@@ -296,6 +296,11 @@ export default function App(){
   const handleCloudLogin=async(event)=>{
     event.preventDefault();
     if(!cloudConfigured) return;
+    if(typeof getSupabaseClient!=="function"){
+      setCloudError("El cliente de Supabase no está disponible en este build.");
+      setCloudStatus("No fue posible iniciar sesión en Supabase.");
+      return;
+    }
 
     const email=authEmail.trim();
     if(!email||!authPassword){
@@ -326,6 +331,11 @@ export default function App(){
 
   const handleCloudLogout=async()=>{
     if(!cloudConfigured) return;
+    if(typeof getSupabaseClient!=="function"){
+      setCloudError("El cliente de Supabase no está disponible en este build.");
+      setCloudStatus("No fue posible cerrar la sesión de Supabase.");
+      return;
+    }
 
     try{
       setIsAuthBusy(true);
@@ -354,9 +364,15 @@ export default function App(){
       bootstrappedRef.current=true;
       return;
     }
-
-    const supabase=getSupabaseClient();
     let cancel=false;
+    let subscription=null;
+
+    if(typeof getSupabaseClient!=="function" || typeof getSessionUser!=="function"){
+      setCloudError("Faltan helpers de Supabase en este build.");
+      setCloudStatus("No fue posible inicializar Supabase en la app.");
+      bootstrappedRef.current=true;
+      return;
+    }
 
     const syncSession=async()=>{
       try{
@@ -378,25 +394,37 @@ export default function App(){
       }
     };
 
-    syncSession();
+    try{
+      const supabase=getSupabaseClient();
+      syncSession();
 
-    const { data } = supabase.auth.onAuthStateChange((_event, session)=>{
-      if(cancel) return;
-      const user=session?.user||null;
-      setCloudUser(user);
-      setAuthEmail(user?.email||"");
-      if(user){
-        setCloudError("");
-        setCloudStatus("Sesión detectada. Preparando datos cloud...");
-      }else{
-        setLastCloudSaveAt("");
-        setCloudStatus("Inicia sesión en Supabase para guardar cambios.");
-      }
-    });
+      const authListener = supabase.auth.onAuthStateChange((_event, session)=>{
+        if(cancel) return;
+        const user=session?.user||null;
+        setCloudUser(user);
+        setAuthEmail(user?.email||"");
+        if(user){
+          setCloudError("");
+          setCloudStatus("Sesión detectada. Preparando datos cloud...");
+        }else{
+          setLastCloudSaveAt("");
+          setCloudStatus("Inicia sesión en Supabase para guardar cambios.");
+        }
+      });
+
+      subscription = authListener?.data?.subscription ?? authListener?.subscription ?? null;
+    }catch(error){
+      console.error("No se pudo inicializar Supabase en App:", error);
+      setCloudError(formatCloudError(error));
+      setCloudStatus("No fue posible inicializar Supabase en la app.");
+      bootstrappedRef.current=true;
+    }
 
     return ()=>{
       cancel=true;
-      data.subscription.unsubscribe();
+      if(subscription && typeof subscription.unsubscribe==="function"){
+        subscription.unsubscribe();
+      }
     };
   },[cloudConfigured]);
 

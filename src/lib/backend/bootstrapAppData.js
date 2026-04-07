@@ -47,6 +47,15 @@ export async function syncCloudCollection(entity, items) {
   await service.replaceAll(entity, items ?? []);
 }
 
+export async function saveCloudAppData(appData) {
+  const service = await getService();
+
+  for (const [entity, stateKey] of Object.entries(ENTITY_TO_STATE)) {
+    if (!Object.prototype.hasOwnProperty.call(appData ?? {}, stateKey)) continue;
+    await service.replaceAll(entity, appData[stateKey] ?? []);
+  }
+}
+
 export function mapStateKeyToEntity(stateKey) {
   const found = Object.entries(ENTITY_TO_STATE).find(([, key]) => key === stateKey);
   return found?.[0] ?? null;

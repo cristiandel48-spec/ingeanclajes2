@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import logoIngeanclajes from "./assets/logo-ingeanclajes.jpeg";
 import articoLineaVidaVertical from "./assets/artico-linea-vida-vertical.jpg";
 import * as backend from "./lib/backend";
@@ -6,8 +6,6 @@ import * as backend from "./lib/backend";
 const isSupabaseConfigured = backend.isSupabaseConfigured;
 const loadCloudAppData = backend.loadCloudAppData;
 const saveCloudAppData = backend.saveCloudAppData;
-const getSupabaseClient = backend.getSupabaseClient;
-const getSessionUser = backend.getSessionUser;
 
 // ======================================================
 // LOGOS CORPORATIVOS
@@ -142,35 +140,6 @@ function H1({title,subtitle,action}){return <div style={{marginBottom:24,display
 function SC({label,value,color,icon,sub}){return <div style={CD}><div style={{fontSize:20,marginBottom:8}}>{icon}</div><div style={{fontSize:22,fontWeight:700,color}}>{value}</div><div style={{fontSize:12,color:"#475569",marginTop:3}}>{label}</div>{sub&&<div style={{fontSize:10,color:"rgba(255,255,255,0.7)",marginTop:2}}>{sub}</div>}</div>;}
 function LBL({children}){return <label style={{display:"block",fontSize:11,color:"#475569",marginBottom:4}}>{children}</label>;}
 
-function formatCloudError(error){
-  const message = error?.message || "Error desconocido al sincronizar con Supabase.";
-  const normalized = message.toLowerCase();
-
-  if(normalized.includes("membres")){
-    return "El usuario inició sesión, pero no está vinculado a esta empresa en app.memberships.";
-  }
-  if(
-    normalized.includes("auth session missing") ||
-    normalized.includes("invalid jwt") ||
-    normalized.includes("jwt")
-  ){
-    return "La sesión de Supabase no está activa. Inicia sesión para guardar en la nube.";
-  }
-  if(normalized.includes("supabase no configurado")){
-    return "Faltan variables de entorno de Supabase en este despliegue.";
-  }
-
-  return message;
-}
-
-function hasRows(data){
-  return Object.values(data||{}).some(value=>Array.isArray(value)&&value.length>0);
-}
-
-function cloudTimeLabel(date){
-  return date.toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
-}
-
 const LEAFLET_CSS_ID = "leaflet-cdn-css";
 const LEAFLET_JS_ID = "leaflet-cdn-js";
 let leafletLoaderPromise = null;
@@ -226,7 +195,6 @@ const GOOGLE_MAPS_EMBED_KEY = "AIzaSyDz60_QWwUzp_uK1czmH5ajxUbfTQB6C6A";
 // APP ROOT
 // ======================================================
 export default function App(){
-  const cloudConfigured=isSupabaseConfigured();
   const [scr,setScr]=useState("dashboard");
   const [open,setOpen]=useState(true);
   const [obras,setObras]=useState(OBRAS_INIT);
@@ -240,14 +208,6 @@ export default function App(){
   const [cuentas,setCuentas]=useState(CUENTAS_PAGAR_INIT);
   const [cotizaciones,setCotizaciones]=useState(COTIZACIONES_INIT);
   const [cotDraft,setCotDraft]=useState(null);
-  const [cloudUser,setCloudUser]=useState(null);
-  const [cloudStatus,setCloudStatus]=useState(cloudConfigured?"Inicia sesión en Supabase para guardar cambios.":"Supabase no está configurado en este despliegue.");
-  const [cloudError,setCloudError]=useState("");
-  const [authEmail,setAuthEmail]=useState("");
-  const [authPassword,setAuthPassword]=useState("");
-  const [isAuthBusy,setIsAuthBusy]=useState(false);
-  const [isCloudSaving,setIsCloudSaving]=useState(false);
-  const [lastCloudSaveAt,setLastCloudSaveAt]=useState("");
   const bootstrappedRef=useRef(false);
   const autosaveTimerRef=useRef(null);
 
@@ -265,183 +225,45 @@ export default function App(){
   });
 
   const saveAllToCloud=async(override=null)=>{
-    if(!cloudConfigured) return false;
+    if(!isSupabaseConfigured()) return;
     if(typeof saveCloudAppData!=="function"){
       console.warn("saveCloudAppData no está disponible en ./lib/backend");
-      setCloudStatus("La función de guardado cloud no está disponible.");
-      return false;
-    }
-    if(!cloudUser?.id){
-      setCloudStatus("Inicia sesión en Supabase para guardar cambios.");
-      return false;
-    }
-    try{
-      setIsCloudSaving(true);
-      setCloudError("");
-      setCloudStatus("Guardando cambios en Supabase...");
-      await saveCloudAppData(override||buildCloudPayload());
-      setLastCloudSaveAt(cloudTimeLabel(new Date()));
-      setCloudStatus("Cambios guardados en Supabase.");
-      return true;
-    }catch(error){
-      console.error("No se pudo guardar datos en Supabase:", error);
-      setCloudError(formatCloudError(error));
-      setCloudStatus("No se pudo guardar en Supabase.");
-      return false;
-    }finally{
-      setIsCloudSaving(false);
-    }
-  };
-
-  const handleCloudLogin=async(event)=>{
-    event.preventDefault();
-    if(!cloudConfigured) return;
-
-    const email=authEmail.trim();
-    if(!email||!authPassword){
-      setCloudError("Escribe el correo y la contraseña del usuario creado en Supabase Auth.");
-      setCloudStatus("Falta iniciar sesión en Supabase.");
       return;
     }
-
     try{
-      setIsAuthBusy(true);
-      setCloudError("");
-      setCloudStatus("Iniciando sesión en Supabase...");
-      const supabase=getSupabaseClient();
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password: authPassword });
-      if(error) throw error;
-      setCloudUser(data.user||null);
-      setAuthEmail(email);
-      setAuthPassword("");
-      setCloudStatus("Sesión iniciada. Cargando datos de la nube...");
+      await saveCloudAppData(override||buildCloudPayload());
     }catch(error){
-      console.error("No se pudo iniciar sesión en Supabase:", error);
-      setCloudError(formatCloudError(error));
-      setCloudStatus("No fue posible iniciar sesión en Supabase.");
-    }finally{
-      setIsAuthBusy(false);
-    }
-  };
-
-  const handleCloudLogout=async()=>{
-    if(!cloudConfigured) return;
-
-    try{
-      setIsAuthBusy(true);
-      const supabase=getSupabaseClient();
-      const { error } = await supabase.auth.signOut();
-      if(error) throw error;
-      setCloudUser(null);
-      setAuthPassword("");
-      setLastCloudSaveAt("");
-      setCloudError("");
-      setCloudStatus("Sesión cerrada. Los cambios volverán a quedar solo en este navegador.");
-    }catch(error){
-      console.error("No se pudo cerrar sesión en Supabase:", error);
-      setCloudError(formatCloudError(error));
-      setCloudStatus("No fue posible cerrar la sesión de Supabase.");
-    }finally{
-      setIsAuthBusy(false);
+      console.error("No se pudo guardar datos en Supabase:", error);
     }
   };
 
   const ctx={obras,setObras,empleados,setEmpleados,pagos,setPagos,horarios,setHorarios,certs,setCerts,informes,setInformes,clientes,setClientes,proveedores,setProveedores,cuentas,setCuentas,cotizaciones,setCotizaciones,cotDraft,setCotDraft,setScr,saveAllToCloud};
 
   useEffect(()=>{
-    if(!cloudConfigured){
-      setCloudStatus("Supabase no está configurado en este despliegue.");
-      bootstrappedRef.current=true;
-      return;
-    }
-
-    const supabase=getSupabaseClient();
-    let cancel=false;
-
-    const syncSession=async()=>{
-      try{
-        const user=await getSessionUser();
-        if(cancel) return;
-        setCloudUser(user||null);
-        setAuthEmail(user?.email||"");
-        if(user){
-          setCloudError("");
-          setCloudStatus("Sesión detectada. Preparando datos cloud...");
-        }else{
-          setCloudStatus("Inicia sesión en Supabase para guardar cambios.");
-        }
-      }catch(error){
-        if(cancel) return;
-        console.error("No se pudo consultar la sesión de Supabase:", error);
-        setCloudError(formatCloudError(error));
-        setCloudStatus("No fue posible validar la sesión de Supabase.");
-      }
-    };
-
-    syncSession();
-
-    const { data } = supabase.auth.onAuthStateChange((_event, session)=>{
-      if(cancel) return;
-      const user=session?.user||null;
-      setCloudUser(user);
-      setAuthEmail(user?.email||"");
-      if(user){
-        setCloudError("");
-        setCloudStatus("Sesión detectada. Preparando datos cloud...");
-      }else{
-        setLastCloudSaveAt("");
-        setCloudStatus("Inicia sesión en Supabase para guardar cambios.");
-      }
-    });
-
-    return ()=>{
-      cancel=true;
-      data.subscription.unsubscribe();
-    };
-  },[cloudConfigured]);
-
-  useEffect(()=>{
     let cancel=false;
 
     const bootstrapCloudData = async () => {
-      if (!cloudConfigured) {
+      if (!isSupabaseConfigured()) {
         bootstrappedRef.current=true;
         return;
       }
-
-      if(!cloudUser?.id){
-        bootstrappedRef.current=true;
-        return;
-      }
-
-      bootstrappedRef.current=false;
-      setCloudError("");
-      setCloudStatus("Cargando datos desde Supabase...");
 
       try {
         const cloud = await loadCloudAppData();
         if (cancel) return;
 
-        if(hasRows(cloud)){
-          if (Array.isArray(cloud.obras)) setObras(cloud.obras);
-          if (Array.isArray(cloud.empleados)) setEmpleados(cloud.empleados);
-          if (Array.isArray(cloud.pagos)) setPagos(cloud.pagos);
-          if (Array.isArray(cloud.horarios)) setHorarios(cloud.horarios);
-          if (Array.isArray(cloud.certs)) setCerts(cloud.certs);
-          if (Array.isArray(cloud.informes)) setInformes(cloud.informes);
-          if (Array.isArray(cloud.clientes)) setClientes(cloud.clientes);
-          if (Array.isArray(cloud.proveedores)) setProveedores(cloud.proveedores);
-          if (Array.isArray(cloud.cuentas)) setCuentas(cloud.cuentas);
-          if (Array.isArray(cloud.cotizaciones)) setCotizaciones(cloud.cotizaciones);
-          setCloudStatus("Datos cargados desde Supabase.");
-        }else{
-          setCloudStatus("La base está vacía. Pulsa 'Sincronizar ahora' para subir lo que ves en la app.");
-        }
+        if (Array.isArray(cloud.obras)) setObras(cloud.obras);
+        if (Array.isArray(cloud.empleados)) setEmpleados(cloud.empleados);
+        if (Array.isArray(cloud.pagos)) setPagos(cloud.pagos);
+        if (Array.isArray(cloud.horarios)) setHorarios(cloud.horarios);
+        if (Array.isArray(cloud.certs)) setCerts(cloud.certs);
+        if (Array.isArray(cloud.informes)) setInformes(cloud.informes);
+        if (Array.isArray(cloud.clientes)) setClientes(cloud.clientes);
+        if (Array.isArray(cloud.proveedores)) setProveedores(cloud.proveedores);
+        if (Array.isArray(cloud.cuentas)) setCuentas(cloud.cuentas);
+        if (Array.isArray(cloud.cotizaciones)) setCotizaciones(cloud.cotizaciones);
       } catch (error) {
         console.error("No se pudo cargar datos de Supabase:", error);
-        if(cancel) return;
-        setCloudError(formatCloudError(error));
-        setCloudStatus("No se pudieron cargar los datos de Supabase.");
       } finally {
         if (!cancel) bootstrappedRef.current=true;
       }
@@ -450,12 +272,11 @@ export default function App(){
     bootstrapCloudData();
 
     return ()=>{ cancel=true; };
-  },[cloudConfigured, cloudUser?.id]);
+  },[]);
 
   useEffect(()=>{
     if(!bootstrappedRef.current) return;
-    if(!cloudConfigured) return;
-    if(!cloudUser?.id) return;
+    if(!isSupabaseConfigured()) return;
     if(typeof saveCloudAppData!=="function") return;
 
     if(autosaveTimerRef.current){
@@ -482,42 +303,40 @@ export default function App(){
     proveedores,
     cuentas,
     cotizaciones,
-    cloudConfigured,
-    cloudUser?.id,
   ]);
 
   const navSections=[
     {
       title:"General",
       items:[
-        {id:"dashboard",l:"Dashboard",i:"?"},
+        {id:"dashboard",l:"Dashboard",i:"▦"},
       ],
     },
     {
       title:"Comercial y Proyectos",
       items:[
-        {id:"cotizacion",l:"Cotizaciones",i:"??"},
-        {id:"clientes",l:"Clientes",i:"??"},
-        {id:"obras",l:"Ejecución de Obra",i:"???"},
-        {id:"planos",l:"Planos y Medición",i:"???"},
-        {id:"pagos",l:"Pagos por Obra",i:"??"},
+        {id:"cotizacion",l:"Cotizaciones",i:"📄"},
+        {id:"clientes",l:"Clientes",i:"🤝"},
+        {id:"obras",l:"Ejecución de Obra",i:"🏗️"},
+        {id:"planos",l:"Planos y Medición",i:"🗺️"},
+        {id:"pagos",l:"Pagos por Obra",i:"💳"},
       ],
     },
     {
       title:"Calidad y Entregables",
       items:[
-        {id:"certificaciones",l:"Certificaciones",i:"??"},
-        {id:"vencimientos",l:"Vencimientos de Certificaciones",i:"??"},
-        {id:"informes",l:"Informes de Actividades",i:"??"},
+        {id:"certificaciones",l:"Certificaciones",i:"🏅"},
+        {id:"vencimientos",l:"Vencimientos de Certificaciones",i:"⚠️"},
+        {id:"informes",l:"Informes de Actividades",i:"📋"},
       ],
     },
     {
       title:"Administración",
       items:[
-        {id:"proveedores",l:"Cuentas x Pagar y Proveedores",i:"??"},
-        {id:"nomina",l:"Nómina y Empleados",i:"??"},
-        {id:"horarios",l:"Horarios",i:"??"},
-        {id:"financiero",l:"Informe Financiero",i:"??"},
+        {id:"proveedores",l:"Cuentas x Pagar y Proveedores",i:"🧾"},
+        {id:"nomina",l:"Nómina y Empleados",i:"💰"},
+        {id:"horarios",l:"Horarios",i:"📅"},
+        {id:"financiero",l:"Informe Financiero",i:"📊"},
       ],
     },
   ];
@@ -556,46 +375,6 @@ export default function App(){
         </div>
       </aside>
       <main style={{flex:1,overflow:"auto",background:"#f0f2f5"}}>
-        <div style={{padding:"18px 22px 0"}}>
-          <div style={{background:"#ffffff",border:"1px solid #dbe4f0",borderRadius:14,padding:16,boxShadow:"0 2px 12px rgba(15,23,42,0.05)",display:"flex",flexWrap:"wrap",gap:14,alignItems:"center",justifyContent:"space-between"}}>
-            <div style={{minWidth:260,flex:"1 1 320px"}}>
-              <div style={{fontSize:12,fontWeight:700,color:"#cc0000",textTransform:"uppercase",letterSpacing:0.8}}>Estado nube</div>
-              <div style={{fontSize:14,fontWeight:600,color:"#1e293b",marginTop:6}}>{cloudStatus}</div>
-              <div style={{fontSize:12,color:"#64748b",marginTop:6}}>
-                {cloudConfigured
-                  ? cloudUser?.email
-                    ? `Usuario conectado: ${cloudUser.email}${lastCloudSaveAt?` • Último guardado ${lastCloudSaveAt}`:""}`
-                    : "Usa el usuario creado en Supabase Auth para habilitar lectura y escritura con RLS."
-                  : "Configura VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY y VITE_SUPABASE_TENANT_SLUG en Vercel."}
-              </div>
-              {cloudError&&<div style={{marginTop:10,fontSize:12,color:"#b91c1c",background:"#fef2f2",border:"1px solid #fecaca",borderRadius:10,padding:"10px 12px"}}>{cloudError}</div>}
-            </div>
-            {cloudConfigured&&cloudUser?.email?(
-              <div style={{display:"flex",flexWrap:"wrap",gap:10,alignItems:"center",justifyContent:"flex-end"}}>
-                <button onClick={()=>saveAllToCloud(buildCloudPayload())} disabled={isCloudSaving||isAuthBusy} style={{...B("#cc0000"),opacity:isCloudSaving||isAuthBusy?0.65:1,cursor:isCloudSaving||isAuthBusy?"not-allowed":"pointer"}}>
-                  {isCloudSaving?"Guardando...":"Sincronizar ahora"}
-                </button>
-                <button onClick={handleCloudLogout} disabled={isAuthBusy||isCloudSaving} style={{...B("#ffffff","#1a3050"),border:"1px solid #cbd5e1",opacity:isAuthBusy||isCloudSaving?0.65:1,cursor:isAuthBusy||isCloudSaving?"not-allowed":"pointer"}}>
-                  {isAuthBusy?"Procesando...":"Cerrar sesión"}
-                </button>
-              </div>
-            ):cloudConfigured?(
-              <form onSubmit={handleCloudLogin} style={{display:"flex",flexWrap:"wrap",gap:10,alignItems:"flex-end",justifyContent:"flex-end",minWidth:280}}>
-                <div style={{minWidth:220}}>
-                  <LBL>Correo Supabase</LBL>
-                  <input type="email" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} placeholder="tu_correo@empresa.com" style={SI}/>
-                </div>
-                <div style={{minWidth:180}}>
-                  <LBL>Contraseña</LBL>
-                  <input type="password" value={authPassword} onChange={e=>setAuthPassword(e.target.value)} placeholder="••••••••" style={SI}/>
-                </div>
-                <button type="submit" disabled={isAuthBusy} style={{...B("#cc0000"),opacity:isAuthBusy?0.65:1,cursor:isAuthBusy?"not-allowed":"pointer"}}>
-                  {isAuthBusy?"Ingresando...":"Iniciar sesión"}
-                </button>
-              </form>
-            ):null}
-          </div>
-        </div>
         {scr==="dashboard"&&<Dashboard ctx={ctx} go={setScr}/>}
         {scr==="cotizacion"&&<Cotizacion ctx={ctx}/>}
         {scr==="clientes"&&<ClientesDB ctx={ctx}/>}
@@ -637,10 +416,10 @@ function Dashboard({ctx,go}){
       </div>
       <H1 title="Dashboard" subtitle="Resumen ejecutivo · INGEANCLAJES S.A.S"/>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:16,marginBottom:24}}>
-        <SC label="Obras activas" value={eO} color="#60b4ff" icon="???" sub={`${obras.length} total`}/>
-        <SC label="Facturado" value={fmtK(tF)} color="#4ade80" icon="??" sub="acumulado"/>
-        <SC label="Por cobrar" value={fmtK(tP)} color="#fb923c" icon="?" sub="saldo clientes"/>
-        <SC label="Cuentas x pagar" value={fmtK(tCP)} color="#c084fc" icon="??" sub="proveedores"/>
+        <SC label="Obras activas" value={eO} color="#60b4ff" icon="🏗️" sub={`${obras.length} total`}/>
+        <SC label="Facturado" value={fmtK(tF)} color="#4ade80" icon="💰" sub="acumulado"/>
+        <SC label="Por cobrar" value={fmtK(tP)} color="#fb923c" icon="⏳" sub="saldo clientes"/>
+        <SC label="Cuentas x pagar" value={fmtK(tCP)} color="#c084fc" icon="🧾" sub="proveedores"/>
       </div>
       {(()=>{
         const hoy=new Date();
@@ -654,7 +433,7 @@ function Dashboard({ctx,go}){
         const colorV=(d)=>d<0?"#ef4444":d<30?"#fb923c":d<90?"#f5c842":"#4ade80";
         return(
           <div style={{...CD,marginBottom:20,border:"2px solid #7a661044",background:"#fff"}}>
-            <div style={{...ST,color:"#b45309",borderBottomColor:"#f5c84233"}}>?? Próximos Vencimientos de Certificaciones</div>
+            <div style={{...ST,color:"#b45309",borderBottomColor:"#f5c84233"}}>🔔 Próximos Vencimientos de Certificaciones</div>
             <div style={{display:"grid",gridTemplateColumns:`repeat(${Math.min(venc.length,5)},1fr)`,gap:10}}>
               {venc.map(c=>(
                 <div key={c.id} style={{background:"#f8fafc",borderRadius:10,padding:"12px 14px",border:`2px solid ${colorV(c.diasRestantes)}44`}}>
@@ -688,9 +467,9 @@ function Dashboard({ctx,go}){
         </div>
         <div style={CD}>
           <div style={ST}>Acciones rápidas</div>
-          {[{l:"Nueva Cotización",i:"??",s:"cotizacion",c:"#f47c20"},{l:"Nueva Certificación",i:"??",s:"certificaciones",c:"#4ade80"},{l:"Informe Actividades",i:"??",s:"informes",c:"#60b4ff"},{l:"Informe Financiero",i:"??",s:"financiero",c:"#c084fc"},{l:"Cuentas x Pagar",i:"??",s:"proveedores",c:"#f5c842"}].map(a=>(
+          {[{l:"Nueva Cotización",i:"📄",s:"cotizacion",c:"#f47c20"},{l:"Nueva Certificación",i:"🏅",s:"certificaciones",c:"#4ade80"},{l:"Informe Actividades",i:"📋",s:"informes",c:"#60b4ff"},{l:"Informe Financiero",i:"📊",s:"financiero",c:"#c084fc"},{l:"Cuentas x Pagar",i:"🧾",s:"proveedores",c:"#f5c842"}].map(a=>(
             <button key={a.s} onClick={()=>go(a.s)} style={{width:"100%",display:"flex",alignItems:"center",gap:10,background:"#f1f5f9",border:`1px solid ${a.c}22`,borderRadius:10,padding:"10px 12px",marginBottom:8,cursor:"pointer",textAlign:"left"}}>
-              <span style={{fontSize:16}}>{a.i}</span><span style={{fontSize:13,color:"#1a1a2e",fontWeight:500}}>{a.l}</span><span style={{marginLeft:"auto",color:a.c}}>?</span>
+              <span style={{fontSize:16}}>{a.i}</span><span style={{fontSize:13,color:"#1a1a2e",fontWeight:500}}>{a.l}</span><span style={{marginLeft:"auto",color:a.c}}>→</span>
             </button>
           ))}
         </div>
@@ -1084,7 +863,7 @@ let html2pdfLoaderPromise = null;
 function sanitizeFileName(v=""){
   return String(v || "documento")
     .normalize("NFD")
-    .replace(/[`-?]/g,"")
+    .replace(/[̀-ͯ]/g,"")
     .replace(/[^a-zA-Z0-9._-]+/g,"-")
     .replace(/-{2,}/g,"-")
     .replace(/^-|-$/g,"") || "documento";
@@ -1093,7 +872,7 @@ function sanitizeFileName(v=""){
 function normalizeEntityKey(v=""){
   return String(v || "")
     .normalize("NFD")
-    .replace(/[`-?]/g,"")
+    .replace(/[̀-ͯ]/g,"")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g,"")
     .trim();
@@ -1798,7 +1577,7 @@ function GoogleMeasureWorkspace({ queryValue, onQueryChange, measurements, onCha
     <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:12,padding:20}}>
       <div style={{display:"grid",gridTemplateColumns:"1.3fr 1fr",gap:16,alignItems:"start",marginBottom:12}}>
         <div>
-          <div style={ST}>??? Medición automática con Google Maps</div>
+          <div style={ST}>🛰️ Medición automática con Google Maps</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr auto auto",gap:8,marginBottom:10}}>
             <input value={queryValue} onChange={e=>onQueryChange(e.target.value)} placeholder="Coordenadas, dirección o enlace de Maps" style={SI} />
             <button onClick={centerMap} style={{...B("#f47c20"),fontSize:12}}>Ver aquí</button>
@@ -1815,7 +1594,7 @@ function GoogleMeasureWorkspace({ queryValue, onQueryChange, measurements, onCha
             {error && <div style={{color:"#991b1b"}}>• {error}</div>}
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginTop:8}}>
-            <button onClick={()=>setZoom(z=>Math.min(21,z+1))} style={{...B("#e0f2fe","#0369a1"),justifyContent:"center",fontSize:12,padding:"8px 0"}}>+</button>
+            <button onClick={()=>setZoom(z=>Math.min(21,z+1))} style={{...B("#e0f2fe","#0369a1"),justifyContent:"center",fontSize:12,padding:"8px 0"}}>＋</button>
             <button onClick={()=>setZoom(z=>Math.max(16,z-1))} style={{...B("#e0f2fe","#0369a1"),justifyContent:"center",fontSize:12,padding:"8px 0"}}>ï¼</button>
           </div>
         </div>
@@ -1825,14 +1604,14 @@ function GoogleMeasureWorkspace({ queryValue, onQueryChange, measurements, onCha
 
       {draft && (
         <div style={{background:"#fffbeb",border:"2px solid #f5c842",borderRadius:10,padding:16,marginBottom:12}}>
-          <div style={{fontSize:13,fontWeight:700,color:"#b45309",marginBottom:12}}>?? Tramo detectado automáticamente</div>
+          <div style={{fontSize:13,fontWeight:700,color:"#b45309",marginBottom:12}}>📏 Tramo detectado automáticamente</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:10,alignItems:"end"}}>
             <div><LBL>Metros calculados</LBL><input value={draft.ml} readOnly style={{...SI,background:"#fff7ed",fontWeight:700,color:"#c2410c"}} /></div>
             <div><LBL>Etiqueta</LBL><input value={draft.label} onChange={e=>setDraft({...draft,label:e.target.value})} placeholder="Ej: Cubierta norte" style={SI} /></div>
             <div><LBL>Tipo</LBL><select value={draft.tipo} onChange={e=>setDraft({...draft,tipo:e.target.value})} style={SI}>{[["LVH","Línea horizontal"],["LVV","Línea vertical"],["CON","Conexión"],["ESC","Escalera"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
             <div style={{display:"flex",gap:6}}>
-              <button onClick={confirmDraft} style={B("#4ade80","#0f2d1a")}>? Agregar</button>
-              <button onClick={()=>{clearTemp(); setDraft(null);}} style={B("#fee2e2","#ef4444")}>?</button>
+              <button onClick={confirmDraft} style={B("#4ade80","#0f2d1a")}>✅ Agregar</button>
+              <button onClick={()=>{clearTemp(); setDraft(null);}} style={B("#fee2e2","#ef4444")}>✕</button>
             </div>
           </div>
         </div>
@@ -2045,7 +1824,7 @@ function Cotizacion({ctx}){
                     <div style={{fontSize:11,color:"#64748b"}}>{c.id} · {c.numero}</div>
                     <div style={{fontSize:15,fontWeight:700,marginTop:2}}>{c.cliente}</div>
                     <div style={{fontSize:12,color:"#475569"}}>{c.obra}</div>
-                    <div style={{fontSize:11,color:"#64748b"}}>?? {c.ciudad} · {fmtD(c.fecha)}</div>
+                    <div style={{fontSize:11,color:"#64748b"}}>📍 {c.ciudad} · {fmtD(c.fecha)}</div>
                   </div>
                   <span style={{background:s.bg,color:s.t,border:`1px solid ${s.b}`,borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:600,flexShrink:0}}>{c.estado}</span>
                 </div>
@@ -2055,11 +1834,11 @@ function Cotizacion({ctx}){
                   <div style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",marginBottom:2}}>Obra</div><div style={{fontSize:12,fontWeight:600,color:obraVinc?"#4ade80":"#5b80a8"}}>{obraVinc?obraVinc.id:"Sin obra"}</div></div>
                 </div>
                 <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                  <button style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"6px 12px"}} onClick={()=>setPreviewCot(c)}>??? Ver</button>
-                  <button style={{...B("#1a3050","#f5c842"),fontSize:11,padding:"6px 12px"}} onClick={()=>loadEdit(c)}>?? Editar</button>
-                  {c.estado!=="Aprobada"&&<button style={{...B("#0f2d1a","#4ade80"),border:"1px solid #166534",fontSize:11,padding:"6px 12px"}} onClick={()=>aprobarCotizacion(c.id)}>? Aprobar ? Crear Obra</button>}
-                  {c.estado==="Aprobada"&&<button style={{...B("#e8f5ee","#166534"),border:"1px solid #166534",fontSize:11,padding:"6px 12px"}} onClick={()=>abrirEnvioCotizacion(c)}>?? Enviar al cliente</button>}
-                  <button style={{...B("#2d1414","#ef4444"),fontSize:11,padding:"6px 12px"}} onClick={()=>openCotizacionPrint(c)}>??? PDF</button>
+                  <button style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"6px 12px"}} onClick={()=>setPreviewCot(c)}>👁️ Ver</button>
+                  <button style={{...B("#1a3050","#f5c842"),fontSize:11,padding:"6px 12px"}} onClick={()=>loadEdit(c)}>✏️ Editar</button>
+                  {c.estado!=="Aprobada"&&<button style={{...B("#0f2d1a","#4ade80"),border:"1px solid #166534",fontSize:11,padding:"6px 12px"}} onClick={()=>aprobarCotizacion(c.id)}>✅ Aprobar → Crear Obra</button>}
+                  {c.estado==="Aprobada"&&<button style={{...B("#e8f5ee","#166534"),border:"1px solid #166534",fontSize:11,padding:"6px 12px"}} onClick={()=>abrirEnvioCotizacion(c)}>📲 Enviar al cliente</button>}
+                  <button style={{...B("#2d1414","#ef4444"),fontSize:11,padding:"6px 12px"}} onClick={()=>openCotizacionPrint(c)}>🖨️ PDF</button>
                 </div>
               </div>
             );
@@ -2069,8 +1848,8 @@ function Cotizacion({ctx}){
           <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:1000,overflow:"auto",padding:20}}>
             <div style={{maxWidth:860,margin:"0 auto"}}>
               <div className="no-print" style={{display:"flex",gap:10,marginBottom:14,justifyContent:"flex-end"}}>
-                <button style={B("#f1f5f9","#475569")} onClick={()=>setPreviewCot(null)}>? Cerrar</button>
-                <button style={B("#f47c20")} onClick={()=>openCotizacionPrint(previewCot)}>??? Imprimir / PDF</button>
+                <button style={B("#f1f5f9","#475569")} onClick={()=>setPreviewCot(null)}>✕ Cerrar</button>
+                <button style={B("#f47c20")} onClick={()=>openCotizacionPrint(previewCot)}>🖨️ Imprimir / PDF</button>
               </div>
               <CotizacionPrint c={previewCot}/>
             </div>
@@ -2085,7 +1864,7 @@ function Cotizacion({ctx}){
                   <div style={{fontSize:22,fontWeight:800,color:"#1a1a2e",marginBottom:6}}>Cotización aprobada</div>
                   <div style={{fontSize:13,color:"#64748b"}}>¿Deseas enviar ahora la cotización <strong>{sendModal.cotizacion?.numero || sendModal.cotizacion?.id}</strong> al cliente?</div>
                 </div>
-                <button style={B("#f1f5f9","#475569")} onClick={cerrarEnvioCotizacion}>? Cerrar</button>
+                <button style={B("#f1f5f9","#475569")} onClick={cerrarEnvioCotizacion}>✕ Cerrar</button>
               </div>
 
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:16}}>
@@ -2139,7 +1918,7 @@ function Cotizacion({ctx}){
   return(
     <div style={{padding:28}}>
       <H1 title={editCot?"Editar Cotización":"Nueva Cotización"} subtitle="Primero defines ubicación, el sistema mide automáticamente y esa información baja luego a Planos y Obras"
-        action={<button style={B("#f1f5f9","#475569")} onClick={()=>setTab("lista")}>? Volver a lista</button>}/>
+        action={<button style={B("#f1f5f9","#475569")} onClick={()=>setTab("lista")}>← Volver a lista</button>}/>
       <div style={{display:"grid",gridTemplateColumns:"1fr 300px",gap:20}}>
         <div>
           <div style={{...CD,marginBottom:14}}>
@@ -2180,7 +1959,7 @@ function Cotizacion({ctx}){
               <div>
                 <div style={{fontSize:12,fontWeight:600,color:"#1a1a2e",marginBottom:8}}>Captura manual opcional</div>
                 <div onClick={()=>fileRef.current.click()} style={{border:"2px dashed #f47c20",borderRadius:10,padding:mapImgManual?0:"32px 20px",textAlign:"center",cursor:"pointer",background:"#f8fafc",overflow:"hidden",minHeight:mapImgManual?180:120,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                  {mapImgManual?<img src={mapImgManual} alt="Mapa manual" style={{width:"100%",display:"block",borderRadius:8,maxHeight:260,objectFit:"contain"}}/>:<div><div style={{fontSize:28,marginBottom:8}} >???</div><div style={{fontSize:13,color:"#cc0000",fontWeight:600}}>Clic para cargar una captura si quieres reemplazar la automática</div></div>}
+                  {mapImgManual?<img src={mapImgManual} alt="Mapa manual" style={{width:"100%",display:"block",borderRadius:8,maxHeight:260,objectFit:"contain"}}/>:<div><div style={{fontSize:28,marginBottom:8}} >🛰️</div><div style={{fontSize:13,color:"#cc0000",fontWeight:600}}>Clic para cargar una captura si quieres reemplazar la automática</div></div>}
                 </div>
                 <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={onImgChange}/>
                 {mapImgManual&&<button onClick={()=>setMapImgManual(null)} style={{...B("#2d1414","#ef4444"),marginTop:8,fontSize:11}}>× Quitar captura manual</button>}
@@ -2192,8 +1971,8 @@ function Cotizacion({ctx}){
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,...{fontSize:11,fontWeight:600,color:"#cc0000",textTransform:"uppercase",letterSpacing:1,borderBottom:"1px solid #e2e8f0",paddingBottom:8}}}>
               <span>?tems</span>
               <div style={{display:"flex",gap:8}}>
-                <button onClick={usarMedicionesComoItems} style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"5px 12px"}}>?? Jalar mediciones</button>
-                <button onClick={()=>setShowDB(!showDB)} style={{...B(showDB?"#1a3050":"transparent","#f47c20"),border:"1px solid #cc0000",fontSize:11,padding:"5px 12px"}}>{showDB?"? Cerrar catálogo":"?? Catálogo"}</button>
+                <button onClick={usarMedicionesComoItems} style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"5px 12px"}}>📥 Jalar mediciones</button>
+                <button onClick={()=>setShowDB(!showDB)} style={{...B(showDB?"#1a3050":"transparent","#f47c20"),border:"1px solid #cc0000",fontSize:11,padding:"5px 12px"}}>{showDB?"▲ Cerrar catálogo":"📋 Catálogo"}</button>
               </div>
             </div>
             {showDB&&(
@@ -2228,7 +2007,7 @@ function Cotizacion({ctx}){
                 ))}
               </div>
             )}
-            {items.length===0&&!showDB&&<div style={{textAlign:"center",padding:"28px 0",color:"#94a3b8",fontSize:13}}><div style={{fontSize:28,marginBottom:8}}>??</div><div>Mide primero en el mapa o usa el catálogo para agregar ítems</div></div>}
+            {items.length===0&&!showDB&&<div style={{textAlign:"center",padding:"28px 0",color:"#94a3b8",fontSize:13}}><div style={{fontSize:28,marginBottom:8}}>📋</div><div>Mide primero en el mapa o usa el catálogo para agregar ítems</div></div>}
             <button onClick={addBlank} style={{...B("#fff3e8","#f47c20"),border:"1px dashed #cc0000",width:"100%",justifyContent:"center",marginTop:8,fontSize:12}}>+ Agregar ítem manual</button>
           </div>
 
@@ -2265,12 +2044,12 @@ function Cotizacion({ctx}){
             <div style={{fontSize:11,color:"#64748b",marginBottom:10}}>{fmtL(fecha)}</div>
             <div style={{fontSize:13,fontWeight:600,marginBottom:2}}>{cl.nombre||"—"}</div>
             <div style={{fontSize:11,color:"#475569",marginBottom:8}}>{cl.obra||"—"} · {cl.ciudad||"—"}</div>
-            <div style={{fontSize:11,color:"#64748b",marginBottom:14}}>?? {(geoMediciones||[]).length} tramo(s) medido(s)</div>
+            <div style={{fontSize:11,color:"#64748b",marginBottom:14}}>📏 {(geoMediciones||[]).length} tramo(s) medido(s)</div>
             <div style={{display:"flex",justifyContent:"space-between",fontWeight:700,fontSize:15,color:"#cc0000",background:"#f1f5f9",padding:"10px 12px",borderRadius:8,marginBottom:12}}><span>TOTAL</span><span>{fmt(tot)}</span></div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              <button style={{...B("#f47c20"),justifyContent:"center"}} onClick={guardarCot}>?? {editCot?"Actualizar":"Guardar"} Cotización</button>
-              <button style={{...B("#dbeafe","#1e40af"),justifyContent:"center"}} onClick={()=>{guardarCot(); const dummy={numero:cot,fecha,val,cliente:cl.nombre,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,items:items.length?items:measurementsToQuoteItems(geoMediciones),util,total:Math.round(tot),formaPago,tiempoEjec,mapImg:effectiveMapImg,geoMediciones,geoMapView}; setPreviewCot(dummy); setTab("lista");}}>??? Guardar y Ver</button>
-              <button style={{...B("#0f2d1a","#4ade80"),justifyContent:"center",border:"1px solid #166534"}} onClick={usarMedicionesComoItems}>?? Crear ítems desde mediciones</button>
+              <button style={{...B("#f47c20"),justifyContent:"center"}} onClick={guardarCot}>💾 {editCot?"Actualizar":"Guardar"} Cotización</button>
+              <button style={{...B("#dbeafe","#1e40af"),justifyContent:"center"}} onClick={()=>{guardarCot(); const dummy={numero:cot,fecha,val,cliente:cl.nombre,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,items:items.length?items:measurementsToQuoteItems(geoMediciones),util,total:Math.round(tot),formaPago,tiempoEjec,mapImg:effectiveMapImg,geoMediciones,geoMapView}; setPreviewCot(dummy); setTab("lista");}}>👁️ Guardar y Ver</button>
+              <button style={{...B("#0f2d1a","#4ade80"),justifyContent:"center",border:"1px solid #166534"}} onClick={usarMedicionesComoItems}>📋 Crear ítems desde mediciones</button>
             </div>
           </div>
         </div>
@@ -2468,8 +2247,8 @@ function Planos({ctx}){
                   <Badge estado={o.estado}/>
                 </div>
                 <div style={{marginTop:10,background:"#f1f5f9",borderRadius:6,padding:"6px 10px",fontSize:11,color:"#475569",display:"flex",justifyContent:"space-between"}}>
-                  <span>?? {geos.length + (o.trazos||[]).length} trazos · {geos.length} automáticos</span>
-                  <span style={{color:"#cc0000",fontWeight:600}}>Ver plano ?</span>
+                  <span>📐 {geos.length + (o.trazos||[]).length} trazos · {geos.length} automáticos</span>
+                  <span style={{color:"#cc0000",fontWeight:600}}>Ver plano →</span>
                 </div>
               </div>
             );
@@ -2482,17 +2261,17 @@ function Planos({ctx}){
   return(
     <div style={{padding:28}}>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,background:"#fff",borderRadius:14,padding:"16px 20px",border:"1px solid #e2e8f0",boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
-        <button onClick={()=>setSel(null)} style={{...B("#f1f5f9","#475569"),padding:"8px 16px",fontSize:13,flexShrink:0}}>? Obras</button>
-        <div style={{flex:1}}><div style={{fontSize:11,color:"#94a3b8"}}>{sel.id} · ?? {sel.ciudad}</div><div style={{fontSize:20,fontWeight:700,color:"#1a1a2e"}}>{sel.cliente}</div><div style={{fontSize:13,color:"#475569"}}>{sel.proyecto}</div></div>
+        <button onClick={()=>setSel(null)} style={{...B("#f1f5f9","#475569"),padding:"8px 16px",fontSize:13,flexShrink:0}}>← Obras</button>
+        <div style={{flex:1}}><div style={{fontSize:11,color:"#94a3b8"}}>{sel.id} · 📍 {sel.ciudad}</div><div style={{fontSize:20,fontWeight:700,color:"#1a1a2e"}}>{sel.cliente}</div><div style={{fontSize:13,color:"#475569"}}>{sel.proyecto}</div></div>
         <Badge estado={sel.estado}/>
       </div>
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
-        {[["?? Total ML",`${totalML} ML`,"#cc0000"],["??? Tramos automáticos",`${geoMediciones.length}`,"#2563eb"],["?? Manuales",`${lineas.length}`,"#60b4ff"],["?? Valor total",fmt(sel.total),"#f47c20"]].map(([k,v,c])=>(<div key={k} style={{background:"#fff",borderRadius:10,padding:"12px 16px",border:"1px solid #e2e8f0",textAlign:"center"}}><div style={{fontSize:10,color:"#94a3b8",marginBottom:4}}>{k}</div><div style={{fontSize:15,fontWeight:700,color:c}}>{v}</div></div>))}
+        {[["📐 Total ML",`${totalML} ML`,"#cc0000"],["🛰️ Tramos automáticos",`${geoMediciones.length}`,"#2563eb"],["📋 Manuales",`${lineas.length}`,"#60b4ff"],["💰 Valor total",fmt(sel.total),"#f47c20"]].map(([k,v,c])=>(<div key={k} style={{background:"#fff",borderRadius:10,padding:"12px 16px",border:"1px solid #e2e8f0",textAlign:"center"}}><div style={{fontSize:10,color:"#94a3b8",marginBottom:4}}>{k}</div><div style={{fontSize:15,fontWeight:700,color:c}}>{v}</div></div>))}
       </div>
 
       <div style={{display:"flex",gap:6,marginBottom:16}}>
-        {[["imagen","??? Medición automática"],["svg","?? Plano de Trazos"],["lista","?? Lista & Cotización"]].map(([id,lb])=>(<button key={id} onClick={()=>setTabPlano(id)} style={{...B(tabPlano===id?"#cc0000":"#f1f5f9",tabPlano===id?"#fff":"#475569"),fontSize:12,padding:"8px 16px",border:`1px solid ${tabPlano===id?"#cc0000":"#e2e8f0"}`}}>{lb}</button>))}
+        {[["imagen","🛰️ Medición automática"],["svg","📐 Plano de Trazos"],["lista","📋 Lista & Cotización"]].map(([id,lb])=>(<button key={id} onClick={()=>setTabPlano(id)} style={{...B(tabPlano===id?"#cc0000":"#f1f5f9",tabPlano===id?"#fff":"#475569"),fontSize:12,padding:"8px 16px",border:`1px solid ${tabPlano===id?"#cc0000":"#e2e8f0"}`}}>{lb}</button>))}
       </div>
 
       {tabPlano==="imagen" && (
@@ -2509,8 +2288,8 @@ function Planos({ctx}){
         <div>
           <div style={{...CD,marginBottom:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-              <div style={ST}>?? Plano de trazos (manual)</div>
-              <button onClick={()=>imgRef.current.click()} style={{...B("#f1f5f9","#475569"),fontSize:11,padding:"5px 10px"}}>??? Cargar imagen de fondo</button>
+              <div style={ST}>📐 Plano de trazos (manual)</div>
+              <button onClick={()=>imgRef.current.click()} style={{...B("#f1f5f9","#475569"),fontSize:11,padding:"5px 10px"}}>🖼️ Cargar imagen de fondo</button>
               <input ref={imgRef} type="file" accept="image/*" style={{display:"none"}} onChange={onImgChange}/>
             </div>
             <div style={{background:"#f0f4f8",borderRadius:8,overflow:"hidden",position:"relative",border:"1px solid #e2e8f0"}}>
@@ -2523,7 +2302,7 @@ function Planos({ctx}){
             </div>
           </div>
           <div style={{...CD,marginBottom:16}}>
-            <div style={ST}>? Agregar tramo manual</div>
+            <div style={ST}>➕ Agregar tramo manual</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr auto",gap:12,alignItems:"end"}}>
               <div><LBL>Tipo</LBL><select value={trazosForm.tipo} onChange={e=>setTrazosForm({...trazosForm,tipo:e.target.value})} style={SI}>{[["LVH","L.V. Horizontal"],["LVV","L.V. Vertical"],["CON","Conexión"],["ESC","Escalera"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
               <div><LBL>Metros lineales</LBL><input type="number" value={trazosForm.ml} onChange={e=>setTrazosForm({...trazosForm,ml:parseFloat(e.target.value)||0})} style={SI}/></div>
@@ -2537,8 +2316,8 @@ function Planos({ctx}){
       {tabPlano==="lista" && (
         <div style={CD}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-            <div style={ST}>?? Trazos registrados — Total: <span style={{color:"#cc0000"}}>{totalML} ML</span></div>
-            <button onClick={pasarACotizacion} style={{...B("#4ade80","#0f2d1a"),fontSize:12}}>?? Llevar a cotización</button>
+            <div style={ST}>📋 Trazos registrados — Total: <span style={{color:"#cc0000"}}>{totalML} ML</span></div>
+            <button onClick={pasarACotizacion} style={{...B("#4ade80","#0f2d1a"),fontSize:12}}>📄 Llevar a cotización</button>
           </div>
           <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
             <thead><tr style={{background:"#f8fafc"}}>{["Fuente","Tipo","Descripción","Metros",""].map(h=><th key={h} style={{padding:"8px 10px",textAlign:"left",color:"#64748b",fontWeight:500,fontSize:11}}>{h}</th>)}</tr></thead>
@@ -2565,10 +2344,10 @@ function Pagos({ctx}){
     <div style={{padding:28}}>
       <H1 title="Pagos por Obra" subtitle="Cobros por cliente y proyecto · integración Bancolombia"/>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
-        <SC label="Total Cobrado" value={fmtK(tCob)} color="#4ade80" icon="?"/>
+        <SC label="Total Cobrado" value={fmtK(tCob)} color="#4ade80" icon="✅"/>
         <SC label="Pendiente" value={fmtK(tPend)} color="#fb923c" icon="?"/>
-        <SC label="Transacciones" value={pagos.length} color="#60b4ff" icon="??"/>
-        <SC label="Obras con saldo" value={obras.filter(o=>o.saldo>0).length} color="#c084fc" icon="??"/>
+        <SC label="Transacciones" value={pagos.length} color="#60b4ff" icon="🔄"/>
+        <SC label="Obras con saldo" value={obras.filter(o=>o.saldo>0).length} color="#c084fc" icon="📋"/>
       </div>
       <div style={{background:"linear-gradient(135deg,#003B71,#00539C)",borderRadius:12,padding:"14px 22px",marginBottom:20,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <div style={{display:"flex",alignItems:"center",gap:14}}><div style={{background:"#FFCD00",borderRadius:8,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:12,color:"#003B71"}}>BC</div><div><div style={{fontWeight:700,fontSize:14,color:"#fff"}}>Bancolombia · Integración Activa</div><div style={{fontSize:11,color:"#91b8df"}}>PSE · Transferencia automática · Conciliación en tiempo real</div></div></div>
@@ -2603,7 +2382,7 @@ function Pagos({ctx}){
             <td style={{padding:"10px 10px",color:"#60b4ff",fontSize:11}}>{p.id}</td><td style={{padding:"10px 10px",fontSize:11}}>{p.obraId}</td><td style={{padding:"10px 10px",fontSize:11,color:"#475569"}}>{ob?.cliente}</td><td style={{padding:"10px 10px",fontSize:11}}>{p.tipo}</td>
             <td style={{padding:"10px 10px",textAlign:"right",fontWeight:700,color:"#cc0000"}}>{fmt(p.monto)}</td><td style={{padding:"10px 10px",color:"#475569",fontSize:11}}>{p.fecha}</td><td style={{padding:"10px 10px",color:"#475569",fontSize:11}}>{p.metodo}</td>
             <td style={{padding:"10px 10px"}}><Badge estado={p.estado}/></td>
-            <td style={{padding:"10px 10px"}}>{p.estado==="Pendiente"&&(pstep===p.id?<span style={{fontSize:11,color:"#cc0000"}}>Procesando…</span>:<button onClick={()=>cobrar(p.id)} style={{background:"#003B71",border:"1px solid #FFCD00",color:"#FFCD00",borderRadius:6,padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:600}}>Cobrar PSE</button>)}{p.estado==="Pagado"&&<span style={{fontSize:11,color:"#4ade80"}}>? Conciliado</span>}</td>
+            <td style={{padding:"10px 10px"}}>{p.estado==="Pendiente"&&(pstep===p.id?<span style={{fontSize:11,color:"#cc0000"}}>Procesando…</span>:<button onClick={()=>cobrar(p.id)} style={{background:"#003B71",border:"1px solid #FFCD00",color:"#FFCD00",borderRadius:6,padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:600}}>Cobrar PSE</button>)}{p.estado==="Pagado"&&<span style={{fontSize:11,color:"#4ade80"}}>✓ Conciliado</span>}</td>
           </tr>);})}
           </tbody>
         </table>
@@ -2770,7 +2549,7 @@ function ClientesDB({ctx}){
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             {sinRegistrar.length>0&&(
               <button style={B("#dbeafe","#1d4ed8")} onClick={importarClientes}>
-                ? Importar {sinRegistrar.length} sugerido(s)
+                ⬇ Importar {sinRegistrar.length} sugerido(s)
               </button>
             )}
             <button style={B("#cc0000")} onClick={()=>{setShowForm(v=>!v); if(showForm) resetCliente();}}>
@@ -2781,10 +2560,10 @@ function ClientesDB({ctx}){
       />
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
-        <SC label="Clientes registrados" value={clientesData.length} color="#60b4ff" icon="??" sub={`${sinRegistrar.length} sugeridos`} />
-        <SC label="Obras activas" value={clientesData.reduce((s,c)=>s+c.obrasActivas,0)} color="#4ade80" icon="???" sub="relacionadas a clientes" />
-        <SC label="Facturado clientes" value={fmtK(totalFacturado)} color="#f59e0b" icon="??" sub="valor total de obras" />
-        <SC label="Saldo pendiente" value={fmtK(saldoPendiente)} color="#fb7185" icon="?" sub="por cobrar a clientes" />
+        <SC label="Clientes registrados" value={clientesData.length} color="#60b4ff" icon="🤝" sub={`${sinRegistrar.length} sugeridos`} />
+        <SC label="Obras activas" value={clientesData.reduce((s,c)=>s+c.obrasActivas,0)} color="#4ade80" icon="🏗️" sub="relacionadas a clientes" />
+        <SC label="Facturado clientes" value={fmtK(totalFacturado)} color="#f59e0b" icon="💰" sub="valor total de obras" />
+        <SC label="Saldo pendiente" value={fmtK(saldoPendiente)} color="#fb7185" icon="⏳" sub="por cobrar a clientes" />
       </div>
 
       {showForm&&(
@@ -2833,7 +2612,7 @@ function ClientesDB({ctx}){
             </div>
           </div>
           <div style={{display:"flex",gap:8}}>
-            <button style={B("#cc0000")} onClick={guardarCliente}>{editId?"?? Guardar cambios":"? Crear cliente"}</button>
+            <button style={B("#cc0000")} onClick={guardarCliente}>{editId?"💾 Guardar cambios":"✅ Crear cliente"}</button>
             <button style={B("#f1f5f9","#475569")} onClick={resetCliente}>Cancelar</button>
           </div>
         </div>
@@ -3015,14 +2794,14 @@ function CuentasPagar({ctx}){
       />
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
-        <SC label="Pendiente por pagar" value={fmtK(totalPendiente)} color="#fb923c" icon="??" sub={`${cuentas.filter(c=>c.estado==="Pendiente").length} facturas`} />
-        <SC label="Pagado acumulado" value={fmtK(totalPagado)} color="#4ade80" icon="?" sub={`${cuentas.filter(c=>c.estado==="Pagado").length} registros`} />
-        <SC label="Facturas vencidas" value={vencidas.length} color={vencidas.length?"#ef4444":"#4ade80"} icon="??" sub={vencidas.length?fmt(vencidas.reduce((s,c)=>s+Number(c.monto||0),0)):"sin mora"} />
-        <SC label="Base de proveedores" value={proveedoresData.length} color="#60b4ff" icon="??" sub={`${porVencer.length} por vencer en 7 días`} />
+        <SC label="Pendiente por pagar" value={fmtK(totalPendiente)} color="#fb923c" icon="🧾" sub={`${cuentas.filter(c=>c.estado==="Pendiente").length} facturas`} />
+        <SC label="Pagado acumulado" value={fmtK(totalPagado)} color="#4ade80" icon="✅" sub={`${cuentas.filter(c=>c.estado==="Pagado").length} registros`} />
+        <SC label="Facturas vencidas" value={vencidas.length} color={vencidas.length?"#ef4444":"#4ade80"} icon="⚠️" sub={vencidas.length?fmt(vencidas.reduce((s,c)=>s+Number(c.monto||0),0)):"sin mora"} />
+        <SC label="Base de proveedores" value={proveedoresData.length} color="#60b4ff" icon="🏢" sub={`${porVencer.length} por vencer en 7 días`} />
       </div>
 
       <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
-        {[["cuentas","?? Cuentas por pagar"],["proveedores","?? Proveedores"]].map(([id,lb])=>(
+        {[["cuentas","🧾 Cuentas por pagar"],["proveedores","🏢 Proveedores"]].map(([id,lb])=>(
           <button
             key={id}
             onClick={()=>setTab(id)}
@@ -3075,7 +2854,7 @@ function CuentasPagar({ctx}){
                 </div>
               </div>
               <div style={{display:"flex",gap:8}}>
-                <button style={B("#cc0000")} onClick={guardarCuenta}>? Guardar cuenta</button>
+                <button style={B("#cc0000")} onClick={guardarCuenta}>✅ Guardar cuenta</button>
                 <button style={B("#f1f5f9","#475569")} onClick={()=>setShowCxP(false)}>Cancelar</button>
               </div>
             </div>
@@ -3113,11 +2892,11 @@ function CuentasPagar({ctx}){
                       <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr 1fr 1fr",gap:10,fontSize:11,color:"#475569"}}>
                         <div><strong style={{color:"#1a1a2e"}}>Proveedor:</strong><br/>{prov?.contacto || "Sin contacto"} · {prov?.telefono || prov?.tel || "Sin teléfono"}</div>
                         <div><strong style={{color:"#1a1a2e"}}>Banco:</strong><br/>{prov?.banco || "Sin banco"} · {prov?.numeroCuenta || "Sin cuenta"}</div>
-                        <div><strong style={{color:"#1a1a2e"}}>Factura:</strong><br/>{fmtD(c.fecha) || "—"} ? {fmtD(c.fechaVence) || "—"}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>Factura:</strong><br/>{fmtD(c.fecha) || "—"} → {fmtD(c.fechaVence) || "—"}</div>
                         <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center"}}>
                           {c.estado==="Pendiente" ? (
                             <button onClick={()=>marcarPagada(c.id)} style={{background:"#dcfce7",border:"1px solid #4ade80",color:"#166534",borderRadius:8,padding:"6px 12px",fontSize:11,cursor:"pointer",fontWeight:700}}>
-                              ? Marcar pagada
+                              ✓ Marcar pagada
                             </button>
                           ) : (
                             <span style={{fontSize:11,color:"#4ade80",fontWeight:700}}>Pagada {c.fechaPago?fmtD(c.fechaPago):""}</span>
@@ -3177,7 +2956,7 @@ function CuentasPagar({ctx}){
                 </div>
               </div>
               <div style={{display:"flex",gap:8}}>
-                <button style={B("#f5c842","#3b2f00")} onClick={guardarProveedor}>{editProvId?"?? Guardar cambios":"? Crear proveedor"}</button>
+                <button style={B("#f5c842","#3b2f00")} onClick={guardarProveedor}>{editProvId?"💾 Guardar cambios":"✅ Crear proveedor"}</button>
                 <button style={B("#f1f5f9","#475569")} onClick={resetProveedor}>Cancelar</button>
               </div>
             </div>
@@ -3305,7 +3084,7 @@ function Obras({ctx}){
             </div>
           </div>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={guardarObra} style={B("#cc0000")}>? Crear Obra</button>
+            <button onClick={guardarObra} style={B("#cc0000")}>✅ Crear Obra</button>
             <button onClick={()=>setShowNO(false)} style={B("#f1f5f9","#475569")}>Cancelar</button>
           </div>
         </div>
@@ -3325,7 +3104,7 @@ function Obras({ctx}){
                   <div style={{fontSize:10,color:"#94a3b8"}}>{o.id} · {fmtD(o.fechaInicio)}</div>
                   <div style={{fontSize:15,fontWeight:700,marginTop:2,color:"#1a1a2e"}}>{o.cliente}</div>
                   <div style={{fontSize:12,color:"#475569"}}>{o.proyecto}</div>
-                  {cotVinc&&<div style={{fontSize:10,color:"#b45309",marginTop:2}}>?? {o.cotizacionId}</div>}
+                  {cotVinc&&<div style={{fontSize:10,color:"#b45309",marginTop:2}}>📄 {o.cotizacionId}</div>}
                 </div>
                 <Badge estado={o.estado}/>
               </div>
@@ -3354,8 +3133,8 @@ function Obras({ctx}){
                   style={{...SI,fontSize:11,padding:"5px 8px",flex:1}} onClick={e=>e.stopPropagation()}>
                   {["Cotización","En Obra","Finalizado","Pagado"].map(s=><option key={s}>{s}</option>)}
                 </select>
-                <span style={{fontSize:11,color:"#94a3b8",flexShrink:0}}>{(o.empleados||[]).length} ??</span>
-                <span style={{fontSize:11,color:"#cc0000",fontWeight:600,flexShrink:0}}>Ver ?</span>
+                <span style={{fontSize:11,color:"#94a3b8",flexShrink:0}}>{(o.empleados||[]).length} 👷</span>
+                <span style={{fontSize:11,color:"#cc0000",fontWeight:600,flexShrink:0}}>Ver →</span>
               </div>
             </div>
           );
@@ -3365,7 +3144,7 @@ function Obras({ctx}){
   );
 }
 
-// -- DETALLE COMPLETO DE UNA OBRA --
+// ── DETALLE COMPLETO DE UNA OBRA ──
 function ObraDetalle({obraId,ctx,onVolver}){
   const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,horarios}=ctx;
   const [detTab,setDetTab]=useState("personal");
@@ -3403,28 +3182,28 @@ function ObraDetalle({obraId,ctx,onVolver}){
     <div style={{padding:28}}>
       {/* Barra superior */}
       <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:24,background:"#fff",borderRadius:14,padding:"16px 20px",border:"1px solid #e2e8f0",boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
-        <button onClick={onVolver} style={{...B("#f1f5f9","#475569"),padding:"8px 16px",fontSize:13,flexShrink:0}}>? Volver</button>
+        <button onClick={onVolver} style={{...B("#f1f5f9","#475569"),padding:"8px 16px",fontSize:13,flexShrink:0}}>← Volver</button>
         <div style={{flex:1}}>
-          <div style={{fontSize:11,color:"#94a3b8"}}>{oAct.id} · {fmtD(oAct.fechaInicio)} ? {fmtD(oAct.fechaFin)||"En curso"}</div>
+          <div style={{fontSize:11,color:"#94a3b8"}}>{oAct.id} · {fmtD(oAct.fechaInicio)} → {fmtD(oAct.fechaFin)||"En curso"}</div>
           <div style={{fontSize:20,fontWeight:700,color:"#1a1a2e",lineHeight:1.2}}>{oAct.cliente}</div>
-          <div style={{fontSize:13,color:"#475569"}}>{oAct.proyecto} · ?? {oAct.ciudad}</div>
+          <div style={{fontSize:13,color:"#475569"}}>{oAct.proyecto} · 📍 {oAct.ciudad}</div>
           {oAct.direccion&&<div style={{fontSize:11,color:"#94a3b8"}}>{oAct.direccion}</div>}
         </div>
         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
           <Badge estado={oAct.estado}/>
-          {cotVinc&&<div style={{fontSize:11,color:"#b45309"}}>?? {cotVinc.numero}</div>}
+          {cotVinc&&<div style={{fontSize:11,color:"#b45309"}}>📄 {cotVinc.numero}</div>}
         </div>
       </div>
 
       {/* KPIs */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:12,marginBottom:24}}>
         {[
-          ["?? Ingreso total",fmt(oAct.total),"#166534"],
-          ["? Cobrado",fmt(oAct.pagado),"#1d4ed8"],
+          ["💰 Ingreso total",fmt(oAct.total),"#166534"],
+          ["✅ Cobrado",fmt(oAct.pagado),"#1d4ed8"],
           ["? Saldo",fmt(oAct.saldo),oAct.saldo>0?"#c2410c":"#166534"],
-          ["?? Gastos",fmt(totalGastos),"#7c3aed"],
-          ["?? Personal",`${empObra.length} pers.`,"#0891b2"],
-          ["?? Días obra",`${totalDias} días`,"#b45309"],
+          ["🧾 Gastos",fmt(totalGastos),"#7c3aed"],
+          ["👷 Personal",`${empObra.length} pers.`,"#0891b2"],
+          ["📅 Días obra",`${totalDias} días`,"#b45309"],
         ].map(([k,v,c])=>(
           <div key={k} style={{background:"#fff",borderRadius:10,padding:"14px 16px",border:"1px solid #e2e8f0",textAlign:"center"}}>
             <div style={{fontSize:10,color:"#94a3b8",marginBottom:6}}>{k}</div>
@@ -3449,7 +3228,7 @@ function ObraDetalle({obraId,ctx,onVolver}){
 
       {/* Tabs */}
       <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
-        {[["personal","?? Personal"],["gastos","?? Gastos"],["nomina","?? Nómina"],["horario","?? Horario"]].map(([id,lb])=>(
+        {[["personal","👷 Personal"],["gastos","🧾 Gastos"],["nomina","💰 Nómina"],["horario","📅 Horario"]].map(([id,lb])=>(
           <button key={id} onClick={()=>setDetTab(id)}
             style={{...B(detTab===id?"#cc0000":"#f1f5f9",detTab===id?"#fff":"#475569"),fontSize:12,padding:"8px 16px",border:`1px solid ${detTab===id?"#cc0000":"#e2e8f0"}`}}>
             {lb}
@@ -3460,7 +3239,7 @@ function ObraDetalle({obraId,ctx,onVolver}){
       {/* TAB PERSONAL */}
       {detTab==="personal"&&(
         <div style={CD}>
-          <div style={ST}>?? Personal en obra</div>
+          <div style={ST}>👷 Personal en obra</div>
           {empObra.length===0&&(
             <div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13,background:"#f8fafc",borderRadius:10,border:"1px dashed #e2e8f0",marginBottom:12}}>
               Sin empleados asignados aún
@@ -3479,10 +3258,10 @@ function ObraDetalle({obraId,ctx,onVolver}){
                     <div style={{flex:1}}>
                       <div style={{fontSize:13,fontWeight:700}}>{emp.nombre}</div>
                       <div style={{fontSize:11,color:"#64748b"}}>{emp.cargo}</div>
-                      <div style={{fontSize:10,color:"#94a3b8"}}>?? {emp.tel}</div>
+                      <div style={{fontSize:10,color:"#94a3b8"}}>📱 {emp.tel}</div>
                     </div>
                     <button onClick={()=>setObras(p=>p.map(o=>o.id===obraId?{...o,empleados:(o.empleados||[]).filter(id=>id!==eid)}:o))}
-                      style={{background:"#fee2e2",border:"1px solid #fca5a5",color:"#cc0000",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11}}>?</button>
+                      style={{background:"#fee2e2",border:"1px solid #fca5a5",color:"#cc0000",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11}}>✕</button>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,fontSize:10}}>
                     {[["Días en obra",diasEmp+"d","#1d4ed8"],["Jornal/día",fmt(jornal),"#166534"],["Costo obra",fmt(jornal*diasEmp),"#7c3aed"]].map(([k,v,c])=>(
@@ -3492,13 +3271,13 @@ function ObraDetalle({obraId,ctx,onVolver}){
                       </div>
                     ))}
                   </div>
-                  <div style={{marginTop:8,fontSize:10,color:"#94a3b8"}}>?? {emp.banco} · {emp.tipoCuenta} · <span style={{fontFamily:"monospace"}}>{emp.numeroCuenta||"—"}</span></div>
+                  <div style={{marginTop:8,fontSize:10,color:"#94a3b8"}}>🏦 {emp.banco} · {emp.tipoCuenta} · <span style={{fontFamily:"monospace"}}>{emp.numeroCuenta||"—"}</span></div>
                 </div>
               );
             })}
           </div>
           <div>
-            <LBL>? Asignar empleado a esta obra</LBL>
+            <LBL>➕ Asignar empleado a esta obra</LBL>
             <select value="" onChange={ev=>{
               const v=ev.target.value;
               if(!v)return;
@@ -3518,7 +3297,7 @@ function ObraDetalle({obraId,ctx,onVolver}){
       {detTab==="gastos"&&(
         <div style={CD}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-            <div style={ST}>?? Gastos y cuentas por pagar</div>
+            <div style={ST}>🧾 Gastos y cuentas por pagar</div>
             <button style={B("#cc0000")} onClick={()=>setShowGasto(!showGasto)}>+ Agregar gasto</button>
           </div>
           {showGasto&&(
@@ -3536,7 +3315,7 @@ function ObraDetalle({obraId,ctx,onVolver}){
                 <div><LBL>Fecha vencimiento</LBL><input type="date" value={gastoForm.fechaVence} onChange={e=>setGastoForm({...gastoForm,fechaVence:e.target.value})} style={SI}/></div>
               </div>
               <div style={{display:"flex",gap:8}}>
-                <button style={B("#cc0000")} onClick={guardarGasto}>? Guardar gasto</button>
+                <button style={B("#cc0000")} onClick={guardarGasto}>✅ Guardar gasto</button>
                 <button style={B("#f1f5f9","#475569")} onClick={()=>setShowGasto(false)}>Cancelar</button>
               </div>
             </div>
@@ -3553,7 +3332,7 @@ function ObraDetalle({obraId,ctx,onVolver}){
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11,color:"#94a3b8"}}>
                   <span>Vence: {fmtD(c.fechaVence)||"—"}</span>
-                  {c.estado==="Pendiente"&&<button onClick={()=>setCuentas(p=>p.map(x=>x.id===c.id?{...x,estado:"Pagado"}:x))} style={{background:"#dcfce7",border:"1px solid #4ade80",color:"#166534",borderRadius:6,padding:"3px 10px",fontSize:11,cursor:"pointer",fontWeight:600}}>? Pagar</button>}
+                  {c.estado==="Pendiente"&&<button onClick={()=>setCuentas(p=>p.map(x=>x.id===c.id?{...x,estado:"Pagado"}:x))} style={{background:"#dcfce7",border:"1px solid #4ade80",color:"#166534",borderRadius:6,padding:"3px 10px",fontSize:11,cursor:"pointer",fontWeight:600}}>✓ Pagar</button>}
                 </div>
               </div>
             );
@@ -3569,7 +3348,7 @@ function ObraDetalle({obraId,ctx,onVolver}){
       {/* TAB NÓMINA */}
       {detTab==="nomina"&&(
         <div style={CD}>
-          <div style={ST}>?? Nómina proporcional por obra</div>
+          <div style={ST}>💰 Nómina proporcional por obra</div>
           <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 14px",marginBottom:14,fontSize:11,color:"#475569",border:"1px solid #e2e8f0"}}>Cálculo: días trabajados × jornal diario (salario ÷ 26 días)</div>
           {empObra.length===0&&<div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13}}>Sin personal asignado</div>}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
@@ -3594,7 +3373,7 @@ function ObraDetalle({obraId,ctx,onVolver}){
                       </div>
                     ))}
                   </div>
-                  <div style={{marginTop:8,fontSize:10,color:"#94a3b8"}}>?? {emp.banco} · {emp.tipoCuenta} · <span style={{fontFamily:"monospace"}}>{emp.numeroCuenta||"—"}</span></div>
+                  <div style={{marginTop:8,fontSize:10,color:"#94a3b8"}}>🏦 {emp.banco} · {emp.tipoCuenta} · <span style={{fontFamily:"monospace"}}>{emp.numeroCuenta||"—"}</span></div>
                 </div>
               );
             })}
@@ -3614,7 +3393,7 @@ function ObraDetalle({obraId,ctx,onVolver}){
       {/* TAB HORARIO */}
       {detTab==="horario"&&(
         <div style={CD}>
-          <div style={ST}>?? Horario y turnos en esta obra</div>
+          <div style={ST}>📅 Horario y turnos en esta obra</div>
           {horariosObra.length===0&&<div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13}}>Sin turnos registrados. Ve a <strong>Horarios</strong> para agregar.</div>}
           {horariosObra.sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(h=>{
             const emp=empleados.find(x=>x.id===h.empleadoId);
@@ -3667,7 +3446,7 @@ function Certificaciones({ctx}){
         action={
           <div style={{display:"flex",gap:8}}>
             <button style={B("#f47c20")} onClick={()=>{setForm(f=>({...f,tipo:"Certificación"}));setNueva(true);}}>+ Nueva Certificación</button>
-            <button style={{...B("#4ade80","#0f2d1a"),border:"1px solid #166534"}} onClick={()=>{setForm(f=>({...f,tipo:"Recertificación",elementos:["Limpieza sistema completo","Verificación ajuste tuercas y pernos","Laca protectora anticorrosiva en todos los puntos","Tensado de cables"]}));setNueva(true);}}>?? Nueva Recertificación</button>
+            <button style={{...B("#4ade80","#0f2d1a"),border:"1px solid #166534"}} onClick={()=>{setForm(f=>({...f,tipo:"Recertificación",elementos:["Limpieza sistema completo","Verificación ajuste tuercas y pernos","Laca protectora anticorrosiva en todos los puntos","Tensado de cables"]}));setNueva(true);}}>🔄 Nueva Recertificación</button>
           </div>
         }/>
 
@@ -3719,7 +3498,7 @@ function Certificaciones({ctx}){
             </div>
           </div>
           <div style={{display:"flex",gap:10}}>
-            <button style={B("#4ade80","#0f2d1a")} onClick={guardar}>? Guardar Certificación</button>
+            <button style={B("#4ade80","#0f2d1a")} onClick={guardar}>✅ Guardar Certificación</button>
             <button style={B("#f1f5f9","#475569")} onClick={()=>setNueva(false)}>Cancelar</button>
           </div>
         </div>
@@ -3737,14 +3516,14 @@ function Certificaciones({ctx}){
                 </div>
                 <Badge estado={c.estado}/>
               </div>
-              <div style={{fontSize:11,color:"#64748b",marginBottom:6}}>?? {c.direccion}</div>
+              <div style={{fontSize:11,color:"#64748b",marginBottom:6}}>📍 {c.direccion}</div>
               <div style={{fontSize:11,color:"#475569",marginBottom:10,lineHeight:1.5}}>{c.sistema}</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
                 <div style={{background:"#f1f5f9",borderRadius:6,padding:"6px 10px"}}><div style={{fontSize:9,color:"#64748b"}}>Fecha certif.</div><div style={{fontSize:12,fontWeight:600,color:"#1a1a2e"}}>{fmtD(c.fecha)}</div></div>
                 <div style={{background:"#f1f5f9",borderRadius:6,padding:"6px 10px"}}><div style={{fontSize:9,color:"#64748b"}}>Próx. mantto.</div><div style={{fontSize:12,fontWeight:600,color:"#fb923c"}}>{fmtD(c.proxMant)||"—"}</div></div>
               </div>
               <div style={{display:"flex",gap:8}}>
-                <button style={{...B("#f47c20"),flex:1,justifyContent:"center",fontSize:12}} onClick={e=>{e.stopPropagation();setSel(c);}}>??? Ver</button>
+                <button style={{...B("#f47c20"),flex:1,justifyContent:"center",fontSize:12}} onClick={e=>{e.stopPropagation();setSel(c);}}>👁️ Ver</button>
                 <button style={{...B("#e8f5ee","#166534"),flex:1,justifyContent:"center",fontSize:12}} onClick={e=>{e.stopPropagation();setSel(c);setTimeout(()=>printCurrentPz(`Certificación ${c?.numero || c?.id || ""}`),300);}}> Imprimir</button>
               </div>
             </div>
@@ -3754,8 +3533,8 @@ function Certificaciones({ctx}){
         {sel&&(
           <div>
             <div style={{display:"flex",gap:10,marginBottom:14,justifyContent:"flex-end"}}>
-              <button style={B("#f1f5f9","#475569")} onClick={()=>setSel(null)}>? Volver</button>
-              <button style={B("#f47c20")} onClick={()=>printCurrentPz(`Certificación ${sel?.numero || sel?.id || ""}`)}>??? Imprimir PDF</button>
+              <button style={B("#f1f5f9","#475569")} onClick={()=>setSel(null)}>← Volver</button>
+              <button style={B("#f47c20")} onClick={()=>printCurrentPz(`Certificación ${sel?.numero || sel?.id || ""}`)}>🖨️ Imprimir PDF</button>
             </div>
             <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:12,lineHeight:1.7,border:"1px solid #ddd",borderRadius:4,padding:"36px 44px"}}>
               <div style={{padding:"0 0 14px"}}>
@@ -4013,7 +3792,7 @@ function Informes({ctx}){
                         style={{minHeight:150,background:"#f8fafc",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",position:"relative",padding:ft.img?8:0}}>
                         {ft.img
                           ?<img src={ft.img} alt="" style={{width:"100%",height:"auto",maxHeight:220,objectFit:"contain",display:"block",background:"#fff",borderRadius:6}}/>
-                          :<div style={{textAlign:"center",color:"#94a3b8",fontSize:11}}><div style={{fontSize:22}}>??</div><div>Foto {fi+1} · Clic para cargar</div></div>}
+                          :<div style={{textAlign:"center",color:"#94a3b8",fontSize:11}}><div style={{fontSize:22}}>📷</div><div>Foto {fi+1} · Clic para cargar</div></div>}
                         {ft.img&&<div style={{position:"absolute",top:6,right:6,background:"rgba(0,0,0,0.55)",borderRadius:4,padding:"2px 6px",fontSize:9,color:"#fff",cursor:"pointer"}} onClick={e=>{e.stopPropagation();updFotoAct(ai,fi,"img",null);}}>× Quitar</div>}
                       </div>
                       <input ref={el=>{fotoRefs.current[`${ai}-${fi}`]=el;}} type="file" accept="image/*" style={{display:"none"}} onChange={e=>cargarFoto(ai,fi,e.target.files[0])}/>
@@ -4028,7 +3807,7 @@ function Informes({ctx}){
 
           <div style={{marginBottom:14}}><LBL>Recomendaciones generales</LBL><textarea value={form.recomendaciones} onChange={e=>setForm(p=>({...p,recomendaciones:e.target.value}))} rows={3} style={{...SI,resize:"vertical"}}/></div>
           <div style={{display:"flex",gap:10}}>
-            <button style={B("#cc0000")} onClick={guardar}>? Guardar Informe</button>
+            <button style={B("#cc0000")} onClick={guardar}>✅ Guardar Informe</button>
             <button style={B("#f1f5f9","#475569")} onClick={()=>setNuevo(false)}>Cancelar</button>
           </div>
         </div>
@@ -4045,11 +3824,11 @@ function Informes({ctx}){
                 <div>
                   <div style={{fontSize:10,color:"#94a3b8"}}>{inf.id}</div>
                   <div style={{fontSize:14,fontWeight:700,color:"#1a1a2e"}}>{inf.proyecto}</div>
-                  <div style={{fontSize:11,color:"#475569"}}>?? {inf.localizacion}</div>
+                  <div style={{fontSize:11,color:"#475569"}}>📍 {inf.localizacion}</div>
                 </div>
                 <div style={{textAlign:"right",fontSize:11,color:"#64748b"}}>
                   <div>{fmtD(inf.fechaInforme)}</div>
-                  <div style={{color:"#94a3b8"}}>{fmtD(inf.periodoInicio)} ? {fmtD(inf.periodoFin)}</div>
+                  <div style={{color:"#94a3b8"}}>{fmtD(inf.periodoInicio)} → {fmtD(inf.periodoFin)}</div>
                 </div>
               </div>
               <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
@@ -4059,7 +3838,7 @@ function Informes({ctx}){
               </div>
               <div style={{fontSize:11,color:"#64748b",marginBottom:10}}>{inf.personal?.length||0} personas · {(inf.actividades||[]).length} actividad(es)</div>
               <div style={{display:"flex",gap:8}}>
-                <button style={{...B("#f47c20"),flex:1,justifyContent:"center",fontSize:12}} onClick={()=>setSel(inf)}>??? Ver / Imprimir</button>
+                <button style={{...B("#f47c20"),flex:1,justifyContent:"center",fontSize:12}} onClick={()=>setSel(inf)}>👁️ Ver / Imprimir</button>
               </div>
             </div>
           ))}
@@ -4070,8 +3849,8 @@ function Informes({ctx}){
       {sel&&(
         <div>
           <div style={{display:"flex",gap:10,marginBottom:14}}>
-            <button style={B("#f1f5f9","#475569")} onClick={()=>setSel(null)}>? Volver</button>
-            <button style={B("#f47c20")} onClick={()=>printCurrentPz(`Informe ${sel?.id || ""}`)}>??? Imprimir PDF</button>
+            <button style={B("#f1f5f9","#475569")} onClick={()=>setSel(null)}>← Volver</button>
+            <button style={B("#f47c20")} onClick={()=>printCurrentPz(`Informe ${sel?.id || ""}`)}>🖨️ Imprimir PDF</button>
           </div>
           <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:11,lineHeight:1.6,border:"1px solid #ddd",padding:"28px 36px"}}>
             <PrintHeader dual={false}/>
@@ -4172,15 +3951,15 @@ function Financiero({ctx}){
             {obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}
           </select>
         </div>
-        <button style={{...B("#f47c20"),marginTop:16}} onClick={()=>printCurrentPz(`Informe financiero ${obraFiltro}`)}>??? Imprimir informe</button>
+        <button style={{...B("#f47c20"),marginTop:16}} onClick={()=>printCurrentPz(`Informe financiero ${obraFiltro}`)}>🖨️ Imprimir informe</button>
       </div>
 
       <div id="pz" className="doc-shell">
         <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
-          <SC label="Ingresos totales" value={fmtK(totIng)} color="#4ade80" icon="??" sub="facturado"/>
-          <SC label="Cobrado" value={fmtK(totCob)} color="#60b4ff" icon="?" sub={`${totIng>0?Math.round(totCob/totIng*100):0}% del total`}/>
-          <SC label="Costos directos" value={fmtK(totCost)} color="#fb923c" icon="??" sub="proveedores"/>
-          <SC label="Margen bruto" value={`${margenGlobal}%`} color={margenGlobal>25?"#4ade80":margenGlobal>10?"#f5c842":"#ef4444"} icon="??" sub={fmt(totUtil)}/>
+          <SC label="Ingresos totales" value={fmtK(totIng)} color="#4ade80" icon="💰" sub="facturado"/>
+          <SC label="Cobrado" value={fmtK(totCob)} color="#60b4ff" icon="✅" sub={`${totIng>0?Math.round(totCob/totIng*100):0}% del total`}/>
+          <SC label="Costos directos" value={fmtK(totCost)} color="#fb923c" icon="🧾" sub="proveedores"/>
+          <SC label="Margen bruto" value={`${margenGlobal}%`} color={margenGlobal>25?"#4ade80":margenGlobal>10?"#f5c842":"#ef4444"} icon="📊" sub={fmt(totUtil)}/>
         </div>
 
         <div style={{...CD,marginBottom:20}}>
@@ -4247,10 +4026,10 @@ function Financiero({ctx}){
             </div>
             <div style={{background:"#f1f5f9",borderRadius:8,padding:"12px 14px",fontSize:12,color:"#64748b",lineHeight:1.7}}>
               <div style={{fontWeight:600,color:"#1a1a2e",marginBottom:6}}>Indicadores clave</div>
-              <div>?? Margen bruto global: <strong style={{color:margenGlobal>25?"#4ade80":"#f5c842"}}>{margenGlobal}%</strong></div>
-              <div>?? Obras activas: <strong style={{color:"#60b4ff"}}>{obras.filter(o=>o.estado==="En Obra").length}</strong></div>
-              <div>?? Por cobrar: <strong style={{color:"#fb923c"}}>{fmt(obras.reduce((s,o)=>s+o.saldo,0))}</strong></div>
-              <div>?? Cuentas x pagar: <strong style={{color:"#c084fc"}}>{fmt(ctx.cuentas.filter(c=>c.estado==="Pendiente").reduce((s,c)=>s+c.monto,0))}</strong></div>
+              <div>💰 Margen bruto global: <strong style={{color:margenGlobal>25?"#4ade80":"#f5c842"}}>{margenGlobal}%</strong></div>
+              <div>📦 Obras activas: <strong style={{color:"#60b4ff"}}>{obras.filter(o=>o.estado==="En Obra").length}</strong></div>
+              <div>💸 Por cobrar: <strong style={{color:"#fb923c"}}>{fmt(obras.reduce((s,o)=>s+o.saldo,0))}</strong></div>
+              <div>🧾 Cuentas x pagar: <strong style={{color:"#c084fc"}}>{fmt(ctx.cuentas.filter(c=>c.estado==="Pendiente").reduce((s,c)=>s+c.monto,0))}</strong></div>
             </div>
           </div>
         </div>
@@ -4307,16 +4086,16 @@ function Nomina({ctx}){
       <H1 title="Nómina y Empleados" subtitle="Gestión de empleados, horas extras, comisiones y planilla"
         action={<button style={B("#cc0000")} onClick={()=>setTab("nuevo")}>+ Nuevo Empleado</button>}/>
       <div style={{display:"flex",gap:6,marginBottom:20}}>
-        {[["lista","?? Empleados"],["he","?? Horas Extras & Comisiones"],["planilla","?? Planilla Bancolombia"]].map(([id,lb])=>(
+        {[["lista","👷 Empleados"],["he","⏱️ Horas Extras & Comisiones"],["planilla","🏦 Planilla Bancolombia"]].map(([id,lb])=>(
           <button key={id} onClick={()=>setTab(id)} style={{...B(tab===id?"#f47c20":"#f1f5f9",tab===id?"#fff":"#475569"),border:`1px solid ${tab===id?"#f47c20":"#e2e8f0"}`}}>{lb}</button>
         ))}
       </div>
 
-      {/* -- FORMULARIO NUEVO EMPLEADO -- */}
+      {/* ── FORMULARIO NUEVO EMPLEADO ── */}
       {tab==="nuevo"&&(
         <div style={{background:"#ffffff",border:"1px solid #e2e8f0",borderRadius:12,padding:24,maxWidth:760,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
           <div style={{fontSize:11,fontWeight:700,color:"#cc0000",textTransform:"uppercase",letterSpacing:1,marginBottom:18,borderBottom:"2px solid #cc000022",paddingBottom:10}}>
-            ?? Datos del Nuevo Empleado
+            👤 Datos del Nuevo Empleado
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:16}}>
             <div><LBL>Nombre completo *</LBL><input value={nf.nombre} onChange={e=>setNf({...nf,nombre:e.target.value})} placeholder="Ej: Carlos Andrés Ríos" style={SI}/></div>
@@ -4330,12 +4109,12 @@ function Nomina({ctx}){
             <div><LBL>Email</LBL><input value={nf.email} onChange={e=>setNf({...nf,email:e.target.value})} placeholder="correo@ingeanclajes.com" style={SI}/></div>
             <div><LBL>Salario base ($)</LBL><input type="number" value={nf.salario} onChange={e=>setNf({...nf,salario:parseFloat(e.target.value)||0})} style={SI}/></div>
             <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px",fontSize:12,color:"#475569",display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:18}}>??</span>
+              <span style={{fontSize:18}}>💵</span>
               <div><div style={{fontSize:10,color:"#94a3b8"}}>Salario ingresado</div><div style={{fontWeight:700,color:"#4ade80",fontSize:14}}>{fmt(nf.salario)}</div></div>
             </div>
           </div>
           <div style={{background:"#f8fafc",borderRadius:10,padding:16,marginBottom:16,border:"1px solid #e2e8f0"}}>
-            <div style={{fontSize:11,fontWeight:700,color:"#475569",textTransform:"uppercase",marginBottom:12,letterSpacing:0.5}}>?? Datos Bancarios</div>
+            <div style={{fontSize:11,fontWeight:700,color:"#475569",textTransform:"uppercase",marginBottom:12,letterSpacing:0.5}}>🏦 Datos Bancarios</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
               <div><LBL>Banco</LBL>
                 <select value={nf.banco} onChange={e=>setNf({...nf,banco:e.target.value})} style={SI}>
@@ -4351,7 +4130,7 @@ function Nomina({ctx}){
             </div>
           </div>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={guardarNuevoEmp} style={B("#cc0000")}>? Guardar Empleado</button>
+            <button onClick={guardarNuevoEmp} style={B("#cc0000")}>✅ Guardar Empleado</button>
             <button onClick={()=>setTab("lista")} style={B("#f1f5f9","#475569")}>Cancelar</button>
           </div>
         </div>
@@ -4359,10 +4138,10 @@ function Nomina({ctx}){
       {tab==="lista"&&(
         <div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
-            <SC label="Total salarios" value={fmtK(totSal)} color="#4ade80" icon="??"/>
-            <SC label="Aux. Transporte" value={fmtK(activos.length*200000)} color="#60b4ff" icon="??"/>
-            <SC label="Seguridad Social" value={fmtK(Math.round(totSal*0.09))} color="#c084fc" icon="???"/>
-            <SC label="Costo total mes" value={fmtK(totSal+activos.length*200000+Math.round(totSal*0.13))} color="#fb923c" icon="??"/>
+            <SC label="Total salarios" value={fmtK(totSal)} color="#4ade80" icon="💵"/>
+            <SC label="Aux. Transporte" value={fmtK(activos.length*200000)} color="#60b4ff" icon="🚌"/>
+            <SC label="Seguridad Social" value={fmtK(Math.round(totSal*0.09))} color="#c084fc" icon="🛡️"/>
+            <SC label="Costo total mes" value={fmtK(totSal+activos.length*200000+Math.round(totSal*0.13))} color="#fb923c" icon="💰"/>
           </div>
           <div style={CD}>
             <div style={ST}>Empleados ({activos.length})</div>
@@ -4375,11 +4154,11 @@ function Nomina({ctx}){
                     <div style={{textAlign:"right"}}><div style={{fontSize:13,fontWeight:700,color:"#4ade80"}}>{fmt(e.salario)}</div></div>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,fontSize:11,color:"#64748b",marginBottom:6}}>
-                    <div>?? {e.tel}</div><div style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>?? {e.email}</div>
+                    <div>📱 {e.tel}</div><div style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>✉️ {e.email}</div>
                   </div>
                   {/* Banco info always visible */}
                   <div style={{background:"#f8fafc",borderRadius:6,padding:"7px 10px",fontSize:11,marginBottom:6}}>
-                    <div style={{color:"#64748b",marginBottom:2}}>?? Datos bancarios</div>
+                    <div style={{color:"#64748b",marginBottom:2}}>🏦 Datos bancarios</div>
                     <div style={{color:"#1a1a2e"}}>{e.banco||"—"} · {e.tipoCuenta||"—"}</div>
                     <div style={{color:"#475569",fontFamily:"monospace"}}>{e.numeroCuenta||"—"}</div>
                   </div>
@@ -4409,7 +4188,7 @@ function Nomina({ctx}){
                           <div key={k} style={{background:"#ffffff",borderRadius:6,padding:"8px 10px"}}><div style={{fontSize:9,color:"#64748b",marginBottom:2}}>{k}</div><div style={{fontSize:11,fontWeight:700,color:c}}>{v}</div></div>
                         ))}
                       </div>
-                      <button onClick={()=>{setShowHE(e.id);setTab("he");}} style={{...B("#142840","#f5c842"),border:"1px solid #7a6610",fontSize:11,width:"100%",justifyContent:"center"}}>? Agregar horas extras / comisiones</button>
+                      <button onClick={()=>{setShowHE(e.id);setTab("he");}} style={{...B("#142840","#f5c842"),border:"1px solid #7a6610",fontSize:11,width:"100%",justifyContent:"center"}}>➕ Agregar horas extras / comisiones</button>
                     </div>
                   )}
                 </div>
@@ -4439,7 +4218,7 @@ function Nomina({ctx}){
                 </div>
                 <div style={{gridColumn:"span 2"}}><LBL>Tipo</LBL>
                   <div style={{display:"flex",gap:8}}>
-                    {[["horaExtra","?? Hora Extra"],["comision","?? Comisión"]].map(([v,l])=>(
+                    {[["horaExtra","⏱️ Hora Extra"],["comision","💰 Comisión"]].map(([v,l])=>(
                       <button key={v} onClick={()=>setHeForm({...heForm,tipo:v})} style={{...B(heForm.tipo===v?"#f47c20":"#142840",heForm.tipo===v?"#fff":"#7da5c8"),flex:1,justifyContent:"center",border:`1px solid ${heForm.tipo===v?"#f47c20":"#1a3050"}`}}>{l}</button>
                     ))}
                   </div>
@@ -4455,7 +4234,7 @@ function Nomina({ctx}){
                 <div><LBL>Fecha</LBL><input type="date" value={heForm.fecha} onChange={e=>setHeForm({...heForm,fecha:e.target.value})} style={SI}/></div>
                 <div><LBL>Concepto</LBL><input value={heForm.concepto} onChange={e=>setHeForm({...heForm,concepto:e.target.value})} placeholder="Ej: Trabajo nocturno" style={SI}/></div>
               </div>
-              <button style={B("#f47c20")} onClick={agregarHE}>? Registrar</button>
+              <button style={B("#f47c20")} onClick={agregarHE}>✅ Registrar</button>
             </div>
             <div style={CD}>
               <div style={ST}>Resumen por empleado</div>
@@ -4468,13 +4247,13 @@ function Nomina({ctx}){
                   </div>
                   {(e.horasExtrasPorObra||[]).map(h=>{const ob=obras.find(o=>o.id===h.obraId);return(
                     <div key={h.id} style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#475569",padding:"3px 0",borderBottom:"1px solid #e2e8f0"}}>
-                      <span>?? {h.horas}h · {ob?.cliente||h.obraId} · {h.fecha}</span>
+                      <span>⏱️ {h.horas}h · {ob?.cliente||h.obraId} · {h.fecha}</span>
                       <span style={{color:"#f5c842",fontWeight:600}}>{fmt(h.total)}</span>
                     </div>
                   );})}
                   {(e.comisionesPorObra||[]).map(c=>{const ob=obras.find(o=>o.id===c.obraId);return(
                     <div key={c.id} style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#475569",padding:"3px 0",borderBottom:"1px solid #e2e8f0"}}>
-                      <span>?? {c.concepto||"Comisión"} · {ob?.cliente||c.obraId} · {c.fecha}</span>
+                      <span>💰 {c.concepto||"Comisión"} · {ob?.cliente||c.obraId} · {c.fecha}</span>
                       <span style={{color:"#c084fc",fontWeight:600}}>{fmt(c.comision)}</span>
                     </div>
                   );})}
@@ -4836,10 +4615,10 @@ function Vencimientos({ctx}){
   };
 
   const grupos=[
-    {titulo:"?? Vencidas o críticas",filtro:(d)=>d!==null&&d<0,color:"#ef4444"},
-    {titulo:"?? Urgente (menos de 30 días)",filtro:(d)=>d!==null&&d>=0&&d<30,color:"#fb923c"},
-    {titulo:"?? Próximas (30–90 días)",filtro:(d)=>d!==null&&d>=30&&d<90,color:"#f5c842"},
-    {titulo:"?? Al día (más de 90 días)",filtro:(d)=>d!==null&&d>=90,color:"#4ade80"},
+    {titulo:"🔴 Vencidas o críticas",filtro:(d)=>d!==null&&d<0,color:"#ef4444"},
+    {titulo:"🟠 Urgente (menos de 30 días)",filtro:(d)=>d!==null&&d>=0&&d<30,color:"#fb923c"},
+    {titulo:"🟡 Próximas (30–90 días)",filtro:(d)=>d!==null&&d>=30&&d<90,color:"#f5c842"},
+    {titulo:"🟢 Al día (más de 90 días)",filtro:(d)=>d!==null&&d>=90,color:"#4ade80"},
   ];
 
   const totVenc=lista.filter(c=>c.diasRestantes!==null&&c.diasRestantes<0).length;
@@ -4853,24 +4632,24 @@ function Vencimientos({ctx}){
     <div style={{padding:28}}>
       <H1 title="Vencimientos de Certificaciones" subtitle="Control de mantenimientos y renovaciones · Res. 4272/2021"/>
 
-      {/* -- NOTIFICACIÓN GUARDADO -- */}
+      {/* ── NOTIFICACIÓN GUARDADO ── */}
       {guardado&&(
         <div style={{background:"#e8f5ee",border:"1px solid #4ade80",borderRadius:10,padding:"12px 18px",marginBottom:20,fontSize:13,color:"#166534",display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontSize:18}}>?</span>
+          <span style={{fontSize:18}}>✅</span>
           <span>Recertificación <strong>{guardado}</strong> creada exitosamente. La certificación original fue marcada como <strong>Recertificado</strong>.</span>
         </div>
       )}
 
-      {/* -- MODAL RECERTIFICACIÓN -- */}
+      {/* ── MODAL RECERTIFICACIÓN ── */}
       {recertForm&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:20,overflowY:"auto"}}>
           <div style={{background:"#fff",borderRadius:16,padding:32,width:"100%",maxWidth:580,boxShadow:"0 20px 60px rgba(0,0,0,0.35)",maxHeight:"90vh",overflowY:"auto"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
               <div>
-                <div style={{fontSize:18,fontWeight:700,color:"#1a1a2e"}}>?? Generar Recertificación</div>
+                <div style={{fontSize:18,fontWeight:700,color:"#1a1a2e"}}>🔄 Generar Recertificación</div>
                 <div style={{fontSize:12,color:"#64748b",marginTop:4}}>Basada en: {recertForm.numero} · {recertForm.cliente}</div>
               </div>
-              <button onClick={()=>setRecertForm(null)} style={{background:"#f1f5f9",border:"none",borderRadius:8,padding:"6px 12px",cursor:"pointer",color:"#475569",fontSize:13}}>?</button>
+              <button onClick={()=>setRecertForm(null)} style={{background:"#f1f5f9",border:"none",borderRadius:8,padding:"6px 12px",cursor:"pointer",color:"#475569",fontSize:13}}>✕</button>
             </div>
 
             {/* Info del cert original */}
@@ -4889,17 +4668,17 @@ function Vencimientos({ctx}){
               <div style={{gridColumn:"span 2"}}><LBL>Dirección de la obra</LBL><input value={recertData.direccion||""} onChange={e=>setRecertData(p=>({...p,direccion:e.target.value}))} style={SI}/></div>
               <div style={{gridColumn:"span 2"}}><LBL>Sistema recertificado</LBL><textarea value={recertData.sistema||""} onChange={e=>setRecertData(p=>({...p,sistema:e.target.value}))} rows={2} style={{...SI,resize:"vertical"}}/></div>
               <div style={{gridColumn:"span 2",background:"#fff3e8",borderRadius:8,padding:12,border:"1px solid #f47c2044"}}>
-                <LBL>?? Próximo mantenimiento (obligatorio)</LBL>
+                <LBL>📅 Próximo mantenimiento (obligatorio)</LBL>
                 <input type="date" value={recertData.proxMant||""} onChange={e=>setRecertData(p=>({...p,proxMant:e.target.value}))} style={{...SI,border:"2px solid #cc0000"}}/>
-                {recertData.proxMant&&<div style={{fontSize:11,color:"#4ade80",marginTop:6}}>? Próximo mantenimiento: <strong>{fmtD(recertData.proxMant)}</strong></div>}
+                {recertData.proxMant&&<div style={{fontSize:11,color:"#4ade80",marginTop:6}}>✅ Próximo mantenimiento: <strong>{fmtD(recertData.proxMant)}</strong></div>}
               </div>
             </div>
 
-            {!recertData.proxMant&&<div style={{background:"#fee2e2",borderRadius:6,padding:"8px 12px",fontSize:11,color:"#cc0000",marginBottom:12}}>?? Debes asignar la fecha del próximo mantenimiento para guardar.</div>}
+            {!recertData.proxMant&&<div style={{background:"#fee2e2",borderRadius:6,padding:"8px 12px",fontSize:11,color:"#cc0000",marginBottom:12}}>⚠️ Debes asignar la fecha del próximo mantenimiento para guardar.</div>}
 
             <div style={{display:"flex",gap:10}}>
               <button style={{...B("#cc0000"),flex:1,justifyContent:"center"}} onClick={guardarRecert}>
-                ?? Crear Recertificación
+                🔄 Crear Recertificación
               </button>
               <button style={{...B("#f1f5f9","#475569"),flex:1,justifyContent:"center"}} onClick={()=>setRecertForm(null)}>
                 Cancelar
@@ -4909,13 +4688,13 @@ function Vencimientos({ctx}){
         </div>
       )}
 
-      {/* -- MODAL IMPRESIÓN PDF -- */}
+      {/* ── MODAL IMPRESIÓN PDF ── */}
       {certParaImpresion&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:2000,overflow:"auto",padding:20}}>
           <div style={{maxWidth:860,margin:"0 auto"}}>
             <div style={{display:"flex",gap:10,marginBottom:14,justifyContent:"flex-end"}}>
-              <button style={B("#f1f5f9","#475569")} onClick={()=>setImprimiendo(null)}>? Cerrar</button>
-              <button style={B("#f47c20")} onClick={()=>printCurrentPz(`Certificación ${certParaImpresion?.numero || certParaImpresion?.id || ""}`)}>??? Imprimir / PDF</button>
+              <button style={B("#f1f5f9","#475569")} onClick={()=>setImprimiendo(null)}>✕ Cerrar</button>
+              <button style={B("#f47c20")} onClick={()=>printCurrentPz(`Certificación ${certParaImpresion?.numero || certParaImpresion?.id || ""}`)}>🖨️ Imprimir / PDF</button>
             </div>
             {/* Reutilizamos el mismo layout de certificación */}
             <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:12,lineHeight:1.7,border:"1px solid #ddd",borderRadius:4,padding:"36px 44px"}}>
@@ -4980,15 +4759,15 @@ function Vencimientos({ctx}){
         </div>
       )}
 
-      {/* -- CONTADORES -- */}
+      {/* ── CONTADORES ── */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
-        <SC label="Vencidas" value={totVenc} color="#ef4444" icon="??" sub="requieren acción"/>
-        <SC label="Urgentes (<30 días)" value={totUrg} color="#fb923c" icon="???" sub="prioridad alta"/>
-        <SC label="Próximas (30-90d)" value={totProx} color="#f5c842" icon="??" sub="programar"/>
-        <SC label="Al día" value={totOk} color="#4ade80" icon="??" sub="sin novedad"/>
+        <SC label="Vencidas" value={totVenc} color="#ef4444" icon="🔴" sub="requieren acción"/>
+        <SC label="Urgentes (<30 días)" value={totUrg} color="#fb923c" icon="🛡️" sub="prioridad alta"/>
+        <SC label="Próximas (30-90d)" value={totProx} color="#f5c842" icon="🟡" sub="programar"/>
+        <SC label="Al día" value={totOk} color="#4ade80" icon="🟢" sub="sin novedad"/>
       </div>
 
-      {/* -- GRUPOS POR ESTADO -- */}
+      {/* ── GRUPOS POR ESTADO ── */}
       {grupos.map(g=>{
         const items=lista.filter(c=>g.filtro(c.diasRestantes));
         if(!items.length)return null;
@@ -5019,7 +4798,7 @@ function Vencimientos({ctx}){
                         <div style={{fontSize:11,color:"#475569"}}>{cActual.tipo}</div>
                         {dActual!==null&&dActual<0&&(
                           <div style={{background:"#ef444422",border:"1px solid #ef4444",borderRadius:6,padding:"3px 8px",marginTop:6,fontSize:10,color:"#ef4444",fontWeight:700,display:"inline-block"}}>
-                            ?? Clic para recertificar
+                            👆 Clic para recertificar
                           </div>
                         )}
                       </div>
@@ -5043,7 +4822,7 @@ function Vencimientos({ctx}){
                       </div>
                     </div>
                     <div style={{fontSize:11,color:"#475569",marginBottom:8,lineHeight:1.4}}>{cActual.sistema}</div>
-                    {ob&&<div style={{fontSize:10,color:"#64748b",marginBottom:10}}>?? {ob.direccion||ob.ciudad}</div>}
+                    {ob&&<div style={{fontSize:10,color:"#64748b",marginBottom:10}}>📍 {ob.direccion||ob.ciudad}</div>}
                     {/* Estado actual */}
                     <div style={{background:colorV(dActual)+"18",border:`1px solid ${colorV(dActual)}44`,borderRadius:8,padding:"6px 10px",textAlign:"center",marginBottom:10}}>
                       <div style={{fontSize:12,fontWeight:700,color:colorV(dActual)}}>{labelV(dActual)}</div>
@@ -5053,15 +4832,15 @@ function Vencimientos({ctx}){
                       <button
                         style={{...B(dActual!==null&&dActual<0?"#7c1010":"#cc0000"),fontSize:11,padding:"7px 10px",flex:1,justifyContent:"center",border:dActual!==null&&dActual<0?"2px solid #ef4444":"none"}}>
                         {dActual!==null&&dActual<0?(
-                          <span onClick={()=>abrirRecert(cActual)}>?? Recertificar ahora</span>
+                          <span onClick={()=>abrirRecert(cActual)}>🔄 Recertificar ahora</span>
                         ):(
-                          <span onClick={()=>abrirRecert(cActual)}>?? Generar Recertificación</span>
+                          <span onClick={()=>abrirRecert(cActual)}>🔄 Generar Recertificación</span>
                         )}
                       </button>
                       <button
                         style={{...B("#e8f5ee","#166534"),border:"1px solid #4ade80",fontSize:11,padding:"7px 10px",flex:"0 0 auto",justifyContent:"center"}}
                         onClick={()=>setImprimiendo(cActual)}>
-                        ??? PDF
+                        🖨️ PDF
                       </button>
                     </div>
                   </div>
@@ -5072,10 +4851,10 @@ function Vencimientos({ctx}){
         );
       })}
 
-      {/* -- SIN FECHA -- */}
+      {/* ── SIN FECHA ── */}
       {lista.filter(c=>c.diasRestantes===null).length>0&&(
         <div style={{...CD,borderLeft:"4px solid #64748b"}}>
-          <div style={{...ST,color:"#64748b"}}>? Sin fecha de mantenimiento asignada</div>
+          <div style={{...ST,color:"#64748b"}}>⚪ Sin fecha de mantenimiento asignada</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
             {lista.filter(c=>c.diasRestantes===null).map(c=>(
               <div key={c.id} style={{background:"#f8fafc",borderRadius:10,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
@@ -5084,10 +4863,10 @@ function Vencimientos({ctx}){
                 <div style={{fontSize:11,color:"#475569",marginBottom:12}}>{c.tipo} · {fmtD(c.fecha)}</div>
                 <div style={{display:"flex",gap:6}}>
                   <button style={{...B("#cc0000"),fontSize:11,flex:1,justifyContent:"center"}} onClick={()=>abrirRecert(c)}>
-                    ?? Generar Recertificación
+                    🔄 Generar Recertificación
                   </button>
                   <button style={{...B("#e8f5ee","#166534"),border:"1px solid #4ade80",fontSize:11,flex:"0 0 auto",justifyContent:"center"}} onClick={()=>setImprimiendo(c)}>
-                    ??? PDF
+                    🖨️ PDF
                   </button>
                 </div>
               </div>
@@ -5098,7 +4877,6 @@ function Vencimientos({ctx}){
     </div>
   );
 }
-
 
 
 

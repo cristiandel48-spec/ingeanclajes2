@@ -1,7 +1,11 @@
-﻿import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import logoIngeanclajes from "./assets/logo-ingeanclajes.jpeg";
 import articoLineaVidaVertical from "./assets/artico-linea-vida-vertical.jpg";
-import { isSupabaseConfigured, loadCloudAppData } from "./lib/backend";
+import * as backend from "./lib/backend";
+
+const isSupabaseConfigured = backend.isSupabaseConfigured;
+const loadCloudAppData = backend.loadCloudAppData;
+const saveCloudAppData = backend.saveCloudAppData;
 
 // ======================================================
 // LOGOS CORPORATIVOS
@@ -204,30 +208,64 @@ export default function App(){
   const [cuentas,setCuentas]=useState(CUENTAS_PAGAR_INIT);
   const [cotizaciones,setCotizaciones]=useState(COTIZACIONES_INIT);
   const [cotDraft,setCotDraft]=useState(null);
-  const ctx={obras,setObras,empleados,setEmpleados,pagos,setPagos,horarios,setHorarios,certs,setCerts,informes,setInformes,clientes,setClientes,proveedores,setProveedores,cuentas,setCuentas,cotizaciones,setCotizaciones,cotDraft,setCotDraft,setScr};
+  const bootstrappedRef=useRef(false);
+  const autosaveTimerRef=useRef(null);
+
+  const buildCloudPayload=()=>({
+    obras,
+    empleados,
+    pagos,
+    horarios,
+    certs,
+    informes,
+    clientes,
+    proveedores,
+    cuentas,
+    cotizaciones,
+  });
+
+  const saveAllToCloud=async(override=null)=>{
+    if(!isSupabaseConfigured()) return;
+    if(typeof saveCloudAppData!=="function"){
+      console.warn("saveCloudAppData no está disponible en ./lib/backend");
+      return;
+    }
+    try{
+      await saveCloudAppData(override||buildCloudPayload());
+    }catch(error){
+      console.error("No se pudo guardar datos en Supabase:", error);
+    }
+  };
+
+  const ctx={obras,setObras,empleados,setEmpleados,pagos,setPagos,horarios,setHorarios,certs,setCerts,informes,setInformes,clientes,setClientes,proveedores,setProveedores,cuentas,setCuentas,cotizaciones,setCotizaciones,cotDraft,setCotDraft,setScr,saveAllToCloud};
 
   useEffect(()=>{
     let cancel=false;
 
     const bootstrapCloudData = async () => {
-      if (!isSupabaseConfigured()) return;
+      if (!isSupabaseConfigured()) {
+        bootstrappedRef.current=true;
+        return;
+      }
 
       try {
         const cloud = await loadCloudAppData();
         if (cancel) return;
 
-        if (cloud.obras?.length) setObras(cloud.obras);
-        if (cloud.empleados?.length) setEmpleados(cloud.empleados);
-        if (cloud.pagos?.length) setPagos(cloud.pagos);
-        if (cloud.horarios?.length) setHorarios(cloud.horarios);
-        if (cloud.certs?.length) setCerts(cloud.certs);
-        if (cloud.informes?.length) setInformes(cloud.informes);
-        if (cloud.clientes?.length) setClientes(cloud.clientes);
-        if (cloud.proveedores?.length) setProveedores(cloud.proveedores);
-        if (cloud.cuentas?.length) setCuentas(cloud.cuentas);
-        if (cloud.cotizaciones?.length) setCotizaciones(cloud.cotizaciones);
+        if (Array.isArray(cloud.obras)) setObras(cloud.obras);
+        if (Array.isArray(cloud.empleados)) setEmpleados(cloud.empleados);
+        if (Array.isArray(cloud.pagos)) setPagos(cloud.pagos);
+        if (Array.isArray(cloud.horarios)) setHorarios(cloud.horarios);
+        if (Array.isArray(cloud.certs)) setCerts(cloud.certs);
+        if (Array.isArray(cloud.informes)) setInformes(cloud.informes);
+        if (Array.isArray(cloud.clientes)) setClientes(cloud.clientes);
+        if (Array.isArray(cloud.proveedores)) setProveedores(cloud.proveedores);
+        if (Array.isArray(cloud.cuentas)) setCuentas(cloud.cuentas);
+        if (Array.isArray(cloud.cotizaciones)) setCotizaciones(cloud.cotizaciones);
       } catch (error) {
         console.error("No se pudo cargar datos de Supabase:", error);
+      } finally {
+        if (!cancel) bootstrappedRef.current=true;
       }
     };
 
@@ -235,6 +273,37 @@ export default function App(){
 
     return ()=>{ cancel=true; };
   },[]);
+
+  useEffect(()=>{
+    if(!bootstrappedRef.current) return;
+    if(!isSupabaseConfigured()) return;
+    if(typeof saveCloudAppData!=="function") return;
+
+    if(autosaveTimerRef.current){
+      clearTimeout(autosaveTimerRef.current);
+    }
+
+    autosaveTimerRef.current=setTimeout(()=>{
+      saveAllToCloud();
+    },700);
+
+    return ()=>{
+      if(autosaveTimerRef.current){
+        clearTimeout(autosaveTimerRef.current);
+      }
+    };
+  },[
+    obras,
+    empleados,
+    pagos,
+    horarios,
+    certs,
+    informes,
+    clientes,
+    proveedores,
+    cuentas,
+    cotizaciones,
+  ]);
 
   const navSections=[
     {

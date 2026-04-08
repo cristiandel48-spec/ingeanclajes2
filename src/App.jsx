@@ -940,7 +940,7 @@ let html2pdfLoaderPromise = null;
 function sanitizeFileName(v=""){
   return String(v || "documento")
     .normalize("NFD")
-    .replace(/[Ì€-Í¯]/g,"")
+    .replace(/[\u0300-\u036f]/g,"")
     .replace(/[^a-zA-Z0-9._-]+/g,"-")
     .replace(/-{2,}/g,"-")
     .replace(/^-|-$/g,"") || "documento";
@@ -949,7 +949,7 @@ function sanitizeFileName(v=""){
 function normalizeEntityKey(v=""){
   return String(v || "")
     .normalize("NFD")
-    .replace(/[Ì€-Í¯]/g,"")
+    .replace(/[\u0300-\u036f]/g,"")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g,"")
     .trim();

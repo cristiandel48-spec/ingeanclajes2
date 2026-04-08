@@ -386,34 +386,34 @@ export default function App(){
     {
       title:"General",
       items:[
-        {id:"dashboard",l:"Dashboard",i:"â–¦"},
+        {id:"dashboard",l:"Dashboard",i:"■"},
       ],
     },
     {
       title:"Comercial y Proyectos",
       items:[
-        {id:"cotizacion",l:"Cotizaciones",i:"ðŸ“„"},
-        {id:"clientes",l:"Clientes",i:"ðŸ¤"},
-        {id:"obras",l:"EjecuciÃ³n de Obra",i:"ðŸ—ï¸"},
-        {id:"planos",l:"Planos y MediciÃ³n",i:"ðŸ—ºï¸"},
-        {id:"pagos",l:"Pagos por Obra",i:"ðŸ’³"},
+        {id:"cotizacion",l:"Cotizaciones",i:"CT"},
+        {id:"clientes",l:"Clientes",i:"CL"},
+        {id:"obras",l:"Ejecucion de Obra",i:"OB"},
+        {id:"planos",l:"Planos y Medicion",i:"PL"},
+        {id:"pagos",l:"Pagos por Obra",i:"PG"},
       ],
     },
     {
       title:"Calidad y Entregables",
       items:[
-        {id:"certificaciones",l:"Certificaciones",i:"ðŸ…"},
-        {id:"vencimientos",l:"Vencimientos de Certificaciones",i:"âš ï¸"},
-        {id:"informes",l:"Informes de Actividades",i:"ðŸ“‹"},
+        {id:"certificaciones",l:"Certificaciones",i:"CF"},
+        {id:"vencimientos",l:"Vencimientos de Certificaciones",i:"AL"},
+        {id:"informes",l:"Informes de Actividades",i:"IN"},
       ],
     },
     {
-      title:"AdministraciÃ³n",
+      title:"Administracion",
       items:[
-        {id:"proveedores",l:"Cuentas x Pagar y Proveedores",i:"ðŸ§¾"},
-        {id:"nomina",l:"NÃ³mina y Empleados",i:"ðŸ’°"},
-        {id:"horarios",l:"Horarios",i:"ðŸ“…"},
-        {id:"financiero",l:"Informe Financiero",i:"ðŸ“Š"},
+        {id:"proveedores",l:"Cuentas x Pagar y Proveedores",i:"CP"},
+        {id:"nomina",l:"Nomina y Empleados",i:"NO"},
+        {id:"horarios",l:"Horarios",i:"HR"},
+        {id:"financiero",l:"Informe Financiero",i:"IF"},
       ],
     },
   ];
@@ -447,7 +447,7 @@ export default function App(){
         <div style={{padding:"10px 8px",borderTop:"1px solid #f1f5f9"}}>
           <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",overflow:"hidden"}}>
             <Av init="MC" size={28}/>
-            {open&&<div><div style={{fontSize:12,color:"#1a1a2e",whiteSpace:"nowrap"}}>Maria Camila SepÃºlveda</div><div style={{fontSize:10,color:"#94a3b8"}}>Directora Comercial</div></div>}
+            {open&&<div><div style={{fontSize:12,color:"#1a1a2e",whiteSpace:"nowrap"}}>Maria Camila Sepulveda</div><div style={{fontSize:10,color:"#94a3b8"}}>Directora Comercial</div></div>}
           </div>
         </div>
       </aside>
@@ -487,16 +487,16 @@ function Dashboard({ctx,go}){
         </div>
         <div>
           <div style={{fontSize:22,fontWeight:700,color:"#cc2200",letterSpacing:0.5}}>INGEANCLAJES S.A.S</div>
-          <div style={{fontSize:13,color:"#64748b",marginTop:2}}>Especialistas en Anclajes Â· Sistema de GestiÃ³n v3.0</div>
-          <div style={{fontSize:11,color:"#94a3b8",marginTop:1}}>Calle 38 sur # 36-48, Envigado Â· PBX 448 26 86 Â· NIT 900193965-4</div>
+          <div style={{fontSize:13,color:"#64748b",marginTop:2}}>Especialistas en Anclajes - Sistema de Gestion v3.0</div>
+          <div style={{fontSize:11,color:"#94a3b8",marginTop:1}}>Calle 38 sur # 36-48, Envigado - PBX 448 26 86 - NIT 900193965-4</div>
         </div>
       </div>
-      <H1 title="Dashboard" subtitle="Resumen ejecutivo Â· INGEANCLAJES S.A.S"/>
+      <H1 title="Dashboard" subtitle="Resumen ejecutivo - INGEANCLAJES S.A.S"/>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:16,marginBottom:24}}>
-        <SC label="Obras activas" value={eO} color="#60b4ff" icon="ðŸ—ï¸" sub={`${obras.length} total`}/>
-        <SC label="Facturado" value={fmtK(tF)} color="#4ade80" icon="ðŸ’°" sub="acumulado"/>
-        <SC label="Por cobrar" value={fmtK(tP)} color="#fb923c" icon="â³" sub="saldo clientes"/>
-        <SC label="Cuentas x pagar" value={fmtK(tCP)} color="#c084fc" icon="ðŸ§¾" sub="proveedores"/>
+        <SC label="Obras activas" value={eO} color="#60b4ff" icon="OB" sub={`${obras.length} total`}/>
+        <SC label="Facturado" value={fmtK(tF)} color="#4ade80" icon="$" sub="acumulado"/>
+        <SC label="Por cobrar" value={fmtK(tP)} color="#fb923c" icon="PC" sub="saldo clientes"/>
+        <SC label="Cuentas x pagar" value={fmtK(tCP)} color="#c084fc" icon="CP" sub="proveedores"/>
       </div>
       {(()=>{
         const hoy=new Date();
@@ -510,7 +510,7 @@ function Dashboard({ctx,go}){
         const colorV=(d)=>d<0?"#ef4444":d<30?"#fb923c":d<90?"#f5c842":"#4ade80";
         return(
           <div style={{...CD,marginBottom:20,border:"2px solid #7a661044",background:"#fff"}}>
-            <div style={{...ST,color:"#b45309",borderBottomColor:"#f5c84233"}}>ðŸ”” PrÃ³ximos Vencimientos de Certificaciones</div>
+            <div style={{...ST,color:"#b45309",borderBottomColor:"#f5c84233"}}>Proximos vencimientos de certificaciones</div>
             <div style={{display:"grid",gridTemplateColumns:`repeat(${Math.min(venc.length,5)},1fr)`,gap:10}}>
               {venc.map(c=>(
                 <div key={c.id} style={{background:"#f8fafc",borderRadius:10,padding:"12px 14px",border:`2px solid ${colorV(c.diasRestantes)}44`}}>
@@ -519,7 +519,7 @@ function Dashboard({ctx,go}){
                   <div style={{fontSize:10,color:"#475569",marginBottom:8}}>{c.tipo}</div>
                   <div style={{background:colorV(c.diasRestantes)+"22",border:`1px solid ${colorV(c.diasRestantes)}`,borderRadius:8,padding:"6px 8px",textAlign:"center"}}>
                     <div style={{fontSize:18,fontWeight:900,color:colorV(c.diasRestantes)}}>{c.diasRestantes<0?"-"+Math.abs(c.diasRestantes):c.diasRestantes}</div>
-                    <div style={{fontSize:9,color:colorV(c.diasRestantes),fontWeight:600}}>{c.diasRestantes<0?"VENCIDA":"DÃAS"}</div>
+                    <div style={{fontSize:9,color:colorV(c.diasRestantes),fontWeight:600}}>{c.diasRestantes<0?"VENCIDA":"DIAS"}</div>
                   </div>
                   <div style={{fontSize:9,color:"#64748b",marginTop:6,textAlign:"center"}}>{fmtD(c.proxMant)}</div>
                 </div>
@@ -535,7 +535,7 @@ function Dashboard({ctx,go}){
             <div key={o.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid #e2e8f0"}}>
               <div style={{flex:1}}>
                 <div style={{fontSize:13,fontWeight:600}}>{o.cliente}</div>
-                <div style={{fontSize:11,color:"#64748b"}}>{o.proyecto} Â· {o.ciudad}</div>
+                <div style={{fontSize:11,color:"#64748b"}}>{o.proyecto} · {o.ciudad}</div>
                 <div style={{marginTop:6,height:4,background:"#e2e8f0",borderRadius:2}}><div style={{width:`${o.avance}%`,height:"100%",background:"#cc0000",borderRadius:2}}/></div>
               </div>
               <div style={{textAlign:"right"}}><div style={{fontSize:13,fontWeight:700,color:"#fb923c"}}>{fmt(o.saldo)}</div><div style={{fontSize:10,color:"#64748b"}}>por cobrar</div></div>
@@ -543,10 +543,10 @@ function Dashboard({ctx,go}){
           ))}
         </div>
         <div style={CD}>
-          <div style={ST}>Acciones rÃ¡pidas</div>
-          {[{l:"Nueva CotizaciÃ³n",i:"ðŸ“„",s:"cotizacion",c:"#f47c20"},{l:"Nueva CertificaciÃ³n",i:"ðŸ…",s:"certificaciones",c:"#4ade80"},{l:"Informe Actividades",i:"ðŸ“‹",s:"informes",c:"#60b4ff"},{l:"Informe Financiero",i:"ðŸ“Š",s:"financiero",c:"#c084fc"},{l:"Cuentas x Pagar",i:"ðŸ§¾",s:"proveedores",c:"#f5c842"}].map(a=>(
+          <div style={ST}>Acciones rapidas</div>
+          {[{l:"Nueva cotizacion",i:"CT",s:"cotizacion",c:"#f47c20"},{l:"Nueva certificacion",i:"CF",s:"certificaciones",c:"#4ade80"},{l:"Informe actividades",i:"IN",s:"informes",c:"#60b4ff"},{l:"Informe financiero",i:"IF",s:"financiero",c:"#c084fc"},{l:"Cuentas x pagar",i:"CP",s:"proveedores",c:"#f5c842"}].map(a=>(
             <button key={a.s} onClick={()=>go(a.s)} style={{width:"100%",display:"flex",alignItems:"center",gap:10,background:"#f1f5f9",border:`1px solid ${a.c}22`,borderRadius:10,padding:"10px 12px",marginBottom:8,cursor:"pointer",textAlign:"left"}}>
-              <span style={{fontSize:16}}>{a.i}</span><span style={{fontSize:13,color:"#1a1a2e",fontWeight:500}}>{a.l}</span><span style={{marginLeft:"auto",color:a.c}}>â†’</span>
+              <span style={{fontSize:16}}>{a.i}</span><span style={{fontSize:13,color:"#1a1a2e",fontWeight:500}}>{a.l}</span><span style={{marginLeft:"auto",color:a.c}}>&gt;</span>
             </button>
           ))}
         </div>
@@ -559,33 +559,33 @@ function Dashboard({ctx,go}){
 // BASE DE DATOS DE ÃTEMS PREDEFINIDOS
 // ======================================================
 const ITEMS_DB = [
-  { categoria:"LÃ­neas de Vida", items:[
+  { categoria:"Lineas de Vida", items:[
     { desc:"LINEA DE VIDA HORIZONTAL",            unit:"ML",  vu:280000 },
     { desc:"LINEA DE VIDA VERTICAL",              unit:"ML",  vu:320000 },
-    { desc:"LINEA DE VIDA CONEXIÃ“N / TRANSVERSAL",unit:"ML",  vu:280000 },
+    { desc:"LINEA DE VIDA CONEXION / TRANSVERSAL",unit:"ML",  vu:280000 },
     { desc:"RECERTIFICACION LINEA DE VIDA",       unit:"ML",  vu:45000  },
   ]},
   { categoria:"Escaleras", items:[
-    { desc:"ESCALERA FIJA CON LÃNEA DE VIDA VERTICAL", unit:"Metro", vu:1200000 },
+    { desc:"ESCALERA FIJA CON LINEA DE VIDA VERTICAL", unit:"Metro", vu:1200000 },
     { desc:"ESCALERA TIPO GATO",                       unit:"Metro", vu:850000  },
     { desc:"ESCALERA MARINERA",                        unit:"Metro", vu:950000  },
   ]},
   { categoria:"Anclajes", items:[
-    { desc:"PUNTO DE ANCLAJE EPÃ“XICO (PURE 110)",     unit:"Und",  vu:380000  },
+    { desc:"PUNTO DE ANCLAJE EPOXICO (PURE 110)",     unit:"Und",  vu:380000  },
     { desc:"PUNTO DE ANCLAJE SOLDADO",                unit:"Und",  vu:290000  },
     { desc:"PUNTO DE ANCLAJE EN FACHADA",             unit:"Und",  vu:420000  },
     { desc:"ANCLAJE ARTICO ACERO GALVANIZADO",        unit:"Und",  vu:450000  },
   ]},
   { categoria:"Sistemas Completos", items:[
-    { desc:"SISTEMA ANTICAÃDA CUBIERTA (COMPLETO)",   unit:"Global",vu:8500000 },
-    { desc:"BARANDILLA DE PROTECCIÃ“N EN CABLE",       unit:"ML",   vu:320000  },
+    { desc:"SISTEMA ANTICAIDA CUBIERTA (COMPLETO)",   unit:"Global",vu:8500000 },
+    { desc:"BARANDILLA DE PROTECCION EN CABLE",       unit:"ML",   vu:320000  },
     { desc:"PASARELA DE SEGURIDAD EN CUBIERTA",       unit:"ML",   vu:550000  },
   ]},
   { categoria:"Servicios", items:[
-    { desc:"CERTIFICACIÃ“N SISTEMA ANTICAÃDA",         unit:"Global",vu:1200000 },
-    { desc:"RECERTIFICACIÃ“N ANUAL",                   unit:"Global",vu:650000  },
-    { desc:"INSPECCIÃ“N Y DIAGNÃ“STICO",                unit:"Global",vu:400000  },
-    { desc:"COORDINADOR SST EN OBRA",                 unit:"DÃ­a",   vu:280000  },
+    { desc:"CERTIFICACION SISTEMA ANTICAIDA",         unit:"Global",vu:1200000 },
+    { desc:"RECERTIFICACION ANUAL",                   unit:"Global",vu:650000  },
+    { desc:"INSPECCION Y DIAGNOSTICO",                unit:"Global",vu:400000  },
+    { desc:"COORDINADOR SST EN OBRA",                 unit:"Dia",   vu:280000  },
   ]},
 ];
 
@@ -599,8 +599,8 @@ function PrintHeader({dual}){
         {dual&&<img src={LOGO_CCS} alt="CCS" style={{height:38,objectFit:"contain",marginTop:4}}/>}
       </div>
       <div style={{textAlign:"right",fontSize:9.5,color:"#555",lineHeight:1.7}}>
-        <div>Calle 38 sur # 36 â€“ 48, Envigado</div>
-        <div>PBX 448 26 86 Â· Cel 3152889541</div>
+        <div>Calle 38 sur # 36 - 48, Envigado</div>
+        <div>PBX 448 26 86 · Cel 3152889541</div>
         <div>Nit. 900193965-4</div>
         <div style={{color:"#cc0000",fontWeight:600}}>www.ingeanclajes.com</div>
       </div>
@@ -609,7 +609,7 @@ function PrintHeader({dual}){
 }
 
 function measurementTypeLabel(tipo){
-  return tipo === "LVV" ? "LÃ­nea de vida vertical" : tipo === "CON" ? "ConexiÃ³n" : tipo === "ESC" ? "Escalera" : "LÃ­nea horizontal";
+  return tipo === "LVV" ? "Linea de vida vertical" : tipo === "CON" ? "Conexion" : tipo === "ESC" ? "Escalera" : "Linea horizontal";
 }
 
 function measurementUnitFromType(tipo){
@@ -627,7 +627,7 @@ function escapeHtml(v=""){
 
 function buildMeasurementNarrative(list=[]){
   if(!Array.isArray(list) || !list.length) return "";
-  return list.map((seg,idx)=>`${seg.label || `LÃNEA ${idx+1}`} de ${Number(seg.ml||0).toFixed(2)} ${measurementUnitFromType(seg.tipo)}`).join(', ');
+  return list.map((seg,idx)=>`${seg.label || `LINEA ${idx+1}`} de ${Number(seg.ml||0).toFixed(2)} ${measurementUnitFromType(seg.tipo)}`).join(', ');
 }
 
 function normalizeQuoteItems(c={}){
@@ -637,7 +637,7 @@ function normalizeQuoteItems(c={}){
     .filter(it => it && (String(it.desc||'').trim() || Number(it.cant||0)));
   const seen = new Set();
   return candidates.filter((it, idx) => {
-    const desc = String(it.desc || `ÃTEM ${idx+1}`).trim().toUpperCase();
+    const desc = String(it.desc || `ITEM ${idx+1}`).trim().toUpperCase();
     const qty = Number(it.cant || 0).toFixed(2);
     const unit = String(it.unit || 'UND').trim().toUpperCase();
     const vu = Number(it.vu || 0).toFixed(2);
@@ -652,7 +652,7 @@ function hasVerticalLifeLineService(c={}){
   if((c.geoMediciones || []).some(seg => seg?.tipo === "LVV")) return true;
   return normalizeQuoteItems(c).some(it => {
     const desc = String(it?.desc || "").toUpperCase();
-    return desc.includes("LINEA DE VIDA VERTICAL") || desc.includes("LÃNEA DE VIDA VERTICAL");
+    return desc.includes("LINEA DE VIDA VERTICAL");
   });
 }
 
@@ -666,32 +666,32 @@ function buildCotizacionPrintHtml(c){
   const iva = ut * 0.19;
   const tot = sub + ut + iva;
   const narrative = buildMeasurementNarrative(measurements);
-  const introDetail = narrative ? `Tenemos el agrado de presentar nuestra cotizaciÃ³n para la instalaciÃ³n sobre cubierta: ${narrative}.` : 'Tenemos el agrado de presentar nuestra cotizaciÃ³n para la instalaciÃ³n de los sistemas de protecciÃ³n anti caÃ­da requeridos para la obra.';
+  const introDetail = narrative ? `Tenemos el agrado de presentar nuestra cotizacion para la instalacion sobre cubierta: ${narrative}.` : 'Tenemos el agrado de presentar nuestra cotizacion para la instalacion de los sistemas de proteccion anticaida requeridos para la obra.';
   const measurementRows = measurements.map((seg,idx)=>{
-    const label = escapeHtml(seg.label || `LÃNEA ${idx+1}`);
+    const label = escapeHtml(seg.label || `LINEA ${idx+1}`);
     const type = escapeHtml(measurementTypeLabel(seg.tipo));
     const meters = `${Number(seg.ml||0).toFixed(2)} ${escapeHtml(measurementUnitFromType(seg.tipo))}`;
     return `<tr><td>${idx+1}</td><td>${label}</td><td>${type}</td><td class="num">${meters}</td></tr>`;
   }).join('');
   const itemRows = items.map((it,idx)=>{
-    const desc = escapeHtml(it.desc || `ÃTEM ${idx+1}`);
+    const desc = escapeHtml(it.desc || `ITEM ${idx+1}`);
     const qty = Number(it.cant||0).toFixed(2).replace(/\.00$/,'');
     const unit = escapeHtml(it.unit || 'UND');
     const value = fmt(Number(it.vu)||0);
     const subtotal = fmt((Number(it.cant)||0)*(Number(it.vu)||0));
     return `<tr><td>${desc}</td><td class="num">${qty}</td><td class="center">${unit}</td><td class="num">${value}</td><td class="num">${subtotal}</td></tr>`;
   }).join('');
-  const mapBlock = c.mapImg ? `<div class="map-wrap" style="aspect-ratio:${mapWidth}/${mapHeight};"><img src="${c.mapImg}" alt="Mapa de mediciÃ³n" class="map"/></div>` : `<div class="placeholder">Agrega la imagen satelital o la mediciÃ³n automÃ¡tica para ver el plano aquÃ­.</div>`;
+  const mapBlock = c.mapImg ? `<div class="map-wrap" style="aspect-ratio:${mapWidth}/${mapHeight};"><img src="${c.mapImg}" alt="Mapa de medicion" class="map"/></div>` : `<div class="placeholder">Agrega la imagen satelital o la medicion automatica para ver el plano aqui.</div>`;
   const mapLabels = getStaticMapLabelData(measurements, c.coords || `${c.obra||""} ${c.ciudad||""}`.trim(), c.geoMapView).map(label=>`
       <div class="map-label" style="left:${label.left}; top:${label.top}; color:${label.color}; transform:translate(-50%, -50%) rotate(${label.angle}deg);">
-        <div>${escapeHtml(label.title)} Â· ${escapeHtml(label.value)}</div>
+        <div>${escapeHtml(label.title)} - ${escapeHtml(label.value)}</div>
       </div>
     `).join('');
-  const mapBlockWithLabels = c.mapImg ? `<div class="map-wrap" style="aspect-ratio:${mapWidth}/${mapHeight};"><img src="${c.mapImg}" alt="Mapa de mediciÃ³n" class="map"/>${mapLabels}</div>` : mapBlock;
+  const mapBlockWithLabels = c.mapImg ? `<div class="map-wrap" style="aspect-ratio:${mapWidth}/${mapHeight};"><img src="${c.mapImg}" alt="Mapa de medicion" class="map"/>${mapLabels}</div>` : mapBlock;
 
   const measurementBlock = measurements.length ? `
       <div class="measurement-box">
-        <p><strong>Medidas levantadas para esta cotizaciÃ³n</strong></p>
+        <p><strong>Medidas levantadas para esta cotizacion</strong></p>
         <table class="measurement-table">
           <thead><tr><th>#</th><th>Tramo</th><th>Tipo</th><th>Medida</th></tr></thead>
           <tbody>${measurementRows}</tbody>
@@ -702,7 +702,7 @@ function buildCotizacionPrintHtml(c){
   <html>
   <head>
     <meta charset="utf-8" />
-    <title>CotizaciÃ³n ${escapeHtml(c.numero || '')}</title>
+    <title>Cotizacion ${escapeHtml(c.numero || '')}</title>
     <style>
       @page { size: Letter; margin: 10mm 10mm 12mm; }
       * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -763,47 +763,47 @@ function buildCotizacionPrintHtml(c){
       <div class="header">
         <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
         <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
-        <div class="header-right">Calle 38 sur # 36 â€“ 48, Envigado<br/>PBX 448 26 86 Â· Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
-      <div class="meta"><div>Envigado, ${escapeHtml(fmtL(c.fecha || today()))}</div><div><strong>COTIZACIÃ“N No. ${escapeHtml(c.numero || '')}</strong></div></div>
+      <div class="meta"><div>Envigado, ${escapeHtml(fmtL(c.fecha || today()))}</div><div><strong>COTIZACION No. ${escapeHtml(c.numero || '')}</strong></div></div>
       <div class="client">
-        <p><strong>SEÃ‘OR:</strong></p>
+        <p><strong>SENOR:</strong></p>
         <p><strong>${escapeHtml((c.cliente || '').toUpperCase())}</strong></p>
         ${c.obra ? `<p><strong>OBRA:</strong> ${escapeHtml((c.obra || '').toUpperCase())}</p>` : ''}
-        ${c.telefono ? `<p><strong>TELÃ‰FONO:</strong> ${escapeHtml(c.telefono)}</p>` : ''}
+        ${c.telefono ? `<p><strong>TELEFONO:</strong> ${escapeHtml(c.telefono)}</p>` : ''}
         ${c.ciudad ? `<p><strong>${escapeHtml((c.ciudad || '').toUpperCase())}</strong></p>` : ''}
       </div>
       <div style="height:8px"></div>
       <p>Cordial saludo.</p>
       <div style="height:8px"></div>
-      <p>Presentamos la cotizaciÃ³n para suministro e instalaciÃ³n de los sistemas de protecciÃ³n anti caÃ­da (lÃ­neas de vida horizontales sobre cubierta y escaleras).</p>
-      <p><strong>Trabajo en altura:</strong> Se considera toda actividad, labor o trabajo que se deba realizar a una altura fÃ­sica igual o superior a 1,50 metros desde el piso.</p>
-      <p><strong>Puntos de anclaje:</strong> Son componentes en acero anclado con un epÃ³xico quÃ­mico marca PURE 110 de POWER FASTENERS o equivalente, con perno de 5/8 a una profundidad de 15 cm o mÃ¡s segÃºn el caso, con capacidad de resistir una fuerza de caÃ­da superior a 5.000 lbs.</p>
-      <p><strong>LÃ­nea de vida:</strong> Son componentes de un sistema/equipo de protecciÃ³n de caÃ­das, consistentes en una cuerda de nylon o cable de acero instalada en forma horizontal y vertical, tensionada y sujeta en dos o tres puntos de anclaje para otorgar movilidad al personal que trabaja en Ã¡reas elevadas.</p>
+      <p>Presentamos la cotizacion para suministro e instalacion de los sistemas de proteccion anticaida (lineas de vida horizontales sobre cubierta y escaleras).</p>
+      <p><strong>Trabajo en altura:</strong> Se considera toda actividad, labor o trabajo que se deba realizar a una altura fisica igual o superior a 1,50 metros desde el piso.</p>
+      <p><strong>Puntos de anclaje:</strong> Son componentes en acero anclado con un epoxico quimico marca PURE 110 de POWER FASTENERS o equivalente, con perno de 5/8 a una profundidad de 15 cm o mas segun el caso, con capacidad de resistir una fuerza de caida superior a 5.000 lbs.</p>
+      <p><strong>Linea de vida:</strong> Son componentes de un sistema o equipo de proteccion de caidas, consistentes en una cuerda de nylon o cable de acero instalada en forma horizontal y vertical, tensionada y sujeta en dos o tres puntos de anclaje para otorgar movilidad al personal que trabaja en areas elevadas.</p>
       <ul>
-        <li>La lÃ­nea de vida permite la fijaciÃ³n directa o indirecta al arnÃ©s completo para el cuerpo o a un dispositivo de impacto o amortiguador.</li>
-        <li>Las lÃ­neas de vida estarÃ¡n constituidas por un solo cable continuo.</li>
-        <li>Los anclajes a los cuales se fijarÃ¡n las lÃ­neas de vida deben resistir al menos 5.000 libras por cada persona asegurada.</li>
+        <li>La linea de vida permite la fijacion directa o indirecta al arnes completo para el cuerpo o a un dispositivo de impacto o amortiguador.</li>
+        <li>Las lineas de vida estaran constituidas por un solo cable continuo.</li>
+        <li>Los anclajes a los cuales se fijaran las lineas de vida deben resistir al menos 5.000 libras por cada persona asegurada.</li>
       </ul>
       <p>${escapeHtml(introDetail)}</p>
-      <div class="footer">Calle 38 sur # 36 â€“ 48, Envigado Â· PBX 448 26 86 Â· Cel 3152889541 Â· Nit. 900193965-4 Â· comercial1ingeanclajes@gmail.com Â· www.ingeanclajes.com</div>
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
     </section>
 
     <section class="page">
       <div class="header">
         <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
         <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
-        <div class="header-right">Calle 38 sur # 36 â€“ 48, Envigado<br/>PBX 448 26 86 Â· Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
       ${mapBlockWithLabels}
       ${measurementBlock}
-      <div class="section-title">Propuesta econÃ³mica lÃ­nea de vida</div>
+      <div class="section-title">Propuesta economica linea de vida</div>
       <table class="table no-break">
-        <thead><tr><th>DescripciÃ³n</th><th class="num">Cantidad</th><th class="center">Unidad</th><th class="num">Valor</th><th class="num">Subtotal</th></tr></thead>
+        <thead><tr><th>Descripcion</th><th class="num">Cantidad</th><th class="center">Unidad</th><th class="num">Valor</th><th class="num">Subtotal</th></tr></thead>
         <tbody>
           ${itemRows}
           <tr class="label-strong"><td colspan="4">SUBTOTAL</td><td class="num">${fmt(sub)}</td></tr>
-          <tr><td colspan="4">ADMINISTRACIÃ“N</td><td class="num">$ - -</td></tr>
+          <tr><td colspan="4">ADMINISTRACION</td><td class="num">$ - -</td></tr>
           <tr><td colspan="4">IMPREVISTOS</td><td class="num">$ - -</td></tr>
           <tr><td colspan="4">UTILIDADES (${Number(c.util||10).toFixed(0)} % VALOR DE LA OBRA)</td><td class="num">${fmt(ut)}</td></tr>
           <tr><td colspan="4">IVA (19 % VALOR DE LAS UTILIDADES)</td><td class="num">${fmt(iva)}</td></tr>
@@ -811,92 +811,92 @@ function buildCotizacionPrintHtml(c){
         </tbody>
       </table>
       <div class="note-center">EL IVA ES EL 19 % DE LAS UTILIDADES</div>
-      <div class="footer">Calle 38 sur # 36 â€“ 48, Envigado Â· PBX 448 26 86 Â· Cel 3152889541 Â· Nit. 900193965-4 Â· comercial1ingeanclajes@gmail.com Â· www.ingeanclajes.com</div>
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
     </section>
 
     <section class="page">
       <div class="header">
         <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
         <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
-        <div class="header-right">Calle 38 sur # 36 â€“ 48, Envigado<br/>PBX 448 26 86 Â· Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
       <div class="section-title">Condiciones comerciales</div>
       <table class="table"><tbody>
         <tr><td style="width:34%"><strong>FORMA DE PAGO</strong></td><td>${escapeHtml(c.formaPago || '50% ANTICIPO, 50% CONCLUIR LABORES')}</td></tr>
-        <tr><td><strong>TIEMPO DE EJECUCIÃ“N</strong></td><td>${escapeHtml(c.tiempoEjec || '10 DÃAS')}</td></tr>
-        <tr><td><strong>VALIDEZ DE LA OFERTA</strong></td><td>${escapeHtml(`${c.val||30} DÃAS A PARTIR DE LA FECHA DE ENTREGA DE ESTA COTIZACIÃ“N`)}</td></tr>
-        <tr><td><strong>CERTIFICACIÃ“N</strong></td><td>SE ENTREGA CON EL PAGO TOTAL</td></tr>
+        <tr><td><strong>TIEMPO DE EJECUCION</strong></td><td>${escapeHtml(c.tiempoEjec || '10 DIAS')}</td></tr>
+        <tr><td><strong>VALIDEZ DE LA OFERTA</strong></td><td>${escapeHtml(`${c.val||30} DIAS A PARTIR DE LA FECHA DE ENTREGA DE ESTA COTIZACION`)}</td></tr>
+        <tr><td><strong>CERTIFICACION</strong></td><td>SE ENTREGA CON EL PAGO TOTAL</td></tr>
       </tbody></table>
       <div class="signature">
         <p>Cordialmente,</p>
         <div class="signature-space"></div>
-        <div class="signature-line"><div class="signature-name"><strong>ING. JHON JAIME SEPULVEDA LONDOÃ‘O</strong></div><div>MP. 05256-409949</div><div>GERENTE GENERAL</div><div>Tel: 3152889541</div></div>
+        <div class="signature-line"><div class="signature-name"><strong>ING. JHON JAIME SEPULVEDA LONDONO</strong></div><div>MP. 05256-409949</div><div>GERENTE GENERAL</div><div>Tel: 3152889541</div></div>
       </div>
-      <div class="footer">Calle 38 sur # 36 â€“ 48, Envigado Â· PBX 448 26 86 Â· Cel 3152889541 Â· Nit. 900193965-4 Â· comercial1ingeanclajes@gmail.com Â· www.ingeanclajes.com</div>
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
     </section>
 
     <section class="page">
       <div class="header">
         <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
         <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
-        <div class="header-right">Calle 38 sur # 36 â€“ 48, Envigado<br/>PBX 448 26 86 Â· Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
       <div class="tech-title">Sistema no continuo en acero galvanizado</div>
       <table class="tech-table">
         <thead>
-          <tr><th style="width:24%">Elemento</th><th>CaracterÃ­stica</th></tr>
+          <tr><th style="width:24%">Elemento</th><th>Caracteristica</th></tr>
         </thead>
         <tbody>
           <tr>
             <td class="tech-elem">Soporte lateral e intermedio</td>
-            <td>Este elemento estÃ¡ diseÃ±ado para ser usado en sistemas de lÃ­neas de vida horizontales de tipo continuo. El componente soporta regularmente el cable de acero para que una secciÃ³n libre de cable no supere la luz mÃ¡xima permitida. Este soporte intermedio permite el uso de un carro deslizador para evitar el uso de eslinga en Y por parte del trabajador y evitar que el colaborador se desconecte.</td>
+            <td>Este elemento esta disenado para ser usado en sistemas de lineas de vida horizontales de tipo continuo. El componente soporta regularmente el cable de acero para que una seccion libre de cable no supere la luz maxima permitida. Este soporte intermedio permite el uso de un carro deslizador para evitar el uso de eslinga en Y por parte del trabajador y evitar que el colaborador se desconecte.</td>
           </tr>
           <tr>
             <td class="tech-elem">Tensor</td>
-            <td>Este elemento estÃ¡ diseÃ±ado para ser usado en sistemas de lÃ­neas de vida horizontales. En sus extremos el tensor se asegura al cable de la lÃ­nea de vida y a un absorbedor de energÃ­a respectivamente. Su funciÃ³n es tensionar la lÃ­nea de vida para que, en el momento de una caÃ­da, la distancia de caÃ­da del trabajador sea mÃ­nima.</td>
+            <td>Este elemento esta disenado para ser usado en sistemas de lineas de vida horizontales. En sus extremos el tensor se asegura al cable de la linea de vida y a un absorbedor de energia respectivamente. Su funcion es tensionar la linea de vida para que, en el momento de una caida, la distancia de caida del trabajador sea minima.</td>
           </tr>
           <tr>
             <td class="tech-elem">Empalmes y fijaciones</td>
-            <td>Fabricados en aluminio. Resistentes a la corrosiÃ³n y oxidaciÃ³n. Se utilizan para empalmar dos cables y fijar barandillas de cables.</td>
+            <td>Fabricados en aluminio. Resistentes a la corrosion y oxidacion. Se utilizan para empalmar dos cables y fijar barandillas de cables.</td>
           </tr>
           <tr>
             <td class="tech-elem">Guardacables</td>
-            <td>Fabricado en acero con acabado galvanizado resistente a la corrosiÃ³n. Protegen contra el desgaste y deformaciÃ³n del cable, alargando su vida Ãºtil.</td>
+            <td>Fabricado en acero con acabado galvanizado resistente a la corrosion. Protegen contra el desgaste y deformacion del cable, alargando su vida util.</td>
           </tr>
           <tr>
             <td class="tech-elem">Cable de acero</td>
-            <td>El cable de acero se fabrica bajo un diseÃ±o que permite que sea capaz de absorber el desgaste y los esfuerzos causados por el contacto con poleas, tambores y otras superficies, asÃ­ como las tensiones estÃ¡ticas y dinÃ¡micas del trabajo al que se someta. Se compone por alambres de acero, estirados en frÃ­o, trenzados en espiral, formando unidades denominadas torones. AdemÃ¡s, su diseÃ±o ha sido ideado para que cada alambre tenga la libertad de movimiento en relaciÃ³n a los alambres adyacentes. Mientras mÃ¡s alambres conformen este elemento, mayor serÃ¡ su flexibilidad y resistencia en esfuerzos elevados; logrando el objetivo de transmisiÃ³n de movimiento, fuerzas y energÃ­a de forma eficaz y efectiva.</td>
+            <td>El cable de acero se fabrica bajo un diseno que permite que sea capaz de absorber el desgaste y los esfuerzos causados por el contacto con poleas, tambores y otras superficies, asi como las tensiones estaticas y dinamicas del trabajo al que se someta. Se compone por alambres de acero, estirados en frio, trenzados en espiral, formando unidades denominadas torones. Ademas, su diseno ha sido ideado para que cada alambre tenga la libertad de movimiento en relacion a los alambres adyacentes. Mientras mas alambres conformen este elemento, mayor sera su flexibilidad y resistencia en esfuerzos elevados; logrando el objetivo de transmision de movimiento, fuerzas y energia de forma eficaz y efectiva.</td>
           </tr>
         </tbody>
       </table>
-      <div class="footer">Calle 38 sur # 36 â€“ 48, Envigado Â· PBX 448 26 86 Â· Cel 3152889541 Â· Nit. 900193965-4 Â· comercial1ingeanclajes@gmail.com Â· www.ingeanclajes.com</div>
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
     </section>
-    ${showVerticalAppendix ? `<section class="page"><img src="${articoLineaVidaVertical}" alt="Anexo tÃ©cnico lÃ­nea de vida vertical" class="appendix-img"/><div class="footer">Calle 38 sur # 36 â€“ 48, Envigado Â· PBX 448 26 86 Â· Cel 3152889541 Â· Nit. 900193965-4 Â· comercial1ingeanclajes@gmail.com Â· www.ingeanclajes.com</div></section>` : ""}
+    ${showVerticalAppendix ? `<section class="page"><img src="${articoLineaVidaVertical}" alt="Anexo tecnico linea de vida vertical" class="appendix-img"/><div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div></section>` : ""}
 
     <section class="page">
       <div class="header">
         <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
         <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
-        <div class="header-right">Calle 38 sur # 36 â€“ 48, Envigado<br/>PBX 448 26 86 Â· Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
-      <div class="section-title">Esta cotizaciÃ³n incluye</div>
+      <div class="section-title">Esta cotizacion incluye</div>
       <ul>
         <li>Tuercas y arandelas en acero galvanizado y/o inoxidable certificado.</li>
-        <li>Los elementos utilizados en la instalaciÃ³n son certificados de fÃ¡brica los cuales se adjuntan en la entrega de documentaciÃ³n de certificados.</li>
+        <li>Los elementos utilizados en la instalacion son certificados de fabrica los cuales se adjuntan en la entrega de documentacion de certificados.</li>
         <li>Transporte de materiales y de personal hasta el sitio de trabajo.</li>
-        <li>Se entregan todos los certificados de acuerdo a la ResoluciÃ³n 4272 de trabajo seguro en alturas.</li>
-        <li>RecertificaciÃ³n sin costo al aÃ±o siguiente de la instalaciÃ³n.</li>
+        <li>Se entregan todos los certificados de acuerdo a la Resolucion 4272 de trabajo seguro en alturas.</li>
+        <li>Recertificacion sin costo al ano siguiente de la instalacion.</li>
         <li>Esta propuesta incluye el coordinador para trabajo seguro en alturas de tiempo completo en la obra.</li>
       </ul>
-      <p class="small-gap">Todo el personal que labora en la empresa, se encuentra afiliado a ARL, Salud, y Pensiones. Llevamos todos los elementos personales de seguridad necesarios para efectuar dicho trabajo. Realizamos todas las reparaciones de los daÃ±os que puedan surgir durante la ejecuciÃ³n de dicho trabajo y se entregan todas las pÃ³lizas exigidas por el contratante.</p>
-      <div class="section-title">Sistema de gestiÃ³n de seguridad y salud en el trabajo</div>
-      <p>Nuestra empresa INGEANCLAJES S.A.S, se encuentra comprometida con el cumplimiento de las directrices generales para la aplicaciÃ³n de la resoluciÃ³n 4272 de 2021 garantizando la implementaciÃ³n del Sistema de GestiÃ³n de Seguridad y Salud en el Trabajo y teniendo coherencia con la estrategia organizacional de la empresa redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y del auto cuidado en los diferentes frentes de trabajo.</p>
+      <p class="small-gap">Todo el personal que labora en la empresa se encuentra afiliado a ARL, salud y pensiones. Llevamos todos los elementos personales de seguridad necesarios para efectuar dicho trabajo. Realizamos todas las reparaciones de los danos que puedan surgir durante la ejecucion de dicho trabajo y se entregan todas las polizas exigidas por el contratante.</p>
+      <div class="section-title">Sistema de gestion de seguridad y salud en el trabajo</div>
+      <p>Nuestra empresa INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicacion de la Resolucion 4272 de 2021, garantizando la implementacion del Sistema de Gestion de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.</p>
       <div class="signature">
         <p>Cordialmente,</p>
         <div class="signature-space"></div>
-        <div class="signature-line"><div class="signature-name"><strong>ING. JHON JAIME SEPULVEDA LONDOÃ‘O</strong></div><div>MP. 05256-409949</div><div>GERENTE GENERAL</div><div>Tel: 3152889541</div></div>
+        <div class="signature-line"><div class="signature-name"><strong>ING. JHON JAIME SEPULVEDA LONDONO</strong></div><div>MP. 05256-409949</div><div>GERENTE GENERAL</div><div>Tel: 3152889541</div></div>
       </div>
-      <div class="footer">Calle 38 sur # 36 â€“ 48, Envigado Â· PBX 448 26 86 Â· Cel 3152889541 Â· Nit. 900193965-4 Â· comercial1ingeanclajes@gmail.com Â· www.ingeanclajes.com</div>
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
     </section>
   </body>
   </html>`;
@@ -971,15 +971,15 @@ function buildCotizacionShareMessage(c, clienteInfo={}){
   const saludo = clienteInfo?.contacto || clienteInfo?.nombre || c?.cliente || "cliente";
   return [
     `Hola ${saludo},`,
-    `Te compartimos la cotizaciÃ³n *${c?.numero || c?.id || ""}* de *${c?.obra || "su proyecto"}* por un valor de *${fmt(Number(c?.total || 0))}*.`,
-    `Vigencia: ${c?.val || 30} dÃ­a(s) calendario.`,
-    `Quedamos atentos a tu aprobaciÃ³n o comentarios.`,
+    `Te compartimos la cotizacion *${c?.numero || c?.id || ""}* de *${c?.obra || "su proyecto"}* por un valor de *${fmt(Number(c?.total || 0))}*.`,
+    `Vigencia: ${c?.val || 30} dia(s) calendario.`,
+    `Quedamos atentos a tu aprobacion o comentarios.`,
     `INGEANCLAJES S.A.S`,
   ].join("\n");
 }
 
 function buildCotizacionEmailSubject(c){
-  return `CotizaciÃ³n ${c?.numero || c?.id || ""} Â· ${c?.obra || c?.cliente || "INGEANCLAJES"}`;
+  return `Cotizacion ${c?.numero || c?.id || ""} - ${c?.obra || c?.cliente || "INGEANCLAJES"}`;
 }
 
 function buildCotizacionEmailBody(c, clienteInfo={}){
@@ -987,11 +987,11 @@ function buildCotizacionEmailBody(c, clienteInfo={}){
   return [
     `Hola ${saludo},`,
     "",
-    `Adjuntamos la cotizaciÃ³n ${c?.numero || c?.id || ""} correspondiente a ${c?.obra || "su proyecto"}.`,
+    `Adjuntamos la cotizacion ${c?.numero || c?.id || ""} correspondiente a ${c?.obra || "su proyecto"}.`,
     `Valor total: ${fmt(Number(c?.total || 0))}.`,
-    `Vigencia: ${c?.val || 30} dÃ­a(s) calendario.`,
+    `Vigencia: ${c?.val || 30} dia(s) calendario.`,
     "",
-    "Quedamos atentos a cualquier comentario o aprobaciÃ³n.",
+    "Quedamos atentos a cualquier comentario o aprobacion.",
     "",
     "INGEANCLAJES S.A.S",
   ].join("\n");

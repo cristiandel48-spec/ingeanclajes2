@@ -206,11 +206,26 @@ const SI={background:"#f8fafc",border:"1px solid #cbd5e1",borderRadius:8,color:"
 const B=(bg,c="#fff")=>({background:bg,color:c,border:`1px solid ${bg==="#1a3050"?"#2a4a6a":bg}`,borderRadius:8,padding:"9px 18px",fontSize:13,fontWeight:600,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,fontFamily:"inherit",whiteSpace:"nowrap"});
 const CD={background:"#ffffff",border:"1px solid #e2e8f0",borderRadius:12,padding:20};
 const ST={fontSize:11,fontWeight:600,color:"#cc0000",textTransform:"uppercase",letterSpacing:1,marginBottom:14,borderBottom:"1px solid #e2e8f0",paddingBottom:8};
+const hasBrokenEncoding = (value="") => /[ðâÃÂïœšŸ]/.test(String(value || ""));
+const buildCardBadge = (icon="", label="") => {
+  const iconText = String(icon || "").trim();
+  if(iconText && !hasBrokenEncoding(iconText)) return iconText;
+
+  return String(label || "NA")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .split(/\s+/)
+    .map((word)=>word.replace(/[^A-Za-z0-9]/g,""))
+    .filter(Boolean)
+    .slice(0,2)
+    .map((word)=>word[0]?.toUpperCase() || "")
+    .join("") || "NA";
+};
 
 function Badge({estado}){const c=EC[estado]||{bg:"#1a3050",text:"#7da5c8",border:"#2a4a6a"};return <span style={{background:c.bg,color:c.text,border:`1px solid ${c.border}`,borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:500,whiteSpace:"nowrap"}}>{estado}</span>;}
 function Av({init,color="#f47c20",size=36}){return <div style={{width:size,height:size,borderRadius:"50%",background:color+"33",border:`2px solid ${color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*0.3,fontWeight:700,color,flexShrink:0}}>{init}</div>;}
 function H1({title,subtitle,action}){return <div style={{marginBottom:24,display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}><div><h1 style={{fontSize:22,fontWeight:700,margin:0,color:"#1a1a2e"}}>{title}</h1><p style={{fontSize:13,color:"#64748b",margin:"4px 0 0"}}>{subtitle}</p></div>{action}</div>;}
-function SC({label,value,color,icon,sub}){return <div style={CD}><div style={{fontSize:20,marginBottom:8}}>{icon}</div><div style={{fontSize:22,fontWeight:700,color}}>{value}</div><div style={{fontSize:12,color:"#475569",marginTop:3}}>{label}</div>{sub&&<div style={{fontSize:10,color:"rgba(255,255,255,0.7)",marginTop:2}}>{sub}</div>}</div>;}
+function SC({label,value,color,icon,sub}){const badge=buildCardBadge(icon,label);return <div style={CD}><div style={{fontSize:18,marginBottom:8,fontWeight:700,letterSpacing:0.4}}>{badge}</div><div style={{fontSize:22,fontWeight:700,color}}>{value}</div><div style={{fontSize:12,color:"#475569",marginTop:3}}>{label}</div>{sub&&<div style={{fontSize:10,color:"rgba(255,255,255,0.7)",marginTop:2}}>{sub}</div>}</div>;}
 function LBL({children}){return <label style={{display:"block",fontSize:11,color:"#475569",marginBottom:4}}>{children}</label>;}
 
 const LEAFLET_CSS_ID = "leaflet-cdn-css";

@@ -44,7 +44,7 @@ const CARGOS_INIT = [...new Set(EMPLEADOS_INIT.map((empleado)=>empleado.cargo))]
 }));
 
 const COTIZACIONES_INIT = [
-  { id:"COT-001", numero:"P-34153", fecha:"2026-03-10", cliente:"Sergio Zapata", obra:"BYCSA", telefono:"3113372396", ciudad:"BARBOSA - ANTIOQUIA", estado:"Aprobada", obraId:"OB-001", total:37956480, items:[{desc:"LINEA DE VIDA HORIZONTAL 21 ML",cant:21,unit:"ML",vu:280000},{desc:"LINEA DE VIDA HORIZONTAL 27 ML",cant:27,unit:"ML",vu:280000},{desc:"LINEA DE VIDA CONEXIÃ“N 26 ML",cant:26,unit:"ML",vu:280000},{desc:"ESCALERA 11 METROS",cant:11,unit:"Metro",vu:1200000}], util:10, formaPago:"50% ANTICIPO, 50% CONCLUIR LABORES", tiempoEjec:"10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)", val:30, mapImg:null, coords:"6.4375,-75.3317" },
+  { id:"COT-001", numero:"P-34153", fecha:"2026-03-10", cliente:"Sergio Zapata", obra:"BYCSA", telefono:"3113372396", ciudad:"BARBOSA - ANTIOQUIA", estado:"Aprobada", obraId:"OB-001", total:37956480, items:[{desc:"LINEA DE VIDA HORIZONTAL 21 ML",cant:21,unit:"ML",vu:280000},{desc:"LINEA DE VIDA HORIZONTAL 27 ML",cant:27,unit:"ML",vu:280000},{desc:"LINEA DE VIDA CONEXION 26 ML",cant:26,unit:"ML",vu:280000},{desc:"ESCALERA 11 METROS",cant:11,unit:"Metro",vu:1200000}], util:10, formaPago:"50% ANTICIPO, 50% CONCLUIR LABORES", tiempoEjec:"10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)", val:30, mapImg:null, coords:"6.4375,-75.3317" },
   { id:"COT-002", numero:"P-34154", fecha:"2026-03-20", cliente:"Parque Ind. Mamonal", obra:"Mantenimiento Fachada Sur", telefono:"6565000", ciudad:"Cartagena, Bolívar", estado:"Pendiente", obraId:null, total:3200000, items:[{desc:"LINEA DE VIDA HORIZONTAL",cant:45,unit:"ML",vu:71111}], util:10, formaPago:"50% ANTICIPO, 50% CONCLUIR LABORES", tiempoEjec:"5 DIAS", val:30, mapImg:null, coords:"10.3432,-75.505" },
 ];
 
@@ -173,6 +173,25 @@ const buildNominaPeriodo = (mes, corte="primera")=>{
     endDate: parseIsoDate(endIso),
     diasReferencia: Math.max(0, endDay-startDay+1),
     label: corte==="primera" ? `${safeMes} · 1 al 15` : `${safeMes} · 16 al ${endDay}`,
+  };
+};
+const buildPeriodoLiquidacionRetiro = (fechaSalida, periodoFallback=null)=>{
+  if(!fechaSalida) return periodoFallback;
+  const [safeMes, safeDayText] = String(fechaSalida).split("-");
+  const mes = String(fechaSalida).slice(0,7);
+  const day = Number(String(fechaSalida).slice(-2));
+  if(!mes || !Number.isFinite(day)) return periodoFallback;
+  const corte = day<=15 ? "primera" : "segunda";
+  const base = buildNominaPeriodo(mes, corte);
+  const salida = parseIsoDate(fechaSalida);
+  const endDate = salida && salida<base.endDate ? salida : base.endDate;
+  const diasReferencia = endDate && endDate>=base.startDate ? diffDaysInclusive(base.startDate, endDate) : 0;
+  return {
+    ...base,
+    endIso: fechaSalida,
+    endDate,
+    diasReferencia,
+    label: `${base.label} · retiro al ${String(fechaSalida).slice(-2)}`,
   };
 };
 const isDateInPeriodo = (iso, periodo)=>{
@@ -801,6 +820,8 @@ function hasVerticalLifeLineService(c={}){
 function buildCotizacionPrintHtml(c){
   const items = normalizeQuoteItems(c);
   const measurements = Array.isArray(c.geoMediciones) ? c.geoMediciones : [];
+  const esObraBlanca = c.tipoCotizacion === "obra_blanca";
+  const requerimientoCliente = String(c.requerimientoCliente || "").trim();
   const { width: mapWidth, height: mapHeight } = getStaticMapDimensions(c.geoMapView);
   const showVerticalAppendix = hasVerticalLifeLineService(c);
   const sub = items.reduce((s,i)=>s+(Number(i.cant)||0)*(Number(i.vu)||0),0);
@@ -838,6 +859,11 @@ function buildCotizacionPrintHtml(c){
           <thead><tr><th>#</th><th>Tramo</th><th>Tipo</th><th>Medida</th></tr></thead>
           <tbody>${measurementRows}</tbody>
         </table>
+      </div>` : '';
+  const requerimientoBlock = esObraBlanca && requerimientoCliente ? `
+      <div class="measurement-box">
+        <p><strong>Necesidad del cliente</strong></p>
+        <div style="white-space:pre-wrap;">${escapeHtml(requerimientoCliente)}</div>
       </div>` : '';
 
   return `<!doctype html>
@@ -918,6 +944,10 @@ function buildCotizacionPrintHtml(c){
       <div style="height:8px"></div>
       <p>Cordial saludo.</p>
       <div style="height:8px"></div>
+      ${esObraBlanca ? `
+      <p>Presentamos la cotizacion para la obra blanca solicitada por el cliente.</p>
+      ${requerimientoBlock}
+      ` : `
       <p>Presentamos la cotizacion para suministro e instalacion de los sistemas de proteccion anticaida (lineas de vida horizontales sobre cubierta y escaleras).</p>
       <p><strong>Trabajo en altura:</strong> Se considera toda actividad, labor o trabajo que se deba realizar a una altura fisica igual o superior a 1,50 metros desde el piso.</p>
       <p><strong>Puntos de anclaje:</strong> Son componentes en acero anclado con un epoxico quimico marca PURE 110 de POWER FASTENERS o equivalente, con perno de 5/8 a una profundidad de 15 cm o mas segun el caso, con capacidad de resistir una fuerza de caida superior a 5.000 lbs.</p>
@@ -928,6 +958,7 @@ function buildCotizacionPrintHtml(c){
         <li>Los anclajes a los cuales se fijaran las lineas de vida deben resistir al menos 5.000 libras por cada persona asegurada.</li>
       </ul>
       <p>${escapeHtml(introDetail)}</p>
+      `}
       <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
     </section>
 
@@ -1440,11 +1471,19 @@ body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:18px;background:#f
   if(win){win.document.write(html);win.document.close();win.focus();setTimeout(()=>win.print(),500);}
 }
 
-function printLiquidacion(empleado, pfl, indemn, diasVacPagar, fechaSalida){
+function printLiquidacion(empleado, pfl, indemn, diasVacPagar, fechaSalida, resumenRetiro, periodoRetiro){
   const fmtC = n => '$ ' + Math.round(Number(n)||0).toLocaleString('es-CO');
   const vacValorReal = Math.round(empleado.salario * (diasVacPagar||0) / 30);
-  const total = pfl.cesantias + pfl.interesesCesantias + pfl.prima + vacValorReal + indemn;
+  const total = pfl.cesantias + pfl.interesesCesantias + pfl.prima + vacValorReal + indemn + (resumenRetiro?.neto||0);
   const rows = [
+    ['Salario días trabajados', (resumenRetiro?.diasNomina||0) + ' días × ' + fmtC((resumenRetiro?.valorDia)||0), fmtC(resumenRetiro?.salario||0)],
+    ['Auxilio de transporte proporcional', 'Auxilio del corte según ' + (resumenRetiro?.diasNomina||0) + ' días', fmtC(resumenRetiro?.auxilioTransporte||0)],
+    ...((resumenRetiro?.horasExtras||0)>0 ? [['Horas extras pendientes', 'Registradas dentro del corte final', fmtC(resumenRetiro?.horasExtras||0)]] : []),
+    ...((resumenRetiro?.comisiones||0)>0 ? [['Comisiones pendientes', 'Registradas dentro del corte final', fmtC(resumenRetiro?.comisiones||0)]] : []),
+    ...((resumenRetiro?.salud||0)>0 ? [['Descuento salud empleado', '4% sobre salario + extras + comisiones', '- ' + fmtC(resumenRetiro?.salud||0)]] : []),
+    ...((resumenRetiro?.pension||0)>0 ? [['Descuento pensión empleado', '4% sobre salario + extras + comisiones', '- ' + fmtC(resumenRetiro?.pension||0)]] : []),
+    ...((resumenRetiro?.otrasDeducciones||0)>0 ? [['Otras deducciones', 'Conceptos autorizados del empleado', '- ' + fmtC(resumenRetiro?.otrasDeducciones||0)]] : []),
+    ['Neto nómina final', periodoRetiro?.label||'Corte final', fmtC(resumenRetiro?.neto||0)],
     ['Cesantías (Art. 249 CST)', (empleado.salario + (empleado.salario<=NOMINA_CO_2026.topeAuxilio?NOMINA_CO_2026.auxilioTransporte:0)).toLocaleString('es-CO') + ' × ' + pfl.diasTrabajados + 'd ÷ 360', fmtC(pfl.cesantias)],
     ['Intereses cesantías (12% anual)', '12% s/ ' + fmtC(pfl.cesantias), fmtC(pfl.interesesCesantias)],
     ['Prima de servicios (Art. 306 CST)', 'Base × ' + pfl.diasTrabajados + 'd ÷ 360', fmtC(pfl.prima)],
@@ -1471,7 +1510,8 @@ function printLiquidacion(empleado, pfl, indemn, diasVacPagar, fechaSalida){
     +'<div class="emp"><strong>'+empleado.nombre+'</strong>'
     +'Cédula: '+(empleado.cedula||'-')+'&nbsp;·&nbsp;Cargo: '+(empleado.cargo||'-')+'<br/>'
     +'Tipo contrato: '+(empleado.tipoContrato||'indefinido')+'&nbsp;·&nbsp;Ingreso: '+(empleado.fechaIngreso||'N/A')+'&nbsp;·&nbsp;Salida: '+(fechaSalida||'N/A')+'<br/>'
-    +'Causa retiro: '+(empleado.causaRetiro||'—')+'&nbsp;·&nbsp;Tiempo laborado: '+pfl.diasTrabajados+' días ('+pfl.mesesTrabajados+' meses)'
+    +'Causa retiro: '+(empleado.causaRetiro||'—')+'&nbsp;·&nbsp;Tiempo laborado: '+pfl.diasTrabajados+' días ('+pfl.mesesTrabajados+' meses)<br/>'
+    +'Corte final: '+(periodoRetiro?.label||'No definido')
     +'</div>'
     +'<table><thead><tr style="background:#142840;color:#fff"><th style="padding:7px 14px;text-align:left">Concepto</th><th style="padding:7px 14px;text-align:left">Base de cálculo</th><th style="padding:7px 14px;text-align:right">Valor</th></tr></thead>'
     +'<tbody>'+rowsHtml+'</tbody>'
@@ -1938,31 +1978,29 @@ function GoogleMeasureWorkspace({ queryValue, onQueryChange, measurements, onCha
 
   const removeMeasurement = (id)=> onChange((measurements||[]).filter(seg=>seg.id!==id));
 
-  const staticPreview = buildGoogleStaticMapUrl(measurements, queryValue, mapView);
-
   return (
     <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:12,padding:20}}>
       <div style={{display:"grid",gridTemplateColumns:"1.3fr 1fr",gap:16,alignItems:"start",marginBottom:12}}>
         <div>
-          <div style={ST}>ðŸ›°️ Medición automática con Google Maps</div>
+          <div style={ST}>Medición automática con Google Maps</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr auto auto",gap:8,marginBottom:10}}>
             <input value={queryValue} onChange={e=>onQueryChange(e.target.value)} placeholder="Coordenadas, dirección o enlace de Maps" style={SI} />
             <button onClick={centerMap} style={{...B("#f47c20"),fontSize:12}}>Ver aquí</button>
-            <button onClick={startMeasurement} style={{...B(measureMode?"#4ade80":"#1a3050", measureMode?"#0f2d1a":"#60b4ff"),fontSize:12}}>{measureMode?"Esperando clicsâ€¦":"Activar medición"}</button>
+            <button onClick={startMeasurement} style={{...B(measureMode?"#4ade80":"#1a3050", measureMode?"#0f2d1a":"#60b4ff"),fontSize:12}}>{measureMode?"Esperando clics...":"Activar medición"}</button>
           </div>
           <div style={{fontSize:11,color:"#64748b",lineHeight:1.6}}>Haz clic en dos puntos del mapa y el sistema calcula la distancia real automáticamente en metros. Luego solo nombras el tramo y su tipo.</div>
         </div>
         <div style={{background:"#f8fafc",borderRadius:10,padding:"12px 14px",border:"1px solid #e2e8f0"}}>
           <div style={{fontSize:12,fontWeight:700,color:"#1a1a2e",marginBottom:8}}>Estado</div>
           <div style={{fontSize:11,color: status==="error" ? "#991b1b" : "#475569",lineHeight:1.7}}>
-            <div>â€¢ API: <strong>{GOOGLE_MAPS_EMBED_KEY ? "configurada" : "sin configurar"}</strong></div>
-            <div>â€¢ Mapa: <strong>{status}</strong></div>
-            <div>â€¢ Tramos: <strong>{(measurements||[]).length}</strong></div>
-            {error && <div style={{color:"#991b1b"}}>â€¢ {error}</div>}
+            <div>• API: <strong>{GOOGLE_MAPS_EMBED_KEY ? "configurada" : "sin configurar"}</strong></div>
+            <div>• Mapa: <strong>{status}</strong></div>
+            <div>• Tramos: <strong>{(measurements||[]).length}</strong></div>
+            {error && <div style={{color:"#991b1b"}}>• {error}</div>}
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginTop:8}}>
-            <button onClick={()=>setZoom(z=>Math.min(21,z+1))} style={{...B("#e0f2fe","#0369a1"),justifyContent:"center",fontSize:12,padding:"8px 0"}}>ï¼‹</button>
-            <button onClick={()=>setZoom(z=>Math.max(16,z-1))} style={{...B("#e0f2fe","#0369a1"),justifyContent:"center",fontSize:12,padding:"8px 0"}}>ï¼</button>
+            <button onClick={()=>setZoom(z=>Math.min(21,z+1))} style={{...B("#e0f2fe","#0369a1"),justifyContent:"center",fontSize:12,padding:"8px 0"}}>+</button>
+            <button onClick={()=>setZoom(z=>Math.max(16,z-1))} style={{...B("#e0f2fe","#0369a1"),justifyContent:"center",fontSize:12,padding:"8px 0"}}>-</button>
           </div>
         </div>
       </div>
@@ -1971,14 +2009,14 @@ function GoogleMeasureWorkspace({ queryValue, onQueryChange, measurements, onCha
 
       {draft && (
         <div style={{background:"#fffbeb",border:"2px solid #f5c842",borderRadius:10,padding:16,marginBottom:12}}>
-          <div style={{fontSize:13,fontWeight:700,color:"#b45309",marginBottom:12}}>ðŸ“ Tramo detectado automáticamente</div>
+          <div style={{fontSize:13,fontWeight:700,color:"#b45309",marginBottom:12}}>Tramo detectado automáticamente</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:10,alignItems:"end"}}>
             <div><LBL>Metros calculados</LBL><input value={draft.ml} readOnly style={{...SI,background:"#fff7ed",fontWeight:700,color:"#c2410c"}} /></div>
             <div><LBL>Etiqueta</LBL><input value={draft.label} onChange={e=>setDraft({...draft,label:e.target.value})} placeholder="Ej: Cubierta norte" style={SI} /></div>
             <div><LBL>Tipo</LBL><select value={draft.tipo} onChange={e=>setDraft({...draft,tipo:e.target.value})} style={SI}>{[["LVH","Línea horizontal"],["LVV","Línea vertical"],["CON","Conexión"],["ESC","Escalera"],["PAN","Punto de anclaje"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
             <div style={{display:"flex",gap:6}}>
-              <button onClick={confirmDraft} style={B("#4ade80","#0f2d1a")}>âœ… Agregar</button>
-              <button onClick={()=>{clearTemp(); setDraft(null);}} style={B("#fee2e2","#ef4444")}>âœ•</button>
+              <button onClick={confirmDraft} style={B("#4ade80","#0f2d1a")}>Agregar</button>
+              <button onClick={()=>{clearTemp(); setDraft(null);}} style={B("#fee2e2","#ef4444")}>Cerrar</button>
             </div>
           </div>
         </div>
@@ -1994,26 +2032,19 @@ function GoogleMeasureWorkspace({ queryValue, onQueryChange, measurements, onCha
                   <div style={{fontSize:12,fontWeight:700,color:"#1a1a2e"}}>{seg.label}</div>
                   <div style={{fontSize:10,color:"#64748b"}}>{seg.tipo} · {Number(seg.ml||0).toFixed(2)} m</div>
                 </div>
-                <button onClick={()=>removeMeasurement(seg.id)} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:5,padding:"3px 8px",cursor:"pointer",fontSize:11}}>Ã—</button>
+                <button onClick={()=>removeMeasurement(seg.id)} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:5,padding:"3px 8px",cursor:"pointer",fontSize:11}}>×</button>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {staticPreview && (
-        <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:12}}>
-          <div style={{fontSize:12,fontWeight:700,color:"#1a1a2e",marginBottom:8}}>Imagen automática para la cotización / obra</div>
-          <StaticMapPreview src={staticPreview} segments={measurements} query={queryValue} mapView={mapView} alt="Mapa automático" border="none" borderRadius={8} />
-          <div style={{fontSize:10,color:"#64748b",marginTop:6}}>Esta imagen sale de Maps Static con los trazos medidos para que también viaje al PDF y a la obra.</div>
-        </div>
-      )}
     </div>
   );
 }
 
 // ======================================================
-// COTIZACIÃ“N
+// COTIZACION
 // ======================================================
 function Cotizacion({ctx}){
   const {cotizaciones,setCotizaciones,obras,setObras,clientes}=ctx;
@@ -2037,6 +2068,7 @@ function Cotizacion({ctx}){
   const [sendModal,setSendModal]=useState(null);
   const [sendNotif,setSendNotif]=useState("");
   const [tipoCotizacion,setTipoCotizacion]=useState("linea_vida");
+  const [requerimientoCliente,setRequerimientoCliente]=useState("");
   const [fotosCotizacion,setFotosCotizacion]=useState([]);
   const fileRef=useRef();
   const fotosRef=useRef();
@@ -2059,10 +2091,12 @@ function Cotizacion({ctx}){
       setGeoMediciones(draft.geoMediciones || []);
       setGeoMapView(draft.geoMapView || null);
       setCl({ nombre:draft.cliente||"", obra:draft.obra||"", telefono:draft.telefono||"", ciudad:draft.ciudad||"", coords:draft.coords||"" });
+      setRequerimientoCliente(draft.requerimientoCliente||"");
       ctx.setCotDraft(null);
     }else{
       setItems([]); setNid(1); setMapImgManual(null); setGeoMediciones([]); setGeoMapView(null);
       setCl({nombre:"",obra:"",telefono:"",ciudad:"",coords:""});
+      setRequerimientoCliente("");
     }
     setTipoCotizacion("linea_vida"); setFotosCotizacion([]);
     setEditCot(null); setTab("form");
@@ -2079,6 +2113,7 @@ function Cotizacion({ctx}){
     setFormaPago(c.formaPago||"50% ANTICIPO, 50% CONCLUIR LABORES");
     setTiempoEjec(c.tiempoEjec||"10 DIAS");
     setTipoCotizacion(c.tipoCotizacion||"linea_vida");
+    setRequerimientoCliente(c.requerimientoCliente||"");
     setFotosCotizacion(c.fotosCotizacion||[]);
     setEditCot(c.id); setTab("form");
   };
@@ -2146,7 +2181,7 @@ function Cotizacion({ctx}){
     const data={
       numero:cot, fecha, val, cliente:cl.nombre, obra:cl.obra, telefono:cl.telefono, ciudad:cl.ciudad, coords:cl.coords,
       items:finalItems, util, total:Math.round((finalItems.reduce((s,i)=>s+(i.cant||0)*(i.vu||0),0))*(1+util/100*1.19)),
-      formaPago, tiempoEjec, mapImg: effectiveMapImg, geoMediciones, geoMapView, tipoCotizacion, fotosCotizacion, estado:"Pendiente", obraId:null
+      formaPago, tiempoEjec, mapImg: effectiveMapImg, geoMediciones, geoMapView, tipoCotizacion, requerimientoCliente, fotosCotizacion, estado:"Pendiente", obraId:null
     };
     if(editCot){
       setCotizaciones(p=>p.map(c=>c.id===editCot?{...c,...data}:c));
@@ -2242,7 +2277,7 @@ function Cotizacion({ctx}){
                   <div style={{fontSize:22,fontWeight:800,color:"#1a1a2e",marginBottom:6}}>Cotización aprobada</div>
                   <div style={{fontSize:13,color:"#64748b"}}>¿Deseas enviar ahora la cotización <strong>{sendModal.cotizacion?.numero || sendModal.cotizacion?.id}</strong> al cliente?</div>
                 </div>
-                <button style={B("#f1f5f9","#475569")} onClick={cerrarEnvioCotizacion}>âœ• Cerrar</button>
+                <button style={B("#f1f5f9","#475569")} onClick={cerrarEnvioCotizacion}>Cerrar</button>
               </div>
 
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:16}}>
@@ -2296,19 +2331,19 @@ function Cotizacion({ctx}){
   return(
     <div style={{padding:28}}>
       <H1 title={editCot?"Editar Cotización":"Nueva Cotización"} subtitle="Primero defines ubicación, el sistema mide automáticamente y esa información baja luego a Planos y Obras"
-        action={<button style={B("#f1f5f9","#475569")} onClick={()=>setTab("lista")}>â† Volver a lista</button>}/>
+        action={<button style={B("#f1f5f9","#475569")} onClick={()=>setTab("lista")}>← Volver a lista</button>}/>
       <div style={{display:"grid",gridTemplateColumns:"1fr 300px",gap:20}}>
         <div>
           <div style={{...CD,marginBottom:14,border:"2px solid #f47c20"}}>
-            <div style={ST}>Tipo de cotizaci&#243;n</div>
+            <div style={ST}>Tipo de cotización</div>
             <div style={{display:"flex",gap:10}}>
-              {[["linea_vida","&#128209; L&#237;nea de vida / Puntos de anclaje"],["obra_blanca","&#127968; Obra blanca (libre)"]].map(([v,l])=>(
+              {[["linea_vida","Línea de vida / Puntos de anclaje"],["obra_blanca","Obra blanca (libre)"]].map(([v,l])=>(
                 <button key={v} onClick={()=>setTipoCotizacion(v)} style={{...B(tipoCotizacion===v?"#f47c20":"#142840",tipoCotizacion===v?"#fff":"#7da5c8"),flex:1,justifyContent:"center",border:"2px solid "+(tipoCotizacion===v?"#f47c20":"#1a3050"),fontSize:13,fontWeight:700}} >{l}</button>
               ))}
             </div>
             {tipoCotizacion==="obra_blanca"&&(
               <div style={{marginTop:10,background:"#fffbeb",border:"1px solid #f5c842",borderRadius:8,padding:"10px 12px",fontSize:12,color:"#92400e"}}>
-                &#128221; Cotizaci&#243;n de obra blanca: escrib&#237; la descripci&#243;n libremente en los &#237;tems de abajo. El mapa y las mediciones son opcionales.
+                Cotización de obra blanca: escribe la descripción libremente en los ítems de abajo. El mapa y las mediciones son opcionales.
               </div>
             )}
           </div>
@@ -2376,10 +2411,10 @@ function Cotizacion({ctx}){
 
           <div style={{...CD,marginBottom:14}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,...{fontSize:11,fontWeight:600,color:"#cc0000",textTransform:"uppercase",letterSpacing:1,borderBottom:"1px solid #e2e8f0",paddingBottom:8}}}>
-              <span>?tems</span>
+              <span>Ítems</span>
               <div style={{display:"flex",gap:8}}>
-                <button onClick={usarMedicionesComoItems} style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"5px 12px"}}>ðŸ“¥ Jalar mediciones</button>
-                <button onClick={()=>setShowDB(!showDB)} style={{...B(showDB?"#1a3050":"transparent","#f47c20"),border:"1px solid #cc0000",fontSize:11,padding:"5px 12px"}}>{showDB?"â–² Cerrar catálogo":"ðŸ“‹ Catálogo"}</button>
+                <button onClick={usarMedicionesComoItems} style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"5px 12px"}}>Jalar mediciones</button>
+                <button onClick={()=>setShowDB(!showDB)} style={{...B(showDB?"#1a3050":"transparent","#f47c20"),border:"1px solid #cc0000",fontSize:11,padding:"5px 12px"}}>{showDB?"Cerrar catálogo":"Catálogo"}</button>
               </div>
             </div>
             {showDB&&(
@@ -2409,12 +2444,12 @@ function Cotizacion({ctx}){
                     <input value={it.unit} onChange={e=>upd(it.id,"unit",e.target.value)} style={{...SI,fontSize:12,padding:"6px 8px"}}/>
                     <input type="number" value={it.vu} onChange={e=>upd(it.id,"vu",e.target.value)} style={{...SI,fontSize:12,padding:"6px 8px"}}/>
                     <div style={{textAlign:"right",fontSize:12,fontWeight:600,color:"#cc0000"}}>{fmt(it.cant*it.vu)}</div>
-                    <button onClick={()=>del(it.id)} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:6,width:24,height:24,cursor:"pointer",fontSize:14}}>Ã—</button>
+                    <button onClick={()=>del(it.id)} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:6,width:24,height:24,cursor:"pointer",fontSize:14}}>×</button>
                   </div>
                 ))}
               </div>
             )}
-            {items.length===0&&!showDB&&<div style={{textAlign:"center",padding:"28px 0",color:"#94a3b8",fontSize:13}}><div style={{fontSize:28,marginBottom:8}}>ðŸ“‹</div><div>Mide primero en el mapa o usa el catálogo para agregar ítems</div></div>}
+            {items.length===0&&!showDB&&<div style={{textAlign:"center",padding:"28px 0",color:"#94a3b8",fontSize:13}}><div style={{fontSize:28,marginBottom:8}}>Items</div><div>Mide primero en el mapa o usa el catálogo para agregar ítems</div></div>}
             <button onClick={addBlank} style={{...B("#fff3e8","#f47c20"),border:"1px dashed #cc0000",width:"100%",justifyContent:"center",marginTop:8,fontSize:12}}>+ Agregar ítem manual</button>
           </div>
 
@@ -2425,6 +2460,21 @@ function Cotizacion({ctx}){
               <div><LBL>Tiempo de ejecución</LBL><input value={tiempoEjec} onChange={e=>setTiempoEjec(e.target.value)} style={SI}/></div>
             </div>
           </div>
+
+          {tipoCotizacion==="obra_blanca"&&(
+            <div style={{...CD,marginBottom:14}}>
+              <div style={ST}>Necesidad del cliente</div>
+              <div style={{fontSize:12,color:"#64748b",marginBottom:10}}>
+                Escribe aquí el alcance o lo que el cliente necesita para esta obra blanca. Este texto también quedará guardado con la cotización.
+              </div>
+              <textarea
+                value={requerimientoCliente}
+                onChange={e=>setRequerimientoCliente(e.target.value)}
+                placeholder="Ej: suministro e instalación de cielo raso en drywall, pintura interior, enchape y resanes en zonas comunes..."
+                style={{...SI,minHeight:150,resize:"vertical",lineHeight:1.5}}
+              />
+            </div>
+          )}
 
           <div style={CD}>
             <div style={ST}>Resumen financiero</div>
@@ -2449,14 +2499,14 @@ function Cotizacion({ctx}){
             <div style={ST}>Resumen</div>
             <div style={{fontSize:13,fontWeight:700,color:"#cc0000"}}>COTIZACION No. {cot}</div>
             <div style={{fontSize:11,color:"#64748b",marginBottom:10}}>{fmtL(fecha)}</div>
-            <div style={{fontSize:13,fontWeight:600,marginBottom:2}}>{cl.nombre||"â€”"}</div>
-            <div style={{fontSize:11,color:"#475569",marginBottom:8}}>{cl.obra||"â€”"} · {cl.ciudad||"â€”"}</div>
-            <div style={{fontSize:11,color:"#64748b",marginBottom:14}}>ðŸ“ {(geoMediciones||[]).length} tramo(s) medido(s)</div>
+            <div style={{fontSize:13,fontWeight:600,marginBottom:2}}>{cl.nombre||"-"}</div>
+            <div style={{fontSize:11,color:"#475569",marginBottom:8}}>{cl.obra||"-"} · {cl.ciudad||"-"}</div>
+            <div style={{fontSize:11,color:"#64748b",marginBottom:14}}>{(geoMediciones||[]).length} tramo(s) medido(s)</div>
             <div style={{display:"flex",justifyContent:"space-between",fontWeight:700,fontSize:15,color:"#cc0000",background:"#f1f5f9",padding:"10px 12px",borderRadius:8,marginBottom:12}}><span>TOTAL</span><span>{fmt(tot)}</span></div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              <button style={{...B("#f47c20"),justifyContent:"center"}} onClick={guardarCot}>ðŸ’¾ {editCot?"Actualizar":"Guardar"} Cotización</button>
-              <button style={{...B("#dbeafe","#1e40af"),justifyContent:"center"}} onClick={()=>{guardarCot(); const dummy={numero:cot,fecha,val,cliente:cl.nombre,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,items:items.length?items:measurementsToQuoteItems(geoMediciones),util,total:Math.round(tot),formaPago,tiempoEjec,mapImg:effectiveMapImg,geoMediciones,geoMapView}; setPreviewCot(dummy); setTab("lista");}}>ðŸ‘️ Guardar y Ver</button>
-              <button style={{...B("#0f2d1a","#4ade80"),justifyContent:"center",border:"1px solid #166534"}} onClick={usarMedicionesComoItems}>ðŸ“‹ Crear ítems desde mediciones</button>
+              <button style={{...B("#f47c20"),justifyContent:"center"}} onClick={guardarCot}>{editCot?"Actualizar":"Guardar"} Cotización</button>
+              <button style={{...B("#dbeafe","#1e40af"),justifyContent:"center"}} onClick={()=>{guardarCot(); const dummy={numero:cot,fecha,val,cliente:cl.nombre,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,items:items.length?items:measurementsToQuoteItems(geoMediciones),util,total:Math.round(tot),formaPago,tiempoEjec,mapImg:effectiveMapImg,geoMediciones,geoMapView,tipoCotizacion,requerimientoCliente}; setPreviewCot(dummy); setTab("lista");}}>Guardar y ver</button>
+              <button style={{...B("#0f2d1a","#4ade80"),justifyContent:"center",border:"1px solid #166534"}} onClick={usarMedicionesComoItems}>Crear ítems desde mediciones</button>
             </div>
           </div>
         </div>
@@ -2469,20 +2519,34 @@ function CotizacionPrint({c}){
   if(!c) return null;
   const items = normalizeQuoteItems(c);
   const measurements = Array.isArray(c.geoMediciones) ? c.geoMediciones : [];
+  const esObraBlanca = c.tipoCotizacion === "obra_blanca";
+  const requerimientoCliente = String(c.requerimientoCliente || "").trim();
   const sub=items.reduce((s,i)=>s+(Number(i.cant)||0)*(Number(i.vu)||0),0);
   const ut=sub*(c.util||10)/100; const iva=ut*0.19; const tot=sub+ut+iva;
   return(
     <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:12,lineHeight:1.45,border:"1px solid #ddd",padding:"22px 26px"}}>
       <div style={{marginBottom:14}}><PrintHeader dual={false}/></div>
       <div style={{textAlign:"center",fontSize:10,fontWeight:700,letterSpacing:3,marginBottom:16}}>ESPECIALISTAS EN ANCLAJES</div>
-      <div style={{display:"flex",justifyContent:"space-between",marginBottom:14,fontSize:12}}><div>Envigado, {fmtL(c.fecha)}</div><div><strong>COTIZACIÃ“N No. {c.numero}</strong></div></div>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:14,fontSize:12}}><div>Envigado, {fmtL(c.fecha)}</div><div><strong>COTIZACION No. {c.numero}</strong></div></div>
       <div style={{marginBottom:12}}>
-        <div><strong>SEÃ‘OR:</strong> {(c.cliente||"").toUpperCase()}</div>
+        <div><strong>SEÑOR:</strong> {(c.cliente||"").toUpperCase()}</div>
         {c.obra&&<div><strong>OBRA:</strong> {(c.obra||"").toUpperCase()}</div>}
-        {c.telefono&&<div><strong>TELÃ‰FONO:</strong> {c.telefono}</div>}
+        {c.telefono&&<div><strong>TELÉFONO:</strong> {c.telefono}</div>}
         {c.ciudad&&<div><strong>{(c.ciudad||"").toUpperCase()}</strong></div>}
       </div>
-      <p style={{marginBottom:10}}>Presentamos la cotización para suministro e instalación de los sistemas de protección anti caída (líneas de vida horizontales sobre cubierta y escaleras).</p>
+      {esObraBlanca ? (
+        <>
+          <p style={{marginBottom:10}}>Presentamos la cotización para la obra blanca solicitada por el cliente.</p>
+          {requerimientoCliente && (
+            <div style={{background:"#f8fafc",border:"1px solid #cbd5e1",borderRadius:6,padding:"12px 14px",marginBottom:16}}>
+              <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8}}>Necesidad del cliente</div>
+              <div style={{whiteSpace:"pre-wrap"}}>{requerimientoCliente}</div>
+            </div>
+          )}
+        </>
+      ) : (
+        <p style={{marginBottom:10}}>Presentamos la cotización para suministro e instalación de los sistemas de protección anti caída (líneas de vida horizontales sobre cubierta y escaleras).</p>
+      )}
       {c.mapImg ? <div style={{marginBottom:16,textAlign:"center"}}><StaticMapPreview src={c.mapImg} segments={measurements} query={c.coords || `${c.obra||""} ${c.ciudad||""}`.trim()} mapView={c.geoMapView} alt="Mapa" maxHeight={320} border="1px solid #ddd" borderRadius={4} /></div> : null}
       {measurements.length>0&&(
         <div style={{background:"#f8fafc",border:"1px solid #cbd5e1",borderRadius:6,padding:"12px 14px",marginBottom:16}}>
@@ -3833,16 +3897,184 @@ function ObraDetalle({obraId,ctx,onVolver}){
 // ======================================================
 // CERTIFICACIONES
 // ======================================================
+const CERT_ELEMENTOS_DEFAULT = [
+  "Perno Grado 8 B7 Ø 5/8",
+  "Arandela Ø 5/8",
+  "Tuerca Ø 5/8",
+  "Cable diámetro 5/16\" (8mm) galvanizado",
+  "Tensor cable",
+  "Soportes laterales e intermedios",
+];
+
+const RECERT_ELEMENTOS_DEFAULT = [
+  "Limpieza sistema completo",
+  "Verificación ajuste tuercas y pernos",
+  "Laca protectora anticorrosiva en todos los puntos",
+  "Tensado de cables",
+];
+
+const CERT_ELEMENTOS_BY_SISTEMA = {
+  "Líneas de vida horizontales": [
+    "Perno Grado 8 B7 Ø 5/8",
+    "Arandela Ø 5/8",
+    "Tuerca Ø 5/8",
+    "Cable diámetro 5/16\" (8mm) galvanizado",
+    "Guardacables",
+    "Tensor cable",
+    "Soportes laterales e intermedios",
+  ],
+  "Puntos de anclaje": [
+    "Perno Grado 8 B7 Ø 5/8",
+    "Arandela Ø 5/8",
+    "Tuerca Ø 5/8",
+    "Punto de anclaje ARTICO acero galvanizado",
+    "Epóxico ProAnchor Elite ESP",
+  ],
+  "Escalera fija": [
+    "Peldaños acero galvanizado",
+    "Largueros perfil L",
+    "Pernos de fijación",
+    "Guardacuerpo lateral",
+    "Línea de vida vertical integrada",
+  ],
+  "Línea de vida vertical": [
+    "Cable de acero Ø 8mm galvanizado",
+    "Absorbedor de caída",
+    "Dispositivo deslizante",
+    "Anclaje superior e inferior",
+    "Tensor y guardacables",
+  ],
+};
+
+const getCertDefaultElements = (tipo="Certificación", tipoSistema="", fallback=[])=>{
+  if (Array.isArray(fallback) && fallback.length) return [...fallback];
+  if (tipo === "Recertificación") return [...RECERT_ELEMENTOS_DEFAULT];
+  if (tipoSistema && CERT_ELEMENTOS_BY_SISTEMA[tipoSistema]) return [...CERT_ELEMENTOS_BY_SISTEMA[tipoSistema]];
+  return [...CERT_ELEMENTOS_DEFAULT];
+};
+
+const buildCertForm = (overrides={})=>{
+  const tipo = overrides.tipo || "Certificación";
+  const tipoSistema = overrides.tipoSistema || "";
+  return {
+    obraId: "OB-001",
+    tipo,
+    tipoSistema,
+    numero: "",
+    fecha: today(),
+    cliente: "",
+    nit: "",
+    direccion: "",
+    sistema: "",
+    normativa: "Resolución 4272 de 2021",
+    ingeniero: "ING. JHON JAIME SEPULVEDA LONDOÑO",
+    matricula: "MP. 05256-409949",
+    proxMant: "",
+    elementos: getCertDefaultElements(tipo, tipoSistema, overrides.elementos),
+    ...overrides,
+  };
+};
+
+function CertificacionDocumento({cert}){
+  if(!cert) return null;
+  const esRecertificacion = cert.tipo==="Recertificación";
+  const elementos = Array.isArray(cert.elementos) ? cert.elementos : [];
+  return(
+    <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:12,lineHeight:1.7,border:"1px solid #ddd",borderRadius:4,padding:"36px 44px"}}>
+      <div style={{padding:"0 0 14px"}}>
+        <PrintHeader dual={true}/>
+      </div>
+      <div style={{textAlign:"center",fontSize:10,fontWeight:700,letterSpacing:2,padding:"6px 0",borderBottom:"1px solid #ddd",color:"#333",textTransform:"uppercase",marginBottom:20}}>
+        {esRecertificacion ? "Recertificación de Sistemas Anticaídas · Res. 4272/2021" : "Certificación de Sistemas Anticaídas · Res. 4272/2021"}
+      </div>
+      <div style={{marginBottom:20}}>
+        <div>Envigado, {fmtL(cert.fecha)}</div>
+        <div style={{marginTop:10,fontWeight:700}}>SEÑORES:</div>
+        <div style={{fontWeight:700}}>{(cert.cliente||"").toUpperCase()}</div>
+        {cert.nit&&<div>NIT: {cert.nit}</div>}
+        {cert.direccion&&<div>DIRECCIÓN: {cert.direccion.toUpperCase()}</div>}
+      </div>
+      <div style={{textAlign:"center",fontWeight:700,fontSize:15,marginBottom:20}}>INGEANCLAJES S.A.S</div>
+
+      {esRecertificacion?(
+        <div style={{textAlign:"justify",lineHeight:1.8,marginBottom:20}}>
+          <p style={{marginBottom:12}}>Ha realizado el mantenimiento preventivo en las instalaciones de {cert.sistema}, que consta de:</p>
+          <p style={{marginBottom:12}}>Limpieza de todo el sistema. Se verifica ajuste de las tuercas y pernos de los puntos de anclaje, finalmente se procedió a dar una laca protectora anticorrosiva como recubrimiento especial en todos los puntos de anclaje para evitar futuras oxidaciones.</p>
+          <p style={{marginBottom:12}}>Nuestra empresa se compromete a garantizar la calidad y seguridad de los materiales proporcionados para la instalación de los puntos de anclaje. Nos enfocamos en cumplir con todas las normativas y estándares de la industria, así como en utilizar materiales de alta calidad que cumplan con las especificaciones técnicas requeridas.</p>
+          <p style={{marginBottom:12}}>Por otro lado, los pernos utilizados en los puntos de anclaje son seleccionados cuidadosamente para garantizar su resistencia y capacidad de fijación. Trabajamos con proveedores confiables que suministran pernos de alta calidad que cumplen con las normativas de seguridad establecidas.</p>
+          <p style={{marginBottom:12}}>En cuanto al epóxico utilizado, nos aseguramos de utilizar productos de reconocidas marcas y de calidad certificada. Nuestro personal altamente capacitado realiza la instalación siguiendo las instrucciones y recomendaciones del fabricante, asegurando así una correcta adherencia y resistencia en los puntos de anclaje.</p>
+          <p style={{marginBottom:12}}>Nos comprometemos a cumplir con todas las regulaciones legales vigentes y a realizar un seguimiento riguroso de las inspecciones y pruebas necesarias para garantizar la calidad de los materiales y la adecuada instalación de los puntos de anclaje.</p>
+          <p style={{marginBottom:12}}>En caso de que se presenten problemas o fallas relacionadas con los materiales suministrados o la instalación de los puntos de anclaje, nos responsabilizamos totalmente de solventar cualquier inconveniente y cubrir los costos asociados a su corrección. De acuerdo a las labores anteriormente descritas <strong>INGEANCLAJES S.A.S. CERTIFICA</strong> que los sistemas de detención de caídas instalados en las instalaciones de la empresa <strong>{(cert.cliente||"").toUpperCase()}</strong>{cert.direccion?` ubicada en ${cert.direccion.toUpperCase()}`:""} y cuyo objetivo es la fijación segura de los trabajadores al momento de realizar tareas que impliquen riesgo de caída, cumplen a cabalidad con la {cert.normativa} del ministerio de trabajo, por la cual se establece el reglamento de seguridad para protección contra caídas en trabajo en altura. Todos los elementos que componen los diferentes sistemas anticaídas se encuentran en excelente estado.</p>
+        </div>
+      ):(
+        <div style={{textAlign:"justify",marginBottom:20,lineHeight:1.8}}>
+          <strong>CERTIFICA</strong> que {cert.sistema} cumple a cabalidad con la {cert.normativa} del ministerio de trabajo, por la cual se establece el reglamento de seguridad para protección contra caídas en trabajo en altura.
+        </div>
+      )}
+
+      <div style={{marginBottom:16}}>Los elementos utilizados en dicha labor son:</div>
+      <ul style={{marginLeft:24,marginBottom:20}}>
+        {elementos.map((el,i)=><li key={i} style={{marginBottom:6}}>{el}</li>)}
+      </ul>
+      <div style={{background:"#f9f9f9",border:"1px solid #ddd",borderRadius:6,padding:"14px 18px",marginBottom:20}}>
+        <div style={{fontWeight:700,marginBottom:10,fontSize:12}}>RECOMENDACIONES PARA TENER EN CUENTA</div>
+        <div style={{fontSize:12,marginBottom:10,textAlign:"justify"}}>A continuación, se realizan algunas recomendaciones para preservar en buen estado los sistemas anti caídas certificados en dicha sede:</div>
+        <ul style={{marginLeft:20,fontSize:12,lineHeight:1.9,marginBottom:10}}>
+          <li>Dar aviso de inmediato, en caso de tener algún evento de caída por muy mínima que sea para hacer su respectiva valoración y diagnóstico.</li>
+          <li>Conectar máximo dos personas por cada línea de vida o en cada tramo entre soportes laterales e intermedios.</li>
+          <li>No modificar ningún elemento del sistema, ya que este puede perder sus funciones y generaría un riesgo más para las personas que las utilizan.</li>
+          <li>Limpiar de inmediato las estructuras u otro elemento que entren en contacto con los químicos de esta área.</li>
+        </ul>
+        <div style={{fontSize:12,textAlign:"justify",lineHeight:1.7}}>
+          Estas recomendaciones son de carácter técnico, por lo tanto, su cumplimiento debe ser obligatorio para minimizar el riesgo generado por la falta y/o ausencia de algunos de sus elementos, ya que estos tienen como principal característica soportar las cargas generadas por la caída de una persona en la realización de trabajos en alturas. Se debe realizar el próximo mantenimiento preventivo de todo el sistema máximo dentro de un año contado a partir de la expedición del presente documento{cert.proxMant?` (antes del ${fmtL(cert.proxMant)})`:"."}.
+        </div>
+      </div>
+      <div style={{marginBottom:12,fontSize:12}}>Cordialmente,</div>
+      <div style={{height:72}}></div>
+      <div>
+        <div style={{borderTop:"1px solid #333",paddingTop:10,display:"inline-block",minWidth:240}}>
+          <div style={{fontWeight:700}}>{cert.ingeniero}</div>
+          <div>{cert.matricula}</div>
+        </div>
+      </div>
+      <div style={{borderTop:"1px solid #ccc",paddingTop:10,marginTop:30,textAlign:"center",fontSize:10,color:"#555"}}>
+        Cl 38 sur # 36-48, Envigado, tel. 448 26 86 · Cel. 314 863 40 72 · Nit. 900193965-4 · ingeanclajes.sas@gmail.com
+      </div>
+    </div>
+  );
+}
+
 function Certificaciones({ctx}){
   const {certs,setCerts,obras}=ctx;
   const [sel,setSel]=useState(null);
   const [nueva,setNueva]=useState(false);
-  const [form,setForm]=useState({obraId:"OB-001",tipo:"Certificación",numero:"",fecha:today(),cliente:"",nit:"",direccion:"",sistema:"",normativa:"Resolución 4272 de 2021",ingeniero:"ING. JHON JAIME SEPULVEDA LONDOÃ‘O",matricula:"MP. 05256-409949",proxMant:"",elementos:["Perno Grado 8 B7 Ã˜ 5/8","Arandela Ã˜ 5/8","Tuerca Ã˜ 5/8","Cable diámetro 5/16\" (8mm) galvanizado","Tensor cable","Soportes laterales e intermedios"]});
+  const [editId,setEditId]=useState(null);
+  const [form,setForm]=useState(buildCertForm());
   const [nuevoElem,setNuevoElem]=useState("");
 
+  const abrirNuevaCertificacion = (tipo="Certificación")=>{
+    setEditId(null);
+    setNuevoElem("");
+    setForm(buildCertForm({tipo, elementos:getCertDefaultElements(tipo)}));
+    setNueva(true);
+  };
+
+  const editarCertificacion = (cert)=>{
+    setEditId(cert.id);
+    setNuevoElem("");
+    setForm(buildCertForm(cert));
+    setNueva(true);
+    setSel(cert);
+  };
+
   const guardar=()=>{
-    const c={id:`CERT-${String(certs.length+1).padStart(3,"0")}`,estado:"Vigente",...form};
-    setCerts(p=>[...p,c]);setNueva(false);setSel(c);
+    const c=editId
+      ? {...form,id:editId,estado:form.estado||"Vigente"}
+      : {id:`CERT-${String(certs.length+1).padStart(3,"0")}`,estado:"Vigente",...form};
+    setCerts(prev=>editId ? prev.map(item=>item.id===editId?{...item,...c}:item) : [...prev,c]);
+    setNueva(false);
+    setSel(c);
+    setEditId(null);
   };
 
   const imprimir=(c)=>{setSel(c);setTimeout(()=>printCurrentPz(`Certificación ${c?.numero || c?.id || ""}`),250);};
@@ -3852,32 +4084,22 @@ function Certificaciones({ctx}){
       <H1 title="Certificaciones" subtitle="Certificados y recertificaciones de sistemas anticaídas · Res. 4272/2021"
         action={
           <div style={{display:"flex",gap:8}}>
-            <button style={B("#f47c20")} onClick={()=>{setForm(f=>({...f,tipo:"Certificación"}));setNueva(true);}}>+ Nueva Certificación</button>
-            <button style={{...B("#4ade80","#0f2d1a"),border:"1px solid #166534"}} onClick={()=>{setForm(f=>({...f,tipo:"Recertificación",elementos:["Limpieza sistema completo","Verificación ajuste tuercas y pernos","Laca protectora anticorrosiva en todos los puntos","Tensado de cables"]}));setNueva(true);}}>ðŸ”„ Nueva Recertificación</button>
+            <button style={B("#f47c20")} onClick={()=>abrirNuevaCertificacion("Certificación")}>+ Nueva Certificación</button>
+            <button style={{...B("#4ade80","#0f2d1a"),border:"1px solid #166534"}} onClick={()=>abrirNuevaCertificacion("Recertificación")}>+ Nueva Recertificación</button>
           </div>
         }/>
 
       {nueva&&(
         <div style={{...CD,marginBottom:20,border:"1px solid #cc0000"}}>
-          <div style={ST}>Nueva Certificación / Recertificación</div>
+          <div style={ST}>{editId ? "Editar Certificación / Recertificación" : "Nueva Certificación / Recertificación"}</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:12}}>
             <div><LBL>Tipo</LBL><select value={form.tipo} onChange={e=>{
               const t=e.target.value;
-              const elems={
-                "Certificación":["Perno Grado 8 B7 Ã˜ 5/8","Arandela Ã˜ 5/8","Tuerca Ã˜ 5/8","Cable diámetro 5/16\" (8mm) galvanizado","Tensor cable","Soportes laterales e intermedios"],
-                "Recertificación":["Limpieza sistema completo","Verificación ajuste tuercas y pernos","Laca protectora anticorrosiva en todos los puntos","Tensado de cables"],
-              };
-              setForm({...form,tipo:t,elementos:elems[t]||form.elementos});
+              setForm({...form,tipo:t,elementos:getCertDefaultElements(t, form.tipoSistema)});
             }} style={SI}>{["Certificación","Recertificación"].map(t=><option key={t}>{t}</option>)}</select></div>
             <div><LBL>Sistema certificado</LBL><select value={form.tipoSistema||""} onChange={e=>{
               const s=e.target.value;
-              const elemsMap={
-                "Líneas de vida horizontales":["Perno Grado 8 B7 Ã˜ 5/8","Arandela Ã˜ 5/8","Tuerca Ã˜ 5/8","Cable diámetro 5/16\" (8mm) galvanizado","Guardacables","Tensor cable","Soportes laterales e intermedios"],
-                "Puntos de anclaje":["Perno Grado 8 B7 Ã˜ 5/8","Arandela Ã˜ 5/8","Tuerca Ã˜ 5/8","Punto de anclaje ARTICO acero galvanizado","Epóxico ProAnchor Elite ESP"],
-                "Escalera fija":["Peldaños acero galvanizado","Largueros perfil L","Pernos de fijación","Guardacuerpo lateral","Línea de vida vertical integrada"],
-                "Línea de vida vertical":["Cable de acero ÃƒËœ 8mm galvanizado","Absorbedor de caída","Dispositivo deslizante","Anclaje superior e inferior","Tensor y guardacables"],
-              };
-              setForm({...form,tipoSistema:s,elementos:elemsMap[s]||form.elementos});
+              setForm({...form,tipoSistema:s,elementos:getCertDefaultElements(form.tipo, s)});
             }} style={SI}>
               <option value="">Seleccionar tipo de sistema...</option>
               {["Líneas de vida horizontales","Puntos de anclaje","Escalera fija","Línea de vida vertical"].map(s=><option key={s}>{s}</option>)}
@@ -3896,7 +4118,7 @@ function Certificaciones({ctx}){
             {form.elementos.map((el,i)=>(
               <div key={i} style={{display:"flex",gap:8,alignItems:"center",marginBottom:6}}>
                 <input value={el} onChange={e=>setForm({...form,elementos:form.elementos.map((x,j)=>j===i?e.target.value:x)})} style={{...SI,fontSize:12}} />
-                <button onClick={()=>setForm({...form,elementos:form.elementos.filter((_,j)=>j!==i)})} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:6,width:28,height:28,cursor:"pointer",fontSize:14,flexShrink:0}}>Ã—</button>
+                <button onClick={()=>setForm({...form,elementos:form.elementos.filter((_,j)=>j!==i)})} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:6,width:28,height:28,cursor:"pointer",fontSize:14,flexShrink:0}}>×</button>
               </div>
             ))}
             <div style={{display:"flex",gap:8,marginTop:6}}>
@@ -3905,8 +4127,8 @@ function Certificaciones({ctx}){
             </div>
           </div>
           <div style={{display:"flex",gap:10}}>
-            <button style={B("#4ade80","#0f2d1a")} onClick={guardar}>âœ… Guardar Certificación</button>
-            <button style={B("#f1f5f9","#475569")} onClick={()=>setNueva(false)}>Cancelar</button>
+            <button style={B("#4ade80","#0f2d1a")} onClick={guardar}>{editId ? "Guardar cambios" : "Guardar certificación"}</button>
+            <button style={B("#f1f5f9","#475569")} onClick={()=>{setNueva(false);setEditId(null);}}>Cancelar</button>
           </div>
         </div>
       )}
@@ -3923,14 +4145,15 @@ function Certificaciones({ctx}){
                 </div>
                 <Badge estado={c.estado}/>
               </div>
-              <div style={{fontSize:11,color:"#64748b",marginBottom:6}}>ðŸ“ {c.direccion}</div>
+              <div style={{fontSize:11,color:"#64748b",marginBottom:6}}>{c.direccion}</div>
               <div style={{fontSize:11,color:"#475569",marginBottom:10,lineHeight:1.5}}>{c.sistema}</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
                 <div style={{background:"#f1f5f9",borderRadius:6,padding:"6px 10px"}}><div style={{fontSize:9,color:"#64748b"}}>Fecha certif.</div><div style={{fontSize:12,fontWeight:600,color:"#1a1a2e"}}>{fmtD(c.fecha)}</div></div>
-                <div style={{background:"#f1f5f9",borderRadius:6,padding:"6px 10px"}}><div style={{fontSize:9,color:"#64748b"}}>Próx. mantto.</div><div style={{fontSize:12,fontWeight:600,color:"#fb923c"}}>{fmtD(c.proxMant)||"â€”"}</div></div>
+                <div style={{background:"#f1f5f9",borderRadius:6,padding:"6px 10px"}}><div style={{fontSize:9,color:"#64748b"}}>Próx. mantto.</div><div style={{fontSize:12,fontWeight:600,color:"#fb923c"}}>{fmtD(c.proxMant)||"-"}</div></div>
               </div>
               <div style={{display:"flex",gap:8}}>
-                <button style={{...B("#f47c20"),flex:1,justifyContent:"center",fontSize:12}} onClick={e=>{e.stopPropagation();setSel(c);}}>ðŸ‘️ Ver</button>
+                <button style={{...B("#f47c20"),flex:1,justifyContent:"center",fontSize:12}} onClick={e=>{e.stopPropagation();setSel(c);}}>Ver</button>
+                <button style={{...B("#dbeafe","#1e40af"),flex:1,justifyContent:"center",fontSize:12}} onClick={e=>{e.stopPropagation();editarCertificacion(c);}}>Editar</button>
                 <button style={{...B("#e8f5ee","#166534"),flex:1,justifyContent:"center",fontSize:12}} onClick={e=>{e.stopPropagation();setSel(c);setTimeout(()=>printCurrentPz(`Certificación ${c?.numero || c?.id || ""}`),300);}}> Imprimir</button>
               </div>
             </div>
@@ -3940,68 +4163,11 @@ function Certificaciones({ctx}){
         {sel&&(
           <div>
             <div style={{display:"flex",gap:10,marginBottom:14,justifyContent:"flex-end"}}>
-              <button style={B("#f1f5f9","#475569")} onClick={()=>setSel(null)}>â† Volver</button>
-              <button style={B("#f47c20")} onClick={()=>printCurrentPz(`Certificación ${sel?.numero || sel?.id || ""}`)}>ðŸ–¨️ Imprimir PDF</button>
+              <button style={B("#f1f5f9","#475569")} onClick={()=>setSel(null)}>Volver</button>
+              <button style={{...B("#dbeafe","#1e40af")}} onClick={()=>editarCertificacion(sel)}>Editar</button>
+              <button style={B("#f47c20")} onClick={()=>printCurrentPz(`Certificación ${sel?.numero || sel?.id || ""}`)}>Imprimir PDF</button>
             </div>
-            <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:12,lineHeight:1.7,border:"1px solid #ddd",borderRadius:4,padding:"36px 44px"}}>
-              <div style={{padding:"0 0 14px"}}>
-                <PrintHeader dual={true}/>
-              </div>
-              <div style={{textAlign:"center",fontSize:10,fontWeight:700,letterSpacing:2,padding:"6px 0",borderBottom:"1px solid #ddd",color:"#333",textTransform:"uppercase",marginBottom:20}}>Certificación de Sistemas Anticaídas · Res. 4272/2021</div>
-              <div style={{marginBottom:20}}>
-                <div>Envigado, {fmtL(sel.fecha)}</div>
-                <div style={{marginTop:10,fontWeight:700}}>SEÃ‘ORES:</div>
-                <div style={{fontWeight:700}}>{sel.cliente.toUpperCase()}</div>
-                {sel.nit&&<div>NIT: {sel.nit}</div>}
-                {sel.direccion&&<div>DIRECCIÃ“N: {sel.direccion.toUpperCase()}</div>}
-              </div>
-              <div style={{textAlign:"center",fontWeight:700,fontSize:15,marginBottom:20}}>INGEANCLAJES S.A.S</div>
-
-              {sel.tipo==="Recertificación"?(
-                <div style={{textAlign:"justify",lineHeight:1.8,marginBottom:20}}>
-                  <p style={{marginBottom:12}}>Ha realizado el mantenimiento preventivo en las instalaciones de {sel.sistema}, que consta de:</p>
-                  <p style={{marginBottom:12}}>Limpieza de todo el sistema. Se verifica ajuste de las tuercas y pernos de los puntos de anclaje, finalmente se procedió a dar una laca protectora anticorrosiva como recubrimiento especial en todos los puntos de anclaje para evitar futuras oxidaciones.</p>
-                  <p style={{marginBottom:12}}>Nuestra empresa se compromete a garantizar la calidad y seguridad de los materiales proporcionados para la instalación de los puntos de anclaje. Nos enfocamos en cumplir con todas las normativas y estándares de la industria, así como en utilizar materiales de alta calidad que cumplan con las especificaciones técnicas requeridas.</p>
-                  <p style={{marginBottom:12}}>Por otro lado, los pernos utilizados en los puntos de anclaje son seleccionados cuidadosamente para garantizar su resistencia y capacidad de fijación. Trabajamos con proveedores confiables que suministran pernos de alta calidad que cumplen con las normativas de seguridad establecidas.</p>
-                  <p style={{marginBottom:12}}>En cuanto al epóxico utilizado, nos aseguramos de utilizar productos de reconocidas marcas y de calidad certificada. Nuestro personal altamente capacitado realiza la instalación siguiendo las instrucciones y recomendaciones del fabricante, asegurando así una correcta adherencia y resistencia en los puntos de anclaje.</p>
-                  <p style={{marginBottom:12}}>Nos comprometemos a cumplir con todas las regulaciones legales vigentes y a realizar un seguimiento riguroso de las inspecciones y pruebas necesarias para garantizar la calidad de los materiales y la adecuada instalación de los puntos de anclaje.</p>
-                  <p style={{marginBottom:12}}>En caso de que se presenten problemas o fallas relacionadas con los materiales suministrados o la instalación de los puntos de anclaje, nos responsabilizamos totalmente de solventar cualquier inconveniente y cubrir los costos asociados a su corrección. De acuerdo a las labores anteriormente descritas <strong>INGEANCLAJES S.A.S. CERTIFICA</strong> que los sistemas de detención de caídas instalados en las instalaciones de la empresa <strong>{sel.cliente.toUpperCase()}</strong>{sel.direccion?` ubicada en ${sel.direccion.toUpperCase()}`:""} y cuyo objetivo es la fijación segura de los trabajadores al momento de realizar tareas que impliquen riesgo de caída, cumplen a cabalidad con la {sel.normativa} del ministerio de trabajo, por la cual se establece el reglamento de seguridad para protección contra caídas en trabajo en altura. Todos los elementos que componen los diferentes sistemas anticaídas se encuentran en excelente estado.</p>
-                </div>
-              ):(
-                <div style={{textAlign:"justify",marginBottom:20,lineHeight:1.8}}>
-                  <strong>CERTIFICA</strong> que {sel.sistema} cumple a cabalidad con la {sel.normativa} del ministerio de trabajo, por la cual se establece el reglamento de seguridad para protección contra caídas en trabajo en altura.
-                </div>
-              )}
-
-              <div style={{marginBottom:16}}>Los elementos utilizados en dicha labor son:</div>
-              <ul style={{marginLeft:24,marginBottom:20}}>
-                {sel.elementos.map((el,i)=><li key={i} style={{marginBottom:6}}>{el}</li>)}
-              </ul>
-              <div style={{background:"#f9f9f9",border:"1px solid #ddd",borderRadius:6,padding:"14px 18px",marginBottom:20}}>
-                <div style={{fontWeight:700,marginBottom:10,fontSize:12}}>RECOMENDACIONES PARA TENER EN CUENTA</div>
-                <div style={{fontSize:12,marginBottom:10,textAlign:"justify"}}>A continuación, se realizan algunas recomendaciones para preservar en buen estado los sistemas anti caídas certificados en dicha sede:</div>
-                <ul style={{marginLeft:20,fontSize:12,lineHeight:1.9,marginBottom:10}}>
-                  <li>Dar aviso de inmediato, en caso de tener algún evento de caída por muy mínima que sea para hacer su respectiva valoración y diagnóstico.</li>
-                  <li>Conectar máximo dos personas por cada línea de vida o en cada tramo entre soportes laterales e intermedios.</li>
-                  <li>No modificar ningún elemento del sistema, ya que este puede perder sus funciones y generaría un riesgo más para las personas que las utilizan.</li>
-                  <li>Limpiar de inmediato las estructuras u otro elemento que entren en contacto con los químicos de esta área.</li>
-                </ul>
-                <div style={{fontSize:12,textAlign:"justify",lineHeight:1.7}}>
-                  Estas recomendaciones son de carácter técnico, por lo tanto, su cumplimiento debe ser obligatorio para minimizar el riesgo generado por la falta y/o ausencia de algunos de sus elementos, ya que estos tienen como principal característica soportar las cargas generadas por la caída de una persona en la realización de trabajos en alturas. Se debe realizar el próximo mantenimiento preventivo de todo el sistema máximo dentro de un año contado a partir de la expedición del presente documento{sel.proxMant?` (antes del ${fmtL(sel.proxMant)})`:""}.
-                </div>
-              </div>
-              <div style={{marginBottom:12,fontSize:12}}>Cordialmente,</div>
-              <div style={{height:72}}></div>
-              <div>
-                <div style={{borderTop:"1px solid #333",paddingTop:10,display:"inline-block",minWidth:240}}>
-                  <div style={{fontWeight:700}}>{sel.ingeniero}</div>
-                  <div>{sel.matricula}</div>
-                </div>
-              </div>
-              <div style={{borderTop:"1px solid #ccc",paddingTop:10,marginTop:30,textAlign:"center",fontSize:10,color:"#555"}}>
-                Cl 38 sur # 36-48, Envigado, tel. 448 26 86 &nbsp;·&nbsp; Cel. 314 863 40 72 &nbsp;·&nbsp; Nit. 900193965-4 &nbsp;·&nbsp; ingeanclajes.sas@gmail.com
-              </div>
-            </div>
+            <CertificacionDocumento cert={sel}/>
           </div>
         )}
       </div>
@@ -4016,6 +4182,7 @@ function Informes({ctx}){
   const {informes,setInformes,obras,empleados,horarios}=ctx;
   const [sel,setSel]=useState(null);
   const [nuevo,setNuevo]=useState(false);
+  const [editId,setEditId]=useState(null);
   const fotoRefs=useRef({});
 
   const emptyActividad=()=>({titulo:"",descripcion:"",observaciones:"",fotos:[{img:null,comentario:""},{img:null,comentario:""},{img:null,comentario:""},{img:null,comentario:""}]});
@@ -4073,13 +4240,43 @@ function Informes({ctx}){
   };
 
   const firstObraId = obras[0]?.id || "";
-  const [form,setForm]=useState({
-    obraId:firstObraId,proyecto:"",localizacion:"",fechaInforme:today(),
-    periodoInicio:today(),periodoFin:today(),
-    personal:[],
-    recomendaciones:"Para garantizar la efectividad y seguridad de las líneas de vida instaladas es fundamental implementar un programa de inspección regular.",
-    actividades:[emptyActividad()],
+  const normalizeInformeActividades = (data={})=>{
+    if(Array.isArray(data.actividades) && data.actividades.length){
+      return data.actividades.map((actividad)=>({
+        ...emptyActividad(),
+        ...actividad,
+        fotos:Array.isArray(actividad?.fotos) && actividad.fotos.length
+          ? actividad.fotos.map((foto)=>({img:foto?.img||foto?.url||null,comentario:foto?.comentario||""}))
+          : emptyActividad().fotos,
+      }));
+    }
+    if(data.actividad || data.descripcion || data.observaciones || (Array.isArray(data.fotos) && data.fotos.length)){
+      return [{
+        ...emptyActividad(),
+        titulo:data.actividad||"",
+        descripcion:data.descripcion||"",
+        observaciones:data.observaciones||"",
+        fotos:(Array.isArray(data.fotos) && data.fotos.length
+          ? data.fotos.map((foto)=>({img:foto?.img||foto?.url||null,comentario:foto?.comentario||""}))
+          : emptyActividad().fotos),
+      }];
+    }
+    return [emptyActividad()];
+  };
+
+  const buildInformeForm = (data={})=>({
+    obraId:data.obraId ?? firstObraId,
+    proyecto:data.proyecto ?? "",
+    localizacion:data.localizacion ?? "",
+    fechaInforme:data.fechaInforme ?? today(),
+    periodoInicio:data.periodoInicio ?? today(),
+    periodoFin:data.periodoFin ?? today(),
+    personal:Array.isArray(data.personal) ? data.personal : [],
+    recomendaciones:data.recomendaciones ?? "Para garantizar la efectividad y seguridad de las líneas de vida instaladas es fundamental implementar un programa de inspección regular.",
+    actividades:normalizeInformeActividades(data),
   });
+
+  const [form,setForm]=useState(buildInformeForm());
 
   const turnosDisponiblesObra = [...new Set(
     horarios
@@ -4128,19 +4325,42 @@ function Informes({ctx}){
     r.readAsDataURL(file);
   };
 
+  const abrirNuevoInforme = ()=>{
+    setEditId(null);
+    setSel(null);
+    fotoRefs.current={};
+    setForm(buildInformeForm());
+    setNuevo(true);
+  };
+
+  const editarInforme = (inf)=>{
+    setEditId(inf.id);
+    fotoRefs.current={};
+    setForm(buildInformeForm(inf));
+    setSel(inf);
+    setNuevo(true);
+  };
+
   const guardar=()=>{
-    const inf={id:`INF-${String(informes.length+1).padStart(3,"0")}`,...form};
-    setInformes(p=>[...p,inf]);setNuevo(false);setSel(inf);
+    const actividades = normalizeInformeActividades(form);
+    const legacyActividad = actividades[0] || emptyActividad();
+    const inf=editId
+      ? {id:editId,...form,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos}
+      : {id:`INF-${String(informes.length+1).padStart(3,"0")}`,...form,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos};
+    setInformes(prev=>editId ? prev.map(item=>item.id===editId?{...item,...inf}:item) : [...prev,inf]);
+    setNuevo(false);
+    setEditId(null);
+    setSel(inf);
   };
 
   return(
     <div style={{padding:28}}>
       <H1 title="Informes de Actividades" subtitle="Múltiples actividades por informe con registro fotográfico"
-        action={<button style={B("#f47c20")} onClick={()=>setNuevo(!nuevo)}>+ Nuevo Informe</button>}/>
+        action={<button style={B("#f47c20")} onClick={abrirNuevoInforme}>+ Nuevo Informe</button>}/>
 
       {nuevo&&(
         <div style={{...CD,marginBottom:20,border:"1px solid #cc0000"}}>
-          <div style={ST}>Nuevo Informe de Actividades</div>
+          <div style={ST}>{editId ? "Editar Informe de Actividades" : "Nuevo Informe de Actividades"}</div>
 
           {/* Datos generales */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
@@ -4168,7 +4388,7 @@ function Informes({ctx}){
                 <input value={p.nombre} onChange={e=>updPersonal(i,"nombre",e.target.value)} placeholder="Nombre completo" style={{...SI,fontSize:12}}/>
                 <input list="turnosInformeList" value={p.turno1||""} onChange={e=>updPersonal(i,"turno1",e.target.value)} placeholder="Turno 1 · 07:00 AM - 05:00 PM" style={{...SI,fontSize:12}}/>
                 <input list="turnosInformeList" value={p.turno2||""} onChange={e=>updPersonal(i,"turno2",e.target.value)} placeholder="Turno 2 · opcional" style={{...SI,fontSize:12}}/>
-                <button onClick={()=>setForm(pf=>({...pf,personal:pf.personal.filter((_,j)=>j!==i)}))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:6,cursor:"pointer",fontSize:14}}>Ã—</button>
+                <button onClick={()=>setForm(pf=>({...pf,personal:pf.personal.filter((_,j)=>j!==i)}))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:6,cursor:"pointer",fontSize:14}}>×</button>
               </div>
             ))}
             <button onClick={()=>setForm(p=>({...p,personal:[...p.personal,emptyPersona()]}))} style={{...B("#f1f5f9","#475569"),fontSize:12,marginTop:4}}>+ Agregar persona</button>
@@ -4184,7 +4404,7 @@ function Informes({ctx}){
               <div key={ai} style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:16,marginBottom:12}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                   <div style={{fontSize:12,fontWeight:700,color:"#cc0000"}}>Actividad {ai+1}</div>
-                  {form.actividades.length>1&&<button onClick={()=>setForm(p=>({...p,actividades:p.actividades.filter((_,i)=>i!==ai)}))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:5,padding:"2px 8px",cursor:"pointer",fontSize:11}}>Ã— Eliminar</button>}
+                  {form.actividades.length>1&&<button onClick={()=>setForm(p=>({...p,actividades:p.actividades.filter((_,i)=>i!==ai)}))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:5,padding:"2px 8px",cursor:"pointer",fontSize:11}}>× Eliminar</button>}
                 </div>
                 <div style={{marginBottom:10}}><LBL>Título / nombre de la actividad</LBL><input value={act.titulo} onChange={e=>updActividad(ai,"titulo",e.target.value)} placeholder="Ej: Instalación de líneas de vida" style={SI}/></div>
                 <div style={{marginBottom:10}}><LBL>Descripción detallada</LBL><textarea value={act.descripcion} onChange={e=>updActividad(ai,"descripcion",e.target.value)} rows={3} placeholder="Descripción del proceso ejecutado..." style={{...SI,resize:"vertical"}}/></div>
@@ -4199,8 +4419,8 @@ function Informes({ctx}){
                         style={{minHeight:150,background:"#f8fafc",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",position:"relative",padding:ft.img?8:0}}>
                         {ft.img
                           ?<img src={ft.img} alt="" style={{width:"100%",height:"auto",maxHeight:220,objectFit:"contain",display:"block",background:"#fff",borderRadius:6}}/>
-                          :<div style={{textAlign:"center",color:"#94a3b8",fontSize:11}}><div style={{fontSize:22}}>ðŸ“·</div><div>Foto {fi+1} · Clic para cargar</div></div>}
-                        {ft.img&&<div style={{position:"absolute",top:6,right:6,background:"rgba(0,0,0,0.55)",borderRadius:4,padding:"2px 6px",fontSize:9,color:"#fff",cursor:"pointer"}} onClick={e=>{e.stopPropagation();updFotoAct(ai,fi,"img",null);}}>Ã— Quitar</div>}
+                          :<div style={{textAlign:"center",color:"#94a3b8",fontSize:11}}><div style={{fontSize:22}}>Foto</div><div>Foto {fi+1} · Clic para cargar</div></div>}
+                        {ft.img&&<div style={{position:"absolute",top:6,right:6,background:"rgba(0,0,0,0.55)",borderRadius:4,padding:"2px 6px",fontSize:9,color:"#fff",cursor:"pointer"}} onClick={e=>{e.stopPropagation();updFotoAct(ai,fi,"img",null);}}>× Quitar</div>}
                       </div>
                       <input ref={el=>{fotoRefs.current[`${ai}-${fi}`]=el;}} type="file" accept="image/*" style={{display:"none"}} onChange={e=>cargarFoto(ai,fi,e.target.files[0])}/>
                       <div style={{padding:"6px 8px"}}><input value={ft.comentario} onChange={e=>updFotoAct(ai,fi,"comentario",e.target.value)} placeholder="Descripción de la foto..." style={{...SI,fontSize:11,padding:"4px 8px"}}/></div>
@@ -4214,8 +4434,8 @@ function Informes({ctx}){
 
           <div style={{marginBottom:14}}><LBL>Recomendaciones generales</LBL><textarea value={form.recomendaciones} onChange={e=>setForm(p=>({...p,recomendaciones:e.target.value}))} rows={3} style={{...SI,resize:"vertical"}}/></div>
           <div style={{display:"flex",gap:10}}>
-            <button style={B("#cc0000")} onClick={guardar}>âœ… Guardar Informe</button>
-            <button style={B("#f1f5f9","#475569")} onClick={()=>setNuevo(false)}>Cancelar</button>
+            <button style={B("#cc0000")} onClick={guardar}>{editId ? "Guardar cambios" : "Guardar informe"}</button>
+            <button style={B("#f1f5f9","#475569")} onClick={()=>{setNuevo(false);setEditId(null);}}>Cancelar</button>
           </div>
         </div>
       )}
@@ -4231,11 +4451,11 @@ function Informes({ctx}){
                 <div>
                   <div style={{fontSize:10,color:"#94a3b8"}}>{inf.id}</div>
                   <div style={{fontSize:14,fontWeight:700,color:"#1a1a2e"}}>{inf.proyecto}</div>
-                  <div style={{fontSize:11,color:"#475569"}}>ðŸ“ {inf.localizacion}</div>
+                  <div style={{fontSize:11,color:"#475569"}}>{inf.localizacion}</div>
                 </div>
                 <div style={{textAlign:"right",fontSize:11,color:"#64748b"}}>
                   <div>{fmtD(inf.fechaInforme)}</div>
-                  <div style={{color:"#94a3b8"}}>{fmtD(inf.periodoInicio)} â†’ {fmtD(inf.periodoFin)}</div>
+                  <div style={{color:"#94a3b8"}}>{fmtD(inf.periodoInicio)} - {fmtD(inf.periodoFin)}</div>
                 </div>
               </div>
               <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
@@ -4245,7 +4465,8 @@ function Informes({ctx}){
               </div>
               <div style={{fontSize:11,color:"#64748b",marginBottom:10}}>{inf.personal?.length||0} personas · {(inf.actividades||[]).length} actividad(es)</div>
               <div style={{display:"flex",gap:8}}>
-                <button style={{...B("#f47c20"),flex:1,justifyContent:"center",fontSize:12}} onClick={()=>setSel(inf)}>ðŸ‘️ Ver / Imprimir</button>
+                <button style={{...B("#f47c20"),flex:1,justifyContent:"center",fontSize:12}} onClick={()=>setSel(inf)}>Ver / Imprimir</button>
+                <button style={{...B("#dbeafe","#1e40af"),flex:1,justifyContent:"center",fontSize:12}} onClick={()=>editarInforme(inf)}>Editar</button>
               </div>
             </div>
           ))}
@@ -4256,15 +4477,16 @@ function Informes({ctx}){
       {sel&&(
         <div>
           <div style={{display:"flex",gap:10,marginBottom:14}}>
-            <button style={B("#f1f5f9","#475569")} onClick={()=>setSel(null)}>â† Volver</button>
-            <button style={B("#f47c20")} onClick={()=>printCurrentPz(`Informe ${sel?.id || ""}`)}>ðŸ–¨️ Imprimir PDF</button>
+            <button style={B("#f1f5f9","#475569")} onClick={()=>setSel(null)}>Volver</button>
+            <button style={{...B("#dbeafe","#1e40af")}} onClick={()=>editarInforme(sel)}>Editar</button>
+            <button style={B("#f47c20")} onClick={()=>printCurrentPz(`Informe ${sel?.id || ""}`)}>Imprimir PDF</button>
           </div>
           <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:11,lineHeight:1.6,border:"1px solid #ddd",padding:"28px 36px"}}>
             <PrintHeader dual={false}/>
             <div style={{textAlign:"center",fontSize:10,fontWeight:700,letterSpacing:2,padding:"6px 0",borderBottom:"1px solid #ddd",color:"#333",textTransform:"uppercase",marginBottom:16,marginTop:8}}>Informe de Actividades</div>
             <table style={{width:"100%",borderCollapse:"collapse",marginBottom:14}}>
               <tbody>
-                {[["PROYECTO",sel.proyecto],["LOCALIZACIÃ“N",sel.localizacion],["FECHA INFORME",fmtL(sel.fechaInforme)],["PERÍODO DE INFORME",`${fmtL(sel.periodoInicio)} - ${fmtL(sel.periodoFin)}`]].map(([k,v])=>(
+                {[["PROYECTO",sel.proyecto],["LOCALIZACIÓN",sel.localizacion],["FECHA INFORME",fmtL(sel.fechaInforme)],["PERÍODO DE INFORME",`${fmtL(sel.periodoInicio)} - ${fmtL(sel.periodoFin)}`]].map(([k,v])=>(
                   <tr key={k}><td style={{border:"1px solid #ccc",padding:"5px 10px",background:"#f0f0f0",fontWeight:700,width:"30%"}}>{k}</td><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{v}</td></tr>
                 ))}
               </tbody>
@@ -4279,7 +4501,7 @@ function Informes({ctx}){
                   <th style={{border:"1px solid #ccc",padding:"5px 10px",textAlign:"left"}}>TURNO 2</th>
                 </tr>
               </thead>
-              <tbody>{(sel.personal||[]).map((p,i)=><tr key={i}><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{p.cargo}</td><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{p.nombre}</td><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{p.turno1||"â€”"}</td><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{p.turno2||"â€”"}</td></tr>)}</tbody>
+              <tbody>{(sel.personal||[]).map((p,i)=><tr key={i}><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{p.cargo}</td><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{p.nombre}</td><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{p.turno1||"-"}</td><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{p.turno2||"-"}</td></tr>)}</tbody>
             </table>
             {/* Múltiples actividades */}
             {(sel.actividades||[{titulo:sel.actividad,descripcion:sel.descripcion,observaciones:sel.observaciones,fotos:sel.fotos||[]}]).map((act,ai)=>(
@@ -4287,13 +4509,13 @@ function Informes({ctx}){
                 <table style={{width:"100%",borderCollapse:"collapse",marginBottom:14}}>
                   <tbody>
                     <tr><td colSpan={2} style={{border:"1px solid #ccc",padding:"6px 10px",background:"#ddd",fontWeight:700,textAlign:"center"}}>{act.titulo||act}</td></tr>
-                    <tr><td style={{border:"1px solid #ccc",padding:"5px 10px",fontWeight:700,width:"20%",verticalAlign:"top"}}>DESCRIPCIÃ“N</td><td style={{border:"1px solid #ccc",padding:"5px 10px",textAlign:"justify"}}>{act.descripcion}</td></tr>
+                    <tr><td style={{border:"1px solid #ccc",padding:"5px 10px",fontWeight:700,width:"20%",verticalAlign:"top"}}>DESCRIPCIÓN</td><td style={{border:"1px solid #ccc",padding:"5px 10px",textAlign:"justify"}}>{act.descripcion}</td></tr>
                     <tr><td style={{border:"1px solid #ccc",padding:"5px 10px",fontWeight:700}}>Observaciones</td><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{act.observaciones}</td></tr>
                   </tbody>
                 </table>
                 {(act.fotos||[]).some(ft=>ft.img||ft.url)&&(
                   <>
-                    <div style={{fontWeight:700,textAlign:"center",background:"#ddd",border:"1px solid #ccc",padding:"6px",marginBottom:10}}>REGISTRO FOTOGRÁFICO â€” {act.titulo}</div>
+                    <div style={{fontWeight:700,textAlign:"center",background:"#ddd",border:"1px solid #ccc",padding:"6px",marginBottom:10}}>REGISTRO FOTOGRÁFICO - {act.titulo}</div>
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14,alignItems:"start"}}>
                       {(act.fotos||[]).filter(ft=>ft.img||ft.url).map((ft,i)=>(
                         <div key={i} style={{border:"1px solid #ccc",borderRadius:4,overflow:"hidden",background:"#fff",padding:8}}>
@@ -4314,7 +4536,7 @@ function Informes({ctx}){
               <div style={{height:72}}></div>
               <div style={{textAlign:"center"}}>
                 <div style={{display:"inline-block",borderTop:"1px solid #333",paddingTop:8,minWidth:200}}>
-                  <div style={{fontWeight:700}}>ING. JHON JAIME SEPULVEDA LONDOÃ‘O</div>
+                  <div style={{fontWeight:700}}>ING. JHON JAIME SEPULVEDA LONDOÑO</div>
                   <div style={{fontSize:10}}>Cl 38 sur # 36-48, Envigado · PBX 448 26 86 · Cel. 314 863 40 72</div>
                   <div style={{fontSize:10}}>Nit. 900193965-4 · ingeanclajes.sas@gmail.com</div>
                 </div>
@@ -4840,7 +5062,6 @@ function Nomina({ctx}){
             <SC label="Empleados activos" value={activos.length} color="#60b4ff" icon="EM"/>
             <SC label="Corte visible" value={periodoNomina.label} color="#f47c20" icon="QT"/>
           </div>
-          {renderNominaSaveBar("Si hiciste ajustes de vacaciones o quieres dejar sincronizada esta vista, puedes guardar ahora mismo.", "Cambios de vacaciones sincronizados")}
           <div style={{...CD,marginBottom:16}}>
             <div style={ST}>Vacaciones pagadas sin retiro</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
@@ -4879,8 +5100,10 @@ function Nomina({ctx}){
                           </div>
                         </div>
                         <div style={{display:"flex",gap:8}}>
+                          <button onClick={()=>guardarCambiosNomina("Cambios de vacaciones sincronizados")} style={{...B("#142840","#4ade80"),fontSize:11,flex:1,justifyContent:"center"}}>Guardar cambios</button>
                           <button onClick={()=>printVacaciones(e,diasLiquidar,valorLiquidar)} style={{...B("#166534","#d1fae5"),fontSize:11,flex:1,justifyContent:"center"}}>Imprimir vacaciones</button>
                         </div>
+                        {mensajeGuardadoNomina && <div style={{fontSize:11,color:"#166534",fontWeight:700,marginTop:8,textAlign:"center"}}>{mensajeGuardadoNomina}</div>}
                       </div>
                     )}
                   </div>
@@ -4893,7 +5116,6 @@ function Nomina({ctx}){
 
       {tab==="contratos"&&(
         <div>
-          {renderNominaSaveBar("Después de ajustar fecha de salida, causa del retiro o estado del empleado, usa este botón para guardar de inmediato.", "Cambios de contratos y liquidación sincronizados")}
           <div style={{...CD,marginBottom:16}}>
             <div style={ST}>Contratos, corte activo y liquidación de retiro</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
@@ -4901,6 +5123,8 @@ function Nomina({ctx}){
                 const pf=calcularParafiscales(e, e.fechaSalida||periodoNomina.endIso);
                 const resumenCorte=calcularResumenNominaEmpleado(e, periodoNomina);
                 const isLiq=liquidarId===e.id;
+                const periodoLiquidacion = buildPeriodoLiquidacionRetiro(e.fechaSalida, periodoNomina) || periodoNomina;
+                const resumenLiquidacion = calcularResumenNominaEmpleado(e, periodoLiquidacion);
                 return(
                 <div key={e.id} style={{background:"#f8fafc",borderRadius:10,padding:"14px 16px",border:isLiq?"2px solid #cc0000":"1px solid #e2e8f0"}}>
                   <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:10}}>
@@ -4937,9 +5161,18 @@ function Nomina({ctx}){
                         ) : 0;
                         const dvp = diasVacPagar[e.id] ?? Math.round(pfl.vacacionesDias);
                         const vacValorReal = Math.round(e.salario * dvp / 30);
-                        const total = pfl.cesantias + pfl.interesesCesantias + pfl.prima + vacValorReal + indemn;
+                        const total = pfl.cesantias + pfl.interesesCesantias + pfl.prima + vacValorReal + indemn + resumenLiquidacion.neto;
                         return(
                         <div>
+                          <div style={{background:"#eff6ff",borderRadius:8,padding:"10px 12px",border:"1px solid #bfdbfe",marginBottom:10}}>
+                            <div style={{fontSize:11,fontWeight:700,color:"#1d4ed8",marginBottom:6}}>NÓMINA FINAL DEL RETIRO</div>
+                            <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8,fontSize:11}}>
+                              <div style={{background:"#fff",borderRadius:6,padding:"7px 8px"}}><div style={{fontSize:9,color:"#64748b"}}>Corte liquidado</div><div style={{fontWeight:700,color:"#142840"}}>{periodoLiquidacion.label}</div></div>
+                              <div style={{background:"#fff",borderRadius:6,padding:"7px 8px"}}><div style={{fontSize:9,color:"#64748b"}}>Días trabajados pendientes</div><div style={{fontWeight:700,color:"#2563eb"}}>{resumenLiquidacion.diasNomina} días</div></div>
+                              <div style={{background:"#fff",borderRadius:6,padding:"7px 8px"}}><div style={{fontSize:9,color:"#64748b"}}>Salario + auxilio</div><div style={{fontWeight:700,color:"#166534"}}>{fmt(resumenLiquidacion.salario + resumenLiquidacion.auxilioTransporte)}</div></div>
+                              <div style={{background:"#fff",borderRadius:6,padding:"7px 8px"}}><div style={{fontSize:9,color:"#64748b"}}>Descuentos salud/pensión</div><div style={{fontWeight:700,color:"#c2410c"}}>{fmt(resumenLiquidacion.salud + resumenLiquidacion.pension)}</div></div>
+                            </div>
+                          </div>
                           <div style={{background:"#f0fdf4",borderRadius:6,padding:"8px 10px",marginBottom:8,display:"flex",alignItems:"center",gap:12,fontSize:11}}>
                             <span style={{color:"#166534",fontWeight:600}}>Dias de vacaciones a pagar con retiro:</span>
                             <input type="number" min={0} max={Math.ceil(pfl.vacacionesDias)+30} step={0.5}
@@ -4951,16 +5184,32 @@ function Nomina({ctx}){
                           <table style={{width:"100%",borderCollapse:"collapse",fontSize:11,marginBottom:10}}>
                             <thead><tr style={{background:"#142840",color:"#fff"}}><th style={{padding:"5px 8px",textAlign:"left"}}>Concepto</th><th style={{padding:"5px 8px",textAlign:"left"}}>Base calculo</th><th style={{padding:"5px 8px",textAlign:"right"}}>Valor</th></tr></thead>
                             <tbody>
-                              {[["Cesantias",fmt(e.salario+(e.salario<=NOMINA_CO_2026.topeAuxilio?NOMINA_CO_2026.auxilioTransporte:0))+" × "+pfl.diasTrabajados+"d ÷ 360",pfl.cesantias],["Intereses cesantias","12% anual s/ cesantias",pfl.interesesCesantias],["Prima de servicios","Base × "+pfl.diasTrabajados+"d ÷ 360",pfl.prima],["Vacaciones",dvp+" dias × salario ÷ 30",vacValorReal],...(indemn>0?[["Indemnizacion (sin justa causa)","Segun CST art. 64",indemn]]:[])].map(([k,b,v])=>(
+                              {[
+                                ["Salario días trabajados",resumenLiquidacion.diasNomina+" días × "+fmt(resumenLiquidacion.valorDia),resumenLiquidacion.salario],
+                                ["Auxilio de transporte",resumenLiquidacion.diasNomina+" días del corte final",resumenLiquidacion.auxilioTransporte],
+                                ...(resumenLiquidacion.horasExtras>0?[["Horas extras pendientes","Registradas en el corte final",resumenLiquidacion.horasExtras]]:[]),
+                                ...(resumenLiquidacion.comisiones>0?[["Comisiones pendientes","Registradas en el corte final",resumenLiquidacion.comisiones]]:[]),
+                                ["Descuento salud","4% sobre salario + extras + comisiones",-resumenLiquidacion.salud],
+                                ["Descuento pensión","4% sobre salario + extras + comisiones",-resumenLiquidacion.pension],
+                                ...(resumenLiquidacion.otrasDeducciones>0?[["Otras deducciones","Conceptos autorizados del empleado",-resumenLiquidacion.otrasDeducciones]]:[]),
+                                ["Neto nómina final",periodoLiquidacion.label,resumenLiquidacion.neto],
+                                ["Cesantias",fmt(e.salario+(e.salario<=NOMINA_CO_2026.topeAuxilio?NOMINA_CO_2026.auxilioTransporte:0))+" × "+pfl.diasTrabajados+"d ÷ 360",pfl.cesantias],
+                                ["Intereses cesantias","12% anual s/ cesantias",pfl.interesesCesantias],
+                                ["Prima de servicios","Base × "+pfl.diasTrabajados+"d ÷ 360",pfl.prima],
+                                ["Vacaciones",dvp+" dias × salario ÷ 30",vacValorReal],
+                                ...(indemn>0?[["Indemnizacion (sin justa causa)","Segun CST art. 64",indemn]]:[])
+                              ].map(([k,b,v])=>(
                                 <tr key={k} style={{borderBottom:"1px solid #f1f5f9"}}><td style={{padding:"5px 8px"}}>{k}</td><td style={{padding:"5px 8px",color:"#64748b",fontSize:10}}>{b}</td><td style={{padding:"5px 8px",textAlign:"right",fontWeight:600,color:"#0f172a"}}>{fmt(v)}</td></tr>
                               ))}
                             </tbody>
                             <tfoot><tr style={{background:"#f5c842"}}><td colSpan={2} style={{padding:"7px 8px",fontWeight:700}}>TOTAL LIQUIDACION</td><td style={{padding:"7px 8px",textAlign:"right",fontWeight:700,fontSize:13}}>{fmt(total)}</td></tr></tfoot>
                           </table>
                           <div style={{display:"flex",gap:6,marginBottom:6}}>
-                            <button onClick={()=>printLiquidacion(e, pfl, indemn, dvp, e.fechaSalida||null)} style={{...B("#142840","#f5c842"),fontSize:11,flex:1,justifyContent:"center"}}>Imprimir liquidacion</button>
+                            <button onClick={()=>guardarCambiosNomina("Cambios de contratos y liquidación sincronizados")} style={{...B("#166534","#d1fae5"),fontSize:11,flex:1,justifyContent:"center"}}>Guardar cambios</button>
+                            <button onClick={()=>printLiquidacion(e, pfl, indemn, dvp, e.fechaSalida||null, resumenLiquidacion, periodoLiquidacion)} style={{...B("#142840","#f5c842"),fontSize:11,flex:1,justifyContent:"center"}}>Imprimir liquidacion</button>
                             <button onClick={()=>updEmp(e.id,"activo",false)} style={{...B("#2d1414","#ef4444"),fontSize:11,flex:1,justifyContent:"center"}}>Marcar como retirado</button>
                           </div>
+                          {mensajeGuardadoNomina && <div style={{fontSize:11,color:"#166534",fontWeight:700,marginTop:6,textAlign:"center"}}>{mensajeGuardadoNomina}</div>}
                         </div>
                         );
                       })()}
@@ -5116,146 +5365,102 @@ function Nomina({ctx}){
 
       {tab==="deducciones"&&(
         <div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
-            <SC label="Salud empleado" value={fmtK(totalSalud)} color="#ef4444" icon="4%"/>
-            <SC label="Pension empleado" value={fmtK(totalPension)} color="#fb7185" icon="4%"/>
-            <SC label="Otras deducciones" value={fmtK(totalOtrasDeducciones)} color="#c084fc" icon="ADD"/>
-            <SC label="Total descuentos" value={fmtK(totalDeducciones)} color="#f97316" icon="NET"/>
-          </div>
-          {renderNominaSaveBar("Las deducciones personalizadas y los descuentos del corte pueden guardarse aquí de forma inmediata.", "Cambios de deducciones sincronizados")}
-          <div style={{display:"grid",gridTemplateColumns:"1.3fr 0.9fr",gap:20}}>
-            <div style={CD}>
-              <div style={ST}>Revision de deducciones por empleado</div>
-              <div style={{overflowX:"auto"}}>
-                <table style={{width:"100%",borderCollapse:"collapse"}}>
-                  <thead>
-                    <tr style={{background:"#142840",color:"#fff"}}>
-                      {["Empleado","Salud","Pension","Otras","Total","Neto"].map((titulo)=>(
-                        <th key={titulo} style={{padding:"10px 12px",fontSize:11,textAlign:titulo==="Empleado"?"left":"right"}}>{titulo}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {resumenesActivos.map(({empleado,resumen},index)=>(
-                      <tr
-                        key={empleado.id}
-                        onClick={()=>setSelId(empleado.id)}
-                        style={{
-                          background:selId===empleado.id?"#fff7ed":index%2===0?"#ffffff":"#f8fafc",
-                          borderBottom:"1px solid #e2e8f0",
-                          cursor:"pointer"
-                        }}
-                      >
-                        <td style={{padding:"12px",verticalAlign:"top"}}>
-                          <div style={{fontWeight:700,color:"#0f172a"}}>{empleado.nombre}</div>
-                          <div style={{fontSize:11,color:"#64748b"}}>{empleado.cargo || "Sin cargo"} · {empleado.cedula || "Sin documento"}</div>
-                          {(empleado.deduccionesPersonalizadas||[]).length>0 && (
-                            <div style={{marginTop:8,display:"flex",flexWrap:"wrap",gap:6}}>
-                              {(empleado.deduccionesPersonalizadas||[]).map((deduccion)=>(
-                                <span key={deduccion.id} style={{background:"#f3e8ff",color:"#6b21a8",border:"1px solid #d8b4fe",borderRadius:999,padding:"3px 8px",fontSize:10,fontWeight:600}}>
-                                  {deduccion.nombre}: {fmt(deduccion.valor)}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </td>
-                        <td style={{padding:"12px",textAlign:"right",color:"#dc2626",fontWeight:600}}>{fmt(resumen.salud)}</td>
-                        <td style={{padding:"12px",textAlign:"right",color:"#e11d48",fontWeight:600}}>{fmt(resumen.pension)}</td>
-                        <td style={{padding:"12px",textAlign:"right",color:"#7c3aed",fontWeight:600}}>{fmt(resumen.otrasDeducciones)}</td>
-                        <td style={{padding:"12px",textAlign:"right",color:"#c2410c",fontWeight:700}}>{fmt(resumen.totalDeducciones)}</td>
-                        <td style={{padding:"12px",textAlign:"right",color:"#0f766e",fontWeight:700}}>{fmt(resumen.neto)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          <div style={{...CD,maxWidth:900,margin:"0 auto"}}>
+            <div style={ST}>Revisión de deducciones por empleado</div>
+            <div style={{display:"grid",gap:14}}>
+              <div>
+                <LBL>Empleado</LBL>
+                <select value={empleadoDeduccionActivo?.id || ""} onChange={(e)=>setSelId(e.target.value || null)} style={SI}>
+                  <option value="">Seleccionar empleado...</option>
+                  {empleadosBase.map((empleado)=>(
+                    <option key={empleado.id} value={empleado.id}>{empleado.nombre}</option>
+                  ))}
+                </select>
               </div>
-            </div>
 
-            <div style={CD}>
-              <div style={ST}>Gestionar deducciones</div>
-              <div style={{display:"grid",gap:12}}>
-                <div>
-                  <LBL>Empleado</LBL>
-                  <select value={empleadoDeduccionActivo?.id || ""} onChange={(e)=>setSelId(e.target.value || null)} style={SI}>
-                    <option value="">Seleccionar empleado...</option>
-                    {empleadosBase.map((empleado)=>(
-                      <option key={empleado.id} value={empleado.id}>{empleado.nombre}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {empleadoDeduccionActivo ? (
-                  <>
-                    <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:"12px 14px"}}>
-                      <div style={{fontWeight:700,color:"#0f172a",marginBottom:4}}>{empleadoDeduccionActivo.nombre}</div>
-                      <div style={{fontSize:11,color:"#64748b",marginBottom:10}}>{empleadoDeduccionActivo.cargo || "Sin cargo"} · {empleadoDeduccionActivo.cedula || "Sin documento"} · {periodoNomina.label}</div>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-                        <div style={{background:"#fff",borderRadius:8,padding:"8px 10px",gridColumn:"span 2"}}>
-                          <div style={{fontSize:10,color:"#64748b"}}>Base salud / pensión del corte</div>
-                          <div style={{fontWeight:700,color:"#142840"}}>{fmt(calcularResumenNominaEmpleado(empleadoDeduccionActivo, periodoNomina).baseSaludPension)}</div>
-                          <div style={{fontSize:10,color:"#94a3b8",marginTop:3}}>Incluye salario del corte + horas extras + comisiones.</div>
-                        </div>
-                        <div style={{background:"#fff",borderRadius:8,padding:"8px 10px"}}>
-                          <div style={{fontSize:10,color:"#64748b"}}>Salud</div>
-                          <div style={{fontWeight:700,color:"#dc2626"}}>{fmt(calcularResumenNominaEmpleado(empleadoDeduccionActivo, periodoNomina).salud)}</div>
-                        </div>
-                        <div style={{background:"#fff",borderRadius:8,padding:"8px 10px"}}>
-                          <div style={{fontSize:10,color:"#64748b"}}>Pension</div>
-                          <div style={{fontWeight:700,color:"#e11d48"}}>{fmt(calcularResumenNominaEmpleado(empleadoDeduccionActivo, periodoNomina).pension)}</div>
-                        </div>
+              {empleadoDeduccionActivo ? (
+                <>
+                  <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:"14px 16px"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                      <Av init={empleadoDeduccionActivo.avatar} color={PAL[0]} size={34}/>
+                      <div style={{flex:1}}>
+                        <div style={{fontWeight:700,color:"#0f172a"}}>{empleadoDeduccionActivo.nombre}</div>
+                        <div style={{fontSize:11,color:"#64748b"}}>{empleadoDeduccionActivo.cargo || "Sin cargo"} · {empleadoDeduccionActivo.cedula || "Sin documento"} · {periodoNomina.label}</div>
                       </div>
                     </div>
-
-                    <div style={{background:"#ffffff",borderRadius:10,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
-                      <div style={{fontSize:11,fontWeight:700,color:"#142840",textTransform:"uppercase",marginBottom:10}}>Deducciones personalizadas</div>
-                      {(empleadoDeduccionActivo.deduccionesPersonalizadas||[]).length>0 ? (
-                        <div style={{display:"grid",gap:8,marginBottom:12}}>
-                          {(empleadoDeduccionActivo.deduccionesPersonalizadas||[]).map((deduccion)=>(
-                            <div key={deduccion.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}>
-                              <div>
-                                <div style={{fontWeight:700,color:"#0f172a"}}>{deduccion.nombre}</div>
-                                <div style={{fontSize:11,color:"#64748b"}}>{fmt(deduccion.valor)} mensual</div>
-                              </div>
-                              <button type="button" onClick={()=>quitarDeduccion(empleadoDeduccionActivo.id,deduccion.id)} style={{...B("#fee2e2","#b91c1c"),border:"1px solid #fecaca",padding:"6px 10px",fontSize:11}}>Quitar</button>
-                            </div>
-                          ))}
+                    {(()=>{
+                      const resumenDeduccion = calcularResumenNominaEmpleado(empleadoDeduccionActivo, periodoNomina);
+                      return(
+                        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+                          <div style={{background:"#fff",borderRadius:8,padding:"10px 12px",gridColumn:"span 3"}}>
+                            <div style={{fontSize:10,color:"#64748b"}}>Base salud / pensión del corte</div>
+                            <div style={{fontWeight:700,color:"#142840",fontSize:16}}>{fmt(resumenDeduccion.baseSaludPension)}</div>
+                            <div style={{fontSize:10,color:"#94a3b8",marginTop:3}}>Incluye salario del corte + horas extras + comisiones.</div>
+                          </div>
+                          <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Salud</div><div style={{fontWeight:700,color:"#dc2626"}}>{fmt(resumenDeduccion.salud)}</div></div>
+                          <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Pensión</div><div style={{fontWeight:700,color:"#e11d48"}}>{fmt(resumenDeduccion.pension)}</div></div>
+                          <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Otras deducciones</div><div style={{fontWeight:700,color:"#7c3aed"}}>{fmt(resumenDeduccion.otrasDeducciones)}</div></div>
+                          <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Total descuentos</div><div style={{fontWeight:700,color:"#c2410c"}}>{fmt(resumenDeduccion.totalDeducciones)}</div></div>
+                          <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Neto del corte</div><div style={{fontWeight:700,color:"#0f766e"}}>{fmt(resumenDeduccion.neto)}</div></div>
+                          <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Extras + comisiones</div><div style={{fontWeight:700,color:"#f59e0b"}}>{fmt(resumenDeduccion.horasExtras + resumenDeduccion.comisiones)}</div></div>
                         </div>
-                      ) : (
-                        <div style={{fontSize:11,color:"#64748b",marginBottom:12}}>
-                          Este empleado no tiene deducciones adicionales. Aqui puedes revisar y agregar conceptos como natillera, libranza o descuentos internos autorizados.
-                        </div>
-                      )}
-
-                      <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr auto",gap:8}}>
-                        <div>
-                          <LBL>Concepto</LBL>
-                          <input value={dedForm.nombre} onChange={(event)=>setDedForm({...dedForm,nombre:event.target.value})} placeholder="Ej: Natillera" style={{...SI,fontSize:11}}/>
-                        </div>
-                        <div>
-                          <LBL>Valor mensual</LBL>
-                          <input type="number" value={dedForm.valor} onChange={(event)=>setDedForm({...dedForm,valor:parseFloat(event.target.value)||0})} placeholder="0" style={{...SI,fontSize:11}}/>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={()=>{
-                            if(empleadoDeduccionActivo?.id){
-                              setSelId(empleadoDeduccionActivo.id);
-                              agregarDeduccion(empleadoDeduccionActivo.id);
-                            }
-                          }}
-                          style={{...B("#142840"),justifyContent:"center",alignSelf:"end"}}
-                        >
-                          Agregar
-                        </button>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div style={{textAlign:"center",color:"#94a3b8",padding:"28px 0"}}>
-                    Selecciona un empleado para revisar sus deducciones.
+                      );
+                    })()}
                   </div>
-                )}
-              </div>
+
+                  <div style={{background:"#ffffff",borderRadius:12,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
+                    <div style={{fontSize:11,fontWeight:700,color:"#142840",textTransform:"uppercase",marginBottom:10}}>Deducciones personalizadas</div>
+                    {(empleadoDeduccionActivo.deduccionesPersonalizadas||[]).length>0 ? (
+                      <div style={{display:"grid",gap:8,marginBottom:12}}>
+                        {(empleadoDeduccionActivo.deduccionesPersonalizadas||[]).map((deduccion)=>(
+                          <div key={deduccion.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}>
+                            <div>
+                              <div style={{fontWeight:700,color:"#0f172a"}}>{deduccion.nombre}</div>
+                              <div style={{fontSize:11,color:"#64748b"}}>{fmt(deduccion.valor)} mensual</div>
+                            </div>
+                            <button type="button" onClick={()=>quitarDeduccion(empleadoDeduccionActivo.id,deduccion.id)} style={{...B("#fee2e2","#b91c1c"),border:"1px solid #fecaca",padding:"6px 10px",fontSize:11}}>Quitar</button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{fontSize:11,color:"#64748b",marginBottom:12}}>
+                        Este empleado no tiene deducciones adicionales. Aquí puedes revisar y agregar conceptos como natillera, libranza o descuentos internos autorizados.
+                      </div>
+                    )}
+
+                    <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr auto",gap:8,marginBottom:12}}>
+                      <div>
+                        <LBL>Concepto</LBL>
+                        <input value={dedForm.nombre} onChange={(event)=>setDedForm({...dedForm,nombre:event.target.value})} placeholder="Ej: Natillera" style={{...SI,fontSize:11}}/>
+                      </div>
+                      <div>
+                        <LBL>Valor mensual</LBL>
+                        <input type="number" value={dedForm.valor} onChange={(event)=>setDedForm({...dedForm,valor:parseFloat(event.target.value)||0})} placeholder="0" style={{...SI,fontSize:11}}/>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={()=>{
+                          if(empleadoDeduccionActivo?.id){
+                            setSelId(empleadoDeduccionActivo.id);
+                            agregarDeduccion(empleadoDeduccionActivo.id);
+                          }
+                        }}
+                        style={{...B("#142840"),justifyContent:"center",alignSelf:"end"}}
+                      >
+                        Agregar
+                      </button>
+                    </div>
+                    <div style={{display:"flex",justifyContent:"flex-end"}}>
+                      <button type="button" onClick={()=>guardarCambiosNomina("Cambios de deducciones sincronizados")} style={{...B("#142840","#4ade80")}}>Guardar cambios</button>
+                    </div>
+                    {mensajeGuardadoNomina && <div style={{fontSize:11,color:"#166534",fontWeight:700,marginTop:8,textAlign:"right"}}>{mensajeGuardadoNomina}</div>}
+                  </div>
+                </>
+              ) : (
+                <div style={{textAlign:"center",color:"#94a3b8",padding:"28px 0"}}>
+                  Selecciona un empleado para revisar sus deducciones.
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -5573,10 +5778,10 @@ function Vencimientos({ctx}){
       direccion: c.direccion||"",
       sistema: c.sistema,
       normativa: c.normativa||"Resolución 4272 de 2021",
-      ingeniero: c.ingeniero||"ING. JHON JAIME SEPULVEDA LONDOÃ‘O",
+      ingeniero: c.ingeniero||"ING. JHON JAIME SEPULVEDA LONDOÑO",
       matricula: c.matricula||"MP. 05256-409949",
       proxMant: "",
-      elementos: ["Limpieza sistema completo","Verificación ajuste tuercas y pernos","Laca protectora anticorrosiva en todos los puntos","Tensado de cables"],
+      elementos: [...RECERT_ELEMENTOS_DEFAULT],
       certOrigenId: c.id,
     });
     setRecertForm(c);
@@ -5592,7 +5797,9 @@ function Vencimientos({ctx}){
       nuevaCert
     ]);
     setGuardado(newId);
+    setImprimiendo(nuevaCert);
     setRecertForm(null);
+    setRecertData({});
     setTimeout(()=>setGuardado(null),4000);
   };
 
@@ -5623,10 +5830,10 @@ function Vencimientos({ctx}){
   };
 
   const grupos=[
-    {titulo:"ðŸ”´ Vencidas o críticas",filtro:(d)=>d!==null&&d<0,color:"#ef4444"},
-    {titulo:"ðŸŸ  Urgente (menos de 30 días)",filtro:(d)=>d!==null&&d>=0&&d<30,color:"#fb923c"},
-    {titulo:"ðŸŸ¡ Próximas (30â€“90 días)",filtro:(d)=>d!==null&&d>=30&&d<90,color:"#f5c842"},
-    {titulo:"ðŸŸ¢ Al día (más de 90 días)",filtro:(d)=>d!==null&&d>=90,color:"#4ade80"},
+    {titulo:"Vencidas o críticas",filtro:(d)=>d!==null&&d<0,color:"#ef4444"},
+    {titulo:"Urgente (menos de 30 días)",filtro:(d)=>d!==null&&d>=0&&d<30,color:"#fb923c"},
+    {titulo:"Próximas (30-90 días)",filtro:(d)=>d!==null&&d>=30&&d<90,color:"#f5c842"},
+    {titulo:"Al día (más de 90 días)",filtro:(d)=>d!==null&&d>=90,color:"#4ade80"},
   ];
 
   const totVenc=lista.filter(c=>c.diasRestantes!==null&&c.diasRestantes<0).length;
@@ -5640,24 +5847,24 @@ function Vencimientos({ctx}){
     <div style={{padding:28}}>
       <H1 title="Vencimientos de Certificaciones" subtitle="Control de mantenimientos y renovaciones · Res. 4272/2021"/>
 
-      {/* â”€â”€ NOTIFICACIÃ“N GUARDADO â”€â”€ */}
+      {/* Confirmación */}
       {guardado&&(
         <div style={{background:"#e8f5ee",border:"1px solid #4ade80",borderRadius:10,padding:"12px 18px",marginBottom:20,fontSize:13,color:"#166534",display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontSize:18}}>âœ…</span>
+          <span style={{fontSize:18}}>OK</span>
           <span>Recertificación <strong>{guardado}</strong> creada exitosamente. La certificación original fue marcada como <strong>Recertificado</strong>.</span>
         </div>
       )}
 
-      {/* â”€â”€ MODAL RECERTIFICACIÃ“N â”€â”€ */}
+      {/* Modal de recertificación */}
       {recertForm&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:20,overflowY:"auto"}}>
           <div style={{background:"#fff",borderRadius:16,padding:32,width:"100%",maxWidth:580,boxShadow:"0 20px 60px rgba(0,0,0,0.35)",maxHeight:"90vh",overflowY:"auto"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
               <div>
-                <div style={{fontSize:18,fontWeight:700,color:"#1a1a2e"}}>ðŸ”„ Generar Recertificación</div>
+                <div style={{fontSize:18,fontWeight:700,color:"#1a1a2e"}}>Generar Recertificación</div>
                 <div style={{fontSize:12,color:"#64748b",marginTop:4}}>Basada en: {recertForm.numero} · {recertForm.cliente}</div>
               </div>
-              <button onClick={()=>setRecertForm(null)} style={{background:"#f1f5f9",border:"none",borderRadius:8,padding:"6px 12px",cursor:"pointer",color:"#475569",fontSize:13}}>âœ•</button>
+              <button onClick={()=>setRecertForm(null)} style={{background:"#f1f5f9",border:"none",borderRadius:8,padding:"6px 12px",cursor:"pointer",color:"#475569",fontSize:13}}>Cerrar</button>
             </div>
 
             {/* Info del cert original */}
@@ -5676,17 +5883,17 @@ function Vencimientos({ctx}){
               <div style={{gridColumn:"span 2"}}><LBL>Dirección de la obra</LBL><input value={recertData.direccion||""} onChange={e=>setRecertData(p=>({...p,direccion:e.target.value}))} style={SI}/></div>
               <div style={{gridColumn:"span 2"}}><LBL>Sistema recertificado</LBL><textarea value={recertData.sistema||""} onChange={e=>setRecertData(p=>({...p,sistema:e.target.value}))} rows={2} style={{...SI,resize:"vertical"}}/></div>
               <div style={{gridColumn:"span 2",background:"#fff3e8",borderRadius:8,padding:12,border:"1px solid #f47c2044"}}>
-                <LBL>ðŸ“… Próximo mantenimiento (obligatorio)</LBL>
+                <LBL>Próximo mantenimiento (obligatorio)</LBL>
                 <input type="date" value={recertData.proxMant||""} onChange={e=>setRecertData(p=>({...p,proxMant:e.target.value}))} style={{...SI,border:"2px solid #cc0000"}}/>
-                {recertData.proxMant&&<div style={{fontSize:11,color:"#4ade80",marginTop:6}}>âœ… Próximo mantenimiento: <strong>{fmtD(recertData.proxMant)}</strong></div>}
+                {recertData.proxMant&&<div style={{fontSize:11,color:"#4ade80",marginTop:6}}>Próximo mantenimiento: <strong>{fmtD(recertData.proxMant)}</strong></div>}
               </div>
             </div>
 
-            {!recertData.proxMant&&<div style={{background:"#fee2e2",borderRadius:6,padding:"8px 12px",fontSize:11,color:"#cc0000",marginBottom:12}}>âš ️ Debes asignar la fecha del próximo mantenimiento para guardar.</div>}
+            {!recertData.proxMant&&<div style={{background:"#fee2e2",borderRadius:6,padding:"8px 12px",fontSize:11,color:"#cc0000",marginBottom:12}}>Debes asignar la fecha del próximo mantenimiento para guardar.</div>}
 
             <div style={{display:"flex",gap:10}}>
               <button style={{...B("#cc0000"),flex:1,justifyContent:"center"}} onClick={guardarRecert}>
-                ðŸ”„ Crear Recertificación
+                Crear Recertificación
               </button>
               <button style={{...B("#f1f5f9","#475569"),flex:1,justifyContent:"center"}} onClick={()=>setRecertForm(null)}>
                 Cancelar
@@ -5696,73 +5903,15 @@ function Vencimientos({ctx}){
         </div>
       )}
 
-      {/* â”€â”€ MODAL IMPRESIÃ“N PDF â”€â”€ */}
+      {/* Modal de impresión */}
       {certParaImpresion&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:2000,overflow:"auto",padding:20}}>
           <div style={{maxWidth:860,margin:"0 auto"}}>
             <div style={{display:"flex",gap:10,marginBottom:14,justifyContent:"flex-end"}}>
-              <button style={B("#f1f5f9","#475569")} onClick={()=>setImprimiendo(null)}>âœ• Cerrar</button>
-              <button style={B("#f47c20")} onClick={()=>printCurrentPz(`Certificación ${certParaImpresion?.numero || certParaImpresion?.id || ""}`)}>ðŸ–¨️ Imprimir / PDF</button>
+              <button style={B("#f1f5f9","#475569")} onClick={()=>setImprimiendo(null)}>Cerrar</button>
+              <button style={B("#f47c20")} onClick={()=>printCurrentPz(`Certificación ${certParaImpresion?.numero || certParaImpresion?.id || ""}`)}>Imprimir / PDF</button>
             </div>
-            {/* Reutilizamos el mismo layout de certificación */}
-            <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:12,lineHeight:1.7,border:"1px solid #ddd",borderRadius:4,padding:"36px 44px"}}>
-              <PrintHeader dual={true}/>
-              <div style={{textAlign:"center",fontSize:10,fontWeight:700,letterSpacing:2,padding:"6px 0",borderBottom:"1px solid #ddd",color:"#333",textTransform:"uppercase",marginBottom:20,marginTop:14}}>
-                Certificación de Sistemas Anticaídas · Res. 4272/2021
-              </div>
-              <div style={{marginBottom:20}}>
-                <div>Envigado, {fmtL(certParaImpresion.fecha)}</div>
-                <div style={{marginTop:10,fontWeight:700}}>SEÃ‘ORES:</div>
-                <div style={{fontWeight:700}}>{certParaImpresion.cliente.toUpperCase()}</div>
-                {certParaImpresion.nit&&<div>NIT: {certParaImpresion.nit}</div>}
-                {certParaImpresion.direccion&&<div>DIRECCIÃ“N: {certParaImpresion.direccion.toUpperCase()}</div>}
-              </div>
-              <div style={{textAlign:"center",fontWeight:700,fontSize:15,marginBottom:20}}>INGEANCLAJES S.A.S</div>
-
-              {certParaImpresion.tipo==="Recertificación"?(
-                <div style={{textAlign:"justify",lineHeight:1.8,marginBottom:20}}>
-                  <p style={{marginBottom:12}}>Ha realizado el mantenimiento preventivo en las instalaciones de {certParaImpresion.sistema}, que consta de:</p>
-                  <p style={{marginBottom:12}}>Limpieza de todo el sistema. Se verifica ajuste de las tuercas y pernos de los puntos de anclaje, finalmente se procedió a dar una laca protectora anticorrosiva como recubrimiento especial en todos los puntos de anclaje para evitar futuras oxidaciones.</p>
-                  <p style={{marginBottom:12}}>Nuestra empresa se compromete a garantizar la calidad y seguridad de los materiales proporcionados para la instalación de los puntos de anclaje. Nos enfocamos en cumplir con todas las normativas y estándares de la industria, así como en utilizar materiales de alta calidad que cumplan con las especificaciones técnicas requeridas.</p>
-                  <p style={{marginBottom:12}}>Por otro lado, los pernos utilizados en los puntos de anclaje son seleccionados cuidadosamente para garantizar su resistencia y capacidad de fijación. Trabajamos con proveedores confiables que suministran pernos de alta calidad que cumplen con las normativas de seguridad establecidas.</p>
-                  <p style={{marginBottom:12}}>En cuanto al epóxico utilizado, nos aseguramos de utilizar productos de reconocidas marcas y de calidad certificada. Nuestro personal altamente capacitado realiza la instalación siguiendo las instrucciones y recomendaciones del fabricante, asegurando así una correcta adherencia y resistencia en los puntos de anclaje.</p>
-                  <p style={{marginBottom:12}}>Nos comprometemos a cumplir con todas las regulaciones legales vigentes y a realizar un seguimiento riguroso de las inspecciones y pruebas necesarias para garantizar la calidad de los materiales y la adecuada instalación de los puntos de anclaje.</p>
-                  <p style={{marginBottom:12}}>En caso de que se presenten problemas o fallas relacionadas con los materiales suministrados o la instalación de los puntos de anclaje, nos responsabilizamos totalmente de solventar cualquier inconveniente y cubrir los costos asociados a su corrección. De acuerdo a las labores anteriormente descritas <strong>INGEANCLAJES S.A.S. CERTIFICA</strong> que los sistemas de detención de caídas instalados en las instalaciones de la empresa <strong>{certParaImpresion.cliente.toUpperCase()}</strong>{certParaImpresion.direccion?` ubicada en ${certParaImpresion.direccion.toUpperCase()}`:""} y cuyo objetivo es la fijación segura de los trabajadores al momento de realizar tareas que impliquen riesgo de caída, cumplen a cabalidad con la {certParaImpresion.normativa} del ministerio de trabajo, por la cual se establece el reglamento de seguridad para protección contra caídas en trabajo en altura. Todos los elementos que componen los diferentes sistemas anticaídas se encuentran en excelente estado.</p>
-                </div>
-              ):(
-                <div style={{textAlign:"justify",marginBottom:20,lineHeight:1.8}}>
-                  <strong>CERTIFICA</strong> que {certParaImpresion.sistema} cumple a cabalidad con la {certParaImpresion.normativa} del ministerio de trabajo, por la cual se establece el reglamento de seguridad para protección contra caídas en trabajo en altura.
-                </div>
-              )}
-              <div style={{marginBottom:16}}>Los elementos utilizados en dicha labor son:</div>
-              <ul style={{marginLeft:24,marginBottom:20}}>
-                {(certParaImpresion.elementos||[]).map((el,i)=><li key={i} style={{marginBottom:6}}>{el}</li>)}
-              </ul>
-              <div style={{background:"#f9f9f9",border:"1px solid #ddd",borderRadius:6,padding:"14px 18px",marginBottom:20}}>
-                <div style={{fontWeight:700,marginBottom:10,fontSize:12}}>RECOMENDACIONES PARA TENER EN CUENTA</div>
-                <div style={{fontSize:12,marginBottom:10,textAlign:"justify"}}>A continuación, se realizan algunas recomendaciones para preservar en buen estado los sistemas anti caídas certificados en dicha sede:</div>
-                <ul style={{marginLeft:20,fontSize:12,lineHeight:1.9,marginBottom:10}}>
-                  <li>Dar aviso de inmediato, en caso de tener algún evento de caída por muy mínima que sea para hacer su respectiva valoración y diagnóstico.</li>
-                  <li>Conectar máximo dos personas por cada línea de vida o en cada tramo entre soportes laterales e intermedios.</li>
-                  <li>No modificar ningún elemento del sistema, ya que este puede perder sus funciones y generaría un riesgo más para las personas que las utilizan.</li>
-                  <li>Limpiar de inmediato las estructuras u otro elemento que entren en contacto con los químicos de esta área.</li>
-                </ul>
-                <div style={{fontSize:12,textAlign:"justify",lineHeight:1.7}}>
-                  Estas recomendaciones son de carácter técnico, por lo tanto, su cumplimiento debe ser obligatorio para minimizar el riesgo generado por la falta y/o ausencia de algunos de sus elementos, ya que estos tienen como principal característica soportar las cargas generadas por la caída de una persona en la realización de trabajos en alturas. Se debe realizar el próximo mantenimiento preventivo de todo el sistema máximo dentro de un año contado a partir de la expedición del presente documento{certParaImpresion.proxMant?` (antes del ${fmtL(certParaImpresion.proxMant)})`:"."}.
-                </div>
-              </div>
-              <div style={{marginBottom:12,fontSize:12}}>Cordialmente,</div>
-              <div style={{height:72}}></div>
-              <div>
-                <div style={{borderTop:"1px solid #333",paddingTop:10,display:"inline-block",minWidth:240}}>
-                  <div style={{fontWeight:700}}>{certParaImpresion.ingeniero}</div>
-                  <div>{certParaImpresion.matricula}</div>
-                </div>
-              </div>
-              <div style={{borderTop:"1px solid #ccc",paddingTop:10,marginTop:30,textAlign:"center",fontSize:10,color:"#555"}}>
-                Cl 38 sur # 36-48, Envigado, tel. 448 26 86 &nbsp;·&nbsp; Cel. 314 863 40 72 &nbsp;·&nbsp; Nit. 900193965-4 &nbsp;·&nbsp; ingeanclajes.sas@gmail.com
-              </div>
-            </div>
+            <CertificacionDocumento cert={certParaImpresion}/>
           </div>
         </div>
       )}

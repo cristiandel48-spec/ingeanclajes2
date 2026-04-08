@@ -198,6 +198,27 @@ export const entityConfig = {
       coords: item.coords ?? null,
       forma_pago: item.formaPago ?? null,
       tiempo_ejecucion: item.tiempoEjec ?? null,
+      requerimiento_cliente: item.requerimientoCliente ?? null,
+      utilidad_pct: item.util ?? null,
+      total: item.total ?? null,
+      items: safeArray(item.items),
+      map_img: item.mapImg ?? null,
+      geo_mediciones: safeArray(item.geoMediciones),
+      geo_map_view: item.geoMapView ?? null,
+      estado: item.estado ?? null,
+    }),
+    toLegacyRow: (item) => ({
+      id: item.id,
+      numero: item.numero ?? null,
+      fecha: item.fecha ?? null,
+      validez_dias: item.val ?? null,
+      cliente: item.cliente ?? null,
+      obra: item.obra ?? null,
+      telefono: item.telefono ?? null,
+      ciudad: item.ciudad ?? null,
+      coords: item.coords ?? null,
+      forma_pago: item.formaPago ?? null,
+      tiempo_ejecucion: item.tiempoEjec ?? null,
       utilidad_pct: item.util ?? null,
       total: item.total ?? null,
       items: safeArray(item.items),
@@ -218,6 +239,7 @@ export const entityConfig = {
       coords: row.coords,
       formaPago: row.forma_pago,
       tiempoEjec: row.tiempo_ejecucion,
+      requerimientoCliente: row.requerimiento_cliente,
       util: row.utilidad_pct,
       total: row.total,
       items: safeArray(row.items),
@@ -275,13 +297,47 @@ export const entityConfig = {
       periodo_inicio: item.periodoInicio ?? null,
       periodo_fin: item.periodoFin ?? null,
       personal: safeArray(item.personal),
+      actividades: safeArray(item.actividades),
       actividad: item.actividad ?? null,
       descripcion: item.descripcion ?? null,
       observaciones: item.observaciones ?? null,
       recomendaciones: item.recomendaciones ?? null,
       fotos: safeArray(item.fotos),
     }),
-    fromRow: (row) => ({
+    toLegacyRow: (item) => {
+      const primeraActividad = safeArray(item.actividades)[0] ?? {};
+      return {
+        id: item.id,
+        obra_id: item.obraId ?? null,
+        proyecto: item.proyecto ?? null,
+        localizacion: item.localizacion ?? null,
+        fecha_informe: item.fechaInforme ?? null,
+        periodo_inicio: item.periodoInicio ?? null,
+        periodo_fin: item.periodoFin ?? null,
+        personal: safeArray(item.personal),
+        actividad: item.actividad ?? primeraActividad.titulo ?? null,
+        descripcion: item.descripcion ?? primeraActividad.descripcion ?? null,
+        observaciones: item.observaciones ?? primeraActividad.observaciones ?? null,
+        recomendaciones: item.recomendaciones ?? null,
+        fotos: safeArray(item.fotos).length ? safeArray(item.fotos) : safeArray(primeraActividad.fotos),
+      };
+    },
+    fromRow: (row) => {
+      const legacyFotos = safeArray(row.fotos);
+      const actividades = safeArray(row.actividades);
+      const actividadesNormalizadas = actividades.length
+        ? actividades
+        : (
+            row.actividad || row.descripcion || row.observaciones || legacyFotos.length
+              ? [{
+                  titulo: row.actividad ?? "",
+                  descripcion: row.descripcion ?? "",
+                  observaciones: row.observaciones ?? "",
+                  fotos: legacyFotos,
+                }]
+              : []
+          );
+      return {
       id: row.id,
       obraId: row.obra_id,
       proyecto: row.proyecto,
@@ -294,8 +350,10 @@ export const entityConfig = {
       descripcion: row.descripcion,
       observaciones: row.observaciones,
       recomendaciones: row.recomendaciones,
-      fotos: safeArray(row.fotos),
-    }),
+      fotos: legacyFotos,
+      actividades: actividadesNormalizadas,
+      };
+    },
   },
   cuentas: {
     table: "cuentas_por_pagar",

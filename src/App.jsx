@@ -22,18 +22,18 @@ const PDF_PAGE5_STATIC = `data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAbgBuAAD/2wB
 // ======================================================
 
 const EMPLEADOS_INIT = [
-  { id:"E01", nombre:"Carlos AndrÃ©s RÃ­os",      cedula:"1032456781", cargo:"TÃ©cnico en alturas",      tel:"3001234567", email:"crios@ingeanclajes.com",      salario:2800000, activo:true, avatar:"CA", banco:"Bancolombia",  tipoCuenta:"Ahorros",   numeroCuenta:"204-123456-78", horasExtrasPorObra:[], comisionesPorObra:[], deduccionesPersonalizadas:[] },
-  { id:"E02", nombre:"Jhon Fredy Zapata",       cedula:"79541236",   cargo:"TÃ©cnico en alturas",      tel:"3112345678", email:"jzapata@ingeanclajes.com",    salario:2800000, activo:true, avatar:"JF", banco:"Davivienda",   tipoCuenta:"Corriente", numeroCuenta:"0351-234567",  horasExtrasPorObra:[], comisionesPorObra:[], deduccionesPersonalizadas:[] },
-  { id:"E03", nombre:"Miguel Ãngel Torres",     cedula:"71784523",   cargo:"Coordinador SST",         tel:"3123456789", email:"mtorres@ingeanclajes.com",    salario:3500000, activo:true, avatar:"MA", banco:"Bancolombia",  tipoCuenta:"Ahorros",   numeroCuenta:"204-345678-90", horasExtrasPorObra:[], comisionesPorObra:[], deduccionesPersonalizadas:[] },
-  { id:"E04", nombre:"AndrÃ©s Felipe GÃ³mez",     cedula:"1017245698", cargo:"TÃ©cnico instalador",      tel:"3134567890", email:"agomez@ingeanclajes.com",     salario:2600000, activo:true, avatar:"AF", banco:"Nequi",        tipoCuenta:"Ahorros",   numeroCuenta:"3134567890",   horasExtrasPorObra:[], comisionesPorObra:[], deduccionesPersonalizadas:[] },
-  { id:"E05", nombre:"Luis Eduardo Cano",       cedula:"98542167",   cargo:"TÃ©cnico instalador",      tel:"3145678901", email:"lcano@ingeanclajes.com",      salario:2600000, activo:true, avatar:"LE", banco:"Banco BogotÃ¡", tipoCuenta:"Ahorros",   numeroCuenta:"012-3456789",  horasExtrasPorObra:[], comisionesPorObra:[], deduccionesPersonalizadas:[] },
-  { id:"E06", nombre:"SebastiÃ¡n Mora",          cedula:"1005987456", cargo:"Auxiliar de obra",        tel:"3156789012", email:"smora@ingeanclajes.com",      salario:1800000, activo:true, avatar:"SM", banco:"Bancolombia",  tipoCuenta:"Ahorros",   numeroCuenta:"204-456789-01", horasExtrasPorObra:[], comisionesPorObra:[], deduccionesPersonalizadas:[] },
-  { id:"E07", nombre:"David HernÃ¡ndez",         cedula:"1042356789", cargo:"Auxiliar de obra",        tel:"3167890123", email:"dhernandez@ingeanclajes.com", salario:1800000, activo:true, avatar:"DH", banco:"Daviplata",    tipoCuenta:"Ahorros",   numeroCuenta:"3167890123",   horasExtrasPorObra:[], comisionesPorObra:[], deduccionesPersonalizadas:[] },
+  { id:"E01", nombre:"Carlos Andrés Ríos",      cedula:"1032456781", cargo:"Técnico en alturas",      tel:"3001234567", email:"crios@ingeanclajes.com",      salario:2800000, activo:true, avatar:"CA", banco:"Bancolombia",  tipoCuenta:"Ahorros",   numeroCuenta:"204-123456-78", horasExtrasPorObra:[], comisionesPorObra:[], deduccionesPersonalizadas:[] },
+  { id:"E02", nombre:"Jhon Fredy Zapata",       cedula:"79541236",   cargo:"Técnico en alturas",      tel:"3112345678", email:"jzapata@ingeanclajes.com",    salario:2800000, activo:true, avatar:"JF", banco:"Davivienda",   tipoCuenta:"Corriente", numeroCuenta:"0351-234567",  horasExtrasPorObra:[], comisionesPorObra:[], deduccionesPersonalizadas:[] },
+  { id:"E03", nombre:"Miguel Ángel Torres",     cedula:"71784523",   cargo:"Coordinador SST",         tel:"3123456789", email:"mtorres@ingeanclajes.com",    salario:3500000, activo:true, avatar:"MA", banco:"Bancolombia",  tipoCuenta:"Ahorros",   numeroCuenta:"204-345678-90", horasExtrasPorObra:[], comisionesPorObra:[], deduccionesPersonalizadas:[] },
+  { id:"E04", nombre:"Andrés Felipe Gómez",     cedula:"1017245698", cargo:"Técnico instalador",      tel:"3134567890", email:"agomez@ingeanclajes.com",     salario:2600000, activo:true, avatar:"AF", banco:"Nequi",        tipoCuenta:"Ahorros",   numeroCuenta:"3134567890",   horasExtrasPorObra:[], comisionesPorObra:[], deduccionesPersonalizadas:[] },
+  { id:"E05", nombre:"Luis Eduardo Cano",       cedula:"98542167",   cargo:"Técnico instalador",      tel:"3145678901", email:"lcano@ingeanclajes.com",      salario:2600000, activo:true, avatar:"LE", banco:"Banco Bogotá", tipoCuenta:"Ahorros",   numeroCuenta:"012-3456789",  horasExtrasPorObra:[], comisionesPorObra:[], deduccionesPersonalizadas:[] },
+  { id:"E06", nombre:"Sebastián Mora",          cedula:"1005987456", cargo:"Auxiliar de obra",        tel:"3156789012", email:"smora@ingeanclajes.com",      salario:1800000, activo:true, avatar:"SM", banco:"Bancolombia",  tipoCuenta:"Ahorros",   numeroCuenta:"204-456789-01", horasExtrasPorObra:[], comisionesPorObra:[], deduccionesPersonalizadas:[] },
+  { id:"E07", nombre:"David Hernández",         cedula:"1042356789", cargo:"Auxiliar de obra",        tel:"3167890123", email:"dhernandez@ingeanclajes.com", salario:1800000, activo:true, avatar:"DH", banco:"Daviplata",    tipoCuenta:"Ahorros",   numeroCuenta:"3167890123",   horasExtrasPorObra:[], comisionesPorObra:[], deduccionesPersonalizadas:[] },
   { id:"E08", nombre:"Camilo Ospina",           cedula:"80123456",   cargo:"Soldador certificado",    tel:"3178901234", email:"cospina@ingeanclajes.com",    salario:3200000, activo:true, avatar:"CO", banco:"Bancolombia",  tipoCuenta:"Corriente", numeroCuenta:"204-567890-12", horasExtrasPorObra:[], comisionesPorObra:[], deduccionesPersonalizadas:[] },
-  { id:"E09", nombre:"Ricardo PatiÃ±o",          cedula:"91234567",   cargo:"TÃ©cnico en alturas",      tel:"3189012345", email:"rpatino@ingeanclajes.com",    salario:2800000, activo:true, avatar:"RP", banco:"BBVA",         tipoCuenta:"Ahorros",   numeroCuenta:"0114-5678901", horasExtrasPorObra:[], comisionesPorObra:[], deduccionesPersonalizadas:[] },
-  { id:"E10", nombre:"Nelson Vargas",           cedula:"15423987",   cargo:"Conductor / LogÃ­stica",   tel:"3190123456", email:"nvargas@ingeanclajes.com",    salario:2200000, activo:true, avatar:"NV", banco:"Banco BogotÃ¡", tipoCuenta:"Ahorros",   numeroCuenta:"012-6789012",  horasExtrasPorObra:[], comisionesPorObra:[], deduccionesPersonalizadas:[] },
-  { id:"E11", nombre:"FabiÃ¡n Salcedo",          cedula:"1023145678", cargo:"TÃ©cnico instalador",      tel:"3201234567", email:"fsalcedo@ingeanclajes.com",   salario:2600000, activo:true, avatar:"FS", banco:"Nequi",        tipoCuenta:"Ahorros",   numeroCuenta:"3201234567",   horasExtrasPorObra:[], comisionesPorObra:[], deduccionesPersonalizadas:[] },
-  { id:"E12", nombre:"JuliÃ¡n Cardona",          cedula:"1154789632", cargo:"Auxiliar administrativo", tel:"3212345678", email:"jcardona@ingeanclajes.com",   salario:1900000, activo:true, avatar:"JC", banco:"Bancolombia",  tipoCuenta:"Ahorros",   numeroCuenta:"204-789012-34", horasExtrasPorObra:[], comisionesPorObra:[], deduccionesPersonalizadas:[] },
+  { id:"E09", nombre:"Ricardo Patiño",          cedula:"91234567",   cargo:"Técnico en alturas",      tel:"3189012345", email:"rpatino@ingeanclajes.com",    salario:2800000, activo:true, avatar:"RP", banco:"BBVA",         tipoCuenta:"Ahorros",   numeroCuenta:"0114-5678901", horasExtrasPorObra:[], comisionesPorObra:[], deduccionesPersonalizadas:[] },
+  { id:"E10", nombre:"Nelson Vargas",           cedula:"15423987",   cargo:"Conductor / Logística",   tel:"3190123456", email:"nvargas@ingeanclajes.com",    salario:2200000, activo:true, avatar:"NV", banco:"Banco Bogotá", tipoCuenta:"Ahorros",   numeroCuenta:"012-6789012",  horasExtrasPorObra:[], comisionesPorObra:[], deduccionesPersonalizadas:[] },
+  { id:"E11", nombre:"Fabián Salcedo",          cedula:"1023145678", cargo:"Técnico instalador",      tel:"3201234567", email:"fsalcedo@ingeanclajes.com",   salario:2600000, activo:true, avatar:"FS", banco:"Nequi",        tipoCuenta:"Ahorros",   numeroCuenta:"3201234567",   horasExtrasPorObra:[], comisionesPorObra:[], deduccionesPersonalizadas:[] },
+  { id:"E12", nombre:"Julián Cardona",          cedula:"1154789632", cargo:"Auxiliar administrativo", tel:"3212345678", email:"jcardona@ingeanclajes.com",   salario:1900000, activo:true, avatar:"JC", banco:"Bancolombia",  tipoCuenta:"Ahorros",   numeroCuenta:"204-789012-34", horasExtrasPorObra:[], comisionesPorObra:[], deduccionesPersonalizadas:[] },
 ];
 
 const CARGOS_INIT = [...new Set(EMPLEADOS_INIT.map((empleado)=>empleado.cargo))].map((nombre,index)=>({
@@ -45,15 +45,15 @@ const CARGOS_INIT = [...new Set(EMPLEADOS_INIT.map((empleado)=>empleado.cargo))]
 
 const COTIZACIONES_INIT = [
   { id:"COT-001", numero:"P-34153", fecha:"2026-03-10", cliente:"Sergio Zapata", obra:"BYCSA", telefono:"3113372396", ciudad:"BARBOSA - ANTIOQUIA", estado:"Aprobada", obraId:"OB-001", total:37956480, items:[{desc:"LINEA DE VIDA HORIZONTAL 21 ML",cant:21,unit:"ML",vu:280000},{desc:"LINEA DE VIDA HORIZONTAL 27 ML",cant:27,unit:"ML",vu:280000},{desc:"LINEA DE VIDA CONEXIÃ“N 26 ML",cant:26,unit:"ML",vu:280000},{desc:"ESCALERA 11 METROS",cant:11,unit:"Metro",vu:1200000}], util:10, formaPago:"50% ANTICIPO, 50% CONCLUIR LABORES", tiempoEjec:"10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)", val:30, mapImg:null, coords:"6.4375,-75.3317" },
-  { id:"COT-002", numero:"P-34154", fecha:"2026-03-20", cliente:"Parque Ind. Mamonal", obra:"Mantenimiento Fachada Sur", telefono:"6565000", ciudad:"Cartagena, BolÃ­var", estado:"Pendiente", obraId:null, total:3200000, items:[{desc:"LINEA DE VIDA HORIZONTAL",cant:45,unit:"ML",vu:71111}], util:10, formaPago:"50% ANTICIPO, 50% CONCLUIR LABORES", tiempoEjec:"5 DIAS", val:30, mapImg:null, coords:"10.3432,-75.505" },
+  { id:"COT-002", numero:"P-34154", fecha:"2026-03-20", cliente:"Parque Ind. Mamonal", obra:"Mantenimiento Fachada Sur", telefono:"6565000", ciudad:"Cartagena, Bolívar", estado:"Pendiente", obraId:null, total:3200000, items:[{desc:"LINEA DE VIDA HORIZONTAL",cant:45,unit:"ML",vu:71111}], util:10, formaPago:"50% ANTICIPO, 50% CONCLUIR LABORES", tiempoEjec:"5 DIAS", val:30, mapImg:null, coords:"10.3432,-75.505" },
 ];
 
 const OBRAS_INIT = [
-  { id:"OB-001", cliente:"Sergio Zapata",          nit:"", tel:"3113372396", proyecto:"BYCSA Â· LÃ­neas de vida y escalera",      ciudad:"Barbosa, Antioquia",  direccion:"VÃ­a principal Barbosa",      coords:"6.4375,-75.3317", estado:"En Obra",   avance:40,  total:37956480, pagado:18978240, saldo:18978240, costos:8500000, fechaInicio:"2026-03-15", fechaFin:"2026-03-25", empleados:["E01","E02","E03"], trazos:[{x1:80,y1:100,x2:320,y2:100,tipo:"LVH",ml:27,label:"LV-1 27ml"},{x1:80,y1:150,x2:290,y2:150,tipo:"LVH",ml:21,label:"LV-2 21ml"},{x1:290,y1:100,x2:290,y2:150,tipo:"CON",ml:26,label:"ConexiÃ³n"}], anclajes:[{x:80,y:100},{x:320,y:100},{x:80,y:150},{x:290,y:150}] },
-  { id:"OB-002", cliente:"Parque Ind. Mamonal",    nit:"890.100.624-1", tel:"6565000", proyecto:"Mantenimiento Fachada Sur",          ciudad:"Cartagena, BolÃ­var",  direccion:"Zona Industrial Mamonal",    coords:"10.3432,-75.505", estado:"CotizaciÃ³n",avance:0,   total:3200000,  pagado:0,        saldo:3200000,  costos:0,       fechaInicio:"2026-04-10", fechaFin:"2026-04-20", empleados:["E04","E05"],        trazos:[{x1:100,y1:80,x2:350,y2:80,tipo:"LVH",ml:45,label:"LV Fachada"}], anclajes:[{x:100,y:80},{x:350,y:80}] },
-  { id:"OB-003", cliente:"Hotel Caribe Hilton",    nit:"800.025.222-1", tel:"6646060", proyecto:"LÃ­neas de Vida + CertificaciÃ³n",      ciudad:"Cartagena, BolÃ­var",  direccion:"El Laguito, Cartagena",      coords:"10.4236,-75.551", estado:"Pagado",    avance:100, total:12450000, pagado:12450000, saldo:0,        costos:3200000, fechaInicio:"2025-12-01", fechaFin:"2025-12-15", empleados:["E01","E03","E08"],  trazos:[{x1:60,y1:90,x2:380,y2:90,tipo:"LVH",ml:60,label:"LV Principal"},{x1:200,y1:90,x2:200,y2:260,tipo:"LVV",ml:30,label:"LV Vertical"}], anclajes:[{x:60,y:90},{x:380,y:90},{x:200,y:90},{x:200,y:260}] },
-  { id:"OB-004", cliente:"Cemex Colombia S.A.",    nit:"860.007.078-4", tel:"3208000", proyecto:"Anclajes EpÃ³xicos Planta",            ciudad:"MedellÃ­n, Antioquia", direccion:"Cra 42 #75-377, ItagÃ¼Ã­",    coords:"6.2442,-75.5812", estado:"En Obra",   avance:30,  total:5670000,  pagado:2835000,  saldo:2835000,  costos:1800000, fechaInicio:"2026-03-20", fechaFin:"2026-04-05", empleados:["E06","E07","E09"],  trazos:[{x1:120,y1:120,x2:310,y2:120,tipo:"LVH",ml:35,label:"LV Industrial"}], anclajes:[{x:120,y:120},{x:220,y:120},{x:310,y:120}] },
-  { id:"OB-005", cliente:"Centro Industrial Sur",  nit:"900.519.711-2", tel:"44483468", proyecto:"RecertificaciÃ³n 20 LVH",             ciudad:"MedellÃ­n, Antioquia", direccion:"Carrera 42 #75-377",        coords:"6.2112,-75.5890", estado:"Pagado",    avance:100, total:4800000,  pagado:4800000,  saldo:0,        costos:900000,  fechaInicio:"2026-02-23", fechaFin:"2026-03-03", empleados:["E04","E02","E03"],  trazos:[{x1:60,y1:80,x2:380,y2:80,tipo:"LVH",ml:80,label:"LV Sur"},{x1:60,y1:140,x2:380,y2:140,tipo:"LVH",ml:80,label:"LV Norte"}], anclajes:[{x:60,y:80},{x:380,y:80},{x:60,y:140},{x:380,y:140}] },
+  { id:"OB-001", cliente:"Sergio Zapata",          nit:"", tel:"3113372396", proyecto:"BYCSA · Líneas de vida y escalera",      ciudad:"Barbosa, Antioquia",  direccion:"Vía principal Barbosa",      coords:"6.4375,-75.3317", estado:"En Obra",   avance:40,  total:37956480, pagado:18978240, saldo:18978240, costos:8500000, fechaInicio:"2026-03-15", fechaFin:"2026-03-25", empleados:["E01","E02","E03"], trazos:[{x1:80,y1:100,x2:320,y2:100,tipo:"LVH",ml:27,label:"LV-1 27ml"},{x1:80,y1:150,x2:290,y2:150,tipo:"LVH",ml:21,label:"LV-2 21ml"},{x1:290,y1:100,x2:290,y2:150,tipo:"CON",ml:26,label:"Conexión"}], anclajes:[{x:80,y:100},{x:320,y:100},{x:80,y:150},{x:290,y:150}] },
+  { id:"OB-002", cliente:"Parque Ind. Mamonal",    nit:"890.100.624-1", tel:"6565000", proyecto:"Mantenimiento Fachada Sur",          ciudad:"Cartagena, Bolívar",  direccion:"Zona Industrial Mamonal",    coords:"10.3432,-75.505", estado:"Cotización",avance:0,   total:3200000,  pagado:0,        saldo:3200000,  costos:0,       fechaInicio:"2026-04-10", fechaFin:"2026-04-20", empleados:["E04","E05"],        trazos:[{x1:100,y1:80,x2:350,y2:80,tipo:"LVH",ml:45,label:"LV Fachada"}], anclajes:[{x:100,y:80},{x:350,y:80}] },
+  { id:"OB-003", cliente:"Hotel Caribe Hilton",    nit:"800.025.222-1", tel:"6646060", proyecto:"Líneas de Vida + Certificación",      ciudad:"Cartagena, Bolívar",  direccion:"El Laguito, Cartagena",      coords:"10.4236,-75.551", estado:"Pagado",    avance:100, total:12450000, pagado:12450000, saldo:0,        costos:3200000, fechaInicio:"2025-12-01", fechaFin:"2025-12-15", empleados:["E01","E03","E08"],  trazos:[{x1:60,y1:90,x2:380,y2:90,tipo:"LVH",ml:60,label:"LV Principal"},{x1:200,y1:90,x2:200,y2:260,tipo:"LVV",ml:30,label:"LV Vertical"}], anclajes:[{x:60,y:90},{x:380,y:90},{x:200,y:90},{x:200,y:260}] },
+  { id:"OB-004", cliente:"Cemex Colombia S.A.",    nit:"860.007.078-4", tel:"3208000", proyecto:"Anclajes Epóxicos Planta",            ciudad:"Medellín, Antioquia", direccion:"Cra 42 #75-377, Itagüí",    coords:"6.2442,-75.5812", estado:"En Obra",   avance:30,  total:5670000,  pagado:2835000,  saldo:2835000,  costos:1800000, fechaInicio:"2026-03-20", fechaFin:"2026-04-05", empleados:["E06","E07","E09"],  trazos:[{x1:120,y1:120,x2:310,y2:120,tipo:"LVH",ml:35,label:"LV Industrial"}], anclajes:[{x:120,y:120},{x:220,y:120},{x:310,y:120}] },
+  { id:"OB-005", cliente:"Centro Industrial Sur",  nit:"900.519.711-2", tel:"44483468", proyecto:"Recertificación 20 LVH",             ciudad:"Medellín, Antioquia", direccion:"Carrera 42 #75-377",        coords:"6.2112,-75.5890", estado:"Pagado",    avance:100, total:4800000,  pagado:4800000,  saldo:0,        costos:900000,  fechaInicio:"2026-02-23", fechaFin:"2026-03-03", empleados:["E04","E02","E03"],  trazos:[{x1:60,y1:80,x2:380,y2:80,tipo:"LVH",ml:80,label:"LV Sur"},{x1:60,y1:140,x2:380,y2:140,tipo:"LVH",ml:80,label:"LV Norte"}], anclajes:[{x:60,y:80},{x:380,y:80},{x:60,y:140},{x:380,y:140}] },
 ];
 
 const PAGOS_INIT = [
@@ -66,52 +66,52 @@ const PAGOS_INIT = [
 ];
 
 const HORARIOS_INIT = [
-  { id:"H01", empleadoId:"E01", obraId:"OB-001", fecha:"2026-04-07", turno:"07:00 - 17:00", tarea:"InstalaciÃ³n lÃ­neas de vida" },
-  { id:"H02", empleadoId:"E02", obraId:"OB-001", fecha:"2026-04-07", turno:"07:00 - 17:00", tarea:"InstalaciÃ³n lÃ­neas de vida" },
-  { id:"H03", empleadoId:"E03", obraId:"OB-001", fecha:"2026-04-07", turno:"08:00 - 17:00", tarea:"CoordinaciÃ³n SST" },
-  { id:"H04", empleadoId:"E04", obraId:"OB-004", fecha:"2026-04-07", turno:"07:00 - 16:00", tarea:"PerforaciÃ³n anclajes" },
-  { id:"H05", empleadoId:"E09", obraId:"OB-004", fecha:"2026-04-07", turno:"07:00 - 16:00", tarea:"InstalaciÃ³n anclajes epÃ³xicos" },
+  { id:"H01", empleadoId:"E01", obraId:"OB-001", fecha:"2026-04-07", turno:"07:00 - 17:00", tarea:"Instalación líneas de vida" },
+  { id:"H02", empleadoId:"E02", obraId:"OB-001", fecha:"2026-04-07", turno:"07:00 - 17:00", tarea:"Instalación líneas de vida" },
+  { id:"H03", empleadoId:"E03", obraId:"OB-001", fecha:"2026-04-07", turno:"08:00 - 17:00", tarea:"Coordinación SST" },
+  { id:"H04", empleadoId:"E04", obraId:"OB-004", fecha:"2026-04-07", turno:"07:00 - 16:00", tarea:"Perforación anclajes" },
+  { id:"H05", empleadoId:"E09", obraId:"OB-004", fecha:"2026-04-07", turno:"07:00 - 16:00", tarea:"Instalación anclajes epóxicos" },
 ];
 
 const CERTIFICACIONES_INIT = [
-  { id:"CERT-001", obraId:"OB-003", tipo:"CertificaciÃ³n", numero:"C-2025-001", fecha:"2025-12-16", cliente:"Hotel Caribe Hilton", nit:"800.025.222-1", direccion:"El Laguito, Cartagena", sistema:"23 LÃ­neas de vida horizontales con conectoras", elementos:["Perno Grado 8 B7 Ã˜ 5/8","Arandela Ã˜ 5/8","Tuerca Ã˜ 5/8","Guarda Cables","Cable diÃ¡metro 5/16\" (8mm) galvanizado","Tensor cable","Soportes laterales e intermedios"], normativa:"ResoluciÃ³n 4272 de 2021", ingeniero:"ING. JHON JAIME SEPULVEDA LONDOÃ‘O", matricula:"MP. 05256-409949", estado:"Vigente", proxMant:"2026-12-16" },
-  { id:"CERT-002", obraId:"OB-004", tipo:"CertificaciÃ³n", numero:"C-2024-047", fecha:"2024-10-29", cliente:"Promotora Frontera Sur S.A.S", nit:"900.412.xxx-x", direccion:"Cl. 50 #40 17, ItagÃ¼Ã­", sistema:"8 puntos de anclaje en Hotel Ibis Budget", elementos:["Perno Grado 8 B7 Ã˜ 5/8","Arandela Ã˜ 5/8","Tuerca Ã˜ 5/8","Punto de anclaje marca ARTICO acero galvanizado","EpÃ³xico ProAnchor Elite ESP"], normativa:"ResoluciÃ³n 4272 de 2021", ingeniero:"ING. JHON JAIME SEPULVEDA LONDOÃ‘O", matricula:"MP. 05256-409949", estado:"Vigente", proxMant:"2025-10-29" },
-  { id:"CERT-003", obraId:"OB-005", tipo:"RecertificaciÃ³n", numero:"R-2025-012", fecha:"2025-12-01", cliente:"Centro CÃ­vico Antioquia Plaza de la Libertad PH", nit:"900.519.711-2", direccion:"CR 53 A 42 161, MedellÃ­n", sistema:"34 puntos de anclaje - Mantenimiento preventivo", elementos:["Limpieza sistema completo","VerificaciÃ³n ajuste tuercas y pernos","Laca protectora anticorrosiva en todos los puntos"], normativa:"ResoluciÃ³n 4272 de 2021", ingeniero:"ING. JHON JAIME SEPULVEDA LONDOÃ‘O", matricula:"MP. 05256-409949", estado:"Vigente", proxMant:"2026-12-01" },
+  { id:"CERT-001", obraId:"OB-003", tipo:"Certificación", numero:"C-2025-001", fecha:"2025-12-16", cliente:"Hotel Caribe Hilton", nit:"800.025.222-1", direccion:"El Laguito, Cartagena", sistema:"23 Líneas de vida horizontales con conectoras", elementos:["Perno Grado 8 B7 Ã˜ 5/8","Arandela Ã˜ 5/8","Tuerca Ã˜ 5/8","Guarda Cables","Cable diámetro 5/16\" (8mm) galvanizado","Tensor cable","Soportes laterales e intermedios"], normativa:"Resolución 4272 de 2021", ingeniero:"ING. JHON JAIME SEPULVEDA LONDOÃ‘O", matricula:"MP. 05256-409949", estado:"Vigente", proxMant:"2026-12-16" },
+  { id:"CERT-002", obraId:"OB-004", tipo:"Certificación", numero:"C-2024-047", fecha:"2024-10-29", cliente:"Promotora Frontera Sur S.A.S", nit:"900.412.xxx-x", direccion:"Cl. 50 #40 17, Itagüí", sistema:"8 puntos de anclaje en Hotel Ibis Budget", elementos:["Perno Grado 8 B7 Ã˜ 5/8","Arandela Ã˜ 5/8","Tuerca Ã˜ 5/8","Punto de anclaje marca ARTICO acero galvanizado","Epóxico ProAnchor Elite ESP"], normativa:"Resolución 4272 de 2021", ingeniero:"ING. JHON JAIME SEPULVEDA LONDOÃ‘O", matricula:"MP. 05256-409949", estado:"Vigente", proxMant:"2025-10-29" },
+  { id:"CERT-003", obraId:"OB-005", tipo:"Recertificación", numero:"R-2025-012", fecha:"2025-12-01", cliente:"Centro Cívico Antioquia Plaza de la Libertad PH", nit:"900.519.711-2", direccion:"CR 53 A 42 161, Medellín", sistema:"34 puntos de anclaje - Mantenimiento preventivo", elementos:["Limpieza sistema completo","Verificación ajuste tuercas y pernos","Laca protectora anticorrosiva en todos los puntos"], normativa:"Resolución 4272 de 2021", ingeniero:"ING. JHON JAIME SEPULVEDA LONDOÃ‘O", matricula:"MP. 05256-409949", estado:"Vigente", proxMant:"2026-12-01" },
 ];
 
 const INFORMES_INIT = [
-  { id:"INF-001", obraId:"OB-001", proyecto:"COMAPAN-PONQUE", localizacion:"Puente Aranda, BogotÃ¡", fechaInforme:"2026-03-18", periodoInicio:"2026-03-09", periodoFin:"2026-03-14", personal:[{cargo:"Instalador",nombre:"Juan David GarcÃ­a"},{cargo:"Instalador",nombre:"James RincÃ³n"},{cargo:"Instalador",nombre:"Carlos Tovar"},{cargo:"Instalador",nombre:"William Ãlvarez"},{cargo:"SST",nombre:"Paola Escobar"}], actividad:"InstalaciÃ³n de lÃ­neas de vida", descripcion:"Primero, se realizÃ³ una evaluaciÃ³n detallada de la cubierta para determinar las ubicaciones Ã³ptimas para los soportes que sostendrÃ¡n las lÃ­neas. A continuaciÃ³n, se instalaron estos soportes asegurÃ¡ndolos firmemente a la cubierta, por Ãºltimo se realizÃ³ la instalaciÃ³n de los cables o lÃ­neas horizontales. Este cable se desliza a travÃ©s de los soportes, asegurÃ¡ndolo con tensores para mantener la lÃ­nea en la posiciÃ³n deseada y evitar movimientos indeseados. Finalmente, se realiza una verificaciÃ³n de la tensiÃ³n y la alineaciÃ³n de los cables para asegurar que cumpla con los estÃ¡ndares de seguridad y funcionalidad.", observaciones:"1 LÃ­nea de vida horizontal de 119 metros en la bodega ponque", recomendaciones:"Para garantizar la efectividad y seguridad de las lÃ­neas de vida instaladas es fundamental implementar un programa de inspecciÃ³n regular para verificar el estado de los anclajes.", fotos:[{url:"",comentario:"Vista general cubierta - evaluaciÃ³n inicial"},{url:"",comentario:"InstalaciÃ³n soportes laterales"},{url:"",comentario:"Tensor y cable instalado"},{url:"",comentario:"VerificaciÃ³n tensiÃ³n final"}] },
-  { id:"INF-002", obraId:"OB-005", proyecto:"CENTRO INDUSTRIAL DEL SUR", localizacion:"MedellÃ­n, Antioquia", fechaInforme:"2026-03-03", periodoInicio:"2026-02-23", periodoFin:"2026-02-24", personal:[{cargo:"Instalador",nombre:"William Ãlvarez"},{cargo:"Instalador",nombre:"James RincÃ³n"},{cargo:"SST",nombre:"Arelis QuiÃ±ones"}], actividad:"RecertificaciÃ³n de lÃ­neas de vida horizontal", descripcion:"Se realizÃ³ la inspecciÃ³n visual y fÃ­sica de todos los elementos que componen el sistema: soportes laterales e intermedios, cable, guardacables, tensor. No fue necesario realizar ajustes al cable ya que este se encontraba en Ã³ptimas condiciones de tensiÃ³n. Se realizÃ³ el ajuste a tornillerÃ­a y se verificÃ³ el estado de la soldadura. Se realizÃ³ limpieza del sistema y la aplicaciÃ³n de pintura anticorrosiva.", observaciones:"20 lÃ­neas de vida horizontal recertificadas", recomendaciones:"Para garantizar la efectividad y seguridad de las lÃ­neas de vida instaladas es fundamental implementar un programa de inspecciÃ³n regular.", fotos:[{url:"",comentario:"InspecciÃ³n visual soportes laterales"},{url:"",comentario:"VerificaciÃ³n tensiÃ³n cable"},{url:"",comentario:"AplicaciÃ³n pintura anticorrosiva"},{url:"",comentario:"Estado final del sistema"}] },
+  { id:"INF-001", obraId:"OB-001", proyecto:"COMAPAN-PONQUE", localizacion:"Puente Aranda, Bogotá", fechaInforme:"2026-03-18", periodoInicio:"2026-03-09", periodoFin:"2026-03-14", personal:[{cargo:"Instalador",nombre:"Juan David García"},{cargo:"Instalador",nombre:"James Rincón"},{cargo:"Instalador",nombre:"Carlos Tovar"},{cargo:"Instalador",nombre:"William Álvarez"},{cargo:"SST",nombre:"Paola Escobar"}], actividad:"Instalación de líneas de vida", descripcion:"Primero, se realizó una evaluación detallada de la cubierta para determinar las ubicaciones óptimas para los soportes que sostendrán las líneas. A continuación, se instalaron estos soportes asegurándolos firmemente a la cubierta, por último se realizó la instalación de los cables o líneas horizontales. Este cable se desliza a través de los soportes, asegurándolo con tensores para mantener la línea en la posición deseada y evitar movimientos indeseados. Finalmente, se realiza una verificación de la tensión y la alineación de los cables para asegurar que cumpla con los estándares de seguridad y funcionalidad.", observaciones:"1 Línea de vida horizontal de 119 metros en la bodega ponque", recomendaciones:"Para garantizar la efectividad y seguridad de las líneas de vida instaladas es fundamental implementar un programa de inspección regular para verificar el estado de los anclajes.", fotos:[{url:"",comentario:"Vista general cubierta - evaluación inicial"},{url:"",comentario:"Instalación soportes laterales"},{url:"",comentario:"Tensor y cable instalado"},{url:"",comentario:"Verificación tensión final"}] },
+  { id:"INF-002", obraId:"OB-005", proyecto:"CENTRO INDUSTRIAL DEL SUR", localizacion:"Medellín, Antioquia", fechaInforme:"2026-03-03", periodoInicio:"2026-02-23", periodoFin:"2026-02-24", personal:[{cargo:"Instalador",nombre:"William Álvarez"},{cargo:"Instalador",nombre:"James Rincón"},{cargo:"SST",nombre:"Arelis Quiñones"}], actividad:"Recertificación de líneas de vida horizontal", descripcion:"Se realizó la inspección visual y física de todos los elementos que componen el sistema: soportes laterales e intermedios, cable, guardacables, tensor. No fue necesario realizar ajustes al cable ya que este se encontraba en óptimas condiciones de tensión. Se realizó el ajuste a tornillería y se verificó el estado de la soldadura. Se realizó limpieza del sistema y la aplicación de pintura anticorrosiva.", observaciones:"20 líneas de vida horizontal recertificadas", recomendaciones:"Para garantizar la efectividad y seguridad de las líneas de vida instaladas es fundamental implementar un programa de inspección regular.", fotos:[{url:"",comentario:"Inspección visual soportes laterales"},{url:"",comentario:"Verificación tensión cable"},{url:"",comentario:"Aplicación pintura anticorrosiva"},{url:"",comentario:"Estado final del sistema"}] },
 ];
 
 
 const CLIENTES_INIT = [
-  { id:"CLI-001", nombre:"Sergio Zapata", nit:"", telefono:"3113372396", ciudad:"Barbosa, Antioquia", direccion:"VÃ­a principal Barbosa", contacto:"Sergio Zapata", email:"", estado:"Activo", notas:"Cliente asociado a BYCSA." },
-  { id:"CLI-002", nombre:"Parque Ind. Mamonal", nit:"890.100.624-1", telefono:"6565000", ciudad:"Cartagena, BolÃ­var", direccion:"Zona Industrial Mamonal", contacto:"Ãrea de mantenimiento", email:"", estado:"Activo", notas:"Cliente industrial con trabajos de mantenimiento." },
-  { id:"CLI-003", nombre:"Hotel Caribe Hilton", nit:"800.025.222-1", telefono:"6646060", ciudad:"Cartagena, BolÃ­var", direccion:"El Laguito, Cartagena", contacto:"AdministraciÃ³n hotel", email:"", estado:"Activo", notas:"Cliente con certificaciones vigentes." },
-  { id:"CLI-004", nombre:"Cemex Colombia S.A.", nit:"860.007.078-4", telefono:"3208000", ciudad:"MedellÃ­n, Antioquia", direccion:"Cra 42 #75-377, ItagÃ¼Ã­", contacto:"Compras / mantenimiento", email:"", estado:"Activo", notas:"Cliente corporativo de planta industrial." },
-  { id:"CLI-005", nombre:"Centro Industrial Sur", nit:"900.519.711-2", telefono:"44483468", ciudad:"MedellÃ­n, Antioquia", direccion:"Carrera 42 #75-377", contacto:"AdministraciÃ³n", email:"", estado:"Activo", notas:"Cliente de recertificaciÃ³n y mantenimiento." },
-  { id:"CLI-006", nombre:"Promotora Frontera Sur S.A.S", nit:"900.412.xxx-x", telefono:"", ciudad:"ItagÃ¼Ã­, Antioquia", direccion:"Cl. 50 #40 17, ItagÃ¼Ã­", contacto:"CoordinaciÃ³n de obra", email:"", estado:"Activo", notas:"Cliente registrado en certificaciones." },
-  { id:"CLI-007", nombre:"Centro CÃ­vico Antioquia Plaza de la Libertad PH", nit:"900.519.711-2", telefono:"", ciudad:"MedellÃ­n, Antioquia", direccion:"CR 53 A 42 161, MedellÃ­n", contacto:"AdministraciÃ³n PH", email:"", estado:"Activo", notas:"Cliente de recertificaciÃ³n." },
+  { id:"CLI-001", nombre:"Sergio Zapata", nit:"", telefono:"3113372396", ciudad:"Barbosa, Antioquia", direccion:"Vía principal Barbosa", contacto:"Sergio Zapata", email:"", estado:"Activo", notas:"Cliente asociado a BYCSA." },
+  { id:"CLI-002", nombre:"Parque Ind. Mamonal", nit:"890.100.624-1", telefono:"6565000", ciudad:"Cartagena, Bolívar", direccion:"Zona Industrial Mamonal", contacto:"Área de mantenimiento", email:"", estado:"Activo", notas:"Cliente industrial con trabajos de mantenimiento." },
+  { id:"CLI-003", nombre:"Hotel Caribe Hilton", nit:"800.025.222-1", telefono:"6646060", ciudad:"Cartagena, Bolívar", direccion:"El Laguito, Cartagena", contacto:"Administración hotel", email:"", estado:"Activo", notas:"Cliente con certificaciones vigentes." },
+  { id:"CLI-004", nombre:"Cemex Colombia S.A.", nit:"860.007.078-4", telefono:"3208000", ciudad:"Medellín, Antioquia", direccion:"Cra 42 #75-377, Itagüí", contacto:"Compras / mantenimiento", email:"", estado:"Activo", notas:"Cliente corporativo de planta industrial." },
+  { id:"CLI-005", nombre:"Centro Industrial Sur", nit:"900.519.711-2", telefono:"44483468", ciudad:"Medellín, Antioquia", direccion:"Carrera 42 #75-377", contacto:"Administración", email:"", estado:"Activo", notas:"Cliente de recertificación y mantenimiento." },
+  { id:"CLI-006", nombre:"Promotora Frontera Sur S.A.S", nit:"900.412.xxx-x", telefono:"", ciudad:"Itagüí, Antioquia", direccion:"Cl. 50 #40 17, Itagüí", contacto:"Coordinación de obra", email:"", estado:"Activo", notas:"Cliente registrado en certificaciones." },
+  { id:"CLI-007", nombre:"Centro Cívico Antioquia Plaza de la Libertad PH", nit:"900.519.711-2", telefono:"", ciudad:"Medellín, Antioquia", direccion:"CR 53 A 42 161, Medellín", contacto:"Administración PH", email:"", estado:"Activo", notas:"Cliente de recertificación." },
 ];
 
 const PROVEEDORES_INIT = [
-  { id:"PROV-001", nombre:"Hilti Colombia S.A.S", nit:"830.098.000-1", telefono:"018000114586", tel:"018000114586", email:"hilti@hilti.co", banco:"Bancolombia", numeroCuenta:"410-000123-45", direccion:"Cra. 48 # 14 Sur - 89, MedellÃ­n", categoria:"Materiales", contacto:"Asesor comercial" },
-  { id:"PROV-002", nombre:"Fischer Colombia", nit:"900.123.456-7", telefono:"6041234567", tel:"6041234567", email:"ventas@fischer.co", banco:"Davivienda", numeroCuenta:"0078-000456-11", direccion:"Autopista Sur # 52 - 31, ItagÃ¼Ã­", categoria:"Materiales", contacto:"Equipo de ventas" },
-  { id:"PROV-003", nombre:"FerreterÃ­a Industrial SAS", nit:"811.000.789-2", telefono:"3005678901", tel:"3005678901", email:"pedidos@ferind.co", banco:"Banco de BogotÃ¡", numeroCuenta:"021-998877-55", direccion:"Cl. 30 # 65 - 10, MedellÃ­n", categoria:"FerreterÃ­a", contacto:"Jhon Mesa" },
-  { id:"PROV-004", nombre:"Transporte RÃ¡pido S.A.", nit:"900.234.567-8", telefono:"3142345678", tel:"3142345678", email:"transp@rapido.co", banco:"Bancolombia", numeroCuenta:"201-445566-77", direccion:"Zona Industrial Mamonal, Cartagena", categoria:"Transporte", contacto:"Carlos DÃ­az" },
-  { id:"PROV-005", nombre:"Arco Industrial Cables", nit:"900.345.678-9", telefono:"3153456789", tel:"3153456789", email:"cables@arco.co", banco:"BBVA", numeroCuenta:"912345670", direccion:"Cl. 10 # 48 - 22, BogotÃ¡", categoria:"Cables/Acero", contacto:"Luisa Torres" },
-  { id:"PROV-006", nombre:"EpÃ³xicos y QuÃ­micos SA", nit:"900.456.789-0", telefono:"3164567890", tel:"3164567890", email:"ventas@epoxicos.co", banco:"Occidente", numeroCuenta:"350-778899-00", direccion:"Parque Industrial Rionegro, Antioquia", categoria:"QuÃ­micos", contacto:"Sandra Ruiz" },
+  { id:"PROV-001", nombre:"Hilti Colombia S.A.S", nit:"830.098.000-1", telefono:"018000114586", tel:"018000114586", email:"hilti@hilti.co", banco:"Bancolombia", numeroCuenta:"410-000123-45", direccion:"Cra. 48 # 14 Sur - 89, Medellín", categoria:"Materiales", contacto:"Asesor comercial" },
+  { id:"PROV-002", nombre:"Fischer Colombia", nit:"900.123.456-7", telefono:"6041234567", tel:"6041234567", email:"ventas@fischer.co", banco:"Davivienda", numeroCuenta:"0078-000456-11", direccion:"Autopista Sur # 52 - 31, Itagüí", categoria:"Materiales", contacto:"Equipo de ventas" },
+  { id:"PROV-003", nombre:"Ferretería Industrial SAS", nit:"811.000.789-2", telefono:"3005678901", tel:"3005678901", email:"pedidos@ferind.co", banco:"Banco de Bogotá", numeroCuenta:"021-998877-55", direccion:"Cl. 30 # 65 - 10, Medellín", categoria:"Ferretería", contacto:"Jhon Mesa" },
+  { id:"PROV-004", nombre:"Transporte Rápido S.A.", nit:"900.234.567-8", telefono:"3142345678", tel:"3142345678", email:"transp@rapido.co", banco:"Bancolombia", numeroCuenta:"201-445566-77", direccion:"Zona Industrial Mamonal, Cartagena", categoria:"Transporte", contacto:"Carlos Díaz" },
+  { id:"PROV-005", nombre:"Arco Industrial Cables", nit:"900.345.678-9", telefono:"3153456789", tel:"3153456789", email:"cables@arco.co", banco:"BBVA", numeroCuenta:"912345670", direccion:"Cl. 10 # 48 - 22, Bogotá", categoria:"Cables/Acero", contacto:"Luisa Torres" },
+  { id:"PROV-006", nombre:"Epóxicos y Químicos SA", nit:"900.456.789-0", telefono:"3164567890", tel:"3164567890", email:"ventas@epoxicos.co", banco:"Occidente", numeroCuenta:"350-778899-00", direccion:"Parque Industrial Rionegro, Antioquia", categoria:"Químicos", contacto:"Sandra Ruiz" },
 ];
 
 const CUENTAS_PAGAR_INIT = [
   { id:"CP-001", proveedorId:"PROV-001", obraId:"OB-001", concepto:"Pernos Grado 8 B7 ÃƒËœ 5/8 x 200 und", monto:1850000, fecha:"2026-03-10", fechaVence:"2026-04-10", estado:"Pendiente", factura:"FV-2026-0341" },
   { id:"CP-002", proveedorId:"PROV-005", obraId:"OB-001", concepto:"Cable acero 5/16\" galvanizado 300ml", monto:2400000, fecha:"2026-03-10", fechaVence:"2026-03-25", estado:"Pagado",   factura:"FV-2026-0198" },
-  { id:"CP-003", proveedorId:"PROV-004", obraId:"OB-001", concepto:"Transporte materiales BogotÃ¡", monto:850000,  fecha:"2026-03-08", fechaVence:"2026-03-15", estado:"Pagado",   factura:"FV-2026-0089" },
-  { id:"CP-004", proveedorId:"PROV-006", obraId:"OB-001", concepto:"EpÃ³xico PURE 110 x 12 und", monto:960000,  fecha:"2026-03-11", fechaVence:"2026-04-11", estado:"Pendiente", factura:"FV-2026-0402" },
+  { id:"CP-003", proveedorId:"PROV-004", obraId:"OB-001", concepto:"Transporte materiales Bogotá", monto:850000,  fecha:"2026-03-08", fechaVence:"2026-03-15", estado:"Pagado",   factura:"FV-2026-0089" },
+  { id:"CP-004", proveedorId:"PROV-006", obraId:"OB-001", concepto:"Epóxico PURE 110 x 12 und", monto:960000,  fecha:"2026-03-11", fechaVence:"2026-04-11", estado:"Pendiente", factura:"FV-2026-0402" },
   { id:"CP-005", proveedorId:"PROV-003", obraId:"OB-004", concepto:"Soportes laterales e intermedios x 30", monto:1200000, fecha:"2026-03-20", fechaVence:"2026-04-20", estado:"Pendiente", factura:"FV-2026-0511" },
   { id:"CP-006", proveedorId:"PROV-005", obraId:"OB-004", concepto:"Cable acero 5/16\" x 150ml", monto:1150000, fecha:"2026-03-19", fechaVence:"2026-04-05", estado:"Pagado",   factura:"FV-2026-0488" },
-  { id:"CP-007", proveedorId:"PROV-002", obraId:"OB-005", concepto:"TornillerÃ­a certificada pack", monto:480000,  fecha:"2026-02-20", fechaVence:"2026-03-20", estado:"Pagado",   factura:"FV-2026-0112" },
+  { id:"CP-007", proveedorId:"PROV-002", obraId:"OB-005", concepto:"Tornillería certificada pack", monto:480000,  fecha:"2026-02-20", fechaVence:"2026-03-20", estado:"Pagado",   factura:"FV-2026-0112" },
   { id:"CP-008", proveedorId:"PROV-001", obraId:"OB-003", concepto:"Anclajes ARTICO acero galvanizado x 23", monto:3200000, fecha:"2025-11-28", fechaVence:"2025-12-28", estado:"Pagado",   factura:"FV-2025-1893" },
 ];
 
@@ -230,7 +230,7 @@ const calcularParafiscales = (empleado, fechaCorte=null) => {
 
 const EC={
   "En Obra":{bg:"#1a3a5c",text:"#60b4ff",border:"#2563a8"},
-  "CotizaciÃ³n":{bg:"#2d2a14",text:"#f5c842",border:"#7a6610"},
+  "Cotización":{bg:"#2d2a14",text:"#f5c842",border:"#7a6610"},
   "Pagado":{bg:"#0f2d1a",text:"#4ade80",border:"#166534"},
   "Pendiente":{bg:"#2d1a0f",text:"#fb923c",border:"#7c3110"},
   "Finalizado":{bg:"#1a1a3a",text:"#c084fc",border:"#6b21a8"},
@@ -289,7 +289,7 @@ function loadLeafletAssets(){
   if(window.L) return Promise.resolve(window.L);
   if(leafletLoaderPromise) return leafletLoaderPromise;
   leafletLoaderPromise = new Promise((resolve,reject)=>{
-    const finish = ()=> window.L ? resolve(window.L) : reject(new Error("Leaflet no cargÃ³"));
+    const finish = ()=> window.L ? resolve(window.L) : reject(new Error("Leaflet no cargó"));
     if(!document.getElementById(LEAFLET_CSS_ID)){
       const link=document.createElement("link");
       link.id=LEAFLET_CSS_ID;
@@ -355,7 +355,7 @@ export default function App(){
   const saveAllToCloud=async(override=null)=>{
     if(!isSupabaseConfigured()) return;
     if(typeof saveCloudAppData!=="function"){
-      console.warn("saveCloudAppData no estÃ¡ disponible en ./lib/backend");
+      console.warn("saveCloudAppData no está disponible en ./lib/backend");
       return;
     }
     try{
@@ -609,7 +609,7 @@ function Dashboard({ctx,go}){
 }
 
 // ======================================================
-// BASE DE DATOS DE ÃTEMS PREDEFINIDOS
+// BASE DE DATOS DE ÍTEMS PREDEFINIDOS
 // ======================================================
 const ITEMS_DB = [
   { categoria:"Lineas de Vida", items:[
@@ -1076,7 +1076,7 @@ function loadHtml2Pdf(){
     script.id = "html2pdf-bundle-js";
     script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
     script.async = true;
-    script.onload = ()=> window.html2pdf ? resolve(window.html2pdf) : reject(new Error("html2pdf no quedÃ³ disponible"));
+    script.onload = ()=> window.html2pdf ? resolve(window.html2pdf) : reject(new Error("html2pdf no quedó disponible"));
     script.onerror = ()=> reject(new Error("No fue posible cargar html2pdf"));
     document.body.appendChild(script);
   });
@@ -1129,18 +1129,18 @@ async function sendCotizacionEmail(c, clienteInfo, pdfFile){
     fd.append("quoteNumber", c?.numero || "");
     fd.append("pdf", pdfFile, pdfFile.name);
     const res = await fetch(COTIZACION_AUTO_SEND_ENDPOINTS.email, { method:"POST", body:fd });
-    if(!res.ok) throw new Error("El endpoint de correo no respondiÃ³ correctamente.");
+    if(!res.ok) throw new Error("El endpoint de correo no respondió correctamente.");
     return { ok:true, message:`Correo enviado a ${email}` };
   }
 
   downloadGeneratedFile(pdfFile);
   window.location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  return { ok:true, manual:true, message:`Correo preparado para ${email}. El PDF se descargÃ³ para adjuntarlo.` };
+  return { ok:true, manual:true, message:`Correo preparado para ${email}. El PDF se descargó para adjuntarlo.` };
 }
 
 async function sendCotizacionWhatsApp(c, clienteInfo, pdfFile){
   const phone = getCotizacionClientPhone(clienteInfo, c);
-  if(!phone) throw new Error("El cliente no tiene telÃ©fono registrado en la cotizaciÃ³n o en la base de datos.");
+  if(!phone) throw new Error("El cliente no tiene teléfono registrado en la cotización o en la base de datos.");
   const message = buildCotizacionShareMessage(c, clienteInfo);
 
   if(COTIZACION_AUTO_SEND_ENDPOINTS.whatsapp){
@@ -1151,7 +1151,7 @@ async function sendCotizacionWhatsApp(c, clienteInfo, pdfFile){
     fd.append("quoteNumber", c?.numero || "");
     fd.append("pdf", pdfFile, pdfFile.name);
     const res = await fetch(COTIZACION_AUTO_SEND_ENDPOINTS.whatsapp, { method:"POST", body:fd });
-    if(!res.ok) throw new Error("El endpoint de WhatsApp no respondiÃ³ correctamente.");
+    if(!res.ok) throw new Error("El endpoint de WhatsApp no respondió correctamente.");
     return { ok:true, message:`WhatsApp enviado a +${phone}` };
   }
 
@@ -1162,15 +1162,15 @@ async function sendCotizacionWhatsApp(c, clienteInfo, pdfFile){
         text: message,
         files: [pdfFile],
       });
-      return { ok:true, manual:true, message:`Se abriÃ³ el selector para compartir el PDF por WhatsApp con +${phone}` };
+      return { ok:true, manual:true, message:`Se abrió el selector para compartir el PDF por WhatsApp con +${phone}` };
     }
   }catch(err){
-    // continÃºa al fallback de wa.me
+    // continúa al fallback de wa.me
   }
 
   downloadGeneratedFile(pdfFile);
   window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank");
-  return { ok:true, manual:true, message:`WhatsApp abierto para +${phone}. El PDF se descargÃ³ para adjuntarlo.` };
+  return { ok:true, manual:true, message:`WhatsApp abierto para +${phone}. El PDF se descargó para adjuntarlo.` };
 }
 
 function openPrintWindow(title, innerHtml, extraCss = ""){
@@ -1316,15 +1316,65 @@ td.hdr3{background:#92400e;color:#fff;font-weight:700;font-size:11px;padding:7px
   if(win){win.document.write(html);win.document.close();win.focus();setTimeout(()=>win.print(),500);}
 }
 
+function printLiquidacion(empleado, pfl, indemn, diasVacPagar, fechaSalida){
+  const fmtC = n => '$ ' + Math.round(Number(n)||0).toLocaleString('es-CO');
+  const vacValorReal = Math.round(empleado.salario * (diasVacPagar||0) / 30);
+  const total = pfl.cesantias + pfl.interesesCesantias + pfl.prima + vacValorReal + indemn;
+  const rows = [
+    ['Cesantías (Art. 249 CST)', (empleado.salario + (empleado.salario<=NOMINA_CO_2026.topeAuxilio?NOMINA_CO_2026.auxilioTransporte:0)).toLocaleString('es-CO') + ' × ' + pfl.diasTrabajados + 'd ÷ 360', fmtC(pfl.cesantias)],
+    ['Intereses cesantías (12% anual)', '12% s/ ' + fmtC(pfl.cesantias), fmtC(pfl.interesesCesantias)],
+    ['Prima de servicios (Art. 306 CST)', 'Base × ' + pfl.diasTrabajados + 'd ÷ 360', fmtC(pfl.prima)],
+    ['Vacaciones (Art. 186 CST)', diasVacPagar + ' días × ' + fmtC(empleado.salario) + ' ÷ 30', fmtC(vacValorReal)],
+    ...(indemn>0?[['Indemnización sin justa causa (Art. 64 CST)', 'Según años de servicio', fmtC(indemn)]]:[]),
+  ];
+  const rowsHtml = rows.map(([k,b,v])=>
+    '<tr><td style="padding:6px 14px;border-bottom:1px solid #f1f5f9">'+k+'</td><td style="padding:6px 14px;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:10px">'+b+'</td><td style="padding:6px 14px;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:600">'+v+'</td></tr>'
+  ).join('');
+  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Liquidación '+empleado.nombre+'</title>'
+    +'<style>body{font-family:"Segoe UI",Arial,sans-serif;margin:0;padding:20px;background:#f8fafc;}'
+    +'.wrap{max-width:640px;margin:0 auto;background:#fff;border:1px solid #ddd;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.1);}'
+    +'.hd{background:#cc0000;color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;}'
+    +'.hd h2{margin:0;font-size:16px;letter-spacing:.5px;}'
+    +'.emp{padding:12px 20px;background:#fff8f8;border-bottom:2px solid #fecaca;font-size:12px;line-height:1.8;}'
+    +'.emp strong{font-size:15px;display:block;color:#0f172a;}'
+    +'table{width:100%;border-collapse:collapse;font-size:11.5px;}'
+    +'.total-row td{background:#cc0000;color:#fff;font-weight:700;font-size:15px;padding:13px 16px;}'
+    +'.total-amt{color:#fde68a;font-size:18px;}'
+    +'.footer{padding:14px 20px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;line-height:1.8;}'
+    +'@media print{body{background:#fff;padding:0;}.wrap{box-shadow:none;border:none;}}'
+    +'</style></head><body><div class="wrap">'
+    +'<div class="hd"><div><h2>LIQUIDACIÓN DEFINITIVA DE PRESTACIONES SOCIALES</h2><div style="font-size:11px;opacity:.8;margin-top:3px">Ingeanclajes S.A.S — NIT 900193965-4</div></div></div>'
+    +'<div class="emp"><strong>'+empleado.nombre+'</strong>'
+    +'Cédula: '+(empleado.cedula||'-')+'&nbsp;·&nbsp;Cargo: '+(empleado.cargo||'-')+'<br/>'
+    +'Tipo contrato: '+(empleado.tipoContrato||'indefinido')+'&nbsp;·&nbsp;Ingreso: '+(empleado.fechaIngreso||'N/A')+'&nbsp;·&nbsp;Salida: '+(fechaSalida||'N/A')+'<br/>'
+    +'Causa retiro: '+(empleado.causaRetiro||'—')+'&nbsp;·&nbsp;Tiempo laborado: '+pfl.diasTrabajados+' días ('+pfl.mesesTrabajados+' meses)'
+    +'</div>'
+    +'<table><thead><tr style="background:#142840;color:#fff"><th style="padding:7px 14px;text-align:left">Concepto</th><th style="padding:7px 14px;text-align:left">Base de cálculo</th><th style="padding:7px 14px;text-align:right">Valor</th></tr></thead>'
+    +'<tbody>'+rowsHtml+'</tbody>'
+    +'<tfoot><tr class="total-row"><td colspan="2">TOTAL A PAGAR</td><td style="text-align:right"><span class="total-amt">'+fmtC(total)+'</span></td></tr></tfoot>'
+    +'</table>'
+    +'<div class="footer">'
+    +'<div style="display:flex;justify-content:space-around;margin-bottom:10px;margin-top:10px">'
+    +'<div style="text-align:center">________________________<br/><span style="font-size:11px;color:#374151">Firma Empleado<br/>'+empleado.nombre+'<br/>C.C. '+(empleado.cedula||'')+'</span></div>'
+    +'<div style="text-align:center">________________________<br/><span style="font-size:11px;color:#374151">Representante Legal<br/>Ingeanclajes S.A.S</span></div>'
+    +'</div>'
+    +'Generado el '+new Date().toLocaleDateString('es-CO',{year:"numeric",month:"long",day:"numeric"})+' · Este documento es constancia de pago de prestaciones sociales.'
+    +'</div>'
+    +'</div></body></html>';
+  const win = window.open('','_blank','width=720,height=920');
+  if(win){win.document.write(html);win.document.close();win.focus();setTimeout(()=>win.print(),500);}
+}
+
+
 
 let googleMapsJsPromise = null;
 function loadGoogleMapsJsApi(){
-  if(typeof window === "undefined") return Promise.reject(new Error("Google Maps solo estÃ¡ disponible en el navegador."));
+  if(typeof window === "undefined") return Promise.reject(new Error("Google Maps solo está disponible en el navegador."));
   if(window.google?.maps) return Promise.resolve(window.google.maps);
   if(googleMapsJsPromise) return googleMapsJsPromise;
   googleMapsJsPromise = new Promise((resolve,reject)=>{
     const existing = document.getElementById("gmaps-js-api");
-    const finish = ()=> window.google?.maps ? resolve(window.google.maps) : reject(new Error("Google Maps no cargÃ³ correctamente."));
+    const finish = ()=> window.google?.maps ? resolve(window.google.maps) : reject(new Error("Google Maps no cargó correctamente."));
     if(existing){
       existing.addEventListener("load", finish, {once:true});
       existing.addEventListener("error", ()=>reject(new Error("No fue posible cargar Google Maps.")), {once:true});
@@ -1464,7 +1514,7 @@ function buildGoogleStaticMapUrl(segments=[], query="", mapView=null, options={}
   return `${base}?${params.toString()}`;
 }
 
-function StaticMapPreview({ src, segments=[], query="", mapView=null, alt="Mapa automÃ¡tico", maxHeight=null, border="1px solid #ddd", borderRadius=8 }){
+function StaticMapPreview({ src, segments=[], query="", mapView=null, alt="Mapa automático", maxHeight=null, border="1px solid #ddd", borderRadius=8 }){
   if(!src) return null;
   const labels = getStaticMapLabelData(segments, query, mapView);
   const { width, height } = getStaticMapDimensions(mapView);
@@ -1492,7 +1542,7 @@ function StaticMapPreview({ src, segments=[], query="", mapView=null, alt="Mapa 
             whiteSpace:"nowrap",
           }}
         >
-          <div style={{fontSize:8.5}}>{label.title} Â· {label.value}</div>
+          <div style={{fontSize:8.5}}>{label.title} · {label.value}</div>
         </div>
       ))}
     </div>
@@ -1502,7 +1552,7 @@ function StaticMapPreview({ src, segments=[], query="", mapView=null, alt="Mapa 
 function measurementsToQuoteItems(list=[]){
   return (list||[]).map((seg,idx)=>({
     id: Date.now() + idx,
-    desc: seg.label || `LÃNEA ${idx+1}`,
+    desc: seg.label || `LÍNEA ${idx+1}`,
     cant: Number(seg.ml||0).toFixed(2),
     unit: measurementUnitFromType(seg.tipo),
     vu: seg.tipo === "LVV" ? 320000 : seg.tipo === "ESC" ? 1200000 : seg.tipo === "CON" ? 280000 : 280000,
@@ -1666,7 +1716,7 @@ function GoogleMeasureWorkspace({ queryValue, onQueryChange, measurements, onCha
         geocoderRef.current = geocoder;
         const result = await geocoder.geocode({ address: raw });
         const first = Array.isArray(result?.results) ? result.results[0] : result?.results?.[0];
-        if(!first?.geometry?.location) throw new Error("No encontrÃ© esa ubicaciÃ³n en Google Maps.");
+        if(!first?.geometry?.location) throw new Error("No encontré esa ubicación en Google Maps.");
         mapRef.current.setCenter(first.geometry.location);
         mapRef.current.setZoom(mapView?.zoom || zoom);
       }
@@ -1683,7 +1733,7 @@ function GoogleMeasureWorkspace({ queryValue, onQueryChange, measurements, onCha
     (async()=>{
       if(!GOOGLE_MAPS_EMBED_KEY){
         setStatus("error");
-        setError("La API key de Google Maps no estÃ¡ configurada en este archivo.");
+        setError("La API key de Google Maps no está configurada en este archivo.");
         return;
       }
       setStatus("loading");
@@ -1770,13 +1820,13 @@ function GoogleMeasureWorkspace({ queryValue, onQueryChange, measurements, onCha
     <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:12,padding:20}}>
       <div style={{display:"grid",gridTemplateColumns:"1.3fr 1fr",gap:16,alignItems:"start",marginBottom:12}}>
         <div>
-          <div style={ST}>ðŸ›°ï¸ MediciÃ³n automÃ¡tica con Google Maps</div>
+          <div style={ST}>ðŸ›°️ Medición automática con Google Maps</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr auto auto",gap:8,marginBottom:10}}>
-            <input value={queryValue} onChange={e=>onQueryChange(e.target.value)} placeholder="Coordenadas, direcciÃ³n o enlace de Maps" style={SI} />
-            <button onClick={centerMap} style={{...B("#f47c20"),fontSize:12}}>Ver aquÃ­</button>
-            <button onClick={startMeasurement} style={{...B(measureMode?"#4ade80":"#1a3050", measureMode?"#0f2d1a":"#60b4ff"),fontSize:12}}>{measureMode?"Esperando clicsâ€¦":"Activar mediciÃ³n"}</button>
+            <input value={queryValue} onChange={e=>onQueryChange(e.target.value)} placeholder="Coordenadas, dirección o enlace de Maps" style={SI} />
+            <button onClick={centerMap} style={{...B("#f47c20"),fontSize:12}}>Ver aquí</button>
+            <button onClick={startMeasurement} style={{...B(measureMode?"#4ade80":"#1a3050", measureMode?"#0f2d1a":"#60b4ff"),fontSize:12}}>{measureMode?"Esperando clicsâ€¦":"Activar medición"}</button>
           </div>
-          <div style={{fontSize:11,color:"#64748b",lineHeight:1.6}}>Haz clic en dos puntos del mapa y el sistema calcula la distancia real automÃ¡ticamente en metros. Luego solo nombras el tramo y su tipo.</div>
+          <div style={{fontSize:11,color:"#64748b",lineHeight:1.6}}>Haz clic en dos puntos del mapa y el sistema calcula la distancia real automáticamente en metros. Luego solo nombras el tramo y su tipo.</div>
         </div>
         <div style={{background:"#f8fafc",borderRadius:10,padding:"12px 14px",border:"1px solid #e2e8f0"}}>
           <div style={{fontSize:12,fontWeight:700,color:"#1a1a2e",marginBottom:8}}>Estado</div>
@@ -1788,7 +1838,7 @@ function GoogleMeasureWorkspace({ queryValue, onQueryChange, measurements, onCha
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginTop:8}}>
             <button onClick={()=>setZoom(z=>Math.min(21,z+1))} style={{...B("#e0f2fe","#0369a1"),justifyContent:"center",fontSize:12,padding:"8px 0"}}>ï¼‹</button>
-            <button onClick={()=>setZoom(z=>Math.max(16,z-1))} style={{...B("#e0f2fe","#0369a1"),justifyContent:"center",fontSize:12,padding:"8px 0"}}>Ã¯Â¼Â</button>
+            <button onClick={()=>setZoom(z=>Math.max(16,z-1))} style={{...B("#e0f2fe","#0369a1"),justifyContent:"center",fontSize:12,padding:"8px 0"}}>ï¼</button>
           </div>
         </div>
       </div>
@@ -1797,7 +1847,7 @@ function GoogleMeasureWorkspace({ queryValue, onQueryChange, measurements, onCha
 
       {draft && (
         <div style={{background:"#fffbeb",border:"2px solid #f5c842",borderRadius:10,padding:16,marginBottom:12}}>
-          <div style={{fontSize:13,fontWeight:700,color:"#b45309",marginBottom:12}}>ðŸ“ Tramo detectado automÃ¡ticamente</div>
+          <div style={{fontSize:13,fontWeight:700,color:"#b45309",marginBottom:12}}>ðŸ“ Tramo detectado automáticamente</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:10,alignItems:"end"}}>
             <div><LBL>Metros calculados</LBL><input value={draft.ml} readOnly style={{...SI,background:"#fff7ed",fontWeight:700,color:"#c2410c"}} /></div>
             <div><LBL>Etiqueta</LBL><input value={draft.label} onChange={e=>setDraft({...draft,label:e.target.value})} placeholder="Ej: Cubierta norte" style={SI} /></div>
@@ -1818,7 +1868,7 @@ function GoogleMeasureWorkspace({ queryValue, onQueryChange, measurements, onCha
               <div key={seg.id} style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,border:"1px solid #e2e8f0"}}>
                 <div>
                   <div style={{fontSize:12,fontWeight:700,color:"#1a1a2e"}}>{seg.label}</div>
-                  <div style={{fontSize:10,color:"#64748b"}}>{seg.tipo} Â· {Number(seg.ml||0).toFixed(2)} m</div>
+                  <div style={{fontSize:10,color:"#64748b"}}>{seg.tipo} · {Number(seg.ml||0).toFixed(2)} m</div>
                 </div>
                 <button onClick={()=>removeMeasurement(seg.id)} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:5,padding:"3px 8px",cursor:"pointer",fontSize:11}}>Ã—</button>
               </div>
@@ -1829,9 +1879,9 @@ function GoogleMeasureWorkspace({ queryValue, onQueryChange, measurements, onCha
 
       {staticPreview && (
         <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:12}}>
-          <div style={{fontSize:12,fontWeight:700,color:"#1a1a2e",marginBottom:8}}>Imagen automÃ¡tica para la cotizaciÃ³n / obra</div>
-          <StaticMapPreview src={staticPreview} segments={measurements} query={queryValue} mapView={mapView} alt="Mapa automÃ¡tico" border="none" borderRadius={8} />
-          <div style={{fontSize:10,color:"#64748b",marginTop:6}}>Esta imagen sale de Maps Static con los trazos medidos para que tambiÃ©n viaje al PDF y a la obra.</div>
+          <div style={{fontSize:12,fontWeight:700,color:"#1a1a2e",marginBottom:8}}>Imagen automática para la cotización / obra</div>
+          <StaticMapPreview src={staticPreview} segments={measurements} query={queryValue} mapView={mapView} alt="Mapa automático" border="none" borderRadius={8} />
+          <div style={{fontSize:10,color:"#64748b",marginTop:6}}>Esta imagen sale de Maps Static con los trazos medidos para que también viaje al PDF y a la obra.</div>
         </div>
       )}
     </div>
@@ -1955,7 +2005,7 @@ function Cotizacion({ctx}){
         const emailRes = await sendCotizacionEmail(cotizacionAct, clienteInfo, pdfFile);
         resultados.push(emailRes.message);
       }
-      const resumen = resultados.join(" Â· ");
+      const resumen = resultados.join(" · ");
       setSendModal(prev=>prev?{...prev,sending:false,status:resumen,error:""}:prev);
       setSendNotif(resumen);
       setTimeout(()=>setSendNotif(""), 8000);
@@ -2015,7 +2065,7 @@ function Cotizacion({ctx}){
     return(
       <div style={{padding:28}}>
         <H1 title="Cotizaciones" subtitle="Ubicacion y medicion automatica primero en la cotizacion; luego viaja a Planos y Obras"
-          action={<button style={B("#f47c20")} onClick={newForm}>+ Nueva CotizaciÃ³n</button>}/>
+          action={<button style={B("#f47c20")} onClick={newForm}>+ Nueva Cotización</button>}/>
         {sendNotif&&<div style={{background:"#e8f5ee",border:"1px solid #166534",borderRadius:10,padding:"12px 16px",marginBottom:16,fontSize:13,color:"#166534"}}>{sendNotif}</div>}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
           {cotizaciones.map(c=>{
@@ -2065,8 +2115,8 @@ function Cotizacion({ctx}){
             <div style={{maxWidth:760,margin:"0 auto",background:"#fff",borderRadius:16,padding:22,border:"1px solid #e2e8f0",boxShadow:"0 25px 60px rgba(0,0,0,0.25)"}}>
               <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"flex-start",marginBottom:16}}>
                 <div>
-                  <div style={{fontSize:22,fontWeight:800,color:"#1a1a2e",marginBottom:6}}>CotizaciÃ³n aprobada</div>
-                  <div style={{fontSize:13,color:"#64748b"}}>Â¿Deseas enviar ahora la cotizaciÃ³n <strong>{sendModal.cotizacion?.numero || sendModal.cotizacion?.id}</strong> al cliente?</div>
+                  <div style={{fontSize:22,fontWeight:800,color:"#1a1a2e",marginBottom:6}}>Cotización aprobada</div>
+                  <div style={{fontSize:13,color:"#64748b"}}>¿Deseas enviar ahora la cotización <strong>{sendModal.cotizacion?.numero || sendModal.cotizacion?.id}</strong> al cliente?</div>
                 </div>
                 <button style={B("#f1f5f9","#475569")} onClick={cerrarEnvioCotizacion}>âœ• Cerrar</button>
               </div>
@@ -2077,14 +2127,14 @@ function Cotizacion({ctx}){
                   <div style={{fontSize:16,fontWeight:700,color:"#1a1a2e",marginBottom:4}}>{sendModal.clienteInfo?.nombre || sendModal.cotizacion?.cliente}</div>
                   <div style={{fontSize:12,color:"#475569",lineHeight:1.7}}>
                     <div><strong>Contacto:</strong> {sendModal.clienteInfo?.contacto || sendModal.cotizacion?.cliente || "Sin contacto"}</div>
-                    <div><strong>WhatsApp:</strong> {getCotizacionClientPhone(sendModal.clienteInfo, sendModal.cotizacion) ? `+${getCotizacionClientPhone(sendModal.clienteInfo, sendModal.cotizacion)}` : "Sin telÃ©fono"}</div>
+                    <div><strong>WhatsApp:</strong> {getCotizacionClientPhone(sendModal.clienteInfo, sendModal.cotizacion) ? `+${getCotizacionClientPhone(sendModal.clienteInfo, sendModal.cotizacion)}` : "Sin teléfono"}</div>
                     <div><strong>Email:</strong> {getCotizacionClientEmail(sendModal.clienteInfo) || "Sin correo"}</div>
                   </div>
                 </div>
                 <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:14}}>
                   <div style={{fontSize:11,color:"#64748b",textTransform:"uppercase",marginBottom:6}}>Resumen</div>
                   <div style={{fontSize:12,color:"#475569",lineHeight:1.8}}>
-                    <div><strong>CotizaciÃ³n:</strong> {sendModal.cotizacion?.numero || sendModal.cotizacion?.id}</div>
+                    <div><strong>Cotización:</strong> {sendModal.cotizacion?.numero || sendModal.cotizacion?.id}</div>
                     <div><strong>Obra:</strong> {sendModal.cotizacion?.obra || "Sin obra"}</div>
                     <div><strong>Total:</strong> {fmt(Number(sendModal.cotizacion?.total || 0))}</div>
                     <div><strong>Obra creada:</strong> {sendModal.cotizacion?.obraId || "Sin obra"}</div>
@@ -2099,7 +2149,7 @@ function Cotizacion({ctx}){
 
               {(!COTIZACION_AUTO_SEND_ENDPOINTS.email || !COTIZACION_AUTO_SEND_ENDPOINTS.whatsapp) && (
                 <div style={{background:"#fff7ed",border:"1px solid #fdba74",color:"#9a3412",borderRadius:10,padding:"12px 14px",fontSize:12,marginBottom:16}}>
-                  En este momento el envÃ­o queda <strong>semi-automÃ¡tico</strong>: la app genera el PDF, abre WhatsApp o el correo y te deja el archivo listo para adjuntar. Si luego conectas tus endpoints en <code>COTIZACION_AUTO_SEND_ENDPOINTS</code>, sÃ­ quedarÃ¡ automÃ¡tico con envÃ­o real del PDF.
+                  En este momento el envío queda <strong>semi-automático</strong>: la app genera el PDF, abre WhatsApp o el correo y te deja el archivo listo para adjuntar. Si luego conectas tus endpoints en <code>COTIZACION_AUTO_SEND_ENDPOINTS</code>, sí quedará automático con envío real del PDF.
                 </div>
               )}
 
@@ -2121,7 +2171,7 @@ function Cotizacion({ctx}){
 
   return(
     <div style={{padding:28}}>
-      <H1 title={editCot?"Editar CotizaciÃ³n":"Nueva CotizaciÃ³n"} subtitle="Primero defines ubicaciÃ³n, el sistema mide automÃ¡ticamente y esa informaciÃ³n baja luego a Planos y Obras"
+      <H1 title={editCot?"Editar Cotización":"Nueva Cotización"} subtitle="Primero defines ubicación, el sistema mide automáticamente y esa información baja luego a Planos y Obras"
         action={<button style={B("#f1f5f9","#475569")} onClick={()=>setTab("lista")}>â† Volver a lista</button>}/>
       <div style={{display:"grid",gridTemplateColumns:"1fr 300px",gap:20}}>
         <div>
@@ -2140,20 +2190,20 @@ function Cotizacion({ctx}){
           </div>
 
           <div style={{...CD,marginBottom:14}}>
-            <div style={ST}>IdentificaciÃ³n</div>
+            <div style={ST}>Identificación</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
-              <div><LBL>NÂ° CotizaciÃ³n</LBL><input value={cot} onChange={e=>setCot(e.target.value)} style={SI}/></div>
+              <div><LBL>N° Cotización</LBL><input value={cot} onChange={e=>setCot(e.target.value)} style={SI}/></div>
               <div><LBL>Fecha</LBL><input type="date" value={fecha} onChange={e=>setFecha(e.target.value)} style={SI}/></div>
-              <div><LBL>VÃ¡lida (dÃ­as)</LBL><input type="number" value={val} onChange={e=>setVal(Number(e.target.value))} style={SI}/></div>
+              <div><LBL>Válida (días)</LBL><input type="number" value={val} onChange={e=>setVal(Number(e.target.value))} style={SI}/></div>
             </div>
           </div>
 
           <div style={{...CD,marginBottom:14}}>
             <div style={ST}>Cliente</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-              <div><LBL>SeÃ±or / Empresa</LBL><input value={cl.nombre} onChange={e=>setCl({...cl,nombre:e.target.value})} style={SI}/></div>
+              <div><LBL>Señor / Empresa</LBL><input value={cl.nombre} onChange={e=>setCl({...cl,nombre:e.target.value})} style={SI}/></div>
               <div><LBL>Obra</LBL><input value={cl.obra} onChange={e=>setCl({...cl,obra:e.target.value})} style={SI}/></div>
-              <div><LBL>TelÃ©fono</LBL><input value={cl.telefono} onChange={e=>setCl({...cl,telefono:e.target.value})} style={SI}/></div>
+              <div><LBL>Teléfono</LBL><input value={cl.telefono} onChange={e=>setCl({...cl,telefono:e.target.value})} style={SI}/></div>
               <div><LBL>Ciudad</LBL><input value={cl.ciudad} onChange={e=>setCl({...cl,ciudad:e.target.value})} style={SI}/></div>
             </div>
           </div>
@@ -2205,7 +2255,7 @@ function Cotizacion({ctx}){
               <span>?tems</span>
               <div style={{display:"flex",gap:8}}>
                 <button onClick={usarMedicionesComoItems} style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"5px 12px"}}>ðŸ“¥ Jalar mediciones</button>
-                <button onClick={()=>setShowDB(!showDB)} style={{...B(showDB?"#1a3050":"transparent","#f47c20"),border:"1px solid #cc0000",fontSize:11,padding:"5px 12px"}}>{showDB?"â–² Cerrar catÃ¡logo":"ðŸ“‹ CatÃ¡logo"}</button>
+                <button onClick={()=>setShowDB(!showDB)} style={{...B(showDB?"#1a3050":"transparent","#f47c20"),border:"1px solid #cc0000",fontSize:11,padding:"5px 12px"}}>{showDB?"â–² Cerrar catálogo":"ðŸ“‹ Catálogo"}</button>
               </div>
             </div>
             {showDB&&(
@@ -2216,7 +2266,7 @@ function Cotizacion({ctx}){
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
                   {ITEMS_DB[dbCat].items.map((it,i)=>(
                     <div key={i} style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
-                      <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:"#1a1a2e",marginBottom:2}}>{it.desc}</div><div style={{fontSize:11,color:"#475569"}}>{it.unit} Â· {fmt(it.vu)}</div></div>
+                      <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:"#1a1a2e",marginBottom:2}}>{it.desc}</div><div style={{fontSize:11,color:"#475569"}}>{it.unit} · {fmt(it.vu)}</div></div>
                       <button onClick={()=>addFromDB(it)} style={{...B("#f47c20"),padding:"5px 12px",fontSize:12,flexShrink:0}}>+</button>
                     </div>
                   ))}
@@ -2226,7 +2276,7 @@ function Cotizacion({ctx}){
             {items.length>0&&(
               <div style={{marginBottom:8}}>
                 <div style={{display:"grid",gridTemplateColumns:"2.2fr 0.7fr 0.8fr 1fr 1fr 28px",gap:8,fontSize:10,color:"#64748b",textTransform:"uppercase",padding:"0 6px",marginBottom:6}}>
-                  <span>DescripciÃ³n</span><span>Cant.</span><span>Unidad</span><span>V.Unit</span><span style={{textAlign:"right"}}>Subtotal</span><span/>
+                  <span>Descripción</span><span>Cant.</span><span>Unidad</span><span>V.Unit</span><span style={{textAlign:"right"}}>Subtotal</span><span/>
                 </div>
                 {items.map(it=>(
                   <div key={it.id} style={{display:"grid",gridTemplateColumns:"2.2fr 0.7fr 0.8fr 1fr 1fr 28px",gap:8,alignItems:"center",background:"#f1f5f9",borderRadius:8,padding:"8px",marginBottom:6}}>
@@ -2240,15 +2290,15 @@ function Cotizacion({ctx}){
                 ))}
               </div>
             )}
-            {items.length===0&&!showDB&&<div style={{textAlign:"center",padding:"28px 0",color:"#94a3b8",fontSize:13}}><div style={{fontSize:28,marginBottom:8}}>ðŸ“‹</div><div>Mide primero en el mapa o usa el catÃ¡logo para agregar Ã­tems</div></div>}
-            <button onClick={addBlank} style={{...B("#fff3e8","#f47c20"),border:"1px dashed #cc0000",width:"100%",justifyContent:"center",marginTop:8,fontSize:12}}>+ Agregar Ã­tem manual</button>
+            {items.length===0&&!showDB&&<div style={{textAlign:"center",padding:"28px 0",color:"#94a3b8",fontSize:13}}><div style={{fontSize:28,marginBottom:8}}>ðŸ“‹</div><div>Mide primero en el mapa o usa el catálogo para agregar ítems</div></div>}
+            <button onClick={addBlank} style={{...B("#fff3e8","#f47c20"),border:"1px dashed #cc0000",width:"100%",justifyContent:"center",marginTop:8,fontSize:12}}>+ Agregar ítem manual</button>
           </div>
 
           <div style={{...CD,marginBottom:14}}>
             <div style={ST}>Condiciones comerciales</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
               <div><LBL>Forma de pago</LBL><input value={formaPago} onChange={e=>setFormaPago(e.target.value)} style={SI}/></div>
-              <div><LBL>Tiempo de ejecuciÃ³n</LBL><input value={tiempoEjec} onChange={e=>setTiempoEjec(e.target.value)} style={SI}/></div>
+              <div><LBL>Tiempo de ejecución</LBL><input value={tiempoEjec} onChange={e=>setTiempoEjec(e.target.value)} style={SI}/></div>
             </div>
           </div>
 
@@ -2276,13 +2326,13 @@ function Cotizacion({ctx}){
             <div style={{fontSize:13,fontWeight:700,color:"#cc0000"}}>COTIZACION No. {cot}</div>
             <div style={{fontSize:11,color:"#64748b",marginBottom:10}}>{fmtL(fecha)}</div>
             <div style={{fontSize:13,fontWeight:600,marginBottom:2}}>{cl.nombre||"â€”"}</div>
-            <div style={{fontSize:11,color:"#475569",marginBottom:8}}>{cl.obra||"â€”"} Â· {cl.ciudad||"â€”"}</div>
+            <div style={{fontSize:11,color:"#475569",marginBottom:8}}>{cl.obra||"â€”"} · {cl.ciudad||"â€”"}</div>
             <div style={{fontSize:11,color:"#64748b",marginBottom:14}}>ðŸ“ {(geoMediciones||[]).length} tramo(s) medido(s)</div>
             <div style={{display:"flex",justifyContent:"space-between",fontWeight:700,fontSize:15,color:"#cc0000",background:"#f1f5f9",padding:"10px 12px",borderRadius:8,marginBottom:12}}><span>TOTAL</span><span>{fmt(tot)}</span></div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              <button style={{...B("#f47c20"),justifyContent:"center"}} onClick={guardarCot}>ðŸ’¾ {editCot?"Actualizar":"Guardar"} CotizaciÃ³n</button>
-              <button style={{...B("#dbeafe","#1e40af"),justifyContent:"center"}} onClick={()=>{guardarCot(); const dummy={numero:cot,fecha,val,cliente:cl.nombre,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,items:items.length?items:measurementsToQuoteItems(geoMediciones),util,total:Math.round(tot),formaPago,tiempoEjec,mapImg:effectiveMapImg,geoMediciones,geoMapView}; setPreviewCot(dummy); setTab("lista");}}>ðŸ‘ï¸ Guardar y Ver</button>
-              <button style={{...B("#0f2d1a","#4ade80"),justifyContent:"center",border:"1px solid #166534"}} onClick={usarMedicionesComoItems}>ðŸ“‹ Crear Ã­tems desde mediciones</button>
+              <button style={{...B("#f47c20"),justifyContent:"center"}} onClick={guardarCot}>ðŸ’¾ {editCot?"Actualizar":"Guardar"} Cotización</button>
+              <button style={{...B("#dbeafe","#1e40af"),justifyContent:"center"}} onClick={()=>{guardarCot(); const dummy={numero:cot,fecha,val,cliente:cl.nombre,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,items:items.length?items:measurementsToQuoteItems(geoMediciones),util,total:Math.round(tot),formaPago,tiempoEjec,mapImg:effectiveMapImg,geoMediciones,geoMapView}; setPreviewCot(dummy); setTab("lista");}}>ðŸ‘️ Guardar y Ver</button>
+              <button style={{...B("#0f2d1a","#4ade80"),justifyContent:"center",border:"1px solid #166534"}} onClick={usarMedicionesComoItems}>ðŸ“‹ Crear ítems desde mediciones</button>
             </div>
           </div>
         </div>
@@ -2308,7 +2358,7 @@ function CotizacionPrint({c}){
         {c.telefono&&<div><strong>TELÃ‰FONO:</strong> {c.telefono}</div>}
         {c.ciudad&&<div><strong>{(c.ciudad||"").toUpperCase()}</strong></div>}
       </div>
-      <p style={{marginBottom:10}}>Presentamos la cotizaciÃ³n para suministro e instalaciÃ³n de los sistemas de protecciÃ³n anti caÃ­da (lÃ­neas de vida horizontales sobre cubierta y escaleras).</p>
+      <p style={{marginBottom:10}}>Presentamos la cotización para suministro e instalación de los sistemas de protección anti caída (líneas de vida horizontales sobre cubierta y escaleras).</p>
       {c.mapImg ? <div style={{marginBottom:16,textAlign:"center"}}><StaticMapPreview src={c.mapImg} segments={measurements} query={c.coords || `${c.obra||""} ${c.ciudad||""}`.trim()} mapView={c.geoMapView} alt="Mapa" maxHeight={320} border="1px solid #ddd" borderRadius={4} /></div> : null}
       {measurements.length>0&&(
         <div style={{background:"#f8fafc",border:"1px solid #cbd5e1",borderRadius:6,padding:"12px 14px",marginBottom:16}}>
@@ -2323,7 +2373,7 @@ function CotizacionPrint({c}){
               {measurements.map((seg,idx)=>(
                 <tr key={seg.id||idx}>
                   <td style={{border:"1px solid #cbd5e1",padding:"6px 8px"}}>{idx+1}</td>
-                  <td style={{border:"1px solid #cbd5e1",padding:"6px 8px"}}>{seg.label||`LÃNEA ${idx+1}`}</td>
+                  <td style={{border:"1px solid #cbd5e1",padding:"6px 8px"}}>{seg.label||`LÍNEA ${idx+1}`}</td>
                   <td style={{border:"1px solid #cbd5e1",padding:"6px 8px"}}>{measurementTypeLabel(seg.tipo)}</td>
                   <td style={{border:"1px solid #cbd5e1",padding:"6px 8px",textAlign:"right",fontWeight:700,color:"#cc0000"}}>{Number(seg.ml||0).toFixed(2)} {measurementUnitFromType(seg.tipo)}</td>
                 </tr>
@@ -2332,9 +2382,9 @@ function CotizacionPrint({c}){
           </table>
         </div>
       )}
-      <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:6}}>Propuesta econÃ³mica</div>
+      <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:6}}>Propuesta económica</div>
       <table style={{width:"100%",borderCollapse:"collapse",fontSize:11.3}}>
-        <thead><tr>{["DescripciÃ³n","Cantidad","Unidad","Valor","Subtotal"].map((h,i)=><th key={h} style={{border:"1px solid #222",padding:"7px 8px",background:"#f7f7f7",textAlign:i>0?"right":"left"}}>{h}</th>)}</tr></thead>
+        <thead><tr>{["Descripción","Cantidad","Unidad","Valor","Subtotal"].map((h,i)=><th key={h} style={{border:"1px solid #222",padding:"7px 8px",background:"#f7f7f7",textAlign:i>0?"right":"left"}}>{h}</th>)}</tr></thead>
         <tbody>
           {items.map((it,i)=><tr key={i}><td style={{border:"1px solid #222",padding:"7px 8px"}}>{it.desc}</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{it.cant}</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{it.unit}</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{fmt(it.vu)}</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{fmt((Number(it.cant)||0)*(Number(it.vu)||0))}</td></tr>)}
           <tr><td colSpan={4} style={{border:"1px solid #222",padding:"7px 8px",fontWeight:700}}>SUBTOTAL</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right",fontWeight:700}}>{fmt(sub)}</td></tr>
@@ -2343,13 +2393,13 @@ function CotizacionPrint({c}){
           <tr><td colSpan={4} style={{border:"1px solid #222",padding:"7px 8px",background:"#fff369",fontWeight:800}}>TOTAL</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right",background:"#fff369",fontWeight:800}}>{fmt(tot)}</td></tr>
         </tbody>
       </table>
-      <div style={{marginTop:16,fontSize:11,color:"#475569"}}>La impresiÃ³n final usa una ventana PDF independiente para evitar letras montadas y respetar el formato multipÃ¡gina.</div>
+      <div style={{marginTop:16,fontSize:11,color:"#475569"}}>La impresión final usa una ventana PDF independiente para evitar letras montadas y respetar el formato multipágina.</div>
     </div>
   );
 }
 
 // =+
-// PLANOS â€” con mediciÃ³n sobre imagen satelital
+// PLANOS â€” con medición sobre imagen satelital
 // ======================================================
 function Planos({ctx}){
   const {obras,setObras,empleados,cotizaciones,setCotDraft,setScr}=ctx;
@@ -2468,7 +2518,7 @@ function Planos({ctx}){
   if(!sel){
     return(
       <div style={{padding:28}}>
-        <H1 title="Planos & MediciÃ³n" subtitle="La cotizaciÃ³n es el origen de la ubicaciÃ³n y mediciÃ³n; aquÃ­ la continÃºas o la ajustas" />
+        <H1 title="Planos & Medición" subtitle="La cotización es el origen de la ubicación y medición; aquí la continúas o la ajustas" />
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14}}>
           {obras.map(o=>{
             const linked = cotizaciones.find(c=>c.id===o.cotizacionId);
@@ -2480,7 +2530,7 @@ function Planos({ctx}){
                   <Badge estado={o.estado}/>
                 </div>
                 <div style={{marginTop:10,background:"#f1f5f9",borderRadius:6,padding:"6px 10px",fontSize:11,color:"#475569",display:"flex",justifyContent:"space-between"}}>
-                  <span>ðŸ“ {geos.length + (o.trazos||[]).length} trazos Â· {geos.length} automÃ¡ticos</span>
+                  <span>ðŸ“ {geos.length + (o.trazos||[]).length} trazos · {geos.length} automáticos</span>
                   <span style={{color:"#cc0000",fontWeight:600}}>Ver plano â†’</span>
                 </div>
               </div>
@@ -2495,16 +2545,16 @@ function Planos({ctx}){
     <div style={{padding:28}}>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,background:"#fff",borderRadius:14,padding:"16px 20px",border:"1px solid #e2e8f0",boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
         <button onClick={()=>setSel(null)} style={{...B("#f1f5f9","#475569"),padding:"8px 16px",fontSize:13,flexShrink:0}}>â† Obras</button>
-        <div style={{flex:1}}><div style={{fontSize:11,color:"#94a3b8"}}>{sel.id} Â· ðŸ“ {sel.ciudad}</div><div style={{fontSize:20,fontWeight:700,color:"#1a1a2e"}}>{sel.cliente}</div><div style={{fontSize:13,color:"#475569"}}>{sel.proyecto}</div></div>
+        <div style={{flex:1}}><div style={{fontSize:11,color:"#94a3b8"}}>{sel.id} · ðŸ“ {sel.ciudad}</div><div style={{fontSize:20,fontWeight:700,color:"#1a1a2e"}}>{sel.cliente}</div><div style={{fontSize:13,color:"#475569"}}>{sel.proyecto}</div></div>
         <Badge estado={sel.estado}/>
       </div>
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
-        {[["ðŸ“ Total ML",`${totalML} ML`,"#cc0000"],["ðŸ›°ï¸ Tramos automÃ¡ticos",`${geoMediciones.length}`,"#2563eb"],["ðŸ“‹ Manuales",`${lineas.length}`,"#60b4ff"],["ðŸ’° Valor total",fmt(sel.total),"#f47c20"]].map(([k,v,c])=>(<div key={k} style={{background:"#fff",borderRadius:10,padding:"12px 16px",border:"1px solid #e2e8f0",textAlign:"center"}}><div style={{fontSize:10,color:"#94a3b8",marginBottom:4}}>{k}</div><div style={{fontSize:15,fontWeight:700,color:c}}>{v}</div></div>))}
+        {[["ðŸ“ Total ML",`${totalML} ML`,"#cc0000"],["ðŸ›°️ Tramos automáticos",`${geoMediciones.length}`,"#2563eb"],["ðŸ“‹ Manuales",`${lineas.length}`,"#60b4ff"],["ðŸ’° Valor total",fmt(sel.total),"#f47c20"]].map(([k,v,c])=>(<div key={k} style={{background:"#fff",borderRadius:10,padding:"12px 16px",border:"1px solid #e2e8f0",textAlign:"center"}}><div style={{fontSize:10,color:"#94a3b8",marginBottom:4}}>{k}</div><div style={{fontSize:15,fontWeight:700,color:c}}>{v}</div></div>))}
       </div>
 
       <div style={{display:"flex",gap:6,marginBottom:16}}>
-        {[["imagen","ðŸ›°ï¸ MediciÃ³n automÃ¡tica"],["svg","ðŸ“ Plano de Trazos"],["lista","ðŸ“‹ Lista & CotizaciÃ³n"]].map(([id,lb])=>(<button key={id} onClick={()=>setTabPlano(id)} style={{...B(tabPlano===id?"#cc0000":"#f1f5f9",tabPlano===id?"#fff":"#475569"),fontSize:12,padding:"8px 16px",border:`1px solid ${tabPlano===id?"#cc0000":"#e2e8f0"}`}}>{lb}</button>))}
+        {[["imagen","ðŸ›°️ Medición automática"],["svg","ðŸ“ Plano de Trazos"],["lista","ðŸ“‹ Lista & Cotización"]].map(([id,lb])=>(<button key={id} onClick={()=>setTabPlano(id)} style={{...B(tabPlano===id?"#cc0000":"#f1f5f9",tabPlano===id?"#fff":"#475569"),fontSize:12,padding:"8px 16px",border:`1px solid ${tabPlano===id?"#cc0000":"#e2e8f0"}`}}>{lb}</button>))}
       </div>
 
       {tabPlano==="imagen" && (
@@ -2512,7 +2562,7 @@ function Planos({ctx}){
           <GoogleMeasureWorkspace queryValue={coordsInput} onQueryChange={(val)=>{ setCoordsInput(val); guardarEnObra({coords:val}); }} measurements={geoMediciones} onChange={persistGeo} mapView={geoMapView} onMapViewChange={(view)=>{ setGeoMapView(view); guardarEnObra({geoMapView:view}); }} />
           <div style={{...CD,marginTop:16}}>
             <div style={ST}>Imagen heredada para la obra / PDF</div>
-                  {buildGoogleStaticMapUrl(geoMediciones, coordsInput, geoMapView) ? <StaticMapPreview src={buildGoogleStaticMapUrl(geoMediciones, coordsInput, geoMapView)} segments={geoMediciones} query={coordsInput} mapView={geoMapView} alt="Imagen heredada" border="none" borderRadius={8} /> : <div style={{background:"#f8fafc",border:"1px dashed #cbd5e1",borderRadius:8,padding:24,textAlign:"center",fontSize:12,color:"#64748b"}}>Mide el primer tramo y aquÃ­ aparecerÃ¡ la imagen que viene de la cotizaciÃ³n.</div>}
+                  {buildGoogleStaticMapUrl(geoMediciones, coordsInput, geoMapView) ? <StaticMapPreview src={buildGoogleStaticMapUrl(geoMediciones, coordsInput, geoMapView)} segments={geoMediciones} query={coordsInput} mapView={geoMapView} alt="Imagen heredada" border="none" borderRadius={8} /> : <div style={{background:"#f8fafc",border:"1px dashed #cbd5e1",borderRadius:8,padding:24,textAlign:"center",fontSize:12,color:"#64748b"}}>Mide el primer tramo y aquí aparecerá la imagen que viene de la cotización.</div>}
           </div>
         </div>
       )}
@@ -2522,7 +2572,7 @@ function Planos({ctx}){
           <div style={{...CD,marginBottom:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
               <div style={ST}>ðŸ“ Plano de trazos (manual)</div>
-              <button onClick={()=>imgRef.current.click()} style={{...B("#f1f5f9","#475569"),fontSize:11,padding:"5px 10px"}}>ðŸ–¼ï¸ Cargar imagen de fondo</button>
+              <button onClick={()=>imgRef.current.click()} style={{...B("#f1f5f9","#475569"),fontSize:11,padding:"5px 10px"}}>ðŸ–¼️ Cargar imagen de fondo</button>
               <input ref={imgRef} type="file" accept="image/*" style={{display:"none"}} onChange={onImgChange}/>
             </div>
             <div style={{background:"#f0f4f8",borderRadius:8,overflow:"hidden",position:"relative",border:"1px solid #e2e8f0"}}>
@@ -2550,10 +2600,10 @@ function Planos({ctx}){
         <div style={CD}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
             <div style={ST}>ðŸ“‹ Trazos registrados â€” Total: <span style={{color:"#cc0000"}}>{totalML} ML</span></div>
-            <button onClick={pasarACotizacion} style={{...B("#4ade80","#0f2d1a"),fontSize:12}}>ðŸ“„ Llevar a cotizaciÃ³n</button>
+            <button onClick={pasarACotizacion} style={{...B("#4ade80","#0f2d1a"),fontSize:12}}>ðŸ“„ Llevar a cotización</button>
           </div>
           <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-            <thead><tr style={{background:"#f8fafc"}}>{["Fuente","Tipo","DescripciÃ³n","Metros",""].map(h=><th key={h} style={{padding:"8px 10px",textAlign:"left",color:"#64748b",fontWeight:500,fontSize:11}}>{h}</th>)}</tr></thead>
+            <thead><tr style={{background:"#f8fafc"}}>{["Fuente","Tipo","Descripción","Metros",""].map(h=><th key={h} style={{padding:"8px 10px",textAlign:"left",color:"#64748b",fontWeight:500,fontSize:11}}>{h}</th>)}</tr></thead>
             <tbody>
               {geoMediciones.map(seg=><tr key={seg.id} style={{borderBottom:"1px solid #f1f5f9",background:"#eff6ff"}}><td style={{padding:"8px 10px"}}><span style={{background:"#dbeafe",color:"#1d4ed8",borderRadius:4,padding:"2px 6px",fontSize:10}}>Google</span></td><td style={{padding:"8px 10px"}}>{seg.tipo}</td><td style={{padding:"8px 10px",fontWeight:500}}>{seg.label}</td><td style={{padding:"8px 10px",fontWeight:700,color:"#cc0000"}}>{Number(seg.ml||0).toFixed(2)} m</td><td style={{padding:"8px 10px"}}><button onClick={()=>persistGeo(geoMediciones.filter(x=>x.id!==seg.id))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:5,padding:"3px 8px",cursor:"pointer",fontSize:11}}>Ã— Eliminar</button></td></tr>)}
               {lineas.map(t=><tr key={t.id} style={{borderBottom:"1px solid #f1f5f9"}}><td style={{padding:"8px 10px"}}><span style={{background:"#fef3c7",color:"#b45309",borderRadius:4,padding:"2px 6px",fontSize:10}}>Manual</span></td><td style={{padding:"8px 10px"}}>{t.tipo}</td><td style={{padding:"8px 10px",fontWeight:500}}>{t.label}</td><td style={{padding:"8px 10px",fontWeight:700,color:"#cc0000"}}>{t.ml} ML</td><td style={{padding:"8px 10px"}}><button onClick={()=>eliminarLinea(t.id)} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:5,padding:"3px 8px",cursor:"pointer",fontSize:11}}>Ã— Eliminar</button></td></tr>)}
@@ -2575,7 +2625,7 @@ function Pagos({ctx}){
   const cobrar=(id)=>{setPstep(id);setTimeout(()=>{setPagos(prev=>prev.map(p=>p.id===id?{...p,estado:"Pagado",fecha:today()}:p));setPstep(null);},1800);};
   return(
     <div style={{padding:28}}>
-      <H1 title="Pagos por Obra" subtitle="Cobros por cliente y proyecto Â· integraciÃ³n Bancolombia"/>
+      <H1 title="Pagos por Obra" subtitle="Cobros por cliente y proyecto · integración Bancolombia"/>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
         <SC label="Total Cobrado" value={fmtK(tCob)} color="#4ade80" icon="âœ…"/>
         <SC label="Pendiente" value={fmtK(tPend)} color="#fb923c" icon="?"/>
@@ -2583,7 +2633,7 @@ function Pagos({ctx}){
         <SC label="Obras con saldo" value={obras.filter(o=>o.saldo>0).length} color="#c084fc" icon="ðŸ“‹"/>
       </div>
       <div style={{background:"linear-gradient(135deg,#003B71,#00539C)",borderRadius:12,padding:"14px 22px",marginBottom:20,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div style={{display:"flex",alignItems:"center",gap:14}}><div style={{background:"#FFCD00",borderRadius:8,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:12,color:"#003B71"}}>BC</div><div><div style={{fontWeight:700,fontSize:14,color:"#fff"}}>Bancolombia Â· IntegraciÃ³n Activa</div><div style={{fontSize:11,color:"#91b8df"}}>PSE Â· Transferencia automÃ¡tica Â· ConciliaciÃ³n en tiempo real</div></div></div>
+        <div style={{display:"flex",alignItems:"center",gap:14}}><div style={{background:"#FFCD00",borderRadius:8,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:12,color:"#003B71"}}>BC</div><div><div style={{fontWeight:700,fontSize:14,color:"#fff"}}>Bancolombia · Integración Activa</div><div style={{fontSize:11,color:"#91b8df"}}>PSE · Transferencia automática · Conciliación en tiempo real</div></div></div>
         <div style={{background:"#FFCD00",color:"#003B71",padding:"5px 14px",borderRadius:20,fontSize:12,fontWeight:700}}>CONECTADO</div>
       </div>
       <div style={{...CD,marginBottom:20}}>
@@ -2606,11 +2656,11 @@ function Pagos({ctx}){
           <div style={ST}>Historial de pagos</div>
           <select value={filtro} onChange={e=>setFiltro(e.target.value)} style={{...SI,width:"auto",fontSize:12}}>
             <option value="todas">Todas las obras</option>
-            {obras.map(o=><option key={o.id} value={o.id}>{o.id} Â· {o.cliente}</option>)}
+            {obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}
           </select>
         </div>
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-          <thead><tr style={{background:"#f1f5f9"}}>{["ID","Obra","Cliente","Tipo","Monto","Fecha","MÃ©todo","Estado","AcciÃ³n"].map(h=><th key={h} style={{padding:"9px 10px",textAlign:h==="Monto"?"right":"left",color:"#64748b",fontWeight:500,fontSize:11}}>{h}</th>)}</tr></thead>
+          <thead><tr style={{background:"#f1f5f9"}}>{["ID","Obra","Cliente","Tipo","Monto","Fecha","Método","Estado","Acción"].map(h=><th key={h} style={{padding:"9px 10px",textAlign:h==="Monto"?"right":"left",color:"#64748b",fontWeight:500,fontSize:11}}>{h}</th>)}</tr></thead>
           <tbody>{pF.map((p,i)=>{const ob=obras.find(o=>o.id===p.obraId);return(<tr key={p.id} style={{borderBottom:"1px solid #e2e8f0",background:i%2===0?"#ffffff":"#f8fafc"}}>
             <td style={{padding:"10px 10px",color:"#60b4ff",fontSize:11}}>{p.id}</td><td style={{padding:"10px 10px",fontSize:11}}>{p.obraId}</td><td style={{padding:"10px 10px",fontSize:11,color:"#475569"}}>{ob?.cliente}</td><td style={{padding:"10px 10px",fontSize:11}}>{p.tipo}</td>
             <td style={{padding:"10px 10px",textAlign:"right",fontWeight:700,color:"#cc0000"}}>{fmt(p.monto)}</td><td style={{padding:"10px 10px",color:"#475569",fontSize:11}}>{p.fecha}</td><td style={{padding:"10px 10px",color:"#475569",fontSize:11}}>{p.metodo}</td>
@@ -2654,7 +2704,7 @@ function ClientesDB({ctx}){
       contacto:c.cliente||"",
       email:"",
       estado:"Activo",
-      notas:c.obra?`CotizaciÃ³n ${c.numero||""} Â· ${c.obra}`:`CotizaciÃ³n ${c.numero||""}`,
+      notas:c.obra?`Cotización ${c.numero||""} · ${c.obra}`:`Cotización ${c.numero||""}`,
     })),
     ...certs.map(c=>({
       nombre:c.cliente||"",
@@ -2794,9 +2844,9 @@ function ClientesDB({ctx}){
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
         <SC label="Clientes registrados" value={clientesData.length} color="#60b4ff" icon="ðŸ¤" sub={`${sinRegistrar.length} sugeridos`} />
-        <SC label="Obras activas" value={clientesData.reduce((s,c)=>s+c.obrasActivas,0)} color="#4ade80" icon="ðŸ—ï¸" sub="relacionadas a clientes" />
+        <SC label="Obras activas" value={clientesData.reduce((s,c)=>s+c.obrasActivas,0)} color="#4ade80" icon="ðŸ—️" sub="relacionadas a clientes" />
         <SC label="Facturado clientes" value={fmtK(totalFacturado)} color="#f59e0b" icon="ðŸ’°" sub="valor total de obras" />
-        <SC label="Saldo pendiente" value={fmtK(saldoPendiente)} color="#fb7185" icon="â³" sub="por cobrar a clientes" />
+        <SC label="Saldo pendiente" value={fmtK(saldoPendiente)} color="#fb7185" icon="⏳" sub="por cobrar a clientes" />
       </div>
 
       {showForm&&(
@@ -2804,7 +2854,7 @@ function ClientesDB({ctx}){
           <div style={ST}>{editId?"Editar cliente":"Nuevo cliente"}</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
             <div>
-              <LBL>Nombre / razÃ³n social</LBL>
+              <LBL>Nombre / razón social</LBL>
               <input value={form.nombre} onChange={e=>setForm({...form,nombre:e.target.value})} placeholder="Nombre del cliente" style={SI}/>
             </div>
             <div>
@@ -2816,12 +2866,12 @@ function ClientesDB({ctx}){
               <input value={form.contacto} onChange={e=>setForm({...form,contacto:e.target.value})} placeholder="Persona de contacto" style={SI}/>
             </div>
             <div>
-              <LBL>TelÃ©fono</LBL>
+              <LBL>Teléfono</LBL>
               <input value={form.telefono} onChange={e=>setForm({...form,telefono:e.target.value})} placeholder="3001234567" style={SI}/>
             </div>
             <div>
               <LBL>Ciudad</LBL>
-              <input value={form.ciudad} onChange={e=>setForm({...form,ciudad:e.target.value})} placeholder="MedellÃ­n, Antioquia" style={SI}/>
+              <input value={form.ciudad} onChange={e=>setForm({...form,ciudad:e.target.value})} placeholder="Medellín, Antioquia" style={SI}/>
             </div>
             <div>
               <LBL>Estado</LBL>
@@ -2832,8 +2882,8 @@ function ClientesDB({ctx}){
               </select>
             </div>
             <div style={{gridColumn:"span 2"}}>
-              <LBL>DirecciÃ³n</LBL>
-              <input value={form.direccion} onChange={e=>setForm({...form,direccion:e.target.value})} placeholder="DirecciÃ³n principal" style={SI}/>
+              <LBL>Dirección</LBL>
+              <input value={form.direccion} onChange={e=>setForm({...form,direccion:e.target.value})} placeholder="Dirección principal" style={SI}/>
             </div>
             <div>
               <LBL>Email</LBL>
@@ -2854,11 +2904,11 @@ function ClientesDB({ctx}){
       <div style={CD}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
           <div style={ST}>Directorio de clientes</div>
-          <div style={{fontSize:11,color:"#64748b"}}>Datos comerciales + relaciÃ³n con obras, cotizaciones y certificaciones</div>
+          <div style={{fontSize:11,color:"#64748b"}}>Datos comerciales + relación con obras, cotizaciones y certificaciones</div>
         </div>
 
         {clientesData.length===0 ? (
-          <div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13}}>No hay clientes registrados todavÃ­a</div>
+          <div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13}}>No hay clientes registrados todavía</div>
         ) : (
           <div style={{display:"grid",gap:12}}>
             {clientesData.map(c=>(
@@ -2867,7 +2917,7 @@ function ClientesDB({ctx}){
                   <div>
                     <div style={{fontSize:15,fontWeight:800,color:"#1a1a2e"}}>{c.nombre}</div>
                     <div style={{fontSize:11,color:"#64748b",marginTop:3}}>
-                      {c.nit || "Sin NIT"} Â· {c.contacto || "Sin contacto"} Â· {c.telefono || "Sin telÃ©fono"}
+                      {c.nit || "Sin NIT"} · {c.contacto || "Sin contacto"} · {c.telefono || "Sin teléfono"}
                     </div>
                   </div>
                   <div style={{display:"flex",gap:8,alignItems:"center"}}>
@@ -2877,9 +2927,9 @@ function ClientesDB({ctx}){
                 </div>
 
                 <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr 1fr 1fr",gap:10,fontSize:11,color:"#475569"}}>
-                  <div><strong style={{color:"#1a1a2e"}}>Ciudad / direcciÃ³n</strong><br/>{c.ciudad || "Sin ciudad"}{c.direccion?` Â· ${c.direccion}`:""}</div>
+                  <div><strong style={{color:"#1a1a2e"}}>Ciudad / dirección</strong><br/>{c.ciudad || "Sin ciudad"}{c.direccion?` · ${c.direccion}`:""}</div>
                   <div><strong style={{color:"#1a1a2e"}}>Email</strong><br/>{c.email || "Sin email"}</div>
-                  <div><strong style={{color:"#1a1a2e"}}>Obras / cotizaciones</strong><br/>{c.obrasTotal} obra(s) Â· {c.cotizacionesTotal} cotizaciÃ³n(es)</div>
+                  <div><strong style={{color:"#1a1a2e"}}>Obras / cotizaciones</strong><br/>{c.obrasTotal} obra(s) · {c.cotizacionesTotal} cotización(es)</div>
                   <div><strong style={{color:"#1a1a2e"}}>Certificaciones</strong><br/>{c.certificacionesTotal} registro(s)</div>
                 </div>
 
@@ -2894,7 +2944,7 @@ function ClientesDB({ctx}){
                     </div>
                     <div style={{textAlign:"right"}}>
                       <div style={{fontSize:10,color:"#94a3b8"}}>Saldo</div>
-                      <div style={{fontWeight:800,color:c.saldoPendiente?"#c2410c":"#166534"}}>{c.saldoPendiente?fmt(c.saldoPendiente):"Al dÃ­a"}</div>
+                      <div style={{fontWeight:800,color:c.saldoPendiente?"#c2410c":"#166534"}}>{c.saldoPendiente?fmt(c.saldoPendiente):"Al día"}</div>
                     </div>
                   </div>
                 </div>
@@ -3013,7 +3063,7 @@ function CuentasPagar({ctx}){
     <div style={{padding:28}}>
       <H1
         title="Cuentas x Pagar y Proveedores"
-        subtitle="GestiÃ³n de proveedores, facturas pendientes y base bancaria"
+        subtitle="Gestión de proveedores, facturas pendientes y base bancaria"
         action={
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             <button style={B("#f5c842","#3b2f00")} onClick={()=>{setTab("proveedores");setShowProv(v=>!v);if(showProv&&tab==="proveedores") resetProveedor();}}>
@@ -3029,8 +3079,8 @@ function CuentasPagar({ctx}){
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
         <SC label="Pendiente por pagar" value={fmtK(totalPendiente)} color="#fb923c" icon="ðŸ§¾" sub={`${cuentas.filter(c=>c.estado==="Pendiente").length} facturas`} />
         <SC label="Pagado acumulado" value={fmtK(totalPagado)} color="#4ade80" icon="âœ…" sub={`${cuentas.filter(c=>c.estado==="Pagado").length} registros`} />
-        <SC label="Facturas vencidas" value={vencidas.length} color={vencidas.length?"#ef4444":"#4ade80"} icon="âš ï¸" sub={vencidas.length?fmt(vencidas.reduce((s,c)=>s+Number(c.monto||0),0)):"sin mora"} />
-        <SC label="Base de proveedores" value={proveedoresData.length} color="#60b4ff" icon="ðŸ¢" sub={`${porVencer.length} por vencer en 7 dÃ­as`} />
+        <SC label="Facturas vencidas" value={vencidas.length} color={vencidas.length?"#ef4444":"#4ade80"} icon="âš ️" sub={vencidas.length?fmt(vencidas.reduce((s,c)=>s+Number(c.monto||0),0)):"sin mora"} />
+        <SC label="Base de proveedores" value={proveedoresData.length} color="#60b4ff" icon="ðŸ¢" sub={`${porVencer.length} por vencer en 7 días`} />
       </div>
 
       <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
@@ -3062,16 +3112,16 @@ function CuentasPagar({ctx}){
                   <LBL>Obra asociada</LBL>
                   <select value={cxpForm.obraId} onChange={e=>setCxpForm({...cxpForm,obraId:e.target.value})} style={SI}>
                     <option value="">Sin obra / gasto general</option>
-                    {obras.map(o=><option key={o.id} value={o.id}>{o.id} Â· {o.cliente}</option>)}
+                    {obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}
                   </select>
                 </div>
                 <div>
-                  <LBL>NÂ° Factura</LBL>
+                  <LBL>N° Factura</LBL>
                   <input value={cxpForm.factura} onChange={e=>setCxpForm({...cxpForm,factura:e.target.value})} placeholder="FV-2026-0001" style={SI}/>
                 </div>
                 <div style={{gridColumn:"span 2"}}>
                   <LBL>Concepto</LBL>
-                  <input value={cxpForm.concepto} onChange={e=>setCxpForm({...cxpForm,concepto:e.target.value})} placeholder="DescripciÃ³n del gasto o servicio" style={SI}/>
+                  <input value={cxpForm.concepto} onChange={e=>setCxpForm({...cxpForm,concepto:e.target.value})} placeholder="Descripción del gasto o servicio" style={SI}/>
                 </div>
                 <div>
                   <LBL>Monto</LBL>
@@ -3113,7 +3163,7 @@ function CuentasPagar({ctx}){
                         <div style={{flex:1}}>
                           <div style={{fontSize:14,fontWeight:700,color:"#1a1a2e"}}>{c.concepto}</div>
                           <div style={{fontSize:11,color:"#64748b",marginTop:2}}>
-                            {prov?.nombre || "Proveedor sin registro"} Â· Factura {c.factura || "â€”"} {obra?`Â· ${obra.id} Â· ${obra.cliente}`:"Â· gasto general"}
+                            {prov?.nombre || "Proveedor sin registro"} · Factura {c.factura || "â€”"} {obra?`· ${obra.id} · ${obra.cliente}`:"· gasto general"}
                           </div>
                         </div>
                         <div style={{textAlign:"right"}}>
@@ -3123,8 +3173,8 @@ function CuentasPagar({ctx}){
                       </div>
 
                       <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr 1fr 1fr",gap:10,fontSize:11,color:"#475569"}}>
-                        <div><strong style={{color:"#1a1a2e"}}>Proveedor:</strong><br/>{prov?.contacto || "Sin contacto"} Â· {prov?.telefono || prov?.tel || "Sin telÃ©fono"}</div>
-                        <div><strong style={{color:"#1a1a2e"}}>Banco:</strong><br/>{prov?.banco || "Sin banco"} Â· {prov?.numeroCuenta || "Sin cuenta"}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>Proveedor:</strong><br/>{prov?.contacto || "Sin contacto"} · {prov?.telefono || prov?.tel || "Sin teléfono"}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>Banco:</strong><br/>{prov?.banco || "Sin banco"} · {prov?.numeroCuenta || "Sin cuenta"}</div>
                         <div><strong style={{color:"#1a1a2e"}}>Factura:</strong><br/>{fmtD(c.fecha) || "â€”"} â†’ {fmtD(c.fechaVence) || "â€”"}</div>
                         <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center"}}>
                           {c.estado==="Pendiente" ? (
@@ -3153,7 +3203,7 @@ function CuentasPagar({ctx}){
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
                 <div>
                   <LBL>Nombre del proveedor</LBL>
-                  <input value={provForm.nombre} onChange={e=>setProvForm({...provForm,nombre:e.target.value})} placeholder="RazÃ³n social o nombre comercial" style={SI}/>
+                  <input value={provForm.nombre} onChange={e=>setProvForm({...provForm,nombre:e.target.value})} placeholder="Razón social o nombre comercial" style={SI}/>
                 </div>
                 <div>
                   <LBL>NIT</LBL>
@@ -3164,7 +3214,7 @@ function CuentasPagar({ctx}){
                   <input value={provForm.contacto} onChange={e=>setProvForm({...provForm,contacto:e.target.value})} placeholder="Nombre del contacto" style={SI}/>
                 </div>
                 <div>
-                  <LBL>TelÃ©fono</LBL>
+                  <LBL>Teléfono</LBL>
                   <input value={provForm.telefono} onChange={e=>setProvForm({...provForm,telefono:e.target.value})} placeholder="3001234567" style={SI}/>
                 </div>
                 <div>
@@ -3172,15 +3222,15 @@ function CuentasPagar({ctx}){
                   <input value={provForm.banco} onChange={e=>setProvForm({...provForm,banco:e.target.value})} placeholder="Bancolombia" style={SI}/>
                 </div>
                 <div>
-                  <LBL>NÃºmero de cuenta</LBL>
+                  <LBL>Número de cuenta</LBL>
                   <input value={provForm.numeroCuenta} onChange={e=>setProvForm({...provForm,numeroCuenta:e.target.value})} placeholder="123-456789-10" style={SI}/>
                 </div>
                 <div style={{gridColumn:"span 2"}}>
-                  <LBL>DirecciÃ³n</LBL>
-                  <input value={provForm.direccion} onChange={e=>setProvForm({...provForm,direccion:e.target.value})} placeholder="DirecciÃ³n principal del proveedor" style={SI}/>
+                  <LBL>Dirección</LBL>
+                  <input value={provForm.direccion} onChange={e=>setProvForm({...provForm,direccion:e.target.value})} placeholder="Dirección principal del proveedor" style={SI}/>
                 </div>
                 <div>
-                  <LBL>CategorÃ­a</LBL>
+                  <LBL>Categoría</LBL>
                   <input value={provForm.categoria} onChange={e=>setProvForm({...provForm,categoria:e.target.value})} placeholder="Materiales / Transporte / Servicios" style={SI}/>
                 </div>
                 <div style={{gridColumn:"span 3"}}>
@@ -3198,7 +3248,7 @@ function CuentasPagar({ctx}){
           <div style={CD}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
               <div style={ST}>Base de datos de proveedores</div>
-              <div style={{fontSize:11,color:"#64748b"}}>Nombre, cuenta, banco, direcciÃ³n, NIT, telÃ©fono y contacto</div>
+              <div style={{fontSize:11,color:"#64748b"}}>Nombre, cuenta, banco, dirección, NIT, teléfono y contacto</div>
             </div>
 
             {proveedoresData.length===0 ? (
@@ -3214,7 +3264,7 @@ function CuentasPagar({ctx}){
                         <div>
                           <div style={{fontSize:15,fontWeight:800,color:"#1a1a2e"}}>{p.nombre}</div>
                           <div style={{fontSize:11,color:"#64748b",marginTop:3}}>
-                            {p.nit || "Sin NIT"} Â· {p.contacto || "Sin contacto"} Â· {p.telefono || p.tel || "Sin telÃ©fono"}
+                            {p.nit || "Sin NIT"} · {p.contacto || "Sin contacto"} · {p.telefono || p.tel || "Sin teléfono"}
                           </div>
                         </div>
                         <div style={{display:"flex",gap:8,alignItems:"center"}}>
@@ -3224,9 +3274,9 @@ function CuentasPagar({ctx}){
                       </div>
 
                       <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr 1fr 1fr",gap:10,fontSize:11,color:"#475569"}}>
-                        <div><strong style={{color:"#1a1a2e"}}>DirecciÃ³n</strong><br/>{p.direccion || "Sin direcciÃ³n registrada"}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>Dirección</strong><br/>{p.direccion || "Sin dirección registrada"}</div>
                         <div><strong style={{color:"#1a1a2e"}}>Banco</strong><br/>{p.banco || "Sin banco"}</div>
-                        <div><strong style={{color:"#1a1a2e"}}>Cuenta</strong><br/>{p.numeroCuenta || "Sin nÃºmero de cuenta"}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>Cuenta</strong><br/>{p.numeroCuenta || "Sin número de cuenta"}</div>
                         <div><strong style={{color:"#1a1a2e"}}>Correo</strong><br/>{p.email || "Sin email"}</div>
                       </div>
 
@@ -3235,7 +3285,7 @@ function CuentasPagar({ctx}){
                           {pendientesProv.length ? `Tiene ${pendientesProv.length} cuenta(s) pendiente(s)` : "Sin cuentas pendientes"}
                         </div>
                         <div style={{fontWeight:800,color:pendientesProv.length?"#c2410c":"#166534"}}>
-                          {pendientesProv.length ? fmt(totalProv) : "Al dÃ­a"}
+                          {pendientesProv.length ? fmt(totalProv) : "Al día"}
                         </div>
                       </div>
                     </div>
@@ -3294,7 +3344,7 @@ function Obras({ctx}){
 
   return(
     <div style={{padding:28}}>
-      <H1 title="EjecuciÃ³n de Obra" subtitle="GestiÃ³n completa: personal, gastos, nÃ³mina y tiempo por obra"
+      <H1 title="Ejecución de Obra" subtitle="Gestión completa: personal, gastos, nómina y tiempo por obra"
         action={<button style={B("#cc0000")} onClick={()=>setShowNO(!showNO)}>+ Nueva Obra</button>}/>
 
       {showNO&&(
@@ -3302,17 +3352,17 @@ function Obras({ctx}){
           <div style={ST}>Nueva Obra</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
             <div><LBL>Cliente</LBL><input value={nob.cliente} onChange={e=>setNob({...nob,cliente:e.target.value})} placeholder="Nombre del cliente" style={SI}/></div>
-            <div><LBL>TelÃ©fono</LBL><input value={nob.tel} onChange={e=>setNob({...nob,tel:e.target.value})} placeholder="3001234567" style={SI}/></div>
-            <div><LBL>Proyecto / DescripciÃ³n</LBL><input value={nob.proyecto} onChange={e=>setNob({...nob,proyecto:e.target.value})} placeholder="Ej: LÃ­neas de vida cubierta" style={SI}/></div>
-            <div><LBL>Ciudad</LBL><input value={nob.ciudad} onChange={e=>setNob({...nob,ciudad:e.target.value})} placeholder="Ej: MedellÃ­n, Antioquia" style={SI}/></div>
-            <div><LBL>DirecciÃ³n</LBL><input value={nob.direccion} onChange={e=>setNob({...nob,direccion:e.target.value})} placeholder="DirecciÃ³n de la obra" style={SI}/></div>
+            <div><LBL>Teléfono</LBL><input value={nob.tel} onChange={e=>setNob({...nob,tel:e.target.value})} placeholder="3001234567" style={SI}/></div>
+            <div><LBL>Proyecto / Descripción</LBL><input value={nob.proyecto} onChange={e=>setNob({...nob,proyecto:e.target.value})} placeholder="Ej: Líneas de vida cubierta" style={SI}/></div>
+            <div><LBL>Ciudad</LBL><input value={nob.ciudad} onChange={e=>setNob({...nob,ciudad:e.target.value})} placeholder="Ej: Medellín, Antioquia" style={SI}/></div>
+            <div><LBL>Dirección</LBL><input value={nob.direccion} onChange={e=>setNob({...nob,direccion:e.target.value})} placeholder="Dirección de la obra" style={SI}/></div>
             <div><LBL>Valor total ($)</LBL><input type="number" value={nob.total} onChange={e=>setNob({...nob,total:parseFloat(e.target.value)||0})} style={SI}/></div>
             <div><LBL>Fecha inicio</LBL><input type="date" value={nob.fechaInicio} onChange={e=>setNob({...nob,fechaInicio:e.target.value})} style={SI}/></div>
             <div><LBL>Fecha fin estimada</LBL><input type="date" value={nob.fechaFin} onChange={e=>setNob({...nob,fechaFin:e.target.value})} style={SI}/></div>
-            <div><LBL>Vincular cotizaciÃ³n (opcional)</LBL>
+            <div><LBL>Vincular cotización (opcional)</LBL>
               <select value={nob.cotizacionId} onChange={e=>setNob({...nob,cotizacionId:e.target.value})} style={SI}>
-                <option value="">Sin cotizaciÃ³n</option>
-                {cotizaciones.filter(c=>!c.obraId).map(c=><option key={c.id} value={c.id}>{c.numero} Â· {c.cliente}</option>)}
+                <option value="">Sin cotización</option>
+                {cotizaciones.filter(c=>!c.obraId).map(c=><option key={c.id} value={c.id}>{c.numero} · {c.cliente}</option>)}
               </select>
             </div>
           </div>
@@ -3334,7 +3384,7 @@ function Obras({ctx}){
               onClick={()=>{setSel(o);setDetTab("personal");}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
                 <div>
-                  <div style={{fontSize:10,color:"#94a3b8"}}>{o.id} Â· {fmtD(o.fechaInicio)}</div>
+                  <div style={{fontSize:10,color:"#94a3b8"}}>{o.id} · {fmtD(o.fechaInicio)}</div>
                   <div style={{fontSize:15,fontWeight:700,marginTop:2,color:"#1a1a2e"}}>{o.cliente}</div>
                   <div style={{fontSize:12,color:"#475569"}}>{o.proyecto}</div>
                   {cotVinc&&<div style={{fontSize:10,color:"#b45309",marginTop:2}}>ðŸ“„ {o.cotizacionId}</div>}
@@ -3364,7 +3414,7 @@ function Obras({ctx}){
               <div style={{display:"flex",gap:6,alignItems:"center"}}>
                 <select value={o.estado} onChange={e=>{e.stopPropagation();updEst(o.id,e.target.value);}}
                   style={{...SI,fontSize:11,padding:"5px 8px",flex:1}} onClick={e=>e.stopPropagation()}>
-                  {["CotizaciÃ³n","En Obra","Finalizado","Pagado"].map(s=><option key={s}>{s}</option>)}
+                  {["Cotización","En Obra","Finalizado","Pagado"].map(s=><option key={s}>{s}</option>)}
                 </select>
                 <span style={{fontSize:11,color:"#94a3b8",flexShrink:0}}>{(o.empleados||[]).length} ðŸ‘·</span>
                 <span style={{fontSize:11,color:"#cc0000",fontWeight:600,flexShrink:0}}>Ver â†’</span>
@@ -3417,9 +3467,9 @@ function ObraDetalle({obraId,ctx,onVolver}){
       <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:24,background:"#fff",borderRadius:14,padding:"16px 20px",border:"1px solid #e2e8f0",boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
         <button onClick={onVolver} style={{...B("#f1f5f9","#475569"),padding:"8px 16px",fontSize:13,flexShrink:0}}>â† Volver</button>
         <div style={{flex:1}}>
-          <div style={{fontSize:11,color:"#94a3b8"}}>{oAct.id} Â· {fmtD(oAct.fechaInicio)} â†’ {fmtD(oAct.fechaFin)||"En curso"}</div>
+          <div style={{fontSize:11,color:"#94a3b8"}}>{oAct.id} · {fmtD(oAct.fechaInicio)} â†’ {fmtD(oAct.fechaFin)||"En curso"}</div>
           <div style={{fontSize:20,fontWeight:700,color:"#1a1a2e",lineHeight:1.2}}>{oAct.cliente}</div>
-          <div style={{fontSize:13,color:"#475569"}}>{oAct.proyecto} Â· ðŸ“ {oAct.ciudad}</div>
+          <div style={{fontSize:13,color:"#475569"}}>{oAct.proyecto} · ðŸ“ {oAct.ciudad}</div>
           {oAct.direccion&&<div style={{fontSize:11,color:"#94a3b8"}}>{oAct.direccion}</div>}
         </div>
         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
@@ -3436,7 +3486,7 @@ function ObraDetalle({obraId,ctx,onVolver}){
           ["? Saldo",fmt(oAct.saldo),oAct.saldo>0?"#c2410c":"#166534"],
           ["ðŸ§¾ Gastos",fmt(totalGastos),"#7c3aed"],
           ["ðŸ‘· Personal",`${empObra.length} pers.`,"#0891b2"],
-          ["ðŸ“… DÃ­as obra",`${totalDias} dÃ­as`,"#b45309"],
+          ["ðŸ“… Días obra",`${totalDias} días`,"#b45309"],
         ].map(([k,v,c])=>(
           <div key={k} style={{background:"#fff",borderRadius:10,padding:"14px 16px",border:"1px solid #e2e8f0",textAlign:"center"}}>
             <div style={{fontSize:10,color:"#94a3b8",marginBottom:6}}>{k}</div>
@@ -3461,7 +3511,7 @@ function ObraDetalle({obraId,ctx,onVolver}){
 
       {/* Tabs */}
       <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
-        {[["personal","ðŸ‘· Personal"],["gastos","ðŸ§¾ Gastos"],["nomina","ðŸ’° NÃ³mina"],["horario","ðŸ“… Horario"]].map(([id,lb])=>(
+        {[["personal","ðŸ‘· Personal"],["gastos","ðŸ§¾ Gastos"],["nomina","ðŸ’° Nómina"],["horario","ðŸ“… Horario"]].map(([id,lb])=>(
           <button key={id} onClick={()=>setDetTab(id)}
             style={{...B(detTab===id?"#cc0000":"#f1f5f9",detTab===id?"#fff":"#475569"),fontSize:12,padding:"8px 16px",border:`1px solid ${detTab===id?"#cc0000":"#e2e8f0"}`}}>
             {lb}
@@ -3475,7 +3525,7 @@ function ObraDetalle({obraId,ctx,onVolver}){
           <div style={ST}>ðŸ‘· Personal en obra</div>
           {empObra.length===0&&(
             <div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13,background:"#f8fafc",borderRadius:10,border:"1px dashed #e2e8f0",marginBottom:12}}>
-              Sin empleados asignados aÃºn
+              Sin empleados asignados aún
             </div>
           )}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
@@ -3497,14 +3547,14 @@ function ObraDetalle({obraId,ctx,onVolver}){
                       style={{background:"#fee2e2",border:"1px solid #fca5a5",color:"#cc0000",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11}}>âœ•</button>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,fontSize:10}}>
-                    {[["DÃ­as en obra",diasEmp+"d","#1d4ed8"],["Jornal/dÃ­a",fmt(jornal),"#166534"],["Costo obra",fmt(jornal*diasEmp),"#7c3aed"]].map(([k,v,c])=>(
+                    {[["Días en obra",diasEmp+"d","#1d4ed8"],["Jornal/día",fmt(jornal),"#166534"],["Costo obra",fmt(jornal*diasEmp),"#7c3aed"]].map(([k,v,c])=>(
                       <div key={k} style={{background:"#fff",borderRadius:5,padding:"6px 8px",textAlign:"center",border:"1px solid #f1f5f9"}}>
                         <div style={{color:"#94a3b8",marginBottom:2,fontSize:9}}>{k}</div>
                         <div style={{fontWeight:700,color:c,fontSize:12}}>{v}</div>
                       </div>
                     ))}
                   </div>
-                  <div style={{marginTop:8,fontSize:10,color:"#94a3b8"}}>ðŸ¦ {emp.banco} Â· {emp.tipoCuenta} Â· <span style={{fontFamily:"monospace"}}>{emp.numeroCuenta||"â€”"}</span></div>
+                  <div style={{marginTop:8,fontSize:10,color:"#94a3b8"}}>ðŸ¦ {emp.banco} · {emp.tipoCuenta} · <span style={{fontFamily:"monospace"}}>{emp.numeroCuenta||"â€”"}</span></div>
                 </div>
               );
             })}
@@ -3519,7 +3569,7 @@ function ObraDetalle({obraId,ctx,onVolver}){
             }} style={{...SI,border:"2px solid #cc0000",fontSize:12}}>
               <option value="">Selecciona un empleado...</option>
               {empleados.filter(emp=>!empObra.includes(emp.id)).map(emp=>(
-                <option key={emp.id} value={emp.id}>{emp.nombre} Â· {emp.cargo}</option>
+                <option key={emp.id} value={emp.id}>{emp.nombre} · {emp.cargo}</option>
               ))}
             </select>
           </div>
@@ -3541,8 +3591,8 @@ function ObraDetalle({obraId,ctx,onVolver}){
                     {proveedores.map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}
                   </select>
                 </div>
-                <div><LBL>NÂ° Factura</LBL><input value={gastoForm.factura} onChange={e=>setGastoForm({...gastoForm,factura:e.target.value})} placeholder="FV-2026-0001" style={SI}/></div>
-                <div style={{gridColumn:"span 2"}}><LBL>Concepto</LBL><input value={gastoForm.concepto} onChange={e=>setGastoForm({...gastoForm,concepto:e.target.value})} placeholder="DescripciÃ³n del gasto" style={SI}/></div>
+                <div><LBL>N° Factura</LBL><input value={gastoForm.factura} onChange={e=>setGastoForm({...gastoForm,factura:e.target.value})} placeholder="FV-2026-0001" style={SI}/></div>
+                <div style={{gridColumn:"span 2"}}><LBL>Concepto</LBL><input value={gastoForm.concepto} onChange={e=>setGastoForm({...gastoForm,concepto:e.target.value})} placeholder="Descripción del gasto" style={SI}/></div>
                 <div><LBL>Monto ($)</LBL><input type="number" value={gastoForm.monto} onChange={e=>setGastoForm({...gastoForm,monto:parseFloat(e.target.value)||0})} style={SI}/></div>
                 <div><LBL>Fecha factura</LBL><input type="date" value={gastoForm.fecha} onChange={e=>setGastoForm({...gastoForm,fecha:e.target.value})} style={SI}/></div>
                 <div><LBL>Fecha vencimiento</LBL><input type="date" value={gastoForm.fechaVence} onChange={e=>setGastoForm({...gastoForm,fechaVence:e.target.value})} style={SI}/></div>
@@ -3553,14 +3603,14 @@ function ObraDetalle({obraId,ctx,onVolver}){
               </div>
             </div>
           )}
-          {gastosObra.length===0&&!showGasto&&<div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13}}>Sin gastos registrados aÃºn</div>}
+          {gastosObra.length===0&&!showGasto&&<div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13}}>Sin gastos registrados aún</div>}
           {gastosObra.map(c=>{
             const prov=proveedores.find(p=>p.id===c.proveedorId);
             const vencida=c.estado==="Pendiente"&&c.fechaVence&&c.fechaVence<today();
             return(
               <div key={c.id} style={{background:"#f8fafc",borderRadius:10,padding:"12px 14px",marginBottom:8,border:`1px solid ${vencida?"#fca5a5":c.estado==="Pagado"?"#bbf7d0":"#e2e8f0"}`}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-                  <div><div style={{fontSize:13,fontWeight:600}}>{c.concepto}</div><div style={{fontSize:11,color:"#64748b"}}>{prov?.nombre} Â· {c.factura}</div></div>
+                  <div><div style={{fontSize:13,fontWeight:600}}>{c.concepto}</div><div style={{fontSize:11,color:"#64748b"}}>{prov?.nombre} · {c.factura}</div></div>
                   <div style={{textAlign:"right"}}><div style={{fontSize:14,fontWeight:700,color:"#cc0000"}}>{fmt(c.monto)}</div><Badge estado={vencida?"Vencida":c.estado}/></div>
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11,color:"#94a3b8"}}>
@@ -3581,8 +3631,8 @@ function ObraDetalle({obraId,ctx,onVolver}){
       {/* TAB NÃ“MINA */}
       {detTab==="nomina"&&(
         <div style={CD}>
-          <div style={ST}>ðŸ’° NÃ³mina proporcional por obra</div>
-          <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 14px",marginBottom:14,fontSize:11,color:"#475569",border:"1px solid #e2e8f0"}}>CÃ¡lculo: dÃ­as trabajados Ã— jornal diario (salario Ã· 26 dÃ­as)</div>
+          <div style={ST}>ðŸ’° Nómina proporcional por obra</div>
+          <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 14px",marginBottom:14,fontSize:11,color:"#475569",border:"1px solid #e2e8f0"}}>Cálculo: días trabajados Ã— jornal diario (salario ÷ 26 días)</div>
           {empObra.length===0&&<div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13}}>Sin personal asignado</div>}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
             {empObra.map((eid,idx)=>{
@@ -3599,14 +3649,14 @@ function ObraDetalle({obraId,ctx,onVolver}){
                     <div><div style={{fontSize:13,fontWeight:700}}>{emp.nombre}</div><div style={{fontSize:11,color:"#64748b"}}>{emp.cargo}</div></div>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
-                    {[["DÃ­as",diasEmp+"d","#1d4ed8"],["Jornal",fmt(jornal),"#166534"],["Bruto",fmt(subtotal),"#b45309"],["Neto",fmt(subtotal-ded),"#cc0000"]].map(([k,v,c])=>(
+                    {[["Días",diasEmp+"d","#1d4ed8"],["Jornal",fmt(jornal),"#166534"],["Bruto",fmt(subtotal),"#b45309"],["Neto",fmt(subtotal-ded),"#cc0000"]].map(([k,v,c])=>(
                       <div key={k} style={{background:"#fff",borderRadius:6,padding:"8px",textAlign:"center",border:"1px solid #f1f5f9"}}>
                         <div style={{color:"#94a3b8",fontSize:9,marginBottom:3}}>{k}</div>
                         <div style={{fontWeight:700,color:c,fontSize:11}}>{v}</div>
                       </div>
                     ))}
                   </div>
-                  <div style={{marginTop:8,fontSize:10,color:"#94a3b8"}}>ðŸ¦ {emp.banco} Â· {emp.tipoCuenta} Â· <span style={{fontFamily:"monospace"}}>{emp.numeroCuenta||"â€”"}</span></div>
+                  <div style={{marginTop:8,fontSize:10,color:"#94a3b8"}}>ðŸ¦ {emp.banco} · {emp.tipoCuenta} · <span style={{fontFamily:"monospace"}}>{emp.numeroCuenta||"â€”"}</span></div>
                 </div>
               );
             })}
@@ -3614,8 +3664,8 @@ function ObraDetalle({obraId,ctx,onVolver}){
           {empObra.length>0&&(
             <div style={{background:"#f1f5f9",borderRadius:10,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,textAlign:"center",fontSize:12}}>
-                <div><div style={{color:"#64748b",marginBottom:4}}>Total dÃ­as trabajados</div><div style={{fontWeight:700,color:"#1d4ed8",fontSize:18}}>{totalDias}</div></div>
-                <div><div style={{color:"#64748b",marginBottom:4}}>NÃ³mina total obra</div><div style={{fontWeight:700,color:"#cc0000",fontSize:18}}>{fmt(nomObraTotal)}</div></div>
+                <div><div style={{color:"#64748b",marginBottom:4}}>Total días trabajados</div><div style={{fontWeight:700,color:"#1d4ed8",fontSize:18}}>{totalDias}</div></div>
+                <div><div style={{color:"#64748b",marginBottom:4}}>Nómina total obra</div><div style={{fontWeight:700,color:"#cc0000",fontSize:18}}>{fmt(nomObraTotal)}</div></div>
                 <div><div style={{color:"#64748b",marginBottom:4}}>% del ingreso</div><div style={{fontWeight:700,color:oAct.total>0&&nomObraTotal/oAct.total<0.3?"#166534":"#c2410c",fontSize:18}}>{oAct.total>0?Math.round(nomObraTotal/oAct.total*100):0}%</div></div>
               </div>
             </div>
@@ -3647,7 +3697,7 @@ function ObraDetalle({obraId,ctx,onVolver}){
           })}
           {horariosObra.length>0&&(
             <div style={{background:"#f1f5f9",borderRadius:8,padding:"10px 14px",marginTop:8,fontSize:12,color:"#64748b"}}>
-              {horariosObra.length} turno(s) Â· {new Set(horariosObra.map(h=>h.empleadoId)).size} persona(s)
+              {horariosObra.length} turno(s) · {new Set(horariosObra.map(h=>h.empleadoId)).size} persona(s)
             </div>
           )}
         </div>
@@ -3663,7 +3713,7 @@ function Certificaciones({ctx}){
   const {certs,setCerts,obras}=ctx;
   const [sel,setSel]=useState(null);
   const [nueva,setNueva]=useState(false);
-  const [form,setForm]=useState({obraId:"OB-001",tipo:"CertificaciÃ³n",numero:"",fecha:today(),cliente:"",nit:"",direccion:"",sistema:"",normativa:"ResoluciÃ³n 4272 de 2021",ingeniero:"ING. JHON JAIME SEPULVEDA LONDOÃ‘O",matricula:"MP. 05256-409949",proxMant:"",elementos:["Perno Grado 8 B7 Ã˜ 5/8","Arandela Ã˜ 5/8","Tuerca Ã˜ 5/8","Cable diÃ¡metro 5/16\" (8mm) galvanizado","Tensor cable","Soportes laterales e intermedios"]});
+  const [form,setForm]=useState({obraId:"OB-001",tipo:"Certificación",numero:"",fecha:today(),cliente:"",nit:"",direccion:"",sistema:"",normativa:"Resolución 4272 de 2021",ingeniero:"ING. JHON JAIME SEPULVEDA LONDOÃ‘O",matricula:"MP. 05256-409949",proxMant:"",elementos:["Perno Grado 8 B7 Ã˜ 5/8","Arandela Ã˜ 5/8","Tuerca Ã˜ 5/8","Cable diámetro 5/16\" (8mm) galvanizado","Tensor cable","Soportes laterales e intermedios"]});
   const [nuevoElem,setNuevoElem]=useState("");
 
   const guardar=()=>{
@@ -3671,52 +3721,52 @@ function Certificaciones({ctx}){
     setCerts(p=>[...p,c]);setNueva(false);setSel(c);
   };
 
-  const imprimir=(c)=>{setSel(c);setTimeout(()=>printCurrentPz(`CertificaciÃ³n ${c?.numero || c?.id || ""}`),250);};
+  const imprimir=(c)=>{setSel(c);setTimeout(()=>printCurrentPz(`Certificación ${c?.numero || c?.id || ""}`),250);};
 
   return(
     <div style={{padding:28}}>
-      <H1 title="Certificaciones" subtitle="Certificados y recertificaciones de sistemas anticaÃ­das Â· Res. 4272/2021"
+      <H1 title="Certificaciones" subtitle="Certificados y recertificaciones de sistemas anticaídas · Res. 4272/2021"
         action={
           <div style={{display:"flex",gap:8}}>
-            <button style={B("#f47c20")} onClick={()=>{setForm(f=>({...f,tipo:"CertificaciÃ³n"}));setNueva(true);}}>+ Nueva CertificaciÃ³n</button>
-            <button style={{...B("#4ade80","#0f2d1a"),border:"1px solid #166534"}} onClick={()=>{setForm(f=>({...f,tipo:"RecertificaciÃ³n",elementos:["Limpieza sistema completo","VerificaciÃ³n ajuste tuercas y pernos","Laca protectora anticorrosiva en todos los puntos","Tensado de cables"]}));setNueva(true);}}>ðŸ”„ Nueva RecertificaciÃ³n</button>
+            <button style={B("#f47c20")} onClick={()=>{setForm(f=>({...f,tipo:"Certificación"}));setNueva(true);}}>+ Nueva Certificación</button>
+            <button style={{...B("#4ade80","#0f2d1a"),border:"1px solid #166534"}} onClick={()=>{setForm(f=>({...f,tipo:"Recertificación",elementos:["Limpieza sistema completo","Verificación ajuste tuercas y pernos","Laca protectora anticorrosiva en todos los puntos","Tensado de cables"]}));setNueva(true);}}>ðŸ”„ Nueva Recertificación</button>
           </div>
         }/>
 
       {nueva&&(
         <div style={{...CD,marginBottom:20,border:"1px solid #cc0000"}}>
-          <div style={ST}>Nueva CertificaciÃ³n / RecertificaciÃ³n</div>
+          <div style={ST}>Nueva Certificación / Recertificación</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:12}}>
             <div><LBL>Tipo</LBL><select value={form.tipo} onChange={e=>{
               const t=e.target.value;
               const elems={
-                "CertificaciÃ³n":["Perno Grado 8 B7 Ã˜ 5/8","Arandela Ã˜ 5/8","Tuerca Ã˜ 5/8","Cable diÃ¡metro 5/16\" (8mm) galvanizado","Tensor cable","Soportes laterales e intermedios"],
-                "RecertificaciÃ³n":["Limpieza sistema completo","VerificaciÃ³n ajuste tuercas y pernos","Laca protectora anticorrosiva en todos los puntos","Tensado de cables"],
+                "Certificación":["Perno Grado 8 B7 Ã˜ 5/8","Arandela Ã˜ 5/8","Tuerca Ã˜ 5/8","Cable diámetro 5/16\" (8mm) galvanizado","Tensor cable","Soportes laterales e intermedios"],
+                "Recertificación":["Limpieza sistema completo","Verificación ajuste tuercas y pernos","Laca protectora anticorrosiva en todos los puntos","Tensado de cables"],
               };
               setForm({...form,tipo:t,elementos:elems[t]||form.elementos});
-            }} style={SI}>{["CertificaciÃ³n","RecertificaciÃ³n"].map(t=><option key={t}>{t}</option>)}</select></div>
+            }} style={SI}>{["Certificación","Recertificación"].map(t=><option key={t}>{t}</option>)}</select></div>
             <div><LBL>Sistema certificado</LBL><select value={form.tipoSistema||""} onChange={e=>{
               const s=e.target.value;
               const elemsMap={
-                "LÃ­neas de vida horizontales":["Perno Grado 8 B7 Ã˜ 5/8","Arandela Ã˜ 5/8","Tuerca Ã˜ 5/8","Cable diÃ¡metro 5/16\" (8mm) galvanizado","Guardacables","Tensor cable","Soportes laterales e intermedios"],
-                "Puntos de anclaje":["Perno Grado 8 B7 Ã˜ 5/8","Arandela Ã˜ 5/8","Tuerca Ã˜ 5/8","Punto de anclaje ARTICO acero galvanizado","EpÃ³xico ProAnchor Elite ESP"],
-                "Escalera fija":["PeldaÃ±os acero galvanizado","Largueros perfil L","Pernos de fijaciÃ³n","Guardacuerpo lateral","LÃ­nea de vida vertical integrada"],
-                "LÃ­nea de vida vertical":["Cable de acero ÃƒËœ 8mm galvanizado","Absorbedor de caÃ­da","Dispositivo deslizante","Anclaje superior e inferior","Tensor y guardacables"],
+                "Líneas de vida horizontales":["Perno Grado 8 B7 Ã˜ 5/8","Arandela Ã˜ 5/8","Tuerca Ã˜ 5/8","Cable diámetro 5/16\" (8mm) galvanizado","Guardacables","Tensor cable","Soportes laterales e intermedios"],
+                "Puntos de anclaje":["Perno Grado 8 B7 Ã˜ 5/8","Arandela Ã˜ 5/8","Tuerca Ã˜ 5/8","Punto de anclaje ARTICO acero galvanizado","Epóxico ProAnchor Elite ESP"],
+                "Escalera fija":["Peldaños acero galvanizado","Largueros perfil L","Pernos de fijación","Guardacuerpo lateral","Línea de vida vertical integrada"],
+                "Línea de vida vertical":["Cable de acero ÃƒËœ 8mm galvanizado","Absorbedor de caída","Dispositivo deslizante","Anclaje superior e inferior","Tensor y guardacables"],
               };
               setForm({...form,tipoSistema:s,elementos:elemsMap[s]||form.elementos});
             }} style={SI}>
               <option value="">Seleccionar tipo de sistema...</option>
-              {["LÃ­neas de vida horizontales","Puntos de anclaje","Escalera fija","LÃ­nea de vida vertical"].map(s=><option key={s}>{s}</option>)}
+              {["Líneas de vida horizontales","Puntos de anclaje","Escalera fija","Línea de vida vertical"].map(s=><option key={s}>{s}</option>)}
             </select></div>
-            <div><LBL>NÃºmero</LBL><input value={form.numero} onChange={e=>setForm({...form,numero:e.target.value})} placeholder="C-2026-001" style={SI}/></div>
+            <div><LBL>Número</LBL><input value={form.numero} onChange={e=>setForm({...form,numero:e.target.value})} placeholder="C-2026-001" style={SI}/></div>
             <div><LBL>Fecha</LBL><input type="date" value={form.fecha} onChange={e=>setForm({...form,fecha:e.target.value})} style={SI}/></div>
-            <div><LBL>Obra asociada</LBL><select value={form.obraId} onChange={e=>{const o=obras.find(x=>x.id===e.target.value);setForm({...form,obraId:e.target.value,cliente:o?.cliente||"",direccion:o?.direccion||""});}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} Â· {o.cliente}</option>)}</select></div>
+            <div><LBL>Obra asociada</LBL><select value={form.obraId} onChange={e=>{const o=obras.find(x=>x.id===e.target.value);setForm({...form,obraId:e.target.value,cliente:o?.cliente||"",direccion:o?.direccion||""});}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
             <div><LBL>Cliente</LBL><input value={form.cliente} onChange={e=>setForm({...form,cliente:e.target.value})} style={SI}/></div>
             <div><LBL>NIT</LBL><input value={form.nit} onChange={e=>setForm({...form,nit:e.target.value})} style={SI}/></div>
-            <div style={{gridColumn:"span 2"}}><LBL>DirecciÃ³n de la obra</LBL><input value={form.direccion} onChange={e=>setForm({...form,direccion:e.target.value})} style={SI}/></div>
-            <div><LBL>PrÃ³ximo mantenimiento</LBL><input type="date" value={form.proxMant} onChange={e=>setForm({...form,proxMant:e.target.value})} style={SI}/></div>
+            <div style={{gridColumn:"span 2"}}><LBL>Dirección de la obra</LBL><input value={form.direccion} onChange={e=>setForm({...form,direccion:e.target.value})} style={SI}/></div>
+            <div><LBL>Próximo mantenimiento</LBL><input type="date" value={form.proxMant} onChange={e=>setForm({...form,proxMant:e.target.value})} style={SI}/></div>
           </div>
-          <div style={{marginBottom:12}}><LBL>Sistema certificado</LBL><textarea value={form.sistema} onChange={e=>setForm({...form,sistema:e.target.value})} rows={2} placeholder="Ej: 23 LÃ­neas de vida horizontales con sus conectoras instaladas sobre las cubiertas..." style={{...SI,resize:"vertical"}}/></div>
+          <div style={{marginBottom:12}}><LBL>Sistema certificado</LBL><textarea value={form.sistema} onChange={e=>setForm({...form,sistema:e.target.value})} rows={2} placeholder="Ej: 23 Líneas de vida horizontales con sus conectoras instaladas sobre las cubiertas..." style={{...SI,resize:"vertical"}}/></div>
           <div style={{marginBottom:12}}>
             <LBL>Elementos utilizados</LBL>
             {form.elementos.map((el,i)=>(
@@ -3731,7 +3781,7 @@ function Certificaciones({ctx}){
             </div>
           </div>
           <div style={{display:"flex",gap:10}}>
-            <button style={B("#4ade80","#0f2d1a")} onClick={guardar}>âœ… Guardar CertificaciÃ³n</button>
+            <button style={B("#4ade80","#0f2d1a")} onClick={guardar}>âœ… Guardar Certificación</button>
             <button style={B("#f1f5f9","#475569")} onClick={()=>setNueva(false)}>Cancelar</button>
           </div>
         </div>
@@ -3743,7 +3793,7 @@ function Certificaciones({ctx}){
             <div key={c.id} style={{...CD,border:`1px solid ${sel?.id===c.id?"#f47c20":"#1a3050"}`,cursor:"pointer"}} onClick={()=>setSel(sel?.id===c.id?null:c)}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
                 <div>
-                  <div style={{fontSize:11,color:"#64748b"}}>{c.id} Â· {c.numero}</div>
+                  <div style={{fontSize:11,color:"#64748b"}}>{c.id} · {c.numero}</div>
                   <div style={{fontSize:14,fontWeight:700,marginTop:2}}>{c.cliente}</div>
                   <div style={{fontSize:11,color:"#475569"}}>{c.tipo}</div>
                 </div>
@@ -3753,11 +3803,11 @@ function Certificaciones({ctx}){
               <div style={{fontSize:11,color:"#475569",marginBottom:10,lineHeight:1.5}}>{c.sistema}</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
                 <div style={{background:"#f1f5f9",borderRadius:6,padding:"6px 10px"}}><div style={{fontSize:9,color:"#64748b"}}>Fecha certif.</div><div style={{fontSize:12,fontWeight:600,color:"#1a1a2e"}}>{fmtD(c.fecha)}</div></div>
-                <div style={{background:"#f1f5f9",borderRadius:6,padding:"6px 10px"}}><div style={{fontSize:9,color:"#64748b"}}>PrÃ³x. mantto.</div><div style={{fontSize:12,fontWeight:600,color:"#fb923c"}}>{fmtD(c.proxMant)||"â€”"}</div></div>
+                <div style={{background:"#f1f5f9",borderRadius:6,padding:"6px 10px"}}><div style={{fontSize:9,color:"#64748b"}}>Próx. mantto.</div><div style={{fontSize:12,fontWeight:600,color:"#fb923c"}}>{fmtD(c.proxMant)||"â€”"}</div></div>
               </div>
               <div style={{display:"flex",gap:8}}>
-                <button style={{...B("#f47c20"),flex:1,justifyContent:"center",fontSize:12}} onClick={e=>{e.stopPropagation();setSel(c);}}>ðŸ‘ï¸ Ver</button>
-                <button style={{...B("#e8f5ee","#166534"),flex:1,justifyContent:"center",fontSize:12}} onClick={e=>{e.stopPropagation();setSel(c);setTimeout(()=>printCurrentPz(`CertificaciÃ³n ${c?.numero || c?.id || ""}`),300);}}> Imprimir</button>
+                <button style={{...B("#f47c20"),flex:1,justifyContent:"center",fontSize:12}} onClick={e=>{e.stopPropagation();setSel(c);}}>ðŸ‘️ Ver</button>
+                <button style={{...B("#e8f5ee","#166534"),flex:1,justifyContent:"center",fontSize:12}} onClick={e=>{e.stopPropagation();setSel(c);setTimeout(()=>printCurrentPz(`Certificación ${c?.numero || c?.id || ""}`),300);}}> Imprimir</button>
               </div>
             </div>
           ))}
@@ -3767,13 +3817,13 @@ function Certificaciones({ctx}){
           <div>
             <div style={{display:"flex",gap:10,marginBottom:14,justifyContent:"flex-end"}}>
               <button style={B("#f1f5f9","#475569")} onClick={()=>setSel(null)}>â† Volver</button>
-              <button style={B("#f47c20")} onClick={()=>printCurrentPz(`CertificaciÃ³n ${sel?.numero || sel?.id || ""}`)}>ðŸ–¨ï¸ Imprimir PDF</button>
+              <button style={B("#f47c20")} onClick={()=>printCurrentPz(`Certificación ${sel?.numero || sel?.id || ""}`)}>ðŸ–¨️ Imprimir PDF</button>
             </div>
             <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:12,lineHeight:1.7,border:"1px solid #ddd",borderRadius:4,padding:"36px 44px"}}>
               <div style={{padding:"0 0 14px"}}>
                 <PrintHeader dual={true}/>
               </div>
-              <div style={{textAlign:"center",fontSize:10,fontWeight:700,letterSpacing:2,padding:"6px 0",borderBottom:"1px solid #ddd",color:"#333",textTransform:"uppercase",marginBottom:20}}>CertificaciÃ³n de Sistemas AnticaÃ­das Â· Res. 4272/2021</div>
+              <div style={{textAlign:"center",fontSize:10,fontWeight:700,letterSpacing:2,padding:"6px 0",borderBottom:"1px solid #ddd",color:"#333",textTransform:"uppercase",marginBottom:20}}>Certificación de Sistemas Anticaídas · Res. 4272/2021</div>
               <div style={{marginBottom:20}}>
                 <div>Envigado, {fmtL(sel.fecha)}</div>
                 <div style={{marginTop:10,fontWeight:700}}>SEÃ‘ORES:</div>
@@ -3783,19 +3833,19 @@ function Certificaciones({ctx}){
               </div>
               <div style={{textAlign:"center",fontWeight:700,fontSize:15,marginBottom:20}}>INGEANCLAJES S.A.S</div>
 
-              {sel.tipo==="RecertificaciÃ³n"?(
+              {sel.tipo==="Recertificación"?(
                 <div style={{textAlign:"justify",lineHeight:1.8,marginBottom:20}}>
                   <p style={{marginBottom:12}}>Ha realizado el mantenimiento preventivo en las instalaciones de {sel.sistema}, que consta de:</p>
-                  <p style={{marginBottom:12}}>Limpieza de todo el sistema. Se verifica ajuste de las tuercas y pernos de los puntos de anclaje, finalmente se procediÃ³ a dar una laca protectora anticorrosiva como recubrimiento especial en todos los puntos de anclaje para evitar futuras oxidaciones.</p>
-                  <p style={{marginBottom:12}}>Nuestra empresa se compromete a garantizar la calidad y seguridad de los materiales proporcionados para la instalaciÃ³n de los puntos de anclaje. Nos enfocamos en cumplir con todas las normativas y estÃ¡ndares de la industria, asÃ­ como en utilizar materiales de alta calidad que cumplan con las especificaciones tÃ©cnicas requeridas.</p>
-                  <p style={{marginBottom:12}}>Por otro lado, los pernos utilizados en los puntos de anclaje son seleccionados cuidadosamente para garantizar su resistencia y capacidad de fijaciÃ³n. Trabajamos con proveedores confiables que suministran pernos de alta calidad que cumplen con las normativas de seguridad establecidas.</p>
-                  <p style={{marginBottom:12}}>En cuanto al epÃ³xico utilizado, nos aseguramos de utilizar productos de reconocidas marcas y de calidad certificada. Nuestro personal altamente capacitado realiza la instalaciÃ³n siguiendo las instrucciones y recomendaciones del fabricante, asegurando asÃ­ una correcta adherencia y resistencia en los puntos de anclaje.</p>
-                  <p style={{marginBottom:12}}>Nos comprometemos a cumplir con todas las regulaciones legales vigentes y a realizar un seguimiento riguroso de las inspecciones y pruebas necesarias para garantizar la calidad de los materiales y la adecuada instalaciÃ³n de los puntos de anclaje.</p>
-                  <p style={{marginBottom:12}}>En caso de que se presenten problemas o fallas relacionadas con los materiales suministrados o la instalaciÃ³n de los puntos de anclaje, nos responsabilizamos totalmente de solventar cualquier inconveniente y cubrir los costos asociados a su correcciÃ³n. De acuerdo a las labores anteriormente descritas <strong>INGEANCLAJES S.A.S. CERTIFICA</strong> que los sistemas de detenciÃ³n de caÃ­das instalados en las instalaciones de la empresa <strong>{sel.cliente.toUpperCase()}</strong>{sel.direccion?` ubicada en ${sel.direccion.toUpperCase()}`:""} y cuyo objetivo es la fijaciÃ³n segura de los trabajadores al momento de realizar tareas que impliquen riesgo de caÃ­da, cumplen a cabalidad con la {sel.normativa} del ministerio de trabajo, por la cual se establece el reglamento de seguridad para protecciÃ³n contra caÃ­das en trabajo en altura. Todos los elementos que componen los diferentes sistemas anticaÃ­das se encuentran en excelente estado.</p>
+                  <p style={{marginBottom:12}}>Limpieza de todo el sistema. Se verifica ajuste de las tuercas y pernos de los puntos de anclaje, finalmente se procedió a dar una laca protectora anticorrosiva como recubrimiento especial en todos los puntos de anclaje para evitar futuras oxidaciones.</p>
+                  <p style={{marginBottom:12}}>Nuestra empresa se compromete a garantizar la calidad y seguridad de los materiales proporcionados para la instalación de los puntos de anclaje. Nos enfocamos en cumplir con todas las normativas y estándares de la industria, así como en utilizar materiales de alta calidad que cumplan con las especificaciones técnicas requeridas.</p>
+                  <p style={{marginBottom:12}}>Por otro lado, los pernos utilizados en los puntos de anclaje son seleccionados cuidadosamente para garantizar su resistencia y capacidad de fijación. Trabajamos con proveedores confiables que suministran pernos de alta calidad que cumplen con las normativas de seguridad establecidas.</p>
+                  <p style={{marginBottom:12}}>En cuanto al epóxico utilizado, nos aseguramos de utilizar productos de reconocidas marcas y de calidad certificada. Nuestro personal altamente capacitado realiza la instalación siguiendo las instrucciones y recomendaciones del fabricante, asegurando así una correcta adherencia y resistencia en los puntos de anclaje.</p>
+                  <p style={{marginBottom:12}}>Nos comprometemos a cumplir con todas las regulaciones legales vigentes y a realizar un seguimiento riguroso de las inspecciones y pruebas necesarias para garantizar la calidad de los materiales y la adecuada instalación de los puntos de anclaje.</p>
+                  <p style={{marginBottom:12}}>En caso de que se presenten problemas o fallas relacionadas con los materiales suministrados o la instalación de los puntos de anclaje, nos responsabilizamos totalmente de solventar cualquier inconveniente y cubrir los costos asociados a su corrección. De acuerdo a las labores anteriormente descritas <strong>INGEANCLAJES S.A.S. CERTIFICA</strong> que los sistemas de detención de caídas instalados en las instalaciones de la empresa <strong>{sel.cliente.toUpperCase()}</strong>{sel.direccion?` ubicada en ${sel.direccion.toUpperCase()}`:""} y cuyo objetivo es la fijación segura de los trabajadores al momento de realizar tareas que impliquen riesgo de caída, cumplen a cabalidad con la {sel.normativa} del ministerio de trabajo, por la cual se establece el reglamento de seguridad para protección contra caídas en trabajo en altura. Todos los elementos que componen los diferentes sistemas anticaídas se encuentran en excelente estado.</p>
                 </div>
               ):(
                 <div style={{textAlign:"justify",marginBottom:20,lineHeight:1.8}}>
-                  <strong>CERTIFICA</strong> que {sel.sistema} cumple a cabalidad con la {sel.normativa} del ministerio de trabajo, por la cual se establece el reglamento de seguridad para protecciÃ³n contra caÃ­das en trabajo en altura.
+                  <strong>CERTIFICA</strong> que {sel.sistema} cumple a cabalidad con la {sel.normativa} del ministerio de trabajo, por la cual se establece el reglamento de seguridad para protección contra caídas en trabajo en altura.
                 </div>
               )}
 
@@ -3805,15 +3855,15 @@ function Certificaciones({ctx}){
               </ul>
               <div style={{background:"#f9f9f9",border:"1px solid #ddd",borderRadius:6,padding:"14px 18px",marginBottom:20}}>
                 <div style={{fontWeight:700,marginBottom:10,fontSize:12}}>RECOMENDACIONES PARA TENER EN CUENTA</div>
-                <div style={{fontSize:12,marginBottom:10,textAlign:"justify"}}>A continuaciÃ³n, se realizan algunas recomendaciones para preservar en buen estado los sistemas anti caÃ­das certificados en dicha sede:</div>
+                <div style={{fontSize:12,marginBottom:10,textAlign:"justify"}}>A continuación, se realizan algunas recomendaciones para preservar en buen estado los sistemas anti caídas certificados en dicha sede:</div>
                 <ul style={{marginLeft:20,fontSize:12,lineHeight:1.9,marginBottom:10}}>
-                  <li>Dar aviso de inmediato, en caso de tener algÃºn evento de caÃ­da por muy mÃ­nima que sea para hacer su respectiva valoraciÃ³n y diagnÃ³stico.</li>
-                  <li>Conectar mÃ¡ximo dos personas por cada lÃ­nea de vida o en cada tramo entre soportes laterales e intermedios.</li>
-                  <li>No modificar ningÃºn elemento del sistema, ya que este puede perder sus funciones y generarÃ­a un riesgo mÃ¡s para las personas que las utilizan.</li>
-                  <li>Limpiar de inmediato las estructuras u otro elemento que entren en contacto con los quÃ­micos de esta Ã¡rea.</li>
+                  <li>Dar aviso de inmediato, en caso de tener algún evento de caída por muy mínima que sea para hacer su respectiva valoración y diagnóstico.</li>
+                  <li>Conectar máximo dos personas por cada línea de vida o en cada tramo entre soportes laterales e intermedios.</li>
+                  <li>No modificar ningún elemento del sistema, ya que este puede perder sus funciones y generaría un riesgo más para las personas que las utilizan.</li>
+                  <li>Limpiar de inmediato las estructuras u otro elemento que entren en contacto con los químicos de esta área.</li>
                 </ul>
                 <div style={{fontSize:12,textAlign:"justify",lineHeight:1.7}}>
-                  Estas recomendaciones son de carÃ¡cter tÃ©cnico, por lo tanto, su cumplimiento debe ser obligatorio para minimizar el riesgo generado por la falta y/o ausencia de algunos de sus elementos, ya que estos tienen como principal caracterÃ­stica soportar las cargas generadas por la caÃ­da de una persona en la realizaciÃ³n de trabajos en alturas. Se debe realizar el prÃ³ximo mantenimiento preventivo de todo el sistema mÃ¡ximo dentro de un aÃ±o contado a partir de la expediciÃ³n del presente documento{sel.proxMant?` (antes del ${fmtL(sel.proxMant)})`:""}.
+                  Estas recomendaciones son de carácter técnico, por lo tanto, su cumplimiento debe ser obligatorio para minimizar el riesgo generado por la falta y/o ausencia de algunos de sus elementos, ya que estos tienen como principal característica soportar las cargas generadas por la caída de una persona en la realización de trabajos en alturas. Se debe realizar el próximo mantenimiento preventivo de todo el sistema máximo dentro de un año contado a partir de la expedición del presente documento{sel.proxMant?` (antes del ${fmtL(sel.proxMant)})`:""}.
                 </div>
               </div>
               <div style={{marginBottom:12,fontSize:12}}>Cordialmente,</div>
@@ -3825,7 +3875,7 @@ function Certificaciones({ctx}){
                 </div>
               </div>
               <div style={{borderTop:"1px solid #ccc",paddingTop:10,marginTop:30,textAlign:"center",fontSize:10,color:"#555"}}>
-                Cl 38 sur # 36-48, Envigado, tel. 448 26 86 &nbsp;Â·&nbsp; Cel. 314 863 40 72 &nbsp;Â·&nbsp; Nit. 900193965-4 &nbsp;Â·&nbsp; ingeanclajes.sas@gmail.com
+                Cl 38 sur # 36-48, Envigado, tel. 448 26 86 &nbsp;·&nbsp; Cel. 314 863 40 72 &nbsp;·&nbsp; Nit. 900193965-4 &nbsp;·&nbsp; ingeanclajes.sas@gmail.com
               </div>
             </div>
           </div>
@@ -3903,7 +3953,7 @@ function Informes({ctx}){
     obraId:firstObraId,proyecto:"",localizacion:"",fechaInforme:today(),
     periodoInicio:today(),periodoFin:today(),
     personal:[],
-    recomendaciones:"Para garantizar la efectividad y seguridad de las lÃ­neas de vida instaladas es fundamental implementar un programa de inspecciÃ³n regular.",
+    recomendaciones:"Para garantizar la efectividad y seguridad de las líneas de vida instaladas es fundamental implementar un programa de inspección regular.",
     actividades:[emptyActividad()],
   });
 
@@ -3961,7 +4011,7 @@ function Informes({ctx}){
 
   return(
     <div style={{padding:28}}>
-      <H1 title="Informes de Actividades" subtitle="MÃºltiples actividades por informe con registro fotogrÃ¡fico"
+      <H1 title="Informes de Actividades" subtitle="Múltiples actividades por informe con registro fotográfico"
         action={<button style={B("#f47c20")} onClick={()=>setNuevo(!nuevo)}>+ Nuevo Informe</button>}/>
 
       {nuevo&&(
@@ -3970,30 +4020,30 @@ function Informes({ctx}){
 
           {/* Datos generales */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
-            <div><LBL>Obra asociada</LBL><select value={form.obraId} onChange={e=>{const o=obras.find(x=>x.id===e.target.value);setForm(p=>({...p,obraId:e.target.value,proyecto:o?.proyecto||"",localizacion:o?.ciudad||"",personal:buildPersonalDesdeObra(e.target.value,p.periodoInicio,p.periodoFin,p.personal)}));}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} Â· {o.cliente}</option>)}</select></div>
+            <div><LBL>Obra asociada</LBL><select value={form.obraId} onChange={e=>{const o=obras.find(x=>x.id===e.target.value);setForm(p=>({...p,obraId:e.target.value,proyecto:o?.proyecto||"",localizacion:o?.ciudad||"",personal:buildPersonalDesdeObra(e.target.value,p.periodoInicio,p.periodoFin,p.personal)}));}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
             <div><LBL>Nombre del proyecto</LBL><input value={form.proyecto} onChange={e=>setForm(p=>({...p,proyecto:e.target.value}))} style={SI}/></div>
-            <div><LBL>LocalizaciÃ³n</LBL><input value={form.localizacion} onChange={e=>setForm(p=>({...p,localizacion:e.target.value}))} style={SI}/></div>
+            <div><LBL>Localización</LBL><input value={form.localizacion} onChange={e=>setForm(p=>({...p,localizacion:e.target.value}))} style={SI}/></div>
             <div><LBL>Fecha del informe</LBL><input type="date" value={form.fechaInforme} onChange={e=>setForm(p=>({...p,fechaInforme:e.target.value}))} style={SI}/></div>
-            <div><LBL>PerÃ­odo desde</LBL><input type="date" value={form.periodoInicio} onChange={e=>setForm(p=>({...p,periodoInicio:e.target.value}))} style={SI}/></div>
-            <div><LBL>PerÃ­odo hasta</LBL><input type="date" value={form.periodoFin} onChange={e=>setForm(p=>({...p,periodoFin:e.target.value}))} style={SI}/></div>
+            <div><LBL>Período desde</LBL><input type="date" value={form.periodoInicio} onChange={e=>setForm(p=>({...p,periodoInicio:e.target.value}))} style={SI}/></div>
+            <div><LBL>Período hasta</LBL><input type="date" value={form.periodoFin} onChange={e=>setForm(p=>({...p,periodoFin:e.target.value}))} style={SI}/></div>
           </div>
 
           {/* Personal */}
           <div style={{marginBottom:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,flexWrap:"wrap",gap:8}}>
               <LBL>Personal en obra</LBL>
-              <div style={{fontSize:11,color:"#64748b"}}>Se carga automÃ¡ticamente segÃºn la obra y los horarios del perÃ­odo. Los turnos se muestran en formato 12h.</div>
+              <div style={{fontSize:11,color:"#64748b"}}>Se carga automáticamente según la obra y los horarios del período. Los turnos se muestran en formato 12h.</div>
             </div>
             <datalist id="turnosInformeList">
               {turnosDisponiblesObra.map((t,i)=><option key={i} value={t} />)}
             </datalist>
-            {form.personal.length===0&&<div style={{background:"#f8fafc",border:"1px dashed #e2e8f0",borderRadius:8,padding:"12px 14px",fontSize:12,color:"#94a3b8",marginBottom:8}}>No hay personal asignado a esta obra todavÃ­a. Puedes agregarlo manualmente.</div>}
+            {form.personal.length===0&&<div style={{background:"#f8fafc",border:"1px dashed #e2e8f0",borderRadius:8,padding:"12px 14px",fontSize:12,color:"#94a3b8",marginBottom:8}}>No hay personal asignado a esta obra todavía. Puedes agregarlo manualmente.</div>}
             {form.personal.map((p,i)=>(
               <div key={i} style={{display:"grid",gridTemplateColumns:"1fr 1.4fr 1fr 1fr 28px",gap:8,marginBottom:6}}>
                 <input value={p.cargo} onChange={e=>updPersonal(i,"cargo",e.target.value)} placeholder="Cargo" style={{...SI,fontSize:12}}/>
                 <input value={p.nombre} onChange={e=>updPersonal(i,"nombre",e.target.value)} placeholder="Nombre completo" style={{...SI,fontSize:12}}/>
-                <input list="turnosInformeList" value={p.turno1||""} onChange={e=>updPersonal(i,"turno1",e.target.value)} placeholder="Turno 1 Â· 07:00 AM - 05:00 PM" style={{...SI,fontSize:12}}/>
-                <input list="turnosInformeList" value={p.turno2||""} onChange={e=>updPersonal(i,"turno2",e.target.value)} placeholder="Turno 2 Â· opcional" style={{...SI,fontSize:12}}/>
+                <input list="turnosInformeList" value={p.turno1||""} onChange={e=>updPersonal(i,"turno1",e.target.value)} placeholder="Turno 1 · 07:00 AM - 05:00 PM" style={{...SI,fontSize:12}}/>
+                <input list="turnosInformeList" value={p.turno2||""} onChange={e=>updPersonal(i,"turno2",e.target.value)} placeholder="Turno 2 · opcional" style={{...SI,fontSize:12}}/>
                 <button onClick={()=>setForm(pf=>({...pf,personal:pf.personal.filter((_,j)=>j!==i)}))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:6,cursor:"pointer",fontSize:14}}>Ã—</button>
               </div>
             ))}
@@ -4012,11 +4062,11 @@ function Informes({ctx}){
                   <div style={{fontSize:12,fontWeight:700,color:"#cc0000"}}>Actividad {ai+1}</div>
                   {form.actividades.length>1&&<button onClick={()=>setForm(p=>({...p,actividades:p.actividades.filter((_,i)=>i!==ai)}))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:5,padding:"2px 8px",cursor:"pointer",fontSize:11}}>Ã— Eliminar</button>}
                 </div>
-                <div style={{marginBottom:10}}><LBL>TÃ­tulo / nombre de la actividad</LBL><input value={act.titulo} onChange={e=>updActividad(ai,"titulo",e.target.value)} placeholder="Ej: InstalaciÃ³n de lÃ­neas de vida" style={SI}/></div>
-                <div style={{marginBottom:10}}><LBL>DescripciÃ³n detallada</LBL><textarea value={act.descripcion} onChange={e=>updActividad(ai,"descripcion",e.target.value)} rows={3} placeholder="DescripciÃ³n del proceso ejecutado..." style={{...SI,resize:"vertical"}}/></div>
-                <div style={{marginBottom:12}}><LBL>Observaciones</LBL><input value={act.observaciones} onChange={e=>updActividad(ai,"observaciones",e.target.value)} placeholder="Ej: 1 LÃ­nea de vida horizontal de 119 metros" style={SI}/></div>
+                <div style={{marginBottom:10}}><LBL>Título / nombre de la actividad</LBL><input value={act.titulo} onChange={e=>updActividad(ai,"titulo",e.target.value)} placeholder="Ej: Instalación de líneas de vida" style={SI}/></div>
+                <div style={{marginBottom:10}}><LBL>Descripción detallada</LBL><textarea value={act.descripcion} onChange={e=>updActividad(ai,"descripcion",e.target.value)} rows={3} placeholder="Descripción del proceso ejecutado..." style={{...SI,resize:"vertical"}}/></div>
+                <div style={{marginBottom:12}}><LBL>Observaciones</LBL><input value={act.observaciones} onChange={e=>updActividad(ai,"observaciones",e.target.value)} placeholder="Ej: 1 Línea de vida horizontal de 119 metros" style={SI}/></div>
                 {/* Fotos de esta actividad */}
-                <LBL>Registro fotogrÃ¡fico</LBL>
+                <LBL>Registro fotográfico</LBL>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,alignItems:"start"}}>
                   {act.fotos.map((ft,fi)=>(
                     <div key={fi} style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,overflow:"hidden"}}>
@@ -4025,11 +4075,11 @@ function Informes({ctx}){
                         style={{minHeight:150,background:"#f8fafc",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",position:"relative",padding:ft.img?8:0}}>
                         {ft.img
                           ?<img src={ft.img} alt="" style={{width:"100%",height:"auto",maxHeight:220,objectFit:"contain",display:"block",background:"#fff",borderRadius:6}}/>
-                          :<div style={{textAlign:"center",color:"#94a3b8",fontSize:11}}><div style={{fontSize:22}}>ðŸ“·</div><div>Foto {fi+1} Â· Clic para cargar</div></div>}
+                          :<div style={{textAlign:"center",color:"#94a3b8",fontSize:11}}><div style={{fontSize:22}}>ðŸ“·</div><div>Foto {fi+1} · Clic para cargar</div></div>}
                         {ft.img&&<div style={{position:"absolute",top:6,right:6,background:"rgba(0,0,0,0.55)",borderRadius:4,padding:"2px 6px",fontSize:9,color:"#fff",cursor:"pointer"}} onClick={e=>{e.stopPropagation();updFotoAct(ai,fi,"img",null);}}>Ã— Quitar</div>}
                       </div>
                       <input ref={el=>{fotoRefs.current[`${ai}-${fi}`]=el;}} type="file" accept="image/*" style={{display:"none"}} onChange={e=>cargarFoto(ai,fi,e.target.files[0])}/>
-                      <div style={{padding:"6px 8px"}}><input value={ft.comentario} onChange={e=>updFotoAct(ai,fi,"comentario",e.target.value)} placeholder="DescripciÃ³n de la foto..." style={{...SI,fontSize:11,padding:"4px 8px"}}/></div>
+                      <div style={{padding:"6px 8px"}}><input value={ft.comentario} onChange={e=>updFotoAct(ai,fi,"comentario",e.target.value)} placeholder="Descripción de la foto..." style={{...SI,fontSize:11,padding:"4px 8px"}}/></div>
                     </div>
                   ))}
                 </div>
@@ -4069,28 +4119,28 @@ function Informes({ctx}){
                   <span key={i} style={{background:"#fff3e8",color:"#cc6600",borderRadius:4,padding:"2px 8px",fontSize:11,border:"1px solid #f47c2044"}}>{a.titulo||a}</span>
                 ))}
               </div>
-              <div style={{fontSize:11,color:"#64748b",marginBottom:10}}>{inf.personal?.length||0} personas Â· {(inf.actividades||[]).length} actividad(es)</div>
+              <div style={{fontSize:11,color:"#64748b",marginBottom:10}}>{inf.personal?.length||0} personas · {(inf.actividades||[]).length} actividad(es)</div>
               <div style={{display:"flex",gap:8}}>
-                <button style={{...B("#f47c20"),flex:1,justifyContent:"center",fontSize:12}} onClick={()=>setSel(inf)}>ðŸ‘ï¸ Ver / Imprimir</button>
+                <button style={{...B("#f47c20"),flex:1,justifyContent:"center",fontSize:12}} onClick={()=>setSel(inf)}>ðŸ‘️ Ver / Imprimir</button>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Vista detalle + impresiÃ³n */}
+      {/* Vista detalle + impresión */}
       {sel&&(
         <div>
           <div style={{display:"flex",gap:10,marginBottom:14}}>
             <button style={B("#f1f5f9","#475569")} onClick={()=>setSel(null)}>â† Volver</button>
-            <button style={B("#f47c20")} onClick={()=>printCurrentPz(`Informe ${sel?.id || ""}`)}>ðŸ–¨ï¸ Imprimir PDF</button>
+            <button style={B("#f47c20")} onClick={()=>printCurrentPz(`Informe ${sel?.id || ""}`)}>ðŸ–¨️ Imprimir PDF</button>
           </div>
           <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:11,lineHeight:1.6,border:"1px solid #ddd",padding:"28px 36px"}}>
             <PrintHeader dual={false}/>
             <div style={{textAlign:"center",fontSize:10,fontWeight:700,letterSpacing:2,padding:"6px 0",borderBottom:"1px solid #ddd",color:"#333",textTransform:"uppercase",marginBottom:16,marginTop:8}}>Informe de Actividades</div>
             <table style={{width:"100%",borderCollapse:"collapse",marginBottom:14}}>
               <tbody>
-                {[["PROYECTO",sel.proyecto],["LOCALIZACIÃ“N",sel.localizacion],["FECHA INFORME",fmtL(sel.fechaInforme)],["PERÃODO DE INFORME",`${fmtL(sel.periodoInicio)} - ${fmtL(sel.periodoFin)}`]].map(([k,v])=>(
+                {[["PROYECTO",sel.proyecto],["LOCALIZACIÃ“N",sel.localizacion],["FECHA INFORME",fmtL(sel.fechaInforme)],["PERÍODO DE INFORME",`${fmtL(sel.periodoInicio)} - ${fmtL(sel.periodoFin)}`]].map(([k,v])=>(
                   <tr key={k}><td style={{border:"1px solid #ccc",padding:"5px 10px",background:"#f0f0f0",fontWeight:700,width:"30%"}}>{k}</td><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{v}</td></tr>
                 ))}
               </tbody>
@@ -4107,7 +4157,7 @@ function Informes({ctx}){
               </thead>
               <tbody>{(sel.personal||[]).map((p,i)=><tr key={i}><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{p.cargo}</td><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{p.nombre}</td><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{p.turno1||"â€”"}</td><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{p.turno2||"â€”"}</td></tr>)}</tbody>
             </table>
-            {/* MÃºltiples actividades */}
+            {/* Múltiples actividades */}
             {(sel.actividades||[{titulo:sel.actividad,descripcion:sel.descripcion,observaciones:sel.observaciones,fotos:sel.fotos||[]}]).map((act,ai)=>(
               <div key={ai}>
                 <table style={{width:"100%",borderCollapse:"collapse",marginBottom:14}}>
@@ -4119,7 +4169,7 @@ function Informes({ctx}){
                 </table>
                 {(act.fotos||[]).some(ft=>ft.img||ft.url)&&(
                   <>
-                    <div style={{fontWeight:700,textAlign:"center",background:"#ddd",border:"1px solid #ccc",padding:"6px",marginBottom:10}}>REGISTRO FOTOGRÃFICO â€” {act.titulo}</div>
+                    <div style={{fontWeight:700,textAlign:"center",background:"#ddd",border:"1px solid #ccc",padding:"6px",marginBottom:10}}>REGISTRO FOTOGRÁFICO â€” {act.titulo}</div>
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14,alignItems:"start"}}>
                       {(act.fotos||[]).filter(ft=>ft.img||ft.url).map((ft,i)=>(
                         <div key={i} style={{border:"1px solid #ccc",borderRadius:4,overflow:"hidden",background:"#fff",padding:8}}>
@@ -4141,8 +4191,8 @@ function Informes({ctx}){
               <div style={{textAlign:"center"}}>
                 <div style={{display:"inline-block",borderTop:"1px solid #333",paddingTop:8,minWidth:200}}>
                   <div style={{fontWeight:700}}>ING. JHON JAIME SEPULVEDA LONDOÃ‘O</div>
-                  <div style={{fontSize:10}}>Cl 38 sur # 36-48, Envigado Â· PBX 448 26 86 Â· Cel. 314 863 40 72</div>
-                  <div style={{fontSize:10}}>Nit. 900193965-4 Â· ingeanclajes.sas@gmail.com</div>
+                  <div style={{fontSize:10}}>Cl 38 sur # 36-48, Envigado · PBX 448 26 86 · Cel. 314 863 40 72</div>
+                  <div style={{fontSize:10}}>Nit. 900193965-4 · ingeanclajes.sas@gmail.com</div>
                 </div>
               </div>
             </div>
@@ -4181,10 +4231,10 @@ function Financiero({ctx}){
         <div><LBL>Filtrar por obra</LBL>
           <select value={obraFiltro} onChange={e=>setObraFiltro(e.target.value)} style={{...SI,width:"auto"}}>
             <option value="todas">Todas las obras</option>
-            {obras.map(o=><option key={o.id} value={o.id}>{o.id} Â· {o.cliente}</option>)}
+            {obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}
           </select>
         </div>
-        <button style={{...B("#f47c20"),marginTop:16}} onClick={()=>printCurrentPz(`Informe financiero ${obraFiltro}`)}>ðŸ–¨ï¸ Imprimir informe</button>
+        <button style={{...B("#f47c20"),marginTop:16}} onClick={()=>printCurrentPz(`Informe financiero ${obraFiltro}`)}>ðŸ–¨️ Imprimir informe</button>
       </div>
 
       <div id="pz" className="doc-shell">
@@ -4250,7 +4300,7 @@ function Financiero({ctx}){
           <div style={CD}>
             <div style={ST}>Estructura de costos</div>
             <div style={{marginBottom:14}}>
-              {[["Costos proveedores",totCost,"#fb923c"],["NÃ³mina mensual estimada",nomMes,"#c084fc"],["Saldo pendiente cobrar",totIng-totCob,"#f5c842"],["Utilidad bruta estimada",totUtil,"#4ade80"]].map(([k,v,c])=>(
+              {[["Costos proveedores",totCost,"#fb923c"],["Nómina mensual estimada",nomMes,"#c084fc"],["Saldo pendiente cobrar",totIng-totCob,"#f5c842"],["Utilidad bruta estimada",totUtil,"#4ade80"]].map(([k,v,c])=>(
                 <div key={k} style={{display:"flex",justifyContent:"space-between",padding:"10px 0",borderBottom:"1px solid #e2e8f0",fontSize:13}}>
                   <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:10,height:10,borderRadius:2,background:c,flexShrink:0}}/><span style={{color:"#475569"}}>{k}</span></div>
                   <span style={{fontWeight:700,color:c}}>{fmt(v)}</span>
@@ -4288,6 +4338,7 @@ function Nomina({ctx}){
   const [editEmpId,setEditEmpId]=useState(null);
   const [editEmpData,setEditEmpData]=useState(null);
   const [liquidarId,setLiquidarId]=useState(null);
+  const [diasVacPagar,setDiasVacPagar]=useState({});
 
   const empleadosBase = empleados.map(normalizarEmpleado);
   const activos=empleadosBase.filter((empleado)=>empleado.activo);
@@ -4635,19 +4686,32 @@ function Nomina({ctx}){
                         const indemn = e.causaRetiro==="Despido sin justa causa" ? (
                           pfl.aniostrabajados<=1 ? Math.round(e.salario) : Math.round(e.salario + e.salario*0.2*(pfl.aniostrabajados-1))
                         ) : 0;
-                        const total = pfl.cesantias + pfl.interesesCesantias + pfl.prima + pfl.vacacionesValor + indemn;
+                        const dvp = diasVacPagar[e.id] ?? Math.round(pfl.vacacionesDias);
+                        const vacValorReal = Math.round(e.salario * dvp / 30);
+                        const total = pfl.cesantias + pfl.interesesCesantias + pfl.prima + vacValorReal + indemn;
                         return(
                         <div>
+                          <div style={{background:"#f0fdf4",borderRadius:6,padding:"8px 10px",marginBottom:8,display:"flex",alignItems:"center",gap:12,fontSize:11}}>
+                            <span style={{color:"#166534",fontWeight:600}}>🏖 Días de vacaciones a liquidar:</span>
+                            <input type="number" min={0} max={Math.ceil(pfl.vacacionesDias)+30} step={0.5}
+                              value={dvp}
+                              onChange={ev=>setDiasVacPagar(prev=>({...prev,[e.id]:Number(ev.target.value)}))}
+                              style={{width:70,padding:"4px 8px",borderRadius:5,border:"1px solid #bbf7d0",fontSize:12,fontWeight:700,textAlign:"center"}}/>
+                            <span style={{color:"#64748b",fontSize:10}}>Acumulados: {pfl.vacacionesDias} días · Valor: {fmt(vacValorReal)}</span>
+                          </div>
                           <table style={{width:"100%",borderCollapse:"collapse",fontSize:11,marginBottom:10}}>
                             <thead><tr style={{background:"#142840",color:"#fff"}}><th style={{padding:"5px 8px",textAlign:"left"}}>Concepto</th><th style={{padding:"5px 8px",textAlign:"left"}}>Base cálculo</th><th style={{padding:"5px 8px",textAlign:"right"}}>Valor</th></tr></thead>
                             <tbody>
-                              {[["Cesantías",`${fmt(e.salario+(e.salario<=NOMINA_CO_2026.topeAuxilio?NOMINA_CO_2026.auxilioTransporte:0))} × ${pfl.diasTrabajados}d ÷ 360`,pfl.cesantias],["Int. cesantías","12% anual s/ cesantías",pfl.interesesCesantias],["Prima de servicios",`Base × ${pfl.diasTrabajados}d ÷ 360`,pfl.prima],["Vacaciones",`${pfl.vacacionesDias} días`,pfl.vacacionesValor],...(indemn>0?[["Indemnización (sin justa causa)","Según CST art. 64",indemn]]:[])].map(([k,b,v])=>(
+                              {[["Cesantías",fmt(e.salario+(e.salario<=NOMINA_CO_2026.topeAuxilio?NOMINA_CO_2026.auxilioTransporte:0))+" × "+pfl.diasTrabajados+"d ÷ 360",pfl.cesantias],["Int. cesantías","12% anual s/ cesantías",pfl.interesesCesantias],["Prima de servicios","Base × "+pfl.diasTrabajados+"d ÷ 360",pfl.prima],["Vacaciones",dvp+" días × salario ÷ 30",vacValorReal],...(indemn>0?[["Indemnización (sin justa causa)","Según CST art. 64",indemn]]:[])].map(([k,b,v])=>(
                                 <tr key={k} style={{borderBottom:"1px solid #f1f5f9"}}><td style={{padding:"5px 8px"}}>{k}</td><td style={{padding:"5px 8px",color:"#64748b",fontSize:10}}>{b}</td><td style={{padding:"5px 8px",textAlign:"right",fontWeight:600,color:"#0f172a"}}>{fmt(v)}</td></tr>
                               ))}
                             </tbody>
                             <tfoot><tr style={{background:"#f5c842"}}><td colSpan={2} style={{padding:"7px 8px",fontWeight:700}}>TOTAL LIQUIDACIÓN</td><td style={{padding:"7px 8px",textAlign:"right",fontWeight:700,fontSize:13}}>{fmt(total)}</td></tr></tfoot>
                           </table>
-                          <button onClick={()=>updEmp(e.id,"activo",false)} style={{...B("#2d1414","#ef4444"),fontSize:11,width:"100%",justifyContent:"center"}}>Marcar como retirado</button>
+                          <div style={{display:"flex",gap:6,marginBottom:6}}>
+                            <button onClick={()=>printLiquidacion(e, pfl, indemn, dvp, e.fechaSalida||null)} style={{...B("#142840","#f5c842"),fontSize:11,flex:1,justifyContent:"center"}}>🖨 Imprimir liquidación</button>
+                            <button onClick={()=>updEmp(e.id,"activo",false)} style={{...B("#2d1414","#ef4444"),fontSize:11,flex:1,justifyContent:"center"}}>Marcar como retirado</button>
+                          </div>
                         </div>
                         );
                       })()}
@@ -5059,9 +5123,9 @@ function Horarios({ctx}){
     if(!e||!o||!turnosInfo.length) return;
     const fechaMsg = fmtD(f) || f;
     const detalleTurnos = turnosInfo.map((item,idx)=>`${idx+1}. ${fmtTurno12Local(item.turno)} - ${item.tarea}`).join('\n');
-    const msg=`Hola ${e.nombre}, has sido asignado a la obra *${o.proyecto}* del cliente *${o.cliente}* para el dÃ­a *${fechaMsg}* en *${o.direccion||o.ciudad}*.\n\nTurnos asignados:\n${detalleTurnos}\n\nPor favor confirma tu asistencia.\n*INGEANCLAJES S.A.S*`;
+    const msg=`Hola ${e.nombre}, has sido asignado a la obra *${o.proyecto}* del cliente *${o.cliente}* para el día *${fechaMsg}* en *${o.direccion||o.ciudad}*.\n\nTurnos asignados:\n${detalleTurnos}\n\nPor favor confirma tu asistencia.\n*INGEANCLAJES S.A.S*`;
     window.open(`https://wa.me/57${e.tel}?text=${encodeURIComponent(msg)}`,"_blank");
-    setNotif(`WhatsApp abierto para ${e.nombre} Â· +57 ${e.tel}`);
+    setNotif(`WhatsApp abierto para ${e.nombre} · +57 ${e.tel}`);
     setTimeout(()=>setNotif(""),5000);
   };
 
@@ -5100,14 +5164,14 @@ function Horarios({ctx}){
 
   return(
     <div style={{padding:28}}>
-      <H1 title="Horarios" subtitle="Asigna hasta 2 turnos por dÃ­a y notifica automÃ¡ticamente por WhatsApp" action={<button style={B("#f47c20")} onClick={()=>setShowF(!showF)}>+ Asignar turnos</button>}/>
+      <H1 title="Horarios" subtitle="Asigna hasta 2 turnos por día y notifica automáticamente por WhatsApp" action={<button style={B("#f47c20")} onClick={()=>setShowF(!showF)}>+ Asignar turnos</button>}/>
       {notif&&<div style={{background:"#e8f5ee",border:"1px solid #166534",borderRadius:10,padding:"12px 16px",marginBottom:16,fontSize:13,color:"#166534"}}>{notif}</div>}
       {showF&&(
         <div style={{...CD,marginBottom:20,border:"1px solid #cc0000"}}>
-          <div style={ST}>Nuevo horario Â· notificaciÃ³n automÃ¡tica por WhatsApp</div>
+          <div style={ST}>Nuevo horario · notificación automática por WhatsApp</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
             <div><LBL>Empleado</LBL><select value={form.empleadoId} onChange={e=>setForm({...form,empleadoId:e.target.value})} style={SI}>{empleados.map(e=><option key={e.id} value={e.id}>{e.nombre}</option>)}</select></div>
-            <div><LBL>Obra</LBL><select value={form.obraId} onChange={e=>setForm({...form,obraId:e.target.value})} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} Â· {o.cliente}</option>)}</select></div>
+            <div><LBL>Obra</LBL><select value={form.obraId} onChange={e=>setForm({...form,obraId:e.target.value})} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
             <div><LBL>Fecha</LBL><input type="date" value={form.fecha} onChange={e=>setForm({...form,fecha:e.target.value})} style={SI}/></div>
           </div>
 
@@ -5130,7 +5194,7 @@ function Horarios({ctx}){
               </div>
               <div>
                 <LBL>Tarea del turno 1</LBL>
-                <input value={form.tarea1} onChange={e=>setForm({...form,tarea1:e.target.value})} placeholder="Ej: InstalaciÃ³n anclajes" style={SI}/>
+                <input value={form.tarea1} onChange={e=>setForm({...form,tarea1:e.target.value})} placeholder="Ej: Instalación anclajes" style={SI}/>
               </div>
             </div>
             <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:12}}>
@@ -5147,11 +5211,11 @@ function Horarios({ctx}){
                     <input type="time" value={form.turno2Fin} onChange={e=>setForm({...form,turno2Fin:e.target.value})} style={SI}/>
                   </div>
                 </div>
-                <div style={{fontSize:11,color:"#64748b",marginTop:6}}>{form.turno2Inicio && form.turno2Fin ? `Ejemplo: ${fmtTurno12Local(armarTurno(form.turno2Inicio, form.turno2Fin))}` : 'DÃ©jalo vacÃ­o si no aplica segundo turno'}</div>
+                <div style={{fontSize:11,color:"#64748b",marginTop:6}}>{form.turno2Inicio && form.turno2Fin ? `Ejemplo: ${fmtTurno12Local(armarTurno(form.turno2Inicio, form.turno2Fin))}` : 'Déjalo vacío si no aplica segundo turno'}</div>
               </div>
               <div>
                 <LBL>Tarea del turno 2</LBL>
-                <input value={form.tarea2} onChange={e=>setForm({...form,tarea2:e.target.value})} placeholder="Ej: Entrega, cierre, inspecciÃ³n" style={SI}/>
+                <input value={form.tarea2} onChange={e=>setForm({...form,tarea2:e.target.value})} placeholder="Ej: Entrega, cierre, inspección" style={SI}/>
               </div>
             </div>
           </div>
@@ -5165,7 +5229,7 @@ function Horarios({ctx}){
                 <div>Fecha: <strong>{fmtD(form.fecha) || form.fecha}</strong></div>
                 <div style={{marginTop:8,fontWeight:600}}>Turnos asignados:</div>
                 <ul style={{margin:"6px 0 0 18px",padding:0}}>
-                  {previewTurnos.map((item,idx)=><li key={idx}><strong>{fmtTurno12Local(item.turno)}</strong> Â· {item.tarea}</li>)}
+                  {previewTurnos.map((item,idx)=><li key={idx}><strong>{fmtTurno12Local(item.turno)}</strong> · {item.tarea}</li>)}
                 </ul>
                 <div style={{marginTop:8}}>Por favor confirma tu asistencia. <strong>INGEANCLAJES S.A.S</strong></div>
               </div>
@@ -5180,11 +5244,11 @@ function Horarios({ctx}){
       )}
       <div style={{display:"flex",gap:14,alignItems:"flex-end",marginBottom:20}}>
         <div><LBL>Filtrar por fecha</LBL><input type="date" value={fechaF} onChange={e=>setFechaF(e.target.value)} style={{...SI,width:"auto"}}/></div>
-        <div style={{fontSize:13,color:"#64748b"}}>{dia.length} turno{dia.length!==1?"s":""} Â· {fmtD(fechaF)}</div>
+        <div style={{fontSize:13,color:"#64748b"}}>{dia.length} turno{dia.length!==1?"s":""} · {fmtD(fechaF)}</div>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
         <div style={CD}>
-          <div style={ST}>Turnos del dÃ­a</div>
+          <div style={ST}>Turnos del día</div>
           {dia.length===0?<div style={{textAlign:"center",color:"#94a3b8",fontSize:13,padding:"28px 0"}}>No hay turnos para esta fecha</div>
           :dia.map(h=>{const e=empleados.find(x=>x.id===h.empleadoId);const o=obras.find(x=>x.id===h.obraId);const idx=empleados.findIndex(x=>x.id===h.empleadoId);return(<div key={h.id} style={{background:"#f1f5f9",borderRadius:10,padding:"12px 14px",marginBottom:10}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}><Av init={e?.avatar||"?"} color={PAL[idx%PAL.length]} size={34}/><div style={{flex:1}}><div style={{fontSize:13,fontWeight:600}}>{e?.nombre}</div><div style={{fontSize:11,color:"#475569"}}>{e?.cargo}</div></div><button onClick={()=>setHorarios(p=>p.filter(x=>x.id!==h.id))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:6,width:24,height:24,cursor:"pointer",fontSize:14}}>Ã—</button></div>
@@ -5192,7 +5256,7 @@ function Horarios({ctx}){
               <div style={{background:"#ffffff",borderRadius:6,padding:"6px 10px"}}><div style={{color:"#64748b",marginBottom:2}}>Obra</div><div style={{color:"#1a1a2e",fontWeight:500}}>{o?.proyecto}</div><div style={{color:"#475569"}}>{o?.ciudad}</div></div>
               <div style={{background:"#ffffff",borderRadius:6,padding:"6px 10px"}}><div style={{color:"#64748b",marginBottom:2}}>Turno</div><div style={{color:"#cc0000",fontWeight:600}}>{fmtTurno12Local(h.turno)}</div><div style={{color:"#475569"}}>{h.tarea}</div></div>
             </div>
-            <button onClick={()=>reenviarDiaEmpleado(h)} style={{...B("#e8f5ee","#166534"),width:"100%",justifyContent:"center",fontSize:12}}>Reenviar WhatsApp Â· +57 {e?.tel}</button>
+            <button onClick={()=>reenviarDiaEmpleado(h)} style={{...B("#e8f5ee","#166534"),width:"100%",justifyContent:"center",fontSize:12}}>Reenviar WhatsApp · +57 {e?.tel}</button>
           </div>);})}
         </div>
         <div style={CD}>
@@ -5215,27 +5279,27 @@ function Vencimientos({ctx}){
   const {certs,setCerts,obras}=ctx;
   const hoy=new Date();
 
-  const [recertForm,setRecertForm]=useState(null);   // cert base para generar recertificaciÃ³n
+  const [recertForm,setRecertForm]=useState(null);   // cert base para generar recertificación
   const [recertData,setRecertData]=useState({});      // datos editables del nuevo cert
   const [imprimiendo,setImprimiendo]=useState(null);  // cert para imprimir
-  const [guardado,setGuardado]=useState(null);        // confirmaciÃ³n
+  const [guardado,setGuardado]=useState(null);        // confirmación
 
   const abrirRecert=(c)=>{
     // Pre-llena el formulario con los datos del certificado original
     setRecertData({
       obraId: c.obraId,
-      tipo: "RecertificaciÃ³n",
+      tipo: "Recertificación",
       numero: `R-${new Date().getFullYear()}-${String(certs.length+1).padStart(3,"0")}`,
       fecha: today(),
       cliente: c.cliente,
       nit: c.nit||"",
       direccion: c.direccion||"",
       sistema: c.sistema,
-      normativa: c.normativa||"ResoluciÃ³n 4272 de 2021",
+      normativa: c.normativa||"Resolución 4272 de 2021",
       ingeniero: c.ingeniero||"ING. JHON JAIME SEPULVEDA LONDOÃ‘O",
       matricula: c.matricula||"MP. 05256-409949",
       proxMant: "",
-      elementos: ["Limpieza sistema completo","VerificaciÃ³n ajuste tuercas y pernos","Laca protectora anticorrosiva en todos los puntos","Tensado de cables"],
+      elementos: ["Limpieza sistema completo","Verificación ajuste tuercas y pernos","Laca protectora anticorrosiva en todos los puntos","Tensado de cables"],
       certOrigenId: c.id,
     });
     setRecertForm(c);
@@ -5277,15 +5341,15 @@ function Vencimientos({ctx}){
     if(d===null)return"Sin fecha";
     if(d<0)return`VENCIDA hace ${Math.abs(d)}d`;
     if(d===0)return"VENCE HOY";
-    if(d===1)return"Vence maÃ±ana";
-    return`${d} dÃ­as`;
+    if(d===1)return"Vence mañana";
+    return`${d} días`;
   };
 
   const grupos=[
-    {titulo:"ðŸ”´ Vencidas o crÃ­ticas",filtro:(d)=>d!==null&&d<0,color:"#ef4444"},
-    {titulo:"ðŸŸ  Urgente (menos de 30 dÃ­as)",filtro:(d)=>d!==null&&d>=0&&d<30,color:"#fb923c"},
-    {titulo:"ðŸŸ¡ PrÃ³ximas (30â€“90 dÃ­as)",filtro:(d)=>d!==null&&d>=30&&d<90,color:"#f5c842"},
-    {titulo:"ðŸŸ¢ Al dÃ­a (mÃ¡s de 90 dÃ­as)",filtro:(d)=>d!==null&&d>=90,color:"#4ade80"},
+    {titulo:"ðŸ”´ Vencidas o críticas",filtro:(d)=>d!==null&&d<0,color:"#ef4444"},
+    {titulo:"ðŸŸ  Urgente (menos de 30 días)",filtro:(d)=>d!==null&&d>=0&&d<30,color:"#fb923c"},
+    {titulo:"ðŸŸ¡ Próximas (30â€“90 días)",filtro:(d)=>d!==null&&d>=30&&d<90,color:"#f5c842"},
+    {titulo:"ðŸŸ¢ Al día (más de 90 días)",filtro:(d)=>d!==null&&d>=90,color:"#4ade80"},
   ];
 
   const totVenc=lista.filter(c=>c.diasRestantes!==null&&c.diasRestantes<0).length;
@@ -5297,13 +5361,13 @@ function Vencimientos({ctx}){
 
   return(
     <div style={{padding:28}}>
-      <H1 title="Vencimientos de Certificaciones" subtitle="Control de mantenimientos y renovaciones Â· Res. 4272/2021"/>
+      <H1 title="Vencimientos de Certificaciones" subtitle="Control de mantenimientos y renovaciones · Res. 4272/2021"/>
 
       {/* â”€â”€ NOTIFICACIÃ“N GUARDADO â”€â”€ */}
       {guardado&&(
         <div style={{background:"#e8f5ee",border:"1px solid #4ade80",borderRadius:10,padding:"12px 18px",marginBottom:20,fontSize:13,color:"#166534",display:"flex",alignItems:"center",gap:10}}>
           <span style={{fontSize:18}}>âœ…</span>
-          <span>RecertificaciÃ³n <strong>{guardado}</strong> creada exitosamente. La certificaciÃ³n original fue marcada como <strong>Recertificado</strong>.</span>
+          <span>Recertificación <strong>{guardado}</strong> creada exitosamente. La certificación original fue marcada como <strong>Recertificado</strong>.</span>
         </div>
       )}
 
@@ -5313,8 +5377,8 @@ function Vencimientos({ctx}){
           <div style={{background:"#fff",borderRadius:16,padding:32,width:"100%",maxWidth:580,boxShadow:"0 20px 60px rgba(0,0,0,0.35)",maxHeight:"90vh",overflowY:"auto"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
               <div>
-                <div style={{fontSize:18,fontWeight:700,color:"#1a1a2e"}}>ðŸ”„ Generar RecertificaciÃ³n</div>
-                <div style={{fontSize:12,color:"#64748b",marginTop:4}}>Basada en: {recertForm.numero} Â· {recertForm.cliente}</div>
+                <div style={{fontSize:18,fontWeight:700,color:"#1a1a2e"}}>ðŸ”„ Generar Recertificación</div>
+                <div style={{fontSize:12,color:"#64748b",marginTop:4}}>Basada en: {recertForm.numero} · {recertForm.cliente}</div>
               </div>
               <button onClick={()=>setRecertForm(null)} style={{background:"#f1f5f9",border:"none",borderRadius:8,padding:"6px 12px",cursor:"pointer",color:"#475569",fontSize:13}}>âœ•</button>
             </div>
@@ -5322,30 +5386,30 @@ function Vencimientos({ctx}){
             {/* Info del cert original */}
             <div style={{background:"#f8fafc",borderRadius:10,padding:12,marginBottom:20,border:"1px solid #e2e8f0",fontSize:12}}>
               <div style={{color:"#64748b",marginBottom:4}}>Certificado original</div>
-              <div style={{fontWeight:700,color:"#1a1a2e"}}>{recertForm.cliente} Â· {recertForm.numero}</div>
+              <div style={{fontWeight:700,color:"#1a1a2e"}}>{recertForm.cliente} · {recertForm.numero}</div>
               <div style={{color:"#475569"}}>{recertForm.sistema}</div>
-              <div style={{color:"#ef4444",marginTop:4}}>VencÃ­a: {fmtD(recertForm.proxMant)||"sin fecha"}</div>
+              <div style={{color:"#ef4444",marginTop:4}}>Vencía: {fmtD(recertForm.proxMant)||"sin fecha"}</div>
             </div>
 
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
-              <div><LBL>NÂ° RecertificaciÃ³n</LBL><input value={recertData.numero||""} onChange={e=>setRecertData(p=>({...p,numero:e.target.value}))} style={SI}/></div>
-              <div><LBL>Fecha de recertificaciÃ³n</LBL><input type="date" value={recertData.fecha||""} onChange={e=>setRecertData(p=>({...p,fecha:e.target.value}))} style={SI}/></div>
+              <div><LBL>N° Recertificación</LBL><input value={recertData.numero||""} onChange={e=>setRecertData(p=>({...p,numero:e.target.value}))} style={SI}/></div>
+              <div><LBL>Fecha de recertificación</LBL><input type="date" value={recertData.fecha||""} onChange={e=>setRecertData(p=>({...p,fecha:e.target.value}))} style={SI}/></div>
               <div><LBL>Cliente</LBL><input value={recertData.cliente||""} onChange={e=>setRecertData(p=>({...p,cliente:e.target.value}))} style={SI}/></div>
               <div><LBL>NIT</LBL><input value={recertData.nit||""} onChange={e=>setRecertData(p=>({...p,nit:e.target.value}))} style={SI}/></div>
-              <div style={{gridColumn:"span 2"}}><LBL>DirecciÃ³n de la obra</LBL><input value={recertData.direccion||""} onChange={e=>setRecertData(p=>({...p,direccion:e.target.value}))} style={SI}/></div>
+              <div style={{gridColumn:"span 2"}}><LBL>Dirección de la obra</LBL><input value={recertData.direccion||""} onChange={e=>setRecertData(p=>({...p,direccion:e.target.value}))} style={SI}/></div>
               <div style={{gridColumn:"span 2"}}><LBL>Sistema recertificado</LBL><textarea value={recertData.sistema||""} onChange={e=>setRecertData(p=>({...p,sistema:e.target.value}))} rows={2} style={{...SI,resize:"vertical"}}/></div>
               <div style={{gridColumn:"span 2",background:"#fff3e8",borderRadius:8,padding:12,border:"1px solid #f47c2044"}}>
-                <LBL>ðŸ“… PrÃ³ximo mantenimiento (obligatorio)</LBL>
+                <LBL>ðŸ“… Próximo mantenimiento (obligatorio)</LBL>
                 <input type="date" value={recertData.proxMant||""} onChange={e=>setRecertData(p=>({...p,proxMant:e.target.value}))} style={{...SI,border:"2px solid #cc0000"}}/>
-                {recertData.proxMant&&<div style={{fontSize:11,color:"#4ade80",marginTop:6}}>âœ… PrÃ³ximo mantenimiento: <strong>{fmtD(recertData.proxMant)}</strong></div>}
+                {recertData.proxMant&&<div style={{fontSize:11,color:"#4ade80",marginTop:6}}>âœ… Próximo mantenimiento: <strong>{fmtD(recertData.proxMant)}</strong></div>}
               </div>
             </div>
 
-            {!recertData.proxMant&&<div style={{background:"#fee2e2",borderRadius:6,padding:"8px 12px",fontSize:11,color:"#cc0000",marginBottom:12}}>âš ï¸ Debes asignar la fecha del prÃ³ximo mantenimiento para guardar.</div>}
+            {!recertData.proxMant&&<div style={{background:"#fee2e2",borderRadius:6,padding:"8px 12px",fontSize:11,color:"#cc0000",marginBottom:12}}>âš ️ Debes asignar la fecha del próximo mantenimiento para guardar.</div>}
 
             <div style={{display:"flex",gap:10}}>
               <button style={{...B("#cc0000"),flex:1,justifyContent:"center"}} onClick={guardarRecert}>
-                ðŸ”„ Crear RecertificaciÃ³n
+                ðŸ”„ Crear Recertificación
               </button>
               <button style={{...B("#f1f5f9","#475569"),flex:1,justifyContent:"center"}} onClick={()=>setRecertForm(null)}>
                 Cancelar
@@ -5361,13 +5425,13 @@ function Vencimientos({ctx}){
           <div style={{maxWidth:860,margin:"0 auto"}}>
             <div style={{display:"flex",gap:10,marginBottom:14,justifyContent:"flex-end"}}>
               <button style={B("#f1f5f9","#475569")} onClick={()=>setImprimiendo(null)}>âœ• Cerrar</button>
-              <button style={B("#f47c20")} onClick={()=>printCurrentPz(`CertificaciÃ³n ${certParaImpresion?.numero || certParaImpresion?.id || ""}`)}>ðŸ–¨ï¸ Imprimir / PDF</button>
+              <button style={B("#f47c20")} onClick={()=>printCurrentPz(`Certificación ${certParaImpresion?.numero || certParaImpresion?.id || ""}`)}>ðŸ–¨️ Imprimir / PDF</button>
             </div>
-            {/* Reutilizamos el mismo layout de certificaciÃ³n */}
+            {/* Reutilizamos el mismo layout de certificación */}
             <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:12,lineHeight:1.7,border:"1px solid #ddd",borderRadius:4,padding:"36px 44px"}}>
               <PrintHeader dual={true}/>
               <div style={{textAlign:"center",fontSize:10,fontWeight:700,letterSpacing:2,padding:"6px 0",borderBottom:"1px solid #ddd",color:"#333",textTransform:"uppercase",marginBottom:20,marginTop:14}}>
-                CertificaciÃ³n de Sistemas AnticaÃ­das Â· Res. 4272/2021
+                Certificación de Sistemas Anticaídas · Res. 4272/2021
               </div>
               <div style={{marginBottom:20}}>
                 <div>Envigado, {fmtL(certParaImpresion.fecha)}</div>
@@ -5378,19 +5442,19 @@ function Vencimientos({ctx}){
               </div>
               <div style={{textAlign:"center",fontWeight:700,fontSize:15,marginBottom:20}}>INGEANCLAJES S.A.S</div>
 
-              {certParaImpresion.tipo==="RecertificaciÃ³n"?(
+              {certParaImpresion.tipo==="Recertificación"?(
                 <div style={{textAlign:"justify",lineHeight:1.8,marginBottom:20}}>
                   <p style={{marginBottom:12}}>Ha realizado el mantenimiento preventivo en las instalaciones de {certParaImpresion.sistema}, que consta de:</p>
-                  <p style={{marginBottom:12}}>Limpieza de todo el sistema. Se verifica ajuste de las tuercas y pernos de los puntos de anclaje, finalmente se procediÃ³ a dar una laca protectora anticorrosiva como recubrimiento especial en todos los puntos de anclaje para evitar futuras oxidaciones.</p>
-                  <p style={{marginBottom:12}}>Nuestra empresa se compromete a garantizar la calidad y seguridad de los materiales proporcionados para la instalaciÃ³n de los puntos de anclaje. Nos enfocamos en cumplir con todas las normativas y estÃ¡ndares de la industria, asÃ­ como en utilizar materiales de alta calidad que cumplan con las especificaciones tÃ©cnicas requeridas.</p>
-                  <p style={{marginBottom:12}}>Por otro lado, los pernos utilizados en los puntos de anclaje son seleccionados cuidadosamente para garantizar su resistencia y capacidad de fijaciÃ³n. Trabajamos con proveedores confiables que suministran pernos de alta calidad que cumplen con las normativas de seguridad establecidas.</p>
-                  <p style={{marginBottom:12}}>En cuanto al epÃ³xico utilizado, nos aseguramos de utilizar productos de reconocidas marcas y de calidad certificada. Nuestro personal altamente capacitado realiza la instalaciÃ³n siguiendo las instrucciones y recomendaciones del fabricante, asegurando asÃ­ una correcta adherencia y resistencia en los puntos de anclaje.</p>
-                  <p style={{marginBottom:12}}>Nos comprometemos a cumplir con todas las regulaciones legales vigentes y a realizar un seguimiento riguroso de las inspecciones y pruebas necesarias para garantizar la calidad de los materiales y la adecuada instalaciÃ³n de los puntos de anclaje.</p>
-                  <p style={{marginBottom:12}}>En caso de que se presenten problemas o fallas relacionadas con los materiales suministrados o la instalaciÃ³n de los puntos de anclaje, nos responsabilizamos totalmente de solventar cualquier inconveniente y cubrir los costos asociados a su correcciÃ³n. De acuerdo a las labores anteriormente descritas <strong>INGEANCLAJES S.A.S. CERTIFICA</strong> que los sistemas de detenciÃ³n de caÃ­das instalados en las instalaciones de la empresa <strong>{certParaImpresion.cliente.toUpperCase()}</strong>{certParaImpresion.direccion?` ubicada en ${certParaImpresion.direccion.toUpperCase()}`:""} y cuyo objetivo es la fijaciÃ³n segura de los trabajadores al momento de realizar tareas que impliquen riesgo de caÃ­da, cumplen a cabalidad con la {certParaImpresion.normativa} del ministerio de trabajo, por la cual se establece el reglamento de seguridad para protecciÃ³n contra caÃ­das en trabajo en altura. Todos los elementos que componen los diferentes sistemas anticaÃ­das se encuentran en excelente estado.</p>
+                  <p style={{marginBottom:12}}>Limpieza de todo el sistema. Se verifica ajuste de las tuercas y pernos de los puntos de anclaje, finalmente se procedió a dar una laca protectora anticorrosiva como recubrimiento especial en todos los puntos de anclaje para evitar futuras oxidaciones.</p>
+                  <p style={{marginBottom:12}}>Nuestra empresa se compromete a garantizar la calidad y seguridad de los materiales proporcionados para la instalación de los puntos de anclaje. Nos enfocamos en cumplir con todas las normativas y estándares de la industria, así como en utilizar materiales de alta calidad que cumplan con las especificaciones técnicas requeridas.</p>
+                  <p style={{marginBottom:12}}>Por otro lado, los pernos utilizados en los puntos de anclaje son seleccionados cuidadosamente para garantizar su resistencia y capacidad de fijación. Trabajamos con proveedores confiables que suministran pernos de alta calidad que cumplen con las normativas de seguridad establecidas.</p>
+                  <p style={{marginBottom:12}}>En cuanto al epóxico utilizado, nos aseguramos de utilizar productos de reconocidas marcas y de calidad certificada. Nuestro personal altamente capacitado realiza la instalación siguiendo las instrucciones y recomendaciones del fabricante, asegurando así una correcta adherencia y resistencia en los puntos de anclaje.</p>
+                  <p style={{marginBottom:12}}>Nos comprometemos a cumplir con todas las regulaciones legales vigentes y a realizar un seguimiento riguroso de las inspecciones y pruebas necesarias para garantizar la calidad de los materiales y la adecuada instalación de los puntos de anclaje.</p>
+                  <p style={{marginBottom:12}}>En caso de que se presenten problemas o fallas relacionadas con los materiales suministrados o la instalación de los puntos de anclaje, nos responsabilizamos totalmente de solventar cualquier inconveniente y cubrir los costos asociados a su corrección. De acuerdo a las labores anteriormente descritas <strong>INGEANCLAJES S.A.S. CERTIFICA</strong> que los sistemas de detención de caídas instalados en las instalaciones de la empresa <strong>{certParaImpresion.cliente.toUpperCase()}</strong>{certParaImpresion.direccion?` ubicada en ${certParaImpresion.direccion.toUpperCase()}`:""} y cuyo objetivo es la fijación segura de los trabajadores al momento de realizar tareas que impliquen riesgo de caída, cumplen a cabalidad con la {certParaImpresion.normativa} del ministerio de trabajo, por la cual se establece el reglamento de seguridad para protección contra caídas en trabajo en altura. Todos los elementos que componen los diferentes sistemas anticaídas se encuentran en excelente estado.</p>
                 </div>
               ):(
                 <div style={{textAlign:"justify",marginBottom:20,lineHeight:1.8}}>
-                  <strong>CERTIFICA</strong> que {certParaImpresion.sistema} cumple a cabalidad con la {certParaImpresion.normativa} del ministerio de trabajo, por la cual se establece el reglamento de seguridad para protecciÃ³n contra caÃ­das en trabajo en altura.
+                  <strong>CERTIFICA</strong> que {certParaImpresion.sistema} cumple a cabalidad con la {certParaImpresion.normativa} del ministerio de trabajo, por la cual se establece el reglamento de seguridad para protección contra caídas en trabajo en altura.
                 </div>
               )}
               <div style={{marginBottom:16}}>Los elementos utilizados en dicha labor son:</div>
@@ -5399,15 +5463,15 @@ function Vencimientos({ctx}){
               </ul>
               <div style={{background:"#f9f9f9",border:"1px solid #ddd",borderRadius:6,padding:"14px 18px",marginBottom:20}}>
                 <div style={{fontWeight:700,marginBottom:10,fontSize:12}}>RECOMENDACIONES PARA TENER EN CUENTA</div>
-                <div style={{fontSize:12,marginBottom:10,textAlign:"justify"}}>A continuaciÃ³n, se realizan algunas recomendaciones para preservar en buen estado los sistemas anti caÃ­das certificados en dicha sede:</div>
+                <div style={{fontSize:12,marginBottom:10,textAlign:"justify"}}>A continuación, se realizan algunas recomendaciones para preservar en buen estado los sistemas anti caídas certificados en dicha sede:</div>
                 <ul style={{marginLeft:20,fontSize:12,lineHeight:1.9,marginBottom:10}}>
-                  <li>Dar aviso de inmediato, en caso de tener algÃºn evento de caÃ­da por muy mÃ­nima que sea para hacer su respectiva valoraciÃ³n y diagnÃ³stico.</li>
-                  <li>Conectar mÃ¡ximo dos personas por cada lÃ­nea de vida o en cada tramo entre soportes laterales e intermedios.</li>
-                  <li>No modificar ningÃºn elemento del sistema, ya que este puede perder sus funciones y generarÃ­a un riesgo mÃ¡s para las personas que las utilizan.</li>
-                  <li>Limpiar de inmediato las estructuras u otro elemento que entren en contacto con los quÃ­micos de esta Ã¡rea.</li>
+                  <li>Dar aviso de inmediato, en caso de tener algún evento de caída por muy mínima que sea para hacer su respectiva valoración y diagnóstico.</li>
+                  <li>Conectar máximo dos personas por cada línea de vida o en cada tramo entre soportes laterales e intermedios.</li>
+                  <li>No modificar ningún elemento del sistema, ya que este puede perder sus funciones y generaría un riesgo más para las personas que las utilizan.</li>
+                  <li>Limpiar de inmediato las estructuras u otro elemento que entren en contacto con los químicos de esta área.</li>
                 </ul>
                 <div style={{fontSize:12,textAlign:"justify",lineHeight:1.7}}>
-                  Estas recomendaciones son de carÃ¡cter tÃ©cnico, por lo tanto, su cumplimiento debe ser obligatorio para minimizar el riesgo generado por la falta y/o ausencia de algunos de sus elementos, ya que estos tienen como principal caracterÃ­stica soportar las cargas generadas por la caÃ­da de una persona en la realizaciÃ³n de trabajos en alturas. Se debe realizar el prÃ³ximo mantenimiento preventivo de todo el sistema mÃ¡ximo dentro de un aÃ±o contado a partir de la expediciÃ³n del presente documento{certParaImpresion.proxMant?` (antes del ${fmtL(certParaImpresion.proxMant)})`:"."}.
+                  Estas recomendaciones son de carácter técnico, por lo tanto, su cumplimiento debe ser obligatorio para minimizar el riesgo generado por la falta y/o ausencia de algunos de sus elementos, ya que estos tienen como principal característica soportar las cargas generadas por la caída de una persona en la realización de trabajos en alturas. Se debe realizar el próximo mantenimiento preventivo de todo el sistema máximo dentro de un año contado a partir de la expedición del presente documento{certParaImpresion.proxMant?` (antes del ${fmtL(certParaImpresion.proxMant)})`:"."}.
                 </div>
               </div>
               <div style={{marginBottom:12,fontSize:12}}>Cordialmente,</div>
@@ -5419,7 +5483,7 @@ function Vencimientos({ctx}){
                 </div>
               </div>
               <div style={{borderTop:"1px solid #ccc",paddingTop:10,marginTop:30,textAlign:"center",fontSize:10,color:"#555"}}>
-                Cl 38 sur # 36-48, Envigado, tel. 448 26 86 &nbsp;Â·&nbsp; Cel. 314 863 40 72 &nbsp;Â·&nbsp; Nit. 900193965-4 &nbsp;Â·&nbsp; ingeanclajes.sas@gmail.com
+                Cl 38 sur # 36-48, Envigado, tel. 448 26 86 &nbsp;·&nbsp; Cel. 314 863 40 72 &nbsp;·&nbsp; Nit. 900193965-4 &nbsp;·&nbsp; ingeanclajes.sas@gmail.com
               </div>
             </div>
           </div>
@@ -5428,10 +5492,10 @@ function Vencimientos({ctx}){
 
       {/* â”€â”€ CONTADORES â”€â”€ */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
-        <SC label="Vencidas" value={totVenc} color="#ef4444" icon="ðŸ”´" sub="requieren acciÃ³n"/>
-        <SC label="Urgentes (<30 dÃ­as)" value={totUrg} color="#fb923c" icon="ðŸ›¡ï¸" sub="prioridad alta"/>
-        <SC label="PrÃ³ximas (30-90d)" value={totProx} color="#f5c842" icon="ðŸŸ¡" sub="programar"/>
-        <SC label="Al dÃ­a" value={totOk} color="#4ade80" icon="ðŸŸ¢" sub="sin novedad"/>
+        <SC label="Vencidas" value={totVenc} color="#ef4444" icon="ðŸ”´" sub="requieren acción"/>
+        <SC label="Urgentes (<30 días)" value={totUrg} color="#fb923c" icon="ðŸ›¡️" sub="prioridad alta"/>
+        <SC label="Próximas (30-90d)" value={totProx} color="#f5c842" icon="ðŸŸ¡" sub="programar"/>
+        <SC label="Al día" value={totOk} color="#4ade80" icon="ðŸŸ¢" sub="sin novedad"/>
       </div>
 
       {/* â”€â”€ GRUPOS POR ESTADO â”€â”€ */}
@@ -5443,7 +5507,7 @@ function Vencimientos({ctx}){
             <div style={{...ST,color:g.color,borderBottomColor:g.color+"33"}}>{g.titulo}</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
               {items.map(c=>{
-                // Obtenemos la versiÃ³n ACTUALIZADA del cert desde certs[]
+                // Obtenemos la versión ACTUALIZADA del cert desde certs[]
                 const cActual=certs.find(x=>x.id===c.id)||c;
                 const dActual=(()=>{
                   if(!cActual.proxMant)return null;
@@ -5460,7 +5524,7 @@ function Vencimientos({ctx}){
                     title={dActual!==null&&dActual<0?"Clic para recertificar":undefined}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
                       <div>
-                        <div style={{fontSize:10,color:"#64748b"}}>{cActual.id} Â· {cActual.numero}</div>
+                        <div style={{fontSize:10,color:"#64748b"}}>{cActual.id} · {cActual.numero}</div>
                         <div style={{fontSize:14,fontWeight:700,color:"#1a1a2e",marginTop:2}}>{cActual.cliente}</div>
                         <div style={{fontSize:11,color:"#475569"}}>{cActual.tipo}</div>
                         {dActual!==null&&dActual<0&&(
@@ -5474,7 +5538,7 @@ function Vencimientos({ctx}){
                           {dActual===null?"â€”":dActual<0?Math.abs(dActual):dActual}
                         </div>
                         <div style={{fontSize:9,color:colorV(dActual),fontWeight:600,marginTop:2}}>
-                          {dActual===null?"sin fecha":dActual<0?"dÃ­as vencida":"dÃ­as restantes"}
+                          {dActual===null?"sin fecha":dActual<0?"días vencida":"días restantes"}
                         </div>
                       </div>
                     </div>
@@ -5484,7 +5548,7 @@ function Vencimientos({ctx}){
                         <div style={{fontSize:11,fontWeight:600}}>{fmtD(cActual.fecha)}</div>
                       </div>
                       <div style={{background:"#fff",borderRadius:6,padding:"7px 10px"}}>
-                        <div style={{fontSize:9,color:"#64748b"}}>PrÃ³x. mantenimiento</div>
+                        <div style={{fontSize:9,color:"#64748b"}}>Próx. mantenimiento</div>
                         <div style={{fontSize:11,fontWeight:600,color:colorV(dActual)}}>{fmtD(cActual.proxMant)||"â€”"}</div>
                       </div>
                     </div>
@@ -5494,20 +5558,20 @@ function Vencimientos({ctx}){
                     <div style={{background:colorV(dActual)+"18",border:`1px solid ${colorV(dActual)}44`,borderRadius:8,padding:"6px 10px",textAlign:"center",marginBottom:10}}>
                       <div style={{fontSize:12,fontWeight:700,color:colorV(dActual)}}>{labelV(dActual)}</div>
                     </div>
-                    {/* Acciones â€” si estÃ¡ vencida, el botÃ³n principal abre directamente recertificaciÃ³n */}
+                    {/* Acciones â€” si está vencida, el botón principal abre directamente recertificación */}
                     <div style={{display:"flex",gap:6}}>
                       <button
                         style={{...B(dActual!==null&&dActual<0?"#7c1010":"#cc0000"),fontSize:11,padding:"7px 10px",flex:1,justifyContent:"center",border:dActual!==null&&dActual<0?"2px solid #ef4444":"none"}}>
                         {dActual!==null&&dActual<0?(
                           <span onClick={()=>abrirRecert(cActual)}>ðŸ”„ Recertificar ahora</span>
                         ):(
-                          <span onClick={()=>abrirRecert(cActual)}>ðŸ”„ Generar RecertificaciÃ³n</span>
+                          <span onClick={()=>abrirRecert(cActual)}>ðŸ”„ Generar Recertificación</span>
                         )}
                       </button>
                       <button
                         style={{...B("#e8f5ee","#166534"),border:"1px solid #4ade80",fontSize:11,padding:"7px 10px",flex:"0 0 auto",justifyContent:"center"}}
                         onClick={()=>setImprimiendo(cActual)}>
-                        ðŸ–¨ï¸ PDF
+                        ðŸ–¨️ PDF
                       </button>
                     </div>
                   </div>
@@ -5525,15 +5589,15 @@ function Vencimientos({ctx}){
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
             {lista.filter(c=>c.diasRestantes===null).map(c=>(
               <div key={c.id} style={{background:"#f8fafc",borderRadius:10,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
-                <div style={{fontSize:10,color:"#64748b"}}>{c.id} Â· {c.numero}</div>
+                <div style={{fontSize:10,color:"#64748b"}}>{c.id} · {c.numero}</div>
                 <div style={{fontSize:14,fontWeight:700}}>{c.cliente}</div>
-                <div style={{fontSize:11,color:"#475569",marginBottom:12}}>{c.tipo} Â· {fmtD(c.fecha)}</div>
+                <div style={{fontSize:11,color:"#475569",marginBottom:12}}>{c.tipo} · {fmtD(c.fecha)}</div>
                 <div style={{display:"flex",gap:6}}>
                   <button style={{...B("#cc0000"),fontSize:11,flex:1,justifyContent:"center"}} onClick={()=>abrirRecert(c)}>
-                    ðŸ”„ Generar RecertificaciÃ³n
+                    ðŸ”„ Generar Recertificación
                   </button>
                   <button style={{...B("#e8f5ee","#166534"),border:"1px solid #4ade80",fontSize:11,flex:"0 0 auto",justifyContent:"center"}} onClick={()=>setImprimiendo(c)}>
-                    ðŸ–¨ï¸ PDF
+                    ðŸ–¨️ PDF
                   </button>
                 </div>
               </div>

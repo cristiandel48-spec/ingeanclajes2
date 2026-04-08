@@ -129,7 +129,19 @@ const NOMINA_CO_2026 = {
   topeAuxilio: 1750905 * 2,
   saludPctEmpleado: 0.04,
   pensionPctEmpleado: 0.04,
+  // Parafiscales
+  vacDiasAnio: 15,          // días de vacaciones por año (Art. 186 CST)
+  interesesCesantiasPct: 0.12, // 12% anual (Ley 52/1975)
 };
+
+// Recargos Colombia 2026 — Código Sustantivo del Trabajo
+const RECARGOS_CO_2026 = [
+  { id:"horaExtraGeneral",   label:"⏱️ Hora extra (valor manual)",        horario:"",                     getPct:()=>null },
+  { id:"recNocturno",        label:"🌙 Recargo nocturno (Lun–Sáb)",       horario:"7:00 p.m. – 6:00 a.m.", getPct:()=>35 },
+  { id:"recDominical",       label:"☀️ Recargo dominical/festivo",         horario:"6:00 a.m. – 7:00 p.m.", getPct:(f)=>new Date(f+"T12:00:00").getMonth()<6?80:90 },
+  { id:"recNoctDominical",   label:"🌙☀️ Rec. nocturno dom./festivo",      horario:"7:00 p.m. – 6:00 a.m.", getPct:(f)=>new Date(f+"T12:00:00").getMonth()<6?115:125 },
+];
+const getPctRecargo=(tipo,fecha)=>{const r=RECARGOS_CO_2026.find(x=>x.id===tipo);return r?.getPct?.(fecha)??null;};
 
 const normalizarDeduccionesPersonalizadas = (deducciones)=>
   (Array.isArray(deducciones)?deducciones:[])
@@ -143,6 +155,10 @@ const normalizarDeduccionesPersonalizadas = (deducciones)=>
 const normalizarEmpleado = (empleado)=>({
   ...empleado,
   cedula:empleado?.cedula||"",
+  tipoContrato:empleado?.tipoContrato||"indefinido",
+  fechaIngreso:empleado?.fechaIngreso||null,
+  fechaSalida:empleado?.fechaSalida||null,
+  causaRetiro:empleado?.causaRetiro||"",
   horasExtrasPorObra:Array.isArray(empleado?.horasExtrasPorObra)?empleado.horasExtrasPorObra:[],
   comisionesPorObra:Array.isArray(empleado?.comisionesPorObra)?empleado.comisionesPorObra:[],
   deduccionesPersonalizadas:normalizarDeduccionesPersonalizadas(empleado?.deduccionesPersonalizadas),
@@ -188,6 +204,28 @@ const calcularResumenNominaEmpleado = (empleado)=>{
     totalDeducciones,
     neto,
   };
+};
+
+const calcularParafiscales = (empleado, fechaCorte=null) => {
+  const salario = Number(empleado?.salario)||0;
+  const fi = empleado?.fechaIngreso||null;
+  const fs = empleado?.fechaSalida||null;
+  if(!fi) return { diasTrabajados:0, vacacionesDias:0, vacacionesValor:0, cesantias:0, interesesCesantias:0, prima:0, totalLiquidacion:0 };
+  const inicio = new Date(fi+"T00:00:00");
+  const fin = fs ? new Date(fs+"T00:00:00") : fechaCorte ? new Date(fechaCorte+"T00:00:00") : new Date();
+  const diasTrabajados = Math.max(0, Math.round((fin-inicio)/(1000*60*60*24)));
+  const aplicaAux = salario>0 && salario<=NOMINA_CO_2026.topeAuxilio;
+  const aux = aplicaAux ? NOMINA_CO_2026.auxilioTransporte : 0;
+  const base = salario + aux;
+  const cesantias = Math.round(base * diasTrabajados / 360);
+  const interesesCesantias = Math.round(cesantias * NOMINA_CO_2026.interesesCesantiasPct * Math.min(diasTrabajados,360) / 360);
+  const prima = Math.round(base * diasTrabajados / 360);
+  const vacacionesDias = Math.round((diasTrabajados / 360) * NOMINA_CO_2026.vacDiasAnio * 10) / 10;
+  const vacacionesValor = Math.round(salario * diasTrabajados / 720);
+  const totalLiquidacion = cesantias + interesesCesantias + prima + vacacionesValor;
+  const aniostrabajados = Math.floor(diasTrabajados / 365);
+  const mesesTrabajados = Math.floor(diasTrabajados / 30);
+  return { diasTrabajados, mesesTrabajados, aniostrabajados, vacacionesDias, vacacionesValor, cesantias, interesesCesantias, prima, totalLiquidacion };
 };
 
 const EC={
@@ -624,7 +662,7 @@ function PrintHeader({dual}){
 }
 
 function measurementTypeLabel(tipo){
-  return tipo === "LVV" ? "Linea de vida vertical" : tipo === "CON" ? "Conexion" : tipo === "ESC" ? "Escalera" : "Linea horizontal";
+  return tipo === "LVV" ? "Línea de vida vertical" : tipo === "CON" ? "Conexión" : tipo === "ESC" ? "Escalera" : tipo === "PAN" ? "Punto de anclaje" : "Línea horizontal";
 }
 
 function measurementUnitFromType(tipo){
@@ -1216,6 +1254,69 @@ function printCurrentPz(title = "Documento"){
   );
 }
 
+function printColilla(empleado, resumen, mes){
+  const fmtC = n => '$ ' + Math.round(Number(n)||0).toLocaleString('es-CO');
+  const mesLabel = mes || new Date().toISOString().slice(0,7);
+  const auxMes = resumen.aplicaAuxilio ? NOMINA_CO_2026.auxilioTransporte : 0;
+  const baseProv = resumen.salario + auxMes;
+  const cesantiasMes = Math.round(baseProv/12);
+  const intCesantiasMes = Math.round(cesantiasMes*0.01);
+  const primaMes = Math.round(baseProv/12);
+  const vacMes = Math.round(resumen.salario/24);
+  const rows = [
+    {k:'DEVENGADOS',h:true,cls:'hdr1'},
+    {k:'Salario básico',v:fmtC(resumen.salario),cls:'dev'},
+    {k:'Auxilio de transporte',v:fmtC(resumen.auxilioTransporte),cls:'dev'},
+    {k:'Horas extras / recargos',v:fmtC(resumen.horasExtras),cls:'dev'},
+    {k:'Comisiones',v:fmtC(resumen.comisiones),cls:'dev'},
+    {k:'Total devengado',v:fmtC(resumen.salario+resumen.auxilioTransporte+resumen.horasExtras+resumen.comisiones),cls:'subtotal'},
+    {k:'DEDUCCIONES',h:true,cls:'hdr2'},
+    {k:'Salud (4%)',v:'- '+fmtC(resumen.salud),cls:'ded'},
+    {k:'Pensión (4%)',v:'- '+fmtC(resumen.pension),cls:'ded'},
+    {k:'Otras deducciones',v:'- '+fmtC(resumen.otrasDeducciones),cls:'ded'},
+    {k:'Total deducciones',v:'- '+fmtC(resumen.totalDeducciones),cls:'subtotal'},
+    {k:'PROVISIONES DEL MES (información)',h:true,cls:'hdr3'},
+    {k:'Cesantías (1/12 base)',v:fmtC(cesantiasMes),cls:'prov'},
+    {k:'Intereses cesantías (1%)',v:fmtC(intCesantiasMes),cls:'prov'},
+    {k:'Prima de servicios (1/12 base)',v:fmtC(primaMes),cls:'prov'},
+    {k:'Vacaciones (1/24 salario)',v:fmtC(vacMes),cls:'prov'},
+  ];
+  const rowsHtml = rows.map(r=>{
+    if(r.h) return `<tr><td colspan="2" class="${r.cls}">${r.k}</td></tr>`;
+    return `<tr class="${r.cls}"><td>${r.k}</td><td style="text-align:right">${r.v}</td></tr>`;
+  }).join('');
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Colilla ${mesLabel}</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:20px;background:#f8fafc;}
+.wrap{max-width:580px;margin:0 auto;background:#fff;border:1px solid #ddd;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.1);}
+.hd{background:#142840;color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;}
+.hd h2{margin:0;font-size:15px;letter-spacing:.5px;}
+.period{font-size:11px;opacity:.75;margin-top:2px;}
+.emp{padding:12px 20px;background:#f8fafc;border-bottom:2px solid #e2e8f0;font-size:12px;line-height:1.6;}
+.emp strong{font-size:14px;display:block;color:#0f172a;}
+table{width:100%;border-collapse:collapse;font-size:11px;}
+td{padding:5px 16px;border-bottom:1px solid #f1f5f9;}
+tr.dev td{background:#f0fdf4;}
+tr.ded td{background:#fff1f2;}
+tr.prov td{background:#fffbeb;color:#78350f;}
+tr.subtotal td{background:#e2e8f0;font-weight:700;font-size:12px;}
+td.hdr1{background:#166534;color:#fff;font-weight:700;font-size:11px;padding:7px 16px;letter-spacing:.5px;}
+td.hdr2{background:#991b1b;color:#fff;font-weight:700;font-size:11px;padding:7px 16px;letter-spacing:.5px;}
+td.hdr3{background:#92400e;color:#fff;font-weight:700;font-size:11px;padding:7px 16px;letter-spacing:.5px;}
+.total-row td{background:#142840;color:#fff;font-weight:700;font-size:14px;padding:12px 16px;}
+.neto{color:#4ade80;font-size:17px;}
+.footer{padding:12px 20px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;}
+</style></head><body><div class="wrap">
+<div class="hd"><div><h2>COLILLA DE PAGO</h2><div class="period">Período: ${mesLabel}</div></div><div style="text-align:right;font-size:10px;opacity:.8">Ingeanclajes S.A.S<br/>NIT 900193965-4</div></div>
+<div class="emp"><strong>${empleado.nombre}</strong>Cédula: ${empleado.cedula||'-'} &nbsp;·&nbsp; Cargo: ${empleado.cargo||'-'}<br/>Contrato: ${(empleado.tipoContrato||'indefinido')} &nbsp;·&nbsp; Ingreso: ${empleado.fechaIngreso||'N/A'}</div>
+<table>${rowsHtml}<tr class="total-row"><td>NETO A PAGAR</td><td style="text-align:right"><span class="neto">${fmtC(resumen.neto)}</span></td></tr></table>
+<div class="footer">Firma empleado: _________________ &nbsp;&nbsp;&nbsp; Firma empresa: _________________<br/>Generado ${new Date().toLocaleDateString('es-CO')} · Ingeanclajes S.A.S</div>
+</div></body></html>`;
+  const win = window.open('','_blank','width=660,height=860');
+  if(win){win.document.write(html);win.document.close();win.focus();setTimeout(()=>win.print(),500);}
+}
+
+
 let googleMapsJsPromise = null;
 function loadGoogleMapsJsApi(){
   if(typeof window === "undefined") return Promise.reject(new Error("Google Maps solo estÃ¡ disponible en el navegador."));
@@ -1700,7 +1801,7 @@ function GoogleMeasureWorkspace({ queryValue, onQueryChange, measurements, onCha
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:10,alignItems:"end"}}>
             <div><LBL>Metros calculados</LBL><input value={draft.ml} readOnly style={{...SI,background:"#fff7ed",fontWeight:700,color:"#c2410c"}} /></div>
             <div><LBL>Etiqueta</LBL><input value={draft.label} onChange={e=>setDraft({...draft,label:e.target.value})} placeholder="Ej: Cubierta norte" style={SI} /></div>
-            <div><LBL>Tipo</LBL><select value={draft.tipo} onChange={e=>setDraft({...draft,tipo:e.target.value})} style={SI}>{[["LVH","LÃ­nea horizontal"],["LVV","LÃ­nea vertical"],["CON","ConexiÃ³n"],["ESC","Escalera"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
+            <div><LBL>Tipo</LBL><select value={draft.tipo} onChange={e=>setDraft({...draft,tipo:e.target.value})} style={SI}>{[["LVH","Línea horizontal"],["LVV","Línea vertical"],["CON","Conexión"],["ESC","Escalera"],["PAN","Punto de anclaje"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
             <div style={{display:"flex",gap:6}}>
               <button onClick={confirmDraft} style={B("#4ade80","#0f2d1a")}>âœ… Agregar</button>
               <button onClick={()=>{clearTemp(); setDraft(null);}} style={B("#fee2e2","#ef4444")}>âœ•</button>
@@ -1761,7 +1862,10 @@ function Cotizacion({ctx}){
   const [previewCot,setPreviewCot]=useState(null);
   const [sendModal,setSendModal]=useState(null);
   const [sendNotif,setSendNotif]=useState("");
+  const [tipoCotizacion,setTipoCotizacion]=useState("linea_vida");
+  const [fotosCotizacion,setFotosCotizacion]=useState([]);
   const fileRef=useRef();
+  const fotosRef=useRef();
 
   const autoMapImg = buildGoogleStaticMapUrl(geoMediciones, cl.coords || `${cl.obra||""} ${cl.ciudad||""}`.trim(), geoMapView);
   const effectiveMapImg = mapImgManual || autoMapImg || null;
@@ -1786,6 +1890,7 @@ function Cotizacion({ctx}){
       setItems([]); setNid(1); setMapImgManual(null); setGeoMediciones([]); setGeoMapView(null);
       setCl({nombre:"",obra:"",telefono:"",ciudad:"",coords:""});
     }
+    setTipoCotizacion("linea_vida"); setFotosCotizacion([]);
     setEditCot(null); setTab("form");
   };
 
@@ -1799,6 +1904,8 @@ function Cotizacion({ctx}){
     setGeoMapView(c.geoMapView||null);
     setFormaPago(c.formaPago||"50% ANTICIPO, 50% CONCLUIR LABORES");
     setTiempoEjec(c.tiempoEjec||"10 DIAS");
+    setTipoCotizacion(c.tipoCotizacion||"linea_vida");
+    setFotosCotizacion(c.fotosCotizacion||[]);
     setEditCot(c.id); setTab("form");
   };
 
@@ -1865,7 +1972,7 @@ function Cotizacion({ctx}){
     const data={
       numero:cot, fecha, val, cliente:cl.nombre, obra:cl.obra, telefono:cl.telefono, ciudad:cl.ciudad, coords:cl.coords,
       items:finalItems, util, total:Math.round((finalItems.reduce((s,i)=>s+(i.cant||0)*(i.vu||0),0))*(1+util/100*1.19)),
-      formaPago, tiempoEjec, mapImg: effectiveMapImg, geoMediciones, geoMapView, estado:"Pendiente", obraId:null
+      formaPago, tiempoEjec, mapImg: effectiveMapImg, geoMediciones, geoMapView, tipoCotizacion, fotosCotizacion, estado:"Pendiente", obraId:null
     };
     if(editCot){
       setCotizaciones(p=>p.map(c=>c.id===editCot?{...c,...data}:c));
@@ -2018,6 +2125,20 @@ function Cotizacion({ctx}){
         action={<button style={B("#f1f5f9","#475569")} onClick={()=>setTab("lista")}>â† Volver a lista</button>}/>
       <div style={{display:"grid",gridTemplateColumns:"1fr 300px",gap:20}}>
         <div>
+          <div style={{...CD,marginBottom:14,border:"2px solid #f47c20"}}>
+            <div style={ST}>Tipo de cotizaci&#243;n</div>
+            <div style={{display:"flex",gap:10}}>
+              {[["linea_vida","&#128209; L&#237;nea de vida / Puntos de anclaje"],["obra_blanca","&#127968; Obra blanca (libre)"]].map(([v,l])=>(
+                <button key={v} onClick={()=>setTipoCotizacion(v)} style={{...B(tipoCotizacion===v?"#f47c20":"#142840",tipoCotizacion===v?"#fff":"#7da5c8"),flex:1,justifyContent:"center",border:"2px solid "+(tipoCotizacion===v?"#f47c20":"#1a3050"),fontSize:13,fontWeight:700}} >{l}</button>
+              ))}
+            </div>
+            {tipoCotizacion==="obra_blanca"&&(
+              <div style={{marginTop:10,background:"#fffbeb",border:"1px solid #f5c842",borderRadius:8,padding:"10px 12px",fontSize:12,color:"#92400e"}}>
+                &#128221; Cotizaci&#243;n de obra blanca: escrib&#237; la descripci&#243;n libremente en los &#237;tems de abajo. El mapa y las mediciones son opcionales.
+              </div>
+            )}
+          </div>
+
           <div style={{...CD,marginBottom:14}}>
             <div style={ST}>IdentificaciÃ³n</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
@@ -2046,22 +2167,37 @@ function Cotizacion({ctx}){
             onMapViewChange={setGeoMapView}
           />
 
+          {/* Hidden input for map image override — still used by PDF */}
+          <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={onImgChange}/>
+
           <div style={{...CD,marginTop:14,marginBottom:14}}>
-            <div style={ST}>Imagen para PDF / obra</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-              <div>
-                <div style={{fontSize:12,fontWeight:600,color:"#1a1a2e",marginBottom:8}}>Generada automÃ¡ticamente</div>
-              {autoMapImg ? <StaticMapPreview src={autoMapImg} segments={geoMediciones} query={cl.coords || `${cl.obra||""} ${cl.ciudad||""}`.trim()} mapView={geoMapView} alt="Mapa automÃ¡tico" border="1px solid #e2e8f0" borderRadius={8} /> : <div style={{background:"#f8fafc",border:"1px dashed #cbd5e1",borderRadius:8,padding:"24px",textAlign:"center",fontSize:12,color:"#64748b"}}>Al medir el primer tramo, aquÃ­ aparecerÃ¡ la imagen automÃ¡tica.</div>}
-              </div>
-              <div>
-                <div style={{fontSize:12,fontWeight:600,color:"#1a1a2e",marginBottom:8}}>Captura manual opcional</div>
-                <div onClick={()=>fileRef.current.click()} style={{border:"2px dashed #f47c20",borderRadius:10,padding:mapImgManual?0:"32px 20px",textAlign:"center",cursor:"pointer",background:"#f8fafc",overflow:"hidden",minHeight:mapImgManual?180:120,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                  {mapImgManual?<img src={mapImgManual} alt="Mapa manual" style={{width:"100%",display:"block",borderRadius:8,maxHeight:260,objectFit:"contain"}}/>:<div><div style={{fontSize:28,marginBottom:8}} >ðŸ›°ï¸</div><div style={{fontSize:13,color:"#cc0000",fontWeight:600}}>Clic para cargar una captura si quieres reemplazar la automÃ¡tica</div></div>}
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",...{fontSize:11,fontWeight:600,color:"#cc0000",textTransform:"uppercase",letterSpacing:1,borderBottom:"1px solid #e2e8f0",paddingBottom:8,marginBottom:12}}}>
+              <span>Fotos de la cotización</span>
+              <span style={{fontSize:10,color:"#94a3b8",fontWeight:400,textTransform:"none"}}>El mapa satelital se agrega al PDF automáticamente</span>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:4}}>
+              {fotosCotizacion.map((f,i)=>(
+                <div key={f.id} style={{borderRadius:8,overflow:"hidden",border:"1px solid #e2e8f0",background:"#f8fafc"}}>
+                  <img src={f.src} alt={f.label||`Foto ${i+1}`} style={{width:"100%",height:120,objectFit:"cover",display:"block"}}/>
+                  <div style={{padding:"6px 8px",display:"flex",gap:4,alignItems:"center"}}>
+                    <input value={f.label||""} onChange={e=>setFotosCotizacion(p=>p.map(x=>x.id===f.id?{...x,label:e.target.value}:x))} placeholder={`Foto ${i+1}`} style={{...SI,fontSize:11,padding:"3px 6px",flex:1}}/>
+                    <button onClick={()=>setFotosCotizacion(p=>p.filter(x=>x.id!==f.id))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:5,width:22,height:22,cursor:"pointer",fontSize:13,flexShrink:0}}>×</button>
+                  </div>
                 </div>
-                <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={onImgChange}/>
-                {mapImgManual&&<button onClick={()=>setMapImgManual(null)} style={{...B("#2d1414","#ef4444"),marginTop:8,fontSize:11}}>Ã— Quitar captura manual</button>}
+              ))}
+              <div onClick={()=>fotosRef.current.click()} style={{border:"2px dashed #f47c20",borderRadius:10,minHeight:140,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",background:"#fff8f3",gap:6}}>
+                <div style={{fontSize:32}}>📷</div>
+                <div style={{fontSize:12,color:"#f47c20",fontWeight:600,textAlign:"center",padding:"0 8px"}}>Agregar foto</div>
               </div>
             </div>
+            <input ref={fotosRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={e=>{
+              Array.from(e.target.files||[]).forEach(file=>{
+                const r=new FileReader();
+                r.onload=(ev)=>setFotosCotizacion(p=>[...p,{id:Date.now()+Math.random(),src:ev.target.result,label:""}]);
+                r.readAsDataURL(file);
+              });
+              e.target.value="";
+            }}/>
           </div>
 
           <div style={{...CD,marginBottom:14}}>
@@ -2401,7 +2537,7 @@ function Planos({ctx}){
           <div style={{...CD,marginBottom:16}}>
             <div style={ST}>âž• Agregar tramo manual</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr auto",gap:12,alignItems:"end"}}>
-              <div><LBL>Tipo</LBL><select value={trazosForm.tipo} onChange={e=>setTrazosForm({...trazosForm,tipo:e.target.value})} style={SI}>{[["LVH","L.V. Horizontal"],["LVV","L.V. Vertical"],["CON","ConexiÃ³n"],["ESC","Escalera"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
+              <div><LBL>Tipo</LBL><select value={trazosForm.tipo} onChange={e=>setTrazosForm({...trazosForm,tipo:e.target.value})} style={SI}>{[["LVH","L.V. Horizontal"],["LVV","L.V. Vertical"],["CON","Conexión"],["ESC","Escalera"],["PAN","Punto anclaje"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
               <div><LBL>Metros lineales</LBL><input type="number" value={trazosForm.ml} onChange={e=>setTrazosForm({...trazosForm,ml:parseFloat(e.target.value)||0})} style={SI}/></div>
               <div style={{gridColumn:"span 2"}}><LBL>Etiqueta</LBL><input value={trazosForm.label} onChange={e=>setTrazosForm({...trazosForm,label:e.target.value})} style={SI}/></div>
               <button onClick={agregarLinea} style={B("#cc0000")}>+ Agregar</button>
@@ -4144,11 +4280,14 @@ function Nomina({ctx}){
   const [mes,setMes]=useState("2026-04");
   const [selId,setSelId]=useState(null);
   const [showHE,setShowHE]=useState(null);
-  const nuevoEmpleadoBase = {nombre:"",cedula:"",cargo:"",tel:"",email:"",salario:NOMINA_CO_2026.salarioMinimo,banco:"Bancolombia",tipoCuenta:"Ahorros",numeroCuenta:"",deduccionesPersonalizadas:[]};
+  const nuevoEmpleadoBase = {nombre:"",cedula:"",cargo:"",tel:"",email:"",salario:NOMINA_CO_2026.salarioMinimo,banco:"Bancolombia",tipoCuenta:"Ahorros",numeroCuenta:"",deduccionesPersonalizadas:[],fechaIngreso:today(),tipoContrato:"indefinido",fechaSalida:"",causaRetiro:""};
   const [nf,setNf]=useState(nuevoEmpleadoBase);
-  const [heForm,setHeForm]=useState({obraId:"",tipo:"horaExtra",horas:0,valorHora:12500,comision:0,concepto:"",fecha:today()});
+  const [heForm,setHeForm]=useState({obraId:"",tipo:"horaExtra",tipoRecargo:"horaExtraGeneral",horas:0,valorHora:12500,comision:0,concepto:"",fecha:today()});
   const [cargoForm,setCargoForm]=useState({nombre:"",descripcion:""});
   const [dedForm,setDedForm]=useState({nombre:"",valor:0});
+  const [editEmpId,setEditEmpId]=useState(null);
+  const [editEmpData,setEditEmpData]=useState(null);
+  const [liquidarId,setLiquidarId]=useState(null);
 
   const empleadosBase = empleados.map(normalizarEmpleado);
   const activos=empleadosBase.filter((empleado)=>empleado.activo);
@@ -4234,13 +4373,16 @@ function Nomina({ctx}){
     if(!showHE||!heForm.obraId)return;
     actualizarEmpleado(showHE,(empleado)=>{
       if(heForm.tipo==="horaExtra"){
-        const nuevo={id:Date.now(),obraId:heForm.obraId,horas:heForm.horas,valorHora:heForm.valorHora,total:heForm.horas*heForm.valorHora,fecha:heForm.fecha,concepto:heForm.concepto};
+        const salHora=Math.round((empleado.salario||NOMINA_CO_2026.salarioMinimo)/240);
+        const pct=getPctRecargo(heForm.tipoRecargo,heForm.fecha);
+        const vHora=pct!==null?Math.round(salHora*pct/100):heForm.valorHora;
+        const nuevo={id:Date.now(),obraId:heForm.obraId,tipoRecargo:heForm.tipoRecargo,horas:heForm.horas,valorHora:vHora,total:heForm.horas*vHora,fecha:heForm.fecha,concepto:heForm.concepto};
         return { ...empleado, horasExtrasPorObra:[...(empleado.horasExtrasPorObra||[]),nuevo] };
       }
       const nuevo={id:Date.now(),obraId:heForm.obraId,comision:heForm.comision,fecha:heForm.fecha,concepto:heForm.concepto};
       return { ...empleado, comisionesPorObra:[...(empleado.comisionesPorObra||[]),nuevo] };
     });
-    setHeForm({obraId:"",tipo:"horaExtra",horas:0,valorHora:12500,comision:0,concepto:"",fecha:today()});
+    setHeForm({obraId:"",tipo:"horaExtra",tipoRecargo:"horaExtraGeneral",horas:0,valorHora:12500,comision:0,concepto:"",fecha:today()});
   };
 
   const agregarDeduccion=(empleadoId=selId)=>{
@@ -4269,7 +4411,7 @@ function Nomina({ctx}){
       <H1 title="Nómina y Empleados" subtitle="Gestión de empleados, horas extras, comisiones y planilla"
         action={<button style={B("#cc0000")} onClick={()=>setTab("nuevo")}>+ Nuevo Empleado</button>}/>
       <div style={{display:"flex",gap:6,marginBottom:20}}>
-        {[["lista","Empleados"],["he","Horas extras y comisiones"],["deducciones","Revision deducciones"],["planilla","Planilla Bancolombia"]].map(([id,lb])=>(
+        {[["lista","Empleados"],["contratos","Contratos & Liquidación"],["he","Horas extras y comisiones"],["deducciones","Revision deducciones"],["colillas","Colillas de pago"],["planilla","Planilla Bancolombia"]].map(([id,lb])=>(
           <button key={id} onClick={()=>setTab(id)} style={{...B(tab===id?"#f47c20":"#f1f5f9",tab===id?"#fff":"#475569"),border:`1px solid ${tab===id?"#f47c20":"#e2e8f0"}`}}>{lb}</button>
         ))}
       </div>
@@ -4324,6 +4466,12 @@ function Nomina({ctx}){
               <div><LBL>Teléfono</LBL><input value={nf.tel} onChange={e=>setNf({...nf,tel:e.target.value})} placeholder="3001234567" style={SI}/></div>
               <div><LBL>Email</LBL><input value={nf.email} onChange={e=>setNf({...nf,email:e.target.value})} placeholder="correo@ingeanclajes.com" style={SI}/></div>
               <div><LBL>Salario base ($)</LBL><input type="number" value={nf.salario} onChange={e=>setNf({...nf,salario:parseFloat(e.target.value)||0})} style={SI}/></div>
+              <div><LBL>Tipo de contrato</LBL>
+                <select value={nf.tipoContrato||"indefinido"} onChange={e=>setNf({...nf,tipoContrato:e.target.value})} style={SI}>
+                  {["indefinido","fijo","obra_labor","prestacion_servicios"].map(t=><option key={t} value={t}>{{indefinido:"Término indefinido",fijo:"Término fijo",obra_labor:"Obra o labor",prestacion_servicios:"Prestación de servicios"}[t]}</option>)}
+                </select>
+              </div>
+              <div><LBL>Fecha de ingreso</LBL><input type="date" value={nf.fechaIngreso||""} onChange={e=>setNf({...nf,fechaIngreso:e.target.value})} style={SI}/></div>
               <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px",fontSize:12,color:"#475569",display:"flex",alignItems:"center",gap:8}}>
                 <span style={{fontSize:18}}>💵</span>
                 <div>
@@ -4383,6 +4531,7 @@ function Nomina({ctx}){
                     <div>📱 {e.tel||"Sin teléfono"}</div>
                     <div style={{gridColumn:"span 2",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>✉️ {e.email||"Sin email"}</div>
                   </div>
+                  {(()=>{ const pf=calcularParafiscales(e); return pf.diasTrabajados>0 ? <div style={{background:"#f0fdf4",borderRadius:6,padding:"7px 10px",fontSize:11,marginBottom:6,display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}><div><span style={{color:"#64748b"}}>📅 Ingreso: </span><strong>{e.fechaIngreso||"N/A"}</strong></div><div><span style={{color:"#64748b"}}>{e.tipoContrato||"indefinido"}: </span></div><div><span style={{color:"#64748b"}}>🏖 Vacac.: </span><strong style={{color:"#166534"}}>{pf.vacacionesDias}d</strong></div><div><span style={{color:"#64748b"}}>Días trab.: </span><strong style={{color:"#2563eb"}}>{pf.diasTrabajados}</strong></div></div> : null; })()}
                   <div style={{background:"#f8fafc",borderRadius:6,padding:"7px 10px",fontSize:11,marginBottom:6}}>
                     <div style={{color:"#64748b",marginBottom:2}}>🏦 Datos bancarios</div>
                     <div style={{color:"#1a1a2e"}}>{e.banco||"-"} · {e.tipoCuenta||"-"}</div>
@@ -4390,28 +4539,27 @@ function Nomina({ctx}){
                   </div>
                   {selId===e.id&&(
                     <div style={{marginTop:10,borderTop:"1px solid rgba(255,255,255,0.2)",paddingTop:10}} onClick={(event)=>event.stopPropagation()}>
-                      <div style={{fontSize:10,color:"#cc0000",fontWeight:600,textTransform:"uppercase",marginBottom:8}}>Datos del empleado y deducciones</div>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
-                        <div><LBL>Cédula / identificación</LBL><input value={e.cedula||""} onChange={ev=>updEmp(e.id,"cedula",ev.target.value)} placeholder="Documento" style={{...SI,fontSize:11}}/></div>
-                        <div><LBL>Cargo</LBL>
-                          <select value={e.cargo||""} onChange={ev=>updEmp(e.id,"cargo",ev.target.value)} style={{...SI,fontSize:11,padding:"5px 8px"}}>
-                            <option value="">Seleccionar cargo...</option>
-                            {cargosDisponibles.map((cargo)=><option key={cargo} value={cargo}>{cargo}</option>)}
-                          </select>
+                      <div style={{fontSize:10,color:"#cc0000",fontWeight:600,textTransform:"uppercase",marginBottom:8}}>Datos del empleado</div>
+                      {editEmpId!==e.id&&<button onClick={()=>{setEditEmpId(e.id);setEditEmpData({...e});}} style={{...B("#1a3050","#60b4ff"),fontSize:11,width:"100%",justifyContent:"center",marginBottom:10}}>✏️ Editar datos del empleado</button>}
+                      {editEmpId===e.id&&editEmpData&&(
+                        <div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+                            <div><LBL>Cédula</LBL><input value={editEmpData.cedula||""} onChange={ev=>setEditEmpData(p=>({...p,cedula:ev.target.value}))} style={{...SI,fontSize:11}}/></div>
+                            <div><LBL>Cargo</LBL><select value={editEmpData.cargo||""} onChange={ev=>setEditEmpData(p=>({...p,cargo:ev.target.value}))} style={{...SI,fontSize:11,padding:"5px 8px"}}><option value="">Seleccionar...</option>{cargosDisponibles.map(cargo=><option key={cargo} value={cargo}>{cargo}</option>)}</select></div>
+                            <div><LBL>Salario base</LBL><input type="number" value={editEmpData.salario} onChange={ev=>setEditEmpData(p=>({...p,salario:parseFloat(ev.target.value)||0}))} style={{...SI,fontSize:11}}/></div>
+                            <div><LBL>Tipo contrato</LBL><select value={editEmpData.tipoContrato||"indefinido"} onChange={ev=>setEditEmpData(p=>({...p,tipoContrato:ev.target.value}))} style={{...SI,fontSize:11,padding:"5px 8px"}}>{[["indefinido","Indefinido"],["fijo","Término fijo"],["obra_labor","Obra/labor"],["prestacion_servicios","Prestación servicios"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
+                            <div><LBL>Fecha de ingreso</LBL><input type="date" value={editEmpData.fechaIngreso||""} onChange={ev=>setEditEmpData(p=>({...p,fechaIngreso:ev.target.value}))} style={{...SI,fontSize:11}}/></div>
+                            <div><LBL>Teléfono</LBL><input value={editEmpData.tel||""} onChange={ev=>setEditEmpData(p=>({...p,tel:ev.target.value}))} style={{...SI,fontSize:11}}/></div>
+                            <div><LBL>Banco</LBL><select value={editEmpData.banco||""} onChange={ev=>setEditEmpData(p=>({...p,banco:ev.target.value}))} style={{...SI,fontSize:11,padding:"5px 8px"}}>{["Bancolombia","Davivienda","Banco Bogotá","BBVA","Nequi","Daviplata","Banco Caja Social","Banco Popular","Scotiabank","AV Villas"].map(b=><option key={b}>{b}</option>)}</select></div>
+                            <div><LBL>Tipo cuenta</LBL><select value={editEmpData.tipoCuenta||"Ahorros"} onChange={ev=>setEditEmpData(p=>({...p,tipoCuenta:ev.target.value}))} style={{...SI,fontSize:11,padding:"5px 8px"}}>{["Ahorros","Corriente"].map(t=><option key={t}>{t}</option>)}</select></div>
+                            <div><LBL>Número de cuenta</LBL><input value={editEmpData.numeroCuenta||""} onChange={ev=>setEditEmpData(p=>({...p,numeroCuenta:ev.target.value}))} style={{...SI,fontSize:11}}/></div>
+                          </div>
+                          <div style={{display:"flex",gap:8,marginBottom:10}}>
+                            <button onClick={()=>{actualizarEmpleado(e.id,editEmpData);setEditEmpId(null);setEditEmpData(null);}} style={{...B("#166534","#4ade80"),fontSize:11,flex:1,justifyContent:"center"}}>💾 Guardar cambios</button>
+                            <button onClick={()=>{setEditEmpId(null);setEditEmpData(null);}} style={{...B("#fee2e2","#ef4444"),fontSize:11,justifyContent:"center"}}>✕ Cancelar</button>
+                          </div>
                         </div>
-                        <div><LBL>Salario base</LBL><input type="number" value={e.salario} onChange={ev=>updEmp(e.id,"salario",parseFloat(ev.target.value)||0)} style={{...SI,fontSize:11}}/></div>
-                        <div><LBL>Banco</LBL>
-                          <select value={e.banco||""} onChange={ev=>updEmp(e.id,"banco",ev.target.value)} style={{...SI,fontSize:11,padding:"5px 8px"}}>
-                            {["Bancolombia","Davivienda","Banco Bogotá","BBVA","Nequi","Daviplata","Banco Caja Social","Banco Popular","Scotiabank","AV Villas"].map((banco)=><option key={banco}>{banco}</option>)}
-                          </select>
-                        </div>
-                        <div><LBL>Tipo de cuenta</LBL>
-                          <select value={e.tipoCuenta||""} onChange={ev=>updEmp(e.id,"tipoCuenta",ev.target.value)} style={{...SI,fontSize:11,padding:"5px 8px"}}>
-                            {["Ahorros","Corriente"].map((tipo)=><option key={tipo}>{tipo}</option>)}
-                          </select>
-                        </div>
-                        <div><LBL>Número de cuenta</LBL><input value={e.numeroCuenta||""} onChange={ev=>updEmp(e.id,"numeroCuenta",ev.target.value)} placeholder="Número de cuenta" style={{...SI,fontSize:11}}/></div>
-                      </div>
+                      )}
                       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:10}}>
                         {[["Salario",fmt(resumen.salario),"#4ade80"],["Aux. transp.",fmt(resumen.auxilioTransporte),"#60b4ff"],["H. extras",fmt(resumen.horasExtras),"#f5c842"],["Comisiones",fmt(resumen.comisiones),"#c084fc"],["Salud 4%",fmt(resumen.salud),"#ef4444"],["Pensión 4%",fmt(resumen.pension),"#fb7185"],["Otras deduc.",fmt(resumen.otrasDeducciones),"#b91c1c"],["Neto",fmt(resumen.neto),"#f47c20"]].map(([k,v,c])=>(
                           <div key={k} style={{background:"#ffffff",borderRadius:6,padding:"8px 10px"}}><div style={{fontSize:9,color:"#64748b",marginBottom:2}}>{k}</div><div style={{fontSize:11,fontWeight:700,color:c}}>{v}</div></div>
@@ -4423,16 +4571,13 @@ function Nomina({ctx}){
                           <div style={{display:"grid",gap:6,marginBottom:10}}>
                             {(e.deduccionesPersonalizadas||[]).map((deduccion)=>(
                               <div key={deduccion.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#f8fafc",borderRadius:6,padding:"8px 10px",fontSize:11}}>
-                                <div>
-                                  <div style={{fontWeight:600,color:"#0f172a"}}>{deduccion.nombre}</div>
-                                  <div style={{color:"#64748b"}}>{fmt(deduccion.valor)} mensual</div>
-                                </div>
+                                <div><div style={{fontWeight:600,color:"#0f172a"}}>{deduccion.nombre}</div><div style={{color:"#64748b"}}>{fmt(deduccion.valor)} mensual</div></div>
                                 <button type="button" onClick={()=>quitarDeduccion(e.id,deduccion.id)} style={{...B("#fee2e2","#b91c1c"),border:"1px solid #fecaca",padding:"6px 10px",fontSize:11}}>Quitar</button>
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <div style={{fontSize:11,color:"#64748b",marginBottom:10}}>Sin deducciones adicionales. Puedes registrar natillera, libranza o cualquier otro descuento autorizado.</div>
+                          <div style={{fontSize:11,color:"#64748b",marginBottom:10}}>Sin deducciones adicionales.</div>
                         )}
                         <div style={{display:"grid",gridTemplateColumns:"1.3fr 1fr auto",gap:8}}>
                           <div><LBL>Concepto</LBL><input value={dedForm.nombre} onChange={(event)=>setDedForm({...dedForm,nombre:event.target.value})} placeholder="Ej: Natillera" style={{...SI,fontSize:11}}/></div>
@@ -4449,6 +4594,106 @@ function Nomina({ctx}){
           </div>
         </div>
       )}
+
+      {tab==="contratos"&&(
+        <div>
+          <div style={{...CD,marginBottom:16}}>
+            <div style={ST}>Contratos, antigüedad y liquidación</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+              {empleadosBase.map((e,idx)=>{
+                const pf=calcularParafiscales(e);
+                const isLiq=liquidarId===e.id;
+                return(
+                <div key={e.id} style={{background:"#f8fafc",borderRadius:10,padding:"14px 16px",border:isLiq?"2px solid #cc0000":"1px solid #e2e8f0"}}>
+                  <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:10}}>
+                    <Av init={e.avatar} color={PAL[idx%PAL.length]} size={34}/>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:13,fontWeight:700}}>{e.nombre}</div>
+                      <div style={{fontSize:11,color:"#64748b"}}>{e.cargo} · {{indefinido:"Contrato indefinido",fijo:"Término fijo",obra_labor:"Obra/labor",prestacion_servicios:"Prestación servicios"}[e.tipoContrato]||e.tipoContrato}</div>
+                    </div>
+                    <span style={{background:e.activo?"#0f2d1a":"#2d1414",color:e.activo?"#4ade80":"#ef4444",borderRadius:20,padding:"3px 10px",fontSize:10,fontWeight:600}}>{e.activo?"Activo":"Retirado"}</span>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,fontSize:11,marginBottom:10}}>
+                    <div style={{background:"#fff",borderRadius:6,padding:"6px 8px"}}><div style={{fontSize:9,color:"#64748b"}}>Fecha ingreso</div><div style={{fontWeight:600}}>{e.fechaIngreso||"No registrada"}</div></div>
+                    <div style={{background:"#fff",borderRadius:6,padding:"6px 8px"}}><div style={{fontSize:9,color:"#64748b"}}>Días trabajados</div><div style={{fontWeight:600,color:"#2563eb"}}>{pf.diasTrabajados} días ({pf.mesesTrabajados} meses)</div></div>
+                    <div style={{background:"#f0fdf4",borderRadius:6,padding:"6px 8px"}}><div style={{fontSize:9,color:"#64748b"}}>Vacaciones acumuladas</div><div style={{fontWeight:700,color:"#166534"}}>{pf.vacacionesDias} días · {fmt(pf.vacacionesValor)}</div></div>
+                    <div style={{background:"#fffbeb",borderRadius:6,padding:"6px 8px"}}><div style={{fontSize:9,color:"#64748b"}}>Cesantías acumuladas</div><div style={{fontWeight:700,color:"#92400e"}}>{fmt(pf.cesantias)}</div></div>
+                  </div>
+                  <button onClick={()=>setLiquidarId(isLiq?null:e.id)} style={{...B(isLiq?"#2d1414":"#142840",isLiq?"#ef4444":"#f5c842"),fontSize:11,width:"100%",justifyContent:"center",marginBottom:8}}>{isLiq?"✕ Cerrar liquidación":"📋 Calcular liquidación / retiro"}</button>
+                  {isLiq&&(
+                    <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,padding:12}}>
+                      <div style={{fontSize:11,fontWeight:700,color:"#cc0000",marginBottom:8}}>LIQUIDACIÓN — {e.nombre}</div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:10,fontSize:11}}>
+                        <div><LBL>Fecha de salida</LBL><input type="date" value={e.fechaSalida||""} onChange={ev=>updEmp(e.id,"fechaSalida",ev.target.value)} style={{...SI,fontSize:11}}/></div>
+                        <div><LBL>Causa del retiro</LBL><select value={e.causaRetiro||""} onChange={ev=>updEmp(e.id,"causaRetiro",ev.target.value)} style={{...SI,fontSize:11,padding:"5px 8px"}}>
+                          <option value="">Seleccionar...</option>
+                          {["Renuncia voluntaria","Despido sin justa causa","Despido con justa causa","Mutuo acuerdo","Vencimiento contrato","Fallecimiento","Incapacidad permanente"].map(c=><option key={c}>{c}</option>)}
+                        </select></div>
+                      </div>
+                      {(()=>{
+                        const pfl=calcularParafiscales(e, e.fechaSalida||null);
+                        const indemn = e.causaRetiro==="Despido sin justa causa" ? (
+                          pfl.aniostrabajados<=1 ? Math.round(e.salario) : Math.round(e.salario + e.salario*0.2*(pfl.aniostrabajados-1))
+                        ) : 0;
+                        const total = pfl.cesantias + pfl.interesesCesantias + pfl.prima + pfl.vacacionesValor + indemn;
+                        return(
+                        <div>
+                          <table style={{width:"100%",borderCollapse:"collapse",fontSize:11,marginBottom:10}}>
+                            <thead><tr style={{background:"#142840",color:"#fff"}}><th style={{padding:"5px 8px",textAlign:"left"}}>Concepto</th><th style={{padding:"5px 8px",textAlign:"left"}}>Base cálculo</th><th style={{padding:"5px 8px",textAlign:"right"}}>Valor</th></tr></thead>
+                            <tbody>
+                              {[["Cesantías",`${fmt(e.salario+(e.salario<=NOMINA_CO_2026.topeAuxilio?NOMINA_CO_2026.auxilioTransporte:0))} × ${pfl.diasTrabajados}d ÷ 360`,pfl.cesantias],["Int. cesantías","12% anual s/ cesantías",pfl.interesesCesantias],["Prima de servicios",`Base × ${pfl.diasTrabajados}d ÷ 360`,pfl.prima],["Vacaciones",`${pfl.vacacionesDias} días`,pfl.vacacionesValor],...(indemn>0?[["Indemnización (sin justa causa)","Según CST art. 64",indemn]]:[])].map(([k,b,v])=>(
+                                <tr key={k} style={{borderBottom:"1px solid #f1f5f9"}}><td style={{padding:"5px 8px"}}>{k}</td><td style={{padding:"5px 8px",color:"#64748b",fontSize:10}}>{b}</td><td style={{padding:"5px 8px",textAlign:"right",fontWeight:600,color:"#0f172a"}}>{fmt(v)}</td></tr>
+                              ))}
+                            </tbody>
+                            <tfoot><tr style={{background:"#f5c842"}}><td colSpan={2} style={{padding:"7px 8px",fontWeight:700}}>TOTAL LIQUIDACIÓN</td><td style={{padding:"7px 8px",textAlign:"right",fontWeight:700,fontSize:13}}>{fmt(total)}</td></tr></tfoot>
+                          </table>
+                          <button onClick={()=>updEmp(e.id,"activo",false)} style={{...B("#2d1414","#ef4444"),fontSize:11,width:"100%",justifyContent:"center"}}>Marcar como retirado</button>
+                        </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+      {tab==="colillas"&&(
+        <div>
+          <div style={{display:"flex",gap:12,alignItems:"flex-end",marginBottom:16}}>
+            <div><LBL>Período</LBL><input type="month" value={mes} onChange={e=>setMes(e.target.value)} style={{...SI,width:"auto"}}/></div>
+            <button style={B("#142840","#4ade80")} onClick={()=>resumenesActivos.forEach(({empleado:e,resumen})=>printColilla(e,resumen,mes))}>📤 Enviar colillas masivas (imprimir)</button>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+            {resumenesActivos.map(({empleado:e,resumen},i)=>{
+              const pf=calcularParafiscales(e);
+              const auxMes=resumen.aplicaAuxilio?NOMINA_CO_2026.auxilioTransporte:0;
+              const baseProv=resumen.salario+auxMes;
+              return(
+              <div key={e.id} style={{background:"#f8fafc",borderRadius:10,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
+                <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:10}}>
+                  <Av init={e.avatar} color={PAL[i%PAL.length]} size={32}/>
+                  <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700}}>{e.nombre}</div><div style={{fontSize:10,color:"#64748b"}}>{e.cargo} · {e.tipoContrato||"indefinido"} · {pf.vacacionesDias}d vac.</div></div>
+                  <div style={{textAlign:"right",fontSize:12,fontWeight:700,color:"#4ade80"}}>{fmt(resumen.neto)}</div>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:4,fontSize:10,marginBottom:10}}>
+                  {[["Salario",fmt(resumen.salario),"#4ade80"],["Aux.T.",fmt(resumen.auxilioTransporte),"#60b4ff"],["Extras",fmt(resumen.horasExtras),"#f5c842"],["Salud",fmt(resumen.salud),"#ef4444"],["Pensión",fmt(resumen.pension),"#fb7185"],["Otras ded.",fmt(resumen.otrasDeducciones),"#b91c1c"],["Cesantías/mes",fmt(Math.round(baseProv/12)),"#c084fc"],["Vac./mes",fmt(Math.round(resumen.salario/24)),"#f97316"]].map(([k,v,col])=>(
+                    <div key={k} style={{background:"#fff",borderRadius:4,padding:"4px 6px"}}><div style={{color:"#94a3b8",fontSize:9}}>{k}</div><div style={{fontWeight:600,color:col,fontSize:10}}>{v}</div></div>
+                  ))}
+                </div>
+                <div style={{display:"flex",gap:6}}>
+                  <button onClick={()=>printColilla(e,resumen,mes)} style={{...B("#142840","#f5c842"),fontSize:11,flex:1,justifyContent:"center"}}>📲 Ver / imprimir colilla</button>
+                  {e.tel&&<button onClick={()=>window.open(`https://wa.me/57${Array.from(e.tel).filter(ch=>ch>="0"&&ch<="9").join("")}?text=${encodeURIComponent("Hola "+e.nombre+", adjuntamos tu colilla de pago del período "+mes+". Neto a pagar: "+fmt(resumen.neto)+". Att. Ingeanclajes S.A.S")}`,'_blank')} style={{...B("#166534","#4ade80"),fontSize:11,justifyContent:"center"}}>WhatsApp</button>}
+                </div>
+              </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
 
       {tab==="he"&&(
         <div>
@@ -4475,11 +4720,29 @@ function Nomina({ctx}){
                     ))}
                   </div>
                 </div>
-                {heForm.tipo==="horaExtra"&&<>
-                  <div><LBL>Horas extras</LBL><input type="number" value={heForm.horas} onChange={e=>setHeForm({...heForm,horas:parseFloat(e.target.value)||0})} style={SI}/></div>
-                  <div><LBL>Valor/hora</LBL><input type="number" value={heForm.valorHora} onChange={e=>setHeForm({...heForm,valorHora:parseFloat(e.target.value)||0})} style={SI}/></div>
-                  <div style={{gridColumn:"span 2",background:"#ffffff",borderRadius:8,padding:"10px 12px",fontSize:12}}>Total horas extras: <strong style={{color:"#f5c842"}}>{fmt(heForm.horas*heForm.valorHora)}</strong></div>
-                </>}
+                {heForm.tipo==="horaExtra"&&(()=>{
+                  const empleadoSel=empleadosBase.find(e=>e.id===showHE);
+                  const salHora=Math.round((empleadoSel?.salario||NOMINA_CO_2026.salarioMinimo)/240);
+                  const pct=getPctRecargo(heForm.tipoRecargo,heForm.fecha||today());
+                  const vHora=pct!==null?Math.round(salHora*pct/100):heForm.valorHora;
+                  const totalHE=heForm.horas*vHora;
+                  const infoRec=RECARGOS_CO_2026.find(r=>r.id===heForm.tipoRecargo);
+                  return(<>
+                  <div style={{gridColumn:"span 2"}}>
+                    <LBL>Tipo de recargo</LBL>
+                    <select value={heForm.tipoRecargo} onChange={e=>setHeForm({...heForm,tipoRecargo:e.target.value})} style={SI}>
+                      {RECARGOS_CO_2026.map(r=><option key={r.id} value={r.id}>{r.label}{r.horario?` · ${r.horario}`:""}</option>)}
+                    </select>
+                    {pct!==null&&<div style={{marginTop:4,fontSize:11,color:"#f47c20",fontWeight:600}}>Recargo aplicable: {pct}% · Valor/hora calculado: {fmt(vHora)} (salario/hora: {fmt(salHora)})</div>}
+                  </div>
+                  <div><LBL>Horas</LBL><input type="number" value={heForm.horas} onChange={e=>setHeForm({...heForm,horas:parseFloat(e.target.value)||0})} style={SI}/></div>
+                  {pct===null
+                    ?<div><LBL>Valor/hora</LBL><input type="number" value={heForm.valorHora} onChange={e=>setHeForm({...heForm,valorHora:parseFloat(e.target.value)||0})} style={SI}/></div>
+                    :<div><LBL>Valor/hora (automático)</LBL><input type="number" value={vHora} readOnly style={{...SI,background:"#f1f5f9",color:"#64748b",cursor:"not-allowed"}}/></div>
+                  }
+                  <div style={{gridColumn:"span 2",background:"#ffffff",borderRadius:8,padding:"10px 12px",fontSize:12}}>Total {infoRec?.label||"horas extras"}: <strong style={{color:"#f5c842"}}>{fmt(totalHE)}</strong></div>
+                  </>);
+                })()}
                 {heForm.tipo==="comision"&&<>
                   <div style={{gridColumn:"span 2"}}><LBL>Valor comisión</LBL><input type="number" value={heForm.comision} onChange={e=>setHeForm({...heForm,comision:parseFloat(e.target.value)||0})} style={SI}/></div>
                 </>}
@@ -4499,9 +4762,9 @@ function Nomina({ctx}){
                     <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600}}>{e.nombre}</div><div style={{fontSize:10,color:"#64748b"}}>{e.cargo}</div></div>
                     <div style={{textAlign:"right",fontSize:12}}><span style={{color:"#f5c842",fontWeight:700}}>{fmt(resumen.horasExtras+resumen.comisiones)}</span></div>
                   </div>
-                  {(e.horasExtrasPorObra||[]).map((h)=>{const ob=obras.find((o)=>o.id===h.obraId);return(
+                  {(e.horasExtrasPorObra||[]).map((h)=>{const ob=obras.find((o)=>o.id===h.obraId);const recInfo=RECARGOS_CO_2026.find(r=>r.id===h.tipoRecargo);return(
                     <div key={h.id} style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#475569",padding:"3px 0",borderBottom:"1px solid #e2e8f0"}}>
-                      <span>⏱️ {h.horas}h · {ob?.cliente||h.obraId} · {h.fecha}</span>
+                      <span>{recInfo?.label||"⏱️ Hora extra"} · {h.horas}h · {ob?.cliente||h.obraId} · {h.fecha}</span>
                       <span style={{color:"#f5c842",fontWeight:600}}>{fmt(h.total)}</span>
                     </div>
                   );})}

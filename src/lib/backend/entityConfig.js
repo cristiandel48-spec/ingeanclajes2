@@ -47,6 +47,21 @@ export const entityConfig = {
       comisiones: safeArray(item.comisionesPorObra),
       deducciones_personalizadas: safeArray(item.deduccionesPersonalizadas),
     }),
+    toLegacyRow: (item) => ({
+      id: item.id,
+      nombre: item.nombre,
+      cargo: item.cargo ?? null,
+      tel: item.tel ?? null,
+      email: item.email ?? null,
+      salario: item.salario ?? null,
+      activo: item.activo ?? true,
+      avatar: item.avatar ?? null,
+      banco: item.banco ?? null,
+      tipo_cuenta: item.tipoCuenta ?? null,
+      numero_cuenta: item.numeroCuenta ?? null,
+      extras: safeArray(item.horasExtrasPorObra),
+      comisiones: safeArray(item.comisionesPorObra),
+    }),
     fromRow: (row) => ({
       id: row.id,
       nombre: row.nombre,
@@ -67,6 +82,7 @@ export const entityConfig = {
   },
   cargos: {
     table: "cargos",
+    optional: true,
     toRow: (item) => ({
       id: item.id,
       nombre: item.nombre,

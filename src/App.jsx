@@ -1821,7 +1821,7 @@ function Cotizacion({ctx}){
     if(!sendModal?.cotizacion) return;
     const cotizacionAct = sendModal.cotizacion;
     const clienteInfo = sendModal.clienteInfo || {};
-    setSendModal(prev=>prev?{...prev,sending:true,error:"",status:"Generando PDF de la cotizaciÃ³n..."}:prev);
+    setSendModal(prev=>prev?{...prev,sending:true,error:"",status:"Generando PDF de la cotizacion..."}:prev);
     try{
       const pdfFile = await generateCotizacionPdfFile(cotizacionAct);
       const resultados = [];
@@ -1838,7 +1838,7 @@ function Cotizacion({ctx}){
       setSendNotif(resumen);
       setTimeout(()=>setSendNotif(""), 8000);
     }catch(err){
-      const mensaje = err?.message || "No fue posible preparar el envÃ­o de la cotizaciÃ³n.";
+      const mensaje = err?.message || "No fue posible preparar el envio de la cotizacion.";
       setSendModal(prev=>prev?{...prev,sending:false,error:mensaje}:prev);
       setSendNotif(mensaje);
       setTimeout(()=>setSendNotif(""), 8000);
@@ -1879,8 +1879,7 @@ function Cotizacion({ctx}){
 
   const imprimirCotizacion=(cotizacion)=>{
     if(!cotizacion) return;
-    setPreviewCot(cotizacion);
-    setTimeout(()=>printCurrentPz(`Cotización ${cotizacion?.numero || cotizacion?.id || ""}`),300);
+    openCotizacionPrint(cotizacion);
   };
 
   const addFromDB=(preset)=>{setItems(p=>[...p,{id:nid,desc:preset.desc,cant:1,unit:preset.unit,vu:preset.vu}]);setNid(n=>n+1);};
@@ -1893,7 +1892,7 @@ function Cotizacion({ctx}){
     const st={Pendiente:{bg:"#2d2a14",t:"#f5c842",b:"#7a6610"},Aprobada:{bg:"#0f2d1a",t:"#4ade80",b:"#166534"},Rechazada:{bg:"#2d1414",t:"#ef4444",b:"#7c1010"}};
     return(
       <div style={{padding:28}}>
-        <H1 title="Cotizaciones" subtitle="UbicaciÃ³n y mediciÃ³n automÃ¡tica primero en la cotizaciÃ³n; luego viaja a Planos y Obras"
+        <H1 title="Cotizaciones" subtitle="Ubicacion y medicion automatica primero en la cotizacion; luego viaja a Planos y Obras"
           action={<button style={B("#f47c20")} onClick={newForm}>+ Nueva CotizaciÃ³n</button>}/>
         {sendNotif&&<div style={{background:"#e8f5ee",border:"1px solid #166534",borderRadius:10,padding:"12px 16px",marginBottom:16,fontSize:13,color:"#166534"}}>{sendNotif}</div>}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
@@ -1904,10 +1903,10 @@ function Cotizacion({ctx}){
               <div key={c.id} style={{...CD,border:`1px solid ${s.b}`}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
                   <div>
-                    <div style={{fontSize:11,color:"#64748b"}}>{c.id} Â· {c.numero}</div>
+                    <div style={{fontSize:11,color:"#64748b"}}>{c.id} · {c.numero}</div>
                     <div style={{fontSize:15,fontWeight:700,marginTop:2}}>{c.cliente}</div>
                     <div style={{fontSize:12,color:"#475569"}}>{c.obra}</div>
-                    <div style={{fontSize:11,color:"#64748b"}}>ðŸ“ {c.ciudad} Â· {fmtD(c.fecha)}</div>
+                    <div style={{fontSize:11,color:"#64748b"}}>{c.ciudad} · {fmtD(c.fecha)}</div>
                   </div>
                   <span style={{background:s.bg,color:s.t,border:`1px solid ${s.b}`,borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:600,flexShrink:0}}>{c.estado}</span>
                 </div>
@@ -1917,11 +1916,11 @@ function Cotizacion({ctx}){
                   <div style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",marginBottom:2}}>Obra</div><div style={{fontSize:12,fontWeight:600,color:obraVinc?"#4ade80":"#5b80a8"}}>{obraVinc?obraVinc.id:"Sin obra"}</div></div>
                 </div>
                 <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                  <button style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"6px 12px"}} onClick={()=>setPreviewCot(c)}>ðŸ‘ï¸ Ver</button>
-                  <button style={{...B("#1a3050","#f5c842"),fontSize:11,padding:"6px 12px"}} onClick={()=>loadEdit(c)}>âœï¸ Editar</button>
-                  {c.estado!=="Aprobada"&&<button style={{...B("#0f2d1a","#4ade80"),border:"1px solid #166534",fontSize:11,padding:"6px 12px"}} onClick={()=>aprobarCotizacion(c.id)}>âœ… Aprobar â†’ Crear Obra</button>}
-                  {c.estado==="Aprobada"&&<button style={{...B("#e8f5ee","#166534"),border:"1px solid #166534",fontSize:11,padding:"6px 12px"}} onClick={()=>abrirEnvioCotizacion(c)}>ðŸ“² Enviar al cliente</button>}
-                  <button style={{...B("#2d1414","#ef4444"),fontSize:11,padding:"6px 12px"}} onClick={()=>imprimirCotizacion(c)}>ðŸ–¨ï¸ PDF</button>
+                  <button style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"6px 12px"}} onClick={()=>setPreviewCot(c)}>Ver</button>
+                  <button style={{...B("#1a3050","#f5c842"),fontSize:11,padding:"6px 12px"}} onClick={()=>loadEdit(c)}>Editar</button>
+                  {c.estado!=="Aprobada"&&<button style={{...B("#0f2d1a","#4ade80"),border:"1px solid #166534",fontSize:11,padding:"6px 12px"}} onClick={()=>aprobarCotizacion(c.id)}>Aprobar y crear obra</button>}
+                  {c.estado==="Aprobada"&&<button style={{...B("#e8f5ee","#166534"),border:"1px solid #166534",fontSize:11,padding:"6px 12px"}} onClick={()=>abrirEnvioCotizacion(c)}>Enviar al cliente</button>}
+                  <button style={{...B("#2d1414","#ef4444"),fontSize:11,padding:"6px 12px"}} onClick={()=>imprimirCotizacion(c)}>PDF</button>
                 </div>
               </div>
             );
@@ -1931,8 +1930,8 @@ function Cotizacion({ctx}){
           <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:1000,overflow:"auto",padding:20}}>
             <div style={{maxWidth:860,margin:"0 auto"}}>
               <div className="no-print" style={{display:"flex",gap:10,marginBottom:14,justifyContent:"flex-end"}}>
-                <button style={B("#f1f5f9","#475569")} onClick={()=>setPreviewCot(null)}>âœ• Cerrar</button>
-                <button style={B("#f47c20")} onClick={()=>printCurrentPz(`Cotización ${previewCot?.numero || previewCot?.id || ""}`)}>ðŸ–¨ï¸ Imprimir / PDF</button>
+                <button style={B("#f1f5f9","#475569")} onClick={()=>setPreviewCot(null)}>Cerrar</button>
+                <button style={B("#f47c20")} onClick={()=>openCotizacionPrint(previewCot)}>Imprimir / PDF</button>
               </div>
               <CotizacionPrint c={previewCot}/>
             </div>
@@ -4141,8 +4140,15 @@ function Nomina({ctx}){
   const resumenesActivos = activos.map((empleado)=>({ empleado, resumen:calcularResumenNominaEmpleado(empleado) }));
   const totSal=resumenesActivos.reduce((total,item)=>total+item.resumen.salario,0);
   const totalAuxilio=resumenesActivos.reduce((total,item)=>total+item.resumen.auxilioTransporte,0);
+  const totalSalud=resumenesActivos.reduce((total,item)=>total+item.resumen.salud,0);
+  const totalPension=resumenesActivos.reduce((total,item)=>total+item.resumen.pension,0);
+  const totalOtrasDeducciones=resumenesActivos.reduce((total,item)=>total+item.resumen.otrasDeducciones,0);
   const totalDeducciones=resumenesActivos.reduce((total,item)=>total+item.resumen.totalDeducciones,0);
   const totalNeto=resumenesActivos.reduce((total,item)=>total+item.resumen.neto,0);
+  const empleadoDeduccionActivo =
+    empleadosBase.find((empleado)=>empleado.id===selId) ||
+    activos[0] ||
+    null;
   const cargosDisponibles=[...new Set([
     ...normalizarCargos(cargos).filter((cargo)=>cargo.activo).map((cargo)=>cargo.nombre),
     ...empleadosBase.map((empleado)=>empleado.cargo).filter(Boolean),
@@ -4222,11 +4228,11 @@ function Nomina({ctx}){
     setHeForm({obraId:"",tipo:"horaExtra",horas:0,valorHora:12500,comision:0,concepto:"",fecha:today()});
   };
 
-  const agregarDeduccion=()=>{
+  const agregarDeduccion=(empleadoId=selId)=>{
     const nombre=dedForm.nombre.trim();
     const valor=Math.round(Number(dedForm.valor)||0);
-    if(!selId||!nombre||valor<=0)return;
-    actualizarEmpleado(selId,(empleado)=>({
+    if(!empleadoId||!nombre||valor<=0)return;
+    actualizarEmpleado(empleadoId,(empleado)=>({
       ...empleado,
       deduccionesPersonalizadas:[
         ...(empleado.deduccionesPersonalizadas||[]),
@@ -4248,7 +4254,7 @@ function Nomina({ctx}){
       <H1 title="Nómina y Empleados" subtitle="Gestión de empleados, horas extras, comisiones y planilla"
         action={<button style={B("#cc0000")} onClick={()=>setTab("nuevo")}>+ Nuevo Empleado</button>}/>
       <div style={{display:"flex",gap:6,marginBottom:20}}>
-        {[["lista","👷 Empleados"],["he","⏱️ Horas Extras & Comisiones"],["planilla","🏦 Planilla Bancolombia"]].map(([id,lb])=>(
+        {[["lista","Empleados"],["he","Horas extras y comisiones"],["deducciones","Revision deducciones"],["planilla","Planilla Bancolombia"]].map(([id,lb])=>(
           <button key={id} onClick={()=>setTab(id)} style={{...B(tab===id?"#f47c20":"#f1f5f9",tab===id?"#fff":"#475569"),border:`1px solid ${tab===id?"#f47c20":"#e2e8f0"}`}}>{lb}</button>
         ))}
       </div>
@@ -4495,6 +4501,147 @@ function Nomina({ctx}){
               {empleadosBase.every((e)=>!(e.horasExtrasPorObra||[]).length&&!(e.comisionesPorObra||[]).length)&&(
                 <div style={{textAlign:"center",color:"#94a3b8",padding:"20px 0",fontSize:13}}>Sin registros aún</div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab==="deducciones"&&(
+        <div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
+            <SC label="Salud empleado" value={fmtK(totalSalud)} color="#ef4444" icon="4%"/>
+            <SC label="Pension empleado" value={fmtK(totalPension)} color="#fb7185" icon="4%"/>
+            <SC label="Otras deducciones" value={fmtK(totalOtrasDeducciones)} color="#c084fc" icon="ADD"/>
+            <SC label="Total descuentos" value={fmtK(totalDeducciones)} color="#f97316" icon="NET"/>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1.3fr 0.9fr",gap:20}}>
+            <div style={CD}>
+              <div style={ST}>Revision de deducciones por empleado</div>
+              <div style={{overflowX:"auto"}}>
+                <table style={{width:"100%",borderCollapse:"collapse"}}>
+                  <thead>
+                    <tr style={{background:"#142840",color:"#fff"}}>
+                      {["Empleado","Salud","Pension","Otras","Total","Neto"].map((titulo)=>(
+                        <th key={titulo} style={{padding:"10px 12px",fontSize:11,textAlign:titulo==="Empleado"?"left":"right"}}>{titulo}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {resumenesActivos.map(({empleado,resumen},index)=>(
+                      <tr
+                        key={empleado.id}
+                        onClick={()=>setSelId(empleado.id)}
+                        style={{
+                          background:selId===empleado.id?"#fff7ed":index%2===0?"#ffffff":"#f8fafc",
+                          borderBottom:"1px solid #e2e8f0",
+                          cursor:"pointer"
+                        }}
+                      >
+                        <td style={{padding:"12px",verticalAlign:"top"}}>
+                          <div style={{fontWeight:700,color:"#0f172a"}}>{empleado.nombre}</div>
+                          <div style={{fontSize:11,color:"#64748b"}}>{empleado.cargo || "Sin cargo"} · {empleado.cedula || "Sin documento"}</div>
+                          {(empleado.deduccionesPersonalizadas||[]).length>0 && (
+                            <div style={{marginTop:8,display:"flex",flexWrap:"wrap",gap:6}}>
+                              {(empleado.deduccionesPersonalizadas||[]).map((deduccion)=>(
+                                <span key={deduccion.id} style={{background:"#f3e8ff",color:"#6b21a8",border:"1px solid #d8b4fe",borderRadius:999,padding:"3px 8px",fontSize:10,fontWeight:600}}>
+                                  {deduccion.nombre}: {fmt(deduccion.valor)}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </td>
+                        <td style={{padding:"12px",textAlign:"right",color:"#dc2626",fontWeight:600}}>{fmt(resumen.salud)}</td>
+                        <td style={{padding:"12px",textAlign:"right",color:"#e11d48",fontWeight:600}}>{fmt(resumen.pension)}</td>
+                        <td style={{padding:"12px",textAlign:"right",color:"#7c3aed",fontWeight:600}}>{fmt(resumen.otrasDeducciones)}</td>
+                        <td style={{padding:"12px",textAlign:"right",color:"#c2410c",fontWeight:700}}>{fmt(resumen.totalDeducciones)}</td>
+                        <td style={{padding:"12px",textAlign:"right",color:"#0f766e",fontWeight:700}}>{fmt(resumen.neto)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div style={CD}>
+              <div style={ST}>Gestionar deducciones</div>
+              <div style={{display:"grid",gap:12}}>
+                <div>
+                  <LBL>Empleado</LBL>
+                  <select value={empleadoDeduccionActivo?.id || ""} onChange={(e)=>setSelId(e.target.value || null)} style={SI}>
+                    <option value="">Seleccionar empleado...</option>
+                    {empleadosBase.map((empleado)=>(
+                      <option key={empleado.id} value={empleado.id}>{empleado.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {empleadoDeduccionActivo ? (
+                  <>
+                    <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:"12px 14px"}}>
+                      <div style={{fontWeight:700,color:"#0f172a",marginBottom:4}}>{empleadoDeduccionActivo.nombre}</div>
+                      <div style={{fontSize:11,color:"#64748b",marginBottom:10}}>{empleadoDeduccionActivo.cargo || "Sin cargo"} · {empleadoDeduccionActivo.cedula || "Sin documento"}</div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                        <div style={{background:"#fff",borderRadius:8,padding:"8px 10px"}}>
+                          <div style={{fontSize:10,color:"#64748b"}}>Salud</div>
+                          <div style={{fontWeight:700,color:"#dc2626"}}>{fmt(calcularResumenNominaEmpleado(empleadoDeduccionActivo).salud)}</div>
+                        </div>
+                        <div style={{background:"#fff",borderRadius:8,padding:"8px 10px"}}>
+                          <div style={{fontSize:10,color:"#64748b"}}>Pension</div>
+                          <div style={{fontWeight:700,color:"#e11d48"}}>{fmt(calcularResumenNominaEmpleado(empleadoDeduccionActivo).pension)}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{background:"#ffffff",borderRadius:10,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
+                      <div style={{fontSize:11,fontWeight:700,color:"#142840",textTransform:"uppercase",marginBottom:10}}>Deducciones personalizadas</div>
+                      {(empleadoDeduccionActivo.deduccionesPersonalizadas||[]).length>0 ? (
+                        <div style={{display:"grid",gap:8,marginBottom:12}}>
+                          {(empleadoDeduccionActivo.deduccionesPersonalizadas||[]).map((deduccion)=>(
+                            <div key={deduccion.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}>
+                              <div>
+                                <div style={{fontWeight:700,color:"#0f172a"}}>{deduccion.nombre}</div>
+                                <div style={{fontSize:11,color:"#64748b"}}>{fmt(deduccion.valor)} mensual</div>
+                              </div>
+                              <button type="button" onClick={()=>quitarDeduccion(empleadoDeduccionActivo.id,deduccion.id)} style={{...B("#fee2e2","#b91c1c"),border:"1px solid #fecaca",padding:"6px 10px",fontSize:11}}>Quitar</button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{fontSize:11,color:"#64748b",marginBottom:12}}>
+                          Este empleado no tiene deducciones adicionales. Aqui puedes revisar y agregar conceptos como natillera, libranza o descuentos internos autorizados.
+                        </div>
+                      )}
+
+                      <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr auto",gap:8}}>
+                        <div>
+                          <LBL>Concepto</LBL>
+                          <input value={dedForm.nombre} onChange={(event)=>setDedForm({...dedForm,nombre:event.target.value})} placeholder="Ej: Natillera" style={{...SI,fontSize:11}}/>
+                        </div>
+                        <div>
+                          <LBL>Valor mensual</LBL>
+                          <input type="number" value={dedForm.valor} onChange={(event)=>setDedForm({...dedForm,valor:parseFloat(event.target.value)||0})} placeholder="0" style={{...SI,fontSize:11}}/>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={()=>{
+                            if(empleadoDeduccionActivo?.id){
+                              setSelId(empleadoDeduccionActivo.id);
+                              agregarDeduccion(empleadoDeduccionActivo.id);
+                            }
+                          }}
+                          style={{...B("#142840"),justifyContent:"center",alignSelf:"end"}}
+                        >
+                          Agregar
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{textAlign:"center",color:"#94a3b8",padding:"28px 0"}}>
+                    Selecciona un empleado para revisar sus deducciones.
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

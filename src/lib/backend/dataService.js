@@ -19,6 +19,34 @@ function chunkArray(items, size = DEFAULT_CHUNK_SIZE) {
   return result;
 }
 
+function getErrorText(error) {
+  return [error?.message, error?.details, error?.hint]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function isMissingRelationError(error) {
+  const text = getErrorText(error);
+  return (
+    error?.code === "PGRST205" ||
+    error?.code === "42P01" ||
+    text.includes("relation") ||
+    text.includes("does not exist") ||
+    text.includes("schema cache")
+  );
+}
+
+function isMissingColumnError(error) {
+  const text = getErrorText(error);
+  return (
+    error?.code === "PGRST204" ||
+    error?.code === "42703" ||
+    text.includes("column") ||
+    text.includes("schema cache")
+  );
+}
+
 export async function resolveTenantId(supabase, preferredSlug) {
   const { data: memberships, error: membershipsError } = await supabase
     .from("memberships")
@@ -62,27 +90,54 @@ export function createDataService({ supabase, tenantId }) {
       .eq("tenant_id", tenantId)
       .order("updated_at", { ascending: true });
 
-    if (error) throw error;
+    if (error) {
+      if (cfg.optional && isMissingRelationError(error)) {
+        return [];
+      }
+      throw error;
+    }
     return (data ?? []).map(cfg.fromRow);
   };
 
   const upsertMany = async (entity, items) => {
     const cfg = assertEntity(entity);
-    const normalized = (items ?? [])
+    const prepared = (items ?? [])
       .filter((item) => item && item.id)
       .map((item) => ({
-        tenant_id: tenantId,
-        ...cfg.toRow(item),
+        source: item,
+        row: {
+          tenant_id: tenantId,
+          ...cfg.toRow(item),
+        },
       }));
 
-    if (!normalized.length) return;
+    if (!prepared.length) return;
 
-    const chunks = chunkArray(normalized);
-    for (const rows of chunks) {
+    const chunks = chunkArray(prepared);
+    for (const chunk of chunks) {
+      const rows = chunk.map((item) => item.row);
       const { error } = await supabase
         .from(cfg.table)
         .upsert(rows, { onConflict: "tenant_id,id" });
-      if (error) throw error;
+      if (!error) continue;
+
+      if (cfg.optional && isMissingRelationError(error)) {
+        return;
+      }
+
+      if (cfg.toLegacyRow && isMissingColumnError(error)) {
+        const legacyRows = chunk.map((item) => ({
+          tenant_id: tenantId,
+          ...cfg.toLegacyRow(item.source),
+        }));
+        const { error: legacyError } = await supabase
+          .from(cfg.table)
+          .upsert(legacyRows, { onConflict: "tenant_id,id" });
+        if (!legacyError) continue;
+        throw legacyError;
+      }
+
+      throw error;
     }
   };
 
@@ -98,7 +153,12 @@ export function createDataService({ supabase, tenantId }) {
         .delete()
         .eq("tenant_id", tenantId)
         .in("id", idChunk);
-      if (error) throw error;
+      if (error) {
+        if (cfg.optional && isMissingRelationError(error)) {
+          return;
+        }
+        throw error;
+      }
     }
   };
 

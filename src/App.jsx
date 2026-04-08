@@ -143,10 +143,12 @@ const TIPOS_CONTRATO_LABELS = {
 
 // Recargos Colombia 2026 — Código Sustantivo del Trabajo
 const RECARGOS_CO_2026 = [
-  { id:"horaExtraGeneral",   label:"⏱️ Hora extra (valor manual)",        horario:"",                     getPct:()=>null },
-  { id:"recNocturno",        label:"🌙 Recargo nocturno (Lun–Sáb)",       horario:"7:00 p.m. – 6:00 a.m.", getPct:()=>35 },
-  { id:"recDominical",       label:"☀️ Recargo dominical/festivo",         horario:"6:00 a.m. – 7:00 p.m.", getPct:(f)=>new Date(f+"T12:00:00").getMonth()<6?80:90 },
-  { id:"recNoctDominical",   label:"🌙☀️ Rec. nocturno dom./festivo",      horario:"7:00 p.m. – 6:00 a.m.", getPct:(f)=>new Date(f+"T12:00:00").getMonth()<6?115:125 },
+  { id:"horaExtraGeneral",   label:"⏱️ Hora extra diurna",                 horario:"Pago automático con salario base", getPct:()=>125 },
+  { id:"horaExtraNocturna",  label:"🌙 Hora extra nocturna",               horario:"7:00 p.m. – 6:00 a.m.", getPct:()=>175 },
+  { id:"recNocturno",        label:"🌙 Hora ordinaria nocturna",           horario:"7:00 p.m. – 6:00 a.m.", getPct:()=>135 },
+  { id:"recDominical",       label:"☀️ Hora diurna dominical/festiva",    horario:"Día de descanso obligatorio", getPct:(f)=>new Date(f+"T12:00:00").getMonth()<6?180:190 },
+  { id:"recNoctDominical",   label:"🌙☀️ Hora nocturna dom./festiva",      horario:"Día de descanso obligatorio", getPct:(f)=>new Date(f+"T12:00:00").getMonth()<6?215:225 },
+  { id:"horaExtraManual",    label:"✍️ Valor manual",                      horario:"Usar solo si se liquida por un acuerdo especial", getPct:()=>null },
 ];
 const getPctRecargo=(tipo,fecha)=>{const r=RECARGOS_CO_2026.find(x=>x.id===tipo);return r?.getPct?.(fecha)??null;};
 const parseIsoDate = (iso)=> iso ? new Date(`${iso}T12:00:00`) : null;
@@ -234,6 +236,19 @@ const normalizarCargos = (cargos)=>
     })
     .filter((cargo)=>cargo.nombre);
 
+const calcularValorHoraBase = (empleado)=>Math.round((Number(empleado?.salario)||NOMINA_CO_2026.salarioMinimo)/240);
+const calcularValorHoraRecargo = (empleado, tipoRecargo, fecha, valorManual=0)=>{
+  const salHora = calcularValorHoraBase(empleado);
+  const pct = getPctRecargo(tipoRecargo, fecha||today());
+  if(pct!==null) return Math.round(salHora*pct/100);
+  return Math.round(Number(valorManual)||0);
+};
+const calcularTotalHoraExtraItem = (empleado, item={})=>{
+  const horas = Number(item?.horas)||0;
+  const valorHora = calcularValorHoraRecargo(empleado, item?.tipoRecargo, item?.fecha, item?.valorHora);
+  return Math.round(horas*valorHora);
+};
+
 const calcularResumenNominaEmpleado = (empleado, periodo=null)=>{
   const salarioMensual = Number(empleado?.salario)||0;
   const diasNomina = calcularDiasNominaPeriodo(empleado, periodo);
@@ -241,7 +256,7 @@ const calcularResumenNominaEmpleado = (empleado, periodo=null)=>{
   const salario = periodo ? Math.round((salarioMensual/30)*diasNomina) : salarioMensual;
   const horasExtras = (empleado?.horasExtrasPorObra||[])
     .filter((item)=>isDateInPeriodo(item?.fecha, periodo))
-    .reduce((total,item)=>total+(Number(item?.total)||0),0);
+    .reduce((total,item)=>total+calcularTotalHoraExtraItem(empleado, item),0);
   const comisiones = (empleado?.comisionesPorObra||[])
     .filter((item)=>isDateInPeriodo(item?.fecha, periodo))
     .reduce((total,item)=>total+(Number(item?.comision)||0),0);
@@ -425,15 +440,17 @@ export default function App(){
   });
 
   const saveAllToCloud=async(override=null)=>{
-    if(!isSupabaseConfigured()) return;
+    if(!isSupabaseConfigured()) return { ok:false, reason:"not-configured" };
     if(typeof saveCloudAppData!=="function"){
       console.warn("saveCloudAppData no está disponible en ./lib/backend");
-      return;
+      return { ok:false, reason:"missing-function" };
     }
     try{
       await saveCloudAppData(override||buildCloudPayload());
+      return { ok:true };
     }catch(error){
       console.error("No se pudo guardar datos en Supabase:", error);
+      return { ok:false, error };
     }
   };
 
@@ -1356,10 +1373,6 @@ body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;background:#fff;
 .chip{display:inline-block;background:#142840;color:#fff;border-radius:999px;padding:5px 10px;font-size:10px;font-weight:700;}
 .employee{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;font-size:11px;line-height:1.6;}
 .employee strong{display:block;font-size:14px;color:#142840;margin-bottom:2px;}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
-.mini{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px 10px;}
-.mini .k{font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px;}
-.mini .v{font-size:12px;font-weight:700;color:#0f172a;margin-top:3px;}
 .body{padding:14px 16px 16px;}
 .section{margin-bottom:14px;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;}
 .section h3{margin:0;padding:9px 12px;font-size:10px;letter-spacing:1px;text-transform:uppercase;background:#f8fafc;color:#475569;}
@@ -1381,11 +1394,7 @@ td{padding:8px 12px;border-top:1px solid #f1f5f9;}
   <div class="employee">
     <strong>${empleado.nombre}</strong>
     Cedula: ${empleado.cedula||'-'} · Cargo: ${empleado.cargo||'-'}<br/>Banco: ${empleado.banco||'-'} · Cuenta: ${empleado.numeroCuenta||'-'}
-    <div class="grid">
-      <div class="mini"><div class="k">Dias pagados</div><div class="v">${resumen.diasNomina}</div></div>
-      <div class="mini"><div class="k">Base salud/pension</div><div class="v">${fmtC(resumen.baseSaludPension)}</div></div>
-      <div class="mini"><div class="k">Neto</div><div class="v" style="color:#166534">${fmtC(resumen.neto)}</div></div>
-    </div>
+    Periodo: ${periodLabel} · Dias pagados: ${resumen.diasNomina}
   </div>
 </div>
 <div class="body">
@@ -4440,7 +4449,7 @@ function Financiero({ctx}){
 // NÃ“MINA
 // ======================================================
 function Nomina({ctx}){
-  const {empleados,setEmpleados,obras,cargos,setCargos}=ctx;
+  const {empleados,setEmpleados,obras,cargos,setCargos,saveAllToCloud}=ctx;
   const [tab,setTab]=useState("lista");
   const [mes,setMes]=useState("2026-04");
   const [corteNomina,setCorteNomina]=useState("primera");
@@ -4457,6 +4466,8 @@ function Nomina({ctx}){
   const [diasVacPagar,setDiasVacPagar]=useState({});
   const [vacacionesId,setVacacionesId]=useState(null);
   const [diasVacLiquidar,setDiasVacLiquidar]=useState({});
+  const [guardandoNomina,setGuardandoNomina]=useState(false);
+  const [mensajeGuardadoNomina,setMensajeGuardadoNomina]=useState("");
 
   const empleadosBase = empleados.map(normalizarEmpleado);
   const periodoNomina = buildNominaPeriodo(mes, corteNomina);
@@ -4544,10 +4555,9 @@ function Nomina({ctx}){
     if(!showHE||!heForm.obraId)return;
     actualizarEmpleado(showHE,(empleado)=>{
       if(heForm.tipo==="horaExtra"){
-        const salHora=Math.round((empleado.salario||NOMINA_CO_2026.salarioMinimo)/240);
-        const pct=getPctRecargo(heForm.tipoRecargo,heForm.fecha);
-        const vHora=pct!==null?Math.round(salHora*pct/100):heForm.valorHora;
-        const nuevo={id:Date.now(),obraId:heForm.obraId,tipoRecargo:heForm.tipoRecargo,horas:heForm.horas,valorHora:vHora,total:heForm.horas*vHora,fecha:heForm.fecha,concepto:heForm.concepto};
+        const vHora=calcularValorHoraRecargo(empleado, heForm.tipoRecargo, heForm.fecha, heForm.valorHora);
+        const total= Math.round((Number(heForm.horas)||0)*vHora);
+        const nuevo={id:Date.now(),obraId:heForm.obraId,tipoRecargo:heForm.tipoRecargo,horas:heForm.horas,valorHora:vHora,total,fecha:heForm.fecha,concepto:heForm.concepto};
         return { ...empleado, horasExtrasPorObra:[...(empleado.horasExtrasPorObra||[]),nuevo] };
       }
       const nuevo={id:Date.now(),obraId:heForm.obraId,comision:heForm.comision,fecha:heForm.fecha,concepto:heForm.concepto};
@@ -4576,6 +4586,34 @@ function Nomina({ctx}){
       deduccionesPersonalizadas:(empleado.deduccionesPersonalizadas||[]).filter((deduccion)=>deduccion.id!==deduccionId),
     }));
   };
+
+  const guardarCambiosNomina=async(mensajeExito="Cambios guardados en la nube")=>{
+    if(typeof saveAllToCloud!=="function"){
+      setMensajeGuardadoNomina("No hay sincronización cloud disponible en esta sesión.");
+      return;
+    }
+    setGuardandoNomina(true);
+    const result = await saveAllToCloud();
+    if(result?.ok===false){
+      setMensajeGuardadoNomina(`No se pudo guardar: ${result.error?.message||"revisa la conexión con Supabase"}`);
+    }else{
+      setMensajeGuardadoNomina(mensajeExito);
+    }
+    setGuardandoNomina(false);
+    setTimeout(()=>setMensajeGuardadoNomina(""), 3500);
+  };
+
+  const renderNominaSaveBar=(texto, mensajeExito)=>(
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:"12px 14px",marginBottom:16}}>
+      <div style={{fontSize:12,color:"#475569"}}>{texto}</div>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        {mensajeGuardadoNomina && <span style={{fontSize:11,color:"#166534",fontWeight:700}}>{mensajeGuardadoNomina}</span>}
+        <button type="button" onClick={()=>guardarCambiosNomina(mensajeExito)} disabled={guardandoNomina} style={{...B("#142840","#4ade80"),opacity:guardandoNomina?0.75:1}}>
+          {guardandoNomina?"Guardando...":"Guardar cambios"}
+        </button>
+      </div>
+    </div>
+  );
 
   return(
     <div style={{padding:28}}>
@@ -4802,6 +4840,7 @@ function Nomina({ctx}){
             <SC label="Empleados activos" value={activos.length} color="#60b4ff" icon="EM"/>
             <SC label="Corte visible" value={periodoNomina.label} color="#f47c20" icon="QT"/>
           </div>
+          {renderNominaSaveBar("Si hiciste ajustes de vacaciones o quieres dejar sincronizada esta vista, puedes guardar ahora mismo.", "Cambios de vacaciones sincronizados")}
           <div style={{...CD,marginBottom:16}}>
             <div style={ST}>Vacaciones pagadas sin retiro</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
@@ -4854,6 +4893,7 @@ function Nomina({ctx}){
 
       {tab==="contratos"&&(
         <div>
+          {renderNominaSaveBar("Después de ajustar fecha de salida, causa del retiro o estado del empleado, usa este botón para guardar de inmediato.", "Cambios de contratos y liquidación sincronizados")}
           <div style={{...CD,marginBottom:16}}>
             <div style={ST}>Contratos, corte activo y liquidación de retiro</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
@@ -5007,9 +5047,9 @@ function Nomina({ctx}){
                 </div>
                 {heForm.tipo==="horaExtra"&&(()=>{
                   const empleadoSel=empleadosBase.find(e=>e.id===showHE);
-                  const salHora=Math.round((empleadoSel?.salario||NOMINA_CO_2026.salarioMinimo)/240);
+                  const salHora=calcularValorHoraBase(empleadoSel);
                   const pct=getPctRecargo(heForm.tipoRecargo,heForm.fecha||today());
-                  const vHora=pct!==null?Math.round(salHora*pct/100):heForm.valorHora;
+                  const vHora=calcularValorHoraRecargo(empleadoSel, heForm.tipoRecargo, heForm.fecha||today(), heForm.valorHora);
                   const totalHE=heForm.horas*vHora;
                   const infoRec=RECARGOS_CO_2026.find(r=>r.id===heForm.tipoRecargo);
                   return(<>
@@ -5018,7 +5058,7 @@ function Nomina({ctx}){
                     <select value={heForm.tipoRecargo} onChange={e=>setHeForm({...heForm,tipoRecargo:e.target.value})} style={SI}>
                       {RECARGOS_CO_2026.map(r=><option key={r.id} value={r.id}>{r.label}{r.horario?` · ${r.horario}`:""}</option>)}
                     </select>
-                    {pct!==null&&<div style={{marginTop:4,fontSize:11,color:"#f47c20",fontWeight:600}}>Recargo aplicable: {pct}% · Valor/hora calculado: {fmt(vHora)} (salario/hora: {fmt(salHora)})</div>}
+                    {pct!==null&&<div style={{marginTop:4,fontSize:11,color:"#f47c20",fontWeight:600}}>Tarifa aplicada: {pct}% sobre hora ordinaria · Valor/hora calculado: {fmt(vHora)} (hora base: {fmt(salHora)})</div>}
                   </div>
                   <div><LBL>Horas</LBL><input type="number" value={heForm.horas} onChange={e=>setHeForm({...heForm,horas:parseFloat(e.target.value)||0})} style={SI}/></div>
                   {pct===null
@@ -5049,10 +5089,10 @@ function Nomina({ctx}){
                     <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600}}>{e.nombre}</div><div style={{fontSize:10,color:"#64748b"}}>{e.cargo} · {periodoNomina.label}</div></div>
                     <div style={{textAlign:"right",fontSize:12}}><span style={{color:"#f5c842",fontWeight:700}}>{fmt(resumen.horasExtras+resumen.comisiones)}</span></div>
                   </div>
-                  {horasPeriodo.map((h)=>{const ob=obras.find((o)=>o.id===h.obraId);const recInfo=RECARGOS_CO_2026.find(r=>r.id===h.tipoRecargo);return(
+                  {horasPeriodo.map((h)=>{const ob=obras.find((o)=>o.id===h.obraId);const recInfo=RECARGOS_CO_2026.find(r=>r.id===h.tipoRecargo);const totalHoraExtra=calcularTotalHoraExtraItem(e,h);return(
                     <div key={h.id} style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#475569",padding:"3px 0",borderBottom:"1px solid #e2e8f0"}}>
                       <span>{recInfo?.label||"⏱️ Hora extra"} · {h.horas}h · {ob?.cliente||h.obraId} · {h.fecha}</span>
-                      <span style={{color:"#f5c842",fontWeight:600}}>{fmt(h.total)}</span>
+                      <span style={{color:"#f5c842",fontWeight:600}}>{fmt(totalHoraExtra)}</span>
                     </div>
                   );})}
                   {comisionesPeriodo.map((c)=>{const ob=obras.find((o)=>o.id===c.obraId);return(
@@ -5082,6 +5122,7 @@ function Nomina({ctx}){
             <SC label="Otras deducciones" value={fmtK(totalOtrasDeducciones)} color="#c084fc" icon="ADD"/>
             <SC label="Total descuentos" value={fmtK(totalDeducciones)} color="#f97316" icon="NET"/>
           </div>
+          {renderNominaSaveBar("Las deducciones personalizadas y los descuentos del corte pueden guardarse aquí de forma inmediata.", "Cambios de deducciones sincronizados")}
           <div style={{display:"grid",gridTemplateColumns:"1.3fr 0.9fr",gap:20}}>
             <div style={CD}>
               <div style={ST}>Revision de deducciones por empleado</div>
@@ -5149,6 +5190,11 @@ function Nomina({ctx}){
                       <div style={{fontWeight:700,color:"#0f172a",marginBottom:4}}>{empleadoDeduccionActivo.nombre}</div>
                       <div style={{fontSize:11,color:"#64748b",marginBottom:10}}>{empleadoDeduccionActivo.cargo || "Sin cargo"} · {empleadoDeduccionActivo.cedula || "Sin documento"} · {periodoNomina.label}</div>
                       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                        <div style={{background:"#fff",borderRadius:8,padding:"8px 10px",gridColumn:"span 2"}}>
+                          <div style={{fontSize:10,color:"#64748b"}}>Base salud / pensión del corte</div>
+                          <div style={{fontWeight:700,color:"#142840"}}>{fmt(calcularResumenNominaEmpleado(empleadoDeduccionActivo, periodoNomina).baseSaludPension)}</div>
+                          <div style={{fontSize:10,color:"#94a3b8",marginTop:3}}>Incluye salario del corte + horas extras + comisiones.</div>
+                        </div>
                         <div style={{background:"#fff",borderRadius:8,padding:"8px 10px"}}>
                           <div style={{fontSize:10,color:"#64748b"}}>Salud</div>
                           <div style={{fontWeight:700,color:"#dc2626"}}>{fmt(calcularResumenNominaEmpleado(empleadoDeduccionActivo, periodoNomina).salud)}</div>

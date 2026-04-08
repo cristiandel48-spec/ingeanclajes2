@@ -33,6 +33,7 @@ export const entityConfig = {
     toRow: (item) => ({
       id: item.id,
       nombre: item.nombre,
+      cedula: item.cedula ?? null,
       cargo: item.cargo ?? null,
       tel: item.tel ?? null,
       email: item.email ?? null,
@@ -44,10 +45,12 @@ export const entityConfig = {
       numero_cuenta: item.numeroCuenta ?? null,
       extras: safeArray(item.horasExtrasPorObra),
       comisiones: safeArray(item.comisionesPorObra),
+      deducciones_personalizadas: safeArray(item.deduccionesPersonalizadas),
     }),
     fromRow: (row) => ({
       id: row.id,
       nombre: row.nombre,
+      cedula: row.cedula,
       cargo: row.cargo,
       tel: row.tel,
       email: row.email,
@@ -59,6 +62,22 @@ export const entityConfig = {
       numeroCuenta: row.numero_cuenta,
       horasExtrasPorObra: safeArray(row.extras),
       comisionesPorObra: safeArray(row.comisiones),
+      deduccionesPersonalizadas: safeArray(row.deducciones_personalizadas),
+    }),
+  },
+  cargos: {
+    table: "cargos",
+    toRow: (item) => ({
+      id: item.id,
+      nombre: item.nombre,
+      descripcion: item.descripcion ?? null,
+      activo: item.activo ?? true,
+    }),
+    fromRow: (row) => ({
+      id: row.id,
+      nombre: row.nombre,
+      descripcion: row.descripcion,
+      activo: row.activo,
     }),
   },
   proveedores: {

@@ -4,6 +4,7 @@ import { getSupabaseClient, isSupabaseConfigured } from "./supabaseClient";
 const ENTITY_TO_STATE = {
   obras: "obras",
   empleados: "empleados",
+  cargos: "cargos",
   pagos: "pagos",
   horarios: "horarios",
   certificaciones: "certs",

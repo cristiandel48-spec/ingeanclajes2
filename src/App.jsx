@@ -969,6 +969,15 @@ function latLngToImagePixel(lat, lng, center, zoom, width, height){
   };
 }
 
+function escapeXml(value=""){
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function buildStaticMapLabelData(segments, center, zoom, width, height){
   return (segments || []).map((seg, idx) => {
     if(!seg?.start || !seg?.end) return null;

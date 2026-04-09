@@ -103,7 +103,7 @@ function Cotizacion({ctx}){
   const [geoMapView,setGeoMapView]=useState(null);
   const [showDB,setShowDB]=useState(false);
   const [dbCat,setDbCat]=useState(0);
-  const [fotosCotizacion,setFotosCotizacion]=useState([]);
+  const [fotosActivaPropuesta,setFotosActivaPropuesta]=useState([]);
   const fotosRef=useRef();
 
   const autoMapImg = buildGoogleStaticMapUrl(geoMediciones, cl.coords || `${cl.obra||""} ${cl.ciudad||""}`.trim(), geoMapView);
@@ -112,7 +112,7 @@ function Cotizacion({ctx}){
   const iva = ut * 0.19;
   const tot = sub + ut + iva;
 
-  const proposalFromState = ()=>buildQuoteProposal({id:propuestaActivaId || createQuoteProposalId(editCot || "draft"),nombre:nombrePropuesta,alcance:alcancePropuesta,tipoCotizacion,requerimientoCliente,formaPago,tiempoEjec,util,items,total:Math.round(tot)},0);
+  const proposalFromState = ()=>buildQuoteProposal({id:propuestaActivaId || createQuoteProposalId(editCot || "draft"),nombre:nombrePropuesta,alcance:alcancePropuesta,tipoCotizacion,requerimientoCliente,formaPago,tiempoEjec,util,items,fotos:fotosActivaPropuesta,total:Math.round(tot)},0);
   const proposalSnapshot = proposalFromState();
   const propuestasSnapshot = (propuestas.length ? propuestas : [proposalSnapshot]).map((propuesta,index)=>buildQuoteProposal(propuesta.id===proposalSnapshot.id?proposalSnapshot:propuesta,index));
 
@@ -129,6 +129,7 @@ function Cotizacion({ctx}){
     setUtil(Number(p.util || 10));
     setItems(nextItems);
     setNid(nextItems.length + 1);
+    setFotosActivaPropuesta(p.fotos || []);
   };
 
   const hydrate = (source={})=>{
@@ -140,9 +141,10 @@ function Cotizacion({ctx}){
     setCl({nombre:source.cliente || "",obra:source.obra || "",telefono:source.telefono || "",ciudad:source.ciudad || "",coords:source.coords || ""});
     setGeoMediciones(source.geoMediciones || []);
     setGeoMapView(source.geoMapView || null);
-    setFotosCotizacion(source.fotosCotizacion || []);
     setPropuestas(all);
-    applyProposal(active);
+    // Para datos viejos sin fotos por propuesta, migrar fotosCotizacion a la propuesta activa
+    const activeConFotos = {...active, fotos: (active.fotos && active.fotos.length) ? active.fotos : (source.fotosCotizacion || [])};
+    applyProposal(activeConFotos);
   };
 
   const syncPropuestas = ()=>{
@@ -168,7 +170,7 @@ function Cotizacion({ctx}){
     const activa = buildQuoteProposal({...current,items:finalItems,total:totalActiva}, next.findIndex((propuesta)=>propuesta.id===current.id));
     const propuestasFinales = next.map((propuesta)=>propuesta.id===activa.id?activa:buildQuoteProposal(propuesta));
     const prev = editCot ? cotizaciones.find((cotizacion)=>cotizacion.id===editCot) : null;
-    const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:cl.nombre,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:autoMapImg || null,geoMediciones,geoMapView,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion,estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
+    const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:cl.nombre,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:autoMapImg || null,geoMediciones,geoMapView,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
     setCotizaciones((prevList)=>editCot ? prevList.map((cotizacion)=>cotizacion.id===editCot?{...cotizacion,...data}:cotizacion) : [...prevList,data]);
     setPropuestas(propuestasFinales);
     setTab("lista");
@@ -293,12 +295,12 @@ function Cotizacion({ctx}){
             <span style={{fontSize:10,color:"#94a3b8"}}>Se imprimen en el PDF</span>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
-            {fotosCotizacion.map((f,i)=>(
+            {fotosActivaPropuesta.map((f,i)=>(
               <div key={f.id} style={{borderRadius:8,overflow:"hidden",border:"1px solid #e2e8f0",background:"#f8fafc"}}>
                 <img src={f.src} alt={f.label||`Foto ${i+1}`} style={{width:"100%",height:120,objectFit:"cover",display:"block"}}/>
                 <div style={{padding:"6px 8px",display:"flex",gap:4,alignItems:"center"}}>
-                  <input value={f.label||""} onChange={e=>setFotosCotizacion(prev=>prev.map(item=>item.id===f.id?{...item,label:e.target.value}:item))} placeholder={`Foto ${i+1}`} style={{...SI,fontSize:11,padding:"3px 6px",flex:1}}/>
-                  <button onClick={()=>setFotosCotizacion(prev=>prev.filter(item=>item.id!==f.id))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:6,width:22,height:22,cursor:"pointer",fontSize:14,flexShrink:0,lineHeight:1}}>×</button>
+                  <input value={f.label||""} onChange={e=>setFotosActivaPropuesta(prev=>prev.map(item=>item.id===f.id?{...item,label:e.target.value}:item))} placeholder={`Foto ${i+1}`} style={{...SI,fontSize:11,padding:"3px 6px",flex:1}}/>
+                  <button onClick={()=>setFotosActivaPropuesta(prev=>prev.filter(item=>item.id!==f.id))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:6,width:22,height:22,cursor:"pointer",fontSize:14,flexShrink:0,lineHeight:1}}>×</button>
                 </div>
               </div>
             ))}
@@ -307,7 +309,7 @@ function Cotizacion({ctx}){
               <span style={{fontSize:12}}>Agregar foto</span>
             </div>
           </div>
-          <input ref={fotosRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={e=>{Array.from(e.target.files||[]).forEach(file=>{const r=new FileReader();r.onload=(ev)=>setFotosCotizacion(prev=>[...prev,{id:Date.now()+Math.random(),src:ev.target.result,label:""}]);r.readAsDataURL(file);});e.target.value="";}}/>
+          <input ref={fotosRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={e=>{Array.from(e.target.files||[]).forEach(file=>{const r=new FileReader();r.onload=(ev)=>setFotosActivaPropuesta(prev=>[...prev,{id:Date.now()+Math.random(),src:ev.target.result,label:""}]);r.readAsDataURL(file);});e.target.value="";}}/>
         </div>
 
         {/* 4. Detalle económico */}
@@ -529,6 +531,7 @@ function buildQuoteProposal(propuesta = {}, index = 0) {
     tiempoEjec: propuesta.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC,
     util,
     items,
+    fotos: Array.isArray(propuesta.fotos) ? propuesta.fotos : [],
     total: Math.round(Number.isFinite(Number(propuesta.total)) ? Number(propuesta.total) : totalCalculado),
   };
 }

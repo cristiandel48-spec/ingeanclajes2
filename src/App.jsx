@@ -690,2082 +690,150 @@ function Dashboard({ctx,go}){
   const tCP=cuentas.filter(c=>c.estado==="Pendiente").reduce((s,c)=>s+c.monto,0);
   const eO=obras.filter(o=>o.estado==="En Obra").length;
   return(
-    <div style={{padding:28}}>
-      <div style={{display:"flex",alignItems:"center",gap:20,marginBottom:24,background:"#ffffff",borderRadius:16,padding:"20px 28px",border:"2px solid #cc2200",boxShadow:"0 2px 16px rgba(204,34,0,0.1)"}}>
-        <div style={{background:"#fff",borderRadius:12,padding:8,flexShrink:0}}>
-          <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{height:82,display:"block",objectFit:"contain"}}/>
+    <div style={{minHeight:'100vh',background:'#f4f7fb',paddingBottom:40}}>
+
+      {/* STICKY HEADER */}
+      <div style={{position:'sticky',top:0,zIndex:100,background:'#fff',borderBottom:'1px solid #e2e8f0',padding:'13px 28px',display:'flex',justifyContent:'space-between',alignItems:'center',boxShadow:'0 2px 8px rgba(0,0,0,.06)'}}>
+        <div style={{display:'flex',alignItems:'center',gap:16}}>
+          <button style={{...B('#f1f5f9','#475569'),padding:'7px 14px',fontSize:12,borderRadius:8}} onClick={()=>setTab('lista')}>← Volver</button>
+          <div>
+            <div style={{fontSize:16,fontWeight:700,color:'#142840'}}>{editCot?'Editar Cotización':'Nueva Cotización'}</div>
+            <div style={{fontSize:11,color:'#94a3b8',marginTop:1}}>{cot?('COT '+cot+' · '):''}{cl.nombre||'Sin cliente'}{cl.ciudad?(' · '+cl.ciudad):''}</div>
+          </div>
         </div>
+        <div style={{display:'flex',gap:10}}>
+          <button style={{...B('#f47c20'),padding:'9px 22px',fontSize:13,fontWeight:700,borderRadius:9}} onClick={guardarCot}>{editCot?'Actualizar':'Guardar cotización'}</button>
+          <button style={{...B('#142840','#94b8d4'),padding:'9px 22px',fontSize:13,borderRadius:9}} onClick={()=>{const saved=guardarCot();if(saved)setPreviewCot(saved);}}>Ver PDF</button>
+        </div>
+      </div>
+
+      {/* MAIN LAYOUT */}
+      <div style={{padding:'24px 28px 0',display:'grid',gridTemplateColumns:'1fr 300px',gap:22,maxWidth:1280,margin:'0 auto'}}>
+
+        {/* ===== LEFT COLUMN ===== */}
         <div>
-          <div style={{fontSize:22,fontWeight:700,color:"#cc2200",letterSpacing:0.5}}>INGEANCLAJES S.A.S</div>
-          <div style={{fontSize:13,color:"#64748b",marginTop:2}}>Especialistas en Anclajes - Sistema de Gestion v3.0</div>
-          <div style={{fontSize:11,color:"#94a3b8",marginTop:1}}>Calle 38 sur # 36-48, Envigado - PBX 448 26 86 - NIT 900193965-4</div>
-        </div>
-      </div>
-      <H1 title="Dashboard" subtitle="Resumen ejecutivo - INGEANCLAJES S.A.S"/>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:16,marginBottom:24}}>
-        <SC label="Obras activas" value={eO} color="#60b4ff" icon="OB" sub={(obras.length) + " total"}/>
-        <SC label="Facturado" value={fmtK(tF)} color="#4ade80" icon="$" sub="acumulado"/>
-        <SC label="Por cobrar" value={fmtK(tP)} color="#fb923c" icon="PC" sub="saldo clientes"/>
-        <SC label="Cuentas x pagar" value={fmtK(tCP)} color="#c084fc" icon="CP" sub="proveedores"/>
-      </div>
-      {(()=>{
-        const hoy=new Date();
-        const venc=[...ctx.certs].map(c=>{
-          if(!c.proxMant)return null;
-          const d=new Date(c.proxMant+"T12:00:00");
-          const diff=Math.round((d-hoy)/(1000*60*60*24));
-          return{...c,diasRestantes:diff};
-        }).filter(Boolean).sort((a,b)=>a.diasRestantes-b.diasRestantes).slice(0,5);
-        if(!venc.length)return null;
-        const colorV=(d)=>d<0?"#ef4444":d<30?"#fb923c":d<90?"#f5c842":"#4ade80";
-        return(
-          <div style={{...CD,marginBottom:20,border:"2px solid #7a661044",background:"#fff"}}>
-            <div style={{...ST,color:"#b45309",borderBottomColor:"#f5c84233"}}>Proximos vencimientos de certificaciones</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(" + (Math.min(venc.length,5)) + ",1fr)",gap:10}}>
-              {venc.map(c=>(
-                <div key={c.id} style={{background:"#f8fafc",borderRadius:10,padding:"12px 14px",border:"2px solid " + (colorV(c.diasRestantes)) + "44"}}>
-                  <div style={{fontSize:10,color:"#64748b",marginBottom:3}}>{c.numero}</div>
-                  <div style={{fontSize:12,fontWeight:700,color:"#1a1a2e",marginBottom:2,lineHeight:1.3}}>{c.cliente}</div>
-                  <div style={{fontSize:10,color:"#475569",marginBottom:8}}>{c.tipo}</div>
-                  <div style={{background:colorV(c.diasRestantes)+"22",border:"1px solid " + (colorV(c.diasRestantes)),borderRadius:8,padding:"6px 8px",textAlign:"center"}}>
-                    <div style={{fontSize:18,fontWeight:900,color:colorV(c.diasRestantes)}}>{c.diasRestantes<0?"-"+Math.abs(c.diasRestantes):c.diasRestantes}</div>
-                    <div style={{fontSize:9,color:colorV(c.diasRestantes),fontWeight:600}}>{c.diasRestantes<0?"VENCIDA":"DIAS"}</div>
-                  </div>
-                  <div style={{fontSize:9,color:"#64748b",marginTop:6,textAlign:"center"}}>{fmtD(c.proxMant)}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
-      <div style={{display:"grid",gridTemplateColumns:"1.6fr 1fr",gap:20}}>
-        <div style={CD}>
-          <div style={ST}>Obras en curso</div>
-          {obras.filter(o=>o.estado==="En Obra").map(o=>(
-            <div key={o.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid #e2e8f0"}}>
-              <div style={{flex:1}}>
-                <div style={{fontSize:13,fontWeight:600}}>{o.cliente}</div>
-                <div style={{fontSize:11,color:"#64748b"}}>{o.proyecto} · {o.ciudad}</div>
-                <div style={{marginTop:6,height:4,background:"#e2e8f0",borderRadius:2}}><div style={{width:(o.avance) + "%",height:"100%",background:"#cc0000",borderRadius:2}}/></div>
-              </div>
-              <div style={{textAlign:"right"}}><div style={{fontSize:13,fontWeight:700,color:"#fb923c"}}>{fmt(o.saldo)}</div><div style={{fontSize:10,color:"#64748b"}}>por cobrar</div></div>
-            </div>
-          ))}
-        </div>
-        <div style={CD}>
-          <div style={ST}>Acciones rapidas</div>
-          {[{l:"Nueva cotizacion",i:"CT",s:"cotizacion",c:"#f47c20"},{l:"Nueva certificacion",i:"CF",s:"certificaciones",c:"#4ade80"},{l:"Informe actividades",i:"IN",s:"informes",c:"#60b4ff"},{l:"Informe financiero",i:"IF",s:"financiero",c:"#c084fc"},{l:"Cuentas x pagar",i:"CP",s:"proveedores",c:"#f5c842"}].map(a=>(
-            <button key={a.s} onClick={()=>go(a.s)} style={{width:"100%",display:"flex",alignItems:"center",gap:10,background:"#f1f5f9",border:"1px solid " + (a.c) + "22",borderRadius:10,padding:"10px 12px",marginBottom:8,cursor:"pointer",textAlign:"left"}}>
-              <span style={{fontSize:16}}>{a.i}</span><span style={{fontSize:13,color:"#1a1a2e",fontWeight:500}}>{a.l}</span><span style={{marginLeft:"auto",color:a.c}}>&gt;</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
 
-// ======================================================
-// BASE DE DATOS DE ÍTEMS PREDEFINIDOS
-// ======================================================
-const ITEMS_DB = [
-  { categoria:"Lineas de Vida", items:[
-    { desc:"LINEA DE VIDA HORIZONTAL",            unit:"ML",  vu:280000 },
-    { desc:"LINEA DE VIDA VERTICAL",              unit:"ML",  vu:320000 },
-    { desc:"LINEA DE VIDA CONEXION / TRANSVERSAL",unit:"ML",  vu:280000 },
-    { desc:"RECERTIFICACION LINEA DE VIDA",       unit:"ML",  vu:45000  },
-  ]},
-  { categoria:"Escaleras", items:[
-    { desc:"ESCALERA FIJA CON LINEA DE VIDA VERTICAL", unit:"Metro", vu:1200000 },
-    { desc:"ESCALERA TIPO GATO",                       unit:"Metro", vu:850000  },
-    { desc:"ESCALERA MARINERA",                        unit:"Metro", vu:950000  },
-  ]},
-  { categoria:"Anclajes", items:[
-    { desc:"PUNTO DE ANCLAJE EPOXICO",                unit:"Und",  vu:380000  },
-    { desc:"PUNTO DE ANCLAJE SOLDADO",                unit:"Und",  vu:290000  },
-    { desc:"PUNTO DE ANCLAJE EN FACHADA",             unit:"Und",  vu:420000  },
-    { desc:"ANCLAJE ARTICO ACERO GALVANIZADO",        unit:"Und",  vu:450000  },
-  ]},
-  { categoria:"Sistemas Completos", items:[
-    { desc:"SISTEMA ANTICAIDA CUBIERTA (COMPLETO)",   unit:"Global",vu:8500000 },
-    { desc:"BARANDILLA DE PROTECCION EN CABLE",       unit:"ML",   vu:320000  },
-    { desc:"PASARELA DE SEGURIDAD EN CUBIERTA",       unit:"ML",   vu:550000  },
-  ]},
-  { categoria:"Servicios", items:[
-    { desc:"CERTIFICACION SISTEMA ANTICAIDA",         unit:"Global",vu:1200000 },
-    { desc:"RECERTIFICACION ANUAL",                   unit:"Global",vu:650000  },
-    { desc:"INSPECCION Y DIAGNOSTICO",                unit:"Global",vu:400000  },
-    { desc:"COORDINADOR SST EN OBRA",                 unit:"Dia",   vu:280000  },
-  ]},
-];
-
-const DEFAULT_COT_FORMA_PAGO = "50% ANTICIPO, 50% CONCLUIR LABORES";
-const DEFAULT_COT_TIEMPO_EJEC = "10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)";
-
-// Header imprimible compartido (cotizaciones + certificaciones)
-function PrintHeader({dual}){
-  return(
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"2.5px solid #cc0000",paddingBottom:14,marginBottom:0}}>
-      <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{height:82,objectFit:"contain"}}/>
-      <div style={{textAlign:"center",flex:1}}>
-        <div style={{fontSize:10,letterSpacing:3,color:"#333",textTransform:"uppercase",fontWeight:700}}>Especialistas en Anclajes</div>
-        {dual&&<img src={LOGO_CCS} alt="CCS" style={{height:38,objectFit:"contain",marginTop:4}}/>}
-      </div>
-      <div style={{textAlign:"right",fontSize:9.5,color:"#555",lineHeight:1.7}}>
-        <div>Calle 38 sur # 36 - 48, Envigado</div>
-        <div>PBX 448 26 86 · Cel 3152889541</div>
-        <div>Nit. 900193965-4</div>
-        <div style={{color:"#cc0000",fontWeight:600}}>www.ingeanclajes.com</div>
-      </div>
-    </div>
-  );
-}
-
-function measurementTypeLabel(tipo){
-  return tipo === "LVV" ? "Línea de vida vertical" : tipo === "CON" ? "Conexión" : tipo === "ESC" ? "Escalera" : tipo === "PAN" ? "Punto de anclaje" : "Línea horizontal";
-}
-
-function measurementUnitFromType(tipo){
-  return tipo === "ESC" ? "ML" : "ML";
-}
-
-function escapeHtml(v=""){
-  return String(v)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;')
-    .replace(/'/g,'&#39;');
-}
-
-function buildMeasurementNarrative(list=[]){
-  if(!Array.isArray(list) || !list.length) return "";
-  return list.map((seg,idx)=>(seg.label || "LÍNEA "+(idx+1)) + " de " + (Number(seg.ml||0).toFixed(2)) + " " + (measurementUnitFromType(seg.tipo))).join(', ');
-}
-
-function normalizeQuoteItems(c={}){
-  const geoItems = measurementsToQuoteItems(c.geoMediciones || []);
-  const rawItems = Array.isArray(c.items) ? c.items : [];
-  const candidates = [...geoItems, ...rawItems]
-    .filter(it => it && (String(it.desc||'').trim() || Number(it.cant||0)));
-  const seen = new Set();
-  return candidates.filter((it, idx) => {
-    const desc = String(it.desc || "ITEM " + (idx+1)).trim().toUpperCase();
-    const qty = Number(it.cant || 0).toFixed(2);
-    const unit = String(it.unit || 'UND').trim().toUpperCase();
-    const vu = Number(it.vu || 0).toFixed(2);
-    const key = (desc) + "|" + (qty) + "|" + (unit) + "|" + (vu);
-    if(seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
-function createQuoteProposalId(seed=""){
-  const suffix = Math.random().toString(36).slice(2, 7);
-  return "PROP-" + (seed || Date.now().toString(36)) + "-" + (suffix);
-}
-
-function getQuoteProposalLabel(index=0){
-  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  return index < letters.length ? "Propuesta " + (letters[index]) : "Propuesta " + (index + 1);
-}
-
-function normalizeProposalItems(items=[]){
-  return (Array.isArray(items) ? items : []).map((it, idx)=>({
-    id: it?.id ?? idx + 1,
-    desc: it?.desc ?? "",
-    cant: Number(it?.cant || 0),
-    unit: it?.unit ?? "UND",
-    vu: Number(it?.vu || 0),
-  }));
-}
-
-function buildQuoteProposal(propuesta={}, index=0){
-  const items = normalizeProposalItems(propuesta.items);
-  const util = Number(propuesta.util ?? 10) || 0;
-  const subtotal = items.reduce((sum, item)=>sum + (Number(item.cant) || 0) * (Number(item.vu) || 0), 0);
-  const totalCalculado = Math.round(subtotal + (subtotal * util / 100) * 1.19);
-  return {
-    id: propuesta.id || createQuoteProposalId(String(index + 1)),
-    nombre: String(propuesta.nombre || getQuoteProposalLabel(index)).trim() || getQuoteProposalLabel(index),
-    alcance: propuesta.alcance || "",
-    tipoCotizacion: propuesta.tipoCotizacion || "linea_vida",
-    requerimientoCliente: propuesta.requerimientoCliente || "",
-    formaPago: propuesta.formaPago || DEFAULT_COT_FORMA_PAGO,
-    tiempoEjec: propuesta.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC,
-    util,
-    items,
-    total: propuesta.total != null ? Number(propuesta.total) || 0 : totalCalculado,
-  };
-}
-
-function getQuoteProposals(c={}){
-  const raw = Array.isArray(c.propuestas) && c.propuestas.length
-    ? c.propuestas
-    : [{
-        id: c.propuestaActivaId || "PROP-LEGACY-" + (c.id || "draft"),
-        nombre: c.propuestaNombre || getQuoteProposalLabel(0),
-        alcance: c.propuestaAlcance || "",
-        tipoCotizacion: c.tipoCotizacion || "linea_vida",
-        requerimientoCliente: c.requerimientoCliente || "",
-        formaPago: c.formaPago || DEFAULT_COT_FORMA_PAGO,
-        tiempoEjec: c.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC,
-        util: c.util ?? 10,
-        items: Array.isArray(c.items) ? c.items : [],
-        total: c.total ?? null,
-      }];
-  return raw.map((propuesta, index)=>buildQuoteProposal(propuesta, index));
-}
-
-function getQuoteActiveProposal(c={}){
-  const propuestas = getQuoteProposals(c);
-  return propuestas.find((propuesta)=>propuesta.id === c.propuestaActivaId) || propuestas[0] || buildQuoteProposal({}, 0);
-}
-
-function mergeQuoteWithProposal(c={}, propuesta=null){
-  const activa = propuesta || getQuoteActiveProposal(c);
-  const propuestas = getQuoteProposals(c);
-  return {
-    ...c,
-    propuestaActivaId: activa.id,
-    propuestas,
-    propuestaNombre: activa.nombre,
-    propuestaAlcance: activa.alcance,
-    tipoCotizacion: activa.tipoCotizacion,
-    requerimientoCliente: activa.requerimientoCliente,
-    formaPago: activa.formaPago,
-    tiempoEjec: activa.tiempoEjec,
-    util: activa.util,
-    items: activa.items,
-    total: activa.total,
-  };
-}
-
-function getQuoteProposalTotals(baseQuote={}, propuesta){
-  const quote = mergeQuoteWithProposal(baseQuote, propuesta);
-  const items = normalizeQuoteItems({ ...quote, items: propuesta?.items || [] });
-  const sub = items.reduce((sum, item)=>sum + (Number(item.cant) || 0) * (Number(item.vu) || 0), 0);
-  const ut = sub * (Number(propuesta?.util ?? 10) || 0) / 100;
-  const iva = ut * 0.19;
-  const tot = sub + ut + iva;
-  return { quote, items, sub, ut, iva, tot };
-}
-
-function hasVerticalLifeLineService(c={}){
-  if((c.geoMediciones || []).some(seg => seg?.tipo === "LVV")) return true;
-  return normalizeQuoteItems(c).some(it => {
-    const desc = String(it?.desc || "").toUpperCase();
-    return desc.includes("LINEA DE VIDA VERTICAL");
-  });
-}
-
-function buildCotizacionPrintHtml(c){
-  const propuestas = getQuoteProposals(c);
-  const activa = getQuoteActiveProposal(c);
-  c = mergeQuoteWithProposal(c, activa);
-  const items = normalizeQuoteItems(c);
-  const measurements = Array.isArray(c.geoMediciones) ? c.geoMediciones : [];
-  const fotosCotizacion = Array.isArray(c.fotosCotizacion) ? c.fotosCotizacion.filter(f=>f?.src) : [];
-  const esObraBlanca = c.tipoCotizacion === "obra_blanca";
-  const alcancePropuesta = String(c.propuestaAlcance || c.alcance || "").trim();
-  const requerimientoCliente = String(c.requerimientoCliente || "").trim();
-  const mapQuery = c.coords || (c.obra||"") + " " + (c.ciudad||"").trim();
-  const { width: mapWidth, height: mapHeight } = getStaticMapDimensions(c.geoMapView);
-  const quoteMapSrc = c.mapImg && String(c.mapImg).startsWith("data:")
-    ? c.mapImg
-    : (buildGoogleStaticMapUrl(measurements, mapQuery, c.geoMapView, { width: mapWidth, height: mapHeight }) || c.mapImg || "");
-  const showVerticalAppendix = hasVerticalLifeLineService(c);
-  const sub = items.reduce((s,i)=>s+(Number(i.cant)||0)*(Number(i.vu)||0),0);
-  const ut  = sub * (Number(c.util)||10) / 100;
-  const iva = ut * 0.19;
-  const tot = sub + ut + iva;
-  const narrative = buildMeasurementNarrative(measurements);
-
-  // Intro paragraph: use alcance if filled, else auto-generate
-  const introParrafo = alcancePropuesta
-    ? escapeHtml(alcancePropuesta)
-    : (narrative
-        ? "Tenemos el agrado de presentar nuestra cotización para la instalación sobre cubierta: " + (escapeHtml(narrative)) + "."
-        : esObraBlanca
-          ? 'Tenemos el agrado de presentar nuestra cotización para la obra blanca solicitada.'
-          : 'Tenemos el agrado de presentar nuestra cotización para el suministro e instalación de los sistemas de protección anticaída requeridos para la obra.');
-
-  // Definitions text - matches real PDFs exactly
-  const defTrabajo = '<strong>Trabajo en altura:</strong> Se considera toda actividad, labor o trabajo que se deba realizar a una altura física igual o superior a 1,50 metros desde el piso.';
-  const defPuntos  = '<strong>Puntos de anclaje:</strong> Son componentes en acero anclado con un epóxico químico marca PURE 110 de POWER FASTENERS o equivalente, con perno de 5/8 a una profundidad de 15 cm o más según el caso a estructuras en concreto, con capacidad de resistir una fuerza de caída de más de 5.000 Lbs.';
-  const defLinea   = '<strong>Línea de vida:</strong> Son componentes de un sistema/equipo de protección de caídas, consistentes en una cuerda de nylon o cable de acero instalada en forma horizontal y vertical, tensionada y sujeta en tres o dos puntos de anclaje para otorgar movilidad al personal que trabaja en áreas elevadas.';
-  const defBullets = [
-    'La línea de vida permite la fijación o enganche en forma directa o indirecta al arnés completo para el cuerpo, o a un dispositivo de impacto o amortiguador.',
-    'Las líneas de vida estarán constituidas por un solo cable continuo.',
-    'Los anclajes a los cuales se fijarán las líneas de vida deben resistir al menos 5.000 libras por cada persona asegurada.',
-  ].map(b=>"<li>" + (b) + "</li>").join('');
-
-  // Item rows for propuesta table
-  const itemRows = items.map((it,idx)=>{
-    const desc = escapeHtml(it.desc || "ÍTEM " + (idx+1));
-    const qty  = Number(it.cant||0).toFixed(0);
-    const unit = escapeHtml(it.unit || 'UND');
-    const val  = fmt(Number(it.vu)||0);
-    const sub2 = fmt((Number(it.cant)||0)*(Number(it.vu)||0));
-    return "<tr><td style=\"text-align:left\">" + (desc) + "</td><td class=\"num\">" + (qty) + "</td><td class=\"ctr\">" + (unit) + "</td><td class=\"num\">" + (val) + "</td><td class=\"num\">" + (sub2) + "</td></tr>";
-  }).join('');
-
-  // Propuesta title
-  const propTitle = propuestas.length > 1
-    ? escapeHtml(activa.nombre).toUpperCase()
-    : (esObraBlanca ? "PROPUESTA ECONÓMICA" : "PROPUESTA ECONÓMICA");
-
-  // Map block: only if we have a URL
-  const mapBlock = quoteMapSrc ? '\n    <div class="map-wrap">\n      <img src="' + (quoteMapSrc) + '" class="map-img" alt="Proyección de líneas de vida"/>\n      ' + (getStaticMapLabelData(measurements, mapQuery, c.geoMapView).map(l=>"<div class=\"map-lbl\" style=\"left:" + (l.left) + ";top:" + (l.top) + ";color:" + (l.color) + ";transform:translate(-50%,-50%) rotate(" + (l.angle) + "deg)\">" + (escapeHtml(l.title)) + " - " + (escapeHtml(l.value)) + "</div>").join('')) + '\n    </div>' : '';
-
-  // Fotos block
-  const fotosBlock = fotosCotizacion.length ? '\n    <div class="sec-title">REGISTRO FOTOGRÁFICO</div>\n    <div class="photo-grid">\n      ' + (fotosCotizacion.map((f,i)=>'\n<div class="photo-card">\n<img src="' + (f.src) + '" class="photo-img" alt="' + (escapeHtml(f.label||'Foto '+(i+1))) + '"/>\n<div class="photo-lbl">' + (escapeHtml(f.label||'Foto '+(i+1))) + '</div>\n</div>').join('')) + '\n    </div>' : '';
-
-  // Multiple proposals summary
-  const multiPropBlock = propuestas.length > 1 ? '\n    <div class="info-box">\n      <strong>Esta cotización incluye ' + (propuestas.length) + ' propuestas:</strong><br/>\n      ' + (propuestas.map((p,i)=>(i+1) + ". " + (escapeHtml(p.nombre)) + " — <strong>" + (fmt(Number(p.total||0))) + "</strong>").join('<br/>')) + '\n    </div>' : '';
-
-  // Requerimiento block (obra blanca)
-  const reqBlock = esObraBlanca && requerimientoCliente ? '\n    <div class="info-box"><strong>Necesidad del cliente:</strong><br/><span style="white-space:pre-wrap">' + (escapeHtml(requerimientoCliente)) + '</span></div>' : '';
-
-  const HDR = '\n    <div class="hdr">\n      <img src="' + (LOGO_INGEANCLAJES) + '" class="logo" alt="Ingeanclajes"/>\n      <div class="hdr-mid">ESPECIALISTAS EN ANCLAJES</div>\n      <div class="hdr-right">Calle 38 sur # 36 – 48, Envigado<br/>PBX 448 26 86 &nbsp;·&nbsp; Cel. 315 288 95 41<br/>Nit. 900193965-4<br/>comercial1ingeanclajes@gmail.com<br/>www.ingeanclajes.com</div>\n    </div>\n    <div class="hdr-line"></div>';
-
-  const FTR = '<div class="ftr">Calle 38 sur # 36 – 48, Envigado &nbsp;·&nbsp; PBX 448 26 86 &nbsp;·&nbsp; Cel. 315 288 95 41 &nbsp;·&nbsp; Nit. 900193965-4 &nbsp;·&nbsp; comercial1ingeanclajes@gmail.com &nbsp;·&nbsp; www.ingeanclajes.com</div>';
-
-  return `<!doctype html><html><head><meta charset="utf-8"/>
-<title>Cotización ${escapeHtml(c.numero||'')}</title>
-<style>
-@page { size: Letter; margin: 18mm 22mm 18mm; }
-*{ box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-html,body{ background:#fff; margin:0; padding:0; }
-body{ font-family: "Times New Roman", Times, serif; color:#111; font-size:11.5pt; line-height:1.55; }
-.page{ width:100%; display:flex; flex-direction:column; min-height:240mm; page-break-after:always; break-after:page; padding-bottom:8mm; }
-.page:last-child{ page-break-after:auto; break-after:auto; }
-/* HEADER */
-.hdr{ display:flex; align-items:flex-start; gap:10px; margin-bottom:4px; }
-.logo{ height:64px; width:auto; object-fit:contain; flex-shrink:0; }
-.hdr-mid{ flex:1; text-align:center; font-family:Arial,Helvetica,sans-serif; font-weight:900; font-size:13pt; letter-spacing:1.5px; padding-top:10px; color:#111; }
-.hdr-right{ text-align:right; font-size:8pt; color:#444; line-height:1.5; white-space:nowrap; }
-.hdr-line{ border-top:2.5px solid #cc0000; margin-bottom:14px; }
-/* FOOTER */
-.ftr{ margin-top:auto; border-top:1px solid #aaa; padding-top:5px; text-align:center; font-size:8pt; color:#555; }
-/* META LINE */
-.meta{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:16px; font-size:11.5pt; }
-/* CLIENT BLOCK */
-.client{ margin-bottom:18px; font-size:11.5pt; line-height:1.7; }
-/* BODY TEXT */
-p{ margin:0 0 9px; }
-ul{ margin:6px 0 12px 24px; padding:0; }
-li{ margin-bottom:5px; }
-/* SECTION TITLE */
-.sec-title{ text-align:center; font-weight:900; font-family:Arial,Helvetica,sans-serif; font-size:12pt; text-transform:uppercase; letter-spacing:.5px; border-bottom:2px solid #111; padding-bottom:4px; margin:16px 0 10px; }
-/* TABLE */
-table{ width:100%; border-collapse:collapse; margin:6px 0 10px; font-size:11pt; }
-th,td{ border:1px solid #111; padding:6px 9px; vertical-align:middle; }
-th{ background:#f0f0f0; font-weight:900; font-family:Arial,Helvetica,sans-serif; font-size:10.5pt; text-align:center; }
-.num{ text-align:right; white-space:nowrap; }
-.ctr{ text-align:center; }
-.bold-row td{ font-weight:900; }
-.total-row td{ background:#ffffaa; font-weight:900; font-size:12pt; }
-.note{ text-align:center; font-weight:900; font-family:Arial,Helvetica,sans-serif; font-size:10.5pt; margin:6px 0 14px; }
-/* MAP */
-.map-wrap{ position:relative; width:100%; border:1px solid #bbb; overflow:hidden; margin:0 0 14px; background:#f5f5f5; aspect-ratio: ${mapWidth}/${mapHeight}; max-height:300px; }
-.map-img{ position:absolute; inset:0; width:100%; height:100%; object-fit:fill; display:block; }
-.map-lbl{ position:absolute; pointer-events:none; font-size:7px; font-weight:800; white-space:nowrap; background:rgba(255,255,255,.85); padding:1px 3px; border-radius:8px; transform-origin:center; }
-/* PHOTOS */
-.photo-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
-.photo-card{ border:1px solid #ccc; padding:6px; break-inside:avoid; }
-.photo-img{ width:100%; height:200px; object-fit:cover; display:block; }
-.photo-lbl{ text-align:center; font-size:9.5pt; color:#555; padding-top:5px; }
-/* INFO BOX */
-.info-box{ border:1px solid #ccc; background:#f9f9f9; padding:9px 12px; margin-bottom:12px; font-size:10.5pt; }
-/* COMMERCIAL CONDITIONS */
-.cond-table td:first-child{ width:34%; font-weight:900; }
-/* SIGNATURE */
-.sig{ margin-top:28px; }
-.sig-space{ height:68px; }
-.sig-line{ border-top:1px solid #111; padding-top:6px; display:inline-block; min-width:320px; }
-/* INCLUDES LIST */
-.includes li{ margin-bottom:6px; }
-/* NO BREAK */
-table,tr,td,th,.photo-card,.map-wrap,.sig{ break-inside:avoid; page-break-inside:avoid; }
-img{ max-width:100%; }
-</style></head><body>
-
-<!-- ═══════════════════════════════════════════════════════════ PAGE 1 - COVER -->
-<div class="page">
-  ${HDR}
-  <div class="meta">
-    <span>Envigado, ${escapeHtml(fmtL(c.fecha||today()))}</span>
-    <span><strong>COTIZACIÓN No. ${escapeHtml(c.numero||'')}</strong></span>
-  </div>
-  <div class="client">
-    <p><strong>SEÑORES:</strong></p>
-    <p><strong>${escapeHtml((c.cliente||'').toUpperCase())}</strong></p>
-    ${c.obra ? `<p>ATENCIÓN: &nbsp;${escapeHtml(c.obra.toUpperCase())}</p>` : ''}
-    ${c.telefono ? `<p>TELÉFONO: ${escapeHtml(c.telefono)}</p>` : ''}
-    ${c.ciudad ? `<p>${escapeHtml(c.ciudad.toUpperCase())}</p>` : ''}
-  </div>
-
-  <p>Cordial saludo.</p>
-  <br/>
-  <p>${introParrafo}</p>
-  <br/>
-  ${reqBlock}
-  ${esObraBlanca ? '' : `
-  <p>${defTrabajo}</p>
-  <p>${defPuntos}</p>
-  <p>${defLinea}</p>
-  <ul>${defBullets}</ul>
-  `}
-  ${multiPropBlock}
-  ${FTR}
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════ PAGE 2 - MAP + PHOTOS -->
-${(quoteMapSrc || fotosCotizacion.length) ? `
-<div class="page">
-  ${HDR}
-  ${quoteMapSrc ? `<div class="sec-title">PROYECCIÓN DE LÍNEAS DE VIDA</div>${mapBlock}` : ''}
-  ${fotosBlock}
-  ${FTR}
-</div>` : ''}
-
-<!-- ═══════════════════════════════════════════════════════════ PAGE 3 - PROPUESTA ECONÓMICA -->
-<div class="page">
-  ${HDR}
-  <div class="sec-title">${propTitle}</div>
-  <table>
-    <thead><tr><th style="text-align:left">DESCRIPCIÓN</th><th>CANTIDAD</th><th>UNIDAD</th><th>VALOR</th><th>SUBTOTAL</th></tr></thead>
-    <tbody>
-      ${itemRows}
-      <tr class="bold-row"><td colspan="4">SUBTOTAL</td><td class="num">${fmt(sub)}</td></tr>
-      <tr><td colspan="4">ADMINISTRACIÓN</td><td class="num">$ &nbsp;- -</td></tr>
-      <tr><td colspan="4">IMPREVISTOS</td><td class="num">$ &nbsp;- -</td></tr>
-      <tr><td colspan="4">UTILIDADES (${Number(c.util||10).toFixed(0)} % VALOR DE LA OBRA)</td><td class="num">${fmt(ut)}</td></tr>
-      <tr><td colspan="4">IVA (19 % VALOR DE LAS UTILIDADES)</td><td class="num">${fmt(iva)}</td></tr>
-      <tr class="total-row"><td colspan="4">TOTAL</td><td class="num">${fmt(tot)}</td></tr>
-    </tbody>
-  </table>
-  <div class="note">EL IVA ES EL 19 % SOBRE LAS UTILIDADES</div>
-
-  <div class="sec-title">CONDICIONES COMERCIALES</div>
-  <table class="cond-table"><tbody>
-    <tr><td><strong>FORMA DE PAGO</strong></td><td>${escapeHtml(c.formaPago||'50% ANTICIPO, 50% CONCLUIR LABORES')}</td></tr>
-    <tr><td><strong>TIEMPO DE EJECUCIÓN</strong></td><td>${escapeHtml(c.tiempoEjec||'10 DÍAS')}</td></tr>
-    <tr><td><strong>VALIDEZ DE LA OFERTA</strong></td><td>${escapeHtml(`${c.val||30} DÍAS A PARTIR DE LA FECHA DE ENTREGA DE ESTA COTIZACIÓN`)}</td></tr>
-    <tr><td><strong>CERTIFICACIÓN</strong></td><td>SE ENTREGA CON EL PAGO TOTAL</td></tr>
-  </tbody></table>
-
-  <p>Todo el personal que labora en la empresa se encuentra afiliado a ARL, Salud y Pensiones. Llevamos todos los elementos personales de seguridad necesarios para efectuar dicho trabajo. Realizamos todas las reparaciones de los daños que puedan surgir durante la ejecución de dicho trabajo y se entregan todas las pólizas exigidas por el contratante.</p>
-
-  <div class="sig">
-    <p>Cordialmente,</p>
-    <div class="sig-space"></div>
-    <div class="sig-line">
-      <strong>ING. JHON JAIME SEPÚLVEDA LONDOÑO</strong><br/>
-      MP. 05256-409949<br/>
-      GERENTE GENERAL<br/>
-      Tel: 315 288 95 41
-    </div>
-  </div>
-  ${FTR}
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════ PAGE 4 - INCLUYE + TABLA TÉCNICA -->
-<div class="page">
-  ${HDR}
-  <div class="sec-title">ESTA COTIZACIÓN INCLUYE</div>
-  <ul class="includes">
-    <li>Tuercas y arandelas en acero galvanizado y/o inoxidable certificado.</li>
-    <li>Los elementos utilizados en la instalación son certificados de fábrica, los cuales se adjuntan en la entrega de documentación de certificados.</li>
-    <li>Transporte de materiales y de personal hasta el sitio de trabajo.</li>
-    <li>Se entregan todos los certificados de acuerdo a la Resolución 4272 de trabajo seguro en alturas.</li>
-    <li>Recertificación sin costo al año siguiente de la instalación.</li>
-    <li>Esta propuesta incluye el coordinador para trabajo seguro en alturas de tiempo completo en la obra.</li>
-  </ul>
-
-  <p>Todo el personal que labora en la empresa se encuentra afiliado a ARL, salud y pensiones. Llevamos todos los elementos personales de seguridad necesarios para efectuar dicho trabajo. Realizamos todas las reparaciones de los daños que puedan surgir durante la ejecución de dicho trabajo y se entregan todas las pólizas exigidas por el contratante.</p>
-
-  <div class="sec-title">SISTEMA NO CONTINUO EN ACERO GALVANIZADO</div>
-  <table>
-    <thead><tr><th style="width:22%;text-align:left">ELEMENTO</th><th style="text-align:left">CARACTERÍSTICA</th></tr></thead>
-    <tbody>
-      <tr><td><strong>Soporte lateral e intermedio</strong></td><td>Este elemento está diseñado para ser usado en sistemas de líneas de vida horizontales de tipo continuo. El componente soporta regularmente el cable de acero para que una sección libre de cable no supere la luz máxima permitida. Este soporte intermedio permite el uso de un carro deslizador para evitar el uso de eslinga en Y por parte del trabajador y evitar que el colaborador se desconecte.</td></tr>
-      <tr><td><strong>Tensor</strong></td><td>Este elemento está diseñado para ser usado en sistemas de líneas de vida horizontales. En sus extremos el tensor se asegura al cable de la línea de vida y a un absorbedor de energía respectivamente. Su función es tensionar la línea de vida para que, en el momento de una caída, la distancia de caída del trabajador sea mínima.</td></tr>
-      <tr><td><strong>Empalmes y fijaciones</strong></td><td>Fabricados en aluminio. Resistentes a la corrosión y oxidación. Se utilizan para empalmar dos cables y fijar barandillas de cables.</td></tr>
-      <tr><td><strong>Guardacables</strong></td><td>Fabricado en acero con acabado galvanizado resistente a la corrosión. Protegen contra el desgaste y deformación del cable, alargando su vida útil.</td></tr>
-      <tr><td><strong>Cable de acero</strong></td><td>Se fabrica bajo un diseño que permite absorber el desgaste y los esfuerzos causados por el contacto con poleas, tambores y otras superficies, así como las tensiones estáticas y dinámicas. Se compone por alambres de acero, estirados en frío, trenzados en espiral, formando unidades denominadas torones.</td></tr>
-    </tbody>
-  </table>
-  ${FTR}
-</div>
-
-${showVerticalAppendix ? `
-<div class="page" style="padding:0">
-  <img src="${articoLineaVidaVertical}" style="width:100%;height:auto;display:block;" alt="Anexo técnico línea de vida vertical"/>
-  ${FTR}
-</div>` : ''}
-
-</body></html>`;
-}
-function openCotizacionPrint(c){
-  const win = window.open('', '_blank', 'width=1100,height=900');
-  if(!win) return;
-  win.document.open();
-  win.document.write(buildCotizacionPrintHtml(c));
-  win.document.close();
-
-  const waitForImages = () => {
-    const imgs = Array.from(win.document.images || []);
-    return Promise.all(imgs.map(img => {
-      if (img.complete) return Promise.resolve();
-      return new Promise(resolve => {
-        img.addEventListener('load', resolve, { once:true });
-        img.addEventListener('error', resolve, { once:true });
-      });
-    }));
-  };
-
-  const ready = [];
-  if (win.document.fonts?.ready) ready.push(win.document.fonts.ready.catch(() => {}));
-  ready.push(waitForImages());
-
-  Promise.all(ready)
-    .then(() => setTimeout(() => { win.focus(); win.print(); }, 350))
-    .catch(() => setTimeout(() => { win.focus(); win.print(); }, 500));
-}
-
-
-const COTIZACION_AUTO_SEND_ENDPOINTS = {
-  email: "",
-  whatsapp: "",
-};
-
-let html2pdfLoaderPromise = null;
-
-function sanitizeFileName(v=""){
-  return String(v || "documento")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g,"")
-    .replace(/[^a-zA-Z0-9._-]+/g,"-")
-    .replace(/-{2,}/g,"-")
-    .replace(/^-|-$/g,"") || "documento";
-}
-
-function normalizeEntityKey(v=""){
-  return String(v || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g,"")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g,"")
-    .trim();
-}
-
-function getCotizacionClientPhone(clienteInfo={}, cotizacion={}){
-  const raw = clienteInfo?.telefono || clienteInfo?.tel || cotizacion?.telefono || "";
-  const digits = Array.from(String(raw)).filter(ch=>ch>="0"&&ch<="9").join("");
-  if(!digits) return "";
-  if(digits.startsWith("57")) return digits;
-  return digits.length === 10 ? "57"+digits : digits;
-}
-
-function getCotizacionClientEmail(clienteInfo={}){
-  return String(clienteInfo?.email || "").trim();
-}
-
-function buildCotizacionShareMessage(c, clienteInfo={}){
-  const saludo = clienteInfo?.contacto || clienteInfo?.nombre || c?.cliente || "cliente";
-  return [
-    "Hola "+saludo+",",
-    "Te compartimos la cotizacion *"+(c?.numero||c?.id||"")+"* de *"+(c?.obra||"su proyecto")+"* por un valor de *"+fmt(Number(c?.total||0))+"*.",
-    "Vigencia: "+(c?.val||30)+" dia(s) calendario.",
-    "Quedamos atentos a tu aprobacion o comentarios.",
-    "INGEANCLAJES S.A.S",
-  ].join("\n");
-}
-
-function buildCotizacionEmailSubject(c){
-  return "Cotizacion "+(c?.numero||c?.id||"")+" - "+(c?.obra||c?.cliente||"INGEANCLAJES");
-}
-
-function buildCotizacionEmailBody(c, clienteInfo={}){
-  const saludo = clienteInfo?.contacto || clienteInfo?.nombre || c?.cliente || "cliente";
-  return [
-    "Hola "+saludo+",",
-    "",
-    "Adjuntamos la cotizacion "+(c?.numero||c?.id||"")+" correspondiente a "+(c?.obra||"su proyecto")+".",
-    "Valor total: "+fmt(Number(c?.total||0))+".",
-    "Vigencia: "+(c?.val||30)+" dia(s) calendario.",
-    "",
-    "Quedamos atentos a cualquier comentario o aprobacion.",
-    "",
-    "INGEANCLAJES S.A.S",
-  ].join("\n");
-}
-
-function downloadGeneratedFile(file){
-  const url = URL.createObjectURL(file);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = file.name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1500);
-}
-
-function loadHtml2Pdf(){
-  if(typeof window === "undefined") return Promise.reject(new Error("html2pdf solo funciona en navegador"));
-  if(window.html2pdf) return Promise.resolve(window.html2pdf);
-  if(html2pdfLoaderPromise) return html2pdfLoaderPromise;
-  html2pdfLoaderPromise = new Promise((resolve,reject)=>{
-    const existing = document.getElementById("html2pdf-bundle-js");
-    if(existing){
-      existing.addEventListener("load", ()=>resolve(window.html2pdf), {once:true});
-      existing.addEventListener("error", ()=>reject(new Error("No fue posible cargar html2pdf")), {once:true});
-      return;
-    }
-    const script = document.createElement("script");
-    script.id = "html2pdf-bundle-js";
-    script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
-    script.async = true;
-    script.onload = ()=> window.html2pdf ? resolve(window.html2pdf) : reject(new Error("html2pdf no quedó disponible"));
-    script.onerror = ()=> reject(new Error("No fue posible cargar html2pdf"));
-    document.body.appendChild(script);
-  });
-  return html2pdfLoaderPromise;
-}
-
-async function generateCotizacionPdfFile(c){
-  const html2pdf = await loadHtml2Pdf();
-  const parser = new DOMParser();
-  const parsed = parser.parseFromString(buildCotizacionPrintHtml(c), "text/html");
-  const styleTag = parsed.head.querySelector("style")?.outerHTML || "";
-  const container = document.createElement("div");
-  container.style.position = "fixed";
-  container.style.left = "-200vw";
-  container.style.top = "0";
-  container.style.width = "816px";
-  container.style.background = "#fff";
-  container.style.zIndex = "-1";
-  container.innerHTML = styleTag + parsed.body.innerHTML;
-  document.body.appendChild(container);
-  try{
-    const opt = {
-      margin: 0,
-      filename: sanitizeFileName(c?.numero || c?.id || "cotizacion") + ".pdf",
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: "#ffffff" },
-      jsPDF: { unit: "mm", format: "letter", orientation: "portrait" },
-      pagebreak: { mode: ["css", "legacy"] },
-    };
-    const worker = html2pdf().set(opt).from(container);
-    const blob = await worker.outputPdf("blob");
-    return new File([blob], opt.filename, { type: "application/pdf" });
-  } finally {
-    container.remove();
-  }
-}
-
-async function sendCotizacionEmail(c, clienteInfo, pdfFile){
-  const email = getCotizacionClientEmail(clienteInfo);
-  if(!email) throw new Error("El cliente no tiene correo registrado en la base de datos.");
-  const subject = buildCotizacionEmailSubject(c);
-  const body = buildCotizacionEmailBody(c, clienteInfo);
-
-  if(COTIZACION_AUTO_SEND_ENDPOINTS.email){
-    const fd = new FormData();
-    fd.append("to", email);
-    fd.append("subject", subject);
-    fd.append("body", body);
-    fd.append("quoteId", c?.id || "");
-    fd.append("quoteNumber", c?.numero || "");
-    fd.append("pdf", pdfFile, pdfFile.name);
-    const res = await fetch(COTIZACION_AUTO_SEND_ENDPOINTS.email, { method:"POST", body:fd });
-    if(!res.ok) throw new Error("El endpoint de correo no respondió correctamente.");
-    return { ok:true, message:"Correo enviado a "+email };
-  }
-
-  downloadGeneratedFile(pdfFile);
-  window.location.href = "mailto:"+encodeURIComponent(email)+"?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body);
-  return { ok:true, manual:true, message:"Correo preparado para "+email+". El PDF se descargó para adjuntarlo." };
-}
-
-async function sendCotizacionWhatsApp(c, clienteInfo, pdfFile){
-  const phone = getCotizacionClientPhone(clienteInfo, c);
-  if(!phone) throw new Error("El cliente no tiene teléfono registrado en la cotización o en la base de datos.");
-  const message = buildCotizacionShareMessage(c, clienteInfo);
-
-  if(COTIZACION_AUTO_SEND_ENDPOINTS.whatsapp){
-    const fd = new FormData();
-    fd.append("phone", phone);
-    fd.append("message", message);
-    fd.append("quoteId", c?.id || "");
-    fd.append("quoteNumber", c?.numero || "");
-    fd.append("pdf", pdfFile, pdfFile.name);
-    const res = await fetch(COTIZACION_AUTO_SEND_ENDPOINTS.whatsapp, { method:"POST", body:fd });
-    if(!res.ok) throw new Error("El endpoint de WhatsApp no respondió correctamente.");
-    return { ok:true, message:"WhatsApp enviado a +"+phone };
-  }
-
-  try{
-    if(navigator.share && navigator.canShare && navigator.canShare({ files:[pdfFile] })){
-      await navigator.share({
-        title: buildCotizacionEmailSubject(c),
-        text: message,
-        files: [pdfFile],
-      });
-      return { ok:true, manual:true, message:"Se abrió el selector para compartir el PDF por WhatsApp con +"+phone };
-    }
-  }catch(err){
-    // continúa al fallback de wa.me
-  }
-
-  downloadGeneratedFile(pdfFile);
-  window.open("https://wa.me/"+phone+"?text="+encodeURIComponent(message), "_blank");
-  return { ok:true, manual:true, message:"WhatsApp abierto para +"+phone+". El PDF se descargó para adjuntarlo." };
-}
-
-function openPrintWindow(title, innerHtml, extraCss = ""){
-  const w = window.open("", "_blank", "width=950,height=1200");
-  if(!w) return;
-
-  w.document.write(
-    '<!doctype html><html><head><meta charset="utf-8"/>'
-    + '<title>' + title + '</title>'
-    + '<style>'
-    + '@page{size:Letter;margin:12mm}'
-    + '*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
-    + 'html,body{margin:0;padding:0;background:#fff;color:#111;font-family:Aptos,"Segoe UI",Arial,sans-serif}'
-    + 'body{font-size:12pt;line-height:1.5}'
-    + '.print-root{width:100%;margin:0;padding:0}'
-    + '.avoid-break,table,tr,td,th{break-inside:avoid;page-break-inside:avoid}'
-    + 'img{max-width:100%}'
-    + extraCss
-    + '</style></head><body><div class="print-root">'
-    + innerHtml
-    + '</div></body></html>'
-  );
-
-  w.document.close();
-
-  const doPrint = () => {
-    w.focus();
-    w.print();
-  };
-
-  if(w.document.fonts?.ready){
-    w.document.fonts.ready.then(() => setTimeout(doPrint, 250));
-  }else{
-    setTimeout(doPrint, 400);
-  }
-}
-
-function printCurrentPz(title = "Documento"){
-  const node = document.getElementById("pz");
-  if(!node) return;
-
-  openPrintWindow(
-    title,
-    node.outerHTML,
-    '.doc-shell{background:#fff;color:#111;}.doc-shell table{width:100%;border-collapse:collapse;}'
-  );
-}
-
-function printColilla(empleado, resumen, periodo){
-  const fmtC = n => '$ ' + Math.round(Number(n)||0).toLocaleString('es-CO');
-  const periodLabel = periodo?.label || (periodo?.mes || new Date().toISOString().slice(0,7));
-  const devengados = [
-    ['Salario del corte', resumen.salario],
-    ['Auxilio de transporte', resumen.auxilioTransporte],
-    ['Horas extras', resumen.horasExtras],
-    ['Comisiones', resumen.comisiones],
-  ].filter(([,valor])=>Number(valor||0)>0);
-  const deducciones = [
-    ['Salud (4%)', resumen.salud],
-    ['Pension (4%)', resumen.pension],
-    ['Otras deducciones', resumen.otrasDeducciones],
-  ].filter(([,valor])=>Number(valor||0)>0);
-  const devRows = devengados.map(([concepto,valor])=>'<tr><td>' + (concepto) + '</td><td style="text-align:right">' + (fmtC(valor)) + '</td></tr>').join('');
-  const dedRows = deducciones.length
-    ? deducciones.map(([concepto,valor])=>'<tr><td>' + (concepto) + '</td><td style="text-align:right">- ' + (fmtC(valor)) + '</td></tr>').join('')
-    : '<tr><td>Sin deducciones adicionales</td><td style="text-align:right">' + (fmtC(0)) + '</td></tr>';
-  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Colilla ' + (periodLabel) + '</title>\n<style>\n@page{size:5.5in 8.5in;margin:8mm;}\nbody{font-family:\'Segoe UI\',Arial,sans-serif;margin:0;padding:0;background:#fff;color:#0f172a;}\n.sheet{width:100%;max-width:127mm;margin:0 auto;border:1px solid #dbe3ec;border-radius:16px;overflow:hidden;background:#fff;}\n.head{padding:14px 16px;background:linear-gradient(135deg,#fff7ed,#ffffff);border-bottom:1px solid #f1f5f9;}\n.brand{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;}\n.brand img{height:42px;object-fit:contain;}\n.brand-title{font-size:10px;color:#64748b;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;}\n.chip{display:inline-block;background:#142840;color:#fff;border-radius:999px;padding:5px 10px;font-size:10px;font-weight:700;}\n.employee{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;font-size:11px;line-height:1.6;}\n.employee strong{display:block;font-size:14px;color:#142840;margin-bottom:2px;}\n.body{padding:14px 16px 16px;}\n.section{margin-bottom:14px;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;}\n.section h3{margin:0;padding:9px 12px;font-size:10px;letter-spacing:1px;text-transform:uppercase;background:#f8fafc;color:#475569;}\ntable{width:100%;border-collapse:collapse;font-size:11px;}\ntd{padding:8px 12px;border-top:1px solid #f1f5f9;}\n.total{display:flex;justify-content:space-between;align-items:center;background:#142840;color:#fff;border-radius:12px;padding:12px 14px;}\n.total .amount{font-size:18px;font-weight:800;color:#4ade80;}\n.foot{padding-top:10px;text-align:center;color:#94a3b8;font-size:9px;line-height:1.5;}\n@media print{body{padding:0;background:#fff;}.sheet{border:none;border-radius:0;box-shadow:none;max-width:none;}}\n</style></head><body><div class="sheet">\n<div class="head">\n  <div class="brand">\n    <img src="' + (LOGO_INGEANCLAJES) + '" alt="Ingeanclajes"/>\n    <div style="text-align:right">\n      <div class="brand-title">Colilla de pago</div>\n      <div class="chip">' + (periodLabel) + '</div>\n    </div>\n  </div>\n  <div class="employee">\n    <strong>' + (empleado.nombre) + '</strong>\n    Cedula: ' + (empleado.cedula||'-') + ' · Cargo: ' + (empleado.cargo||'-') + '<br/>Banco: ' + (empleado.banco||'-') + ' · Cuenta: ' + (empleado.numeroCuenta||'-') + '\n    Periodo: ' + (periodLabel) + ' · Dias pagados: ' + (resumen.diasNomina) + '\n  </div>\n</div>\n<div class="body">\n  <div class="section">\n    <h3>Devengados</h3>\n    <table>' + (devRows || '<tr><td>Sin devengados</td><td style="text-align:right">' + (fmtC(0)) + '</td></tr>') + '</table>\n  </div>\n  <div class="section">\n    <h3>Deducciones</h3>\n    <table>' + (dedRows) + '</table>\n  </div>\n  <div class="total"><span>Total neto a pagar</span><span class="amount">' + (fmtC(resumen.neto)) + '</span></div>\n  <div class="foot">Documento generado el ' + (new Date().toLocaleDateString('es-CO')) + ' · Ingeanclajes S.A.S</div>\n</div>\n</div></body></html>';
-  const win = window.open('','_blank','width=620,height=760');
-  if(win){win.document.write(html);win.document.close();win.focus();setTimeout(()=>win.print(),500);}
-}
-
-function printVacaciones(empleado, diasVacaciones, valorVacaciones){
-  const fmtC = n => '$ ' + Math.round(Number(n)||0).toLocaleString('es-CO');
-  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'
-    +'<title>Vacaciones ' + empleado.nombre + '</title>'
-    +'<style>@page{size:Letter;margin:12mm;}'
-    +'body{font-family:"Segoe UI",Arial,sans-serif;margin:0;padding:18px;background:#fff;color:#0f172a;}'
-    +'.wrap{max-width:620px;margin:0 auto;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;}'
-    +'.hd{padding:16px 18px;background:linear-gradient(135deg,#ecfdf5,#fff);border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;}'
-    +'.hd img{height:48px;object-fit:contain;}.bd{padding:18px;}'
-    +'.card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;margin-bottom:14px;line-height:1.7;font-size:12px;}'
-    +'.total{background:#166534;color:#fff;border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;font-size:16px;font-weight:700;}'
-    +'.footer{text-align:center;color:#94a3b8;font-size:10px;padding:14px;}'
-    +'</style></head><body><div class="wrap">'
-    +'<div class="hd"><img src="' + LOGO_INGEANCLAJES + '" alt="Ingeanclajes"/>'
-    +'<div style="text-align:right">'
-    +'<div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748b;font-weight:700">Liquidacion de vacaciones</div>'
-    +'<div style="font-size:12px;font-weight:700;color:#166534">' + today() + '</div>'
-    +'</div></div>'
-    +'<div class="bd">'
-    +'<div class="card"><strong style="font-size:16px;color:#142840">' + empleado.nombre + '</strong><br/>'
-    +'Cedula: ' + (empleado.cedula||'-') + ' &middot; Cargo: ' + (empleado.cargo||'-') + '<br/>'
-    +'Salario base: ' + fmtC(empleado.salario||0) + ' &middot; Dias a liquidar: ' + diasVacaciones + '</div>'
-    +'<div class="card">Esta liquidacion corresponde a vacaciones pagadas sin retiro del empleado.'
-    +' Valor calculado: ' + fmtC(empleado.salario||0) + ' &divide; 30 &times; ' + diasVacaciones + ' dias.</div>'
-    +'<div class="total"><span>Valor vacaciones</span><span>' + fmtC(valorVacaciones) + '</span></div>'
-    +'</div>'
-    +'<div class="footer">Ingeanclajes S.A.S &middot; Documento generado automaticamente</div>'
-    +'</div></body></html>';
-  const win = window.open('','_blank','width=760,height=820');
-  if(win){win.document.write(html);win.document.close();win.focus();setTimeout(()=>win.print(),500);}
-}
-function printLiquidacion(empleado, pfl, indemn, diasVacPagar, fechaSalida, resumenRetiro, periodoRetiro){
-  const fmtC = n => '$ ' + Math.round(Number(n)||0).toLocaleString('es-CO');
-  const vacValorReal = Math.round(empleado.salario * (diasVacPagar||0) / 30);
-  const total = pfl.cesantias + pfl.interesesCesantias + pfl.prima + vacValorReal + indemn + (resumenRetiro?.neto||0);
-  const rows = [
-    ['Salario días trabajados', (resumenRetiro?.diasNomina||0) + ' días × ' + fmtC((resumenRetiro?.valorDia)||0), fmtC(resumenRetiro?.salario||0)],
-    ['Auxilio de transporte proporcional', 'Auxilio del corte según ' + (resumenRetiro?.diasNomina||0) + ' días', fmtC(resumenRetiro?.auxilioTransporte||0)],
-    ...((resumenRetiro?.horasExtras||0)>0 ? [['Horas extras pendientes', 'Registradas dentro del corte final', fmtC(resumenRetiro?.horasExtras||0)]] : []),
-    ...((resumenRetiro?.comisiones||0)>0 ? [['Comisiones pendientes', 'Registradas dentro del corte final', fmtC(resumenRetiro?.comisiones||0)]] : []),
-    ...((resumenRetiro?.salud||0)>0 ? [['Descuento salud empleado', '4% sobre salario + extras + comisiones', '- ' + fmtC(resumenRetiro?.salud||0)]] : []),
-    ...((resumenRetiro?.pension||0)>0 ? [['Descuento pensión empleado', '4% sobre salario + extras + comisiones', '- ' + fmtC(resumenRetiro?.pension||0)]] : []),
-    ...((resumenRetiro?.otrasDeducciones||0)>0 ? [['Otras deducciones', 'Conceptos autorizados del empleado', '- ' + fmtC(resumenRetiro?.otrasDeducciones||0)]] : []),
-    ['Neto nómina final', periodoRetiro?.label||'Corte final', fmtC(resumenRetiro?.neto||0)],
-    ['Cesantías (Art. 249 CST)', (empleado.salario + (empleado.salario<=NOMINA_CO_2026.topeAuxilio?NOMINA_CO_2026.auxilioTransporte:0)).toLocaleString('es-CO') + ' × ' + pfl.diasTrabajados + 'd ÷ 360', fmtC(pfl.cesantias)],
-    ['Intereses cesantías (12% anual)', '12% s/ ' + fmtC(pfl.cesantias), fmtC(pfl.interesesCesantias)],
-    ['Prima de servicios (Art. 306 CST)', 'Base × ' + pfl.diasTrabajados + 'd ÷ 360', fmtC(pfl.prima)],
-    ['Vacaciones (Art. 186 CST)', diasVacPagar + ' días × ' + fmtC(empleado.salario) + ' ÷ 30', fmtC(vacValorReal)],
-    ...(indemn>0?[['Indemnización sin justa causa (Art. 64 CST)', 'Según años de servicio', fmtC(indemn)]]:[]),
-  ];
-  const rowsHtml = rows.map(([k,b,v])=>
-    '<tr><td style="padding:6px 14px;border-bottom:1px solid #f1f5f9">'+k+'</td><td style="padding:6px 14px;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:10px">'+b+'</td><td style="padding:6px 14px;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:600">'+v+'</td></tr>'
-  ).join('');
-  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Liquidación '+empleado.nombre+'</title>'
-    +'<style>body{font-family:"Segoe UI",Arial,sans-serif;margin:0;padding:20px;background:#f8fafc;}'
-    +'.wrap{max-width:640px;margin:0 auto;background:#fff;border:1px solid #ddd;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.1);}'
-    +'.hd{background:#cc0000;color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;}'
-    +'.hd h2{margin:0;font-size:16px;letter-spacing:.5px;}'
-    +'.emp{padding:12px 20px;background:#fff8f8;border-bottom:2px solid #fecaca;font-size:12px;line-height:1.8;}'
-    +'.emp strong{font-size:15px;display:block;color:#0f172a;}'
-    +'table{width:100%;border-collapse:collapse;font-size:11.5px;}'
-    +'.total-row td{background:#cc0000;color:#fff;font-weight:700;font-size:15px;padding:13px 16px;}'
-    +'.total-amt{color:#fde68a;font-size:18px;}'
-    +'.footer{padding:14px 20px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;line-height:1.8;}'
-    +'@media print{body{background:#fff;padding:0;}.wrap{box-shadow:none;border:none;}}'
-    +'</style></head><body><div class="wrap">'
-    +'<div class="hd"><div><h2>LIQUIDACIÓN DEFINITIVA DE PRESTACIONES SOCIALES</h2><div style="font-size:11px;opacity:.8;margin-top:3px">Ingeanclajes S.A.S — NIT 900193965-4</div></div></div>'
-    +'<div class="emp"><strong>'+empleado.nombre+'</strong>'
-    +'Cédula: '+(empleado.cedula||'-')+'&nbsp;·&nbsp;Cargo: '+(empleado.cargo||'-')+'<br/>'
-    +'Tipo contrato: '+(empleado.tipoContrato||'indefinido')+'&nbsp;·&nbsp;Ingreso: '+(empleado.fechaIngreso||'N/A')+'&nbsp;·&nbsp;Salida: '+(fechaSalida||'N/A')+'<br/>'
-    +'Causa retiro: '+(empleado.causaRetiro||'—')+'&nbsp;·&nbsp;Tiempo laborado: '+pfl.diasTrabajados+' días ('+pfl.mesesTrabajados+' meses)<br/>'
-    +'Corte final: '+(periodoRetiro?.label||'No definido')
-    +'</div>'
-    +'<table><thead><tr style="background:#142840;color:#fff"><th style="padding:7px 14px;text-align:left">Concepto</th><th style="padding:7px 14px;text-align:left">Base de cálculo</th><th style="padding:7px 14px;text-align:right">Valor</th></tr></thead>'
-    +'<tbody>'+rowsHtml+'</tbody>'
-    +'<tfoot><tr class="total-row"><td colspan="2">TOTAL A PAGAR</td><td style="text-align:right"><span class="total-amt">'+fmtC(total)+'</span></td></tr></tfoot>'
-    +'</table>'
-    +'<div class="footer">'
-    +'<div style="display:flex;justify-content:space-around;margin-bottom:10px;margin-top:10px">'
-    +'<div style="text-align:center">________________________<br/><span style="font-size:11px;color:#374151">Firma Empleado<br/>'+empleado.nombre+'<br/>C.C. '+(empleado.cedula||'')+'</span></div>'
-    +'<div style="text-align:center">________________________<br/><span style="font-size:11px;color:#374151">Representante Legal<br/>Ingeanclajes S.A.S</span></div>'
-    +'</div>'
-    +'Generado el '+new Date().toLocaleDateString('es-CO',{year:"numeric",month:"long",day:"numeric"})+' · Este documento es constancia de pago de prestaciones sociales.'
-    +'</div>'
-    +'</div></body></html>';
-  const win = window.open('','_blank','width=720,height=920');
-  if(win){win.document.write(html);win.document.close();win.focus();setTimeout(()=>win.print(),500);}
-}
-
-
-
-let googleMapsJsPromise = null;
-function loadGoogleMapsJsApi(){
-  if(typeof window === "undefined") return Promise.reject(new Error("Google Maps solo está disponible en el navegador."));
-  if(window.google?.maps) return Promise.resolve(window.google.maps);
-  if(googleMapsJsPromise) return googleMapsJsPromise;
-  googleMapsJsPromise = new Promise((resolve,reject)=>{
-    const existing = document.getElementById("gmaps-js-api");
-    const finish = ()=> window.google?.maps ? resolve(window.google.maps) : reject(new Error("Google Maps no cargó correctamente."));
-    if(existing){
-      existing.addEventListener("load", finish, {once:true});
-      existing.addEventListener("error", ()=>reject(new Error("No fue posible cargar Google Maps.")), {once:true});
-      return;
-    }
-    const script = document.createElement("script");
-    script.id = "gmaps-js-api";
-    script.async = true;
-    script.defer = true;
-    script.src = "https://maps.googleapis.com/maps/api/js?key=" + (encodeURIComponent(GOOGLE_MAPS_EMBED_KEY)) + "&libraries=geometry&v=weekly";
-    script.onload = finish;
-    script.onerror = ()=>reject(new Error("No fue posible cargar Google Maps."));
-    document.body.appendChild(script);
-  });
-  return googleMapsJsPromise;
-}
-
-function getStaticMapCenter(segments=[], query="", mapView=null){
-  if(mapView?.center && Number.isFinite(mapView.center.lat) && Number.isFinite(mapView.center.lng)){
-    return {lat:Number(mapView.center.lat), lng:Number(mapView.center.lng)};
-  }
-  const parsed = parseLatLngValue(query||"");
-  if(parsed) return {lat:parsed.lat, lng:parsed.lng};
-  const valid = (segments||[]).filter(seg=>seg?.start && seg?.end);
-  if(valid.length){
-    const total = valid.reduce((acc,seg)=>({
-      lat: acc.lat + Number(seg.start.lat||0) + Number(seg.end.lat||0),
-      lng: acc.lng + Number(seg.start.lng||0) + Number(seg.end.lng||0),
-    }), {lat:0, lng:0});
-    return {lat: total.lat/(valid.length*2), lng: total.lng/(valid.length*2)};
-  }
-  return null;
-}
-
-function latLngToWorldPoint(lat, lng, zoom){
-  const siny = Math.min(Math.max(Math.sin((lat * Math.PI) / 180), -0.9999), 0.9999);
-  const scale = 256 * Math.pow(2, zoom);
-  return {
-    x: ((lng + 180) / 360) * scale,
-    y: (0.5 - Math.log((1 + siny) / (1 - siny)) / (4 * Math.PI)) * scale,
-  };
-}
-
-function latLngToImagePixel(lat, lng, center, zoom, width, height){
-  const world = latLngToWorldPoint(lat, lng, zoom);
-  const worldCenter = latLngToWorldPoint(center.lat, center.lng, zoom);
-  return {
-    x: world.x - worldCenter.x + width / 2,
-    y: world.y - worldCenter.y + height / 2,
-  };
-}
-
-function escapeXml(value=""){
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-function buildStaticMapLabelData(segments, center, zoom, width, height){
-  return (segments || []).map((seg, idx) => {
-    if(!seg?.start || !seg?.end) return null;
-    const startPx = latLngToImagePixel(Number(seg.start.lat), Number(seg.start.lng), center, zoom, width, height);
-    const endPx = latLngToImagePixel(Number(seg.end.lat), Number(seg.end.lng), center, zoom, width, height);
-    const dx = endPx.x - startPx.x;
-    const dy = endPx.y - startPx.y;
-    const len = Math.max(Math.hypot(dx, dy), 1);
-    const x = (startPx.x + endPx.x) / 2;
-    const y = (startPx.y + endPx.y) / 2;
-    const rawAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
-    const angle = rawAngle > 90 || rawAngle < -90 ? rawAngle + 180 : rawAngle;
-    return {
-      id: seg.id || "seg-" + (idx),
-      x,
-      y,
-      angle,
-      color: seg.tipo === "CON" ? "#EAB308" : seg.tipo === "LVV" ? "#22C55E" : seg.tipo === "ESC" ? "#F97316" : "#2563EB",
-      title: String(seg.label || "LINEA " + (idx+1)),
-      value: (Number(seg.ml || 0).toFixed(2)) + " m",
-    };
-  }).filter(Boolean);
-}
-
-function getStaticMapLabelData(segments=[], query="", mapView=null, options={}){
-  const { width, height } = getStaticMapDimensions(mapView, options);
-  const center = getStaticMapCenter(segments, query, mapView);
-  if(!center) return [];
-  const zoom = Number.isFinite(mapView?.zoom) ? Number(mapView.zoom) : (Array.isArray(segments) && segments.length ? 20 : 19);
-  return buildStaticMapLabelData(segments, center, zoom, width, height).map(label=>({
-    ...label,
-    left: ((label.x / width) * 100) + "%",
-    top: ((label.y / height) * 100) + "%",
-  }));
-}
-
-function getStaticMapDimensions(mapView=null, options={}){
-  return {
-    width: Math.min(640, Math.max(320, Math.round(options.width || mapView?.width || 640))),
-    height: Math.min(640, Math.max(240, Math.round(options.height || mapView?.height || 420))),
-  };
-}
-
-function buildGoogleStaticMapUrl(segments=[], query="", mapView=null, options={}){
-  if(!GOOGLE_MAPS_EMBED_KEY) return "";
-  const { width, height } = getStaticMapDimensions(mapView, options);
-  const center = getStaticMapCenter(segments, query, mapView);
-  if(!center) return "";
-  const zoom = Number.isFinite(mapView?.zoom) ? Number(mapView.zoom) : (Array.isArray(segments) && segments.length ? 20 : 19);
-  const base = "https://maps.googleapis.com/maps/api/staticmap";
-  const params = new URLSearchParams();
-  params.set("size", (width) + "x" + (height));
-  params.set("scale", "2");
-  params.set("maptype", "satellite");
-  params.set("format", "png");
-  params.set("key", GOOGLE_MAPS_EMBED_KEY);
-  params.set("center", (center.lat) + "," + (center.lng));
-  params.set("zoom", String(zoom));
-
-  if(!Array.isArray(segments) || !segments.length) return (base) + "?" + (params.toString());
-
-  (segments||[]).forEach((seg)=>{
-    if(!seg?.start || !seg?.end) return;
-    const color = seg.tipo === "CON" ? "0xEAB308FF" : seg.tipo === "LVV" ? "0x22C55EFF" : seg.tipo === "ESC" ? "0xF97316FF" : "0x3B82F6FF";
-    const weight = seg.tipo === "CON" ? 4 : 5;
-    params.append(
-      "path",
-      "color:" + (color) + "|weight:" + (weight) + "|" + (Number(seg.start.lat)) + "," + (Number(seg.start.lng)) + "|" + (Number(seg.end.lat)) + "," + (Number(seg.end.lng))
-    );
-  });
-  return (base) + "?" + (params.toString());
-}
-
-function StaticMapPreview({ src, segments=[], query="", mapView=null, alt="Mapa automático", maxHeight=null, border="1px solid #ddd", borderRadius=8 }){
-  if(!src) return null;
-  const labels = getStaticMapLabelData(segments, query, mapView);
-  const { width, height } = getStaticMapDimensions(mapView);
-  return(
-    <div style={{position:"relative",width:"100%",aspectRatio:(width) + " / " + (height),maxHeight:maxHeight||undefined,border,borderRadius,overflow:"hidden"}}>
-      <img src={src} alt={alt} style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"fill",display:"block"}} />
-      {labels.map(label=>(
-        <div
-          key={label.id}
-          style={{
-            position:"absolute",
-            left:label.left,
-            top:label.top,
-            transform:"translate(-50%, -50%) rotate(" + (label.angle) + "deg)",
-            pointerEvents:"none",
-            textAlign:"center",
-            fontFamily:"Aptos, Segoe UI, Arial, sans-serif",
-            fontWeight:800,
-            lineHeight:1,
-            color:label.color,
-            textShadow:"-2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff, 0 0 8px rgba(255,255,255,0.96)",
-            background:"rgba(255,255,255,0.72)",
-            padding:"1px 4px",
-            borderRadius:999,
-            whiteSpace:"nowrap",
-          }}
-        >
-          <div style={{fontSize:8.5}}>{label.title} · {label.value}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function measurementsToQuoteItems(list=[]){
-  return (list||[]).map((seg,idx)=>({
-    id: Date.now() + idx,
-    desc: seg.label || "LÍNEA " + (idx+1),
-    cant: Number(seg.ml||0).toFixed(2),
-    unit: measurementUnitFromType(seg.tipo),
-    vu: seg.tipo === "LVV" ? 320000 : seg.tipo === "ESC" ? 1200000 : seg.tipo === "CON" ? 280000 : 280000,
-  }));
-}
-
-function createMapLabelOverlay(gm, map, startPos, endPos, labelText, color){
-  class SegmentLabelOverlay extends gm.OverlayView {
-    constructor(){
-      super();
-      this.div = null;
-    }
-    onAdd(){
-      const div = document.createElement("div");
-      div.style.position = "absolute";
-      div.style.transform = "translate(-50%, -50%)";
-      div.style.pointerEvents = "none";
-      div.style.fontFamily = "Aptos, Segoe UI, Arial, sans-serif";
-      div.style.fontSize = "14px";
-      div.style.fontWeight = "700";
-      div.style.lineHeight = "1.15";
-      div.style.textAlign = "center";
-      div.style.color = color;
-      div.style.whiteSpace = "nowrap";
-      div.style.textShadow = "-2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff, 0 0 8px rgba(255,255,255,0.95)";
-      div.innerHTML = labelText;
-      this.div = div;
-      this.getPanes().overlayMouseTarget.appendChild(div);
-    }
-    draw(){
-      if(!this.div) return;
-      const projection = this.getProjection();
-      if(!projection) return;
-      const s = projection.fromLatLngToDivPixel(startPos);
-      const e = projection.fromLatLngToDivPixel(endPos);
-      if(!s || !e) return;
-      const dx = e.x - s.x;
-      const dy = e.y - s.y;
-      const len = Math.max(Math.hypot(dx, dy), 1);
-      const normalX = -dy / len;
-      const normalY = dx / len;
-      const offset = 22;
-      const x = ((s.x + e.x) / 2) + (normalX * offset);
-      const y = ((s.y + e.y) / 2) + (normalY * offset);
-      this.div.style.left = (x) + "px";
-      this.div.style.top = (y) + "px";
-    }
-    onRemove(){
-      if(this.div?.parentNode) this.div.parentNode.removeChild(this.div);
-      this.div = null;
-    }
-  }
-  const overlay = new SegmentLabelOverlay();
-  overlay.setMap(map);
-  return overlay;
-}
-
-function GoogleMeasureWorkspace({ queryValue, onQueryChange, measurements, onChange, mapView, onMapViewChange }){
-  const mapNodeRef = useRef(null);
-  const mapRef = useRef(null);
-  const googleRef = useRef(null);
-  const geocoderRef = useRef(null);
-  const overlayRef = useRef([]);
-  const tempMarkersRef = useRef([]);
-  const mapClickRef = useRef(null);
-  const idleListenerRef = useRef(null);
-  const [status,setStatus] = useState("idle");
-  const [error,setError] = useState("");
-  const [measureMode,setMeasureMode] = useState(false);
-  const [draft,setDraft] = useState(null);
-  const [zoom,setZoom] = useState(20);
-
-  const captureMapView = ()=>{
-    if(!mapRef.current) return null;
-    const center = mapRef.current.getCenter && mapRef.current.getCenter();
-    if(!center) return null;
-    const next = {
-      center: { lat: center.lat(), lng: center.lng() },
-      zoom: mapRef.current.getZoom ? mapRef.current.getZoom() : (mapView?.zoom || zoom),
-      width: Math.min(640, Math.max(320, Math.round(mapNodeRef.current?.clientWidth || mapView?.width || 640))),
-      height: Math.min(640, Math.max(240, Math.round(mapNodeRef.current?.clientHeight || mapView?.height || 420))),
-    };
-    onMapViewChange && onMapViewChange(next);
-    return next;
-  };
-
-  const clearTemp = ()=>{
-    tempMarkersRef.current.forEach(m=>m && m.setMap && m.setMap(null));
-    tempMarkersRef.current = [];
-    if(mapClickRef.current){
-      googleRef.current?.maps.event.removeListener(mapClickRef.current);
-      mapClickRef.current = null;
-    }
-  };
-
-  const clearOverlays = ()=>{
-    overlayRef.current.forEach(group=>{
-      group.start?.setMap(null);
-      group.end?.setMap(null);
-      group.line?.setMap(null);
-      group.label?.setMap(null);
-    });
-    overlayRef.current = [];
-  };
-
-  const computeMeters = (a,b)=>{
-    if(!googleRef.current?.maps?.geometry?.spherical) return 0;
-    return googleRef.current.maps.geometry.spherical.computeDistanceBetween(a,b);
-  };
-
-  const redraw = ()=>{
-    if(!mapRef.current || !googleRef.current?.maps) return;
-    clearOverlays();
-    const gm = googleRef.current.maps;
-    (measurements||[]).forEach(seg=>{
-      const startPos = new gm.LatLng(seg.start.lat, seg.start.lng);
-      const endPos = new gm.LatLng(seg.end.lat, seg.end.lng);
-      const line = new gm.Polyline({
-        map: mapRef.current,
-        path: [startPos, endPos],
-        geodesic: true,
-        strokeColor: seg.tipo === "CON" ? "#eab308" : seg.tipo === "LVV" ? "#22c55e" : seg.tipo === "ESC" ? "#f97316" : "#3b82f6",
-        strokeOpacity: 0.95,
-        strokeWeight: 4,
-      });
-      const start = new gm.Marker({ map: mapRef.current, position: startPos, draggable: true });
-      const end = new gm.Marker({ map: mapRef.current, position: endPos, draggable: true });
-      const labelHtml = (escapeXml(seg.label || "Tramo")) + "<br/>" + (Number(seg.ml||0).toFixed(2)) + " m";
-      const label = createMapLabelOverlay(gm, mapRef.current, startPos, endPos, labelHtml, seg.tipo === "CON" ? "#a16207" : seg.tipo === "LVV" ? "#15803d" : seg.tipo === "ESC" ? "#c2410c" : "#1d4ed8");
-      const sync = ()=>{
-        const s = start.getPosition();
-        const e = end.getPosition();
-        line.setPath([s,e]);
-        const next = (measurements||[]).map(item=> item.id===seg.id ? ({
-          ...item,
-          start: {lat:s.lat(), lng:s.lng()},
-          end: {lat:e.lat(), lng:e.lng()},
-          ml: Number(computeMeters(s,e).toFixed(2)),
-        }) : item);
-        onChange(next);
-      };
-      start.addListener("dragend", sync);
-      end.addListener("dragend", sync);
-      overlayRef.current.push({start,end,line,label});
-    });
-  };
-
-  const centerMap = async ()=>{
-    if(!mapRef.current || !googleRef.current?.maps) return;
-    const raw = (queryValue||"").trim();
-    if(!raw) return;
-    setStatus("loading");
-    setError("");
-    try{
-      const parsed = parseLatLngValue(raw);
-      if(parsed){
-        mapRef.current.setCenter({lat: parsed.lat, lng: parsed.lng});
-        mapRef.current.setZoom(mapView?.zoom || zoom);
-      }else{
-        const geocoder = geocoderRef.current || new googleRef.current.maps.Geocoder();
-        geocoderRef.current = geocoder;
-        const result = await geocoder.geocode({ address: raw });
-        const first = Array.isArray(result?.results) ? result.results[0] : result?.results?.[0];
-        if(!first?.geometry?.location) throw new Error("No encontré esa ubicación en Google Maps.");
-        mapRef.current.setCenter(first.geometry.location);
-        mapRef.current.setZoom(mapView?.zoom || zoom);
-      }
-      captureMapView();
-      setStatus("ready");
-    }catch(err){
-      setStatus("error");
-      setError(err?.message || "No fue posible centrar el mapa.");
-    }
-  };
-
-  useEffect(()=>{
-    let mounted = true;
-    (async()=>{
-      if(!GOOGLE_MAPS_EMBED_KEY){
-        setStatus("error");
-        setError("La API key de Google Maps no está configurada en este archivo.");
-        return;
-      }
-      setStatus("loading");
-      try{
-        const maps = await loadGoogleMapsJsApi();
-        if(!mounted || !mapNodeRef.current) return;
-        googleRef.current = window.google;
-        if(!mapRef.current){
-          const fallback = mapView?.center || parseLatLngValue(queryValue || "") || {lat:6.2442,lng:-75.5812};
-          mapRef.current = new maps.Map(mapNodeRef.current, {
-            center: {lat: fallback.lat, lng: fallback.lng},
-            zoom: mapView?.zoom || zoom,
-            mapTypeId: "satellite",
-            streetViewControl: false,
-            mapTypeControl: false,
-            fullscreenControl: true,
-            gestureHandling: "greedy",
-          });
-        }
-        if(idleListenerRef.current){ maps.event.removeListener(idleListenerRef.current); }
-        idleListenerRef.current = mapRef.current.addListener("idle", ()=>{ captureMapView(); redraw(); });
-        captureMapView();
-        setStatus("ready");
-      }catch(err){
-        if(mounted){
-          setStatus("error");
-          setError(err?.message || "No fue posible cargar Google Maps.");
-        }
-      }
-    })();
-    return ()=>{ mounted = false; clearTemp(); clearOverlays(); if(idleListenerRef.current && googleRef.current?.maps){ googleRef.current.maps.event.removeListener(idleListenerRef.current); idleListenerRef.current = null; } };
-  }, []);
-
-  useEffect(()=>{ redraw(); }, [JSON.stringify(measurements||[])]);
-  useEffect(()=>{ if(mapRef.current){ mapRef.current.setZoom(zoom); captureMapView(); } }, [zoom]);
-
-  const startMeasurement = ()=>{
-    if(!mapRef.current || !googleRef.current?.maps) return;
-    clearTemp();
-    setDraft(null);
-    captureMapView();
-    setMeasureMode(true);
-    let first = null;
-    mapClickRef.current = mapRef.current.addListener("click", (ev)=>{
-      const gm = googleRef.current.maps;
-      if(!first){
-        first = ev.latLng;
-        const mk = new gm.Marker({ map: mapRef.current, position: first });
-        tempMarkersRef.current = [mk];
-        return;
-      }
-      const second = ev.latLng;
-      const mk2 = new gm.Marker({ map: mapRef.current, position: second });
-      tempMarkersRef.current.push(mk2);
-      captureMapView();
-      setDraft({
-        start: {lat:first.lat(), lng:first.lng()},
-        end: {lat:second.lat(), lng:second.lng()},
-        ml: Number(computeMeters(first, second).toFixed(2)),
-        label: "",
-        tipo: "LVH",
-      });
-      setMeasureMode(false);
-      if(mapClickRef.current){
-        googleRef.current.maps.event.removeListener(mapClickRef.current);
-        mapClickRef.current = null;
-      }
-    });
-  };
-
-  const confirmDraft = ()=>{
-    if(!draft?.label) return;
-    const next = [...(measurements||[]), { ...draft, id: "gm-" + (Date.now()) }];
-    clearTemp();
-    setDraft(null);
-    onChange(next);
-  };
-
-  const removeMeasurement = (id)=> onChange((measurements||[]).filter(seg=>seg.id!==id));
-
-  return (
-    <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:12,padding:20}}>
-      <div style={{display:"grid",gridTemplateColumns:"1.3fr 1fr",gap:16,alignItems:"start",marginBottom:12}}>
-        <div>
-          <div style={ST}>Medición automática con Google Maps</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr auto auto",gap:8,marginBottom:10}}>
-            <input value={queryValue} onChange={e=>onQueryChange(e.target.value)} placeholder="Coordenadas, dirección o enlace de Maps" style={SI} />
-            <button onClick={centerMap} style={{...B("#f47c20"),fontSize:12}}>Ver aquí</button>
-            <button onClick={startMeasurement} style={{...B(measureMode?"#4ade80":"#1a3050", measureMode?"#0f2d1a":"#60b4ff"),fontSize:12}}>{measureMode?"Esperando clics...":"Activar medición"}</button>
-          </div>
-          <div style={{fontSize:11,color:"#64748b",lineHeight:1.6}}>Haz clic en dos puntos del mapa y el sistema calcula la distancia real automáticamente en metros. Luego solo nombras el tramo y su tipo.</div>
-        </div>
-        <div style={{background:"#f8fafc",borderRadius:10,padding:"12px 14px",border:"1px solid #e2e8f0"}}>
-          <div style={{fontSize:12,fontWeight:700,color:"#1a1a2e",marginBottom:8}}>Estado</div>
-          <div style={{fontSize:11,color: status==="error" ? "#991b1b" : "#475569",lineHeight:1.7}}>
-            <div>• API: <strong>{GOOGLE_MAPS_EMBED_KEY ? "configurada" : "sin configurar"}</strong></div>
-            <div>• Mapa: <strong>{status}</strong></div>
-            <div>• Tramos: <strong>{(measurements||[]).length}</strong></div>
-            {error && <div style={{color:"#991b1b"}}>• {error}</div>}
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginTop:8}}>
-            <button onClick={()=>setZoom(z=>Math.min(21,z+1))} style={{...B("#e0f2fe","#0369a1"),justifyContent:"center",fontSize:12,padding:"8px 0"}}>+</button>
-            <button onClick={()=>setZoom(z=>Math.max(16,z-1))} style={{...B("#e0f2fe","#0369a1"),justifyContent:"center",fontSize:12,padding:"8px 0"}}>-</button>
-          </div>
-        </div>
-      </div>
-
-      <div ref={mapNodeRef} style={{height:420,borderRadius:12,overflow:"hidden",border:"2px solid " + (measureMode?"#f47c20":"#e2e8f0"),marginBottom:12}} />
-
-      {draft && (
-        <div style={{background:"#fffbeb",border:"2px solid #f5c842",borderRadius:10,padding:16,marginBottom:12}}>
-          <div style={{fontSize:13,fontWeight:700,color:"#b45309",marginBottom:12}}>Tramo detectado automáticamente</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:10,alignItems:"end"}}>
-            <div><LBL>Metros calculados</LBL><input value={draft.ml} readOnly style={{...SI,background:"#fff7ed",fontWeight:700,color:"#c2410c"}} /></div>
-            <div><LBL>Etiqueta</LBL><input value={draft.label} onChange={e=>setDraft({...draft,label:e.target.value})} placeholder="Ej: Cubierta norte" style={SI} /></div>
-            <div><LBL>Tipo</LBL><select value={draft.tipo} onChange={e=>setDraft({...draft,tipo:e.target.value})} style={SI}>{[["LVH","Línea horizontal"],["LVV","Línea vertical"],["CON","Conexión"],["ESC","Escalera"],["PAN","Punto de anclaje"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
-            <div style={{display:"flex",gap:6}}>
-              <button onClick={confirmDraft} style={B("#4ade80","#0f2d1a")}>Agregar</button>
-              <button onClick={()=>{clearTemp(); setDraft(null);}} style={B("#fee2e2","#ef4444")}>Cerrar</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {(measurements||[]).length>0 && (
-        <div style={{marginBottom:12}}>
-          <div style={{fontSize:12,fontWeight:600,color:"#475569",marginBottom:8}}>Tramos medidos:</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-            {(measurements||[]).map(seg=>(
-              <div key={seg.id} style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,border:"1px solid #e2e8f0"}}>
-                <div>
-                  <div style={{fontSize:12,fontWeight:700,color:"#1a1a2e"}}>{seg.label}</div>
-                  <div style={{fontSize:10,color:"#64748b"}}>{seg.tipo} · {Number(seg.ml||0).toFixed(2)} m</div>
-                </div>
-                <button onClick={()=>removeMeasurement(seg.id)} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:5,padding:"3px 8px",cursor:"pointer",fontSize:11}}>×</button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-    </div>
-  );
-}
-
-// ======================================================
-// COTIZACION
-// ======================================================
-function Cotizacion({ctx}){
-  const {cotizaciones,setCotizaciones,obras,setObras,clientes}=ctx;
-  const [tab,setTab]=useState("lista");
-  const [editCot,setEditCot]=useState(null);
-  const [cot,setCot]=useState("");
-  const [fecha,setFecha]=useState(today());
-  const [val,setVal]=useState(30);
-  const [formaPago,setFormaPago]=useState("50% ANTICIPO, 50% CONCLUIR LABORES");
-  const [tiempoEjec,setTiempoEjec]=useState("10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)");
-  const [cl,setCl]=useState({nombre:"",obra:"",telefono:"",ciudad:"",coords:""});
-  const [items,setItems]=useState([]);
-  const [util,setUtil]=useState(10);
-  const [nid,setNid]=useState(1);
-  const [mapImgManual,setMapImgManual]=useState(null);
-  const [geoMediciones,setGeoMediciones]=useState([]);
-  const [geoMapView,setGeoMapView]=useState(null);
-  const [showDB,setShowDB]=useState(false);
-  const [dbCat,setDbCat]=useState(0);
-  const [previewCot,setPreviewCot]=useState(null);
-  const [busqCot,setBusqCot]=useState("");
-  const [detalleCot,setDetalleCot]=useState(null);
-  const [sendModal,setSendModal]=useState(null);
-  const [sendNotif,setSendNotif]=useState("");
-  const [propuestas,setPropuestas]=useState([]);
-  const [propuestaActivaId,setPropuestaActivaId]=useState(null);
-  const [nombrePropuesta,setNombrePropuesta]=useState(getQuoteProposalLabel(0));
-  const [alcancePropuesta,setAlcancePropuesta]=useState("");
-  const [tipoCotizacion,setTipoCotizacion]=useState("linea_vida");
-  const [requerimientoCliente,setRequerimientoCliente]=useState("");
-  const [fotosCotizacion,setFotosCotizacion]=useState([]);
-  const fileRef=useRef();
-  const fotosRef=useRef();
-
-  const autoMapImg = buildGoogleStaticMapUrl(geoMediciones, cl.coords || (cl.obra||"") + " " + (cl.ciudad||"").trim(), geoMapView);
-  const effectiveMapImg = mapImgManual || autoMapImg || null;
-  const sub=items.reduce((s,i)=>s+i.cant*i.vu,0);
-  const ut=sub*util/100; const iva=ut*0.19; const tot=sub+ut+iva;
-
-  const buildCurrentProposalState = (overrides={}) => buildQuoteProposal({
-    id: overrides.id || propuestaActivaId || "PROP-DRAFT-" + (editCot || "new"),
-    nombre: overrides.nombre ?? nombrePropuesta,
-    alcance: overrides.alcance ?? alcancePropuesta,
-    tipoCotizacion: overrides.tipoCotizacion ?? tipoCotizacion,
-    requerimientoCliente: overrides.requerimientoCliente ?? requerimientoCliente,
-    formaPago: overrides.formaPago ?? formaPago,
-    tiempoEjec: overrides.tiempoEjec ?? tiempoEjec,
-    util: overrides.util ?? util,
-    items: overrides.items ?? items,
-    total: overrides.total ?? Math.round(tot),
-  }, propuestas.length);
-
-  const applyProposalToForm = (propuesta) => {
-    const normalized = buildQuoteProposal(propuesta, 0);
-    const nextItems = normalizeProposalItems(normalized.items);
-    setPropuestaActivaId(normalized.id);
-    setNombrePropuesta(normalized.nombre);
-    setAlcancePropuesta(normalized.alcance || "");
-    setTipoCotizacion(normalized.tipoCotizacion || "linea_vida");
-    setRequerimientoCliente(normalized.requerimientoCliente || "");
-    setFormaPago(normalized.formaPago || DEFAULT_COT_FORMA_PAGO);
-    setTiempoEjec(normalized.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC);
-    setUtil(Number(normalized.util || 10));
-    setItems(nextItems);
-    setNid(nextItems.length + 1);
-  };
-
-  const setQuoteFormFromSource = (source={}) => {
-    const propuestasSource = getQuoteProposals(source);
-    const activa = propuestasSource.find((propuesta)=>propuesta.id === source.propuestaActivaId) || propuestasSource[0] || buildQuoteProposal({}, 0);
-    setPropuestas(propuestasSource);
-    setCot(source.numero || "");
-    setFecha(source.fecha || today());
-    setVal(source.val || 30);
-    setCl({
-      nombre: source.cliente || "",
-      obra: source.obra || "",
-      telefono: source.telefono || "",
-      ciudad: source.ciudad || "",
-      coords: source.coords || "",
-    });
-    setMapImgManual(source.mapImg && String(source.mapImg).startsWith("data:") ? source.mapImg : null);
-    setGeoMediciones(source.geoMediciones || []);
-    setGeoMapView(source.geoMapView || null);
-    setFotosCotizacion(source.fotosCotizacion || []);
-    applyProposalToForm(activa);
-  };
-
-  const syncCurrentProposal = () => {
-    const proposal = buildCurrentProposalState();
-    const base = propuestas.length ? propuestas : [proposal];
-    const exists = base.some((item)=>item.id === proposal.id);
-    const next = (exists ? base.map((item)=>item.id === proposal.id ? proposal : item) : [...base, proposal]).map((item, index)=>buildQuoteProposal(item, index));
-    setPropuestas(next);
-    setPropuestaActivaId(proposal.id);
-    return { proposal, next };
-  };
-
-  const switchProposal = (targetId) => {
-    const { next } = syncCurrentProposal();
-    const target = next.find((item)=>item.id === targetId);
-    if(target) applyProposalToForm(target);
-  };
-
-  const addProposal = () => {
-    const { next } = syncCurrentProposal();
-    const nueva = buildQuoteProposal({
-      id: createQuoteProposalId(String(next.length + 1)),
-      nombre: getQuoteProposalLabel(next.length),
-      formaPago: DEFAULT_COT_FORMA_PAGO,
-      tiempoEjec: DEFAULT_COT_TIEMPO_EJEC,
-      util: 10,
-      items: [],
-    }, next.length);
-    const final = [...next, nueva];
-    setPropuestas(final);
-    applyProposalToForm(nueva);
-  };
-
-  const duplicateProposal = () => {
-    const { proposal, next } = syncCurrentProposal();
-    const copia = buildQuoteProposal({
-      ...proposal,
-      id: createQuoteProposalId(String(next.length + 1)),
-      nombre: (proposal.nombre) + " copia",
-      items: normalizeProposalItems(proposal.items).map((item, index)=>({ ...item, id: index + 1 })),
-    }, next.length);
-    const final = [...next, copia];
-    setPropuestas(final);
-    applyProposalToForm(copia);
-  };
-
-  const removeActiveProposal = () => {
-    const { next } = syncCurrentProposal();
-    if(next.length <= 1) return;
-    const filtered = next.filter((item)=>item.id !== propuestaActivaId);
-    const fallback = filtered[0];
-    setPropuestas(filtered);
-    applyProposalToForm(fallback);
-  };
-
-  const propuestasSnapshot = (() => {
-    const current = buildCurrentProposalState();
-    const base = propuestas.length ? propuestas : [current];
-    const exists = base.some((item)=>item.id === current.id);
-    return (exists ? base.map((item)=>item.id === current.id ? current : item) : [...base, current]).map((item, index)=>buildQuoteProposal(item, index));
-  })();
-
-  const newForm=()=>{
-    const num="P-" + (34155+(cotizaciones.length));
-    const draft=ctx.cotDraft;
-    if(draft){
-      setQuoteFormFromSource({
-        ...draft,
-        numero: draft.numero || num,
-        fecha: draft.fecha || today(),
-        val: draft.val || 30,
-        fotosCotizacion: draft.fotosCotizacion || [],
-      });
-      ctx.setCotDraft(null);
-    }else{
-      setQuoteFormFromSource({
-        numero: num,
-        fecha: today(),
-        val: 30,
-        cliente: "",
-        obra: "",
-        telefono: "",
-        ciudad: "",
-        coords: "",
-        mapImg: null,
-        geoMediciones: [],
-        geoMapView: null,
-        fotosCotizacion: [],
-        propuestas: [buildQuoteProposal({
-          id: createQuoteProposalId("new"),
-          nombre: getQuoteProposalLabel(0),
-          formaPago: DEFAULT_COT_FORMA_PAGO,
-          tiempoEjec: DEFAULT_COT_TIEMPO_EJEC,
-          util: 10,
-          items: [],
-        }, 0)],
-      });
-    }
-    setEditCot(null); setTab("form");
-  };
-
-  const loadEdit=(c)=>{
-    setQuoteFormFromSource(c);
-    setEditCot(c.id); setTab("form");
-  };
-
-  const usarMedicionesComoItems=()=>{
-    const nuevos = measurementsToQuoteItems(geoMediciones);
-    setItems(nuevos.map((it,i)=>({...it,id:i+1})));
-    setNid(nuevos.length+1);
-  };
-
-
-  const buscarClienteAsociado = (cotizacion)=>{
-    const key = normalizeEntityKey(cotizacion?.cliente || "");
-    return clientes.find(cli=>normalizeEntityKey(cli.nombre)===key) || null;
-  };
-
-  const abrirEnvioCotizacion = (cotizacion, obraIdOverride=null)=>{
-    const clienteInfo = buscarClienteAsociado(cotizacion) || {
-      nombre: cotizacion?.cliente || "",
-      contacto: cotizacion?.cliente || "",
-      telefono: cotizacion?.telefono || "",
-      email: "",
-    };
-    setSendModal({
-      cotizacion: { ...cotizacion, obraId: obraIdOverride || cotizacion?.obraId || null },
-      clienteInfo,
-      sending: false,
-      status: "",
-      error: "",
-    });
-  };
-
-  const cerrarEnvioCotizacion = ()=>setSendModal(null);
-
-  const ejecutarEnvioCotizacion = async (canal)=>{
-    if(!sendModal?.cotizacion) return;
-    const cotizacionAct = sendModal.cotizacion;
-    const clienteInfo = sendModal.clienteInfo || {};
-    setSendModal(prev=>prev?{...prev,sending:true,error:"",status:"Generando PDF de la cotizacion..."}:prev);
-    try{
-      const pdfFile = await generateCotizacionPdfFile(cotizacionAct);
-      const resultados = [];
-      if(canal === "whatsapp" || canal === "ambos"){
-        const waRes = await sendCotizacionWhatsApp(cotizacionAct, clienteInfo, pdfFile);
-        resultados.push(waRes.message);
-      }
-      if(canal === "email" || canal === "ambos"){
-        const emailRes = await sendCotizacionEmail(cotizacionAct, clienteInfo, pdfFile);
-        resultados.push(emailRes.message);
-      }
-      const resumen = resultados.join(" · ");
-      setSendModal(prev=>prev?{...prev,sending:false,status:resumen,error:""}:prev);
-      setSendNotif(resumen);
-      setTimeout(()=>setSendNotif(""), 8000);
-    }catch(err){
-      const mensaje = err?.message || "No fue posible preparar el envio de la cotizacion.";
-      setSendModal(prev=>prev?{...prev,sending:false,error:mensaje}:prev);
-      setSendNotif(mensaje);
-      setTimeout(()=>setSendNotif(""), 8000);
-    }
-  };
-
-  const guardarCot=()=>{
-    const { proposal, next } = syncCurrentProposal();
-    const finalItems = normalizeQuoteItems({ items: proposal.items, geoMediciones });
-    const totalActiva = Math.round((finalItems.reduce((sum, item)=>sum + (Number(item.cant) || 0) * (Number(item.vu) || 0), 0)) * (1 + (Number(proposal.util || 10) / 100) * 1.19));
-    const propuestaActiva = buildQuoteProposal({ ...proposal, items: finalItems, total: totalActiva }, next.findIndex((item)=>item.id === proposal.id));
-    const propuestasFinales = next.map((item)=>item.id === propuestaActiva.id ? propuestaActiva : buildQuoteProposal(item));
-    const data={
-      numero:cot, fecha, val, cliente:cl.nombre, obra:cl.obra, telefono:cl.telefono, ciudad:cl.ciudad, coords:cl.coords,
-      items:propuestaActiva.items,
-      util:propuestaActiva.util,
-      total:propuestaActiva.total,
-      formaPago:propuestaActiva.formaPago,
-      tiempoEjec:propuestaActiva.tiempoEjec,
-      mapImg: effectiveMapImg,
-      geoMediciones,
-      geoMapView,
-      tipoCotizacion:propuestaActiva.tipoCotizacion,
-      requerimientoCliente:propuestaActiva.requerimientoCliente,
-      propuestaNombre:propuestaActiva.nombre,
-      propuestaAlcance:propuestaActiva.alcance,
-      propuestas:propuestasFinales,
-      propuestaActivaId:propuestaActiva.id,
-      fotosCotizacion,
-      estado:"Pendiente",
-      obraId:null
-    };
-    setPropuestas(propuestasFinales);
-    let savedQuote;
-    if(editCot){
-      savedQuote = { ...(cotizaciones.find((cotizacion)=>cotizacion.id===editCot) || {}), ...data, id: editCot };
-      setCotizaciones(p=>p.map(c=>c.id===editCot?savedQuote:c));
-    } else {
-      const id="COT-" + (String(cotizaciones.length+1).padStart(3,"0"));
-      savedQuote = { id, ...data };
-      setCotizaciones(p=>[...p,savedQuote]);
-    }
-    setTab("lista");
-    return savedQuote;
-  };
-
-  const aprobarCotizacion=(cotId)=>{
-    const cBase=cotizaciones.find(x=>x.id===cotId);
-    const c = cBase ? mergeQuoteWithProposal(cBase, getQuoteActiveProposal(cBase)) : null;
-    if(!c)return;
-    const newObraId="OB-" + (String(obras.length+1).padStart(3,"0"));
-    const newObra={
-      id:newObraId, cliente:c.cliente, nit:"", tel:c.telefono, proyecto:c.obra,
-      ciudad:c.ciudad, direccion:"", coords:c.coords||"", estado:"En Obra", avance:0,
-      total:c.total, pagado:0, saldo:c.total, costos:0, fechaInicio:today(), fechaFin:"", empleados:[],
-      trazos:[], anclajes:[], imgSat:c.mapImg||null, geoMediciones:c.geoMediciones||[], geoMapView:c.geoMapView||null, cotizacionId:c.id
-    };
-    const cotizacionAprobada = {...c, estado:"Aprobada", obraId:newObraId};
-    setObras(p=>[...p,newObra]);
-    setCotizaciones(p=>p.map(x=>x.id===cotId?cotizacionAprobada:x));
-    abrirEnvioCotizacion(cotizacionAprobada, newObraId);
-  };
-
-  const imprimirCotizacion=(cotizacion)=>{
-    if(!cotizacion) return;
-    openCotizacionPrint(cotizacion);
-  };
-
-  const addFromDB=(preset)=>{setItems(p=>[...p,{id:nid,desc:preset.desc,cant:1,unit:preset.unit,vu:preset.vu}]);setNid(n=>n+1);};
-  const addBlank=()=>{setItems(p=>[...p,{id:nid,desc:"",cant:1,unit:"ML",vu:0}]);setNid(n=>n+1);};
-  const upd=(id,f,v)=>setItems(p=>p.map(i=>i.id===id?{...i,[f]:(f==="cant"||f==="vu")?(parseFloat(v)||0):v}:i));
-  const del=(id)=>setItems(p=>p.filter(i=>i.id!==id));
-  const onImgChange=(e)=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=(ev)=>setMapImgManual(ev.target.result);r.readAsDataURL(file);};
-
-  if(tab==="lista"){
-    const st={Pendiente:{bg:"#2d2a14",t:"#f5c842",b:"#7a6610"},Aprobada:{bg:"#0f2d1a",t:"#4ade80",b:"#166534"},Rechazada:{bg:"#2d1414",t:"#ef4444",b:"#7c1010"}};
-    const normCot=(s="")=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
-    const cotFiltradas = busqCot ? cotizaciones.filter(c=>[c.id,c.numero,c.cliente,c.obra,c.ciudad].some(v=>normCot(v).includes(normCot(busqCot)))) : cotizaciones;
-    if(detalleCot){
-      const dc=detalleCot;
-      const ds=st[dc.estado]||st.Pendiente;
-      const dpropuestas=getQuoteProposals(dc);
-      const dpropActiva=getQuoteActiveProposal(dc);
-      const dobraVinc=obras.find(o=>o.id===dc.obraId);
-      return(
-        <div style={{padding:28}}>
-          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
-            <button style={{...B("#f1f5f9","#475569"),fontSize:13}} onClick={()=>setDetalleCot(null)}>← Volver a cotizaciones</button>
-            <span style={{fontSize:11,color:"#94a3b8"}}>{dc.id} · {dc.numero}</span>
-            <span style={{background:ds.bg,color:ds.t,border:"1px solid "+ds.b,borderRadius:20,padding:"3px 12px",fontSize:11,fontWeight:600}}>{dc.estado}</span>
-            <div style={{flex:1}}/>
-            <button style={{...B("#1a3050","#f5c842"),fontSize:12}} onClick={()=>{loadEdit(dc);setDetalleCot(null);}}>✏️ Editar</button>
-            <button style={{...B("#2d1414","#ef4444"),fontSize:12}} onClick={()=>imprimirCotizacion(dc)}>🖨 PDF</button>
-            {dc.estado!=="Aprobada"&&<button style={{...B("#0f2d1a","#4ade80"),fontSize:12}} onClick={()=>{aprobarCotizacion(dc.id);setDetalleCot(null);}}>✅ Aprobar y crear obra</button>}
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:20}}>
-            <div style={CD}>
-              <div style={ST}>Datos del cliente</div>
-              {[["Cliente",dc.cliente],["Obra / Proyecto",dc.obra],["Ciudad",dc.ciudad],["Teléfono",dc.telefono],["Fecha",fmtD(dc.fecha)],["Vigencia",dc.val+" días"]].map(([k,v])=>v?(
-                <div key={k} style={{display:"flex",justifyContent:"space-between",padding:"7px 0",borderBottom:"1px solid #f1f5f9",fontSize:12}}>
-                  <span style={{color:"#64748b"}}>{k}</span><span style={{fontWeight:600,color:"#1a1a2e",textAlign:"right",maxWidth:"60%"}}>{v}</span>
-                </div>
-              ):null)}
-              {dobraVinc&&<div style={{marginTop:10,background:"#f0fdf4",borderRadius:6,padding:"8px 10px",fontSize:11,color:"#166534"}}>✅ Vinculada a obra: <strong>{dobraVinc.id} · {dobraVinc.proyecto}</strong></div>}
-            </div>
-            <div style={CD}>
-              <div style={ST}>Propuestas</div>
-              {dpropuestas.map((p,pi)=>(
-                <div key={p.id} style={{background:p.id===dc.propuestaActivaId?"#fff7ed":"#f8fafc",border:"1px solid "+(p.id===dc.propuestaActivaId?"#fed7aa":"#e2e8f0"),borderRadius:8,padding:"10px 12px",marginBottom:8}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <div style={{fontSize:12,fontWeight:700,color:"#1a1a2e"}}>{p.nombre||"Propuesta "+(pi+1)}</div>
-                    <div style={{fontSize:14,fontWeight:800,color:"#cc0000"}}>{fmt(p.total)}</div>
-                  </div>
-                  {p.alcance&&<div style={{fontSize:11,color:"#64748b",marginTop:4}}>{p.alcance}</div>}
-                  <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>{(p.items||[]).length} ítems · {p.tipoCotizacion==="obra_blanca"?"Obra blanca":"Línea de vida"}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div style={CD}>
-            <div style={ST}>Ítems de la propuesta activa</div>
-            <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-              <thead><tr style={{background:"#142840",color:"#fff"}}>{["Descripción","Cant.","Unidad","V. Unitario","V. Total"].map(h=><th key={h} style={{padding:"8px 10px",textAlign:h==="Descripción"?"left":"right",fontWeight:600,fontSize:11}}>{h}</th>)}</tr></thead>
-              <tbody>
-                {(dpropActiva.items||[]).map((item,ii)=>(
-                  <tr key={ii} style={{borderBottom:"1px solid #f1f5f9",background:ii%2===0?"#fff":"#f8fafc"}}>
-                    <td style={{padding:"7px 10px"}}>{item.desc}</td>
-                    <td style={{padding:"7px 10px",textAlign:"right"}}>{item.cant}</td>
-                    <td style={{padding:"7px 10px",textAlign:"right"}}>{item.unit}</td>
-                    <td style={{padding:"7px 10px",textAlign:"right"}}>{fmt(item.vu)}</td>
-                    <td style={{padding:"7px 10px",textAlign:"right",fontWeight:600}}>{fmt(item.cant*item.vu)}</td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                {(()=>{
-                  const sub2=(dpropActiva.items||[]).reduce((s,i)=>s+i.cant*i.vu,0);
-                  const ut2=sub2*(dpropActiva.util||10)/100;
-                  const iva2=ut2*0.19;
-                  return(<>
-                    <tr style={{background:"#f1f5f9"}}><td colSpan={4} style={{padding:"6px 10px",textAlign:"right",color:"#64748b"}}>Subtotal</td><td style={{padding:"6px 10px",textAlign:"right",fontWeight:600}}>{fmt(sub2)}</td></tr>
-                    <tr style={{background:"#f1f5f9"}}><td colSpan={4} style={{padding:"6px 10px",textAlign:"right",color:"#64748b"}}>Utilidad ({dpropActiva.util||10}%) + IVA 19%</td><td style={{padding:"6px 10px",textAlign:"right",fontWeight:600}}>{fmt(ut2+iva2)}</td></tr>
-                    <tr style={{background:"#142840",color:"#fff"}}><td colSpan={4} style={{padding:"8px 10px",textAlign:"right",fontWeight:700}}>TOTAL</td><td style={{padding:"8px 10px",textAlign:"right",fontWeight:800,fontSize:14}}>{fmt(dpropActiva.total||sub2+ut2+iva2)}</td></tr>
-                  </>);
-                })()}
-              </tfoot>
-            </table>
-          </div>
-          {(dc.fotosCotizacion||[]).length>0&&(
-            <div style={{...CD,marginTop:16}}>
-              <div style={ST}>Fotos de la cotización</div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
-                {(dc.fotosCotizacion||[]).map((f,fi)=>(
-                  <div key={fi} style={{textAlign:"center"}}>
-                    <img src={f.url||f} alt={f.label||"Foto "+(fi+1)} style={{width:180,height:130,objectFit:"cover",borderRadius:8,border:"1px solid #e2e8f0"}}/>
-                    {f.label&&<div style={{fontSize:10,color:"#64748b",marginTop:4}}>{f.label}</div>}
-                  </div>
-                ))}
+          {/* PROPUESTAS */}
+          <div style={{background:'#fff',border:'1.5px solid #e8edf4',borderRadius:14,padding:'20px 24px',marginBottom:18}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
+              <div style={{fontSize:11,fontWeight:700,color:'#cc0000',textTransform:'uppercase',letterSpacing:1.5}}>Propuestas</div>
+              <div style={{display:'flex',gap:7}}>
+                <button onClick={addProposal} style={{...B('#fff8f0','#f47c20'),border:'1px solid #fcd7aa',fontSize:11,padding:'5px 12px',borderRadius:7}}>+ Nueva</button>
+                <button onClick={duplicateProposal} style={{...B('#f8fafc','#475569'),border:'1px solid #e2e8f0',fontSize:11,padding:'5px 12px',borderRadius:7}}>Duplicar</button>
+                <button onClick={removeActiveProposal} disabled={propuestasSnapshot.length<=1} style={{...B('#fff1f2','#dc2626'),border:'1px solid #fecaca',fontSize:11,padding:'5px 12px',borderRadius:7,opacity:propuestasSnapshot.length<=1?0.4:1}}>Eliminar</button>
               </div>
             </div>
-          )}
-        </div>
-      );
-    }
-    return(
-      <div style={{padding:28}}>
-        <H1 title="Cotizaciones" subtitle="Ubicacion y medicion automatica primero en la cotizacion; luego viaja a Planos y Obras"
-          action={<button style={B("#f47c20")} onClick={newForm}>+ Nueva Cotización</button>}/>
-        {sendNotif&&<div style={{background:"#e8f5ee",border:"1px solid #166534",borderRadius:10,padding:"12px 16px",marginBottom:16,fontSize:13,color:"#166534"}}>{sendNotif}</div>}
-        <div style={{position:"relative",marginBottom:18}}>
-          <input
-            value={busqCot}
-            onChange={e=>setBusqCot(e.target.value)}
-            placeholder="🔍 Buscar cotización por cliente, número, obra o ciudad..."
-            style={{...SI,paddingLeft:16,fontSize:13,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}
-          />
-          {busqCot&&<button onClick={()=>setBusqCot("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:16,color:"#94a3b8"}}>✕</button>}
-          {busqCot&&<div style={{fontSize:11,color:"#64748b",marginTop:6}}>{cotFiltradas.length} resultado(s) de {cotizaciones.length}</div>}
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
-          {cotFiltradas.map(c=>{
-            const s=st[c.estado]||st.Pendiente;
-            const obraVinc=obras.find(o=>o.id===c.obraId);
-            const propuestasCot = getQuoteProposals(c);
-            const propuestaActiva = getQuoteActiveProposal(c);
-            return(
-              <div key={c.id} style={{...CD,border:"1px solid " + (s.b)}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-                  <div>
-                    <div style={{fontSize:11,color:"#64748b"}}>{c.id} · {c.numero}</div>
-                    <div style={{fontSize:15,fontWeight:700,marginTop:2}}>{c.cliente}</div>
-                    <div style={{fontSize:12,color:"#475569"}}>{c.obra}</div>
-                    <div style={{fontSize:11,color:"#64748b"}}>{c.ciudad} · {fmtD(c.fecha)}</div>
-                  </div>
-                  <span style={{background:s.bg,color:s.t,border:"1px solid " + (s.b),borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:600,flexShrink:0}}>{c.estado}</span>
-                </div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
-                  <div style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",marginBottom:2}}>Total activo</div><div style={{fontSize:14,fontWeight:700,color:"#cc0000"}}>{fmt(propuestaActiva.total || c.total)}</div></div>
-                  <div style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",marginBottom:2}}>Tramos</div><div style={{fontSize:13,fontWeight:700,color:"#2563eb"}}>{(c.geoMediciones||[]).length}</div></div>
-                  <div style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",marginBottom:2}}>Propuestas</div><div style={{fontSize:13,fontWeight:700,color:"#f47c20"}}>{propuestasCot.length}</div></div>
-                </div>
-                <div style={{fontSize:11,color:"#64748b",marginBottom:12}}>
-                  Base actual para PDF / obra: <strong style={{color:"#1a1a2e"}}>{propuestaActiva.nombre}</strong>{obraVinc ? " · " + (obraVinc.id) : ""}
-                </div>
-                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                  <button style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"6px 12px"}} onClick={()=>setDetalleCot(c)}>👁 Ver detalle</button>
-                  <button style={{...B("#1a3050","#f5c842"),fontSize:11,padding:"6px 12px"}} onClick={()=>loadEdit(c)}>Editar</button>
-                  {c.estado!=="Aprobada"&&<button style={{...B("#0f2d1a","#4ade80"),border:"1px solid #166534",fontSize:11,padding:"6px 12px"}} onClick={()=>aprobarCotizacion(c.id)}>Aprobar y crear obra</button>}
-                  {c.estado==="Aprobada"&&<button style={{...B("#e8f5ee","#166534"),border:"1px solid #166534",fontSize:11,padding:"6px 12px"}} onClick={()=>abrirEnvioCotizacion(c)}>Enviar al cliente</button>}
-                  <button style={{...B("#2d1414","#ef4444"),fontSize:11,padding:"6px 12px"}} onClick={()=>imprimirCotizacion(c)}>PDF</button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        {previewCot&&(
-          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:1000,overflow:"auto",padding:20}}>
-            <div style={{maxWidth:860,margin:"0 auto"}}>
-              <div className="no-print" style={{display:"flex",gap:10,marginBottom:14,justifyContent:"flex-end"}}>
-                <button style={B("#f1f5f9","#475569")} onClick={()=>setPreviewCot(null)}>Cerrar</button>
-                <button style={B("#f47c20")} onClick={()=>openCotizacionPrint(previewCot)}>Imprimir / PDF</button>
-              </div>
-              <CotizacionPrint c={previewCot}/>
-            </div>
-          </div>
-        )}
-
-        {sendModal&&(
-          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.78)",zIndex:1100,overflow:"auto",padding:20}}>
-            <div style={{maxWidth:760,margin:"0 auto",background:"#fff",borderRadius:16,padding:22,border:"1px solid #e2e8f0",boxShadow:"0 25px 60px rgba(0,0,0,0.25)"}}>
-              <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"flex-start",marginBottom:16}}>
-                <div>
-                  <div style={{fontSize:22,fontWeight:800,color:"#1a1a2e",marginBottom:6}}>Cotización aprobada</div>
-                  <div style={{fontSize:13,color:"#64748b"}}>¿Deseas enviar ahora la cotización <strong>{sendModal.cotizacion?.numero || sendModal.cotizacion?.id}</strong> al cliente?</div>
-                </div>
-                <button style={B("#f1f5f9","#475569")} onClick={cerrarEnvioCotizacion}>Cerrar</button>
-              </div>
-
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:16}}>
-                <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:14}}>
-                  <div style={{fontSize:11,color:"#64748b",textTransform:"uppercase",marginBottom:6}}>Cliente</div>
-                  <div style={{fontSize:16,fontWeight:700,color:"#1a1a2e",marginBottom:4}}>{sendModal.clienteInfo?.nombre || sendModal.cotizacion?.cliente}</div>
-                  <div style={{fontSize:12,color:"#475569",lineHeight:1.7}}>
-                    <div><strong>Contacto:</strong> {sendModal.clienteInfo?.contacto || sendModal.cotizacion?.cliente || "Sin contacto"}</div>
-                    <div><strong>WhatsApp:</strong> {getCotizacionClientPhone(sendModal.clienteInfo, sendModal.cotizacion) ? "+" + (getCotizacionClientPhone(sendModal.clienteInfo, sendModal.cotizacion)) : "Sin teléfono"}</div>
-                    <div><strong>Email:</strong> {getCotizacionClientEmail(sendModal.clienteInfo) || "Sin correo"}</div>
-                  </div>
-                </div>
-                <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:14}}>
-                  <div style={{fontSize:11,color:"#64748b",textTransform:"uppercase",marginBottom:6}}>Resumen</div>
-                  <div style={{fontSize:12,color:"#475569",lineHeight:1.8}}>
-                    <div><strong>Cotización:</strong> {sendModal.cotizacion?.numero || sendModal.cotizacion?.id}</div>
-                    <div><strong>Obra:</strong> {sendModal.cotizacion?.obra || "Sin obra"}</div>
-                    <div><strong>Total:</strong> {fmt(Number(sendModal.cotizacion?.total || 0))}</div>
-                    <div><strong>Obra creada:</strong> {sendModal.cotizacion?.obraId || "Sin obra"}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:14,marginBottom:16}}>
-                <div style={{fontSize:11,color:"#64748b",textTransform:"uppercase",marginBottom:8}}>Vista previa del mensaje</div>
-                <div style={{whiteSpace:"pre-wrap",fontSize:13,lineHeight:1.7,color:"#1a1a2e",background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"12px 14px"}}>{buildCotizacionShareMessage(sendModal.cotizacion, sendModal.clienteInfo)}</div>
-              </div>
-
-              {(!COTIZACION_AUTO_SEND_ENDPOINTS.email || !COTIZACION_AUTO_SEND_ENDPOINTS.whatsapp) && (
-                <div style={{background:"#fff7ed",border:"1px solid #fdba74",color:"#9a3412",borderRadius:10,padding:"12px 14px",fontSize:12,marginBottom:16}}>
-                  En este momento el envío queda <strong>semi-automático</strong>: la app genera el PDF, abre WhatsApp o el correo y te deja el archivo listo para adjuntar. Si luego conectas tus endpoints en <code>COTIZACION_AUTO_SEND_ENDPOINTS</code>, sí quedará automático con envío real del PDF.
-                </div>
-              )}
-
-              {sendModal.status&&<div style={{background:"#e8f5ee",border:"1px solid #166534",borderRadius:10,padding:"12px 14px",fontSize:12,color:"#166534",marginBottom:12}}>{sendModal.status}</div>}
-              {sendModal.error&&<div style={{background:"#fee2e2",border:"1px solid #ef4444",borderRadius:10,padding:"12px 14px",fontSize:12,color:"#991b1b",marginBottom:12}}>{sendModal.error}</div>}
-
-              <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
-                <button disabled={sendModal.sending || !getCotizacionClientPhone(sendModal.clienteInfo, sendModal.cotizacion)} style={{...B("#4ade80","#0f2d1a"),opacity:(sendModal.sending || !getCotizacionClientPhone(sendModal.clienteInfo, sendModal.cotizacion))?0.6:1,cursor:(sendModal.sending || !getCotizacionClientPhone(sendModal.clienteInfo, sendModal.cotizacion))?"not-allowed":"pointer"}} onClick={()=>ejecutarEnvioCotizacion("whatsapp")}>{sendModal.sending?"Procesando...":"WhatsApp + PDF"}</button>
-                <button disabled={sendModal.sending || !getCotizacionClientEmail(sendModal.clienteInfo)} style={{...B("#dbeafe","#1e40af"),opacity:(sendModal.sending || !getCotizacionClientEmail(sendModal.clienteInfo))?0.6:1,cursor:(sendModal.sending || !getCotizacionClientEmail(sendModal.clienteInfo))?"not-allowed":"pointer"}} onClick={()=>ejecutarEnvioCotizacion("email")}>{sendModal.sending?"Procesando...":"Correo + PDF"}</button>
-                <button disabled={sendModal.sending || !getCotizacionClientPhone(sendModal.clienteInfo, sendModal.cotizacion) || !getCotizacionClientEmail(sendModal.clienteInfo)} style={{...B("#f47c20"),opacity:(sendModal.sending || !getCotizacionClientPhone(sendModal.clienteInfo, sendModal.cotizacion) || !getCotizacionClientEmail(sendModal.clienteInfo))?0.6:1,cursor:(sendModal.sending || !getCotizacionClientPhone(sendModal.clienteInfo, sendModal.cotizacion) || !getCotizacionClientEmail(sendModal.clienteInfo))?"not-allowed":"pointer"}} onClick={()=>ejecutarEnvioCotizacion("ambos")}>{sendModal.sending?"Procesando...":"Enviar ambos"}</button>
-                <button style={B("#f1f5f9","#475569")} onClick={cerrarEnvioCotizacion}>No por ahora</button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  return(
-    <div style={{padding:28}}>
-      <H1 title={editCot?"Editar Cotización":"Nueva Cotización"} subtitle="Primero defines ubicación, el sistema mide automáticamente y esa información baja luego a Planos y Obras"
-        action={<button style={B("#f1f5f9","#475569")} onClick={()=>setTab("lista")}>← Volver a lista</button>}/>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 300px",gap:20}}>
-        <div>
-          <div style={{...CD,marginBottom:14,border:"2px solid #142840"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:14,...{fontSize:11,fontWeight:600,color:"#cc0000",textTransform:"uppercase",letterSpacing:1,borderBottom:"1px solid #e2e8f0",paddingBottom:8}}}>
-              <span>Propuestas comerciales</span>
-              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                <button onClick={addProposal} style={{...B("#f47c20"),fontSize:11,padding:"5px 12px"}}>+ Agregar propuesta</button>
-                <button onClick={duplicateProposal} style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"5px 12px"}}>Duplicar activa</button>
-                <button onClick={removeActiveProposal} disabled={propuestasSnapshot.length<=1} style={{...B("#fee2e2","#b91c1c"),fontSize:11,padding:"5px 12px",opacity:propuestasSnapshot.length<=1?0.55:1,cursor:propuestasSnapshot.length<=1?"not-allowed":"pointer"}}>Eliminar activa</button>
-              </div>
-            </div>
-            <div style={{fontSize:12,color:"#64748b",marginBottom:12}}>
-              Cada propuesta puede tener su propio alcance, ítems, utilidad, forma de pago y tiempo de ejecución. La propuesta activa queda como base para aprobar la obra y para el PDF principal.
-            </div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
-              {propuestasSnapshot.map((propuesta)=>(
-                <button key={propuesta.id} onClick={()=>switchProposal(propuesta.id)} style={{flex:"1 1 220px",textAlign:"left",padding:"12px 14px",borderRadius:12,border:"2px solid " + (propuesta.id===propuestaActivaId?"#f47c20":"#dbe5f0"),background:propuesta.id===propuestaActivaId?"#fff7ed":"#f8fafc",cursor:"pointer"}}>
-                  <div style={{fontSize:13,fontWeight:700,color:"#1a1a2e",marginBottom:4}}>{propuesta.nombre}</div>
-                  <div style={{fontSize:11,color:"#64748b",marginBottom:6}}>{propuesta.tipoCotizacion === "obra_blanca" ? "Obra blanca" : "Línea de vida / anclajes"}</div>
-                  <div style={{fontSize:14,fontWeight:700,color:"#cc0000"}}>{fmt(Number(propuesta.id===propuestaActivaId ? tot : propuesta.total) || 0)}</div>
+            <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+              {propuestasSnapshot.map(propuesta=>(
+                <button key={propuesta.id} onClick={()=>switchProposal(propuesta.id)}
+                  style={{display:'flex',flexDirection:'column',alignItems:'flex-start',padding:'13px 18px',borderRadius:12,border:'2px solid '+(propuesta.id===propuestaActivaId?'#f47c20':'#e8edf4'),background:propuesta.id===propuestaActivaId?'#fff7ed':'#f8fafc',cursor:'pointer',minWidth:175,gap:3}}>
+                  <div style={{fontSize:13,fontWeight:700,color:'#142840'}}>{propuesta.nombre}</div>
+                  <div style={{fontSize:11,color:'#94a3b8'}}>{propuesta.tipoCotizacion==='obra_blanca'?'Obra blanca':'Línea de vida'}</div>
+                  <div style={{fontSize:16,fontWeight:800,color:propuesta.id===propuestaActivaId?'#f47c20':'#94a3b8',marginTop:4}}>{fmt(Number(propuesta.id===propuestaActivaId?tot:propuesta.total)||0)}</div>
                 </button>
               ))}
             </div>
           </div>
 
-          <div style={{...CD,marginBottom:14,border:"2px solid #f47c20"}}>
-            <div style={ST}>Configuración de la propuesta activa</div>
-            <div style={{display:"grid",gridTemplateColumns:"1.1fr 1fr",gap:12,marginBottom:12}}>
+          {/* PROPUESTA ACTIVA CONFIG */}
+          <div style={{background:'#fff',border:'1.5px solid #e8edf4',borderRadius:14,padding:'20px 24px',marginBottom:18}}>
+            <div style={{fontSize:11,fontWeight:700,color:'#cc0000',textTransform:'uppercase',letterSpacing:1.5,borderBottom:'2px solid #f4f7fb',paddingBottom:10,marginBottom:16}}>Configuración · propuesta activa</div>
+            <div style={{display:'grid',gridTemplateColumns:'1.3fr 1fr',gap:14,marginBottom:14}}>
               <div>
-                <LBL>Nombre de la propuesta</LBL>
-                <input value={nombrePropuesta} onChange={e=>setNombrePropuesta(e.target.value)} style={SI} placeholder="Ej: Propuesta recomendada"/>
+                <div style={{fontSize:10,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:.8,marginBottom:5}}>Nombre de la propuesta</div>
+                <input value={nombrePropuesta} onChange={e=>setNombrePropuesta(e.target.value)} style={{...SI,fontSize:13}} placeholder="Ej: Propuesta recomendada"/>
               </div>
               <div>
-                <LBL>Tipo de propuesta</LBL>
-                <div style={{display:"flex",gap:10}}>
-                  {[["linea_vida","Línea de vida / Puntos de anclaje"],["obra_blanca","Obra blanca (libre)"]].map(([v,l])=>(
-                    <button key={v} onClick={()=>setTipoCotizacion(v)} style={{...B(tipoCotizacion===v?"#f47c20":"#142840",tipoCotizacion===v?"#fff":"#7da5c8"),flex:1,justifyContent:"center",border:"2px solid "+(tipoCotizacion===v?"#f47c20":"#1a3050"),fontSize:13,fontWeight:700}} >{l}</button>
+                <div style={{fontSize:10,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:.8,marginBottom:5}}>Tipo</div>
+                <div style={{display:'flex',gap:7,height:38}}>
+                  {[['linea_vida','Línea de vida'],['obra_blanca','Obra blanca']].map(([v,l])=>(
+                    <button key={v} onClick={()=>setTipoCotizacion(v)}
+                      style={{...B(tipoCotizacion===v?'#142840':'#f8fafc',tipoCotizacion===v?'#fff':'#64748b'),flex:1,justifyContent:'center',border:'1.5px solid '+(tipoCotizacion===v?'#142840':'#e2e8f0'),fontSize:12,fontWeight:tipoCotizacion===v?700:400,borderRadius:8}}>{l}</button>
                   ))}
                 </div>
               </div>
             </div>
             <div>
-              <LBL>Alcance / enfoque comercial de esta propuesta</LBL>
-              <textarea
-                value={alcancePropuesta}
-                onChange={e=>setAlcancePropuesta(e.target.value)}
-                placeholder="Ej: alternativa recomendada con línea de vida horizontal continua, puntos de anclaje y mantenimiento preventivo anual."
-                style={{...SI,minHeight:110,resize:"vertical",lineHeight:1.5}}
-              />
-            </div>
-            {tipoCotizacion==="obra_blanca"&&(
-              <div style={{marginTop:10,background:"#fffbeb",border:"1px solid #f5c842",borderRadius:8,padding:"10px 12px",fontSize:12,color:"#92400e"}}>
-                Cotización de obra blanca: escribe la descripción libremente en los ítems de abajo. El mapa y las mediciones son opcionales.
-              </div>
-            )}
-          </div>
-
-          <div style={{...CD,marginBottom:14}}>
-            <div style={ST}>Identificación</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
-              <div><LBL>N° Cotización</LBL><input value={cot} onChange={e=>setCot(e.target.value)} style={SI}/></div>
-              <div><LBL>Fecha</LBL><input type="date" value={fecha} onChange={e=>setFecha(e.target.value)} style={SI}/></div>
-              <div><LBL>Válida (días)</LBL><input type="number" value={val} onChange={e=>setVal(Number(e.target.value))} style={SI}/></div>
+              <div style={{fontSize:10,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:.8,marginBottom:5}}>Alcance / descripción comercial</div>
+              <textarea value={alcancePropuesta} onChange={e=>setAlcancePropuesta(e.target.value)} placeholder="Ej: alternativa recomendada con línea de vida horizontal continua, puntos de anclaje y mantenimiento preventivo anual." style={{...SI,minHeight:95,resize:'vertical',lineHeight:1.6,fontSize:13}}/>
             </div>
           </div>
 
-          <div style={{...CD,marginBottom:14}}>
-            <div style={ST}>Cliente</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-              <div><LBL>Señor / Empresa</LBL><input value={cl.nombre} onChange={e=>setCl({...cl,nombre:e.target.value})} style={SI}/></div>
-              <div><LBL>Obra</LBL><input value={cl.obra} onChange={e=>setCl({...cl,obra:e.target.value})} style={SI}/></div>
-              <div><LBL>Teléfono</LBL><input value={cl.telefono} onChange={e=>setCl({...cl,telefono:e.target.value})} style={SI}/></div>
-              <div><LBL>Ciudad</LBL><input value={cl.ciudad} onChange={e=>setCl({...cl,ciudad:e.target.value})} style={SI}/></div>
+          {/* CLIENTE */}
+          <div style={{background:'#fff',border:'1.5px solid #e8edf4',borderRadius:14,padding:'20px 24px',marginBottom:18}}>
+            <div style={{fontSize:11,fontWeight:700,color:'#cc0000',textTransform:'uppercase',letterSpacing:1.5,borderBottom:'2px solid #f4f7fb',paddingBottom:10,marginBottom:16}}>Datos del cliente</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+              {[
+                ['Señor / Empresa','nombre',cl.nombre,'Nombre del cliente o empresa'],
+                ['Obra / Proyecto','obra',cl.obra,'Nombre del proyecto'],
+                ['Teléfono','telefono',cl.telefono,'Número de contacto'],
+                ['Ciudad','ciudad',cl.ciudad,'Ciudad, Departamento'],
+              ].map(([label,field,fieldVal,ph])=>(
+                <div key={field}>
+                  <div style={{fontSize:10,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:.8,marginBottom:5}}>{label}</div>
+                  <input value={fieldVal} onChange={e=>setCl({...cl,[field]:e.target.value})} style={{...SI,fontSize:13}} placeholder={ph}/>
+                </div>
+              ))}
             </div>
           </div>
 
-          <GoogleMeasureWorkspace
-            queryValue={cl.coords || (cl.obra||"") + " " + (cl.ciudad||"").trim()}
-            onQueryChange={(val)=>setCl({...cl,coords:val})}
-            measurements={geoMediciones}
-            onChange={setGeoMediciones}
-            mapView={geoMapView}
-            onMapViewChange={setGeoMapView}
-          />
+          {/* UBICACIÓN Y MEDICIONES */}
+          <div style={{background:'#fff',border:'1.5px solid #e8edf4',borderRadius:14,padding:'20px 24px',marginBottom:18}}>
+            <div style={{fontSize:11,fontWeight:700,color:'#cc0000',textTransform:'uppercase',letterSpacing:1.5,borderBottom:'2px solid #f4f7fb',paddingBottom:10,marginBottom:16}}>Ubicación y mediciones</div>
+            <GoogleMeasureWorkspace
+              queryValue={cl.coords||((cl.obra||'')+' '+(cl.ciudad||'')).trim()}
+              onQueryChange={(v)=>setCl({...cl,coords:v})}
+              measurements={geoMediciones}
+              onChange={setGeoMediciones}
+              mapView={geoMapView}
+              onMapViewChange={setGeoMapView}
+            />
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" style={{display:'none'}} onChange={onImgChange}/>
 
-          {/* Hidden input for map image override — still used by PDF */}
-          <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={onImgChange}/>
-
-          <div style={{...CD,marginTop:14,marginBottom:14}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",...{fontSize:11,fontWeight:600,color:"#cc0000",textTransform:"uppercase",letterSpacing:1,borderBottom:"1px solid #e2e8f0",paddingBottom:8,marginBottom:12}}}>
-              <span>Fotos de la cotización</span>
-              <span style={{fontSize:10,color:"#94a3b8",fontWeight:400,textTransform:"none"}}>El mapa satelital se agrega al PDF automáticamente</span>
+          {/* FOTOS */}
+          <div style={{background:'#fff',border:'1.5px solid #e8edf4',borderRadius:14,padding:'20px 24px',marginBottom:18}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'2px solid #f4f7fb',paddingBottom:10,marginBottom:16}}>
+              <div style={{fontSize:11,fontWeight:700,color:'#cc0000',textTransform:'uppercase',letterSpacing:1.5}}>Fotos</div>
+              <div style={{fontSize:11,color:'#94a3b8'}}>El mapa satelital se agrega automáticamente al PDF</div>
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:4}}>
-              {fotosCotizacion.map((f,i)=>(
-                <div key={f.id} style={{borderRadius:8,overflow:"hidden",border:"1px solid #e2e8f0",background:"#f8fafc"}}>
-                  <img src={f.src} alt={f.label||"Foto " + (i+1)} style={{width:"100%",height:120,objectFit:"cover",display:"block"}}/>
-                  <div style={{padding:"6px 8px",display:"flex",gap:4,alignItems:"center"}}>
-                    <input value={f.label||""} onChange={e=>setFotosCotizacion(p=>p.map(x=>x.id===f.id?{...x,label:e.target.value}:x))} placeholder={"Foto " + (i+1)} style={{...SI,fontSize:11,padding:"3px 6px",flex:1}}/>
-                    <button onClick={()=>setFotosCotizacion(p=>p.filter(x=>x.id!==f.id))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:5,width:22,height:22,cursor:"pointer",fontSize:13,flexShrink:0}}>×</button>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10}}>
+              {fotosCotizacion.map((f,idx2)=>(
+                <div key={f.id} style={{borderRadius:10,overflow:'hidden',border:'1px solid #e8edf4',background:'#f8fafc'}}>
+                  <img src={f.src} alt={f.label||('Foto '+(idx2+1))} style={{width:'100%',height:108,objectFit:'cover',display:'block'}}/>
+                  <div style={{padding:'6px 8px',display:'flex',gap:4,alignItems:'center'}}>
+                    <input value={f.label||''} onChange={e=>setFotosCotizacion(p=>p.map(x=>x.id===f.id?{...x,label:e.target.value}:x))} placeholder={'Foto '+(idx2+1)} style={{...SI,fontSize:11,padding:'3px 6px',flex:1}}/>
+                    <button onClick={()=>setFotosCotizacion(p=>p.filter(x=>x.id!==f.id))} style={{background:'#fee2e2',border:'none',color:'#ef4444',borderRadius:5,width:22,height:22,cursor:'pointer',fontSize:13,flexShrink:0}}>×</button>
                   </div>
                 </div>
               ))}
-              <div onClick={()=>fotosRef.current.click()} style={{border:"2px dashed #f47c20",borderRadius:10,minHeight:140,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",background:"#fff8f3",gap:6}}>
-                <div style={{fontSize:32}}>📷</div>
-                <div style={{fontSize:12,color:"#f47c20",fontWeight:600,textAlign:"center",padding:"0 8px"}}>Agregar foto</div>
+              <div onClick={()=>fotosRef.current.click()} style={{border:'2px dashed #f47c20',borderRadius:10,minHeight:128,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',cursor:'pointer',background:'#fff8f3',gap:6}}>
+                <div style={{fontSize:26}}>📷</div>
+                <div style={{fontSize:12,color:'#f47c20',fontWeight:600}}>Agregar foto</div>
               </div>
             </div>
-            <input ref={fotosRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={e=>{
-              Array.from(e.target.files||[]).forEach(file=>{
-                const r=new FileReader();
-                r.onload=(ev)=>setFotosCotizacion(p=>[...p,{id:Date.now()+Math.random(),src:ev.target.result,label:""}]);
-                r.readAsDataURL(file);
-              });
-              e.target.value="";
-            }}/>
+            <input ref={fotosRef} type="file" accept="image/*" multiple style={{display:'none'}} onChange={e=>{Array.from(e.target.files||[]).forEach(file=>{const r=new FileReader();r.onload=(ev)=>setFotosCotizacion(p=>[...p,{id:Date.now()+Math.random(),src:ev.target.result,label:''}]);r.readAsDataURL(file);});e.target.value='';}}/>
           </div>
 
-          <div style={{...CD,marginBottom:14}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,...{fontSize:11,fontWeight:600,color:"#cc0000",textTransform:"uppercase",letterSpacing:1,borderBottom:"1px solid #e2e8f0",paddingBottom:8}}}>
-              <span>Ítems</span>
-              <div style={{display:"flex",gap:8}}>
-                <button onClick={usarMedicionesComoItems} style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"5px 12px"}}>Jalar mediciones</button>
-                <button onClick={()=>setShowDB(!showDB)} style={{...B(showDB?"#1a3050":"transparent","#f47c20"),border:"1px solid #cc0000",fontSize:11,padding:"5px 12px"}}>{showDB?"Cerrar catálogo":"Catálogo"}</button>
+          {/* ÍTEMS */}
+          <div style={{background:'#fff',border:'1.5px solid #e8edf4',borderRadius:14,padding:'20px 24px',marginBottom:18}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'2px solid #f4f7fb',paddingBottom:10,marginBottom:16}}>
+              <div style={{fontSize:11,fontWeight:700,color:'#cc0000',textTransform:'uppercase',letterSpacing:1.5}}>Ítems de la propuesta</div>
+              <div style={{display:'flex',gap:8}}>
+                <button onClick={usarMedicionesComoItems} style={{...B('#f0f9ff','#0284c7'),border:'1px solid #bae6fd',fontSize:11,padding:'5px 12px',borderRadius:7}}>Jalar mediciones</button>
+                <button onClick={()=>setShowDB(!showDB)} style={{...B(showDB?'#142840':'#f8fafc',showDB?'#fff':'#64748b'),border:'1px solid '+(showDB?'#142840':'#e2e8f0'),fontSize:11,padding:'5px 12px',borderRadius:7}}>{showDB?'Cerrar catálogo':'Catálogo de precios'}</button>
               </div>
             </div>
             {showDB&&(
-              <div style={{background:"#f8fafc",borderRadius:10,padding:16,marginBottom:16,border:"1px solid #f47c2044"}}>
-                <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
-                  {ITEMS_DB.map((cat,i)=><button key={i} onClick={()=>setDbCat(i)} style={{...B(dbCat===i?"#f47c20":"#142840",dbCat===i?"#fff":"#7da5c8"),border:"1px solid " + (dbCat===i?"#f47c20":"#1a3050"),fontSize:11,padding:"5px 12px"}}>{cat.categoria}</button>)}
+              <div style={{background:'#f8fafc',borderRadius:10,padding:16,marginBottom:16,border:'1px solid #f0e5d8'}}>
+                <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:12}}>
+                  {ITEMS_DB.map((cat,i)=><button key={i} onClick={()=>setDbCat(i)} style={{...B(dbCat===i?'#f47c20':'#fff',dbCat===i?'#fff':'#64748b'),border:'1px solid '+(dbCat===i?'#f47c20':'#e2e8f0'),fontSize:11,padding:'5px 12px',borderRadius:8}}>{cat.categoria}</button>)}
                 </div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
                   {ITEMS_DB[dbCat].items.map((it,i)=>(
-                    <div key={i} style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
-                      <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:"#1a1a2e",marginBottom:2}}>{it.desc}</div><div style={{fontSize:11,color:"#475569"}}>{it.unit} · {fmt(it.vu)}</div></div>
-                      <button onClick={()=>addFromDB(it)} style={{...B("#f47c20"),padding:"5px 12px",fontSize:12,flexShrink:0}}>+</button>
+                    <div key={i} style={{background:'#fff',borderRadius:8,padding:'10px 12px',display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,border:'1px solid #f0e5d8'}}>
+                      <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:'#142840',marginBottom:2}}>{it.desc}</div><div style={{fontSize:11,color:'#64748b'}}>{it.unit} · {fmt(it.vu)}</div></div>
+                      <button onClick={()=>addFromDB(it)} style={{...B('#f47c20'),padding:'5px 10px',fontSize:12,flexShrink:0}}>+</button>
                     </div>
                   ))}
                 </div>
@@ -2773,83 +841,108 @@ function Cotizacion({ctx}){
             )}
             {items.length>0&&(
               <div style={{marginBottom:8}}>
-                <div style={{display:"grid",gridTemplateColumns:"2.2fr 0.7fr 0.8fr 1fr 1fr 28px",gap:8,fontSize:10,color:"#64748b",textTransform:"uppercase",padding:"0 6px",marginBottom:6}}>
-                  <span>Descripción</span><span>Cant.</span><span>Unidad</span><span>V.Unit</span><span style={{textAlign:"right"}}>Subtotal</span><span/>
+                <div style={{display:'grid',gridTemplateColumns:'2.5fr 0.7fr 0.9fr 1.1fr 1.1fr 30px',gap:8,fontSize:10,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',letterSpacing:.5,padding:'0 10px 8px',borderBottom:'1px solid #f1f5f9',marginBottom:6}}>
+                  <span>Descripción</span><span>Cant.</span><span>Unidad</span><span>V. Unitario</span><span style={{textAlign:'right'}}>Subtotal</span><span/>
                 </div>
                 {items.map(it=>(
-                  <div key={it.id} style={{display:"grid",gridTemplateColumns:"2.2fr 0.7fr 0.8fr 1fr 1fr 28px",gap:8,alignItems:"center",background:"#f1f5f9",borderRadius:8,padding:"8px",marginBottom:6}}>
-                    <input value={it.desc} onChange={e=>upd(it.id,"desc",e.target.value)} style={{...SI,fontSize:12,padding:"6px 8px"}}/>
-                    <input type="number" value={it.cant} onChange={e=>upd(it.id,"cant",e.target.value)} style={{...SI,fontSize:12,padding:"6px 8px"}}/>
-                    <input value={it.unit} onChange={e=>upd(it.id,"unit",e.target.value)} style={{...SI,fontSize:12,padding:"6px 8px"}}/>
-                    <input type="number" value={it.vu} onChange={e=>upd(it.id,"vu",e.target.value)} style={{...SI,fontSize:12,padding:"6px 8px"}}/>
-                    <div style={{textAlign:"right",fontSize:12,fontWeight:600,color:"#cc0000"}}>{fmt(it.cant*it.vu)}</div>
-                    <button onClick={()=>del(it.id)} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:6,width:24,height:24,cursor:"pointer",fontSize:14}}>×</button>
+                  <div key={it.id} style={{display:'grid',gridTemplateColumns:'2.5fr 0.7fr 0.9fr 1.1fr 1.1fr 30px',gap:8,alignItems:'center',borderRadius:10,padding:'9px 10px',marginBottom:5,border:'1px solid #f1f5f9',background:'#fafbfc'}}>
+                    <input value={it.desc} onChange={e=>upd(it.id,'desc',e.target.value)} style={{...SI,fontSize:12,padding:'7px 10px'}}/>
+                    <input type="number" value={it.cant} onChange={e=>upd(it.id,'cant',e.target.value)} style={{...SI,fontSize:12,padding:'7px 10px'}}/>
+                    <input value={it.unit} onChange={e=>upd(it.id,'unit',e.target.value)} style={{...SI,fontSize:12,padding:'7px 10px'}}/>
+                    <input type="number" value={it.vu} onChange={e=>upd(it.id,'vu',e.target.value)} style={{...SI,fontSize:12,padding:'7px 10px'}}/>
+                    <div style={{textAlign:'right',fontSize:13,fontWeight:700,color:'#cc0000',paddingRight:4}}>{fmt(it.cant*it.vu)}</div>
+                    <button onClick={()=>del(it.id)} style={{background:'#fee2e2',border:'none',color:'#dc2626',borderRadius:7,width:26,height:26,cursor:'pointer',fontSize:15,display:'flex',alignItems:'center',justifyContent:'center'}}>×</button>
                   </div>
                 ))}
               </div>
             )}
-            {items.length===0&&!showDB&&<div style={{textAlign:"center",padding:"28px 0",color:"#94a3b8",fontSize:13}}><div style={{fontSize:28,marginBottom:8}}>Items</div><div>Mide primero en el mapa o usa el catálogo para agregar ítems</div></div>}
-            <button onClick={addBlank} style={{...B("#fff3e8","#f47c20"),border:"1px dashed #cc0000",width:"100%",justifyContent:"center",marginTop:8,fontSize:12}}>+ Agregar ítem manual</button>
+            {items.length===0&&!showDB&&(
+              <div style={{textAlign:'center',padding:'36px 0',color:'#94a3b8',fontSize:13}}>
+                <div style={{fontSize:32,marginBottom:10}}>📋</div>
+                <div style={{fontWeight:600,marginBottom:4,color:'#64748b'}}>Sin ítems todavía</div>
+                <div style={{fontSize:12}}>Mide en el mapa o usa el catálogo para agregar ítems</div>
+              </div>
+            )}
+            <button onClick={addBlank} style={{...B('#fff','#f47c20'),border:'1.5px dashed #f47c20',width:'100%',justifyContent:'center',marginTop:10,fontSize:12,padding:'10px 0',borderRadius:10}}>+ Agregar ítem manual</button>
           </div>
 
-          <div style={{...CD,marginBottom:14}}>
-            <div style={ST}>Condiciones comerciales</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-              <div><LBL>Forma de pago</LBL><input value={formaPago} onChange={e=>setFormaPago(e.target.value)} style={SI}/></div>
-              <div><LBL>Tiempo de ejecución</LBL><input value={tiempoEjec} onChange={e=>setTiempoEjec(e.target.value)} style={SI}/></div>
+          {/* CONDICIONES COMERCIALES */}
+          <div style={{background:'#fff',border:'1.5px solid #e8edf4',borderRadius:14,padding:'20px 24px',marginBottom:18}}>
+            <div style={{fontSize:11,fontWeight:700,color:'#cc0000',textTransform:'uppercase',letterSpacing:1.5,borderBottom:'2px solid #f4f7fb',paddingBottom:10,marginBottom:16}}>Condiciones comerciales</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+              <div>
+                <div style={{fontSize:10,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:.8,marginBottom:5}}>Forma de pago</div>
+                <input value={formaPago} onChange={e=>setFormaPago(e.target.value)} style={{...SI,fontSize:13}}/>
+              </div>
+              <div>
+                <div style={{fontSize:10,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:.8,marginBottom:5}}>Tiempo de ejecución</div>
+                <input value={tiempoEjec} onChange={e=>setTiempoEjec(e.target.value)} style={{...SI,fontSize:13}}/>
+              </div>
             </div>
           </div>
 
-          {tipoCotizacion==="obra_blanca"&&(
-            <div style={{...CD,marginBottom:14}}>
-              <div style={ST}>Necesidad del cliente</div>
-              <div style={{fontSize:12,color:"#64748b",marginBottom:10}}>
-                Escribe aquí el alcance o lo que el cliente necesita para esta obra blanca. Este texto también quedará guardado con la cotización.
-              </div>
-              <textarea
-                value={requerimientoCliente}
-                onChange={e=>setRequerimientoCliente(e.target.value)}
-                placeholder="Ej: suministro e instalación de cielo raso en drywall, pintura interior, enchape y resanes en zonas comunes..."
-                style={{...SI,minHeight:150,resize:"vertical",lineHeight:1.5}}
-              />
+          {tipoCotizacion==='obra_blanca'&&(
+            <div style={{background:'#fff',border:'1.5px solid #e8edf4',borderRadius:14,padding:'20px 24px',marginBottom:18}}>
+              <div style={{fontSize:11,fontWeight:700,color:'#cc0000',textTransform:'uppercase',letterSpacing:1.5,borderBottom:'2px solid #f4f7fb',paddingBottom:10,marginBottom:16}}>Necesidad del cliente</div>
+              <textarea value={requerimientoCliente} onChange={e=>setRequerimientoCliente(e.target.value)} placeholder="Ej: suministro e instalación de cielo raso en drywall, pintura interior, enchape y resanes..." style={{...SI,minHeight:140,resize:'vertical',lineHeight:1.6,fontSize:13}}/>
             </div>
           )}
 
-          <div style={CD}>
-            <div style={ST}>Resumen financiero</div>
-            <div style={{maxWidth:400,marginLeft:"auto"}}>
-              {[ ["SUBTOTAL",fmt(sub),false], ["UTILIDADES",fmt(ut),true], ["IVA 19% UTILIDADES",fmt(iva),false] ].map(([k,v,ed])=>(
-                <div key={k} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",fontSize:12,color:"#475569",borderBottom:"1px solid #142840"}}>
-                  <span>{k}{ed?" (" + (util) + "% valor obra)":""}</span>
-                  <div style={{display:"flex",alignItems:"center",gap:6}}>
-                    {ed&&<input type="number" value={util} min={0} max={100} onChange={e=>setUtil(parseFloat(e.target.value)||0)} style={{...SI,width:54,padding:"4px 8px",fontSize:12}}/>}
-                    {ed&&<span style={{fontSize:11}}>%</span>}
-                    <span style={{minWidth:100,textAlign:"right"}}>{v}</span>
-                  </div>
-                </div>
-              ))}
-              <div style={{display:"flex",justifyContent:"space-between",padding:"12px 14px",background:"#f5c842",borderRadius:4,marginTop:10,fontWeight:700,color:"#111",fontSize:15}}><span>TOTAL</span><span>{fmt(tot)}</span></div>
-            </div>
-          </div>
         </div>
 
-        <div style={{alignSelf:"start",position:"sticky",top:20,display:"flex",flexDirection:"column",gap:14}}>
-          <div style={CD}>
-            <div style={ST}>Resumen</div>
-            <div style={{fontSize:13,fontWeight:700,color:"#cc0000"}}>COTIZACION No. {cot}</div>
-            <div style={{fontSize:11,color:"#64748b",marginBottom:10}}>{fmtL(fecha)}</div>
-            <div style={{fontSize:13,fontWeight:600,marginBottom:2}}>{cl.nombre||"-"}</div>
-            <div style={{fontSize:11,color:"#475569",marginBottom:8}}>{cl.obra||"-"} · {cl.ciudad||"-"}</div>
-            <div style={{fontSize:11,color:"#64748b",marginBottom:4}}>{(geoMediciones||[]).length} tramo(s) medido(s)</div>
-            <div style={{fontSize:11,color:"#64748b",marginBottom:4}}>{propuestasSnapshot.length} propuesta(s) en esta cotización</div>
-            <div style={{fontSize:11,color:"#1a1a2e",marginBottom:14}}><strong>Activa:</strong> {nombrePropuesta || "-"}</div>
-            <div style={{display:"flex",justifyContent:"space-between",fontWeight:700,fontSize:15,color:"#cc0000",background:"#f1f5f9",padding:"10px 12px",borderRadius:8,marginBottom:12}}><span>TOTAL</span><span>{fmt(tot)}</span></div>
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              <button style={{...B("#f47c20"),justifyContent:"center"}} onClick={guardarCot}>{editCot?"Actualizar":"Guardar"} Cotización</button>
-              <button style={{...B("#dbeafe","#1e40af"),justifyContent:"center"}} onClick={()=>{const saved=guardarCot(); if(saved) setPreviewCot(saved);}}>Guardar y ver</button>
-              <button style={{...B("#0f2d1a","#4ade80"),justifyContent:"center",border:"1px solid #166534"}} onClick={usarMedicionesComoItems}>Crear ítems desde mediciones</button>
+        {/* ===== RIGHT SIDEBAR ===== */}
+        <div style={{alignSelf:'start',position:'sticky',top:72,display:'flex',flexDirection:'column',gap:14}}>
+
+          {/* IDENTIFICACIÓN */}
+          <div style={{background:'#fff',border:'1.5px solid #e8edf4',borderRadius:14,padding:'18px 20px'}}>
+            <div style={{fontSize:11,fontWeight:700,color:'#cc0000',textTransform:'uppercase',letterSpacing:1.5,borderBottom:'2px solid #f4f7fb',paddingBottom:8,marginBottom:14}}>Identificación</div>
+            <div style={{display:'flex',flexDirection:'column',gap:12}}>
+              <div>
+                <div style={{fontSize:10,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',letterSpacing:.8,marginBottom:4}}>N° Cotización</div>
+                <input value={cot} onChange={e=>setCot(e.target.value)} style={{...SI,fontSize:13,fontWeight:700}}/>
+              </div>
+              <div>
+                <div style={{fontSize:10,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',letterSpacing:.8,marginBottom:4}}>Fecha</div>
+                <input type="date" value={fecha} onChange={e=>setFecha(e.target.value)} style={{...SI,fontSize:13}}/>
+              </div>
+              <div>
+                <div style={{fontSize:10,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',letterSpacing:.8,marginBottom:4}}>Vigencia (días)</div>
+                <input type="number" value={val} onChange={e=>setVal(Number(e.target.value))} style={{...SI,fontSize:13}}/>
+              </div>
             </div>
           </div>
+
+          {/* RESUMEN FINANCIERO */}
+          <div style={{background:'#fff',border:'1.5px solid #e8edf4',borderRadius:14,padding:'18px 20px'}}>
+            <div style={{fontSize:11,fontWeight:700,color:'#cc0000',textTransform:'uppercase',letterSpacing:1.5,borderBottom:'2px solid #f4f7fb',paddingBottom:8,marginBottom:14}}>Resumen financiero</div>
+            <div style={{display:'flex',flexDirection:'column',gap:10}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',fontSize:12,color:'#64748b',padding:'4px 0',borderBottom:'1px solid #f4f7fb'}}>
+                <span>Subtotal</span><span style={{fontWeight:600,color:'#1a1a2e'}}>{fmt(sub)}</span>
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',fontSize:12,color:'#64748b',padding:'4px 0',borderBottom:'1px solid #f4f7fb'}}>
+                <div style={{display:'flex',alignItems:'center',gap:5}}>
+                  <span>Utilidad</span>
+                  <input type="number" value={util} min={0} max={100} onChange={e=>setUtil(parseFloat(e.target.value)||0)} style={{...SI,width:46,padding:'3px 6px',fontSize:11,textAlign:'center'}}/>
+                  <span style={{fontSize:11}}>%</span>
+                </div>
+                <span style={{fontWeight:600,color:'#1a1a2e'}}>{fmt(ut)}</span>
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',fontSize:12,color:'#64748b',padding:'4px 0',borderBottom:'1px solid #f4f7fb'}}>
+                <span>IVA 19%</span><span style={{fontWeight:600,color:'#1a1a2e'}}>{fmt(iva)}</span>
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:'#142840',color:'#fff',borderRadius:10,padding:'13px 16px',marginTop:4,fontWeight:700,fontSize:16}}>
+                <span>TOTAL</span><span style={{color:'#fcd34d'}}>{fmt(tot)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ACCIONES */}
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+            <button style={{...B('#f47c20'),justifyContent:'center',fontSize:13,fontWeight:700,padding:'13px 0',borderRadius:10,width:'100%'}} onClick={guardarCot}>{editCot?'Actualizar cotización':'Guardar cotización'}</button>
+            <button style={{...B('#142840','#94b8d4'),justifyContent:'center',fontSize:12,padding:'11px 0',borderRadius:10,width:'100%'}} onClick={()=>{const saved=guardarCot();if(saved)setPreviewCot(saved);}}>Guardar y ver PDF</button>
+            <button style={{...B('#f0fdf4','#166534'),border:'1px solid #bbf7d0',justifyContent:'center',fontSize:12,padding:'10px 0',borderRadius:10,width:'100%'}} onClick={usarMedicionesComoItems}>Crear ítems desde mediciones</button>
+          </div>
+
         </div>
       </div>
     </div>

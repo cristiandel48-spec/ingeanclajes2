@@ -1,0 +1,259 @@
+
+  return(
+    <div style={{minHeight:'100vh',background:'#f4f7fb',paddingBottom:40}}>
+
+      {/* STICKY HEADER */}
+      <div style={{position:'sticky',top:0,zIndex:100,background:'#fff',borderBottom:'1px solid #e2e8f0',padding:'13px 28px',display:'flex',justifyContent:'space-between',alignItems:'center',boxShadow:'0 2px 8px rgba(0,0,0,.06)'}}>
+        <div style={{display:'flex',alignItems:'center',gap:16}}>
+          <button style={{...B('#f1f5f9','#475569'),padding:'7px 14px',fontSize:12,borderRadius:8}} onClick={()=>setTab('lista')}>← Volver</button>
+          <div>
+            <div style={{fontSize:16,fontWeight:700,color:'#142840'}}>{editCot?'Editar Cotización':'Nueva Cotización'}</div>
+            <div style={{fontSize:11,color:'#94a3b8',marginTop:1}}>{cot?('COT '+cot+' · '):''}{cl.nombre||'Sin cliente'}{cl.ciudad?(' · '+cl.ciudad):''}</div>
+          </div>
+        </div>
+        <div style={{display:'flex',gap:10}}>
+          <button style={{...B('#f47c20'),padding:'9px 22px',fontSize:13,fontWeight:700,borderRadius:9}} onClick={guardarCot}>{editCot?'Actualizar':'Guardar cotización'}</button>
+          <button style={{...B('#142840','#94b8d4'),padding:'9px 22px',fontSize:13,borderRadius:9}} onClick={()=>{const saved=guardarCot();if(saved)setPreviewCot(saved);}}>Ver PDF</button>
+        </div>
+      </div>
+
+      {/* MAIN LAYOUT */}
+      <div style={{padding:'24px 28px 0',display:'grid',gridTemplateColumns:'1fr 300px',gap:22,maxWidth:1280,margin:'0 auto'}}>
+
+        {/* ===== LEFT COLUMN ===== */}
+        <div>
+
+          {/* PROPUESTAS */}
+          <div style={{background:'#fff',border:'1.5px solid #e8edf4',borderRadius:14,padding:'20px 24px',marginBottom:18}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
+              <div style={{fontSize:11,fontWeight:700,color:'#cc0000',textTransform:'uppercase',letterSpacing:1.5}}>Propuestas</div>
+              <div style={{display:'flex',gap:7}}>
+                <button onClick={addProposal} style={{...B('#fff8f0','#f47c20'),border:'1px solid #fcd7aa',fontSize:11,padding:'5px 12px',borderRadius:7}}>+ Nueva</button>
+                <button onClick={duplicateProposal} style={{...B('#f8fafc','#475569'),border:'1px solid #e2e8f0',fontSize:11,padding:'5px 12px',borderRadius:7}}>Duplicar</button>
+                <button onClick={removeActiveProposal} disabled={propuestasSnapshot.length<=1} style={{...B('#fff1f2','#dc2626'),border:'1px solid #fecaca',fontSize:11,padding:'5px 12px',borderRadius:7,opacity:propuestasSnapshot.length<=1?0.4:1}}>Eliminar</button>
+              </div>
+            </div>
+            <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+              {propuestasSnapshot.map(propuesta=>(
+                <button key={propuesta.id} onClick={()=>switchProposal(propuesta.id)}
+                  style={{display:'flex',flexDirection:'column',alignItems:'flex-start',padding:'13px 18px',borderRadius:12,border:'2px solid '+(propuesta.id===propuestaActivaId?'#f47c20':'#e8edf4'),background:propuesta.id===propuestaActivaId?'#fff7ed':'#f8fafc',cursor:'pointer',minWidth:175,gap:3}}>
+                  <div style={{fontSize:13,fontWeight:700,color:'#142840'}}>{propuesta.nombre}</div>
+                  <div style={{fontSize:11,color:'#94a3b8'}}>{propuesta.tipoCotizacion==='obra_blanca'?'Obra blanca':'Línea de vida'}</div>
+                  <div style={{fontSize:16,fontWeight:800,color:propuesta.id===propuestaActivaId?'#f47c20':'#94a3b8',marginTop:4}}>{fmt(Number(propuesta.id===propuestaActivaId?tot:propuesta.total)||0)}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* PROPUESTA ACTIVA CONFIG */}
+          <div style={{background:'#fff',border:'1.5px solid #e8edf4',borderRadius:14,padding:'20px 24px',marginBottom:18}}>
+            <div style={{fontSize:11,fontWeight:700,color:'#cc0000',textTransform:'uppercase',letterSpacing:1.5,borderBottom:'2px solid #f4f7fb',paddingBottom:10,marginBottom:16}}>Configuración · propuesta activa</div>
+            <div style={{display:'grid',gridTemplateColumns:'1.3fr 1fr',gap:14,marginBottom:14}}>
+              <div>
+                <div style={{fontSize:10,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:.8,marginBottom:5}}>Nombre de la propuesta</div>
+                <input value={nombrePropuesta} onChange={e=>setNombrePropuesta(e.target.value)} style={{...SI,fontSize:13}} placeholder="Ej: Propuesta recomendada"/>
+              </div>
+              <div>
+                <div style={{fontSize:10,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:.8,marginBottom:5}}>Tipo</div>
+                <div style={{display:'flex',gap:7,height:38}}>
+                  {[['linea_vida','Línea de vida'],['obra_blanca','Obra blanca']].map(([v,l])=>(
+                    <button key={v} onClick={()=>setTipoCotizacion(v)}
+                      style={{...B(tipoCotizacion===v?'#142840':'#f8fafc',tipoCotizacion===v?'#fff':'#64748b'),flex:1,justifyContent:'center',border:'1.5px solid '+(tipoCotizacion===v?'#142840':'#e2e8f0'),fontSize:12,fontWeight:tipoCotizacion===v?700:400,borderRadius:8}}>{l}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div>
+              <div style={{fontSize:10,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:.8,marginBottom:5}}>Alcance / descripción comercial</div>
+              <textarea value={alcancePropuesta} onChange={e=>setAlcancePropuesta(e.target.value)} placeholder="Ej: alternativa recomendada con línea de vida horizontal continua, puntos de anclaje y mantenimiento preventivo anual." style={{...SI,minHeight:95,resize:'vertical',lineHeight:1.6,fontSize:13}}/>
+            </div>
+          </div>
+
+          {/* CLIENTE */}
+          <div style={{background:'#fff',border:'1.5px solid #e8edf4',borderRadius:14,padding:'20px 24px',marginBottom:18}}>
+            <div style={{fontSize:11,fontWeight:700,color:'#cc0000',textTransform:'uppercase',letterSpacing:1.5,borderBottom:'2px solid #f4f7fb',paddingBottom:10,marginBottom:16}}>Datos del cliente</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+              {[
+                ['Señor / Empresa','nombre',cl.nombre,'Nombre del cliente o empresa'],
+                ['Obra / Proyecto','obra',cl.obra,'Nombre del proyecto'],
+                ['Teléfono','telefono',cl.telefono,'Número de contacto'],
+                ['Ciudad','ciudad',cl.ciudad,'Ciudad, Departamento'],
+              ].map(([label,field,fieldVal,ph])=>(
+                <div key={field}>
+                  <div style={{fontSize:10,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:.8,marginBottom:5}}>{label}</div>
+                  <input value={fieldVal} onChange={e=>setCl({...cl,[field]:e.target.value})} style={{...SI,fontSize:13}} placeholder={ph}/>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* UBICACIÓN Y MEDICIONES */}
+          <div style={{background:'#fff',border:'1.5px solid #e8edf4',borderRadius:14,padding:'20px 24px',marginBottom:18}}>
+            <div style={{fontSize:11,fontWeight:700,color:'#cc0000',textTransform:'uppercase',letterSpacing:1.5,borderBottom:'2px solid #f4f7fb',paddingBottom:10,marginBottom:16}}>Ubicación y mediciones</div>
+            <GoogleMeasureWorkspace
+              queryValue={cl.coords||((cl.obra||'')+' '+(cl.ciudad||'')).trim()}
+              onQueryChange={(v)=>setCl({...cl,coords:v})}
+              measurements={geoMediciones}
+              onChange={setGeoMediciones}
+              mapView={geoMapView}
+              onMapViewChange={setGeoMapView}
+            />
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" style={{display:'none'}} onChange={onImgChange}/>
+
+          {/* FOTOS */}
+          <div style={{background:'#fff',border:'1.5px solid #e8edf4',borderRadius:14,padding:'20px 24px',marginBottom:18}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'2px solid #f4f7fb',paddingBottom:10,marginBottom:16}}>
+              <div style={{fontSize:11,fontWeight:700,color:'#cc0000',textTransform:'uppercase',letterSpacing:1.5}}>Fotos</div>
+              <div style={{fontSize:11,color:'#94a3b8'}}>El mapa satelital se agrega automáticamente al PDF</div>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10}}>
+              {fotosCotizacion.map((f,idx2)=>(
+                <div key={f.id} style={{borderRadius:10,overflow:'hidden',border:'1px solid #e8edf4',background:'#f8fafc'}}>
+                  <img src={f.src} alt={f.label||('Foto '+(idx2+1))} style={{width:'100%',height:108,objectFit:'cover',display:'block'}}/>
+                  <div style={{padding:'6px 8px',display:'flex',gap:4,alignItems:'center'}}>
+                    <input value={f.label||''} onChange={e=>setFotosCotizacion(p=>p.map(x=>x.id===f.id?{...x,label:e.target.value}:x))} placeholder={'Foto '+(idx2+1)} style={{...SI,fontSize:11,padding:'3px 6px',flex:1}}/>
+                    <button onClick={()=>setFotosCotizacion(p=>p.filter(x=>x.id!==f.id))} style={{background:'#fee2e2',border:'none',color:'#ef4444',borderRadius:5,width:22,height:22,cursor:'pointer',fontSize:13,flexShrink:0}}>×</button>
+                  </div>
+                </div>
+              ))}
+              <div onClick={()=>fotosRef.current.click()} style={{border:'2px dashed #f47c20',borderRadius:10,minHeight:128,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',cursor:'pointer',background:'#fff8f3',gap:6}}>
+                <div style={{fontSize:26}}>📷</div>
+                <div style={{fontSize:12,color:'#f47c20',fontWeight:600}}>Agregar foto</div>
+              </div>
+            </div>
+            <input ref={fotosRef} type="file" accept="image/*" multiple style={{display:'none'}} onChange={e=>{Array.from(e.target.files||[]).forEach(file=>{const r=new FileReader();r.onload=(ev)=>setFotosCotizacion(p=>[...p,{id:Date.now()+Math.random(),src:ev.target.result,label:''}]);r.readAsDataURL(file);});e.target.value='';}}/>
+          </div>
+
+          {/* ÍTEMS */}
+          <div style={{background:'#fff',border:'1.5px solid #e8edf4',borderRadius:14,padding:'20px 24px',marginBottom:18}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'2px solid #f4f7fb',paddingBottom:10,marginBottom:16}}>
+              <div style={{fontSize:11,fontWeight:700,color:'#cc0000',textTransform:'uppercase',letterSpacing:1.5}}>Ítems de la propuesta</div>
+              <div style={{display:'flex',gap:8}}>
+                <button onClick={usarMedicionesComoItems} style={{...B('#f0f9ff','#0284c7'),border:'1px solid #bae6fd',fontSize:11,padding:'5px 12px',borderRadius:7}}>Jalar mediciones</button>
+                <button onClick={()=>setShowDB(!showDB)} style={{...B(showDB?'#142840':'#f8fafc',showDB?'#fff':'#64748b'),border:'1px solid '+(showDB?'#142840':'#e2e8f0'),fontSize:11,padding:'5px 12px',borderRadius:7}}>{showDB?'Cerrar catálogo':'Catálogo de precios'}</button>
+              </div>
+            </div>
+            {showDB&&(
+              <div style={{background:'#f8fafc',borderRadius:10,padding:16,marginBottom:16,border:'1px solid #f0e5d8'}}>
+                <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:12}}>
+                  {ITEMS_DB.map((cat,i)=><button key={i} onClick={()=>setDbCat(i)} style={{...B(dbCat===i?'#f47c20':'#fff',dbCat===i?'#fff':'#64748b'),border:'1px solid '+(dbCat===i?'#f47c20':'#e2e8f0'),fontSize:11,padding:'5px 12px',borderRadius:8}}>{cat.categoria}</button>)}
+                </div>
+                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+                  {ITEMS_DB[dbCat].items.map((it,i)=>(
+                    <div key={i} style={{background:'#fff',borderRadius:8,padding:'10px 12px',display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,border:'1px solid #f0e5d8'}}>
+                      <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:'#142840',marginBottom:2}}>{it.desc}</div><div style={{fontSize:11,color:'#64748b'}}>{it.unit} · {fmt(it.vu)}</div></div>
+                      <button onClick={()=>addFromDB(it)} style={{...B('#f47c20'),padding:'5px 10px',fontSize:12,flexShrink:0}}>+</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {items.length>0&&(
+              <div style={{marginBottom:8}}>
+                <div style={{display:'grid',gridTemplateColumns:'2.5fr 0.7fr 0.9fr 1.1fr 1.1fr 30px',gap:8,fontSize:10,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',letterSpacing:.5,padding:'0 10px 8px',borderBottom:'1px solid #f1f5f9',marginBottom:6}}>
+                  <span>Descripción</span><span>Cant.</span><span>Unidad</span><span>V. Unitario</span><span style={{textAlign:'right'}}>Subtotal</span><span/>
+                </div>
+                {items.map(it=>(
+                  <div key={it.id} style={{display:'grid',gridTemplateColumns:'2.5fr 0.7fr 0.9fr 1.1fr 1.1fr 30px',gap:8,alignItems:'center',borderRadius:10,padding:'9px 10px',marginBottom:5,border:'1px solid #f1f5f9',background:'#fafbfc'}}>
+                    <input value={it.desc} onChange={e=>upd(it.id,'desc',e.target.value)} style={{...SI,fontSize:12,padding:'7px 10px'}}/>
+                    <input type="number" value={it.cant} onChange={e=>upd(it.id,'cant',e.target.value)} style={{...SI,fontSize:12,padding:'7px 10px'}}/>
+                    <input value={it.unit} onChange={e=>upd(it.id,'unit',e.target.value)} style={{...SI,fontSize:12,padding:'7px 10px'}}/>
+                    <input type="number" value={it.vu} onChange={e=>upd(it.id,'vu',e.target.value)} style={{...SI,fontSize:12,padding:'7px 10px'}}/>
+                    <div style={{textAlign:'right',fontSize:13,fontWeight:700,color:'#cc0000',paddingRight:4}}>{fmt(it.cant*it.vu)}</div>
+                    <button onClick={()=>del(it.id)} style={{background:'#fee2e2',border:'none',color:'#dc2626',borderRadius:7,width:26,height:26,cursor:'pointer',fontSize:15,display:'flex',alignItems:'center',justifyContent:'center'}}>×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {items.length===0&&!showDB&&(
+              <div style={{textAlign:'center',padding:'36px 0',color:'#94a3b8',fontSize:13}}>
+                <div style={{fontSize:32,marginBottom:10}}>📋</div>
+                <div style={{fontWeight:600,marginBottom:4,color:'#64748b'}}>Sin ítems todavía</div>
+                <div style={{fontSize:12}}>Mide en el mapa o usa el catálogo para agregar ítems</div>
+              </div>
+            )}
+            <button onClick={addBlank} style={{...B('#fff','#f47c20'),border:'1.5px dashed #f47c20',width:'100%',justifyContent:'center',marginTop:10,fontSize:12,padding:'10px 0',borderRadius:10}}>+ Agregar ítem manual</button>
+          </div>
+
+          {/* CONDICIONES COMERCIALES */}
+          <div style={{background:'#fff',border:'1.5px solid #e8edf4',borderRadius:14,padding:'20px 24px',marginBottom:18}}>
+            <div style={{fontSize:11,fontWeight:700,color:'#cc0000',textTransform:'uppercase',letterSpacing:1.5,borderBottom:'2px solid #f4f7fb',paddingBottom:10,marginBottom:16}}>Condiciones comerciales</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+              <div>
+                <div style={{fontSize:10,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:.8,marginBottom:5}}>Forma de pago</div>
+                <input value={formaPago} onChange={e=>setFormaPago(e.target.value)} style={{...SI,fontSize:13}}/>
+              </div>
+              <div>
+                <div style={{fontSize:10,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:.8,marginBottom:5}}>Tiempo de ejecución</div>
+                <input value={tiempoEjec} onChange={e=>setTiempoEjec(e.target.value)} style={{...SI,fontSize:13}}/>
+              </div>
+            </div>
+          </div>
+
+          {tipoCotizacion==='obra_blanca'&&(
+            <div style={{background:'#fff',border:'1.5px solid #e8edf4',borderRadius:14,padding:'20px 24px',marginBottom:18}}>
+              <div style={{fontSize:11,fontWeight:700,color:'#cc0000',textTransform:'uppercase',letterSpacing:1.5,borderBottom:'2px solid #f4f7fb',paddingBottom:10,marginBottom:16}}>Necesidad del cliente</div>
+              <textarea value={requerimientoCliente} onChange={e=>setRequerimientoCliente(e.target.value)} placeholder="Ej: suministro e instalación de cielo raso en drywall, pintura interior, enchape y resanes..." style={{...SI,minHeight:140,resize:'vertical',lineHeight:1.6,fontSize:13}}/>
+            </div>
+          )}
+
+        </div>
+
+        {/* ===== RIGHT SIDEBAR ===== */}
+        <div style={{alignSelf:'start',position:'sticky',top:72,display:'flex',flexDirection:'column',gap:14}}>
+
+          {/* IDENTIFICACIÓN */}
+          <div style={{background:'#fff',border:'1.5px solid #e8edf4',borderRadius:14,padding:'18px 20px'}}>
+            <div style={{fontSize:11,fontWeight:700,color:'#cc0000',textTransform:'uppercase',letterSpacing:1.5,borderBottom:'2px solid #f4f7fb',paddingBottom:8,marginBottom:14}}>Identificación</div>
+            <div style={{display:'flex',flexDirection:'column',gap:12}}>
+              <div>
+                <div style={{fontSize:10,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',letterSpacing:.8,marginBottom:4}}>N° Cotización</div>
+                <input value={cot} onChange={e=>setCot(e.target.value)} style={{...SI,fontSize:13,fontWeight:700}}/>
+              </div>
+              <div>
+                <div style={{fontSize:10,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',letterSpacing:.8,marginBottom:4}}>Fecha</div>
+                <input type="date" value={fecha} onChange={e=>setFecha(e.target.value)} style={{...SI,fontSize:13}}/>
+              </div>
+              <div>
+                <div style={{fontSize:10,fontWeight:700,color:'#94a3b8',textTransform:'uppercase',letterSpacing:.8,marginBottom:4}}>Vigencia (días)</div>
+                <input type="number" value={val} onChange={e=>setVal(Number(e.target.value))} style={{...SI,fontSize:13}}/>
+              </div>
+            </div>
+          </div>
+
+          {/* RESUMEN FINANCIERO */}
+          <div style={{background:'#fff',border:'1.5px solid #e8edf4',borderRadius:14,padding:'18px 20px'}}>
+            <div style={{fontSize:11,fontWeight:700,color:'#cc0000',textTransform:'uppercase',letterSpacing:1.5,borderBottom:'2px solid #f4f7fb',paddingBottom:8,marginBottom:14}}>Resumen financiero</div>
+            <div style={{display:'flex',flexDirection:'column',gap:10}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',fontSize:12,color:'#64748b',padding:'4px 0',borderBottom:'1px solid #f4f7fb'}}>
+                <span>Subtotal</span><span style={{fontWeight:600,color:'#1a1a2e'}}>{fmt(sub)}</span>
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',fontSize:12,color:'#64748b',padding:'4px 0',borderBottom:'1px solid #f4f7fb'}}>
+                <div style={{display:'flex',alignItems:'center',gap:5}}>
+                  <span>Utilidad</span>
+                  <input type="number" value={util} min={0} max={100} onChange={e=>setUtil(parseFloat(e.target.value)||0)} style={{...SI,width:46,padding:'3px 6px',fontSize:11,textAlign:'center'}}/>
+                  <span style={{fontSize:11}}>%</span>
+                </div>
+                <span style={{fontWeight:600,color:'#1a1a2e'}}>{fmt(ut)}</span>
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',fontSize:12,color:'#64748b',padding:'4px 0',borderBottom:'1px solid #f4f7fb'}}>
+                <span>IVA 19%</span><span style={{fontWeight:600,color:'#1a1a2e'}}>{fmt(iva)}</span>
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:'#142840',color:'#fff',borderRadius:10,padding:'13px 16px',marginTop:4,fontWeight:700,fontSize:16}}>
+                <span>TOTAL</span><span style={{color:'#fcd34d'}}>{fmt(tot)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ACCIONES */}
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+            <button style={{...B('#f47c20'),justifyContent:'center',fontSize:13,fontWeight:700,padding:'13px 0',borderRadius:10,width:'100%'}} onClick={guardarCot}>{editCot?'Actualizar cotización':'Guardar cotización'}</button>
+            <button style={{...B('#142840','#94b8d4'),justifyContent:'center',fontSize:12,padding:'11px 0',borderRadius:10,width:'100%'}} onClick={()=>{const saved=guardarCot();if(saved)setPreviewCot(saved);}}>Guardar y ver PDF</button>
+            <button style={{...B('#f0fdf4','#166534'),border:'1px solid #bbf7d0',justifyContent:'center',fontSize:12,padding:'10px 0',borderRadius:10,width:'100%'}} onClick={usarMedicionesComoItems}>Crear ítems desde mediciones</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );

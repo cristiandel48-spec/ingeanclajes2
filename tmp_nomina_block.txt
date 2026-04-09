@@ -1,0 +1,429 @@
+﻿function Nomina({ctx}){
+  const {empleados,setEmpleados,obras,cargos,setCargos}=ctx;
+  const [tab,setTab]=useState("lista");
+  const [mes,setMes]=useState("2026-04");
+  const [selId,setSelId]=useState(null);
+  const [showHE,setShowHE]=useState(null);
+  const nuevoEmpleadoBase = {nombre:"",cedula:"",cargo:"",tel:"",email:"",salario:NOMINA_CO_2026.salarioMinimo,banco:"Bancolombia",tipoCuenta:"Ahorros",numeroCuenta:"",deduccionesPersonalizadas:[]};
+  const [nf,setNf]=useState(nuevoEmpleadoBase);
+  const [heForm,setHeForm]=useState({obraId:"",tipo:"horaExtra",horas:0,valorHora:12500,comision:0,concepto:"",fecha:today()});
+  const [cargoForm,setCargoForm]=useState({nombre:"",descripcion:""});
+  const [dedForm,setDedForm]=useState({nombre:"",valor:0});
+
+  const empleadosBase = empleados.map(normalizarEmpleado);
+  const activos=empleadosBase.filter((empleado)=>empleado.activo);
+  const resumenesActivos = activos.map((empleado)=>({ empleado, resumen:calcularResumenNominaEmpleado(empleado) }));
+  const totSal=resumenesActivos.reduce((total,item)=>total+item.resumen.salario,0);
+  const totalAuxilio=resumenesActivos.reduce((total,item)=>total+item.resumen.auxilioTransporte,0);
+  const totalDeducciones=resumenesActivos.reduce((total,item)=>total+item.resumen.totalDeducciones,0);
+  const totalNeto=resumenesActivos.reduce((total,item)=>total+item.resumen.neto,0);
+  const cargosDisponibles=[...new Set([
+    ...normalizarCargos(cargos).filter((cargo)=>cargo.activo).map((cargo)=>cargo.nombre),
+    ...empleadosBase.map((empleado)=>empleado.cargo).filter(Boolean),
+  ])].sort((a,b)=>a.localeCompare(b,"es"));
+
+  const actualizarEmpleado=(id,updater)=>{
+    setEmpleados((prev)=>
+      prev.map((empleado)=>{
+        const actual=normalizarEmpleado(empleado);
+        if(actual.id!==id) return actual;
+        const siguiente=typeof updater==="function" ? updater(actual) : { ...actual, ...updater };
+        return normalizarEmpleado(siguiente);
+      })
+    );
+  };
+
+  const updEmp=(id,field,val)=>actualizarEmpleado(id,{ [field]:val });
+
+  const guardarNuevoEmp=()=>{
+    const nombre=nf.nombre.trim();
+    const cargo=nf.cargo.trim();
+    if(!nombre||!cargo)return;
+    const nextNumber=empleadosBase.reduce((maximo,empleado)=>{
+      const match=String(empleado.id||"").match(/^E(\d+)$/);
+      return match ? Math.max(maximo,Number(match[1])) : maximo;
+    },0)+1;
+    const id=`E${String(nextNumber).padStart(2,"0")}`;
+    const av=nombre.split(" ").map((word)=>word[0]).slice(0,2).join("").toUpperCase()||"EM";
+    setEmpleados((prev)=>[
+      ...prev,
+      normalizarEmpleado({
+        ...nf,
+        nombre,
+        cargo,
+        cedula:nf.cedula.trim(),
+        id,
+        activo:true,
+        avatar:av,
+        horasExtrasPorObra:[],
+        comisionesPorObra:[],
+      }),
+    ]);
+    setNf(nuevoEmpleadoBase);
+    setTab("lista");
+  };
+
+  const guardarCargo=()=>{
+    const nombre=cargoForm.nombre.trim();
+    if(!nombre)return;
+    const yaExiste=cargosDisponibles.find((cargo)=>cargo.toLowerCase()===nombre.toLowerCase());
+    if(yaExiste){
+      setNf((prev)=>({ ...prev, cargo:yaExiste }));
+      setCargoForm({nombre:"",descripcion:""});
+      return;
+    }
+    const nuevoCargo={
+      id:`CAR-${Date.now()}`,
+      nombre,
+      descripcion:cargoForm.descripcion.trim(),
+      activo:true,
+    };
+    setCargos((prev)=>[...normalizarCargos(prev),nuevoCargo]);
+    setNf((prev)=>({ ...prev, cargo:nombre }));
+    setCargoForm({nombre:"",descripcion:""});
+  };
+
+  const agregarHE=()=>{
+    if(!showHE||!heForm.obraId)return;
+    actualizarEmpleado(showHE,(empleado)=>{
+      if(heForm.tipo==="horaExtra"){
+        const nuevo={id:Date.now(),obraId:heForm.obraId,horas:heForm.horas,valorHora:heForm.valorHora,total:heForm.horas*heForm.valorHora,fecha:heForm.fecha,concepto:heForm.concepto};
+        return { ...empleado, horasExtrasPorObra:[...(empleado.horasExtrasPorObra||[]),nuevo] };
+      }
+      const nuevo={id:Date.now(),obraId:heForm.obraId,comision:heForm.comision,fecha:heForm.fecha,concepto:heForm.concepto};
+      return { ...empleado, comisionesPorObra:[...(empleado.comisionesPorObra||[]),nuevo] };
+    });
+    setHeForm({obraId:"",tipo:"horaExtra",horas:0,valorHora:12500,comision:0,concepto:"",fecha:today()});
+  };
+
+  const agregarDeduccion=()=>{
+    const nombre=dedForm.nombre.trim();
+    const valor=Math.round(Number(dedForm.valor)||0);
+    if(!selId||!nombre||valor<=0)return;
+    actualizarEmpleado(selId,(empleado)=>({
+      ...empleado,
+      deduccionesPersonalizadas:[
+        ...(empleado.deduccionesPersonalizadas||[]),
+        { id:`DED-${Date.now()}`, nombre, valor },
+      ],
+    }));
+    setDedForm({nombre:"",valor:0});
+  };
+
+  const quitarDeduccion=(empleadoId,deduccionId)=>{
+    actualizarEmpleado(empleadoId,(empleado)=>({
+      ...empleado,
+      deduccionesPersonalizadas:(empleado.deduccionesPersonalizadas||[]).filter((deduccion)=>deduccion.id!==deduccionId),
+    }));
+  };
+
+  return(
+    <div style={{padding:28}}>
+      <H1 title="Nómina y Empleados" subtitle="Gestión de empleados, horas extras, comisiones y planilla"
+        action={<button style={B("#cc0000")} onClick={()=>setTab("nuevo")}>+ Nuevo Empleado</button>}/>
+      <div style={{display:"flex",gap:6,marginBottom:20}}>
+        {[["lista","👷 Empleados"],["he","⏱️ Horas Extras & Comisiones"],["planilla","🏦 Planilla Bancolombia"]].map(([id,lb])=>(
+          <button key={id} onClick={()=>setTab(id)} style={{...B(tab===id?"#f47c20":"#f1f5f9",tab===id?"#fff":"#475569"),border:`1px solid ${tab===id?"#f47c20":"#e2e8f0"}`}}>{lb}</button>
+        ))}
+      </div>
+
+      <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:"14px 16px",marginBottom:20}}>
+        <div style={{fontSize:11,fontWeight:700,color:"#142840",textTransform:"uppercase",letterSpacing:0.8,marginBottom:10}}>
+          Parámetros Colombia 2026
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(160px, 1fr))",gap:12}}>
+          <div><div style={{fontSize:10,color:"#64748b"}}>Salario mínimo</div><div style={{fontWeight:700,color:"#0f172a"}}>{fmt(NOMINA_CO_2026.salarioMinimo)}</div></div>
+          <div><div style={{fontSize:10,color:"#64748b"}}>Auxilio transporte</div><div style={{fontWeight:700,color:"#0f172a"}}>{fmt(NOMINA_CO_2026.auxilioTransporte)}</div></div>
+          <div><div style={{fontSize:10,color:"#64748b"}}>Salud empleado</div><div style={{fontWeight:700,color:"#0f172a"}}>{Math.round(NOMINA_CO_2026.saludPctEmpleado*100)}%</div></div>
+          <div><div style={{fontSize:10,color:"#64748b"}}>Pensión empleado</div><div style={{fontWeight:700,color:"#0f172a"}}>{Math.round(NOMINA_CO_2026.pensionPctEmpleado*100)}%</div></div>
+        </div>
+        <div style={{fontSize:11,color:"#475569",marginTop:10}}>
+          El auxilio de transporte se liquida aquí para salarios hasta {fmt(NOMINA_CO_2026.topeAuxilio)}. Las otras deducciones quedan configurables para conceptos autorizados como natillera, libranza o descuentos internos.
+        </div>
+      </div>
+      {tab==="nuevo"&&(
+        <div style={{display:"grid",gap:16,maxWidth:980}}>
+          <div style={{background:"#ffffff",border:"1px solid #e2e8f0",borderRadius:12,padding:20,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+            <div style={{fontSize:11,fontWeight:700,color:"#142840",textTransform:"uppercase",letterSpacing:1,marginBottom:16,borderBottom:"1px solid #e2e8f0",paddingBottom:10}}>
+              Catálogo de cargos
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1.1fr 1.4fr auto",gap:12,alignItems:"end"}}>
+              <div><LBL>Nuevo cargo</LBL><input value={cargoForm.nombre} onChange={(e)=>setCargoForm({...cargoForm,nombre:e.target.value})} placeholder="Ej: Supervisor de cuadrilla" style={SI}/></div>
+              <div><LBL>Descripción</LBL><input value={cargoForm.descripcion} onChange={(e)=>setCargoForm({...cargoForm,descripcion:e.target.value})} placeholder="Uso interno o funciones principales" style={SI}/></div>
+              <button onClick={guardarCargo} style={{...B("#142840"),justifyContent:"center"}}>Guardar cargo</button>
+            </div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:14}}>
+              {cargosDisponibles.map((cargo)=>(
+                <span key={cargo} style={{background:nf.cargo===cargo?"#fef3c7":"#f1f5f9",color:nf.cargo===cargo?"#92400e":"#334155",border:`1px solid ${nf.cargo===cargo?"#f59e0b":"#cbd5e1"}`,borderRadius:999,padding:"6px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}} onClick={()=>setNf({...nf,cargo:cargo})}>
+                  {cargo}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div style={{background:"#ffffff",border:"1px solid #e2e8f0",borderRadius:12,padding:24,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+            <div style={{fontSize:11,fontWeight:700,color:"#cc0000",textTransform:"uppercase",letterSpacing:1,marginBottom:18,borderBottom:"2px solid #cc000022",paddingBottom:10}}>
+              👤 Datos del Nuevo Empleado
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:16}}>
+              <div><LBL>Nombre completo *</LBL><input value={nf.nombre} onChange={e=>setNf({...nf,nombre:e.target.value})} placeholder="Ej: Carlos Andres Rios" style={SI}/></div>
+              <div><LBL>Cédula o identificación</LBL><input value={nf.cedula} onChange={e=>setNf({...nf,cedula:e.target.value})} placeholder="Ej: 1032456781" style={SI}/></div>
+              <div><LBL>Cargo *</LBL>
+                <select value={nf.cargo} onChange={e=>setNf({...nf,cargo:e.target.value})} style={SI}>
+                  <option value="">Seleccionar cargo...</option>
+                  {cargosDisponibles.map((cargo)=><option key={cargo} value={cargo}>{cargo}</option>)}
+                </select>
+              </div>
+              <div><LBL>Teléfono</LBL><input value={nf.tel} onChange={e=>setNf({...nf,tel:e.target.value})} placeholder="3001234567" style={SI}/></div>
+              <div><LBL>Email</LBL><input value={nf.email} onChange={e=>setNf({...nf,email:e.target.value})} placeholder="correo@ingeanclajes.com" style={SI}/></div>
+              <div><LBL>Salario base ($)</LBL><input type="number" value={nf.salario} onChange={e=>setNf({...nf,salario:parseFloat(e.target.value)||0})} style={SI}/></div>
+              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px",fontSize:12,color:"#475569",display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:18}}>💵</span>
+                <div>
+                  <div style={{fontSize:10,color:"#94a3b8"}}>Salario ingresado</div>
+                  <div style={{fontWeight:700,color:"#4ade80",fontSize:14}}>{fmt(nf.salario)}</div>
+                  <div style={{fontSize:10,color:"#64748b",marginTop:2}}>
+                    {nf.salario<=NOMINA_CO_2026.topeAuxilio ? `Aplica auxilio 2026: ${fmt(NOMINA_CO_2026.auxilioTransporte)}` : "No aplica auxilio de transporte"}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style={{background:"#f8fafc",borderRadius:10,padding:16,marginBottom:16,border:"1px solid #e2e8f0"}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#475569",textTransform:"uppercase",marginBottom:12,letterSpacing:0.5}}>🏦 Datos Bancarios</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
+                <div><LBL>Banco</LBL>
+                  <select value={nf.banco} onChange={e=>setNf({...nf,banco:e.target.value})} style={SI}>
+                    {["Bancolombia","Davivienda","Banco Bogotá","BBVA","Nequi","Daviplata","Banco Caja Social","Banco Popular","Scotiabank","AV Villas"].map((banco)=><option key={banco}>{banco}</option>)}
+                  </select>
+                </div>
+                <div><LBL>Tipo de cuenta</LBL>
+                  <select value={nf.tipoCuenta} onChange={e=>setNf({...nf,tipoCuenta:e.target.value})} style={SI}>
+                    {["Ahorros","Corriente"].map((tipo)=><option key={tipo}>{tipo}</option>)}
+                  </select>
+                </div>
+                <div><LBL>Número de cuenta</LBL><input value={nf.numeroCuenta} onChange={e=>setNf({...nf,numeroCuenta:e.target.value})} placeholder="204-123456-78" style={SI}/></div>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={guardarNuevoEmp} style={B("#cc0000")}>✅ Guardar Empleado</button>
+              <button onClick={()=>setTab("lista")} style={B("#f1f5f9","#475569")}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {tab==="lista"&&(
+        <div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
+            <SC label="Total salarios" value={fmtK(totSal)} color="#4ade80" icon="💵"/>
+            <SC label="Aux. transporte 2026" value={fmtK(totalAuxilio)} color="#60b4ff" icon="🚌"/>
+            <SC label="Deducciones nómina" value={fmtK(totalDeducciones)} color="#c084fc" icon="🧾"/>
+            <SC label="Neto estimado" value={fmtK(totalNeto)} color="#fb923c" icon="💰"/>
+          </div>
+          <div style={CD}>
+            <div style={ST}>Empleados ({activos.length})</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+              {empleadosBase.map((e,idx)=>{
+                const resumen=calcularResumenNominaEmpleado(e);
+                return(
+                <div key={e.id} style={{background:"#f1f5f9",borderRadius:10,padding:"14px 16px",border:selId===e.id?"1px solid #cc0000":"1px solid #e2e8f0",cursor:"pointer"}} onClick={()=>setSelId(selId===e.id?null:e.id)}>
+                  <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
+                    <Av init={e.avatar} color={PAL[idx%PAL.length]} size={38}/>
+                    <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600}}>{e.nombre}</div><div style={{fontSize:11,color:"#475569"}}>{e.cargo}</div></div>
+                    <div style={{textAlign:"right"}}><div style={{fontSize:13,fontWeight:700,color:"#4ade80"}}>{fmt(e.salario)}</div></div>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,fontSize:11,color:"#64748b",marginBottom:6}}>
+                    <div>🪪 {e.cedula||"Sin documento"}</div>
+                    <div>📱 {e.tel||"Sin teléfono"}</div>
+                    <div style={{gridColumn:"span 2",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>✉️ {e.email||"Sin email"}</div>
+                  </div>
+                  <div style={{background:"#f8fafc",borderRadius:6,padding:"7px 10px",fontSize:11,marginBottom:6}}>
+                    <div style={{color:"#64748b",marginBottom:2}}>🏦 Datos bancarios</div>
+                    <div style={{color:"#1a1a2e"}}>{e.banco||"-"} · {e.tipoCuenta||"-"}</div>
+                    <div style={{color:"#475569",fontFamily:"monospace"}}>{e.numeroCuenta||"-"}</div>
+                  </div>
+                  {selId===e.id&&(
+                    <div style={{marginTop:10,borderTop:"1px solid rgba(255,255,255,0.2)",paddingTop:10}} onClick={(event)=>event.stopPropagation()}>
+                      <div style={{fontSize:10,color:"#cc0000",fontWeight:600,textTransform:"uppercase",marginBottom:8}}>Datos del empleado y deducciones</div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+                        <div><LBL>Cédula / identificación</LBL><input value={e.cedula||""} onChange={ev=>updEmp(e.id,"cedula",ev.target.value)} placeholder="Documento" style={{...SI,fontSize:11}}/></div>
+                        <div><LBL>Cargo</LBL>
+                          <select value={e.cargo||""} onChange={ev=>updEmp(e.id,"cargo",ev.target.value)} style={{...SI,fontSize:11,padding:"5px 8px"}}>
+                            <option value="">Seleccionar cargo...</option>
+                            {cargosDisponibles.map((cargo)=><option key={cargo} value={cargo}>{cargo}</option>)}
+                          </select>
+                        </div>
+                        <div><LBL>Salario base</LBL><input type="number" value={e.salario} onChange={ev=>updEmp(e.id,"salario",parseFloat(ev.target.value)||0)} style={{...SI,fontSize:11}}/></div>
+                        <div><LBL>Banco</LBL>
+                          <select value={e.banco||""} onChange={ev=>updEmp(e.id,"banco",ev.target.value)} style={{...SI,fontSize:11,padding:"5px 8px"}}>
+                            {["Bancolombia","Davivienda","Banco Bogotá","BBVA","Nequi","Daviplata","Banco Caja Social","Banco Popular","Scotiabank","AV Villas"].map((banco)=><option key={banco}>{banco}</option>)}
+                          </select>
+                        </div>
+                        <div><LBL>Tipo de cuenta</LBL>
+                          <select value={e.tipoCuenta||""} onChange={ev=>updEmp(e.id,"tipoCuenta",ev.target.value)} style={{...SI,fontSize:11,padding:"5px 8px"}}>
+                            {["Ahorros","Corriente"].map((tipo)=><option key={tipo}>{tipo}</option>)}
+                          </select>
+                        </div>
+                        <div><LBL>Número de cuenta</LBL><input value={e.numeroCuenta||""} onChange={ev=>updEmp(e.id,"numeroCuenta",ev.target.value)} placeholder="Número de cuenta" style={{...SI,fontSize:11}}/></div>
+                      </div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:10}}>
+                        {[["Salario",fmt(resumen.salario),"#4ade80"],["Aux. transp.",fmt(resumen.auxilioTransporte),"#60b4ff"],["H. extras",fmt(resumen.horasExtras),"#f5c842"],["Comisiones",fmt(resumen.comisiones),"#c084fc"],["Salud 4%",fmt(resumen.salud),"#ef4444"],["Pensión 4%",fmt(resumen.pension),"#fb7185"],["Otras deduc.",fmt(resumen.otrasDeducciones),"#b91c1c"],["Neto",fmt(resumen.neto),"#f47c20"]].map(([k,v,c])=>(
+                          <div key={k} style={{background:"#ffffff",borderRadius:6,padding:"8px 10px"}}><div style={{fontSize:9,color:"#64748b",marginBottom:2}}>{k}</div><div style={{fontSize:11,fontWeight:700,color:c}}>{v}</div></div>
+                        ))}
+                      </div>
+                      <div style={{background:"#ffffff",borderRadius:8,padding:"10px 12px",marginBottom:10,border:"1px solid #e2e8f0"}}>
+                        <div style={{fontSize:10,color:"#142840",fontWeight:700,textTransform:"uppercase",marginBottom:8}}>Deducciones personalizadas</div>
+                        {(e.deduccionesPersonalizadas||[]).length>0 ? (
+                          <div style={{display:"grid",gap:6,marginBottom:10}}>
+                            {(e.deduccionesPersonalizadas||[]).map((deduccion)=>(
+                              <div key={deduccion.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#f8fafc",borderRadius:6,padding:"8px 10px",fontSize:11}}>
+                                <div>
+                                  <div style={{fontWeight:600,color:"#0f172a"}}>{deduccion.nombre}</div>
+                                  <div style={{color:"#64748b"}}>{fmt(deduccion.valor)} mensual</div>
+                                </div>
+                                <button type="button" onClick={()=>quitarDeduccion(e.id,deduccion.id)} style={{...B("#fee2e2","#b91c1c"),border:"1px solid #fecaca",padding:"6px 10px",fontSize:11}}>Quitar</button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div style={{fontSize:11,color:"#64748b",marginBottom:10}}>Sin deducciones adicionales. Puedes registrar natillera, libranza o cualquier otro descuento autorizado.</div>
+                        )}
+                        <div style={{display:"grid",gridTemplateColumns:"1.3fr 1fr auto",gap:8}}>
+                          <div><LBL>Concepto</LBL><input value={dedForm.nombre} onChange={(event)=>setDedForm({...dedForm,nombre:event.target.value})} placeholder="Ej: Natillera" style={{...SI,fontSize:11}}/></div>
+                          <div><LBL>Valor mensual</LBL><input type="number" value={dedForm.valor} onChange={(event)=>setDedForm({...dedForm,valor:parseFloat(event.target.value)||0})} placeholder="0" style={{...SI,fontSize:11}}/></div>
+                          <button type="button" onClick={agregarDeduccion} style={{...B("#142840"),justifyContent:"center",alignSelf:"end"}}>Agregar</button>
+                        </div>
+                      </div>
+                      <button onClick={()=>{setShowHE(e.id);setTab("he");}} style={{...B("#142840","#f5c842"),border:"1px solid #7a6610",fontSize:11,width:"100%",justifyContent:"center"}}>➕ Agregar horas extras / comisiones</button>
+                    </div>
+                  )}
+                </div>
+              )})}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab==="he"&&(
+        <div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
+            <div style={CD}>
+              <div style={ST}>Registrar hora extra o comisión</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+                <div><LBL>Empleado</LBL>
+                  <select value={showHE||""} onChange={e=>setShowHE(e.target.value)} style={SI}>
+                    <option value="">Seleccionar...</option>
+                    {empleadosBase.map((e)=><option key={e.id} value={e.id}>{e.nombre}</option>)}
+                  </select>
+                </div>
+                <div><LBL>Obra</LBL>
+                  <select value={heForm.obraId} onChange={e=>setHeForm({...heForm,obraId:e.target.value})} style={SI}>
+                    <option value="">Seleccionar obra...</option>
+                    {obras.map((o)=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}
+                  </select>
+                </div>
+                <div style={{gridColumn:"span 2"}}><LBL>Tipo</LBL>
+                  <div style={{display:"flex",gap:8}}>
+                    {[["horaExtra","⏱️ Hora Extra"],["comision","💰 Comisión"]].map(([v,l])=>(
+                      <button key={v} onClick={()=>setHeForm({...heForm,tipo:v})} style={{...B(heForm.tipo===v?"#f47c20":"#142840",heForm.tipo===v?"#fff":"#7da5c8"),flex:1,justifyContent:"center",border:`1px solid ${heForm.tipo===v?"#f47c20":"#1a3050"}`}}>{l}</button>
+                    ))}
+                  </div>
+                </div>
+                {heForm.tipo==="horaExtra"&&<>
+                  <div><LBL>Horas extras</LBL><input type="number" value={heForm.horas} onChange={e=>setHeForm({...heForm,horas:parseFloat(e.target.value)||0})} style={SI}/></div>
+                  <div><LBL>Valor/hora</LBL><input type="number" value={heForm.valorHora} onChange={e=>setHeForm({...heForm,valorHora:parseFloat(e.target.value)||0})} style={SI}/></div>
+                  <div style={{gridColumn:"span 2",background:"#ffffff",borderRadius:8,padding:"10px 12px",fontSize:12}}>Total horas extras: <strong style={{color:"#f5c842"}}>{fmt(heForm.horas*heForm.valorHora)}</strong></div>
+                </>}
+                {heForm.tipo==="comision"&&<>
+                  <div style={{gridColumn:"span 2"}}><LBL>Valor comisión</LBL><input type="number" value={heForm.comision} onChange={e=>setHeForm({...heForm,comision:parseFloat(e.target.value)||0})} style={SI}/></div>
+                </>}
+                <div><LBL>Fecha</LBL><input type="date" value={heForm.fecha} onChange={e=>setHeForm({...heForm,fecha:e.target.value})} style={SI}/></div>
+                <div><LBL>Concepto</LBL><input value={heForm.concepto} onChange={e=>setHeForm({...heForm,concepto:e.target.value})} placeholder="Ej: Trabajo nocturno" style={SI}/></div>
+              </div>
+              <button style={B("#f47c20")} onClick={agregarHE}>✅ Registrar</button>
+            </div>
+            <div style={CD}>
+              <div style={ST}>Resumen por empleado</div>
+              {empleadosBase.filter((e)=>(e.horasExtrasPorObra||[]).length>0||(e.comisionesPorObra||[]).length>0).map((e,idx)=>{
+                const resumen=calcularResumenNominaEmpleado(e);
+                return(
+                <div key={e.id} style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px",marginBottom:10}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                    <Av init={e.avatar} color={PAL[idx%PAL.length]} size={30}/>
+                    <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600}}>{e.nombre}</div><div style={{fontSize:10,color:"#64748b"}}>{e.cargo}</div></div>
+                    <div style={{textAlign:"right",fontSize:12}}><span style={{color:"#f5c842",fontWeight:700}}>{fmt(resumen.horasExtras+resumen.comisiones)}</span></div>
+                  </div>
+                  {(e.horasExtrasPorObra||[]).map((h)=>{const ob=obras.find((o)=>o.id===h.obraId);return(
+                    <div key={h.id} style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#475569",padding:"3px 0",borderBottom:"1px solid #e2e8f0"}}>
+                      <span>⏱️ {h.horas}h · {ob?.cliente||h.obraId} · {h.fecha}</span>
+                      <span style={{color:"#f5c842",fontWeight:600}}>{fmt(h.total)}</span>
+                    </div>
+                  );})}
+                  {(e.comisionesPorObra||[]).map((c)=>{const ob=obras.find((o)=>o.id===c.obraId);return(
+                    <div key={c.id} style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#475569",padding:"3px 0",borderBottom:"1px solid #e2e8f0"}}>
+                      <span>💰 {c.concepto||"Comisión"} · {ob?.cliente||c.obraId} · {c.fecha}</span>
+                      <span style={{color:"#c084fc",fontWeight:600}}>{fmt(c.comision)}</span>
+                    </div>
+                  );})}
+                </div>
+              )})}
+              {empleadosBase.every((e)=>!(e.horasExtrasPorObra||[]).length&&!(e.comisionesPorObra||[]).length)&&(
+                <div style={{textAlign:"center",color:"#94a3b8",padding:"20px 0",fontSize:13}}>Sin registros aún</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab==="planilla"&&(
+        <div>
+          <div style={{display:"flex",gap:12,alignItems:"flex-end",marginBottom:20}}>
+            <div><LBL>Período de pago</LBL><input type="month" value={mes} onChange={e=>setMes(e.target.value)} style={{...SI,width:"auto"}}/></div>
+            <button style={B("#f47c20")} onClick={()=>printCurrentPz(`Planilla Nómina ${mes}`)}> Imprimir / Bancolombia</button>
+          </div>
+          <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:11,padding:"30px 40px",border:"1px solid #ddd"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",borderBottom:"2px solid #003B71",paddingBottom:14,marginBottom:20}}>
+              <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{height:60,objectFit:"contain"}}/>
+              <div style={{textAlign:"right"}}><div style={{background:"#FFCD00",color:"#003B71",padding:"6px 16px",borderRadius:4,fontWeight:700}}>BANCOLOMBIA</div><div style={{fontSize:10,color:"#555",marginTop:4}}>Planilla Nómina · {mes}</div></div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:16}}>
+              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Salario mínimo 2026</div><div style={{fontWeight:700}}>{fmt(NOMINA_CO_2026.salarioMinimo)}</div></div>
+              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Auxilio transporte</div><div style={{fontWeight:700}}>{fmt(NOMINA_CO_2026.auxilioTransporte)}</div></div>
+              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Salud empleado</div><div style={{fontWeight:700}}>{Math.round(NOMINA_CO_2026.saludPctEmpleado*100)}%</div></div>
+              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Pensión empleado</div><div style={{fontWeight:700}}>{Math.round(NOMINA_CO_2026.pensionPctEmpleado*100)}%</div></div>
+            </div>
+            <table style={{width:"100%",borderCollapse:"collapse"}}>
+              <thead><tr style={{background:"#003B71",color:"#fff"}}>{["#","Empleado","Documento","Banco / Cuenta","Básico","Aux. T.","H.Extra","Comisión","Deducciones","NETO"].map((h)=><th key={h} style={{padding:"6px 8px",textAlign:["Básico","Aux. T.","H.Extra","Comisión","Deducciones","NETO"].includes(h)?"right":"left",fontSize:10}}>{h}</th>)}</tr></thead>
+              <tbody>
+                {resumenesActivos.map(({empleado:e,resumen},i)=>(
+                  <tr key={e.id} style={{background:i%2===0?"#fff":"#f5f5f5",borderBottom:"1px solid #e0e0e0"}}>
+                    <td style={{padding:"6px 8px",color:"#555",fontSize:10}}>{i+1}</td>
+                    <td style={{padding:"6px 8px",fontWeight:600,fontSize:10}}>{e.nombre}</td>
+                    <td style={{padding:"6px 8px",color:"#555",fontSize:9}}>{e.cedula||"-"}</td>
+                    <td style={{padding:"6px 8px",color:"#555",fontSize:9}}>{e.banco}<br/>{e.tipoCuenta}<br/><span style={{fontFamily:"monospace"}}>{e.numeroCuenta}</span></td>
+                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10}}>$ {resumen.salario.toLocaleString("es-CO")}</td>
+                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10}}>$ {resumen.auxilioTransporte.toLocaleString("es-CO")}</td>
+                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10,color:"#7a6610"}}>$ {resumen.horasExtras.toLocaleString("es-CO")}</td>
+                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10,color:"#5b21b6"}}>$ {resumen.comisiones.toLocaleString("es-CO")}</td>
+                    <td style={{padding:"6px 8px",textAlign:"right",color:"#cc0000",fontSize:9}}>
+                      <div>Salud: -$ {resumen.salud.toLocaleString("es-CO")}</div>
+                      <div>Pensión: -$ {resumen.pension.toLocaleString("es-CO")}</div>
+                      <div>Otras: -$ {resumen.otrasDeducciones.toLocaleString("es-CO")}</div>
+                    </td>
+                    <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,color:"#003B71",fontSize:10}}>$ {resumen.neto.toLocaleString("es-CO")}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot><tr style={{background:"#003B71",color:"#FFCD00"}}><td colSpan={9} style={{padding:"8px 10px",fontWeight:700,fontSize:11}}>TOTAL A PAGAR</td><td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,fontSize:11}}>$ {totalNeto.toLocaleString("es-CO")}</td></tr></tfoot>
+            </table>
+            <div style={{marginTop:16,fontSize:10,color:"#555",lineHeight:1.5}}>
+              Salud y pensión del empleado se estiman aquí sobre el salario básico con 4% cada una. Las otras deducciones quedan abiertas para conceptos autorizados por el trabajador, como natillera, libranza u otros descuentos internos.
+            </div>
+            <div style={{marginTop:30,display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:20}}>
+              {["REPRESENTANTE LEGAL","CONTADOR","APROBADO POR"].map((l)=><div key={l} style={{textAlign:"center",borderTop:"1px solid #333",paddingTop:8}}><div style={{fontSize:10,color:"#555"}}>{l}</div></div>)}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

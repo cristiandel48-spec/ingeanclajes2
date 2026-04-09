@@ -967,7 +967,7 @@ export default function App(){
 // ======================================================
 // DASHBOARD
 // ======================================================
-function Dashboard({ctx,go}){
+function DashboardCorruptoDesactivado2({ctx,go}){
   const {obras,pagos,cuentas,certs}=ctx;
   const tF=obras.reduce((s,o)=>s+o.total,0);
   const tP=obras.reduce((s,o)=>s+o.saldo,0);

@@ -1458,31 +1458,29 @@ function buildCotizacionPrintHtml(c){
   </html>`;
 }
 
-function openCotizacionPrint(c){
-  const win = window.open('', '_blank', 'width=1100,height=900');
-  if(!win) return;
-  win.document.open();
-  win.document.write(buildCotizacionPrintHtml(c));
-  win.document.close();
-
-  const waitForImages = () => {
-    const imgs = Array.from(win.document.images || []);
-    return Promise.all(imgs.map(img => {
-      if (img.complete) return Promise.resolve();
-      return new Promise(resolve => {
-        img.addEventListener('load', resolve, { once:true });
-        img.addEventListener('error', resolve, { once:true });
-      });
-    }));
-  };
-
-  const ready = [];
-  if (win.document.fonts?.ready) ready.push(win.document.fonts.ready.catch(() => {}));
-  ready.push(waitForImages());
-
-  Promise.all(ready)
-    .then(() => setTimeout(() => { win.focus(); win.print(); }, 350))
-    .catch(() => setTimeout(() => { win.focus(); win.print(); }, 500));
+async function openCotizacionPrint(c){
+  const toast = document.createElement("div");
+  toast.style.cssText = "position:fixed;top:20px;right:20px;z-index:99999;background:#1a2840;color:#fff;padding:12px 20px;borderRadius:12px;fontSize:13px;fontWeight:600;boxShadow:0 4px 24px rgba(0,0,0,0.25);display:flex;align-items:center;gap:10px";
+  toast.innerHTML = '<span style="animation:spin 1s linear infinite;display:inline-block">⏳</span> Generando PDF...';
+  document.body.appendChild(toast);
+  try {
+    const file = await generateCotizacionPdfFile(c);
+    const url = URL.createObjectURL(file);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 8000);
+    toast.style.background = "#166534";
+    toast.innerHTML = "✓ PDF descargado";
+    setTimeout(() => toast.remove(), 2500);
+  } catch(err) {
+    toast.style.background = "#991b1b";
+    toast.innerHTML = "✗ Error: " + (err?.message || "No fue posible generar el PDF");
+    setTimeout(() => toast.remove(), 4000);
+  }
 }
 
 

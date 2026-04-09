@@ -709,6 +709,15 @@ const LEAFLET_CSS_ID = "leaflet-cdn-css";
 const LEAFLET_JS_ID = "leaflet-cdn-js";
 let leafletLoaderPromise = null;
 
+function normalizeEntityKey(v=""){
+  return String(v || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g,"")
+    .trim();
+}
+
 function parseLatLngValue(value){
   const raw=(value||"").trim();
   if(!raw) return null;

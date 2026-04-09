@@ -17,7 +17,7 @@ const PDF_PAGE5_STATIC = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAbgBuAAD/2wB
 
 
 
-function DashboardLegacyBroken({ctx,go}){
+function DashboardCorruptoDesactivado({ctx,go}){
   const {obras,pagos,cuentas,certs,cotizaciones}=ctx;
   const totalFacturado = obras.reduce((sum, obra)=>sum + Number(obra.total || 0), 0);
   const saldoPendiente = obras.reduce((sum, obra)=>sum + Number(obra.saldo || 0), 0);

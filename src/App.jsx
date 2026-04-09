@@ -306,6 +306,107 @@ const fmtK = n=>n>=1000000?"$" + ((n/1000000).toFixed(1)) + "M":"$" + ((n/1000).
 const today= ()=>new Date().toISOString().split("T")[0];
 const fmtD = iso=>{ if(!iso)return""; const d=new Date(iso+"T12:00:00"); return d.toLocaleDateString("es-CO",{day:"2-digit",month:"short",year:"numeric"}); };
 const fmtL = iso=>{ if(!iso)return""; const ms=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"]; const d=new Date(iso+"T12:00:00"); return (d.getDate()) + " de " + (ms[d.getMonth()]) + " de " + (d.getFullYear()); };
+const DEFAULT_COT_FORMA_PAGO = "50% ANTICIPO, 50% CONTRA ENTREGA";
+const DEFAULT_COT_TIEMPO_EJEC = "10 DIAS HABILES";
+
+function getQuoteProposalLabel(index = 0) {
+  const safeIndex = Number.isFinite(Number(index)) ? Number(index) : 0;
+  return `Propuesta ${String.fromCharCode(65 + Math.max(0, safeIndex % 26))}`;
+}
+
+function createQuoteProposalId(seed = "prop") {
+  const normalizedSeed = String(seed || "prop")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase() || "prop";
+  return `${normalizedSeed}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function normalizeQuoteItem(item = {}, index = 0) {
+  return {
+    id: item.id ?? index + 1,
+    desc: item.desc ?? "",
+    cant: Number(item.cant ?? 0),
+    unit: item.unit ?? "ML",
+    vu: Number(item.vu ?? 0),
+  };
+}
+
+function buildQuoteProposal(propuesta = {}, index = 0) {
+  const items = Array.isArray(propuesta.items)
+    ? propuesta.items.map((item, itemIndex) => normalizeQuoteItem(item, itemIndex))
+    : [];
+
+  const util = Number(propuesta.util ?? 10);
+  const subtotal = items.reduce((sum, item) => sum + (Number(item.cant || 0) * Number(item.vu || 0)), 0);
+  const utilidadValor = subtotal * (util / 100);
+  const ivaValor = utilidadValor * 0.19;
+  const totalCalculado = Math.round(subtotal + utilidadValor + ivaValor);
+
+  return {
+    id: propuesta.id || createQuoteProposalId(index + 1),
+    nombre: propuesta.nombre || getQuoteProposalLabel(index),
+    alcance: propuesta.alcance ?? propuesta.propuestaAlcance ?? "",
+    tipoCotizacion: propuesta.tipoCotizacion || "linea_vida",
+    requerimientoCliente: propuesta.requerimientoCliente ?? "",
+    formaPago: propuesta.formaPago || DEFAULT_COT_FORMA_PAGO,
+    tiempoEjec: propuesta.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC,
+    util,
+    items,
+    total: Math.round(Number.isFinite(Number(propuesta.total)) ? Number(propuesta.total) : totalCalculado),
+  };
+}
+
+function getQuoteProposals(cotizacion = {}) {
+  if (Array.isArray(cotizacion.propuestas) && cotizacion.propuestas.length) {
+    return cotizacion.propuestas.map((propuesta, index) => buildQuoteProposal(propuesta, index));
+  }
+
+  return [
+    buildQuoteProposal(
+      {
+        id: cotizacion.propuestaActivaId || createQuoteProposalId(cotizacion.id || "base"),
+        nombre: cotizacion.propuestaNombre || getQuoteProposalLabel(0),
+        alcance: cotizacion.propuestaAlcance || "",
+        tipoCotizacion: cotizacion.tipoCotizacion || "linea_vida",
+        requerimientoCliente: cotizacion.requerimientoCliente || "",
+        formaPago: cotizacion.formaPago || DEFAULT_COT_FORMA_PAGO,
+        tiempoEjec: cotizacion.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC,
+        util: Number(cotizacion.util ?? 10),
+        items: Array.isArray(cotizacion.items) ? cotizacion.items : [],
+        total: cotizacion.total,
+      },
+      0
+    ),
+  ];
+}
+
+function getQuoteActiveProposal(cotizacion = {}) {
+  const proposals = getQuoteProposals(cotizacion);
+  if (!proposals.length) {
+    return buildQuoteProposal({}, 0);
+  }
+  return proposals.find((propuesta) => propuesta.id === cotizacion.propuestaActivaId) || proposals[0];
+}
+
+function mergeQuoteWithProposal(cotizacion = {}, propuesta = null) {
+  const activeProposal = propuesta ? buildQuoteProposal(propuesta, 0) : getQuoteActiveProposal(cotizacion);
+  return {
+    ...cotizacion,
+    propuestaNombre: activeProposal.nombre,
+    propuestaAlcance: activeProposal.alcance,
+    propuestaActivaId: activeProposal.id,
+    propuestas: getQuoteProposals(cotizacion),
+    tipoCotizacion: activeProposal.tipoCotizacion,
+    requerimientoCliente: activeProposal.requerimientoCliente,
+    formaPago: activeProposal.formaPago,
+    tiempoEjec: activeProposal.tiempoEjec,
+    util: activeProposal.util,
+    items: activeProposal.items,
+    total: activeProposal.total,
+  };
+}
+
 const NOMINA_CO_2026 = {
   salarioMinimo: 1750905,
   auxilioTransporte: 249095,

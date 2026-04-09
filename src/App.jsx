@@ -709,15 +709,6 @@ const LEAFLET_CSS_ID = "leaflet-cdn-css";
 const LEAFLET_JS_ID = "leaflet-cdn-js";
 let leafletLoaderPromise = null;
 
-function normalizeEntityKey(v=""){
-  return String(v || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g,"")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g,"")
-    .trim();
-}
-
 function parseLatLngValue(value){
   const raw=(value||"").trim();
   if(!raw) return null;
@@ -900,6 +891,1200 @@ function StaticMapPreview({ src, segments=[], query="", mapView=null, alt="Mapa 
     </div>
   );
 }
+
+function PrintHeader({dual}){
+  return(
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"2.5px solid #cc0000",paddingBottom:14,marginBottom:0}}>
+      <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{height:82,objectFit:"contain"}}/>
+      <div style={{textAlign:"center",flex:1}}>
+        <div style={{fontSize:10,letterSpacing:3,color:"#333",textTransform:"uppercase",fontWeight:700}}>Especialistas en Anclajes</div>
+        {dual&&<img src={LOGO_CCS} alt="CCS" style={{height:38,objectFit:"contain",marginTop:4}}/>}
+      </div>
+      <div style={{textAlign:"right",fontSize:9.5,color:"#555",lineHeight:1.7}}>
+        <div>Calle 38 sur # 36 - 48, Envigado</div>
+        <div>PBX 448 26 86 · Cel 3152889541</div>
+        <div>Nit. 900193965-4</div>
+        <div style={{color:"#cc0000",fontWeight:600}}>www.ingeanclajes.com</div>
+      </div>
+    </div>
+  );
+}
+
+function measurementTypeLabel(tipo){
+  return tipo === "LVV" ? "Línea de vida vertical" : tipo === "CON" ? "Conexión" : tipo === "ESC" ? "Escalera" : tipo === "PAN" ? "Punto de anclaje" : "Línea horizontal";
+}
+
+function measurementUnitFromType(tipo){
+  return tipo === "ESC" ? "ML" : "ML";
+}
+
+function escapeHtml(v=""){
+  return String(v)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+function buildMeasurementNarrative(list=[]){
+  if(!Array.isArray(list) || !list.length) return "";
+  return list.map((seg,idx)=>`${seg.label || `LINEA ${idx+1}`} de ${Number(seg.ml||0).toFixed(2)} ${measurementUnitFromType(seg.tipo)}`).join(', ');
+}
+
+function normalizeQuoteItems(c={}){
+  const geoItems = measurementsToQuoteItems(c.geoMediciones || []);
+  const rawItems = Array.isArray(c.items) ? c.items : [];
+  const candidates = [...geoItems, ...rawItems]
+    .filter(it => it && (String(it.desc||'').trim() || Number(it.cant||0)));
+  const seen = new Set();
+  return candidates.filter((it, idx) => {
+    const desc = String(it.desc || `ITEM ${idx+1}`).trim().toUpperCase();
+    const qty = Number(it.cant || 0).toFixed(2);
+    const unit = String(it.unit || 'UND').trim().toUpperCase();
+    const vu = Number(it.vu || 0).toFixed(2);
+    const key = `${desc}|${qty}|${unit}|${vu}`;
+    if(seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function normalizeProposalItems(items=[]){
+  return (Array.isArray(items) ? items : []).map((it, idx)=>({
+    id: it?.id ?? idx + 1,
+    desc: it?.desc ?? "",
+    cant: Number(it?.cant || 0),
+    unit: it?.unit ?? "UND",
+    vu: Number(it?.vu || 0),
+  }));
+}
+
+function getQuoteProposalTotals(baseQuote={}, propuesta){
+  const quote = mergeQuoteWithProposal(baseQuote, propuesta);
+  const items = normalizeQuoteItems({ ...quote, items: propuesta?.items || [] });
+  const sub = items.reduce((sum, item)=>sum + (Number(item.cant) || 0) * (Number(item.vu) || 0), 0);
+  const ut = sub * (Number(propuesta?.util ?? 10) || 0) / 100;
+  const iva = ut * 0.19;
+  const tot = sub + ut + iva;
+  return { quote, items, sub, ut, iva, tot };
+}
+
+function hasVerticalLifeLineService(c={}){
+  if((c.geoMediciones || []).some(seg => seg?.tipo === "LVV")) return true;
+  return normalizeQuoteItems(c).some(it => {
+    const desc = String(it?.desc || "").toUpperCase();
+    return desc.includes("LINEA DE VIDA VERTICAL");
+  });
+}
+
+function buildCotizacionPrintHtml(c){
+  const propuestas = getQuoteProposals(c);
+  const activa = getQuoteActiveProposal(c);
+  c = mergeQuoteWithProposal(c, activa);
+  const items = normalizeQuoteItems(c);
+  const measurements = Array.isArray(c.geoMediciones) ? c.geoMediciones : [];
+  const fotosCotizacion = Array.isArray(c.fotosCotizacion) ? c.fotosCotizacion.filter((foto)=>foto?.src) : [];
+  const esObraBlanca = c.tipoCotizacion === "obra_blanca";
+  const requerimientoCliente = String(c.requerimientoCliente || "").trim();
+  const alcancePropuesta = String(c.propuestaAlcance || "").trim();
+  const mapQuery = c.coords || `${c.obra||""} ${c.ciudad||""}`.trim();
+  const { width: mapWidth, height: mapHeight } = getStaticMapDimensions(c.geoMapView);
+  const quoteMapSrc = c.mapImg && String(c.mapImg).startsWith("data:")
+    ? c.mapImg
+    : (buildGoogleStaticMapUrl(measurements, mapQuery, c.geoMapView, { width: mapWidth, height: mapHeight }) || c.mapImg || "");
+  const showVerticalAppendix = hasVerticalLifeLineService(c);
+  const sub = items.reduce((s,i)=>s+(Number(i.cant)||0)*(Number(i.vu)||0),0);
+  const ut = sub * (Number(c.util)||10) / 100;
+  const iva = ut * 0.19;
+  const tot = sub + ut + iva;
+  const narrative = buildMeasurementNarrative(measurements);
+  const introDetail = narrative ? `Tenemos el agrado de presentar nuestra cotizacion para la instalacion sobre cubierta: ${narrative}.` : 'Tenemos el agrado de presentar nuestra cotizacion para la instalacion de los sistemas de proteccion anticaida requeridos para la obra.';
+  const itemRows = items.map((it,idx)=>{
+    const desc = escapeHtml(it.desc || `ITEM ${idx+1}`);
+    const qty = Number(it.cant||0).toFixed(2).replace(/\.00$/,'');
+    const unit = escapeHtml(it.unit || 'UND');
+    const value = fmt(Number(it.vu)||0);
+    const subtotal = fmt((Number(it.cant)||0)*(Number(it.vu)||0));
+    return `<tr><td>${desc}</td><td class="num">${qty}</td><td class="center">${unit}</td><td class="num">${value}</td><td class="num">${subtotal}</td></tr>`;
+  }).join('');
+  const mapBlock = quoteMapSrc ? `<div class="map-wrap" style="aspect-ratio:${mapWidth}/${mapHeight};"><img src="${quoteMapSrc}" alt="Mapa de medicion" class="map"/></div>` : `<div class="placeholder">Agrega la imagen satelital o la medicion automatica para ver el plano aqui.</div>`;
+  const mapLabels = getStaticMapLabelData(measurements, mapQuery, c.geoMapView).map(label=>`
+      <div class="map-label" style="left:${label.left}; top:${label.top}; color:${label.color}; transform:translate(-50%, -50%) rotate(${label.angle}deg);">
+        <div>${escapeHtml(label.title)} - ${escapeHtml(label.value)}</div>
+      </div>
+    `).join('');
+  const mapBlockWithLabels = quoteMapSrc ? `<div class="map-wrap" style="aspect-ratio:${mapWidth}/${mapHeight};"><img src="${quoteMapSrc}" alt="Mapa de medicion" class="map"/>${mapLabels}</div>` : mapBlock;
+  const requerimientoBlock = esObraBlanca && requerimientoCliente ? `
+      <div class="measurement-box">
+        <p><strong>Necesidad del cliente</strong></p>
+        <div style="white-space:pre-wrap;">${escapeHtml(requerimientoCliente)}</div>
+      </div>` : '';
+  const alcanceBlock = alcancePropuesta ? `
+      <div class="measurement-box">
+        <p><strong>Alcance de esta propuesta</strong></p>
+        <div style="white-space:pre-wrap;">${escapeHtml(alcancePropuesta)}</div>
+      </div>` : '';
+  const propuestasResumen = propuestas.length > 1 ? `
+      <div class="measurement-box">
+        <p><strong>Esta cotizacion incluye ${propuestas.length} propuestas comerciales</strong></p>
+        <table class="measurement-table">
+          <thead><tr><th>Propuesta</th><th>Tipo</th><th>Total</th></tr></thead>
+          <tbody>
+            ${propuestas.map((propuesta)=>`
+              <tr>
+                <td>${escapeHtml(propuesta.nombre)}</td>
+                <td>${escapeHtml(propuesta.tipoCotizacion === "obra_blanca" ? "Obra blanca" : "Linea de vida / anclajes")}</td>
+                <td>${fmt(Number(propuesta.total || 0))}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+        <div style="font-size:10pt;color:#475569;padding-top:6px;">El PDF muestra en detalle la propuesta activa: <strong>${escapeHtml(activa.nombre)}</strong>.</div>
+      </div>` : '';
+  const fotosBlock = fotosCotizacion.length ? `
+      <div class="section-title">Registro fotografico</div>
+      <div class="photo-grid">
+        ${fotosCotizacion.map((foto,idx)=>`
+          <div class="photo-card">
+            <div class="photo-wrap"><img src="${foto.src}" alt="${escapeHtml(foto.label || `Foto ${idx+1}`)}" class="photo"/></div>
+            <div class="photo-label">${escapeHtml(foto.label || `Foto ${idx+1}`)}</div>
+          </div>
+        `).join("")}
+      </div>` : '';
+
+  return `<!doctype html>
+  <html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Cotizacion ${escapeHtml(c.numero || '')}</title>
+    <style>
+      @page { size: Letter; margin: 10mm 10mm 12mm; }
+      * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      html, body { background:#fff; }
+      body { font-family: Aptos, Arial, Helvetica, sans-serif; color: #111; margin: 0; font-size: 12pt; line-height: 1.45; }
+      .page { width:100%; display:flex; flex-direction:column; break-after: page; page-break-after: always; min-height: 255mm; padding: 4mm 5mm 10mm; }
+      .page:last-child { page-break-after: auto; }
+      .header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #cc0000; padding-bottom:10px; margin-bottom:14px; }
+      .logo { height: 66px; width:auto; object-fit:contain; }
+      .header-mid { flex:1; text-align:center; padding-top:5px; font-family:Aptos, Arial, Helvetica, sans-serif; font-weight:900; letter-spacing:1.6px; font-size:11pt; color:#111; }
+      .header-right { text-align:right; font-size:8.3pt; color:#555; line-height:1.45; max-width:220px; }
+      p { margin: 0 0 9px; }
+      .meta { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; gap:12px; }
+      .meta strong { font-size:10.8pt; }
+      .client { margin-bottom: 18px; }
+      .client p { margin-bottom: 5px; }
+      .section-title { text-align:center; font-weight:900; color:#111; text-transform:uppercase; margin: 10px 0 8px; border-bottom:2px solid #cc0000; padding-bottom:4px; font-size:12pt; letter-spacing:.2px; }
+      .table { width:100%; border-collapse:collapse; margin: 8px 0 10px; }
+      .table th, .table td { border:1px solid #222; padding:7px 9px; vertical-align:middle; }
+      .table th { background:#f7f7f7; font-weight:900; text-align:center; font-size:11pt; }
+      .table td { font-size: 11pt; }
+      .table .num { text-align:right; white-space:nowrap; }
+      .table .center { text-align:center; }
+      .table .label-strong td:first-child { font-weight:900; }
+      .total-row td { background:#fff369; font-weight:900; }
+      .note-center { text-align:center; font-weight:900; margin:10px 0 0; font-size:11pt; }
+      .map-wrap { position:relative; border:1px solid #bbb; padding:0; margin: 2px 0 12px; width:100%; min-height:360px; overflow:hidden; background:#f8fafc; }
+      .map { position:absolute; inset:0; width:100%; height:100%; object-fit:fill; display:block; margin:0 auto; }
+      .map-label { position:absolute; pointer-events:none; text-align:center; font-family:Aptos, Arial, Helvetica, sans-serif; font-weight:800; line-height:1; font-size:7.5px; white-space:nowrap; background:rgba(255,255,255,0.8); padding:1px 3px; border-radius:999px; text-shadow:-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 0 4px rgba(255,255,255,0.9); transform-origin:center; }
+      .placeholder { border:1px dashed #bbb; padding: 28px; text-align:center; color:#777; margin-bottom:12px; }
+      .measurement-box { border:1px solid #d5d9e2; background:#f8fafc; padding:10px 12px; margin: 0 0 12px; }
+      .measurement-box p { margin-bottom: 6px; }
+      .measurement-table { width:100%; border-collapse:collapse; margin-top: 6px; }
+      .measurement-table th, .measurement-table td { border:1px solid #cbd5e1; padding:6px 8px; font-size:11pt; }
+      .measurement-table th { background:#e2e8f0; text-align:left; font-weight:800; }
+      .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+      .photo-card { border:1px solid #d5d9e2; background:#fff; padding:8px; break-inside: avoid; page-break-inside: avoid; }
+      .photo-wrap { height:220px; display:flex; align-items:center; justify-content:center; background:#f8fafc; overflow:hidden; }
+      .photo { width:100%; height:100%; object-fit:cover; display:block; }
+      .photo-label { font-size:10pt; color:#475569; padding-top:6px; text-align:center; }
+      .signature { margin-top: 30px; }
+      .signature-space { height: 72px; }
+      .signature-line { width: 360px; border-top:1px solid #222; padding-top:7px; }
+      .signature-name { white-space: nowrap; }
+      .footer { margin-top:auto; border-top:1px solid #999; padding-top:7px; text-align:center; font-size:9pt; color:#555; }
+      .appendix-img { width:100%; height:auto; display:block; }
+      .tech-title { font-weight:900; text-transform:uppercase; text-align:center; font-size:15pt; margin: 0 0 10px; }
+      .tech-subtitle { text-align:center; font-weight:700; letter-spacing:4px; margin: 0 0 14px; }
+      .tech-table { width:100%; border-collapse:collapse; margin-top: 8px; }
+      .tech-table th, .tech-table td { border:1px solid #222; padding:8px 10px; vertical-align:top; }
+      .tech-table th { background:#f7f7f7; font-weight:900; text-align:center; }
+      .tech-table td { font-size:11pt; line-height:1.42; }
+      .tech-elem { width:24%; font-weight:800; }
+      ul { margin: 8px 0 12px 22px; padding:0; }
+      li { margin-bottom: 5px; }
+      .small-gap { margin-top: 8px; }
+      .no-break, .measurement-box, .map-wrap, .signature, table, tr, td, th { break-inside: avoid; page-break-inside: avoid; }
+      img { max-width:100%; }
+    </style>
+  </head>
+  <body>
+    <section class="page">
+      <div class="header">
+        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+      </div>
+      <div class="meta"><div>Envigado, ${escapeHtml(fmtL(c.fecha || today()))}</div><div><strong>COTIZACION No. ${escapeHtml(c.numero || '')}</strong></div></div>
+      <div class="client">
+        <p><strong>SENOR:</strong></p>
+        <p><strong>${escapeHtml((c.cliente || '').toUpperCase())}</strong></p>
+        ${c.obra ? `<p><strong>OBRA:</strong> ${escapeHtml((c.obra || '').toUpperCase())}</p>` : ''}
+        ${c.telefono ? `<p><strong>TELEFONO:</strong> ${escapeHtml(c.telefono)}</p>` : ''}
+        ${c.ciudad ? `<p><strong>${escapeHtml((c.ciudad || '').toUpperCase())}</strong></p>` : ''}
+      </div>
+      <div style="height:8px"></div>
+      <p>Cordial saludo.</p>
+      <div style="height:8px"></div>
+      ${esObraBlanca ? `
+      <p>Presentamos la cotizacion para la obra blanca solicitada por el cliente.</p>
+      ${requerimientoBlock}
+      ${alcanceBlock}
+      ` : `
+      <p>Presentamos la cotizacion para suministro e instalacion de los sistemas de proteccion anticaida (lineas de vida horizontales sobre cubierta y escaleras).</p>
+      <p><strong>Trabajo en altura:</strong> Se considera toda actividad, labor o trabajo que se deba realizar a una altura fisica igual o superior a 1,50 metros desde el piso.</p>
+      <p><strong>Puntos de anclaje:</strong> Son componentes en acero anclado con un epoxico quimico estructural o equivalente, con perno de 5/8 a una profundidad de 15 cm o mas segun el caso, con capacidad de resistir una fuerza de caida superior a 5.000 lbs.</p>
+      <p><strong>Linea de vida:</strong> Son componentes de un sistema o equipo de proteccion de caidas, consistentes en una cuerda de nylon o cable de acero instalada en forma horizontal y vertical, tensionada y sujeta en dos o tres puntos de anclaje para otorgar movilidad al personal que trabaja en areas elevadas.</p>
+      <ul>
+        <li>La linea de vida permite la fijacion directa o indirecta al arnes completo para el cuerpo o a un dispositivo de impacto o amortiguador.</li>
+        <li>Las lineas de vida estaran constituidas por un solo cable continuo.</li>
+        <li>Los anclajes a los cuales se fijaran las lineas de vida deben resistir al menos 5.000 libras por cada persona asegurada.</li>
+      </ul>
+      <p>${escapeHtml(introDetail)}</p>
+      ${alcanceBlock}
+      `}
+      ${propuestasResumen}
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
+    </section>
+
+    <section class="page">
+      <div class="header">
+        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+      </div>
+      ${mapBlockWithLabels}
+      ${fotosBlock}
+      <div class="section-title">${escapeHtml(propuestas.length > 1 ? activa.nombre : "Propuesta economica linea de vida")}</div>
+      <table class="table no-break">
+        <thead><tr><th>Descripcion</th><th class="num">Cantidad</th><th class="center">Unidad</th><th class="num">Valor</th><th class="num">Subtotal</th></tr></thead>
+        <tbody>
+          ${itemRows}
+          <tr class="label-strong"><td colspan="4">SUBTOTAL</td><td class="num">${fmt(sub)}</td></tr>
+          <tr><td colspan="4">ADMINISTRACION</td><td class="num">$ - -</td></tr>
+          <tr><td colspan="4">IMPREVISTOS</td><td class="num">$ - -</td></tr>
+          <tr><td colspan="4">UTILIDADES (${Number(c.util||10).toFixed(0)} % VALOR DE LA OBRA)</td><td class="num">${fmt(ut)}</td></tr>
+          <tr><td colspan="4">IVA (19 % VALOR DE LAS UTILIDADES)</td><td class="num">${fmt(iva)}</td></tr>
+          <tr class="total-row"><td colspan="4">TOTAL</td><td class="num">${fmt(tot)}</td></tr>
+        </tbody>
+      </table>
+      <div class="note-center">EL IVA ES EL 19 % DE LAS UTILIDADES</div>
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
+    </section>
+
+    <section class="page">
+      <div class="header">
+        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+      </div>
+      <div class="section-title">Condiciones comerciales</div>
+      <table class="table"><tbody>
+        <tr><td style="width:34%"><strong>FORMA DE PAGO</strong></td><td>${escapeHtml(c.formaPago || '50% ANTICIPO, 50% CONCLUIR LABORES')}</td></tr>
+        <tr><td><strong>TIEMPO DE EJECUCION</strong></td><td>${escapeHtml(c.tiempoEjec || '10 DIAS')}</td></tr>
+        <tr><td><strong>VALIDEZ DE LA OFERTA</strong></td><td>${escapeHtml(`${c.val||30} DIAS A PARTIR DE LA FECHA DE ENTREGA DE ESTA COTIZACION`)}</td></tr>
+        <tr><td><strong>CERTIFICACION</strong></td><td>SE ENTREGA CON EL PAGO TOTAL</td></tr>
+      </tbody></table>
+      <div class="signature">
+        <p>Cordialmente,</p>
+        <div class="signature-space"></div>
+        <div class="signature-line"><div class="signature-name"><strong>ING. JHON JAIME SEPULVEDA LONDONO</strong></div><div>MP. 05256-409949</div><div>GERENTE GENERAL</div><div>Tel: 3152889541</div></div>
+      </div>
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
+    </section>
+
+    <section class="page">
+      <div class="header">
+        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+      </div>
+      <div class="tech-title">Sistema no continuo en acero galvanizado</div>
+      <table class="tech-table">
+        <thead>
+          <tr><th style="width:24%">Elemento</th><th>Caracteristica</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="tech-elem">Soporte lateral e intermedio</td>
+            <td>Este elemento esta disenado para ser usado en sistemas de lineas de vida horizontales de tipo continuo. El componente soporta regularmente el cable de acero para que una seccion libre de cable no supere la luz maxima permitida. Este soporte intermedio permite el uso de un carro deslizador para evitar el uso de eslinga en Y por parte del trabajador y evitar que el colaborador se desconecte.</td>
+          </tr>
+          <tr>
+            <td class="tech-elem">Tensor</td>
+            <td>Este elemento esta disenado para ser usado en sistemas de lineas de vida horizontales. En sus extremos el tensor se asegura al cable de la linea de vida y a un absorbedor de energia respectivamente. Su funcion es tensionar la linea de vida para que, en el momento de una caida, la distancia de caida del trabajador sea minima.</td>
+          </tr>
+          <tr>
+            <td class="tech-elem">Empalmes y fijaciones</td>
+            <td>Fabricados en aluminio. Resistentes a la corrosion y oxidacion. Se utilizan para empalmar dos cables y fijar barandillas de cables.</td>
+          </tr>
+          <tr>
+            <td class="tech-elem">Guardacables</td>
+            <td>Fabricado en acero con acabado galvanizado resistente a la corrosion. Protegen contra el desgaste y deformacion del cable, alargando su vida util.</td>
+          </tr>
+          <tr>
+            <td class="tech-elem">Cable de acero</td>
+            <td>El cable de acero se fabrica bajo un diseno que permite que sea capaz de absorber el desgaste y los esfuerzos causados por el contacto con poleas, tambores y otras superficies, asi como las tensiones estaticas y dinamicas del trabajo al que se someta. Se compone por alambres de acero, estirados en frio, trenzados en espiral, formando unidades denominadas torones. Ademas, su diseno ha sido ideado para que cada alambre tenga la libertad de movimiento en relacion a los alambres adyacentes. Mientras mas alambres conformen este elemento, mayor sera su flexibilidad y resistencia en esfuerzos elevados; logrando el objetivo de transmision de movimiento, fuerzas y energia de forma eficaz y efectiva.</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
+    </section>
+    ${showVerticalAppendix ? `<section class="page"><img src="${articoLineaVidaVertical}" alt="Anexo tecnico linea de vida vertical" class="appendix-img"/><div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div></section>` : ""}
+
+    <section class="page">
+      <div class="header">
+        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+      </div>
+      <div class="section-title">Esta cotizacion incluye</div>
+      <ul>
+        <li>Tuercas y arandelas en acero galvanizado y/o inoxidable certificado.</li>
+        <li>Los elementos utilizados en la instalacion son certificados de fabrica los cuales se adjuntan en la entrega de documentacion de certificados.</li>
+        <li>Transporte de materiales y de personal hasta el sitio de trabajo.</li>
+        <li>Se entregan todos los certificados de acuerdo a la Resolucion 4272 de trabajo seguro en alturas.</li>
+        <li>Recertificacion sin costo al ano siguiente de la instalacion.</li>
+        <li>Esta propuesta incluye el coordinador para trabajo seguro en alturas de tiempo completo en la obra.</li>
+      </ul>
+      <p class="small-gap">Todo el personal que labora en la empresa se encuentra afiliado a ARL, salud y pensiones. Llevamos todos los elementos personales de seguridad necesarios para efectuar dicho trabajo. Realizamos todas las reparaciones de los danos que puedan surgir durante la ejecucion de dicho trabajo y se entregan todas las polizas exigidas por el contratante.</p>
+      <div class="section-title">Sistema de gestion de seguridad y salud en el trabajo</div>
+      <p>Nuestra empresa INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicacion de la Resolucion 4272 de 2021, garantizando la implementacion del Sistema de Gestion de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.</p>
+      <div class="signature">
+        <p>Cordialmente,</p>
+        <div class="signature-space"></div>
+        <div class="signature-line"><div class="signature-name"><strong>ING. JHON JAIME SEPULVEDA LONDONO</strong></div><div>MP. 05256-409949</div><div>GERENTE GENERAL</div><div>Tel: 3152889541</div></div>
+      </div>
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
+    </section>
+  </body>
+  </html>`;
+}
+
+function openCotizacionPrint(c){
+  const win = window.open('', '_blank', 'width=1100,height=900');
+  if(!win) return;
+  win.document.open();
+  win.document.write(buildCotizacionPrintHtml(c));
+  win.document.close();
+
+  const waitForImages = () => {
+    const imgs = Array.from(win.document.images || []);
+    return Promise.all(imgs.map(img => {
+      if (img.complete) return Promise.resolve();
+      return new Promise(resolve => {
+        img.addEventListener('load', resolve, { once:true });
+        img.addEventListener('error', resolve, { once:true });
+      });
+    }));
+  };
+
+  const ready = [];
+  if (win.document.fonts?.ready) ready.push(win.document.fonts.ready.catch(() => {}));
+  ready.push(waitForImages());
+
+  Promise.all(ready)
+    .then(() => setTimeout(() => { win.focus(); win.print(); }, 350))
+    .catch(() => setTimeout(() => { win.focus(); win.print(); }, 500));
+}
+
+
+const COTIZACION_AUTO_SEND_ENDPOINTS = {
+  email: "",
+  whatsapp: "",
+};
+
+let html2pdfLoaderPromise = null;
+
+function sanitizeFileName(v=""){
+  return String(v || "documento")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-zA-Z0-9._-]+/g,"-")
+    .replace(/-{2,}/g,"-")
+    .replace(/^-|-$/g,"") || "documento";
+}
+
+function normalizeEntityKey(v=""){
+  return String(v || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g,"")
+    .trim();
+}
+
+function getCotizacionClientPhone(clienteInfo={}, cotizacion={}){
+  const raw = clienteInfo?.telefono || clienteInfo?.tel || cotizacion?.telefono || "";
+  const digits = String(raw).replace(/\D/g,"");
+  if(!digits) return "";
+  if(digits.startsWith("57")) return digits;
+  return digits.length === 10 ? `57${digits}` : digits;
+}
+
+function getCotizacionClientEmail(clienteInfo={}){
+  return String(clienteInfo?.email || "").trim();
+}
+
+function buildCotizacionShareMessage(c, clienteInfo={}){
+  const saludo = clienteInfo?.contacto || clienteInfo?.nombre || c?.cliente || "cliente";
+  return [
+    `Hola ${saludo},`,
+    `Te compartimos la cotizacion *${c?.numero || c?.id || ""}* de *${c?.obra || "su proyecto"}* por un valor de *${fmt(Number(c?.total || 0))}*.`,
+    `Vigencia: ${c?.val || 30} dia(s) calendario.`,
+    `Quedamos atentos a tu aprobacion o comentarios.`,
+    `INGEANCLAJES S.A.S`,
+  ].join("\n");
+}
+
+function buildCotizacionEmailSubject(c){
+  return `Cotizacion ${c?.numero || c?.id || ""} - ${c?.obra || c?.cliente || "INGEANCLAJES"}`;
+}
+
+function buildCotizacionEmailBody(c, clienteInfo={}){
+  const saludo = clienteInfo?.contacto || clienteInfo?.nombre || c?.cliente || "cliente";
+  return [
+    `Hola ${saludo},`,
+    "",
+    `Adjuntamos la cotizacion ${c?.numero || c?.id || ""} correspondiente a ${c?.obra || "su proyecto"}.`,
+    `Valor total: ${fmt(Number(c?.total || 0))}.`,
+    `Vigencia: ${c?.val || 30} dia(s) calendario.`,
+    "",
+    "Quedamos atentos a cualquier comentario o aprobacion.",
+    "",
+    "INGEANCLAJES S.A.S",
+  ].join("\n");
+}
+
+function downloadGeneratedFile(file){
+  const url = URL.createObjectURL(file);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = file.name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+
+function loadHtml2Pdf(){
+  if(typeof window === "undefined") return Promise.reject(new Error("html2pdf solo funciona en navegador"));
+  if(window.html2pdf) return Promise.resolve(window.html2pdf);
+  if(html2pdfLoaderPromise) return html2pdfLoaderPromise;
+  html2pdfLoaderPromise = new Promise((resolve,reject)=>{
+    const existing = document.getElementById("html2pdf-bundle-js");
+    if(existing){
+      existing.addEventListener("load", ()=>resolve(window.html2pdf), {once:true});
+      existing.addEventListener("error", ()=>reject(new Error("No fue posible cargar html2pdf")), {once:true});
+      return;
+    }
+    const script = document.createElement("script");
+    script.id = "html2pdf-bundle-js";
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+    script.async = true;
+    script.onload = ()=> window.html2pdf ? resolve(window.html2pdf) : reject(new Error("html2pdf no quedó disponible"));
+    script.onerror = ()=> reject(new Error("No fue posible cargar html2pdf"));
+    document.body.appendChild(script);
+  });
+  return html2pdfLoaderPromise;
+}
+
+async function generateCotizacionPdfFile(c){
+  const html2pdf = await loadHtml2Pdf();
+  const parser = new DOMParser();
+  const parsed = parser.parseFromString(buildCotizacionPrintHtml(c), "text/html");
+  const styleTag = parsed.head.querySelector("style")?.outerHTML || "";
+  const container = document.createElement("div");
+  container.style.position = "fixed";
+  container.style.left = "-200vw";
+  container.style.top = "0";
+  container.style.width = "816px";
+  container.style.background = "#fff";
+  container.style.zIndex = "-1";
+  container.innerHTML = `${styleTag}${parsed.body.innerHTML}`;
+  document.body.appendChild(container);
+  try{
+    const opt = {
+      margin: 0,
+      filename: `${sanitizeFileName(c?.numero || c?.id || "cotizacion")}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: "#ffffff" },
+      jsPDF: { unit: "mm", format: "letter", orientation: "portrait" },
+      pagebreak: { mode: ["css", "legacy"] },
+    };
+    const worker = html2pdf().set(opt).from(container);
+    const blob = await worker.outputPdf("blob");
+    return new File([blob], opt.filename, { type: "application/pdf" });
+  } finally {
+    container.remove();
+  }
+}
+
+async function sendCotizacionEmail(c, clienteInfo, pdfFile){
+  const email = getCotizacionClientEmail(clienteInfo);
+  if(!email) throw new Error("El cliente no tiene correo registrado en la base de datos.");
+  const subject = buildCotizacionEmailSubject(c);
+  const body = buildCotizacionEmailBody(c, clienteInfo);
+
+  if(COTIZACION_AUTO_SEND_ENDPOINTS.email){
+    const fd = new FormData();
+    fd.append("to", email);
+    fd.append("subject", subject);
+    fd.append("body", body);
+    fd.append("quoteId", c?.id || "");
+    fd.append("quoteNumber", c?.numero || "");
+    fd.append("pdf", pdfFile, pdfFile.name);
+    const res = await fetch(COTIZACION_AUTO_SEND_ENDPOINTS.email, { method:"POST", body:fd });
+    if(!res.ok) throw new Error("El endpoint de correo no respondió correctamente.");
+    return { ok:true, message:`Correo enviado a ${email}` };
+  }
+
+  downloadGeneratedFile(pdfFile);
+  window.location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  return { ok:true, manual:true, message:`Correo preparado para ${email}. El PDF se descargó para adjuntarlo.` };
+}
+
+async function sendCotizacionWhatsApp(c, clienteInfo, pdfFile){
+  const phone = getCotizacionClientPhone(clienteInfo, c);
+  if(!phone) throw new Error("El cliente no tiene teléfono registrado en la cotización o en la base de datos.");
+  const message = buildCotizacionShareMessage(c, clienteInfo);
+
+  if(COTIZACION_AUTO_SEND_ENDPOINTS.whatsapp){
+    const fd = new FormData();
+    fd.append("phone", phone);
+    fd.append("message", message);
+    fd.append("quoteId", c?.id || "");
+    fd.append("quoteNumber", c?.numero || "");
+    fd.append("pdf", pdfFile, pdfFile.name);
+    const res = await fetch(COTIZACION_AUTO_SEND_ENDPOINTS.whatsapp, { method:"POST", body:fd });
+    if(!res.ok) throw new Error("El endpoint de WhatsApp no respondió correctamente.");
+    return { ok:true, message:`WhatsApp enviado a +${phone}` };
+  }
+
+  try{
+    if(navigator.share && navigator.canShare && navigator.canShare({ files:[pdfFile] })){
+      await navigator.share({
+        title: buildCotizacionEmailSubject(c),
+        text: message,
+        files: [pdfFile],
+      });
+      return { ok:true, manual:true, message:`Se abrió el selector para compartir el PDF por WhatsApp con +${phone}` };
+    }
+  }catch(err){
+    // continúa al fallback de wa.me
+  }
+
+  downloadGeneratedFile(pdfFile);
+  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank");
+  return { ok:true, manual:true, message:`WhatsApp abierto para +${phone}. El PDF se descargó para adjuntarlo.` };
+}
+
+function openPrintWindow(title, innerHtml, extraCss = ""){
+  const w = window.open("", "_blank", "width=950,height=1200");
+  if(!w) return;
+
+  w.document.write(`<!doctype html>
+  <html>
+    <head>
+      <meta charset="utf-8" />
+      <title>${title}</title>
+      <style>
+        @page { size: Letter; margin: 12mm; }
+        * {
+          box-sizing: border-box;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        html, body {
+          margin: 0;
+          padding: 0;
+          background: #fff;
+          color: #111;
+          font-family: Aptos, "Segoe UI", Arial, sans-serif;
+        }
+        body {
+          font-size: 12pt;
+          line-height: 1.5;
+        }
+        .print-root {
+          width: 100%;
+          margin: 0;
+          padding: 0;
+        }
+        .avoid-break, table, tr, td, th {
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+        img {
+          max-width: 100%;
+        }
+        ${extraCss}
+      </style>
+    </head>
+    <body>
+      <div class="print-root">${innerHtml}</div>
+    </body>
+  </html>`);
+
+  w.document.close();
+
+  const doPrint = () => {
+    w.focus();
+    w.print();
+  };
+
+  if(w.document.fonts?.ready){
+    w.document.fonts.ready.then(() => setTimeout(doPrint, 250));
+  }else{
+    setTimeout(doPrint, 400);
+  }
+}
+
+function printCurrentPz(title = "Documento"){
+  const node = document.getElementById("pz");
+  if(!node) return;
+
+  openPrintWindow(
+    title,
+    node.outerHTML,
+    `
+      .doc-shell{
+        background:#fff;
+        color:#111;
+      }
+      .doc-shell table{
+        width:100%;
+        border-collapse:collapse;
+      }
+    `
+  );
+}
+
+function printColilla(empleado, resumen, periodo){
+  const fmtC = n => '$ ' + Math.round(Number(n)||0).toLocaleString('es-CO');
+  const periodLabel = periodo?.label || (periodo?.mes || new Date().toISOString().slice(0,7));
+  const devengados = [
+    ['Salario del corte', resumen.salario],
+    ['Auxilio de transporte', resumen.auxilioTransporte],
+    ['Horas extras', resumen.horasExtras],
+    ['Comisiones', resumen.comisiones],
+  ].filter(([,valor])=>Number(valor||0)>0);
+  const deducciones = [
+    ['Salud (4%)', resumen.salud],
+    ['Pension (4%)', resumen.pension],
+    ['Otras deducciones', resumen.otrasDeducciones],
+  ].filter(([,valor])=>Number(valor||0)>0);
+  const devRows = devengados.map(([concepto,valor])=>`<tr><td>${concepto}</td><td style="text-align:right">${fmtC(valor)}</td></tr>`).join('');
+  const dedRows = deducciones.length
+    ? deducciones.map(([concepto,valor])=>`<tr><td>${concepto}</td><td style="text-align:right">- ${fmtC(valor)}</td></tr>`).join('')
+    : `<tr><td>Sin deducciones adicionales</td><td style="text-align:right">${fmtC(0)}</td></tr>`;
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Colilla ${periodLabel}</title>
+<style>
+@page{size:5.5in 8.5in;margin:8mm;}
+body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;background:#fff;color:#0f172a;}
+.sheet{width:100%;max-width:127mm;margin:0 auto;border:1px solid #dbe3ec;border-radius:16px;overflow:hidden;background:#fff;}
+.head{padding:14px 16px;background:linear-gradient(135deg,#fff7ed,#ffffff);border-bottom:1px solid #f1f5f9;}
+.brand{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;}
+.brand img{height:42px;object-fit:contain;}
+.brand-title{font-size:10px;color:#64748b;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;}
+.chip{display:inline-block;background:#142840;color:#fff;border-radius:999px;padding:5px 10px;font-size:10px;font-weight:700;}
+.employee{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;font-size:11px;line-height:1.6;}
+.employee strong{display:block;font-size:14px;color:#142840;margin-bottom:2px;}
+.body{padding:14px 16px 16px;}
+.section{margin-bottom:14px;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;}
+.section h3{margin:0;padding:9px 12px;font-size:10px;letter-spacing:1px;text-transform:uppercase;background:#f8fafc;color:#475569;}
+table{width:100%;border-collapse:collapse;font-size:11px;}
+td{padding:8px 12px;border-top:1px solid #f1f5f9;}
+.total{display:flex;justify-content:space-between;align-items:center;background:#142840;color:#fff;border-radius:12px;padding:12px 14px;}
+.total .amount{font-size:18px;font-weight:800;color:#4ade80;}
+.foot{padding-top:10px;text-align:center;color:#94a3b8;font-size:9px;line-height:1.5;}
+@media print{body{padding:0;background:#fff;}.sheet{border:none;border-radius:0;box-shadow:none;max-width:none;}}
+</style></head><body><div class="sheet">
+<div class="head">
+  <div class="brand">
+    <img src="${LOGO_INGEANCLAJES}" alt="Ingeanclajes"/>
+    <div style="text-align:right">
+      <div class="brand-title">Colilla de pago</div>
+      <div class="chip">${periodLabel}</div>
+    </div>
+  </div>
+  <div class="employee">
+    <strong>${empleado.nombre}</strong>
+    Cedula: ${empleado.cedula||'-'} · Cargo: ${empleado.cargo||'-'}<br/>Banco: ${empleado.banco||'-'} · Cuenta: ${empleado.numeroCuenta||'-'}
+    Periodo: ${periodLabel} · Dias pagados: ${resumen.diasNomina}
+  </div>
+</div>
+<div class="body">
+  <div class="section">
+    <h3>Devengados</h3>
+    <table>${devRows || `<tr><td>Sin devengados</td><td style="text-align:right">${fmtC(0)}</td></tr>`}</table>
+  </div>
+  <div class="section">
+    <h3>Deducciones</h3>
+    <table>${dedRows}</table>
+  </div>
+  <div class="total"><span>Total neto a pagar</span><span class="amount">${fmtC(resumen.neto)}</span></div>
+  <div class="foot">Documento generado el ${new Date().toLocaleDateString('es-CO')} · Ingeanclajes S.A.S</div>
+</div>
+</div></body></html>`;
+  const win = window.open('','_blank','width=620,height=760');
+  if(win){win.document.write(html);win.document.close();win.focus();setTimeout(()=>win.print(),500);}
+}
+
+function printVacaciones(empleado, diasVacaciones, valorVacaciones){
+  const fmtC = n => '$ ' + Math.round(Number(n)||0).toLocaleString('es-CO');
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Vacaciones ${empleado.nombre}</title>
+<style>
+@page{size:Letter;margin:12mm;}
+body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:18px;background:#fff;color:#0f172a;}
+.wrap{max-width:620px;margin:0 auto;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;}
+.hd{padding:16px 18px;background:linear-gradient(135deg,#ecfdf5,#ffffff);border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;}
+.hd img{height:48px;object-fit:contain;}
+.bd{padding:18px;}
+.card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;margin-bottom:14px;line-height:1.7;font-size:12px;}
+.total{background:#166534;color:#fff;border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;font-size:16px;font-weight:700;}
+.footer{text-align:center;color:#94a3b8;font-size:10px;padding:14px;}
+</style></head><body><div class="wrap">
+<div class="hd"><img src="${LOGO_INGEANCLAJES}" alt="Ingeanclajes"/><div style="text-align:right"><div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748b;font-weight:700">Liquidacion de vacaciones</div><div style="font-size:12px;font-weight:700;color:#166534">${today()}</div></div></div>
+<div class="bd">
+<div class="card"><strong style="font-size:16px;color:#142840">${empleado.nombre}</strong><br/>Cedula: ${empleado.cedula||'-'} · Cargo: ${empleado.cargo||'-'}<br/>Salario base: ${fmtC(empleado.salario||0)} · Dias a liquidar: ${diasVacaciones}</div>
+<div class="card">Esta liquidacion corresponde a vacaciones pagadas sin retiro del empleado. Valor calculado sobre salario basico: ${fmtC(empleado.salario||0)} ÷ 30 × ${diasVacaciones} dias.</div>
+<div class="total"><span>Valor vacaciones</span><span>${fmtC(valorVacaciones)}</span></div>
+</div>
+<div class="footer">Ingeanclajes S.A.S · Documento generado automaticamente</div>
+</div></body></html>`;
+  const win = window.open('','_blank','width=760,height=820');
+  if(win){win.document.write(html);win.document.close();win.focus();setTimeout(()=>win.print(),500);}
+}
+
+function printLiquidacion(empleado, pfl, indemn, diasVacPagar, fechaSalida, resumenRetiro, periodoRetiro){
+  const fmtC = n => '$ ' + Math.round(Number(n)||0).toLocaleString('es-CO');
+  const vacValorReal = Math.round(empleado.salario * (diasVacPagar||0) / 30);
+  const total = pfl.cesantias + pfl.interesesCesantias + pfl.prima + vacValorReal + indemn + (resumenRetiro?.neto||0);
+  const rows = [
+    ['Salario días trabajados', (resumenRetiro?.diasNomina||0) + ' días × ' + fmtC((resumenRetiro?.valorDia)||0), fmtC(resumenRetiro?.salario||0)],
+    ['Auxilio de transporte proporcional', 'Auxilio del corte según ' + (resumenRetiro?.diasNomina||0) + ' días', fmtC(resumenRetiro?.auxilioTransporte||0)],
+    ...((resumenRetiro?.horasExtras||0)>0 ? [['Horas extras pendientes', 'Registradas dentro del corte final', fmtC(resumenRetiro?.horasExtras||0)]] : []),
+    ...((resumenRetiro?.comisiones||0)>0 ? [['Comisiones pendientes', 'Registradas dentro del corte final', fmtC(resumenRetiro?.comisiones||0)]] : []),
+    ...((resumenRetiro?.salud||0)>0 ? [['Descuento salud empleado', '4% sobre salario + extras + comisiones', '- ' + fmtC(resumenRetiro?.salud||0)]] : []),
+    ...((resumenRetiro?.pension||0)>0 ? [['Descuento pensión empleado', '4% sobre salario + extras + comisiones', '- ' + fmtC(resumenRetiro?.pension||0)]] : []),
+    ...((resumenRetiro?.otrasDeducciones||0)>0 ? [['Otras deducciones', 'Conceptos autorizados del empleado', '- ' + fmtC(resumenRetiro?.otrasDeducciones||0)]] : []),
+    ['Neto nómina final', periodoRetiro?.label||'Corte final', fmtC(resumenRetiro?.neto||0)],
+    ['Cesantías (Art. 249 CST)', (empleado.salario + (empleado.salario<=NOMINA_CO_2026.topeAuxilio?NOMINA_CO_2026.auxilioTransporte:0)).toLocaleString('es-CO') + ' × ' + pfl.diasTrabajados + 'd ÷ 360', fmtC(pfl.cesantias)],
+    ['Intereses cesantías (12% anual)', '12% s/ ' + fmtC(pfl.cesantias), fmtC(pfl.interesesCesantias)],
+    ['Prima de servicios (Art. 306 CST)', 'Base × ' + pfl.diasTrabajados + 'd ÷ 360', fmtC(pfl.prima)],
+    ['Vacaciones (Art. 186 CST)', diasVacPagar + ' días × ' + fmtC(empleado.salario) + ' ÷ 30', fmtC(vacValorReal)],
+    ...(indemn>0?[['Indemnización sin justa causa (Art. 64 CST)', 'Según años de servicio', fmtC(indemn)]]:[]),
+  ];
+  const rowsHtml = rows.map(([k,b,v])=>
+    '<tr><td style="padding:6px 14px;border-bottom:1px solid #f1f5f9">'+k+'</td><td style="padding:6px 14px;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:10px">'+b+'</td><td style="padding:6px 14px;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:600">'+v+'</td></tr>'
+  ).join('');
+  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Liquidación '+empleado.nombre+'</title>'
+    +'<style>body{font-family:"Segoe UI",Arial,sans-serif;margin:0;padding:20px;background:#f8fafc;}'
+    +'.wrap{max-width:640px;margin:0 auto;background:#fff;border:1px solid #ddd;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.1);}'
+    +'.hd{background:#cc0000;color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;}'
+    +'.hd h2{margin:0;font-size:16px;letter-spacing:.5px;}'
+    +'.emp{padding:12px 20px;background:#fff8f8;border-bottom:2px solid #fecaca;font-size:12px;line-height:1.8;}'
+    +'.emp strong{font-size:15px;display:block;color:#0f172a;}'
+    +'table{width:100%;border-collapse:collapse;font-size:11.5px;}'
+    +'.total-row td{background:#cc0000;color:#fff;font-weight:700;font-size:15px;padding:13px 16px;}'
+    +'.total-amt{color:#fde68a;font-size:18px;}'
+    +'.footer{padding:14px 20px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;line-height:1.8;}'
+    +'@media print{body{background:#fff;padding:0;}.wrap{box-shadow:none;border:none;}}'
+    +'</style></head><body><div class="wrap">'
+    +'<div class="hd"><div><h2>LIQUIDACIÓN DEFINITIVA DE PRESTACIONES SOCIALES</h2><div style="font-size:11px;opacity:.8;margin-top:3px">Ingeanclajes S.A.S — NIT 900193965-4</div></div></div>'
+    +'<div class="emp"><strong>'+empleado.nombre+'</strong>'
+    +'Cédula: '+(empleado.cedula||'-')+'&nbsp;·&nbsp;Cargo: '+(empleado.cargo||'-')+'<br/>'
+    +'Tipo contrato: '+(empleado.tipoContrato||'indefinido')+'&nbsp;·&nbsp;Ingreso: '+(empleado.fechaIngreso||'N/A')+'&nbsp;·&nbsp;Salida: '+(fechaSalida||'N/A')+'<br/>'
+    +'Causa retiro: '+(empleado.causaRetiro||'—')+'&nbsp;·&nbsp;Tiempo laborado: '+pfl.diasTrabajados+' días ('+pfl.mesesTrabajados+' meses)<br/>'
+    +'Corte final: '+(periodoRetiro?.label||'No definido')
+    +'</div>'
+    +'<table><thead><tr style="background:#142840;color:#fff"><th style="padding:7px 14px;text-align:left">Concepto</th><th style="padding:7px 14px;text-align:left">Base de cálculo</th><th style="padding:7px 14px;text-align:right">Valor</th></tr></thead>'
+    +'<tbody>'+rowsHtml+'</tbody>'
+    +'<tfoot><tr class="total-row"><td colspan="2">TOTAL A PAGAR</td><td style="text-align:right"><span class="total-amt">'+fmtC(total)+'</span></td></tr></tfoot>'
+    +'</table>'
+    +'<div class="footer">'
+    +'<div style="display:flex;justify-content:space-around;margin-bottom:10px;margin-top:10px">'
+    +'<div style="text-align:center">________________________<br/><span style="font-size:11px;color:#374151">Firma Empleado<br/>'+empleado.nombre+'<br/>C.C. '+(empleado.cedula||'')+'</span></div>'
+    +'<div style="text-align:center">________________________<br/><span style="font-size:11px;color:#374151">Representante Legal<br/>Ingeanclajes S.A.S</span></div>'
+    +'</div>'
+    +'Generado el '+new Date().toLocaleDateString('es-CO',{year:"numeric",month:"long",day:"numeric"})+' · Este documento es constancia de pago de prestaciones sociales.'
+    +'</div>'
+    +'</div></body></html>';
+  const win = window.open('','_blank','width=720,height=920');
+  if(win){win.document.write(html);win.document.close();win.focus();setTimeout(()=>win.print(),500);}
+}
+
+
+
+let googleMapsJsPromise = null;
+function loadGoogleMapsJsApi(){
+  if(typeof window === "undefined") return Promise.reject(new Error("Google Maps solo está disponible en el navegador."));
+  if(window.google?.maps) return Promise.resolve(window.google.maps);
+  if(googleMapsJsPromise) return googleMapsJsPromise;
+  googleMapsJsPromise = new Promise((resolve,reject)=>{
+    const existing = document.getElementById("gmaps-js-api");
+    const finish = ()=> window.google?.maps ? resolve(window.google.maps) : reject(new Error("Google Maps no cargó correctamente."));
+    if(existing){
+      existing.addEventListener("load", finish, {once:true});
+      existing.addEventListener("error", ()=>reject(new Error("No fue posible cargar Google Maps.")), {once:true});
+      return;
+    }
+    const script = document.createElement("script");
+    script.id = "gmaps-js-api";
+    script.async = true;
+    script.defer = true;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_MAPS_EMBED_KEY)}&libraries=geometry&v=weekly`;
+    script.onload = finish;
+    script.onerror = ()=>reject(new Error("No fue posible cargar Google Maps."));
+    document.body.appendChild(script);
+  });
+  return googleMapsJsPromise;
+}
+
+function measurementsToQuoteItems(list=[]){
+  return (list||[]).map((seg,idx)=>({
+    id: Date.now() + idx,
+    desc: seg.label || `LÍNEA ${idx+1}`,
+    cant: Number(seg.ml||0).toFixed(2),
+    unit: measurementUnitFromType(seg.tipo),
+    vu: seg.tipo === "LVV" ? 320000 : seg.tipo === "ESC" ? 1200000 : seg.tipo === "CON" ? 280000 : 280000,
+  }));
+}
+
+function createMapLabelOverlay(gm, map, startPos, endPos, labelText, color){
+  class SegmentLabelOverlay extends gm.OverlayView {
+    constructor(){
+      super();
+      this.div = null;
+    }
+    onAdd(){
+      const div = document.createElement("div");
+      div.style.position = "absolute";
+      div.style.transform = "translate(-50%, -50%)";
+      div.style.pointerEvents = "none";
+      div.style.fontFamily = "Aptos, Segoe UI, Arial, sans-serif";
+      div.style.fontSize = "14px";
+      div.style.fontWeight = "700";
+      div.style.lineHeight = "1.15";
+      div.style.textAlign = "center";
+      div.style.color = color;
+      div.style.whiteSpace = "nowrap";
+      div.style.textShadow = "-2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff, 0 0 8px rgba(255,255,255,0.95)";
+      div.innerHTML = labelText;
+      this.div = div;
+      this.getPanes().overlayMouseTarget.appendChild(div);
+    }
+    draw(){
+      if(!this.div) return;
+      const projection = this.getProjection();
+      if(!projection) return;
+      const s = projection.fromLatLngToDivPixel(startPos);
+      const e = projection.fromLatLngToDivPixel(endPos);
+      if(!s || !e) return;
+      const dx = e.x - s.x;
+      const dy = e.y - s.y;
+      const len = Math.max(Math.hypot(dx, dy), 1);
+      const normalX = -dy / len;
+      const normalY = dx / len;
+      const offset = 22;
+      const x = ((s.x + e.x) / 2) + (normalX * offset);
+      const y = ((s.y + e.y) / 2) + (normalY * offset);
+      this.div.style.left = `${x}px`;
+      this.div.style.top = `${y}px`;
+    }
+    onRemove(){
+      if(this.div?.parentNode) this.div.parentNode.removeChild(this.div);
+      this.div = null;
+    }
+  }
+  const overlay = new SegmentLabelOverlay();
+  overlay.setMap(map);
+  return overlay;
+}
+
+function GoogleMeasureWorkspace({ queryValue, onQueryChange, measurements, onChange, mapView, onMapViewChange }){
+  const mapNodeRef = useRef(null);
+  const mapRef = useRef(null);
+  const googleRef = useRef(null);
+  const geocoderRef = useRef(null);
+  const overlayRef = useRef([]);
+  const tempMarkersRef = useRef([]);
+  const mapClickRef = useRef(null);
+  const idleListenerRef = useRef(null);
+  const [status,setStatus] = useState("idle");
+  const [error,setError] = useState("");
+  const [measureMode,setMeasureMode] = useState(false);
+  const [draft,setDraft] = useState(null);
+  const [zoom,setZoom] = useState(20);
+
+  const captureMapView = ()=>{
+    if(!mapRef.current) return null;
+    const center = mapRef.current.getCenter && mapRef.current.getCenter();
+    if(!center) return null;
+    const next = {
+      center: { lat: center.lat(), lng: center.lng() },
+      zoom: mapRef.current.getZoom ? mapRef.current.getZoom() : (mapView?.zoom || zoom),
+      width: Math.min(640, Math.max(320, Math.round(mapNodeRef.current?.clientWidth || mapView?.width || 640))),
+      height: Math.min(640, Math.max(240, Math.round(mapNodeRef.current?.clientHeight || mapView?.height || 420))),
+    };
+    onMapViewChange && onMapViewChange(next);
+    return next;
+  };
+
+  const clearTemp = ()=>{
+    tempMarkersRef.current.forEach(m=>m && m.setMap && m.setMap(null));
+    tempMarkersRef.current = [];
+    if(mapClickRef.current){
+      googleRef.current?.maps.event.removeListener(mapClickRef.current);
+      mapClickRef.current = null;
+    }
+  };
+
+  const clearOverlays = ()=>{
+    overlayRef.current.forEach(group=>{
+      group.start?.setMap(null);
+      group.end?.setMap(null);
+      group.line?.setMap(null);
+      group.label?.setMap(null);
+    });
+    overlayRef.current = [];
+  };
+
+  const computeMeters = (a,b)=>{
+    if(!googleRef.current?.maps?.geometry?.spherical) return 0;
+    return googleRef.current.maps.geometry.spherical.computeDistanceBetween(a,b);
+  };
+
+  const redraw = ()=>{
+    if(!mapRef.current || !googleRef.current?.maps) return;
+    clearOverlays();
+    const gm = googleRef.current.maps;
+    (measurements||[]).forEach(seg=>{
+      const startPos = new gm.LatLng(seg.start.lat, seg.start.lng);
+      const endPos = new gm.LatLng(seg.end.lat, seg.end.lng);
+      const line = new gm.Polyline({
+        map: mapRef.current,
+        path: [startPos, endPos],
+        geodesic: true,
+        strokeColor: seg.tipo === "CON" ? "#eab308" : seg.tipo === "LVV" ? "#22c55e" : seg.tipo === "ESC" ? "#f97316" : "#3b82f6",
+        strokeOpacity: 0.95,
+        strokeWeight: 4,
+      });
+      const start = new gm.Marker({ map: mapRef.current, position: startPos, draggable: true });
+      const end = new gm.Marker({ map: mapRef.current, position: endPos, draggable: true });
+      const labelHtml = `${escapeXml(seg.label || "Tramo")}<br/>${Number(seg.ml||0).toFixed(2)} m`;
+      const label = createMapLabelOverlay(gm, mapRef.current, startPos, endPos, labelHtml, seg.tipo === "CON" ? "#a16207" : seg.tipo === "LVV" ? "#15803d" : seg.tipo === "ESC" ? "#c2410c" : "#1d4ed8");
+      const sync = ()=>{
+        const s = start.getPosition();
+        const e = end.getPosition();
+        line.setPath([s,e]);
+        const next = (measurements||[]).map(item=> item.id===seg.id ? ({
+          ...item,
+          start: {lat:s.lat(), lng:s.lng()},
+          end: {lat:e.lat(), lng:e.lng()},
+          ml: Number(computeMeters(s,e).toFixed(2)),
+        }) : item);
+        onChange(next);
+      };
+      start.addListener("dragend", sync);
+      end.addListener("dragend", sync);
+      overlayRef.current.push({start,end,line,label});
+    });
+  };
+
+  const centerMap = async ()=>{
+    if(!mapRef.current || !googleRef.current?.maps) return;
+    const raw = (queryValue||"").trim();
+    if(!raw) return;
+    setStatus("loading");
+    setError("");
+    try{
+      const parsed = parseLatLngValue(raw);
+      if(parsed){
+        mapRef.current.setCenter({lat: parsed.lat, lng: parsed.lng});
+        mapRef.current.setZoom(mapView?.zoom || zoom);
+      }else{
+        const geocoder = geocoderRef.current || new googleRef.current.maps.Geocoder();
+        geocoderRef.current = geocoder;
+        const result = await geocoder.geocode({ address: raw });
+        const first = Array.isArray(result?.results) ? result.results[0] : result?.results?.[0];
+        if(!first?.geometry?.location) throw new Error("No encontré esa ubicación en Google Maps.");
+        mapRef.current.setCenter(first.geometry.location);
+        mapRef.current.setZoom(mapView?.zoom || zoom);
+      }
+      captureMapView();
+      setStatus("ready");
+    }catch(err){
+      setStatus("error");
+      setError(err?.message || "No fue posible centrar el mapa.");
+    }
+  };
+
+  useEffect(()=>{
+    let mounted = true;
+    (async()=>{
+      if(!GOOGLE_MAPS_EMBED_KEY){
+        setStatus("error");
+        setError("La API key de Google Maps no está configurada en este archivo.");
+        return;
+      }
+      setStatus("loading");
+      try{
+        const maps = await loadGoogleMapsJsApi();
+        if(!mounted || !mapNodeRef.current) return;
+        googleRef.current = window.google;
+        if(!mapRef.current){
+          const fallback = mapView?.center || parseLatLngValue(queryValue || "") || {lat:6.2442,lng:-75.5812};
+          mapRef.current = new maps.Map(mapNodeRef.current, {
+            center: {lat: fallback.lat, lng: fallback.lng},
+            zoom: mapView?.zoom || zoom,
+            mapTypeId: "satellite",
+            streetViewControl: false,
+            mapTypeControl: false,
+            fullscreenControl: true,
+            gestureHandling: "greedy",
+          });
+        }
+        if(idleListenerRef.current){ maps.event.removeListener(idleListenerRef.current); }
+        idleListenerRef.current = mapRef.current.addListener("idle", ()=>{ captureMapView(); redraw(); });
+        captureMapView();
+        setStatus("ready");
+      }catch(err){
+        if(mounted){
+          setStatus("error");
+          setError(err?.message || "No fue posible cargar Google Maps.");
+        }
+      }
+    })();
+    return ()=>{ mounted = false; clearTemp(); clearOverlays(); if(idleListenerRef.current && googleRef.current?.maps){ googleRef.current.maps.event.removeListener(idleListenerRef.current); idleListenerRef.current = null; } };
+  }, []);
+
+  useEffect(()=>{ redraw(); }, [JSON.stringify(measurements||[])]);
+  useEffect(()=>{ if(mapRef.current){ mapRef.current.setZoom(zoom); captureMapView(); } }, [zoom]);
+
+  const startMeasurement = ()=>{
+    if(!mapRef.current || !googleRef.current?.maps) return;
+    clearTemp();
+    setDraft(null);
+    captureMapView();
+    setMeasureMode(true);
+    let first = null;
+    mapClickRef.current = mapRef.current.addListener("click", (ev)=>{
+      const gm = googleRef.current.maps;
+      if(!first){
+        first = ev.latLng;
+        const mk = new gm.Marker({ map: mapRef.current, position: first });
+        tempMarkersRef.current = [mk];
+        return;
+      }
+      const second = ev.latLng;
+      const mk2 = new gm.Marker({ map: mapRef.current, position: second });
+      tempMarkersRef.current.push(mk2);
+      captureMapView();
+      setDraft({
+        start: {lat:first.lat(), lng:first.lng()},
+        end: {lat:second.lat(), lng:second.lng()},
+        ml: Number(computeMeters(first, second).toFixed(2)),
+        label: "",
+        tipo: "LVH",
+      });
+      setMeasureMode(false);
+      if(mapClickRef.current){
+        googleRef.current.maps.event.removeListener(mapClickRef.current);
+        mapClickRef.current = null;
+      }
+    });
+  };
+
+  const confirmDraft = ()=>{
+    if(!draft?.label) return;
+    const next = [...(measurements||[]), { ...draft, id: `gm-${Date.now()}` }];
+    clearTemp();
+    setDraft(null);
+    onChange(next);
+  };
+
+  const removeMeasurement = (id)=> onChange((measurements||[]).filter(seg=>seg.id!==id));
+
+  return (
+    <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:12,padding:20}}>
+      <div style={{display:"grid",gridTemplateColumns:"1.3fr 1fr",gap:16,alignItems:"start",marginBottom:12}}>
+        <div>
+          <div style={ST}>Medición automática con Google Maps</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr auto auto",gap:8,marginBottom:10}}>
+            <input value={queryValue} onChange={e=>onQueryChange(e.target.value)} placeholder="Coordenadas, dirección o enlace de Maps" style={SI} />
+            <button onClick={centerMap} style={{...B("#f47c20"),fontSize:12}}>Ver aquí</button>
+            <button onClick={startMeasurement} style={{...B(measureMode?"#4ade80":"#1a3050", measureMode?"#0f2d1a":"#60b4ff"),fontSize:12}}>{measureMode?"Esperando clics...":"Activar medición"}</button>
+          </div>
+          <div style={{fontSize:11,color:"#64748b",lineHeight:1.6}}>Haz clic en dos puntos del mapa y el sistema calcula la distancia real automáticamente en metros. Luego solo nombras el tramo y su tipo.</div>
+        </div>
+        <div style={{background:"#f8fafc",borderRadius:10,padding:"12px 14px",border:"1px solid #e2e8f0"}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#1a1a2e",marginBottom:8}}>Estado</div>
+          <div style={{fontSize:11,color: status==="error" ? "#991b1b" : "#475569",lineHeight:1.7}}>
+            <div>• API: <strong>{GOOGLE_MAPS_EMBED_KEY ? "configurada" : "sin configurar"}</strong></div>
+            <div>• Mapa: <strong>{status}</strong></div>
+            <div>• Tramos: <strong>{(measurements||[]).length}</strong></div>
+            {error && <div style={{color:"#991b1b"}}>• {error}</div>}
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginTop:8}}>
+            <button onClick={()=>setZoom(z=>Math.min(21,z+1))} style={{...B("#e0f2fe","#0369a1"),justifyContent:"center",fontSize:12,padding:"8px 0"}}>+</button>
+            <button onClick={()=>setZoom(z=>Math.max(16,z-1))} style={{...B("#e0f2fe","#0369a1"),justifyContent:"center",fontSize:12,padding:"8px 0"}}>-</button>
+          </div>
+        </div>
+      </div>
+
+      <div ref={mapNodeRef} style={{height:420,borderRadius:12,overflow:"hidden",border:`2px solid ${measureMode?"#f47c20":"#e2e8f0"}`,marginBottom:12}} />
+
+      {draft && (
+        <div style={{background:"#fffbeb",border:"2px solid #f5c842",borderRadius:10,padding:16,marginBottom:12}}>
+          <div style={{fontSize:13,fontWeight:700,color:"#b45309",marginBottom:12}}>Tramo detectado automáticamente</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:10,alignItems:"end"}}>
+            <div><LBL>Metros calculados</LBL><input value={draft.ml} readOnly style={{...SI,background:"#fff7ed",fontWeight:700,color:"#c2410c"}} /></div>
+            <div><LBL>Etiqueta</LBL><input value={draft.label} onChange={e=>setDraft({...draft,label:e.target.value})} placeholder="Ej: Cubierta norte" style={SI} /></div>
+            <div><LBL>Tipo</LBL><select value={draft.tipo} onChange={e=>setDraft({...draft,tipo:e.target.value})} style={SI}>{[["LVH","Línea horizontal"],["LVV","Línea vertical"],["CON","Conexión"],["ESC","Escalera"],["PAN","Punto de anclaje"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
+            <div style={{display:"flex",gap:6}}>
+              <button onClick={confirmDraft} style={B("#4ade80","#0f2d1a")}>Agregar</button>
+              <button onClick={()=>{clearTemp(); setDraft(null);}} style={B("#fee2e2","#ef4444")}>Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {(measurements||[]).length>0 && (
+        <div style={{marginBottom:12}}>
+          <div style={{fontSize:12,fontWeight:600,color:"#475569",marginBottom:8}}>Tramos medidos:</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            {(measurements||[]).map(seg=>(
+              <div key={seg.id} style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,border:"1px solid #e2e8f0"}}>
+                <div>
+                  <div style={{fontSize:12,fontWeight:700,color:"#1a1a2e"}}>{seg.label}</div>
+                  <div style={{fontSize:10,color:"#64748b"}}>{seg.tipo} · {Number(seg.ml||0).toFixed(2)} m</div>
+                </div>
+                <button onClick={()=>removeMeasurement(seg.id)} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:5,padding:"3px 8px",cursor:"pointer",fontSize:11}}>×</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+// ======================================================
+// COTIZACION
+// ======================================================
+
 
 // ======================================================
 // APP ROOT

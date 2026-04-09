@@ -153,6 +153,7 @@ const RECARGOS_CO_2026 = [
 const getPctRecargo=(tipo,fecha)=>{const r=RECARGOS_CO_2026.find(x=>x.id===tipo);return r?.getPct?.(fecha)??null;};
 const parseIsoDate = (iso)=> iso ? new Date(`${iso}T12:00:00`) : null;
 const diffDaysInclusive = (start,end)=> Math.floor((end-start)/(1000*60*60*24))+1;
+const round1 = (value)=> Math.round((Number(value)||0) * 10) / 10;
 const getDaysInMonth = (mes)=>{
   const [year,month] = String(mes || today().slice(0,7)).split("-").map(Number);
   return new Date(year, month, 0).getDate();
@@ -211,9 +212,14 @@ const calcularDiasNominaPeriodo = (empleado, periodo=null)=>{
 };
 const calcularVacacionesPendientes = (empleado, fechaCorte=null)=>{
   const pf = calcularParafiscales(empleado, fechaCorte);
+  const pagadasDias = round1(Math.max(0, Number(empleado?.vacacionesPagadasDias||0)));
+  const acumuladasDias = round1(pf.vacacionesDias);
+  const diasPendientes = round1(Math.max(0, acumuladasDias - pagadasDias));
   return {
-    dias: pf.vacacionesDias,
-    valor: pf.vacacionesValor,
+    dias: diasPendientes,
+    valor: Math.round((Number(empleado?.salario)||0) * diasPendientes / 30),
+    acumuladasDias,
+    pagadasDias,
     parafiscales: pf,
   };
 };
@@ -234,6 +240,10 @@ const normalizarEmpleado = (empleado)=>({
   fechaIngreso:empleado?.fechaIngreso||null,
   fechaSalida:empleado?.fechaSalida||null,
   causaRetiro:empleado?.causaRetiro||"",
+  vacacionesPagadasDias:round1(Math.max(0, Number(empleado?.vacacionesPagadasDias||0))),
+  vacacionesLiquidacionDias:empleado?.vacacionesLiquidacionDias===null || empleado?.vacacionesLiquidacionDias===undefined || empleado?.vacacionesLiquidacionDias===""
+    ? null
+    : round1(Math.max(0, Number(empleado?.vacacionesLiquidacionDias||0))),
   horasExtrasPorObra:Array.isArray(empleado?.horasExtrasPorObra)?empleado.horasExtrasPorObra:[],
   comisionesPorObra:Array.isArray(empleado?.comisionesPorObra)?empleado.comisionesPorObra:[],
   deduccionesPersonalizadas:normalizarDeduccionesPersonalizadas(empleado?.deduccionesPersonalizadas),
@@ -332,6 +342,45 @@ const calcularParafiscales = (empleado, fechaCorte=null) => {
   const aniostrabajados = Math.floor(diasTrabajados / 365);
   const mesesTrabajados = Math.floor(diasTrabajados / 30);
   return { diasTrabajados, mesesTrabajados, aniostrabajados, vacacionesDias, vacacionesValor, cesantias, interesesCesantias, prima, totalLiquidacion };
+};
+
+const calcularIndemnizacionRetiro = (empleado, parafiscales) => (
+  empleado?.causaRetiro==="Despido sin justa causa"
+    ? (
+        parafiscales?.aniostrabajados<=1
+          ? Math.round(Number(empleado?.salario)||0)
+          : Math.round((Number(empleado?.salario)||0) + (Number(empleado?.salario)||0)*0.2*((parafiscales?.aniostrabajados||0)-1))
+      )
+    : 0
+);
+
+const calcularLiquidacionRetiro = (empleado, periodoNomina=null, diasVacacionesOverride=null) => {
+  const periodoLiquidacion = buildPeriodoLiquidacionRetiro(empleado?.fechaSalida, periodoNomina) || periodoNomina;
+  const resumenRetiro = calcularResumenNominaEmpleado(empleado, periodoLiquidacion);
+  const parafiscales = calcularParafiscales(empleado, empleado?.fechaSalida||null);
+  const vacacionesPendientes = calcularVacacionesPendientes(empleado, empleado?.fechaSalida||null);
+  const valorPreferido =
+    diasVacacionesOverride ??
+    empleado?.vacacionesLiquidacionDias ??
+    vacacionesPendientes.dias;
+  const diasVacPagar = round1(Math.max(0, Math.min(vacacionesPendientes.dias, Number(valorPreferido)||0)));
+  const vacValorReal = Math.round((Number(empleado?.salario)||0) * diasVacPagar / 30);
+  const indemn = calcularIndemnizacionRetiro(empleado, parafiscales);
+  const total = parafiscales.cesantias + parafiscales.interesesCesantias + parafiscales.prima + vacValorReal + indemn + resumenRetiro.neto;
+  const prestaciones = total - resumenRetiro.neto;
+  const retiroEnPeriodo = Boolean(empleado?.fechaSalida && isDateInPeriodo(empleado.fechaSalida, periodoNomina));
+  return {
+    periodoLiquidacion,
+    resumenRetiro,
+    parafiscales,
+    vacacionesPendientes,
+    diasVacPagar,
+    vacValorReal,
+    indemn,
+    total,
+    prestaciones,
+    retiroEnPeriodo,
+  };
 };
 
 const EC={
@@ -732,7 +781,7 @@ const ITEMS_DB = [
     { desc:"ESCALERA MARINERA",                        unit:"Metro", vu:950000  },
   ]},
   { categoria:"Anclajes", items:[
-    { desc:"PUNTO DE ANCLAJE EPOXICO (PURE 110)",     unit:"Und",  vu:380000  },
+    { desc:"PUNTO DE ANCLAJE EPOXICO",                unit:"Und",  vu:380000  },
     { desc:"PUNTO DE ANCLAJE SOLDADO",                unit:"Und",  vu:290000  },
     { desc:"PUNTO DE ANCLAJE EN FACHADA",             unit:"Und",  vu:420000  },
     { desc:"ANCLAJE ARTICO ACERO GALVANIZADO",        unit:"Und",  vu:450000  },
@@ -820,9 +869,14 @@ function hasVerticalLifeLineService(c={}){
 function buildCotizacionPrintHtml(c){
   const items = normalizeQuoteItems(c);
   const measurements = Array.isArray(c.geoMediciones) ? c.geoMediciones : [];
+  const fotosCotizacion = Array.isArray(c.fotosCotizacion) ? c.fotosCotizacion.filter((foto)=>foto?.src) : [];
   const esObraBlanca = c.tipoCotizacion === "obra_blanca";
   const requerimientoCliente = String(c.requerimientoCliente || "").trim();
+  const mapQuery = c.coords || `${c.obra||""} ${c.ciudad||""}`.trim();
   const { width: mapWidth, height: mapHeight } = getStaticMapDimensions(c.geoMapView);
+  const quoteMapSrc = c.mapImg && String(c.mapImg).startsWith("data:")
+    ? c.mapImg
+    : (buildGoogleStaticMapUrl(measurements, mapQuery, c.geoMapView, { width: mapWidth, height: mapHeight }) || c.mapImg || "");
   const showVerticalAppendix = hasVerticalLifeLineService(c);
   const sub = items.reduce((s,i)=>s+(Number(i.cant)||0)*(Number(i.vu)||0),0);
   const ut = sub * (Number(c.util)||10) / 100;
@@ -830,12 +884,6 @@ function buildCotizacionPrintHtml(c){
   const tot = sub + ut + iva;
   const narrative = buildMeasurementNarrative(measurements);
   const introDetail = narrative ? `Tenemos el agrado de presentar nuestra cotizacion para la instalacion sobre cubierta: ${narrative}.` : 'Tenemos el agrado de presentar nuestra cotizacion para la instalacion de los sistemas de proteccion anticaida requeridos para la obra.';
-  const measurementRows = measurements.map((seg,idx)=>{
-    const label = escapeHtml(seg.label || `LINEA ${idx+1}`);
-    const type = escapeHtml(measurementTypeLabel(seg.tipo));
-    const meters = `${Number(seg.ml||0).toFixed(2)} ${escapeHtml(measurementUnitFromType(seg.tipo))}`;
-    return `<tr><td>${idx+1}</td><td>${label}</td><td>${type}</td><td class="num">${meters}</td></tr>`;
-  }).join('');
   const itemRows = items.map((it,idx)=>{
     const desc = escapeHtml(it.desc || `ITEM ${idx+1}`);
     const qty = Number(it.cant||0).toFixed(2).replace(/\.00$/,'');
@@ -844,26 +892,27 @@ function buildCotizacionPrintHtml(c){
     const subtotal = fmt((Number(it.cant)||0)*(Number(it.vu)||0));
     return `<tr><td>${desc}</td><td class="num">${qty}</td><td class="center">${unit}</td><td class="num">${value}</td><td class="num">${subtotal}</td></tr>`;
   }).join('');
-  const mapBlock = c.mapImg ? `<div class="map-wrap" style="aspect-ratio:${mapWidth}/${mapHeight};"><img src="${c.mapImg}" alt="Mapa de medicion" class="map"/></div>` : `<div class="placeholder">Agrega la imagen satelital o la medicion automatica para ver el plano aqui.</div>`;
-  const mapLabels = getStaticMapLabelData(measurements, c.coords || `${c.obra||""} ${c.ciudad||""}`.trim(), c.geoMapView).map(label=>`
+  const mapBlock = quoteMapSrc ? `<div class="map-wrap" style="aspect-ratio:${mapWidth}/${mapHeight};"><img src="${quoteMapSrc}" alt="Mapa de medicion" class="map"/></div>` : `<div class="placeholder">Agrega la imagen satelital o la medicion automatica para ver el plano aqui.</div>`;
+  const mapLabels = getStaticMapLabelData(measurements, mapQuery, c.geoMapView).map(label=>`
       <div class="map-label" style="left:${label.left}; top:${label.top}; color:${label.color}; transform:translate(-50%, -50%) rotate(${label.angle}deg);">
         <div>${escapeHtml(label.title)} - ${escapeHtml(label.value)}</div>
       </div>
     `).join('');
-  const mapBlockWithLabels = c.mapImg ? `<div class="map-wrap" style="aspect-ratio:${mapWidth}/${mapHeight};"><img src="${c.mapImg}" alt="Mapa de medicion" class="map"/>${mapLabels}</div>` : mapBlock;
-
-  const measurementBlock = measurements.length ? `
-      <div class="measurement-box">
-        <p><strong>Medidas levantadas para esta cotizacion</strong></p>
-        <table class="measurement-table">
-          <thead><tr><th>#</th><th>Tramo</th><th>Tipo</th><th>Medida</th></tr></thead>
-          <tbody>${measurementRows}</tbody>
-        </table>
-      </div>` : '';
+  const mapBlockWithLabels = quoteMapSrc ? `<div class="map-wrap" style="aspect-ratio:${mapWidth}/${mapHeight};"><img src="${quoteMapSrc}" alt="Mapa de medicion" class="map"/>${mapLabels}</div>` : mapBlock;
   const requerimientoBlock = esObraBlanca && requerimientoCliente ? `
       <div class="measurement-box">
         <p><strong>Necesidad del cliente</strong></p>
         <div style="white-space:pre-wrap;">${escapeHtml(requerimientoCliente)}</div>
+      </div>` : '';
+  const fotosBlock = fotosCotizacion.length ? `
+      <div class="section-title">Registro fotografico</div>
+      <div class="photo-grid">
+        ${fotosCotizacion.map((foto,idx)=>`
+          <div class="photo-card">
+            <div class="photo-wrap"><img src="${foto.src}" alt="${escapeHtml(foto.label || `Foto ${idx+1}`)}" class="photo"/></div>
+            <div class="photo-label">${escapeHtml(foto.label || `Foto ${idx+1}`)}</div>
+          </div>
+        `).join("")}
       </div>` : '';
 
   return `<!doctype html>
@@ -906,6 +955,11 @@ function buildCotizacionPrintHtml(c){
       .measurement-table { width:100%; border-collapse:collapse; margin-top: 6px; }
       .measurement-table th, .measurement-table td { border:1px solid #cbd5e1; padding:6px 8px; font-size:11pt; }
       .measurement-table th { background:#e2e8f0; text-align:left; font-weight:800; }
+      .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+      .photo-card { border:1px solid #d5d9e2; background:#fff; padding:8px; break-inside: avoid; page-break-inside: avoid; }
+      .photo-wrap { height:220px; display:flex; align-items:center; justify-content:center; background:#f8fafc; overflow:hidden; }
+      .photo { width:100%; height:100%; object-fit:cover; display:block; }
+      .photo-label { font-size:10pt; color:#475569; padding-top:6px; text-align:center; }
       .signature { margin-top: 30px; }
       .signature-space { height: 72px; }
       .signature-line { width: 360px; border-top:1px solid #222; padding-top:7px; }
@@ -950,7 +1004,7 @@ function buildCotizacionPrintHtml(c){
       ` : `
       <p>Presentamos la cotizacion para suministro e instalacion de los sistemas de proteccion anticaida (lineas de vida horizontales sobre cubierta y escaleras).</p>
       <p><strong>Trabajo en altura:</strong> Se considera toda actividad, labor o trabajo que se deba realizar a una altura fisica igual o superior a 1,50 metros desde el piso.</p>
-      <p><strong>Puntos de anclaje:</strong> Son componentes en acero anclado con un epoxico quimico marca PURE 110 de POWER FASTENERS o equivalente, con perno de 5/8 a una profundidad de 15 cm o mas segun el caso, con capacidad de resistir una fuerza de caida superior a 5.000 lbs.</p>
+      <p><strong>Puntos de anclaje:</strong> Son componentes en acero anclado con un epoxico quimico estructural o equivalente, con perno de 5/8 a una profundidad de 15 cm o mas segun el caso, con capacidad de resistir una fuerza de caida superior a 5.000 lbs.</p>
       <p><strong>Linea de vida:</strong> Son componentes de un sistema o equipo de proteccion de caidas, consistentes en una cuerda de nylon o cable de acero instalada en forma horizontal y vertical, tensionada y sujeta en dos o tres puntos de anclaje para otorgar movilidad al personal que trabaja en areas elevadas.</p>
       <ul>
         <li>La linea de vida permite la fijacion directa o indirecta al arnes completo para el cuerpo o a un dispositivo de impacto o amortiguador.</li>
@@ -969,7 +1023,7 @@ function buildCotizacionPrintHtml(c){
         <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
       ${mapBlockWithLabels}
-      ${measurementBlock}
+      ${fotosBlock}
       <div class="section-title">Propuesta economica linea de vida</div>
       <table class="table no-break">
         <thead><tr><th>Descripcion</th><th class="num">Cantidad</th><th class="center">Unidad</th><th class="num">Valor</th><th class="num">Subtotal</th></tr></thead>
@@ -1659,10 +1713,7 @@ function buildGoogleStaticMapUrl(segments=[], query="", mapView=null, options={}
   params.set("center", `${center.lat},${center.lng}`);
   params.set("zoom", String(zoom));
 
-  if(!Array.isArray(segments) || !segments.length){
-    params.append("markers", `size:mid|color:red|${center.lat},${center.lng}`);
-    return `${base}?${params.toString()}`;
-  }
+  if(!Array.isArray(segments) || !segments.length) return `${base}?${params.toString()}`;
 
   (segments||[]).forEach((seg)=>{
     if(!seg?.start || !seg?.end) return;
@@ -1672,8 +1723,6 @@ function buildGoogleStaticMapUrl(segments=[], query="", mapView=null, options={}
       "path",
       `color:${color}|weight:${weight}|${Number(seg.start.lat)},${Number(seg.start.lng)}|${Number(seg.end.lat)},${Number(seg.end.lng)}`
     );
-    params.append("markers", `size:mid|color:red|${Number(seg.start.lat)},${Number(seg.start.lng)}`);
-    params.append("markers", `size:mid|color:red|${Number(seg.end.lat)},${Number(seg.end.lng)}`);
   });
   return `${base}?${params.toString()}`;
 }
@@ -2505,7 +2554,7 @@ function Cotizacion({ctx}){
             <div style={{display:"flex",justifyContent:"space-between",fontWeight:700,fontSize:15,color:"#cc0000",background:"#f1f5f9",padding:"10px 12px",borderRadius:8,marginBottom:12}}><span>TOTAL</span><span>{fmt(tot)}</span></div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
               <button style={{...B("#f47c20"),justifyContent:"center"}} onClick={guardarCot}>{editCot?"Actualizar":"Guardar"} Cotización</button>
-              <button style={{...B("#dbeafe","#1e40af"),justifyContent:"center"}} onClick={()=>{guardarCot(); const dummy={numero:cot,fecha,val,cliente:cl.nombre,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,items:items.length?items:measurementsToQuoteItems(geoMediciones),util,total:Math.round(tot),formaPago,tiempoEjec,mapImg:effectiveMapImg,geoMediciones,geoMapView,tipoCotizacion,requerimientoCliente}; setPreviewCot(dummy); setTab("lista");}}>Guardar y ver</button>
+              <button style={{...B("#dbeafe","#1e40af"),justifyContent:"center"}} onClick={()=>{guardarCot(); const dummy={numero:cot,fecha,val,cliente:cl.nombre,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,items:items.length?items:measurementsToQuoteItems(geoMediciones),util,total:Math.round(tot),formaPago,tiempoEjec,mapImg:effectiveMapImg,geoMediciones,geoMapView,tipoCotizacion,requerimientoCliente,fotosCotizacion}; setPreviewCot(dummy); setTab("lista");}}>Guardar y ver</button>
               <button style={{...B("#0f2d1a","#4ade80"),justifyContent:"center",border:"1px solid #166534"}} onClick={usarMedicionesComoItems}>Crear ítems desde mediciones</button>
             </div>
           </div>
@@ -2519,8 +2568,13 @@ function CotizacionPrint({c}){
   if(!c) return null;
   const items = normalizeQuoteItems(c);
   const measurements = Array.isArray(c.geoMediciones) ? c.geoMediciones : [];
+  const fotosCotizacion = Array.isArray(c.fotosCotizacion) ? c.fotosCotizacion.filter((foto)=>foto?.src) : [];
   const esObraBlanca = c.tipoCotizacion === "obra_blanca";
   const requerimientoCliente = String(c.requerimientoCliente || "").trim();
+  const mapQuery = c.coords || `${c.obra||""} ${c.ciudad||""}`.trim();
+  const quoteMapSrc = c.mapImg && String(c.mapImg).startsWith("data:")
+    ? c.mapImg
+    : (buildGoogleStaticMapUrl(measurements, mapQuery, c.geoMapView) || c.mapImg || null);
   const sub=items.reduce((s,i)=>s+(Number(i.cant)||0)*(Number(i.vu)||0),0);
   const ut=sub*(c.util||10)/100; const iva=ut*0.19; const tot=sub+ut+iva;
   return(
@@ -2547,27 +2601,20 @@ function CotizacionPrint({c}){
       ) : (
         <p style={{marginBottom:10}}>Presentamos la cotización para suministro e instalación de los sistemas de protección anti caída (líneas de vida horizontales sobre cubierta y escaleras).</p>
       )}
-      {c.mapImg ? <div style={{marginBottom:16,textAlign:"center"}}><StaticMapPreview src={c.mapImg} segments={measurements} query={c.coords || `${c.obra||""} ${c.ciudad||""}`.trim()} mapView={c.geoMapView} alt="Mapa" maxHeight={320} border="1px solid #ddd" borderRadius={4} /></div> : null}
-      {measurements.length>0&&(
-        <div style={{background:"#f8fafc",border:"1px solid #cbd5e1",borderRadius:6,padding:"12px 14px",marginBottom:16}}>
-          <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8}}>Medidas levantadas</div>
-          <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
-            <thead>
-              <tr>
-                {["#","Tramo","Tipo","Medida"].map((h,i)=><th key={h} style={{border:"1px solid #cbd5e1",padding:"6px 8px",background:"#e2e8f0",textAlign:i===3?"right":"left"}}>{h}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {measurements.map((seg,idx)=>(
-                <tr key={seg.id||idx}>
-                  <td style={{border:"1px solid #cbd5e1",padding:"6px 8px"}}>{idx+1}</td>
-                  <td style={{border:"1px solid #cbd5e1",padding:"6px 8px"}}>{seg.label||`LÍNEA ${idx+1}`}</td>
-                  <td style={{border:"1px solid #cbd5e1",padding:"6px 8px"}}>{measurementTypeLabel(seg.tipo)}</td>
-                  <td style={{border:"1px solid #cbd5e1",padding:"6px 8px",textAlign:"right",fontWeight:700,color:"#cc0000"}}>{Number(seg.ml||0).toFixed(2)} {measurementUnitFromType(seg.tipo)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {quoteMapSrc ? <div style={{marginBottom:16,textAlign:"center"}}><StaticMapPreview src={quoteMapSrc} segments={measurements} query={mapQuery} mapView={c.geoMapView} alt="Mapa" maxHeight={320} border="1px solid #ddd" borderRadius={4} /></div> : null}
+      {fotosCotizacion.length>0&&(
+        <div style={{marginBottom:16}}>
+          <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8}}>Registro fotográfico</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+            {fotosCotizacion.map((foto,idx)=>(
+              <div key={foto.id||idx} style={{border:"1px solid #cbd5e1",borderRadius:6,overflow:"hidden",background:"#fff"}}>
+                <div style={{height:180,background:"#f8fafc"}}>
+                  <img src={foto.src} alt={foto.label||`Foto ${idx+1}`} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
+                </div>
+                <div style={{padding:"8px 10px",fontSize:11,color:"#475569",textAlign:"center"}}>{foto.label||`Foto ${idx+1}`}</div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
       <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:6}}>Propuesta económica</div>
@@ -2804,41 +2851,295 @@ function Planos({ctx}){
 }
 
 function Pagos({ctx}){
-  const {obras,pagos,setPagos}=ctx;
+  const {obras,setObras,pagos,setPagos}=ctx;
   const [filtro,setFiltro]=useState("todas");
   const [pstep,setPstep]=useState(null);
-  const pF=filtro==="todas"?pagos:pagos.filter(p=>p.obraId===filtro);
-  const tCob=pagos.filter(p=>p.estado==="Pagado").reduce((s,p)=>s+p.monto,0);
-  const tPend=pagos.filter(p=>p.estado==="Pendiente").reduce((s,p)=>s+p.monto,0);
-  const cobrar=(id)=>{setPstep(id);setTimeout(()=>{setPagos(prev=>prev.map(p=>p.id===id?{...p,estado:"Pagado",fecha:today()}:p));setPstep(null);},1800);};
+  const [busquedaPago,setBusquedaPago]=useState("");
+  const [obraPagoId,setObraPagoId]=useState("");
+  const [guardandoAbono,setGuardandoAbono]=useState(false);
+  const [abono,setAbono]=useState({
+    tipo:"Abono manual",
+    monto:"",
+    fecha:today(),
+    metodo:"Transferencia",
+    notas:"",
+  });
+
+  const normalizarTexto = (valor="") =>
+    String(valor || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+
+  const pagosNormalizados = (Array.isArray(pagos) ? pagos : []).map((pago)=>({
+    ...pago,
+    monto:Number(pago?.monto ?? pago?.valor ?? 0),
+    valor:Number(pago?.monto ?? pago?.valor ?? 0),
+    metodo:pago?.metodo ?? pago?.medio ?? "",
+    medio:pago?.metodo ?? pago?.medio ?? "",
+    tipo:pago?.tipo ?? pago?.referencia ?? "Abono",
+    estado:pago?.estado ?? "Pagado",
+    fecha:pago?.fecha || today(),
+  }));
+
+  const obrasFiltradasBusqueda = obras.filter((obra)=>{
+    const term = normalizarTexto(busquedaPago);
+    if(!term) return true;
+    return [obra.id, obra.cliente, obra.proyecto, obra.ciudad, obra.direccion]
+      .some((campo)=>normalizarTexto(campo).includes(term));
+  });
+
+  const obraSeleccionada = obras.find((obra)=>obra.id===obraPagoId) || null;
+  const pF = filtro==="todas" ? pagosNormalizados : pagosNormalizados.filter((p)=>p.obraId===filtro);
+  const tCob = pagosNormalizados.filter((p)=>p.estado==="Pagado").reduce((s,p)=>s+Number(p.monto||0),0);
+  const tPend = pagosNormalizados.filter((p)=>p.estado==="Pendiente").reduce((s,p)=>s+Number(p.monto||0),0);
+
+  const actualizarSaldoObra = (obraId, montoAbono) => {
+    if(!obraId || !Number.isFinite(montoAbono) || montoAbono<=0) return;
+    setObras((prev)=>prev.map((obra)=>{
+      if(obra.id!==obraId) return obra;
+      const pagadoActual = Number(obra.pagado || 0);
+      const totalActual = Number(obra.total || 0);
+      const nuevoPagado = pagadoActual + montoAbono;
+      const nuevoSaldo = Math.max(0, totalActual - nuevoPagado);
+      return {
+        ...obra,
+        pagado:nuevoPagado,
+        saldo:nuevoSaldo,
+        estado:nuevoSaldo>0 ? obra.estado : "Pagado",
+      };
+    }));
+  };
+
+  const cobrar = (id) => {
+    const pagoActual = pagosNormalizados.find((p)=>p.id===id);
+    if(!pagoActual || pagoActual.estado==="Pagado") return;
+    setPstep(id);
+    setTimeout(()=>{
+      actualizarSaldoObra(pagoActual.obraId, Number(pagoActual.monto || 0));
+      setPagos((prev)=>prev.map((p)=>p.id===id ? {
+        ...p,
+        estado:"Pagado",
+        fecha:today(),
+        metodo:p.metodo ?? p.medio ?? "PSE",
+      } : p));
+      setPstep(null);
+    }, 700);
+  };
+
+  const guardarAbonoManual = () => {
+    const monto = Math.round(Number(abono.monto || 0));
+    if(!obraPagoId || !Number.isFinite(monto) || monto<=0) return;
+    const nuevoPago = {
+      id:`PG-${Date.now()}`,
+      obraId:obraPagoId,
+      tipo:abono.tipo?.trim() || "Abono manual",
+      monto,
+      valor:monto,
+      fecha:abono.fecha || today(),
+      estado:"Pagado",
+      metodo:abono.metodo || "Transferencia",
+      medio:abono.metodo || "Transferencia",
+      notas:(abono.notas || "").trim(),
+    };
+    setGuardandoAbono(true);
+    setPagos((prev)=>[nuevoPago, ...prev]);
+    actualizarSaldoObra(obraPagoId, monto);
+    setFiltro(obraPagoId);
+    setAbono({
+      tipo:"Abono manual",
+      monto:"",
+      fecha:today(),
+      metodo:"Transferencia",
+      notas:"",
+    });
+    setTimeout(()=>setGuardandoAbono(false), 500);
+  };
+
   return(
     <div style={{padding:28}}>
-      <H1 title="Pagos por Obra" subtitle="Cobros por cliente y proyecto · integración Bancolombia"/>
+      <H1 title="Pagos por Obra" subtitle="Registro de abonos por cliente y proyecto"/>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
-        <SC label="Total Cobrado" value={fmtK(tCob)} color="#4ade80" icon="âœ…"/>
-        <SC label="Pendiente" value={fmtK(tPend)} color="#fb923c" icon="?"/>
-        <SC label="Transacciones" value={pagos.length} color="#60b4ff" icon="ðŸ”„"/>
-        <SC label="Obras con saldo" value={obras.filter(o=>o.saldo>0).length} color="#c084fc" icon="ðŸ“‹"/>
+        <SC label="Total Cobrado" value={fmtK(tCob)} color="#4ade80" icon="TC"/>
+        <SC label="Pendiente" value={fmtK(tPend)} color="#fb923c" icon="PD"/>
+        <SC label="Transacciones" value={pagosNormalizados.length} color="#60b4ff" icon="TR"/>
+        <SC label="Obras con saldo" value={obras.filter(o=>Number(o.saldo||0)>0).length} color="#c084fc" icon="OB"/>
       </div>
-      <div style={{background:"linear-gradient(135deg,#003B71,#00539C)",borderRadius:12,padding:"14px 22px",marginBottom:20,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div style={{display:"flex",alignItems:"center",gap:14}}><div style={{background:"#FFCD00",borderRadius:8,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:12,color:"#003B71"}}>BC</div><div><div style={{fontWeight:700,fontSize:14,color:"#fff"}}>Bancolombia · Integración Activa</div><div style={{fontSize:11,color:"#91b8df"}}>PSE · Transferencia automática · Conciliación en tiempo real</div></div></div>
-        <div style={{background:"#FFCD00",color:"#003B71",padding:"5px 14px",borderRadius:20,fontSize:12,fontWeight:700}}>CONECTADO</div>
+
+      <div style={{...CD,marginBottom:20,border:"1px solid #fed7aa",boxShadow:"0 18px 40px rgba(244,124,32,0.08)"}}>
+        <div style={ST}>Registrar abono manual</div>
+        <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr",gap:18,alignItems:"start"}}>
+          <div style={{display:"grid",gap:12}}>
+            <div>
+              <LBL>Buscar cliente u obra</LBL>
+              <input
+                value={busquedaPago}
+                onChange={(e)=>setBusquedaPago(e.target.value)}
+                placeholder="Escribe cliente, obra, ciudad o ID"
+                style={SI}
+              />
+            </div>
+            <div>
+              <LBL>Seleccionar obra</LBL>
+              <select value={obraPagoId} onChange={(e)=>setObraPagoId(e.target.value)} style={SI}>
+                <option value="">Seleccionar obra...</option>
+                {obrasFiltradasBusqueda.map((obra)=>(
+                  <option key={obra.id} value={obra.id}>
+                    {obra.id} · {obra.cliente} · {obra.proyecto}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+              <div>
+                <LBL>Valor del abono</LBL>
+                <input
+                  type="number"
+                  min="0"
+                  step="1000"
+                  value={abono.monto}
+                  onChange={(e)=>setAbono({...abono,monto:e.target.value})}
+                  placeholder="Ej. 2000000"
+                  style={SI}
+                />
+                <div style={{fontSize:11,color:"#64748b",marginTop:6}}>
+                  {Number(abono.monto || 0)>0 ? fmt(Number(abono.monto || 0)) : "Ingresa el valor manual del abono"}
+                </div>
+              </div>
+              <div>
+                <LBL>Fecha del abono</LBL>
+                <input
+                  type="date"
+                  value={abono.fecha}
+                  onChange={(e)=>setAbono({...abono,fecha:e.target.value})}
+                  style={SI}
+                />
+              </div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+              <div>
+                <LBL>Tipo</LBL>
+                <input
+                  value={abono.tipo}
+                  onChange={(e)=>setAbono({...abono,tipo:e.target.value})}
+                  placeholder="Abono manual / anticipo / pago parcial"
+                  style={SI}
+                />
+              </div>
+              <div>
+                <LBL>Método</LBL>
+                <select value={abono.metodo} onChange={(e)=>setAbono({...abono,metodo:e.target.value})} style={SI}>
+                  <option value="Transferencia">Transferencia</option>
+                  <option value="Consignación">Consignación</option>
+                  <option value="Efectivo">Efectivo</option>
+                  <option value="PSE">PSE</option>
+                  <option value="Cheque">Cheque</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <LBL>Notas</LBL>
+              <textarea
+                value={abono.notas}
+                onChange={(e)=>setAbono({...abono,notas:e.target.value})}
+                rows={3}
+                placeholder="Referencia, observación del pago o soporte recibido"
+                style={{...SI,minHeight:86,resize:"vertical"}}
+              />
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button
+                type="button"
+                onClick={guardarAbonoManual}
+                disabled={!obraPagoId || Number(abono.monto || 0)<=0 || guardandoAbono}
+                style={{
+                  ...B("#cc0000"),
+                  opacity:(!obraPagoId || Number(abono.monto || 0)<=0 || guardandoAbono)?0.6:1,
+                  cursor:(!obraPagoId || Number(abono.monto || 0)<=0 || guardandoAbono)?"not-allowed":"pointer",
+                }}
+              >
+                {guardandoAbono ? "Guardando..." : "Guardar abono"}
+              </button>
+              <button
+                type="button"
+                onClick={()=>{
+                  setBusquedaPago("");
+                  setObraPagoId("");
+                  setAbono({ tipo:"Abono manual", monto:"", fecha:today(), metodo:"Transferencia", notas:"" });
+                }}
+                style={B("#f1f5f9","#475569")}
+              >
+                Limpiar
+              </button>
+            </div>
+          </div>
+
+          <div style={{background:"linear-gradient(180deg,#fff7ed,#ffffff)",border:"1px solid #fed7aa",borderRadius:14,padding:16}}>
+            <div style={{fontSize:11,fontWeight:700,color:"#9a3412",textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>Obra seleccionada</div>
+            {obraSeleccionada ? (
+              <div style={{display:"grid",gap:10}}>
+                <div>
+                  <div style={{fontSize:11,color:"#64748b"}}>{obraSeleccionada.id}</div>
+                  <div style={{fontSize:20,fontWeight:700,color:"#1a1a2e"}}>{obraSeleccionada.cliente}</div>
+                  <div style={{fontSize:13,color:"#475569"}}>{obraSeleccionada.proyecto}</div>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                  <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px"}}>
+                    <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase"}}>Total obra</div>
+                    <div style={{fontSize:18,fontWeight:700,color:"#1a1a2e"}}>{fmt(Number(obraSeleccionada.total || 0))}</div>
+                  </div>
+                  <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px"}}>
+                    <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase"}}>Cobrado</div>
+                    <div style={{fontSize:18,fontWeight:700,color:"#166534"}}>{fmt(Number(obraSeleccionada.pagado || 0))}</div>
+                  </div>
+                  <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px",gridColumn:"span 2"}}>
+                    <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase"}}>Saldo pendiente</div>
+                    <div style={{fontSize:24,fontWeight:800,color:Number(obraSeleccionada.saldo||0)>0?"#c2410c":"#166534"}}>
+                      {fmt(Number(obraSeleccionada.saldo || 0))}
+                    </div>
+                  </div>
+                </div>
+                <div style={{fontSize:12,color:"#64748b",lineHeight:1.6}}>
+                  Ciudad: <strong style={{color:"#334155"}}>{obraSeleccionada.ciudad || "No registrada"}</strong><br/>
+                  Dirección: <strong style={{color:"#334155"}}>{obraSeleccionada.direccion || "No registrada"}</strong>
+                </div>
+              </div>
+            ) : (
+              <div style={{fontSize:13,color:"#64748b",lineHeight:1.6}}>
+                Busca el cliente o la obra, selecciónala y luego registra el valor exacto del abono manual.
+              </div>
+            )}
+          </div>
+        </div>
       </div>
+
       <div style={{...CD,marginBottom:20}}>
         <div style={ST}>Estado financiero por cliente</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
           {obras.map(o=>(
-            <div key={o.id} style={{background:"#f1f5f9",borderRadius:10,padding:"14px 16px",border:`1px solid ${o.saldo>0?"#7c3110":"#166534"}`}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}><div><div style={{fontSize:11,color:"#64748b"}}>{o.id}</div><div style={{fontSize:13,fontWeight:600}}>{o.cliente}</div><div style={{fontSize:11,color:"#475569"}}>{o.proyecto}</div></div><Badge estado={o.estado}/></div>
+            <div key={o.id} style={{background:"#f1f5f9",borderRadius:10,padding:"14px 16px",border:`1px solid ${Number(o.saldo||0)>0?"#7c3110":"#166534"}`}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                <div>
+                  <div style={{fontSize:11,color:"#64748b"}}>{o.id}</div>
+                  <div style={{fontSize:13,fontWeight:600}}>{o.cliente}</div>
+                  <div style={{fontSize:11,color:"#475569"}}>{o.proyecto}</div>
+                </div>
+                <Badge estado={o.estado}/>
+              </div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-                {[["Total",fmt(o.total),"#e2eaf4"],["Cobrado",fmt(o.pagado),"#4ade80"],["Saldo",fmt(o.saldo),o.saldo>0?"#fb923c":"#4ade80"]].map(([k,v,c])=>(
-                  <div key={k}><div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",marginBottom:2}}>{k}</div><div style={{fontSize:12,fontWeight:700,color:c}}>{v}</div></div>
+                {[["Total",fmt(o.total),"#e2eaf4"],["Cobrado",fmt(o.pagado),"#4ade80"],["Saldo",fmt(o.saldo),Number(o.saldo||0)>0?"#fb923c":"#4ade80"]].map(([k,v,c])=>(
+                  <div key={k}>
+                    <div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",marginBottom:2}}>{k}</div>
+                    <div style={{fontSize:12,fontWeight:700,color:c}}>{v}</div>
+                  </div>
                 ))}
               </div>
             </div>
           ))}
         </div>
       </div>
+
       <div style={CD}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
           <div style={ST}>Historial de pagos</div>
@@ -2848,13 +3149,37 @@ function Pagos({ctx}){
           </select>
         </div>
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-          <thead><tr style={{background:"#f1f5f9"}}>{["ID","Obra","Cliente","Tipo","Monto","Fecha","Método","Estado","Acción"].map(h=><th key={h} style={{padding:"9px 10px",textAlign:h==="Monto"?"right":"left",color:"#64748b",fontWeight:500,fontSize:11}}>{h}</th>)}</tr></thead>
-          <tbody>{pF.map((p,i)=>{const ob=obras.find(o=>o.id===p.obraId);return(<tr key={p.id} style={{borderBottom:"1px solid #e2e8f0",background:i%2===0?"#ffffff":"#f8fafc"}}>
-            <td style={{padding:"10px 10px",color:"#60b4ff",fontSize:11}}>{p.id}</td><td style={{padding:"10px 10px",fontSize:11}}>{p.obraId}</td><td style={{padding:"10px 10px",fontSize:11,color:"#475569"}}>{ob?.cliente}</td><td style={{padding:"10px 10px",fontSize:11}}>{p.tipo}</td>
-            <td style={{padding:"10px 10px",textAlign:"right",fontWeight:700,color:"#cc0000"}}>{fmt(p.monto)}</td><td style={{padding:"10px 10px",color:"#475569",fontSize:11}}>{p.fecha}</td><td style={{padding:"10px 10px",color:"#475569",fontSize:11}}>{p.metodo}</td>
-            <td style={{padding:"10px 10px"}}><Badge estado={p.estado}/></td>
-            <td style={{padding:"10px 10px"}}>{p.estado==="Pendiente"&&(pstep===p.id?<span style={{fontSize:11,color:"#cc0000"}}>Procesandoâ€¦</span>:<button onClick={()=>cobrar(p.id)} style={{background:"#003B71",border:"1px solid #FFCD00",color:"#FFCD00",borderRadius:6,padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:600}}>Cobrar PSE</button>)}{p.estado==="Pagado"&&<span style={{fontSize:11,color:"#4ade80"}}>âœ“ Conciliado</span>}</td>
-          </tr>);})}
+          <thead>
+            <tr style={{background:"#f1f5f9"}}>
+              {["ID","Obra","Cliente","Tipo","Monto","Fecha","Método","Estado","Acción"].map(h=>(
+                <th key={h} style={{padding:"9px 10px",textAlign:h==="Monto"?"right":"left",color:"#64748b",fontWeight:500,fontSize:11}}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {pF.map((p,i)=>{
+              const ob=obras.find(o=>o.id===p.obraId);
+              return(
+                <tr key={p.id} style={{borderBottom:"1px solid #e2e8f0",background:i%2===0?"#ffffff":"#f8fafc"}}>
+                  <td style={{padding:"10px 10px",color:"#60b4ff",fontSize:11}}>{p.id}</td>
+                  <td style={{padding:"10px 10px",fontSize:11}}>{p.obraId}</td>
+                  <td style={{padding:"10px 10px",fontSize:11,color:"#475569"}}>{ob?.cliente}</td>
+                  <td style={{padding:"10px 10px",fontSize:11}}>{p.tipo}</td>
+                  <td style={{padding:"10px 10px",textAlign:"right",fontWeight:700,color:"#cc0000"}}>{fmt(Number(p.monto || 0))}</td>
+                  <td style={{padding:"10px 10px",color:"#475569",fontSize:11}}>{p.fecha}</td>
+                  <td style={{padding:"10px 10px",color:"#475569",fontSize:11}}>{p.metodo}</td>
+                  <td style={{padding:"10px 10px"}}><Badge estado={p.estado}/></td>
+                  <td style={{padding:"10px 10px"}}>
+                    {p.estado==="Pendiente" && (
+                      pstep===p.id
+                        ? <span style={{fontSize:11,color:"#cc0000"}}>Procesando...</span>
+                        : <button onClick={()=>cobrar(p.id)} style={{background:"#003B71",border:"1px solid #FFCD00",color:"#FFCD00",borderRadius:6,padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:600}}>Marcar pagado</button>
+                    )}
+                    {p.estado==="Pagado" && <span style={{fontSize:11,color:"#166534",fontWeight:700}}>Conciliado</span>}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -3083,7 +3408,7 @@ function ClientesDB({ctx}){
             </div>
           </div>
           <div style={{display:"flex",gap:8}}>
-            <button style={B("#cc0000")} onClick={guardarCliente}>{editId?"ðŸ’¾ Guardar cambios":"âœ… Crear cliente"}</button>
+            <button style={B("#cc0000")} onClick={guardarCliente}>{editId?"Guardar cambios":"Crear cliente"}</button>
             <button style={B("#f1f5f9","#475569")} onClick={resetCliente}>Cancelar</button>
           </div>
         </div>
@@ -3427,7 +3752,7 @@ function CuentasPagar({ctx}){
                 </div>
               </div>
               <div style={{display:"flex",gap:8}}>
-                <button style={B("#f5c842","#3b2f00")} onClick={guardarProveedor}>{editProvId?"ðŸ’¾ Guardar cambios":"âœ… Crear proveedor"}</button>
+                <button style={B("#f5c842","#3b2f00")} onClick={guardarProveedor}>{editProvId?"Guardar cambios":"Crear proveedor"}</button>
                 <button style={B("#f1f5f9","#475569")} onClick={resetProveedor}>Cancelar</button>
               </div>
             </div>
@@ -4677,7 +5002,7 @@ function Nomina({ctx}){
   const [corteNomina,setCorteNomina]=useState("primera");
   const [selId,setSelId]=useState(null);
   const [showHE,setShowHE]=useState(null);
-  const nuevoEmpleadoBase = {nombre:"",cedula:"",cargo:"",tel:"",email:"",salario:NOMINA_CO_2026.salarioMinimo,banco:"Bancolombia",tipoCuenta:"Ahorros",numeroCuenta:"",deduccionesPersonalizadas:[],fechaIngreso:today(),tipoContrato:"indefinido",fechaSalida:"",causaRetiro:""};
+  const nuevoEmpleadoBase = {nombre:"",cedula:"",cargo:"",tel:"",email:"",salario:NOMINA_CO_2026.salarioMinimo,banco:"Bancolombia",tipoCuenta:"Ahorros",numeroCuenta:"",deduccionesPersonalizadas:[],fechaIngreso:today(),tipoContrato:"indefinido",fechaSalida:"",causaRetiro:"",vacacionesPagadasDias:0,vacacionesLiquidacionDias:null};
   const [nf,setNf]=useState(nuevoEmpleadoBase);
   const [heForm,setHeForm]=useState({obraId:"",tipo:"horaExtra",tipoRecargo:"horaExtraGeneral",horas:0,valorHora:12500,comision:0,concepto:"",fecha:today()});
   const [cargoForm,setCargoForm]=useState({nombre:"",descripcion:""});
@@ -4695,6 +5020,25 @@ function Nomina({ctx}){
   const periodoNomina = buildNominaPeriodo(mes, corteNomina);
   const activos=empleadosBase.filter((empleado)=>empleado.activo);
   const resumenesActivos = activos.map((empleado)=>({ empleado, resumen:calcularResumenNominaEmpleado(empleado, periodoNomina) }));
+  const resumenesPlanilla = empleadosBase
+    .map((empleado)=>{
+      const resumen = calcularResumenNominaEmpleado(empleado, periodoNomina);
+      const liquidacion = calcularLiquidacionRetiro(empleado, periodoNomina, diasVacPagar[empleado.id]);
+      const tieneMovimiento = resumen.diasNomina>0 || resumen.horasExtras>0 || resumen.comisiones>0 || liquidacion.retiroEnPeriodo;
+      if(!tieneMovimiento) return null;
+      const liquidacionPrestaciones = liquidacion.retiroEnPeriodo ? liquidacion.prestaciones : 0;
+      const totalPagar = resumen.neto + liquidacionPrestaciones;
+      if(totalPagar<=0) return null;
+      return {
+        empleado,
+        resumen,
+        liquidacionPrestaciones,
+        totalPagar,
+        retiroEnPeriodo: liquidacion.retiroEnPeriodo,
+        fechaSalida: empleado.fechaSalida || null,
+      };
+    })
+    .filter(Boolean);
   const totSal=resumenesActivos.reduce((total,item)=>total+item.resumen.salario,0);
   const totalAuxilio=resumenesActivos.reduce((total,item)=>total+item.resumen.auxilioTransporte,0);
   const totalSalud=resumenesActivos.reduce((total,item)=>total+item.resumen.salud,0);
@@ -4703,6 +5047,9 @@ function Nomina({ctx}){
   const totalDeducciones=resumenesActivos.reduce((total,item)=>total+item.resumen.totalDeducciones,0);
   const totalNeto=resumenesActivos.reduce((total,item)=>total+item.resumen.neto,0);
   const totalDevengado=resumenesActivos.reduce((total,item)=>total+item.resumen.totalDevengado,0);
+  const totalNominaPlanilla=resumenesPlanilla.reduce((total,item)=>total+item.resumen.neto,0);
+  const totalLiquidacionesPlanilla=resumenesPlanilla.reduce((total,item)=>total+item.liquidacionPrestaciones,0);
+  const totalPagarPlanilla=resumenesPlanilla.reduce((total,item)=>total+item.totalPagar,0);
   const empleadoDeduccionActivo =
     empleadosBase.find((empleado)=>empleado.id===selId) ||
     activos[0] ||
@@ -4724,6 +5071,12 @@ function Nomina({ctx}){
   };
 
   const updEmp=(id,field,val)=>actualizarEmpleado(id,{ [field]:val });
+  const construirEmpleadosActualizados = (id, updater)=>
+    empleadosBase.map((empleado)=>{
+      if(empleado.id!==id) return empleado;
+      const siguiente = typeof updater==="function" ? updater(empleado) : { ...empleado, ...updater };
+      return normalizarEmpleado(siguiente);
+    });
 
   const guardarNuevoEmp=()=>{
     const nombre=nf.nombre.trim();
@@ -4809,13 +5162,13 @@ function Nomina({ctx}){
     }));
   };
 
-  const guardarCambiosNomina=async(mensajeExito="Cambios guardados en la nube")=>{
+  const guardarCambiosNomina=async(mensajeExito="Cambios guardados en la nube", override=null)=>{
     if(typeof saveAllToCloud!=="function"){
       setMensajeGuardadoNomina("No hay sincronización cloud disponible en esta sesión.");
       return;
     }
     setGuardandoNomina(true);
-    const result = await saveAllToCloud();
+    const result = await saveAllToCloud(override);
     if(result?.ok===false){
       setMensajeGuardadoNomina(`No se pudo guardar: ${result.error?.message||"revisa la conexión con Supabase"}`);
     }else{
@@ -4823,6 +5176,41 @@ function Nomina({ctx}){
     }
     setGuardandoNomina(false);
     setTimeout(()=>setMensajeGuardadoNomina(""), 3500);
+  };
+
+  const registrarVacacionesPagadas = async (empleado)=>{
+    const vacaciones = calcularVacacionesPendientes(empleado, periodoNomina.endIso);
+    const diasSolicitados = round1(Number(diasVacLiquidar[empleado.id] ?? Math.max(0, Math.min(vacaciones.dias, 15))) || 0);
+    const diasAplicados = round1(Math.min(vacaciones.dias, Math.max(0, diasSolicitados)));
+    if(diasAplicados<=0){
+      setMensajeGuardadoNomina("Ingresa días de vacaciones válidos para registrar.");
+      setTimeout(()=>setMensajeGuardadoNomina(""), 2500);
+      return;
+    }
+    const nextEmployees = construirEmpleadosActualizados(empleado.id, (actual)=>({
+      ...actual,
+      vacacionesPagadasDias: round1((actual.vacacionesPagadasDias||0) + diasAplicados),
+    }));
+    const saldoRestante = round1(Math.max(0, vacaciones.dias - diasAplicados));
+    setEmpleados(nextEmployees);
+    setDiasVacLiquidar((prev)=>({
+      ...prev,
+      [empleado.id]: saldoRestante>0 ? Math.min(15, saldoRestante) : 0,
+    }));
+    await guardarCambiosNomina(
+      `Vacaciones guardadas. Saldo pendiente: ${saldoRestante} días.`,
+      { empleados: nextEmployees }
+    );
+  };
+
+  const guardarLiquidacionRetiro = async (empleado)=>{
+    const liquidacion = calcularLiquidacionRetiro(empleado, periodoNomina, diasVacPagar[empleado.id]);
+    const nextEmployees = construirEmpleadosActualizados(empleado.id, {
+      vacacionesLiquidacionDias: liquidacion.diasVacPagar,
+    });
+    setEmpleados(nextEmployees);
+    setDiasVacPagar((prev)=>({ ...prev, [empleado.id]: liquidacion.diasVacPagar }));
+    await guardarCambiosNomina("Cambios de contratos y liquidación sincronizados", { empleados: nextEmployees });
   };
 
   const renderNominaSaveBar=(texto, mensajeExito)=>(
@@ -4982,11 +5370,12 @@ function Nomina({ctx}){
                   </div>
                   {(()=>{
                     const pf=calcularParafiscales(e, e.fechaSalida||periodoNomina.endIso);
+                    const vacacionesPendientes = calcularVacacionesPendientes(e, e.fechaSalida||periodoNomina.endIso);
                     return pf.diasTrabajados>0 ? (
                       <div style={{background:"#f0fdf4",borderRadius:6,padding:"7px 10px",fontSize:11,marginBottom:6,display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
                         <div><span style={{color:"#64748b"}}>📅 Ingreso: </span><strong>{e.fechaIngreso||"N/A"}</strong></div>
                         <div><span style={{color:"#64748b"}}>Contrato: </span><strong>{TIPOS_CONTRATO_LABELS[e.tipoContrato]||e.tipoContrato||"Sin definir"}</strong></div>
-                        <div><span style={{color:"#64748b"}}>✈️ Vacac.: </span><strong style={{color:"#166534"}}>{pf.vacacionesDias}d</strong></div>
+                        <div><span style={{color:"#64748b"}}>✈️ Vacac.: </span><strong style={{color:"#166534"}}>{vacacionesPendientes.dias}d</strong></div>
                         <div><span style={{color:"#64748b"}}>Días corte: </span><strong style={{color:"#2563eb"}}>{resumen.diasNomina}</strong></div>
                       </div>
                     ) : null;
@@ -5068,8 +5457,9 @@ function Nomina({ctx}){
               {activos.map((e,idx)=>{
                 const vacaciones = calcularVacacionesPendientes(e, periodoNomina.endIso);
                 const abierta = vacacionesId===e.id;
-                const diasLiquidar = diasVacLiquidar[e.id] ?? Math.max(0, Math.min(Math.round(vacaciones.dias), 15));
+                const diasLiquidar = diasVacLiquidar[e.id] ?? Math.max(0, Math.min(vacaciones.dias, 15));
                 const valorLiquidar = Math.round((Number(e.salario)||0) * diasLiquidar / 30);
+                const saldoVacaciones = round1(Math.max(0, vacaciones.dias - diasLiquidar));
                 return(
                   <div key={e.id} style={{background:"#f8fafc",borderRadius:10,padding:"14px 16px",border:abierta?"2px solid #166534":"1px solid #e2e8f0"}}>
                     <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:10}}>
@@ -5081,7 +5471,7 @@ function Nomina({ctx}){
                       <span style={{background:"#ecfdf5",color:"#166534",borderRadius:20,padding:"3px 10px",fontSize:10,fontWeight:700}}>Vacaciones</span>
                     </div>
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,fontSize:11,marginBottom:10}}>
-                      <div style={{background:"#fff",borderRadius:6,padding:"6px 8px"}}><div style={{fontSize:9,color:"#64748b"}}>Dias acumulados</div><div style={{fontWeight:700,color:"#166534"}}>{vacaciones.dias} dias</div></div>
+                      <div style={{background:"#fff",borderRadius:6,padding:"6px 8px"}}><div style={{fontSize:9,color:"#64748b"}}>Dias disponibles</div><div style={{fontWeight:700,color:"#166534"}}>{vacaciones.dias} dias</div></div>
                       <div style={{background:"#fff",borderRadius:6,padding:"6px 8px"}}><div style={{fontSize:9,color:"#64748b"}}>Valor estimado</div><div style={{fontWeight:700,color:"#0f172a"}}>{fmt(vacaciones.valor)}</div></div>
                     </div>
                     <button onClick={()=>setVacacionesId(abierta?null:e.id)} style={{...B(abierta?"#2d1414":"#166534",abierta?"#ef4444":"#d1fae5"),fontSize:11,width:"100%",justifyContent:"center",marginBottom:8}}>{abierta?"Cerrar vacaciones":"Liquidar vacaciones"}</button>
@@ -5091,16 +5481,17 @@ function Nomina({ctx}){
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
                           <div>
                             <LBL>Dias a pagar</LBL>
-                            <input type="number" min={0} max={Math.ceil(vacaciones.dias)+30} step={0.5} value={diasLiquidar} onChange={ev=>setDiasVacLiquidar(prev=>({...prev,[e.id]:Number(ev.target.value)}))} style={SI}/>
+                            <input type="number" min={0} max={vacaciones.dias} step={0.1} value={diasLiquidar} onChange={ev=>setDiasVacLiquidar(prev=>({...prev,[e.id]:round1(ev.target.value)}))} style={SI}/>
                           </div>
                           <div style={{background:"#f0fdf4",borderRadius:8,padding:"10px 12px",border:"1px solid #bbf7d0",alignSelf:"end"}}>
                             <div style={{fontSize:10,color:"#64748b"}}>Valor vacaciones</div>
                             <div style={{fontSize:16,fontWeight:700,color:"#166534"}}>{fmt(valorLiquidar)}</div>
                             <div style={{fontSize:10,color:"#64748b",marginTop:4}}>Base: {fmt(e.salario)} ÷ 30 × {diasLiquidar}</div>
+                            <div style={{fontSize:10,color:"#0f766e",marginTop:4}}>Saldo restante: {saldoVacaciones} días</div>
                           </div>
                         </div>
                         <div style={{display:"flex",gap:8}}>
-                          <button onClick={()=>guardarCambiosNomina("Cambios de vacaciones sincronizados")} style={{...B("#142840","#4ade80"),fontSize:11,flex:1,justifyContent:"center"}}>Guardar cambios</button>
+                          <button onClick={()=>registrarVacacionesPagadas(e)} style={{...B("#142840","#4ade80"),fontSize:11,flex:1,justifyContent:"center"}}>Guardar cambios</button>
                           <button onClick={()=>printVacaciones(e,diasLiquidar,valorLiquidar)} style={{...B("#166534","#d1fae5"),fontSize:11,flex:1,justifyContent:"center"}}>Imprimir vacaciones</button>
                         </div>
                         {mensajeGuardadoNomina && <div style={{fontSize:11,color:"#166534",fontWeight:700,marginTop:8,textAlign:"center"}}>{mensajeGuardadoNomina}</div>}
@@ -5123,8 +5514,10 @@ function Nomina({ctx}){
                 const pf=calcularParafiscales(e, e.fechaSalida||periodoNomina.endIso);
                 const resumenCorte=calcularResumenNominaEmpleado(e, periodoNomina);
                 const isLiq=liquidarId===e.id;
-                const periodoLiquidacion = buildPeriodoLiquidacionRetiro(e.fechaSalida, periodoNomina) || periodoNomina;
-                const resumenLiquidacion = calcularResumenNominaEmpleado(e, periodoLiquidacion);
+                const liquidacion = calcularLiquidacionRetiro(e, periodoNomina, diasVacPagar[e.id]);
+                const periodoLiquidacion = liquidacion.periodoLiquidacion || periodoNomina;
+                const resumenLiquidacion = liquidacion.resumenRetiro;
+                const vacacionesPendientesRetiro = liquidacion.vacacionesPendientes;
                 return(
                 <div key={e.id} style={{background:"#f8fafc",borderRadius:10,padding:"14px 16px",border:isLiq?"2px solid #cc0000":"1px solid #e2e8f0"}}>
                   <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:10}}>
@@ -5155,13 +5548,11 @@ function Nomina({ctx}){
                         </select></div>
                       </div>
                       {(()=>{
-                        const pfl=calcularParafiscales(e, e.fechaSalida||null);
-                        const indemn = e.causaRetiro==="Despido sin justa causa" ? (
-                          pfl.aniostrabajados<=1 ? Math.round(e.salario) : Math.round(e.salario + e.salario*0.2*(pfl.aniostrabajados-1))
-                        ) : 0;
-                        const dvp = diasVacPagar[e.id] ?? Math.round(pfl.vacacionesDias);
-                        const vacValorReal = Math.round(e.salario * dvp / 30);
-                        const total = pfl.cesantias + pfl.interesesCesantias + pfl.prima + vacValorReal + indemn + resumenLiquidacion.neto;
+                        const pfl=liquidacion.parafiscales;
+                        const indemn = liquidacion.indemn;
+                        const dvp = liquidacion.diasVacPagar;
+                        const vacValorReal = liquidacion.vacValorReal;
+                        const total = liquidacion.total;
                         return(
                         <div>
                           <div style={{background:"#eff6ff",borderRadius:8,padding:"10px 12px",border:"1px solid #bfdbfe",marginBottom:10}}>
@@ -5175,11 +5566,11 @@ function Nomina({ctx}){
                           </div>
                           <div style={{background:"#f0fdf4",borderRadius:6,padding:"8px 10px",marginBottom:8,display:"flex",alignItems:"center",gap:12,fontSize:11}}>
                             <span style={{color:"#166534",fontWeight:600}}>Dias de vacaciones a pagar con retiro:</span>
-                            <input type="number" min={0} max={Math.ceil(pfl.vacacionesDias)+30} step={0.5}
+                            <input type="number" min={0} max={vacacionesPendientesRetiro.dias} step={0.1}
                               value={dvp}
-                              onChange={ev=>setDiasVacPagar(prev=>({...prev,[e.id]:Number(ev.target.value)}))}
+                              onChange={ev=>setDiasVacPagar(prev=>({...prev,[e.id]:round1(ev.target.value)}))}
                               style={{width:70,padding:"4px 8px",borderRadius:5,border:"1px solid #bbf7d0",fontSize:12,fontWeight:700,textAlign:"center"}}/>
-                            <span style={{color:"#64748b",fontSize:10}}>Acumulados: {pfl.vacacionesDias} dias · Valor: {fmt(vacValorReal)}</span>
+                            <span style={{color:"#64748b",fontSize:10}}>Disponibles: {vacacionesPendientesRetiro.dias} dias · Valor: {fmt(vacValorReal)}</span>
                           </div>
                           <table style={{width:"100%",borderCollapse:"collapse",fontSize:11,marginBottom:10}}>
                             <thead><tr style={{background:"#142840",color:"#fff"}}><th style={{padding:"5px 8px",textAlign:"left"}}>Concepto</th><th style={{padding:"5px 8px",textAlign:"left"}}>Base calculo</th><th style={{padding:"5px 8px",textAlign:"right"}}>Valor</th></tr></thead>
@@ -5205,7 +5596,7 @@ function Nomina({ctx}){
                             <tfoot><tr style={{background:"#f5c842"}}><td colSpan={2} style={{padding:"7px 8px",fontWeight:700}}>TOTAL LIQUIDACION</td><td style={{padding:"7px 8px",textAlign:"right",fontWeight:700,fontSize:13}}>{fmt(total)}</td></tr></tfoot>
                           </table>
                           <div style={{display:"flex",gap:6,marginBottom:6}}>
-                            <button onClick={()=>guardarCambiosNomina("Cambios de contratos y liquidación sincronizados")} style={{...B("#166534","#d1fae5"),fontSize:11,flex:1,justifyContent:"center"}}>Guardar cambios</button>
+                            <button onClick={()=>guardarLiquidacionRetiro(e)} style={{...B("#166534","#d1fae5"),fontSize:11,flex:1,justifyContent:"center"}}>Guardar cambios</button>
                             <button onClick={()=>printLiquidacion(e, pfl, indemn, dvp, e.fechaSalida||null, resumenLiquidacion, periodoLiquidacion)} style={{...B("#142840","#f5c842"),fontSize:11,flex:1,justifyContent:"center"}}>Imprimir liquidacion</button>
                             <button onClick={()=>updEmp(e.id,"activo",false)} style={{...B("#2d1414","#ef4444"),fontSize:11,flex:1,justifyContent:"center"}}>Marcar como retirado</button>
                           </div>
@@ -5472,7 +5863,7 @@ function Nomina({ctx}){
             <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:12,padding:"12px 14px"}}>
               <div style={{fontSize:11,fontWeight:700,color:"#1d4ed8",textTransform:"uppercase",letterSpacing:0.7}}>Planilla Bancolombia</div>
               <div style={{fontSize:13,color:"#0f172a",marginTop:4}}>Liquidación del corte {periodoNomina.label}</div>
-              <div style={{fontSize:11,color:"#64748b",marginTop:4}}>Incluye salario proporcional, auxilio del corte, horas extras, comisiones y descuentos del empleado.</div>
+              <div style={{fontSize:11,color:"#64748b",marginTop:4}}>Incluye salario proporcional, auxilio del corte, horas extras, comisiones, descuentos y liquidaciones de retiro cuando la salida cae en este corte.</div>
             </div>
             <button style={B("#f47c20")} onClick={()=>printCurrentPz(`Planilla Nómina ${periodoNomina.label}`)}>Imprimir / Bancolombia</button>
           </div>
@@ -5481,19 +5872,23 @@ function Nomina({ctx}){
               <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{height:60,objectFit:"contain"}}/>
               <div style={{textAlign:"right"}}><div style={{background:"#FFCD00",color:"#003B71",padding:"6px 16px",borderRadius:4,fontWeight:700}}>BANCOLOMBIA</div><div style={{fontSize:10,color:"#555",marginTop:4}}>Planilla Nómina · {periodoNomina.label}</div></div>
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:16}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:12,marginBottom:16}}>
               <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Corte activo</div><div style={{fontWeight:700}}>{periodoNomina.label}</div></div>
               <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Días referencia</div><div style={{fontWeight:700}}>{periodoNomina.diasReferencia}</div></div>
-              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Total devengado</div><div style={{fontWeight:700}}>{fmt(totalDevengado)}</div></div>
-              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Total neto</div><div style={{fontWeight:700}}>{fmt(totalNeto)}</div></div>
+              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Nómina corte</div><div style={{fontWeight:700}}>{fmt(totalNominaPlanilla)}</div></div>
+              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Liquidaciones corte</div><div style={{fontWeight:700,color:"#b45309"}}>{fmt(totalLiquidacionesPlanilla)}</div></div>
+              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Total a transferir</div><div style={{fontWeight:700,color:"#003B71"}}>{fmt(totalPagarPlanilla)}</div></div>
             </div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
-              <thead><tr style={{background:"#003B71",color:"#fff"}}>{["#","Empleado","Documento","Banco / Cuenta","Días","Básico","Aux. T.","H.Extra","Comisión","Deducciones","NETO"].map((h)=><th key={h} style={{padding:"6px 8px",textAlign:["Días","Básico","Aux. T.","H.Extra","Comisión","Deducciones","NETO"].includes(h)?"right":"left",fontSize:10}}>{h}</th>)}</tr></thead>
+              <thead><tr style={{background:"#003B71",color:"#fff"}}>{["#","Empleado","Documento","Banco / Cuenta","Días","Básico","Aux. T.","H.Extra","Comisión","Deducciones","Liq. retiro","TOTAL"].map((h)=><th key={h} style={{padding:"6px 8px",textAlign:["Días","Básico","Aux. T.","H.Extra","Comisión","Deducciones","Liq. retiro","TOTAL"].includes(h)?"right":"left",fontSize:10}}>{h}</th>)}</tr></thead>
               <tbody>
-                {resumenesActivos.map(({empleado:e,resumen},i)=>(
+                {resumenesPlanilla.map(({empleado:e,resumen,liquidacionPrestaciones,totalPagar,retiroEnPeriodo},i)=>(
                   <tr key={e.id} style={{background:i%2===0?"#fff":"#f5f5f5",borderBottom:"1px solid #e0e0e0"}}>
                     <td style={{padding:"6px 8px",color:"#555",fontSize:10}}>{i+1}</td>
-                    <td style={{padding:"6px 8px",fontWeight:600,fontSize:10}}>{e.nombre}</td>
+                    <td style={{padding:"6px 8px",fontWeight:600,fontSize:10}}>
+                      {e.nombre}
+                      {retiroEnPeriodo && <div style={{fontSize:9,color:"#b91c1c",fontWeight:700,marginTop:2}}>Liquidación incluida · retiro {e.fechaSalida}</div>}
+                    </td>
                     <td style={{padding:"6px 8px",color:"#555",fontSize:9}}>{e.cedula||"-"}</td>
                     <td style={{padding:"6px 8px",color:"#555",fontSize:9}}>{e.banco}<br/>{e.tipoCuenta}<br/><span style={{fontFamily:"monospace"}}>{e.numeroCuenta}</span></td>
                     <td style={{padding:"6px 8px",textAlign:"right",fontSize:10}}>{resumen.diasNomina}</td>
@@ -5506,14 +5901,15 @@ function Nomina({ctx}){
                       <div>Pensión: -$ {resumen.pension.toLocaleString("es-CO")}</div>
                       <div>Otras: -$ {resumen.otrasDeducciones.toLocaleString("es-CO")}</div>
                     </td>
-                    <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,color:"#003B71",fontSize:10}}>$ {resumen.neto.toLocaleString("es-CO")}</td>
+                    <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,color:liquidacionPrestaciones>0?"#b45309":"#94a3b8",fontSize:10}}>$ {liquidacionPrestaciones.toLocaleString("es-CO")}</td>
+                    <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,color:"#003B71",fontSize:10}}>$ {totalPagar.toLocaleString("es-CO")}</td>
                   </tr>
                 ))}
               </tbody>
-              <tfoot><tr style={{background:"#003B71",color:"#FFCD00"}}><td colSpan={10} style={{padding:"8px 10px",fontWeight:700,fontSize:11}}>TOTAL A PAGAR</td><td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,fontSize:11}}>$ {totalNeto.toLocaleString("es-CO")}</td></tr></tfoot>
+              <tfoot><tr style={{background:"#003B71",color:"#FFCD00"}}><td colSpan={11} style={{padding:"8px 10px",fontWeight:700,fontSize:11}}>TOTAL A PAGAR</td><td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,fontSize:11}}>$ {totalPagarPlanilla.toLocaleString("es-CO")}</td></tr></tfoot>
             </table>
             <div style={{marginTop:16,fontSize:10,color:"#555",lineHeight:1.5}}>
-              Salud y pensión del empleado se calculan aquí sobre la base del corte: salario proporcional + horas extras + comisiones. El auxilio de transporte se prorratea por los días del corte cuando aplica.
+              Salud y pensión del empleado se calculan aquí sobre la base del corte: salario proporcional + horas extras + comisiones. El auxilio de transporte se prorratea por los días del corte cuando aplica. Si el retiro cae dentro del corte, la planilla suma la liquidación definitiva en este mismo pago.
             </div>
             <div style={{marginTop:30,display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:20}}>
               {["REPRESENTANTE LEGAL","CONTADOR","APROBADO POR"].map((l)=><div key={l} style={{textAlign:"center",borderTop:"1px solid #333",paddingTop:8}}><div style={{fontSize:10,color:"#555"}}>{l}</div></div>)}

@@ -799,6 +799,9 @@ const ITEMS_DB = [
   ]},
 ];
 
+const DEFAULT_COT_FORMA_PAGO = "50% ANTICIPO, 50% CONCLUIR LABORES";
+const DEFAULT_COT_TIEMPO_EJEC = "10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)";
+
 // Header imprimible compartido (cotizaciones + certificaciones)
 function PrintHeader({dual}){
   return(
@@ -858,6 +861,97 @@ function normalizeQuoteItems(c={}){
   });
 }
 
+function createQuoteProposalId(seed=""){
+  const suffix = Math.random().toString(36).slice(2, 7);
+  return `PROP-${seed || Date.now().toString(36)}-${suffix}`;
+}
+
+function getQuoteProposalLabel(index=0){
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  return index < letters.length ? `Propuesta ${letters[index]}` : `Propuesta ${index + 1}`;
+}
+
+function normalizeProposalItems(items=[]){
+  return (Array.isArray(items) ? items : []).map((it, idx)=>({
+    id: it?.id ?? idx + 1,
+    desc: it?.desc ?? "",
+    cant: Number(it?.cant || 0),
+    unit: it?.unit ?? "UND",
+    vu: Number(it?.vu || 0),
+  }));
+}
+
+function buildQuoteProposal(propuesta={}, index=0){
+  const items = normalizeProposalItems(propuesta.items);
+  const util = Number(propuesta.util ?? 10) || 0;
+  const subtotal = items.reduce((sum, item)=>sum + (Number(item.cant) || 0) * (Number(item.vu) || 0), 0);
+  const totalCalculado = Math.round(subtotal + (subtotal * util / 100) * 1.19);
+  return {
+    id: propuesta.id || createQuoteProposalId(String(index + 1)),
+    nombre: String(propuesta.nombre || getQuoteProposalLabel(index)).trim() || getQuoteProposalLabel(index),
+    alcance: propuesta.alcance || "",
+    tipoCotizacion: propuesta.tipoCotizacion || "linea_vida",
+    requerimientoCliente: propuesta.requerimientoCliente || "",
+    formaPago: propuesta.formaPago || DEFAULT_COT_FORMA_PAGO,
+    tiempoEjec: propuesta.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC,
+    util,
+    items,
+    total: propuesta.total != null ? Number(propuesta.total) || 0 : totalCalculado,
+  };
+}
+
+function getQuoteProposals(c={}){
+  const raw = Array.isArray(c.propuestas) && c.propuestas.length
+    ? c.propuestas
+    : [{
+        id: c.propuestaActivaId || `PROP-LEGACY-${c.id || "draft"}`,
+        nombre: c.propuestaNombre || getQuoteProposalLabel(0),
+        alcance: c.propuestaAlcance || "",
+        tipoCotizacion: c.tipoCotizacion || "linea_vida",
+        requerimientoCliente: c.requerimientoCliente || "",
+        formaPago: c.formaPago || DEFAULT_COT_FORMA_PAGO,
+        tiempoEjec: c.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC,
+        util: c.util ?? 10,
+        items: Array.isArray(c.items) ? c.items : [],
+        total: c.total ?? null,
+      }];
+  return raw.map((propuesta, index)=>buildQuoteProposal(propuesta, index));
+}
+
+function getQuoteActiveProposal(c={}){
+  const propuestas = getQuoteProposals(c);
+  return propuestas.find((propuesta)=>propuesta.id === c.propuestaActivaId) || propuestas[0] || buildQuoteProposal({}, 0);
+}
+
+function mergeQuoteWithProposal(c={}, propuesta=null){
+  const activa = propuesta || getQuoteActiveProposal(c);
+  const propuestas = getQuoteProposals(c);
+  return {
+    ...c,
+    propuestaActivaId: activa.id,
+    propuestas,
+    propuestaNombre: activa.nombre,
+    propuestaAlcance: activa.alcance,
+    tipoCotizacion: activa.tipoCotizacion,
+    requerimientoCliente: activa.requerimientoCliente,
+    formaPago: activa.formaPago,
+    tiempoEjec: activa.tiempoEjec,
+    util: activa.util,
+    items: activa.items,
+    total: activa.total,
+  };
+}
+
+function getQuoteProposalTotals(baseQuote={}, propuesta){
+  const quote = mergeQuoteWithProposal(baseQuote, propuesta);
+  const items = normalizeQuoteItems({ ...quote, items: propuesta?.items || [] });
+  const sub = items.reduce((sum, item)=>sum + (Number(item.cant) || 0) * (Number(item.vu) || 0), 0);
+  const ut = sub * (Number(propuesta?.util ?? 10) || 0) / 100;
+  const iva = ut * 0.19;
+  const tot = sub + ut + iva;
+  return { quote, items, sub, ut, iva, tot };
+}
+
 function hasVerticalLifeLineService(c={}){
   if((c.geoMediciones || []).some(seg => seg?.tipo === "LVV")) return true;
   return normalizeQuoteItems(c).some(it => {
@@ -867,11 +961,15 @@ function hasVerticalLifeLineService(c={}){
 }
 
 function buildCotizacionPrintHtml(c){
+  const propuestas = getQuoteProposals(c);
+  const activa = getQuoteActiveProposal(c);
+  c = mergeQuoteWithProposal(c, activa);
   const items = normalizeQuoteItems(c);
   const measurements = Array.isArray(c.geoMediciones) ? c.geoMediciones : [];
   const fotosCotizacion = Array.isArray(c.fotosCotizacion) ? c.fotosCotizacion.filter((foto)=>foto?.src) : [];
   const esObraBlanca = c.tipoCotizacion === "obra_blanca";
   const requerimientoCliente = String(c.requerimientoCliente || "").trim();
+  const alcancePropuesta = String(c.propuestaAlcance || "").trim();
   const mapQuery = c.coords || `${c.obra||""} ${c.ciudad||""}`.trim();
   const { width: mapWidth, height: mapHeight } = getStaticMapDimensions(c.geoMapView);
   const quoteMapSrc = c.mapImg && String(c.mapImg).startsWith("data:")
@@ -903,6 +1001,28 @@ function buildCotizacionPrintHtml(c){
       <div class="measurement-box">
         <p><strong>Necesidad del cliente</strong></p>
         <div style="white-space:pre-wrap;">${escapeHtml(requerimientoCliente)}</div>
+      </div>` : '';
+  const alcanceBlock = alcancePropuesta ? `
+      <div class="measurement-box">
+        <p><strong>Alcance de esta propuesta</strong></p>
+        <div style="white-space:pre-wrap;">${escapeHtml(alcancePropuesta)}</div>
+      </div>` : '';
+  const propuestasResumen = propuestas.length > 1 ? `
+      <div class="measurement-box">
+        <p><strong>Esta cotizacion incluye ${propuestas.length} propuestas comerciales</strong></p>
+        <table class="measurement-table">
+          <thead><tr><th>Propuesta</th><th>Tipo</th><th>Total</th></tr></thead>
+          <tbody>
+            ${propuestas.map((propuesta)=>`
+              <tr>
+                <td>${escapeHtml(propuesta.nombre)}</td>
+                <td>${escapeHtml(propuesta.tipoCotizacion === "obra_blanca" ? "Obra blanca" : "Linea de vida / anclajes")}</td>
+                <td>${fmt(Number(propuesta.total || 0))}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+        <div style="font-size:10pt;color:#475569;padding-top:6px;">El PDF muestra en detalle la propuesta activa: <strong>${escapeHtml(activa.nombre)}</strong>.</div>
       </div>` : '';
   const fotosBlock = fotosCotizacion.length ? `
       <div class="section-title">Registro fotografico</div>
@@ -1001,6 +1121,7 @@ function buildCotizacionPrintHtml(c){
       ${esObraBlanca ? `
       <p>Presentamos la cotizacion para la obra blanca solicitada por el cliente.</p>
       ${requerimientoBlock}
+      ${alcanceBlock}
       ` : `
       <p>Presentamos la cotizacion para suministro e instalacion de los sistemas de proteccion anticaida (lineas de vida horizontales sobre cubierta y escaleras).</p>
       <p><strong>Trabajo en altura:</strong> Se considera toda actividad, labor o trabajo que se deba realizar a una altura fisica igual o superior a 1,50 metros desde el piso.</p>
@@ -1012,7 +1133,9 @@ function buildCotizacionPrintHtml(c){
         <li>Los anclajes a los cuales se fijaran las lineas de vida deben resistir al menos 5.000 libras por cada persona asegurada.</li>
       </ul>
       <p>${escapeHtml(introDetail)}</p>
+      ${alcanceBlock}
       `}
+      ${propuestasResumen}
       <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
     </section>
 
@@ -1024,7 +1147,7 @@ function buildCotizacionPrintHtml(c){
       </div>
       ${mapBlockWithLabels}
       ${fotosBlock}
-      <div class="section-title">Propuesta economica linea de vida</div>
+      <div class="section-title">${escapeHtml(propuestas.length > 1 ? activa.nombre : "Propuesta economica linea de vida")}</div>
       <table class="table no-break">
         <thead><tr><th>Descripcion</th><th class="num">Cantidad</th><th class="center">Unidad</th><th class="num">Valor</th><th class="num">Subtotal</th></tr></thead>
         <tbody>
@@ -2116,6 +2239,10 @@ function Cotizacion({ctx}){
   const [previewCot,setPreviewCot]=useState(null);
   const [sendModal,setSendModal]=useState(null);
   const [sendNotif,setSendNotif]=useState("");
+  const [propuestas,setPropuestas]=useState([]);
+  const [propuestaActivaId,setPropuestaActivaId]=useState(null);
+  const [nombrePropuesta,setNombrePropuesta]=useState(getQuoteProposalLabel(0));
+  const [alcancePropuesta,setAlcancePropuesta]=useState("");
   const [tipoCotizacion,setTipoCotizacion]=useState("linea_vida");
   const [requerimientoCliente,setRequerimientoCliente]=useState("");
   const [fotosCotizacion,setFotosCotizacion]=useState([]);
@@ -2127,43 +2254,156 @@ function Cotizacion({ctx}){
   const sub=items.reduce((s,i)=>s+i.cant*i.vu,0);
   const ut=sub*util/100; const iva=ut*0.19; const tot=sub+ut+iva;
 
+  const buildCurrentProposalState = (overrides={}) => buildQuoteProposal({
+    id: overrides.id || propuestaActivaId || `PROP-DRAFT-${editCot || "new"}`,
+    nombre: overrides.nombre ?? nombrePropuesta,
+    alcance: overrides.alcance ?? alcancePropuesta,
+    tipoCotizacion: overrides.tipoCotizacion ?? tipoCotizacion,
+    requerimientoCliente: overrides.requerimientoCliente ?? requerimientoCliente,
+    formaPago: overrides.formaPago ?? formaPago,
+    tiempoEjec: overrides.tiempoEjec ?? tiempoEjec,
+    util: overrides.util ?? util,
+    items: overrides.items ?? items,
+    total: overrides.total ?? Math.round(tot),
+  }, propuestas.length);
+
+  const applyProposalToForm = (propuesta) => {
+    const normalized = buildQuoteProposal(propuesta, 0);
+    const nextItems = normalizeProposalItems(normalized.items);
+    setPropuestaActivaId(normalized.id);
+    setNombrePropuesta(normalized.nombre);
+    setAlcancePropuesta(normalized.alcance || "");
+    setTipoCotizacion(normalized.tipoCotizacion || "linea_vida");
+    setRequerimientoCliente(normalized.requerimientoCliente || "");
+    setFormaPago(normalized.formaPago || DEFAULT_COT_FORMA_PAGO);
+    setTiempoEjec(normalized.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC);
+    setUtil(Number(normalized.util || 10));
+    setItems(nextItems);
+    setNid(nextItems.length + 1);
+  };
+
+  const setQuoteFormFromSource = (source={}) => {
+    const propuestasSource = getQuoteProposals(source);
+    const activa = propuestasSource.find((propuesta)=>propuesta.id === source.propuestaActivaId) || propuestasSource[0] || buildQuoteProposal({}, 0);
+    setPropuestas(propuestasSource);
+    setCot(source.numero || "");
+    setFecha(source.fecha || today());
+    setVal(source.val || 30);
+    setCl({
+      nombre: source.cliente || "",
+      obra: source.obra || "",
+      telefono: source.telefono || "",
+      ciudad: source.ciudad || "",
+      coords: source.coords || "",
+    });
+    setMapImgManual(source.mapImg && String(source.mapImg).startsWith("data:") ? source.mapImg : null);
+    setGeoMediciones(source.geoMediciones || []);
+    setGeoMapView(source.geoMapView || null);
+    setFotosCotizacion(source.fotosCotizacion || []);
+    applyProposalToForm(activa);
+  };
+
+  const syncCurrentProposal = () => {
+    const proposal = buildCurrentProposalState();
+    const base = propuestas.length ? propuestas : [proposal];
+    const exists = base.some((item)=>item.id === proposal.id);
+    const next = (exists ? base.map((item)=>item.id === proposal.id ? proposal : item) : [...base, proposal]).map((item, index)=>buildQuoteProposal(item, index));
+    setPropuestas(next);
+    setPropuestaActivaId(proposal.id);
+    return { proposal, next };
+  };
+
+  const switchProposal = (targetId) => {
+    const { next } = syncCurrentProposal();
+    const target = next.find((item)=>item.id === targetId);
+    if(target) applyProposalToForm(target);
+  };
+
+  const addProposal = () => {
+    const { next } = syncCurrentProposal();
+    const nueva = buildQuoteProposal({
+      id: createQuoteProposalId(String(next.length + 1)),
+      nombre: getQuoteProposalLabel(next.length),
+      formaPago: DEFAULT_COT_FORMA_PAGO,
+      tiempoEjec: DEFAULT_COT_TIEMPO_EJEC,
+      util: 10,
+      items: [],
+    }, next.length);
+    const final = [...next, nueva];
+    setPropuestas(final);
+    applyProposalToForm(nueva);
+  };
+
+  const duplicateProposal = () => {
+    const { proposal, next } = syncCurrentProposal();
+    const copia = buildQuoteProposal({
+      ...proposal,
+      id: createQuoteProposalId(String(next.length + 1)),
+      nombre: `${proposal.nombre} copia`,
+      items: normalizeProposalItems(proposal.items).map((item, index)=>({ ...item, id: index + 1 })),
+    }, next.length);
+    const final = [...next, copia];
+    setPropuestas(final);
+    applyProposalToForm(copia);
+  };
+
+  const removeActiveProposal = () => {
+    const { next } = syncCurrentProposal();
+    if(next.length <= 1) return;
+    const filtered = next.filter((item)=>item.id !== propuestaActivaId);
+    const fallback = filtered[0];
+    setPropuestas(filtered);
+    applyProposalToForm(fallback);
+  };
+
+  const propuestasSnapshot = (() => {
+    const current = buildCurrentProposalState();
+    const base = propuestas.length ? propuestas : [current];
+    const exists = base.some((item)=>item.id === current.id);
+    return (exists ? base.map((item)=>item.id === current.id ? current : item) : [...base, current]).map((item, index)=>buildQuoteProposal(item, index));
+  })();
+
   const newForm=()=>{
     const num=`P-${34155+(cotizaciones.length)}`;
     const draft=ctx.cotDraft;
-    setCot(num); setFecha(today()); setVal(30); setUtil(10);
-    setFormaPago("50% ANTICIPO, 50% CONCLUIR LABORES");
-    setTiempoEjec("10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)");
     if(draft){
-      const draftItems=(draft.items||[]).map((it,i)=>({...it,id:i+1}));
-      setItems(draftItems); setNid(draftItems.length+1 || 1);
-      setMapImgManual(draft.mapImg && String(draft.mapImg).startsWith("data:") ? draft.mapImg : null);
-      setGeoMediciones(draft.geoMediciones || []);
-      setGeoMapView(draft.geoMapView || null);
-      setCl({ nombre:draft.cliente||"", obra:draft.obra||"", telefono:draft.telefono||"", ciudad:draft.ciudad||"", coords:draft.coords||"" });
-      setRequerimientoCliente(draft.requerimientoCliente||"");
+      setQuoteFormFromSource({
+        ...draft,
+        numero: draft.numero || num,
+        fecha: draft.fecha || today(),
+        val: draft.val || 30,
+        fotosCotizacion: draft.fotosCotizacion || [],
+      });
       ctx.setCotDraft(null);
     }else{
-      setItems([]); setNid(1); setMapImgManual(null); setGeoMediciones([]); setGeoMapView(null);
-      setCl({nombre:"",obra:"",telefono:"",ciudad:"",coords:""});
-      setRequerimientoCliente("");
+      setQuoteFormFromSource({
+        numero: num,
+        fecha: today(),
+        val: 30,
+        cliente: "",
+        obra: "",
+        telefono: "",
+        ciudad: "",
+        coords: "",
+        mapImg: null,
+        geoMediciones: [],
+        geoMapView: null,
+        fotosCotizacion: [],
+        propuestas: [buildQuoteProposal({
+          id: createQuoteProposalId("new"),
+          nombre: getQuoteProposalLabel(0),
+          formaPago: DEFAULT_COT_FORMA_PAGO,
+          tiempoEjec: DEFAULT_COT_TIEMPO_EJEC,
+          util: 10,
+          items: [],
+        }, 0)],
+      });
     }
-    setTipoCotizacion("linea_vida"); setFotosCotizacion([]);
     setEditCot(null); setTab("form");
   };
 
   const loadEdit=(c)=>{
-    setCot(c.numero); setFecha(c.fecha); setVal(c.val||30);
-    setCl({nombre:c.cliente,obra:c.obra,telefono:c.telefono,ciudad:c.ciudad,coords:c.coords||""});
-    setItems((c.items||[]).map((it,i)=>({...it,id:i+1}))); setNid((c.items||[]).length+1);
-    setUtil(c.util||10);
-    setMapImgManual(c.mapImg && String(c.mapImg).startsWith("data:") ? c.mapImg : null);
-    setGeoMediciones(c.geoMediciones||[]);
-    setGeoMapView(c.geoMapView||null);
-    setFormaPago(c.formaPago||"50% ANTICIPO, 50% CONCLUIR LABORES");
-    setTiempoEjec(c.tiempoEjec||"10 DIAS");
-    setTipoCotizacion(c.tipoCotizacion||"linea_vida");
-    setRequerimientoCliente(c.requerimientoCliente||"");
-    setFotosCotizacion(c.fotosCotizacion||[]);
+    setQuoteFormFromSource(c);
     setEditCot(c.id); setTab("form");
   };
 
@@ -2226,23 +2466,48 @@ function Cotizacion({ctx}){
   };
 
   const guardarCot=()=>{
-    const finalItems = normalizeQuoteItems({ items, geoMediciones });
+    const { proposal, next } = syncCurrentProposal();
+    const finalItems = normalizeQuoteItems({ items: proposal.items, geoMediciones });
+    const totalActiva = Math.round((finalItems.reduce((sum, item)=>sum + (Number(item.cant) || 0) * (Number(item.vu) || 0), 0)) * (1 + (Number(proposal.util || 10) / 100) * 1.19));
+    const propuestaActiva = buildQuoteProposal({ ...proposal, items: finalItems, total: totalActiva }, next.findIndex((item)=>item.id === proposal.id));
+    const propuestasFinales = next.map((item)=>item.id === propuestaActiva.id ? propuestaActiva : buildQuoteProposal(item));
     const data={
       numero:cot, fecha, val, cliente:cl.nombre, obra:cl.obra, telefono:cl.telefono, ciudad:cl.ciudad, coords:cl.coords,
-      items:finalItems, util, total:Math.round((finalItems.reduce((s,i)=>s+(i.cant||0)*(i.vu||0),0))*(1+util/100*1.19)),
-      formaPago, tiempoEjec, mapImg: effectiveMapImg, geoMediciones, geoMapView, tipoCotizacion, requerimientoCliente, fotosCotizacion, estado:"Pendiente", obraId:null
+      items:propuestaActiva.items,
+      util:propuestaActiva.util,
+      total:propuestaActiva.total,
+      formaPago:propuestaActiva.formaPago,
+      tiempoEjec:propuestaActiva.tiempoEjec,
+      mapImg: effectiveMapImg,
+      geoMediciones,
+      geoMapView,
+      tipoCotizacion:propuestaActiva.tipoCotizacion,
+      requerimientoCliente:propuestaActiva.requerimientoCliente,
+      propuestaNombre:propuestaActiva.nombre,
+      propuestaAlcance:propuestaActiva.alcance,
+      propuestas:propuestasFinales,
+      propuestaActivaId:propuestaActiva.id,
+      fotosCotizacion,
+      estado:"Pendiente",
+      obraId:null
     };
+    setPropuestas(propuestasFinales);
+    let savedQuote;
     if(editCot){
-      setCotizaciones(p=>p.map(c=>c.id===editCot?{...c,...data}:c));
+      savedQuote = { ...(cotizaciones.find((cotizacion)=>cotizacion.id===editCot) || {}), ...data, id: editCot };
+      setCotizaciones(p=>p.map(c=>c.id===editCot?savedQuote:c));
     } else {
       const id=`COT-${String(cotizaciones.length+1).padStart(3,"0")}`;
-      setCotizaciones(p=>[...p,{id,...data}]);
+      savedQuote = { id, ...data };
+      setCotizaciones(p=>[...p,savedQuote]);
     }
     setTab("lista");
+    return savedQuote;
   };
 
   const aprobarCotizacion=(cotId)=>{
-    const c=cotizaciones.find(x=>x.id===cotId);
+    const cBase=cotizaciones.find(x=>x.id===cotId);
+    const c = cBase ? mergeQuoteWithProposal(cBase, getQuoteActiveProposal(cBase)) : null;
     if(!c)return;
     const newObraId=`OB-${String(obras.length+1).padStart(3,"0")}`;
     const newObra={
@@ -2279,6 +2544,8 @@ function Cotizacion({ctx}){
           {cotizaciones.map(c=>{
             const s=st[c.estado]||st.Pendiente;
             const obraVinc=obras.find(o=>o.id===c.obraId);
+            const propuestasCot = getQuoteProposals(c);
+            const propuestaActiva = getQuoteActiveProposal(c);
             return(
               <div key={c.id} style={{...CD,border:`1px solid ${s.b}`}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
@@ -2291,9 +2558,12 @@ function Cotizacion({ctx}){
                   <span style={{background:s.bg,color:s.t,border:`1px solid ${s.b}`,borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:600,flexShrink:0}}>{c.estado}</span>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
-                  <div style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",marginBottom:2}}>Total</div><div style={{fontSize:14,fontWeight:700,color:"#cc0000"}}>{fmt(c.total)}</div></div>
+                  <div style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",marginBottom:2}}>Total activo</div><div style={{fontSize:14,fontWeight:700,color:"#cc0000"}}>{fmt(propuestaActiva.total || c.total)}</div></div>
                   <div style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",marginBottom:2}}>Tramos</div><div style={{fontSize:13,fontWeight:700,color:"#2563eb"}}>{(c.geoMediciones||[]).length}</div></div>
-                  <div style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",marginBottom:2}}>Obra</div><div style={{fontSize:12,fontWeight:600,color:obraVinc?"#4ade80":"#5b80a8"}}>{obraVinc?obraVinc.id:"Sin obra"}</div></div>
+                  <div style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",marginBottom:2}}>Propuestas</div><div style={{fontSize:13,fontWeight:700,color:"#f47c20"}}>{propuestasCot.length}</div></div>
+                </div>
+                <div style={{fontSize:11,color:"#64748b",marginBottom:12}}>
+                  Base actual para PDF / obra: <strong style={{color:"#1a1a2e"}}>{propuestaActiva.nombre}</strong>{obraVinc ? ` · ${obraVinc.id}` : ""}
                 </div>
                 <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                   <button style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"6px 12px"}} onClick={()=>setPreviewCot(c)}>Ver</button>
@@ -2383,12 +2653,53 @@ function Cotizacion({ctx}){
         action={<button style={B("#f1f5f9","#475569")} onClick={()=>setTab("lista")}>← Volver a lista</button>}/>
       <div style={{display:"grid",gridTemplateColumns:"1fr 300px",gap:20}}>
         <div>
-          <div style={{...CD,marginBottom:14,border:"2px solid #f47c20"}}>
-            <div style={ST}>Tipo de cotización</div>
-            <div style={{display:"flex",gap:10}}>
-              {[["linea_vida","Línea de vida / Puntos de anclaje"],["obra_blanca","Obra blanca (libre)"]].map(([v,l])=>(
-                <button key={v} onClick={()=>setTipoCotizacion(v)} style={{...B(tipoCotizacion===v?"#f47c20":"#142840",tipoCotizacion===v?"#fff":"#7da5c8"),flex:1,justifyContent:"center",border:"2px solid "+(tipoCotizacion===v?"#f47c20":"#1a3050"),fontSize:13,fontWeight:700}} >{l}</button>
+          <div style={{...CD,marginBottom:14,border:"2px solid #142840"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:14,...{fontSize:11,fontWeight:600,color:"#cc0000",textTransform:"uppercase",letterSpacing:1,borderBottom:"1px solid #e2e8f0",paddingBottom:8}}}>
+              <span>Propuestas comerciales</span>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                <button onClick={addProposal} style={{...B("#f47c20"),fontSize:11,padding:"5px 12px"}}>+ Agregar propuesta</button>
+                <button onClick={duplicateProposal} style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"5px 12px"}}>Duplicar activa</button>
+                <button onClick={removeActiveProposal} disabled={propuestasSnapshot.length<=1} style={{...B("#fee2e2","#b91c1c"),fontSize:11,padding:"5px 12px",opacity:propuestasSnapshot.length<=1?0.55:1,cursor:propuestasSnapshot.length<=1?"not-allowed":"pointer"}}>Eliminar activa</button>
+              </div>
+            </div>
+            <div style={{fontSize:12,color:"#64748b",marginBottom:12}}>
+              Cada propuesta puede tener su propio alcance, ítems, utilidad, forma de pago y tiempo de ejecución. La propuesta activa queda como base para aprobar la obra y para el PDF principal.
+            </div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
+              {propuestasSnapshot.map((propuesta)=>(
+                <button key={propuesta.id} onClick={()=>switchProposal(propuesta.id)} style={{flex:"1 1 220px",textAlign:"left",padding:"12px 14px",borderRadius:12,border:`2px solid ${propuesta.id===propuestaActivaId?"#f47c20":"#dbe5f0"}`,background:propuesta.id===propuestaActivaId?"#fff7ed":"#f8fafc",cursor:"pointer"}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"#1a1a2e",marginBottom:4}}>{propuesta.nombre}</div>
+                  <div style={{fontSize:11,color:"#64748b",marginBottom:6}}>{propuesta.tipoCotizacion === "obra_blanca" ? "Obra blanca" : "Línea de vida / anclajes"}</div>
+                  <div style={{fontSize:14,fontWeight:700,color:"#cc0000"}}>{fmt(Number(propuesta.id===propuestaActivaId ? tot : propuesta.total) || 0)}</div>
+                </button>
               ))}
+            </div>
+          </div>
+
+          <div style={{...CD,marginBottom:14,border:"2px solid #f47c20"}}>
+            <div style={ST}>Configuración de la propuesta activa</div>
+            <div style={{display:"grid",gridTemplateColumns:"1.1fr 1fr",gap:12,marginBottom:12}}>
+              <div>
+                <LBL>Nombre de la propuesta</LBL>
+                <input value={nombrePropuesta} onChange={e=>setNombrePropuesta(e.target.value)} style={SI} placeholder="Ej: Propuesta recomendada"/>
+              </div>
+              <div>
+                <LBL>Tipo de propuesta</LBL>
+                <div style={{display:"flex",gap:10}}>
+                  {[["linea_vida","Línea de vida / Puntos de anclaje"],["obra_blanca","Obra blanca (libre)"]].map(([v,l])=>(
+                    <button key={v} onClick={()=>setTipoCotizacion(v)} style={{...B(tipoCotizacion===v?"#f47c20":"#142840",tipoCotizacion===v?"#fff":"#7da5c8"),flex:1,justifyContent:"center",border:"2px solid "+(tipoCotizacion===v?"#f47c20":"#1a3050"),fontSize:13,fontWeight:700}} >{l}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div>
+              <LBL>Alcance / enfoque comercial de esta propuesta</LBL>
+              <textarea
+                value={alcancePropuesta}
+                onChange={e=>setAlcancePropuesta(e.target.value)}
+                placeholder="Ej: alternativa recomendada con línea de vida horizontal continua, puntos de anclaje y mantenimiento preventivo anual."
+                style={{...SI,minHeight:110,resize:"vertical",lineHeight:1.5}}
+              />
             </div>
             {tipoCotizacion==="obra_blanca"&&(
               <div style={{marginTop:10,background:"#fffbeb",border:"1px solid #f5c842",borderRadius:8,padding:"10px 12px",fontSize:12,color:"#92400e"}}>
@@ -2550,11 +2861,13 @@ function Cotizacion({ctx}){
             <div style={{fontSize:11,color:"#64748b",marginBottom:10}}>{fmtL(fecha)}</div>
             <div style={{fontSize:13,fontWeight:600,marginBottom:2}}>{cl.nombre||"-"}</div>
             <div style={{fontSize:11,color:"#475569",marginBottom:8}}>{cl.obra||"-"} · {cl.ciudad||"-"}</div>
-            <div style={{fontSize:11,color:"#64748b",marginBottom:14}}>{(geoMediciones||[]).length} tramo(s) medido(s)</div>
+            <div style={{fontSize:11,color:"#64748b",marginBottom:4}}>{(geoMediciones||[]).length} tramo(s) medido(s)</div>
+            <div style={{fontSize:11,color:"#64748b",marginBottom:4}}>{propuestasSnapshot.length} propuesta(s) en esta cotización</div>
+            <div style={{fontSize:11,color:"#1a1a2e",marginBottom:14}}><strong>Activa:</strong> {nombrePropuesta || "-"}</div>
             <div style={{display:"flex",justifyContent:"space-between",fontWeight:700,fontSize:15,color:"#cc0000",background:"#f1f5f9",padding:"10px 12px",borderRadius:8,marginBottom:12}}><span>TOTAL</span><span>{fmt(tot)}</span></div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
               <button style={{...B("#f47c20"),justifyContent:"center"}} onClick={guardarCot}>{editCot?"Actualizar":"Guardar"} Cotización</button>
-              <button style={{...B("#dbeafe","#1e40af"),justifyContent:"center"}} onClick={()=>{guardarCot(); const dummy={numero:cot,fecha,val,cliente:cl.nombre,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,items:items.length?items:measurementsToQuoteItems(geoMediciones),util,total:Math.round(tot),formaPago,tiempoEjec,mapImg:effectiveMapImg,geoMediciones,geoMapView,tipoCotizacion,requerimientoCliente,fotosCotizacion}; setPreviewCot(dummy); setTab("lista");}}>Guardar y ver</button>
+              <button style={{...B("#dbeafe","#1e40af"),justifyContent:"center"}} onClick={()=>{const saved=guardarCot(); if(saved) setPreviewCot(saved);}}>Guardar y ver</button>
               <button style={{...B("#0f2d1a","#4ade80"),justifyContent:"center",border:"1px solid #166534"}} onClick={usarMedicionesComoItems}>Crear ítems desde mediciones</button>
             </div>
           </div>
@@ -2566,11 +2879,15 @@ function Cotizacion({ctx}){
 
 function CotizacionPrint({c}){
   if(!c) return null;
+  const propuestas = getQuoteProposals(c);
+  const activa = getQuoteActiveProposal(c);
+  c = mergeQuoteWithProposal(c, activa);
   const items = normalizeQuoteItems(c);
   const measurements = Array.isArray(c.geoMediciones) ? c.geoMediciones : [];
   const fotosCotizacion = Array.isArray(c.fotosCotizacion) ? c.fotosCotizacion.filter((foto)=>foto?.src) : [];
   const esObraBlanca = c.tipoCotizacion === "obra_blanca";
   const requerimientoCliente = String(c.requerimientoCliente || "").trim();
+  const alcancePropuesta = String(c.propuestaAlcance || "").trim();
   const mapQuery = c.coords || `${c.obra||""} ${c.ciudad||""}`.trim();
   const quoteMapSrc = c.mapImg && String(c.mapImg).startsWith("data:")
     ? c.mapImg
@@ -2597,9 +2914,42 @@ function CotizacionPrint({c}){
               <div style={{whiteSpace:"pre-wrap"}}>{requerimientoCliente}</div>
             </div>
           )}
+          {alcancePropuesta && (
+            <div style={{background:"#fff8f3",border:"1px solid #fdba74",borderRadius:6,padding:"12px 14px",marginBottom:16}}>
+              <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8}}>Alcance de la propuesta</div>
+              <div style={{whiteSpace:"pre-wrap"}}>{alcancePropuesta}</div>
+            </div>
+          )}
         </>
       ) : (
-        <p style={{marginBottom:10}}>Presentamos la cotización para suministro e instalación de los sistemas de protección anti caída (líneas de vida horizontales sobre cubierta y escaleras).</p>
+        <>
+          <p style={{marginBottom:10}}>Presentamos la cotización para suministro e instalación de los sistemas de protección anti caída (líneas de vida horizontales sobre cubierta y escaleras).</p>
+          {alcancePropuesta && (
+            <div style={{background:"#fff8f3",border:"1px solid #fdba74",borderRadius:6,padding:"12px 14px",marginBottom:16}}>
+              <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8}}>Alcance de la propuesta</div>
+              <div style={{whiteSpace:"pre-wrap"}}>{alcancePropuesta}</div>
+            </div>
+          )}
+        </>
+      )}
+      {propuestas.length > 1 && (
+        <div style={{background:"#f8fafc",border:"1px solid #cbd5e1",borderRadius:6,padding:"12px 14px",marginBottom:16}}>
+          <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8}}>Propuestas incluidas</div>
+          <div style={{display:"grid",gap:8}}>
+            {propuestas.map((propuesta)=>(
+              <div key={propuesta.id} style={{display:"flex",justifyContent:"space-between",gap:12,background:propuesta.id===activa.id?"#fff8f3":"#fff",border:"1px solid #e2e8f0",borderRadius:6,padding:"8px 10px"}}>
+                <div>
+                  <div style={{fontWeight:700,color:"#1a1a2e"}}>{propuesta.nombre}</div>
+                  <div style={{fontSize:11,color:"#64748b"}}>{propuesta.tipoCotizacion === "obra_blanca" ? "Obra blanca" : "Línea de vida / anclajes"}</div>
+                </div>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontSize:11,color:"#64748b"}}>{propuesta.id===activa.id?"Activa para PDF":"Alternativa"}</div>
+                  <div style={{fontWeight:700,color:"#cc0000"}}>{fmt(Number(propuesta.total||0))}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
       {quoteMapSrc ? <div style={{marginBottom:16,textAlign:"center"}}><StaticMapPreview src={quoteMapSrc} segments={measurements} query={mapQuery} mapView={c.geoMapView} alt="Mapa" maxHeight={320} border="1px solid #ddd" borderRadius={4} /></div> : null}
       {fotosCotizacion.length>0&&(
@@ -2617,7 +2967,7 @@ function CotizacionPrint({c}){
           </div>
         </div>
       )}
-      <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:6}}>Propuesta económica</div>
+      <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:6}}>{propuestas.length > 1 ? activa.nombre : "Propuesta económica"}</div>
       <table style={{width:"100%",borderCollapse:"collapse",fontSize:11.3}}>
         <thead><tr>{["Descripción","Cantidad","Unidad","Valor","Subtotal"].map((h,i)=><th key={h} style={{border:"1px solid #222",padding:"7px 8px",background:"#f7f7f7",textAlign:i>0?"right":"left"}}>{h}</th>)}</tr></thead>
         <tbody>
@@ -4369,6 +4719,26 @@ function CertificacionDocumento({cert}){
   );
 }
 
+function CertificacionDetalle({cert,onVolver,onEditar,onImprimir,subtitle="Vista previa del documento"}) {
+  if(!cert) return null;
+  return(
+    <div>
+      <div style={{display:"flex",gap:10,marginBottom:14}}>
+        <button style={B("#f1f5f9","#475569")} onClick={onVolver}>Volver</button>
+        {typeof onEditar==="function" && <button style={{...B("#dbeafe","#1e40af")}} onClick={()=>onEditar(cert)}>Editar</button>}
+        {typeof onImprimir==="function" && <button style={B("#f47c20")} onClick={()=>onImprimir(cert)}>Imprimir PDF</button>}
+      </div>
+      <div style={{background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:12,padding:"12px 14px",marginBottom:16}}>
+        <div style={{fontSize:11,fontWeight:700,color:"#9a3412",textTransform:"uppercase",letterSpacing:0.7}}>Certificación</div>
+        <div style={{fontSize:13,color:"#7c2d12",marginTop:4}}>{subtitle}</div>
+      </div>
+      <div style={{maxWidth:980}}>
+        <CertificacionDocumento cert={cert}/>
+      </div>
+    </div>
+  );
+}
+
 function Certificaciones({ctx}){
   const {certs,setCerts,obras}=ctx;
   const [sel,setSel]=useState(null);
@@ -4458,10 +4828,10 @@ function Certificaciones({ctx}){
         </div>
       )}
 
-      <div style={{display:"grid",gridTemplateColumns:sel?"1fr 480px":"1fr",gap:20}}>
+      {!sel&&(
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,alignContent:"start"}}>
           {certs.map(c=>(
-            <div key={c.id} style={{...CD,border:`1px solid ${sel?.id===c.id?"#f47c20":"#1a3050"}`,cursor:"pointer"}} onClick={()=>setSel(sel?.id===c.id?null:c)}>
+            <div key={c.id} style={{...CD,border:`1px solid ${sel?.id===c.id?"#f47c20":"#1a3050"}`,cursor:"pointer"}} onClick={()=>setSel(c)}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
                 <div>
                   <div style={{fontSize:11,color:"#64748b"}}>{c.id} · {c.numero}</div>
@@ -4479,23 +4849,22 @@ function Certificaciones({ctx}){
               <div style={{display:"flex",gap:8}}>
                 <button style={{...B("#f47c20"),flex:1,justifyContent:"center",fontSize:12}} onClick={e=>{e.stopPropagation();setSel(c);}}>Ver</button>
                 <button style={{...B("#dbeafe","#1e40af"),flex:1,justifyContent:"center",fontSize:12}} onClick={e=>{e.stopPropagation();editarCertificacion(c);}}>Editar</button>
-                <button style={{...B("#e8f5ee","#166534"),flex:1,justifyContent:"center",fontSize:12}} onClick={e=>{e.stopPropagation();setSel(c);setTimeout(()=>printCurrentPz(`Certificación ${c?.numero || c?.id || ""}`),300);}}> Imprimir</button>
+                <button style={{...B("#e8f5ee","#166534"),flex:1,justifyContent:"center",fontSize:12}} onClick={e=>{e.stopPropagation();imprimir(c);}}>Imprimir</button>
               </div>
             </div>
           ))}
         </div>
+      )}
 
-        {sel&&(
-          <div>
-            <div style={{display:"flex",gap:10,marginBottom:14,justifyContent:"flex-end"}}>
-              <button style={B("#f1f5f9","#475569")} onClick={()=>setSel(null)}>Volver</button>
-              <button style={{...B("#dbeafe","#1e40af")}} onClick={()=>editarCertificacion(sel)}>Editar</button>
-              <button style={B("#f47c20")} onClick={()=>printCurrentPz(`Certificación ${sel?.numero || sel?.id || ""}`)}>Imprimir PDF</button>
-            </div>
-            <CertificacionDocumento cert={sel}/>
-          </div>
-        )}
-      </div>
+      {sel&&(
+        <CertificacionDetalle
+          cert={sel}
+          onVolver={()=>setSel(null)}
+          onEditar={editarCertificacion}
+          onImprimir={imprimir}
+          subtitle="Vista previa completa para revisar, editar e imprimir."
+        />
+      )}
     </div>
   );
 }
@@ -6299,133 +6668,127 @@ function Vencimientos({ctx}){
         </div>
       )}
 
-      {/* Modal de impresión */}
       {certParaImpresion&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:2000,overflow:"auto",padding:20}}>
-          <div style={{maxWidth:860,margin:"0 auto"}}>
-            <div style={{display:"flex",gap:10,marginBottom:14,justifyContent:"flex-end"}}>
-              <button style={B("#f1f5f9","#475569")} onClick={()=>setImprimiendo(null)}>Cerrar</button>
-              <button style={B("#f47c20")} onClick={()=>printCurrentPz(`Certificación ${certParaImpresion?.numero || certParaImpresion?.id || ""}`)}>Imprimir / PDF</button>
-            </div>
-            <CertificacionDocumento cert={certParaImpresion}/>
-          </div>
-        </div>
+        <CertificacionDetalle
+          cert={certParaImpresion}
+          onVolver={()=>setImprimiendo(null)}
+          onImprimir={(cert)=>printCurrentPz(`Certificación ${cert?.numero || cert?.id || ""}`)}
+          subtitle="Vista previa completa del certificado o recertificación."
+        />
       )}
 
-      {/* â”€â”€ CONTADORES â”€â”€ */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
-        <SC label="Vencidas" value={totVenc} color="#ef4444" icon="ðŸ”´" sub="requieren acción"/>
-        <SC label="Urgentes (<30 días)" value={totUrg} color="#fb923c" icon="ðŸ›¡️" sub="prioridad alta"/>
-        <SC label="Próximas (30-90d)" value={totProx} color="#f5c842" icon="ðŸŸ¡" sub="programar"/>
-        <SC label="Al día" value={totOk} color="#4ade80" icon="ðŸŸ¢" sub="sin novedad"/>
-      </div>
+      {!certParaImpresion&&(
+        <>
+          {/* â”€â”€ CONTADORES â”€â”€ */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
+            <SC label="Vencidas" value={totVenc} color="#ef4444" icon="VE" sub="requieren acción"/>
+            <SC label="Urgentes (<30 días)" value={totUrg} color="#fb923c" icon="UR" sub="prioridad alta"/>
+            <SC label="Próximas (30-90d)" value={totProx} color="#f5c842" icon="PR" sub="programar"/>
+            <SC label="Al día" value={totOk} color="#4ade80" icon="OK" sub="sin novedad"/>
+          </div>
 
-      {/* â”€â”€ GRUPOS POR ESTADO â”€â”€ */}
-      {grupos.map(g=>{
-        const items=lista.filter(c=>g.filtro(c.diasRestantes));
-        if(!items.length)return null;
-        return(
-          <div key={g.titulo} style={{...CD,marginBottom:20,borderLeft:`4px solid ${g.color}`}}>
-            <div style={{...ST,color:g.color,borderBottomColor:g.color+"33"}}>{g.titulo}</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-              {items.map(c=>{
-                // Obtenemos la versión ACTUALIZADA del cert desde certs[]
-                const cActual=certs.find(x=>x.id===c.id)||c;
-                const dActual=(()=>{
-                  if(!cActual.proxMant)return null;
-                  const d=new Date(cActual.proxMant+"T12:00:00");
-                  return Math.round((d-hoy)/(1000*60*60*24));
-                })();
-                const ob=obras.find(o=>o.id===cActual.obraId);
-                return(
-                  <div key={cActual.id}
-                    style={{background:"#f8fafc",borderRadius:10,padding:"14px 16px",border:`1px solid ${colorV(dActual)}44`,cursor:dActual!==null&&dActual<0?"pointer":"default",transition:"box-shadow 0.15s"}}
-                    onClick={dActual!==null&&dActual<0?(()=>abrirRecert(cActual)):undefined}
-                    onMouseEnter={dActual!==null&&dActual<0?(e=>e.currentTarget.style.boxShadow="0 0 0 3px #ef444433"):undefined}
-                    onMouseLeave={dActual!==null&&dActual<0?(e=>e.currentTarget.style.boxShadow="none"):undefined}
-                    title={dActual!==null&&dActual<0?"Clic para recertificar":undefined}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-                      <div>
-                        <div style={{fontSize:10,color:"#64748b"}}>{cActual.id} · {cActual.numero}</div>
-                        <div style={{fontSize:14,fontWeight:700,color:"#1a1a2e",marginTop:2}}>{cActual.cliente}</div>
-                        <div style={{fontSize:11,color:"#475569"}}>{cActual.tipo}</div>
-                        {dActual!==null&&dActual<0&&(
-                          <div style={{background:"#ef444422",border:"1px solid #ef4444",borderRadius:6,padding:"3px 8px",marginTop:6,fontSize:10,color:"#ef4444",fontWeight:700,display:"inline-block"}}>
-                            ðŸ‘† Clic para recertificar
+          {/* â”€â”€ GRUPOS POR ESTADO â”€â”€ */}
+          {grupos.map(g=>{
+            const items=lista.filter(c=>g.filtro(c.diasRestantes));
+            if(!items.length)return null;
+            return(
+              <div key={g.titulo} style={{...CD,marginBottom:20,borderLeft:`4px solid ${g.color}`}}>
+                <div style={{...ST,color:g.color,borderBottomColor:g.color+"33"}}>{g.titulo}</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+                  {items.map(c=>{
+                    const cActual=certs.find(x=>x.id===c.id)||c;
+                    const dActual=(()=>{
+                      if(!cActual.proxMant)return null;
+                      const d=new Date(cActual.proxMant+"T12:00:00");
+                      return Math.round((d-hoy)/(1000*60*60*24));
+                    })();
+                    const ob=obras.find(o=>o.id===cActual.obraId);
+                    return(
+                      <div key={cActual.id}
+                        style={{background:"#f8fafc",borderRadius:10,padding:"14px 16px",border:`1px solid ${colorV(dActual)}44`,cursor:dActual!==null&&dActual<0?"pointer":"default",transition:"box-shadow 0.15s"}}
+                        onClick={dActual!==null&&dActual<0?(()=>abrirRecert(cActual)):undefined}
+                        onMouseEnter={dActual!==null&&dActual<0?(e=>e.currentTarget.style.boxShadow="0 0 0 3px #ef444433"):undefined}
+                        onMouseLeave={dActual!==null&&dActual<0?(e=>e.currentTarget.style.boxShadow="none"):undefined}
+                        title={dActual!==null&&dActual<0?"Clic para recertificar":undefined}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                          <div>
+                            <div style={{fontSize:10,color:"#64748b"}}>{cActual.id} · {cActual.numero}</div>
+                            <div style={{fontSize:14,fontWeight:700,color:"#1a1a2e",marginTop:2}}>{cActual.cliente}</div>
+                            <div style={{fontSize:11,color:"#475569"}}>{cActual.tipo}</div>
+                            {dActual!==null&&dActual<0&&(
+                              <div style={{background:"#ef444422",border:"1px solid #ef4444",borderRadius:6,padding:"3px 8px",marginTop:6,fontSize:10,color:"#ef4444",fontWeight:700,display:"inline-block"}}>
+                                Clic para recertificar
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                      <div style={{background:colorV(dActual)+"22",border:`2px solid ${colorV(dActual)}`,borderRadius:10,padding:"8px 12px",textAlign:"center",minWidth:72}}>
-                        <div style={{fontSize:20,fontWeight:900,color:colorV(dActual),lineHeight:1}}>
-                          {dActual===null?"â€”":dActual<0?Math.abs(dActual):dActual}
+                          <div style={{background:colorV(dActual)+"22",border:`2px solid ${colorV(dActual)}`,borderRadius:10,padding:"8px 12px",textAlign:"center",minWidth:72}}>
+                            <div style={{fontSize:20,fontWeight:900,color:colorV(dActual),lineHeight:1}}>
+                              {dActual===null?"—":dActual<0?Math.abs(dActual):dActual}
+                            </div>
+                            <div style={{fontSize:9,color:colorV(dActual),fontWeight:600,marginTop:2}}>
+                              {dActual===null?"sin fecha":dActual<0?"días vencida":"días restantes"}
+                            </div>
+                          </div>
                         </div>
-                        <div style={{fontSize:9,color:colorV(dActual),fontWeight:600,marginTop:2}}>
-                          {dActual===null?"sin fecha":dActual<0?"días vencida":"días restantes"}
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+                          <div style={{background:"#fff",borderRadius:6,padding:"7px 10px"}}>
+                            <div style={{fontSize:9,color:"#64748b"}}>Certificado</div>
+                            <div style={{fontSize:11,fontWeight:600}}>{fmtD(cActual.fecha)}</div>
+                          </div>
+                          <div style={{background:"#fff",borderRadius:6,padding:"7px 10px"}}>
+                            <div style={{fontSize:9,color:"#64748b"}}>Próx. mantenimiento</div>
+                            <div style={{fontSize:11,fontWeight:600,color:colorV(dActual)}}>{fmtD(cActual.proxMant)||"—"}</div>
+                          </div>
+                        </div>
+                        <div style={{fontSize:11,color:"#475569",marginBottom:8,lineHeight:1.4}}>{cActual.sistema}</div>
+                        {ob&&<div style={{fontSize:10,color:"#64748b",marginBottom:10}}>{ob.direccion||ob.ciudad}</div>}
+                        <div style={{background:colorV(dActual)+"18",border:`1px solid ${colorV(dActual)}44`,borderRadius:8,padding:"6px 10px",textAlign:"center",marginBottom:10}}>
+                          <div style={{fontSize:12,fontWeight:700,color:colorV(dActual)}}>{labelV(dActual)}</div>
+                        </div>
+                        <div style={{display:"flex",gap:6}}>
+                          <button
+                            style={{...B(dActual!==null&&dActual<0?"#7c1010":"#cc0000"),fontSize:11,padding:"7px 10px",flex:1,justifyContent:"center",border:dActual!==null&&dActual<0?"2px solid #ef4444":"none"}}
+                            onClick={(event)=>{event.stopPropagation();abrirRecert(cActual);}}>
+                            {dActual!==null&&dActual<0 ? "Recertificar ahora" : "Generar recertificación"}
+                          </button>
+                          <button
+                            style={{...B("#e8f5ee","#166534"),border:"1px solid #4ade80",fontSize:11,padding:"7px 10px",flex:"0 0 auto",justifyContent:"center"}}
+                            onClick={(event)=>{event.stopPropagation();setImprimiendo(cActual);}}>
+                            Ver PDF
+                          </button>
                         </div>
                       </div>
-                    </div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
-                      <div style={{background:"#fff",borderRadius:6,padding:"7px 10px"}}>
-                        <div style={{fontSize:9,color:"#64748b"}}>Certificado</div>
-                        <div style={{fontSize:11,fontWeight:600}}>{fmtD(cActual.fecha)}</div>
-                      </div>
-                      <div style={{background:"#fff",borderRadius:6,padding:"7px 10px"}}>
-                        <div style={{fontSize:9,color:"#64748b"}}>Próx. mantenimiento</div>
-                        <div style={{fontSize:11,fontWeight:600,color:colorV(dActual)}}>{fmtD(cActual.proxMant)||"â€”"}</div>
-                      </div>
-                    </div>
-                    <div style={{fontSize:11,color:"#475569",marginBottom:8,lineHeight:1.4}}>{cActual.sistema}</div>
-                    {ob&&<div style={{fontSize:10,color:"#64748b",marginBottom:10}}>ðŸ“ {ob.direccion||ob.ciudad}</div>}
-                    {/* Estado actual */}
-                    <div style={{background:colorV(dActual)+"18",border:`1px solid ${colorV(dActual)}44`,borderRadius:8,padding:"6px 10px",textAlign:"center",marginBottom:10}}>
-                      <div style={{fontSize:12,fontWeight:700,color:colorV(dActual)}}>{labelV(dActual)}</div>
-                    </div>
-                    {/* Acciones â€” si está vencida, el botón principal abre directamente recertificación */}
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* â”€â”€ SIN FECHA â”€â”€ */}
+          {lista.filter(c=>c.diasRestantes===null).length>0&&(
+            <div style={{...CD,borderLeft:"4px solid #64748b"}}>
+              <div style={{...ST,color:"#64748b"}}>Sin fecha de mantenimiento asignada</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+                {lista.filter(c=>c.diasRestantes===null).map(c=>(
+                  <div key={c.id} style={{background:"#f8fafc",borderRadius:10,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
+                    <div style={{fontSize:10,color:"#64748b"}}>{c.id} · {c.numero}</div>
+                    <div style={{fontSize:14,fontWeight:700}}>{c.cliente}</div>
+                    <div style={{fontSize:11,color:"#475569",marginBottom:12}}>{c.tipo} · {fmtD(c.fecha)}</div>
                     <div style={{display:"flex",gap:6}}>
-                      <button
-                        style={{...B(dActual!==null&&dActual<0?"#7c1010":"#cc0000"),fontSize:11,padding:"7px 10px",flex:1,justifyContent:"center",border:dActual!==null&&dActual<0?"2px solid #ef4444":"none"}}>
-                        {dActual!==null&&dActual<0?(
-                          <span onClick={()=>abrirRecert(cActual)}>ðŸ”„ Recertificar ahora</span>
-                        ):(
-                          <span onClick={()=>abrirRecert(cActual)}>ðŸ”„ Generar Recertificación</span>
-                        )}
+                      <button style={{...B("#cc0000"),fontSize:11,flex:1,justifyContent:"center"}} onClick={()=>abrirRecert(c)}>
+                        Generar recertificación
                       </button>
-                      <button
-                        style={{...B("#e8f5ee","#166534"),border:"1px solid #4ade80",fontSize:11,padding:"7px 10px",flex:"0 0 auto",justifyContent:"center"}}
-                        onClick={()=>setImprimiendo(cActual)}>
-                        ðŸ–¨️ PDF
+                      <button style={{...B("#e8f5ee","#166534"),border:"1px solid #4ade80",fontSize:11,flex:"0 0 auto",justifyContent:"center"}} onClick={()=>setImprimiendo(c)}>
+                        Ver PDF
                       </button>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
-
-      {/* â”€â”€ SIN FECHA â”€â”€ */}
-      {lista.filter(c=>c.diasRestantes===null).length>0&&(
-        <div style={{...CD,borderLeft:"4px solid #64748b"}}>
-          <div style={{...ST,color:"#64748b"}}>âšª Sin fecha de mantenimiento asignada</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-            {lista.filter(c=>c.diasRestantes===null).map(c=>(
-              <div key={c.id} style={{background:"#f8fafc",borderRadius:10,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
-                <div style={{fontSize:10,color:"#64748b"}}>{c.id} · {c.numero}</div>
-                <div style={{fontSize:14,fontWeight:700}}>{c.cliente}</div>
-                <div style={{fontSize:11,color:"#475569",marginBottom:12}}>{c.tipo} · {fmtD(c.fecha)}</div>
-                <div style={{display:"flex",gap:6}}>
-                  <button style={{...B("#cc0000"),fontSize:11,flex:1,justifyContent:"center"}} onClick={()=>abrirRecert(c)}>
-                    ðŸ”„ Generar Recertificación
-                  </button>
-                  <button style={{...B("#e8f5ee","#166534"),border:"1px solid #4ade80",fontSize:11,flex:"0 0 auto",justifyContent:"center"}} onClick={()=>setImprimiendo(c)}>
-                    ðŸ–¨️ PDF
-                  </button>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

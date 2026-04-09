@@ -74,9 +74,9 @@ const HORARIOS_INIT = [
 ];
 
 const CERTIFICACIONES_INIT = [
-  { id:"CERT-001", obraId:"OB-003", tipo:"Certificación", numero:"C-2025-001", fecha:"2025-12-16", cliente:"Hotel Caribe Hilton", nit:"800.025.222-1", direccion:"El Laguito, Cartagena", sistema:"23 Líneas de vida horizontales con conectoras", elementos:["Perno Grado 8 B7 Ã˜ 5/8","Arandela Ã˜ 5/8","Tuerca Ã˜ 5/8","Guarda Cables","Cable diámetro 5/16\" (8mm) galvanizado","Tensor cable","Soportes laterales e intermedios"], normativa:"Resolución 4272 de 2021", ingeniero:"ING. JHON JAIME SEPULVEDA LONDOÃ‘O", matricula:"MP. 05256-409949", estado:"Vigente", proxMant:"2026-12-16" },
-  { id:"CERT-002", obraId:"OB-004", tipo:"Certificación", numero:"C-2024-047", fecha:"2024-10-29", cliente:"Promotora Frontera Sur S.A.S", nit:"900.412.xxx-x", direccion:"Cl. 50 #40 17, Itagüí", sistema:"8 puntos de anclaje en Hotel Ibis Budget", elementos:["Perno Grado 8 B7 Ã˜ 5/8","Arandela Ã˜ 5/8","Tuerca Ã˜ 5/8","Punto de anclaje marca ARTICO acero galvanizado","Epóxico ProAnchor Elite ESP"], normativa:"Resolución 4272 de 2021", ingeniero:"ING. JHON JAIME SEPULVEDA LONDOÃ‘O", matricula:"MP. 05256-409949", estado:"Vigente", proxMant:"2025-10-29" },
-  { id:"CERT-003", obraId:"OB-005", tipo:"Recertificación", numero:"R-2025-012", fecha:"2025-12-01", cliente:"Centro Cívico Antioquia Plaza de la Libertad PH", nit:"900.519.711-2", direccion:"CR 53 A 42 161, Medellín", sistema:"34 puntos de anclaje - Mantenimiento preventivo", elementos:["Limpieza sistema completo","Verificación ajuste tuercas y pernos","Laca protectora anticorrosiva en todos los puntos"], normativa:"Resolución 4272 de 2021", ingeniero:"ING. JHON JAIME SEPULVEDA LONDOÃ‘O", matricula:"MP. 05256-409949", estado:"Vigente", proxMant:"2026-12-01" },
+  { id:"CERT-001", obraId:"OB-003", tipo:"Certificación", numero:"C-2025-001", fecha:"2025-12-16", cliente:"Hotel Caribe Hilton", nit:"800.025.222-1", direccion:"El Laguito, Cartagena", sistema:"23 Líneas de vida horizontales con conectoras", elementos:["Perno Grado 8 B7 Ø 5/8","Arandela Ø 5/8","Tuerca Ø 5/8","Guarda Cables","Cable diámetro 5/16\" (8mm) galvanizado","Tensor cable","Soportes laterales e intermedios"], normativa:"Resolución 4272 de 2021", ingeniero:"ING. JHON JAIME SEPULVEDA LONDOÑO", matricula:"MP. 05256-409949", estado:"Vigente", proxMant:"2026-12-16" },
+  { id:"CERT-002", obraId:"OB-004", tipo:"Certificación", numero:"C-2024-047", fecha:"2024-10-29", cliente:"Promotora Frontera Sur S.A.S", nit:"900.412.xxx-x", direccion:"Cl. 50 #40 17, Itagüí", sistema:"8 puntos de anclaje en Hotel Ibis Budget", elementos:["Perno Grado 8 B7 Ø 5/8","Arandela Ø 5/8","Tuerca Ø 5/8","Punto de anclaje marca ARTICO acero galvanizado","Epóxico ProAnchor Elite ESP"], normativa:"Resolución 4272 de 2021", ingeniero:"ING. JHON JAIME SEPULVEDA LONDOÑO", matricula:"MP. 05256-409949", estado:"Vigente", proxMant:"2025-10-29" },
+  { id:"CERT-003", obraId:"OB-005", tipo:"Recertificación", numero:"R-2025-012", fecha:"2025-12-01", cliente:"Centro Cívico Antioquia Plaza de la Libertad PH", nit:"900.519.711-2", direccion:"CR 53 A 42 161, Medellín", sistema:"34 puntos de anclaje - Mantenimiento preventivo", elementos:["Limpieza sistema completo","Verificación ajuste tuercas y pernos","Laca protectora anticorrosiva en todos los puntos"], normativa:"Resolución 4272 de 2021", ingeniero:"ING. JHON JAIME SEPULVEDA LONDOÑO", matricula:"MP. 05256-409949", estado:"Vigente", proxMant:"2026-12-01" },
 ];
 
 const INFORMES_INIT = [
@@ -105,7 +105,7 @@ const PROVEEDORES_INIT = [
 ];
 
 const CUENTAS_PAGAR_INIT = [
-  { id:"CP-001", proveedorId:"PROV-001", obraId:"OB-001", concepto:"Pernos Grado 8 B7 ÃƒËœ 5/8 x 200 und", monto:1850000, fecha:"2026-03-10", fechaVence:"2026-04-10", estado:"Pendiente", factura:"FV-2026-0341" },
+  { id:"CP-001", proveedorId:"PROV-001", obraId:"OB-001", concepto:"Pernos Grado 8 B7 Ø 5/8 x 200 und", monto:1850000, fecha:"2026-03-10", fechaVence:"2026-04-10", estado:"Pendiente", factura:"FV-2026-0341" },
   { id:"CP-002", proveedorId:"PROV-005", obraId:"OB-001", concepto:"Cable acero 5/16\" galvanizado 300ml", monto:2400000, fecha:"2026-03-10", fechaVence:"2026-03-25", estado:"Pagado",   factura:"FV-2026-0198" },
   { id:"CP-003", proveedorId:"PROV-004", obraId:"OB-001", concepto:"Transporte materiales Bogotá", monto:850000,  fecha:"2026-03-08", fechaVence:"2026-03-15", estado:"Pagado",   factura:"FV-2026-0089" },
   { id:"CP-004", proveedorId:"PROV-006", obraId:"OB-001", concepto:"Epóxico PURE 110 x 12 und", monto:960000,  fecha:"2026-03-11", fechaVence:"2026-04-11", estado:"Pendiente", factura:"FV-2026-0402" },
@@ -399,7 +399,7 @@ const SI={background:"#f8fafc",border:"1px solid #cbd5e1",borderRadius:8,color:"
 const B=(bg,c="#fff")=>({background:bg,color:c,border:`1px solid ${bg==="#1a3050"?"#2a4a6a":bg}`,borderRadius:8,padding:"9px 18px",fontSize:13,fontWeight:600,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,fontFamily:"inherit",whiteSpace:"nowrap"});
 const CD={background:"#ffffff",border:"1px solid #e2e8f0",borderRadius:12,padding:20};
 const ST={fontSize:11,fontWeight:600,color:"#cc0000",textTransform:"uppercase",letterSpacing:1,marginBottom:14,borderBottom:"1px solid #e2e8f0",paddingBottom:8};
-const hasBrokenEncoding = (value="") => /[ðâÃÂïœšŸ]/.test(String(value || ""));
+const hasBrokenEncoding = (value="") => /[ðâÃÂŸ]/.test(String(value || ""));
 const buildCardBadge = (icon="", label="") => {
   const iconText = String(icon || "").trim();
   if(iconText && !hasBrokenEncoding(iconText)) return iconText;
@@ -606,7 +606,7 @@ export default function App(){
         {id:"clientes",l:"Clientes",i:"CL"},
         {id:"obras",l:"Ejecucion de Obra",i:"OB"},
         {id:"planos",l:"Planos y Medicion",i:"PL"},
-        {id:"pagos",l:"Pagos por Obra",i:"PG"},
+        {id:"pagos",l:"Cuentas por cobrar",i:"PG"},
       ],
     },
     {
@@ -2237,6 +2237,8 @@ function Cotizacion({ctx}){
   const [showDB,setShowDB]=useState(false);
   const [dbCat,setDbCat]=useState(0);
   const [previewCot,setPreviewCot]=useState(null);
+  const [busqCot,setBusqCot]=useState("");
+  const [detalleCot,setDetalleCot]=useState(null);
   const [sendModal,setSendModal]=useState(null);
   const [sendNotif,setSendNotif]=useState("");
   const [propuestas,setPropuestas]=useState([]);
@@ -2535,13 +2537,111 @@ function Cotizacion({ctx}){
 
   if(tab==="lista"){
     const st={Pendiente:{bg:"#2d2a14",t:"#f5c842",b:"#7a6610"},Aprobada:{bg:"#0f2d1a",t:"#4ade80",b:"#166534"},Rechazada:{bg:"#2d1414",t:"#ef4444",b:"#7c1010"}};
+    const normCot=(s="")=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+    const cotFiltradas = busqCot ? cotizaciones.filter(c=>[c.id,c.numero,c.cliente,c.obra,c.ciudad].some(v=>normCot(v).includes(normCot(busqCot)))) : cotizaciones;
+    if(detalleCot){
+      const dc=detalleCot;
+      const ds=st[dc.estado]||st.Pendiente;
+      const dpropuestas=getQuoteProposals(dc);
+      const dpropActiva=getQuoteActiveProposal(dc);
+      const dobraVinc=obras.find(o=>o.id===dc.obraId);
+      return(
+        <div style={{padding:28}}>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
+            <button style={{...B("#f1f5f9","#475569"),fontSize:13}} onClick={()=>setDetalleCot(null)}>← Volver a cotizaciones</button>
+            <span style={{fontSize:11,color:"#94a3b8"}}>{dc.id} · {dc.numero}</span>
+            <span style={{background:ds.bg,color:ds.t,border:"1px solid "+ds.b,borderRadius:20,padding:"3px 12px",fontSize:11,fontWeight:600}}>{dc.estado}</span>
+            <div style={{flex:1}}/>
+            <button style={{...B("#1a3050","#f5c842"),fontSize:12}} onClick={()=>{loadEdit(dc);setDetalleCot(null);}}>✏️ Editar</button>
+            <button style={{...B("#2d1414","#ef4444"),fontSize:12}} onClick={()=>imprimirCotizacion(dc)}>🖨 PDF</button>
+            {dc.estado!=="Aprobada"&&<button style={{...B("#0f2d1a","#4ade80"),fontSize:12}} onClick={()=>{aprobarCotizacion(dc.id);setDetalleCot(null);}}>✅ Aprobar y crear obra</button>}
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:20}}>
+            <div style={CD}>
+              <div style={ST}>Datos del cliente</div>
+              {[["Cliente",dc.cliente],["Obra / Proyecto",dc.obra],["Ciudad",dc.ciudad],["Teléfono",dc.telefono],["Fecha",fmtD(dc.fecha)],["Vigencia",dc.val+" días"]].map(([k,v])=>v?(
+                <div key={k} style={{display:"flex",justifyContent:"space-between",padding:"7px 0",borderBottom:"1px solid #f1f5f9",fontSize:12}}>
+                  <span style={{color:"#64748b"}}>{k}</span><span style={{fontWeight:600,color:"#1a1a2e",textAlign:"right",maxWidth:"60%"}}>{v}</span>
+                </div>
+              ):null)}
+              {dobraVinc&&<div style={{marginTop:10,background:"#f0fdf4",borderRadius:6,padding:"8px 10px",fontSize:11,color:"#166534"}}>✅ Vinculada a obra: <strong>{dobraVinc.id} · {dobraVinc.proyecto}</strong></div>}
+            </div>
+            <div style={CD}>
+              <div style={ST}>Propuestas</div>
+              {dpropuestas.map((p,pi)=>(
+                <div key={p.id} style={{background:p.id===dc.propuestaActivaId?"#fff7ed":"#f8fafc",border:"1px solid "+(p.id===dc.propuestaActivaId?"#fed7aa":"#e2e8f0"),borderRadius:8,padding:"10px 12px",marginBottom:8}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <div style={{fontSize:12,fontWeight:700,color:"#1a1a2e"}}>{p.nombre||"Propuesta "+(pi+1)}</div>
+                    <div style={{fontSize:14,fontWeight:800,color:"#cc0000"}}>{fmt(p.total)}</div>
+                  </div>
+                  {p.alcance&&<div style={{fontSize:11,color:"#64748b",marginTop:4}}>{p.alcance}</div>}
+                  <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>{(p.items||[]).length} ítems · {p.tipoCotizacion==="obra_blanca"?"Obra blanca":"Línea de vida"}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={CD}>
+            <div style={ST}>Ítems de la propuesta activa</div>
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+              <thead><tr style={{background:"#142840",color:"#fff"}}>{["Descripción","Cant.","Unidad","V. Unitario","V. Total"].map(h=><th key={h} style={{padding:"8px 10px",textAlign:h==="Descripción"?"left":"right",fontWeight:600,fontSize:11}}>{h}</th>)}</tr></thead>
+              <tbody>
+                {(dpropActiva.items||[]).map((item,ii)=>(
+                  <tr key={ii} style={{borderBottom:"1px solid #f1f5f9",background:ii%2===0?"#fff":"#f8fafc"}}>
+                    <td style={{padding:"7px 10px"}}>{item.desc}</td>
+                    <td style={{padding:"7px 10px",textAlign:"right"}}>{item.cant}</td>
+                    <td style={{padding:"7px 10px",textAlign:"right"}}>{item.unit}</td>
+                    <td style={{padding:"7px 10px",textAlign:"right"}}>{fmt(item.vu)}</td>
+                    <td style={{padding:"7px 10px",textAlign:"right",fontWeight:600}}>{fmt(item.cant*item.vu)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                {(()=>{
+                  const sub2=(dpropActiva.items||[]).reduce((s,i)=>s+i.cant*i.vu,0);
+                  const ut2=sub2*(dpropActiva.util||10)/100;
+                  const iva2=ut2*0.19;
+                  return(<>
+                    <tr style={{background:"#f1f5f9"}}><td colSpan={4} style={{padding:"6px 10px",textAlign:"right",color:"#64748b"}}>Subtotal</td><td style={{padding:"6px 10px",textAlign:"right",fontWeight:600}}>{fmt(sub2)}</td></tr>
+                    <tr style={{background:"#f1f5f9"}}><td colSpan={4} style={{padding:"6px 10px",textAlign:"right",color:"#64748b"}}>Utilidad ({dpropActiva.util||10}%) + IVA 19%</td><td style={{padding:"6px 10px",textAlign:"right",fontWeight:600}}>{fmt(ut2+iva2)}</td></tr>
+                    <tr style={{background:"#142840",color:"#fff"}}><td colSpan={4} style={{padding:"8px 10px",textAlign:"right",fontWeight:700}}>TOTAL</td><td style={{padding:"8px 10px",textAlign:"right",fontWeight:800,fontSize:14}}>{fmt(dpropActiva.total||sub2+ut2+iva2)}</td></tr>
+                  </>);
+                })()}
+              </tfoot>
+            </table>
+          </div>
+          {(dc.fotosCotizacion||[]).length>0&&(
+            <div style={{...CD,marginTop:16}}>
+              <div style={ST}>Fotos de la cotización</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
+                {(dc.fotosCotizacion||[]).map((f,fi)=>(
+                  <div key={fi} style={{textAlign:"center"}}>
+                    <img src={f.url||f} alt={f.label||"Foto "+(fi+1)} style={{width:180,height:130,objectFit:"cover",borderRadius:8,border:"1px solid #e2e8f0"}}/>
+                    {f.label&&<div style={{fontSize:10,color:"#64748b",marginTop:4}}>{f.label}</div>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
     return(
       <div style={{padding:28}}>
         <H1 title="Cotizaciones" subtitle="Ubicacion y medicion automatica primero en la cotizacion; luego viaja a Planos y Obras"
           action={<button style={B("#f47c20")} onClick={newForm}>+ Nueva Cotización</button>}/>
         {sendNotif&&<div style={{background:"#e8f5ee",border:"1px solid #166534",borderRadius:10,padding:"12px 16px",marginBottom:16,fontSize:13,color:"#166534"}}>{sendNotif}</div>}
+        <div style={{position:"relative",marginBottom:18}}>
+          <input
+            value={busqCot}
+            onChange={e=>setBusqCot(e.target.value)}
+            placeholder="🔍 Buscar cotización por cliente, número, obra o ciudad..."
+            style={{...SI,paddingLeft:16,fontSize:13,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}
+          />
+          {busqCot&&<button onClick={()=>setBusqCot("")} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",fontSize:16,color:"#94a3b8"}}>✕</button>}
+          {busqCot&&<div style={{fontSize:11,color:"#64748b",marginTop:6}}>{cotFiltradas.length} resultado(s) de {cotizaciones.length}</div>}
+        </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
-          {cotizaciones.map(c=>{
+          {cotFiltradas.map(c=>{
             const s=st[c.estado]||st.Pendiente;
             const obraVinc=obras.find(o=>o.id===c.obraId);
             const propuestasCot = getQuoteProposals(c);
@@ -2566,7 +2666,7 @@ function Cotizacion({ctx}){
                   Base actual para PDF / obra: <strong style={{color:"#1a1a2e"}}>{propuestaActiva.nombre}</strong>{obraVinc ? ` · ${obraVinc.id}` : ""}
                 </div>
                 <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                  <button style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"6px 12px"}} onClick={()=>setPreviewCot(c)}>Ver</button>
+                  <button style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"6px 12px"}} onClick={()=>setDetalleCot(c)}>👁 Ver detalle</button>
                   <button style={{...B("#1a3050","#f5c842"),fontSize:11,padding:"6px 12px"}} onClick={()=>loadEdit(c)}>Editar</button>
                   {c.estado!=="Aprobada"&&<button style={{...B("#0f2d1a","#4ade80"),border:"1px solid #166534",fontSize:11,padding:"6px 12px"}} onClick={()=>aprobarCotizacion(c.id)}>Aprobar y crear obra</button>}
                   {c.estado==="Aprobada"&&<button style={{...B("#e8f5ee","#166534"),border:"1px solid #166534",fontSize:11,padding:"6px 12px"}} onClick={()=>abrirEnvioCotizacion(c)}>Enviar al cliente</button>}
@@ -2984,7 +3084,7 @@ function CotizacionPrint({c}){
 }
 
 // =+
-// PLANOS â€” con medición sobre imagen satelital
+// PLANOS — con medición sobre imagen satelital
 // ======================================================
 function Planos({ctx}){
   const {obras,setObras,empleados,cotizaciones,setCotDraft,setScr}=ctx;
@@ -3115,8 +3215,8 @@ function Planos({ctx}){
                   <Badge estado={o.estado}/>
                 </div>
                 <div style={{marginTop:10,background:"#f1f5f9",borderRadius:6,padding:"6px 10px",fontSize:11,color:"#475569",display:"flex",justifyContent:"space-between"}}>
-                  <span>ðŸ“ {geos.length + (o.trazos||[]).length} trazos · {geos.length} automáticos</span>
-                  <span style={{color:"#cc0000",fontWeight:600}}>Ver plano â†’</span>
+                  <span>📐 {geos.length + (o.trazos||[]).length} trazos · {geos.length} automáticos</span>
+                  <span style={{color:"#cc0000",fontWeight:600}}>Ver plano →</span>
                 </div>
               </div>
             );
@@ -3129,17 +3229,17 @@ function Planos({ctx}){
   return(
     <div style={{padding:28}}>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,background:"#fff",borderRadius:14,padding:"16px 20px",border:"1px solid #e2e8f0",boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
-        <button onClick={()=>setSel(null)} style={{...B("#f1f5f9","#475569"),padding:"8px 16px",fontSize:13,flexShrink:0}}>â† Obras</button>
-        <div style={{flex:1}}><div style={{fontSize:11,color:"#94a3b8"}}>{sel.id} · ðŸ“ {sel.ciudad}</div><div style={{fontSize:20,fontWeight:700,color:"#1a1a2e"}}>{sel.cliente}</div><div style={{fontSize:13,color:"#475569"}}>{sel.proyecto}</div></div>
+        <button onClick={()=>setSel(null)} style={{...B("#f1f5f9","#475569"),padding:"8px 16px",fontSize:13,flexShrink:0}}>← Obras</button>
+        <div style={{flex:1}}><div style={{fontSize:11,color:"#94a3b8"}}>{sel.id} · 📍 {sel.ciudad}</div><div style={{fontSize:20,fontWeight:700,color:"#1a1a2e"}}>{sel.cliente}</div><div style={{fontSize:13,color:"#475569"}}>{sel.proyecto}</div></div>
         <Badge estado={sel.estado}/>
       </div>
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
-        {[["ðŸ“ Total ML",`${totalML} ML`,"#cc0000"],["ðŸ›°️ Tramos automáticos",`${geoMediciones.length}`,"#2563eb"],["ðŸ“‹ Manuales",`${lineas.length}`,"#60b4ff"],["ðŸ’° Valor total",fmt(sel.total),"#f47c20"]].map(([k,v,c])=>(<div key={k} style={{background:"#fff",borderRadius:10,padding:"12px 16px",border:"1px solid #e2e8f0",textAlign:"center"}}><div style={{fontSize:10,color:"#94a3b8",marginBottom:4}}>{k}</div><div style={{fontSize:15,fontWeight:700,color:c}}>{v}</div></div>))}
+        {[["📐 Total ML",`${totalML} ML`,"#cc0000"],["🛰️ Tramos automáticos",`${geoMediciones.length}`,"#2563eb"],["📋 Manuales",`${lineas.length}`,"#60b4ff"],["💰 Valor total",fmt(sel.total),"#f47c20"]].map(([k,v,c])=>(<div key={k} style={{background:"#fff",borderRadius:10,padding:"12px 16px",border:"1px solid #e2e8f0",textAlign:"center"}}><div style={{fontSize:10,color:"#94a3b8",marginBottom:4}}>{k}</div><div style={{fontSize:15,fontWeight:700,color:c}}>{v}</div></div>))}
       </div>
 
       <div style={{display:"flex",gap:6,marginBottom:16}}>
-        {[["imagen","ðŸ›°️ Medición automática"],["svg","ðŸ“ Plano de Trazos"],["lista","ðŸ“‹ Lista & Cotización"]].map(([id,lb])=>(<button key={id} onClick={()=>setTabPlano(id)} style={{...B(tabPlano===id?"#cc0000":"#f1f5f9",tabPlano===id?"#fff":"#475569"),fontSize:12,padding:"8px 16px",border:`1px solid ${tabPlano===id?"#cc0000":"#e2e8f0"}`}}>{lb}</button>))}
+        {[["imagen","🛰️ Medición automática"],["svg","📐 Plano de Trazos"],["lista","📋 Lista & Cotización"]].map(([id,lb])=>(<button key={id} onClick={()=>setTabPlano(id)} style={{...B(tabPlano===id?"#cc0000":"#f1f5f9",tabPlano===id?"#fff":"#475569"),fontSize:12,padding:"8px 16px",border:`1px solid ${tabPlano===id?"#cc0000":"#e2e8f0"}`}}>{lb}</button>))}
       </div>
 
       {tabPlano==="imagen" && (
@@ -3156,8 +3256,8 @@ function Planos({ctx}){
         <div>
           <div style={{...CD,marginBottom:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-              <div style={ST}>ðŸ“ Plano de trazos (manual)</div>
-              <button onClick={()=>imgRef.current.click()} style={{...B("#f1f5f9","#475569"),fontSize:11,padding:"5px 10px"}}>ðŸ–¼️ Cargar imagen de fondo</button>
+              <div style={ST}>📐 Plano de trazos (manual)</div>
+              <button onClick={()=>imgRef.current.click()} style={{...B("#f1f5f9","#475569"),fontSize:11,padding:"5px 10px"}}>🖼️ Cargar imagen de fondo</button>
               <input ref={imgRef} type="file" accept="image/*" style={{display:"none"}} onChange={onImgChange}/>
             </div>
             <div style={{background:"#f0f4f8",borderRadius:8,overflow:"hidden",position:"relative",border:"1px solid #e2e8f0"}}>
@@ -3170,7 +3270,7 @@ function Planos({ctx}){
             </div>
           </div>
           <div style={{...CD,marginBottom:16}}>
-            <div style={ST}>âž• Agregar tramo manual</div>
+            <div style={ST}>➕ Agregar tramo manual</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr auto",gap:12,alignItems:"end"}}>
               <div><LBL>Tipo</LBL><select value={trazosForm.tipo} onChange={e=>setTrazosForm({...trazosForm,tipo:e.target.value})} style={SI}>{[["LVH","L.V. Horizontal"],["LVV","L.V. Vertical"],["CON","Conexión"],["ESC","Escalera"],["PAN","Punto anclaje"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
               <div><LBL>Metros lineales</LBL><input type="number" value={trazosForm.ml} onChange={e=>setTrazosForm({...trazosForm,ml:parseFloat(e.target.value)||0})} style={SI}/></div>
@@ -3184,14 +3284,14 @@ function Planos({ctx}){
       {tabPlano==="lista" && (
         <div style={CD}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-            <div style={ST}>ðŸ“‹ Trazos registrados â€” Total: <span style={{color:"#cc0000"}}>{totalML} ML</span></div>
-            <button onClick={pasarACotizacion} style={{...B("#4ade80","#0f2d1a"),fontSize:12}}>ðŸ“„ Llevar a cotización</button>
+            <div style={ST}>📋 Trazos registrados — Total: <span style={{color:"#cc0000"}}>{totalML} ML</span></div>
+            <button onClick={pasarACotizacion} style={{...B("#4ade80","#0f2d1a"),fontSize:12}}>📄 Llevar a cotización</button>
           </div>
           <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
             <thead><tr style={{background:"#f8fafc"}}>{["Fuente","Tipo","Descripción","Metros",""].map(h=><th key={h} style={{padding:"8px 10px",textAlign:"left",color:"#64748b",fontWeight:500,fontSize:11}}>{h}</th>)}</tr></thead>
             <tbody>
-              {geoMediciones.map(seg=><tr key={seg.id} style={{borderBottom:"1px solid #f1f5f9",background:"#eff6ff"}}><td style={{padding:"8px 10px"}}><span style={{background:"#dbeafe",color:"#1d4ed8",borderRadius:4,padding:"2px 6px",fontSize:10}}>Google</span></td><td style={{padding:"8px 10px"}}>{seg.tipo}</td><td style={{padding:"8px 10px",fontWeight:500}}>{seg.label}</td><td style={{padding:"8px 10px",fontWeight:700,color:"#cc0000"}}>{Number(seg.ml||0).toFixed(2)} m</td><td style={{padding:"8px 10px"}}><button onClick={()=>persistGeo(geoMediciones.filter(x=>x.id!==seg.id))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:5,padding:"3px 8px",cursor:"pointer",fontSize:11}}>Ã— Eliminar</button></td></tr>)}
-              {lineas.map(t=><tr key={t.id} style={{borderBottom:"1px solid #f1f5f9"}}><td style={{padding:"8px 10px"}}><span style={{background:"#fef3c7",color:"#b45309",borderRadius:4,padding:"2px 6px",fontSize:10}}>Manual</span></td><td style={{padding:"8px 10px"}}>{t.tipo}</td><td style={{padding:"8px 10px",fontWeight:500}}>{t.label}</td><td style={{padding:"8px 10px",fontWeight:700,color:"#cc0000"}}>{t.ml} ML</td><td style={{padding:"8px 10px"}}><button onClick={()=>eliminarLinea(t.id)} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:5,padding:"3px 8px",cursor:"pointer",fontSize:11}}>Ã— Eliminar</button></td></tr>)}
+              {geoMediciones.map(seg=><tr key={seg.id} style={{borderBottom:"1px solid #f1f5f9",background:"#eff6ff"}}><td style={{padding:"8px 10px"}}><span style={{background:"#dbeafe",color:"#1d4ed8",borderRadius:4,padding:"2px 6px",fontSize:10}}>Google</span></td><td style={{padding:"8px 10px"}}>{seg.tipo}</td><td style={{padding:"8px 10px",fontWeight:500}}>{seg.label}</td><td style={{padding:"8px 10px",fontWeight:700,color:"#cc0000"}}>{Number(seg.ml||0).toFixed(2)} m</td><td style={{padding:"8px 10px"}}><button onClick={()=>persistGeo(geoMediciones.filter(x=>x.id!==seg.id))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:5,padding:"3px 8px",cursor:"pointer",fontSize:11}}>× Eliminar</button></td></tr>)}
+              {lineas.map(t=><tr key={t.id} style={{borderBottom:"1px solid #f1f5f9"}}><td style={{padding:"8px 10px"}}><span style={{background:"#fef3c7",color:"#b45309",borderRadius:4,padding:"2px 6px",fontSize:10}}>Manual</span></td><td style={{padding:"8px 10px"}}>{t.tipo}</td><td style={{padding:"8px 10px",fontWeight:500}}>{t.label}</td><td style={{padding:"8px 10px",fontWeight:700,color:"#cc0000"}}>{t.ml} ML</td><td style={{padding:"8px 10px"}}><button onClick={()=>eliminarLinea(t.id)} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:5,padding:"3px 8px",cursor:"pointer",fontSize:11}}>× Eliminar</button></td></tr>)}
             </tbody>
           </table>
         </div>
@@ -3308,7 +3408,7 @@ function Pagos({ctx}){
 
   return(
     <div style={{padding:28}}>
-      <H1 title="Pagos por Obra" subtitle="Registro de abonos por cliente y proyecto"/>
+      <H1 title="Cuentas por cobrar" subtitle="Cuentas por cobrar · Abonos y saldos por cliente"/>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
         <SC label="Total Cobrado" value={fmtK(tCob)} color="#4ade80" icon="TC"/>
         <SC label="Pendiente" value={fmtK(tPend)} color="#fb923c" icon="PD"/>
@@ -3324,8 +3424,16 @@ function Pagos({ctx}){
               <LBL>Buscar cliente u obra</LBL>
               <input
                 value={busquedaPago}
-                onChange={(e)=>setBusquedaPago(e.target.value)}
-                placeholder="Escribe cliente, obra, ciudad o ID"
+                onChange={(e)=>{
+                  const v=e.target.value;
+                  setBusquedaPago(v);
+                  const norm=(s="")=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+                  const t=norm(v);
+                  if(!t){setObraPagoId("");return;}
+                  const matches=obras.filter(o=>[o.id,o.cliente,o.proyecto,o.ciudad,o.direccion].some(c=>norm(c).includes(t)));
+                  if(matches.length===1) setObraPagoId(matches[0].id);
+                }}
+                placeholder="Escribe cliente, obra, ciudad o ID — selección automática"
                 style={SI}
               />
             </div>
@@ -3695,7 +3803,7 @@ function ClientesDB({ctx}){
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             {sinRegistrar.length>0&&(
               <button style={B("#dbeafe","#1d4ed8")} onClick={importarClientes}>
-                â¬‡ Importar {sinRegistrar.length} sugerido(s)
+                ⬇ Importar {sinRegistrar.length} sugerido(s)
               </button>
             )}
             <button style={B("#cc0000")} onClick={()=>{setShowForm(v=>!v); if(showForm) resetCliente();}}>
@@ -3706,9 +3814,9 @@ function ClientesDB({ctx}){
       />
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
-        <SC label="Clientes registrados" value={clientesData.length} color="#60b4ff" icon="ðŸ¤" sub={`${sinRegistrar.length} sugeridos`} />
-        <SC label="Obras activas" value={clientesData.reduce((s,c)=>s+c.obrasActivas,0)} color="#4ade80" icon="ðŸ—️" sub="relacionadas a clientes" />
-        <SC label="Facturado clientes" value={fmtK(totalFacturado)} color="#f59e0b" icon="ðŸ’°" sub="valor total de obras" />
+        <SC label="Clientes registrados" value={clientesData.length} color="#60b4ff" icon="🤝" sub={`${sinRegistrar.length} sugeridos`} />
+        <SC label="Obras activas" value={clientesData.reduce((s,c)=>s+c.obrasActivas,0)} color="#4ade80" icon="🏅" sub="relacionadas a clientes" />
+        <SC label="Facturado clientes" value={fmtK(totalFacturado)} color="#f59e0b" icon="💰" sub="valor total de obras" />
         <SC label="Saldo pendiente" value={fmtK(saldoPendiente)} color="#fb7185" icon="⏳" sub="por cobrar a clientes" />
       </div>
 
@@ -3940,14 +4048,14 @@ function CuentasPagar({ctx}){
       />
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
-        <SC label="Pendiente por pagar" value={fmtK(totalPendiente)} color="#fb923c" icon="ðŸ§¾" sub={`${cuentas.filter(c=>c.estado==="Pendiente").length} facturas`} />
-        <SC label="Pagado acumulado" value={fmtK(totalPagado)} color="#4ade80" icon="âœ…" sub={`${cuentas.filter(c=>c.estado==="Pagado").length} registros`} />
-        <SC label="Facturas vencidas" value={vencidas.length} color={vencidas.length?"#ef4444":"#4ade80"} icon="âš ️" sub={vencidas.length?fmt(vencidas.reduce((s,c)=>s+Number(c.monto||0),0)):"sin mora"} />
-        <SC label="Base de proveedores" value={proveedoresData.length} color="#60b4ff" icon="ðŸ¢" sub={`${porVencer.length} por vencer en 7 días`} />
+        <SC label="Pendiente por pagar" value={fmtK(totalPendiente)} color="#fb923c" icon="🧾" sub={`${cuentas.filter(c=>c.estado==="Pendiente").length} facturas`} />
+        <SC label="Pagado acumulado" value={fmtK(totalPagado)} color="#4ade80" icon="✅" sub={`${cuentas.filter(c=>c.estado==="Pagado").length} registros`} />
+        <SC label="Facturas vencidas" value={vencidas.length} color={vencidas.length?"#ef4444":"#4ade80"} icon="⚠️" sub={vencidas.length?fmt(vencidas.reduce((s,c)=>s+Number(c.monto||0),0)):"sin mora"} />
+        <SC label="Base de proveedores" value={proveedoresData.length} color="#60b4ff" icon="🏢" sub={`${porVencer.length} por vencer en 7 días`} />
       </div>
 
       <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
-        {[["cuentas","ðŸ§¾ Cuentas por pagar"],["proveedores","ðŸ¢ Proveedores"]].map(([id,lb])=>(
+        {[["cuentas","🧾 Cuentas por pagar"],["proveedores","🏢 Proveedores"]].map(([id,lb])=>(
           <button
             key={id}
             onClick={()=>setTab(id)}
@@ -4000,7 +4108,7 @@ function CuentasPagar({ctx}){
                 </div>
               </div>
               <div style={{display:"flex",gap:8}}>
-                <button style={B("#cc0000")} onClick={guardarCuenta}>âœ… Guardar cuenta</button>
+                <button style={B("#cc0000")} onClick={guardarCuenta}>✅ Guardar cuenta</button>
                 <button style={B("#f1f5f9","#475569")} onClick={()=>setShowCxP(false)}>Cancelar</button>
               </div>
             </div>
@@ -4026,7 +4134,7 @@ function CuentasPagar({ctx}){
                         <div style={{flex:1}}>
                           <div style={{fontSize:14,fontWeight:700,color:"#1a1a2e"}}>{c.concepto}</div>
                           <div style={{fontSize:11,color:"#64748b",marginTop:2}}>
-                            {prov?.nombre || "Proveedor sin registro"} · Factura {c.factura || "â€”"} {obra?`· ${obra.id} · ${obra.cliente}`:"· gasto general"}
+                            {prov?.nombre || "Proveedor sin registro"} · Factura {c.factura || "—"} {obra?`· ${obra.id} · ${obra.cliente}`:"· gasto general"}
                           </div>
                         </div>
                         <div style={{textAlign:"right"}}>
@@ -4038,11 +4146,11 @@ function CuentasPagar({ctx}){
                       <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr 1fr 1fr",gap:10,fontSize:11,color:"#475569"}}>
                         <div><strong style={{color:"#1a1a2e"}}>Proveedor:</strong><br/>{prov?.contacto || "Sin contacto"} · {prov?.telefono || prov?.tel || "Sin teléfono"}</div>
                         <div><strong style={{color:"#1a1a2e"}}>Banco:</strong><br/>{prov?.banco || "Sin banco"} · {prov?.numeroCuenta || "Sin cuenta"}</div>
-                        <div><strong style={{color:"#1a1a2e"}}>Factura:</strong><br/>{fmtD(c.fecha) || "â€”"} â†’ {fmtD(c.fechaVence) || "â€”"}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>Factura:</strong><br/>{fmtD(c.fecha) || "—"} → {fmtD(c.fechaVence) || "—"}</div>
                         <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center"}}>
                           {c.estado==="Pendiente" ? (
                             <button onClick={()=>marcarPagada(c.id)} style={{background:"#dcfce7",border:"1px solid #4ade80",color:"#166534",borderRadius:8,padding:"6px 12px",fontSize:11,cursor:"pointer",fontWeight:700}}>
-                              âœ“ Marcar pagada
+                              ✓ Marcar pagada
                             </button>
                           ) : (
                             <span style={{fontSize:11,color:"#4ade80",fontWeight:700}}>Pagada {c.fechaPago?fmtD(c.fechaPago):""}</span>
@@ -4230,7 +4338,7 @@ function Obras({ctx}){
             </div>
           </div>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={guardarObra} style={B("#cc0000")}>âœ… Crear Obra</button>
+            <button onClick={guardarObra} style={B("#cc0000")}>✅ Crear Obra</button>
             <button onClick={()=>setShowNO(false)} style={B("#f1f5f9","#475569")}>Cancelar</button>
           </div>
         </div>
@@ -4250,7 +4358,7 @@ function Obras({ctx}){
                   <div style={{fontSize:10,color:"#94a3b8"}}>{o.id} · {fmtD(o.fechaInicio)}</div>
                   <div style={{fontSize:15,fontWeight:700,marginTop:2,color:"#1a1a2e"}}>{o.cliente}</div>
                   <div style={{fontSize:12,color:"#475569"}}>{o.proyecto}</div>
-                  {cotVinc&&<div style={{fontSize:10,color:"#b45309",marginTop:2}}>ðŸ“„ {o.cotizacionId}</div>}
+                  {cotVinc&&<div style={{fontSize:10,color:"#b45309",marginTop:2}}>📄 {o.cotizacionId}</div>}
                 </div>
                 <Badge estado={o.estado}/>
               </div>
@@ -4279,8 +4387,8 @@ function Obras({ctx}){
                   style={{...SI,fontSize:11,padding:"5px 8px",flex:1}} onClick={e=>e.stopPropagation()}>
                   {["Cotización","En Obra","Finalizado","Pagado"].map(s=><option key={s}>{s}</option>)}
                 </select>
-                <span style={{fontSize:11,color:"#94a3b8",flexShrink:0}}>{(o.empleados||[]).length} ðŸ‘·</span>
-                <span style={{fontSize:11,color:"#cc0000",fontWeight:600,flexShrink:0}}>Ver â†’</span>
+                <span style={{fontSize:11,color:"#94a3b8",flexShrink:0}}>{(o.empleados||[]).length} 👷</span>
+                <span style={{fontSize:11,color:"#cc0000",fontWeight:600,flexShrink:0}}>Ver →</span>
               </div>
             </div>
           );
@@ -4290,7 +4398,7 @@ function Obras({ctx}){
   );
 }
 
-// â”€â”€ DETALLE COMPLETO DE UNA OBRA â”€â”€
+// ── DETALLE COMPLETO DE UNA OBRA ──
 function ObraDetalle({obraId,ctx,onVolver}){
   const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,horarios}=ctx;
   const [detTab,setDetTab]=useState("personal");
@@ -4328,28 +4436,28 @@ function ObraDetalle({obraId,ctx,onVolver}){
     <div style={{padding:28}}>
       {/* Barra superior */}
       <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:24,background:"#fff",borderRadius:14,padding:"16px 20px",border:"1px solid #e2e8f0",boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
-        <button onClick={onVolver} style={{...B("#f1f5f9","#475569"),padding:"8px 16px",fontSize:13,flexShrink:0}}>â† Volver</button>
+        <button onClick={onVolver} style={{...B("#f1f5f9","#475569"),padding:"8px 16px",fontSize:13,flexShrink:0}}>← Volver</button>
         <div style={{flex:1}}>
-          <div style={{fontSize:11,color:"#94a3b8"}}>{oAct.id} · {fmtD(oAct.fechaInicio)} â†’ {fmtD(oAct.fechaFin)||"En curso"}</div>
+          <div style={{fontSize:11,color:"#94a3b8"}}>{oAct.id} · {fmtD(oAct.fechaInicio)} → {fmtD(oAct.fechaFin)||"En curso"}</div>
           <div style={{fontSize:20,fontWeight:700,color:"#1a1a2e",lineHeight:1.2}}>{oAct.cliente}</div>
-          <div style={{fontSize:13,color:"#475569"}}>{oAct.proyecto} · ðŸ“ {oAct.ciudad}</div>
+          <div style={{fontSize:13,color:"#475569"}}>{oAct.proyecto} · 📍 {oAct.ciudad}</div>
           {oAct.direccion&&<div style={{fontSize:11,color:"#94a3b8"}}>{oAct.direccion}</div>}
         </div>
         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
           <Badge estado={oAct.estado}/>
-          {cotVinc&&<div style={{fontSize:11,color:"#b45309"}}>ðŸ“„ {cotVinc.numero}</div>}
+          {cotVinc&&<div style={{fontSize:11,color:"#b45309"}}>📄 {cotVinc.numero}</div>}
         </div>
       </div>
 
       {/* KPIs */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:12,marginBottom:24}}>
         {[
-          ["ðŸ’° Ingreso total",fmt(oAct.total),"#166534"],
-          ["âœ… Cobrado",fmt(oAct.pagado),"#1d4ed8"],
+          ["💰 Ingreso total",fmt(oAct.total),"#166534"],
+          ["✅ Cobrado",fmt(oAct.pagado),"#1d4ed8"],
           ["? Saldo",fmt(oAct.saldo),oAct.saldo>0?"#c2410c":"#166534"],
-          ["ðŸ§¾ Gastos",fmt(totalGastos),"#7c3aed"],
-          ["ðŸ‘· Personal",`${empObra.length} pers.`,"#0891b2"],
-          ["ðŸ“… Días obra",`${totalDias} días`,"#b45309"],
+          ["🧾 Gastos",fmt(totalGastos),"#7c3aed"],
+          ["👷 Personal",`${empObra.length} pers.`,"#0891b2"],
+          ["📅 Días obra",`${totalDias} días`,"#b45309"],
         ].map(([k,v,c])=>(
           <div key={k} style={{background:"#fff",borderRadius:10,padding:"14px 16px",border:"1px solid #e2e8f0",textAlign:"center"}}>
             <div style={{fontSize:10,color:"#94a3b8",marginBottom:6}}>{k}</div>
@@ -4374,7 +4482,7 @@ function ObraDetalle({obraId,ctx,onVolver}){
 
       {/* Tabs */}
       <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
-        {[["personal","ðŸ‘· Personal"],["gastos","ðŸ§¾ Gastos"],["nomina","ðŸ’° Nómina"],["horario","ðŸ“… Horario"]].map(([id,lb])=>(
+        {[["personal","👷 Personal"],["gastos","🧾 Gastos"],["nomina","💰 Nómina"],["horario","📅 Horario"]].map(([id,lb])=>(
           <button key={id} onClick={()=>setDetTab(id)}
             style={{...B(detTab===id?"#cc0000":"#f1f5f9",detTab===id?"#fff":"#475569"),fontSize:12,padding:"8px 16px",border:`1px solid ${detTab===id?"#cc0000":"#e2e8f0"}`}}>
             {lb}
@@ -4385,7 +4493,7 @@ function ObraDetalle({obraId,ctx,onVolver}){
       {/* TAB PERSONAL */}
       {detTab==="personal"&&(
         <div style={CD}>
-          <div style={ST}>ðŸ‘· Personal en obra</div>
+          <div style={ST}>👷 Personal en obra</div>
           {empObra.length===0&&(
             <div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13,background:"#f8fafc",borderRadius:10,border:"1px dashed #e2e8f0",marginBottom:12}}>
               Sin empleados asignados aún
@@ -4404,10 +4512,10 @@ function ObraDetalle({obraId,ctx,onVolver}){
                     <div style={{flex:1}}>
                       <div style={{fontSize:13,fontWeight:700}}>{emp.nombre}</div>
                       <div style={{fontSize:11,color:"#64748b"}}>{emp.cargo}</div>
-                      <div style={{fontSize:10,color:"#94a3b8"}}>ðŸ“± {emp.tel}</div>
+                      <div style={{fontSize:10,color:"#94a3b8"}}>📱 {emp.tel}</div>
                     </div>
                     <button onClick={()=>setObras(p=>p.map(o=>o.id===obraId?{...o,empleados:(o.empleados||[]).filter(id=>id!==eid)}:o))}
-                      style={{background:"#fee2e2",border:"1px solid #fca5a5",color:"#cc0000",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11}}>âœ•</button>
+                      style={{background:"#fee2e2",border:"1px solid #fca5a5",color:"#cc0000",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11}}>✕</button>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,fontSize:10}}>
                     {[["Días en obra",diasEmp+"d","#1d4ed8"],["Jornal/día",fmt(jornal),"#166534"],["Costo obra",fmt(jornal*diasEmp),"#7c3aed"]].map(([k,v,c])=>(
@@ -4417,13 +4525,13 @@ function ObraDetalle({obraId,ctx,onVolver}){
                       </div>
                     ))}
                   </div>
-                  <div style={{marginTop:8,fontSize:10,color:"#94a3b8"}}>ðŸ¦ {emp.banco} · {emp.tipoCuenta} · <span style={{fontFamily:"monospace"}}>{emp.numeroCuenta||"â€”"}</span></div>
+                  <div style={{marginTop:8,fontSize:10,color:"#94a3b8"}}>🏦 {emp.banco} · {emp.tipoCuenta} · <span style={{fontFamily:"monospace"}}>{emp.numeroCuenta||"—"}</span></div>
                 </div>
               );
             })}
           </div>
           <div>
-            <LBL>âž• Asignar empleado a esta obra</LBL>
+            <LBL>➕ Asignar empleado a esta obra</LBL>
             <select value="" onChange={ev=>{
               const v=ev.target.value;
               if(!v)return;
@@ -4443,7 +4551,7 @@ function ObraDetalle({obraId,ctx,onVolver}){
       {detTab==="gastos"&&(
         <div style={CD}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-            <div style={ST}>ðŸ§¾ Gastos y cuentas por pagar</div>
+            <div style={ST}>🧾 Gastos y cuentas por pagar</div>
             <button style={B("#cc0000")} onClick={()=>setShowGasto(!showGasto)}>+ Agregar gasto</button>
           </div>
           {showGasto&&(
@@ -4461,7 +4569,7 @@ function ObraDetalle({obraId,ctx,onVolver}){
                 <div><LBL>Fecha vencimiento</LBL><input type="date" value={gastoForm.fechaVence} onChange={e=>setGastoForm({...gastoForm,fechaVence:e.target.value})} style={SI}/></div>
               </div>
               <div style={{display:"flex",gap:8}}>
-                <button style={B("#cc0000")} onClick={guardarGasto}>âœ… Guardar gasto</button>
+                <button style={B("#cc0000")} onClick={guardarGasto}>✅ Guardar gasto</button>
                 <button style={B("#f1f5f9","#475569")} onClick={()=>setShowGasto(false)}>Cancelar</button>
               </div>
             </div>
@@ -4477,8 +4585,8 @@ function ObraDetalle({obraId,ctx,onVolver}){
                   <div style={{textAlign:"right"}}><div style={{fontSize:14,fontWeight:700,color:"#cc0000"}}>{fmt(c.monto)}</div><Badge estado={vencida?"Vencida":c.estado}/></div>
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11,color:"#94a3b8"}}>
-                  <span>Vence: {fmtD(c.fechaVence)||"â€”"}</span>
-                  {c.estado==="Pendiente"&&<button onClick={()=>setCuentas(p=>p.map(x=>x.id===c.id?{...x,estado:"Pagado"}:x))} style={{background:"#dcfce7",border:"1px solid #4ade80",color:"#166534",borderRadius:6,padding:"3px 10px",fontSize:11,cursor:"pointer",fontWeight:600}}>âœ“ Pagar</button>}
+                  <span>Vence: {fmtD(c.fechaVence)||"—"}</span>
+                  {c.estado==="Pendiente"&&<button onClick={()=>setCuentas(p=>p.map(x=>x.id===c.id?{...x,estado:"Pagado"}:x))} style={{background:"#dcfce7",border:"1px solid #4ade80",color:"#166534",borderRadius:6,padding:"3px 10px",fontSize:11,cursor:"pointer",fontWeight:600}}>✓ Pagar</button>}
                 </div>
               </div>
             );
@@ -4491,11 +4599,11 @@ function ObraDetalle({obraId,ctx,onVolver}){
         </div>
       )}
 
-      {/* TAB NÃ“MINA */}
+      {/* TAB NÓMINA */}
       {detTab==="nomina"&&(
         <div style={CD}>
-          <div style={ST}>ðŸ’° Nómina proporcional por obra</div>
-          <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 14px",marginBottom:14,fontSize:11,color:"#475569",border:"1px solid #e2e8f0"}}>Cálculo: días trabajados Ã— jornal diario (salario ÷ 26 días)</div>
+          <div style={ST}>💰 Nómina proporcional por obra</div>
+          <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 14px",marginBottom:14,fontSize:11,color:"#475569",border:"1px solid #e2e8f0"}}>Cálculo: días trabajados × jornal diario (salario ÷ 26 días)</div>
           {empObra.length===0&&<div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13}}>Sin personal asignado</div>}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
             {empObra.map((eid,idx)=>{
@@ -4519,7 +4627,7 @@ function ObraDetalle({obraId,ctx,onVolver}){
                       </div>
                     ))}
                   </div>
-                  <div style={{marginTop:8,fontSize:10,color:"#94a3b8"}}>ðŸ¦ {emp.banco} · {emp.tipoCuenta} · <span style={{fontFamily:"monospace"}}>{emp.numeroCuenta||"â€”"}</span></div>
+                  <div style={{marginTop:8,fontSize:10,color:"#94a3b8"}}>🏦 {emp.banco} · {emp.tipoCuenta} · <span style={{fontFamily:"monospace"}}>{emp.numeroCuenta||"—"}</span></div>
                 </div>
               );
             })}
@@ -4539,7 +4647,7 @@ function ObraDetalle({obraId,ctx,onVolver}){
       {/* TAB HORARIO */}
       {detTab==="horario"&&(
         <div style={CD}>
-          <div style={ST}>ðŸ“… Horario y turnos en esta obra</div>
+          <div style={ST}>📅 Horario y turnos en esta obra</div>
           {horariosObra.length===0&&<div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13}}>Sin turnos registrados. Ve a <strong>Horarios</strong> para agregar.</div>}
           {horariosObra.sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(h=>{
             const emp=empleados.find(x=>x.id===h.empleadoId);
@@ -4548,7 +4656,7 @@ function ObraDetalle({obraId,ctx,onVolver}){
               <div key={h.id} style={{display:"flex",alignItems:"center",gap:12,background:"#f8fafc",borderRadius:10,padding:"10px 14px",marginBottom:8,border:"1px solid #e2e8f0"}}>
                 <Av init={emp?.avatar||"?"} color={PAL[idx%PAL.length]} size={32}/>
                 <div style={{flex:1}}>
-                  <div style={{fontSize:13,fontWeight:600}}>{emp?.nombre||"â€”"}</div>
+                  <div style={{fontSize:13,fontWeight:600}}>{emp?.nombre||"—"}</div>
                   <div style={{fontSize:11,color:"#475569"}}>{h.tarea}</div>
                 </div>
                 <div style={{textAlign:"right",fontSize:11}}>
@@ -5274,15 +5382,15 @@ function Financiero({ctx}){
             {obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}
           </select>
         </div>
-        <button style={{...B("#f47c20"),marginTop:16}} onClick={()=>printCurrentPz(`Informe financiero ${obraFiltro}`)}>ðŸ–¨️ Imprimir informe</button>
+        <button style={{...B("#f47c20"),marginTop:16}} onClick={()=>printCurrentPz(`Informe financiero ${obraFiltro}`)}>🖨️ Imprimir informe</button>
       </div>
 
       <div id="pz" className="doc-shell">
         <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
-          <SC label="Ingresos totales" value={fmtK(totIng)} color="#4ade80" icon="ðŸ’°" sub="facturado"/>
-          <SC label="Cobrado" value={fmtK(totCob)} color="#60b4ff" icon="âœ…" sub={`${totIng>0?Math.round(totCob/totIng*100):0}% del total`}/>
-          <SC label="Costos directos" value={fmtK(totCost)} color="#fb923c" icon="ðŸ§¾" sub="proveedores"/>
-          <SC label="Margen bruto" value={`${margenGlobal}%`} color={margenGlobal>25?"#4ade80":margenGlobal>10?"#f5c842":"#ef4444"} icon="ðŸ“Š" sub={fmt(totUtil)}/>
+          <SC label="Ingresos totales" value={fmtK(totIng)} color="#4ade80" icon="💰" sub="facturado"/>
+          <SC label="Cobrado" value={fmtK(totCob)} color="#60b4ff" icon="✅" sub={`${totIng>0?Math.round(totCob/totIng*100):0}% del total`}/>
+          <SC label="Costos directos" value={fmtK(totCost)} color="#fb923c" icon="🧾" sub="proveedores"/>
+          <SC label="Margen bruto" value={`${margenGlobal}%`} color={margenGlobal>25?"#4ade80":margenGlobal>10?"#f5c842":"#ef4444"} icon="📊" sub={fmt(totUtil)}/>
         </div>
 
         <div style={{...CD,marginBottom:20}}>
@@ -5349,10 +5457,10 @@ function Financiero({ctx}){
             </div>
             <div style={{background:"#f1f5f9",borderRadius:8,padding:"12px 14px",fontSize:12,color:"#64748b",lineHeight:1.7}}>
               <div style={{fontWeight:600,color:"#1a1a2e",marginBottom:6}}>Indicadores clave</div>
-              <div>ðŸ’° Margen bruto global: <strong style={{color:margenGlobal>25?"#4ade80":"#f5c842"}}>{margenGlobal}%</strong></div>
-              <div>ðŸ“¦ Obras activas: <strong style={{color:"#60b4ff"}}>{obras.filter(o=>o.estado==="En Obra").length}</strong></div>
-              <div>ðŸ’¸ Por cobrar: <strong style={{color:"#fb923c"}}>{fmt(obras.reduce((s,o)=>s+o.saldo,0))}</strong></div>
-              <div>ðŸ§¾ Cuentas x pagar: <strong style={{color:"#c084fc"}}>{fmt(ctx.cuentas.filter(c=>c.estado==="Pendiente").reduce((s,c)=>s+c.monto,0))}</strong></div>
+              <div>💰 Margen bruto global: <strong style={{color:margenGlobal>25?"#4ade80":"#f5c842"}}>{margenGlobal}%</strong></div>
+              <div>📦 Obras activas: <strong style={{color:"#60b4ff"}}>{obras.filter(o=>o.estado==="En Obra").length}</strong></div>
+              <div>💸 Por cobrar: <strong style={{color:"#fb923c"}}>{fmt(obras.reduce((s,o)=>s+o.saldo,0))}</strong></div>
+              <div>🧾 Cuentas x pagar: <strong style={{color:"#c084fc"}}>{fmt(ctx.cuentas.filter(c=>c.estado==="Pendiente").reduce((s,c)=>s+c.monto,0))}</strong></div>
             </div>
           </div>
         </div>
@@ -5362,7 +5470,7 @@ function Financiero({ctx}){
 }
 
 // ======================================================
-// NÃ“MINA
+// NÓMINA
 // ======================================================
 function Nomina({ctx}){
   const {empleados,setEmpleados,obras,cargos,setCargos,saveAllToCloud}=ctx;
@@ -6498,7 +6606,7 @@ function Horarios({ctx}){
           <div style={ST}>Turnos del día</div>
           {dia.length===0?<div style={{textAlign:"center",color:"#94a3b8",fontSize:13,padding:"28px 0"}}>No hay turnos para esta fecha</div>
           :dia.map(h=>{const e=empleados.find(x=>x.id===h.empleadoId);const o=obras.find(x=>x.id===h.obraId);const idx=empleados.findIndex(x=>x.id===h.empleadoId);return(<div key={h.id} style={{background:"#f1f5f9",borderRadius:10,padding:"12px 14px",marginBottom:10}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}><Av init={e?.avatar||"?"} color={PAL[idx%PAL.length]} size={34}/><div style={{flex:1}}><div style={{fontSize:13,fontWeight:600}}>{e?.nombre}</div><div style={{fontSize:11,color:"#475569"}}>{e?.cargo}</div></div><button onClick={()=>setHorarios(p=>p.filter(x=>x.id!==h.id))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:6,width:24,height:24,cursor:"pointer",fontSize:14}}>Ã—</button></div>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}><Av init={e?.avatar||"?"} color={PAL[idx%PAL.length]} size={34}/><div style={{flex:1}}><div style={{fontSize:13,fontWeight:600}}>{e?.nombre}</div><div style={{fontSize:11,color:"#475569"}}>{e?.cargo}</div></div><button onClick={()=>setHorarios(p=>p.filter(x=>x.id!==h.id))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:6,width:24,height:24,cursor:"pointer",fontSize:14}}>×</button></div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,fontSize:11,marginBottom:8}}>
               <div style={{background:"#ffffff",borderRadius:6,padding:"6px 10px"}}><div style={{color:"#64748b",marginBottom:2}}>Obra</div><div style={{color:"#1a1a2e",fontWeight:500}}>{o?.proyecto}</div><div style={{color:"#475569"}}>{o?.ciudad}</div></div>
               <div style={{background:"#ffffff",borderRadius:6,padding:"6px 10px"}}><div style={{color:"#64748b",marginBottom:2}}>Turno</div><div style={{color:"#cc0000",fontWeight:600}}>{fmtTurno12Local(h.turno)}</div><div style={{color:"#475569"}}>{h.tarea}</div></div>
@@ -6679,7 +6787,7 @@ function Vencimientos({ctx}){
 
       {!certParaImpresion&&(
         <>
-          {/* â”€â”€ CONTADORES â”€â”€ */}
+          {/* ── CONTADORES ── */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
             <SC label="Vencidas" value={totVenc} color="#ef4444" icon="VE" sub="requieren acción"/>
             <SC label="Urgentes (<30 días)" value={totUrg} color="#fb923c" icon="UR" sub="prioridad alta"/>
@@ -6687,7 +6795,7 @@ function Vencimientos({ctx}){
             <SC label="Al día" value={totOk} color="#4ade80" icon="OK" sub="sin novedad"/>
           </div>
 
-          {/* â”€â”€ GRUPOS POR ESTADO â”€â”€ */}
+          {/* ── GRUPOS POR ESTADO ── */}
           {grupos.map(g=>{
             const items=lista.filter(c=>g.filtro(c.diasRestantes));
             if(!items.length)return null;
@@ -6765,7 +6873,7 @@ function Vencimientos({ctx}){
             );
           })}
 
-          {/* â”€â”€ SIN FECHA â”€â”€ */}
+          {/* ── SIN FECHA ── */}
           {lista.filter(c=>c.diasRestantes===null).length>0&&(
             <div style={{...CD,borderLeft:"4px solid #64748b"}}>
               <div style={{...ST,color:"#64748b"}}>Sin fecha de mantenimiento asignada</div>

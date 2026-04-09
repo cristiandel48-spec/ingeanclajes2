@@ -1197,36 +1197,64 @@ function hasVerticalLifeLineService(c={}){
   });
 }
 
+function getQuoteProposalPhotos(baseQuote = {}, propuesta = {}, activeProposalId = null){
+  const ownPhotos = Array.isArray(propuesta?.fotos)
+    ? propuesta.fotos.filter((foto)=>foto?.src)
+    : [];
+
+  if(ownPhotos.length) return ownPhotos;
+
+  if(propuesta?.id && propuesta.id === activeProposalId){
+    return Array.isArray(baseQuote?.fotosCotizacion)
+      ? baseQuote.fotosCotizacion.filter((foto)=>foto?.src)
+      : [];
+  }
+
+  return [];
+}
+
+function getQuotePrintableProposals(baseQuote = {}){
+  const proposals = getQuoteProposals(baseQuote);
+  const activeProposal = getQuoteActiveProposal(baseQuote);
+
+  return proposals.map((propuesta, index)=>{
+    const quote = mergeQuoteWithProposal(baseQuote, propuesta);
+    const items = normalizeQuoteItems(quote);
+    const sub = items.reduce((sum, item)=>sum + (Number(item.cant) || 0) * (Number(item.vu) || 0), 0);
+    const ut = sub * (Number(quote.util || 10) / 100);
+    const iva = ut * 0.19;
+    const tot = sub + ut + iva;
+
+    return {
+      ...propuesta,
+      index,
+      quote,
+      items,
+      sub,
+      ut,
+      iva,
+      tot,
+      tipoLabel: quote.tipoCotizacion === "obra_blanca" ? "Obra blanca" : "Línea de vida / anclajes",
+      esObraBlanca: quote.tipoCotizacion === "obra_blanca",
+      requerimientoCliente: String(quote.requerimientoCliente || "").trim(),
+      alcancePropuesta: String(quote.propuestaAlcance || propuesta.alcance || "").trim(),
+      fotos: getQuoteProposalPhotos(baseQuote, propuesta, activeProposal?.id),
+    };
+  });
+}
+
 function buildCotizacionPrintHtml(c){
-  const propuestas = getQuoteProposals(c);
-  const activa = getQuoteActiveProposal(c);
-  c = mergeQuoteWithProposal(c, activa);
-  const items = normalizeQuoteItems(c);
-  const measurements = Array.isArray(c.geoMediciones) ? c.geoMediciones : [];
-  const fotosCotizacion = Array.isArray(c.fotosCotizacion) ? c.fotosCotizacion.filter((foto)=>foto?.src) : [];
-  const esObraBlanca = c.tipoCotizacion === "obra_blanca";
-  const requerimientoCliente = String(c.requerimientoCliente || "").trim();
-  const alcancePropuesta = String(c.propuestaAlcance || "").trim();
+  const propuestas = getQuotePrintableProposals(c);
+  const activa = propuestas.find((propuesta)=>propuesta.id===getQuoteActiveProposal(c)?.id) || propuestas[0];
+  const baseQuote = activa?.quote || c;
+  const measurements = Array.isArray(baseQuote.geoMediciones) ? baseQuote.geoMediciones : [];
   const mapQuery = c.coords || `${c.obra||""} ${c.ciudad||""}`.trim();
-  const { width: mapWidth, height: mapHeight } = getStaticMapDimensions(c.geoMapView);
+  const { width: mapWidth, height: mapHeight } = getStaticMapDimensions(baseQuote.geoMapView || c.geoMapView);
   const quoteMapSrc = c.mapImg && String(c.mapImg).startsWith("data:")
     ? c.mapImg
-    : (buildGoogleStaticMapUrl(measurements, mapQuery, c.geoMapView, { width: mapWidth, height: mapHeight }) || c.mapImg || "");
-  const showVerticalAppendix = hasVerticalLifeLineService(c);
-  const sub = items.reduce((s,i)=>s+(Number(i.cant)||0)*(Number(i.vu)||0),0);
-  const ut = sub * (Number(c.util)||10) / 100;
-  const iva = ut * 0.19;
-  const tot = sub + ut + iva;
+    : (buildGoogleStaticMapUrl(measurements, mapQuery, baseQuote.geoMapView || c.geoMapView, { width: mapWidth, height: mapHeight }) || c.mapImg || "");
+  const showVerticalAppendix = propuestas.some((propuesta)=>hasVerticalLifeLineService(propuesta.quote));
   const narrative = buildMeasurementNarrative(measurements);
-  const introDetail = narrative ? `Tenemos el agrado de presentar nuestra cotizacion para la instalacion sobre cubierta: ${narrative}.` : 'Tenemos el agrado de presentar nuestra cotizacion para la instalacion de los sistemas de proteccion anticaida requeridos para la obra.';
-  const itemRows = items.map((it,idx)=>{
-    const desc = escapeHtml(it.desc || `ITEM ${idx+1}`);
-    const qty = Number(it.cant||0).toFixed(2).replace(/\.00$/,'');
-    const unit = escapeHtml(it.unit || 'UND');
-    const value = fmt(Number(it.vu)||0);
-    const subtotal = fmt((Number(it.cant)||0)*(Number(it.vu)||0));
-    return `<tr><td>${desc}</td><td class="num">${qty}</td><td class="center">${unit}</td><td class="num">${value}</td><td class="num">${subtotal}</td></tr>`;
-  }).join('');
   const mapBlock = quoteMapSrc ? `<div class="map-wrap" style="aspect-ratio:${mapWidth}/${mapHeight};"><img src="${quoteMapSrc}" alt="Mapa de medicion" class="map"/></div>` : `<div class="placeholder">Agrega la imagen satelital o la medicion automatica para ver el plano aqui.</div>`;
   const mapLabels = getStaticMapLabelData(measurements, mapQuery, c.geoMapView).map(label=>`
       <div class="map-label" style="left:${label.left}; top:${label.top}; color:${label.color}; transform:translate(-50%, -50%) rotate(${label.angle}deg);">
@@ -1234,16 +1262,6 @@ function buildCotizacionPrintHtml(c){
       </div>
     `).join('');
   const mapBlockWithLabels = quoteMapSrc ? `<div class="map-wrap" style="aspect-ratio:${mapWidth}/${mapHeight};"><img src="${quoteMapSrc}" alt="Mapa de medicion" class="map"/>${mapLabels}</div>` : mapBlock;
-  const requerimientoBlock = esObraBlanca && requerimientoCliente ? `
-      <div class="measurement-box">
-        <p><strong>Necesidad del cliente</strong></p>
-        <div style="white-space:pre-wrap;">${escapeHtml(requerimientoCliente)}</div>
-      </div>` : '';
-  const alcanceBlock = alcancePropuesta ? `
-      <div class="measurement-box">
-        <p><strong>Alcance de esta propuesta</strong></p>
-        <div style="white-space:pre-wrap;">${escapeHtml(alcancePropuesta)}</div>
-      </div>` : '';
   const propuestasResumen = propuestas.length > 1 ? `
       <div class="measurement-box">
         <p><strong>Esta cotizacion incluye ${propuestas.length} propuestas comerciales</strong></p>
@@ -1253,24 +1271,82 @@ function buildCotizacionPrintHtml(c){
             ${propuestas.map((propuesta)=>`
               <tr>
                 <td>${escapeHtml(propuesta.nombre)}</td>
-                <td>${escapeHtml(propuesta.tipoCotizacion === "obra_blanca" ? "Obra blanca" : "Linea de vida / anclajes")}</td>
-                <td>${fmt(Number(propuesta.total || 0))}</td>
+                <td>${escapeHtml(propuesta.esObraBlanca ? "Obra blanca" : "Linea de vida / anclajes")}</td>
+                <td>${fmt(Number(propuesta.tot || 0))}</td>
               </tr>
             `).join("")}
           </tbody>
         </table>
-        <div style="font-size:10pt;color:#475569;padding-top:6px;">El PDF muestra en detalle la propuesta activa: <strong>${escapeHtml(activa.nombre)}</strong>.</div>
+        <div style="font-size:10pt;color:#475569;padding-top:6px;">A continuacion se desarrolla cada propuesta en detalle, una despues de otra.</div>
       </div>` : '';
-  const fotosBlock = fotosCotizacion.length ? `
-      <div class="section-title">Registro fotografico</div>
+  const proposalSections = propuestas.map((propuesta)=>{
+    const requerimientoBlock = propuesta.esObraBlanca && propuesta.requerimientoCliente ? `
+      <div class="measurement-box">
+        <p><strong>Necesidad del cliente</strong></p>
+        <div style="white-space:pre-wrap;">${escapeHtml(propuesta.requerimientoCliente)}</div>
+      </div>` : "";
+    const alcanceBlock = propuesta.alcancePropuesta ? `
+      <div class="measurement-box">
+        <p><strong>Alcance de esta propuesta</strong></p>
+        <div style="white-space:pre-wrap;">${escapeHtml(propuesta.alcancePropuesta)}</div>
+      </div>` : "";
+    const fotosBlock = propuesta.fotos.length ? `
+      <div class="section-title">Registro fotografico de la propuesta</div>
       <div class="photo-grid">
-        ${fotosCotizacion.map((foto,idx)=>`
+        ${propuesta.fotos.map((foto,idx)=>`
           <div class="photo-card">
             <div class="photo-wrap"><img src="${foto.src}" alt="${escapeHtml(foto.label || `Foto ${idx+1}`)}" class="photo"/></div>
             <div class="photo-label">${escapeHtml(foto.label || `Foto ${idx+1}`)}</div>
           </div>
         `).join("")}
-      </div>` : '';
+      </div>` : "";
+    const itemRows = propuesta.items.map((it,idx)=>{
+      const desc = escapeHtml(it.desc || `ITEM ${idx+1}`);
+      const qty = Number(it.cant||0).toFixed(2).replace(/\.00$/,'');
+      const unit = escapeHtml(it.unit || "UND");
+      const value = fmt(Number(it.vu)||0);
+      const subtotal = fmt((Number(it.cant)||0)*(Number(it.vu)||0));
+      return `<tr><td>${desc}</td><td class="num">${qty}</td><td class="center">${unit}</td><td class="num">${value}</td><td class="num">${subtotal}</td></tr>`;
+    }).join("");
+    const proposalIntro = propuesta.esObraBlanca
+      ? `<p>Presentamos la cotizacion para la obra blanca solicitada por el cliente.</p>`
+      : `<p>Presentamos la cotizacion para suministro e instalacion de los sistemas de proteccion anticaida requeridos para esta propuesta.</p>`;
+
+    return `
+    <section class="page">
+      <div class="header">
+        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+      </div>
+      <div class="section-title">${escapeHtml(propuesta.nombre)}</div>
+      <p style="margin-bottom:6px;color:#64748b;"><strong>Tipo:</strong> ${escapeHtml(propuesta.esObraBlanca ? "Obra blanca" : "Linea de vida / anclajes")}</p>
+      ${proposalIntro}
+      ${requerimientoBlock}
+      ${alcanceBlock}
+      ${fotosBlock}
+      <table class="table no-break">
+        <thead><tr><th>Descripcion</th><th class="num">Cantidad</th><th class="center">Unidad</th><th class="num">Valor</th><th class="num">Subtotal</th></tr></thead>
+        <tbody>
+          ${itemRows}
+          <tr class="label-strong"><td colspan="4">SUBTOTAL</td><td class="num">${fmt(propuesta.sub)}</td></tr>
+          <tr><td colspan="4">ADMINISTRACION</td><td class="num">$ - -</td></tr>
+          <tr><td colspan="4">IMPREVISTOS</td><td class="num">$ - -</td></tr>
+          <tr><td colspan="4">UTILIDADES (${Number(propuesta.quote.util||10).toFixed(0)} % VALOR DE LA OBRA)</td><td class="num">${fmt(propuesta.ut)}</td></tr>
+          <tr><td colspan="4">IVA (19 % VALOR DE LAS UTILIDADES)</td><td class="num">${fmt(propuesta.iva)}</td></tr>
+          <tr class="total-row"><td colspan="4">TOTAL</td><td class="num">${fmt(propuesta.tot)}</td></tr>
+        </tbody>
+      </table>
+      <div class="section-title">Condiciones comerciales</div>
+      <table class="table"><tbody>
+        <tr><td style="width:34%"><strong>FORMA DE PAGO</strong></td><td>${escapeHtml(propuesta.quote.formaPago || DEFAULT_COT_FORMA_PAGO)}</td></tr>
+        <tr><td><strong>TIEMPO DE EJECUCION</strong></td><td>${escapeHtml(propuesta.quote.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC)}</td></tr>
+        <tr><td><strong>VALIDEZ DE LA OFERTA</strong></td><td>${escapeHtml(`${c.val||30} DIAS A PARTIR DE LA FECHA DE ENTREGA DE ESTA COTIZACION`)}</td></tr>
+        <tr><td><strong>CERTIFICACION</strong></td><td>SE ENTREGA CON EL PAGO TOTAL</td></tr>
+      </tbody></table>
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
+    </section>`;
+  }).join("");
 
   return `<!doctype html>
   <html>
@@ -1355,12 +1431,11 @@ function buildCotizacionPrintHtml(c){
       <div style="height:8px"></div>
       <p>Cordial saludo.</p>
       <div style="height:8px"></div>
-      ${esObraBlanca ? `
-      <p>Presentamos la cotizacion para la obra blanca solicitada por el cliente.</p>
-      ${requerimientoBlock}
-      ${alcanceBlock}
-      ` : `
-      <p>Presentamos la cotizacion para suministro e instalacion de los sistemas de proteccion anticaida (lineas de vida horizontales sobre cubierta y escaleras).</p>
+      <p>Presentamos la cotizacion para suministro e instalacion de los sistemas de proteccion anticaida y/o obra blanca requeridos para este proyecto.</p>
+      ${narrative ? `<div class="measurement-box"><p><strong>Mediciones base del proyecto</strong></p><div>${escapeHtml(narrative)}</div></div>` : ""}
+      ${propuestas.length > 1 ? `
+      <p>Esta cotizacion fue organizada en varias propuestas para facilitar comparacion tecnica y comercial.</p>` : ""}
+      ${propuestas.length === 1 && !activa?.esObraBlanca ? `
       <p><strong>Trabajo en altura:</strong> Se considera toda actividad, labor o trabajo que se deba realizar a una altura fisica igual o superior a 1,50 metros desde el piso.</p>
       <p><strong>Puntos de anclaje:</strong> Son componentes en acero anclado con un epoxico quimico estructural o equivalente, con perno de 5/8 a una profundidad de 15 cm o mas segun el caso, con capacidad de resistir una fuerza de caida superior a 5.000 lbs.</p>
       <p><strong>Linea de vida:</strong> Son componentes de un sistema o equipo de proteccion de caidas, consistentes en una cuerda de nylon o cable de acero instalada en forma horizontal y vertical, tensionada y sujeta en dos o tres puntos de anclaje para otorgar movilidad al personal que trabaja en areas elevadas.</p>
@@ -1369,58 +1444,24 @@ function buildCotizacionPrintHtml(c){
         <li>Las lineas de vida estaran constituidas por un solo cable continuo.</li>
         <li>Los anclajes a los cuales se fijaran las lineas de vida deben resistir al menos 5.000 libras por cada persona asegurada.</li>
       </ul>
-      <p>${escapeHtml(introDetail)}</p>
-      ${alcanceBlock}
-      `}
+      ` : ""}
       ${propuestasResumen}
       <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
     </section>
 
-    <section class="page">
+    ${quoteMapSrc ? `<section class="page">
       <div class="header">
         <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
         <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
         <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
+      <div class="section-title">Plano y medicion base</div>
       ${mapBlockWithLabels}
-      ${fotosBlock}
-      <div class="section-title">${escapeHtml(propuestas.length > 1 ? activa.nombre : "Propuesta economica linea de vida")}</div>
-      <table class="table no-break">
-        <thead><tr><th>Descripcion</th><th class="num">Cantidad</th><th class="center">Unidad</th><th class="num">Valor</th><th class="num">Subtotal</th></tr></thead>
-        <tbody>
-          ${itemRows}
-          <tr class="label-strong"><td colspan="4">SUBTOTAL</td><td class="num">${fmt(sub)}</td></tr>
-          <tr><td colspan="4">ADMINISTRACION</td><td class="num">$ - -</td></tr>
-          <tr><td colspan="4">IMPREVISTOS</td><td class="num">$ - -</td></tr>
-          <tr><td colspan="4">UTILIDADES (${Number(c.util||10).toFixed(0)} % VALOR DE LA OBRA)</td><td class="num">${fmt(ut)}</td></tr>
-          <tr><td colspan="4">IVA (19 % VALOR DE LAS UTILIDADES)</td><td class="num">${fmt(iva)}</td></tr>
-          <tr class="total-row"><td colspan="4">TOTAL</td><td class="num">${fmt(tot)}</td></tr>
-        </tbody>
-      </table>
-      <div class="note-center">EL IVA ES EL 19 % DE LAS UTILIDADES</div>
+      <p>Estas mediciones sirven como base para comparar tecnicamente las propuestas que aparecen a continuacion.</p>
       <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
-    </section>
+    </section>` : ""}
 
-    <section class="page">
-      <div class="header">
-        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
-        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
-        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
-      </div>
-      <div class="section-title">Condiciones comerciales</div>
-      <table class="table"><tbody>
-        <tr><td style="width:34%"><strong>FORMA DE PAGO</strong></td><td>${escapeHtml(c.formaPago || '50% ANTICIPO, 50% CONCLUIR LABORES')}</td></tr>
-        <tr><td><strong>TIEMPO DE EJECUCION</strong></td><td>${escapeHtml(c.tiempoEjec || '10 DIAS')}</td></tr>
-        <tr><td><strong>VALIDEZ DE LA OFERTA</strong></td><td>${escapeHtml(`${c.val||30} DIAS A PARTIR DE LA FECHA DE ENTREGA DE ESTA COTIZACION`)}</td></tr>
-        <tr><td><strong>CERTIFICACION</strong></td><td>SE ENTREGA CON EL PAGO TOTAL</td></tr>
-      </tbody></table>
-      <div class="signature">
-        <p>Cordialmente,</p>
-        <div class="signature-space"></div>
-        <div class="signature-line"><div class="signature-name"><strong>ING. JHON JAIME SEPULVEDA LONDONO</strong></div><div>MP. 05256-409949</div><div>GERENTE GENERAL</div><div>Tel: 3152889541</div></div>
-      </div>
-      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
-    </section>
+    ${proposalSections}
 
     <section class="page">
       <div class="header">
@@ -1489,29 +1530,14 @@ function buildCotizacionPrintHtml(c){
   </html>`;
 }
 
-async function openCotizacionPrint(c){
-  const toast = document.createElement("div");
-  toast.style.cssText = "position:fixed;top:20px;right:20px;z-index:99999;background:#1a2840;color:#fff;padding:12px 20px;borderRadius:12px;fontSize:13px;fontWeight:600;boxShadow:0 4px 24px rgba(0,0,0,0.25);display:flex;align-items:center;gap:10px";
-  toast.innerHTML = '<span style="animation:spin 1s linear infinite;display:inline-block">⏳</span> Generando PDF...';
-  document.body.appendChild(toast);
-  try {
-    const file = await generateCotizacionPdfFile(c);
-    const url = URL.createObjectURL(file);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = file.name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 8000);
-    toast.style.background = "#166534";
-    toast.innerHTML = "✓ PDF descargado";
-    setTimeout(() => toast.remove(), 2500);
-  } catch(err) {
-    toast.style.background = "#991b1b";
-    toast.innerHTML = "✗ Error: " + (err?.message || "No fue posible generar el PDF");
-    setTimeout(() => toast.remove(), 4000);
-  }
+function openCotizacionPrint(c){
+  const parsed = new DOMParser().parseFromString(buildCotizacionPrintHtml(c), "text/html");
+  const inlineCss = parsed.head.querySelector("style")?.textContent || "";
+  openPrintWindow(
+    `Cotizacion ${c?.numero || c?.id || ""}`,
+    parsed.body.innerHTML,
+    inlineCss
+  );
 }
 
 
@@ -1615,14 +1641,37 @@ function loadHtml2Pdf(){
   return html2pdfLoaderPromise;
 }
 
+async function waitForPrintableAssets(root){
+  const images = Array.from(root.querySelectorAll("img"));
+  await Promise.all(images.map((img)=>{
+    if(img.complete) return Promise.resolve();
+    return new Promise((resolve)=>{
+      const done = ()=>resolve();
+      img.addEventListener("load", done, { once:true });
+      img.addEventListener("error", done, { once:true });
+      setTimeout(done, 5000);
+    });
+  }));
+
+  try{
+    if(document.fonts?.ready){
+      await document.fonts.ready;
+    }
+  }catch(_err){
+    // continúa aunque la fuente falle
+  }
+
+  await new Promise((resolve)=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+}
+
 async function generateCotizacionPdfFile(c){
   const html2pdf = await loadHtml2Pdf();
   const parser = new DOMParser();
   const parsed = parser.parseFromString(buildCotizacionPrintHtml(c), "text/html");
   const styleTag = parsed.head.querySelector("style")?.outerHTML || "";
   const container = document.createElement("div");
-  container.style.position = "fixed";
-  container.style.left = "-200vw";
+  container.style.position = "absolute";
+  container.style.left = "0";
   container.style.top = "0";
   container.style.width = "816px";
   container.style.background = "#fff";
@@ -1630,6 +1679,7 @@ async function generateCotizacionPdfFile(c){
   container.innerHTML = `${styleTag}${parsed.body.innerHTML}`;
   document.body.appendChild(container);
   try{
+    await waitForPrintableAssets(container);
     const opt = {
       margin: 0,
       filename: `${sanitizeFileName(c?.numero || c?.id || "cotizacion")}.pdf`,
@@ -2515,21 +2565,16 @@ export default function App(){
 // DASHBOARD
 function CotizacionPrint({c}){
   if(!c) return null;
-  const propuestas = getQuoteProposals(c);
-  const activa = getQuoteActiveProposal(c);
-  c = mergeQuoteWithProposal(c, activa);
-  const items = normalizeQuoteItems(c);
-  const measurements = Array.isArray(c.geoMediciones) ? c.geoMediciones : [];
-  const fotosCotizacion = Array.isArray(c.fotosCotizacion) ? c.fotosCotizacion.filter((foto)=>foto?.src) : [];
-  const esObraBlanca = c.tipoCotizacion === "obra_blanca";
-  const requerimientoCliente = String(c.requerimientoCliente || "").trim();
-  const alcancePropuesta = String(c.propuestaAlcance || "").trim();
-  const mapQuery = c.coords || (c.obra||"") + " " + (c.ciudad||"").trim();
+  const propuestas = getQuotePrintableProposals(c);
+  const activa = propuestas.find((propuesta)=>propuesta.id===getQuoteActiveProposal(c)?.id) || propuestas[0];
+  const baseQuote = activa?.quote || c;
+  const measurements = Array.isArray(baseQuote.geoMediciones) ? baseQuote.geoMediciones : [];
+  const mapQuery = c.coords || `${c.obra||""} ${c.ciudad||""}`.trim();
   const quoteMapSrc = c.mapImg && String(c.mapImg).startsWith("data:")
     ? c.mapImg
     : (buildGoogleStaticMapUrl(measurements, mapQuery, c.geoMapView) || c.mapImg || null);
-  const sub=items.reduce((s,i)=>s+(Number(i.cant)||0)*(Number(i.vu)||0),0);
-  const ut=sub*(c.util||10)/100; const iva=ut*0.19; const tot=sub+ut+iva;
+  const narrative = buildMeasurementNarrative(measurements);
+
   return(
     <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:12,lineHeight:1.45,border:"1px solid #ddd",padding:"22px 26px"}}>
       <div style={{marginBottom:14}}><PrintHeader dual={false}/></div>
@@ -2541,46 +2586,30 @@ function CotizacionPrint({c}){
         {c.telefono&&<div><strong>TELÉFONO:</strong> {c.telefono}</div>}
         {c.ciudad&&<div><strong>{(c.ciudad||"").toUpperCase()}</strong></div>}
       </div>
-      {esObraBlanca ? (
-        <>
-          <p style={{marginBottom:10}}>Presentamos la cotización para la obra blanca solicitada por el cliente.</p>
-          {requerimientoCliente && (
-            <div style={{background:"#f8fafc",border:"1px solid #cbd5e1",borderRadius:6,padding:"12px 14px",marginBottom:16}}>
-              <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8}}>Necesidad del cliente</div>
-              <div style={{whiteSpace:"pre-wrap"}}>{requerimientoCliente}</div>
-            </div>
-          )}
-          {alcancePropuesta && (
-            <div style={{background:"#fff8f3",border:"1px solid #fdba74",borderRadius:6,padding:"12px 14px",marginBottom:16}}>
-              <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8}}>Alcance de la propuesta</div>
-              <div style={{whiteSpace:"pre-wrap"}}>{alcancePropuesta}</div>
-            </div>
-          )}
-        </>
-      ) : (
-        <>
-          <p style={{marginBottom:10}}>Presentamos la cotización para suministro e instalación de los sistemas de protección anti caída (líneas de vida horizontales sobre cubierta y escaleras).</p>
-          {alcancePropuesta && (
-            <div style={{background:"#fff8f3",border:"1px solid #fdba74",borderRadius:6,padding:"12px 14px",marginBottom:16}}>
-              <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8}}>Alcance de la propuesta</div>
-              <div style={{whiteSpace:"pre-wrap"}}>{alcancePropuesta}</div>
-            </div>
-          )}
-        </>
+      <p style={{marginBottom:10}}>
+        {propuestas.length > 1
+          ? `Esta cotización incluye ${propuestas.length} propuestas comerciales para la misma obra. A continuación se desarrolla cada una en detalle.`
+          : "Presentamos la cotización comercial correspondiente al alcance solicitado por el cliente."}
+      </p>
+      {narrative && (
+        <div style={{background:"#f8fafc",border:"1px solid #cbd5e1",borderRadius:6,padding:"12px 14px",marginBottom:16}}>
+          <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8}}>Mediciones base del proyecto</div>
+          <div style={{whiteSpace:"pre-wrap"}}>{narrative}</div>
+        </div>
       )}
       {propuestas.length > 1 && (
         <div style={{background:"#f8fafc",border:"1px solid #cbd5e1",borderRadius:6,padding:"12px 14px",marginBottom:16}}>
           <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8}}>Propuestas incluidas</div>
           <div style={{display:"grid",gap:8}}>
             {propuestas.map((propuesta)=>(
-              <div key={propuesta.id} style={{display:"flex",justifyContent:"space-between",gap:12,background:propuesta.id===activa.id?"#fff8f3":"#fff",border:"1px solid #e2e8f0",borderRadius:6,padding:"8px 10px"}}>
+              <div key={propuesta.id} style={{display:"flex",justifyContent:"space-between",gap:12,background:propuesta.id===activa?.id?"#fff8f3":"#fff",border:"1px solid #e2e8f0",borderRadius:6,padding:"8px 10px"}}>
                 <div>
                   <div style={{fontWeight:700,color:"#1a1a2e"}}>{propuesta.nombre}</div>
-                  <div style={{fontSize:11,color:"#64748b"}}>{propuesta.tipoCotizacion === "obra_blanca" ? "Obra blanca" : "Línea de vida / anclajes"}</div>
+                  <div style={{fontSize:11,color:"#64748b"}}>{propuesta.tipoLabel}</div>
                 </div>
                 <div style={{textAlign:"right"}}>
-                  <div style={{fontSize:11,color:"#64748b"}}>{propuesta.id===activa.id?"Activa para PDF":"Alternativa"}</div>
-                  <div style={{fontWeight:700,color:"#cc0000"}}>{fmt(Number(propuesta.total||0))}</div>
+                  <div style={{fontSize:11,color:"#64748b"}}>{propuesta.id===activa?.id?"Activa":"Alternativa"}</div>
+                  <div style={{fontWeight:700,color:"#cc0000"}}>{fmt(Number(propuesta.tot||0))}</div>
                 </div>
               </div>
             ))}
@@ -2588,32 +2617,77 @@ function CotizacionPrint({c}){
         </div>
       )}
       {quoteMapSrc ? <div style={{marginBottom:16,textAlign:"center"}}><StaticMapPreview src={quoteMapSrc} segments={measurements} query={mapQuery} mapView={c.geoMapView} alt="Mapa" maxHeight={320} border="1px solid #ddd" borderRadius={4} /></div> : null}
-      {fotosCotizacion.length>0&&(
-        <div style={{marginBottom:16}}>
-          <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8}}>Registro fotográfico</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-            {fotosCotizacion.map((foto,idx)=>(
-              <div key={foto.id||idx} style={{border:"1px solid #cbd5e1",borderRadius:6,overflow:"hidden",background:"#fff"}}>
-                <div style={{height:180,background:"#f8fafc"}}>
-                  <img src={foto.src} alt={foto.label||"Foto " + (idx+1)} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
-                </div>
-                <div style={{padding:"8px 10px",fontSize:11,color:"#475569",textAlign:"center"}}>{foto.label||"Foto " + (idx+1)}</div>
+      {propuestas.map((propuesta, idx)=>(
+        <div key={propuesta.id} style={{marginTop:idx===0?0:24,paddingTop:idx===0?0:20,borderTop:idx===0?"none":"2px solid #e2e8f0",pageBreakBefore:idx===0?"auto":"always"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:12,marginBottom:4}}>
+            <div style={{fontWeight:800,textTransform:"uppercase",fontSize:16,color:"#1a1a2e"}}>{propuesta.nombre}</div>
+            <div style={{fontWeight:800,color:"#cc0000",fontSize:15}}>{fmt(propuesta.tot)}</div>
+          </div>
+          <div style={{fontSize:11,color:"#64748b",marginBottom:10}}>{propuesta.tipoLabel}</div>
+
+          {propuesta.esObraBlanca ? (
+            <p style={{marginBottom:10}}>Presentamos la cotización para la obra blanca solicitada por el cliente.</p>
+          ) : (
+            <p style={{marginBottom:10}}>Presentamos la cotización para suministro e instalación de los sistemas de protección anticaída requeridos para esta propuesta.</p>
+          )}
+
+          {propuesta.requerimientoCliente && (
+            <div style={{background:"#f8fafc",border:"1px solid #cbd5e1",borderRadius:6,padding:"12px 14px",marginBottom:12}}>
+              <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8}}>Necesidad del cliente</div>
+              <div style={{whiteSpace:"pre-wrap"}}>{propuesta.requerimientoCliente}</div>
+            </div>
+          )}
+
+          {propuesta.alcancePropuesta && (
+            <div style={{background:"#fff8f3",border:"1px solid #fdba74",borderRadius:6,padding:"12px 14px",marginBottom:12}}>
+              <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8}}>Alcance de la propuesta</div>
+              <div style={{whiteSpace:"pre-wrap"}}>{propuesta.alcancePropuesta}</div>
+            </div>
+          )}
+
+          {propuesta.fotos.length>0&&(
+            <div style={{marginBottom:16}}>
+              <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8}}>Registro fotográfico de la propuesta</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                {propuesta.fotos.map((foto,fotoIdx)=>(
+                  <div key={foto.id||fotoIdx} style={{border:"1px solid #cbd5e1",borderRadius:6,overflow:"hidden",background:"#fff"}}>
+                    <div style={{height:180,background:"#f8fafc"}}>
+                      <img src={foto.src} alt={foto.label||"Foto " + (fotoIdx+1)} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
+                    </div>
+                    <div style={{padding:"8px 10px",fontSize:11,color:"#475569",textAlign:"center"}}>{foto.label||"Foto " + (fotoIdx+1)}</div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+          )}
+
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:11.3,marginBottom:14}}>
+            <thead><tr>{["Descripción","Cantidad","Unidad","Valor","Subtotal"].map((h,i)=><th key={h} style={{border:"1px solid #222",padding:"7px 8px",background:"#f7f7f7",textAlign:i>0?"right":"left"}}>{h}</th>)}</tr></thead>
+            <tbody>
+              {propuesta.items.map((it,i)=><tr key={i}><td style={{border:"1px solid #222",padding:"7px 8px"}}>{it.desc}</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{it.cant}</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{it.unit}</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{fmt(it.vu)}</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{fmt((Number(it.cant)||0)*(Number(it.vu)||0))}</td></tr>)}
+              <tr><td colSpan={4} style={{border:"1px solid #222",padding:"7px 8px",fontWeight:700}}>SUBTOTAL</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right",fontWeight:700}}>{fmt(propuesta.sub)}</td></tr>
+              <tr><td colSpan={4} style={{border:"1px solid #222",padding:"7px 8px"}}>UTILIDADES ({propuesta.quote.util||10}% VALOR DE LA OBRA)</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{fmt(propuesta.ut)}</td></tr>
+              <tr><td colSpan={4} style={{border:"1px solid #222",padding:"7px 8px"}}>IVA (19% VALOR DE LAS UTILIDADES)</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{fmt(propuesta.iva)}</td></tr>
+              <tr><td colSpan={4} style={{border:"1px solid #222",padding:"7px 8px",background:"#fff369",fontWeight:800}}>TOTAL</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right",background:"#fff369",fontWeight:800}}>{fmt(propuesta.tot)}</td></tr>
+            </tbody>
+          </table>
+
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+            <div style={{background:"#f8fafc",border:"1px solid #cbd5e1",borderRadius:6,padding:"10px 12px"}}>
+              <div style={{fontSize:10,fontWeight:800,textTransform:"uppercase",color:"#64748b",marginBottom:4}}>Forma de pago</div>
+              <div>{propuesta.quote.formaPago || DEFAULT_COT_FORMA_PAGO}</div>
+            </div>
+            <div style={{background:"#f8fafc",border:"1px solid #cbd5e1",borderRadius:6,padding:"10px 12px"}}>
+              <div style={{fontSize:10,fontWeight:800,textTransform:"uppercase",color:"#64748b",marginBottom:4}}>Tiempo de ejecución</div>
+              <div>{propuesta.quote.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC}</div>
+            </div>
+            <div style={{background:"#f8fafc",border:"1px solid #cbd5e1",borderRadius:6,padding:"10px 12px"}}>
+              <div style={{fontSize:10,fontWeight:800,textTransform:"uppercase",color:"#64748b",marginBottom:4}}>Validez</div>
+              <div>{c.val||30} días</div>
+            </div>
           </div>
         </div>
-      )}
-      <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:6}}>{propuestas.length > 1 ? activa.nombre : "Propuesta económica"}</div>
-      <table style={{width:"100%",borderCollapse:"collapse",fontSize:11.3}}>
-        <thead><tr>{["Descripción","Cantidad","Unidad","Valor","Subtotal"].map((h,i)=><th key={h} style={{border:"1px solid #222",padding:"7px 8px",background:"#f7f7f7",textAlign:i>0?"right":"left"}}>{h}</th>)}</tr></thead>
-        <tbody>
-          {items.map((it,i)=><tr key={i}><td style={{border:"1px solid #222",padding:"7px 8px"}}>{it.desc}</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{it.cant}</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{it.unit}</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{fmt(it.vu)}</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{fmt((Number(it.cant)||0)*(Number(it.vu)||0))}</td></tr>)}
-          <tr><td colSpan={4} style={{border:"1px solid #222",padding:"7px 8px",fontWeight:700}}>SUBTOTAL</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right",fontWeight:700}}>{fmt(sub)}</td></tr>
-          <tr><td colSpan={4} style={{border:"1px solid #222",padding:"7px 8px"}}>UTILIDADES ({c.util||10}% VALOR DE LA OBRA)</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{fmt(ut)}</td></tr>
-          <tr><td colSpan={4} style={{border:"1px solid #222",padding:"7px 8px"}}>IVA (19% VALOR DE LAS UTILIDADES)</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{fmt(iva)}</td></tr>
-          <tr><td colSpan={4} style={{border:"1px solid #222",padding:"7px 8px",background:"#fff369",fontWeight:800}}>TOTAL</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right",background:"#fff369",fontWeight:800}}>{fmt(tot)}</td></tr>
-        </tbody>
-      </table>
+      ))}
       <div style={{marginTop:16,fontSize:11,color:"#475569"}}>La impresión final usa una ventana PDF independiente para evitar letras montadas y respetar el formato multipágina.</div>
     </div>
   );
@@ -2944,13 +3018,7 @@ function Pagos({ctx}){
 
   return(
     <div style={{padding:28}}>
-      <H1 title="Cuentas por cobrar" subtitle="Cuentas por cobrar · Abonos y saldos por cliente"/>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
-        <SC label="Total Cobrado" value={fmtK(tCob)} color="#4ade80" icon="TC"/>
-        <SC label="Pendiente" value={fmtK(tPend)} color="#fb923c" icon="PD"/>
-        <SC label="Transacciones" value={pagosNormalizados.length} color="#60b4ff" icon="TR"/>
-        <SC label="Obras con saldo" value={obras.filter(o=>Number(o.saldo||0)>0).length} color="#c084fc" icon="OB"/>
-      </div>
+      <H1 title="Cuentas por cobrar" subtitle="Registro de abonos y seguimiento por obra"/>
 
       <div style={{...CD,marginBottom:20,border:"1px solid #fed7aa",boxShadow:"0 18px 40px rgba(244,124,32,0.08)"}}>
         <div style={ST}>Registrar abono manual</div>
@@ -3104,32 +3172,6 @@ function Pagos({ctx}){
               </div>
             )}
           </div>
-        </div>
-      </div>
-
-      <div style={{...CD,marginBottom:20}}>
-        <div style={ST}>Estado financiero por cliente</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-          {obras.map(o=>(
-            <div key={o.id} style={{background:"#f1f5f9",borderRadius:10,padding:"14px 16px",border:"1px solid " + (Number(o.saldo||0)>0?"#7c3110":"#166534")}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-                <div>
-                  <div style={{fontSize:11,color:"#64748b"}}>{o.id}</div>
-                  <div style={{fontSize:13,fontWeight:600}}>{o.cliente}</div>
-                  <div style={{fontSize:11,color:"#475569"}}>{o.proyecto}</div>
-                </div>
-                <Badge estado={o.estado}/>
-              </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-                {[["Total",fmt(o.total),"#e2eaf4"],["Cobrado",fmt(o.pagado),"#4ade80"],["Saldo",fmt(o.saldo),Number(o.saldo||0)>0?"#fb923c":"#4ade80"]].map(([k,v,c])=>(
-                  <div key={k}>
-                    <div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",marginBottom:2}}>{k}</div>
-                    <div style={{fontSize:12,fontWeight:700,color:c}}>{v}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
         </div>
       </div>
 
@@ -3348,12 +3390,6 @@ function ClientesDB({ctx}){
         }
       />
 
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
-        <SC label="Clientes registrados" value={clientesData.length} color="#60b4ff" icon="🤝" sub={(sinRegistrar.length) + " sugeridos"} />
-        <SC label="Obras activas" value={clientesData.reduce((s,c)=>s+c.obrasActivas,0)} color="#4ade80" icon="🏅" sub="relacionadas a clientes" />
-        <SC label="Facturado clientes" value={fmtK(totalFacturado)} color="#f59e0b" icon="💰" sub="valor total de obras" />
-        <SC label="Saldo pendiente" value={fmtK(saldoPendiente)} color="#fb7185" icon="⏳" sub="por cobrar a clientes" />
-      </div>
 
       {showForm&&(
         <div style={{...CD,marginBottom:18,border:"1px solid #cc0000"}}>
@@ -3582,12 +3618,6 @@ function CuentasPagar({ctx}){
         }
       />
 
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
-        <SC label="Pendiente por pagar" value={fmtK(totalPendiente)} color="#fb923c" icon="🧾" sub={(cuentas.filter(c=>c.estado==="Pendiente").length) + " facturas"} />
-        <SC label="Pagado acumulado" value={fmtK(totalPagado)} color="#4ade80" icon="✅" sub={(cuentas.filter(c=>c.estado==="Pagado").length) + " registros"} />
-        <SC label="Facturas vencidas" value={vencidas.length} color={vencidas.length?"#ef4444":"#4ade80"} icon="⚠️" sub={vencidas.length?fmt(vencidas.reduce((s,c)=>s+Number(c.monto||0),0)):"sin mora"} />
-        <SC label="Base de proveedores" value={proveedoresData.length} color="#60b4ff" icon="🏢" sub={(porVencer.length) + " por vencer en 7 días"} />
-      </div>
 
       <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
         {[["cuentas","🧾 Cuentas por pagar"],["proveedores","🏢 Proveedores"]].map(([id,lb])=>(
@@ -5139,8 +5169,9 @@ function Nomina({ctx}){
   };
 
   const agregarHE=()=>{
-    if(!showHE||!heForm.obraId)return;
-    actualizarEmpleado(showHE,(empleado)=>{
+    const empleadoObjetivo = showHE || activos[0]?.id;
+    if(!empleadoObjetivo||!heForm.obraId)return;
+    actualizarEmpleado(empleadoObjetivo,(empleado)=>{
       if(heForm.tipo==="horaExtra"){
         const vHora=calcularValorHoraRecargo(empleado, heForm.tipoRecargo, heForm.fecha, heForm.valorHora);
         const total= Math.round((Number(heForm.horas)||0)*vHora);
@@ -5225,17 +5256,42 @@ function Nomina({ctx}){
     await guardarCambiosNomina("Cambios de contratos y liquidación sincronizados", { empleados: nextEmployees });
   };
 
-  const renderNominaSaveBar=(texto, mensajeExito)=>(
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:"12px 14px",marginBottom:16}}>
-      <div style={{fontSize:12,color:"#475569"}}>{texto}</div>
-      <div style={{display:"flex",alignItems:"center",gap:10}}>
-        {mensajeGuardadoNomina && <span style={{fontSize:11,color:"#166534",fontWeight:700}}>{mensajeGuardadoNomina}</span>}
-        <button type="button" onClick={()=>guardarCambiosNomina(mensajeExito)} disabled={guardandoNomina} style={{...B("#142840","#4ade80"),opacity:guardandoNomina?0.75:1}}>
-          {guardandoNomina?"Guardando...":"Guardar cambios"}
-        </button>
-      </div>
+  const renderNominaMetricCard=({label,value,color="#142840",hint="",span=1})=>(
+    <div style={{background:"#fff",borderRadius:8,padding:"10px 12px",gridColumn:span>1?("span " + span):undefined}}>
+      <div style={{fontSize:10,color:"#64748b"}}>{label}</div>
+      <div style={{fontWeight:700,color,fontSize:span>1?16:15,marginTop:3}}>{value}</div>
+      {hint ? <div style={{fontSize:10,color:"#94a3b8",marginTop:4,lineHeight:1.4}}>{hint}</div> : null}
     </div>
   );
+
+  const renderNominaEmpleadoCard=({
+    empleado,
+    index=0,
+    badgeLabel="Empleado",
+    badgeBg="#eff6ff",
+    badgeColor="#1d4ed8",
+    subtitle="",
+    principal=null,
+    metrics=[],
+  })=>{
+    if(!empleado) return null;
+    return(
+      <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:"14px 16px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+          <Av init={empleado.avatar} color={PAL[index%PAL.length]} size={34}/>
+          <div style={{flex:1}}>
+            <div style={{fontWeight:700,color:"#0f172a"}}>{empleado.nombre}</div>
+            <div style={{fontSize:11,color:"#64748b"}}>{subtitle}</div>
+          </div>
+          <span style={{background:badgeBg,color:badgeColor,borderRadius:20,padding:"3px 12px",fontSize:10,fontWeight:700}}>{badgeLabel}</span>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+          {principal ? renderNominaMetricCard({ ...principal, span:3 }) : null}
+          {metrics.map((metric)=>renderNominaMetricCard(metric))}
+        </div>
+      </div>
+    );
+  };
 
   return(
     <div style={{padding:28}}>
@@ -5247,35 +5303,23 @@ function Nomina({ctx}){
         ))}
       </div>
 
-      <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:"14px 16px",marginBottom:20}}>
-        <div style={{fontSize:11,fontWeight:700,color:"#142840",textTransform:"uppercase",letterSpacing:0.8,marginBottom:10}}>
-          Parámetros Colombia 2026
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(160px, 1fr))",gap:12}}>
-          <div><div style={{fontSize:10,color:"#64748b"}}>Salario mínimo</div><div style={{fontWeight:700,color:"#0f172a"}}>{fmt(NOMINA_CO_2026.salarioMinimo)}</div></div>
-          <div><div style={{fontSize:10,color:"#64748b"}}>Auxilio transporte</div><div style={{fontWeight:700,color:"#0f172a"}}>{fmt(NOMINA_CO_2026.auxilioTransporte)}</div></div>
-          <div><div style={{fontSize:10,color:"#64748b"}}>Salud empleado</div><div style={{fontWeight:700,color:"#0f172a"}}>{Math.round(NOMINA_CO_2026.saludPctEmpleado*100)}%</div></div>
-          <div><div style={{fontSize:10,color:"#64748b"}}>Pensión empleado</div><div style={{fontWeight:700,color:"#0f172a"}}>{Math.round(NOMINA_CO_2026.pensionPctEmpleado*100)}%</div></div>
-        </div>
-        <div style={{fontSize:11,color:"#475569",marginTop:10}}>
-          El auxilio de transporte se liquida aquí para salarios hasta {fmt(NOMINA_CO_2026.topeAuxilio)}. Las otras deducciones quedan configurables para conceptos autorizados como natillera, libranza o descuentos internos.
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))",gap:12,marginTop:14,paddingTop:14,borderTop:"1px solid #e2e8f0"}}>
+      <div style={{...CD,maxWidth:900,margin:"0 auto 20px",padding:"14px 16px"}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))",gap:12,alignItems:"end"}}>
           <div>
             <LBL>Mes de nómina</LBL>
-            <input type="month" value={mes} onChange={e=>setMes(e.target.value)} style={{...SI,width:"auto"}}/>
+            <input type="month" value={mes} onChange={e=>setMes(e.target.value)} style={SI}/>
           </div>
           <div>
             <LBL>Corte</LBL>
-            <select value={corteNomina} onChange={e=>setCorteNomina(e.target.value)} style={{...SI,width:"100%"}}>
+            <select value={corteNomina} onChange={e=>setCorteNomina(e.target.value)} style={SI}>
               <option value="primera">Primera quincena · 1 al 15</option>
               <option value="segunda">{"Segunda quincena · 16 al " + (periodoNomina.endIso.slice(-2))}</option>
             </select>
           </div>
-          <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px",alignSelf:"end"}}>
+          <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px"}}>
             <div style={{fontSize:10,color:"#94a3b8",textTransform:"uppercase",letterSpacing:0.7}}>Periodo activo</div>
             <div style={{fontSize:13,fontWeight:700,color:"#142840",marginTop:4}}>{periodoNomina.label}</div>
-            <div style={{fontSize:10,color:"#64748b",marginTop:4}}>Dias del corte: {periodoNomina.diasReferencia}</div>
+            <div style={{fontSize:10,color:"#64748b",marginTop:4}}>Días del corte: {periodoNomina.diasReferencia}</div>
           </div>
         </div>
       </div>
@@ -5357,12 +5401,6 @@ function Nomina({ctx}){
       )}
       {tab==="lista"&&(
         <div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
-            <SC label="Total salarios" value={fmtK(totSal)} color="#4ade80" icon="💵"/>
-            <SC label="Aux. transporte 2026" value={fmtK(totalAuxilio)} color="#60b4ff" icon="🚌"/>
-            <SC label="Deducciones nómina" value={fmtK(totalDeducciones)} color="#c084fc" icon="🧾"/>
-            <SC label="Neto estimado" value={fmtK(totalNeto)} color="#fb923c" icon="💰"/>
-          </div>
           <div style={CD}>
             <div style={ST}>Empleados ({activos.length})</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
@@ -5455,176 +5493,173 @@ function Nomina({ctx}){
         </div>
       )}
 
-      {tab==="vacaciones"&&(
+      {tab==="vacaciones"&&(()=>{
+        const eVac = activos.find(e=>e.id===vacacionesId) || activos[0] || null;
+        const vacaciones = eVac ? calcularVacacionesPendientes(eVac, periodoNomina.endIso) : null;
+        const diasLiquidar = eVac ? (diasVacLiquidar[eVac.id] ?? Math.max(0, Math.min(vacaciones.dias, 15))) : 0;
+        const valorLiquidar = eVac ? Math.round((Number(eVac.salario)||0) * diasLiquidar / 30) : 0;
+        const saldoVacaciones = eVac ? round1(Math.max(0, vacaciones.dias - diasLiquidar)) : 0;
+        const idxVac = activos.findIndex(e=>e.id===eVac?.id);
+        return(
         <div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
-            <SC label="Dias acumulados" value={activos.reduce((total,empleado)=>total+calcularVacacionesPendientes(empleado, periodoNomina.endIso).dias,0).toFixed(1)} color="#166534" icon="VAC"/>
-            <SC label="Valor acumulado" value={fmtK(activos.reduce((total,empleado)=>total+calcularVacacionesPendientes(empleado, periodoNomina.endIso).valor,0))} color="#16a34a" icon="$"/>
-            <SC label="Empleados activos" value={activos.length} color="#60b4ff" icon="EM"/>
-            <SC label="Corte visible" value={periodoNomina.label} color="#f47c20" icon="QT"/>
-          </div>
-          <div style={{...CD,marginBottom:16}}>
-            <div style={ST}>Vacaciones pagadas sin retiro</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-              {activos.map((e,idx)=>{
-                const vacaciones = calcularVacacionesPendientes(e, periodoNomina.endIso);
-                const abierta = vacacionesId===e.id;
-                const diasLiquidar = diasVacLiquidar[e.id] ?? Math.max(0, Math.min(vacaciones.dias, 15));
-                const valorLiquidar = Math.round((Number(e.salario)||0) * diasLiquidar / 30);
-                const saldoVacaciones = round1(Math.max(0, vacaciones.dias - diasLiquidar));
-                return(
-                  <div key={e.id} style={{background:"#f8fafc",borderRadius:10,padding:"14px 16px",border:abierta?"2px solid #166534":"1px solid #e2e8f0"}}>
-                    <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:10}}>
-                      <Av init={e.avatar} color={PAL[idx%PAL.length]} size={34}/>
-                      <div style={{flex:1}}>
-                        <div style={{fontSize:13,fontWeight:700}}>{e.nombre}</div>
-                        <div style={{fontSize:11,color:"#64748b"}}>{e.cargo} · Ingreso {e.fechaIngreso||"sin fecha"}</div>
-                      </div>
-                      <span style={{background:"#ecfdf5",color:"#166534",borderRadius:20,padding:"3px 10px",fontSize:10,fontWeight:700}}>Vacaciones</span>
-                    </div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,fontSize:11,marginBottom:10}}>
-                      <div style={{background:"#fff",borderRadius:6,padding:"6px 8px"}}><div style={{fontSize:9,color:"#64748b"}}>Dias disponibles</div><div style={{fontWeight:700,color:"#166534"}}>{vacaciones.dias} dias</div></div>
-                      <div style={{background:"#fff",borderRadius:6,padding:"6px 8px"}}><div style={{fontSize:9,color:"#64748b"}}>Valor estimado</div><div style={{fontWeight:700,color:"#0f172a"}}>{fmt(vacaciones.valor)}</div></div>
-                    </div>
-                    <button onClick={()=>setVacacionesId(abierta?null:e.id)} style={{...B(abierta?"#2d1414":"#166534",abierta?"#ef4444":"#d1fae5"),fontSize:11,width:"100%",justifyContent:"center",marginBottom:8}}>{abierta?"Cerrar vacaciones":"Liquidar vacaciones"}</button>
-                    {abierta&&(
-                      <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,padding:12}}>
-                        <div style={{fontSize:11,fontWeight:700,color:"#166534",marginBottom:8}}>VACACIONES — {e.nombre}</div>
-                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
-                          <div>
-                            <LBL>Dias a pagar</LBL>
-                            <input type="number" min={0} max={vacaciones.dias} step={0.1} value={diasLiquidar} onChange={ev=>setDiasVacLiquidar(prev=>({...prev,[e.id]:round1(ev.target.value)}))} style={SI}/>
-                          </div>
-                          <div style={{background:"#f0fdf4",borderRadius:8,padding:"10px 12px",border:"1px solid #bbf7d0",alignSelf:"end"}}>
-                            <div style={{fontSize:10,color:"#64748b"}}>Valor vacaciones</div>
-                            <div style={{fontSize:16,fontWeight:700,color:"#166534"}}>{fmt(valorLiquidar)}</div>
-                            <div style={{fontSize:10,color:"#64748b",marginTop:4}}>Base: {fmt(e.salario)} ÷ 30 × {diasLiquidar}</div>
-                            <div style={{fontSize:10,color:"#0f766e",marginTop:4}}>Saldo restante: {saldoVacaciones} días</div>
-                          </div>
-                        </div>
-                        <div style={{display:"flex",gap:8}}>
-                          <button onClick={()=>registrarVacacionesPagadas(e)} style={{...B("#142840","#4ade80"),fontSize:11,flex:1,justifyContent:"center"}}>Guardar cambios</button>
-                          <button onClick={()=>printVacaciones(e,diasLiquidar,valorLiquidar)} style={{...B("#166534","#d1fae5"),fontSize:11,flex:1,justifyContent:"center"}}>Imprimir vacaciones</button>
-                        </div>
-                        {mensajeGuardadoNomina && <div style={{fontSize:11,color:"#166534",fontWeight:700,marginTop:8,textAlign:"center"}}>{mensajeGuardadoNomina}</div>}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+          <div style={{...CD,maxWidth:900,margin:"0 auto"}}>
+            <div style={ST}>Vacaciones por empleado</div>
+            <div style={{marginBottom:14}}>
+              <LBL>Empleado</LBL>
+              <select value={eVac?.id||""} onChange={ev=>setVacacionesId(ev.target.value||null)} style={SI}>
+                {activos.map(e=><option key={e.id} value={e.id}>{e.nombre}</option>)}
+              </select>
             </div>
-          </div>
-        </div>
-      )}
-
-      {tab==="contratos"&&(
-        <div>
-          <div style={{...CD,marginBottom:16}}>
-            <div style={ST}>Contratos, corte activo y liquidación de retiro</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-              {empleadosBase.map((e,idx)=>{
-                const pf=calcularParafiscales(e, e.fechaSalida||periodoNomina.endIso);
-                const resumenCorte=calcularResumenNominaEmpleado(e, periodoNomina);
-                const isLiq=liquidarId===e.id;
-                const liquidacion = calcularLiquidacionRetiro(e, periodoNomina, diasVacPagar[e.id]);
-                const periodoLiquidacion = liquidacion.periodoLiquidacion || periodoNomina;
-                const resumenLiquidacion = liquidacion.resumenRetiro;
-                const vacacionesPendientesRetiro = liquidacion.vacacionesPendientes;
-                return(
-                <div key={e.id} style={{background:"#f8fafc",borderRadius:10,padding:"14px 16px",border:isLiq?"2px solid #cc0000":"1px solid #e2e8f0"}}>
-                  <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:10}}>
-                    <Av init={e.avatar} color={PAL[idx%PAL.length]} size={34}/>
-                    <div style={{flex:1}}>
-                      <div style={{fontSize:13,fontWeight:700}}>{e.nombre}</div>
-                      <div style={{fontSize:11,color:"#64748b"}}>{e.cargo} · {TIPOS_CONTRATO_LABELS[e.tipoContrato]||e.tipoContrato}</div>
+            {eVac&&(
+              <>
+                {renderNominaEmpleadoCard({
+                  empleado:eVac,
+                  index:idxVac,
+                  badgeLabel:"Vacaciones",
+                  badgeBg:"#ecfdf5",
+                  badgeColor:"#166534",
+                  subtitle:(eVac.cargo||"Sin cargo") + " · " + (eVac.cedula||"Sin documento") + " · Ingreso " + (eVac.fechaIngreso||"sin fecha"),
+                  principal:{
+                    label:"Saldo disponible de vacaciones",
+                    value:vacaciones.dias + " días",
+                    color:"#166534",
+                    hint:"Pagadas sin retiro: " + round1(eVac.vacacionesPagadasDias||0) + " días · Valor acumulado: " + fmt(vacaciones.valor),
+                  },
+                  metrics:[
+                    {label:"Salario base", value:fmt(eVac.salario), color:"#142840"},
+                    {label:"Valor día", value:fmt(Math.round((Number(eVac.salario)||0)/30)), color:"#0f766e"},
+                    {label:"Corte activo", value:periodoNomina.label, color:"#f47c20"},
+                    {label:"Días a pagar", value:diasLiquidar + " días", color:"#2563eb"},
+                    {label:"Valor vacaciones", value:fmt(valorLiquidar), color:"#166534"},
+                    {label:"Saldo restante", value:saldoVacaciones + " días", color:"#7c3aed"},
+                  ],
+                })}
+                <div style={{height:14}}/>
+                <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:12,padding:"14px 16px"}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"#166534",textTransform:"uppercase",letterSpacing:0.7,marginBottom:12}}>Liquidar vacaciones — {eVac.nombre}</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+                    <div>
+                      <LBL>Días a pagar</LBL>
+                      <input type="number" min={0} max={vacaciones.dias} step={0.1} value={diasLiquidar} onChange={ev=>setDiasVacLiquidar(prev=>({...prev,[eVac.id]:round1(ev.target.value)}))} style={SI}/>
                     </div>
-                    <span style={{background:e.activo?"#0f2d1a":"#2d1414",color:e.activo?"#4ade80":"#ef4444",borderRadius:20,padding:"3px 10px",fontSize:10,fontWeight:600}}>{e.activo?"Activo":"Retirado"}</span>
-                  </div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,fontSize:11,marginBottom:10}}>
-                    <div style={{background:"#fff",borderRadius:6,padding:"6px 8px"}}><div style={{fontSize:9,color:"#64748b"}}>Fecha ingreso</div><div style={{fontWeight:600}}>{e.fechaIngreso||"No registrada"}</div></div>
-                    <div style={{background:"#fff",borderRadius:6,padding:"6px 8px"}}><div style={{fontSize:9,color:"#64748b"}}>Antiguedad</div><div style={{fontWeight:600,color:"#2563eb"}}>{pf.diasTrabajados} dias ({pf.mesesTrabajados} meses)</div></div>
-                    <div style={{background:"#eff6ff",borderRadius:6,padding:"6px 8px"}}><div style={{fontSize:9,color:"#64748b"}}>Dias nomina corte</div><div style={{fontWeight:700,color:"#1d4ed8"}}>{resumenCorte.diasNomina} dias</div></div>
-                    <div style={{background:"#f0fdf4",borderRadius:6,padding:"6px 8px"}}><div style={{fontSize:9,color:"#64748b"}}>Auxilio corte</div><div style={{fontWeight:700,color:"#166534"}}>{fmt(resumenCorte.auxilioTransporte)}</div></div>
-                    <div style={{background:"#fff7ed",borderRadius:6,padding:"6px 8px"}}><div style={{fontSize:9,color:"#64748b"}}>Descuentos corte</div><div style={{fontWeight:700,color:"#c2410c"}}>{fmt(resumenCorte.totalDeducciones)}</div></div>
-                    <div style={{background:"#f8fafc",borderRadius:6,padding:"6px 8px"}}><div style={{fontSize:9,color:"#64748b"}}>Neto corte</div><div style={{fontWeight:700,color:"#0f766e"}}>{fmt(resumenCorte.neto)}</div></div>
-                  </div>
-                  <button onClick={()=>setLiquidarId(isLiq?null:e.id)} style={{...B(isLiq?"#2d1414":"#142840",isLiq?"#ef4444":"#f5c842"),fontSize:11,width:"100%",justifyContent:"center",marginBottom:8}}>{isLiq?"Cerrar liquidación":"Abrir liquidación de retiro"}</button>
-                  {isLiq&&(
-                    <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,padding:12}}>
-                      <div style={{fontSize:11,fontWeight:700,color:"#cc0000",marginBottom:8}}>LIQUIDACIÓN — {e.nombre}</div>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:10,fontSize:11}}>
-                        <div><LBL>Fecha de salida</LBL><input type="date" value={e.fechaSalida||""} onChange={ev=>updEmp(e.id,"fechaSalida",ev.target.value)} style={{...SI,fontSize:11}}/></div>
-                        <div><LBL>Causa del retiro</LBL><select value={e.causaRetiro||""} onChange={ev=>updEmp(e.id,"causaRetiro",ev.target.value)} style={{...SI,fontSize:11,padding:"5px 8px"}}>
-                          <option value="">Seleccionar...</option>
-                          {["Renuncia voluntaria","Despido sin justa causa","Despido con justa causa","Mutuo acuerdo","Vencimiento contrato","Fallecimiento","Incapacidad permanente"].map(c=><option key={c}>{c}</option>)}
-                        </select></div>
-                      </div>
-                      {(()=>{
-                        const pfl=liquidacion.parafiscales;
-                        const indemn = liquidacion.indemn;
-                        const dvp = liquidacion.diasVacPagar;
-                        const vacValorReal = liquidacion.vacValorReal;
-                        const total = liquidacion.total;
-                        return(
-                        <div>
-                          <div style={{background:"#eff6ff",borderRadius:8,padding:"10px 12px",border:"1px solid #bfdbfe",marginBottom:10}}>
-                            <div style={{fontSize:11,fontWeight:700,color:"#1d4ed8",marginBottom:6}}>NÓMINA FINAL DEL RETIRO</div>
-                            <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8,fontSize:11}}>
-                              <div style={{background:"#fff",borderRadius:6,padding:"7px 8px"}}><div style={{fontSize:9,color:"#64748b"}}>Corte liquidado</div><div style={{fontWeight:700,color:"#142840"}}>{periodoLiquidacion.label}</div></div>
-                              <div style={{background:"#fff",borderRadius:6,padding:"7px 8px"}}><div style={{fontSize:9,color:"#64748b"}}>Días trabajados pendientes</div><div style={{fontWeight:700,color:"#2563eb"}}>{resumenLiquidacion.diasNomina} días</div></div>
-                              <div style={{background:"#fff",borderRadius:6,padding:"7px 8px"}}><div style={{fontSize:9,color:"#64748b"}}>Salario + auxilio</div><div style={{fontWeight:700,color:"#166534"}}>{fmt(resumenLiquidacion.salario + resumenLiquidacion.auxilioTransporte)}</div></div>
-                              <div style={{background:"#fff",borderRadius:6,padding:"7px 8px"}}><div style={{fontSize:9,color:"#64748b"}}>Descuentos salud/pensión</div><div style={{fontWeight:700,color:"#c2410c"}}>{fmt(resumenLiquidacion.salud + resumenLiquidacion.pension)}</div></div>
-                            </div>
-                          </div>
-                          <div style={{background:"#f0fdf4",borderRadius:6,padding:"8px 10px",marginBottom:8,display:"flex",alignItems:"center",gap:12,fontSize:11}}>
-                            <span style={{color:"#166534",fontWeight:600}}>Dias de vacaciones a pagar con retiro:</span>
-                            <input type="number" min={0} max={vacacionesPendientesRetiro.dias} step={0.1}
-                              value={dvp}
-                              onChange={ev=>setDiasVacPagar(prev=>({...prev,[e.id]:round1(ev.target.value)}))}
-                              style={{width:70,padding:"4px 8px",borderRadius:5,border:"1px solid #bbf7d0",fontSize:12,fontWeight:700,textAlign:"center"}}/>
-                            <span style={{color:"#64748b",fontSize:10}}>Disponibles: {vacacionesPendientesRetiro.dias} dias · Valor: {fmt(vacValorReal)}</span>
-                          </div>
-                          <table style={{width:"100%",borderCollapse:"collapse",fontSize:11,marginBottom:10}}>
-                            <thead><tr style={{background:"#142840",color:"#fff"}}><th style={{padding:"5px 8px",textAlign:"left"}}>Concepto</th><th style={{padding:"5px 8px",textAlign:"left"}}>Base calculo</th><th style={{padding:"5px 8px",textAlign:"right"}}>Valor</th></tr></thead>
-                            <tbody>
-                              {[
-                                ["Salario días trabajados",resumenLiquidacion.diasNomina+" días × "+fmt(resumenLiquidacion.valorDia),resumenLiquidacion.salario],
-                                ["Auxilio de transporte",resumenLiquidacion.diasNomina+" días del corte final",resumenLiquidacion.auxilioTransporte],
-                                ...(resumenLiquidacion.horasExtras>0?[["Horas extras pendientes","Registradas en el corte final",resumenLiquidacion.horasExtras]]:[]),
-                                ...(resumenLiquidacion.comisiones>0?[["Comisiones pendientes","Registradas en el corte final",resumenLiquidacion.comisiones]]:[]),
-                                ["Descuento salud","4% sobre salario + extras + comisiones",-resumenLiquidacion.salud],
-                                ["Descuento pensión","4% sobre salario + extras + comisiones",-resumenLiquidacion.pension],
-                                ...(resumenLiquidacion.otrasDeducciones>0?[["Otras deducciones","Conceptos autorizados del empleado",-resumenLiquidacion.otrasDeducciones]]:[]),
-                                ["Neto nómina final",periodoLiquidacion.label,resumenLiquidacion.neto],
-                                ["Cesantias",fmt(e.salario+(e.salario<=NOMINA_CO_2026.topeAuxilio?NOMINA_CO_2026.auxilioTransporte:0))+" × "+pfl.diasTrabajados+"d ÷ 360",pfl.cesantias],
-                                ["Intereses cesantias","12% anual s/ cesantias",pfl.interesesCesantias],
-                                ["Prima de servicios","Base × "+pfl.diasTrabajados+"d ÷ 360",pfl.prima],
-                                ["Vacaciones",dvp+" dias × salario ÷ 30",vacValorReal],
-                                ...(indemn>0?[["Indemnizacion (sin justa causa)","Segun CST art. 64",indemn]]:[])
-                              ].map(([k,b,v])=>(
-                                <tr key={k} style={{borderBottom:"1px solid #f1f5f9"}}><td style={{padding:"5px 8px"}}>{k}</td><td style={{padding:"5px 8px",color:"#64748b",fontSize:10}}>{b}</td><td style={{padding:"5px 8px",textAlign:"right",fontWeight:600,color:"#0f172a"}}>{fmt(v)}</td></tr>
-                              ))}
-                            </tbody>
-                            <tfoot><tr style={{background:"#f5c842"}}><td colSpan={2} style={{padding:"7px 8px",fontWeight:700}}>TOTAL LIQUIDACION</td><td style={{padding:"7px 8px",textAlign:"right",fontWeight:700,fontSize:13}}>{fmt(total)}</td></tr></tfoot>
-                          </table>
-                          <div style={{display:"flex",gap:6,marginBottom:6}}>
-                            <button onClick={()=>guardarLiquidacionRetiro(e)} style={{...B("#166534","#d1fae5"),fontSize:11,flex:1,justifyContent:"center"}}>Guardar cambios</button>
-                            <button onClick={()=>printLiquidacion(e, pfl, indemn, dvp, e.fechaSalida||null, resumenLiquidacion, periodoLiquidacion)} style={{...B("#142840","#f5c842"),fontSize:11,flex:1,justifyContent:"center"}}>Imprimir liquidacion</button>
-                            <button onClick={()=>updEmp(e.id,"activo",false)} style={{...B("#2d1414","#ef4444"),fontSize:11,flex:1,justifyContent:"center"}}>Marcar como retirado</button>
-                          </div>
-                          {mensajeGuardadoNomina && <div style={{fontSize:11,color:"#166534",fontWeight:700,marginTop:6,textAlign:"center"}}>{mensajeGuardadoNomina}</div>}
-                        </div>
-                        );
-                      })()}
+                    <div style={{background:"#fff",borderRadius:8,padding:"10px 12px",border:"1px solid #bbf7d0",alignSelf:"end"}}>
+                      <div style={{fontSize:10,color:"#64748b"}}>Valor a pagar</div>
+                      <div style={{fontSize:18,fontWeight:700,color:"#166534"}}>{fmt(valorLiquidar)}</div>
+                      <div style={{fontSize:10,color:"#64748b",marginTop:4}}>Saldo restante: {saldoVacaciones} días</div>
                     </div>
-                  )}
+                  </div>
+                  <div style={{display:"flex",gap:8}}>
+                    <button onClick={()=>registrarVacacionesPagadas(eVac)} style={{...B("#142840","#4ade80"),fontSize:11,flex:1,justifyContent:"center"}}>Guardar cambios</button>
+                    <button onClick={()=>printVacaciones(eVac,diasLiquidar,valorLiquidar)} style={{...B("#166534","#d1fae5"),fontSize:11,flex:1,justifyContent:"center"}}>Imprimir vacaciones</button>
+                  </div>
+                  {mensajeGuardadoNomina&&<div style={{fontSize:11,color:"#166534",fontWeight:700,marginTop:8,textAlign:"center"}}>{mensajeGuardadoNomina}</div>}
                 </div>
-                );
-              })}
-            </div>
+              </>
+            )}
           </div>
         </div>
-      )}
+        );
+      })()}
+
+      {tab==="contratos"&&(()=>{
+        const eCont = empleadosBase.find(e=>e.id===liquidarId) || empleadosBase[0] || null;
+        const idxCont = empleadosBase.findIndex(e=>e.id===eCont?.id);
+        const pf = eCont ? calcularParafiscales(eCont, eCont.fechaSalida||periodoNomina.endIso) : null;
+        const resumenCorte = eCont ? calcularResumenNominaEmpleado(eCont, periodoNomina) : null;
+        const liquidacion = eCont ? calcularLiquidacionRetiro(eCont, periodoNomina, diasVacPagar[eCont.id]) : null;
+        const periodoLiquidacion = liquidacion?.periodoLiquidacion || periodoNomina;
+        const resumenLiquidacion = liquidacion?.resumenRetiro;
+        const vacacionesPendientesRetiro = liquidacion?.vacacionesPendientes;
+        const dvp = eCont ? (diasVacPagar[eCont.id] ?? (vacacionesPendientesRetiro?.dias || 0)) : 0;
+        const vacValorReal = liquidacion?.vacValorReal;
+        const indemn = liquidacion?.indemn;
+        const total = liquidacion?.total;
+        return(
+        <div>
+          <div style={{...CD,maxWidth:900,margin:"0 auto"}}>
+            <div style={ST}>Contratos, corte activo y liquidación de retiro</div>
+            <div style={{marginBottom:14}}>
+              <LBL>Empleado</LBL>
+              <select value={eCont?.id||""} onChange={ev=>setLiquidarId(ev.target.value||null)} style={SI}>
+                {empleadosBase.map(e=><option key={e.id} value={e.id}>{e.nombre} {e.activo?"":"· Retirado"}</option>)}
+              </select>
+            </div>
+            {eCont&&pf&&resumenCorte&&(
+              <>
+                {renderNominaEmpleadoCard({
+                  empleado:eCont,
+                  index:idxCont,
+                  badgeLabel:eCont.activo?"Activo":"Retirado",
+                  badgeBg:eCont.activo?"#dcfce7":"#fee2e2",
+                  badgeColor:eCont.activo?"#166534":"#b91c1c",
+                  subtitle:(eCont.cargo||"Sin cargo") + " · " + (eCont.cedula||"Sin documento") + " · " + periodoNomina.label,
+                  principal:{
+                    label:"Liquidación estimada del retiro",
+                    value:fmt(total||0),
+                    color:"#92400e",
+                    hint:(liquidacion?.retiroEnPeriodo
+                      ? ("Se incluirá en planilla del corte " + periodoLiquidacion.label)
+                      : "Define fecha de salida dentro del corte para que aparezca en planilla"),
+                  },
+                  metrics:[
+                    {label:"Antigüedad", value:pf.diasTrabajados + " días", color:"#142840", hint:pf.mesesTrabajados + " meses · Ingreso " + (eCont.fechaIngreso||"No registrada")},
+                    {label:"Días corte", value:resumenCorte.diasNomina + " días", color:"#2563eb"},
+                    {label:"Neto corte", value:fmt(resumenCorte.neto), color:"#0f766e"},
+                    {label:"Descuentos", value:fmt(resumenCorte.totalDeducciones), color:"#c2410c"},
+                    {label:"Vacaciones pendientes", value:(vacacionesPendientesRetiro?.dias||0) + " días", color:"#166534"},
+                    {label:"Estado planilla", value:liquidacion?.retiroEnPeriodo?"Incluida":"Pendiente", color:liquidacion?.retiroEnPeriodo?"#166534":"#64748b"},
+                  ],
+                })}
+                <div style={{height:14}}/>
+                <div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:12,padding:"14px 16px"}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"#92400e",textTransform:"uppercase",letterSpacing:0.7,marginBottom:12}}>Liquidación de retiro — {eCont.nombre}</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+                    <div><LBL>Fecha de salida</LBL><input type="date" value={eCont.fechaSalida||""} onChange={ev=>updEmp(eCont.id,"fechaSalida",ev.target.value)} style={{...SI,fontSize:11}}/></div>
+                    <div><LBL>Causa del retiro</LBL><select value={eCont.causaRetiro||""} onChange={ev=>updEmp(eCont.id,"causaRetiro",ev.target.value)} style={{...SI,fontSize:11,padding:"5px 8px"}}>
+                      <option value="">Seleccionar...</option>
+                      {["Renuncia voluntaria","Despido sin justa causa","Despido con justa causa","Mutuo acuerdo","Vencimiento contrato","Fallecimiento","Incapacidad permanente"].map(c=><option key={c}>{c}</option>)}
+                    </select></div>
+                  </div>
+                  <div style={{background:"#f0fdf4",borderRadius:6,padding:"8px 10px",marginBottom:10,display:"flex",alignItems:"center",gap:12,fontSize:11}}>
+                    <span style={{color:"#166534",fontWeight:600}}>Días de vacaciones a pagar con retiro:</span>
+                    <input type="number" min={0} max={vacacionesPendientesRetiro?.dias||0} step={0.1} value={dvp} onChange={ev=>setDiasVacPagar(prev=>({...prev,[eCont.id]:round1(ev.target.value)}))} style={{width:70,padding:"4px 8px",borderRadius:5,border:"1px solid #bbf7d0",fontSize:12,fontWeight:700,textAlign:"center"}}/>
+                    <span style={{color:"#64748b",fontSize:10}}>Disponibles: {vacacionesPendientesRetiro?.dias||0} días · Valor: {fmt(vacValorReal||0)}</span>
+                  </div>
+                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:11,marginBottom:10}}>
+                    <thead><tr style={{background:"#142840",color:"#fff"}}><th style={{padding:"5px 8px",textAlign:"left"}}>Concepto</th><th style={{padding:"5px 8px",textAlign:"left"}}>Base cálculo</th><th style={{padding:"5px 8px",textAlign:"right"}}>Valor</th></tr></thead>
+                    <tbody>
+                      {[
+                        ["Salario días trabajados",(resumenLiquidacion?.diasNomina||0)+" días × "+fmt(resumenLiquidacion?.valorDia||0),resumenLiquidacion?.salario||0],
+                        ["Auxilio de transporte",(resumenLiquidacion?.diasNomina||0)+" días del corte final",resumenLiquidacion?.auxilioTransporte||0],
+                        ...((resumenLiquidacion?.horasExtras||0)>0?[["Horas extras pendientes","Registradas en el corte final",resumenLiquidacion.horasExtras]]:[]),
+                        ...((resumenLiquidacion?.comisiones||0)>0?[["Comisiones pendientes","Registradas en el corte final",resumenLiquidacion.comisiones]]:[]),
+                        ["Descuento salud","4% sobre base",-(resumenLiquidacion?.salud||0)],
+                        ["Descuento pensión","4% sobre base",-(resumenLiquidacion?.pension||0)],
+                        ["Neto nómina final",periodoLiquidacion.label,resumenLiquidacion?.neto||0],
+                        ["Cesantías",fmt(pf.cesantias)+" (días: "+pf.diasTrabajados+"÷360)",pf.cesantias],
+                        ["Intereses cesantías","12% anual",pf.interesesCesantias],
+                        ["Prima de servicios","Base × días÷360",pf.prima],
+                        ["Vacaciones",dvp+" días × salario÷30",vacValorReal||0],
+                        ...((indemn||0)>0?[["Indemnización (sin justa causa)","CST art. 64",indemn]]:[])
+                      ].map(([k,b,v])=>(
+                        <tr key={k} style={{borderBottom:"1px solid #f1f5f9"}}><td style={{padding:"5px 8px"}}>{k}</td><td style={{padding:"5px 8px",color:"#64748b",fontSize:10}}>{b}</td><td style={{padding:"5px 8px",textAlign:"right",fontWeight:600,color:"#0f172a"}}>{fmt(v)}</td></tr>
+                      ))}
+                    </tbody>
+                    <tfoot><tr style={{background:"#f5c842"}}><td colSpan={2} style={{padding:"7px 8px",fontWeight:700}}>TOTAL LIQUIDACIÓN</td><td style={{padding:"7px 8px",textAlign:"right",fontWeight:700,fontSize:13}}>{fmt(total||0)}</td></tr></tfoot>
+                  </table>
+                  <div style={{display:"flex",gap:6,marginBottom:6}}>
+                    <button onClick={()=>guardarLiquidacionRetiro(eCont)} style={{...B("#166534","#d1fae5"),fontSize:11,flex:1,justifyContent:"center"}}>Guardar cambios</button>
+                    <button onClick={()=>printLiquidacion(eCont,pf,indemn||0,dvp,eCont.fechaSalida||null,resumenLiquidacion,periodoLiquidacion)} style={{...B("#142840","#f5c842"),fontSize:11,flex:1,justifyContent:"center"}}>Imprimir liquidación</button>
+                    <button onClick={()=>updEmp(eCont.id,"activo",false)} style={{...B("#2d1414","#ef4444"),fontSize:11,flex:1,justifyContent:"center"}}>Marcar como retirado</button>
+                  </div>
+                  {mensajeGuardadoNomina&&<div style={{fontSize:11,color:"#166534",fontWeight:700,marginTop:6,textAlign:"center"}}>{mensajeGuardadoNomina}</div>}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+        );
+      })()}
       {tab==="colillas"&&(
         <div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
@@ -5674,95 +5709,146 @@ function Nomina({ctx}){
 
       {tab==="he"&&(
         <div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
-            <div style={CD}>
-              <div style={ST}>Registrar hora extra o comisión</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-                <div><LBL>Empleado</LBL>
-                  <select value={showHE||""} onChange={e=>setShowHE(e.target.value)} style={SI}>
-                    <option value="">Seleccionar...</option>
-                    {empleadosBase.map((e)=><option key={e.id} value={e.id}>{e.nombre}</option>)}
-                  </select>
-                </div>
-                <div><LBL>Obra</LBL>
-                  <select value={heForm.obraId} onChange={e=>setHeForm({...heForm,obraId:e.target.value})} style={SI}>
-                    <option value="">Seleccionar obra...</option>
-                    {obras.map((o)=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}
-                  </select>
-                </div>
-                <div style={{gridColumn:"span 2"}}><LBL>Tipo</LBL>
-                  <div style={{display:"flex",gap:8}}>
-                    {[["horaExtra","⏱️ Hora Extra"],["comision","💰 Comisión"]].map(([v,l])=>(
-                      <button key={v} onClick={()=>setHeForm({...heForm,tipo:v})} style={{...B(heForm.tipo===v?"#f47c20":"#142840",heForm.tipo===v?"#fff":"#7da5c8"),flex:1,justifyContent:"center",border:"1px solid " + (heForm.tipo===v?"#f47c20":"#1a3050")}}>{l}</button>
-                    ))}
+          {(()=>{
+            const empleadoHEActivo = empleadosBase.find((empleado)=>empleado.id===showHE) || activos[0] || null;
+            const idxHE = empleadosBase.findIndex((empleado)=>empleado.id===empleadoHEActivo?.id);
+            const resumenHE = empleadoHEActivo ? calcularResumenNominaEmpleado(empleadoHEActivo, periodoNomina) : null;
+            const horasPeriodo = empleadoHEActivo ? (empleadoHEActivo.horasExtrasPorObra||[]).filter((horaExtra)=>isDateInPeriodo(horaExtra.fecha, periodoNomina)) : [];
+            const comisionesPeriodo = empleadoHEActivo ? (empleadoHEActivo.comisionesPorObra||[]).filter((comision)=>isDateInPeriodo(comision.fecha, periodoNomina)) : [];
+            const valorHoraBase = calcularValorHoraBase(empleadoHEActivo);
+            const pctRecargo = getPctRecargo(heForm.tipoRecargo, heForm.fecha||today());
+            const valorHoraRecargo = calcularValorHoraRecargo(empleadoHEActivo, heForm.tipoRecargo, heForm.fecha||today(), heForm.valorHora);
+            const totalHE = (Number(heForm.horas)||0) * valorHoraRecargo;
+            const infoRec = RECARGOS_CO_2026.find((recargo)=>recargo.id===heForm.tipoRecargo);
+            return(
+              <div>
+                <div style={{...CD,maxWidth:900,margin:"0 auto"}}>
+                  <div style={ST}>Horas extras y comisiones por empleado</div>
+                  <div style={{display:"grid",gap:14}}>
+                    <div>
+                      <LBL>Empleado</LBL>
+                      <select value={empleadoHEActivo?.id||""} onChange={e=>setShowHE(e.target.value||null)} style={SI}>
+                        <option value="">Seleccionar empleado...</option>
+                        {empleadosBase.map((empleado)=><option key={empleado.id} value={empleado.id}>{empleado.nombre}</option>)}
+                      </select>
+                    </div>
+
+                    {empleadoHEActivo && resumenHE ? (
+                      <>
+                        {renderNominaEmpleadoCard({
+                          empleado:empleadoHEActivo,
+                          index:idxHE,
+                          badgeLabel:"Horas extras",
+                          badgeBg:"#fff7ed",
+                          badgeColor:"#c2410c",
+                          subtitle:(empleadoHEActivo.cargo||"Sin cargo") + " · " + (empleadoHEActivo.cedula||"Sin documento") + " · " + periodoNomina.label,
+                          principal:{
+                            label:"Extras y comisiones del corte",
+                            value:fmt(resumenHE.horasExtras + resumenHE.comisiones),
+                            color:"#f59e0b",
+                            hint:"Esta base también entra al cálculo de salud y pensión del corte.",
+                          },
+                          metrics:[
+                            {label:"Salario base", value:fmt(empleadoHEActivo.salario), color:"#142840"},
+                            {label:"Valor hora base", value:fmt(valorHoraBase), color:"#0f766e"},
+                            {label:"Horas extras", value:fmt(resumenHE.horasExtras), color:"#f59e0b"},
+                            {label:"Comisiones", value:fmt(resumenHE.comisiones), color:"#7c3aed"},
+                            {label:"Base salud / pensión", value:fmt(resumenHE.baseSaludPension), color:"#1d4ed8"},
+                            {label:"Neto del corte", value:fmt(resumenHE.neto), color:"#0f766e"},
+                          ],
+                        })}
+
+                        <div style={{background:"#ffffff",borderRadius:12,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
+                          <div style={{fontSize:11,fontWeight:700,color:"#142840",textTransform:"uppercase",marginBottom:10}}>Registrar movimiento</div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+                            <div><LBL>Obra</LBL>
+                              <select value={heForm.obraId} onChange={e=>setHeForm({...heForm,obraId:e.target.value})} style={SI}>
+                                <option value="">Seleccionar obra...</option>
+                                {obras.map((obra)=><option key={obra.id} value={obra.id}>{obra.id} · {obra.cliente}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <LBL>Tipo</LBL>
+                              <div style={{display:"flex",gap:8}}>
+                                {[["horaExtra","Hora extra"],["comision","Comisión"]].map(([value,label])=>(
+                                  <button key={value} onClick={()=>setHeForm({...heForm,tipo:value})} style={{...B(heForm.tipo===value?"#f47c20":"#142840",heForm.tipo===value?"#fff":"#7da5c8"),flex:1,justifyContent:"center",border:"1px solid " + (heForm.tipo===value?"#f47c20":"#1a3050")}}>{label}</button>
+                                ))}
+                              </div>
+                            </div>
+                            {heForm.tipo==="horaExtra"&&(
+                              <>
+                                <div style={{gridColumn:"span 2"}}>
+                                  <LBL>Tipo de recargo</LBL>
+                                  <select value={heForm.tipoRecargo} onChange={e=>setHeForm({...heForm,tipoRecargo:e.target.value})} style={SI}>
+                                    {RECARGOS_CO_2026.map((recargo)=><option key={recargo.id} value={recargo.id}>{recargo.label}{recargo.horario?" · " + recargo.horario:""}</option>)}
+                                  </select>
+                                  {pctRecargo!==null&&<div style={{marginTop:4,fontSize:11,color:"#f47c20",fontWeight:600}}>Tarifa aplicada: {pctRecargo}% sobre hora ordinaria · Valor/hora calculado: {fmt(valorHoraRecargo)} (hora base: {fmt(valorHoraBase)})</div>}
+                                </div>
+                                <div><LBL>Horas</LBL><input type="number" value={heForm.horas} onChange={e=>setHeForm({...heForm,horas:parseFloat(e.target.value)||0})} style={SI}/></div>
+                                {pctRecargo===null
+                                  ? <div><LBL>Valor/hora</LBL><input type="number" value={heForm.valorHora} onChange={e=>setHeForm({...heForm,valorHora:parseFloat(e.target.value)||0})} style={SI}/></div>
+                                  : <div><LBL>Valor/hora (automático)</LBL><input type="number" value={valorHoraRecargo} readOnly style={{...SI,background:"#f1f5f9",color:"#64748b",cursor:"not-allowed"}}/></div>
+                                }
+                                <div style={{gridColumn:"span 2",background:"#f8fafc",borderRadius:8,padding:"10px 12px",fontSize:12}}>Total {infoRec?.label||"horas extras"}: <strong style={{color:"#f59e0b"}}>{fmt(totalHE)}</strong></div>
+                              </>
+                            )}
+                            {heForm.tipo==="comision"&&(
+                              <div style={{gridColumn:"span 2"}}><LBL>Valor comisión</LBL><input type="number" value={heForm.comision} onChange={e=>setHeForm({...heForm,comision:parseFloat(e.target.value)||0})} style={SI}/></div>
+                            )}
+                            <div><LBL>Fecha</LBL><input type="date" value={heForm.fecha} onChange={e=>setHeForm({...heForm,fecha:e.target.value})} style={SI}/></div>
+                            <div><LBL>Concepto</LBL><input value={heForm.concepto} onChange={e=>setHeForm({...heForm,concepto:e.target.value})} placeholder="Ej: Trabajo nocturno" style={SI}/></div>
+                          </div>
+                          <div style={{display:"flex",justifyContent:"flex-end"}}>
+                            <button style={B("#f47c20")} onClick={agregarHE}>Registrar</button>
+                          </div>
+                        </div>
+
+                        <div style={{background:"#ffffff",borderRadius:12,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
+                          <div style={{fontSize:11,fontWeight:700,color:"#142840",textTransform:"uppercase",marginBottom:10}}>Movimientos del corte</div>
+                          {horasPeriodo.length===0 && comisionesPeriodo.length===0 ? (
+                            <div style={{fontSize:12,color:"#94a3b8"}}>Este empleado no tiene horas extras ni comisiones registradas en el corte activo.</div>
+                          ) : (
+                            <div style={{display:"grid",gap:8}}>
+                              {horasPeriodo.map((horaExtra)=>{
+                                const obra = obras.find((item)=>item.id===horaExtra.obraId);
+                                const recargo = RECARGOS_CO_2026.find((item)=>item.id===horaExtra.tipoRecargo);
+                                const totalHoraExtra = calcularTotalHoraExtraItem(empleadoHEActivo, horaExtra);
+                                return(
+                                  <div key={horaExtra.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}>
+                                    <div>
+                                      <div style={{fontWeight:700,color:"#0f172a"}}>{recargo?.label||"Hora extra"}</div>
+                                      <div style={{fontSize:11,color:"#64748b"}}>{horaExtra.horas} h · {obra?.cliente||horaExtra.obraId} · {horaExtra.fecha}</div>
+                                    </div>
+                                    <div style={{fontWeight:700,color:"#f59e0b"}}>{fmt(totalHoraExtra)}</div>
+                                  </div>
+                                );
+                              })}
+                              {comisionesPeriodo.map((comision)=>{
+                                const obra = obras.find((item)=>item.id===comision.obraId);
+                                return(
+                                  <div key={comision.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}>
+                                    <div>
+                                      <div style={{fontWeight:700,color:"#0f172a"}}>{comision.concepto||"Comisión"}</div>
+                                      <div style={{fontSize:11,color:"#64748b"}}>{obra?.cliente||comision.obraId} · {comision.fecha}</div>
+                                    </div>
+                                    <div style={{fontWeight:700,color:"#7c3aed"}}>{fmt(comision.comision)}</div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{textAlign:"center",color:"#94a3b8",padding:"28px 0"}}>
+                        Selecciona un empleado para revisar y registrar sus horas extras o comisiones.
+                      </div>
+                    )}
                   </div>
                 </div>
-                {heForm.tipo==="horaExtra"&&(()=>{
-                  const empleadoSel=empleadosBase.find(e=>e.id===showHE);
-                  const salHora=calcularValorHoraBase(empleadoSel);
-                  const pct=getPctRecargo(heForm.tipoRecargo,heForm.fecha||today());
-                  const vHora=calcularValorHoraRecargo(empleadoSel, heForm.tipoRecargo, heForm.fecha||today(), heForm.valorHora);
-                  const totalHE=heForm.horas*vHora;
-                  const infoRec=RECARGOS_CO_2026.find(r=>r.id===heForm.tipoRecargo);
-                  return(<>
-                  <div style={{gridColumn:"span 2"}}>
-                    <LBL>Tipo de recargo</LBL>
-                    <select value={heForm.tipoRecargo} onChange={e=>setHeForm({...heForm,tipoRecargo:e.target.value})} style={SI}>
-                      {RECARGOS_CO_2026.map(r=><option key={r.id} value={r.id}>{r.label}{r.horario?" · " + (r.horario):""}</option>)}
-                    </select>
-                    {pct!==null&&<div style={{marginTop:4,fontSize:11,color:"#f47c20",fontWeight:600}}>Tarifa aplicada: {pct}% sobre hora ordinaria · Valor/hora calculado: {fmt(vHora)} (hora base: {fmt(salHora)})</div>}
-                  </div>
-                  <div><LBL>Horas</LBL><input type="number" value={heForm.horas} onChange={e=>setHeForm({...heForm,horas:parseFloat(e.target.value)||0})} style={SI}/></div>
-                  {pct===null
-                    ?<div><LBL>Valor/hora</LBL><input type="number" value={heForm.valorHora} onChange={e=>setHeForm({...heForm,valorHora:parseFloat(e.target.value)||0})} style={SI}/></div>
-                    :<div><LBL>Valor/hora (automático)</LBL><input type="number" value={vHora} readOnly style={{...SI,background:"#f1f5f9",color:"#64748b",cursor:"not-allowed"}}/></div>
-                  }
-                  <div style={{gridColumn:"span 2",background:"#ffffff",borderRadius:8,padding:"10px 12px",fontSize:12}}>Total {infoRec?.label||"horas extras"}: <strong style={{color:"#f5c842"}}>{fmt(totalHE)}</strong></div>
-                  </>);
-                })()}
-                {heForm.tipo==="comision"&&<>
-                  <div style={{gridColumn:"span 2"}}><LBL>Valor comisión</LBL><input type="number" value={heForm.comision} onChange={e=>setHeForm({...heForm,comision:parseFloat(e.target.value)||0})} style={SI}/></div>
-                </>}
-                <div><LBL>Fecha</LBL><input type="date" value={heForm.fecha} onChange={e=>setHeForm({...heForm,fecha:e.target.value})} style={SI}/></div>
-                <div><LBL>Concepto</LBL><input value={heForm.concepto} onChange={e=>setHeForm({...heForm,concepto:e.target.value})} placeholder="Ej: Trabajo nocturno" style={SI}/></div>
               </div>
-              <button style={B("#f47c20")} onClick={agregarHE}>✅ Registrar</button>
-            </div>
-            <div style={CD}>
-              <div style={ST}>Resumen por empleado del corte activo</div>
-              {empleadosBase.filter((e)=>(e.horasExtrasPorObra||[]).length>0||(e.comisionesPorObra||[]).length>0).map((e,idx)=>{
-                const resumen=calcularResumenNominaEmpleado(e, periodoNomina);
-                const horasPeriodo = (e.horasExtrasPorObra||[]).filter((h)=>isDateInPeriodo(h.fecha, periodoNomina));
-                const comisionesPeriodo = (e.comisionesPorObra||[]).filter((c)=>isDateInPeriodo(c.fecha, periodoNomina));
-                return(
-                <div key={e.id} style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px",marginBottom:10}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                    <Av init={e.avatar} color={PAL[idx%PAL.length]} size={30}/>
-                    <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600}}>{e.nombre}</div><div style={{fontSize:10,color:"#64748b"}}>{e.cargo} · {periodoNomina.label}</div></div>
-                    <div style={{textAlign:"right",fontSize:12}}><span style={{color:"#f5c842",fontWeight:700}}>{fmt(resumen.horasExtras+resumen.comisiones)}</span></div>
-                  </div>
-                  {horasPeriodo.map((h)=>{const ob=obras.find((o)=>o.id===h.obraId);const recInfo=RECARGOS_CO_2026.find(r=>r.id===h.tipoRecargo);const totalHoraExtra=calcularTotalHoraExtraItem(e,h);return(
-                    <div key={h.id} style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#475569",padding:"3px 0",borderBottom:"1px solid #e2e8f0"}}>
-                      <span>{recInfo?.label||"⏱️ Hora extra"} · {h.horas}h · {ob?.cliente||h.obraId} · {h.fecha}</span>
-                      <span style={{color:"#f5c842",fontWeight:600}}>{fmt(totalHoraExtra)}</span>
-                    </div>
-                  );})}
-                  {comisionesPeriodo.map((c)=>{const ob=obras.find((o)=>o.id===c.obraId);return(
-                    <div key={c.id} style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#475569",padding:"3px 0",borderBottom:"1px solid #e2e8f0"}}>
-                      <span>💰 {c.concepto||"Comisión"} · {ob?.cliente||c.obraId} · {c.fecha}</span>
-                      <span style={{color:"#c084fc",fontWeight:600}}>{fmt(c.comision)}</span>
-                    </div>
-                  );})}
-                  {!horasPeriodo.length && !comisionesPeriodo.length && (
-                    <div style={{fontSize:11,color:"#94a3b8",padding:"6px 0"}}>Sin horas extras ni comisiones en este corte.</div>
-                  )}
-                </div>
-              )})}
-              {empleadosBase.every((e)=>!(e.horasExtrasPorObra||[]).length&&!(e.comisionesPorObra||[]).length)&&(
-                <div style={{textAlign:"center",color:"#94a3b8",padding:"20px 0",fontSize:13}}>Sin registros aún</div>
-              )}
-            </div>
-          </div>
+            );
+          })()}
         </div>
       )}
 

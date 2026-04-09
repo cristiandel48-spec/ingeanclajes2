@@ -484,8 +484,39 @@ const fmtK = n=>n>=1000000?"$" + ((n/1000000).toFixed(1)) + "M":"$" + ((n/1000).
 const today= ()=>new Date().toISOString().split("T")[0];
 const fmtD = iso=>{ if(!iso)return""; const d=new Date(iso+"T12:00:00"); return d.toLocaleDateString("es-CO",{day:"2-digit",month:"short",year:"numeric"}); };
 const fmtL = iso=>{ if(!iso)return""; const ms=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"]; const d=new Date(iso+"T12:00:00"); return (d.getDate()) + " de " + (ms[d.getMonth()]) + " de " + (d.getFullYear()); };
-const DEFAULT_COT_FORMA_PAGO = "50% ANTICIPO, 50% CONTRA ENTREGA";
-const DEFAULT_COT_TIEMPO_EJEC = "10 DIAS HABILES";
+const ITEMS_DB = [
+  { categoria:"Lineas de Vida", items:[
+    { desc:"LINEA DE VIDA HORIZONTAL",            unit:"ML",  vu:280000 },
+    { desc:"LINEA DE VIDA VERTICAL",              unit:"ML",  vu:320000 },
+    { desc:"LINEA DE VIDA CONEXION / TRANSVERSAL",unit:"ML",  vu:280000 },
+    { desc:"RECERTIFICACION LINEA DE VIDA",       unit:"ML",  vu:45000  },
+  ]},
+  { categoria:"Escaleras", items:[
+    { desc:"ESCALERA FIJA CON LINEA DE VIDA VERTICAL", unit:"Metro", vu:1200000 },
+    { desc:"ESCALERA TIPO GATO",                       unit:"Metro", vu:850000  },
+    { desc:"ESCALERA MARINERA",                        unit:"Metro", vu:950000  },
+  ]},
+  { categoria:"Anclajes", items:[
+    { desc:"PUNTO DE ANCLAJE EPOXICO",                unit:"Und",  vu:380000  },
+    { desc:"PUNTO DE ANCLAJE SOLDADO",                unit:"Und",  vu:290000  },
+    { desc:"PUNTO DE ANCLAJE EN FACHADA",             unit:"Und",  vu:420000  },
+    { desc:"ANCLAJE ARTICO ACERO GALVANIZADO",        unit:"Und",  vu:450000  },
+  ]},
+  { categoria:"Sistemas Completos", items:[
+    { desc:"SISTEMA ANTICAIDA CUBIERTA (COMPLETO)",   unit:"Global",vu:8500000 },
+    { desc:"BARANDILLA DE PROTECCION EN CABLE",       unit:"ML",   vu:320000  },
+    { desc:"PASARELA DE SEGURIDAD EN CUBIERTA",       unit:"ML",   vu:550000  },
+  ]},
+  { categoria:"Servicios", items:[
+    { desc:"CERTIFICACION SISTEMA ANTICAIDA",         unit:"Global",vu:1200000 },
+    { desc:"RECERTIFICACION ANUAL",                   unit:"Global",vu:650000  },
+    { desc:"INSPECCION Y DIAGNOSTICO",                unit:"Global",vu:400000  },
+    { desc:"COORDINADOR SST EN OBRA",                 unit:"Dia",   vu:280000  },
+  ]},
+];
+
+const DEFAULT_COT_FORMA_PAGO = "50% ANTICIPO, 50% CONCLUIR LABORES";
+const DEFAULT_COT_TIEMPO_EJEC = "10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)";
 
 function getQuoteProposalLabel(index = 0) {
   const safeIndex = Number.isFinite(Number(index)) ? Number(index) : 0;

@@ -1633,7 +1633,7 @@ function buildCotizacionPrintHtml(c){
     if(propuesta.mapImg && propuesta.measurements.length > 0){
       const { width: mW, height: mH } = getStaticMapDimensions(propuesta.quote.geoMapView || c.geoMapView);
       const propLabels = getStaticMapLabelData(propuesta.measurements, mapQuery, propuesta.quote.geoMapView || c.geoMapView).map(label=>`
-        <div class="map-label" style="left:${label.left}; top:${label.top}; transform:translate(-50%, -50%) rotate(${label.angle}deg);">
+        <div class="map-label" style="left:${label.left}; top:${label.top}; color:${label.color}; transform:translate(-50%, -50%) rotate(${label.angle}deg);">
           <div>${escapeHtml(label.title)} - ${escapeHtml(label.value)}</div>
         </div>`).join('');
       propMapBlock = `<div class="section-title">Medicion satelital</div>
@@ -1642,21 +1642,19 @@ function buildCotizacionPrintHtml(c){
     const requerimientoBlock = propuesta.esObraBlanca && propuesta.requerimientoCliente ? `
       <div class="measurement-box">
         <p><strong>Necesidad del cliente</strong></p>
-        <div style="white-space:pre-wrap; text-align:justify;">${escapeHtml(propuesta.requerimientoCliente)}</div>
+        <div style="white-space:pre-wrap;">${escapeHtml(propuesta.requerimientoCliente)}</div>
       </div>` : "";
     const alcanceBlock = propuesta.alcancePropuesta ? `
       <div class="measurement-box">
         <p><strong>Alcance de esta propuesta</strong></p>
-        <div style="white-space:pre-wrap; text-align:justify;">${escapeHtml(propuesta.alcancePropuesta)}</div>
+        <div style="white-space:pre-wrap;">${escapeHtml(propuesta.alcancePropuesta)}</div>
       </div>` : "";
-    const photoCount = propuesta.fotos.length;
-    const photoGridClass = photoCount <= 1 ? "photo-grid single" : photoCount === 2 ? "photo-grid double" : "photo-grid multi";
     const fotosBlock = propuesta.fotos.length ? `
       <div class="section-title">Registro fotografico de la propuesta</div>
-      <div class="${photoGridClass}">
+      <div class="photo-grid">
         ${propuesta.fotos.map((foto,idx)=>`
           <div class="photo-card">
-            <div class="photo-wrap ${photoCount===1 ? "photo-wrap-large" : ""}"><img src="${foto.src}" alt="${escapeHtml(foto.label || `Foto ${idx+1}`)}" class="photo"/></div>
+            <div class="photo-wrap"><img src="${foto.src}" alt="${escapeHtml(foto.label || `Foto ${idx+1}`)}" class="photo"/></div>
             <div class="photo-label">${escapeHtml(foto.label || `Foto ${idx+1}`)}</div>
           </div>
         `).join("")}
@@ -1678,6 +1676,7 @@ function buildCotizacionPrintHtml(c){
         <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
       <div class="section-title">${escapeHtml(propuesta.nombre)}</div>
+      <p style="margin-bottom:6px;color:#64748b;"><strong>Tipo:</strong> ${escapeHtml(propuesta.esObraBlanca ? "Obra blanca" : "Linea de vida / anclajes")}</p>
       ${requerimientoBlock}
       ${alcanceBlock}
       ${fotosBlock}
@@ -1704,65 +1703,61 @@ function buildCotizacionPrintHtml(c){
     <meta charset="utf-8" />
     <title>Cotizacion ${escapeHtml(c.numero || '')}</title>
     <style>
-      @page { size: letter portrait; margin: 12mm 10mm 12mm 10mm; }
+      @page { size: letter portrait; margin-top: 35mm; margin-right: 20mm; margin-bottom: 20mm; margin-left: 28mm; }
       * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       html, body { background:#fff; }
-      body { font-family: Aptos, Arial, Helvetica, sans-serif; color: #1f2937; margin: 0; font-size: 10.5pt; line-height: 1.35; text-align: justify; text-justify: inter-word; }
+      body { font-family: Aptos, Arial, Helvetica, sans-serif; color: #111; margin: 0; font-size: 12pt; line-height: 1.45; text-align: justify; text-justify: inter-word; }
       .page { width:100%; display:flex; flex-direction:column; break-after: page; page-break-after: always; min-height: auto; padding: 0; }
       .page:last-child { page-break-after: auto; }
-      .header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #c1121f; padding-bottom:8px; margin-bottom:10px; }
-      .logo { height: 60px; width:auto; object-fit:contain; }
-      .header-mid { flex:1; text-align:center; padding-top:4px; font-family:Aptos, Arial, Helvetica, sans-serif; font-weight:900; letter-spacing:1.4px; font-size:10.8pt; color:#111; }
-      .header-right { text-align:right; font-size:8.2pt; color:#555; line-height:1.35; max-width:220px; }
-      p { margin: 0 0 6px; }
-      .meta { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; gap:12px; }
+      .header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #cc0000; padding-bottom:10px; margin-bottom:14px; }
+      .logo { height: 66px; width:auto; object-fit:contain; }
+      .header-mid { flex:1; text-align:center; padding-top:5px; font-family:Aptos, Arial, Helvetica, sans-serif; font-weight:900; letter-spacing:1.6px; font-size:11pt; color:#111; }
+      .header-right { text-align:right; font-size:8.3pt; color:#555; line-height:1.45; max-width:220px; }
+      p { margin: 0 0 9px; }
+      .meta { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; gap:12px; }
       .meta strong { font-size:10.8pt; }
-      .client { margin-bottom: 10px; }
-      .client p { margin-bottom: 3px; }
-      .section-title { text-align:center; font-weight:900; color:#111; text-transform:uppercase; margin: 8px 0 6px; border-bottom:2px solid #c1121f; padding-bottom:3px; font-size:11.4pt; letter-spacing:.2px; }
-      .table { width:100%; border-collapse:collapse; margin: 6px 0 8px; }
-      .table th, .table td { border:1px solid #444; padding:5px 8px; vertical-align:middle; }
-      .table th { background:#eef2f7; font-weight:900; text-align:center; font-size:10.5pt; }
-      .table td { font-size: 10.2pt; }
+      .client { margin-bottom: 18px; }
+      .client p { margin-bottom: 5px; }
+      .section-title { text-align:center; font-weight:900; color:#111; text-transform:uppercase; margin: 10px 0 8px; border-bottom:2px solid #cc0000; padding-bottom:4px; font-size:12pt; letter-spacing:.2px; }
+      .table { width:100%; border-collapse:collapse; margin: 8px 0 10px; }
+      .table th, .table td { border:1px solid #222; padding:7px 9px; vertical-align:middle; }
+      .table th { background:#f7f7f7; font-weight:900; text-align:center; font-size:11pt; }
+      .table td { font-size: 11pt; }
       .table .num { text-align:right; white-space:nowrap; }
       .table .center { text-align:center; }
       .table .label-strong td:first-child { font-weight:900; }
-      .total-row td { background:#dbe7f5; color:#0f172a; font-weight:900; }
+      .total-row td { background:#fff369; font-weight:900; }
       .note-center { text-align:center; font-weight:900; margin:10px 0 0; font-size:11pt; }
-      .map-wrap { position:relative; border:1px solid #d8dee7; padding:0; margin: 2px 0 8px; width:100%; min-height:250px; overflow:hidden; background:#fff; }
-      .map { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block; margin:0 auto; }
-      .map-label { position:absolute; pointer-events:none; text-align:center; font-family:Aptos, Arial, Helvetica, sans-serif; font-weight:800; line-height:1; font-size:8px; white-space:nowrap; color:#fff !important; background:rgba(17,24,39,0.55); padding:2px 4px; border-radius:4px; text-shadow:0 1px 2px rgba(0,0,0,0.85); border:1px solid rgba(255,255,255,0.28); transform-origin:center; }
+      .map-wrap { position:relative; border:1px solid #bbb; padding:0; margin: 2px 0 12px; width:100%; min-height:360px; overflow:hidden; background:#f8fafc; }
+      .map { position:absolute; inset:0; width:100%; height:100%; object-fit:fill; display:block; margin:0 auto; }
+      .map-label { position:absolute; pointer-events:none; text-align:center; font-family:Aptos, Arial, Helvetica, sans-serif; font-weight:800; line-height:1; font-size:7.5px; white-space:nowrap; background:rgba(255,255,255,0.8); padding:1px 3px; border-radius:999px; text-shadow:-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 0 4px rgba(255,255,255,0.9); transform-origin:center; }
       .placeholder { border:1px dashed #bbb; padding: 28px; text-align:center; color:#777; margin-bottom:12px; }
-      .measurement-box { border:1px solid #d5d9e2; background:#f8fafc; padding:8px 10px; margin: 0 0 8px; text-align:justify; text-justify:inter-word; }
-      .measurement-box p { margin-bottom: 4px; }
+      .measurement-box { border:1px solid #d5d9e2; background:#f8fafc; padding:10px 12px; margin: 0 0 12px; }
+      .measurement-box p { margin-bottom: 6px; }
       .measurement-table { width:100%; border-collapse:collapse; margin-top: 6px; }
       .measurement-table th, .measurement-table td { border:1px solid #cbd5e1; padding:6px 8px; font-size:11pt; }
       .measurement-table th { background:#e2e8f0; text-align:left; font-weight:800; }
-      .photo-grid { display:grid; gap:8px; margin-bottom:8px; }
-      .photo-grid.single { grid-template-columns:1fr; }
-      .photo-grid.double { grid-template-columns:1fr 1fr; }
-      .photo-grid.multi { grid-template-columns:1fr 1fr; }
-      .photo-card { border:1px solid #d5d9e2; background:#fff; padding:6px; break-inside: avoid; page-break-inside: avoid; }
-      .photo-wrap { background:#fff; overflow:hidden; height:210px; display:flex; align-items:center; justify-content:center; border:1px solid #e5e7eb; }
-      .photo-wrap-large { height:300px; }
-      .photo { width:100%; height:100%; object-fit:contain; display:block; }
-      .photo-label { font-size:9.5pt; color:#475569; padding-top:5px; text-align:center; }
-      .signature { margin-top: 18px; }
-      .signature-space { height: 48px; }
+      .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+      .photo-card { border:1px solid #d5d9e2; background:#fff; padding:8px; break-inside: avoid; page-break-inside: avoid; }
+      .photo-wrap { background:#f8fafc; overflow:hidden; }
+      .photo { width:100%; height:auto; display:block; }
+      .photo-label { font-size:10pt; color:#475569; padding-top:6px; text-align:center; }
+      .signature { margin-top: 30px; }
+      .signature-space { height: 72px; }
       .signature-line { width: 360px; border-top:1px solid #222; padding-top:7px; }
       .signature-name { white-space: nowrap; }
-      .footer { margin-top:auto; border-top:1px solid #999; padding-top:6px; text-align:center; font-size:8.6pt; color:#555; }
+      .footer { margin-top:auto; border-top:1px solid #999; padding-top:7px; text-align:center; font-size:9pt; color:#555; }
       .appendix-img { width:100%; height:auto; display:block; }
-      .tech-title { font-weight:900; text-transform:uppercase; text-align:center; font-size:13pt; margin: 0 0 8px; }
+      .tech-title { font-weight:900; text-transform:uppercase; text-align:center; font-size:15pt; margin: 0 0 10px; }
       .tech-subtitle { text-align:center; font-weight:700; letter-spacing:4px; margin: 0 0 14px; }
       .tech-table { width:100%; border-collapse:collapse; margin-top: 8px; }
-      .tech-table th, .tech-table td { border:1px solid #444; padding:6px 8px; vertical-align:top; }
+      .tech-table th, .tech-table td { border:1px solid #222; padding:8px 10px; vertical-align:top; }
       .tech-table th { background:#f7f7f7; font-weight:900; text-align:center; }
-      .tech-table td { font-size:10.2pt; line-height:1.32; }
+      .tech-table td { font-size:11pt; line-height:1.42; }
       .tech-elem { width:24%; font-weight:800; }
-      ul { margin: 6px 0 8px 18px; padding:0; }
-      li { margin-bottom: 3px; }
-      .small-gap { margin-top: 6px; }
+      ul { margin: 8px 0 12px 22px; padding:0; }
+      li { margin-bottom: 5px; }
+      .small-gap { margin-top: 8px; }
       .no-break, .measurement-box, .map-wrap, .signature, table, tr, td, th { break-inside: avoid; page-break-inside: avoid; }
       img { max-width:100%; }
     </style>
@@ -1785,7 +1780,7 @@ function buildCotizacionPrintHtml(c){
       <div style="height:8px"></div>
       <p>Cordial saludo.</p>
       <div style="height:8px"></div>
-      ${textoInicial ? `<div class="measurement-box"><div style="white-space:pre-wrap; text-align:justify;">${escapeHtml(textoInicial)}</div></div>` : ""}
+      ${textoInicial ? `<div class="measurement-box"><div style="white-space:pre-wrap;">${escapeHtml(textoInicial)}</div></div>` : ""}
       <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
     </section>
 
@@ -1804,7 +1799,7 @@ function buildCotizacionPrintHtml(c){
         <tr><td><strong>VALIDEZ DE LA OFERTA</strong></td><td>${escapeHtml(`${c.val||30} DIAS A PARTIR DE LA FECHA DE ENTREGA DE ESTA COTIZACION`)}</td></tr>
         <tr><td><strong>CERTIFICACION</strong></td><td>SE ENTREGA CON EL PAGO TOTAL</td></tr>
       </tbody></table>
-      ${String(c.observaciones||"").trim() ? `<div class="measurement-box" style="margin-top:10px;"><p><strong>Observaciones</strong></p><div style="white-space:pre-wrap; text-align:justify;">${escapeHtml(c.observaciones)}</div></div>` : ""}
+      ${String(c.observaciones||"").trim() ? `<div class="measurement-box" style="margin-top:12px;"><p><strong>Observaciones</strong></p><div style="white-space:pre-wrap;">${escapeHtml(c.observaciones)}</div></div>` : ""}
       <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
     </section>
 
@@ -5238,6 +5233,8 @@ function Nomina({ctx}){
   const [diasVacLiquidar,setDiasVacLiquidar]=useState({});
   const [guardandoNomina,setGuardandoNomina]=useState(false);
   const [mensajeGuardadoNomina,setMensajeGuardadoNomina]=useState("");
+  const [nominaEditor,setNominaEditor]=useState(null);
+  const [guardandoNominaGenerada,setGuardandoNominaGenerada]=useState(false);
   const [nominasGeneradas,setNominasGeneradas]=useState(()=>{
     if(typeof window==="undefined") return {};
     try{
@@ -5284,8 +5281,9 @@ function Nomina({ctx}){
   const totalPagarPlanilla=resumenesPlanilla.reduce((total,item)=>total+item.totalPagar,0);
   const nominaPreview = buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar);
   const nominaGeneradaActual = nominasGeneradas[nominaPreview.id] || null;
-  const nominaVistaActual = nominaGeneradaActual || nominaPreview;
+  const nominaVistaActual = nominaEditor || nominaGeneradaActual || nominaPreview;
   const nominaEstaGenerada = Boolean(nominaGeneradaActual);
+  const nominaEnEdicion = Boolean(nominaEditor);
   const empleadoDeduccionActivo =
     empleadosBase.find((empleado)=>empleado.id===selId) ||
     activos[0] ||
@@ -5457,20 +5455,115 @@ function Nomina({ctx}){
     await guardarCambiosNomina("Cambios de contratos y liquidación sincronizados", { empleados: nextEmployees });
   };
 
+  const abrirEditorNomina = (snapshot)=>{
+    const copia = JSON.parse(JSON.stringify(snapshot));
+    setNominaEditor(copia);
+    setTab("planilla");
+  };
+
   const generarNominaCorte = ()=>{
     const snapshot = buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar);
     setNominasGeneradas((prev)=>({
       ...prev,
       [snapshot.id]: snapshot,
     }));
+    abrirEditorNomina(snapshot);
     setMensajeGuardadoNomina(
-      "Nómina generada para " + snapshot.periodo.label + " con " + snapshot.totals.totalRegistros + " registros."
+      "Nómina generada para " + snapshot.periodo.label + ". Ahora puedes revisarla, editarla y guardarla."
     );
     setTimeout(()=>setMensajeGuardadoNomina(""), 3500);
   };
 
+  const actualizarNominaEditorRegistro = (empleadoId, patch)=>{
+    setNominaEditor((prev)=>{
+      if(!prev) return prev;
+
+      const registros = prev.registros.map((registro)=>{
+        if(registro.empleado.id !== empleadoId) return registro;
+
+        const resumen = {
+          ...registro.resumen,
+          ...(patch.resumen || {}),
+        };
+
+        const totalPagar =
+          Number(resumen.salario || 0) +
+          Number(resumen.auxilioTransporte || 0) +
+          Number(resumen.horasExtras || 0) +
+          Number(resumen.comisiones || 0) +
+          Number(registro.liquidacionPrestaciones || 0) -
+          Number(resumen.salud || 0) -
+          Number(resumen.pension || 0) -
+          Number(resumen.otrasDeducciones || 0);
+
+        return {
+          ...registro,
+          ...patch,
+          resumen,
+          totalPagar: Math.max(0, Math.round(totalPagar)),
+        };
+      });
+
+      const totalPagar = registros.reduce((s,r)=>s + Number(r.totalPagar || 0), 0);
+      const totalBanco = registros
+        .filter(r=>!(r.observacionesBanco || []).length)
+        .reduce((s,r)=>s + Number(r.totalPagar || 0), 0);
+      const totalRegistrosBanco = registros.filter(r=>!(r.observacionesBanco || []).length).length;
+
+      return {
+        ...prev,
+        registros,
+        totals: {
+          ...prev.totals,
+          totalPagar,
+          totalBanco,
+          totalRegistrosBanco,
+        },
+      };
+    });
+  };
+
+  const guardarNominaGeneradaEditada = async ()=>{
+    if(!nominaEditor) return;
+
+    try{
+      setGuardandoNominaGenerada(true);
+
+      const snapshot = {
+        ...nominaEditor,
+        generadoEn: new Date().toISOString(),
+      };
+
+      const nextNominas = {
+        ...(nominasGeneradas || {}),
+        [snapshot.id]: snapshot,
+      };
+
+      setNominasGeneradas(nextNominas);
+      setNominaEditor(snapshot);
+
+      if(typeof saveAllToCloud === "function" && isSupabaseConfigured()){
+        const result = await saveAllToCloud({ nominasGeneradas: nextNominas });
+        if(result?.ok===false){
+          setMensajeGuardadoNomina("No se pudo guardar en Supabase. La nómina quedó actualizada localmente.");
+          setTimeout(()=>setMensajeGuardadoNomina(""), 3500);
+          return;
+        }
+      }
+
+      setMensajeGuardadoNomina("Nómina guardada correctamente.");
+      setTimeout(()=>setMensajeGuardadoNomina(""), 3500);
+    } finally {
+      setGuardandoNominaGenerada(false);
+    }
+  };
+
+  const cancelarEdicionNomina = ()=>{
+    setNominaEditor(nominaGeneradaActual ? JSON.parse(JSON.stringify(nominaGeneradaActual)) : null);
+  };
+
   const descargarPlanoBanco = ()=>{
-    const snapshot = nominaEstaGenerada ? nominaGeneradaActual : buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar);
+    const snapshot = nominaEditor || nominaGeneradaActual || buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar);
     if(!snapshot.registrosBanco.length){
       setMensajeGuardadoNomina("No hay registros listos para el banco. Revisa cédula y cuenta bancaria de los empleados del corte.");
       setTimeout(()=>setMensajeGuardadoNomina(""), 3500);
@@ -5531,7 +5624,7 @@ function Nomina({ctx}){
       <H1 title="Nómina y Empleados" subtitle="Gestión de empleados, horas extras, comisiones y planilla"
         action={<button style={B("#cc0000")} onClick={()=>setTab("nuevo")}>+ Nuevo Empleado</button>}/>
       <div style={{display:"flex",gap:6,marginBottom:20}}>
-        {[["lista","Empleados"],["vacaciones","Vacaciones"],["contratos","Contratos y liquidación"],["he","Horas extras y comisiones"],["deducciones","Revisión deducciones"],["colillas","Colillas de pago"],["planilla","Planilla Bancolombia"]].map(([id,lb])=>(
+        {[["lista","Empleados"],["vacaciones","Vacaciones"],["contratos","Contratos y liquidación"],["he","Horas extras y comisiones"],["deducciones","Revisión deducciones"],["planilla","Planilla Bancolombia"],["colillas","Colillas de pago"]].map(([id,lb])=>(
           <button key={id} onClick={()=>setTab(id)} style={{...B(tab===id?"#f47c20":"#f1f5f9",tab===id?"#fff":"#475569"),border:"1px solid " + (tab===id?"#f47c20":"#e2e8f0")}}>{lb}</button>
         ))}
       </div>
@@ -5632,6 +5725,27 @@ function Nomina({ctx}){
           </div>
         </div>
       )}
+      <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:-4,marginBottom:20}}>
+        <button
+          onClick={generarNominaCorte}
+          style={{...B("#f47c20"),minWidth:190,justifyContent:"center",fontWeight:700}}
+        >
+          {nominaEstaGenerada ? "Regenerar nómina" : "Generar nómina"}
+        </button>
+        <button
+          onClick={()=>setTab("deducciones")}
+          style={{...B("#142840","#dbeafe"),minWidth:190,justifyContent:"center",fontWeight:700}}
+        >
+          Ir a revisión deducciones
+        </button>
+        <button
+          onClick={()=>setTab("planilla")}
+          style={{...B("#166534","#d1fae5"),minWidth:190,justifyContent:"center",fontWeight:700}}
+        >
+          Abrir nómina generada
+        </button>
+      </div>
+
       {tab==="lista"&&(
         <div>
           <div style={CD}>
@@ -6190,14 +6304,16 @@ function Nomina({ctx}){
 
       {tab==="planilla"&&(
         <div>
-          <div style={{display:"flex",gap:12,alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
-            <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:12,padding:"12px 14px"}}>
-              <div style={{fontSize:11,fontWeight:700,color:"#1d4ed8",textTransform:"uppercase",letterSpacing:0.7}}>Generación de nómina y plano banco</div>
-              <div style={{fontSize:13,color:"#0f172a",marginTop:4}}>Corte activo: {periodoNomina.label}</div>
+          <div style={{display:"flex",gap:12,alignItems:"center",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap"}}>
+            <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:12,padding:"12px 14px",flex:"1 1 520px"}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#1d4ed8",textTransform:"uppercase",letterSpacing:0.7}}>Edición de nómina generada</div>
+              <div style={{fontSize:13,color:"#0f172a",marginTop:4}}>Corte activo: {nominaVistaActual.periodo.label}</div>
               <div style={{fontSize:11,color:"#64748b",marginTop:4}}>
-                {nominaEstaGenerada
-                  ? ("Nómina generada el " + formatNominaGeneratedAt(nominaVistaActual.generadoEn) + ". Si cambias horas extras, comisiones o deducciones, usa Regenerar nómina.")
-                  : "Esta es la vista previa del corte. Cuando ya revises horas extras, comisiones, deducciones y liquidaciones, pulsa Generar nómina para congelar el periodo."}
+                {nominaEnEdicion
+                  ? "Estás editando la nómina generada. Puedes ajustar valores y luego guardar."
+                  : nominaEstaGenerada
+                    ? ("Nómina generada el " + formatNominaGeneratedAt(nominaVistaActual.generadoEn))
+                    : "Vista previa del corte. Genera la nómina para congelarla y luego editarla."}
               </div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(3, minmax(120px, 1fr))",gap:8,marginTop:12}}>
                 <div style={{background:"#fff",borderRadius:10,padding:"9px 10px",border:"1px solid #dbeafe"}}>
@@ -6214,9 +6330,15 @@ function Nomina({ctx}){
                 </div>
               </div>
             </div>
-            <div style={{display:"flex",gap:10,flexWrap:"wrap",justifyContent:"flex-start",alignItems:"center",marginTop:14,paddingTop:10,borderTop:"1px solid #bfdbfe"}}>
-              <button style={{...B("#f47c20"),minWidth:180,justifyContent:"center",fontWeight:700}} onClick={generarNominaCorte}>{nominaEstaGenerada ? "Regenerar nómina" : "Generar nómina"}</button>
-              <button style={{...B("#142840","#dbeafe"),minWidth:190,justifyContent:"center",fontWeight:700}} onClick={descargarPlanoBanco}>Descargar plano banco</button>
+
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"flex-end"}}>
+              <button style={B("#166534","#d1fae5")} onClick={guardarNominaGeneradaEditada} disabled={!nominaEnEdicion || guardandoNominaGenerada}>
+                {guardandoNominaGenerada ? "Guardando..." : "Guardar nómina"}
+              </button>
+              <button style={B("#475569","#e2e8f0")} onClick={cancelarEdicionNomina} disabled={!nominaEnEdicion}>
+                Cancelar edición
+              </button>
+              <button style={B("#142840","#dbeafe")} onClick={descargarPlanoBanco}>Descargar plano banco</button>
               <button style={B("#166534","#d1fae5")} onClick={()=>printCurrentPz("Planilla Nómina " + (nominaVistaActual.periodo.label))}>Imprimir / Bancolombia</button>
             </div>
           </div>
@@ -6248,15 +6370,34 @@ function Nomina({ctx}){
                       {e.banco}<br/>{e.tipoCuenta}<br/><span style={{fontFamily:"monospace"}}>{e.numeroCuenta}</span>
                       {observacionesBanco?.length ? <div style={{fontSize:9,color:"#b91c1c",marginTop:4}}>{observacionesBanco.join(" · ")}</div> : <div style={{fontSize:9,color:"#166534",marginTop:4}}>Listo para banco</div>}
                     </td>
-                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10}}>{resumen.diasNomina}</td>
-                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10}}>$ {resumen.salario.toLocaleString("es-CO")}</td>
-                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10}}>$ {resumen.auxilioTransporte.toLocaleString("es-CO")}</td>
-                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10,color:"#7a6610"}}>$ {resumen.horasExtras.toLocaleString("es-CO")}</td>
-                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10,color:"#5b21b6"}}>$ {resumen.comisiones.toLocaleString("es-CO")}</td>
+                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10}}>
+                      <input type="number" value={resumen.diasNomina} onChange={(ev)=>actualizarNominaEditorRegistro(e.id,{resumen:{ diasNomina:Number(ev.target.value)||0 }})} style={{width:70,textAlign:"right",padding:"4px 6px"}} />
+                    </td>
+                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10}}>
+                      <input type="number" value={resumen.salario} onChange={(ev)=>actualizarNominaEditorRegistro(e.id,{resumen:{ salario:Number(ev.target.value)||0 }})} style={{width:110,textAlign:"right",padding:"4px 6px"}} />
+                    </td>
+                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10}}>
+                      <input type="number" value={resumen.auxilioTransporte} onChange={(ev)=>actualizarNominaEditorRegistro(e.id,{resumen:{ auxilioTransporte:Number(ev.target.value)||0 }})} style={{width:110,textAlign:"right",padding:"4px 6px"}} />
+                    </td>
+                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10,color:"#7a6610"}}>
+                      <input type="number" value={resumen.horasExtras} onChange={(ev)=>actualizarNominaEditorRegistro(e.id,{resumen:{ horasExtras:Number(ev.target.value)||0 }})} style={{width:110,textAlign:"right",padding:"4px 6px"}} />
+                    </td>
+                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10,color:"#5b21b6"}}>
+                      <input type="number" value={resumen.comisiones} onChange={(ev)=>actualizarNominaEditorRegistro(e.id,{resumen:{ comisiones:Number(ev.target.value)||0 }})} style={{width:110,textAlign:"right",padding:"4px 6px"}} />
+                    </td>
                     <td style={{padding:"6px 8px",textAlign:"right",color:"#cc0000",fontSize:9}}>
-                      <div>Salud: -$ {resumen.salud.toLocaleString("es-CO")}</div>
-                      <div>Pensión: -$ {resumen.pension.toLocaleString("es-CO")}</div>
-                      <div>Otras: -$ {resumen.otrasDeducciones.toLocaleString("es-CO")}</div>
+                      <div style={{marginBottom:4}}>
+                        Salud:
+                        <input type="number" value={resumen.salud} onChange={(ev)=>actualizarNominaEditorRegistro(e.id,{resumen:{ salud:Number(ev.target.value)||0 }})} style={{width:95,textAlign:"right",padding:"3px 5px",marginLeft:6}} />
+                      </div>
+                      <div style={{marginBottom:4}}>
+                        Pensión:
+                        <input type="number" value={resumen.pension} onChange={(ev)=>actualizarNominaEditorRegistro(e.id,{resumen:{ pension:Number(ev.target.value)||0 }})} style={{width:95,textAlign:"right",padding:"3px 5px",marginLeft:6}} />
+                      </div>
+                      <div>
+                        Otras:
+                        <input type="number" value={resumen.otrasDeducciones} onChange={(ev)=>actualizarNominaEditorRegistro(e.id,{resumen:{ otrasDeducciones:Number(ev.target.value)||0 }})} style={{width:95,textAlign:"right",padding:"3px 5px",marginLeft:6}} />
+                      </div>
                     </td>
                     <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,color:liquidacionPrestaciones>0?"#b45309":"#94a3b8",fontSize:10}}>$ {liquidacionPrestaciones.toLocaleString("es-CO")}</td>
                     <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,color:"#003B71",fontSize:10}}>$ {totalPagar.toLocaleString("es-CO")}</td>

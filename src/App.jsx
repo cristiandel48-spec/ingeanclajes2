@@ -1431,24 +1431,21 @@ function getQuotePrintableProposals(baseQuote = {}){
 
 function buildCotizacionPrintHtml(c){
   const propuestas = getQuotePrintableProposals(c);
-  const activa = propuestas.find((propuesta)=>propuesta.id===getQuoteActiveProposal(c)?.id) || propuestas[0];
-  const baseQuote = activa?.quote || c;
   const textoInicial = String(c.textoInicial || "").trim();
-  const measurements = Array.isArray(baseQuote.geoMediciones) ? baseQuote.geoMediciones : [];
   const mapQuery = c.coords || `${c.obra||""} ${c.ciudad||""}`.trim();
-  const { width: mapWidth, height: mapHeight } = getStaticMapDimensions(baseQuote.geoMapView || c.geoMapView);
-  const quoteMapSrc = c.mapImg && String(c.mapImg).startsWith("data:")
-    ? c.mapImg
-    : (buildGoogleStaticMapUrl(measurements, mapQuery, baseQuote.geoMapView || c.geoMapView, { width: mapWidth, height: mapHeight }) || c.mapImg || "");
   const showVerticalAppendix = propuestas.some((propuesta)=>hasVerticalLifeLineService(propuesta.quote));
-  const mapBlock = quoteMapSrc ? `<div class="map-wrap" style="aspect-ratio:${mapWidth}/${mapHeight};"><img src="${quoteMapSrc}" alt="Mapa de medicion" class="map"/></div>` : `<div class="placeholder">Agrega la imagen satelital o la medicion automatica para ver el plano aqui.</div>`;
-  const mapLabels = getStaticMapLabelData(measurements, mapQuery, c.geoMapView).map(label=>`
-      <div class="map-label" style="left:${label.left}; top:${label.top}; color:${label.color}; transform:translate(-50%, -50%) rotate(${label.angle}deg);">
-        <div>${escapeHtml(label.title)} - ${escapeHtml(label.value)}</div>
-      </div>
-    `).join('');
-  const mapBlockWithLabels = quoteMapSrc ? `<div class="map-wrap" style="aspect-ratio:${mapWidth}/${mapHeight};"><img src="${quoteMapSrc}" alt="Mapa de medicion" class="map"/>${mapLabels}</div>` : mapBlock;
   const proposalSections = propuestas.map((propuesta)=>{
+    // Mapa de esta propuesta (solo si tiene mediciones)
+    let propMapBlock = "";
+    if(propuesta.mapImg && propuesta.measurements.length > 0){
+      const { width: mW, height: mH } = getStaticMapDimensions(propuesta.quote.geoMapView || c.geoMapView);
+      const propLabels = getStaticMapLabelData(propuesta.measurements, mapQuery, propuesta.quote.geoMapView || c.geoMapView).map(label=>`
+        <div class="map-label" style="left:${label.left}; top:${label.top}; color:${label.color}; transform:translate(-50%, -50%) rotate(${label.angle}deg);">
+          <div>${escapeHtml(label.title)} - ${escapeHtml(label.value)}</div>
+        </div>`).join('');
+      propMapBlock = `<div class="section-title">Medicion satelital</div>
+        <div class="map-wrap" style="aspect-ratio:${mW}/${mH};"><img src="${propuesta.mapImg}" alt="Mapa de medicion" class="map"/>${propLabels}</div>`;
+    }
     const requerimientoBlock = propuesta.esObraBlanca && propuesta.requerimientoCliente ? `
       <div class="measurement-box">
         <p><strong>Necesidad del cliente</strong></p>
@@ -1490,6 +1487,7 @@ function buildCotizacionPrintHtml(c){
       ${requerimientoBlock}
       ${alcanceBlock}
       ${fotosBlock}
+      ${propMapBlock}
       <table class="table no-break">
         <thead><tr><th>Descripcion</th><th class="num">Cantidad</th><th class="center">Unidad</th><th class="num">Valor</th><th class="num">Subtotal</th></tr></thead>
         <tbody>
@@ -1555,8 +1553,8 @@ function buildCotizacionPrintHtml(c){
       .measurement-table th { background:#e2e8f0; text-align:left; font-weight:800; }
       .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
       .photo-card { border:1px solid #d5d9e2; background:#fff; padding:8px; break-inside: avoid; page-break-inside: avoid; }
-      .photo-wrap { height:220px; display:flex; align-items:center; justify-content:center; background:#f8fafc; overflow:hidden; }
-      .photo { width:100%; height:100%; object-fit:cover; display:block; }
+      .photo-wrap { background:#f8fafc; overflow:hidden; }
+      .photo { width:100%; height:auto; display:block; }
       .photo-label { font-size:10pt; color:#475569; padding-top:6px; text-align:center; }
       .signature { margin-top: 30px; }
       .signature-space { height: 72px; }
@@ -1599,18 +1597,6 @@ function buildCotizacionPrintHtml(c){
       ${textoInicial ? `<div class="measurement-box"><div style="white-space:pre-wrap;">${escapeHtml(textoInicial)}</div></div>` : ""}
       <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
     </section>
-
-    ${quoteMapSrc ? `<section class="page">
-      <div class="header">
-        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
-        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
-        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
-      </div>
-      <div class="section-title">Plano y medicion base</div>
-      ${mapBlockWithLabels}
-      <p>Estas mediciones sirven como base para comparar tecnicamente las propuestas que aparecen a continuacion.</p>
-      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
-    </section>` : ""}
 
     ${proposalSections}
 
@@ -2599,14 +2585,8 @@ export default function App(){
 function CotizacionPrint({c}){
   if(!c) return null;
   const propuestas = getQuotePrintableProposals(c);
-  const activa = propuestas.find((propuesta)=>propuesta.id===getQuoteActiveProposal(c)?.id) || propuestas[0];
-  const baseQuote = activa?.quote || c;
   const textoInicial = String(c.textoInicial || "").trim();
-  const measurements = Array.isArray(baseQuote.geoMediciones) ? baseQuote.geoMediciones : [];
   const mapQuery = c.coords || `${c.obra||""} ${c.ciudad||""}`.trim();
-  const quoteMapSrc = c.mapImg && String(c.mapImg).startsWith("data:")
-    ? c.mapImg
-    : (buildGoogleStaticMapUrl(measurements, mapQuery, c.geoMapView) || c.mapImg || null);
 
   return(
     <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:12,lineHeight:1.45,border:"1px solid #ddd",padding:"22px 26px"}}>
@@ -2624,8 +2604,9 @@ function CotizacionPrint({c}){
           <div style={{whiteSpace:"pre-wrap"}}>{textoInicial}</div>
         </div>
       )}
-      {quoteMapSrc ? <div style={{marginBottom:16,textAlign:"center"}}><StaticMapPreview src={quoteMapSrc} segments={measurements} query={mapQuery} mapView={c.geoMapView} alt="Mapa" maxHeight={320} border="1px solid #ddd" borderRadius={4} /></div> : null}
-      {propuestas.map((propuesta, idx)=>(
+      {propuestas.map((propuesta, idx)=>{
+        const propMapSrc = propuesta.mapImg || null;
+        return (
         <div key={propuesta.id} style={{marginTop:idx===0?0:24,paddingTop:idx===0?0:20,borderTop:idx===0?"none":"2px solid #e2e8f0",pageBreakBefore:idx===0?"auto":"always"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:12,marginBottom:4}}>
             <div style={{fontWeight:800,textTransform:"uppercase",fontSize:16,color:"#1a1a2e"}}>{propuesta.nombre}</div>
@@ -2649,17 +2630,22 @@ function CotizacionPrint({c}){
 
           {propuesta.fotos.length>0&&(
             <div style={{marginBottom:16}}>
-              <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8}}>Registro fotográfico de la propuesta</div>
+              <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8}}>Registro fotográfico</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                 {propuesta.fotos.map((foto,fotoIdx)=>(
                   <div key={foto.id||fotoIdx} style={{border:"1px solid #cbd5e1",borderRadius:6,overflow:"hidden",background:"#fff"}}>
-                    <div style={{height:180,background:"#f8fafc"}}>
-                      <img src={foto.src} alt={foto.label||"Foto " + (fotoIdx+1)} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}/>
-                    </div>
+                    <img src={foto.src} alt={foto.label||"Foto " + (fotoIdx+1)} style={{width:"100%",height:"auto",display:"block"}}/>
                     <div style={{padding:"8px 10px",fontSize:11,color:"#475569",textAlign:"center"}}>{foto.label||"Foto " + (fotoIdx+1)}</div>
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {propMapSrc && (
+            <div style={{marginBottom:16,textAlign:"center"}}>
+              <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8,textAlign:"left"}}>Medición satelital</div>
+              <StaticMapPreview src={propMapSrc} segments={propuesta.measurements} query={mapQuery} mapView={propuesta.quote.geoMapView||c.geoMapView} alt="Mapa" maxHeight={360} border="1px solid #ddd" borderRadius={4} />
             </div>
           )}
 
@@ -2673,24 +2659,9 @@ function CotizacionPrint({c}){
               <tr><td colSpan={4} style={{border:"1px solid #222",padding:"7px 8px",background:"#fff369",fontWeight:800}}>TOTAL</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right",background:"#fff369",fontWeight:800}}>{fmt(propuesta.tot)}</td></tr>
             </tbody>
           </table>
-
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
-            <div style={{background:"#f8fafc",border:"1px solid #cbd5e1",borderRadius:6,padding:"10px 12px"}}>
-              <div style={{fontSize:10,fontWeight:800,textTransform:"uppercase",color:"#64748b",marginBottom:4}}>Forma de pago</div>
-              <div>{propuesta.quote.formaPago || DEFAULT_COT_FORMA_PAGO}</div>
-            </div>
-            <div style={{background:"#f8fafc",border:"1px solid #cbd5e1",borderRadius:6,padding:"10px 12px"}}>
-              <div style={{fontSize:10,fontWeight:800,textTransform:"uppercase",color:"#64748b",marginBottom:4}}>Tiempo de ejecución</div>
-              <div>{propuesta.quote.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC}</div>
-            </div>
-            <div style={{background:"#f8fafc",border:"1px solid #cbd5e1",borderRadius:6,padding:"10px 12px"}}>
-              <div style={{fontSize:10,fontWeight:800,textTransform:"uppercase",color:"#64748b",marginBottom:4}}>Validez</div>
-              <div>{c.val||30} días</div>
-            </div>
-          </div>
         </div>
-      ))}
-      <div style={{marginTop:16,fontSize:11,color:"#475569"}}>La impresión final usa una ventana PDF independiente para evitar letras montadas y respetar el formato multipágina.</div>
+        );
+      })}
     </div>
   );
 }

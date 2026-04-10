@@ -1731,35 +1731,97 @@ async function waitForPrintableAssets(root){
 }
 
 async function generateCotizacionPdfFile(c){
-  const html2pdf = await loadHtml2Pdf();
+  const h2p = await loadHtml2Pdf();
   const parser = new DOMParser();
   const parsed = parser.parseFromString(buildCotizacionPrintHtml(c), "text/html");
   const styleTag = parsed.head.querySelector("style")?.outerHTML || "";
+
+  // Contenedor fuera de pantalla pero VISIBLE (sin z-index negativo)
+  // html2canvas no captura elementos con z-index:-1 en algunos navegadores
   const container = document.createElement("div");
-  container.style.position = "absolute";
-  container.style.left = "0";
-  container.style.top = "0";
-  container.style.width = "816px";
-  container.style.background = "#fff";
-  container.style.zIndex = "-1";
-  container.innerHTML = `${styleTag}${parsed.body.innerHTML}`;
+  container.style.cssText = [
+    "position:fixed",
+    "left:-9999px",
+    "top:0",
+    "width:816px",
+    "background:#fff",
+    "z-index:0",
+    "overflow:visible",
+  ].join(";");
+  container.innerHTML = styleTag + parsed.body.innerHTML;
   document.body.appendChild(container);
+
   try{
     await waitForPrintableAssets(container);
     const opt = {
       margin: 0,
       filename: `${sanitizeFileName(c?.numero || c?.id || "cotizacion")}.pdf`,
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: "#ffffff" },
+      image: { type: "jpeg", quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: "#ffffff", logging: false },
       jsPDF: { unit: "mm", format: "letter", orientation: "portrait" },
       pagebreak: { mode: ["css", "legacy"] },
     };
-    const worker = html2pdf().set(opt).from(container);
-    const blob = await worker.outputPdf("blob");
+    const blob = await h2p().set(opt).from(container).outputPdf("blob");
     return new File([blob], opt.filename, { type: "application/pdf" });
   } finally {
     container.remove();
   }
+}
+
+// ─── Helper: convierte cualquier HTML string a PDF descargable ───
+async function printHtmlAsPdf(htmlString, filename){
+  const h2p = await loadHtml2Pdf();
+  const parsed = new DOMParser().parseFromString(htmlString, "text/html");
+  const styleTag = parsed.head.querySelector("style")?.outerHTML || "";
+
+  const container = document.createElement("div");
+  container.style.cssText = [
+    "position:fixed",
+    "left:-9999px",
+    "top:0",
+    "width:794px",   // ~Letter width en px a 96dpi
+    "background:#fff",
+    "z-index:0",
+    "overflow:visible",
+  ].join(";");
+  // Copia estilos del body original al contenedor
+  const bodyStyle = parsed.body?.getAttribute("style") || "";
+  if(bodyStyle) container.setAttribute("style", container.getAttribute("style") + ";" + bodyStyle);
+
+  container.innerHTML = styleTag + parsed.body.innerHTML;
+  document.body.appendChild(container);
+
+  try{
+    await waitForPrintableAssets(container);
+    const opt = {
+      margin: [8, 8, 8, 8],
+      filename: sanitizeFileName(filename || "documento") + ".pdf",
+      image: { type: "jpeg", quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: "#ffffff", logging: false },
+      jsPDF: { unit: "mm", format: "letter", orientation: "portrait" },
+      pagebreak: { mode: ["css", "legacy"] },
+    };
+    const blob = await h2p().set(opt).from(container).outputPdf("blob");
+    const file = new File([blob], opt.filename, { type: "application/pdf" });
+    downloadGeneratedFile(file);
+  } finally {
+    container.remove();
+  }
+}
+
+// ─── Toast reutilizable para impresión ───
+function showPrintToast(msg, color="#1a2840"){
+  const t = document.createElement("div");
+  t.style.cssText = [
+    "position:fixed","top:20px","right:20px","z-index:99999",
+    `background:${color}`,"color:#fff","padding:14px 22px",
+    "border-radius:10px","font-size:14px","font-family:sans-serif",
+    "box-shadow:0 4px 24px rgba(0,0,0,.25)",
+    "display:flex","align-items:center","gap:10px","min-width:220px","pointer-events:none",
+  ].join(";");
+  t.innerHTML = msg;
+  document.body.appendChild(t);
+  return t;
 }
 
 async function sendCotizacionEmail(c, clienteInfo, pdfFile){
@@ -1969,8 +2031,10 @@ td{padding:8px 12px;border-top:1px solid #f1f5f9;}
   <div class="foot">Documento generado el ${new Date().toLocaleDateString('es-CO')} · Ingeanclajes S.A.S</div>
 </div>
 </div></body></html>`;
-  const win = window.open('','_blank','width=620,height=760');
-  if(win){win.document.write(html);win.document.close();win.focus();setTimeout(()=>win.print(),500);}
+  const toast = showPrintToast("⏳&nbsp;Generando colilla PDF...");
+  printHtmlAsPdf(html, `Colilla_${sanitizeFileName(empleado.nombre)}_${periodLabel}`)
+    .then(()=>{ toast.style.background="#166534"; toast.innerHTML="✓&nbsp;Colilla descargada"; setTimeout(()=>toast.remove(),2500); })
+    .catch(err=>{ toast.style.background="#991b1b"; toast.innerHTML="✗&nbsp;"+(err?.message||"Error al generar PDF"); setTimeout(()=>toast.remove(),4000); });
 }
 
 function printVacaciones(empleado, diasVacaciones, valorVacaciones){
@@ -1995,8 +2059,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:18px;background:#f
 </div>
 <div class="footer">Ingeanclajes S.A.S · Documento generado automaticamente</div>
 </div></body></html>`;
-  const win = window.open('','_blank','width=760,height=820');
-  if(win){win.document.write(html);win.document.close();win.focus();setTimeout(()=>win.print(),500);}
+  const toast = showPrintToast("⏳&nbsp;Generando PDF vacaciones...");
+  printHtmlAsPdf(html, `Vacaciones_${sanitizeFileName(empleado.nombre)}`)
+    .then(()=>{ toast.style.background="#166534"; toast.innerHTML="✓&nbsp;PDF descargado"; setTimeout(()=>toast.remove(),2500); })
+    .catch(err=>{ toast.style.background="#991b1b"; toast.innerHTML="✗&nbsp;"+(err?.message||"Error al generar PDF"); setTimeout(()=>toast.remove(),4000); });
 }
 
 function printLiquidacion(empleado, pfl, indemn, diasVacPagar, fechaSalida, resumenRetiro, periodoRetiro){
@@ -2053,8 +2119,10 @@ function printLiquidacion(empleado, pfl, indemn, diasVacPagar, fechaSalida, resu
     +'Generado el '+new Date().toLocaleDateString('es-CO',{year:"numeric",month:"long",day:"numeric"})+' · Este documento es constancia de pago de prestaciones sociales.'
     +'</div>'
     +'</div></body></html>';
-  const win = window.open('','_blank','width=720,height=920');
-  if(win){win.document.write(html);win.document.close();win.focus();setTimeout(()=>win.print(),500);}
+  const toast = showPrintToast("⏳&nbsp;Generando liquidación PDF...");
+  printHtmlAsPdf(html, `Liquidacion_${sanitizeFileName(empleado.nombre)}`)
+    .then(()=>{ toast.style.background="#166534"; toast.innerHTML="✓&nbsp;Liquidación descargada"; setTimeout(()=>toast.remove(),2500); })
+    .catch(err=>{ toast.style.background="#991b1b"; toast.innerHTML="✗&nbsp;"+(err?.message||"Error al generar PDF"); setTimeout(()=>toast.remove(),4000); });
 }
 
 

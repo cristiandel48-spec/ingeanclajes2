@@ -1681,18 +1681,9 @@ function buildCotizacionPrintHtml(c){
   </html>`;
 }
 
-async function openCotizacionPrint(c){
-  const toast = showPrintToast("⏳&nbsp;Generando PDF...");
-  try {
-    await generateCotizacionPdfFile(c);
-    toast.style.background = "#166534";
-    toast.innerHTML = "✓&nbsp;PDF descargado";
-    setTimeout(()=>toast.remove(), 2500);
-  } catch(err) {
-    toast.style.background = "#991b1b";
-    toast.innerHTML = "✗&nbsp;Error: " + (err?.message || "No fue posible generar el PDF");
-    setTimeout(()=>toast.remove(), 4000);
-  }
+function openCotizacionPrint(c){
+  const html = buildCotizacionPrintHtml(c);
+  openPrintTab(html, "Cotización " + (c?.numero || c?.id || ""));
 }
 
 
@@ -1701,7 +1692,16 @@ const COTIZACION_AUTO_SEND_ENDPOINTS = {
   whatsapp: "",
 };
 
-let html2pdfLoaderPromise = null;
+function downloadGeneratedFile(file){
+  const url = URL.createObjectURL(file);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = file.name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
 
 function sanitizeFileName(v=""){
   return String(v || "documento")
@@ -1763,127 +1763,37 @@ function buildCotizacionEmailBody(c, clienteInfo={}){
   ].join("\n");
 }
 
-function downloadGeneratedFile(file){
-  const url = URL.createObjectURL(file);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = file.name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1500);
-}
-
-function loadHtml2Pdf(){
-  if(typeof window === "undefined") return Promise.reject(new Error("html2pdf solo funciona en navegador"));
-  if(window.html2pdf) return Promise.resolve(window.html2pdf);
-  if(html2pdfLoaderPromise) return html2pdfLoaderPromise;
-  html2pdfLoaderPromise = new Promise((resolve,reject)=>{
-    const existing = document.getElementById("html2pdf-bundle-js");
-    if(existing){
-      existing.addEventListener("load", ()=>resolve(window.html2pdf), {once:true});
-      existing.addEventListener("error", ()=>reject(new Error("No fue posible cargar html2pdf")), {once:true});
-      return;
-    }
-    const script = document.createElement("script");
-    script.id = "html2pdf-bundle-js";
-    script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
-    script.async = true;
-    script.onload = ()=> window.html2pdf ? resolve(window.html2pdf) : reject(new Error("html2pdf no quedó disponible"));
-    script.onerror = ()=> reject(new Error("No fue posible cargar html2pdf"));
-    document.body.appendChild(script);
-  });
-  return html2pdfLoaderPromise;
-}
-
-async function waitForPrintableAssets(root){
-  const images = Array.from(root.querySelectorAll("img"));
-  await Promise.all(images.map((img)=>{
-    if(img.complete) return Promise.resolve();
-    return new Promise((resolve)=>{
-      const done = ()=>resolve();
-      img.addEventListener("load", done, { once:true });
-      img.addEventListener("error", done, { once:true });
-      setTimeout(done, 5000);
-    });
-  }));
-
-  try{
-    if(document.fonts?.ready){
-      await document.fonts.ready;
-    }
-  }catch(_err){
-    // continúa aunque la fuente falle
+// ─── Abre HTML completo en nueva pestaña con toolbar de impresión ───
+// NO bloquea la app principal. El usuario imprime/guarda PDF desde la pestaña.
+function openPrintTab(fullHtml, title){
+  const w = window.open("", "_blank");
+  if(!w){ alert("El navegador bloqueó la ventana emergente. Permite las ventanas emergentes para este sitio."); return; }
+  // Inyectar toolbar NO-PRINT al inicio del body
+  const toolbar = `
+    <div id="print-toolbar" style="position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a2840;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:10px 20px;font-family:sans-serif;box-shadow:0 2px 12px rgba(0,0,0,.3);">
+      <span style="font-size:14px;font-weight:600;">${title || "Documento"}</span>
+      <div style="display:flex;gap:10px;">
+        <button onclick="document.getElementById('print-toolbar').style.display='none';window.print();document.getElementById('print-toolbar').style.display='flex';" style="background:#f47c20;color:#fff;border:none;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">🖨 Imprimir / Guardar PDF</button>
+        <button onclick="window.close();" style="background:#475569;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;">✕ Cerrar</button>
+      </div>
+    </div>
+    <div style="height:56px;"></div>`;
+  // Si es HTML completo (tiene <html>), insertar toolbar después de <body...>
+  let output = fullHtml;
+  const bodyMatch = fullHtml.match(/<body[^>]*>/i);
+  if(bodyMatch){
+    const idx = fullHtml.indexOf(bodyMatch[0]) + bodyMatch[0].length;
+    // Agregar regla @media print para ocultar toolbar
+    const printHide = `<style>@media print{#print-toolbar,#print-toolbar+div{display:none!important;}body{padding-top:0!important;}}</style>`;
+    output = fullHtml.slice(0, idx) + printHide + toolbar + fullHtml.slice(idx);
+  } else {
+    // HTML parcial, envolver
+    output = `<!doctype html><html><head><meta charset="utf-8"><title>${title||"Documento"}</title>
+      <style>@media print{#print-toolbar,#print-toolbar+div{display:none!important;}}</style>
+    </head><body>${toolbar}${fullHtml}</body></html>`;
   }
-
-  await new Promise((resolve)=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-}
-
-// ─── Monta un <div> oculto fuera de pantalla listo para html2canvas ───
-function _buildPrintContainer(htmlBody, styleTag, width){
-  const el = document.createElement("div");
-  // position:absolute fuera de pantalla — html2canvas lo ve pero no bloquea scroll
-  el.style.cssText = `position:absolute;left:-${width + 100}px;top:0;width:${width}px;background:#fff;overflow:visible`;
-  el.innerHTML = styleTag + htmlBody;
-  document.body.appendChild(el);
-  return el;
-}
-
-async function generateCotizacionPdfFile(c){
-  const h2p = await loadHtml2Pdf();
-  const parsed = new DOMParser().parseFromString(buildCotizacionPrintHtml(c), "text/html");
-  const styleTag = parsed.head.querySelector("style")?.outerHTML || "";
-  const container = _buildPrintContainer(parsed.body.innerHTML, styleTag, 816);
-  try{
-    await waitForPrintableAssets(container);
-    const filename = sanitizeFileName(c?.numero || c?.id || "cotizacion") + ".pdf";
-    await h2p().set({
-      margin: 0,
-      filename,
-      image: { type: "jpeg", quality: 0.92 },
-      html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: "#ffffff", logging: false },
-      jsPDF: { unit: "mm", format: "letter", orientation: "portrait" },
-      pagebreak: { mode: ["css", "legacy"] },
-    }).from(container).save();
-  } finally {
-    container.remove();
-  }
-}
-
-// ─── Helper: convierte cualquier HTML string a PDF y lo descarga ───
-async function printHtmlAsPdf(htmlString, filename){
-  const h2p = await loadHtml2Pdf();
-  const parsed = new DOMParser().parseFromString(htmlString, "text/html");
-  const styleTag = parsed.head.querySelector("style")?.outerHTML || "";
-  const container = _buildPrintContainer(parsed.body.innerHTML, styleTag, 794);
-  try{
-    await waitForPrintableAssets(container);
-    await h2p().set({
-      margin: [8, 8, 8, 8],
-      filename: sanitizeFileName(filename || "documento") + ".pdf",
-      image: { type: "jpeg", quality: 0.92 },
-      html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: "#ffffff", logging: false },
-      jsPDF: { unit: "mm", format: "letter", orientation: "portrait" },
-      pagebreak: { mode: ["css", "legacy"] },
-    }).from(container).save();
-  } finally {
-    container.remove();
-  }
-}
-
-// ─── Toast reutilizable para impresión ───
-function showPrintToast(msg, color="#1a2840"){
-  const t = document.createElement("div");
-  t.style.cssText = [
-    "position:fixed","top:20px","right:20px","z-index:99999",
-    `background:${color}`,"color:#fff","padding:14px 22px",
-    "border-radius:10px","font-size:14px","font-family:sans-serif",
-    "box-shadow:0 4px 24px rgba(0,0,0,.25)",
-    "display:flex","align-items:center","gap:10px","min-width:220px","pointer-events:none",
-  ].join(";");
-  t.innerHTML = msg;
-  document.body.appendChild(t);
-  return t;
+  w.document.write(output);
+  w.document.close();
 }
 
 async function sendCotizacionEmail(c, clienteInfo, pdfFile){
@@ -1945,85 +1855,21 @@ async function sendCotizacionWhatsApp(c, clienteInfo, pdfFile){
   return { ok:true, manual:true, message:`WhatsApp abierto para +${phone}. El PDF se descargó para adjuntarlo.` };
 }
 
-function openPrintWindow(title, innerHtml, extraCss = ""){
-  const w = window.open("", "_blank", "width=950,height=1200");
-  if(!w) return;
-
-  w.document.write(`<!doctype html>
-  <html>
-    <head>
-      <meta charset="utf-8" />
-      <title>${title}</title>
-      <style>
-        @page { size: Letter; margin: 12mm; }
-        * {
-          box-sizing: border-box;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-        html, body {
-          margin: 0;
-          padding: 0;
-          background: #fff;
-          color: #111;
-          font-family: Aptos, "Segoe UI", Arial, sans-serif;
-        }
-        body {
-          font-size: 12pt;
-          line-height: 1.5;
-        }
-        .print-root {
-          width: 100%;
-          margin: 0;
-          padding: 0;
-        }
-        .avoid-break, table, tr, td, th {
-          break-inside: avoid;
-          page-break-inside: avoid;
-        }
-        img {
-          max-width: 100%;
-        }
-        ${extraCss}
-      </style>
-    </head>
-    <body>
-      <div class="print-root">${innerHtml}</div>
-    </body>
-  </html>`);
-
-  w.document.close();
-
-  const doPrint = () => {
-    w.focus();
-    w.print();
-  };
-
-  if(w.document.fonts?.ready){
-    w.document.fonts.ready.then(() => setTimeout(doPrint, 250));
-  }else{
-    setTimeout(doPrint, 400);
-  }
-}
-
 function printCurrentPz(title = "Documento"){
   const node = document.getElementById("pz");
   if(!node) return;
-
-  openPrintWindow(
-    title,
-    node.outerHTML,
-    `
-      .doc-shell{
-        background:#fff;
-        color:#111;
-      }
-      .doc-shell table{
-        width:100%;
-        border-collapse:collapse;
-      }
-    `
-  );
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      @page{size:Letter;margin:12mm;}
+      *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+      html,body{margin:0;padding:0;background:#fff;color:#111;font-family:Aptos,"Segoe UI",Arial,sans-serif;font-size:12pt;line-height:1.5;}
+      .doc-shell{background:#fff;color:#111;}
+      .doc-shell table{width:100%;border-collapse:collapse;}
+      table,tr,td,th{break-inside:avoid;page-break-inside:avoid;}
+      img{max-width:100%;}
+    </style>
+  </head><body>${node.outerHTML}</body></html>`;
+  openPrintTab(html, title);
 }
 
 function printColilla(empleado, resumen, periodo){
@@ -2093,10 +1939,7 @@ td{padding:8px 12px;border-top:1px solid #f1f5f9;}
   <div class="foot">Documento generado el ${new Date().toLocaleDateString('es-CO')} · Ingeanclajes S.A.S</div>
 </div>
 </div></body></html>`;
-  const toast = showPrintToast("⏳&nbsp;Generando colilla PDF...");
-  printHtmlAsPdf(html, `Colilla_${sanitizeFileName(empleado.nombre)}_${periodLabel}`)
-    .then(()=>{ toast.style.background="#166534"; toast.innerHTML="✓&nbsp;Colilla descargada"; setTimeout(()=>toast.remove(),2500); })
-    .catch(err=>{ toast.style.background="#991b1b"; toast.innerHTML="✗&nbsp;"+(err?.message||"Error al generar PDF"); setTimeout(()=>toast.remove(),4000); });
+  openPrintTab(html, `Colilla ${empleado.nombre} - ${periodLabel}`);
 }
 
 function printVacaciones(empleado, diasVacaciones, valorVacaciones){
@@ -2121,10 +1964,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:18px;background:#f
 </div>
 <div class="footer">Ingeanclajes S.A.S · Documento generado automaticamente</div>
 </div></body></html>`;
-  const toast = showPrintToast("⏳&nbsp;Generando PDF vacaciones...");
-  printHtmlAsPdf(html, `Vacaciones_${sanitizeFileName(empleado.nombre)}`)
-    .then(()=>{ toast.style.background="#166534"; toast.innerHTML="✓&nbsp;PDF descargado"; setTimeout(()=>toast.remove(),2500); })
-    .catch(err=>{ toast.style.background="#991b1b"; toast.innerHTML="✗&nbsp;"+(err?.message||"Error al generar PDF"); setTimeout(()=>toast.remove(),4000); });
+  openPrintTab(html, `Vacaciones ${empleado.nombre}`);
 }
 
 function printLiquidacion(empleado, pfl, indemn, diasVacPagar, fechaSalida, resumenRetiro, periodoRetiro){
@@ -2181,10 +2021,7 @@ function printLiquidacion(empleado, pfl, indemn, diasVacPagar, fechaSalida, resu
     +'Generado el '+new Date().toLocaleDateString('es-CO',{year:"numeric",month:"long",day:"numeric"})+' · Este documento es constancia de pago de prestaciones sociales.'
     +'</div>'
     +'</div></body></html>';
-  const toast = showPrintToast("⏳&nbsp;Generando liquidación PDF...");
-  printHtmlAsPdf(html, `Liquidacion_${sanitizeFileName(empleado.nombre)}`)
-    .then(()=>{ toast.style.background="#166534"; toast.innerHTML="✓&nbsp;Liquidación descargada"; setTimeout(()=>toast.remove(),2500); })
-    .catch(err=>{ toast.style.background="#991b1b"; toast.innerHTML="✗&nbsp;"+(err?.message||"Error al generar PDF"); setTimeout(()=>toast.remove(),4000); });
+  openPrintTab(html, `Liquidación ${empleado.nombre}`);
 }
 
 

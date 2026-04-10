@@ -131,6 +131,66 @@ const NOMINA_CO_2026 = {
   pensionPctEmpleado: 0.04,
 };
 
+const BANK_CODES = {
+  "Bancolombia":"0007","Davivienda":"0051","Banco Bogotá":"0001","BBVA":"0013",
+  "Nequi":"0507","Daviplata":"0051","Banco Caja Social":"0032","Banco Popular":"0002",
+  "Scotiabank":"0012","AV Villas":"0052",
+};
+const NIT_EMPRESA = "900193965"; // NIT de INGEANCLAJES S.A.S.
+const CUENTA_ORIGEN = "00000000000"; // Cuenta origen de la empresa en Bancolombia — ajustar
+
+function generarPlanoBancolombia(nomina){
+  const pad = (s,n,c=" ")=>String(s||"").slice(0,n).padEnd(n,c);
+  const padL = (s,n,c="0")=>String(s||"").slice(0,n).padStart(n,c);
+  const fechaPago = (nomina.fechaGeneracion||today()).replace(/-/g,"");
+  const registros = nomina.empleados||[];
+  const totalNeto = registros.reduce((s,e)=>s+(Number(e.neto)||0),0);
+
+  // Header (tipo 1)
+  const header = "1"
+    + padL(NIT_EMPRESA.replace(/[^0-9]/g,""),15)
+    + "I"
+    + pad("",15)
+    + "225"
+    + pad("PAGONOMINA",10)
+    + fechaPago
+    + "A"
+    + " "
+    + fechaPago
+    + padL(String(registros.length),6)
+    + padL(String(Math.round(totalNeto)),17)
+    + padL("00",2)
+    + padL(CUENTA_ORIGEN.replace(/[^0-9]/g,""),11)
+    + "S";
+
+  // Detail lines (tipo 6)
+  const lines = [pad(header,240)];
+  for(const emp of registros){
+    const cedula = (emp.cedula||"").replace(/[^0-9]/g,"");
+    const nombre = (emp.nombre||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/[^A-Z ]/g,"");
+    const bankCode = BANK_CODES[emp.banco]||"0007";
+    const cuenta = (emp.numeroCuenta||"").replace(/[^0-9]/g,"");
+    const tipoTx = (emp.tipoCuenta||"").toLowerCase().includes("corriente") ? "27" : "37";
+    const monto = Math.round(Number(emp.neto)||0);
+
+    const detail = "6"
+      + "1"
+      + pad(padL(cedula,10),15)
+      + pad(nombre,30)
+      + "0056"
+      + padL(bankCode + cuenta,17)
+      + pad("",7)
+      + tipoTx
+      + padL(String(monto),16)
+      + "0"
+      + fechaPago
+      + pad("PAGO DE NOMINA",30);
+
+    lines.push(pad(detail,240));
+  }
+  return lines.join("\r\n");
+}
+
 const normalizarDeduccionesPersonalizadas = (deducciones)=>
   (Array.isArray(deducciones)?deducciones:[])
     .filter(Boolean)
@@ -296,6 +356,7 @@ export default function App(){
   const [proveedores,setProveedores]=useState(PROVEEDORES_INIT);
   const [cuentas,setCuentas]=useState(CUENTAS_PAGAR_INIT);
   const [cotizaciones,setCotizaciones]=useState(COTIZACIONES_INIT);
+  const [nominasGeneradas,setNominasGeneradas]=useState([]);
   const [cotDraft,setCotDraft]=useState(null);
   const bootstrappedRef=useRef(false);
   const autosaveTimerRef=useRef(null);
@@ -312,6 +373,7 @@ export default function App(){
     proveedores,
     cuentas,
     cotizaciones,
+    nominasGeneradas,
   });
 
   const saveAllToCloud=async(override=null)=>{
@@ -327,7 +389,7 @@ export default function App(){
     }
   };
 
-  const ctx={obras,setObras,empleados,setEmpleados,cargos,setCargos,pagos,setPagos,horarios,setHorarios,certs,setCerts,informes,setInformes,clientes,setClientes,proveedores,setProveedores,cuentas,setCuentas,cotizaciones,setCotizaciones,cotDraft,setCotDraft,setScr,saveAllToCloud};
+  const ctx={obras,setObras,empleados,setEmpleados,cargos,setCargos,pagos,setPagos,horarios,setHorarios,certs,setCerts,informes,setInformes,clientes,setClientes,proveedores,setProveedores,cuentas,setCuentas,cotizaciones,setCotizaciones,nominasGeneradas,setNominasGeneradas,cotDraft,setCotDraft,setScr,saveAllToCloud};
 
   useEffect(()=>{
     let cancel=false;
@@ -353,6 +415,7 @@ export default function App(){
         if (Array.isArray(cloud.proveedores)) setProveedores(cloud.proveedores);
         if (Array.isArray(cloud.cuentas)) setCuentas(cloud.cuentas);
         if (Array.isArray(cloud.cotizaciones)) setCotizaciones(cloud.cotizaciones);
+        if (Array.isArray(cloud.nominasGeneradas)) setNominasGeneradas(cloud.nominasGeneradas);
       } catch (error) {
         console.error("No se pudo cargar datos de Supabase:", error);
       } finally {
@@ -395,6 +458,7 @@ export default function App(){
     proveedores,
     cuentas,
     cotizaciones,
+    nominasGeneradas,
   ]);
 
   const navSections=[
@@ -725,16 +789,16 @@ function buildCotizacionPrintHtml(c){
       body { font-family: Aptos, Arial, Helvetica, sans-serif; color: #111; margin: 0; font-size: 12pt; line-height: 1.45; }
       .page { width:100%; display:flex; flex-direction:column; break-after: page; page-break-after: always; min-height: 255mm; padding: 4mm 5mm 10mm; }
       .page:last-child { page-break-after: auto; }
-      .header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #cc0000; padding-bottom:10px; margin-bottom:14px; }
-      .logo { height: 66px; width:auto; object-fit:contain; }
+      .header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #cc0000; padding-bottom:10px; margin-bottom:14px; gap:8px; }
+      .logo { height: 66px; width:auto; object-fit:contain; flex-shrink:0; }
       .header-mid { flex:1; text-align:center; padding-top:5px; font-family:Aptos, Arial, Helvetica, sans-serif; font-weight:900; letter-spacing:1.6px; font-size:11pt; color:#111; }
-      .header-right { text-align:right; font-size:8.3pt; color:#555; line-height:1.45; max-width:220px; }
+      .header-right { text-align:right; font-size:8.3pt; color:#555; line-height:1.45; white-space:nowrap; flex-shrink:0; }
       p { margin: 0 0 9px; }
       .meta { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; gap:12px; }
       .meta strong { font-size:10.8pt; }
       .client { margin-bottom: 18px; }
       .client p { margin-bottom: 5px; }
-      .section-title { text-align:center; font-weight:900; color:#111; text-transform:uppercase; margin: 10px 0 8px; border-bottom:2px solid #cc0000; padding-bottom:4px; font-size:12pt; letter-spacing:.2px; }
+      .section-title { text-align:center; font-weight:600; color:#1a2840; margin: 10px 0 8px; border-bottom:1px solid #cc0000; padding-bottom:4px; font-size:10.5pt; letter-spacing:.3px; }
       .table { width:100%; border-collapse:collapse; margin: 8px 0 10px; }
       .table th, .table td { border:1px solid #222; padding:7px 9px; vertical-align:middle; }
       .table th { background:#f7f7f7; font-weight:900; text-align:center; font-size:11pt; }
@@ -918,30 +982,8 @@ function buildCotizacionPrintHtml(c){
 }
 
 function openCotizacionPrint(c){
-  const win = window.open('', '_blank', 'width=1100,height=900');
-  if(!win) return;
-  win.document.open();
-  win.document.write(buildCotizacionPrintHtml(c));
-  win.document.close();
-
-  const waitForImages = () => {
-    const imgs = Array.from(win.document.images || []);
-    return Promise.all(imgs.map(img => {
-      if (img.complete) return Promise.resolve();
-      return new Promise(resolve => {
-        img.addEventListener('load', resolve, { once:true });
-        img.addEventListener('error', resolve, { once:true });
-      });
-    }));
-  };
-
-  const ready = [];
-  if (win.document.fonts?.ready) ready.push(win.document.fonts.ready.catch(() => {}));
-  ready.push(waitForImages());
-
-  Promise.all(ready)
-    .then(() => setTimeout(() => { win.focus(); win.print(); }, 350))
-    .catch(() => setTimeout(() => { win.focus(); win.print(); }, 500));
+  const html = buildCotizacionPrintHtml(c);
+  openPrintWindow("Cotización " + (c?.numero || c?.id || ""), "", "", html);
 }
 
 
@@ -1135,64 +1177,108 @@ async function sendCotizacionWhatsApp(c, clienteInfo, pdfFile){
   return { ok:true, manual:true, message:`WhatsApp abierto para +${phone}. El PDF se descargÃ³ para adjuntarlo.` };
 }
 
-function openPrintWindow(title, innerHtml, extraCss = ""){
+function openPrintWindow(title, innerHtml, extraCss = "", fullHtml = ""){
   const w = window.open("", "_blank", "width=950,height=1200");
-  if(!w) return;
+  if(!w){ alert("El navegador bloqueó la ventana emergente. Permite las ventanas emergentes para este sitio."); return; }
 
-  w.document.write(`<!doctype html>
-  <html>
-    <head>
-      <meta charset="utf-8" />
-      <title>${title}</title>
-      <style>
-        @page { size: Letter; margin: 12mm; }
-        * {
-          box-sizing: border-box;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-        html, body {
-          margin: 0;
-          padding: 0;
-          background: #fff;
-          color: #111;
-          font-family: Aptos, "Segoe UI", Arial, sans-serif;
-        }
-        body {
-          font-size: 12pt;
-          line-height: 1.5;
-        }
-        .print-root {
-          width: 100%;
-          margin: 0;
-          padding: 0;
-        }
-        .avoid-break, table, tr, td, th {
-          break-inside: avoid;
-          page-break-inside: avoid;
-        }
-        img {
-          max-width: 100%;
-        }
-        ${extraCss}
-      </style>
-    </head>
-    <body>
-      <div class="print-root">${innerHtml}</div>
-    </body>
-  </html>`);
+  const toolbar = `
+    <div id="print-toolbar" style="position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a2840;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:10px 20px;font-family:Aptos,'Segoe UI',Arial,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.3);">
+      <span style="font-size:14px;font-weight:600;">${title || "Documento"}</span>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span style="font-size:11px;opacity:.7;">También puedes usar Ctrl+P</span>
+        <button id="btn-print" style="background:#f47c20;color:#fff;border:none;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">🖨 Imprimir / Guardar PDF</button>
+        <button onclick="window.close();" style="background:#475569;color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:13px;">✕ Cerrar</button>
+      </div>
+    </div>
+    <div style="height:56px;"></div>`;
+
+  const printHideCss = `@media print{#print-toolbar,#print-toolbar+div{display:none!important;}body{padding-top:0!important;}}`;
+
+  if(fullHtml){
+    // fullHtml mode: inject toolbar into existing complete HTML
+    let output = fullHtml;
+    const bodyMatch = fullHtml.match(/<body[^>]*>/i);
+    if(bodyMatch){
+      const idx = fullHtml.indexOf(bodyMatch[0]) + bodyMatch[0].length;
+      output = fullHtml.slice(0, idx) + `<style>${printHideCss}</style>` + toolbar + fullHtml.slice(idx);
+    } else {
+      output = `<!doctype html><html><head><meta charset="utf-8"><title>${title||"Documento"}</title><style>${printHideCss}</style></head><body>${toolbar}${fullHtml}</body></html>`;
+    }
+    w.document.write(output);
+  } else {
+    // innerHtml mode: build complete HTML
+    w.document.write(`<!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>${title}</title>
+        <style>
+          @page { size: Letter; margin: 12mm; }
+          * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          html, body {
+            margin: 0;
+            padding: 0;
+            background: #fff;
+            color: #111;
+            font-family: Aptos, "Segoe UI", Arial, sans-serif;
+          }
+          body {
+            font-size: 12pt;
+            line-height: 1.5;
+          }
+          .print-root {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+          }
+          .avoid-break, table, tr, td, th {
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+          img {
+            max-width: 100%;
+          }
+          ${printHideCss}
+          ${extraCss}
+        </style>
+      </head>
+      <body>
+        ${toolbar}
+        <div class="print-root">${innerHtml}</div>
+      </body>
+    </html>`);
+  }
 
   w.document.close();
 
-  const doPrint = () => {
-    w.focus();
-    w.print();
+  // Attach print button handler after document is ready — uses requestAnimationFrame to avoid blocking
+  const attachPrintBtn = () => {
+    const btn = w.document.getElementById("btn-print");
+    if(btn){
+      btn.addEventListener("click", () => {
+        const tb = w.document.getElementById("print-toolbar");
+        const sp = tb?.nextElementSibling;
+        if(tb) tb.style.display = "none";
+        if(sp && sp.style) sp.style.display = "none";
+        w.requestAnimationFrame(() => {
+          w.focus();
+          w.print();
+          // Restore toolbar after print dialog closes
+          if(tb) tb.style.display = "flex";
+          if(sp && sp.style) sp.style.display = "block";
+        });
+      });
+    }
   };
 
   if(w.document.fonts?.ready){
-    w.document.fonts.ready.then(() => setTimeout(doPrint, 250));
-  }else{
-    setTimeout(doPrint, 400);
+    w.document.fonts.ready.then(attachPrintBtn).catch(attachPrintBtn);
+  } else {
+    setTimeout(attachPrintBtn, 300);
   }
 }
 
@@ -2176,7 +2262,7 @@ function CotizacionPrint({c}){
       {c.mapImg ? <div style={{marginBottom:16,textAlign:"center"}}><StaticMapPreview src={c.mapImg} segments={measurements} query={c.coords || `${c.obra||""} ${c.ciudad||""}`.trim()} mapView={c.geoMapView} alt="Mapa" maxHeight={320} border="1px solid #ddd" borderRadius={4} /></div> : null}
       {measurements.length>0&&(
         <div style={{background:"#f8fafc",border:"1px solid #cbd5e1",borderRadius:6,padding:"12px 14px",marginBottom:16}}>
-          <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8}}>Medidas levantadas</div>
+          <div style={{fontWeight:600,fontSize:12,color:"#1a2840",marginBottom:8}}>Medidas levantadas</div>
           <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
             <thead>
               <tr>
@@ -2196,7 +2282,7 @@ function CotizacionPrint({c}){
           </table>
         </div>
       )}
-      <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:6}}>Propuesta econÃ³mica</div>
+      <div style={{fontWeight:600,fontSize:12,color:"#1a2840",marginBottom:8,borderBottom:"1px solid #e2e8f0",paddingBottom:4}}>Propuesta econ\u00f3mica</div>
       <table style={{width:"100%",borderCollapse:"collapse",fontSize:11.3}}>
         <thead><tr>{["DescripciÃ³n","Cantidad","Unidad","Valor","Subtotal"].map((h,i)=><th key={h} style={{border:"1px solid #222",padding:"7px 8px",background:"#f7f7f7",textAlign:i>0?"right":"left"}}>{h}</th>)}</tr></thead>
         <tbody>
@@ -2207,7 +2293,6 @@ function CotizacionPrint({c}){
           <tr><td colSpan={4} style={{border:"1px solid #222",padding:"7px 8px",background:"#fff369",fontWeight:800}}>TOTAL</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right",background:"#fff369",fontWeight:800}}>{fmt(tot)}</td></tr>
         </tbody>
       </table>
-      <div style={{marginTop:16,fontSize:11,color:"#475569"}}>La impresiÃ³n final usa una ventana PDF independiente para evitar letras montadas y respetar el formato multipÃ¡gina.</div>
     </div>
   );
 }
@@ -4139,10 +4224,12 @@ function Financiero({ctx}){
 // NÃ“MINA
 // ======================================================
 function Nomina({ctx}){
-  const {empleados,setEmpleados,obras,cargos,setCargos}=ctx;
+  const {empleados,setEmpleados,obras,cargos,setCargos,nominasGeneradas,setNominasGeneradas}=ctx;
   const [tab,setTab]=useState("lista");
   const [mes,setMes]=useState("2026-04");
+  const [quincena,setQuincena]=useState("Q1");
   const [selId,setSelId]=useState(null);
+  const [verNomina,setVerNomina]=useState(null);
   const [showHE,setShowHE]=useState(null);
   const nuevoEmpleadoBase = {nombre:"",cedula:"",cargo:"",tel:"",email:"",salario:NOMINA_CO_2026.salarioMinimo,banco:"Bancolombia",tipoCuenta:"Ahorros",numeroCuenta:"",deduccionesPersonalizadas:[]};
   const [nf,setNf]=useState(nuevoEmpleadoBase);
@@ -4264,12 +4351,65 @@ function Nomina({ctx}){
     }));
   };
 
+  const labelCorte = ()=>{
+    const [y,m] = (mes||"2026-01").split("-").map(Number);
+    const meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+    const mesNombre = meses[(m||1)-1]||"";
+    if(quincena==="Q1") return `1 al 15 de ${mesNombre} de ${y}`;
+    const ultimo = new Date(y,m,0).getDate();
+    return `16 al ${ultimo} de ${mesNombre} de ${y}`;
+  };
+
+  const generarNomina = ()=>{
+    if(!window.confirm(`¿Está seguro de generar la nómina del corte ${labelCorte()}?\n\nEsto creará un registro permanente con los valores actuales de todos los empleados activos.`)) return;
+    const snapshot = resumenesActivos.map(({empleado:e,resumen:r})=>({
+      id:e.id, nombre:e.nombre, cedula:e.cedula, cargo:e.cargo,
+      banco:e.banco, tipoCuenta:e.tipoCuenta, numeroCuenta:e.numeroCuenta,
+      salario:r.salario, auxilioTransporte:r.auxilioTransporte,
+      horasExtras:r.horasExtras, comisiones:r.comisiones,
+      salud:r.salud, pension:r.pension, otrasDeducciones:r.otrasDeducciones,
+      totalDeducciones:r.totalDeducciones, neto:r.neto,
+    }));
+    const nueva = {
+      id:"NOM-"+Date.now(),
+      mes, quincena,
+      label: labelCorte(),
+      fechaGeneracion: today(),
+      empleados: snapshot,
+      totalNeto: snapshot.reduce((s,e)=>s+e.neto,0),
+      totalEmpleados: snapshot.length,
+    };
+    setNominasGeneradas(prev=>[nueva,...prev]);
+    setVerNomina(nueva);
+    setTab("historial");
+    alert(`✅ Nómina generada exitosamente para el corte ${labelCorte()}`);
+  };
+
+  const descargarPlano = (nomina)=>{
+    const contenido = generarPlanoBancolombia(nomina);
+    const blob = new Blob([contenido], {type:"text/plain;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Nomina_${nomina.mes}_${nomina.quincena}_${nomina.id}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const eliminarNomina = (id)=>{
+    if(!window.confirm("¿Está seguro de eliminar esta nómina generada?")) return;
+    setNominasGeneradas(prev=>prev.filter(n=>n.id!==id));
+    if(verNomina?.id===id) setVerNomina(null);
+  };
+
   return(
     <div style={{padding:28}}>
       <H1 title="Nómina y Empleados" subtitle="Gestión de empleados, horas extras, comisiones y planilla"
         action={<button style={B("#cc0000")} onClick={()=>setTab("nuevo")}>+ Nuevo Empleado</button>}/>
-      <div style={{display:"flex",gap:6,marginBottom:20}}>
-        {[["lista","Empleados"],["he","Horas extras y comisiones"],["deducciones","Revision deducciones"],["planilla","Planilla Bancolombia"]].map(([id,lb])=>(
+      <div style={{display:"flex",gap:6,marginBottom:20,flexWrap:"wrap"}}>
+        {[["lista","Empleados"],["he","Horas extras y comisiones"],["deducciones","Revision deducciones"],["planilla","Generar Nómina"],["historial",`Nóminas generadas (${(nominasGeneradas||[]).length})`]].map(([id,lb])=>(
           <button key={id} onClick={()=>setTab(id)} style={{...B(tab===id?"#f47c20":"#f1f5f9",tab===id?"#fff":"#475569"),border:`1px solid ${tab===id?"#f47c20":"#e2e8f0"}`}}>{lb}</button>
         ))}
       </div>
@@ -4664,14 +4804,33 @@ function Nomina({ctx}){
 
       {tab==="planilla"&&(
         <div>
-          <div style={{display:"flex",gap:12,alignItems:"flex-end",marginBottom:20}}>
-            <div><LBL>Período de pago</LBL><input type="month" value={mes} onChange={e=>setMes(e.target.value)} style={{...SI,width:"auto"}}/></div>
-            <button style={B("#f47c20")} onClick={()=>printCurrentPz(`Planilla Nómina ${mes}`)}> Imprimir / Bancolombia</button>
+          <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:12,padding:24,marginBottom:20,boxShadow:"0 2px 8px rgba(0,0,0,.06)"}}>
+            <div style={{fontSize:14,fontWeight:700,color:"#142840",marginBottom:16}}>Generar Nómina del Corte</div>
+            <div style={{display:"flex",gap:14,alignItems:"flex-end",flexWrap:"wrap",marginBottom:20}}>
+              <div><LBL>Mes</LBL><input type="month" value={mes} onChange={e=>setMes(e.target.value)} style={{...SI,width:"auto"}}/></div>
+              <div><LBL>Corte</LBL>
+                <div style={{display:"flex",gap:6}}>
+                  {[["Q1","1 - 15"],["Q2","16 - Último"]].map(([v,l])=>(
+                    <button key={v} onClick={()=>setQuincena(v)} style={{...B(quincena===v?"#003B71":"#f1f5f9",quincena===v?"#fff":"#475569"),border:`1px solid ${quincena===v?"#003B71":"#e2e8f0"}`,minWidth:90,justifyContent:"center"}}>{l}</button>
+                  ))}
+                </div>
+              </div>
+              <button style={{...B("#f47c20"),fontSize:14,padding:"10px 28px"}} onClick={generarNomina}>
+                Generar nómina corte {labelCorte()}
+              </button>
+              <button style={B("#142840")} onClick={()=>printCurrentPz(`Planilla Nómina ${labelCorte()}`)}>
+                Imprimir planilla
+              </button>
+            </div>
+            <div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,padding:"10px 14px",fontSize:12,color:"#92400e"}}>
+              Al generar la nómina se tomará una foto de los valores actuales de todos los empleados activos ({activos.length}) para el corte <strong>{labelCorte()}</strong>. Podrá consultarla después en la pestaña "Nóminas generadas" y descargar el archivo plano para Bancolombia.
+            </div>
           </div>
+
           <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:11,padding:"30px 40px",border:"1px solid #ddd"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",borderBottom:"2px solid #003B71",paddingBottom:14,marginBottom:20}}>
               <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{height:60,objectFit:"contain"}}/>
-              <div style={{textAlign:"right"}}><div style={{background:"#FFCD00",color:"#003B71",padding:"6px 16px",borderRadius:4,fontWeight:700}}>BANCOLOMBIA</div><div style={{fontSize:10,color:"#555",marginTop:4}}>Planilla Nómina · {mes}</div></div>
+              <div style={{textAlign:"right"}}><div style={{background:"#FFCD00",color:"#003B71",padding:"6px 16px",borderRadius:4,fontWeight:700}}>BANCOLOMBIA</div><div style={{fontSize:10,color:"#555",marginTop:4}}>Planilla Nómina · Corte {labelCorte()}</div></div>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:16}}>
               <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Salario mínimo 2026</div><div style={{fontWeight:700}}>{fmt(NOMINA_CO_2026.salarioMinimo)}</div></div>
@@ -4710,6 +4869,87 @@ function Nomina({ctx}){
               {["REPRESENTANTE LEGAL","CONTADOR","APROBADO POR"].map((l)=><div key={l} style={{textAlign:"center",borderTop:"1px solid #333",paddingTop:8}}><div style={{fontSize:10,color:"#555"}}>{l}</div></div>)}
             </div>
           </div>
+        </div>
+      )}
+
+      {tab==="historial"&&(
+        <div>
+          {!verNomina ? (
+            <div>
+              {(nominasGeneradas||[]).length===0 ? (
+                <div style={{textAlign:"center",color:"#94a3b8",padding:"40px 0",fontSize:14}}>
+                  No hay nóminas generadas aún. Ve a la pestaña "Generar Nómina" para crear la primera.
+                </div>
+              ) : (
+                <div style={{display:"grid",gap:12}}>
+                  {(nominasGeneradas||[]).map((nom)=>(
+                    <div key={nom.id} style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"16px 20px",display:"flex",alignItems:"center",gap:16,cursor:"pointer",boxShadow:"0 1px 4px rgba(0,0,0,.04)"}} onClick={()=>setVerNomina(nom)}>
+                      <div style={{background:"#003B71",color:"#FFCD00",borderRadius:8,width:50,height:50,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:16,flexShrink:0}}>
+                        {nom.quincena==="Q1"?"Q1":"Q2"}
+                      </div>
+                      <div style={{flex:1}}>
+                        <div style={{fontWeight:700,color:"#0f172a",fontSize:14}}>Nómina: {nom.label}</div>
+                        <div style={{fontSize:12,color:"#64748b"}}>Generada el {fmtD(nom.fechaGeneracion)} · {nom.totalEmpleados} empleados</div>
+                      </div>
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontWeight:700,color:"#003B71",fontSize:16}}>{fmt(nom.totalNeto)}</div>
+                        <div style={{fontSize:10,color:"#64748b"}}>Total neto</div>
+                      </div>
+                      <div style={{display:"flex",gap:6,flexShrink:0}}>
+                        <button style={{...B("#003B71"),fontSize:11,padding:"6px 12px"}} onClick={(e)=>{e.stopPropagation();descargarPlano(nom);}}>Plano Bancolombia</button>
+                        <button style={{...B("#fee2e2","#b91c1c"),fontSize:11,padding:"6px 12px",border:"1px solid #fecaca"}} onClick={(e)=>{e.stopPropagation();eliminarNomina(nom.id);}}>Eliminar</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div>
+              <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:20}}>
+                <button style={B("#f1f5f9","#475569")} onClick={()=>setVerNomina(null)}>← Volver al listado</button>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:16,color:"#0f172a"}}>Nómina: {verNomina.label}</div>
+                  <div style={{fontSize:12,color:"#64748b"}}>Generada el {fmtD(verNomina.fechaGeneracion)} · {verNomina.totalEmpleados} empleados · Total: {fmt(verNomina.totalNeto)}</div>
+                </div>
+                <button style={{...B("#003B71"),fontSize:12}} onClick={()=>descargarPlano(verNomina)}>Descargar plano Bancolombia</button>
+                <button style={B("#f47c20")} onClick={()=>printCurrentPz(`Nómina ${verNomina.label}`)}>Imprimir</button>
+              </div>
+              <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:11,padding:"30px 40px",border:"1px solid #ddd"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",borderBottom:"2px solid #003B71",paddingBottom:14,marginBottom:20}}>
+                  <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{height:60,objectFit:"contain"}}/>
+                  <div style={{textAlign:"right"}}><div style={{background:"#FFCD00",color:"#003B71",padding:"6px 16px",borderRadius:4,fontWeight:700}}>BANCOLOMBIA</div><div style={{fontSize:10,color:"#555",marginTop:4}}>Nómina · {verNomina.label}</div></div>
+                </div>
+                <table style={{width:"100%",borderCollapse:"collapse"}}>
+                  <thead><tr style={{background:"#003B71",color:"#fff"}}>{["#","Empleado","Documento","Banco / Cuenta","Básico","Aux. T.","H.Extra","Comisión","Deducciones","NETO"].map((h)=><th key={h} style={{padding:"6px 8px",textAlign:["Básico","Aux. T.","H.Extra","Comisión","Deducciones","NETO"].includes(h)?"right":"left",fontSize:10}}>{h}</th>)}</tr></thead>
+                  <tbody>
+                    {(verNomina.empleados||[]).map((e,i)=>(
+                      <tr key={e.id} style={{background:i%2===0?"#fff":"#f5f5f5",borderBottom:"1px solid #e0e0e0"}}>
+                        <td style={{padding:"6px 8px",color:"#555",fontSize:10}}>{i+1}</td>
+                        <td style={{padding:"6px 8px",fontWeight:600,fontSize:10}}>{e.nombre}</td>
+                        <td style={{padding:"6px 8px",color:"#555",fontSize:9}}>{e.cedula||"-"}</td>
+                        <td style={{padding:"6px 8px",color:"#555",fontSize:9}}>{e.banco}<br/>{e.tipoCuenta}<br/><span style={{fontFamily:"monospace"}}>{e.numeroCuenta}</span></td>
+                        <td style={{padding:"6px 8px",textAlign:"right",fontSize:10}}>$ {(e.salario||0).toLocaleString("es-CO")}</td>
+                        <td style={{padding:"6px 8px",textAlign:"right",fontSize:10}}>$ {(e.auxilioTransporte||0).toLocaleString("es-CO")}</td>
+                        <td style={{padding:"6px 8px",textAlign:"right",fontSize:10,color:"#7a6610"}}>$ {(e.horasExtras||0).toLocaleString("es-CO")}</td>
+                        <td style={{padding:"6px 8px",textAlign:"right",fontSize:10,color:"#5b21b6"}}>$ {(e.comisiones||0).toLocaleString("es-CO")}</td>
+                        <td style={{padding:"6px 8px",textAlign:"right",color:"#cc0000",fontSize:9}}>
+                          <div>Salud: -$ {(e.salud||0).toLocaleString("es-CO")}</div>
+                          <div>Pensión: -$ {(e.pension||0).toLocaleString("es-CO")}</div>
+                          <div>Otras: -$ {(e.otrasDeducciones||0).toLocaleString("es-CO")}</div>
+                        </td>
+                        <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,color:"#003B71",fontSize:10}}>$ {(e.neto||0).toLocaleString("es-CO")}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot><tr style={{background:"#003B71",color:"#FFCD00"}}><td colSpan={9} style={{padding:"8px 10px",fontWeight:700,fontSize:11}}>TOTAL A PAGAR</td><td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,fontSize:11}}>$ {(verNomina.totalNeto||0).toLocaleString("es-CO")}</td></tr></tfoot>
+                </table>
+                <div style={{marginTop:30,display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:20}}>
+                  {["REPRESENTANTE LEGAL","CONTADOR","APROBADO POR"].map((l)=><div key={l} style={{textAlign:"center",borderTop:"1px solid #333",paddingTop:8}}><div style={{fontSize:10,color:"#555"}}>{l}</div></div>)}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

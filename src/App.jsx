@@ -1247,35 +1247,6 @@ const buildNominaPlanoBancoContent = (snapshot, config=NOMINA_PLANO_BANCO_DEFAUL
   return [header, ...details].join("\r\n");
 };
 
-const getNominaArchivoNombre = (snapshot) => `NOMINA_${snapshot?.periodo?.mes || "SIN_MES"}_${String(snapshot?.periodo?.corte || "CORTE").toUpperCase()}.txt`;
-const hydrateNominaSnapshot = (snapshot) => {
-  if(!snapshot) return null;
-  const normalized = {
-    ...snapshot,
-    periodo: snapshot.periodo || {},
-    totals: snapshot.totals || {},
-    registros: Array.isArray(snapshot.registros) ? snapshot.registros : [],
-    registrosBanco: Array.isArray(snapshot.registrosBanco) ? snapshot.registrosBanco : [],
-  };
-  if(!normalized.planoBanco){
-    normalized.planoBanco = buildNominaPlanoBancoContent(normalized, NOMINA_PLANO_BANCO_DEFAULTS);
-  }
-  if(!normalized.archivoBanco){
-    normalized.archivoBanco = getNominaArchivoNombre(normalized);
-  }
-  return normalized;
-};
-const indexNominaSnapshots = (items=[]) => (Array.isArray(items) ? items : [])
-  .map((item)=>hydrateNominaSnapshot(item))
-  .filter(Boolean)
-  .reduce((acc, item)=>{
-    acc[item.id] = item;
-    return acc;
-  }, {});
-const listNominaSnapshots = (map={}) => Object.values(map || {}).sort(
-  (a,b)=>new Date(b?.generadoEn || 0).getTime() - new Date(a?.generadoEn || 0).getTime()
-);
-
 const EC={
   "En Obra":{bg:"#1a3a5c",text:"#60b4ff",border:"#2563a8"},
   "Cotización":{bg:"#2d2a14",text:"#f5c842",border:"#7a6610"},
@@ -1656,644 +1627,252 @@ function buildCotizacionPrintHtml(c){
   const textoInicial = String(c.textoInicial || "").trim();
   const mapQuery = c.coords || `${c.obra||""} ${c.ciudad||""}`.trim();
   const showVerticalAppendix = propuestas.some((propuesta)=>hasVerticalLifeLineService(propuesta.quote));
-
-  const renderPhotosBlock = (propuesta)=>{
-    if(!propuesta.fotos.length) return "";
-
-    const photoCount = propuesta.fotos.length;
-    let gridClass = "photo-grid";
-    if(photoCount === 1) gridClass += " single";
-    else if(photoCount === 2) gridClass += " double";
-    else gridClass += " multi";
-
-    return `
-      <div class="proposal-block avoid-break">
-        <div class="section-title">Registro fotografico de la propuesta</div>
-        <div class="${gridClass}">
-          ${propuesta.fotos.map((foto,idx)=>`
-            <div class="photo-card avoid-break">
-              <div class="photo-wrap ${photoCount === 1 ? "photo-wrap-large" : ""}">
-                <img
-                  src="${foto.src}"
-                  alt="${escapeHtml(foto.label || `Foto ${idx+1}`)}"
-                  class="photo"
-                />
-              </div>
-              <div class="photo-label">${escapeHtml(foto.label || `Foto ${idx+1}`)}</div>
-            </div>
-          `).join("")}
-        </div>
-      </div>
-    `;
-  };
-
-  const renderMapBlock = (propuesta)=>{
-    if(!(propuesta.mapImg && propuesta.measurements.length > 0)) return "";
-
-    const { width: mW, height: mH } = getStaticMapDimensions(propuesta.quote.geoMapView || c.geoMapView);
-    const propLabels = getStaticMapLabelData(
-      propuesta.measurements,
-      mapQuery,
-      propuesta.quote.geoMapView || c.geoMapView
-    ).map(label=>`
-      <div
-        class="map-label"
-        style="left:${label.left}; top:${label.top}; color:${label.color}; transform:translate(-50%, -50%) rotate(${label.angle}deg);"
-      >
-        <div>${escapeHtml(label.title)} - ${escapeHtml(label.value)}</div>
-      </div>
-    `).join("");
-
-    return `
-      <div class="proposal-block avoid-break">
-        <div class="section-title">Medicion satelital</div>
-        <div class="map-wrap" style="aspect-ratio:${mW}/${mH};">
-          <img src="${propuesta.mapImg}" alt="Mapa de medicion" class="map"/>
-          ${propLabels}
-        </div>
-      </div>
-    `;
-  };
-
   const proposalSections = propuestas.map((propuesta)=>{
+    // Mapa de esta propuesta (solo si tiene mediciones)
+    let propMapBlock = "";
+    if(propuesta.mapImg && propuesta.measurements.length > 0){
+      const { width: mW, height: mH } = getStaticMapDimensions(propuesta.quote.geoMapView || c.geoMapView);
+      const propLabels = getStaticMapLabelData(propuesta.measurements, mapQuery, propuesta.quote.geoMapView || c.geoMapView).map(label=>`
+        <div class="map-label" style="left:${label.left}; top:${label.top}; transform:translate(-50%, -50%) rotate(${label.angle}deg);">
+          <div>${escapeHtml(label.title)} - ${escapeHtml(label.value)}</div>
+        </div>`).join('');
+      propMapBlock = `<div class="section-title">Medicion satelital</div>
+        <div class="map-wrap" style="aspect-ratio:${mW}/${mH};"><img src="${propuesta.mapImg}" alt="Mapa de medicion" class="map"/>${propLabels}</div>`;
+    }
     const requerimientoBlock = propuesta.esObraBlanca && propuesta.requerimientoCliente ? `
-      <div class="measurement-box avoid-break">
+      <div class="measurement-box">
         <p><strong>Necesidad del cliente</strong></p>
-        <div style="white-space:pre-wrap;">${escapeHtml(propuesta.requerimientoCliente)}</div>
+        <div style="white-space:pre-wrap; text-align:justify;">${escapeHtml(propuesta.requerimientoCliente)}</div>
       </div>` : "";
-
     const alcanceBlock = propuesta.alcancePropuesta ? `
-      <div class="measurement-box avoid-break">
+      <div class="measurement-box">
         <p><strong>Alcance de esta propuesta</strong></p>
-        <div style="white-space:pre-wrap;">${escapeHtml(propuesta.alcancePropuesta)}</div>
+        <div style="white-space:pre-wrap; text-align:justify;">${escapeHtml(propuesta.alcancePropuesta)}</div>
       </div>` : "";
-
-    const fotosBlock = renderPhotosBlock(propuesta);
-    const propMapBlock = renderMapBlock(propuesta);
-
+    const photoCount = propuesta.fotos.length;
+    const photoGridClass = photoCount <= 1 ? "photo-grid single" : photoCount === 2 ? "photo-grid double" : "photo-grid multi";
+    const fotosBlock = propuesta.fotos.length ? `
+      <div class="section-title">Registro fotografico de la propuesta</div>
+      <div class="${photoGridClass}">
+        ${propuesta.fotos.map((foto,idx)=>`
+          <div class="photo-card">
+            <div class="photo-wrap ${photoCount===1 ? "photo-wrap-large" : ""}"><img src="${foto.src}" alt="${escapeHtml(foto.label || `Foto ${idx+1}`)}" class="photo"/></div>
+            <div class="photo-label">${escapeHtml(foto.label || `Foto ${idx+1}`)}</div>
+          </div>
+        `).join("")}
+      </div>` : "";
     const itemRows = propuesta.items.map((it,idx)=>{
-      const desc = escapeHtml(it.desc || "");
-      const cant = Number(it.cant || 0);
-      const unit = escapeHtml(it.unit || "");
-      const vu = Number(it.vu || 0);
-      const subtotal = cant * vu;
-      return `
-        <tr>
-          <td>${desc || `Item ${idx+1}`}</td>
-          <td class="num">${cant}</td>
-          <td class="center">${unit}</td>
-          <td class="num">${fmt(vu)}</td>
-          <td class="num">${fmt(subtotal)}</td>
-        </tr>`;
+      const desc = escapeHtml(it.desc || `ITEM ${idx+1}`);
+      const qty = Number(it.cant||0).toFixed(2).replace(/\.00$/,'');
+      const unit = escapeHtml(it.unit || "UND");
+      const value = fmt(Number(it.vu)||0);
+      const subtotal = fmt((Number(it.cant)||0)*(Number(it.vu)||0));
+      return `<tr><td>${desc}</td><td class="num">${qty}</td><td class="center">${unit}</td><td class="num">${value}</td><td class="num">${subtotal}</td></tr>`;
     }).join("");
 
-    const medicionNarrativa = propuesta.narrative ? `
-      <div class="measurement-box avoid-break">
-        <p><strong>Resumen de medicion</strong></p>
-        <div style="white-space:pre-wrap;">${escapeHtml(propuesta.narrative)}</div>
-      </div>` : "";
-
     return `
-      <section class="proposal-section">
-        <div class="proposal-header avoid-break">
-          <div class="proposal-title">${escapeHtml((propuesta.nombre || `Propuesta ${propuesta.index+1}`).toUpperCase())}</div>
-          <div class="proposal-subtitle"><strong>Tipo:</strong> ${escapeHtml(propuesta.tipoLabel)}</div>
-        </div>
-
-        ${requerimientoBlock}
-        ${alcanceBlock}
-        ${medicionNarrativa}
-        ${fotosBlock}
-        ${propMapBlock}
-
-        <div class="proposal-block avoid-break">
-          <table class="price-table">
-            <thead>
-              <tr>
-                <th>Descripcion</th>
-                <th>Cantidad</th>
-                <th>Unidad</th>
-                <th>Valor</th>
-                <th>Subtotal</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${itemRows}
-              <tr class="sum-row">
-                <td colspan="4"><strong>SUBTOTAL</strong></td>
-                <td class="num">${fmt(propuesta.sub)}</td>
-              </tr>
-              <tr>
-                <td colspan="4">ADMINISTRACION</td>
-                <td class="num">$ - -</td>
-              </tr>
-              <tr>
-                <td colspan="4">IMPREVISTOS</td>
-                <td class="num">$ - -</td>
-              </tr>
-              <tr>
-                <td colspan="4">UTILIDADES (${Number(propuesta.quote.util || 10)} % VALOR DE LA OBRA)</td>
-                <td class="num">${fmt(propuesta.ut)}</td>
-              </tr>
-              <tr>
-                <td colspan="4">IVA (19 % VALOR DE LAS UTILIDADES)</td>
-                <td class="num">${fmt(propuesta.iva)}</td>
-              </tr>
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colspan="4"><strong>TOTAL</strong></td>
-                <td class="num total-cell"><strong>${fmt(propuesta.tot)}</strong></td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </section>
-    `;
+    <section class="page">
+      <div class="header">
+        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+      </div>
+      <div class="section-title">${escapeHtml(propuesta.nombre)}</div>
+      ${requerimientoBlock}
+      ${alcanceBlock}
+      ${fotosBlock}
+      ${propMapBlock}
+      <table class="table no-break">
+        <thead><tr><th>Descripcion</th><th class="num">Cantidad</th><th class="center">Unidad</th><th class="num">Valor</th><th class="num">Subtotal</th></tr></thead>
+        <tbody>
+          ${itemRows}
+          <tr class="label-strong"><td colspan="4">SUBTOTAL</td><td class="num">${fmt(propuesta.sub)}</td></tr>
+          <tr><td colspan="4">ADMINISTRACION</td><td class="num">$ - -</td></tr>
+          <tr><td colspan="4">IMPREVISTOS</td><td class="num">$ - -</td></tr>
+          <tr><td colspan="4">UTILIDADES (${Number(propuesta.quote.util||10).toFixed(0)} % VALOR DE LA OBRA)</td><td class="num">${fmt(propuesta.ut)}</td></tr>
+          <tr><td colspan="4">IVA (19 % VALOR DE LAS UTILIDADES)</td><td class="num">${fmt(propuesta.iva)}</td></tr>
+          <tr class="total-row"><td colspan="4">TOTAL</td><td class="num">${fmt(propuesta.tot)}</td></tr>
+        </tbody>
+      </table>
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
+    </section>`;
   }).join("");
 
-  const verticalAppendix = showVerticalAppendix ? `
-    <section class="appendix avoid-break">
-      <div class="section-title">Anexo tecnico linea de vida vertical</div>
-      <div class="appendix-card">
-        <img src="${articoLineaVidaVertical}" alt="Linea de vida vertical" class="appendix-image"/>
+  return `<!doctype html>
+  <html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Cotizacion ${escapeHtml(c.numero || '')}</title>
+    <style>
+      @page { size: letter portrait; margin: 12mm 10mm 12mm 10mm; }
+      * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      html, body { background:#fff; }
+      body { font-family: Aptos, Arial, Helvetica, sans-serif; color: #1f2937; margin: 0; font-size: 10.5pt; line-height: 1.35; text-align: justify; text-justify: inter-word; }
+      .page { width:100%; display:flex; flex-direction:column; break-after: page; page-break-after: always; min-height: auto; padding: 0; }
+      .page:last-child { page-break-after: auto; }
+      .header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #c1121f; padding-bottom:8px; margin-bottom:10px; }
+      .logo { height: 60px; width:auto; object-fit:contain; }
+      .header-mid { flex:1; text-align:center; padding-top:4px; font-family:Aptos, Arial, Helvetica, sans-serif; font-weight:900; letter-spacing:1.4px; font-size:10.8pt; color:#111; }
+      .header-right { text-align:right; font-size:8.2pt; color:#555; line-height:1.35; max-width:220px; }
+      p { margin: 0 0 6px; }
+      .meta { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; gap:12px; }
+      .meta strong { font-size:10.8pt; }
+      .client { margin-bottom: 10px; }
+      .client p { margin-bottom: 3px; }
+      .section-title { text-align:center; font-weight:900; color:#111; text-transform:uppercase; margin: 8px 0 6px; border-bottom:2px solid #c1121f; padding-bottom:3px; font-size:11.4pt; letter-spacing:.2px; }
+      .table { width:100%; border-collapse:collapse; margin: 6px 0 8px; }
+      .table th, .table td { border:1px solid #444; padding:5px 8px; vertical-align:middle; }
+      .table th { background:#eef2f7; font-weight:900; text-align:center; font-size:10.5pt; }
+      .table td { font-size: 10.2pt; }
+      .table .num { text-align:right; white-space:nowrap; }
+      .table .center { text-align:center; }
+      .table .label-strong td:first-child { font-weight:900; }
+      .total-row td { background:#dbe7f5; color:#0f172a; font-weight:900; }
+      .note-center { text-align:center; font-weight:900; margin:10px 0 0; font-size:11pt; }
+      .map-wrap { position:relative; border:1px solid #d8dee7; padding:0; margin: 2px 0 8px; width:100%; min-height:250px; overflow:hidden; background:#fff; }
+      .map { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block; margin:0 auto; }
+      .map-label { position:absolute; pointer-events:none; text-align:center; font-family:Aptos, Arial, Helvetica, sans-serif; font-weight:800; line-height:1; font-size:8px; white-space:nowrap; color:#fff !important; background:rgba(17,24,39,0.55); padding:2px 4px; border-radius:4px; text-shadow:0 1px 2px rgba(0,0,0,0.85); border:1px solid rgba(255,255,255,0.28); transform-origin:center; }
+      .placeholder { border:1px dashed #bbb; padding: 28px; text-align:center; color:#777; margin-bottom:12px; }
+      .measurement-box { border:1px solid #d5d9e2; background:#f8fafc; padding:8px 10px; margin: 0 0 8px; text-align:justify; text-justify:inter-word; }
+      .measurement-box p { margin-bottom: 4px; }
+      .measurement-table { width:100%; border-collapse:collapse; margin-top: 6px; }
+      .measurement-table th, .measurement-table td { border:1px solid #cbd5e1; padding:6px 8px; font-size:11pt; }
+      .measurement-table th { background:#e2e8f0; text-align:left; font-weight:800; }
+      .photo-grid { display:grid; gap:8px; margin-bottom:8px; }
+      .photo-grid.single { grid-template-columns:1fr; }
+      .photo-grid.double { grid-template-columns:1fr 1fr; }
+      .photo-grid.multi { grid-template-columns:1fr 1fr; }
+      .photo-card { border:1px solid #d5d9e2; background:#fff; padding:6px; break-inside: avoid; page-break-inside: avoid; }
+      .photo-wrap { background:#fff; overflow:hidden; height:210px; display:flex; align-items:center; justify-content:center; border:1px solid #e5e7eb; }
+      .photo-wrap-large { height:300px; }
+      .photo { width:100%; height:100%; object-fit:contain; display:block; }
+      .photo-label { font-size:9.5pt; color:#475569; padding-top:5px; text-align:center; }
+      .signature { margin-top: 18px; }
+      .signature-space { height: 48px; }
+      .signature-line { width: 360px; border-top:1px solid #222; padding-top:7px; }
+      .signature-name { white-space: nowrap; }
+      .footer { margin-top:auto; border-top:1px solid #999; padding-top:6px; text-align:center; font-size:8.6pt; color:#555; }
+      .appendix-img { width:100%; height:auto; display:block; }
+      .tech-title { font-weight:900; text-transform:uppercase; text-align:center; font-size:13pt; margin: 0 0 8px; }
+      .tech-subtitle { text-align:center; font-weight:700; letter-spacing:4px; margin: 0 0 14px; }
+      .tech-table { width:100%; border-collapse:collapse; margin-top: 8px; }
+      .tech-table th, .tech-table td { border:1px solid #444; padding:6px 8px; vertical-align:top; }
+      .tech-table th { background:#f7f7f7; font-weight:900; text-align:center; }
+      .tech-table td { font-size:10.2pt; line-height:1.32; }
+      .tech-elem { width:24%; font-weight:800; }
+      ul { margin: 6px 0 8px 18px; padding:0; }
+      li { margin-bottom: 3px; }
+      .small-gap { margin-top: 6px; }
+      .no-break, .measurement-box, .map-wrap, .signature, table, tr, td, th { break-inside: avoid; page-break-inside: avoid; }
+      img { max-width:100%; }
+    </style>
+  </head>
+  <body>
+    <section class="page">
+      <div class="header">
+        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
+      <div class="meta"><div>Envigado, ${escapeHtml(fmtL(c.fecha || today()))}</div><div><strong>COTIZACION No. ${escapeHtml(c.numero || '')}</strong></div></div>
+      <div class="client">
+        <p><strong>SENOR:</strong></p>
+        <p><strong>${escapeHtml((c.cliente || '').toUpperCase())}</strong></p>
+        ${c.obra ? `<p><strong>OBRA:</strong> ${escapeHtml((c.obra || '').toUpperCase())}</p>` : ''}
+        ${c.telefono ? `<p><strong>TELEFONO:</strong> ${escapeHtml(c.telefono)}</p>` : ''}
+        ${c.ciudad ? `<p><strong>${escapeHtml((c.ciudad || '').toUpperCase())}</strong></p>` : ''}
+      </div>
+      <div style="height:8px"></div>
+      <p>Cordial saludo.</p>
+      <div style="height:8px"></div>
+      ${textoInicial ? `<div class="measurement-box"><div style="white-space:pre-wrap; text-align:justify;">${escapeHtml(textoInicial)}</div></div>` : ""}
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
     </section>
-  ` : "";
-
-  return `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8" />
-  <title>Cotizacion ${escapeHtml(c.numero || c.id || "")}</title>
-  <style>
-    @page{
-      size: Letter;
-      margin: 11mm 10mm 12mm 10mm;
-    }
-
-    *{
-      box-sizing:border-box;
-      -webkit-print-color-adjust:exact;
-      print-color-adjust:exact;
-    }
-
-    html,body{
-      margin:0;
-      padding:0;
-      background:#fff;
-      color:#111827;
-      font-family:Aptos,"Segoe UI",Arial,sans-serif;
-      font-size:11pt;
-      line-height:1.45;
-    }
-
-    body{
-      padding:0;
-    }
-
-    .doc{
-      width:100%;
-      max-width:100%;
-      margin:0 auto;
-    }
-
-    .avoid-break{
-      break-inside:avoid;
-      page-break-inside:avoid;
-    }
-
-    .header{
-      border-bottom:2px solid #cc0000;
-      padding-bottom:10px;
-      margin-bottom:16px;
-    }
-
-    .header-top{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-start;
-      gap:16px;
-    }
-
-    .logo-left img{
-      width:250px;
-      max-width:100%;
-      object-fit:contain;
-    }
-
-    .brand-center{
-      flex:1;
-      text-align:center;
-      padding-top:6px;
-    }
-
-    .brand-center .title{
-      font-size:18px;
-      font-weight:800;
-      letter-spacing:2px;
-      text-transform:uppercase;
-      color:#111827;
-    }
-
-    .brand-center .subtitle{
-      font-size:12px;
-      font-weight:700;
-      letter-spacing:1px;
-      text-transform:uppercase;
-      margin-top:2px;
-      color:#111827;
-    }
-
-    .company-right{
-      min-width:220px;
-      text-align:right;
-      font-size:11px;
-      line-height:1.5;
-      color:#4b5563;
-    }
-
-    .meta{
-      display:flex;
-      justify-content:space-between;
-      gap:16px;
-      margin-top:14px;
-      align-items:flex-start;
-    }
-
-    .meta-left{
-      flex:1;
-      font-size:11.5px;
-      line-height:1.55;
-    }
-
-    .meta-right{
-      min-width:220px;
-      text-align:right;
-      font-size:11.5px;
-    }
-
-    .intro{
-      margin:12px 0 16px;
-      white-space:pre-wrap;
-      font-size:11.5px;
-    }
-
-    .proposal-section{
-      margin:0 0 20px;
-      page-break-inside:auto;
-    }
-
-    .proposal-header{
-      margin-bottom:10px;
-    }
-
-    .proposal-title{
-      border-top:2px solid #cc0000;
-      border-bottom:2px solid #cc0000;
-      padding:6px 8px;
-      text-align:center;
-      font-size:20px;
-      font-weight:800;
-      color:#111827;
-      text-transform:uppercase;
-      letter-spacing:.4px;
-    }
-
-    .proposal-subtitle{
-      margin-top:8px;
-      font-size:16px;
-      color:#6b7280;
-    }
-
-    .proposal-block{
-      margin-top:12px;
-    }
-
-    .section-title{
-      font-size:16px;
-      font-weight:800;
-      text-transform:uppercase;
-      text-align:center;
-      border-bottom:2px solid #cc0000;
-      padding-bottom:4px;
-      margin:0 0 10px;
-      color:#111827;
-      letter-spacing:.4px;
-    }
-
-    .measurement-box{
-      background:#f8fafc;
-      border:1px solid #dbe3ec;
-      border-radius:0;
-      padding:12px 14px;
-      margin-top:10px;
-      font-size:11.5px;
-    }
-
-    .measurement-box p{
-      margin:0 0 6px;
-      font-size:12px;
-    }
-
-    .photo-grid{
-      display:grid;
-      gap:12px;
-      align-items:start;
-    }
-
-    .photo-grid.single{
-      grid-template-columns:1fr;
-    }
-
-    .photo-grid.double{
-      grid-template-columns:1fr 1fr;
-    }
-
-    .photo-grid.multi{
-      grid-template-columns:1fr 1fr;
-    }
-
-    .photo-card{
-      border:1px solid #d8dee7;
-      background:#fff;
-      padding:10px;
-    }
-
-    .photo-wrap{
-      width:100%;
-      height:280px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      overflow:hidden;
-      background:#fff;
-      border:1px solid #e5e7eb;
-    }
-
-    .photo-wrap-large{
-      height:420px;
-    }
-
-    .photo{
-      width:100%;
-      height:100%;
-      object-fit:contain;
-      display:block;
-      background:#fff;
-    }
-
-    .photo-label{
-      text-align:center;
-      margin-top:8px;
-      font-size:12px;
-      color:#6b7280;
-      font-weight:600;
-    }
-
-    .map-wrap{
-      position:relative;
-      width:100%;
-      min-height:320px;
-      border:1px solid #d8dee7;
-      overflow:hidden;
-      background:#fff;
-    }
-
-    .map{
-      width:100%;
-      height:100%;
-      object-fit:contain;
-      display:block;
-      background:#fff;
-    }
-
-    .map-label{
-      position:absolute;
-      font-size:11px;
-      font-weight:800;
-      text-shadow:0 1px 2px rgba(255,255,255,.92);
-      white-space:nowrap;
-    }
-
-    .price-table{
-      width:100%;
-      border-collapse:collapse;
-      margin-top:10px;
-      font-size:11.5px;
-    }
-
-    .price-table th,
-    .price-table td{
-      border:1px solid #2f2f2f;
-      padding:8px 10px;
-      vertical-align:top;
-    }
-
-    .price-table thead th{
-      background:#f3f4f6;
-      font-size:12.5px;
-      font-weight:800;
-      text-align:center;
-    }
-
-    .price-table .num{
-      text-align:right;
-      white-space:nowrap;
-    }
-
-    .price-table .center{
-      text-align:center;
-    }
-
-    .price-table .sum-row td{
-      font-weight:700;
-    }
-
-    .price-table tfoot td{
-      background:#f3e463;
-      font-size:13px;
-      font-weight:800;
-    }
-
-    .price-table .total-cell{
-      font-size:14px;
-      color:#111827;
-    }
-
-    .conditions{
-      margin-top:20px;
-    }
-
-    .conditions table{
-      width:100%;
-      border-collapse:collapse;
-      font-size:11.5px;
-    }
-
-    .conditions td{
-      border:1px solid #cfd8e3;
-      padding:8px 10px;
-    }
-
-    .conditions td:first-child{
-      width:34%;
-      font-weight:800;
-      color:#111827;
-      background:#f8fafc;
-    }
-
-    .appendix{
-      margin-top:20px;
-    }
-
-    .appendix-card{
-      border:1px solid #d8dee7;
-      padding:10px;
-      background:#fff;
-    }
-
-    .appendix-image{
-      width:100%;
-      max-height:720px;
-      object-fit:contain;
-      display:block;
-      margin:0 auto;
-    }
-
-    .footer{
-      margin-top:18px;
-      border-top:1px solid #d1d5db;
-      padding-top:10px;
-      text-align:center;
-      font-size:10px;
-      color:#6b7280;
-    }
-
-    .signature{
-      margin-top:28px;
-      font-size:11.5px;
-      line-height:1.7;
-    }
-
-    @media print{
-      .proposal-section{
-        break-inside:auto;
-        page-break-inside:auto;
-      }
-
-      .photo-card,
-      .measurement-box,
-      .proposal-header,
-      .map-wrap,
-      .price-table,
-      .appendix,
-      .appendix-card{
-        break-inside:avoid;
-        page-break-inside:avoid;
-      }
-
-      .photo-wrap{
-        height:260px;
-      }
-
-      .photo-wrap-large{
-        height:380px;
-      }
-
-      .map-wrap{
-        min-height:300px;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="doc">
-    <div class="header avoid-break">
-      <div class="header-top">
-        <div class="logo-left">
-          <img src="${LOGO_INGEANCLAJES}" alt="Ingeanclajes"/>
-        </div>
-
-        <div class="brand-center">
-          <div class="title">Especialistas en</div>
-          <div class="subtitle">Anclajes</div>
-        </div>
-
-        <div class="company-right">
-          Calle 38 sur # 36 - 48, Envigado<br/>
-          PBX 448 26 86 - Cel 3152889541<br/>
-          Nit. 900193965-4<br/>
-          www.ingeanclajes.com
-        </div>
-      </div>
-
-      <div class="meta">
-        <div class="meta-left">
-          <div><strong>Señor:</strong> ${escapeHtml(c.cliente || "")}</div>
-          <div><strong>Obra:</strong> ${escapeHtml(c.obra || "")}</div>
-          <div><strong>Telefono:</strong> ${escapeHtml(c.telefono || "")}</div>
-          <div>${escapeHtml(c.ciudad || "")}</div>
-        </div>
-        <div class="meta-right">
-          <div><strong>Envigado, ${fmtD(c.fecha || today())}</strong></div>
-          <div style="margin-top:4px;"><strong>Cotizacion No. ${escapeHtml(c.numero || c.id || "")}</strong></div>
-        </div>
-      </div>
-    </div>
-
-    ${textoInicial ? `<div class="intro">${escapeHtml(textoInicial)}</div>` : ""}
 
     ${proposalSections}
 
-    <section class="conditions avoid-break">
+    <section class="page">
+      <div class="header">
+        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+      </div>
       <div class="section-title">Condiciones comerciales</div>
-      <table>
-        <tr><td>FORMA DE PAGO</td><td>${escapeHtml(c.formaPago || DEFAULT_COT_FORMA_PAGO)}</td></tr>
-        <tr><td>TIEMPO DE EJECUCION</td><td>${escapeHtml(c.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC)}</td></tr>
-        <tr><td>VALIDEZ DE LA OFERTA</td><td>${escapeHtml(String(c.val || 30))} DIAS A PARTIR DE LA FECHA DE ENTREGA DE ESTA COTIZACION</td></tr>
-        <tr><td>CERTIFICACION</td><td>SE ENTREGA CON EL PAGO TOTAL</td></tr>
+      <table class="table"><tbody>
+        <tr><td style="width:34%"><strong>FORMA DE PAGO</strong></td><td>${escapeHtml(c.formaPago || DEFAULT_COT_FORMA_PAGO)}</td></tr>
+        <tr><td><strong>TIEMPO DE EJECUCION</strong></td><td>${escapeHtml(c.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC)}</td></tr>
+        <tr><td><strong>VALIDEZ DE LA OFERTA</strong></td><td>${escapeHtml(`${c.val||30} DIAS A PARTIR DE LA FECHA DE ENTREGA DE ESTA COTIZACION`)}</td></tr>
+        <tr><td><strong>CERTIFICACION</strong></td><td>SE ENTREGA CON EL PAGO TOTAL</td></tr>
+      </tbody></table>
+      ${String(c.observaciones||"").trim() ? `<div class="measurement-box" style="margin-top:10px;"><p><strong>Observaciones</strong></p><div style="white-space:pre-wrap; text-align:justify;">${escapeHtml(c.observaciones)}</div></div>` : ""}
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
+    </section>
+
+    <section class="page">
+      <div class="header">
+        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+      </div>
+      <div class="tech-title">Sistema no continuo en acero galvanizado</div>
+      <table class="tech-table">
+        <thead>
+          <tr><th style="width:24%">Elemento</th><th>Caracteristica</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="tech-elem">Soporte lateral e intermedio</td>
+            <td>Este elemento esta disenado para ser usado en sistemas de lineas de vida horizontales de tipo continuo. El componente soporta regularmente el cable de acero para que una seccion libre de cable no supere la luz maxima permitida. Este soporte intermedio permite el uso de un carro deslizador para evitar el uso de eslinga en Y por parte del trabajador y evitar que el colaborador se desconecte.</td>
+          </tr>
+          <tr>
+            <td class="tech-elem">Tensor</td>
+            <td>Este elemento esta disenado para ser usado en sistemas de lineas de vida horizontales. En sus extremos el tensor se asegura al cable de la linea de vida y a un absorbedor de energia respectivamente. Su funcion es tensionar la linea de vida para que, en el momento de una caida, la distancia de caida del trabajador sea minima.</td>
+          </tr>
+          <tr>
+            <td class="tech-elem">Empalmes y fijaciones</td>
+            <td>Fabricados en aluminio. Resistentes a la corrosion y oxidacion. Se utilizan para empalmar dos cables y fijar barandillas de cables.</td>
+          </tr>
+          <tr>
+            <td class="tech-elem">Guardacables</td>
+            <td>Fabricado en acero con acabado galvanizado resistente a la corrosion. Protegen contra el desgaste y deformacion del cable, alargando su vida util.</td>
+          </tr>
+          <tr>
+            <td class="tech-elem">Cable de acero</td>
+            <td>El cable de acero se fabrica bajo un diseno que permite que sea capaz de absorber el desgaste y los esfuerzos causados por el contacto con poleas, tambores y otras superficies, asi como las tensiones estaticas y dinamicas del trabajo al que se someta. Se compone por alambres de acero, estirados en frio, trenzados en espiral, formando unidades denominadas torones. Ademas, su diseno ha sido ideado para que cada alambre tenga la libertad de movimiento en relacion a los alambres adyacentes. Mientras mas alambres conformen este elemento, mayor sera su flexibilidad y resistencia en esfuerzos elevados; logrando el objetivo de transmision de movimiento, fuerzas y energia de forma eficaz y efectiva.</td>
+          </tr>
+        </tbody>
       </table>
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
     </section>
+    ${showVerticalAppendix ? `<section class="page"><img src="${articoLineaVidaVertical}" alt="Anexo tecnico linea de vida vertical" class="appendix-img"/><div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div></section>` : ""}
 
-    ${verticalAppendix}
-
-    <section class="avoid-break" style="margin-top:20px;">
+    <section class="page">
+      <div class="header">
+        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+      </div>
       <div class="section-title">Esta cotizacion incluye</div>
-      <div class="measurement-box">
-        Tuercas y arandelas en acero galvanizado y/o inoxidable certificado.<br/>
-        Los elementos utilizados en la instalacion son certificados de fabrica los cuales se adjuntan en la entrega de documentacion de certificados.<br/>
-        Transporte de materiales y de personal hasta el sitio de trabajo.<br/>
-        Se entregan todos los certificados de acuerdo a la Resolucion 4272 de trabajo seguro en alturas.<br/>
-        Recertificacion sin costo al ano siguiente de la instalacion.<br/>
-        Esta propuesta incluye el coordinador para trabajo seguro en alturas de tiempo completo en la obra.<br/>
-        Todo el personal que labora en la empresa se encuentra afiliado a ARL, salud y pensiones.<br/>
-        Llevamos todos los elementos personales de seguridad necesarios para efectuar dicho trabajo.<br/>
-        Realizamos todas las reparaciones de los danos que puedan surgir durante la ejecucion de dicho trabajo y se entregan todas las polizas exigidas por el contratante.
-      </div>
-    </section>
-
-    <section class="avoid-break" style="margin-top:18px;">
+      <ul>
+        <li>Tuercas y arandelas en acero galvanizado y/o inoxidable certificado.</li>
+        <li>Los elementos utilizados en la instalacion son certificados de fabrica los cuales se adjuntan en la entrega de documentacion de certificados.</li>
+        <li>Transporte de materiales y de personal hasta el sitio de trabajo.</li>
+        <li>Se entregan todos los certificados de acuerdo a la Resolucion 4272 de trabajo seguro en alturas.</li>
+        <li>Recertificacion sin costo al ano siguiente de la instalacion.</li>
+        <li>Esta propuesta incluye el coordinador para trabajo seguro en alturas de tiempo completo en la obra.</li>
+      </ul>
+      <p class="small-gap">Todo el personal que labora en la empresa se encuentra afiliado a ARL, salud y pensiones. Llevamos todos los elementos personales de seguridad necesarios para efectuar dicho trabajo. Realizamos todas las reparaciones de los danos que puedan surgir durante la ejecucion de dicho trabajo y se entregan todas las polizas exigidas por el contratante.</p>
       <div class="section-title">Sistema de gestion de seguridad y salud en el trabajo</div>
-      <div class="measurement-box">
-        Nuestra empresa INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicacion de la Resolucion 4272 de 2021, garantizando la implementacion del Sistema de Gestion de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.
+      <p>Nuestra empresa INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicacion de la Resolucion 4272 de 2021, garantizando la implementacion del Sistema de Gestion de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.</p>
+      <div class="signature">
+        <p>Cordialmente,</p>
+        <div class="signature-space"></div>
+        <div class="signature-line"><div class="signature-name"><strong>ING. JHON JAIME SEPULVEDA LONDONO</strong></div><div>MP. 05256-409949</div><div>GERENTE GENERAL</div><div>Tel: 3152889541</div></div>
       </div>
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
     </section>
-
-    <div class="signature avoid-break">
-      Cordialmente,<br/><br/>
-      <strong>ING. JHON JAIME SEPULVEDA LONDONO</strong><br/>
-      MP. 05256-409949<br/>
-      GERENTE GENERAL<br/>
-      Tel: 3152889541
-    </div>
-
-    <div class="footer">
-      Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com
-    </div>
-  </div>
-</body>
-</html>`;
+  </body>
+  </html>`;
 }
 
 function openCotizacionPrint(c){
@@ -3018,15 +2597,6 @@ export default function App(){
   const [proveedores,setProveedores]=useState(PROVEEDORES_INIT);
   const [cuentas,setCuentas]=useState(CUENTAS_PAGAR_INIT);
   const [cotizaciones,setCotizaciones]=useState(COTIZACIONES_INIT);
-  const [nominasGeneradas,setNominasGeneradas]=useState(()=>{
-    if(typeof window==="undefined") return {};
-    try{
-      const raw = window.localStorage.getItem(NOMINA_GENERATED_STORAGE_KEY);
-      return raw ? indexNominaSnapshots(JSON.parse(raw)) : {};
-    }catch{
-      return {};
-    }
-  });
   const [cotDraft,setCotDraft]=useState(null);
   const bootstrappedRef=useRef(false);
   const autosaveTimerRef=useRef(null);
@@ -3043,19 +2613,7 @@ export default function App(){
     proveedores,
     cuentas,
     cotizaciones,
-    nominasGeneradas: listNominaSnapshots(nominasGeneradas),
   });
-
-  const normalizeCloudPayload = (payload)=>{
-    if(!payload) return buildCloudPayload();
-    const next = { ...payload };
-    if(Object.prototype.hasOwnProperty.call(next, "nominasGeneradas")){
-      next.nominasGeneradas = Array.isArray(next.nominasGeneradas)
-        ? next.nominasGeneradas
-        : listNominaSnapshots(next.nominasGeneradas || {});
-    }
-    return next;
-  };
 
   const saveAllToCloud=async(override=null)=>{
     if(!isSupabaseConfigured()) return { ok:false, reason:"not-configured" };
@@ -3064,7 +2622,7 @@ export default function App(){
       return { ok:false, reason:"missing-function" };
     }
     try{
-      await saveCloudAppData(normalizeCloudPayload(override||buildCloudPayload()));
+      await saveCloudAppData(override||buildCloudPayload());
       return { ok:true };
     }catch(error){
       console.error("No se pudo guardar datos en Supabase:", error);
@@ -3072,7 +2630,7 @@ export default function App(){
     }
   };
 
-  const ctx={obras,setObras,empleados,setEmpleados,cargos,setCargos,pagos,setPagos,horarios,setHorarios,certs,setCerts,informes,setInformes,clientes,setClientes,proveedores,setProveedores,cuentas,setCuentas,cotizaciones,setCotizaciones,nominasGeneradas,setNominasGeneradas,cotDraft,setCotDraft,setScr,saveAllToCloud};
+  const ctx={obras,setObras,empleados,setEmpleados,cargos,setCargos,pagos,setPagos,horarios,setHorarios,certs,setCerts,informes,setInformes,clientes,setClientes,proveedores,setProveedores,cuentas,setCuentas,cotizaciones,setCotizaciones,cotDraft,setCotDraft,setScr,saveAllToCloud};
 
   useEffect(()=>{
     let cancel=false;
@@ -3098,7 +2656,6 @@ export default function App(){
         if (Array.isArray(cloud.proveedores)) setProveedores(cloud.proveedores);
         if (Array.isArray(cloud.cuentas)) setCuentas(cloud.cuentas);
         if (Array.isArray(cloud.cotizaciones)) setCotizaciones(cloud.cotizaciones);
-        if (Array.isArray(cloud.nominasGeneradas)) setNominasGeneradas(indexNominaSnapshots(cloud.nominasGeneradas));
       } catch (error) {
         console.error("No se pudo cargar datos de Supabase:", error);
       } finally {
@@ -3110,13 +2667,6 @@ export default function App(){
 
     return ()=>{ cancel=true; };
   },[]);
-
-  useEffect(()=>{
-    if(typeof window==="undefined") return;
-    try{
-      window.localStorage.setItem(NOMINA_GENERATED_STORAGE_KEY, JSON.stringify(listNominaSnapshots(nominasGeneradas)));
-    }catch{}
-  }, [nominasGeneradas]);
 
   useEffect(()=>{
     if(!bootstrappedRef.current) return;
@@ -3148,7 +2698,6 @@ export default function App(){
     proveedores,
     cuentas,
     cotizaciones,
-    nominasGeneradas,
   ]);
 
   const navSections=[
@@ -5670,7 +5219,7 @@ function Financiero({ctx}){
 // NÓMINA
 // ======================================================
 function Nomina({ctx}){
-  const {empleados,setEmpleados,obras,cargos,setCargos,nominasGeneradas,setNominasGeneradas,saveAllToCloud}=ctx;
+  const {empleados,setEmpleados,obras,cargos,setCargos,saveAllToCloud}=ctx;
   const [tab,setTab]=useState("lista");
   const [mes,setMes]=useState("2026-04");
   const [corteNomina,setCorteNomina]=useState("primera");
@@ -5689,7 +5238,15 @@ function Nomina({ctx}){
   const [diasVacLiquidar,setDiasVacLiquidar]=useState({});
   const [guardandoNomina,setGuardandoNomina]=useState(false);
   const [mensajeGuardadoNomina,setMensajeGuardadoNomina]=useState("");
-  const [nominaConsultaId,setNominaConsultaId]=useState("");
+  const [nominasGeneradas,setNominasGeneradas]=useState(()=>{
+    if(typeof window==="undefined") return {};
+    try{
+      const raw = window.localStorage.getItem(NOMINA_GENERATED_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    }catch{
+      return {};
+    }
+  });
 
   const empleadosBase = empleados.map(normalizarEmpleado);
   const periodoNomina = buildNominaPeriodo(mes, corteNomina);
@@ -5725,15 +5282,10 @@ function Nomina({ctx}){
   const totalNominaPlanilla=resumenesPlanilla.reduce((total,item)=>total+item.resumen.neto,0);
   const totalLiquidacionesPlanilla=resumenesPlanilla.reduce((total,item)=>total+item.liquidacionPrestaciones,0);
   const totalPagarPlanilla=resumenesPlanilla.reduce((total,item)=>total+item.totalPagar,0);
-  const nominaPreview = hydrateNominaSnapshot(buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar));
-  const nominaGeneradaActual = nominasGeneradas[nominaPreview.id] ? hydrateNominaSnapshot(nominasGeneradas[nominaPreview.id]) : null;
-  const nominasGeneradasList = listNominaSnapshots(nominasGeneradas);
-  const nominaConsulta = nominaConsultaId && nominasGeneradas[nominaConsultaId]
-    ? hydrateNominaSnapshot(nominasGeneradas[nominaConsultaId])
-    : null;
-  const nominaVistaActual = nominaConsulta || nominaGeneradaActual || nominaPreview;
+  const nominaPreview = buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar);
+  const nominaGeneradaActual = nominasGeneradas[nominaPreview.id] || null;
+  const nominaVistaActual = nominaGeneradaActual || nominaPreview;
   const nominaEstaGenerada = Boolean(nominaGeneradaActual);
-  const nominaVistaEsHistorica = Boolean(nominaConsulta && nominaConsulta.id!==nominaPreview.id);
   const empleadoDeduccionActivo =
     empleadosBase.find((empleado)=>empleado.id===selId) ||
     activos[0] ||
@@ -5744,10 +5296,11 @@ function Nomina({ctx}){
   ])].sort((a,b)=>a.localeCompare(b,"es"));
 
   useEffect(()=>{
-    if(nominaConsultaId && !nominasGeneradas[nominaConsultaId]){
-      setNominaConsultaId("");
-    }
-  }, [nominaConsultaId, nominasGeneradas]);
+    if(typeof window==="undefined") return;
+    try{
+      window.localStorage.setItem(NOMINA_GENERATED_STORAGE_KEY, JSON.stringify(nominasGeneradas));
+    }catch{}
+  }, [nominasGeneradas]);
 
   const actualizarEmpleado=(id,updater)=>{
     setEmpleados((prev)=>
@@ -5904,48 +5457,33 @@ function Nomina({ctx}){
     await guardarCambiosNomina("Cambios de contratos y liquidación sincronizados", { empleados: nextEmployees });
   };
 
-  const generarNominaCorte = async ()=>{
-    const mensajeConfirmacion = `${nominaEstaGenerada ? "¿Regenerar" : "¿Generar"} la nómina del corte ${periodoNomina.label}?`;
-    if(typeof window!=="undefined" && !window.confirm(mensajeConfirmacion + " Esta acción congelará la planilla y la guardará en Supabase.")) return;
-
-    const baseSnapshot = buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar);
-    const snapshot = hydrateNominaSnapshot({
-      ...baseSnapshot,
-      planoBanco: buildNominaPlanoBancoContent(baseSnapshot, NOMINA_PLANO_BANCO_DEFAULTS),
-    });
-    const nextNominas = {
-      ...nominasGeneradas,
+  const generarNominaCorte = ()=>{
+    const snapshot = buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar);
+    setNominasGeneradas((prev)=>({
+      ...prev,
       [snapshot.id]: snapshot,
-    };
-    setNominasGeneradas(nextNominas);
-    setNominaConsultaId(snapshot.id);
-
-    if(typeof saveAllToCloud==="function"){
-      setGuardandoNomina(true);
-      const result = await saveAllToCloud({ nominasGeneradas: nextNominas });
-      setGuardandoNomina(false);
-      if(result?.ok===false){
-        setMensajeGuardadoNomina("La nómina se generó localmente, pero no se pudo guardar en Supabase: " + (result.error?.message||"revisa la conexión"));
-        setTimeout(()=>setMensajeGuardadoNomina(""), 5000);
-        return;
-      }
-    }
-
+    }));
     setMensajeGuardadoNomina(
-      "Nómina generada para " + snapshot.periodo.label + " con " + snapshot.totals.totalRegistros + " registros y sincronizada en Supabase."
+      "Nómina generada para " + snapshot.periodo.label + " con " + snapshot.totals.totalRegistros + " registros."
     );
     setTimeout(()=>setMensajeGuardadoNomina(""), 3500);
   };
 
-  const descargarPlanoBanco = (snapshotArg=null)=>{
-    const snapshot = hydrateNominaSnapshot(snapshotArg || nominaVistaActual);
-    if(!snapshot?.registrosBanco?.length){
+  const descargarPlanoBanco = ()=>{
+    const snapshot = nominaEstaGenerada ? nominaGeneradaActual : buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar);
+    if(!snapshot.registrosBanco.length){
       setMensajeGuardadoNomina("No hay registros listos para el banco. Revisa cédula y cuenta bancaria de los empleados del corte.");
       setTimeout(()=>setMensajeGuardadoNomina(""), 3500);
       return;
     }
-    const contenido = snapshot.planoBanco || buildNominaPlanoBancoContent(snapshot, NOMINA_PLANO_BANCO_DEFAULTS);
-    const nombreArchivo = snapshot.archivoBanco || getNominaArchivoNombre(snapshot);
+    if(!nominaEstaGenerada){
+      setNominasGeneradas((prev)=>({
+        ...prev,
+        [snapshot.id]: snapshot,
+      }));
+    }
+    const contenido = buildNominaPlanoBancoContent(snapshot, NOMINA_PLANO_BANCO_DEFAULTS);
+    const nombreArchivo = `NOMINA_${snapshot.periodo.mes}_${snapshot.periodo.corte.toUpperCase()}.txt`;
     downloadTextFile(nombreArchivo, contenido);
     setMensajeGuardadoNomina("Plano banco descargado: " + nombreArchivo);
     setTimeout(()=>setMensajeGuardadoNomina(""), 3500);
@@ -5993,7 +5531,7 @@ function Nomina({ctx}){
       <H1 title="Nómina y Empleados" subtitle="Gestión de empleados, horas extras, comisiones y planilla"
         action={<button style={B("#cc0000")} onClick={()=>setTab("nuevo")}>+ Nuevo Empleado</button>}/>
       <div style={{display:"flex",gap:6,marginBottom:20}}>
-        {[["lista","Empleados"],  ["vacaciones","Vacaciones"],  ["contratos","Contratos y liquidación"],  ["he","Horas extras y comisiones"],["deducciones","Revisión deducciones"],  ["planilla","Planilla Bancolombia"],["colillas","Colillas de pago"]].map(([id,lb])=>(
+        {[["lista","Empleados"],["vacaciones","Vacaciones"],["contratos","Contratos y liquidación"],["he","Horas extras y comisiones"],["deducciones","Revisión deducciones"],["colillas","Colillas de pago"],["planilla","Planilla Bancolombia"]].map(([id,lb])=>(
           <button key={id} onClick={()=>setTab(id)} style={{...B(tab===id?"#f47c20":"#f1f5f9",tab===id?"#fff":"#475569"),border:"1px solid " + (tab===id?"#f47c20":"#e2e8f0")}}>{lb}</button>
         ))}
       </div>
@@ -6652,16 +6190,14 @@ function Nomina({ctx}){
 
       {tab==="planilla"&&(
         <div>
-          <div style={{display:"grid",gridTemplateColumns:"minmax(320px, 1.2fr) minmax(280px, 0.8fr)",gap:16,marginBottom:20}}>
+          <div style={{display:"flex",gap:12,alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
             <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:12,padding:"12px 14px"}}>
               <div style={{fontSize:11,fontWeight:700,color:"#1d4ed8",textTransform:"uppercase",letterSpacing:0.7}}>Generación de nómina y plano banco</div>
               <div style={{fontSize:13,color:"#0f172a",marginTop:4}}>Corte activo: {periodoNomina.label}</div>
               <div style={{fontSize:11,color:"#64748b",marginTop:4}}>
-                {nominaVistaEsHistorica
-                  ? ("Consultando la nómina generada del corte " + nominaVistaActual.periodo.label + " el " + formatNominaGeneratedAt(nominaVistaActual.generadoEn) + ".")
-                  : nominaEstaGenerada
-                    ? ("Nómina generada el " + formatNominaGeneratedAt(nominaVistaActual.generadoEn) + ". Si cambias horas extras, comisiones o deducciones, usa Regenerar nómina.")
-                    : "Esta es la vista previa del corte. Cuando ya revises horas extras, comisiones, deducciones y liquidaciones, pulsa Generar nómina para congelar el periodo."}
+                {nominaEstaGenerada
+                  ? ("Nómina generada el " + formatNominaGeneratedAt(nominaVistaActual.generadoEn) + ". Si cambias horas extras, comisiones o deducciones, usa Regenerar nómina.")
+                  : "Esta es la vista previa del corte. Cuando ya revises horas extras, comisiones, deducciones y liquidaciones, pulsa Generar nómina para congelar el periodo."}
               </div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(3, minmax(120px, 1fr))",gap:8,marginTop:12}}>
                 <div style={{background:"#fff",borderRadius:10,padding:"9px 10px",border:"1px solid #dbeafe"}}>
@@ -6677,52 +6213,18 @@ function Nomina({ctx}){
                   <div style={{fontWeight:700,color:"#003B71",marginTop:4}}>{fmt(nominaVistaActual.totals.totalBanco)}</div>
                 </div>
               </div>
-              <div style={{  display:"flex",  gap:10,  flexWrap:"wrap",  justifyContent:"flex-start",  alignItems:"center",  marginTop:14, paddingTop:10, borderTop:"1px solid #bfdbfe" }}>
-                <button style={{...B("#f47c20"), minWidth:180, justifyContent:"center", fontWeight:700}} onClick={generarNominaCorte}>  {nominaEstaGenerada ? "Regenerar nómina" : "Generar nómina"} </button>
-                <button style={{...B("#142840"), minWidth:190, justifyContent:"center", fontWeight:700}} onClick={descargarPlanoBanco}> Descargar plano banco </button>
-                <button style={B("#166534","#d1fae5")} onClick={()=>printCurrentPz("Planilla Nómina " + (nominaVistaActual.periodo.label))}>Imprimir / Bancolombia</button>
-                {nominaVistaEsHistorica ? <button style={B("#475569","#f8fafc")} onClick={()=>setNominaConsultaId("")}>Volver al corte activo</button> : null}
-              </div>
             </div>
-            <div style={{background:"#fff",border:"1px solid #dbeafe",borderRadius:12,padding:"12px 14px"}}>
-              <div style={{fontSize:11,fontWeight:700,color:"#0f172a",textTransform:"uppercase",letterSpacing:0.7}}>Nóminas generadas</div>
-              <div style={{fontSize:11,color:"#64748b",marginTop:4}}>Cada corte generado queda guardado en Supabase para consulta posterior.</div>
-              <div style={{display:"grid",gap:8,marginTop:12,maxHeight:240,overflow:"auto"}}>
-                {!nominasGeneradasList.length ? (
-                  <div style={{fontSize:12,color:"#94a3b8",padding:"18px 10px",textAlign:"center",border:"1px dashed #cbd5e1",borderRadius:10}}>
-                    Aún no has generado nóminas. Cuando generes un corte, aparecerá aquí.
-                  </div>
-                ) : nominasGeneradasList.map((nomina)=>{
-                  const abierta = nominaVistaActual?.id===nomina.id;
-                  return (
-                    <div key={nomina.id} style={{border:"1px solid " + (abierta ? "#60a5fa" : "#e2e8f0"),borderRadius:10,padding:"10px 12px",background:abierta ? "#eff6ff" : "#f8fafc"}}>
-                      <div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"flex-start"}}>
-                        <div>
-                          <div style={{fontWeight:700,color:"#0f172a",fontSize:13}}>{nomina.periodo?.label || nomina.id}</div>
-                          <div style={{fontSize:10,color:"#64748b",marginTop:3}}>Generada {formatNominaGeneratedAt(nomina.generadoEn)}</div>
-                        </div>
-                        <div style={{fontSize:12,fontWeight:700,color:"#003B71"}}>{fmt(nomina.totals?.totalPagar || 0)}</div>
-                      </div>
-                      <div style={{ display:"flex",  gap:10,  flexWrap:"wrap",  justifyContent:"flex-start",  alignItems:"center",  marginTop:14, paddingTop:10, borderTop:"1px solid #bfdbfe"}}>
-                        <span>{nomina.totals?.totalRegistros || 0} registros</span>
-                        <span>•</span>
-                        <span>{nomina.totals?.totalRegistrosBanco || 0} listos para banco</span>
-                      </div>
-                      <div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}>
-                        <button style={{...B("#142840","#dbeafe"),fontSize:11,padding:"8px 10px"}} onClick={()=>setNominaConsultaId(nomina.id)}>{abierta ? "Abierta" : "Abrir nómina"}</button>
-                        <button style={{...B("#166534","#d1fae5"),fontSize:11,padding:"8px 10px"}} onClick={()=>{ setNominaConsultaId(nomina.id); descargarPlanoBanco(nomina); }}>Plano banco</button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+            <div style={{display:"flex",gap:10,flexWrap:"wrap",justifyContent:"flex-start",alignItems:"center",marginTop:14,paddingTop:10,borderTop:"1px solid #bfdbfe"}}>
+              <button style={{...B("#f47c20"),minWidth:180,justifyContent:"center",fontWeight:700}} onClick={generarNominaCorte}>{nominaEstaGenerada ? "Regenerar nómina" : "Generar nómina"}</button>
+              <button style={{...B("#142840","#dbeafe"),minWidth:190,justifyContent:"center",fontWeight:700}} onClick={descargarPlanoBanco}>Descargar plano banco</button>
+              <button style={B("#166534","#d1fae5")} onClick={()=>printCurrentPz("Planilla Nómina " + (nominaVistaActual.periodo.label))}>Imprimir / Bancolombia</button>
             </div>
           </div>
           {mensajeGuardadoNomina ? <div style={{marginBottom:12,fontSize:12,fontWeight:700,color:"#166534"}}>{mensajeGuardadoNomina}</div> : null}
           <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:11,padding:"30px 40px",border:"1px solid #ddd"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",borderBottom:"2px solid #003B71",paddingBottom:14,marginBottom:20}}>
               <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{height:60,objectFit:"contain"}}/>
-              <div style={{textAlign:"right"}}><div style={{background:"#FFCD00",color:"#003B71",padding:"6px 16px",borderRadius:4,fontWeight:700}}>BANCOLOMBIA</div><div style={{fontSize:10,color:"#555",marginTop:4}}>Planilla Nómina · {nominaVistaActual.periodo.label}</div><div style={{fontSize:9,color:"#64748b",marginTop:4}}>{nominaVistaActual?.generadoEn ? ("Generada el " + formatNominaGeneratedAt(nominaVistaActual.generadoEn)) : "Vista previa del corte"}</div></div>
+              <div style={{textAlign:"right"}}><div style={{background:"#FFCD00",color:"#003B71",padding:"6px 16px",borderRadius:4,fontWeight:700}}>BANCOLOMBIA</div><div style={{fontSize:10,color:"#555",marginTop:4}}>Planilla Nómina · {nominaVistaActual.periodo.label}</div><div style={{fontSize:9,color:"#64748b",marginTop:4}}>{nominaEstaGenerada ? ("Generada el " + formatNominaGeneratedAt(nominaVistaActual.generadoEn)) : "Vista previa del corte"}</div></div>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:12,marginBottom:16}}>
               <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Corte activo</div><div style={{fontWeight:700}}>{nominaVistaActual.periodo.label}</div></div>

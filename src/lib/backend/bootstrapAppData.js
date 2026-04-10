@@ -13,6 +13,7 @@ const ENTITY_TO_STATE = {
   proveedores: "proveedores",
   cuentas: "cuentas",
   cotizaciones: "cotizaciones",
+  nominas_generadas: "nominasGeneradasCloud",
 };
 
 async function getService() {

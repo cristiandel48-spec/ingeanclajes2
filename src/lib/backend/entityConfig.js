@@ -456,6 +456,26 @@ export const entityConfig = {
       horas: row.horas,
       notas: row.notas,
     }),
+  },  nominas_generadas: {
+    table: "nominas_generadas",
+    toRow: (item) => ({
+      id: item.id,
+      periodo_mes: item.periodoMes ?? null,
+      periodo_corte: item.periodoCorte ?? null,
+      periodo_label: item.periodoLabel ?? null,
+      generado_en: item.generadoEn ?? new Date().toISOString(),
+      snapshot: item.snapshot ?? {},
+      plano_banco: item.planoBanco ?? null,
+    }),
+    fromRow: (row) => ({
+      id: row.id,
+      periodoMes: row.periodo_mes,
+      periodoCorte: row.periodo_corte,
+      periodoLabel: row.periodo_label,
+      generadoEn: row.generado_en,
+      snapshot: row.snapshot ?? {},
+      planoBanco: row.plano_banco ?? "",
+    }),
   },
 };
 

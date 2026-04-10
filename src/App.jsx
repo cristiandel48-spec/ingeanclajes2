@@ -1066,6 +1066,216 @@ const calcularLiquidacionRetiro = (empleado, periodoNomina=null, diasVacacionesO
   };
 };
 
+const NOMINA_GENERATED_STORAGE_KEY = "ingeanclajes_nominas_generadas_v1";
+const NOMINA_PLANO_BANCO_DEFAULTS = {
+  nitEmpresa: "900411781",
+  tipoIdEmpresa: "I",
+  codigoServicio: "225",
+  descripcionArchivo: "PAGONOMINA",
+  cuentaOrigen: "63443072448",
+  tipoCuentaOrigen: "S",
+  codigoDestino: "0056",
+  codigoTransaccion: "37",
+  descripcionDetalle: "PAGO DE NOMINA",
+};
+
+const cleanNominaDigits = (value="") => String(value || "").replace(/\D/g,"");
+const normalizeNominaBankText = (value="", maxLength=0) => {
+  const text = String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^A-Za-z0-9 .,/()-]/g," ")
+    .replace(/\s+/g," ")
+    .trim()
+    .toUpperCase();
+  return maxLength ? text.slice(0,maxLength) : text;
+};
+const padNominaLeft = (value, length, char="0") => String(value ?? "").slice(-length).padStart(length, char);
+const padNominaRight = (value, length, char=" ") => String(value ?? "").slice(0, length).padEnd(length, char);
+const formatNominaCompactDate = (value) => {
+  if(value instanceof Date){
+    const y = value.getFullYear();
+    const m = String(value.getMonth()+1).padStart(2,"0");
+    const d = String(value.getDate()).padStart(2,"0");
+    return `${y}${m}${d}`;
+  }
+  return padNominaRight(cleanNominaDigits(value).slice(0,8), 8, "0");
+};
+const formatNominaCompactTimestamp = (value=new Date()) => {
+  const date = value instanceof Date ? value : new Date(value);
+  if(Number.isNaN(date.getTime())) return formatNominaCompactDate(today()) + "000000";
+  const y = date.getFullYear();
+  const m = String(date.getMonth()+1).padStart(2,"0");
+  const d = String(date.getDate()).padStart(2,"0");
+  const hh = String(date.getHours()).padStart(2,"0");
+  const mm = String(date.getMinutes()).padStart(2,"0");
+  const ss = String(date.getSeconds()).padStart(2,"0");
+  return `${y}${m}${d}${hh}${mm}${ss}`;
+};
+const formatNominaGeneratedAt = (value) => {
+  const date = new Date(value);
+  if(Number.isNaN(date.getTime())) return "Sin fecha";
+  return date.toLocaleString("es-CO", { dateStyle:"medium", timeStyle:"short" });
+};
+const downloadTextFile = (filename, content) => {
+  if(typeof window==="undefined" || typeof document==="undefined") return;
+  const blob = new Blob([content], { type:"text/plain;charset=utf-8" });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+};
+
+const buildNominaSnapshot = (empleados=[], periodoNomina=null, diasVacPagarOverrides={}) => {
+  const registros = (Array.isArray(empleados) ? empleados : [])
+    .map((empleado)=> {
+      const resumen = calcularResumenNominaEmpleado(empleado, periodoNomina);
+      const liquidacion = calcularLiquidacionRetiro(
+        empleado,
+        periodoNomina,
+        diasVacPagarOverrides?.[empleado.id] ?? empleado?.vacacionesLiquidacionDias
+      );
+      const tieneMovimiento = resumen.diasNomina>0 || resumen.horasExtras>0 || resumen.comisiones>0 || liquidacion.retiroEnPeriodo;
+      const liquidacionPrestaciones = liquidacion.retiroEnPeriodo ? liquidacion.prestaciones : 0;
+      const totalPagar = resumen.neto + liquidacionPrestaciones;
+      if(!tieneMovimiento || totalPagar<=0) return null;
+
+      const cedula = cleanNominaDigits(empleado?.cedula);
+      const cuenta = cleanNominaDigits(empleado?.numeroCuenta);
+      const bancoValido = cedula.length>0 && cuenta.length>0;
+      const observacionesBanco = [
+        !cedula.length ? "Falta cédula" : null,
+        !cuenta.length ? "Falta cuenta bancaria" : null,
+      ].filter(Boolean);
+
+      return {
+        empleado: {
+          id: empleado.id,
+          nombre: empleado.nombre,
+          cedula: empleado.cedula || "",
+          cargo: empleado.cargo || "",
+          fechaSalida: empleado.fechaSalida || null,
+          banco: empleado.banco || "",
+          tipoCuenta: empleado.tipoCuenta || "",
+          numeroCuenta: empleado.numeroCuenta || "",
+        },
+        resumen,
+        liquidacionPrestaciones,
+        totalPagar,
+        retiroEnPeriodo: liquidacion.retiroEnPeriodo,
+        fechaSalida: empleado?.fechaSalida || null,
+        bancoValido,
+        observacionesBanco,
+      };
+    })
+    .filter(Boolean);
+
+  const registrosBanco = registros.filter((registro)=>registro.bancoValido);
+  const totals = {
+    totalNomina: registros.reduce((total, registro)=>total + (registro.resumen?.neto || 0), 0),
+    totalLiquidaciones: registros.reduce((total, registro)=>total + (registro.liquidacionPrestaciones || 0), 0),
+    totalPagar: registros.reduce((total, registro)=>total + (registro.totalPagar || 0), 0),
+    totalBanco: registrosBanco.reduce((total, registro)=>total + (registro.totalPagar || 0), 0),
+    totalRegistros: registros.length,
+    totalRegistrosBanco: registrosBanco.length,
+  };
+
+  return {
+    id: `${periodoNomina?.mes || "sin-mes"}-${periodoNomina?.corte || "sin-corte"}`,
+    generadoEn: new Date().toISOString(),
+    periodo: {
+      mes: periodoNomina?.mes || "",
+      corte: periodoNomina?.corte || "",
+      label: periodoNomina?.label || "Sin periodo",
+      startIso: periodoNomina?.startIso || "",
+      endIso: periodoNomina?.endIso || "",
+      diasReferencia: periodoNomina?.diasReferencia || 0,
+    },
+    registros,
+    registrosBanco,
+    totals,
+  };
+};
+
+const buildNominaPlanoBancoHeader = (snapshot, config=NOMINA_PLANO_BANCO_DEFAULTS) => {
+  const fechaPago = formatNominaCompactDate(snapshot?.periodo?.endIso || today());
+  const line = [
+    "1",
+    padNominaLeft(cleanNominaDigits(config.nitEmpresa).slice(-15), 15, "0"),
+    String(config.tipoIdEmpresa || "I").slice(0,1).toUpperCase(),
+    "".padEnd(15, " "),
+    padNominaRight(String(config.codigoServicio || "225"), 3, " "),
+    padNominaRight(normalizeNominaBankText(config.descripcionArchivo, 10), 10, " "),
+    fechaPago,
+    "A ",
+    formatNominaCompactTimestamp(snapshot?.generadoEn || new Date()),
+    "".padStart(24, "0"),
+    padNominaLeft(Math.round(snapshot?.totals?.totalBanco || 0), 10, "0"),
+    padNominaLeft(cleanNominaDigits(config.cuentaOrigen).slice(-11), 11, "0"),
+    String(config.tipoCuentaOrigen || "S").slice(0,1).toUpperCase(),
+  ].join("");
+  return padNominaRight(line, 264, " ");
+};
+
+const buildNominaPlanoBancoDetail = (registro, snapshot, config=NOMINA_PLANO_BANCO_DEFAULTS) => {
+  const fechaPago = formatNominaCompactDate(snapshot?.periodo?.endIso || today());
+  const cuentaDestino = cleanNominaDigits(registro?.empleado?.numeroCuenta || "").slice(-16);
+  const line = [
+    "6",
+    padNominaLeft(cleanNominaDigits(registro?.empleado?.cedula).slice(-10), 10, "0"),
+    "".padEnd(5, " "),
+    padNominaRight(normalizeNominaBankText(registro?.empleado?.nombre, 30), 30, " "),
+    padNominaRight((String(config.codigoDestino || "0056") + padNominaLeft(cuentaDestino, 16, "0")).slice(0,20), 20, " "),
+    "".padEnd(7, " "),
+    padNominaRight(String(config.codigoTransaccion || "37"), 2, " "),
+    padNominaLeft(Math.round(registro?.totalPagar || 0), 16, "0"),
+    "0",
+    fechaPago,
+    padNominaRight(normalizeNominaBankText(config.descripcionDetalle, 14), 14, " "),
+  ].join("");
+  return padNominaRight(line, 264, " ");
+};
+
+const buildNominaPlanoBancoContent = (snapshot, config=NOMINA_PLANO_BANCO_DEFAULTS) => {
+  const registros = Array.isArray(snapshot?.registrosBanco) ? snapshot.registrosBanco : [];
+  const header = buildNominaPlanoBancoHeader(snapshot, config);
+  const details = registros.map((registro)=>buildNominaPlanoBancoDetail(registro, snapshot, config));
+  return [header, ...details].join("\r\n");
+};
+
+const getNominaArchivoNombre = (snapshot) => `NOMINA_${snapshot?.periodo?.mes || "SIN_MES"}_${String(snapshot?.periodo?.corte || "CORTE").toUpperCase()}.txt`;
+const hydrateNominaSnapshot = (snapshot) => {
+  if(!snapshot) return null;
+  const normalized = {
+    ...snapshot,
+    periodo: snapshot.periodo || {},
+    totals: snapshot.totals || {},
+    registros: Array.isArray(snapshot.registros) ? snapshot.registros : [],
+    registrosBanco: Array.isArray(snapshot.registrosBanco) ? snapshot.registrosBanco : [],
+  };
+  if(!normalized.planoBanco){
+    normalized.planoBanco = buildNominaPlanoBancoContent(normalized, NOMINA_PLANO_BANCO_DEFAULTS);
+  }
+  if(!normalized.archivoBanco){
+    normalized.archivoBanco = getNominaArchivoNombre(normalized);
+  }
+  return normalized;
+};
+const indexNominaSnapshots = (items=[]) => (Array.isArray(items) ? items : [])
+  .map((item)=>hydrateNominaSnapshot(item))
+  .filter(Boolean)
+  .reduce((acc, item)=>{
+    acc[item.id] = item;
+    return acc;
+  }, {});
+const listNominaSnapshots = (map={}) => Object.values(map || {}).sort(
+  (a,b)=>new Date(b?.generadoEn || 0).getTime() - new Date(a?.generadoEn || 0).getTime()
+);
+
 const EC={
   "En Obra":{bg:"#1a3a5c",text:"#60b4ff",border:"#2563a8"},
   "Cotización":{bg:"#2d2a14",text:"#f5c842",border:"#7a6610"},
@@ -2411,6 +2621,15 @@ export default function App(){
   const [proveedores,setProveedores]=useState(PROVEEDORES_INIT);
   const [cuentas,setCuentas]=useState(CUENTAS_PAGAR_INIT);
   const [cotizaciones,setCotizaciones]=useState(COTIZACIONES_INIT);
+  const [nominasGeneradas,setNominasGeneradas]=useState(()=>{
+    if(typeof window==="undefined") return {};
+    try{
+      const raw = window.localStorage.getItem(NOMINA_GENERATED_STORAGE_KEY);
+      return raw ? indexNominaSnapshots(JSON.parse(raw)) : {};
+    }catch{
+      return {};
+    }
+  });
   const [cotDraft,setCotDraft]=useState(null);
   const bootstrappedRef=useRef(false);
   const autosaveTimerRef=useRef(null);
@@ -2427,7 +2646,19 @@ export default function App(){
     proveedores,
     cuentas,
     cotizaciones,
+    nominasGeneradas: listNominaSnapshots(nominasGeneradas),
   });
+
+  const normalizeCloudPayload = (payload)=>{
+    if(!payload) return buildCloudPayload();
+    const next = { ...payload };
+    if(Object.prototype.hasOwnProperty.call(next, "nominasGeneradas")){
+      next.nominasGeneradas = Array.isArray(next.nominasGeneradas)
+        ? next.nominasGeneradas
+        : listNominaSnapshots(next.nominasGeneradas || {});
+    }
+    return next;
+  };
 
   const saveAllToCloud=async(override=null)=>{
     if(!isSupabaseConfigured()) return { ok:false, reason:"not-configured" };
@@ -2436,7 +2667,7 @@ export default function App(){
       return { ok:false, reason:"missing-function" };
     }
     try{
-      await saveCloudAppData(override||buildCloudPayload());
+      await saveCloudAppData(normalizeCloudPayload(override||buildCloudPayload()));
       return { ok:true };
     }catch(error){
       console.error("No se pudo guardar datos en Supabase:", error);
@@ -2444,7 +2675,7 @@ export default function App(){
     }
   };
 
-  const ctx={obras,setObras,empleados,setEmpleados,cargos,setCargos,pagos,setPagos,horarios,setHorarios,certs,setCerts,informes,setInformes,clientes,setClientes,proveedores,setProveedores,cuentas,setCuentas,cotizaciones,setCotizaciones,cotDraft,setCotDraft,setScr,saveAllToCloud};
+  const ctx={obras,setObras,empleados,setEmpleados,cargos,setCargos,pagos,setPagos,horarios,setHorarios,certs,setCerts,informes,setInformes,clientes,setClientes,proveedores,setProveedores,cuentas,setCuentas,cotizaciones,setCotizaciones,nominasGeneradas,setNominasGeneradas,cotDraft,setCotDraft,setScr,saveAllToCloud};
 
   useEffect(()=>{
     let cancel=false;
@@ -2470,6 +2701,7 @@ export default function App(){
         if (Array.isArray(cloud.proveedores)) setProveedores(cloud.proveedores);
         if (Array.isArray(cloud.cuentas)) setCuentas(cloud.cuentas);
         if (Array.isArray(cloud.cotizaciones)) setCotizaciones(cloud.cotizaciones);
+        if (Array.isArray(cloud.nominasGeneradas)) setNominasGeneradas(indexNominaSnapshots(cloud.nominasGeneradas));
       } catch (error) {
         console.error("No se pudo cargar datos de Supabase:", error);
       } finally {
@@ -2481,6 +2713,13 @@ export default function App(){
 
     return ()=>{ cancel=true; };
   },[]);
+
+  useEffect(()=>{
+    if(typeof window==="undefined") return;
+    try{
+      window.localStorage.setItem(NOMINA_GENERATED_STORAGE_KEY, JSON.stringify(listNominaSnapshots(nominasGeneradas)));
+    }catch{}
+  }, [nominasGeneradas]);
 
   useEffect(()=>{
     if(!bootstrappedRef.current) return;
@@ -2512,6 +2751,7 @@ export default function App(){
     proveedores,
     cuentas,
     cotizaciones,
+    nominasGeneradas,
   ]);
 
   const navSections=[
@@ -5033,7 +5273,7 @@ function Financiero({ctx}){
 // NÓMINA
 // ======================================================
 function Nomina({ctx}){
-  const {empleados,setEmpleados,obras,cargos,setCargos,saveAllToCloud}=ctx;
+  const {empleados,setEmpleados,obras,cargos,setCargos,nominasGeneradas,setNominasGeneradas,saveAllToCloud}=ctx;
   const [tab,setTab]=useState("lista");
   const [mes,setMes]=useState("2026-04");
   const [corteNomina,setCorteNomina]=useState("primera");
@@ -5052,6 +5292,7 @@ function Nomina({ctx}){
   const [diasVacLiquidar,setDiasVacLiquidar]=useState({});
   const [guardandoNomina,setGuardandoNomina]=useState(false);
   const [mensajeGuardadoNomina,setMensajeGuardadoNomina]=useState("");
+  const [nominaConsultaId,setNominaConsultaId]=useState("");
 
   const empleadosBase = empleados.map(normalizarEmpleado);
   const periodoNomina = buildNominaPeriodo(mes, corteNomina);
@@ -5087,6 +5328,15 @@ function Nomina({ctx}){
   const totalNominaPlanilla=resumenesPlanilla.reduce((total,item)=>total+item.resumen.neto,0);
   const totalLiquidacionesPlanilla=resumenesPlanilla.reduce((total,item)=>total+item.liquidacionPrestaciones,0);
   const totalPagarPlanilla=resumenesPlanilla.reduce((total,item)=>total+item.totalPagar,0);
+  const nominaPreview = hydrateNominaSnapshot(buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar));
+  const nominaGeneradaActual = nominasGeneradas[nominaPreview.id] ? hydrateNominaSnapshot(nominasGeneradas[nominaPreview.id]) : null;
+  const nominasGeneradasList = listNominaSnapshots(nominasGeneradas);
+  const nominaConsulta = nominaConsultaId && nominasGeneradas[nominaConsultaId]
+    ? hydrateNominaSnapshot(nominasGeneradas[nominaConsultaId])
+    : null;
+  const nominaVistaActual = nominaConsulta || nominaGeneradaActual || nominaPreview;
+  const nominaEstaGenerada = Boolean(nominaGeneradaActual);
+  const nominaVistaEsHistorica = Boolean(nominaConsulta && nominaConsulta.id!==nominaPreview.id);
   const empleadoDeduccionActivo =
     empleadosBase.find((empleado)=>empleado.id===selId) ||
     activos[0] ||
@@ -5095,6 +5345,12 @@ function Nomina({ctx}){
     ...normalizarCargos(cargos).filter((cargo)=>cargo.activo).map((cargo)=>cargo.nombre),
     ...empleadosBase.map((empleado)=>empleado.cargo).filter(Boolean),
   ])].sort((a,b)=>a.localeCompare(b,"es"));
+
+  useEffect(()=>{
+    if(nominaConsultaId && !nominasGeneradas[nominaConsultaId]){
+      setNominaConsultaId("");
+    }
+  }, [nominaConsultaId, nominasGeneradas]);
 
   const actualizarEmpleado=(id,updater)=>{
     setEmpleados((prev)=>
@@ -5249,6 +5505,53 @@ function Nomina({ctx}){
     setEmpleados(nextEmployees);
     setDiasVacPagar((prev)=>({ ...prev, [empleado.id]: liquidacion.diasVacPagar }));
     await guardarCambiosNomina("Cambios de contratos y liquidación sincronizados", { empleados: nextEmployees });
+  };
+
+  const generarNominaCorte = async ()=>{
+    const mensajeConfirmacion = `${nominaEstaGenerada ? "¿Regenerar" : "¿Generar"} la nómina del corte ${periodoNomina.label}?`;
+    if(typeof window!=="undefined" && !window.confirm(mensajeConfirmacion + " Esta acción congelará la planilla y la guardará en Supabase.")) return;
+
+    const baseSnapshot = buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar);
+    const snapshot = hydrateNominaSnapshot({
+      ...baseSnapshot,
+      planoBanco: buildNominaPlanoBancoContent(baseSnapshot, NOMINA_PLANO_BANCO_DEFAULTS),
+    });
+    const nextNominas = {
+      ...nominasGeneradas,
+      [snapshot.id]: snapshot,
+    };
+    setNominasGeneradas(nextNominas);
+    setNominaConsultaId(snapshot.id);
+
+    if(typeof saveAllToCloud==="function"){
+      setGuardandoNomina(true);
+      const result = await saveAllToCloud({ nominasGeneradas: nextNominas });
+      setGuardandoNomina(false);
+      if(result?.ok===false){
+        setMensajeGuardadoNomina("La nómina se generó localmente, pero no se pudo guardar en Supabase: " + (result.error?.message||"revisa la conexión"));
+        setTimeout(()=>setMensajeGuardadoNomina(""), 5000);
+        return;
+      }
+    }
+
+    setMensajeGuardadoNomina(
+      "Nómina generada para " + snapshot.periodo.label + " con " + snapshot.totals.totalRegistros + " registros y sincronizada en Supabase."
+    );
+    setTimeout(()=>setMensajeGuardadoNomina(""), 3500);
+  };
+
+  const descargarPlanoBanco = (snapshotArg=null)=>{
+    const snapshot = hydrateNominaSnapshot(snapshotArg || nominaVistaActual);
+    if(!snapshot?.registrosBanco?.length){
+      setMensajeGuardadoNomina("No hay registros listos para el banco. Revisa cédula y cuenta bancaria de los empleados del corte.");
+      setTimeout(()=>setMensajeGuardadoNomina(""), 3500);
+      return;
+    }
+    const contenido = snapshot.planoBanco || buildNominaPlanoBancoContent(snapshot, NOMINA_PLANO_BANCO_DEFAULTS);
+    const nombreArchivo = snapshot.archivoBanco || getNominaArchivoNombre(snapshot);
+    downloadTextFile(nombreArchivo, contenido);
+    setMensajeGuardadoNomina("Plano banco descargado: " + nombreArchivo);
+    setTimeout(()=>setMensajeGuardadoNomina(""), 3500);
   };
 
   const renderNominaMetricCard=({label,value,color="#142840",hint="",span=1})=>(
@@ -5952,30 +6255,89 @@ function Nomina({ctx}){
 
       {tab==="planilla"&&(
         <div>
-          <div style={{display:"flex",gap:12,alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+          <div style={{display:"grid",gridTemplateColumns:"minmax(320px, 1.2fr) minmax(280px, 0.8fr)",gap:16,marginBottom:20}}>
             <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:12,padding:"12px 14px"}}>
-              <div style={{fontSize:11,fontWeight:700,color:"#1d4ed8",textTransform:"uppercase",letterSpacing:0.7}}>Planilla Bancolombia</div>
-              <div style={{fontSize:13,color:"#0f172a",marginTop:4}}>Liquidación del corte {periodoNomina.label}</div>
-              <div style={{fontSize:11,color:"#64748b",marginTop:4}}>Incluye salario proporcional, auxilio del corte, horas extras, comisiones, descuentos y liquidaciones de retiro cuando la salida cae en este corte.</div>
+              <div style={{fontSize:11,fontWeight:700,color:"#1d4ed8",textTransform:"uppercase",letterSpacing:0.7}}>Generación de nómina y plano banco</div>
+              <div style={{fontSize:13,color:"#0f172a",marginTop:4}}>Corte activo: {periodoNomina.label}</div>
+              <div style={{fontSize:11,color:"#64748b",marginTop:4}}>
+                {nominaVistaEsHistorica
+                  ? ("Consultando la nómina generada del corte " + nominaVistaActual.periodo.label + " el " + formatNominaGeneratedAt(nominaVistaActual.generadoEn) + ".")
+                  : nominaEstaGenerada
+                    ? ("Nómina generada el " + formatNominaGeneratedAt(nominaVistaActual.generadoEn) + ". Si cambias horas extras, comisiones o deducciones, usa Regenerar nómina.")
+                    : "Esta es la vista previa del corte. Cuando ya revises horas extras, comisiones, deducciones y liquidaciones, pulsa Generar nómina para congelar el periodo."}
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3, minmax(120px, 1fr))",gap:8,marginTop:12}}>
+                <div style={{background:"#fff",borderRadius:10,padding:"9px 10px",border:"1px solid #dbeafe"}}>
+                  <div style={{fontSize:9,color:"#64748b",textTransform:"uppercase"}}>Registros nómina</div>
+                  <div style={{fontWeight:700,color:"#142840",marginTop:4}}>{nominaVistaActual.totals.totalRegistros}</div>
+                </div>
+                <div style={{background:"#fff",borderRadius:10,padding:"9px 10px",border:"1px solid #dbeafe"}}>
+                  <div style={{fontSize:9,color:"#64748b",textTransform:"uppercase"}}>Listos para banco</div>
+                  <div style={{fontWeight:700,color:"#166534",marginTop:4}}>{nominaVistaActual.totals.totalRegistrosBanco}</div>
+                </div>
+                <div style={{background:"#fff",borderRadius:10,padding:"9px 10px",border:"1px solid #dbeafe"}}>
+                  <div style={{fontSize:9,color:"#64748b",textTransform:"uppercase"}}>Total banco</div>
+                  <div style={{fontWeight:700,color:"#003B71",marginTop:4}}>{fmt(nominaVistaActual.totals.totalBanco)}</div>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"flex-start",marginTop:14}}>
+                <button style={B("#f47c20")} onClick={generarNominaCorte} disabled={guardandoNomina}>{guardandoNomina ? "Guardando..." : (nominaEstaGenerada ? "Regenerar nómina" : "Generar nómina")}</button>
+                <button style={B("#142840","#dbeafe")} onClick={descargarPlanoBanco}>Descargar plano banco</button>
+                <button style={B("#166534","#d1fae5")} onClick={()=>printCurrentPz("Planilla Nómina " + (nominaVistaActual.periodo.label))}>Imprimir / Bancolombia</button>
+                {nominaVistaEsHistorica ? <button style={B("#475569","#f8fafc")} onClick={()=>setNominaConsultaId("")}>Volver al corte activo</button> : null}
+              </div>
             </div>
-            <button style={B("#f47c20")} onClick={()=>printCurrentPz("Planilla Nómina " + (periodoNomina.label))}>Imprimir / Bancolombia</button>
+            <div style={{background:"#fff",border:"1px solid #dbeafe",borderRadius:12,padding:"12px 14px"}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#0f172a",textTransform:"uppercase",letterSpacing:0.7}}>Nóminas generadas</div>
+              <div style={{fontSize:11,color:"#64748b",marginTop:4}}>Cada corte generado queda guardado en Supabase para consulta posterior.</div>
+              <div style={{display:"grid",gap:8,marginTop:12,maxHeight:240,overflow:"auto"}}>
+                {!nominasGeneradasList.length ? (
+                  <div style={{fontSize:12,color:"#94a3b8",padding:"18px 10px",textAlign:"center",border:"1px dashed #cbd5e1",borderRadius:10}}>
+                    Aún no has generado nóminas. Cuando generes un corte, aparecerá aquí.
+                  </div>
+                ) : nominasGeneradasList.map((nomina)=>{
+                  const abierta = nominaVistaActual?.id===nomina.id;
+                  return (
+                    <div key={nomina.id} style={{border:"1px solid " + (abierta ? "#60a5fa" : "#e2e8f0"),borderRadius:10,padding:"10px 12px",background:abierta ? "#eff6ff" : "#f8fafc"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"flex-start"}}>
+                        <div>
+                          <div style={{fontWeight:700,color:"#0f172a",fontSize:13}}>{nomina.periodo?.label || nomina.id}</div>
+                          <div style={{fontSize:10,color:"#64748b",marginTop:3}}>Generada {formatNominaGeneratedAt(nomina.generadoEn)}</div>
+                        </div>
+                        <div style={{fontSize:12,fontWeight:700,color:"#003B71"}}>{fmt(nomina.totals?.totalPagar || 0)}</div>
+                      </div>
+                      <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:8,fontSize:10,color:"#475569"}}>
+                        <span>{nomina.totals?.totalRegistros || 0} registros</span>
+                        <span>•</span>
+                        <span>{nomina.totals?.totalRegistrosBanco || 0} listos para banco</span>
+                      </div>
+                      <div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}>
+                        <button style={{...B("#142840","#dbeafe"),fontSize:11,padding:"8px 10px"}} onClick={()=>setNominaConsultaId(nomina.id)}>{abierta ? "Abierta" : "Abrir nómina"}</button>
+                        <button style={{...B("#166534","#d1fae5"),fontSize:11,padding:"8px 10px"}} onClick={()=>{ setNominaConsultaId(nomina.id); descargarPlanoBanco(nomina); }}>Plano banco</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
+          {mensajeGuardadoNomina ? <div style={{marginBottom:12,fontSize:12,fontWeight:700,color:"#166534"}}>{mensajeGuardadoNomina}</div> : null}
           <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:11,padding:"30px 40px",border:"1px solid #ddd"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",borderBottom:"2px solid #003B71",paddingBottom:14,marginBottom:20}}>
               <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{height:60,objectFit:"contain"}}/>
-              <div style={{textAlign:"right"}}><div style={{background:"#FFCD00",color:"#003B71",padding:"6px 16px",borderRadius:4,fontWeight:700}}>BANCOLOMBIA</div><div style={{fontSize:10,color:"#555",marginTop:4}}>Planilla Nómina · {periodoNomina.label}</div></div>
+              <div style={{textAlign:"right"}}><div style={{background:"#FFCD00",color:"#003B71",padding:"6px 16px",borderRadius:4,fontWeight:700}}>BANCOLOMBIA</div><div style={{fontSize:10,color:"#555",marginTop:4}}>Planilla Nómina · {nominaVistaActual.periodo.label}</div><div style={{fontSize:9,color:"#64748b",marginTop:4}}>{nominaVistaActual?.generadoEn ? ("Generada el " + formatNominaGeneratedAt(nominaVistaActual.generadoEn)) : "Vista previa del corte"}</div></div>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:12,marginBottom:16}}>
-              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Corte activo</div><div style={{fontWeight:700}}>{periodoNomina.label}</div></div>
-              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Días referencia</div><div style={{fontWeight:700}}>{periodoNomina.diasReferencia}</div></div>
-              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Nómina corte</div><div style={{fontWeight:700}}>{fmt(totalNominaPlanilla)}</div></div>
-              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Liquidaciones corte</div><div style={{fontWeight:700,color:"#b45309"}}>{fmt(totalLiquidacionesPlanilla)}</div></div>
-              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Total a transferir</div><div style={{fontWeight:700,color:"#003B71"}}>{fmt(totalPagarPlanilla)}</div></div>
+              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Corte activo</div><div style={{fontWeight:700}}>{nominaVistaActual.periodo.label}</div></div>
+              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Días referencia</div><div style={{fontWeight:700}}>{nominaVistaActual.periodo.diasReferencia}</div></div>
+              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Nómina corte</div><div style={{fontWeight:700}}>{fmt(nominaVistaActual.totals.totalNomina)}</div></div>
+              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Liquidaciones corte</div><div style={{fontWeight:700,color:"#b45309"}}>{fmt(nominaVistaActual.totals.totalLiquidaciones)}</div></div>
+              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Total a transferir</div><div style={{fontWeight:700,color:"#003B71"}}>{fmt(nominaVistaActual.totals.totalPagar)}</div></div>
             </div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead><tr style={{background:"#003B71",color:"#fff"}}>{["#","Empleado","Documento","Banco / Cuenta","Días","Básico","Aux. T.","H.Extra","Comisión","Deducciones","Liq. retiro","TOTAL"].map((h)=><th key={h} style={{padding:"6px 8px",textAlign:["Días","Básico","Aux. T.","H.Extra","Comisión","Deducciones","Liq. retiro","TOTAL"].includes(h)?"right":"left",fontSize:10}}>{h}</th>)}</tr></thead>
               <tbody>
-                {resumenesPlanilla.map(({empleado:e,resumen,liquidacionPrestaciones,totalPagar,retiroEnPeriodo},i)=>(
+                {nominaVistaActual.registros.map(({empleado:e,resumen,liquidacionPrestaciones,totalPagar,retiroEnPeriodo,observacionesBanco},i)=>(
                   <tr key={e.id} style={{background:i%2===0?"#fff":"#f5f5f5",borderBottom:"1px solid #e0e0e0"}}>
                     <td style={{padding:"6px 8px",color:"#555",fontSize:10}}>{i+1}</td>
                     <td style={{padding:"6px 8px",fontWeight:600,fontSize:10}}>
@@ -5983,7 +6345,10 @@ function Nomina({ctx}){
                       {retiroEnPeriodo && <div style={{fontSize:9,color:"#b91c1c",fontWeight:700,marginTop:2}}>Liquidación incluida · retiro {e.fechaSalida}</div>}
                     </td>
                     <td style={{padding:"6px 8px",color:"#555",fontSize:9}}>{e.cedula||"-"}</td>
-                    <td style={{padding:"6px 8px",color:"#555",fontSize:9}}>{e.banco}<br/>{e.tipoCuenta}<br/><span style={{fontFamily:"monospace"}}>{e.numeroCuenta}</span></td>
+                    <td style={{padding:"6px 8px",color:"#555",fontSize:9}}>
+                      {e.banco}<br/>{e.tipoCuenta}<br/><span style={{fontFamily:"monospace"}}>{e.numeroCuenta}</span>
+                      {observacionesBanco?.length ? <div style={{fontSize:9,color:"#b91c1c",marginTop:4}}>{observacionesBanco.join(" · ")}</div> : <div style={{fontSize:9,color:"#166534",marginTop:4}}>Listo para banco</div>}
+                    </td>
                     <td style={{padding:"6px 8px",textAlign:"right",fontSize:10}}>{resumen.diasNomina}</td>
                     <td style={{padding:"6px 8px",textAlign:"right",fontSize:10}}>$ {resumen.salario.toLocaleString("es-CO")}</td>
                     <td style={{padding:"6px 8px",textAlign:"right",fontSize:10}}>$ {resumen.auxilioTransporte.toLocaleString("es-CO")}</td>
@@ -5999,10 +6364,10 @@ function Nomina({ctx}){
                   </tr>
                 ))}
               </tbody>
-              <tfoot><tr style={{background:"#003B71",color:"#FFCD00"}}><td colSpan={11} style={{padding:"8px 10px",fontWeight:700,fontSize:11}}>TOTAL A PAGAR</td><td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,fontSize:11}}>$ {totalPagarPlanilla.toLocaleString("es-CO")}</td></tr></tfoot>
+              <tfoot><tr style={{background:"#003B71",color:"#FFCD00"}}><td colSpan={11} style={{padding:"8px 10px",fontWeight:700,fontSize:11}}>TOTAL A PAGAR</td><td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,fontSize:11}}>$ {nominaVistaActual.totals.totalPagar.toLocaleString("es-CO")}</td></tr></tfoot>
             </table>
             <div style={{marginTop:16,fontSize:10,color:"#555",lineHeight:1.5}}>
-              Salud y pensión del empleado se calculan aquí sobre la base del corte: salario proporcional + horas extras + comisiones. El auxilio de transporte se prorratea por los días del corte cuando aplica. Si el retiro cae dentro del corte, la planilla suma la liquidación definitiva en este mismo pago.
+              Salud y pensión del empleado se calculan aquí sobre la base del corte: salario proporcional + horas extras + comisiones. El auxilio de transporte se prorratea por los días del corte cuando aplica. Si el retiro cae dentro del corte, la planilla suma la liquidación definitiva en este mismo pago. El plano banco usa como referencia el archivo adjunto y solo exporta empleados con cédula y cuenta bancaria completas.
             </div>
             <div style={{marginTop:30,display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:20}}>
               {["REPRESENTANTE LEGAL","CONTADOR","APROBADO POR"].map((l)=><div key={l} style={{textAlign:"center",borderTop:"1px solid #333",paddingTop:8}}><div style={{fontSize:10,color:"#555"}}>{l}</div></div>)}

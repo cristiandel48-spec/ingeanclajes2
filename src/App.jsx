@@ -88,6 +88,7 @@ function Cotizacion({ctx}){
   const [fecha,setFecha]=useState(today());
   const [val,setVal]=useState(30);
   const [cl,setCl]=useState({nombre:"",obra:"",telefono:"",ciudad:"",coords:""});
+  const [textoInicial,setTextoInicial]=useState("");
   const [propuestas,setPropuestas]=useState([buildQuoteProposal({id:createQuoteProposalId("new"),nombre:getQuoteProposalLabel(0),formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,util:10,items:[]},0)]);
   const [propuestaActivaId,setPropuestaActivaId]=useState(null);
   const [nombrePropuesta,setNombrePropuesta]=useState(getQuoteProposalLabel(0));
@@ -139,6 +140,7 @@ function Cotizacion({ctx}){
     setFecha(source.fecha || today());
     setVal(source.val || 30);
     setCl({nombre:source.cliente || "",obra:source.obra || "",telefono:source.telefono || "",ciudad:source.ciudad || "",coords:source.coords || ""});
+    setTextoInicial(source.textoInicial || "");
     setGeoMediciones(source.geoMediciones || []);
     setGeoMapView(source.geoMapView || null);
     setPropuestas(all);
@@ -165,12 +167,12 @@ function Cotizacion({ctx}){
 
   const guardarCotizacion = ()=>{
     const { current, next } = syncPropuestas();
-    const finalItems = normalizeQuoteItems({items:current.items,geoMediciones});
+    const finalItems = normalizeQuoteItems({items:current.items,geoMediciones,propuestas:next});
     const totalActiva = Math.round((finalItems.reduce((sum,item)=>sum + (Number(item.cant)||0)*(Number(item.vu)||0),0)) * (1 + (Number(current.util || 10) / 100) * 1.19));
     const activa = buildQuoteProposal({...current,items:finalItems,total:totalActiva}, next.findIndex((propuesta)=>propuesta.id===current.id));
     const propuestasFinales = next.map((propuesta)=>propuesta.id===activa.id?activa:buildQuoteProposal(propuesta));
     const prev = editCot ? cotizaciones.find((cotizacion)=>cotizacion.id===editCot) : null;
-    const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:cl.nombre,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:autoMapImg || null,geoMediciones,geoMapView,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
+    const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:cl.nombre,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,textoInicial:textoInicial.trim(),items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:autoMapImg || null,geoMediciones,geoMapView,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
     setCotizaciones((prevList)=>editCot ? prevList.map((cotizacion)=>cotizacion.id===editCot?{...cotizacion,...data}:cotizacion) : [...prevList,data]);
     setPropuestas(propuestasFinales);
     setTab("lista");
@@ -232,6 +234,19 @@ function Cotizacion({ctx}){
           <div><LBL>Obra</LBL><input value={cl.obra} onChange={e=>setCl({...cl,obra:e.target.value})} style={SI}/></div>
           <div><LBL>Teléfono</LBL><input value={cl.telefono} onChange={e=>setCl({...cl,telefono:e.target.value})} style={SI}/></div>
           <div><LBL>Ciudad</LBL><input value={cl.ciudad} onChange={e=>setCl({...cl,ciudad:e.target.value})} style={SI}/></div>
+        </div>
+      </div>
+
+      <div style={{...CD,marginBottom:14}}>
+        <div style={ST}>Texto inicial del documento</div>
+        <textarea
+          value={textoInicial}
+          onChange={e=>setTextoInicial(e.target.value)}
+          placeholder={"Ej: Presentamos la cotización para la instalación de puntos de anclaje o línea de vida sobre la cubierta del Éxito de Niquia en Bello."}
+          style={{...SI,minHeight:110,resize:"vertical",lineHeight:1.6}}
+        />
+        <div style={{fontSize:11,color:"#64748b",marginTop:8}}>
+          Este texto saldrá al inicio del PDF y de la vista previa. Lo puedes redactar manualmente para cada cliente.
         </div>
       </div>
 
@@ -1152,9 +1167,10 @@ function buildMeasurementNarrative(list=[]){
 }
 
 function normalizeQuoteItems(c={}){
-  const geoItems = measurementsToQuoteItems(c.geoMediciones || []);
   const rawItems = Array.isArray(c.items) ? c.items : [];
-  const candidates = [...geoItems, ...rawItems]
+  const hasMultipleProposals = Array.isArray(c.propuestas) && c.propuestas.length > 1;
+  const geoItems = measurementsToQuoteItems(c.geoMediciones || []);
+  const candidates = (rawItems.length ? rawItems : (!hasMultipleProposals ? geoItems : []))
     .filter(it => it && (String(it.desc||'').trim() || Number(it.cant||0)));
   const seen = new Set();
   return candidates.filter((it, idx) => {
@@ -1247,6 +1263,7 @@ function buildCotizacionPrintHtml(c){
   const propuestas = getQuotePrintableProposals(c);
   const activa = propuestas.find((propuesta)=>propuesta.id===getQuoteActiveProposal(c)?.id) || propuestas[0];
   const baseQuote = activa?.quote || c;
+  const textoInicial = String(c.textoInicial || "").trim();
   const measurements = Array.isArray(baseQuote.geoMediciones) ? baseQuote.geoMediciones : [];
   const mapQuery = c.coords || `${c.obra||""} ${c.ciudad||""}`.trim();
   const { width: mapWidth, height: mapHeight } = getStaticMapDimensions(baseQuote.geoMapView || c.geoMapView);
@@ -1254,7 +1271,6 @@ function buildCotizacionPrintHtml(c){
     ? c.mapImg
     : (buildGoogleStaticMapUrl(measurements, mapQuery, baseQuote.geoMapView || c.geoMapView, { width: mapWidth, height: mapHeight }) || c.mapImg || "");
   const showVerticalAppendix = propuestas.some((propuesta)=>hasVerticalLifeLineService(propuesta.quote));
-  const narrative = buildMeasurementNarrative(measurements);
   const mapBlock = quoteMapSrc ? `<div class="map-wrap" style="aspect-ratio:${mapWidth}/${mapHeight};"><img src="${quoteMapSrc}" alt="Mapa de medicion" class="map"/></div>` : `<div class="placeholder">Agrega la imagen satelital o la medicion automatica para ver el plano aqui.</div>`;
   const mapLabels = getStaticMapLabelData(measurements, mapQuery, c.geoMapView).map(label=>`
       <div class="map-label" style="left:${label.left}; top:${label.top}; color:${label.color}; transform:translate(-50%, -50%) rotate(${label.angle}deg);">
@@ -1262,23 +1278,6 @@ function buildCotizacionPrintHtml(c){
       </div>
     `).join('');
   const mapBlockWithLabels = quoteMapSrc ? `<div class="map-wrap" style="aspect-ratio:${mapWidth}/${mapHeight};"><img src="${quoteMapSrc}" alt="Mapa de medicion" class="map"/>${mapLabels}</div>` : mapBlock;
-  const propuestasResumen = propuestas.length > 1 ? `
-      <div class="measurement-box">
-        <p><strong>Esta cotizacion incluye ${propuestas.length} propuestas comerciales</strong></p>
-        <table class="measurement-table">
-          <thead><tr><th>Propuesta</th><th>Tipo</th><th>Total</th></tr></thead>
-          <tbody>
-            ${propuestas.map((propuesta)=>`
-              <tr>
-                <td>${escapeHtml(propuesta.nombre)}</td>
-                <td>${escapeHtml(propuesta.esObraBlanca ? "Obra blanca" : "Linea de vida / anclajes")}</td>
-                <td>${fmt(Number(propuesta.tot || 0))}</td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-        <div style="font-size:10pt;color:#475569;padding-top:6px;">A continuacion se desarrolla cada propuesta en detalle, una despues de otra.</div>
-      </div>` : '';
   const proposalSections = propuestas.map((propuesta)=>{
     const requerimientoBlock = propuesta.esObraBlanca && propuesta.requerimientoCliente ? `
       <div class="measurement-box">
@@ -1308,9 +1307,6 @@ function buildCotizacionPrintHtml(c){
       const subtotal = fmt((Number(it.cant)||0)*(Number(it.vu)||0));
       return `<tr><td>${desc}</td><td class="num">${qty}</td><td class="center">${unit}</td><td class="num">${value}</td><td class="num">${subtotal}</td></tr>`;
     }).join("");
-    const proposalIntro = propuesta.esObraBlanca
-      ? `<p>Presentamos la cotizacion para la obra blanca solicitada por el cliente.</p>`
-      : `<p>Presentamos la cotizacion para suministro e instalacion de los sistemas de proteccion anticaida requeridos para esta propuesta.</p>`;
 
     return `
     <section class="page">
@@ -1321,7 +1317,6 @@ function buildCotizacionPrintHtml(c){
       </div>
       <div class="section-title">${escapeHtml(propuesta.nombre)}</div>
       <p style="margin-bottom:6px;color:#64748b;"><strong>Tipo:</strong> ${escapeHtml(propuesta.esObraBlanca ? "Obra blanca" : "Linea de vida / anclajes")}</p>
-      ${proposalIntro}
       ${requerimientoBlock}
       ${alcanceBlock}
       ${fotosBlock}
@@ -1431,21 +1426,7 @@ function buildCotizacionPrintHtml(c){
       <div style="height:8px"></div>
       <p>Cordial saludo.</p>
       <div style="height:8px"></div>
-      <p>Presentamos la cotizacion para suministro e instalacion de los sistemas de proteccion anticaida y/o obra blanca requeridos para este proyecto.</p>
-      ${narrative ? `<div class="measurement-box"><p><strong>Mediciones base del proyecto</strong></p><div>${escapeHtml(narrative)}</div></div>` : ""}
-      ${propuestas.length > 1 ? `
-      <p>Esta cotizacion fue organizada en varias propuestas para facilitar comparacion tecnica y comercial.</p>` : ""}
-      ${propuestas.length === 1 && !activa?.esObraBlanca ? `
-      <p><strong>Trabajo en altura:</strong> Se considera toda actividad, labor o trabajo que se deba realizar a una altura fisica igual o superior a 1,50 metros desde el piso.</p>
-      <p><strong>Puntos de anclaje:</strong> Son componentes en acero anclado con un epoxico quimico estructural o equivalente, con perno de 5/8 a una profundidad de 15 cm o mas segun el caso, con capacidad de resistir una fuerza de caida superior a 5.000 lbs.</p>
-      <p><strong>Linea de vida:</strong> Son componentes de un sistema o equipo de proteccion de caidas, consistentes en una cuerda de nylon o cable de acero instalada en forma horizontal y vertical, tensionada y sujeta en dos o tres puntos de anclaje para otorgar movilidad al personal que trabaja en areas elevadas.</p>
-      <ul>
-        <li>La linea de vida permite la fijacion directa o indirecta al arnes completo para el cuerpo o a un dispositivo de impacto o amortiguador.</li>
-        <li>Las lineas de vida estaran constituidas por un solo cable continuo.</li>
-        <li>Los anclajes a los cuales se fijaran las lineas de vida deben resistir al menos 5.000 libras por cada persona asegurada.</li>
-      </ul>
-      ` : ""}
-      ${propuestasResumen}
+      ${textoInicial ? `<div class="measurement-box"><div style="white-space:pre-wrap;">${escapeHtml(textoInicial)}</div></div>` : ""}
       <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
     </section>
 
@@ -2568,12 +2549,12 @@ function CotizacionPrint({c}){
   const propuestas = getQuotePrintableProposals(c);
   const activa = propuestas.find((propuesta)=>propuesta.id===getQuoteActiveProposal(c)?.id) || propuestas[0];
   const baseQuote = activa?.quote || c;
+  const textoInicial = String(c.textoInicial || "").trim();
   const measurements = Array.isArray(baseQuote.geoMediciones) ? baseQuote.geoMediciones : [];
   const mapQuery = c.coords || `${c.obra||""} ${c.ciudad||""}`.trim();
   const quoteMapSrc = c.mapImg && String(c.mapImg).startsWith("data:")
     ? c.mapImg
     : (buildGoogleStaticMapUrl(measurements, mapQuery, c.geoMapView) || c.mapImg || null);
-  const narrative = buildMeasurementNarrative(measurements);
 
   return(
     <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:12,lineHeight:1.45,border:"1px solid #ddd",padding:"22px 26px"}}>
@@ -2586,34 +2567,9 @@ function CotizacionPrint({c}){
         {c.telefono&&<div><strong>TELÉFONO:</strong> {c.telefono}</div>}
         {c.ciudad&&<div><strong>{(c.ciudad||"").toUpperCase()}</strong></div>}
       </div>
-      <p style={{marginBottom:10}}>
-        {propuestas.length > 1
-          ? `Esta cotización incluye ${propuestas.length} propuestas comerciales para la misma obra. A continuación se desarrolla cada una en detalle.`
-          : "Presentamos la cotización comercial correspondiente al alcance solicitado por el cliente."}
-      </p>
-      {narrative && (
+      {textoInicial && (
         <div style={{background:"#f8fafc",border:"1px solid #cbd5e1",borderRadius:6,padding:"12px 14px",marginBottom:16}}>
-          <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8}}>Mediciones base del proyecto</div>
-          <div style={{whiteSpace:"pre-wrap"}}>{narrative}</div>
-        </div>
-      )}
-      {propuestas.length > 1 && (
-        <div style={{background:"#f8fafc",border:"1px solid #cbd5e1",borderRadius:6,padding:"12px 14px",marginBottom:16}}>
-          <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8}}>Propuestas incluidas</div>
-          <div style={{display:"grid",gap:8}}>
-            {propuestas.map((propuesta)=>(
-              <div key={propuesta.id} style={{display:"flex",justifyContent:"space-between",gap:12,background:propuesta.id===activa?.id?"#fff8f3":"#fff",border:"1px solid #e2e8f0",borderRadius:6,padding:"8px 10px"}}>
-                <div>
-                  <div style={{fontWeight:700,color:"#1a1a2e"}}>{propuesta.nombre}</div>
-                  <div style={{fontSize:11,color:"#64748b"}}>{propuesta.tipoLabel}</div>
-                </div>
-                <div style={{textAlign:"right"}}>
-                  <div style={{fontSize:11,color:"#64748b"}}>{propuesta.id===activa?.id?"Activa":"Alternativa"}</div>
-                  <div style={{fontWeight:700,color:"#cc0000"}}>{fmt(Number(propuesta.tot||0))}</div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <div style={{whiteSpace:"pre-wrap"}}>{textoInicial}</div>
         </div>
       )}
       {quoteMapSrc ? <div style={{marginBottom:16,textAlign:"center"}}><StaticMapPreview src={quoteMapSrc} segments={measurements} query={mapQuery} mapView={c.geoMapView} alt="Mapa" maxHeight={320} border="1px solid #ddd" borderRadius={4} /></div> : null}
@@ -2624,12 +2580,6 @@ function CotizacionPrint({c}){
             <div style={{fontWeight:800,color:"#cc0000",fontSize:15}}>{fmt(propuesta.tot)}</div>
           </div>
           <div style={{fontSize:11,color:"#64748b",marginBottom:10}}>{propuesta.tipoLabel}</div>
-
-          {propuesta.esObraBlanca ? (
-            <p style={{marginBottom:10}}>Presentamos la cotización para la obra blanca solicitada por el cliente.</p>
-          ) : (
-            <p style={{marginBottom:10}}>Presentamos la cotización para suministro e instalación de los sistemas de protección anticaída requeridos para esta propuesta.</p>
-          )}
 
           {propuesta.requerimientoCliente && (
             <div style={{background:"#f8fafc",border:"1px solid #cbd5e1",borderRadius:6,padding:"12px 14px",marginBottom:12}}>

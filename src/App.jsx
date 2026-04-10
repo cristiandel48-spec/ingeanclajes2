@@ -1709,10 +1709,10 @@ function buildCotizacionPrintHtml(c){
       body { font-family: Aptos, Arial, Helvetica, sans-serif; color: #111; margin: 0; font-size: 11pt; line-height: 1.45; }
       .page { width:100%; display:flex; flex-direction:column; break-after: page; page-break-after: always; min-height: auto; padding: 0; }
       .page:last-child { page-break-after: auto; }
-      .header { width:100%; display:grid; grid-template-columns: 40% 34% 26%; align-items:center; column-gap:8mm; border-bottom:2px solid #cc0000; padding:0 0 8px; margin:0 0 14px; }
+      .header { width:100%; display:grid; grid-template-columns: 42% 33% 25%; align-items:center; column-gap:6mm; border-bottom:2px solid #cc0000; padding:0 0 8px; margin:0 0 14px; }
       .logo { width:100%; max-width:340px; max-height:24mm; height:auto; object-fit:contain; display:block; }
       .header-mid { text-align:center; font-family:Aptos, Arial, Helvetica, sans-serif; font-weight:900; letter-spacing:1.5px; font-size:10.5pt; color:#111; line-height:1.22; white-space:normal; }
-      .header-right { text-align:right; font-size:8.1pt; color:#555; line-height:1.32; max-width:none; white-space:normal; overflow-wrap:anywhere; word-break:normal; }
+      .header-right { text-align:right; font-size:7.8pt; color:#555; line-height:1.3; max-width:none; white-space:normal; overflow-wrap:anywhere; word-break:normal; padding-right:10mm; }
       p { margin: 0 0 9px; }
       .meta { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; gap:12px; }
       .meta strong { font-size:10.8pt; }

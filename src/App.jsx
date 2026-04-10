@@ -1644,11 +1644,7 @@ function buildCotizacionPrintHtml(c){
         <p><strong>Necesidad del cliente</strong></p>
         <div style="white-space:pre-wrap;">${escapeHtml(propuesta.requerimientoCliente)}</div>
       </div>` : "";
-    const alcanceBlock = propuesta.alcancePropuesta ? `
-      <div class="measurement-box">
-        <p><strong>Alcance de esta propuesta</strong></p>
-        <div style="white-space:pre-wrap;">${escapeHtml(propuesta.alcancePropuesta)}</div>
-      </div>` : "";
+    const alcanceBlock = "";
     const fotosBlock = propuesta.fotos.length ? `
       <div class="section-title">Registro fotografico de la propuesta</div>
       <div class="photo-grid">
@@ -1711,7 +1707,7 @@ function buildCotizacionPrintHtml(c){
       .page:last-child { page-break-after: auto; }
       .header { width:100%; display:grid; grid-template-columns: 42% 33% 25%; align-items:center; column-gap:6mm; border-bottom:2px solid #cc0000; padding:0 0 8px; margin:0 0 14px; }
       .logo { width:100%; max-width:340px; max-height:24mm; height:auto; object-fit:contain; display:block; }
-      .header-mid { text-align:center; font-family:Aptos, Arial, Helvetica, sans-serif; font-weight:900; letter-spacing:1.5px; font-size:10.5pt; color:#111; line-height:1.22; white-space:normal; }
+      .header-mid { text-align:center; font-family:Aptos, Arial, Helvetica, sans-serif; font-weight:600; letter-spacing:1.8px; font-size:9.5pt; color:#1a2840; line-height:1.22; white-space:normal; }
       .header-right { text-align:right; font-size:7.8pt; color:#555; line-height:1.3; max-width:none; white-space:normal; overflow-wrap:anywhere; word-break:normal; padding-right:10mm; }
       p { margin: 0 0 9px; }
       .meta { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; gap:12px; }

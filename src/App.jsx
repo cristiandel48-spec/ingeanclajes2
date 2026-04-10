@@ -285,6 +285,13 @@ function Cotizacion({ctx}){
                   <button style={{...B("#1a3050","#f5c842"),fontSize:11,padding:"6px 12px"}} onClick={()=>{setEditCot(cotizacion.id);hydrate(cotizacion);setTab("form");}}>Editar</button>
                   {cotizacion.estado!=="Aprobada" && <button style={{...B("#0f2d1a","#4ade80"),border:"1px solid #166534",fontSize:11,padding:"6px 12px"}} onClick={()=>aprobarCotizacion(cotizacion.id)}>Aprobar y crear obra</button>}
                   <button style={{...B("#2d1414","#ef4444"),fontSize:11,padding:"6px 12px"}} onClick={()=>openCotizacionPrint(cotizacion)}>PDF</button>
+                  <button
+                    style={{...B("#fff","#ef4444"),border:"1.5px solid #ef4444",fontSize:11,padding:"6px 12px"}}
+                    onClick={()=>{
+                      if(!window.confirm(`¿Eliminar la cotización "${cotizacion.numero || cotizacion.id}" de ${cotizacion.cliente || "este cliente"}? Esta acción no se puede deshacer.`)) return;
+                      setCotizaciones(prev=>prev.filter(c=>c.id!==cotizacion.id));
+                    }}
+                  >🗑 Eliminar</button>
                 </div>
               </div>
             );

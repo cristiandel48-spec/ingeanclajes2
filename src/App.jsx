@@ -210,7 +210,88 @@ function Cotizacion({ctx}){
     if(previewCot){
       return <div style={{padding:28}}><H1 title={`Cotización ${previewCot.numero || previewCot.id}`} subtitle="Vista completa del documento comercial" action={<div style={{display:"flex",gap:10}}><button style={B("#f1f5f9","#475569")} onClick={()=>setPreviewCot(null)}>Volver</button><button style={B("#dbeafe","#1e40af")} onClick={()=>{setEditCot(previewCot.id);hydrate(previewCot);setTab("form");setPreviewCot(null);}}>Editar</button><button style={B("#f47c20")} onClick={()=>openCotizacionPrint(previewCot)}>Imprimir PDF</button></div>}/><CotizacionPrint c={previewCot}/></div>;
     }
-    return <div style={{padding:28}}><H1 title="Cotizaciones" subtitle="Ubicación, medición y propuestas comerciales por cliente" action={<button style={B("#f47c20")} onClick={nuevaCotizacion}>+ Nueva Cotización</button>}/><div style={{...CD,marginBottom:18}}><div style={ST}>Buscar cotización</div><input value={busqueda} onChange={(e)=>setBusqueda(e.target.value)} placeholder="Busca por cliente, obra, ciudad, número o propuesta" style={SI}/></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>{cotizacionesFiltradas.map((cotizacion)=>{const activa=getQuoteActiveProposal(cotizacion);const obraVinc=obras.find((obra)=>obra.id===cotizacion.obraId);return <div key={cotizacion.id} style={CD}><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}><div><div style={{fontSize:11,color:"#64748b"}}>{cotizacion.id} · {cotizacion.numero}</div><div style={{fontSize:15,fontWeight:700}}>{cotizacion.cliente}</div><div style={{fontSize:12,color:"#475569"}}>{cotizacion.obra}</div><div style={{fontSize:11,color:"#64748b"}}>{cotizacion.ciudad} · {fmtD(cotizacion.fecha)}</div></div><Badge estado={cotizacion.estado}/></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}><div style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",marginBottom:2}}>Total activo</div><div style={{fontSize:14,fontWeight:700,color:"#cc0000"}}>{fmt(Number(activa.total || 0))}</div></div><div style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",marginBottom:2}}>Tramos</div><div style={{fontSize:13,fontWeight:700,color:"#2563eb"}}>{(cotizacion.geoMediciones||[]).length}</div></div><div style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",marginBottom:2}}>Obra</div><div style={{fontSize:12,fontWeight:600,color:obraVinc?"#166534":"#64748b"}}>{obraVinc?obraVinc.id:"Sin obra"}</div></div></div><div style={{fontSize:11,color:"#64748b",marginBottom:12}}>Activa: <strong style={{color:"#1a1a2e"}}>{activa.nombre}</strong></div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}><button style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"6px 12px"}} onClick={()=>setPreviewCot(cotizacion)}>Ver</button><button style={{...B("#1a3050","#f5c842"),fontSize:11,padding:"6px 12px"}} onClick={()=>{setEditCot(cotizacion.id);hydrate(cotizacion);setTab("form");}}>Editar</button>{cotizacion.estado!=="Aprobada" && <button style={{...B("#0f2d1a","#4ade80"),border:"1px solid #166534",fontSize:11,padding:"6px 12px"}} onClick={()=>aprobarCotizacion(cotizacion.id)}>Aprobar y crear obra</button>}<button style={{...B("#2d1414","#ef4444"),fontSize:11,padding:"6px 12px"}} onClick={()=>openCotizacionPrint(cotizacion)}>PDF</button></div></div>;})}</div></div>;
+    return (
+      <div style={{padding:28}}>
+        <H1 title="Cotizaciones" subtitle="Ubicación, medición y propuestas comerciales por cliente" action={<button style={B("#f47c20")} onClick={nuevaCotizacion}>+ Nueva Cotización</button>}/>
+        <div style={{...CD,marginBottom:18}}><div style={ST}>Buscar cotización</div><input value={busqueda} onChange={(e)=>setBusqueda(e.target.value)} placeholder="Busca por cliente, obra, ciudad, número o propuesta" style={SI}/></div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+          {cotizacionesFiltradas.map((cotizacion)=>{
+            const todasPropuestas = getQuoteProposals(cotizacion);
+            const activaId = cotizacion.propuestaActivaId || todasPropuestas[0]?.id;
+            const activa = todasPropuestas.find(p=>p.id===activaId) || todasPropuestas[0] || getQuoteActiveProposal(cotizacion);
+            const obraVinc = obras.find((obra)=>obra.id===cotizacion.obraId);
+
+            const cambiarActiva = (propuesta)=>{
+              const updated = {...cotizacion, propuestaActivaId: propuesta.id};
+              setCotizaciones(prev=>prev.map(c=>c.id===cotizacion.id ? updated : c));
+            };
+
+            return (
+              <div key={cotizacion.id} style={CD}>
+                {/* Cabecera */}
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                  <div>
+                    <div style={{fontSize:11,color:"#64748b"}}>{cotizacion.id} · {cotizacion.numero}</div>
+                    <div style={{fontSize:15,fontWeight:700}}>{cotizacion.cliente}</div>
+                    <div style={{fontSize:12,color:"#475569"}}>{cotizacion.obra}</div>
+                    <div style={{fontSize:11,color:"#64748b"}}>{cotizacion.ciudad} · {fmtD(cotizacion.fecha)}</div>
+                  </div>
+                  <Badge estado={cotizacion.estado}/>
+                </div>
+
+                {/* Stats */}
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
+                  <div style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px"}}>
+                    <div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",marginBottom:2}}>Total activo</div>
+                    <div style={{fontSize:14,fontWeight:700,color:"#cc0000"}}>{fmt(Number(activa.total||0))}</div>
+                  </div>
+                  <div style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px"}}>
+                    <div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",marginBottom:2}}>Propuestas</div>
+                    <div style={{fontSize:13,fontWeight:700,color:"#2563eb"}}>{todasPropuestas.length}</div>
+                  </div>
+                  <div style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px"}}>
+                    <div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",marginBottom:2}}>Obra</div>
+                    <div style={{fontSize:12,fontWeight:600,color:obraVinc?"#166534":"#64748b"}}>{obraVinc?obraVinc.id:"Sin obra"}</div>
+                  </div>
+                </div>
+
+                {/* Chips de propuestas — clicables para cambiar activa */}
+                {todasPropuestas.length > 0 && (
+                  <div style={{marginBottom:12}}>
+                    <div style={{fontSize:10,color:"#94a3b8",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Propuestas</div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                      {todasPropuestas.map(p=>{
+                        const esActiva = p.id===activaId;
+                        return (
+                          <button
+                            key={p.id}
+                            onClick={()=>cambiarActiva(p)}
+                            title={`${p.nombre} · ${fmt(Number(p.total||0))}`}
+                            style={{fontSize:11,padding:"4px 10px",borderRadius:20,border:`1.5px solid ${esActiva?"#f47c20":"#dbe5f0"}`,background:esActiva?"#fff7ed":"#f8fafc",color:esActiva?"#c2410c":"#475569",fontWeight:esActiva?700:400,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}
+                          >
+                            {esActiva && <span style={{width:6,height:6,borderRadius:"50%",background:"#f47c20",display:"inline-block",flexShrink:0}}/>}
+                            {p.nombre}
+                            <span style={{color:esActiva?"#f47c20":"#94a3b8",fontWeight:600}}>{fmt(Number(p.total||0))}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Acciones */}
+                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                  <button style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"6px 12px"}} onClick={()=>setPreviewCot(cotizacion)}>Ver</button>
+                  <button style={{...B("#1a3050","#f5c842"),fontSize:11,padding:"6px 12px"}} onClick={()=>{setEditCot(cotizacion.id);hydrate(cotizacion);setTab("form");}}>Editar</button>
+                  {cotizacion.estado!=="Aprobada" && <button style={{...B("#0f2d1a","#4ade80"),border:"1px solid #166534",fontSize:11,padding:"6px 12px"}} onClick={()=>aprobarCotizacion(cotizacion.id)}>Aprobar y crear obra</button>}
+                  <button style={{...B("#2d1414","#ef4444"),fontSize:11,padding:"6px 12px"}} onClick={()=>openCotizacionPrint(cotizacion)}>PDF</button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -271,13 +352,31 @@ function Cotizacion({ctx}){
           </div>
         </div>
         <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
-          {propuestasSnapshot.map((propuesta)=>(
-            <button key={propuesta.id} onClick={()=>{setPropuestas(propuestasSnapshot);applyProposal(propuesta);}} style={{flex:"1 1 180px",textAlign:"left",padding:"12px 14px",borderRadius:12,border:`2px solid ${propuesta.id===propuestaActivaId?"#f47c20":"#dbe5f0"}`,background:propuesta.id===propuestaActivaId?"#fff7ed":"#f8fafc",cursor:"pointer"}}>
-              <div style={{fontSize:12,fontWeight:700,color:"#1a1a2e",marginBottom:3}}>{propuesta.nombre}</div>
-              <div style={{fontSize:10,color:"#64748b",marginBottom:5}}>{propuesta.tipoCotizacion==="obra_blanca"?"Obra blanca":"Línea de vida / anclajes"}</div>
-              <div style={{fontSize:14,fontWeight:700,color:"#cc0000"}}>{fmt(Number(propuesta.id===propuestaActivaId?tot:propuesta.total)||0)}</div>
-            </button>
-          ))}
+          {propuestasSnapshot.map((propuesta)=>{
+            const esActiva = propuesta.id===propuestaActivaId;
+            return (
+              <div key={propuesta.id} style={{flex:"1 1 180px",position:"relative",borderRadius:12,border:`2px solid ${esActiva?"#f47c20":"#dbe5f0"}`,background:esActiva?"#fff7ed":"#f8fafc",overflow:"hidden"}}>
+                <div onClick={()=>{setPropuestas(propuestasSnapshot);applyProposal(propuesta);}} style={{textAlign:"left",padding:"12px 14px 10px",cursor:"pointer"}}>
+                  <div style={{fontSize:12,fontWeight:700,color:"#1a1a2e",marginBottom:3,paddingRight:22}}>{propuesta.nombre}</div>
+                  <div style={{fontSize:10,color:"#64748b",marginBottom:5}}>{propuesta.tipoCotizacion==="obra_blanca"?"Obra blanca":"Línea de vida / anclajes"}</div>
+                  <div style={{fontSize:14,fontWeight:700,color:"#cc0000"}}>{fmt(Number(esActiva?tot:propuesta.total)||0)}</div>
+                </div>
+                {propuestasSnapshot.length > 1 && (
+                  <button
+                    title="Eliminar propuesta"
+                    onClick={(e)=>{
+                      e.stopPropagation();
+                      if(!window.confirm(`¿Eliminar "${propuesta.nombre}"? Esta acción no se puede deshacer.`)) return;
+                      const next = propuestasSnapshot.filter(p=>p.id!==propuesta.id);
+                      setPropuestas(next);
+                      if(esActiva) applyProposal(next[0]);
+                    }}
+                    style={{position:"absolute",top:6,right:6,background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:6,width:20,height:20,cursor:"pointer",fontSize:13,lineHeight:1,padding:0,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}
+                  >×</button>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 

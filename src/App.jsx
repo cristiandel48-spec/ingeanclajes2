@@ -1247,6 +1247,35 @@ const buildNominaPlanoBancoContent = (snapshot, config=NOMINA_PLANO_BANCO_DEFAUL
   return [header, ...details].join("\r\n");
 };
 
+const getNominaArchivoNombre = (snapshot) => `NOMINA_${snapshot?.periodo?.mes || "SIN_MES"}_${String(snapshot?.periodo?.corte || "CORTE").toUpperCase()}.txt`;
+const hydrateNominaSnapshot = (snapshot) => {
+  if(!snapshot) return null;
+  const normalized = {
+    ...snapshot,
+    periodo: snapshot.periodo || {},
+    totals: snapshot.totals || {},
+    registros: Array.isArray(snapshot.registros) ? snapshot.registros : [],
+    registrosBanco: Array.isArray(snapshot.registrosBanco) ? snapshot.registrosBanco : [],
+  };
+  if(!normalized.planoBanco){
+    normalized.planoBanco = buildNominaPlanoBancoContent(normalized, NOMINA_PLANO_BANCO_DEFAULTS);
+  }
+  if(!normalized.archivoBanco){
+    normalized.archivoBanco = getNominaArchivoNombre(normalized);
+  }
+  return normalized;
+};
+const indexNominaSnapshots = (items=[]) => (Array.isArray(items) ? items : [])
+  .map((item)=>hydrateNominaSnapshot(item))
+  .filter(Boolean)
+  .reduce((acc, item)=>{
+    acc[item.id] = item;
+    return acc;
+  }, {});
+const listNominaSnapshots = (map={}) => Object.values(map || {}).sort(
+  (a,b)=>new Date(b?.generadoEn || 0).getTime() - new Date(a?.generadoEn || 0).getTime()
+);
+
 const EC={
   "En Obra":{bg:"#1a3a5c",text:"#60b4ff",border:"#2563a8"},
   "Cotización":{bg:"#2d2a14",text:"#f5c842",border:"#7a6610"},
@@ -1629,102 +1658,69 @@ function buildCotizacionPrintHtml(c){
 
   const renderPhotosBlock = (propuesta)=>{
     if(!propuesta.fotos.length) return "";
+    const single = propuesta.fotos.length === 1;
     return `
-      <div class="photo-strip avoid-break">
+      <div class="photos ${single ? 'single' : ''}">
         ${propuesta.fotos.map((foto)=>`
-          <div class="photo-item">
-            <img src="${foto.src}" alt="" class="photo" />
-          </div>
+          <img src="${foto.src}" alt="" class="photo ${single ? 'single' : ''}" />
         `).join("")}
-      </div>
-    `;
+      </div>`;
   };
 
-  const proposalSections = propuestas.map((propuesta)=>{
+  const renderProposalPage = (propuesta)=>{
     const requerimientoBlock = propuesta.esObraBlanca && propuesta.requerimientoCliente ? `
-      <div class="clean-block avoid-break">
-        <p><strong>Necesidad del cliente</strong></p>
+      <div class="clean-block">
+        <div class="clean-title">Necesidad del cliente</div>
         <div style="white-space:pre-wrap;">${escapeHtml(propuesta.requerimientoCliente)}</div>
       </div>` : "";
 
     const alcanceBlock = propuesta.alcancePropuesta ? `
-      <div class="clean-block avoid-break">
-        <p><strong>Alcance de esta propuesta</strong></p>
+      <div class="clean-block">
+        <div class="clean-title">Alcance de esta propuesta</div>
         <div style="white-space:pre-wrap;">${escapeHtml(propuesta.alcancePropuesta)}</div>
       </div>` : "";
 
-    const fotosBlock = renderPhotosBlock(propuesta);
-
     const itemRows = propuesta.items.map((it,idx)=>{
-      const desc = escapeHtml(it.desc || "");
-      const cant = Number(it.cant || 0);
-      const unit = escapeHtml(it.unit || "");
-      const vu = Number(it.vu || 0);
-      const subtotal = cant * vu;
-      return `
-        <tr>
-          <td>${desc || `Item ${idx+1}`}</td>
-          <td class="num">${cant}</td>
-          <td class="center">${unit}</td>
-          <td class="num">${fmt(vu)}</td>
-          <td class="num">${fmt(subtotal)}</td>
-        </tr>`;
+      const desc = escapeHtml(it.desc || `ITEM ${idx+1}`);
+      const qty = Number(it.cant||0).toFixed(2).replace(/\.00$/,'');
+      const unit = escapeHtml(it.unit || "UND");
+      const value = fmt(Number(it.vu)||0);
+      const subtotal = fmt((Number(it.cant)||0)*(Number(it.vu)||0));
+      return `<tr><td>${desc}</td><td class="num">${qty}</td><td class="center">${unit}</td><td class="num">${value}</td><td class="num">${subtotal}</td></tr>`;
     }).join("");
 
     return `
-      <section class="page proposal-page">
-        <div class="proposal-header avoid-break">
-          <div class="proposal-title">${escapeHtml((propuesta.nombre || `Propuesta ${propuesta.index+1}`).toUpperCase())}</div>
+      <section class="page">
+        <div class="page-header">
+          <div class="header-inner">
+            <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+            <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
+            <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+          </div>
         </div>
-
-        ${requerimientoBlock}
-        ${alcanceBlock}
-        ${fotosBlock}
-
-        <div class="proposal-block avoid-break">
-          <table class="table price-table">
-            <thead>
-              <tr>
-                <th>Descripcion</th>
-                <th>Cantidad</th>
-                <th>Unidad</th>
-                <th>Valor</th>
-                <th>Subtotal</th>
-              </tr>
-            </thead>
+        <div class="page-footer">
+          <div class="footer-inner">Calle 38 Sur # 36 - 48, Envigado · PBX 448 26 86 · Cel. 315 288 9541 · Nit. 900193965-4 · comercial1ingeanclajes@gmail.com · www.ingeanclajes.com</div>
+        </div>
+        <div class="page-body">
+          <div class="proposal-title">${escapeHtml(propuesta.nombre || '').toUpperCase()}</div>
+          ${requerimientoBlock}
+          ${alcanceBlock}
+          ${renderPhotosBlock(propuesta)}
+          <table class="table no-break">
+            <thead><tr><th>Descripcion</th><th class="num">Cantidad</th><th class="center">Unidad</th><th class="num">Valor</th><th class="num">Subtotal</th></tr></thead>
             <tbody>
               ${itemRows}
-              <tr class="label-strong">
-                <td colspan="4"><strong>SUBTOTAL</strong></td>
-                <td class="num">${fmt(propuesta.sub)}</td>
-              </tr>
-              <tr>
-                <td colspan="4">ADMINISTRACION</td>
-                <td class="num">$ - -</td>
-              </tr>
-              <tr>
-                <td colspan="4">IMPREVISTOS</td>
-                <td class="num">$ - -</td>
-              </tr>
-              <tr>
-                <td colspan="4">UTILIDADES (${Number(propuesta.quote.util || 10)} % VALOR DE LA OBRA)</td>
-                <td class="num">${fmt(propuesta.ut)}</td>
-              </tr>
-              <tr>
-                <td colspan="4">IVA (19 % VALOR DE LAS UTILIDADES)</td>
-                <td class="num">${fmt(propuesta.iva)}</td>
-              </tr>
+              <tr class="label-strong"><td colspan="4">SUBTOTAL</td><td class="num">${fmt(propuesta.sub)}</td></tr>
+              <tr><td colspan="4">ADMINISTRACION</td><td class="num">$ - -</td></tr>
+              <tr><td colspan="4">IMPREVISTOS</td><td class="num">$ - -</td></tr>
+              <tr><td colspan="4">UTILIDADES (${Number(propuesta.quote.util||10).toFixed(0)} % VALOR DE LA OBRA)</td><td class="num">${fmt(propuesta.ut)}</td></tr>
+              <tr><td colspan="4">IVA (19 % VALOR DE LAS UTILIDADES)</td><td class="num">${fmt(propuesta.iva)}</td></tr>
+              <tr class="total-row"><td colspan="4">TOTAL</td><td class="num">${fmt(propuesta.tot)}</td></tr>
             </tbody>
-            <tfoot>
-              <tr class="total-row">
-                <td colspan="4"><strong>TOTAL</strong></td>
-                <td class="num"><strong>${fmt(propuesta.tot)}</strong></td>
-              </tr>
-            </tfoot>
           </table>
         </div>
       </section>`;
-  }).join("");
+  };
 
   return `<!doctype html>
   <html>
@@ -1732,112 +1728,67 @@ function buildCotizacionPrintHtml(c){
     <meta charset="utf-8" />
     <title>Cotizacion ${escapeHtml(c.numero || '')}</title>
     <style>
-      @page {
-        size: A4 portrait;
-        margin-top: 45mm;
-        margin-right: 20mm;
-        margin-bottom: 25mm;
-        margin-left: 28mm;
-      }
+      @page { size: A4 portrait; margin: 0; }
       * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       html, body { margin:0; padding:0; background:#fff; }
-      body { font-family: Aptos, Arial, Helvetica, sans-serif; color:#111827; font-size:11pt; line-height:1.5; }
-      p { margin:0 0 8px; text-align:left; }
-      img { max-width:100%; }
-      .header-fixed {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 35mm;
-        background: #fff;
-        z-index: 1000;
-      }
-      .header-inner {
-        margin: 0 20mm 0 28mm;
-        height: 100%;
-        border-bottom: 2px solid #cc0000;
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        gap:16px;
-        padding: 6mm 0 4mm;
-      }
-      .logo { height: 68px; width:auto; object-fit:contain; }
-      .header-mid { flex:1; text-align:center; font-weight:900; letter-spacing:2px; font-size:16pt; color:#111827; text-transform:uppercase; line-height:1.2; }
-      .header-right { text-align:right; font-size:10pt; color:#374151; line-height:1.35; max-width:255px; }
-      .footer-fixed {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 18mm;
-        background:#fff;
-        z-index: 1000;
-      }
-      .footer-inner {
-        margin: 0 20mm 0 28mm;
-        border-top:1px solid #9ca3af;
-        padding-top:4mm;
-        text-align:center;
-        font-size:9pt;
-        color:#4b5563;
-        line-height:1.2;
-      }
-      .doc { position:relative; z-index:1; }
-      .page { width:100%; break-after: page; page-break-after: always; padding: 0; }
-      .page:last-child { break-after:auto; page-break-after:auto; }
-      .meta { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; gap:12px; }
-      .meta strong { font-size:10.8pt; }
-      .client { margin-bottom: 14px; }
-      .client p { margin-bottom:4px; }
-      .proposal-header { margin: 0 0 10px; }
-      .proposal-title { text-align:center; font-weight:900; color:#111; text-transform:uppercase; margin: 0 0 12px; border-bottom:2px solid #cc0000; padding-bottom:5px; font-size:15pt; letter-spacing:.2px; }
-      .section-title { text-align:center; font-weight:900; color:#111; text-transform:uppercase; margin: 10px 0 8px; border-bottom:2px solid #cc0000; padding-bottom:4px; font-size:12pt; letter-spacing:.2px; }
-      .table { width:100%; border-collapse:collapse; margin:10px 0 0; }
-      .table th, .table td { border:1px solid #222; padding:7px 9px; vertical-align:middle; }
-      .table th { background:#f7f7f7; font-weight:900; text-align:center; font-size:11pt; }
-      .table td { font-size:11pt; }
+      body { font-family: Aptos, Arial, Helvetica, sans-serif; color: #111827; font-size: 10.8pt; line-height: 1.45; }
+      .page { position: relative; width: 210mm; height: 297mm; page-break-after: always; overflow: hidden; background:#fff; }
+      .page:last-child { page-break-after: auto; }
+      .page-header { position:absolute; top:0; left:0; right:0; height:40mm; }
+      .header-inner { position:absolute; left:0; right:0; top:0; padding:8mm 20mm 4mm 28mm; border-bottom:2px solid #c1121f; display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+      .logo { height:22mm; width:auto; object-fit:contain; }
+      .header-mid { flex:1; text-align:center; padding-top:2mm; font-weight:900; letter-spacing:1.8px; font-size:16pt; color:#111; }
+      .header-right { text-align:right; font-size:9pt; color:#444; line-height:1.35; max-width:56mm; }
+      .page-footer { position:absolute; left:0; right:0; bottom:0; height:18mm; }
+      .footer-inner { position:absolute; left:0; right:0; bottom:0; padding:3mm 20mm 4mm 28mm; border-top:1px solid #9ca3af; text-align:center; font-size:8.8pt; color:#4b5563; line-height:1.2; }
+      .page-body { position:absolute; top:45mm; left:28mm; right:20mm; bottom:25mm; overflow:hidden; }
+      .meta { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin:0 0 8px; }
+      .client { margin:0 0 8px; }
+      .client p { margin:0 0 2px; }
+      p { margin:0 0 6px; }
+      .intro-text { white-space:pre-wrap; text-align:left; }
+      .proposal-title { text-align:center; font-weight:900; color:#111; text-transform:uppercase; margin: 0 0 8px; border-bottom:2px solid #c1121f; padding-bottom:3px; font-size:12.2pt; letter-spacing:.2px; }
+      .clean-title { font-weight:800; margin:0 0 3px; }
+      .clean-block { margin:0 0 8px; padding:0; border:0; background:transparent; text-align:left; }
+      .photos { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:10px 0 10px; }
+      .photos.single { grid-template-columns:1fr; }
+      .photo { width:100%; max-height:87mm; object-fit:contain; display:block; }
+      .photo.single { max-height:108mm; }
+      .table { width:100%; border-collapse:collapse; margin: 6px 0 0; }
+      .table th, .table td { border:1px solid #444; padding:5px 8px; vertical-align:middle; }
+      .table th { background:#eef2f7; font-weight:900; text-align:center; font-size:10.4pt; }
+      .table td { font-size: 10.1pt; }
       .table .num { text-align:right; white-space:nowrap; }
       .table .center { text-align:center; }
-      .label-strong td:first-child { font-weight:900; }
-      .total-row td { background:#e5e7eb; font-weight:900; }
-      .clean-block { margin: 0 0 10px; padding:0; background:transparent; border:none; box-shadow:none; }
-      .clean-block p { margin-bottom:4px; }
-      .photo-strip { margin: 10px 0 12px; }
-      .photo-item { margin: 0 0 12px; border:none; padding:0; background:transparent; }
-      .photo { width:100%; max-height:420px; object-fit:contain; display:block; }
-      .tech-title { font-weight:900; text-transform:uppercase; text-align:center; font-size:15pt; margin: 0 0 10px; }
-      .tech-table { width:100%; border-collapse:collapse; margin-top: 8px; }
-      .tech-table th, .tech-table td { border:1px solid #222; padding:8px 10px; vertical-align:top; }
+      .table .label-strong td:first-child { font-weight:900; }
+      .total-row td { background:#dbe7f5; color:#0f172a; font-weight:900; }
+      .tech-title { font-weight:900; text-transform:uppercase; text-align:center; font-size:13pt; margin:0 0 8px; }
+      .tech-table { width:100%; border-collapse:collapse; margin-top:8px; }
+      .tech-table th, .tech-table td { border:1px solid #444; padding:6px 8px; vertical-align:top; }
       .tech-table th { background:#f7f7f7; font-weight:900; text-align:center; }
-      .tech-table td { font-size:11pt; line-height:1.42; text-align:left; }
+      .tech-table td { font-size:10pt; line-height:1.3; }
       .tech-elem { width:24%; font-weight:800; }
-      ul { margin: 8px 0 12px 22px; padding:0; }
-      li { margin-bottom: 5px; text-align:left; }
-      .signature { margin-top: 26px; }
-      .signature-space { height: 60px; }
-      .signature-line { width: 360px; border-top:1px solid #222; padding-top:7px; }
-      .signature-name { white-space: nowrap; }
-      .appendix-img { width:100%; height:auto; display:block; }
-      .avoid-break, .clean-block, .photo-item, .signature, table, tr, td, th { break-inside: avoid; page-break-inside: avoid; }
+      .section-title { text-align:center; font-weight:900; color:#111; text-transform:uppercase; margin:8px 0 6px; border-bottom:2px solid #c1121f; padding-bottom:3px; font-size:11.4pt; letter-spacing:.2px; }
+      ul { margin:6px 0 8px 18px; padding:0; }
+      li { margin-bottom:3px; }
+      .signature { margin-top:14px; }
+      .signature-space { height:18mm; }
+      .signature-line { width:72mm; border-top:1px solid #222; padding-top:3mm; }
+      .appendix-img { width:100%; height:auto; display:block; max-height:230mm; object-fit:contain; margin:0 auto; }
+      .no-break, table, tr, td, th, img { break-inside: avoid; page-break-inside: avoid; }
     </style>
   </head>
   <body>
-    <div class="header-fixed">
-      <div class="header-inner">
-        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
-        <div class="header-mid">ESPECIALISTAS EN<br/>ANCLAJES</div>
-        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+    <section class="page">
+      <div class="page-header">
+        <div class="header-inner">
+          <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+          <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
+          <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+        </div>
       </div>
-    </div>
-
-    <div class="footer-fixed">
-      <div class="footer-inner">Calle 38 Sur # 36 - 48, Envigado · PBX 448 26 86 · Cel. 315 288 9541 · Nit. 900193965-4 · comercial1ingeanclajes@gmail.com · www.ingeanclajes.com</div>
-    </div>
-
-    <div class="doc">
-      <section class="page">
+      <div class="page-footer"><div class="footer-inner">Calle 38 Sur # 36 - 48, Envigado · PBX 448 26 86 · Cel. 315 288 9541 · Nit. 900193965-4 · comercial1ingeanclajes@gmail.com · www.ingeanclajes.com</div></div>
+      <div class="page-body">
         <div class="meta"><div>Envigado, ${escapeHtml(fmtL(c.fecha || today()))}</div><div><strong>COTIZACION No. ${escapeHtml(c.numero || '')}</strong></div></div>
         <div class="client">
           <p><strong>SENOR:</strong></p>
@@ -1846,15 +1797,19 @@ function buildCotizacionPrintHtml(c){
           ${c.telefono ? `<p><strong>TELEFONO:</strong> ${escapeHtml(c.telefono)}</p>` : ''}
           ${c.ciudad ? `<p><strong>${escapeHtml((c.ciudad || '').toUpperCase())}</strong></p>` : ''}
         </div>
-        <div style="height:8px"></div>
+        <div style="height:2mm"></div>
         <p>Cordial saludo.</p>
-        <div style="height:8px"></div>
-        ${textoInicial ? `<div class="clean-block"><div style="white-space:pre-wrap; text-align:left;">${escapeHtml(textoInicial)}</div></div>` : ""}
-      </section>
+        <div style="height:2mm"></div>
+        ${textoInicial ? `<div class="intro-text">${escapeHtml(textoInicial)}</div>` : ""}
+      </div>
+    </section>
 
-      ${proposalSections}
+    ${propuestas.map(renderProposalPage).join('')}
 
-      <section class="page">
+    <section class="page">
+      <div class="page-header"><div class="header-inner"><img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" /><div class="header-mid">ESPECIALISTAS EN ANCLAJES</div><div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div></div></div>
+      <div class="page-footer"><div class="footer-inner">Calle 38 Sur # 36 - 48, Envigado · PBX 448 26 86 · Cel. 315 288 9541 · Nit. 900193965-4 · comercial1ingeanclajes@gmail.com · www.ingeanclajes.com</div></div>
+      <div class="page-body">
         <div class="section-title">Condiciones comerciales</div>
         <table class="table"><tbody>
           <tr><td style="width:34%"><strong>FORMA DE PAGO</strong></td><td>${escapeHtml(c.formaPago || DEFAULT_COT_FORMA_PAGO)}</td></tr>
@@ -1862,15 +1817,17 @@ function buildCotizacionPrintHtml(c){
           <tr><td><strong>VALIDEZ DE LA OFERTA</strong></td><td>${escapeHtml(`${c.val||30} DIAS A PARTIR DE LA FECHA DE ENTREGA DE ESTA COTIZACION`)}</td></tr>
           <tr><td><strong>CERTIFICACION</strong></td><td>SE ENTREGA CON EL PAGO TOTAL</td></tr>
         </tbody></table>
-        ${String(c.observaciones||"").trim() ? `<div class="clean-block" style="margin-top:12px;"><p><strong>Observaciones</strong></p><div style="white-space:pre-wrap; text-align:left;">${escapeHtml(c.observaciones)}</div></div>` : ""}
-      </section>
+        ${String(c.observaciones||"").trim() ? `<div class="clean-block" style="margin-top:10px;"><div class="clean-title">Observaciones</div><div style="white-space:pre-wrap;">${escapeHtml(c.observaciones)}</div></div>` : ""}
+      </div>
+    </section>
 
-      <section class="page">
+    <section class="page">
+      <div class="page-header"><div class="header-inner"><img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" /><div class="header-mid">ESPECIALISTAS EN ANCLAJES</div><div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div></div></div>
+      <div class="page-footer"><div class="footer-inner">Calle 38 Sur # 36 - 48, Envigado · PBX 448 26 86 · Cel. 315 288 9541 · Nit. 900193965-4 · comercial1ingeanclajes@gmail.com · www.ingeanclajes.com</div></div>
+      <div class="page-body">
         <div class="tech-title">Sistema no continuo en acero galvanizado</div>
         <table class="tech-table">
-          <thead>
-            <tr><th style="width:24%">Elemento</th><th>Caracteristica</th></tr>
-          </thead>
+          <thead><tr><th style="width:24%">Elemento</th><th>Caracteristica</th></tr></thead>
           <tbody>
             <tr><td class="tech-elem">Soporte lateral e intermedio</td><td>Este elemento esta disenado para ser usado en sistemas de lineas de vida horizontales de tipo continuo. El componente soporta regularmente el cable de acero para que una seccion libre de cable no supere la luz maxima permitida. Este soporte intermedio permite el uso de un carro deslizador para evitar el uso de eslinga en Y por parte del trabajador y evitar que el colaborador se desconecte.</td></tr>
             <tr><td class="tech-elem">Tensor</td><td>Este elemento esta disenado para ser usado en sistemas de lineas de vida horizontales. En sus extremos el tensor se asegura al cable de la linea de vida y a un absorbedor de energia respectivamente. Su funcion es tensionar la linea de vida para que, en el momento de una caida, la distancia de caida del trabajador sea minima.</td></tr>
@@ -1879,11 +1836,14 @@ function buildCotizacionPrintHtml(c){
             <tr><td class="tech-elem">Cable de acero</td><td>El cable de acero se fabrica bajo un diseno que permite que sea capaz de absorber el desgaste y los esfuerzos causados por el contacto con poleas, tambores y otras superficies, asi como las tensiones estaticas y dinamicas del trabajo al que se someta. Se compone por alambres de acero, estirados en frio, trenzados en espiral, formando unidades denominadas torones. Ademas, su diseno ha sido ideado para que cada alambre tenga la libertad de movimiento en relacion a los alambres adyacentes. Mientras mas alambres conformen este elemento, mayor sera su flexibilidad y resistencia en esfuerzos elevados; logrando el objetivo de transmision de movimiento, fuerzas y energia de forma eficaz y efectiva.</td></tr>
           </tbody>
         </table>
-      </section>
+      </div>
+    </section>
+    ${showVerticalAppendix ? `<section class="page"><div class="page-header"><div class="header-inner"><img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" /><div class="header-mid">ESPECIALISTAS EN ANCLAJES</div><div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div></div></div><div class="page-footer"><div class="footer-inner">Calle 38 Sur # 36 - 48, Envigado · PBX 448 26 86 · Cel. 315 288 9541 · Nit. 900193965-4 · comercial1ingeanclajes@gmail.com · www.ingeanclajes.com</div></div><div class="page-body"><img src="${articoLineaVidaVertical}" alt="Anexo tecnico linea de vida vertical" class="appendix-img"/></div></section>` : ""}
 
-      ${showVerticalAppendix ? `<section class="page"><img src="${articoLineaVidaVertical}" alt="Anexo tecnico linea de vida vertical" class="appendix-img"/></section>` : ""}
-
-      <section class="page">
+    <section class="page">
+      <div class="page-header"><div class="header-inner"><img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" /><div class="header-mid">ESPECIALISTAS EN ANCLAJES</div><div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div></div></div>
+      <div class="page-footer"><div class="footer-inner">Calle 38 Sur # 36 - 48, Envigado · PBX 448 26 86 · Cel. 315 288 9541 · Nit. 900193965-4 · comercial1ingeanclajes@gmail.com · www.ingeanclajes.com</div></div>
+      <div class="page-body">
         <div class="section-title">Esta cotizacion incluye</div>
         <ul>
           <li>Tuercas y arandelas en acero galvanizado y/o inoxidable certificado.</li>
@@ -1899,10 +1859,10 @@ function buildCotizacionPrintHtml(c){
         <div class="signature">
           <p>Cordialmente,</p>
           <div class="signature-space"></div>
-          <div class="signature-line"><div class="signature-name"><strong>ING. JHON JAIME SEPULVEDA LONDONO</strong></div><div>MP. 05256-409949</div><div>GERENTE GENERAL</div><div>Tel: 3152889541</div></div>
+          <div class="signature-line"><div><strong>ING. JHON JAIME SEPULVEDA LONDONO</strong></div><div>MP. 05256-409949</div><div>GERENTE GENERAL</div><div>Tel: 3152889541</div></div>
         </div>
-      </section>
-    </div>
+      </div>
+    </section>
   </body>
   </html>`;
 }
@@ -2629,6 +2589,15 @@ export default function App(){
   const [proveedores,setProveedores]=useState(PROVEEDORES_INIT);
   const [cuentas,setCuentas]=useState(CUENTAS_PAGAR_INIT);
   const [cotizaciones,setCotizaciones]=useState(COTIZACIONES_INIT);
+  const [nominasGeneradas,setNominasGeneradas]=useState(()=>{
+    if(typeof window==="undefined") return {};
+    try{
+      const raw = window.localStorage.getItem(NOMINA_GENERATED_STORAGE_KEY);
+      return raw ? indexNominaSnapshots(JSON.parse(raw)) : {};
+    }catch{
+      return {};
+    }
+  });
   const [cotDraft,setCotDraft]=useState(null);
   const bootstrappedRef=useRef(false);
   const autosaveTimerRef=useRef(null);
@@ -2645,7 +2614,19 @@ export default function App(){
     proveedores,
     cuentas,
     cotizaciones,
+    nominasGeneradas: listNominaSnapshots(nominasGeneradas),
   });
+
+  const normalizeCloudPayload = (payload)=>{
+    if(!payload) return buildCloudPayload();
+    const next = { ...payload };
+    if(Object.prototype.hasOwnProperty.call(next, "nominasGeneradas")){
+      next.nominasGeneradas = Array.isArray(next.nominasGeneradas)
+        ? next.nominasGeneradas
+        : listNominaSnapshots(next.nominasGeneradas || {});
+    }
+    return next;
+  };
 
   const saveAllToCloud=async(override=null)=>{
     if(!isSupabaseConfigured()) return { ok:false, reason:"not-configured" };
@@ -2654,7 +2635,7 @@ export default function App(){
       return { ok:false, reason:"missing-function" };
     }
     try{
-      await saveCloudAppData(override||buildCloudPayload());
+      await saveCloudAppData(normalizeCloudPayload(override||buildCloudPayload()));
       return { ok:true };
     }catch(error){
       console.error("No se pudo guardar datos en Supabase:", error);
@@ -2662,7 +2643,7 @@ export default function App(){
     }
   };
 
-  const ctx={obras,setObras,empleados,setEmpleados,cargos,setCargos,pagos,setPagos,horarios,setHorarios,certs,setCerts,informes,setInformes,clientes,setClientes,proveedores,setProveedores,cuentas,setCuentas,cotizaciones,setCotizaciones,cotDraft,setCotDraft,setScr,saveAllToCloud};
+  const ctx={obras,setObras,empleados,setEmpleados,cargos,setCargos,pagos,setPagos,horarios,setHorarios,certs,setCerts,informes,setInformes,clientes,setClientes,proveedores,setProveedores,cuentas,setCuentas,cotizaciones,setCotizaciones,nominasGeneradas,setNominasGeneradas,cotDraft,setCotDraft,setScr,saveAllToCloud};
 
   useEffect(()=>{
     let cancel=false;
@@ -2688,6 +2669,7 @@ export default function App(){
         if (Array.isArray(cloud.proveedores)) setProveedores(cloud.proveedores);
         if (Array.isArray(cloud.cuentas)) setCuentas(cloud.cuentas);
         if (Array.isArray(cloud.cotizaciones)) setCotizaciones(cloud.cotizaciones);
+        if (Array.isArray(cloud.nominasGeneradas)) setNominasGeneradas(indexNominaSnapshots(cloud.nominasGeneradas));
       } catch (error) {
         console.error("No se pudo cargar datos de Supabase:", error);
       } finally {
@@ -2699,6 +2681,13 @@ export default function App(){
 
     return ()=>{ cancel=true; };
   },[]);
+
+  useEffect(()=>{
+    if(typeof window==="undefined") return;
+    try{
+      window.localStorage.setItem(NOMINA_GENERATED_STORAGE_KEY, JSON.stringify(listNominaSnapshots(nominasGeneradas)));
+    }catch{}
+  }, [nominasGeneradas]);
 
   useEffect(()=>{
     if(!bootstrappedRef.current) return;
@@ -2730,6 +2719,7 @@ export default function App(){
     proveedores,
     cuentas,
     cotizaciones,
+    nominasGeneradas,
   ]);
 
   const navSections=[
@@ -5251,7 +5241,7 @@ function Financiero({ctx}){
 // NÓMINA
 // ======================================================
 function Nomina({ctx}){
-  const {empleados,setEmpleados,obras,cargos,setCargos,saveAllToCloud}=ctx;
+  const {empleados,setEmpleados,obras,cargos,setCargos,nominasGeneradas,setNominasGeneradas,saveAllToCloud}=ctx;
   const [tab,setTab]=useState("lista");
   const [mes,setMes]=useState("2026-04");
   const [corteNomina,setCorteNomina]=useState("primera");
@@ -5270,15 +5260,7 @@ function Nomina({ctx}){
   const [diasVacLiquidar,setDiasVacLiquidar]=useState({});
   const [guardandoNomina,setGuardandoNomina]=useState(false);
   const [mensajeGuardadoNomina,setMensajeGuardadoNomina]=useState("");
-  const [nominasGeneradas,setNominasGeneradas]=useState(()=>{
-    if(typeof window==="undefined") return {};
-    try{
-      const raw = window.localStorage.getItem(NOMINA_GENERATED_STORAGE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    }catch{
-      return {};
-    }
-  });
+  const [nominaConsultaId,setNominaConsultaId]=useState("");
 
   const empleadosBase = empleados.map(normalizarEmpleado);
   const periodoNomina = buildNominaPeriodo(mes, corteNomina);
@@ -5314,10 +5296,15 @@ function Nomina({ctx}){
   const totalNominaPlanilla=resumenesPlanilla.reduce((total,item)=>total+item.resumen.neto,0);
   const totalLiquidacionesPlanilla=resumenesPlanilla.reduce((total,item)=>total+item.liquidacionPrestaciones,0);
   const totalPagarPlanilla=resumenesPlanilla.reduce((total,item)=>total+item.totalPagar,0);
-  const nominaPreview = buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar);
-  const nominaGeneradaActual = nominasGeneradas[nominaPreview.id] || null;
-  const nominaVistaActual = nominaGeneradaActual || nominaPreview;
+  const nominaPreview = hydrateNominaSnapshot(buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar));
+  const nominaGeneradaActual = nominasGeneradas[nominaPreview.id] ? hydrateNominaSnapshot(nominasGeneradas[nominaPreview.id]) : null;
+  const nominasGeneradasList = listNominaSnapshots(nominasGeneradas);
+  const nominaConsulta = nominaConsultaId && nominasGeneradas[nominaConsultaId]
+    ? hydrateNominaSnapshot(nominasGeneradas[nominaConsultaId])
+    : null;
+  const nominaVistaActual = nominaConsulta || nominaGeneradaActual || nominaPreview;
   const nominaEstaGenerada = Boolean(nominaGeneradaActual);
+  const nominaVistaEsHistorica = Boolean(nominaConsulta && nominaConsulta.id!==nominaPreview.id);
   const empleadoDeduccionActivo =
     empleadosBase.find((empleado)=>empleado.id===selId) ||
     activos[0] ||
@@ -5328,11 +5315,10 @@ function Nomina({ctx}){
   ])].sort((a,b)=>a.localeCompare(b,"es"));
 
   useEffect(()=>{
-    if(typeof window==="undefined") return;
-    try{
-      window.localStorage.setItem(NOMINA_GENERATED_STORAGE_KEY, JSON.stringify(nominasGeneradas));
-    }catch{}
-  }, [nominasGeneradas]);
+    if(nominaConsultaId && !nominasGeneradas[nominaConsultaId]){
+      setNominaConsultaId("");
+    }
+  }, [nominaConsultaId, nominasGeneradas]);
 
   const actualizarEmpleado=(id,updater)=>{
     setEmpleados((prev)=>
@@ -5489,33 +5475,48 @@ function Nomina({ctx}){
     await guardarCambiosNomina("Cambios de contratos y liquidación sincronizados", { empleados: nextEmployees });
   };
 
-  const generarNominaCorte = ()=>{
-    const snapshot = buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar);
-    setNominasGeneradas((prev)=>({
-      ...prev,
+  const generarNominaCorte = async ()=>{
+    const mensajeConfirmacion = `${nominaEstaGenerada ? "¿Regenerar" : "¿Generar"} la nómina del corte ${periodoNomina.label}?`;
+    if(typeof window!=="undefined" && !window.confirm(mensajeConfirmacion + " Esta acción congelará la planilla y la guardará en Supabase.")) return;
+
+    const baseSnapshot = buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar);
+    const snapshot = hydrateNominaSnapshot({
+      ...baseSnapshot,
+      planoBanco: buildNominaPlanoBancoContent(baseSnapshot, NOMINA_PLANO_BANCO_DEFAULTS),
+    });
+    const nextNominas = {
+      ...nominasGeneradas,
       [snapshot.id]: snapshot,
-    }));
+    };
+    setNominasGeneradas(nextNominas);
+    setNominaConsultaId(snapshot.id);
+
+    if(typeof saveAllToCloud==="function"){
+      setGuardandoNomina(true);
+      const result = await saveAllToCloud({ nominasGeneradas: nextNominas });
+      setGuardandoNomina(false);
+      if(result?.ok===false){
+        setMensajeGuardadoNomina("La nómina se generó localmente, pero no se pudo guardar en Supabase: " + (result.error?.message||"revisa la conexión"));
+        setTimeout(()=>setMensajeGuardadoNomina(""), 5000);
+        return;
+      }
+    }
+
     setMensajeGuardadoNomina(
-      "Nómina generada para " + snapshot.periodo.label + " con " + snapshot.totals.totalRegistros + " registros."
+      "Nómina generada para " + snapshot.periodo.label + " con " + snapshot.totals.totalRegistros + " registros y sincronizada en Supabase."
     );
     setTimeout(()=>setMensajeGuardadoNomina(""), 3500);
   };
 
-  const descargarPlanoBanco = ()=>{
-    const snapshot = nominaEstaGenerada ? nominaGeneradaActual : buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar);
-    if(!snapshot.registrosBanco.length){
+  const descargarPlanoBanco = (snapshotArg=null)=>{
+    const snapshot = hydrateNominaSnapshot(snapshotArg || nominaVistaActual);
+    if(!snapshot?.registrosBanco?.length){
       setMensajeGuardadoNomina("No hay registros listos para el banco. Revisa cédula y cuenta bancaria de los empleados del corte.");
       setTimeout(()=>setMensajeGuardadoNomina(""), 3500);
       return;
     }
-    if(!nominaEstaGenerada){
-      setNominasGeneradas((prev)=>({
-        ...prev,
-        [snapshot.id]: snapshot,
-      }));
-    }
-    const contenido = buildNominaPlanoBancoContent(snapshot, NOMINA_PLANO_BANCO_DEFAULTS);
-    const nombreArchivo = `NOMINA_${snapshot.periodo.mes}_${snapshot.periodo.corte.toUpperCase()}.txt`;
+    const contenido = snapshot.planoBanco || buildNominaPlanoBancoContent(snapshot, NOMINA_PLANO_BANCO_DEFAULTS);
+    const nombreArchivo = snapshot.archivoBanco || getNominaArchivoNombre(snapshot);
     downloadTextFile(nombreArchivo, contenido);
     setMensajeGuardadoNomina("Plano banco descargado: " + nombreArchivo);
     setTimeout(()=>setMensajeGuardadoNomina(""), 3500);
@@ -5563,7 +5564,7 @@ function Nomina({ctx}){
       <H1 title="Nómina y Empleados" subtitle="Gestión de empleados, horas extras, comisiones y planilla"
         action={<button style={B("#cc0000")} onClick={()=>setTab("nuevo")}>+ Nuevo Empleado</button>}/>
       <div style={{display:"flex",gap:6,marginBottom:20}}>
-        {[["lista","Empleados"],["vacaciones","Vacaciones"],["contratos","Contratos y liquidación"],["he","Horas extras y comisiones"],["deducciones","Revisión deducciones"],["colillas","Colillas de pago"],["planilla","Planilla Bancolombia"]].map(([id,lb])=>(
+        {[["lista","Empleados"],  ["vacaciones","Vacaciones"],  ["contratos","Contratos y liquidación"],  ["he","Horas extras y comisiones"],["deducciones","Revisión deducciones"],  ["planilla","Planilla Bancolombia"],["colillas","Colillas de pago"]].map(([id,lb])=>(
           <button key={id} onClick={()=>setTab(id)} style={{...B(tab===id?"#f47c20":"#f1f5f9",tab===id?"#fff":"#475569"),border:"1px solid " + (tab===id?"#f47c20":"#e2e8f0")}}>{lb}</button>
         ))}
       </div>
@@ -6222,14 +6223,16 @@ function Nomina({ctx}){
 
       {tab==="planilla"&&(
         <div>
-          <div style={{display:"flex",gap:12,alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+          <div style={{display:"grid",gridTemplateColumns:"minmax(320px, 1.2fr) minmax(280px, 0.8fr)",gap:16,marginBottom:20}}>
             <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:12,padding:"12px 14px"}}>
               <div style={{fontSize:11,fontWeight:700,color:"#1d4ed8",textTransform:"uppercase",letterSpacing:0.7}}>Generación de nómina y plano banco</div>
               <div style={{fontSize:13,color:"#0f172a",marginTop:4}}>Corte activo: {periodoNomina.label}</div>
               <div style={{fontSize:11,color:"#64748b",marginTop:4}}>
-                {nominaEstaGenerada
-                  ? ("Nómina generada el " + formatNominaGeneratedAt(nominaVistaActual.generadoEn) + ". Si cambias horas extras, comisiones o deducciones, usa Regenerar nómina.")
-                  : "Esta es la vista previa del corte. Cuando ya revises horas extras, comisiones, deducciones y liquidaciones, pulsa Generar nómina para congelar el periodo."}
+                {nominaVistaEsHistorica
+                  ? ("Consultando la nómina generada del corte " + nominaVistaActual.periodo.label + " el " + formatNominaGeneratedAt(nominaVistaActual.generadoEn) + ".")
+                  : nominaEstaGenerada
+                    ? ("Nómina generada el " + formatNominaGeneratedAt(nominaVistaActual.generadoEn) + ". Si cambias horas extras, comisiones o deducciones, usa Regenerar nómina.")
+                    : "Esta es la vista previa del corte. Cuando ya revises horas extras, comisiones, deducciones y liquidaciones, pulsa Generar nómina para congelar el periodo."}
               </div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(3, minmax(120px, 1fr))",gap:8,marginTop:12}}>
                 <div style={{background:"#fff",borderRadius:10,padding:"9px 10px",border:"1px solid #dbeafe"}}>
@@ -6245,18 +6248,52 @@ function Nomina({ctx}){
                   <div style={{fontWeight:700,color:"#003B71",marginTop:4}}>{fmt(nominaVistaActual.totals.totalBanco)}</div>
                 </div>
               </div>
+              <div style={{  display:"flex",  gap:10,  flexWrap:"wrap",  justifyContent:"flex-start",  alignItems:"center",  marginTop:14, paddingTop:10, borderTop:"1px solid #bfdbfe" }}>
+                <button style={{...B("#f47c20"), minWidth:180, justifyContent:"center", fontWeight:700}} onClick={generarNominaCorte}>  {nominaEstaGenerada ? "Regenerar nómina" : "Generar nómina"} </button>
+                <button style={{...B("#142840"), minWidth:190, justifyContent:"center", fontWeight:700}} onClick={descargarPlanoBanco}> Descargar plano banco </button>
+                <button style={B("#166534","#d1fae5")} onClick={()=>printCurrentPz("Planilla Nómina " + (nominaVistaActual.periodo.label))}>Imprimir / Bancolombia</button>
+                {nominaVistaEsHistorica ? <button style={B("#475569","#f8fafc")} onClick={()=>setNominaConsultaId("")}>Volver al corte activo</button> : null}
+              </div>
             </div>
-            <div style={{display:"flex",gap:10,flexWrap:"wrap",justifyContent:"flex-start",alignItems:"center",marginTop:14,paddingTop:10,borderTop:"1px solid #bfdbfe"}}>
-              <button style={{...B("#f47c20"),minWidth:180,justifyContent:"center",fontWeight:700}} onClick={generarNominaCorte}>{nominaEstaGenerada ? "Regenerar nómina" : "Generar nómina"}</button>
-              <button style={{...B("#142840","#dbeafe"),minWidth:190,justifyContent:"center",fontWeight:700}} onClick={descargarPlanoBanco}>Descargar plano banco</button>
-              <button style={B("#166534","#d1fae5")} onClick={()=>printCurrentPz("Planilla Nómina " + (nominaVistaActual.periodo.label))}>Imprimir / Bancolombia</button>
+            <div style={{background:"#fff",border:"1px solid #dbeafe",borderRadius:12,padding:"12px 14px"}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#0f172a",textTransform:"uppercase",letterSpacing:0.7}}>Nóminas generadas</div>
+              <div style={{fontSize:11,color:"#64748b",marginTop:4}}>Cada corte generado queda guardado en Supabase para consulta posterior.</div>
+              <div style={{display:"grid",gap:8,marginTop:12,maxHeight:240,overflow:"auto"}}>
+                {!nominasGeneradasList.length ? (
+                  <div style={{fontSize:12,color:"#94a3b8",padding:"18px 10px",textAlign:"center",border:"1px dashed #cbd5e1",borderRadius:10}}>
+                    Aún no has generado nóminas. Cuando generes un corte, aparecerá aquí.
+                  </div>
+                ) : nominasGeneradasList.map((nomina)=>{
+                  const abierta = nominaVistaActual?.id===nomina.id;
+                  return (
+                    <div key={nomina.id} style={{border:"1px solid " + (abierta ? "#60a5fa" : "#e2e8f0"),borderRadius:10,padding:"10px 12px",background:abierta ? "#eff6ff" : "#f8fafc"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"flex-start"}}>
+                        <div>
+                          <div style={{fontWeight:700,color:"#0f172a",fontSize:13}}>{nomina.periodo?.label || nomina.id}</div>
+                          <div style={{fontSize:10,color:"#64748b",marginTop:3}}>Generada {formatNominaGeneratedAt(nomina.generadoEn)}</div>
+                        </div>
+                        <div style={{fontSize:12,fontWeight:700,color:"#003B71"}}>{fmt(nomina.totals?.totalPagar || 0)}</div>
+                      </div>
+                      <div style={{ display:"flex",  gap:10,  flexWrap:"wrap",  justifyContent:"flex-start",  alignItems:"center",  marginTop:14, paddingTop:10, borderTop:"1px solid #bfdbfe"}}>
+                        <span>{nomina.totals?.totalRegistros || 0} registros</span>
+                        <span>•</span>
+                        <span>{nomina.totals?.totalRegistrosBanco || 0} listos para banco</span>
+                      </div>
+                      <div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}>
+                        <button style={{...B("#142840","#dbeafe"),fontSize:11,padding:"8px 10px"}} onClick={()=>setNominaConsultaId(nomina.id)}>{abierta ? "Abierta" : "Abrir nómina"}</button>
+                        <button style={{...B("#166534","#d1fae5"),fontSize:11,padding:"8px 10px"}} onClick={()=>{ setNominaConsultaId(nomina.id); descargarPlanoBanco(nomina); }}>Plano banco</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
           {mensajeGuardadoNomina ? <div style={{marginBottom:12,fontSize:12,fontWeight:700,color:"#166534"}}>{mensajeGuardadoNomina}</div> : null}
           <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:11,padding:"30px 40px",border:"1px solid #ddd"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",borderBottom:"2px solid #003B71",paddingBottom:14,marginBottom:20}}>
               <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{height:60,objectFit:"contain"}}/>
-              <div style={{textAlign:"right"}}><div style={{background:"#FFCD00",color:"#003B71",padding:"6px 16px",borderRadius:4,fontWeight:700}}>BANCOLOMBIA</div><div style={{fontSize:10,color:"#555",marginTop:4}}>Planilla Nómina · {nominaVistaActual.periodo.label}</div><div style={{fontSize:9,color:"#64748b",marginTop:4}}>{nominaEstaGenerada ? ("Generada el " + formatNominaGeneratedAt(nominaVistaActual.generadoEn)) : "Vista previa del corte"}</div></div>
+              <div style={{textAlign:"right"}}><div style={{background:"#FFCD00",color:"#003B71",padding:"6px 16px",borderRadius:4,fontWeight:700}}>BANCOLOMBIA</div><div style={{fontSize:10,color:"#555",marginTop:4}}>Planilla Nómina · {nominaVistaActual.periodo.label}</div><div style={{fontSize:9,color:"#64748b",marginTop:4}}>{nominaVistaActual?.generadoEn ? ("Generada el " + formatNominaGeneratedAt(nominaVistaActual.generadoEn)) : "Vista previa del corte"}</div></div>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:12,marginBottom:16}}>
               <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Corte activo</div><div style={{fontWeight:700}}>{nominaVistaActual.periodo.label}</div></div>

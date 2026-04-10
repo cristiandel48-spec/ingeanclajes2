@@ -1625,40 +1625,42 @@ function getQuotePrintableProposals(baseQuote = {}){
 function buildCotizacionPrintHtml(c){
   const propuestas = getQuotePrintableProposals(c);
   const textoInicial = String(c.textoInicial || "").trim();
+  const mapQuery = c.coords || `${c.obra||""} ${c.ciudad||""}`.trim();
   const showVerticalAppendix = propuestas.some((propuesta)=>hasVerticalLifeLineService(propuesta.quote));
-
-  const renderHeader = ()=>`
-    <div class="page-header">
-      <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
-      <div class="header-mid">ESPECIALISTAS EN<br/>ANCLAJES</div>
-      <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
-    </div>`;
-
-  const renderFooter = ()=>`
-    <div class="page-footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>`;
-
-  const proposalPages = propuestas.map((propuesta)=>{
-    const photoCount = propuesta.fotos.length;
-    let photoGridClass = "photo-grid";
-    if(photoCount === 1) photoGridClass += " single";
-    else if(photoCount === 2) photoGridClass += " double";
-    else photoGridClass += " multi";
-
+  const proposalSections = propuestas.map((propuesta)=>{
+    // Mapa de esta propuesta (solo si tiene mediciones)
+    let propMapBlock = "";
+    if(propuesta.mapImg && propuesta.measurements.length > 0){
+      const { width: mW, height: mH } = getStaticMapDimensions(propuesta.quote.geoMapView || c.geoMapView);
+      const propLabels = getStaticMapLabelData(propuesta.measurements, mapQuery, propuesta.quote.geoMapView || c.geoMapView).map(label=>`
+        <div class="map-label" style="left:${label.left}; top:${label.top}; transform:translate(-50%, -50%) rotate(${label.angle}deg);">
+          <div>${escapeHtml(label.title)} - ${escapeHtml(label.value)}</div>
+        </div>`).join('');
+      propMapBlock = `<div class="section-title">Medicion satelital</div>
+        <div class="map-wrap" style="aspect-ratio:${mW}/${mH};"><img src="${propuesta.mapImg}" alt="Mapa de medicion" class="map"/>${propLabels}</div>`;
+    }
     const requerimientoBlock = propuesta.esObraBlanca && propuesta.requerimientoCliente ? `
-      <div class="body-copy" style="white-space:pre-wrap;">${escapeHtml(propuesta.requerimientoCliente)}</div>` : "";
-
+      <div class="measurement-box">
+        <p><strong>Necesidad del cliente</strong></p>
+        <div style="white-space:pre-wrap; text-align:justify;">${escapeHtml(propuesta.requerimientoCliente)}</div>
+      </div>` : "";
     const alcanceBlock = propuesta.alcancePropuesta ? `
-      <div class="body-copy" style="white-space:pre-wrap;">${escapeHtml(propuesta.alcancePropuesta)}</div>` : "";
-
+      <div class="measurement-box">
+        <p><strong>Alcance de esta propuesta</strong></p>
+        <div style="white-space:pre-wrap; text-align:justify;">${escapeHtml(propuesta.alcancePropuesta)}</div>
+      </div>` : "";
+    const photoCount = propuesta.fotos.length;
+    const photoGridClass = photoCount <= 1 ? "photo-grid single" : photoCount === 2 ? "photo-grid double" : "photo-grid multi";
     const fotosBlock = propuesta.fotos.length ? `
+      <div class="section-title">Registro fotografico de la propuesta</div>
       <div class="${photoGridClass}">
-        ${propuesta.fotos.map((foto)=>`
+        ${propuesta.fotos.map((foto,idx)=>`
           <div class="photo-card">
-            <img src="${foto.src}" alt="Imagen propuesta" class="photo ${photoCount===1 ? 'photo-large' : ''}" />
+            <div class="photo-wrap ${photoCount===1 ? "photo-wrap-large" : ""}"><img src="${foto.src}" alt="${escapeHtml(foto.label || `Foto ${idx+1}`)}" class="photo"/></div>
+            <div class="photo-label">${escapeHtml(foto.label || `Foto ${idx+1}`)}</div>
           </div>
         `).join("")}
       </div>` : "";
-
     const itemRows = propuesta.items.map((it,idx)=>{
       const desc = escapeHtml(it.desc || `ITEM ${idx+1}`);
       const qty = Number(it.cant||0).toFixed(2).replace(/\.00$/,'');
@@ -1669,57 +1671,32 @@ function buildCotizacionPrintHtml(c){
     }).join("");
 
     return `
-      <section class="print-page">
-        ${renderHeader()}
-        <div class="page-body">
-          <div class="proposal-title">${escapeHtml(propuesta.nombre || '').toUpperCase()}</div>
-          ${requerimientoBlock}
-          ${alcanceBlock}
-          ${fotosBlock}
-        </div>
-        ${renderFooter()}
-      </section>
-
-      <section class="print-page">
-        ${renderHeader()}
-        <div class="page-body table-page-body">
-          <div class="proposal-title">${escapeHtml(propuesta.nombre || '').toUpperCase()}</div>
-          <table class="price-table">
-            <thead>
-              <tr>
-                <th>Descripcion</th>
-                <th>Cantidad</th>
-                <th>Unidad</th>
-                <th>Valor</th>
-                <th>Subtotal</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${itemRows}
-              <tr class="label-strong"><td colspan="4">SUBTOTAL</td><td class="num">${fmt(propuesta.sub)}</td></tr>
-              <tr><td colspan="4">ADMINISTRACION</td><td class="num">$ - -</td></tr>
-              <tr><td colspan="4">IMPREVISTOS</td><td class="num">$ - -</td></tr>
-              <tr><td colspan="4">UTILIDADES (${Number(propuesta.quote.util||10).toFixed(0)} % VALOR DE LA OBRA)</td><td class="num">${fmt(propuesta.ut)}</td></tr>
-              <tr><td colspan="4">IVA (19 % VALOR DE LAS UTILIDADES)</td><td class="num">${fmt(propuesta.iva)}</td></tr>
-            </tbody>
-            <tfoot>
-              <tr class="total-row"><td colspan="4">TOTAL</td><td class="num">${fmt(propuesta.tot)}</td></tr>
-            </tfoot>
-          </table>
-        </div>
-        ${renderFooter()}
-      </section>`;
-  }).join("");
-
-  const appendixPage = showVerticalAppendix ? `
-    <section class="print-page">
-      ${renderHeader()}
-      <div class="page-body">
-        <div class="proposal-title">ANEXO TECNICO LINEA DE VIDA VERTICAL</div>
-        <img src="${articoLineaVidaVertical}" alt="Linea de vida vertical" class="appendix-img" />
+    <section class="page">
+      <div class="header">
+        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
-      ${renderFooter()}
-    </section>` : "";
+      <div class="section-title">${escapeHtml(propuesta.nombre)}</div>
+      ${requerimientoBlock}
+      ${alcanceBlock}
+      ${fotosBlock}
+      ${propMapBlock}
+      <table class="table no-break">
+        <thead><tr><th>Descripcion</th><th class="num">Cantidad</th><th class="center">Unidad</th><th class="num">Valor</th><th class="num">Subtotal</th></tr></thead>
+        <tbody>
+          ${itemRows}
+          <tr class="label-strong"><td colspan="4">SUBTOTAL</td><td class="num">${fmt(propuesta.sub)}</td></tr>
+          <tr><td colspan="4">ADMINISTRACION</td><td class="num">$ - -</td></tr>
+          <tr><td colspan="4">IMPREVISTOS</td><td class="num">$ - -</td></tr>
+          <tr><td colspan="4">UTILIDADES (${Number(propuesta.quote.util||10).toFixed(0)} % VALOR DE LA OBRA)</td><td class="num">${fmt(propuesta.ut)}</td></tr>
+          <tr><td colspan="4">IVA (19 % VALOR DE LAS UTILIDADES)</td><td class="num">${fmt(propuesta.iva)}</td></tr>
+          <tr class="total-row"><td colspan="4">TOTAL</td><td class="num">${fmt(propuesta.tot)}</td></tr>
+        </tbody>
+      </table>
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
+    </section>`;
+  }).join("");
 
   return `<!doctype html>
   <html>
@@ -1727,240 +1704,349 @@ function buildCotizacionPrintHtml(c){
     <meta charset="utf-8" />
     <title>Cotizacion ${escapeHtml(c.numero || '')}</title>
     <style>
-      @page {
-        size: Letter;
-        margin-top: 35mm;
-        margin-right: 20mm;
-        margin-bottom: 20mm;
-        margin-left: 28mm;
-      }
-      * { box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-      html, body {
-        margin:0;
-        padding:0;
-        background:#fff;
-        color:#111827;
-        font-family:Aptos, "Segoe UI", Arial, sans-serif;
-        font-size:11.5pt;
-        line-height:1.5;
-      }
-      body { background:#fff; }
-      .print-page {
-        position:relative;
-        min-height:240mm;
-        page-break-after:always;
-      }
-      .print-page:last-child { page-break-after:auto; }
-      .page-header {
-        display:flex;
-        justify-content:space-between;
-        align-items:flex-start;
-        gap:16px;
-        padding-bottom:10px;
-        border-bottom:2px solid #c00000;
-        margin-bottom:16px;
-      }
-      .logo {
-        width:250px;
-        max-width:38%;
-        height:auto;
-        object-fit:contain;
-      }
-      .header-mid {
-        flex:1;
-        text-align:center;
-        font-weight:900;
-        letter-spacing:2px;
-        font-size:17pt;
-        line-height:1.15;
-        padding-top:8px;
-      }
-      .header-right {
-        width:260px;
-        text-align:right;
-        font-size:10.5pt;
-        line-height:1.35;
-        color:#4b5563;
-      }
-      .page-body {
-        min-height:175mm;
-        padding-bottom:18mm;
-      }
-      .table-page-body {
-        display:flex;
-        flex-direction:column;
-        justify-content:flex-start;
-      }
-      .page-footer {
-        position:absolute;
-        left:0;
-        right:0;
-        bottom:0;
-        border-top:1px solid #9ca3af;
-        padding-top:7px;
-        text-align:center;
-        font-size:9.5pt;
-        line-height:1.3;
-        color:#4b5563;
-      }
-      .meta {
-        display:flex;
-        justify-content:space-between;
-        align-items:flex-start;
-        gap:16px;
-        margin-bottom:14px;
-      }
-      .client p, .body-copy, p {
-        text-align:justify;
-        text-justify:inter-word;
-      }
-      .client p { margin:0 0 4px; }
-      .proposal-title {
-        text-align:center;
-        font-weight:900;
-        font-size:16pt;
-        line-height:1.2;
-        text-transform:uppercase;
-        border-bottom:2px solid #c00000;
-        padding-bottom:6px;
-        margin:0 0 14px;
-      }
-      .body-copy {
-        margin:0 0 10px;
-        white-space:pre-wrap;
-      }
-      .price-table {
-        width:100%;
-        border-collapse:collapse;
-        margin-top:8px;
-      }
-      .price-table th,
-      .price-table td {
-        border:1px solid #374151;
-        padding:7px 9px;
-        vertical-align:middle;
-      }
-      .price-table th {
-        background:#f3f4f6;
-        text-align:center;
-        font-weight:800;
-      }
-      .price-table .num { text-align:right; white-space:nowrap; }
-      .price-table .center { text-align:center; }
-      .label-strong td:first-child { font-weight:800; }
-      .price-table tfoot td,
-      .total-row td {
-        background:#dbe7f5;
-        font-weight:900;
-      }
-      .photo-grid {
-        display:grid;
-        gap:12px;
-        margin-top:10px;
-      }
+      @page { size: letter portrait; margin: 12mm 10mm 12mm 10mm; }
+      * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      html, body { background:#fff; }
+      body { font-family: Aptos, Arial, Helvetica, sans-serif; color: #1f2937; margin: 0; font-size: 10.5pt; line-height: 1.35; text-align: justify; text-justify: inter-word; }
+      .page { width:100%; display:flex; flex-direction:column; break-after: page; page-break-after: always; min-height: auto; padding: 0; }
+      .page:last-child { page-break-after: auto; }
+      .header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #c1121f; padding-bottom:8px; margin-bottom:10px; }
+      .logo { height: 60px; width:auto; object-fit:contain; }
+      .header-mid { flex:1; text-align:center; padding-top:4px; font-family:Aptos, Arial, Helvetica, sans-serif; font-weight:900; letter-spacing:1.4px; font-size:10.8pt; color:#111; }
+      .header-right { text-align:right; font-size:8.2pt; color:#555; line-height:1.35; max-width:220px; }
+      p { margin: 0 0 6px; }
+      .meta { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; gap:12px; }
+      .meta strong { font-size:10.8pt; }
+      .client { margin-bottom: 10px; }
+      .client p { margin-bottom: 3px; }
+      .section-title { text-align:center; font-weight:900; color:#111; text-transform:uppercase; margin: 8px 0 6px; border-bottom:2px solid #c1121f; padding-bottom:3px; font-size:11.4pt; letter-spacing:.2px; }
+      .table { width:100%; border-collapse:collapse; margin: 6px 0 8px; }
+      .table th, .table td { border:1px solid #444; padding:5px 8px; vertical-align:middle; }
+      .table th { background:#eef2f7; font-weight:900; text-align:center; font-size:10.5pt; }
+      .table td { font-size: 10.2pt; }
+      .table .num { text-align:right; white-space:nowrap; }
+      .table .center { text-align:center; }
+      .table .label-strong td:first-child { font-weight:900; }
+      .total-row td { background:#dbe7f5; color:#0f172a; font-weight:900; }
+      .note-center { text-align:center; font-weight:900; margin:10px 0 0; font-size:11pt; }
+      .map-wrap { position:relative; border:1px solid #d8dee7; padding:0; margin: 2px 0 8px; width:100%; min-height:250px; overflow:hidden; background:#fff; }
+      .map { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block; margin:0 auto; }
+      .map-label { position:absolute; pointer-events:none; text-align:center; font-family:Aptos, Arial, Helvetica, sans-serif; font-weight:800; line-height:1; font-size:8px; white-space:nowrap; color:#fff !important; background:rgba(17,24,39,0.55); padding:2px 4px; border-radius:4px; text-shadow:0 1px 2px rgba(0,0,0,0.85); border:1px solid rgba(255,255,255,0.28); transform-origin:center; }
+      .placeholder { border:1px dashed #bbb; padding: 28px; text-align:center; color:#777; margin-bottom:12px; }
+      .measurement-box { border:1px solid #d5d9e2; background:#f8fafc; padding:8px 10px; margin: 0 0 8px; text-align:justify; text-justify:inter-word; }
+      .measurement-box p { margin-bottom: 4px; }
+      .measurement-table { width:100%; border-collapse:collapse; margin-top: 6px; }
+      .measurement-table th, .measurement-table td { border:1px solid #cbd5e1; padding:6px 8px; font-size:11pt; }
+      .measurement-table th { background:#e2e8f0; text-align:left; font-weight:800; }
+      .photo-grid { display:grid; gap:8px; margin-bottom:8px; }
       .photo-grid.single { grid-template-columns:1fr; }
       .photo-grid.double { grid-template-columns:1fr 1fr; }
       .photo-grid.multi { grid-template-columns:1fr 1fr; }
-      .photo-card {
-        border:none;
-        padding:0;
-        margin:0;
-        background:transparent;
-        break-inside:avoid;
-        page-break-inside:avoid;
-      }
-      .photo {
-        width:100%;
-        height:310px;
-        object-fit:contain;
-        display:block;
-      }
-      .photo-large {
-        height:470px;
-      }
-      .appendix-img {
-        width:100%;
-        max-height:190mm;
-        object-fit:contain;
-        display:block;
-      }
-      @media print {
-        .print-page { break-after:page; }
-        .print-page:last-child { break-after:auto; }
-      }
+      .photo-card { border:1px solid #d5d9e2; background:#fff; padding:6px; break-inside: avoid; page-break-inside: avoid; }
+      .photo-wrap { background:#fff; overflow:hidden; height:210px; display:flex; align-items:center; justify-content:center; border:1px solid #e5e7eb; }
+      .photo-wrap-large { height:300px; }
+      .photo { width:100%; height:100%; object-fit:contain; display:block; }
+      .photo-label { font-size:9.5pt; color:#475569; padding-top:5px; text-align:center; }
+      .signature { margin-top: 18px; }
+      .signature-space { height: 48px; }
+      .signature-line { width: 360px; border-top:1px solid #222; padding-top:7px; }
+      .signature-name { white-space: nowrap; }
+      .footer { margin-top:auto; border-top:1px solid #999; padding-top:6px; text-align:center; font-size:8.6pt; color:#555; }
+      .appendix-img { width:100%; height:auto; display:block; }
+      .tech-title { font-weight:900; text-transform:uppercase; text-align:center; font-size:13pt; margin: 0 0 8px; }
+      .tech-subtitle { text-align:center; font-weight:700; letter-spacing:4px; margin: 0 0 14px; }
+      .tech-table { width:100%; border-collapse:collapse; margin-top: 8px; }
+      .tech-table th, .tech-table td { border:1px solid #444; padding:6px 8px; vertical-align:top; }
+      .tech-table th { background:#f7f7f7; font-weight:900; text-align:center; }
+      .tech-table td { font-size:10.2pt; line-height:1.32; }
+      .tech-elem { width:24%; font-weight:800; }
+      ul { margin: 6px 0 8px 18px; padding:0; }
+      li { margin-bottom: 3px; }
+      .small-gap { margin-top: 6px; }
+      .no-break, .measurement-box, .map-wrap, .signature, table, tr, td, th { break-inside: avoid; page-break-inside: avoid; }
+      img { max-width:100%; }
     </style>
   </head>
   <body>
-    <section class="print-page">
-      ${renderHeader()}
-      <div class="page-body">
-        <div class="meta">
-          <div>Envigado, ${escapeHtml(fmtL(c.fecha || today()))}</div>
-          <div><strong>COTIZACION No. ${escapeHtml(c.numero || '')}</strong></div>
-        </div>
-        <div class="client">
-          <p><strong>SENOR:</strong></p>
-          <p><strong>${escapeHtml((c.cliente || '').toUpperCase())}</strong></p>
-          ${c.obra ? `<p><strong>OBRA:</strong> ${escapeHtml((c.obra || '').toUpperCase())}</p>` : ''}
-          ${c.telefono ? `<p><strong>TELEFONO:</strong> ${escapeHtml(c.telefono)}</p>` : ''}
-          ${c.ciudad ? `<p><strong>${escapeHtml((c.ciudad || '').toUpperCase())}</strong></p>` : ''}
-        </div>
-        <p>Cordial saludo.</p>
-        ${textoInicial ? `<div class="body-copy">${escapeHtml(textoInicial)}</div>` : ""}
+    <section class="page">
+      <div class="header">
+        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
-      ${renderFooter()}
+      <div class="meta"><div>Envigado, ${escapeHtml(fmtL(c.fecha || today()))}</div><div><strong>COTIZACION No. ${escapeHtml(c.numero || '')}</strong></div></div>
+      <div class="client">
+        <p><strong>SENOR:</strong></p>
+        <p><strong>${escapeHtml((c.cliente || '').toUpperCase())}</strong></p>
+        ${c.obra ? `<p><strong>OBRA:</strong> ${escapeHtml((c.obra || '').toUpperCase())}</p>` : ''}
+        ${c.telefono ? `<p><strong>TELEFONO:</strong> ${escapeHtml(c.telefono)}</p>` : ''}
+        ${c.ciudad ? `<p><strong>${escapeHtml((c.ciudad || '').toUpperCase())}</strong></p>` : ''}
+      </div>
+      <div style="height:8px"></div>
+      <p>Cordial saludo.</p>
+      <div style="height:8px"></div>
+      ${textoInicial ? `<div class="measurement-box"><div style="white-space:pre-wrap; text-align:justify;">${escapeHtml(textoInicial)}</div></div>` : ""}
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
     </section>
 
-    ${proposalPages}
+    ${proposalSections}
 
-    <section class="print-page">
-      ${renderHeader()}
-      <div class="page-body">
-        <div class="proposal-title">CONDICIONES COMERCIALES</div>
-        <table class="price-table">
-          <tbody>
-            <tr><td style="width:34%"><strong>FORMA DE PAGO</strong></td><td>${escapeHtml(c.formaPago || DEFAULT_COT_FORMA_PAGO)}</td></tr>
-            <tr><td><strong>TIEMPO DE EJECUCION</strong></td><td>${escapeHtml(c.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC)}</td></tr>
-            <tr><td><strong>VALIDEZ DE LA OFERTA</strong></td><td>${escapeHtml(`${c.val||30} DIAS A PARTIR DE LA FECHA DE ENTREGA DE ESTA COTIZACION`)}</td></tr>
-            <tr><td><strong>CERTIFICACION</strong></td><td>SE ENTREGA CON EL PAGO TOTAL</td></tr>
-          </tbody>
-        </table>
+    <section class="page">
+      <div class="header">
+        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
-      ${renderFooter()}
+      <div class="section-title">Condiciones comerciales</div>
+      <table class="table"><tbody>
+        <tr><td style="width:34%"><strong>FORMA DE PAGO</strong></td><td>${escapeHtml(c.formaPago || DEFAULT_COT_FORMA_PAGO)}</td></tr>
+        <tr><td><strong>TIEMPO DE EJECUCION</strong></td><td>${escapeHtml(c.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC)}</td></tr>
+        <tr><td><strong>VALIDEZ DE LA OFERTA</strong></td><td>${escapeHtml(`${c.val||30} DIAS A PARTIR DE LA FECHA DE ENTREGA DE ESTA COTIZACION`)}</td></tr>
+        <tr><td><strong>CERTIFICACION</strong></td><td>SE ENTREGA CON EL PAGO TOTAL</td></tr>
+      </tbody></table>
+      ${String(c.observaciones||"").trim() ? `<div class="measurement-box" style="margin-top:10px;"><p><strong>Observaciones</strong></p><div style="white-space:pre-wrap; text-align:justify;">${escapeHtml(c.observaciones)}</div></div>` : ""}
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
     </section>
 
-    ${appendixPage}
-
-    <section class="print-page">
-      ${renderHeader()}
-      <div class="page-body">
-        <div class="proposal-title">ESTA COTIZACION INCLUYE</div>
-        <div class="body-copy">Tuercas y arandelas en acero galvanizado y/o inoxidable certificado.
-Los elementos utilizados en la instalacion son certificados de fabrica los cuales se adjuntan en la entrega de documentacion de certificados.
-Transporte de materiales y de personal hasta el sitio de trabajo.
-Se entregan todos los certificados de acuerdo a la Resolucion 4272 de trabajo seguro en alturas.
-Recertificacion sin costo al ano siguiente de la instalacion.
-Esta propuesta incluye el coordinador para trabajo seguro en alturas de tiempo completo en la obra.
-Todo el personal que labora en la empresa se encuentra afiliado a ARL, salud y pensiones.
-Llevamos todos los elementos personales de seguridad necesarios para efectuar dicho trabajo.
-Realizamos todas las reparaciones de los danos que puedan surgir durante la ejecucion de dicho trabajo y se entregan todas las polizas exigidas por el contratante.</div>
-
-        <div class="proposal-title" style="margin-top:18px;">SISTEMA DE GESTION DE SEGURIDAD Y SALUD EN EL TRABAJO</div>
-        <div class="body-copy">Nuestra empresa INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicacion de la Resolucion 4272 de 2021, garantizando la implementacion del Sistema de Gestion de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.</div>
+    <section class="page">
+      <div class="header">
+        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
-      ${renderFooter()}
+      <div class="tech-title">Sistema no continuo en acero galvanizado</div>
+      <table class="tech-table">
+        <thead>
+          <tr><th style="width:24%">Elemento</th><th>Caracteristica</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="tech-elem">Soporte lateral e intermedio</td>
+            <td>Este elemento esta disenado para ser usado en sistemas de lineas de vida horizontales de tipo continuo. El componente soporta regularmente el cable de acero para que una seccion libre de cable no supere la luz maxima permitida. Este soporte intermedio permite el uso de un carro deslizador para evitar el uso de eslinga en Y por parte del trabajador y evitar que el colaborador se desconecte.</td>
+          </tr>
+          <tr>
+            <td class="tech-elem">Tensor</td>
+            <td>Este elemento esta disenado para ser usado en sistemas de lineas de vida horizontales. En sus extremos el tensor se asegura al cable de la linea de vida y a un absorbedor de energia respectivamente. Su funcion es tensionar la linea de vida para que, en el momento de una caida, la distancia de caida del trabajador sea minima.</td>
+          </tr>
+          <tr>
+            <td class="tech-elem">Empalmes y fijaciones</td>
+            <td>Fabricados en aluminio. Resistentes a la corrosion y oxidacion. Se utilizan para empalmar dos cables y fijar barandillas de cables.</td>
+          </tr>
+          <tr>
+            <td class="tech-elem">Guardacables</td>
+            <td>Fabricado en acero con acabado galvanizado resistente a la corrosion. Protegen contra el desgaste y deformacion del cable, alargando su vida util.</td>
+          </tr>
+          <tr>
+            <td class="tech-elem">Cable de acero</td>
+            <td>El cable de acero se fabrica bajo un diseno que permite que sea capaz de absorber el desgaste y los esfuerzos causados por el contacto con poleas, tambores y otras superficies, asi como las tensiones estaticas y dinamicas del trabajo al que se someta. Se compone por alambres de acero, estirados en frio, trenzados en espiral, formando unidades denominadas torones. Ademas, su diseno ha sido ideado para que cada alambre tenga la libertad de movimiento en relacion a los alambres adyacentes. Mientras mas alambres conformen este elemento, mayor sera su flexibilidad y resistencia en esfuerzos elevados; logrando el objetivo de transmision de movimiento, fuerzas y energia de forma eficaz y efectiva.</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
     </section>
+    ${showVerticalAppendix ? `<section class="page"><img src="${articoLineaVidaVertical}" alt="Anexo tecnico linea de vida vertical" class="appendix-img"/><div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div></section>` : ""}
 
-    <section class="print-page">
-      ${renderHeader()}
-      <div class="page-body">
-        <p style="margin-top:30mm;">Cordialmente,</p>
-        <p><strong>ING. JHON JAIME SEPULVEDA LONDONO</strong><br/>MP. 05256-409949<br/>GERENTE GENERAL<br/>Tel: 3152889541</p>
+    <section class="page">
+      <div class="header">
+        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
-      ${renderFooter()}
+      <div class="section-title">Esta cotizacion incluye</div>
+      <ul>
+        <li>Tuercas y arandelas en acero galvanizado y/o inoxidable certificado.</li>
+        <li>Los elementos utilizados en la instalacion son certificados de fabrica los cuales se adjuntan en la entrega de documentacion de certificados.</li>
+        <li>Transporte de materiales y de personal hasta el sitio de trabajo.</li>
+        <li>Se entregan todos los certificados de acuerdo a la Resolucion 4272 de trabajo seguro en alturas.</li>
+        <li>Recertificacion sin costo al ano siguiente de la instalacion.</li>
+        <li>Esta propuesta incluye el coordinador para trabajo seguro en alturas de tiempo completo en la obra.</li>
+      </ul>
+      <p class="small-gap">Todo el personal que labora en la empresa se encuentra afiliado a ARL, salud y pensiones. Llevamos todos los elementos personales de seguridad necesarios para efectuar dicho trabajo. Realizamos todas las reparaciones de los danos que puedan surgir durante la ejecucion de dicho trabajo y se entregan todas las polizas exigidas por el contratante.</p>
+      <div class="section-title">Sistema de gestion de seguridad y salud en el trabajo</div>
+      <p>Nuestra empresa INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicacion de la Resolucion 4272 de 2021, garantizando la implementacion del Sistema de Gestion de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.</p>
+      <div class="signature">
+        <p>Cordialmente,</p>
+        <div class="signature-space"></div>
+        <div class="signature-line"><div class="signature-name"><strong>ING. JHON JAIME SEPULVEDA LONDONO</strong></div><div>MP. 05256-409949</div><div>GERENTE GENERAL</div><div>Tel: 3152889541</div></div>
+      </div>
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
     </section>
   </body>
   </html>`;
+}
+
+function openCotizacionPrint(c){
+  const html = buildCotizacionPrintHtml(c);
+  openPrintTab(html, "Cotización " + (c?.numero || c?.id || ""));
+}
+
+
+const COTIZACION_AUTO_SEND_ENDPOINTS = {
+  email: "",
+  whatsapp: "",
+};
+
+function downloadGeneratedFile(file){
+  const url = URL.createObjectURL(file);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = file.name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+
+function sanitizeFileName(v=""){
+  return String(v || "documento")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-zA-Z0-9._-]+/g,"-")
+    .replace(/-{2,}/g,"-")
+    .replace(/^-|-$/g,"") || "documento";
+}
+
+function normalizeEntityKey(v=""){
+  return String(v || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g,"")
+    .trim();
+}
+
+function getCotizacionClientPhone(clienteInfo={}, cotizacion={}){
+  const raw = clienteInfo?.telefono || clienteInfo?.tel || cotizacion?.telefono || "";
+  const digits = String(raw).replace(/\D/g,"");
+  if(!digits) return "";
+  if(digits.startsWith("57")) return digits;
+  return digits.length === 10 ? `57${digits}` : digits;
+}
+
+function getCotizacionClientEmail(clienteInfo={}){
+  return String(clienteInfo?.email || "").trim();
+}
+
+function buildCotizacionShareMessage(c, clienteInfo={}){
+  const saludo = clienteInfo?.contacto || clienteInfo?.nombre || c?.cliente || "cliente";
+  return [
+    `Hola ${saludo},`,
+    `Te compartimos la cotizacion *${c?.numero || c?.id || ""}* de *${c?.obra || "su proyecto"}* por un valor de *${fmt(Number(c?.total || 0))}*.`,
+    `Vigencia: ${c?.val || 30} dia(s) calendario.`,
+    `Quedamos atentos a tu aprobacion o comentarios.`,
+    `INGEANCLAJES S.A.S`,
+  ].join("\n");
+}
+
+function buildCotizacionEmailSubject(c){
+  return `Cotizacion ${c?.numero || c?.id || ""} - ${c?.obra || c?.cliente || "INGEANCLAJES"}`;
+}
+
+function buildCotizacionEmailBody(c, clienteInfo={}){
+  const saludo = clienteInfo?.contacto || clienteInfo?.nombre || c?.cliente || "cliente";
+  return [
+    `Hola ${saludo},`,
+    "",
+    `Adjuntamos la cotizacion ${c?.numero || c?.id || ""} correspondiente a ${c?.obra || "su proyecto"}.`,
+    `Valor total: ${fmt(Number(c?.total || 0))}.`,
+    `Vigencia: ${c?.val || 30} dia(s) calendario.`,
+    "",
+    "Quedamos atentos a cualquier comentario o aprobacion.",
+    "",
+    "INGEANCLAJES S.A.S",
+  ].join("\n");
+}
+
+// ─── Abre HTML completo en nueva pestaña con toolbar de impresión ───
+// NO bloquea la app principal. El usuario imprime/guarda PDF desde la pestaña.
+function openPrintTab(fullHtml, title){
+  const w = window.open("", "_blank");
+  if(!w){ alert("El navegador bloqueó la ventana emergente. Permite las ventanas emergentes para este sitio."); return; }
+  // Inyectar toolbar NO-PRINT al inicio del body
+  const toolbar = `
+    <div id="print-toolbar" style="position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a2840;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:10px 20px;font-family:sans-serif;box-shadow:0 2px 12px rgba(0,0,0,.3);">
+      <span style="font-size:14px;font-weight:600;">${title || "Documento"}</span>
+      <div style="display:flex;gap:10px;">
+        <button onclick="var tb=document.getElementById('print-toolbar');var sp=tb.nextElementSibling;tb.style.display='none';if(sp)sp.style.display='none';setTimeout(function(){window.print();setTimeout(function(){tb.style.display='flex';if(sp)sp.style.display='block';},300);},100);" style="background:#f47c20;color:#fff;border:none;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">🖨 Imprimir / Guardar PDF</button>
+        <button onclick="window.close();" style="background:#475569;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;">✕ Cerrar</button>
+      </div>
+    </div>
+    <div style="height:56px;"></div>`;
+  // Si es HTML completo (tiene <html>), insertar toolbar después de <body...>
+  let output = fullHtml;
+  const bodyMatch = fullHtml.match(/<body[^>]*>/i);
+  if(bodyMatch){
+    const idx = fullHtml.indexOf(bodyMatch[0]) + bodyMatch[0].length;
+    // Agregar regla @media print para ocultar toolbar
+    const printHide = `<style>@media print{#print-toolbar,#print-toolbar+div{display:none!important;}body{padding-top:0!important;}}</style>`;
+    output = fullHtml.slice(0, idx) + printHide + toolbar + fullHtml.slice(idx);
+  } else {
+    // HTML parcial, envolver
+    output = `<!doctype html><html><head><meta charset="utf-8"><title>${title||"Documento"}</title>
+      <style>@media print{#print-toolbar,#print-toolbar+div{display:none!important;}}</style>
+    </head><body>${toolbar}${fullHtml}</body></html>`;
+  }
+  w.document.write(output);
+  w.document.close();
+}
+
+async function sendCotizacionEmail(c, clienteInfo, pdfFile){
+  const email = getCotizacionClientEmail(clienteInfo);
+  if(!email) throw new Error("El cliente no tiene correo registrado en la base de datos.");
+  const subject = buildCotizacionEmailSubject(c);
+  const body = buildCotizacionEmailBody(c, clienteInfo);
+
+  if(COTIZACION_AUTO_SEND_ENDPOINTS.email){
+    const fd = new FormData();
+    fd.append("to", email);
+    fd.append("subject", subject);
+    fd.append("body", body);
+    fd.append("quoteId", c?.id || "");
+    fd.append("quoteNumber", c?.numero || "");
+    fd.append("pdf", pdfFile, pdfFile.name);
+    const res = await fetch(COTIZACION_AUTO_SEND_ENDPOINTS.email, { method:"POST", body:fd });
+    if(!res.ok) throw new Error("El endpoint de correo no respondió correctamente.");
+    return { ok:true, message:`Correo enviado a ${email}` };
+  }
+
+  downloadGeneratedFile(pdfFile);
+  window.location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  return { ok:true, manual:true, message:`Correo preparado para ${email}. El PDF se descargó para adjuntarlo.` };
+}
+
+async function sendCotizacionWhatsApp(c, clienteInfo, pdfFile){
+  const phone = getCotizacionClientPhone(clienteInfo, c);
+  if(!phone) throw new Error("El cliente no tiene teléfono registrado en la cotización o en la base de datos.");
+  const message = buildCotizacionShareMessage(c, clienteInfo);
+
+  if(COTIZACION_AUTO_SEND_ENDPOINTS.whatsapp){
+    const fd = new FormData();
+    fd.append("phone", phone);
+    fd.append("message", message);
+    fd.append("quoteId", c?.id || "");
+    fd.append("quoteNumber", c?.numero || "");
+    fd.append("pdf", pdfFile, pdfFile.name);
+    const res = await fetch(COTIZACION_AUTO_SEND_ENDPOINTS.whatsapp, { method:"POST", body:fd });
+    if(!res.ok) throw new Error("El endpoint de WhatsApp no respondió correctamente.");
+    return { ok:true, message:`WhatsApp enviado a +${phone}` };
+  }
+
+  try{
+    if(navigator.share && navigator.canShare && navigator.canShare({ files:[pdfFile] })){
+      await navigator.share({
+        title: buildCotizacionEmailSubject(c),
+        text: message,
+        files: [pdfFile],
+      });
+      return { ok:true, manual:true, message:`Se abrió el selector para compartir el PDF por WhatsApp con +${phone}` };
+    }
+  }catch(err){
+    // continúa al fallback de wa.me
+  }
+
+  downloadGeneratedFile(pdfFile);
+  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank");
+  return { ok:true, manual:true, message:`WhatsApp abierto para +${phone}. El PDF se descargó para adjuntarlo.` };
 }
 
 function printCurrentPz(title = "Documento"){
@@ -6128,9 +6214,9 @@ function Nomina({ctx}){
                 </div>
               </div>
             </div>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"flex-end"}}>
-              <button style={B("#f47c20")} onClick={generarNominaCorte}>{nominaEstaGenerada ? "Regenerar nómina" : "Generar nómina"}</button>
-              <button style={B("#142840","#dbeafe")} onClick={descargarPlanoBanco}>Descargar plano banco</button>
+            <div style={{display:"flex",gap:10,flexWrap:"wrap",justifyContent:"flex-start",alignItems:"center",marginTop:14,paddingTop:10,borderTop:"1px solid #bfdbfe"}}>
+              <button style={{...B("#f47c20"),minWidth:180,justifyContent:"center",fontWeight:700}} onClick={generarNominaCorte}>{nominaEstaGenerada ? "Regenerar nómina" : "Generar nómina"}</button>
+              <button style={{...B("#142840","#dbeafe"),minWidth:190,justifyContent:"center",fontWeight:700}} onClick={descargarPlanoBanco}>Descargar plano banco</button>
               <button style={B("#166534","#d1fae5")} onClick={()=>printCurrentPz("Planilla Nómina " + (nominaVistaActual.periodo.label))}>Imprimir / Bancolombia</button>
             </div>
           </div>

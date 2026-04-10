@@ -102,6 +102,7 @@ function Cotizacion({ctx}){
   const [nid,setNid]=useState(1);
   const [geoMediciones,setGeoMediciones]=useState([]);
   const [geoMapView,setGeoMapView]=useState(null);
+  const [medicionAutomaticaActiva,setMedicionAutomaticaActiva]=useState(false);
   const [showDB,setShowDB]=useState(false);
   const [dbCat,setDbCat]=useState(0);
   const [fotosActivaPropuesta,setFotosActivaPropuesta]=useState([]);
@@ -113,7 +114,7 @@ function Cotizacion({ctx}){
   const iva = ut * 0.19;
   const tot = sub + ut + iva;
 
-  const proposalFromState = ()=>buildQuoteProposal({id:propuestaActivaId || createQuoteProposalId(editCot || "draft"),nombre:nombrePropuesta,alcance:alcancePropuesta,tipoCotizacion,requerimientoCliente,formaPago,tiempoEjec,util,items,fotos:fotosActivaPropuesta,total:Math.round(tot)},0);
+  const proposalFromState = ()=>buildQuoteProposal({id:propuestaActivaId || createQuoteProposalId(editCot || "draft"),nombre:nombrePropuesta,alcance:alcancePropuesta,tipoCotizacion,requerimientoCliente,formaPago,tiempoEjec,util,items,fotos:fotosActivaPropuesta,geoMediciones,geoMapView,mapImg:autoMapImg || null,medicionAutomatica:medicionAutomaticaActiva,total:Math.round(tot)},0);
   const proposalSnapshot = proposalFromState();
   const propuestasSnapshot = (propuestas.length ? propuestas : [proposalSnapshot]).map((propuesta,index)=>buildQuoteProposal(propuesta.id===proposalSnapshot.id?proposalSnapshot:propuesta,index));
 
@@ -131,6 +132,9 @@ function Cotizacion({ctx}){
     setItems(nextItems);
     setNid(nextItems.length + 1);
     setFotosActivaPropuesta(p.fotos || []);
+    setGeoMediciones(Array.isArray(p.geoMediciones) ? p.geoMediciones : []);
+    setGeoMapView(p.geoMapView || null);
+    setMedicionAutomaticaActiva(Boolean(p.medicionAutomatica || (Array.isArray(p.geoMediciones) && p.geoMediciones.length)));
   };
 
   const hydrate = (source={})=>{
@@ -145,7 +149,14 @@ function Cotizacion({ctx}){
     setGeoMapView(source.geoMapView || null);
     setPropuestas(all);
     // Para datos viejos sin fotos por propuesta, migrar fotosCotizacion a la propuesta activa
-    const activeConFotos = {...active, fotos: (active.fotos && active.fotos.length) ? active.fotos : (source.fotosCotizacion || [])};
+    const activeConFotos = {
+      ...active,
+      fotos: (active.fotos && active.fotos.length) ? active.fotos : (source.fotosCotizacion || []),
+      geoMediciones: (active.geoMediciones && active.geoMediciones.length) ? active.geoMediciones : (source.geoMediciones || []),
+      geoMapView: active.geoMapView || source.geoMapView || null,
+      mapImg: active.mapImg || source.mapImg || null,
+      medicionAutomatica: Boolean(active.medicionAutomatica || (active.geoMediciones && active.geoMediciones.length) || (source.geoMediciones && source.geoMediciones.length)),
+    };
     applyProposal(activeConFotos);
   };
 
@@ -161,7 +172,7 @@ function Cotizacion({ctx}){
   const nuevaCotizacion = ()=>{
     setEditCot(null);
     setPreviewCot(null);
-    hydrate({numero:`P-${34155 + cotizaciones.length}`,fecha:today(),val:30,cliente:"",obra:"",telefono:"",ciudad:"",coords:"",geoMediciones:[],geoMapView:null,fotosCotizacion:[],propuestas:[buildQuoteProposal({id:createQuoteProposalId("new"),nombre:getQuoteProposalLabel(0),formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,util:10,items:[]},0)]});
+    hydrate({numero:`P-${34155 + cotizaciones.length}`,fecha:today(),val:30,cliente:"",obra:"",telefono:"",ciudad:"",coords:"",geoMediciones:[],geoMapView:null,fotosCotizacion:[],propuestas:[buildQuoteProposal({id:createQuoteProposalId("new"),nombre:getQuoteProposalLabel(0),formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,util:10,items:[],geoMediciones:[],geoMapView:null,mapImg:null,medicionAutomatica:false},0)]});
     setTab("form");
   };
 
@@ -172,7 +183,7 @@ function Cotizacion({ctx}){
     const activa = buildQuoteProposal({...current,items:finalItems,total:totalActiva}, next.findIndex((propuesta)=>propuesta.id===current.id));
     const propuestasFinales = next.map((propuesta)=>propuesta.id===activa.id?activa:buildQuoteProposal(propuesta));
     const prev = editCot ? cotizaciones.find((cotizacion)=>cotizacion.id===editCot) : null;
-    const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:cl.nombre,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,textoInicial:textoInicial.trim(),items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:autoMapImg || null,geoMediciones,geoMapView,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
+    const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:cl.nombre,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,textoInicial:textoInicial.trim(),items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:activa.mapImg || autoMapImg || null,geoMediciones:activa.geoMediciones || geoMediciones,geoMapView:activa.geoMapView || geoMapView,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
     setCotizaciones((prevList)=>editCot ? prevList.map((cotizacion)=>cotizacion.id===editCot?{...cotizacion,...data}:cotizacion) : [...prevList,data]);
     setPropuestas(propuestasFinales);
     setTab("lista");
@@ -250,11 +261,8 @@ function Cotizacion({ctx}){
         </div>
       </div>
 
-      {/* Mapa */}
-      <GoogleMeasureWorkspace queryValue={cl.coords||`${cl.obra||""} ${cl.ciudad||""}`.trim()} onQueryChange={(value)=>setCl({...cl,coords:value})} measurements={geoMediciones} onChange={setGeoMediciones} mapView={geoMapView} onMapViewChange={setGeoMapView}/>
-
       {/* Selector de propuestas */}
-      <div style={{...CD,marginTop:14,marginBottom:14,border:"2px solid #142840"}}>
+      <div style={{...CD,marginBottom:14,border:"2px solid #142840"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
           <div style={ST}>Propuestas</div>
           <div style={{display:"flex",gap:8}}>
@@ -312,7 +320,9 @@ function Cotizacion({ctx}){
           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
             {fotosActivaPropuesta.map((f,i)=>(
               <div key={f.id} style={{borderRadius:8,overflow:"hidden",border:"1px solid #e2e8f0",background:"#f8fafc"}}>
-                <img src={f.src} alt={f.label||`Foto ${i+1}`} style={{width:"100%",height:120,objectFit:"cover",display:"block"}}/>
+                <div style={{background:"#fff",padding:6}}>
+                  <img src={f.src} alt={f.label||`Foto ${i+1}`} style={{width:"100%",height:"auto",display:"block",borderRadius:4}}/>
+                </div>
                 <div style={{padding:"6px 8px",display:"flex",gap:4,alignItems:"center"}}>
                   <input value={f.label||""} onChange={e=>setFotosActivaPropuesta(prev=>prev.map(item=>item.id===f.id?{...item,label:e.target.value}:item))} placeholder={`Foto ${i+1}`} style={{...SI,fontSize:11,padding:"3px 6px",flex:1}}/>
                   <button onClick={()=>setFotosActivaPropuesta(prev=>prev.filter(item=>item.id!==f.id))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:6,width:22,height:22,cursor:"pointer",fontSize:14,flexShrink:0,lineHeight:1}}>×</button>
@@ -325,6 +335,42 @@ function Cotizacion({ctx}){
             </div>
           </div>
           <input ref={fotosRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={e=>{Array.from(e.target.files||[]).forEach(file=>{const r=new FileReader();r.onload=(ev)=>setFotosActivaPropuesta(prev=>[...prev,{id:Date.now()+Math.random(),src:ev.target.result,label:""}]);r.readAsDataURL(file);});e.target.value="";}}/>
+        </div>
+
+        <div style={{marginBottom:18}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <span style={{fontSize:12,fontWeight:600,color:"#1a1a2e"}}>Medición automática con Google Maps</span>
+            <div style={{display:"flex",gap:8}}>
+              <button
+                type="button"
+                onClick={()=>setMedicionAutomaticaActiva((prev)=>!prev)}
+                style={{...B(medicionAutomaticaActiva?"#166534":"#dbeafe",medicionAutomaticaActiva?"#ecfdf5":"#1e40af"),fontSize:11,padding:"5px 12px",border:"1px solid " + (medicionAutomaticaActiva?"#166534":"#93c5fd")}}
+              >
+                {medicionAutomaticaActiva ? "Desactivar medición" : "Activar medición"}
+              </button>
+              {autoMapImg && (
+                <button
+                  type="button"
+                  onClick={()=>setFotosActivaPropuesta((prev)=>[...prev,{id:Date.now()+Math.random(),src:autoMapImg,label:"Mapa Google Maps"}])}
+                  style={{...B("#fff7ed","#c2410c"),fontSize:11,padding:"5px 12px",border:"1px solid #fdba74"}}
+                >
+                  Agregar mapa como foto
+                </button>
+              )}
+            </div>
+          </div>
+          <div style={{fontSize:11,color:"#64748b",marginBottom:10}}>
+            Esta medición queda amarrada solo a la propuesta activa. Si cambias a otra propuesta, tendrá su propio mapa y sus propios tramos.
+          </div>
+          {medicionAutomaticaActiva ? (
+            <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:14}}>
+              <GoogleMeasureWorkspace queryValue={cl.coords||`${cl.obra||""} ${cl.ciudad||""}`.trim()} onQueryChange={(value)=>setCl({...cl,coords:value})} measurements={geoMediciones} onChange={setGeoMediciones} mapView={geoMapView} onMapViewChange={setGeoMapView}/>
+            </div>
+          ) : (
+            <div style={{background:"#f8fafc",border:"1px dashed #cbd5e1",borderRadius:12,padding:"18px 16px",fontSize:12,color:"#64748b",textAlign:"center"}}>
+              Activa la medición automática si esta propuesta necesita mapa satelital o tramos medidos con Google Maps.
+            </div>
+          )}
         </div>
 
         {/* 4. Detalle económico */}
@@ -578,6 +624,10 @@ function buildQuoteProposal(propuesta = {}, index = 0) {
     util,
     items,
     fotos: Array.isArray(propuesta.fotos) ? propuesta.fotos : [],
+    geoMediciones: Array.isArray(propuesta.geoMediciones) ? propuesta.geoMediciones : [],
+    geoMapView: propuesta.geoMapView ?? null,
+    mapImg: propuesta.mapImg ?? null,
+    medicionAutomatica: Boolean(propuesta.medicionAutomatica),
     total: Math.round(Number.isFinite(Number(propuesta.total)) ? Number(propuesta.total) : totalCalculado),
   };
 }
@@ -599,6 +649,9 @@ function getQuoteProposals(cotizacion = {}) {
         tiempoEjec: cotizacion.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC,
         util: Number(cotizacion.util ?? 10),
         items: Array.isArray(cotizacion.items) ? cotizacion.items : [],
+        geoMediciones: Array.isArray(cotizacion.geoMediciones) ? cotizacion.geoMediciones : [],
+        geoMapView: cotizacion.geoMapView ?? null,
+        mapImg: cotizacion.mapImg ?? null,
         total: cotizacion.total,
       },
       0
@@ -628,6 +681,9 @@ function mergeQuoteWithProposal(cotizacion = {}, propuesta = null) {
     tiempoEjec: activeProposal.tiempoEjec,
     util: activeProposal.util,
     items: activeProposal.items,
+    geoMediciones: activeProposal.geoMediciones,
+    geoMapView: activeProposal.geoMapView,
+    mapImg: activeProposal.mapImg,
     total: activeProposal.total,
   };
 }
@@ -1240,6 +1296,11 @@ function getQuotePrintableProposals(baseQuote = {}){
     const ut = sub * (Number(quote.util || 10) / 100);
     const iva = ut * 0.19;
     const tot = sub + ut + iva;
+    const measurements = Array.isArray(quote.geoMediciones) ? quote.geoMediciones : [];
+    const mapQuery = baseQuote.coords || `${baseQuote.obra||""} ${baseQuote.ciudad||""}`.trim();
+    const mapImg = String(quote.mapImg || "").startsWith("data:")
+      ? quote.mapImg
+      : (buildGoogleStaticMapUrl(measurements, mapQuery, quote.geoMapView || baseQuote.geoMapView) || quote.mapImg || "");
 
     return {
       ...propuesta,
@@ -1255,6 +1316,9 @@ function getQuotePrintableProposals(baseQuote = {}){
       requerimientoCliente: String(quote.requerimientoCliente || "").trim(),
       alcancePropuesta: String(quote.propuestaAlcance || propuesta.alcance || "").trim(),
       fotos: getQuoteProposalPhotos(baseQuote, propuesta, activeProposal?.id),
+      measurements,
+      narrative: buildMeasurementNarrative(measurements),
+      mapImg,
     };
   });
 }
@@ -1511,14 +1575,35 @@ function buildCotizacionPrintHtml(c){
   </html>`;
 }
 
-function openCotizacionPrint(c){
-  const parsed = new DOMParser().parseFromString(buildCotizacionPrintHtml(c), "text/html");
-  const inlineCss = parsed.head.querySelector("style")?.textContent || "";
-  openPrintWindow(
-    `Cotizacion ${c?.numero || c?.id || ""}`,
-    parsed.body.innerHTML,
-    inlineCss
-  );
+async function openCotizacionPrint(c){
+  const toast = document.createElement("div");
+  toast.style.cssText = [
+    "position:fixed","top:20px","right:20px","z-index:99999",
+    "background:#1a2840","color:#fff","padding:14px 22px",
+    "border-radius:10px","font-size:14px","font-family:sans-serif",
+    "box-shadow:0 4px 24px rgba(0,0,0,.25)",
+    "display:flex","align-items:center","gap:10px","min-width:220px",
+  ].join(";");
+  toast.innerHTML = "<span>⏳</span>&nbsp;Generando PDF...";
+  document.body.appendChild(toast);
+  try {
+    const file = await generateCotizacionPdfFile(c);
+    const url = URL.createObjectURL(file);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 8000);
+    toast.style.background = "#166534";
+    toast.innerHTML = "✓&nbsp;PDF descargado";
+    setTimeout(()=>toast.remove(), 2500);
+  } catch(err) {
+    toast.style.background = "#991b1b";
+    toast.innerHTML = "✗&nbsp;Error: " + (err?.message || "No fue posible generar el PDF");
+    setTimeout(()=>toast.remove(), 4000);
+  }
 }
 
 

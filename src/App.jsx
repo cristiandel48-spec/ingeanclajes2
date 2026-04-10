@@ -1682,26 +1682,9 @@ function buildCotizacionPrintHtml(c){
 }
 
 async function openCotizacionPrint(c){
-  const toast = document.createElement("div");
-  toast.style.cssText = [
-    "position:fixed","top:20px","right:20px","z-index:99999",
-    "background:#1a2840","color:#fff","padding:14px 22px",
-    "border-radius:10px","font-size:14px","font-family:sans-serif",
-    "box-shadow:0 4px 24px rgba(0,0,0,.25)",
-    "display:flex","align-items:center","gap:10px","min-width:220px",
-  ].join(";");
-  toast.innerHTML = "<span>⏳</span>&nbsp;Generando PDF...";
-  document.body.appendChild(toast);
+  const toast = showPrintToast("⏳&nbsp;Generando PDF...");
   try {
-    const file = await generateCotizacionPdfFile(c);
-    const url = URL.createObjectURL(file);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = file.name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url), 8000);
+    await generateCotizacionPdfFile(c);
     toast.style.background = "#166534";
     toast.innerHTML = "✓&nbsp;PDF descargado";
     setTimeout(()=>toast.remove(), 2500);
@@ -1836,80 +1819,53 @@ async function waitForPrintableAssets(root){
   await new Promise((resolve)=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
 }
 
+// ─── Monta un <div> oculto fuera de pantalla listo para html2canvas ───
+function _buildPrintContainer(htmlBody, styleTag, width){
+  const el = document.createElement("div");
+  // position:absolute fuera de pantalla — html2canvas lo ve pero no bloquea scroll
+  el.style.cssText = `position:absolute;left:-${width + 100}px;top:0;width:${width}px;background:#fff;overflow:visible`;
+  el.innerHTML = styleTag + htmlBody;
+  document.body.appendChild(el);
+  return el;
+}
+
 async function generateCotizacionPdfFile(c){
   const h2p = await loadHtml2Pdf();
-  const parser = new DOMParser();
-  const parsed = parser.parseFromString(buildCotizacionPrintHtml(c), "text/html");
+  const parsed = new DOMParser().parseFromString(buildCotizacionPrintHtml(c), "text/html");
   const styleTag = parsed.head.querySelector("style")?.outerHTML || "";
-
-  // Contenedor fuera de pantalla pero VISIBLE (sin z-index negativo)
-  // html2canvas no captura elementos con z-index:-1 en algunos navegadores
-  const container = document.createElement("div");
-  container.style.cssText = [
-    "position:fixed",
-    "left:-9999px",
-    "top:0",
-    "width:816px",
-    "background:#fff",
-    "z-index:0",
-    "overflow:visible",
-  ].join(";");
-  container.innerHTML = styleTag + parsed.body.innerHTML;
-  document.body.appendChild(container);
-
+  const container = _buildPrintContainer(parsed.body.innerHTML, styleTag, 816);
   try{
     await waitForPrintableAssets(container);
-    const opt = {
+    const filename = sanitizeFileName(c?.numero || c?.id || "cotizacion") + ".pdf";
+    await h2p().set({
       margin: 0,
-      filename: `${sanitizeFileName(c?.numero || c?.id || "cotizacion")}.pdf`,
-      image: { type: "jpeg", quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: "#ffffff", logging: false },
+      filename,
+      image: { type: "jpeg", quality: 0.92 },
+      html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: "#ffffff", logging: false },
       jsPDF: { unit: "mm", format: "letter", orientation: "portrait" },
       pagebreak: { mode: ["css", "legacy"] },
-    };
-    const blob = await h2p().set(opt).from(container).outputPdf("blob");
-    return new File([blob], opt.filename, { type: "application/pdf" });
+    }).from(container).save();
   } finally {
     container.remove();
   }
 }
 
-// ─── Helper: convierte cualquier HTML string a PDF descargable ───
+// ─── Helper: convierte cualquier HTML string a PDF y lo descarga ───
 async function printHtmlAsPdf(htmlString, filename){
   const h2p = await loadHtml2Pdf();
   const parsed = new DOMParser().parseFromString(htmlString, "text/html");
   const styleTag = parsed.head.querySelector("style")?.outerHTML || "";
-
-  const container = document.createElement("div");
-  container.style.cssText = [
-    "position:fixed",
-    "left:-9999px",
-    "top:0",
-    "width:794px",   // ~Letter width en px a 96dpi
-    "background:#fff",
-    "z-index:0",
-    "overflow:visible",
-  ].join(";");
-  // Copia estilos del body original al contenedor
-  const bodyStyle = parsed.body?.getAttribute("style") || "";
-  if(bodyStyle) container.setAttribute("style", container.getAttribute("style") + ";" + bodyStyle);
-
-  container.innerHTML = styleTag + parsed.body.innerHTML;
-  document.body.appendChild(container);
-
+  const container = _buildPrintContainer(parsed.body.innerHTML, styleTag, 794);
   try{
     await waitForPrintableAssets(container);
-    const opt = {
+    await h2p().set({
       margin: [8, 8, 8, 8],
       filename: sanitizeFileName(filename || "documento") + ".pdf",
-      image: { type: "jpeg", quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true, allowTaint: false, backgroundColor: "#ffffff", logging: false },
+      image: { type: "jpeg", quality: 0.92 },
+      html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: "#ffffff", logging: false },
       jsPDF: { unit: "mm", format: "letter", orientation: "portrait" },
       pagebreak: { mode: ["css", "legacy"] },
-    };
-    const blob = await h2p().set(opt).from(container).outputPdf("blob");
-    const file = new File([blob], opt.filename, { type: "application/pdf" });
-    downloadGeneratedFile(file);
+    }).from(container).save();
   } finally {
     container.remove();
   }

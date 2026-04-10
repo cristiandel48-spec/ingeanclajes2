@@ -89,6 +89,7 @@ function Cotizacion({ctx}){
   const [val,setVal]=useState(30);
   const [cl,setCl]=useState({nombre:"",obra:"",telefono:"",ciudad:"",coords:""});
   const [textoInicial,setTextoInicial]=useState("");
+  const [observacionesCot,setObservacionesCot]=useState("");
   const [propuestas,setPropuestas]=useState([buildQuoteProposal({id:createQuoteProposalId("new"),nombre:getQuoteProposalLabel(0),formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,util:10,items:[]},0)]);
   const [propuestaActivaId,setPropuestaActivaId]=useState(null);
   const [nombrePropuesta,setNombrePropuesta]=useState(getQuoteProposalLabel(0));
@@ -145,6 +146,7 @@ function Cotizacion({ctx}){
     setVal(source.val || 30);
     setCl({nombre:source.cliente || "",obra:source.obra || "",telefono:source.telefono || "",ciudad:source.ciudad || "",coords:source.coords || ""});
     setTextoInicial(source.textoInicial || "");
+    setObservacionesCot(source.observaciones || "");
     setGeoMediciones(source.geoMediciones || []);
     setGeoMapView(source.geoMapView || null);
     setPropuestas(all);
@@ -183,7 +185,7 @@ function Cotizacion({ctx}){
     const activa = buildQuoteProposal({...current,items:finalItems,total:totalActiva}, next.findIndex((propuesta)=>propuesta.id===current.id));
     const propuestasFinales = next.map((propuesta)=>propuesta.id===activa.id?activa:buildQuoteProposal(propuesta));
     const prev = editCot ? cotizaciones.find((cotizacion)=>cotizacion.id===editCot) : null;
-    const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:cl.nombre,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,textoInicial:textoInicial.trim(),items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:activa.mapImg || autoMapImg || null,geoMediciones:activa.geoMediciones || geoMediciones,geoMapView:activa.geoMapView || geoMapView,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
+    const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:cl.nombre,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,textoInicial:textoInicial.trim(),observaciones:observacionesCot.trim(),items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:activa.mapImg || autoMapImg || null,geoMediciones:activa.geoMediciones || geoMediciones,geoMapView:activa.geoMapView || geoMapView,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
     setCotizaciones((prevList)=>editCot ? prevList.map((cotizacion)=>cotizacion.id===editCot?{...cotizacion,...data}:cotizacion) : [...prevList,data]);
     setPropuestas(propuestasFinales);
     setTab("lista");
@@ -540,6 +542,16 @@ function Cotizacion({ctx}){
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,paddingTop:4,borderTop:"1px solid #f1f5f9"}}>
           <div><LBL>Forma de pago</LBL><input value={formaPago} onChange={e=>setFormaPago(e.target.value)} style={SI}/></div>
           <div><LBL>Tiempo de ejecución</LBL><input value={tiempoEjec} onChange={e=>setTiempoEjec(e.target.value)} style={SI}/></div>
+        </div>
+        <div style={{marginTop:12}}>
+          <LBL>Observaciones / condiciones adicionales</LBL>
+          <textarea
+            value={observacionesCot}
+            onChange={e=>setObservacionesCot(e.target.value)}
+            placeholder="Ej: El pago se realiza contra entrega de acta parcial. Incluye transporte de materiales..."
+            style={{...SI,minHeight:80,resize:"vertical",lineHeight:1.6}}
+          />
+          <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Este texto aparece en las condiciones comerciales del PDF</div>
         </div>
       </div>
     </div>
@@ -1500,13 +1512,6 @@ function buildCotizacionPrintHtml(c){
           <tr class="total-row"><td colspan="4">TOTAL</td><td class="num">${fmt(propuesta.tot)}</td></tr>
         </tbody>
       </table>
-      <div class="section-title">Condiciones comerciales</div>
-      <table class="table"><tbody>
-        <tr><td style="width:34%"><strong>FORMA DE PAGO</strong></td><td>${escapeHtml(propuesta.quote.formaPago || DEFAULT_COT_FORMA_PAGO)}</td></tr>
-        <tr><td><strong>TIEMPO DE EJECUCION</strong></td><td>${escapeHtml(propuesta.quote.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC)}</td></tr>
-        <tr><td><strong>VALIDEZ DE LA OFERTA</strong></td><td>${escapeHtml(`${c.val||30} DIAS A PARTIR DE LA FECHA DE ENTREGA DE ESTA COTIZACION`)}</td></tr>
-        <tr><td><strong>CERTIFICACION</strong></td><td>SE ENTREGA CON EL PAGO TOTAL</td></tr>
-      </tbody></table>
       <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
     </section>`;
   }).join("");
@@ -1599,6 +1604,23 @@ function buildCotizacionPrintHtml(c){
     </section>
 
     ${proposalSections}
+
+    <section class="page">
+      <div class="header">
+        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+      </div>
+      <div class="section-title">Condiciones comerciales</div>
+      <table class="table"><tbody>
+        <tr><td style="width:34%"><strong>FORMA DE PAGO</strong></td><td>${escapeHtml(c.formaPago || DEFAULT_COT_FORMA_PAGO)}</td></tr>
+        <tr><td><strong>TIEMPO DE EJECUCION</strong></td><td>${escapeHtml(c.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC)}</td></tr>
+        <tr><td><strong>VALIDEZ DE LA OFERTA</strong></td><td>${escapeHtml(`${c.val||30} DIAS A PARTIR DE LA FECHA DE ENTREGA DE ESTA COTIZACION`)}</td></tr>
+        <tr><td><strong>CERTIFICACION</strong></td><td>SE ENTREGA CON EL PAGO TOTAL</td></tr>
+      </tbody></table>
+      ${String(c.observaciones||"").trim() ? `<div class="measurement-box" style="margin-top:12px;"><p><strong>Observaciones</strong></p><div style="white-space:pre-wrap;">${escapeHtml(c.observaciones)}</div></div>` : ""}
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
+    </section>
 
     <section class="page">
       <div class="header">
@@ -1759,7 +1781,7 @@ function openPrintTab(fullHtml, title){
     <div id="print-toolbar" style="position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a2840;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:10px 20px;font-family:sans-serif;box-shadow:0 2px 12px rgba(0,0,0,.3);">
       <span style="font-size:14px;font-weight:600;">${title || "Documento"}</span>
       <div style="display:flex;gap:10px;">
-        <button onclick="document.getElementById('print-toolbar').style.display='none';window.print();document.getElementById('print-toolbar').style.display='flex';" style="background:#f47c20;color:#fff;border:none;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">🖨 Imprimir / Guardar PDF</button>
+        <button onclick="var tb=document.getElementById('print-toolbar');var sp=tb.nextElementSibling;tb.style.display='none';if(sp)sp.style.display='none';setTimeout(function(){window.print();setTimeout(function(){tb.style.display='flex';if(sp)sp.style.display='block';},300);},100);" style="background:#f47c20;color:#fff;border:none;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">🖨 Imprimir / Guardar PDF</button>
         <button onclick="window.close();" style="background:#475569;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;">✕ Cerrar</button>
       </div>
     </div>

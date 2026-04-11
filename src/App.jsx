@@ -110,6 +110,17 @@ function Cotizacion({ctx}){
   const [fotosActivaPropuesta,setFotosActivaPropuesta]=useState([]);
   const fotosRef=useRef();
 
+  const getNextCotizacionNumero = (list = []) => {
+    const maxAnc = (Array.isArray(list) ? list : []).reduce((max, cotizacion) => {
+      const numero = String(cotizacion?.numero || '').trim().toUpperCase();
+      const match = numero.match(/^ANC\s*-?\s*(\d+)$/);
+      if (!match) return max;
+      return Math.max(max, Number(match[1] || 0));
+    }, 0);
+
+    return `ANC${String(maxAnc + 1).padStart(3, "0")}`;
+  };
+
   const autoMapImg = buildGoogleStaticMapUrl(geoMediciones, cl.coords || `${cl.obra||""} ${cl.ciudad||""}`.trim(), geoMapView);
   const sub = items.reduce((sum,item)=>sum + (Number(item.cant)||0)*(Number(item.vu)||0),0);
   const ut = sub * (Number(util)||0) / 100;
@@ -189,7 +200,7 @@ function Cotizacion({ctx}){
   const nuevaCotizacion = ()=>{
     setEditCot(null);
     setPreviewCot(null);
-    hydrate({numero:`P-${34155 + cotizaciones.length}`,fecha:today(),val:30,cliente:"",obra:"",telefono:"",ciudad:"",coords:"",geoMediciones:[],geoMapView:null,fotosCotizacion:[],propuestas:[buildQuoteProposal({id:createQuoteProposalId("new"),nombre:getQuoteProposalLabel(0),formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,util:10,items:[],geoMediciones:[],geoMapView:null,mapImg:null,medicionAutomatica:false,incluyeTexto:""},0)]});
+    hydrate({numero:getNextCotizacionNumero(cotizaciones),fecha:today(),val:30,cliente:"",obra:"",telefono:"",ciudad:"",coords:"",geoMediciones:[],geoMapView:null,fotosCotizacion:[],propuestas:[buildQuoteProposal({id:createQuoteProposalId("new"),nombre:getQuoteProposalLabel(0),formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,util:10,items:[],geoMediciones:[],geoMapView:null,mapImg:null,medicionAutomatica:false,incluyeTexto:""},0)]});
     setTab("form");
   };
 

@@ -1636,8 +1636,23 @@ function buildCotizacionPrintHtml(c){
         <div class="map-label" style="left:${label.left}; top:${label.top}; color:${label.color}; transform:translate(-50%, -50%) rotate(${label.angle}deg);">
           <div>${escapeHtml(label.title)} - ${escapeHtml(label.value)}</div>
         </div>`).join('');
-      propMapBlock = `<div class="section-title">Medicion satelital</div>
-        <div class="map-wrap" style="aspect-ratio:${mW}/${mH};"><img src="${propuesta.mapImg}" alt="Mapa de medicion" class="map"/>${propLabels}</div>`;
+      propMapBlock = `</section>
+    <section class="page">
+      <div class="header">
+        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+      </div>
+      <div class="section-title">Medicion satelital</div>
+      <div class="map-wrap"><img src="${propuesta.mapImg}" alt="Mapa de medicion" style="width:100%;height:auto;display:block;aspect-ratio:${mW}/${mH};object-fit:cover;"/>${propLabels}</div>
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel 3152889541 &middot; Nit. 900193965-4 &middot; comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
+    </section>
+    <section class="page">
+      <div class="header">
+        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+      </div>`;
     }
     const requerimientoBlock = propuesta.esObraBlanca && propuesta.requerimientoCliente ? `
       <div class="measurement-box">
@@ -1706,7 +1721,7 @@ function buildCotizacionPrintHtml(c){
       * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       html, body { background:#fff; margin:0; padding:0; }
       body { font-family: Aptos, Arial, Helvetica, sans-serif; color: #111; font-size: 11pt; line-height: 1.5; text-align: justify; }
-      .page { width:216mm; height:279mm; display:flex; flex-direction:column; break-after: page; page-break-after: always; padding: 10mm 12mm 0; overflow:visible; }
+      .page { width:216mm; height:279mm; display:flex; flex-direction:column; break-after: page; page-break-after: always; padding: 10mm 12mm 0; overflow:hidden; }
       .page:last-child { page-break-after: auto; }
 
       /* HEADER */
@@ -1754,10 +1769,9 @@ function buildCotizacionPrintHtml(c){
       /* INFO BOX — texto plano sin recuadro */
       .info-box { background:none; border:none; padding:0; margin-bottom:10px; font-size:10.5pt; }
 
-      /* MAPA — imagen fluida, sin posicionamiento absoluto */
-      .map-wrap { position:relative; border:1px solid #bbb; padding:0; margin:4px 0 10px; width:100%; overflow:hidden; background:#f8fafc; }
-      .map-wrap img { width:100%; height:auto; display:block; }
-      .map { width:100%; height:auto; display:block; }
+      /* MAPA */
+      .map-wrap { position:relative; border:1px solid #bbb; margin:4px 0 10px; width:100%; overflow:hidden; background:#f8fafc; }
+      .map-wrap img { width:100%; display:block; }
       .map-label { position:absolute; pointer-events:none; text-align:center; font-weight:800; line-height:1; font-size:7.5px; white-space:nowrap; background:rgba(255,255,255,0.85); padding:1px 3px; border-radius:999px; text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff; transform-origin:center; }
 
       /* FOTOS — sin altura fija para que no se corten */

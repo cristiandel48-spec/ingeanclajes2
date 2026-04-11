@@ -1742,7 +1742,7 @@ function buildCotizacionPrintHtml(c){
       @page { size: Letter; margin: 0; }
       * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       html, body { background:#fff; margin:0; padding:0; }
-      body { font-family: Aptos, Arial, Helvetica, sans-serif; color: #111; font-size: 11pt; line-height: 1.5; text-align: justify; }
+      body { font-family: Aptos, Arial, Helvetica, sans-serif; color: #111; font-size: 11pt; line-height: 1.4; text-align: justify; }
       .page { width:216mm; height:279mm; display:flex; flex-direction:column; break-after: page; page-break-after: always; padding: 10mm 12mm 8mm; overflow:hidden; }
       .page:last-child { page-break-after: auto; }
 
@@ -1760,10 +1760,10 @@ function buildCotizacionPrintHtml(c){
       .client-block p { margin-bottom:4px; font-size:10.5pt; }
 
       /* TITULOS DE SECCION */
-      .section-title { text-align:center; font-weight:900; color:#1a1a2e; text-transform:uppercase; margin:12px 0 8px; border-bottom:2px solid #cc0000; padding-bottom:4px; font-size:11.5pt; letter-spacing:.3px; }
+      .section-title { text-align:center; font-weight:900; color:#1a1a2e; text-transform:uppercase; margin:8px 0 6px; border-bottom:2px solid #cc0000; padding-bottom:3px; font-size:11pt; letter-spacing:.3px; }
 
       /* BADGE PROPUESTA */
-      .badge-proposal { display:inline-block; background:#1a1a2e; color:#fff; font-size:8.5pt; padding:3px 12px; border-radius:20px; margin-bottom:8px; letter-spacing:.5px; text-align:left; }
+      .badge-proposal { display:inline-block; background:#1a1a2e; color:#fff; font-size:8.5pt; padding:3px 12px; border-radius:20px; margin-bottom:6px; letter-spacing:.5px; text-align:left; }
 
       /* TABLA DE ITEMS */
       .table { width:100%; border-collapse:collapse; margin:6px 0 8px; }
@@ -1798,10 +1798,10 @@ function buildCotizacionPrintHtml(c){
 
       /* FOTOS */
       .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
-      .photo-single { display:block; margin-bottom:10px; max-width:70%; }
-      .photo-card { border:0.5px solid #d5d9e2; background:#fff; padding:6px; break-inside:avoid; page-break-inside:avoid; border-radius:5px; }
-      .photo-wrap { background:#f8fafc; overflow:hidden; border-radius:3px; }
-      .photo { width:100%; height:auto; display:block; }
+      .photo-single { display:block; margin-bottom:10px; max-width:65%; }
+      .photo-card { border:0.5px solid #d5d9e2; background:#fff; padding:6px; break-inside:avoid; page-break-inside:avoid; border-radius:5px; overflow:hidden; }
+      .photo-wrap { background:#f8fafc; overflow:hidden; border-radius:3px; max-height:105mm; }
+      .photo { width:100%; height:auto; max-height:105mm; display:block; object-fit:cover; }
 
       /* LISTA INCLUYE */
       ul { margin:6px 0 12px 22px; padding:0; }
@@ -2031,29 +2031,68 @@ function buildCotizacionEmailBody(c, clienteInfo={}){
 function openPrintTab(fullHtml, title){
   const w = window.open("", "_blank");
   if(!w){ alert("El navegador bloqueó la ventana emergente. Permite las ventanas emergentes para este sitio."); return; }
-  // Inyectar toolbar NO-PRINT al inicio del body
+
+  const aiScript = `<script>
+  async function optimizarEspacios(){
+    const btn = document.getElementById('btn-ai');
+    btn.disabled = true; btn.textContent = '⏳ Ajustando...';
+    const pages = document.querySelectorAll('.page');
+    const pageDataList = [];
+    pages.forEach((page, idx) => {
+      const pageH = page.getBoundingClientRect().height;
+      const footer = page.querySelector('.footer');
+      const header = page.querySelector('.header');
+      const allEls = Array.from(page.children);
+      const usedH = allEls.reduce((s, el) => s + el.getBoundingClientRect().height, 0);
+      const spare = Math.round(pageH - usedH);
+      pageDataList.push({ idx, spare, pageH: Math.round(pageH) });
+    });
+    try {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514', max_tokens: 800,
+          messages: [{ role: 'user', content: 'Estas son paginas de un PDF con espacio sobrante en px: ' + JSON.stringify(pageDataList) + '. Para cada una, calcula extra_padding_top en px (max 40) para distribuir el espacio de forma elegante. Si spare < 15 pon 0. Responde SOLO JSON array [{idx, extra_padding_top}] sin texto ni backticks.' }]
+        })
+      });
+      const data = await resp.json();
+      const raw = (data.content?.[0]?.text || '[]').replace(/\`\`\`json|\`\`\`/g,'').trim();
+      const adjustments = JSON.parse(raw);
+      adjustments.forEach(({idx, extra_padding_top}) => {
+        if(!pages[idx] || !extra_padding_top) return;
+        const curr = parseFloat(getComputedStyle(pages[idx]).paddingTop) || 0;
+        pages[idx].style.paddingTop = (curr + Math.min(extra_padding_top, 40)) + 'px';
+      });
+      btn.textContent = '✅ Listo';
+      setTimeout(() => { btn.textContent = '✨ Ajustar espacios (IA)'; btn.disabled = false; }, 2500);
+    } catch(e) {
+      btn.textContent = '⚠️ Error'; btn.disabled = false;
+    }
+  }
+  <\/script>`;
+
   const toolbar = `
     <div id="print-toolbar" style="position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a2840;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:10px 20px;font-family:sans-serif;box-shadow:0 2px 12px rgba(0,0,0,.3);">
       <span style="font-size:14px;font-weight:600;">${title || "Documento"}</span>
       <div style="display:flex;gap:10px;">
+        <button id="btn-ai" onclick="optimizarEspacios()" style="background:#7c3aed;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">✨ Ajustar espacios (IA)</button>
         <button onclick="var tb=document.getElementById('print-toolbar');var sp=tb.nextElementSibling;tb.style.display='none';if(sp)sp.style.display='none';setTimeout(function(){window.print();setTimeout(function(){tb.style.display='flex';if(sp)sp.style.display='block';},300);},100);" style="background:#f47c20;color:#fff;border:none;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">🖨 Imprimir / Guardar PDF</button>
         <button onclick="window.close();" style="background:#475569;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;">✕ Cerrar</button>
       </div>
     </div>
     <div style="height:56px;"></div>`;
-  // Si es HTML completo (tiene <html>), insertar toolbar después de <body...>
+
   let output = fullHtml;
   const bodyMatch = fullHtml.match(/<body[^>]*>/i);
   if(bodyMatch){
     const idx = fullHtml.indexOf(bodyMatch[0]) + bodyMatch[0].length;
-    // Agregar regla @media print para ocultar toolbar
     const printHide = `<style>@media print{#print-toolbar,#print-toolbar+div{display:none!important;}body{padding-top:0!important;}}</style>`;
-    output = fullHtml.slice(0, idx) + printHide + toolbar + fullHtml.slice(idx);
+    output = fullHtml.slice(0, idx) + printHide + aiScript + toolbar + fullHtml.slice(idx);
   } else {
-    // HTML parcial, envolver
     output = `<!doctype html><html><head><meta charset="utf-8"><title>${title||"Documento"}</title>
       <style>@media print{#print-toolbar,#print-toolbar+div{display:none!important;}}</style>
-    </head><body>${toolbar}${fullHtml}</body></html>`;
+    </head><body>${aiScript}${toolbar}${fullHtml}</body></html>`;
   }
   w.document.write(output);
   w.document.close();

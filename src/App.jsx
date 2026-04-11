@@ -1624,346 +1624,706 @@ function getQuotePrintableProposals(baseQuote = {}){
 
 function buildCotizacionPrintHtml(c){
   const propuestas = getQuotePrintableProposals(c);
-  const textoInicial = String(c.textoInicial || "").trim();
-  const mapQuery = c.coords || `${c.obra||""} ${c.ciudad||""}`.trim();
+  const textoInicial = String(c?.textoInicial || "").trim();
+  const mapCenter = c?.geoMapView?.center || c?.geoMapView || { lat: 0, lng: 0 };
+  const mapZoom = Number(c?.geoMapView?.zoom || 18);
   const showVerticalAppendix = propuestas.some((propuesta)=>hasVerticalLifeLineService(propuesta.quote));
-  const proposalSections = propuestas.map((propuesta)=>{
-    // Mapa de esta propuesta (solo si tiene mediciones)
-    let propMapBlock = "";
-    if(propuesta.mapImg && propuesta.measurements.length > 0){
-      const { width: mW, height: mH } = getStaticMapDimensions(propuesta.quote.geoMapView || c.geoMapView);
-      const propLabels = getStaticMapLabelData(propuesta.measurements, mapQuery, propuesta.quote.geoMapView || c.geoMapView).map(label=>`
-        <div class="map-label" style="left:${label.left}; top:${label.top}; color:${label.color}; transform:translate(-50%, -50%) rotate(${label.angle}deg);">
-          <div>${escapeHtml(label.title)} - ${escapeHtml(label.value)}</div>
-        </div>`).join('');
-      propMapBlock = `</section>
-    <section class="page">
-      <div class="header">
-        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
-        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
-        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
-      </div>
-      <div class="section-title">Medicion satelital</div>
-      <div class="map-wrap"><img src="${propuesta.mapImg}" alt="Mapa de medicion" style="width:100%;height:auto;display:block;aspect-ratio:${mW}/${mH};object-fit:cover;"/>${propLabels}</div>
-      <div class="footer">Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
-    </section>
-    <section class="page">
-      <div class="header">
-        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
-        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
-        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
-      </div>`;
-    }
-    const requerimientoBlock = propuesta.esObraBlanca && propuesta.requerimientoCliente ? `
-      <div class="measurement-box">
-        <p><strong>Necesidad del cliente</strong></p>
-        <div style="white-space:pre-wrap;">${escapeHtml(propuesta.requerimientoCliente)}</div>
-      </div>` : "";
-    const alcanceBlock = propuesta.alcancePropuesta ? `
-      <div class="measurement-box">
-        <p><strong>Alcance de esta propuesta</strong></p>
-        <div style="white-space:pre-wrap;">${escapeHtml(propuesta.alcancePropuesta)}</div>
-      </div>` : "";
-    const fotosBlock = propuesta.fotos.length ? `
-      <div class="${propuesta.fotos.length === 1 ? 'photo-single' : 'photo-grid'}">
-        ${propuesta.fotos.map((foto,idx)=>`
-          <div class="photo-card">
-            <div class="photo-wrap"><img src="${foto.src}" alt="${escapeHtml(foto.label || `Foto ${idx+1}`)}" class="photo"/></div>
-          </div>
-        `).join("")}
-      </div>` : "";
-    const itemRows = propuesta.items.map((it,idx)=>{
-      const desc = escapeHtml(it.desc || `ITEM ${idx+1}`);
-      const qty = Number(it.cant||0).toFixed(2).replace(/\.00$/,'');
-      const unit = escapeHtml(it.unit || "UND");
-      const value = fmt(Number(it.vu)||0);
-      const subtotal = fmt((Number(it.cant)||0)*(Number(it.vu)||0));
-      return `<tr><td>${desc}</td><td class="num">${qty}</td><td class="center">${unit}</td><td class="num">${value}</td><td class="num">${subtotal}</td></tr>`;
-    }).join("");
 
-    const tableHtml = `
-      <table class="table no-break">
-        <thead><tr><th style="text-align:left;">Descripcion</th><th class="num">Cantidad</th><th class="center">Unidad</th><th class="num">Valor unitario</th><th class="num">Subtotal</th></tr></thead>
-        <tbody>
-          ${itemRows}
-          <tr class="sub-row"><td colspan="4"><strong>SUBTOTAL</strong></td><td class="num">${fmt(propuesta.sub)}</td></tr>
-          <tr><td colspan="4">ADMINISTRACION</td><td class="num" style="color:#94a3b8;">$ &mdash;</td></tr>
-          <tr><td colspan="4">IMPREVISTOS</td><td class="num" style="color:#94a3b8;">$ &mdash;</td></tr>
-          <tr class="util-row"><td colspan="4">UTILIDADES (${Number(propuesta.quote.util||10).toFixed(0)}% del valor de la obra)</td><td class="num">${fmt(propuesta.ut)}</td></tr>
-          <tr class="util-row"><td colspan="4">IVA (19% sobre utilidades)</td><td class="num">${fmt(propuesta.iva)}</td></tr>
-          <tr class="total-row"><td colspan="4"><strong>TOTAL</strong></td><td class="num"><strong>${fmt(propuesta.tot)}</strong></td></tr>
-        </tbody>
-      </table>`;
+  const escapeHtml = (value="") =>
+    String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
 
-    // Si hay mapa, el propMapBlock ya abre una nueva página — la tabla va dentro de esa página
-    // Si no hay mapa, la tabla va en la misma página que las fotos/texto
-    if(propMapBlock){
-      return `
-    <section class="page">
-      <div class="header">
-        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
-        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
-        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+  const money = (n) => fmt(Number(n || 0));
+  const numberFmt = (n) => Number(n || 0).toLocaleString("es-CO");
+
+  const footerHtml = `
+    <div class="footer">
+      Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>
+      comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com
+    </div>
+  `;
+
+  const headerHtml = `
+    <div class="header">
+      <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+      <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
+      <div class="header-right">
+        Calle 38 sur # 36 - 48, Envigado<br/>
+        PBX 448 26 86 &middot; Cel 3152889541<br/>
+        Nit. 900193965-4<br/>
+        www.ingeanclajes.com
       </div>
-      <div class="page-body">
-      <div>
-      <div class="section-title">${escapeHtml(propuesta.nombre)}</div>
-      ${requerimientoBlock}
-      ${alcanceBlock}
-      ${fotosBlock}
-      </div>
-      </div>
-      <div class="footer">Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
-    </section>
-    ${propMapBlock}
-      ${tableHtml}
-      <div class="footer">Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
-    </section>`;
-    }
+    </div>
+  `;
+
+  const renderPhotoGrid = (fotos = [], forceSingle = false, proposalIndex = 0) => {
+    if(!Array.isArray(fotos) || !fotos.length) return "";
+    const images = forceSingle ? fotos.slice(0, 1) : fotos.slice(0, 2);
 
     return `
-    <section class="page">
-      <div class="header">
-        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
-        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
-        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+      <div class="photo-grid ${proposalIndex === 2 ? "proposal-3-grid" : ""} ${images.length === 1 ? "single" : ""}">
+        ${images.map((src, idx)=>`
+          <div class="photo-card">
+            <img
+              src="${src}"
+              alt="Foto ${idx+1}"
+              class="photo ${proposalIndex === 2 ? "proposal-3-photo" : ""}"
+            />
+            <div class="photo-caption">Foto ${idx+1}</div>
+          </div>
+        `).join("")}
       </div>
-      <div class="page-body">
-      <div>
-      <div class="section-title">${escapeHtml(propuesta.nombre)}</div>
-      ${requerimientoBlock}
-      ${alcanceBlock}
-      ${fotosBlock}
-      ${tableHtml}
-      </div>
-      </div>
-      <div class="footer">Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
-    </section>`;
-  }).join("");
+    `;
+  };
 
-  return `<!doctype html>
-  <html>
+  const renderMapBlock = (propuesta, proposalIndex = 0) => {
+    if(!propuesta?.mapImg || !Array.isArray(propuesta.measurements) || !propuesta.measurements.length){
+      return "";
+    }
+
+    const mapView = propuesta?.quote?.geoMapView || c?.geoMapView || null;
+    const { width: mW, height: mH } = getStaticMapDimensions(mapView, { width: 1200, height: 700 });
+
+    const labels = buildStaticMapLabelData(
+      propuesta.measurements,
+      mapView?.center || mapCenter,
+      Number(mapView?.zoom || mapZoom),
+      mW,
+      mH
+    ).map((label)=>`
+      <div
+        class="map-label"
+        style="
+          left:${Number(label.x || 0)}px;
+          top:${Number(label.y || 0)}px;
+          color:${escapeHtml(label.color || "#2563EB")};
+          transform:translate(-50%, -50%) rotate(${Number(label.angle || 0)}deg);
+        "
+      >
+        ${escapeHtml(label.title)} - ${escapeHtml(label.value)}
+      </div>
+    `).join("");
+
+    return `
+      <div class="section-title">Medicion satelital</div>
+      <div class="map-wrap ${proposalIndex === 2 ? "proposal-3-map" : ""}">
+        <img src="${propuesta.mapImg}" alt="Mapa de medicion" class="map" />
+        ${labels}
+      </div>
+    `;
+  };
+
+  const renderItemsTable = (propuesta) => {
+    const rows = (propuesta.items || []).map((item) => `
+      <tr>
+        <td>${escapeHtml(item.descripcion || item.nombre || "")}</td>
+        <td class="t-center">${numberFmt(item.cantidad || 0)}</td>
+        <td class="t-center">${escapeHtml(item.unidad || "Und")}</td>
+        <td class="t-right">${money(item.valorUnitario || item.valor || 0)}</td>
+        <td class="t-right">${money((item.subtotal ?? ((Number(item.cantidad || 0) * Number(item.valorUnitario || item.valor || 0)))))}</td>
+      </tr>
+    `).join("");
+
+    return `
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th style="width:44%">Descripcion</th>
+              <th style="width:12%">Cantidad</th>
+              <th style="width:12%">Unidad</th>
+              <th style="width:16%">Valor unitario</th>
+              <th style="width:16%">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+            <tr>
+              <td colspan="4" class="label-total">SUBTOTAL</td>
+              <td class="t-right strong">${money(propuesta.sub || 0)}</td>
+            </tr>
+            <tr>
+              <td colspan="4">ADMINISTRACION</td>
+              <td class="t-right">$ —</td>
+            </tr>
+            <tr>
+              <td colspan="4">IMPREVISTOS</td>
+              <td class="t-right">$ —</td>
+            </tr>
+            <tr class="soft-row">
+              <td colspan="4">UTILIDADES (${numberFmt(propuesta.util || 0)}% del valor de la obra)</td>
+              <td class="t-right">${money(propuesta.ut || 0)}</td>
+            </tr>
+            <tr class="soft-row">
+              <td colspan="4">IVA (19% sobre utilidades)</td>
+              <td class="t-right">${money(propuesta.iva || 0)}</td>
+            </tr>
+            <tr class="grand-total">
+              <td colspan="4">TOTAL</td>
+              <td class="t-right">${money(propuesta.tot || 0)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+  };
+
+  const renderProposalIntroPage = (propuesta, idx) => {
+    const hasPhotos = Array.isArray(propuesta.fotos) && propuesta.fotos.length > 0;
+    const hasMap = propuesta.mapImg && Array.isArray(propuesta.measurements) && propuesta.measurements.length > 0;
+    const hasNarrative = String(propuesta.narrative || "").trim().length > 0;
+    const hasScope = String(propuesta.alcancePropuesta || "").trim().length > 0;
+
+    return `
+      <section class="page">
+        <div class="page-inner">
+          ${headerHtml}
+
+          <div class="page-content">
+            <div class="proposal-title">${escapeHtml(propuesta.nombre || `PROPUESTA ${idx+1}`)}</div>
+
+            ${hasScope ? `
+              <div class="content-block">
+                <div class="subheading">Alcance de esta propuesta</div>
+                <p>${escapeHtml(propuesta.alcancePropuesta)}</p>
+              </div>
+            ` : ""}
+
+            ${hasNarrative ? `
+              <div class="content-block">
+                <p>${escapeHtml(propuesta.narrative)}</p>
+              </div>
+            ` : ""}
+
+            ${hasPhotos ? `
+              <div class="section-title">Registro fotografico de la propuesta</div>
+              ${renderPhotoGrid(propuesta.fotos, false, idx)}
+            ` : ""}
+
+            ${hasMap ? renderMapBlock(propuesta, idx) : ""}
+
+            ${renderItemsTable(propuesta)}
+          </div>
+
+          ${footerHtml}
+        </div>
+      </section>
+    `;
+  };
+
+  const renderConditionsPage = () => `
+    <section class="page">
+      <div class="page-inner">
+        ${headerHtml}
+
+        <div class="page-content">
+          <div class="section-title">Condiciones comerciales</div>
+
+          <div class="kv-grid">
+            <div class="kv-row"><strong>FORMA DE PAGO</strong><span>${escapeHtml(c?.formaPago || "50% ANTICIPO, 50% CONCLUIR LABORES")}</span></div>
+            <div class="kv-row"><strong>TIEMPO DE EJECUCI&Oacute;N</strong><span>${escapeHtml(c?.tiempoEjec || "10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)")}</span></div>
+            <div class="kv-row"><strong>VALIDEZ DE LA OFERTA</strong><span>${escapeHtml(`${c?.val || 30} días a partir de la fecha de entrega de esta cotización`)}</span></div>
+            <div class="kv-row"><strong>CERTIFICACI&Oacute;N</strong><span>Se entrega con el pago total</span></div>
+          </div>
+
+          <div class="subheading with-space">Esta cotizaci&oacute;n incluye</div>
+          <ul class="bullet-list">
+            <li>Tuercas y arandelas en acero galvanizado y/o inoxidable certificado.</li>
+            <li>Elementos de instalaci&oacute;n con certificados de f&aacute;brica adjuntos en la documentaci&oacute;n.</li>
+            <li>Transporte de materiales y personal hasta el sitio de trabajo.</li>
+            <li>Certificados seg&uacute;n Resoluci&oacute;n 4272 &mdash; trabajo seguro en alturas.</li>
+            <li>Recertificaci&oacute;n sin costo al a&ntilde;o siguiente de la instalaci&oacute;n.</li>
+            <li>Coordinador de trabajo seguro en alturas de tiempo completo en obra.</li>
+            <li>Todo el personal se encuentra afiliado a ARL, salud y pensiones. Se llevan todos los EPP necesarios, se realizan todas las reparaciones de da&ntilde;os durante la ejecuci&oacute;n y se entregan las p&oacute;lizas exigidas por el contratante.</li>
+          </ul>
+        </div>
+
+        ${footerHtml}
+      </div>
+    </section>
+  `;
+
+  const renderTechnicalPage = () => `
+    <section class="page">
+      <div class="page-inner">
+        ${headerHtml}
+
+        <div class="page-content">
+          <div class="section-title">Sistema no continuo en acero galvanizado &mdash; ficha t&eacute;cnica</div>
+
+          <table class="table tech-table">
+            <thead>
+              <tr>
+                <th style="width:28%">Elemento</th>
+                <th>Caracter&iacute;stica</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Soporte lateral e intermedio</td>
+                <td>Dise&ntilde;ado para sistemas de l&iacute;neas de vida horizontales de tipo continuo. Soporta el cable para que ninguna secci&oacute;n libre supere la luz m&aacute;xima permitida. Permite el uso de carro deslizador para evitar que el colaborador se desconecte.</td>
+              </tr>
+              <tr>
+                <td>Tensor</td>
+                <td>Sus extremos se aseguran al cable de la l&iacute;nea de vida y a un absorbedor de energ&iacute;a. Tensiona la l&iacute;nea para que, ante una ca&iacute;da, la distancia recorrida por el trabajador sea m&iacute;nima.</td>
+              </tr>
+              <tr>
+                <td>Empalmes y fijaciones</td>
+                <td>Fabricados en aluminio. Resistentes a la corrosi&oacute;n y oxidaci&oacute;n. Se utilizan para empalmar dos cables y fijar barandillas.</td>
+              </tr>
+              <tr>
+                <td>Guardacables</td>
+                <td>Acero con acabado galvanizado resistente a la corrosi&oacute;n. Protegen contra el desgaste y deformaci&oacute;n del cable, alargando su vida &uacute;til.</td>
+              </tr>
+              <tr>
+                <td>Cable de acero</td>
+                <td>Fabricado con alambres de acero estirados en fr&iacute;o, trenzados en espiral formando torones. Transmite movimiento, fuerzas y energ&iacute;a de forma eficaz bajo tensiones est&aacute;ticas y din&aacute;micas.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        ${footerHtml}
+      </div>
+    </section>
+  `;
+
+  const renderSgsstPage = () => `
+    <section class="page">
+      <div class="page-inner">
+        ${headerHtml}
+
+        <div class="page-content">
+          <div class="section-title">Sistema de gesti&oacute;n de seguridad y salud en el trabajo</div>
+          <p>
+            INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicaci&oacute;n de la Resoluci&oacute;n 4272 de 2021, garantizando la implementaci&oacute;n del Sistema de Gesti&oacute;n de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.
+          </p>
+
+          <div class="signature-block">
+            <p>Cordialmente,</p>
+            <div class="signature-space"></div>
+            <div class="signature-line">
+              <strong>ING. JHON JAIME SEP&Uacute;LVEDA LONDO&Ntilde;O</strong><br/>
+              MP. 05256-409949<br/>
+              Gerente General<br/>
+              Tel: 3152889541
+            </div>
+          </div>
+        </div>
+
+        ${footerHtml}
+      </div>
+    </section>
+  `;
+
+  const introPage = `
+    <section class="page">
+      <div class="page-inner">
+        ${headerHtml}
+
+        <div class="page-content intro-page">
+          <div class="meta-top">
+            <div><strong>Envigado,</strong> ${escapeHtml(c?.fecha || "9 de abril de 2026")}</div>
+            <div><strong>COTIZACI&Oacute;N No.</strong> ${escapeHtml(c?.numero || c?.id || "")}</div>
+          </div>
+
+          <div class="intro-kv">
+            <div><strong>SE&Ntilde;OR(A):</strong> ${escapeHtml(c?.cliente || "")}</div>
+            <div><strong>OBRA:</strong> ${escapeHtml(c?.obra || "")}</div>
+            <div><strong>TEL&Eacute;FONO:</strong> ${escapeHtml(c?.telefono || "")}</div>
+            <div><strong>CIUDAD:</strong> ${escapeHtml(c?.ciudad || "")}</div>
+          </div>
+
+          <p>Cordial saludo.</p>
+
+          ${textoInicial ? `
+            <p>${escapeHtml(textoInicial)}</p>
+          ` : `
+            <p>Presentamos la cotizaci&oacute;n para la instalaci&oacute;n de puntos de anclaje o l&iacute;nea de vida sobre la cubierta del proyecto indicado.</p>
+          `}
+
+          <p><strong>Trabajo en altura:</strong> Se considera toda actividad, labor o trabajo que se deba realizar a una altura f&iacute;sica igual o superior a 1,50 metros desde el piso.</p>
+          <p><strong>Puntos de anclaje:</strong> Son componentes en acero anclado con un ep&oacute;xico qu&iacute;mico marca PURE 110 de POWER FASTENERS o equivalente, con perno de 5/8 a una profundidad de 15 cm o m&aacute;s seg&uacute;n el caso a estructuras en concreto, con capacidad de resistir una fuerza de ca&iacute;da de m&aacute;s de 5000 Lbs.</p>
+          <p><strong>L&iacute;nea de vida:</strong> Son componentes de un sistema/equipo de protecci&oacute;n de ca&iacute;das, consistentes en una cuerda de nylon o cable de acero instalada en forma horizontal y vertical, tensionada y sujeta en tres o dos puntos de anclaje para otorgar movilidad al personal que trabaja en &aacute;reas elevadas.</p>
+
+          <ul class="bullet-list">
+            <li>La l&iacute;nea de vida permite la fijaci&oacute;n o enganche en forma directa o indirecta al arn&eacute;s completo para el cuerpo, o a un dispositivo de impacto o amortiguador.</li>
+            <li>Las l&iacute;neas de vida estar&aacute;n constituidas por un solo cable continuo.</li>
+            <li>Los anclajes a los cuales se fijar&aacute;n las l&iacute;neas de vida deben resistir al menos 5.000 libras por cada persona asegurada.</li>
+          </ul>
+        </div>
+
+        ${footerHtml}
+      </div>
+    </section>
+  `;
+
+  const proposalSections = propuestas.map((propuesta, idx) => renderProposalIntroPage(propuesta, idx)).join("");
+
+  return `
+  <!doctype html>
+  <html lang="es">
   <head>
     <meta charset="utf-8" />
-    <title>Cotizacion ${escapeHtml(c.numero || '')}</title>
+    <title>Cotizaci&oacute;n ${escapeHtml(c?.numero || c?.id || "")}</title>
     <style>
-      @page { size: Letter; margin: 0; }
-      * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      html, body { background:#fff; margin:0; padding:0; }
-      body { font-family: Aptos, Arial, Helvetica, sans-serif; color: #111; font-size: 11pt; line-height: 1.4; text-align: justify; }
-      .page { width:216mm; height:279mm; display:flex; flex-direction:column; break-after: page; page-break-after: always; padding: 10mm 12mm 8mm; overflow:hidden; }
-      .page:last-child { page-break-after: auto; }
-      .page-body { flex:1; display:flex; flex-direction:column; justify-content:space-between; }
+      @page {
+        size: letter;
+        margin: 0;
+      }
 
-      /* HEADER */
-      .header { display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #cc0000; padding-bottom:10px; margin-bottom:14px; gap:8px; }
-      .logo { height:58px; width:auto; object-fit:contain; flex-shrink:0; }
-      .header-mid { flex:1; text-align:center; font-weight:900; letter-spacing:2px; font-size:10pt; color:#111; white-space:nowrap; }
-      .header-right { text-align:right; font-size:7.5pt; color:#555; line-height:1.5; min-width:160px; flex-shrink:0; }
+      * {
+        box-sizing: border-box;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
 
-      /* META Y CLIENTE */
-      p { margin: 0 0 8px; }
-      .meta { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:12px; gap:12px; font-size:10.5pt; }
-      .meta strong { font-size:11pt; letter-spacing:.2px; }
-      .client-block { border-left:3px solid #cc0000; background:#f8fafc; padding:9px 14px; margin-bottom:14px; border-radius:0 6px 6px 0; }
-      .client-block p { margin-bottom:4px; font-size:10.5pt; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #d9d9d9;
+        font-family: Arial, Helvetica, sans-serif;
+        color: #111827;
+      }
 
-      /* TITULOS DE SECCION */
-      .section-title { text-align:center; font-weight:900; color:#1a1a2e; text-transform:uppercase; margin:8px 0 6px; border-bottom:2px solid #cc0000; padding-bottom:3px; font-size:11pt; letter-spacing:.3px; }
+      body {
+        padding: 0;
+      }
 
-      /* BADGE PROPUESTA */
-      .badge-proposal { display:inline-block; background:#1a1a2e; color:#fff; font-size:8.5pt; padding:3px 12px; border-radius:20px; margin-bottom:6px; letter-spacing:.5px; text-align:left; }
+      .page {
+        width: 216mm;
+        min-height: 279mm;
+        margin: 0 auto;
+        background: #fff;
+        break-after: page;
+        page-break-after: always;
+        overflow: hidden;
+        padding: 6mm 8mm 14mm 8mm;
+      }
 
-      /* TABLA DE ITEMS */
-      .table { width:100%; border-collapse:collapse; margin:6px 0 8px; }
-      .table th { background:#1a1a2e; color:#fff; padding:5px 8px; font-weight:900; font-size:9.5pt; text-align:center; }
-      .table td { border:0.5px solid #cbd5e1; padding:4px 8px; vertical-align:middle; font-size:9.5pt; text-align:left; }
-      .table tr:nth-child(even) td { background:#f8fafc; }
-      .table .num { text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
-      .table .center { text-align:center; }
-      .sub-row td { background:#f1f5f9 !important; font-weight:900; border-top:1.5px solid #94a3b8; }
-      .util-row td { background:#fef9c3 !important; }
-      .total-row td { background:#fff369 !important; font-weight:900; font-size:10pt; border-top:2px solid #222; }
+      .page:last-child {
+        break-after: auto;
+        page-break-after: auto;
+      }
 
-      /* TABLA CONDICIONES */
-      .cond-table { width:100%; border-collapse:collapse; margin:8px 0 10px; font-size:10.5pt; }
-      .cond-table td { border:0.5px solid #cbd5e1; padding:7px 10px; }
-      .cond-table td:first-child { background:#f1f5f9; font-weight:900; width:34%; color:#1a1a2e; }
+      .page-inner {
+        min-height: calc(279mm - 20mm);
+        display: flex;
+        flex-direction: column;
+        padding: 4mm 6mm 6mm 6mm;
+      }
 
-      /* MEASUREMENT BOX — texto plano sin recuadro */
-      .measurement-box { border:none; background:none; padding:0; margin:0 0 10px; font-size:10.5pt; }
-      .measurement-box p { margin-bottom:4px; }
-      .measurement-table { width:100%; border-collapse:collapse; margin-top:6px; }
-      .measurement-table th, .measurement-table td { border:0.5px solid #cbd5e1; padding:5px 8px; font-size:10.5pt; }
-      .measurement-table th { background:#e2e8f0; text-align:left; font-weight:800; }
+      .page-content {
+        flex: 1 1 auto;
+        min-height: 0;
+      }
 
-      /* INFO BOX — texto plano sin recuadro */
-      .info-box { background:none; border:none; padding:0; margin-bottom:10px; font-size:10.5pt; }
+      .header {
+        display: grid;
+        grid-template-columns: 170px 1fr 220px;
+        align-items: center;
+        column-gap: 12px;
+        border-bottom: 2px solid #c1121f;
+        padding-bottom: 3mm;
+        margin-bottom: 4mm;
+      }
 
-      /* MAPA */
-      .map-wrap { position:relative; border:1px solid #bbb; margin:4px 0 10px; width:100%; overflow:hidden; background:#f8fafc; }
-      .map-wrap img { width:100%; display:block; }
-      .map-label { position:absolute; pointer-events:none; text-align:center; font-weight:800; line-height:1; font-size:7.5px; white-space:nowrap; background:rgba(255,255,255,0.85); padding:1px 3px; border-radius:999px; text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff; transform-origin:center; }
+      .logo {
+        width: 160px;
+        max-height: 38px;
+        object-fit: contain;
+      }
 
-      /* FOTOS */
-      .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
-      .photo-single { display:block; margin-bottom:10px; max-width:65%; }
-      .photo-card { border:0.5px solid #d5d9e2; background:#fff; padding:6px; break-inside:avoid; page-break-inside:avoid; border-radius:5px; overflow:hidden; }
-      .photo-wrap { background:#f8fafc; overflow:hidden; border-radius:3px; max-height:105mm; }
-      .photo { width:100%; height:auto; max-height:105mm; display:block; object-fit:cover; }
+      .header-mid {
+        text-align: center;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 2.2px;
+        color: #111827;
+      }
 
-      /* LISTA INCLUYE */
-      ul { margin:6px 0 12px 22px; padding:0; }
-      li { margin-bottom:4px; font-size:10.5pt; }
+      .header-right {
+        text-align: right;
+        font-size: 10px;
+        line-height: 1.35;
+        color: #4b5563;
+      }
 
-      /* FIRMA */
-      .signature { margin-top:28px; }
-      .signature-space { height:68px; }
-      .signature-line { width:340px; border-top:1px solid #333; padding-top:7px; font-size:10.5pt; }
+      .meta-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 4mm;
+        font-size: 12px;
+      }
 
-      /* FICHA TECNICA */
-      .tech-table { width:100%; border-collapse:collapse; margin-top:8px; }
-      .tech-table th { background:#1a1a2e; color:#fff; padding:8px 10px; font-weight:900; font-size:10.5pt; }
-      .tech-table td { border:0.5px solid #cbd5e1; padding:8px 10px; vertical-align:top; font-size:10.5pt; line-height:1.5; }
-      .tech-table tr:nth-child(even) td { background:#f8fafc; }
-      .tech-elem { width:24%; font-weight:800; color:#1a1a2e; }
+      .intro-kv {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2px;
+        font-size: 12px;
+        margin-bottom: 4mm;
+      }
 
-      /* APPENDIX */
-      .appendix-img { width:100%; height:auto; display:block; }
+      p {
+        margin: 0 0 3mm;
+        font-size: 12px;
+        line-height: 1.45;
+      }
 
-      /* FOOTER */
-      .footer { margin-top:auto; border-top:1px solid #aaa; border-bottom:1px solid #aaa; padding:5px 0; text-align:center; font-size:7.5pt; color:#333; flex-shrink:0; line-height:1.6; }
+      .bullet-list {
+        margin: 1.5mm 0 0 0;
+        padding-left: 18px;
+        font-size: 12px;
+        line-height: 1.45;
+      }
 
-      /* MISC */
-      .small-gap { margin-top:8px; }
-      .no-break, .map-wrap, .signature, table, tr { break-inside:avoid; page-break-inside:avoid; }
-      img { max-width:100%; height:auto; }
+      .bullet-list li {
+        margin-bottom: 1.5mm;
+      }
+
+      .proposal-title {
+        margin: 1mm 0 3mm;
+        padding-bottom: 1.5mm;
+        border-bottom: 1px solid #c1121f;
+        text-align: center;
+        font-size: 13px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .2px;
+      }
+
+      .section-title {
+        margin: 2mm 0 2mm;
+        padding-bottom: 1.2mm;
+        border-bottom: 1px solid #c1121f;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .2px;
+      }
+
+      .subheading {
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 2mm;
+      }
+
+      .subheading.with-space {
+        margin-top: 4mm;
+      }
+
+      .content-block {
+        margin-bottom: 3mm;
+      }
+
+      .photo-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin: 2mm 0 3mm;
+      }
+
+      .photo-grid.single {
+        grid-template-columns: 1fr;
+      }
+
+      .photo-card {
+        border: 1px solid #d1d5db;
+        border-radius: 3px;
+        overflow: hidden;
+        background: #fff;
+      }
+
+      .photo {
+        display: block;
+        width: 100%;
+        height: 52mm;
+        object-fit: cover;
+        background: #f8fafc;
+      }
+
+      .proposal-3-photo {
+        height: 42mm;
+      }
+
+      .photo-caption {
+        padding: 4px 0 5px;
+        text-align: center;
+        font-size: 10px;
+        color: #6b7280;
+      }
+
+      .map-wrap {
+        position: relative;
+        width: 100%;
+        height: 64mm;
+        border: 1px solid #d1d5db;
+        overflow: hidden;
+        background: #f8fafc;
+        margin: 2mm 0 3mm;
+      }
+
+      .proposal-3-map {
+        height: 54mm;
+      }
+
+      .map {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .map-label {
+        position: absolute;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1;
+        white-space: nowrap;
+        text-shadow: 0 1px 1px rgba(255,255,255,.9);
+        transform-origin: center center;
+        pointer-events: none;
+      }
+
+      .table-wrap {
+        margin-top: 2mm;
+      }
+
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+      }
+
+      .table th {
+        background: #151a36;
+        color: #fff;
+        border: 1px solid #cbd5e1;
+        padding: 6px 6px;
+        font-weight: 700;
+        text-align: center;
+      }
+
+      .table td {
+        border: 1px solid #cbd5e1;
+        padding: 6px 6px;
+        vertical-align: middle;
+      }
+
+      .table .label-total {
+        background: #eef2f7;
+        font-weight: 700;
+      }
+
+      .table .soft-row td {
+        background: #f3edb0;
+      }
+
+      .table .grand-total td {
+        background: #f2e55e;
+        font-weight: 800;
+        font-size: 12px;
+      }
+
+      .tech-table td:first-child {
+        width: 28%;
+        font-weight: 700;
+      }
+
+      .t-center { text-align: center; }
+      .t-right { text-align: right; }
+      .strong { font-weight: 700; }
+
+      .kv-grid {
+        display: grid;
+        gap: 2mm;
+        margin-top: 2mm;
+      }
+
+      .kv-row {
+        display: grid;
+        grid-template-columns: 64mm 1fr;
+        gap: 4mm;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+
+      .signature-block {
+        margin-top: 8mm;
+      }
+
+      .signature-space {
+        height: 36px;
+      }
+
+      .signature-line {
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .appendix-img {
+        width: 100%;
+        height: auto;
+        max-height: 235mm;
+        object-fit: contain;
+        display: block;
+        margin: 0 auto;
+      }
+
+      .footer {
+        margin-top: auto;
+        padding-top: 3mm;
+        border-top: 0.4px solid #9ca3af;
+        text-align: center;
+        font-size: 9px;
+        line-height: 1.3;
+        color: #6b7280;
+      }
+
+      .proposal-title,
+      .section-title,
+      .photo-grid,
+      .map-wrap,
+      .table-wrap,
+      .signature-block,
+      .content-block {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      @media print {
+        body {
+          background: #fff;
+        }
+
+        .page {
+          margin: 0;
+        }
+      }
     </style>
   </head>
   <body>
-    <section class="page">
-      <div class="header">
-        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
-        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
-        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
-      </div>
-      <div class="page-body">
-      <div>
-      <div class="meta">
-        <div>Envigado, ${escapeHtml(fmtL(c.fecha || today()))}</div>
-        <div><strong>COTIZACI&Oacute;N No. ${escapeHtml(c.numero || '')}</strong></div>
-      </div>
-      <div class="client-block">
-        <p><strong>SE&Ntilde;OR(A):</strong> <strong>${escapeHtml((c.cliente || '').toUpperCase())}</strong></p>
-        ${c.obra ? `<p><strong>OBRA:</strong> ${escapeHtml((c.obra || '').toUpperCase())}</p>` : ''}
-        ${c.telefono ? `<p><strong>TEL&Eacute;FONO:</strong> ${escapeHtml(c.telefono)}</p>` : ''}
-        ${c.ciudad ? `<p><strong>CIUDAD:</strong> ${escapeHtml((c.ciudad || '').toUpperCase())}</p>` : ''}
-      </div>
-      <p>Cordial saludo.</p>
-      ${textoInicial ? `<div class="info-box"><div style="white-space:pre-wrap;">${escapeHtml(textoInicial)}</div></div>` : ""}
-      </div>
-      </div>
-      <div class="footer">Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
-    </section>
-
+    ${introPage}
     ${proposalSections}
-
-    <section class="page">
-      <div class="header">
-        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
-        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
-        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
-      </div>
-      <div class="page-body">
-      <div>
-      <div class="section-title">Condiciones comerciales</div>
-      <table class="cond-table"><tbody>
-        <tr><td>FORMA DE PAGO</td><td>${escapeHtml(c.formaPago || DEFAULT_COT_FORMA_PAGO)}</td></tr>
-        <tr><td>TIEMPO DE EJECUCI&Oacute;N</td><td>${escapeHtml(c.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC)}</td></tr>
-        <tr><td>VALIDEZ DE LA OFERTA</td><td>${escapeHtml(`${c.val||30} d\u00edas a partir de la fecha de entrega de esta cotizaci\u00f3n`)}</td></tr>
-        <tr><td>CERTIFICACI&Oacute;N</td><td>Se entrega con el pago total</td></tr>
-      </tbody></table>
-      ${String(c.observaciones||"").trim() ? `<div class="measurement-box" style="margin-top:12px;"><p><strong>Observaciones</strong></p><div style="white-space:pre-wrap;">${escapeHtml(c.observaciones)}</div></div>` : ""}
-      <div class="section-title" style="margin-top:18px;">Esta cotizaci&oacute;n incluye</div>
-      <ul>
-        <li>Tuercas y arandelas en acero galvanizado y/o inoxidable certificado.</li>
-        <li>Elementos de instalaci&oacute;n con certificados de f&aacute;brica adjuntos en la documentaci&oacute;n.</li>
-        <li>Transporte de materiales y personal hasta el sitio de trabajo.</li>
-        <li>Certificados seg&uacute;n Resoluci&oacute;n 4272 &mdash; trabajo seguro en alturas.</li>
-        <li>Recertificaci&oacute;n sin costo al a&ntilde;o siguiente de la instalaci&oacute;n.</li>
-        <li>Coordinador de trabajo seguro en alturas de tiempo completo en obra.</li>
-      </ul>
-      </div>
-      </div>
-      <p class="small-gap" style="margin-top:auto;">Todo el personal se encuentra afiliado a ARL, salud y pensiones. Se llevan todos los EPP necesarios, se realizan todas las reparaciones de da&ntilde;os durante la ejecuci&oacute;n y se entregan las p&oacute;lizas exigidas por el contratante.</p>
-      <div class="footer">Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
-    </section>
-
-    <section class="page">
-      <div class="header">
-        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
-        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
-        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
-      </div>
-      <div class="page-body">
-      <div>
-      <div class="section-title">Sistema no continuo en acero galvanizado &mdash; Ficha t&eacute;cnica</div>
-      <table class="tech-table">
-        <thead>
-          <tr><th style="width:24%;text-align:left;">Elemento</th><th style="text-align:left;">Caracter&iacute;stica</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td class="tech-elem">Soporte lateral e intermedio</td>
-            <td>Dise&ntilde;ado para sistemas de l&iacute;neas de vida horizontales de tipo continuo. Soporta el cable para que ninguna secci&oacute;n libre supere la luz m&aacute;xima permitida. Permite el uso de carro deslizador para evitar que el colaborador se desconecte.</td>
-          </tr>
-          <tr>
-            <td class="tech-elem">Tensor</td>
-            <td>Sus extremos se aseguran al cable de la l&iacute;nea de vida y a un absorbedor de energ&iacute;a. Tensiona la l&iacute;nea para que, ante una ca&iacute;da, la distancia recorrida por el trabajador sea m&iacute;nima.</td>
-          </tr>
-          <tr>
-            <td class="tech-elem">Empalmes y fijaciones</td>
-            <td>Fabricados en aluminio. Resistentes a la corrosi&oacute;n y oxidaci&oacute;n. Se utilizan para empalmar dos cables y fijar barandillas.</td>
-          </tr>
-          <tr>
-            <td class="tech-elem">Guardacables</td>
-            <td>Acero con acabado galvanizado resistente a la corrosi&oacute;n. Protegen contra el desgaste y deformaci&oacute;n del cable, alargando su vida &uacute;til.</td>
-          </tr>
-          <tr>
-            <td class="tech-elem">Cable de acero</td>
-            <td>Fabricado con alambres de acero estirados en fr&iacute;o, trenzados en espiral formando torones. Transmite movimiento, fuerzas y energ&iacute;a de forma eficaz bajo tensiones est&aacute;ticas y din&aacute;micas.</td>
-          </tr>
-        </tbody>
-      </table>
-      </div>
-      </div>
-      <div class="footer">Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
-    </section>
-    ${showVerticalAppendix ? `<section class="page"><img src="${articoLineaVidaVertical}" alt="Anexo tecnico linea de vida vertical" class="appendix-img"/><div class="footer">Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div></section>` : ""}
-
-    <section class="page">
-      <div class="header">
-        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
-        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
-        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
-      </div>
-      <div class="page-body">
-      <div>
-      <div class="section-title">Sistema de gesti&oacute;n de seguridad y salud en el trabajo</div>
-      <p>INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicaci&oacute;n de la Resoluci&oacute;n 4272 de 2021, garantizando la implementaci&oacute;n del Sistema de Gesti&oacute;n de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.</p>
-      </div>
-      <div class="signature">
-        <p>Cordialmente,</p>
-        <div class="signature-space"></div>
-        <div class="signature-line">
-          <strong>ING. JHON JAIME SEP&Uacute;LVEDA LONDO&Ntilde;O</strong><br/>
-          MP. 05256-409949<br/>
-          Gerente General<br/>
-          Tel: 3152889541
+    ${showVerticalAppendix ? `
+      <section class="page">
+        <div class="page-inner">
+          <div class="page-content">
+            <img src="${articoLineaVidaVertical}" alt="Anexo tecnico linea de vida vertical" class="appendix-img" />
+          </div>
+          ${footerHtml}
         </div>
-      </div>
-      <div class="footer">Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
-    </section>
+      </section>
+    ` : ""}
+    ${renderConditionsPage()}
+    ${renderTechnicalPage()}
+    ${renderSgsstPage()}
   </body>
   </html>`;
 }

@@ -1985,23 +1985,23 @@ function buildCotizacionPrintHtml(c){
             <tbody>
               <tr>
                 <td>Soporte lateral e intermedio</td>
-                <td>Diseñado para sistemas de líneas de vida horizontales de tipo continuo. Soporta el cable para que ninguna sección libre supere la luz máxima permitida. Permite el uso de carro deslizador para evitar que el colaborador se desconecte.</td>
+                <td>Este elemento está diseñado para ser usado en sistemas de líneas de vida horizontales de tipo continuo. El componente soporta regularmente el cable de acero para que una sección libre de cable no supere la luz máxima permitida. Este soporte intermedio permite el uso de un carro deslizador para evitar el uso de eslinga en Y por parte del trabajador y evitar que el colaborador se desconecte.</td>
               </tr>
               <tr>
                 <td>Tensor</td>
-                <td>Sus extremos se aseguran al cable de la línea de vida y a un absorbedor de energía. Tensiona la línea para que, ante una caída, la distancia recorrida por el trabajador sea mínima.</td>
+                <td>Este elemento está diseñado para ser usado en sistemas de líneas de vida horizontales. En sus extremos el tensor se asegura al cable de la línea de vida y a un absorbedor de energía respectivamente. Su función es tensionar la línea de vida para que, en el momento de una caída, la distancia de caída del trabajador sea mínima.</td>
               </tr>
               <tr>
                 <td>Empalmes y fijaciones</td>
-                <td>Fabricados en aluminio. Resistentes a la corrosión y oxidación. Se utilizan para empalmar dos cables y fijar barandillas.</td>
+                <td>Fabricados en aluminio. Resistentes a la corrosión y oxidación. Se utilizan para empalmar dos cables y fijar barandillas de cables.</td>
               </tr>
               <tr>
                 <td>Guardacables</td>
-                <td>Acero con acabado galvanizado resistente a la corrosión. Protegen contra el desgaste y deformación del cable, alargando su vida útil.</td>
+                <td>Fabricado en acero con acabado galvanizado resistente a la corrosión. Protegen contra el desgaste y deformación del cable, alargando su vida útil.</td>
               </tr>
               <tr>
                 <td>Cable de acero</td>
-                <td>Fabricado con alambres de acero estirados en frío, trenzados en espiral formando torones. Transmite movimiento, fuerzas y energía de forma eficaz bajo tensiones estáticas y dinámicas.</td>
+                <td>El cable de acero se fabrica bajo un diseño que permite que sea capaz de absorber el desgaste y los esfuerzos causados por el contacto con poleas, tambores y otras superficies, así como las tensiones estáticas y dinámicas del trabajo al que se someta. Se compone por alambres de acero, estirados en frio, trenzados en espiral, formando unidades denominadas torones.<br/><br/>Además, su diseño ha sido ideado para que cada alambre tenga la libertad de movimiento en relación a los alambres adyacentes. Mientras más alambres conformen este elemento, mayor será su flexibilidad y resistencia en esfuerzos elevados; logrando el objetivo de transmisión de movimiento, fuerzas y energía de forma eficaz y efectiva.</td>
               </tr>
             </tbody>
           </table>
@@ -2024,7 +2024,7 @@ function buildCotizacionPrintHtml(c){
             <div class="signature-line">
               <strong>ING. JHON JAIME SEPÚLVEDA LONDOÑO</strong><br/>
               MP. 05256-409949<br/>
-              Directos Comercial<br/>
+              Gerente General<br/>
               Tel: 3152889541
             </div>
           </div>

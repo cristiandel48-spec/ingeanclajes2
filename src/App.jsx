@@ -1644,7 +1644,11 @@ function buildCotizacionPrintHtml(c){
         <p><strong>Necesidad del cliente</strong></p>
         <div style="white-space:pre-wrap;">${escapeHtml(propuesta.requerimientoCliente)}</div>
       </div>` : "";
-    const alcanceBlock = "";
+    const alcanceBlock = propuesta.alcancePropuesta ? `
+      <div class="measurement-box">
+        <p><strong>Alcance de esta propuesta</strong></p>
+        <div style="white-space:pre-wrap;">${escapeHtml(propuesta.alcancePropuesta)}</div>
+      </div>` : "";
     const fotosBlock = propuesta.fotos.length ? `
       <div class="section-title">Registro fotografico de la propuesta</div>
       <div class="photo-grid">
@@ -1668,7 +1672,7 @@ function buildCotizacionPrintHtml(c){
     <section class="page">
       <div class="header">
         <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
-        <div class="header-mid">ESPECIALISTAS EN<br/>ANCLAJES</div>
+        <div class="header-mid">ESPECIALISTAS<br/>EN ANCLAJES</div>
         <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
       <div class="section-title">${escapeHtml(propuesta.nombre)}</div>
@@ -1699,16 +1703,16 @@ function buildCotizacionPrintHtml(c){
     <meta charset="utf-8" />
     <title>Cotizacion ${escapeHtml(c.numero || '')}</title>
     <style>
-      @page { size: A4 portrait; margin: 45mm 20mm 25mm 28mm; }
+      @page { size: Letter; margin: 10mm 10mm 12mm; }
       * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       html, body { background:#fff; }
-      body { font-family: Aptos, Arial, Helvetica, sans-serif; color: #111; margin: 0; font-size: 11pt; line-height: 1.45; }
-      .page { width:100%; display:flex; flex-direction:column; break-after: page; page-break-after: always; min-height: auto; padding: 0; }
+      body { font-family: Aptos, Arial, Helvetica, sans-serif; color: #111; margin: 0; font-size: 12pt; line-height: 1.45; }
+      .page { width:100%; display:flex; flex-direction:column; break-after: page; page-break-after: always; min-height: 255mm; padding: 4mm 5mm 10mm; }
       .page:last-child { page-break-after: auto; }
-      .header { width:100%; display:grid; grid-template-columns: 42% 33% 25%; align-items:center; column-gap:6mm; border-bottom:2px solid #cc0000; padding:0 0 8px; margin:0 0 14px; }
-      .logo { width:100%; max-width:340px; max-height:24mm; height:auto; object-fit:contain; display:block; }
-      .header-mid { text-align:center; font-family:Aptos, Arial, Helvetica, sans-serif; font-weight:600; letter-spacing:1.8px; font-size:9.5pt; color:#1a2840; line-height:1.22; white-space:normal; }
-      .header-right { text-align:right; font-size:7.8pt; color:#555; line-height:1.3; max-width:none; white-space:normal; overflow-wrap:anywhere; word-break:normal; padding-right:10mm; }
+      .header { display:grid; grid-template-columns: 44% 31% 17%; align-items:center; column-gap:10px; border-bottom:2px solid #cc0000; padding-bottom:10px; margin-bottom:14px; }
+      .logo { height: 66px; max-width:100%; width:auto; object-fit:contain; }
+      .header-mid { text-align:center; padding-top:0; font-family:Aptos, Arial, Helvetica, sans-serif; font-weight:900; letter-spacing:1.4px; font-size:10.6pt; color:#111; line-height:1.15; }
+      .header-right { text-align:right; font-size:7.6pt; color:#555; line-height:1.3; max-width:none; padding-right:8mm; justify-self:end; }
       p { margin: 0 0 9px; }
       .meta { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; gap:12px; }
       .meta strong { font-size:10.8pt; }
@@ -1738,10 +1742,10 @@ function buildCotizacionPrintHtml(c){
       .photo-wrap { background:#f8fafc; overflow:hidden; }
       .photo { width:100%; height:auto; display:block; }
       .photo-label { font-size:10pt; color:#475569; padding-top:6px; text-align:center; }
-      .signature { margin-top: 24px; page-break-inside: avoid; }
-      .signature-space { height: 52px; }
-      .signature-line { width: 420px; max-width: 100%; border-top:1px solid #222; padding-top:7px; display:inline-block; }
-      .signature-name { white-space: nowrap; display:inline-block; font-size:10pt; }
+      .signature { margin-top: 30px; }
+      .signature-space { height: 72px; }
+      .signature-line { width: 360px; border-top:1px solid #222; padding-top:7px; }
+      .signature-name { white-space: nowrap; }
       .footer { margin-top:auto; border-top:1px solid #999; padding-top:7px; text-align:center; font-size:9pt; color:#555; }
       .appendix-img { width:100%; height:auto; display:block; }
       .tech-title { font-weight:900; text-transform:uppercase; text-align:center; font-size:15pt; margin: 0 0 10px; }
@@ -1762,7 +1766,7 @@ function buildCotizacionPrintHtml(c){
     <section class="page">
       <div class="header">
         <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
-        <div class="header-mid">ESPECIALISTAS EN<br/>ANCLAJES</div>
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
         <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
       <div class="meta"><div>Envigado, ${escapeHtml(fmtL(c.fecha || today()))}</div><div><strong>COTIZACION No. ${escapeHtml(c.numero || '')}</strong></div></div>
@@ -1785,7 +1789,7 @@ function buildCotizacionPrintHtml(c){
     <section class="page">
       <div class="header">
         <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
-        <div class="header-mid">ESPECIALISTAS EN<br/>ANCLAJES</div>
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
         <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
       <div class="section-title">Condiciones comerciales</div>
@@ -1802,7 +1806,7 @@ function buildCotizacionPrintHtml(c){
     <section class="page">
       <div class="header">
         <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
-        <div class="header-mid">ESPECIALISTAS EN<br/>ANCLAJES</div>
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
         <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
       <div class="tech-title">Sistema no continuo en acero galvanizado</div>
@@ -1840,7 +1844,7 @@ function buildCotizacionPrintHtml(c){
     <section class="page">
       <div class="header">
         <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
-        <div class="header-mid">ESPECIALISTAS EN<br/>ANCLAJES</div>
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
         <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
       <div class="section-title">Esta cotizacion incluye</div>

@@ -1745,20 +1745,21 @@ function buildCotizacionPrintHtml(c){
       .cond-table td { border:0.5px solid #cbd5e1; padding:7px 10px; }
       .cond-table td:first-child { background:#f1f5f9; font-weight:900; width:34%; color:#1a1a2e; }
 
-      /* MAPA */
-      .map-wrap { position:relative; border:1px solid #bbb; padding:0; margin:4px 0 12px; width:100%; min-height:320px; overflow:hidden; background:#f8fafc; }
-      .map { position:absolute; inset:0; width:100%; height:100%; object-fit:fill; display:block; }
-      .map-label { position:absolute; pointer-events:none; text-align:center; font-weight:800; line-height:1; font-size:7.5px; white-space:nowrap; background:rgba(255,255,255,0.85); padding:1px 3px; border-radius:999px; text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff; transform-origin:center; }
-
-      /* MEASUREMENT BOX */
-      .measurement-box { border:0.5px solid #d5d9e2; background:#f8fafc; padding:10px 13px; margin:0 0 12px; border-radius:4px; font-size:10.5pt; }
-      .measurement-box p { margin-bottom:5px; }
+      /* MEASUREMENT BOX — texto plano sin recuadro */
+      .measurement-box { border:none; background:none; padding:0; margin:0 0 10px; font-size:10.5pt; }
+      .measurement-box p { margin-bottom:4px; }
       .measurement-table { width:100%; border-collapse:collapse; margin-top:6px; }
       .measurement-table th, .measurement-table td { border:0.5px solid #cbd5e1; padding:5px 8px; font-size:10.5pt; }
       .measurement-table th { background:#e2e8f0; text-align:left; font-weight:800; }
 
-      /* INFO BOX — mismo estilo que measurement-box, sin azul */
-      .info-box { background:#f8fafc; border:0.5px solid #d5d9e2; border-radius:4px; padding:10px 13px; margin-bottom:12px; font-size:10.5pt; }
+      /* INFO BOX — texto plano sin recuadro */
+      .info-box { background:none; border:none; padding:0; margin-bottom:10px; font-size:10.5pt; }
+
+      /* MAPA — contenido dentro del margen */
+      .map-wrap { position:relative; border:1px solid #bbb; padding:0; margin:4px 0 10px; width:100%; max-width:100%; overflow:hidden; background:#f8fafc; }
+      .map-wrap img { width:100%; height:auto; display:block; max-width:100%; }
+      .map { position:absolute; inset:0; width:100%; height:100%; object-fit:fill; display:block; }
+      .map-label { position:absolute; pointer-events:none; text-align:center; font-weight:800; line-height:1; font-size:7.5px; white-space:nowrap; background:rgba(255,255,255,0.85); padding:1px 3px; border-radius:999px; text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff; transform-origin:center; }
 
       /* FOTOS — sin altura fija para que no se corten */
       .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
@@ -1791,8 +1792,8 @@ function buildCotizacionPrintHtml(c){
 
       /* MISC */
       .small-gap { margin-top:8px; }
-      .no-break, .measurement-box, .map-wrap, .signature, table, tr { break-inside:avoid; page-break-inside:avoid; }
-      img { max-width:100%; }
+      .no-break, .map-wrap, .signature, table, tr { break-inside:avoid; page-break-inside:avoid; }
+      img { max-width:100%; height:auto; }
     </style>
   </head>
   <body>

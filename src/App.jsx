@@ -729,7 +729,7 @@ const ITEMS_DB = [
 const DEFAULT_COT_FORMA_PAGO = "50% ANTICIPO, 50% CONCLUIR LABORES";
 const DEFAULT_COT_TIEMPO_EJEC = "10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)";
 const DEFAULT_COT_INCLUYE_PUNTOS_ANCLAJE = [
-  "Puntos de anclajes certificados."
+  "Puntos de anclajes certificados.",
   "Elementos de instalación con certificados de fábrica adjuntos en la documentación.",
   "Transporte de materiales y personal hasta el sitio de trabajo.",
   "Certificados según Resolución 4272 — trabajo seguro en alturas.",

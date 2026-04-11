@@ -729,7 +729,6 @@ const ITEMS_DB = [
 const DEFAULT_COT_FORMA_PAGO = "50% ANTICIPO, 50% CONCLUIR LABORES";
 const DEFAULT_COT_TIEMPO_EJEC = "10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)";
 const DEFAULT_COT_INCLUYE_PUNTOS_ANCLAJE = [
-  "Tuercas y arandelas en acero galvanizado y/o inoxidable certificado.",
   "Elementos de instalación con certificados de fábrica adjuntos en la documentación.",
   "Transporte de materiales y personal hasta el sitio de trabajo.",
   "Certificados según Resolución 4272 — trabajo seguro en alturas.",
@@ -1948,10 +1947,11 @@ function buildCotizacionPrintHtml(c){
           </div>
 
           <p>Cordial saludo.</p>
-          ${textoInicial ? `<p>${escapeHtml(textoInicial)}</p>` : `<p>Presentamos la cotización para la instalación de elementos para trabajo seguro en alturas.</p>`}
           ${(()=>{
             const tipo = propuestas[0]?.quote?.tipoCotizacion || "linea_vida";
             if(tipo === "puntos_anclaje") return `
+              <p>Presentamos la cotización para la instalación de elementos para trabajo seguro en alturas.</p>
+              ${textoInicial ? `<p>${escapeHtml(textoInicial)}</p>` : ""}
               <p><strong>Trabajo en altura:</strong> Se considera toda actividad, labor o trabajo que se deba realizar a una altura física igual o superior a 2 metros desde el piso.</p>
               <p><strong>Puntos de anclaje:</strong> Son componentes en acero, anclados con un epóxico químico, con perno de 5/8" a una profundidad de 12 cm o más según el caso, instalados en estructuras de concreto, con capacidad de resistir una fuerza de caída de más de 5.000 Lbs (2.268 kg).</p>
               <p><strong>Epóxico estructural:</strong> Adhesivo de alta resistencia que garantiza la fijación permanente del perno en la estructura, cumpliendo con los estándares exigidos por la Resolución 4272 de 2021 del Ministerio del Trabajo.</p>
@@ -1963,6 +1963,8 @@ function buildCotizacionPrintHtml(c){
               </ul>
             `;
             if(tipo === "obra_blanca") return `
+              <p>Presentamos la cotización para la instalación de elementos para trabajo seguro en alturas.</p>
+              ${textoInicial ? `<p>${escapeHtml(textoInicial)}</p>` : ""}
               <p><strong>Obra blanca:</strong> Comprende todas las actividades de acabado y revestimiento en edificaciones, incluyendo instalación de sistemas de protección integrados a la estructura arquitectónica del proyecto.</p>
               <ul class="bullet-list">
                 <li>Instalación de elementos empotrados en la fase de obra para garantizar la mejor estética y durabilidad.</li>
@@ -1970,8 +1972,10 @@ function buildCotizacionPrintHtml(c){
                 <li>Coordinación con el equipo de obra para minimizar el impacto en los cronogramas de construcción.</li>
               </ul>
             `;
-            // linea_vida (default)
+            // linea_vida — texto FIJO, siempre aparece completo
             return `
+              <p>Presentamos la cotización para la instalación de elementos para trabajo seguro en alturas.</p>
+              ${textoInicial ? `<p>${escapeHtml(textoInicial)}</p>` : ""}
               <p><strong>Trabajo en altura:</strong> Se considera toda actividad, labor o trabajo que se deba realizar a una altura física igual o superior a 2 metros desde el piso.</p>
               <p><strong>Puntos de anclaje:</strong> Son componentes en acero, anclado con un epóxico químico, con perno de 5/8 a una profundidad de 12 cm o más según el caso a estructuras en concreto, con capacidad de resistir una fuerza de caída de más de 5000 Lbs.</p>
               <p><strong>Línea de vida:</strong> Son componentes de un sistema/equipo de protección de caídas, consistentes en una cuerda de nylon o cable de acero instalada en forma horizontal y vertical, tensionada y sujeta en tres o dos puntos de anclaje para otorgar movilidad al personal que trabaja en áreas elevadas.</p>
@@ -2184,12 +2188,13 @@ function buildCotizacionPrintHtml(c){
       .bullet-list li { margin-bottom:1.3mm; }
       .compact-list li { margin-bottom:1mm; }
 
-      .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:2mm 0 3mm; }
+      .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:2mm 0 3mm; }
       .photo-grid.single { grid-template-columns:1fr; }
-      .photo-card { border:1px solid #d1d5db; border-radius:3px; overflow:hidden; background:#fff; padding:4px; }
-      .photo { display:block; width:100%; height:46mm; object-fit:contain; object-position:center; background:#f3f4f6; }
-      .proposal-3-photo { height:34mm; object-fit:contain; object-position:center; }
-      .photo-caption { padding:4px 0 5px; text-align:center; font-size:10px; color:#6b7280; }
+      .photo-card { border:1px solid #d1d5db; border-radius:4px; overflow:hidden; background:#fff; padding:0; }
+      .photo { display:block; width:100%; height:72mm; object-fit:cover; object-position:center; background:#f3f4f6; }
+      .photo-grid.single .photo { height:90mm; }
+      .proposal-3-photo { height:52mm; object-fit:cover; object-position:center; }
+      .photo-caption { padding:5px 0 6px; text-align:center; font-size:10px; color:#6b7280; border-top:1px solid #e5e7eb; }
 
       .map-wrap { position:relative; width:100%; height:52mm; border:1px solid #d1d5db; overflow:hidden; background:#eef2f7; margin:2mm 0 3mm; }
       .proposal-3-map { height:52mm; }

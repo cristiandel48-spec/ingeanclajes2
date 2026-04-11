@@ -1675,7 +1675,6 @@ function buildCotizacionPrintHtml(c){
         <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
         <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
-      <span class="badge-proposal">${escapeHtml(propuesta.nombre)} &mdash; ${escapeHtml(propuesta.esObraBlanca ? "Obra blanca" : "Linea de vida / anclajes")}</span>
       <div class="section-title">${escapeHtml(propuesta.nombre)}</div>
       ${requerimientoBlock}
       ${alcanceBlock}
@@ -1706,8 +1705,8 @@ function buildCotizacionPrintHtml(c){
       @page { size: Letter; margin: 0; }
       * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       html, body { background:#fff; margin:0; padding:0; }
-      body { font-family: Aptos, Arial, Helvetica, sans-serif; color: #111; font-size: 11pt; line-height: 1.5; }
-      .page { width:216mm; height:279mm; display:flex; flex-direction:column; break-after: page; page-break-after: always; padding: 10mm 12mm 0; overflow:hidden; }
+      body { font-family: Aptos, Arial, Helvetica, sans-serif; color: #111; font-size: 11pt; line-height: 1.5; text-align: justify; }
+      .page { width:216mm; height:279mm; display:flex; flex-direction:column; break-after: page; page-break-after: always; padding: 10mm 12mm 0; overflow:visible; }
       .page:last-child { page-break-after: auto; }
 
       /* HEADER */
@@ -1727,12 +1726,12 @@ function buildCotizacionPrintHtml(c){
       .section-title { text-align:center; font-weight:900; color:#1a1a2e; text-transform:uppercase; margin:12px 0 8px; border-bottom:2px solid #cc0000; padding-bottom:4px; font-size:11.5pt; letter-spacing:.3px; }
 
       /* BADGE PROPUESTA */
-      .badge-proposal { display:inline-block; background:#1a1a2e; color:#fff; font-size:8.5pt; padding:3px 12px; border-radius:20px; margin-bottom:8px; letter-spacing:.5px; }
+      .badge-proposal { display:inline-block; background:#1a1a2e; color:#fff; font-size:8.5pt; padding:3px 12px; border-radius:20px; margin-bottom:8px; letter-spacing:.5px; text-align:left; }
 
       /* TABLA DE ITEMS */
       .table { width:100%; border-collapse:collapse; margin:8px 0 10px; }
-      .table th { background:#1a1a2e; color:#fff; padding:7px 9px; font-weight:900; font-size:10.5pt; }
-      .table td { border:0.5px solid #cbd5e1; padding:6px 9px; vertical-align:middle; font-size:10.5pt; }
+      .table th { background:#1a1a2e; color:#fff; padding:7px 9px; font-weight:900; font-size:10.5pt; text-align:center; }
+      .table td { border:0.5px solid #cbd5e1; padding:6px 9px; vertical-align:middle; font-size:10.5pt; text-align:left; }
       .table tr:nth-child(even) td { background:#f8fafc; }
       .table .num { text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
       .table .center { text-align:center; }
@@ -1755,10 +1754,10 @@ function buildCotizacionPrintHtml(c){
       /* INFO BOX — texto plano sin recuadro */
       .info-box { background:none; border:none; padding:0; margin-bottom:10px; font-size:10.5pt; }
 
-      /* MAPA — contenido dentro del margen */
-      .map-wrap { position:relative; border:1px solid #bbb; padding:0; margin:4px 0 10px; width:100%; max-width:100%; overflow:hidden; background:#f8fafc; }
-      .map-wrap img { width:100%; height:auto; display:block; max-width:100%; }
-      .map { position:absolute; inset:0; width:100%; height:100%; object-fit:fill; display:block; }
+      /* MAPA — imagen fluida, sin posicionamiento absoluto */
+      .map-wrap { position:relative; border:1px solid #bbb; padding:0; margin:4px 0 10px; width:100%; overflow:hidden; background:#f8fafc; }
+      .map-wrap img { width:100%; height:auto; display:block; }
+      .map { width:100%; height:auto; display:block; }
       .map-label { position:absolute; pointer-events:none; text-align:center; font-weight:800; line-height:1; font-size:7.5px; white-space:nowrap; background:rgba(255,255,255,0.85); padding:1px 3px; border-radius:999px; text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff; transform-origin:center; }
 
       /* FOTOS — sin altura fija para que no se corten */

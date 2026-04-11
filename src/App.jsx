@@ -1665,12 +1665,10 @@ function buildCotizacionPrintHtml(c){
         <div style="white-space:pre-wrap;">${escapeHtml(propuesta.alcancePropuesta)}</div>
       </div>` : "";
     const fotosBlock = propuesta.fotos.length ? `
-      <div class="section-title">Registro fotografico de la propuesta</div>
       <div class="photo-grid">
         ${propuesta.fotos.map((foto,idx)=>`
           <div class="photo-card">
             <div class="photo-wrap"><img src="${foto.src}" alt="${escapeHtml(foto.label || `Foto ${idx+1}`)}" class="photo"/></div>
-            <div class="photo-label">${escapeHtml(foto.label || `Foto ${idx+1}`)}</div>
           </div>
         `).join("")}
       </div>` : "";
@@ -1721,7 +1719,7 @@ function buildCotizacionPrintHtml(c){
       * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       html, body { background:#fff; margin:0; padding:0; }
       body { font-family: Aptos, Arial, Helvetica, sans-serif; color: #111; font-size: 11pt; line-height: 1.5; text-align: justify; }
-      .page { width:216mm; height:279mm; display:flex; flex-direction:column; break-after: page; page-break-after: always; padding: 10mm 12mm 0; overflow:hidden; }
+      .page { width:216mm; height:279mm; display:flex; flex-direction:column; break-after: page; page-break-after: always; padding: 10mm 12mm 8mm; overflow:hidden; }
       .page:last-child { page-break-after: auto; }
 
       /* HEADER */
@@ -1744,15 +1742,15 @@ function buildCotizacionPrintHtml(c){
       .badge-proposal { display:inline-block; background:#1a1a2e; color:#fff; font-size:8.5pt; padding:3px 12px; border-radius:20px; margin-bottom:8px; letter-spacing:.5px; text-align:left; }
 
       /* TABLA DE ITEMS */
-      .table { width:100%; border-collapse:collapse; margin:8px 0 10px; }
-      .table th { background:#1a1a2e; color:#fff; padding:7px 9px; font-weight:900; font-size:10.5pt; text-align:center; }
-      .table td { border:0.5px solid #cbd5e1; padding:6px 9px; vertical-align:middle; font-size:10.5pt; text-align:left; }
+      .table { width:100%; border-collapse:collapse; margin:6px 0 8px; }
+      .table th { background:#1a1a2e; color:#fff; padding:5px 8px; font-weight:900; font-size:9.5pt; text-align:center; }
+      .table td { border:0.5px solid #cbd5e1; padding:4px 8px; vertical-align:middle; font-size:9.5pt; text-align:left; }
       .table tr:nth-child(even) td { background:#f8fafc; }
       .table .num { text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
       .table .center { text-align:center; }
       .sub-row td { background:#f1f5f9 !important; font-weight:900; border-top:1.5px solid #94a3b8; }
       .util-row td { background:#fef9c3 !important; }
-      .total-row td { background:#fff369 !important; font-weight:900; font-size:11.5pt; border-top:2px solid #222; }
+      .total-row td { background:#fff369 !important; font-weight:900; font-size:10pt; border-top:2px solid #222; }
 
       /* TABLA CONDICIONES */
       .cond-table { width:100%; border-collapse:collapse; margin:8px 0 10px; font-size:10.5pt; }

@@ -1705,10 +1705,14 @@ function buildCotizacionPrintHtml(c){
         <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
         <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
+      <div class="page-body">
+      <div>
       <div class="section-title">${escapeHtml(propuesta.nombre)}</div>
       ${requerimientoBlock}
       ${alcanceBlock}
       ${fotosBlock}
+      </div>
+      </div>
       <div class="footer">Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
     </section>
     ${propMapBlock}
@@ -1724,11 +1728,15 @@ function buildCotizacionPrintHtml(c){
         <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
         <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
+      <div class="page-body">
+      <div>
       <div class="section-title">${escapeHtml(propuesta.nombre)}</div>
       ${requerimientoBlock}
       ${alcanceBlock}
       ${fotosBlock}
       ${tableHtml}
+      </div>
+      </div>
       <div class="footer">Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
     </section>`;
   }).join("");
@@ -1745,6 +1753,7 @@ function buildCotizacionPrintHtml(c){
       body { font-family: Aptos, Arial, Helvetica, sans-serif; color: #111; font-size: 11pt; line-height: 1.4; text-align: justify; }
       .page { width:216mm; height:279mm; display:flex; flex-direction:column; break-after: page; page-break-after: always; padding: 10mm 12mm 8mm; overflow:hidden; }
       .page:last-child { page-break-after: auto; }
+      .page-body { flex:1; display:flex; flex-direction:column; justify-content:space-between; }
 
       /* HEADER */
       .header { display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #cc0000; padding-bottom:10px; margin-bottom:14px; gap:8px; }
@@ -1838,6 +1847,8 @@ function buildCotizacionPrintHtml(c){
         <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
         <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
+      <div class="page-body">
+      <div>
       <div class="meta">
         <div>Envigado, ${escapeHtml(fmtL(c.fecha || today()))}</div>
         <div><strong>COTIZACI&Oacute;N No. ${escapeHtml(c.numero || '')}</strong></div>
@@ -1850,6 +1861,8 @@ function buildCotizacionPrintHtml(c){
       </div>
       <p>Cordial saludo.</p>
       ${textoInicial ? `<div class="info-box"><div style="white-space:pre-wrap;">${escapeHtml(textoInicial)}</div></div>` : ""}
+      </div>
+      </div>
       <div class="footer">Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
     </section>
 
@@ -1861,6 +1874,8 @@ function buildCotizacionPrintHtml(c){
         <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
         <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
+      <div class="page-body">
+      <div>
       <div class="section-title">Condiciones comerciales</div>
       <table class="cond-table"><tbody>
         <tr><td>FORMA DE PAGO</td><td>${escapeHtml(c.formaPago || DEFAULT_COT_FORMA_PAGO)}</td></tr>
@@ -1878,7 +1893,9 @@ function buildCotizacionPrintHtml(c){
         <li>Recertificaci&oacute;n sin costo al a&ntilde;o siguiente de la instalaci&oacute;n.</li>
         <li>Coordinador de trabajo seguro en alturas de tiempo completo en obra.</li>
       </ul>
-      <p class="small-gap">Todo el personal se encuentra afiliado a ARL, salud y pensiones. Se llevan todos los EPP necesarios, se realizan todas las reparaciones de da&ntilde;os durante la ejecuci&oacute;n y se entregan las p&oacute;lizas exigidas por el contratante.</p>
+      </div>
+      </div>
+      <p class="small-gap" style="margin-top:auto;">Todo el personal se encuentra afiliado a ARL, salud y pensiones. Se llevan todos los EPP necesarios, se realizan todas las reparaciones de da&ntilde;os durante la ejecuci&oacute;n y se entregan las p&oacute;lizas exigidas por el contratante.</p>
       <div class="footer">Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
     </section>
 
@@ -1888,6 +1905,8 @@ function buildCotizacionPrintHtml(c){
         <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
         <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
+      <div class="page-body">
+      <div>
       <div class="section-title">Sistema no continuo en acero galvanizado &mdash; Ficha t&eacute;cnica</div>
       <table class="tech-table">
         <thead>
@@ -1916,6 +1935,8 @@ function buildCotizacionPrintHtml(c){
           </tr>
         </tbody>
       </table>
+      </div>
+      </div>
       <div class="footer">Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
     </section>
     ${showVerticalAppendix ? `<section class="page"><img src="${articoLineaVidaVertical}" alt="Anexo tecnico linea de vida vertical" class="appendix-img"/><div class="footer">Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div></section>` : ""}
@@ -1926,8 +1947,11 @@ function buildCotizacionPrintHtml(c){
         <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
         <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
+      <div class="page-body">
+      <div>
       <div class="section-title">Sistema de gesti&oacute;n de seguridad y salud en el trabajo</div>
-      <p>INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices de la Resoluci&oacute;n 4272 de 2021, garantizando la implementaci&oacute;n del SG-SST y el mejoramiento de las condiciones de trabajo, minimizando accidentes y enfermedades laborales en todos los frentes de trabajo.</p>
+      <p>INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicaci&oacute;n de la Resoluci&oacute;n 4272 de 2021, garantizando la implementaci&oacute;n del Sistema de Gesti&oacute;n de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.</p>
+      </div>
       <div class="signature">
         <p>Cordialmente,</p>
         <div class="signature-space"></div>

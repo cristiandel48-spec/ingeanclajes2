@@ -1673,27 +1673,27 @@ function buildCotizacionPrintHtml(c){
       <div class="header">
         <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
         <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
-        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
+      <span class="badge-proposal">${escapeHtml(propuesta.nombre)} &mdash; ${escapeHtml(propuesta.esObraBlanca ? "Obra blanca" : "Linea de vida / anclajes")}</span>
       <div class="section-title">${escapeHtml(propuesta.nombre)}</div>
-      <p style="margin-bottom:6px;color:#64748b;"><strong>Tipo:</strong> ${escapeHtml(propuesta.esObraBlanca ? "Obra blanca" : "Linea de vida / anclajes")}</p>
       ${requerimientoBlock}
       ${alcanceBlock}
       ${fotosBlock}
       ${propMapBlock}
       <table class="table no-break">
-        <thead><tr><th>Descripcion</th><th class="num">Cantidad</th><th class="center">Unidad</th><th class="num">Valor</th><th class="num">Subtotal</th></tr></thead>
+        <thead><tr><th style="text-align:left;">Descripcion</th><th class="num">Cantidad</th><th class="center">Unidad</th><th class="num">Valor unitario</th><th class="num">Subtotal</th></tr></thead>
         <tbody>
           ${itemRows}
-          <tr class="label-strong"><td colspan="4">SUBTOTAL</td><td class="num">${fmt(propuesta.sub)}</td></tr>
-          <tr><td colspan="4">ADMINISTRACION</td><td class="num">$ - -</td></tr>
-          <tr><td colspan="4">IMPREVISTOS</td><td class="num">$ - -</td></tr>
-          <tr><td colspan="4">UTILIDADES (${Number(propuesta.quote.util||10).toFixed(0)} % VALOR DE LA OBRA)</td><td class="num">${fmt(propuesta.ut)}</td></tr>
-          <tr><td colspan="4">IVA (19 % VALOR DE LAS UTILIDADES)</td><td class="num">${fmt(propuesta.iva)}</td></tr>
-          <tr class="total-row"><td colspan="4">TOTAL</td><td class="num">${fmt(propuesta.tot)}</td></tr>
+          <tr class="sub-row"><td colspan="4"><strong>SUBTOTAL</strong></td><td class="num">${fmt(propuesta.sub)}</td></tr>
+          <tr><td colspan="4">ADMINISTRACION</td><td class="num" style="color:#94a3b8;">$ &mdash;</td></tr>
+          <tr><td colspan="4">IMPREVISTOS</td><td class="num" style="color:#94a3b8;">$ &mdash;</td></tr>
+          <tr class="util-row"><td colspan="4">UTILIDADES (${Number(propuesta.quote.util||10).toFixed(0)}% del valor de la obra)</td><td class="num">${fmt(propuesta.ut)}</td></tr>
+          <tr class="util-row"><td colspan="4">IVA (19% sobre utilidades)</td><td class="num">${fmt(propuesta.iva)}</td></tr>
+          <tr class="total-row"><td colspan="4"><strong>TOTAL</strong></td><td class="num"><strong>${fmt(propuesta.tot)}</strong></td></tr>
         </tbody>
       </table>
-      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel 3152889541 &middot; Nit. 900193965-4 &middot; comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
     </section>`;
   }).join("");
 
@@ -1703,62 +1703,95 @@ function buildCotizacionPrintHtml(c){
     <meta charset="utf-8" />
     <title>Cotizacion ${escapeHtml(c.numero || '')}</title>
     <style>
-      @page { size: Letter; margin: 10mm 10mm 12mm; }
+      @page { size: Letter; margin: 10mm 12mm 12mm; }
       * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       html, body { background:#fff; }
-      body { font-family: Aptos, Arial, Helvetica, sans-serif; color: #111; margin: 0; font-size: 12pt; line-height: 1.45; }
-      .page { width:100%; display:flex; flex-direction:column; break-after: page; page-break-after: always; min-height: 255mm; padding: 4mm 5mm 10mm; }
+      body { font-family: Aptos, Arial, Helvetica, sans-serif; color: #111; margin: 0; font-size: 11pt; line-height: 1.5; }
+      .page { width:100%; display:flex; flex-direction:column; break-after: page; page-break-after: always; min-height: 252mm; padding: 5mm 6mm 10mm; }
       .page:last-child { page-break-after: auto; }
-      .header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #cc0000; padding-bottom:10px; margin-bottom:14px; }
-      .logo { height: 66px; width:auto; object-fit:contain; }
-      .header-mid { flex:1; text-align:center; padding-top:5px; font-family:Aptos, Arial, Helvetica, sans-serif; font-weight:900; letter-spacing:1.6px; font-size:11pt; color:#111; }
-      .header-right { text-align:right; font-size:8.3pt; color:#555; line-height:1.45; max-width:220px; }
-      p { margin: 0 0 9px; }
-      .meta { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; gap:12px; }
-      .meta strong { font-size:10.8pt; }
-      .client { margin-bottom: 18px; }
-      .client p { margin-bottom: 5px; }
-      .section-title { text-align:center; font-weight:900; color:#111; text-transform:uppercase; margin: 10px 0 8px; border-bottom:2px solid #cc0000; padding-bottom:4px; font-size:12pt; letter-spacing:.2px; }
-      .table { width:100%; border-collapse:collapse; margin: 8px 0 10px; }
-      .table th, .table td { border:1px solid #222; padding:7px 9px; vertical-align:middle; }
-      .table th { background:#f7f7f7; font-weight:900; text-align:center; font-size:11pt; }
-      .table td { font-size: 11pt; }
-      .table .num { text-align:right; white-space:nowrap; }
+
+      /* HEADER */
+      .header { display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #cc0000; padding-bottom:10px; margin-bottom:14px; gap:12px; }
+      .logo { height:62px; width:auto; object-fit:contain; }
+      .header-mid { flex:1; text-align:center; font-weight:900; letter-spacing:2px; font-size:10.5pt; color:#111; }
+      .header-right { text-align:right; font-size:8pt; color:#555; line-height:1.5; max-width:210px; }
+
+      /* META Y CLIENTE */
+      p { margin: 0 0 8px; }
+      .meta { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:12px; gap:12px; font-size:10.5pt; }
+      .meta strong { font-size:11pt; letter-spacing:.2px; }
+      .client-block { border-left:3px solid #cc0000; background:#f8fafc; padding:9px 14px; margin-bottom:14px; border-radius:0 6px 6px 0; }
+      .client-block p { margin-bottom:4px; font-size:10.5pt; }
+
+      /* TITULOS DE SECCION */
+      .section-title { text-align:center; font-weight:900; color:#1a1a2e; text-transform:uppercase; margin:12px 0 8px; border-bottom:2px solid #cc0000; padding-bottom:4px; font-size:11.5pt; letter-spacing:.3px; }
+
+      /* BADGE PROPUESTA */
+      .badge-proposal { display:inline-block; background:#1a1a2e; color:#fff; font-size:8.5pt; padding:3px 12px; border-radius:20px; margin-bottom:8px; letter-spacing:.5px; }
+
+      /* TABLA DE ITEMS */
+      .table { width:100%; border-collapse:collapse; margin:8px 0 10px; }
+      .table th { background:#1a1a2e; color:#fff; padding:7px 9px; font-weight:900; font-size:10.5pt; }
+      .table td { border:0.5px solid #cbd5e1; padding:6px 9px; vertical-align:middle; font-size:10.5pt; }
+      .table tr:nth-child(even) td { background:#f8fafc; }
+      .table .num { text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
       .table .center { text-align:center; }
-      .table .label-strong td:first-child { font-weight:900; }
-      .total-row td { background:#fff369; font-weight:900; }
-      .note-center { text-align:center; font-weight:900; margin:10px 0 0; font-size:11pt; }
-      .map-wrap { position:relative; border:1px solid #bbb; padding:0; margin: 2px 0 12px; width:100%; min-height:360px; overflow:hidden; background:#f8fafc; }
-      .map { position:absolute; inset:0; width:100%; height:100%; object-fit:fill; display:block; margin:0 auto; }
-      .map-label { position:absolute; pointer-events:none; text-align:center; font-family:Aptos, Arial, Helvetica, sans-serif; font-weight:800; line-height:1; font-size:7.5px; white-space:nowrap; background:rgba(255,255,255,0.8); padding:1px 3px; border-radius:999px; text-shadow:-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 0 4px rgba(255,255,255,0.9); transform-origin:center; }
-      .placeholder { border:1px dashed #bbb; padding: 28px; text-align:center; color:#777; margin-bottom:12px; }
-      .measurement-box { border:1px solid #d5d9e2; background:#f8fafc; padding:10px 12px; margin: 0 0 12px; }
-      .measurement-box p { margin-bottom: 6px; }
-      .measurement-table { width:100%; border-collapse:collapse; margin-top: 6px; }
-      .measurement-table th, .measurement-table td { border:1px solid #cbd5e1; padding:6px 8px; font-size:11pt; }
+      .sub-row td { background:#f1f5f9 !important; font-weight:900; border-top:1.5px solid #94a3b8; }
+      .util-row td { background:#fef9c3 !important; }
+      .total-row td { background:#fff369 !important; font-weight:900; font-size:11.5pt; border-top:2px solid #222; }
+
+      /* TABLA CONDICIONES */
+      .cond-table { width:100%; border-collapse:collapse; margin:8px 0 10px; font-size:10.5pt; }
+      .cond-table td { border:0.5px solid #cbd5e1; padding:7px 10px; }
+      .cond-table td:first-child { background:#f1f5f9; font-weight:900; width:34%; color:#1a1a2e; }
+
+      /* MAPA */
+      .map-wrap { position:relative; border:1px solid #bbb; padding:0; margin:4px 0 12px; width:100%; min-height:320px; overflow:hidden; background:#f8fafc; }
+      .map { position:absolute; inset:0; width:100%; height:100%; object-fit:fill; display:block; }
+      .map-label { position:absolute; pointer-events:none; text-align:center; font-weight:800; line-height:1; font-size:7.5px; white-space:nowrap; background:rgba(255,255,255,0.85); padding:1px 3px; border-radius:999px; text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff; transform-origin:center; }
+
+      /* MEASUREMENT BOX */
+      .measurement-box { border:0.5px solid #d5d9e2; background:#f8fafc; padding:10px 13px; margin:0 0 12px; border-radius:4px; }
+      .measurement-box p { margin-bottom:5px; }
+      .measurement-table { width:100%; border-collapse:collapse; margin-top:6px; }
+      .measurement-table th, .measurement-table td { border:0.5px solid #cbd5e1; padding:5px 8px; font-size:10.5pt; }
       .measurement-table th { background:#e2e8f0; text-align:left; font-weight:800; }
+
+      /* INFO BOX */
+      .info-box { background:#f0f9ff; border:0.5px solid #bae6fd; border-radius:5px; padding:10px 14px; margin-bottom:12px; font-size:10.5pt; }
+
+      /* FOTOS */
       .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
-      .photo-card { border:1px solid #d5d9e2; background:#fff; padding:8px; break-inside: avoid; page-break-inside: avoid; }
-      .photo-wrap { background:#f8fafc; overflow:hidden; }
+      .photo-card { border:0.5px solid #d5d9e2; background:#fff; padding:7px; break-inside:avoid; page-break-inside:avoid; border-radius:5px; }
+      .photo-wrap { background:#f8fafc; overflow:hidden; border-radius:3px; }
       .photo { width:100%; height:auto; display:block; }
-      .photo-label { font-size:10pt; color:#475569; padding-top:6px; text-align:center; }
-      .signature { margin-top: 30px; }
-      .signature-space { height: 72px; }
-      .signature-line { width: 360px; border-top:1px solid #222; padding-top:7px; }
-      .signature-name { white-space: nowrap; }
-      .footer { margin-top:auto; border-top:1px solid #999; padding-top:7px; text-align:center; font-size:9pt; color:#555; }
+      .photo-label { font-size:9.5pt; color:#475569; padding-top:5px; text-align:center; }
+
+      /* LISTA INCLUYE */
+      ul { margin:6px 0 12px 22px; padding:0; }
+      li { margin-bottom:4px; font-size:10.5pt; }
+
+      /* FIRMA */
+      .signature { margin-top:28px; }
+      .signature-space { height:68px; }
+      .signature-line { width:340px; border-top:1px solid #333; padding-top:7px; font-size:10.5pt; }
+
+      /* FICHA TECNICA */
+      .tech-table { width:100%; border-collapse:collapse; margin-top:8px; }
+      .tech-table th { background:#1a1a2e; color:#fff; padding:8px 10px; font-weight:900; font-size:10.5pt; }
+      .tech-table td { border:0.5px solid #cbd5e1; padding:8px 10px; vertical-align:top; font-size:10.5pt; line-height:1.5; }
+      .tech-table tr:nth-child(even) td { background:#f8fafc; }
+      .tech-elem { width:24%; font-weight:800; color:#1a1a2e; }
+
+      /* APPENDIX */
       .appendix-img { width:100%; height:auto; display:block; }
-      .tech-title { font-weight:900; text-transform:uppercase; text-align:center; font-size:15pt; margin: 0 0 10px; }
-      .tech-subtitle { text-align:center; font-weight:700; letter-spacing:4px; margin: 0 0 14px; }
-      .tech-table { width:100%; border-collapse:collapse; margin-top: 8px; }
-      .tech-table th, .tech-table td { border:1px solid #222; padding:8px 10px; vertical-align:top; }
-      .tech-table th { background:#f7f7f7; font-weight:900; text-align:center; }
-      .tech-table td { font-size:11pt; line-height:1.42; }
-      .tech-elem { width:24%; font-weight:800; }
-      ul { margin: 8px 0 12px 22px; padding:0; }
-      li { margin-bottom: 5px; }
-      .small-gap { margin-top: 8px; }
-      .no-break, .measurement-box, .map-wrap, .signature, table, tr, td, th { break-inside: avoid; page-break-inside: avoid; }
+
+      /* FOOTER */
+      .footer { margin-top:auto; border-top:1px solid #cbd5e1; padding-top:7px; text-align:center; font-size:8pt; color:#64748b; }
+
+      /* MISC */
+      .small-gap { margin-top:8px; }
+      .no-break, .measurement-box, .map-wrap, .signature, table, tr { break-inside:avoid; page-break-inside:avoid; }
       img { max-width:100%; }
     </style>
   </head>
@@ -1767,21 +1800,21 @@ function buildCotizacionPrintHtml(c){
       <div class="header">
         <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
         <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
-        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
-      <div class="meta"><div>Envigado, ${escapeHtml(fmtL(c.fecha || today()))}</div><div><strong>COTIZACION No. ${escapeHtml(c.numero || '')}</strong></div></div>
-      <div class="client">
-        <p><strong>SENOR:</strong></p>
-        <p><strong>${escapeHtml((c.cliente || '').toUpperCase())}</strong></p>
+      <div class="meta">
+        <div>Envigado, ${escapeHtml(fmtL(c.fecha || today()))}</div>
+        <div><strong>COTIZACI&Oacute;N No. ${escapeHtml(c.numero || '')}</strong></div>
+      </div>
+      <div class="client-block">
+        <p><strong>SE&Ntilde;OR(A):</strong> <strong>${escapeHtml((c.cliente || '').toUpperCase())}</strong></p>
         ${c.obra ? `<p><strong>OBRA:</strong> ${escapeHtml((c.obra || '').toUpperCase())}</p>` : ''}
-        ${c.telefono ? `<p><strong>TELEFONO:</strong> ${escapeHtml(c.telefono)}</p>` : ''}
-        ${c.ciudad ? `<p><strong>${escapeHtml((c.ciudad || '').toUpperCase())}</strong></p>` : ''}
+        ${c.telefono ? `<p><strong>TEL&Eacute;FONO:</strong> ${escapeHtml(c.telefono)}</p>` : ''}
+        ${c.ciudad ? `<p><strong>CIUDAD:</strong> ${escapeHtml((c.ciudad || '').toUpperCase())}</p>` : ''}
       </div>
-      <div style="height:8px"></div>
       <p>Cordial saludo.</p>
-      <div style="height:8px"></div>
-      ${textoInicial ? `<div class="measurement-box"><div style="white-space:pre-wrap;">${escapeHtml(textoInicial)}</div></div>` : ""}
-      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
+      ${textoInicial ? `<div class="info-box"><div style="white-space:pre-wrap;">${escapeHtml(textoInicial)}</div></div>` : ""}
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel 3152889541 &middot; Nit. 900193965-4 &middot; comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
     </section>
 
     ${proposalSections}
@@ -1790,81 +1823,86 @@ function buildCotizacionPrintHtml(c){
       <div class="header">
         <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
         <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
-        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
       <div class="section-title">Condiciones comerciales</div>
-      <table class="table"><tbody>
-        <tr><td style="width:34%"><strong>FORMA DE PAGO</strong></td><td>${escapeHtml(c.formaPago || DEFAULT_COT_FORMA_PAGO)}</td></tr>
-        <tr><td><strong>TIEMPO DE EJECUCION</strong></td><td>${escapeHtml(c.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC)}</td></tr>
-        <tr><td><strong>VALIDEZ DE LA OFERTA</strong></td><td>${escapeHtml(`${c.val||30} DIAS A PARTIR DE LA FECHA DE ENTREGA DE ESTA COTIZACION`)}</td></tr>
-        <tr><td><strong>CERTIFICACION</strong></td><td>SE ENTREGA CON EL PAGO TOTAL</td></tr>
+      <table class="cond-table"><tbody>
+        <tr><td>FORMA DE PAGO</td><td>${escapeHtml(c.formaPago || DEFAULT_COT_FORMA_PAGO)}</td></tr>
+        <tr><td>TIEMPO DE EJECUCI&Oacute;N</td><td>${escapeHtml(c.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC)}</td></tr>
+        <tr><td>VALIDEZ DE LA OFERTA</td><td>${escapeHtml(`${c.val||30} d\u00edas a partir de la fecha de entrega de esta cotizaci\u00f3n`)}</td></tr>
+        <tr><td>CERTIFICACI&Oacute;N</td><td>Se entrega con el pago total</td></tr>
       </tbody></table>
       ${String(c.observaciones||"").trim() ? `<div class="measurement-box" style="margin-top:12px;"><p><strong>Observaciones</strong></p><div style="white-space:pre-wrap;">${escapeHtml(c.observaciones)}</div></div>` : ""}
-      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
+      <div class="section-title" style="margin-top:18px;">Esta cotizaci&oacute;n incluye</div>
+      <ul>
+        <li>Tuercas y arandelas en acero galvanizado y/o inoxidable certificado.</li>
+        <li>Elementos de instalaci&oacute;n con certificados de f&aacute;brica adjuntos en la documentaci&oacute;n.</li>
+        <li>Transporte de materiales y personal hasta el sitio de trabajo.</li>
+        <li>Certificados seg&uacute;n Resoluci&oacute;n 4272 &mdash; trabajo seguro en alturas.</li>
+        <li>Recertificaci&oacute;n sin costo al a&ntilde;o siguiente de la instalaci&oacute;n.</li>
+        <li>Coordinador de trabajo seguro en alturas de tiempo completo en obra.</li>
+      </ul>
+      <p class="small-gap">Todo el personal se encuentra afiliado a ARL, salud y pensiones. Se llevan todos los EPP necesarios, se realizan todas las reparaciones de da&ntilde;os durante la ejecuci&oacute;n y se entregan las p&oacute;lizas exigidas por el contratante.</p>
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel 3152889541 &middot; Nit. 900193965-4 &middot; comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
     </section>
 
     <section class="page">
       <div class="header">
         <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
         <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
-        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
-      <div class="tech-title">Sistema no continuo en acero galvanizado</div>
+      <div class="section-title">Sistema no continuo en acero galvanizado &mdash; Ficha t&eacute;cnica</div>
       <table class="tech-table">
         <thead>
-          <tr><th style="width:24%">Elemento</th><th>Caracteristica</th></tr>
+          <tr><th style="width:24%;text-align:left;">Elemento</th><th style="text-align:left;">Caracter&iacute;stica</th></tr>
         </thead>
         <tbody>
           <tr>
             <td class="tech-elem">Soporte lateral e intermedio</td>
-            <td>Este elemento esta disenado para ser usado en sistemas de lineas de vida horizontales de tipo continuo. El componente soporta regularmente el cable de acero para que una seccion libre de cable no supere la luz maxima permitida. Este soporte intermedio permite el uso de un carro deslizador para evitar el uso de eslinga en Y por parte del trabajador y evitar que el colaborador se desconecte.</td>
+            <td>Dise&ntilde;ado para sistemas de l&iacute;neas de vida horizontales de tipo continuo. Soporta el cable para que ninguna secci&oacute;n libre supere la luz m&aacute;xima permitida. Permite el uso de carro deslizador para evitar que el colaborador se desconecte.</td>
           </tr>
           <tr>
             <td class="tech-elem">Tensor</td>
-            <td>Este elemento esta disenado para ser usado en sistemas de lineas de vida horizontales. En sus extremos el tensor se asegura al cable de la linea de vida y a un absorbedor de energia respectivamente. Su funcion es tensionar la linea de vida para que, en el momento de una caida, la distancia de caida del trabajador sea minima.</td>
+            <td>Sus extremos se aseguran al cable de la l&iacute;nea de vida y a un absorbedor de energ&iacute;a. Tensiona la l&iacute;nea para que, ante una ca&iacute;da, la distancia recorrida por el trabajador sea m&iacute;nima.</td>
           </tr>
           <tr>
             <td class="tech-elem">Empalmes y fijaciones</td>
-            <td>Fabricados en aluminio. Resistentes a la corrosion y oxidacion. Se utilizan para empalmar dos cables y fijar barandillas de cables.</td>
+            <td>Fabricados en aluminio. Resistentes a la corrosi&oacute;n y oxidaci&oacute;n. Se utilizan para empalmar dos cables y fijar barandillas.</td>
           </tr>
           <tr>
             <td class="tech-elem">Guardacables</td>
-            <td>Fabricado en acero con acabado galvanizado resistente a la corrosion. Protegen contra el desgaste y deformacion del cable, alargando su vida util.</td>
+            <td>Acero con acabado galvanizado resistente a la corrosi&oacute;n. Protegen contra el desgaste y deformaci&oacute;n del cable, alargando su vida &uacute;til.</td>
           </tr>
           <tr>
             <td class="tech-elem">Cable de acero</td>
-            <td>El cable de acero se fabrica bajo un diseno que permite que sea capaz de absorber el desgaste y los esfuerzos causados por el contacto con poleas, tambores y otras superficies, asi como las tensiones estaticas y dinamicas del trabajo al que se someta. Se compone por alambres de acero, estirados en frio, trenzados en espiral, formando unidades denominadas torones. Ademas, su diseno ha sido ideado para que cada alambre tenga la libertad de movimiento en relacion a los alambres adyacentes. Mientras mas alambres conformen este elemento, mayor sera su flexibilidad y resistencia en esfuerzos elevados; logrando el objetivo de transmision de movimiento, fuerzas y energia de forma eficaz y efectiva.</td>
+            <td>Fabricado con alambres de acero estirados en fr&iacute;o, trenzados en espiral formando torones. Transmite movimiento, fuerzas y energ&iacute;a de forma eficaz bajo tensiones est&aacute;ticas y din&aacute;micas.</td>
           </tr>
         </tbody>
       </table>
-      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel 3152889541 &middot; Nit. 900193965-4 &middot; comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
     </section>
-    ${showVerticalAppendix ? `<section class="page"><img src="${articoLineaVidaVertical}" alt="Anexo tecnico linea de vida vertical" class="appendix-img"/><div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div></section>` : ""}
+    ${showVerticalAppendix ? `<section class="page"><img src="${articoLineaVidaVertical}" alt="Anexo tecnico linea de vida vertical" class="appendix-img"/><div class="footer">Calle 38 sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel 3152889541 &middot; Nit. 900193965-4 &middot; comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div></section>` : ""}
 
     <section class="page">
       <div class="header">
         <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
         <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
-        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 - Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
       </div>
-      <div class="section-title">Esta cotizacion incluye</div>
-      <ul>
-        <li>Tuercas y arandelas en acero galvanizado y/o inoxidable certificado.</li>
-        <li>Los elementos utilizados en la instalacion son certificados de fabrica los cuales se adjuntan en la entrega de documentacion de certificados.</li>
-        <li>Transporte de materiales y de personal hasta el sitio de trabajo.</li>
-        <li>Se entregan todos los certificados de acuerdo a la Resolucion 4272 de trabajo seguro en alturas.</li>
-        <li>Recertificacion sin costo al ano siguiente de la instalacion.</li>
-        <li>Esta propuesta incluye el coordinador para trabajo seguro en alturas de tiempo completo en la obra.</li>
-      </ul>
-      <p class="small-gap">Todo el personal que labora en la empresa se encuentra afiliado a ARL, salud y pensiones. Llevamos todos los elementos personales de seguridad necesarios para efectuar dicho trabajo. Realizamos todas las reparaciones de los danos que puedan surgir durante la ejecucion de dicho trabajo y se entregan todas las polizas exigidas por el contratante.</p>
-      <div class="section-title">Sistema de gestion de seguridad y salud en el trabajo</div>
-      <p>Nuestra empresa INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicacion de la Resolucion 4272 de 2021, garantizando la implementacion del Sistema de Gestion de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.</p>
+      <div class="section-title">Sistema de gesti&oacute;n de seguridad y salud en el trabajo</div>
+      <p>INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices de la Resoluci&oacute;n 4272 de 2021, garantizando la implementaci&oacute;n del SG-SST y el mejoramiento de las condiciones de trabajo, minimizando accidentes y enfermedades laborales en todos los frentes de trabajo.</p>
       <div class="signature">
         <p>Cordialmente,</p>
         <div class="signature-space"></div>
-        <div class="signature-line"><div class="signature-name"><strong>ING. JHON JAIME SEPULVEDA LONDONO</strong></div><div>MP. 05256-409949</div><div>GERENTE GENERAL</div><div>Tel: 3152889541</div></div>
+        <div class="signature-line">
+          <strong>ING. JHON JAIME SEP&Uacute;LVEDA LONDO&Ntilde;O</strong><br/>
+          MP. 05256-409949<br/>
+          Gerente General<br/>
+          Tel: 3152889541
+        </div>
       </div>
-      <div class="footer">Calle 38 sur # 36 - 48, Envigado - PBX 448 26 86 - Cel 3152889541 - Nit. 900193965-4 - comercial1ingeanclajes@gmail.com - www.ingeanclajes.com</div>
+      <div class="footer">Calle 38 sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel 3152889541 &middot; Nit. 900193965-4 &middot; comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
     </section>
   </body>
   </html>`;

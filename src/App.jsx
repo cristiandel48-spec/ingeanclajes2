@@ -1985,23 +1985,23 @@ function buildCotizacionPrintHtml(c){
             <tbody>
               <tr>
                 <td>Soporte lateral e intermedio</td>
-                <td>Este elemento está diseñado para ser usado en sistemas de líneas de vida horizontales de tipo continuo. El componente soporta regularmente el cable de acero para que una sección libre de cable no supere la luz máxima permitida. Este soporte intermedio permite el uso de un carro deslizador para evitar el uso de eslinga en Y por parte del trabajador y evitar que el colaborador se desconecte.</td>
+                <td>Diseñado para sistemas de líneas de vida horizontales de tipo continuo. Soporta el cable para que ninguna sección libre supere la luz máxima permitida. Permite el uso de carro deslizador para evitar que el colaborador se desconecte.</td>
               </tr>
               <tr>
                 <td>Tensor</td>
-                <td>Este elemento está diseñado para ser usado en sistemas de líneas de vida horizontales. En sus extremos el tensor se asegura al cable de la línea de vida y a un absorbedor de energía respectivamente. Su función es tensionar la línea de vida para que, en el momento de una caída, la distancia de caída del trabajador sea mínima.</td>
+                <td>Sus extremos se aseguran al cable de la línea de vida y a un absorbedor de energía. Tensiona la línea para que, ante una caída, la distancia recorrida por el trabajador sea mínima.</td>
               </tr>
               <tr>
                 <td>Empalmes y fijaciones</td>
-                <td>Fabricados en aluminio. Resistentes a la corrosión y oxidación. Se utilizan para empalmar dos cables y fijar barandillas de cables.</td>
+                <td>Fabricados en aluminio. Resistentes a la corrosión y oxidación. Se utilizan para empalmar dos cables y fijar barandillas.</td>
               </tr>
               <tr>
                 <td>Guardacables</td>
-                <td>Fabricado en acero con acabado galvanizado resistente a la corrosión. Protegen contra el desgaste y deformación del cable, alargando su vida útil.</td>
+                <td>Acero con acabado galvanizado resistente a la corrosión. Protegen contra el desgaste y deformación del cable, alargando su vida útil.</td>
               </tr>
               <tr>
                 <td>Cable de acero</td>
-                <td>El cable de acero se fabrica bajo un diseño que permite que sea capaz de absorber el desgaste y los esfuerzos causados por el contacto con poleas, tambores y otras superficies, así como las tensiones estáticas y dinámicas del trabajo al que se someta. Se compone por alambres de acero, estirados en frio, trenzados en espiral, formando unidades denominadas torones.<br/><br/>Además, su diseño ha sido ideado para que cada alambre tenga la libertad de movimiento en relación a los alambres adyacentes. Mientras más alambres conformen este elemento, mayor será su flexibilidad y resistencia en esfuerzos elevados; logrando el objetivo de transmisión de movimiento, fuerzas y energía de forma eficaz y efectiva.</td>
+                <td>Fabricado con alambres de acero estirados en frío, trenzados en espiral formando torones. Transmite movimiento, fuerzas y energía de forma eficaz bajo tensiones estáticas y dinámicas.</td>
               </tr>
             </tbody>
           </table>
@@ -2109,9 +2109,9 @@ function buildCotizacionPrintHtml(c){
 
       .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:2mm 0 3mm; }
       .photo-grid.single { grid-template-columns:1fr; }
-      .photo-card { border:1px solid #d1d5db; border-radius:3px; overflow:hidden; background:#fff; }
-      .photo { display:block; width:100%; height:38mm; object-fit:cover; background:#f3f4f6; }
-      .proposal-3-photo { height:34mm; }
+      .photo-card { border:1px solid #d1d5db; border-radius:3px; overflow:hidden; background:#fff; padding:4px; }
+      .photo { display:block; width:100%; height:46mm; object-fit:contain; object-position:center; background:#f3f4f6; }
+      .proposal-3-photo { height:34mm; object-fit:contain; object-position:center; }
       .photo-caption { padding:4px 0 5px; text-align:center; font-size:10px; color:#6b7280; }
 
       .map-wrap { position:relative; width:100%; height:52mm; border:1px solid #d1d5db; overflow:hidden; background:#eef2f7; margin:2mm 0 3mm; }

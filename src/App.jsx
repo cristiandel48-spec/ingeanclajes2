@@ -1645,7 +1645,7 @@ function buildCotizacionPrintHtml(c){
       </div>
       <div class="section-title">Medicion satelital</div>
       <div class="map-wrap"><img src="${propuesta.mapImg}" alt="Mapa de medicion" style="width:100%;height:auto;display:block;aspect-ratio:${mW}/${mH};object-fit:cover;"/>${propLabels}</div>
-      <div class="footer">Calle 38 sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel 3152889541 &middot; Nit. 900193965-4 &middot; comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
+      <div class="footer">Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
     </section>
     <section class="page">
       <div class="header">
@@ -1665,7 +1665,7 @@ function buildCotizacionPrintHtml(c){
         <div style="white-space:pre-wrap;">${escapeHtml(propuesta.alcancePropuesta)}</div>
       </div>` : "";
     const fotosBlock = propuesta.fotos.length ? `
-      <div class="photo-grid">
+      <div class="${propuesta.fotos.length === 1 ? 'photo-single' : 'photo-grid'}">
         ${propuesta.fotos.map((foto,idx)=>`
           <div class="photo-card">
             <div class="photo-wrap"><img src="${foto.src}" alt="${escapeHtml(foto.label || `Foto ${idx+1}`)}" class="photo"/></div>
@@ -1681,18 +1681,7 @@ function buildCotizacionPrintHtml(c){
       return `<tr><td>${desc}</td><td class="num">${qty}</td><td class="center">${unit}</td><td class="num">${value}</td><td class="num">${subtotal}</td></tr>`;
     }).join("");
 
-    return `
-    <section class="page">
-      <div class="header">
-        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
-        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
-        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
-      </div>
-      <div class="section-title">${escapeHtml(propuesta.nombre)}</div>
-      ${requerimientoBlock}
-      ${alcanceBlock}
-      ${fotosBlock}
-      ${propMapBlock}
+    const tableHtml = `
       <table class="table no-break">
         <thead><tr><th style="text-align:left;">Descripcion</th><th class="num">Cantidad</th><th class="center">Unidad</th><th class="num">Valor unitario</th><th class="num">Subtotal</th></tr></thead>
         <tbody>
@@ -1704,8 +1693,43 @@ function buildCotizacionPrintHtml(c){
           <tr class="util-row"><td colspan="4">IVA (19% sobre utilidades)</td><td class="num">${fmt(propuesta.iva)}</td></tr>
           <tr class="total-row"><td colspan="4"><strong>TOTAL</strong></td><td class="num"><strong>${fmt(propuesta.tot)}</strong></td></tr>
         </tbody>
-      </table>
-      <div class="footer">Calle 38 sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel 3152889541 &middot; Nit. 900193965-4 &middot; comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
+      </table>`;
+
+    // Si hay mapa, el propMapBlock ya abre una nueva página — la tabla va dentro de esa página
+    // Si no hay mapa, la tabla va en la misma página que las fotos/texto
+    if(propMapBlock){
+      return `
+    <section class="page">
+      <div class="header">
+        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+      </div>
+      <div class="section-title">${escapeHtml(propuesta.nombre)}</div>
+      ${requerimientoBlock}
+      ${alcanceBlock}
+      ${fotosBlock}
+      <div class="footer">Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
+    </section>
+    ${propMapBlock}
+      ${tableHtml}
+      <div class="footer">Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
+    </section>`;
+    }
+
+    return `
+    <section class="page">
+      <div class="header">
+        <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
+        <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
+        <div class="header-right">Calle 38 sur # 36 - 48, Envigado<br/>PBX 448 26 86 &middot; Cel 3152889541<br/>Nit. 900193965-4<br/>www.ingeanclajes.com</div>
+      </div>
+      <div class="section-title">${escapeHtml(propuesta.nombre)}</div>
+      ${requerimientoBlock}
+      ${alcanceBlock}
+      ${fotosBlock}
+      ${tableHtml}
+      <div class="footer">Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
     </section>`;
   }).join("");
 
@@ -1723,10 +1747,10 @@ function buildCotizacionPrintHtml(c){
       .page:last-child { page-break-after: auto; }
 
       /* HEADER */
-      .header { display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #cc0000; padding-bottom:10px; margin-bottom:14px; gap:12px; }
-      .logo { height:62px; width:auto; object-fit:contain; }
-      .header-mid { flex:1; text-align:center; font-weight:900; letter-spacing:2px; font-size:10.5pt; color:#111; }
-      .header-right { text-align:right; font-size:8pt; color:#555; line-height:1.5; max-width:210px; }
+      .header { display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #cc0000; padding-bottom:10px; margin-bottom:14px; gap:8px; }
+      .logo { height:58px; width:auto; object-fit:contain; flex-shrink:0; }
+      .header-mid { flex:1; text-align:center; font-weight:900; letter-spacing:2px; font-size:10pt; color:#111; white-space:nowrap; }
+      .header-right { text-align:right; font-size:7.5pt; color:#555; line-height:1.5; min-width:160px; flex-shrink:0; }
 
       /* META Y CLIENTE */
       p { margin: 0 0 8px; }
@@ -1772,12 +1796,12 @@ function buildCotizacionPrintHtml(c){
       .map-wrap img { width:100%; display:block; }
       .map-label { position:absolute; pointer-events:none; text-align:center; font-weight:800; line-height:1; font-size:7.5px; white-space:nowrap; background:rgba(255,255,255,0.85); padding:1px 3px; border-radius:999px; text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff; transform-origin:center; }
 
-      /* FOTOS — sin altura fija para que no se corten */
-      .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
-      .photo-card { border:0.5px solid #d5d9e2; background:#fff; padding:8px; break-inside:avoid; page-break-inside:avoid; border-radius:5px; }
-      .photo-wrap { background:#f8fafc; overflow:visible; border-radius:3px; }
-      .photo { width:100%; height:auto; max-height:none; display:block; object-fit:contain; }
-      .photo-label { font-size:9.5pt; color:#475569; padding-top:6px; text-align:center; }
+      /* FOTOS */
+      .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+      .photo-single { display:block; margin-bottom:10px; max-width:70%; }
+      .photo-card { border:0.5px solid #d5d9e2; background:#fff; padding:6px; break-inside:avoid; page-break-inside:avoid; border-radius:5px; }
+      .photo-wrap { background:#f8fafc; overflow:hidden; border-radius:3px; }
+      .photo { width:100%; height:auto; display:block; }
 
       /* LISTA INCLUYE */
       ul { margin:6px 0 12px 22px; padding:0; }
@@ -1799,7 +1823,7 @@ function buildCotizacionPrintHtml(c){
       .appendix-img { width:100%; height:auto; display:block; }
 
       /* FOOTER */
-      .footer { margin-top:auto; border-top:1px solid #cbd5e1; padding-top:6px; padding-bottom:7px; text-align:center; font-size:8pt; color:#64748b; flex-shrink:0; }
+      .footer { margin-top:auto; border-top:1px solid #aaa; border-bottom:1px solid #aaa; padding:5px 0; text-align:center; font-size:7.5pt; color:#333; flex-shrink:0; line-height:1.6; }
 
       /* MISC */
       .small-gap { margin-top:8px; }
@@ -1826,7 +1850,7 @@ function buildCotizacionPrintHtml(c){
       </div>
       <p>Cordial saludo.</p>
       ${textoInicial ? `<div class="info-box"><div style="white-space:pre-wrap;">${escapeHtml(textoInicial)}</div></div>` : ""}
-      <div class="footer">Calle 38 sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel 3152889541 &middot; Nit. 900193965-4 &middot; comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
+      <div class="footer">Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
     </section>
 
     ${proposalSections}
@@ -1855,7 +1879,7 @@ function buildCotizacionPrintHtml(c){
         <li>Coordinador de trabajo seguro en alturas de tiempo completo en obra.</li>
       </ul>
       <p class="small-gap">Todo el personal se encuentra afiliado a ARL, salud y pensiones. Se llevan todos los EPP necesarios, se realizan todas las reparaciones de da&ntilde;os durante la ejecuci&oacute;n y se entregan las p&oacute;lizas exigidas por el contratante.</p>
-      <div class="footer">Calle 38 sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel 3152889541 &middot; Nit. 900193965-4 &middot; comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
+      <div class="footer">Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
     </section>
 
     <section class="page">
@@ -1892,9 +1916,9 @@ function buildCotizacionPrintHtml(c){
           </tr>
         </tbody>
       </table>
-      <div class="footer">Calle 38 sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel 3152889541 &middot; Nit. 900193965-4 &middot; comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
+      <div class="footer">Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
     </section>
-    ${showVerticalAppendix ? `<section class="page"><img src="${articoLineaVidaVertical}" alt="Anexo tecnico linea de vida vertical" class="appendix-img"/><div class="footer">Calle 38 sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel 3152889541 &middot; Nit. 900193965-4 &middot; comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div></section>` : ""}
+    ${showVerticalAppendix ? `<section class="page"><img src="${articoLineaVidaVertical}" alt="Anexo tecnico linea de vida vertical" class="appendix-img"/><div class="footer">Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div></section>` : ""}
 
     <section class="page">
       <div class="header">
@@ -1914,7 +1938,7 @@ function buildCotizacionPrintHtml(c){
           Tel: 3152889541
         </div>
       </div>
-      <div class="footer">Calle 38 sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel 3152889541 &middot; Nit. 900193965-4 &middot; comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
+      <div class="footer">Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</div>
     </section>
   </body>
   </html>`;

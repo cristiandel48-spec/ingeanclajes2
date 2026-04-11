@@ -90,12 +90,13 @@ function Cotizacion({ctx}){
   const [cl,setCl]=useState({nombre:"",obra:"",telefono:"",ciudad:"",coords:""});
   const [textoInicial,setTextoInicial]=useState("");
   const [observacionesCot,setObservacionesCot]=useState("");
-  const [propuestas,setPropuestas]=useState([buildQuoteProposal({id:createQuoteProposalId("new"),nombre:getQuoteProposalLabel(0),formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,util:10,items:[]},0)]);
+  const [propuestas,setPropuestas]=useState([buildQuoteProposal({id:createQuoteProposalId("new"),nombre:getQuoteProposalLabel(0),formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,util:10,items:[],incluyeTexto:""},0)]);
   const [propuestaActivaId,setPropuestaActivaId]=useState(null);
   const [nombrePropuesta,setNombrePropuesta]=useState(getQuoteProposalLabel(0));
   const [alcancePropuesta,setAlcancePropuesta]=useState("");
   const [tipoCotizacion,setTipoCotizacion]=useState("linea_vida");
   const [requerimientoCliente,setRequerimientoCliente]=useState("");
+  const [incluyeTexto,setIncluyeTexto]=useState("");
   const [formaPago,setFormaPago]=useState(DEFAULT_COT_FORMA_PAGO);
   const [tiempoEjec,setTiempoEjec]=useState(DEFAULT_COT_TIEMPO_EJEC);
   const [util,setUtil]=useState(10);
@@ -115,9 +116,21 @@ function Cotizacion({ctx}){
   const iva = ut * 0.19;
   const tot = sub + ut + iva;
 
-  const proposalFromState = ()=>buildQuoteProposal({id:propuestaActivaId || createQuoteProposalId(editCot || "draft"),nombre:nombrePropuesta,alcance:alcancePropuesta,tipoCotizacion,requerimientoCliente,formaPago,tiempoEjec,util,items,fotos:fotosActivaPropuesta,geoMediciones,geoMapView,mapImg:autoMapImg || null,medicionAutomatica:medicionAutomaticaActiva,total:Math.round(tot)},0);
+  const proposalFromState = ()=>buildQuoteProposal({id:propuestaActivaId || createQuoteProposalId(editCot || "draft"),nombre:nombrePropuesta,alcance:alcancePropuesta,tipoCotizacion,requerimientoCliente,incluyeTexto,formaPago,tiempoEjec,util,items,fotos:fotosActivaPropuesta,geoMediciones,geoMapView,mapImg:autoMapImg || null,medicionAutomatica:medicionAutomaticaActiva,total:Math.round(tot)},0);
   const proposalSnapshot = proposalFromState();
   const propuestasSnapshot = (propuestas.length ? propuestas : [proposalSnapshot]).map((propuesta,index)=>buildQuoteProposal(propuesta.id===proposalSnapshot.id?proposalSnapshot:propuesta,index));
+
+  useEffect(()=>{
+    const propuestaActual = {
+      nombre: nombrePropuesta,
+      alcance: alcancePropuesta,
+      requerimientoCliente,
+      items,
+    };
+    if (hasAnchorPointsService(propuestaActual) && !String(incluyeTexto || "").trim()) {
+      setIncluyeTexto(DEFAULT_COT_INCLUYE_PUNTOS_ANCLAJE);
+    }
+  }, [nombrePropuesta, alcancePropuesta, requerimientoCliente, items, incluyeTexto]);
 
   const applyProposal = (propuesta)=>{
     const p = buildQuoteProposal(propuesta,0);
@@ -127,6 +140,7 @@ function Cotizacion({ctx}){
     setAlcancePropuesta(p.alcance || "");
     setTipoCotizacion(p.tipoCotizacion || "linea_vida");
     setRequerimientoCliente(p.requerimientoCliente || "");
+    setIncluyeTexto(String(p.incluyeTexto || ""));
     setFormaPago(p.formaPago || DEFAULT_COT_FORMA_PAGO);
     setTiempoEjec(p.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC);
     setUtil(Number(p.util || 10));
@@ -157,6 +171,7 @@ function Cotizacion({ctx}){
       geoMediciones: (active.geoMediciones && active.geoMediciones.length) ? active.geoMediciones : (source.geoMediciones || []),
       geoMapView: active.geoMapView || source.geoMapView || null,
       mapImg: active.mapImg || source.mapImg || null,
+      incluyeTexto: active.incluyeTexto || "",
       medicionAutomatica: Boolean(active.medicionAutomatica || (active.geoMediciones && active.geoMediciones.length) || (source.geoMediciones && source.geoMediciones.length)),
     };
     applyProposal(activeConFotos);
@@ -174,7 +189,7 @@ function Cotizacion({ctx}){
   const nuevaCotizacion = ()=>{
     setEditCot(null);
     setPreviewCot(null);
-    hydrate({numero:`P-${34155 + cotizaciones.length}`,fecha:today(),val:30,cliente:"",obra:"",telefono:"",ciudad:"",coords:"",geoMediciones:[],geoMapView:null,fotosCotizacion:[],propuestas:[buildQuoteProposal({id:createQuoteProposalId("new"),nombre:getQuoteProposalLabel(0),formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,util:10,items:[],geoMediciones:[],geoMapView:null,mapImg:null,medicionAutomatica:false},0)]});
+    hydrate({numero:`P-${34155 + cotizaciones.length}`,fecha:today(),val:30,cliente:"",obra:"",telefono:"",ciudad:"",coords:"",geoMediciones:[],geoMapView:null,fotosCotizacion:[],propuestas:[buildQuoteProposal({id:createQuoteProposalId("new"),nombre:getQuoteProposalLabel(0),formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,util:10,items:[],geoMediciones:[],geoMapView:null,mapImg:null,medicionAutomatica:false,incluyeTexto:""},0)]});
     setTab("form");
   };
 
@@ -185,7 +200,7 @@ function Cotizacion({ctx}){
     const activa = buildQuoteProposal({...current,items:finalItems,total:totalActiva}, next.findIndex((propuesta)=>propuesta.id===current.id));
     const propuestasFinales = next.map((propuesta)=>propuesta.id===activa.id?activa:buildQuoteProposal(propuesta));
     const prev = editCot ? cotizaciones.find((cotizacion)=>cotizacion.id===editCot) : null;
-    const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:cl.nombre,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,textoInicial:textoInicial.trim(),observaciones:observacionesCot.trim(),items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:activa.mapImg || autoMapImg || null,geoMediciones:activa.geoMediciones || geoMediciones,geoMapView:activa.geoMapView || geoMapView,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
+    const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:cl.nombre,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,textoInicial:textoInicial.trim(),observaciones:observacionesCot.trim(),items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:activa.mapImg || autoMapImg || null,geoMediciones:activa.geoMediciones || geoMediciones,geoMapView:activa.geoMapView || geoMapView,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,incluyeTexto:activa.incluyeTexto || "",propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
     setCotizaciones((prevList)=>editCot ? prevList.map((cotizacion)=>cotizacion.id===editCot?{...cotizacion,...data}:cotizacion) : [...prevList,data]);
     setPropuestas(propuestasFinales);
     setTab("lista");
@@ -356,7 +371,7 @@ function Cotizacion({ctx}){
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
           <div style={ST}>Propuestas</div>
           <div style={{display:"flex",gap:8}}>
-            <button onClick={()=>{const next=[...propuestasSnapshot,buildQuoteProposal({id:createQuoteProposalId(String(propuestasSnapshot.length+1)),nombre:getQuoteProposalLabel(propuestasSnapshot.length),formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,util:10,items:[]},propuestasSnapshot.length)];setPropuestas(next);applyProposal(next[next.length-1]);}} style={{...B("#f47c20"),fontSize:11,padding:"5px 14px"}}>+ Nueva</button>
+            <button onClick={()=>{const next=[...propuestasSnapshot,buildQuoteProposal({id:createQuoteProposalId(String(propuestasSnapshot.length+1)),nombre:getQuoteProposalLabel(propuestasSnapshot.length),formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,util:10,items:[],incluyeTexto:""},propuestasSnapshot.length)];setPropuestas(next);applyProposal(next[next.length-1]);}} style={{...B("#f47c20"),fontSize:11,padding:"5px 14px"}}>+ Nueva</button>
             <button onClick={()=>{const next=[...propuestasSnapshot,buildQuoteProposal({...proposalSnapshot,id:createQuoteProposalId(String(propuestasSnapshot.length+1)),nombre:`${proposalSnapshot.nombre} copia`},propuestasSnapshot.length)];setPropuestas(next);applyProposal(next[next.length-1]);}} style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"5px 14px"}}>Duplicar</button>
           </div>
         </div>
@@ -418,6 +433,11 @@ function Cotizacion({ctx}){
             <textarea value={requerimientoCliente} onChange={e=>setRequerimientoCliente(e.target.value)} style={{...SI,minHeight:100,resize:"vertical",lineHeight:1.5}}/>
           </div>
         )}
+
+        <div style={{marginBottom:18}}>
+          <LBL>Esta cotización incluye</LBL>
+          <textarea value={incluyeTexto} onChange={e=>setIncluyeTexto(e.target.value)} placeholder="Texto predeterminado editable" style={{...SI,minHeight:120,resize:"vertical",lineHeight:1.6}}/>
+        </div>
 
         {/* 3. Fotos */}
         <div style={{marginBottom:18}}>
@@ -696,6 +716,51 @@ const ITEMS_DB = [
 
 const DEFAULT_COT_FORMA_PAGO = "50% ANTICIPO, 50% CONCLUIR LABORES";
 const DEFAULT_COT_TIEMPO_EJEC = "10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)";
+const DEFAULT_COT_INCLUYE_PUNTOS_ANCLAJE = [
+  "Tuercas y arandelas en acero galvanizado y/o inoxidable certificado.",
+  "Elementos de instalación con certificados de fábrica adjuntos en la documentación.",
+  "Transporte de materiales y personal hasta el sitio de trabajo.",
+  "Certificados según Resolución 4272 — trabajo seguro en alturas.",
+  "Recertificación sin costo al año siguiente de la instalación.",
+  "Coordinador de trabajo seguro en alturas de tiempo completo en obra.",
+  "Todo el personal se encuentra afiliado a ARL, salud y pensiones. Se llevan todos los EPP necesarios, se realizan todas las reparaciones de daños durante la ejecución y se entregan las pólizas exigidas por el contratante."
+].join("\n");
+
+function hasAnchorPointsService(propuesta = {}) {
+  const ownText = [
+    propuesta?.nombre || "",
+    propuesta?.alcance || "",
+    propuesta?.propuestaAlcance || "",
+    propuesta?.requerimientoCliente || "",
+  ].join(" ");
+
+  const itemsText = Array.isArray(propuesta?.items)
+    ? propuesta.items.map((item) => [
+        item?.desc || "",
+        item?.descripcion || "",
+        item?.nombre || "",
+      ].join(" ")).join(" ")
+    : "";
+
+  const text = `${ownText} ${itemsText}`.toLowerCase();
+
+  return (
+    text.includes("punto de anclaje") ||
+    text.includes("puntos de anclaje") ||
+    text.includes("anclaje importado") ||
+    text.includes("anclaje nacional") ||
+    text.includes("anclaje epoxico") ||
+    text.includes("anclaje soldado")
+  );
+}
+
+function ensureProposalDefaultTexts(propuesta = {}) {
+  const next = { ...propuesta };
+  if (hasAnchorPointsService(next) && !String(next.incluyeTexto || "").trim()) {
+    next.incluyeTexto = DEFAULT_COT_INCLUYE_PUNTOS_ANCLAJE;
+  }
+  return next;
+}
 
 function getQuoteProposalLabel(index = 0) {
   const safeIndex = Number.isFinite(Number(index)) ? Number(index) : 0;
@@ -731,12 +796,13 @@ function buildQuoteProposal(propuesta = {}, index = 0) {
   const ivaValor = utilidadValor * 0.19;
   const totalCalculado = Math.round(subtotal + utilidadValor + ivaValor);
 
-  return {
+  const base = {
     id: propuesta.id || createQuoteProposalId(index + 1),
     nombre: propuesta.nombre || getQuoteProposalLabel(index),
     alcance: propuesta.alcance ?? propuesta.propuestaAlcance ?? "",
     tipoCotizacion: propuesta.tipoCotizacion || "linea_vida",
     requerimientoCliente: propuesta.requerimientoCliente ?? "",
+    incluyeTexto: String(propuesta.incluyeTexto || ""),
     formaPago: propuesta.formaPago || DEFAULT_COT_FORMA_PAGO,
     tiempoEjec: propuesta.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC,
     util,
@@ -748,6 +814,8 @@ function buildQuoteProposal(propuesta = {}, index = 0) {
     medicionAutomatica: Boolean(propuesta.medicionAutomatica),
     total: Math.round(Number.isFinite(Number(propuesta.total)) ? Number(propuesta.total) : totalCalculado),
   };
+
+  return ensureProposalDefaultTexts(base);
 }
 
 function getQuoteProposals(cotizacion = {}) {
@@ -763,6 +831,7 @@ function getQuoteProposals(cotizacion = {}) {
         alcance: cotizacion.propuestaAlcance || "",
         tipoCotizacion: cotizacion.tipoCotizacion || "linea_vida",
         requerimientoCliente: cotizacion.requerimientoCliente || "",
+        incluyeTexto: cotizacion.incluyeTexto || "",
         formaPago: cotizacion.formaPago || DEFAULT_COT_FORMA_PAGO,
         tiempoEjec: cotizacion.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC,
         util: Number(cotizacion.util ?? 10),
@@ -795,6 +864,7 @@ function mergeQuoteWithProposal(cotizacion = {}, propuesta = null) {
     propuestas: getQuoteProposals(cotizacion),
     tipoCotizacion: activeProposal.tipoCotizacion,
     requerimientoCliente: activeProposal.requerimientoCliente,
+    incluyeTexto: activeProposal.incluyeTexto,
     formaPago: activeProposal.formaPago,
     tiempoEjec: activeProposal.tiempoEjec,
     util: activeProposal.util,
@@ -1618,6 +1688,7 @@ function getQuotePrintableProposals(baseQuote = {}){
       measurements,
       narrative: buildMeasurementNarrative(measurements),
       mapImg,
+      incluyeTexto: String(quote.incluyeTexto || "").trim(),
     };
   });
 }
@@ -1626,6 +1697,7 @@ function buildCotizacionPrintHtml(c){
   const propuestas = getQuotePrintableProposals(c);
   const textoInicial = String(c?.textoInicial || "").trim();
   const showVerticalAppendix = propuestas.some((propuesta)=>hasVerticalLifeLineService(propuesta.quote));
+  const showTechnicalPage = propuestas.some((propuesta)=>propuesta?.quote?.tipoCotizacion === "linea_vida");
   const mapCenter = c?.geoMapView?.center || c?.geoMapView || { lat: 0, lng: 0 };
   const mapZoom = Number(c?.geoMapView?.zoom || 18);
 
@@ -1713,6 +1785,27 @@ function buildCotizacionPrintHtml(c){
           referrerpolicy="no-referrer"
         />
         ${labels}
+      </div>
+    `;
+  };
+
+  const renderIncluyeBlock = (propuesta) => {
+    const texto = String(propuesta?.incluyeTexto || "").trim();
+    if (!texto) return "";
+
+    const lines = texto
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (!lines.length) return "";
+
+    return `
+      <div class="content-block">
+        <div class="subheading with-space">Esta cotización incluye</div>
+        <ul class="bullet-list compact-list">
+          ${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}
+        </ul>
       </div>
     `;
   };
@@ -1812,6 +1905,8 @@ function buildCotizacionPrintHtml(c){
               </div>
             ` : ""}
 
+            ${hasAnchorPointsService(propuesta.quote) ? renderIncluyeBlock(propuesta) : ""}
+
             ${renderPhotoGrid(propuesta.fotos, idx)}
             ${renderMapBlock(propuesta, idx)}
             ${renderItemsTable(propuesta)}
@@ -1833,16 +1928,17 @@ function buildCotizacionPrintHtml(c){
           </div>
 
           <div class="intro-kv">
-            <div><strong>SEÑOR(A):</strong> ${escapeHtml(c?.cliente || "")}</div>
+            <div><strong>EMPRESA:</strong> ${escapeHtml(c?.cliente || "")}</div>
+            <div><strong>CONTACTO:</strong> ${escapeHtml(c?.cliente || "")}</div>
             <div><strong>OBRA:</strong> ${escapeHtml(c?.obra || "")}</div>
             <div><strong>TELÉFONO:</strong> ${escapeHtml(c?.telefono || "")}</div>
             <div><strong>CIUDAD:</strong> ${escapeHtml(c?.ciudad || "")}</div>
           </div>
 
           <p>Cordial saludo.</p>
-          ${textoInicial ? `<p>${escapeHtml(textoInicial)}</p>` : `<p>Presentamos la cotización para la instalación de puntos de anclaje o línea de vida sobre la cubierta del proyecto indicado.</p>`}
-          <p><strong>Trabajo en altura:</strong> Se considera toda actividad, labor o trabajo que se deba realizar a una altura física igual o superior a 1,50 metros desde el piso.</p>
-          <p><strong>Puntos de anclaje:</strong> Son componentes en acero anclado con un epóxico químico marca PURE 110 de POWER FASTENERS o equivalente, con perno de 5/8 a una profundidad de 15 cm o más según el caso a estructuras en concreto, con capacidad de resistir una fuerza de caída de más de 5000 Lbs.</p>
+          ${textoInicial ? `<p>${escapeHtml(textoInicial)}</p>` : `<p>Presentamos la cotización para la instalación de elementos para trabajo seguro en alturas.</p>`}
+          <p><strong>Trabajo en altura:</strong> Se considera toda actividad, labor o trabajo que se deba realizar a una altura física igual o superior a 2 metros desde el piso.</p>
+          <p><strong>Puntos de anclaje:</strong> Son componentes en acero, anclado con un epóxico químico, con perno de 5/8 a una profundidad de 12 cm o más según el caso a estructuras en concreto, con capacidad de resistir una fuerza de caída de más de 5000 Lbs.</p>
           <p><strong>Línea de vida:</strong> Son componentes de un sistema/equipo de protección de caídas, consistentes en una cuerda de nylon o cable de acero instalada en forma horizontal y vertical, tensionada y sujeta en tres o dos puntos de anclaje para otorgar movilidad al personal que trabaja en áreas elevadas.</p>
           <ul class="bullet-list">
             <li>La línea de vida permite la fijación o enganche en forma directa o indirecta al arnés completo para el cuerpo, o a un dispositivo de impacto o amortiguador.</li>
@@ -1867,16 +1963,6 @@ function buildCotizacionPrintHtml(c){
             <div class="kv-row"><strong>VALIDEZ DE LA OFERTA</strong><span>${escapeHtml(`${c?.val || 30} días a partir de la fecha de entrega de esta cotización`)}</span></div>
             <div class="kv-row"><strong>CERTIFICACIÓN</strong><span>Se entrega con el pago total</span></div>
           </div>
-          <div class="subheading with-space">Esta cotización incluye</div>
-          <ul class="bullet-list compact-list">
-            <li>Tuercas y arandelas en acero galvanizado y/o inoxidable certificado.</li>
-            <li>Elementos de instalación con certificados de fábrica adjuntos en la documentación.</li>
-            <li>Transporte de materiales y personal hasta el sitio de trabajo.</li>
-            <li>Certificados según Resolución 4272 &mdash; trabajo seguro en alturas.</li>
-            <li>Recertificación sin costo al año siguiente de la instalación.</li>
-            <li>Coordinador de trabajo seguro en alturas de tiempo completo en obra.</li>
-            <li>Todo el personal se encuentra afiliado a ARL, salud y pensiones. Se llevan todos los EPP necesarios, se realizan todas las reparaciones de daños durante la ejecución y se entregan las pólizas exigidas por el contratante.</li>
-          </ul>
         </div>
         ${footerHtml}
       </div>
@@ -1938,7 +2024,7 @@ function buildCotizacionPrintHtml(c){
             <div class="signature-line">
               <strong>ING. JHON JAIME SEPÚLVEDA LONDOÑO</strong><br/>
               MP. 05256-409949<br/>
-              Gerente General<br/>
+              Directos Comercial<br/>
               Tel: 3152889541
             </div>
           </div>
@@ -2102,7 +2188,7 @@ function buildCotizacionPrintHtml(c){
       </section>
     ` : ""}
     ${renderConditionsPage()}
-    ${renderTechnicalPage()}
+    ${showTechnicalPage ? renderTechnicalPage() : ""}
     ${renderSgsstPage()}
     <script>
       async function waitForImages(){

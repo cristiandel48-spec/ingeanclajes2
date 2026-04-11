@@ -1703,11 +1703,11 @@ function buildCotizacionPrintHtml(c){
     <meta charset="utf-8" />
     <title>Cotizacion ${escapeHtml(c.numero || '')}</title>
     <style>
-      @page { size: Letter; margin: 10mm 12mm 12mm; }
+      @page { size: Letter; margin: 0; }
       * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      html, body { background:#fff; }
-      body { font-family: Aptos, Arial, Helvetica, sans-serif; color: #111; margin: 0; font-size: 11pt; line-height: 1.5; }
-      .page { width:100%; display:flex; flex-direction:column; break-after: page; page-break-after: always; min-height: 252mm; padding: 5mm 6mm 10mm; }
+      html, body { background:#fff; margin:0; padding:0; }
+      body { font-family: Aptos, Arial, Helvetica, sans-serif; color: #111; font-size: 11pt; line-height: 1.5; }
+      .page { width:216mm; height:279mm; display:flex; flex-direction:column; break-after: page; page-break-after: always; padding: 10mm 12mm 0; overflow:hidden; }
       .page:last-child { page-break-after: auto; }
 
       /* HEADER */
@@ -1751,21 +1751,21 @@ function buildCotizacionPrintHtml(c){
       .map-label { position:absolute; pointer-events:none; text-align:center; font-weight:800; line-height:1; font-size:7.5px; white-space:nowrap; background:rgba(255,255,255,0.85); padding:1px 3px; border-radius:999px; text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff; transform-origin:center; }
 
       /* MEASUREMENT BOX */
-      .measurement-box { border:0.5px solid #d5d9e2; background:#f8fafc; padding:10px 13px; margin:0 0 12px; border-radius:4px; }
+      .measurement-box { border:0.5px solid #d5d9e2; background:#f8fafc; padding:10px 13px; margin:0 0 12px; border-radius:4px; font-size:10.5pt; }
       .measurement-box p { margin-bottom:5px; }
       .measurement-table { width:100%; border-collapse:collapse; margin-top:6px; }
       .measurement-table th, .measurement-table td { border:0.5px solid #cbd5e1; padding:5px 8px; font-size:10.5pt; }
       .measurement-table th { background:#e2e8f0; text-align:left; font-weight:800; }
 
-      /* INFO BOX */
-      .info-box { background:#f0f9ff; border:0.5px solid #bae6fd; border-radius:5px; padding:10px 14px; margin-bottom:12px; font-size:10.5pt; }
+      /* INFO BOX — mismo estilo que measurement-box, sin azul */
+      .info-box { background:#f8fafc; border:0.5px solid #d5d9e2; border-radius:4px; padding:10px 13px; margin-bottom:12px; font-size:10.5pt; }
 
-      /* FOTOS */
-      .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
-      .photo-card { border:0.5px solid #d5d9e2; background:#fff; padding:7px; break-inside:avoid; page-break-inside:avoid; border-radius:5px; }
-      .photo-wrap { background:#f8fafc; overflow:hidden; border-radius:3px; }
-      .photo { width:100%; height:auto; display:block; }
-      .photo-label { font-size:9.5pt; color:#475569; padding-top:5px; text-align:center; }
+      /* FOTOS — sin altura fija para que no se corten */
+      .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+      .photo-card { border:0.5px solid #d5d9e2; background:#fff; padding:8px; break-inside:avoid; page-break-inside:avoid; border-radius:5px; }
+      .photo-wrap { background:#f8fafc; overflow:visible; border-radius:3px; }
+      .photo { width:100%; height:auto; max-height:none; display:block; object-fit:contain; }
+      .photo-label { font-size:9.5pt; color:#475569; padding-top:6px; text-align:center; }
 
       /* LISTA INCLUYE */
       ul { margin:6px 0 12px 22px; padding:0; }
@@ -1787,7 +1787,7 @@ function buildCotizacionPrintHtml(c){
       .appendix-img { width:100%; height:auto; display:block; }
 
       /* FOOTER */
-      .footer { margin-top:auto; border-top:1px solid #cbd5e1; padding-top:7px; text-align:center; font-size:8pt; color:#64748b; }
+      .footer { margin-top:auto; border-top:1px solid #cbd5e1; padding-top:6px; padding-bottom:7px; text-align:center; font-size:8pt; color:#64748b; flex-shrink:0; }
 
       /* MISC */
       .small-gap { margin-top:8px; }

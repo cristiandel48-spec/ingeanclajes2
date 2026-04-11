@@ -1625,17 +1625,9 @@ function getQuotePrintableProposals(baseQuote = {}){
 function buildCotizacionPrintHtml(c){
   const propuestas = getQuotePrintableProposals(c);
   const textoInicial = String(c?.textoInicial || "").trim();
+  const showVerticalAppendix = propuestas.some((propuesta)=>hasVerticalLifeLineService(propuesta.quote));
   const mapCenter = c?.geoMapView?.center || c?.geoMapView || { lat: 0, lng: 0 };
   const mapZoom = Number(c?.geoMapView?.zoom || 18);
-  const showVerticalAppendix = propuestas.some((propuesta)=>hasVerticalLifeLineService(propuesta.quote));
-
-  const escapeHtml = (value="") =>
-    String(value ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
 
   const money = (n) => fmt(Number(n || 0));
   const numberFmt = (n) => Number(n || 0).toLocaleString("es-CO");
@@ -1660,84 +1652,100 @@ function buildCotizacionPrintHtml(c){
     </div>
   `;
 
-  const renderPhotoGrid = (fotos = [], forceSingle = false, proposalIndex = 0) => {
+  const renderPhotoGrid = (fotos = [], proposalIndex = 0) => {
     if(!Array.isArray(fotos) || !fotos.length) return "";
-    const images = forceSingle ? fotos.slice(0, 1) : fotos.slice(0, 2);
-
+    const images = fotos.slice(0, 2);
     return `
-      <div class="photo-grid ${proposalIndex === 2 ? "proposal-3-grid" : ""} ${images.length === 1 ? "single" : ""}">
-        ${images.map((src, idx)=>`
-          <div class="photo-card">
-            <img
-              src="${src}"
-              alt="Foto ${idx+1}"
-              class="photo ${proposalIndex === 2 ? "proposal-3-photo" : ""}"
-            />
-            <div class="photo-caption">Foto ${idx+1}</div>
-          </div>
-        `).join("")}
+      <div class="section-title">Registro fotografico de la propuesta</div>
+      <div class="photo-grid ${images.length === 1 ? "single" : ""}">
+        ${images.map((foto, idx)=>{
+          const src = escapeHtml(foto?.src || "");
+          const label = escapeHtml(foto?.label || `Foto ${idx + 1}`);
+          return `
+            <div class="photo-card">
+              <img
+                src="${src}"
+                alt="${label}"
+                class="photo ${proposalIndex === 2 ? "proposal-3-photo" : ""}"
+                loading="eager"
+                referrerpolicy="no-referrer"
+              />
+              <div class="photo-caption">${label}</div>
+            </div>
+          `;
+        }).join("")}
       </div>
     `;
   };
 
   const renderMapBlock = (propuesta, proposalIndex = 0) => {
-    if(!propuesta?.mapImg || !Array.isArray(propuesta.measurements) || !propuesta.measurements.length){
-      return "";
-    }
+    const hasMap = typeof propuesta?.mapImg === "string" && propuesta.mapImg.trim() !== "";
+    if(!hasMap) return "";
 
     const mapView = propuesta?.quote?.geoMapView || c?.geoMapView || null;
     const { width: mW, height: mH } = getStaticMapDimensions(mapView, { width: 1200, height: 700 });
 
-    const labels = buildStaticMapLabelData(
-      propuesta.measurements,
-      mapView?.center || mapCenter,
-      Number(mapView?.zoom || mapZoom),
-      mW,
-      mH
-    ).map((label)=>`
-      <div
-        class="map-label"
-        style="
-          left:${Number(label.x || 0)}px;
-          top:${Number(label.y || 0)}px;
-          color:${escapeHtml(label.color || "#2563EB")};
-          transform:translate(-50%, -50%) rotate(${Number(label.angle || 0)}deg);
-        "
-      >
-        ${escapeHtml(label.title)} - ${escapeHtml(label.value)}
-      </div>
-    `).join("");
+    const labels = Array.isArray(propuesta.measurements) && propuesta.measurements.length
+      ? buildStaticMapLabelData(
+          propuesta.measurements,
+          mapView?.center || mapCenter,
+          Number(mapView?.zoom || mapZoom),
+          mW,
+          mH
+        ).map((label)=>`
+          <div
+            class="map-label"
+            style="left:${Number(label.x || 0)}px; top:${Number(label.y || 0)}px; color:${escapeHtml(label.color || "#2563EB")}; transform:translate(-50%, -50%) rotate(${Number(label.angle || 0)}deg);"
+          >
+            ${escapeHtml(label.title)} - ${escapeHtml(label.value)}
+          </div>
+        `).join("")
+      : "";
 
     return `
       <div class="section-title">Medicion satelital</div>
       <div class="map-wrap ${proposalIndex === 2 ? "proposal-3-map" : ""}">
-        <img src="${propuesta.mapImg}" alt="Mapa de medicion" class="map" />
+        <img
+          src="${escapeHtml(propuesta.mapImg)}"
+          alt="Mapa de medicion"
+          class="map"
+          loading="eager"
+          referrerpolicy="no-referrer"
+        />
         ${labels}
       </div>
     `;
   };
 
   const renderItemsTable = (propuesta) => {
-    const rows = (propuesta.items || []).map((item) => `
-      <tr>
-        <td>${escapeHtml(item.descripcion || item.nombre || "")}</td>
-        <td class="t-center">${numberFmt(item.cantidad || 0)}</td>
-        <td class="t-center">${escapeHtml(item.unidad || "Und")}</td>
-        <td class="t-right">${money(item.valorUnitario || item.valor || 0)}</td>
-        <td class="t-right">${money((item.subtotal ?? ((Number(item.cantidad || 0) * Number(item.valorUnitario || item.valor || 0)))))}</td>
-      </tr>
-    `).join("");
+    const rows = (propuesta.items || []).map((item, idx) => {
+      const desc = escapeHtml(item?.desc || `ITEM ${idx + 1}`);
+      const qtyNumber = Number(item?.cant || 0);
+      const qty = Number.isInteger(qtyNumber) ? String(qtyNumber) : qtyNumber.toFixed(2).replace(/\.00$/, "");
+      const unit = escapeHtml(item?.unit || "UND");
+      const value = money(item?.vu || 0);
+      const subtotal = money((Number(item?.cant || 0) * Number(item?.vu || 0)));
+      return `
+        <tr>
+          <td>${desc}</td>
+          <td class="t-center">${qty}</td>
+          <td class="t-center">${unit}</td>
+          <td class="t-right">${value}</td>
+          <td class="t-right">${subtotal}</td>
+        </tr>
+      `;
+    }).join("");
 
     return `
       <div class="table-wrap">
         <table class="table">
           <thead>
             <tr>
-              <th style="width:44%">Descripcion</th>
-              <th style="width:12%">Cantidad</th>
-              <th style="width:12%">Unidad</th>
-              <th style="width:16%">Valor unitario</th>
-              <th style="width:16%">Subtotal</th>
+              <th style="width:44%; text-align:left;">Descripcion</th>
+              <th style="width:12%;">Cantidad</th>
+              <th style="width:12%;">Unidad</th>
+              <th style="width:16%;">Valor unitario</th>
+              <th style="width:16%;">Subtotal</th>
             </tr>
           </thead>
           <tbody>
@@ -1748,14 +1756,14 @@ function buildCotizacionPrintHtml(c){
             </tr>
             <tr>
               <td colspan="4">ADMINISTRACION</td>
-              <td class="t-right">$ —</td>
+              <td class="t-right">$ &mdash;</td>
             </tr>
             <tr>
               <td colspan="4">IMPREVISTOS</td>
-              <td class="t-right">$ —</td>
+              <td class="t-right">$ &mdash;</td>
             </tr>
             <tr class="soft-row">
-              <td colspan="4">UTILIDADES (${numberFmt(propuesta.util || 0)}% del valor de la obra)</td>
+              <td colspan="4">UTILIDADES (${numberFmt(propuesta.quote?.util || 10)}% del valor de la obra)</td>
               <td class="t-right">${money(propuesta.ut || 0)}</td>
             </tr>
             <tr class="soft-row">
@@ -1772,19 +1780,24 @@ function buildCotizacionPrintHtml(c){
     `;
   };
 
-  const renderProposalIntroPage = (propuesta, idx) => {
-    const hasPhotos = Array.isArray(propuesta.fotos) && propuesta.fotos.length > 0;
-    const hasMap = propuesta.mapImg && Array.isArray(propuesta.measurements) && propuesta.measurements.length > 0;
-    const hasNarrative = String(propuesta.narrative || "").trim().length > 0;
+  const renderProposalPage = (propuesta, idx) => {
     const hasScope = String(propuesta.alcancePropuesta || "").trim().length > 0;
+    const hasNarrative = String(propuesta.narrative || "").trim().length > 0;
+    const hasClientReq = propuesta.esObraBlanca && String(propuesta.requerimientoCliente || "").trim().length > 0;
 
     return `
       <section class="page">
         <div class="page-inner">
           ${headerHtml}
-
           <div class="page-content">
-            <div class="proposal-title">${escapeHtml(propuesta.nombre || `PROPUESTA ${idx+1}`)}</div>
+            <div class="proposal-title">${escapeHtml(propuesta.nombre || `PROPUESTA ${idx + 1}`)}</div>
+
+            ${hasClientReq ? `
+              <div class="content-block">
+                <div class="subheading">Necesidad del cliente</div>
+                <p>${escapeHtml(propuesta.requerimientoCliente)}</p>
+              </div>
+            ` : ""}
 
             ${hasScope ? `
               <div class="content-block">
@@ -1794,54 +1807,77 @@ function buildCotizacionPrintHtml(c){
             ` : ""}
 
             ${hasNarrative ? `
-              <div class="content-block">
+              <div class="content-block compact-block">
                 <p>${escapeHtml(propuesta.narrative)}</p>
               </div>
             ` : ""}
 
-            ${hasPhotos ? `
-              <div class="section-title">Registro fotografico de la propuesta</div>
-              ${renderPhotoGrid(propuesta.fotos, false, idx)}
-            ` : ""}
-
-            ${hasMap ? renderMapBlock(propuesta, idx) : ""}
-
+            ${renderPhotoGrid(propuesta.fotos, idx)}
+            ${renderMapBlock(propuesta, idx)}
             ${renderItemsTable(propuesta)}
           </div>
-
           ${footerHtml}
         </div>
       </section>
     `;
   };
 
+  const introPage = `
+    <section class="page">
+      <div class="page-inner">
+        ${headerHtml}
+        <div class="page-content intro-page">
+          <div class="meta-top">
+            <div><strong>Envigado,</strong> ${escapeHtml(c?.fecha || "")}</div>
+            <div><strong>COTIZACIÓN No.</strong> ${escapeHtml(c?.numero || c?.id || "")}</div>
+          </div>
+
+          <div class="intro-kv">
+            <div><strong>SEÑOR(A):</strong> ${escapeHtml(c?.cliente || "")}</div>
+            <div><strong>OBRA:</strong> ${escapeHtml(c?.obra || "")}</div>
+            <div><strong>TELÉFONO:</strong> ${escapeHtml(c?.telefono || "")}</div>
+            <div><strong>CIUDAD:</strong> ${escapeHtml(c?.ciudad || "")}</div>
+          </div>
+
+          <p>Cordial saludo.</p>
+          ${textoInicial ? `<p>${escapeHtml(textoInicial)}</p>` : `<p>Presentamos la cotización para la instalación de puntos de anclaje o línea de vida sobre la cubierta del proyecto indicado.</p>`}
+          <p><strong>Trabajo en altura:</strong> Se considera toda actividad, labor o trabajo que se deba realizar a una altura física igual o superior a 1,50 metros desde el piso.</p>
+          <p><strong>Puntos de anclaje:</strong> Son componentes en acero anclado con un epóxico químico marca PURE 110 de POWER FASTENERS o equivalente, con perno de 5/8 a una profundidad de 15 cm o más según el caso a estructuras en concreto, con capacidad de resistir una fuerza de caída de más de 5000 Lbs.</p>
+          <p><strong>Línea de vida:</strong> Son componentes de un sistema/equipo de protección de caídas, consistentes en una cuerda de nylon o cable de acero instalada en forma horizontal y vertical, tensionada y sujeta en tres o dos puntos de anclaje para otorgar movilidad al personal que trabaja en áreas elevadas.</p>
+          <ul class="bullet-list">
+            <li>La línea de vida permite la fijación o enganche en forma directa o indirecta al arnés completo para el cuerpo, o a un dispositivo de impacto o amortiguador.</li>
+            <li>Las líneas de vida estarán constituidas por un solo cable continuo.</li>
+            <li>Los anclajes a los cuales se fijarán las líneas de vida deben resistir al menos 5.000 libras por cada persona asegurada.</li>
+          </ul>
+        </div>
+        ${footerHtml}
+      </div>
+    </section>
+  `;
+
   const renderConditionsPage = () => `
     <section class="page">
       <div class="page-inner">
         ${headerHtml}
-
         <div class="page-content">
           <div class="section-title">Condiciones comerciales</div>
-
           <div class="kv-grid">
             <div class="kv-row"><strong>FORMA DE PAGO</strong><span>${escapeHtml(c?.formaPago || "50% ANTICIPO, 50% CONCLUIR LABORES")}</span></div>
-            <div class="kv-row"><strong>TIEMPO DE EJECUCI&Oacute;N</strong><span>${escapeHtml(c?.tiempoEjec || "10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)")}</span></div>
+            <div class="kv-row"><strong>TIEMPO DE EJECUCIÓN</strong><span>${escapeHtml(c?.tiempoEjec || "10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)")}</span></div>
             <div class="kv-row"><strong>VALIDEZ DE LA OFERTA</strong><span>${escapeHtml(`${c?.val || 30} días a partir de la fecha de entrega de esta cotización`)}</span></div>
-            <div class="kv-row"><strong>CERTIFICACI&Oacute;N</strong><span>Se entrega con el pago total</span></div>
+            <div class="kv-row"><strong>CERTIFICACIÓN</strong><span>Se entrega con el pago total</span></div>
           </div>
-
-          <div class="subheading with-space">Esta cotizaci&oacute;n incluye</div>
-          <ul class="bullet-list">
+          <div class="subheading with-space">Esta cotización incluye</div>
+          <ul class="bullet-list compact-list">
             <li>Tuercas y arandelas en acero galvanizado y/o inoxidable certificado.</li>
-            <li>Elementos de instalaci&oacute;n con certificados de f&aacute;brica adjuntos en la documentaci&oacute;n.</li>
+            <li>Elementos de instalación con certificados de fábrica adjuntos en la documentación.</li>
             <li>Transporte de materiales y personal hasta el sitio de trabajo.</li>
-            <li>Certificados seg&uacute;n Resoluci&oacute;n 4272 &mdash; trabajo seguro en alturas.</li>
-            <li>Recertificaci&oacute;n sin costo al a&ntilde;o siguiente de la instalaci&oacute;n.</li>
+            <li>Certificados según Resolución 4272 &mdash; trabajo seguro en alturas.</li>
+            <li>Recertificación sin costo al año siguiente de la instalación.</li>
             <li>Coordinador de trabajo seguro en alturas de tiempo completo en obra.</li>
-            <li>Todo el personal se encuentra afiliado a ARL, salud y pensiones. Se llevan todos los EPP necesarios, se realizan todas las reparaciones de da&ntilde;os durante la ejecuci&oacute;n y se entregan las p&oacute;lizas exigidas por el contratante.</li>
+            <li>Todo el personal se encuentra afiliado a ARL, salud y pensiones. Se llevan todos los EPP necesarios, se realizan todas las reparaciones de daños durante la ejecución y se entregan las pólizas exigidas por el contratante.</li>
           </ul>
         </div>
-
         ${footerHtml}
       </div>
     </section>
@@ -1851,42 +1887,39 @@ function buildCotizacionPrintHtml(c){
     <section class="page">
       <div class="page-inner">
         ${headerHtml}
-
         <div class="page-content">
-          <div class="section-title">Sistema no continuo en acero galvanizado &mdash; ficha t&eacute;cnica</div>
-
+          <div class="section-title">Sistema no continuo en acero galvanizado &mdash; ficha técnica</div>
           <table class="table tech-table">
             <thead>
               <tr>
-                <th style="width:28%">Elemento</th>
-                <th>Caracter&iacute;stica</th>
+                <th style="width:28%;">Elemento</th>
+                <th>Característica</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td>Soporte lateral e intermedio</td>
-                <td>Dise&ntilde;ado para sistemas de l&iacute;neas de vida horizontales de tipo continuo. Soporta el cable para que ninguna secci&oacute;n libre supere la luz m&aacute;xima permitida. Permite el uso de carro deslizador para evitar que el colaborador se desconecte.</td>
+                <td>Diseñado para sistemas de líneas de vida horizontales de tipo continuo. Soporta el cable para que ninguna sección libre supere la luz máxima permitida. Permite el uso de carro deslizador para evitar que el colaborador se desconecte.</td>
               </tr>
               <tr>
                 <td>Tensor</td>
-                <td>Sus extremos se aseguran al cable de la l&iacute;nea de vida y a un absorbedor de energ&iacute;a. Tensiona la l&iacute;nea para que, ante una ca&iacute;da, la distancia recorrida por el trabajador sea m&iacute;nima.</td>
+                <td>Sus extremos se aseguran al cable de la línea de vida y a un absorbedor de energía. Tensiona la línea para que, ante una caída, la distancia recorrida por el trabajador sea mínima.</td>
               </tr>
               <tr>
                 <td>Empalmes y fijaciones</td>
-                <td>Fabricados en aluminio. Resistentes a la corrosi&oacute;n y oxidaci&oacute;n. Se utilizan para empalmar dos cables y fijar barandillas.</td>
+                <td>Fabricados en aluminio. Resistentes a la corrosión y oxidación. Se utilizan para empalmar dos cables y fijar barandillas.</td>
               </tr>
               <tr>
                 <td>Guardacables</td>
-                <td>Acero con acabado galvanizado resistente a la corrosi&oacute;n. Protegen contra el desgaste y deformaci&oacute;n del cable, alargando su vida &uacute;til.</td>
+                <td>Acero con acabado galvanizado resistente a la corrosión. Protegen contra el desgaste y deformación del cable, alargando su vida útil.</td>
               </tr>
               <tr>
                 <td>Cable de acero</td>
-                <td>Fabricado con alambres de acero estirados en fr&iacute;o, trenzados en espiral formando torones. Transmite movimiento, fuerzas y energ&iacute;a de forma eficaz bajo tensiones est&aacute;ticas y din&aacute;micas.</td>
+                <td>Fabricado con alambres de acero estirados en frío, trenzados en espiral formando torones. Transmite movimiento, fuerzas y energía de forma eficaz bajo tensiones estáticas y dinámicas.</td>
               </tr>
             </tbody>
           </table>
         </div>
-
         ${footerHtml}
       </div>
     </section>
@@ -1896,394 +1929,149 @@ function buildCotizacionPrintHtml(c){
     <section class="page">
       <div class="page-inner">
         ${headerHtml}
-
         <div class="page-content">
-          <div class="section-title">Sistema de gesti&oacute;n de seguridad y salud en el trabajo</div>
-          <p>
-            INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicaci&oacute;n de la Resoluci&oacute;n 4272 de 2021, garantizando la implementaci&oacute;n del Sistema de Gesti&oacute;n de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.
-          </p>
-
+          <div class="section-title">Sistema de gestión de seguridad y salud en el trabajo</div>
+          <p>INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicación de la Resolución 4272 de 2021, garantizando la implementación del Sistema de Gestión de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.</p>
           <div class="signature-block">
             <p>Cordialmente,</p>
             <div class="signature-space"></div>
             <div class="signature-line">
-              <strong>ING. JHON JAIME SEP&Uacute;LVEDA LONDO&Ntilde;O</strong><br/>
+              <strong>ING. JHON JAIME SEPÚLVEDA LONDOÑO</strong><br/>
               MP. 05256-409949<br/>
               Gerente General<br/>
               Tel: 3152889541
             </div>
           </div>
         </div>
-
         ${footerHtml}
       </div>
     </section>
   `;
 
-  const introPage = `
-    <section class="page">
-      <div class="page-inner">
-        ${headerHtml}
+  const proposalSections = propuestas.map((propuesta, idx) => renderProposalPage(propuesta, idx)).join("");
 
-        <div class="page-content intro-page">
-          <div class="meta-top">
-            <div><strong>Envigado,</strong> ${escapeHtml(c?.fecha || "9 de abril de 2026")}</div>
-            <div><strong>COTIZACI&Oacute;N No.</strong> ${escapeHtml(c?.numero || c?.id || "")}</div>
-          </div>
-
-          <div class="intro-kv">
-            <div><strong>SE&Ntilde;OR(A):</strong> ${escapeHtml(c?.cliente || "")}</div>
-            <div><strong>OBRA:</strong> ${escapeHtml(c?.obra || "")}</div>
-            <div><strong>TEL&Eacute;FONO:</strong> ${escapeHtml(c?.telefono || "")}</div>
-            <div><strong>CIUDAD:</strong> ${escapeHtml(c?.ciudad || "")}</div>
-          </div>
-
-          <p>Cordial saludo.</p>
-
-          ${textoInicial ? `
-            <p>${escapeHtml(textoInicial)}</p>
-          ` : `
-            <p>Presentamos la cotizaci&oacute;n para la instalaci&oacute;n de puntos de anclaje o l&iacute;nea de vida sobre la cubierta del proyecto indicado.</p>
-          `}
-
-          <p><strong>Trabajo en altura:</strong> Se considera toda actividad, labor o trabajo que se deba realizar a una altura f&iacute;sica igual o superior a 1,50 metros desde el piso.</p>
-          <p><strong>Puntos de anclaje:</strong> Son componentes en acero anclado con un ep&oacute;xico qu&iacute;mico marca PURE 110 de POWER FASTENERS o equivalente, con perno de 5/8 a una profundidad de 15 cm o m&aacute;s seg&uacute;n el caso a estructuras en concreto, con capacidad de resistir una fuerza de ca&iacute;da de m&aacute;s de 5000 Lbs.</p>
-          <p><strong>L&iacute;nea de vida:</strong> Son componentes de un sistema/equipo de protecci&oacute;n de ca&iacute;das, consistentes en una cuerda de nylon o cable de acero instalada en forma horizontal y vertical, tensionada y sujeta en tres o dos puntos de anclaje para otorgar movilidad al personal que trabaja en &aacute;reas elevadas.</p>
-
-          <ul class="bullet-list">
-            <li>La l&iacute;nea de vida permite la fijaci&oacute;n o enganche en forma directa o indirecta al arn&eacute;s completo para el cuerpo, o a un dispositivo de impacto o amortiguador.</li>
-            <li>Las l&iacute;neas de vida estar&aacute;n constituidas por un solo cable continuo.</li>
-            <li>Los anclajes a los cuales se fijar&aacute;n las l&iacute;neas de vida deben resistir al menos 5.000 libras por cada persona asegurada.</li>
-          </ul>
-        </div>
-
-        ${footerHtml}
-      </div>
-    </section>
-  `;
-
-  const proposalSections = propuestas.map((propuesta, idx) => renderProposalIntroPage(propuesta, idx)).join("");
-
-  return `
-  <!doctype html>
-  <html lang="es">
+  return `<!doctype html>
+  <html>
   <head>
     <meta charset="utf-8" />
-    <title>Cotizaci&oacute;n ${escapeHtml(c?.numero || c?.id || "")}</title>
+    <title>Cotizacion ${escapeHtml(c?.numero || "")}</title>
     <style>
-      @page {
-        size: letter;
-        margin: 0;
-      }
-
-      * {
-        box-sizing: border-box;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-
-      html, body {
-        margin: 0;
-        padding: 0;
-        background: #d9d9d9;
-        font-family: Arial, Helvetica, sans-serif;
-        color: #111827;
-      }
-
-      body {
-        padding: 0;
-      }
+      @page { size: Letter; margin: 0; }
+      * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      html, body { margin:0; padding:0; background:#ffffff; }
+      body { font-family: Aptos, Arial, Helvetica, sans-serif; color:#111827; }
 
       .page {
-        width: 216mm;
-        min-height: 279mm;
-        margin: 0 auto;
-        background: #fff;
-        break-after: page;
-        page-break-after: always;
-        overflow: hidden;
-        padding: 6mm 8mm 14mm 8mm;
+        width:216mm;
+        height:279mm;
+        margin:0 auto;
+        background:#fff;
+        break-after:page;
+        page-break-after:always;
+        overflow:hidden;
+        padding:6mm 8mm 14mm 8mm;
       }
-
-      .page:last-child {
-        break-after: auto;
-        page-break-after: auto;
-      }
-
-      .page-inner {
-        min-height: calc(279mm - 20mm);
-        display: flex;
-        flex-direction: column;
-        padding: 4mm 6mm 6mm 6mm;
-      }
-
-      .page-content {
-        flex: 1 1 auto;
-        min-height: 0;
-      }
+      .page:last-child { break-after:auto; page-break-after:auto; }
+      .page-inner { display:block; padding:4mm 6mm 6mm 6mm; }
+      .page-content { display:block; }
 
       .header {
-        display: grid;
-        grid-template-columns: 170px 1fr 220px;
-        align-items: center;
-        column-gap: 12px;
-        border-bottom: 2px solid #c1121f;
-        padding-bottom: 3mm;
-        margin-bottom: 4mm;
+        display:grid;
+        grid-template-columns:170px 1fr 220px;
+        align-items:center;
+        column-gap:12px;
+        border-bottom:2px solid #c1121f;
+        padding-bottom:3mm;
+        margin-bottom:4mm;
       }
+      .logo { width:160px; max-height:38px; object-fit:contain; }
+      .header-mid { text-align:center; font-size:11px; font-weight:800; letter-spacing:2.2px; color:#111827; }
+      .header-right { text-align:right; font-size:10px; line-height:1.35; color:#4b5563; }
 
-      .logo {
-        width: 160px;
-        max-height: 38px;
-        object-fit: contain;
-      }
-
-      .header-mid {
-        text-align: center;
-        font-size: 11px;
-        font-weight: 800;
-        letter-spacing: 2.2px;
-        color: #111827;
-      }
-
-      .header-right {
-        text-align: right;
-        font-size: 10px;
-        line-height: 1.35;
-        color: #4b5563;
-      }
-
-      .meta-top {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        margin-bottom: 4mm;
-        font-size: 12px;
-      }
-
-      .intro-kv {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 2px;
-        font-size: 12px;
-        margin-bottom: 4mm;
-      }
-
-      p {
-        margin: 0 0 3mm;
-        font-size: 12px;
-        line-height: 1.45;
-      }
-
-      .bullet-list {
-        margin: 1.5mm 0 0 0;
-        padding-left: 18px;
-        font-size: 12px;
-        line-height: 1.45;
-      }
-
-      .bullet-list li {
-        margin-bottom: 1.5mm;
-      }
+      .meta-top { display:flex; justify-content:space-between; gap:12px; margin-bottom:4mm; font-size:12px; }
+      .intro-kv { display:grid; gap:2px; font-size:12px; margin-bottom:4mm; }
+      p { margin:0 0 3mm; font-size:12px; line-height:1.42; text-align:justify; }
 
       .proposal-title {
-        margin: 1mm 0 3mm;
-        padding-bottom: 1.5mm;
-        border-bottom: 1px solid #c1121f;
-        text-align: center;
-        font-size: 13px;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: .2px;
+        margin:1mm 0 3mm;
+        padding-bottom:1.5mm;
+        border-bottom:1px solid #c1121f;
+        text-align:center;
+        font-size:13px;
+        font-weight:800;
+        text-transform:uppercase;
+        letter-spacing:.2px;
       }
-
       .section-title {
-        margin: 2mm 0 2mm;
-        padding-bottom: 1.2mm;
-        border-bottom: 1px solid #c1121f;
-        text-align: center;
-        font-size: 12px;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: .2px;
+        margin:2mm 0 2mm;
+        padding-bottom:1.2mm;
+        border-bottom:1px solid #c1121f;
+        text-align:center;
+        font-size:12px;
+        font-weight:800;
+        text-transform:uppercase;
+        letter-spacing:.2px;
       }
+      .subheading { font-size:12px; font-weight:700; margin-bottom:2mm; }
+      .subheading.with-space { margin-top:4mm; }
+      .content-block { margin-bottom:3mm; }
+      .compact-block p { margin-bottom:2mm; }
 
-      .subheading {
-        font-size: 12px;
-        font-weight: 700;
-        margin-bottom: 2mm;
-      }
+      .bullet-list { margin:1.5mm 0 0 0; padding-left:18px; font-size:12px; line-height:1.38; }
+      .bullet-list li { margin-bottom:1.3mm; }
+      .compact-list li { margin-bottom:1mm; }
 
-      .subheading.with-space {
-        margin-top: 4mm;
-      }
+      .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:2mm 0 3mm; }
+      .photo-grid.single { grid-template-columns:1fr; }
+      .photo-card { border:1px solid #d1d5db; border-radius:3px; overflow:hidden; background:#fff; }
+      .photo { display:block; width:100%; height:38mm; object-fit:cover; background:#f3f4f6; }
+      .proposal-3-photo { height:34mm; }
+      .photo-caption { padding:4px 0 5px; text-align:center; font-size:10px; color:#6b7280; }
 
-      .content-block {
-        margin-bottom: 3mm;
-      }
-
-      .photo-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-        margin: 2mm 0 3mm;
-      }
-
-      .photo-grid.single {
-        grid-template-columns: 1fr;
-      }
-
-      .photo-card {
-        border: 1px solid #d1d5db;
-        border-radius: 3px;
-        overflow: hidden;
-        background: #fff;
-      }
-
-      .photo {
-        display: block;
-        width: 100%;
-        height: 52mm;
-        object-fit: cover;
-        background: #f8fafc;
-      }
-
-      .proposal-3-photo {
-        height: 42mm;
-      }
-
-      .photo-caption {
-        padding: 4px 0 5px;
-        text-align: center;
-        font-size: 10px;
-        color: #6b7280;
-      }
-
-      .map-wrap {
-        position: relative;
-        width: 100%;
-        height: 64mm;
-        border: 1px solid #d1d5db;
-        overflow: hidden;
-        background: #f8fafc;
-        margin: 2mm 0 3mm;
-      }
-
-      .proposal-3-map {
-        height: 54mm;
-      }
-
-      .map {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-      }
-
+      .map-wrap { position:relative; width:100%; height:52mm; border:1px solid #d1d5db; overflow:hidden; background:#eef2f7; margin:2mm 0 3mm; }
+      .proposal-3-map { height:52mm; }
+      .map { display:block; width:100%; height:100%; object-fit:cover; background:#eef2f7; }
       .map-label {
-        position: absolute;
-        font-size: 10px;
-        font-weight: 700;
-        line-height: 1;
-        white-space: nowrap;
-        text-shadow: 0 1px 1px rgba(255,255,255,.9);
-        transform-origin: center center;
-        pointer-events: none;
+        position:absolute;
+        font-size:10px;
+        font-weight:700;
+        line-height:1;
+        white-space:nowrap;
+        text-shadow:0 1px 1px rgba(255,255,255,.95);
+        transform-origin:center center;
+        pointer-events:none;
       }
 
-      .table-wrap {
-        margin-top: 2mm;
-      }
+      .table-wrap { margin-top:2mm; }
+      .table { width:100%; border-collapse:collapse; font-size:10.2px; }
+      .table th { background:#151a36; color:#fff; border:1px solid #cbd5e1; padding:5px 6px; font-weight:700; text-align:center; }
+      .table td { border:1px solid #cbd5e1; padding:5px 6px; vertical-align:middle; }
+      .table .label-total { background:#eef2f7; font-weight:700; }
+      .table .soft-row td { background:#f3edb0; }
+      .table .grand-total td { background:#f2e55e; font-weight:800; font-size:12px; }
+      .tech-table td:first-child { width:28%; font-weight:700; }
 
-      .table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 11px;
-      }
+      .t-center { text-align:center; }
+      .t-right { text-align:right; }
+      .strong { font-weight:700; }
 
-      .table th {
-        background: #151a36;
-        color: #fff;
-        border: 1px solid #cbd5e1;
-        padding: 6px 6px;
-        font-weight: 700;
-        text-align: center;
-      }
+      .kv-grid { display:grid; gap:2mm; margin-top:2mm; }
+      .kv-row { display:grid; grid-template-columns:64mm 1fr; gap:4mm; font-size:12px; line-height:1.35; }
 
-      .table td {
-        border: 1px solid #cbd5e1;
-        padding: 6px 6px;
-        vertical-align: middle;
-      }
+      .signature-block { margin-top:8mm; }
+      .signature-space { height:24px; }
+      .signature-line { font-size:12px; line-height:1.42; }
 
-      .table .label-total {
-        background: #eef2f7;
-        font-weight: 700;
-      }
-
-      .table .soft-row td {
-        background: #f3edb0;
-      }
-
-      .table .grand-total td {
-        background: #f2e55e;
-        font-weight: 800;
-        font-size: 12px;
-      }
-
-      .tech-table td:first-child {
-        width: 28%;
-        font-weight: 700;
-      }
-
-      .t-center { text-align: center; }
-      .t-right { text-align: right; }
-      .strong { font-weight: 700; }
-
-      .kv-grid {
-        display: grid;
-        gap: 2mm;
-        margin-top: 2mm;
-      }
-
-      .kv-row {
-        display: grid;
-        grid-template-columns: 64mm 1fr;
-        gap: 4mm;
-        font-size: 12px;
-        line-height: 1.4;
-      }
-
-      .signature-block {
-        margin-top: 8mm;
-      }
-
-      .signature-space {
-        height: 36px;
-      }
-
-      .signature-line {
-        font-size: 12px;
-        line-height: 1.45;
-      }
-
-      .appendix-img {
-        width: 100%;
-        height: auto;
-        max-height: 235mm;
-        object-fit: contain;
-        display: block;
-        margin: 0 auto;
-      }
+      .appendix-img { width:100%; height:auto; max-height:235mm; object-fit:contain; display:block; margin:0 auto; }
 
       .footer {
-        margin-top: auto;
-        padding-top: 3mm;
-        border-top: 0.4px solid #9ca3af;
-        text-align: center;
-        font-size: 9px;
-        line-height: 1.3;
-        color: #6b7280;
+        margin-top:5mm;
+        padding-top:2mm;
+        border-top:0.4px solid #9ca3af;
+        text-align:center;
+        font-size:9px;
+        line-height:1.25;
+        color:#6b7280;
       }
 
       .proposal-title,
@@ -2292,19 +2080,11 @@ function buildCotizacionPrintHtml(c){
       .map-wrap,
       .table-wrap,
       .signature-block,
-      .content-block {
-        break-inside: avoid;
-        page-break-inside: avoid;
-      }
+      .content-block { break-inside:avoid; page-break-inside:avoid; }
 
       @media print {
-        body {
-          background: #fff;
-        }
-
-        .page {
-          margin: 0;
-        }
+        body { background:#fff; }
+        .page { margin:0; }
       }
     </style>
   </head>
@@ -2324,14 +2104,95 @@ function buildCotizacionPrintHtml(c){
     ${renderConditionsPage()}
     ${renderTechnicalPage()}
     ${renderSgsstPage()}
+    <script>
+      async function waitForImages(){
+        const images = Array.from(document.images || []);
+        await Promise.all(images.map((img)=>{
+          if(img.complete) return Promise.resolve();
+          return new Promise((resolve)=>{
+            img.onload = resolve;
+            img.onerror = resolve;
+          });
+        }));
+      }
+      window.addEventListener('load', async ()=>{ await waitForImages(); });
+    </script>
   </body>
   </html>`;
 }
 
-function openCotizacionPrint(c){
-  const html = buildCotizacionPrintHtml(c);
+
+async function toDataUrl(src){
+  if(!src) return "";
+  if(typeof src !== "string"){
+    if(src instanceof Blob || src instanceof File){
+      return await new Promise((resolve, reject)=>{
+        const reader = new FileReader();
+        reader.onloadend = ()=>resolve(reader.result || "");
+        reader.onerror = reject;
+        reader.readAsDataURL(src);
+      });
+    }
+    return "";
+  }
+  if(src.startsWith("data:")) return src;
+  try {
+    const response = await fetch(src);
+    const blob = await response.blob();
+    return await new Promise((resolve, reject)=>{
+      const reader = new FileReader();
+      reader.onloadend = ()=>resolve(reader.result || "");
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch(err){
+    console.error("No se pudo convertir imagen a data URL:", src, err);
+    return src;
+  }
+}
+
+async function normalizeCotizacionForPrint(c={}){
+  let clone;
+  try {
+    clone = structuredClone(c);
+  } catch(_err){
+    clone = JSON.parse(JSON.stringify(c || {}));
+  }
+
+  if(Array.isArray(clone?.fotosCotizacion)){
+    clone.fotosCotizacion = await Promise.all(clone.fotosCotizacion.map(async (foto)=>({
+      ...foto,
+      src: await toDataUrl(foto?.src || ""),
+    })));
+  }
+
+  if(Array.isArray(clone?.propuestas)){
+    clone.propuestas = await Promise.all(clone.propuestas.map(async (propuesta)=>{
+      const fotos = Array.isArray(propuesta?.fotos)
+        ? await Promise.all(propuesta.fotos.map(async (foto)=>({
+            ...foto,
+            src: await toDataUrl(foto?.src || ""),
+          })))
+        : propuesta?.fotos;
+
+      const mapImg = propuesta?.mapImg ? await toDataUrl(propuesta.mapImg) : propuesta?.mapImg;
+      return { ...propuesta, fotos, mapImg };
+    }));
+  }
+
+  if(clone?.mapImg){
+    clone.mapImg = await toDataUrl(clone.mapImg);
+  }
+
+  return clone;
+}
+
+async function openCotizacionPrint(c){
+  const printable = await normalizeCotizacionForPrint(c);
+  const html = buildCotizacionPrintHtml(printable);
   openPrintTab(html, "Cotización " + (c?.numero || c?.id || ""));
 }
+
 
 
 const COTIZACION_AUTO_SEND_ENDPOINTS = {

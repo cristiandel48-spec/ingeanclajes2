@@ -1955,12 +1955,12 @@ function buildCotizacionPrintHtml(c){
               ${textoInicial ? `<p>${escapeHtml(textoInicial)}</p>` : ""}
               <p><strong>Trabajo en altura:</strong> Se considera toda actividad, labor o trabajo que se deba realizar a una altura física igual o superior a 2 metros desde el piso.</p>
               <p><strong>Puntos de anclaje:</strong> Son componentes en acero, anclados con un epóxico químico, con perno de 5/8" a una profundidad de 12 cm o más según el caso, instalados en estructuras de concreto, con capacidad de resistir una fuerza de caída de más de 5.000 Lbs (2.268 kg).</p>
-              <p><strong>Epóxico estructural:</strong> Adhesivo de alta resistencia que garantiza la fijación permanente del perno en la estructura, cumpliendo con los estándares exigidos por la Resolución 4272 de 2021 del Ministerio del Trabajo.</p>
+              <p><strong>Línea de vida:</strong> Son componentes de un sistema/equipo de protección de caídas, consistentes en una cuerda de nylon o cable deacero instalada en forma horizontal y vertical, tensionada y sujeta en tres o dos puntos de anclaje para otorgar movilidad al personalque trabaja en áreas elevadas.</p>
               <ul class="bullet-list">
-                <li>Cada punto de anclaje es individual e independiente, con capacidad mínima de 5.000 libras por persona.</li>
+                <li>La línea de vida permite la fijación o enganche en forma directa o indirecta al arnés completo para el cuerpo, o a un dispositivo deimpacto o amortiguador.</li>
                 <li>Los pernos son grado 8 — B7, resistentes a corrosión y condiciones ambientales extremas.</li>
-                <li>Se entrega certificado de carga y cálculo de ingeniería por cada punto instalado.</li>
-                <li>El sistema es compatible con todos los arneses y dispositivos de detención de caídas del mercado.</li>
+                <li>Las líneas de vida estarán constituidas por un solo cable continuo.</li>
+                <li>Los anclajes a los cuales se fijarán las líneas de vida deben resistir al menos 5.000 libras por cada persona asegurada.</li>
               </ul>
             `;
             if(tipo === "obra_blanca") return `

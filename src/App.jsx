@@ -204,8 +204,7 @@ function Cotizacion({ctx}){
     setTab("form");
   };
 
-  const guardarCotizacion = (options = {})=>{
-    const { stayOnForm = false } = options;
+  const guardarCotizacion = ()=>{
     const { current, next } = syncPropuestas();
     const finalItems = normalizeQuoteItems({items:current.items,geoMediciones,propuestas:next});
     const totalActiva = Math.round((finalItems.reduce((sum,item)=>sum + (Number(item.cant)||0)*(Number(item.vu)||0),0)) * (1 + (Number(current.util || 10) / 100) * 1.19));
@@ -215,16 +214,8 @@ function Cotizacion({ctx}){
     const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:cl.nombre,contacto:cl.contacto,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,textoInicial:textoInicial.trim(),observaciones:observacionesCot.trim(),items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:activa.mapImg || autoMapImg || null,geoMediciones:activa.geoMediciones || geoMediciones,geoMapView:activa.geoMapView || geoMapView,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,incluyeTexto:activa.incluyeTexto || "",propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
     setCotizaciones((prevList)=>editCot ? prevList.map((cotizacion)=>cotizacion.id===editCot?{...cotizacion,...data}:cotizacion) : [...prevList,data]);
     setPropuestas(propuestasFinales);
-    if (!stayOnForm) setTab("lista");
+    setTab("lista");
     return data;
-  };
-
-  const guardarPropuestaYSubir = ()=>{
-    const saved = guardarCotizacion({ stayOnForm: true });
-    if (!saved) return;
-    setTimeout(()=>{
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }, 120);
   };
 
   const aprobarCotizacion = (cotId)=>{
@@ -593,24 +584,6 @@ function Cotizacion({ctx}){
             style={{...SI,minHeight:80,resize:"vertical",lineHeight:1.6}}
           />
           <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Este texto aparece en las condiciones comerciales del PDF</div>
-          <div style={{display:"flex",justifyContent:"flex-end",marginTop:16}}>
-            <button
-              type="button"
-              onClick={guardarPropuestaYSubir}
-              style={{
-                background:"#0f172a",
-                color:"#fff",
-                border:"none",
-                borderRadius:10,
-                padding:"10px 18px",
-                fontWeight:700,
-                cursor:"pointer",
-                boxShadow:"0 2px 8px rgba(15,23,42,0.12)"
-              }}
-            >
-              Guardar
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -1776,8 +1749,12 @@ function buildCotizacionPrintHtml(c){
     if (!mostrarResumenFinal) return "";
 
     return `
-      <div class="summary-card">
-        <div class="section-title premium-title summary-title">Condiciones económicas</div>
+      <section class="page summary-page">
+      <div class="page-inner">
+        ${headerHtml}
+        <div class="page-content">
+          <div class="summary-card">
+        <div class="section-title premium-title summary-title">Condiciones economicas</div>
         <table class="summary-table">
           <thead>
             <tr>
@@ -1802,6 +1779,10 @@ function buildCotizacionPrintHtml(c){
           </tbody>
         </table>
       </div>
+        </div>
+        ${footerHtml}
+      </div>
+    </section>
     `;
   };
 
@@ -2087,8 +2068,6 @@ function buildCotizacionPrintHtml(c){
       <div class="page-inner">
         ${headerHtml}
         <div class="page-content">
-          ${renderResumenPropuestas()}
-
           <div class="section-title premium-title">Condiciones comerciales</div>
           <div class="premium-card text-only-block premium-tight">
             <div class="kv-grid premium-kv-grid">
@@ -2238,7 +2217,7 @@ function buildCotizacionPrintHtml(c){
       .page-content {
         display:block;
         min-height:auto;
-        padding-bottom:18mm;
+        padding-bottom:30mm;
       }
 
       .header {
@@ -2292,9 +2271,9 @@ function buildCotizacionPrintHtml(c){
       .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:2mm 0 3mm; }
       .photo-grid.single { grid-template-columns:1fr; }
       .photo-card { border:1px solid #d1d5db; border-radius:4px; overflow:hidden; background:#fff; padding:0; }
-      .photo { display:block; width:100%; height:72mm; object-fit:cover; object-position:center; background:#f3f4f6; }
-      .photo-grid.single .photo { height:90mm; }
-      .proposal-3-photo { height:52mm; object-fit:cover; object-position:center; }
+      .photo { display:block; width:100%; height:66mm; object-fit:cover; object-position:center; background:#f3f4f6; }
+      .photo-grid.single .photo { height:74mm; }
+      .proposal-3-photo { height:46mm; object-fit:cover; object-position:center; }
       .photo-caption { padding:5px 0 6px; text-align:center; font-size:10px; color:#6b7280; border-top:1px solid #e5e7eb; }
 
       .map-wrap { position:relative; width:100%; height:52mm; border:1px solid #d1d5db; overflow:hidden; background:#eef2f7; margin:2mm 0 3mm; }
@@ -2334,6 +2313,7 @@ function buildCotizacionPrintHtml(c){
       .appendix-img { width:100%; height:auto; max-height:235mm; object-fit:contain; display:block; margin:0 auto; }
       .premium-title { margin-top:1mm; margin-bottom:2.6mm; }
       .summary-title { margin-top:0; }
+      .summary-page .page-content { padding-bottom: 30mm; }
       .summary-card {
         margin: 0 0 4mm 0;
         border: 1px solid #dbe3ec;
@@ -2345,7 +2325,7 @@ function buildCotizacionPrintHtml(c){
       .summary-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 10.8px;
+        font-size: 10.4px;
         margin-top: 1mm;
       }
       .summary-table th {
@@ -2422,6 +2402,15 @@ function buildCotizacionPrintHtml(c){
       .photo-grid,
       .map-wrap,
       .table-wrap,
+      .table,
+      .table thead,
+      .table tbody,
+      .table tr,
+      .summary-card,
+      .summary-table,
+      .summary-table thead,
+      .summary-table tbody,
+      .summary-table tr,
       .signature-block,
       .content-block { break-inside:avoid; page-break-inside:avoid; }
 
@@ -2445,6 +2434,7 @@ function buildCotizacionPrintHtml(c){
       </section>
     ` : ""}
     ${showTechnicalPage ? renderTechnicalPage() : ""}
+    ${renderResumenPropuestas()}
     ${renderFinalPage()}
     <script>
       async function waitForImages(){

@@ -204,7 +204,7 @@ function Cotizacion({ctx}){
     setTab("form");
   };
 
-  const guardarCotizacion = ({ goToList = false } = {})=>{
+  const guardarCotizacion = ()=>{
     const { current, next } = syncPropuestas();
     const finalItems = normalizeQuoteItems({items:current.items,geoMediciones,propuestas:next});
     const totalActiva = Math.round((finalItems.reduce((sum,item)=>sum + (Number(item.cant)||0)*(Number(item.vu)||0),0)) * (1 + (Number(current.util || 10) / 100) * 1.19));
@@ -214,40 +214,8 @@ function Cotizacion({ctx}){
     const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:cl.nombre,contacto:cl.contacto,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,textoInicial:textoInicial.trim(),observaciones:observacionesCot.trim(),items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:activa.mapImg || autoMapImg || null,geoMediciones:activa.geoMediciones || geoMediciones,geoMapView:activa.geoMapView || geoMapView,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,incluyeTexto:activa.incluyeTexto || "",propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
     setCotizaciones((prevList)=>editCot ? prevList.map((cotizacion)=>cotizacion.id===editCot?{...cotizacion,...data}:cotizacion) : [...prevList,data]);
     setPropuestas(propuestasFinales);
-    if (goToList) setTab("lista");
+    setTab("lista");
     return data;
-  };
-
-  const guardarYNuevaPropuesta = ()=>{
-    const saved = guardarCotizacion({ goToList:false });
-    if (!saved) return;
-    const propuestasActuales = Array.isArray(saved.propuestas) ? saved.propuestas : [];
-    const nuevaIndex = propuestasActuales.length;
-    const nueva = buildQuoteProposal({
-      id:createQuoteProposalId(saved.id || "new"),
-      nombre:getQuoteProposalLabel(nuevaIndex),
-      formaPago:DEFAULT_COT_FORMA_PAGO,
-      tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,
-      util:10,
-      items:[],
-      fotos:[],
-      geoMediciones:[],
-      geoMapView:null,
-      mapImg:null,
-      medicionAutomatica:false,
-      incluyeTexto:"",
-      alcance:"",
-      requerimientoCliente:"",
-      tipoCotizacion:tipoCotizacion || "linea_vida",
-    }, nuevaIndex);
-    const next = [...propuestasActuales, nueva];
-    setCotizaciones((prevList)=>prevList.map((cotizacion)=>cotizacion.id===saved.id ? { ...cotizacion, propuestas:next, propuestaActivaId:nueva.id } : cotizacion));
-    setPropuestas(next);
-    setPropuestaActivaId(nueva.id);
-    applyProposal(nueva);
-    setTimeout(() => {
-      window.scrollTo({ top:0, behavior:"smooth" });
-    }, 120);
   };
 
   const aprobarCotizacion = (cotId)=>{
@@ -369,8 +337,8 @@ function Cotizacion({ctx}){
         action={
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             <button style={B("#f1f5f9","#475569")} onClick={()=>setTab("lista")}>Volver a lista</button>
-            <button style={{...B("#dbeafe","#1e40af"),justifyContent:"center"}} onClick={()=>{const saved=guardarCotizacion({ goToList:false });if(saved){setPreviewCot(saved);setTab("lista");}}}>Guardar y ver</button>
-            <button style={{...B("#f47c20"),justifyContent:"center"}} onClick={()=>guardarCotizacion({ goToList:true })}>{editCot?"Actualizar":"Guardar"}</button>
+            <button style={{...B("#dbeafe","#1e40af"),justifyContent:"center"}} onClick={()=>{const saved=guardarCotizacion();if(saved){setPreviewCot(saved);setTab("lista");}}}>Guardar y ver</button>
+            <button style={{...B("#f47c20"),justifyContent:"center"}} onClick={guardarCotizacion}>{editCot?"Actualizar":"Guardar"}</button>
           </div>
         }
       />
@@ -616,15 +584,6 @@ function Cotizacion({ctx}){
             style={{...SI,minHeight:80,resize:"vertical",lineHeight:1.6}}
           />
           <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Este texto aparece en las condiciones comerciales del PDF</div>
-          <div style={{display:"flex",justifyContent:"flex-end",marginTop:16}}>
-            <button
-              type="button"
-              onClick={guardarYNuevaPropuesta}
-              style={{...B("#f47c20"),justifyContent:"center",minWidth:170}}
-            >
-              Guardar y nueva propuesta
-            </button>
-          </div>
         </div>
       </div>
     </div>
@@ -1749,89 +1708,13 @@ function getQuotePrintableProposals(baseQuote = {}){
 function buildCotizacionPrintHtml(c){
   const propuestas = getQuotePrintableProposals(c);
   const textoInicial = String(c?.textoInicial || "").trim();
-  const showVerticalAppendix = false;
+  const showVerticalAppendix = propuestas.some((propuesta)=>hasVerticalLifeLineService(propuesta.quote));
   const showTechnicalPage = propuestas.some((propuesta)=>propuesta?.quote?.tipoCotizacion === "linea_vida");
   const mapCenter = c?.geoMapView?.center || c?.geoMapView || { lat: 0, lng: 0 };
   const mapZoom = Number(c?.geoMapView?.zoom || 18);
 
   const money = (n) => fmt(Number(n || 0));
   const numberFmt = (n) => Number(n || 0).toLocaleString("es-CO");
-
-  const findProposalSummaryItem = (propuesta = {}) => {
-    const items = Array.isArray(propuesta?.items) ? propuesta.items : [];
-    const match = items.find((item) => {
-      const desc = String(item?.desc || item?.descripcion || item?.nombre || "").toUpperCase();
-      return (
-        desc.includes("PUNTO DE ANCLAJE") ||
-        desc.includes("PUNTOS DE ANCLAJE") ||
-        desc.includes("ANCLAJE") ||
-        desc.includes("ANCLAJE IMPORTADO") ||
-        desc.includes("ANCLAJE NACIONAL") ||
-        desc.includes("ANCLAJE EPOXICO") ||
-        desc.includes("ANCLAJE SOLDADO")
-      );
-    });
-    return match || items[0] || null;
-  };
-
-  const getProposalAnchorPoints = (propuesta = {}) => {
-    const item = findProposalSummaryItem(propuesta);
-    return Number(item?.cant || 0);
-  };
-
-  const resumenPropuestas = propuestas.map((propuesta, idx) => {
-    const summaryItem = findProposalSummaryItem(propuesta);
-    return {
-      nombre: propuesta?.nombre || propuesta?.quote?.propuestaNombre || `Propuesta ${idx + 1}`,
-      puntos: getProposalAnchorPoints(propuesta),
-      unidad: String(summaryItem?.unit || "UND").toUpperCase(),
-      valorUnitario: Number(summaryItem?.vu || 0),
-      total: Math.round(Number(propuesta?.tot || propuesta?.quote?.total || 0)),
-    };
-  });
-
-  const mostrarResumenFinal = resumenPropuestas.length >= 2;
-  const totalResumenPuntos = resumenPropuestas.reduce((sum, row) => sum + Number(row.puntos || 0), 0);
-  const totalResumenValor = resumenPropuestas.reduce((sum, row) => sum + Number(row.total || 0), 0);
-
-  const renderResumenPropuestas = () => {
-    if (!mostrarResumenFinal) return "";
-
-    return `
-      <div class="summary-card text-only-block">
-        <div class="section-title premium-title summary-title">Valor total de la Cotización</div>
-        <table class="summary-table">
-          <thead>
-            <tr>
-              <th>Propuesta</th>
-              <th style="text-align:center;">Cantidad</th>
-              <th style="text-align:center;">Unidad</th>
-              <th style="text-align:right;">Valor unitario</th>
-              <th style="text-align:right;">Valor total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${resumenPropuestas.map((row) => `
-              <tr>
-                <td>${escapeHtml(row.nombre || "")}</td>
-                <td style="text-align:center;">${numberFmt(row.puntos || 0)}</td>
-                <td style="text-align:center;">${escapeHtml(row.unidad || "UND")}</td>
-                <td style="text-align:right;">${money(row.valorUnitario || 0)}</td>
-                <td style="text-align:right;">${money(row.total || 0)}</td>
-              </tr>
-            `).join("")}
-            <tr class="summary-total-row">
-              <td><strong>TOTAL GENERAL</strong></td>
-              <td style="text-align:center;"><strong>${numberFmt(totalResumenPuntos)}</strong></td>
-              <td style="text-align:center;"><strong>-</strong></td>
-              <td style="text-align:right;"><strong>-</strong></td>
-              <td style="text-align:right;"><strong>${money(totalResumenValor)}</strong></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    `;
-  };
 
   const footerHtml = `
     <div class="footer">
@@ -2110,64 +1993,17 @@ function buildCotizacionPrintHtml(c){
     </section>
   `;
 
-  const renderFinalPage = () => `
-    <section class="page premium-final-page ${mostrarResumenFinal ? "premium-final-page-with-summary" : ""}">
+  const renderConditionsPage = () => `
+    <section class="page">
       <div class="page-inner">
         ${headerHtml}
         <div class="page-content">
-          ${renderResumenPropuestas()}
-          <div class="section-title premium-title">Condiciones comerciales</div>
-          <div class="premium-card text-only-block premium-tight">
-            <div class="kv-grid premium-kv-grid">
-              <div class="kv-row premium-kv-row"><strong>FORMA DE PAGO</strong><span>${escapeHtml(c?.formaPago || "50% ANTICIPO, 50% CONCLUIR LABORES")}</span></div>
-              <div class="kv-row premium-kv-row"><strong>TIEMPO DE EJECUCIÓN</strong><span>${escapeHtml(c?.tiempoEjec || "10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)")}</span></div>
-              <div class="kv-row premium-kv-row"><strong>VALIDEZ DE LA OFERTA</strong><span>${escapeHtml(`${c?.val || 30} días a partir de la fecha de entrega de esta cotización`)}</span></div>
-              <div class="kv-row premium-kv-row"><strong>CERTIFICACIÓN</strong><span>Se entrega con el pago total</span></div>
-            </div>
-          </div>
-
-          <div class="premium-divider text-only-block ${mostrarResumenFinal ? "premium-divider-compact" : ""}"></div>
-
-          <div class="section-title premium-title ${mostrarResumenFinal ? "premium-title-compact" : ""}">Sistema de gestión de seguridad y salud en el trabajo</div>
-          <div class="premium-card premium-copy text-only-block compact-block premium-tight ${mostrarResumenFinal ? "premium-copy-compact" : ""}">
-            <p>INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicación de la Resolución 4272 de 2021, garantizando la implementación del Sistema de Gestión de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.</p>
-          </div>
-
-          <div class="signature-block text-only-block premium-signature ${mostrarResumenFinal ? "premium-signature-compact" : ""}">
-            <p class="signature-intro">Cordialmente,</p>
-            <div class="signature-space compact-signature-space ${mostrarResumenFinal ? "compact-signature-space-sm" : ""}"></div>
-            <div class="signature-line premium-signature-line ${mostrarResumenFinal ? "premium-signature-line-compact" : ""}">
-              <strong>ING. JHON JAIME SEPÚLVEDA LONDOÑO</strong><br/>
-              MP. 05256-409949<br/>
-              Director Comercial<br/>
-              Tel: 3152889541
-            </div>
-          </div>
-        </div>
-        ${footerHtml}
-      </div>
-    </section>
-  `;
-
-  const renderSgsstPage = () => `
-    <section class="page premium-sgsst-page">
-      <div class="page-inner">
-        ${headerHtml}
-        <div class="page-content">
-          <div class="section-title premium-title">Sistema de gestión de seguridad y salud en el trabajo</div>
-          <div class="premium-card premium-copy text-only-block compact-block premium-tight">
-            <p>INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicación de la Resolución 4272 de 2021, garantizando la implementación del Sistema de Gestión de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.</p>
-          </div>
-
-          <div class="signature-block text-only-block premium-signature">
-            <p class="signature-intro">Cordialmente,</p>
-            <div class="signature-space compact-signature-space"></div>
-            <div class="signature-line premium-signature-line">
-              <strong>ING. JHON JAIME SEPÚLVEDA LONDOÑO</strong><br/>
-              MP. 05256-409949<br/>
-              Director Comercial<br/>
-              Tel: 3152889541
-            </div>
+          <div class="section-title">Condiciones comerciales</div>
+          <div class="kv-grid">
+            <div class="kv-row"><strong>FORMA DE PAGO</strong><span>${escapeHtml(c?.formaPago || "50% ANTICIPO, 50% CONCLUIR LABORES")}</span></div>
+            <div class="kv-row"><strong>TIEMPO DE EJECUCIÓN</strong><span>${escapeHtml(c?.tiempoEjec || "10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)")}</span></div>
+            <div class="kv-row"><strong>VALIDEZ DE LA OFERTA</strong><span>${escapeHtml(`${c?.val || 30} días a partir de la fecha de entrega de esta cotización`)}</span></div>
+            <div class="kv-row"><strong>CERTIFICACIÓN</strong><span>Se entrega con el pago total</span></div>
           </div>
         </div>
         ${footerHtml}
@@ -2256,6 +2092,28 @@ function buildCotizacionPrintHtml(c){
     </section>
   `;
 
+  const renderSgsstPage = () => `
+    <section class="page">
+      <div class="page-inner">
+        ${headerHtml}
+        <div class="page-content">
+          <div class="section-title">Sistema de gestión de seguridad y salud en el trabajo</div>
+          <p>INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicación de la Resolución 4272 de 2021, garantizando la implementación del Sistema de Gestión de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.</p>
+          <div class="signature-block">
+            <p>Cordialmente,</p>
+            <div class="signature-space"></div>
+            <div class="signature-line">
+              <strong>ING. JHON JAIME SEPÚLVEDA LONDOÑO</strong><br/>
+              MP. 05256-409949<br/>
+              Director Comercial<br/>
+              Tel: 3152889541
+            </div>
+          </div>
+        </div>
+        ${footerHtml}
+      </div>
+    </section>
+  `;
 
   const proposalSections = propuestas.map((propuesta, idx) => renderProposalPage(propuesta, idx)).join("");
 
@@ -2277,22 +2135,13 @@ function buildCotizacionPrintHtml(c){
         background:#fff;
         break-after:page;
         page-break-after:always;
-        position:relative;
         overflow:hidden;
+        padding:6mm 8mm 6mm 8mm;
+        position:relative;
       }
       .page:last-child { break-after:auto; page-break-after:auto; }
-      .page-inner {
-        position:relative;
-        width:100%;
-        height:100%;
-        padding:10mm 9mm 0 9mm;
-        box-sizing:border-box;
-      }
-      .page-content {
-        display:block;
-        min-height:auto;
-        padding-bottom:30mm;
-      }
+      .page-inner { display:flex; flex-direction:column; padding:4mm 6mm 4mm 6mm; height:calc(279mm - 12mm); }
+      .page-content { display:block; flex:1; }
 
       .header {
         display:grid;
@@ -2334,8 +2183,6 @@ function buildCotizacionPrintHtml(c){
       .subheading { font-size:12px; font-weight:700; margin-bottom:2mm; }
       .subheading.with-space { margin-top:4mm; }
       .content-block { margin-bottom:3mm; }
-      .text-only-block { margin-left:4cm; margin-right:3cm; max-width:calc(100% - 7cm); }
-      .text-only-block p, .text-only-block li { line-height:1.52; text-align:justify; }
       .compact-block p { margin-bottom:2mm; }
 
       .bullet-list { margin:1.5mm 0 0 0; padding-left:18px; font-size:12px; line-height:1.38; }
@@ -2345,9 +2192,9 @@ function buildCotizacionPrintHtml(c){
       .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:2mm 0 3mm; }
       .photo-grid.single { grid-template-columns:1fr; }
       .photo-card { border:1px solid #d1d5db; border-radius:4px; overflow:hidden; background:#fff; padding:0; }
-      .photo { display:block; width:100%; height:66mm; object-fit:cover; object-position:center; background:#f3f4f6; }
-      .photo-grid.single .photo { height:74mm; }
-      .proposal-3-photo { height:46mm; object-fit:cover; object-position:center; }
+      .photo { display:block; width:100%; height:72mm; object-fit:cover; object-position:center; background:#f3f4f6; }
+      .photo-grid.single .photo { height:90mm; }
+      .proposal-3-photo { height:52mm; object-fit:cover; object-position:center; }
       .photo-caption { padding:5px 0 6px; text-align:center; font-size:10px; color:#6b7280; border-top:1px solid #e5e7eb; }
 
       .map-wrap { position:relative; width:100%; height:52mm; border:1px solid #d1d5db; overflow:hidden; background:#eef2f7; margin:2mm 0 3mm; }
@@ -2378,128 +2225,23 @@ function buildCotizacionPrintHtml(c){
       .strong { font-weight:700; }
 
       .kv-grid { display:grid; gap:2mm; margin-top:2mm; }
-      .kv-row { display:grid; grid-template-columns:48mm 1fr; gap:4mm; font-size:12px; line-height:1.4; }
+      .kv-row { display:grid; grid-template-columns:64mm 1fr; gap:4mm; font-size:12px; line-height:1.35; }
 
-      .signature-block { margin-top:6mm; }
-      .signature-space { height:10mm; }
+      .signature-block { margin-top:8mm; }
+      .signature-space { height:24px; }
       .signature-line { font-size:12px; line-height:1.42; }
 
       .appendix-img { width:100%; height:auto; max-height:235mm; object-fit:contain; display:block; margin:0 auto; }
-      .premium-title { margin-top:1mm; margin-bottom:2.6mm; }
-      .summary-title { margin-top:0; }
-      .summary-card{
-  width: 88%;
-  margin: 0 auto 6mm auto;
-  border: 1px solid #d9e1ea;
-  border-radius: 12px;
-  background: #ffffff;
-  padding: 4mm 5mm 3mm 5mm;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-}
-     .summary-card .section-title{
-  text-align: center;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  color: #111827;
-  border-bottom: 1px solid #c1121f;
-  padding-bottom: 2.5mm;
-  margin: 0 0 3mm 0;
-}
-
-    .summary-table{
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 10.5px;
-  margin: 0 auto;
-}
-
-    .summary-table th{
-  background: #f8fafc;
-  color: #111827;
-  font-weight: 700;
-  border-bottom: 1px solid #d9e1ea;
-  padding: 7px 8px;
-  text-align: center;
-}
-
-    .summary-table td{
-  padding: 7px 8px;
-  border-bottom: 1px solid #e5e7eb;
-  color: #1f2937;
-  text-align: center;
-  vertical-align: middle;
-}
-
-    .summary-table td:first-child,
-.summary-table th:first-child{
-  text-align: left;
-}
-
-    .summary-table tbody tr:last-child td{
-  border-bottom: none;
-}
-
-    .summary-total-row td{
-  background: #fff8db;
-  border-top: 2px solid #e5d36b;
-  font-weight: 800;
-}
-      .premium-card {
-        background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
-        border:1px solid #dbe3ec;
-        border-radius:10px;
-        padding:3.2mm 4mm;
-        box-shadow:0 1.5mm 4mm rgba(15,23,42,.05);
-      }
-      .premium-tight { margin-top:0; margin-bottom:0; }
-      .premium-kv-grid { gap:1.4mm; }
-      .premium-kv-row {
-        grid-template-columns:42mm 1fr;
-        gap:3mm;
-        font-size:10.8px;
-        line-height:1.35;
-        padding:1.1mm 0;
-        border-bottom:1px solid #e8eef5;
-      }
-      .premium-kv-row:last-child { border-bottom:none; padding-bottom:0; }
-      .premium-divider {
-        height:0;
-        margin-top:3.2mm;
-        margin-bottom:3.2mm;
-        border-top:1px solid #d7dee8;
-      }
-      .premium-copy p { font-size:10.8px; margin-bottom:0; }
-      .premium-copy-compact p { font-size:10px; line-height:1.42; }
-      .premium-signature { margin-top:4mm; }
-      .premium-signature-compact { margin-top:2.6mm; }
-      .signature-intro { margin-bottom:1.4mm; font-size:10.8px; }
-      .compact-signature-space { height:7mm; }
-      .compact-signature-space-sm { height:4mm; }
-      .premium-signature-line {
-        display:inline-block;
-        padding-top:2.4mm;
-        border-top:1px solid #1f2937;
-        font-size:10.6px;
-        line-height:1.42;
-      }
-      .premium-signature-line-compact { font-size:10px; line-height:1.35; padding-top:1.8mm; }
-      .premium-title-compact { margin-top:.8mm; margin-bottom:1.8mm; }
-      .premium-divider-compact { margin-top:2mm; margin-bottom:2mm; }
 
       .footer {
-        position:absolute;
-        left:9mm;
-        right:9mm;
-        bottom:8mm;
+        margin-top:auto;
         padding-top:2mm;
         border-top:0.4px solid #9ca3af;
         text-align:center;
         font-size:9px;
         line-height:1.25;
         color:#6b7280;
-        background:#fff;
+        flex-shrink:0;
       }
 
       .proposal-title,
@@ -2507,15 +2249,6 @@ function buildCotizacionPrintHtml(c){
       .photo-grid,
       .map-wrap,
       .table-wrap,
-      .table,
-      .table thead,
-      .table tbody,
-      .table tr,
-      .summary-card,
-      .summary-table,
-      .summary-table thead,
-      .summary-table tbody,
-      .summary-table tr,
       .signature-block,
       .content-block { break-inside:avoid; page-break-inside:avoid; }
 
@@ -2538,8 +2271,9 @@ function buildCotizacionPrintHtml(c){
         </div>
       </section>
     ` : ""}
+    ${renderConditionsPage()}
     ${showTechnicalPage ? renderTechnicalPage() : ""}
-    ${renderFinalPage()}
+    ${renderSgsstPage()}
     <script>
       async function waitForImages(){
         const images = Array.from(document.images || []);
@@ -4472,14 +4206,104 @@ function ClientesDB({ctx}){
 
 function CuentasPagar({ctx}){
   const {cuentas,setCuentas,proveedores,setProveedores,obras}=ctx;
+  const UVT_2026 = 52374;
+  const RETEFUENTE_PRESETS = {
+    servicios: 4,
+    honorarios: 10,
+    comisiones: 11,
+    compras: 2.5,
+    arrendamientos: 3.5,
+    otros: 0,
+  };
   const proveedorBase={nombre:"",numeroCuenta:"",banco:"Bancolombia",direccion:"",nit:"",telefono:"",contacto:"",email:"",categoria:"General"};
-  const cuentaBase={proveedorId:proveedores[0]?.id||"",obraId:"",concepto:"",monto:0,fecha:today(),fechaVence:"",factura:""};
+  const cuentaBase={
+    proveedorId:proveedores[0]?.id||"",
+    obraId:"",
+    concepto:"",
+    monto:0,
+    fecha:today(),
+    fechaVence:"",
+    factura:"",
+    tipoOperacion:"servicio",
+    conceptoRetFuente:"servicios",
+    responsableIva:true,
+    aplicaRetFuente:true,
+    aplicaReteiva:true,
+    aplicaReteica:false,
+    tarifaIVA:19,
+    tarifaRetFuente:4,
+    tarifaReteiva:15,
+    tarifaReteica:0,
+    municipioReteica:"",
+    observacionesTributarias:"",
+  };
   const [tab,setTab]=useState("cuentas");
   const [showProv,setShowProv]=useState(false);
   const [showCxP,setShowCxP]=useState(false);
   const [editProvId,setEditProvId]=useState(null);
   const [provForm,setProvForm]=useState(proveedorBase);
   const [cxpForm,setCxpForm]=useState(cuentaBase);
+
+  const round2=(n)=>Math.round((Number(n||0)+Number.EPSILON)*100)/100;
+  const fmtPct=(n)=>`${Number(n||0).toFixed(2)}%`;
+  const fmtMil=(n)=>`${Number(n||0).toFixed(3)} x 1.000`;
+
+  const calcularTributosCuenta=(raw={})=>{
+    const subtotal=round2(Number(raw.monto||0));
+    const tarifaIVA=raw.responsableIva?Number(raw.tarifaIVA||0):0;
+    const valorIVA=round2(subtotal*(tarifaIVA/100));
+    const baseRetFuente=subtotal;
+    const tarifaRetFuente=raw.aplicaRetFuente?Number(raw.tarifaRetFuente||0):0;
+    const valorRetFuente=round2(baseRetFuente*(tarifaRetFuente/100));
+
+    const baseMinReteiva = raw.tipoOperacion==="bien" ? (27*UVT_2026) : (4*UVT_2026);
+    const tarifaReteiva=raw.aplicaReteiva?Number(raw.tarifaReteiva||0):0;
+    const reteivaHabilitada = Boolean(raw.aplicaReteiva && valorIVA>0 && subtotal>=baseMinReteiva);
+    const valorReteiva=round2(reteivaHabilitada ? (valorIVA*(tarifaReteiva/100)) : 0);
+
+    const baseReteica=subtotal;
+    const tarifaReteica=raw.aplicaReteica?Number(raw.tarifaReteica||0):0;
+    const valorReteica=round2(raw.aplicaReteica ? (baseReteica*(tarifaReteica/1000)) : 0);
+
+    const valorBrutoFactura=round2(subtotal+valorIVA);
+    const valorTotalRetenciones=round2(valorRetFuente+valorReteiva+valorReteica);
+    const valorTotalPagar=round2(valorBrutoFactura-valorTotalRetenciones);
+
+    return {
+      subtotal,
+      tarifaIVA,
+      valorIVA,
+      baseRetFuente,
+      tarifaRetFuente,
+      valorRetFuente,
+      baseReteiva:valorIVA,
+      tarifaReteiva,
+      reteivaHabilitada,
+      baseMinReteiva,
+      valorReteiva,
+      baseReteica,
+      tarifaReteica,
+      valorReteica,
+      valorBrutoFactura,
+      valorTotalRetenciones,
+      valorTotalPagar,
+    };
+  };
+
+  const tributosPreview=calcularTributosCuenta(cxpForm);
+
+  const updateCxpForm=(patch)=>{
+    setCxpForm(prev=>{
+      const next={...prev,...patch};
+      if(Object.prototype.hasOwnProperty.call(patch,"conceptoRetFuente") && !Object.prototype.hasOwnProperty.call(patch,"tarifaRetFuenteManual")){
+        next.tarifaRetFuente=RETEFUENTE_PRESETS[next.conceptoRetFuente] ?? 0;
+      }
+      if(Object.prototype.hasOwnProperty.call(patch,"responsableIva") && !patch.responsableIva){
+        next.aplicaReteiva=false;
+      }
+      return next;
+    });
+  };
 
   useEffect(()=>{
     if(!cxpForm.proveedorId && proveedores[0]?.id){
@@ -4505,8 +4329,9 @@ function CuentasPagar({ctx}){
     return String(a.fechaVence||"").localeCompare(String(b.fechaVence||""));
   });
 
-  const totalPendiente=cuentas.filter(c=>c.estado==="Pendiente").reduce((s,c)=>s+Number(c.monto||0),0);
-  const totalPagado=cuentas.filter(c=>c.estado==="Pagado").reduce((s,c)=>s+Number(c.monto||0),0);
+  const getCuentaDisplayTotal=(c)=>Number(c.valorTotalPagar ?? c.monto ?? 0);
+  const totalPendiente=cuentas.filter(c=>c.estado==="Pendiente").reduce((s,c)=>s+getCuentaDisplayTotal(c),0);
+  const totalPagado=cuentas.filter(c=>c.estado==="Pagado").reduce((s,c)=>s+getCuentaDisplayTotal(c),0);
   const vencidas=cuentas.filter(c=>c.estado==="Pendiente"&&c.fechaVence&&c.fechaVence<today());
   const porVencer=cuentas.filter(c=>c.estado==="Pendiente"&&c.fechaVence&&c.fechaVence>=today()&&((new Date(c.fechaVence+"T12:00:00")-new Date(today()+"T12:00:00"))/(1000*60*60*24))<=7);
 
@@ -4514,6 +4339,10 @@ function CuentasPagar({ctx}){
     setProvForm(proveedorBase);
     setEditProvId(null);
     setShowProv(false);
+  };
+
+  const resetCuentaForm=()=>{
+    setCxpForm({...cuentaBase,proveedorId:proveedores[0]?.id||""});
   };
 
   const guardarProveedor=()=>{
@@ -4562,8 +4391,25 @@ function CuentasPagar({ctx}){
   const guardarCuenta=()=>{
     if(!cxpForm.proveedorId || !cxpForm.concepto.trim() || Number(cxpForm.monto||0)<=0) return;
     const id="CP-" + (String(cuentas.length+1).padStart(3,"0"));
-    setCuentas(prev=>[...prev,{id,...cxpForm,monto:Number(cxpForm.monto||0),estado:"Pendiente"}]);
-    setCxpForm({proveedorId:proveedores[0]?.id||"",obraId:"",concepto:"",monto:0,fecha:today(),fechaVence:"",factura:""});
+    const calc=calcularTributosCuenta(cxpForm);
+    setCuentas(prev=>[...prev,{
+      id,
+      ...cxpForm,
+      monto:Number(cxpForm.monto||0),
+      subtotal:calc.subtotal,
+      valorIVA:calc.valorIVA,
+      baseRetFuente:calc.baseRetFuente,
+      valorRetFuente:calc.valorRetFuente,
+      baseReteiva:calc.baseReteiva,
+      valorReteiva:calc.valorReteiva,
+      baseReteica:calc.baseReteica,
+      valorReteica:calc.valorReteica,
+      valorBrutoFactura:calc.valorBrutoFactura,
+      valorTotalRetenciones:calc.valorTotalRetenciones,
+      valorTotalPagar:calc.valorTotalPagar,
+      estado:"Pendiente",
+    }]);
+    resetCuentaForm();
     setShowCxP(false);
   };
 
@@ -4588,7 +4434,6 @@ function CuentasPagar({ctx}){
         }
       />
 
-
       <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
         {[["cuentas","🧾 Cuentas por pagar"],["proveedores","🏢 Proveedores"]].map(([id,lb])=>(
           <button
@@ -4606,42 +4451,118 @@ function CuentasPagar({ctx}){
           {showCxP&&(
             <div style={{...CD,marginBottom:18,border:"1px solid #cc0000"}}>
               <div style={ST}>Registrar cuenta por pagar</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3, minmax(0, 1fr))",gap:12,marginBottom:14}}>
                 <div>
                   <LBL>Proveedor</LBL>
-                  <select value={cxpForm.proveedorId} onChange={e=>setCxpForm({...cxpForm,proveedorId:e.target.value})} style={SI}>
+                  <select value={cxpForm.proveedorId} onChange={e=>updateCxpForm({proveedorId:e.target.value})} style={SI}>
                     <option value="">Selecciona un proveedor...</option>
                     {proveedoresData.map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}
                   </select>
                 </div>
                 <div>
                   <LBL>Obra asociada</LBL>
-                  <select value={cxpForm.obraId} onChange={e=>setCxpForm({...cxpForm,obraId:e.target.value})} style={SI}>
+                  <select value={cxpForm.obraId} onChange={e=>updateCxpForm({obraId:e.target.value})} style={SI}>
                     <option value="">Sin obra / gasto general</option>
                     {obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}
                   </select>
                 </div>
                 <div>
                   <LBL>N° Factura</LBL>
-                  <input value={cxpForm.factura} onChange={e=>setCxpForm({...cxpForm,factura:e.target.value})} placeholder="FV-2026-0001" style={SI}/>
+                  <input value={cxpForm.factura} onChange={e=>updateCxpForm({factura:e.target.value})} placeholder="FV-2026-0001" style={SI}/>
                 </div>
                 <div style={{gridColumn:"span 2"}}>
                   <LBL>Concepto</LBL>
-                  <input value={cxpForm.concepto} onChange={e=>setCxpForm({...cxpForm,concepto:e.target.value})} placeholder="Descripción del gasto o servicio" style={SI}/>
+                  <input value={cxpForm.concepto} onChange={e=>updateCxpForm({concepto:e.target.value})} placeholder="Descripción del gasto o servicio" style={SI}/>
                 </div>
                 <div>
-                  <LBL>Monto</LBL>
-                  <input type="number" value={cxpForm.monto} onChange={e=>setCxpForm({...cxpForm,monto:parseFloat(e.target.value)||0})} style={SI}/>
+                  <LBL>Base / subtotal</LBL>
+                  <input type="number" value={cxpForm.monto} onChange={e=>updateCxpForm({monto:parseFloat(e.target.value)||0})} style={SI}/>
                 </div>
                 <div>
                   <LBL>Fecha factura</LBL>
-                  <input type="date" value={cxpForm.fecha} onChange={e=>setCxpForm({...cxpForm,fecha:e.target.value})} style={SI}/>
+                  <input type="date" value={cxpForm.fecha} onChange={e=>updateCxpForm({fecha:e.target.value})} style={SI}/>
                 </div>
                 <div>
                   <LBL>Fecha vencimiento</LBL>
-                  <input type="date" value={cxpForm.fechaVence} onChange={e=>setCxpForm({...cxpForm,fechaVence:e.target.value})} style={SI}/>
+                  <input type="date" value={cxpForm.fechaVence} onChange={e=>updateCxpForm({fechaVence:e.target.value})} style={SI}/>
+                </div>
+                <div>
+                  <LBL>Tipo operación</LBL>
+                  <select value={cxpForm.tipoOperacion} onChange={e=>updateCxpForm({tipoOperacion:e.target.value})} style={SI}>
+                    <option value="servicio">Servicio</option>
+                    <option value="bien">Bien / compra</option>
+                  </select>
+                </div>
+                <div>
+                  <LBL>Concepto retefuente</LBL>
+                  <select value={cxpForm.conceptoRetFuente} onChange={e=>updateCxpForm({conceptoRetFuente:e.target.value})} style={SI}>
+                    <option value="servicios">Servicios</option>
+                    <option value="honorarios">Honorarios</option>
+                    <option value="comisiones">Comisiones</option>
+                    <option value="compras">Compras</option>
+                    <option value="arrendamientos">Arrendamientos</option>
+                    <option value="otros">Otros</option>
+                  </select>
+                </div>
+                <div>
+                  <LBL>Municipio reteICA</LBL>
+                  <input value={cxpForm.municipioReteica} onChange={e=>updateCxpForm({municipioReteica:e.target.value})} placeholder="Envigado / Medellín" style={SI}/>
                 </div>
               </div>
+
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4, minmax(0, 1fr))",gap:12,marginBottom:14}}>
+                <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:12}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+                    <LBL>IVA</LBL>
+                    <input type="checkbox" checked={cxpForm.responsableIva} onChange={e=>updateCxpForm({responsableIva:e.target.checked})}/>
+                  </div>
+                  <div style={{fontSize:11,color:"#64748b",marginBottom:6}}>Responsable de IVA</div>
+                  <input type="number" value={cxpForm.tarifaIVA} onChange={e=>updateCxpForm({tarifaIVA:parseFloat(e.target.value)||0})} style={SI}/>
+                  <div style={{fontSize:11,color:"#64748b",marginTop:6}}>Tarifa %</div>
+                </div>
+                <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:12}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+                    <LBL>Retención fuente</LBL>
+                    <input type="checkbox" checked={cxpForm.aplicaRetFuente} onChange={e=>updateCxpForm({aplicaRetFuente:e.target.checked})}/>
+                  </div>
+                  <div style={{fontSize:11,color:"#64748b",marginBottom:6}}>Tarifa editable %</div>
+                  <input type="number" value={cxpForm.tarifaRetFuente} onChange={e=>updateCxpForm({tarifaRetFuente:parseFloat(e.target.value)||0,tarifaRetFuenteManual:true})} style={SI}/>
+                </div>
+                <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:12}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+                    <LBL>ReteIVA</LBL>
+                    <input type="checkbox" checked={cxpForm.aplicaReteiva} onChange={e=>updateCxpForm({aplicaReteiva:e.target.checked})} disabled={!cxpForm.responsableIva}/>
+                  </div>
+                  <div style={{fontSize:11,color:"#64748b",marginBottom:6}}>Tarifa % sobre IVA</div>
+                  <input type="number" value={cxpForm.tarifaReteiva} onChange={e=>updateCxpForm({tarifaReteiva:parseFloat(e.target.value)||0})} style={SI} disabled={!cxpForm.responsableIva}/>
+                  <div style={{fontSize:10,color:tributosPreview.reteivaHabilitada?"#166534":"#64748b",marginTop:6}}>
+                    Base DIAN aprox.: {fmt(tributosPreview.baseMinReteiva)}
+                  </div>
+                </div>
+                <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:12}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+                    <LBL>ReteICA</LBL>
+                    <input type="checkbox" checked={cxpForm.aplicaReteica} onChange={e=>updateCxpForm({aplicaReteica:e.target.checked})}/>
+                  </div>
+                  <div style={{fontSize:11,color:"#64748b",marginBottom:6}}>Tarifa x 1.000</div>
+                  <input type="number" value={cxpForm.tarifaReteica} onChange={e=>updateCxpForm({tarifaReteica:parseFloat(e.target.value)||0})} style={SI}/>
+                </div>
+              </div>
+
+              <div style={{background:"#fff7ed",border:"1px solid #fdba74",borderRadius:12,padding:14,marginBottom:14}}>
+                <div style={{fontWeight:800,color:"#9a3412",marginBottom:10}}>Liquidación automática</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(4, minmax(0, 1fr))",gap:12,fontSize:12}}>
+                  <div><strong>Subtotal:</strong><br/>{fmt(tributosPreview.subtotal)}</div>
+                  <div><strong>IVA ({fmtPct(tributosPreview.tarifaIVA)}):</strong><br/>{fmt(tributosPreview.valorIVA)}</div>
+                  <div><strong>Retefuente ({fmtPct(tributosPreview.tarifaRetFuente)}):</strong><br/>{fmt(tributosPreview.valorRetFuente)}</div>
+                  <div><strong>ReteIVA ({fmtPct(tributosPreview.tarifaReteiva)}):</strong><br/>{fmt(tributosPreview.valorReteiva)}</div>
+                  <div><strong>ReteICA ({fmtMil(tributosPreview.tarifaReteica)}):</strong><br/>{fmt(tributosPreview.valorReteica)}</div>
+                  <div><strong>Bruto factura:</strong><br/>{fmt(tributosPreview.valorBrutoFactura)}</div>
+                  <div><strong>Total retenciones:</strong><br/>{fmt(tributosPreview.valorTotalRetenciones)}</div>
+                  <div style={{fontWeight:800,color:"#166534"}}><strong>Total a pagar:</strong><br/>{fmt(tributosPreview.valorTotalPagar)}</div>
+                </div>
+              </div>
+
               <div style={{display:"flex",gap:8}}>
                 <button style={B("#cc0000")} onClick={guardarCuenta}>✅ Guardar cuenta</button>
                 <button style={B("#f1f5f9","#475569")} onClick={()=>setShowCxP(false)}>Cancelar</button>
@@ -4655,6 +4576,25 @@ function CuentasPagar({ctx}){
               <div style={{fontSize:11,color:"#64748b"}}>Se ordenan primero las pendientes y luego por fecha de vencimiento</div>
             </div>
 
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4, minmax(0, 1fr))",gap:12,marginBottom:14}}>
+              <div style={{background:"#fff7ed",border:"1px solid #fdba74",borderRadius:10,padding:12}}>
+                <div style={{fontSize:11,color:"#9a3412"}}>Pendiente por pagar</div>
+                <div style={{fontSize:18,fontWeight:800,color:"#c2410c"}}>{fmt(totalPendiente)}</div>
+              </div>
+              <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:10,padding:12}}>
+                <div style={{fontSize:11,color:"#1d4ed8"}}>Pagado</div>
+                <div style={{fontSize:18,fontWeight:800,color:"#1e3a8a"}}>{fmt(totalPagado)}</div>
+              </div>
+              <div style={{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:10,padding:12}}>
+                <div style={{fontSize:11,color:"#b91c1c"}}>Vencidas</div>
+                <div style={{fontSize:18,fontWeight:800,color:"#991b1b"}}>{vencidas.length}</div>
+              </div>
+              <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:10,padding:12}}>
+                <div style={{fontSize:11,color:"#166534"}}>Por vencer (7 días)</div>
+                <div style={{fontSize:18,fontWeight:800,color:"#166534"}}>{porVencer.length}</div>
+              </div>
+            </div>
+
             {cuentasOrdenadas.length===0 ? (
               <div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13}}>No hay cuentas por pagar registradas</div>
             ) : (
@@ -4663,6 +4603,7 @@ function CuentasPagar({ctx}){
                   const prov=proveedoresData.find(p=>p.id===c.proveedorId);
                   const obra=obras.find(o=>o.id===c.obraId);
                   const vencida=c.estado==="Pendiente"&&c.fechaVence&&c.fechaVence<today();
+                  const valorPagar=getCuentaDisplayTotal(c);
                   return(
                     <div key={c.id} style={{background:"#f8fafc",borderRadius:10,padding:"14px 16px",border:"1px solid " + (vencida?"#fca5a5":c.estado==="Pagado"?"#bbf7d0":"#e2e8f0")}}>
                       <div style={{display:"flex",justifyContent:"space-between",gap:16,alignItems:"flex-start",marginBottom:8}}>
@@ -4673,23 +4614,25 @@ function CuentasPagar({ctx}){
                           </div>
                         </div>
                         <div style={{textAlign:"right"}}>
-                          <div style={{fontSize:15,fontWeight:800,color:"#cc0000"}}>{fmt(c.monto)}</div>
+                          <div style={{fontSize:11,color:"#64748b"}}>Total a pagar</div>
+                          <div style={{fontSize:15,fontWeight:800,color:"#cc0000"}}>{fmt(valorPagar)}</div>
                           <Badge estado={vencida?"Vencida":c.estado}/>
                         </div>
                       </div>
 
-                      <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr 1fr 1fr",gap:10,fontSize:11,color:"#475569"}}>
+                      <div style={{display:"grid",gridTemplateColumns:"1.1fr 1fr 1fr 1fr",gap:10,fontSize:11,color:"#475569"}}>
                         <div><strong style={{color:"#1a1a2e"}}>Proveedor:</strong><br/>{prov?.contacto || "Sin contacto"} · {prov?.telefono || prov?.tel || "Sin teléfono"}</div>
                         <div><strong style={{color:"#1a1a2e"}}>Banco:</strong><br/>{prov?.banco || "Sin banco"} · {prov?.numeroCuenta || "Sin cuenta"}</div>
-                        <div><strong style={{color:"#1a1a2e"}}>Factura:</strong><br/>{fmtD(c.fecha) || "—"} → {fmtD(c.fechaVence) || "—"}</div>
-                        <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center"}}>
-                          {c.estado==="Pendiente" ? (
-                            <button onClick={()=>marcarPagada(c.id)} style={{background:"#dcfce7",border:"1px solid #4ade80",color:"#166534",borderRadius:8,padding:"6px 12px",fontSize:11,cursor:"pointer",fontWeight:700}}>
-                              ✓ Marcar pagada
-                            </button>
-                          ) : (
-                            <span style={{fontSize:11,color:"#4ade80",fontWeight:700}}>Pagada {c.fechaPago?fmtD(c.fechaPago):""}</span>
-                          )}
+                        <div><strong style={{color:"#1a1a2e"}}>Fechas:</strong><br/>{fmtD(c.fecha) || "—"} → {fmtD(c.fechaVence) || "—"}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>Impuestos:</strong><br/>IVA {fmt(c.valorIVA || 0)} · RF {fmt(c.valorRetFuente || 0)}</div>
+                      </div>
+
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(4, minmax(0, 1fr))",gap:10,fontSize:11,color:"#475569",marginTop:10}}>
+                        <div><strong style={{color:"#1a1a2e"}}>Subtotal</strong><br/>{fmt(c.subtotal ?? c.monto ?? 0)}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>ReteIVA / ReteICA</strong><br/>{fmt(c.valorReteiva || 0)} · {fmt(c.valorReteica || 0)}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>Bruto / Retenciones</strong><br/>{fmt(c.valorBrutoFactura ?? c.monto ?? 0)} · {fmt(c.valorTotalRetenciones || 0)}</div>
+                        <div style={{display:"flex",justifyContent:"flex-end",alignItems:"center",gap:8}}>
+                          {c.estado!=="Pagado" && <button style={{...B("#16a34a"),padding:"8px 12px",fontSize:11}} onClick={()=>marcarPagada(c.id)}>Marcar pagada</button>}
                         </div>
                       </div>
                     </div>
@@ -4705,11 +4648,11 @@ function CuentasPagar({ctx}){
         <>
           {showProv&&(
             <div style={{...CD,marginBottom:18,border:"1px solid #f5c842"}}>
-              <div style={ST}>{editProvId?"Editar proveedor":"Nuevo proveedor"}</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
+              <div style={ST}>{editProvId?"Editar proveedor":"Registrar proveedor"}</div>
+              <div style={{display:"grid",gridTemplateColumns:"1.1fr 1fr 1fr",gap:12,marginBottom:14}}>
                 <div>
-                  <LBL>Nombre del proveedor</LBL>
-                  <input value={provForm.nombre} onChange={e=>setProvForm({...provForm,nombre:e.target.value})} placeholder="Razón social o nombre comercial" style={SI}/>
+                  <LBL>Nombre proveedor</LBL>
+                  <input value={provForm.nombre} onChange={e=>setProvForm({...provForm,nombre:e.target.value})} placeholder="Nombre / razón social" style={SI}/>
                 </div>
                 <div>
                   <LBL>NIT</LBL>
@@ -4763,7 +4706,7 @@ function CuentasPagar({ctx}){
               <div style={{display:"grid",gap:12}}>
                 {proveedoresData.map(p=>{
                   const pendientesProv=cuentas.filter(c=>c.proveedorId===p.id&&c.estado==="Pendiente");
-                  const totalProv=pendientesProv.reduce((s,c)=>s+Number(c.monto||0),0);
+                  const totalProv=pendientesProv.reduce((s,c)=>s+getCuentaDisplayTotal(c),0);
                   return(
                     <div key={p.id} style={{background:"#f8fafc",borderRadius:10,padding:"16px 18px",border:"1px solid #e2e8f0"}}>
                       <div style={{display:"flex",justifyContent:"space-between",gap:16,alignItems:"flex-start",marginBottom:10}}>
@@ -4806,12 +4749,6 @@ function CuentasPagar({ctx}){
   );
 }
 
-// ======================================================
-// OBRAS
-// ======================================================
-// ======================================================
-// OBRAS
-// ======================================================
 function Obras({ctx}){
   const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,horarios}=ctx;
   const [sel,setSel]=useState(null);

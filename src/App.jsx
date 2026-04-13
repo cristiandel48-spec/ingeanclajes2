@@ -1716,6 +1716,68 @@ function buildCotizacionPrintHtml(c){
   const money = (n) => fmt(Number(n || 0));
   const numberFmt = (n) => Number(n || 0).toLocaleString("es-CO");
 
+  const getProposalAnchorPoints = (propuesta = {}) => {
+    const items = Array.isArray(propuesta?.items) ? propuesta.items : [];
+    return items.reduce((sum, item) => {
+      const desc = String(item?.desc || item?.descripcion || item?.nombre || "").toUpperCase();
+      const unit = String(item?.unit || "").toUpperCase();
+      const qty = Number(item?.cant || 0);
+      const isAnchorItem =
+        desc.includes("PUNTO DE ANCLAJE") ||
+        desc.includes("PUNTOS DE ANCLAJE") ||
+        desc.includes("ANCLAJE") ||
+        desc.includes("ANCLAJE IMPORTADO") ||
+        desc.includes("ANCLAJE NACIONAL") ||
+        desc.includes("ANCLAJE EPOXICO") ||
+        desc.includes("ANCLAJE SOLDADO");
+      const isUnitCount = !unit || unit === "UND" || unit === "UNIDAD" || unit === "UNIDADES" || unit === "UN";
+      return isAnchorItem && isUnitCount ? sum + qty : sum;
+    }, 0);
+  };
+
+  const resumenPropuestas = propuestas.map((propuesta, idx) => ({
+    nombre: propuesta?.nombre || propuesta?.quote?.propuestaNombre || `Propuesta ${idx + 1}`,
+    puntos: getProposalAnchorPoints(propuesta),
+    total: Math.round(Number(propuesta?.tot || propuesta?.quote?.total || 0)),
+  }));
+
+  const mostrarResumenFinal = resumenPropuestas.length > 2;
+  const totalResumenPuntos = resumenPropuestas.reduce((sum, row) => sum + Number(row.puntos || 0), 0);
+  const totalResumenValor = resumenPropuestas.reduce((sum, row) => sum + Number(row.total || 0), 0);
+
+  const renderResumenPropuestas = () => {
+    if (!mostrarResumenFinal) return "";
+
+    return `
+      <div class="summary-card">
+        <div class="section-title premium-title summary-title">Resumen de propuestas</div>
+        <table class="summary-table">
+          <thead>
+            <tr>
+              <th>Propuesta</th>
+              <th style="text-align:center;">Puntos de anclaje</th>
+              <th style="text-align:right;">Valor total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${resumenPropuestas.map((row) => `
+              <tr>
+                <td>${escapeHtml(row.nombre || "")}</td>
+                <td style="text-align:center;">${numberFmt(row.puntos || 0)}</td>
+                <td style="text-align:right;">${money(row.total || 0)}</td>
+              </tr>
+            `).join("")}
+            <tr class="summary-total-row">
+              <td><strong>TOTAL GENERAL</strong></td>
+              <td style="text-align:center;"><strong>${numberFmt(totalResumenPuntos)}</strong></td>
+              <td style="text-align:right;"><strong>${money(totalResumenValor)}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+  };
+
   const footerHtml = `
     <div class="footer">
       Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>
@@ -1998,6 +2060,8 @@ function buildCotizacionPrintHtml(c){
       <div class="page-inner">
         ${headerHtml}
         <div class="page-content">
+          ${renderResumenPropuestas()}
+
           <div class="section-title premium-title">Condiciones comerciales</div>
           <div class="premium-card text-only-block premium-tight">
             <div class="kv-grid premium-kv-grid">
@@ -2242,6 +2306,40 @@ function buildCotizacionPrintHtml(c){
 
       .appendix-img { width:100%; height:auto; max-height:235mm; object-fit:contain; display:block; margin:0 auto; }
       .premium-title { margin-top:1mm; margin-bottom:2.6mm; }
+      .summary-title { margin-top:0; }
+      .summary-card {
+        margin: 0 0 4mm 0;
+        border: 1px solid #dbe3ec;
+        border-radius: 10px;
+        background: linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
+        padding: 3.2mm 4mm 3mm 4mm;
+        box-shadow: 0 1.5mm 4mm rgba(15,23,42,.05);
+      }
+      .summary-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 10.8px;
+        margin-top: 1mm;
+      }
+      .summary-table th {
+        background: #f8fafc;
+        color: #111827;
+        font-weight: 700;
+        border-bottom: 1px solid #d9e1ea;
+        padding: 8px 10px;
+        text-align: left;
+      }
+      .summary-table td {
+        padding: 8px 10px;
+        border-bottom: 1px solid #e5e7eb;
+        color: #1f2937;
+      }
+      .summary-table tbody tr:last-child td { border-bottom: none; }
+      .summary-total-row td {
+        background: #fff8db;
+        border-top: 2px solid #e5d36b;
+        font-weight: 800;
+      }
       .premium-card {
         background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
         border:1px solid #dbe3ec;

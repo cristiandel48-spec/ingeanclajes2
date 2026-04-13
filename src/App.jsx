@@ -1716,30 +1716,38 @@ function buildCotizacionPrintHtml(c){
   const money = (n) => fmt(Number(n || 0));
   const numberFmt = (n) => Number(n || 0).toLocaleString("es-CO");
 
-  const getProposalAnchorPoints = (propuesta = {}) => {
+  const findProposalSummaryItem = (propuesta = {}) => {
     const items = Array.isArray(propuesta?.items) ? propuesta.items : [];
-    return items.reduce((sum, item) => {
+    const match = items.find((item) => {
       const desc = String(item?.desc || item?.descripcion || item?.nombre || "").toUpperCase();
-      const unit = String(item?.unit || "").toUpperCase();
-      const qty = Number(item?.cant || 0);
-      const isAnchorItem =
+      return (
         desc.includes("PUNTO DE ANCLAJE") ||
         desc.includes("PUNTOS DE ANCLAJE") ||
         desc.includes("ANCLAJE") ||
         desc.includes("ANCLAJE IMPORTADO") ||
         desc.includes("ANCLAJE NACIONAL") ||
         desc.includes("ANCLAJE EPOXICO") ||
-        desc.includes("ANCLAJE SOLDADO");
-      const isUnitCount = !unit || unit === "UND" || unit === "UNIDAD" || unit === "UNIDADES" || unit === "UN";
-      return isAnchorItem && isUnitCount ? sum + qty : sum;
-    }, 0);
+        desc.includes("ANCLAJE SOLDADO")
+      );
+    });
+    return match || items[0] || null;
   };
 
-  const resumenPropuestas = propuestas.map((propuesta, idx) => ({
-    nombre: propuesta?.nombre || propuesta?.quote?.propuestaNombre || `Propuesta ${idx + 1}`,
-    puntos: getProposalAnchorPoints(propuesta),
-    total: Math.round(Number(propuesta?.tot || propuesta?.quote?.total || 0)),
-  }));
+  const getProposalAnchorPoints = (propuesta = {}) => {
+    const item = findProposalSummaryItem(propuesta);
+    return Number(item?.cant || 0);
+  };
+
+  const resumenPropuestas = propuestas.map((propuesta, idx) => {
+    const summaryItem = findProposalSummaryItem(propuesta);
+    return {
+      nombre: propuesta?.nombre || propuesta?.quote?.propuestaNombre || `Propuesta ${idx + 1}`,
+      puntos: getProposalAnchorPoints(propuesta),
+      unidad: String(summaryItem?.unit || "UND").toUpperCase(),
+      valorUnitario: Number(summaryItem?.vu || 0),
+      total: Math.round(Number(propuesta?.tot || propuesta?.quote?.total || 0)),
+    };
+  });
 
   const mostrarResumenFinal = resumenPropuestas.length >= 2;
   const totalResumenPuntos = resumenPropuestas.reduce((sum, row) => sum + Number(row.puntos || 0), 0);
@@ -1756,6 +1764,8 @@ function buildCotizacionPrintHtml(c){
             <tr>
               <th>Propuesta</th>
               <th style="text-align:center;">Puntos de anclaje</th>
+              <th style="text-align:center;">Unidad</th>
+              <th style="text-align:right;">Valor unitario</th>
               <th style="text-align:right;">Valor total</th>
             </tr>
           </thead>
@@ -1764,12 +1774,16 @@ function buildCotizacionPrintHtml(c){
               <tr>
                 <td>${escapeHtml(row.nombre || "")}</td>
                 <td style="text-align:center;">${numberFmt(row.puntos || 0)}</td>
+                <td style="text-align:center;">${escapeHtml(row.unidad || "UND")}</td>
+                <td style="text-align:right;">${money(row.valorUnitario || 0)}</td>
                 <td style="text-align:right;">${money(row.total || 0)}</td>
               </tr>
             `).join("")}
             <tr class="summary-total-row">
               <td><strong>TOTAL GENERAL</strong></td>
               <td style="text-align:center;"><strong>${numberFmt(totalResumenPuntos)}</strong></td>
+              <td style="text-align:center;"><strong>-</strong></td>
+              <td style="text-align:right;"><strong>-</strong></td>
               <td style="text-align:right;"><strong>${money(totalResumenValor)}</strong></td>
             </tr>
           </tbody>
@@ -2071,25 +2085,23 @@ function buildCotizacionPrintHtml(c){
             </div>
           </div>
 
-          ${mostrarResumenFinal ? "" : `
-            <div class="premium-divider text-only-block"></div>
+          <div class="premium-divider text-only-block ${mostrarResumenFinal ? "premium-divider-compact" : ""}"></div>
 
-            <div class="section-title premium-title">Sistema de gestión de seguridad y salud en el trabajo</div>
-            <div class="premium-card premium-copy text-only-block compact-block premium-tight">
-              <p>INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicación de la Resolución 4272 de 2021, garantizando la implementación del Sistema de Gestión de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.</p>
-            </div>
+          <div class="section-title premium-title ${mostrarResumenFinal ? "premium-title-compact" : ""}">Sistema de gestión de seguridad y salud en el trabajo</div>
+          <div class="premium-card premium-copy text-only-block compact-block premium-tight ${mostrarResumenFinal ? "premium-copy-compact" : ""}">
+            <p>INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicación de la Resolución 4272 de 2021, garantizando la implementación del Sistema de Gestión de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.</p>
+          </div>
 
-            <div class="signature-block text-only-block premium-signature">
-              <p class="signature-intro">Cordialmente,</p>
-              <div class="signature-space compact-signature-space"></div>
-              <div class="signature-line premium-signature-line">
-                <strong>ING. JHON JAIME SEPÚLVEDA LONDOÑO</strong><br/>
-                MP. 05256-409949<br/>
-                Director Comercial<br/>
-                Tel: 3152889541
-              </div>
+          <div class="signature-block text-only-block premium-signature ${mostrarResumenFinal ? "premium-signature-compact" : ""}">
+            <p class="signature-intro">Cordialmente,</p>
+            <div class="signature-space compact-signature-space ${mostrarResumenFinal ? "compact-signature-space-sm" : ""}"></div>
+            <div class="signature-line premium-signature-line ${mostrarResumenFinal ? "premium-signature-line-compact" : ""}">
+              <strong>ING. JHON JAIME SEPÚLVEDA LONDOÑO</strong><br/>
+              MP. 05256-409949<br/>
+              Director Comercial<br/>
+              Tel: 3152889541
             </div>
-          `}
+          </div>
         </div>
         ${footerHtml}
       </div>
@@ -2345,7 +2357,7 @@ function buildCotizacionPrintHtml(c){
       .summary-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 10.4px;
+        font-size: 9.8px;
         margin-top: 1mm;
       }
       .summary-table th {
@@ -2353,11 +2365,12 @@ function buildCotizacionPrintHtml(c){
         color: #111827;
         font-weight: 700;
         border-bottom: 1px solid #d9e1ea;
-        padding: 8px 10px;
+        padding: 6px 7px;
         text-align: left;
+        white-space: nowrap;
       }
       .summary-table td {
-        padding: 8px 10px;
+        padding: 6px 7px;
         border-bottom: 1px solid #e5e7eb;
         color: #1f2937;
       }
@@ -2392,9 +2405,12 @@ function buildCotizacionPrintHtml(c){
         border-top:1px solid #d7dee8;
       }
       .premium-copy p { font-size:10.8px; margin-bottom:0; }
+      .premium-copy-compact p { font-size:10px; line-height:1.42; }
       .premium-signature { margin-top:4mm; }
+      .premium-signature-compact { margin-top:2.6mm; }
       .signature-intro { margin-bottom:1.4mm; font-size:10.8px; }
       .compact-signature-space { height:7mm; }
+      .compact-signature-space-sm { height:4mm; }
       .premium-signature-line {
         display:inline-block;
         padding-top:2.4mm;
@@ -2402,6 +2418,9 @@ function buildCotizacionPrintHtml(c){
         font-size:10.6px;
         line-height:1.42;
       }
+      .premium-signature-line-compact { font-size:10px; line-height:1.35; padding-top:1.8mm; }
+      .premium-title-compact { margin-top:.8mm; margin-bottom:1.8mm; }
+      .premium-divider-compact { margin-top:2mm; margin-bottom:2mm; }
 
       .footer {
         position:absolute;
@@ -2455,7 +2474,6 @@ function buildCotizacionPrintHtml(c){
     ` : ""}
     ${showTechnicalPage ? renderTechnicalPage() : ""}
     ${renderFinalPage()}
-    ${mostrarResumenFinal ? renderSgsstPage() : ""}
     <script>
       async function waitForImages(){
         const images = Array.from(document.images || []);

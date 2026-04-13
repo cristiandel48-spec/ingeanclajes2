@@ -204,7 +204,7 @@ function Cotizacion({ctx}){
     setTab("form");
   };
 
-  const guardarCotizacion = ()=>{
+  const guardarCotizacion = ({ goToList = false } = {})=>{
     const { current, next } = syncPropuestas();
     const finalItems = normalizeQuoteItems({items:current.items,geoMediciones,propuestas:next});
     const totalActiva = Math.round((finalItems.reduce((sum,item)=>sum + (Number(item.cant)||0)*(Number(item.vu)||0),0)) * (1 + (Number(current.util || 10) / 100) * 1.19));
@@ -214,8 +214,40 @@ function Cotizacion({ctx}){
     const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:cl.nombre,contacto:cl.contacto,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,textoInicial:textoInicial.trim(),observaciones:observacionesCot.trim(),items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:activa.mapImg || autoMapImg || null,geoMediciones:activa.geoMediciones || geoMediciones,geoMapView:activa.geoMapView || geoMapView,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,incluyeTexto:activa.incluyeTexto || "",propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
     setCotizaciones((prevList)=>editCot ? prevList.map((cotizacion)=>cotizacion.id===editCot?{...cotizacion,...data}:cotizacion) : [...prevList,data]);
     setPropuestas(propuestasFinales);
-    setTab("lista");
+    if (goToList) setTab("lista");
     return data;
+  };
+
+  const guardarYNuevaPropuesta = ()=>{
+    const saved = guardarCotizacion({ goToList:false });
+    if (!saved) return;
+    const propuestasActuales = Array.isArray(saved.propuestas) ? saved.propuestas : [];
+    const nuevaIndex = propuestasActuales.length;
+    const nueva = buildQuoteProposal({
+      id:createQuoteProposalId(saved.id || "new"),
+      nombre:getQuoteProposalLabel(nuevaIndex),
+      formaPago:DEFAULT_COT_FORMA_PAGO,
+      tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,
+      util:10,
+      items:[],
+      fotos:[],
+      geoMediciones:[],
+      geoMapView:null,
+      mapImg:null,
+      medicionAutomatica:false,
+      incluyeTexto:"",
+      alcance:"",
+      requerimientoCliente:"",
+      tipoCotizacion:tipoCotizacion || "linea_vida",
+    }, nuevaIndex);
+    const next = [...propuestasActuales, nueva];
+    setCotizaciones((prevList)=>prevList.map((cotizacion)=>cotizacion.id===saved.id ? { ...cotizacion, propuestas:next, propuestaActivaId:nueva.id } : cotizacion));
+    setPropuestas(next);
+    setPropuestaActivaId(nueva.id);
+    applyProposal(nueva);
+    setTimeout(() => {
+      window.scrollTo({ top:0, behavior:"smooth" });
+    }, 120);
   };
 
   const aprobarCotizacion = (cotId)=>{
@@ -337,8 +369,8 @@ function Cotizacion({ctx}){
         action={
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             <button style={B("#f1f5f9","#475569")} onClick={()=>setTab("lista")}>Volver a lista</button>
-            <button style={{...B("#dbeafe","#1e40af"),justifyContent:"center"}} onClick={()=>{const saved=guardarCotizacion();if(saved){setPreviewCot(saved);setTab("lista");}}}>Guardar y ver</button>
-            <button style={{...B("#f47c20"),justifyContent:"center"}} onClick={guardarCotizacion}>{editCot?"Actualizar":"Guardar"}</button>
+            <button style={{...B("#dbeafe","#1e40af"),justifyContent:"center"}} onClick={()=>{const saved=guardarCotizacion({ goToList:false });if(saved){setPreviewCot(saved);setTab("lista");}}}>Guardar y ver</button>
+            <button style={{...B("#f47c20"),justifyContent:"center"}} onClick={()=>guardarCotizacion({ goToList:true })}>{editCot?"Actualizar":"Guardar"}</button>
           </div>
         }
       />
@@ -584,6 +616,15 @@ function Cotizacion({ctx}){
             style={{...SI,minHeight:80,resize:"vertical",lineHeight:1.6}}
           />
           <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Este texto aparece en las condiciones comerciales del PDF</div>
+          <div style={{display:"flex",justifyContent:"flex-end",marginTop:16}}>
+            <button
+              type="button"
+              onClick={guardarYNuevaPropuesta}
+              style={{...B("#f47c20"),justifyContent:"center",minWidth:170}}
+            >
+              Guardar y nueva propuesta
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1763,7 +1804,7 @@ function buildCotizacionPrintHtml(c){
           <thead>
             <tr>
               <th>Propuesta</th>
-              <th style="text-align:center;">Puntos de anclaje</th>
+              <th style="text-align:center;">Cantidad</th>
               <th style="text-align:center;">Unidad</th>
               <th style="text-align:right;">Valor unitario</th>
               <th style="text-align:right;">Valor total</th>

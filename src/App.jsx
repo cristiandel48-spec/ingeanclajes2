@@ -2128,17 +2128,27 @@ function buildCotizacionPrintHtml(c){
 
       .page {
         width:216mm;
-        min-height:279mm;
+        height:279mm;
         margin:0 auto;
         background:#fff;
         break-after:page;
         page-break-after:always;
-        padding:6mm 8mm 6mm 8mm;
         position:relative;
+        overflow:hidden;
       }
       .page:last-child { break-after:auto; page-break-after:auto; }
-      .page-inner { display:block; padding:4mm 6mm 4mm 6mm; min-height:auto; }
-      .page-content { display:block; min-height:auto; }
+      .page-inner {
+        position:relative;
+        width:100%;
+        height:100%;
+        padding:10mm 9mm 0 9mm;
+        box-sizing:border-box;
+      }
+      .page-content {
+        display:block;
+        min-height:auto;
+        padding-bottom:18mm;
+      }
 
       .header {
         display:grid;
@@ -2269,13 +2279,17 @@ function buildCotizacionPrintHtml(c){
       }
 
       .footer {
-        margin-top:6mm;
+        position:absolute;
+        left:9mm;
+        right:9mm;
+        bottom:8mm;
         padding-top:2mm;
         border-top:0.4px solid #9ca3af;
         text-align:center;
         font-size:9px;
         line-height:1.25;
         color:#6b7280;
+        background:#fff;
       }
 
       .proposal-title,

@@ -204,7 +204,8 @@ function Cotizacion({ctx}){
     setTab("form");
   };
 
-  const guardarCotizacion = ()=>{
+  const guardarCotizacion = (options = {})=>{
+    const { stayOnForm = false } = options;
     const { current, next } = syncPropuestas();
     const finalItems = normalizeQuoteItems({items:current.items,geoMediciones,propuestas:next});
     const totalActiva = Math.round((finalItems.reduce((sum,item)=>sum + (Number(item.cant)||0)*(Number(item.vu)||0),0)) * (1 + (Number(current.util || 10) / 100) * 1.19));
@@ -214,8 +215,16 @@ function Cotizacion({ctx}){
     const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:cl.nombre,contacto:cl.contacto,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,textoInicial:textoInicial.trim(),observaciones:observacionesCot.trim(),items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:activa.mapImg || autoMapImg || null,geoMediciones:activa.geoMediciones || geoMediciones,geoMapView:activa.geoMapView || geoMapView,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,incluyeTexto:activa.incluyeTexto || "",propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
     setCotizaciones((prevList)=>editCot ? prevList.map((cotizacion)=>cotizacion.id===editCot?{...cotizacion,...data}:cotizacion) : [...prevList,data]);
     setPropuestas(propuestasFinales);
-    setTab("lista");
+    if (!stayOnForm) setTab("lista");
     return data;
+  };
+
+  const guardarPropuestaYSubir = ()=>{
+    const saved = guardarCotizacion({ stayOnForm: true });
+    if (!saved) return;
+    setTimeout(()=>{
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 120);
   };
 
   const aprobarCotizacion = (cotId)=>{
@@ -584,6 +593,24 @@ function Cotizacion({ctx}){
             style={{...SI,minHeight:80,resize:"vertical",lineHeight:1.6}}
           />
           <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Este texto aparece en las condiciones comerciales del PDF</div>
+          <div style={{display:"flex",justifyContent:"flex-end",marginTop:16}}>
+            <button
+              type="button"
+              onClick={guardarPropuestaYSubir}
+              style={{
+                background:"#0f172a",
+                color:"#fff",
+                border:"none",
+                borderRadius:10,
+                padding:"10px 18px",
+                fontWeight:700,
+                cursor:"pointer",
+                boxShadow:"0 2px 8px rgba(15,23,42,0.12)"
+              }}
+            >
+              Guardar
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1741,7 +1768,7 @@ function buildCotizacionPrintHtml(c){
     total: Math.round(Number(propuesta?.tot || propuesta?.quote?.total || 0)),
   }));
 
-  const mostrarResumenFinal = resumenPropuestas.length > 2;
+  const mostrarResumenFinal = resumenPropuestas.length >= 2;
   const totalResumenPuntos = resumenPropuestas.reduce((sum, row) => sum + Number(row.puntos || 0), 0);
   const totalResumenValor = resumenPropuestas.reduce((sum, row) => sum + Number(row.total || 0), 0);
 
@@ -1750,7 +1777,7 @@ function buildCotizacionPrintHtml(c){
 
     return `
       <div class="summary-card">
-        <div class="section-title premium-title summary-title">Resumen de propuestas</div>
+        <div class="section-title premium-title summary-title">Condiciones económicas</div>
         <table class="summary-table">
           <thead>
             <tr>

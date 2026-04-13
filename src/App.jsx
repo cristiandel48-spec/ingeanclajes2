@@ -1993,17 +1993,37 @@ function buildCotizacionPrintHtml(c){
     </section>
   `;
 
-  const renderConditionsPage = () => `
-    <section class="page">
+  const renderFinalPage = () => `
+    <section class="page premium-final-page">
       <div class="page-inner">
         ${headerHtml}
         <div class="page-content">
-          <div class="section-title">Condiciones comerciales</div>
-          <div class="kv-grid">
-            <div class="kv-row"><strong>FORMA DE PAGO</strong><span>${escapeHtml(c?.formaPago || "50% ANTICIPO, 50% CONCLUIR LABORES")}</span></div>
-            <div class="kv-row"><strong>TIEMPO DE EJECUCIÓN</strong><span>${escapeHtml(c?.tiempoEjec || "10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)")}</span></div>
-            <div class="kv-row"><strong>VALIDEZ DE LA OFERTA</strong><span>${escapeHtml(`${c?.val || 30} días a partir de la fecha de entrega de esta cotización`)}</span></div>
-            <div class="kv-row"><strong>CERTIFICACIÓN</strong><span>Se entrega con el pago total</span></div>
+          <div class="section-title premium-title">Condiciones comerciales</div>
+          <div class="premium-card text-only-block premium-tight">
+            <div class="kv-grid premium-kv-grid">
+              <div class="kv-row premium-kv-row"><strong>FORMA DE PAGO</strong><span>${escapeHtml(c?.formaPago || "50% ANTICIPO, 50% CONCLUIR LABORES")}</span></div>
+              <div class="kv-row premium-kv-row"><strong>TIEMPO DE EJECUCIÓN</strong><span>${escapeHtml(c?.tiempoEjec || "10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)")}</span></div>
+              <div class="kv-row premium-kv-row"><strong>VALIDEZ DE LA OFERTA</strong><span>${escapeHtml(`${c?.val || 30} días a partir de la fecha de entrega de esta cotización`)}</span></div>
+              <div class="kv-row premium-kv-row"><strong>CERTIFICACIÓN</strong><span>Se entrega con el pago total</span></div>
+            </div>
+          </div>
+
+          <div class="premium-divider text-only-block"></div>
+
+          <div class="section-title premium-title">Sistema de gestión de seguridad y salud en el trabajo</div>
+          <div class="premium-card premium-copy text-only-block compact-block premium-tight">
+            <p>INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicación de la Resolución 4272 de 2021, garantizando la implementación del Sistema de Gestión de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.</p>
+          </div>
+
+          <div class="signature-block text-only-block premium-signature">
+            <p class="signature-intro">Cordialmente,</p>
+            <div class="signature-space compact-signature-space"></div>
+            <div class="signature-line premium-signature-line">
+              <strong>ING. JHON JAIME SEPÚLVEDA LONDOÑO</strong><br/>
+              MP. 05256-409949<br/>
+              Director Comercial<br/>
+              Tel: 3152889541
+            </div>
           </div>
         </div>
         ${footerHtml}
@@ -2092,28 +2112,6 @@ function buildCotizacionPrintHtml(c){
     </section>
   `;
 
-  const renderSgsstPage = () => `
-    <section class="page">
-      <div class="page-inner">
-        ${headerHtml}
-        <div class="page-content">
-          <div class="section-title">Sistema de gestión de seguridad y salud en el trabajo</div>
-          <p>INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicación de la Resolución 4272 de 2021, garantizando la implementación del Sistema de Gestión de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.</p>
-          <div class="signature-block">
-            <p>Cordialmente,</p>
-            <div class="signature-space"></div>
-            <div class="signature-line">
-              <strong>ING. JHON JAIME SEPÚLVEDA LONDOÑO</strong><br/>
-              MP. 05256-409949<br/>
-              Director Comercial<br/>
-              Tel: 3152889541
-            </div>
-          </div>
-        </div>
-        ${footerHtml}
-      </div>
-    </section>
-  `;
 
   const proposalSections = propuestas.map((propuesta, idx) => renderProposalPage(propuesta, idx)).join("");
 
@@ -2130,18 +2128,17 @@ function buildCotizacionPrintHtml(c){
 
       .page {
         width:216mm;
-        height:279mm;
+        min-height:279mm;
         margin:0 auto;
         background:#fff;
         break-after:page;
         page-break-after:always;
-        overflow:hidden;
         padding:6mm 8mm 6mm 8mm;
         position:relative;
       }
       .page:last-child { break-after:auto; page-break-after:auto; }
-      .page-inner { display:flex; flex-direction:column; padding:4mm 6mm 4mm 6mm; height:calc(279mm - 12mm); }
-      .page-content { display:block; flex:1; }
+      .page-inner { display:block; padding:4mm 6mm 4mm 6mm; min-height:auto; }
+      .page-content { display:block; min-height:auto; }
 
       .header {
         display:grid;
@@ -2183,6 +2180,8 @@ function buildCotizacionPrintHtml(c){
       .subheading { font-size:12px; font-weight:700; margin-bottom:2mm; }
       .subheading.with-space { margin-top:4mm; }
       .content-block { margin-bottom:3mm; }
+      .text-only-block { margin-left:4cm; margin-right:3cm; max-width:calc(100% - 7cm); }
+      .text-only-block p, .text-only-block li { line-height:1.52; text-align:justify; }
       .compact-block p { margin-bottom:2mm; }
 
       .bullet-list { margin:1.5mm 0 0 0; padding-left:18px; font-size:12px; line-height:1.38; }
@@ -2225,23 +2224,58 @@ function buildCotizacionPrintHtml(c){
       .strong { font-weight:700; }
 
       .kv-grid { display:grid; gap:2mm; margin-top:2mm; }
-      .kv-row { display:grid; grid-template-columns:64mm 1fr; gap:4mm; font-size:12px; line-height:1.35; }
+      .kv-row { display:grid; grid-template-columns:48mm 1fr; gap:4mm; font-size:12px; line-height:1.4; }
 
-      .signature-block { margin-top:8mm; }
-      .signature-space { height:24px; }
+      .signature-block { margin-top:6mm; }
+      .signature-space { height:10mm; }
       .signature-line { font-size:12px; line-height:1.42; }
 
       .appendix-img { width:100%; height:auto; max-height:235mm; object-fit:contain; display:block; margin:0 auto; }
+      .premium-title { margin-top:1mm; margin-bottom:2.6mm; }
+      .premium-card {
+        background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
+        border:1px solid #dbe3ec;
+        border-radius:10px;
+        padding:3.2mm 4mm;
+        box-shadow:0 1.5mm 4mm rgba(15,23,42,.05);
+      }
+      .premium-tight { margin-top:0; margin-bottom:0; }
+      .premium-kv-grid { gap:1.4mm; }
+      .premium-kv-row {
+        grid-template-columns:42mm 1fr;
+        gap:3mm;
+        font-size:10.8px;
+        line-height:1.35;
+        padding:1.1mm 0;
+        border-bottom:1px solid #e8eef5;
+      }
+      .premium-kv-row:last-child { border-bottom:none; padding-bottom:0; }
+      .premium-divider {
+        height:0;
+        margin-top:3.2mm;
+        margin-bottom:3.2mm;
+        border-top:1px solid #d7dee8;
+      }
+      .premium-copy p { font-size:10.8px; margin-bottom:0; }
+      .premium-signature { margin-top:4mm; }
+      .signature-intro { margin-bottom:1.4mm; font-size:10.8px; }
+      .compact-signature-space { height:7mm; }
+      .premium-signature-line {
+        display:inline-block;
+        padding-top:2.4mm;
+        border-top:1px solid #1f2937;
+        font-size:10.6px;
+        line-height:1.42;
+      }
 
       .footer {
-        margin-top:auto;
+        margin-top:6mm;
         padding-top:2mm;
         border-top:0.4px solid #9ca3af;
         text-align:center;
         font-size:9px;
         line-height:1.25;
         color:#6b7280;
-        flex-shrink:0;
       }
 
       .proposal-title,
@@ -2271,9 +2305,8 @@ function buildCotizacionPrintHtml(c){
         </div>
       </section>
     ` : ""}
-    ${renderConditionsPage()}
     ${showTechnicalPage ? renderTechnicalPage() : ""}
-    ${renderSgsstPage()}
+    ${renderFinalPage()}
     <script>
       async function waitForImages(){
         const images = Array.from(document.images || []);

@@ -1799,7 +1799,7 @@ function buildCotizacionPrintHtml(c){
 
     return `
       <div class="summary-card text-only-block">
-        <div class="section-title premium-title summary-title">Valor total de la cotización</div>
+        <div class="section-title premium-title summary-title">Valor total de la Cotización</div>
         <table class="summary-table">
           <thead>
             <tr>

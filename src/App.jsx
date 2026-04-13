@@ -1758,7 +1758,7 @@ function buildCotizacionPrintHtml(c){
 
     return `
       <div class="summary-card text-only-block">
-        <div class="section-title premium-title summary-title">Condiciones economicas</div>
+        <div class="section-title premium-title summary-title">Valor total de la cotización</div>
         <table class="summary-table">
           <thead>
             <tr>
@@ -2346,40 +2346,65 @@ function buildCotizacionPrintHtml(c){
       .appendix-img { width:100%; height:auto; max-height:235mm; object-fit:contain; display:block; margin:0 auto; }
       .premium-title { margin-top:1mm; margin-bottom:2.6mm; }
       .summary-title { margin-top:0; }
-      .summary-card {
-        margin: 0 0 4mm 0;
-        border: 1px solid #dbe3ec;
-        border-radius: 10px;
-        background: linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
-        padding: 3.2mm 4mm 3mm 4mm;
-        box-shadow: 0 1.5mm 4mm rgba(15,23,42,.05);
-      }
-      .summary-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 9.8px;
-        margin-top: 1mm;
-      }
-      .summary-table th {
-        background: #f8fafc;
-        color: #111827;
-        font-weight: 700;
-        border-bottom: 1px solid #d9e1ea;
-        padding: 6px 7px;
-        text-align: left;
-        white-space: nowrap;
-      }
-      .summary-table td {
-        padding: 6px 7px;
-        border-bottom: 1px solid #e5e7eb;
-        color: #1f2937;
-      }
-      .summary-table tbody tr:last-child td { border-bottom: none; }
-      .summary-total-row td {
-        background: #fff8db;
-        border-top: 2px solid #e5d36b;
-        font-weight: 800;
-      }
+      .summary-card{
+  width: 88%;
+  margin: 0 auto 6mm auto;
+  border: 1px solid #d9e1ea;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 4mm 5mm 3mm 5mm;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+     .summary-card .section-title{
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #111827;
+  border-bottom: 1px solid #c1121f;
+  padding-bottom: 2.5mm;
+  margin: 0 0 3mm 0;
+}
+
+    .summary-table{
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10.5px;
+  margin: 0 auto;
+}
+
+    .summary-table th{
+  background: #f8fafc;
+  color: #111827;
+  font-weight: 700;
+  border-bottom: 1px solid #d9e1ea;
+  padding: 7px 8px;
+  text-align: center;
+}
+
+    .summary-table td{
+  padding: 7px 8px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #1f2937;
+  text-align: center;
+  vertical-align: middle;
+}
+
+    .summary-table td:first-child,
+.summary-table th:first-child{
+  text-align: left;
+}
+
+    .summary-table tbody tr:last-child td{
+  border-bottom: none;
+}
+
+    .summary-total-row td{
+  background: #fff8db;
+  border-top: 2px solid #e5d36b;
+  font-weight: 800;
+}
       .premium-card {
         background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
         border:1px solid #dbe3ec;

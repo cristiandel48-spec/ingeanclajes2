@@ -1749,11 +1749,7 @@ function buildCotizacionPrintHtml(c){
     if (!mostrarResumenFinal) return "";
 
     return `
-      <section class="page summary-page">
-      <div class="page-inner">
-        ${headerHtml}
-        <div class="page-content">
-          <div class="summary-card">
+      <div class="summary-card text-only-block">
         <div class="section-title premium-title summary-title">Condiciones economicas</div>
         <table class="summary-table">
           <thead>
@@ -1779,10 +1775,6 @@ function buildCotizacionPrintHtml(c){
           </tbody>
         </table>
       </div>
-        </div>
-        ${footerHtml}
-      </div>
-    </section>
     `;
   };
 
@@ -2064,10 +2056,11 @@ function buildCotizacionPrintHtml(c){
   `;
 
   const renderFinalPage = () => `
-    <section class="page premium-final-page">
+    <section class="page premium-final-page ${mostrarResumenFinal ? "premium-final-page-with-summary" : ""}">
       <div class="page-inner">
         ${headerHtml}
         <div class="page-content">
+          ${renderResumenPropuestas()}
           <div class="section-title premium-title">Condiciones comerciales</div>
           <div class="premium-card text-only-block premium-tight">
             <div class="kv-grid premium-kv-grid">
@@ -2078,8 +2071,36 @@ function buildCotizacionPrintHtml(c){
             </div>
           </div>
 
-          <div class="premium-divider text-only-block"></div>
+          ${mostrarResumenFinal ? "" : `
+            <div class="premium-divider text-only-block"></div>
 
+            <div class="section-title premium-title">Sistema de gestión de seguridad y salud en el trabajo</div>
+            <div class="premium-card premium-copy text-only-block compact-block premium-tight">
+              <p>INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicación de la Resolución 4272 de 2021, garantizando la implementación del Sistema de Gestión de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.</p>
+            </div>
+
+            <div class="signature-block text-only-block premium-signature">
+              <p class="signature-intro">Cordialmente,</p>
+              <div class="signature-space compact-signature-space"></div>
+              <div class="signature-line premium-signature-line">
+                <strong>ING. JHON JAIME SEPÚLVEDA LONDOÑO</strong><br/>
+                MP. 05256-409949<br/>
+                Director Comercial<br/>
+                Tel: 3152889541
+              </div>
+            </div>
+          `}
+        </div>
+        ${footerHtml}
+      </div>
+    </section>
+  `;
+
+  const renderSgsstPage = () => `
+    <section class="page premium-sgsst-page">
+      <div class="page-inner">
+        ${headerHtml}
+        <div class="page-content">
           <div class="section-title premium-title">Sistema de gestión de seguridad y salud en el trabajo</div>
           <div class="premium-card premium-copy text-only-block compact-block premium-tight">
             <p>INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicación de la Resolución 4272 de 2021, garantizando la implementación del Sistema de Gestión de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.</p>
@@ -2313,7 +2334,6 @@ function buildCotizacionPrintHtml(c){
       .appendix-img { width:100%; height:auto; max-height:235mm; object-fit:contain; display:block; margin:0 auto; }
       .premium-title { margin-top:1mm; margin-bottom:2.6mm; }
       .summary-title { margin-top:0; }
-      .summary-page .page-content { padding-bottom: 30mm; }
       .summary-card {
         margin: 0 0 4mm 0;
         border: 1px solid #dbe3ec;
@@ -2434,8 +2454,8 @@ function buildCotizacionPrintHtml(c){
       </section>
     ` : ""}
     ${showTechnicalPage ? renderTechnicalPage() : ""}
-    ${renderResumenPropuestas()}
     ${renderFinalPage()}
+    ${mostrarResumenFinal ? renderSgsstPage() : ""}
     <script>
       async function waitForImages(){
         const images = Array.from(document.images || []);

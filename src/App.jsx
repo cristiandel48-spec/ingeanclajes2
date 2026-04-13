@@ -4215,7 +4215,23 @@ function CuentasPagar({ctx}){
     arrendamientos: 3.5,
     otros: 0,
   };
-  const proveedorBase={nombre:"",numeroCuenta:"",banco:"Bancolombia",direccion:"",nit:"",telefono:"",contacto:"",email:"",categoria:"General"};
+  const proveedorBase={
+    nombre:"",
+    numeroCuenta:"",
+    banco:"Bancolombia",
+    direccion:"",
+    nit:"",
+    telefono:"",
+    contacto:"",
+    email:"",
+    categoria:"General",
+    responsableIva:true,
+    regimenTributario:"ordinario",
+    agenteReteiva:false,
+    autorretenedorRenta:false,
+    municipioIca:"",
+    codigoIca:"",
+  };
   const cuentaBase={
     proveedorId:proveedores[0]?.id||"",
     obraId:"",
@@ -4294,9 +4310,12 @@ function CuentasPagar({ctx}){
 
   const updateCxpForm=(patch)=>{
     setCxpForm(prev=>{
-      const next={...prev,...patch};
+      let next={...prev,...patch};
       if(Object.prototype.hasOwnProperty.call(patch,"conceptoRetFuente") && !Object.prototype.hasOwnProperty.call(patch,"tarifaRetFuenteManual")){
         next.tarifaRetFuente=RETEFUENTE_PRESETS[next.conceptoRetFuente] ?? 0;
+      }
+      if(Object.prototype.hasOwnProperty.call(patch,"proveedorId")){
+        next=applyProveedorFiscalDefaults(next, patch.proveedorId);
       }
       if(Object.prototype.hasOwnProperty.call(patch,"responsableIva") && !patch.responsableIva){
         next.aplicaReteiva=false;
@@ -4307,7 +4326,7 @@ function CuentasPagar({ctx}){
 
   useEffect(()=>{
     if(!cxpForm.proveedorId && proveedores[0]?.id){
-      setCxpForm(prev=>({...prev,proveedorId:proveedores[0].id}));
+      setCxpForm(prev=>applyProveedorFiscalDefaults({...prev,proveedorId:proveedores[0].id}, proveedores[0].id));
     }
   },[proveedores, cxpForm.proveedorId]);
 
@@ -4322,6 +4341,18 @@ function CuentasPagar({ctx}){
     contacto:p.contacto||"",
     email:p.email||"",
     categoria:p.categoria||"General",
+    responsableIva: p.responsableIva ?? p.responsable_iva ?? true,
+    responsable_iva: p.responsable_iva ?? p.responsableIva ?? true,
+    regimenTributario: p.regimenTributario ?? p.regimen_tributario ?? "ordinario",
+    regimen_tributario: p.regimen_tributario ?? p.regimenTributario ?? "ordinario",
+    agenteReteiva: p.agenteReteiva ?? p.agente_reteiva ?? false,
+    agente_reteiva: p.agente_reteiva ?? p.agenteReteiva ?? false,
+    autorretenedorRenta: p.autorretenedorRenta ?? p.autorretenedor_renta ?? false,
+    autorretenedor_renta: p.autorretenedor_renta ?? p.autorretenedorRenta ?? false,
+    municipioIca: p.municipioIca ?? p.municipio_ica ?? "",
+    municipio_ica: p.municipio_ica ?? p.municipioIca ?? "",
+    codigoIca: p.codigoIca ?? p.codigo_ica ?? "",
+    codigo_ica: p.codigo_ica ?? p.codigoIca ?? "",
   }));
 
   const cuentasOrdenadas=[...cuentas].sort((a,b)=>{
@@ -4341,8 +4372,27 @@ function CuentasPagar({ctx}){
     setShowProv(false);
   };
 
+  const applyProveedorFiscalDefaults=(form, proveedorId)=>{
+    const prov=proveedoresData.find(p=>p.id===proveedorId);
+    if(!prov) return {...form, proveedorId};
+    const responsableIva=prov.responsableIva ?? true;
+    const municipioReteica=form.municipioReteica || prov.municipioIca || "";
+    return {
+      ...form,
+      proveedorId,
+      responsableIva,
+      aplicaReteiva: responsableIva ? form.aplicaReteiva : false,
+      municipioReteica,
+      codigoIca: prov.codigoIca || form.codigoIca || "",
+      regimenTributarioProveedor: prov.regimenTributario || form.regimenTributarioProveedor || "ordinario",
+      agenteReteivaProveedor: prov.agenteReteiva ?? form.agenteReteivaProveedor ?? false,
+      autorretenedorRentaProveedor: prov.autorretenedorRenta ?? form.autorretenedorRentaProveedor ?? false,
+    };
+  };
+
   const resetCuentaForm=()=>{
-    setCxpForm({...cuentaBase,proveedorId:proveedores[0]?.id||""});
+    const base={...cuentaBase,proveedorId:proveedores[0]?.id||""};
+    setCxpForm(applyProveedorFiscalDefaults(base, base.proveedorId));
   };
 
   const guardarProveedor=()=>{
@@ -4358,6 +4408,18 @@ function CuentasPagar({ctx}){
       contacto:provForm.contacto.trim(),
       email:provForm.email.trim(),
       categoria:provForm.categoria.trim()||"General",
+      responsableIva:Boolean(provForm.responsableIva),
+      responsable_iva:Boolean(provForm.responsableIva),
+      regimenTributario:provForm.regimenTributario||"ordinario",
+      regimen_tributario:provForm.regimenTributario||"ordinario",
+      agenteReteiva:Boolean(provForm.agenteReteiva),
+      agente_reteiva:Boolean(provForm.agenteReteiva),
+      autorretenedorRenta:Boolean(provForm.autorretenedorRenta),
+      autorretenedor_renta:Boolean(provForm.autorretenedorRenta),
+      municipioIca:(provForm.municipioIca||"").trim(),
+      municipio_ica:(provForm.municipioIca||"").trim(),
+      codigoIca:(provForm.codigoIca||"").trim(),
+      codigo_ica:(provForm.codigoIca||"").trim(),
     };
     if(editProvId){
       setProveedores(prev=>prev.map(p=>p.id===editProvId?{...p,...payload}:p));
@@ -4383,6 +4445,12 @@ function CuentasPagar({ctx}){
       contacto:prov.contacto||"",
       email:prov.email||"",
       categoria:prov.categoria||"General",
+      responsableIva:prov.responsableIva ?? prov.responsable_iva ?? true,
+      regimenTributario:prov.regimenTributario ?? prov.regimen_tributario ?? "ordinario",
+      agenteReteiva:prov.agenteReteiva ?? prov.agente_reteiva ?? false,
+      autorretenedorRenta:prov.autorretenedorRenta ?? prov.autorretenedor_renta ?? false,
+      municipioIca:prov.municipioIca ?? prov.municipio_ica ?? "",
+      codigoIca:prov.codigoIca ?? prov.codigo_ica ?? "",
     });
     setTab("proveedores");
     setShowProv(true);
@@ -4395,18 +4463,41 @@ function CuentasPagar({ctx}){
     setCuentas(prev=>[...prev,{
       id,
       ...cxpForm,
+      proveedor_id:cxpForm.proveedorId,
+      obra_id:cxpForm.obraId || null,
+      tipo_operacion:cxpForm.tipoOperacion,
+      concepto_ret_fuente:cxpForm.conceptoRetFuente,
+      responsable_iva:Boolean(cxpForm.responsableIva),
+      aplica_reteiva:Boolean(cxpForm.aplicaReteiva),
+      municipio_reteica:cxpForm.municipioReteica,
+      codigo_ica:cxpForm.codigoIca || "",
       monto:Number(cxpForm.monto||0),
       subtotal:calc.subtotal,
+      tarifa_iva:calc.tarifaIVA,
       valorIVA:calc.valorIVA,
+      valor_iva:calc.valorIVA,
       baseRetFuente:calc.baseRetFuente,
+      base_ret_fuente:calc.baseRetFuente,
+      tarifa_ret_fuente:calc.tarifaRetFuente,
       valorRetFuente:calc.valorRetFuente,
+      valor_ret_fuente:calc.valorRetFuente,
       baseReteiva:calc.baseReteiva,
+      base_reteiva:calc.baseReteiva,
+      tarifa_reteiva:calc.tarifaReteiva,
       valorReteiva:calc.valorReteiva,
+      valor_reteiva:calc.valorReteiva,
       baseReteica:calc.baseReteica,
+      base_reteica:calc.baseReteica,
+      tarifa_reteica:calc.tarifaReteica,
       valorReteica:calc.valorReteica,
+      valor_reteica:calc.valorReteica,
       valorBrutoFactura:calc.valorBrutoFactura,
+      valor_bruto_factura:calc.valorBrutoFactura,
       valorTotalRetenciones:calc.valorTotalRetenciones,
+      valor_total_retenciones:calc.valorTotalRetenciones,
       valorTotalPagar:calc.valorTotalPagar,
+      valor_total_pagar:calc.valorTotalPagar,
+      observacion_tributaria:cxpForm.observacionesTributarias || "",
       estado:"Pendiente",
     }]);
     resetCuentaForm();
@@ -4507,6 +4598,24 @@ function CuentasPagar({ctx}){
                 <div>
                   <LBL>Municipio reteICA</LBL>
                   <input value={cxpForm.municipioReteica} onChange={e=>updateCxpForm({municipioReteica:e.target.value})} placeholder="Envigado / Medellín" style={SI}/>
+                </div>
+                <div>
+                  <LBL>Código ICA</LBL>
+                  <input value={cxpForm.codigoIca||""} onChange={e=>updateCxpForm({codigoIca:e.target.value})} placeholder="Código actividad ICA" style={SI}/>
+                </div>
+                <div>
+                  <LBL>Obs. tributaria</LBL>
+                  <input value={cxpForm.observacionesTributarias} onChange={e=>updateCxpForm({observacionesTributarias:e.target.value})} placeholder="Base legal / observación interna" style={SI}/>
+                </div>
+              </div>
+
+              <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:12,marginBottom:14,fontSize:11,color:"#475569"}}>
+                <strong style={{color:"#1a1a2e"}}>Perfil fiscal del proveedor:</strong>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(4, minmax(0, 1fr))",gap:10,marginTop:8}}>
+                  <div>Régimen<br/><strong>{cxpForm.regimenTributarioProveedor||"ordinario"}</strong></div>
+                  <div>Responsable IVA<br/><strong>{cxpForm.responsableIva?"Sí":"No"}</strong></div>
+                  <div>Agente reteIVA<br/><strong>{cxpForm.agenteReteivaProveedor?"Sí":"No"}</strong></div>
+                  <div>Autorretenedor renta<br/><strong>{cxpForm.autorretenedorRentaProveedor?"Sí":"No"}</strong></div>
                 </div>
               </div>
 
@@ -4686,6 +4795,34 @@ function CuentasPagar({ctx}){
                   <LBL>Email</LBL>
                   <input value={provForm.email} onChange={e=>setProvForm({...provForm,email:e.target.value})} placeholder="correo@proveedor.com" style={SI}/>
                 </div>
+                <div>
+                  <LBL>Régimen tributario</LBL>
+                  <select value={provForm.regimenTributario} onChange={e=>setProvForm({...provForm,regimenTributario:e.target.value})} style={SI}>
+                    <option value="ordinario">Ordinario</option>
+                    <option value="simple">SIMPLE</option>
+                    <option value="no_responsable_iva">No responsable IVA</option>
+                  </select>
+                </div>
+                <div>
+                  <LBL>Municipio ICA</LBL>
+                  <input value={provForm.municipioIca} onChange={e=>setProvForm({...provForm,municipioIca:e.target.value})} placeholder="Envigado / Medellín" style={SI}/>
+                </div>
+                <div>
+                  <LBL>Código ICA</LBL>
+                  <input value={provForm.codigoIca} onChange={e=>setProvForm({...provForm,codigoIca:e.target.value})} placeholder="Código actividad ICA" style={SI}/>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <input id="prov-resp-iva" type="checkbox" checked={provForm.responsableIva} onChange={e=>setProvForm({...provForm,responsableIva:e.target.checked})}/>
+                  <label htmlFor="prov-resp-iva" style={{fontSize:12,color:"#334155",fontWeight:600}}>Responsable de IVA</label>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <input id="prov-agente-reteiva" type="checkbox" checked={provForm.agenteReteiva} onChange={e=>setProvForm({...provForm,agenteReteiva:e.target.checked})}/>
+                  <label htmlFor="prov-agente-reteiva" style={{fontSize:12,color:"#334155",fontWeight:600}}>Agente de reteIVA</label>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <input id="prov-autorrenta" type="checkbox" checked={provForm.autorretenedorRenta} onChange={e=>setProvForm({...provForm,autorretenedorRenta:e.target.checked})}/>
+                  <label htmlFor="prov-autorrenta" style={{fontSize:12,color:"#334155",fontWeight:600}}>Autorretenedor renta</label>
+                </div>
               </div>
               <div style={{display:"flex",gap:8}}>
                 <button style={B("#f5c842","#3b2f00")} onClick={guardarProveedor}>{editProvId?"Guardar cambios":"Crear proveedor"}</button>
@@ -4722,11 +4859,12 @@ function CuentasPagar({ctx}){
                         </div>
                       </div>
 
-                      <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr 1fr 1fr",gap:10,fontSize:11,color:"#475569"}}>
+                      <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr 1fr 1fr 1fr",gap:10,fontSize:11,color:"#475569"}}>
                         <div><strong style={{color:"#1a1a2e"}}>Dirección</strong><br/>{p.direccion || "Sin dirección registrada"}</div>
                         <div><strong style={{color:"#1a1a2e"}}>Banco</strong><br/>{p.banco || "Sin banco"}</div>
                         <div><strong style={{color:"#1a1a2e"}}>Cuenta</strong><br/>{p.numeroCuenta || "Sin número de cuenta"}</div>
                         <div><strong style={{color:"#1a1a2e"}}>Correo</strong><br/>{p.email || "Sin email"}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>Perfil fiscal</strong><br/>{p.regimenTributario || "ordinario"} · IVA {p.responsableIva?"Sí":"No"}</div>
                       </div>
 
                       <div style={{marginTop:10,display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11}}>

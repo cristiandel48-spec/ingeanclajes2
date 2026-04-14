@@ -13,6 +13,9 @@ const ENTITY_TO_STATE = {
   proveedores: "proveedores",
   cuentas: "cuentas",
   cotizaciones: "cotizaciones",
+  contabilidad_config: "contabilidadConfig",
+  plan_cuentas: "planCuentas",
+  asientos_contables: "asientosContables",
   nominas_generadas: "nominasGeneradasCloud",
 };
 

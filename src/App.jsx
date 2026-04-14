@@ -2,6 +2,25 @@
 import logoIngeanclajes from "./assets/logo-ingeanclajes.jpeg";
 import articoLineaVidaVertical from "./assets/artico-linea-vida-vertical.jpg";
 import * as backend from "./lib/backend";
+import {
+  ACCOUNTING_NORMATIVE_NOTE,
+  buildCombinedEntries,
+  buildDefaultContabilidadConfig,
+  buildDefaultPlanCuentas,
+  buildEmptyManualAsiento,
+  buildEmptyPlanCuenta,
+  buildFinancialStatements,
+  buildTrialBalance,
+  createAsientoLine,
+  filterEntriesByPeriod,
+  getAccountGroupOptions,
+  getStatementCategoryOptions,
+  isBalancedEntry,
+  normalizeAsientoContable,
+  normalizeContabilidadConfig,
+  normalizePlanCuenta,
+  summarizeEntries,
+} from "./lib/accounting";
 
 const isSupabaseConfigured = backend.isSupabaseConfigured;
 const loadCloudAppData = backend.loadCloudAppData;
@@ -83,6 +102,7 @@ function Cotizacion({ctx}){
   const [tab,setTab]=useState("lista");
   const [previewCot,setPreviewCot]=useState(null);
   const [busqueda,setBusqueda]=useState("");
+  const [filtroObraCot,setFiltroObraCot]=useState("todas");
   const [editCot,setEditCot]=useState(null);
   const [cot,setCot]=useState("");
   const [fecha,setFecha]=useState(today());
@@ -204,7 +224,7 @@ function Cotizacion({ctx}){
     setTab("form");
   };
 
-  const guardarCotizacion = ({ goToList = false } = {})=>{
+  const persistCotizacion = ({volverALista=true}={})=>{
     const { current, next } = syncPropuestas();
     const finalItems = normalizeQuoteItems({items:current.items,geoMediciones,propuestas:next});
     const totalActiva = Math.round((finalItems.reduce((sum,item)=>sum + (Number(item.cant)||0)*(Number(item.vu)||0),0)) * (1 + (Number(current.util || 10) / 100) * 1.19));
@@ -214,40 +234,21 @@ function Cotizacion({ctx}){
     const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:cl.nombre,contacto:cl.contacto,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,textoInicial:textoInicial.trim(),observaciones:observacionesCot.trim(),items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:activa.mapImg || autoMapImg || null,geoMediciones:activa.geoMediciones || geoMediciones,geoMapView:activa.geoMapView || geoMapView,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,incluyeTexto:activa.incluyeTexto || "",propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
     setCotizaciones((prevList)=>editCot ? prevList.map((cotizacion)=>cotizacion.id===editCot?{...cotizacion,...data}:cotizacion) : [...prevList,data]);
     setPropuestas(propuestasFinales);
-    if (goToList) setTab("lista");
+    setEditCot(data.id);
+    if(volverALista) setTab("lista");
     return data;
   };
 
-  const guardarYNuevaPropuesta = ()=>{
-    const saved = guardarCotizacion({ goToList:false });
-    if (!saved) return;
-    const propuestasActuales = Array.isArray(saved.propuestas) ? saved.propuestas : [];
-    const nuevaIndex = propuestasActuales.length;
-    const nueva = buildQuoteProposal({
-      id:createQuoteProposalId(saved.id || "new"),
-      nombre:getQuoteProposalLabel(nuevaIndex),
-      formaPago:DEFAULT_COT_FORMA_PAGO,
-      tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,
-      util:10,
-      items:[],
-      fotos:[],
-      geoMediciones:[],
-      geoMapView:null,
-      mapImg:null,
-      medicionAutomatica:false,
-      incluyeTexto:"",
-      alcance:"",
-      requerimientoCliente:"",
-      tipoCotizacion:tipoCotizacion || "linea_vida",
-    }, nuevaIndex);
-    const next = [...propuestasActuales, nueva];
-    setCotizaciones((prevList)=>prevList.map((cotizacion)=>cotizacion.id===saved.id ? { ...cotizacion, propuestas:next, propuestaActivaId:nueva.id } : cotizacion));
-    setPropuestas(next);
-    setPropuestaActivaId(nueva.id);
-    applyProposal(nueva);
-    setTimeout(() => {
-      window.scrollTo({ top:0, behavior:"smooth" });
-    }, 120);
+  const guardarCotizacion = ()=>persistCotizacion({volverALista:true});
+
+  const guardarCotizacionYSubir = ()=>{
+    const saved = persistCotizacion({volverALista:false});
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        scrollAppToTop("smooth");
+      });
+    });
+    return saved;
   };
 
   const aprobarCotizacion = (cotId)=>{
@@ -260,7 +261,13 @@ function Cotizacion({ctx}){
   };
 
   const term = normalizeEntityKey(busqueda || "");
+  const obrasFiltroCotizacion = Array.from(new Set(
+    cotizaciones
+      .map((cotizacion)=>String(cotizacion.obra || "").trim())
+      .filter(Boolean)
+  )).sort((a,b)=>a.localeCompare(b,"es"));
   const cotizacionesFiltradas = cotizaciones.filter((cotizacion)=>{
+    if(filtroObraCot!=="todas" && String(cotizacion.obra || "").trim()!==filtroObraCot) return false;
     if(!term) return true;
     const activa = getQuoteActiveProposal(cotizacion);
     return [cotizacion.id,cotizacion.numero,cotizacion.cliente,cotizacion.obra,cotizacion.ciudad,activa.nombre].some((value)=>normalizeEntityKey(value || "").includes(term));
@@ -273,89 +280,94 @@ function Cotizacion({ctx}){
     return (
       <div style={{padding:28}}>
         <H1 title="Cotizaciones" subtitle="Ubicación, medición y propuestas comerciales por cliente" action={<button style={B("#f47c20")} onClick={nuevaCotizacion}>+ Nueva Cotización</button>}/>
-        <div style={{...CD,marginBottom:18}}><div style={ST}>Buscar cotización</div><input value={busqueda} onChange={(e)=>setBusqueda(e.target.value)} placeholder="Busca por cliente, obra, ciudad, número o propuesta" style={SI}/></div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
-          {cotizacionesFiltradas.map((cotizacion)=>{
-            const todasPropuestas = getQuoteProposals(cotizacion);
-            const activaId = cotizacion.propuestaActivaId || todasPropuestas[0]?.id;
-            const activa = todasPropuestas.find(p=>p.id===activaId) || todasPropuestas[0] || getQuoteActiveProposal(cotizacion);
-            const obraVinc = obras.find((obra)=>obra.id===cotizacion.obraId);
-
-            const cambiarActiva = (propuesta)=>{
-              const updated = {...cotizacion, propuestaActivaId: propuesta.id};
-              setCotizaciones(prev=>prev.map(c=>c.id===cotizacion.id ? updated : c));
-            };
-
-            return (
-              <div key={cotizacion.id} style={CD}>
-                {/* Cabecera */}
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-                  <div>
-                    <div style={{fontSize:11,color:"#64748b"}}>{cotizacion.id} · {cotizacion.numero}</div>
-                    <div style={{fontSize:15,fontWeight:700}}>{cotizacion.cliente}</div>
-                    <div style={{fontSize:12,color:"#475569"}}>{cotizacion.obra}</div>
-                    <div style={{fontSize:11,color:"#64748b"}}>{cotizacion.ciudad} · {fmtD(cotizacion.fecha)}</div>
-                  </div>
-                  <Badge estado={cotizacion.estado}/>
-                </div>
-
-                {/* Stats */}
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
-                  <div style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px"}}>
-                    <div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",marginBottom:2}}>Total activo</div>
-                    <div style={{fontSize:14,fontWeight:700,color:"#cc0000"}}>{fmt(Number(activa.total||0))}</div>
-                  </div>
-                  <div style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px"}}>
-                    <div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",marginBottom:2}}>Propuestas</div>
-                    <div style={{fontSize:13,fontWeight:700,color:"#2563eb"}}>{todasPropuestas.length}</div>
-                  </div>
-                  <div style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px"}}>
-                    <div style={{fontSize:9,color:"#64748b",textTransform:"uppercase",marginBottom:2}}>Obra</div>
-                    <div style={{fontSize:12,fontWeight:600,color:obraVinc?"#166534":"#64748b"}}>{obraVinc?obraVinc.id:"Sin obra"}</div>
-                  </div>
-                </div>
-
-                {/* Chips de propuestas — clicables para cambiar activa */}
-                {todasPropuestas.length > 0 && (
-                  <div style={{marginBottom:12}}>
-                    <div style={{fontSize:10,color:"#94a3b8",textTransform:"uppercase",letterSpacing:.5,marginBottom:6}}>Propuestas</div>
-                    <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                      {todasPropuestas.map(p=>{
-                        const esActiva = p.id===activaId;
-                        return (
+        <div style={{...CD,marginBottom:18,padding:"18px 22px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:16,flexWrap:"wrap"}}>
+            <div style={{minWidth:240}}>
+              <div style={{fontSize:13,letterSpacing:2,textTransform:"uppercase",color:"#cc0000",fontWeight:800}}>Historial de cotizaciones</div>
+              <div style={{width:210,height:1,background:"#dbe4f0",marginTop:14}}/>
+              <div style={{fontSize:12,color:"#64748b",marginTop:12}}>{cotizacionesFiltradas.length} registro(s) visibles</div>
+            </div>
+            <div style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
+              <input
+                value={busqueda}
+                onChange={(e)=>setBusqueda(e.target.value)}
+                placeholder="Buscar cliente, obra o número"
+                style={{...SI,width:300,minHeight:44,padding:"10px 14px"}}
+              />
+              <select
+                value={filtroObraCot}
+                onChange={(e)=>setFiltroObraCot(e.target.value)}
+                style={{...SI,width:260,minHeight:44,padding:"10px 14px"}}
+              >
+                <option value="todas">Todas las obras</option>
+                {obrasFiltroCotizacion.map((obra)=><option key={obra} value={obra}>{obra}</option>)}
+              </select>
+            </div>
+          </div>
+        </div>
+        <div style={{...CD,padding:0,overflow:"hidden"}}>
+          <div style={{padding:"18px 18px 10px 18px",borderBottom:"1px solid #e2e8f0",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+            <div>
+              <div style={{fontSize:12,letterSpacing:1.2,textTransform:"uppercase",color:"#b91c1c",fontWeight:800}}>Listado de cotizaciones</div>
+              <div style={{fontSize:12,color:"#64748b",marginTop:4}}>Vista ejecutiva compacta por cliente, obra y propuesta activa</div>
+            </div>
+            <div style={{fontSize:12,color:"#64748b"}}>{cotizacionesFiltradas.length} registro(s)</div>
+          </div>
+          <div style={{overflowX:"auto"}}>
+            <table style={{width:"100%",borderCollapse:"separate",borderSpacing:0,minWidth:760}}>
+              <thead>
+                <tr style={{background:"#f8fafc"}}>
+                  {[
+                    "Número",
+                    "Cliente",
+                    "Estado",
+                    "Acciones",
+                  ].map((label)=>(
+                    <th key={label} style={{textAlign:"left",padding:"10px 12px",fontSize:10,color:"#64748b",fontWeight:800,borderBottom:"1px solid #e2e8f0",whiteSpace:"nowrap",letterSpacing:0.3}}>{label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {cotizacionesFiltradas.map((cotizacion)=>{
+                  return (
+                    <tr key={cotizacion.id} style={{background:"#fff"}}>
+                      <td style={{padding:"11px 12px",borderBottom:"1px solid #e2e8f0",verticalAlign:"top"}}>
+                        <div style={{fontWeight:800,color:"#2563eb",fontSize:11}}>{cotizacion.numero || cotizacion.id}</div>
+                        <div style={{fontSize:10,color:"#94a3b8",marginTop:3}}>{cotizacion.id}</div>
+                      </td>
+                      <td style={{padding:"11px 12px",borderBottom:"1px solid #e2e8f0",verticalAlign:"top"}}>
+                        <div style={{fontWeight:700,color:"#0f172a",fontSize:11}}>{cotizacion.cliente}</div>
+                        {cotizacion.ciudad ? <div style={{fontSize:10,color:"#64748b",marginTop:3}}>{cotizacion.ciudad}</div> : null}
+                      </td>
+                      <td style={{padding:"11px 12px",borderBottom:"1px solid #e2e8f0",verticalAlign:"top"}}>
+                        <Badge estado={cotizacion.estado}/>
+                      </td>
+                      <td style={{padding:"11px 12px",borderBottom:"1px solid #e2e8f0",verticalAlign:"top",minWidth:260}}>
+                        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                          <button style={{...B("#dbeafe","#1e40af"),fontSize:10,padding:"5px 10px"}} onClick={()=>setPreviewCot(cotizacion)}>Ver</button>
+                          <button style={{...B("#1a3050","#f5c842"),fontSize:10,padding:"5px 10px"}} onClick={()=>{setEditCot(cotizacion.id);hydrate(cotizacion);setTab("form");}}>Editar</button>
+                          {cotizacion.estado!=="Aprobada" && <button style={{...B("#0f2d1a","#4ade80"),border:"1px solid #166534",fontSize:10,padding:"5px 10px"}} onClick={()=>aprobarCotizacion(cotizacion.id)}>Aprobar y crear obra</button>}
+                          <button style={{...B("#2d1414","#ef4444"),fontSize:10,padding:"5px 10px"}} onClick={()=>openCotizacionPrint(cotizacion)}>PDF</button>
                           <button
-                            key={p.id}
-                            onClick={()=>cambiarActiva(p)}
-                            title={`${p.nombre} · ${fmt(Number(p.total||0))}`}
-                            style={{fontSize:11,padding:"4px 10px",borderRadius:20,border:`1.5px solid ${esActiva?"#f47c20":"#dbe5f0"}`,background:esActiva?"#fff7ed":"#f8fafc",color:esActiva?"#c2410c":"#475569",fontWeight:esActiva?700:400,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}
-                          >
-                            {esActiva && <span style={{width:6,height:6,borderRadius:"50%",background:"#f47c20",display:"inline-block",flexShrink:0}}/>}
-                            {p.nombre}
-                            <span style={{color:esActiva?"#f47c20":"#94a3b8",fontWeight:600}}>{fmt(Number(p.total||0))}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
+                            style={{...B("#fff","#ef4444"),border:"1.5px solid #ef4444",fontSize:10,padding:"5px 10px"}}
+                            onClick={()=>{
+                              if(!window.confirm(`¿Eliminar la cotización "${cotizacion.numero || cotizacion.id}" de ${cotizacion.cliente || "este cliente"}? Esta acción no se puede deshacer.`)) return;
+                              setCotizaciones((prev)=>prev.filter((c)=>c.id!==cotizacion.id));
+                            }}
+                          >🗑 Eliminar</button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {!cotizacionesFiltradas.length && (
+                  <tr>
+                    <td colSpan={9} style={{padding:"28px 16px",textAlign:"center",color:"#64748b"}}>No hay cotizaciones para mostrar con este filtro.</td>
+                  </tr>
                 )}
-
-                {/* Acciones */}
-                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                  <button style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"6px 12px"}} onClick={()=>setPreviewCot(cotizacion)}>Ver</button>
-                  <button style={{...B("#1a3050","#f5c842"),fontSize:11,padding:"6px 12px"}} onClick={()=>{setEditCot(cotizacion.id);hydrate(cotizacion);setTab("form");}}>Editar</button>
-                  {cotizacion.estado!=="Aprobada" && <button style={{...B("#0f2d1a","#4ade80"),border:"1px solid #166534",fontSize:11,padding:"6px 12px"}} onClick={()=>aprobarCotizacion(cotizacion.id)}>Aprobar y crear obra</button>}
-                  <button style={{...B("#2d1414","#ef4444"),fontSize:11,padding:"6px 12px"}} onClick={()=>openCotizacionPrint(cotizacion)}>PDF</button>
-                  <button
-                    style={{...B("#fff","#ef4444"),border:"1.5px solid #ef4444",fontSize:11,padding:"6px 12px"}}
-                    onClick={()=>{
-                      if(!window.confirm(`¿Eliminar la cotización "${cotizacion.numero || cotizacion.id}" de ${cotizacion.cliente || "este cliente"}? Esta acción no se puede deshacer.`)) return;
-                      setCotizaciones(prev=>prev.filter(c=>c.id!==cotizacion.id));
-                    }}
-                  >🗑 Eliminar</button>
-                </div>
-              </div>
-            );
-          })}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     );
@@ -369,8 +381,8 @@ function Cotizacion({ctx}){
         action={
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             <button style={B("#f1f5f9","#475569")} onClick={()=>setTab("lista")}>Volver a lista</button>
-            <button style={{...B("#dbeafe","#1e40af"),justifyContent:"center"}} onClick={()=>{const saved=guardarCotizacion({ goToList:false });if(saved){setPreviewCot(saved);setTab("lista");}}}>Guardar y ver</button>
-            <button style={{...B("#f47c20"),justifyContent:"center"}} onClick={()=>guardarCotizacion({ goToList:true })}>{editCot?"Actualizar":"Guardar"}</button>
+            <button style={{...B("#dbeafe","#1e40af"),justifyContent:"center"}} onClick={()=>{const saved=guardarCotizacion();if(saved){setPreviewCot(saved);setTab("lista");}}}>Guardar y ver</button>
+            <button style={{...B("#f47c20"),justifyContent:"center"}} onClick={guardarCotizacion}>{editCot?"Actualizar":"Guardar"}</button>
           </div>
         }
       />
@@ -616,15 +628,15 @@ function Cotizacion({ctx}){
             style={{...SI,minHeight:80,resize:"vertical",lineHeight:1.6}}
           />
           <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Este texto aparece en las condiciones comerciales del PDF</div>
-          <div style={{display:"flex",justifyContent:"flex-end",marginTop:16}}>
-            <button
-              type="button"
-              onClick={guardarYNuevaPropuesta}
-              style={{...B("#f47c20"),justifyContent:"center",minWidth:170}}
-            >
-              Guardar y nueva propuesta
-            </button>
-          </div>
+        </div>
+        <div style={{display:"flex",justifyContent:"flex-end",marginTop:16}}>
+          <button
+            type="button"
+            onClick={guardarCotizacionYSubir}
+            style={{...B("#f47c20"),fontSize:11,padding:"7px 16px"}}
+          >
+            Guardar
+          </button>
         </div>
       </div>
     </div>
@@ -728,6 +740,10 @@ const CUENTAS_PAGAR_INIT = [
   { id:"CP-008", proveedorId:"PROV-001", obraId:"OB-003", concepto:"Anclajes ARTICO acero galvanizado x 23", monto:3200000, fecha:"2025-11-28", fechaVence:"2025-12-28", estado:"Pagado",   factura:"FV-2025-1893" },
 ];
 
+const CONTABILIDAD_CONFIG_INIT = [buildDefaultContabilidadConfig()];
+const PLAN_CUENTAS_INIT = buildDefaultPlanCuentas();
+const ASIENTOS_CONTABLES_INIT = [];
+
 // ======================================================
 // HELPERS
 // ======================================================
@@ -735,6 +751,33 @@ const fmt  = n=>new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",m
 const fmtK = n=>n>=1000000?"$" + ((n/1000000).toFixed(1)) + "M":"$" + ((n/1000).toFixed(0)) + "K";
 const today= ()=>new Date().toISOString().split("T")[0];
 const fmtD = iso=>{ if(!iso)return""; const d=new Date(iso+"T12:00:00"); return d.toLocaleDateString("es-CO",{day:"2-digit",month:"short",year:"numeric"}); };
+const scrollAppToTop = (behavior="smooth")=>{
+  const main = typeof document!=="undefined" ? document.querySelector("main") : null;
+  if(main?.scrollTo) main.scrollTo({top:0,behavior});
+  if(typeof window!=="undefined" && window.scrollTo){
+    window.scrollTo({top:0,behavior});
+  }
+};
+const buildMonthDateRange = (period = today().slice(0,7))=>{
+  const normalized = String(period || "").trim();
+  if(!/^\d{4}-\d{2}$/.test(normalized)){
+    const current = today();
+    return {inicio:current.slice(0,7) + "-01", fin:current};
+  }
+  const [year, month] = normalized.split("-").map(Number);
+  const lastDay = new Date(year, month, 0).getDate();
+  return {
+    inicio:`${normalized}-01`,
+    fin:`${normalized}-${String(lastDay).padStart(2,"0")}`,
+  };
+};
+const isDateWithinRange = (iso = "", inicio = "", fin = "")=>{
+  const value = String(iso || "").trim();
+  if(!value) return false;
+  if(inicio && value < inicio) return false;
+  if(fin && value > fin) return false;
+  return true;
+};
 const fmtL = iso=>{ if(!iso)return""; const ms=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"]; const d=new Date(iso+"T12:00:00"); return (d.getDate()) + " de " + (ms[d.getMonth()]) + " de " + (d.getFullYear()); };
 const ITEMS_DB = [
   { categoria:"Lineas de Vida", items:[
@@ -1253,6 +1296,132 @@ const downloadTextFile = (filename, content) => {
   window.URL.revokeObjectURL(url);
 };
 
+const normalizeNominaGeneratedRecord = (item={}) => {
+  const snapshot = item.snapshot ?? item;
+  const periodo = snapshot?.periodo ?? {};
+  const totals = snapshot?.totals ?? {};
+  const generatedAt = String(item.generadoEn ?? item.generado_en ?? snapshot?.generadoEn ?? new Date().toISOString());
+  return {
+    id: String(item.id || snapshot?.id || ""),
+    periodoMes: String(item.periodoMes ?? item.periodo_mes ?? periodo?.mes ?? ""),
+    periodoCorte: String(item.periodoCorte ?? item.periodo_corte ?? periodo?.corte ?? ""),
+    periodoLabel: String(item.periodoLabel ?? item.periodo_label ?? periodo?.label ?? ""),
+    generadoEn: generatedAt,
+    planoBanco: String(item.planoBanco ?? item.plano_banco ?? ""),
+    snapshot: {
+      ...snapshot,
+      id: String(snapshot?.id || item.id || ""),
+      generadoEn: String(snapshot?.generadoEn ?? generatedAt),
+      periodo: {
+        mes: String(periodo?.mes || item.periodoMes || item.periodo_mes || ""),
+        corte: String(periodo?.corte || item.periodoCorte || item.periodo_corte || ""),
+        label: String(periodo?.label || item.periodoLabel || item.periodo_label || ""),
+        startIso: String(periodo?.startIso || ""),
+        endIso: String(periodo?.endIso || ""),
+        diasReferencia: Number(periodo?.diasReferencia || 0),
+      },
+      registros: Array.isArray(snapshot?.registros) ? snapshot.registros : [],
+      registrosBanco: Array.isArray(snapshot?.registrosBanco) ? snapshot.registrosBanco : [],
+      totals: {
+        totalNomina: Number(totals?.totalNomina || 0),
+        totalLiquidaciones: Number(totals?.totalLiquidaciones || 0),
+        totalPagar: Number(totals?.totalPagar || 0),
+        totalBanco: Number(totals?.totalBanco || 0),
+        totalRegistros: Number(totals?.totalRegistros || 0),
+        totalRegistrosBanco: Number(totals?.totalRegistrosBanco || 0),
+      },
+    },
+  };
+};
+
+const buildNominaGeneratedRecord = (snapshot, planoBanco="") =>
+  normalizeNominaGeneratedRecord({
+    id: snapshot?.id,
+    periodoMes: snapshot?.periodo?.mes,
+    periodoCorte: snapshot?.periodo?.corte,
+    periodoLabel: snapshot?.periodo?.label,
+    generadoEn: snapshot?.generadoEn || new Date().toISOString(),
+    planoBanco,
+    snapshot,
+  });
+
+const loadStoredNominasGeneradas = () => {
+  if(typeof window==="undefined") return [];
+  try{
+    const raw = window.localStorage.getItem(NOMINA_GENERATED_STORAGE_KEY);
+    if(!raw) return [];
+    const parsed = JSON.parse(raw);
+    if(Array.isArray(parsed)){
+      return parsed.map(normalizeNominaGeneratedRecord).filter((item)=>item.id);
+    }
+    if(parsed && typeof parsed==="object"){
+      return Object.values(parsed)
+        .map((snapshot)=>buildNominaGeneratedRecord(snapshot))
+        .filter((item)=>item.id);
+    }
+  }catch{}
+  return [];
+};
+
+const upsertNominaGeneratedRecord = (list=[], record={}) => {
+  const normalized = normalizeNominaGeneratedRecord(record);
+  const base = (Array.isArray(list) ? list : []).map(normalizeNominaGeneratedRecord);
+  return [normalized, ...base.filter((item)=>item.id!==normalized.id)];
+};
+
+const sanitizeExcelSheetName = (value="Hoja") =>
+  String(value || "Hoja")
+    .replace(/[\\/:*?\[\]]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 31) || "Hoja";
+
+const buildExcelCellXml = (value, isHeader=false) => {
+  const style = isHeader ? ' ss:StyleID="header"' : "";
+  if(typeof value==="number" && Number.isFinite(value)){
+    return `<Cell${style}><Data ss:Type="Number">${value}</Data></Cell>`;
+  }
+  return `<Cell${style}><Data ss:Type="String">${escapeXml(String(value ?? ""))}</Data></Cell>`;
+};
+
+const downloadExcelWorkbook = (filename, sheets=[]) => {
+  if(typeof window==="undefined" || typeof document==="undefined") return;
+  const normalizedSheets = (Array.isArray(sheets) ? sheets : [])
+    .map((sheet, index)=>({
+      name: sanitizeExcelSheetName(sheet?.name || `Hoja ${index+1}`),
+      rows: Array.isArray(sheet?.rows) && sheet.rows.length ? sheet.rows : [["Sin datos"]],
+    }))
+    .filter((sheet)=>sheet.rows.length);
+  if(!normalizedSheets.length) return;
+
+  const workbook = [
+    '<?xml version="1.0"?>',
+    '<?mso-application progid="Excel.Sheet"?>',
+    '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"',
+    ' xmlns:o="urn:schemas-microsoft-com:office:office"',
+    ' xmlns:x="urn:schemas-microsoft-com:office:excel"',
+    ' xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"',
+    ' xmlns:html="http://www.w3.org/TR/REC-html40">',
+    '<Styles>',
+    '<Style ss:ID="header"><Font ss:Bold="1"/><Interior ss:Color="#DCE6F1" ss:Pattern="Solid"/></Style>',
+    '</Styles>',
+    normalizedSheets.map((sheet)=>([
+      `<Worksheet ss:Name="${escapeXml(sheet.name)}">`,
+      "<Table>",
+      sheet.rows.map((row, rowIndex)=>(
+        `<Row>${(Array.isArray(row) ? row : [row]).map((cell)=>buildExcelCellXml(cell, rowIndex===0)).join("")}</Row>`
+      )).join(""),
+      "</Table>",
+      "</Worksheet>",
+    ].join(""))).join(""),
+    "</Workbook>",
+  ].join("");
+
+  const finalName = sanitizeFileName(filename).replace(/\.xls$/i,"") + ".xls";
+  const file = new File([workbook], finalName, { type:"application/vnd.ms-excel;charset=utf-8" });
+  downloadGeneratedFile(file);
+};
+
 const buildNominaSnapshot = (empleados=[], periodoNomina=null, diasVacPagarOverrides={}) => {
   const registros = (Array.isArray(empleados) ? empleados : [])
     .map((empleado)=> {
@@ -1323,6 +1492,8 @@ const buildNominaSnapshot = (empleados=[], periodoNomina=null, diasVacPagarOverr
     totals,
   };
 };
+
+const NOMINAS_GENERADAS_INIT = loadStoredNominasGeneradas();
 
 const buildNominaPlanoBancoHeader = (snapshot, config=NOMINA_PLANO_BANCO_DEFAULTS) => {
   const fechaPago = formatNominaCompactDate(snapshot?.periodo?.endIso || today());
@@ -1753,61 +1924,96 @@ function buildCotizacionPrintHtml(c){
   const showTechnicalPage = propuestas.some((propuesta)=>propuesta?.quote?.tipoCotizacion === "linea_vida");
   const mapCenter = c?.geoMapView?.center || c?.geoMapView || { lat: 0, lng: 0 };
   const mapZoom = Number(c?.geoMapView?.zoom || 18);
+  const monthNamesEs = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
 
   const money = (n) => fmt(Number(n || 0));
   const numberFmt = (n) => Number(n || 0).toLocaleString("es-CO");
+  const formatFechaComercial = (value) => {
+    if (!value) return "";
 
-  const findProposalSummaryItem = (propuesta = {}) => {
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      return `${value.getDate()} DE ${monthNamesEs[value.getMonth()]} DEL ${value.getFullYear()}`;
+    }
+
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+
+    let year;
+    let month;
+    let day;
+
+    let match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (match) {
+      year = Number(match[1]);
+      month = Number(match[2]) - 1;
+      day = Number(match[3]);
+    } else {
+      match = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+      if (match) {
+        day = Number(match[1]);
+        month = Number(match[2]) - 1;
+        year = Number(match[3]);
+      } else {
+        const parsed = new Date(raw);
+        if (!Number.isNaN(parsed.getTime())) {
+          day = parsed.getDate();
+          month = parsed.getMonth();
+          year = parsed.getFullYear();
+        }
+      }
+    }
+
+    if (Number.isFinite(day) && Number.isFinite(month) && Number.isFinite(year) && monthNamesEs[month]) {
+      return `${day} DE ${monthNamesEs[month]} DEL ${year}`;
+    }
+
+    return raw.toUpperCase();
+  };
+  const fechaComercial = formatFechaComercial(c?.fecha);
+  const ciudadEncabezado = "ENVIGADO";
+  const encabezadoFecha = fechaComercial ? `${ciudadEncabezado}, ${fechaComercial}` : ciudadEncabezado;
+
+  const getProposalAnchorPoints = (propuesta = {}) => {
     const items = Array.isArray(propuesta?.items) ? propuesta.items : [];
-    const match = items.find((item) => {
+    return items.reduce((sum, item) => {
       const desc = String(item?.desc || item?.descripcion || item?.nombre || "").toUpperCase();
-      return (
+      const unit = String(item?.unit || "").toUpperCase();
+      const qty = Number(item?.cant || 0);
+      const isAnchorItem =
         desc.includes("PUNTO DE ANCLAJE") ||
         desc.includes("PUNTOS DE ANCLAJE") ||
         desc.includes("ANCLAJE") ||
         desc.includes("ANCLAJE IMPORTADO") ||
         desc.includes("ANCLAJE NACIONAL") ||
         desc.includes("ANCLAJE EPOXICO") ||
-        desc.includes("ANCLAJE SOLDADO")
-      );
-    });
-    return match || items[0] || null;
+        desc.includes("ANCLAJE SOLDADO");
+      const isUnitCount = !unit || unit === "UND" || unit === "UNIDAD" || unit === "UNIDADES" || unit === "UN";
+      return isAnchorItem && isUnitCount ? sum + qty : sum;
+    }, 0);
   };
 
-  const getProposalAnchorPoints = (propuesta = {}) => {
-    const item = findProposalSummaryItem(propuesta);
-    return Number(item?.cant || 0);
-  };
-
-  const resumenPropuestas = propuestas.map((propuesta, idx) => {
-    const summaryItem = findProposalSummaryItem(propuesta);
-    return {
-      nombre: propuesta?.nombre || propuesta?.quote?.propuestaNombre || `Propuesta ${idx + 1}`,
-      puntos: getProposalAnchorPoints(propuesta),
-      unidad: String(summaryItem?.unit || "UND").toUpperCase(),
-      valorUnitario: Number(summaryItem?.vu || 0),
-      total: Math.round(Number(propuesta?.tot || propuesta?.quote?.total || 0)),
-    };
-  });
+  const resumenPropuestas = propuestas.map((propuesta, idx) => ({
+    nombre: propuesta?.nombre || propuesta?.quote?.propuestaNombre || `Propuesta ${idx + 1}`,
+    puntos: getProposalAnchorPoints(propuesta),
+    total: Math.round(Number(propuesta?.tot || propuesta?.quote?.total || 0)),
+  }));
 
   const mostrarResumenFinal = resumenPropuestas.length >= 2;
   const totalResumenPuntos = resumenPropuestas.reduce((sum, row) => sum + Number(row.puntos || 0), 0);
   const totalResumenValor = resumenPropuestas.reduce((sum, row) => sum + Number(row.total || 0), 0);
 
-  const renderResumenPropuestas = () => {
+  const renderResumenBlock = () => {
     if (!mostrarResumenFinal) return "";
 
     return `
-      <div class="summary-card text-only-block">
-        <div class="section-title premium-title summary-title">Valor total de la cotización</div>
+      <div class="summary-card">
+        <div class="section-title premium-title summary-title">VALOR TOTAL DE LA COTIZACION</div>
         <table class="summary-table">
           <thead>
             <tr>
-              <th>Propuesta</th>
-              <th style="text-align:center;">Cantidad</th>
-              <th style="text-align:center;">Unidad</th>
-              <th style="text-align:right;">Valor unitario</th>
-              <th style="text-align:right;">Valor total</th>
+              <th>PROPUESTA / SERVICIOS OFRECIDOS</th>
+              <th style="text-align:center;">CANTIDAD</th>
+              <th style="text-align:right;">VALOR TOTAL</th>
             </tr>
           </thead>
           <tbody>
@@ -1815,21 +2021,33 @@ function buildCotizacionPrintHtml(c){
               <tr>
                 <td>${escapeHtml(row.nombre || "")}</td>
                 <td style="text-align:center;">${numberFmt(row.puntos || 0)}</td>
-                <td style="text-align:center;">${escapeHtml(row.unidad || "UND")}</td>
-                <td style="text-align:right;">${money(row.valorUnitario || 0)}</td>
                 <td style="text-align:right;">${money(row.total || 0)}</td>
               </tr>
             `).join("")}
             <tr class="summary-total-row">
               <td><strong>TOTAL GENERAL</strong></td>
               <td style="text-align:center;"><strong>${numberFmt(totalResumenPuntos)}</strong></td>
-              <td style="text-align:center;"><strong>-</strong></td>
-              <td style="text-align:right;"><strong>-</strong></td>
               <td style="text-align:right;"><strong>${money(totalResumenValor)}</strong></td>
             </tr>
           </tbody>
         </table>
       </div>
+    `;
+  };
+
+  const renderResumenPropuestas = () => {
+    if (!mostrarResumenFinal) return "";
+
+    return `
+      <section class="page summary-page">
+        <div class="page-inner">
+          ${headerHtml}
+          <div class="page-content">
+            ${renderResumenBlock()}
+          </div>
+          ${footerHtml}
+        </div>
+      </section>
     `;
   };
 
@@ -2051,9 +2269,9 @@ function buildCotizacionPrintHtml(c){
       <div class="page-inner">
         ${headerHtml}
         <div class="page-content intro-page">
-          <div class="meta-top">
-            <div><strong>Envigado,</strong> ${escapeHtml(c?.fecha || "")}</div>
-            <div><strong>COTIZACIÓN No.</strong> ${escapeHtml(c?.numero || c?.id || "")}</div>
+          <div class="meta-top intro-meta">
+            <div class="intro-location">${escapeHtml(encabezadoFecha)}</div>
+            <div class="intro-number"><strong>COTIZACIÓN No.</strong> ${escapeHtml(c?.numero || c?.id || "")}</div>
           </div>
 
           <div class="intro-kv">
@@ -2110,65 +2328,43 @@ function buildCotizacionPrintHtml(c){
     </section>
   `;
 
-  const renderFinalPage = () => `
-    <section class="page premium-final-page ${mostrarResumenFinal ? "premium-final-page-with-summary" : ""}">
-      <div class="page-inner">
-        ${headerHtml}
-        <div class="page-content">
-          ${renderResumenPropuestas()}
-          <div class="section-title premium-title">Condiciones comerciales</div>
-          <div class="premium-card text-only-block premium-tight">
-            <div class="kv-grid premium-kv-grid">
-              <div class="kv-row premium-kv-row"><strong>FORMA DE PAGO</strong><span>${escapeHtml(c?.formaPago || "50% ANTICIPO, 50% CONCLUIR LABORES")}</span></div>
-              <div class="kv-row premium-kv-row"><strong>TIEMPO DE EJECUCIÓN</strong><span>${escapeHtml(c?.tiempoEjec || "10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)")}</span></div>
-              <div class="kv-row premium-kv-row"><strong>VALIDEZ DE LA OFERTA</strong><span>${escapeHtml(`${c?.val || 30} días a partir de la fecha de entrega de esta cotización`)}</span></div>
-              <div class="kv-row premium-kv-row"><strong>CERTIFICACIÓN</strong><span>Se entrega con el pago total</span></div>
-            </div>
-          </div>
-
-          <div class="premium-divider text-only-block ${mostrarResumenFinal ? "premium-divider-compact" : ""}"></div>
-
-          <div class="section-title premium-title ${mostrarResumenFinal ? "premium-title-compact" : ""}">Sistema de gestión de seguridad y salud en el trabajo</div>
-          <div class="premium-card premium-copy text-only-block compact-block premium-tight ${mostrarResumenFinal ? "premium-copy-compact" : ""}">
-            <p>INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicación de la Resolución 4272 de 2021, garantizando la implementación del Sistema de Gestión de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.</p>
-          </div>
-
-          <div class="signature-block text-only-block premium-signature ${mostrarResumenFinal ? "premium-signature-compact" : ""}">
-            <p class="signature-intro">Cordialmente,</p>
-            <div class="signature-space compact-signature-space ${mostrarResumenFinal ? "compact-signature-space-sm" : ""}"></div>
-            <div class="signature-line premium-signature-line ${mostrarResumenFinal ? "premium-signature-line-compact" : ""}">
-              <strong>ING. JHON JAIME SEPÚLVEDA LONDOÑO</strong><br/>
-              MP. 05256-409949<br/>
-              Director Comercial<br/>
-              Tel: 3152889541
-            </div>
-          </div>
-        </div>
-        ${footerHtml}
+  const renderFinalContent = ({ includeSummary = false } = {}) => `
+    ${includeSummary ? renderResumenBlock() : ""}
+    <div class="section-title premium-title ${includeSummary ? "closing-title-with-summary" : ""}">Condiciones comerciales</div>
+    <div class="premium-card text-only-block premium-tight">
+      <div class="kv-grid premium-kv-grid">
+        <div class="kv-row premium-kv-row"><strong>FORMA DE PAGO</strong><span>${escapeHtml(c?.formaPago || "50% ANTICIPO, 50% CONCLUIR LABORES")}</span></div>
+        <div class="kv-row premium-kv-row"><strong>TIEMPO DE EJECUCIÓN</strong><span>${escapeHtml(c?.tiempoEjec || "10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)")}</span></div>
+        <div class="kv-row premium-kv-row"><strong>VALIDEZ DE LA OFERTA</strong><span>${escapeHtml(`${c?.val || 30} días a partir de la fecha de entrega de esta cotización`)}</span></div>
+        <div class="kv-row premium-kv-row"><strong>CERTIFICACIÓN</strong><span>Se entrega con el pago total</span></div>
       </div>
-    </section>
+    </div>
+
+    <div class="premium-divider text-only-block"></div>
+
+    <div class="section-title premium-title">Sistema de gestión de seguridad y salud en el trabajo</div>
+    <div class="premium-card premium-copy text-only-block compact-block premium-tight">
+      <p>INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicación de la Resolución 4272 de 2021, garantizando la implementación del Sistema de Gestión de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.</p>
+    </div>
+
+    <div class="signature-block text-only-block premium-signature">
+      <p class="signature-intro">Cordialmente,</p>
+      <div class="signature-space compact-signature-space"></div>
+      <div class="signature-line premium-signature-line">
+        <strong>ING. JHON JAIME SEPÚLVEDA LONDOÑO</strong><br/>
+        MP. 05256-409949<br/>
+        Director Comercial<br/>
+        Tel: 3152889541
+      </div>
+    </div>
   `;
 
-  const renderSgsstPage = () => `
-    <section class="page premium-sgsst-page">
+  const renderFinalPage = ({ includeSummary = false } = {}) => `
+    <section class="page premium-final-page ${includeSummary ? "premium-closing-page" : ""}">
       <div class="page-inner">
         ${headerHtml}
         <div class="page-content">
-          <div class="section-title premium-title">Sistema de gestión de seguridad y salud en el trabajo</div>
-          <div class="premium-card premium-copy text-only-block compact-block premium-tight">
-            <p>INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicación de la Resolución 4272 de 2021, garantizando la implementación del Sistema de Gestión de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.</p>
-          </div>
-
-          <div class="signature-block text-only-block premium-signature">
-            <p class="signature-intro">Cordialmente,</p>
-            <div class="signature-space compact-signature-space"></div>
-            <div class="signature-line premium-signature-line">
-              <strong>ING. JHON JAIME SEPÚLVEDA LONDOÑO</strong><br/>
-              MP. 05256-409949<br/>
-              Director Comercial<br/>
-              Tel: 3152889541
-            </div>
-          </div>
+          ${renderFinalContent({ includeSummary })}
         </div>
         ${footerHtml}
       </div>
@@ -2256,8 +2452,10 @@ function buildCotizacionPrintHtml(c){
     </section>
   `;
 
-
   const proposalSections = propuestas.map((propuesta, idx) => renderProposalPage(propuesta, idx)).join("");
+  const closingSections = mostrarResumenFinal
+    ? renderFinalPage({ includeSummary: true })
+    : renderFinalPage();
 
   return `<!doctype html>
   <html>
@@ -2271,8 +2469,8 @@ function buildCotizacionPrintHtml(c){
       body { font-family: Aptos, Arial, Helvetica, sans-serif; color:#111827; }
 
       .page {
-        width:216mm;
-        height:279mm;
+        width:8.5in;
+        height:11in;
         margin:0 auto;
         background:#fff;
         break-after:page;
@@ -2291,7 +2489,11 @@ function buildCotizacionPrintHtml(c){
       .page-content {
         display:block;
         min-height:auto;
-        padding-bottom:30mm;
+        padding:0 10mm 30mm 10mm;
+      }
+      .intro-page {
+        padding-left:12mm;
+        padding-right:12mm;
       }
 
       .header {
@@ -2301,14 +2503,34 @@ function buildCotizacionPrintHtml(c){
         column-gap:12px;
         border-bottom:2px solid #c1121f;
         padding-bottom:3mm;
-        margin-bottom:4mm;
+        margin:0 10mm 4mm 10mm;
       }
       .logo { width:160px; max-height:38px; object-fit:contain; }
       .header-mid { text-align:center; font-size:11px; font-weight:800; letter-spacing:2.2px; color:#111827; }
       .header-right { text-align:right; font-size:10px; line-height:1.35; color:#4b5563; }
 
-      .meta-top { display:flex; justify-content:space-between; gap:12px; margin-bottom:4mm; font-size:12px; }
-      .intro-kv { display:grid; gap:2px; font-size:12px; margin-bottom:4mm; }
+      .meta-top { display:flex; justify-content:space-between; gap:12px; margin-bottom:4.5mm; font-size:12px; }
+      .intro-meta {
+        margin-top: 6mm;
+        margin-bottom: 7.5mm;
+        align-items: flex-end;
+      }
+      .intro-location {
+        font-size: 12.6px;
+        font-weight: 700;
+        letter-spacing: 0.15px;
+      }
+      .intro-number {
+        font-size: 12.2px;
+        font-weight: 700;
+        text-align: right;
+      }
+      .intro-kv {
+        display:grid;
+        gap:1.2mm;
+        font-size:12px;
+        margin-bottom:7mm;
+      }
       p { margin:0 0 3mm; font-size:12px; line-height:1.42; text-align:justify; }
 
       .proposal-title {
@@ -2387,65 +2609,42 @@ function buildCotizacionPrintHtml(c){
       .appendix-img { width:100%; height:auto; max-height:235mm; object-fit:contain; display:block; margin:0 auto; }
       .premium-title { margin-top:1mm; margin-bottom:2.6mm; }
       .summary-title { margin-top:0; }
-      .summary-card{
-  width: 88%;
-  margin: 0 auto 6mm auto;
-  border: 1px solid #d9e1ea;
-  border-radius: 12px;
-  background: #ffffff;
-  padding: 4mm 5mm 3mm 5mm;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-}
-     .summary-card .section-title{
-  text-align: center;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  color: #111827;
-  border-bottom: 1px solid #c1121f;
-  padding-bottom: 2.5mm;
-  margin: 0 0 3mm 0;
-}
-
-    .summary-table{
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 10.5px;
-  margin: 0 auto;
-}
-
-    .summary-table th{
-  background: #f8fafc;
-  color: #111827;
-  font-weight: 700;
-  border-bottom: 1px solid #d9e1ea;
-  padding: 7px 8px;
-  text-align: center;
-}
-
-    .summary-table td{
-  padding: 7px 8px;
-  border-bottom: 1px solid #e5e7eb;
-  color: #1f2937;
-  text-align: center;
-  vertical-align: middle;
-}
-
-    .summary-table td:first-child,
-.summary-table th:first-child{
-  text-align: left;
-}
-
-    .summary-table tbody tr:last-child td{
-  border-bottom: none;
-}
-
-    .summary-total-row td{
-  background: #fff8db;
-  border-top: 2px solid #e5d36b;
-  font-weight: 800;
-}
+      .summary-page .page-content { padding-bottom: 30mm; }
+      .premium-closing-page .page-content { padding-bottom: 30mm; }
+      .closing-title-with-summary { margin-top: 1.5mm; }
+      .summary-card {
+        margin: 0 0 4mm 0;
+        border: 1px solid #dbe3ec;
+        border-radius: 10px;
+        background: linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
+        padding: 3.2mm 4mm 3mm 4mm;
+        box-shadow: 0 1.5mm 4mm rgba(15,23,42,.05);
+      }
+      .summary-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 10.4px;
+        margin-top: 1mm;
+      }
+      .summary-table th {
+        background: #f8fafc;
+        color: #111827;
+        font-weight: 700;
+        border-bottom: 1px solid #d9e1ea;
+        padding: 8px 10px;
+        text-align: left;
+      }
+      .summary-table td {
+        padding: 8px 10px;
+        border-bottom: 1px solid #e5e7eb;
+        color: #1f2937;
+      }
+      .summary-table tbody tr:last-child td { border-bottom: none; }
+      .summary-total-row td {
+        background: #fff8db;
+        border-top: 2px solid #e5d36b;
+        font-weight: 800;
+      }
       .premium-card {
         background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
         border:1px solid #dbe3ec;
@@ -2471,12 +2670,9 @@ function buildCotizacionPrintHtml(c){
         border-top:1px solid #d7dee8;
       }
       .premium-copy p { font-size:10.8px; margin-bottom:0; }
-      .premium-copy-compact p { font-size:10px; line-height:1.42; }
       .premium-signature { margin-top:4mm; }
-      .premium-signature-compact { margin-top:2.6mm; }
       .signature-intro { margin-bottom:1.4mm; font-size:10.8px; }
       .compact-signature-space { height:7mm; }
-      .compact-signature-space-sm { height:4mm; }
       .premium-signature-line {
         display:inline-block;
         padding-top:2.4mm;
@@ -2484,9 +2680,6 @@ function buildCotizacionPrintHtml(c){
         font-size:10.6px;
         line-height:1.42;
       }
-      .premium-signature-line-compact { font-size:10px; line-height:1.35; padding-top:1.8mm; }
-      .premium-title-compact { margin-top:.8mm; margin-bottom:1.8mm; }
-      .premium-divider-compact { margin-top:2mm; margin-bottom:2mm; }
 
       .footer {
         position:absolute;
@@ -2539,7 +2732,8 @@ function buildCotizacionPrintHtml(c){
       </section>
     ` : ""}
     ${showTechnicalPage ? renderTechnicalPage() : ""}
-    ${renderFinalPage()}
+    ${mostrarResumenFinal ? "" : renderResumenPropuestas()}
+    ${closingSections}
     <script>
       async function waitForImages(){
         const images = Array.from(document.images || []);
@@ -3386,6 +3580,10 @@ export default function App(){
   const [proveedores,setProveedores]=useState(PROVEEDORES_INIT);
   const [cuentas,setCuentas]=useState(CUENTAS_PAGAR_INIT);
   const [cotizaciones,setCotizaciones]=useState(COTIZACIONES_INIT);
+  const [contabilidadConfig,setContabilidadConfig]=useState(CONTABILIDAD_CONFIG_INIT);
+  const [planCuentas,setPlanCuentas]=useState(PLAN_CUENTAS_INIT);
+  const [asientosContables,setAsientosContables]=useState(ASIENTOS_CONTABLES_INIT);
+  const [nominasGeneradas,setNominasGeneradas]=useState(NOMINAS_GENERADAS_INIT);
   const [cotDraft,setCotDraft]=useState(null);
   const bootstrappedRef=useRef(false);
   const autosaveTimerRef=useRef(null);
@@ -3402,6 +3600,10 @@ export default function App(){
     proveedores,
     cuentas,
     cotizaciones,
+    contabilidadConfig,
+    planCuentas,
+    asientosContables,
+    nominasGeneradasCloud: nominasGeneradas,
   });
 
   const saveAllToCloud=async(override=null)=>{
@@ -3419,7 +3621,7 @@ export default function App(){
     }
   };
 
-  const ctx={obras,setObras,empleados,setEmpleados,cargos,setCargos,pagos,setPagos,horarios,setHorarios,certs,setCerts,informes,setInformes,clientes,setClientes,proveedores,setProveedores,cuentas,setCuentas,cotizaciones,setCotizaciones,cotDraft,setCotDraft,setScr,saveAllToCloud};
+  const ctx={obras,setObras,empleados,setEmpleados,cargos,setCargos,pagos,setPagos,horarios,setHorarios,certs,setCerts,informes,setInformes,clientes,setClientes,proveedores,setProveedores,cuentas,setCuentas,cotizaciones,setCotizaciones,contabilidadConfig,setContabilidadConfig,planCuentas,setPlanCuentas,asientosContables,setAsientosContables,nominasGeneradas,setNominasGeneradas,cotDraft,setCotDraft,setScr,saveAllToCloud};
 
   useEffect(()=>{
     let cancel=false;
@@ -3445,6 +3647,18 @@ export default function App(){
         if (Array.isArray(cloud.proveedores)) setProveedores(cloud.proveedores);
         if (Array.isArray(cloud.cuentas)) setCuentas(cloud.cuentas);
         if (Array.isArray(cloud.cotizaciones)) setCotizaciones(cloud.cotizaciones);
+        if (Array.isArray(cloud.contabilidadConfig) && cloud.contabilidadConfig.length) {
+          setContabilidadConfig(cloud.contabilidadConfig.map(normalizeContabilidadConfig));
+        }
+        if (Array.isArray(cloud.planCuentas) && cloud.planCuentas.length) {
+          setPlanCuentas(cloud.planCuentas.map(normalizePlanCuenta));
+        }
+        if (Array.isArray(cloud.asientosContables)) {
+          setAsientosContables(cloud.asientosContables.map((entry)=>normalizeAsientoContable(entry, cloud.planCuentas?.length ? cloud.planCuentas.map(normalizePlanCuenta) : PLAN_CUENTAS_INIT)));
+        }
+        if (Array.isArray(cloud.nominasGeneradasCloud)) {
+          setNominasGeneradas(cloud.nominasGeneradasCloud.map(normalizeNominaGeneratedRecord));
+        }
       } catch (error) {
         console.error("No se pudo cargar datos de Supabase:", error);
       } finally {
@@ -3487,6 +3701,10 @@ export default function App(){
     proveedores,
     cuentas,
     cotizaciones,
+    contabilidadConfig,
+    planCuentas,
+    asientosContables,
+    nominasGeneradas,
   ]);
 
   const navSections=[
@@ -3517,7 +3735,8 @@ export default function App(){
     {
       title:"Administracion",
       items:[
-        {id:"proveedores",l:"Cuentas x Pagar y Proveedores",i:"CP"},
+        {id:"proveedores",l:"Causación / Facturas y Gastos",i:"CP"},
+        {id:"contabilidad",l:"Contabilidad",i:"CO"},
         {id:"nomina",l:"Nomina y Empleados",i:"NO"},
         {id:"horarios",l:"Horarios",i:"HR"},
         {id:"financiero",l:"Informe Financiero",i:"IF"},
@@ -3568,6 +3787,7 @@ export default function App(){
         {scr==="certificaciones"&&<Certificaciones ctx={ctx}/>}
         {scr==="informes"&&<Informes ctx={ctx}/>}
         {scr==="proveedores"&&<CuentasPagar ctx={ctx}/>}
+        {scr==="contabilidad"&&<Contabilidad ctx={ctx}/>}
         {scr==="financiero"&&<Financiero ctx={ctx}/>}
         {scr==="nomina"&&<Nomina ctx={ctx}/>}
         {scr==="horarios"&&<Horarios ctx={ctx}/>}
@@ -3586,7 +3806,24 @@ function CotizacionPrint({c}){
   const mapQuery = c.coords || `${c.obra||""} ${c.ciudad||""}`.trim();
 
   return(
-    <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:12,lineHeight:1.45,border:"1px solid #ddd",padding:"22px 26px"}}>
+    <div
+      id="pz"
+      className="doc-shell"
+      style={{
+        width:"216mm",
+        minHeight:"279mm",
+        maxWidth:"216mm",
+        margin:"0 auto",
+        background:"#fff",
+        color:"#111",
+        fontFamily:"'Aptos','Segoe UI',sans-serif",
+        fontSize:12,
+        lineHeight:1.45,
+        border:"1px solid #d6dde6",
+        boxShadow:"0 10px 30px rgba(15,23,42,0.08)",
+        padding:"14mm 16mm 16mm 16mm",
+      }}
+    >
       <div style={{marginBottom:14}}><PrintHeader dual={false}/></div>
       <div style={{textAlign:"center",fontSize:10,fontWeight:700,letterSpacing:3,marginBottom:16}}>ESPECIALISTAS EN ANCLAJES</div>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:14,fontSize:12}}><div>Envigado, {fmtL(c.fecha)}</div><div><strong>COTIZACION No. {c.numero}</strong></div></div>
@@ -3887,6 +4124,7 @@ function Pagos({ctx}){
   const [busquedaPago,setBusquedaPago]=useState("");
   const [obraPagoId,setObraPagoId]=useState("");
   const [guardandoAbono,setGuardandoAbono]=useState(false);
+  const [vistaPago,setVistaPago]=useState("registro");
   const [abono,setAbono]=useState({
     tipo:"Abono manual",
     monto:"",
@@ -3990,7 +4228,30 @@ function Pagos({ctx}){
     <div style={{padding:28}}>
       <H1 title="Cuentas por cobrar" subtitle="Registro de abonos y seguimiento por obra"/>
 
-      <div style={{...CD,marginBottom:20,border:"1px solid #fed7aa",boxShadow:"0 18px 40px rgba(244,124,32,0.08)"}}>
+      <div style={{display:"flex",gap:10,marginBottom:18,flexWrap:"wrap"}}>
+        <button
+          type="button"
+          onClick={()=>setVistaPago("registro")}
+          style={{
+            ...B(vistaPago==="registro" ? "#cc0000" : "#fff7ed", vistaPago==="registro" ? "#fff" : "#9a3412"),
+            border:vistaPago==="registro" ? "1px solid #cc0000" : "1px solid #fed7aa",
+          }}
+        >
+          Registrar abono
+        </button>
+        <button
+          type="button"
+          onClick={()=>setVistaPago("historial")}
+          style={{
+            ...B(vistaPago==="historial" ? "#003B71" : "#eff6ff", vistaPago==="historial" ? "#fff" : "#1d4ed8"),
+            border:vistaPago==="historial" ? "1px solid #003B71" : "1px solid #bfdbfe",
+          }}
+        >
+          Historial de pagos
+        </button>
+      </div>
+
+      {vistaPago==="registro" && <div style={{...CD,marginBottom:20,border:"1px solid #fed7aa",boxShadow:"0 18px 40px rgba(244,124,32,0.08)"}}>
         <div style={ST}>Registrar abono manual</div>
         <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr",gap:18,alignItems:"start"}}>
           <div style={{display:"grid",gap:12}}>
@@ -4143,7 +4404,7 @@ function Pagos({ctx}){
             )}
           </div>
         </div>
-      </div>
+      </div>}
 
       <div style={CD}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
@@ -4524,65 +4785,36 @@ function CuentasPagar({ctx}){
     observacionTributaria:"",
   });
 
-  const [tab,setTab]=useState("cuentas");
+  const [tab,setTab]=useState("causacion");
   const [showProv,setShowProv]=useState(false);
   const [showCxP,setShowCxP]=useState(false);
   const [editProvId,setEditProvId]=useState(null);
   const [editCxPId,setEditCxPId]=useState(null);
   const [provForm,setProvForm]=useState(proveedorBase);
   const [cxpForm,setCxpForm]=useState(createCuentaBase());
+  const [vistaPagoCxP,setVistaPagoCxP]=useState("registro");
+  const [busquedaProveedorPago,setBusquedaProveedorPago]=useState("");
+  const [proveedorPagoId,setProveedorPagoId]=useState("");
+  const [guardandoPagoProv,setGuardandoPagoProv]=useState(false);
+  const [filtroPagoProv,setFiltroPagoProv]=useState("todos");
+  const [pagoProv,setPagoProv]=useState({
+    tipo:"Pago a proveedor",
+    monto:"",
+    fecha:today(),
+    metodo:"Transferencia",
+    notas:"",
+  });
 
   const clampNum=(v)=>{
     const n=Number(v||0);
     return Number.isFinite(n)?n:0;
   };
 
-  const calcCuentaTributaria=(form, proveedorSel)=>{
-    const subtotal=clampNum(form.subtotal);
-    const tarifaIva=clampNum(form.tarifaIva);
-    const valorIva=Number((subtotal * (tarifaIva/100)).toFixed(2));
-    const baseRetFuente=subtotal;
-    const tarifaRetFuente=clampNum(form.tarifaRetFuente);
-    const valorRetFuente=Number((baseRetFuente * (tarifaRetFuente/100)).toFixed(2));
-    const aplicaReteiva=!!form.aplicaReteiva;
-    const baseReteiva=valorIva;
-    const tarifaReteiva=clampNum(form.tarifaReteiva);
-    const valorReteiva=aplicaReteiva ? Number((baseReteiva * (tarifaReteiva/100)).toFixed(2)) : 0;
-    const baseReteica=subtotal;
-    const tarifaReteica=clampNum(form.tarifaReteica);
-    const valorReteica=tarifaReteica>0 ? Number((baseReteica * (tarifaReteica/1000)).toFixed(2)) : 0;
-    const valorBrutoFactura=Number((subtotal + valorIva).toFixed(2));
-    const valorTotalRetenciones=Number((valorRetFuente + valorReteiva + valorReteica).toFixed(2));
-    const valorTotalPagar=Number((valorBrutoFactura - valorTotalRetenciones).toFixed(2));
-    return {
-      ...form,
-      subtotal,
-      tarifaIva,
-      valorIva,
-      baseRetFuente,
-      tarifaRetFuente,
-      valorRetFuente,
-      aplicaReteiva,
-      baseReteiva,
-      tarifaReteiva,
-      valorReteiva,
-      baseReteica,
-      tarifaReteica,
-      valorReteica,
-      valorBrutoFactura,
-      valorTotalRetenciones,
-      valorTotalPagar,
-      monto:valorTotalPagar,
-      municipioReteica:form.municipioReteica || proveedorSel?.municipioIca || "Envigado",
-      codigoIca:form.codigoIca || proveedorSel?.codigoIca || "",
-    };
-  };
-
-  useEffect(()=>{
-    if(!cxpForm.proveedorId && proveedores[0]?.id){
-      setCxpForm(prev=>({...prev,proveedorId:proveedores[0].id}));
-    }
-  },[proveedores, cxpForm.proveedorId]);
+  const normalizarTexto=(valor="")=>
+    String(valor || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
 
   const proveedoresData=proveedores.map(p=>({
     ...p,
@@ -4603,7 +4835,87 @@ function CuentasPagar({ctx}){
     codigoIca:p.codigoIca||p.codigo_ica||"",
   }));
 
-  const proveedorSel=proveedoresData.find(p=>p.id===cxpForm.proveedorId);
+  const normalizarCuenta=(cuenta)=>{
+    const total=Number(cuenta.valorTotalPagar ?? cuenta.valor_total_pagar ?? cuenta.monto ?? 0);
+    const saldoPendienteActual=Math.max(0, Number(cuenta.saldoPendienteActual ?? cuenta.saldo_pendiente_actual ?? total));
+    const pagosHistorial=Array.isArray(cuenta.pagosHistorial)
+      ? cuenta.pagosHistorial
+      : Array.isArray(cuenta.pagos_historial)
+      ? cuenta.pagos_historial
+      : [];
+    const montoPagado=Number(cuenta.montoPagado ?? cuenta.monto_pagado ?? Math.max(0, total - saldoPendienteActual));
+    return {
+      ...cuenta,
+      valorTotalPagar:total,
+      saldoPendienteActual,
+      pagosHistorial,
+      montoPagado,
+    };
+  };
+
+  const cuentasNorm=cuentas.map(normalizarCuenta);
+  const proveedorSel=proveedoresData.find(p=>p.id===cxpForm.proveedorId) || null;
+  const proveedorPagoSel=proveedoresData.find(p=>p.id===proveedorPagoId) || null;
+
+  const calcCuentaTributaria=(form, proveedorActivo)=>{
+    const subtotal=clampNum(form.subtotal);
+    const proveedorNoIva = proveedorActivo && (proveedorActivo.responsableIva===false || proveedorActivo.regimenTributario==="No responsable de IVA");
+    const tarifaIva=proveedorNoIva ? 0 : clampNum(form.tarifaIva);
+    const valorIva=Number((subtotal * (tarifaIva/100)).toFixed(2));
+
+    const esAutorretenedor = !!proveedorActivo?.autorretenedorRenta;
+    const baseRetFuente=esAutorretenedor ? 0 : subtotal;
+    const tarifaRetFuente=esAutorretenedor ? 0 : clampNum(form.tarifaRetFuente);
+    const valorRetFuente=esAutorretenedor ? 0 : Number((baseRetFuente * (tarifaRetFuente/100)).toFixed(2));
+
+    const aplicaReteiva=!!form.aplicaReteiva;
+    const baseReteiva=valorIva;
+    const tarifaReteiva=clampNum(form.tarifaReteiva);
+    const valorReteiva=aplicaReteiva ? Number((baseReteiva * (tarifaReteiva/100)).toFixed(2)) : 0;
+
+    const baseReteica=subtotal;
+    const tarifaReteica=clampNum(form.tarifaReteica);
+    const valorReteica=tarifaReteica>0 ? Number((baseReteica * (tarifaReteica/1000)).toFixed(2)) : 0;
+
+    const valorBrutoFactura=Number((subtotal + valorIva).toFixed(2));
+    const valorTotalRetenciones=Number((valorRetFuente + valorReteiva + valorReteica).toFixed(2));
+    const valorTotalPagar=Number((valorBrutoFactura - valorTotalRetenciones).toFixed(2));
+
+    return {
+      ...form,
+      subtotal,
+      tarifaIva,
+      valorIva,
+      baseRetFuente,
+      tarifaRetFuente,
+      valorRetFuente,
+      aplicaReteiva,
+      baseReteiva,
+      tarifaReteiva,
+      valorReteiva,
+      baseReteica,
+      tarifaReteica,
+      valorReteica,
+      valorBrutoFactura,
+      valorTotalRetenciones,
+      valorTotalPagar,
+      monto:valorTotalPagar,
+      municipioReteica:form.municipioReteica || proveedorActivo?.municipioIca || "Envigado",
+      codigoIca:form.codigoIca || proveedorActivo?.codigoIca || "",
+    };
+  };
+
+  useEffect(()=>{
+    if(!cxpForm.proveedorId && proveedoresData[0]?.id){
+      setCxpForm(prev=>({...prev,proveedorId:proveedoresData[0].id}));
+    }
+  },[proveedoresData, cxpForm.proveedorId]);
+
+  useEffect(()=>{
+    if(!proveedorPagoId && proveedoresData[0]?.id){
+      setProveedorPagoId(proveedoresData[0].id);
+    }
+  },[proveedoresData, proveedorPagoId]);
 
   useEffect(()=>{
     if(!proveedorSel) return;
@@ -4616,15 +4928,15 @@ function CuentasPagar({ctx}){
     });
   },[proveedorSel?.id]);
 
-  const cuentasOrdenadas=[...cuentas].sort((a,b)=>{
+  const cuentasOrdenadas=[...cuentasNorm].sort((a,b)=>{
     if(a.estado!==b.estado) return a.estado==="Pendiente"?-1:1;
     return String(a.fechaVence||"").localeCompare(String(b.fechaVence||""));
   });
 
-  const totalPendiente=cuentas.filter(c=>c.estado==="Pendiente").reduce((s,c)=>s+Number(c.valorTotalPagar ?? c.valor_total_pagar ?? c.monto||0),0);
-  const totalPagado=cuentas.filter(c=>c.estado==="Pagado").reduce((s,c)=>s+Number(c.valorTotalPagar ?? c.valor_total_pagar ?? c.monto||0),0);
-  const vencidas=cuentas.filter(c=>c.estado==="Pendiente"&&c.fechaVence&&c.fechaVence<today());
-  const porVencer=cuentas.filter(c=>c.estado==="Pendiente"&&c.fechaVence&&c.fechaVence>=today()&&((new Date(c.fechaVence+"T12:00:00")-new Date(today()+"T12:00:00"))/(1000*60*60*24))<=7);
+  const totalPendiente=cuentasNorm.filter(c=>c.estado==="Pendiente").reduce((s,c)=>s+Number(c.saldoPendienteActual||0),0);
+  const totalPagado=cuentasNorm.reduce((s,c)=>s+Number(c.montoPagado||0),0);
+  const vencidas=cuentasNorm.filter(c=>c.estado==="Pendiente"&&c.fechaVence&&c.fechaVence<today());
+  const porVencer=cuentasNorm.filter(c=>c.estado==="Pendiente"&&c.fechaVence&&c.fechaVence>=today()&&((new Date(c.fechaVence+"T12:00:00")-new Date(today()+"T12:00:00"))/(1000*60*60*24))<=7);
 
   const resetProveedor=()=>{
     setProvForm(proveedorBase);
@@ -4636,6 +4948,11 @@ function CuentasPagar({ctx}){
     setCxpForm(createCuentaBase(proveedorId));
     setEditCxPId(null);
     setShowCxP(false);
+  };
+
+  const resetPagoProveedor=()=>{
+    setBusquedaProveedorPago("");
+    setPagoProv({tipo:"Pago a proveedor",monto:"",fecha:today(),metodo:"Transferencia",notas:""});
   };
 
   const guardarProveedor=()=>{
@@ -4673,6 +4990,7 @@ function CuentasPagar({ctx}){
     }
     if(newId){
       setCxpForm(prev=>({...prev,proveedorId:newId,municipioReteica:payload.municipioIca,codigoIca:payload.codigoIca,aplicaReteiva:payload.agenteReteiva||prev.aplicaReteiva}));
+      setProveedorPagoId(newId);
     }
     resetProveedor();
   };
@@ -4720,6 +5038,7 @@ function CuentasPagar({ctx}){
       codigo_ica:cxpForm.codigoIca,
     }, proveedorSel);
 
+    const current = editCxPId ? cuentasNorm.find(c=>c.id===editCxPId) : null;
     const withMirror={
       ...payload,
       subtotal:payload.subtotal,
@@ -4754,8 +5073,14 @@ function CuentasPagar({ctx}){
       valorTotalPagar:payload.valorTotalPagar,
       valor_total_pagar:payload.valorTotalPagar,
       monto:payload.valorTotalPagar,
-      estado:editCxPId ? (cuentas.find(c=>c.id===editCxPId)?.estado || "Pendiente") : "Pendiente",
-      fechaPago:editCxPId ? (cuentas.find(c=>c.id===editCxPId)?.fechaPago || "") : "",
+      saldoPendienteActual:current ? Math.min(Number(current.saldoPendienteActual || payload.valorTotalPagar), payload.valorTotalPagar) : payload.valorTotalPagar,
+      saldo_pendiente_actual:current ? Math.min(Number(current.saldoPendienteActual || payload.valorTotalPagar), payload.valorTotalPagar) : payload.valorTotalPagar,
+      montoPagado:current ? Number(current.montoPagado || 0) : 0,
+      monto_pagado:current ? Number(current.montoPagado || 0) : 0,
+      pagosHistorial:current ? (current.pagosHistorial || []) : [],
+      pagos_historial:current ? (current.pagosHistorial || []) : [],
+      estado:editCxPId ? ((current?.saldoPendienteActual || 0) <= 0 ? "Pagado" : (current?.estado || "Pendiente")) : "Pendiente",
+      fechaPago:editCxPId ? (current?.fechaPago || "") : "",
     };
 
     if(editCxPId){
@@ -4764,14 +5089,14 @@ function CuentasPagar({ctx}){
       const id="CP-" + (String(cuentas.length+1).padStart(3,"0"));
       setCuentas(prev=>[...prev,{id,...withMirror}]);
     }
-    resetCuenta(proveedorSel?.id || proveedores[0]?.id || "");
+    resetCuenta(proveedorSel?.id || proveedoresData[0]?.id || "");
   };
 
   const editarCuenta=(cuenta)=>{
     const prov=proveedoresData.find(p=>p.id===cuenta.proveedorId);
     setEditCxPId(cuenta.id);
     setCxpForm({
-      proveedorId:cuenta.proveedorId||proveedores[0]?.id||"",
+      proveedorId:cuenta.proveedorId||proveedoresData[0]?.id||"",
       obraId:cuenta.obraId||"",
       factura:cuenta.factura||"",
       concepto:cuenta.concepto||"",
@@ -4801,41 +5126,166 @@ function CuentasPagar({ctx}){
       fechaVence:cuenta.fechaVence||"",
       observacionTributaria:cuenta.observacionTributaria||cuenta.observacion_tributaria||"",
     });
-    setTab("cuentas");
+    setTab("causacion");
     setShowCxP(true);
   };
 
   const marcarPagada=(id)=>{
-    setCuentas(prev=>prev.map(c=>c.id===id?{...c,estado:"Pagado",fechaPago:today()}:c));
+    setCuentas(prev=>prev.map(item=>{
+      if(item.id!==id) return item;
+      const total = Number(item.valorTotalPagar ?? item.valor_total_pagar ?? item.monto ?? 0);
+      return {
+        ...item,
+        estado:"Pagado",
+        fechaPago:today(),
+        saldoPendienteActual:0,
+        saldo_pendiente_actual:0,
+        montoPagado:total,
+        monto_pagado:total,
+      };
+    }));
   };
 
+  const registrarPagoProveedor=(proveedorIdPreset="")=>{
+    const pid = proveedorIdPreset || proveedorPagoId;
+    const monto = Math.round(Number(pagoProv.monto || 0));
+    if(!pid || !Number.isFinite(monto) || monto<=0) return;
+
+    const pendientes = cuentasNorm
+      .filter(c=>c.proveedorId===pid && Number(c.saldoPendienteActual || 0)>0)
+      .sort((a,b)=>String(a.fechaVence||a.fecha||"").localeCompare(String(b.fechaVence||b.fecha||"")));
+
+    if(pendientes.length===0) return;
+
+    let restante=monto;
+    const afectaciones=[];
+    for(const cuenta of pendientes){
+      if(restante<=0) break;
+      const saldo=Number(cuenta.saldoPendienteActual || 0);
+      if(saldo<=0) continue;
+      const abonado=Math.min(restante, saldo);
+      restante-=abonado;
+      afectaciones.push({
+        cuentaId:cuenta.id,
+        factura:cuenta.factura || "—",
+        concepto:cuenta.concepto || "Cuenta por pagar",
+        abono:abonado,
+        saldoAntes:saldo,
+        saldoDespues:Math.max(0, saldo - abonado),
+      });
+    }
+
+    const montoAplicado = afectaciones.reduce((s,a)=>s+Number(a.abono||0),0);
+    if(montoAplicado<=0) return;
+
+    const pagoId = "PP-" + Date.now();
+    const pagoRecord={
+      id:pagoId,
+      proveedorId:pid,
+      monto:montoAplicado,
+      valor:montoAplicado,
+      fecha:pagoProv.fecha || today(),
+      estado:"Pagado",
+      tipo:pagoProv.tipo?.trim() || "Pago a proveedor",
+      metodo:pagoProv.metodo || "Transferencia",
+      medio:pagoProv.metodo || "Transferencia",
+      notas:(pagoProv.notas || "").trim(),
+      facturasAfectadas:afectaciones.map(a=>({cuentaId:a.cuentaId,factura:a.factura,concepto:a.concepto,monto:a.abono})),
+    };
+
+    setGuardandoPagoProv(true);
+    setCuentas(prev=>prev.map(raw=>{
+      const cuenta=normalizarCuenta(raw);
+      const afect=afectaciones.find(a=>a.cuentaId===cuenta.id);
+      if(!afect) return raw;
+      const historialPrev=Array.isArray(cuenta.pagosHistorial) ? cuenta.pagosHistorial : [];
+      const historialItem={
+        ...pagoRecord,
+        cuentaId:cuenta.id,
+        factura:afect.factura,
+        conceptoFactura:afect.concepto,
+        monto:afect.abono,
+        valor:afect.abono,
+        saldoAntes:afect.saldoAntes,
+        saldoDespues:afect.saldoDespues,
+      };
+      const nuevoSaldo=Math.max(0, afect.saldoDespues);
+      const nuevoPagado=Number(cuenta.montoPagado || 0) + Number(afect.abono || 0);
+      return {
+        ...raw,
+        estado:nuevoSaldo<=0 ? "Pagado" : "Pendiente",
+        fechaPago:nuevoSaldo<=0 ? (pagoRecord.fecha || today()) : (raw.fechaPago || ""),
+        saldoPendienteActual:nuevoSaldo,
+        saldo_pendiente_actual:nuevoSaldo,
+        montoPagado:nuevoPagado,
+        monto_pagado:nuevoPagado,
+        pagosHistorial:[historialItem, ...historialPrev],
+        pagos_historial:[historialItem, ...historialPrev],
+      };
+    }));
+
+    setFiltroPagoProv(pid);
+    setVistaPagoCxP("registro");
+    setPagoProv({tipo:"Pago a proveedor",monto:"",fecha:today(),metodo:"Transferencia",notas:""});
+    setTimeout(()=>setGuardandoPagoProv(false), 500);
+  };
+
+  const cuentasProveedorPago = cuentasNorm.filter(c=>c.proveedorId===proveedorPagoId);
+  const cuentasPendientesProveedor = cuentasProveedorPago.filter(c=>Number(c.saldoPendienteActual || 0)>0);
+  const totalPendienteProveedor = cuentasPendientesProveedor.reduce((s,c)=>s+Number(c.saldoPendienteActual || 0),0);
+  const totalPagadoProveedor = cuentasProveedorPago.reduce((s,c)=>s+Number(c.montoPagado || 0),0);
+  const proveedorBusquedaFiltrado = proveedoresData.filter((p)=>{
+    const term = normalizarTexto(busquedaProveedorPago);
+    if(!term) return true;
+    return [p.id,p.nombre,p.nit,p.contacto,p.telefono,p.email,p.categoria]
+      .some(v=>normalizarTexto(v).includes(term));
+  });
+
+  const pagosProveedorHistorial = cuentasNorm.flatMap((cuenta)=>{
+    const prov=proveedoresData.find(p=>p.id===cuenta.proveedorId);
+    return (cuenta.pagosHistorial || []).map((p)=>({
+      ...p,
+      proveedorNombre:prov?.nombre || "Proveedor sin registro",
+      cuentaId:cuenta.id,
+      factura:p.factura || cuenta.factura || "—",
+      conceptoFactura:p.conceptoFactura || cuenta.concepto || "Cuenta por pagar",
+    }));
+  }).sort((a,b)=>String(b.fecha||"").localeCompare(String(a.fecha||"")) || String(b.id||"").localeCompare(String(a.id||"")));
+
+  const pagosProveedorFiltrados = filtroPagoProv==="todos" ? pagosProveedorHistorial : pagosProveedorHistorial.filter(p=>p.proveedorId===filtroPagoProv);
   const cxpPreview=calcCuentaTributaria(cxpForm, proveedorSel);
+
+  const Stat=({title,value,color,sub})=>(
+    <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:12,padding:"12px 14px",minWidth:170,flex:"1 1 170px"}}>
+      <div style={{fontSize:11,color:"#64748b",marginBottom:6}}>{title}</div>
+      <div style={{fontSize:20,fontWeight:800,color:color||"#0f172a",lineHeight:1.1}}>{value}</div>
+      <div style={{fontSize:11,color:"#94a3b8",marginTop:4}}>{sub}</div>
+    </div>
+  );
 
   return(
     <div style={{padding:28}}>
       <H1
-        title="Cuentas x Pagar y Proveedores"
-        subtitle="Gestión de proveedores, facturas pendientes y base bancaria"
+        title="Causación o ingreso de facturas y gastos"
+        subtitle="Causación de facturas, egresos a proveedores y base tributaria del ERP"
         action={
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             <button style={B("#f5c842","#3b2f00")} onClick={()=>{setTab("proveedores");setShowProv(v=>!v);if(showProv&&tab==="proveedores") resetProveedor();}}>
               + Proveedor
             </button>
-            <button style={B("#cc0000")} onClick={()=>{setTab("cuentas");setShowCxP(v=>{const next=!v;if(next&&!editCxPId)setCxpForm(createCuentaBase(cxpForm.proveedorId));if(!next)resetCuenta(cxpForm.proveedorId);return next;});}}>
-              + Cuenta por pagar
+            <button style={B("#cc0000")} onClick={()=>{setTab("causacion");setShowCxP(v=>{const next=!v;if(next&&!editCxPId)setCxpForm(createCuentaBase(cxpForm.proveedorId));if(!next)resetCuenta(cxpForm.proveedorId);return next;});}}>
+              + Causación / factura
+            </button>
+            <button style={B("#003B71")} onClick={()=>{setTab("pagos");setVistaPagoCxP("registro");scrollAppToTop("smooth");}}>
+              Registrar pago
             </button>
           </div>
         }
       />
 
-      <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:16}}>
-        <Stat title="Pendiente" value={fmt(totalPendiente)} color="#fb923c" sub={vencidas.length + " vencidas"}/>
-        <Stat title="Pagado" value={fmt(totalPagado)} color="#4ade80" sub="Histórico"/>
-        <Stat title="Por vencer" value={String(porVencer.length)} color="#60a5fa" sub="Próximos 7 días"/>
-      </div>
 
       <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
-        {[ ["cuentas","🧾 Cuentas por pagar"],["proveedores","🏢 Proveedores"] ].map(([id,lb])=>(
+        {[["causacion","🧾 Causación / facturas"],["pagos","🏦 Pagos y egresos"],["proveedores","🏢 Proveedores"]].map(([id,lb])=>(
           <button
             key={id}
             onClick={()=>setTab(id)}
@@ -4846,11 +5296,231 @@ function CuentasPagar({ctx}){
         ))}
       </div>
 
-      {tab==="cuentas"&&(
+      {(tab==="causacion" || tab==="pagos")&&(
         <>
+          {tab==="pagos" && (
+            <>
+          <div style={{display:"flex",gap:10,marginBottom:18,flexWrap:"wrap"}}>
+            <button
+              type="button"
+              onClick={()=>setVistaPagoCxP("registro")}
+              style={{
+                ...B(vistaPagoCxP==="registro" ? "#cc0000" : "#fff7ed", vistaPagoCxP==="registro" ? "#fff" : "#9a3412"),
+                border:vistaPagoCxP==="registro" ? "1px solid #cc0000" : "1px solid #fed7aa",
+              }}
+            >
+              Registrar pago
+            </button>
+            <button
+              type="button"
+              onClick={()=>setVistaPagoCxP("historial")}
+              style={{
+                ...B(vistaPagoCxP==="historial" ? "#003B71" : "#eff6ff", vistaPagoCxP==="historial" ? "#fff" : "#1d4ed8"),
+                border:vistaPagoCxP==="historial" ? "1px solid #003B71" : "1px solid #bfdbfe",
+              }}
+            >
+              Historial de pagos
+            </button>
+          </div>
+
+          {vistaPagoCxP==="registro" && (
+            <div style={{...CD,marginBottom:20,border:"1px solid #fed7aa",boxShadow:"0 18px 40px rgba(244,124,32,0.08)"}}>
+              <div style={ST}>Registrar pago manual a proveedor</div>
+              <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr",gap:18,alignItems:"start"}}>
+                <div style={{display:"grid",gap:12}}>
+                  <div>
+                    <LBL>Buscar proveedor</LBL>
+                    <input
+                      value={busquedaProveedorPago}
+                      onChange={(e)=>{
+                        const v=e.target.value;
+                        setBusquedaProveedorPago(v);
+                        const t=normalizarTexto(v);
+                        if(!t) return;
+                        const matches=proveedoresData.filter((p)=>[p.id,p.nombre,p.nit,p.contacto,p.telefono,p.email,p.categoria].some((campo)=>normalizarTexto(campo).includes(t)));
+                        if(matches[0]?.id) setProveedorPagoId(matches[0].id);
+                      }}
+                      placeholder="Escribe proveedor, NIT, contacto o categoría"
+                      style={SI}
+                    />
+                  </div>
+                  <div>
+                    <LBL>Seleccionar proveedor</LBL>
+                    <select value={proveedorPagoId} onChange={(e)=>setProveedorPagoId(e.target.value)} style={SI}>
+                      <option value="">Seleccionar proveedor...</option>
+                      {proveedorBusquedaFiltrado.map((prov)=>(
+                        <option key={prov.id} value={prov.id}>{prov.nombre} · {prov.nit || prov.id}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                    <div>
+                      <LBL>Valor del pago</LBL>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1000"
+                        value={pagoProv.monto}
+                        onChange={(e)=>setPagoProv({...pagoProv,monto:e.target.value})}
+                        placeholder="Ej. 2000000"
+                        style={SI}
+                      />
+                      <div style={{fontSize:11,color:"#64748b",marginTop:6}}>
+                        {Number(pagoProv.monto || 0)>0 ? fmt(Number(pagoProv.monto || 0)) : "Ingresa el valor manual del pago"}
+                      </div>
+                    </div>
+                    <div>
+                      <LBL>Fecha del pago</LBL>
+                      <input type="date" value={pagoProv.fecha} onChange={(e)=>setPagoProv({...pagoProv,fecha:e.target.value})} style={SI}/>
+                    </div>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                    <div>
+                      <LBL>Tipo</LBL>
+                      <input
+                        value={pagoProv.tipo}
+                        onChange={(e)=>setPagoProv({...pagoProv,tipo:e.target.value})}
+                        placeholder="Pago manual / anticipo / pago parcial"
+                        style={SI}
+                      />
+                    </div>
+                    <div>
+                      <LBL>Método</LBL>
+                      <select value={pagoProv.metodo} onChange={(e)=>setPagoProv({...pagoProv,metodo:e.target.value})} style={SI}>
+                        <option value="Transferencia">Transferencia</option>
+                        <option value="Consignación">Consignación</option>
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="PSE">PSE</option>
+                        <option value="Cheque">Cheque</option>
+                        <option value="Otro">Otro</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <LBL>Notas</LBL>
+                    <textarea
+                      value={pagoProv.notas}
+                      onChange={(e)=>setPagoProv({...pagoProv,notas:e.target.value})}
+                      rows={3}
+                      placeholder="Referencia, observación del pago o soporte recibido"
+                      style={{...SI,minHeight:86,resize:"vertical"}}
+                    />
+                  </div>
+                  <div style={{display:"flex",gap:10}}>
+                    <button
+                      type="button"
+                      onClick={()=>registrarPagoProveedor()}
+                      disabled={!proveedorPagoId || Number(pagoProv.monto || 0)<=0 || guardandoPagoProv || totalPendienteProveedor<=0}
+                      style={{
+                        ...B("#cc0000"),
+                        opacity:(!proveedorPagoId || Number(pagoProv.monto || 0)<=0 || guardandoPagoProv || totalPendienteProveedor<=0)?0.6:1,
+                        cursor:(!proveedorPagoId || Number(pagoProv.monto || 0)<=0 || guardandoPagoProv || totalPendienteProveedor<=0)?"not-allowed":"pointer",
+                      }}
+                    >
+                      {guardandoPagoProv ? "Guardando..." : "Guardar pago"}
+                    </button>
+                    <button type="button" onClick={resetPagoProveedor} style={B("#f1f5f9","#475569")}>Limpiar</button>
+                  </div>
+                </div>
+
+                <div style={{background:"linear-gradient(180deg,#fff7ed,#ffffff)",border:"1px solid #fed7aa",borderRadius:14,padding:16}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"#9a3412",textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>Proveedor seleccionado</div>
+                  {proveedorPagoSel ? (
+                    <div style={{display:"grid",gap:10}}>
+                      <div>
+                        <div style={{fontSize:11,color:"#64748b"}}>{proveedorPagoSel.id}</div>
+                        <div style={{fontSize:20,fontWeight:700,color:"#1a1a2e"}}>{proveedorPagoSel.nombre}</div>
+                        <div style={{fontSize:13,color:"#475569"}}>{proveedorPagoSel.categoria || "Proveedor"}</div>
+                      </div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                        <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px"}}>
+                          <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase"}}>Saldo pendiente</div>
+                          <div style={{fontSize:20,fontWeight:800,color:Number(totalPendienteProveedor||0)>0?"#c2410c":"#166534"}}>{fmt(totalPendienteProveedor)}</div>
+                        </div>
+                        <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px"}}>
+                          <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase"}}>Pagado</div>
+                          <div style={{fontSize:18,fontWeight:700,color:"#166534"}}>{fmt(totalPagadoProveedor)}</div>
+                        </div>
+                        <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px"}}>
+                          <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase"}}>Facturas pendientes</div>
+                          <div style={{fontSize:18,fontWeight:700,color:"#1a1a2e"}}>{String(cuentasPendientesProveedor.length)}</div>
+                        </div>
+                        <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px"}}>
+                          <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase"}}>Banco</div>
+                          <div style={{fontSize:14,fontWeight:700,color:"#1a1a2e"}}>{proveedorPagoSel.banco || "Sin banco"}</div>
+                        </div>
+                      </div>
+                      <div style={{fontSize:12,color:"#64748b",lineHeight:1.6}}>
+                        NIT: <strong style={{color:"#334155"}}>{proveedorPagoSel.nit || "No registrado"}</strong><br/>
+                        Contacto: <strong style={{color:"#334155"}}>{proveedorPagoSel.contacto || "No registrado"}</strong><br/>
+                        Cuenta: <strong style={{color:"#334155"}}>{proveedorPagoSel.numeroCuenta || "No registrada"}</strong>
+                      </div>
+                      {cuentasPendientesProveedor.length>0 && (
+                        <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px"}}>
+                          <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase",marginBottom:8}}>Aplicación automática del pago</div>
+                          <div style={{display:"grid",gap:6,maxHeight:180,overflow:"auto"}}>
+                            {cuentasPendientesProveedor.slice(0,5).map((c)=>(
+                              <div key={c.id} style={{display:"flex",justifyContent:"space-between",gap:10,fontSize:12}}>
+                                <div style={{color:"#334155"}}>{c.factura || c.id} · {c.concepto}</div>
+                                <strong style={{color:"#c2410c"}}>{fmt(c.saldoPendienteActual)}</strong>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{fontSize:13,color:"#64748b",lineHeight:1.6}}>
+                      Busca el proveedor, selecciónalo y luego registra el valor exacto del pago manual.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div style={CD}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,flexWrap:"wrap",gap:10}}>
+              <div style={ST}>Historial de pagos a proveedores</div>
+              <select value={filtroPagoProv} onChange={e=>setFiltroPagoProv(e.target.value)} style={{...SI,width:"auto",fontSize:12}}>
+                <option value="todos">Todos los proveedores</option>
+                {proveedoresData.map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}
+              </select>
+            </div>
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+              <thead>
+                <tr style={{background:"#f1f5f9"}}>
+                  {["ID","Proveedor","Factura","Concepto","Monto","Fecha","Método","Estado"].map(h=>(
+                    <th key={h} style={{padding:"9px 10px",textAlign:h==="Monto"?"right":"left",color:"#64748b",fontWeight:500,fontSize:11}}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {pagosProveedorFiltrados.length===0 ? (
+                  <tr><td colSpan={8} style={{padding:18,textAlign:"center",color:"#94a3b8"}}>No hay pagos registrados para este filtro</td></tr>
+                ) : pagosProveedorFiltrados.map((p)=> (
+                  <tr key={p.id + "-" + p.cuentaId} style={{borderBottom:"1px solid #e2e8f0"}}>
+                    <td style={{padding:"10px 10px",color:"#2563eb",fontWeight:500}}>{p.id}</td>
+                    <td style={{padding:"10px 10px"}}>{p.proveedorNombre}</td>
+                    <td style={{padding:"10px 10px"}}>{p.factura || "—"}</td>
+                    <td style={{padding:"10px 10px"}}>{p.conceptoFactura || "Cuenta por pagar"}</td>
+                    <td style={{padding:"10px 10px",textAlign:"right",fontWeight:700,color:"#cc0000"}}>{fmt(p.monto)}</td>
+                    <td style={{padding:"10px 10px"}}>{p.fecha || "—"}</td>
+                    <td style={{padding:"10px 10px"}}>{p.metodo || p.medio || "—"}</td>
+                    <td style={{padding:"10px 10px"}}><Badge estado={p.estado || "Pagado"}/></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+            </>
+          )}
+
+          {tab==="causacion" && (
+            <>
           {showCxP&&(
             <div style={{...CD,marginBottom:18,border:"1px solid #cc0000"}}>
-              <div style={ST}>{editCxPId?"Editar cuenta por pagar":"Registrar cuenta por pagar"}</div>
+              <div style={ST}>{editCxPId?"Editar causación de factura o gasto":"Registrar causación de factura o gasto"}</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
                 <div>
                   <LBL>Proveedor</LBL>
@@ -4892,7 +5562,7 @@ function CuentasPagar({ctx}){
                 </div>
                 <div>
                   <LBL>Tarifa IVA %</LBL>
-                  <input type="number" value={cxpForm.tarifaIva} onChange={e=>setCxpForm({...cxpForm,tarifaIva:parseFloat(e.target.value)||0})} style={SI}/>
+                  <input type="number" value={cxpForm.tarifaIva} onChange={e=>setCxpForm({...cxpForm,tarifaIva:parseFloat(e.target.value)||0})} style={SI} disabled={!!proveedorSel && (proveedorSel.responsableIva===false || proveedorSel.regimenTributario==="No responsable de IVA")}/>
                 </div>
                 <div>
                   <LBL>Valor IVA</LBL>
@@ -4912,27 +5582,34 @@ function CuentasPagar({ctx}){
                 </div>
                 <div>
                   <LBL>Tarifa retefuente %</LBL>
-                  <input type="number" value={cxpForm.tarifaRetFuente} onChange={e=>setCxpForm({...cxpForm,tarifaRetFuente:parseFloat(e.target.value)||0})} style={SI}/>
+                  <input type="number" value={cxpForm.tarifaRetFuente} onChange={e=>setCxpForm({...cxpForm,tarifaRetFuente:parseFloat(e.target.value)||0})} style={SI} disabled={!!proveedorSel?.autorretenedorRenta}/>
                 </div>
                 <div>
                   <LBL>Valor retefuente</LBL>
                   <input value={fmt(cxpPreview.valorRetFuente)} readOnly style={{...SI,background:"#f8fafc"}}/>
                 </div>
 
-                <div>
-                  <LBL>ReteIVA</LBL>
-                  <div style={{display:"flex",gap:8,alignItems:"center",height:42,padding:"0 12px",border:"1px solid #e2e8f0",borderRadius:12,background:"#fff"}}>
-                    <input type="checkbox" checked={cxpForm.aplicaReteiva} onChange={e=>setCxpForm({...cxpForm,aplicaReteiva:e.target.checked})}/>
-                    <span style={{fontSize:12,color:"#334155"}}>Aplicar reteIVA</span>
+                <div style={{gridColumn:"span 3",display:"flex",gap:10,flexWrap:"wrap",marginTop:-2}}>
+                  {proveedorSel?.autorretenedorRenta && <div style={{fontSize:11,color:"#166534",background:"#ecfdf5",border:"1px solid #bbf7d0",padding:"8px 10px",borderRadius:999}}>Proveedor autorretenedor: no se calcula retención en la fuente</div>}
+                  {proveedorSel && (proveedorSel.responsableIva===false || proveedorSel.regimenTributario==="No responsable de IVA") && <div style={{fontSize:11,color:"#1d4ed8",background:"#eff6ff",border:"1px solid #bfdbfe",padding:"8px 10px",borderRadius:999}}>Proveedor no responsable de IVA: la tarifa IVA se ajusta a 0%</div>}
+                </div>
+
+                <div style={{gridColumn:"span 3",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
+                  <div>
+                    <LBL>Aplica reteIVA</LBL>
+                    <select value={cxpForm.aplicaReteiva?"si":"no"} onChange={e=>setCxpForm({...cxpForm,aplicaReteiva:e.target.value==="si"})} style={SI}>
+                      <option value="no">No</option>
+                      <option value="si">Sí</option>
+                    </select>
                   </div>
-                </div>
-                <div>
-                  <LBL>Tarifa reteIVA %</LBL>
-                  <input type="number" value={cxpForm.tarifaReteiva} onChange={e=>setCxpForm({...cxpForm,tarifaReteiva:parseFloat(e.target.value)||0})} style={SI}/>
-                </div>
-                <div>
-                  <LBL>Valor reteIVA</LBL>
-                  <input value={fmt(cxpPreview.valorReteiva)} readOnly style={{...SI,background:"#f8fafc"}}/>
+                  <div>
+                    <LBL>Tarifa reteIVA %</LBL>
+                    <input type="number" value={cxpForm.tarifaReteiva} onChange={e=>setCxpForm({...cxpForm,tarifaReteiva:parseFloat(e.target.value)||0})} style={SI}/>
+                  </div>
+                  <div>
+                    <LBL>Valor reteIVA</LBL>
+                    <input value={fmt(cxpPreview.valorReteiva)} readOnly style={{...SI,background:"#f8fafc"}}/>
+                  </div>
                 </div>
 
                 <div>
@@ -4944,48 +5621,47 @@ function CuentasPagar({ctx}){
                   <input value={cxpForm.codigoIca} onChange={e=>setCxpForm({...cxpForm,codigoIca:e.target.value})} style={SI}/>
                 </div>
                 <div>
-                  <LBL>Actividad ICA</LBL>
-                  <input value={cxpForm.actividadIca} onChange={e=>setCxpForm({...cxpForm,actividadIca:e.target.value})} placeholder="Actividad o concepto ICA" style={SI}/>
-                </div>
-                <div>
-                  <LBL>Tarifa reteICA x 1.000</LBL>
+                  <LBL>Tarifa reteICA x 1000</LBL>
                   <input type="number" value={cxpForm.tarifaReteica} onChange={e=>setCxpForm({...cxpForm,tarifaReteica:parseFloat(e.target.value)||0})} style={SI}/>
                 </div>
-                <div>
-                  <LBL>Valor reteICA</LBL>
-                  <input value={fmt(cxpPreview.valorReteica)} readOnly style={{...SI,background:"#f8fafc"}}/>
+
+                <div style={{gridColumn:"span 3"}}>
+                  <LBL>Observación tributaria</LBL>
+                  <input value={cxpForm.observacionTributaria} onChange={e=>setCxpForm({...cxpForm,observacionTributaria:e.target.value})} placeholder="Notas de causación, soporte o validaciones tributarias" style={SI}/>
                 </div>
+              </div>
+
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:14}}>
+                <div style={{background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:10,padding:"12px 14px"}}>
+                  <div style={{fontSize:11,color:"#9a3412",marginBottom:4}}>Valor bruto factura</div>
+                  <div style={{fontSize:18,fontWeight:800,color:"#c2410c"}}>{fmt(cxpPreview.valorBrutoFactura)}</div>
+                </div>
+                <div style={{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:10,padding:"12px 14px"}}>
+                  <div style={{fontSize:11,color:"#9a3412",marginBottom:4}}>Total retenciones</div>
+                  <div style={{fontSize:18,fontWeight:800,color:"#b91c1c"}}>{fmt(cxpPreview.valorTotalRetenciones)}</div>
+                </div>
+                <div style={{background:"#ecfdf5",border:"1px solid #bbf7d0",borderRadius:10,padding:"12px 14px"}}>
+                  <div style={{fontSize:11,color:"#166534",marginBottom:4}}>Total a pagar</div>
+                  <div style={{fontSize:18,fontWeight:800,color:"#166534"}}>{fmt(cxpPreview.valorTotalPagar)}</div>
+                </div>
+                <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:10,padding:"12px 14px"}}>
+                  <div style={{fontSize:11,color:"#1d4ed8",marginBottom:4}}>Fecha vencimiento</div>
+                  <input type="date" value={cxpForm.fechaVence} onChange={e=>setCxpForm({...cxpForm,fechaVence:e.target.value})} style={{...SI,margin:0,padding:"8px 10px"}}/>
+                </div>
+              </div>
+
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
                 <div>
                   <LBL>Fecha factura</LBL>
                   <input type="date" value={cxpForm.fecha} onChange={e=>setCxpForm({...cxpForm,fecha:e.target.value})} style={SI}/>
                 </div>
-                <div>
-                  <LBL>Fecha vencimiento</LBL>
-                  <input type="date" value={cxpForm.fechaVence} onChange={e=>setCxpForm({...cxpForm,fechaVence:e.target.value})} style={SI}/>
-                </div>
-                <div style={{gridColumn:"span 3"}}>
-                  <LBL>Observación tributaria</LBL>
-                  <textarea value={cxpForm.observacionTributaria} onChange={e=>setCxpForm({...cxpForm,observacionTributaria:e.target.value})} placeholder="Notas de causación, soporte o particularidades tributarias" style={{...SI,minHeight:82,resize:"vertical"}}/>
+                <div style={{alignSelf:"end",fontSize:12,color:"#64748b"}}>
+                  Se conserva el historial de pagos si editas una cuenta ya registrada.
                 </div>
               </div>
 
-              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:14}}>
-                <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:14}}>
-                  <div style={{fontSize:11,color:"#64748b",marginBottom:4}}>Valor bruto factura</div>
-                  <div style={{fontSize:18,fontWeight:800,color:"#0f172a"}}>{fmt(cxpPreview.valorBrutoFactura)}</div>
-                </div>
-                <div style={{background:"#fff7ed",border:"1px solid #fdba74",borderRadius:12,padding:14}}>
-                  <div style={{fontSize:11,color:"#9a3412",marginBottom:4}}>Total retenciones</div>
-                  <div style={{fontSize:18,fontWeight:800,color:"#c2410c"}}>{fmt(cxpPreview.valorTotalRetenciones)}</div>
-                </div>
-                <div style={{background:"#f0fdf4",border:"1px solid #86efac",borderRadius:12,padding:14}}>
-                  <div style={{fontSize:11,color:"#166534",marginBottom:4}}>Valor total a pagar</div>
-                  <div style={{fontSize:20,fontWeight:900,color:"#166534"}}>{fmt(cxpPreview.valorTotalPagar)}</div>
-                </div>
-              </div>
-
-              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                <button style={B("#cc0000")} onClick={guardarCuenta}>{editCxPId?"💾 Guardar cambios":"✅ Guardar cuenta"}</button>
+              <div style={{display:"flex",gap:8}}>
+                <button style={B("#cc0000")} onClick={guardarCuenta}>{editCxPId?"Guardar cambios":"Guardar cuenta"}</button>
                 <button style={B("#f1f5f9","#475569")} onClick={()=>resetCuenta(cxpForm.proveedorId)}>Cancelar</button>
               </div>
             </div>
@@ -4993,63 +5669,54 @@ function CuentasPagar({ctx}){
 
           <div style={CD}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-              <div style={ST}>Facturas y vencimientos</div>
+              <div style={ST}>Facturas causadas y vencimientos</div>
               <div style={{fontSize:11,color:"#64748b"}}>Se ordenan primero las pendientes y luego por fecha de vencimiento</div>
             </div>
 
             {cuentasOrdenadas.length===0 ? (
-              <div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13}}>No hay cuentas por pagar registradas</div>
+              <div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13}}>No hay facturas o gastos causados</div>
             ) : (
               <div style={{display:"grid",gap:10}}>
                 {cuentasOrdenadas.map(c=>{
                   const prov=proveedoresData.find(p=>p.id===c.proveedorId);
                   const obra=obras.find(o=>o.id===c.obraId);
                   const vencida=c.estado==="Pendiente"&&c.fechaVence&&c.fechaVence<today();
-                  const totalPagar=Number(c.valorTotalPagar ?? c.valor_total_pagar ?? c.monto || 0);
-                  const bruto=Number(c.valorBrutoFactura ?? c.valor_bruto_factura ?? totalPagar || 0);
-                  const reteFuente=Number(c.valorRetFuente ?? c.valor_ret_fuente ?? 0);
-                  const reteIva=Number(c.valorReteiva ?? c.valor_reteiva ?? 0);
-                  const reteIca=Number(c.valorReteica ?? c.valor_reteica ?? 0);
                   return(
                     <div key={c.id} style={{background:"#f8fafc",borderRadius:10,padding:"14px 16px",border:"1px solid " + (vencida?"#fca5a5":c.estado==="Pagado"?"#bbf7d0":"#e2e8f0")}}>
                       <div style={{display:"flex",justifyContent:"space-between",gap:16,alignItems:"flex-start",marginBottom:8}}>
                         <div style={{flex:1}}>
                           <div style={{fontSize:14,fontWeight:700,color:"#1a1a2e"}}>{c.concepto}</div>
                           <div style={{fontSize:11,color:"#64748b",marginTop:2}}>
-                            {prov?.nombre || "Proveedor sin registro"} · Factura {c.factura || "—"} {obra?"· " + (obra.id) + " · " + (obra.cliente):"· gasto general"}
+                            {prov?.nombre || "Proveedor sin registro"} · Factura {c.factura || "—"} {obra?"· " + obra.id + " · " + obra.cliente:"· gasto general"}
                           </div>
                         </div>
                         <div style={{textAlign:"right"}}>
-                          <div style={{fontSize:15,fontWeight:800,color:"#cc0000"}}>{fmt(totalPagar)}</div>
+                          <div style={{fontSize:15,fontWeight:800,color:"#cc0000"}}>{fmt(c.valorTotalPagar)}</div>
                           <Badge estado={vencida?"Vencida":c.estado}/>
                         </div>
                       </div>
 
-                      <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr 1fr 1fr",gap:10,fontSize:11,color:"#475569"}}>
-                        <div><strong style={{color:"#1a1a2e"}}>Proveedor:</strong><br/>{prov?.contacto || "Sin contacto"} · {prov?.telefono || prov?.tel || "Sin teléfono"}</div>
-                        <div><strong style={{color:"#1a1a2e"}}>Banco:</strong><br/>{prov?.banco || "Sin banco"} · {prov?.numeroCuenta || "Sin cuenta"}</div>
-                        <div><strong style={{color:"#1a1a2e"}}>Fechas:</strong><br/>{fmtD(c.fecha) || "—"} → {fmtD(c.fechaVence) || "—"}</div>
-                        <div><strong style={{color:"#1a1a2e"}}>Tipo:</strong><br/>{(c.tipoOperacion||c.tipo_operacion||"servicio").toString().toUpperCase()}</div>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",gap:10,fontSize:11,color:"#475569"}}>
+                        <div><strong style={{color:"#1a1a2e"}}>Factura</strong><br/>{c.factura || "Sin consecutivo"}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>Fecha factura</strong><br/>{c.fecha || "—"}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>Vencimiento</strong><br/>{c.fechaVence || "Sin fecha"}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>Saldo pendiente</strong><br/>{Number(c.saldoPendienteActual||0)>0?fmt(c.saldoPendienteActual):"0"}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>Subtotal</strong><br/>{fmt(c.subtotal || 0)}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>IVA</strong><br/>{fmt(c.valorIva ?? c.valor_iva ?? 0)}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>Retenciones</strong><br/>{fmt(c.valorTotalRetenciones ?? c.valor_total_retenciones ?? 0)}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>Pagado acumulado</strong><br/>{fmt(c.montoPagado || 0)}</div>
                       </div>
 
-                      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginTop:10,fontSize:11}}>
-                        <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:10}}><strong>Bruto</strong><br/>{fmt(bruto)}</div>
-                        <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:10}}><strong>Retefuente</strong><br/>{fmt(reteFuente)}</div>
-                        <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:10}}><strong>ReteIVA</strong><br/>{fmt(reteIva)}</div>
-                        <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:10}}><strong>ReteICA</strong><br/>{fmt(reteIca)}</div>
-                      </div>
-
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginTop:12,flexWrap:"wrap"}}>
-                        <div style={{fontSize:11,color:"#64748b"}}>{c.observacionTributaria || c.observacion_tributaria || "Sin observaciones tributarias"}</div>
-                        <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                          <button onClick={()=>editarCuenta(c)} style={{...B("#f1f5f9","#475569"),padding:"6px 12px",fontSize:11}}>Editar</button>
-                          {c.estado==="Pendiente" ? (
-                            <button onClick={()=>marcarPagada(c.id)} style={{background:"#dcfce7",border:"1px solid #4ade80",color:"#166534",borderRadius:8,padding:"6px 12px",fontSize:11,cursor:"pointer",fontWeight:700}}>
-                              ✓ Marcar pagada
-                            </button>
-                          ) : (
-                            <span style={{fontSize:11,color:"#4ade80",fontWeight:700}}>Pagada {c.fechaPago?fmtD(c.fechaPago):""}</span>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:12,flexWrap:"wrap",gap:10}}>
+                        <div style={{fontSize:11,color:"#64748b"}}>
+                          {c.estado==="Pagado" ? "Pagada" + (c.fechaPago?" el " + c.fechaPago:"") : (vencida?"Cuenta vencida":"Pendiente de pago")}
+                        </div>
+                        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                          <button style={{...B("#f1f5f9","#475569"),padding:"7px 12px",fontSize:11}} onClick={()=>editarCuenta(c)}>Editar</button>
+                          {Number(c.saldoPendienteActual||0)>0 && (
+                            <button style={{...B("#003B71"),padding:"7px 12px",fontSize:11}} onClick={()=>{setTab("pagos"); setProveedorPagoId(c.proveedorId); setBusquedaProveedorPago(prov?.nombre || ""); setPagoProv(prev=>({...prev,tipo:"Pago a proveedor",monto:String(Math.round(Number(c.saldoPendienteActual||0))),fecha:today()})); setVistaPagoCxP("registro"); scrollAppToTop("smooth");}}>Registrar pago</button>
                           )}
+                          {c.estado!=="Pagado" && <button style={{...B("#16a34a"),padding:"7px 12px",fontSize:11}} onClick={()=>marcarPagada(c.id)}>Marcar pagada</button>}
                         </div>
                       </div>
                     </div>
@@ -5058,6 +5725,8 @@ function CuentasPagar({ctx}){
               </div>
             )}
           </div>
+            </>
+          )}
         </>
       )}
 
@@ -5143,8 +5812,8 @@ function CuentasPagar({ctx}){
             ) : (
               <div style={{display:"grid",gap:12}}>
                 {proveedoresData.map(p=>{
-                  const pendientesProv=cuentas.filter(c=>c.proveedorId===p.id&&c.estado==="Pendiente");
-                  const totalProv=pendientesProv.reduce((s,c)=>s+Number(c.valorTotalPagar ?? c.valor_total_pagar ?? c.monto||0),0);
+                  const pendientesProv=cuentasNorm.filter(c=>c.proveedorId===p.id&&Number(c.saldoPendienteActual||0)>0);
+                  const totalProv=pendientesProv.reduce((s,c)=>s+Number(c.saldoPendienteActual||0),0);
                   return(
                     <div key={p.id} style={{background:"#f8fafc",borderRadius:10,padding:"16px 18px",border:"1px solid #e2e8f0"}}>
                       <div style={{display:"flex",justifyContent:"space-between",gap:16,alignItems:"flex-start",marginBottom:10}}>
@@ -5154,8 +5823,9 @@ function CuentasPagar({ctx}){
                             {p.nit || "Sin NIT"} · {p.contacto || "Sin contacto"} · {p.telefono || p.tel || "Sin teléfono"}
                           </div>
                         </div>
-                        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                        <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
                           <Badge estado={pendientesProv.length?"Pendiente":"Pagado"}/>
+                          {p.autorretenedorRenta && <span style={{fontSize:10,fontWeight:700,color:"#166534",background:"#ecfdf5",border:"1px solid #bbf7d0",padding:"5px 8px",borderRadius:999}}>Autorretenedor</span>}
                           <button style={{...B("#f1f5f9","#475569"),padding:"7px 12px",fontSize:11}} onClick={()=>editarProveedor(p)}>Editar</button>
                         </div>
                       </div>
@@ -5167,19 +5837,15 @@ function CuentasPagar({ctx}){
                         <div><strong style={{color:"#1a1a2e"}}>Correo</strong><br/>{p.email || "Sin email"}</div>
                       </div>
 
-                      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,fontSize:11,color:"#475569",marginTop:10}}>
-                        <div><strong style={{color:"#1a1a2e"}}>Régimen</strong><br/>{p.regimenTributario || "Ordinario"}</div>
-                        <div><strong style={{color:"#1a1a2e"}}>IVA</strong><br/>{p.responsableIva?"Responsable":"No responsable"}</div>
-                        <div><strong style={{color:"#1a1a2e"}}>ReteIVA</strong><br/>{p.agenteReteiva?"Sí":"No"}</div>
-                        <div><strong style={{color:"#1a1a2e"}}>ICA</strong><br/>{p.municipioIca || "Sin municipio"}{p.codigoIca?` · ${p.codigoIca}`:""}</div>
-                      </div>
-
-                      <div style={{marginTop:10,display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11}}>
+                      <div style={{marginTop:10,display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11,flexWrap:"wrap",gap:10}}>
                         <div style={{color:"#64748b"}}>
-                          {pendientesProv.length ? "Tiene " + (pendientesProv.length) + " cuenta(s) pendiente(s)" : "Sin cuentas pendientes"}
+                          {pendientesProv.length ? "Tiene " + pendientesProv.length + " cuenta(s) pendiente(s)" : "Sin cuentas pendientes"}
                         </div>
-                        <div style={{fontWeight:800,color:pendientesProv.length?"#c2410c":"#166534"}}>
-                          {pendientesProv.length ? fmt(totalProv) : "Al día"}
+                        <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+                          <div style={{fontWeight:800,color:pendientesProv.length?"#c2410c":"#166534"}}>
+                            {pendientesProv.length ? fmt(totalProv) : "Al día"}
+                          </div>
+                          <button style={{...B("#003B71"),padding:"7px 12px",fontSize:11}} onClick={()=>{setTab("pagos"); setVistaPagoCxP("registro"); setProveedorPagoId(p.id); setBusquedaProveedorPago(p.nombre || ""); scrollAppToTop("smooth");}}>Registrar pago</button>
                         </div>
                       </div>
                     </div>
@@ -5193,12 +5859,8 @@ function CuentasPagar({ctx}){
     </div>
   );
 }
-// ======================================================
-// OBRAS
-// ======================================================
-// ======================================================
-// OBRAS
-// ======================================================
+
+
 function Obras({ctx}){
   const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,horarios}=ctx;
   const [sel,setSel]=useState(null);
@@ -6273,6 +6935,1214 @@ function Informes({ctx}){
   );
 }
 
+function Contabilidad({ctx}){
+  const {
+    clientes,
+    empleados,
+    pagos,
+    cuentas,
+    proveedores,
+    obras,
+    nominasGeneradas,
+    contabilidadConfig,
+    setContabilidadConfig,
+    planCuentas,
+    setPlanCuentas,
+    asientosContables,
+    setAsientosContables,
+  } = ctx;
+  const money = (value)=>Number((Number(value || 0)).toFixed(2));
+  const accountGroupOptions = getAccountGroupOptions();
+  const statementCategoryOptions = getStatementCategoryOptions();
+  const configActual = normalizeContabilidadConfig(contabilidadConfig?.[0] || CONTABILIDAD_CONFIG_INIT[0]);
+  const cuentasPlan = (planCuentas?.length ? planCuentas : PLAN_CUENTAS_INIT).map(normalizePlanCuenta);
+  const manuales = (asientosContables || []).map((entry)=>normalizeAsientoContable(entry, cuentasPlan));
+  const tercerosERP = [
+    ...(Array.isArray(clientes) ? clientes : []).map((cliente)=>({
+      ref:`cliente:${cliente.id}`,
+      tipo:"Cliente",
+      terceroId:String(cliente.id || "").trim(),
+      terceroNit:String(cliente.nit || "").trim(),
+      terceroNombre:String(cliente.nombre || "").trim(),
+    })),
+    ...(Array.isArray(proveedores) ? proveedores : []).map((proveedor)=>({
+      ref:`proveedor:${proveedor.id}`,
+      tipo:"Proveedor",
+      terceroId:String(proveedor.id || "").trim(),
+      terceroNit:String(proveedor.nit || "").trim(),
+      terceroNombre:String(proveedor.nombre || "").trim(),
+    })),
+    ...(Array.isArray(empleados) ? empleados : []).map((empleado)=>({
+      ref:`empleado:${empleado.id}`,
+      tipo:"Empleado",
+      terceroId:String(empleado.id || "").trim(),
+      terceroNit:String(empleado.cedula || "").trim(),
+      terceroNombre:String(empleado.nombre || "").trim(),
+    })),
+  ]
+    .filter((item)=>item.terceroNombre)
+    .sort((a,b)=>a.terceroNombre.localeCompare(b.terceroNombre,"es"));
+  const buscarTerceroERP = (ref="")=>tercerosERP.find((item)=>item.ref===ref) || null;
+  const resolverTerceroRef = (terceroId="", terceroNit="", terceroNombre="")=>{
+    const id = String(terceroId || "").trim();
+    const nit = String(terceroNit || "").trim();
+    const nombre = String(terceroNombre || "").trim().toLowerCase();
+    const found = tercerosERP.find((item)=>
+      (id && item.terceroId===id) ||
+      (nit && item.terceroNit===nit) ||
+      (nombre && item.terceroNombre.toLowerCase()===nombre)
+    );
+    return found?.ref || "";
+  };
+  const [tab,setTab]=useState("resumen");
+  const [periodo,setPeriodo]=useState(today().slice(0,7));
+  const [busquedaCuenta,setBusquedaCuenta]=useState("");
+  const [busquedaAsiento,setBusquedaAsiento]=useState("");
+  const [showCuentaForm,setShowCuentaForm]=useState(false);
+  const [editCuentaId,setEditCuentaId]=useState(null);
+  const [cuentaForm,setCuentaForm]=useState(buildEmptyPlanCuenta());
+  const [showAsientoForm,setShowAsientoForm]=useState(false);
+  const [editAsientoId,setEditAsientoId]=useState(null);
+  const [asientoForm,setAsientoForm]=useState(buildEmptyManualAsiento(manuales, today()));
+  const [reporteTab,setReporteTab]=useState("general");
+  const [rangoReportes,setRangoReportes]=useState(()=>buildMonthDateRange(today().slice(0,7)));
+  const [filtroCuentaMovimiento,setFiltroCuentaMovimiento]=useState("");
+  const [filtroTerceroMovimientoRef,setFiltroTerceroMovimientoRef]=useState("");
+  const [cuentaConciliacion,setCuentaConciliacion]=useState(configActual.cuentaBanco || configActual.cuentaCaja || "");
+  const [soloPendientesConciliacion,setSoloPendientesConciliacion]=useState(false);
+  const [movimientosConciliados,setMovimientosConciliados]=useState({});
+
+  const asientosCombinados = buildCombinedEntries({
+    asientosManuales:manuales,
+    pagos,
+    cuentas,
+    clientes,
+    proveedores,
+    obras,
+    nominasGeneradas,
+    config:configActual,
+    planCuentas:cuentasPlan,
+  });
+  const planCuentaMap = new Map(cuentasPlan.map((cuenta)=>[cuenta.codigo, cuenta]));
+  const asientosPeriodo = filterEntriesByPeriod(asientosCombinados, periodo);
+  const balancePrueba = buildTrialBalance({ entries:asientosPeriodo, planCuentas:cuentasPlan });
+  const estados = buildFinancialStatements(balancePrueba);
+  const resumenPeriodo = summarizeEntries(asientosPeriodo);
+  const impuestosPorPagar = balancePrueba
+    .filter((row)=>["236540","236701","236801","240805"].includes(row.codigo))
+    .reduce((sum,row)=>sum + Number(row.saldoNatural || 0),0);
+  const cXcPendiente = obras.reduce((sum,obra)=>sum + Number(obra.saldo || 0),0);
+  const cXpPendiente = cuentas.reduce((sum,cuenta)=>{
+    const total = Number(cuenta.saldoPendienteActual ?? cuenta.saldo_pendiente_actual ?? cuenta.valorTotalPagar ?? cuenta.valor_total_pagar ?? cuenta.monto ?? 0);
+    return sum + (Number.isFinite(total) ? total : 0);
+  },0);
+  const nominasProcesadas = (Array.isArray(nominasGeneradas) ? nominasGeneradas : []).length;
+  const automaticosCxc = asientosPeriodo.filter((entry)=>String(entry.origen || "").startsWith("cxc")).length;
+  const automaticosCxp = asientosPeriodo.filter((entry)=>String(entry.origen || "").startsWith("cxp")).length;
+  const automaticosNomina = asientosPeriodo.filter((entry)=>String(entry.origen || "").startsWith("nomina")).length;
+  const cuentasMovimiento = cuentasPlan.filter((cuenta)=>cuenta.activo && cuenta.permiteMovimientos);
+  const cuentasBancariasReporte = cuentasMovimiento.filter((cuenta)=>{
+    const codigo = String(cuenta.codigo || "");
+    return codigo.startsWith("11") || [configActual.cuentaBanco, configActual.cuentaCaja].includes(codigo);
+  }).filter((cuenta, index, array)=>array.findIndex((item)=>item.codigo===cuenta.codigo)===index);
+  const primeraCuentaBancaria = cuentasBancariasReporte[0]?.codigo || "";
+  const cuentasFiltradas = cuentasPlan.filter((cuenta)=>{
+    const term = String(busquedaCuenta || "").trim().toLowerCase();
+    if(!term) return true;
+    return [cuenta.codigo,cuenta.nombre,cuenta.grupoReporteLabel,cuenta.categoriaEstadoLabel]
+      .some((value)=>String(value || "").toLowerCase().includes(term));
+  });
+  const asientosFiltrados = asientosPeriodo.filter((entry)=>{
+    const term = String(busquedaAsiento || "").trim().toLowerCase();
+    if(!term) return true;
+    return [entry.consecutivo,entry.descripcion,entry.tipoComprobante,entry.terceroNit,entry.terceroNombre,entry.soporte,entry.origen]
+      .some((value)=>String(value || "").toLowerCase().includes(term));
+  });
+  const totalDebitoForm = money((asientoForm.lineas || []).reduce((sum,linea)=>sum + Number(linea.debito || 0),0));
+  const totalCreditoForm = money((asientoForm.lineas || []).reduce((sum,linea)=>sum + Number(linea.credito || 0),0));
+  const diferenciaForm = money(totalDebitoForm - totalCreditoForm);
+  const terceroMovimientoActivo = buscarTerceroERP(filtroTerceroMovimientoRef);
+  const filtroCuentaMovimientoNormalizado = String(filtroCuentaMovimiento || "").trim();
+  const movimientosReporteBase = asientosCombinados
+    .filter((entry)=>entry.estado!=="Anulado" && isDateWithinRange(entry.fecha, rangoReportes.inicio, rangoReportes.fin))
+    .flatMap((entry)=>(entry.lineas || []).map((linea, index)=>{
+      const cuentaMeta = planCuentaMap.get(String(linea.cuentaCodigo || "").trim()) || null;
+      const debito = Number(linea.debito || 0);
+      const credito = Number(linea.credito || 0);
+      const naturaleza = cuentaMeta?.naturaleza || "debito";
+      return {
+        rowId:`${entry.id || entry.consecutivo || "entry"}:${linea.id || index}`,
+        fecha:entry.fecha || "",
+        consecutivo:entry.consecutivo || entry.id || "",
+        tipoComprobante:entry.tipoComprobante || "",
+        descripcion:entry.descripcion || "",
+        origen:entry.origen || "",
+        automatico:!!entry.automatico,
+        cuentaCodigo:String(linea.cuentaCodigo || "").trim(),
+        cuentaNombre:String(linea.cuentaNombre || cuentaMeta?.nombre || "").trim(),
+        terceroId:String(linea.terceroId || entry.terceroId || "").trim(),
+        terceroNit:String(linea.terceroNit || entry.terceroNit || "").trim(),
+        terceroNombre:String(linea.terceroNombre || entry.terceroNombre || "").trim(),
+        detalle:String(linea.detalle || "").trim(),
+        centroCosto:String(linea.centroCosto || "").trim(),
+        debito,
+        credito,
+        saldoMovimiento:money(naturaleza==="credito" ? credito - debito : debito - credito),
+      };
+    }))
+    .sort((a,b)=>
+      String(a.fecha || "").localeCompare(String(b.fecha || "")) ||
+      String(a.consecutivo || "").localeCompare(String(b.consecutivo || ""),"es") ||
+      String(a.rowId || "").localeCompare(String(b.rowId || ""),"es")
+    );
+  let saldoAuxiliarAcumulado = 0;
+  const movimientosCuenta = movimientosReporteBase
+    .filter((row)=>!filtroCuentaMovimientoNormalizado || row.cuentaCodigo.startsWith(filtroCuentaMovimientoNormalizado))
+    .filter((row)=>{
+      if(!terceroMovimientoActivo) return true;
+      return (
+        (terceroMovimientoActivo.terceroId && row.terceroId===terceroMovimientoActivo.terceroId) ||
+        (terceroMovimientoActivo.terceroNit && row.terceroNit===terceroMovimientoActivo.terceroNit) ||
+        (terceroMovimientoActivo.terceroNombre && row.terceroNombre===terceroMovimientoActivo.terceroNombre)
+      );
+    })
+    .map((row)=>{
+      saldoAuxiliarAcumulado = money(saldoAuxiliarAcumulado + Number(row.saldoMovimiento || 0));
+      return {
+        ...row,
+        saldoAcumulado:saldoAuxiliarAcumulado,
+      };
+    });
+  const resumenAuxiliar = movimientosCuenta.reduce((acc,row)=>({
+    debitos:money(acc.debitos + Number(row.debito || 0)),
+    creditos:money(acc.creditos + Number(row.credito || 0)),
+    saldo:money(acc.saldo + Number(row.saldoMovimiento || 0)),
+  }),{debitos:0,creditos:0,saldo:0});
+  const resumenMovimientoTerceros = Array.from(movimientosCuenta.reduce((map,row)=>{
+    const key = `${row.terceroNit || row.terceroId || "SIN-TERCERO"}|${row.terceroNombre || "Sin tercero"}`;
+    const current = map.get(key) || {
+      nit:row.terceroNit || row.terceroId || "—",
+      tercero:row.terceroNombre || "Sin tercero",
+      debitos:0,
+      creditos:0,
+      saldo:0,
+    };
+    current.debitos = money(current.debitos + Number(row.debito || 0));
+    current.creditos = money(current.creditos + Number(row.credito || 0));
+    current.saldo = money(current.saldo + Number(row.saldoMovimiento || 0));
+    map.set(key, current);
+    return map;
+  }, new Map()).values()).sort((a,b)=>String(a.tercero || "").localeCompare(String(b.tercero || ""),"es"));
+  const cuentasTributariasRapidas = [
+    {codigo:configActual.cuentaRetefuente, etiqueta:"Retefuente", color:"#b91c1c"},
+    {codigo:configActual.cuentaReteiva, etiqueta:"ReteIVA", color:"#7c3aed"},
+    {codigo:configActual.cuentaReteica, etiqueta:"ReteICA", color:"#0f766e"},
+    {codigo:configActual.cuentaIvaDescontable, etiqueta:"IVA descontable", color:"#1d4ed8"},
+    {codigo:configActual.cuentaIvaGenerado, etiqueta:"IVA generado", color:"#166534"},
+  ].filter((item, index, array)=>item.codigo && array.findIndex((candidate)=>candidate.codigo===item.codigo)===index);
+  const saldosTributarios = cuentasTributariasRapidas.map((item)=>{
+    const row = balancePrueba.find((candidate)=>candidate.codigo===item.codigo);
+    return {
+      ...item,
+      nombre:row?.nombre || planCuentaMap.get(item.codigo)?.nombre || item.etiqueta,
+      saldoNatural:Number(row?.saldoNatural || 0),
+      debitos:Number(row?.debitos || 0),
+      creditos:Number(row?.creditos || 0),
+    };
+  });
+  let saldoBancoAcumulado = 0;
+  const movimientosConciliacion = movimientosReporteBase
+    .filter((row)=>!cuentaConciliacion || row.cuentaCodigo===cuentaConciliacion)
+    .map((row)=>{
+      saldoBancoAcumulado = money(saldoBancoAcumulado + Number(row.saldoMovimiento || 0));
+      return {
+        ...row,
+        saldoAcumulado:saldoBancoAcumulado,
+        conciliado:!!movimientosConciliados[row.rowId],
+      };
+    });
+  const movimientosConciliacionVisibles = soloPendientesConciliacion
+    ? movimientosConciliacion.filter((row)=>!row.conciliado)
+    : movimientosConciliacion;
+  const resumenConciliacion = movimientosConciliacion.reduce((acc,row)=>({
+    debitos:money(acc.debitos + Number(row.debito || 0)),
+    creditos:money(acc.creditos + Number(row.credito || 0)),
+    conciliados:acc.conciliados + (row.conciliado ? 1 : 0),
+    saldo:money(acc.saldo + Number(row.saldoMovimiento || 0)),
+    saldoConciliado:money(acc.saldoConciliado + (row.conciliado ? Number(row.saldoMovimiento || 0) : 0)),
+  }),{debitos:0,creditos:0,conciliados:0,saldo:0,saldoConciliado:0});
+
+  useEffect(()=>{
+    setRangoReportes(buildMonthDateRange(periodo));
+  },[periodo]);
+
+  useEffect(()=>{
+    if(cuentaConciliacion) return;
+    const sugerida = configActual.cuentaBanco || configActual.cuentaCaja || primeraCuentaBancaria;
+    if(sugerida) setCuentaConciliacion(sugerida);
+  },[configActual.cuentaBanco, configActual.cuentaCaja, cuentaConciliacion, primeraCuentaBancaria]);
+
+  const exportarExcelContabilidad = ()=>{
+    const periodoLabel = periodo || "general";
+    const rangoLabel = `${rangoReportes.inicio || "inicio"}_${rangoReportes.fin || "fin"}`;
+    const libroRows = [
+      ["Fecha","Comprobante","Tipo","Origen","NIT tercero","Tercero","Descripcion","Cuenta","Detalle","Centro costo","Debito","Credito","Estado"],
+      ...asientosFiltrados.flatMap((entry)=>
+        (entry.lineas || []).map((linea)=>[
+          entry.fecha || "",
+          entry.consecutivo || entry.id,
+          entry.tipoComprobante || "",
+          entry.origen || "",
+          linea.terceroNit || entry.terceroNit || "",
+          linea.terceroNombre || entry.terceroNombre || "",
+          entry.descripcion || "",
+          `${linea.cuentaCodigo || ""} ${linea.cuentaNombre ? "· " + linea.cuentaNombre : ""}`.trim(),
+          linea.detalle || "",
+          linea.centroCosto || "",
+          Number(linea.debito || 0),
+          Number(linea.credito || 0),
+          entry.estado || "",
+        ])
+      ),
+    ];
+    const balanceRows = [
+      ["Codigo","Cuenta","Grupo","Debitos","Creditos","Saldo natural"],
+      ...balancePrueba.map((row)=>[
+        row.codigo,
+        row.nombre,
+        row.grupoReporteLabel,
+        Number(row.debitos || 0),
+        Number(row.creditos || 0),
+        Number(row.saldoNatural || 0),
+      ]),
+    ];
+    const resultadosRows = [
+      ["Concepto","Valor"],
+      ["Ingresos", Number(estados.resultados.totalIngresos || 0)],
+      ["Costos", Number(estados.resultados.totalCostos || 0)],
+      ["Utilidad bruta", Number(estados.resultados.utilidadBruta || 0)],
+      ["Gastos", Number(estados.resultados.totalGastos || 0)],
+      ["Utilidad operacional", Number(estados.resultados.utilidadOperacional || 0)],
+      [""],
+      ["Detalle","Saldo"],
+      ...estados.resultados.ingresos.map((row)=>[`${row.codigo} · ${row.nombre}`, Number(row.saldoNatural || 0)]),
+      ...estados.resultados.costos.map((row)=>[`${row.codigo} · ${row.nombre}`, Number(row.saldoNatural || 0)]),
+      ...estados.resultados.gastos.map((row)=>[`${row.codigo} · ${row.nombre}`, Number(row.saldoNatural || 0)]),
+    ];
+    const situacionRows = [
+      ["Concepto","Valor"],
+      ["Activos", Number(estados.balance.totalActivos || 0)],
+      ["Pasivos", Number(estados.balance.totalPasivos || 0)],
+      ["Patrimonio", Number(estados.balance.totalPatrimonio || 0)],
+      [""],
+      ["Detalle","Saldo"],
+      ...estados.balance.activos.map((row)=>[`${row.codigo} · ${row.nombre}`, Number(row.saldoNatural || 0)]),
+      ...estados.balance.pasivos.map((row)=>[`${row.codigo} · ${row.nombre}`, Number(row.saldoNatural || 0)]),
+      ...estados.balance.patrimonio.map((row)=>[`${row.codigo} · ${row.nombre}`, Number(row.saldoNatural || 0)]),
+    ];
+    const resumenRows = [
+      ["Indicador","Valor"],
+      ["Periodo", periodoLabel],
+      ["Asientos visibles", asientosFiltrados.length],
+      ["Debitos", Number(resumenPeriodo.totalDebitos || 0)],
+      ["Creditos", Number(resumenPeriodo.totalCreditos || 0)],
+      ["CxC pendiente", Number(cXcPendiente || 0)],
+      ["CxP pendiente", Number(cXpPendiente || 0)],
+      ["Impuestos por pagar", Number(impuestosPorPagar || 0)],
+      ["Nominas generadas", nominasProcesadas],
+      ["Automaticos CxC", automaticosCxc],
+      ["Automaticos CxP", automaticosCxp],
+      ["Automaticos Nomina", automaticosNomina],
+    ];
+    const tributarioRows = [
+      ["Consulta","Codigo","Cuenta","Debitos","Creditos","Saldo natural"],
+      ...saldosTributarios.map((row)=>[
+        row.etiqueta,
+        row.codigo,
+        row.nombre,
+        Number(row.debitos || 0),
+        Number(row.creditos || 0),
+        Number(row.saldoNatural || 0),
+      ]),
+    ];
+    const auxiliarRows = [
+      ["Fecha","Comprobante","Cuenta","Detalle","NIT","Tercero","Centro costo","Debito","Credito","Saldo acumulado","Origen"],
+      ...movimientosCuenta.map((row)=>[
+        row.fecha || "",
+        row.consecutivo || "",
+        `${row.cuentaCodigo || ""} ${row.cuentaNombre ? "· " + row.cuentaNombre : ""}`.trim(),
+        row.detalle || row.descripcion || "",
+        row.terceroNit || "",
+        row.terceroNombre || "",
+        row.centroCosto || "",
+        Number(row.debito || 0),
+        Number(row.credito || 0),
+        Number(row.saldoAcumulado || 0),
+        row.origen || "",
+      ]),
+    ];
+    const conciliacionRows = [
+      ["Conciliado","Fecha","Comprobante","Cuenta","Detalle","NIT","Tercero","Debito","Credito","Saldo acumulado","Origen"],
+      ...movimientosConciliacion.map((row)=>[
+        row.conciliado ? "Si" : "No",
+        row.fecha || "",
+        row.consecutivo || "",
+        `${row.cuentaCodigo || ""} ${row.cuentaNombre ? "· " + row.cuentaNombre : ""}`.trim(),
+        row.detalle || row.descripcion || "",
+        row.terceroNit || "",
+        row.terceroNombre || "",
+        Number(row.debito || 0),
+        Number(row.credito || 0),
+        Number(row.saldoAcumulado || 0),
+        row.origen || "",
+      ]),
+    ];
+
+    downloadExcelWorkbook(
+      `reportes-contables-${periodoLabel}-${rangoLabel}`,
+      [
+        { name:"Resumen", rows:resumenRows },
+        { name:"Libro Diario", rows:libroRows },
+        { name:"Balance Prueba", rows:balanceRows },
+        { name:"Resultados", rows:resultadosRows },
+        { name:"Situacion", rows:situacionRows },
+        { name:"Tributario", rows:tributarioRows },
+        { name:"Auxiliar", rows:auxiliarRows },
+        { name:"Conciliacion", rows:conciliacionRows },
+      ]
+    );
+  };
+
+  const actualizarConfig = (field,value)=>{
+    setContabilidadConfig([normalizeContabilidadConfig({ ...configActual, [field]:value })]);
+  };
+
+  const aplicarConsultaTributaria = (codigo = "")=>{
+    setReporteTab("movimientos");
+    setFiltroCuentaMovimiento(codigo);
+    setFiltroTerceroMovimientoRef("");
+  };
+
+  const alternarMovimientoConciliado = (rowId)=>{
+    setMovimientosConciliados((prev)=>{
+      const next = {...prev};
+      if(next[rowId]) delete next[rowId];
+      else next[rowId] = true;
+      return next;
+    });
+  };
+
+  const marcarMovimientosConciliacionVisible = (conciliado)=>{
+    setMovimientosConciliados((prev)=>{
+      const next = {...prev};
+      movimientosConciliacionVisibles.forEach((row)=>{
+        if(conciliado) next[row.rowId] = true;
+        else delete next[row.rowId];
+      });
+      return next;
+    });
+  };
+
+  const aplicarTerceroAsiento = (ref)=>{
+    const tercero = buscarTerceroERP(ref);
+    setAsientoForm((prev)=>({
+      ...prev,
+      terceroId:tercero?.terceroId || "",
+      terceroNit:tercero?.terceroNit || "",
+      terceroNombre:tercero?.terceroNombre || "",
+      lineas:(prev.lineas || []).map((linea)=>({
+        ...linea,
+        terceroId:tercero?.terceroId || "",
+        terceroNit:tercero?.terceroNit || "",
+        terceroNombre:tercero?.terceroNombre || "",
+      })),
+    }));
+  };
+
+  const resetCuentaPlan = ()=>{
+    setCuentaForm(buildEmptyPlanCuenta());
+    setEditCuentaId(null);
+    setShowCuentaForm(false);
+  };
+
+  const guardarCuentaPlan = ()=>{
+    if(!String(cuentaForm.codigo || "").trim() || !String(cuentaForm.nombre || "").trim()){
+      alert("Debes indicar codigo y nombre de la cuenta.");
+      return;
+    }
+    const payload = normalizePlanCuenta({
+      ...cuentaForm,
+      id:String(cuentaForm.codigo || "").trim(),
+      codigo:String(cuentaForm.codigo || "").trim(),
+      nombre:String(cuentaForm.nombre || "").trim(),
+    });
+    setPlanCuentas((prev)=>{
+      const base = (prev?.length ? prev : PLAN_CUENTAS_INIT).map(normalizePlanCuenta);
+      const next = base.some((item)=>item.id===editCuentaId || item.codigo===payload.codigo)
+        ? base.map((item)=>(item.id===editCuentaId || item.codigo===payload.codigo) ? payload : item)
+        : [...base,payload];
+      return next.sort((a,b)=>String(a.codigo).localeCompare(String(b.codigo),"es"));
+    });
+    resetCuentaPlan();
+  };
+
+  const editarCuentaPlan = (cuenta)=>{
+    setEditCuentaId(cuenta.id);
+    setCuentaForm(normalizePlanCuenta(cuenta));
+    setShowCuentaForm(true);
+    setTab("catalogo");
+  };
+
+  const alternarCuentaActiva = (codigo)=>{
+    setPlanCuentas((prev)=>(prev?.length ? prev : PLAN_CUENTAS_INIT).map((item)=>{
+      const cuenta = normalizePlanCuenta(item);
+      if(cuenta.codigo!==codigo) return cuenta;
+      return { ...cuenta, activo:!cuenta.activo };
+    }));
+  };
+
+  const resetAsiento = ()=>{
+    setAsientoForm(buildEmptyManualAsiento(manuales, today()));
+    setEditAsientoId(null);
+    setShowAsientoForm(false);
+  };
+
+  const actualizarLinea = (lineId,field,value)=>{
+    setAsientoForm((prev)=>({
+      ...prev,
+      lineas:(prev.lineas || []).map((linea)=>{
+        if(linea.id!==lineId) return linea;
+        if(field==="cuentaCodigo"){
+          const cuenta = cuentasPlan.find((item)=>item.codigo===value);
+          return {
+            ...linea,
+            cuentaCodigo:value,
+            cuentaNombre:cuenta?.nombre || "",
+          };
+        }
+        if(field==="terceroRef"){
+          const tercero = buscarTerceroERP(value);
+          return {
+            ...linea,
+            terceroId:tercero?.terceroId || "",
+            terceroNit:tercero?.terceroNit || "",
+            terceroNombre:tercero?.terceroNombre || "",
+          };
+        }
+        if(field==="debito" || field==="credito"){
+          return { ...linea, [field]: parseFloat(value) || 0 };
+        }
+        return { ...linea, [field]:value };
+      }),
+    }));
+  };
+
+  const agregarLinea = ()=>{
+    setAsientoForm((prev)=>({
+      ...prev,
+      lineas:[...(prev.lineas || []), createAsientoLine({
+        terceroId:prev.terceroId,
+        terceroNit:prev.terceroNit,
+        terceroNombre:prev.terceroNombre,
+      })],
+    }));
+  };
+
+  const quitarLinea = (lineId)=>{
+    setAsientoForm((prev)=>({
+      ...prev,
+      lineas:(prev.lineas || []).filter((linea)=>linea.id!==lineId),
+    }));
+  };
+
+  const guardarAsiento = ()=>{
+    const payload = normalizeAsientoContable({
+      ...asientoForm,
+      id:editAsientoId || asientoForm.id,
+      automatico:false,
+      origen:"manual",
+      descripcion:String(asientoForm.descripcion || "").trim(),
+      terceroId:String(asientoForm.terceroId || "").trim(),
+      terceroNit:String(asientoForm.terceroNit || "").trim(),
+      terceroNombre:String(asientoForm.terceroNombre || "").trim(),
+      soporte:String(asientoForm.soporte || "").trim(),
+      lineas:(asientoForm.lineas || []).map((linea)=>({
+        ...linea,
+        cuentaCodigo:String(linea.cuentaCodigo || "").trim(),
+        cuentaNombre:String(linea.cuentaNombre || "").trim(),
+        detalle:String(linea.detalle || "").trim(),
+        terceroId:String(linea.terceroId || asientoForm.terceroId || "").trim(),
+        terceroNit:String(linea.terceroNit || asientoForm.terceroNit || "").trim(),
+        terceroNombre:String(linea.terceroNombre || asientoForm.terceroNombre || "").trim(),
+      })),
+    }, cuentasPlan);
+
+    if(!payload.descripcion){
+      alert("Agrega una descripcion para el comprobante.");
+      return;
+    }
+    if(!payload.terceroNit || !payload.terceroNombre){
+      alert("Selecciona un tercero del ERP para el comprobante manual.");
+      return;
+    }
+    if((payload.lineas || []).length < 2){
+      alert("Agrega al menos dos lineas contables.");
+      return;
+    }
+    if(!isBalancedEntry(payload)){
+      alert("El comprobante no esta cuadrado. Debito y credito deben ser iguales.");
+      return;
+    }
+
+    setAsientosContables((prev)=>{
+      const base = (prev || []).map((item)=>normalizeAsientoContable(item, cuentasPlan));
+      return editAsientoId
+        ? base.map((item)=>item.id===editAsientoId ? payload : item)
+        : [payload, ...base];
+    });
+    resetAsiento();
+  };
+
+  const editarAsiento = (entry)=>{
+    setEditAsientoId(entry.id);
+    setAsientoForm(normalizeAsientoContable(entry, cuentasPlan));
+    setShowAsientoForm(true);
+    setTab("comprobantes");
+  };
+
+  const anularAsiento = (entryId)=>{
+    if(!window.confirm("¿Anular este comprobante manual?")) return;
+    setAsientosContables((prev)=>(prev || []).map((item)=>{
+      const entry = normalizeAsientoContable(item, cuentasPlan);
+      if(entry.id!==entryId) return entry;
+      return { ...entry, estado:"Anulado" };
+    }));
+  };
+
+  return(
+    <div style={{padding:28}}>
+      <H1
+        title="Contabilidad"
+        subtitle="Plan de cuentas, comprobantes y reportes contables integrados con CxC, CxP y nómina"
+        action={
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            <button style={B("#cc0000")} onClick={()=>setTab("comprobantes")}>Comprobantes</button>
+            <button style={B("#003B71")} onClick={()=>setTab("reportes")}>Reportes</button>
+          </div>
+        }
+      />
+
+      <div style={{display:"flex",gap:10,marginBottom:18,flexWrap:"wrap"}}>
+        {[
+          ["resumen","Resumen","#cc0000","#fff7ed","#9a3412"],
+          ["catalogo","Catalogo","#003B71","#eff6ff","#1d4ed8"],
+          ["comprobantes","Comprobantes","#166534","#ecfdf5","#166534"],
+          ["reportes","Reportes","#7c3aed","#faf5ff","#7c3aed"],
+        ].map(([id,label,bg,inactiveBg,inactiveColor])=>(
+          <button
+            key={id}
+            type="button"
+            onClick={()=>setTab(id)}
+            style={{
+              ...B(tab===id ? bg : inactiveBg, tab===id ? "#fff" : inactiveColor),
+              border:tab===id ? `1px solid ${bg}` : "1px solid #dbe4f0",
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab==="resumen" && (
+        <>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:14,marginBottom:18}}>
+            <SC label="Asientos del periodo" value={asientosPeriodo.length} color="#60b4ff" icon="AS"/>
+            <SC label="Debitos" value={fmt(resumenPeriodo.totalDebitos)} color="#166534" icon="DB"/>
+            <SC label="Creditos" value={fmt(resumenPeriodo.totalCreditos)} color="#7c3aed" icon="CR"/>
+            <SC label="CxC pendiente" value={fmt(cXcPendiente)} color="#fb923c" icon="RC"/>
+            <SC label="CxP pendiente" value={fmt(cXpPendiente)} color="#ef4444" icon="CP"/>
+            <SC label="Utilidad operativa" value={fmt(estados.resultados.utilidadOperacional)} color={estados.resultados.utilidadOperacional>=0?"#4ade80":"#ef4444"} icon="UT"/>
+          </div>
+
+          <div style={{display:"grid",gridTemplateColumns:"1.1fr 1fr",gap:18}}>
+            <div style={CD}>
+              <div style={ST}>Base contable 2026</div>
+              <div style={{fontSize:13,color:"#475569",lineHeight:1.7}}>
+                <div><strong style={{color:"#1a1a2e"}}>Marco sugerido:</strong> {configActual.marcoNormativoLabel}</div>
+                <div><strong style={{color:"#1a1a2e"}}>UVT 2026:</strong> {fmt(configActual.uvt)}</div>
+                <div><strong style={{color:"#1a1a2e"}}>Moneda:</strong> {configActual.moneda}</div>
+                <div><strong style={{color:"#1a1a2e"}}>Automatico CxC:</strong> {configActual.autoCxc ? "Activo" : "Inactivo"}</div>
+                <div><strong style={{color:"#1a1a2e"}}>Automatico CxP:</strong> {configActual.autoCxp ? "Activo" : "Inactivo"}</div>
+                <div><strong style={{color:"#1a1a2e"}}>Automatico nómina:</strong> {configActual.autoNomina ? "Activo" : "Inactivo"}</div>
+                <div style={{marginTop:10,background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:"12px 14px"}}>
+                  {ACCOUNTING_NORMATIVE_NOTE}
+                </div>
+              </div>
+            </div>
+            <div style={CD}>
+              <div style={ST}>Alertas operativas</div>
+              <div style={{display:"grid",gap:12}}>
+                <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:12,padding:"12px 14px"}}>
+                  <div style={{fontSize:11,color:"#1d4ed8",textTransform:"uppercase",marginBottom:4}}>Comprobantes automáticos</div>
+                  <div style={{fontSize:22,fontWeight:800,color:"#1d4ed8"}}>{resumenPeriodo.totalAutomaticos}</div>
+                  <div style={{fontSize:12,color:"#64748b",marginTop:6}}>
+                    CxC: {automaticosCxc} · CxP: {automaticosCxp} · Nómina: {automaticosNomina}
+                  </div>
+                </div>
+                <div style={{background:"#faf5ff",border:"1px solid #e9d5ff",borderRadius:12,padding:"12px 14px"}}>
+                  <div style={{fontSize:11,color:"#7c3aed",textTransform:"uppercase",marginBottom:4}}>Nóminas generadas</div>
+                  <div style={{fontSize:22,fontWeight:800,color:"#7c3aed"}}>{nominasProcesadas}</div>
+                  <div style={{fontSize:12,color:"#64748b",marginTop:6}}>Cada nómina puede causar gasto y, al descargar el plano banco, generar egreso bancario.</div>
+                </div>
+                <div style={{fontSize:12,color:"#64748b",lineHeight:1.7}}>
+                  El libro diario del periodo se nutre de causaciones y recaudos de cuentas por cobrar, causaciones y egresos de cuentas por pagar, y comprobantes automáticos de nómina. Los ajustes especiales siguen disponibles desde comprobantes manuales.
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {tab==="catalogo" && (
+        <div style={{display:"grid",gap:18}}>
+          <div style={CD}>
+            <div style={ST}>Configuracion contable</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
+              <div><LBL>Razon social</LBL><input value={configActual.razonSocial} onChange={(e)=>actualizarConfig("razonSocial",e.target.value)} style={SI}/></div>
+              <div><LBL>NIT</LBL><input value={configActual.nit} onChange={(e)=>actualizarConfig("nit",e.target.value)} style={SI}/></div>
+              <div><LBL>Marco normativo</LBL><select value={configActual.marcoNormativo} onChange={(e)=>{const value=e.target.value;actualizarConfig("marcoNormativo",value);actualizarConfig("marcoNormativoLabel",value==="grupo3"?"Grupo 3 - Microempresas":"Grupo 2 - NIIF para las PYMES");}} style={SI}><option value="grupo2">Grupo 2 - NIIF para las PYMES</option><option value="grupo3">Grupo 3 - Microempresas</option></select></div>
+              <div><LBL>UVT 2026</LBL><input type="number" value={configActual.uvt} onChange={(e)=>actualizarConfig("uvt",parseFloat(e.target.value)||0)} style={SI}/></div>
+              <div><LBL>Auto CxC</LBL><select value={configActual.autoCxc?"si":"no"} onChange={(e)=>actualizarConfig("autoCxc",e.target.value==="si")} style={SI}><option value="si">Activo</option><option value="no">Inactivo</option></select></div>
+              <div><LBL>Cuenta banco</LBL><select value={configActual.cuentaBanco} onChange={(e)=>actualizarConfig("cuentaBanco",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
+              <div><LBL>Cuenta caja</LBL><select value={configActual.cuentaCaja} onChange={(e)=>actualizarConfig("cuentaCaja",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
+              <div><LBL>Cuenta clientes</LBL><select value={configActual.cuentaClientes} onChange={(e)=>actualizarConfig("cuentaClientes",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
+              <div><LBL>Ingreso servicios</LBL><select value={configActual.cuentaIngresoServicios} onChange={(e)=>actualizarConfig("cuentaIngresoServicios",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
+              <div><LBL>Cuenta proveedores</LBL><select value={configActual.cuentaProveedores} onChange={(e)=>actualizarConfig("cuentaProveedores",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
+              <div><LBL>IVA descontable</LBL><select value={configActual.cuentaIvaDescontable} onChange={(e)=>actualizarConfig("cuentaIvaDescontable",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
+              <div><LBL>Auto CxP</LBL><select value={configActual.autoCxp?"si":"no"} onChange={(e)=>actualizarConfig("autoCxp",e.target.value==="si")} style={SI}><option value="si">Activo</option><option value="no">Inactivo</option></select></div>
+              <div><LBL>Auto nómina</LBL><select value={configActual.autoNomina?"si":"no"} onChange={(e)=>actualizarConfig("autoNomina",e.target.value==="si")} style={SI}><option value="si">Activo</option><option value="no">Inactivo</option></select></div>
+              <div><LBL>Gasto sueldos</LBL><select value={configActual.cuentaNominaSueldos} onChange={(e)=>actualizarConfig("cuentaNominaSueldos",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
+              <div><LBL>Gasto extras</LBL><select value={configActual.cuentaNominaExtras} onChange={(e)=>actualizarConfig("cuentaNominaExtras",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
+              <div><LBL>Auxilio transporte</LBL><select value={configActual.cuentaNominaAuxilio} onChange={(e)=>actualizarConfig("cuentaNominaAuxilio",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
+              <div><LBL>Liquidaciones</LBL><select value={configActual.cuentaNominaLiquidaciones} onChange={(e)=>actualizarConfig("cuentaNominaLiquidaciones",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
+              <div><LBL>Nómina por pagar</LBL><select value={configActual.cuentaNominaPorPagar} onChange={(e)=>actualizarConfig("cuentaNominaPorPagar",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
+              <div><LBL>Salud por pagar</LBL><select value={configActual.cuentaSaludPorPagar} onChange={(e)=>actualizarConfig("cuentaSaludPorPagar",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
+              <div><LBL>Pensión por pagar</LBL><select value={configActual.cuentaPensionPorPagar} onChange={(e)=>actualizarConfig("cuentaPensionPorPagar",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
+              <div><LBL>Otras deduc. nómina</LBL><select value={configActual.cuentaOtrasDeduccionesNomina} onChange={(e)=>actualizarConfig("cuentaOtrasDeduccionesNomina",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
+            </div>
+          </div>
+          <div style={CD}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:14,flexWrap:"wrap"}}>
+              <div style={ST}>Plan de cuentas</div>
+              <div style={{display:"flex",gap:8}}>
+                <button style={B("#003B71")} onClick={()=>{setShowCuentaForm(true);setCuentaForm(buildEmptyPlanCuenta());setEditCuentaId(null);}}>+ Nueva cuenta</button>
+                <button style={B("#f1f5f9","#475569")} onClick={()=>setPlanCuentas(buildDefaultPlanCuentas())}>Restablecer base</button>
+              </div>
+            </div>
+            <div style={{marginBottom:12}}><input value={busquedaCuenta} onChange={(e)=>setBusquedaCuenta(e.target.value)} placeholder="Busca por codigo, nombre o categoria" style={SI}/></div>
+            {showCuentaForm && <div style={{background:"#f8fafc",border:"1px solid #dbe4f0",borderRadius:12,padding:16,marginBottom:14}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:12}}>
+                <div><LBL>Codigo</LBL><input value={cuentaForm.codigo} onChange={(e)=>setCuentaForm({...cuentaForm,codigo:e.target.value})} style={SI}/></div>
+                <div><LBL>Nombre</LBL><input value={cuentaForm.nombre} onChange={(e)=>setCuentaForm({...cuentaForm,nombre:e.target.value})} style={SI}/></div>
+                <div><LBL>Naturaleza</LBL><select value={cuentaForm.naturaleza} onChange={(e)=>setCuentaForm({...cuentaForm,naturaleza:e.target.value})} style={SI}><option value="debito">Debito</option><option value="credito">Credito</option></select></div>
+                <div><LBL>Grupo</LBL><select value={cuentaForm.grupoReporte} onChange={(e)=>setCuentaForm({...cuentaForm,grupoReporte:e.target.value})} style={SI}>{accountGroupOptions.map((opt)=><option key={opt.value} value={opt.value}>{opt.label}</option>)}</select></div>
+                <div><LBL>Categoria estado</LBL><select value={cuentaForm.categoriaEstado} onChange={(e)=>setCuentaForm({...cuentaForm,categoriaEstado:e.target.value})} style={SI}>{statementCategoryOptions.map((opt)=><option key={opt.value} value={opt.value}>{opt.label}</option>)}</select></div>
+                <div><LBL>Cuenta padre</LBL><input value={cuentaForm.cuentaPadre} onChange={(e)=>setCuentaForm({...cuentaForm,cuentaPadre:e.target.value})} style={SI}/></div>
+                <div><LBL>Permite movimientos</LBL><select value={cuentaForm.permiteMovimientos?"si":"no"} onChange={(e)=>setCuentaForm({...cuentaForm,permiteMovimientos:e.target.value==="si"})} style={SI}><option value="si">Si</option><option value="no">No</option></select></div>
+                <div><LBL>Activa</LBL><select value={cuentaForm.activo?"si":"no"} onChange={(e)=>setCuentaForm({...cuentaForm,activo:e.target.value==="si"})} style={SI}><option value="si">Si</option><option value="no">No</option></select></div>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button style={B("#cc0000")} onClick={guardarCuentaPlan}>{editCuentaId?"Guardar cambios":"Guardar cuenta"}</button>
+                <button style={B("#f1f5f9","#475569")} onClick={resetCuentaPlan}>Cancelar</button>
+              </div>
+            </div>}
+            <div style={{overflowX:"auto"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+                <thead><tr style={{background:"#f1f5f9"}}>{["Codigo","Cuenta","Grupo","Categoria","Naturaleza","Estado","Acciones"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:"left",color:"#64748b",fontWeight:600,fontSize:11}}>{label}</th>)}</tr></thead>
+                <tbody>
+                  {cuentasFiltradas.map((cuenta)=>(
+                    <tr key={cuenta.codigo} style={{borderBottom:"1px solid #e2e8f0"}}>
+                      <td style={{padding:"10px",fontWeight:700,color:"#003B71"}}>{cuenta.codigo}</td>
+                      <td style={{padding:"10px"}}>{cuenta.nombre}</td>
+                      <td style={{padding:"10px"}}>{cuenta.grupoReporteLabel}</td>
+                      <td style={{padding:"10px"}}>{cuenta.categoriaEstadoLabel}</td>
+                      <td style={{padding:"10px"}}>{cuenta.naturaleza}</td>
+                      <td style={{padding:"10px"}}><Badge estado={cuenta.activo?"Activa":"Inactiva"}/></td>
+                      <td style={{padding:"10px"}}>
+                        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                          <button style={{...B("#f1f5f9","#475569"),padding:"6px 10px",fontSize:11}} onClick={()=>editarCuentaPlan(cuenta)}>Editar</button>
+                          <button style={{...B(cuenta.activo?"#fff7ed":"#ecfdf5",cuenta.activo?"#9a3412":"#166534"),padding:"6px 10px",fontSize:11}} onClick={()=>alternarCuentaActiva(cuenta.codigo)}>{cuenta.activo?"Desactivar":"Activar"}</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab==="comprobantes" && (
+        <div style={{display:"grid",gap:18}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+            <div style={{...CD,flex:1,padding:16}}>
+              <div style={ST}>Libro diario del periodo</div>
+              <div style={{fontSize:12,color:"#64748b"}}>{asientosFiltrados.length} comprobante(s) visibles en {periodo || "todos los periodos"}.</div>
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button style={B("#166534")} onClick={()=>{setShowAsientoForm(true);setAsientoForm(buildEmptyManualAsiento(manuales, today()));setEditAsientoId(null);}}>+ Nuevo comprobante</button>
+            </div>
+          </div>
+
+          {showAsientoForm && (
+            <div style={{...CD,border:"1px solid #166534"}}>
+              <div style={ST}>{editAsientoId?"Editar comprobante manual":"Nuevo comprobante manual"}</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:12}}>
+                <div><LBL>Fecha</LBL><input type="date" value={asientoForm.fecha} onChange={(e)=>setAsientoForm({...asientoForm,fecha:e.target.value,periodo:e.target.value?.slice(0,7)||""})} style={SI}/></div>
+                <div><LBL>Consecutivo</LBL><input value={asientoForm.consecutivo} onChange={(e)=>setAsientoForm({...asientoForm,consecutivo:e.target.value})} style={SI}/></div>
+                <div><LBL>Tipo</LBL><select value={asientoForm.tipoComprobante} onChange={(e)=>setAsientoForm({...asientoForm,tipoComprobante:e.target.value})} style={SI}><option value="Diario">Diario</option><option value="Ingreso">Ingreso</option><option value="Egreso">Egreso</option><option value="Ajuste">Ajuste</option></select></div>
+                <div><LBL>Estado</LBL><select value={asientoForm.estado} onChange={(e)=>setAsientoForm({...asientoForm,estado:e.target.value})} style={SI}><option value="Contabilizado">Contabilizado</option><option value="Borrador">Borrador</option></select></div>
+                <div>
+                  <LBL>Tercero ERP</LBL>
+                  <select value={resolverTerceroRef(asientoForm.terceroId, asientoForm.terceroNit, asientoForm.terceroNombre)} onChange={(e)=>aplicarTerceroAsiento(e.target.value)} style={SI}>
+                    <option value="">Selecciona tercero...</option>
+                    {tercerosERP.map((tercero)=><option key={tercero.ref} value={tercero.ref}>{tercero.tipo} · {tercero.terceroNombre} · {tercero.terceroNit || "Sin NIT"}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <LBL>NIT / Documento</LBL>
+                  <input value={asientoForm.terceroNit || ""} readOnly style={{...SI,background:"#f8fafc",color:"#334155"}} placeholder="Se completa con el tercero"/>
+                </div>
+                <div><LBL>Soporte</LBL><input value={asientoForm.soporte} onChange={(e)=>setAsientoForm({...asientoForm,soporte:e.target.value})} style={SI}/></div>
+                <div><LBL>Nombre tercero</LBL><input value={asientoForm.terceroNombre || ""} readOnly style={{...SI,background:"#f8fafc",color:"#334155"}} placeholder="Se completa con el tercero"/></div>
+                <div style={{gridColumn:"span 4"}}><LBL>Descripcion</LBL><input value={asientoForm.descripcion} onChange={(e)=>setAsientoForm({...asientoForm,descripcion:e.target.value})} style={SI}/></div>
+              </div>
+
+              <div style={{overflowX:"auto",marginBottom:12}}>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:980}}>
+                  <thead><tr style={{background:"#f1f5f9"}}>{["Cuenta","Detalle","Tercero","Centro costo","Debito","Credito",""].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:label==="Debito"||label==="Credito"?"right":"left",color:"#64748b",fontWeight:600,fontSize:11}}>{label}</th>)}</tr></thead>
+                  <tbody>
+                    {(asientoForm.lineas || []).map((linea)=>(
+                      <tr key={linea.id} style={{borderBottom:"1px solid #e2e8f0"}}>
+                        <td style={{padding:"8px 10px",minWidth:220}}>
+                          <select value={linea.cuentaCodigo} onChange={(e)=>actualizarLinea(linea.id,"cuentaCodigo",e.target.value)} style={SI}>
+                            <option value="">Selecciona...</option>
+                            {cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}
+                          </select>
+                        </td>
+                        <td style={{padding:"8px 10px"}}><input value={linea.detalle} onChange={(e)=>actualizarLinea(linea.id,"detalle",e.target.value)} style={SI}/></td>
+                        <td style={{padding:"8px 10px",minWidth:240}}>
+                          <select value={resolverTerceroRef(linea.terceroId, linea.terceroNit, linea.terceroNombre)} onChange={(e)=>actualizarLinea(linea.id,"terceroRef",e.target.value)} style={SI}>
+                            <option value="">Usar tercero del encabezado...</option>
+                            {tercerosERP.map((tercero)=><option key={tercero.ref} value={tercero.ref}>{tercero.tipo} · {tercero.terceroNombre}</option>)}
+                          </select>
+                          <div style={{fontSize:10,color:"#64748b",marginTop:4}}>
+                            NIT: {linea.terceroNit || asientoForm.terceroNit || "—"} · {linea.terceroNombre || asientoForm.terceroNombre || "Sin tercero"}
+                          </div>
+                        </td>
+                        <td style={{padding:"8px 10px"}}><input value={linea.centroCosto} onChange={(e)=>actualizarLinea(linea.id,"centroCosto",e.target.value)} style={SI} placeholder="OB-001"/></td>
+                        <td style={{padding:"8px 10px",minWidth:120}}><input type="number" value={linea.debito} onChange={(e)=>actualizarLinea(linea.id,"debito",e.target.value)} style={{...SI,textAlign:"right"}}/></td>
+                        <td style={{padding:"8px 10px",minWidth:120}}><input type="number" value={linea.credito} onChange={(e)=>actualizarLinea(linea.id,"credito",e.target.value)} style={{...SI,textAlign:"right"}}/></td>
+                        <td style={{padding:"8px 10px"}}><button style={{...B("#fff1f2","#be123c"),padding:"6px 10px",fontSize:11}} onClick={()=>quitarLinea(linea.id)}>Quitar</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+                <div style={{display:"flex",gap:8}}>
+                  <button style={B("#003B71")} onClick={agregarLinea}>+ Linea</button>
+                  <button style={B("#cc0000")} onClick={guardarAsiento}>{editAsientoId?"Guardar cambios":"Guardar comprobante"}</button>
+                  <button style={B("#f1f5f9","#475569")} onClick={resetAsiento}>Cancelar</button>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(3,auto)",gap:12,fontSize:12}}>
+                  <div><strong>Debito:</strong> {fmt(totalDebitoForm)}</div>
+                  <div><strong>Credito:</strong> {fmt(totalCreditoForm)}</div>
+                  <div><strong>Diferencia:</strong> <span style={{color:diferenciaForm===0?"#166534":"#b91c1c"}}>{fmt(diferenciaForm)}</span></div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div style={CD}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:14,flexWrap:"wrap"}}>
+              <div style={ST}>Comprobantes del periodo</div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                <input type="month" value={periodo} onChange={(e)=>setPeriodo(e.target.value)} style={{...SI,width:"auto"}}/>
+                <input value={busquedaAsiento} onChange={(e)=>setBusquedaAsiento(e.target.value)} placeholder="Buscar comprobante" style={{...SI,width:240}}/>
+              </div>
+            </div>
+            <div style={{display:"grid",gap:12}}>
+              {asientosFiltrados.map((entry)=>(
+                <div key={entry.id} style={{border:"1px solid #e2e8f0",borderRadius:12,overflow:"hidden",background:"#fff"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center",padding:"12px 14px",background:entry.automatico?"#eff6ff":"#f8fafc",borderBottom:"1px solid #e2e8f0",flexWrap:"wrap"}}>
+                    <div>
+                      <div style={{fontWeight:800,color:"#1a1a2e"}}>{entry.consecutivo || entry.id} · {entry.tipoComprobante}</div>
+                      <div style={{fontSize:12,color:"#64748b",marginTop:4}}>{fmtD(entry.fecha)} · {entry.descripcion}</div>
+                      <div style={{fontSize:12,color:"#334155",marginTop:6}}>
+                        <strong>NIT:</strong> {entry.terceroNit || "—"} · <strong>Tercero:</strong> {entry.terceroNombre || "Sin tercero"}
+                      </div>
+                    </div>
+                    <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                      <Badge estado={entry.automatico?"Automatico":entry.estado}/>
+                      {!entry.automatico && <button style={{...B("#f1f5f9","#475569"),padding:"6px 10px",fontSize:11}} onClick={()=>editarAsiento(entry)}>Editar</button>}
+                      {!entry.automatico && entry.estado!=="Anulado" && <button style={{...B("#fff1f2","#be123c"),padding:"6px 10px",fontSize:11}} onClick={()=>anularAsiento(entry.id)}>Anular</button>}
+                    </div>
+                  </div>
+                  <div style={{overflowX:"auto"}}>
+                    <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:760}}>
+                      <thead><tr style={{background:"#fafafa"}}>{["Cuenta","Detalle","Tercero","Centro costo","Debito","Credito"].map((label)=><th key={label} style={{padding:"8px 10px",textAlign:label==="Debito"||label==="Credito"?"right":"left",fontSize:11,color:"#64748b"}}>{label}</th>)}</tr></thead>
+                      <tbody>
+                        {(entry.lineas || []).map((linea)=>(
+                          <tr key={linea.id} style={{borderTop:"1px solid #f1f5f9"}}>
+                            <td style={{padding:"8px 10px"}}>{linea.cuentaCodigo} · {linea.cuentaNombre}</td>
+                            <td style={{padding:"8px 10px"}}>{linea.detalle || "—"}</td>
+                            <td style={{padding:"8px 10px"}}>{(linea.terceroNit || entry.terceroNit) ? `${linea.terceroNit || entry.terceroNit} · ` : ""}{linea.terceroNombre || entry.terceroNombre || "—"}</td>
+                            <td style={{padding:"8px 10px"}}>{linea.centroCosto || "—"}</td>
+                            <td style={{padding:"8px 10px",textAlign:"right",color:"#166534"}}>{fmt(linea.debito)}</td>
+                            <td style={{padding:"8px 10px",textAlign:"right",color:"#7c3aed"}}>{fmt(linea.credito)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot><tr style={{background:"#f8fafc"}}><td colSpan={4} style={{padding:"8px 10px",fontWeight:700}}>Totales</td><td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:"#166534"}}>{fmt(entry.totalDebito)}</td><td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:"#7c3aed"}}>{fmt(entry.totalCredito)}</td></tr></tfoot>
+                    </table>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab==="reportes" && (
+        <div id="pz" className="doc-shell">
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:18,flexWrap:"wrap"}}>
+            <div>
+              <div style={{fontSize:24,fontWeight:800,color:"#1a1a2e"}}>Reportes contables</div>
+              <div style={{fontSize:12,color:"#64748b",marginTop:4}}>Estados financieros, libro auxiliar por cuenta/tercero y conciliación bancaria para {periodo || "todos los periodos"}.</div>
+            </div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              <input type="month" value={periodo} onChange={(e)=>setPeriodo(e.target.value)} style={{...SI,width:"auto"}}/>
+              <button style={B("#166534")} onClick={exportarExcelContabilidad}>Exportar Excel</button>
+              <button style={B("#7c3aed")} onClick={()=>printCurrentPz("Contabilidad " + (periodo || "general"))}>Imprimir</button>
+            </div>
+          </div>
+
+          <div style={{display:"flex",gap:8,marginBottom:18,flexWrap:"wrap"}}>
+            {[
+              ["general","Vista general","#7c3aed","#faf5ff","#7c3aed"],
+              ["movimientos","Auxiliar por cuenta","#003B71","#eff6ff","#1d4ed8"],
+              ["conciliacion","Conciliación bancaria","#166534","#ecfdf5","#166534"],
+            ].map(([id,label,bg,inactiveBg,inactiveColor])=>(
+              <button
+                key={id}
+                type="button"
+                onClick={()=>setReporteTab(id)}
+                style={{
+                  ...B(reporteTab===id ? bg : inactiveBg, reporteTab===id ? "#fff" : inactiveColor),
+                  border:reporteTab===id ? `1px solid ${bg}` : "1px solid #dbe4f0",
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {reporteTab==="general" && (
+            <>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18,marginBottom:18}}>
+                <div style={CD}>
+                  <div style={ST}>Estado de resultados</div>
+                  <div style={{display:"grid",gap:8,fontSize:13}}>
+                    <div style={{display:"flex",justifyContent:"space-between"}}><span>Ingresos</span><strong style={{color:"#166534"}}>{fmt(estados.resultados.totalIngresos)}</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between"}}><span>Costos</span><strong style={{color:"#c2410c"}}>{fmt(estados.resultados.totalCostos)}</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between"}}><span>Utilidad bruta</span><strong style={{color:estados.resultados.utilidadBruta>=0?"#166534":"#b91c1c"}}>{fmt(estados.resultados.utilidadBruta)}</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between"}}><span>Gastos</span><strong style={{color:"#7c3aed"}}>{fmt(estados.resultados.totalGastos)}</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",paddingTop:8,borderTop:"1px solid #e2e8f0"}}><span>Utilidad operacional</span><strong style={{color:estados.resultados.utilidadOperacional>=0?"#166534":"#b91c1c"}}>{fmt(estados.resultados.utilidadOperacional)}</strong></div>
+                  </div>
+                </div>
+                <div style={CD}>
+                  <div style={ST}>Estado de situacion financiera</div>
+                  <div style={{display:"grid",gap:8,fontSize:13}}>
+                    <div style={{display:"flex",justifyContent:"space-between"}}><span>Activos</span><strong style={{color:"#166534"}}>{fmt(estados.balance.totalActivos)}</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between"}}><span>Pasivos</span><strong style={{color:"#c2410c"}}>{fmt(estados.balance.totalPasivos)}</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between"}}><span>Patrimonio total</span><strong style={{color:"#003B71"}}>{fmt(estados.balance.totalPatrimonio)}</strong></div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{...CD,marginBottom:18}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:12,flexWrap:"wrap"}}>
+                  <div>
+                    <div style={ST}>Saldos tributarios relevantes</div>
+                    <div style={{fontSize:12,color:"#64748b"}}>Consulta rápida de retenciones e IVA del periodo.</div>
+                  </div>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    {cuentasTributariasRapidas.map((item)=>(
+                      <button key={item.codigo} style={{...B("#f8fafc",item.color),border:`1px solid ${item.color}`}} onClick={()=>aplicarConsultaTributaria(item.codigo)}>
+                        {item.etiqueta}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{overflowX:"auto"}}>
+                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:820}}>
+                    <thead><tr style={{background:"#f1f5f9"}}>{["Consulta","Codigo","Cuenta","Debitos","Creditos","Saldo natural"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:["Debitos","Creditos","Saldo natural"].includes(label)?"right":"left",color:"#64748b",fontWeight:600,fontSize:11}}>{label}</th>)}</tr></thead>
+                    <tbody>
+                      {saldosTributarios.map((row)=>(
+                        <tr key={row.codigo} style={{borderBottom:"1px solid #e2e8f0"}}>
+                          <td style={{padding:"8px 10px",fontWeight:700,color:row.color}}>{row.etiqueta}</td>
+                          <td style={{padding:"8px 10px",fontWeight:700,color:"#003B71"}}>{row.codigo}</td>
+                          <td style={{padding:"8px 10px"}}>{row.nombre}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",color:"#166534"}}>{fmt(row.debitos)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",color:"#7c3aed"}}>{fmt(row.creditos)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:Number(row.saldoNatural || 0)>=0?"#1a1a2e":"#b91c1c"}}>{fmt(row.saldoNatural)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div style={{...CD,marginBottom:18}}>
+                <div style={ST}>Balance de prueba</div>
+                <div style={{overflowX:"auto"}}>
+                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:980}}>
+                    <thead><tr style={{background:"#f1f5f9"}}>{["Codigo","Cuenta","Grupo","Debitos","Creditos","Saldo natural"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:["Debitos","Creditos","Saldo natural"].includes(label)?"right":"left",color:"#64748b",fontWeight:600,fontSize:11}}>{label}</th>)}</tr></thead>
+                    <tbody>
+                      {balancePrueba.map((row)=>(
+                        <tr key={row.codigo} style={{borderBottom:"1px solid #e2e8f0"}}>
+                          <td style={{padding:"8px 10px",fontWeight:700,color:"#003B71"}}>{row.codigo}</td>
+                          <td style={{padding:"8px 10px"}}>{row.nombre}</td>
+                          <td style={{padding:"8px 10px"}}>{row.grupoReporteLabel}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",color:"#166534"}}>{fmt(row.debitos)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",color:"#7c3aed"}}>{fmt(row.creditos)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:row.saldoNatural>=0?"#1a1a2e":"#b91c1c"}}>{fmt(row.saldoNatural)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div style={CD}>
+                <div style={ST}>Libro diario resumido</div>
+                <div style={{overflowX:"auto"}}>
+                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:980}}>
+                    <thead><tr style={{background:"#f1f5f9"}}>{["Fecha","Comprobante","NIT","Tercero","Descripcion","Origen","Debito","Credito"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:label==="Debito"||label==="Credito"?"right":"left",color:"#64748b",fontWeight:600,fontSize:11}}>{label}</th>)}</tr></thead>
+                    <tbody>
+                      {asientosFiltrados.map((entry)=>(
+                        <tr key={entry.id} style={{borderBottom:"1px solid #e2e8f0"}}>
+                          <td style={{padding:"8px 10px"}}>{fmtD(entry.fecha)}</td>
+                          <td style={{padding:"8px 10px",fontWeight:700,color:"#003B71"}}>{entry.consecutivo || entry.id}</td>
+                          <td style={{padding:"8px 10px"}}>{entry.terceroNit || "—"}</td>
+                          <td style={{padding:"8px 10px"}}>{entry.terceroNombre || "Sin tercero"}</td>
+                          <td style={{padding:"8px 10px"}}>{entry.descripcion}</td>
+                          <td style={{padding:"8px 10px"}}>{entry.automatico?"Automatico":"Manual"}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",color:"#166534"}}>{fmt(entry.totalDebito)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",color:"#7c3aed"}}>{fmt(entry.totalCredito)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
+
+          {reporteTab==="movimientos" && (
+            <>
+              <div style={{...CD,marginBottom:18}}>
+                <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr 1fr 1fr",gap:12,marginBottom:12}}>
+                  <div>
+                    <LBL>Código de cuenta o auxiliar</LBL>
+                    <input value={filtroCuentaMovimiento} onChange={(e)=>setFiltroCuentaMovimiento(e.target.value)} placeholder="Ej. 2365, 236540, 240810" style={SI}/>
+                  </div>
+                  <div>
+                    <LBL>Tercero ERP</LBL>
+                    <select value={filtroTerceroMovimientoRef} onChange={(e)=>setFiltroTerceroMovimientoRef(e.target.value)} style={SI}>
+                      <option value="">Todos los terceros</option>
+                      {tercerosERP.map((tercero)=><option key={tercero.ref} value={tercero.ref}>{tercero.tipo} · {tercero.terceroNombre} · {tercero.terceroNit || "Sin NIT"}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <LBL>Fecha inicial</LBL>
+                    <input type="date" value={rangoReportes.inicio} onChange={(e)=>setRangoReportes((prev)=>({...prev,inicio:e.target.value}))} style={SI}/>
+                  </div>
+                  <div>
+                    <LBL>Fecha final</LBL>
+                    <input type="date" value={rangoReportes.fin} onChange={(e)=>setRangoReportes((prev)=>({...prev,fin:e.target.value}))} style={SI}/>
+                  </div>
+                </div>
+                <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    {cuentasTributariasRapidas.map((item)=>(
+                      <button key={item.codigo} style={{...B("#f8fafc",item.color),border:`1px solid ${item.color}`}} onClick={()=>aplicarConsultaTributaria(item.codigo)}>
+                        {item.etiqueta}
+                      </button>
+                    ))}
+                  </div>
+                  <button style={B("#f1f5f9","#475569")} onClick={()=>{setFiltroCuentaMovimiento("");setFiltroTerceroMovimientoRef("");setRangoReportes(buildMonthDateRange(periodo));}}>
+                    Limpiar filtros
+                  </button>
+                </div>
+              </div>
+
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:18}}>
+                <SC label="Movimientos" value={movimientosCuenta.length} color="#60b4ff" icon="MV"/>
+                <SC label="Debitos" value={fmt(resumenAuxiliar.debitos)} color="#166534" icon="DB"/>
+                <SC label="Creditos" value={fmt(resumenAuxiliar.creditos)} color="#7c3aed" icon="CR"/>
+                <SC label="Saldo consulta" value={fmt(resumenAuxiliar.saldo)} color={resumenAuxiliar.saldo>=0?"#003B71":"#b91c1c"} icon="SD"/>
+              </div>
+
+              <div style={{...CD,marginBottom:18}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:12,flexWrap:"wrap"}}>
+                  <div>
+                    <div style={ST}>Libro auxiliar por cuenta</div>
+                    <div style={{fontSize:12,color:"#64748b"}}>Consulta por cuenta, auxiliar o tercero con NIT y detalle del movimiento.</div>
+                  </div>
+                  <div style={{fontSize:12,color:"#64748b"}}>
+                    Rango: <strong>{fmtD(rangoReportes.inicio)}</strong> a <strong>{fmtD(rangoReportes.fin)}</strong>
+                  </div>
+                </div>
+                <div style={{overflowX:"auto"}}>
+                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:1200}}>
+                    <thead><tr style={{background:"#f1f5f9"}}>{["Fecha","Comprobante","Cuenta","NIT","Tercero","Detalle","Centro costo","Debito","Credito","Saldo acumulado","Origen"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:["Debito","Credito","Saldo acumulado"].includes(label)?"right":"left",color:"#64748b",fontWeight:600,fontSize:11}}>{label}</th>)}</tr></thead>
+                    <tbody>
+                      {movimientosCuenta.length===0 ? (
+                        <tr><td colSpan={11} style={{padding:18,textAlign:"center",color:"#94a3b8"}}>No hay movimientos para el filtro seleccionado.</td></tr>
+                      ) : movimientosCuenta.map((row)=>(
+                        <tr key={row.rowId} style={{borderBottom:"1px solid #e2e8f0"}}>
+                          <td style={{padding:"8px 10px"}}>{fmtD(row.fecha)}</td>
+                          <td style={{padding:"8px 10px",fontWeight:700,color:"#003B71"}}>{row.consecutivo}</td>
+                          <td style={{padding:"8px 10px"}}>{row.cuentaCodigo} · {row.cuentaNombre || "Cuenta"}</td>
+                          <td style={{padding:"8px 10px"}}>{row.terceroNit || "—"}</td>
+                          <td style={{padding:"8px 10px"}}>{row.terceroNombre || "Sin tercero"}</td>
+                          <td style={{padding:"8px 10px"}}>{row.detalle || row.descripcion || "—"}</td>
+                          <td style={{padding:"8px 10px"}}>{row.centroCosto || "—"}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",color:"#166534"}}>{fmt(row.debito)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",color:"#7c3aed"}}>{fmt(row.credito)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:Number(row.saldoAcumulado || 0)>=0?"#1a1a2e":"#b91c1c"}}>{fmt(row.saldoAcumulado)}</td>
+                          <td style={{padding:"8px 10px"}}>{row.origen || "manual"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div style={CD}>
+                <div style={ST}>Resumen por tercero</div>
+                <div style={{overflowX:"auto"}}>
+                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:760}}>
+                    <thead><tr style={{background:"#f1f5f9"}}>{["NIT","Tercero","Debitos","Creditos","Saldo"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:["Debitos","Creditos","Saldo"].includes(label)?"right":"left",color:"#64748b",fontWeight:600,fontSize:11}}>{label}</th>)}</tr></thead>
+                    <tbody>
+                      {resumenMovimientoTerceros.length===0 ? (
+                        <tr><td colSpan={5} style={{padding:18,textAlign:"center",color:"#94a3b8"}}>No hay terceros para mostrar en esta consulta.</td></tr>
+                      ) : resumenMovimientoTerceros.map((row)=>(
+                        <tr key={`${row.nit}-${row.tercero}`} style={{borderBottom:"1px solid #e2e8f0"}}>
+                          <td style={{padding:"8px 10px"}}>{row.nit}</td>
+                          <td style={{padding:"8px 10px"}}>{row.tercero}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",color:"#166534"}}>{fmt(row.debitos)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",color:"#7c3aed"}}>{fmt(row.creditos)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:Number(row.saldo || 0)>=0?"#1a1a2e":"#b91c1c"}}>{fmt(row.saldo)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
+
+          {reporteTab==="conciliacion" && (
+            <>
+              <div style={{...CD,marginBottom:18}}>
+                <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr 1fr auto",gap:12,alignItems:"end",marginBottom:12}}>
+                  <div>
+                    <LBL>Cuenta bancaria</LBL>
+                    <select value={cuentaConciliacion} onChange={(e)=>setCuentaConciliacion(e.target.value)} style={SI}>
+                      <option value="">Selecciona una cuenta...</option>
+                      {cuentasBancariasReporte.map((cuenta)=><option key={cuenta.codigo} value={cuenta.codigo}>{cuenta.codigo} · {cuenta.nombre}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <LBL>Fecha inicial</LBL>
+                    <input type="date" value={rangoReportes.inicio} onChange={(e)=>setRangoReportes((prev)=>({...prev,inicio:e.target.value}))} style={SI}/>
+                  </div>
+                  <div>
+                    <LBL>Fecha final</LBL>
+                    <input type="date" value={rangoReportes.fin} onChange={(e)=>setRangoReportes((prev)=>({...prev,fin:e.target.value}))} style={SI}/>
+                  </div>
+                  <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:"#334155",paddingBottom:12}}>
+                    <input type="checkbox" checked={soloPendientesConciliacion} onChange={(e)=>setSoloPendientesConciliacion(e.target.checked)}/>
+                    Mostrar solo pendientes
+                  </label>
+                </div>
+                <div style={{display:"flex",justifyContent:"space-between",gap:10,flexWrap:"wrap"}}>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    <button style={B("#166534")} onClick={()=>marcarMovimientosConciliacionVisible(true)}>Marcar visibles conciliados</button>
+                    <button style={B("#f1f5f9","#475569")} onClick={()=>marcarMovimientosConciliacionVisible(false)}>Quitar conciliación visible</button>
+                  </div>
+                  <div style={{fontSize:12,color:"#64748b"}}>
+                    Cuenta de trabajo: <strong>{cuentaConciliacion || "Sin seleccionar"}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:18}}>
+                <SC label="Movimientos banco" value={movimientosConciliacion.length} color="#60b4ff" icon="BK"/>
+                <SC label="Conciliados" value={resumenConciliacion.conciliados} color="#166534" icon="OK"/>
+                <SC label="Saldo cuenta" value={fmt(resumenConciliacion.saldo)} color="#003B71" icon="SD"/>
+                <SC label="Saldo conciliado" value={fmt(resumenConciliacion.saldoConciliado)} color="#7c3aed" icon="CC"/>
+              </div>
+
+              <div style={CD}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:12,flexWrap:"wrap"}}>
+                  <div>
+                    <div style={ST}>Conciliación bancaria</div>
+                    <div style={{fontSize:12,color:"#64748b"}}>Selecciona los movimientos del banco conciliados a cierre de mes.</div>
+                  </div>
+                  <div style={{fontSize:12,color:"#64748b"}}>
+                    Débitos {fmt(resumenConciliacion.debitos)} · Créditos {fmt(resumenConciliacion.creditos)}
+                  </div>
+                </div>
+                <div style={{overflowX:"auto"}}>
+                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:1120}}>
+                    <thead><tr style={{background:"#f1f5f9"}}>{["OK","Fecha","Comprobante","Detalle","NIT","Tercero","Debito","Credito","Saldo","Origen"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:["Debito","Credito","Saldo"].includes(label)?"right":"left",color:"#64748b",fontWeight:600,fontSize:11}}>{label}</th>)}</tr></thead>
+                    <tbody>
+                      {movimientosConciliacionVisibles.length===0 ? (
+                        <tr><td colSpan={10} style={{padding:18,textAlign:"center",color:"#94a3b8"}}>No hay movimientos bancarios para el filtro actual.</td></tr>
+                      ) : movimientosConciliacionVisibles.map((row)=>(
+                        <tr key={row.rowId} style={{borderBottom:"1px solid #e2e8f0",background:row.conciliado?"#f0fdf4":"#fff"}}>
+                          <td style={{padding:"8px 10px"}}>
+                            <input type="checkbox" checked={row.conciliado} onChange={()=>alternarMovimientoConciliado(row.rowId)}/>
+                          </td>
+                          <td style={{padding:"8px 10px"}}>{fmtD(row.fecha)}</td>
+                          <td style={{padding:"8px 10px",fontWeight:700,color:"#003B71"}}>{row.consecutivo}</td>
+                          <td style={{padding:"8px 10px"}}>{row.detalle || row.descripcion || "—"}</td>
+                          <td style={{padding:"8px 10px"}}>{row.terceroNit || "—"}</td>
+                          <td style={{padding:"8px 10px"}}>{row.terceroNombre || "Sin tercero"}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",color:"#166534"}}>{fmt(row.debito)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",color:"#7c3aed"}}>{fmt(row.credito)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:Number(row.saldoAcumulado || 0)>=0?"#1a1a2e":"#b91c1c"}}>{fmt(row.saldoAcumulado)}</td>
+                          <td style={{padding:"8px 10px"}}>{row.origen || "manual"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Financiero({ctx}){
   const {obras,pagos,cuentas,empleados}=ctx;
   const [obraFiltro,setObraFiltro]=useState("todas");
@@ -6395,7 +8265,7 @@ function Financiero({ctx}){
 // NÓMINA
 // ======================================================
 function Nomina({ctx}){
-  const {empleados,setEmpleados,obras,cargos,setCargos,saveAllToCloud}=ctx;
+  const {empleados,setEmpleados,obras,cargos,setCargos,nominasGeneradas,setNominasGeneradas,saveAllToCloud}=ctx;
   const [tab,setTab]=useState("lista");
   const [mes,setMes]=useState("2026-04");
   const [corteNomina,setCorteNomina]=useState("primera");
@@ -6414,15 +8284,12 @@ function Nomina({ctx}){
   const [diasVacLiquidar,setDiasVacLiquidar]=useState({});
   const [guardandoNomina,setGuardandoNomina]=useState(false);
   const [mensajeGuardadoNomina,setMensajeGuardadoNomina]=useState("");
-  const [nominasGeneradas,setNominasGeneradas]=useState(()=>{
-    if(typeof window==="undefined") return {};
-    try{
-      const raw = window.localStorage.getItem(NOMINA_GENERATED_STORAGE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    }catch{
-      return {};
-    }
-  });
+  const nominasGeneradasMap = (Array.isArray(nominasGeneradas) ? nominasGeneradas : [])
+    .map(normalizeNominaGeneratedRecord)
+    .reduce((acc,item)=>{
+      acc[item.id]=item;
+      return acc;
+    }, {});
 
   const empleadosBase = empleados.map(normalizarEmpleado);
   const periodoNomina = buildNominaPeriodo(mes, corteNomina);
@@ -6459,8 +8326,8 @@ function Nomina({ctx}){
   const totalLiquidacionesPlanilla=resumenesPlanilla.reduce((total,item)=>total+item.liquidacionPrestaciones,0);
   const totalPagarPlanilla=resumenesPlanilla.reduce((total,item)=>total+item.totalPagar,0);
   const nominaPreview = buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar);
-  const nominaGeneradaActual = nominasGeneradas[nominaPreview.id] || null;
-  const nominaVistaActual = nominaGeneradaActual || nominaPreview;
+  const nominaGeneradaActual = nominasGeneradasMap[nominaPreview.id] || null;
+  const nominaVistaActual = nominaGeneradaActual?.snapshot || nominaPreview;
   const nominaEstaGenerada = Boolean(nominaGeneradaActual);
   const empleadoDeduccionActivo =
     empleadosBase.find((empleado)=>empleado.id===selId) ||
@@ -6635,10 +8502,8 @@ function Nomina({ctx}){
 
   const generarNominaCorte = ()=>{
     const snapshot = buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar);
-    setNominasGeneradas((prev)=>({
-      ...prev,
-      [snapshot.id]: snapshot,
-    }));
+    const record = buildNominaGeneratedRecord(snapshot);
+    setNominasGeneradas((prev)=>upsertNominaGeneratedRecord(prev, record));
     setMensajeGuardadoNomina(
       "Nómina generada para " + snapshot.periodo.label + " con " + snapshot.totals.totalRegistros + " registros."
     );
@@ -6646,19 +8511,15 @@ function Nomina({ctx}){
   };
 
   const descargarPlanoBanco = ()=>{
-    const snapshot = nominaEstaGenerada ? nominaGeneradaActual : buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar);
+    const snapshot = nominaEstaGenerada ? nominaVistaActual : buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar);
     if(!snapshot.registrosBanco.length){
       setMensajeGuardadoNomina("No hay registros listos para el banco. Revisa cédula y cuenta bancaria de los empleados del corte.");
       setTimeout(()=>setMensajeGuardadoNomina(""), 3500);
       return;
     }
-    if(!nominaEstaGenerada){
-      setNominasGeneradas((prev)=>({
-        ...prev,
-        [snapshot.id]: snapshot,
-      }));
-    }
     const contenido = buildNominaPlanoBancoContent(snapshot, NOMINA_PLANO_BANCO_DEFAULTS);
+    const record = buildNominaGeneratedRecord(snapshot, contenido);
+    setNominasGeneradas((prev)=>upsertNominaGeneratedRecord(prev, record));
     const nombreArchivo = `NOMINA_${snapshot.periodo.mes}_${snapshot.periodo.corte.toUpperCase()}.txt`;
     downloadTextFile(nombreArchivo, contenido);
     setMensajeGuardadoNomina("Plano banco descargado: " + nombreArchivo);
@@ -7957,6 +9818,3 @@ function Vencimientos({ctx}){
     </div>
   );
 }
-
-
-

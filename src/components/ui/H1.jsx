@@ -1,0 +1,1 @@
+export default function H1({title,subtitle,action}){return <div style={{marginBottom:24,display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}><div><h1 style={{fontSize:22,fontWeight:700,margin:0,color:"#1a1a2e"}}>{title}</h1><p style={{fontSize:13,color:"#64748b",margin:"4px 0 0"}}>{subtitle}</p></div>{action}</div>;}

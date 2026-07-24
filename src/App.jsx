@@ -3,11 +3,16 @@ import logoIngeanclajes from "./assets/logo-ingeanclajes.jpeg";
 import articoLineaVidaVertical from "./assets/artico-linea-vida-vertical.jpg";
 import * as backend from "./lib/backend";
 import { LOGO_CCS } from "./assets/embeddedImages";
-import { EC, PAL, TC, SI, B, CD, ST, hasBrokenEncoding, buildCardBadge } from "./styles/tokens";
+import { EC, PAL, TC, SI, B, CD, ST } from "./styles/tokens";
 import { fmt, fmtK, today, fmtD, fmtL, scrollAppToTop, buildMonthDateRange, isDateWithinRange } from "./lib/format";
 import { parseIsoDate, diffDaysInclusive, toIsoDate, addDaysToDate, maxDate, minDate, round1, getDaysInMonth } from "./lib/dates";
 import { escapeHtml, escapeXml } from "./lib/html";
 import { EMPLEADOS_INIT, CARGOS_INIT, COTIZACIONES_INIT, OBRAS_INIT, PAGOS_INIT, HORARIOS_INIT, CERTIFICACIONES_INIT, INFORMES_INIT, CLIENTES_INIT, PROVEEDORES_INIT, CUENTAS_PAGAR_INIT, CONTABILIDAD_CONFIG_INIT, PLAN_CUENTAS_INIT, ASIENTOS_CONTABLES_INIT, ITEMS_DB, DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_TIEMPO_EJEC, DEFAULT_COT_INCLUYE_PUNTOS_ANCLAJE } from "./data/seed";
+import Badge from "./components/ui/Badge";
+import Av from "./components/ui/Av";
+import H1 from "./components/ui/H1";
+import SC from "./components/ui/SC";
+import LBL from "./components/ui/LBL";
 import {
   ACCOUNTING_NORMATIVE_NOTE,
   buildCombinedEntries,
@@ -1787,11 +1792,6 @@ const buildNominaPlanoBancoContent = (snapshot, config=NOMINA_PLANO_BANCO_DEFAUL
 };
 
 
-function Badge({estado}){const c=EC[estado]||{bg:"#1a3050",text:"#7da5c8",border:"#2a4a6a"};return <span style={{background:c.bg,color:c.text,border:"1px solid " + (c.border),borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:500,whiteSpace:"nowrap"}}>{estado}</span>;}
-function Av({init,color="#f47c20",size=36}){return <div style={{width:size,height:size,borderRadius:"50%",background:color+"33",border:"2px solid " + (color),display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*0.3,fontWeight:700,color,flexShrink:0}}>{init}</div>;}
-function H1({title,subtitle,action}){return <div style={{marginBottom:24,display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}><div><h1 style={{fontSize:22,fontWeight:700,margin:0,color:"#1a1a2e"}}>{title}</h1><p style={{fontSize:13,color:"#64748b",margin:"4px 0 0"}}>{subtitle}</p></div>{action}</div>;}
-function SC({label,value,color,icon,sub}){const badge=buildCardBadge(icon,label);return <div style={CD}><div style={{fontSize:18,marginBottom:8,fontWeight:700,letterSpacing:0.4}}>{badge}</div><div style={{fontSize:22,fontWeight:700,color}}>{value}</div><div style={{fontSize:12,color:"#475569",marginTop:3}}>{label}</div>{sub&&<div style={{fontSize:10,color:"rgba(255,255,255,0.7)",marginTop:2}}>{sub}</div>}</div>;}
-function LBL({children}){return <label style={{display:"block",fontSize:11,color:"#475569",marginBottom:4}}>{children}</label>;}
 
 const LEAFLET_CSS_ID = "leaflet-cdn-css";
 const LEAFLET_JS_ID = "leaflet-cdn-js";

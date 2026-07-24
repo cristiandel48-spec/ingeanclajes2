@@ -333,14 +333,6 @@ export function buildCotizacionPrintHtml(c){
               <td class="t-right tnum strong">${money(propuesta.sub || 0)}</td>
             </tr>
             <tr class="soft-row">
-              <td colspan="4">Administración</td>
-              <td class="t-right tnum">$ &mdash;</td>
-            </tr>
-            <tr class="soft-row">
-              <td colspan="4">Imprevistos</td>
-              <td class="t-right tnum">$ &mdash;</td>
-            </tr>
-            <tr class="soft-row">
               <td colspan="4">Utilidades (${numberFmt(propuesta.quote?.util || 10)}% del valor de la obra)</td>
               <td class="t-right tnum">${money(propuesta.ut || 0)}</td>
             </tr>

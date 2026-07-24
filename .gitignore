@@ -24,3 +24,18 @@ dist-ssr
 *.sw?
 
 .env
+
+# Scripts de parcheo de un solo uso y volcados temporales (no versionar)
+fix_*.py
+patch_*.py
+find_bts.py
+redesign_form.py
+tmp_*.txt
+new_form_jsx.txt
+Inge.txt
+
+# Artefactos de Claude / worktrees y ajustes locales
+.claude/worktrees/
+.claude/settings.local.json
+*.out.log
+*.err.log

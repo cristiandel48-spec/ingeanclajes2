@@ -37,12 +37,8 @@ const PDF_PAGE5_STATIC = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAbgBuAAD/2wB
 
 
 function Dashboard({ctx,go}){
-  const {obras,pagos,cuentas,certs,cotizaciones}=ctx;
-  const totalFacturado = obras.reduce((sum, obra)=>sum + Number(obra.total || 0), 0);
+  const {obras,cotizaciones}=ctx;
   const saldoPendiente = obras.reduce((sum, obra)=>sum + Number(obra.saldo || 0), 0);
-  const cuentasPendientes = cuentas.filter((cuenta)=>cuenta.estado==="Pendiente").reduce((sum, cuenta)=>sum + Number(cuenta.monto || 0), 0);
-  const obrasActivas = obras.filter((obra)=>obra.estado==="En Obra").length;
-  const certsVencidas = certs.filter((cert)=>Number(cert.diasRest ?? 9999) <= 0).length;
   const recientes = [...cotizaciones].sort((a,b)=>String(b.fecha||"").localeCompare(String(a.fecha||""))).slice(0,4);
 
   return(
@@ -52,13 +48,6 @@ function Dashboard({ctx,go}){
         subtitle="Resumen comercial, operativo y financiero de Ingeanclajes"
         action={<div style={{display:"flex",gap:10}}><button style={B("#f47c20")} onClick={()=>go("cotizacion")}>+ Nueva Cotización</button><button style={B("#dbeafe","#1e40af")} onClick={()=>go("clientes")}>Clientes</button></div>}
       />
-      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:14,marginBottom:22}}>
-        <SC label="Facturado" value={fmtK(totalFacturado)} color="#4ade80" icon="FT"/>
-        <SC label="Por cobrar" value={fmtK(saldoPendiente)} color="#fb923c" icon="CC"/>
-        <SC label="Obras activas" value={obrasActivas} color="#60b4ff" icon="OB"/>
-        <SC label="Ctas x pagar" value={fmtK(cuentasPendientes)} color="#fb7185" icon="CP"/>
-        <SC label="Certs vencidas" value={certsVencidas} color="#f5c842" icon="VC"/>
-      </div>
       <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr",gap:18}}>
         <div style={CD}>
           <div style={ST}>Cotizaciones recientes</div>
@@ -253,10 +242,39 @@ function Cotizacion({ctx}){
 
   const aprobarCotizacion = (cotId)=>{
     const base = cotizaciones.find((cotizacion)=>cotizacion.id===cotId);
-    const cotizacion = base ? mergeQuoteWithProposal(base, getQuoteActiveProposal(base)) : null;
-    if(!cotizacion) return;
+    const snapshot = base ? getQuoteApprovalAccountingSnapshot(base) : null;
+    const cotizacion = snapshot?.cotizacion || null;
+    if(!cotizacion || !snapshot) return;
     const obraId = `OB-${String(obras.length+1).padStart(3,"0")}`;
-    setObras((prev)=>[...prev,{id:obraId,cliente:cotizacion.cliente,nit:"",tel:cotizacion.telefono,proyecto:cotizacion.obra,ciudad:cotizacion.ciudad,direccion:"",coords:cotizacion.coords || "",estado:"En Obra",avance:0,total:Number(cotizacion.total || 0),pagado:0,saldo:Number(cotizacion.total || 0),costos:0,fechaInicio:today(),fechaFin:"",empleados:[],trazos:[],anclajes:[],imgSat:cotizacion.mapImg || null,geoMediciones:cotizacion.geoMediciones || [],geoMapView:cotizacion.geoMapView || null,cotizacionId:cotizacion.id}]);
+    setObras((prev)=>[...prev,{
+      id:obraId,
+      cliente:cotizacion.cliente,
+      nit:"",
+      tel:cotizacion.telefono,
+      proyecto:cotizacion.obra,
+      ciudad:cotizacion.ciudad,
+      direccion:"",
+      coords:cotizacion.coords || "",
+      estado:"En Obra",
+      avance:0,
+      total:snapshot.totalObra,
+      pagado:0,
+      saldo:snapshot.totalObra,
+      costos:0,
+      fechaInicio:today(),
+      fechaFin:"",
+      empleados:[],
+      trazos:[],
+      anclajes:[],
+      imgSat:cotizacion.mapImg || null,
+      geoMediciones:cotizacion.geoMediciones || [],
+      geoMapView:cotizacion.geoMapView || null,
+      cotizacionId:cotizacion.id,
+      subtotalCotizacion:snapshot.subtotalCotizacion,
+      utilidadCotizacion:snapshot.utilidadCotizacion,
+      baseIngresoContable:snapshot.baseIngresoContable,
+      ivaGeneradoCotizacion:snapshot.ivaGeneradoCotizacion,
+    }]);
     setCotizaciones((prev)=>prev.map((item)=>item.id===cotId?{...item,estado:"Aprobada",obraId}:item));
   };
 
@@ -972,6 +990,24 @@ function mergeQuoteWithProposal(cotizacion = {}, propuesta = null) {
   };
 }
 
+function getQuoteApprovalAccountingSnapshot(cotizacion = {}) {
+  const activeProposal = getQuoteActiveProposal(cotizacion);
+  const { quote, sub, ut, iva, tot } = getQuoteProposalTotals(cotizacion, activeProposal);
+  const totalObra = Math.round(Number(quote.total || tot || 0));
+  const subtotalCotizacion = Math.round(Number(sub || 0));
+  const utilidadCotizacion = Math.round(Number(ut || 0));
+  const ivaGeneradoCotizacion = Math.round(Number(iva || 0));
+
+  return {
+    cotizacion: quote,
+    totalObra,
+    subtotalCotizacion,
+    utilidadCotizacion,
+    ivaGeneradoCotizacion,
+    baseIngresoContable: Math.max(0, totalObra - ivaGeneradoCotizacion),
+  };
+}
+
 const NOMINA_CO_2026 = {
   salarioMinimo: 1750905,
   auxilioTransporte: 249095,
@@ -1002,6 +1038,20 @@ const RECARGOS_CO_2026 = [
 const getPctRecargo=(tipo,fecha)=>{const r=RECARGOS_CO_2026.find(x=>x.id===tipo);return r?.getPct?.(fecha)??null;};
 const parseIsoDate = (iso)=> iso ? new Date((iso) + "T12:00:00") : null;
 const diffDaysInclusive = (start,end)=> Math.floor((end-start)/(1000*60*60*24))+1;
+const toIsoDate = (date)=>{
+  if(!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth()+1).padStart(2,"0");
+  const day = String(date.getDate()).padStart(2,"0");
+  return `${year}-${month}-${day}`;
+};
+const addDaysToDate = (date, days=0)=>{
+  const next = new Date(date.getTime());
+  next.setDate(next.getDate() + days);
+  return next;
+};
+const maxDate = (...dates)=>dates.filter(Boolean).reduce((acc,date)=>(!acc || date>acc ? date : acc), null);
+const minDate = (...dates)=>dates.filter(Boolean).reduce((acc,date)=>(!acc || date<acc ? date : acc), null);
 const round1 = (value)=> Math.round((Number(value)||0) * 10) / 10;
 const getDaysInMonth = (mes)=>{
   const [year,month] = String(mes || today().slice(0,7)).split("-").map(Number);
@@ -1073,6 +1123,184 @@ const calcularVacacionesPendientes = (empleado, fechaCorte=null)=>{
   };
 };
 
+const PRESTACION_TIPOS_LABELS = {
+  prima: "Prima de servicios",
+  cesantias: "Cesantías",
+  intereses_cesantias: "Intereses a las cesantías",
+  liquidacion_retiro: "Liquidación de retiro",
+};
+
+const PRESTACION_ESTADOS_LABELS = {
+  provisionada: "Provisionada",
+  pagada: "Pagada",
+  consignada: "Consignada",
+  en_nomina: "En nómina",
+};
+
+const buildPrestacionPeriod = (tipo, anio, semestre="1")=>{
+  const year = Math.max(2020, Math.round(Number(anio) || Number(today().slice(0,4))));
+  if(tipo==="prima"){
+    if(String(semestre)==="2"){
+      return {
+        anio: year,
+        semestre: "2",
+        periodoInicio: `${year}-07-01`,
+        periodoFin: `${year}-12-31`,
+        fechaCausacion: `${year}-12-20`,
+        fechaLimite: `${year}-12-20`,
+        label: `Prima segundo semestre ${year}`,
+      };
+    }
+    return {
+      anio: year,
+      semestre: "1",
+      periodoInicio: `${year}-01-01`,
+      periodoFin: `${year}-06-30`,
+      fechaCausacion: `${year}-06-30`,
+      fechaLimite: `${year}-06-30`,
+      label: `Prima primer semestre ${year}`,
+    };
+  }
+  if(tipo==="cesantias"){
+    return {
+      anio: year,
+      semestre: "",
+      periodoInicio: `${year}-01-01`,
+      periodoFin: `${year}-12-31`,
+      fechaCausacion: `${year+1}-02-14`,
+      fechaLimite: `${year+1}-02-14`,
+      label: `Cesantías ${year}`,
+    };
+  }
+  return {
+    anio: year,
+    semestre: "",
+    periodoInicio: `${year}-01-01`,
+    periodoFin: `${year}-12-31`,
+    fechaCausacion: `${year+1}-01-31`,
+    fechaLimite: `${year+1}-01-31`,
+    label: `Intereses cesantías ${year}`,
+  };
+};
+
+const calcularDiasPrestacionPeriodo = (empleado, periodoInicio, periodoFin)=>{
+  const inicio = parseIsoDate(periodoInicio);
+  const fin = parseIsoDate(periodoFin);
+  if(!inicio || !fin || fin<inicio) return 0;
+  const ingreso = parseIsoDate(empleado?.fechaIngreso) || inicio;
+  const salida = parseIsoDate(empleado?.fechaSalida) || fin;
+  const overlapStart = ingreso>inicio ? ingreso : inicio;
+  const overlapEnd = salida<fin ? salida : fin;
+  if(overlapEnd<overlapStart) return 0;
+  return diffDaysInclusive(overlapStart, overlapEnd);
+};
+
+const calcularPrestacionSocialEmpleado = (empleado, tipo, anio, semestre="1")=>{
+  if(!empleado) return null;
+  const period = buildPrestacionPeriod(tipo, anio, semestre);
+  const diasLiquidados = calcularDiasPrestacionPeriodo(empleado, period.periodoInicio, period.periodoFin);
+  const salario = Number(empleado?.salario || 0);
+  const aplicaAux = salario>0 && salario<=NOMINA_CO_2026.topeAuxilio;
+  const auxilio = aplicaAux ? NOMINA_CO_2026.auxilioTransporte : 0;
+  const basePrestacional = salario + auxilio;
+  const cesantiasBase = Math.round(basePrestacional * diasLiquidados / 360);
+  const valor =
+    tipo==="prima"
+      ? Math.round(basePrestacional * diasLiquidados / 360)
+      : tipo==="cesantias"
+        ? cesantiasBase
+        : Math.round(cesantiasBase * NOMINA_CO_2026.interesesCesantiasPct * Math.min(diasLiquidados,360) / 360);
+  return {
+    id:`PRS-${empleado.id}-${tipo}-${period.anio}${period.semestre ? "-" + period.semestre : ""}`,
+    tipo,
+    estado:"provisionada",
+    origen:"prestaciones",
+    periodoInicio:period.periodoInicio,
+    periodoFin:period.periodoFin,
+    periodoLabel:period.label,
+    fechaCausacion:period.fechaCausacion,
+    fechaLimite:period.fechaLimite,
+    fechaPago:"",
+    valor,
+    diasLiquidados,
+    basePrestacional,
+    observacion:"",
+    liquidacionEnNomina:false,
+    componentes:null,
+  };
+};
+
+const normalizarPrestacionesSociales = (prestaciones)=>
+  (Array.isArray(prestaciones)?prestaciones:[])
+    .filter(Boolean)
+    .map((prestacion,index)=>{
+      const tipo = prestacion?.tipo==="cesantias"
+        ? "cesantias"
+        : prestacion?.tipo==="intereses_cesantias"
+          ? "intereses_cesantias"
+          : prestacion?.tipo==="liquidacion_retiro"
+            ? "liquidacion_retiro"
+            : "prima";
+      const componentes = prestacion?.componentes && typeof prestacion.componentes==="object"
+        ? prestacion.componentes
+        : {};
+      return {
+        id:prestacion?.id || `PRS-${index+1}`,
+        tipo,
+        estado:prestacion?.estado || "provisionada",
+        origen:prestacion?.origen || (tipo==="liquidacion_retiro" ? "liquidacion_retiro" : "prestaciones"),
+        periodoInicio:prestacion?.periodoInicio || prestacion?.periodo_inicio || "",
+        periodoFin:prestacion?.periodoFin || prestacion?.periodo_fin || "",
+        periodoLabel:prestacion?.periodoLabel || prestacion?.periodo_label || PRESTACION_TIPOS_LABELS[tipo],
+        fechaCausacion:prestacion?.fechaCausacion || prestacion?.fecha_causacion || "",
+        fechaLimite:prestacion?.fechaLimite || prestacion?.fecha_limite || "",
+        fechaPago:prestacion?.fechaPago || prestacion?.fecha_pago || "",
+        valor:Math.round(Number(prestacion?.valor || 0)),
+        diasLiquidados:Math.max(0, Number(prestacion?.diasLiquidados ?? prestacion?.dias_liquidados ?? 0)),
+        basePrestacional:Math.round(Number(prestacion?.basePrestacional ?? prestacion?.base_prestacional ?? 0)),
+        observacion:String(prestacion?.observacion || prestacion?.notas || "").trim(),
+        liquidacionEnNomina:Boolean(prestacion?.liquidacionEnNomina ?? prestacion?.liquidacion_en_nomina),
+        componentes:{
+          prima:Math.round(Number(componentes?.prima || 0)),
+          cesantias:Math.round(Number(componentes?.cesantias || 0)),
+          interesesCesantias:Math.round(Number(componentes?.interesesCesantias ?? componentes?.intereses_cesantias ?? 0)),
+          vacaciones:Math.round(Number(componentes?.vacaciones || 0)),
+          indemnizacion:Math.round(Number(componentes?.indemnizacion || 0)),
+        },
+      };
+    });
+
+const upsertPrestacionSocial = (prestaciones=[], siguiente={})=>{
+  const normalizadas = normalizarPrestacionesSociales(prestaciones);
+  const registro = normalizarPrestacionesSociales([siguiente])[0];
+  return [registro, ...normalizadas.filter((prestacion)=>prestacion.id!==registro.id)];
+};
+
+const buildLiquidacionPrestacionRecord = (empleado, liquidacion)=>({
+  id:`LQ-${empleado?.id || "EMP"}-${empleado?.fechaSalida || today()}`,
+  tipo:"liquidacion_retiro",
+  estado:liquidacion?.retiroEnPeriodo ? "en_nomina" : "provisionada",
+  origen:"liquidacion_retiro",
+  periodoInicio:liquidacion?.periodoLiquidacion?.startIso || empleado?.fechaIngreso || "",
+  periodoFin:empleado?.fechaSalida || liquidacion?.periodoLiquidacion?.endIso || today(),
+  periodoLabel:`Liquidación retiro ${empleado?.fechaSalida || today()}`,
+  fechaCausacion:empleado?.fechaSalida || liquidacion?.periodoLiquidacion?.endIso || today(),
+  fechaLimite:empleado?.fechaSalida || liquidacion?.periodoLiquidacion?.endIso || today(),
+  fechaPago:"",
+  valor:Math.round(Number(liquidacion?.prestaciones || 0)),
+  diasLiquidados:Math.max(0, Number(liquidacion?.parafiscales?.diasTrabajados || 0)),
+  basePrestacional:Math.round((Number(empleado?.salario || 0)) + ((Number(empleado?.salario || 0)<=NOMINA_CO_2026.topeAuxilio) ? NOMINA_CO_2026.auxilioTransporte : 0)),
+  observacion:liquidacion?.retiroEnPeriodo ? "Se paga con la nómina del corte de retiro." : "Pendiente de pago manual o transferencia.",
+  liquidacionEnNomina:Boolean(liquidacion?.retiroEnPeriodo),
+  componentes:{
+    prima:Math.round(Number(liquidacion?.parafiscales?.prima || 0)),
+    cesantias:Math.round(Number(liquidacion?.parafiscales?.cesantias || 0)),
+    interesesCesantias:Math.round(Number(liquidacion?.parafiscales?.interesesCesantias || 0)),
+    vacaciones:Math.round(Number(liquidacion?.vacValorReal || 0)),
+    indemnizacion:Math.round(Number(liquidacion?.indemn || 0)),
+  },
+});
+
 const normalizarDeduccionesPersonalizadas = (deducciones)=>
   (Array.isArray(deducciones)?deducciones:[])
     .filter(Boolean)
@@ -1081,6 +1309,149 @@ const normalizarDeduccionesPersonalizadas = (deducciones)=>
       nombre:(deduccion.nombre||deduccion.concepto||"Otra deduccion").trim(),
       valor:Math.max(0,Number(deduccion.valor||deduccion.monto||0)),
     }));
+
+const INCAPACIDAD_ORIGEN_LABELS = {
+  comun: "Origen comun",
+  laboral: "Origen laboral",
+};
+const INCAPACIDAD_RESPONSABLE_LABELS = {
+  empleador: "Empleador",
+  eps: "EPS",
+  colpensiones: "Colpensiones",
+  arl: "ARL",
+  eps_541: "EPS (541+)",
+};
+const buildIncapacidadFormDefault = (empleadoId="", baseDate=today())=>({
+  empleadoId,
+  origen:"comun",
+  fechaInicio:baseDate,
+  fechaFin:baseDate,
+  diasPrevios:0,
+  iblMensual:"",
+  numeroSoporte:"",
+  diagnostico:"",
+  observacion:"",
+});
+const normalizarIncapacidades = (incapacidades)=>
+  (Array.isArray(incapacidades)?incapacidades:[])
+    .filter(Boolean)
+    .map((incapacidad,index)=>{
+      const fechaInicio = incapacidad?.fechaInicio || incapacidad?.fecha || "";
+      const fechaFinOriginal = incapacidad?.fechaFin || incapacidad?.fechaHasta || incapacidad?.fecha_hasta || fechaInicio;
+      const inicioDate = parseIsoDate(fechaInicio);
+      const finDate = parseIsoDate(fechaFinOriginal);
+      return {
+        id:incapacidad?.id || "INC-" + (index+1),
+        origen:incapacidad?.origen==="laboral" ? "laboral" : "comun",
+        fechaInicio,
+        fechaFin:inicioDate && finDate && finDate<inicioDate ? fechaInicio : fechaFinOriginal,
+        diasPrevios:Math.max(0, Math.round(Number(incapacidad?.diasPrevios ?? incapacidad?.dias_previos ?? incapacidad?.diasAcumuladosPrevios ?? 0))),
+        iblMensual:Math.max(0, Math.round(Number(incapacidad?.iblMensual ?? incapacidad?.ibl_mensual ?? incapacidad?.ibcMensual ?? 0))),
+        numeroSoporte:String(incapacidad?.numeroSoporte || incapacidad?.soporte || "").trim(),
+        diagnostico:String(incapacidad?.diagnostico || incapacidad?.concepto || "").trim(),
+        observacion:String(incapacidad?.observacion || incapacidad?.notas || "").trim(),
+      };
+    })
+    .filter((incapacidad)=>incapacidad.fechaInicio && incapacidad.fechaFin);
+const getIncapacidadResponsable = (origen, diaAcumulado)=>{
+  if(origen==="laboral") return "arl";
+  if(diaAcumulado<=2) return "empleador";
+  if(diaAcumulado<=180) return "eps";
+  if(diaAcumulado<=540) return "colpensiones";
+  return "eps_541";
+};
+const getIncapacidadPorcentaje = (origen, diaAcumulado)=>{
+  if(origen==="laboral") return 1;
+  return diaAcumulado<=90 ? (2/3) : 0.5;
+};
+const calcularResumenIncapacidadesRegistros = (empleado, incapacidades=[], periodo=null)=>{
+  const registrosBase = normalizarIncapacidades(incapacidades)
+    .sort((a,b)=>String(a.fechaInicio).localeCompare(String(b.fechaInicio)) || String(a.fechaFin).localeCompare(String(b.fechaFin)));
+  const diasMap = new Map();
+  const registros = [];
+  const fechaIngreso = parseIsoDate(empleado?.fechaIngreso) || null;
+  const fechaSalida = parseIsoDate(empleado?.fechaSalida) || null;
+  const pisoComunDiario = NOMINA_CO_2026.salarioMinimo / 30;
+
+  registrosBase.forEach((registro)=>{
+    const fechaInicio = parseIsoDate(registro.fechaInicio);
+    const fechaFin = parseIsoDate(registro.fechaFin);
+    if(!fechaInicio || !fechaFin || fechaFin<fechaInicio) return;
+
+    const inicioPeriodo = maxDate(
+      fechaInicio,
+      periodo?.startDate || null,
+      fechaIngreso
+    ) || fechaInicio;
+    const finPeriodo = minDate(
+      fechaFin,
+      periodo?.endDate || null,
+      fechaSalida
+    ) || fechaFin;
+    if(finPeriodo<inicioPeriodo) return;
+
+    const iblMensual = Math.max(0, Number(registro.iblMensual || empleado?.salario || 0));
+    const baseDiaria = iblMensual / 30;
+    const totalesResponsable = { empleador:0, eps:0, colpensiones:0, arl:0, eps_541:0 };
+    let diasPeriodo = 0;
+    let totalPeriodo = 0;
+
+    for(let current = inicioPeriodo; current<=finPeriodo; current = addDaysToDate(current, 1)){
+      const iso = toIsoDate(current);
+      if(diasMap.has(iso)) continue;
+      const diaAcumulado = Math.max(1, Number(registro.diasPrevios || 0) + diffDaysInclusive(fechaInicio, current));
+      const porcentaje = getIncapacidadPorcentaje(registro.origen, diaAcumulado);
+      const responsable = getIncapacidadResponsable(registro.origen, diaAcumulado);
+      const valorCalculado = baseDiaria>0 ? baseDiaria * porcentaje : 0;
+      const valorDia = Math.round(
+        baseDiaria<=0
+          ? 0
+          : (
+              registro.origen==="comun"
+                ? Math.max(valorCalculado, pisoComunDiario)
+                : valorCalculado
+            )
+      );
+      const detalleDia = {
+        fecha:iso,
+        registroId:registro.id,
+        origen:registro.origen,
+        diaAcumulado,
+        porcentaje,
+        responsable,
+        valorDia,
+      };
+      diasMap.set(iso, detalleDia);
+      totalesResponsable[responsable] += valorDia;
+      diasPeriodo += 1;
+      totalPeriodo += valorDia;
+    }
+
+    if(diasPeriodo>0){
+      registros.push({
+        ...registro,
+        diasPeriodo,
+        totalPeriodo,
+        totalesResponsable,
+      });
+    }
+  });
+
+  const dias = Array.from(diasMap.values()).sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha)));
+  const totalPorResponsable = dias.reduce((acc,dia)=>{
+    acc[dia.responsable] = (acc[dia.responsable] || 0) + (dia.valorDia || 0);
+    return acc;
+  }, { empleador:0, eps:0, colpensiones:0, arl:0, eps_541:0 });
+  const total = dias.reduce((acc,dia)=>acc + (dia.valorDia || 0), 0);
+
+  return {
+    dias,
+    registros,
+    diasIncapacidad:dias.length,
+    total,
+    totalPorResponsable,
+  };
+};
 
 const normalizarEmpleado = (empleado)=>({
   ...empleado,
@@ -1096,6 +1467,8 @@ const normalizarEmpleado = (empleado)=>({
   horasExtrasPorObra:Array.isArray(empleado?.horasExtrasPorObra)?empleado.horasExtrasPorObra:[],
   comisionesPorObra:Array.isArray(empleado?.comisionesPorObra)?empleado.comisionesPorObra:[],
   deduccionesPersonalizadas:normalizarDeduccionesPersonalizadas(empleado?.deduccionesPersonalizadas),
+  incapacidades:normalizarIncapacidades(empleado?.incapacidades),
+  prestacionesSociales:normalizarPrestacionesSociales(empleado?.prestacionesSociales),
 });
 
 const normalizarCargos = (cargos)=>
@@ -1129,7 +1502,10 @@ const calcularTotalHoraExtraItem = (empleado, item={})=>{
 
 const calcularResumenNominaEmpleado = (empleado, periodo=null)=>{
   const salarioMensual = Number(empleado?.salario)||0;
-  const diasNomina = calcularDiasNominaPeriodo(empleado, periodo);
+  const diasCalendario = calcularDiasNominaPeriodo(empleado, periodo);
+  const incapacidadResumen = calcularResumenIncapacidadesRegistros(empleado, empleado?.incapacidades||[], periodo);
+  const diasIncapacidad = Math.min(diasCalendario, incapacidadResumen.diasIncapacidad);
+  const diasNomina = Math.max(0, diasCalendario - diasIncapacidad);
   const valorDia = Math.round(salarioMensual/30);
   const salario = periodo ? Math.round((salarioMensual/30)*diasNomina) : salarioMensual;
   const horasExtras = (empleado?.horasExtrasPorObra||[])
@@ -1138,17 +1514,23 @@ const calcularResumenNominaEmpleado = (empleado, periodo=null)=>{
   const comisiones = (empleado?.comisionesPorObra||[])
     .filter((item)=>isDateInPeriodo(item?.fecha, periodo))
     .reduce((total,item)=>total+(Number(item?.comision)||0),0);
+  const incapacidadTotal = incapacidadResumen.total;
+  const incapacidadEmpleador = incapacidadResumen.totalPorResponsable.empleador || 0;
+  const incapacidadEPS = incapacidadResumen.totalPorResponsable.eps || 0;
+  const incapacidadColpensiones = incapacidadResumen.totalPorResponsable.colpensiones || 0;
+  const incapacidadARL = incapacidadResumen.totalPorResponsable.arl || 0;
+  const incapacidadEPS540 = incapacidadResumen.totalPorResponsable.eps_541 || 0;
   const aplicaAuxilio = salarioMensual>0 && salarioMensual<=NOMINA_CO_2026.topeAuxilio;
   const auxilioTransporte = aplicaAuxilio
     ? (periodo ? Math.round((NOMINA_CO_2026.auxilioTransporte/30)*diasNomina) : NOMINA_CO_2026.auxilioTransporte)
     : 0;
-  const baseSaludPension = salario + horasExtras + comisiones;
+  const baseSaludPension = salario + incapacidadTotal + horasExtras + comisiones;
   const salud = Math.round(baseSaludPension*NOMINA_CO_2026.saludPctEmpleado);
   const pension = Math.round(baseSaludPension*NOMINA_CO_2026.pensionPctEmpleado);
   const otrasMensuales = normalizarDeduccionesPersonalizadas(empleado?.deduccionesPersonalizadas)
     .reduce((total,item)=>total+(Number(item?.valor)||0),0);
-  const otrasDeducciones = periodo ? Math.round((otrasMensuales/30)*diasNomina) : otrasMensuales;
-  const totalDevengado = salario+auxilioTransporte+horasExtras+comisiones;
+  const otrasDeducciones = periodo ? Math.round((otrasMensuales/30)*diasCalendario) : otrasMensuales;
+  const totalDevengado = salario+incapacidadTotal+auxilioTransporte+horasExtras+comisiones;
   const totalDeducciones = salud+pension+otrasDeducciones;
   const neto = totalDevengado-totalDeducciones;
 
@@ -1156,9 +1538,18 @@ const calcularResumenNominaEmpleado = (empleado, periodo=null)=>{
     salarioMensual,
     salario,
     valorDia,
+    diasCalendario,
     diasNomina,
+    diasIncapacidad,
     horasExtras,
     comisiones,
+    incapacidadTotal,
+    incapacidadEmpleador,
+    incapacidadEPS,
+    incapacidadColpensiones,
+    incapacidadARL,
+    incapacidadEPS540,
+    incapacidadDetalle:incapacidadResumen,
     aplicaAuxilio,
     auxilioTransporte,
     baseSaludPension,
@@ -1296,6 +1687,53 @@ const downloadTextFile = (filename, content) => {
   window.URL.revokeObjectURL(url);
 };
 
+const normalizeNominaResumenSnapshot = (resumen={}) => ({
+  salarioMensual: Number(resumen?.salarioMensual || 0),
+  salario: Number(resumen?.salario || 0),
+  valorDia: Number(resumen?.valorDia || 0),
+  diasCalendario: Number(resumen?.diasCalendario || resumen?.diasNomina || 0),
+  diasNomina: Number(resumen?.diasNomina || 0),
+  diasIncapacidad: Number(resumen?.diasIncapacidad || 0),
+  horasExtras: Number(resumen?.horasExtras || 0),
+  comisiones: Number(resumen?.comisiones || 0),
+  incapacidadTotal: Number(resumen?.incapacidadTotal || 0),
+  incapacidadEmpleador: Number(resumen?.incapacidadEmpleador || 0),
+  incapacidadEPS: Number(resumen?.incapacidadEPS || 0),
+  incapacidadColpensiones: Number(resumen?.incapacidadColpensiones || 0),
+  incapacidadARL: Number(resumen?.incapacidadARL || 0),
+  incapacidadEPS540: Number(resumen?.incapacidadEPS540 || 0),
+  incapacidadDetalle: resumen?.incapacidadDetalle || { dias:[], registros:[], diasIncapacidad:0, total:0, totalPorResponsable:{ empleador:0, eps:0, colpensiones:0, arl:0, eps_541:0 } },
+  aplicaAuxilio: Boolean(resumen?.aplicaAuxilio),
+  auxilioTransporte: Number(resumen?.auxilioTransporte || 0),
+  baseSaludPension: Number(resumen?.baseSaludPension || 0),
+  salud: Number(resumen?.salud || 0),
+  pension: Number(resumen?.pension || 0),
+  otrasDeducciones: Number(resumen?.otrasDeducciones || 0),
+  totalDevengado: Number(resumen?.totalDevengado || 0),
+  totalDeducciones: Number(resumen?.totalDeducciones || 0),
+  neto: Number(resumen?.neto || 0),
+});
+
+const normalizeNominaRegistroSnapshot = (registro={}) => ({
+  empleado: {
+    id: String(registro?.empleado?.id || ""),
+    nombre: String(registro?.empleado?.nombre || ""),
+    cedula: String(registro?.empleado?.cedula || ""),
+    cargo: String(registro?.empleado?.cargo || ""),
+    fechaSalida: registro?.empleado?.fechaSalida || null,
+    banco: String(registro?.empleado?.banco || ""),
+    tipoCuenta: String(registro?.empleado?.tipoCuenta || ""),
+    numeroCuenta: String(registro?.empleado?.numeroCuenta || ""),
+  },
+  resumen: normalizeNominaResumenSnapshot(registro?.resumen || {}),
+  liquidacionPrestaciones: Number(registro?.liquidacionPrestaciones || 0),
+  totalPagar: Number(registro?.totalPagar || 0),
+  retiroEnPeriodo: Boolean(registro?.retiroEnPeriodo),
+  fechaSalida: registro?.fechaSalida || null,
+  bancoValido: Boolean(registro?.bancoValido),
+  observacionesBanco: Array.isArray(registro?.observacionesBanco) ? registro.observacionesBanco : [],
+});
+
 const normalizeNominaGeneratedRecord = (item={}) => {
   const snapshot = item.snapshot ?? item;
   const periodo = snapshot?.periodo ?? {};
@@ -1320,8 +1758,8 @@ const normalizeNominaGeneratedRecord = (item={}) => {
         endIso: String(periodo?.endIso || ""),
         diasReferencia: Number(periodo?.diasReferencia || 0),
       },
-      registros: Array.isArray(snapshot?.registros) ? snapshot.registros : [],
-      registrosBanco: Array.isArray(snapshot?.registrosBanco) ? snapshot.registrosBanco : [],
+      registros: Array.isArray(snapshot?.registros) ? snapshot.registros.map(normalizeNominaRegistroSnapshot) : [],
+      registrosBanco: Array.isArray(snapshot?.registrosBanco) ? snapshot.registrosBanco.map(normalizeNominaRegistroSnapshot) : [],
       totals: {
         totalNomina: Number(totals?.totalNomina || 0),
         totalLiquidaciones: Number(totals?.totalLiquidaciones || 0),
@@ -1431,7 +1869,7 @@ const buildNominaSnapshot = (empleados=[], periodoNomina=null, diasVacPagarOverr
         periodoNomina,
         diasVacPagarOverrides?.[empleado.id] ?? empleado?.vacacionesLiquidacionDias
       );
-      const tieneMovimiento = resumen.diasNomina>0 || resumen.horasExtras>0 || resumen.comisiones>0 || liquidacion.retiroEnPeriodo;
+      const tieneMovimiento = resumen.diasNomina>0 || resumen.incapacidadTotal>0 || resumen.horasExtras>0 || resumen.comisiones>0 || liquidacion.retiroEnPeriodo;
       const liquidacionPrestaciones = liquidacion.retiroEnPeriodo ? liquidacion.prestaciones : 0;
       const totalPagar = resumen.neto + liquidacionPrestaciones;
       if(!tieneMovimiento || totalPagar<=0) return null;
@@ -1627,7 +2065,10 @@ function loadLeafletAssets(){
   return leafletLoaderPromise;
 }
 
-const GOOGLE_MAPS_EMBED_KEY = "AIzaSyDz60_QWwUzp_uK1czmH5ajxUbfTQB6C6A";
+// Clave de Google Maps. Configúrala como VITE_GOOGLE_MAPS_KEY en .env (local) y en Vercel (producción).
+// El valor por defecto es TEMPORAL para no romper producción mientras se define la variable;
+// restringe la clave por referrer HTTP en Google Cloud Console y rótala (estuvo expuesta en el historial de git).
+const GOOGLE_MAPS_EMBED_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || "AIzaSyDz60_QWwUzp_uK1czmH5ajxUbfTQB6C6A";
 
 function getStaticMapCenter(segments=[], query="", mapView=null){
   if(mapView?.center && Number.isFinite(mapView.center.lat) && Number.isFinite(mapView.center.lng)){
@@ -1973,33 +2414,80 @@ function buildCotizacionPrintHtml(c){
   const ciudadEncabezado = "ENVIGADO";
   const encabezadoFecha = fechaComercial ? `${ciudadEncabezado}, ${fechaComercial}` : ciudadEncabezado;
 
-  const getProposalAnchorPoints = (propuesta = {}) => {
-    const items = Array.isArray(propuesta?.items) ? propuesta.items : [];
-    return items.reduce((sum, item) => {
-      const desc = String(item?.desc || item?.descripcion || item?.nombre || "").toUpperCase();
-      const unit = String(item?.unit || "").toUpperCase();
-      const qty = Number(item?.cant || 0);
-      const isAnchorItem =
-        desc.includes("PUNTO DE ANCLAJE") ||
-        desc.includes("PUNTOS DE ANCLAJE") ||
-        desc.includes("ANCLAJE") ||
-        desc.includes("ANCLAJE IMPORTADO") ||
-        desc.includes("ANCLAJE NACIONAL") ||
-        desc.includes("ANCLAJE EPOXICO") ||
-        desc.includes("ANCLAJE SOLDADO");
-      const isUnitCount = !unit || unit === "UND" || unit === "UNIDAD" || unit === "UNIDADES" || unit === "UN";
-      return isAnchorItem && isUnitCount ? sum + qty : sum;
-    }, 0);
+  const normalizeProposalMeasureUnit = (unit = "") => {
+    const raw = String(unit || "").trim().toUpperCase();
+    if (!raw) return "UND";
+    if (["UN", "UND", "UNIDAD", "UNIDADES"].includes(raw)) return "UND";
+    if (["ML", "M.L", "M L", "METRO", "METROS", "MT", "MTS", "MTR", "METRO LINEAL", "METROS LINEALES"].includes(raw)) return "ML";
+    return raw;
   };
 
-  const resumenPropuestas = propuestas.map((propuesta, idx) => ({
-    nombre: propuesta?.nombre || propuesta?.quote?.propuestaNombre || `Propuesta ${idx + 1}`,
-    puntos: getProposalAnchorPoints(propuesta),
-    total: Math.round(Number(propuesta?.tot || propuesta?.quote?.total || 0)),
-  }));
+  const formatProposalMeasureQuantity = (value = 0) => {
+    const qty = Number(value || 0);
+    if (!Number.isFinite(qty)) return "0";
+    return Number.isInteger(qty)
+      ? numberFmt(qty)
+      : qty.toLocaleString("es-CO", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  };
+
+  const formatProposalMeasures = (measures = []) => {
+    if (!Array.isArray(measures) || !measures.length) return "0 UND";
+    return measures
+      .filter((measure) => Number(measure?.quantity || 0) > 0)
+      .map((measure) => `${formatProposalMeasureQuantity(measure.quantity)} ${normalizeProposalMeasureUnit(measure.unit)}`)
+      .join(" + ") || "0 UND";
+  };
+
+  const getProposalMeasureSummary = (propuesta = {}) => {
+    const items = Array.isArray(propuesta?.items) ? propuesta.items : [];
+    const totalsByUnit = new Map();
+
+    items.forEach((item) => {
+      const qty = Number(item?.cant || item?.cantidad || 0);
+      if (!Number.isFinite(qty) || qty <= 0) return;
+      const unit = normalizeProposalMeasureUnit(item?.unit || item?.unidad || "UND");
+      totalsByUnit.set(unit, (totalsByUnit.get(unit) || 0) + qty);
+    });
+
+    if (!totalsByUnit.size) {
+      const qty = Number(propuesta?.cantidad || propuesta?.cant || propuesta?.quote?.cantidad || 0);
+      const unit = normalizeProposalMeasureUnit(
+        propuesta?.unit || propuesta?.unidad || propuesta?.quote?.unit || propuesta?.quote?.unidad || "UND"
+      );
+      const measures = qty > 0 ? [{ quantity: qty, unit }] : [];
+      return { measures, label: formatProposalMeasures(measures) };
+    }
+
+    const measures = Array.from(totalsByUnit.entries()).map(([unit, quantity]) => ({ unit, quantity }));
+    return { measures, label: formatProposalMeasures(measures) };
+  };
+
+  const mergeProposalMeasures = (rows = []) => {
+    const totalsByUnit = new Map();
+    rows.forEach((row) => {
+      const measures = Array.isArray(row?.measures) ? row.measures : [];
+      measures.forEach((measure) => {
+        const qty = Number(measure?.quantity || 0);
+        if (!Number.isFinite(qty) || qty <= 0) return;
+        const unit = normalizeProposalMeasureUnit(measure?.unit || "UND");
+        totalsByUnit.set(unit, (totalsByUnit.get(unit) || 0) + qty);
+      });
+    });
+    return Array.from(totalsByUnit.entries()).map(([unit, quantity]) => ({ unit, quantity }));
+  };
+
+  const resumenPropuestas = propuestas.map((propuesta, idx) => {
+    const measureSummary = getProposalMeasureSummary(propuesta);
+    return {
+      nombre: propuesta?.nombre || propuesta?.quote?.propuestaNombre || `Propuesta ${idx + 1}`,
+      measures: measureSummary.measures,
+      cantidadLabel: measureSummary.label,
+      total: Math.round(Number(propuesta?.tot || propuesta?.quote?.total || 0)),
+    };
+  });
 
   const mostrarResumenFinal = resumenPropuestas.length >= 2;
-  const totalResumenPuntos = resumenPropuestas.reduce((sum, row) => sum + Number(row.puntos || 0), 0);
+  const totalResumenCantidad = formatProposalMeasures(mergeProposalMeasures(resumenPropuestas));
   const totalResumenValor = resumenPropuestas.reduce((sum, row) => sum + Number(row.total || 0), 0);
 
   const renderResumenBlock = () => {
@@ -2012,7 +2500,7 @@ function buildCotizacionPrintHtml(c){
           <thead>
             <tr>
               <th>PROPUESTA / SERVICIOS OFRECIDOS</th>
-              <th style="text-align:center;">CANTIDAD</th>
+              <th style="text-align:center;">CANTIDAD / UNIDAD</th>
               <th style="text-align:right;">VALOR TOTAL</th>
             </tr>
           </thead>
@@ -2020,13 +2508,13 @@ function buildCotizacionPrintHtml(c){
             ${resumenPropuestas.map((row) => `
               <tr>
                 <td>${escapeHtml(row.nombre || "")}</td>
-                <td style="text-align:center;">${numberFmt(row.puntos || 0)}</td>
+                <td style="text-align:center;">${escapeHtml(row.cantidadLabel || "0 UND")}</td>
                 <td style="text-align:right;">${money(row.total || 0)}</td>
               </tr>
             `).join("")}
             <tr class="summary-total-row">
               <td><strong>TOTAL GENERAL</strong></td>
-              <td style="text-align:center;"><strong>${numberFmt(totalResumenPuntos)}</strong></td>
+              <td style="text-align:center;"><strong>${escapeHtml(totalResumenCantidad)}</strong></td>
               <td style="text-align:right;"><strong>${money(totalResumenValor)}</strong></td>
             </tr>
           </tbody>
@@ -2102,7 +2590,10 @@ function buildCotizacionPrintHtml(c){
     if(!hasMap) return "";
 
     const mapView = propuesta?.quote?.geoMapView || c?.geoMapView || null;
-    const { width: mW, height: mH } = getStaticMapDimensions(mapView, { width: 1200, height: 700 });
+    const { width: mW, height: mH } = getStaticMapDimensions(mapView);
+    const mapWrapStyle = proposalIndex === 2
+      ? `style="height:132mm; margin-top:6mm;"`
+      : `style="height:58mm;"`;
 
     const labels = Array.isArray(propuesta.measurements) && propuesta.measurements.length
       ? buildStaticMapLabelData(
@@ -2112,26 +2603,26 @@ function buildCotizacionPrintHtml(c){
           mW,
           mH
         ).map((label)=>`
-          <div
-            class="map-label"
-            style="left:${Number(label.x || 0)}px; top:${Number(label.y || 0)}px; color:${escapeHtml(label.color || "#2563EB")}; transform:translate(-50%, -50%) rotate(${Number(label.angle || 0)}deg);"
-          >
-            ${escapeHtml(label.title)} - ${escapeHtml(label.value)}
-          </div>
+          <g class="map-label-group" transform="translate(${Number(label.x || 0)} ${Number(label.y || 0)}) rotate(${Number(label.angle || 0)})">
+            <text class="map-label-value" y="0" fill="${escapeHtml(label.color || "#2563EB")}">${escapeHtml(label.value)}</text>
+          </g>
         `).join("")
       : "";
 
     return `
       <div class="section-title">Medicion satelital</div>
-      <div class="map-wrap ${proposalIndex === 2 ? "proposal-3-map" : ""}">
-        <img
-          src="${escapeHtml(propuesta.mapImg)}"
-          alt="Mapa de medicion"
-          class="map"
-          loading="eager"
-          referrerpolicy="no-referrer"
-        />
-        ${labels}
+      <div class="map-wrap ${proposalIndex === 2 ? "proposal-3-map" : ""}" ${mapWrapStyle}>
+        <svg class="map-svg" viewBox="0 0 ${mW} ${mH}" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mapa de medicion">
+          <image
+            href="${escapeHtml(propuesta.mapImg)}"
+            x="0"
+            y="0"
+            width="${mW}"
+            height="${mH}"
+            preserveAspectRatio="none"
+          />
+          ${labels}
+        </svg>
       </div>
     `;
   };
@@ -2511,7 +3002,7 @@ function buildCotizacionPrintHtml(c){
 
       .meta-top { display:flex; justify-content:space-between; gap:12px; margin-bottom:4.5mm; font-size:12px; }
       .intro-meta {
-        margin-top: 6mm;
+        margin-top: 13mm;
         margin-bottom: 7.5mm;
         align-items: flex-end;
       }
@@ -2569,22 +3060,48 @@ function buildCotizacionPrintHtml(c){
       .photo-card { border:1px solid #d1d5db; border-radius:4px; overflow:hidden; background:#fff; padding:0; }
       .photo { display:block; width:100%; height:66mm; object-fit:cover; object-position:center; background:#f3f4f6; }
       .photo-grid.single .photo { height:74mm; }
-      .proposal-3-photo { height:46mm; object-fit:cover; object-position:center; }
+      .proposal-3-photo {
+        height:52mm;
+        object-fit:contain;
+        object-position:center;
+        background:#ffffff;
+      }
       .photo-caption { padding:5px 0 6px; text-align:center; font-size:10px; color:#6b7280; border-top:1px solid #e5e7eb; }
 
-      .map-wrap { position:relative; width:100%; height:52mm; border:1px solid #d1d5db; overflow:hidden; background:#eef2f7; margin:2mm 0 3mm; }
-      .proposal-3-map { height:52mm; }
-      .map { display:block; width:100%; height:100%; object-fit:cover; background:#eef2f7; }
-      .map-label {
-        position:absolute;
-        font-size:10px;
-        font-weight:700;
-        line-height:1;
-        white-space:nowrap;
-        text-shadow:0 1px 1px rgba(255,255,255,.95);
-        transform-origin:center center;
+      .map-wrap {
+        position:relative;
+        width:100%;
+        height:52mm;
+        border:1px solid #d1d5db;
+        overflow:hidden;
+        background:#eef2f7;
+        margin:2mm 0 3mm;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+      }
+      .proposal-3-map {
+        height:72mm;
+        background:#ffffff;
+      }
+      .map-svg { display:block; width:100%; height:100%; background:#eef2f7; }
+      .proposal-3-map .map-svg { background:#ffffff; }
+      .map-label-group {
         pointer-events:none;
       }
+      .map-label-group text {
+        text-anchor:middle;
+        dominant-baseline:middle;
+        font-weight:800;
+        letter-spacing:.2px;
+        paint-order:stroke;
+        stroke:#ffffff;
+        stroke-width:3;
+        stroke-linejoin:round;
+        stroke-linecap:round;
+      }
+      .map-label-title { font-size:0; }
+      .map-label-value { font-size:8px; }
 
       .table-wrap { margin-top:2mm; }
       .table { width:100%; border-collapse:collapse; font-size:10.2px; }
@@ -3054,6 +3571,11 @@ function printColilla(empleado, resumen, periodo){
   const periodLabel = periodo?.label || (periodo?.mes || new Date().toISOString().slice(0,7));
   const devengados = [
     ['Salario del corte', resumen.salario],
+    ['Incapacidad empleador', resumen.incapacidadEmpleador],
+    ['Incapacidad EPS', resumen.incapacidadEPS],
+    ['Incapacidad Colpensiones', resumen.incapacidadColpensiones],
+    ['Incapacidad ARL', resumen.incapacidadARL],
+    ['Incapacidad EPS (541+)', resumen.incapacidadEPS540],
     ['Auxilio de transporte', resumen.auxilioTransporte],
     ['Horas extras', resumen.horasExtras],
     ['Comisiones', resumen.comisiones],
@@ -3100,7 +3622,7 @@ td{padding:8px 12px;border-top:1px solid #f1f5f9;}
   <div class="employee">
     <strong>${empleado.nombre}</strong>
     Cedula: ${empleado.cedula||'-'} · Cargo: ${empleado.cargo||'-'}<br/>Banco: ${empleado.banco||'-'} · Cuenta: ${empleado.numeroCuenta||'-'}
-    Periodo: ${periodLabel} · Dias pagados: ${resumen.diasNomina}
+    Periodo: ${periodLabel} · Dias laborados: ${resumen.diasNomina}${resumen.diasIncapacidad>0 ? ` · Dias incapacidad: ${resumen.diasIncapacidad}` : ""}
   </div>
 </div>
 <div class="body">
@@ -3150,11 +3672,16 @@ function printLiquidacion(empleado, pfl, indemn, diasVacPagar, fechaSalida, resu
   const total = pfl.cesantias + pfl.interesesCesantias + pfl.prima + vacValorReal + indemn + (resumenRetiro?.neto||0);
   const rows = [
     ['Salario días trabajados', (resumenRetiro?.diasNomina||0) + ' días × ' + fmtC((resumenRetiro?.valorDia)||0), fmtC(resumenRetiro?.salario||0)],
+    ...((resumenRetiro?.incapacidadEmpleador||0)>0 ? [['Incapacidad empleador', 'Enfermedad común · días 1-2 del tramo reportado', fmtC(resumenRetiro?.incapacidadEmpleador||0)]] : []),
+    ...((resumenRetiro?.incapacidadEPS||0)>0 ? [['Incapacidad EPS', 'Origen común a cargo de EPS', fmtC(resumenRetiro?.incapacidadEPS||0)]] : []),
+    ...((resumenRetiro?.incapacidadColpensiones||0)>0 ? [['Incapacidad Colpensiones', 'Prórroga común día 181 a 540', fmtC(resumenRetiro?.incapacidadColpensiones||0)]] : []),
+    ...((resumenRetiro?.incapacidadARL||0)>0 ? [['Incapacidad ARL', 'Origen laboral al 100% del IBC', fmtC(resumenRetiro?.incapacidadARL||0)]] : []),
+    ...((resumenRetiro?.incapacidadEPS540||0)>0 ? [['Incapacidad EPS (541+)', 'Prórroga común posterior a 540 días', fmtC(resumenRetiro?.incapacidadEPS540||0)]] : []),
     ['Auxilio de transporte proporcional', 'Auxilio del corte según ' + (resumenRetiro?.diasNomina||0) + ' días', fmtC(resumenRetiro?.auxilioTransporte||0)],
     ...((resumenRetiro?.horasExtras||0)>0 ? [['Horas extras pendientes', 'Registradas dentro del corte final', fmtC(resumenRetiro?.horasExtras||0)]] : []),
     ...((resumenRetiro?.comisiones||0)>0 ? [['Comisiones pendientes', 'Registradas dentro del corte final', fmtC(resumenRetiro?.comisiones||0)]] : []),
-    ...((resumenRetiro?.salud||0)>0 ? [['Descuento salud empleado', '4% sobre salario + extras + comisiones', '- ' + fmtC(resumenRetiro?.salud||0)]] : []),
-    ...((resumenRetiro?.pension||0)>0 ? [['Descuento pensión empleado', '4% sobre salario + extras + comisiones', '- ' + fmtC(resumenRetiro?.pension||0)]] : []),
+    ...((resumenRetiro?.salud||0)>0 ? [['Descuento salud empleado', '4% sobre salario + incapacidades + extras + comisiones', '- ' + fmtC(resumenRetiro?.salud||0)]] : []),
+    ...((resumenRetiro?.pension||0)>0 ? [['Descuento pensión empleado', '4% sobre salario + incapacidades + extras + comisiones', '- ' + fmtC(resumenRetiro?.pension||0)]] : []),
     ...((resumenRetiro?.otrasDeducciones||0)>0 ? [['Otras deducciones', 'Conceptos autorizados del empleado', '- ' + fmtC(resumenRetiro?.otrasDeducciones||0)]] : []),
     ['Neto nómina final', periodoRetiro?.label||'Corte final', fmtC(resumenRetiro?.neto||0)],
     ['Cesantías (Art. 249 CST)', (empleado.salario + (empleado.salario<=NOMINA_CO_2026.topeAuxilio?NOMINA_CO_2026.auxilioTransporte:0)).toLocaleString('es-CO') + ' × ' + pfl.diasTrabajados + 'd ÷ 360', fmtC(pfl.cesantias)],
@@ -3720,7 +4247,6 @@ export default function App(){
         {id:"cotizacion",l:"Cotizaciones",i:"CT"},
         {id:"clientes",l:"Clientes",i:"CL"},
         {id:"obras",l:"Ejecucion de Obra",i:"OB"},
-        {id:"planos",l:"Planos y Medicion",i:"PL"},
         {id:"pagos",l:"Cuentas por cobrar",i:"PG"},
       ],
     },
@@ -3781,7 +4307,6 @@ export default function App(){
         {scr==="dashboard"&&<Dashboard ctx={ctx} go={setScr}/>}
         {scr==="cotizacion"&&<Cotizacion ctx={ctx}/>}
         {scr==="clientes"&&<ClientesDB ctx={ctx}/>}
-        {scr==="planos"&&<Planos ctx={ctx}/>}
         {scr==="pagos"&&<Pagos ctx={ctx}/>}
         {scr==="obras"&&<Obras ctx={ctx}/>}
         {scr==="certificaciones"&&<Certificaciones ctx={ctx}/>}
@@ -4794,6 +5319,8 @@ function CuentasPagar({ctx}){
   const [cxpForm,setCxpForm]=useState(createCuentaBase());
   const [vistaPagoCxP,setVistaPagoCxP]=useState("registro");
   const [busquedaProveedorPago,setBusquedaProveedorPago]=useState("");
+  const [busquedaProveedorFactura,setBusquedaProveedorFactura]=useState("");
+  const [fechaCorteReporteFactura,setFechaCorteReporteFactura]=useState(today());
   const [proveedorPagoId,setProveedorPagoId]=useState("");
   const [guardandoPagoProv,setGuardandoPagoProv]=useState(false);
   const [filtroPagoProv,setFiltroPagoProv]=useState("todos");
@@ -4932,6 +5459,77 @@ function CuentasPagar({ctx}){
     if(a.estado!==b.estado) return a.estado==="Pendiente"?-1:1;
     return String(a.fechaVence||"").localeCompare(String(b.fechaVence||""));
   });
+  const filtroProveedorFactura=normalizarTexto(busquedaProveedorFactura);
+  const busquedaFacturaActiva=Boolean(filtroProveedorFactura);
+  const cuentasCausadasFiltradas=cuentasOrdenadas.filter((cuenta)=>{
+    const proveedorCuenta=proveedoresData.find((proveedor)=>proveedor.id===cuenta.proveedorId);
+    const obraCuenta=obras.find((obra)=>obra.id===cuenta.obraId);
+    const searchable=[
+      proveedorCuenta?.nombre,
+      proveedorCuenta?.nit,
+      cuenta.factura,
+      cuenta.concepto,
+      cuenta.obraId,
+      obraCuenta?.cliente,
+      obraCuenta?.proyecto,
+      cuenta.fecha,
+      cuenta.fechaVence,
+      cuenta.estado,
+    ].map(normalizarTexto);
+    if(!busquedaFacturaActiva) return false;
+    return searchable.some((value)=>value.includes(filtroProveedorFactura));
+  });
+  const cuentasVencimientoReporte = cuentasOrdenadas
+    .filter((cuenta)=>!fechaCorteReporteFactura || String(cuenta.fechaVence || cuenta.fecha || "") <= String(fechaCorteReporteFactura))
+    .filter((cuenta)=>Number(cuenta.saldoPendienteActual || 0) > 0);
+  const totalVencimientoReporte = cuentasVencimientoReporte.reduce((sum, cuenta)=>sum + Number(cuenta.saldoPendienteActual || 0), 0);
+  const exportarExcelVencimientos = ()=>{
+    const fechaCorte = fechaCorteReporteFactura || today();
+    const filas = cuentasVencimientoReporte.map((cuenta)=>{
+      const proveedorCuenta=proveedoresData.find((proveedor)=>proveedor.id===cuenta.proveedorId);
+      const obraCuenta=obras.find((obra)=>obra.id===cuenta.obraId);
+      const diasVencimiento = cuenta.fechaVence
+        ? Math.floor((parseIsoDate(fechaCorte) - parseIsoDate(cuenta.fechaVence)) / (1000*60*60*24))
+        : "";
+      return [
+        proveedorCuenta?.nombre || "",
+        proveedorCuenta?.nit || "",
+        cuenta.factura || "",
+        cuenta.concepto || "",
+        obraCuenta?.id || cuenta.obraId || "",
+        obraCuenta?.cliente || "",
+        cuenta.fecha || "",
+        cuenta.fechaVence || "",
+        cuenta.estado || "",
+        Number(cuenta.subtotal || 0),
+        Number(cuenta.valorIva ?? cuenta.valor_iva ?? 0),
+        Number(cuenta.valorTotalRetenciones ?? cuenta.valor_total_retenciones ?? 0),
+        Number(cuenta.valorTotalPagar ?? cuenta.valor_total_pagar ?? cuenta.monto ?? 0),
+        Number(cuenta.montoPagado || 0),
+        Number(cuenta.saldoPendienteActual || 0),
+        Number.isFinite(diasVencimiento) ? diasVencimiento : "",
+      ];
+    });
+
+    downloadExcelWorkbook(`reporte_vencimientos_${fechaCorte}`, [
+      {
+        name:"Resumen",
+        rows:[
+          ["Reporte", "Vencimientos cuentas por pagar"],
+          ["Fecha corte", fechaCorte],
+          ["Facturas incluidas", cuentasVencimientoReporte.length],
+          ["Saldo pendiente", totalVencimientoReporte],
+        ],
+      },
+      {
+        name:"Vencimientos",
+        rows:[
+          ["Proveedor", "NIT", "Factura", "Concepto", "Obra", "Cliente / Obra", "Fecha factura", "Fecha vencimiento", "Estado", "Subtotal", "IVA", "Retenciones", "Valor total", "Pagado acumulado", "Saldo pendiente", "Dias vencido al corte"],
+          ...filas,
+        ],
+      },
+    ]);
+  };
 
   const totalPendiente=cuentasNorm.filter(c=>c.estado==="Pendiente").reduce((s,c)=>s+Number(c.saldoPendienteActual||0),0);
   const totalPagado=cuentasNorm.reduce((s,c)=>s+Number(c.montoPagado||0),0);
@@ -5668,16 +6266,54 @@ function CuentasPagar({ctx}){
           )}
 
           <div style={CD}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:14,flexWrap:"wrap",gap:12}}>
               <div style={ST}>Facturas causadas y vencimientos</div>
-              <div style={{fontSize:11,color:"#64748b"}}>Se ordenan primero las pendientes y luego por fecha de vencimiento</div>
+              <div style={{display:"flex",gap:10,flexWrap:"wrap",justifyContent:"flex-end",width:"100%"}}>
+                <div style={{width:"100%",maxWidth:380}}>
+                  <input
+                    value={busquedaProveedorFactura}
+                    onChange={(e)=>setBusquedaProveedorFactura(e.target.value)}
+                    placeholder="Buscar factura, proveedor, concepto u obra"
+                    style={{...SI,margin:0,background:"#fff"}}
+                  />
+                </div>
+                <div style={{width:"100%",maxWidth:180}}>
+                  <input
+                    type="date"
+                    value={fechaCorteReporteFactura}
+                    onChange={(e)=>setFechaCorteReporteFactura(e.target.value)}
+                    style={{...SI,margin:0,background:"#fff"}}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={exportarExcelVencimientos}
+                  style={{...B("#166534","#d1fae5"),padding:"10px 16px"}}
+                >
+                  Exportar Excel
+                </button>
+              </div>
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10,marginBottom:12,fontSize:11,color:"#64748b"}}>
+              <div>
+                {busquedaFacturaActiva
+                  ? `Mostrando solo los resultados de "${busquedaProveedorFactura.trim()}".`
+                  : "Escribe la factura, proveedor, concepto u obra que quieres consultar para ver resultados."}
+              </div>
+              <div style={{fontWeight:700,color:"#166534"}}>
+                Corte reporte: {fechaCorteReporteFactura || "Sin fecha"} · {cuentasVencimientoReporte.length} factura(s) · {fmt(totalVencimientoReporte)}
+              </div>
             </div>
 
-            {cuentasOrdenadas.length===0 ? (
-              <div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13}}>No hay facturas o gastos causados</div>
+            {cuentasCausadasFiltradas.length===0 ? (
+              <div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13}}>
+                {busquedaFacturaActiva
+                  ? "No hay facturas causadas con ese criterio de búsqueda"
+                  : "La vista está limpia. Escribe una factura para consultarla."}
+              </div>
             ) : (
               <div style={{display:"grid",gap:10}}>
-                {cuentasOrdenadas.map(c=>{
+                {cuentasCausadasFiltradas.map(c=>{
                   const prov=proveedoresData.find(p=>p.id===c.proveedorId);
                   const obra=obras.find(o=>o.id===c.obraId);
                   const vencida=c.estado==="Pendiente"&&c.fechaVence&&c.fechaVence<today();
@@ -5876,7 +6512,28 @@ function Obras({ctx}){
   const guardarObra=()=>{
     if(!nob.cliente.trim())return;
     const id="OB-" + (String(obras.length+1).padStart(3,"0"));
-    setObras(p=>[...p,{...nob,id,nit:"",coords:"",estado:"En Obra",avance:0,pagado:0,saldo:nob.total,costos:0,empleados:[],trazos:[],anclajes:[]}]);
+    const cotizacionVinculada = nob.cotizacionId ? cotizaciones.find((cotizacion)=>cotizacion.id===nob.cotizacionId) : null;
+    const snapshot = cotizacionVinculada ? getQuoteApprovalAccountingSnapshot(cotizacionVinculada) : null;
+    const totalObra = snapshot?.totalObra ?? Number(nob.total || 0);
+    setObras(p=>[...p,{
+      ...nob,
+      id,
+      nit:"",
+      coords:"",
+      estado:"En Obra",
+      avance:0,
+      total:totalObra,
+      pagado:0,
+      saldo:totalObra,
+      costos:0,
+      empleados:[],
+      trazos:[],
+      anclajes:[],
+      subtotalCotizacion:snapshot?.subtotalCotizacion ?? 0,
+      utilidadCotizacion:snapshot?.utilidadCotizacion ?? 0,
+      baseIngresoContable:snapshot?.baseIngresoContable ?? totalObra,
+      ivaGeneradoCotizacion:snapshot?.ivaGeneradoCotizacion ?? 0,
+    }]);
     if(nob.cotizacionId){
       ctx.setCotizaciones(p=>p.map(c=>c.id===nob.cotizacionId?{...c,estado:"Aprobada",obraId:id}:c));
     }
@@ -6955,7 +7612,13 @@ function Contabilidad({ctx}){
   const accountGroupOptions = getAccountGroupOptions();
   const statementCategoryOptions = getStatementCategoryOptions();
   const configActual = normalizeContabilidadConfig(contabilidadConfig?.[0] || CONTABILIDAD_CONFIG_INIT[0]);
-  const cuentasPlan = (planCuentas?.length ? planCuentas : PLAN_CUENTAS_INIT).map(normalizePlanCuenta);
+  const cuentasPlan = Array.from(
+    new Map(
+      [...PLAN_CUENTAS_INIT, ...((planCuentas?.length ? planCuentas : []))]
+        .map(normalizePlanCuenta)
+        .map((cuenta)=>[cuenta.codigo, cuenta])
+    ).values()
+  ).sort((a,b)=>String(a.codigo).localeCompare(String(b.codigo),"es"));
   const manuales = (asientosContables || []).map((entry)=>normalizeAsientoContable(entry, cuentasPlan));
   const tercerosERP = [
     ...(Array.isArray(clientes) ? clientes : []).map((cliente)=>({
@@ -6982,7 +7645,16 @@ function Contabilidad({ctx}){
   ]
     .filter((item)=>item.terceroNombre)
     .sort((a,b)=>a.terceroNombre.localeCompare(b.terceroNombre,"es"));
+  const normalizeTerceroLookup = (value="")=>String(value || "").toLowerCase().replace(/[^a-z0-9]/g,"");
   const buscarTerceroERP = (ref="")=>tercerosERP.find((item)=>item.ref===ref) || null;
+  const buscarTerceroERPPorNit = (nit="")=>{
+    const lookup = normalizeTerceroLookup(nit);
+    if(!lookup) return null;
+    const exacto = tercerosERP.find((item)=>normalizeTerceroLookup(item.terceroNit)===lookup);
+    if(exacto) return exacto;
+    const coincidencias = tercerosERP.filter((item)=>normalizeTerceroLookup(item.terceroNit).includes(lookup));
+    return coincidencias.length===1 ? coincidencias[0] : null;
+  };
   const resolverTerceroRef = (terceroId="", terceroNit="", terceroNombre="")=>{
     const id = String(terceroId || "").trim();
     const nit = String(terceroNit || "").trim();
@@ -7018,6 +7690,7 @@ function Contabilidad({ctx}){
     cuentas,
     clientes,
     proveedores,
+    empleados,
     obras,
     nominasGeneradas,
     config:configActual,
@@ -7046,23 +7719,52 @@ function Contabilidad({ctx}){
     return codigo.startsWith("11") || [configActual.cuentaBanco, configActual.cuentaCaja].includes(codigo);
   }).filter((cuenta, index, array)=>array.findIndex((item)=>item.codigo===cuenta.codigo)===index);
   const primeraCuentaBancaria = cuentasBancariasReporte[0]?.codigo || "";
+  const formatCuentaMovimientoLabel = (codigo="", nombre="")=>{
+    const cuentaCodigo = String(codigo || "").trim();
+    const cuentaNombre = String(nombre || "").trim();
+    if(cuentaCodigo && cuentaNombre) return `${cuentaCodigo} · ${cuentaNombre}`;
+    return cuentaCodigo || cuentaNombre;
+  };
+  const buscarCuentaMovimiento = (term="")=>{
+    const lookup = normalizeTerceroLookup(term);
+    if(!lookup) return null;
+    const exacta = cuentasMovimiento.find((cuenta)=>
+      [cuenta.codigo, cuenta.nombre, formatCuentaMovimientoLabel(cuenta.codigo, cuenta.nombre)]
+        .some((value)=>normalizeTerceroLookup(value)===lookup)
+    );
+    if(exacta) return exacta;
+    const inicia = cuentasMovimiento.filter((cuenta)=>
+      [cuenta.codigo, cuenta.nombre, formatCuentaMovimientoLabel(cuenta.codigo, cuenta.nombre)]
+        .some((value)=>normalizeTerceroLookup(value).startsWith(lookup))
+    );
+    if(inicia.length===1) return inicia[0];
+    const contiene = cuentasMovimiento.filter((cuenta)=>
+      [cuenta.codigo, cuenta.nombre, formatCuentaMovimientoLabel(cuenta.codigo, cuenta.nombre)]
+        .some((value)=>normalizeTerceroLookup(value).includes(lookup))
+    );
+    return contiene.length===1 ? contiene[0] : null;
+  };
+  const getCuentaMovimientoInputValue = (linea={})=>
+    String(linea?.cuentaBusqueda || formatCuentaMovimientoLabel(linea?.cuentaCodigo, linea?.cuentaNombre) || "");
   const cuentasFiltradas = cuentasPlan.filter((cuenta)=>{
     const term = String(busquedaCuenta || "").trim().toLowerCase();
     if(!term) return true;
     return [cuenta.codigo,cuenta.nombre,cuenta.grupoReporteLabel,cuenta.categoriaEstadoLabel]
       .some((value)=>String(value || "").toLowerCase().includes(term));
   });
+  const busquedaAsientoNormalizada = String(busquedaAsiento || "").trim().toLowerCase();
+  const mostrarComprobantesBuscados = busquedaAsientoNormalizada.length > 0;
   const asientosFiltrados = asientosPeriodo.filter((entry)=>{
-    const term = String(busquedaAsiento || "").trim().toLowerCase();
-    if(!term) return true;
+    const term = busquedaAsientoNormalizada;
+    if(!term) return false;
     return [entry.consecutivo,entry.descripcion,entry.tipoComprobante,entry.terceroNit,entry.terceroNombre,entry.soporte,entry.origen]
       .some((value)=>String(value || "").toLowerCase().includes(term));
   });
   const totalDebitoForm = money((asientoForm.lineas || []).reduce((sum,linea)=>sum + Number(linea.debito || 0),0));
   const totalCreditoForm = money((asientoForm.lineas || []).reduce((sum,linea)=>sum + Number(linea.credito || 0),0));
   const diferenciaForm = money(totalDebitoForm - totalCreditoForm);
-  const terceroMovimientoActivo = buscarTerceroERP(filtroTerceroMovimientoRef);
   const filtroCuentaMovimientoNormalizado = String(filtroCuentaMovimiento || "").trim();
+  const filtroTerceroMovimientoLookup = normalizeTerceroLookup(filtroTerceroMovimientoRef);
   const movimientosReporteBase = asientosCombinados
     .filter((entry)=>entry.estado!=="Anulado" && isDateWithinRange(entry.fecha, rangoReportes.inicio, rangoReportes.fin))
     .flatMap((entry)=>(entry.lineas || []).map((linea, index)=>{
@@ -7099,12 +7801,9 @@ function Contabilidad({ctx}){
   const movimientosCuenta = movimientosReporteBase
     .filter((row)=>!filtroCuentaMovimientoNormalizado || row.cuentaCodigo.startsWith(filtroCuentaMovimientoNormalizado))
     .filter((row)=>{
-      if(!terceroMovimientoActivo) return true;
-      return (
-        (terceroMovimientoActivo.terceroId && row.terceroId===terceroMovimientoActivo.terceroId) ||
-        (terceroMovimientoActivo.terceroNit && row.terceroNit===terceroMovimientoActivo.terceroNit) ||
-        (terceroMovimientoActivo.terceroNombre && row.terceroNombre===terceroMovimientoActivo.terceroNombre)
-      );
+      if(!filtroTerceroMovimientoLookup) return true;
+      return [row.terceroNit, row.terceroId, row.terceroNombre]
+        .some((value)=>normalizeTerceroLookup(value).includes(filtroTerceroMovimientoLookup));
     })
     .map((row)=>{
       saldoAuxiliarAcumulado = money(saldoAuxiliarAcumulado + Number(row.saldoMovimiento || 0));
@@ -7185,6 +7884,8 @@ function Contabilidad({ctx}){
   const exportarExcelContabilidad = ()=>{
     const periodoLabel = periodo || "general";
     const rangoLabel = `${rangoReportes.inicio || "inicio"}_${rangoReportes.fin || "fin"}`;
+    const filtroCuentaLabel = String(filtroCuentaMovimiento || "").trim() || "Todas";
+    const filtroTerceroLabel = String(filtroTerceroMovimientoRef || "").trim() || "Todos";
     const libroRows = [
       ["Fecha","Comprobante","Tipo","Origen","NIT tercero","Tercero","Descripcion","Cuenta","Detalle","Centro costo","Debito","Credito","Estado"],
       ...asientosFiltrados.flatMap((entry)=>
@@ -7266,6 +7967,17 @@ function Contabilidad({ctx}){
       ]),
     ];
     const auxiliarRows = [
+      ["Reporte","Auxiliar por cuenta"],
+      ["Periodo", periodoLabel],
+      ["Cuenta / auxiliar", filtroCuentaLabel],
+      ["Tercero / NIT / cédula", filtroTerceroLabel],
+      ["Fecha inicial", rangoReportes.inicio || ""],
+      ["Fecha final", rangoReportes.fin || ""],
+      ["Movimientos", movimientosCuenta.length],
+      ["Debitos", Number(resumenAuxiliar.debitos || 0)],
+      ["Creditos", Number(resumenAuxiliar.creditos || 0)],
+      ["Saldo", Number(resumenAuxiliar.saldo || 0)],
+      [""],
       ["Fecha","Comprobante","Cuenta","Detalle","NIT","Tercero","Centro costo","Debito","Credito","Saldo acumulado","Origen"],
       ...movimientosCuenta.map((row)=>[
         row.fecha || "",
@@ -7282,6 +7994,18 @@ function Contabilidad({ctx}){
       ]),
     ];
     const conciliacionRows = [
+      ["Reporte","Conciliacion bancaria"],
+      ["Periodo", periodoLabel],
+      ["Cuenta bancaria", cuentaConciliacion || "Todas"],
+      ["Fecha inicial", rangoReportes.inicio || ""],
+      ["Fecha final", rangoReportes.fin || ""],
+      ["Solo pendientes", soloPendientesConciliacion ? "Si" : "No"],
+      ["Movimientos", movimientosConciliacion.length],
+      ["Debitos", Number(resumenConciliacion.debitos || 0)],
+      ["Creditos", Number(resumenConciliacion.creditos || 0)],
+      ["Saldo cuenta", Number(resumenConciliacion.saldo || 0)],
+      ["Saldo conciliado", Number(resumenConciliacion.saldoConciliado || 0)],
+      [""],
       ["Conciliado","Fecha","Comprobante","Cuenta","Detalle","NIT","Tercero","Debito","Credito","Saldo acumulado","Origen"],
       ...movimientosConciliacion.map((row)=>[
         row.conciliado ? "Si" : "No",
@@ -7297,6 +8021,22 @@ function Contabilidad({ctx}){
         row.origen || "",
       ]),
     ];
+
+    if(reporteTab==="movimientos"){
+      downloadExcelWorkbook(
+        `auxiliar-filtrado-${periodoLabel}-${rangoLabel}`,
+        [{ name:"Auxiliar", rows:auxiliarRows }]
+      );
+      return;
+    }
+
+    if(reporteTab==="conciliacion"){
+      downloadExcelWorkbook(
+        `conciliacion-filtrada-${periodoLabel}-${rangoLabel}`,
+        [{ name:"Conciliacion", rows:conciliacionRows }]
+      );
+      return;
+    }
 
     downloadExcelWorkbook(
       `reportes-contables-${periodoLabel}-${rangoLabel}`,
@@ -7358,6 +8098,22 @@ function Contabilidad({ctx}){
       })),
     }));
   };
+  const aplicarTerceroAsientoPorNit = (nit)=>{
+    const nitValue = String(nit || "").trim();
+    const tercero = buscarTerceroERPPorNit(nitValue);
+    setAsientoForm((prev)=>({
+      ...prev,
+      terceroId:tercero?.terceroId || "",
+      terceroNit:tercero?.terceroNit || nitValue,
+      terceroNombre:tercero?.terceroNombre || "",
+      lineas:(prev.lineas || []).map((linea)=>({
+        ...linea,
+        terceroId:tercero?.terceroId || "",
+        terceroNit:tercero?.terceroNit || nitValue,
+        terceroNombre:tercero?.terceroNombre || "",
+      })),
+    }));
+  };
 
   const resetCuentaPlan = ()=>{
     setCuentaForm(buildEmptyPlanCuenta());
@@ -7377,7 +8133,13 @@ function Contabilidad({ctx}){
       nombre:String(cuentaForm.nombre || "").trim(),
     });
     setPlanCuentas((prev)=>{
-      const base = (prev?.length ? prev : PLAN_CUENTAS_INIT).map(normalizePlanCuenta);
+      const base = Array.from(
+        new Map(
+          [...PLAN_CUENTAS_INIT, ...((prev?.length ? prev : []))]
+            .map(normalizePlanCuenta)
+            .map((cuenta)=>[cuenta.codigo, cuenta])
+        ).values()
+      );
       const next = base.some((item)=>item.id===editCuentaId || item.codigo===payload.codigo)
         ? base.map((item)=>(item.id===editCuentaId || item.codigo===payload.codigo) ? payload : item)
         : [...base,payload];
@@ -7394,7 +8156,13 @@ function Contabilidad({ctx}){
   };
 
   const alternarCuentaActiva = (codigo)=>{
-    setPlanCuentas((prev)=>(prev?.length ? prev : PLAN_CUENTAS_INIT).map((item)=>{
+    setPlanCuentas((prev)=>Array.from(
+      new Map(
+        [...PLAN_CUENTAS_INIT, ...((prev?.length ? prev : []))]
+          .map(normalizePlanCuenta)
+          .map((cuenta)=>[cuenta.codigo, cuenta])
+      ).values()
+    ).map((item)=>{
       const cuenta = normalizePlanCuenta(item);
       if(cuenta.codigo!==codigo) return cuenta;
       return { ...cuenta, activo:!cuenta.activo };
@@ -7418,6 +8186,16 @@ function Contabilidad({ctx}){
             ...linea,
             cuentaCodigo:value,
             cuentaNombre:cuenta?.nombre || "",
+            cuentaBusqueda:formatCuentaMovimientoLabel(value, cuenta?.nombre || ""),
+          };
+        }
+        if(field==="cuentaBusqueda"){
+          const cuenta = buscarCuentaMovimiento(value);
+          return {
+            ...linea,
+            cuentaCodigo:cuenta?.codigo || "",
+            cuentaNombre:cuenta?.nombre || "",
+            cuentaBusqueda:cuenta ? formatCuentaMovimientoLabel(cuenta.codigo, cuenta.nombre) : String(value || ""),
           };
         }
         if(field==="terceroRef"){
@@ -7555,15 +8333,6 @@ function Contabilidad({ctx}){
 
       {tab==="resumen" && (
         <>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:14,marginBottom:18}}>
-            <SC label="Asientos del periodo" value={asientosPeriodo.length} color="#60b4ff" icon="AS"/>
-            <SC label="Debitos" value={fmt(resumenPeriodo.totalDebitos)} color="#166534" icon="DB"/>
-            <SC label="Creditos" value={fmt(resumenPeriodo.totalCreditos)} color="#7c3aed" icon="CR"/>
-            <SC label="CxC pendiente" value={fmt(cXcPendiente)} color="#fb923c" icon="RC"/>
-            <SC label="CxP pendiente" value={fmt(cXpPendiente)} color="#ef4444" icon="CP"/>
-            <SC label="Utilidad operativa" value={fmt(estados.resultados.utilidadOperacional)} color={estados.resultados.utilidadOperacional>=0?"#4ade80":"#ef4444"} icon="UT"/>
-          </div>
-
           <div style={{display:"grid",gridTemplateColumns:"1.1fr 1fr",gap:18}}>
             <div style={CD}>
               <div style={ST}>Base contable 2026</div>
@@ -7619,6 +8388,8 @@ function Contabilidad({ctx}){
               <div><LBL>Ingreso servicios</LBL><select value={configActual.cuentaIngresoServicios} onChange={(e)=>actualizarConfig("cuentaIngresoServicios",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
               <div><LBL>Cuenta proveedores</LBL><select value={configActual.cuentaProveedores} onChange={(e)=>actualizarConfig("cuentaProveedores",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
               <div><LBL>IVA descontable</LBL><select value={configActual.cuentaIvaDescontable} onChange={(e)=>actualizarConfig("cuentaIvaDescontable",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
+              <div><LBL>IVA generado</LBL><select value={configActual.cuentaIvaGenerado} onChange={(e)=>actualizarConfig("cuentaIvaGenerado",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
+              <div><LBL>Utilidad / AIU</LBL><select value={configActual.cuentaUtilidadObra} onChange={(e)=>actualizarConfig("cuentaUtilidadObra",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
               <div><LBL>Auto CxP</LBL><select value={configActual.autoCxp?"si":"no"} onChange={(e)=>actualizarConfig("autoCxp",e.target.value==="si")} style={SI}><option value="si">Activo</option><option value="no">Inactivo</option></select></div>
               <div><LBL>Auto nómina</LBL><select value={configActual.autoNomina?"si":"no"} onChange={(e)=>actualizarConfig("autoNomina",e.target.value==="si")} style={SI}><option value="si">Activo</option><option value="no">Inactivo</option></select></div>
               <div><LBL>Gasto sueldos</LBL><select value={configActual.cuentaNominaSueldos} onChange={(e)=>actualizarConfig("cuentaNominaSueldos",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
@@ -7626,6 +8397,12 @@ function Contabilidad({ctx}){
               <div><LBL>Auxilio transporte</LBL><select value={configActual.cuentaNominaAuxilio} onChange={(e)=>actualizarConfig("cuentaNominaAuxilio",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
               <div><LBL>Liquidaciones</LBL><select value={configActual.cuentaNominaLiquidaciones} onChange={(e)=>actualizarConfig("cuentaNominaLiquidaciones",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
               <div><LBL>Nómina por pagar</LBL><select value={configActual.cuentaNominaPorPagar} onChange={(e)=>actualizarConfig("cuentaNominaPorPagar",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
+              <div><LBL>Gasto prima</LBL><select value={configActual.cuentaPrimaServicios} onChange={(e)=>actualizarConfig("cuentaPrimaServicios",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
+              <div><LBL>Gasto cesantías</LBL><select value={configActual.cuentaCesantias} onChange={(e)=>actualizarConfig("cuentaCesantias",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
+              <div><LBL>Gasto int. cesantías</LBL><select value={configActual.cuentaInteresesCesantias} onChange={(e)=>actualizarConfig("cuentaInteresesCesantias",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
+              <div><LBL>Prima por pagar</LBL><select value={configActual.cuentaPrimaPorPagar} onChange={(e)=>actualizarConfig("cuentaPrimaPorPagar",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
+              <div><LBL>Cesantías por pagar</LBL><select value={configActual.cuentaCesantiasPorPagar} onChange={(e)=>actualizarConfig("cuentaCesantiasPorPagar",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
+              <div><LBL>Int. cesantías x pagar</LBL><select value={configActual.cuentaInteresesCesantiasPorPagar} onChange={(e)=>actualizarConfig("cuentaInteresesCesantiasPorPagar",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
               <div><LBL>Salud por pagar</LBL><select value={configActual.cuentaSaludPorPagar} onChange={(e)=>actualizarConfig("cuentaSaludPorPagar",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
               <div><LBL>Pensión por pagar</LBL><select value={configActual.cuentaPensionPorPagar} onChange={(e)=>actualizarConfig("cuentaPensionPorPagar",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
               <div><LBL>Otras deduc. nómina</LBL><select value={configActual.cuentaOtrasDeduccionesNomina} onChange={(e)=>actualizarConfig("cuentaOtrasDeduccionesNomina",e.target.value)} style={SI}>{cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}</select></div>
@@ -7688,7 +8465,11 @@ function Contabilidad({ctx}){
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap"}}>
             <div style={{...CD,flex:1,padding:16}}>
               <div style={ST}>Libro diario del periodo</div>
-              <div style={{fontSize:12,color:"#64748b"}}>{asientosFiltrados.length} comprobante(s) visibles en {periodo || "todos los periodos"}.</div>
+              <div style={{fontSize:12,color:"#64748b"}}>
+                {mostrarComprobantesBuscados
+                  ? `${asientosFiltrados.length} comprobante(s) visibles en ${periodo || "todos los periodos"}.`
+                  : `Escribe en el buscador para consultar comprobantes de ${periodo || "todos los periodos"}.`}
+              </div>
             </div>
             <div style={{display:"flex",gap:8}}>
               <button style={B("#166534")} onClick={()=>{setShowAsientoForm(true);setAsientoForm(buildEmptyManualAsiento(manuales, today()));setEditAsientoId(null);}}>+ Nuevo comprobante</button>
@@ -7704,15 +8485,26 @@ function Contabilidad({ctx}){
                 <div><LBL>Tipo</LBL><select value={asientoForm.tipoComprobante} onChange={(e)=>setAsientoForm({...asientoForm,tipoComprobante:e.target.value})} style={SI}><option value="Diario">Diario</option><option value="Ingreso">Ingreso</option><option value="Egreso">Egreso</option><option value="Ajuste">Ajuste</option></select></div>
                 <div><LBL>Estado</LBL><select value={asientoForm.estado} onChange={(e)=>setAsientoForm({...asientoForm,estado:e.target.value})} style={SI}><option value="Contabilizado">Contabilizado</option><option value="Borrador">Borrador</option></select></div>
                 <div>
-                  <LBL>Tercero ERP</LBL>
-                  <select value={resolverTerceroRef(asientoForm.terceroId, asientoForm.terceroNit, asientoForm.terceroNombre)} onChange={(e)=>aplicarTerceroAsiento(e.target.value)} style={SI}>
-                    <option value="">Selecciona tercero...</option>
-                    {tercerosERP.map((tercero)=><option key={tercero.ref} value={tercero.ref}>{tercero.tipo} · {tercero.terceroNombre} · {tercero.terceroNit || "Sin NIT"}</option>)}
-                  </select>
+                  <LBL>NIT / Documento</LBL>
+                  <input
+                    list="terceros-erp-por-nit"
+                    value={asientoForm.terceroNit || ""}
+                    onChange={(e)=>aplicarTerceroAsientoPorNit(e.target.value)}
+                    style={SI}
+                    placeholder="Escribe NIT o cédula"
+                  />
+                  <datalist id="terceros-erp-por-nit">
+                    {tercerosERP.map((tercero)=><option key={tercero.ref} value={tercero.terceroNit || ""} label={`${tercero.terceroNombre} · ${tercero.tipo}`}>{`${tercero.terceroNombre} · ${tercero.tipo}`}</option>)}
+                  </datalist>
                 </div>
                 <div>
-                  <LBL>NIT / Documento</LBL>
-                  <input value={asientoForm.terceroNit || ""} readOnly style={{...SI,background:"#f8fafc",color:"#334155"}} placeholder="Se completa con el tercero"/>
+                  <LBL>Tercero ERP</LBL>
+                  <input
+                    value={asientoForm.terceroNombre ? `${asientoForm.terceroNombre}${resolverTerceroRef(asientoForm.terceroId, asientoForm.terceroNit, asientoForm.terceroNombre) ? ` · ${buscarTerceroERP(resolverTerceroRef(asientoForm.terceroId, asientoForm.terceroNit, asientoForm.terceroNombre))?.tipo || ""}` : ""}` : ""}
+                    readOnly
+                    style={{...SI,background:"#f8fafc",color:"#334155"}}
+                    placeholder="Se completa con el NIT"
+                  />
                 </div>
                 <div><LBL>Soporte</LBL><input value={asientoForm.soporte} onChange={(e)=>setAsientoForm({...asientoForm,soporte:e.target.value})} style={SI}/></div>
                 <div><LBL>Nombre tercero</LBL><input value={asientoForm.terceroNombre || ""} readOnly style={{...SI,background:"#f8fafc",color:"#334155"}} placeholder="Se completa con el tercero"/></div>
@@ -7726,10 +8518,16 @@ function Contabilidad({ctx}){
                     {(asientoForm.lineas || []).map((linea)=>(
                       <tr key={linea.id} style={{borderBottom:"1px solid #e2e8f0"}}>
                         <td style={{padding:"8px 10px",minWidth:220}}>
-                          <select value={linea.cuentaCodigo} onChange={(e)=>actualizarLinea(linea.id,"cuentaCodigo",e.target.value)} style={SI}>
-                            <option value="">Selecciona...</option>
-                            {cuentasMovimiento.map((item)=><option key={item.codigo} value={item.codigo}>{item.codigo} · {item.nombre}</option>)}
-                          </select>
+                          <input
+                            list="cuentas-movimiento-list"
+                            value={getCuentaMovimientoInputValue(linea)}
+                            onChange={(e)=>actualizarLinea(linea.id,"cuentaBusqueda",e.target.value)}
+                            style={SI}
+                            placeholder="Busca código o nombre"
+                          />
+                          <datalist id="cuentas-movimiento-list">
+                            {cuentasMovimiento.map((item)=><option key={item.codigo} value={formatCuentaMovimientoLabel(item.codigo, item.nombre)} />)}
+                          </datalist>
                         </td>
                         <td style={{padding:"8px 10px"}}><input value={linea.detalle} onChange={(e)=>actualizarLinea(linea.id,"detalle",e.target.value)} style={SI}/></td>
                         <td style={{padding:"8px 10px",minWidth:240}}>
@@ -7771,9 +8569,10 @@ function Contabilidad({ctx}){
               <div style={ST}>Comprobantes del periodo</div>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                 <input type="month" value={periodo} onChange={(e)=>setPeriodo(e.target.value)} style={{...SI,width:"auto"}}/>
-                <input value={busquedaAsiento} onChange={(e)=>setBusquedaAsiento(e.target.value)} placeholder="Buscar comprobante" style={{...SI,width:240}}/>
+                <input value={busquedaAsiento} onChange={(e)=>setBusquedaAsiento(e.target.value)} placeholder="Buscar comprobante, tercero o NIT" style={{...SI,width:280}}/>
               </div>
             </div>
+            {!mostrarComprobantesBuscados ? null : (
             <div style={{display:"grid",gap:12}}>
               {asientosFiltrados.map((entry)=>(
                 <div key={entry.id} style={{border:"1px solid #e2e8f0",borderRadius:12,overflow:"hidden",background:"#fff"}}>
@@ -7811,7 +8610,13 @@ function Contabilidad({ctx}){
                   </div>
                 </div>
               ))}
+              {!asientosFiltrados.length && (
+                <div style={{border:"1px dashed #cbd5e1",borderRadius:14,background:"#f8fafc",padding:"22px",textAlign:"center",color:"#64748b",fontSize:13}}>
+                  No hay comprobantes que coincidan con esa búsqueda.
+                </div>
+              )}
             </div>
+            )}
           </div>
         </div>
       )}
@@ -7961,11 +8766,13 @@ function Contabilidad({ctx}){
                     <input value={filtroCuentaMovimiento} onChange={(e)=>setFiltroCuentaMovimiento(e.target.value)} placeholder="Ej. 2365, 236540, 240810" style={SI}/>
                   </div>
                   <div>
-                    <LBL>Tercero ERP</LBL>
-                    <select value={filtroTerceroMovimientoRef} onChange={(e)=>setFiltroTerceroMovimientoRef(e.target.value)} style={SI}>
-                      <option value="">Todos los terceros</option>
-                      {tercerosERP.map((tercero)=><option key={tercero.ref} value={tercero.ref}>{tercero.tipo} · {tercero.terceroNombre} · {tercero.terceroNit || "Sin NIT"}</option>)}
-                    </select>
+                    <LBL>Tercero / NIT / cédula</LBL>
+                    <input
+                      value={filtroTerceroMovimientoRef}
+                      onChange={(e)=>setFiltroTerceroMovimientoRef(e.target.value)}
+                      placeholder="Escribe tercero, NIT o cédula"
+                      style={SI}
+                    />
                   </div>
                   <div>
                     <LBL>Fecha inicial</LBL>
@@ -7976,43 +8783,30 @@ function Contabilidad({ctx}){
                     <input type="date" value={rangoReportes.fin} onChange={(e)=>setRangoReportes((prev)=>({...prev,fin:e.target.value}))} style={SI}/>
                   </div>
                 </div>
-                <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",flexWrap:"wrap"}}>
-                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                    {cuentasTributariasRapidas.map((item)=>(
-                      <button key={item.codigo} style={{...B("#f8fafc",item.color),border:`1px solid ${item.color}`}} onClick={()=>aplicarConsultaTributaria(item.codigo)}>
-                        {item.etiqueta}
-                      </button>
-                    ))}
-                  </div>
-                  <button style={B("#f1f5f9","#475569")} onClick={()=>{setFiltroCuentaMovimiento("");setFiltroTerceroMovimientoRef("");setRangoReportes(buildMonthDateRange(periodo));}}>
-                    Limpiar filtros
-                  </button>
-                </div>
               </div>
-
-              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:18}}>
-                <SC label="Movimientos" value={movimientosCuenta.length} color="#60b4ff" icon="MV"/>
-                <SC label="Debitos" value={fmt(resumenAuxiliar.debitos)} color="#166534" icon="DB"/>
-                <SC label="Creditos" value={fmt(resumenAuxiliar.creditos)} color="#7c3aed" icon="CR"/>
-                <SC label="Saldo consulta" value={fmt(resumenAuxiliar.saldo)} color={resumenAuxiliar.saldo>=0?"#003B71":"#b91c1c"} icon="SD"/>
-              </div>
-
-              <div style={{...CD,marginBottom:18}}>
+              <div style={CD}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:12,flexWrap:"wrap"}}>
-                  <div>
-                    <div style={ST}>Libro auxiliar por cuenta</div>
-                    <div style={{fontSize:12,color:"#64748b"}}>Consulta por cuenta, auxiliar o tercero con NIT y detalle del movimiento.</div>
+                  <div style={{fontSize:12,color:"#64748b"}}>
+                    {movimientosCuenta.length} movimiento(s) · Débitos {fmt(resumenAuxiliar.debitos)} · Créditos {fmt(resumenAuxiliar.creditos)} · Saldo {fmt(resumenAuxiliar.saldo)}
                   </div>
                   <div style={{fontSize:12,color:"#64748b"}}>
-                    Rango: <strong>{fmtD(rangoReportes.inicio)}</strong> a <strong>{fmtD(rangoReportes.fin)}</strong>
+                    {filtroTerceroMovimientoRef ? `Filtro tercero: ${filtroTerceroMovimientoRef}` : "Sin filtro de tercero"}
                   </div>
                 </div>
                 <div style={{overflowX:"auto"}}>
                   <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:1200}}>
-                    <thead><tr style={{background:"#f1f5f9"}}>{["Fecha","Comprobante","Cuenta","NIT","Tercero","Detalle","Centro costo","Debito","Credito","Saldo acumulado","Origen"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:["Debito","Credito","Saldo acumulado"].includes(label)?"right":"left",color:"#64748b",fontWeight:600,fontSize:11}}>{label}</th>)}</tr></thead>
+                    <thead>
+                      <tr style={{background:"#f1f5f9"}}>
+                        {["Fecha","Comprobante","Cuenta","NIT","Tercero","Detalle","Centro costo","Debito","Credito","Saldo acumulado","Origen"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:["Debito","Credito","Saldo acumulado"].includes(label)?"right":"left",color:"#64748b",fontWeight:600,fontSize:11}}>{label}</th>)}
+                      </tr>
+                    </thead>
                     <tbody>
                       {movimientosCuenta.length===0 ? (
-                        <tr><td colSpan={11} style={{padding:18,textAlign:"center",color:"#94a3b8"}}>No hay movimientos para el filtro seleccionado.</td></tr>
+                        <tr>
+                          <td colSpan={11} style={{padding:18,textAlign:"center",color:"#94a3b8"}}>
+                            No hay movimientos para ese NIT, cédula, tercero o cuenta en el rango seleccionado.
+                          </td>
+                        </tr>
                       ) : movimientosCuenta.map((row)=>(
                         <tr key={row.rowId} style={{borderBottom:"1px solid #e2e8f0"}}>
                           <td style={{padding:"8px 10px"}}>{fmtD(row.fecha)}</td>
@@ -8026,28 +8820,6 @@ function Contabilidad({ctx}){
                           <td style={{padding:"8px 10px",textAlign:"right",color:"#7c3aed"}}>{fmt(row.credito)}</td>
                           <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:Number(row.saldoAcumulado || 0)>=0?"#1a1a2e":"#b91c1c"}}>{fmt(row.saldoAcumulado)}</td>
                           <td style={{padding:"8px 10px"}}>{row.origen || "manual"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div style={CD}>
-                <div style={ST}>Resumen por tercero</div>
-                <div style={{overflowX:"auto"}}>
-                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:760}}>
-                    <thead><tr style={{background:"#f1f5f9"}}>{["NIT","Tercero","Debitos","Creditos","Saldo"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:["Debitos","Creditos","Saldo"].includes(label)?"right":"left",color:"#64748b",fontWeight:600,fontSize:11}}>{label}</th>)}</tr></thead>
-                    <tbody>
-                      {resumenMovimientoTerceros.length===0 ? (
-                        <tr><td colSpan={5} style={{padding:18,textAlign:"center",color:"#94a3b8"}}>No hay terceros para mostrar en esta consulta.</td></tr>
-                      ) : resumenMovimientoTerceros.map((row)=>(
-                        <tr key={`${row.nit}-${row.tercero}`} style={{borderBottom:"1px solid #e2e8f0"}}>
-                          <td style={{padding:"8px 10px"}}>{row.nit}</td>
-                          <td style={{padding:"8px 10px"}}>{row.tercero}</td>
-                          <td style={{padding:"8px 10px",textAlign:"right",color:"#166534"}}>{fmt(row.debitos)}</td>
-                          <td style={{padding:"8px 10px",textAlign:"right",color:"#7c3aed"}}>{fmt(row.creditos)}</td>
-                          <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:Number(row.saldo || 0)>=0?"#1a1a2e":"#b91c1c"}}>{fmt(row.saldo)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -8091,14 +8863,6 @@ function Contabilidad({ctx}){
                   </div>
                 </div>
               </div>
-
-              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:18}}>
-                <SC label="Movimientos banco" value={movimientosConciliacion.length} color="#60b4ff" icon="BK"/>
-                <SC label="Conciliados" value={resumenConciliacion.conciliados} color="#166534" icon="OK"/>
-                <SC label="Saldo cuenta" value={fmt(resumenConciliacion.saldo)} color="#003B71" icon="SD"/>
-                <SC label="Saldo conciliado" value={fmt(resumenConciliacion.saldoConciliado)} color="#7c3aed" icon="CC"/>
-              </div>
-
               <div style={CD}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:12,flexWrap:"wrap"}}>
                   <div>
@@ -8271,11 +9035,18 @@ function Nomina({ctx}){
   const [corteNomina,setCorteNomina]=useState("primera");
   const [selId,setSelId]=useState(null);
   const [showHE,setShowHE]=useState(null);
-  const nuevoEmpleadoBase = {nombre:"",cedula:"",cargo:"",tel:"",email:"",salario:NOMINA_CO_2026.salarioMinimo,banco:"Bancolombia",tipoCuenta:"Ahorros",numeroCuenta:"",deduccionesPersonalizadas:[],fechaIngreso:today(),tipoContrato:"indefinido",fechaSalida:"",causaRetiro:"",vacacionesPagadasDias:0,vacacionesLiquidacionDias:null};
+  const [showIncapacidad,setShowIncapacidad]=useState(null);
+  const [incapacidadForm,setIncapacidadForm]=useState(buildIncapacidadFormDefault());
+  const [incapacidadPreview,setIncapacidadPreview]=useState(null);
+  const nuevoEmpleadoBase = {nombre:"",cedula:"",cargo:"",tel:"",email:"",salario:NOMINA_CO_2026.salarioMinimo,banco:"Bancolombia",tipoCuenta:"Ahorros",numeroCuenta:"",deduccionesPersonalizadas:[],incapacidades:[],prestacionesSociales:[],fechaIngreso:today(),tipoContrato:"indefinido",fechaSalida:"",causaRetiro:"",vacacionesPagadasDias:0,vacacionesLiquidacionDias:null};
   const [nf,setNf]=useState(nuevoEmpleadoBase);
   const [heForm,setHeForm]=useState({obraId:"",tipo:"horaExtra",tipoRecargo:"horaExtraGeneral",horas:0,valorHora:12500,comision:0,concepto:"",fecha:today()});
   const [cargoForm,setCargoForm]=useState({nombre:"",descripcion:""});
   const [dedForm,setDedForm]=useState({nombre:"",valor:0});
+  const [prestacionEmpleadoId,setPrestacionEmpleadoId]=useState(null);
+  const [prestacionTipo,setPrestacionTipo]=useState("prima");
+  const [prestacionSemestre,setPrestacionSemestre]=useState("1");
+  const [prestacionAnio,setPrestacionAnio]=useState(Number(today().slice(0,4)));
   const [editEmpId,setEditEmpId]=useState(null);
   const [editEmpData,setEditEmpData]=useState(null);
   const [liquidarId,setLiquidarId]=useState(null);
@@ -8299,7 +9070,7 @@ function Nomina({ctx}){
     .map((empleado)=>{
       const resumen = calcularResumenNominaEmpleado(empleado, periodoNomina);
       const liquidacion = calcularLiquidacionRetiro(empleado, periodoNomina, diasVacPagar[empleado.id]);
-      const tieneMovimiento = resumen.diasNomina>0 || resumen.horasExtras>0 || resumen.comisiones>0 || liquidacion.retiroEnPeriodo;
+      const tieneMovimiento = resumen.diasNomina>0 || resumen.incapacidadTotal>0 || resumen.horasExtras>0 || resumen.comisiones>0 || liquidacion.retiroEnPeriodo;
       if(!tieneMovimiento) return null;
       const liquidacionPrestaciones = liquidacion.retiroEnPeriodo ? liquidacion.prestaciones : 0;
       const totalPagar = resumen.neto + liquidacionPrestaciones;
@@ -8333,6 +9104,28 @@ function Nomina({ctx}){
     empleadosBase.find((empleado)=>empleado.id===selId) ||
     activos[0] ||
     null;
+  const empleadoIncapacidadActivo =
+    empleadosBase.find((empleado)=>empleado.id===showIncapacidad) ||
+    activos[0] ||
+    null;
+  const empleadoPrestacionActivo =
+    empleadosBase.find((empleado)=>empleado.id===prestacionEmpleadoId) ||
+    activos[0] ||
+    null;
+  const prestacionPreview = empleadoPrestacionActivo
+    ? calcularPrestacionSocialEmpleado(
+        empleadoPrestacionActivo,
+        prestacionTipo,
+        prestacionAnio,
+        prestacionSemestre
+      )
+    : null;
+  const historialPrestacionesEmpleado = normalizarPrestacionesSociales(empleadoPrestacionActivo?.prestacionesSociales)
+    .sort((a,b)=>String(b.fechaCausacion || b.periodoFin || "").localeCompare(String(a.fechaCausacion || a.periodoFin || "")));
+  const resumenIncapacidadActivo =
+    empleadoIncapacidadActivo
+      ? calcularResumenIncapacidadesRegistros(empleadoIncapacidadActivo, empleadoIncapacidadActivo.incapacidades || [], periodoNomina)
+      : null;
   const cargosDisponibles=[...new Set([
     ...normalizarCargos(cargos).filter((cargo)=>cargo.activo).map((cargo)=>cargo.nombre),
     ...empleadosBase.map((empleado)=>empleado.cargo).filter(Boolean),
@@ -8344,6 +9137,18 @@ function Nomina({ctx}){
       window.localStorage.setItem(NOMINA_GENERATED_STORAGE_KEY, JSON.stringify(nominasGeneradas));
     }catch{}
   }, [nominasGeneradas]);
+
+  useEffect(()=>{
+    if(!empleadoIncapacidadActivo) return;
+    setIncapacidadForm((prev)=>{
+      if(prev.empleadoId===empleadoIncapacidadActivo.id) return prev;
+      return {
+        ...buildIncapacidadFormDefault(empleadoIncapacidadActivo.id, periodoNomina.startIso || today()),
+        iblMensual:empleadoIncapacidadActivo.salario || "",
+      };
+    });
+    setIncapacidadPreview(null);
+  }, [empleadoIncapacidadActivo?.id, periodoNomina.startIso]);
 
   const actualizarEmpleado=(id,updater)=>{
     setEmpleados((prev)=>
@@ -8449,6 +9254,78 @@ function Nomina({ctx}){
     }));
   };
 
+  const buildIncapacidadRecordFromForm = (empleado)=>
+    normalizarIncapacidades([{
+      id:"INC-" + Date.now(),
+      ...incapacidadForm,
+      empleadoId:empleado?.id || incapacidadForm.empleadoId,
+      iblMensual:Math.max(0, Number(incapacidadForm.iblMensual || empleado?.salario || 0)),
+    }])[0];
+
+  const calcularPreviewIncapacidad = ()=>{
+    if(!empleadoIncapacidadActivo){
+      setMensajeGuardadoNomina("Selecciona un empleado para calcular la incapacidad.");
+      setTimeout(()=>setMensajeGuardadoNomina(""), 2500);
+      return;
+    }
+    const registro = buildIncapacidadRecordFromForm(empleadoIncapacidadActivo);
+    if(!registro?.fechaInicio || !registro?.fechaFin){
+      setMensajeGuardadoNomina("Completa fecha inicial y fecha final de la incapacidad.");
+      setTimeout(()=>setMensajeGuardadoNomina(""), 2500);
+      return;
+    }
+    const fechaInicio = parseIsoDate(registro.fechaInicio);
+    const fechaFin = parseIsoDate(registro.fechaFin);
+    if(!fechaInicio || !fechaFin || fechaFin<fechaInicio){
+      setMensajeGuardadoNomina("La fecha final no puede ser menor que la fecha inicial.");
+      setTimeout(()=>setMensajeGuardadoNomina(""), 2500);
+      return;
+    }
+    const resumen = calcularResumenIncapacidadesRegistros(empleadoIncapacidadActivo, [registro], periodoNomina);
+    const nominaConPreview = calcularResumenNominaEmpleado({
+      ...empleadoIncapacidadActivo,
+      incapacidades:[...(empleadoIncapacidadActivo.incapacidades||[]), registro],
+    }, periodoNomina);
+    setIncapacidadPreview({ registro, resumen, nominaConPreview });
+  };
+
+  const guardarIncapacidad = async ()=>{
+    if(!empleadoIncapacidadActivo){
+      setMensajeGuardadoNomina("Selecciona un empleado para guardar la incapacidad.");
+      setTimeout(()=>setMensajeGuardadoNomina(""), 2500);
+      return;
+    }
+    const registro = incapacidadPreview?.registro || buildIncapacidadRecordFromForm(empleadoIncapacidadActivo);
+    if(!registro?.fechaInicio || !registro?.fechaFin){
+      setMensajeGuardadoNomina("Primero calcula la incapacidad con fechas válidas.");
+      setTimeout(()=>setMensajeGuardadoNomina(""), 2500);
+      return;
+    }
+    const nextEmployees = construirEmpleadosActualizados(empleadoIncapacidadActivo.id, (empleado)=>({
+      ...empleado,
+      incapacidades:[...(empleado.incapacidades||[]), registro],
+    }));
+    setEmpleados(nextEmployees);
+    setIncapacidadForm({
+      ...buildIncapacidadFormDefault(empleadoIncapacidadActivo.id, periodoNomina.startIso || today()),
+      iblMensual:empleadoIncapacidadActivo.salario || "",
+    });
+    setIncapacidadPreview(null);
+    await guardarCambiosNomina("Incapacidad guardada y aplicada al corte de nómina.", { empleados: nextEmployees });
+  };
+
+  const quitarIncapacidad = async (empleadoId, incapacidadId)=>{
+    const nextEmployees = construirEmpleadosActualizados(empleadoId, (empleado)=>({
+      ...empleado,
+      incapacidades:(empleado.incapacidades||[]).filter((incapacidad)=>incapacidad.id!==incapacidadId),
+    }));
+    setEmpleados(nextEmployees);
+    if(incapacidadPreview?.registro?.id===incapacidadId){
+      setIncapacidadPreview(null);
+    }
+    await guardarCambiosNomina("Incapacidad retirada del empleado y del corte.", { empleados: nextEmployees });
+  };
+
   const guardarCambiosNomina=async(mensajeExito="Cambios guardados en la nube", override=null)=>{
     if(typeof saveAllToCloud!=="function"){
       setMensajeGuardadoNomina("No hay sincronización cloud disponible en esta sesión.");
@@ -8463,6 +9340,84 @@ function Nomina({ctx}){
     }
     setGuardandoNomina(false);
     setTimeout(()=>setMensajeGuardadoNomina(""), 3500);
+  };
+
+  const sincronizarLiquidacionPrestacionalEmpleado = (empleado)=>{
+    const liquidacion = calcularLiquidacionRetiro(empleado, periodoNomina, diasVacPagar[empleado.id]);
+    const recordId = `LQ-${empleado?.id || "EMP"}-${empleado?.fechaSalida || today()}`;
+    const vigente = normalizarPrestacionesSociales(empleado?.prestacionesSociales).find((prestacion)=>prestacion.id===recordId);
+    const baseRecord = buildLiquidacionPrestacionRecord(empleado, liquidacion);
+    const record = {
+      ...baseRecord,
+      estado: liquidacion.retiroEnPeriodo ? "en_nomina" : (vigente?.estado || baseRecord.estado),
+      fechaPago: liquidacion.retiroEnPeriodo ? "" : (vigente?.fechaPago || ""),
+      observacion: vigente?.observacion || baseRecord.observacion,
+      liquidacionEnNomina: Boolean(liquidacion.retiroEnPeriodo),
+    };
+    return normalizarEmpleado({
+      ...empleado,
+      vacacionesLiquidacionDias: liquidacion.diasVacPagar,
+      prestacionesSociales: liquidacion.prestaciones>0
+        ? upsertPrestacionSocial(empleado?.prestacionesSociales, record)
+        : normalizarPrestacionesSociales(empleado?.prestacionesSociales),
+    });
+  };
+
+  const guardarPrestacionSocial = async ()=>{
+    if(!empleadoPrestacionActivo || !prestacionPreview){
+      setMensajeGuardadoNomina("Selecciona un empleado para provisionar la prestación.");
+      setTimeout(()=>setMensajeGuardadoNomina(""), 2500);
+      return;
+    }
+    if((prestacionPreview?.valor || 0)<=0){
+      setMensajeGuardadoNomina("La prestación calculada es cero para ese periodo.");
+      setTimeout(()=>setMensajeGuardadoNomina(""), 2500);
+      return;
+    }
+    const vigente = historialPrestacionesEmpleado.find((prestacion)=>prestacion.id===prestacionPreview.id);
+    const registro = {
+      ...prestacionPreview,
+      estado: vigente?.estado || "provisionada",
+      fechaPago: vigente?.fechaPago || "",
+      observacion: vigente?.observacion || prestacionPreview.observacion || "",
+    };
+    const nextEmployees = construirEmpleadosActualizados(empleadoPrestacionActivo.id, (empleado)=>({
+      ...empleado,
+      prestacionesSociales: upsertPrestacionSocial(empleado?.prestacionesSociales, registro),
+    }));
+    setEmpleados(nextEmployees);
+    await guardarCambiosNomina(
+      `${PRESTACION_TIPOS_LABELS[prestacionTipo]} provisionada para ${empleadoPrestacionActivo.nombre}.`,
+      { empleados: nextEmployees }
+    );
+  };
+
+  const actualizarEstadoPrestacionSocial = async (empleado, prestacion, estadoSiguiente)=>{
+    if(!empleado || !prestacion) return;
+    const nextEmployees = construirEmpleadosActualizados(empleado.id, (actual)=>({
+      ...actual,
+      prestacionesSociales: normalizarPrestacionesSociales(actual?.prestacionesSociales).map((item)=>item.id===prestacion.id ? {
+        ...item,
+        estado:estadoSiguiente,
+        fechaPago:today(),
+        liquidacionEnNomina:false,
+      } : item),
+    }));
+    setEmpleados(nextEmployees);
+    await guardarCambiosNomina(
+      `${PRESTACION_TIPOS_LABELS[prestacion.tipo]} ${estadoSiguiente==="consignada" ? "consignada" : "pagada"} y enviada a contabilidad.`,
+      { empleados: nextEmployees }
+    );
+  };
+
+  const quitarPrestacionSocial = async (empleado, prestacionId)=>{
+    if(!empleado || !prestacionId) return;
+    const nextEmployees = construirEmpleadosActualizados(empleado.id, (actual)=>({
+      ...actual,
+      prestacionesSociales: normalizarPrestacionesSociales(actual?.prestacionesSociales).filter((item)=>item.id!==prestacionId),
+    }));
+    setEmpleados(nextEmployees);
+    await guardarCambiosNomina("Prestación eliminada del empleado.", { empleados: nextEmployees });
   };
 
   const registrarVacacionesPagadas = async (empleado)=>{
@@ -8492,17 +9447,19 @@ function Nomina({ctx}){
 
   const guardarLiquidacionRetiro = async (empleado)=>{
     const liquidacion = calcularLiquidacionRetiro(empleado, periodoNomina, diasVacPagar[empleado.id]);
-    const nextEmployees = construirEmpleadosActualizados(empleado.id, {
-      vacacionesLiquidacionDias: liquidacion.diasVacPagar,
-    });
+    const nextEmployees = construirEmpleadosActualizados(empleado.id, (actual)=>sincronizarLiquidacionPrestacionalEmpleado(actual));
     setEmpleados(nextEmployees);
     setDiasVacPagar((prev)=>({ ...prev, [empleado.id]: liquidacion.diasVacPagar }));
-    await guardarCambiosNomina("Cambios de contratos y liquidación sincronizados", { empleados: nextEmployees });
+    await guardarCambiosNomina("Liquidación de retiro sincronizada y enviada a contabilidad.", { empleados: nextEmployees });
   };
 
   const generarNominaCorte = ()=>{
-    const snapshot = buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar);
+    const empleadosSincronizados = empleadosBase.map((empleado)=>
+      empleado?.fechaSalida ? sincronizarLiquidacionPrestacionalEmpleado(empleado) : empleado
+    );
+    const snapshot = buildNominaSnapshot(empleadosSincronizados, periodoNomina, diasVacPagar);
     const record = buildNominaGeneratedRecord(snapshot);
+    setEmpleados(empleadosSincronizados);
     setNominasGeneradas((prev)=>upsertNominaGeneratedRecord(prev, record));
     setMensajeGuardadoNomina(
       "Nómina generada para " + snapshot.periodo.label + " con " + snapshot.totals.totalRegistros + " registros."
@@ -8565,11 +9522,27 @@ function Nomina({ctx}){
 
   return(
     <div style={{padding:28}}>
-      <H1 title="Nómina y Empleados" subtitle="Gestión de empleados, horas extras, comisiones y planilla"
+      <H1 title="Nómina y Empleados" subtitle="Gestión de empleados, prestaciones, incapacidades, horas extras, comisiones y planilla"
         action={<button style={B("#cc0000")} onClick={()=>setTab("nuevo")}>+ Nuevo Empleado</button>}/>
-      <div style={{display:"flex",gap:6,marginBottom:20}}>
-        {[["lista","Empleados"],["vacaciones","Vacaciones"],["contratos","Contratos y liquidación"],["he","Horas extras y comisiones"],["deducciones","Revisión deducciones"],["colillas","Colillas de pago"],["planilla","Planilla Bancolombia"]].map(([id,lb])=>(
-          <button key={id} onClick={()=>setTab(id)} style={{...B(tab===id?"#f47c20":"#f1f5f9",tab===id?"#fff":"#475569"),border:"1px solid " + (tab===id?"#f47c20":"#e2e8f0")}}>{lb}</button>
+      <div style={{display:"flex",gap:4,marginBottom:16,flexWrap:"nowrap",overflowX:"auto",paddingBottom:2}}>
+        {[["lista","Empleados"],["prestaciones","Prestaciones sociales"],["vacaciones","Vacaciones"],["contratos","Contratos y liquidación"],["he","Horas extras y comisiones"],["incapacidades","Incapacidades"],["deducciones","Revisión deducciones"],["colillas","Colillas de pago"],["planilla","Planilla Bancolombia"]].map(([id,lb])=>(
+          <button
+            key={id}
+            onClick={()=>setTab(id)}
+            style={{
+              ...B(tab===id?"#f47c20":"#f8fafc",tab===id?"#fff":"#475569"),
+              border:"1px solid " + (tab===id?"#f47c20":"#dbe4f0"),
+              padding:"7px 12px",
+              fontSize:11,
+              fontWeight:600,
+              borderRadius:10,
+              whiteSpace:"nowrap",
+              flex:"0 0 auto",
+              minHeight:36,
+            }}
+          >
+            {lb}
+          </button>
         ))}
       </div>
 
@@ -8729,7 +9702,7 @@ function Nomina({ctx}){
                         </div>
                       )}
                       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:10}}>
-                        {[["Días corte",resumen.diasNomina,"#2563eb"],["Salario corte",fmt(resumen.salario),"#4ade80"],["Aux. transp.",fmt(resumen.auxilioTransporte),"#60b4ff"],["H. extras",fmt(resumen.horasExtras),"#f5c842"],["Comisiones",fmt(resumen.comisiones),"#c084fc"],["Salud 4%",fmt(resumen.salud),"#ef4444"],["Pensión 4%",fmt(resumen.pension),"#fb7185"],["Neto",fmt(resumen.neto),"#f47c20"]].map(([k,v,c])=>(
+                        {[["Días laborados",resumen.diasNomina,"#2563eb"],["Días incapacidad",resumen.diasIncapacidad,"#dc2626"],["Salario corte",fmt(resumen.salario),"#4ade80"],["Incapacidad",fmt(resumen.incapacidadTotal),"#166534"],["Aux. transp.",fmt(resumen.auxilioTransporte),"#60b4ff"],["H. extras",fmt(resumen.horasExtras),"#f5c842"],["Comisiones",fmt(resumen.comisiones),"#c084fc"],["Salud 4%",fmt(resumen.salud),"#ef4444"],["Pensión 4%",fmt(resumen.pension),"#fb7185"],["Neto",fmt(resumen.neto),"#f47c20"]].map(([k,v,c])=>(
                           <div key={k} style={{background:"#ffffff",borderRadius:6,padding:"8px 10px"}}><div style={{fontSize:9,color:"#64748b",marginBottom:2}}>{k}</div><div style={{fontSize:11,fontWeight:700,color:c}}>{v}</div></div>
                         ))}
                       </div>
@@ -8759,6 +9732,145 @@ function Nomina({ctx}){
                 </div>
               )})}
             </div>
+          </div>
+        </div>
+      )}
+
+      {tab==="prestaciones"&&(
+        <div>
+          <div style={{...CD,maxWidth:980,margin:"0 auto"}}>
+            <div style={ST}>Prestaciones sociales y provisiones</div>
+            <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:"12px 14px",fontSize:12,color:"#475569",lineHeight:1.7,marginBottom:16}}>
+              Prima de servicios: pago máximo el <strong>30 de junio</strong> y dentro de los <strong>primeros veinte días de diciembre</strong>.
+              Cesantías: consignación antes del <strong>14 de febrero</strong> del año siguiente.
+              Intereses a las cesantías: pago al trabajador a más tardar el <strong>31 de enero</strong> del año siguiente.
+            </div>
+
+            <div style={{display:"grid",gridTemplateColumns:"1.4fr 1fr 1fr 1fr",gap:12,marginBottom:16}}>
+              <div>
+                <LBL>Empleado</LBL>
+                <select value={empleadoPrestacionActivo?.id || ""} onChange={(e)=>setPrestacionEmpleadoId(e.target.value || null)} style={SI}>
+                  {activos.map((empleado)=><option key={empleado.id} value={empleado.id}>{empleado.nombre} · {empleado.cedula || "Sin cédula"}</option>)}
+                </select>
+              </div>
+              <div>
+                <LBL>Prestación</LBL>
+                <select value={prestacionTipo} onChange={(e)=>setPrestacionTipo(e.target.value)} style={SI}>
+                  <option value="prima">Prima de servicios</option>
+                  <option value="cesantias">Cesantías</option>
+                  <option value="intereses_cesantias">Intereses a las cesantías</option>
+                </select>
+              </div>
+              <div>
+                <LBL>Año de liquidación</LBL>
+                <input type="number" min={2020} max={2099} value={prestacionAnio} onChange={(e)=>setPrestacionAnio(Math.max(2020, Math.min(2099, parseInt(e.target.value || "0", 10) || Number(today().slice(0,4)))))} style={SI}/>
+              </div>
+              <div>
+                <LBL>Segmento</LBL>
+                <select value={prestacionSemestre} onChange={(e)=>setPrestacionSemestre(e.target.value)} style={SI} disabled={prestacionTipo!=="prima"}>
+                  <option value="1">Primer semestre</option>
+                  <option value="2">Segundo semestre</option>
+                </select>
+              </div>
+            </div>
+
+            {!empleadoPrestacionActivo ? (
+              <div style={{fontSize:12,color:"#94a3b8",textAlign:"center",padding:"18px 0"}}>No hay empleados activos para liquidar prestaciones.</div>
+            ) : (
+              <>
+                {renderNominaEmpleadoCard({
+                  empleado:empleadoPrestacionActivo,
+                  badgeLabel:"Prestaciones",
+                  badgeBg:"#eff6ff",
+                  badgeColor:"#1d4ed8",
+                  subtitle:(empleadoPrestacionActivo.cargo||"Sin cargo") + " · " + (empleadoPrestacionActivo.cedula||"Sin cédula") + " · Ingreso " + (empleadoPrestacionActivo.fechaIngreso||"sin fecha"),
+                  principal:{
+                    label:prestacionPreview?.periodoLabel || "Prestación",
+                    value:fmt(prestacionPreview?.valor || 0),
+                    color:"#166534",
+                    hint:prestacionPreview ? ("Base: " + fmt(prestacionPreview.basePrestacional || 0) + " · Días liquidados: " + (prestacionPreview.diasLiquidados || 0)) : "",
+                  },
+                  metrics:[
+                    {label:"Fecha causación", value:prestacionPreview?.fechaCausacion ? fmtD(prestacionPreview.fechaCausacion) : "—", color:"#142840"},
+                    {label:"Fecha límite", value:prestacionPreview?.fechaLimite ? fmtD(prestacionPreview.fechaLimite) : "—", color:"#b45309"},
+                    {label:"Estado sugerido", value:PRESTACION_ESTADOS_LABELS[prestacionPreview?.estado || "provisionada"], color:"#2563eb"},
+                  ],
+                })}
+
+                <div style={{height:14}}/>
+
+                <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:12,padding:"14px 16px",marginBottom:16}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap",marginBottom:10}}>
+                    <div>
+                      <div style={{fontSize:11,fontWeight:700,color:"#166534",textTransform:"uppercase",letterSpacing:0.7}}>Provisión prestacional</div>
+                      <div style={{fontSize:12,color:"#475569",marginTop:4}}>
+                        La provisión contable viaja con la cédula del empleado como tercero y luego podrás pagarla o consignarla desde este mismo módulo.
+                      </div>
+                    </div>
+                    <button onClick={guardarPrestacionSocial} style={{...B("#166534","#d1fae5"),fontSize:11,justifyContent:"center"}}>Provisionar prestación</button>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
+                    <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Tipo</div><div style={{fontWeight:700,color:"#0f172a",marginTop:4}}>{PRESTACION_TIPOS_LABELS[prestacionTipo]}</div></div>
+                    <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Periodo</div><div style={{fontWeight:700,color:"#0f172a",marginTop:4}}>{prestacionPreview?.periodoLabel || "—"}</div></div>
+                    <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Días trabajados</div><div style={{fontWeight:700,color:"#0f172a",marginTop:4}}>{prestacionPreview?.diasLiquidados || 0}</div></div>
+                    <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Valor provisionado</div><div style={{fontWeight:700,color:(prestacionPreview?.valor || 0)>0?"#166534":"#94a3b8",marginTop:4}}>{fmt(prestacionPreview?.valor || 0)}</div></div>
+                  </div>
+                </div>
+
+                <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:12,padding:"14px 16px"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:12,flexWrap:"wrap"}}>
+                    <div>
+                      <div style={{fontSize:11,fontWeight:700,color:"#142840",textTransform:"uppercase",letterSpacing:0.7}}>Historial prestacional</div>
+                      <div style={{fontSize:12,color:"#64748b",marginTop:4}}>Consulta, paga o consigna prestaciones del empleado seleccionado.</div>
+                    </div>
+                    <div style={{fontSize:12,color:"#64748b"}}>{historialPrestacionesEmpleado.length} registro(s)</div>
+                  </div>
+                  <div style={{overflowX:"auto"}}>
+                    <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:920}}>
+                      <thead>
+                        <tr style={{background:"#f8fafc"}}>
+                          {["Concepto","Periodo","Valor","Causación","Pago","Estado","Acciones"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:label==="Valor"?"right":"left",color:"#64748b",fontWeight:600,fontSize:11}}>{label}</th>)}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {historialPrestacionesEmpleado.length===0 ? (
+                          <tr><td colSpan={7} style={{padding:18,textAlign:"center",color:"#94a3b8"}}>Aún no hay prestaciones registradas para este empleado.</td></tr>
+                        ) : historialPrestacionesEmpleado.map((prestacion)=>(
+                          <tr key={prestacion.id} style={{borderBottom:"1px solid #e2e8f0"}}>
+                            <td style={{padding:"9px 10px"}}>
+                              <div style={{fontWeight:700,color:"#0f172a"}}>{PRESTACION_TIPOS_LABELS[prestacion.tipo]}</div>
+                              <div style={{fontSize:10,color:"#64748b",marginTop:3}}>{prestacion.observacion || "Registro contable por tercero"}</div>
+                            </td>
+                            <td style={{padding:"9px 10px"}}>{prestacion.periodoLabel || "—"}</td>
+                            <td style={{padding:"9px 10px",textAlign:"right",fontWeight:700,color:"#166534"}}>{fmt(prestacion.valor || 0)}</td>
+                            <td style={{padding:"9px 10px"}}>{prestacion.fechaCausacion ? fmtD(prestacion.fechaCausacion) : "—"}</td>
+                            <td style={{padding:"9px 10px"}}>{prestacion.fechaPago ? fmtD(prestacion.fechaPago) : "Pendiente"}</td>
+                            <td style={{padding:"9px 10px"}}>
+                              <span style={{background:prestacion.estado==="pagada"||prestacion.estado==="consignada"?"#dcfce7":prestacion.estado==="en_nomina"?"#dbeafe":"#fef3c7",color:prestacion.estado==="pagada"||prestacion.estado==="consignada"?"#166534":prestacion.estado==="en_nomina"?"#1d4ed8":"#92400e",borderRadius:999,padding:"4px 10px",fontSize:10,fontWeight:700}}>
+                                {PRESTACION_ESTADOS_LABELS[prestacion.estado] || prestacion.estado}
+                              </span>
+                            </td>
+                            <td style={{padding:"9px 10px"}}>
+                              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                                {prestacion.estado!=="pagada" && prestacion.estado!=="consignada" && !prestacion.liquidacionEnNomina && (
+                                  <button onClick={()=>actualizarEstadoPrestacionSocial(empleadoPrestacionActivo, prestacion, prestacion.tipo==="cesantias" ? "consignada" : "pagada")} style={{...B("#166534","#d1fae5"),fontSize:10,padding:"6px 10px"}}>
+                                    {prestacion.tipo==="cesantias" ? "Consignar" : "Marcar pagada"}
+                                  </button>
+                                )}
+                                {prestacion.liquidacionEnNomina && (
+                                  <span style={{fontSize:10,color:"#1d4ed8",fontWeight:700,alignSelf:"center"}}>Se paga en nómina</span>
+                                )}
+                                <button onClick={()=>quitarPrestacionSocial(empleadoPrestacionActivo, prestacion.id)} style={{...B("#fee2e2","#b91c1c"),fontSize:10,padding:"6px 10px"}}>Eliminar</button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -8932,16 +10044,10 @@ function Nomina({ctx}){
       })()}
       {tab==="colillas"&&(
         <div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
-            <SC label="Corte activo" value={periodoNomina.label} color="#142840" icon="CO"/>
-            <SC label="Total devengado" value={fmtK(totalDevengado)} color="#4ade80" icon="DEV"/>
-            <SC label="Total deducciones" value={fmtK(totalDeducciones)} color="#ef4444" icon="DED"/>
-            <SC label="Neto a pagar" value={fmtK(totalNeto)} color="#f47c20" icon="NET"/>
-          </div>
           <div style={{display:"flex",gap:12,alignItems:"center",justifyContent:"space-between",marginBottom:16,background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:12,padding:"12px 14px"}}>
             <div>
               <div style={{fontSize:11,fontWeight:700,color:"#9a3412",textTransform:"uppercase",letterSpacing:0.7}}>Colillas de pago</div>
-              <div style={{fontSize:12,color:"#7c2d12",marginTop:4}}>Formato media carta con logo, solo con el detalle del corte activo y sin provisiones informativas.</div>
+              <div style={{fontSize:12,color:"#7c2d12",marginTop:4}}>Formato media carta con logo, con detalle del corte activo, incapacidades reconocidas y sin provisiones informativas.</div>
             </div>
             <button style={B("#142840","#4ade80")} onClick={()=>resumenesActivos.forEach(({empleado:e,resumen})=>printColilla(e,resumen,periodoNomina))}>🧾 Imprimir colillas masivas</button>
           </div>
@@ -8958,7 +10064,7 @@ function Nomina({ctx}){
                   <div style={{textAlign:"right",fontSize:12,fontWeight:700,color:"#4ade80"}}>{fmt(resumen.neto)}</div>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,fontSize:10,marginBottom:12}}>
-                  {[["Días",resumen.diasNomina,"#2563eb"],["Salario",fmt(resumen.salario),"#4ade80"],["Aux. transp.",fmt(resumen.auxilioTransporte),"#60b4ff"],["Extras + com.",fmt(resumen.horasExtras+resumen.comisiones),"#f59e0b"],["Base salud/pens.",fmt(resumen.baseSaludPension),"#7c3aed"],["Deducciones",fmt(resumen.totalDeducciones),"#dc2626"]].map(([k,v,col])=>(
+                  {[["Días laborados",resumen.diasNomina,"#2563eb"],["Días incapacidad",resumen.diasIncapacidad,"#dc2626"],["Salario",fmt(resumen.salario),"#4ade80"],["Incapacidades",fmt(resumen.incapacidadTotal),"#166534"],["Aux. transp.",fmt(resumen.auxilioTransporte),"#60b4ff"],["Extras + com.",fmt(resumen.horasExtras+resumen.comisiones),"#f59e0b"],["Base salud/pens.",fmt(resumen.baseSaludPension),"#7c3aed"],["Deducciones",fmt(resumen.totalDeducciones),"#dc2626"]].map(([k,v,col])=>(
                     <div key={k} style={{background:"#fff",borderRadius:8,padding:"8px 9px",border:"1px solid #e2e8f0"}}>
                       <div style={{color:"#94a3b8",fontSize:9,textTransform:"uppercase",letterSpacing:0.5}}>{k}</div>
                       <div style={{fontWeight:700,color:col,fontSize:11,marginTop:3}}>{v}</div>
@@ -9122,6 +10228,223 @@ function Nomina({ctx}){
         </div>
       )}
 
+      {tab==="incapacidades"&&(
+        <div>
+          {(()=>{
+            const empleadoActivo = empleadoIncapacidadActivo;
+            const idxActivo = empleadosBase.findIndex((empleado)=>empleado.id===empleadoActivo?.id);
+            const resumenNominaIncapacidad = empleadoActivo ? calcularResumenNominaEmpleado(empleadoActivo, periodoNomina) : null;
+            const previewRegistro = incapacidadPreview?.resumen?.registros?.[0] || null;
+            return(
+              <div>
+                <div style={{...CD,maxWidth:980,margin:"0 auto"}}>
+                  <div style={ST}>Incapacidades del corte</div>
+                  <div style={{display:"grid",gap:14}}>
+                    <div>
+                      <LBL>Empleado</LBL>
+                      <select
+                        value={empleadoActivo?.id || ""}
+                        onChange={(e)=>setShowIncapacidad(e.target.value || null)}
+                        style={SI}
+                      >
+                        <option value="">Seleccionar empleado...</option>
+                        {empleadosBase.map((empleado)=>(
+                          <option key={empleado.id} value={empleado.id}>{empleado.nombre}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {empleadoActivo && resumenNominaIncapacidad ? (
+                      <>
+                        {renderNominaEmpleadoCard({
+                          empleado:empleadoActivo,
+                          index:idxActivo,
+                          badgeLabel:"Incapacidades",
+                          badgeBg:"#eefbf3",
+                          badgeColor:"#166534",
+                          subtitle:(empleadoActivo.cargo||"Sin cargo") + " · " + (empleadoActivo.cedula||"Sin documento") + " · " + periodoNomina.label,
+                          principal:{
+                            label:"Valor de incapacidades aplicado al corte",
+                            value:fmt(resumenNominaIncapacidad.incapacidadTotal),
+                            color:"#166534",
+                            hint:"Se descuenta del salario los días no laborados y la incapacidad entra a la base del corte según el origen registrado.",
+                          },
+                          metrics:[
+                            {label:"Días laborados", value:resumenNominaIncapacidad.diasNomina, color:"#2563eb"},
+                            {label:"Días incapacidad", value:resumenNominaIncapacidad.diasIncapacidad, color:"#dc2626"},
+                            {label:"Empleador", value:fmt(resumenNominaIncapacidad.incapacidadEmpleador), color:"#c2410c"},
+                            {label:"EPS", value:fmt(resumenNominaIncapacidad.incapacidadEPS + resumenNominaIncapacidad.incapacidadEPS540), color:"#0f766e"},
+                            {label:"Colpensiones", value:fmt(resumenNominaIncapacidad.incapacidadColpensiones), color:"#7c3aed"},
+                            {label:"ARL", value:fmt(resumenNominaIncapacidad.incapacidadARL), color:"#f59e0b"},
+                            {label:"Base salud / pensión", value:fmt(resumenNominaIncapacidad.baseSaludPension), color:"#1d4ed8"},
+                            {label:"Neto del corte", value:fmt(resumenNominaIncapacidad.neto), color:"#0f766e"},
+                          ],
+                        })}
+
+                        <div style={{background:"#ffffff",borderRadius:12,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
+                          <div style={{fontSize:11,fontWeight:700,color:"#142840",textTransform:"uppercase",marginBottom:10}}>Registrar y calcular incapacidad</div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+                            <div>
+                              <LBL>Origen</LBL>
+                              <div style={{display:"flex",gap:8}}>
+                                {[["comun","Origen común"],["laboral","Origen laboral"]].map(([value,label])=>(
+                                  <button
+                                    key={value}
+                                    type="button"
+                                    onClick={()=>setIncapacidadForm((prev)=>({ ...prev, origen:value }))}
+                                    style={{...B(incapacidadForm.origen===value?"#f47c20":"#142840",incapacidadForm.origen===value?"#fff":"#7da5c8"),flex:1,justifyContent:"center",border:"1px solid " + (incapacidadForm.origen===value?"#f47c20":"#1a3050")}}
+                                  >
+                                    {label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div>
+                              <LBL>IBC / IBL mensual base</LBL>
+                              <input
+                                type="number"
+                                value={incapacidadForm.iblMensual}
+                                onChange={(e)=>setIncapacidadForm((prev)=>({ ...prev, iblMensual:parseFloat(e.target.value)||0 }))}
+                                placeholder={String(empleadoActivo.salario || 0)}
+                                style={SI}
+                              />
+                            </div>
+                            <div>
+                              <LBL>Fecha inicio</LBL>
+                              <input
+                                type="date"
+                                value={incapacidadForm.fechaInicio}
+                                onChange={(e)=>setIncapacidadForm((prev)=>({ ...prev, fechaInicio:e.target.value }))}
+                                style={SI}
+                              />
+                            </div>
+                            <div>
+                              <LBL>Fecha fin</LBL>
+                              <input
+                                type="date"
+                                value={incapacidadForm.fechaFin}
+                                onChange={(e)=>setIncapacidadForm((prev)=>({ ...prev, fechaFin:e.target.value }))}
+                                style={SI}
+                              />
+                            </div>
+                            <div>
+                              <LBL>Días acumulados previos</LBL>
+                              <input
+                                type="number"
+                                value={incapacidadForm.diasPrevios}
+                                onChange={(e)=>setIncapacidadForm((prev)=>({ ...prev, diasPrevios:Math.max(0, parseInt(e.target.value || "0", 10) || 0) }))}
+                                style={SI}
+                              />
+                              <div style={{fontSize:10,color:"#64748b",marginTop:4}}>Úsalo cuando la incapacidad sea prórroga y ya vengan días reconocidos de certificados anteriores.</div>
+                            </div>
+                            <div>
+                              <LBL>Número de soporte</LBL>
+                              <input
+                                value={incapacidadForm.numeroSoporte}
+                                onChange={(e)=>setIncapacidadForm((prev)=>({ ...prev, numeroSoporte:e.target.value }))}
+                                placeholder="Ej: INC-2026-0414"
+                                style={SI}
+                              />
+                            </div>
+                            <div style={{gridColumn:"span 2"}}>
+                              <LBL>Concepto / diagnóstico</LBL>
+                              <input
+                                value={incapacidadForm.diagnostico}
+                                onChange={(e)=>setIncapacidadForm((prev)=>({ ...prev, diagnostico:e.target.value }))}
+                                placeholder="Ej: Incapacidad médica por enfermedad general"
+                                style={SI}
+                              />
+                            </div>
+                            <div style={{gridColumn:"span 2"}}>
+                              <LBL>Observación interna</LBL>
+                              <textarea
+                                value={incapacidadForm.observacion}
+                                onChange={(e)=>setIncapacidadForm((prev)=>({ ...prev, observacion:e.target.value }))}
+                                rows={3}
+                                placeholder="Notas para nómina o seguimiento"
+                                style={{...SI,resize:"vertical"}}
+                              />
+                            </div>
+                          </div>
+
+                          <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:"12px 14px",fontSize:12,color:"#475569",lineHeight:1.7,marginBottom:12}}>
+                            <div style={{fontWeight:700,color:"#142840",marginBottom:6}}>Base legal aplicada para empresa privada</div>
+                            <div>Origen común: 66.67% del IBC en días 1 a 90 y 50% del IBC en días 91 a 540, con empleador días 1-2, EPS desde día 3 y Colpensiones desde día 181. Origen laboral: 100% del IBC a cargo de la ARL.</div>
+                          </div>
+
+                          <div style={{display:"flex",justifyContent:"flex-end",gap:8,flexWrap:"wrap"}}>
+                            <button type="button" onClick={calcularPreviewIncapacidad} style={B("#f47c20")}>Calcular incapacidad</button>
+                            <button type="button" onClick={guardarIncapacidad} style={B("#166534","#d1fae5")}>Guardar incapacidad</button>
+                          </div>
+                          {mensajeGuardadoNomina && <div style={{fontSize:11,color:"#166534",fontWeight:700,marginTop:8,textAlign:"right"}}>{mensajeGuardadoNomina}</div>}
+                        </div>
+
+                        {incapacidadPreview && previewRegistro ? (
+                          <div style={{background:"#ffffff",borderRadius:12,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
+                            <div style={{fontSize:11,fontWeight:700,color:"#142840",textTransform:"uppercase",marginBottom:10}}>Vista previa del cálculo</div>
+                            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:12}}>
+                              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Origen</div><div style={{fontWeight:700,color:"#142840"}}>{INCAPACIDAD_ORIGEN_LABELS[previewRegistro.origen]}</div></div>
+                              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Días en el corte</div><div style={{fontWeight:700,color:"#dc2626"}}>{previewRegistro.diasPeriodo}</div></div>
+                              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Valor reconocido</div><div style={{fontWeight:700,color:"#166534"}}>{fmt(previewRegistro.totalPeriodo)}</div></div>
+                              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Neto estimado</div><div style={{fontWeight:700,color:"#0f766e"}}>{fmt(incapacidadPreview.nominaConPreview.neto)}</div></div>
+                            </div>
+                            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
+                              {Object.entries(previewRegistro.totalesResponsable)
+                                .filter(([,valor])=>Number(valor||0)>0)
+                                .map(([responsable, valor])=>(
+                                  <div key={responsable} style={{background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:8,padding:"10px 12px"}}>
+                                    <div style={{fontSize:10,color:"#9a3412"}}>{INCAPACIDAD_RESPONSABLE_LABELS[responsable]}</div>
+                                    <div style={{fontWeight:700,color:"#c2410c",marginTop:3}}>{fmt(valor)}</div>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        ) : null}
+
+                        <div style={{background:"#ffffff",borderRadius:12,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
+                          <div style={{fontSize:11,fontWeight:700,color:"#142840",textTransform:"uppercase",marginBottom:10}}>Incapacidades registradas en el corte</div>
+                          {resumenIncapacidadActivo?.registros?.length ? (
+                            <div style={{display:"grid",gap:8}}>
+                              {resumenIncapacidadActivo.registros.map((registro)=>(
+                                <div key={registro.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#f8fafc",borderRadius:8,padding:"10px 12px",gap:12}}>
+                                  <div style={{flex:1}}>
+                                    <div style={{fontWeight:700,color:"#0f172a"}}>{INCAPACIDAD_ORIGEN_LABELS[registro.origen]} · {registro.fechaInicio}{registro.fechaFin!==registro.fechaInicio ? " al " + registro.fechaFin : ""}</div>
+                                    <div style={{fontSize:11,color:"#64748b"}}>{registro.diasPeriodo} día(s) en el corte · {registro.numeroSoporte || "Sin soporte"}{registro.diagnostico ? " · " + registro.diagnostico : ""}</div>
+                                    <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:6,fontSize:10,color:"#475569"}}>
+                                      {Object.entries(registro.totalesResponsable)
+                                        .filter(([,valor])=>Number(valor||0)>0)
+                                        .map(([responsable, valor])=>(
+                                          <span key={responsable} style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:999,padding:"4px 8px"}}>
+                                            {INCAPACIDAD_RESPONSABLE_LABELS[responsable]}: <strong>{fmt(valor)}</strong>
+                                          </span>
+                                        ))}
+                                    </div>
+                                  </div>
+                                  <div style={{textAlign:"right"}}>
+                                    <div style={{fontWeight:700,color:"#166534"}}>{fmt(registro.totalPeriodo)}</div>
+                                    <button type="button" onClick={()=>quitarIncapacidad(empleadoActivo.id, registro.id)} style={{...B("#fee2e2","#b91c1c"),border:"1px solid #fecaca",padding:"6px 10px",fontSize:11,marginTop:8}}>Quitar</button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{fontSize:12,color:"#94a3b8"}}>Este empleado no tiene incapacidades aplicadas en el corte activo.</div>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{textAlign:"center",color:"#94a3b8",padding:"28px 0"}}>
+                        Selecciona un empleado para calcular y guardar incapacidades en nómina.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
       {tab==="deducciones"&&(
         <div>
           <div style={{...CD,maxWidth:900,margin:"0 auto"}}>
@@ -9154,10 +10477,11 @@ function Nomina({ctx}){
                           <div style={{background:"#fff",borderRadius:8,padding:"10px 12px",gridColumn:"span 3"}}>
                             <div style={{fontSize:10,color:"#64748b"}}>Base salud / pensión del corte</div>
                             <div style={{fontWeight:700,color:"#142840",fontSize:16}}>{fmt(resumenDeduccion.baseSaludPension)}</div>
-                            <div style={{fontSize:10,color:"#94a3b8",marginTop:3}}>Incluye salario del corte + horas extras + comisiones.</div>
+                            <div style={{fontSize:10,color:"#94a3b8",marginTop:3}}>Incluye salario del corte + incapacidades + horas extras + comisiones.</div>
                           </div>
                           <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Salud</div><div style={{fontWeight:700,color:"#dc2626"}}>{fmt(resumenDeduccion.salud)}</div></div>
                           <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Pensión</div><div style={{fontWeight:700,color:"#e11d48"}}>{fmt(resumenDeduccion.pension)}</div></div>
+                          <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Incapacidades</div><div style={{fontWeight:700,color:"#166534"}}>{fmt(resumenDeduccion.incapacidadTotal)}</div></div>
                           <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Otras deducciones</div><div style={{fontWeight:700,color:"#7c3aed"}}>{fmt(resumenDeduccion.otrasDeducciones)}</div></div>
                           <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Total descuentos</div><div style={{fontWeight:700,color:"#c2410c"}}>{fmt(resumenDeduccion.totalDeducciones)}</div></div>
                           <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Neto del corte</div><div style={{fontWeight:700,color:"#0f766e"}}>{fmt(resumenDeduccion.neto)}</div></div>
@@ -9233,8 +10557,8 @@ function Nomina({ctx}){
               <div style={{fontSize:13,color:"#0f172a",marginTop:4}}>Corte activo: {periodoNomina.label}</div>
               <div style={{fontSize:11,color:"#64748b",marginTop:4}}>
                 {nominaEstaGenerada
-                  ? ("Nómina generada el " + formatNominaGeneratedAt(nominaVistaActual.generadoEn) + ". Si cambias horas extras, comisiones o deducciones, usa Regenerar nómina.")
-                  : "Esta es la vista previa del corte. Cuando ya revises horas extras, comisiones, deducciones y liquidaciones, pulsa Generar nómina para congelar el periodo."}
+                  ? ("Nómina generada el " + formatNominaGeneratedAt(nominaVistaActual.generadoEn) + ". Si cambias incapacidades, horas extras, comisiones o deducciones, usa Regenerar nómina.")
+                  : "Esta es la vista previa del corte. Cuando ya revises incapacidades, horas extras, comisiones, deducciones y liquidaciones, pulsa Generar nómina para congelar el periodo."}
               </div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(3, minmax(120px, 1fr))",gap:8,marginTop:12}}>
                 <div style={{background:"#fff",borderRadius:10,padding:"9px 10px",border:"1px solid #dbeafe"}}>
@@ -9271,7 +10595,7 @@ function Nomina({ctx}){
               <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:9,color:"#64748b"}}>Total a transferir</div><div style={{fontWeight:700,color:"#003B71"}}>{fmt(nominaVistaActual.totals.totalPagar)}</div></div>
             </div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
-              <thead><tr style={{background:"#003B71",color:"#fff"}}>{["#","Empleado","Documento","Banco / Cuenta","Días","Básico","Aux. T.","H.Extra","Comisión","Deducciones","Liq. retiro","TOTAL"].map((h)=><th key={h} style={{padding:"6px 8px",textAlign:["Días","Básico","Aux. T.","H.Extra","Comisión","Deducciones","Liq. retiro","TOTAL"].includes(h)?"right":"left",fontSize:10}}>{h}</th>)}</tr></thead>
+              <thead><tr style={{background:"#003B71",color:"#fff"}}>{["#","Empleado","Documento","Banco / Cuenta","Días","Básico","Incap.","Aux. T.","H.Extra","Comisión","Deducciones","Liq. retiro","TOTAL"].map((h)=><th key={h} style={{padding:"6px 8px",textAlign:["Días","Básico","Incap.","Aux. T.","H.Extra","Comisión","Deducciones","Liq. retiro","TOTAL"].includes(h)?"right":"left",fontSize:10}}>{h}</th>)}</tr></thead>
               <tbody>
                 {nominaVistaActual.registros.map(({empleado:e,resumen,liquidacionPrestaciones,totalPagar,retiroEnPeriodo,observacionesBanco},i)=>(
                   <tr key={e.id} style={{background:i%2===0?"#fff":"#f5f5f5",borderBottom:"1px solid #e0e0e0"}}>
@@ -9285,25 +10609,29 @@ function Nomina({ctx}){
                       {e.banco}<br/>{e.tipoCuenta}<br/><span style={{fontFamily:"monospace"}}>{e.numeroCuenta}</span>
                       {observacionesBanco?.length ? <div style={{fontSize:9,color:"#b91c1c",marginTop:4}}>{observacionesBanco.join(" · ")}</div> : <div style={{fontSize:9,color:"#166534",marginTop:4}}>Listo para banco</div>}
                     </td>
-                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10}}>{resumen.diasNomina}</td>
-                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10}}>$ {resumen.salario.toLocaleString("es-CO")}</td>
-                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10}}>$ {resumen.auxilioTransporte.toLocaleString("es-CO")}</td>
-                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10,color:"#7a6610"}}>$ {resumen.horasExtras.toLocaleString("es-CO")}</td>
-                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10,color:"#5b21b6"}}>$ {resumen.comisiones.toLocaleString("es-CO")}</td>
-                    <td style={{padding:"6px 8px",textAlign:"right",color:"#cc0000",fontSize:9}}>
-                      <div>Salud: -$ {resumen.salud.toLocaleString("es-CO")}</div>
-                      <div>Pensión: -$ {resumen.pension.toLocaleString("es-CO")}</div>
-                      <div>Otras: -$ {resumen.otrasDeducciones.toLocaleString("es-CO")}</div>
+                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10}}>
+                      <div>{resumen.diasNomina}</div>
+                      {resumen.diasIncapacidad>0 ? <div style={{fontSize:9,color:"#b91c1c"}}>{resumen.diasIncapacidad} inc.</div> : null}
                     </td>
-                    <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,color:liquidacionPrestaciones>0?"#b45309":"#94a3b8",fontSize:10}}>$ {liquidacionPrestaciones.toLocaleString("es-CO")}</td>
-                    <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,color:"#003B71",fontSize:10}}>$ {totalPagar.toLocaleString("es-CO")}</td>
+                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10}}>$ {Number(resumen.salario || 0).toLocaleString("es-CO")}</td>
+                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10,color:"#166534"}}>$ {Number(resumen.incapacidadTotal || 0).toLocaleString("es-CO")}</td>
+                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10}}>$ {Number(resumen.auxilioTransporte || 0).toLocaleString("es-CO")}</td>
+                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10,color:"#7a6610"}}>$ {Number(resumen.horasExtras || 0).toLocaleString("es-CO")}</td>
+                    <td style={{padding:"6px 8px",textAlign:"right",fontSize:10,color:"#5b21b6"}}>$ {Number(resumen.comisiones || 0).toLocaleString("es-CO")}</td>
+                    <td style={{padding:"6px 8px",textAlign:"right",color:"#cc0000",fontSize:9}}>
+                      <div>Salud: -$ {Number(resumen.salud || 0).toLocaleString("es-CO")}</div>
+                      <div>Pensión: -$ {Number(resumen.pension || 0).toLocaleString("es-CO")}</div>
+                      <div>Otras: -$ {Number(resumen.otrasDeducciones || 0).toLocaleString("es-CO")}</div>
+                    </td>
+                    <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,color:liquidacionPrestaciones>0?"#b45309":"#94a3b8",fontSize:10}}>$ {Number(liquidacionPrestaciones || 0).toLocaleString("es-CO")}</td>
+                    <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,color:"#003B71",fontSize:10}}>$ {Number(totalPagar || 0).toLocaleString("es-CO")}</td>
                   </tr>
                 ))}
               </tbody>
-              <tfoot><tr style={{background:"#003B71",color:"#FFCD00"}}><td colSpan={11} style={{padding:"8px 10px",fontWeight:700,fontSize:11}}>TOTAL A PAGAR</td><td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,fontSize:11}}>$ {nominaVistaActual.totals.totalPagar.toLocaleString("es-CO")}</td></tr></tfoot>
+              <tfoot><tr style={{background:"#003B71",color:"#FFCD00"}}><td colSpan={12} style={{padding:"8px 10px",fontWeight:700,fontSize:11}}>TOTAL A PAGAR</td><td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,fontSize:11}}>$ {Number(nominaVistaActual.totals.totalPagar || 0).toLocaleString("es-CO")}</td></tr></tfoot>
             </table>
             <div style={{marginTop:16,fontSize:10,color:"#555",lineHeight:1.5}}>
-              Salud y pensión del empleado se calculan aquí sobre la base del corte: salario proporcional + horas extras + comisiones. El auxilio de transporte se prorratea por los días del corte cuando aplica. Si el retiro cae dentro del corte, la planilla suma la liquidación definitiva en este mismo pago. El plano banco usa como referencia el archivo adjunto y solo exporta empleados con cédula y cuenta bancaria completas.
+              Salud y pensión del empleado se calculan aquí sobre la base del corte: salario proporcional + incapacidades + horas extras + comisiones. El auxilio de transporte se prorratea por los días laborados del corte cuando aplica. Si el retiro cae dentro del corte, la planilla suma la liquidación definitiva en este mismo pago. El plano banco usa como referencia el archivo adjunto y solo exporta empleados con cédula y cuenta bancaria completas.
             </div>
             <div style={{marginTop:30,display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:20}}>
               {["REPRESENTANTE LEGAL","CONTADOR","APROBADO POR"].map((l)=><div key={l} style={{textAlign:"center",borderTop:"1px solid #333",paddingTop:8}}><div style={{fontSize:10,color:"#555"}}>{l}</div></div>)}
@@ -9626,11 +10954,6 @@ function Vencimientos({ctx}){
     {titulo:"Al día (más de 90 días)",filtro:(d)=>d!==null&&d>=90,color:"#4ade80"},
   ];
 
-  const totVenc=lista.filter(c=>c.diasRestantes!==null&&c.diasRestantes<0).length;
-  const totUrg=lista.filter(c=>c.diasRestantes!==null&&c.diasRestantes>=0&&c.diasRestantes<30).length;
-  const totProx=lista.filter(c=>c.diasRestantes!==null&&c.diasRestantes>=30&&c.diasRestantes<90).length;
-  const totOk=lista.filter(c=>c.diasRestantes!==null&&c.diasRestantes>=90).length;
-
   const certParaImpresion=imprimiendo?certs.find(x=>x.id===imprimiendo.id)||imprimiendo:null;
 
   return(
@@ -9704,14 +11027,6 @@ function Vencimientos({ctx}){
 
       {!certParaImpresion&&(
         <>
-          {/* ── CONTADORES ── */}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
-            <SC label="Vencidas" value={totVenc} color="#ef4444" icon="VE" sub="requieren acción"/>
-            <SC label="Urgentes (<30 días)" value={totUrg} color="#fb923c" icon="UR" sub="prioridad alta"/>
-            <SC label="Próximas (30-90d)" value={totProx} color="#f5c842" icon="PR" sub="programar"/>
-            <SC label="Al día" value={totOk} color="#4ade80" icon="OK" sub="sin novedad"/>
-          </div>
-
           {/* ── GRUPOS POR ESTADO ── */}
           {grupos.map(g=>{
             const items=lista.filter(c=>g.filtro(c.diasRestantes));

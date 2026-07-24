@@ -30,6 +30,7 @@ export const entityConfig = {
   },
   empleados: {
     table: "empleados",
+    coerceNullCols: ["salario", "vacaciones_pagadas_dias", "vacaciones_liquidacion_dias", "fecha_ingreso", "fecha_salida"],
     toRow: (item) => ({
       id: item.id,
       nombre: item.nombre,
@@ -52,6 +53,8 @@ export const entityConfig = {
       extras: safeArray(item.horasExtrasPorObra),
       comisiones: safeArray(item.comisionesPorObra),
       deducciones_personalizadas: safeArray(item.deduccionesPersonalizadas),
+      incapacidades: safeArray(item.incapacidades),
+      prestaciones_sociales: safeArray(item.prestacionesSociales),
     }),
     toLegacyRow: (item) => ({
       id: item.id,
@@ -67,6 +70,7 @@ export const entityConfig = {
       numero_cuenta: item.numeroCuenta ?? null,
       extras: safeArray(item.horasExtrasPorObra),
       comisiones: safeArray(item.comisionesPorObra),
+      incapacidades: safeArray(item.incapacidades),
     }),
     fromRow: (row) => ({
       id: row.id,
@@ -90,6 +94,8 @@ export const entityConfig = {
       horasExtrasPorObra: safeArray(row.extras),
       comisionesPorObra: safeArray(row.comisiones),
       deduccionesPersonalizadas: safeArray(row.deducciones_personalizadas),
+      incapacidades: safeArray(row.incapacidades),
+      prestacionesSociales: safeArray(row.prestaciones_sociales),
     }),
   },
   cargos: {
@@ -167,6 +173,7 @@ export const entityConfig = {
   },
   obras: {
     table: "obras",
+    coerceNullCols: ["avance", "total", "pagado", "saldo", "costos", "subtotal_cotizacion", "utilidad_cotizacion", "base_ingreso_contable", "iva_generado_cotizacion", "fecha_inicio", "fecha_fin"],
     toRow: (item) => ({
       id: item.id,
       cliente: item.cliente,
@@ -184,6 +191,11 @@ export const entityConfig = {
       costos: item.costos ?? null,
       fecha_inicio: item.fechaInicio ?? null,
       fecha_fin: item.fechaFin ?? null,
+      cotizacion_id: item.cotizacionId ?? null,
+      subtotal_cotizacion: item.subtotalCotizacion ?? null,
+      utilidad_cotizacion: item.utilidadCotizacion ?? null,
+      base_ingreso_contable: item.baseIngresoContable ?? null,
+      iva_generado_cotizacion: item.ivaGeneradoCotizacion ?? null,
       empleados: safeArray(item.empleados),
       trazos: safeArray(item.trazos),
       anclajes: safeArray(item.anclajes),
@@ -209,6 +221,11 @@ export const entityConfig = {
       costos: row.costos,
       fechaInicio: row.fecha_inicio,
       fechaFin: row.fecha_fin,
+      cotizacionId: row.cotizacion_id,
+      subtotalCotizacion: row.subtotal_cotizacion,
+      utilidadCotizacion: row.utilidad_cotizacion,
+      baseIngresoContable: row.base_ingreso_contable,
+      ivaGeneradoCotizacion: row.iva_generado_cotizacion,
       empleados: safeArray(row.empleados),
       trazos: safeArray(row.trazos),
       anclajes: safeArray(row.anclajes),
@@ -220,6 +237,7 @@ export const entityConfig = {
   },
   cotizaciones: {
     table: "cotizaciones",
+    coerceNullCols: ["fecha", "validez_dias", "utilidad_pct", "total"],
     toRow: (item) => ({
       id: item.id,
       numero: item.numero ?? null,
@@ -299,6 +317,7 @@ export const entityConfig = {
   },
   certificaciones: {
     table: "certificaciones",
+    coerceNullCols: ["fecha", "prox_mant"],
     toRow: (item) => ({
       id: item.id,
       obra_id: item.obraId ?? null,
@@ -336,6 +355,7 @@ export const entityConfig = {
   },
   informes: {
     table: "informes",
+    coerceNullCols: ["fecha_informe", "periodo_inicio", "periodo_fin"],
     toRow: (item) => ({
       id: item.id,
       obra_id: item.obraId ?? null,
@@ -405,6 +425,7 @@ export const entityConfig = {
   },
   cuentas: {
     table: "cuentas_por_pagar",
+    coerceNullCols: ["monto", "fecha", "fecha_vence", "subtotal", "tarifa_iva", "valor_iva", "base_ret_fuente", "tarifa_ret_fuente", "valor_ret_fuente", "base_reteiva", "tarifa_reteiva", "valor_reteiva", "base_reteica", "tarifa_reteica", "valor_reteica", "valor_bruto_factura", "valor_total_retenciones", "valor_total_pagar", "saldo_pendiente_actual", "monto_pagado", "fecha_pago"],
     toRow: (item) => ({
       id: item.id,
       proveedor_id: item.proveedorId ?? null,
@@ -493,6 +514,7 @@ export const entityConfig = {
   },
   pagos: {
     table: "pagos",
+    coerceNullCols: ["fecha", "valor"],
     toRow: (item) => ({
       id: item.id,
       obra_id: item.obraId ?? null,
@@ -529,6 +551,7 @@ export const entityConfig = {
   },
   horarios: {
     table: "horarios",
+    coerceNullCols: ["fecha", "horas"],
     toRow: (item) => ({
       id: item.id,
       empleado_id: item.empleadoId ?? null,
@@ -552,6 +575,7 @@ export const entityConfig = {
   },
   contabilidad_config: {
     table: "contabilidad_config",
+    coerceNullCols: ["uvt"],
     optional: true,
     toRow: (item) => ({
       id: item.id,
@@ -574,6 +598,51 @@ export const entityConfig = {
       cuenta_reteiva: item.cuentaReteiva ?? null,
       cuenta_reteica: item.cuentaReteica ?? null,
       cuenta_ingreso_servicios: item.cuentaIngresoServicios ?? null,
+      cuenta_utilidad_obra: item.cuentaUtilidadObra ?? null,
+      cuenta_costo_materiales: item.cuentaCostoMateriales ?? null,
+      cuenta_costo_servicios_obra: item.cuentaCostoServiciosObra ?? null,
+      cuenta_gasto_servicios: item.cuentaGastoServicios ?? null,
+      cuenta_gasto_honorarios: item.cuentaGastoHonorarios ?? null,
+      cuenta_gasto_arrendamiento: item.cuentaGastoArrendamiento ?? null,
+      cuenta_gasto_diverso: item.cuentaGastoDiverso ?? null,
+      cuenta_nomina_sueldos: item.cuentaNominaSueldos ?? null,
+      cuenta_nomina_extras: item.cuentaNominaExtras ?? null,
+      cuenta_nomina_auxilio: item.cuentaNominaAuxilio ?? null,
+      cuenta_nomina_liquidaciones: item.cuentaNominaLiquidaciones ?? null,
+      cuenta_nomina_por_pagar: item.cuentaNominaPorPagar ?? null,
+      cuenta_prima_servicios: item.cuentaPrimaServicios ?? null,
+      cuenta_cesantias: item.cuentaCesantias ?? null,
+      cuenta_intereses_cesantias: item.cuentaInteresesCesantias ?? null,
+      cuenta_prima_por_pagar: item.cuentaPrimaPorPagar ?? null,
+      cuenta_cesantias_por_pagar: item.cuentaCesantiasPorPagar ?? null,
+      cuenta_intereses_cesantias_por_pagar: item.cuentaInteresesCesantiasPorPagar ?? null,
+      cuenta_salud_por_pagar: item.cuentaSaludPorPagar ?? null,
+      cuenta_pension_por_pagar: item.cuentaPensionPorPagar ?? null,
+      cuenta_otras_deducciones_nomina: item.cuentaOtrasDeduccionesNomina ?? null,
+      observaciones: item.observaciones ?? null,
+    }),
+    toLegacyRow: (item) => ({
+      id: item.id,
+      razon_social: item.razonSocial ?? null,
+      nit: item.nit ?? null,
+      marco_normativo: item.marcoNormativo ?? null,
+      marco_normativo_label: item.marcoNormativoLabel ?? null,
+      moneda: item.moneda ?? null,
+      uvt: item.uvt ?? null,
+      auto_cxc: item.autoCxc ?? true,
+      auto_cxp: item.autoCxp ?? true,
+      auto_nomina: item.autoNomina ?? true,
+      cuenta_banco: item.cuentaBanco ?? null,
+      cuenta_caja: item.cuentaCaja ?? null,
+      cuenta_clientes: item.cuentaClientes ?? null,
+      cuenta_proveedores: item.cuentaProveedores ?? null,
+      cuenta_iva_descontable: item.cuentaIvaDescontable ?? null,
+      cuenta_iva_generado: item.cuentaIvaGenerado ?? null,
+      cuenta_retefuente: item.cuentaRetefuente ?? null,
+      cuenta_reteiva: item.cuentaReteiva ?? null,
+      cuenta_reteica: item.cuentaReteica ?? null,
+      cuenta_ingreso_servicios: item.cuentaIngresoServicios ?? null,
+      cuenta_utilidad_obra: item.cuentaUtilidadObra ?? null,
       cuenta_costo_materiales: item.cuentaCostoMateriales ?? null,
       cuenta_costo_servicios_obra: item.cuentaCostoServiciosObra ?? null,
       cuenta_gasto_servicios: item.cuentaGastoServicios ?? null,
@@ -611,6 +680,7 @@ export const entityConfig = {
       cuentaReteiva: row.cuenta_reteiva,
       cuentaReteica: row.cuenta_reteica,
       cuentaIngresoServicios: row.cuenta_ingreso_servicios,
+      cuentaUtilidadObra: row.cuenta_utilidad_obra,
       cuentaCostoMateriales: row.cuenta_costo_materiales,
       cuentaCostoServiciosObra: row.cuenta_costo_servicios_obra,
       cuentaGastoServicios: row.cuenta_gasto_servicios,
@@ -622,6 +692,12 @@ export const entityConfig = {
       cuentaNominaAuxilio: row.cuenta_nomina_auxilio,
       cuentaNominaLiquidaciones: row.cuenta_nomina_liquidaciones,
       cuentaNominaPorPagar: row.cuenta_nomina_por_pagar,
+      cuentaPrimaServicios: row.cuenta_prima_servicios,
+      cuentaCesantias: row.cuenta_cesantias,
+      cuentaInteresesCesantias: row.cuenta_intereses_cesantias,
+      cuentaPrimaPorPagar: row.cuenta_prima_por_pagar,
+      cuentaCesantiasPorPagar: row.cuenta_cesantias_por_pagar,
+      cuentaInteresesCesantiasPorPagar: row.cuenta_intereses_cesantias_por_pagar,
       cuentaSaludPorPagar: row.cuenta_salud_por_pagar,
       cuentaPensionPorPagar: row.cuenta_pension_por_pagar,
       cuentaOtrasDeduccionesNomina: row.cuenta_otras_deducciones_nomina,
@@ -662,6 +738,7 @@ export const entityConfig = {
   },
   asientos_contables: {
     table: "asientos_contables",
+    coerceNullCols: ["fecha", "total_debito", "total_credito", "diferencia"],
     optional: true,
     toRow: (item) => ({
       id: item.id,
@@ -704,6 +781,7 @@ export const entityConfig = {
   },
   nominas_generadas: {
     table: "nominas_generadas",
+    coerceNullCols: ["fecha_inicio", "fecha_fin", "dias_referencia", "generado_en"],
     toRow: (item) => ({
       id: item.id,
       mes: item.periodoMes ?? item.snapshot?.periodo?.mes ?? null,

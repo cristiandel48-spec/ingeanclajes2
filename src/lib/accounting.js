@@ -216,6 +216,39 @@ const DEFAULT_PLAN_TEMPLATE = [
     descripcion: "Obligaciones laborales inmediatas.",
   },
   {
+    codigo: "251005",
+    nombre: "Cesantias por pagar",
+    naturaleza: "credito",
+    grupoReporte: "pasivo",
+    categoriaEstado: "pasivo_corriente",
+    permiteMovimientos: true,
+    requiereTercero: true,
+    requiereCentroCosto: false,
+    descripcion: "Cesantias provisionadas o liquidadas pendientes de pago o consignacion.",
+  },
+  {
+    codigo: "251010",
+    nombre: "Intereses sobre cesantias por pagar",
+    naturaleza: "credito",
+    grupoReporte: "pasivo",
+    categoriaEstado: "pasivo_corriente",
+    permiteMovimientos: true,
+    requiereTercero: true,
+    requiereCentroCosto: false,
+    descripcion: "Intereses a las cesantias pendientes de pago al trabajador.",
+  },
+  {
+    codigo: "251015",
+    nombre: "Prima de servicios por pagar",
+    naturaleza: "credito",
+    grupoReporte: "pasivo",
+    categoriaEstado: "pasivo_corriente",
+    permiteMovimientos: true,
+    requiereTercero: true,
+    requiereCentroCosto: false,
+    descripcion: "Prima de servicios provisionada o causada pendiente de pago.",
+  },
+  {
     codigo: "310505",
     nombre: "Capital social",
     naturaleza: "credito",
@@ -258,6 +291,17 @@ const DEFAULT_PLAN_TEMPLATE = [
     requiereTercero: true,
     requiereCentroCosto: true,
     descripcion: "Servicios de anclajes, lineas de vida y certificacion.",
+  },
+  {
+    codigo: "413596",
+    nombre: "Utilidad AIU en obras y servicios",
+    naturaleza: "credito",
+    grupoReporte: "ingreso",
+    categoriaEstado: "ingreso_operacional",
+    permiteMovimientos: true,
+    requiereTercero: true,
+    requiereCentroCosto: true,
+    descripcion: "Utilidad o AIU causada sobre cotizaciones y obras aprobadas.",
   },
   {
     codigo: "417595",
@@ -313,6 +357,39 @@ const DEFAULT_PLAN_TEMPLATE = [
     requiereTercero: false,
     requiereCentroCosto: true,
     descripcion: "Liquidaciones, prestaciones sociales e indemnizaciones.",
+  },
+  {
+    codigo: "510536",
+    nombre: "Cesantias",
+    naturaleza: "debito",
+    grupoReporte: "gasto",
+    categoriaEstado: "gasto_operativo",
+    permiteMovimientos: true,
+    requiereTercero: true,
+    requiereCentroCosto: true,
+    descripcion: "Gasto por cesantias liquidadas o provisionadas al personal.",
+  },
+  {
+    codigo: "510537",
+    nombre: "Intereses sobre cesantias",
+    naturaleza: "debito",
+    grupoReporte: "gasto",
+    categoriaEstado: "gasto_operativo",
+    permiteMovimientos: true,
+    requiereTercero: true,
+    requiereCentroCosto: true,
+    descripcion: "Gasto por intereses sobre cesantias a cargo de la empresa.",
+  },
+  {
+    codigo: "510539",
+    nombre: "Prima de servicios",
+    naturaleza: "debito",
+    grupoReporte: "gasto",
+    categoriaEstado: "gasto_operativo",
+    permiteMovimientos: true,
+    requiereTercero: true,
+    requiereCentroCosto: true,
+    descripcion: "Gasto por prima legal de servicios del personal.",
   },
   {
     codigo: "513525",
@@ -420,6 +497,7 @@ export function buildDefaultContabilidadConfig(overrides = {}) {
     cuentaReteiva: "236701",
     cuentaReteica: "236801",
     cuentaIngresoServicios: "413595",
+    cuentaUtilidadObra: "413596",
     cuentaCostoMateriales: "614595",
     cuentaCostoServiciosObra: "615595",
     cuentaGastoServicios: "513595",
@@ -431,6 +509,12 @@ export function buildDefaultContabilidadConfig(overrides = {}) {
     cuentaNominaAuxilio: "510530",
     cuentaNominaLiquidaciones: "510535",
     cuentaNominaPorPagar: "250505",
+    cuentaPrimaServicios: "510539",
+    cuentaCesantias: "510536",
+    cuentaInteresesCesantias: "510537",
+    cuentaPrimaPorPagar: "251015",
+    cuentaCesantiasPorPagar: "251005",
+    cuentaInteresesCesantiasPorPagar: "251010",
     cuentaSaludPorPagar: "237005",
     cuentaPensionPorPagar: "237010",
     cuentaOtrasDeduccionesNomina: "236595",
@@ -546,6 +630,11 @@ export function normalizeContabilidadConfig(raw = {}) {
         raw.cuenta_ingreso_servicios ??
         base.cuentaIngresoServicios
     ),
+    cuentaUtilidadObra: String(
+      raw.cuentaUtilidadObra ??
+        raw.cuenta_utilidad_obra ??
+        base.cuentaUtilidadObra
+    ),
     cuentaCostoMateriales: String(
       raw.cuentaCostoMateriales ??
         raw.cuenta_costo_materiales ??
@@ -600,6 +689,36 @@ export function normalizeContabilidadConfig(raw = {}) {
       raw.cuentaNominaPorPagar ??
         raw.cuenta_nomina_por_pagar ??
         base.cuentaNominaPorPagar
+    ),
+    cuentaPrimaServicios: String(
+      raw.cuentaPrimaServicios ??
+        raw.cuenta_prima_servicios ??
+        base.cuentaPrimaServicios
+    ),
+    cuentaCesantias: String(
+      raw.cuentaCesantias ??
+        raw.cuenta_cesantias ??
+        base.cuentaCesantias
+    ),
+    cuentaInteresesCesantias: String(
+      raw.cuentaInteresesCesantias ??
+        raw.cuenta_intereses_cesantias ??
+        base.cuentaInteresesCesantias
+    ),
+    cuentaPrimaPorPagar: String(
+      raw.cuentaPrimaPorPagar ??
+        raw.cuenta_prima_por_pagar ??
+        base.cuentaPrimaPorPagar
+    ),
+    cuentaCesantiasPorPagar: String(
+      raw.cuentaCesantiasPorPagar ??
+        raw.cuenta_cesantias_por_pagar ??
+        base.cuentaCesantiasPorPagar
+    ),
+    cuentaInteresesCesantiasPorPagar: String(
+      raw.cuentaInteresesCesantiasPorPagar ??
+        raw.cuenta_intereses_cesantias_por_pagar ??
+        base.cuentaInteresesCesantiasPorPagar
     ),
     cuentaSaludPorPagar: String(
       raw.cuentaSaludPorPagar ??
@@ -865,6 +984,10 @@ function normalizeCobro(raw = {}) {
 }
 
 function normalizeObraIngreso(raw = {}) {
+  const ivaGeneradoCotizacion = roundMoney(
+    raw.ivaGeneradoCotizacion ?? raw.iva_generado_cotizacion ?? 0
+  );
+  const total = roundMoney(raw.total ?? 0);
   return {
     ...raw,
     id: String(raw.id || buildId("OB")),
@@ -872,12 +995,24 @@ function normalizeObraIngreso(raw = {}) {
     nit: String(raw.nit || ""),
     proyecto: String(raw.proyecto || raw.obra || ""),
     estado: String(raw.estado || ""),
-    total: roundMoney(raw.total ?? 0),
+    total,
     pagado: roundMoney(raw.pagado ?? 0),
     saldo: roundMoney(raw.saldo ?? 0),
     fechaInicio: String(raw.fechaInicio ?? raw.fecha_inicio ?? ""),
     fechaFin: String(raw.fechaFin ?? raw.fecha_fin ?? ""),
     cotizacionId: String(raw.cotizacionId ?? raw.cotizacion_id ?? ""),
+    subtotalCotizacion: roundMoney(
+      raw.subtotalCotizacion ?? raw.subtotal_cotizacion ?? 0
+    ),
+    utilidadCotizacion: roundMoney(
+      raw.utilidadCotizacion ?? raw.utilidad_cotizacion ?? 0
+    ),
+    baseIngresoContable: roundMoney(
+      raw.baseIngresoContable ??
+        raw.base_ingreso_contable ??
+        Math.max(0, total - ivaGeneradoCotizacion)
+    ),
+    ivaGeneradoCotizacion,
   };
 }
 
@@ -932,11 +1067,89 @@ function resolveAutoDate(...values) {
   return String(date || "").trim();
 }
 
+function normalizePrestacionSocial(raw = {}) {
+  const componentes = raw.componentes && typeof raw.componentes === "object" ? raw.componentes : {};
+  const tipo =
+    raw.tipo === "cesantias"
+      ? "cesantias"
+      : raw.tipo === "intereses_cesantias"
+        ? "intereses_cesantias"
+        : raw.tipo === "liquidacion_retiro"
+          ? "liquidacion_retiro"
+          : "prima";
+  return {
+    id: String(raw.id || buildId("PRS")),
+    tipo,
+    estado: String(raw.estado || "provisionada"),
+    origen: String(raw.origen || (tipo === "liquidacion_retiro" ? "liquidacion_retiro" : "prestaciones")),
+    periodoLabel: String(raw.periodoLabel ?? raw.periodo_label ?? ""),
+    fechaCausacion: String(raw.fechaCausacion ?? raw.fecha_causacion ?? ""),
+    fechaPago: String(raw.fechaPago ?? raw.fecha_pago ?? ""),
+    fechaLimite: String(raw.fechaLimite ?? raw.fecha_limite ?? ""),
+    valor: roundMoney(raw.valor ?? 0),
+    basePrestacional: roundMoney(raw.basePrestacional ?? raw.base_prestacional ?? 0),
+    diasLiquidados: Number(raw.diasLiquidados ?? raw.dias_liquidados ?? 0),
+    observacion: String(raw.observacion || raw.notas || ""),
+    liquidacionEnNomina: Boolean(raw.liquidacionEnNomina ?? raw.liquidacion_en_nomina),
+    componentes: {
+      prima: roundMoney(componentes.prima ?? 0),
+      cesantias: roundMoney(componentes.cesantias ?? 0),
+      interesesCesantias: roundMoney(
+        componentes.interesesCesantias ?? componentes.intereses_cesantias ?? 0
+      ),
+      vacaciones: roundMoney(componentes.vacaciones ?? 0),
+      indemnizacion: roundMoney(componentes.indemnizacion ?? 0),
+    },
+  };
+}
+
+function normalizeEmpleadoPrestaciones(raw = {}) {
+  return {
+    id: String(raw.id || ""),
+    nombre: String(raw.nombre || ""),
+    cedula: String(raw.cedula || ""),
+    prestacionesSociales: safeArray(raw.prestacionesSociales ?? raw.prestaciones_sociales).map(
+      normalizePrestacionSocial
+    ),
+  };
+}
+
+function buildEmpleadoTercero(empleado = {}) {
+  return {
+    terceroId: String(empleado.id || "").trim(),
+    terceroNit: String(empleado.cedula || "").trim(),
+    terceroNombre: String(empleado.nombre || empleado.id || "Empleado").trim(),
+  };
+}
+
+function resolvePrestacionAccounts(tipo = "", settings) {
+  if (tipo === "cesantias") {
+    return {
+      gasto: settings.cuentaCesantias,
+      pasivo: settings.cuentaCesantiasPorPagar,
+      detalle: "Cesantias",
+    };
+  }
+  if (tipo === "intereses_cesantias") {
+    return {
+      gasto: settings.cuentaInteresesCesantias,
+      pasivo: settings.cuentaInteresesCesantiasPorPagar,
+      detalle: "Intereses cesantias",
+    };
+  }
+  return {
+    gasto: settings.cuentaPrimaServicios,
+    pasivo: settings.cuentaPrimaPorPagar,
+    detalle: "Prima de servicios",
+  };
+}
+
 export function buildAutomaticAccountingEntries({
   pagos = [],
   cuentas = [],
   clientes = [],
   proveedores = [],
+  empleados = [],
   obras = [],
   nominasGeneradas = [],
   config,
@@ -977,6 +1190,66 @@ export function buildAutomaticAccountingEntries({
         const terceroId = String(cliente.id || obra.id || "");
         const terceroNit = String(obra.nit || cliente.nit || "").trim();
         const terceroNombre = String(obra.cliente || cliente.nombre || obra.proyecto || obra.id || "").trim();
+        const ivaGenerado = roundMoney(obra.ivaGeneradoCotizacion || 0);
+        const subtotalIngreso = roundMoney(obra.subtotalCotizacion || 0);
+        const utilidadIngreso = roundMoney(obra.utilidadCotizacion || 0);
+        const ingresoBase = roundMoney(
+          obra.baseIngresoContable > 0
+            ? obra.baseIngresoContable
+            : Math.max(0, obra.total - ivaGenerado)
+        );
+        const ingresoServicios = subtotalIngreso > 0 ? subtotalIngreso : ingresoBase;
+        const utilidadObra = subtotalIngreso > 0
+          ? utilidadIngreso
+          : Math.max(0, ingresoBase - ingresoServicios);
+        const lineasCausacion = [
+          createAsientoLine({
+            cuentaCodigo: settings.cuentaClientes,
+            detalle: `Cuenta por cobrar ${obra.proyecto || obra.id}`,
+            debito: obra.total,
+            terceroId,
+            terceroNit,
+            terceroNombre,
+            centroCosto: obra.id,
+          }),
+          createAsientoLine({
+            cuentaCodigo: settings.cuentaIngresoServicios,
+            detalle: `Ingreso causado ${obra.proyecto || obra.id}`,
+            credito: ingresoServicios,
+            terceroId,
+            terceroNit,
+            terceroNombre,
+            centroCosto: obra.id,
+          }),
+        ];
+
+        if (utilidadObra > 0) {
+          lineasCausacion.push(
+            createAsientoLine({
+              cuentaCodigo: settings.cuentaUtilidadObra,
+              detalle: `Utilidad AIU ${obra.proyecto || obra.id}`,
+              credito: utilidadObra,
+              terceroId,
+              terceroNit,
+              terceroNombre,
+              centroCosto: obra.id,
+            })
+          );
+        }
+
+        if (ivaGenerado > 0) {
+          lineasCausacion.push(
+            createAsientoLine({
+              cuentaCodigo: settings.cuentaIvaGenerado,
+              detalle: `IVA generado ${obra.proyecto || obra.id}`,
+              credito: ivaGenerado,
+              terceroId,
+              terceroNit,
+              terceroNombre,
+              centroCosto: obra.id,
+            })
+          );
+        }
 
         entries.push(
           buildAutoEntry({
@@ -991,26 +1264,7 @@ export function buildAutomaticAccountingEntries({
             terceroNit,
             terceroNombre,
             soporte: obra.cotizacionId || obra.id,
-            lineas: [
-              createAsientoLine({
-                cuentaCodigo: settings.cuentaClientes,
-                detalle: `Cuenta por cobrar ${obra.proyecto || obra.id}`,
-                debito: obra.total,
-                terceroId,
-                terceroNit,
-                terceroNombre,
-                centroCosto: obra.id,
-              }),
-              createAsientoLine({
-                cuentaCodigo: settings.cuentaIngresoServicios,
-                detalle: `Ingreso causado ${obra.proyecto || obra.id}`,
-                credito: obra.total,
-                terceroId,
-                terceroNit,
-                terceroNombre,
-                centroCosto: obra.id,
-              }),
-            ],
+            lineas: lineasCausacion,
             planMap,
           })
         );
@@ -1227,6 +1481,201 @@ export function buildAutomaticAccountingEntries({
   }
 
   if (settings.autoNomina) {
+    safeArray(empleados)
+      .map(normalizeEmpleadoPrestaciones)
+      .forEach((empleado) => {
+        const tercero = buildEmpleadoTercero(empleado);
+        if (!tercero.terceroNombre) return;
+
+        safeArray(empleado.prestacionesSociales).forEach((prestacion) => {
+          const fechaCausacion = resolveAutoDate(prestacion.fechaCausacion, prestacion.fechaLimite);
+          if (!fechaCausacion || prestacion.valor <= 0) return;
+
+          if (prestacion.tipo === "liquidacion_retiro") {
+            const causacionLines = [];
+            if (prestacion.componentes.prima > 0) {
+              causacionLines.push(
+                createAsientoLine({
+                  cuentaCodigo: settings.cuentaPrimaServicios,
+                  detalle: `Prima liquidacion retiro ${empleado.nombre}`,
+                  debito: prestacion.componentes.prima,
+                  ...tercero,
+                })
+              );
+            }
+            if (prestacion.componentes.cesantias > 0) {
+              causacionLines.push(
+                createAsientoLine({
+                  cuentaCodigo: settings.cuentaCesantias,
+                  detalle: `Cesantias liquidacion retiro ${empleado.nombre}`,
+                  debito: prestacion.componentes.cesantias,
+                  ...tercero,
+                })
+              );
+            }
+            if (prestacion.componentes.interesesCesantias > 0) {
+              causacionLines.push(
+                createAsientoLine({
+                  cuentaCodigo: settings.cuentaInteresesCesantias,
+                  detalle: `Intereses cesantias liquidacion retiro ${empleado.nombre}`,
+                  debito: prestacion.componentes.interesesCesantias,
+                  ...tercero,
+                })
+              );
+            }
+            if (prestacion.componentes.vacaciones > 0) {
+              causacionLines.push(
+                createAsientoLine({
+                  cuentaCodigo: settings.cuentaNominaLiquidaciones,
+                  detalle: `Vacaciones liquidacion retiro ${empleado.nombre}`,
+                  debito: prestacion.componentes.vacaciones,
+                  ...tercero,
+                })
+              );
+            }
+            if (prestacion.componentes.indemnizacion > 0) {
+              causacionLines.push(
+                createAsientoLine({
+                  cuentaCodigo: settings.cuentaNominaLiquidaciones,
+                  detalle: `Indemnizacion liquidacion retiro ${empleado.nombre}`,
+                  debito: prestacion.componentes.indemnizacion,
+                  ...tercero,
+                })
+              );
+            }
+            if (!causacionLines.length) return;
+
+            causacionLines.push(
+              createAsientoLine({
+                cuentaCodigo: settings.cuentaNominaPorPagar,
+                detalle: `Liquidacion retiro por pagar ${empleado.nombre}`,
+                credito: prestacion.valor,
+                ...tercero,
+              })
+            );
+
+            entries.push(
+              buildAutoEntry({
+                id: `AUTO-LIQ-${prestacion.id}`,
+                consecutivo: `LQ-${prestacion.id}`,
+                fecha: fechaCausacion,
+                tipoComprobante: "Comprobante de liquidacion",
+                origen: "nomina_liquidacion",
+                origenRef: prestacion.id,
+                descripcion: `Liquidacion de retiro ${empleado.nombre}`,
+                soporte: prestacion.id,
+                lineas: causacionLines,
+                planMap,
+                ...tercero,
+              })
+            );
+
+            const estadoPrestacion = String(prestacion.estado || "").toLowerCase();
+            if (
+              !prestacion.liquidacionEnNomina &&
+              prestacion.fechaPago &&
+              ["pagada", "consignada"].includes(estadoPrestacion)
+            ) {
+              entries.push(
+                buildAutoEntry({
+                  id: `AUTO-LIQ-PAGO-${prestacion.id}`,
+                  consecutivo: `EGR-LQ-${prestacion.id}`,
+                  fecha: prestacion.fechaPago,
+                  tipoComprobante: "Comprobante de egreso",
+                  origen: "nomina_liquidacion_pago",
+                  origenRef: prestacion.id,
+                  descripcion: `Pago liquidacion ${empleado.nombre}`,
+                  soporte: prestacion.id,
+                  lineas: [
+                    createAsientoLine({
+                      cuentaCodigo: settings.cuentaNominaPorPagar,
+                      detalle: `Cancelacion liquidacion ${empleado.nombre}`,
+                      debito: prestacion.valor,
+                      ...tercero,
+                    }),
+                    createAsientoLine({
+                      cuentaCodigo: settings.cuentaBanco,
+                      detalle: `Salida banco liquidacion ${empleado.nombre}`,
+                      credito: prestacion.valor,
+                      ...tercero,
+                    }),
+                  ],
+                  planMap,
+                  ...tercero,
+                })
+              );
+            }
+            return;
+          }
+
+          const cuentaPrestacion = resolvePrestacionAccounts(prestacion.tipo, settings);
+          entries.push(
+            buildAutoEntry({
+              id: `AUTO-PRS-${prestacion.id}`,
+              consecutivo: `PRS-${prestacion.id}`,
+              fecha: fechaCausacion,
+              tipoComprobante: "Comprobante de provision",
+              origen: `nomina_${prestacion.tipo}`,
+              origenRef: prestacion.id,
+              descripcion: `${cuentaPrestacion.detalle} ${prestacion.periodoLabel || empleado.nombre}`.trim(),
+              soporte: prestacion.id,
+              lineas: [
+                createAsientoLine({
+                  cuentaCodigo: cuentaPrestacion.gasto,
+                  detalle: `${cuentaPrestacion.detalle} ${prestacion.periodoLabel || ""}`.trim(),
+                  debito: prestacion.valor,
+                  ...tercero,
+                }),
+                createAsientoLine({
+                  cuentaCodigo: cuentaPrestacion.pasivo,
+                  detalle: `${cuentaPrestacion.detalle} por pagar ${empleado.nombre}`.trim(),
+                  credito: prestacion.valor,
+                  ...tercero,
+                }),
+              ],
+              planMap,
+              ...tercero,
+            })
+          );
+
+          const estadoPrestacion = String(prestacion.estado || "").toLowerCase();
+          if (
+            prestacion.fechaPago &&
+            ["pagada", "consignada"].includes(estadoPrestacion)
+          ) {
+            const accion = estadoPrestacion === "consignada" ? "Consignacion" : "Pago";
+            entries.push(
+              buildAutoEntry({
+                id: `AUTO-PRS-PAGO-${prestacion.id}`,
+                consecutivo: `EGR-PRS-${prestacion.id}`,
+                fecha: prestacion.fechaPago,
+                tipoComprobante: "Comprobante de egreso",
+                origen: `nomina_${prestacion.tipo}_pago`,
+                origenRef: prestacion.id,
+                descripcion: `${accion} ${cuentaPrestacion.detalle.toLowerCase()} ${empleado.nombre}`.trim(),
+                soporte: prestacion.id,
+                lineas: [
+                  createAsientoLine({
+                    cuentaCodigo: cuentaPrestacion.pasivo,
+                    detalle: `${cuentaPrestacion.detalle} cancelada ${empleado.nombre}`.trim(),
+                    debito: prestacion.valor,
+                    ...tercero,
+                  }),
+                  createAsientoLine({
+                    cuentaCodigo: settings.cuentaBanco,
+                    detalle: `Salida banco ${cuentaPrestacion.detalle.toLowerCase()} ${empleado.nombre}`.trim(),
+                    credito: prestacion.valor,
+                    ...tercero,
+                  }),
+                ],
+                planMap,
+                ...tercero,
+              })
+            );
+          }
+        });
+      });
+
     safeArray(nominasGeneradas)
       .map(normalizeNominaGenerada)
       .forEach((payroll) => {
@@ -1258,9 +1707,9 @@ export function buildAutomaticAccountingEntries({
             0
           )
         );
-        const totalLiquidaciones = roundMoney(
+        const totalIncapacidades = roundMoney(
           registros.reduce(
-            (sum, registro) => sum + Number(registro?.liquidacionPrestaciones || 0),
+            (sum, registro) => sum + Number(registro?.resumen?.incapacidadTotal || 0),
             0
           )
         );
@@ -1305,21 +1754,21 @@ export function buildAutomaticAccountingEntries({
             })
           );
         }
-        if (totalLiquidaciones > 0) {
+        if (totalIncapacidades > 0) {
           causacionLines.push(
             createAsientoLine({
-              cuentaCodigo: settings.cuentaNominaLiquidaciones,
-              detalle: `Liquidaciones ${payroll.periodoLabel || snapshot?.periodo?.label || payroll.id}`,
-              debito: totalLiquidaciones,
+              cuentaCodigo: settings.cuentaNominaSueldos,
+              detalle: `Incapacidades ${payroll.periodoLabel || snapshot?.periodo?.label || payroll.id}`,
+              debito: totalIncapacidades,
             })
           );
         }
-        if (totals.totalPagar > 0) {
+        if (totals.totalNomina > 0) {
           causacionLines.push(
             createAsientoLine({
               cuentaCodigo: settings.cuentaNominaPorPagar,
               detalle: `Neto nomina por pagar ${payroll.periodoLabel || snapshot?.periodo?.label || payroll.id}`,
-              credito: totals.totalPagar,
+              credito: totals.totalNomina,
             })
           );
         }
@@ -1419,6 +1868,7 @@ export function buildCombinedEntries({
   cuentas = [],
   clientes = [],
   proveedores = [],
+  empleados = [],
   obras = [],
   nominasGeneradas = [],
   config,
@@ -1432,6 +1882,7 @@ export function buildCombinedEntries({
     cuentas,
     clientes,
     proveedores,
+    empleados,
     obras,
     nominasGeneradas,
     config,

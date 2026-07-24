@@ -10,6 +10,20 @@ function assertEntity(entity) {
   return cfg;
 }
 
+// Convierte "" (o solo espacios) en null para las columnas indicadas en cfg.coerceNullCols.
+// Necesario porque Postgres rechaza el string vacío en columnas date/timestamptz/numeric/integer
+// ("invalid input syntax for type date/numeric"). Solo se aplica a esas columnas, nunca a texto.
+function coerceEmptyToNull(row, cols) {
+  if (!cols || !cols.length) return row;
+  for (const col of cols) {
+    const value = row[col];
+    if (typeof value === "string" && value.trim() === "") {
+      row[col] = null;
+    }
+  }
+  return row;
+}
+
 function chunkArray(items, size = DEFAULT_CHUNK_SIZE) {
   if (items.length <= size) return [items];
   const result = [];
@@ -105,10 +119,13 @@ export function createDataService({ supabase, tenantId }) {
       .filter((item) => item && item.id)
       .map((item) => ({
         source: item,
-        row: {
-          tenant_id: tenantId,
-          ...cfg.toRow(item),
-        },
+        row: coerceEmptyToNull(
+          {
+            tenant_id: tenantId,
+            ...cfg.toRow(item),
+          },
+          cfg.coerceNullCols
+        ),
       }));
 
     if (!prepared.length) return;
@@ -126,10 +143,15 @@ export function createDataService({ supabase, tenantId }) {
       }
 
       if (cfg.toLegacyRow && isMissingColumnError(error)) {
-        const legacyRows = chunk.map((item) => ({
-          tenant_id: tenantId,
-          ...cfg.toLegacyRow(item.source),
-        }));
+        const legacyRows = chunk.map((item) =>
+          coerceEmptyToNull(
+            {
+              tenant_id: tenantId,
+              ...cfg.toLegacyRow(item.source),
+            },
+            cfg.coerceNullCols
+          )
+        );
         const { error: legacyError } = await supabase
           .from(cfg.table)
           .upsert(legacyRows, { onConflict: "tenant_id,id" });

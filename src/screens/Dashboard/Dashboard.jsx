@@ -1,3 +1,4 @@
+import H1 from "../../components/ui/H1";
 import { B, CD, ST } from "../../styles/tokens";
 import { fmt, fmtD } from "../../lib/format";
 import { getQuoteActiveProposal } from "../../lib/cotizaciones";

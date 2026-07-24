@@ -1,3 +1,5 @@
+import PrintHeader from "../../components/print/PrintHeader";
+import StaticMapPreview from "../../components/maps/StaticMapPreview";
 import { fmt, fmtL } from "../../lib/format";
 import { getQuotePrintableProposals } from "../../lib/cotizaciones";
 export default function CotizacionPrint({c}){

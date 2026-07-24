@@ -1,3 +1,4 @@
+import CertificacionDocumento from "./CertificacionDocumento";
 import { B } from "../../styles/tokens";
 export default function CertificacionDetalle({cert,onVolver,onEditar,onImprimir,subtitle="Vista previa del documento"}) {
   if(!cert) return null;

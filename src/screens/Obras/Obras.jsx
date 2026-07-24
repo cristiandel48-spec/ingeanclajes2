@@ -1,3 +1,7 @@
+import Badge from "../../components/ui/Badge";
+import H1 from "../../components/ui/H1";
+import LBL from "../../components/ui/LBL";
+import ObraDetalle from "./ObraDetalle";
 import { useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmt, fmtD, today } from "../../lib/format";

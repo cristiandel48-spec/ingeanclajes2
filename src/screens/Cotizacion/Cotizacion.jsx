@@ -1,3 +1,8 @@
+import Badge from "../../components/ui/Badge";
+import CotizacionPrint from "./CotizacionPrint";
+import GoogleMeasureWorkspace from "../../components/maps/GoogleMeasureWorkspace";
+import H1 from "../../components/ui/H1";
+import LBL from "../../components/ui/LBL";
 import { useEffect, useRef, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_INCLUYE_PUNTOS_ANCLAJE, DEFAULT_COT_TIEMPO_EJEC, ITEMS_DB } from "../../data/seed";

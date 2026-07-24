@@ -1,3 +1,4 @@
+import PrintHeader from "../../components/print/PrintHeader";
 import { fmtL } from "../../lib/format";
 export default function CertificacionDocumento({cert}){
   if(!cert) return null;

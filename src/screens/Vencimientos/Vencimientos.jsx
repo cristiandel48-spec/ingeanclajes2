@@ -1,3 +1,6 @@
+import CertificacionDetalle from "../Certificaciones/CertificacionDetalle";
+import H1 from "../../components/ui/H1";
+import LBL from "../../components/ui/LBL";
 import { RECERT_ELEMENTOS_DEFAULT } from "../Certificaciones/certConfig";
 import { useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";

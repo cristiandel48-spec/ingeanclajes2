@@ -1,1 +1,3 @@
-export default function Av({init,color="#f47c20",size=36}){return <div style={{width:size,height:size,borderRadius:"50%",background:color+"33",border:"2px solid " + (color),display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*0.3,fontWeight:700,color,flexShrink:0}}>{init}</div>;}
+export default function Av({init,color="#E0342A",size=36}){
+  return <div style={{width:size,height:size,borderRadius:"50%",background:color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*0.32,fontWeight:700,color:"#fff",flexShrink:0}}>{init}</div>;
+}

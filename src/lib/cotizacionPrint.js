@@ -144,28 +144,31 @@ export function buildCotizacionPrintHtml(c){
     if (!mostrarResumenFinal) return "";
 
     return `
-      <div class="summary-card">
-        <div class="section-title premium-title summary-title">VALOR TOTAL DE LA COTIZACION</div>
-        <table class="summary-table">
+      <h2 class="doc-h2">Valor total de la cotización</h2>
+      <div class="price-table summary-spacing">
+        <table class="table">
           <thead>
             <tr>
-              <th>PROPUESTA / SERVICIOS OFRECIDOS</th>
-              <th style="text-align:center;">CANTIDAD / UNIDAD</th>
-              <th style="text-align:right;">VALOR TOTAL</th>
+              <th class="t-left" style="width:26px;"></th>
+              <th class="t-left">Propuesta / servicio</th>
+              <th style="width:110px;">Cant.</th>
+              <th class="t-right" style="width:150px;">Valor total</th>
             </tr>
           </thead>
           <tbody>
-            ${resumenPropuestas.map((row) => `
+            ${resumenPropuestas.map((row, i) => `
               <tr>
+                <td class="row-num tnum">${String(i + 1).padStart(2, "0")}</td>
                 <td>${escapeHtml(row.nombre || "")}</td>
-                <td style="text-align:center;">${escapeHtml(row.cantidadLabel || "0 UND")}</td>
-                <td style="text-align:right;">${money(row.total || 0)}</td>
+                <td class="t-center tnum">${escapeHtml(row.cantidadLabel || "0 UND")}</td>
+                <td class="t-right tnum strong">${money(row.total || 0)}</td>
               </tr>
             `).join("")}
-            <tr class="summary-total-row">
-              <td><strong>TOTAL GENERAL</strong></td>
-              <td style="text-align:center;"><strong>${escapeHtml(totalResumenCantidad)}</strong></td>
-              <td style="text-align:right;"><strong>${money(totalResumenValor)}</strong></td>
+            <tr class="grand-total">
+              <td></td>
+              <td class="total-label">Total general</td>
+              <td class="t-center tnum">${escapeHtml(totalResumenCantidad)}</td>
+              <td class="t-right tnum total-amount">${money(totalResumenValor)}</td>
             </tr>
           </tbody>
         </table>
@@ -191,21 +194,15 @@ export function buildCotizacionPrintHtml(c){
 
   const footerHtml = `
     <div class="footer">
-      Calle 38 Sur # 36 - 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; Nit. 900193965-4 &middot;<br/>
-      comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com
+      <span>Calle 38 Sur # 36 &ndash; 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; NIT 900193965-4</span>
+      <span>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</span>
     </div>
   `;
 
   const headerHtml = `
     <div class="header">
       <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
-      <div class="header-mid">ESPECIALISTAS EN ANCLAJES</div>
-      <div class="header-right">
-        Calle 38 sur # 36 - 48, Envigado<br/>
-        PBX 448 26 86 &middot; Cel 3152889541<br/>
-        Nit. 900193965-4<br/>
-        www.ingeanclajes.com
-      </div>
+      <div class="header-right">Especialistas en anclajes &middot; Cotización ${escapeHtml(c?.numero || c?.id || "")}</div>
     </div>
   `;
 
@@ -213,7 +210,7 @@ export function buildCotizacionPrintHtml(c){
     if(!Array.isArray(fotos) || !fotos.length) return "";
     const images = fotos.slice(0, 2);
     return `
-      <div class="section-title">Registro fotografico de la propuesta</div>
+      <div class="card-label block-label">Registro fotográfico de la propuesta</div>
       <div class="photo-grid ${images.length === 1 ? "single" : ""}">
         ${images.map((foto, idx)=>{
           const src = escapeHtml(foto?.src || "");
@@ -260,7 +257,7 @@ export function buildCotizacionPrintHtml(c){
       : "";
 
     return `
-      <div class="section-title">Medicion satelital</div>
+      <div class="card-label block-label">Medición satelital</div>
       <div class="map-wrap ${proposalIndex === 2 ? "proposal-3-map" : ""}" ${mapWrapStyle}>
         <svg class="map-svg" viewBox="0 0 ${mW} ${mH}" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mapa de medicion">
           <image
@@ -290,10 +287,10 @@ export function buildCotizacionPrintHtml(c){
 
     return `
       <div class="content-block">
-        <div class="subheading with-space">Esta cotización incluye</div>
-        <ul class="bullet-list compact-list">
-          ${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}
-        </ul>
+        <div class="card-label block-label">Esta propuesta incluye</div>
+        <div class="incluye-grid">
+          ${lines.map((line) => `<div class="incluye-item">&mdash; ${escapeHtml(line)}</div>`).join("")}
+        </div>
       </div>
     `;
   };
@@ -309,51 +306,51 @@ export function buildCotizacionPrintHtml(c){
       return `
         <tr>
           <td>${desc}</td>
-          <td class="t-center">${qty}</td>
+          <td class="t-center tnum">${qty}</td>
           <td class="t-center">${unit}</td>
-          <td class="t-right">${value}</td>
-          <td class="t-right">${subtotal}</td>
+          <td class="t-right tnum">${value}</td>
+          <td class="t-right tnum strong">${subtotal}</td>
         </tr>
       `;
     }).join("");
 
     return `
-      <div class="table-wrap">
+      <div class="price-table">
         <table class="table">
           <thead>
             <tr>
-              <th style="width:44%; text-align:left;">Descripcion</th>
-              <th style="width:12%;">Cantidad</th>
+              <th class="t-left" style="width:44%;">Descripción</th>
+              <th style="width:10%;">Cant.</th>
               <th style="width:12%;">Unidad</th>
-              <th style="width:16%;">Valor unitario</th>
-              <th style="width:16%;">Subtotal</th>
+              <th class="t-right" style="width:17%;">V. unitario</th>
+              <th class="t-right" style="width:17%;">Subtotal</th>
             </tr>
           </thead>
           <tbody>
             ${rows}
-            <tr>
-              <td colspan="4" class="label-total">SUBTOTAL</td>
-              <td class="t-right strong">${money(propuesta.sub || 0)}</td>
-            </tr>
-            <tr>
-              <td colspan="4">ADMINISTRACION</td>
-              <td class="t-right">$ &mdash;</td>
-            </tr>
-            <tr>
-              <td colspan="4">IMPREVISTOS</td>
-              <td class="t-right">$ &mdash;</td>
+            <tr class="sub-row">
+              <td colspan="4">Subtotal</td>
+              <td class="t-right tnum strong">${money(propuesta.sub || 0)}</td>
             </tr>
             <tr class="soft-row">
-              <td colspan="4">UTILIDADES (${numberFmt(propuesta.quote?.util || 10)}% del valor de la obra)</td>
-              <td class="t-right">${money(propuesta.ut || 0)}</td>
+              <td colspan="4">Administración</td>
+              <td class="t-right tnum">$ &mdash;</td>
+            </tr>
+            <tr class="soft-row">
+              <td colspan="4">Imprevistos</td>
+              <td class="t-right tnum">$ &mdash;</td>
+            </tr>
+            <tr class="soft-row">
+              <td colspan="4">Utilidades (${numberFmt(propuesta.quote?.util || 10)}% del valor de la obra)</td>
+              <td class="t-right tnum">${money(propuesta.ut || 0)}</td>
             </tr>
             <tr class="soft-row">
               <td colspan="4">IVA (19% sobre utilidades)</td>
-              <td class="t-right">${money(propuesta.iva || 0)}</td>
+              <td class="t-right tnum">${money(propuesta.iva || 0)}</td>
             </tr>
             <tr class="grand-total">
-              <td colspan="4">TOTAL</td>
-              <td class="t-right">${money(propuesta.tot || 0)}</td>
+              <td colspan="4" class="total-label">Total propuesta</td>
+              <td class="t-right tnum total-amount">${money(propuesta.tot || 0)}</td>
             </tr>
           </tbody>
         </table>
@@ -371,25 +368,26 @@ export function buildCotizacionPrintHtml(c){
         <div class="page-inner">
           ${headerHtml}
           <div class="page-content">
-            <div class="proposal-title">${escapeHtml(propuesta.nombre || `PROPUESTA ${idx + 1}`)}</div>
+            <div class="eyebrow">${String(idx + 3).padStart(2, "0")} &mdash; Propuesta ${idx + 1} de ${propuestas.length}</div>
+            <h2 class="doc-h2">${escapeHtml(propuesta.nombre || `Propuesta ${idx + 1}`)}</h2>
 
             ${hasClientReq ? `
               <div class="content-block">
-                <div class="subheading">Necesidad del cliente</div>
-                <p>${escapeHtml(propuesta.requerimientoCliente)}</p>
+                <div class="card-label block-label">Necesidad del cliente</div>
+                <p class="doc-copy">${escapeHtml(propuesta.requerimientoCliente)}</p>
               </div>
             ` : ""}
 
             ${hasScope ? `
               <div class="content-block">
-                <div class="subheading">Alcance de esta propuesta</div>
-                <p>${escapeHtml(propuesta.alcancePropuesta)}</p>
+                <div class="card-label block-label">Alcance de esta propuesta</div>
+                <p class="doc-copy">${escapeHtml(propuesta.alcancePropuesta)}</p>
               </div>
             ` : ""}
 
             ${hasNarrative ? `
-              <div class="content-block compact-block">
-                <p>${escapeHtml(propuesta.narrative)}</p>
+              <div class="content-block">
+                <p class="doc-copy">${escapeHtml(propuesta.narrative)}</p>
               </div>
             ` : ""}
 
@@ -405,62 +403,134 @@ export function buildCotizacionPrintHtml(c){
     `;
   };
 
+  const coverPage = `
+    <section class="page">
+      <div class="page-inner">
+        <div class="page-content cover">
+          <header class="cover-header">
+            <img src="${LOGO_INGEANCLAJES}" alt="Ingeanclajes" class="cover-logo" />
+          </header>
+          <div class="cover-firm">
+            <div class="cover-firm-name">ESPECIALISTAS EN ANCLAJES</div>
+            <div>Calle 38 Sur # 36 &ndash; 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; NIT 900193965-4</div>
+          </div>
+          <div class="cover-title">
+            <div class="cover-kicker">Propuesta Comercial</div>
+            <h1>Sistema de Anclajes Certificado<br/>para Trabajo en Alturas</h1>
+          </div>
+          <div class="meta-strip">
+            <div class="meta-cell">
+              <div class="meta-label">Cotización</div>
+              <div class="meta-value tnum">${escapeHtml(c?.numero || c?.id || "")}</div>
+            </div>
+            <div class="meta-cell">
+              <div class="meta-label">Emisión</div>
+              <div class="meta-value">${escapeHtml(fechaComercial || "")}</div>
+            </div>
+            <div class="meta-cell">
+              <div class="meta-label">Validez</div>
+              <div class="meta-value">${escapeHtml(String(c?.val || 30))} días</div>
+            </div>
+            <div class="meta-cell last">
+              <div class="meta-label">Valor total</div>
+              <div class="meta-value tnum accent">${money(totalResumenValor)}</div>
+            </div>
+          </div>
+          <div class="cover-client">
+            <div class="meta-label">Cotización preparada para</div>
+            <div class="cover-client-name">${escapeHtml(c?.cliente || "")}</div>
+            <div class="cover-client-grid">
+              <div><span>Obra:</span> ${escapeHtml(c?.obra || "")}</div>
+              <div><span>Ciudad:</span> ${escapeHtml(c?.ciudad || "")}</div>
+              <div><span>Contacto:</span> ${escapeHtml(c?.contacto || c?.cliente || "")}</div>
+              <div><span>Teléfono:</span> ${escapeHtml(c?.telefono || "")}</div>
+            </div>
+          </div>
+          <div class="cover-foot">
+            <span>Documento confidencial &middot; Uso exclusivo del destinatario</span>
+            <span>${escapeHtml(encabezadoFecha)}</span>
+          </div>
+        </div>
+        ${footerHtml}
+      </div>
+    </section>
+  `;
+
   const introPage = `
     <section class="page">
       <div class="page-inner">
         ${headerHtml}
-        <div class="page-content intro-page">
-          <div class="meta-top intro-meta">
-            <div class="intro-location">${escapeHtml(encabezadoFecha)}</div>
-            <div class="intro-number"><strong>COTIZACIÓN No.</strong> ${escapeHtml(c?.numero || c?.id || "")}</div>
-          </div>
+        <div class="page-content">
+          <div class="eyebrow">01 &mdash; Carta de presentación</div>
+          <h2 class="doc-h2">Cordial saludo${c?.cliente ? `, ${escapeHtml(c.cliente)}` : ""}</h2>
+          <p class="doc-copy">Presentamos la cotización para la instalación de elementos para trabajo seguro en alturas${c?.obra ? ` en la obra <strong>${escapeHtml(c.obra)}</strong>` : ""}.</p>
+          ${textoInicial ? `<p class="doc-copy">${escapeHtml(textoInicial)}</p>` : ""}
 
-          <div class="intro-kv">
-            <div><strong>EMPRESA:</strong> ${escapeHtml(c?.cliente || "")}</div>
-            <div><strong>CONTACTO:</strong> ${escapeHtml(c?.contacto || c?.cliente || "")}</div>
-            <div><strong>OBRA:</strong> ${escapeHtml(c?.obra || "")}</div>
-            <div><strong>TELÉFONO:</strong> ${escapeHtml(c?.telefono || "")}</div>
-            <div><strong>CIUDAD:</strong> ${escapeHtml(c?.ciudad || "")}</div>
-          </div>
-
-          <p>Cordial saludo.</p>
+          <div class="eyebrow eyebrow-gap">02 &mdash; Marco técnico</div>
+          <h3 class="doc-h3">Definiciones que estructuran el alcance</h3>
           ${(()=>{
             const tipo = propuestas[0]?.quote?.tipoCotizacion || "linea_vida";
-            if(tipo === "puntos_anclaje") return `
-              <p>Presentamos la cotización para la instalación de elementos para trabajo seguro en alturas.</p>
-              ${textoInicial ? `<p>${escapeHtml(textoInicial)}</p>` : ""}
-              <p><strong>Trabajo en altura:</strong> Se considera toda actividad, labor o trabajo que se deba realizar a una altura física igual o superior a 2 metros desde el piso.</p>
-              <p><strong>Puntos de anclaje:</strong> Son componentes en acero, anclados con un epóxico químico, con perno de 5/8" a una profundidad de 12 cm o más según el caso, instalados en estructuras de concreto, con capacidad de resistir una fuerza de caída de más de 5.000 Lbs (2.268 kg).</p>
-              <p><strong>Línea de vida:</strong> Son componentes de un sistema/equipo de protección de caídas, consistentes en una cuerda de nylon o cable deacero instalada en forma horizontal y vertical, tensionada y sujeta en tres o dos puntos de anclaje para otorgar movilidad al personalque trabaja en áreas elevadas.</p>
-              <ul class="bullet-list">
-                <li>La línea de vida permite la fijación o enganche en forma directa o indirecta al arnés completo para el cuerpo, o a un dispositivo deimpacto o amortiguador.</li>
-                <li>Los pernos son grado 8 — B7, resistentes a corrosión y condiciones ambientales extremas.</li>
-                <li>Las líneas de vida estarán constituidas por un solo cable continuo.</li>
-                <li>Los anclajes a los cuales se fijarán las líneas de vida deben resistir al menos 5.000 libras por cada persona asegurada.</li>
-              </ul>
-            `;
             if(tipo === "obra_blanca") return `
-              <p>Presentamos la cotización para la instalación de elementos para trabajo seguro en alturas.</p>
-              ${textoInicial ? `<p>${escapeHtml(textoInicial)}</p>` : ""}
-              <p><strong>Obra blanca:</strong> Comprende todas las actividades de acabado y revestimiento en edificaciones, incluyendo instalación de sistemas de protección integrados a la estructura arquitectónica del proyecto.</p>
-              <ul class="bullet-list">
-                <li>Instalación de elementos empotrados en la fase de obra para garantizar la mejor estética y durabilidad.</li>
-                <li>Cumplimiento estricto de los estándares constructivos y de seguridad vigentes.</li>
-                <li>Coordinación con el equipo de obra para minimizar el impacto en los cronogramas de construcción.</li>
-              </ul>
+              <div class="def-list">
+                <div class="def-row">
+                  <div class="def-term">Obra blanca</div>
+                  <div class="def-body">
+                    <p>Comprende todas las actividades de acabado y revestimiento en edificaciones, incluyendo instalación de sistemas de protección integrados a la estructura arquitectónica del proyecto.</p>
+                    <ul class="def-bullets">
+                      <li>Instalación de elementos empotrados en la fase de obra para garantizar la mejor estética y durabilidad.</li>
+                      <li>Cumplimiento estricto de los estándares constructivos y de seguridad vigentes.</li>
+                      <li>Coordinación con el equipo de obra para minimizar el impacto en los cronogramas de construcción.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             `;
-            // linea_vida — texto FIJO, siempre aparece completo
+            if(tipo === "puntos_anclaje") return `
+              <div class="def-list">
+                <div class="def-row">
+                  <div class="def-term">Trabajo en altura</div>
+                  <div class="def-body">Se considera toda actividad, labor o trabajo que se deba realizar a una altura física igual o superior a <strong>2 metros desde el piso</strong>.</div>
+                </div>
+                <div class="def-row">
+                  <div class="def-term">Puntos de anclaje</div>
+                  <div class="def-body">Son componentes en acero, anclados con un epóxico químico, con perno de <span class="tnum">5/8"</span> a una profundidad de <span class="tnum">12 cm</span> o más según el caso, instalados en estructuras de concreto, con capacidad de resistir una fuerza de caída de más de <strong>5.000 Lbs (2.268 kg)</strong>.</div>
+                </div>
+                <div class="def-row">
+                  <div class="def-term">Línea de vida</div>
+                  <div class="def-body">
+                    <p>Son componentes de un sistema/equipo de protección de caídas, consistentes en una cuerda de nylon o cable de acero instalada en forma horizontal y vertical, tensionada y sujeta en tres o dos puntos de anclaje para otorgar movilidad al personal que trabaja en áreas elevadas.</p>
+                    <ul class="def-bullets">
+                      <li>La línea de vida permite la fijación o enganche en forma directa o indirecta al arnés completo para el cuerpo, o a un dispositivo de impacto o amortiguador.</li>
+                      <li>Los pernos son grado 8 &mdash; B7, resistentes a corrosión y condiciones ambientales extremas.</li>
+                      <li>Las líneas de vida estarán constituidas por un solo cable continuo.</li>
+                      <li>Los anclajes a los cuales se fijarán las líneas de vida deben resistir al menos 5.000 libras por cada persona asegurada.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            `;
             return `
-              <p>Presentamos la cotización para la instalación de elementos para trabajo seguro en alturas.</p>
-              ${textoInicial ? `<p>${escapeHtml(textoInicial)}</p>` : ""}
-              <p><strong>Trabajo en altura:</strong> Se considera toda actividad, labor o trabajo que se deba realizar a una altura física igual o superior a 2 metros desde el piso.</p>
-              <p><strong>Puntos de anclaje:</strong> Son componentes en acero, anclado con un epóxico químico, con perno de 5/8 a una profundidad de 12 cm o más según el caso a estructuras en concreto, con capacidad de resistir una fuerza de caída de más de 5000 Lbs.</p>
-              <p><strong>Línea de vida:</strong> Son componentes de un sistema/equipo de protección de caídas, consistentes en una cuerda de nylon o cable de acero instalada en forma horizontal y vertical, tensionada y sujeta en tres o dos puntos de anclaje para otorgar movilidad al personal que trabaja en áreas elevadas.</p>
-              <ul class="bullet-list">
-                <li>La línea de vida permite la fijación o enganche en forma directa o indirecta al arnés completo para el cuerpo, o a un dispositivo de impacto o amortiguador.</li>
-                <li>Las líneas de vida estarán constituidas por un solo cable continuo.</li>
-                <li>Los anclajes a los cuales se fijarán las líneas de vida deben resistir al menos 5.000 libras por cada persona asegurada.</li>
-              </ul>
+              <div class="def-list">
+                <div class="def-row">
+                  <div class="def-term">Trabajo en altura</div>
+                  <div class="def-body">Se considera toda actividad, labor o trabajo que se deba realizar a una altura física igual o superior a <strong>2 metros desde el piso</strong>.</div>
+                </div>
+                <div class="def-row">
+                  <div class="def-term">Puntos de anclaje</div>
+                  <div class="def-body">Son componentes en acero, anclado con un epóxico químico, con perno de <span class="tnum">5/8</span> a una profundidad de <span class="tnum">12 cm</span> o más según el caso a estructuras en concreto, con capacidad de resistir una fuerza de caída de más de <strong>5000 Lbs</strong>.</div>
+                </div>
+                <div class="def-row">
+                  <div class="def-term">Línea de vida</div>
+                  <div class="def-body">
+                    <p>Son componentes de un sistema/equipo de protección de caídas, consistentes en una cuerda de nylon o cable de acero instalada en forma horizontal y vertical, tensionada y sujeta en tres o dos puntos de anclaje para otorgar movilidad al personal que trabaja en áreas elevadas.</p>
+                    <ul class="def-bullets">
+                      <li>La línea de vida permite la fijación o enganche en forma directa o indirecta al arnés completo para el cuerpo, o a un dispositivo de impacto o amortiguador.</li>
+                      <li>Las líneas de vida estarán constituidas por un solo cable continuo.</li>
+                      <li>Los anclajes a los cuales se fijarán las líneas de vida deben resistir al menos 5.000 libras por cada persona asegurada.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             `;
           })()}
         </div>
@@ -470,34 +540,60 @@ export function buildCotizacionPrintHtml(c){
   `;
 
   const renderFinalContent = ({ includeSummary = false } = {}) => `
+    <div class="eyebrow">${String(propuestas.length + (showTechnicalPage ? 4 : 3)).padStart(2, "0")} &mdash; Resumen, condiciones y próximos pasos</div>
     ${includeSummary ? renderResumenBlock() : ""}
-    <div class="section-title premium-title ${includeSummary ? "closing-title-with-summary" : ""}">Condiciones comerciales</div>
-    <div class="premium-card text-only-block premium-tight">
-      <div class="kv-grid premium-kv-grid">
-        <div class="kv-row premium-kv-row"><strong>FORMA DE PAGO</strong><span>${escapeHtml(c?.formaPago || "50% ANTICIPO, 50% CONCLUIR LABORES")}</span></div>
-        <div class="kv-row premium-kv-row"><strong>TIEMPO DE EJECUCIÓN</strong><span>${escapeHtml(c?.tiempoEjec || "10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)")}</span></div>
-        <div class="kv-row premium-kv-row"><strong>VALIDEZ DE LA OFERTA</strong><span>${escapeHtml(`${c?.val || 30} días a partir de la fecha de entrega de esta cotización`)}</span></div>
-        <div class="kv-row premium-kv-row"><strong>CERTIFICACIÓN</strong><span>Se entrega con el pago total</span></div>
+    <div class="keep conditions-block">
+      <div class="card-label block-label centered">Condiciones comerciales</div>
+      <div class="conditions-grid">
+        <div class="meta-card">
+          <div class="meta-label">Forma de pago</div>
+          <div class="meta-strong">${escapeHtml(c?.formaPago || "50% ANTICIPO, 50% CONCLUIR LABORES")}</div>
+        </div>
+        <div class="meta-card pad-left">
+          <div class="meta-label">Tiempo de ejecución</div>
+          <div class="meta-strong">${escapeHtml(c?.tiempoEjec || "10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)")}</div>
+        </div>
+        <div class="meta-card">
+          <div class="meta-label">Validez de la oferta</div>
+          <div class="meta-strong">${escapeHtml(`${c?.val || 30} días desde la entrega de esta cotización`)}</div>
+        </div>
+        <div class="meta-card pad-left">
+          <div class="meta-label">Certificación</div>
+          <div class="meta-strong">Se entrega con el pago total</div>
+        </div>
       </div>
     </div>
 
-    <div class="premium-divider text-only-block"></div>
-
-    <div class="section-title premium-title">Sistema de gestión de seguridad y salud en el trabajo</div>
-    <div class="premium-card premium-copy text-only-block compact-block premium-tight">
+    <div class="keep sst-block">
+      <div class="sst-title">Sistema de Gestión de Seguridad y Salud en el Trabajo</div>
       <p>INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicación de la Resolución 4272 de 2021, garantizando la implementación del Sistema de Gestión de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.</p>
     </div>
 
-    <div class="signature-block text-only-block premium-signature">
-      <p class="signature-intro">Cordialmente,</p>
-      <div class="signature-space compact-signature-space"></div>
-      <div class="signature-line premium-signature-line">
-        <strong>ING. JHON JAIME SEPÚLVEDA LONDOÑO</strong><br/>
-        MP. 05256-409949<br/>
-        Director Comercial<br/>
-        Tel: 3152889541
+    <div class="signature keep">
+      <div>
+        <div class="card-label block-label">Próximos pasos</div>
+        <ol class="steps-list">
+          <li>Confirmar aceptación por el medio de su preferencia.</li>
+          <li>Pago del anticipo pactado para iniciar fabricación.</li>
+          <li>Coordinación de visita técnica y cronograma de obra.</li>
+          <li>Instalación, certificación y entrega de pólizas.</li>
+        </ol>
+        <div class="contact-box">
+          <div class="meta-label">Para aceptar o resolver dudas</div>
+          <div class="contact-line">Cel. 315 288 9541</div>
+          <div class="contact-line">comercial1ingeanclajes@gmail.com</div>
+        </div>
+      </div>
+      <div>
+        <div class="card-label block-label">Cordialmente</div>
+        <div class="sig-space"></div>
+        <div class="sig-name">Ing. Jhon Jaime Sepúlveda Londoño</div>
+        <div class="sig-role">Director Comercial</div>
+        <div class="sig-meta">MP. 05256-409949<br/>Tel. 315 288 9541</div>
       </div>
     </div>
+
+    <div class="thanks-row"><span>Gracias por su confianza</span></div>
   `;
 
   const renderFinalPage = ({ includeSummary = false } = {}) => `
@@ -522,71 +618,35 @@ export function buildCotizacionPrintHtml(c){
       <div class="page-inner">
         ${headerHtml}
         <div class="page-content">
-          <div class="section-title" style="text-align:center;font-size:12px;font-weight:800;letter-spacing:1.5px;color:#111827;border-bottom:3px solid #c1121f;padding-bottom:4px;margin-bottom:0;">
-            SISTEMA NO CONTINUO EN ACERO GALVANIZADO — FICHA TÉCNICA
+          <div class="eyebrow">${String(propuestas.length + 3).padStart(2, "0")} &mdash; Ficha técnica</div>
+          <h3 class="doc-h3">Componentes del sistema en acero galvanizado</h3>
+
+          <div class="ficha-row">
+            <div class="ficha-name">Soporte lateral e intermedio</div>
+            <img src="${IMG_SOPORTE}" class="ficha-img" alt="Soporte lateral e intermedio" />
+            <div class="ficha-desc">Este elemento está diseñado para ser usado en sistemas de líneas de vida horizontales de tipo continuo. El componente soporta regularmente el cable de acero para que una sección libre de cable no supere la luz máxima permitida. Este soporte intermedio permite el uso de un carro deslizador para evitar el uso de eslinga en Y por parte del trabajador, y evitar que el colaborador se desconecte.</div>
           </div>
-          <table style="width:100%;border-collapse:collapse;font-size:9.5px;font-family:Arial,sans-serif;">
-            <thead>
-              <tr style="background:#1a2e4a;">
-                <th style="color:#fff;padding:7px 10px;text-align:left;font-weight:700;width:32%;border:1px solid #1a2e4a;">Elemento</th>
-                <th style="color:#fff;padding:7px 10px;text-align:left;font-weight:700;border:1px solid #1a2e4a;">Característica</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr style="border:1px solid #dde3ea;">
-                <td style="padding:10px;border:1px solid #dde3ea;vertical-align:middle;">
-                  <div style="display:flex;align-items:center;gap:10px;">
-                    <img src="${IMG_SOPORTE}" style="width:72px;height:72px;object-fit:contain;flex-shrink:0;" />
-                    <strong>Soporte lateral e intermedio</strong>
-                  </div>
-                </td>
-                <td style="padding:10px;border:1px solid #dde3ea;vertical-align:middle;line-height:1.55;">
-                  Este elemento está diseñado para ser usado en sistemas de líneas de vida horizontales de tipo continuo. El componente soporta regularmente el cable de acero para que una sección libre de cable no supere la luz máxima permitida. Este soporte intermedio permite el uso de un carro deslizador para evitar el uso de eslinga en Y por parte del trabajador, y evitar que el colaborador se desconecte.
-                </td>
-              </tr>
-              <tr style="background:#f8fafc;border:1px solid #dde3ea;">
-                <td style="padding:10px;border:1px solid #dde3ea;vertical-align:middle;">
-                  <div style="display:flex;align-items:center;gap:10px;">
-                    <img src="${IMG_TENSOR}" style="width:72px;height:72px;object-fit:contain;flex-shrink:0;" />
-                    <strong>Tensor</strong>
-                  </div>
-                </td>
-                <td style="padding:10px;border:1px solid #dde3ea;vertical-align:middle;line-height:1.55;">
-                  Este elemento está diseñado para ser usado en sistemas de líneas de vida horizontales. En sus extremos el tensor se asegura al cable de la línea de vida y a un absorbedor de energía respectivamente. Su función es tensionar la línea de vida para que, en el momento de una caída, la distancia de caída del trabajador sea mínima.
-                </td>
-              </tr>
-              <tr style="border:1px solid #dde3ea;">
-                <td style="padding:10px;border:1px solid #dde3ea;vertical-align:middle;">
-                  <div style="display:flex;align-items:center;gap:10px;">
-                    <img src="${IMG_EMPALMES}" style="width:72px;height:90px;object-fit:contain;flex-shrink:0;" />
-                    <div>
-                      <div><strong>Empalmes y fijaciones</strong></div>
-                      <div style="margin-top:8px;"><strong>Guardacables</strong></div>
-                    </div>
-                  </div>
-                </td>
-                <td style="padding:10px;border:1px solid #dde3ea;vertical-align:middle;line-height:1.55;">
-                  <div style="margin-bottom:8px;padding-bottom:8px;border-bottom:1px dashed #dde3ea;">
-                    <strong>Empalmes y fijaciones:</strong> Fabricados en aluminio. Resistentes a la corrosión y oxidación. Se utilizan para empalmar dos cables y fijar barandillas de cables.
-                  </div>
-                  <div>
-                    <strong>Guardacables:</strong> Fabricado en acero con acabado galvanizado resistente a la corrosión. Protegen contra el desgaste y deformación del cable, alargando su vida útil.
-                  </div>
-                </td>
-              </tr>
-              <tr style="background:#f8fafc;border:1px solid #dde3ea;">
-                <td style="padding:10px;border:1px solid #dde3ea;vertical-align:middle;">
-                  <div style="display:flex;align-items:center;gap:10px;">
-                    <img src="${IMG_CABLE}" style="width:72px;height:72px;object-fit:contain;flex-shrink:0;" />
-                    <strong>Cable de acero</strong>
-                  </div>
-                </td>
-                <td style="padding:10px;border:1px solid #dde3ea;vertical-align:middle;line-height:1.55;">
-                  El cable de acero se fabrica bajo un diseño que permite que sea capaz de absorber el desgaste y los esfuerzos causados por el contacto con poleas, tambores y otras superficies, así como las tensiones estáticas y dinámicas del trabajo al que se someta. Se compone por alambres de acero, estirados en frío, trenzados en espiral, formando unidades denominadas torones. Además, su diseño ha sido ideado para que cada alambre tenga la libertad de movimiento en relación a los alambres adyacentes. Mientras más alambres conformen este elemento, mayor será su flexibilidad y resistencia en esfuerzos elevados; logrando el objetivo de transmisión de movimiento, fuerzas y energía de forma eficaz y efectiva.
-                </td>
-              </tr>
-            </tbody>
-          </table>
+
+          <div class="ficha-row">
+            <div class="ficha-name">Tensor</div>
+            <img src="${IMG_TENSOR}" class="ficha-img" alt="Tensor" />
+            <div class="ficha-desc">Este elemento está diseñado para ser usado en sistemas de líneas de vida horizontales. En sus extremos el tensor se asegura al cable de la línea de vida y a un absorbedor de energía respectivamente. Su función es tensionar la línea de vida para que, en el momento de una caída, la distancia de caída del trabajador sea mínima.</div>
+          </div>
+
+          <div class="ficha-row">
+            <div class="ficha-name">Empalmes, fijaciones y guardacables</div>
+            <img src="${IMG_EMPALMES}" class="ficha-img tall" alt="Empalmes y guardacables" />
+            <div class="ficha-desc">
+              <div class="split"><strong>Empalmes y fijaciones:</strong> Fabricados en aluminio. Resistentes a la corrosión y oxidación. Se utilizan para empalmar dos cables y fijar barandillas de cables.</div>
+              <div><strong>Guardacables:</strong> Fabricado en acero con acabado galvanizado resistente a la corrosión. Protegen contra el desgaste y deformación del cable, alargando su vida útil.</div>
+            </div>
+          </div>
+
+          <div class="ficha-row">
+            <div class="ficha-name">Cable de acero</div>
+            <img src="${IMG_CABLE}" class="ficha-img" alt="Cable de acero" />
+            <div class="ficha-desc">El cable de acero se fabrica bajo un diseño que permite que sea capaz de absorber el desgaste y los esfuerzos causados por el contacto con poleas, tambores y otras superficies, así como las tensiones estáticas y dinámicas del trabajo al que se someta. Se compone por alambres de acero, estirados en frío, trenzados en espiral, formando unidades denominadas torones. Mientras más alambres conformen este elemento, mayor será su flexibilidad y resistencia en esfuerzos elevados.</div>
+          </div>
         </div>
         ${footerHtml}
       </div>
@@ -602,12 +662,15 @@ export function buildCotizacionPrintHtml(c){
   <html>
   <head>
     <meta charset="utf-8" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet" />
     <title>Cotizacion ${escapeHtml(c?.numero || "")}</title>
     <style>
       @page { size: Letter; margin: 0; }
       * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       html, body { margin:0; padding:0; background:#ffffff; }
-      body { font-family: Aptos, Arial, Helvetica, sans-serif; color:#111827; }
+      body { font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; color:#1E1E1E; -webkit-font-smoothing:antialiased; }
 
       .page {
         width:8.5in;
@@ -620,264 +683,152 @@ export function buildCotizacionPrintHtml(c){
         overflow:hidden;
       }
       .page:last-child { break-after:auto; page-break-after:auto; }
-      .page-inner {
-        position:relative;
-        width:100%;
-        height:100%;
-        padding:10mm 9mm 0 9mm;
-        box-sizing:border-box;
-      }
-      .page-content {
-        display:block;
-        min-height:auto;
-        padding:0 10mm 30mm 10mm;
-      }
-      .intro-page {
-        padding-left:12mm;
-        padding-right:12mm;
+      .page-inner { position:relative; width:100%; height:100%; padding:9mm 9mm 0 9mm; }
+      .page-content { display:block; padding:0 9mm 30mm 9mm; }
+
+      h1, h2, h3 { margin:0; font-family:'Source Serif 4', Georgia, serif; font-weight:600; text-wrap:balance; }
+      p { margin:0 0 3mm; font-size:12px; line-height:1.6; }
+
+      .header { display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid #1E1E1E; padding-bottom:2.6mm; margin:0 9mm 6mm 9mm; }
+      .logo { height:30px; width:auto; object-fit:contain; }
+      .header-right { font-size:9.5px; letter-spacing:.06em; text-transform:uppercase; color:#6B6B6B; font-weight:600; }
+
+      .footer {
+        position:absolute;
+        left:9mm; right:9mm; bottom:8mm;
+        padding-top:2mm;
+        border-top:1px solid #DDD;
+        display:flex; justify-content:space-between; gap:6mm;
+        font-size:8.6px; letter-spacing:.03em; color:#666;
+        background:#fff;
       }
 
-      .header {
-        display:grid;
-        grid-template-columns:170px 1fr 220px;
-        align-items:center;
-        column-gap:12px;
-        border-bottom:2px solid #c1121f;
-        padding-bottom:3mm;
-        margin:0 10mm 4mm 10mm;
-      }
-      .logo { width:160px; max-height:38px; object-fit:contain; }
-      .header-mid { text-align:center; font-size:11px; font-weight:800; letter-spacing:2.2px; color:#111827; }
-      .header-right { text-align:right; font-size:10px; line-height:1.35; color:#4b5563; }
+      .eyebrow { font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:#6B6B6B; font-weight:600; text-align:center; margin:0 0 6mm; padding-bottom:3mm; border-bottom:2px solid #1E1E1E; }
+      .eyebrow-gap { margin-top:9mm; }
+      .card-label { font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; color:#6B6B6B; font-weight:600; }
+      .block-label { margin-bottom:2.6mm; }
+      .centered { text-align:center; }
+      .tnum { font-variant-numeric:tabular-nums; }
+      .accent { color:#8A1518; }
 
-      .meta-top { display:flex; justify-content:space-between; gap:12px; margin-bottom:4.5mm; font-size:12px; }
-      .intro-meta {
-        margin-top: 13mm;
-        margin-bottom: 7.5mm;
-        align-items: flex-end;
-      }
-      .intro-location {
-        font-size: 12.6px;
-        font-weight: 700;
-        letter-spacing: 0.15px;
-      }
-      .intro-number {
-        font-size: 12.2px;
-        font-weight: 700;
-        text-align: right;
-      }
-      .intro-kv {
-        display:grid;
-        gap:1.2mm;
-        font-size:12px;
-        margin-bottom:7mm;
-      }
-      p { margin:0 0 3mm; font-size:12px; line-height:1.42; text-align:justify; }
+      .doc-h2 { font-size:20px; line-height:1.3; text-align:center; margin:0 auto 5mm; max-width:170mm; }
+      .doc-h3 { font-size:15px; text-align:center; margin:0 0 4.5mm; }
+      .doc-copy { font-size:12px; line-height:1.65; color:#2A2A2A; max-width:160mm; margin:0 auto 3mm; }
 
-      .proposal-title {
-        margin:1mm 0 3mm;
-        padding-bottom:1.5mm;
-        border-bottom:1px solid #c1121f;
-        text-align:center;
-        font-size:13px;
-        font-weight:800;
-        text-transform:uppercase;
-        letter-spacing:.2px;
-      }
-      .section-title {
-        margin:2mm 0 2mm;
-        padding-bottom:1.2mm;
-        border-bottom:1px solid #c1121f;
-        text-align:center;
-        font-size:12px;
-        font-weight:800;
-        text-transform:uppercase;
-        letter-spacing:.2px;
-      }
-      .subheading { font-size:12px; font-weight:700; margin-bottom:2mm; }
-      .subheading.with-space { margin-top:4mm; }
-      .content-block { margin-bottom:3mm; }
-      .text-only-block { margin-left:4cm; margin-right:3cm; max-width:calc(100% - 7cm); }
-      .text-only-block p, .text-only-block li { line-height:1.52; text-align:justify; }
-      .compact-block p { margin-bottom:2mm; }
+      .cover { padding-top:10mm; }
+      .cover-header { display:flex; justify-content:center; padding-bottom:6mm; border-bottom:2px solid #1E1E1E; }
+      .cover-logo { height:44px; width:auto; }
+      .cover-firm { text-align:center; font-size:10.5px; color:#444; line-height:1.8; margin-top:4mm; }
+      .cover-firm-name { font-weight:700; color:#1E1E1E; letter-spacing:.08em; }
+      .cover-title { margin-top:14mm; text-align:center; }
+      .cover-kicker { font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:#6B6B6B; margin-bottom:5mm; font-weight:700; }
+      .cover-title h1 { font-size:30px; line-height:1.3; }
+      .meta-strip { margin-top:13mm; display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid #CCC; border-bottom:1px solid #CCC; padding:6mm 0; }
+      .meta-cell { padding:0 4mm; border-right:1px solid #DDD; text-align:center; }
+      .meta-cell.last { border-right:none; }
+      .meta-label { font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; color:#777; margin-bottom:2mm; }
+      .meta-value { font-size:14px; font-weight:700; }
+      .cover-client { margin-top:10mm; text-align:center; }
+      .cover-client-name { font-size:21px; font-weight:700; margin:2mm 0 5mm; font-family:'Source Serif 4', Georgia, serif; }
+      .cover-client-grid { display:inline-grid; grid-template-columns:repeat(2,auto); gap:2mm 12mm; font-size:12px; color:#333; line-height:1.6; text-align:left; }
+      .cover-client-grid span { color:#777; }
+      .cover-foot { margin-top:12mm; padding-top:4mm; border-top:1px solid #DDD; display:flex; justify-content:space-between; font-size:9px; color:#777; }
 
-      .bullet-list { margin:1.5mm 0 0 0; padding-left:18px; font-size:12px; line-height:1.38; }
+      .def-list { border-top:1px solid #DDD; max-width:170mm; margin:0 auto; }
+      .def-row { display:grid; grid-template-columns:44mm 1fr; gap:7mm; padding:4.5mm 0; border-bottom:1px solid #DDD; }
+      .def-term { font-size:13px; font-weight:600; font-family:'Source Serif 4', Georgia, serif; }
+      .def-body { font-size:11.5px; line-height:1.65; color:#333; }
+      .def-body p { font-size:11.5px; margin:0 0 2.5mm; }
+      .def-bullets { margin:0; padding-left:16px; font-size:11.5px; line-height:1.65; color:#333; }
+      .def-bullets li { margin-bottom:1.2mm; }
+      .bullet-list { margin:1.5mm 0 0 0; padding-left:18px; font-size:12px; line-height:1.5; }
       .bullet-list li { margin-bottom:1.3mm; }
-      .compact-list li { margin-bottom:1mm; }
+      .section-title { font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; color:#6B6B6B; font-weight:600; margin-bottom:2.6mm; }
+      .subheading { font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; color:#6B6B6B; font-weight:600; margin-bottom:2.6mm; }
 
-      .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:2mm 0 3mm; }
+      .incluye-grid { display:grid; grid-template-columns:1fr 1fr; gap:2mm 8mm; }
+      .incluye-item { font-size:11.5px; line-height:1.55; color:#2A2A2A; }
+      .content-block { margin-bottom:5mm; }
+
+      .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 0 5mm; }
       .photo-grid.single { grid-template-columns:1fr; }
-      .photo-card { border:1px solid #d1d5db; border-radius:4px; overflow:hidden; background:#fff; padding:0; }
-      .photo { display:block; width:100%; height:66mm; object-fit:cover; object-position:center; background:#f3f4f6; }
-      .photo-grid.single .photo { height:74mm; }
-      .proposal-3-photo {
-        height:52mm;
-        object-fit:contain;
-        object-position:center;
-        background:#ffffff;
-      }
-      .photo-caption { padding:5px 0 6px; text-align:center; font-size:10px; color:#6b7280; border-top:1px solid #e5e7eb; }
+      .photo-card { border:1px solid #DDD; border-radius:6px; overflow:hidden; background:#fff; }
+      .photo { display:block; width:100%; height:62mm; object-fit:cover; object-position:center; background:#F4F4F2; }
+      .photo-grid.single .photo { height:72mm; }
+      .proposal-3-photo { height:52mm; object-fit:contain; object-position:center; background:#ffffff; }
+      .photo-caption { padding:5px 8px 6px; text-align:center; font-size:9.5px; letter-spacing:.04em; text-transform:uppercase; color:#777; border-top:1px solid #EEE; }
 
       .map-wrap {
-        position:relative;
-        width:100%;
-        height:52mm;
-        border:1px solid #d1d5db;
-        overflow:hidden;
-        background:#eef2f7;
-        margin:2mm 0 3mm;
-        display:flex;
-        align-items:center;
-        justify-content:center;
+        position:relative; width:100%; height:52mm;
+        border:1px solid #DDD; border-radius:6px; overflow:hidden;
+        background:#F4F4F2; margin:0 0 5mm;
+        display:flex; align-items:center; justify-content:center;
       }
-      .proposal-3-map {
-        height:72mm;
-        background:#ffffff;
-      }
-      .map-svg { display:block; width:100%; height:100%; background:#eef2f7; }
+      .proposal-3-map { height:72mm; background:#ffffff; }
+      .map-svg { display:block; width:100%; height:100%; background:#F4F4F2; }
       .proposal-3-map .map-svg { background:#ffffff; }
-      .map-label-group {
-        pointer-events:none;
-      }
+      .map-label-group { pointer-events:none; }
       .map-label-group text {
-        text-anchor:middle;
-        dominant-baseline:middle;
-        font-weight:800;
-        letter-spacing:.2px;
-        paint-order:stroke;
-        stroke:#ffffff;
-        stroke-width:3;
-        stroke-linejoin:round;
-        stroke-linecap:round;
+        text-anchor:middle; dominant-baseline:middle; font-weight:800; letter-spacing:.2px;
+        paint-order:stroke; stroke:#ffffff; stroke-width:3; stroke-linejoin:round; stroke-linecap:round;
       }
       .map-label-title { font-size:0; }
       .map-label-value { font-size:8px; }
 
-      .table-wrap { margin-top:2mm; }
-      .table { width:100%; border-collapse:collapse; font-size:10.2px; }
-      .table th { background:#151a36; color:#fff; border:1px solid #cbd5e1; padding:5px 6px; font-weight:700; text-align:center; }
-      .table td { border:1px solid #cbd5e1; padding:5px 6px; vertical-align:middle; }
-      .table .label-total { background:#eef2f7; font-weight:700; }
-      .table .soft-row td { background:#f3edb0; }
-      .table .grand-total td { background:#f2e55e; font-weight:800; font-size:12px; }
-      .tech-table td:first-child { width:28%; font-weight:700; }
+      .price-table { margin-top:2mm; }
+      .table { width:100%; border-collapse:collapse; font-size:11px; }
+      .table th { background:#1E1E1E; color:#fff; padding:8px 10px; font-size:9.5px; letter-spacing:.07em; text-transform:uppercase; font-weight:600; text-align:center; border:none; }
+      .table th.t-left { text-align:left; }
+      .table th.t-right { text-align:right; }
+      .table td { border-bottom:1px solid #DDD; padding:8px 10px; vertical-align:middle; color:#1E1E1E; }
+      .table .sub-row td { font-weight:600; }
+      .table .soft-row td { color:#666; font-size:10.5px; border-bottom:1px solid #EEE; padding:6px 10px; }
+      .table .grand-total td { border-top:2px solid #1E1E1E; border-bottom:none; padding-top:12px; }
+      .total-label { font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
+      .total-amount { font-size:16px; color:#8A1518; font-weight:700; }
+      .row-num { color:#777; font-size:10px; }
 
       .t-center { text-align:center; }
       .t-right { text-align:right; }
-      .strong { font-weight:700; }
+      .t-left { text-align:left; }
+      .strong { font-weight:600; }
 
-      .kv-grid { display:grid; gap:2mm; margin-top:2mm; }
-      .kv-row { display:grid; grid-template-columns:48mm 1fr; gap:4mm; font-size:12px; line-height:1.4; }
+      .ficha-row { display:grid; grid-template-columns:42mm 34mm 1fr; gap:7mm; padding:4.5mm 0; border-top:1px solid #DDD; align-items:center; }
+      .ficha-row:last-of-type { border-bottom:1px solid #DDD; }
+      .ficha-name { font-size:13px; font-weight:600; font-family:'Source Serif 4', Georgia, serif; }
+      .ficha-img { width:100%; height:26mm; object-fit:contain; }
+      .ficha-img.tall { height:32mm; }
+      .ficha-desc { font-size:11px; line-height:1.6; color:#333; }
+      .ficha-desc .split { margin-bottom:2.5mm; padding-bottom:2.5mm; border-bottom:1px dashed #DDD; }
 
-      .signature-block { margin-top:6mm; }
-      .signature-space { height:10mm; }
-      .signature-line { font-size:12px; line-height:1.42; }
+      .conditions-block { margin:7mm 0 0; }
+      .conditions-grid { display:grid; grid-template-columns:1fr 1fr; border-top:1px solid #DDD; }
+      .meta-card { padding:4.5mm 6mm 4.5mm 0; border-bottom:1px solid #DDD; }
+      .meta-card.pad-left { padding-left:6mm; padding-right:0; border-left:1px solid #EEE; }
+      .meta-strong { font-size:12px; font-weight:600; margin-top:1.6mm; }
+
+      .sst-block { margin:6mm 0; padding-top:4mm; border-top:2px solid #1E1E1E; }
+      .sst-title { font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; margin-bottom:2.6mm; }
+      .sst-block p { font-size:11.5px; line-height:1.7; margin:0; }
+
+      .signature { display:grid; grid-template-columns:1fr 1fr; gap:12mm; padding-top:5mm; border-top:1px solid #DDD; }
+      .steps-list { margin:0; padding-left:17px; font-size:11px; line-height:1.8; color:#2A2A2A; }
+      .contact-box { margin-top:5mm; padding:4mm 5mm; background:#F4F4F2; border:1px solid #DDD; }
+      .contact-line { font-size:11.5px; line-height:1.6; }
+      .sig-space { height:14mm; border-bottom:1px solid #1E1E1E; margin-bottom:3mm; }
+      .sig-name { font-size:13px; font-weight:600; font-family:'Source Serif 4', Georgia, serif; }
+      .sig-role { font-size:11.5px; color:#333; margin-top:.6mm; }
+      .sig-meta { font-size:10px; color:#666; margin-top:2mm; line-height:1.65; }
+      .thanks-row { margin-top:8mm; padding-top:4mm; border-top:1px solid #DDD; text-align:right; font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; color:#777; }
 
       .appendix-img { width:100%; height:auto; max-height:235mm; object-fit:contain; display:block; margin:0 auto; }
-      .premium-title { margin-top:1mm; margin-bottom:2.6mm; }
-      .summary-title { margin-top:0; }
-      .summary-page .page-content { padding-bottom: 30mm; }
-      .premium-closing-page .page-content { padding-bottom: 30mm; }
-      .closing-title-with-summary { margin-top: 1.5mm; }
-      .summary-card {
-        margin: 0 0 4mm 0;
-        border: 1px solid #dbe3ec;
-        border-radius: 10px;
-        background: linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
-        padding: 3.2mm 4mm 3mm 4mm;
-        box-shadow: 0 1.5mm 4mm rgba(15,23,42,.05);
-      }
-      .summary-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 10.4px;
-        margin-top: 1mm;
-      }
-      .summary-table th {
-        background: #f8fafc;
-        color: #111827;
-        font-weight: 700;
-        border-bottom: 1px solid #d9e1ea;
-        padding: 8px 10px;
-        text-align: left;
-      }
-      .summary-table td {
-        padding: 8px 10px;
-        border-bottom: 1px solid #e5e7eb;
-        color: #1f2937;
-      }
-      .summary-table tbody tr:last-child td { border-bottom: none; }
-      .summary-total-row td {
-        background: #fff8db;
-        border-top: 2px solid #e5d36b;
-        font-weight: 800;
-      }
-      .premium-card {
-        background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
-        border:1px solid #dbe3ec;
-        border-radius:10px;
-        padding:3.2mm 4mm;
-        box-shadow:0 1.5mm 4mm rgba(15,23,42,.05);
-      }
-      .premium-tight { margin-top:0; margin-bottom:0; }
-      .premium-kv-grid { gap:1.4mm; }
-      .premium-kv-row {
-        grid-template-columns:42mm 1fr;
-        gap:3mm;
-        font-size:10.8px;
-        line-height:1.35;
-        padding:1.1mm 0;
-        border-bottom:1px solid #e8eef5;
-      }
-      .premium-kv-row:last-child { border-bottom:none; padding-bottom:0; }
-      .premium-divider {
-        height:0;
-        margin-top:3.2mm;
-        margin-bottom:3.2mm;
-        border-top:1px solid #d7dee8;
-      }
-      .premium-copy p { font-size:10.8px; margin-bottom:0; }
-      .premium-signature { margin-top:4mm; }
-      .signature-intro { margin-bottom:1.4mm; font-size:10.8px; }
-      .compact-signature-space { height:7mm; }
-      .premium-signature-line {
-        display:inline-block;
-        padding-top:2.4mm;
-        border-top:1px solid #1f2937;
-        font-size:10.6px;
-        line-height:1.42;
-      }
+      .summary-spacing { margin-bottom:8mm; }
+      .summary-page .page-content { padding-bottom:30mm; }
 
-      .footer {
-        position:absolute;
-        left:9mm;
-        right:9mm;
-        bottom:8mm;
-        padding-top:2mm;
-        border-top:0.4px solid #9ca3af;
-        text-align:center;
-        font-size:9px;
-        line-height:1.25;
-        color:#6b7280;
-        background:#fff;
-      }
-
-      .proposal-title,
-      .section-title,
-      .photo-grid,
-      .map-wrap,
-      .table-wrap,
-      .table,
-      .table thead,
-      .table tbody,
-      .table tr,
-      .summary-card,
-      .summary-table,
-      .summary-table thead,
-      .summary-table tbody,
-      .summary-table tr,
-      .signature-block,
-      .content-block { break-inside:avoid; page-break-inside:avoid; }
+      .eyebrow, .doc-h2, .doc-h3, .photo-grid, .photo-card, .map-wrap,
+      .price-table, .table, .table thead, .table tr,
+      .def-row, .ficha-row, .meta-card, .conditions-grid,
+      .sst-block, .signature, .content-block, .incluye-grid { break-inside:avoid; page-break-inside:avoid; }
 
       @media print {
         body { background:#fff; }
@@ -886,6 +837,7 @@ export function buildCotizacionPrintHtml(c){
     </style>
   </head>
   <body>
+    ${coverPage}
     ${introPage}
     ${proposalSections}
     ${showVerticalAppendix ? `

@@ -4,6 +4,9 @@ import articoLineaVidaVertical from "./assets/artico-linea-vida-vertical.jpg";
 import * as backend from "./lib/backend";
 import { LOGO_CCS } from "./assets/embeddedImages";
 import { EC, PAL, TC, SI, B, CD, ST, hasBrokenEncoding, buildCardBadge } from "./styles/tokens";
+import { fmt, fmtK, today, fmtD, fmtL, scrollAppToTop, buildMonthDateRange, isDateWithinRange } from "./lib/format";
+import { parseIsoDate, diffDaysInclusive, toIsoDate, addDaysToDate, maxDate, minDate, round1, getDaysInMonth } from "./lib/dates";
+import { escapeHtml, escapeXml } from "./lib/html";
 import {
   ACCOUNTING_NORMATIVE_NOTE,
   buildCombinedEntries,
@@ -764,38 +767,6 @@ const ASIENTOS_CONTABLES_INIT = [];
 // ======================================================
 // HELPERS
 // ======================================================
-const fmt  = n=>new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0}).format(n||0);
-const fmtK = n=>n>=1000000?"$" + ((n/1000000).toFixed(1)) + "M":"$" + ((n/1000).toFixed(0)) + "K";
-const today= ()=>new Date().toISOString().split("T")[0];
-const fmtD = iso=>{ if(!iso)return""; const d=new Date(iso+"T12:00:00"); return d.toLocaleDateString("es-CO",{day:"2-digit",month:"short",year:"numeric"}); };
-const scrollAppToTop = (behavior="smooth")=>{
-  const main = typeof document!=="undefined" ? document.querySelector("main") : null;
-  if(main?.scrollTo) main.scrollTo({top:0,behavior});
-  if(typeof window!=="undefined" && window.scrollTo){
-    window.scrollTo({top:0,behavior});
-  }
-};
-const buildMonthDateRange = (period = today().slice(0,7))=>{
-  const normalized = String(period || "").trim();
-  if(!/^\d{4}-\d{2}$/.test(normalized)){
-    const current = today();
-    return {inicio:current.slice(0,7) + "-01", fin:current};
-  }
-  const [year, month] = normalized.split("-").map(Number);
-  const lastDay = new Date(year, month, 0).getDate();
-  return {
-    inicio:`${normalized}-01`,
-    fin:`${normalized}-${String(lastDay).padStart(2,"0")}`,
-  };
-};
-const isDateWithinRange = (iso = "", inicio = "", fin = "")=>{
-  const value = String(iso || "").trim();
-  if(!value) return false;
-  if(inicio && value < inicio) return false;
-  if(fin && value > fin) return false;
-  return true;
-};
-const fmtL = iso=>{ if(!iso)return""; const ms=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"]; const d=new Date(iso+"T12:00:00"); return (d.getDate()) + " de " + (ms[d.getMonth()]) + " de " + (d.getFullYear()); };
 const ITEMS_DB = [
   { categoria:"Lineas de Vida", items:[
     { desc:"LINEA DE VIDA HORIZONTAL",            unit:"ML",  vu:280000 },
@@ -1035,27 +1006,6 @@ const RECARGOS_CO_2026 = [
   { id:"horaExtraManual",    label:"✍️ Valor manual",                      horario:"Usar solo si se liquida por un acuerdo especial", getPct:()=>null },
 ];
 const getPctRecargo=(tipo,fecha)=>{const r=RECARGOS_CO_2026.find(x=>x.id===tipo);return r?.getPct?.(fecha)??null;};
-const parseIsoDate = (iso)=> iso ? new Date((iso) + "T12:00:00") : null;
-const diffDaysInclusive = (start,end)=> Math.floor((end-start)/(1000*60*60*24))+1;
-const toIsoDate = (date)=>{
-  if(!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
-  const year = date.getFullYear();
-  const month = String(date.getMonth()+1).padStart(2,"0");
-  const day = String(date.getDate()).padStart(2,"0");
-  return `${year}-${month}-${day}`;
-};
-const addDaysToDate = (date, days=0)=>{
-  const next = new Date(date.getTime());
-  next.setDate(next.getDate() + days);
-  return next;
-};
-const maxDate = (...dates)=>dates.filter(Boolean).reduce((acc,date)=>(!acc || date>acc ? date : acc), null);
-const minDate = (...dates)=>dates.filter(Boolean).reduce((acc,date)=>(!acc || date<acc ? date : acc), null);
-const round1 = (value)=> Math.round((Number(value)||0) * 10) / 10;
-const getDaysInMonth = (mes)=>{
-  const [year,month] = String(mes || today().slice(0,7)).split("-").map(Number);
-  return new Date(year, month, 0).getDate();
-};
 const buildNominaPeriodo = (mes, corte="primera")=>{
   const safeMes = mes || today().slice(0,7);
   const monthDays = getDaysInMonth(safeMes);
@@ -2073,14 +2023,6 @@ function latLngToImagePixel(lat, lng, center, zoom, width, height){
   };
 }
 
-function escapeXml(value=""){
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
 
 function buildStaticMapLabelData(segments, center, zoom, width, height){
   return (segments || []).map((seg, idx) => {
@@ -2210,14 +2152,6 @@ function measurementUnitFromType(tipo){
   return tipo === "ESC" ? "ML" : "ML";
 }
 
-function escapeHtml(v=""){
-  return String(v)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;')
-    .replace(/'/g,'&#39;');
-}
 
 function buildMeasurementNarrative(list=[]){
   if(!Array.isArray(list) || !list.length) return "";

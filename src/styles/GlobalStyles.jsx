@@ -1,0 +1,80 @@
+// Estilos globales del armazon: scrollbars, impresion y correcciones
+// especificas de Safari en iOS (zoom al enfocar inputs, rebote del scroll,
+// alto real de la ventana y area segura del notch).
+
+export default function GlobalStyles({ divider }) {
+  const css = `
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html {
+      /* Evita que iOS reescale la tipografia al girar el telefono. */
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+
+    body {
+      margin: 0;
+      /* Sin rebote elastico al llegar al final en iOS. */
+      overscroll-behavior-y: none;
+    }
+
+    /* Sin destello gris al tocar botones en iOS. */
+    button, a, [role="button"] { -webkit-tap-highlight-color: transparent; }
+
+    button, input, select, textarea { font-family: inherit; }
+
+    /* Scroll suave y con inercia en iOS. */
+    .app-scroll {
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+
+    /* Alto real de la ventana. En iOS "100vh" incluye la barra de
+       direcciones y deja contenido cortado; 100dvh la descuenta.
+       El orden importa: el navegador se queda con la ultima que entiende. */
+    .app-shell {
+      height: 100vh;
+      height: -webkit-fill-available;
+      height: 100dvh;
+    }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: ${divider}; border-radius: 8px; }
+    ::-webkit-scrollbar-thumb:hover { background: #b9bfc9; }
+
+    @media (max-width: 900px) {
+      /* Safari en iOS hace zoom al enfocar un campo con texto menor a 16px.
+         Se fuerza 16px solo en pantallas tactiles pequenas. */
+      input, select, textarea { font-size: 16px !important; }
+
+      /* Las tablas anchas se desplazan dentro de su contenedor en vez de
+         romper el ancho de la pagina. */
+      table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    }
+
+    @media print {
+      @page { size: Letter; margin: 12mm; }
+      html, body {
+        margin: 0 !important; padding: 0 !important; background: #fff !important;
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+      }
+      body * { visibility: hidden !important; }
+      #pz, #pz * { visibility: visible !important; }
+      #pz {
+        position: relative !important; left: auto !important; top: auto !important;
+        width: auto !important; max-width: none !important; margin: 0 !important;
+        padding: 0 !important; border: none !important; border-radius: 0 !important;
+        box-shadow: none !important; background: #fff !important; overflow: visible !important;
+      }
+      .no-print { display: none !important; }
+      .print-avoid-break, table, tr, td, th { break-inside: avoid; page-break-inside: avoid; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+    }
+  `;
+
+  return <style>{css}</style>;
+}

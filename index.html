@@ -1,12 +1,23 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover permite usar env(safe-area-inset-*) en iPhone.
+         maximum-scale se omite a proposito: limitarlo impide el zoom
+         a personas con baja vision. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#14151a" />
+    <meta name="description" content="Sistema de gestión comercial, técnica y operativa de Ingeanclajes S.A.S." />
+    <!-- Permite instalar la app en la pantalla de inicio del iPhone. -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Ingeanclajes" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <title>Ingeanclajes</title>
+    <title>Ingeanclajes · Sistema de gestión</title>
   </head>
   <body>
     <div id="root"></div>

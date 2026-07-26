@@ -4,15 +4,22 @@ import { escapeHtml } from "./html";
 import { LOGO_INGEANCLAJES } from "../assets/embeddedImages";
 import { getQuotePrintableProposals } from "./cotizaciones";
 import { getStaticMapDimensions, buildStaticMapLabelData } from "./maps";
-import { hasAnchorPointsService } from "./cotizaciones";
+import { hasAnchorPointsService, hasVerticalLifeLineService } from "./cotizaciones";
 import { downloadGeneratedFile } from "./download";
 import articoLineaVidaVertical from "../assets/artico-linea-vida-vertical.jpg";
 
 export function buildCotizacionPrintHtml(c){
   const propuestas = getQuotePrintableProposals(c);
   const textoInicial = String(c?.textoInicial || "").trim();
-  const showVerticalAppendix = false;
+  const showVerticalAppendix = propuestas.some((propuesta)=>hasVerticalLifeLineService(propuesta?.quote));
   const showTechnicalPage = propuestas.some((propuesta)=>propuesta?.quote?.tipoCotizacion === "linea_vida");
+
+  // Numeracion de secciones: 01 carta, 02 marco tecnico, 03.. propuestas,
+  // luego anexo vertical y ficha tecnica segun apliquen, y al final el cierre.
+  const secNum = (n) => String(n).padStart(2, "0");
+  const secAnexoVertical = propuestas.length + 3;
+  const secFichaTecnica = secAnexoVertical + (showVerticalAppendix ? 1 : 0);
+  const secCierre = secFichaTecnica + (showTechnicalPage ? 1 : 0);
   const mapCenter = c?.geoMapView?.center || c?.geoMapView || { lat: 0, lng: 0 };
   const mapZoom = Number(c?.geoMapView?.zoom || 18);
   const monthNamesEs = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
@@ -532,7 +539,7 @@ export function buildCotizacionPrintHtml(c){
   `;
 
   const renderFinalContent = ({ includeSummary = false } = {}) => `
-    <div class="eyebrow">${String(propuestas.length + (showTechnicalPage ? 4 : 3)).padStart(2, "0")} &mdash; Resumen, condiciones y próximos pasos</div>
+    <div class="eyebrow">${secNum(secCierre)} &mdash; Resumen, condiciones y próximos pasos</div>
     ${includeSummary ? renderResumenBlock() : ""}
     <div class="keep conditions-block">
       <div class="card-label block-label centered">Condiciones comerciales</div>
@@ -610,7 +617,7 @@ export function buildCotizacionPrintHtml(c){
       <div class="page-inner">
         ${headerHtml}
         <div class="page-content">
-          <div class="eyebrow">${String(propuestas.length + 3).padStart(2, "0")} &mdash; Ficha técnica</div>
+          <div class="eyebrow">${secNum(secFichaTecnica)} &mdash; Ficha técnica</div>
           <h3 class="doc-h3">Componentes del sistema en acero galvanizado</h3>
 
           <div class="ficha-row">
@@ -835,8 +842,11 @@ export function buildCotizacionPrintHtml(c){
     ${showVerticalAppendix ? `
       <section class="page">
         <div class="page-inner">
+          ${headerHtml}
           <div class="page-content">
-            <img src="${articoLineaVidaVertical}" alt="Anexo tecnico linea de vida vertical" class="appendix-img" />
+            <div class="eyebrow">${secNum(secAnexoVertical)} &mdash; Línea de vida vertical</div>
+            <h3 class="doc-h3">Sistema certificado para escalera fija</h3>
+            <img src="${articoLineaVidaVertical}" alt="Sistema de linea de vida vertical Artico Safe Work" class="appendix-img" />
           </div>
           ${footerHtml}
         </div>
@@ -1001,51 +1011,10 @@ export function openPrintTab(fullHtml, title){
   const w = window.open("", "_blank");
   if(!w){ alert("El navegador bloqueó la ventana emergente. Permite las ventanas emergentes para este sitio."); return; }
 
-  const aiScript = `<script>
-  async function optimizarEspacios(){
-    const btn = document.getElementById('btn-ai');
-    btn.disabled = true; btn.textContent = '⏳ Ajustando...';
-    const pages = document.querySelectorAll('.page');
-    const pageDataList = [];
-    pages.forEach((page, idx) => {
-      const pageH = page.getBoundingClientRect().height;
-      const footer = page.querySelector('.footer');
-      const header = page.querySelector('.header');
-      const allEls = Array.from(page.children);
-      const usedH = allEls.reduce((s, el) => s + el.getBoundingClientRect().height, 0);
-      const spare = Math.round(pageH - usedH);
-      pageDataList.push({ idx, spare, pageH: Math.round(pageH) });
-    });
-    try {
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514', max_tokens: 800,
-          messages: [{ role: 'user', content: 'Estas son paginas de un PDF con espacio sobrante en px: ' + JSON.stringify(pageDataList) + '. Para cada una, calcula extra_padding_top en px (max 40) para distribuir el espacio de forma elegante. Si spare < 15 pon 0. Responde SOLO JSON array [{idx, extra_padding_top}] sin texto ni backticks.' }]
-        })
-      });
-      const data = await resp.json();
-      const raw = (data.content?.[0]?.text || '[]').replace(/\`\`\`json|\`\`\`/g,'').trim();
-      const adjustments = JSON.parse(raw);
-      adjustments.forEach(({idx, extra_padding_top}) => {
-        if(!pages[idx] || !extra_padding_top) return;
-        const curr = parseFloat(getComputedStyle(pages[idx]).paddingTop) || 0;
-        pages[idx].style.paddingTop = (curr + Math.min(extra_padding_top, 40)) + 'px';
-      });
-      btn.textContent = '✅ Listo';
-      setTimeout(() => { btn.textContent = '✨ Ajustar espacios (IA)'; btn.disabled = false; }, 2500);
-    } catch(e) {
-      btn.textContent = '⚠️ Error'; btn.disabled = false;
-    }
-  }
-  <\/script>`;
-
   const toolbar = `
     <div id="print-toolbar" style="position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a2840;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:10px 20px;font-family:sans-serif;box-shadow:0 2px 12px rgba(0,0,0,.3);">
       <span style="font-size:14px;font-weight:600;">${title || "Documento"}</span>
       <div style="display:flex;gap:10px;">
-        <button id="btn-ai" onclick="optimizarEspacios()" style="background:#7c3aed;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">✨ Ajustar espacios (IA)</button>
         <button onclick="var tb=document.getElementById('print-toolbar');var sp=tb.nextElementSibling;tb.style.display='none';if(sp)sp.style.display='none';setTimeout(function(){window.print();setTimeout(function(){tb.style.display='flex';if(sp)sp.style.display='block';},300);},100);" style="background:#f47c20;color:#fff;border:none;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">🖨 Imprimir / Guardar PDF</button>
         <button onclick="window.close();" style="background:#475569;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;">✕ Cerrar</button>
       </div>
@@ -1057,11 +1026,11 @@ export function openPrintTab(fullHtml, title){
   if(bodyMatch){
     const idx = fullHtml.indexOf(bodyMatch[0]) + bodyMatch[0].length;
     const printHide = `<style>@media print{#print-toolbar,#print-toolbar+div{display:none!important;}body{padding-top:0!important;}}</style>`;
-    output = fullHtml.slice(0, idx) + printHide + aiScript + toolbar + fullHtml.slice(idx);
+    output = fullHtml.slice(0, idx) + printHide + toolbar + fullHtml.slice(idx);
   } else {
     output = `<!doctype html><html><head><meta charset="utf-8"><title>${title||"Documento"}</title>
       <style>@media print{#print-toolbar,#print-toolbar+div{display:none!important;}}</style>
-    </head><body>${aiScript}${toolbar}${fullHtml}</body></html>`;
+    </head><body>${toolbar}${fullHtml}</body></html>`;
   }
   w.document.write(output);
   w.document.close();

@@ -1,5 +1,7 @@
 import Badge from "../../components/ui/Badge";
 import CotizacionPrint from "./CotizacionPrint";
+import DocumentoEnVivo from "./DocumentoEnVivo";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
 import GoogleMeasureWorkspace from "../../components/maps/GoogleMeasureWorkspace";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
@@ -14,6 +16,10 @@ export default function Cotizacion({ctx}){
   const {cotizaciones,setCotizaciones,obras,setObras}=ctx;
   const [tab,setTab]=useState("lista");
   const [previewCot,setPreviewCot]=useState(null);
+  // Vista previa del documento junto al formulario, para revisar los textos
+  // completos mientras se edita.
+  const [verDocumento,setVerDocumento]=useState(false);
+  const cabeEnDosColumnas=useMediaQuery("(min-width: 1250px)");
   const [busqueda,setBusqueda]=useState("");
   const [filtroObraCot,setFiltroObraCot]=useState("todas");
   const [editCot,setEditCot]=useState(null);
@@ -63,6 +69,40 @@ export default function Cotizacion({ctx}){
   const proposalFromState = ()=>buildQuoteProposal({id:propuestaActivaId || createQuoteProposalId(editCot || "draft"),nombre:nombrePropuesta,alcance:alcancePropuesta,tipoCotizacion,requerimientoCliente,incluyeTexto,formaPago,tiempoEjec,util,items,fotos:fotosActivaPropuesta,geoMediciones,geoMapView,mapImg:autoMapImg || null,medicionAutomatica:medicionAutomaticaActiva,total:Math.round(tot)},0);
   const proposalSnapshot = proposalFromState();
   const propuestasSnapshot = (propuestas.length ? propuestas : [proposalSnapshot]).map((propuesta,index)=>buildQuoteProposal(propuesta.id===proposalSnapshot.id?proposalSnapshot:propuesta,index));
+
+  // Misma forma que el objeto que se guarda, pero armado en vivo desde el
+  // formulario: alimenta la vista previa sin necesidad de guardar antes.
+  const cotizacionEnVivo = {
+    id: editCot || "PREVIEW",
+    numero: cot,
+    fecha,
+    val,
+    cliente: cl.nombre,
+    contacto: cl.contacto,
+    obra: cl.obra,
+    telefono: cl.telefono,
+    ciudad: cl.ciudad,
+    coords: cl.coords,
+    textoInicial: textoInicial.trim(),
+    observaciones: observacionesCot.trim(),
+    items: proposalSnapshot.items,
+    util: proposalSnapshot.util,
+    total: proposalSnapshot.total,
+    formaPago: proposalSnapshot.formaPago,
+    tiempoEjec: proposalSnapshot.tiempoEjec,
+    mapImg: proposalSnapshot.mapImg || autoMapImg || null,
+    geoMediciones: proposalSnapshot.geoMediciones || geoMediciones,
+    geoMapView: proposalSnapshot.geoMapView || geoMapView,
+    tipoCotizacion: proposalSnapshot.tipoCotizacion,
+    requerimientoCliente: proposalSnapshot.requerimientoCliente,
+    incluyeTexto: proposalSnapshot.incluyeTexto || "",
+    propuestaNombre: proposalSnapshot.nombre,
+    propuestaAlcance: proposalSnapshot.alcance,
+    propuestas: propuestasSnapshot,
+    propuestaActivaId: proposalSnapshot.id,
+    fotosCotizacion: proposalSnapshot.fotos || [],
+    estado: "Pendiente",
+  };
 
   useEffect(()=>{
     const propuestaActual = {
@@ -323,11 +363,28 @@ export default function Cotizacion({ctx}){
         action={
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             <button style={B("#f1f5f9","#475569")} onClick={()=>setTab("lista")}>Volver a lista</button>
+            <button
+              style={verDocumento ? B("#111827") : B("#f1f5f9","#475569")}
+              onClick={()=>setVerDocumento(v=>!v)}
+              title="Muestra el documento completo tal como se imprimirá, mientras editas"
+            >
+              {verDocumento ? "Ocultar documento" : "Ver documento"}
+            </button>
             <button style={{...B("#dbeafe","#1e40af"),justifyContent:"center"}} onClick={()=>{const saved=guardarCotizacion();if(saved){setPreviewCot(saved);setTab("lista");}}}>Guardar y ver</button>
             <button style={{...B("#f47c20"),justifyContent:"center"}} onClick={guardarCotizacion}>{editCot?"Actualizar":"Guardar"}</button>
           </div>
         }
       />
+
+      <div style={{
+        display:"grid",
+        // En pantallas anchas el documento va al lado; en angostas, el boton
+        // alterna entre formulario y documento para no apilar dos cosas largas.
+        gridTemplateColumns: verDocumento && cabeEnDosColumnas ? "minmax(0,1fr) minmax(0,1fr)" : "minmax(0,1fr)",
+        gap:18,
+        alignItems:"start",
+      }}>
+      <div style={{minWidth:0, display: verDocumento && !cabeEnDosColumnas ? "none" : "block"}}>
 
       {/* Identificación */}
       <div style={{...CD,marginBottom:14}}>
@@ -580,6 +637,16 @@ export default function Cotizacion({ctx}){
             Guardar
           </button>
         </div>
+      </div>
+
+      </div>
+
+      {verDocumento && (
+        <DocumentoEnVivo
+          cotizacion={cotizacionEnVivo}
+          alto={cabeEnDosColumnas ? "calc(100vh - 210px)" : "calc(100vh - 260px)"}
+        />
+      )}
       </div>
     </div>
   );

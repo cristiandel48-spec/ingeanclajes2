@@ -50,6 +50,20 @@ export function AppDataProvider({ children }) {
   const bootstrappedRef = useRef(false);
   const autosaveTimerRef = useRef(null);
 
+  // Estado visible del autoguardado: "idle" | "saving" | "saved" | "error".
+  // Sin esto un fallo de red quedaba solo en la consola y la persona seguia
+  // trabajando creyendo que todo estaba guardado.
+  const [saveState, setSaveState] = useState("idle");
+  const [lastSavedAt, setLastSavedAt] = useState(null);
+  const [hasPendingChanges, setHasPendingChanges] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const [loadError, setLoadError] = useState(null);
+  const retryTimerRef = useRef(null);
+  const retryAttemptRef = useRef(0);
+  // Referencia siempre fresca al contenido a guardar: un reintento programado
+  // debe subir el estado actual, no el que existia cuando fallo.
+  const payloadRef = useRef(null);
+
   const buildCloudPayload = () => ({
     obras,
     empleados,
@@ -68,20 +82,54 @@ export function AppDataProvider({ children }) {
     nominasGeneradasCloud: nominasGeneradas,
   });
 
+  payloadRef.current = buildCloudPayload;
+
   const saveAllToCloud = async (override = null) => {
     if (!isSupabaseConfigured()) return { ok: false, reason: "not-configured" };
     if (typeof saveCloudAppData !== "function") {
       console.warn("saveCloudAppData no está disponible en ./lib/backend");
       return { ok: false, reason: "missing-function" };
     }
+
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+
+    setSaveState("saving");
     try {
-      await saveCloudAppData(override || buildCloudPayload());
+      await saveCloudAppData(override || payloadRef.current());
+      retryAttemptRef.current = 0;
+      setSaveError(null);
+      setHasPendingChanges(false);
+      setLastSavedAt(new Date());
+      setSaveState("saved");
       return { ok: true };
     } catch (error) {
       console.error("No se pudo guardar datos en Supabase:", error);
+      setSaveError(error);
+      setSaveState("error");
+      scheduleRetryRef.current?.();
       return { ok: false, error };
     }
   };
+
+  // Reintento con espera creciente para no golpear el servidor: 3s, 8s, 20s,
+  // 45s y luego cada 90s hasta que vuelva la conexion.
+  const scheduleRetryRef = useRef(null);
+  scheduleRetryRef.current = () => {
+    if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+    const esperas = [3000, 8000, 20000, 45000, 90000];
+    const espera = esperas[Math.min(retryAttemptRef.current, esperas.length - 1)];
+    retryAttemptRef.current += 1;
+    retryTimerRef.current = setTimeout(() => {
+      retryTimerRef.current = null;
+      saveAllToCloudRef.current?.();
+    }, espera);
+  };
+
+  const saveAllToCloudRef = useRef(null);
+  saveAllToCloudRef.current = saveAllToCloud;
 
   useEffect(() => {
     let cancel = false;
@@ -119,8 +167,12 @@ export function AppDataProvider({ children }) {
         if (Array.isArray(cloud.nominasGeneradasCloud)) {
           setNominasGeneradas(cloud.nominasGeneradasCloud.map(normalizeNominaGeneratedRecord));
         }
+        if (!cancel) setLoadError(null);
       } catch (error) {
         console.error("No se pudo cargar datos de Supabase:", error);
+        // Sin esto la app mostraba los datos de ejemplo como si fueran los
+        // reales del cliente, sin ninguna senal de que algo fallo.
+        if (!cancel) setLoadError(error);
       } finally {
         if (!cancel) bootstrappedRef.current = true;
       }
@@ -129,6 +181,32 @@ export function AppDataProvider({ children }) {
     bootstrapCloudData();
 
     return () => { cancel = true; };
+  }, []);
+
+  // Reintenta apenas vuelve la conexion, sin esperar al siguiente intento.
+  useEffect(() => {
+    const onOnline = () => {
+      if (saveState === "error" || hasPendingChanges) saveAllToCloudRef.current?.();
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [saveState, hasPendingChanges]);
+
+  // Avisa antes de cerrar la pestana si quedan cambios sin subir.
+  useEffect(() => {
+    const enRiesgo = hasPendingChanges || saveState === "error";
+    if (!enRiesgo) return;
+    const onBeforeUnload = (event) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [hasPendingChanges, saveState]);
+
+  // Limpia el reintento pendiente al desmontar.
+  useEffect(() => () => {
+    if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
   }, []);
 
   useEffect(() => {
@@ -140,8 +218,9 @@ export function AppDataProvider({ children }) {
       clearTimeout(autosaveTimerRef.current);
     }
 
+    setHasPendingChanges(true);
     autosaveTimerRef.current = setTimeout(() => {
-      saveAllToCloud();
+      saveAllToCloudRef.current?.();
     }, 700);
 
     return () => {
@@ -186,6 +265,13 @@ export function AppDataProvider({ children }) {
     nominasGeneradas, setNominasGeneradas,
     cotDraft, setCotDraft,
     saveAllToCloud,
+    // Estado del autoguardado, para el indicador de la barra superior.
+    saveState,
+    lastSavedAt,
+    hasPendingChanges,
+    saveError,
+    loadError,
+    reintentarGuardado: () => saveAllToCloudRef.current?.(),
   };
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;

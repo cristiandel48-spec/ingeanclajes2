@@ -1,4 +1,5 @@
 import Av from "../ui/Av";
+import SaveIndicator from "./SaveIndicator";
 import { getScreenTitle, getScreenSection } from "../../config/navigation";
 import { TOPBAR_HEIGHT } from "../../styles/shellTheme";
 
@@ -58,6 +59,8 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+        <SaveIndicator theme={theme} compact={isMobile} />
+
         <button
           onClick={onToggleTheme}
           aria-label={dark ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}

@@ -50,6 +50,20 @@ function setBaseline(entity, items) {
   baselineByEntity[entity] = map;
 }
 
+// Resolver el tenant cuesta dos consultas (memberships + tenants). Antes se
+// hacia en CADA guardado, triplicando el trafico del autoguardado. Se cachea
+// y se invalida cuando cambia la sesion, que es lo unico que puede cambiarlo.
+let cachedService = null;
+let authWatcherReady = false;
+
+function watchAuthChanges(supabase) {
+  if (authWatcherReady) return;
+  authWatcherReady = true;
+  supabase.auth.onAuthStateChange(() => {
+    cachedService = null;
+  });
+}
+
 async function getService() {
   if (!isSupabaseConfigured()) {
     throw new Error(
@@ -58,12 +72,17 @@ async function getService() {
   }
 
   const supabase = getSupabaseClient();
+  watchAuthChanges(supabase);
+
+  if (cachedService) return cachedService;
+
   const tenantId = await resolveTenantId(
     supabase,
     import.meta.env.VITE_SUPABASE_TENANT_SLUG
   );
 
-  return createDataService({ supabase, tenantId });
+  cachedService = createDataService({ supabase, tenantId });
+  return cachedService;
 }
 
 export async function loadCloudAppData() {

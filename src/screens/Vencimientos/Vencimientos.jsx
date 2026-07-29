@@ -1,5 +1,6 @@
 import CertificacionDetalle from "../Certificaciones/CertificacionDetalle";
 import H1 from "../../components/ui/H1";
+import { calcularVencimientos, colorVencimiento, etiquetaVencimiento, GRUPOS_VENCIMIENTO } from "../../lib/vencimientos";
 import LBL from "../../components/ui/LBL";
 import { RECERT_ELEMENTOS_DEFAULT } from "../Certificaciones/certConfig";
 import { useState } from "react";
@@ -52,38 +53,12 @@ export default function Vencimientos({ctx}){
     setTimeout(()=>setGuardado(null),4000);
   };
 
-  const lista=certs.filter(c=>c.estado!=="Recertificado").map(c=>{
-    if(!c.proxMant)return{...c,diasRestantes:null};
-    const d=new Date(c.proxMant+"T12:00:00");
-    const diff=Math.round((d-hoy)/(1000*60*60*24));
-    return{...c,diasRestantes:diff};
-  }).sort((a,b)=>{
-    if(a.diasRestantes===null)return 1;
-    if(b.diasRestantes===null)return -1;
-    return a.diasRestantes-b.diasRestantes;
-  });
-
-  const colorV=(d)=>{
-    if(d===null)return"#64748b";
-    if(d<0)return"#ef4444";
-    if(d<30)return"#fb923c";
-    if(d<90)return"#f5c842";
-    return"#4ade80";
-  };
-  const labelV=(d)=>{
-    if(d===null)return"Sin fecha";
-    if(d<0)return"VENCIDA hace " + (Math.abs(d)) + "d";
-    if(d===0)return"VENCE HOY";
-    if(d===1)return"Vence mañana";
-    return(d) + " días";
-  };
-
-  const grupos=[
-    {titulo:"Vencidas o críticas",filtro:(d)=>d!==null&&d<0,color:"#ef4444"},
-    {titulo:"Urgente (menos de 30 días)",filtro:(d)=>d!==null&&d>=0&&d<30,color:"#fb923c"},
-    {titulo:"Próximas (30-90 días)",filtro:(d)=>d!==null&&d>=30&&d<90,color:"#f5c842"},
-    {titulo:"Al día (más de 90 días)",filtro:(d)=>d!==null&&d>=90,color:"#4ade80"},
-  ];
+  // Las reglas de vencimiento viven en lib/vencimientos.js para que el
+  // Dashboard avise con los mismos umbrales.
+  const lista = calcularVencimientos(certs, hoy);
+  const colorV = colorVencimiento;
+  const labelV = etiquetaVencimiento;
+  const grupos = GRUPOS_VENCIMIENTO;
 
   const certParaImpresion=imprimiendo?certs.find(x=>x.id===imprimiendo.id)||imprimiendo:null;
 

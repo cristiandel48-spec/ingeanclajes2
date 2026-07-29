@@ -394,7 +394,7 @@ export default function Cotizacion({ctx}){
 
       {/* Identificación */}
       <div style={{...CD,marginBottom:14}}>
-        <div style={ST}>Identificación</div>
+        <div style={ST}>Portada · Identificación</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
           <div><LBL>N° Cotización</LBL><input value={cot} onChange={e=>setCot(e.target.value)} style={SI}/></div>
           <div><LBL>Fecha</LBL><input type="date" value={fecha} onChange={e=>setFecha(e.target.value)} style={SI}/></div>
@@ -404,7 +404,7 @@ export default function Cotizacion({ctx}){
 
       {/* Cliente */}
       <div style={{...CD,marginBottom:14}}>
-        <div style={ST}>Cliente</div>
+        <div style={ST}>Portada · Cliente</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
           <div><LBL>Empresa</LBL><input value={cl.nombre} onChange={e=>setCl({...cl,nombre:e.target.value})} style={SI}/></div>
           <div><LBL>Contacto</LBL><input value={cl.contacto} onChange={e=>setCl({...cl,contacto:e.target.value})} style={SI}/></div>
@@ -415,22 +415,44 @@ export default function Cotizacion({ctx}){
       </div>
 
       <div style={{...CD,marginBottom:14}}>
-        <div style={ST}>Texto inicial del documento</div>
+        <div style={ST}>01 · Carta de presentación</div>
+        <div style={{marginBottom:14}}>
+          <LBL>Frase de apertura</LBL>
+          <textarea
+            value={textosDocumento.saludo}
+            onChange={e=>setTexto("saludo",e.target.value)}
+            style={{...SI,minHeight:60,resize:"vertical",lineHeight:1.6}}
+          />
+          <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Se imprime después de &quot;Cordial saludo, [cliente]&quot;. Si la obra tiene nombre, se agrega al final.</div>
+        </div>
+        <div>
+          <LBL>Párrafo adicional para este cliente (opcional)</LBL>
+          <textarea
+            value={textoInicial}
+            onChange={e=>setTextoInicial(e.target.value)}
+            placeholder={"Ej: Presentamos la cotización para la instalación de puntos de anclaje o línea de vida sobre la cubierta del proyecto..."}
+            style={{...SI,minHeight:100,resize:"vertical",lineHeight:1.6}}
+          />
+          <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Se agrega debajo de la frase de apertura. Déjalo vacío si no aplica.</div>
+        </div>
+      </div>
+
+      <div style={{...CD,marginBottom:14}}>
+        <div style={ST}>02 · Marco técnico</div>
+        <LBL>Definiciones que estructuran el alcance</LBL>
         <textarea
-          value={textoInicial}
-          onChange={e=>setTextoInicial(e.target.value)}
-          placeholder={"Ej: Presentamos la cotización para la instalación de puntos de anclaje o línea de vida sobre la cubierta del Éxito de Niquia en Bello."}
+          value={textosDocumento.marcoTecnico}
+          onChange={e=>setTexto("marcoTecnico",e.target.value)}
+          placeholder="Déjalo vacío para usar las definiciones automáticas según el tipo de propuesta (línea de vida, puntos de anclaje u obra blanca)."
           style={{...SI,minHeight:110,resize:"vertical",lineHeight:1.6}}
         />
-        <div style={{fontSize:11,color:"#64748b",marginTop:8}}>
-          Este texto saldrá al inicio del PDF y de la vista previa. Lo puedes redactar manualmente para cada cliente.
-        </div>
+        <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Vacío = definiciones automáticas. Si escribes algo, reemplaza ese bloque. Separa párrafos con una línea en blanco.</div>
       </div>
 
       {/* Selector de propuestas */}
       <div style={{...CD,marginBottom:14,border:"2px solid #142840"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-          <div style={ST}>Propuestas</div>
+          <div style={ST}>03 · Propuestas</div>
           <div style={{display:"flex",gap:8}}>
             <button onClick={()=>{const next=[...propuestasSnapshot,buildQuoteProposal({id:createQuoteProposalId(String(propuestasSnapshot.length+1)),nombre:getQuoteProposalLabel(propuestasSnapshot.length),formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,util:10,items:[],incluyeTexto:""},propuestasSnapshot.length)];setPropuestas(next);applyProposal(next[next.length-1]);}} style={{...B("#f47c20"),fontSize:11,padding:"5px 14px"}}>+ Nueva</button>
             <button onClick={()=>{const next=[...propuestasSnapshot,buildQuoteProposal({...proposalSnapshot,id:createQuoteProposalId(String(propuestasSnapshot.length+1)),nombre:`${proposalSnapshot.nombre} copia`},propuestasSnapshot.length)];setPropuestas(next);applyProposal(next[next.length-1]);}} style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"5px 14px"}}>Duplicar</button>
@@ -619,8 +641,13 @@ export default function Cotizacion({ctx}){
           </div>
         </div>
 
-        {/* 5. Condiciones comerciales */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,paddingTop:4,borderTop:"1px solid #f1f5f9"}}>
+        {/* 5. Condiciones comerciales. Son datos de la propuesta, pero en el
+            documento se imprimen en el cierre; se avisa para que no confunda. */}
+        <div style={{paddingTop:12,borderTop:"1px solid #f1f5f9",marginTop:4}}>
+          <div style={{fontSize:11,fontWeight:700,color:"#1a1a2e",marginBottom:2}}>Condiciones comerciales</div>
+          <div style={{fontSize:10.5,color:"#94a3b8",marginBottom:10}}>Pertenecen a esta propuesta, pero en el documento salen al final, en el cierre.</div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
           <div><LBL>Forma de pago</LBL><input value={formaPago} onChange={e=>setFormaPago(e.target.value)} style={SI}/></div>
           <div><LBL>Tiempo de ejecución</LBL><input value={tiempoEjec} onChange={e=>setTiempoEjec(e.target.value)} style={SI}/></div>
         </div>
@@ -636,34 +663,9 @@ export default function Cotizacion({ctx}){
         </div>
       </div>
 
-      {/* Textos fijos del documento, en el mismo orden en que aparecen impresos */}
+      {/* Cierre del documento, en el mismo orden en que sale impreso */}
       <div style={{...CD,marginBottom:14}}>
-        <div style={ST}>Textos del documento</div>
-        <div style={{fontSize:11,color:"#64748b",marginTop:-6,marginBottom:14,lineHeight:1.5}}>
-          Estos textos salen impresos en la cotización. Vienen con el texto estándar de la empresa;
-          si los cambias aquí, el cambio aplica solo a esta cotización.
-        </div>
-
-        <div style={{marginBottom:14}}>
-          <LBL>01 · Carta de presentación — frase de apertura</LBL>
-          <textarea
-            value={textosDocumento.saludo}
-            onChange={e=>setTexto("saludo",e.target.value)}
-            style={{...SI,minHeight:60,resize:"vertical",lineHeight:1.6}}
-          />
-          <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Se imprime después de &quot;Cordial saludo, [cliente]&quot;. Si la obra tiene nombre, se agrega al final.</div>
-        </div>
-
-        <div style={{marginBottom:14}}>
-          <LBL>02 · Marco técnico (definiciones)</LBL>
-          <textarea
-            value={textosDocumento.marcoTecnico}
-            onChange={e=>setTexto("marcoTecnico",e.target.value)}
-            placeholder="Déjalo vacío para usar las definiciones automáticas según el tipo de propuesta (línea de vida, puntos de anclaje u obra blanca)."
-            style={{...SI,minHeight:90,resize:"vertical",lineHeight:1.6}}
-          />
-          <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Vacío = definiciones automáticas. Si escribes algo, reemplaza ese bloque. Separa párrafos con una línea en blanco.</div>
-        </div>
+        <div style={ST}>Cierre · Resumen, condiciones y próximos pasos</div>
 
         <div style={{marginBottom:14}}>
           <LBL>Sistema de gestión de seguridad y salud en el trabajo</LBL>
@@ -703,7 +705,7 @@ export default function Cotizacion({ctx}){
         </div>
 
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,marginTop:16,paddingTop:12,borderTop:"1px solid #f1f5f9"}}>
-          <div style={{fontSize:10.5,color:"#94a3b8"}}>¿Los cambiaste por error? Puedes volver al texto estándar.</div>
+          <div style={{fontSize:10.5,color:"#94a3b8"}}>¿Cambiaste algún texto por error? Puedes volver al estándar de la empresa.</div>
           <button
             type="button"
             onClick={()=>setTextosDocumento(TEXTOS_DOCUMENTO_DEFAULT)}

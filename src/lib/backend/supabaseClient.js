@@ -30,6 +30,12 @@ export function getSupabaseClient() {
   return cached;
 }
 
+export async function signOut() {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
+}
+
 export async function getSessionUser() {
   const supabase = getSupabaseClient();
   const {

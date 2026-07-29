@@ -1,4 +1,4 @@
-import Av from "../ui/Av";
+import MenuUsuario from "./MenuUsuario";
 import SaveIndicator from "./SaveIndicator";
 import { getScreenTitle, getScreenSection } from "../../config/navigation";
 import { TOPBAR_HEIGHT } from "../../styles/shellTheme";
@@ -86,20 +86,7 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
 
         {!isMobile && <div style={{ width: 1, height: 26, background: theme.divider }} />}
 
-        <div style={{
-          display: "flex", alignItems: "center", gap: 10,
-          padding: isMobile ? 0 : "4px 12px 4px 4px",
-          borderRadius: 999,
-          background: isMobile ? "transparent" : theme.surfaceTint,
-        }}>
-          <Av init="MC" size={isMobile ? 34 : 30} />
-          {!isMobile && (
-            <div style={{ lineHeight: 1.2 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 600, color: theme.text }}>M. Camila Sepúlveda</div>
-              <div style={{ fontSize: 11, color: theme.muted }}>Directora comercial</div>
-            </div>
-          )}
-        </div>
+        <MenuUsuario theme={theme} compact={isMobile} />
       </div>
     </header>
   );

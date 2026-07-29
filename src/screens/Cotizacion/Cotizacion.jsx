@@ -2,6 +2,7 @@ import Badge from "../../components/ui/Badge";
 import CotizacionPrint from "./CotizacionPrint";
 import DocumentoEnVivo from "./DocumentoEnVivo";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { TEXTOS_DOCUMENTO_DEFAULT, getTextosDocumento } from "../../lib/cotizacionTextos";
 import GoogleMeasureWorkspace from "../../components/maps/GoogleMeasureWorkspace";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
@@ -29,6 +30,9 @@ export default function Cotizacion({ctx}){
   const [cl,setCl]=useState({nombre:"",contacto:"",obra:"",telefono:"",ciudad:"",coords:""});
   const [textoInicial,setTextoInicial]=useState("");
   const [observacionesCot,setObservacionesCot]=useState("");
+  // Textos fijos del documento, editables por cotizacion.
+  const [textosDocumento,setTextosDocumento]=useState(TEXTOS_DOCUMENTO_DEFAULT);
+  const setTexto=(clave,valor)=>setTextosDocumento(prev=>({...prev,[clave]:valor}));
   const [propuestas,setPropuestas]=useState([buildQuoteProposal({id:createQuoteProposalId("new"),nombre:getQuoteProposalLabel(0),formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,util:10,items:[],incluyeTexto:""},0)]);
   const [propuestaActivaId,setPropuestaActivaId]=useState(null);
   const [nombrePropuesta,setNombrePropuesta]=useState(getQuoteProposalLabel(0));
@@ -85,6 +89,7 @@ export default function Cotizacion({ctx}){
     coords: cl.coords,
     textoInicial: textoInicial.trim(),
     observaciones: observacionesCot.trim(),
+    textosDocumento,
     items: proposalSnapshot.items,
     util: proposalSnapshot.util,
     total: proposalSnapshot.total,
@@ -145,6 +150,7 @@ export default function Cotizacion({ctx}){
     setCl({nombre:source.cliente || "",contacto:source.contacto || "",obra:source.obra || "",telefono:source.telefono || "",ciudad:source.ciudad || "",coords:source.coords || ""});
     setTextoInicial(source.textoInicial || "");
     setObservacionesCot(source.observaciones || "");
+    setTextosDocumento(getTextosDocumento(source));
     setGeoMediciones(source.geoMediciones || []);
     setGeoMapView(source.geoMapView || null);
     setPropuestas(all);
@@ -184,7 +190,7 @@ export default function Cotizacion({ctx}){
     const activa = buildQuoteProposal({...current,items:finalItems,total:totalActiva}, next.findIndex((propuesta)=>propuesta.id===current.id));
     const propuestasFinales = next.map((propuesta)=>propuesta.id===activa.id?activa:buildQuoteProposal(propuesta));
     const prev = editCot ? cotizaciones.find((cotizacion)=>cotizacion.id===editCot) : null;
-    const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:cl.nombre,contacto:cl.contacto,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,textoInicial:textoInicial.trim(),observaciones:observacionesCot.trim(),items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:activa.mapImg || autoMapImg || null,geoMediciones:activa.geoMediciones || geoMediciones,geoMapView:activa.geoMapView || geoMapView,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,incluyeTexto:activa.incluyeTexto || "",propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
+    const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:cl.nombre,contacto:cl.contacto,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,textoInicial:textoInicial.trim(),observaciones:observacionesCot.trim(),textosDocumento,items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:activa.mapImg || autoMapImg || null,geoMediciones:activa.geoMediciones || geoMediciones,geoMapView:activa.geoMapView || geoMapView,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,incluyeTexto:activa.incluyeTexto || "",propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
     setCotizaciones((prevList)=>editCot ? prevList.map((cotizacion)=>cotizacion.id===editCot?{...cotizacion,...data}:cotizacion) : [...prevList,data]);
     setPropuestas(propuestasFinales);
     setEditCot(data.id);
@@ -628,6 +634,87 @@ export default function Cotizacion({ctx}){
           />
           <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Este texto aparece en las condiciones comerciales del PDF</div>
         </div>
+      </div>
+
+      {/* Textos fijos del documento, en el mismo orden en que aparecen impresos */}
+      <div style={{...CD,marginBottom:14}}>
+        <div style={ST}>Textos del documento</div>
+        <div style={{fontSize:11,color:"#64748b",marginTop:-6,marginBottom:14,lineHeight:1.5}}>
+          Estos textos salen impresos en la cotización. Vienen con el texto estándar de la empresa;
+          si los cambias aquí, el cambio aplica solo a esta cotización.
+        </div>
+
+        <div style={{marginBottom:14}}>
+          <LBL>01 · Carta de presentación — frase de apertura</LBL>
+          <textarea
+            value={textosDocumento.saludo}
+            onChange={e=>setTexto("saludo",e.target.value)}
+            style={{...SI,minHeight:60,resize:"vertical",lineHeight:1.6}}
+          />
+          <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Se imprime después de &quot;Cordial saludo, [cliente]&quot;. Si la obra tiene nombre, se agrega al final.</div>
+        </div>
+
+        <div style={{marginBottom:14}}>
+          <LBL>02 · Marco técnico (definiciones)</LBL>
+          <textarea
+            value={textosDocumento.marcoTecnico}
+            onChange={e=>setTexto("marcoTecnico",e.target.value)}
+            placeholder="Déjalo vacío para usar las definiciones automáticas según el tipo de propuesta (línea de vida, puntos de anclaje u obra blanca)."
+            style={{...SI,minHeight:90,resize:"vertical",lineHeight:1.6}}
+          />
+          <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Vacío = definiciones automáticas. Si escribes algo, reemplaza ese bloque. Separa párrafos con una línea en blanco.</div>
+        </div>
+
+        <div style={{marginBottom:14}}>
+          <LBL>Sistema de gestión de seguridad y salud en el trabajo</LBL>
+          <textarea
+            value={textosDocumento.sst}
+            onChange={e=>setTexto("sst",e.target.value)}
+            style={{...SI,minHeight:120,resize:"vertical",lineHeight:1.6}}
+          />
+        </div>
+
+        <div style={{marginBottom:14}}>
+          <LBL>Próximos pasos (uno por línea)</LBL>
+          <textarea
+            value={textosDocumento.proximosPasos}
+            onChange={e=>setTexto("proximosPasos",e.target.value)}
+            style={{...SI,minHeight:90,resize:"vertical",lineHeight:1.6}}
+          />
+          <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Se imprimen numerados en el orden que los escribas.</div>
+        </div>
+
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
+          <div><LBL>Contacto — teléfono</LBL><input value={textosDocumento.contactoTelefono} onChange={e=>setTexto("contactoTelefono",e.target.value)} style={SI}/></div>
+          <div><LBL>Contacto — correo</LBL><input value={textosDocumento.contactoEmail} onChange={e=>setTexto("contactoEmail",e.target.value)} style={SI}/></div>
+        </div>
+
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          <div><LBL>Firma — nombre</LBL><input value={textosDocumento.firmaNombre} onChange={e=>setTexto("firmaNombre",e.target.value)} style={SI}/></div>
+          <div><LBL>Firma — cargo</LBL><input value={textosDocumento.firmaCargo} onChange={e=>setTexto("firmaCargo",e.target.value)} style={SI}/></div>
+        </div>
+        <div style={{marginTop:12}}>
+          <LBL>Firma — datos adicionales (uno por línea)</LBL>
+          <textarea
+            value={textosDocumento.firmaDetalle}
+            onChange={e=>setTexto("firmaDetalle",e.target.value)}
+            style={{...SI,minHeight:60,resize:"vertical",lineHeight:1.6}}
+          />
+        </div>
+
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,marginTop:16,paddingTop:12,borderTop:"1px solid #f1f5f9"}}>
+          <div style={{fontSize:10.5,color:"#94a3b8"}}>¿Los cambiaste por error? Puedes volver al texto estándar.</div>
+          <button
+            type="button"
+            onClick={()=>setTextosDocumento(TEXTOS_DOCUMENTO_DEFAULT)}
+            style={{...B("#f1f5f9","#475569"),fontSize:11,padding:"7px 14px"}}
+          >
+            Restaurar textos estándar
+          </button>
+        </div>
+      </div>
+
+      <div style={{...CD,marginBottom:14}}>
         <div style={{display:"flex",justifyContent:"flex-end",marginTop:16}}>
           <button
             type="button"

@@ -6,11 +6,13 @@ import { getQuotePrintableProposals } from "./cotizaciones";
 import { getStaticMapDimensions, buildStaticMapLabelData } from "./maps";
 import { hasAnchorPointsService, hasVerticalLifeLineService } from "./cotizaciones";
 import { downloadGeneratedFile } from "./download";
+import { getTextosDocumento, lineasDeTexto } from "./cotizacionTextos";
 import articoLineaVidaVertical from "../assets/artico-linea-vida-vertical.jpg";
 
 export function buildCotizacionPrintHtml(c){
   const propuestas = getQuotePrintableProposals(c);
   const textoInicial = String(c?.textoInicial || "").trim();
+  const textos = getTextosDocumento(c);
   const showVerticalAppendix = propuestas.some((propuesta)=>hasVerticalLifeLineService(propuesta?.quote));
   const showTechnicalPage = propuestas.some((propuesta)=>propuesta?.quote?.tipoCotizacion === "linea_vida");
 
@@ -462,12 +464,22 @@ export function buildCotizacionPrintHtml(c){
         <div class="page-content">
           <div class="eyebrow">01 &mdash; Carta de presentación</div>
           <h2 class="doc-h2">Cordial saludo${c?.cliente ? `, ${escapeHtml(c.cliente)}` : ""}</h2>
-          <p class="doc-copy">Presentamos la cotización para la instalación de elementos para trabajo seguro en alturas${c?.obra ? ` en la obra <strong>${escapeHtml(c.obra)}</strong>` : ""}.</p>
+          <p class="doc-copy">${escapeHtml(textos.saludo)}${c?.obra ? ` en la obra <strong>${escapeHtml(c.obra)}</strong>` : ""}</p>
           ${textoInicial ? `<p class="doc-copy">${escapeHtml(textoInicial)}</p>` : ""}
 
           <div class="eyebrow eyebrow-gap">02 &mdash; Marco técnico</div>
           <h3 class="doc-h3">Definiciones que estructuran el alcance</h3>
           ${(()=>{
+            // Si la cotizacion trae un marco tecnico propio, reemplaza a las
+            // definiciones automaticas por tipo.
+            const propio = String(textos.marcoTecnico || "").trim();
+            if (propio) {
+              return `<div class="def-list-libre">${
+                propio.split(/\n{2,}/).map((parrafo)=>
+                  `<p class="doc-copy">${lineasDeTexto(parrafo).map((l)=>escapeHtml(l)).join("<br/>")}</p>`
+                ).join("")
+              }</div>`;
+            }
             const tipo = propuestas[0]?.quote?.tipoCotizacion || "linea_vida";
             if(tipo === "obra_blanca") return `
               <div class="def-list">
@@ -565,30 +577,27 @@ export function buildCotizacionPrintHtml(c){
 
     <div class="keep sst-block">
       <div class="sst-title">Sistema de Gestión de Seguridad y Salud en el Trabajo</div>
-      <p>INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicación de la Resolución 4272 de 2021, garantizando la implementación del Sistema de Gestión de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.</p>
+      <p>${escapeHtml(textos.sst)}</p>
     </div>
 
     <div class="signature keep">
       <div>
         <div class="card-label block-label">Próximos pasos</div>
         <ol class="steps-list">
-          <li>Confirmar aceptación por el medio de su preferencia.</li>
-          <li>Pago del anticipo pactado para iniciar fabricación.</li>
-          <li>Coordinación de visita técnica y cronograma de obra.</li>
-          <li>Instalación, certificación y entrega de pólizas.</li>
+          ${lineasDeTexto(textos.proximosPasos).map((paso)=>`<li>${escapeHtml(paso)}</li>`).join("")}
         </ol>
         <div class="contact-box">
           <div class="meta-label">Para aceptar o resolver dudas</div>
-          <div class="contact-line">Cel. 315 288 9541</div>
-          <div class="contact-line">comercial1ingeanclajes@gmail.com</div>
+          <div class="contact-line">${escapeHtml(textos.contactoTelefono)}</div>
+          <div class="contact-line">${escapeHtml(textos.contactoEmail)}</div>
         </div>
       </div>
       <div>
         <div class="card-label block-label">Cordialmente</div>
         <div class="sig-space"></div>
-        <div class="sig-name">Ing. Jhon Jaime Sepúlveda Londoño</div>
-        <div class="sig-role">Director Comercial</div>
-        <div class="sig-meta">MP. 05256-409949<br/>Tel. 315 288 9541</div>
+        <div class="sig-name">${escapeHtml(textos.firmaNombre)}</div>
+        <div class="sig-role">${escapeHtml(textos.firmaCargo)}</div>
+        <div class="sig-meta">${lineasDeTexto(textos.firmaDetalle).map((l)=>escapeHtml(l)).join("<br/>")}</div>
       </div>
     </div>
 

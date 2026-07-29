@@ -11,6 +11,22 @@
 --
 -- Se puede ejecutar dos veces sin error.
 
+-- Avisa si el usuario todavia no existe en Authentication. Sin esto el
+-- insert de abajo no encuentra a quien dar permiso y no hace nada, sin
+-- mostrar ningun error: parece que funciono cuando en realidad falto crear
+-- el usuario en Authentication > Users > Add user.
+do $$
+begin
+  if not exists (select 1 from auth.users where email = 'sistemasingeanclajes@gmail.com') then
+    raise exception
+      'El usuario % no existe en Authentication. Crealo primero en Authentication > Users > Add user (marca Auto Confirm User) y vuelve a ejecutar esto.',
+      'sistemasingeanclajes@gmail.com';
+  end if;
+  if not exists (select 1 from app.tenants where slug = 'ingeanclajes') then
+    raise exception 'No existe la empresa con slug "ingeanclajes" en app.tenants.';
+  end if;
+end $$;
+
 insert into app.memberships (tenant_id, user_id, role)
 select t.id, u.id, 'admin'
 from app.tenants t

@@ -369,7 +369,6 @@ export function buildCotizacionPrintHtml(c){
         <div class="page-inner">
           ${headerHtml}
           <div class="page-content">
-            <div class="eyebrow">${String(idx + 3).padStart(2, "0")} &mdash; Propuesta ${idx + 1} de ${propuestas.length}</div>
             <h2 class="doc-h2">${escapeHtml(propuesta.nombre || `Propuesta ${idx + 1}`)}</h2>
 
             ${hasClientReq ? `
@@ -463,7 +462,6 @@ export function buildCotizacionPrintHtml(c){
       <div class="page-inner">
         ${headerHtml}
         <div class="page-content">
-          <div class="eyebrow">01 &mdash; Carta de presentación</div>
           <h2 class="doc-h2">Cordial saludo${c?.cliente ? `, ${escapeHtml(c.cliente)}` : ""}</h2>
           ${(()=>{
             // La obra se agrega al final de la frase de apertura. Se quita el
@@ -477,8 +475,7 @@ export function buildCotizacionPrintHtml(c){
           ${lineasDeTexto(textos.presentacion).map((parrafo)=>`<p class="doc-copy">${escapeHtml(parrafo)}</p>`).join("")}
           ${textoInicial ? `<p class="doc-copy">${escapeHtml(textoInicial)}</p>` : ""}
 
-          <div class="eyebrow eyebrow-gap">02 &mdash; Marco técnico</div>
-          <h3 class="doc-h3">Definiciones que estructuran el alcance</h3>
+          <h3 class="doc-h3 con-espacio">Definiciones que estructuran el alcance</h3>
           ${(()=>{
             // Si la cotizacion trae un marco tecnico propio, reemplaza a las
             // definiciones automaticas por tipo.
@@ -561,7 +558,6 @@ export function buildCotizacionPrintHtml(c){
   `;
 
   const renderFinalContent = ({ includeSummary = false } = {}) => `
-    <div class="eyebrow">${secNum(secCierre)} &mdash; Resumen, condiciones y próximos pasos</div>
     ${includeSummary ? renderResumenBlock() : ""}
     <div class="keep conditions-block">
       <div class="card-label block-label centered">Condiciones comerciales</div>
@@ -636,7 +632,6 @@ export function buildCotizacionPrintHtml(c){
       <div class="page-inner">
         ${headerHtml}
         <div class="page-content">
-          <div class="eyebrow">${secNum(secFichaTecnica)} &mdash; Ficha técnica</div>
           <h3 class="doc-h3">Componentes del sistema en acero galvanizado</h3>
 
           <div class="ficha-row">
@@ -687,6 +682,7 @@ export function buildCotizacionPrintHtml(c){
     <style>
       @page { size: Letter; margin: 0; }
       * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      :root { --texto: 11.5px; --titulo: 17px; }
       html, body { margin:0; padding:0; background:#ffffff; }
       body { font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; color:#1E1E1E; -webkit-font-smoothing:antialiased; }
 
@@ -705,11 +701,12 @@ export function buildCotizacionPrintHtml(c){
       .page-content { display:block; padding:0 9mm 30mm 9mm; }
 
       h1, h2, h3 { margin:0; font-family:'Source Serif 4', Georgia, serif; font-weight:600; text-wrap:balance; }
-      p { margin:0 0 3mm; font-size:12px; line-height:1.6; }
+      p { margin:0 0 3mm; font-size: var(--texto); line-height:1.6;
+          text-align: justify; text-justify: inter-word; hyphens: auto; }
 
       .header { display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid #1E1E1E; padding-bottom:2.6mm; margin:0 9mm 6mm 9mm; }
       .logo { height:30px; width:auto; object-fit:contain; }
-      .header-right { font-size:9.5px; letter-spacing:.06em; text-transform:uppercase; color:#6B6B6B; font-weight:600; }
+      .header-right { font-size: var(--texto); letter-spacing:.06em; text-transform:uppercase; color:#6B6B6B; font-weight:600; }
 
       .footer {
         position:absolute;
@@ -717,56 +714,58 @@ export function buildCotizacionPrintHtml(c){
         padding-top:2mm;
         border-top:1px solid #DDD;
         display:flex; justify-content:space-between; gap:6mm;
-        font-size:8.6px; letter-spacing:.03em; color:#666;
+        font-size: var(--texto); letter-spacing:.03em; color:#666;
         background:#fff;
       }
 
-      .eyebrow { font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:#6B6B6B; font-weight:600; text-align:center; margin:0 0 6mm; padding-bottom:3mm; border-bottom:2px solid #1E1E1E; }
+      .eyebrow { font-size: var(--texto); letter-spacing:.09em; text-transform:uppercase; color:#6B6B6B; font-weight:600; text-align:center; margin:0 0 6mm; padding-bottom:3mm; border-bottom:2px solid #1E1E1E; }
       .eyebrow-gap { margin-top:9mm; }
-      .card-label { font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; color:#6B6B6B; font-weight:600; }
+      .card-label { font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; color:#6B6B6B; font-weight:600; }
       .block-label { margin-bottom:2.6mm; }
       .centered { text-align:center; }
       .tnum { font-variant-numeric:tabular-nums; }
       .accent { color:#8A1518; }
 
-      .doc-h2 { font-size:20px; line-height:1.3; text-align:center; margin:0 auto 5mm; max-width:170mm; }
-      .doc-h3 { font-size:15px; text-align:center; margin:0 0 4.5mm; }
-      .doc-copy { font-size:12px; line-height:1.65; color:#2A2A2A; max-width:160mm; margin:0 auto 3mm; }
+      .doc-h2 { font-size: var(--titulo); line-height:1.3; text-align:center; margin:0 auto 5mm; max-width:170mm; }
+      .doc-h3.con-espacio { margin-top:12mm; }
+      .doc-h3 { font-size: var(--titulo); text-align:center; margin:0 0 4.5mm; }
+      .doc-copy { font-size: var(--texto); line-height:1.65; color:#2A2A2A; max-width:160mm; margin:0 auto 3mm;
+                  text-align: justify; text-justify: inter-word; hyphens: auto; }
 
       .cover { padding-top:10mm; }
       .cover-header { display:flex; justify-content:center; padding-bottom:6mm; border-bottom:2px solid #1E1E1E; }
       .cover-logo { height:44px; width:auto; }
-      .cover-firm { text-align:center; font-size:10.5px; color:#444; line-height:1.8; margin-top:4mm; }
+      .cover-firm { text-align:center; font-size: var(--texto); color:#444; line-height:1.8; margin-top:4mm; }
       .cover-firm-name { font-weight:700; color:#1E1E1E; letter-spacing:.08em; }
       .cover-title { margin-top:14mm; text-align:center; }
-      .cover-kicker { font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:#6B6B6B; margin-bottom:5mm; font-weight:700; }
-      .cover-title h1 { font-size:30px; line-height:1.3; }
+      .cover-kicker { font-size: var(--texto); letter-spacing:.18em; text-transform:uppercase; color:#6B6B6B; margin-bottom:5mm; font-weight:700; }
+      .cover-title h1 { font-size: var(--titulo); line-height:1.3; }
       .meta-strip { margin-top:13mm; display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid #CCC; border-bottom:1px solid #CCC; padding:6mm 0; }
       .meta-cell { padding:0 4mm; border-right:1px solid #DDD; text-align:center; }
       .meta-cell.last { border-right:none; }
-      .meta-label { font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; color:#777; margin-bottom:2mm; }
-      .meta-value { font-size:14px; font-weight:700; }
+      .meta-label { font-size: var(--texto); letter-spacing:.08em; text-transform:uppercase; color:#777; margin-bottom:2mm; }
+      .meta-value { font-size: var(--titulo); font-weight:700; }
       .cover-client { margin-top:10mm; text-align:center; }
-      .cover-client-name { font-size:21px; font-weight:700; margin:2mm 0 1.5mm; font-family:'Source Serif 4', Georgia, serif; }
-      .cover-client-nit { font-size:11.5px; color:#667085; margin-bottom:4mm; letter-spacing:.02em; }
-      .cover-client-grid { display:inline-grid; grid-template-columns:repeat(2,auto); gap:2mm 12mm; font-size:12px; color:#333; line-height:1.6; text-align:left; }
+      .cover-client-name { font-size: var(--titulo); font-weight:700; margin:2mm 0 1.5mm; font-family:'Source Serif 4', Georgia, serif; }
+      .cover-client-nit { font-size: var(--texto); color:#667085; margin-bottom:4mm; letter-spacing:.02em; }
+      .cover-client-grid { display:inline-grid; grid-template-columns:repeat(2,auto); gap:2mm 12mm; font-size: var(--texto); color:#333; line-height:1.6; text-align:left; }
       .cover-client-grid span { color:#777; }
-      .cover-foot { margin-top:12mm; padding-top:4mm; border-top:1px solid #DDD; display:flex; justify-content:space-between; font-size:9px; color:#777; }
+      .cover-foot { margin-top:12mm; padding-top:4mm; border-top:1px solid #DDD; display:flex; justify-content:space-between; font-size: var(--texto); color:#777; }
 
       .def-list { border-top:1px solid #DDD; max-width:170mm; margin:0 auto; }
       .def-row { display:grid; grid-template-columns:44mm 1fr; gap:7mm; padding:4.5mm 0; border-bottom:1px solid #DDD; }
-      .def-term { font-size:13px; font-weight:600; font-family:'Source Serif 4', Georgia, serif; }
-      .def-body { font-size:11.5px; line-height:1.65; color:#333; }
-      .def-body p { font-size:11.5px; margin:0 0 2.5mm; }
-      .def-bullets { margin:0; padding-left:16px; font-size:11.5px; line-height:1.65; color:#333; }
+      .def-term { font-size: var(--titulo); font-weight:600; font-family:'Source Serif 4', Georgia, serif; }
+      .def-body { font-size: var(--texto); line-height:1.65; color:#333; }
+      .def-body p { font-size: var(--texto); margin:0 0 2.5mm; }
+      .def-bullets { margin:0; padding-left:16px; font-size: var(--texto); line-height:1.65; color:#333; }
       .def-bullets li { margin-bottom:1.2mm; }
-      .bullet-list { margin:1.5mm 0 0 0; padding-left:18px; font-size:12px; line-height:1.5; }
+      .bullet-list { margin:1.5mm 0 0 0; padding-left:18px; font-size: var(--texto); line-height:1.5; }
       .bullet-list li { margin-bottom:1.3mm; }
-      .section-title { font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; color:#6B6B6B; font-weight:600; margin-bottom:2.6mm; }
-      .subheading { font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; color:#6B6B6B; font-weight:600; margin-bottom:2.6mm; }
+      .section-title { font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; color:#6B6B6B; font-weight:600; margin-bottom:2.6mm; }
+      .subheading { font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; color:#6B6B6B; font-weight:600; margin-bottom:2.6mm; }
 
       .incluye-grid { display:grid; grid-template-columns:1fr 1fr; gap:2mm 8mm; }
-      .incluye-item { font-size:11.5px; line-height:1.55; color:#2A2A2A; }
+      .incluye-item { font-size: var(--texto); line-height:1.55; color:#2A2A2A; }
       .content-block { margin-bottom:5mm; }
 
       .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 0 5mm; }
@@ -775,7 +774,7 @@ export function buildCotizacionPrintHtml(c){
       .photo { display:block; width:100%; height:62mm; object-fit:cover; object-position:center; background:#F4F4F2; }
       .photo-grid.single .photo { height:72mm; }
       .proposal-3-photo { height:52mm; object-fit:contain; object-position:center; background:#ffffff; }
-      .photo-caption { padding:5px 8px 6px; text-align:center; font-size:9.5px; letter-spacing:.04em; text-transform:uppercase; color:#777; border-top:1px solid #EEE; }
+      .photo-caption { padding:5px 8px 6px; text-align:center; font-size: var(--texto); letter-spacing:.04em; text-transform:uppercase; color:#777; border-top:1px solid #EEE; }
 
       .map-wrap {
         position:relative; width:100%; height:52mm;
@@ -792,20 +791,20 @@ export function buildCotizacionPrintHtml(c){
         paint-order:stroke; stroke:#ffffff; stroke-width:3; stroke-linejoin:round; stroke-linecap:round;
       }
       .map-label-title { font-size:0; }
-      .map-label-value { font-size:8px; }
+      .map-label-value { font-size: var(--texto); }
 
       .price-table { margin-top:2mm; }
-      .table { width:100%; border-collapse:collapse; font-size:11px; }
-      .table th { background:#1E1E1E; color:#fff; padding:8px 10px; font-size:9.5px; letter-spacing:.07em; text-transform:uppercase; font-weight:600; text-align:center; border:none; }
+      .table { width:100%; border-collapse:collapse; font-size: var(--texto); }
+      .table th { background:#1E1E1E; color:#fff; padding:8px 10px; font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; font-weight:600; text-align:center; border:none; }
       .table th.t-left { text-align:left; }
       .table th.t-right { text-align:right; }
       .table td { border-bottom:1px solid #DDD; padding:8px 10px; vertical-align:middle; color:#1E1E1E; }
       .table .sub-row td { font-weight:600; }
-      .table .soft-row td { color:#666; font-size:10.5px; border-bottom:1px solid #EEE; padding:6px 10px; }
+      .table .soft-row td { color:#666; font-size: var(--texto); border-bottom:1px solid #EEE; padding:6px 10px; }
       .table .grand-total td { border-top:2px solid #1E1E1E; border-bottom:none; padding-top:12px; }
-      .total-label { font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
-      .total-amount { font-size:16px; color:#8A1518; font-weight:700; }
-      .row-num { color:#777; font-size:10px; }
+      .total-label { font-size: var(--texto); font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
+      .total-amount { font-size: var(--titulo); color:#8A1518; font-weight:700; }
+      .row-num { color:#777; font-size: var(--texto); }
 
       .t-center { text-align:center; }
       .t-right { text-align:right; }
@@ -814,31 +813,31 @@ export function buildCotizacionPrintHtml(c){
 
       .ficha-row { display:grid; grid-template-columns:42mm 34mm 1fr; gap:7mm; padding:4.5mm 0; border-top:1px solid #DDD; align-items:center; }
       .ficha-row:last-of-type { border-bottom:1px solid #DDD; }
-      .ficha-name { font-size:13px; font-weight:600; font-family:'Source Serif 4', Georgia, serif; }
+      .ficha-name { font-size: var(--titulo); font-weight:600; font-family:'Source Serif 4', Georgia, serif; }
       .ficha-img { width:100%; height:26mm; object-fit:contain; }
       .ficha-img.tall { height:32mm; }
-      .ficha-desc { font-size:11px; line-height:1.6; color:#333; }
+      .ficha-desc { font-size: var(--texto); line-height:1.6; color:#333; }
       .ficha-desc .split { margin-bottom:2.5mm; padding-bottom:2.5mm; border-bottom:1px dashed #DDD; }
 
       .conditions-block { margin:7mm 0 0; }
       .conditions-grid { display:grid; grid-template-columns:1fr 1fr; border-top:1px solid #DDD; }
       .meta-card { padding:4.5mm 6mm 4.5mm 0; border-bottom:1px solid #DDD; }
       .meta-card.pad-left { padding-left:6mm; padding-right:0; border-left:1px solid #EEE; }
-      .meta-strong { font-size:12px; font-weight:600; margin-top:1.6mm; }
+      .meta-strong { font-size: var(--texto); font-weight:600; margin-top:1.6mm; }
 
       .sst-block { margin:6mm 0; padding-top:4mm; border-top:2px solid #1E1E1E; }
-      .sst-title { font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; font-weight:700; margin-bottom:2.6mm; }
-      .sst-block p { font-size:11.5px; line-height:1.7; margin:0; }
+      .sst-title { font-size: var(--texto); letter-spacing:.08em; text-transform:uppercase; font-weight:700; margin-bottom:2.6mm; }
+      .sst-block p { font-size: var(--texto); line-height:1.7; margin:0; }
 
       .signature { display:grid; grid-template-columns:1fr 1fr; gap:12mm; padding-top:5mm; border-top:1px solid #DDD; }
-      .steps-list { margin:0; padding-left:17px; font-size:11px; line-height:1.8; color:#2A2A2A; }
+      .steps-list { margin:0; padding-left:17px; font-size: var(--texto); line-height:1.8; color:#2A2A2A; }
       .contact-box { margin-top:5mm; padding:4mm 5mm; background:#F4F4F2; border:1px solid #DDD; }
-      .contact-line { font-size:11.5px; line-height:1.6; }
+      .contact-line { font-size: var(--texto); line-height:1.6; }
       .sig-space { height:14mm; border-bottom:1px solid #1E1E1E; margin-bottom:3mm; }
-      .sig-name { font-size:13px; font-weight:600; font-family:'Source Serif 4', Georgia, serif; }
-      .sig-role { font-size:11.5px; color:#333; margin-top:.6mm; }
-      .sig-meta { font-size:10px; color:#666; margin-top:2mm; line-height:1.65; }
-      .thanks-row { margin-top:8mm; padding-top:4mm; border-top:1px solid #DDD; text-align:right; font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; color:#777; }
+      .sig-name { font-size: var(--titulo); font-weight:600; font-family:'Source Serif 4', Georgia, serif; }
+      .sig-role { font-size: var(--texto); color:#333; margin-top:.6mm; }
+      .sig-meta { font-size: var(--texto); color:#666; margin-top:2mm; line-height:1.65; }
+      .thanks-row { margin-top:8mm; padding-top:4mm; border-top:1px solid #DDD; text-align:right; font-size: var(--texto); letter-spacing:.08em; text-transform:uppercase; color:#777; }
 
       .appendix-img { width:100%; height:auto; max-height:235mm; object-fit:contain; display:block; margin:0 auto; }
       .summary-spacing { margin-bottom:8mm; }
@@ -864,7 +863,6 @@ export function buildCotizacionPrintHtml(c){
         <div class="page-inner">
           ${headerHtml}
           <div class="page-content">
-            <div class="eyebrow">${secNum(secAnexoVertical)} &mdash; Línea de vida vertical</div>
             <h3 class="doc-h3">Sistema certificado para escalera fija</h3>
             <img src="${articoLineaVidaVertical}" alt="Sistema de linea de vida vertical Artico Safe Work" class="appendix-img" />
           </div>

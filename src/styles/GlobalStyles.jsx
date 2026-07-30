@@ -48,9 +48,11 @@ export default function GlobalStyles({ divider }) {
          Se fuerza 16px solo en pantallas tactiles pequenas. */
       input, select, textarea { font-size: 16px !important; }
 
-      /* Las tablas anchas se desplazan dentro de su contenedor en vez de
-         romper el ancho de la pagina. */
-      table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      /* Las tablas anchas ya vienen envueltas en un contenedor con
+         overflow-x:auto y su propio min-width. Solo se suaviza el
+         desplazamiento; poner display:block en la tabla romperia la
+         alineacion entre el encabezado y las filas. */
+      table { -webkit-overflow-scrolling: touch; }
     }
 
     /* ---- Telefono ----------------------------------------------------
@@ -66,6 +68,27 @@ export default function GlobalStyles({ divider }) {
       /* Las filas de botones y encabezados se acomodan en varias lineas en
          vez de comprimirse. */
       main [style*="display: flex"] { flex-wrap: wrap; }
+
+      /* Varios campos traen un ancho fijo en pixeles (por ejemplo el
+         buscador en 300 px). No basta con max-width: el contenedor flexible
+         se estira para acomodar al hijo, asi que hay que imponer el ancho.
+         Se excluyen casillas y botones de opcion, que deben mantener su
+         tamano. */
+      main input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+      main select,
+      main textarea {
+        width: 100% !important;
+      }
+      main img { max-width: 100%; }
+
+      /* Varias pantallas tienen tablas sin contenedor desplazable, y una
+         tabla de 7 columnas no cabe en un telefono. Con :has se hace
+         desplazable el contenedor que la envuelve, sin tocar cada pantalla
+         ni alterar la maquetacion interna de la tabla. */
+      main div:has(> table) {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
 
       /* La tabla de items es lo unico que conserva sus columnas: apilarla
          perderia la relacion entre cantidad, valor y subtotal. Se desplaza

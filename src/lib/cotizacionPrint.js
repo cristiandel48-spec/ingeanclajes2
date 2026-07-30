@@ -440,6 +440,7 @@ export function buildCotizacionPrintHtml(c){
           <div class="cover-client">
             <div class="meta-label">Cotización preparada para</div>
             <div class="cover-client-name">${escapeHtml(c?.cliente || "")}</div>
+            ${c?.nit ? `<div class="cover-client-nit tnum">NIT ${escapeHtml(c.nit)}</div>` : ""}
             <div class="cover-client-grid">
               <div><span>Obra:</span> ${escapeHtml(c?.obra || "")}</div>
               <div><span>Ciudad:</span> ${escapeHtml(c?.ciudad || "")}</div>
@@ -737,7 +738,8 @@ export function buildCotizacionPrintHtml(c){
       .meta-label { font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; color:#777; margin-bottom:2mm; }
       .meta-value { font-size:14px; font-weight:700; }
       .cover-client { margin-top:10mm; text-align:center; }
-      .cover-client-name { font-size:21px; font-weight:700; margin:2mm 0 5mm; font-family:'Source Serif 4', Georgia, serif; }
+      .cover-client-name { font-size:21px; font-weight:700; margin:2mm 0 1.5mm; font-family:'Source Serif 4', Georgia, serif; }
+      .cover-client-nit { font-size:11.5px; color:#667085; margin-bottom:4mm; letter-spacing:.02em; }
       .cover-client-grid { display:inline-grid; grid-template-columns:repeat(2,auto); gap:2mm 12mm; font-size:12px; color:#333; line-height:1.6; text-align:left; }
       .cover-client-grid span { color:#777; }
       .cover-foot { margin-top:12mm; padding-top:4mm; border-top:1px solid #DDD; display:flex; justify-content:space-between; font-size:9px; color:#777; }

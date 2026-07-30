@@ -26,7 +26,7 @@ export default function Cotizacion({ctx}){
   const [cot,setCot]=useState("");
   const [fecha,setFecha]=useState(today());
   const [val,setVal]=useState(30);
-  const [cl,setCl]=useState({nombre:"",contacto:"",obra:"",telefono:"",ciudad:"",coords:""});
+  const [cl,setCl]=useState({nombre:"",nit:"",contacto:"",obra:"",telefono:"",ciudad:"",coords:""});
   const [textoInicial,setTextoInicial]=useState("");
   const [observacionesCot,setObservacionesCot]=useState("");
   // Textos fijos del documento, editables por cotizacion.
@@ -97,6 +97,7 @@ export default function Cotizacion({ctx}){
     fecha,
     val,
     cliente: cl.nombre,
+    nit: cl.nit,
     contacto: cl.contacto,
     obra: cl.obra,
     telefono: cl.telefono,
@@ -132,7 +133,7 @@ export default function Cotizacion({ctx}){
     setCot(source.numero || `P-${34155 + cotizaciones.length}`);
     setFecha(source.fecha || today());
     setVal(source.val || 30);
-    setCl({nombre:source.cliente || "",contacto:source.contacto || "",obra:source.obra || "",telefono:source.telefono || "",ciudad:source.ciudad || "",coords:source.coords || ""});
+    setCl({nombre:source.cliente || "",nit:source.nit || "",contacto:source.contacto || "",obra:source.obra || "",telefono:source.telefono || "",ciudad:source.ciudad || "",coords:source.coords || ""});
     setTextoInicial(source.textoInicial || "");
     setObservacionesCot(source.observaciones || "");
     setTextosDocumento(getTextosDocumento(source));
@@ -175,7 +176,7 @@ export default function Cotizacion({ctx}){
     });
     const activa = propuestasFinales.find((x)=>x.id===propuestaActivaId) || propuestasFinales[0];
     const prev = editCot ? cotizaciones.find((cotizacion)=>cotizacion.id===editCot) : null;
-    const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:cl.nombre,contacto:cl.contacto,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,textoInicial:textoInicial.trim(),observaciones:observacionesCot.trim(),textosDocumento,items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:activa.mapImg || null,geoMediciones:activa.geoMediciones || [],geoMapView:activa.geoMapView || null,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,incluyeTexto:activa.incluyeTexto || "",propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
+    const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:cl.nombre,nit:cl.nit,contacto:cl.contacto,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,textoInicial:textoInicial.trim(),observaciones:observacionesCot.trim(),textosDocumento,items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:activa.mapImg || null,geoMediciones:activa.geoMediciones || [],geoMapView:activa.geoMapView || null,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,incluyeTexto:activa.incluyeTexto || "",propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
     setCotizaciones((prevList)=>editCot ? prevList.map((cotizacion)=>cotizacion.id===editCot?{...cotizacion,...data}:cotizacion) : [...prevList,data]);
     setPropuestas(propuestasFinales);
     setEditCot(data.id);
@@ -204,7 +205,7 @@ export default function Cotizacion({ctx}){
     setObras((prev)=>[...prev,{
       id:obraId,
       cliente:cotizacion.cliente,
-      nit:"",
+      nit:cotizacion.nit || "",
       tel:cotizacion.telefono,
       proyecto:cotizacion.obra,
       ciudad:cotizacion.ciudad,
@@ -392,6 +393,11 @@ export default function Cotizacion({ctx}){
         <div style={ST}>Portada · Cliente</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
           <div><LBL>Empresa</LBL><input value={cl.nombre} onChange={e=>setCl({...cl,nombre:e.target.value})} style={SI}/></div>
+          <div>
+            <LBL>NIT / Cédula</LBL>
+            <input value={cl.nit} onChange={e=>setCl({...cl,nit:e.target.value})} placeholder="900123456-7" style={SI}/>
+            <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Viaja hasta el comprobante contable al aprobar la cotización.</div>
+          </div>
           <div><LBL>Contacto</LBL><input value={cl.contacto} onChange={e=>setCl({...cl,contacto:e.target.value})} style={SI}/></div>
           <div><LBL>Obra</LBL><input value={cl.obra} onChange={e=>setCl({...cl,obra:e.target.value})} style={SI}/></div>
           <div><LBL>Teléfono</LBL><input value={cl.telefono} onChange={e=>setCl({...cl,telefono:e.target.value})} style={SI}/></div>

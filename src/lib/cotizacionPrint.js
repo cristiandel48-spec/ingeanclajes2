@@ -16,12 +16,6 @@ export function buildCotizacionPrintHtml(c){
   const showVerticalAppendix = propuestas.some((propuesta)=>hasVerticalLifeLineService(propuesta?.quote));
   const showTechnicalPage = propuestas.some((propuesta)=>propuesta?.quote?.tipoCotizacion === "linea_vida");
 
-  // Numeracion de secciones: 01 carta, 02 marco tecnico, 03.. propuestas,
-  // luego anexo vertical y ficha tecnica segun apliquen, y al final el cierre.
-  const secNum = (n) => String(n).padStart(2, "0");
-  const secAnexoVertical = propuestas.length + 3;
-  const secFichaTecnica = secAnexoVertical + (showVerticalAppendix ? 1 : 0);
-  const secCierre = secFichaTecnica + (showTechnicalPage ? 1 : 0);
   const mapCenter = c?.geoMapView?.center || c?.geoMapView || { lat: 0, lng: 0 };
   const mapZoom = Number(c?.geoMapView?.zoom || 18);
   const monthNamesEs = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];

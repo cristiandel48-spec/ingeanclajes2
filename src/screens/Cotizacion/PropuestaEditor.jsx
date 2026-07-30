@@ -193,8 +193,9 @@ export default function PropuestaEditor({
             </div>
           )}
 
-          {/* Tabla de ítems */}
-          <div style={{border:"1px solid #e2e8f0",borderRadius:10,overflow:"hidden",marginBottom:10}}>
+          {/* Tabla de ítems. La clase "tabla-items" evita que en el celular se
+              colapse a una columna: conserva sus columnas y se desplaza. */}
+          <div className="tabla-items" style={{border:"1px solid #e2e8f0",borderRadius:10,overflow:"hidden",marginBottom:10}}>
             <div style={{display:"grid",gridTemplateColumns:"3fr 0.65fr 0.75fr 1.1fr 1.1fr 28px",background:"#1a2840",color:"#94a3b8",fontSize:10,textTransform:"uppercase",padding:"9px 12px",letterSpacing:0.5}}>
               <span>Descripción</span><span>Cant.</span><span>Unidad</span><span>Valor unit.</span><span style={{textAlign:"right"}}>Subtotal</span><span/>
             </div>

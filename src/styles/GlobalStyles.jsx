@@ -53,6 +53,35 @@ export default function GlobalStyles({ divider }) {
       table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     }
 
+    /* ---- Telefono ----------------------------------------------------
+       Las pantallas usan rejillas de 2 y 3 columnas escritas en el propio
+       componente. En un telefono de 360 px eso deja columnas de 60 px: las
+       etiquetas no caben y el texto se monta. Aqui se colapsan a una sola
+       columna. Hace falta !important porque los estilos son en linea. */
+    @media (max-width: 760px) {
+      main [style*="grid-template-columns"] {
+        grid-template-columns: 1fr !important;
+      }
+
+      /* Las filas de botones y encabezados se acomodan en varias lineas en
+         vez de comprimirse. */
+      main [style*="display: flex"] { flex-wrap: wrap; }
+
+      /* La tabla de items es lo unico que conserva sus columnas: apilarla
+         perderia la relacion entre cantidad, valor y subtotal. Se desplaza
+         de lado dentro de su marco. */
+      .tabla-items {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+      }
+      .tabla-items > * {
+        min-width: 520px;
+      }
+      .tabla-items [style*="grid-template-columns"] {
+        grid-template-columns: 3fr 0.7fr 0.8fr 1.15fr 1.15fr 28px !important;
+      }
+    }
+
     @media print {
       @page { size: Letter; margin: 12mm; }
       html, body {

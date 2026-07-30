@@ -4,8 +4,18 @@
 // campo queda vacio se usa el valor por defecto de aqui.
 
 export const TEXTOS_DOCUMENTO_DEFAULT = {
+  // Frase de apertura. El documento le agrega " en la obra X." cuando la
+  // cotizacion tiene obra, asi que va SIN punto final.
   saludo:
-    "Presentamos la cotización para la instalación de elementos para trabajo seguro en alturas.",
+    "Agradecemos la oportunidad de presentarles nuestra propuesta para el suministro e instalación de sistemas de protección contra caídas para trabajo seguro en alturas",
+
+  // Cuerpo de la carta: quienes somos y que garantiza la propuesta. Salia
+  // una sola frase suelta y la carta se veia vacia.
+  presentacion: [
+    "INGEANCLAJES S.A.S. es una empresa especializada en el diseño, fabricación e instalación de sistemas de protección contra caídas. Cada sistema se entrega certificado bajo la Resolución 4272 de 2021, con los certificados de fábrica de todos los elementos instalados y una recertificación anual sin costo.",
+    "Nuestro personal está afiliado a ARL, salud y pensión, cuenta con los elementos de protección personal requeridos, y un coordinador de trabajo seguro en alturas acompaña la obra durante toda la ejecución. Entregamos las pólizas que exija el contratante y respondemos por los daños que puedan ocasionarse durante los trabajos.",
+    "Quedamos atentos a cualquier inquietud sobre el alcance, los materiales o las condiciones comerciales de esta propuesta.",
+  ].join("\n\n"),
 
   // Si se deja vacio, el documento arma las definiciones automaticamente
   // segun el tipo de cotizacion (linea de vida, puntos de anclaje, obra blanca).

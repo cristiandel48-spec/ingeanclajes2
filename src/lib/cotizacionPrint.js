@@ -465,7 +465,16 @@ export function buildCotizacionPrintHtml(c){
         <div class="page-content">
           <div class="eyebrow">01 &mdash; Carta de presentación</div>
           <h2 class="doc-h2">Cordial saludo${c?.cliente ? `, ${escapeHtml(c.cliente)}` : ""}</h2>
-          <p class="doc-copy">${escapeHtml(textos.saludo)}${c?.obra ? ` en la obra <strong>${escapeHtml(c.obra)}</strong>` : ""}</p>
+          ${(()=>{
+            // La obra se agrega al final de la frase de apertura. Se quita el
+            // punto final si lo trae, para no imprimir "...alturas. en la obra X".
+            const apertura = String(textos.saludo || "").trim().replace(/\.$/, "");
+            const conObra = c?.obra
+              ? `${escapeHtml(apertura)} en la obra <strong>${escapeHtml(c.obra)}</strong>.`
+              : `${escapeHtml(apertura)}.`;
+            return `<p class="doc-copy">${conObra}</p>`;
+          })()}
+          ${lineasDeTexto(textos.presentacion).map((parrafo)=>`<p class="doc-copy">${escapeHtml(parrafo)}</p>`).join("")}
           ${textoInicial ? `<p class="doc-copy">${escapeHtml(textoInicial)}</p>` : ""}
 
           <div class="eyebrow eyebrow-gap">02 &mdash; Marco técnico</div>

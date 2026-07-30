@@ -458,7 +458,16 @@ export default function Cotizacion({ctx}){
             onChange={e=>setTexto("saludo",e.target.value)}
             style={{...SI,minHeight:60,resize:"vertical",lineHeight:1.6}}
           />
-          <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Se imprime después de &quot;Cordial saludo, [cliente]&quot;. Si la obra tiene nombre, se agrega al final.</div>
+          <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Se imprime después de &quot;Cordial saludo, [cliente]&quot;. Si la obra tiene nombre, se agrega al final. No hace falta el punto final.</div>
+        </div>
+        <div style={{marginBottom:14}}>
+          <LBL>Presentación de la empresa</LBL>
+          <textarea
+            value={textosDocumento.presentacion}
+            onChange={e=>setTexto("presentacion",e.target.value)}
+            style={{...SI,minHeight:150,resize:"vertical",lineHeight:1.6}}
+          />
+          <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Quiénes somos y qué garantiza la propuesta. Separa los párrafos con una línea en blanco.</div>
         </div>
         <div>
           <LBL>Párrafo adicional para este cliente (opcional)</LBL>

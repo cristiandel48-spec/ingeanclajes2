@@ -15,10 +15,19 @@ export default function Certificaciones({ctx}){
   const [form,setForm]=useState(buildCertForm());
   const [nuevoElem,setNuevoElem]=useState("");
 
-  const abrirNuevaCertificacion = (tipo="Certificación")=>{
+  // Al abrir una certificacion nueva se preselecciona la primera obra real
+  // y se traen sus datos, para no tener que reescribir cliente y direccion.
+  const abrirNuevaCertificacion = (tipo="Certificación", obraId=null)=>{
+    const obra = obras.find((x)=>x.id===obraId) || obras[0] || null;
     setEditId(null);
     setNuevoElem("");
-    setForm(buildCertForm({tipo, elementos:getCertDefaultElements(tipo)}));
+    setForm(buildCertForm({
+      tipo,
+      elementos:getCertDefaultElements(tipo),
+      obraId: obra?.id || "",
+      cliente: obra?.cliente || "",
+      direccion: obra?.direccion || obra?.ciudad || "",
+    }));
     setNueva(true);
   };
 
@@ -69,7 +78,7 @@ export default function Certificaciones({ctx}){
             </select></div>
             <div><LBL>Número</LBL><input value={form.numero} onChange={e=>setForm({...form,numero:e.target.value})} placeholder="C-2026-001" style={SI}/></div>
             <div><LBL>Fecha</LBL><input type="date" value={form.fecha} onChange={e=>setForm({...form,fecha:e.target.value})} style={SI}/></div>
-            <div><LBL>Obra asociada</LBL><select value={form.obraId} onChange={e=>{const o=obras.find(x=>x.id===e.target.value);setForm({...form,obraId:e.target.value,cliente:o?.cliente||"",direccion:o?.direccion||""});}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
+            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const o=obras.find(x=>x.id===e.target.value);setForm({...form,obraId:e.target.value,cliente:o?.cliente||"",direccion:o?.direccion||o?.ciudad||""});}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
             <div><LBL>Cliente</LBL><input value={form.cliente} onChange={e=>setForm({...form,cliente:e.target.value})} style={SI}/></div>
             <div><LBL>NIT</LBL><input value={form.nit} onChange={e=>setForm({...form,nit:e.target.value})} style={SI}/></div>
             <div style={{gridColumn:"span 2"}}><LBL>Dirección de la obra</LBL><input value={form.direccion} onChange={e=>setForm({...form,direccion:e.target.value})} style={SI}/></div>

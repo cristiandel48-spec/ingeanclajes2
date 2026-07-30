@@ -61,7 +61,10 @@ export const buildCertForm = (overrides={})=>{
   const tipo = overrides.tipo || "Certificación";
   const tipoSistema = overrides.tipoSistema || "";
   return {
-    obraId: "OB-001",
+    // Antes venia fijo en "OB-001": si esa obra no existia, el desplegable
+    // mostraba otra pero se guardaba un id inexistente, y el cliente y la
+    // direccion quedaban vacios. Ahora lo define quien abre el formulario.
+    obraId: overrides.obraId ?? "",
     tipo,
     tipoSistema,
     numero: "",

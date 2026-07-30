@@ -91,17 +91,25 @@ export default function Informes({ctx}){
     return [emptyActividad()];
   };
 
-  const buildInformeForm = (data={})=>({
-    obraId:data.obraId ?? firstObraId,
-    proyecto:data.proyecto ?? "",
-    localizacion:data.localizacion ?? "",
+  const buildInformeForm = (data={})=>{
+    // Se resuelve la obra aqui y se traen sus datos de una: el efecto que
+    // rellenaba estos campos solo corre cuando cambian las obras, no al
+    // abrir un informe nuevo, y el proyecto quedaba en blanco.
+    const obraBase = obras.find((o)=>o.id===(data.obraId ?? firstObraId)) || obras[0] || null;
+    return {
+    obraId:data.obraId ?? obraBase?.id ?? firstObraId,
+    proyecto:data.proyecto ?? obraBase?.proyecto ?? "",
+    localizacion:data.localizacion ?? obraBase?.ciudad ?? "",
     fechaInforme:data.fechaInforme ?? today(),
     periodoInicio:data.periodoInicio ?? today(),
     periodoFin:data.periodoFin ?? today(),
-    personal:Array.isArray(data.personal) ? data.personal : [],
+    personal:Array.isArray(data.personal) && data.personal.length
+      ? data.personal
+      : (obraBase ? buildPersonalDesdeObra(obraBase.id, data.periodoInicio ?? today(), data.periodoFin ?? today(), []) : []),
     recomendaciones:data.recomendaciones ?? "Para garantizar la efectividad y seguridad de las líneas de vida instaladas es fundamental implementar un programa de inspección regular.",
     actividades:normalizeInformeActividades(data),
-  });
+    };
+  };
 
   const [form,setForm]=useState(buildInformeForm());
 

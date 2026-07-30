@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 // Estado global de la aplicacion. El value mantiene exactamente el mismo
 // shape que el ctx historico de App.jsx (mismos nombres y setters).
-import { createContext, useContext, useState, useRef, useEffect } from "react";
+import { createContext, useContext, useState, useRef, useEffect, useCallback } from "react";
 import * as backend from "../lib/backend";
 import {
   OBRAS_INIT, EMPLEADOS_INIT, CARGOS_INIT, PAGOS_INIT, HORARIOS_INIT,
@@ -47,6 +47,18 @@ export function AppDataProvider({ children }) {
   const [asientosContables, setAsientosContables] = useState(ASIENTOS_CONTABLES_INIT);
   const [nominasGeneradas, setNominasGeneradas] = useState(NOMINAS_GENERADAS_INIT);
   const [cotDraft, setCotDraft] = useState(null);
+
+  // Permite saltar a otra pantalla llevando contexto, por ejemplo "abre un
+  // informe para la obra OB-001". La pantalla destino lo lee al montarse y
+  // se descarta al salir de ella.
+  const [intencion, setIntencion] = useState(null);
+  const irAPantalla = (pantalla, datos = null) => {
+    setIntencion(datos ? { pantalla, ...datos } : null);
+    setScr(pantalla);
+  };
+  // Estable, para que las pantallas puedan usarla como dependencia de un
+  // efecto sin recrearlo en cada render.
+  const limpiarIntencion = useCallback(() => setIntencion(null), []);
   const bootstrappedRef = useRef(false);
   const autosaveTimerRef = useRef(null);
 
@@ -264,6 +276,7 @@ export function AppDataProvider({ children }) {
     asientosContables, setAsientosContables,
     nominasGeneradas, setNominasGeneradas,
     cotDraft, setCotDraft,
+    intencion, irAPantalla, limpiarIntencion,
     saveAllToCloud,
     // Estado del autoguardado, para el indicador de la barra superior.
     saveState,

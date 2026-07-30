@@ -6,9 +6,9 @@ import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmtD, fmtL, today } from "../../lib/format";
 import { printCurrentPz } from "../../lib/print";
 export default function Informes({ctx}){
-  const {informes,setInformes,obras,empleados,horarios}=ctx;
+  const {informes,setInformes,obras,empleados,horarios,intencion,limpiarIntencion}=ctx;
   const [sel,setSel]=useState(null);
-  const [nuevo,setNuevo]=useState(false);
+  const [nuevo,setNuevo]=useState(()=>Boolean(ctx.intencion?.pantalla==="informes" && ctx.intencion?.obraId));
   const [editId,setEditId]=useState(null);
   const fotoRefs=useRef({});
 
@@ -111,7 +111,14 @@ export default function Informes({ctx}){
     };
   };
 
-  const [form,setForm]=useState(buildInformeForm());
+  // Obra que llega desde el detalle de obra ("Crear informe"). Se lee al
+  // montar, asi el formulario abre ya con esa obra y sus datos.
+  const obraSolicitada = intencion?.pantalla==="informes" ? intencion.obraId : null;
+  const [form,setForm]=useState(()=>buildInformeForm(obraSolicitada?{obraId:obraSolicitada}:{}));
+
+  // La intencion se descarta al salir de la pantalla, para que al volver por
+  // el menu no se reabra el formulario.
+  useEffect(()=>()=>limpiarIntencion(),[limpiarIntencion]);
 
   const turnosDisponiblesObra = [...new Set(
     horarios

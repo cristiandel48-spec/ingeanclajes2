@@ -2,17 +2,28 @@ import Badge from "../../components/ui/Badge";
 import CertificacionDetalle from "./CertificacionDetalle";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { buildCertForm, getCertDefaultElements } from "./certConfig";
 import { fmtD } from "../../lib/format";
 import { printCurrentPz } from "../../lib/print";
 export default function Certificaciones({ctx}){
-  const {certs,setCerts,obras}=ctx;
+  const {certs,setCerts,obras,intencion,limpiarIntencion}=ctx;
   const [sel,setSel]=useState(null);
-  const [nueva,setNueva]=useState(false);
+  // Obra que llega desde el detalle de obra ("Crear certificación").
+  const obraSolicitada = intencion?.pantalla==="certificaciones" ? intencion.obraId : null;
+  const obraInicial = obras.find((x)=>x.id===obraSolicitada) || obras[0] || null;
+  const [nueva,setNueva]=useState(()=>Boolean(obraSolicitada));
   const [editId,setEditId]=useState(null);
-  const [form,setForm]=useState(buildCertForm());
+  const [form,setForm]=useState(()=>buildCertForm({
+    elementos:getCertDefaultElements("Certificación"),
+    obraId: obraInicial?.id || "",
+    cliente: obraInicial?.cliente || "",
+    direccion: obraInicial?.direccion || obraInicial?.ciudad || "",
+  }));
+
+  // Se descarta al salir, para que al volver por el menu no se reabra.
+  useEffect(()=>()=>limpiarIntencion(),[limpiarIntencion]);
   const [nuevoElem,setNuevoElem]=useState("");
 
   // Al abrir una certificacion nueva se preselecciona la primera obra real

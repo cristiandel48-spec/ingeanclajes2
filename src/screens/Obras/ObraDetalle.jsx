@@ -5,7 +5,7 @@ import { useState } from "react";
 import { B, CD, PAL, SI, ST } from "../../styles/tokens";
 import { fmt, fmtD, today } from "../../lib/format";
 export default function ObraDetalle({obraId,ctx,onVolver}){
-  const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,horarios}=ctx;
+  const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,horarios,irAPantalla}=ctx;
   const [detTab,setDetTab]=useState("personal");
   const [gastoForm,setGastoForm]=useState({proveedorId:"PROV-001",concepto:"",monto:0,fecha:today(),fechaVence:"",factura:""});
   const [showGasto,setShowGasto]=useState(false);
@@ -48,9 +48,27 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           <div style={{fontSize:13,color:"#475569"}}>{oAct.proyecto} · 📍 {oAct.ciudad}</div>
           {oAct.direccion&&<div style={{fontSize:11,color:"#94a3b8"}}>{oAct.direccion}</div>}
         </div>
-        <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
+        <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
           <Badge estado={oAct.estado}/>
           {cotVinc&&<div style={{fontSize:11,color:"#b45309"}}>📄 {cotVinc.numero}</div>}
+          {/* Continuación del flujo: llevan a la pantalla correspondiente con
+              esta obra ya cargada, sin buscarla en el desplegable. */}
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
+            <button
+              onClick={()=>irAPantalla("informes",{obraId:oAct.id})}
+              title={`Crear un informe de actividades para ${oAct.id}`}
+              style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"6px 12px"}}
+            >
+              Crear informe
+            </button>
+            <button
+              onClick={()=>irAPantalla("certificaciones",{obraId:oAct.id})}
+              title={`Crear una certificación para ${oAct.id}`}
+              style={{...B("#dcfce7","#15803d"),fontSize:11,padding:"6px 12px"}}
+            >
+              Crear certificación
+            </button>
+          </div>
         </div>
       </div>
 

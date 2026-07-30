@@ -3,6 +3,7 @@ import Badge from "../../components/ui/Badge";
 import LBL from "../../components/ui/LBL";
 import { useState } from "react";
 import { B, CD, PAL, SI, ST } from "../../styles/tokens";
+import GuiaFlujoObra from "./GuiaFlujoObra";
 import { fmt, fmtD, today } from "../../lib/format";
 export default function ObraDetalle({obraId,ctx,onVolver}){
   const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,horarios,irAPantalla}=ctx;
@@ -51,26 +52,15 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
           <Badge estado={oAct.estado}/>
           {cotVinc&&<div style={{fontSize:11,color:"#b45309"}}>📄 {cotVinc.numero}</div>}
-          {/* Continuación del flujo: llevan a la pantalla correspondiente con
-              esta obra ya cargada, sin buscarla en el desplegable. */}
-          <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
-            <button
-              onClick={()=>irAPantalla("informes",{obraId:oAct.id})}
-              title={`Crear un informe de actividades para ${oAct.id}`}
-              style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"6px 12px"}}
-            >
-              Crear informe
-            </button>
-            <button
-              onClick={()=>irAPantalla("certificaciones",{obraId:oAct.id})}
-              title={`Crear una certificación para ${oAct.id}`}
-              style={{...B("#dcfce7","#15803d"),fontSize:11,padding:"6px 12px"}}
-            >
-              Crear certificación
-            </button>
-          </div>
         </div>
       </div>
+
+      <GuiaFlujoObra
+        obra={oAct}
+        empleadosAsignados={empObra.length}
+        onCrearInforme={()=>irAPantalla("informes",{obraId:oAct.id})}
+        onCrearCertificacion={()=>irAPantalla("certificaciones",{obraId:oAct.id})}
+      />
 
       {/* KPIs */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:12,marginBottom:24}}>

@@ -22,6 +22,8 @@ export default function Cotizacion({ctx}){
   const cabeEnDosColumnas=useMediaQuery("(min-width: 1250px)");
   const [busqueda,setBusqueda]=useState("");
   const [filtroObraCot,setFiltroObraCot]=useState("todas");
+  // Aviso posterior a aprobar: explica que se creo y que sigue.
+  const [obraCreada,setObraCreada]=useState(null);
   const [editCot,setEditCot]=useState(null);
   const [cot,setCot]=useState("");
   const [fecha,setFecha]=useState(today());
@@ -232,6 +234,7 @@ export default function Cotizacion({ctx}){
       ivaGeneradoCotizacion:snapshot.ivaGeneradoCotizacion,
     }]);
     setCotizaciones((prev)=>prev.map((item)=>item.id===cotId?{...item,estado:"Aprobada",obraId}:item));
+    setObraCreada({id:obraId,cliente:cotizacion.cliente,proyecto:cotizacion.obra});
   };
 
   const term = normalizeEntityKey(busqueda || "");
@@ -254,6 +257,47 @@ export default function Cotizacion({ctx}){
     return (
       <div style={{padding:28}}>
         <H1 title="Cotizaciones" subtitle="Ubicación, medición y propuestas comerciales por cliente" action={<button style={B("#f47c20")} onClick={nuevaCotizacion}>+ Nueva Cotización</button>}/>
+
+        {/* Al aprobar, se explica que se creo y cual es el siguiente paso:
+            quien cotiza no tiene por que saber que ahora existe una obra. */}
+        {obraCreada && (
+          <div style={{background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:14,padding:"16px 20px",marginBottom:18}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
+              <div style={{minWidth:0}}>
+                <div style={{fontSize:14,fontWeight:700,color:"#15803D"}}>
+                  Listo: se creó la obra {obraCreada.id}
+                </div>
+                <div style={{fontSize:12.5,color:"#166534",marginTop:6,lineHeight:1.55}}>
+                  {obraCreada.cliente}{obraCreada.proyecto?` · ${obraCreada.proyecto}`:""}. Los datos del cliente,
+                  el valor y las mediciones ya pasaron a la obra: <strong>no hay que volver a escribirlos</strong>.
+                </div>
+                <div style={{fontSize:12.5,color:"#166534",marginTop:8,lineHeight:1.55}}>
+                  Desde la obra se generan el <strong>informe de actividades</strong> y la <strong>certificación</strong>,
+                  también con los datos ya cargados. Entra a la obra y ahí te dice qué falta para cada uno.
+                </div>
+              </div>
+              <button
+                onClick={()=>setObraCreada(null)}
+                title="Cerrar aviso"
+                style={{background:"transparent",border:"none",color:"#15803D",cursor:"pointer",fontSize:18,lineHeight:1,padding:4,flexShrink:0}}
+              >×</button>
+            </div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:14}}>
+              <button
+                onClick={()=>{setObraCreada(null);ctx.irAPantalla("obras");}}
+                style={{...B("#16a34a"),fontSize:12,padding:"9px 16px"}}
+              >
+                Ir a la obra {obraCreada.id}
+              </button>
+              <button
+                onClick={()=>setObraCreada(null)}
+                style={{...B("#f1f5f9","#475569"),fontSize:12,padding:"9px 16px"}}
+              >
+                Seguir cotizando
+              </button>
+            </div>
+          </div>
+        )}
         <div style={{...CD,marginBottom:18,padding:"18px 22px"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:16,flexWrap:"wrap"}}>
             <div style={{minWidth:240}}>

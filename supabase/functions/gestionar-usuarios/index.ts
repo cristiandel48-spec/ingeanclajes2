@@ -42,6 +42,9 @@ async function enviarBienvenida({ nombre, email, clave }: {
     "lo hagas, queda escrita en este correo y cualquiera que abra tu bandeja",
     "podría entrar al sistema con ella.",
     "",
+    "Para cambiarla: entra al sistema, haz clic en tu correo arriba a la derecha",
+    "y elige «Cambiar mi contraseña».",
+    "",
     "Si no esperabas este mensaje, avísanos y damos de baja la cuenta.",
     "",
     "Ingeanclajes S.A.S.",
@@ -62,6 +65,10 @@ async function enviarBienvenida({ nombre, email, clave }: {
       <p style="background:#FFFAF0;border:1px solid #FDE3C4;border-radius:8px;padding:12px 14px;color:#B54708">
         <strong>Cambia esta contraseña la primera vez que entres.</strong> Mientras no lo hagas,
         queda escrita en este correo y cualquiera que abra tu bandeja podría entrar al sistema con ella.
+      </p>
+      <p>
+        <strong>Para cambiarla:</strong> entra al sistema, haz clic en tu correo arriba a la derecha
+        y elige <strong>«Cambiar mi contraseña»</strong>.
       </p>
       <p style="color:#667085;font-size:13px">Si no esperabas este mensaje, avísanos y damos de baja la cuenta.</p>
       <p style="color:#667085;font-size:13px">Ingeanclajes S.A.S.</p>

@@ -168,6 +168,19 @@ La contraseña viaja escrita en ese correo y se queda en la bandeja de entrada
 de quien lo recibe. El mensaje le insiste en que la cambie al entrar; conviene
 recordárselo también de palabra.
 
+**Cómo cambia su contraseña la persona:** entra al sistema, hace clic en su
+correo arriba a la derecha y elige **«Cambiar mi contraseña»**. No necesita
+pedírselo a nadie. El correo de bienvenida se lo explica.
+
+Si no puede entrar, el **«¿Olvidaste tu contraseña?»** de la pantalla de acceso
+le manda un enlace; al abrirlo entra al sistema y usa esa misma opción del menú.
+
+> Ese correo de recuperación lo envía Supabase, no la cuenta de la empresa, y
+> en el plan gratuito viene muy limitado (unos pocos por hora). Para que salga
+> desde `sistemasingeanclajes@gmail.com` y sin ese tope, hay que poner la misma
+> contraseña de aplicación en **Project Settings → Authentication → SMTP
+> Settings**. Es la misma que ya está en los secretos.
+
 **Quitar acceso:**
 
 - **Suspender** — deja de entrar de inmediato, se puede reactivar. Es el

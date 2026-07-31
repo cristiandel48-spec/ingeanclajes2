@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import Av from "../ui/Av";
+import CambiarMiClave from "./CambiarMiClave";
 import * as backend from "../../lib/backend";
 
-// Muestra quien esta conectado y permite cerrar sesion.
+// Muestra quien esta conectado, deja cambiar la propia contrasena y salir.
 // Antes solo se podia salir cerrando la pestana, y el nombre estaba escrito
 // a mano en el codigo: no habia forma de saber con que cuenta se entro.
 export default function MenuUsuario({ theme, compact = false }) {
   const [abierto, setAbierto] = useState(false);
   const [correo, setCorreo] = useState("");
   const [saliendo, setSaliendo] = useState(false);
+  const [cambiandoClave, setCambiandoClave] = useState(false);
   const contenedorRef = useRef(null);
 
   useEffect(() => {
@@ -109,6 +111,24 @@ export default function MenuUsuario({ theme, compact = false }) {
 
           <button
             role="menuitem"
+            onClick={() => { setAbierto(false); setCambiandoClave(true); }}
+            style={{
+              width: "100%", minHeight: 44, display: "flex", alignItems: "center", gap: 10,
+              padding: "0 14px", border: "none", cursor: "pointer",
+              borderBottom: `1px solid ${theme.divider}`,
+              background: "transparent", color: theme.text,
+              fontSize: 13, fontWeight: 600, fontFamily: "inherit", textAlign: "left",
+            }}
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="4" y="10.5" width="16" height="10" rx="2"/>
+              <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/>
+            </svg>
+            Cambiar mi contraseña
+          </button>
+
+          <button
+            role="menuitem"
             onClick={cerrarSesion}
             disabled={saliendo}
             style={{
@@ -126,6 +146,8 @@ export default function MenuUsuario({ theme, compact = false }) {
           </button>
         </div>
       )}
+
+      {cambiandoClave && <CambiarMiClave onCerrar={() => setCambiandoClave(false)} />}
     </div>
   );
 }

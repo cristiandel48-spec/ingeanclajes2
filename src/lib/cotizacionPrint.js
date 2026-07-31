@@ -435,10 +435,10 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
             <div class="cover-client-name">${escapeHtml(c?.cliente || "")}</div>
             ${c?.nit ? `<div class="cover-client-nit tnum">NIT ${escapeHtml(c.nit)}</div>` : ""}
             <div class="cover-client-grid">
-              <div><span>Obra:</span> ${escapeHtml(c?.obra || "")}</div>
-              <div><span>Ciudad:</span> ${escapeHtml(c?.ciudad || "")}</div>
-              <div><span>Contacto:</span> ${escapeHtml(c?.contacto || c?.cliente || "")}</div>
-              <div><span>Teléfono:</span> ${escapeHtml(c?.telefono || "")}</div>
+              <div><div class="ccg-k">Obra</div><div class="ccg-v">${escapeHtml(c?.obra || "")}</div></div>
+              <div><div class="ccg-k">Ciudad</div><div class="ccg-v">${escapeHtml(c?.ciudad || "")}</div></div>
+              <div><div class="ccg-k">Contacto</div><div class="ccg-v">${escapeHtml(c?.contacto || c?.cliente || "")}</div></div>
+              <div><div class="ccg-k">Teléfono</div><div class="ccg-v tnum">${escapeHtml(c?.telefono || "")}</div></div>
             </div>
           </div>
           <div class="cover-foot">
@@ -742,11 +742,14 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
       .cover-client { margin-top:10mm; text-align:center; }
       .cover-client-name { font-size: var(--titulo); font-weight:700; margin:2mm 0 1.5mm; font-family:'Source Serif 4', Georgia, serif; }
       .cover-client-nit { font-size: var(--texto); color:#667085; margin-bottom:4mm; letter-spacing:.02em; }
-      /* Los datos del cliente van en negrita y en negro: son lo que primero
-         busca quien recibe el documento. La etiqueta queda en gris y en peso
-         normal, para que resalte el dato y no el rotulo. */
-      .cover-client-grid { display:inline-grid; grid-template-columns:repeat(2,auto); gap:2mm 12mm; font-size: var(--texto); color:#1E1E1E; font-weight:700; line-height:1.6; text-align:left; }
-      .cover-client-grid span { color:#777; font-weight:400; }
+      /* Los datos del cliente son lo primero que busca quien recibe el
+         documento, asi que van con el mismo peso y tamano que las demas
+         cifras destacadas de la portada (.meta-value). En negrita a 11.5px no
+         se distinguian del rotulo. La etiqueta pasa arriba, pequena y en gris,
+         para que la vista caiga en el dato. */
+      .cover-client-grid { display:inline-grid; grid-template-columns:repeat(2,auto); gap:4mm 14mm; text-align:left; }
+      .ccg-k { font-size: var(--texto); letter-spacing:.08em; text-transform:uppercase; color:#777; margin-bottom:.8mm; }
+      .ccg-v { font-size: var(--titulo); font-weight:700; color:#1E1E1E; line-height:1.3; }
       .cover-foot { margin-top:12mm; padding-top:4mm; border-top:1px solid #DDD; display:flex; justify-content:space-between; font-size: var(--texto); color:#777; }
 
       .def-list { border-top:1px solid #DDD; max-width:170mm; margin:0 auto; }

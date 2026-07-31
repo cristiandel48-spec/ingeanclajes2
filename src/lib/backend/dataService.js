@@ -62,9 +62,13 @@ function isMissingColumnError(error) {
 }
 
 export async function resolveTenantId(supabase, preferredSlug) {
+  // El orden importa: sin ORDER BY, Postgres puede devolver las membresias
+  // en distinto orden entre peticiones. Con mas de una empresa eso hacia que
+  // se guardara en una y se leyera de otra, y los datos "desaparecian".
   const { data: memberships, error: membershipsError } = await supabase
     .from("memberships")
-    .select("tenant_id, role");
+    .select("tenant_id, role")
+    .order("created_at", { ascending: true });
 
   if (membershipsError) throw membershipsError;
   if (!memberships?.length) {
@@ -87,6 +91,13 @@ export async function resolveTenantId(supabase, preferredSlug) {
     if (tenantBySlug && tenantIds.includes(tenantBySlug.id)) {
       return tenantBySlug.id;
     }
+
+    // Antes se caia en silencio a otra empresa: se escribian datos donde no
+    // correspondia y despues no aparecian. Es preferible fallar a la vista.
+    throw new Error(
+      `La empresa configurada ("${preferredSlug}") no existe o tu usuario no tiene acceso a ella. ` +
+      "Revisa VITE_SUPABASE_TENANT_SLUG y la fila en app.memberships."
+    );
   }
 
   return memberships[0].tenant_id;

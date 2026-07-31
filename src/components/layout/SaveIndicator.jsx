@@ -3,7 +3,11 @@ import { useAppData } from "../../context/AppDataContext";
 // Muestra si los cambios estan guardados en la nube. Es la senal que faltaba:
 // antes un fallo de red solo quedaba en la consola del navegador.
 export default function SaveIndicator({ theme, compact = false }) {
-  const { saveState, lastSavedAt, hasPendingChanges, loadError, reintentarGuardado } = useAppData();
+  const { saveState, lastSavedAt, hasPendingChanges, loadError, saveError, reintentarGuardado } = useAppData();
+
+  // El motivo real del fallo: sin esto habia que abrir la consola del
+  // navegador para saber por que no guardaba.
+  const motivo = String(saveError?.message || saveError || "").trim();
 
   const hora = lastSavedAt
     ? lastSavedAt.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })
@@ -23,8 +27,11 @@ export default function SaveIndicator({ theme, compact = false }) {
     estado = {
       tipo: "error",
       texto: "Cambios sin guardar",
-      detalle: "Reintentando automáticamente. Toca para reintentar ahora.",
+      detalle: motivo
+        ? `${motivo} · Reintentando automáticamente. Toca para reintentar ahora.`
+        : "Reintentando automáticamente. Toca para reintentar ahora.",
       accion: reintentarGuardado,
+      motivo,
     };
   } else if (saveState === "saving") {
     estado = { tipo: "activo", texto: "Guardando…" };
@@ -45,6 +52,26 @@ export default function SaveIndicator({ theme, compact = false }) {
 
   const esError = estado.tipo === "error";
 
+  // Cuando falla, el motivo se muestra debajo del indicador: la persona que
+  // usa la app no va a abrir la consola del navegador.
+  if (esError && estado.motivo && !compact) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3, flexShrink: 0 }}>
+        <Boton estado={estado} colores={colores} esError={esError} compact={compact} />
+        <div style={{
+          fontSize: 10.5, color: colores.fg, maxWidth: 320, textAlign: "right",
+          lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis",
+        }}>
+          {estado.motivo}
+        </div>
+      </div>
+    );
+  }
+
+  return <Boton estado={estado} colores={colores} esError={esError} compact={compact} />;
+}
+
+function Boton({ estado, colores, esError, compact }) {
   return (
     <button
       onClick={estado.accion}

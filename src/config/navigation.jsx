@@ -22,6 +22,7 @@ export const ICONS = {
   nomina: ico(<><rect x="2" y="6" width="20" height="12" rx="2.5"/><circle cx="12" cy="12" r="3"/><line x1="6" y1="9" x2="6" y2="9.01"/><line x1="18" y1="15" x2="18" y2="15.01"/></>),
   horarios: ico(<><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></>),
   financiero: ico(<><line x1="4" y1="20" x2="4" y2="10"/><line x1="10" y1="20" x2="10" y2="4"/><line x1="16" y1="20" x2="16" y2="13"/><line x1="21" y1="20" x2="3" y2="20"/></>),
+  usuarios: ico(<><circle cx="9" cy="8" r="3.4"/><path d="M2.5 20c0-3.5 2.9-5.8 6.5-5.8s6.5 2.3 6.5 5.8"/><circle cx="18.5" cy="6.5" r="2"/><path d="M18.5 11v4"/><path d="M16.5 13h4"/></>),
 };
 
 // Secciones del menu. `label` es el nombre visible; `short` se usa en la
@@ -58,6 +59,12 @@ export const NAV_SECTIONS = [
       { id: "nomina", label: "Nómina y empleados", short: "Nómina" },
       { id: "horarios", label: "Horarios" },
       { id: "financiero", label: "Informe financiero", short: "Financiero" },
+    ],
+  },
+  {
+    title: "Sistema",
+    items: [
+      { id: "usuarios", label: "Usuarios y permisos", short: "Usuarios" },
     ],
   },
 ];

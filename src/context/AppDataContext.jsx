@@ -19,6 +19,7 @@ import {
 
 const isSupabaseConfigured = backend.isSupabaseConfigured;
 const loadCloudAppData = backend.loadCloudAppData;
+const getMiMembresia = backend.getMiMembresia;
 const saveCloudAppData = backend.saveCloudAppData;
 
 const AppDataContext = createContext(null);
@@ -48,6 +49,8 @@ export function AppDataProvider({ children }) {
   const [nominasGeneradas, setNominasGeneradas] = useState(NOMINAS_GENERADAS_INIT);
   // Configuracion de empresa (firma escaneada). Una sola fila.
   const [empresaConfig, setEmpresaConfig] = useState([]);
+  // Rol y modulos de quien tiene la sesion abierta. null mientras carga.
+  const [membresia, setMembresia] = useState(null);
   const [cotDraft, setCotDraft] = useState(null);
 
   // Permite saltar a otra pantalla llevando contexto, por ejemplo "abre un
@@ -156,6 +159,14 @@ export function AppDataProvider({ children }) {
       }
 
       try {
+        // El rol decide que ve la persona, asi que se pide junto con los datos.
+        try {
+          const mia = await getMiMembresia();
+          if (!cancel) setMembresia(mia);
+        } catch (error) {
+          console.error("No se pudo leer el rol del usuario:", error);
+        }
+
         const cloud = await loadCloudAppData();
         if (cancel) return;
 
@@ -281,6 +292,7 @@ export function AppDataProvider({ children }) {
     asientosContables, setAsientosContables,
     nominasGeneradas, setNominasGeneradas,
     empresaConfig, setEmpresaConfig,
+    membresia,
     cotDraft, setCotDraft,
     intencion, irAPantalla, limpiarIntencion,
     saveAllToCloud,

@@ -1,5 +1,6 @@
 import { AppDataProvider, useAppData } from "./context/AppDataContext";
 import AppShell from "./components/layout/AppShell";
+import { puedeVer } from "./lib/permisos";
 import Dashboard from "./screens/Dashboard/Dashboard";
 import Cotizacion from "./screens/Cotizacion/Cotizacion";
 import ClientesDB from "./screens/Clientes/ClientesDB";
@@ -13,6 +14,7 @@ import Financiero from "./screens/Financiero/Financiero";
 import Nomina from "./screens/Nomina/Nomina";
 import Horarios from "./screens/Horarios/Horarios";
 import Vencimientos from "./screens/Vencimientos/Vencimientos";
+import Usuarios from "./screens/Usuarios/Usuarios";
 
 // Registro de pantallas. Las claves coinciden con los `id` de
 // config/navigation.jsx: para sumar una pantalla se agrega aqui y alli.
@@ -30,6 +32,7 @@ const SCREENS = {
   nomina: Nomina,
   horarios: Horarios,
   financiero: Financiero,
+  usuarios: Usuarios,
 };
 
 export default function App() {
@@ -42,11 +45,16 @@ export default function App() {
 
 function AppRoot() {
   const ctx = useAppData();
-  const { scr, setScr } = ctx;
-  const Screen = SCREENS[scr] || SCREENS.dashboard;
+  const { scr, setScr, membresia } = ctx;
+
+  // Si la persona no tiene acceso a la pantalla actual, cae al dashboard.
+  // Pasa al entrar por primera vez o si le quitan un modulo estando dentro.
+  const permitido = puedeVer(membresia, scr);
+  const destino = permitido ? scr : "dashboard";
+  const Screen = SCREENS[destino] || SCREENS.dashboard;
 
   return (
-    <AppShell scr={scr} onNavigate={setScr}>
+    <AppShell scr={destino} onNavigate={setScr}>
       <Screen ctx={ctx} go={setScr} />
     </AppShell>
   );

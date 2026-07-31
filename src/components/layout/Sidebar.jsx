@@ -1,6 +1,8 @@
 import { useState } from "react";
 import logoIngeanclajes from "../../assets/logo-ingeanclajes.jpeg";
 import { NAV_SECTIONS, ICONS } from "../../config/navigation";
+import { useAppData } from "../../context/AppDataContext";
+import { filtrarSecciones } from "../../lib/permisos";
 import { BRAND, RAIL_WIDTH, RAIL_WIDTH_EXPANDED } from "../../styles/shellTheme";
 
 // Navegacion lateral.
@@ -18,6 +20,10 @@ export default function Sidebar({
   onTogglePin,
 }) {
   const [hovered, setHovered] = useState(false);
+  // Cada quien ve solo sus modulos. Mientras la membresia carga se
+  // muestra el menu completo: no hay datos aun y evita un parpadeo.
+  const { membresia } = useAppData();
+  const secciones = membresia ? filtrarSecciones(NAV_SECTIONS, membresia) : NAV_SECTIONS;
 
   const open = isMobile ? true : pinned || hovered;
   const reservedWidth = pinned ? RAIL_WIDTH_EXPANDED : RAIL_WIDTH;
@@ -93,7 +99,7 @@ export default function Sidebar({
 
         {/* Secciones */}
         <div className="app-scroll" style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "4px 12px 12px" }}>
-          {NAV_SECTIONS.map((section, sectionIndex) => (
+          {secciones.map((section, sectionIndex) => (
             <div key={section.title} style={{ marginBottom: 6 }}>
               {showLabels ? (
                 <div style={{

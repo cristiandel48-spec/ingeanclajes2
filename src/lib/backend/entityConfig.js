@@ -580,6 +580,25 @@ export const entityConfig = {
       notas: row.notas,
     }),
   },
+  // Configuracion general de la empresa: una sola fila por tenant. Marcada
+  // como opcional para que la app siga funcionando si aun no se aplico la
+  // migracion 023.
+  empresa_config: {
+    table: "empresa_config",
+    optional: true,
+    toRow: (item) => ({
+      id: item.id,
+      firma_img: item.firmaImg ?? null,
+      firma_nombre: item.firmaNombre ?? null,
+      firma_cargo: item.firmaCargo ?? null,
+    }),
+    fromRow: (row) => ({
+      id: row.id,
+      firmaImg: row.firma_img ?? "",
+      firmaNombre: row.firma_nombre ?? "",
+      firmaCargo: row.firma_cargo ?? "",
+    }),
+  },
   contabilidad_config: {
     table: "contabilidad_config",
     coerceNullCols: ["uvt"],

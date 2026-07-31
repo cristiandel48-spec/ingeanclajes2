@@ -9,7 +9,7 @@ import { downloadGeneratedFile } from "./download";
 import { getTextosDocumento, lineasDeTexto } from "./cotizacionTextos";
 import articoLineaVidaVertical from "../assets/artico-linea-vida-vertical.jpg";
 
-export function buildCotizacionPrintHtml(c){
+export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
   const propuestas = getQuotePrintableProposals(c);
   const textoInicial = String(c?.textoInicial || "").trim();
   const textos = getTextosDocumento(c);
@@ -594,7 +594,7 @@ export function buildCotizacionPrintHtml(c){
       </div>
       <div>
         <div class="card-label block-label">Cordialmente</div>
-        <div class="sig-space"></div>
+        <div class="sig-space">${firmaImg ? `<img class="sig-img" src="${escapeHtml(firmaImg)}" alt=""/>` : ""}</div>
         <div class="sig-name">${escapeHtml(textos.firmaNombre)}</div>
         <div class="sig-role">${escapeHtml(textos.firmaCargo)}</div>
         <div class="sig-meta">${lineasDeTexto(textos.firmaDetalle).map((l)=>escapeHtml(l)).join("<br/>")}</div>
@@ -827,7 +827,8 @@ export function buildCotizacionPrintHtml(c){
       .steps-list { margin:0; padding-left:17px; font-size: var(--texto); line-height:1.8; color:#2A2A2A; }
       .contact-box { margin-top:5mm; padding:4mm 5mm; background:#F4F4F2; border:1px solid #DDD; }
       .contact-line { font-size: var(--texto); line-height:1.6; }
-      .sig-space { height:14mm; border-bottom:1px solid #1E1E1E; margin-bottom:3mm; }
+      .sig-space { height:14mm; border-bottom:1px solid #1E1E1E; margin-bottom:3mm; display:flex; align-items:flex-end; }
+      .sig-img { max-height:13mm; max-width:60mm; object-fit:contain; }
       .sig-name { font-size: var(--titulo); font-weight:600; font-family:'Source Serif 4', Georgia, serif; }
       .sig-role { font-size: var(--texto); color:#333; margin-top:.6mm; }
       .sig-meta { font-size: var(--texto); color:#666; margin-top:2mm; line-height:1.65; }
@@ -950,9 +951,9 @@ async function normalizeCotizacionForPrint(c={}){
   return clone;
 }
 
-export async function openCotizacionPrint(c){
+export async function openCotizacionPrint(c, { firmaImg = "" } = {}){
   const printable = await normalizeCotizacionForPrint(c);
-  const html = buildCotizacionPrintHtml(printable);
+  const html = buildCotizacionPrintHtml(printable, { firmaImg });
   openPrintTab(html, "Cotización " + (c?.numero || c?.id || ""));
 }
 

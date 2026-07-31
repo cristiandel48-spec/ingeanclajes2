@@ -46,6 +46,8 @@ export function AppDataProvider({ children }) {
   const [planCuentas, setPlanCuentas] = useState(PLAN_CUENTAS_INIT);
   const [asientosContables, setAsientosContables] = useState(ASIENTOS_CONTABLES_INIT);
   const [nominasGeneradas, setNominasGeneradas] = useState(NOMINAS_GENERADAS_INIT);
+  // Configuracion de empresa (firma escaneada). Una sola fila.
+  const [empresaConfig, setEmpresaConfig] = useState([]);
   const [cotDraft, setCotDraft] = useState(null);
 
   // Permite saltar a otra pantalla llevando contexto, por ejemplo "abre un
@@ -92,6 +94,7 @@ export function AppDataProvider({ children }) {
     planCuentas,
     asientosContables,
     nominasGeneradasCloud: nominasGeneradas,
+    empresaConfig,
   });
 
   payloadRef.current = buildCloudPayload;
@@ -176,6 +179,7 @@ export function AppDataProvider({ children }) {
         if (Array.isArray(cloud.asientosContables)) {
           setAsientosContables(cloud.asientosContables.map((entry) => normalizeAsientoContable(entry, cloud.planCuentas?.length ? cloud.planCuentas.map(normalizePlanCuenta) : PLAN_CUENTAS_INIT)));
         }
+        if (Array.isArray(cloud.empresaConfig)) setEmpresaConfig(cloud.empresaConfig);
         if (Array.isArray(cloud.nominasGeneradasCloud)) {
           setNominasGeneradas(cloud.nominasGeneradasCloud.map(normalizeNominaGeneratedRecord));
         }
@@ -256,6 +260,7 @@ export function AppDataProvider({ children }) {
     planCuentas,
     asientosContables,
     nominasGeneradas,
+    empresaConfig,
   ]);
 
   const value = {
@@ -275,6 +280,7 @@ export function AppDataProvider({ children }) {
     planCuentas, setPlanCuentas,
     asientosContables, setAsientosContables,
     nominasGeneradas, setNominasGeneradas,
+    empresaConfig, setEmpresaConfig,
     cotDraft, setCotDraft,
     intencion, irAPantalla, limpiarIntencion,
     saveAllToCloud,

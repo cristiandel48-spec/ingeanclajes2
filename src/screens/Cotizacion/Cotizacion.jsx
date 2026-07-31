@@ -1,4 +1,5 @@
 import Badge from "../../components/ui/Badge";
+import FirmaEmpresa from "../../components/FirmaEmpresa";
 import CotizacionPrint from "./CotizacionPrint";
 import DocumentoEnVivo from "./DocumentoEnVivo";
 import PropuestaEditor from "./PropuestaEditor";
@@ -12,8 +13,10 @@ import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_INCLUYE_PUNTOS_ANCLAJE, DEFAULT_COT
 import { buildQuoteProposal, createQuoteProposalId, getQuoteActiveProposal, getQuoteApprovalAccountingSnapshot, getQuoteProposalLabel, getQuoteProposals, hasAnchorPointsService, normalizeProposalItems, normalizeQuoteItems } from "../../lib/cotizaciones";
 import { scrollAppToTop, today } from "../../lib/format";
 import { normalizeEntityKey, openCotizacionPrint } from "../../lib/cotizacionPrint";
+import { getFirmaImg } from "../../lib/firmaEmpresa";
 export default function Cotizacion({ctx}){
-  const {cotizaciones,setCotizaciones,obras,setObras}=ctx;
+  const {cotizaciones,setCotizaciones,obras,setObras,empresaConfig}=ctx;
+  const firmaImg=getFirmaImg(empresaConfig);
   const [tab,setTab]=useState("lista");
   const [previewCot,setPreviewCot]=useState(null);
   // Vista previa del documento junto al formulario, para revisar los textos
@@ -259,7 +262,7 @@ export default function Cotizacion({ctx}){
 
   if(tab==="lista"){
     if(previewCot){
-      return <div style={{padding:28}}><H1 title={`Cotización ${previewCot.numero || previewCot.id}`} subtitle="Vista completa del documento comercial" action={<div style={{display:"flex",gap:10}}><button style={B("#f1f5f9","#475569")} onClick={()=>setPreviewCot(null)}>Volver</button><button style={B("#dbeafe","#1e40af")} onClick={()=>{setEditCot(previewCot.id);hydrate(previewCot);setTab("form");setPreviewCot(null);}}>Editar</button><button style={B("#f47c20")} onClick={()=>openCotizacionPrint(previewCot)}>Imprimir PDF</button></div>}/><CotizacionPrint c={previewCot}/></div>;
+      return <div style={{padding:28}}><H1 title={`Cotización ${previewCot.numero || previewCot.id}`} subtitle="Vista completa del documento comercial" action={<div style={{display:"flex",gap:10}}><button style={B("#f1f5f9","#475569")} onClick={()=>setPreviewCot(null)}>Volver</button><button style={B("#dbeafe","#1e40af")} onClick={()=>{setEditCot(previewCot.id);hydrate(previewCot);setTab("form");setPreviewCot(null);}}>Editar</button><button style={B("#f47c20")} onClick={()=>openCotizacionPrint(previewCot,{firmaImg})}>Imprimir PDF</button></div>}/><CotizacionPrint c={previewCot}/></div>;
     }
     return (
       <div style={{padding:28}}>
@@ -372,7 +375,7 @@ export default function Cotizacion({ctx}){
                           <button style={{...B("#dbeafe","#1e40af"),fontSize:10,padding:"5px 10px"}} onClick={()=>setPreviewCot(cotizacion)}>Ver</button>
                           <button style={{...B("#1a3050","#f5c842"),fontSize:10,padding:"5px 10px"}} onClick={()=>{setEditCot(cotizacion.id);hydrate(cotizacion);setTab("form");}}>Editar</button>
                           {cotizacion.estado!=="Aprobada" && <button style={{...B("#0f2d1a","#4ade80"),border:"1px solid #166534",fontSize:10,padding:"5px 10px"}} onClick={()=>aprobarCotizacion(cotizacion.id)}>Aprobar y crear obra</button>}
-                          <button style={{...B("#2d1414","#ef4444"),fontSize:10,padding:"5px 10px"}} onClick={()=>openCotizacionPrint(cotizacion)}>PDF</button>
+                          <button style={{...B("#2d1414","#ef4444"),fontSize:10,padding:"5px 10px"}} onClick={()=>openCotizacionPrint(cotizacion,{firmaImg})}>PDF</button>
                           <button
                             style={{...B("#fff","#ef4444"),border:"1.5px solid #ef4444",fontSize:10,padding:"5px 10px"}}
                             onClick={()=>{
@@ -573,6 +576,7 @@ export default function Cotizacion({ctx}){
           <div><LBL>Firma — nombre</LBL><input value={textosDocumento.firmaNombre} onChange={e=>setTexto("firmaNombre",e.target.value)} style={SI}/></div>
           <div><LBL>Firma — cargo</LBL><input value={textosDocumento.firmaCargo} onChange={e=>setTexto("firmaCargo",e.target.value)} style={SI}/></div>
         </div>
+        <FirmaEmpresa/>
         <div style={{marginTop:12}}>
           <LBL>Firma — datos adicionales (uno por línea)</LBL>
           <textarea
@@ -611,6 +615,7 @@ export default function Cotizacion({ctx}){
       {verDocumento && (
         <DocumentoEnVivo
           cotizacion={cotizacionEnVivo}
+          firmaImg={firmaImg}
           alto={cabeEnDosColumnas ? "calc(100vh - 210px)" : "calc(100vh - 260px)"}
         />
       )}

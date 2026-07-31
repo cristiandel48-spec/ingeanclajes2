@@ -1,6 +1,10 @@
+import { useAppData } from "../../context/AppDataContext";
+import { getFirmaImg } from "../../lib/firmaEmpresa";
 import PrintHeader from "../../components/print/PrintHeader";
 import { fmtL } from "../../lib/format";
 export default function CertificacionDocumento({cert}){
+  const {empresaConfig}=useAppData();
+  const firmaImg=getFirmaImg(empresaConfig);
   if(!cert) return null;
   const esRecertificacion = cert.tipo==="Recertificación";
   const elementos = Array.isArray(cert.elementos) ? cert.elementos : [];
@@ -55,7 +59,9 @@ export default function CertificacionDocumento({cert}){
         </div>
       </div>
       <div style={{marginBottom:12,fontSize:12}}>Cordialmente,</div>
-      <div style={{height:72}}></div>
+      <div style={{height:72,display:"flex",alignItems:"flex-end"}}>
+        {firmaImg && <img src={firmaImg} alt="" style={{maxHeight:70,maxWidth:230,objectFit:"contain"}}/>}
+      </div>
       <div>
         <div style={{borderTop:"1px solid #333",paddingTop:10,display:"inline-block",minWidth:240}}>
           <div style={{fontWeight:700}}>{cert.ingeniero}</div>

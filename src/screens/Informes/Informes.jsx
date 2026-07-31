@@ -1,3 +1,4 @@
+import { getFirmaImg } from "../../lib/firmaEmpresa";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
 import PrintHeader from "../../components/print/PrintHeader";
@@ -6,7 +7,8 @@ import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmtD, fmtL, today } from "../../lib/format";
 import { printCurrentPz } from "../../lib/print";
 export default function Informes({ctx}){
-  const {informes,setInformes,obras,empleados,horarios,intencion,limpiarIntencion}=ctx;
+  const {informes,setInformes,obras,empleados,horarios,intencion,limpiarIntencion,empresaConfig}=ctx;
+  const firmaImg=getFirmaImg(empresaConfig);
   const [sel,setSel]=useState(null);
   const [nuevo,setNuevo]=useState(()=>Boolean(ctx.intencion?.pantalla==="informes" && ctx.intencion?.obraId));
   const [editId,setEditId]=useState(null);
@@ -375,7 +377,9 @@ export default function Informes({ctx}){
             </table>
             <div style={{marginTop:24}}>
               <div style={{marginBottom:12,fontSize:12}}>Cordialmente,</div>
-              <div style={{height:72}}></div>
+              <div style={{height:72,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+                {firmaImg && <img src={firmaImg} alt="" style={{maxHeight:70,maxWidth:230,objectFit:"contain"}}/>}
+              </div>
               <div style={{textAlign:"center"}}>
                 <div style={{display:"inline-block",borderTop:"1px solid #333",paddingTop:8,minWidth:200}}>
                   <div style={{fontWeight:700}}>ING. JHON JAIME SEPULVEDA LONDOÑO</div>

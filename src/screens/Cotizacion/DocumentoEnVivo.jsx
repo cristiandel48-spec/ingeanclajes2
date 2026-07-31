@@ -8,11 +8,12 @@ const ANCHO_HOJA = 816;
 // Vista previa del documento tal como saldra impreso, actualizada mientras se
 // escribe. Usa la MISMA plantilla del PDF, no una version resumida: lo que se
 // ve aqui es exactamente lo que se imprime.
-export default function DocumentoEnVivo({ cotizacion, alto = "calc(100vh - 220px)" }) {
+export default function DocumentoEnVivo({ cotizacion, firmaImg = "", alto = "calc(100vh - 220px)" }) {
   const contenedorRef = useRef(null);
   // Referencia siempre fresca: el efecto se dispara por contenido, pero debe
   // generar el documento con el objeto completo (imagenes incluidas).
   const cotizacionRef = useRef(cotizacion);
+  const firmaRef = useRef(firmaImg);
   const [html, setHtml] = useState("");
   const [escala, setEscala] = useState(1);
   const [error, setError] = useState(null);
@@ -26,14 +27,14 @@ export default function DocumentoEnVivo({ cotizacion, alto = "calc(100vh - 220px
   );
 
   // Se actualiza tras cada commit, nunca durante el render.
-  useEffect(() => { cotizacionRef.current = cotizacion; });
+  useEffect(() => { cotizacionRef.current = cotizacion; firmaRef.current = firmaImg; });
 
   // Regenerar el documento es costoso, asi que se espera a que la persona
   // deje de escribir.
   useEffect(() => {
     const id = setTimeout(() => {
       try {
-        setHtml(buildCotizacionPrintHtml(cotizacionRef.current));
+        setHtml(buildCotizacionPrintHtml(cotizacionRef.current, { firmaImg: firmaRef.current }));
         setError(null);
       } catch (e) {
         console.error("No se pudo generar la vista previa:", e);
@@ -41,7 +42,7 @@ export default function DocumentoEnVivo({ cotizacion, alto = "calc(100vh - 220px
       }
     }, 450);
     return () => clearTimeout(id);
-  }, [clave]);
+  }, [clave, firmaImg]);
 
   // Ajusta el zoom al ancho disponible del panel.
   useEffect(() => {

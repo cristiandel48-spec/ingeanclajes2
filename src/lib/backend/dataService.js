@@ -40,24 +40,53 @@ function getErrorText(error) {
     .toLowerCase();
 }
 
+// Errores de DATOS: la tabla y las columnas existen, lo que la base rechaza es
+// el contenido de la fila. Nunca se deben confundir con "falta la tabla",
+// porque en las entidades opcionales eso los hacia desaparecer en silencio:
+// el guardado fallaba, no se avisaba y el indicador decia "Guardado".
+//
+// Paso de verdad: una cotizacion de puntos de anclaje daba 23514 (violacion de
+// CHECK). El mensaje de Postgres es 'new row for relation "cotizaciones"
+// violates check constraint ...', y como el clasificador solo buscaba la
+// palabra "relation" en el texto, lo tomaba por tabla inexistente.
+const DATA_ERROR_CODES = new Set([
+  "23502", // not null
+  "23503", // clave foranea
+  "23505", // clave duplicada
+  "23514", // restriccion CHECK
+  "22P02", // sintaxis de entrada invalida
+  "22007", // formato de fecha invalido
+  "42501", // permisos / RLS
+]);
+
+function isDataError(error) {
+  return DATA_ERROR_CODES.has(String(error?.code ?? ""));
+}
+
+// La tabla no existe todavia (migracion sin aplicar). PostgREST responde
+// PGRST205; Postgres, 42P01. El texto solo se consulta cuando no hay codigo,
+// y con frases completas, no con palabras sueltas.
 function isMissingRelationError(error) {
+  if (isDataError(error)) return false;
+  if (error?.code === "PGRST205" || error?.code === "42P01") return true;
+  if (error?.code) return false;
   const text = getErrorText(error);
   return (
-    error?.code === "PGRST205" ||
-    error?.code === "42P01" ||
-    text.includes("relation") ||
-    text.includes("does not exist") ||
-    text.includes("schema cache")
+    text.includes("could not find the table") ||
+    /relation ".*" does not exist/.test(text)
   );
 }
 
+// Falta una columna concreta (esquema viejo). Habilita el reintento con la
+// fila legada, que trae menos columnas.
 function isMissingColumnError(error) {
+  if (isDataError(error)) return false;
+  if (error?.code === "PGRST204" || error?.code === "42703") return true;
+  if (error?.code) return false;
   const text = getErrorText(error);
   return (
-    error?.code === "PGRST204" ||
-    error?.code === "42703" ||
-    text.includes("column") ||
-    text.includes("schema cache")
+    (text.includes("could not find the") && text.includes("column")) ||
+    /column ".*" does not exist/.test(text)
   );
 }
 

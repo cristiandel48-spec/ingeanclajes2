@@ -37,15 +37,22 @@ export default function Cotizacion({ctx}){
   const [propuestas,setPropuestas]=useState([buildQuoteProposal({id:createQuoteProposalId("new"),nombre:getQuoteProposalLabel(0),formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,util:10,items:[],incluyeTexto:""},0)]);
   const [propuestaActivaId,setPropuestaActivaId]=useState(null);
 
+  // Numeracion real de la empresa: C-26115, C-26116, ... Si la base esta
+  // vacia se arranca desde el ultimo numero emitido a mano, para no repetir
+  // consecutivos ya entregados a clientes.
+  const PRIMER_CONSECUTIVO = 26116;
+
   const getNextCotizacionNumero = (list = []) => {
-    const maxAnc = (Array.isArray(list) ? list : []).reduce((max, cotizacion) => {
+    const ultimo = (Array.isArray(list) ? list : []).reduce((max, cotizacion) => {
       const numero = String(cotizacion?.numero || '').trim().toUpperCase();
-      const match = numero.match(/^ANC\s*-?\s*(\d+)$/);
+      // Acepta "C-26115" y tambien el formato viejo "ANC001".
+      const match = numero.match(/^C\s*-?\s*(\d+)$/) || numero.match(/^ANC\s*-?\s*(\d+)$/);
       if (!match) return max;
       return Math.max(max, Number(match[1] || 0));
     }, 0);
 
-    return `ANC${String(maxAnc + 1).padStart(3, "0")}`;
+    const siguiente = Math.max(ultimo + 1, PRIMER_CONSECUTIVO);
+    return `C-${siguiente}`;
   };
 
   // `propuestas` es la unica fuente de verdad: cada editor escribe ahi.

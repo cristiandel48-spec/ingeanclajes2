@@ -5,10 +5,18 @@ import { buildCotizacionPrintHtml } from "../../lib/cotizacionPrint";
 // asi que para que quepa en el panel se reduce con zoom.
 const ANCHO_HOJA = 816;
 
-// Vista previa del documento tal como saldra impreso, actualizada mientras se
-// escribe. Usa la MISMA plantilla del PDF, no una version resumida: lo que se
-// ve aqui es exactamente lo que se imprime.
-export default function DocumentoEnVivo({ cotizacion, firmaImg = "", alto = "calc(100vh - 220px)" }) {
+// Vista previa del documento tal como saldra impreso. Usa la MISMA plantilla
+// del PDF, no una version resumida: lo que se ve aqui es exactamente lo que se
+// imprime. Sirve para los dos casos: mientras se escribe la cotizacion y al
+// abrir una guardada con "Ver".
+export default function DocumentoEnVivo({
+  cotizacion,
+  firmaImg = "",
+  alto = "calc(100vh - 220px)",
+  titulo = "Documento como se imprimirá",
+  nota = "Se actualiza al escribir",
+  sticky = true,
+}) {
   const contenedorRef = useRef(null);
   // Referencia siempre fresca: el efecto se dispara por contenido, pero debe
   // generar el documento con el objeto completo (imagenes incluidas).
@@ -30,9 +38,11 @@ export default function DocumentoEnVivo({ cotizacion, firmaImg = "", alto = "cal
   useEffect(() => { cotizacionRef.current = cotizacion; firmaRef.current = firmaImg; });
 
   // Regenerar el documento es costoso, asi que se espera a que la persona
-  // deje de escribir.
+  // deje de escribir. La PRIMERA vez no se espera: al abrir "Ver" el documento
+  // debe aparecer de una, no medio segundo despues.
+  const yaHayDocumento = html !== "";
   useEffect(() => {
-    const id = setTimeout(() => {
+    const generar = () => {
       try {
         setHtml(buildCotizacionPrintHtml(cotizacionRef.current, { firmaImg: firmaRef.current }));
         setError(null);
@@ -40,8 +50,15 @@ export default function DocumentoEnVivo({ cotizacion, firmaImg = "", alto = "cal
         console.error("No se pudo generar la vista previa:", e);
         setError(e);
       }
-    }, 450);
+    };
+    if (!yaHayDocumento) {
+      generar();
+      return undefined;
+    }
+    const id = setTimeout(generar, 450);
     return () => clearTimeout(id);
+    // yaHayDocumento solo distingue el primer render; no debe reprogramar nada.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clave, firmaImg]);
 
   // Ajusta el zoom al ancho disponible del panel.
@@ -78,7 +95,7 @@ export default function DocumentoEnVivo({ cotizacion, firmaImg = "", alto = "cal
     <div
       ref={contenedorRef}
       style={{
-        position: "sticky",
+        position: sticky ? "sticky" : "static",
         top: 0,
         border: "1px solid #e2e8f0",
         borderRadius: 12,
@@ -93,10 +110,10 @@ export default function DocumentoEnVivo({ cotizacion, firmaImg = "", alto = "cal
         borderBottom: "1px solid #e2e8f0",
       }}>
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "#64748b" }}>
-          Documento como se imprimirá
+          {titulo}
         </div>
         <div style={{ fontSize: 10.5, color: "#94a3b8" }}>
-          {html ? "Se actualiza al escribir" : "Generando…"}
+          {html ? nota : "Generando…"}
         </div>
       </div>
 

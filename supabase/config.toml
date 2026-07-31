@@ -2,21 +2,10 @@
 
 project_id = "ktomujtqkitctdoznbmp"
 
-# La verificacion automatica de JWT del portal de Supabase rechazaba las
-# peticiones de la aplicacion con "INVALID_CREDENTIALS", antes de que la
-# funcion llegara a ejecutarse, pese a que la misma llave funciona contra la
-# base de datos y contra el login.
+# La verificacion de JWT del portal se deja ENCENDIDA (el valor por defecto).
+# La aplicacion envia el token de sesion de quien esta usando el sistema, asi
+# que pasa sin problema, y es una capa mas antes de llegar al codigo.
 #
-# Se apaga porque la funcion NO queda abierta: ella misma exige la sesion,
-# la valida contra Supabase y despues comprueba que quien llama sea
-# administrador de esa empresa. Sin todo eso responde 401 o 403.
-#
-# El nombre real es el que quedo al crearla, no el del archivo: en Supabase la
-# direccion de una funcion se fija al crearla y renombrarla no la cambia.
-[functions.smart-endpoint]
-verify_jwt = false
-
-# Si algun dia se vuelve a publicar con el nombre correcto, esta entrada ya
-# la deja lista.
-[functions.gestionar-usuarios]
-verify_jwt = false
+# Nota sobre el nombre: en Supabase la direccion de una funcion se fija al
+# crearla y renombrarla en el panel no la cambia. Esta quedo publicada como
+# smart-endpoint aunque en la lista se muestre como "gestionar-usuarios".

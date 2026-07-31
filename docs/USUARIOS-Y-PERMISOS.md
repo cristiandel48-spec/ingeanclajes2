@@ -52,23 +52,28 @@ No hay que configurar variables: Supabase le entrega las llaves sola.
 > VITE_SUPABASE_FUNCION_USUARIOS=el-nombre-que-quedo
 > ```
 
-### Apagar la verificación de JWT de la función
+### Comprueba que el código pegado sea el correcto
 
-Supabase pone un portal delante de las funciones que valida el token **antes**
-de ejecutarlas. En este proyecto ese portal rechaza la llave de la aplicación
-con `INVALID_CREDENTIALS` (401), aunque la misma llave funcione contra la base
-de datos y contra el login.
+Es el fallo más fácil de pasar por alto: el editor **deja su ejemplo puesto** y
+si se le da Deploy sin borrarlo, la función queda publicada con el código de
+muestra de Supabase, no con el nuestro.
 
-En el panel: **Edge Functions → la función → Settings** y apaga la opción de
-verificar el JWT ("Verify JWT with legacy secret" o similar).
+El ejemplo empieza así:
 
-Esto **no** deja la función abierta. Ella misma exige la sesión, la valida
-contra Supabase y comprueba que quien llama sea administrador de la empresa;
-sin eso responde 401 o 403. La verificación del portal era una segunda capa
-redundante, y es el patrón que la propia documentación de Supabase recomienda
-para funciones con autenticación propia.
+```ts
+fetch: withSupabase({ auth: ["publishable", "secret"] }, async (req, ctx) => {
+  const { name }: ReqPayload = await req.json();
+```
 
-Si despliegas con el CLI, ya queda puesto en `supabase/config.toml`.
+y rechaza a la aplicación con `INVALID_CREDENTIALS` (401), porque solo acepta
+llaves del formato nuevo y la aplicación envía el token de sesión.
+
+Para verificarlo: **Edge Functions → la función → pestaña Code**. La primera
+línea del archivo tiene que ser el comentario `// Crear y administrar las
+cuentas del equipo desde la propia aplicacion.`
+
+La verificación de JWT del portal se deja **encendida**: la aplicación manda el
+token de sesión y pasa sin problema.
 
 Si prefieres la terminal y tienes el CLI instalado:
 

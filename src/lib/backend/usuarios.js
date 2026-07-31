@@ -126,4 +126,5 @@ export const actualizarUsuario = (datos) => invocar("actualizar", datos);
 export const desactivarUsuario = (userId) => invocar("desactivar", { userId });
 export const reactivarUsuario = (userId) => invocar("reactivar", { userId });
 export const eliminarUsuario = (userId) => invocar("eliminar", { userId });
-export const cambiarClave = (userId, clave) => invocar("clave", { userId, clave });
+export const cambiarClave = (userId, clave, extra = {}) =>
+  invocar("clave", { userId, clave, ...extra });

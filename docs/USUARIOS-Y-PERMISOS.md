@@ -86,6 +86,39 @@ equipo pero al crear a alguien avisa que falta publicar la función.
 
 ---
 
+## 2b. Conectar el correo de la empresa (opcional)
+
+Sirve para que, al crear un usuario, le lleguen sus datos por correo desde
+`sistemasingeanclajes@gmail.com`. Si no se configura, todo lo demás sigue
+funcionando: simplemente el sistema avisa que el correo no salió y Camila
+entrega los datos a mano.
+
+Gmail no acepta la contraseña normal para esto. Hay que generar una
+**contraseña de aplicación**:
+
+1. Entra a `myaccount.google.com` con la cuenta de la empresa
+2. **Seguridad** → activa la **verificación en dos pasos** (es requisito)
+3. Busca **Contraseñas de aplicaciones** y crea una nueva
+4. Google muestra 16 letras. Cópialas — no se vuelven a ver
+
+Después, en Supabase → **Edge Functions → Secrets**, agrega:
+
+| Nombre | Valor |
+|---|---|
+| `SMTP_USUARIO` | `sistemasingeanclajes@gmail.com` |
+| `SMTP_CLAVE` | las 16 letras de la contraseña de aplicación |
+
+Esa contraseña **solo vive en Supabase**, nunca en el navegador ni en el
+repositorio. Si algún día se filtra, se revoca desde la cuenta de Google sin
+tocar la contraseña real.
+
+Gmail permite unos 500 correos al día, de sobra para dar de alta al equipo.
+
+Si usas otro proveedor de correo, añade también `SMTP_SERVIDOR` y `SMTP_PUERTO`
+(por defecto `smtp.gmail.com` y `465`).
+
+---
+
 ## 3. Dejar a Camila como Administradora
 
 Solo el rol `admin` puede administrar el equipo. Ejecuta en **SQL Editor**,
@@ -125,6 +158,15 @@ El **Dashboard va siempre**, para que la persona tenga dónde llegar al entrar.
 
 **Usuarios y permisos no se puede marcar** para nadie más: si se pudiera,
 cualquiera con ese módulo se daría a sí mismo el resto.
+
+**El correo de bienvenida:** al crear a alguien hay una casilla para enviarle
+sus datos por correo. Va marcada por defecto. Si el envío falla, el sistema lo
+dice con todas sus letras y la cuenta queda creada igual, para que nadie se
+quede creyendo que la persona ya recibió sus claves.
+
+La contraseña viaja escrita en ese correo y se queda en la bandeja de entrada
+de quien lo recibe. El mensaje le insiste en que la cambie al entrar; conviene
+recordárselo también de palabra.
 
 **Quitar acceso:**
 

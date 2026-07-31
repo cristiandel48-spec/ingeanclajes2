@@ -13,7 +13,8 @@ import {
 } from "../../lib/backend/usuarios";
 
 const FORM_VACIO = {
-  nombre: "", email: "", clave: "", rol: "operator", modulos: [...MODULOS_MINIMOS],
+  nombre: "", email: "", clave: "", rol: "operator",
+  modulos: [...MODULOS_MINIMOS], enviarCorreo: true,
 };
 
 export default function Usuarios({ ctx }) {
@@ -56,6 +57,7 @@ export default function Usuarios({ ctx }) {
       clave: "",
       rol: u.role,
       modulos: u.modulos ?? [...MODULOS_MINIMOS],
+      enviarCorreo: true,
     });
     setEditId(u.user_id);
     setMensaje(null);
@@ -78,9 +80,21 @@ export default function Usuarios({ ctx }) {
     setGuardando(true);
     setMensaje(null);
     try {
-      await accion();
+      const res = await accion();
       await recargar();
-      setMensaje({ tono: "listo", texto: exito });
+      // Que el correo falle no invalida lo hecho, pero callarlo dejaria a
+      // Camila creyendo que la persona ya recibio sus datos.
+      const correo = res?.correo;
+      if (correo && !correo.enviado && correo.motivo !== "No se solicitó.") {
+        setMensaje({
+          tono: "falta",
+          texto: `${exito} Pero el correo NO salió (${correo.motivo}). Entrégale los datos tú misma.`,
+        });
+      } else if (correo?.enviado) {
+        setMensaje({ tono: "listo", texto: `${exito} Se le envió el correo con sus datos.` });
+      } else {
+        setMensaje({ tono: "listo", texto: exito });
+      }
       return true;
     } catch (e) {
       setMensaje({ tono: "falta", texto: e.message });
@@ -104,7 +118,10 @@ export default function Usuarios({ ctx }) {
 
     const ok = editId
       ? await ejecutar(() => actualizarUsuario({ ...datos, userId: editId }), "Cambios guardados.")
-      : await ejecutar(() => crearUsuario({ ...datos, clave: form.clave }), `Cuenta creada para ${datos.email}.`);
+      : await ejecutar(
+          () => crearUsuario({ ...datos, clave: form.clave, enviarCorreo: form.enviarCorreo }),
+          `Cuenta creada para ${datos.email}.`
+        );
 
     if (ok) { setAbierto(false); setEditId(null); }
   };
@@ -112,7 +129,14 @@ export default function Usuarios({ ctx }) {
   const nuevaClave = async (u) => {
     const clave = window.prompt(`Nueva contraseña para ${u.email}\n\nMínimo 8 caracteres. Anótala: no se puede volver a ver.`);
     if (!clave) return;
-    await ejecutar(() => cambiarClave(u.user_id, clave), `Contraseña cambiada para ${u.email}.`);
+    const avisar = window.confirm(`¿Enviarle la nueva contraseña por correo a ${u.email}?
+
+Aceptar: se la mandamos.
+Cancelar: se la entregas tú.`);
+    await ejecutar(
+      () => cambiarClave(u.user_id, clave, { email: u.email, nombre: u.nombre || "", enviarCorreo: avisar }),
+      `Contraseña cambiada para ${u.email}.`
+    );
   };
 
   const quitarAcceso = async (u) => {
@@ -170,9 +194,23 @@ export default function Usuarios({ ctx }) {
                 <LBL>Contraseña provisional</LBL>
                 <input value={form.clave} onChange={(e) => setForm({ ...form, clave: e.target.value })}
                   placeholder="Mínimo 8 caracteres" style={SI} />
-                <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 4 }}>
-                  Anótala y entrégasela. Ella puede cambiarla después.
-                </div>
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 7, marginTop: 7, fontSize: 11.5, color: "#334155", cursor: "pointer" }}>
+                  <input type="checkbox" checked={form.enviarCorreo} style={{ marginTop: 2 }}
+                    onChange={(e) => setForm({ ...form, enviarCorreo: e.target.checked })} />
+                  <span>
+                    Enviarle estos datos por correo desde la cuenta de la empresa.
+                    {form.enviarCorreo && (
+                      <span style={{ display: "block", color: "#94a3b8", marginTop: 3 }}>
+                        La contraseña queda escrita en su bandeja de entrada. El correo le pide cambiarla al entrar.
+                      </span>
+                    )}
+                    {!form.enviarCorreo && (
+                      <span style={{ display: "block", color: "#94a3b8", marginTop: 3 }}>
+                        Anótala y entrégasela tú.
+                      </span>
+                    )}
+                  </span>
+                </label>
               </div>
             )}
             <div>

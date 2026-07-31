@@ -11,6 +11,92 @@
 // function) o con:  supabase functions deploy gestionar-usuarios
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+
+// Correo de bienvenida. Sale desde la cuenta de la empresa, configurada como
+// secretos de la funcion (SMTP_USUARIO y SMTP_CLAVE). Si no estan puestos, la
+// creacion del usuario NO falla: solo se avisa que no se pudo enviar.
+async function enviarBienvenida({ nombre, email, clave }: {
+  nombre: string;
+  email: string;
+  clave: string;
+}) {
+  const usuario = Deno.env.get("SMTP_USUARIO");
+  const password = Deno.env.get("SMTP_CLAVE");
+  if (!usuario || !password) {
+    return { enviado: false, motivo: "Faltan los secretos SMTP_USUARIO y SMTP_CLAVE." };
+  }
+
+  const trato = nombre ? nombre.split(" ")[0] : "Hola";
+  const asunto = "Tu acceso al sistema de Ingeanclajes";
+
+  const texto = [
+    `${trato},`,
+    "",
+    "Te creamos una cuenta en el sistema de gestión de Ingeanclajes.",
+    "",
+    `Usuario: ${email}`,
+    `Contraseña provisional: ${clave}`,
+    "",
+    "IMPORTANTE: cambia esta contraseña la primera vez que entres. Mientras no",
+    "lo hagas, queda escrita en este correo y cualquiera que abra tu bandeja",
+    "podría entrar al sistema con ella.",
+    "",
+    "Si no esperabas este mensaje, avísanos y damos de baja la cuenta.",
+    "",
+    "Ingeanclajes S.A.S.",
+  ].join("\n");
+
+  const html = `
+    <div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1E1E1E;line-height:1.6;max-width:520px">
+      <p>${escapeHtml(trato)},</p>
+      <p>Te creamos una cuenta en el sistema de gestión de <strong>Ingeanclajes</strong>.</p>
+      <table cellpadding="0" cellspacing="0" style="margin:18px 0;border:1px solid #e2e8f0;border-radius:8px">
+        <tr><td style="padding:14px 18px">
+          <div style="font-size:12px;color:#777;text-transform:uppercase;letter-spacing:.06em">Usuario</div>
+          <div style="font-size:16px;font-weight:700">${escapeHtml(email)}</div>
+          <div style="font-size:12px;color:#777;text-transform:uppercase;letter-spacing:.06em;margin-top:12px">Contraseña provisional</div>
+          <div style="font-size:16px;font-weight:700">${escapeHtml(clave)}</div>
+        </td></tr>
+      </table>
+      <p style="background:#FFFAF0;border:1px solid #FDE3C4;border-radius:8px;padding:12px 14px;color:#B54708">
+        <strong>Cambia esta contraseña la primera vez que entres.</strong> Mientras no lo hagas,
+        queda escrita en este correo y cualquiera que abra tu bandeja podría entrar al sistema con ella.
+      </p>
+      <p style="color:#667085;font-size:13px">Si no esperabas este mensaje, avísanos y damos de baja la cuenta.</p>
+      <p style="color:#667085;font-size:13px">Ingeanclajes S.A.S.</p>
+    </div>
+  `;
+
+  const cliente = new SMTPClient({
+    connection: {
+      hostname: Deno.env.get("SMTP_SERVIDOR") ?? "smtp.gmail.com",
+      port: Number(Deno.env.get("SMTP_PUERTO") ?? 465),
+      tls: true,
+      auth: { username: usuario, password },
+    },
+  });
+
+  try {
+    await cliente.send({
+      from: `Ingeanclajes <${usuario}>`,
+      to: email,
+      subject: asunto,
+      content: texto,
+      html,
+    });
+    return { enviado: true };
+  } finally {
+    // Sin esto la funcion queda esperando a que cierre la conexion.
+    try { await cliente.close(); } catch { /* ya estaba cerrada */ }
+  }
+}
+
+function escapeHtml(v: string) {
+  return String(v ?? "").replace(/[&<>"']/g, (c) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string
+  ));
+}
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -135,7 +221,19 @@ Deno.serve(async (req) => {
         );
 
       if (errMembresia) return error(errMembresia.message, 500);
-      return responder({ ok: true, userId: nuevoId });
+
+      // El correo es lo ultimo y nunca tumba la creacion: la cuenta ya existe
+      // y quedarse sin avisar es mucho mejor que dejarla a medias.
+      let correo: { enviado: boolean; motivo?: string } = { enviado: false, motivo: "No se solicitó." };
+      if (cuerpo.enviarCorreo !== false) {
+        try {
+          correo = await enviarBienvenida({ nombre, email, clave });
+        } catch (e) {
+          correo = { enviado: false, motivo: e instanceof Error ? e.message : "Error al enviar." };
+        }
+      }
+
+      return responder({ ok: true, userId: nuevoId, correo });
     }
 
     if (!userId) return error("Falta indicar la persona.");
@@ -175,7 +273,19 @@ Deno.serve(async (req) => {
       if (clave.length < 8) return error("La contraseña debe tener al menos 8 caracteres.");
       const { error: err } = await admin.auth.admin.updateUserById(userId, { password: clave });
       if (err) return error(err.message, 500);
-      return responder({ ok: true });
+
+      // Cambiarle la clave a alguien sin avisarle lo deja fuera del sistema
+      // sin saber por que, asi que se le manda igual que al crearla.
+      let correo: { enviado: boolean; motivo?: string } = { enviado: false, motivo: "No se solicitó." };
+      if (cuerpo.enviarCorreo !== false && email) {
+        try {
+          correo = await enviarBienvenida({ nombre, email, clave });
+        } catch (e) {
+          correo = { enviado: false, motivo: e instanceof Error ? e.message : "Error al enviar." };
+        }
+      }
+
+      return responder({ ok: true, correo });
     }
 
     if (accion === "eliminar") {

@@ -66,15 +66,23 @@ async function invocar(accion, datos = {}) {
   // como FunctionsHttpError y el motivo util viene en el cuerpo.
   if (error) {
     let detalle = error.message;
+    let estado = error.context?.status ?? null;
     try {
       const cuerpo = await error.context?.json();
       if (cuerpo?.error) detalle = cuerpo.error;
     } catch { /* la respuesta no era JSON */ }
 
-    if (/not found|does not exist|404/i.test(detalle)) {
+    // supabase-js no distingue "la funcion no existe" de "no hubo red": las
+    // dos llegan como "Failed to send a request to the Edge Function". Como en
+    // la practica casi siempre es lo primero, se explica lo que hay que hacer
+    // en vez de dejar el mensaje original en ingles.
+    const noLlego = /failed to send a request/i.test(detalle);
+    if (estado === 404 || noLlego || /not found|does not exist/i.test(detalle)) {
       throw new Error(
-        "La función «gestionar-usuarios» no está publicada en Supabase. " +
-        "Míralo en docs/USUARIOS-Y-PERMISOS.md."
+        "No se pudo contactar la función «gestionar-usuarios» de Supabase. " +
+        "Suele ser porque todavía no está publicada: revisa que aparezca con ese " +
+        "nombre exacto en Supabase → Edge Functions. Los pasos están en " +
+        "docs/USUARIOS-Y-PERMISOS.md. Si ya está publicada, revisa tu conexión."
       );
     }
     throw new Error(detalle);

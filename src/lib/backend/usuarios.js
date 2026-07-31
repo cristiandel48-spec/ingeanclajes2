@@ -7,7 +7,12 @@
 import { getSupabaseClient } from "./supabaseClient";
 import { resolveTenantId } from "./dataService";
 
-const FUNCION = "gestionar-usuarios";
+// Nombre de la funcion de borde. En Supabase, la direccion de una funcion se
+// fija al crearla y despues no se puede cambiar: renombrarla en el panel solo
+// cambia la etiqueta que se ve, no la URL. Si la funcion quedo publicada con
+// otro nombre, se indica aqui con VITE_SUPABASE_FUNCION_USUARIOS en vez de
+// tener que borrarla y volverla a crear.
+const FUNCION = import.meta.env.VITE_SUPABASE_FUNCION_USUARIOS || "gestionar-usuarios";
 
 export async function getTenantIdActual() {
   const supabase = getSupabaseClient();
@@ -79,9 +84,11 @@ async function invocar(accion, datos = {}) {
     const noLlego = /failed to send a request/i.test(detalle);
     if (estado === 404 || noLlego || /not found|does not exist/i.test(detalle)) {
       throw new Error(
-        "No se pudo contactar la función «gestionar-usuarios» de Supabase. " +
+        "No se pudo contactar la función «" + FUNCION + "» de Supabase. " +
         "Suele ser porque todavía no está publicada: revisa que aparezca con ese " +
-        "nombre exacto en Supabase → Edge Functions. Los pasos están en " +
+        "nombre exacto en Supabase → Edge Functions, y que la URL que aparece " +
+        "ahí termine igual (el nombre visible y la dirección son distintos). " +
+        "Los pasos están en " +
         "docs/USUARIOS-Y-PERMISOS.md. Si ya está publicada, revisa tu conexión."
       );
     }

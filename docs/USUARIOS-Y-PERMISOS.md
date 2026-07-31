@@ -37,6 +37,21 @@ Supabase → **Edge Functions** → **Deploy a new function**
 
 No hay que configurar variables: Supabase le entrega las llaves sola.
 
+> **Ojo con el nombre.** El campo del nombre viene relleno con algo como
+> `smart-endpoint` y hay que cambiarlo **antes** de desplegar: la dirección de
+> la función se fija al crearla y después ya no cambia. Renombrarla en el panel
+> solo cambia la etiqueta que se ve en la lista, no la URL.
+>
+> Para comprobarlo, mira la columna **URL** en la lista de funciones: tiene que
+> terminar en `/gestionar-usuarios`. Si terminó en otra cosa, tienes dos
+> salidas: borrar la función y volver a crearla con el nombre correcto, o dejar
+> la que hay y decirle a la aplicación cómo se llama, añadiendo esta variable de
+> entorno (en `.env` y en Vercel):
+>
+> ```
+> VITE_SUPABASE_FUNCION_USUARIOS=el-nombre-que-quedo
+> ```
+
 Si prefieres la terminal y tienes el CLI instalado:
 
 ```bash

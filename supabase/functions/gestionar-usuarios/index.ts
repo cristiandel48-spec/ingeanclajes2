@@ -102,6 +102,12 @@ async function enviarBienvenida({ nombre, email, clave, appUrl }: {
     </div>
   `;
 
+  // El correo viaja en "quoted-printable", donde un espacio al final de linea
+  // se escribe =20. La sangria de la plantilla dejaba lineas de puros espacios
+  // y algunos clientes las mostraban tal cual, con los =20 a la vista. Se
+  // compacta a una sola linea para que no quede ninguno.
+  const htmlCompacto = html.replace(/\s*\n\s*/g, " ").trim();
+
   const cliente = new SMTPClient({
     connection: {
       hostname: Deno.env.get("SMTP_SERVIDOR") ?? "smtp.gmail.com",
@@ -117,7 +123,7 @@ async function enviarBienvenida({ nombre, email, clave, appUrl }: {
       to: email,
       subject: asunto,
       content: texto,
-      html,
+      html: htmlCompacto,
     });
     return { enviado: true };
   } finally {

@@ -742,8 +742,11 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
       .cover-client { margin-top:10mm; text-align:center; }
       .cover-client-name { font-size: var(--titulo); font-weight:700; margin:2mm 0 1.5mm; font-family:'Source Serif 4', Georgia, serif; }
       .cover-client-nit { font-size: var(--texto); color:#667085; margin-bottom:4mm; letter-spacing:.02em; }
-      .cover-client-grid { display:inline-grid; grid-template-columns:repeat(2,auto); gap:2mm 12mm; font-size: var(--texto); color:#333; line-height:1.6; text-align:left; }
-      .cover-client-grid span { color:#777; }
+      /* Los datos del cliente van en negrita y en negro: son lo que primero
+         busca quien recibe el documento. La etiqueta queda en gris y en peso
+         normal, para que resalte el dato y no el rotulo. */
+      .cover-client-grid { display:inline-grid; grid-template-columns:repeat(2,auto); gap:2mm 12mm; font-size: var(--texto); color:#1E1E1E; font-weight:700; line-height:1.6; text-align:left; }
+      .cover-client-grid span { color:#777; font-weight:400; }
       .cover-foot { margin-top:12mm; padding-top:4mm; border-top:1px solid #DDD; display:flex; justify-content:space-between; font-size: var(--texto); color:#777; }
 
       .def-list { border-top:1px solid #DDD; max-width:170mm; margin:0 auto; }

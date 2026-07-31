@@ -52,6 +52,24 @@ No hay que configurar variables: Supabase le entrega las llaves sola.
 > VITE_SUPABASE_FUNCION_USUARIOS=el-nombre-que-quedo
 > ```
 
+### Apagar la verificación de JWT de la función
+
+Supabase pone un portal delante de las funciones que valida el token **antes**
+de ejecutarlas. En este proyecto ese portal rechaza la llave de la aplicación
+con `INVALID_CREDENTIALS` (401), aunque la misma llave funcione contra la base
+de datos y contra el login.
+
+En el panel: **Edge Functions → la función → Settings** y apaga la opción de
+verificar el JWT ("Verify JWT with legacy secret" o similar).
+
+Esto **no** deja la función abierta. Ella misma exige la sesión, la valida
+contra Supabase y comprueba que quien llama sea administrador de la empresa;
+sin eso responde 401 o 403. La verificación del portal era una segunda capa
+redundante, y es el patrón que la propia documentación de Supabase recomienda
+para funciones con autenticación propia.
+
+Si despliegas con el CLI, ya queda puesto en `supabase/config.toml`.
+
 Si prefieres la terminal y tienes el CLI instalado:
 
 ```bash

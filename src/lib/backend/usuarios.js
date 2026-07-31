@@ -82,7 +82,11 @@ async function invocar(accion, datos = {}) {
     if (respuesta && typeof respuesta.clone === "function") {
       try {
         const cuerpo = await respuesta.clone().json();
-        if (cuerpo?.error) detalle = cuerpo.error;
+        // La funcion responde {error}, pero el portal de Supabase rechaza
+        // antes con {message, code}. Mirar solo "error" dejaba esos rechazos
+        // sin explicacion.
+        const motivo = cuerpo?.error || cuerpo?.message || cuerpo?.msg;
+        if (motivo) detalle = cuerpo?.code ? `${motivo} [${cuerpo.code}]` : motivo;
       } catch {
         try {
           const texto = (await respuesta.clone().text()).trim();

@@ -1,0 +1,14 @@
+# Configuracion del proyecto para el CLI de Supabase.
+
+project_id = "ktomujtqkitctdoznbmp"
+
+# La verificacion automatica de JWT del portal de Supabase rechazaba las
+# peticiones de la aplicacion con "INVALID_CREDENTIALS", antes de que la
+# funcion llegara a ejecutarse, pese a que la misma llave funciona contra la
+# base de datos y contra el login.
+#
+# Se apaga porque la funcion NO queda abierta: ella misma exige la sesion,
+# la valida contra Supabase y despues comprueba que quien llama sea
+# administrador de esa empresa. Sin todo eso responde 401 o 403.
+[functions.gestionar-usuarios]
+verify_jwt = false

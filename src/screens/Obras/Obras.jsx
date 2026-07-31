@@ -2,13 +2,19 @@ import Badge from "../../components/ui/Badge";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
 import ObraDetalle from "./ObraDetalle";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmt, fmtD, today } from "../../lib/format";
 import { getQuoteApprovalAccountingSnapshot } from "../../lib/cotizaciones";
 export default function Obras({ctx}){
-  const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,horarios}=ctx;
-  const [sel,setSel]=useState(null);
+  const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,horarios,intencion,limpiarIntencion}=ctx;
+  // Se puede llegar aqui desde otra pantalla pidiendo una obra concreta, por
+  // ejemplo desde el aviso de "esta obra no esta lista para certificar".
+  const obraSolicitada = intencion?.pantalla==="obras" ? intencion.obraId : null;
+  const [sel,setSel]=useState(()=>obras.find((o)=>o.id===obraSolicitada) || null);
+
+  // Se descarta al salir, para que al volver por el menu no se reabra sola.
+  useEffect(()=>()=>limpiarIntencion(),[limpiarIntencion]);
   const [detTab,setDetTab]=useState("personal");
   const [showNO,setShowNO]=useState(false);
   const [nob,setNob]=useState({cliente:"",tel:"",proyecto:"",ciudad:"",direccion:"",fechaInicio:today(),fechaFin:"",total:0,cotizacionId:""});

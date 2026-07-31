@@ -1,3 +1,4 @@
+import AvisoFlujo from "../../components/AvisoFlujo";
 import { getFirmaImg } from "../../lib/firmaEmpresa";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
@@ -7,7 +8,7 @@ import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmtD, fmtL, today } from "../../lib/format";
 import { printCurrentPz } from "../../lib/print";
 export default function Informes({ctx}){
-  const {informes,setInformes,obras,empleados,horarios,intencion,limpiarIntencion,empresaConfig}=ctx;
+  const {informes,setInformes,obras,empleados,horarios,intencion,limpiarIntencion,empresaConfig,irAPantalla}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
   const [sel,setSel]=useState(null);
   const [nuevo,setNuevo]=useState(()=>Boolean(ctx.intencion?.pantalla==="informes" && ctx.intencion?.obraId));
@@ -201,6 +202,36 @@ export default function Informes({ctx}){
     <div style={{padding:28}}>
       <H1 title="Informes de Actividades" subtitle="Múltiples actividades por informe con registro fotográfico"
         action={<button style={B("#f47c20")} onClick={abrirNuevoInforme}>+ Nuevo Informe</button>}/>
+
+      {obras.length===0 ? (
+        <AvisoFlujo
+          tono="falta"
+          titulo="Primero hay que aprobar la obra"
+          pasos={[
+            "Ve a Cotizaciones y abre la cotización que el cliente aceptó.",
+            "Dale «Aprobar». El sistema crea la obra solo, con el mismo número.",
+            "Asigna el personal en la obra y vuelve aquí a hacer el informe.",
+          ]}
+          accion={
+            <button
+              onClick={()=>irAPantalla("cotizacion")}
+              style={{...B("#f47c20"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
+            >
+              Ir a Cotizaciones
+            </button>
+          }
+        >
+          Todavía no hay obras en el sistema, y el informe de actividades se hace sobre una obra.
+        </AvisoFlujo>
+      ) : (
+        <AvisoFlujo
+          tono="info"
+          titulo="Recuerda: el informe sale de una obra aprobada"
+        >
+          El personal y los turnos se traen solos de la obra. Si el informe sale sin trabajadores,
+          es porque falta asignarlos en la pestaña «Personal» de la obra.
+        </AvisoFlujo>
+      )}
 
       {nuevo&&(
         <div style={{...CD,marginBottom:20,border:"1px solid #cc0000"}}>

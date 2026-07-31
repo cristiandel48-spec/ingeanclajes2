@@ -1,4 +1,5 @@
 import { fmt } from "../../lib/format";
+import { getEstadoFlujoObra } from "../../lib/flujoObra";
 import { B } from "../../styles/tokens";
 
 // Guia paso a paso de lo que falta en una obra para poder generar el informe
@@ -36,14 +37,8 @@ function Fila({ estado, titulo, detalle, accion }) {
 }
 
 export default function GuiaFlujoObra({ obra, empleadosAsignados, onCrearInforme, onCrearCertificacion }) {
-  const total = Number(obra?.total || 0);
-  const pagado = Number(obra?.pagado || 0);
-  const saldo = Number(obra?.saldo ?? Math.max(0, total - pagado));
-  const avance = Number(obra?.avance || 0);
+  const { total, pagado, saldo, avance, estaPagada, estaTerminada } = getEstadoFlujoObra(obra);
   const personal = Number(empleadosAsignados || 0);
-
-  const estaPagada = total > 0 && saldo <= 0;
-  const estaTerminada = avance >= 100 || String(obra?.estado || "").toLowerCase() === "finalizado";
 
   // La certificacion se entrega con el pago total: es la condicion comercial
   // que sale impresa en la propia cotizacion.

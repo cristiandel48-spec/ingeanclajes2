@@ -2,6 +2,9 @@
 -- reconstruida desde el PDF porque no alcanzo a guardarse desde la aplicacion.
 --
 -- Ejecutar en Supabase > SQL Editor. Es reejecutable: si ya existe, actualiza.
+--
+-- REQUIERE la migracion 021 (columna contacto). Aplicala antes:
+--   alter table app.cotizaciones add column if not exists contacto text;
 
 insert into app.cotizaciones (
   tenant_id, id, numero, fecha, validez_dias,

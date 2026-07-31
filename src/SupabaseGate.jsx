@@ -132,7 +132,18 @@ function mensajeAmable(error) {
   if (texto.includes("membres")) return "La cuenta no tiene permisos en esta empresa. Pide que te asignen acceso.";
   if (texto.includes("rate limit") || texto.includes("too many")) return "Demasiados intentos. Espera un momento y vuelve a intentar.";
   if (texto.includes("failed to fetch") || texto.includes("network")) return "Sin conexión con el servidor. Revisa tu internet.";
+  if (texto.includes("stack depth")) {
+    return "Las reglas de acceso de la base de datos se están llamando a sí mismas. " +
+      "Es un problema de configuración, no de tu cuenta.";
+  }
   return error?.message || "No fue posible iniciar sesión.";
+}
+
+// Que la consulta del tenant falle no significa que la persona no tenga
+// permisos: puede ser un fallo tecnico. Decirle "tu cuenta no tiene acceso"
+// cuando en realidad la base esta mal configurada manda a buscar donde no es.
+function esFaltaDePermisos(error) {
+  return String(error?.message || error || "").toLowerCase().includes("membres");
 }
 
 export default function SupabaseGate({ children }) {
@@ -144,6 +155,8 @@ export default function SupabaseGate({ children }) {
   const [aviso, setAviso] = useState("");
   const [busy, setBusy] = useState(false);
   const [user, setUser] = useState(null);
+  // "permisos" = a la cuenta le falta membresia; "tecnico" = algo fallo.
+  const [motivoBloqueo, setMotivoBloqueo] = useState("permisos");
 
   const validateAccess = async (currentUser) => {
     if (!currentUser) {
@@ -159,7 +172,9 @@ export default function SupabaseGate({ children }) {
       setError("");
       setStatus("ready");
     } catch (tenantError) {
+      console.error("No se pudo resolver la empresa del usuario:", tenantError);
       setUser(currentUser);
+      setMotivoBloqueo(esFaltaDePermisos(tenantError) ? "permisos" : "tecnico");
       setError(mensajeAmable(tenantError));
       setStatus("blocked");
     }
@@ -299,14 +314,44 @@ export default function SupabaseGate({ children }) {
     return (
       <Pantalla>
         <Encabezado etiqueta="Acceso Cloud" />
-        <h1 style={{ margin: "0 0 8px", fontSize: 26, fontWeight: 800, color: "#101828" }}>Tu cuenta no tiene acceso</h1>
+        <h1 style={{ margin: "0 0 8px", fontSize: 26, fontWeight: 800, color: "#101828" }}>
+          {motivoBloqueo === "permisos" ? "Tu cuenta no tiene acceso" : "No se pudo abrir la empresa"}
+        </h1>
         <p style={{ margin: "0 0 16px", color: "#667085", lineHeight: 1.6, fontSize: 14 }}>
-          Entraste como <strong style={{ color: "#101828" }}>{user.email}</strong>, pero esa cuenta todavía no
-          tiene permisos asignados en la empresa.
+          {motivoBloqueo === "permisos" ? (
+            <>
+              Entraste como <strong style={{ color: "#101828" }}>{user.email}</strong>, pero esa cuenta todavía no
+              tiene permisos asignados en la empresa.
+            </>
+          ) : (
+            <>
+              Tu usuario y contraseña están bien: entraste como{" "}
+              <strong style={{ color: "#101828" }}>{user.email}</strong>. Lo que falló fue la conexión con los datos
+              de la empresa, así que no es algo que puedas resolver desde aquí.
+            </>
+          )}
         </p>
         {error ? <Aviso>{error}</Aviso> : null}
-        <div style={{ marginTop: 18 }}>
-          <button type="button" onClick={handleLogout} disabled={busy} style={{ ...botonStyle, opacity: busy ? 0.7 : 1 }}>
+        <div style={{ marginTop: 18, display: "grid", gap: 10 }}>
+          {motivoBloqueo === "tecnico" && (
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              style={botonStyle}
+            >
+              Reintentar
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleLogout}
+            disabled={busy}
+            style={
+              motivoBloqueo === "tecnico"
+                ? { ...botonStyle, background: "#fff", color: "#475569", border: "1px solid #e4e7ec", opacity: busy ? 0.7 : 1 }
+                : { ...botonStyle, opacity: busy ? 0.7 : 1 }
+            }
+          >
             {busy ? "Cerrando…" : "Salir e intentar con otra cuenta"}
           </button>
         </div>

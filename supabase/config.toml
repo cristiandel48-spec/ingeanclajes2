@@ -10,5 +10,13 @@ project_id = "ktomujtqkitctdoznbmp"
 # Se apaga porque la funcion NO queda abierta: ella misma exige la sesion,
 # la valida contra Supabase y despues comprueba que quien llama sea
 # administrador de esa empresa. Sin todo eso responde 401 o 403.
+#
+# El nombre real es el que quedo al crearla, no el del archivo: en Supabase la
+# direccion de una funcion se fija al crearla y renombrarla no la cambia.
+[functions.smart-endpoint]
+verify_jwt = false
+
+# Si algun dia se vuelve a publicar con el nombre correcto, esta entrada ya
+# la deja lista.
 [functions.gestionar-usuarios]
 verify_jwt = false

@@ -71,11 +71,29 @@ async function invocar(accion, datos = {}) {
   // como FunctionsHttpError y el motivo util viene en el cuerpo.
   if (error) {
     let detalle = error.message;
-    let estado = error.context?.status ?? null;
-    try {
-      const cuerpo = await error.context?.json();
-      if (cuerpo?.error) detalle = cuerpo.error;
-    } catch { /* la respuesta no era JSON */ }
+    const estado = error.context?.status ?? null;
+
+    // El motivo util viaja en el CUERPO de la respuesta; error.message solo
+    // dice "Edge Function returned a non-2xx status code", que no sirve para
+    // nada. El cuerpo se lee una sola vez, asi que se clona antes por si hay
+    // que reintentar como texto plano (una excepcion no controlada en la
+    // funcion no devuelve JSON).
+    const respuesta = error.context;
+    if (respuesta && typeof respuesta.clone === "function") {
+      try {
+        const cuerpo = await respuesta.clone().json();
+        if (cuerpo?.error) detalle = cuerpo.error;
+      } catch {
+        try {
+          const texto = (await respuesta.clone().text()).trim();
+          if (texto) detalle = texto.slice(0, 300);
+        } catch { /* el cuerpo ya no se puede leer */ }
+      }
+    }
+
+    // Sin el codigo no hay forma de saber si fue permisos, sesion o un fallo
+    // interno, y el mensaje solo se ve en pantalla.
+    if (estado && !/\(\d{3}\)$/.test(detalle)) detalle = `${detalle} (${estado})`;
 
     // supabase-js no distingue "la funcion no existe" de "no hubo red": las
     // dos llegan como "Failed to send a request to the Edge Function". Como en

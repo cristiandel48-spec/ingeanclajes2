@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import Av from "../ui/Av";
 import CambiarMiClave from "./CambiarMiClave";
 import * as backend from "../../lib/backend";
+import { useAppData } from "../../context/AppDataContext";
+import { ROL_LABEL } from "../../lib/permisos";
 
 // Muestra quien esta conectado, deja cambiar la propia contrasena y salir.
 // Antes solo se podia salir cerrando la pestana, y el nombre estaba escrito
@@ -12,6 +14,13 @@ export default function MenuUsuario({ theme, compact = false }) {
   const [saliendo, setSaliendo] = useState(false);
   const [cambiandoClave, setCambiandoClave] = useState(false);
   const contenedorRef = useRef(null);
+  const { membresia } = useAppData();
+
+  // Se muestra el nombre de la persona; el correo es un dato tecnico que solo
+  // hace falta al soportar un problema, asi que queda dentro del menu.
+  const nombre = membresia?.nombre?.trim() || "";
+  const titulo = nombre || correo || "Sesión local";
+  const subtitulo = membresia?.role ? (ROL_LABEL[membresia.role] || "Ingeanclajes") : "Ingeanclajes";
 
   useEffect(() => {
     if (!backend.isSupabaseConfigured()) return;
@@ -54,7 +63,11 @@ export default function MenuUsuario({ theme, compact = false }) {
     }
   };
 
-  const iniciales = (correo || "?").slice(0, 2).toUpperCase();
+  // Iniciales del nombre ("Camila Montoya" -> "CM"). Sin nombre se cae al
+  // correo, como antes.
+  const iniciales = nombre
+    ? nombre.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase()
+    : (correo || "?").slice(0, 2).toUpperCase();
 
   return (
     <div ref={contenedorRef} style={{ position: "relative", flexShrink: 0 }}>
@@ -79,9 +92,9 @@ export default function MenuUsuario({ theme, compact = false }) {
                 fontSize: 12.5, fontWeight: 600, color: theme.text,
                 overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
               }}>
-                {correo || "Sesión local"}
+                {titulo}
               </div>
-              <div style={{ fontSize: 11, color: theme.muted }}>Ingeanclajes</div>
+              <div style={{ fontSize: 11, color: theme.muted }}>{subtitulo}</div>
             </div>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ opacity: .5 }}>
               <path d="M6 9l6 6 6-6"/>

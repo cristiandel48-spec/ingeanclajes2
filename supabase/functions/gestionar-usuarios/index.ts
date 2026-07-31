@@ -13,13 +13,28 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
+// Direccion del sistema para el enlace del correo. Se acepta solo http/https:
+// asi nadie puede colar un "javascript:" u otro esquema en un mensaje que sale
+// a nombre de la empresa.
+function direccionSegura(valor: unknown): string {
+  const texto = String(valor ?? "").trim();
+  if (!texto) return "";
+  try {
+    const u = new URL(texto);
+    return u.protocol === "https:" || u.protocol === "http:" ? u.origin : "";
+  } catch {
+    return "";
+  }
+}
+
 // Correo de bienvenida. Sale desde la cuenta de la empresa, configurada como
 // secretos de la funcion (SMTP_USUARIO y SMTP_CLAVE). Si no estan puestos, la
 // creacion del usuario NO falla: solo se avisa que no se pudo enviar.
-async function enviarBienvenida({ nombre, email, clave }: {
+async function enviarBienvenida({ nombre, email, clave, appUrl }: {
   nombre: string;
   email: string;
   clave: string;
+  appUrl: string;
 }) {
   const usuario = Deno.env.get("SMTP_USUARIO");
   const password = Deno.env.get("SMTP_CLAVE");
@@ -35,6 +50,7 @@ async function enviarBienvenida({ nombre, email, clave }: {
     "",
     "Te creamos una cuenta en el sistema de gestión de Ingeanclajes.",
     "",
+    ...(appUrl ? [`Entra aquí: ${appUrl}`, ""] : []),
     `Usuario: ${email}`,
     `Contraseña provisional: ${clave}`,
     "",
@@ -62,6 +78,17 @@ async function enviarBienvenida({ nombre, email, clave }: {
           <div style="font-size:16px;font-weight:700">${escapeHtml(clave)}</div>
         </td></tr>
       </table>
+      ${appUrl ? `
+        <p style="margin:0 0 18px">
+          <a href="${escapeHtml(appUrl)}" style="display:inline-block;background:#E0342A;color:#fff;text-decoration:none;padding:13px 26px;border-radius:9px;font-weight:700;font-size:15px">
+            Entrar al sistema
+          </a>
+        </p>
+        <p style="margin:0 0 18px;font-size:12.5px;color:#667085">
+          O copia esta dirección en el navegador: <br/>
+          <span style="color:#1E1E1E">${escapeHtml(appUrl)}</span>
+        </p>
+      ` : ""}
       <p style="background:#FFFAF0;border:1px solid #FDE3C4;border-radius:8px;padding:12px 14px;color:#B54708">
         <strong>Cambia esta contraseña la primera vez que entres.</strong> Mientras no lo hagas,
         queda escrita en este correo y cualquiera que abra tu bandeja podría entrar al sistema con ella.
@@ -176,6 +203,11 @@ Deno.serve(async (req) => {
   const clave = String(cuerpo.clave ?? "");
   const userId = String(cuerpo.userId ?? "");
 
+  // La direccion del sistema para el correo. El secreto APP_URL manda; si no
+  // esta puesto se usa la que informa el navegador, para no tener que
+  // configurar nada cuando cambia el dominio.
+  const appUrl = direccionSegura(Deno.env.get("APP_URL")) || direccionSegura(cuerpo.appUrl);
+
   const ROLES = ["admin", "manager", "operator", "viewer"];
   if (["crear", "actualizar"].includes(accion) && !ROLES.includes(rol)) {
     return error("Rol no válido.");
@@ -234,7 +266,7 @@ Deno.serve(async (req) => {
       let correo: { enviado: boolean; motivo?: string } = { enviado: false, motivo: "No se solicitó." };
       if (cuerpo.enviarCorreo !== false) {
         try {
-          correo = await enviarBienvenida({ nombre, email, clave });
+          correo = await enviarBienvenida({ nombre, email, clave, appUrl });
         } catch (e) {
           correo = { enviado: false, motivo: e instanceof Error ? e.message : "Error al enviar." };
         }
@@ -286,7 +318,7 @@ Deno.serve(async (req) => {
       let correo: { enviado: boolean; motivo?: string } = { enviado: false, motivo: "No se solicitó." };
       if (cuerpo.enviarCorreo !== false && email) {
         try {
-          correo = await enviarBienvenida({ nombre, email, clave });
+          correo = await enviarBienvenida({ nombre, email, clave, appUrl });
         } catch (e) {
           correo = { enviado: false, motivo: e instanceof Error ? e.message : "Error al enviar." };
         }

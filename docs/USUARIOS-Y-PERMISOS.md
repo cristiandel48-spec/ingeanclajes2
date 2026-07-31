@@ -168,6 +168,12 @@ La contraseña viaja escrita en ese correo y se queda en la bandeja de entrada
 de quien lo recibe. El mensaje le insiste en que la cambie al entrar; conviene
 recordárselo también de palabra.
 
+**El enlace al sistema** sale en el correo automáticamente: se toma de la
+dirección desde la que Camila está trabajando en ese momento. Si algún día
+conviene fijarlo (por ejemplo, para que siempre apunte al dominio de
+producción aunque se cree el usuario desde una versión de prueba), se agrega el
+secreto `APP_URL` en Supabase → Edge Functions → Secrets y ese manda.
+
 **Cómo cambia su contraseña la persona:** entra al sistema, hace clic en su
 correo arriba a la derecha y elige **«Cambiar mi contraseña»**. No necesita
 pedírselo a nadie. El correo de bienvenida se lo explica.

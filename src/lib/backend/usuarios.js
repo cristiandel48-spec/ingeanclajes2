@@ -64,7 +64,9 @@ async function invocar(accion, datos = {}) {
   const tenantId = await getTenantIdActual();
 
   const { data, error } = await supabase.functions.invoke(FUNCION, {
-    body: { accion, tenantId, ...datos },
+    // appUrl viaja para que el correo de bienvenida traiga el enlace al
+    // sistema sin tener que configurar el dominio en ningun lado.
+    body: { accion, tenantId, appUrl: window.location.origin, ...datos },
   });
 
   // Cuando la funcion responde con un codigo de error, supabase-js lo entrega

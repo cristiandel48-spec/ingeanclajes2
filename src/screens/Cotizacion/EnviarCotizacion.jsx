@@ -7,33 +7,64 @@ import { useState } from "react";
 import { blobABase64, generarCotizacionPdf } from "../../lib/cotizacionPdf";
 import { enviarCotizacionPorCorreo } from "../../lib/backend/usuarios";
 import { fmt } from "../../lib/format";
+import { comoFrase, comoNombre, primerNombre } from "../../lib/texto";
+import { getQuotePrintableProposals } from "../../lib/cotizaciones";
 import LBL from "../../components/ui/LBL";
 import { B, SI } from "../../styles/tokens";
 
-function primerNombre(texto) {
-  const limpio = String(texto || "").trim();
-  return limpio ? limpio.split(/\s+/)[0] : "";
+// El nombre de la empresa va en el asunto: en la bandeja del cliente, un
+// "Cotización C-26115" a secas no dice de quién viene y se pierde.
+function asuntoPorDefecto(c) {
+  const obra = comoNombre(c?.obra || c?.cliente || "");
+  return [`Cotización ${c?.numero || ""}`.trim(), "Ingeanclajes", obra]
+    .filter(Boolean)
+    .join(" · ");
 }
 
-function asuntoPorDefecto(c) {
-  return `Cotización ${c?.numero || ""} · ${c?.obra || c?.cliente || "Ingeanclajes"}`.trim();
+// Detalle de la propuesta activa: qué se cotiza, cuánto y a qué precio. Sin
+// esto el correo solo daba un total, y el cliente tenía que abrir el adjunto
+// para saber qué estaba comprando.
+function detallePropuesta(c) {
+  const propuestas = getQuotePrintableProposals(c);
+  const activa = propuestas.find((p) => p.id === c?.propuestaActivaId) || propuestas[0];
+  if (!activa?.items?.length) return [];
+
+  const lineas = activa.items.map((item) => {
+    const cant = Number(item.cant) || 0;
+    const vu = Number(item.vu) || 0;
+    return `· ${cant} ${item.unit || "und"} de ${comoFrase(item.desc)} — ${fmt(vu)} c/u — ${fmt(cant * vu)}`;
+  });
+
+  return [
+    "Detalle de la propuesta:",
+    ...lineas,
+    "",
+    `Subtotal: ${fmt(activa.sub)}`,
+    `Utilidad (${activa.quote?.util ?? 10}%): ${fmt(activa.ut)}`,
+    `IVA (19% sobre la utilidad): ${fmt(activa.iva)}`,
+    `Valor total: ${fmt(activa.tot)}`,
+  ];
 }
 
 function mensajePorDefecto(c) {
   const saludo = primerNombre(c?.contacto);
+  const obra = comoNombre(c?.obra || "");
+  const detalle = detallePropuesta(c);
+
   return [
     saludo ? `${saludo}, buen día.` : "Buen día.",
     "",
-    `Adjunto encontrará la cotización ${c?.numero || ""} para ${c?.obra || "su solicitud"}` +
-      (c?.total ? `, por un valor de ${fmt(c.total)}.` : "."),
+    `Adjunto encontrará la cotización ${c?.numero || ""} para ${obra || "su solicitud"}.`,
     "",
+    ...(detalle.length ? [...detalle, ""] : []),
     `La propuesta tiene una validez de ${c?.val || 30} días.` +
-      (c?.tiempoEjec ? ` El tiempo de ejecución estimado es de ${c.tiempoEjec}.` : ""),
+      (c?.tiempoEjec ? ` El tiempo de ejecución estimado es de ${comoFrase(c.tiempoEjec)}.` : ""),
+    ...(c?.formaPago ? ["", `Forma de pago: ${comoFrase(c.formaPago)}.`] : []),
     "",
     "Quedamos atentos a sus comentarios y a cualquier ajuste que necesite.",
     "",
     "Cordialmente,",
-    "INGEANCLAJES S.A.S.",
+    "Ingeanclajes S.A.S.",
   ].join("\n");
 }
 

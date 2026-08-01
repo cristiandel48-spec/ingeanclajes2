@@ -35,10 +35,21 @@ async function esperarRecursos(doc, ventana) {
  * en una cotización con fotos esto tarda varios segundos.
  */
 export async function generarCotizacionPdf(cotizacion, { firmaImg = "", onProgreso } = {}) {
-  const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-    import("html2canvas"),
-    import("jspdf"),
-  ]);
+  // Las dos librerias pesan cerca de un mega, asi que se cargan solo al
+  // generar un PDF. El precio es que si se publica una version nueva mientras
+  // alguien tiene la pagina abierta, el navegador pide un archivo que ya no
+  // existe y falla con un mensaje en ingles que no dice que hacer.
+  let html2canvas, jsPDF;
+  try {
+    const [mod1, mod2] = await Promise.all([import("html2canvas"), import("jspdf")]);
+    html2canvas = mod1.default;
+    jsPDF = mod2.jsPDF;
+  } catch {
+    throw new Error(
+      "Se publicó una versión nueva del sistema mientras tenías esta página abierta. " +
+      "Recárgala (Ctrl+Shift+R) y vuelve a intentarlo."
+    );
+  }
 
   const html = buildCotizacionPrintHtml(cotizacion, { firmaImg });
 

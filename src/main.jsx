@@ -41,6 +41,21 @@ class AppErrorBoundary extends Component {
   }
 }
 
+// Al publicar una version nueva, los archivos de la anterior desaparecen del
+// servidor. Quien tenga la pagina abierta y toque algo que se carga bajo
+// demanda -generar un PDF, por ejemplo- recibe un 404 y un mensaje en ingles
+// que no dice que hacer. Vite avisa de eso y aqui se traduce a una accion.
+window.addEventListener("vite:preloadError", (evento) => {
+  evento.preventDefault();
+  console.error("Falta un archivo de una version anterior:", evento.payload);
+  const recargar = window.confirm(
+    "Se publicó una versión nueva del sistema mientras tenías esta página abierta.\n\n" +
+    "Hay que recargarla para seguir. Tus cambios guardados no se pierden.\n\n" +
+    "¿Recargar ahora?"
+  );
+  if (recargar) window.location.reload();
+});
+
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <AppErrorBoundary>

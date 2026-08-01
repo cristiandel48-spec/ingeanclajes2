@@ -4,6 +4,7 @@ import LBL from "../../components/ui/LBL";
 import { useEffect, useState } from "react";
 import { B, CD, PAL, SI, ST } from "../../styles/tokens";
 import { fmtD, today } from "../../lib/format";
+import { abrirWhatsApp, normalizarCelular } from "../../lib/whatsapp";
 export default function Horarios({ctx}){
   const {obras,empleados,horarios,setHorarios}=ctx;
   const firstEmpId = empleados[0]?.id || "";
@@ -42,7 +43,9 @@ export default function Horarios({ctx}){
     turno2Fin:"",
     tarea2:"",
   });
-  const [notif,setNotif]=useState("");
+  // {texto, ok}. Un fallo al abrir WhatsApp salia en verde igual que un envio
+  // correcto, asi que se leia como si hubiera salido bien.
+  const [notif,setNotif]=useState(null);
   const dia=horarios.filter(h=>h.fecha===fechaF);
   const empSel=empleados.find(e=>e.id===form.empleadoId);
   const obraSel=obras.find(o=>o.id===form.obraId);
@@ -82,10 +85,24 @@ export default function Horarios({ctx}){
     if(!e||!o||!turnosInfo.length) return;
     const fechaMsg = fmtD(f) || f;
     const detalleTurnos = turnosInfo.map((item,idx)=>(idx+1) + ". " + (fmtTurno12Local(item.turno)) + " - " + (item.tarea)).join('\n');
-    const msg="Hola " + (e.nombre) + ", has sido asignado a la obra *" + (o.proyecto) + "* del cliente *" + (o.cliente) + "* para el día *" + (fechaMsg) + "* en *" + (o.direccion||o.ciudad) + "*.\\n\\nTurnos asignados:\\n" + (detalleTurnos) + "\\n\\nPor favor confirma tu asistencia.\\n*INGEANCLAJES S.A.S*";
-    window.open("https://wa.me/57" + (e.tel) + "?text=" + (encodeURIComponent(msg)),"_blank");
-    setNotif("WhatsApp abierto para " + (e.nombre) + " · +57 " + (e.tel));
-    setTimeout(()=>setNotif(""),5000);
+    // Las lineas llevan saltos de verdad. Antes se escribian escapados y
+    // WhatsApp los mostraba tal cual: el mensaje llegaba como un bloque con
+    // las barras a la vista.
+    const msg = [
+      "Hola " + (e.nombre) + ", has sido asignado a la obra *" + (o.proyecto) + "* del cliente *" + (o.cliente) + "* para el día *" + (fechaMsg) + "* en *" + (o.direccion||o.ciudad) + "*.",
+      "",
+      "Turnos asignados:",
+      detalleTurnos,
+      "",
+      "Por favor confirma tu asistencia.",
+      "*INGEANCLAJES S.A.S*",
+    ].join("\n");
+
+    const problema = abrirWhatsApp(e.tel, msg);
+    setNotif(problema
+      ? {ok:false, texto: e.nombre + ": " + problema + " El turno quedó guardado; avísale por otro medio."}
+      : {ok:true, texto: "WhatsApp abierto para " + (e.nombre) + " · +" + normalizarCelular(e.tel)});
+    setTimeout(()=>setNotif(null),8000);
   };
 
   const guardar=()=>{
@@ -124,7 +141,14 @@ export default function Horarios({ctx}){
   return(
     <div style={{padding:28}}>
       <H1 title="Horarios" subtitle="Asigna hasta 2 turnos por día y notifica automáticamente por WhatsApp" action={<button style={B("#f47c20")} onClick={()=>setShowF(!showF)}>+ Asignar turnos</button>}/>
-      {notif&&<div style={{background:"#e8f5ee",border:"1px solid #166534",borderRadius:10,padding:"12px 16px",marginBottom:16,fontSize:13,color:"#166534"}}>{notif}</div>}
+      {notif&&(
+        <div style={{
+          background: notif.ok?"#e8f5ee":"#fffaf0",
+          border: "1px solid " + (notif.ok?"#166534":"#fde3c4"),
+          color: notif.ok?"#166534":"#b54708",
+          borderRadius:10,padding:"12px 16px",marginBottom:16,fontSize:13,lineHeight:1.5,
+        }}>{notif.texto}</div>
+      )}
       {showF&&(
         <div style={{...CD,marginBottom:20,border:"1px solid #cc0000"}}>
           <div style={ST}>Nuevo horario · notificación automática por WhatsApp</div>

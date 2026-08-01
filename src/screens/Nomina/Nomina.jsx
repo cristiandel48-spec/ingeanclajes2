@@ -1,6 +1,7 @@
 import Av from "../../components/ui/Av";
 import H1 from "../../components/ui/H1";
 import PasosNomina, { NavegacionPasos } from "./PasosNomina";
+import PeriodoCorte from "./PeriodoCorte";
 import LBL from "../../components/ui/LBL";
 import { useEffect, useState } from "react";
 import { B, CD, PAL, SI, ST } from "../../styles/tokens";
@@ -507,26 +508,16 @@ export default function Nomina({ctx}){
         action={<button style={B("#cc0000")} onClick={()=>setTab("nuevo")}>+ Nuevo Empleado</button>}/>
       <PasosNomina activo={tab} onIr={setTab}/>
 
-      <div style={{...CD,maxWidth:900,margin:"0 auto 20px",padding:"14px 16px"}}>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))",gap:12,alignItems:"end"}}>
-          <div>
-            <LBL>Mes de nómina</LBL>
-            <input type="month" value={mes} onChange={e=>setMes(e.target.value)} style={SI}/>
-          </div>
-          <div>
-            <LBL>Corte</LBL>
-            <select value={corteNomina} onChange={e=>setCorteNomina(e.target.value)} style={SI}>
-              <option value="primera">Primera quincena · 1 al 15</option>
-              <option value="segunda">{"Segunda quincena · 16 al " + (periodoNomina.endIso.slice(-2))}</option>
-            </select>
-          </div>
-          <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px"}}>
-            <div style={{fontSize:10,color:"#94a3b8",textTransform:"uppercase",letterSpacing:0.7}}>Periodo activo</div>
-            <div style={{fontSize:13,fontWeight:700,color:"#142840",marginTop:4}}>{periodoNomina.label}</div>
-            <div style={{fontSize:10,color:"#64748b",marginTop:4}}>Días del corte: {periodoNomina.diasReferencia}</div>
-          </div>
-        </div>
-      </div>
+      {/* Al dar de alta a alguien no hay corte que elegir, asi que ni aparece. */}
+      {tab!=="nuevo" && (
+        <PeriodoCorte
+          mes={mes} onMes={setMes}
+          corte={corteNomina} onCorte={setCorteNomina}
+          periodo={periodoNomina}
+          soloLectura={tab==="lista"}
+        />
+      )}
+
       {tab==="nuevo"&&(
         <div style={{display:"grid",gap:16,maxWidth:980}}>
           <div style={{background:"#ffffff",border:"1px solid #e2e8f0",borderRadius:12,padding:20,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>

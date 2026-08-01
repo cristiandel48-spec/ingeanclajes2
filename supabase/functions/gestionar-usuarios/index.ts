@@ -27,6 +27,54 @@ function direccionSegura(valor: unknown): string {
   }
 }
 
+// Envio generico por SMTP desde la cuenta de la empresa. Devuelve el motivo
+// en vez de lanzar, para que quien llama decida si es un fallo grave o solo un
+// aviso que no salio.
+async function enviarCorreo({ para, asunto, texto, html, adjunto }: {
+  para: string;
+  asunto: string;
+  texto: string;
+  html?: string;
+  adjunto?: { nombre: string; base64: string; tipo: string } | null;
+}) {
+  const usuario = Deno.env.get("SMTP_USUARIO");
+  const password = Deno.env.get("SMTP_CLAVE");
+  if (!usuario || !password) {
+    return { enviado: false, motivo: "Faltan los secretos SMTP_USUARIO y SMTP_CLAVE." };
+  }
+
+  const cliente = new SMTPClient({
+    connection: {
+      hostname: Deno.env.get("SMTP_SERVIDOR") ?? "smtp.gmail.com",
+      port: Number(Deno.env.get("SMTP_PUERTO") ?? 465),
+      tls: true,
+      auth: { username: usuario, password },
+    },
+  });
+
+  try {
+    await cliente.send({
+      from: `Ingeanclajes <${usuario}>`,
+      to: para,
+      subject: asunto,
+      content: texto,
+      ...(html ? { html } : {}),
+      ...(adjunto ? {
+        attachments: [{
+          filename: adjunto.nombre,
+          encoding: "base64",
+          content: adjunto.base64,
+          contentType: adjunto.tipo,
+        }],
+      } : {}),
+    });
+    return { enviado: true };
+  } finally {
+    // Sin esto la funcion queda esperando a que cierre la conexion.
+    try { await cliente.close(); } catch { /* ya estaba cerrada */ }
+  }
+}
+
 // Correo de bienvenida. Sale desde la cuenta de la empresa, configurada como
 // secretos de la funcion (SMTP_USUARIO y SMTP_CLAVE). Si no estan puestos, la
 // creacion del usuario NO falla: solo se avisa que no se pudo enviar.
@@ -36,12 +84,6 @@ async function enviarBienvenida({ nombre, email, clave, appUrl }: {
   clave: string;
   appUrl: string;
 }) {
-  const usuario = Deno.env.get("SMTP_USUARIO");
-  const password = Deno.env.get("SMTP_CLAVE");
-  if (!usuario || !password) {
-    return { enviado: false, motivo: "Faltan los secretos SMTP_USUARIO y SMTP_CLAVE." };
-  }
-
   const trato = nombre ? nombre.split(" ")[0] : "Hola";
   const asunto = "Tu acceso al sistema de Ingeanclajes";
 
@@ -108,28 +150,7 @@ async function enviarBienvenida({ nombre, email, clave, appUrl }: {
   // compacta a una sola linea para que no quede ninguno.
   const htmlCompacto = html.replace(/\s*\n\s*/g, " ").trim();
 
-  const cliente = new SMTPClient({
-    connection: {
-      hostname: Deno.env.get("SMTP_SERVIDOR") ?? "smtp.gmail.com",
-      port: Number(Deno.env.get("SMTP_PUERTO") ?? 465),
-      tls: true,
-      auth: { username: usuario, password },
-    },
-  });
-
-  try {
-    await cliente.send({
-      from: `Ingeanclajes <${usuario}>`,
-      to: email,
-      subject: asunto,
-      content: texto,
-      html: htmlCompacto,
-    });
-    return { enviado: true };
-  } finally {
-    // Sin esto la funcion queda esperando a que cierre la conexion.
-    try { await cliente.close(); } catch { /* ya estaba cerrada */ }
-  }
+  return enviarCorreo({ para: email, asunto, texto, html: htmlCompacto });
 }
 
 function escapeHtml(v: string) {
@@ -198,7 +219,14 @@ Deno.serve(async (req) => {
     .maybeSingle();
 
   if (errPropia) return error(errPropia.message, 500);
-  if (!propia || !propia.activo || propia.role !== "admin") {
+  if (!propia || !propia.activo) {
+    return error("Tu cuenta no tiene acceso activo en esta empresa.", 403);
+  }
+
+  // Enviar una cotizacion es trabajo comercial de cualquiera del equipo.
+  // Administrar cuentas, no: eso sigue siendo exclusivo del administrador.
+  const ACCIONES_DE_ADMIN = ["crear", "actualizar", "desactivar", "reactivar", "eliminar", "clave"];
+  if (ACCIONES_DE_ADMIN.includes(accion) && propia.role !== "admin") {
     return error("Solo un administrador de la empresa puede administrar usuarios.", 403);
   }
 
@@ -223,6 +251,48 @@ Deno.serve(async (req) => {
   const modulosFinales = rol === "admin" ? null : (modulos ?? []);
 
   try {
+    if (accion === "enviar-cotizacion") {
+      const para = String(cuerpo.para ?? "").trim();
+      const asunto = String(cuerpo.asunto ?? "").trim();
+      const mensaje = String(cuerpo.mensaje ?? "");
+      const pdfBase64 = String(cuerpo.pdfBase64 ?? "");
+      const nombreArchivo = String(cuerpo.nombreArchivo ?? "Cotizacion.pdf");
+
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(para)) {
+        return error("El correo del cliente no es válido.");
+      }
+      if (!asunto) return error("Escribe un asunto para el correo.");
+      if (!mensaje.trim()) return error("Escribe el mensaje para el cliente.");
+
+      // Gmail rechaza por encima de 25 MB. Se corta antes para poder explicarlo
+      // en vez de devolver un error del servidor de correo.
+      const bytesAprox = Math.floor(pdfBase64.length * 0.75);
+      if (bytesAprox > 20 * 1024 * 1024) {
+        return error("El PDF pesa más de 20 MB. Quita algunas fotos de la cotización.");
+      }
+
+      // El mensaje lo escribe una persona en un campo de texto, asi que se
+      // escapa antes de meterlo en el HTML.
+      const parrafos = mensaje
+        .split(/\r?\n/)
+        .map((l) => `<p style="margin:0 0 10px">${escapeHtml(l) || "&nbsp;"}</p>`)
+        .join("");
+      const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1E1E1E;line-height:1.6;max-width:560px">${parrafos}</div>`;
+
+      const resultado = await enviarCorreo({
+        para,
+        asunto,
+        texto: mensaje,
+        html,
+        adjunto: pdfBase64
+          ? { nombre: nombreArchivo, base64: pdfBase64, tipo: "application/pdf" }
+          : null,
+      });
+
+      if (!resultado.enviado) return error(resultado.motivo || "No se pudo enviar el correo.", 500);
+      return responder({ ok: true, para });
+    }
+
     if (accion === "crear") {
       if (!email) return error("Escribe el correo de la persona.");
       if (clave.length < 8) return error("La contraseña debe tener al menos 8 caracteres.");

@@ -1,6 +1,7 @@
 import Badge from "../../components/ui/Badge";
 import FirmaEmpresa from "../../components/FirmaEmpresa";
 import DocumentoEnVivo from "./DocumentoEnVivo";
+import EnviarCotizacion from "./EnviarCotizacion";
 import PropuestaEditor from "./PropuestaEditor";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { TEXTOS_DOCUMENTO_DEFAULT, getTextosDocumento } from "../../lib/cotizacionTextos";
@@ -18,6 +19,8 @@ export default function Cotizacion({ctx}){
   const firmaImg=getFirmaImg(empresaConfig);
   const [tab,setTab]=useState("lista");
   const [previewCot,setPreviewCot]=useState(null);
+  // Cotizacion que se esta por enviar al cliente.
+  const [enviarCot,setEnviarCot]=useState(null);
   // Vista previa del documento junto al formulario, para revisar los textos
   // completos mientras se edita.
   const [verDocumento,setVerDocumento]=useState(false);
@@ -30,7 +33,7 @@ export default function Cotizacion({ctx}){
   const [cot,setCot]=useState("");
   const [fecha,setFecha]=useState(today());
   const [val,setVal]=useState(30);
-  const [cl,setCl]=useState({nombre:"",nit:"",contacto:"",obra:"",telefono:"",ciudad:"",coords:""});
+  const [cl,setCl]=useState({nombre:"",nit:"",contacto:"",contactoEmail:"",obra:"",telefono:"",ciudad:"",coords:""});
   const [textoInicial,setTextoInicial]=useState("");
   const [observacionesCot,setObservacionesCot]=useState("");
   // Textos fijos del documento, editables por cotizacion.
@@ -110,6 +113,7 @@ export default function Cotizacion({ctx}){
     cliente: cl.nombre,
     nit: cl.nit,
     contacto: cl.contacto,
+    contactoEmail: cl.contactoEmail,
     obra: cl.obra,
     telefono: cl.telefono,
     ciudad: cl.ciudad,
@@ -144,7 +148,7 @@ export default function Cotizacion({ctx}){
     setCot(source.numero || `P-${34155 + cotizaciones.length}`);
     setFecha(source.fecha || today());
     setVal(source.val || 30);
-    setCl({nombre:source.cliente || "",nit:source.nit || "",contacto:source.contacto || "",obra:source.obra || "",telefono:source.telefono || "",ciudad:source.ciudad || "",coords:source.coords || ""});
+    setCl({nombre:source.cliente || "",nit:source.nit || "",contacto:source.contacto || "",contactoEmail:source.contactoEmail || "",obra:source.obra || "",telefono:source.telefono || "",ciudad:source.ciudad || "",coords:source.coords || ""});
     setTextoInicial(source.textoInicial || "");
     setObservacionesCot(source.observaciones || "");
     setTextosDocumento(getTextosDocumento(source));
@@ -187,7 +191,7 @@ export default function Cotizacion({ctx}){
     });
     const activa = propuestasFinales.find((x)=>x.id===propuestaActivaId) || propuestasFinales[0];
     const prev = editCot ? cotizaciones.find((cotizacion)=>cotizacion.id===editCot) : null;
-    const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:cl.nombre,nit:cl.nit,contacto:cl.contacto,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,textoInicial:textoInicial.trim(),observaciones:observacionesCot.trim(),textosDocumento,items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:activa.mapImg || null,geoMediciones:activa.geoMediciones || [],geoMapView:activa.geoMapView || null,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,incluyeTexto:activa.incluyeTexto || "",propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
+    const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:cl.nombre,nit:cl.nit,contacto:cl.contacto,contactoEmail:cl.contactoEmail,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,textoInicial:textoInicial.trim(),observaciones:observacionesCot.trim(),textosDocumento,items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:activa.mapImg || null,geoMediciones:activa.geoMediciones || [],geoMapView:activa.geoMapView || null,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,incluyeTexto:activa.incluyeTexto || "",propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
     setCotizaciones((prevList)=>editCot ? prevList.map((cotizacion)=>cotizacion.id===editCot?{...cotizacion,...data}:cotizacion) : [...prevList,data]);
     setPropuestas(propuestasFinales);
     setEditCot(data.id);
@@ -261,7 +265,7 @@ export default function Cotizacion({ctx}){
 
   if(tab==="lista"){
     if(previewCot){
-      return <div style={{padding:28}}><H1 title={`Cotización ${previewCot.numero || previewCot.id}`} subtitle="Vista completa del documento comercial" action={<div style={{display:"flex",gap:10}}><button style={B("#f1f5f9","#475569")} onClick={()=>setPreviewCot(null)}>Volver</button><button style={B("#dbeafe","#1e40af")} onClick={()=>{setEditCot(previewCot.id);hydrate(previewCot);setTab("form");setPreviewCot(null);}}>Editar</button><button style={B("#f47c20")} onClick={()=>openCotizacionPrint(previewCot,{firmaImg})}>Imprimir PDF</button></div>}/><DocumentoEnVivo cotizacion={previewCot} firmaImg={firmaImg} alto="calc(100vh - 190px)" nota="Igual al PDF" sticky={false}/></div>;
+      return <div style={{padding:28}}><H1 title={`Cotización ${previewCot.numero || previewCot.id}`} subtitle="Vista completa del documento comercial" action={<div style={{display:"flex",gap:10}}><button style={B("#f1f5f9","#475569")} onClick={()=>setPreviewCot(null)}>Volver</button><button style={B("#dbeafe","#1e40af")} onClick={()=>{setEditCot(previewCot.id);hydrate(previewCot);setTab("form");setPreviewCot(null);}}>Editar</button><button style={B("#f1f5f9","#475569")} onClick={()=>openCotizacionPrint(previewCot,{firmaImg})}>Imprimir PDF</button><button style={B("#f47c20")} onClick={()=>setEnviarCot(previewCot)}>Enviar al cliente</button></div>}/><DocumentoEnVivo cotizacion={previewCot} firmaImg={firmaImg} alto="calc(100vh - 190px)" nota="Igual al PDF" sticky={false}/>{enviarCot && <EnviarCotizacion cotizacion={enviarCot} firmaImg={firmaImg} onCerrar={()=>setEnviarCot(null)}/>}</div>;
     }
     return (
       <div style={{padding:28}}>
@@ -374,7 +378,7 @@ export default function Cotizacion({ctx}){
                           <button style={{...B("#dbeafe","#1e40af"),fontSize:10,padding:"5px 10px"}} onClick={()=>setPreviewCot(cotizacion)}>Ver</button>
                           <button style={{...B("#1a3050","#f5c842"),fontSize:10,padding:"5px 10px"}} onClick={()=>{setEditCot(cotizacion.id);hydrate(cotizacion);setTab("form");}}>Editar</button>
                           {cotizacion.estado!=="Aprobada" && <button style={{...B("#0f2d1a","#4ade80"),border:"1px solid #166534",fontSize:10,padding:"5px 10px"}} onClick={()=>aprobarCotizacion(cotizacion.id)}>Aprobar y crear obra</button>}
-                          <button style={{...B("#2d1414","#ef4444"),fontSize:10,padding:"5px 10px"}} onClick={()=>openCotizacionPrint(cotizacion,{firmaImg})}>PDF</button>
+                          <button style={{...B("#2d1414","#ef4444"),fontSize:10,padding:"5px 10px"}} onClick={()=>openCotizacionPrint(cotizacion,{firmaImg})}>PDF</button><button style={{...B("#fff3e8","#f47c20"),fontSize:10,padding:"5px 10px"}} onClick={()=>setEnviarCot(cotizacion)}>Enviar</button>
                           <button
                             style={{...B("#fff","#ef4444"),border:"1.5px solid #ef4444",fontSize:10,padding:"5px 10px"}}
                             onClick={()=>{
@@ -452,6 +456,11 @@ export default function Cotizacion({ctx}){
             <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Viaja hasta el comprobante contable al aprobar la cotización.</div>
           </div>
           <div><LBL>Contacto</LBL><input value={cl.contacto} onChange={e=>setCl({...cl,contacto:e.target.value})} style={SI}/></div>
+          <div>
+            <LBL>Correo del contacto</LBL>
+            <input type="email" value={cl.contactoEmail} onChange={e=>setCl({...cl,contactoEmail:e.target.value})} placeholder="isabel@empresa.com" style={SI}/>
+            <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>A esta dirección se envía la cotización.</div>
+          </div>
           <div><LBL>Obra</LBL><input value={cl.obra} onChange={e=>setCl({...cl,obra:e.target.value})} style={SI}/></div>
           <div><LBL>Teléfono</LBL><input value={cl.telefono} onChange={e=>setCl({...cl,telefono:e.target.value})} style={SI}/></div>
           <div><LBL>Ciudad</LBL><input value={cl.ciudad} onChange={e=>setCl({...cl,ciudad:e.target.value})} style={SI}/></div>
@@ -618,6 +627,8 @@ export default function Cotizacion({ctx}){
           alto={cabeEnDosColumnas ? "calc(100vh - 210px)" : "calc(100vh - 260px)"}
         />
       )}
+      {enviarCot && <EnviarCotizacion cotizacion={enviarCot} firmaImg={firmaImg} onCerrar={()=>setEnviarCot(null)}/>}
+
       </div>
     </div>
   );

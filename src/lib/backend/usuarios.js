@@ -123,6 +123,12 @@ async function invocar(accion, datos = {}) {
   return data;
 }
 
+// Enviar una cotización al cliente no es administrar usuarios, pero comparte
+// la misma función porque necesita las credenciales del correo de la empresa,
+// que solo viven en el servidor. La función deja hacerlo a cualquier miembro
+// activo, no solo a un administrador.
+export const enviarCotizacionPorCorreo = (datos) => invocar("enviar-cotizacion", datos);
+
 export const crearUsuario = (datos) => invocar("crear", datos);
 export const actualizarUsuario = (datos) => invocar("actualizar", datos);
 export const desactivarUsuario = (userId) => invocar("desactivar", { userId });

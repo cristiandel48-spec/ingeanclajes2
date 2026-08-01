@@ -212,3 +212,36 @@ Para el equipo de una empresa pequeña esto suele bastar. Si más adelante hace
 falta blindaje real, la migración ya dejó lista la función
 `app.usuario_tiene_modulo(tenant_id, modulo)`; faltaría agregar políticas por
 tabla que la consulten.
+
+
+---
+
+## Enviar cotizaciones al cliente
+
+La misma función `gestionar-usuarios` envía las cotizaciones, porque necesita
+las credenciales del correo de la empresa y esas solo viven en el servidor.
+
+**No hace falta ser administrador**: cualquier persona con acceso activo puede
+enviar una cotización. Administrar cuentas sí sigue siendo exclusivo del rol
+Administrador.
+
+Requiere la migración `20260801_026_cotizaciones_contacto_email.sql`, que agrega
+el correo de la persona de contacto, y los secretos `SMTP_USUARIO` y
+`SMTP_CLAVE` ya configurados.
+
+### Cómo se usa
+
+En la cotización, botón **Enviar al cliente**. Se abre el correo ya redactado
+con los datos del contacto; se revisa y se pulsa Enviar. El PDF se arma en ese
+momento y va adjunto.
+
+El correo **no sale solo**: va a un cliente y lleva el precio de un trabajo.
+
+### Sobre el PDF adjunto
+
+Se arma en el navegador convirtiendo cada hoja en imagen. Eso significa que
+**el texto no se puede seleccionar ni buscar** y que el archivo pesa más que el
+que sale con «Imprimir PDF».
+
+Para archivar o firmar sigue siendo mejor el de imprimir. Si el PDF supera los
+20 MB el envío se detiene y avisa: hay que quitar fotos de la cotización.

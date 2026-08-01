@@ -8,6 +8,7 @@ import { blobABase64, generarCotizacionPdf } from "../../lib/cotizacionPdf";
 import { enviarCotizacionPorCorreo } from "../../lib/backend/usuarios";
 import { fmt } from "../../lib/format";
 import { comoFrase, comoNombre, primerNombre } from "../../lib/texto";
+import { asuntoSeguro } from "../../lib/asuntoCorreo";
 import { getQuotePrintableProposals } from "../../lib/cotizaciones";
 import LBL from "../../components/ui/LBL";
 import { B, SI } from "../../styles/tokens";
@@ -16,9 +17,9 @@ import { B, SI } from "../../styles/tokens";
 // "Cotización C-26115" a secas no dice de quién viene y se pierde.
 function asuntoPorDefecto(c) {
   const obra = comoNombre(c?.obra || c?.cliente || "");
-  return [`Cotización ${c?.numero || ""}`.trim(), "Ingeanclajes", obra]
-    .filter(Boolean)
-    .join(" · ");
+  return asuntoSeguro(
+    [`Cotizacion ${c?.numero || ""}`.trim(), "Ingeanclajes", obra].filter(Boolean).join(" - ")
+  );
 }
 
 // Detalle de la propuesta activa: qué se cotiza, cuánto y a qué precio. Sin
@@ -91,7 +92,9 @@ export default function EnviarCotizacion({ cotizacion, firmaImg = "", onCerrar }
       setEstado("Enviando el correo…");
       await enviarCotizacionPorCorreo({
         para: para.trim(),
-        asunto: asunto.trim(),
+        // Se limpia otra vez al enviar, no solo al proponerlo: el campo es
+        // editable y una tilde escrita a mano rompe las cabeceras del correo.
+        asunto: asuntoSeguro(asunto),
         mensaje,
         pdfBase64: await blobABase64(blob),
         nombreArchivo: nombre,

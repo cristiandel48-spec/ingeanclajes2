@@ -40,7 +40,9 @@ export const NAV_SECTIONS = [
       { id: "cotizacion", label: "Cotizaciones" },
       { id: "clientes", label: "Clientes" },
       { id: "obras", label: "Ejecución de obra", short: "Obras" },
-      { id: "pagos", label: "Cuentas por cobrar", short: "Por cobrar" },
+      // Los horarios se arman al lado de la obra: es donde se decide quien va
+      // a cada sitio y se le avisa.
+      { id: "horarios", label: "Horarios" },
     ],
   },
   {
@@ -54,10 +56,11 @@ export const NAV_SECTIONS = [
   {
     title: "Administración",
     items: [
+      // Cobrar y pagar quedan juntos, que es como se revisa la plata.
+      { id: "pagos", label: "Cuentas por cobrar", short: "Por cobrar" },
       { id: "proveedores", label: "Causación / facturas", short: "Causación" },
       { id: "contabilidad", label: "Contabilidad" },
       { id: "nomina", label: "Nómina y empleados", short: "Nómina" },
-      { id: "horarios", label: "Horarios" },
       { id: "financiero", label: "Informe financiero", short: "Financiero" },
     ],
   },

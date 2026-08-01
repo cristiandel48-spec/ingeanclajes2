@@ -1,5 +1,6 @@
 import Av from "../../components/ui/Av";
 import H1 from "../../components/ui/H1";
+import PasosNomina, { NavegacionPasos } from "./PasosNomina";
 import LBL from "../../components/ui/LBL";
 import { useEffect, useState } from "react";
 import { B, CD, PAL, SI, ST } from "../../styles/tokens";
@@ -502,29 +503,9 @@ export default function Nomina({ctx}){
 
   return(
     <div style={{padding:28}}>
-      <H1 title="Nómina y Empleados" subtitle="Gestión de empleados, prestaciones, incapacidades, horas extras, comisiones y planilla"
+      <H1 title="Nómina y Empleados" subtitle="Proceso quincenal: preparar el corte, revisar novedades y generar el pago"
         action={<button style={B("#cc0000")} onClick={()=>setTab("nuevo")}>+ Nuevo Empleado</button>}/>
-      <div style={{display:"flex",gap:4,marginBottom:16,flexWrap:"nowrap",overflowX:"auto",paddingBottom:2}}>
-        {[["lista","Empleados"],["prestaciones","Prestaciones sociales"],["vacaciones","Vacaciones"],["contratos","Contratos y liquidación"],["he","Horas extras y comisiones"],["incapacidades","Incapacidades"],["deducciones","Revisión deducciones"],["colillas","Colillas de pago"],["planilla","Planilla Bancolombia"]].map(([id,lb])=>(
-          <button
-            key={id}
-            onClick={()=>setTab(id)}
-            style={{
-              ...B(tab===id?"#f47c20":"#f8fafc",tab===id?"#fff":"#475569"),
-              border:"1px solid " + (tab===id?"#f47c20":"#dbe4f0"),
-              padding:"7px 12px",
-              fontSize:11,
-              fontWeight:600,
-              borderRadius:10,
-              whiteSpace:"nowrap",
-              flex:"0 0 auto",
-              minHeight:36,
-            }}
-          >
-            {lb}
-          </button>
-        ))}
-      </div>
+      <PasosNomina activo={tab} onIr={setTab}/>
 
       <div style={{...CD,maxWidth:900,margin:"0 auto 20px",padding:"14px 16px"}}>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))",gap:12,alignItems:"end"}}>
@@ -1555,10 +1536,39 @@ export default function Nomina({ctx}){
                 </div>
               </div>
             </div>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"flex-end"}}>
-              <button style={B("#f47c20")} onClick={generarNominaCorte}>{nominaEstaGenerada ? "Regenerar nómina" : "Generar nómina"}</button>
-              <button style={B("#142840","#dbeafe")} onClick={descargarPlanoBanco}>Descargar plano banco</button>
-              <button style={B("#166534","#d1fae5")} onClick={()=>printCurrentPz("Planilla Nómina " + (nominaVistaActual.periodo.label))}>Imprimir / Bancolombia</button>
+            <div style={{display:"flex",flexDirection:"column",gap:10,minWidth:230}}>
+              {/* Primero se genera; hasta entonces lo demas no tiene sentido y
+                  se muestra apagado para que nadie lo intente antes. */}
+              <button
+                style={{...B("#f47c20"),justifyContent:"center",padding:"13px 20px",fontSize:13.5,fontWeight:700}}
+                onClick={generarNominaCorte}
+              >
+                {nominaEstaGenerada ? "Regenerar nómina" : "1 · Generar nómina"}
+              </button>
+
+              <div style={{fontSize:10.5,color:"#94a3b8",lineHeight:1.45,textAlign:"center"}}>
+                {nominaEstaGenerada
+                  ? "Ya puedes descargar el archivo del banco."
+                  : "Congela el corte con los datos actuales."}
+              </div>
+
+              <button
+                style={{
+                  ...B(nominaEstaGenerada?"#142840":"#f1f5f9", nominaEstaGenerada?"#dbeafe":"#94a3b8"),
+                  justifyContent:"center",padding:"12px 20px",fontSize:12.5,
+                }}
+                onClick={descargarPlanoBanco}
+                title={nominaEstaGenerada ? "" : "Genera la nómina primero"}
+              >
+                2 · Descargar plano banco
+              </button>
+
+              <button
+                style={{...B("#f8fafc","#475569"),border:"1px solid #dbe4f0",justifyContent:"center",padding:"12px 20px",fontSize:12.5}}
+                onClick={()=>printCurrentPz("Planilla Nómina " + (nominaVistaActual.periodo.label))}
+              >
+                Imprimir planilla
+              </button>
             </div>
           </div>
           {mensajeGuardadoNomina ? <div style={{marginBottom:12,fontSize:12,fontWeight:700,color:"#166534"}}>{mensajeGuardadoNomina}</div> : null}
@@ -1619,6 +1629,8 @@ export default function Nomina({ctx}){
           </div>
         </div>
       )}
+
+      {tab!=="nuevo" && <NavegacionPasos activo={tab} onIr={setTab}/>}
     </div>
   );
 }

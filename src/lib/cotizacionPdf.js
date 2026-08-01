@@ -14,6 +14,29 @@ import { buildCotizacionPrintHtml } from "./cotizacionPrint";
 const ANCHO_HOJA = 816;
 const ALTO_HOJA = 1056;
 
+// html2canvas no dibuja el documento: lo copia a otro iframe y lo redibuja
+// midiendo el texto palabra por palabra. Con una tipografía descargada de
+// internet, la negrita no siempre llega a tiempo a esa copia: entonces mide
+// con una fuente y dibuja con otra, y las palabras salen pegadas
+// ("FISCALIAGENERALDELANACION").
+//
+// Para el PDF se cambian por fuentes que todo computador ya tiene. Cambia algo
+// el aspecto frente al documento impreso, pero se lee bien, que es lo que
+// importa en algo que va a un cliente.
+function prepararHtmlParaPdf(html) {
+  return html
+    .replace(/<link[^>]*fonts\.(?:googleapis|gstatic)\.com[^>]*>/g, "")
+    .replace("</head>", `<style>
+      body, .table, .table th, .table td, input, button {
+        font-family: Arial, Helvetica, sans-serif !important;
+      }
+      h1, h2, h3,
+      .cover-client-name, .def-term, .ficha-name, .sig-name {
+        font-family: Georgia, 'Times New Roman', serif !important;
+      }
+    </style></head>`);
+}
+
 // Espera a que el documento del iframe tenga fuentes e imágenes listas. Sin
 // esto html2canvas dibuja huecos donde van las fotos y el logo.
 async function esperarRecursos(doc, ventana) {
@@ -51,7 +74,7 @@ export async function generarCotizacionPdf(cotizacion, { firmaImg = "", onProgre
     );
   }
 
-  const html = buildCotizacionPrintHtml(cotizacion, { firmaImg });
+  const html = prepararHtmlParaPdf(buildCotizacionPrintHtml(cotizacion, { firmaImg }));
 
   // Se dibuja fuera de la vista, no oculto: display:none o visibility:hidden
   // hacen que html2canvas mida todo en cero.

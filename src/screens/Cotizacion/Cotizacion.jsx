@@ -14,6 +14,8 @@ import { buildQuoteProposal, createQuoteProposalId, getQuoteActiveProposal, getQ
 import { scrollAppToTop, today } from "../../lib/format";
 import { normalizeEntityKey, openCotizacionPrint } from "../../lib/cotizacionPrint";
 import { getFirmaImg } from "../../lib/firmaEmpresa";
+import { asuntoAprobacion, mensajeAprobacion } from "../../lib/correoAprobacion";
+import { enviarCotizacionPorCorreo } from "../../lib/backend/usuarios";
 export default function Cotizacion({ctx}){
   const {cotizaciones,setCotizaciones,obras,setObras,empresaConfig}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
@@ -247,7 +249,29 @@ export default function Cotizacion({ctx}){
       ivaGeneradoCotizacion:snapshot.ivaGeneradoCotizacion,
     }]);
     setCotizaciones((prev)=>prev.map((item)=>item.id===cotId?{...item,estado:"Aprobada",obraId}:item));
-    setObraCreada({id:obraId,cliente:cotizacion.cliente,proyecto:cotizacion.obra});
+    setObraCreada({id:obraId,cliente:cotizacion.cliente,proyecto:cotizacion.obra,correo:"enviando"});
+
+    // Confirmacion al cliente, sin preguntar nada: aprobar ya fue la decision.
+    // El resultado si se muestra: si el correo no sale, quien aprobo tiene que
+    // enterarse para avisar por otro medio.
+    const destino = String(cotizacion.contactoEmail || "").trim();
+    if(!destino){
+      setObraCreada((prev)=>prev && {...prev,correo:"sin-direccion"});
+      return;
+    }
+
+    enviarCotizacionPorCorreo({
+      para: destino,
+      asunto: asuntoAprobacion(cotizacion),
+      mensaje: mensajeAprobacion(cotizacion,{obraId}),
+      nombreArchivo: "",
+      pdfBase64: "",
+    })
+      .then(()=>setObraCreada((prev)=>prev && {...prev,correo:"enviado",destino}))
+      .catch((e)=>{
+        console.error("No se pudo avisar al cliente de la aprobacion:",e);
+        setObraCreada((prev)=>prev && {...prev,correo:"fallo",destino,motivo:e.message});
+      });
   };
 
   const term = normalizeEntityKey(busqueda || "");
@@ -288,6 +312,30 @@ export default function Cotizacion({ctx}){
                   Desde la obra se generan el <strong>informe de actividades</strong> y la <strong>certificación</strong>,
                   también con los datos ya cargados. Entra a la obra y ahí te dice qué falta para cada uno.
                 </div>
+
+                {/* El correo sale solo, pero el resultado se ve: si no llego,
+                    quien aprobo tiene que enterarse para avisar por otro medio. */}
+                {obraCreada.correo==="enviando" && (
+                  <div style={{fontSize:12,color:"#166534",marginTop:8,opacity:.75}}>
+                    Avisando al cliente por correo…
+                  </div>
+                )}
+                {obraCreada.correo==="enviado" && (
+                  <div style={{fontSize:12,color:"#166534",marginTop:8}}>
+                    Se le confirmó por correo a <strong>{obraCreada.destino}</strong>.
+                  </div>
+                )}
+                {obraCreada.correo==="sin-direccion" && (
+                  <div style={{fontSize:12,color:"#B54708",marginTop:8,lineHeight:1.5}}>
+                    No se avisó al cliente: esta cotización no tiene correo de contacto.
+                  </div>
+                )}
+                {obraCreada.correo==="fallo" && (
+                  <div style={{fontSize:12,color:"#B42318",marginTop:8,lineHeight:1.5}}>
+                    <strong>El correo al cliente no salió</strong> ({obraCreada.motivo}). La obra sí quedó
+                    creada; avísale tú.
+                  </div>
+                )}
               </div>
               <button
                 onClick={()=>setObraCreada(null)}

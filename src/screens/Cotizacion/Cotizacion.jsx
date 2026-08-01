@@ -400,6 +400,11 @@ export default function Cotizacion({ctx}){
             </table>
           </div>
         </div>
+
+        {/* La lista tiene su propio return, aparte del formulario. Sin montar
+            aqui el dialogo, el boton de enviar guardaba el estado y no pasaba
+            nada visible. */}
+        {enviarCot && <EnviarCotizacion cotizacion={enviarCot} firmaImg={firmaImg} onCerrar={()=>setEnviarCot(null)}/>}
       </div>
     );
   }

@@ -444,6 +444,22 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     const hasClientReq = propuesta.esObraBlanca && String(propuesta.requerimientoCliente || "").trim().length > 0;
     const plan = planificarItems(propuesta);
 
+    const incluyeHtml = hasAnchorPointsService(propuesta.quote) ? renderIncluyeBlock(propuesta) : "";
+    const fotosHtml = renderPhotoGrid(propuesta.fotos, idx);
+    const mapaHtml = renderMapBlock(propuesta, idx);
+
+    // Si la propuesta no trae texto, fotos ni mapa, y la tabla se fue a hojas
+    // propias, esta hoja solo tendria el titulo y un aviso: una pagina en
+    // blanco con dos lineas arriba. En ese caso no se imprime, y el detalle
+    // arranca directo en su hoja.
+    const tieneContenidoPropio = Boolean(
+      hasClientReq || hasScope || hasNarrative ||
+      incluyeHtml.trim() || fotosHtml.trim() || mapaHtml.trim()
+    );
+    if (!tieneContenidoPropio && !plan.juntoAlTexto) {
+      return renderItemsPages(propuesta, idx, plan);
+    }
+
     return `
       <section class="page">
         <div class="page-inner">
@@ -471,10 +487,10 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
               </div>
             ` : ""}
 
-            ${hasAnchorPointsService(propuesta.quote) ? renderIncluyeBlock(propuesta) : ""}
+            ${incluyeHtml}
 
-            ${renderPhotoGrid(propuesta.fotos, idx)}
-            ${renderMapBlock(propuesta, idx)}
+            ${fotosHtml}
+            ${mapaHtml}
             ${plan.juntoAlTexto
               ? (plan.hojas.length ? renderItemsTable(propuesta, plan.hojas[0], { conTotales: true }) : "")
               : `<p class="doc-copy"><em>El detalle de precios continúa en la página siguiente.</em></p>`}

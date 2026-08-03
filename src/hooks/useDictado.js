@@ -26,7 +26,10 @@ const MENSAJES_ERROR = {
   "not-allowed": "No diste permiso al micrófono. Búscalo en el candado de la barra de direcciones y actívalo.",
   "service-not-allowed": "El navegador bloqueó el micrófono. Revisa los permisos del sitio.",
   "audio-capture": "No se encontró ningún micrófono conectado.",
-  network: "Sin conexión para transcribir. El dictado necesita internet.",
+  // "network" casi nunca es falta de internet: la app ya cargó. Es que no se
+  // pudo llegar al servicio que transcribe. Pasa en navegadores Chromium sin
+  // las claves de Google (Brave, Opera, Vivaldi) y en redes con firewall.
+  network: "No se pudo contactar el servicio que transcribe. Suele pasar en Brave, Opera o Vivaldi, y en redes con restricciones. Prueba en Chrome o Edge, o usa el dictado del teclado (tecla Windows + H).",
   "no-speech": "No se escuchó nada. Acércate al micrófono y vuelve a intentar.",
 };
 

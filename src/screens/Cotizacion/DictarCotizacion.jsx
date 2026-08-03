@@ -49,8 +49,9 @@ export default function DictarCotizacion({ onAplicar, onCerrar }) {
         Son 120 metros de línea de vida horizontal en la cubierta y 4 puntos de anclaje epóxico»</em>.
         <div style={{ marginTop: 5 }}>
           Lo que se entienda se muestra abajo para que <strong>lo revises antes de aplicarlo</strong>.
-          Los precios salen del catálogo del sistema, no de la IA. Los nombres propios y los números
-          conviene verificarlos siempre: el dictado los equivoca con frecuencia.
+          Si dices un precio («a 100 mil cada uno») se usa ese; si no dices nada, se toma el del
+          catálogo. Los nombres propios y los números conviene verificarlos siempre: el dictado los
+          equivoca con frecuencia.
         </div>
       </AvisoFlujo>
 
@@ -112,7 +113,8 @@ export default function DictarCotizacion({ onAplicar, onCerrar }) {
           )}
 
           <div style={{ fontSize: 11, color: "#64748b", marginBottom: 6 }}>
-            Servicios reconocidos ({propuesta.items.length}) · precios tomados del catálogo
+            Servicios reconocidos ({propuesta.items.length}) · si dictaste un precio manda ese;
+            si no, el del catálogo
           </div>
           {propuesta.items.length === 0 ? (
             <div style={{ background: "#FFFAF0", border: "1px solid #FDE3C4", color: "#B54708", borderRadius: 8, padding: "10px 12px", fontSize: 12 }}>
@@ -123,7 +125,16 @@ export default function DictarCotizacion({ onAplicar, onCerrar }) {
             <div style={{ background: "#fff", borderRadius: 8, border: "1px solid #f1f5f9", overflow: "hidden" }}>
               {propuesta.items.map((item, i) => (
                 <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: "8px 12px", borderBottom: i < propuesta.items.length - 1 ? "1px solid #f8fafc" : "none", fontSize: 12 }}>
-                  <span style={{ color: "#1a1a2e" }}>{item.desc}</span>
+                  <span style={{ color: "#1a1a2e" }}>
+                    {item.desc}
+                    {/* Se avisa cuando el precio no es el de siempre: un valor
+                        dictado por error se veria igual que uno correcto. */}
+                    {item.precioDictado && (
+                      <span style={{ color: "#B54708", fontSize: 10.5, display: "block", marginTop: 2 }}>
+                        precio dictado {fmt(item.vu)} · en catálogo {fmt(item.vuCatalogo)}
+                      </span>
+                    )}
+                  </span>
                   <span style={{ color: "#64748b", whiteSpace: "nowrap" }}>{item.cant} {item.unit} · {fmt(item.vu * item.cant)}</span>
                 </div>
               ))}

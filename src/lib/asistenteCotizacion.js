@@ -64,13 +64,25 @@ export async function armarCotizacionDesdeTexto(texto) {
   if (error) throw new Error(await motivoDelError(error));
   if (data?.error) throw new Error(data.error);
 
-  // Los items se cruzan aqui con el catalogo real: la IA propone el nombre,
-  // pero el precio y la unidad salen SIEMPRE del sistema, nunca del modelo.
+  // Los items se cruzan con el catalogo real: la descripcion y la unidad
+  // salen SIEMPRE del sistema, nunca del modelo.
+  //
+  // Con el precio se distingue quien lo decidio. Si la persona dicto un valor
+  // ("a 100 mil cada uno") manda ese, porque es una decision suya y no un
+  // invento del modelo. Si no dijo nada, manda el del catalogo.
   const items = (data?.items ?? [])
     .map((propuesto) => {
       const real = buscarItemCatalogo(propuesto.desc);
       if (!real) return null;
-      return { desc: real.desc, unit: real.unit, vu: real.vu, cant: propuesto.cant };
+      const dictado = Number(propuesto.vu) > 0 ? Number(propuesto.vu) : null;
+      return {
+        desc: real.desc,
+        unit: real.unit,
+        cant: propuesto.cant,
+        vu: dictado ?? real.vu,
+        vuCatalogo: real.vu,
+        precioDictado: dictado !== null,
+      };
     })
     .filter(Boolean);
 

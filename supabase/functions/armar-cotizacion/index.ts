@@ -53,7 +53,7 @@ function construirInstruccion(catalogo: string) {
     '  "obra": string,           // sitio o nombre de la obra; "" si no se dijo',
     '  "telefono": string,       // solo digitos; "" si no se dijo',
     '  "alcance": string,        // descripcion del trabajo, redactada formal',
-    '  "items": [{ "desc": string, "cant": number }],',
+    '  "items": [{ "desc": string, "cant": number, "vu": number|null }],',
     '  "avisos": [string]        // que quedo dudoso o no se entendio',
     "}",
     "",
@@ -61,6 +61,10 @@ function construirInstruccion(catalogo: string) {
     "- `desc` de cada item debe ser EXACTAMENTE uno de los del catalogo. Si lo",
     "  dictado no encaja con ninguno, no lo inventes: dejalo fuera y explicalo",
     "  en `avisos`.",
+    "- `vu` es el valor unitario. SOLO se pone si la persona dijo un precio",
+    "  para ese item concreto (\"a 100 mil cada uno\", \"a 150.000 la unidad\").",
+    "  Si no dijo precio, `vu` va en null y el sistema usa el del catalogo.",
+    "  Nunca calcules ni supongas un precio: o lo dijeron, o va null.",
     "- No inventes cantidades, precios, nombres ni telefonos. Lo que no se dijo",
     "  va vacio. Es preferible un campo en blanco a un dato falso.",
     "- El dictado viene de voz: puede traer errores. Si un nombre propio suena",
@@ -170,9 +174,11 @@ Deno.serve(async (peticion) => {
       items: Array.isArray(propuesta.items)
         ? propuesta.items
             .filter((item: { desc?: unknown }) => item && item.desc)
-            .map((item: { desc: unknown; cant: unknown }) => ({
+            .map((item: { desc: unknown; cant: unknown; vu: unknown }) => ({
               desc: String(item.desc),
               cant: Number(item.cant) > 0 ? Number(item.cant) : 1,
+              // null = no se dicto precio, manda el catalogo.
+              vu: Number(item.vu) > 0 ? Number(item.vu) : null,
             }))
         : [],
       avisos: Array.isArray(propuesta.avisos) ? propuesta.avisos.map(String) : [],

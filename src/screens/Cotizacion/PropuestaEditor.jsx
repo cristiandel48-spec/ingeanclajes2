@@ -95,14 +95,11 @@ export default function PropuestaEditor({
           </div>
         </div>
 
-        {/* 2. Descripción / texto comercial */}
-        <div style={{marginBottom:18}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
-            <LBL>Descripción / texto de la propuesta</LBL>
-            <BotonDictado valor={p.alcance} onChange={v=>set("alcance", v)} titulo="Dictar la descripción" compacto/>
-          </div>
-          <textarea value={p.alcance} onChange={e=>set("alcance", e.target.value)} onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==p.alcance)set("alcance", v);}} placeholder="Describe el servicio, materiales y alcance de esta propuesta..." spellCheck lang="es" style={{...SI,minHeight:130,resize:"vertical",lineHeight:1.7}}/>
-        </div>
+        {/* Se quitaron de la pantalla la «descripción de la propuesta» y el
+            «esta cotización incluye». Los valores siguen viajando al documento
+            -lo que ya esté escrito se imprime igual, y el texto de "incluye" se
+            sigue rellenando solo en las cotizaciones de puntos de anclaje-, lo
+            que ya no se hace es escribirlos a mano desde aquí. */}
 
         {p.tipoCotizacion==="obra_blanca"&&(
           <div style={{marginBottom:18}}>
@@ -113,14 +110,6 @@ export default function PropuestaEditor({
             <textarea value={p.requerimientoCliente} onChange={e=>set("requerimientoCliente", e.target.value)} onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==p.requerimientoCliente)set("requerimientoCliente", v);}} spellCheck lang="es" style={{...SI,minHeight:100,resize:"vertical",lineHeight:1.5}}/>
           </div>
         )}
-
-        <div style={{marginBottom:18}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
-            <LBL>Esta cotización incluye</LBL>
-            <BotonDictado valor={p.incluyeTexto} onChange={v=>set("incluyeTexto", v)} titulo="Dictar lo que incluye" compacto/>
-          </div>
-          <textarea value={p.incluyeTexto} onChange={e=>set("incluyeTexto", e.target.value)} placeholder="Texto predeterminado editable" spellCheck lang="es" style={{...SI,minHeight:120,resize:"vertical",lineHeight:1.6}}/>
-        </div>
 
         {/* 3. Fotos */}
         <div style={{marginBottom:18}}>

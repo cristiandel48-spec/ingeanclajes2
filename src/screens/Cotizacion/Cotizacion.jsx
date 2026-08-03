@@ -267,10 +267,10 @@ export default function Cotizacion({ctx}){
           fontFamily:"inherit", whiteSpace:"nowrap",
         }}
       >
-        {editCot ? "Actualizar" : "Guardar"}
+        Guardar
       </button>
     ) : null,
-    [tab, editCot]
+    [tab]
   );
 
   const guardarCotizacionYSubir = ()=>{
@@ -666,16 +666,9 @@ export default function Cotizacion({ctx}){
       <div style={{...CD,marginBottom:14}}>
         <div style={ST}>Cierre · Resumen, condiciones y próximos pasos</div>
 
-        <div style={{marginBottom:14}}>
-          <LBL>Observaciones / condiciones adicionales</LBL>
-          <textarea
-            value={observacionesCot}
-            onChange={e=>setObservacionesCot(e.target.value)}
-            placeholder="Ej: El pago se realiza contra entrega de acta parcial. Incluye transporte de materiales..."
-            style={{...SI,minHeight:80,resize:"vertical",lineHeight:1.6}}
-          />
-          <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Aparece junto a las condiciones comerciales del documento.</div>
-        </div>
+        {/* Las «observaciones / condiciones adicionales» ya no se escriben
+            desde aquí. El valor se conserva y se sigue imprimiendo en las
+            cotizaciones que lo tengan. */}
 
         <div style={{marginBottom:14}}>
           <LBL>Sistema de gestión de seguridad y salud en el trabajo</LBL>

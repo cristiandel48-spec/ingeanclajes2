@@ -1,3 +1,4 @@
+import AvisoFlujo from "../../components/AvisoFlujo";
 import Badge from "../../components/ui/Badge";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
@@ -6,8 +7,20 @@ import { useEffect, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmt, fmtD, today } from "../../lib/format";
 import { getQuoteApprovalAccountingSnapshot } from "../../lib/cotizaciones";
+import { resumenBitacora } from "../../lib/bitacoraObra";
+
+// Siguiente consecutivo de obra. Se calcula sobre el numero mas alto que ya
+// existe, no sobre cuantas obras hay: al borrar una obra intermedia, contar
+// filas repetia un id que ya estaba en uso y la obra nueva pisaba a la vieja.
+const siguienteIdObra = (obras) => {
+  const mayor = obras.reduce((max, o) => {
+    const n = parseInt(String(o.id || "").replace(/\D/g, ""), 10);
+    return Number.isFinite(n) && n > max ? n : max;
+  }, 0);
+  return "OB-" + String(mayor + 1).padStart(3, "0");
+};
 export default function Obras({ctx}){
-  const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,horarios,intencion,limpiarIntencion}=ctx;
+  const {obras,setObras,cotizaciones,cuentas,intencion,limpiarIntencion}=ctx;
   // Se puede llegar aqui desde otra pantalla pidiendo una obra concreta, por
   // ejemplo desde el aviso de "esta obra no esta lista para certificar".
   const obraSolicitada = intencion?.pantalla==="obras" ? intencion.obraId : null;
@@ -15,35 +28,42 @@ export default function Obras({ctx}){
 
   // Se descarta al salir, para que al volver por el menu no se reabra sola.
   useEffect(()=>()=>limpiarIntencion(),[limpiarIntencion]);
-  const [detTab,setDetTab]=useState("personal");
   const [showNO,setShowNO]=useState(false);
-  const [nob,setNob]=useState({cliente:"",tel:"",proyecto:"",ciudad:"",direccion:"",fechaInicio:today(),fechaFin:"",total:0,cotizacionId:""});
-  const [gastoForm,setGastoForm]=useState({proveedorId:"PROV-001",concepto:"",monto:0,fecha:today(),fechaVence:"",factura:""});
-  const [showGasto,setShowGasto]=useState(false);
+  // `estado` y `avance` van en el formulario porque muchas obras se cargan al
+  // sistema cuando ya llevan tiempo ejecutandose: arrancar siempre en 0% las
+  // dejaba mal desde el primer dia.
+  const [nob,setNob]=useState({cliente:"",tel:"",proyecto:"",ciudad:"",direccion:"",fechaInicio:today(),fechaFin:"",total:0,pagado:0,estado:"En Obra",avance:0,cotizacionId:""});
 
   const updAv=(id,v)=>setObras(p=>p.map(o=>o.id===id?{...o,avance:Math.min(100,Math.max(0,v))}:o));
   const updEst=(id,e)=>setObras(p=>p.map(o=>o.id===id?{...o,estado:e}:o));
 
   const guardarObra=()=>{
-    if(!nob.cliente.trim())return;
-    const id="OB-" + (String(obras.length+1).padStart(3,"0"));
+    if(!nob.cliente.trim()){
+      window.alert("Falta el nombre del cliente. Es lo único obligatorio para crear la obra.");
+      return;
+    }
+    const id=siguienteIdObra(obras);
     const cotizacionVinculada = nob.cotizacionId ? cotizaciones.find((cotizacion)=>cotizacion.id===nob.cotizacionId) : null;
     const snapshot = cotizacionVinculada ? getQuoteApprovalAccountingSnapshot(cotizacionVinculada) : null;
     const totalObra = snapshot?.totalObra ?? Number(nob.total || 0);
+    // Lo ya cobrado se pide en el formulario para las obras que entran al
+    // sistema con anticipo recibido.
+    const cobrado = Math.min(Number(nob.pagado || 0), totalObra);
     setObras(p=>[...p,{
       ...nob,
       id,
       nit:"",
       coords:"",
-      estado:"En Obra",
-      avance:0,
+      estado:nob.estado || "En Obra",
+      avance:Math.min(100,Math.max(0,Number(nob.avance || 0))),
       total:totalObra,
-      pagado:0,
-      saldo:totalObra,
+      pagado:cobrado,
+      saldo:totalObra-cobrado,
       costos:0,
       empleados:[],
       trazos:[],
       anclajes:[],
+      bitacora:[],
       subtotalCotizacion:snapshot?.subtotalCotizacion ?? 0,
       utilidadCotizacion:snapshot?.utilidadCotizacion ?? 0,
       baseIngresoContable:snapshot?.baseIngresoContable ?? totalObra,
@@ -52,16 +72,8 @@ export default function Obras({ctx}){
     if(nob.cotizacionId){
       ctx.setCotizaciones(p=>p.map(c=>c.id===nob.cotizacionId?{...c,estado:"Aprobada",obraId:id}:c));
     }
-    setNob({cliente:"",tel:"",proyecto:"",ciudad:"",direccion:"",fechaInicio:today(),fechaFin:"",total:0,cotizacionId:""});
+    setNob({cliente:"",tel:"",proyecto:"",ciudad:"",direccion:"",fechaInicio:today(),fechaFin:"",total:0,pagado:0,estado:"En Obra",avance:0,cotizacionId:""});
     setShowNO(false);
-  };
-
-  const guardarGasto=()=>{
-    if(!sel||!gastoForm.concepto)return;
-    const id="CP-" + (String(cuentas.length+1).padStart(3,"0"));
-    setCuentas(p=>[...p,{id,...gastoForm,obraId:sel.id,estado:"Pendiente"}]);
-    setGastoForm({proveedorId:"PROV-001",concepto:"",monto:0,fecha:today(),fechaVence:"",factura:""});
-    setShowGasto(false);
   };
 
   // Si hay obra seleccionada, mostramos pantalla completa de esa obra
@@ -74,9 +86,30 @@ export default function Obras({ctx}){
       <H1 title="Ejecución de Obra" subtitle="Gestión completa: personal, gastos, nómina y tiempo por obra"
         action={<button style={B("#cc0000")} onClick={()=>setShowNO(!showNO)}>+ Nueva Obra</button>}/>
 
+      <AvisoFlujo
+        tono="info"
+        titulo="Cómo funciona este módulo"
+        pasos={[
+          "Crea la obra: con «+ Nueva Obra» si ya está en ejecución, o aprobando una cotización (ahí se crea sola con sus valores).",
+          "Abre la obra y asigna en «Personal» quién trabaja en ella. Si alguien no aparece, créalo primero en Nómina.",
+          "Asigna los turnos desde Horarios: le llegan por WhatsApp y cuentan los días trabajados.",
+          "En «Avance y fotos» registra cada día lo que se hizo, con fotos y comentarios.",
+          "Con eso ya salen el informe de actividades y la certificación, sin volver a escribir nada.",
+        ]}
+      >
+        La obra es el centro de todo: es donde se junta la información que después alimenta los
+        documentos que se le entregan al cliente.
+      </AvisoFlujo>
+
       {showNO&&(
         <div style={{...CD,marginBottom:20,border:"1px solid #cc0000"}}>
           <div style={ST}>Nueva Obra</div>
+          <AvisoFlujo tono="info" titulo="¿La obra ya está en ejecución?">
+            Créala igual aquí. Pon la <strong>fecha real de inicio</strong>, el <strong>% de avance
+            que lleva</strong> hoy y lo que ya se haya <strong>cobrado</strong>: así el sistema
+            arranca con la realidad de la obra y no en ceros. Lo único obligatorio es el cliente,
+            lo demás se puede completar después.
+          </AvisoFlujo>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
             <div><LBL>Cliente</LBL><input value={nob.cliente} onChange={e=>setNob({...nob,cliente:e.target.value})} placeholder="Nombre del cliente" style={SI}/></div>
             <div><LBL>Teléfono</LBL><input value={nob.tel} onChange={e=>setNob({...nob,tel:e.target.value})} placeholder="3001234567" style={SI}/></div>
@@ -84,13 +117,28 @@ export default function Obras({ctx}){
             <div><LBL>Ciudad</LBL><input value={nob.ciudad} onChange={e=>setNob({...nob,ciudad:e.target.value})} placeholder="Ej: Medellín, Antioquia" style={SI}/></div>
             <div><LBL>Dirección</LBL><input value={nob.direccion} onChange={e=>setNob({...nob,direccion:e.target.value})} placeholder="Dirección de la obra" style={SI}/></div>
             <div><LBL>Valor total ($)</LBL><input type="number" value={nob.total} onChange={e=>setNob({...nob,total:parseFloat(e.target.value)||0})} style={SI}/></div>
-            <div><LBL>Fecha inicio</LBL><input type="date" value={nob.fechaInicio} onChange={e=>setNob({...nob,fechaInicio:e.target.value})} style={SI}/></div>
+            <div><LBL>Ya cobrado ($)</LBL><input type="number" value={nob.pagado} onChange={e=>setNob({...nob,pagado:parseFloat(e.target.value)||0})} style={SI}/>
+              <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>Anticipos ya recibidos. Déjalo en 0 si no han pagado nada.</div>
+            </div>
+            <div><LBL>Fecha inicio</LBL><input type="date" value={nob.fechaInicio} onChange={e=>setNob({...nob,fechaInicio:e.target.value})} style={SI}/>
+              <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>La fecha real en que empezaron, aunque sea de meses atrás.</div>
+            </div>
             <div><LBL>Fecha fin estimada</LBL><input type="date" value={nob.fechaFin} onChange={e=>setNob({...nob,fechaFin:e.target.value})} style={SI}/></div>
+            <div><LBL>Estado actual</LBL>
+              <select value={nob.estado} onChange={e=>setNob({...nob,estado:e.target.value})} style={SI}>
+                {["Cotización","En Obra","Finalizado","Pagado"].map(s=><option key={s}>{s}</option>)}
+              </select>
+              <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>Si está trabajándose ahora, déjalo en «En Obra».</div>
+            </div>
+            <div><LBL>Avance que lleva hoy (%)</LBL><input type="number" min={0} max={100} value={nob.avance} onChange={e=>setNob({...nob,avance:parseInt(e.target.value,10)||0})} style={SI}/>
+              <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>Al 100% (o en «Finalizado») ya se puede certificar.</div>
+            </div>
             <div><LBL>Vincular cotización (opcional)</LBL>
               <select value={nob.cotizacionId} onChange={e=>setNob({...nob,cotizacionId:e.target.value})} style={SI}>
                 <option value="">Sin cotización</option>
                 {cotizaciones.filter(c=>!c.obraId).map(c=><option key={c.id} value={c.id}>{c.numero} · {c.cliente}</option>)}
               </select>
+              <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>Si la vinculas, el valor total lo toma de la cotización y esa queda «Aprobada».</div>
             </div>
           </div>
           <div style={{display:"flex",gap:10}}>
@@ -104,11 +152,12 @@ export default function Obras({ctx}){
         {obras.map(o=>{
           const cotVinc=cotizaciones.find(c=>c.id===o.cotizacionId);
           const gastosObra=cuentas.filter(c=>c.obraId===o.id).reduce((s,c)=>s+c.monto,0);
+          const avanceReg=resumenBitacora(o.bitacora);
           return(
             <div key={o.id} style={{...CD,border:"1px solid #e2e8f0",cursor:"pointer",transition:"all 0.15s"}}
               onMouseEnter={e=>e.currentTarget.style.borderColor="#cc0000"}
               onMouseLeave={e=>e.currentTarget.style.borderColor="#e2e8f0"}
-              onClick={()=>{setSel(o);setDetTab("personal");}}>
+              onClick={()=>setSel(o)}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
                 <div>
                   <div style={{fontSize:10,color:"#94a3b8"}}>{o.id} · {fmtD(o.fechaInicio)}</div>
@@ -144,6 +193,12 @@ export default function Obras({ctx}){
                   {["Cotización","En Obra","Finalizado","Pagado"].map(s=><option key={s}>{s}</option>)}
                 </select>
                 <span style={{fontSize:11,color:"#94a3b8",flexShrink:0}}>{(o.empleados||[]).length} 👷</span>
+                <span
+                  title={avanceReg.fotos?"Fotos de avance cargadas para el informe":"Sin fotos de avance: el informe saldría vacío"}
+                  style={{fontSize:11,color:avanceReg.fotos?"#94a3b8":"#b54708",flexShrink:0}}
+                >
+                  {avanceReg.fotos} 📸
+                </span>
                 <span style={{fontSize:11,color:"#cc0000",fontWeight:600,flexShrink:0}}>Ver →</span>
               </div>
             </div>

@@ -36,9 +36,14 @@ function Fila({ estado, titulo, detalle, accion }) {
   );
 }
 
-export default function GuiaFlujoObra({ obra, empleadosAsignados, onCrearInforme, onCrearCertificacion }) {
+export default function GuiaFlujoObra({
+  obra, empleadosAsignados, registrosAvance = 0, fotosAvance = 0,
+  onVerAvance, onCrearInforme, onCrearCertificacion,
+}) {
   const { total, pagado, saldo, avance, estaPagada, estaTerminada } = getEstadoFlujoObra(obra);
   const personal = Number(empleadosAsignados || 0);
+  const registros = Number(registrosAvance || 0);
+  const fotos = Number(fotosAvance || 0);
 
   // La certificacion se entrega con el pago total: es la condicion comercial
   // que sale impresa en la propia cotizacion.
@@ -72,7 +77,8 @@ export default function GuiaFlujoObra({ obra, empleadosAsignados, onCrearInforme
         </div>
         <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 3, lineHeight: 1.5 }}>
           El informe y la certificación toman los datos de aquí. Entre más completa esté la obra,
-          menos hay que escribir después.
+          menos hay que escribir después: <strong>lo que se alimenta en la obra no se vuelve a
+          escribir en el informe</strong>.
         </div>
       </div>
 
@@ -90,6 +96,30 @@ export default function GuiaFlujoObra({ obra, empleadosAsignados, onCrearInforme
             personal > 0
               ? "El informe de actividades traerá esta gente con sus turnos del período."
               : "Asigna el personal en la pestaña «Personal». Sin esto, el informe sale sin trabajadores y toca escribirlos a mano."
+          }
+        />
+
+        <Fila
+          estado={fotos > 0 ? "listo" : "falta"}
+          titulo={
+            fotos > 0
+              ? `${registros} avance(s) registrado(s) · ${fotos} foto(s)`
+              : "Falta registrar el avance con fotos"
+          }
+          detalle={
+            fotos > 0
+              ? "El informe de actividades va a traer estos registros con sus fotos y comentarios."
+              : "Ve a la pestaña «Avance y fotos» y registra qué se hizo cada día, con las fotos y el comentario de cada una. Sin esto el informe sale vacío y toca escribirlo todo a mano."
+          }
+          accion={
+            onVerAvance && (
+              <button
+                onClick={onVerAvance}
+                style={{ ...B("#f1f5f9", "#475569"), fontSize: 11, padding: "7px 12px", flexShrink: 0, alignSelf: "center" }}
+              >
+                {fotos > 0 ? "Ver" : "Registrar"}
+              </button>
+            )
           }
         />
 

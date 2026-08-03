@@ -7,6 +7,8 @@ import { useEffect, useRef, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmtD, fmtL, today } from "../../lib/format";
 import { printCurrentPz } from "../../lib/print";
+import { bitacoraAActividades, normalizarBitacora, registrosDelPeriodo } from "../../lib/bitacoraObra";
+import { leerImagenComprimida } from "../../lib/imagenes";
 export default function Informes({ctx}){
   const {informes,setInformes,obras,empleados,horarios,intencion,limpiarIntencion,empresaConfig,irAPantalla}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
@@ -15,7 +17,7 @@ export default function Informes({ctx}){
   const [editId,setEditId]=useState(null);
   const fotoRefs=useRef({});
 
-  const emptyActividad=()=>({titulo:"",descripcion:"",observaciones:"",fotos:[{img:null,comentario:""},{img:null,comentario:""},{img:null,comentario:""},{img:null,comentario:""}]});
+  const emptyActividad=()=>({titulo:"",descripcion:"",observaciones:"",fecha:"",fotos:[{img:null,comentario:""},{img:null,comentario:""},{img:null,comentario:""},{img:null,comentario:""}]});
   const emptyPersona=()=>({empleadoId:"",cargo:"Instalador",nombre:"",turno1:"",turno2:"",manual:true});
 
   const fmtHora12=(hhmm)=>{
@@ -70,6 +72,16 @@ export default function Informes({ctx}){
   };
 
   const firstObraId = obras[0]?.id || "";
+
+  // El informe no se escribe desde cero: la persona que estuvo en la obra ya
+  // dejo el avance del dia con sus fotos en la pestana «Avance y fotos». Aqui
+  // solo se traen los registros que caen dentro del periodo del informe.
+  const actividadesDesdeObra = (obraId, desde, hasta)=>{
+    const obraSel = obras.find(o=>o.id===obraId);
+    if(!obraSel) return [];
+    return bitacoraAActividades(registrosDelPeriodo(obraSel.bitacora, desde, hasta));
+  };
+
   const normalizeInformeActividades = (data={})=>{
     if(Array.isArray(data.actividades) && data.actividades.length){
       return data.actividades.map((actividad)=>({
@@ -99,18 +111,36 @@ export default function Informes({ctx}){
     // rellenaba estos campos solo corre cuando cambian las obras, no al
     // abrir un informe nuevo, y el proyecto quedaba en blanco.
     const obraBase = obras.find((o)=>o.id===(data.obraId ?? firstObraId)) || obras[0] || null;
+
+    // En un informe nuevo el periodo se deduce de la bitacora de la obra: va
+    // desde el primer avance registrado hasta el ultimo. Antes arrancaba en
+    // "hoy - hoy" y no traia nada, que es justo lo contrario de lo util.
+    const registrosObra = normalizarBitacora(obraBase?.bitacora);
+    const fechasAvance = registrosObra.map((r)=>r.fecha).filter(Boolean);
+    const periodoInicio = data.periodoInicio ?? fechasAvance[0] ?? today();
+    const periodoFin = data.periodoFin ?? fechasAvance[fechasAvance.length-1] ?? today();
+
+    // Si el informe ya venia con actividades escritas (se esta editando), se
+    // respetan. Si es nuevo, se llena con lo que se alimento en la obra.
+    const traeActividadesPropias = (Array.isArray(data.actividades) && data.actividades.length)
+      || data.actividad || data.descripcion || data.observaciones
+      || (Array.isArray(data.fotos) && data.fotos.length);
+    const desdeObra = traeActividadesPropias
+      ? []
+      : actividadesDesdeObra(obraBase?.id, periodoInicio, periodoFin);
+
     return {
     obraId:data.obraId ?? obraBase?.id ?? firstObraId,
     proyecto:data.proyecto ?? obraBase?.proyecto ?? "",
     localizacion:data.localizacion ?? obraBase?.ciudad ?? "",
     fechaInforme:data.fechaInforme ?? today(),
-    periodoInicio:data.periodoInicio ?? today(),
-    periodoFin:data.periodoFin ?? today(),
+    periodoInicio,
+    periodoFin,
     personal:Array.isArray(data.personal) && data.personal.length
       ? data.personal
-      : (obraBase ? buildPersonalDesdeObra(obraBase.id, data.periodoInicio ?? today(), data.periodoFin ?? today(), []) : []),
+      : (obraBase ? buildPersonalDesdeObra(obraBase.id, periodoInicio, periodoFin, []) : []),
     recomendaciones:data.recomendaciones ?? "Para garantizar la efectividad y seguridad de las líneas de vida instaladas es fundamental implementar un programa de inspección regular.",
-    actividades:normalizeInformeActividades(data),
+    actividades:desdeObra.length ? desdeObra : normalizeInformeActividades(data),
     };
   };
 
@@ -163,11 +193,46 @@ export default function Informes({ctx}){
   const updActividad=(ai,field,val)=>setForm(p=>({...p,actividades:p.actividades.map((a,i)=>i===ai?{...a,[field]:val}:a)}));
   const updFotoAct=(ai,fi,field,val)=>setForm(p=>({...p,actividades:p.actividades.map((a,i)=>i===ai?{...a,fotos:a.fotos.map((ft,j)=>j===fi?{...ft,[field]:val}:ft)}:a)}));
 
-  const cargarFoto=(ai,fi,file)=>{
+  // Se reduce la imagen antes de guardarla: van como dataURL dentro del
+  // informe y una foto de celular sin comprimir hace fallar el guardado.
+  const cargarFoto=async(ai,fi,file)=>{
     if(!file)return;
-    const r=new FileReader();
-    r.onload=ev=>updFotoAct(ai,fi,"img",ev.target.result);
-    r.readAsDataURL(file);
+    try{
+      const img=await leerImagenComprimida(file);
+      updFotoAct(ai,fi,"img",img);
+    }catch{
+      window.alert("No se pudo cargar esa foto. Intenta con otra imagen.");
+    }
+  };
+
+  // Avances de la obra que caen en el periodo elegido. Se muestra el conteo en
+  // pantalla para que la persona entienda por que el informe trae 3 y no 8:
+  // casi siempre es que el periodo no cubre todas las fechas.
+  const avancesDisponibles = actividadesDesdeObra(form.obraId, form.periodoInicio, form.periodoFin);
+  const avancesTotalesObra = actividadesDesdeObra(form.obraId, null, null);
+
+  const hayContenidoEscrito = form.actividades.some((a)=>
+    a.titulo?.trim() || a.descripcion?.trim() || a.observaciones?.trim() || (a.fotos||[]).some((f)=>f.img)
+  );
+
+  const traerAvancesDeLaObra = ()=>{
+    if(!avancesDisponibles.length){
+      window.alert(
+        "No hay avances registrados en esta obra dentro del período elegido.\n\n" +
+        "Ve a Ejecución de obra → abre la obra → pestaña «Avance y fotos» y registra allí lo que se hizo, con las fotos.\n\n" +
+        "Si ya los registraste, revisa que las fechas del período cubran esos días."
+      );
+      return;
+    }
+    if(hayContenidoEscrito){
+      const seguir = window.confirm(
+        `Se van a reemplazar las actividades de este informe por los ${avancesDisponibles.length} avance(s) registrados en la obra.\n\n` +
+        "Lo que hayas escrito a mano aquí se pierde. ¿Continuar?"
+      );
+      if(!seguir) return;
+    }
+    fotoRefs.current={};
+    setForm(p=>({...p,actividades:avancesDisponibles}));
   };
 
   const abrirNuevoInforme = ()=>{
@@ -206,18 +271,19 @@ export default function Informes({ctx}){
       {obras.length===0 ? (
         <AvisoFlujo
           tono="falta"
-          titulo="Primero hay que aprobar la obra"
+          titulo="Primero hay que crear la obra"
           pasos={[
-            "Ve a Cotizaciones y abre la cotización que el cliente aceptó.",
-            "Dale «Aprobar». El sistema crea la obra solo, con el mismo número.",
-            "Asigna el personal en la obra y vuelve aquí a hacer el informe.",
+            "Ve a Ejecución de obra y dale «+ Nueva Obra» (o aprueba la cotización, que la crea sola).",
+            "Abre la obra y asigna el personal que trabajó.",
+            "En la pestaña «Avance y fotos» registra qué se hizo cada día, con fotos y comentarios.",
+            "Vuelve aquí: el informe se arma solo con todo eso.",
           ]}
           accion={
             <button
-              onClick={()=>irAPantalla("cotizacion")}
+              onClick={()=>irAPantalla("obras")}
               style={{...B("#f47c20"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
             >
-              Ir a Cotizaciones
+              Ir a Obras
             </button>
           }
         >
@@ -226,10 +292,19 @@ export default function Informes({ctx}){
       ) : (
         <AvisoFlujo
           tono="info"
-          titulo="Recuerda: el informe sale de una obra aprobada"
+          titulo="Este informe no se escribe a mano: se arma con lo que se alimentó en la obra"
+          accion={
+            <button
+              onClick={()=>irAPantalla("obras",form.obraId?{obraId:form.obraId}:undefined)}
+              style={{...B("#f1f5f9","#475569"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
+            >
+              Abrir la obra
+            </button>
+          }
         >
-          El personal y los turnos se traen solos de la obra. Si el informe sale sin trabajadores,
-          es porque falta asignarlos en la pestaña «Personal» de la obra.
+          Las <strong>fotos y los comentarios</strong> salen de la pestaña «Avance y fotos» de la
+          obra; el <strong>personal y los turnos</strong>, de la pestaña «Personal» y de Horarios.
+          Si el informe sale vacío, es porque nadie ha registrado el avance en la obra todavía.
         </AvisoFlujo>
       )}
 
@@ -239,7 +314,30 @@ export default function Informes({ctx}){
 
           {/* Datos generales */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
-            <div><LBL>Obra asociada</LBL><select value={form.obraId} onChange={e=>{const o=obras.find(x=>x.id===e.target.value);setForm(p=>({...p,obraId:e.target.value,proyecto:o?.proyecto||"",localizacion:o?.ciudad||"",personal:buildPersonalDesdeObra(e.target.value,p.periodoInicio,p.periodoFin,p.personal)}));}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
+            <div><LBL>Obra asociada</LBL><select value={form.obraId} onChange={e=>{
+              const nuevaObraId=e.target.value;
+              const o=obras.find(x=>x.id===nuevaObraId);
+              // Al cambiar de obra se reencuadra el periodo con las fechas de
+              // avance de esa obra y se traen sus registros, salvo que la
+              // persona ya haya escrito algo a mano (eso no se pisa solo).
+              const registros=normalizarBitacora(o?.bitacora);
+              const fechas=registros.map(r=>r.fecha).filter(Boolean);
+              setForm(p=>{
+                const inicio=fechas[0]||p.periodoInicio;
+                const fin=fechas[fechas.length-1]||p.periodoFin;
+                const traidas=actividadesDesdeObra(nuevaObraId,inicio,fin);
+                return {
+                  ...p,
+                  obraId:nuevaObraId,
+                  proyecto:o?.proyecto||"",
+                  localizacion:o?.ciudad||"",
+                  periodoInicio:inicio,
+                  periodoFin:fin,
+                  personal:buildPersonalDesdeObra(nuevaObraId,inicio,fin,p.personal),
+                  actividades:(!hayContenidoEscrito && traidas.length) ? traidas : p.actividades,
+                };
+              });
+            }} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
             <div><LBL>Nombre del proyecto</LBL><input value={form.proyecto} onChange={e=>setForm(p=>({...p,proyecto:e.target.value}))} style={SI}/></div>
             <div><LBL>Localización</LBL><input value={form.localizacion} onChange={e=>setForm(p=>({...p,localizacion:e.target.value}))} style={SI}/></div>
             <div><LBL>Fecha del informe</LBL><input type="date" value={form.fechaInforme} onChange={e=>setForm(p=>({...p,fechaInforme:e.target.value}))} style={SI}/></div>
@@ -271,9 +369,27 @@ export default function Informes({ctx}){
 
           {/* Actividades */}
           <div style={{marginBottom:16}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
               <LBL>Actividades ejecutadas</LBL>
-              <button onClick={()=>setForm(p=>({...p,actividades:[...p.actividades,emptyActividad()]}))} style={{...B("#cc0000"),fontSize:11,padding:"5px 12px"}}>+ Agregar actividad</button>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                <button onClick={traerAvancesDeLaObra} style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"5px 12px"}}>
+                  ↻ Traer avances de la obra ({avancesDisponibles.length})
+                </button>
+                <button onClick={()=>setForm(p=>({...p,actividades:[...p.actividades,emptyActividad()]}))} style={{...B("#cc0000"),fontSize:11,padding:"5px 12px"}}>+ Agregar actividad</button>
+              </div>
+            </div>
+            <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:8,padding:"10px 13px",fontSize:11.5,color:"#475569",lineHeight:1.55,marginBottom:12}}>
+              Estas actividades salen de lo que se registró en la obra, en la pestaña
+              «Avance y fotos». Aquí las puedes retocar antes de imprimir sin dañar el registro
+              original de la obra.
+              {avancesTotalesObra.length>avancesDisponibles.length && (
+                <div style={{color:"#b54708",marginTop:5}}>
+                  Ojo: la obra tiene <strong>{avancesTotalesObra.length}</strong> avance(s) en total,
+                  pero solo <strong>{avancesDisponibles.length}</strong> caen entre el
+                  {" "}{fmtD(form.periodoInicio)} y el {fmtD(form.periodoFin)}. Amplía el período de
+                  arriba si quieres incluirlos todos.
+                </div>
+              )}
             </div>
             {form.actividades.map((act,ai)=>(
               <div key={ai} style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:16,marginBottom:12}}>
@@ -281,7 +397,10 @@ export default function Informes({ctx}){
                   <div style={{fontSize:12,fontWeight:700,color:"#cc0000"}}>Actividad {ai+1}</div>
                   {form.actividades.length>1&&<button onClick={()=>setForm(p=>({...p,actividades:p.actividades.filter((_,i)=>i!==ai)}))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:5,padding:"2px 8px",cursor:"pointer",fontSize:11}}>× Eliminar</button>}
                 </div>
-                <div style={{marginBottom:10}}><LBL>Título / nombre de la actividad</LBL><input value={act.titulo} onChange={e=>updActividad(ai,"titulo",e.target.value)} placeholder="Ej: Instalación de líneas de vida" style={SI}/></div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 170px",gap:10,marginBottom:10}}>
+                  <div><LBL>Título / nombre de la actividad</LBL><input value={act.titulo} onChange={e=>updActividad(ai,"titulo",e.target.value)} placeholder="Ej: Instalación de líneas de vida" style={SI}/></div>
+                  <div><LBL>Fecha de ejecución</LBL><input type="date" value={act.fecha||""} onChange={e=>updActividad(ai,"fecha",e.target.value)} style={SI}/></div>
+                </div>
                 <div style={{marginBottom:10}}><LBL>Descripción detallada</LBL><textarea value={act.descripcion} onChange={e=>updActividad(ai,"descripcion",e.target.value)} rows={3} placeholder="Descripción del proceso ejecutado..." style={{...SI,resize:"vertical"}}/></div>
                 <div style={{marginBottom:12}}><LBL>Observaciones</LBL><input value={act.observaciones} onChange={e=>updActividad(ai,"observaciones",e.target.value)} placeholder="Ej: 1 Línea de vida horizontal de 119 metros" style={SI}/></div>
                 {/* Fotos de esta actividad */}
@@ -297,7 +416,7 @@ export default function Informes({ctx}){
                           :<div style={{textAlign:"center",color:"#94a3b8",fontSize:11}}><div style={{fontSize:22}}>Foto</div><div>Foto {fi+1} · Clic para cargar</div></div>}
                         {ft.img&&<div style={{position:"absolute",top:6,right:6,background:"rgba(0,0,0,0.55)",borderRadius:4,padding:"2px 6px",fontSize:9,color:"#fff",cursor:"pointer"}} onClick={e=>{e.stopPropagation();updFotoAct(ai,fi,"img",null);}}>× Quitar</div>}
                       </div>
-                      <input ref={el=>{fotoRefs.current[(ai) + "-" + (fi)]=el;}} type="file" accept="image/*" style={{display:"none"}} onChange={e=>cargarFoto(ai,fi,e.target.files[0])}/>
+                      <input ref={el=>{fotoRefs.current[(ai) + "-" + (fi)]=el;}} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{cargarFoto(ai,fi,e.target.files[0]);e.target.value="";}}/>
                       <div style={{padding:"6px 8px"}}><input value={ft.comentario} onChange={e=>updFotoAct(ai,fi,"comentario",e.target.value)} placeholder="Descripción de la foto..." style={{...SI,fontSize:11,padding:"4px 8px"}}/></div>
                     </div>
                   ))}
@@ -384,6 +503,7 @@ export default function Informes({ctx}){
                 <table style={{width:"100%",borderCollapse:"collapse",marginBottom:14}}>
                   <tbody>
                     <tr><td colSpan={2} style={{border:"1px solid #ccc",padding:"6px 10px",background:"#ddd",fontWeight:700,textAlign:"center"}}>{act.titulo||act}</td></tr>
+                    {act.fecha&&<tr><td style={{border:"1px solid #ccc",padding:"5px 10px",fontWeight:700,width:"20%"}}>FECHA</td><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{fmtL(act.fecha)}</td></tr>}
                     <tr><td style={{border:"1px solid #ccc",padding:"5px 10px",fontWeight:700,width:"20%",verticalAlign:"top"}}>DESCRIPCIÓN</td><td style={{border:"1px solid #ccc",padding:"5px 10px",textAlign:"justify"}}>{act.descripcion}</td></tr>
                     <tr><td style={{border:"1px solid #ccc",padding:"5px 10px",fontWeight:700}}>Observaciones</td><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{act.observaciones}</td></tr>
                   </tbody>

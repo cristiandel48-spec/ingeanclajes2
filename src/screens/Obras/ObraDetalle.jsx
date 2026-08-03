@@ -1,13 +1,16 @@
 import Av from "../../components/ui/Av";
+import AvisoFlujo from "../../components/AvisoFlujo";
 import Badge from "../../components/ui/Badge";
+import BitacoraObra from "./BitacoraObra";
 import LBL from "../../components/ui/LBL";
 import { useState } from "react";
 import { B, CD, PAL, SI, ST } from "../../styles/tokens";
 import GuiaFlujoObra from "./GuiaFlujoObra";
 import { fmt, fmtD, today } from "../../lib/format";
+import { resumenBitacora } from "../../lib/bitacoraObra";
 export default function ObraDetalle({obraId,ctx,onVolver}){
   const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,horarios,irAPantalla}=ctx;
-  const [detTab,setDetTab]=useState("personal");
+  const [detTab,setDetTab]=useState("avance");
   const [gastoForm,setGastoForm]=useState({proveedorId:"PROV-001",concepto:"",monto:0,fecha:today(),fechaVence:"",factura:""});
   const [showGasto,setShowGasto]=useState(false);
 
@@ -19,6 +22,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
   const horariosObra=horarios.filter(h=>h.obraId===obraId);
   const empObra=oAct.empleados||[];
   const cotVinc=cotizaciones.find(c=>c.id===oAct.cotizacionId);
+  const resumenAvance=resumenBitacora(oAct.bitacora);
 
   const diasMap={};
   horariosObra.forEach(h=>{if(!diasMap[h.empleadoId])diasMap[h.empleadoId]=new Set();diasMap[h.empleadoId].add(h.fecha);});
@@ -58,12 +62,15 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       <GuiaFlujoObra
         obra={oAct}
         empleadosAsignados={empObra.length}
+        registrosAvance={resumenAvance.registros}
+        fotosAvance={resumenAvance.fotos}
+        onVerAvance={()=>setDetTab("avance")}
         onCrearInforme={()=>irAPantalla("informes",{obraId:oAct.id})}
         onCrearCertificacion={()=>irAPantalla("certificaciones",{obraId:oAct.id})}
       />
 
       {/* KPIs */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:12,marginBottom:24}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(118px,1fr))",gap:12,marginBottom:24}}>
         {[
           ["💰 Ingreso total",fmt(oAct.total),"#166534"],
           ["✅ Cobrado",fmt(oAct.pagado),"#1d4ed8"],
@@ -71,6 +78,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           ["🧾 Gastos",fmt(totalGastos),"#7c3aed"],
           ["👷 Personal",(empObra.length) + " pers.","#0891b2"],
           ["📅 Días obra",(totalDias) + " días","#b45309"],
+          ["📸 Fotos avance",(resumenAvance.fotos) + "","#db2777"],
         ].map(([k,v,c])=>(
           <div key={k} style={{background:"#fff",borderRadius:10,padding:"14px 16px",border:"1px solid #e2e8f0",textAlign:"center"}}>
             <div style={{fontSize:10,color:"#94a3b8",marginBottom:6}}>{k}</div>
@@ -95,7 +103,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
 
       {/* Tabs */}
       <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
-        {[["personal","👷 Personal"],["gastos","🧾 Gastos"],["nomina","💰 Nómina"],["horario","📅 Horario"]].map(([id,lb])=>(
+        {[["avance","📸 Avance y fotos"],["personal","👷 Personal"],["gastos","🧾 Gastos"],["nomina","💰 Nómina"],["horario","📅 Horario"]].map(([id,lb])=>(
           <button key={id} onClick={()=>setDetTab(id)}
             style={{...B(detTab===id?"#cc0000":"#f1f5f9",detTab===id?"#fff":"#475569"),fontSize:12,padding:"8px 16px",border:"1px solid " + (detTab===id?"#cc0000":"#e2e8f0")}}>
             {lb}
@@ -103,10 +111,19 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
         ))}
       </div>
 
+      {/* TAB AVANCE Y FOTOS (bitacora que alimenta el informe) */}
+      {detTab==="avance"&&<BitacoraObra obra={oAct} setObras={setObras}/>}
+
       {/* TAB PERSONAL */}
       {detTab==="personal"&&(
         <div style={CD}>
           <div style={ST}>👷 Personal en obra</div>
+          <AvisoFlujo tono="info" titulo="Quién trabajó en esta obra">
+            El personal que asignes aquí es el que sale en la tabla «Personal en obra» del informe
+            de actividades, con sus turnos. Si la persona no aparece en la lista de abajo, es porque
+            todavía no está creada: ve a <strong>Nómina → + Nuevo empleado</strong>, créala allí y
+            vuelve. Los turnos se cargan solos desde <strong>Horarios</strong>.
+          </AvisoFlujo>
           {empObra.length===0&&(
             <div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13,background:"#f8fafc",borderRadius:10,border:"1px dashed #e2e8f0",marginBottom:12}}>
               Sin empleados asignados aún
@@ -167,6 +184,11 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             <div style={ST}>🧾 Gastos y cuentas por pagar</div>
             <button style={B("#cc0000")} onClick={()=>setShowGasto(!showGasto)}>+ Agregar gasto</button>
           </div>
+          <AvisoFlujo tono="info" titulo="Todo gasto que cargues aquí queda cruzado con esta obra">
+            Sirve para saber cuánto costó realmente la obra frente a lo que se cobró. El gasto se
+            crea también en <strong>Cuentas por pagar</strong>, no hay que registrarlo dos veces.
+            Si el proveedor no aparece en la lista, créalo primero en <strong>Proveedores</strong>.
+          </AvisoFlujo>
           {showGasto&&(
             <div style={{background:"#f8fafc",border:"1px solid #cc000033",borderRadius:10,padding:16,marginBottom:16}}>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
@@ -216,7 +238,12 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       {detTab==="nomina"&&(
         <div style={CD}>
           <div style={ST}>💰 Nómina proporcional por obra</div>
-          <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 14px",marginBottom:14,fontSize:11,color:"#475569",border:"1px solid #e2e8f0"}}>Cálculo: días trabajados × jornal diario (salario ÷ 26 días)</div>
+          <AvisoFlujo tono="info" titulo="Cuánto de la nómina se le carga a esta obra">
+            Es un cálculo automático, no hay nada que llenar: días trabajados × jornal diario
+            (salario ÷ 26 días). Los <strong>días salen de los turnos de Horarios</strong>, así que
+            si aquí sale 0 días es porque no se han asignado turnos a esa persona en esta obra.
+            Esta cifra es informativa; la nómina que se paga se liquida en el módulo de Nómina.
+          </AvisoFlujo>
           {empObra.length===0&&<div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13}}>Sin personal asignado</div>}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
             {empObra.map((eid,idx)=>{
@@ -261,7 +288,23 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       {detTab==="horario"&&(
         <div style={CD}>
           <div style={ST}>📅 Horario y turnos en esta obra</div>
-          {horariosObra.length===0&&<div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13}}>Sin turnos registrados. Ve a <strong>Horarios</strong> para agregar.</div>}
+          <AvisoFlujo
+            tono="info"
+            titulo="Los turnos se asignan desde el módulo de Horarios"
+            accion={
+              <button
+                onClick={()=>irAPantalla("horarios")}
+                style={{...B("#f1f5f9","#475569"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
+              >
+                Ir a Horarios
+              </button>
+            }
+          >
+            Aquí solo se ven. Cada turno que asignes en Horarios le llega al trabajador por WhatsApp
+            y además alimenta dos cosas de esta obra: los <strong>días trabajados</strong> de la
+            pestaña Nómina y la columna <strong>turno</strong> del informe de actividades.
+          </AvisoFlujo>
+          {horariosObra.length===0&&<div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13}}>Sin turnos registrados todavía.</div>}
           {horariosObra.sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(h=>{
             const emp=empleados.find(x=>x.id===h.empleadoId);
             const idx=empleados.findIndex(x=>x.id===h.empleadoId);

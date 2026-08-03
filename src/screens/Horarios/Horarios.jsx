@@ -1,4 +1,5 @@
 import Av from "../../components/ui/Av";
+import AvisoFlujo from "../../components/AvisoFlujo";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
 import { useEffect, useState } from "react";
@@ -6,7 +7,7 @@ import { B, CD, PAL, SI, ST } from "../../styles/tokens";
 import { fmtD, today } from "../../lib/format";
 import { abrirWhatsApp, normalizarCelular } from "../../lib/whatsapp";
 export default function Horarios({ctx}){
-  const {obras,empleados,horarios,setHorarios}=ctx;
+  const {obras,empleados,horarios,setHorarios,irAPantalla}=ctx;
   const firstEmpId = empleados[0]?.id || "";
   const firstObraId = obras[0]?.id || "";
   const fmtHora12Local=(hhmm)=>{
@@ -141,6 +142,52 @@ export default function Horarios({ctx}){
   return(
     <div style={{padding:28}}>
       <H1 title="Horarios" subtitle="Asigna hasta 2 turnos por día y notifica automáticamente por WhatsApp" action={<button style={B("#f47c20")} onClick={()=>setShowF(!showF)}>+ Asignar turnos</button>}/>
+
+      {empleados.length===0 && (
+        <AvisoFlujo
+          tono="falta"
+          titulo="Todavía no hay empleados para asignar"
+          accion={
+            <button onClick={()=>irAPantalla("nomina")} style={{...B("#f47c20"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}>
+              Ir a Nómina
+            </button>
+          }
+        >
+          Los trabajadores se crean en <strong>Nómina y empleados</strong>. Crea allí a la persona
+          (con su celular, que es al que le llega el WhatsApp del turno) y vuelve aquí: aparecerá
+          sola en la lista de arriba.
+        </AvisoFlujo>
+      )}
+
+      {obras.length===0 && (
+        <AvisoFlujo
+          tono="falta"
+          titulo="Todavía no hay obras a las cuales asignar turnos"
+          accion={
+            <button onClick={()=>irAPantalla("obras")} style={{...B("#f47c20"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}>
+              Ir a Obras
+            </button>
+          }
+        >
+          Crea primero la obra en <strong>Ejecución de obra</strong>. El WhatsApp que le llega al
+          trabajador usa el nombre del proyecto y la dirección de la obra.
+        </AvisoFlujo>
+      )}
+
+      {empleados.length>0 && obras.length>0 && (
+        <AvisoFlujo tono="info" titulo="Para qué sirve asignar el turno aquí">
+          Hace tres cosas de una sola vez: le <strong>avisa al trabajador por WhatsApp</strong>,
+          cuenta los <strong>días trabajados</strong> que se le cargan a esa obra en su pestaña de
+          Nómina, y llena la <strong>columna de turnos</strong> del informe de actividades.
+          <div style={{marginTop:5}}>
+            ¿No aparece la persona en la lista? Créala en <strong>Nómina y empleados</strong>.
+            ¿No aparece la obra? Créala en <strong>Ejecución de obra</strong>.
+            Y recuerda asignarla también en la pestaña «Personal» de esa obra, que es de donde el
+            informe saca quién estuvo.
+          </div>
+        </AvisoFlujo>
+      )}
+
       {notif&&(
         <div style={{
           background: notif.ok?"#e8f5ee":"#fffaf0",

@@ -42,6 +42,31 @@ export function esAdmin(membresia) {
   return membresia?.role === "admin";
 }
 
+// Cuentas de soporte del desarrollo, que no se listan en la pantalla de
+// Usuarios. Existen y funcionan igual: solo se dejan fuera de esa lista.
+//
+// OJO: esto es cosmetico, no seguridad. La cuenta sigue estando en la base,
+// en el panel de Supabase y en los registros de acceso. No sirve para
+// esconder un acceso de quien lo busque de verdad.
+//
+// Se puede definir en VITE_CUENTAS_SOPORTE (separadas por coma) para no
+// dejarlas escritas en el codigo.
+const CUENTAS_SOPORTE = (
+  import.meta.env?.VITE_CUENTAS_SOPORTE ?? "cristiandel48@gmail.com"
+)
+  .split(",")
+  .map((correo) => correo.trim().toLowerCase())
+  .filter(Boolean);
+
+export function esCuentaSoporte(correo) {
+  return CUENTAS_SOPORTE.includes(String(correo ?? "").trim().toLowerCase());
+}
+
+/** Quita del listado del equipo las cuentas de soporte. */
+export function sinCuentasSoporte(usuarios) {
+  return (usuarios ?? []).filter((usuario) => !esCuentaSoporte(usuario?.email));
+}
+
 // Cifras de dinero dentro de un modulo operativo.
 //
 // A la obra entra quien organiza el trabajo: asigna personal, manda turnos,

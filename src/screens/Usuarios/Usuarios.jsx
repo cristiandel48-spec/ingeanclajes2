@@ -6,7 +6,7 @@ import LBL from "../../components/ui/LBL";
 import { useCallback, useEffect, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { NAV_SECTIONS } from "../../config/navigation";
-import { MODULOS_MINIMOS, MODULOS_SOLO_ADMIN, ROLES, ROL_LABEL } from "../../lib/permisos";
+import { MODULOS_MINIMOS, MODULOS_SOLO_ADMIN, ROLES, ROL_LABEL, sinCuentasSoporte } from "../../lib/permisos";
 import {
   actualizarUsuario, cambiarClave, crearUsuario, desactivarUsuario,
   eliminarUsuario, listarUsuarios, reactivarUsuario,
@@ -276,7 +276,7 @@ Cancelar: se la entregas tú.`);
         <div style={{ ...CD, color: "#64748b", fontSize: 13 }}>Cargando el equipo…</div>
       ) : (
         <div style={{ display: "grid", gap: 12 }}>
-          {usuarios.map((u) => {
+          {sinCuentasSoporte(usuarios).map((u) => {
             const modulos = u.role === "admin" || u.modulos == null ? null : u.modulos;
             return (
               <div key={u.user_id} style={{ ...CD, opacity: u.activo ? 1 : 0.6 }}>

@@ -100,7 +100,9 @@ export default function AppShell({ scr, onNavigate, children }) {
             overflowY: "auto",
             overflowX: "hidden",
             background: theme.bg,
-            padding: isMobile ? "16px 14px 28px" : "28px 32px 40px",
+            // Sin espacio arriba: cada pantalla ya trae el suyo (padding:28) y
+            // sumarlo dejaba el titulo hundido casi 60px bajo la barra.
+            padding: isMobile ? "0 14px 28px" : "0 32px 40px",
             paddingBottom: isMobile
               ? "calc(28px + env(safe-area-inset-bottom))"
               : "40px",

@@ -1,4 +1,5 @@
 import Av from "../../components/ui/Av";
+import AvisoFlujo from "../../components/AvisoFlujo";
 import CampoTexto from "../../components/ui/CampoTexto";
 import H1 from "../../components/ui/H1";
 import PasosNomina, { NavegacionPasos } from "./PasosNomina";
@@ -140,10 +141,20 @@ export default function Nomina({ctx}){
         const actual=normalizarEmpleado(empleado);
         if(actual.id!==id) return actual;
         const siguiente=typeof updater==="function" ? updater(actual) : { ...actual, ...updater };
-        return normalizarEmpleado(siguiente);
+        // Los que se dieron de alta desde la obra llegan con el minimo puesto
+        // y pendientes de revisar. Tocar el salario aqui ES esa revision: no
+        // hace falta un boton aparte para confirmarlos.
+        const revisoElSalario = Number(siguiente.salario) !== Number(actual.salario);
+        return normalizarEmpleado(revisoElSalario
+          ? { ...siguiente, altaEstado:"confirmado", salarioOrigen:"definido" }
+          : siguiente);
       })
     );
   };
+
+  // Fichas creadas desde obra u horarios que nadie ha revisado todavia.
+  const pendientesRevision = empleadosBase.filter((e)=>e.altaEstado==="pendiente");
+  const confirmarAlta=(id)=>actualizarEmpleado(id,{ altaEstado:"confirmado" });
 
   const updEmp=(id,field,val)=>actualizarEmpleado(id,{ [field]:val });
   const construirEmpleadosActualizados = (id, updater)=>
@@ -520,6 +531,38 @@ export default function Nomina({ctx}){
     <div style={{padding:28}}>
       <H1 title="Nómina y Empleados" subtitle="Proceso quincenal: preparar el corte, revisar novedades y generar el pago"
         action={<button style={B("#cc0000")} onClick={()=>setTab("nuevo")}>+ Nuevo Empleado</button>}/>
+
+      {/* Altas hechas desde la obra: llegan con lo basico y el minimo puesto,
+          esperando que aqui se defina la parte contractual. */}
+      {pendientesRevision.length>0&&(
+        <AvisoFlujo
+          tono="falta"
+          titulo={`${pendientesRevision.length} ficha(s) registradas desde obra, pendientes de revisar`}
+        >
+          Las creó personal de campo con lo básico: nombre, cargo, cédula y celular. Entraron con
+          el salario mínimo ({fmt(NOMINA_CO_2026.salarioMinimo)}) como valor de arranque, no como
+          decisión salarial. Abre cada una y define <strong>salario, tipo de contrato y datos
+          bancarios</strong>; al cambiar el salario la ficha queda confirmada sola.
+          <div style={{marginTop:7,display:"flex",flexWrap:"wrap",gap:8}}>
+            {pendientesRevision.map((e)=>(
+              <span key={e.id} style={{background:"#fff",border:"1px solid #FDE3C4",borderRadius:6,padding:"4px 4px 4px 9px",fontSize:11.5,color:"#B54708",display:"inline-flex",alignItems:"center",gap:7}}>
+                {e.nombre} · {e.cargo || "sin cargo"}
+                {e.altaCreadoPor ? ` · por ${e.altaCreadoPor}` : ""}
+                {/* Si de verdad gana el minimo no habra cambio de salario que
+                    confirme la ficha, y el aviso se quedaria fijo. */}
+                <button
+                  onClick={()=>confirmarAlta(e.id)}
+                  title="Ya la revisé, el salario queda como está"
+                  style={{background:"#FDF6E9",border:"1px solid #E3C287",color:"#8A5200",borderRadius:4,padding:"1px 7px",fontSize:11,cursor:"pointer"}}
+                >
+                  ✓ revisada
+                </button>
+              </span>
+            ))}
+          </div>
+        </AvisoFlujo>
+      )}
+
       <PasosNomina activo={tab} onIr={setTab}/>
 
       {/* Al dar de alta a alguien no hay corte que elegir, asi que ni aparece. */}

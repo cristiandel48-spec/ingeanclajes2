@@ -55,6 +55,10 @@ export const entityConfig = {
       deducciones_personalizadas: safeArray(item.deduccionesPersonalizadas),
       incapacidades: safeArray(item.incapacidades),
       prestaciones_sociales: safeArray(item.prestacionesSociales),
+      alta_estado: item.altaEstado ?? "confirmado",
+      alta_creado_por: item.altaCreadoPor ?? null,
+      alta_creado_en: item.altaCreadoEn ?? null,
+      salario_origen: item.salarioOrigen ?? "definido",
     }),
     toLegacyRow: (item) => ({
       id: item.id,
@@ -96,6 +100,10 @@ export const entityConfig = {
       deduccionesPersonalizadas: safeArray(row.deducciones_personalizadas),
       incapacidades: safeArray(row.incapacidades),
       prestacionesSociales: safeArray(row.prestaciones_sociales),
+      altaEstado: row.alta_estado ?? "confirmado",
+      altaCreadoPor: row.alta_creado_por ?? "",
+      altaCreadoEn: row.alta_creado_en ?? null,
+      salarioOrigen: row.salario_origen ?? "definido",
     }),
   },
   cargos: {

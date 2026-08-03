@@ -1,13 +1,15 @@
 import Av from "../../components/ui/Av";
 import AvisoFlujo from "../../components/AvisoFlujo";
+import NuevoEmpleadoRapido from "../../components/NuevoEmpleadoRapido";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
 import { useEffect, useState } from "react";
 import { B, CD, PAL, SI, ST } from "../../styles/tokens";
 import { fmtD, today } from "../../lib/format";
 import { abrirWhatsApp, normalizarCelular } from "../../lib/whatsapp";
+import { puedeCrearPersonal } from "../../lib/permisos";
 export default function Horarios({ctx}){
-  const {obras,empleados,horarios,setHorarios,irAPantalla}=ctx;
+  const {obras,empleados,horarios,setHorarios,irAPantalla,membresia}=ctx;
   const firstEmpId = empleados[0]?.id || "";
   const firstObraId = obras[0]?.id || "";
   const fmtHora12Local=(hhmm)=>{
@@ -31,6 +33,7 @@ export default function Horarios({ctx}){
     return raw;
   };
 
+  const [nuevoEmp,setNuevoEmp]=useState(false);
   const [fechaF,setFechaF]=useState(today());
   const [showF,setShowF]=useState(false);
   const [form,setForm]=useState({
@@ -147,16 +150,34 @@ export default function Horarios({ctx}){
         <AvisoFlujo
           tono="falta"
           titulo="Todavía no hay empleados para asignar"
-          accion={
+          accion={puedeCrearPersonal(membresia) && !nuevoEmp ? (
+            <button onClick={()=>setNuevoEmp(true)} style={{...B("#cc0000"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}>
+              + Registrar trabajador
+            </button>
+          ) : (
             <button onClick={()=>irAPantalla("nomina")} style={{...B("#f47c20"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}>
               Ir a Nómina
             </button>
-          }
+          )}
         >
-          Los trabajadores se crean en <strong>Nómina y empleados</strong>. Crea allí a la persona
-          (con su celular, que es al que le llega el WhatsApp del turno) y vuelve aquí: aparecerá
-          sola en la lista de arriba.
+          Regístralo aquí mismo con lo básico —nombre, cargo, cédula y celular— y podrás asignarle
+          turnos de inmediato. El salario y el contrato los completa Nómina después.
         </AvisoFlujo>
+      )}
+
+      {nuevoEmp && (
+        <NuevoEmpleadoRapido
+          ctx={ctx}
+          onCerrar={()=>setNuevoEmp(false)}
+          onCreado={(id,info)=>{
+            setNuevoEmp(false);
+            setForm((prev)=>({...prev,empleadoId:id}));
+            window.alert(
+              (info?.reactivado ? `${info.nombre} se reactivó.` : `${info?.nombre} quedó registrado.`) +
+              "\n\nYa está seleccionado para asignarle el turno. Nómina revisará su salario y contrato."
+            );
+          }}
+        />
       )}
 
       {obras.length===0 && (
@@ -175,12 +196,20 @@ export default function Horarios({ctx}){
       )}
 
       {empleados.length>0 && obras.length>0 && (
-        <AvisoFlujo tono="info" titulo="Para qué sirve asignar el turno aquí">
+        <AvisoFlujo
+          tono="info"
+          titulo="Para qué sirve asignar el turno aquí"
+          accion={puedeCrearPersonal(membresia) && !nuevoEmp ? (
+            <button onClick={()=>setNuevoEmp(true)} style={{...B("#f1f5f9","#475569"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}>
+              + Registrar trabajador
+            </button>
+          ) : null}
+        >
           Hace tres cosas de una sola vez: le <strong>avisa al trabajador por WhatsApp</strong>,
           cuenta los <strong>días trabajados</strong> que se le cargan a esa obra en su pestaña de
           Nómina, y llena la <strong>columna de turnos</strong> del informe de actividades.
           <div style={{marginTop:5}}>
-            ¿No aparece la persona en la lista? Créala en <strong>Nómina y empleados</strong>.
+            ¿No aparece la persona en la lista? Regístrala con el botón de arriba.
             ¿No aparece la obra? Créala en <strong>Ejecución de obra</strong>.
             Y recuerda asignarla también en la pestaña «Personal» de esa obra, que es de donde el
             informe saca quién estuvo.

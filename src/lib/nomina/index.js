@@ -432,6 +432,13 @@ export const calcularResumenIncapacidadesRegistros = (empleado, incapacidades=[]
 export const normalizarEmpleado = (empleado)=>({
   ...empleado,
   cedula:empleado?.cedula||"",
+  // Alta desde obra u horarios: el registro llega sin revisar la parte
+  // contractual. Lo que ya existia se da por confirmado, que para eso paso
+  // por nomina en su momento.
+  altaEstado:empleado?.altaEstado||"confirmado",
+  altaCreadoPor:empleado?.altaCreadoPor||"",
+  altaCreadoEn:empleado?.altaCreadoEn||null,
+  salarioOrigen:empleado?.salarioOrigen||"definido",
   tipoContrato:empleado?.tipoContrato||"indefinido",
   fechaIngreso:empleado?.fechaIngreso||null,
   fechaSalida:empleado?.fechaSalida||null,

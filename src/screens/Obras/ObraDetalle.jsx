@@ -3,18 +3,20 @@ import AvisoFlujo from "../../components/AvisoFlujo";
 import Badge from "../../components/ui/Badge";
 import BitacoraObra from "./BitacoraObra";
 import LBL from "../../components/ui/LBL";
+import NuevoEmpleadoRapido from "../../components/NuevoEmpleadoRapido";
 import { useState } from "react";
 import { B, CD, PAL, SI, ST } from "../../styles/tokens";
 import GuiaFlujoObra from "./GuiaFlujoObra";
 import { fmt, fmtD, today } from "../../lib/format";
 import { resumenBitacora } from "../../lib/bitacoraObra";
-import { puedeVerDinero } from "../../lib/permisos";
+import { puedeCrearPersonal, puedeVerDinero } from "../../lib/permisos";
 export default function ObraDetalle({obraId,ctx,onVolver}){
   const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,horarios,irAPantalla,membresia}=ctx;
   // Las cifras de la obra son confidenciales: quien organiza el trabajo no ve
   // cuanto se cobro ni el jornal de sus companeros.
   const verDinero=puedeVerDinero(membresia);
   const [detTab,setDetTab]=useState("avance");
+  const [nuevoEmp,setNuevoEmp]=useState(false);
   const [gastoForm,setGastoForm]=useState({proveedorId:"PROV-001",concepto:"",monto:0,fecha:today(),fechaVence:"",factura:""});
   const [showGasto,setShowGasto]=useState(false);
 
@@ -111,12 +113,40 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       {detTab==="personal"&&(
         <div style={CD}>
           <div style={ST}>👷 Personal en obra</div>
-          <AvisoFlujo tono="info" titulo="Quién trabajó en esta obra">
+          <AvisoFlujo
+            tono="info"
+            titulo="Quién trabajó en esta obra"
+            accion={puedeCrearPersonal(membresia) && !nuevoEmp ? (
+              <button
+                onClick={()=>setNuevoEmp(true)}
+                style={{...B("#cc0000"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
+              >
+                + Registrar trabajador
+              </button>
+            ) : null}
+          >
             El personal que asignes aquí es el que sale en la tabla «Personal en obra» del informe
-            de actividades, con sus turnos. Si la persona no aparece en la lista de abajo, es porque
-            todavía no está creada: ve a <strong>Nómina → + Nuevo empleado</strong>, créala allí y
-            vuelve. Los turnos se cargan solos desde <strong>Horarios</strong>.
+            de actividades, con sus turnos. ¿No aparece la persona en la lista? Regístrala aquí
+            mismo con el botón: queda disponible al instante y Nómina completa después el salario
+            y el contrato. Los turnos se cargan solos desde <strong>Horarios</strong>.
           </AvisoFlujo>
+
+          {nuevoEmp && (
+            <NuevoEmpleadoRapido
+              ctx={ctx}
+              obraId={obraId}
+              onCerrar={()=>setNuevoEmp(false)}
+              onCreado={(id,info)=>{
+                setNuevoEmp(false);
+                window.alert(
+                  (info?.reactivado
+                    ? `${info.nombre} se reactivó y quedó asignado a esta obra.`
+                    : `${info?.nombre} quedó registrado y asignado a esta obra.`) +
+                  "\n\nYa puedes asignarle turnos en Horarios. Nómina revisará su salario y contrato."
+                );
+              }}
+            />
+          )}
           {empObra.length===0&&(
             <div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13,background:"#f8fafc",borderRadius:10,border:"1px dashed #e2e8f0",marginBottom:12}}>
               Sin empleados asignados aún

@@ -100,6 +100,16 @@ export function puedeVer(membresia, moduloId) {
   return modulosPermitidos(membresia).includes(moduloId);
 }
 
+// Dar de alta a un trabajador desde la obra o desde horarios.
+//
+// Va aparte de entrar a nomina: quien organiza el trabajo necesita registrar
+// al que llega hoy a la obra, pero no tiene por que ver salarios ni cuentas.
+// Se concede a quien ya entra a alguno de esos dos modulos, que es donde se
+// topa con el problema de que la persona no aparece en la lista.
+export function puedeCrearPersonal(membresia) {
+  return puedeVer(membresia, "obras") || puedeVer(membresia, "horarios");
+}
+
 // Donde aterriza cada quien al entrar. El administrador cae en el dashboard;
 // los demas, en el primer modulo que tengan asignado, en el orden del menu.
 // null significa que la cuenta no tiene ningun modulo: hay que decirselo en

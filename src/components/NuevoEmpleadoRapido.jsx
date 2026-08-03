@@ -6,7 +6,7 @@ import { B, SI } from "../styles/tokens";
 import { NOMINA_CO_2026, normalizarCargos, normalizarEmpleado } from "../lib/nomina";
 import {
   avisoCedula, avisoCelular, avisoNombre,
-  normalizarDocumento, normalizarNombrePropio, normalizarTelefono,
+  normalizarDocumento, normalizarFrase, normalizarNombrePropio, normalizarTelefono,
 } from "../lib/normalizarEntrada";
 
 // Alta de un trabajador desde la obra o desde horarios.
@@ -21,9 +21,13 @@ import {
 // completen. El salario entra con el mínimo vigente solo para que el empleado
 // exista con un valor coherente, no como una decisión salarial.
 
+// Valor del desplegable que abre el campo para escribir un cargo que no está.
+const CARGO_NUEVO = "__crear__";
+
 export default function NuevoEmpleadoRapido({ ctx, onCreado, onCerrar, obraId = null }) {
-  const { empleados, setEmpleados, cargos, membresia, setObras } = ctx;
+  const { empleados, setEmpleados, cargos, setCargos, membresia, setObras } = ctx;
   const [form, setForm] = useState({ nombre: "", apellidos: "", cargo: "", cedula: "", tel: "" });
+  const [cargoNuevo, setCargoNuevo] = useState("");
   const [error, setError] = useState("");
 
   const cargosDisponibles = [...new Set([
@@ -36,6 +40,29 @@ export default function NuevoEmpleadoRapido({ ctx, onCreado, onCerrar, obraId = 
     .filter(Boolean)
     .join(" ");
 
+  // El cargo tambien dependia de nomina: si el que hacia falta no estaba en la
+  // lista, quien coordina volvia a quedarse bloqueado. Aqui se puede crear.
+  // Devuelve el nombre definitivo del cargo, o "" si falta escribirlo.
+  const resolverCargo = () => {
+    if (form.cargo !== CARGO_NUEVO) return form.cargo.trim();
+
+    const nombre = normalizarFrase(cargoNuevo);
+    if (!nombre) return "";
+
+    // Si ya existe con otra grafia se reutiliza, para no acabar con
+    // "Instalador" e "instalador" como dos cargos distintos.
+    const existente = cargosDisponibles.find((c) => c.toLowerCase() === nombre.toLowerCase());
+    if (existente) return existente;
+
+    setCargos((prev) => [...normalizarCargos(prev), {
+      id: "CAR-" + Date.now(),
+      nombre,
+      descripcion: "",
+      activo: true,
+    }]);
+    return nombre;
+  };
+
   const guardar = () => {
     setError("");
 
@@ -43,8 +70,11 @@ export default function NuevoEmpleadoRapido({ ctx, onCreado, onCerrar, obraId = 
       setError("Escribe el nombre y los apellidos.");
       return;
     }
-    if (!form.cargo.trim()) {
-      setError("Elige el cargo. Es lo que sale en el informe de actividades.");
+    const cargoFinal = resolverCargo();
+    if (!cargoFinal) {
+      setError(form.cargo === CARGO_NUEVO
+        ? "Escribe cómo se llama el cargo nuevo."
+        : "Elige el cargo. Es lo que sale en el informe de actividades.");
       return;
     }
     const cedula = normalizarDocumento(form.cedula).replace(/\D/g, "");
@@ -94,7 +124,7 @@ export default function NuevoEmpleadoRapido({ ctx, onCreado, onCerrar, obraId = 
       id,
       nombre: nombreCompleto,
       cedula,
-      cargo: form.cargo.trim(),
+      cargo: cargoFinal,
       tel: celular,
       email: "",
       // El mínimo vigente es un valor de arranque para que la ficha sea
@@ -161,10 +191,27 @@ export default function NuevoEmpleadoRapido({ ctx, onCreado, onCerrar, obraId = 
           <select value={form.cargo} onChange={(e) => setForm({ ...form, cargo: e.target.value })} style={SI}>
             <option value="">Seleccionar cargo…</option>
             {cargosDisponibles.map((cargo) => <option key={cargo} value={cargo}>{cargo}</option>)}
+            <option value={CARGO_NUEVO}>+ Crear un cargo nuevo…</option>
           </select>
-          <div style={{ fontSize: 10.5, color: "#94a3b8", marginTop: 3 }}>
-            Sale impreso en la tabla de personal del informe.
-          </div>
+          {form.cargo === CARGO_NUEVO ? (
+            <>
+              <input
+                value={cargoNuevo}
+                onChange={(e) => setCargoNuevo(e.target.value)}
+                onBlur={(e) => setCargoNuevo(normalizarFrase(e.target.value))}
+                placeholder="Ej: Ayudante de instalación"
+                autoFocus
+                style={{ ...SI, marginTop: 6 }}
+              />
+              <div style={{ fontSize: 10.5, color: "#94a3b8", marginTop: 3 }}>
+                Queda disponible para los demás. Si ya existe con otra escritura, se usa el que hay.
+              </div>
+            </>
+          ) : (
+            <div style={{ fontSize: 10.5, color: "#94a3b8", marginTop: 3 }}>
+              Sale impreso en la tabla de personal del informe.
+            </div>
+          )}
         </div>
         <CampoTexto
           label="Cédula *" valor={form.cedula}

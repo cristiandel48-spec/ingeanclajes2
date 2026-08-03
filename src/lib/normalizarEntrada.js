@@ -88,6 +88,18 @@ export function normalizarCodigo(valor) {
   return limpiarEspacios(valor).toUpperCase();
 }
 
+/**
+ * Razon social de la empresa cliente, siempre en mayuscula:
+ * "Proco Inc" -> "PROCO INC".
+ *
+ * Se salta a proposito la regla de nombre propio: en la portada de la
+ * cotizacion el nombre del cliente va en mayuscula, que es como se venia
+ * escribiendo a mano en los documentos de la empresa.
+ */
+export function normalizarRazonSocial(valor) {
+  return limpiarEspacios(valor).toUpperCase();
+}
+
 // ── Avisos ────────────────────────────────────────────────────────────────
 // Revisiones simples sobre datos que despues dan problemas: un correo mal
 // escrito hace que la cotizacion no llegue, y un celular de 7 digitos hace

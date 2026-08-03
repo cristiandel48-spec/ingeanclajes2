@@ -6,7 +6,9 @@ import LBL from "../../components/ui/LBL";
 import { useCallback, useEffect, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { NAV_SECTIONS } from "../../config/navigation";
+import CampoTexto from "../../components/ui/CampoTexto";
 import { MODULOS_MINIMOS, MODULOS_SOLO_ADMIN, ROLES, ROL_LABEL, sinCuentasSoporte } from "../../lib/permisos";
+import { avisoNombre, normalizarNombrePropio } from "../../lib/normalizarEntrada";
 import {
   actualizarUsuario, cambiarClave, crearUsuario, desactivarUsuario,
   eliminarUsuario, listarUsuarios, reactivarUsuario,
@@ -110,7 +112,7 @@ export default function Usuarios({ ctx }) {
     if (!editId && form.clave.length < 8) return setMensaje({ tono: "falta", texto: "La contraseña debe tener al menos 8 caracteres." });
 
     const datos = {
-      nombre: form.nombre.trim(),
+      nombre: normalizarNombrePropio(form.nombre),
       email: form.email.trim(),
       rol: form.rol,
       modulos: form.modulos,
@@ -181,11 +183,15 @@ Cancelar: se la entregas tú.`);
           <div style={ST}>{editId ? "Editar acceso" : "Nuevo usuario"}</div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
-            <div>
-              <LBL>Nombre</LBL>
-              <input value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-                placeholder="Camila Montoya" style={SI} />
-            </div>
+            <CampoTexto
+              label="Nombre"
+              valor={form.nombre}
+              onChange={(v) => setForm({ ...form, nombre: v })}
+              normalizar={normalizarNombrePropio}
+              revisar={avisoNombre}
+              placeholder="Camila Montoya"
+              autoCapitalize="words"
+            />
             <div>
               <LBL>Correo</LBL>
               <input type="email" value={form.email} disabled={Boolean(editId)}
@@ -288,7 +294,11 @@ Cancelar: se la entregas tú.`);
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 700 }}>
-                      {u.nombre || u.email}{soyYo(u) && <span style={{ fontSize: 11, fontWeight: 600, color: "#f47c20" }}> · tú</span>}
+                      {/* Se acomoda tambien al mostrar: las cuentas creadas
+                          antes de esto quedaron en minuscula y no se van a
+                          arreglar solas hasta que alguien las edite. */}
+                      {normalizarNombrePropio(u.nombre) || u.email}
+                      {soyYo(u) && <span style={{ fontSize: 11, fontWeight: 600, color: "#f47c20" }}> · tú</span>}
                     </div>
                     <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2 }}>{u.email}</div>
                     <div style={{ fontSize: 11.5, color: "#475569", marginTop: 6 }}>

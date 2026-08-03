@@ -1,5 +1,6 @@
 import Badge from "../../components/ui/Badge";
 import CampoTexto from "../../components/ui/CampoTexto";
+import DictarCotizacion from "./DictarCotizacion";
 import FirmaEmpresa from "../../components/FirmaEmpresa";
 import DocumentoEnVivo from "./DocumentoEnVivo";
 import EnviarCotizacion from "./EnviarCotizacion";
@@ -34,6 +35,7 @@ export default function Cotizacion({ctx}){
   // Aviso posterior a aprobar: explica que se creo y que sigue.
   const [obraCreada,setObraCreada]=useState(null);
   const [editCot,setEditCot]=useState(null);
+  const [dictando,setDictando]=useState(false);
   const [cot,setCot]=useState("");
   const [fecha,setFecha]=useState(today());
   const [val,setVal]=useState(30);
@@ -84,6 +86,38 @@ export default function Cotizacion({ctx}){
       }
       return siguiente;
     }));
+  };
+
+  // Vuelca en el formulario lo que la IA entendio del dictado.
+  //
+  // Solo rellena lo que este VACIO: si la persona ya escribio el cliente a
+  // mano, ese dato manda sobre lo que oyo el microfono. Los items se agregan
+  // a los que ya haya, no los reemplazan.
+  const aplicarDictado = (propuesta)=>{
+    setCl((prev)=>({
+      ...prev,
+      nombre: prev.nombre || propuesta.cliente || "",
+      contacto: prev.contacto || propuesta.contacto || "",
+      ciudad: prev.ciudad || propuesta.ciudad || "",
+      obra: prev.obra || propuesta.obra || "",
+      telefono: prev.telefono || propuesta.telefono || "",
+    }));
+
+    if(propuesta.alcance || propuesta.items.length){
+      const destino = propuestas.find((x)=>x.id===propuestaActivaId) || propuestas[0];
+      if(destino){
+        actualizarPropuesta(destino.id,{
+          alcance: String(destino.alcance || "").trim() || propuesta.alcance,
+          items: [
+            ...(Array.isArray(destino.items) ? destino.items : []),
+            ...propuesta.items.map((item)=>({desc:item.desc,cant:item.cant,unit:item.unit,vu:item.vu})),
+          ],
+        });
+      }
+    }
+
+    setDictando(false);
+    scrollAppToTop();
   };
 
   const agregarPropuesta = ()=>{
@@ -489,6 +523,17 @@ export default function Cotizacion({ctx}){
         alignItems:"start",
       }}>
       <div style={{minWidth:0, display: verDocumento && !cabeEnDosColumnas ? "none" : "block"}}>
+
+      {/* Armar hablando: rellena el formulario a partir de un dictado. */}
+      {dictando
+        ? <DictarCotizacion onAplicar={aplicarDictado} onCerrar={()=>setDictando(false)}/>
+        : (
+          <div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}>
+            <button onClick={()=>setDictando(true)} style={{...B("#dbeafe","#1e40af"),fontSize:12.5}}>
+              🎤 Armar esta cotización hablando
+            </button>
+          </div>
+        )}
 
       {/* Identificación */}
       <div style={{...CD,marginBottom:14}}>

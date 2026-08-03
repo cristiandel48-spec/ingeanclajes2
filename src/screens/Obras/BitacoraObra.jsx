@@ -1,4 +1,5 @@
 import AvisoFlujo from "../../components/AvisoFlujo";
+import BotonDictado from "../../components/ui/BotonDictado";
 import LBL from "../../components/ui/LBL";
 import { useRef, useState } from "react";
 import { B, SI } from "../../styles/tokens";
@@ -155,7 +156,15 @@ export default function BitacoraObra({ obra, setObras }) {
             </div>
 
             <div style={{ marginBottom: 10 }}>
-              <LBL>Descripción del trabajo</LBL>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                <LBL>Descripción del trabajo</LBL>
+                <BotonDictado
+                  valor={registro.descripcion}
+                  onChange={(v) => actualizarRegistro(registro.id, "descripcion", v)}
+                  titulo="Dictar la descripción"
+                  compacto
+                />
+              </div>
               <textarea
                 value={registro.descripcion}
                 onChange={(e) => actualizarRegistro(registro.id, "descripcion", e.target.value)}
@@ -169,7 +178,15 @@ export default function BitacoraObra({ obra, setObras }) {
             </div>
 
             <div style={{ marginBottom: 12 }}>
-              <LBL>Observaciones (cantidades, novedades, pendientes)</LBL>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                <LBL>Observaciones (cantidades, novedades, pendientes)</LBL>
+                <BotonDictado
+                  valor={registro.observaciones}
+                  onChange={(v) => actualizarRegistro(registro.id, "observaciones", v)}
+                  titulo="Dictar las observaciones"
+                  compacto
+                />
+              </div>
               <input
                 value={registro.observaciones}
                 onChange={(e) => actualizarRegistro(registro.id, "observaciones", e.target.value)}

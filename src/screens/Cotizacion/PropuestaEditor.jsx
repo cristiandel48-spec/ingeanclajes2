@@ -1,6 +1,8 @@
 import { useRef, useState } from "react";
+import BotonDictado from "../../components/ui/BotonDictado";
 import GoogleMeasureWorkspace from "../../components/maps/GoogleMeasureWorkspace";
 import LBL from "../../components/ui/LBL";
+import { normalizarFrase } from "../../lib/normalizarEntrada";
 import { B, SI } from "../../styles/tokens";
 import { ITEMS_DB } from "../../data/seed";
 import { buildGoogleStaticMapUrl, measurementsToQuoteItems } from "../../lib/maps";
@@ -92,20 +94,29 @@ export default function PropuestaEditor({
 
         {/* 2. Descripción / texto comercial */}
         <div style={{marginBottom:18}}>
-          <LBL>Descripción / texto de la propuesta</LBL>
-          <textarea value={p.alcance} onChange={e=>set("alcance", e.target.value)} placeholder="Describe el servicio, materiales y alcance de esta propuesta..." style={{...SI,minHeight:130,resize:"vertical",lineHeight:1.7}}/>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+            <LBL>Descripción / texto de la propuesta</LBL>
+            <BotonDictado valor={p.alcance} onChange={v=>set("alcance", v)} titulo="Dictar la descripción" compacto/>
+          </div>
+          <textarea value={p.alcance} onChange={e=>set("alcance", e.target.value)} onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==p.alcance)set("alcance", v);}} placeholder="Describe el servicio, materiales y alcance de esta propuesta..." spellCheck lang="es" style={{...SI,minHeight:130,resize:"vertical",lineHeight:1.7}}/>
         </div>
 
         {p.tipoCotizacion==="obra_blanca"&&(
           <div style={{marginBottom:18}}>
-            <LBL>Necesidad del cliente</LBL>
-            <textarea value={p.requerimientoCliente} onChange={e=>set("requerimientoCliente", e.target.value)} style={{...SI,minHeight:100,resize:"vertical",lineHeight:1.5}}/>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+              <LBL>Necesidad del cliente</LBL>
+              <BotonDictado valor={p.requerimientoCliente} onChange={v=>set("requerimientoCliente", v)} titulo="Dictar la necesidad del cliente" compacto/>
+            </div>
+            <textarea value={p.requerimientoCliente} onChange={e=>set("requerimientoCliente", e.target.value)} onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==p.requerimientoCliente)set("requerimientoCliente", v);}} spellCheck lang="es" style={{...SI,minHeight:100,resize:"vertical",lineHeight:1.5}}/>
           </div>
         )}
 
         <div style={{marginBottom:18}}>
-          <LBL>Esta cotización incluye</LBL>
-          <textarea value={p.incluyeTexto} onChange={e=>set("incluyeTexto", e.target.value)} placeholder="Texto predeterminado editable" style={{...SI,minHeight:120,resize:"vertical",lineHeight:1.6}}/>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+            <LBL>Esta cotización incluye</LBL>
+            <BotonDictado valor={p.incluyeTexto} onChange={v=>set("incluyeTexto", v)} titulo="Dictar lo que incluye" compacto/>
+          </div>
+          <textarea value={p.incluyeTexto} onChange={e=>set("incluyeTexto", e.target.value)} placeholder="Texto predeterminado editable" spellCheck lang="es" style={{...SI,minHeight:120,resize:"vertical",lineHeight:1.6}}/>
         </div>
 
         {/* 3. Fotos */}

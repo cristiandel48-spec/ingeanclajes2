@@ -1,4 +1,5 @@
 import { useState } from "react";
+import CreditoDesarrollo from "../CreditoDesarrollo";
 import logoIngeanclajes from "../../assets/logo-ingeanclajes.jpeg";
 import { NAV_SECTIONS, ICONS } from "../../config/navigation";
 import { useAppData } from "../../context/AppDataContext";
@@ -159,9 +160,17 @@ export default function Sidebar({
           ))}
         </div>
 
+        {/* En movil el panel se despliega completo, asi que el credito va aqui;
+            en escritorio se muestra bajo el boton de fijar, mas abajo. */}
+        {isMobile && (
+          <div style={{ padding: "10px 12px 16px", borderTop: `1px solid ${theme.railDivider}`, flexShrink: 0 }}>
+            <CreditoDesarrollo tono="oscuro" />
+          </div>
+        )}
+
         {/* Fijar / soltar el panel (solo escritorio) */}
         {!isMobile && (
-          <div style={{ padding: "8px 12px 16px", borderTop: `1px solid ${theme.railDivider}`, flexShrink: 0 }}>
+          <div style={{ padding: "8px 12px 14px", borderTop: `1px solid ${theme.railDivider}`, flexShrink: 0 }}>
             <button
               onClick={onTogglePin}
               title={pinned ? "Contraer menú" : "Mantener menú abierto"}
@@ -183,6 +192,16 @@ export default function Sidebar({
                 {pinned ? "Contraer menú" : "Fijar menú"}
               </span>
             </button>
+            {/* Solo con el menu desplegado: en el riel angosto se cortaria. */}
+            <CreditoDesarrollo
+              tono="oscuro"
+              style={{
+                marginTop: 6,
+                opacity: showLabels ? 1 : 0,
+                transition: "opacity .15s ease",
+                pointerEvents: "none",
+              }}
+            />
           </div>
         )}
       </nav>

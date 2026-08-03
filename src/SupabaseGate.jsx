@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import * as backend from "./lib/backend";
+import CreditoDesarrollo from "./components/CreditoDesarrollo";
 import logoIngeanclajes from "./assets/logo-ingeanclajes.jpeg";
 
 const isSupabaseConfigured = backend.isSupabaseConfigured;
@@ -59,18 +60,19 @@ function Pantalla({ children }) {
         boxSizing: "border-box",
       }}
     >
-      <div
-        style={{
-          maxWidth: 420,
-          width: "100%",
-          background: "#fff",
-          borderRadius: 20,
-          padding: "36px 34px",
-          boxShadow: "0 24px 60px -20px rgba(16,24,40,.18), 0 2px 6px rgba(16,24,40,.04)",
-          boxSizing: "border-box",
-        }}
-      >
-        {children}
+      <div style={{ maxWidth: 420, width: "100%" }}>
+        <div
+          style={{
+            background: "#fff",
+            borderRadius: 20,
+            padding: "36px 34px",
+            boxShadow: "0 24px 60px -20px rgba(16,24,40,.18), 0 2px 6px rgba(16,24,40,.04)",
+            boxSizing: "border-box",
+          }}
+        >
+          {children}
+        </div>
+        <CreditoDesarrollo style={{ marginTop: 18 }} />
       </div>
     </div>
   );

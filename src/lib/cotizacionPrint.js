@@ -298,8 +298,60 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     `;
   };
 
-  const renderItemsTable = (propuesta) => {
-    const rows = (propuesta.items || []).map((item, idx) => {
+  // Cada `.page` mide 11in exactas, asi que lo que no cabe se sale del papel y
+  // no se imprime: con muchos items la tabla se cortaba sobre la fila 11 y el
+  // resto desaparecia del PDF sin avisar.
+  //
+  // Por eso la tabla se reparte en varias hojas. Cuando son pocos items sigue
+  // yendo junto al texto y las fotos, como siempre; a partir de ahi se lleva a
+  // hojas propias, donde caben muchas mas filas y el documento respira.
+  const FILAS_JUNTO_AL_TEXTO = 8;  // caben sin desbordar la hoja compartida
+  const FILAS_HOJA = 20;           // hoja de tabla, contando el aviso de "continúa"
+  const FILAS_HOJA_FINAL = 16;     // la ultima pierde sitio por subtotal, utilidad, IVA y total
+
+  // Reparte parejo en vez de llenar hojas hasta arriba: con 50 items, tres
+  // hojas de 17 se ven mucho mejor que dos llenas y una con dos renglones
+  // sueltos en medio de una pagina en blanco.
+  const repartirParejo = (lista, hojas) => {
+    const grupos = [];
+    let restantes = lista.length;
+    let desde = 0;
+    for (let quedan = hojas; quedan > 0; quedan -= 1) {
+      const tamano = Math.ceil(restantes / quedan);
+      grupos.push(lista.slice(desde, desde + tamano));
+      desde += tamano;
+      restantes -= tamano;
+    }
+    return grupos;
+  };
+
+  // Reparte los items en hojas y dice si la tabla va junto al texto o aparte.
+  const planificarItems = (propuesta) => {
+    const items = propuesta.items || [];
+    if (items.length <= FILAS_JUNTO_AL_TEXTO) {
+      return { juntoAlTexto: true, hojas: items.length ? [items] : [] };
+    }
+
+    // Minimo de hojas donde cabe todo, sabiendo que la ultima lleva totales.
+    let hojas = 1;
+    while ((hojas - 1) * FILAS_HOJA + FILAS_HOJA_FINAL < items.length) hojas += 1;
+
+    // Al repartir parejo la ultima puede pasarse del sitio que le queda con
+    // los totales; en ese caso se abre una hoja mas y se vuelve a repartir.
+    let grupos = repartirParejo(items, hojas);
+    while (grupos[grupos.length - 1].length > FILAS_HOJA_FINAL && hojas < items.length) {
+      hojas += 1;
+      grupos = repartirParejo(items, hojas);
+    }
+
+    return { juntoAlTexto: false, hojas: grupos };
+  };
+
+  const renderItemsTable = (propuesta, itemsHoja = null, opciones = {}) => {
+    const { conTotales = true, desde = 0 } = opciones;
+    const lista = itemsHoja ?? propuesta.items ?? [];
+    const rows = lista.map((item, i) => {
+      const idx = desde + i;
       const desc = escapeHtml(item?.desc || `ITEM ${idx + 1}`);
       const qtyNumber = Number(item?.cant || 0);
       const qty = Number.isInteger(qtyNumber) ? String(qtyNumber) : qtyNumber.toFixed(2).replace(/\.00$/, "");
@@ -331,6 +383,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
           </thead>
           <tbody>
             ${rows}
+            ${conTotales ? `
             <tr class="sub-row">
               <td colspan="4">Subtotal</td>
               <td class="t-right tnum strong">${money(propuesta.sub || 0)}</td>
@@ -347,16 +400,49 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
               <td colspan="4" class="total-label">Total propuesta</td>
               <td class="t-right tnum total-amount">${money(propuesta.tot || 0)}</td>
             </tr>
+            ` : `
+            <tr class="soft-row">
+              <td colspan="5" class="t-right">Continúa en la página siguiente</td>
+            </tr>
+            `}
           </tbody>
         </table>
       </div>
     `;
   };
 
+  // Hojas dedicadas a la tabla, cuando los items no caben junto al texto.
+  const renderItemsPages = (propuesta, idx, plan) => {
+    if (plan.juntoAlTexto) return "";
+    const totalHojas = plan.hojas.length;
+    // Las hojas no tienen el mismo numero de filas, asi que el indice de
+    // arranque se acumula en vez de multiplicarse.
+    let desde = 0;
+    return plan.hojas.map((itemsHoja, i) => {
+      const esUltima = i === totalHojas - 1;
+      const arranque = desde;
+      desde += itemsHoja.length;
+      const titulo = escapeHtml(propuesta.nombre || `Propuesta ${idx + 1}`);
+      return `
+        <section class="page">
+          <div class="page-inner">
+            ${headerHtml}
+            <div class="page-content">
+              <h2 class="doc-h2">${titulo}${totalHojas > 1 ? ` &middot; Detalle ${i + 1} de ${totalHojas}` : " &middot; Detalle"}</h2>
+              ${renderItemsTable(propuesta, itemsHoja, { conTotales: esUltima, desde: arranque })}
+            </div>
+            ${footerHtml}
+          </div>
+        </section>
+      `;
+    }).join("");
+  };
+
   const renderProposalPage = (propuesta, idx) => {
     const hasScope = String(propuesta.alcancePropuesta || "").trim().length > 0;
     const hasNarrative = String(propuesta.narrative || "").trim().length > 0;
     const hasClientReq = propuesta.esObraBlanca && String(propuesta.requerimientoCliente || "").trim().length > 0;
+    const plan = planificarItems(propuesta);
 
     return `
       <section class="page">
@@ -389,11 +475,14 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
 
             ${renderPhotoGrid(propuesta.fotos, idx)}
             ${renderMapBlock(propuesta, idx)}
-            ${renderItemsTable(propuesta)}
+            ${plan.juntoAlTexto
+              ? (plan.hojas.length ? renderItemsTable(propuesta, plan.hojas[0], { conTotales: true }) : "")
+              : `<p class="doc-copy"><em>El detalle de precios continúa en la página siguiente.</em></p>`}
           </div>
           ${footerHtml}
         </div>
       </section>
+      ${renderItemsPages(propuesta, idx, plan)}
     `;
   };
 

@@ -106,11 +106,19 @@ export default function Cotizacion({ctx}){
     if(propuesta.alcance || propuesta.items.length){
       const destino = propuestas.find((x)=>x.id===propuestaActivaId) || propuestas[0];
       if(destino){
+        const itemsActuales = Array.isArray(destino.items) ? destino.items : [];
+        // Cada fila de la tabla se identifica por `id`: sin el, la unidad y el
+        // valor no se podian editar, el subtotal no se pintaba y el total de
+        // la propuesta no cuadraba. Se numera siguiendo el mayor que ya exista.
+        let ultimoId = itemsActuales.reduce((max,item)=>Math.max(max,Number(item?.id)||0),0);
         actualizarPropuesta(destino.id,{
           alcance: String(destino.alcance || "").trim() || propuesta.alcance,
           items: [
-            ...(Array.isArray(destino.items) ? destino.items : []),
-            ...propuesta.items.map((item)=>({desc:item.desc,cant:item.cant,unit:item.unit,vu:item.vu})),
+            ...itemsActuales,
+            ...propuesta.items.map((item)=>{
+              ultimoId += 1;
+              return {id:ultimoId,desc:item.desc,cant:item.cant,unit:item.unit,vu:item.vu};
+            }),
           ],
         });
       }

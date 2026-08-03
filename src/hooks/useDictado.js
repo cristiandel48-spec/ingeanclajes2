@@ -37,6 +37,8 @@ export function useDictado({ onTexto, lang = "es-CO" } = {}) {
   const [escuchando, setEscuchando] = useState(false);
   const [error, setError] = useState("");
   const reconocedorRef = useRef(null);
+  // Cuantas frases definitivas se han entregado ya en esta sesion de escucha.
+  const entregadosRef = useRef(0);
   // Chrome corta la escucha solo cada tanto. Si la persona no le dio a parar,
   // se vuelve a arrancar; sin esto el dictado se muere a media frase.
   const queremosEscucharRef = useRef(false);
@@ -67,18 +69,29 @@ export function useDictado({ onTexto, lang = "es-CO" } = {}) {
     reconocedor.continuous = true;
     reconocedor.interimResults = true;
 
+    reconocedor.onstart = () => {
+      // `results` arranca de cero en cada sesion de escucha, asi que el
+      // contador de lo ya entregado tiene que arrancar de cero tambien.
+      entregadosRef.current = 0;
+    };
+
     reconocedor.onresult = (evento) => {
+      // NO se usa `evento.resultIndex`: hay navegadores que lo devuelven
+      // siempre en 0, y entonces cada evento reenvia TODAS las frases dichas
+      // hasta ese momento. Al pegarlas se producia el efecto bola de nieve
+      // ("Hola Hola constructora Hola constructora Velez...").
+      //
+      // Se lleva la cuenta propia de cuantas frases definitivas ya se
+      // entregaron, y solo se manda lo que viene despues.
       let definitivo = "";
-      let provisional = "";
-      for (let i = evento.resultIndex; i < evento.results.length; i += 1) {
-        const trozo = evento.results[i][0].transcript;
-        if (evento.results[i].isFinal) definitivo += trozo;
-        else provisional += trozo;
+      for (let i = entregadosRef.current; i < evento.results.length; i += 1) {
+        const resultado = evento.results[i];
+        // En cuanto aparece una no definitiva, las siguientes tampoco lo son.
+        if (!resultado.isFinal) break;
+        definitivo += resultado[0].transcript;
+        entregadosRef.current = i + 1;
       }
-      // El provisional se manda tambien para que se vea el texto apareciendo
-      // mientras se habla; quien recibe decide si lo pinta distinto.
       if (definitivo) onTextoRef.current?.(definitivo, { definitivo: true });
-      else if (provisional) onTextoRef.current?.(provisional, { definitivo: false });
     };
 
     reconocedor.onerror = (evento) => {

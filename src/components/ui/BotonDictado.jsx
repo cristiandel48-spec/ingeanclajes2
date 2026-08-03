@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useDictado } from "../../hooks/useDictado";
 
 // Boton de microfono que se pone al lado de un campo de texto.
@@ -17,12 +18,22 @@ function unir(actual, nuevo) {
 }
 
 export default function BotonDictado({ valor, onChange, titulo = "Dictar", compacto = false }) {
+  // Hablando salen varias frases seguidas, mas rapido de lo que React vuelve a
+  // pintar. Usando `valor` directo, la segunda frase se montaba sobre el texto
+  // de antes de la primera y se perdia. El ref se actualiza en el acto.
+  const valorRef = useRef(valor);
+  useEffect(() => {
+    valorRef.current = valor;
+  }, [valor]);
+
   const { escuchando, alternar, error, soportado } = useDictado({
     onTexto: (texto, { definitivo }) => {
       // Solo se pega lo definitivo. Lo provisional cambia mientras se habla y
       // pegarlo dejaba la frase repetida a pedazos.
       if (!definitivo) return;
-      onChange(unir(valor, texto));
+      const siguiente = unir(valorRef.current, texto);
+      valorRef.current = siguiente;
+      onChange(siguiente);
     },
   });
 

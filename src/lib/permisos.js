@@ -42,6 +42,19 @@ export function esAdmin(membresia) {
   return membresia?.role === "admin";
 }
 
+// Cifras de dinero dentro de un modulo operativo.
+//
+// A la obra entra quien organiza el trabajo: asigna personal, manda turnos,
+// sube las fotos del avance. Esa persona no tiene por que ver cuanto se cobro,
+// cuanto falta por cobrar ni el jornal de sus companeros. Es informacion
+// confidencial y va aparte del permiso de entrar al modulo.
+//
+// Mientras la membresia carga (null) se oculta: es preferible que aparezca un
+// segundo despues a que asome un dato que no debia verse.
+export function puedeVerDinero(membresia) {
+  return esAdmin(membresia);
+}
+
 // Modulos permitidos, ya resueltos. null en la base significa "todos".
 export function modulosPermitidos(membresia) {
   const todos = NAV_ITEMS.map((item) => item.id);

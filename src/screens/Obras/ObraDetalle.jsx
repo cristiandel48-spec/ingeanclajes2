@@ -8,8 +8,12 @@ import { B, CD, PAL, SI, ST } from "../../styles/tokens";
 import GuiaFlujoObra from "./GuiaFlujoObra";
 import { fmt, fmtD, today } from "../../lib/format";
 import { resumenBitacora } from "../../lib/bitacoraObra";
+import { puedeVerDinero } from "../../lib/permisos";
 export default function ObraDetalle({obraId,ctx,onVolver}){
-  const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,horarios,irAPantalla}=ctx;
+  const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,horarios,irAPantalla,membresia}=ctx;
+  // Las cifras de la obra son confidenciales: quien organiza el trabajo no ve
+  // cuanto se cobro ni el jornal de sus companeros.
+  const verDinero=puedeVerDinero(membresia);
   const [detTab,setDetTab]=useState("avance");
   const [gastoForm,setGastoForm]=useState({proveedorId:"PROV-001",concepto:"",monto:0,fecha:today(),fechaVence:"",factura:""});
   const [showGasto,setShowGasto]=useState(false);
@@ -64,6 +68,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
         empleadosAsignados={empObra.length}
         registrosAvance={resumenAvance.registros}
         fotosAvance={resumenAvance.fotos}
+        verDinero={verDinero}
         onVerAvance={()=>setDetTab("avance")}
         onCrearInforme={()=>irAPantalla("informes",{obraId:oAct.id})}
         onCrearCertificacion={()=>irAPantalla("certificaciones",{obraId:oAct.id})}
@@ -85,7 +90,13 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
 
       {/* Tabs */}
       <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
-        {[["avance","📸 Avance y fotos"],["personal","👷 Personal"],["gastos","🧾 Gastos"],["nomina","💰 Nómina"],["horario","📅 Horario"]].map(([id,lb])=>(
+        {[
+          ["avance","📸 Avance y fotos"],
+          ["personal","👷 Personal"],
+          // Gastos y Nomina llevan cifras: solo para quien puede verlas.
+          ...(verDinero?[["gastos","🧾 Gastos"],["nomina","💰 Nómina"]]:[]),
+          ["horario","📅 Horario"],
+        ].map(([id,lb])=>(
           <button key={id} onClick={()=>setDetTab(id)}
             style={{...B(detTab===id?"#cc0000":"#f1f5f9",detTab===id?"#fff":"#475569"),fontSize:12,padding:"8px 16px",border:"1px solid " + (detTab===id?"#cc0000":"#e2e8f0")}}>
             {lb}
@@ -129,15 +140,17 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                     <button onClick={()=>setObras(p=>p.map(o=>o.id===obraId?{...o,empleados:(o.empleados||[]).filter(id=>id!==eid)}:o))}
                       style={{background:"#fee2e2",border:"1px solid #fca5a5",color:"#cc0000",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11}}>✕</button>
                   </div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,fontSize:10}}>
-                    {[["Días en obra",diasEmp+"d","#1d4ed8"],["Jornal/día",fmt(jornal),"#166534"],["Costo obra",fmt(jornal*diasEmp),"#7c3aed"]].map(([k,v,c])=>(
+                  {/* El jornal y la cuenta bancaria del companero son datos
+                      confidenciales: sin permiso solo se ven los dias. */}
+                  <div style={{display:"grid",gridTemplateColumns:verDinero?"1fr 1fr 1fr":"1fr",gap:6,fontSize:10}}>
+                    {[["Días en obra",diasEmp+"d","#1d4ed8"],...(verDinero?[["Jornal/día",fmt(jornal),"#166534"],["Costo obra",fmt(jornal*diasEmp),"#7c3aed"]]:[])].map(([k,v,c])=>(
                       <div key={k} style={{background:"#fff",borderRadius:5,padding:"6px 8px",textAlign:"center",border:"1px solid #f1f5f9"}}>
                         <div style={{color:"#94a3b8",marginBottom:2,fontSize:9}}>{k}</div>
                         <div style={{fontWeight:700,color:c,fontSize:12}}>{v}</div>
                       </div>
                     ))}
                   </div>
-                  <div style={{marginTop:8,fontSize:10,color:"#94a3b8"}}>🏦 {emp.banco} · {emp.tipoCuenta} · <span style={{fontFamily:"monospace"}}>{emp.numeroCuenta||"—"}</span></div>
+                  {verDinero&&<div style={{marginTop:8,fontSize:10,color:"#94a3b8"}}>🏦 {emp.banco} · {emp.tipoCuenta} · <span style={{fontFamily:"monospace"}}>{emp.numeroCuenta||"—"}</span></div>}
                 </div>
               );
             })}
@@ -160,7 +173,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       )}
 
       {/* TAB GASTOS */}
-      {detTab==="gastos"&&(
+      {detTab==="gastos"&&verDinero&&(
         <div style={CD}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
             <div style={ST}>🧾 Gastos y cuentas por pagar</div>
@@ -217,7 +230,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       )}
 
       {/* TAB NÓMINA */}
-      {detTab==="nomina"&&(
+      {detTab==="nomina"&&verDinero&&(
         <div style={CD}>
           <div style={ST}>💰 Nómina proporcional por obra</div>
           <AvisoFlujo tono="info" titulo="Cuánto de la nómina se le carga a esta obra">

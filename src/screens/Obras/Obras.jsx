@@ -9,6 +9,7 @@ import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmt, fmtD, today } from "../../lib/format";
 import { getQuoteApprovalAccountingSnapshot } from "../../lib/cotizaciones";
 import { resumenBitacora } from "../../lib/bitacoraObra";
+import { puedeVerDinero } from "../../lib/permisos";
 import { avisoCelular, normalizarFrase, normalizarNombrePropio, normalizarTelefono } from "../../lib/normalizarEntrada";
 
 // Siguiente consecutivo de obra. Se calcula sobre el numero mas alto que ya
@@ -22,7 +23,8 @@ const siguienteIdObra = (obras) => {
   return "OB-" + String(mayor + 1).padStart(3, "0");
 };
 export default function Obras({ctx}){
-  const {obras,setObras,cotizaciones,cuentas,intencion,limpiarIntencion}=ctx;
+  const {obras,setObras,cotizaciones,cuentas,intencion,limpiarIntencion,membresia}=ctx;
+  const verDinero = puedeVerDinero(membresia);
   // Se puede llegar aqui desde otra pantalla pidiendo una obra concreta, por
   // ejemplo desde el aviso de "esta obra no esta lista para certificar".
   const obraSolicitada = intencion?.pantalla==="obras" ? intencion.obraId : null;
@@ -34,7 +36,7 @@ export default function Obras({ctx}){
   // `estado` y `avance` van en el formulario porque muchas obras se cargan al
   // sistema cuando ya llevan tiempo ejecutandose: arrancar siempre en 0% las
   // dejaba mal desde el primer dia.
-  const [nob,setNob]=useState({cliente:"",tel:"",proyecto:"",ciudad:"",direccion:"",fechaInicio:today(),fechaFin:"",total:0,pagado:0,estado:"En Obra",avance:0,cotizacionId:""});
+  const [nob,setNob]=useState({cliente:"",tel:"",proyecto:"",ciudad:"",direccion:"",fechaInicio:today(),fechaFin:"",estado:"En Obra",avance:0,cotizacionId:""});
 
   const updAv=(id,v)=>setObras(p=>p.map(o=>o.id===id?{...o,avance:Math.min(100,Math.max(0,v))}:o));
   const updEst=(id,e)=>setObras(p=>p.map(o=>o.id===id?{...o,estado:e}:o));
@@ -50,10 +52,10 @@ export default function Obras({ctx}){
     const id=siguienteIdObra(obras);
     const cotizacionVinculada = nob.cotizacionId ? cotizaciones.find((cotizacion)=>cotizacion.id===nob.cotizacionId) : null;
     const snapshot = cotizacionVinculada ? getQuoteApprovalAccountingSnapshot(cotizacionVinculada) : null;
-    const totalObra = snapshot?.totalObra ?? Number(nob.total || 0);
-    // Lo ya cobrado se pide en el formulario para las obras que entran al
-    // sistema con anticipo recibido.
-    const cobrado = Math.min(Number(nob.pagado || 0), totalObra);
+    // El valor sale de la cotizacion vinculada o queda en cero: en este
+    // formulario no se piden cifras.
+    const totalObra = snapshot?.totalObra ?? 0;
+    const cobrado = 0;
     setObras(p=>[...p,{
       ...nob,
       // Igual que en el empleado: quien pega y guarda de una no dispara el
@@ -84,7 +86,7 @@ export default function Obras({ctx}){
     if(nob.cotizacionId){
       ctx.setCotizaciones(p=>p.map(c=>c.id===nob.cotizacionId?{...c,estado:"Aprobada",obraId:id}:c));
     }
-    setNob({cliente:"",tel:"",proyecto:"",ciudad:"",direccion:"",fechaInicio:today(),fechaFin:"",total:0,pagado:0,estado:"En Obra",avance:0,cotizacionId:""});
+    setNob({cliente:"",tel:"",proyecto:"",ciudad:"",direccion:"",fechaInicio:today(),fechaFin:"",estado:"En Obra",avance:0,cotizacionId:""});
     setShowNO(false);
   };
 
@@ -134,10 +136,10 @@ export default function Obras({ctx}){
               normalizar={normalizarNombrePropio} placeholder="Ej: Medellín, Antioquia" autoCapitalize="words"/>
             <CampoTexto label="Dirección" valor={nob.direccion} onChange={v=>setNob({...nob,direccion:v})}
               normalizar={normalizarFrase} placeholder="Dirección de la obra"/>
-            <div><LBL>Valor total ($)</LBL><input type="number" value={nob.total} onChange={e=>setNob({...nob,total:parseFloat(e.target.value)||0})} style={SI}/></div>
-            <div><LBL>Ya cobrado ($)</LBL><input type="number" value={nob.pagado} onChange={e=>setNob({...nob,pagado:parseFloat(e.target.value)||0})} style={SI}/>
-              <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>Anticipos ya recibidos. Déjalo en 0 si no han pagado nada.</div>
-            </div>
+            {/* Aqui no se pregunta por plata. Quien registra la obra es quien
+                organiza el trabajo -personal, turnos, fotos, avances- y las
+                cifras son confidenciales. La obra nace en ceros; el valor entra
+                solo al vincular la cotizacion, que la maneja quien cotiza. */}
             <div><LBL>Fecha inicio</LBL><input type="date" value={nob.fechaInicio} onChange={e=>setNob({...nob,fechaInicio:e.target.value})} style={SI}/>
               <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>La fecha real en que empezaron, aunque sea de meses atrás.</div>
             </div>
@@ -197,14 +199,16 @@ export default function Obras({ctx}){
                   style={{width:"100%",marginTop:4,accentColor:"#f47c20"}}
                   onClick={e=>e.stopPropagation()}/>
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6,marginBottom:10}}>
-                {[["Total",fmt(o.total),"#1a1a2e"],["Cobrado",fmt(o.pagado),"#166534"],["Saldo",fmt(o.saldo),o.saldo>0?"#c2410c":"#166534"],["Gastos",fmt(gastosObra),"#7c3aed"]].map(([k,v,c])=>(
-                  <div key={k} style={{background:"#f8fafc",borderRadius:6,padding:"6px 8px",border:"1px solid #f1f5f9"}}>
-                    <div style={{fontSize:8,color:"#94a3b8",textTransform:"uppercase",marginBottom:2}}>{k}</div>
-                    <div style={{fontSize:11,fontWeight:700,color:c}}>{v}</div>
-                  </div>
-                ))}
-              </div>
+              {verDinero&&(
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6,marginBottom:10}}>
+                  {[["Total",fmt(o.total),"#1a1a2e"],["Cobrado",fmt(o.pagado),"#166534"],["Saldo",fmt(o.saldo),o.saldo>0?"#c2410c":"#166534"],["Gastos",fmt(gastosObra),"#7c3aed"]].map(([k,v,c])=>(
+                    <div key={k} style={{background:"#f8fafc",borderRadius:6,padding:"6px 8px",border:"1px solid #f1f5f9"}}>
+                      <div style={{fontSize:8,color:"#94a3b8",textTransform:"uppercase",marginBottom:2}}>{k}</div>
+                      <div style={{fontSize:11,fontWeight:700,color:c}}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div style={{display:"flex",gap:6,alignItems:"center"}}>
                 <select value={o.estado} onChange={e=>{e.stopPropagation();updEst(o.id,e.target.value);}}
                   style={{...SI,fontSize:11,padding:"5px 8px",flex:1}} onClick={e=>e.stopPropagation()}>

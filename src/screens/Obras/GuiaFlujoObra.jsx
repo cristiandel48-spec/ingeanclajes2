@@ -38,6 +38,9 @@ function Fila({ estado, titulo, detalle, accion }) {
 
 export default function GuiaFlujoObra({
   obra, empleadosAsignados, registrosAvance = 0, fotosAvance = 0,
+  // Sin permiso para ver cifras, la guia habla del estado del cobro sin decir
+  // cuanto: "falta cobrar" en vez de "faltan $14.200.000".
+  verDinero = true,
   onVerAvance, onCrearInforme, onCrearCertificacion,
 }) {
   const { total, pagado, saldo, avance, estaPagada, estaTerminada } = getEstadoFlujoObra(obra);
@@ -50,7 +53,9 @@ export default function GuiaFlujoObra({
   const pedirConfirmacionCertificado = () => {
     if (!estaPagada) {
       const seguir = window.confirm(
-        `Esta obra tiene un saldo pendiente de ${fmt(saldo)}.\n\n` +
+        (verDinero
+          ? `Esta obra tiene un saldo pendiente de ${fmt(saldo)}.`
+          : "Esta obra todavía tiene saldo pendiente por cobrar.") + "\n\n" +
         "En las condiciones de la cotización, la certificación se entrega con el pago total.\n\n" +
         "¿Aun así quieres crear la certificación?"
       );
@@ -86,7 +91,7 @@ export default function GuiaFlujoObra({
         <Fila
           estado="listo"
           titulo="Obra creada desde la cotización"
-          detalle={`${obra.cliente} · ${obra.proyecto || "sin proyecto"} · ${fmt(total)}`}
+          detalle={`${obra.cliente} · ${obra.proyecto || "sin proyecto"}${verDinero ? ` · ${fmt(total)}` : ""}`}
         />
 
         <Fila
@@ -135,11 +140,17 @@ export default function GuiaFlujoObra({
 
         <Fila
           estado={estaPagada ? "listo" : "aviso"}
-          titulo={estaPagada ? "Obra pagada por completo" : `Saldo pendiente: ${fmt(saldo)}`}
+          titulo={
+            estaPagada
+              ? "Obra pagada por completo"
+              : verDinero ? `Saldo pendiente: ${fmt(saldo)}` : "Todavía queda por cobrar"
+          }
           detalle={
             estaPagada
               ? "Se puede entregar la certificación sin problema."
-              : `Cobrado ${fmt(pagado)} de ${fmt(total)}. Registra los abonos en «Cuentas por cobrar». Según la cotización, la certificación se entrega con el pago total.`
+              : verDinero
+                ? `Cobrado ${fmt(pagado)} de ${fmt(total)}. Registra los abonos en «Cuentas por cobrar». Según la cotización, la certificación se entrega con el pago total.`
+                : "Según la cotización, la certificación se entrega con el pago total. Quien lleva la cartera sabrá si ya está al día."
           }
         />
       </div>

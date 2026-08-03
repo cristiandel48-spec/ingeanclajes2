@@ -30,13 +30,18 @@ export const ROLES = [
 
 export const ROL_LABEL = Object.fromEntries(ROLES.map((r) => [r.id, r.label]));
 
-// Todo el mundo necesita una pantalla de aterrizaje.
-export const MODULOS_MINIMOS = ["dashboard"];
+// Ningun modulo se concede por defecto: cada quien entra solo a lo que se le
+// marca. Antes el dashboard era obligatorio para todos, pero resume la plata
+// de la empresa -cobros pendientes, totales- y eso no lo ve el personal
+// operativo. Ahora la pantalla de aterrizaje es el primer modulo permitido.
+export const MODULOS_MINIMOS = [];
 
-// Administrar el equipo es del rol Administrador y de nadie mas. No se puede
-// conceder marcando una casilla: si se pudiera, cualquiera con ese modulo se
-// daria a si mismo el resto.
-export const MODULOS_SOLO_ADMIN = ["usuarios"];
+// Modulos del rol Administrador y de nadie mas. No se pueden conceder
+// marcando una casilla.
+//
+// - usuarios: si se pudiera dar, cualquiera con ese modulo se daria el resto.
+// - dashboard: es el resumen economico de la empresa.
+export const MODULOS_SOLO_ADMIN = ["usuarios", "dashboard"];
 
 export function esAdmin(membresia) {
   return membresia?.role === "admin";
@@ -93,6 +98,16 @@ export function modulosPermitidos(membresia) {
 
 export function puedeVer(membresia, moduloId) {
   return modulosPermitidos(membresia).includes(moduloId);
+}
+
+// Donde aterriza cada quien al entrar. El administrador cae en el dashboard;
+// los demas, en el primer modulo que tengan asignado, en el orden del menu.
+// null significa que la cuenta no tiene ningun modulo: hay que decirselo en
+// vez de dejar la pantalla en blanco.
+export function pantallaInicial(membresia) {
+  const permitidos = modulosPermitidos(membresia);
+  if (!permitidos.length) return null;
+  return permitidos.includes("dashboard") ? "dashboard" : permitidos[0];
 }
 
 // Secciones del menu filtradas; las que quedan sin items no se muestran.

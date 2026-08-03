@@ -155,8 +155,13 @@ Cancelar: se la entregas tú.`);
       />
 
       <AvisoFlujo tono="info" titulo="Cada persona ve solo lo que le marques">
-        El Administrador ve todo y puede crear usuarios. A los demás les marcas los módulos uno por uno.
-        El Dashboard va siempre, para que tengan dónde llegar al entrar.
+        El Administrador ve todo y puede crear usuarios. A los demás les marcas los módulos uno
+        por uno, y entran directo al primero que les hayas marcado.
+        <div style={{ marginTop: 5 }}>
+          El <strong>Dashboard no se puede asignar</strong>: resume la plata de la empresa —cobros
+          pendientes, totales— y es solo del Administrador. Si no le marcas ningún módulo a alguien,
+          al entrar verá un aviso de que le falta acceso.
+        </div>
       </AvisoFlujo>
 
       {mensaje && (

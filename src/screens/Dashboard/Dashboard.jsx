@@ -3,8 +3,10 @@ import { B, CD, ST } from "../../styles/tokens";
 import { fmt, fmtD } from "../../lib/format";
 import { getQuoteActiveProposal } from "../../lib/cotizaciones";
 import { resumenVencimientos, colorVencimiento, etiquetaVencimiento } from "../../lib/vencimientos";
+import { puedeVerDinero } from "../../lib/permisos";
 export default function Dashboard({ctx,go}){
-  const {obras,cotizaciones,certs}=ctx;
+  const {obras,cotizaciones,certs,membresia}=ctx;
+  const verDinero=puedeVerDinero(membresia);
   const saldoPendiente = obras.reduce((sum, obra)=>sum + Number(obra.saldo || 0), 0);
   const recientes = [...cotizaciones].sort((a,b)=>String(b.fecha||"").localeCompare(String(a.fecha||""))).slice(0,4);
   const venc = resumenVencimientos(certs);
@@ -28,7 +30,7 @@ export default function Dashboard({ctx,go}){
                     <div style={{fontSize:11,color:"#64748b"}}>{cotizacion.numero} · {fmtD(cotizacion.fecha)}</div>
                     <div style={{fontSize:16,fontWeight:700,color:"#1a1a2e"}}>{cotizacion.cliente}</div>
                     <div style={{fontSize:12,color:"#475569"}}>{cotizacion.obra}</div>
-                    <div style={{fontSize:11,color:"#94a3b8",marginTop:4}}>{activa.nombre} · {fmt(Number(activa.total || 0))}</div>
+                    <div style={{fontSize:11,color:"#94a3b8",marginTop:4}}>{activa.nombre}{verDinero && ` · ${fmt(Number(activa.total || 0))}`}</div>
                   </div>
                   <button style={{...B("#f1f5f9","#475569"),fontSize:12,padding:"7px 12px"}} onClick={()=>go("cotizacion")}>Abrir módulo</button>
                 </div>
@@ -39,10 +41,14 @@ export default function Dashboard({ctx,go}){
         <div style={CD}>
           <div style={ST}>Alertas rápidas</div>
           <div style={{display:"grid",gap:12,fontSize:13,color:"#475569"}}>
-            <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:"14px 16px"}}>
-              <div style={{fontSize:11,color:"#64748b",textTransform:"uppercase",marginBottom:4}}>Cobro pendiente</div>
-              <div style={{fontSize:24,fontWeight:800,color:Number(saldoPendiente)>0?"#cc0000":"#166534"}}>{fmt(Number(saldoPendiente || 0))}</div>
-            </div>
+            {/* Doble llave: el dashboard ya es solo del administrador, pero la
+                cifra tampoco se pinta si el permiso no alcanza. */}
+            {verDinero&&(
+              <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:"14px 16px"}}>
+                <div style={{fontSize:11,color:"#64748b",textTransform:"uppercase",marginBottom:4}}>Cobro pendiente</div>
+                <div style={{fontSize:24,fontWeight:800,color:Number(saldoPendiente)>0?"#cc0000":"#166534"}}>{fmt(Number(saldoPendiente || 0))}</div>
+              </div>
+            )}
             {/* Vencimientos de certificaciones: es la alerta que evita perder
                 una recertificación por fecha. Lleva directo a generarla. */}
             <div style={{

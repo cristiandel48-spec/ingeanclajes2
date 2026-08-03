@@ -1,6 +1,6 @@
 import { AppDataProvider, useAppData } from "./context/AppDataContext";
 import AppShell from "./components/layout/AppShell";
-import { puedeVer } from "./lib/permisos";
+import { pantallaInicial, puedeVer } from "./lib/permisos";
 import Dashboard from "./screens/Dashboard/Dashboard";
 import Cotizacion from "./screens/Cotizacion/Cotizacion";
 import ClientesDB from "./screens/Clientes/ClientesDB";
@@ -43,15 +43,52 @@ export default function App() {
   );
 }
 
+// Pantalla suelta, sin menu: se usa antes de saber que puede ver la persona y
+// cuando su cuenta no tiene ningun modulo.
+function PantallaMensaje({ titulo, detalle }) {
+  return (
+    <div style={{
+      minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+      padding: 24, background: "#f4f5f6", fontFamily: "'Inter', system-ui, sans-serif",
+    }}>
+      <div style={{
+        maxWidth: 420, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14,
+        padding: "28px 30px", textAlign: "center",
+      }}>
+        <div style={{ fontSize: 18, fontWeight: 700, color: "#101828", marginBottom: detalle ? 8 : 0 }}>
+          {titulo}
+        </div>
+        {detalle && <div style={{ fontSize: 14, color: "#667085", lineHeight: 1.55 }}>{detalle}</div>}
+      </div>
+    </div>
+  );
+}
+
 function AppRoot() {
   const ctx = useAppData();
   const { scr, setScr, membresia } = ctx;
 
-  // Si la persona no tiene acceso a la pantalla actual, cae al dashboard.
-  // Pasa al entrar por primera vez o si le quitan un modulo estando dentro.
+  // Si la persona no tiene acceso a la pantalla actual, cae en la primera que
+  // si tenga. Pasa al entrar por primera vez -el estado arranca en el
+  // dashboard, que ahora es solo del administrador- o si le quitan un modulo
+  // estando dentro.
   const permitido = puedeVer(membresia, scr);
-  const destino = permitido ? scr : "dashboard";
-  const Screen = SCREENS[destino] || SCREENS.dashboard;
+  const destino = permitido ? scr : pantallaInicial(membresia);
+
+  // Mientras la membresia carga no se sabe que puede ver: mejor esperar que
+  // enseñar una pantalla que quiza no le corresponde.
+  if (membresia === null) return <PantallaMensaje titulo="Cargando tu acceso…" />;
+
+  if (!destino) {
+    return (
+      <PantallaMensaje
+        titulo="Tu cuenta todavía no tiene módulos asignados"
+        detalle="Pide a quien administra el sistema que te habilite los que necesitas para trabajar."
+      />
+    );
+  }
+
+  const Screen = SCREENS[destino];
 
   return (
     <AppShell scr={destino} onNavigate={setScr}>

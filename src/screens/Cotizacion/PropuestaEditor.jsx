@@ -40,8 +40,11 @@ export default function PropuestaEditor({
   const setItems = (siguiente) => set("items", aplicar(items, siguiente));
   const setFotos = (siguiente) => set("fotos", aplicar(fotos, siguiente));
 
-  const siguienteId = () =>
-    items.reduce((max, item) => Math.max(max, Number(item?.id) || 0), 0) + 1;
+  // Se calcula sobre la lista que llega al actualizador, no sobre la del
+  // render: dos clics seguidos en el catalogo se resolvian con la misma lista
+  // y salia el mismo id dos veces, asi que una de las dos lineas se perdia.
+  const siguienteId = (lista) =>
+    (Array.isArray(lista) ? lista : []).reduce((max, item) => Math.max(max, Number(item?.id) || 0), 0) + 1;
 
   const medicionActiva = Boolean(p.medicionAutomatica);
   const autoMapImg = buildGoogleStaticMapUrl(
@@ -200,7 +203,7 @@ export default function PropuestaEditor({
           {showDB&&(
             <div style={{background:"#f8fafc",borderRadius:10,padding:16,marginBottom:14,border:"1px solid #f47c2044"}}>
               <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>{ITEMS_DB.map((cat,i)=><button key={i} onClick={()=>setDbCat(i)} style={{...B(dbCat===i?"#f47c20":"#142840",dbCat===i?"#fff":"#7da5c8"),border:`1px solid ${dbCat===i?"#f47c20":"#1a3050"}`,fontSize:11,padding:"5px 12px"}}>{cat.categoria}</button>)}</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>{ITEMS_DB[dbCat].items.map((it,i)=><div key={i} style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:"#1a1a2e",marginBottom:2}}>{it.desc}</div><div style={{fontSize:11,color:"#475569"}}>{it.unit} · {fmt(it.vu)}</div></div><button onClick={()=>{setItems(prev=>[...prev,{id:siguienteId(),desc:it.desc,cant:1,unit:it.unit,vu:it.vu}]);}} style={{...B("#f47c20"),padding:"5px 12px",fontSize:12,flexShrink:0}}>+</button></div>)}</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>{ITEMS_DB[dbCat].items.map((it,i)=><div key={i} style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:"#1a1a2e",marginBottom:2}}>{it.desc}</div><div style={{fontSize:11,color:"#475569"}}>{it.unit} · {fmt(it.vu)}</div></div><button onClick={()=>{setItems(prev=>[...prev,{id:siguienteId(prev),desc:it.desc,cant:1,unit:it.unit,vu:it.vu}]);}} style={{...B("#f47c20"),padding:"5px 12px",fontSize:12,flexShrink:0}}>+</button></div>)}</div>
             </div>
           )}
 
@@ -223,7 +226,7 @@ export default function PropuestaEditor({
             {p.items.length===0&&<div style={{padding:"18px 12px",textAlign:"center",fontSize:12,color:"#94a3b8"}}>Sin ítems — agrega desde catálogo o manualmente</div>}
           </div>
 
-          <button onClick={()=>{setItems(prev=>[...prev,{id:siguienteId(),desc:"",cant:1,unit:"ML",vu:0}]);}} style={{...B("#fff3e8","#f47c20"),border:"1px dashed #cc0000",width:"100%",justifyContent:"center",marginBottom:16,fontSize:12}}>+ Agregar ítem manual</button>
+          <button onClick={()=>{setItems(prev=>[...prev,{id:siguienteId(prev),desc:"",cant:1,unit:"ML",vu:0}]);}} style={{...B("#fff3e8","#f47c20"),border:"1px dashed #cc0000",width:"100%",justifyContent:"center",marginBottom:16,fontSize:12}}>+ Agregar ítem manual</button>
 
           {/* Tabla de totales */}
           <div style={{border:"1px solid #e2e8f0",borderRadius:10,overflow:"hidden"}}>

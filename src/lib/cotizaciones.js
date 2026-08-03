@@ -176,27 +176,58 @@ export function normalizeQuoteItems(c={}){
   const geoItems = measurementsToQuoteItems(c.geoMediciones || []);
   const candidates = (rawItems.length ? rawItems : (!hasMultipleProposals ? geoItems : []))
     .filter(it => it && (String(it.desc||'').trim() || Number(it.cant||0)));
-  const seen = new Set();
-  return candidates.filter((it, idx) => {
-    const desc = String(it.desc || `ITEM ${idx+1}`).trim().toUpperCase();
-    const qty = Number(it.cant || 0).toFixed(2);
-    const unit = String(it.unit || 'UND').trim().toUpperCase();
-    const vu = Number(it.vu || 0).toFixed(2);
-    const key = `${desc}|${qty}|${unit}|${vu}`;
-    if(seen.has(key)) return false;
-    seen.add(key);
+  // Se descartan repetidos por IDENTIFICADOR, no por contenido.
+  //
+  // Antes la clave era descripcion + cantidad + unidad + valor, y eso borraba
+  // trabajo cotizado de verdad: cinco "SISTEMA ANTICAIDA CUBIERTA (COMPLETO)"
+  // de 1 Global cada uno -cinco cubiertas del mismo edificio- son cinco lineas
+  // legitimas, y al guardar se quedaba una sola. Dos lineas iguales pueden ser
+  // un error de quien cotiza, pero eso lo ve en pantalla y lo borra; lo que no
+  // puede ver es una linea que el sistema quito por su cuenta.
+  const vistos = new Set();
+  return candidates.filter((it) => {
+    const id = it?.id;
+    // Sin identificador no hay forma de distinguir una linea repetida a
+    // proposito de una duplicada por error: se conserva.
+    if(id === undefined || id === null || id === '') return true;
+    const clave = String(id);
+    if(vistos.has(clave)) return false;
+    vistos.add(clave);
     return true;
   });
 }
 
 export function normalizeProposalItems(items=[]){
-  return (Array.isArray(items) ? items : []).map((it, idx)=>({
-    id: it?.id ?? idx + 1,
-    desc: it?.desc ?? "",
-    cant: Number(it?.cant || 0),
-    unit: it?.unit ?? "UND",
-    vu: Number(it?.vu || 0),
-  }));
+  // Los identificadores tienen que salir unicos: ahora son ellos los que
+  // deciden si dos lineas son la misma, asi que un id repetido haria
+  // desaparecer una linea al guardar. Los que ya traen id lo conservan; a los
+  // que no, se les da uno libre.
+  const lista = Array.isArray(items) ? items : [];
+  const usados = new Set(
+    lista.map((it)=>it?.id).filter((id)=>id !== undefined && id !== null && id !== '').map(String)
+  );
+  let siguiente = 1;
+  const idLibre = ()=>{
+    while(usados.has(String(siguiente))) siguiente += 1;
+    usados.add(String(siguiente));
+    return siguiente;
+  };
+
+  const yaVistos = new Set();
+  return lista.map((it)=>{
+    const original = it?.id;
+    const tieneId = original !== undefined && original !== null && original !== '';
+    // Un id repetido dentro de la misma lista tampoco sirve: se reemplaza.
+    const id = tieneId && !yaVistos.has(String(original)) ? original : idLibre();
+    yaVistos.add(String(id));
+    return {
+      id,
+      desc: it?.desc ?? "",
+      cant: Number(it?.cant || 0),
+      unit: it?.unit ?? "UND",
+      vu: Number(it?.vu || 0),
+    };
+  });
 }
 
 export function getQuoteProposalTotals(baseQuote={}, propuesta){

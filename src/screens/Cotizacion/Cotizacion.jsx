@@ -528,12 +528,20 @@ export default function Cotizacion({ctx}){
   }
 
   return (
-    <div style={{padding:28}}>
+    // Menos aire arriba: el formulario es largo y arrancaba muy abajo.
+    <div style={{padding:"16px 28px 28px"}}>
       <H1
         title={editCot?"Editar Cotización":"Nueva Cotización"}
         subtitle="Construye propuestas comerciales para una misma obra"
         action={
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            {/* El dictado va con el resto de acciones: en su propia fila se
+                comia un renglon entero antes de empezar el formulario. */}
+            {!dictando && (
+              <button style={{...B("#dbeafe","#1e40af")}} onClick={()=>setDictando(true)}>
+                🎤 Armar hablando
+              </button>
+            )}
             <button style={B("#f1f5f9","#475569")} onClick={()=>setTab("lista")}>Volver a lista</button>
             <button
               style={verDocumento ? B("#111827") : B("#f1f5f9","#475569")}
@@ -557,16 +565,9 @@ export default function Cotizacion({ctx}){
       }}>
       <div style={{minWidth:0, display: verDocumento && !cabeEnDosColumnas ? "none" : "block"}}>
 
-      {/* Armar hablando: rellena el formulario a partir de un dictado. */}
-      {dictando
-        ? <DictarCotizacion onAplicar={aplicarDictado} onCerrar={()=>setDictando(false)}/>
-        : (
-          <div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}>
-            <button onClick={()=>setDictando(true)} style={{...B("#dbeafe","#1e40af"),fontSize:12.5}}>
-              🎤 Armar esta cotización hablando
-            </button>
-          </div>
-        )}
+      {/* Armar hablando: rellena el formulario a partir de un dictado. El
+          botón que lo abre está arriba, con el resto de acciones. */}
+      {dictando && <DictarCotizacion onAplicar={aplicarDictado} onCerrar={()=>setDictando(false)}/>}
 
       {/* Identificación */}
       <div style={{...CD,marginBottom:14}}>

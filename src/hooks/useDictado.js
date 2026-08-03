@@ -37,8 +37,8 @@ export function useDictado({ onTexto, lang = "es-CO" } = {}) {
   const [escuchando, setEscuchando] = useState(false);
   const [error, setError] = useState("");
   const reconocedorRef = useRef(null);
-  // Cuantas frases definitivas se han entregado ya en esta sesion de escucha.
-  const entregadosRef = useRef(0);
+  // Texto que ya se entrego en esta sesion de escucha, para no repetirlo.
+  const entregadoRef = useRef("");
   // Chrome corta la escucha solo cada tanto. Si la persona no le dio a parar,
   // se vuelve a arrancar; sin esto el dictado se muere a media frase.
   const queremosEscucharRef = useRef(false);
@@ -70,28 +70,43 @@ export function useDictado({ onTexto, lang = "es-CO" } = {}) {
     reconocedor.interimResults = true;
 
     reconocedor.onstart = () => {
-      // `results` arranca de cero en cada sesion de escucha, asi que el
-      // contador de lo ya entregado tiene que arrancar de cero tambien.
-      entregadosRef.current = 0;
+      // `results` arranca de cero en cada sesion de escucha.
+      entregadoRef.current = "";
     };
 
     reconocedor.onresult = (evento) => {
-      // NO se usa `evento.resultIndex`: hay navegadores que lo devuelven
-      // siempre en 0, y entonces cada evento reenvia TODAS las frases dichas
-      // hasta ese momento. Al pegarlas se producia el efecto bola de nieve
-      // ("Hola Hola constructora Hola constructora Velez...").
+      // El efecto bola de nieve ("Hola Hola constructora Hola constructora
+      // Velez...") sale de dos comportamientos que cambian segun el navegador:
       //
-      // Se lleva la cuenta propia de cuantas frases definitivas ya se
-      // entregaron, y solo se manda lo que viene despues.
-      let definitivo = "";
-      for (let i = entregadosRef.current; i < evento.results.length; i += 1) {
+      //   a) `resultIndex` llega en 0 siempre, asi que recorrer desde ahi
+      //      reenvia todas las frases anteriores.
+      //   b) cada resultado trae la frase ACUMULADA, no solo el trozo nuevo.
+      //
+      // En vez de confiar en el navegador, se reconstruye el texto de la
+      // sesion absorbiendo las dos formas, y despues se entrega unicamente lo
+      // que aun no habia salido.
+      let completo = "";
+      for (let i = 0; i < evento.results.length; i += 1) {
         const resultado = evento.results[i];
-        // En cuanto aparece una no definitiva, las siguientes tampoco lo son.
-        if (!resultado.isFinal) break;
-        definitivo += resultado[0].transcript;
-        entregadosRef.current = i + 1;
+        if (!resultado.isFinal) continue;
+        const trozo = String(resultado[0].transcript || "").trim();
+        if (!trozo) continue;
+        if (!completo) completo = trozo;
+        else if (trozo.startsWith(completo)) completo = trozo;   // viene acumulado
+        else if (completo.endsWith(trozo)) continue;             // repetido
+        else completo += " " + trozo;                            // trozo nuevo
       }
-      if (definitivo) onTextoRef.current?.(definitivo, { definitivo: true });
+
+      const yaEntregado = entregadoRef.current;
+      if (!completo || completo === yaEntregado) return;
+
+      const nuevo = yaEntregado && completo.startsWith(yaEntregado)
+        ? completo.slice(yaEntregado.length)
+        : completo;
+      entregadoRef.current = completo;
+
+      const limpio = nuevo.trim();
+      if (limpio) onTextoRef.current?.(limpio, { definitivo: true });
     };
 
     reconocedor.onerror = (evento) => {

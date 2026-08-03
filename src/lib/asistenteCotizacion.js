@@ -15,15 +15,47 @@ const FUNCION = "armar-cotizacion";
 const catalogoPlano = () =>
   ITEMS_DB.flatMap((grupo) => grupo.items.map((item) => `${item.desc} (${item.unit})`));
 
-/** Busca el item real del catalogo a partir de la descripcion que devolvio la IA. */
+// El catalogo esta escrito sin tildes ("LINEA DE VIDA HORIZONTAL") y la IA
+// responde con la ortografia correcta ("LÍNEA DE VIDA HORIZONTAL"). Comparando
+// letra a letra no coincidian y todos los servicios se descartaban.
+const sinTildes = (texto) =>
+  String(texto || "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+// Palabras que no distinguen un servicio de otro y solo estorban al comparar.
+const VACIAS = new Set(["DE", "DEL", "LA", "EL", "LOS", "LAS", "EN", "Y", "CON", "A"]);
+const clave = (texto) => sinTildes(texto).split(" ").filter((p) => p && !VACIAS.has(p));
+
+/**
+ * Busca el item real del catalogo a partir de la descripcion que devolvio la
+ * IA. Primero por coincidencia limpia; si no, por palabras, para que "linea de
+ * vida horizontal en cubierta" encuentre "LINEA DE VIDA HORIZONTAL".
+ */
 export function buscarItemCatalogo(desc) {
-  const buscado = String(desc || "").trim().toUpperCase();
+  const buscado = sinTildes(desc);
   if (!buscado) return null;
-  for (const grupo of ITEMS_DB) {
-    const exacto = grupo.items.find((item) => item.desc.toUpperCase() === buscado);
-    if (exacto) return { ...exacto, categoria: grupo.categoria };
-  }
-  return null;
+
+  const todos = ITEMS_DB.flatMap((grupo) =>
+    grupo.items.map((item) => ({ ...item, categoria: grupo.categoria })),
+  );
+
+  const exacto = todos.find((item) => sinTildes(item.desc) === buscado);
+  if (exacto) return exacto;
+
+  // Se queda el del catalogo cuyas palabras esten todas en lo dictado, y
+  // entre esos el mas especifico (el de mas palabras).
+  const palabrasBuscadas = clave(desc);
+  const candidatos = todos
+    .map((item) => ({ item, palabras: clave(item.desc) }))
+    .filter(({ palabras }) => palabras.length && palabras.every((p) => palabrasBuscadas.includes(p)))
+    .sort((a, b) => b.palabras.length - a.palabras.length);
+
+  return candidatos[0]?.item ?? null;
 }
 
 async function motivoDelError(error) {

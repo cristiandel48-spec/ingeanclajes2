@@ -69,24 +69,6 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
         onCrearCertificacion={()=>irAPantalla("certificaciones",{obraId:oAct.id})}
       />
 
-      {/* KPIs */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(118px,1fr))",gap:12,marginBottom:24}}>
-        {[
-          ["💰 Ingreso total",fmt(oAct.total),"#166534"],
-          ["✅ Cobrado",fmt(oAct.pagado),"#1d4ed8"],
-          ["? Saldo",fmt(oAct.saldo),oAct.saldo>0?"#c2410c":"#166534"],
-          ["🧾 Gastos",fmt(totalGastos),"#7c3aed"],
-          ["👷 Personal",(empObra.length) + " pers.","#0891b2"],
-          ["📅 Días obra",(totalDias) + " días","#b45309"],
-          ["📸 Fotos avance",(resumenAvance.fotos) + "","#db2777"],
-        ].map(([k,v,c])=>(
-          <div key={k} style={{background:"#fff",borderRadius:10,padding:"14px 16px",border:"1px solid #e2e8f0",textAlign:"center"}}>
-            <div style={{fontSize:10,color:"#94a3b8",marginBottom:6}}>{k}</div>
-            <div style={{fontSize:16,fontWeight:700,color:c}}>{v}</div>
-          </div>
-        ))}
-      </div>
-
       {/* Avance */}
       <div style={{...CD,marginBottom:20}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>

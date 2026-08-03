@@ -1,6 +1,8 @@
 import Badge from "../../components/ui/Badge";
+import CampoTexto from "../../components/ui/CampoTexto";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
+import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarFrase, normalizarNombrePropio, normalizarTelefono } from "../../lib/normalizarEntrada";
 import { useEffect, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { downloadExcelWorkbook } from "../../lib/nomina";
@@ -303,18 +305,28 @@ export default function CuentasPagar({ctx}){
   };
 
   const guardarProveedor=()=>{
-    if(!provForm.nombre.trim()) return;
+    if(!provForm.nombre.trim()){
+      window.alert("Falta el nombre o razón social del proveedor.");
+      return;
+    }
+    // Se acomoda tambien aqui, no solo al salir del campo: quien pega el dato
+    // y guarda de una nunca dispara el onBlur.
+    const nombreLimpio=normalizarNombrePropio(provForm.nombre);
+    const telefonoLimpio=normalizarTelefono(provForm.telefono);
+    const repetido=proveedores.find(p=>p.id!==editProvId && normalizarNombrePropio(p.nombre)===nombreLimpio);
+    if(repetido && !window.confirm(`Ya existe un proveedor llamado ${nombreLimpio} (${repetido.id}).\n\n¿Aun así quieres crearlo otra vez?`)) return;
     const payload={
       ...provForm,
-      telefono:provForm.telefono.trim(),
-      tel:provForm.telefono.trim(),
-      numeroCuenta:provForm.numeroCuenta.trim(),
-      banco:provForm.banco.trim(),
-      direccion:provForm.direccion.trim(),
-      nit:provForm.nit.trim(),
-      contacto:provForm.contacto.trim(),
-      email:provForm.email.trim(),
-      categoria:provForm.categoria.trim()||"General",
+      nombre:nombreLimpio,
+      telefono:telefonoLimpio,
+      tel:telefonoLimpio,
+      numeroCuenta:normalizarDocumento(provForm.numeroCuenta),
+      banco:normalizarNombrePropio(provForm.banco),
+      direccion:normalizarFrase(provForm.direccion),
+      nit:normalizarDocumento(provForm.nit),
+      contacto:normalizarNombrePropio(provForm.contacto),
+      email:normalizarCorreo(provForm.email),
+      categoria:normalizarFrase(provForm.categoria)||"General",
       responsableIva:!!provForm.responsableIva,
       responsable_iva:!!provForm.responsableIva,
       regimenTributario:provForm.regimenTributario||"Ordinario",
@@ -1121,38 +1133,22 @@ export default function CuentasPagar({ctx}){
             <div style={{...CD,marginBottom:18,border:"1px solid #f5c842"}}>
               <div style={ST}>{editProvId?"Editar proveedor":"Nuevo proveedor"}</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
-                <div>
-                  <LBL>Nombre del proveedor</LBL>
-                  <input value={provForm.nombre} onChange={e=>setProvForm({...provForm,nombre:e.target.value})} placeholder="Razón social o nombre comercial" style={SI}/>
-                </div>
-                <div>
-                  <LBL>NIT</LBL>
-                  <input value={provForm.nit} onChange={e=>setProvForm({...provForm,nit:e.target.value})} placeholder="900.123.456-7" style={SI}/>
-                </div>
-                <div>
-                  <LBL>Contacto</LBL>
-                  <input value={provForm.contacto} onChange={e=>setProvForm({...provForm,contacto:e.target.value})} placeholder="Nombre del contacto" style={SI}/>
-                </div>
-                <div>
-                  <LBL>Teléfono</LBL>
-                  <input value={provForm.telefono} onChange={e=>setProvForm({...provForm,telefono:e.target.value})} placeholder="3001234567" style={SI}/>
-                </div>
-                <div>
-                  <LBL>Banco</LBL>
-                  <input value={provForm.banco} onChange={e=>setProvForm({...provForm,banco:e.target.value})} placeholder="Bancolombia" style={SI}/>
-                </div>
-                <div>
-                  <LBL>Número de cuenta</LBL>
-                  <input value={provForm.numeroCuenta} onChange={e=>setProvForm({...provForm,numeroCuenta:e.target.value})} placeholder="123-456789-10" style={SI}/>
-                </div>
-                <div style={{gridColumn:"span 2"}}>
-                  <LBL>Dirección</LBL>
-                  <input value={provForm.direccion} onChange={e=>setProvForm({...provForm,direccion:e.target.value})} placeholder="Dirección principal del proveedor" style={SI}/>
-                </div>
-                <div>
-                  <LBL>Categoría</LBL>
-                  <input value={provForm.categoria} onChange={e=>setProvForm({...provForm,categoria:e.target.value})} placeholder="Materiales / Transporte / Servicios" style={SI}/>
-                </div>
+                <CampoTexto label="Nombre del proveedor" valor={provForm.nombre} onChange={v=>setProvForm({...provForm,nombre:v})}
+                  normalizar={normalizarNombrePropio} placeholder="Razón social o nombre comercial" autoCapitalize="words"/>
+                <CampoTexto label="NIT" valor={provForm.nit} onChange={v=>setProvForm({...provForm,nit:v})}
+                  normalizar={normalizarDocumento} placeholder="900.123.456-7" spellCheck={false}/>
+                <CampoTexto label="Contacto" valor={provForm.contacto} onChange={v=>setProvForm({...provForm,contacto:v})}
+                  normalizar={normalizarNombrePropio} placeholder="Nombre del contacto" autoCapitalize="words"/>
+                <CampoTexto label="Teléfono" valor={provForm.telefono} onChange={v=>setProvForm({...provForm,telefono:v})}
+                  normalizar={normalizarTelefono} revisar={avisoCelular} placeholder="3001234567" inputMode="tel" spellCheck={false}/>
+                <CampoTexto label="Banco" valor={provForm.banco} onChange={v=>setProvForm({...provForm,banco:v})}
+                  normalizar={normalizarNombrePropio} placeholder="Bancolombia" autoCapitalize="words"/>
+                <CampoTexto label="Número de cuenta" valor={provForm.numeroCuenta} onChange={v=>setProvForm({...provForm,numeroCuenta:v})}
+                  normalizar={normalizarDocumento} placeholder="123-456789-10" inputMode="numeric" spellCheck={false}/>
+                <CampoTexto label="Dirección" valor={provForm.direccion} onChange={v=>setProvForm({...provForm,direccion:v})}
+                  normalizar={normalizarFrase} placeholder="Dirección principal del proveedor" wrapStyle={{gridColumn:"span 2"}}/>
+                <CampoTexto label="Categoría" valor={provForm.categoria} onChange={v=>setProvForm({...provForm,categoria:v})}
+                  normalizar={normalizarFrase} placeholder="Materiales / Transporte / Servicios"/>
                 <div>
                   <LBL>Régimen tributario</LBL>
                   <select value={provForm.regimenTributario} onChange={e=>setProvForm({...provForm,regimenTributario:e.target.value})} style={SI}>
@@ -1161,10 +1157,8 @@ export default function CuentasPagar({ctx}){
                     <option value="No responsable de IVA">No responsable de IVA</option>
                   </select>
                 </div>
-                <div>
-                  <LBL>Municipio ICA</LBL>
-                  <input value={provForm.municipioIca} onChange={e=>setProvForm({...provForm,municipioIca:e.target.value})} placeholder="Envigado / Medellín" style={SI}/>
-                </div>
+                <CampoTexto label="Municipio ICA" valor={provForm.municipioIca} onChange={v=>setProvForm({...provForm,municipioIca:v})}
+                  normalizar={normalizarNombrePropio} placeholder="Envigado / Medellín" autoCapitalize="words"/>
                 <div>
                   <LBL>Código ICA</LBL>
                   <input value={provForm.codigoIca} onChange={e=>setProvForm({...provForm,codigoIca:e.target.value})} placeholder="Actividad ICA" style={SI}/>
@@ -1174,10 +1168,9 @@ export default function CuentasPagar({ctx}){
                   <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:"#334155"}}><input type="checkbox" checked={provForm.agenteReteiva} onChange={e=>setProvForm({...provForm,agenteReteiva:e.target.checked})}/> Agente reteIVA</label>
                   <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:"#334155"}}><input type="checkbox" checked={provForm.autorretenedorRenta} onChange={e=>setProvForm({...provForm,autorretenedorRenta:e.target.checked})}/> Autorretenedor renta</label>
                 </div>
-                <div style={{gridColumn:"span 3"}}>
-                  <LBL>Email</LBL>
-                  <input value={provForm.email} onChange={e=>setProvForm({...provForm,email:e.target.value})} placeholder="correo@proveedor.com" style={SI}/>
-                </div>
+                <CampoTexto label="Email" valor={provForm.email} onChange={v=>setProvForm({...provForm,email:v})}
+                  normalizar={normalizarCorreo} revisar={avisoCorreo} placeholder="correo@proveedor.com"
+                  inputMode="email" autoCapitalize="off" spellCheck={false} wrapStyle={{gridColumn:"span 3"}}/>
               </div>
               <div style={{display:"flex",gap:8}}>
                 <button style={B("#f5c842","#3b2f00")} onClick={guardarProveedor}>{editProvId?"Guardar cambios":"Crear proveedor"}</button>

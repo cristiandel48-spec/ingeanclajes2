@@ -1,4 +1,5 @@
 import Badge from "../../components/ui/Badge";
+import CampoTexto from "../../components/ui/CampoTexto";
 import FirmaEmpresa from "../../components/FirmaEmpresa";
 import DocumentoEnVivo from "./DocumentoEnVivo";
 import EnviarCotizacion from "./EnviarCotizacion";
@@ -12,6 +13,7 @@ import { B, CD, SI, ST } from "../../styles/tokens";
 import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_INCLUYE_PUNTOS_ANCLAJE, DEFAULT_COT_TIEMPO_EJEC, ITEMS_DB } from "../../data/seed";
 import { buildQuoteProposal, createQuoteProposalId, getQuoteActiveProposal, getQuoteApprovalAccountingSnapshot, getQuoteProposalLabel, getQuoteProposals, hasAnchorPointsService, normalizeProposalItems, normalizeQuoteItems } from "../../lib/cotizaciones";
 import { scrollAppToTop, today } from "../../lib/format";
+import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarFrase, normalizarNombrePropio, normalizarTelefono } from "../../lib/normalizarEntrada";
 import { normalizeEntityKey, openCotizacionPrint } from "../../lib/cotizacionPrint";
 import { getFirmaImg } from "../../lib/firmaEmpresa";
 import { asuntoAprobacion, mensajeAprobacion } from "../../lib/correoAprobacion";
@@ -502,21 +504,24 @@ export default function Cotizacion({ctx}){
       <div style={{...CD,marginBottom:14}}>
         <div style={ST}>Portada · Cliente</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-          <div><LBL>Empresa</LBL><input value={cl.nombre} onChange={e=>setCl({...cl,nombre:e.target.value})} style={SI}/></div>
-          <div>
-            <LBL>NIT / Cédula</LBL>
-            <input value={cl.nit} onChange={e=>setCl({...cl,nit:e.target.value})} placeholder="900123456-7" style={SI}/>
-            <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Viaja hasta el comprobante contable al aprobar la cotización.</div>
-          </div>
-          <div><LBL>Contacto</LBL><input value={cl.contacto} onChange={e=>setCl({...cl,contacto:e.target.value})} style={SI}/></div>
-          <div>
-            <LBL>Correo del contacto</LBL>
-            <input type="email" value={cl.contactoEmail} onChange={e=>setCl({...cl,contactoEmail:e.target.value})} placeholder="isabel@empresa.com" style={SI}/>
-            <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>A esta dirección se envía la cotización.</div>
-          </div>
-          <div><LBL>Obra</LBL><input value={cl.obra} onChange={e=>setCl({...cl,obra:e.target.value})} style={SI}/></div>
-          <div><LBL>Teléfono</LBL><input value={cl.telefono} onChange={e=>setCl({...cl,telefono:e.target.value})} style={SI}/></div>
-          <div><LBL>Ciudad</LBL><input value={cl.ciudad} onChange={e=>setCl({...cl,ciudad:e.target.value})} style={SI}/></div>
+          <CampoTexto label="Empresa" valor={cl.nombre} onChange={v=>setCl({...cl,nombre:v})}
+            normalizar={normalizarNombrePropio} autoCapitalize="words"
+            ayuda="Va en la portada del documento que ve el cliente."/>
+          <CampoTexto label="NIT / Cédula" valor={cl.nit} onChange={v=>setCl({...cl,nit:v})}
+            normalizar={normalizarDocumento} placeholder="900123456-7" spellCheck={false}
+            ayuda="Viaja hasta el comprobante contable al aprobar la cotización."/>
+          <CampoTexto label="Contacto" valor={cl.contacto} onChange={v=>setCl({...cl,contacto:v})}
+            normalizar={normalizarNombrePropio} autoCapitalize="words"/>
+          <CampoTexto label="Correo del contacto" valor={cl.contactoEmail} onChange={v=>setCl({...cl,contactoEmail:v})}
+            normalizar={normalizarCorreo} revisar={avisoCorreo} type="email" placeholder="isabel@empresa.com"
+            inputMode="email" autoCapitalize="off" spellCheck={false}
+            ayuda="A esta dirección se envía la cotización."/>
+          <CampoTexto label="Obra" valor={cl.obra} onChange={v=>setCl({...cl,obra:v})}
+            normalizar={normalizarFrase}/>
+          <CampoTexto label="Teléfono" valor={cl.telefono} onChange={v=>setCl({...cl,telefono:v})}
+            normalizar={normalizarTelefono} revisar={avisoCelular} inputMode="tel" spellCheck={false}/>
+          <CampoTexto label="Ciudad" valor={cl.ciudad} onChange={v=>setCl({...cl,ciudad:v})}
+            normalizar={normalizarNombrePropio} autoCapitalize="words"/>
         </div>
       </div>
 

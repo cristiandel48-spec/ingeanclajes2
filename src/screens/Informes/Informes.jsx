@@ -9,6 +9,7 @@ import { fmtD, fmtL, today } from "../../lib/format";
 import { printCurrentPz } from "../../lib/print";
 import { bitacoraAActividades, normalizarBitacora, registrosDelPeriodo } from "../../lib/bitacoraObra";
 import { leerImagenComprimida } from "../../lib/imagenes";
+import { normalizarFrase, normalizarNombrePropio } from "../../lib/normalizarEntrada";
 export default function Informes({ctx}){
   const {informes,setInformes,obras,empleados,horarios,intencion,limpiarIntencion,empresaConfig,irAPantalla}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
@@ -357,8 +358,8 @@ export default function Informes({ctx}){
             {form.personal.length===0&&<div style={{background:"#f8fafc",border:"1px dashed #e2e8f0",borderRadius:8,padding:"12px 14px",fontSize:12,color:"#94a3b8",marginBottom:8}}>No hay personal asignado a esta obra todavía. Puedes agregarlo manualmente.</div>}
             {form.personal.map((p,i)=>(
               <div key={i} style={{display:"grid",gridTemplateColumns:"1fr 1.4fr 1fr 1fr 28px",gap:8,marginBottom:6}}>
-                <input value={p.cargo} onChange={e=>updPersonal(i,"cargo",e.target.value)} placeholder="Cargo" style={{...SI,fontSize:12}}/>
-                <input value={p.nombre} onChange={e=>updPersonal(i,"nombre",e.target.value)} placeholder="Nombre completo" style={{...SI,fontSize:12}}/>
+                <input value={p.cargo} onChange={e=>updPersonal(i,"cargo",e.target.value)} onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==p.cargo)updPersonal(i,"cargo",v);}} placeholder="Cargo" style={{...SI,fontSize:12}}/>
+                <input value={p.nombre} onChange={e=>updPersonal(i,"nombre",e.target.value)} onBlur={e=>{const v=normalizarNombrePropio(e.target.value);if(v!==p.nombre)updPersonal(i,"nombre",v);}} placeholder="Nombre completo" autoCapitalize="words" style={{...SI,fontSize:12}}/>
                 <input list="turnosInformeList" value={p.turno1||""} onChange={e=>updPersonal(i,"turno1",e.target.value)} placeholder="Turno 1 · 07:00 AM - 05:00 PM" style={{...SI,fontSize:12}}/>
                 <input list="turnosInformeList" value={p.turno2||""} onChange={e=>updPersonal(i,"turno2",e.target.value)} placeholder="Turno 2 · opcional" style={{...SI,fontSize:12}}/>
                 <button onClick={()=>setForm(pf=>({...pf,personal:pf.personal.filter((_,j)=>j!==i)}))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:6,cursor:"pointer",fontSize:14}}>×</button>
@@ -401,8 +402,8 @@ export default function Informes({ctx}){
                   <div><LBL>Título / nombre de la actividad</LBL><input value={act.titulo} onChange={e=>updActividad(ai,"titulo",e.target.value)} placeholder="Ej: Instalación de líneas de vida" style={SI}/></div>
                   <div><LBL>Fecha de ejecución</LBL><input type="date" value={act.fecha||""} onChange={e=>updActividad(ai,"fecha",e.target.value)} style={SI}/></div>
                 </div>
-                <div style={{marginBottom:10}}><LBL>Descripción detallada</LBL><textarea value={act.descripcion} onChange={e=>updActividad(ai,"descripcion",e.target.value)} rows={3} placeholder="Descripción del proceso ejecutado..." style={{...SI,resize:"vertical"}}/></div>
-                <div style={{marginBottom:12}}><LBL>Observaciones</LBL><input value={act.observaciones} onChange={e=>updActividad(ai,"observaciones",e.target.value)} placeholder="Ej: 1 Línea de vida horizontal de 119 metros" style={SI}/></div>
+                <div style={{marginBottom:10}}><LBL>Descripción detallada</LBL><textarea value={act.descripcion} onChange={e=>updActividad(ai,"descripcion",e.target.value)} onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==act.descripcion)updActividad(ai,"descripcion",v);}} rows={3} placeholder="Descripción del proceso ejecutado..." spellCheck lang="es" style={{...SI,resize:"vertical"}}/></div>
+                <div style={{marginBottom:12}}><LBL>Observaciones</LBL><input value={act.observaciones} onChange={e=>updActividad(ai,"observaciones",e.target.value)} onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==act.observaciones)updActividad(ai,"observaciones",v);}} placeholder="Ej: 1 Línea de vida horizontal de 119 metros" spellCheck lang="es" style={SI}/></div>
                 {/* Fotos de esta actividad */}
                 <LBL>Registro fotográfico</LBL>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,alignItems:"start"}}>
@@ -426,7 +427,7 @@ export default function Informes({ctx}){
             ))}
           </div>
 
-          <div style={{marginBottom:14}}><LBL>Recomendaciones generales</LBL><textarea value={form.recomendaciones} onChange={e=>setForm(p=>({...p,recomendaciones:e.target.value}))} rows={3} style={{...SI,resize:"vertical"}}/></div>
+          <div style={{marginBottom:14}}><LBL>Recomendaciones generales</LBL><textarea value={form.recomendaciones} onChange={e=>setForm(p=>({...p,recomendaciones:e.target.value}))} rows={3} spellCheck lang="es" style={{...SI,resize:"vertical"}}/></div>
           <div style={{display:"flex",gap:10}}>
             <button style={B("#cc0000")} onClick={guardar}>{editId ? "Guardar cambios" : "Guardar informe"}</button>
             <button style={B("#f1f5f9","#475569")} onClick={()=>{setNuevo(false);setEditId(null);}}>Cancelar</button>

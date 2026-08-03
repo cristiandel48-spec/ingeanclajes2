@@ -1,9 +1,11 @@
 import Badge from "../../components/ui/Badge";
+import CampoTexto from "../../components/ui/CampoTexto";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
 import { useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmt } from "../../lib/format";
+import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarFrase, normalizarNombrePropio, normalizarTelefono } from "../../lib/normalizarEntrada";
 export default function ClientesDB({ctx}){
   const {clientes,setClientes,obras,cotizaciones,certs,setObras,setCotizaciones,setCerts}=ctx;
   const clienteBase={nombre:"",nit:"",telefono:"",ciudad:"",direccion:"",contacto:"",email:"",estado:"Activo",notas:""};
@@ -94,18 +96,26 @@ export default function ClientesDB({ctx}){
   };
 
   const guardarCliente=()=>{
-    if(!form.nombre.trim()) return;
+    if(!form.nombre.trim()){
+      window.alert("Falta el nombre o razón social del cliente.");
+      return;
+    }
+    // Se acomoda tambien aqui: quien pega el dato y guarda de una no dispara
+    // el arreglo del campo, y estos textos salen impresos.
     const payload={
-      nombre:form.nombre.trim(),
-      nit:form.nit.trim(),
-      telefono:form.telefono.trim(),
-      ciudad:form.ciudad.trim(),
-      direccion:form.direccion.trim(),
-      contacto:form.contacto.trim(),
-      email:form.email.trim(),
+      nombre:normalizarNombrePropio(form.nombre),
+      nit:normalizarDocumento(form.nit),
+      telefono:normalizarTelefono(form.telefono),
+      ciudad:normalizarNombrePropio(form.ciudad),
+      direccion:normalizarFrase(form.direccion),
+      contacto:normalizarNombrePropio(form.contacto),
+      email:normalizarCorreo(form.email),
       estado:form.estado.trim() || "Activo",
-      notas:form.notas.trim(),
+      notas:normalizarFrase(form.notas),
     };
+
+    const repetido=clientes.find(c=>c.id!==editId && normalizarNombrePropio(c.nombre)===payload.nombre);
+    if(repetido && !window.confirm(`Ya existe un cliente llamado ${payload.nombre} (${repetido.id}).\n\n¿Aun así quieres crearlo otra vez?`)) return;
 
     if(editId){
       const anterior=clientes.find(c=>c.id===editId);
@@ -175,26 +185,17 @@ export default function ClientesDB({ctx}){
         <div style={{...CD,marginBottom:18,border:"1px solid #cc0000"}}>
           <div style={ST}>{editId?"Editar cliente":"Nuevo cliente"}</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
-            <div>
-              <LBL>Nombre / razón social</LBL>
-              <input value={form.nombre} onChange={e=>setForm({...form,nombre:e.target.value})} placeholder="Nombre del cliente" style={SI}/>
-            </div>
-            <div>
-              <LBL>NIT</LBL>
-              <input value={form.nit} onChange={e=>setForm({...form,nit:e.target.value})} placeholder="900.123.456-7" style={SI}/>
-            </div>
-            <div>
-              <LBL>Contacto</LBL>
-              <input value={form.contacto} onChange={e=>setForm({...form,contacto:e.target.value})} placeholder="Persona de contacto" style={SI}/>
-            </div>
-            <div>
-              <LBL>Teléfono</LBL>
-              <input value={form.telefono} onChange={e=>setForm({...form,telefono:e.target.value})} placeholder="3001234567" style={SI}/>
-            </div>
-            <div>
-              <LBL>Ciudad</LBL>
-              <input value={form.ciudad} onChange={e=>setForm({...form,ciudad:e.target.value})} placeholder="Medellín, Antioquia" style={SI}/>
-            </div>
+            <CampoTexto label="Nombre / razón social" valor={form.nombre} onChange={v=>setForm({...form,nombre:v})}
+              normalizar={normalizarNombrePropio} placeholder="Nombre del cliente" autoCapitalize="words"
+              ayuda="Sale impreso en cotizaciones y certificados."/>
+            <CampoTexto label="NIT" valor={form.nit} onChange={v=>setForm({...form,nit:v})}
+              normalizar={normalizarDocumento} placeholder="900.123.456-7" spellCheck={false}/>
+            <CampoTexto label="Contacto" valor={form.contacto} onChange={v=>setForm({...form,contacto:v})}
+              normalizar={normalizarNombrePropio} placeholder="Persona de contacto" autoCapitalize="words"/>
+            <CampoTexto label="Teléfono" valor={form.telefono} onChange={v=>setForm({...form,telefono:v})}
+              normalizar={normalizarTelefono} revisar={avisoCelular} placeholder="3001234567" inputMode="tel" spellCheck={false}/>
+            <CampoTexto label="Ciudad" valor={form.ciudad} onChange={v=>setForm({...form,ciudad:v})}
+              normalizar={normalizarNombrePropio} placeholder="Medellín, Antioquia" autoCapitalize="words"/>
             <div>
               <LBL>Estado</LBL>
               <select value={form.estado} onChange={e=>setForm({...form,estado:e.target.value})} style={SI}>
@@ -203,17 +204,18 @@ export default function ClientesDB({ctx}){
                 <option value="Inactivo">Inactivo</option>
               </select>
             </div>
-            <div style={{gridColumn:"span 2"}}>
-              <LBL>Dirección</LBL>
-              <input value={form.direccion} onChange={e=>setForm({...form,direccion:e.target.value})} placeholder="Dirección principal" style={SI}/>
-            </div>
-            <div>
-              <LBL>Email</LBL>
-              <input value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="correo@cliente.com" style={SI}/>
-            </div>
+            <CampoTexto label="Dirección" valor={form.direccion} onChange={v=>setForm({...form,direccion:v})}
+              normalizar={normalizarFrase} placeholder="Dirección principal" wrapStyle={{gridColumn:"span 2"}}/>
+            <CampoTexto label="Email" valor={form.email} onChange={v=>setForm({...form,email:v})}
+              normalizar={normalizarCorreo} revisar={avisoCorreo} placeholder="correo@cliente.com"
+              inputMode="email" autoCapitalize="off" spellCheck={false}
+              ayuda="A este correo se envían las cotizaciones."/>
             <div style={{gridColumn:"span 3"}}>
               <LBL>Notas</LBL>
-              <textarea value={form.notas} onChange={e=>setForm({...form,notas:e.target.value})} rows={3} placeholder="Observaciones comerciales, sedes, condiciones, etc." style={{...SI,minHeight:86,resize:"vertical"}}/>
+              <textarea value={form.notas} onChange={e=>setForm({...form,notas:e.target.value})}
+                onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==form.notas)setForm({...form,notas:v});}}
+                rows={3} placeholder="Observaciones comerciales, sedes, condiciones, etc." spellCheck lang="es"
+                style={{...SI,minHeight:86,resize:"vertical"}}/>
             </div>
           </div>
           <div style={{display:"flex",gap:8}}>

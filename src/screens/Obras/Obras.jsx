@@ -1,5 +1,6 @@
 import AvisoFlujo from "../../components/AvisoFlujo";
 import Badge from "../../components/ui/Badge";
+import CampoTexto from "../../components/ui/CampoTexto";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
 import ObraDetalle from "./ObraDetalle";
@@ -8,6 +9,7 @@ import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmt, fmtD, today } from "../../lib/format";
 import { getQuoteApprovalAccountingSnapshot } from "../../lib/cotizaciones";
 import { resumenBitacora } from "../../lib/bitacoraObra";
+import { avisoCelular, normalizarFrase, normalizarNombrePropio, normalizarTelefono } from "../../lib/normalizarEntrada";
 
 // Siguiente consecutivo de obra. Se calcula sobre el numero mas alto que ya
 // existe, no sobre cuantas obras hay: al borrar una obra intermedia, contar
@@ -42,6 +44,9 @@ export default function Obras({ctx}){
       window.alert("Falta el nombre del cliente. Es lo único obligatorio para crear la obra.");
       return;
     }
+    const clienteLimpio=normalizarNombrePropio(nob.cliente);
+    const yaExiste=obras.find((o)=>normalizarNombrePropio(o.cliente)===clienteLimpio && normalizarFrase(o.proyecto)===normalizarFrase(nob.proyecto));
+    if(yaExiste && !window.confirm(`Ya hay una obra de ${clienteLimpio} con ese mismo proyecto (${yaExiste.id}).\n\n¿Aun así quieres crear otra?`)) return;
     const id=siguienteIdObra(obras);
     const cotizacionVinculada = nob.cotizacionId ? cotizaciones.find((cotizacion)=>cotizacion.id===nob.cotizacionId) : null;
     const snapshot = cotizacionVinculada ? getQuoteApprovalAccountingSnapshot(cotizacionVinculada) : null;
@@ -51,6 +56,13 @@ export default function Obras({ctx}){
     const cobrado = Math.min(Number(nob.pagado || 0), totalObra);
     setObras(p=>[...p,{
       ...nob,
+      // Igual que en el empleado: quien pega y guarda de una no dispara el
+      // arreglo del campo, y estos textos salen impresos.
+      cliente:normalizarNombrePropio(nob.cliente),
+      proyecto:normalizarFrase(nob.proyecto),
+      ciudad:normalizarNombrePropio(nob.ciudad),
+      direccion:normalizarFrase(nob.direccion),
+      tel:normalizarTelefono(nob.tel),
       id,
       nit:"",
       coords:"",
@@ -111,11 +123,17 @@ export default function Obras({ctx}){
             lo demás se puede completar después.
           </AvisoFlujo>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
-            <div><LBL>Cliente</LBL><input value={nob.cliente} onChange={e=>setNob({...nob,cliente:e.target.value})} placeholder="Nombre del cliente" style={SI}/></div>
-            <div><LBL>Teléfono</LBL><input value={nob.tel} onChange={e=>setNob({...nob,tel:e.target.value})} placeholder="3001234567" style={SI}/></div>
-            <div><LBL>Proyecto / Descripción</LBL><input value={nob.proyecto} onChange={e=>setNob({...nob,proyecto:e.target.value})} placeholder="Ej: Líneas de vida cubierta" style={SI}/></div>
-            <div><LBL>Ciudad</LBL><input value={nob.ciudad} onChange={e=>setNob({...nob,ciudad:e.target.value})} placeholder="Ej: Medellín, Antioquia" style={SI}/></div>
-            <div><LBL>Dirección</LBL><input value={nob.direccion} onChange={e=>setNob({...nob,direccion:e.target.value})} placeholder="Dirección de la obra" style={SI}/></div>
+            <CampoTexto label="Cliente" valor={nob.cliente} onChange={v=>setNob({...nob,cliente:v})}
+              normalizar={normalizarNombrePropio} placeholder="Nombre del cliente" autoCapitalize="words"
+              ayuda="Sale impreso en la cotización y el certificado."/>
+            <CampoTexto label="Teléfono" valor={nob.tel} onChange={v=>setNob({...nob,tel:v})}
+              normalizar={normalizarTelefono} revisar={avisoCelular} placeholder="3001234567" inputMode="tel" spellCheck={false}/>
+            <CampoTexto label="Proyecto / Descripción" valor={nob.proyecto} onChange={v=>setNob({...nob,proyecto:v})}
+              normalizar={normalizarFrase} placeholder="Ej: Líneas de vida cubierta"/>
+            <CampoTexto label="Ciudad" valor={nob.ciudad} onChange={v=>setNob({...nob,ciudad:v})}
+              normalizar={normalizarNombrePropio} placeholder="Ej: Medellín, Antioquia" autoCapitalize="words"/>
+            <CampoTexto label="Dirección" valor={nob.direccion} onChange={v=>setNob({...nob,direccion:v})}
+              normalizar={normalizarFrase} placeholder="Dirección de la obra"/>
             <div><LBL>Valor total ($)</LBL><input type="number" value={nob.total} onChange={e=>setNob({...nob,total:parseFloat(e.target.value)||0})} style={SI}/></div>
             <div><LBL>Ya cobrado ($)</LBL><input type="number" value={nob.pagado} onChange={e=>setNob({...nob,pagado:parseFloat(e.target.value)||0})} style={SI}/>
               <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>Anticipos ya recibidos. Déjalo en 0 si no han pagado nada.</div>

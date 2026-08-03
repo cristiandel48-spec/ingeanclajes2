@@ -1,4 +1,5 @@
 import Av from "../../components/ui/Av";
+import CampoTexto from "../../components/ui/CampoTexto";
 import H1 from "../../components/ui/H1";
 import PasosNomina, { NavegacionPasos } from "./PasosNomina";
 import PeriodoCorte from "./PeriodoCorte";
@@ -9,6 +10,7 @@ import { INCAPACIDAD_ORIGEN_LABELS, INCAPACIDAD_RESPONSABLE_LABELS, NOMINA_CO_20
 import { LOGO_INGEANCLAJES } from "../../assets/embeddedImages";
 import { fmt, fmtD, today } from "../../lib/format";
 import { parseIsoDate, round1 } from "../../lib/dates";
+import { avisoCedula, avisoCelular, avisoCorreo, avisoNombre, normalizarCorreo, normalizarDocumento, normalizarNombrePropio, normalizarTelefono } from "../../lib/normalizarEntrada";
 import { printColilla, printCurrentPz, printLiquidacion, printVacaciones } from "../../lib/print";
 export default function Nomina({ctx}){
   const {empleados,setEmpleados,obras,cargos,setCargos,nominasGeneradas,setNominasGeneradas,saveAllToCloud}=ctx;
@@ -152,9 +154,18 @@ export default function Nomina({ctx}){
     });
 
   const guardarNuevoEmp=()=>{
-    const nombre=nf.nombre.trim();
+    // Se normaliza tambien aqui, no solo al salir del campo: quien pega el
+    // dato y le da guardar de una nunca dispara el onBlur.
+    const nombre=normalizarNombrePropio(nf.nombre);
     const cargo=nf.cargo.trim();
-    if(!nombre||!cargo)return;
+    if(!nombre||!cargo){
+      window.alert("Faltan datos obligatorios: el nombre completo y el cargo.");
+      return;
+    }
+    // Dos personas con el mismo nombre casi siempre es la misma cargada dos
+    // veces. Se avisa, pero se deja seguir: los homonimos existen.
+    const repetido=empleadosBase.find((e)=>normalizarNombrePropio(e.nombre)===nombre);
+    if(repetido && !window.confirm(`Ya existe un empleado llamado ${nombre} (${repetido.id}).\n\n¿Aun así quieres crearlo otra vez?`)) return;
     const nextNumber=empleadosBase.reduce((maximo,empleado)=>{
       const match=String(empleado.id||"").match(/^E(\d+)$/);
       return match ? Math.max(maximo,Number(match[1])) : maximo;
@@ -167,7 +178,10 @@ export default function Nomina({ctx}){
         ...nf,
         nombre,
         cargo,
-        cedula:nf.cedula.trim(),
+        cedula:normalizarDocumento(nf.cedula),
+        tel:normalizarTelefono(nf.tel),
+        email:normalizarCorreo(nf.email),
+        numeroCuenta:normalizarDocumento(nf.numeroCuenta),
         id,
         activo:true,
         avatar:av,
@@ -543,16 +557,54 @@ export default function Nomina({ctx}){
               👤 Datos del Nuevo Empleado
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:16}}>
-              <div><LBL>Nombre completo *</LBL><input value={nf.nombre} onChange={e=>setNf({...nf,nombre:e.target.value})} placeholder="Ej: Carlos Andres Rios" style={SI}/></div>
-              <div><LBL>Cédula o identificación</LBL><input value={nf.cedula} onChange={e=>setNf({...nf,cedula:e.target.value})} placeholder="Ej: 1032456781" style={SI}/></div>
+              <CampoTexto
+                label="Nombre completo *"
+                valor={nf.nombre}
+                onChange={(v)=>setNf({...nf,nombre:v})}
+                normalizar={normalizarNombrePropio}
+                revisar={avisoNombre}
+                ayuda="Se acomoda solo al salir del campo: «juan PEREZ» queda «Juan Perez»."
+                placeholder="Ej: Carlos Andres Rios"
+                autoCapitalize="words"
+              />
+              <CampoTexto
+                label="Cédula o identificación"
+                valor={nf.cedula}
+                onChange={(v)=>setNf({...nf,cedula:v})}
+                normalizar={normalizarDocumento}
+                revisar={avisoCedula}
+                placeholder="Ej: 1032456781"
+                inputMode="numeric"
+                spellCheck={false}
+              />
               <div><LBL>Cargo *</LBL>
                 <select value={nf.cargo} onChange={e=>setNf({...nf,cargo:e.target.value})} style={SI}>
                   <option value="">Seleccionar cargo...</option>
                   {cargosDisponibles.map((cargo)=><option key={cargo} value={cargo}>{cargo}</option>)}
                 </select>
               </div>
-              <div><LBL>Teléfono</LBL><input value={nf.tel} onChange={e=>setNf({...nf,tel:e.target.value})} placeholder="3001234567" style={SI}/></div>
-              <div><LBL>Email</LBL><input value={nf.email} onChange={e=>setNf({...nf,email:e.target.value})} placeholder="correo@ingeanclajes.com" style={SI}/></div>
+              <CampoTexto
+                label="Teléfono"
+                valor={nf.tel}
+                onChange={(v)=>setNf({...nf,tel:v})}
+                normalizar={normalizarTelefono}
+                revisar={avisoCelular}
+                ayuda="A este número le llegan los turnos por WhatsApp."
+                placeholder="3001234567"
+                inputMode="tel"
+                spellCheck={false}
+              />
+              <CampoTexto
+                label="Email"
+                valor={nf.email}
+                onChange={(v)=>setNf({...nf,email:v})}
+                normalizar={normalizarCorreo}
+                revisar={avisoCorreo}
+                placeholder="correo@ingeanclajes.com"
+                inputMode="email"
+                autoCapitalize="off"
+                spellCheck={false}
+              />
               <div><LBL>Salario base ($)</LBL><input type="number" value={nf.salario} onChange={e=>setNf({...nf,salario:parseFloat(e.target.value)||0})} style={SI}/></div>
               <div><LBL>Tipo de contrato</LBL>
                 <select value={nf.tipoContrato||"indefinido"} onChange={e=>setNf({...nf,tipoContrato:e.target.value})} style={SI}>
@@ -584,7 +636,15 @@ export default function Nomina({ctx}){
                     {["Ahorros","Corriente"].map((tipo)=><option key={tipo}>{tipo}</option>)}
                   </select>
                 </div>
-                <div><LBL>Número de cuenta</LBL><input value={nf.numeroCuenta} onChange={e=>setNf({...nf,numeroCuenta:e.target.value})} placeholder="204-123456-78" style={SI}/></div>
+                <CampoTexto
+                  label="Número de cuenta"
+                  valor={nf.numeroCuenta}
+                  onChange={(v)=>setNf({...nf,numeroCuenta:v})}
+                  normalizar={normalizarDocumento}
+                  placeholder="204-123456-78"
+                  inputMode="numeric"
+                  spellCheck={false}
+                />
               </div>
             </div>
             <div style={{display:"flex",gap:10}}>

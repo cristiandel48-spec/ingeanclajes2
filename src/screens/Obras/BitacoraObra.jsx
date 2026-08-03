@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { B, SI } from "../../styles/tokens";
 import { fmtD, today } from "../../lib/format";
 import { leerImagenComprimida } from "../../lib/imagenes";
+import { normalizarFrase } from "../../lib/normalizarEntrada";
 import { fotoVacia, normalizarBitacora, registroVacio, resumenBitacora } from "../../lib/bitacoraObra";
 
 // Pestana «Avance y fotos» del detalle de obra.
@@ -32,6 +33,13 @@ export default function BitacoraObra({ obra, setObras }) {
 
   const actualizarRegistro = (id, campo, valor) =>
     guardarBitacora(registros.map((r) => (r.id === id ? { ...r, [campo]: valor } : r)));
+
+  // Al salir del campo se acomoda el texto: mayuscula inicial y sin espacios
+  // de sobra. Estos textos salen tal cual impresos en el informe.
+  const acomodarTexto = (id, campo, valor) => {
+    const limpio = normalizarFrase(valor);
+    if (limpio !== valor) actualizarRegistro(id, campo, limpio);
+  };
 
   const eliminarRegistro = (registro) => {
     const cuantasFotos = (registro.fotos || []).filter((f) => f.img).length;
@@ -137,7 +145,10 @@ export default function BitacoraObra({ obra, setObras }) {
                 <input
                   value={registro.actividad}
                   onChange={(e) => actualizarRegistro(registro.id, "actividad", e.target.value)}
+                  onBlur={(e) => acomodarTexto(registro.id, "actividad", e.target.value)}
                   placeholder="Ej: Instalación de líneas de vida en cubierta norte"
+                  spellCheck
+                  lang="es"
                   style={SI}
                 />
               </div>
@@ -148,8 +159,11 @@ export default function BitacoraObra({ obra, setObras }) {
               <textarea
                 value={registro.descripcion}
                 onChange={(e) => actualizarRegistro(registro.id, "descripcion", e.target.value)}
+                onBlur={(e) => acomodarTexto(registro.id, "descripcion", e.target.value)}
                 rows={3}
                 placeholder="Cuenta el proceso: cómo se hizo, con qué material, en qué parte de la obra. Este texto sale tal cual en el informe."
+                spellCheck
+                lang="es"
                 style={{ ...SI, resize: "vertical" }}
               />
             </div>
@@ -159,7 +173,10 @@ export default function BitacoraObra({ obra, setObras }) {
               <input
                 value={registro.observaciones}
                 onChange={(e) => actualizarRegistro(registro.id, "observaciones", e.target.value)}
+                onBlur={(e) => acomodarTexto(registro.id, "observaciones", e.target.value)}
                 placeholder="Ej: 1 línea de vida horizontal de 119 metros · quedó pendiente la señalización"
+                spellCheck
+                lang="es"
                 style={SI}
               />
             </div>
@@ -206,7 +223,13 @@ export default function BitacoraObra({ obra, setObras }) {
                       <input
                         value={foto.comentario}
                         onChange={(e) => actualizarFoto(registro.id, fi, "comentario", e.target.value)}
+                        onBlur={(e) => {
+                          const limpio = normalizarFrase(e.target.value);
+                          if (limpio !== foto.comentario) actualizarFoto(registro.id, fi, "comentario", limpio);
+                        }}
                         placeholder="¿Qué se ve en esta foto?"
+                        spellCheck
+                        lang="es"
                         style={{ ...SI, fontSize: 11, padding: "4px 8px" }}
                       />
                       <button

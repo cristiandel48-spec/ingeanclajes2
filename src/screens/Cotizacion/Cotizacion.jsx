@@ -1,5 +1,6 @@
 import Badge from "../../components/ui/Badge";
 import CampoTexto from "../../components/ui/CampoTexto";
+import { useAccionesPantalla } from "../../context/accionesPantalla";
 import DictarCotizacion from "./DictarCotizacion";
 import FirmaEmpresa from "../../components/FirmaEmpresa";
 import DocumentoEnVivo from "./DocumentoEnVivo";
@@ -9,7 +10,7 @@ import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { TEXTOS_DOCUMENTO_DEFAULT, getTextosDocumento } from "../../lib/cotizacionTextos";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_INCLUYE_PUNTOS_ANCLAJE, DEFAULT_COT_TIEMPO_EJEC, ITEMS_DB } from "../../data/seed";
 import { buildQuoteProposal, createQuoteProposalId, getQuoteActiveProposal, getQuoteApprovalAccountingSnapshot, getQuoteProposalLabel, getQuoteProposals, hasAnchorPointsService, normalizeProposalItems, normalizeQuoteItems } from "../../lib/cotizaciones";
@@ -246,6 +247,31 @@ export default function Cotizacion({ctx}){
   };
 
   const guardarCotizacion = ()=>persistCotizacion({volverALista:true});
+
+  // El botón de guardar vive en la barra superior, junto al indicador de
+  // "Guardado". El formulario de cotización es muy largo y el botón quedaba
+  // arriba del todo: para guardar tocaba volver a subir cada vez.
+  //
+  // La función se lee de una referencia porque se recrea en cada render; si
+  // fuera dependencia del efecto, se estaría republicando sin parar.
+  const guardarRef = useRef(guardarCotizacion);
+  useEffect(()=>{ guardarRef.current = guardarCotizacion; });
+
+  useAccionesPantalla(
+    tab==="form" ? (
+      <button
+        onClick={()=>guardarRef.current()}
+        style={{
+          background:"#f47c20", color:"#fff", border:"none", borderRadius:9,
+          padding:"9px 18px", fontSize:13, fontWeight:700, cursor:"pointer",
+          fontFamily:"inherit", whiteSpace:"nowrap",
+        }}
+      >
+        {editCot ? "Actualizar" : "Guardar"}
+      </button>
+    ) : null,
+    [tab, editCot]
+  );
 
   const guardarCotizacionYSubir = ()=>{
     const saved = persistCotizacion({volverALista:false});
@@ -517,7 +543,6 @@ export default function Cotizacion({ctx}){
               {verDocumento ? "Ocultar documento" : "Ver documento"}
             </button>
             <button style={{...B("#dbeafe","#1e40af"),justifyContent:"center"}} onClick={()=>{const saved=guardarCotizacion();if(saved){setPreviewCot(saved);setTab("lista");}}}>Guardar y ver</button>
-            <button style={{...B("#f47c20"),justifyContent:"center"}} onClick={guardarCotizacion}>{editCot?"Actualizar":"Guardar"}</button>
           </div>
         }
       />
@@ -598,28 +623,13 @@ export default function Cotizacion({ctx}){
           />
           <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Quiénes somos y qué garantiza la propuesta. Separa los párrafos con una línea en blanco.</div>
         </div>
-        <div>
-          <LBL>Párrafo adicional para este cliente (opcional)</LBL>
-          <textarea
-            value={textoInicial}
-            onChange={e=>setTextoInicial(e.target.value)}
-            placeholder={"Ej: Presentamos la cotización para la instalación de puntos de anclaje o línea de vida sobre la cubierta del proyecto..."}
-            style={{...SI,minHeight:100,resize:"vertical",lineHeight:1.6}}
-          />
-          <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Se agrega debajo de la frase de apertura. Déjalo vacío si no aplica.</div>
-        </div>
-      </div>
-
-      <div style={{...CD,marginBottom:14}}>
-        <div style={ST}>02 · Marco técnico</div>
-        <LBL>Definiciones que estructuran el alcance</LBL>
-        <textarea
-          value={textosDocumento.marcoTecnico}
-          onChange={e=>setTexto("marcoTecnico",e.target.value)}
-          placeholder="Déjalo vacío para usar las definiciones automáticas según el tipo de propuesta (línea de vida, puntos de anclaje u obra blanca)."
-          style={{...SI,minHeight:110,resize:"vertical",lineHeight:1.6}}
-        />
-        <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Vacío = definiciones automáticas. Si escribes algo, reemplaza ese bloque. Separa párrafos con una línea en blanco.</div>
+        {/* Se quitaron de la pantalla el «párrafo adicional para este cliente»
+            y el «marco técnico»: nadie los llenaba y alargaban el formulario.
+            Los valores siguen existiendo y viajando al documento, así que las
+            cotizaciones antiguas que sí los tengan se imprimen igual; lo que
+            ya no se puede es escribirlos desde aquí. El marco técnico, al ir
+            vacío, usa las definiciones automáticas según el tipo de propuesta,
+            que es lo que se estaba usando en la práctica. */}
       </div>
 
       {/* 03 · Propuestas: todas abiertas, una debajo de otra, en el orden

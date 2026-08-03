@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
+import { useAccionesTopbar } from "../../context/accionesPantalla";
 import GlobalStyles from "../../styles/GlobalStyles";
 import { getTheme } from "../../styles/shellTheme";
 import { useIsMobile } from "../../hooks/useMediaQuery";
@@ -29,6 +30,9 @@ const writeStored = (key, value) => {
 // de contenido. Las pantallas se reciben ya resueltas en `children`.
 export default function AppShell({ scr, onNavigate, children }) {
   const isMobile = useIsMobile();
+  // Botones que publica la pantalla abierta, para que queden junto al
+  // indicador de guardado en vez de perderse al bajar por el formulario.
+  const accionesTopbar = useAccionesTopbar();
   const [themeMode, setThemeMode] = useState(() => readStored(THEME_KEY, "light"));
   const [pinned, setPinned] = useState(() => readStored(PIN_KEY, false));
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -91,6 +95,7 @@ export default function AppShell({ scr, onNavigate, children }) {
           onToggleTheme={() => setThemeMode(dark ? "light" : "dark")}
           isMobile={isMobile}
           onOpenMenu={() => setMobileOpen(true)}
+          acciones={accionesTopbar}
         />
 
         <main

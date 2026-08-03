@@ -3,9 +3,13 @@ import SaveIndicator from "./SaveIndicator";
 import { getScreenTitle, getScreenSection } from "../../config/navigation";
 import { TOPBAR_HEIGHT } from "../../styles/shellTheme";
 
-// Barra superior: ubicacion actual, cambio de tema y usuario.
+// Barra superior: ubicacion actual, acciones de la pantalla, tema y usuario.
 // En movil incluye el boton que abre el menu lateral.
-export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOpenMenu }) {
+//
+// `acciones` lo publica la pantalla que este abierta (ver AccionesPantalla).
+// Sirve para que un boton importante -guardar una cotizacion larga- quede
+// siempre a la vista junto al indicador de guardado, sin tener que subir.
+export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOpenMenu, acciones }) {
   const title = getScreenTitle(scr);
   const section = getScreenSection(scr);
 
@@ -59,6 +63,7 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+        {acciones}
         <SaveIndicator theme={theme} compact={isMobile} />
 
         <button

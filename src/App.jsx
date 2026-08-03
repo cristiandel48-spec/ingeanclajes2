@@ -1,5 +1,6 @@
 import { AppDataProvider, useAppData } from "./context/AppDataContext";
 import AppShell from "./components/layout/AppShell";
+import { AccionesPantallaProvider } from "./context/accionesPantalla";
 import { pantallaInicial, puedeVer } from "./lib/permisos";
 import Dashboard from "./screens/Dashboard/Dashboard";
 import Cotizacion from "./screens/Cotizacion/Cotizacion";
@@ -38,7 +39,9 @@ const SCREENS = {
 export default function App() {
   return (
     <AppDataProvider>
-      <AppRoot />
+      <AccionesPantallaProvider>
+        <AppRoot />
+      </AccionesPantallaProvider>
     </AppDataProvider>
   );
 }

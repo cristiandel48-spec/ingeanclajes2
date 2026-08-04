@@ -36,7 +36,7 @@ export const TEXTOS_DOCUMENTO_DEFAULT = {
   contactoEmail: "comercial1ingeanclajes@gmail.com",
 
   firmaNombre: "Ing. Jhon Jaime Sepúlveda Londoño",
-  firmaCargo: "Director Comercial",
+  firmaCargo: "Gerente General",
   // Una linea por renglon debajo del cargo.
   firmaDetalle: ["MP. 05256-409949", "Tel. 315 288 9541"].join("\n"),
 };
@@ -44,6 +44,16 @@ export const TEXTOS_DOCUMENTO_DEFAULT = {
 // Devuelve los textos de una cotizacion completados con los valores por
 // defecto. Un campo en blanco cuenta como "usar el predeterminado", salvo
 // marcoTecnico, donde vacio significa "usar las definiciones automaticas".
+// El cargo de la firma estaba mal: figuraba como "Director Comercial" cuando
+// quien firma es el gerente general. Las cotizaciones guardadas traen el valor
+// viejo, y como no es una decision de cada documento sino un dato de la
+// empresa, se corrige al leerlas en vez de dejar el error impreso.
+//
+// Solo se corrige si firma la misma persona: si algun dia firma un director
+// comercial de verdad, su cargo se respeta.
+const FIRMA_GERENTE = "ing. jhon jaime sepúlveda londoño";
+const CARGO_ANTERIOR = "director comercial";
+
 export function getTextosDocumento(cotizacion = {}) {
   const guardados = cotizacion?.textosDocumento || {};
   const resultado = { ...TEXTOS_DOCUMENTO_DEFAULT };
@@ -56,6 +66,11 @@ export function getTextosDocumento(cotizacion = {}) {
       continue;
     }
     if (valor.trim()) resultado[clave] = valor;
+  }
+
+  const firmaEsDelGerente = resultado.firmaNombre.trim().toLowerCase() === FIRMA_GERENTE;
+  if (firmaEsDelGerente && resultado.firmaCargo.trim().toLowerCase() === CARGO_ANTERIOR) {
+    resultado.firmaCargo = TEXTOS_DOCUMENTO_DEFAULT.firmaCargo;
   }
 
   return resultado;

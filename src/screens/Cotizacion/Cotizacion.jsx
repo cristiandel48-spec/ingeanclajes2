@@ -40,7 +40,7 @@ export default function Cotizacion({ctx}){
   const [cot,setCot]=useState("");
   const [fecha,setFecha]=useState(today());
   const [val,setVal]=useState(30);
-  const [cl,setCl]=useState({nombre:"",nit:"",contacto:"",contactoEmail:"",obra:"",telefono:"",ciudad:"",coords:""});
+  const [cl,setCl]=useState({nombre:"",nit:"",contacto:"",contactoEmail:"",obra:"",telefono:"",ciudad:"",direccion:"",coords:""});
   const [textoInicial,setTextoInicial]=useState("");
   const [observacionesCot,setObservacionesCot]=useState("");
   // Textos fijos del documento, editables por cotizacion.
@@ -146,12 +146,13 @@ export default function Cotizacion({ctx}){
         contactoEmail: previo.contactoEmail || datos.contactoEmail || "",
         telefono: previo.telefono || datos.telefono || "",
         ciudad: previo.ciudad || datos.ciudad || "",
+        direccion: previo.direccion || datos.direccion || "",
       });
     };
     // El orden importa: lo primero que entra manda.
-    (clientes||[]).forEach((c)=>registrar({nombre:c.nombre,nit:c.nit,contacto:c.contacto,contactoEmail:c.email,telefono:c.telefono,ciudad:c.ciudad}));
-    (cotizaciones||[]).forEach((c)=>registrar({nombre:c.cliente,nit:c.nit,contacto:c.contacto,contactoEmail:c.contactoEmail,telefono:c.telefono,ciudad:c.ciudad}));
-    (obras||[]).forEach((o)=>registrar({nombre:o.cliente,nit:o.nit,telefono:o.tel,ciudad:o.ciudad}));
+    (clientes||[]).forEach((c)=>registrar({nombre:c.nombre,nit:c.nit,contacto:c.contacto,contactoEmail:c.email,telefono:c.telefono,ciudad:c.ciudad,direccion:c.direccion}));
+    (cotizaciones||[]).forEach((c)=>registrar({nombre:c.cliente,nit:c.nit,contacto:c.contacto,contactoEmail:c.contactoEmail,telefono:c.telefono,ciudad:c.ciudad,direccion:c.direccion}));
+    (obras||[]).forEach((o)=>registrar({nombre:o.cliente,nit:o.nit,telefono:o.tel,ciudad:o.ciudad,direccion:o.direccion}));
     return [...mapa.values()].sort((a,b)=>a.nombre.localeCompare(b.nombre));
   })();
 
@@ -173,6 +174,7 @@ export default function Cotizacion({ctx}){
         contactoEmail: conocido.contactoEmail || prev.contactoEmail,
         telefono: conocido.telefono || prev.telefono,
         ciudad: conocido.ciudad || prev.ciudad,
+        direccion: conocido.direccion || prev.direccion,
       } : null),
     }));
   };
@@ -243,7 +245,7 @@ export default function Cotizacion({ctx}){
     setCot(source.numero || `P-${34155 + cotizaciones.length}`);
     setFecha(source.fecha || today());
     setVal(source.val || 30);
-    setCl({nombre:source.cliente || "",nit:source.nit || "",contacto:source.contacto || "",contactoEmail:source.contactoEmail || "",obra:source.obra || "",telefono:source.telefono || "",ciudad:source.ciudad || "",coords:source.coords || ""});
+    setCl({nombre:source.cliente || "",nit:source.nit || "",contacto:source.contacto || "",contactoEmail:source.contactoEmail || "",obra:source.obra || "",telefono:source.telefono || "",ciudad:source.ciudad || "",direccion:source.direccion || "",coords:source.coords || ""});
     setTextoInicial(source.textoInicial || "");
     setObservacionesCot(source.observaciones || "");
     setTextosDocumento(getTextosDocumento(source));
@@ -286,7 +288,7 @@ export default function Cotizacion({ctx}){
     });
     const activa = propuestasFinales.find((x)=>x.id===propuestaActivaId) || propuestasFinales[0];
     const prev = editCot ? cotizaciones.find((cotizacion)=>cotizacion.id===editCot) : null;
-    const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:normalizarRazonSocial(cl.nombre),nit:cl.nit,contacto:cl.contacto,contactoEmail:cl.contactoEmail,obra:normalizarMayusculas(cl.obra),telefono:cl.telefono,ciudad:normalizarMayusculas(cl.ciudad),coords:cl.coords,textoInicial:textoInicial.trim(),observaciones:observacionesCot.trim(),textosDocumento,items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:activa.mapImg || null,geoMediciones:activa.geoMediciones || [],geoMapView:activa.geoMapView || null,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,incluyeTexto:activa.incluyeTexto || "",propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
+    const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:normalizarRazonSocial(cl.nombre),nit:cl.nit,contacto:cl.contacto,contactoEmail:cl.contactoEmail,obra:normalizarMayusculas(cl.obra),telefono:cl.telefono,ciudad:normalizarMayusculas(cl.ciudad),direccion:normalizarMayusculas(cl.direccion),coords:cl.coords,textoInicial:textoInicial.trim(),observaciones:observacionesCot.trim(),textosDocumento,items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:activa.mapImg || null,geoMediciones:activa.geoMediciones || [],geoMapView:activa.geoMapView || null,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,incluyeTexto:activa.incluyeTexto || "",propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
     setCotizaciones((prevList)=>editCot ? prevList.map((cotizacion)=>cotizacion.id===editCot?{...cotizacion,...data}:cotizacion) : [...prevList,data]);
     setPropuestas(propuestasFinales);
     setEditCot(data.id);
@@ -344,7 +346,7 @@ export default function Cotizacion({ctx}){
       tel:cotizacion.telefono,
       proyecto:cotizacion.obra,
       ciudad:cotizacion.ciudad,
-      direccion:"",
+      direccion:cotizacion.direccion || "",
       coords:cotizacion.coords || "",
       estado:"En Obra",
       avance:0,
@@ -664,6 +666,9 @@ export default function Cotizacion({ctx}){
             normalizar={normalizarTelefono} revisar={avisoCelular} inputMode="tel" spellCheck={false}/>
           <CampoTexto label="Ciudad" valor={cl.ciudad} onChange={v=>setCl({...cl,ciudad:v})}
             normalizar={normalizarMayusculas} autoCapitalize="characters"/>
+          <CampoTexto label="Dirección de la obra" valor={cl.direccion} onChange={v=>setCl({...cl,direccion:v})}
+            normalizar={normalizarMayusculas} autoCapitalize="characters"
+            ayuda="Viaja a la ficha del cliente y a la obra cuando se apruebe."/>
         </div>
       </div>
 

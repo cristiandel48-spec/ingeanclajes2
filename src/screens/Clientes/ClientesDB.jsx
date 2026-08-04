@@ -27,10 +27,10 @@ export default function ClientesDB({ctx}){
     })),
     ...cotizaciones.map(c=>({
       nombre:c.cliente||"",
-      nit:"",
+      nit:c.nit||"",
       telefono:c.telefono||"",
       ciudad:c.ciudad||"",
-      direccion:"",
+      direccion:c.direccion||"",
       contacto:c.cliente||"",
       email:"",
       estado:"Activo",

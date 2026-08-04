@@ -13,7 +13,7 @@ import { leerImagenComprimida } from "../../lib/imagenes";
 import { normalizarFrase, normalizarMayusculas, normalizarNombrePropio, normalizarParrafos } from "../../lib/normalizarEntrada";
 import { DEFAULT_INFORME_DESCRIPCION, DEFAULT_INFORME_RECOMENDACIONES } from "../../data/seed";
 export default function Informes({ctx}){
-  const {informes,setInformes,obras,empleados,intencion,limpiarIntencion,empresaConfig,irAPantalla}=ctx;
+  const {informes,setInformes,obras,empleados,horarios,intencion,limpiarIntencion,empresaConfig,irAPantalla}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
   const [sel,setSel]=useState(null);
   const [generandoPdf,setGenerandoPdf]=useState(false);
@@ -29,23 +29,51 @@ export default function Informes({ctx}){
   // `agregada` marca las filas que puso la persona a mano en el informe, para
   // conservarlas cuando se resincroniza con la obra. Arranca en modo lista:
   // lo normal es elegir a alguien registrado, no escribirlo.
-  const emptyPersona=()=>({empleadoId:"",cargo:"",nombre:"",manual:false,agregada:true});
+  const emptyPersona=()=>({empleadoId:"",cargo:"",nombre:"",turno1:"",turno2:"",manual:false,agregada:true});
 
-  // El informe ya no lleva columnas de turno: sobraban en el documento que se
-  // le entrega al cliente, que solo necesita saber quien estuvo y en que cargo.
-  // Con ellas se fue tambien lo que las alimentaba -el formato de 12 horas y el
-  // cruce contra Horarios-, que no servia para nada mas.
+  const fmtHora12=(hhmm)=>{
+    if(!hhmm||!hhmm.includes(':')) return hhmm||"";
+    const [hs,ms] = hhmm.trim().split(':');
+    const h = Number(hs);
+    if(Number.isNaN(h)) return hhmm;
+    const suffix = h >= 12 ? 'PM' : 'AM';
+    const h12 = ((h + 11) % 12) + 1;
+    return (String(h12).padStart(2,'0')) + ":" + (ms) + " " + (suffix);
+  };
+
+  const fmtTurno12=(turno)=>{
+    if(!turno) return "";
+    const parts = turno.split('-').map(p=>p.trim()).filter(Boolean);
+    if(parts.length===2 && parts[0].includes(':') && parts[1].includes(':')){
+      return (fmtHora12(parts[0])) + " - " + (fmtHora12(parts[1]));
+    }
+    return turno;
+  };
+
   const buildPersonalDesdeObra=(obraId,periodoInicio,periodoFin,prevPersonal=[])=>{
     const obraSel = obras.find(o=>o.id===obraId);
     const idsObra = obraSel?.empleados || [];
+    const horariosObra = horarios.filter(h=>
+      h.obraId===obraId &&
+      (!periodoInicio || h.fecha>=periodoInicio) &&
+      (!periodoFin || h.fecha<=periodoFin)
+    );
 
     const vinculados = idsObra.map((eid)=>{
       const emp = empleados.find(e=>e.id===eid);
       const prev = prevPersonal.find(p=>p.empleadoId===eid) || {};
+      const turnosEmp = [...new Set(
+        horariosObra
+          .filter(h=>h.empleadoId===eid)
+          .map(h=>fmtTurno12(h.turno))
+          .filter(Boolean)
+      )].slice(0,2);
       return {
         empleadoId:eid,
         cargo: prev.cargo || emp?.cargo || 'Instalador',
         nombre: emp?.nombre || prev.nombre || '',
+        turno1: prev.turno1 || turnosEmp[0] || '',
+        turno2: prev.turno2 || turnosEmp[1] || '',
         manual:false,
       };
     });
@@ -143,6 +171,13 @@ export default function Informes({ctx}){
   // el menu no se reabra el formulario.
   useEffect(()=>()=>limpiarIntencion(),[limpiarIntencion]);
 
+  const turnosDisponiblesObra = [...new Set(
+    horarios
+      .filter(h=>h.obraId===form.obraId && (!form.periodoInicio || h.fecha>=form.periodoInicio) && (!form.periodoFin || h.fecha<=form.periodoFin))
+      .map(h=>fmtTurno12(h.turno))
+      .filter(Boolean)
+  )];
+
   useEffect(()=>{
     if(!obras.length) return;
     setForm(prev=>{
@@ -157,7 +192,7 @@ export default function Informes({ctx}){
       if(sameProyecto && sameLocal && samePersonal && obraSel.id===prev.obraId) return prev;
       return {...prev,obraId:obraSel.id,proyecto:nextProyecto,localizacion:nextLocal,personal:nextPersonal};
     });
-  },[obras,empleados]);
+  },[obras,empleados,horarios]);
 
   useEffect(()=>{
     if(!form.obraId) return;
@@ -170,7 +205,7 @@ export default function Informes({ctx}){
       if(samePersonal && nextProyecto===prev.proyecto && nextLocal===prev.localizacion) return prev;
       return {...prev,proyecto:nextProyecto,localizacion:nextLocal,personal:nextPersonal};
     });
-  },[form.obraId,form.periodoInicio,form.periodoFin,obras,empleados]);
+  },[form.obraId,form.periodoInicio,form.periodoFin,obras,empleados,horarios]);
 
   const updPersonal=(i,f,v)=>setForm(p=>({...p,personal:p.personal.map((x,j)=>j===i?{...x,[f]:v}:x)}));
   const updActividad=(ai,field,val)=>setForm(p=>({...p,actividades:p.actividades.map((a,i)=>i===ai?{...a,[field]:val}:a)}));
@@ -286,7 +321,7 @@ export default function Informes({ctx}){
           }
         >
           Las <strong>fotos y los comentarios</strong> salen de la pestaña «Avance y fotos» de la
-          obra; el <strong>personal</strong>, de la pestaña «Personal» de esa misma obra.
+          obra; el <strong>personal y los turnos</strong>, de la pestaña «Personal» y de Horarios.
           Si el informe sale vacío, es porque nadie ha registrado el avance en la obra todavía.
         </AvisoFlujo>
       )}
@@ -332,11 +367,14 @@ export default function Informes({ctx}){
           <div style={{marginBottom:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,flexWrap:"wrap",gap:8}}>
               <LBL>Personal en obra</LBL>
-              <div style={{fontSize:11,color:"#64748b"}}>Se carga automáticamente con quienes estén asignados a la obra.</div>
+              <div style={{fontSize:11,color:"#64748b"}}>Se carga automáticamente según la obra y los horarios del período. Los turnos se muestran en formato 12h.</div>
             </div>
+            <datalist id="turnosInformeList">
+              {turnosDisponiblesObra.map((t,i)=><option key={i} value={t} />)}
+            </datalist>
             {form.personal.length===0&&<div style={{background:"#f8fafc",border:"1px dashed #e2e8f0",borderRadius:8,padding:"12px 14px",fontSize:12,color:"#94a3b8",marginBottom:8}}>No hay personal asignado a esta obra todavía. Puedes agregarlo manualmente.</div>}
             {form.personal.map((p,i)=>(
-              <div key={i} style={{display:"grid",gridTemplateColumns:"1fr 1.4fr 28px",gap:8,marginBottom:6}}>
+              <div key={i} style={{display:"grid",gridTemplateColumns:"1fr 1.4fr 1fr 1fr 28px",gap:8,marginBottom:6}}>
                 <input value={p.cargo} onChange={e=>updPersonal(i,"cargo",e.target.value)} onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==p.cargo)updPersonal(i,"cargo",v);}} placeholder="Cargo" style={{...SI,fontSize:12}}/>
                 {/* Se elige de la lista y el cargo entra solo. Antes habia que
                     escribir el nombre a mano, y es donde se colaban los
@@ -381,6 +419,8 @@ export default function Informes({ctx}){
                     />
                   )}
                 </div>
+                <input list="turnosInformeList" value={p.turno1||""} onChange={e=>updPersonal(i,"turno1",e.target.value)} placeholder="Turno 1 · 07:00 AM - 05:00 PM" style={{...SI,fontSize:12}}/>
+                <input list="turnosInformeList" value={p.turno2||""} onChange={e=>updPersonal(i,"turno2",e.target.value)} placeholder="Turno 2 · opcional" style={{...SI,fontSize:12}}/>
                 <button onClick={()=>setForm(pf=>({...pf,personal:pf.personal.filter((_,j)=>j!==i)}))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:6,cursor:"pointer",fontSize:14}}>×</button>
               </div>
             ))}
@@ -532,6 +572,10 @@ export default function Informes({ctx}){
             </table>
             <table style={{width:"100%",borderCollapse:"collapse",marginBottom:14}}>
               <thead>
+                {/* Los turnos se siguen llevando en la pantalla de edicion,
+                    pero NO se imprimen: en el documento que se le entrega al
+                    cliente ocupaban media tabla para mostrar casi siempre un
+                    guion. */}
                 <tr style={{background:"#ddd"}}><td colSpan={2} style={{border:"1px solid #ccc",padding:"6px 10px",fontWeight:700,textAlign:"center"}}>PERSONAL EN OBRA</td></tr>
                 <tr style={{background:"#f5f5f5"}}>
                   <th style={{border:"1px solid #ccc",padding:"5px 10px",textAlign:"left",width:"35%"}}>CARGO</th>

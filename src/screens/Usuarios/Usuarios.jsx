@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { NAV_SECTIONS } from "../../config/navigation";
 import CampoTexto from "../../components/ui/CampoTexto";
+import OptimizarFotos from "../../components/OptimizarFotos";
 import { MODULOS_MINIMOS, MODULOS_SOLO_ADMIN, ROLES, ROL_LABEL, sinCuentasSoporte } from "../../lib/permisos";
 import { avisoNombre, normalizarNombrePropio } from "../../lib/normalizarEntrada";
 import {
@@ -339,6 +340,10 @@ Cancelar: se la entregas tú.`);
           })}
         </div>
       )}
+
+      {/* Herramienta de mantenimiento. Vive aqui porque esta pantalla ya es
+          solo para administradores y reescribe datos de toda la empresa. */}
+      <OptimizarFotos ctx={ctx} />
     </div>
   );
 }

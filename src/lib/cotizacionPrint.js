@@ -286,12 +286,36 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
   // son largas: a dos columnas cada una se partia en tres renglones y el bloque
   // se leia apretado.
   const renderIncluyeBlock = (texto) => {
-    const lines = String(texto || "")
+    const crudas = String(texto || "")
       .split("\n")
-      // Si quien escribe empieza la linea con un guion o un punto, se quita:
-      // la vinieta la pone el documento y si no salian dos seguidas.
-      .map((line) => line.trim().replace(/^[-–—•*·]\s*/, "").trim())
+      .map((line) => line.trim())
       .filter(Boolean);
+
+    // Una linea NO siempre es una vinieta: hay textos escritos cortando los
+    // renglones donde cabian en la pantalla, y ahi cada trozo salia como punto
+    // aparte -"Los" en una vinieta y "elementos utilizados..." en la siguiente-.
+    //
+    // Lo que delata una continuacion es que la linea EMPIECE EN MINUSCULA: un
+    // punto nuevo de la lista se escribe con mayuscula. Con eso solo se pegan
+    // los pedazos de una misma frase -"Los" + "elementos utilizados..."- y
+    // siguen separados dos puntos distintos aunque el primero no lleve punto
+    // final, como "Obras estructurales de ser necesario".
+    const lines = [];
+    for (const cruda of crudas) {
+      const marcada = /^[-–—•*·]\s*/.test(cruda);
+      const limpia = cruda.replace(/^[-–—•*·]\s*/, "").trim();
+      if (!limpia) continue;
+
+      const anterior = lines[lines.length - 1];
+      const continua =
+        anterior &&
+        !marcada &&
+        /^[a-záéíóúüñ]/.test(limpia) &&
+        !/[.;:!?]$/.test(anterior);
+
+      if (continua) lines[lines.length - 1] = `${anterior} ${limpia}`;
+      else lines.push(limpia);
+    }
 
     if (!lines.length) return "";
 
@@ -589,9 +613,15 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
             // definiciones automaticas por tipo.
             const propio = String(textos.marcoTecnico || "").trim();
             if (propio) {
+              // Dentro de un parrafo las lineas se unen con un espacio, no con
+              // un <br/>. Quien escribe el texto corta los renglones donde le
+              // cabe en su pantalla, y al convertir cada corte en un salto de
+              // verdad el parrafo salia dentado -renglones a media hoja, sin
+              // justificar-. Los parrafos de verdad ya vienen separados por una
+              // linea en blanco, que es lo que parte el split de arriba.
               return `<div class="def-list-libre">${
                 propio.split(/\n{2,}/).map((parrafo)=>
-                  `<p class="doc-copy">${lineasDeTexto(parrafo).map((l)=>escapeHtml(l)).join("<br/>")}</p>`
+                  `<p class="doc-copy">${lineasDeTexto(parrafo).map((l)=>escapeHtml(l)).join(" ")}</p>`
                 ).join("")
               }</div>`;
             }
@@ -665,8 +695,34 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     </section>
   `;
 
-  const renderFinalContent = ({ includeSummary = false } = {}) => `
-    ${includeSummary ? renderResumenBlock() : ""}
+  // Alto aprovechable de una hoja carta, en milimetros, ya descontados los
+  // margenes, el encabezado y el sitio que ocupa el pie.
+  const ALTO_UTIL_CIERRE = 200;
+
+  // Cuanto ocupa el bloque de "esta cotizacion incluye". Se estima por el texto
+  // porque no hay forma de medirlo de verdad: el HTML se arma aqui y solo el
+  // navegador sabe donde parte cada renglon. ~95 caracteres entran por renglon
+  // al ancho de la hoja.
+  const altoIncluye = (html) => {
+    if (!html.trim()) return 0;
+    const renglones = (html.match(/class="incluye-item"/g) || []).length;
+    const textoPlano = html.replace(/<[^>]+>/g, " ");
+    const renglonesReales = Math.max(renglones, Math.ceil(textoPlano.length / 95));
+    return 16 + renglonesReales * 4.8 + renglones * 1.7;
+  };
+
+  // El cierre deja de ser un bloque unico y pasa a ser una lista de piezas con
+  // su alto estimado, para poder repartirlas entre hojas. Antes iba todo en una
+  // sola: cuando no cabia, la hoja recortaba el sobrante y el pie -que va
+  // pegado abajo y con fondo blanco- quedaba impreso ENCIMA del texto.
+  const bloquesDelCierre = ({ includeSummary = false } = {}) => {
+    const bloques = [];
+
+    if (includeSummary) {
+      bloques.push({ alto: 34 + propuestas.length * 7, html: renderResumenBlock() });
+    }
+
+    bloques.push({ alto: 54, html: `
     <div class="keep conditions-block">
       <div class="card-label block-label centered">Condiciones comerciales</div>
       <div class="conditions-grid">
@@ -688,14 +744,20 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
         </div>
       </div>
     </div>
+    ` });
 
-    ${incluyeCierreHtml}
+    if (incluyeCierreHtml.trim()) {
+      bloques.push({ alto: altoIncluye(incluyeCierreHtml), html: incluyeCierreHtml });
+    }
 
+    bloques.push({ alto: 44, html: `
     <div class="keep sst-block">
       <div class="sst-title">Sistema de Gestión de Seguridad y Salud en el Trabajo</div>
       <p>${escapeHtml(textos.sst)}</p>
     </div>
+    ` });
 
+    bloques.push({ alto: 72, html: `
     <div class="signature keep">
       <div>
         <div class="card-label block-label">Próximos pasos</div>
@@ -716,21 +778,43 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
         <div class="sig-meta">${lineasDeTexto(textos.firmaDetalle).map((l)=>escapeHtml(l)).join("<br/>")}</div>
       </div>
     </div>
+    ` });
 
-    <div class="thanks-row"><span>Gracias por su confianza</span></div>
-  `;
+    return bloques;
+  };
 
-  const renderFinalPage = ({ includeSummary = false } = {}) => `
-    <section class="page premium-final-page ${includeSummary ? "premium-closing-page" : ""}">
-      <div class="page-inner">
-        ${headerHtml}
-        <div class="page-content">
-          ${renderFinalContent({ includeSummary })}
+  const renderFinalPage = ({ includeSummary = false } = {}) => {
+    // Se van llenando hojas hasta que la siguiente pieza no cabe; ahi se abre
+    // una nueva. Ninguna pieza se parte por dentro: son bloques que se leen de
+    // corrido -las condiciones, lo que incluye, la firma- y cortarlos a la
+    // mitad se ve peor que pasarlos enteros a la hoja siguiente.
+    const hojas = [[]];
+    let ocupado = 0;
+
+    for (const bloque of bloquesDelCierre({ includeSummary })) {
+      const ultima = hojas[hojas.length - 1];
+      if (ultima.length && ocupado + bloque.alto > ALTO_UTIL_CIERRE) {
+        hojas.push([bloque.html]);
+        ocupado = bloque.alto;
+      } else {
+        ultima.push(bloque.html);
+        ocupado += bloque.alto;
+      }
+    }
+
+    return hojas.map((piezas, i) => `
+      <section class="page premium-final-page ${includeSummary && i === 0 ? "premium-closing-page" : ""}">
+        <div class="page-inner">
+          ${headerHtml}
+          <div class="page-content">
+            ${piezas.join("\n")}
+            ${i === hojas.length - 1 ? `<div class="thanks-row"><span>Gracias por su confianza</span></div>` : ""}
+          </div>
+          ${footerHtml}
         </div>
-        ${footerHtml}
-      </div>
-    </section>
-  `;
+      </section>
+    `).join("");
+  };
 
   const IMG_SOPORTE = "data:image/png;base64,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";
   const IMG_TENSOR = "data:image/png;base64,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";

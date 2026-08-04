@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { B, CD, SI, ST, TC } from "../../styles/tokens";
 import { buildGoogleStaticMapUrl, measurementsToQuoteItems } from "../../lib/maps";
 import { fmt } from "../../lib/format";
+import { leerImagenComprimida } from "../../lib/imagenes";
 export default function Planos({ctx}){
   const {obras,setObras,empleados,cotizaciones,setCotDraft,setScr}=ctx;
   const [sel,setSel]=useState(null);
@@ -80,7 +81,9 @@ export default function Planos({ctx}){
   const moverDrag=(e)=>{ if(!drag) return; const pt=toSvgPoint(e, manualSvgRef.current); const dx=pt.x-drag.lastX; const dy=pt.y-drag.lastY; if(!dx&&!dy) return; persistLineas(lineas.map(l=>l.id===drag.id?moveItem(l,drag.part,dx,dy,drag.maxX,drag.maxY):l)); setDrag(prev=>prev?{...prev,lastX:pt.x,lastY:pt.y}:prev); };
   const finalizarDrag=()=>setDrag(null);
 
-  const onImgChange=(e)=>{const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=ev=>{ setImgPlano(ev.target.result); guardarEnObra({imgPlano:ev.target.result}); }; r.readAsDataURL(f);};
+  // El plano se reduce antes de guardarlo: entraba en tamano original y se
+  // escribia en la fila de la obra, que despues sube completa en cada guardado.
+  const onImgChange=async(e)=>{const f=e.target.files[0]; if(!f)return; const src=await leerImagenComprimida(f); setImgPlano(src); guardarEnObra({imgPlano:src});};
   const allLineas=[...lineas, ...geoMediciones.map((g,idx)=>({id:g.id||"geo-" + (idx), tipo:g.tipo, ml:g.ml, label:g.label}))];
   const totalML=allLineas.reduce((s,l)=>s+(parseFloat(l.ml)||0),0);
 

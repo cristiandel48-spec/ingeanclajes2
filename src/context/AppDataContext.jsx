@@ -246,9 +246,14 @@ export function AppDataProvider({ children }) {
     }
 
     setHasPendingChanges(true);
+    // Espera antes de guardar. Cada guardado sube la fila COMPLETA de lo que
+    // cambio -cotizacion u obra, con sus fotos dentro-, asi que a 700 ms
+    // escribir un parrafo largo mandaba la misma foto una y otra vez y ahogaba
+    // la base. Con 2 s se juntan mas teclas en un solo envio; si la persona
+    // cierra antes, el aviso de "cambios sin guardar" la detiene igual.
     autosaveTimerRef.current = setTimeout(() => {
       saveAllToCloudRef.current?.();
-    }, 700);
+    }, 2000);
 
     return () => {
       if (autosaveTimerRef.current) {

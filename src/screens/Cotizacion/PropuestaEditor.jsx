@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import BotonDictado from "../../components/ui/BotonDictado";
 import GoogleMeasureWorkspace from "../../components/maps/GoogleMeasureWorkspace";
 import LBL from "../../components/ui/LBL";
+import { leerImagenComprimida } from "../../lib/imagenes";
 import { normalizarFrase } from "../../lib/normalizarEntrada";
 import { B, SI } from "../../styles/tokens";
 import { DEFAULT_COT_INCLUYE, ITEMS_DB } from "../../data/seed";
@@ -133,7 +134,18 @@ export default function PropuestaEditor({
               <span style={{fontSize:12}}>Agregar foto</span>
             </div>
           </div>
-          <input ref={fotosRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={e=>{Array.from(e.target.files||[]).forEach(file=>{const r=new FileReader();r.onload=(ev)=>setFotos(prev=>[...prev,{id:Date.now()+Math.random(),src:ev.target.result,label:""}]);r.readAsDataURL(file);});e.target.value="";}}/>
+          {/* Las fotos se reducen ANTES de guardarlas. Sin esto entraban tal
+              como salen del celular -4 a 8 MB cada una en base64- y como la
+              cotizacion viaja entera a la base en cada guardado, unas pocas
+              fotos bastaban para tumbar la conexion. */}
+          <input ref={fotosRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={async(e)=>{
+            const archivos=Array.from(e.target.files||[]);
+            e.target.value="";
+            for(const file of archivos){
+              const src=await leerImagenComprimida(file);
+              setFotos(prev=>[...prev,{id:Date.now()+Math.random(),src,label:""}]);
+            }
+          }}/>
         </div>
 
         <div style={{marginBottom:18}}>

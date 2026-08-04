@@ -134,8 +134,10 @@ export default function Informes({ctx}){
 
     return {
     obraId:data.obraId ?? obraBase?.id ?? firstObraId,
-    proyecto:data.proyecto ?? obraBase?.proyecto ?? "",
-    localizacion:data.localizacion ?? obraBase?.ciudad ?? "",
+    // Se acomodan al traerlos: las obras cargadas antes del cambio tienen
+    // el proyecto y la ciudad en minuscula, y el informe los imprime tal cual.
+    proyecto:normalizarMayusculas(data.proyecto ?? obraBase?.proyecto ?? ""),
+    localizacion:normalizarMayusculas(data.localizacion ?? obraBase?.ciudad ?? ""),
     fechaInforme:data.fechaInforme ?? today(),
     periodoInicio,
     periodoFin,
@@ -168,8 +170,8 @@ export default function Informes({ctx}){
     setForm(prev=>{
       const obraSel = obras.find(o=>o.id===prev.obraId) || obras[0];
       if(!obraSel) return prev;
-      const nextProyecto = prev.proyecto || obraSel.proyecto || '';
-      const nextLocal = prev.localizacion || obraSel.ciudad || '';
+      const nextProyecto = normalizarMayusculas(prev.proyecto || obraSel.proyecto || '');
+      const nextLocal = normalizarMayusculas(prev.localizacion || obraSel.ciudad || '');
       const nextPersonal = buildPersonalDesdeObra(obraSel.id, prev.periodoInicio, prev.periodoFin, prev.personal);
       const sameProyecto = nextProyecto===prev.proyecto;
       const sameLocal = nextLocal===prev.localizacion;
@@ -184,8 +186,8 @@ export default function Informes({ctx}){
     const obraSel = obras.find(o=>o.id===form.obraId);
     setForm(prev=>{
       const nextPersonal = buildPersonalDesdeObra(prev.obraId, prev.periodoInicio, prev.periodoFin, prev.personal);
-      const nextProyecto = obraSel?.proyecto || prev.proyecto || '';
-      const nextLocal = obraSel?.ciudad || prev.localizacion || '';
+      const nextProyecto = normalizarMayusculas(obraSel?.proyecto || prev.proyecto || '');
+      const nextLocal = normalizarMayusculas(obraSel?.ciudad || prev.localizacion || '');
       const samePersonal = JSON.stringify(nextPersonal)===JSON.stringify(prev.personal);
       if(samePersonal && nextProyecto===prev.proyecto && nextLocal===prev.localizacion) return prev;
       return {...prev,proyecto:nextProyecto,localizacion:nextLocal,personal:nextPersonal};
@@ -332,8 +334,8 @@ export default function Informes({ctx}){
                 return {
                   ...p,
                   obraId:nuevaObraId,
-                  proyecto:o?.proyecto||"",
-                  localizacion:o?.ciudad||"",
+                  proyecto:normalizarMayusculas(o?.proyecto||""),
+                  localizacion:normalizarMayusculas(o?.ciudad||""),
                   periodoInicio:inicio,
                   periodoFin:fin,
                   personal:buildPersonalDesdeObra(nuevaObraId,inicio,fin,p.personal),

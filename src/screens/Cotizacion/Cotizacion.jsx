@@ -21,7 +21,7 @@ import { getFirmaImg } from "../../lib/firmaEmpresa";
 import { asuntoAprobacion, mensajeAprobacion } from "../../lib/correoAprobacion";
 import { enviarCotizacionPorCorreo } from "../../lib/backend/usuarios";
 export default function Cotizacion({ctx}){
-  const {cotizaciones,setCotizaciones,obras,setObras,empresaConfig}=ctx;
+  const {cotizaciones,setCotizaciones,obras,setObras,clientes,empresaConfig}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
   const [tab,setTab]=useState("lista");
   const [previewCot,setPreviewCot]=useState(null);
@@ -127,6 +127,54 @@ export default function Cotizacion({ctx}){
 
     setDictando(false);
     scrollAppToTop();
+  };
+
+  // Clientes que ya estan en el sistema, vengan de su ficha, de una cotizacion
+  // anterior o de una obra. Se juntan por razon social acomodada, para que
+  // "Proco Inc" y "PROCO INC" no salgan dos veces, y gana la ficha de
+  // Clientes, que es la que alguien mantiene al dia.
+  const clientesConocidos = (()=>{
+    const mapa = new Map();
+    const registrar = (datos)=>{
+      const nombre = normalizarRazonSocial(datos.nombre);
+      if(!nombre) return;
+      const previo = mapa.get(nombre) || {};
+      mapa.set(nombre,{
+        nombre,
+        nit: previo.nit || datos.nit || "",
+        contacto: previo.contacto || datos.contacto || "",
+        contactoEmail: previo.contactoEmail || datos.contactoEmail || "",
+        telefono: previo.telefono || datos.telefono || "",
+        ciudad: previo.ciudad || datos.ciudad || "",
+      });
+    };
+    // El orden importa: lo primero que entra manda.
+    (clientes||[]).forEach((c)=>registrar({nombre:c.nombre,nit:c.nit,contacto:c.contacto,contactoEmail:c.email,telefono:c.telefono,ciudad:c.ciudad}));
+    (cotizaciones||[]).forEach((c)=>registrar({nombre:c.cliente,nit:c.nit,contacto:c.contacto,contactoEmail:c.contactoEmail,telefono:c.telefono,ciudad:c.ciudad}));
+    (obras||[]).forEach((o)=>registrar({nombre:o.cliente,nit:o.nit,telefono:o.tel,ciudad:o.ciudad}));
+    return [...mapa.values()].sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  })();
+
+  // Escribe el nombre y, si coincide con un cliente que ya existe, se traen
+  // sus datos. La obra NO: es lo unico que cambia entre dos cotizaciones del
+  // mismo cliente.
+  //
+  // El nombre se guarda tal cual se escribe y solo se acomoda al salir del
+  // campo, que de eso ya se encarga CampoTexto. Normalizarlo en cada tecla
+  // quitaba el espacio final y no dejaba escribir la palabra siguiente.
+  const escribirCliente = (texto)=>{
+    const conocido = clientesConocidos.find((c)=>c.nombre===normalizarRazonSocial(texto));
+    setCl((prev)=>({
+      ...prev,
+      nombre: texto,
+      ...(conocido ? {
+        nit: conocido.nit || prev.nit,
+        contacto: conocido.contacto || prev.contacto,
+        contactoEmail: conocido.contactoEmail || prev.contactoEmail,
+        telefono: conocido.telefono || prev.telefono,
+        ciudad: conocido.ciudad || prev.ciudad,
+      } : null),
+    }));
   };
 
   const agregarPropuesta = ()=>{
@@ -582,12 +630,25 @@ export default function Cotizacion({ctx}){
       {/* Cliente */}
       <div style={{...CD,marginBottom:14}}>
         <div style={ST}>Portada · Cliente</div>
+
+        {/* Escribiendo en Empresa aparecen los clientes que ya existen. Al
+            elegir uno se traen NIT, contacto, correo, teléfono y ciudad: solo
+            la obra queda en blanco, que es lo que cambia entre cotizaciones
+            del mismo cliente. */}
+        <datalist id="clientesConocidosList">
+          {clientesConocidos.map((c)=><option key={c.nombre} value={c.nombre}/>)}
+        </datalist>
+
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
           {/* La razon social va en mayuscula, no como nombre propio: es como
               se escribe en la portada de los documentos de la empresa. */}
-          <CampoTexto label="Empresa" valor={cl.nombre} onChange={v=>setCl({...cl,nombre:v})}
+          <CampoTexto label="Empresa" valor={cl.nombre}
+            onChange={escribirCliente}
             normalizar={normalizarRazonSocial} autoCapitalize="characters"
-            ayuda="Va en la portada del documento, en mayúscula."/>
+            list="clientesConocidosList"
+            ayuda={clientesConocidos.length
+              ? `Empieza a escribir y elige de los ${clientesConocidos.length} clientes que ya existen: se traen sus datos solos.`
+              : "Va en la portada del documento, en mayúscula."}/>
           <CampoTexto label="NIT / Cédula" valor={cl.nit} onChange={v=>setCl({...cl,nit:v})}
             normalizar={normalizarDocumento} placeholder="900123456-7" spellCheck={false}
             ayuda="Viaja hasta el comprobante contable al aprobar la cotización."/>

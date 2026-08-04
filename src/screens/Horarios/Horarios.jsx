@@ -3,7 +3,7 @@ import AvisoFlujo from "../../components/AvisoFlujo";
 import NuevoEmpleadoRapido from "../../components/NuevoEmpleadoRapido";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { B, CD, PAL, SI, ST } from "../../styles/tokens";
 import { fmtD, today } from "../../lib/format";
 import { abrirWhatsApp, normalizarCelular } from "../../lib/whatsapp";
@@ -36,6 +36,11 @@ export default function Horarios({ctx}){
   const [nuevoEmp,setNuevoEmp]=useState(false);
   const [fechaF,setFechaF]=useState(today());
   const [showF,setShowF]=useState(false);
+  // El formulario sale debajo de los avisos, asi que en el telefono quedaba
+  // fuera de la pantalla: se tocaba "Asignar turnos", no se movia nada a la
+  // vista y parecia que la lista de empleados no existiera. Se lleva la vista
+  // hasta el al abrirlo.
+  const formRef=useRef(null);
   const [form,setForm]=useState({
     empleadoId:firstEmpId,
     obraId:firstObraId,
@@ -61,6 +66,11 @@ export default function Horarios({ctx}){
       obraId: obras.some(o=>o.id===prev.obraId) ? prev.obraId : firstObraId,
     }));
   },[firstEmpId,firstObraId,empleados,obras]);
+
+  useEffect(()=>{
+    if(!showF) return;
+    formRef.current?.scrollIntoView({behavior:"smooth",block:"start"});
+  },[showF]);
 
   const armarTurno=(inicio,fin)=>{
     if(!inicio || !fin) return "";
@@ -226,7 +236,7 @@ export default function Horarios({ctx}){
         }}>{notif.texto}</div>
       )}
       {showF&&(
-        <div style={{...CD,marginBottom:20,border:"1px solid #cc0000"}}>
+        <div ref={formRef} style={{...CD,marginBottom:20,border:"1px solid #cc0000",scrollMarginTop:12}}>
           <div style={ST}>Nuevo horario · notificación automática por WhatsApp</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
             <div><LBL>Empleado</LBL><select value={form.empleadoId} onChange={e=>setForm({...form,empleadoId:e.target.value})} style={SI}>{empleados.map(e=><option key={e.id} value={e.id}>{e.nombre}</option>)}</select></div>

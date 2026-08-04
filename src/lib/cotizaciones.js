@@ -1,5 +1,5 @@
 // Modelo de cotizaciones y propuestas
-import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_TIEMPO_EJEC, DEFAULT_COT_INCLUYE_PUNTOS_ANCLAJE } from "../data/seed";
+import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_TIEMPO_EJEC, DEFAULT_COT_INCLUYE } from "../data/seed";
 import { measurementsToQuoteItems, buildGoogleStaticMapUrl, buildMeasurementNarrative } from "./maps";
 
 export function hasAnchorPointsService(propuesta = {}) {
@@ -30,10 +30,20 @@ export function hasAnchorPointsService(propuesta = {}) {
   );
 }
 
+// El texto de "esta cotizacion incluye" acompaña ahora a TODAS las propuestas,
+// no solo a las de puntos de anclaje.
+//
+// Se rellena aqui, al construir la propuesta, y no con una migracion en la base:
+// asi las cotizaciones que ya estaban guardadas lo estrenan en cuanto se abren,
+// sin tocar un solo registro. Como cada propuesta viaja a la base dentro del
+// JSON de `propuestas`, en el primer guardado queda escrito de verdad.
+//
+// Solo se rellena cuando esta vacio, de modo que un texto ya editado a mano
+// nunca se pisa.
 export function ensureProposalDefaultTexts(propuesta = {}) {
   const next = { ...propuesta };
-  if (hasAnchorPointsService(next) && !String(next.incluyeTexto || "").trim()) {
-    next.incluyeTexto = DEFAULT_COT_INCLUYE_PUNTOS_ANCLAJE;
+  if (!String(next.incluyeTexto || "").trim()) {
+    next.incluyeTexto = DEFAULT_COT_INCLUYE;
   }
   return next;
 }

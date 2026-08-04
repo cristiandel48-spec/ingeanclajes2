@@ -4,7 +4,7 @@ import GoogleMeasureWorkspace from "../../components/maps/GoogleMeasureWorkspace
 import LBL from "../../components/ui/LBL";
 import { normalizarFrase } from "../../lib/normalizarEntrada";
 import { B, SI } from "../../styles/tokens";
-import { ITEMS_DB } from "../../data/seed";
+import { DEFAULT_COT_INCLUYE, ITEMS_DB } from "../../data/seed";
 import { buildGoogleStaticMapUrl, measurementsToQuoteItems } from "../../lib/maps";
 import { fmt } from "../../lib/format";
 
@@ -95,11 +95,10 @@ export default function PropuestaEditor({
           </div>
         </div>
 
-        {/* Se quitaron de la pantalla la «descripción de la propuesta» y el
-            «esta cotización incluye». Los valores siguen viajando al documento
-            -lo que ya esté escrito se imprime igual, y el texto de "incluye" se
-            sigue rellenando solo en las cotizaciones de puntos de anclaje-, lo
-            que ya no se hace es escribirlos a mano desde aquí. */}
+        {/* Se quitó de la pantalla la «descripción de la propuesta»: lo que ya
+            esté escrito se sigue imprimiendo, lo que ya no se hace es
+            escribirla a mano desde aquí. El «esta cotización incluye» sí volvió,
+            más abajo, junto a las condiciones comerciales. */}
 
         {p.tipoCotizacion==="obra_blanca"&&(
           <div style={{marginBottom:18}}>
@@ -246,6 +245,34 @@ export default function PropuestaEditor({
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
           <div><LBL>Forma de pago</LBL><input value={p.formaPago} onChange={e=>set("formaPago", e.target.value)} style={SI}/></div>
           <div><LBL>Tiempo de ejecución</LBL><input value={p.tiempoEjec} onChange={e=>set("tiempoEjec", e.target.value)} style={SI}/></div>
+        </div>
+
+        {/* 6. Lo que incluye. Se imprime en el cierre, debajo de las condiciones
+            comerciales. Viene con un texto estandar ya escrito y se ajusta aqui
+            cuando la obra lo pida. */}
+        <div style={{marginTop:18}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:2}}>
+            <div style={{fontSize:11,fontWeight:700,color:"#1a1a2e"}}>Esta cotización incluye</div>
+            <button
+              onClick={()=>set("incluyeTexto", DEFAULT_COT_INCLUYE)}
+              disabled={p.incluyeTexto===DEFAULT_COT_INCLUYE}
+              style={{
+                background:"none",border:"none",padding:0,fontSize:10.5,fontFamily:"inherit",
+                color:p.incluyeTexto===DEFAULT_COT_INCLUYE?"#cbd5e1":"#f47c20",
+                cursor:p.incluyeTexto===DEFAULT_COT_INCLUYE?"default":"pointer",
+                textDecoration:p.incluyeTexto===DEFAULT_COT_INCLUYE?"none":"underline",
+              }}
+            >Restaurar texto estándar</button>
+          </div>
+          <div style={{fontSize:10.5,color:"#94a3b8",marginBottom:10}}>
+            Una línea por cada punto. Sale al final del documento, justo debajo de las condiciones comerciales.
+          </div>
+          <textarea
+            value={p.incluyeTexto||""}
+            onChange={e=>set("incluyeTexto", e.target.value)}
+            spellCheck lang="es"
+            style={{...SI,minHeight:150,resize:"vertical",lineHeight:1.6}}
+          />
         </div>
 
     </div>

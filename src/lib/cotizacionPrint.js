@@ -5,7 +5,7 @@ import { normalizarMayusculas } from "./normalizarEntrada";
 import { LOGO_INGEANCLAJES } from "../assets/embeddedImages";
 import { getQuotePrintableProposals } from "./cotizaciones";
 import { getStaticMapDimensions, buildStaticMapLabelData } from "./maps";
-import { hasAnchorPointsService, hasVerticalLifeLineService } from "./cotizaciones";
+import { hasVerticalLifeLineService } from "./cotizaciones";
 import { downloadGeneratedFile } from "./download";
 import { getTextosDocumento, lineasDeTexto } from "./cotizacionTextos";
 import articoLineaVidaVertical from "../assets/artico-linea-vida-vertical.jpg";
@@ -278,26 +278,37 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     `;
   };
 
-  const renderIncluyeBlock = (propuesta) => {
-    const texto = String(propuesta?.incluyeTexto || "").trim();
-    if (!texto) return "";
-
-    const lines = texto
+  // "Esta cotizacion incluye" se imprime en el cierre, justo debajo de las
+  // condiciones comerciales: son las dos cosas que el cliente compara antes de
+  // aprobar, y separarlas obligaba a ir y volver entre paginas.
+  //
+  // Una linea del texto = una vinieta. Va a una sola columna porque las frases
+  // son largas: a dos columnas cada una se partia en tres renglones y el bloque
+  // se leia apretado.
+  const renderIncluyeBlock = (texto) => {
+    const lines = String(texto || "")
       .split("\n")
-      .map((line) => line.trim())
+      // Si quien escribe empieza la linea con un guion o un punto, se quita:
+      // la vinieta la pone el documento y si no salian dos seguidas.
+      .map((line) => line.trim().replace(/^[-–—•*·]\s*/, "").trim())
       .filter(Boolean);
 
     if (!lines.length) return "";
 
     return `
-      <div class="content-block">
-        <div class="card-label block-label">Esta propuesta incluye</div>
-        <div class="incluye-grid">
-          ${lines.map((line) => `<div class="incluye-item">&mdash; ${escapeHtml(line)}</div>`).join("")}
+      <div class="keep incluye-block">
+        <div class="card-label block-label centered">Esta cotización incluye</div>
+        <div class="incluye-list">
+          ${lines.map((line) => `<div class="incluye-item">${escapeHtml(line)}</div>`).join("")}
         </div>
       </div>
     `;
   };
+
+  // El cierre es uno solo para toda la cotizacion, igual que la forma de pago y
+  // el tiempo de ejecucion: se imprime el texto de la propuesta activa.
+  const propuestaDelCierre = propuestas.find((p) => p.id === c?.propuestaActivaId) || propuestas[0];
+  const incluyeCierreHtml = renderIncluyeBlock(propuestaDelCierre?.incluyeTexto || c?.incluyeTexto || "");
 
   // Cada `.page` mide 11in exactas, asi que lo que no cabe se sale del papel y
   // no se imprime: con muchos items la tabla se cortaba sobre la fila 11 y el
@@ -445,7 +456,6 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     const hasClientReq = propuesta.esObraBlanca && String(propuesta.requerimientoCliente || "").trim().length > 0;
     const plan = planificarItems(propuesta);
 
-    const incluyeHtml = hasAnchorPointsService(propuesta.quote) ? renderIncluyeBlock(propuesta) : "";
     const fotosHtml = renderPhotoGrid(propuesta.fotos, idx);
     const mapaHtml = renderMapBlock(propuesta, idx);
 
@@ -455,7 +465,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     // arranca directo en su hoja.
     const tieneContenidoPropio = Boolean(
       hasClientReq || hasScope || hasNarrative ||
-      incluyeHtml.trim() || fotosHtml.trim() || mapaHtml.trim()
+      fotosHtml.trim() || mapaHtml.trim()
     );
     if (!tieneContenidoPropio && !plan.juntoAlTexto) {
       return renderItemsPages(propuesta, idx, plan);
@@ -487,8 +497,6 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
                 <p class="doc-copy">${escapeHtml(propuesta.narrative)}</p>
               </div>
             ` : ""}
-
-            ${incluyeHtml}
 
             ${fotosHtml}
             ${mapaHtml}
@@ -681,6 +689,8 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
       </div>
     </div>
 
+    ${incluyeCierreHtml}
+
     <div class="keep sst-block">
       <div class="sst-title">Sistema de Gestión de Seguridad y Salud en el Trabajo</div>
       <p>${escapeHtml(textos.sst)}</p>
@@ -870,8 +880,16 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
       .section-title { font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; color:#6B6B6B; font-weight:600; margin-bottom:2.6mm; }
       .subheading { font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; color:#6B6B6B; font-weight:600; margin-bottom:2.6mm; }
 
-      .incluye-grid { display:grid; grid-template-columns:1fr 1fr; gap:2mm 8mm; }
-      .incluye-item { font-size: var(--texto); line-height:1.55; color:#2A2A2A; }
+      .incluye-block { margin:6mm 0 0; }
+      .incluye-list { border-top:1px solid #DDD; padding-top:3.5mm; }
+      /* Sangria francesa: el guion cuelga fuera y los renglones siguientes
+         quedan alineados bajo la primera palabra, no bajo la vinieta. */
+      .incluye-item {
+        position:relative; padding-left:5mm; margin-bottom:1.7mm;
+        font-size: var(--texto); line-height:1.55; color:#2A2A2A; text-align:justify;
+      }
+      .incluye-item:last-child { margin-bottom:0; }
+      .incluye-item::before { content:"–"; position:absolute; left:1.2mm; color:#6B6B6B; }
       .content-block { margin-bottom:5mm; }
 
       .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 0 5mm; }
@@ -953,7 +971,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
       .eyebrow, .doc-h2, .doc-h3, .photo-grid, .photo-card, .map-wrap,
       .price-table, .table, .table thead, .table tr,
       .def-row, .ficha-row, .meta-card, .conditions-grid,
-      .sst-block, .signature, .content-block, .incluye-grid { break-inside:avoid; page-break-inside:avoid; }
+      .sst-block, .signature, .content-block, .incluye-block { break-inside:avoid; page-break-inside:avoid; }
 
       @media print {
         body { background:#fff; }

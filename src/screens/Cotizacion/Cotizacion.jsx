@@ -13,8 +13,8 @@ import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
 import { useEffect, useRef, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
-import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_INCLUYE_PUNTOS_ANCLAJE, DEFAULT_COT_TIEMPO_EJEC, ITEMS_DB } from "../../data/seed";
-import { buildQuoteProposal, createQuoteProposalId, getQuoteActiveProposal, getQuoteApprovalAccountingSnapshot, getQuoteProposalLabel, getQuoteProposals, hasAnchorPointsService, normalizeProposalItems, normalizeQuoteItems } from "../../lib/cotizaciones";
+import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_TIEMPO_EJEC, ITEMS_DB } from "../../data/seed";
+import { buildQuoteProposal, createQuoteProposalId, getQuoteActiveProposal, getQuoteApprovalAccountingSnapshot, getQuoteProposalLabel, getQuoteProposals, normalizeProposalItems, normalizeQuoteItems } from "../../lib/cotizaciones";
 import { scrollAppToTop, today } from "../../lib/format";
 import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarMayusculas, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
 import { normalizeEntityKey, openCotizacionPrint } from "../../lib/cotizacionPrint";
@@ -77,17 +77,14 @@ export default function Cotizacion({ctx}){
 
   const propuestaActiva = propuestasSnapshot.find((x)=>x.id===propuestaActivaId) || propuestasSnapshot[0];
 
+  // El texto de "esta cotizacion incluye" ya no se rellena aqui. Se rellena al
+  // construir la propuesta (ensureProposalDefaultTexts), que es una sola vez al
+  // abrir; hacerlo tambien en cada tecla impedia dejar el campo vacio a
+  // proposito: se borraba y volvia a aparecer solo.
   const actualizarPropuesta = (id,patch)=>{
-    setPropuestas((prev)=>prev.map((propuesta)=>{
-      if(propuesta.id!==id) return propuesta;
-      const siguiente = {...propuesta,...patch};
-      // Rellena el texto de "incluye" cuando la propuesta pasa a ser de
-      // puntos de anclaje y aun no tiene texto propio.
-      if(hasAnchorPointsService(siguiente) && !String(siguiente.incluyeTexto || "").trim()){
-        siguiente.incluyeTexto = DEFAULT_COT_INCLUYE_PUNTOS_ANCLAJE;
-      }
-      return siguiente;
-    }));
+    setPropuestas((prev)=>prev.map((propuesta)=>(
+      propuesta.id===id ? {...propuesta,...patch} : propuesta
+    )));
   };
 
   // Vuelca en el formulario lo que la IA entendio del dictado.

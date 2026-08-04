@@ -81,12 +81,16 @@ export const ITEMS_DB = [
 
 export const DEFAULT_COT_FORMA_PAGO = "50% ANTICIPO, 50% CONCLUIR LABORES";
 export const DEFAULT_COT_TIEMPO_EJEC = "10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)";
-export const DEFAULT_COT_INCLUYE_PUNTOS_ANCLAJE = [
-  "Puntos de anclajes certificados.",
-  "Elementos de instalación con certificados de fábrica adjuntos en la documentación.",
-  "Transporte de materiales y personal hasta el sitio de trabajo.",
-  "Certificados según Resolución 4272 — trabajo seguro en alturas.",
-  "Recertificación sin costo al año siguiente de la instalación.",
-  "Coordinador de trabajo seguro en alturas de tiempo completo en obra.",
-  "Todo el personal se encuentra afiliado a ARL, salud y pensiones. Se llevan todos los EPP necesarios, se realizan todas las reparaciones de daños durante la ejecución y se entregan las pólizas exigidas por el contratante."
+// Lo que la cotizacion incluye. Sale en el cierre del documento, debajo de las
+// condiciones comerciales, y es editable propuesta por propuesta: este texto es
+// solo el punto de partida cuando todavia no se ha escrito nada.
+//
+// Una linea = una vinieta. Las lineas en blanco se ignoran al imprimir.
+export const DEFAULT_COT_INCLUYE = [
+  "Tuercas y arandelas en ACERO GALVANIZADO.",
+  "Los elementos utilizados en la instalación son certificados de fábrica, los cuales se adjuntan en la entrega de documentación de certificados.",
+  "Transporte de materiales y de personal hasta el sitio de trabajo.",
+  "Se entregan todos los certificados de acuerdo a la Resolución 4272 de trabajo seguro en alturas.",
+  "Recertificación gratis al año siguiente de la instalación.",
+  "Esta propuesta incluye el coordinador para trabajo seguro en alturas de tiempo completo en la obra."
 ].join("\n");

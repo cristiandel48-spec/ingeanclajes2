@@ -21,7 +21,10 @@ export default function Informes({ctx}){
   const fotoRefs=useRef({});
 
   const emptyActividad=()=>({titulo:"",descripcion:"",observaciones:"",fecha:"",fotos:[{img:null,comentario:""},{img:null,comentario:""},{img:null,comentario:""},{img:null,comentario:""}]});
-  const emptyPersona=()=>({empleadoId:"",cargo:"Instalador",nombre:"",turno1:"",turno2:"",manual:true});
+  // `agregada` marca las filas que puso la persona a mano en el informe, para
+  // conservarlas cuando se resincroniza con la obra. Arranca en modo lista:
+  // lo normal es elegir a alguien registrado, no escribirlo.
+  const emptyPersona=()=>({empleadoId:"",cargo:"",nombre:"",turno1:"",turno2:"",manual:false,agregada:true});
 
   const fmtHora12=(hhmm)=>{
     if(!hhmm||!hhmm.includes(':')) return hhmm||"";
@@ -70,8 +73,13 @@ export default function Informes({ctx}){
       };
     });
 
-    const manuales = prevPersonal.filter(p=>p.manual && !p.empleadoId);
-    return [...vinculados, ...manuales];
+    // Las filas agregadas a mano se conservan, sean de alguien registrado o
+    // escritas a pulso. Se descartan las que dupliquen a un vinculado.
+    const yaVinculado = new Set(vinculados.map((v)=>v.empleadoId));
+    const agregadas = prevPersonal.filter((p)=>
+      (p.agregada || (p.manual && !p.empleadoId)) && !yaVinculado.has(p.empleadoId)
+    );
+    return [...vinculados, ...agregadas];
   };
 
   const firstObraId = obras[0]?.id || "";
@@ -363,7 +371,49 @@ export default function Informes({ctx}){
             {form.personal.map((p,i)=>(
               <div key={i} style={{display:"grid",gridTemplateColumns:"1fr 1.4fr 1fr 1fr 28px",gap:8,marginBottom:6}}>
                 <input value={p.cargo} onChange={e=>updPersonal(i,"cargo",e.target.value)} onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==p.cargo)updPersonal(i,"cargo",v);}} placeholder="Cargo" style={{...SI,fontSize:12}}/>
-                <input value={p.nombre} onChange={e=>updPersonal(i,"nombre",e.target.value)} onBlur={e=>{const v=normalizarNombrePropio(e.target.value);if(v!==p.nombre)updPersonal(i,"nombre",v);}} placeholder="Nombre completo" autoCapitalize="words" style={{...SI,fontSize:12}}/>
+                {/* Se elige de la lista y el cargo entra solo. Antes habia que
+                    escribir el nombre a mano, y es donde se colaban los
+                    errores: un apellido mal escrito en el informe que se le
+                    entrega al cliente. */}
+                <div style={{display:"flex",flexDirection:"column",gap:4,minWidth:0}}>
+                  <select
+                    value={p.manual ? "__manual__" : (p.empleadoId || "")}
+                    onChange={e=>{
+                      const v=e.target.value;
+                      if(v==="__manual__"){
+                        setForm(pf=>({...pf,personal:pf.personal.map((x,j)=>j===i?{...x,empleadoId:"",nombre:"",manual:true}:x)}));
+                        return;
+                      }
+                      const emp=empleados.find(x=>x.id===v);
+                      setForm(pf=>({...pf,personal:pf.personal.map((x,j)=>j===i?{
+                        ...x,
+                        empleadoId:v,
+                        nombre:emp?.nombre||"",
+                        // El cargo llega de la ficha, pero se puede cambiar:
+                        // en una obra concreta alguien puede haber hecho otro.
+                        cargo:emp?.cargo||x.cargo||"",
+                        manual:false,
+                      }:x)}));
+                    }}
+                    style={{...SI,fontSize:12}}
+                  >
+                    <option value="">Seleccionar persona…</option>
+                    {empleados.filter(e=>e.activo!==false).map(e=>(
+                      <option key={e.id} value={e.id}>{e.nombre}{e.cargo?` · ${e.cargo}`:""}</option>
+                    ))}
+                    <option value="__manual__">Escribir a mano…</option>
+                  </select>
+                  {p.manual && (
+                    <input
+                      value={p.nombre}
+                      onChange={e=>updPersonal(i,"nombre",e.target.value)}
+                      onBlur={e=>{const v=normalizarNombrePropio(e.target.value);if(v!==p.nombre)updPersonal(i,"nombre",v);}}
+                      placeholder="Nombre completo"
+                      autoCapitalize="words"
+                      style={{...SI,fontSize:12}}
+                    />
+                  )}
+                </div>
                 <input list="turnosInformeList" value={p.turno1||""} onChange={e=>updPersonal(i,"turno1",e.target.value)} placeholder="Turno 1 · 07:00 AM - 05:00 PM" style={{...SI,fontSize:12}}/>
                 <input list="turnosInformeList" value={p.turno2||""} onChange={e=>updPersonal(i,"turno2",e.target.value)} placeholder="Turno 2 · opcional" style={{...SI,fontSize:12}}/>
                 <button onClick={()=>setForm(pf=>({...pf,personal:pf.personal.filter((_,j)=>j!==i)}))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:6,cursor:"pointer",fontSize:14}}>×</button>

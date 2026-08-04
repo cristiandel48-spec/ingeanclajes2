@@ -81,6 +81,29 @@ export const ITEMS_DB = [
 
 export const DEFAULT_COT_FORMA_PAGO = "50% ANTICIPO, 50% CONCLUIR LABORES";
 export const DEFAULT_COT_TIEMPO_EJEC = "10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)";
+// Textos con los que arranca un informe de actividades. Son un punto de
+// partida, no una plantilla cerrada: se editan libremente en cada informe y lo
+// que se escriba encima manda.
+//
+// La linea en blanco entre los dos bloques es parte del texto y se conserva al
+// guardar y al imprimir.
+export const DEFAULT_INFORME_DESCRIPCION = [
+  "ACTIVIDADES REALIZADAS",
+  "Se realizó la inspección visual y física de todos elementos que componen el sistema, soportes laterales e intermedios, cable, guardacables, tensor. Etc No fue necesario realizar ajustes al cable ya que este se encontraba en óptimas condiciones de tensión. Se realizó el ajuste a tornillería y se verificó el estado de la soldadura que no presentara porosidad Se realizó limpieza del sistema y la aplicación de pintura anticorrosiva sobre los elementos inspeccionados. Se actualizó fechas en las tarjetas de identificación de los sistemas No se identificaron componentes afectados o en mal estado, por lo tanto no fue necesario ningún reemplazo.",
+  "",
+  "DESCRIPCIÓN",
+  "Se realizaron labores de mantenimiento en los soportes de las líneas de vida, las cuales incluyeron una limpieza a fondo de todo el sistema metálico y la aplicación de una capa de pintura anticorrosiva en los soportes y anclajes, con el fin de protegerlos de futuras corrosiones. Finalmente, se verificó el sistema completo, asegurando que todos los elementos estuvieran en óptimas condiciones. Con estas acciones, se garantizó que las líneas de vida quedaran completamente operativas y seguras para su uso.",
+].join("\n");
+
+export const DEFAULT_INFORME_RECOMENDACIONES =
+  "Para garantizar la efectividad y seguridad de las líneas de vida instaladas es fundamental " +
+  "implementar un programa de inspección regular para verificar el estado de los anclajes, " +
+  "asegurando que no presenten desgaste o daños. Además, la capacitación del personal es crucial, " +
+  "todos los empleados deben recibir formación específica sobre el uso adecuado de este sistema, " +
+  "del equipo de protección personal y los procedimientos de emergencia en caso de caída. Esta " +
+  "combinación de inspección meticulosa y formación continua asegura un entorno de trabajo seguro " +
+  "y conforme a las normativas vigentes.";
+
 // Lo que la cotizacion incluye. Sale en el cierre del documento, debajo de las
 // condiciones comerciales, y es editable propuesta por propuesta: este texto es
 // solo el punto de partida cuando todavia no se ha escrito nada.

@@ -122,6 +122,32 @@ export function normalizarFrase(valor) {
   return base[0].toUpperCase() + base.slice(1);
 }
 
+/**
+ * Textos largos de varios parrafos: corrige las palabras del oficio pero
+ * RESPETA los saltos de linea.
+ *
+ * `normalizarFrase` no sirve para estos campos: aplasta todos los espacios en
+ * blanco -saltos incluidos- a un solo espacio, asi que un texto escrito en dos
+ * bloques quedaba en un parrafo corrido en cuanto se salia del campo. Tampoco
+ * baja a minuscula los renglones que van en mayuscula a proposito, como los
+ * encabezados de "ACTIVIDADES REALIZADAS" o "DESCRIPCION".
+ */
+export function normalizarParrafos(valor) {
+  const texto = String(valor ?? "");
+  if (!texto.trim()) return "";
+
+  const lineas = texto
+    .split("\n")
+    .map((linea) => corregirPalabras(linea).replace(/[ \t]+/g, " ").trim());
+
+  return lineas
+    .join("\n")
+    // Varias lineas en blanco seguidas se quedan en una: separan parrafos, y
+    // mas de una solo abre huecos en el documento impreso.
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 /** Correos: siempre en minuscula y sin espacios. */
 export function normalizarCorreo(valor) {
   return String(valor ?? "").trim().toLowerCase().replace(/\s+/g, "");

@@ -10,7 +10,8 @@ import { printCurrentPz } from "../../lib/print";
 import { descargarDocumentoPdf } from "../../lib/documentoPdf";
 import { bitacoraAActividades, normalizarBitacora, registrosDelPeriodo } from "../../lib/bitacoraObra";
 import { leerImagenComprimida } from "../../lib/imagenes";
-import { normalizarFrase, normalizarMayusculas, normalizarNombrePropio } from "../../lib/normalizarEntrada";
+import { normalizarFrase, normalizarMayusculas, normalizarNombrePropio, normalizarParrafos } from "../../lib/normalizarEntrada";
+import { DEFAULT_INFORME_DESCRIPCION, DEFAULT_INFORME_RECOMENDACIONES } from "../../data/seed";
 export default function Informes({ctx}){
   const {informes,setInformes,obras,empleados,horarios,intencion,limpiarIntencion,empresaConfig,irAPantalla}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
@@ -20,7 +21,11 @@ export default function Informes({ctx}){
   const [editId,setEditId]=useState(null);
   const fotoRefs=useRef({});
 
-  const emptyActividad=()=>({titulo:"",descripcion:"",observaciones:"",fecha:"",fotos:[{img:null,comentario:""},{img:null,comentario:""},{img:null,comentario:""},{img:null,comentario:""}]});
+  // La descripcion arranca con el texto de mantenimiento que se repite en casi
+  // todos los informes. Es solo el punto de partida: se edita encima y lo
+  // escrito manda. Las actividades que llegan de la bitacora de la obra traen
+  // su propia descripcion y no pasan por aqui.
+  const emptyActividad=()=>({titulo:"",descripcion:DEFAULT_INFORME_DESCRIPCION,observaciones:"",fecha:"",fotos:[{img:null,comentario:""},{img:null,comentario:""},{img:null,comentario:""},{img:null,comentario:""}]});
   // `agregada` marca las filas que puso la persona a mano en el informe, para
   // conservarlas cuando se resincroniza con la obra. Arranca en modo lista:
   // lo normal es elegir a alguien registrado, no escribirlo.
@@ -152,7 +157,7 @@ export default function Informes({ctx}){
     personal:Array.isArray(data.personal) && data.personal.length
       ? data.personal
       : (obraBase ? buildPersonalDesdeObra(obraBase.id, periodoInicio, periodoFin, []) : []),
-    recomendaciones:data.recomendaciones ?? "Para garantizar la efectividad y seguridad de las líneas de vida instaladas es fundamental implementar un programa de inspección regular.",
+    recomendaciones:data.recomendaciones ?? DEFAULT_INFORME_RECOMENDACIONES,
     actividades:desdeObra.length ? desdeObra : normalizeInformeActividades(data),
     };
   };
@@ -456,7 +461,9 @@ export default function Informes({ctx}){
                   <div><LBL>Título / nombre de la actividad</LBL><input value={act.titulo} onChange={e=>updActividad(ai,"titulo",e.target.value)} placeholder="Ej: Instalación de líneas de vida" style={SI}/></div>
                   <div><LBL>Fecha de ejecución</LBL><input type="date" value={act.fecha||""} onChange={e=>updActividad(ai,"fecha",e.target.value)} style={SI}/></div>
                 </div>
-                <div style={{marginBottom:10}}><LBL>Descripción detallada</LBL><textarea value={act.descripcion} onChange={e=>updActividad(ai,"descripcion",e.target.value)} onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==act.descripcion)updActividad(ai,"descripcion",v);}} rows={3} placeholder="Descripción del proceso ejecutado..." spellCheck lang="es" style={{...SI,resize:"vertical"}}/></div>
+                {/* normalizarParrafos y no normalizarFrase: este campo lleva
+                    varios parrafos y el otro los aplasta en uno solo. */}
+                <div style={{marginBottom:10}}><LBL>Descripción detallada</LBL><textarea value={act.descripcion} onChange={e=>updActividad(ai,"descripcion",e.target.value)} onBlur={e=>{const v=normalizarParrafos(e.target.value);if(v!==act.descripcion)updActividad(ai,"descripcion",v);}} rows={9} placeholder="Descripción del proceso ejecutado..." spellCheck lang="es" style={{...SI,resize:"vertical",lineHeight:1.5}}/></div>
                 <div style={{marginBottom:12}}><LBL>Observaciones</LBL><input value={act.observaciones} onChange={e=>updActividad(ai,"observaciones",e.target.value)} onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==act.observaciones)updActividad(ai,"observaciones",v);}} placeholder="Ej: 1 Línea de vida horizontal de 119 metros" spellCheck lang="es" style={SI}/></div>
                 {/* Fotos de esta actividad */}
                 <LBL>Registro fotográfico</LBL>
@@ -582,7 +589,10 @@ export default function Informes({ctx}){
                   <tbody>
                     <tr><td colSpan={2} style={{border:"1px solid #ccc",padding:"6px 10px",background:"#ddd",fontWeight:700,textAlign:"center"}}>{act.titulo||act}</td></tr>
                     {act.fecha&&<tr><td style={{border:"1px solid #ccc",padding:"5px 10px",fontWeight:700,width:"20%"}}>FECHA</td><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{fmtL(act.fecha)}</td></tr>}
-                    <tr><td style={{border:"1px solid #ccc",padding:"5px 10px",fontWeight:700,width:"20%",verticalAlign:"top"}}>DESCRIPCIÓN</td><td style={{border:"1px solid #ccc",padding:"5px 10px",textAlign:"justify"}}>{act.descripcion}</td></tr>
+                    {/* whiteSpace pre-line: en HTML los saltos de linea se
+                        aplastan a un espacio, y el texto escrito en dos bloques
+                        se imprimia como un parrafo corrido. */}
+                    <tr><td style={{border:"1px solid #ccc",padding:"5px 10px",fontWeight:700,width:"20%",verticalAlign:"top"}}>DESCRIPCIÓN</td><td style={{border:"1px solid #ccc",padding:"5px 10px",textAlign:"justify",whiteSpace:"pre-line"}}>{act.descripcion}</td></tr>
                     <tr><td style={{border:"1px solid #ccc",padding:"5px 10px",fontWeight:700}}>Observaciones</td><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{act.observaciones}</td></tr>
                   </tbody>
                 </table>
@@ -602,7 +612,7 @@ export default function Informes({ctx}){
               </div>
             ))}
             <table style={{width:"100%",borderCollapse:"collapse",marginBottom:20}}>
-              <tbody><tr><td style={{border:"1px solid #ccc",padding:"5px 10px",fontWeight:700,width:"20%",verticalAlign:"top"}}>RECOMENDACIONES</td><td style={{border:"1px solid #ccc",padding:"5px 10px",textAlign:"justify"}}>{sel.recomendaciones}</td></tr></tbody>
+              <tbody><tr><td style={{border:"1px solid #ccc",padding:"5px 10px",fontWeight:700,width:"20%",verticalAlign:"top"}}>RECOMENDACIONES</td><td style={{border:"1px solid #ccc",padding:"5px 10px",textAlign:"justify",whiteSpace:"pre-line"}}>{sel.recomendaciones}</td></tr></tbody>
             </table>
             <div style={{marginTop:24}}>
               <div style={{marginBottom:12,fontSize:12}}>Cordialmente,</div>

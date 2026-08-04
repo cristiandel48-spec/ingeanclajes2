@@ -9,6 +9,7 @@ import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmtD, today } from "../../lib/format";
 import { getQuoteApprovalAccountingSnapshot } from "../../lib/cotizaciones";
 import { resumenBitacora } from "../../lib/bitacoraObra";
+import { ESTADOS_OBRA, estadoSegunAvance } from "../../lib/flujoObra";
 import { avisoCelular, normalizarMayusculas, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
 
 // Siguiente consecutivo de obra. Se calcula sobre el numero mas alto que ya
@@ -36,7 +37,11 @@ export default function Obras({ctx}){
   // dejaba mal desde el primer dia.
   const [nob,setNob]=useState({cliente:"",tel:"",proyecto:"",ciudad:"",direccion:"",fechaInicio:today(),fechaFin:"",estado:"En Obra",avance:0,cotizacionId:""});
 
-  const updAv=(id,v)=>setObras(p=>p.map(o=>o.id===id?{...o,avance:Math.min(100,Math.max(0,v))}:o));
+  const updAv=(id,v)=>setObras(p=>p.map((o)=>{
+    if(o.id!==id) return o;
+    const avance=Math.min(100,Math.max(0,v));
+    return {...o,avance,estado:estadoSegunAvance(avance,o.estado)};
+  }));
   const updEst=(id,e)=>setObras(p=>p.map(o=>o.id===id?{...o,estado:e}:o));
 
   const guardarObra=()=>{
@@ -66,7 +71,7 @@ export default function Obras({ctx}){
       id,
       nit:"",
       coords:"",
-      estado:nob.estado || "En Obra",
+      estado:estadoSegunAvance(nob.avance,nob.estado || "En Obra"),
       avance:Math.min(100,Math.max(0,Number(nob.avance || 0))),
       total:totalObra,
       pagado:cobrado,
@@ -144,7 +149,7 @@ export default function Obras({ctx}){
             <div><LBL>Fecha fin estimada</LBL><input type="date" value={nob.fechaFin} onChange={e=>setNob({...nob,fechaFin:e.target.value})} style={SI}/></div>
             <div><LBL>Estado actual</LBL>
               <select value={nob.estado} onChange={e=>setNob({...nob,estado:e.target.value})} style={SI}>
-                {["Cotización","En Obra","Finalizado","Pagado"].map(s=><option key={s}>{s}</option>)}
+                {ESTADOS_OBRA.map(s=><option key={s}>{s}</option>)}
               </select>
               <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>Si está trabajándose ahora, déjalo en «En Obra».</div>
             </div>
@@ -203,7 +208,7 @@ export default function Obras({ctx}){
               <div style={{display:"flex",gap:6,alignItems:"center"}}>
                 <select value={o.estado} onChange={e=>{e.stopPropagation();updEst(o.id,e.target.value);}}
                   style={{...SI,fontSize:11,padding:"5px 8px",flex:1}} onClick={e=>e.stopPropagation()}>
-                  {["Cotización","En Obra","Finalizado","Pagado"].map(s=><option key={s}>{s}</option>)}
+                  {[...new Set([...ESTADOS_OBRA,o.estado].filter(Boolean))].map(s=><option key={s}>{s}</option>)}
                 </select>
                 <span style={{fontSize:11,color:"#94a3b8",flexShrink:0}}>{(o.empleados||[]).length} 👷</span>
                 <span

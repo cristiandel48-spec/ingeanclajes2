@@ -9,6 +9,7 @@ import { B, CD, PAL, SI, ST } from "../../styles/tokens";
 import GuiaFlujoObra from "./GuiaFlujoObra";
 import { fmt, fmtD, today } from "../../lib/format";
 import { resumenBitacora } from "../../lib/bitacoraObra";
+import { estadoSegunAvance } from "../../lib/flujoObra";
 import { puedeCrearPersonal, puedeVerDinero } from "../../lib/permisos";
 export default function ObraDetalle({obraId,ctx,onVolver}){
   const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,horarios,irAPantalla,membresia}=ctx;
@@ -86,7 +87,10 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           <div style={{width:(oAct.avance) + "%",height:"100%",background:oAct.avance===100?"#4ade80":"#f47c20",borderRadius:5,transition:"width 0.3s"}}/>
         </div>
         <input type="range" min={0} max={100} value={oAct.avance}
-          onChange={e=>setObras(p=>p.map(o=>o.id===obraId?{...o,avance:Number(e.target.value)}:o))}
+          onChange={e=>{
+            const avance=Number(e.target.value);
+            setObras(p=>p.map(o=>o.id===obraId?{...o,avance,estado:estadoSegunAvance(avance,o.estado)}:o));
+          }}
           style={{width:"100%",accentColor:"#f47c20"}}/>
       </div>
 

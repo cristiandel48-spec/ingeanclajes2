@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmtD, fmtL, today } from "../../lib/format";
 import { printCurrentPz } from "../../lib/print";
+import { descargarDocumentoPdf } from "../../lib/documentoPdf";
 import { bitacoraAActividades, normalizarBitacora, registrosDelPeriodo } from "../../lib/bitacoraObra";
 import { leerImagenComprimida } from "../../lib/imagenes";
 import { normalizarFrase, normalizarNombrePropio } from "../../lib/normalizarEntrada";
@@ -14,6 +15,7 @@ export default function Informes({ctx}){
   const {informes,setInformes,obras,empleados,horarios,intencion,limpiarIntencion,empresaConfig,irAPantalla}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
   const [sel,setSel]=useState(null);
+  const [generandoPdf,setGenerandoPdf]=useState(false);
   const [nuevo,setNuevo]=useState(()=>Boolean(ctx.intencion?.pantalla==="informes" && ctx.intencion?.obraId));
   const [editId,setEditId]=useState(null);
   const fotoRefs=useRef({});
@@ -474,7 +476,28 @@ export default function Informes({ctx}){
           <div style={{display:"flex",gap:10,marginBottom:14}}>
             <button style={B("#f1f5f9","#475569")} onClick={()=>setSel(null)}>Volver</button>
             <button style={{...B("#dbeafe","#1e40af")}} onClick={()=>editarInforme(sel)}>Editar</button>
-            <button style={B("#f47c20")} onClick={()=>printCurrentPz("Informe " + (sel?.id || ""))}>Imprimir PDF</button>
+            {/* Descarga directa: el PDF sale sin el encabezado ni el pie que
+                Chrome estampa al imprimir («about:blank», fecha, 1/7). */}
+            <button
+              style={{...B("#f47c20"),opacity:generandoPdf?0.65:1}}
+              disabled={generandoPdf}
+              onClick={async()=>{
+                setGenerandoPdf(true);
+                try{
+                  await descargarDocumentoPdf(
+                    document.getElementById("pz"),
+                    "Informe de actividades " + (sel?.id || ""),
+                  );
+                }catch(fallo){
+                  window.alert(fallo.message || "No se pudo generar el PDF.");
+                }finally{
+                  setGenerandoPdf(false);
+                }
+              }}
+            >
+              {generandoPdf ? "Generando…" : "Descargar PDF"}
+            </button>
+            <button style={B("#f1f5f9","#475569")} onClick={()=>printCurrentPz("Informe " + (sel?.id || ""))}>Imprimir</button>
           </div>
           <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:11,lineHeight:1.6,border:"1px solid #ddd",padding:"28px 36px"}}>
             <PrintHeader dual={false}/>

@@ -5,8 +5,8 @@ import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
 import { useEffect, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
-import { buildCertForm, getCertDefaultElements } from "./certConfig";
-import { fmt, fmtD } from "../../lib/format";
+import { buildCertForm, construirTextoSistema, getCertDefaultElements } from "./certConfig";
+import { fmt, fmtD, fmtL } from "../../lib/format";
 import { getEstadoFlujoObra } from "../../lib/flujoObra";
 import { printCurrentPz } from "../../lib/print";
 export default function Certificaciones({ctx}){
@@ -27,6 +27,43 @@ export default function Certificaciones({ctx}){
   // Se descarta al salir, para que al volver por el menu no se reabra.
   useEffect(()=>()=>limpiarIntencion(),[limpiarIntencion]);
   const [nuevoElem,setNuevoElem]=useState("");
+
+  // Cambia algo del encabezado -tipo, sistema, cantidad, cliente, dirección o
+  // fecha- y el párrafo se rehace. Solo mientras nadie lo haya editado a mano:
+  // en cuanto se toca, manda lo escrito y esto deja de pisarlo.
+  const aplicarCambio=(patch)=>{
+    setForm((prev)=>{
+      const siguiente={...prev,...patch};
+      if(siguiente.sistemaAuto!==false){
+        const texto=construirTextoSistema({
+          tipo:siguiente.tipo,
+          tipoSistema:siguiente.tipoSistema,
+          cantidad:siguiente.cantidad,
+          cliente:siguiente.cliente,
+          direccion:siguiente.direccion,
+          fechaLarga:fmtL(siguiente.fecha),
+        });
+        if(texto) siguiente.sistema=texto;
+      }
+      return siguiente;
+    });
+  };
+
+  const rehacerTexto=()=>{
+    const texto=construirTextoSistema({
+      tipo:form.tipo,
+      tipoSistema:form.tipoSistema,
+      cantidad:form.cantidad,
+      cliente:form.cliente,
+      direccion:form.direccion,
+      fechaLarga:fmtL(form.fecha),
+    });
+    if(!texto){
+      window.alert("Para armar el texto hacen falta la cantidad y el cliente.");
+      return;
+    }
+    setForm((prev)=>({...prev,sistema:texto,sistemaAuto:true}));
+  };
 
   // Al abrir una certificacion nueva se preselecciona la primera obra real
   // y se traen sus datos, para no tener que reescribir cliente y direccion.
@@ -141,24 +178,52 @@ export default function Certificaciones({ctx}){
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:12}}>
             <div><LBL>Tipo</LBL><select value={form.tipo} onChange={e=>{
               const t=e.target.value;
-              setForm({...form,tipo:t,elementos:getCertDefaultElements(t, form.tipoSistema)});
+              aplicarCambio({tipo:t,elementos:getCertDefaultElements(t, form.tipoSistema)});
             }} style={SI}>{["Certificación","Recertificación"].map(t=><option key={t}>{t}</option>)}</select></div>
-            <div><LBL>Sistema certificado</LBL><select value={form.tipoSistema||""} onChange={e=>{
+            <div><LBL>Tipo de sistema</LBL><select value={form.tipoSistema||""} onChange={e=>{
               const s=e.target.value;
-              setForm({...form,tipoSistema:s,elementos:getCertDefaultElements(form.tipo, s)});
+              aplicarCambio({tipoSistema:s,elementos:getCertDefaultElements(form.tipo, s)});
             }} style={SI}>
               <option value="">Seleccionar tipo de sistema...</option>
               {["Líneas de vida horizontales","Puntos de anclaje","Escalera fija","Línea de vida vertical"].map(s=><option key={s}>{s}</option>)}
             </select></div>
+            <div><LBL>Cantidad</LBL>
+              <input type="number" min={0} value={form.cantidad ?? ""} onChange={e=>aplicarCambio({cantidad:e.target.value})} placeholder="26" style={SI}/>
+              <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>
+                {form.tipoSistema?.includes("línea") || form.tipoSistema?.includes("Línea")
+                  ? "Metros instalados."
+                  : "Cuántos puntos o unidades se certifican."}
+              </div>
+            </div>
             <div><LBL>Número</LBL><input value={form.numero} onChange={e=>setForm({...form,numero:e.target.value})} placeholder="C-2026-001" style={SI}/></div>
-            <div><LBL>Fecha</LBL><input type="date" value={form.fecha} onChange={e=>setForm({...form,fecha:e.target.value})} style={SI}/></div>
-            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const o=obras.find(x=>x.id===e.target.value);setForm({...form,obraId:e.target.value,cliente:o?.cliente||"",direccion:o?.direccion||o?.ciudad||""});}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
-            <div><LBL>Cliente</LBL><input value={form.cliente} onChange={e=>setForm({...form,cliente:e.target.value})} style={SI}/></div>
+            <div><LBL>Fecha</LBL><input type="date" value={form.fecha} onChange={e=>aplicarCambio({fecha:e.target.value})} style={SI}/></div>
+            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const o=obras.find(x=>x.id===e.target.value);aplicarCambio({obraId:e.target.value,cliente:o?.cliente||"",direccion:o?.direccion||o?.ciudad||""});}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
+            <div><LBL>Cliente</LBL><input value={form.cliente} onChange={e=>aplicarCambio({cliente:e.target.value})} style={SI}/></div>
             <div><LBL>NIT</LBL><input value={form.nit} onChange={e=>setForm({...form,nit:e.target.value})} style={SI}/></div>
-            <div style={{gridColumn:"span 2"}}><LBL>Dirección de la obra</LBL><input value={form.direccion} onChange={e=>setForm({...form,direccion:e.target.value})} style={SI}/></div>
+            <div style={{gridColumn:"span 2"}}><LBL>Dirección de la obra</LBL><input value={form.direccion} onChange={e=>aplicarCambio({direccion:e.target.value})} style={SI}/></div>
             <div><LBL>Próximo mantenimiento</LBL><input type="date" value={form.proxMant} onChange={e=>setForm({...form,proxMant:e.target.value})} style={SI}/></div>
           </div>
-          <div style={{marginBottom:12}}><LBL>Sistema certificado</LBL><textarea value={form.sistema} onChange={e=>setForm({...form,sistema:e.target.value})} rows={2} placeholder="Ej: 23 Líneas de vida horizontales con sus conectoras instaladas sobre las cubiertas..." style={{...SI,resize:"vertical"}}/></div>
+          <div style={{marginBottom:12}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+              <LBL>Sistema certificado</LBL>
+              <button onClick={rehacerTexto} style={{...B("#f1f5f9","#475569"),fontSize:11,padding:"5px 11px"}}>
+                ↻ Rehacer con los datos de arriba
+              </button>
+            </div>
+            <textarea
+              value={form.sistema}
+              onChange={e=>setForm({...form,sistema:e.target.value,sistemaAuto:false})}
+              rows={4}
+              placeholder="Se arma solo al llenar el tipo, el sistema, la cantidad y el cliente. También puedes escribirlo a mano."
+              spellCheck lang="es"
+              style={{...SI,resize:"vertical"}}
+            />
+            <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>
+              {form.sistemaAuto===false
+                ? "Lo estás escribiendo a mano, así que ya no se rehace solo. Usa el botón para volver al texto automático."
+                : "Se actualiza solo con lo que elijas arriba. En cuanto lo edites, deja de hacerlo."}
+            </div>
+          </div>
           <div style={{marginBottom:12}}>
             <LBL>Elementos utilizados</LBL>
             {form.elementos.map((el,i)=>(

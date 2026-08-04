@@ -57,6 +57,85 @@ export const getCertDefaultElements = (tipo="Certificación", tipoSistema="", fa
   return [...CERT_ELEMENTOS_DEFAULT];
 };
 
+// ── Texto del sistema certificado ──────────────────────────────────────────
+//
+// Se escribia a mano, y en la practica se copiaba del certificado anterior:
+// quedaban certificaciones que decian "recertificacion", con el cliente y la
+// direccion de otra obra. Ahora el parrafo se arma con lo que se elige en el
+// encabezado y se puede retocar despues.
+
+// Como se nombra cada sistema y en que se mide.
+const SISTEMAS = {
+  "Puntos de anclaje": {
+    nombra: (n)=> n === 1 ? "un punto de anclaje" : `${n} puntos de anclaje`,
+    cadaUno: "cada punto de anclaje",
+    remate: "para su acabado final se pintaron con anticorrosivo y se instalaron las placas de identificación correspondientes a cada punto",
+  },
+  "Líneas de vida horizontales": {
+    nombra: (n)=> n === 1 ? "un metro de línea de vida horizontal" : `${n} metros de línea de vida horizontal`,
+    cadaUno: "cada anclaje estructural",
+    remate: "se tensionó el cable y se verificó el ajuste de todos los soportes laterales e intermedios",
+  },
+  "Línea de vida vertical": {
+    nombra: (n)=> n === 1 ? "un metro de línea de vida vertical" : `${n} metros de línea de vida vertical`,
+    cadaUno: "cada anclaje superior e inferior",
+    remate: "se verificó el desplazamiento del dispositivo deslizante y el estado del absorbedor de caída",
+  },
+  "Escalera fija": {
+    nombra: (n)=> n === 1 ? "una escalera fija con línea de vida vertical" : `${n} escaleras fijas con línea de vida vertical`,
+    cadaUno: "cada punto de fijación",
+    remate: "se verificó el ajuste de peldaños, largueros y guardacuerpo lateral",
+  },
+};
+
+const SISTEMA_GENERICO = {
+  nombra: (n)=> n === 1 ? "un sistema de protección contra caídas" : `${n} sistemas de protección contra caídas`,
+  cadaUno: "cada punto de anclaje",
+  remate: "se verificó el estado general de todos los componentes",
+};
+
+const enMayuscula = (texto)=>String(texto || "").trim().toUpperCase();
+
+/**
+ * Arma el parrafo del sistema certificado con los datos del encabezado.
+ * Devuelve "" si falta lo minimo para que la frase tenga sentido.
+ */
+export const construirTextoSistema = ({
+  tipo = "Certificación",
+  tipoSistema = "",
+  cantidad = 0,
+  cliente = "",
+  direccion = "",
+  fecha = "",
+  fechaLarga = "",
+} = {})=>{
+  const n = Number(cantidad) || 0;
+  if(!n || !cliente.trim()) return "";
+
+  const sistema = SISTEMAS[tipoSistema] || SISTEMA_GENERICO;
+  const esRecert = tipo === "Recertificación";
+  const lugar = direccion.trim()
+    ? `en las instalaciones de ${enMayuscula(cliente)}, ubicadas en ${enMayuscula(direccion)}`
+    : `en las instalaciones de ${enMayuscula(cliente)}`;
+  const cuando = (fechaLarga || fecha) ? ` El ${fechaLarga || fecha}` : " El día de la visita";
+
+  if(esRecert){
+    return (
+      `Se realizó la recertificación de ${sistema.nombra(n)} ${lugar}.` +
+      `${cuando} se realizaron las correspondientes pruebas de carga o presión, que permiten medir ` +
+      `la resistencia de ${sistema.cadaUno} para cumplir con las 5.000 lb requeridas. ` +
+      `A cada punto se le realizó su mantenimiento correspondiente y ${sistema.remate}.`
+    );
+  }
+
+  return (
+    `Se realizó la instalación de ${sistema.nombra(n)} ${lugar}.` +
+    `${cuando} se realizaron las correspondientes pruebas de carga o presión, que permiten medir ` +
+    `la resistencia de ${sistema.cadaUno} para cumplir con las 5.000 lb requeridas. ` +
+    `Adicionalmente, ${sistema.remate}.`
+  );
+};
+
 export const buildCertForm = (overrides={})=>{
   const tipo = overrides.tipo || "Certificación";
   const tipoSistema = overrides.tipoSistema || "";
@@ -73,6 +152,11 @@ export const buildCertForm = (overrides={})=>{
     nit: "",
     direccion: "",
     sistema: "",
+    // Cuantos elementos se certifican: alimenta el parrafo automatico.
+    cantidad: "",
+    // Mientras nadie retoque el parrafo a mano, se rehace solo al cambiar el
+    // encabezado. En cuanto se edita, manda lo escrito.
+    sistemaAuto: true,
     normativa: "Resolución 4272 de 2021",
     ingeniero: "ING. JHON JAIME SEPULVEDA LONDOÑO",
     matricula: "MP. 05256-409949",

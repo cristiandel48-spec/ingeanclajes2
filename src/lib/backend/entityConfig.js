@@ -606,16 +606,29 @@ export const entityConfig = {
   horarios: {
     table: "horarios",
     coerceNullCols: ["fecha", "horas"],
-    toRow: (item) => ({
-      id: item.id,
-      empleado_id: item.empleadoId ?? null,
-      obra_id: item.obraId ?? null,
-      fecha: item.fecha ?? null,
-      hora_inicio: item.horaInicio ?? null,
-      hora_fin: item.horaFin ?? null,
-      horas: item.horas ?? null,
-      notas: item.notas ?? null,
-    }),
+    // La pantalla trabaja con `turno` ("07:00 - 17:00") y `tarea`, pero la
+    // tabla nunca tuvo esas columnas: guardaba hora_inicio, hora_fin y notas.
+    // El turno y la tarea se subian a un campo que no existia y se perdian, asi
+    // que al recargar la pagina los turnos aparecian en blanco.
+    //
+    // Se traducen aqui, sin migracion: las columnas ya estan y son de texto.
+    toRow: (item) => {
+      const [inicio = "", fin = ""] = String(item.turno ?? "")
+        .split("-")
+        .map((parte) => parte.trim());
+      return {
+        id: item.id,
+        empleado_id: item.empleadoId ?? null,
+        obra_id: item.obraId ?? null,
+        fecha: item.fecha ?? null,
+        // El turno manda sobre horaInicio/horaFin: es el campo que la pantalla
+        // edita, y los otros dos solo son como se guarda por dentro.
+        hora_inicio: inicio || item.horaInicio || null,
+        hora_fin: fin || item.horaFin || null,
+        horas: item.horas ?? null,
+        notas: item.tarea ?? item.notas ?? null,
+      };
+    },
     fromRow: (row) => ({
       id: row.id,
       empleadoId: row.empleado_id,
@@ -625,6 +638,10 @@ export const entityConfig = {
       horaFin: row.hora_fin,
       horas: row.horas,
       notas: row.notas,
+      // "07:00" + "17:00" -> "07:00 - 17:00". Un turno sin hora de fin, como
+      // "Turno completo", vuelve tal cual.
+      turno: [row.hora_inicio, row.hora_fin].filter(Boolean).join(" - "),
+      tarea: row.notas ?? "",
     }),
   },
   // Configuracion general de la empresa: una sola fila por tenant. Marcada

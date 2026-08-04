@@ -105,8 +105,21 @@ export default function Horarios({ctx}){
     const e=empleados.find(x=>x.id===eid);
     const o=obras.find(x=>x.id===oid);
     if(!e||!o||!turnosInfo.length) return;
+
+    // Sin hora no se manda nada. Un mensaje que dice "has sido asignado" y deja
+    // el renglon del turno en blanco no le sirve a nadie, y el trabajador
+    // termina llamando a preguntar a que hora entra.
+    const conHorario = turnosInfo.filter((item)=>String(item?.turno||"").trim());
+    if(!conHorario.length){
+      setNotif({ok:false, texto:
+        `El turno de ${e.nombre} quedó sin horario, así que no se envió el mensaje. ` +
+        "Bórralo y vuelve a asignarlo poniendo la hora de entrada y la de salida."});
+      setTimeout(()=>setNotif(null),9000);
+      return;
+    }
+
     const fechaMsg = fmtD(f) || f;
-    const detalleTurnos = turnosInfo.map((item,idx)=>(idx+1) + ". " + (fmtTurno12Local(item.turno)) + " - " + (item.tarea)).join('\n');
+    const detalleTurnos = conHorario.map((item,idx)=>(idx+1) + ". " + (fmtTurno12Local(item.turno)) + (item.tarea ? " - " + (item.tarea) : "")).join('\n');
     // Las lineas llevan saltos de verdad. Antes se escribian escapados y
     // WhatsApp los mostraba tal cual: el mensaje llegaba como un bloque con
     // las barras a la vista.
@@ -495,9 +508,18 @@ export default function Horarios({ctx}){
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}><Av init={e?.avatar||"?"} color={PAL[idx%PAL.length]} size={34}/><div style={{flex:1}}><div style={{fontSize:13,fontWeight:600}}>{e?.nombre}</div><div style={{fontSize:11,color:"#475569"}}>{e?.cargo}</div></div><button onClick={()=>setHorarios(p=>p.filter(x=>x.id!==h.id))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:6,width:24,height:24,cursor:"pointer",fontSize:14}}>×</button></div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,fontSize:11,marginBottom:8}}>
               <div style={{background:"#ffffff",borderRadius:6,padding:"6px 10px"}}><div style={{color:"#64748b",marginBottom:2}}>Obra</div><div style={{color:"#1a1a2e",fontWeight:500}}>{o?.proyecto}</div><div style={{color:"#475569"}}>{o?.ciudad}</div></div>
-              <div style={{background:"#ffffff",borderRadius:6,padding:"6px 10px"}}><div style={{color:"#64748b",marginBottom:2}}>Turno</div><div style={{color:"#cc0000",fontWeight:600}}>{fmtTurno12Local(h.turno)}</div><div style={{color:"#475569"}}>{h.tarea}</div></div>
+              {/* Un turno sin hora se marca en la tarjeta. Antes salia un hueco
+                  en blanco y parecia un problema de la pantalla. */}
+              <div style={{background:"#ffffff",borderRadius:6,padding:"6px 10px"}}><div style={{color:"#64748b",marginBottom:2}}>Turno</div>{String(h.turno||"").trim() ? (<><div style={{color:"#cc0000",fontWeight:600}}>{fmtTurno12Local(h.turno)}</div><div style={{color:"#475569"}}>{h.tarea}</div></>) : (<div style={{color:"#b54708",fontWeight:600}}>Sin horario · bórralo y vuelve a asignarlo</div>)}</div>
             </div>
-            <button onClick={()=>reenviarDiaEmpleado(h)} style={{...B("#e8f5ee","#166534"),width:"100%",justifyContent:"center",fontSize:12}}>Reenviar WhatsApp · +57 {e?.tel}</button>
+            <button
+              onClick={()=>reenviarDiaEmpleado(h)}
+              disabled={!String(h.turno||"").trim()}
+              title={String(h.turno||"").trim() ? "" : "Este turno no tiene hora, no hay nada que avisar"}
+              style={{...B("#e8f5ee","#166534"),width:"100%",justifyContent:"center",fontSize:12,
+                opacity:String(h.turno||"").trim()?1:0.45,
+                cursor:String(h.turno||"").trim()?"pointer":"not-allowed"}}
+            >Reenviar WhatsApp · +57 {e?.tel}</button>
           </div>);})}
         </div>
         <div style={CD}>

@@ -57,6 +57,9 @@ export default function Horarios({ctx}){
   // golpe -el navegador bloquea las ventanas y quedan avisos a medias-, asi que
   // los turnos quedan guardados y el envio se hace de a uno desde aqui.
   const [porAvisar,setPorAvisar]=useState([]);
+  // Mensaje del dia listo para pegar en el grupo. Se muestra en pantalla.
+  const [mensajeGrupo,setMensajeGrupo]=useState(null);
+  const [copiado,setCopiado]=useState(false);
   const dia=horarios.filter(h=>h.fecha===fechaF);
   const obraSel=obras.find(o=>o.id===form.obraId);
   const seleccionados=empleados.filter(e=>form.empleadoIds.includes(e.id));
@@ -223,31 +226,40 @@ export default function Horarios({ctx}){
     ].join("\n");
   };
 
-  const copiarHorarioDelDia=async()=>{
-    if(!dia.length){
-      setNotif({ok:false,texto:"No hay turnos ese día para copiar."});
-      setTimeout(()=>setNotif(null),6000);
-      return;
-    }
-    const mensaje=armarMensajeDelDia();
+  const copiarAlPortapapeles=async(texto)=>{
     try{
-      await navigator.clipboard.writeText(mensaje);
-      setNotif({ok:true,texto:`Horario copiado (${dia.length} turno(s)). Pégalo en el grupo de WhatsApp.`});
+      await navigator.clipboard.writeText(texto);
+      return true;
     }catch{
       // Sin permiso de portapapeles -o en una conexion sin cifrar- se hace a
       // la vieja usanza, que funciona en cualquier navegador.
       const area=document.createElement("textarea");
-      area.value=mensaje;
+      area.value=texto;
       area.style.cssText="position:fixed;left:-9999px;top:0;";
       document.body.appendChild(area);
       area.select();
       const listo=document.execCommand("copy");
       area.remove();
-      setNotif(listo
-        ? {ok:true,texto:`Horario copiado (${dia.length} turno(s)). Pégalo en el grupo de WhatsApp.`}
-        : {ok:false,texto:"El navegador no dejó copiar. Selecciona los turnos a mano."});
+      return listo;
     }
-    setTimeout(()=>setNotif(null),8000);
+  };
+
+  // El mensaje se ENSEÑA, no solo se copia.
+  //
+  // Antes el boton copiaba en silencio y soltaba un aviso pequeño que se iba
+  // solo a los pocos segundos: quien lo usaba no se enteraba de que habia
+  // pasado algo y volvia a pulsarlo. Ahora se abre el mensaje completo en
+  // pantalla, ya copiado, y ademas se puede leer antes de pegarlo en el grupo
+  // y copiarlo otra vez si hizo falta.
+  const abrirHorarioDelDia=async()=>{
+    if(!dia.length){
+      setNotif({ok:false,texto:"No hay turnos ese día para compartir."});
+      setTimeout(()=>setNotif(null),6000);
+      return;
+    }
+    const mensaje=armarMensajeDelDia();
+    setMensajeGrupo(mensaje);
+    setCopiado(await copiarAlPortapapeles(mensaje));
   };
 
   const reenviarDiaEmpleado=(h)=>{
@@ -450,6 +462,56 @@ export default function Horarios({ctx}){
           </div>
         </div>
       )}
+      {mensajeGrupo!==null&&(
+        <div
+          onClick={()=>setMensajeGrupo(null)}
+          style={{position:"fixed",inset:0,zIndex:200,background:"rgba(9,11,16,.45)",
+            display:"flex",alignItems:"center",justifyContent:"center",padding:16}}
+        >
+          <div onClick={(e)=>e.stopPropagation()} style={{
+            background:"#fff",borderRadius:14,padding:22,width:"100%",maxWidth:520,
+            maxHeight:"88vh",display:"flex",flexDirection:"column",
+            boxShadow:"0 18px 50px rgba(9,11,16,.28)",
+          }}>
+            <div style={{fontSize:15,fontWeight:700,color:"#1a1a2e"}}>Horario del día · para el grupo</div>
+            <div style={{
+              background:copiado?"#e8f5ee":"#fffaf0",
+              border:"1px solid "+(copiado?"#166534":"#fde3c4"),
+              color:copiado?"#166534":"#b54708",
+              borderRadius:9,padding:"9px 12px",fontSize:12.5,lineHeight:1.5,margin:"11px 0 12px",
+            }}>
+              {copiado
+                ? <><strong>Ya está copiado.</strong> Abre el grupo de WhatsApp y pega el mensaje (Ctrl+V, o mantén pulsado y «Pegar» en el celular).</>
+                : <><strong>El navegador no dejó copiarlo solo.</strong> Selecciona el texto de abajo, cópialo con Ctrl+C y pégalo en el grupo.</>}
+            </div>
+
+            {/* Un textarea y no un div: se puede seleccionar y copiar a mano si
+                el portapapeles falla, que es justo el caso de arriba. */}
+            <textarea
+              readOnly
+              value={mensajeGrupo}
+              onFocus={(e)=>e.target.select()}
+              style={{...SI,flex:1,minHeight:210,resize:"vertical",lineHeight:1.6,
+                fontSize:12.5,fontFamily:"inherit",background:"#f8fafc",whiteSpace:"pre-wrap"}}
+            />
+
+            <div style={{display:"flex",gap:10,marginTop:14}}>
+              <button
+                onClick={async()=>{
+                  const listo=await copiarAlPortapapeles(mensajeGrupo);
+                  setCopiado(listo);
+                }}
+                style={{...B("#166534","#ffffff"),fontSize:12.5,fontWeight:700}}
+              >{copiado?"Copiar otra vez":"Copiar mensaje"}</button>
+              <button onClick={()=>setMensajeGrupo(null)} style={{...B("#f1f5f9","#475569"),fontSize:12.5}}>Cerrar</button>
+              <div style={{marginLeft:"auto",alignSelf:"center",fontSize:11,color:"#94a3b8"}}>
+                {dia.length} turno{dia.length!==1?"s":""} · {fmtD(fechaF)}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {porAvisar.length>0&&(
         <div style={{...CD,marginBottom:20,border:"1px solid #166534"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:4}}>
@@ -459,7 +521,7 @@ export default function Horarios({ctx}){
           <div style={{fontSize:11.5,color:"#64748b",marginBottom:12,lineHeight:1.5}}>
             Los turnos <strong>ya quedaron guardados</strong>. WhatsApp solo deja abrir un chat a la vez,
             así que se manda de a uno. Si el horario se comparte en el grupo, es más rápido usar
-            <strong> «Copiar horario del día»</strong> aquí abajo.
+            <strong> «Enviar horario al grupo»</strong> aquí abajo.
           </div>
           {porAvisar.map((p)=>{
             const e=empleados.find(x=>x.id===p.empleadoId);
@@ -492,12 +554,12 @@ export default function Horarios({ctx}){
         <div><LBL>Filtrar por fecha</LBL><input type="date" value={fechaF} onChange={e=>setFechaF(e.target.value)} style={{...SI,width:"auto"}}/></div>
         <div style={{fontSize:13,color:"#64748b"}}>{dia.length} turno{dia.length!==1?"s":""} · {fmtD(fechaF)}</div>
         <button
-          onClick={copiarHorarioDelDia}
+          onClick={abrirHorarioDelDia}
           disabled={!dia.length}
           title="Arma el mensaje con todos los turnos del día para pegarlo en el grupo"
-          style={{...B("#e8f5ee","#166534"),fontSize:12.5,opacity:dia.length?1:0.5}}
+          style={{...B("#166534","#ffffff"),fontSize:12.5,fontWeight:700,opacity:dia.length?1:0.45}}
         >
-          📋 Copiar horario del día
+          📋 Enviar horario al grupo
         </button>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>

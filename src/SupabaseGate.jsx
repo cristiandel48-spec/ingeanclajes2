@@ -7,6 +7,7 @@ const isSupabaseConfigured = backend.isSupabaseConfigured;
 const getSupabaseClient = backend.getSupabaseClient;
 const getSessionUser = backend.getSessionUser;
 const resolveTenantId = backend.resolveTenantId;
+const reintentandoSiChocanPestanas = backend.reintentandoSiChocanPestanas;
 
 const MARCA = "#E0342A";
 
@@ -134,6 +135,12 @@ function mensajeAmable(error) {
   if (texto.includes("membres")) return "La cuenta no tiene permisos en esta empresa. Pide que te asignen acceso.";
   if (texto.includes("rate limit") || texto.includes("too many")) return "Demasiados intentos. Espera un momento y vuelve a intentar.";
   if (texto.includes("failed to fetch") || texto.includes("network")) return "Sin conexión con el servidor. Revisa tu internet.";
+  // El mensaje original ("Lock ... was released because another request stole
+  // it") no le dice nada a nadie, y la solucion es cerrar las otras pestañas.
+  if (backend.esChoqueEntrePestanas(error)) {
+    return "Tienes el sistema abierto en varias pestañas y se estorban entre ellas. " +
+      "Cierra las demás, deja solo esta y vuelve a entrar.";
+  }
   if (texto.includes("stack depth")) {
     return "Las reglas de acceso de la base de datos se están llamando a sí mismas. " +
       "Es un problema de configuración, no de tu cuenta.";
@@ -169,7 +176,7 @@ export default function SupabaseGate({ children }) {
 
     try {
       const supabase = getSupabaseClient();
-      await resolveTenantId(supabase, import.meta.env.VITE_SUPABASE_TENANT_SLUG);
+      await reintentandoSiChocanPestanas(() => resolveTenantId(supabase, import.meta.env.VITE_SUPABASE_TENANT_SLUG));
       setUser(currentUser);
       setError("");
       setStatus("ready");
@@ -190,7 +197,7 @@ export default function SupabaseGate({ children }) {
 
     const loadUser = async () => {
       try {
-        const currentUser = await getSessionUser();
+        const currentUser = await reintentandoSiChocanPestanas(() => getSessionUser());
         if (!active) return;
         setEmail(currentUser?.email ?? "");
         await validateAccess(currentUser ?? null);

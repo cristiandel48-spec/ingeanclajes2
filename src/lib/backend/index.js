@@ -1,4 +1,4 @@
-﻿export { getSupabaseClient, getSessionUser, isSupabaseConfigured, signOut } from "./supabaseClient";
+﻿export { getSupabaseClient, getSessionUser, isSupabaseConfigured, signOut, esChoqueEntrePestanas, reintentandoSiChocanPestanas } from "./supabaseClient";
 export { createDataService, resolveTenantId } from "./dataService";
 export { entityConfig, entityKeys } from "./entityConfig";
 export {

@@ -30,6 +30,38 @@ export function getSupabaseClient() {
   return cached;
 }
 
+// Con la app abierta en varias pestañas, todas intentan renovar el mismo
+// token de sesion a la vez. La libreria las coordina con un cerrojo del
+// navegador, y cuando una le quita el turno a otra lanza:
+//
+//   Lock "lock:sb-...-auth-token" was released because another request stole it
+//
+// No es un fallo de verdad -la otra pestaña hizo el trabajo- pero llegaba
+// hasta la pantalla como "Sin conexion", y la app se bloqueaba entera.
+export function esChoqueEntrePestanas(error) {
+  const texto = String(error?.message || error || "").toLowerCase();
+  return texto.includes("lock:sb-") ||
+    (texto.includes("lock") && texto.includes("stole it"));
+}
+
+/**
+ * Reintenta cuando el fallo es solo el cerrojo entre pestañas. Se espera un
+ * poco entre intentos: lo que hay que dejar es que la otra pestaña termine.
+ */
+export async function reintentandoSiChocanPestanas(tarea, intentos = 3) {
+  let ultimo;
+  for (let i = 0; i < intentos; i += 1) {
+    try {
+      return await tarea();
+    } catch (error) {
+      if (!esChoqueEntrePestanas(error)) throw error;
+      ultimo = error;
+      await new Promise((seguir) => setTimeout(seguir, 250 * (i + 1)));
+    }
+  }
+  throw ultimo;
+}
+
 export async function signOut() {
   const supabase = getSupabaseClient();
   const { error } = await supabase.auth.signOut();

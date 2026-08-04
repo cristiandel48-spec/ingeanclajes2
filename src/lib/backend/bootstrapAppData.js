@@ -1,5 +1,5 @@
 import { createDataService, resolveTenantId } from "./dataService";
-import { getSupabaseClient, isSupabaseConfigured } from "./supabaseClient";
+import { getSupabaseClient, isSupabaseConfigured, reintentandoSiChocanPestanas } from "./supabaseClient";
 
 const ENTITY_TO_STATE = {
   obras: "obras",
@@ -90,8 +90,10 @@ export async function loadCloudAppData() {
   // Hasta que esta carga termine bien, no se debe guardar.
   baselineLoaded = false;
 
-  const service = await getService();
-  const cloudData = await service.loadAll();
+  // Con varias pestañas abiertas, el cerrojo del token puede hacer fallar esto
+  // sin que haya ningun problema real. Se reintenta antes de darlo por perdido.
+  const service = await reintentandoSiChocanPestanas(() => getService());
+  const cloudData = await reintentandoSiChocanPestanas(() => service.loadAll());
 
   // Reiniciamos el baseline con lo que realmente vino de la nube.
   baselineByEntity = {};

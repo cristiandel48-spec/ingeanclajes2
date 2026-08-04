@@ -6,10 +6,9 @@ import LBL from "../../components/ui/LBL";
 import ObraDetalle from "./ObraDetalle";
 import { useEffect, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
-import { fmt, fmtD, today } from "../../lib/format";
+import { fmtD, today } from "../../lib/format";
 import { getQuoteApprovalAccountingSnapshot } from "../../lib/cotizaciones";
 import { resumenBitacora } from "../../lib/bitacoraObra";
-import { puedeVerDinero } from "../../lib/permisos";
 import { avisoCelular, normalizarMayusculas, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
 
 // Siguiente consecutivo de obra. Se calcula sobre el numero mas alto que ya
@@ -23,8 +22,7 @@ const siguienteIdObra = (obras) => {
   return "OB-" + String(mayor + 1).padStart(3, "0");
 };
 export default function Obras({ctx}){
-  const {obras,setObras,cotizaciones,cuentas,intencion,limpiarIntencion,membresia}=ctx;
-  const verDinero = puedeVerDinero(membresia);
+  const {obras,setObras,cotizaciones,intencion,limpiarIntencion}=ctx;
   // Se puede llegar aqui desde otra pantalla pidiendo una obra concreta, por
   // ejemplo desde el aviso de "esta obra no esta lista para certificar".
   const obraSolicitada = intencion?.pantalla==="obras" ? intencion.obraId : null;
@@ -171,7 +169,6 @@ export default function Obras({ctx}){
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
         {obras.map(o=>{
           const cotVinc=cotizaciones.find(c=>c.id===o.cotizacionId);
-          const gastosObra=cuentas.filter(c=>c.obraId===o.id).reduce((s,c)=>s+c.monto,0);
           const avanceReg=resumenBitacora(o.bitacora);
           return(
             <div key={o.id} style={{...CD,border:"1px solid #e2e8f0",cursor:"pointer",transition:"all 0.15s"}}
@@ -199,16 +196,10 @@ export default function Obras({ctx}){
                   style={{width:"100%",marginTop:4,accentColor:"#f47c20"}}
                   onClick={e=>e.stopPropagation()}/>
               </div>
-              {verDinero&&(
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6,marginBottom:10}}>
-                  {[["Total",fmt(o.total),"#1a1a2e"],["Cobrado",fmt(o.pagado),"#166534"],["Saldo",fmt(o.saldo),o.saldo>0?"#c2410c":"#166534"],["Gastos",fmt(gastosObra),"#7c3aed"]].map(([k,v,c])=>(
-                    <div key={k} style={{background:"#f8fafc",borderRadius:6,padding:"6px 8px",border:"1px solid #f1f5f9"}}>
-                      <div style={{fontSize:8,color:"#94a3b8",textTransform:"uppercase",marginBottom:2}}>{k}</div>
-                      <div style={{fontSize:11,fontWeight:700,color:c}}>{v}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {/* Aqui no van cifras, para nadie. La lista de obras es una
+                  pantalla operativa -quien trabaja, como va, cuantas fotos
+                  hay- y el total, el cobrado y el saldo se consultan donde
+                  tienen contexto: Cuentas por cobrar y el informe financiero. */}
               <div style={{display:"flex",gap:6,alignItems:"center"}}>
                 <select value={o.estado} onChange={e=>{e.stopPropagation();updEst(o.id,e.target.value);}}
                   style={{...SI,fontSize:11,padding:"5px 8px",flex:1}} onClick={e=>e.stopPropagation()}>

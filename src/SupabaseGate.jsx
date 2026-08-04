@@ -141,6 +141,14 @@ function mensajeAmable(error) {
     return "Tienes el sistema abierto en varias pestañas y se estorban entre ellas. " +
       "Cierra las demás, deja solo esta y vuelve a entrar.";
   }
+  // "canceling statement due to statement timeout": la consulta tardo mas de lo
+  // que la base permite. Casi siempre es que hay fotos muy pesadas guardadas
+  // dentro de las filas y arrastrarlas se lleva todo el tiempo.
+  if (texto.includes("statement timeout") || texto.includes("canceling statement")) {
+    return "La base de datos tardó demasiado en responder y canceló la consulta. " +
+      "Suele ser por fotos muy pesadas guardadas dentro de los registros: " +
+      "entra a Usuarios y permisos y usa «Mantenimiento · fotos guardadas».";
+  }
   if (texto.includes("stack depth")) {
     return "Las reglas de acceso de la base de datos se están llamando a sí mismas. " +
       "Es un problema de configuración, no de tu cuenta.";

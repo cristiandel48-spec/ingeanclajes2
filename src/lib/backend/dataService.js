@@ -136,21 +136,44 @@ export function createDataService({ supabase, tenantId }) {
   if (!supabase) throw new Error("Supabase client requerido");
   if (!tenantId) throw new Error("tenantId requerido");
 
+  // Filas por consulta. Antes se pedia la tabla entera de un tiron y con las
+  // fotos dentro de las filas la consulta no alcanzaba a terminar: Postgres la
+  // mataba a los 8 segundos con «canceling statement due to statement timeout»,
+  // y la app arrancaba sin datos y bloqueada.
+  //
+  // Cincuenta es un termino medio: suficientes para no hacer decenas de viajes
+  // en una empresa normal, y pocas para que ninguna consulta se acerque al
+  // limite aunque las filas lleven fotos.
+  const FILAS_POR_PAGINA = 50;
+
   const list = async (entity) => {
     const cfg = assertEntity(entity);
-    const { data, error } = await supabase
-      .from(cfg.table)
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .order("updated_at", { ascending: true });
+    const filas = [];
+    let desde = 0;
 
-    if (error) {
-      if (cfg.optional && isMissingRelationError(error)) {
-        return [];
+    for (;;) {
+      const { data, error } = await supabase
+        .from(cfg.table)
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .order("updated_at", { ascending: true })
+        .range(desde, desde + FILAS_POR_PAGINA - 1);
+
+      if (error) {
+        if (cfg.optional && isMissingRelationError(error)) {
+          return [];
+        }
+        throw error;
       }
-      throw error;
+
+      const lote = data ?? [];
+      filas.push(...lote);
+      // Una pagina incompleta significa que ya no queda nada mas.
+      if (lote.length < FILAS_POR_PAGINA) break;
+      desde += FILAS_POR_PAGINA;
     }
-    return (data ?? []).map(cfg.fromRow);
+
+    return filas.map(cfg.fromRow);
   };
 
   const upsertMany = async (entity, items) => {
@@ -238,11 +261,18 @@ export function createDataService({ supabase, tenantId }) {
     await deleteMany(entity, idsToDelete);
   };
 
+  // Las tablas se piden UNA DETRAS DE OTRA, no todas a la vez.
+  //
+  // En paralelo, quince consultas pesadas competian por el puñado de conexiones
+  // que da el plan gratuito: se estorbaban entre ellas, cada una tardaba mas y
+  // acababan agotando el tiempo justo las que traian fotos. De a una tardan un
+  // poco mas en total, pero llegan.
   const loadAll = async () => {
-    const entries = await Promise.all(
-      entityKeys.map(async (entity) => [entity, await list(entity)])
-    );
-    return Object.fromEntries(entries);
+    const resultado = {};
+    for (const entity of entityKeys) {
+      resultado[entity] = await list(entity);
+    }
+    return resultado;
   };
 
   return {

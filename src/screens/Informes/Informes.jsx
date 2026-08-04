@@ -88,20 +88,25 @@ export default function Informes({ctx}){
   };
 
   // Escala tipografica del documento impreso, en pixeles a 96 ppp (1 pt = 1,33
-  // px). Estaba plana entre 10 y 11 px, con el detalle de que el TITULO del
-  // informe era mas pequeño que el texto del cuerpo y se sostenia solo por las
-  // mayusculas. Ahora cada nivel pesa distinto, que es lo que deja leer un
-  // formulario sin tener que leerlo entero.
+  // px). Son los mismos valores del documento de cotizacion, que es el formato
+  // mejor resuelto de la casa: cuerpo 11,5 y titulo 17.
+  //
+  // El titulo del informe llego a ser MAS PEQUEÑO que el texto del cuerpo y se
+  // sostenia solo por las mayusculas; el primer arreglo se paso al otro lado y
+  // dejo la hoja basta. Cada nivel pesa distinto, pero sin gritar.
   const T = {
-    titulo: 19,      // ~14 pt · el elemento dominante de la hoja
-    seccion: 13,     // ~10 pt · "REGISTRO FOTOGRÁFICO"
-    cuerpo: 13,      // ~10 pt · valores y parrafos
-    etiqueta: 11,    // ~8 pt  · rotulos de tabla (PROYECTO, FECHA...)
-    pie: 11,         // ~8 pt  · comentarios de foto
+    titulo: 17,      // ~13 pt · el elemento dominante de la hoja
+    seccion: 11.5,   // ~9 pt  · "REGISTRO FOTOGRÁFICO", cabecera de tabla
+    cuerpo: 11.5,    // ~9 pt  · valores y parrafos
+    etiqueta: 10,    // ~7,5 pt · rotulos de tabla (PROYECTO, FECHA...)
+    pie: 9.5,        // ~7 pt  · comentarios de foto y datos de la firma
   };
-  // Gris para los rotulos: separa "que campo es" de "que dice el campo" sin
-  // depender solo de la negrita y el fondo gris.
-  const GRIS_ROTULO = "#555";
+  // El mismo gris de los rotulos de la cotizacion. Separa "que campo es" de
+  // "que dice el campo" sin depender solo de la negrita y el fondo gris.
+  const GRIS_ROTULO = "#6B6B6B";
+  // Borde suave, tambien de la cotizacion: el #ccc de antes pesaba mas que el
+  // texto y la hoja parecia una cuadricula.
+  const BORDE = "#ddd";
 
   const firstObraId = obras[0]?.id || "";
 
@@ -582,7 +587,7 @@ export default function Informes({ctx}){
                 {/* Se acomodan también al imprimir: los informes guardados
                     antes de esto tienen el proyecto en minúscula. */}
                 {[["PROYECTO",normalizarMayusculas(sel.proyecto)],["LOCALIZACIÓN",normalizarMayusculas(sel.localizacion)],["FECHA INFORME",fmtL(sel.fechaInforme)],["PERÍODO DE INFORME",(fmtL(sel.periodoInicio)) + " - " + (fmtL(sel.periodoFin))]].map(([k,v])=>(
-                  <tr key={k}><td style={{border:"1px solid #ccc",padding:"6px 10px",background:"#f0f0f0",fontWeight:700,width:"30%",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>{k}</td><td style={{border:"1px solid #ccc",padding:"6px 10px"}}>{v}</td></tr>
+                  <tr key={k}><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",background:"#f0f0f0",fontWeight:700,width:"30%",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>{k}</td><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px"}}>{v}</td></tr>
                 ))}
               </tbody>
             </table>
@@ -592,31 +597,31 @@ export default function Informes({ctx}){
                     pero NO se imprimen: en el documento que se le entrega al
                     cliente ocupaban media tabla para mostrar casi siempre un
                     guion. */}
-                <tr style={{background:"#ddd"}}><td colSpan={2} style={{border:"1px solid #ccc",padding:"7px 10px",fontWeight:700,textAlign:"center",fontSize:T.seccion,letterSpacing:".04em"}}>PERSONAL EN OBRA</td></tr>
+                <tr style={{background:"#ddd"}}><td colSpan={2} style={{border:`1px solid ${BORDE}`,padding:"7px 10px",fontWeight:700,textAlign:"center",fontSize:T.seccion,letterSpacing:".04em"}}>PERSONAL EN OBRA</td></tr>
                 <tr style={{background:"#f5f5f5"}}>
-                  <th style={{border:"1px solid #ccc",padding:"6px 10px",textAlign:"left",width:"35%",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>CARGO</th>
-                  <th style={{border:"1px solid #ccc",padding:"6px 10px",textAlign:"left",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>NOMBRE</th>
+                  <th style={{border:`1px solid ${BORDE}`,padding:"6px 10px",textAlign:"left",width:"35%",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>CARGO</th>
+                  <th style={{border:`1px solid ${BORDE}`,padding:"6px 10px",textAlign:"left",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>NOMBRE</th>
                 </tr>
               </thead>
-              <tbody>{(sel.personal||[]).map((p,i)=><tr key={i}><td style={{border:"1px solid #ccc",padding:"6px 10px"}}>{p.cargo}</td><td style={{border:"1px solid #ccc",padding:"6px 10px"}}>{p.nombre}</td></tr>)}</tbody>
+              <tbody>{(sel.personal||[]).map((p,i)=><tr key={i}><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px"}}>{p.cargo}</td><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px"}}>{p.nombre}</td></tr>)}</tbody>
             </table>
             {/* Múltiples actividades */}
             {(sel.actividades||[{titulo:sel.actividad,descripcion:sel.descripcion,observaciones:sel.observaciones,fotos:sel.fotos||[]}]).map((act,ai)=>(
               <div key={ai} style={{marginBottom:22}}>
                 <table style={{width:"100%",borderCollapse:"collapse",marginBottom:12}}>
                   <tbody>
-                    <tr><td colSpan={2} style={{border:"1px solid #ccc",padding:"7px 10px",background:"#ddd",fontWeight:700,textAlign:"center",fontSize:T.seccion,letterSpacing:".04em"}}>{act.titulo||act}</td></tr>
-                    {act.fecha&&<tr><td style={{border:"1px solid #ccc",padding:"6px 10px",fontWeight:700,width:"20%",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>FECHA</td><td style={{border:"1px solid #ccc",padding:"6px 10px"}}>{fmtL(act.fecha)}</td></tr>}
+                    <tr><td colSpan={2} style={{border:`1px solid ${BORDE}`,padding:"7px 10px",background:"#ddd",fontWeight:700,textAlign:"center",fontSize:T.seccion,letterSpacing:".04em"}}>{act.titulo||act}</td></tr>
+                    {act.fecha&&<tr><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",fontWeight:700,width:"20%",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>FECHA</td><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px"}}>{fmtL(act.fecha)}</td></tr>}
                     {/* whiteSpace pre-line: en HTML los saltos de linea se
                         aplastan a un espacio, y el texto escrito en dos bloques
                         se imprimia como un parrafo corrido. */}
-                    <tr><td style={{border:"1px solid #ccc",padding:"6px 10px",fontWeight:700,width:"20%",verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>DESCRIPCIÓN</td><td style={{border:"1px solid #ccc",padding:"8px 10px",textAlign:"justify",whiteSpace:"pre-line",lineHeight:1.6}}>{act.descripcion}</td></tr>
-                    <tr><td style={{border:"1px solid #ccc",padding:"6px 10px",fontWeight:700,verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>OBSERVACIONES</td><td style={{border:"1px solid #ccc",padding:"6px 10px"}}>{act.observaciones}</td></tr>
+                    <tr><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",fontWeight:700,width:"20%",verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>DESCRIPCIÓN</td><td style={{border:`1px solid ${BORDE}`,padding:"8px 10px",textAlign:"justify",whiteSpace:"pre-line",lineHeight:1.6}}>{act.descripcion}</td></tr>
+                    <tr><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",fontWeight:700,verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>OBSERVACIONES</td><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px"}}>{act.observaciones}</td></tr>
                   </tbody>
                 </table>
                 {(act.fotos||[]).some(ft=>ft.img||ft.url)&&(
                   <>
-                    <div style={{fontWeight:700,textAlign:"center",background:"#ddd",border:"1px solid #ccc",padding:"7px 6px",marginBottom:10,fontSize:T.seccion,letterSpacing:".04em"}}>REGISTRO FOTOGRÁFICO · {act.titulo}</div>
+                    <div style={{fontWeight:700,textAlign:"center",background:"#ddd",border:`1px solid ${BORDE}`,padding:"7px 6px",marginBottom:10,fontSize:T.seccion,letterSpacing:".04em"}}>REGISTRO FOTOGRÁFICO · {act.titulo}</div>
                     {/* Alto FIJO y no maximo: asi las dos fotos de una fila
                         miden igual, la rejilla queda pareja y -sobre todo- el
                         corte de pagina cae siempre en el mismo sitio. Con alto
@@ -624,7 +629,7 @@ export default function Informes({ctx}){
                         mas facil que una foto quedara partida entre hojas. */}
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12,alignItems:"start"}}>
                       {(act.fotos||[]).filter(ft=>ft.img||ft.url).map((ft,i)=>(
-                        <div key={i} style={{border:"1px solid #ccc",borderRadius:4,overflow:"hidden",background:"#fff",padding:8}}>
+                        <div key={i} style={{border:`1px solid ${BORDE}`,borderRadius:4,overflow:"hidden",background:"#fff",padding:8}}>
                           <img src={ft.img||ft.url} alt={"foto" + (i+1)} style={{width:"100%",height:250,objectFit:"contain",display:"block",background:"#fff"}} onError={e=>{e.target.style.display="none";}}/>
                           {ft.comentario&&<div style={{padding:"6px 2px 0",fontSize:T.pie,color:GRIS_ROTULO,borderTop:"1px solid #eee",marginTop:6,lineHeight:1.45}}>{ft.comentario}</div>}
                         </div>
@@ -635,7 +640,7 @@ export default function Informes({ctx}){
               </div>
             ))}
             <table style={{width:"100%",borderCollapse:"collapse",marginBottom:26}}>
-              <tbody><tr><td style={{border:"1px solid #ccc",padding:"6px 10px",fontWeight:700,width:"20%",verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>RECOMENDACIONES</td><td style={{border:"1px solid #ccc",padding:"8px 10px",textAlign:"justify",whiteSpace:"pre-line",lineHeight:1.6}}>{sel.recomendaciones}</td></tr></tbody>
+              <tbody><tr><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",fontWeight:700,width:"20%",verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>RECOMENDACIONES</td><td style={{border:`1px solid ${BORDE}`,padding:"8px 10px",textAlign:"justify",whiteSpace:"pre-line",lineHeight:1.6}}>{sel.recomendaciones}</td></tr></tbody>
             </table>
             <div style={{marginTop:30}}>
               <div style={{marginBottom:12,fontSize:T.cuerpo}}>Cordialmente,</div>

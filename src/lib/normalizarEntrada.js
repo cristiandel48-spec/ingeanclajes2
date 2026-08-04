@@ -8,11 +8,15 @@
 // Se aplica al SALIR del campo, no mientras se escribe: corregir tecla a tecla
 // mueve el cursor de sitio y pelea con quien esta escribiendo.
 //
-// Lo que esto NO hace: corregir ortografia ni poner tildes que faltan. Para
-// eso esta el corrector del navegador (spellCheck), que subraya en rojo y deja
-// que la persona decida. Inventar tildes seria peor: "Jose" y "José" no son
-// intercambiables en un nombre propio, y "Medellin" escrito sin tilde por el
-// cliente no siempre es un error nuestro.
+// Sobre la ortografia: se corrige una LISTA CERRADA de palabras del oficio
+// que se escriben mal siempre igual (recidencial, anclage, instalacion sin
+// tilde). Lo demas lo subraya el corrector del navegador y lo decide la
+// persona: un diccionario del español entero corrigiendo a ciegas haria
+// destrozos con marcas y referencias tecnicas.
+//
+// Los NOMBRES PROPIOS no pasan por esa correccion. "Jose" y "José" no son
+// intercambiables en el apellido de alguien, y un cliente que se llama
+// "Recidencial S.A.S" tiene derecho a llamarse asi.
 
 // Palabras que dentro de un nombre van en minuscula, salvo al principio.
 const CONECTORES = new Set([
@@ -25,6 +29,57 @@ const SIGLAS = new Set([
 ]);
 
 const limpiarEspacios = (valor) => String(valor ?? "").trim().replace(/\s+/g, " ");
+
+// ── Correccion de palabras del oficio ──────────────────────────────────────
+//
+// NO es un corrector ortografico: eso necesitaria un diccionario del español
+// entero, y corregir a ciegas haria destrozos con nombres propios, marcas y
+// referencias tecnicas. Es una lista cerrada de errores que se repiten en
+// este sector y que no admiten duda: nadie escribe "recidencial" a proposito.
+//
+// El corrector del navegador (spellCheck) sigue subrayando lo demas.
+const CORRECCIONES = {
+  // Errores de letra
+  recidencial: "residencial", reidencial: "residencial", residensial: "residencial",
+  anclage: "anclaje", ancalje: "anclaje", anclages: "anclajes", ancalges: "anclajes",
+  sertificado: "certificado", sertificacion: "certificación",
+  galvanisado: "galvanizado", galbanizado: "galvanizado",
+  mantenimineto: "mantenimiento", mantenimento: "mantenimiento",
+  estructual: "estructural", estrutura: "estructura",
+  seguriad: "seguridad", segurida: "seguridad",
+  instalacon: "instalación", intalacion: "instalación",
+  // Tildes que faltan en palabras del oficio
+  instalacion: "instalación", certificacion: "certificación",
+  recertificacion: "recertificación", inspeccion: "inspección",
+  proteccion: "protección", senalizacion: "señalización",
+  "señalizacion": "señalización", resolucion: "resolución",
+  construccion: "construcción", edificacion: "edificación",
+  ubicacion: "ubicación", direccion: "dirección",
+  linea: "línea", lineas: "líneas",
+  metalica: "metálica", metalico: "metálico",
+  epoxico: "epóxico", epoxica: "epóxica",
+  tecnico: "técnico", tecnica: "técnica",
+  numero: "número", area: "área", maquina: "máquina",
+  fabricacion: "fabricación", fijacion: "fijación",
+  identificacion: "identificación", verificacion: "verificación",
+};
+
+// Conserva como venia escrita la palabra: MAYUSCULAS, Capitalizada o suelta.
+const conMismaForma = (original, corregida) => {
+  if (original === original.toUpperCase()) return corregida.toUpperCase();
+  if (original[0] === original[0].toUpperCase()) {
+    return corregida[0].toUpperCase() + corregida.slice(1);
+  }
+  return corregida;
+};
+
+/** Arregla las palabras de la lista; el resto del texto no se toca. */
+export function corregirPalabras(valor) {
+  return String(valor ?? "").replace(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+/g, (palabra) => {
+    const corregida = CORRECCIONES[palabra.toLowerCase()];
+    return corregida ? conMismaForma(palabra, corregida) : palabra;
+  });
+}
 
 /**
  * Nombres de persona, clientes, ciudades, razones sociales.
@@ -60,7 +115,7 @@ export function normalizarNombrePropio(valor) {
  * propios, medidas y referencias que no se deben alterar.
  */
 export function normalizarFrase(valor) {
-  const texto = limpiarEspacios(valor);
+  const texto = corregirPalabras(limpiarEspacios(valor));
   if (!texto) return "";
   // Si viene TODO gritado se baja a minuscula; si no, se respeta.
   const base = texto === texto.toUpperCase() && texto.length > 3 ? texto.toLowerCase() : texto;
@@ -100,7 +155,7 @@ export function normalizarCodigo(valor) {
  * recomendaciones-: un parrafo entero en mayuscula no hay quien lo lea.
  */
 export function normalizarMayusculas(valor) {
-  return limpiarEspacios(valor).toUpperCase();
+  return corregirPalabras(limpiarEspacios(valor)).toUpperCase();
 }
 
 /** Nombre de la empresa cliente. Mismo criterio, nombre propio del caso. */

@@ -1,6 +1,7 @@
 // Generacion del HTML imprimible de cotizaciones y mensajes de envio
 import { fmt } from "./format";
 import { escapeHtml } from "./html";
+import { normalizarMayusculas } from "./normalizarEntrada";
 import { LOGO_INGEANCLAJES } from "../assets/embeddedImages";
 import { getQuotePrintableProposals } from "./cotizaciones";
 import { getStaticMapDimensions, buildStaticMapLabelData } from "./maps";
@@ -540,7 +541,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
             <div class="cover-client-name">${escapeHtml(c?.cliente || "")}</div>
             ${c?.nit ? `<div class="cover-client-nit tnum">NIT ${escapeHtml(c.nit)}</div>` : ""}
             <div class="cover-client-grid">
-              <div><div class="ccg-k">Obra</div><div class="ccg-v">${escapeHtml(c?.obra || "")}</div></div>
+              <div><div class="ccg-k">Obra</div><div class="ccg-v">${escapeHtml(normalizarMayusculas(c?.obra || ""))}</div></div>
               <div><div class="ccg-k">Ciudad</div><div class="ccg-v">${escapeHtml(c?.ciudad || "")}</div></div>
               <div><div class="ccg-k">Contacto</div><div class="ccg-v">${escapeHtml(c?.contacto || c?.cliente || "")}</div></div>
               <div><div class="ccg-k">Teléfono</div><div class="ccg-v tnum">${escapeHtml(c?.telefono || "")}</div></div>

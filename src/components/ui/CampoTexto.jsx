@@ -37,7 +37,13 @@ export default function CampoTexto({
   return (
     <div style={wrapStyle}>
       {label && <LBL>{label}</LBL>}
+      {/* El corrector del navegador va encendido y en español: subraya en rojo
+          lo que no reconoce y ofrece la palabra buena con clic derecho. Los
+          campos que no lo quieren -cédulas, cuentas, correos- lo apagan con
+          spellCheck={false}, que llega por `props` y pisa esto. */}
       <input
+        spellCheck
+        lang="es"
         value={valor ?? ""}
         onChange={(e) => onChange(e.target.value)}
         onBlur={alSalir}

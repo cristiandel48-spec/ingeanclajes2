@@ -5,7 +5,7 @@ import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
 import { useEffect, useState } from "react";
 import { B, CD, PAL, SI, ST } from "../../styles/tokens";
-import { fmtD, today } from "../../lib/format";
+import { fmtD, fmtL, today } from "../../lib/format";
 import { abrirWhatsApp, normalizarCelular } from "../../lib/whatsapp";
 import { puedeCrearPersonal } from "../../lib/permisos";
 export default function Horarios({ctx}){
@@ -132,6 +132,63 @@ export default function Horarios({ctx}){
   };
 
   const previewTurnos = buildTurnosPayload(form);
+
+  // Los turnos tambien se comparten en un grupo de WhatsApp, y a un grupo no
+  // se puede escribir desde el sistema: ni el enlace wa.me ni la API oficial
+  // de WhatsApp admiten grupos. Asi que se arma el mensaje del dia y se deja
+  // en el portapapeles, para pegarlo de un toque.
+  const armarMensajeDelDia=()=>{
+    const porObra=new Map();
+    dia.forEach((h)=>{
+      if(!porObra.has(h.obraId)) porObra.set(h.obraId,[]);
+      porObra.get(h.obraId).push(h);
+    });
+
+    const bloques=[...porObra.entries()].map(([obraId,turnos])=>{
+      const o=obras.find(x=>x.id===obraId);
+      const donde=[o?.cliente,o?.direccion||o?.ciudad].filter(Boolean).join(" · ");
+      const lineas=turnos.map((h)=>{
+        const e=empleados.find(x=>x.id===h.empleadoId);
+        return `• ${e?.nombre||"—"} · ${fmtTurno12Local(h.turno)} · ${h.tarea}`;
+      });
+      return [`*${o?.proyecto||"Obra"}*${donde?`\n${donde}`:""}`,...lineas].join("\n");
+    });
+
+    return [
+      `*TURNOS · ${fmtL(fechaF)}*`,
+      "",
+      ...bloques.flatMap((b)=>[b,""]),
+      "Por favor confirmar asistencia.",
+      "*INGEANCLAJES S.A.S*",
+    ].join("\n");
+  };
+
+  const copiarHorarioDelDia=async()=>{
+    if(!dia.length){
+      setNotif({ok:false,texto:"No hay turnos ese día para copiar."});
+      setTimeout(()=>setNotif(null),6000);
+      return;
+    }
+    const mensaje=armarMensajeDelDia();
+    try{
+      await navigator.clipboard.writeText(mensaje);
+      setNotif({ok:true,texto:`Horario copiado (${dia.length} turno(s)). Pégalo en el grupo de WhatsApp.`});
+    }catch{
+      // Sin permiso de portapapeles -o en una conexion sin cifrar- se hace a
+      // la vieja usanza, que funciona en cualquier navegador.
+      const area=document.createElement("textarea");
+      area.value=mensaje;
+      area.style.cssText="position:fixed;left:-9999px;top:0;";
+      document.body.appendChild(area);
+      area.select();
+      const listo=document.execCommand("copy");
+      area.remove();
+      setNotif(listo
+        ? {ok:true,texto:`Horario copiado (${dia.length} turno(s)). Pégalo en el grupo de WhatsApp.`}
+        : {ok:false,texto:"El navegador no dejó copiar. Selecciona los turnos a mano."});
+    }
+    setTimeout(()=>setNotif(null),8000);
+  };
 
   const reenviarDiaEmpleado=(h)=>{
     const relacionados = horarios.filter(x=>
@@ -304,6 +361,14 @@ export default function Horarios({ctx}){
       <div style={{display:"flex",gap:14,alignItems:"flex-end",marginBottom:20}}>
         <div><LBL>Filtrar por fecha</LBL><input type="date" value={fechaF} onChange={e=>setFechaF(e.target.value)} style={{...SI,width:"auto"}}/></div>
         <div style={{fontSize:13,color:"#64748b"}}>{dia.length} turno{dia.length!==1?"s":""} · {fmtD(fechaF)}</div>
+        <button
+          onClick={copiarHorarioDelDia}
+          disabled={!dia.length}
+          title="Arma el mensaje con todos los turnos del día para pegarlo en el grupo"
+          style={{...B("#e8f5ee","#166534"),fontSize:12.5,opacity:dia.length?1:0.5}}
+        >
+          📋 Copiar horario del día
+        </button>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
         <div style={CD}>

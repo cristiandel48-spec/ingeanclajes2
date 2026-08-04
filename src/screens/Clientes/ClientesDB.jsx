@@ -134,6 +134,80 @@ export default function ClientesDB({ctx}){
     resetCliente();
   };
 
+  // Unifica dos fichas del mismo tercero. Pasa cuando el nombre se escribio
+  // distinto -"SANDIEDO" por "SANDIEGO"- y el sistema las tomo por clientes
+  // distintos: cada una se quedo con parte de las obras y las cotizaciones.
+  //
+  // No basta con borrar la repetida: sus obras seguirian con el nombre mal
+  // escrito, y volveria a aparecer como cliente sugerido. Hay que mover todo
+  // lo suyo al que se queda y despues si borrarla.
+  const unificarCliente=(cli)=>{
+    const otros=clientesData.filter(c=>c.id!==cli.id);
+    if(!otros.length){
+      window.alert("No hay otro cliente con el que unificar.");
+      return;
+    }
+
+    const lista=otros.map((c,i)=>`${i+1}. ${c.nombre}`).join("\n");
+    const elegido=window.prompt(
+      `Unificar «${cli.nombre}» con otro cliente.\n\n` +
+      `Se moverán sus ${cli.obrasTotal} obra(s), ${cli.cotizacionesTotal} cotización(es) y ` +
+      `${cli.certificacionesTotal} certificación(es) al que elijas, y esta ficha se eliminará.\n\n` +
+      `Escribe el número del cliente que se queda:\n\n${lista}`
+    );
+    if(elegido===null) return;
+
+    const destino=otros[Number(elegido)-1];
+    if(!destino){
+      window.alert("Ese número no está en la lista. No se hizo nada.");
+      return;
+    }
+
+    const confirmar=window.confirm(
+      `Se va a hacer esto:\n\n` +
+      `• Las obras, cotizaciones y certificaciones de «${cli.nombre}» pasarán a «${destino.nombre}».\n` +
+      `• La ficha «${cli.nombre}» se eliminará.\n\n` +
+      `Esto no se puede deshacer. ¿Continuar?`
+    );
+    if(!confirmar) return;
+
+    const viejo=cli.nombre;
+    const nuevo=destino.nombre;
+    setObras(prev=>prev.map(o=>o.cliente===viejo?{...o,cliente:nuevo}:o));
+    setCotizaciones(prev=>prev.map(c=>c.cliente===viejo?{...c,cliente:nuevo}:c));
+    setCerts(prev=>prev.map(c=>c.cliente===viejo?{...c,cliente:nuevo}:c));
+
+    // Lo que le falte al que se queda se completa con lo de la ficha que se va.
+    setClientes(prev=>prev
+      .map(c=>c.id!==destino.id ? c : {
+        ...c,
+        nit:c.nit || cli.nit || "",
+        telefono:c.telefono || cli.telefono || "",
+        ciudad:c.ciudad || cli.ciudad || "",
+        direccion:c.direccion || cli.direccion || "",
+        contacto:c.contacto || cli.contacto || "",
+        email:c.email || cli.email || "",
+        notas:[c.notas,cli.notas].filter(Boolean).join(" · "),
+      })
+      .filter(c=>c.id!==cli.id)
+    );
+  };
+
+  const eliminarCliente=(cli)=>{
+    const atado=cli.obrasTotal+cli.cotizacionesTotal+cli.certificacionesTotal;
+    if(atado>0){
+      window.alert(
+        `«${cli.nombre}» tiene ${cli.obrasTotal} obra(s), ${cli.cotizacionesTotal} cotización(es) y ` +
+        `${cli.certificacionesTotal} certificación(es).\n\n` +
+        "Si borras la ficha, esos documentos se quedan con el nombre y vuelve a aparecer como " +
+        "cliente sugerido. Usa «Unificar» para pasarlos a otro cliente."
+      );
+      return;
+    }
+    if(!window.confirm(`¿Eliminar la ficha de «${cli.nombre}»?\n\nNo tiene obras ni documentos asociados.`)) return;
+    setClientes(prev=>prev.filter(c=>c.id!==cli.id));
+  };
+
   const editarCliente=(cli)=>{
     setEditId(cli.id);
     setForm({
@@ -247,6 +321,20 @@ export default function ClientesDB({ctx}){
                   <div style={{display:"flex",gap:8,alignItems:"center"}}>
                     <Badge estado={c.estado || "Activo"}/>
                     <button style={{...B("#f1f5f9","#475569"),padding:"7px 12px",fontSize:11}} onClick={()=>editarCliente(c)}>Editar</button>
+                    <button
+                      style={{...B("#fff7ed","#b45309"),padding:"7px 12px",fontSize:11}}
+                      onClick={()=>unificarCliente(c)}
+                      title="Pasar sus obras y documentos a otro cliente y borrar esta ficha"
+                    >
+                      Unificar
+                    </button>
+                    <button
+                      style={{...B("#fef2f2","#b91c1c"),padding:"7px 12px",fontSize:11}}
+                      onClick={()=>eliminarCliente(c)}
+                      title="Eliminar la ficha"
+                    >
+                      Eliminar
+                    </button>
                   </div>
                 </div>
 

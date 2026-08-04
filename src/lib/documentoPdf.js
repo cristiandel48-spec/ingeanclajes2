@@ -70,21 +70,33 @@ function limitesSeguros(raiz) {
     limites.add(Math.round(caja.bottom - arriba));
   };
 
-  // Se baja por el arbol MIENTRAS el bloque no quepa en una hoja.
+  // Por debajo de esto una pieza no se parte por dentro: una fila de tabla, un
+  // titulo, un pie de foto. Son las unidades minimas del documento.
+  const ATOMICO = 140;
+
+  // Se baja por el arbol hasta llegar a esas unidades minimas.
   //
-  // Antes se bajaba un solo nivel, y las fotos estan dos mas abajo: van en una
-  // rejilla de dos columnas y cada foto es un recuadro dentro de esa rejilla.
-  // Se registraba el final de la rejilla entera, asi que con seis o mas fotos
-  // no habia ningun corte valido dentro y el documento se partia a la fuerza
-  // por la mitad de una foto.
+  // Antes solo se bajaba dentro de un bloque si el bloque NO cabia en una hoja
+  // entera. Sonaba prudente y salia caro: la tabla de una actividad mide unos
+  // 500 px, cabe de sobra en una hoja, asi que se trataba como indivisible; si
+  // en la pagina en curso quedaban 366 px libres, se iba entera a la siguiente
+  // y dejaba ese hueco en blanco. Las hojas salian llenas al 60% y la firma
+  // terminaba sola en la ultima.
   //
-  // El descenso se frena solo: en cuanto una pieza cabe en la hoja, deja de
-  // ser necesario mirar dentro. Un bloque que cabe se mantiene entero aunque
-  // deje hueco al pie; un titulo huerfano se ve peor que un espacio en blanco.
+  // Partir una tabla entre dos filas es normal y se lee bien. Lo que no se debe
+  // partir es una foto de su pie, y de eso se encarga la regla de abajo.
   const descender = (elemento, profundidad = 0) => {
     registrar(elemento);
-    if (profundidad >= 6) return;
-    if (elemento.getBoundingClientRect().height <= ALTO_UTIL) return;
+    if (profundidad >= 8) return;
+
+    const alto = elemento.getBoundingClientRect().height;
+    if (alto <= ATOMICO) return;
+
+    // Un recuadro con UNA sola foto es una unidad: la imagen y su comentario
+    // van juntos o no van. La rejilla que los contiene lleva varias, asi que
+    // esta regla no la frena y se sigue pudiendo cortar entre foto y foto.
+    if (elemento.querySelectorAll("img").length === 1 && alto <= ALTO_UTIL) return;
+
     [...elemento.children].forEach((hijo) => descender(hijo, profundidad + 1));
   };
 

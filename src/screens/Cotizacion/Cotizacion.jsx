@@ -15,7 +15,7 @@ import { B, CD, SI, ST } from "../../styles/tokens";
 import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_INCLUYE_PUNTOS_ANCLAJE, DEFAULT_COT_TIEMPO_EJEC, ITEMS_DB } from "../../data/seed";
 import { buildQuoteProposal, createQuoteProposalId, getQuoteActiveProposal, getQuoteApprovalAccountingSnapshot, getQuoteProposalLabel, getQuoteProposals, hasAnchorPointsService, normalizeProposalItems, normalizeQuoteItems } from "../../lib/cotizaciones";
 import { scrollAppToTop, today } from "../../lib/format";
-import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarFrase, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
+import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarMayusculas, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
 import { normalizeEntityKey, openCotizacionPrint } from "../../lib/cotizacionPrint";
 import { getFirmaImg } from "../../lib/firmaEmpresa";
 import { asuntoAprobacion, mensajeAprobacion } from "../../lib/correoAprobacion";
@@ -238,7 +238,7 @@ export default function Cotizacion({ctx}){
     });
     const activa = propuestasFinales.find((x)=>x.id===propuestaActivaId) || propuestasFinales[0];
     const prev = editCot ? cotizaciones.find((cotizacion)=>cotizacion.id===editCot) : null;
-    const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:normalizarRazonSocial(cl.nombre),nit:cl.nit,contacto:cl.contacto,contactoEmail:cl.contactoEmail,obra:cl.obra,telefono:cl.telefono,ciudad:cl.ciudad,coords:cl.coords,textoInicial:textoInicial.trim(),observaciones:observacionesCot.trim(),textosDocumento,items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:activa.mapImg || null,geoMediciones:activa.geoMediciones || [],geoMapView:activa.geoMapView || null,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,incluyeTexto:activa.incluyeTexto || "",propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
+    const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:normalizarRazonSocial(cl.nombre),nit:cl.nit,contacto:cl.contacto,contactoEmail:cl.contactoEmail,obra:normalizarMayusculas(cl.obra),telefono:cl.telefono,ciudad:normalizarMayusculas(cl.ciudad),coords:cl.coords,textoInicial:textoInicial.trim(),observaciones:observacionesCot.trim(),textosDocumento,items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:activa.mapImg || null,geoMediciones:activa.geoMediciones || [],geoMapView:activa.geoMapView || null,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,incluyeTexto:activa.incluyeTexto || "",propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
     setCotizaciones((prevList)=>editCot ? prevList.map((cotizacion)=>cotizacion.id===editCot?{...cotizacion,...data}:cotizacion) : [...prevList,data]);
     setPropuestas(propuestasFinales);
     setEditCot(data.id);
@@ -485,8 +485,8 @@ export default function Cotizacion({ctx}){
                         <div style={{fontSize:10,color:"#94a3b8",marginTop:3}}>{cotizacion.id}</div>
                       </td>
                       <td style={{padding:"11px 12px",borderBottom:"1px solid #e2e8f0",verticalAlign:"top"}}>
-                        <div style={{fontWeight:700,color:"#0f172a",fontSize:11}}>{cotizacion.cliente}</div>
-                        {cotizacion.ciudad ? <div style={{fontSize:10,color:"#64748b",marginTop:3}}>{cotizacion.ciudad}</div> : null}
+                        <div style={{fontWeight:700,color:"#0f172a",fontSize:11}}>{normalizarRazonSocial(cotizacion.cliente)}</div>
+                        {cotizacion.ciudad ? <div style={{fontSize:10,color:"#64748b",marginTop:3}}>{normalizarMayusculas(cotizacion.ciudad)}</div> : null}
                       </td>
                       <td style={{padding:"11px 12px",borderBottom:"1px solid #e2e8f0",verticalAlign:"top"}}>
                         <Badge estado={cotizacion.estado}/>
@@ -598,11 +598,11 @@ export default function Cotizacion({ctx}){
             inputMode="email" autoCapitalize="off" spellCheck={false}
             ayuda="A esta dirección se envía la cotización."/>
           <CampoTexto label="Obra" valor={cl.obra} onChange={v=>setCl({...cl,obra:v})}
-            normalizar={normalizarFrase}/>
+            normalizar={normalizarMayusculas} autoCapitalize="characters"/>
           <CampoTexto label="Teléfono" valor={cl.telefono} onChange={v=>setCl({...cl,telefono:v})}
             normalizar={normalizarTelefono} revisar={avisoCelular} inputMode="tel" spellCheck={false}/>
           <CampoTexto label="Ciudad" valor={cl.ciudad} onChange={v=>setCl({...cl,ciudad:v})}
-            normalizar={normalizarNombrePropio} autoCapitalize="words"/>
+            normalizar={normalizarMayusculas} autoCapitalize="characters"/>
         </div>
       </div>
 

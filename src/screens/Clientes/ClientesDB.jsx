@@ -5,7 +5,7 @@ import LBL from "../../components/ui/LBL";
 import { useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmt } from "../../lib/format";
-import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarFrase, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
+import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarFrase, normalizarMayusculas, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
 export default function ClientesDB({ctx}){
   const {clientes,setClientes,obras,cotizaciones,certs,setObras,setCotizaciones,setCerts}=ctx;
   const clienteBase={nombre:"",nit:"",telefono:"",ciudad:"",direccion:"",contacto:"",email:"",estado:"Activo",notas:""};
@@ -106,8 +106,8 @@ export default function ClientesDB({ctx}){
       nombre:normalizarRazonSocial(form.nombre),
       nit:normalizarDocumento(form.nit),
       telefono:normalizarTelefono(form.telefono),
-      ciudad:normalizarNombrePropio(form.ciudad),
-      direccion:normalizarFrase(form.direccion),
+      ciudad:normalizarMayusculas(form.ciudad),
+      direccion:normalizarMayusculas(form.direccion),
       contacto:normalizarNombrePropio(form.contacto),
       email:normalizarCorreo(form.email),
       estado:form.estado.trim() || "Activo",
@@ -195,7 +195,7 @@ export default function ClientesDB({ctx}){
             <CampoTexto label="Teléfono" valor={form.telefono} onChange={v=>setForm({...form,telefono:v})}
               normalizar={normalizarTelefono} revisar={avisoCelular} placeholder="3001234567" inputMode="tel" spellCheck={false}/>
             <CampoTexto label="Ciudad" valor={form.ciudad} onChange={v=>setForm({...form,ciudad:v})}
-              normalizar={normalizarNombrePropio} placeholder="Medellín, Antioquia" autoCapitalize="words"/>
+              normalizar={normalizarMayusculas} placeholder="Medellín, Antioquia" autoCapitalize="characters"/>
             <div>
               <LBL>Estado</LBL>
               <select value={form.estado} onChange={e=>setForm({...form,estado:e.target.value})} style={SI}>
@@ -205,7 +205,7 @@ export default function ClientesDB({ctx}){
               </select>
             </div>
             <CampoTexto label="Dirección" valor={form.direccion} onChange={v=>setForm({...form,direccion:v})}
-              normalizar={normalizarFrase} placeholder="Dirección principal" wrapStyle={{gridColumn:"span 2"}}/>
+              normalizar={normalizarMayusculas} placeholder="Dirección principal" autoCapitalize="characters" wrapStyle={{gridColumn:"span 2"}}/>
             <CampoTexto label="Email" valor={form.email} onChange={v=>setForm({...form,email:v})}
               normalizar={normalizarCorreo} revisar={avisoCorreo} placeholder="correo@cliente.com"
               inputMode="email" autoCapitalize="off" spellCheck={false}

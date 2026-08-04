@@ -89,16 +89,22 @@ export function normalizarCodigo(valor) {
 }
 
 /**
- * Razon social de la empresa cliente, siempre en mayuscula:
- * "Proco Inc" -> "PROCO INC".
+ * Todo en mayuscula, sin espacios de sobra: "Proco Inc" -> "PROCO INC".
  *
- * Se salta a proposito la regla de nombre propio: en la portada de la
- * cotizacion el nombre del cliente va en mayuscula, que es como se venia
- * escribiendo a mano en los documentos de la empresa.
+ * Se salta a proposito la regla de nombre propio. Es como se vienen
+ * escribiendo a mano los datos de identificacion en los documentos de la
+ * empresa: el cliente, el proyecto, la ciudad y la direccion de la obra, que
+ * despues viajan tal cual a la cotizacion, al informe y al certificado.
+ *
+ * NO se aplica a los textos largos -descripcion del avance, observaciones,
+ * recomendaciones-: un parrafo entero en mayuscula no hay quien lo lea.
  */
-export function normalizarRazonSocial(valor) {
+export function normalizarMayusculas(valor) {
   return limpiarEspacios(valor).toUpperCase();
 }
+
+/** Nombre de la empresa cliente. Mismo criterio, nombre propio del caso. */
+export const normalizarRazonSocial = normalizarMayusculas;
 
 // ── Avisos ────────────────────────────────────────────────────────────────
 // Revisiones simples sobre datos que despues dan problemas: un correo mal

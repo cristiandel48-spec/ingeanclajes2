@@ -10,7 +10,7 @@ import { fmt, fmtD, today } from "../../lib/format";
 import { getQuoteApprovalAccountingSnapshot } from "../../lib/cotizaciones";
 import { resumenBitacora } from "../../lib/bitacoraObra";
 import { puedeVerDinero } from "../../lib/permisos";
-import { avisoCelular, normalizarFrase, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
+import { avisoCelular, normalizarMayusculas, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
 
 // Siguiente consecutivo de obra. Se calcula sobre el numero mas alto que ya
 // existe, no sobre cuantas obras hay: al borrar una obra intermedia, contar
@@ -47,7 +47,7 @@ export default function Obras({ctx}){
       return;
     }
     const clienteLimpio=normalizarRazonSocial(nob.cliente);
-    const yaExiste=obras.find((o)=>normalizarRazonSocial(o.cliente)===clienteLimpio && normalizarFrase(o.proyecto)===normalizarFrase(nob.proyecto));
+    const yaExiste=obras.find((o)=>normalizarRazonSocial(o.cliente)===clienteLimpio && normalizarMayusculas(o.proyecto)===normalizarMayusculas(nob.proyecto));
     if(yaExiste && !window.confirm(`Ya hay una obra de ${clienteLimpio} con ese mismo proyecto (${yaExiste.id}).\n\n¿Aun así quieres crear otra?`)) return;
     const id=siguienteIdObra(obras);
     const cotizacionVinculada = nob.cotizacionId ? cotizaciones.find((cotizacion)=>cotizacion.id===nob.cotizacionId) : null;
@@ -61,9 +61,9 @@ export default function Obras({ctx}){
       // Igual que en el empleado: quien pega y guarda de una no dispara el
       // arreglo del campo, y estos textos salen impresos.
       cliente:normalizarRazonSocial(nob.cliente),
-      proyecto:normalizarFrase(nob.proyecto),
-      ciudad:normalizarNombrePropio(nob.ciudad),
-      direccion:normalizarFrase(nob.direccion),
+      proyecto:normalizarMayusculas(nob.proyecto),
+      ciudad:normalizarMayusculas(nob.ciudad),
+      direccion:normalizarMayusculas(nob.direccion),
       tel:normalizarTelefono(nob.tel),
       id,
       nit:"",
@@ -131,11 +131,11 @@ export default function Obras({ctx}){
             <CampoTexto label="Teléfono" valor={nob.tel} onChange={v=>setNob({...nob,tel:v})}
               normalizar={normalizarTelefono} revisar={avisoCelular} placeholder="3001234567" inputMode="tel" spellCheck={false}/>
             <CampoTexto label="Proyecto / Descripción" valor={nob.proyecto} onChange={v=>setNob({...nob,proyecto:v})}
-              normalizar={normalizarFrase} placeholder="Ej: Líneas de vida cubierta"/>
+              normalizar={normalizarMayusculas} placeholder="Ej: Líneas de vida cubierta" autoCapitalize="characters"/>
             <CampoTexto label="Ciudad" valor={nob.ciudad} onChange={v=>setNob({...nob,ciudad:v})}
-              normalizar={normalizarNombrePropio} placeholder="Ej: Medellín, Antioquia" autoCapitalize="words"/>
+              normalizar={normalizarMayusculas} placeholder="Ej: Medellín, Antioquia" autoCapitalize="characters"/>
             <CampoTexto label="Dirección" valor={nob.direccion} onChange={v=>setNob({...nob,direccion:v})}
-              normalizar={normalizarFrase} placeholder="Dirección de la obra"/>
+              normalizar={normalizarMayusculas} placeholder="Dirección de la obra" autoCapitalize="characters"/>
             {/* Aqui no se pregunta por plata. Quien registra la obra es quien
                 organiza el trabajo -personal, turnos, fotos, avances- y las
                 cifras son confidenciales. La obra nace en ceros; el valor entra

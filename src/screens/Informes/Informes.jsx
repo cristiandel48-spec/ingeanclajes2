@@ -10,7 +10,7 @@ import { printCurrentPz } from "../../lib/print";
 import { descargarDocumentoPdf } from "../../lib/documentoPdf";
 import { bitacoraAActividades, normalizarBitacora, registrosDelPeriodo } from "../../lib/bitacoraObra";
 import { leerImagenComprimida } from "../../lib/imagenes";
-import { normalizarFrase, normalizarNombrePropio } from "../../lib/normalizarEntrada";
+import { normalizarFrase, normalizarMayusculas, normalizarNombrePropio } from "../../lib/normalizarEntrada";
 export default function Informes({ctx}){
   const {informes,setInformes,obras,empleados,horarios,intencion,limpiarIntencion,empresaConfig,irAPantalla}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
@@ -341,8 +341,8 @@ export default function Informes({ctx}){
                 };
               });
             }} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
-            <div><LBL>Nombre del proyecto</LBL><input value={form.proyecto} onChange={e=>setForm(p=>({...p,proyecto:e.target.value}))} style={SI}/></div>
-            <div><LBL>Localización</LBL><input value={form.localizacion} onChange={e=>setForm(p=>({...p,localizacion:e.target.value}))} style={SI}/></div>
+            <div><LBL>Nombre del proyecto</LBL><input value={form.proyecto} onChange={e=>setForm(p=>({...p,proyecto:e.target.value}))} onBlur={e=>{const v=normalizarMayusculas(e.target.value);if(v!==form.proyecto)setForm(p=>({...p,proyecto:v}));}} autoCapitalize="characters" style={SI}/></div>
+            <div><LBL>Localización</LBL><input value={form.localizacion} onChange={e=>setForm(p=>({...p,localizacion:e.target.value}))} onBlur={e=>{const v=normalizarMayusculas(e.target.value);if(v!==form.localizacion)setForm(p=>({...p,localizacion:v}));}} autoCapitalize="characters" style={SI}/></div>
             <div><LBL>Fecha del informe</LBL><input type="date" value={form.fechaInforme} onChange={e=>setForm(p=>({...p,fechaInforme:e.target.value}))} style={SI}/></div>
             <div><LBL>Período desde</LBL><input type="date" value={form.periodoInicio} onChange={e=>setForm(p=>({...p,periodoInicio:e.target.value}))} style={SI}/></div>
             <div><LBL>Período hasta</LBL><input type="date" value={form.periodoFin} onChange={e=>setForm(p=>({...p,periodoFin:e.target.value}))} style={SI}/></div>
@@ -504,7 +504,9 @@ export default function Informes({ctx}){
             <div style={{textAlign:"center",fontSize:10,fontWeight:700,letterSpacing:2,padding:"6px 0",borderBottom:"1px solid #ddd",color:"#333",textTransform:"uppercase",marginBottom:16,marginTop:8}}>Informe de Actividades</div>
             <table style={{width:"100%",borderCollapse:"collapse",marginBottom:14}}>
               <tbody>
-                {[["PROYECTO",sel.proyecto],["LOCALIZACIÓN",sel.localizacion],["FECHA INFORME",fmtL(sel.fechaInforme)],["PERÍODO DE INFORME",(fmtL(sel.periodoInicio)) + " - " + (fmtL(sel.periodoFin))]].map(([k,v])=>(
+                {/* Se acomodan también al imprimir: los informes guardados
+                    antes de esto tienen el proyecto en minúscula. */}
+                {[["PROYECTO",normalizarMayusculas(sel.proyecto)],["LOCALIZACIÓN",normalizarMayusculas(sel.localizacion)],["FECHA INFORME",fmtL(sel.fechaInforme)],["PERÍODO DE INFORME",(fmtL(sel.periodoInicio)) + " - " + (fmtL(sel.periodoFin))]].map(([k,v])=>(
                   <tr key={k}><td style={{border:"1px solid #ccc",padding:"5px 10px",background:"#f0f0f0",fontWeight:700,width:"30%"}}>{k}</td><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{v}</td></tr>
                 ))}
               </tbody>

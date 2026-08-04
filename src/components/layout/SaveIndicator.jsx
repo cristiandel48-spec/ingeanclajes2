@@ -8,6 +8,7 @@ export default function SaveIndicator({ theme, compact = false }) {
   // El motivo real del fallo: sin esto habia que abrir la consola del
   // navegador para saber por que no guardaba.
   const motivo = String(saveError?.message || saveError || "").trim();
+  const motivoCarga = String(loadError?.message || loadError || "").trim();
 
   const hora = lastSavedAt
     ? lastSavedAt.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })
@@ -22,6 +23,9 @@ export default function SaveIndicator({ theme, compact = false }) {
       texto: "Sin conexión — recarga la página",
       detalle: "No se pudieron cargar los datos. Lo que ves no es información real y no se está guardando.",
       accion: () => window.location.reload(),
+      // Sin esto el aviso decia «sin conexion» y nada mas, y habia que abrir la
+      // consola del navegador para saber si fue el token, la red o la base.
+      motivo: motivoCarga,
     };
   } else if (saveState === "error") {
     estado = {
@@ -60,7 +64,10 @@ export default function SaveIndicator({ theme, compact = false }) {
         <Boton estado={estado} colores={colores} esError={esError} compact={compact} />
         <div style={{
           fontSize: 10.5, color: colores.fg, maxWidth: 320, textAlign: "right",
-          lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis",
+          lineHeight: 1.35, overflow: "hidden",
+          // Hasta tres renglones: en una sola linea los mensajes largos se
+          // cortaban justo donde estaba el dato que hacia falta.
+          display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical",
         }}>
           {estado.motivo}
         </div>

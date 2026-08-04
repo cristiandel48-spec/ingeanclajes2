@@ -87,6 +87,22 @@ export default function Informes({ctx}){
     return [...vinculados, ...agregadas];
   };
 
+  // Escala tipografica del documento impreso, en pixeles a 96 ppp (1 pt = 1,33
+  // px). Estaba plana entre 10 y 11 px, con el detalle de que el TITULO del
+  // informe era mas pequeño que el texto del cuerpo y se sostenia solo por las
+  // mayusculas. Ahora cada nivel pesa distinto, que es lo que deja leer un
+  // formulario sin tener que leerlo entero.
+  const T = {
+    titulo: 19,      // ~14 pt · el elemento dominante de la hoja
+    seccion: 13,     // ~10 pt · "REGISTRO FOTOGRÁFICO"
+    cuerpo: 13,      // ~10 pt · valores y parrafos
+    etiqueta: 11,    // ~8 pt  · rotulos de tabla (PROYECTO, FECHA...)
+    pie: 11,         // ~8 pt  · comentarios de foto
+  };
+  // Gris para los rotulos: separa "que campo es" de "que dice el campo" sin
+  // depender solo de la negrita y el fondo gris.
+  const GRIS_ROTULO = "#555";
+
   const firstObraId = obras[0]?.id || "";
 
   // El informe no se escribe desde cero: la persona que estuvo en la obra ya
@@ -558,15 +574,15 @@ export default function Informes({ctx}){
             </button>
             <button style={B("#f1f5f9","#475569")} onClick={()=>printCurrentPz("Informe " + (sel?.id || ""))}>Imprimir</button>
           </div>
-          <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:11,lineHeight:1.6,border:"1px solid #ddd",padding:"28px 36px"}}>
+          <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:T.cuerpo,lineHeight:1.55,border:"1px solid #ddd",padding:"28px 36px"}}>
             <PrintHeader dual={false}/>
-            <div style={{textAlign:"center",fontSize:10,fontWeight:700,letterSpacing:2,padding:"6px 0",borderBottom:"1px solid #ddd",color:"#333",textTransform:"uppercase",marginBottom:16,marginTop:8}}>Informe de Actividades</div>
-            <table style={{width:"100%",borderCollapse:"collapse",marginBottom:14}}>
+            <div style={{textAlign:"center",fontSize:T.titulo,fontWeight:700,letterSpacing:1.5,padding:"2px 0 10px",borderBottom:"2px solid #333",color:"#111",textTransform:"uppercase",marginBottom:22,marginTop:14}}>Informe de Actividades</div>
+            <table style={{width:"100%",borderCollapse:"collapse",marginBottom:20}}>
               <tbody>
                 {/* Se acomodan también al imprimir: los informes guardados
                     antes de esto tienen el proyecto en minúscula. */}
                 {[["PROYECTO",normalizarMayusculas(sel.proyecto)],["LOCALIZACIÓN",normalizarMayusculas(sel.localizacion)],["FECHA INFORME",fmtL(sel.fechaInforme)],["PERÍODO DE INFORME",(fmtL(sel.periodoInicio)) + " - " + (fmtL(sel.periodoFin))]].map(([k,v])=>(
-                  <tr key={k}><td style={{border:"1px solid #ccc",padding:"5px 10px",background:"#f0f0f0",fontWeight:700,width:"30%"}}>{k}</td><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{v}</td></tr>
+                  <tr key={k}><td style={{border:"1px solid #ccc",padding:"6px 10px",background:"#f0f0f0",fontWeight:700,width:"30%",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>{k}</td><td style={{border:"1px solid #ccc",padding:"6px 10px"}}>{v}</td></tr>
                 ))}
               </tbody>
             </table>
@@ -576,36 +592,41 @@ export default function Informes({ctx}){
                     pero NO se imprimen: en el documento que se le entrega al
                     cliente ocupaban media tabla para mostrar casi siempre un
                     guion. */}
-                <tr style={{background:"#ddd"}}><td colSpan={2} style={{border:"1px solid #ccc",padding:"6px 10px",fontWeight:700,textAlign:"center"}}>PERSONAL EN OBRA</td></tr>
+                <tr style={{background:"#ddd"}}><td colSpan={2} style={{border:"1px solid #ccc",padding:"7px 10px",fontWeight:700,textAlign:"center",fontSize:T.seccion,letterSpacing:".04em"}}>PERSONAL EN OBRA</td></tr>
                 <tr style={{background:"#f5f5f5"}}>
-                  <th style={{border:"1px solid #ccc",padding:"5px 10px",textAlign:"left",width:"35%"}}>CARGO</th>
-                  <th style={{border:"1px solid #ccc",padding:"5px 10px",textAlign:"left"}}>NOMBRE</th>
+                  <th style={{border:"1px solid #ccc",padding:"6px 10px",textAlign:"left",width:"35%",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>CARGO</th>
+                  <th style={{border:"1px solid #ccc",padding:"6px 10px",textAlign:"left",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>NOMBRE</th>
                 </tr>
               </thead>
-              <tbody>{(sel.personal||[]).map((p,i)=><tr key={i}><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{p.cargo}</td><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{p.nombre}</td></tr>)}</tbody>
+              <tbody>{(sel.personal||[]).map((p,i)=><tr key={i}><td style={{border:"1px solid #ccc",padding:"6px 10px"}}>{p.cargo}</td><td style={{border:"1px solid #ccc",padding:"6px 10px"}}>{p.nombre}</td></tr>)}</tbody>
             </table>
             {/* Múltiples actividades */}
             {(sel.actividades||[{titulo:sel.actividad,descripcion:sel.descripcion,observaciones:sel.observaciones,fotos:sel.fotos||[]}]).map((act,ai)=>(
-              <div key={ai}>
-                <table style={{width:"100%",borderCollapse:"collapse",marginBottom:14}}>
+              <div key={ai} style={{marginBottom:22}}>
+                <table style={{width:"100%",borderCollapse:"collapse",marginBottom:12}}>
                   <tbody>
-                    <tr><td colSpan={2} style={{border:"1px solid #ccc",padding:"6px 10px",background:"#ddd",fontWeight:700,textAlign:"center"}}>{act.titulo||act}</td></tr>
-                    {act.fecha&&<tr><td style={{border:"1px solid #ccc",padding:"5px 10px",fontWeight:700,width:"20%"}}>FECHA</td><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{fmtL(act.fecha)}</td></tr>}
+                    <tr><td colSpan={2} style={{border:"1px solid #ccc",padding:"7px 10px",background:"#ddd",fontWeight:700,textAlign:"center",fontSize:T.seccion,letterSpacing:".04em"}}>{act.titulo||act}</td></tr>
+                    {act.fecha&&<tr><td style={{border:"1px solid #ccc",padding:"6px 10px",fontWeight:700,width:"20%",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>FECHA</td><td style={{border:"1px solid #ccc",padding:"6px 10px"}}>{fmtL(act.fecha)}</td></tr>}
                     {/* whiteSpace pre-line: en HTML los saltos de linea se
                         aplastan a un espacio, y el texto escrito en dos bloques
                         se imprimia como un parrafo corrido. */}
-                    <tr><td style={{border:"1px solid #ccc",padding:"5px 10px",fontWeight:700,width:"20%",verticalAlign:"top"}}>DESCRIPCIÓN</td><td style={{border:"1px solid #ccc",padding:"5px 10px",textAlign:"justify",whiteSpace:"pre-line"}}>{act.descripcion}</td></tr>
-                    <tr><td style={{border:"1px solid #ccc",padding:"5px 10px",fontWeight:700}}>Observaciones</td><td style={{border:"1px solid #ccc",padding:"5px 10px"}}>{act.observaciones}</td></tr>
+                    <tr><td style={{border:"1px solid #ccc",padding:"6px 10px",fontWeight:700,width:"20%",verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>DESCRIPCIÓN</td><td style={{border:"1px solid #ccc",padding:"8px 10px",textAlign:"justify",whiteSpace:"pre-line",lineHeight:1.6}}>{act.descripcion}</td></tr>
+                    <tr><td style={{border:"1px solid #ccc",padding:"6px 10px",fontWeight:700,verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>OBSERVACIONES</td><td style={{border:"1px solid #ccc",padding:"6px 10px"}}>{act.observaciones}</td></tr>
                   </tbody>
                 </table>
                 {(act.fotos||[]).some(ft=>ft.img||ft.url)&&(
                   <>
-                    <div style={{fontWeight:700,textAlign:"center",background:"#ddd",border:"1px solid #ccc",padding:"6px",marginBottom:10}}>REGISTRO FOTOGRÁFICO - {act.titulo}</div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14,alignItems:"start"}}>
+                    <div style={{fontWeight:700,textAlign:"center",background:"#ddd",border:"1px solid #ccc",padding:"7px 6px",marginBottom:10,fontSize:T.seccion,letterSpacing:".04em"}}>REGISTRO FOTOGRÁFICO · {act.titulo}</div>
+                    {/* Alto FIJO y no maximo: asi las dos fotos de una fila
+                        miden igual, la rejilla queda pareja y -sobre todo- el
+                        corte de pagina cae siempre en el mismo sitio. Con alto
+                        variable cada fila terminaba a una altura distinta y era
+                        mas facil que una foto quedara partida entre hojas. */}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12,alignItems:"start"}}>
                       {(act.fotos||[]).filter(ft=>ft.img||ft.url).map((ft,i)=>(
                         <div key={i} style={{border:"1px solid #ccc",borderRadius:4,overflow:"hidden",background:"#fff",padding:8}}>
-                          <img src={ft.img||ft.url} alt={"foto" + (i+1)} style={{width:"100%",height:"auto",maxHeight:260,objectFit:"contain",display:"block",background:"#fff"}} onError={e=>{e.target.style.display="none";}}/>
-                          {ft.comentario&&<div style={{padding:"6px 8px",fontSize:10,color:"#555",borderTop:"1px solid #eee",marginTop:6}}>{ft.comentario}</div>}
+                          <img src={ft.img||ft.url} alt={"foto" + (i+1)} style={{width:"100%",height:250,objectFit:"contain",display:"block",background:"#fff"}} onError={e=>{e.target.style.display="none";}}/>
+                          {ft.comentario&&<div style={{padding:"6px 2px 0",fontSize:T.pie,color:GRIS_ROTULO,borderTop:"1px solid #eee",marginTop:6,lineHeight:1.45}}>{ft.comentario}</div>}
                         </div>
                       ))}
                     </div>
@@ -613,19 +634,19 @@ export default function Informes({ctx}){
                 )}
               </div>
             ))}
-            <table style={{width:"100%",borderCollapse:"collapse",marginBottom:20}}>
-              <tbody><tr><td style={{border:"1px solid #ccc",padding:"5px 10px",fontWeight:700,width:"20%",verticalAlign:"top"}}>RECOMENDACIONES</td><td style={{border:"1px solid #ccc",padding:"5px 10px",textAlign:"justify",whiteSpace:"pre-line"}}>{sel.recomendaciones}</td></tr></tbody>
+            <table style={{width:"100%",borderCollapse:"collapse",marginBottom:26}}>
+              <tbody><tr><td style={{border:"1px solid #ccc",padding:"6px 10px",fontWeight:700,width:"20%",verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>RECOMENDACIONES</td><td style={{border:"1px solid #ccc",padding:"8px 10px",textAlign:"justify",whiteSpace:"pre-line",lineHeight:1.6}}>{sel.recomendaciones}</td></tr></tbody>
             </table>
-            <div style={{marginTop:24}}>
-              <div style={{marginBottom:12,fontSize:12}}>Cordialmente,</div>
+            <div style={{marginTop:30}}>
+              <div style={{marginBottom:12,fontSize:T.cuerpo}}>Cordialmente,</div>
               <div style={{height:72,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
                 {firmaImg && <img src={firmaImg} alt="" style={{maxHeight:70,maxWidth:230,objectFit:"contain"}}/>}
               </div>
               <div style={{textAlign:"center"}}>
-                <div style={{display:"inline-block",borderTop:"1px solid #333",paddingTop:8,minWidth:200}}>
-                  <div style={{fontWeight:700}}>ING. JHON JAIME SEPULVEDA LONDOÑO</div>
-                  <div style={{fontSize:10}}>Cl 38 sur # 36-48, Envigado · PBX 448 26 86 · Cel. 314 863 40 72</div>
-                  <div style={{fontSize:10}}>Nit. 900193965-4 · ingeanclajes.sas@gmail.com</div>
+                <div style={{display:"inline-block",borderTop:"1px solid #333",paddingTop:8,minWidth:240}}>
+                  <div style={{fontWeight:700,fontSize:T.cuerpo,letterSpacing:".02em"}}>ING. JHON JAIME SEPULVEDA LONDOÑO</div>
+                  <div style={{fontSize:T.pie,color:GRIS_ROTULO,marginTop:3}}>Cl 38 sur # 36-48, Envigado · PBX 448 26 86 · Cel. 314 863 40 72</div>
+                  <div style={{fontSize:T.pie,color:GRIS_ROTULO}}>Nit. 900193965-4 · ingeanclajes.sas@gmail.com</div>
                 </div>
               </div>
             </div>

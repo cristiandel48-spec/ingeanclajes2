@@ -14,12 +14,25 @@
 // ciegas parte una foto o una fila de tabla por la mitad, que se ve peor que
 // el problema que veniamos a resolver.
 
-// Carta a 96 ppp, con los mismos margenes que la impresion normal (12mm).
+// El documento se DIBUJA en pixeles -es como mide el navegador, a 96 por
+// pulgada- pero el PDF se DECLARA en puntos, que es la unidad del papel: 72 por
+// pulgada. Sin esa conversion la hoja salia de 15,1 x 19,6 pulgadas en vez de
+// carta, la impresora la encogia al 56% para que cupiera, y el texto llegaba al
+// papel a unos 4,6 pt: ilegible. De ahi venia lo de "la letra sale
+// desproporcionada".
+const PX_A_PT = 72 / 96;
+
+// Carta a 96 ppp: 8,5 x 11 pulgadas.
 const ANCHO_HOJA = 816;
 const ALTO_HOJA = 1056;
-const MARGEN = 45;
+// 18 mm. Los 12 mm de antes quedaban justos para un documento que se archiva
+// perforado, y un margen amplio es lo que mas barato le da aire a una hoja.
+const MARGEN = 68;
 const ANCHO_UTIL = ANCHO_HOJA - MARGEN * 2;
 const ALTO_UTIL = ALTO_HOJA - MARGEN * 2;
+
+// Medidas de la hoja ya en puntos, que es como hay que dárselas a jsPDF.
+const HOJA_PT = [ANCHO_HOJA * PX_A_PT, ALTO_HOJA * PX_A_PT];
 
 const HOJA_ESTILOS = `
   *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
@@ -57,22 +70,39 @@ function limitesSeguros(raiz) {
     limites.add(Math.round(caja.bottom - arriba));
   };
 
-  raiz.querySelectorAll(":scope > *").forEach((bloque) => {
-    registrar(bloque);
+  // Se baja por el arbol MIENTRAS el bloque no quepa en una hoja.
+  //
+  // Antes se bajaba un solo nivel, y las fotos estan dos mas abajo: van en una
+  // rejilla de dos columnas y cada foto es un recuadro dentro de esa rejilla.
+  // Se registraba el final de la rejilla entera, asi que con seis o mas fotos
+  // no habia ningun corte valido dentro y el documento se partia a la fuerza
+  // por la mitad de una foto.
+  //
+  // El descenso se frena solo: en cuanto una pieza cabe en la hoja, deja de
+  // ser necesario mirar dentro. Un bloque que cabe se mantiene entero aunque
+  // deje hueco al pie; un titulo huerfano se ve peor que un espacio en blanco.
+  const descender = (elemento, profundidad = 0) => {
+    registrar(elemento);
+    if (profundidad >= 6) return;
+    if (elemento.getBoundingClientRect().height <= ALTO_UTIL) return;
+    [...elemento.children].forEach((hijo) => descender(hijo, profundidad + 1));
+  };
 
-    // Por dentro solo se corta si el bloque NO cabe entero en una hoja.
-    //
-    // Cortando siempre que se pudiera, el recuadro de recomendaciones quedaba
-    // partido: el titulo y su frase de entrada al final de una pagina, y la
-    // lista al principio de la siguiente. Un bloque que cabe se mantiene
-    // entero aunque eso deje hueco al pie; un titulo huerfano se ve peor que
-    // un espacio en blanco.
-    if (bloque.getBoundingClientRect().height > ALTO_UTIL) {
-      bloque.querySelectorAll("tr, :scope > div").forEach(registrar);
-    }
-  });
+  raiz.querySelectorAll(":scope > *").forEach((bloque) => descender(bloque));
 
-  return [...limites].sort((a, b) => a - b);
+  // Dos fotos lado a lado terminan a alturas parecidas pero no iguales. Si se
+  // corta por la mas baja, la otra se parte igual. Los limites que caen a menos
+  // de 24 px se tratan como uno solo y se conserva el mas bajo del grupo, que
+  // es el que deja pasar la fila completa.
+  const ordenados = [...limites].sort((a, b) => a - b);
+  const agrupados = [];
+  for (const limite of ordenados) {
+    const ultimo = agrupados[agrupados.length - 1];
+    if (agrupados.length && limite - ultimo < 24) agrupados[agrupados.length - 1] = limite;
+    else agrupados.push(limite);
+  }
+
+  return agrupados;
 }
 
 /**
@@ -135,7 +165,7 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
     const escala = lienzo.height / altoTotal;
     const altoPagina = ALTO_UTIL;
 
-    const pdf = new jsPDF({ unit: "px", format: [ANCHO_HOJA, ALTO_HOJA], orientation: "portrait" });
+    const pdf = new jsPDF({ unit: "pt", format: HOJA_PT, orientation: "portrait" });
     const recorte = document.createElement("canvas");
     const pincel = recorte.getContext("2d");
 
@@ -162,13 +192,14 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
       pincel.drawImage(lienzo, 0, Math.round(desde * escala), lienzo.width, altoTrozo,
                        0, 0, lienzo.width, altoTrozo);
 
-      if (!primera) pdf.addPage([ANCHO_HOJA, ALTO_HOJA], "portrait");
+      if (!primera) pdf.addPage(HOJA_PT, "portrait");
       primera = false;
 
       // JPEG y no PNG: con fotos de obra el PNG multiplica el peso por diez.
       pdf.addImage(
         recorte.toDataURL("image/jpeg", 0.92), "JPEG",
-        MARGEN, MARGEN, ANCHO_UTIL, altoTrozo / escala,
+        MARGEN * PX_A_PT, MARGEN * PX_A_PT,
+        ANCHO_UTIL * PX_A_PT, (altoTrozo / escala) * PX_A_PT,
         undefined, "FAST",
       );
 

@@ -96,10 +96,15 @@ export default function Informes({ctx}){
   // sostenia solo por las mayusculas; el primer arreglo se paso al otro lado y
   // dejo la hoja basta. Cada nivel pesa distinto, pero sin gritar.
   const T = {
-    titulo: 16,      // ~12 pt · el elemento dominante de la hoja
-    seccion: 10.5,   // ~8 pt  · "REGISTRO FOTOGRÁFICO", cabecera de tabla
-    cuerpo: 10.5,    // ~8 pt  · valores y parrafos
-    etiqueta: 9,     // ~7 pt  · rotulos de tabla (PROYECTO, FECHA...)
+    titulo: 15,      // ~11 pt · el elemento dominante de la hoja
+    seccion: 10,     // ~7,5 pt · "REGISTRO FOTOGRÁFICO", cabecera de tabla
+    cuerpo: 10,      // ~7,5 pt · valores y parrafos
+    // El rotulo va al MISMO tamaño que el cuerpo, como el `card-label` de la
+    // cotizacion. Hacerlo mas pequeño abria un salto que se veia raro: el
+    // rotulo en letra diminuta al lado de un parrafo grande. Lo que lo
+    // distingue es el gris, las mayusculas y el espaciado entre letras, no el
+    // tamaño.
+    etiqueta: 10,
     pie: 9,          // ~7 pt  · comentarios de foto y datos de la firma
   };
   // El mismo gris de los rotulos de la cotizacion. Separa "que campo es" de
@@ -595,7 +600,7 @@ export default function Informes({ctx}){
                 {/* Se acomodan también al imprimir: los informes guardados
                     antes de esto tienen el proyecto en minúscula. */}
                 {[["PROYECTO",normalizarMayusculas(sel.proyecto)],["LOCALIZACIÓN",normalizarMayusculas(sel.localizacion)],["FECHA INFORME",fmtL(sel.fechaInforme)],["PERÍODO DE INFORME",(fmtL(sel.periodoInicio)) + " - " + (fmtL(sel.periodoFin))]].map(([k,v])=>(
-                  <tr key={k}><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",background:"#f0f0f0",fontWeight:700,width:"30%",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>{k}</td><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px"}}>{v}</td></tr>
+                  <tr key={k}><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",background:"#f0f0f0",fontWeight:700,width:"30%",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".07em"}}>{k}</td><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px"}}>{v}</td></tr>
                 ))}
               </tbody>
             </table>
@@ -607,8 +612,8 @@ export default function Informes({ctx}){
                     guion. */}
                 <tr style={{background:"#ddd"}}><td colSpan={2} style={{border:`1px solid ${BORDE}`,padding:"7px 10px",fontWeight:700,textAlign:"center",fontSize:T.seccion,letterSpacing:".04em"}}>PERSONAL EN OBRA</td></tr>
                 <tr style={{background:"#f5f5f5"}}>
-                  <th style={{border:`1px solid ${BORDE}`,padding:"6px 10px",textAlign:"left",width:"35%",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>CARGO</th>
-                  <th style={{border:`1px solid ${BORDE}`,padding:"6px 10px",textAlign:"left",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>NOMBRE</th>
+                  <th style={{border:`1px solid ${BORDE}`,padding:"6px 10px",textAlign:"left",width:"35%",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".07em"}}>CARGO</th>
+                  <th style={{border:`1px solid ${BORDE}`,padding:"6px 10px",textAlign:"left",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".07em"}}>NOMBRE</th>
                 </tr>
               </thead>
               <tbody>{(sel.personal||[]).map((p,i)=><tr key={i}><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px"}}>{p.cargo}</td><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px"}}>{p.nombre}</td></tr>)}</tbody>
@@ -619,13 +624,13 @@ export default function Informes({ctx}){
                 <table style={{width:"100%",borderCollapse:"collapse",marginBottom:12}}>
                   <tbody>
                     <tr><td colSpan={2} style={{border:`1px solid ${BORDE}`,padding:"7px 10px",background:"#ddd",fontWeight:700,textAlign:"center",fontSize:T.seccion,letterSpacing:".04em"}}>{act.titulo||act}</td></tr>
-                    {act.fecha&&<tr><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",fontWeight:700,width:"20%",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>FECHA</td><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px"}}>{fmtL(act.fecha)}</td></tr>}
+                    {act.fecha&&<tr><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",fontWeight:700,width:"20%",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".07em"}}>FECHA</td><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px"}}>{fmtL(act.fecha)}</td></tr>}
                     {/* whiteSpace pre-line: en HTML los saltos de linea se
                         aplastan a un espacio, y el texto escrito en dos bloques
                         se imprimia como un parrafo corrido. */}
-                    {(act.actividadesRealizadas||"").trim()&&<tr><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",fontWeight:700,width:"20%",verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>ACTIVIDADES REALIZADAS</td><td style={{border:`1px solid ${BORDE}`,padding:"8px 10px",textAlign:"justify",whiteSpace:"pre-line",lineHeight:1.6}}>{act.actividadesRealizadas}</td></tr>}
-                    {(act.descripcion||"").trim()&&<tr><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",fontWeight:700,width:"20%",verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>DESCRIPCIÓN</td><td style={{border:`1px solid ${BORDE}`,padding:"8px 10px",textAlign:"justify",whiteSpace:"pre-line",lineHeight:1.6}}>{act.descripcion}</td></tr>}
-                    <tr><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",fontWeight:700,verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>OBSERVACIONES</td><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px"}}>{act.observaciones}</td></tr>
+                    {(act.actividadesRealizadas||"").trim()&&<tr><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",fontWeight:700,width:"20%",verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".07em"}}>ACTIVIDADES REALIZADAS</td><td style={{border:`1px solid ${BORDE}`,padding:"8px 10px",textAlign:"justify",whiteSpace:"pre-line",lineHeight:1.5}}>{act.actividadesRealizadas}</td></tr>}
+                    {(act.descripcion||"").trim()&&<tr><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",fontWeight:700,width:"20%",verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".07em"}}>DESCRIPCIÓN</td><td style={{border:`1px solid ${BORDE}`,padding:"8px 10px",textAlign:"justify",whiteSpace:"pre-line",lineHeight:1.5}}>{act.descripcion}</td></tr>}
+                    <tr><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",fontWeight:700,verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".07em"}}>OBSERVACIONES</td><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px"}}>{act.observaciones}</td></tr>
                   </tbody>
                 </table>
                 {(act.fotos||[]).some(ft=>ft.img||ft.url)&&(
@@ -649,7 +654,7 @@ export default function Informes({ctx}){
               </div>
             ))}
             <table style={{width:"100%",borderCollapse:"collapse",marginBottom:26}}>
-              <tbody><tr><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",fontWeight:700,width:"20%",verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>RECOMENDACIONES</td><td style={{border:`1px solid ${BORDE}`,padding:"8px 10px",textAlign:"justify",whiteSpace:"pre-line",lineHeight:1.6}}>{sel.recomendaciones}</td></tr></tbody>
+              <tbody><tr><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",fontWeight:700,width:"20%",verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".07em"}}>RECOMENDACIONES</td><td style={{border:`1px solid ${BORDE}`,padding:"8px 10px",textAlign:"justify",whiteSpace:"pre-line",lineHeight:1.5}}>{sel.recomendaciones}</td></tr></tbody>
             </table>
             <div style={{marginTop:30}}>
               <div style={{marginBottom:12,fontSize:T.cuerpo}}>Cordialmente,</div>

@@ -10,7 +10,7 @@ import { fmt, fmtD, today } from "../../lib/format";
 import { getQuoteApprovalAccountingSnapshot } from "../../lib/cotizaciones";
 import { resumenBitacora } from "../../lib/bitacoraObra";
 import { puedeVerDinero } from "../../lib/permisos";
-import { avisoCelular, normalizarFrase, normalizarNombrePropio, normalizarTelefono } from "../../lib/normalizarEntrada";
+import { avisoCelular, normalizarFrase, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
 
 // Siguiente consecutivo de obra. Se calcula sobre el numero mas alto que ya
 // existe, no sobre cuantas obras hay: al borrar una obra intermedia, contar
@@ -46,8 +46,8 @@ export default function Obras({ctx}){
       window.alert("Falta el nombre del cliente. Es lo único obligatorio para crear la obra.");
       return;
     }
-    const clienteLimpio=normalizarNombrePropio(nob.cliente);
-    const yaExiste=obras.find((o)=>normalizarNombrePropio(o.cliente)===clienteLimpio && normalizarFrase(o.proyecto)===normalizarFrase(nob.proyecto));
+    const clienteLimpio=normalizarRazonSocial(nob.cliente);
+    const yaExiste=obras.find((o)=>normalizarRazonSocial(o.cliente)===clienteLimpio && normalizarFrase(o.proyecto)===normalizarFrase(nob.proyecto));
     if(yaExiste && !window.confirm(`Ya hay una obra de ${clienteLimpio} con ese mismo proyecto (${yaExiste.id}).\n\n¿Aun así quieres crear otra?`)) return;
     const id=siguienteIdObra(obras);
     const cotizacionVinculada = nob.cotizacionId ? cotizaciones.find((cotizacion)=>cotizacion.id===nob.cotizacionId) : null;
@@ -60,7 +60,7 @@ export default function Obras({ctx}){
       ...nob,
       // Igual que en el empleado: quien pega y guarda de una no dispara el
       // arreglo del campo, y estos textos salen impresos.
-      cliente:normalizarNombrePropio(nob.cliente),
+      cliente:normalizarRazonSocial(nob.cliente),
       proyecto:normalizarFrase(nob.proyecto),
       ciudad:normalizarNombrePropio(nob.ciudad),
       direccion:normalizarFrase(nob.direccion),
@@ -126,7 +126,7 @@ export default function Obras({ctx}){
           </AvisoFlujo>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
             <CampoTexto label="Cliente" valor={nob.cliente} onChange={v=>setNob({...nob,cliente:v})}
-              normalizar={normalizarNombrePropio} placeholder="Nombre del cliente" autoCapitalize="words"
+              normalizar={normalizarRazonSocial} placeholder="Nombre del cliente" autoCapitalize="characters"
               ayuda="Sale impreso en la cotización y el certificado."/>
             <CampoTexto label="Teléfono" valor={nob.tel} onChange={v=>setNob({...nob,tel:v})}
               normalizar={normalizarTelefono} revisar={avisoCelular} placeholder="3001234567" inputMode="tel" spellCheck={false}/>
@@ -181,7 +181,7 @@ export default function Obras({ctx}){
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
                 <div>
                   <div style={{fontSize:10,color:"#94a3b8"}}>{o.id} · {fmtD(o.fechaInicio)}</div>
-                  <div style={{fontSize:15,fontWeight:700,marginTop:2,color:"#1a1a2e"}}>{o.cliente}</div>
+                  <div style={{fontSize:15,fontWeight:700,marginTop:2,color:"#1a1a2e"}}>{normalizarRazonSocial(o.cliente)}</div>
                   <div style={{fontSize:12,color:"#475569"}}>{o.proyecto}</div>
                   {cotVinc&&<div style={{fontSize:10,color:"#b45309",marginTop:2}}>📄 {o.cotizacionId}</div>}
                 </div>

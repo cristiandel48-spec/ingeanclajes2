@@ -59,9 +59,17 @@ function limitesSeguros(raiz) {
 
   raiz.querySelectorAll(":scope > *").forEach((bloque) => {
     registrar(bloque);
-    // Las tablas y las rejillas de fotos son altas: hay que poder cortar por
-    // dentro, entre fila y fila o entre foto y foto.
-    bloque.querySelectorAll("tr, :scope > div").forEach(registrar);
+
+    // Por dentro solo se corta si el bloque NO cabe entero en una hoja.
+    //
+    // Cortando siempre que se pudiera, el recuadro de recomendaciones quedaba
+    // partido: el titulo y su frase de entrada al final de una pagina, y la
+    // lista al principio de la siguiente. Un bloque que cabe se mantiene
+    // entero aunque eso deje hueco al pie; un titulo huerfano se ve peor que
+    // un espacio en blanco.
+    if (bloque.getBoundingClientRect().height > ALTO_UTIL) {
+      bloque.querySelectorAll("tr, :scope > div").forEach(registrar);
+    }
   });
 
   return [...limites].sort((a, b) => a - b);

@@ -5,7 +5,7 @@ import LBL from "../../components/ui/LBL";
 import { useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmt } from "../../lib/format";
-import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarFrase, normalizarNombrePropio, normalizarTelefono } from "../../lib/normalizarEntrada";
+import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarFrase, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
 export default function ClientesDB({ctx}){
   const {clientes,setClientes,obras,cotizaciones,certs,setObras,setCotizaciones,setCerts}=ctx;
   const clienteBase={nombre:"",nit:"",telefono:"",ciudad:"",direccion:"",contacto:"",email:"",estado:"Activo",notas:""};
@@ -103,7 +103,7 @@ export default function ClientesDB({ctx}){
     // Se acomoda tambien aqui: quien pega el dato y guarda de una no dispara
     // el arreglo del campo, y estos textos salen impresos.
     const payload={
-      nombre:normalizarNombrePropio(form.nombre),
+      nombre:normalizarRazonSocial(form.nombre),
       nit:normalizarDocumento(form.nit),
       telefono:normalizarTelefono(form.telefono),
       ciudad:normalizarNombrePropio(form.ciudad),
@@ -114,7 +114,7 @@ export default function ClientesDB({ctx}){
       notas:normalizarFrase(form.notas),
     };
 
-    const repetido=clientes.find(c=>c.id!==editId && normalizarNombrePropio(c.nombre)===payload.nombre);
+    const repetido=clientes.find(c=>c.id!==editId && normalizarRazonSocial(c.nombre)===payload.nombre);
     if(repetido && !window.confirm(`Ya existe un cliente llamado ${payload.nombre} (${repetido.id}).\n\n¿Aun así quieres crearlo otra vez?`)) return;
 
     if(editId){
@@ -186,7 +186,7 @@ export default function ClientesDB({ctx}){
           <div style={ST}>{editId?"Editar cliente":"Nuevo cliente"}</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
             <CampoTexto label="Nombre / razón social" valor={form.nombre} onChange={v=>setForm({...form,nombre:v})}
-              normalizar={normalizarNombrePropio} placeholder="Nombre del cliente" autoCapitalize="words"
+              normalizar={normalizarRazonSocial} placeholder="Nombre del cliente" autoCapitalize="characters"
               ayuda="Sale impreso en cotizaciones y certificados."/>
             <CampoTexto label="NIT" valor={form.nit} onChange={v=>setForm({...form,nit:v})}
               normalizar={normalizarDocumento} placeholder="900.123.456-7" spellCheck={false}/>
@@ -239,7 +239,7 @@ export default function ClientesDB({ctx}){
               <div key={c.id} style={{background:"#f8fafc",borderRadius:10,padding:"16px 18px",border:"1px solid #e2e8f0"}}>
                 <div style={{display:"flex",justifyContent:"space-between",gap:16,alignItems:"flex-start",marginBottom:10}}>
                   <div>
-                    <div style={{fontSize:15,fontWeight:800,color:"#1a1a2e"}}>{c.nombre}</div>
+                    <div style={{fontSize:15,fontWeight:800,color:"#1a1a2e"}}>{normalizarRazonSocial(c.nombre)}</div>
                     <div style={{fontSize:11,color:"#64748b",marginTop:3}}>
                       {c.nit || "Sin NIT"} · {c.contacto || "Sin contacto"} · {c.telefono || "Sin teléfono"}
                     </div>

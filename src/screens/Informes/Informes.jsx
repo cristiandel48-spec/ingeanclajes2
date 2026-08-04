@@ -11,7 +11,8 @@ import { descargarDocumentoPdf } from "../../lib/documentoPdf";
 import { bitacoraAActividades, normalizarBitacora, registrosDelPeriodo } from "../../lib/bitacoraObra";
 import { leerImagenComprimida } from "../../lib/imagenes";
 import { normalizarFrase, normalizarMayusculas, normalizarNombrePropio, normalizarParrafos } from "../../lib/normalizarEntrada";
-import { DEFAULT_INFORME_DESCRIPCION, DEFAULT_INFORME_RECOMENDACIONES } from "../../data/seed";
+import { DEFAULT_INFORME_ACTIVIDADES, DEFAULT_INFORME_DESCRIPCION, DEFAULT_INFORME_RECOMENDACIONES } from "../../data/seed";
+import { conActividadSeparada } from "../../lib/informeTextos";
 export default function Informes({ctx}){
   const {informes,setInformes,obras,empleados,horarios,intencion,limpiarIntencion,empresaConfig,irAPantalla}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
@@ -25,7 +26,7 @@ export default function Informes({ctx}){
   // todos los informes. Es solo el punto de partida: se edita encima y lo
   // escrito manda. Las actividades que llegan de la bitacora de la obra traen
   // su propia descripcion y no pasan por aqui.
-  const emptyActividad=()=>({titulo:"",descripcion:DEFAULT_INFORME_DESCRIPCION,observaciones:"",fecha:"",fotos:[{img:null,comentario:""},{img:null,comentario:""},{img:null,comentario:""},{img:null,comentario:""}]});
+  const emptyActividad=()=>({titulo:"",actividadesRealizadas:DEFAULT_INFORME_ACTIVIDADES,descripcion:DEFAULT_INFORME_DESCRIPCION,observaciones:"",fecha:"",fotos:[{img:null,comentario:""},{img:null,comentario:""},{img:null,comentario:""},{img:null,comentario:""}]});
   // `agregada` marca las filas que puso la persona a mano en el informe, para
   // conservarlas cuando se resincroniza con la obra. Arranca en modo lista:
   // lo normal es elegir a alguien registrado, no escribirlo.
@@ -95,11 +96,11 @@ export default function Informes({ctx}){
   // sostenia solo por las mayusculas; el primer arreglo se paso al otro lado y
   // dejo la hoja basta. Cada nivel pesa distinto, pero sin gritar.
   const T = {
-    titulo: 17,      // ~13 pt · el elemento dominante de la hoja
-    seccion: 11.5,   // ~9 pt  · "REGISTRO FOTOGRÁFICO", cabecera de tabla
-    cuerpo: 11.5,    // ~9 pt  · valores y parrafos
-    etiqueta: 10,    // ~7,5 pt · rotulos de tabla (PROYECTO, FECHA...)
-    pie: 9.5,        // ~7 pt  · comentarios de foto y datos de la firma
+    titulo: 16,      // ~12 pt · el elemento dominante de la hoja
+    seccion: 10.5,   // ~8 pt  · "REGISTRO FOTOGRÁFICO", cabecera de tabla
+    cuerpo: 10.5,    // ~8 pt  · valores y parrafos
+    etiqueta: 9,     // ~7 pt  · rotulos de tabla (PROYECTO, FECHA...)
+    pie: 9,          // ~7 pt  · comentarios de foto y datos de la firma
   };
   // El mismo gris de los rotulos de la cotizacion. Separa "que campo es" de
   // "que dice el campo" sin depender solo de la negrita y el fondo gris.
@@ -121,7 +122,9 @@ export default function Informes({ctx}){
 
   const normalizeInformeActividades = (data={})=>{
     if(Array.isArray(data.actividades) && data.actividades.length){
-      return data.actividades.map((actividad)=>({
+      // conActividadSeparada acomoda los informes guardados cuando los dos
+      // bloques iban juntos en un solo campo. Los ya separados no se tocan.
+      return data.actividades.map(conActividadSeparada).map((actividad)=>({
         ...emptyActividad(),
         ...actividad,
         fotos:Array.isArray(actividad?.fotos) && actividad.fotos.length
@@ -482,9 +485,14 @@ export default function Informes({ctx}){
                   <div><LBL>Título / nombre de la actividad</LBL><input value={act.titulo} onChange={e=>updActividad(ai,"titulo",e.target.value)} placeholder="Ej: Instalación de líneas de vida" style={SI}/></div>
                   <div><LBL>Fecha de ejecución</LBL><input type="date" value={act.fecha||""} onChange={e=>updActividad(ai,"fecha",e.target.value)} style={SI}/></div>
                 </div>
-                {/* normalizarParrafos y no normalizarFrase: este campo lleva
+                {/* Dos campos y no uno solo con los encabezados dentro: puestos
+                    seguidos en el mismo recuadro se leian como un ladrillo, y
+                    el rotulo de cada bloque ya lo pone la tabla del documento.
+
+                    normalizarParrafos y no normalizarFrase: estos campos llevan
                     varios parrafos y el otro los aplasta en uno solo. */}
-                <div style={{marginBottom:10}}><LBL>Descripción detallada</LBL><textarea value={act.descripcion} onChange={e=>updActividad(ai,"descripcion",e.target.value)} onBlur={e=>{const v=normalizarParrafos(e.target.value);if(v!==act.descripcion)updActividad(ai,"descripcion",v);}} rows={9} placeholder="Descripción del proceso ejecutado..." spellCheck lang="es" style={{...SI,resize:"vertical",lineHeight:1.5}}/></div>
+                <div style={{marginBottom:10}}><LBL>Actividades realizadas</LBL><textarea value={act.actividadesRealizadas||""} onChange={e=>updActividad(ai,"actividadesRealizadas",e.target.value)} onBlur={e=>{const v=normalizarParrafos(e.target.value);if(v!==act.actividadesRealizadas)updActividad(ai,"actividadesRealizadas",v);}} rows={7} placeholder="Qué se ejecutó en campo: inspección, ajustes, limpieza..." spellCheck lang="es" style={{...SI,resize:"vertical",lineHeight:1.5}}/></div>
+                <div style={{marginBottom:10}}><LBL>Descripción</LBL><textarea value={act.descripcion} onChange={e=>updActividad(ai,"descripcion",e.target.value)} onBlur={e=>{const v=normalizarParrafos(e.target.value);if(v!==act.descripcion)updActividad(ai,"descripcion",v);}} rows={6} placeholder="Descripción del proceso ejecutado..." spellCheck lang="es" style={{...SI,resize:"vertical",lineHeight:1.5}}/></div>
                 <div style={{marginBottom:12}}><LBL>Observaciones</LBL><input value={act.observaciones} onChange={e=>updActividad(ai,"observaciones",e.target.value)} onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==act.observaciones)updActividad(ai,"observaciones",v);}} placeholder="Ej: 1 Línea de vida horizontal de 119 metros" spellCheck lang="es" style={SI}/></div>
                 {/* Fotos de esta actividad */}
                 <LBL>Registro fotográfico</LBL>
@@ -615,7 +623,8 @@ export default function Informes({ctx}){
                     {/* whiteSpace pre-line: en HTML los saltos de linea se
                         aplastan a un espacio, y el texto escrito en dos bloques
                         se imprimia como un parrafo corrido. */}
-                    <tr><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",fontWeight:700,width:"20%",verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>DESCRIPCIÓN</td><td style={{border:`1px solid ${BORDE}`,padding:"8px 10px",textAlign:"justify",whiteSpace:"pre-line",lineHeight:1.6}}>{act.descripcion}</td></tr>
+                    {(act.actividadesRealizadas||"").trim()&&<tr><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",fontWeight:700,width:"20%",verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>ACTIVIDADES REALIZADAS</td><td style={{border:`1px solid ${BORDE}`,padding:"8px 10px",textAlign:"justify",whiteSpace:"pre-line",lineHeight:1.6}}>{act.actividadesRealizadas}</td></tr>}
+                    {(act.descripcion||"").trim()&&<tr><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",fontWeight:700,width:"20%",verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>DESCRIPCIÓN</td><td style={{border:`1px solid ${BORDE}`,padding:"8px 10px",textAlign:"justify",whiteSpace:"pre-line",lineHeight:1.6}}>{act.descripcion}</td></tr>}
                     <tr><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",fontWeight:700,verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".04em"}}>OBSERVACIONES</td><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px"}}>{act.observaciones}</td></tr>
                   </tbody>
                 </table>

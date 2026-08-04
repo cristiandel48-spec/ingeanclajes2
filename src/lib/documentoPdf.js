@@ -25,20 +25,30 @@ const PX_A_PT = 72 / 96;
 // Carta a 96 ppp: 8,5 x 11 pulgadas.
 const ANCHO_HOJA = 816;
 const ALTO_HOJA = 1056;
-// 18 mm. Los 12 mm de antes quedaban justos para un documento que se archiva
-// perforado, y un margen amplio es lo que mas barato le da aire a una hoja.
-const MARGEN = 68;
+// 12 mm, EL MISMO margen que `@page` en print.js. Los dos botones tienen que
+// sacar la misma hoja: si aqui se pone otro numero, "Descargar PDF" e
+// "Imprimir" dan documentos distintos y el de descargar es el que se manda al
+// cliente. Si algun dia se quiere mas aire, hay que cambiarlo en los dos sitios.
+const MARGEN = 45;
 const ANCHO_UTIL = ANCHO_HOJA - MARGEN * 2;
 const ALTO_UTIL = ALTO_HOJA - MARGEN * 2;
 
 // Medidas de la hoja ya en puntos, que es como hay que dárselas a jsPDF.
 const HOJA_PT = [ANCHO_HOJA * PX_A_PT, ALTO_HOJA * PX_A_PT];
 
+// OJO con el tamaño de letra: aqui NO se declara ninguno.
+//
+// El documento se copia entero -con el `style` que lleva puesto en pantalla-,
+// asi que el tamaño lo pone el, igual que cuando se imprime con Ctrl+P. Antes
+// el body declaraba `font-size:12pt` y solo se copiaba el CONTENIDO del
+// documento, no el elemento: se perdia su tamaño y todo lo que no llevara uno
+// propio caia a esos 12 pt, o sea 16 px en vez de 10. De ahi que el boton de
+// descargar sacara las letras mucho mas grandes que el de imprimir.
 const HOJA_ESTILOS = `
   *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-  html,body{margin:0;padding:0;background:#fff;color:#111;
-    font-family:Aptos,"Segoe UI",Arial,sans-serif;font-size:12pt;line-height:1.5;}
-  .doc-shell{background:#fff;color:#111;border:0 !important;padding:0 !important;}
+  html,body{margin:0;padding:0;background:#fff;}
+  .doc-shell{background:#fff;border:0 !important;padding:0 !important;
+    margin:0 !important;width:100% !important;}
   .doc-shell table{width:100%;border-collapse:collapse;}
   img{max-width:100%;}
 `;
@@ -148,7 +158,7 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
   try {
     marco.srcdoc = `<!doctype html><html><head><meta charset="utf-8">
       <style>${HOJA_ESTILOS}</style></head>
-      <body><div id="raiz">${nodo.innerHTML}</div></body></html>`;
+      <body>${nodo.outerHTML}</body></html>`;
 
     await new Promise((listo, fallo) => {
       marco.addEventListener("load", listo, { once: true });
@@ -161,7 +171,8 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
     // Un respiro para que termine de acomodarse el texto antes de medir.
     await new Promise((listo) => setTimeout(listo, 120));
 
-    const raiz = doc.getElementById("raiz");
+    const raiz = doc.body.firstElementChild;
+    if (!raiz) throw new Error("No se pudo leer el documento generado.");
     const altoTotal = raiz.scrollHeight;
     const cortes = limitesSeguros(raiz);
 

@@ -1,4 +1,5 @@
 import Badge from "../../components/ui/Badge";
+import BuscadorCliente from "../../components/BuscadorCliente";
 import CampoTexto from "../../components/ui/CampoTexto";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
 import DictarCotizacion from "./DictarCotizacion";
@@ -139,10 +140,13 @@ export default function Cotizacion({ctx}){
       const nombre = normalizarRazonSocial(datos.nombre);
       if(!nombre) return;
       const previo = mapa.get(nombre) || {};
+      // Hubo un tiempo en que el contacto se rellenaba con el nombre de la
+      // empresa. Si coinciden, no es una persona: se descarta.
+      const contacto = normalizarRazonSocial(datos.contacto)===nombre ? "" : (datos.contacto || "");
       mapa.set(nombre,{
         nombre,
         nit: previo.nit || datos.nit || "",
-        contacto: previo.contacto || datos.contacto || "",
+        contacto: previo.contacto || contacto,
         contactoEmail: previo.contactoEmail || datos.contactoEmail || "",
         telefono: previo.telefono || datos.telefono || "",
         ciudad: previo.ciudad || datos.ciudad || "",
@@ -155,29 +159,6 @@ export default function Cotizacion({ctx}){
     (obras||[]).forEach((o)=>registrar({nombre:o.cliente,nit:o.nit,telefono:o.tel,ciudad:o.ciudad,direccion:o.direccion}));
     return [...mapa.values()].sort((a,b)=>a.nombre.localeCompare(b.nombre));
   })();
-
-  // Escribe el nombre y, si coincide con un cliente que ya existe, se traen
-  // sus datos. La obra NO: es lo unico que cambia entre dos cotizaciones del
-  // mismo cliente.
-  //
-  // El nombre se guarda tal cual se escribe y solo se acomoda al salir del
-  // campo, que de eso ya se encarga CampoTexto. Normalizarlo en cada tecla
-  // quitaba el espacio final y no dejaba escribir la palabra siguiente.
-  const escribirCliente = (texto)=>{
-    const conocido = clientesConocidos.find((c)=>c.nombre===normalizarRazonSocial(texto));
-    setCl((prev)=>({
-      ...prev,
-      nombre: texto,
-      ...(conocido ? {
-        nit: conocido.nit || prev.nit,
-        contacto: conocido.contacto || prev.contacto,
-        contactoEmail: conocido.contactoEmail || prev.contactoEmail,
-        telefono: conocido.telefono || prev.telefono,
-        ciudad: conocido.ciudad || prev.ciudad,
-        direccion: conocido.direccion || prev.direccion,
-      } : null),
-    }));
-  };
 
   const agregarPropuesta = ()=>{
     const nueva = buildQuoteProposal({id:createQuoteProposalId(String(propuestasSnapshot.length+1)),nombre:getQuoteProposalLabel(propuestasSnapshot.length),formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,util:10,items:[],incluyeTexto:""},propuestasSnapshot.length);
@@ -633,24 +614,28 @@ export default function Cotizacion({ctx}){
       <div style={{...CD,marginBottom:14}}>
         <div style={ST}>Portada · Cliente</div>
 
-        {/* Escribiendo en Empresa aparecen los clientes que ya existen. Al
-            elegir uno se traen NIT, contacto, correo, teléfono y ciudad: solo
-            la obra queda en blanco, que es lo que cambia entre cotizaciones
-            del mismo cliente. */}
-        <datalist id="clientesConocidosList">
-          {clientesConocidos.map((c)=><option key={c.nombre} value={c.nombre}/>)}
-        </datalist>
-
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
           {/* La razon social va en mayuscula, no como nombre propio: es como
               se escribe en la portada de los documentos de la empresa. */}
-          <CampoTexto label="Empresa" valor={cl.nombre}
-            onChange={escribirCliente}
-            normalizar={normalizarRazonSocial} autoCapitalize="characters"
-            list="clientesConocidosList"
+          <BuscadorCliente
+            label="Empresa"
+            valor={cl.nombre}
+            clientes={clientesConocidos}
+            onEscribir={(v)=>setCl((prev)=>({...prev,nombre:v}))}
+            onElegir={(c)=>setCl((prev)=>({
+              ...prev,
+              nombre:c.nombre,
+              nit:c.nit || prev.nit,
+              contacto:c.contacto || prev.contacto,
+              contactoEmail:c.contactoEmail || prev.contactoEmail,
+              telefono:c.telefono || prev.telefono,
+              ciudad:c.ciudad || prev.ciudad,
+              direccion:c.direccion || prev.direccion,
+            }))}
             ayuda={clientesConocidos.length
-              ? `Empieza a escribir y elige de los ${clientesConocidos.length} clientes que ya existen: se traen sus datos solos.`
-              : "Va en la portada del documento, en mayúscula."}/>
+              ? `Escribe dos letras y elige: se traen NIT, contacto, correo, teléfono, ciudad y dirección. Hay ${clientesConocidos.length} clientes.`
+              : "Va en la portada del documento, en mayúscula."}
+          />
           <CampoTexto label="NIT / Cédula" valor={cl.nit} onChange={v=>setCl({...cl,nit:v})}
             normalizar={normalizarDocumento} placeholder="900123456-7" spellCheck={false}
             ayuda="Viaja hasta el comprobante contable al aprobar la cotización."/>

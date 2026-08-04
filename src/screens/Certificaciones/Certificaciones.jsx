@@ -11,11 +11,32 @@ import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { getEstadoFlujoObra } from "../../lib/flujoObra";
 import { printCurrentPz } from "../../lib/print";
 export default function Certificaciones({ctx}){
-  const {certs,setCerts,obras,intencion,limpiarIntencion,irAPantalla}=ctx;
+  const {certs,setCerts,obras,clientes,cotizaciones,intencion,limpiarIntencion,irAPantalla}=ctx;
   const [sel,setSel]=useState(null);
   // Obra que llega desde el detalle de obra ("Crear certificación").
   const obraSolicitada = intencion?.pantalla==="certificaciones" ? intencion.obraId : null;
   const obraInicial = obras.find((x)=>x.id===obraSolicitada) || obras[0] || null;
+  // El NIT no se escribe a mano: ya esta en algun lado del sistema. Se busca
+  // en la propia obra, luego en la ficha del cliente y por ultimo en la
+  // cotizacion que dio origen a la obra. Se compara por razon social
+  // acomodada, para que "Proco Inc" encuentre a "PROCO INC".
+  const buscarNit=(obra,clienteTexto)=>{
+    if(obra?.nit) return obra.nit;
+    const nombre=normalizarRazonSocial(clienteTexto || obra?.cliente || "");
+    if(!nombre) return "";
+
+    const ficha=(clientes||[]).find((c)=>normalizarRazonSocial(c.nombre)===nombre);
+    if(ficha?.nit) return ficha.nit;
+
+    const vinculada=obra?.cotizacionId
+      ? (cotizaciones||[]).find((c)=>c.id===obra.cotizacionId)
+      : null;
+    if(vinculada?.nit) return vinculada.nit;
+
+    const porNombre=(cotizaciones||[]).find((c)=>normalizarRazonSocial(c.cliente)===nombre && c.nit);
+    return porNombre?.nit || "";
+  };
+
   const [nueva,setNueva]=useState(()=>Boolean(obraSolicitada));
   const [editId,setEditId]=useState(null);
   const [form,setForm]=useState(()=>buildCertForm({
@@ -23,6 +44,7 @@ export default function Certificaciones({ctx}){
     obraId: obraInicial?.id || "",
     cliente: obraInicial?.cliente || "",
     direccion: obraInicial?.direccion || obraInicial?.ciudad || "",
+    nit: buscarNit(obraInicial),
   }));
 
   // Se descarta al salir, para que al volver por el menu no se reabra.
@@ -78,6 +100,7 @@ export default function Certificaciones({ctx}){
       obraId: obra?.id || "",
       cliente: obra?.cliente || "",
       direccion: obra?.direccion || obra?.ciudad || "",
+      nit: buscarNit(obra),
     }));
     setNueva(true);
   };
@@ -198,8 +221,14 @@ export default function Certificaciones({ctx}){
             </div>
             <div><LBL>Número</LBL><input value={form.numero} onChange={e=>setForm({...form,numero:e.target.value})} placeholder="C-2026-001" style={SI}/></div>
             <div><LBL>Fecha</LBL><input type="date" value={form.fecha} onChange={e=>aplicarCambio({fecha:e.target.value})} style={SI}/></div>
-            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const o=obras.find(x=>x.id===e.target.value);aplicarCambio({obraId:e.target.value,cliente:o?.cliente||"",direccion:o?.direccion||o?.ciudad||""});}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
-            <div><LBL>Cliente</LBL><input value={form.cliente} onChange={e=>aplicarCambio({cliente:e.target.value})} onBlur={e=>aplicarCambio({cliente:normalizarRazonSocial(e.target.value)})} style={SI}/></div>
+            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const o=obras.find(x=>x.id===e.target.value);aplicarCambio({obraId:e.target.value,cliente:o?.cliente||"",direccion:o?.direccion||o?.ciudad||"",nit:buscarNit(o)});}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
+            <div><LBL>Cliente</LBL><input value={form.cliente} onChange={e=>aplicarCambio({cliente:e.target.value})} onBlur={e=>{
+              const nombre=normalizarRazonSocial(e.target.value);
+              // Si el NIT esta vacio se busca el de ese cliente; si ya hay uno
+              // escrito no se pisa, que puede ser una sede o un caso especial.
+              const nit=form.nit || buscarNit(null,nombre);
+              aplicarCambio({cliente:nombre,nit});
+            }} style={SI}/></div>
             <div><LBL>NIT</LBL><input value={form.nit} onChange={e=>setForm({...form,nit:e.target.value})} style={SI}/></div>
             <div style={{gridColumn:"span 2"}}><LBL>Dirección de la obra</LBL><input value={form.direccion} onChange={e=>aplicarCambio({direccion:e.target.value})} style={SI}/></div>
             <div><LBL>Próximo mantenimiento</LBL><input type="date" value={form.proxMant} onChange={e=>setForm({...form,proxMant:e.target.value})} style={SI}/></div>

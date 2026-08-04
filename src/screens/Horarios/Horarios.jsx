@@ -1,6 +1,7 @@
 import Av from "../../components/ui/Av";
 import AvisoFlujo from "../../components/AvisoFlujo";
 import NuevoEmpleadoRapido from "../../components/NuevoEmpleadoRapido";
+import SelectorEmpleados from "../../components/SelectorEmpleados";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
 import { useEffect, useState } from "react";
@@ -10,7 +11,6 @@ import { abrirWhatsApp, normalizarCelular } from "../../lib/whatsapp";
 import { puedeCrearPersonal } from "../../lib/permisos";
 export default function Horarios({ctx}){
   const {obras,empleados,horarios,setHorarios,irAPantalla,membresia}=ctx;
-  const firstEmpId = empleados[0]?.id || "";
   const firstObraId = obras[0]?.id || "";
   const fmtHora12Local=(hhmm)=>{
     if(!hhmm || !String(hhmm).includes(':')) return hhmm || "";
@@ -36,8 +36,10 @@ export default function Horarios({ctx}){
   const [nuevoEmp,setNuevoEmp]=useState(false);
   const [fechaF,setFechaF]=useState(today());
   const [showF,setShowF]=useState(false);
-  const [form,setForm]=useState({
-    empleadoId:firstEmpId,
+  // Arranca sin nadie marcado. Antes venia preseleccionado el primero de la
+  // lista y era facil asignarle el turno a quien no era.
+  const FORM_VACIO={
+    empleadoIds:[],
     obraId:firstObraId,
     fecha:today(),
     turno1Inicio:"07:00",
@@ -46,41 +48,57 @@ export default function Horarios({ctx}){
     turno2Inicio:"",
     turno2Fin:"",
     tarea2:"",
-  });
+  };
+  const [form,setForm]=useState(FORM_VACIO);
   // {texto, ok}. Un fallo al abrir WhatsApp salia en verde igual que un envio
   // correcto, asi que se leia como si hubiera salido bien.
   const [notif,setNotif]=useState(null);
+  // Cuando el turno se asigna a un grupo no se pueden abrir seis WhatsApp de
+  // golpe -el navegador bloquea las ventanas y quedan avisos a medias-, asi que
+  // los turnos quedan guardados y el envio se hace de a uno desde aqui.
+  const [porAvisar,setPorAvisar]=useState([]);
   const dia=horarios.filter(h=>h.fecha===fechaF);
-  const empSel=empleados.find(e=>e.id===form.empleadoId);
   const obraSel=obras.find(o=>o.id===form.obraId);
+  const seleccionados=empleados.filter(e=>form.empleadoIds.includes(e.id));
 
   useEffect(()=>{
     setForm(prev=>({
       ...prev,
-      empleadoId: empleados.some(e=>e.id===prev.empleadoId) ? prev.empleadoId : firstEmpId,
+      // Si a alguien lo dan de baja mientras el formulario esta abierto, sale
+      // de la seleccion en vez de guardarse un turno de un id que ya no existe.
+      empleadoIds: prev.empleadoIds.filter(id=>empleados.some(e=>e.id===id)),
       obraId: obras.some(o=>o.id===prev.obraId) ? prev.obraId : firstObraId,
     }));
-  },[firstEmpId,firstObraId,empleados,obras]);
+  },[firstObraId,empleados,obras]);
 
   const armarTurno=(inicio,fin)=>{
     if(!inicio || !fin) return "";
     return (inicio) + " - " + (fin);
   };
 
-  const buildTurnosPayload=(baseForm)=>{
+  // Los turnos que se arman con el formulario, tal cual, sin repartirlos aun
+  // entre las personas.
+  const buildTurnos=(baseForm)=>{
     const configs = [
       {turno:armarTurno(baseForm.turno1Inicio, baseForm.turno1Fin), tarea:baseForm.tarea1 || baseForm.tarea2},
       {turno:armarTurno(baseForm.turno2Inicio, baseForm.turno2Fin), tarea:baseForm.tarea2 || baseForm.tarea1},
     ];
-    return configs
-      .filter(item=>item.turno && item.tarea)
-      .map(item=>({
-        empleadoId: baseForm.empleadoId,
+    return configs.filter(item=>item.turno && item.tarea);
+  };
+
+  // El mismo turno para cada persona marcada: es lo que evita repetir el
+  // formulario una vez por trabajador.
+  const buildTurnosPayload=(baseForm)=>{
+    const turnos = buildTurnos(baseForm);
+    return (baseForm.empleadoIds||[]).flatMap((empleadoId)=>
+      turnos.map((item)=>({
+        empleadoId,
         obraId: baseForm.obraId,
         fecha: baseForm.fecha,
         turno: item.turno,
         tarea: item.tarea,
-      }));
+      }))
+    );
   };
 
   const enviarWA=(eid,oid,f,turnosInfo=[])=>{
@@ -112,25 +130,54 @@ export default function Horarios({ctx}){
   const guardar=()=>{
     const payload = buildTurnosPayload(form);
     if(!payload.length) return;
+
+    // Si a alguien del grupo ya se le habia asignado ese mismo turno en esa
+    // obra y ese dia, no se duplica: al traer «el equipo de la obra» es normal
+    // volver a marcar a quien ya estaba puesto.
+    const nuevos = payload.filter(p=>!horarios.some(h=>
+      h.empleadoId===p.empleadoId && h.obraId===p.obraId &&
+      h.fecha===p.fecha && h.turno===p.turno
+    ));
+    const repetidos = payload.length - nuevos.length;
+
+    if(!nuevos.length){
+      setNotif({ok:false,texto:"Esas personas ya tenían ese turno asignado ese día. No se creó nada nuevo."});
+      setTimeout(()=>setNotif(null),8000);
+      return;
+    }
+
     setHorarios(p=>[
       ...p,
-      ...payload.map((item,idx)=>({id:"H" + (Date.now()) + (idx),...item}))
+      ...nuevos.map((item,idx)=>({id:"H" + (Date.now()) + (idx),...item}))
     ]);
-    enviarWA(form.empleadoId,form.obraId,form.fecha,payload);
+
+    // Una sola persona: se abre su WhatsApp de una, como siempre. Un grupo:
+    // quedan en la lista de avisos y se mandan de a uno.
+    const ids=[...new Set(nuevos.map(n=>n.empleadoId))];
+    if(ids.length===1){
+      enviarWA(ids[0],form.obraId,form.fecha,nuevos.filter(n=>n.empleadoId===ids[0]));
+    }else{
+      setPorAvisar(ids.map((eid)=>({
+        empleadoId:eid,
+        obraId:form.obraId,
+        fecha:form.fecha,
+        turnos:nuevos.filter(n=>n.empleadoId===eid),
+        enviado:false,
+      })));
+      setNotif({
+        ok:true,
+        texto:`${nuevos.length} turno(s) guardados para ${ids.length} personas.` +
+          (repetidos?` Se omitieron ${repetidos} que ya estaban.`:"") +
+          " Avísales abajo, uno por uno o copiando el horario del día para el grupo.",
+      });
+      setTimeout(()=>setNotif(null),12000);
+    }
+
     setShowF(false);
-    setForm({
-      empleadoId: empleados.some(e=>e.id===form.empleadoId) ? form.empleadoId : firstEmpId,
-      obraId: obras.some(o=>o.id===form.obraId) ? form.obraId : firstObraId,
-      fecha:today(),
-      turno1Inicio:"07:00",
-      turno1Fin:"17:00",
-      tarea1:"",
-      turno2Inicio:"",
-      turno2Fin:"",
-      tarea2:"",
-    });
+    setForm({...FORM_VACIO, obraId:form.obraId, fecha:form.fecha});
   };
 
+  const turnosBase = buildTurnos(form);
   const previewTurnos = buildTurnosPayload(form);
 
   // Los turnos tambien se comparten en un grupo de WhatsApp, y a un grupo no
@@ -201,7 +248,7 @@ export default function Horarios({ctx}){
 
   return(
     <div style={{padding:28}}>
-      <H1 title="Horarios" subtitle="Asigna hasta 2 turnos por día y notifica automáticamente por WhatsApp" action={<button style={B("#f47c20")} onClick={()=>setShowF(!showF)}>+ Asignar turnos</button>}/>
+      <H1 title="Horarios" subtitle="Asigna hasta 2 turnos por día a una persona o a un grupo entero, y avisa por WhatsApp" action={<button style={B("#f47c20")} onClick={()=>setShowF(!showF)}>+ Asignar turnos</button>}/>
 
       {empleados.length===0 && (
         <AvisoFlujo
@@ -228,7 +275,7 @@ export default function Horarios({ctx}){
           onCerrar={()=>setNuevoEmp(false)}
           onCreado={(id,info)=>{
             setNuevoEmp(false);
-            setForm((prev)=>({...prev,empleadoId:id}));
+            setForm((prev)=>({...prev,empleadoIds:[...new Set([...prev.empleadoIds,id])]}));
             window.alert(
               (info?.reactivado ? `${info.nombre} se reactivó.` : `${info?.nombre} quedó registrado.`) +
               "\n\nYa está seleccionado para asignarle el turno. Nómina revisará su salario y contrato."
@@ -285,10 +332,26 @@ export default function Horarios({ctx}){
       {showF&&(
         <div style={{...CD,marginBottom:20,border:"1px solid #cc0000"}}>
           <div style={ST}>Nuevo horario · notificación automática por WhatsApp</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
-            <div><LBL>Empleado</LBL><select value={form.empleadoId} onChange={e=>setForm({...form,empleadoId:e.target.value})} style={SI}>{empleados.map(e=><option key={e.id} value={e.id}>{e.nombre}</option>)}</select></div>
+          {/* La obra va primero: de ella sale el atajo para marcar al equipo
+              completo, que es lo que evita repetir el formulario por persona. */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
             <div><LBL>Obra</LBL><select value={form.obraId} onChange={e=>setForm({...form,obraId:e.target.value})} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
             <div><LBL>Fecha</LBL><input type="date" value={form.fecha} onChange={e=>setForm({...form,fecha:e.target.value})} style={SI}/></div>
+          </div>
+
+          <div style={{marginBottom:14}}>
+            <LBL>¿A quiénes?</LBL>
+            <SelectorEmpleados
+              empleados={empleados}
+              seleccionados={form.empleadoIds}
+              onCambiar={(ids)=>setForm(prev=>({...prev,empleadoIds:ids}))}
+              idsDeLaObra={obraSel?.empleados||[]}
+              nombreObra={obraSel?.proyecto||""}
+            />
+            <div style={{fontSize:10.5,color:"#94a3b8",marginTop:5}}>
+              Todos los marcados reciben el mismo turno, la misma obra y la misma tarea.
+              Si alguno necesita algo distinto, asígnaselo aparte.
+            </div>
           </div>
 
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
@@ -336,28 +399,82 @@ export default function Horarios({ctx}){
             </div>
           </div>
 
-          {previewTurnos.length>0&&empSel&&obraSel&&(
+          {turnosBase.length>0&&seleccionados.length>0&&obraSel&&(
             <div style={{background:"#f1f5f9",borderRadius:10,padding:14,marginBottom:14}}>
-              <div style={{fontSize:11,color:"#64748b",marginBottom:6}}>Vista previa WhatsApp</div>
+              <div style={{fontSize:11,color:"#64748b",marginBottom:6}}>
+                Vista previa · le llega igual a {seleccionados.length===1?"la persona":`las ${seleccionados.length} personas`}, con su nombre
+              </div>
               <div style={{fontSize:13,color:"#1a1a2e",lineHeight:1.7,background:"#f8fafc",borderRadius:8,padding:"12px 14px"}}>
-                <div>Hola <strong>{empSel.nombre}</strong>, has sido asignado a la obra <strong>{obraSel.proyecto}</strong> del cliente <strong>{obraSel.cliente}</strong>.</div>
+                <div>Hola <strong>{seleccionados[0].nombre}</strong>, has sido asignado a la obra <strong>{obraSel.proyecto}</strong> del cliente <strong>{obraSel.cliente}</strong>.</div>
                 <div>Lugar: <strong>{obraSel.direccion||obraSel.ciudad}, {obraSel.ciudad}</strong></div>
                 <div>Fecha: <strong>{fmtD(form.fecha) || form.fecha}</strong></div>
                 <div style={{marginTop:8,fontWeight:600}}>Turnos asignados:</div>
                 <ul style={{margin:"6px 0 0 18px",padding:0}}>
-                  {previewTurnos.map((item,idx)=><li key={idx}><strong>{fmtTurno12Local(item.turno)}</strong> · {item.tarea}</li>)}
+                  {turnosBase.map((item,idx)=><li key={idx}><strong>{fmtTurno12Local(item.turno)}</strong> · {item.tarea}</li>)}
                 </ul>
                 <div style={{marginTop:8}}>Por favor confirma tu asistencia. <strong>INGEANCLAJES S.A.S</strong></div>
               </div>
-              <div style={{fontSize:11,color:"#64748b",marginTop:8}}>+57 {empSel.tel}</div>
+              <div style={{fontSize:11,color:"#64748b",marginTop:8}}>
+                Se van a crear <strong>{previewTurnos.length} turno{previewTurnos.length!==1?"s":""}</strong>
+                {seleccionados.length>1 && <> · {seleccionados.map(e=>e.nombre.split(" ")[0]).join(", ")}</>}
+              </div>
             </div>
           )}
-          <div style={{display:"flex",gap:10}}>
-            <button style={B("#4ade80","#0f2d1a")} onClick={guardar}>Guardar y enviar WhatsApp</button>
+          <div style={{display:"flex",gap:10,alignItems:"center"}}>
+            <button
+              style={{...B("#4ade80","#0f2d1a"),opacity:previewTurnos.length?1:0.5,cursor:previewTurnos.length?"pointer":"not-allowed"}}
+              onClick={guardar}
+              disabled={!previewTurnos.length}
+            >
+              {seleccionados.length>1?`Guardar turnos de ${seleccionados.length} personas`:"Guardar y enviar WhatsApp"}
+            </button>
             <button style={B("#f1f5f9","#475569")} onClick={()=>setShowF(false)}>Cancelar</button>
+            {!previewTurnos.length && (
+              <span style={{fontSize:11,color:"#94a3b8"}}>
+                {!seleccionados.length?"Marca al menos a una persona":"Falta la tarea del turno"}
+              </span>
+            )}
           </div>
         </div>
       )}
+      {porAvisar.length>0&&(
+        <div style={{...CD,marginBottom:20,border:"1px solid #166534"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:4}}>
+            <div style={ST}>Falta avisarles · {porAvisar.filter(p=>!p.enviado).length} de {porAvisar.length}</div>
+            <button onClick={()=>setPorAvisar([])} style={{...B("#f1f5f9","#475569"),fontSize:11.5,padding:"6px 12px"}}>Listo, cerrar</button>
+          </div>
+          <div style={{fontSize:11.5,color:"#64748b",marginBottom:12,lineHeight:1.5}}>
+            Los turnos <strong>ya quedaron guardados</strong>. WhatsApp solo deja abrir un chat a la vez,
+            así que se manda de a uno. Si el horario se comparte en el grupo, es más rápido usar
+            <strong> «Copiar horario del día»</strong> aquí abajo.
+          </div>
+          {porAvisar.map((p)=>{
+            const e=empleados.find(x=>x.id===p.empleadoId);
+            const idx=empleados.findIndex(x=>x.id===p.empleadoId);
+            return(
+              <div key={p.empleadoId} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid #f1f5f9"}}>
+                <Av init={e?.avatar||"?"} color={PAL[idx%PAL.length]} size={30}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:12.5,fontWeight:600,color:"#1a1a2e"}}>{e?.nombre}</div>
+                  <div style={{fontSize:10.5,color:"#64748b"}}>
+                    {p.turnos.map((t)=>fmtTurno12Local(t.turno)).join(" · ")}
+                  </div>
+                </div>
+                <button
+                  onClick={()=>{
+                    enviarWA(p.empleadoId,p.obraId,p.fecha,p.turnos);
+                    setPorAvisar(prev=>prev.map(x=>x.empleadoId===p.empleadoId?{...x,enviado:true}:x));
+                  }}
+                  style={{...(p.enviado?B("#f1f5f9","#475569"):B("#e8f5ee","#166534")),fontSize:11.5,padding:"6px 12px",flexShrink:0}}
+                >
+                  {p.enviado?"✓ Enviado · reenviar":"Avisar por WhatsApp"}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <div style={{display:"flex",gap:14,alignItems:"flex-end",marginBottom:20}}>
         <div><LBL>Filtrar por fecha</LBL><input type="date" value={fechaF} onChange={e=>setFechaF(e.target.value)} style={{...SI,width:"auto"}}/></div>
         <div style={{fontSize:13,color:"#64748b"}}>{dia.length} turno{dia.length!==1?"s":""} · {fmtD(fechaF)}</div>

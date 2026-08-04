@@ -47,10 +47,12 @@ export const NAV_SECTIONS = [
   },
   {
     title: "Calidad y entregables",
+    // En el orden en que se generan: el informe documenta el trabajo, el
+    // certificado se apoya en el, y el vencimiento vigila la recertificacion.
     items: [
+      { id: "informes", label: "Informes de actividades", short: "Informes" },
       { id: "certificaciones", label: "Certificaciones" },
       { id: "vencimientos", label: "Vencimientos" },
-      { id: "informes", label: "Informes de actividades", short: "Informes" },
     ],
   },
   {

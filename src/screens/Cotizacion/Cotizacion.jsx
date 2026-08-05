@@ -412,6 +412,58 @@ export default function Cotizacion({ctx}){
     })();
   };
 
+  // Deshacer una aprobacion. Se aprueba de un clic y hasta ahora no habia
+  // vuelta atras: si se aprobaba la cotizacion equivocada, quedaba una obra de
+  // mas y una cotizacion marcada como aprobada para siempre.
+  //
+  // La obra NO se borra sin preguntar. Puede llevar dias de avance, fotos,
+  // personal y pagos encima, y eso no se puede rehacer. Solo se ofrece borrarla
+  // cuando esta como recien creada.
+  const desaprobarCotizacion = (cotId)=>{
+    const cotizacion = cotizaciones.find((c)=>c.id===cotId);
+    if(!cotizacion) return;
+
+    const obra = obras.find((o)=>o.id===cotizacion.obraId);
+    const conTrabajo = obra && (
+      Number(obra.avance||0) > 0 ||
+      Number(obra.pagado||0) > 0 ||
+      Number(obra.costos||0) > 0 ||
+      (Array.isArray(obra.bitacora) && obra.bitacora.length > 0) ||
+      (Array.isArray(obra.empleados) && obra.empleados.length > 0) ||
+      (Array.isArray(obra.trazos) && obra.trazos.length > 0) ||
+      (Array.isArray(obra.anclajes) && obra.anclajes.length > 0)
+    );
+
+    let borrarObra = false;
+    if(!obra){
+      if(!window.confirm(
+        `¿Devolver la cotización ${cotizacion.numero || cotizacion.id} a "Pendiente"?`
+      )) return;
+    }else if(conTrabajo){
+      if(!window.confirm(
+        `La cotización ${cotizacion.numero || cotizacion.id} vuelve a "Pendiente".\n\n` +
+        `La obra ${obra.id} (${obra.proyecto || obra.cliente}) SE CONSERVA: ya tiene ` +
+        `trabajo registrado —avance, fotos, personal o pagos— y borrarla haría perder todo eso.\n\n` +
+        "Queda suelta, sin cotización asociada. Si de verdad sobra, bórrala desde Ejecución de obra.\n\n¿Continuar?"
+      )) return;
+    }else{
+      borrarObra = window.confirm(
+        `La cotización ${cotizacion.numero || cotizacion.id} vuelve a "Pendiente".\n\n` +
+        `La obra ${obra.id} (${obra.proyecto || obra.cliente}) está sin empezar: 0% de avance, ` +
+        "sin fotos, sin personal y sin pagos.\n\n" +
+        "Aceptar → se borra también la obra.\nCancelar → la obra se conserva sin cotización asociada."
+      );
+    }
+
+    setCotizaciones((prev)=>prev.map((c)=>(
+      c.id===cotId ? {...c, estado:"Pendiente", obraId:null} : c
+    )));
+    if(borrarObra && obra){
+      setObras((prev)=>prev.filter((o)=>o.id!==obra.id));
+    }
+    setObraCreada(null);
+  };
+
   const term = normalizeEntityKey(busqueda || "");
   const obrasFiltroCotizacion = Array.from(new Set(
     cotizaciones
@@ -570,7 +622,13 @@ export default function Cotizacion({ctx}){
                         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                           <button style={{...B("#dbeafe","#1e40af"),fontSize:10,padding:"5px 10px"}} onClick={()=>setPreviewCot(cotizacion)}>Ver</button>
                           <button style={{...B("#1a3050","#f5c842"),fontSize:10,padding:"5px 10px"}} onClick={()=>{setEditCot(cotizacion.id);hydrate(cotizacion);setTab("form");}}>Editar</button>
-                          {cotizacion.estado!=="Aprobada" && <button style={{...B("#0f2d1a","#4ade80"),border:"1px solid #166534",fontSize:10,padding:"5px 10px"}} onClick={()=>aprobarCotizacion(cotizacion.id)}>Aprobar y crear obra</button>}
+                          {cotizacion.estado!=="Aprobada"
+                            ? <button style={{...B("#0f2d1a","#4ade80"),border:"1px solid #166534",fontSize:10,padding:"5px 10px"}} onClick={()=>aprobarCotizacion(cotizacion.id)}>Aprobar y crear obra</button>
+                            : <button
+                                style={{...B("#fff","#b54708"),border:"1.5px solid #fde3c4",fontSize:10,padding:"5px 10px"}}
+                                title="Devuelve la cotización a Pendiente. La obra solo se borra si está sin empezar y tú lo confirmas."
+                                onClick={()=>desaprobarCotizacion(cotizacion.id)}
+                              >↩ Desaprobar</button>}
                           <button style={{...B("#2d1414","#ef4444"),fontSize:10,padding:"5px 10px"}} onClick={()=>openCotizacionPrint(cotizacion,{firmaImg})}>PDF</button><button style={{...B("#f47c20"),fontSize:10,padding:"5px 10px"}} onClick={()=>setEnviarCot(cotizacion)}>Enviar al cliente</button>
                           <button
                             style={{...B("#fff","#ef4444"),border:"1.5px solid #ef4444",fontSize:10,padding:"5px 10px"}}

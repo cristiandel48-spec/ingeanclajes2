@@ -86,7 +86,7 @@ export default function CambiarMiClave({ onCerrar }) {
               ese mensaje.
             </p>
             <button onClick={onCerrar} style={{
-              width: "100%", background: "#E0342A", color: "#fff", border: "none",
+              width: "100%", background: "#cc0000", color: "#fff", border: "none",
               borderRadius: 10, padding: "13px 18px", fontSize: 14.5, fontWeight: 700,
               cursor: "pointer", fontFamily: "inherit",
             }}>
@@ -117,7 +117,7 @@ export default function CambiarMiClave({ onCerrar }) {
 
             {error && (
               <div style={{
-                background: "#fef3f2", border: "1px solid #fecdca", color: "#b42318",
+                background: "#fef3f2", border: "1px solid #fecdca", color: "#cc0000",
                 borderRadius: 10, padding: "10px 12px", fontSize: 13, marginBottom: 14, lineHeight: 1.5,
               }}>
                 {error}
@@ -126,7 +126,7 @@ export default function CambiarMiClave({ onCerrar }) {
 
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={guardar} disabled={guardando} style={{
-                flex: 1, background: "#E0342A", color: "#fff", border: "none",
+                flex: 1, background: "#cc0000", color: "#fff", border: "none",
                 borderRadius: 10, padding: "13px 18px", fontSize: 14.5, fontWeight: 700,
                 cursor: guardando ? "default" : "pointer", opacity: guardando ? .7 : 1,
                 fontFamily: "inherit",
@@ -134,7 +134,7 @@ export default function CambiarMiClave({ onCerrar }) {
                 {guardando ? "Guardando…" : "Cambiar"}
               </button>
               <button onClick={onCerrar} disabled={guardando} style={{
-                background: "#fff", color: "#475569", border: "1px solid #e4e7ec",
+                background: "#fff", color: "#475467", border: "1px solid #e4e7ec",
                 borderRadius: 10, padding: "13px 18px", fontSize: 14.5, fontWeight: 600,
                 cursor: "pointer", fontFamily: "inherit",
               }}>

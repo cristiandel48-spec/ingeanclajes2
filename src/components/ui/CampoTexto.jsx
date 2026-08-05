@@ -53,7 +53,7 @@ export default function CampoTexto({
       {aviso ? (
         <div style={{ fontSize: 10.5, color: "#b54708", marginTop: 3, lineHeight: 1.4 }}>{aviso}</div>
       ) : ayuda ? (
-        <div style={{ fontSize: 10.5, color: "#94a3b8", marginTop: 3, lineHeight: 1.4 }}>{ayuda}</div>
+        <div style={{ fontSize: 10.5, color: "#98a2b3", marginTop: 3, lineHeight: 1.4 }}>{ayuda}</div>
       ) : null}
     </div>
   );

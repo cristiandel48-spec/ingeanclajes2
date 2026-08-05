@@ -5,8 +5,8 @@
 // aparezca una obra que nunca se creo.
 
 const TONOS = {
-  info: { bg: "#F0F6FF", borde: "#BFD8FF", fg: "#1E40AF", icono: "i" },
-  falta: { bg: "#FFFAF0", borde: "#FDE3C4", fg: "#B54708", icono: "!" },
+  info: { bg: "#F0F6FF", borde: "#BFD8FF", fg: "#475467", icono: "i" },
+  falta: { bg: "#f2f4f7", borde: "#eaecf0", fg: "#B54708", icono: "!" },
   listo: { bg: "#F0FDF4", borde: "#BBF7D0", fg: "#15803D", icono: "✓" },
 };
 
@@ -31,12 +31,12 @@ export default function AvisoFlujo({ tono = "info", titulo, children, pasos, acc
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 12.5, fontWeight: 700, color: c.fg }}>{titulo}</div>
         {children && (
-          <div style={{ fontSize: 11.5, color: "#475569", marginTop: 3, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 11.5, color: "#475467", marginTop: 3, lineHeight: 1.5 }}>
             {children}
           </div>
         )}
         {pasos?.length > 0 && (
-          <ol style={{ margin: "8px 0 0", paddingLeft: 18, fontSize: 11.5, color: "#475569", lineHeight: 1.7 }}>
+          <ol style={{ margin: "8px 0 0", paddingLeft: 18, fontSize: 11.5, color: "#475467", lineHeight: 1.7 }}>
             {pasos.map((paso, i) => <li key={i}>{paso}</li>)}
           </ol>
         )}

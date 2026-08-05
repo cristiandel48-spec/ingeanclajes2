@@ -31,11 +31,11 @@ export function calcularVencimientos(certs = [], hoy = new Date()) {
 }
 
 export function colorVencimiento(dias) {
-  if (dias === null) return "#64748b";
-  if (dias < 0) return "#ef4444";
+  if (dias === null) return "#667085";
+  if (dias < 0) return "#cc0000";
   if (dias < UMBRAL_URGENTE) return "#fb923c";
-  if (dias < UMBRAL_PROXIMO) return "#f5c842";
-  return "#4ade80";
+  if (dias < UMBRAL_PROXIMO) return "#b54708";
+  return "#101828";
 }
 
 export function etiquetaVencimiento(dias) {
@@ -47,10 +47,10 @@ export function etiquetaVencimiento(dias) {
 }
 
 export const GRUPOS_VENCIMIENTO = [
-  { titulo: "Vencidas o críticas", filtro: (d) => d !== null && d < 0, color: "#ef4444" },
+  { titulo: "Vencidas o críticas", filtro: (d) => d !== null && d < 0, color: "#cc0000" },
   { titulo: `Urgente (menos de ${UMBRAL_URGENTE} días)`, filtro: (d) => d !== null && d >= 0 && d < UMBRAL_URGENTE, color: "#fb923c" },
-  { titulo: `Próximas (${UMBRAL_URGENTE}-${UMBRAL_PROXIMO} días)`, filtro: (d) => d !== null && d >= UMBRAL_URGENTE && d < UMBRAL_PROXIMO, color: "#f5c842" },
-  { titulo: `Al día (más de ${UMBRAL_PROXIMO} días)`, filtro: (d) => d !== null && d >= UMBRAL_PROXIMO, color: "#4ade80" },
+  { titulo: `Próximas (${UMBRAL_URGENTE}-${UMBRAL_PROXIMO} días)`, filtro: (d) => d !== null && d >= UMBRAL_URGENTE && d < UMBRAL_PROXIMO, color: "#b54708" },
+  { titulo: `Al día (más de ${UMBRAL_PROXIMO} días)`, filtro: (d) => d !== null && d >= UMBRAL_PROXIMO, color: "#101828" },
 ];
 
 // Resumen para el Dashboard: cuantas hay en cada estado y las mas urgentes.

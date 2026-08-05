@@ -55,7 +55,7 @@ function PantallaMensaje({ titulo, detalle }) {
       padding: 24, background: "#f4f5f6", fontFamily: "'Inter', system-ui, sans-serif",
     }}>
       <div style={{
-        maxWidth: 420, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14,
+        maxWidth: 420, background: "#fff", border: "1px solid #eaecf0", borderRadius: 14,
         padding: "28px 30px", textAlign: "center",
       }}>
         <div style={{ fontSize: 18, fontWeight: 700, color: "#101828", marginBottom: detalle ? 8 : 0 }}>

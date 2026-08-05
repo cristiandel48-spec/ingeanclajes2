@@ -67,14 +67,14 @@ export default function GoogleMeasureWorkspace({ queryValue, onQueryChange, meas
         map: mapRef.current,
         path: [startPos, endPos],
         geodesic: true,
-        strokeColor: seg.tipo === "CON" ? "#eab308" : seg.tipo === "LVV" ? "#22c55e" : seg.tipo === "ESC" ? "#f97316" : "#3b82f6",
+        strokeColor: seg.tipo === "CON" ? "#eab308" : seg.tipo === "LVV" ? "#027a48" : seg.tipo === "ESC" ? "#f97316" : "#3b82f6",
         strokeOpacity: 0.95,
         strokeWeight: 4,
       });
       const start = new gm.Marker({ map: mapRef.current, position: startPos, draggable: true });
       const end = new gm.Marker({ map: mapRef.current, position: endPos, draggable: true });
       const labelHtml = `${escapeXml(seg.label || "Tramo")}<br/>${Number(seg.ml||0).toFixed(2)} m`;
-      const label = createMapLabelOverlay(gm, mapRef.current, startPos, endPos, labelHtml, seg.tipo === "CON" ? "#a16207" : seg.tipo === "LVV" ? "#15803d" : seg.tipo === "ESC" ? "#c2410c" : "#1d4ed8");
+      const label = createMapLabelOverlay(gm, mapRef.current, startPos, endPos, labelHtml, seg.tipo === "CON" ? "#a16207" : seg.tipo === "LVV" ? "#15803d" : seg.tipo === "ESC" ? "#475467" : "#475467");
       const sync = ()=>{
         const s = start.getPosition();
         const e = end.getPosition();
@@ -208,20 +208,20 @@ export default function GoogleMeasureWorkspace({ queryValue, onQueryChange, meas
   const removeMeasurement = (id)=> onChange((measurements||[]).filter(seg=>seg.id!==id));
 
   return (
-    <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:12,padding:20}}>
+    <div style={{background:"#fff",border:"1px solid #eaecf0",borderRadius:12,padding:20}}>
       <div style={{display:"grid",gridTemplateColumns:"1.3fr 1fr",gap:16,alignItems:"start",marginBottom:12}}>
         <div>
           <div style={ST}>Medición automática con Google Maps</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr auto auto",gap:8,marginBottom:10}}>
             <input value={queryValue} onChange={e=>onQueryChange(e.target.value)} placeholder="Coordenadas, dirección o enlace de Maps" style={SI} />
-            <button onClick={centerMap} style={{...B("#f47c20"),fontSize:12}}>Ver aquí</button>
-            <button onClick={startMeasurement} style={{...B(measureMode?"#4ade80":"#1a3050", measureMode?"#0f2d1a":"#60b4ff"),fontSize:12}}>{measureMode?"Esperando clics...":"Activar medición"}</button>
+            <button onClick={centerMap} style={{...B("#101828"),fontSize:12}}>Ver aquí</button>
+            <button onClick={startMeasurement} style={{...B(measureMode?"#101828":"#eaecf0", measureMode?"#ffffff":"#60b4ff"),fontSize:12}}>{measureMode?"Esperando clics...":"Activar medición"}</button>
           </div>
-          <div style={{fontSize:11,color:"#64748b",lineHeight:1.6}}>Haz clic en dos puntos del mapa y el sistema calcula la distancia real automáticamente en metros. Luego solo nombras el tramo y su tipo.</div>
+          <div style={{fontSize:11,color:"#667085",lineHeight:1.6}}>Haz clic en dos puntos del mapa y el sistema calcula la distancia real automáticamente en metros. Luego solo nombras el tramo y su tipo.</div>
         </div>
-        <div style={{background:"#f8fafc",borderRadius:10,padding:"12px 14px",border:"1px solid #e2e8f0"}}>
-          <div style={{fontSize:12,fontWeight:700,color:"#1a1a2e",marginBottom:8}}>Estado</div>
-          <div style={{fontSize:11,color: status==="error" ? "#991b1b" : "#475569",lineHeight:1.7}}>
+        <div style={{background:"#fafafa",borderRadius:10,padding:"12px 14px",border:"1px solid #eaecf0"}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#101828",marginBottom:8}}>Estado</div>
+          <div style={{fontSize:11,color: status==="error" ? "#991b1b" : "#475467",lineHeight:1.7}}>
             <div>• API: <strong>{GOOGLE_MAPS_EMBED_KEY ? "configurada" : "sin configurar"}</strong></div>
             <div>• Mapa: <strong>{status}</strong></div>
             <div>• Tramos: <strong>{(measurements||[]).length}</strong></div>
@@ -234,18 +234,18 @@ export default function GoogleMeasureWorkspace({ queryValue, onQueryChange, meas
         </div>
       </div>
 
-      <div ref={mapNodeRef} style={{height:420,borderRadius:12,overflow:"hidden",border:`2px solid ${measureMode?"#f47c20":"#e2e8f0"}`,marginBottom:12}} />
+      <div ref={mapNodeRef} style={{height:420,borderRadius:12,overflow:"hidden",border:`2px solid ${measureMode?"#101828":"#eaecf0"}`,marginBottom:12}} />
 
       {draft && (
-        <div style={{background:"#fffbeb",border:"2px solid #f5c842",borderRadius:10,padding:16,marginBottom:12}}>
-          <div style={{fontSize:13,fontWeight:700,color:"#b45309",marginBottom:12}}>Tramo detectado automáticamente</div>
+        <div style={{background:"#fffbeb",border:"2px solid #b54708",borderRadius:10,padding:16,marginBottom:12}}>
+          <div style={{fontSize:13,fontWeight:700,color:"#b54708",marginBottom:12}}>Tramo detectado automáticamente</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",gap:10,alignItems:"end"}}>
-            <div><LBL>Metros calculados</LBL><input value={draft.ml} readOnly style={{...SI,background:"#fff7ed",fontWeight:700,color:"#c2410c"}} /></div>
+            <div><LBL>Metros calculados</LBL><input value={draft.ml} readOnly style={{...SI,background:"#f2f4f7",fontWeight:700,color:"#475467"}} /></div>
             <div><LBL>Etiqueta</LBL><input value={draft.label} onChange={e=>setDraft({...draft,label:e.target.value})} placeholder="Ej: Cubierta norte" style={SI} /></div>
             <div><LBL>Tipo</LBL><select value={draft.tipo} onChange={e=>setDraft({...draft,tipo:e.target.value})} style={SI}>{[["LVH","Línea horizontal"],["LVV","Línea vertical"],["CON","Conexión"],["ESC","Escalera"],["PAN","Punto de anclaje"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
             <div style={{display:"flex",gap:6}}>
-              <button onClick={confirmDraft} style={B("#4ade80","#0f2d1a")}>Agregar</button>
-              <button onClick={()=>{clearTemp(); setDraft(null);}} style={B("#fee2e2","#ef4444")}>Cerrar</button>
+              <button onClick={confirmDraft} style={B("#101828","#ffffff")}>Agregar</button>
+              <button onClick={()=>{clearTemp(); setDraft(null);}} style={B("#feecec","#cc0000")}>Cerrar</button>
             </div>
           </div>
         </div>
@@ -253,15 +253,15 @@ export default function GoogleMeasureWorkspace({ queryValue, onQueryChange, meas
 
       {(measurements||[]).length>0 && (
         <div style={{marginBottom:12}}>
-          <div style={{fontSize:12,fontWeight:600,color:"#475569",marginBottom:8}}>Tramos medidos:</div>
+          <div style={{fontSize:12,fontWeight:600,color:"#475467",marginBottom:8}}>Tramos medidos:</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
             {(measurements||[]).map(seg=>(
-              <div key={seg.id} style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,border:"1px solid #e2e8f0"}}>
+              <div key={seg.id} style={{background:"#fafafa",borderRadius:8,padding:"10px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,border:"1px solid #eaecf0"}}>
                 <div>
-                  <div style={{fontSize:12,fontWeight:700,color:"#1a1a2e"}}>{seg.label}</div>
-                  <div style={{fontSize:10,color:"#64748b"}}>{seg.tipo} · {Number(seg.ml||0).toFixed(2)} m</div>
+                  <div style={{fontSize:12,fontWeight:700,color:"#101828"}}>{seg.label}</div>
+                  <div style={{fontSize:10,color:"#667085"}}>{seg.tipo} · {Number(seg.ml||0).toFixed(2)} m</div>
                 </div>
-                <button onClick={()=>removeMeasurement(seg.id)} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:5,padding:"3px 8px",cursor:"pointer",fontSize:11}}>×</button>
+                <button onClick={()=>removeMeasurement(seg.id)} style={{background:"#feecec",border:"none",color:"#cc0000",borderRadius:5,padding:"3px 8px",cursor:"pointer",fontSize:11}}>×</button>
               </div>
             ))}
           </div>

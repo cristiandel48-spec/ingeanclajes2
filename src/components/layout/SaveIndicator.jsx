@@ -48,10 +48,10 @@ export default function SaveIndicator({ theme, compact = false }) {
   }
 
   const colores = {
-    ok: { fg: "#067647", bg: "rgba(6,118,71,.10)" },
+    ok: { fg: "#027a48", bg: "rgba(6,118,71,.10)" },
     activo: { fg: theme.muted, bg: theme.surfaceTint },
     pendiente: { fg: "#B54708", bg: "rgba(181,71,8,.10)" },
-    error: { fg: "#B42318", bg: "rgba(180,35,24,.10)" },
+    error: { fg: "#cc0000", bg: "rgba(180,35,24,.10)" },
   }[estado.tipo];
 
   const esError = estado.tipo === "error";

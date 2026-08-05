@@ -9,7 +9,11 @@ const getSessionUser = backend.getSessionUser;
 const resolveTenantId = backend.resolveTenantId;
 const reintentandoSiChocanPestanas = backend.reintentandoSiChocanPestanas;
 
-const MARCA = "#E0342A";
+// El rojo del logo, solo para el logo. El boton de entrar va en tinta como
+// todos los botones principales: si el rojo sale tambien en los botones deja
+// de identificar a la marca y pasa a ser un color mas.
+const MARCA = "#cc0000";
+const ACCION = "#101828";
 
 const inputStyle = {
   background: "#fff",
@@ -35,7 +39,7 @@ const labelStyle = {
 
 const botonStyle = {
   width: "100%",
-  background: MARCA,
+  background: ACCION,
   color: "#fff",
   border: "none",
   borderRadius: 10,
@@ -100,7 +104,7 @@ function Encabezado({ etiqueta }) {
 function Aviso({ tono = "error", children }) {
   const colores = tono === "ok"
     ? { bg: "#f0fdf4", border: "#bbf7d0", fg: "#15803d" }
-    : { bg: "#fef3f2", border: "#fecdca", fg: "#b42318" };
+    : { bg: "#fef3f2", border: "#fecdca", fg: "#cc0000" };
   return (
     <div
       style={{
@@ -365,7 +369,7 @@ export default function SupabaseGate({ children }) {
             disabled={busy}
             style={
               motivoBloqueo === "tecnico"
-                ? { ...botonStyle, background: "#fff", color: "#475569", border: "1px solid #e4e7ec", opacity: busy ? 0.7 : 1 }
+                ? { ...botonStyle, background: "#fff", color: "#475467", border: "1px solid #e4e7ec", opacity: busy ? 0.7 : 1 }
                 : { ...botonStyle, opacity: busy ? 0.7 : 1 }
             }
           >

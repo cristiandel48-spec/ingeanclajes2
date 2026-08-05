@@ -2,13 +2,13 @@
 // cada uno. El orden y los nombres viven en pasosNominaConfig.js.
 import { FASES, PASOS, indiceDePaso, pasoAnterior, pasoSiguiente } from "./pasosNominaConfig";
 
-const NARANJA = "#f47c20";
+const NARANJA = "#101828";
 
 function Circulo({ numero, estado }) {
   const estilos = {
     actual: { fondo: NARANJA, texto: "#fff", borde: NARANJA },
     hecho: { fondo: "#fff", texto: NARANJA, borde: NARANJA },
-    pendiente: { fondo: "#fff", texto: "#94a3b8", borde: "#dbe4f0" },
+    pendiente: { fondo: "#fff", texto: "#98a2b3", borde: "#dbe4f0" },
   }[estado];
 
   return (
@@ -40,11 +40,11 @@ export default function PasosNomina({ activo, onIr }) {
         }}>
           <div style={{
             fontSize: 9.5, fontWeight: 700, letterSpacing: ".07em",
-            textTransform: "uppercase", color: "#94a3b8", marginBottom: 2,
+            textTransform: "uppercase", color: "#98a2b3", marginBottom: 2,
           }}>
             Fase {iFase + 1} · {fase.titulo}
           </div>
-          <div style={{ fontSize: 10.5, color: "#94a3b8", marginBottom: 9 }}>
+          <div style={{ fontSize: 10.5, color: "#98a2b3", marginBottom: 9 }}>
             {fase.detalle}
           </div>
 
@@ -60,14 +60,14 @@ export default function PasosNomina({ activo, onIr }) {
               return (
                 <div key={paso.id} style={{ display: "flex", alignItems: "center" }}>
                   {iPaso > 0 && (
-                    <div style={{ width: 14, height: 1.5, background: "#e2e8f0", flexShrink: 0 }} />
+                    <div style={{ width: 14, height: 1.5, background: "#eaecf0", flexShrink: 0 }} />
                   )}
                   <button
                     onClick={() => onIr(paso.id)}
                     title={`Paso ${indice + 1} de ${PASOS.length}: ${paso.label}`}
                     style={{
                       display: "flex", alignItems: "center", gap: 7,
-                      background: paso.id === activo ? "#fff7ed" : "transparent",
+                      background: paso.id === activo ? "#f2f4f7" : "transparent",
                       border: `1px solid ${paso.id === activo ? "#fed7aa" : "transparent"}`,
                       borderRadius: 10, padding: "5px 9px 5px 5px",
                       cursor: "pointer", fontFamily: "inherit",
@@ -78,7 +78,7 @@ export default function PasosNomina({ activo, onIr }) {
                     <span style={{
                       fontSize: 11.5,
                       fontWeight: paso.id === activo ? 700 : 600,
-                      color: paso.id === activo ? "#9a3412" : "#475569",
+                      color: paso.id === activo ? "#475467" : "#475467",
                     }}>
                       {paso.label}
                     </span>
@@ -114,7 +114,7 @@ export function NavegacionPasos({ activo, onIr }) {
     }}>
       {previo ? (
         <button onClick={() => onIr(previo.id)}
-          style={{ ...boton, background: "#f8fafc", border: "1px solid #dbe4f0", color: "#475569" }}>
+          style={{ ...boton, background: "#fafafa", border: "1px solid #dbe4f0", color: "#475467" }}>
           ← {previo.label}
         </button>
       ) : <span />}

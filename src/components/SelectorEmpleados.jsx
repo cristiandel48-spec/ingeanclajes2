@@ -48,9 +48,9 @@ export default function SelectorEmpleados({
   const agregar = (ids) => onCambiar([...new Set([...seleccionados, ...ids])]);
 
   const chip = (activo) => ({
-    background: activo ? "#fff4ec" : "#f1f5f9",
-    border: "1px solid " + (activo ? "#f9c99e" : "#e2e8f0"),
-    color: activo ? "#b45309" : "#475569",
+    background: activo ? "#fff4ec" : "#f2f4f7",
+    border: "1px solid " + (activo ? "#f9c99e" : "#eaecf0"),
+    color: activo ? "#b54708" : "#475467",
     borderRadius: 999, padding: "4px 11px", fontSize: 11, fontWeight: 600,
     cursor: activo ? "pointer" : "default", fontFamily: "inherit",
     opacity: activo ? 1 : 0.55,
@@ -59,7 +59,7 @@ export default function SelectorEmpleados({
   return (
     <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:7,flexWrap:"wrap"}}>
-        <span style={{fontSize:11,fontWeight:700,color: seleccionados.length ? "#166534" : "#94a3b8"}}>
+        <span style={{fontSize:11,fontWeight:700,color: seleccionados.length ? "#027a48" : "#98a2b3"}}>
           {seleccionados.length
             ? `${seleccionados.length} ${seleccionados.length === 1 ? "persona seleccionada" : "personas seleccionadas"}`
             : "Nadie seleccionado todavía"}
@@ -100,11 +100,11 @@ export default function SelectorEmpleados({
       )}
 
       <div style={{
-        border: "1px solid #e2e8f0", borderRadius: 10, maxHeight: 210,
+        border: "1px solid #eaecf0", borderRadius: 10, maxHeight: 210,
         overflowY: "auto", background: "#fff",
       }}>
         {filtrados.length === 0 && (
-          <div style={{padding:"16px 12px",textAlign:"center",fontSize:12,color:"#94a3b8"}}>
+          <div style={{padding:"16px 12px",textAlign:"center",fontSize:12,color:"#98a2b3"}}>
             Nadie coincide con «{busqueda}»
           </div>
         )}
@@ -116,7 +116,7 @@ export default function SelectorEmpleados({
               key={e.id}
               style={{
                 display:"flex",alignItems:"center",gap:9,padding:"7px 11px",cursor:"pointer",
-                borderBottom:"1px solid #f1f5f9",
+                borderBottom:"1px solid #f2f4f7",
                 background: activo ? "#f0fdf4" : "transparent",
               }}
             >
@@ -124,15 +124,15 @@ export default function SelectorEmpleados({
                 type="checkbox"
                 checked={activo}
                 onChange={() => alternar(e.id)}
-                style={{width:15,height:15,accentColor:"#166534",cursor:"pointer",flexShrink:0}}
+                style={{width:15,height:15,accentColor:"#027a48",cursor:"pointer",flexShrink:0}}
               />
               <Av init={e.avatar || "?"} color={PAL[idx % PAL.length]} size={26}/>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:12.5,fontWeight:600,color:"#1a1a2e",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{e.nombre}</div>
-                <div style={{fontSize:10.5,color:"#64748b"}}>{e.cargo}</div>
+                <div style={{fontSize:12.5,fontWeight:600,color:"#101828",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{e.nombre}</div>
+                <div style={{fontSize:10.5,color:"#667085"}}>{e.cargo}</div>
               </div>
               {delaObra.includes(e.id) && (
-                <span style={{fontSize:9.5,color:"#b45309",background:"#fff4ec",borderRadius:999,padding:"2px 7px",flexShrink:0}}>
+                <span style={{fontSize:9.5,color:"#b54708",background:"#fff4ec",borderRadius:999,padding:"2px 7px",flexShrink:0}}>
                   en la obra
                 </span>
               )}

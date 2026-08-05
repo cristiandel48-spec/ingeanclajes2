@@ -1,7 +1,7 @@
 // Paleta del armazon de la aplicacion (navegacion, barra superior, fondo).
 // Los tokens de las pantallas viven en styles/tokens.js.
 
-export const BRAND = "#E0342A";
+export const BRAND = "#cc0000";
 
 const light = {
   bg: "#f6f7f9",
@@ -16,7 +16,7 @@ const light = {
   railActiveBg: "#ffffff",
   railHoverBg: "rgba(255,255,255,.08)",
   railDivider: "#262931",
-  railTitle: "#6b7280",
+  railTitle: "#667085",
 };
 
 const dark = {
@@ -32,7 +32,7 @@ const dark = {
   railActiveBg: "#ffffff",
   railHoverBg: "rgba(255,255,255,.08)",
   railDivider: "#24262e",
-  railTitle: "#6b7280",
+  railTitle: "#667085",
 };
 
 export const getTheme = (mode) => (mode === "dark" ? dark : light);

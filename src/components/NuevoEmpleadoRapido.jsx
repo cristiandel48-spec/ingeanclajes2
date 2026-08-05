@@ -163,8 +163,8 @@ export default function NuevoEmpleadoRapido({ ctx, onCreado, onCerrar, obraId = 
   return (
     <div style={{ background: "#fff", border: "1px solid #cc0000", borderRadius: 14, padding: 20, marginBottom: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 12 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1a2e" }}>👷 Registrar un trabajador</div>
-        <button onClick={onCerrar} style={{ ...B("#f1f5f9", "#475569"), fontSize: 12, padding: "6px 12px" }}>Cerrar</button>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#101828" }}>👷 Registrar un trabajador</div>
+        <button onClick={onCerrar} style={{ ...B("#f2f4f7", "#475467"), fontSize: 12, padding: "6px 12px" }}>Cerrar</button>
       </div>
 
       <AvisoFlujo tono="info" titulo="Solo los datos básicos: el resto lo completa Nómina">
@@ -203,12 +203,12 @@ export default function NuevoEmpleadoRapido({ ctx, onCreado, onCerrar, obraId = 
                 autoFocus
                 style={{ ...SI, marginTop: 6 }}
               />
-              <div style={{ fontSize: 10.5, color: "#94a3b8", marginTop: 3 }}>
+              <div style={{ fontSize: 10.5, color: "#98a2b3", marginTop: 3 }}>
                 Queda disponible para los demás. Si ya existe con otra escritura, se usa el que hay.
               </div>
             </>
           ) : (
-            <div style={{ fontSize: 10.5, color: "#94a3b8", marginTop: 3 }}>
+            <div style={{ fontSize: 10.5, color: "#98a2b3", marginTop: 3 }}>
               Sale impreso en la tabla de personal del informe.
             </div>
           )}
@@ -230,16 +230,16 @@ export default function NuevoEmpleadoRapido({ ctx, onCreado, onCerrar, obraId = 
       </div>
 
       {error && (
-        <div style={{ background: "#FEF3F2", border: "1px solid #FECDCA", color: "#B42318", borderRadius: 10, padding: "11px 14px", fontSize: 12.5, marginBottom: 12, lineHeight: 1.5 }}>
+        <div style={{ background: "#FEF3F2", border: "1px solid #FECDCA", color: "#cc0000", borderRadius: 10, padding: "11px 14px", fontSize: 12.5, marginBottom: 12, lineHeight: 1.5 }}>
           {error}
         </div>
       )}
 
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-        <button onClick={guardar} style={B("#cc0000")}>✅ Registrar trabajador</button>
-        <button onClick={onCerrar} style={B("#f1f5f9", "#475569")}>Cancelar</button>
+        <button onClick={guardar} style={B("#101828")}>✅ Registrar trabajador</button>
+        <button onClick={onCerrar} style={B("#f2f4f7", "#475467")}>Cancelar</button>
         {nombreCompleto && (
-          <div style={{ fontSize: 11.5, color: "#64748b" }}>
+          <div style={{ fontSize: 11.5, color: "#667085" }}>
             Se registrará como <strong>{nombreCompleto}</strong>
           </div>
         )}

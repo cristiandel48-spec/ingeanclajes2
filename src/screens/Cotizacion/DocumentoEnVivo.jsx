@@ -97,7 +97,7 @@ export default function DocumentoEnVivo({
       style={{
         position: sticky ? "sticky" : "static",
         top: 0,
-        border: "1px solid #e2e8f0",
+        border: "1px solid #eaecf0",
         borderRadius: 12,
         overflow: "hidden",
         background: "#e8eaee",
@@ -107,18 +107,18 @@ export default function DocumentoEnVivo({
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
         gap: 10, padding: "9px 14px", background: "#fff",
-        borderBottom: "1px solid #e2e8f0",
+        borderBottom: "1px solid #eaecf0",
       }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "#64748b" }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "#667085" }}>
           {titulo}
         </div>
-        <div style={{ fontSize: 10.5, color: "#94a3b8" }}>
+        <div style={{ fontSize: 10.5, color: "#98a2b3" }}>
           {html ? nota : "Generando…"}
         </div>
       </div>
 
       {error ? (
-        <div style={{ padding: 20, fontSize: 12.5, color: "#b42318", background: "#fff" }}>
+        <div style={{ padding: 20, fontSize: 12.5, color: "#cc0000", background: "#fff" }}>
           No se pudo generar la vista previa. Revisa que los ítems tengan cantidad y valor.
         </div>
       ) : (

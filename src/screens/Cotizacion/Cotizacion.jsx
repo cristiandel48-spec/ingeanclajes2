@@ -20,6 +20,7 @@ import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, norma
 import { normalizeEntityKey, openCotizacionPrint } from "../../lib/cotizacionPrint";
 import { getFirmaImg } from "../../lib/firmaEmpresa";
 import { asuntoAprobacion, mensajeAprobacion } from "../../lib/correoAprobacion";
+import { blobABase64, generarCotizacionPdf } from "../../lib/cotizacionPdf";
 import { enviarCotizacionPorCorreo } from "../../lib/backend/usuarios";
 export default function Cotizacion({ctx}){
   const {cotizaciones,setCotizaciones,obras,setObras,clientes,empresaConfig}=ctx;
@@ -358,18 +359,56 @@ export default function Cotizacion({ctx}){
       return;
     }
 
-    enviarCotizacionPorCorreo({
-      para: destino,
-      asunto: asuntoAprobacion(cotizacion),
-      mensaje: mensajeAprobacion(cotizacion,{obraId}),
-      nombreArchivo: "",
-      pdfBase64: "",
-    })
-      .then(()=>setObraCreada((prev)=>prev && {...prev,correo:"enviado",destino}))
-      .catch((e)=>{
+    // El correo de aprobacion lleva la cotizacion adjunta: es el documento que
+    // el cliente va a querer tener a mano cuando empiece la obra, y pedirselo
+    // despues por otro medio sobra.
+    //
+    // Si el PDF no se puede generar, el correo sale IGUAL pero sin adjunto: el
+    // cliente tiene que enterarse de que se le aprobo aunque falle el archivo.
+    // Se avisa en pantalla para poder mandarselo aparte.
+    (async ()=>{
+      let adjunto = {nombreArchivo:"", pdfBase64:""};
+      try{
+        const {blob, nombre} = await generarCotizacionPdf(cotizacion,{firmaImg});
+        adjunto = {nombreArchivo:nombre, pdfBase64:await blobABase64(blob)};
+      }catch(e){
+        console.error("No se pudo generar el PDF para adjuntarlo a la aprobacion:",e);
+      }
+
+      const base = {
+        para: destino,
+        asunto: asuntoAprobacion(cotizacion),
+        mensaje: mensajeAprobacion(cotizacion,{obraId}),
+      };
+
+      try{
+        await enviarCotizacionPorCorreo({...base, ...adjunto});
+        setObraCreada((prev)=>prev && {
+          ...prev,
+          correo: adjunto.pdfBase64 ? "enviado" : "enviado-sin-pdf",
+          destino,
+        });
+      }catch(e){
+        // Si lo que tumbo el envio fue el adjunto -el servidor rechaza los PDF
+        // de mas de 20 MB, y una cotizacion con muchas fotos los pasa-, se
+        // manda el aviso solo. Que el cliente sepa que se le aprobo importa mas
+        // que llevarle el archivo, y el archivo se le puede pasar aparte.
+        if(adjunto.pdfBase64){
+          console.error("Falló el correo con el PDF adjunto, se reintenta sin él:",e);
+          try{
+            await enviarCotizacionPorCorreo({...base, nombreArchivo:"", pdfBase64:""});
+            setObraCreada((prev)=>prev && {...prev,correo:"enviado-sin-pdf",destino});
+            return;
+          }catch(e2){
+            console.error("Tampoco salió el correo sin adjunto:",e2);
+            setObraCreada((prev)=>prev && {...prev,correo:"fallo",destino,motivo:e2.message});
+            return;
+          }
+        }
         console.error("No se pudo avisar al cliente de la aprobacion:",e);
         setObraCreada((prev)=>prev && {...prev,correo:"fallo",destino,motivo:e.message});
-      });
+      }
+    })();
   };
 
   const term = normalizeEntityKey(busqueda || "");
@@ -415,12 +454,19 @@ export default function Cotizacion({ctx}){
                     quien aprobo tiene que enterarse para avisar por otro medio. */}
                 {obraCreada.correo==="enviando" && (
                   <div style={{fontSize:12,color:"#166534",marginTop:8,opacity:.75}}>
-                    Avisando al cliente por correo…
+                    Preparando la cotización en PDF y avisando al cliente…
                   </div>
                 )}
                 {obraCreada.correo==="enviado" && (
                   <div style={{fontSize:12,color:"#166534",marginTop:8}}>
-                    Se le confirmó por correo a <strong>{obraCreada.destino}</strong>.
+                    Se le confirmó por correo a <strong>{obraCreada.destino}</strong>, con la cotización adjunta.
+                  </div>
+                )}
+                {obraCreada.correo==="enviado-sin-pdf" && (
+                  <div style={{fontSize:12,color:"#B54708",marginTop:8,lineHeight:1.5}}>
+                    Se le confirmó por correo a <strong>{obraCreada.destino}</strong>, pero
+                    <strong> sin la cotización adjunta</strong>: el PDF no se pudo generar. Mándaselo
+                    aparte desde «Ver / Imprimir».
                   </div>
                 )}
                 {obraCreada.correo==="sin-direccion" && (

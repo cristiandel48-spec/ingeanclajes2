@@ -188,7 +188,7 @@ export default function Certificaciones({ctx}){
       observaciones:alcanceCompleto(form.obraId),
     });
     if(!texto){
-      window.alert("Para armar el texto hacen falta la cantidad y el cliente.");
+      window.alert("Para armar el texto hace falta el cliente. Elige la obra y se completa solo.");
       return;
     }
     setForm((prev)=>({...prev,sistema:texto,sistemaAuto:true}));
@@ -313,39 +313,6 @@ export default function Certificaciones({ctx}){
             </AvisoFlujo>
           )}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:12}}>
-            <div><LBL>Tipo</LBL><select value={form.tipo} onChange={e=>{
-              const t=e.target.value;
-              aplicarCambio({tipo:t,elementos:getCertDefaultElements(t, form.tipoSistema)});
-            }} style={SI}>{["Certificación","Recertificación"].map(t=><option key={t}>{t}</option>)}</select></div>
-            <div><LBL>Tipo de sistema</LBL><select value={form.tipoSistema||""} onChange={e=>{
-              const s=e.target.value;
-              aplicarCambio({tipoSistema:s,elementos:getCertDefaultElements(form.tipo, s)});
-            }} style={SI}>
-              <option value="">Seleccionar tipo de sistema...</option>
-              {["Líneas de vida horizontales","Puntos de anclaje","Escalera fija","Línea de vida vertical"].map(s=><option key={s}>{s}</option>)}
-            </select></div>
-            <div><LBL>Cantidad</LBL>
-              <input type="number" min={0} value={form.cantidad ?? ""} onChange={e=>aplicarCambio({cantidad:e.target.value})} placeholder="26" style={SI}/>
-              <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>
-                {form.tipoSistema?.includes("línea") || form.tipoSistema?.includes("Línea")
-                  ? "Metros instalados."
-                  : "Cuántos puntos o unidades se certifican."}
-              </div>
-            </div>
-            <div><LBL>Número</LBL><input value={form.numero} onChange={e=>setForm({...form,numero:e.target.value})} placeholder="C-2026-001" style={SI}/></div>
-            <div>
-              <LBL>Fecha</LBL>
-              <input type="date" value={form.fecha} onChange={e=>aplicarCambio({fecha:e.target.value})} style={SI}/>
-              {/* De donde salio, para que se note que no es la de hoy sino la
-                  del trabajo, y se pueda cambiar sabiendo lo que se cambia. */}
-              {fechaDeLaObra(form.obraId) && (
-                <div style={{fontSize:10,color: form.fecha===fechaDeLaObra(form.obraId) ? "#166534" : "#b45309", marginTop:3, lineHeight:1.4}}>
-                  {form.fecha===fechaDeLaObra(form.obraId)
-                    ? <>Es el fin del período del informe de {form.obraId}.</>
-                    : <>El informe de {form.obraId} termina el {fmtD(fechaDeLaObra(form.obraId))}.</>}
-                </div>
-              )}
-            </div>
             <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const id=e.target.value;setInformeRef("");const o=obras.find(x=>x.id===id);const cant=cantidadDeLaObra(id);const f=fechaDeLaObra(id);aplicarCambio({obraId:id,cliente:o?.cliente||"",direccion:o?.direccion||o?.ciudad||"",nit:buscarNit(o),...(cant?{cantidad:cant}:{}),...(f?{fecha:f}:{})});}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
             {/* Una obra con varias sedes lleva un informe por sede, y de cada
                 uno sale su propia certificacion. Aqui se elige cual. */}
@@ -383,6 +350,24 @@ export default function Certificaciones({ctx}){
                 </div>
               </div>
             )}
+            <div><LBL>Tipo</LBL><select value={form.tipo} onChange={e=>{
+              const t=e.target.value;
+              aplicarCambio({tipo:t,elementos:getCertDefaultElements(t, form.tipoSistema)});
+            }} style={SI}>{["Certificación","Recertificación"].map(t=><option key={t}>{t}</option>)}</select></div>
+            <div><LBL>Número</LBL><input value={form.numero} onChange={e=>setForm({...form,numero:e.target.value})} placeholder="C-2026-001" style={SI}/></div>
+            <div>
+              <LBL>Fecha</LBL>
+              <input type="date" value={form.fecha} onChange={e=>aplicarCambio({fecha:e.target.value})} style={SI}/>
+              {/* De donde salio, para que se note que no es la de hoy sino la
+                  del trabajo, y se pueda cambiar sabiendo lo que se cambia. */}
+              {fechaDeLaObra(form.obraId) && (
+                <div style={{fontSize:10,color: form.fecha===fechaDeLaObra(form.obraId) ? "#166534" : "#b45309", marginTop:3, lineHeight:1.4}}>
+                  {form.fecha===fechaDeLaObra(form.obraId)
+                    ? <>Es el fin del período del informe de {form.obraId}.</>
+                    : <>El informe de {form.obraId} termina el {fmtD(fechaDeLaObra(form.obraId))}.</>}
+                </div>
+              )}
+            </div>
             <div><LBL>Cliente</LBL><input value={form.cliente} onChange={e=>aplicarCambio({cliente:e.target.value})} onBlur={e=>{
               const nombre=normalizarRazonSocial(e.target.value);
               // Si el NIT esta vacio se busca el de ese cliente; si ya hay uno

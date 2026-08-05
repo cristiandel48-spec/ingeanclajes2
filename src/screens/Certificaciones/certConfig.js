@@ -89,12 +89,24 @@ const SISTEMAS = {
 };
 
 const SISTEMA_GENERICO = {
-  nombra: (n)=> n === 1 ? "un sistema de protección contra caídas" : `${n} sistemas de protección contra caídas`,
+  // Sin numero -que es lo normal desde que la cantidad no se escribe a mano-
+  // se habla del sistema en singular y sin cifra. El detalle exacto ya va en
+  // el "Alcance certificado", que sale de la cotizacion.
+  nombra: (n)=> !n
+    ? "el sistema de protección contra caídas"
+    : n === 1 ? "un sistema de protección contra caídas" : `${n} sistemas de protección contra caídas`,
   cadaUno: "cada punto de anclaje",
   remate: "se verificó el estado general de todos los componentes",
 };
 
 const enMayuscula = (texto)=>String(texto || "").trim().toUpperCase();
+
+// "de" + "el sistema..." = "del sistema...". Sin esto el parrafo salia con un
+// "de el" cuando no hay cantidad y se habla del sistema en singular.
+const contraerDe = (texto)=>{
+  const t = String(texto || "").trim();
+  return t.startsWith("el ") ? `del ${t.slice(3)}` : `de ${t}`;
+};
 
 /**
  * Arma el parrafo del sistema certificado con los datos del encabezado.
@@ -115,7 +127,10 @@ export const construirTextoSistema = ({
   observaciones = "",
 } = {})=>{
   const n = Number(cantidad) || 0;
-  if(!n || !cliente.trim()) return "";
+  // La cantidad dejo de pedirse en pantalla: se calcula sola desde la
+  // cotizacion, y cuando no hay se redacta sin cifra. Lo unico imprescindible
+  // es saber de quien es la obra.
+  if(!cliente.trim()) return "";
 
   const sistema = SISTEMAS[tipoSistema] || SISTEMA_GENERICO;
   const esRecert = tipo === "Recertificación";
@@ -133,7 +148,7 @@ export const construirTextoSistema = ({
 
   if(esRecert){
     return (
-      `Se realizó la recertificación de ${sistema.nombra(n)} ${lugar}.` +
+      `Se realizó la recertificación ${contraerDe(sistema.nombra(n))} ${lugar}.` +
       `${cuando} se realizaron las correspondientes pruebas de carga o presión, que permiten medir ` +
       `la resistencia de ${sistema.cadaUno} para cumplir con las 5.000 lb requeridas. ` +
       `A cada punto se le realizó su mantenimiento correspondiente y ${sistema.remate}.` +
@@ -142,7 +157,7 @@ export const construirTextoSistema = ({
   }
 
   return (
-    `Se realizó la instalación de ${sistema.nombra(n)} ${lugar}.` +
+    `Se realizó la instalación ${contraerDe(sistema.nombra(n))} ${lugar}.` +
     `${cuando} se realizaron las correspondientes pruebas de carga o presión, que permiten medir ` +
     `la resistencia de ${sistema.cadaUno} para cumplir con las 5.000 lb requeridas. ` +
     `Adicionalmente, ${sistema.remate}.` +

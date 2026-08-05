@@ -83,6 +83,22 @@ export default function Certificaciones({ctx}){
     return porNombre?.nit || "";
   };
 
+  // La direccion tambien sale de la ficha del cliente, no de la obra. En la
+  // obra suele estar la sede concreta -"TENERIFE #43"- y en el certificado
+  // tiene que ir la del cliente, que es a quien se le expide el documento.
+  const buscarDireccionCliente=(obra,clienteTexto)=>{
+    const nombre=normalizarRazonSocial(clienteTexto || obra?.cliente || "");
+    if(nombre){
+      const ficha=(clientes||[]).find((c)=>normalizarRazonSocial(c.nombre)===nombre);
+      if(ficha?.direccion) return ficha.direccion;
+      const vinculada=obra?.cotizacionId
+        ? (cotizaciones||[]).find((c)=>c.id===obra.cotizacionId)
+        : null;
+      if(vinculada?.direccion) return vinculada.direccion;
+    }
+    return obra?.direccion || obra?.ciudad || "";
+  };
+
   const [nueva,setNueva]=useState(()=>Boolean(obraSolicitada));
   const [editId,setEditId]=useState(null);
   const [form,setForm]=useState(()=>{
@@ -92,7 +108,7 @@ export default function Certificaciones({ctx}){
       elementos:getCertDefaultElements("Certificación"),
       obraId: obraInicial?.id || "",
       cliente: obraInicial?.cliente || "",
-      direccion: obraInicial?.direccion || obraInicial?.ciudad || "",
+      direccion: buscarDireccionCliente(obraInicial),
       nit: buscarNit(obraInicial),
       ...(fechaObra ? {fecha:fechaObra} : {}),
     });
@@ -201,7 +217,7 @@ export default function Certificaciones({ctx}){
       elementos:getCertDefaultElements(tipo),
       obraId: obra?.id || "",
       cliente: obra?.cliente || "",
-      direccion: obra?.direccion || obra?.ciudad || "",
+      direccion: buscarDireccionCliente(obra),
       nit: buscarNit(obra),
       ...(fechaObra ? {fecha:fechaObra} : {}),
     }));
@@ -303,7 +319,7 @@ export default function Certificaciones({ctx}){
             </AvisoFlujo>
           )}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:12}}>
-            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const id=e.target.value;setInformeRef("");const o=obras.find(x=>x.id===id);const f=fechaDeLaObra(id);aplicarCambio({obraId:id,cliente:o?.cliente||"",direccion:o?.direccion||o?.ciudad||"",nit:buscarNit(o),...(f?{fecha:f}:{})}, "");}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
+            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const id=e.target.value;setInformeRef("");const o=obras.find(x=>x.id===id);const f=fechaDeLaObra(id);aplicarCambio({obraId:id,cliente:o?.cliente||"",direccion:buscarDireccionCliente(o),nit:buscarNit(o),...(f?{fecha:f}:{})}, "");}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
             {/* Una obra con varias sedes lleva un informe por sede, y de cada
                 uno sale su propia certificacion. Aqui se elige cual. */}
             {informesDeObra(form.obraId).length > 1 && (

@@ -2,6 +2,29 @@ import { useAppData } from "../../context/AppDataContext";
 import { getFirmaImg } from "../../lib/firmaEmpresa";
 import PrintHeader from "../../components/print/PrintHeader";
 import { fmtL, today as hoy } from "../../lib/format";
+// Pone en negrita los datos del cliente dentro de una frase escrita en plano.
+//
+// El campo "Sistema certificado" se guarda como texto normal para poder
+// editarlo a mano; meterle etiquetas dentro lo volveria ilegible. Asi que la
+// negrita se aplica aqui, al imprimir: se buscan en la frase el NIT, el
+// cliente, la direccion y el sitio, y se resaltan.
+const conNegritas = (texto, datos)=>{
+  const trozos = [...new Set((datos||[]).map((d)=>String(d||"").trim()).filter((d)=>d.length>2))]
+    // De mayor a menor: si "CREAFAM" se resalta antes que "COOPERATIVA ...
+    // CREAFAM", parte el nombre largo por la mitad.
+    .sort((a,b)=>b.length-a.length);
+  if(!trozos.length) return texto;
+
+  const escapar = (t)=>t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const patron = new RegExp(`(${trozos.map(escapar).join("|")})`, "gi");
+
+  return String(texto||"").split(patron).map((parte,i)=>(
+    trozos.some((t)=>t.toLowerCase()===parte.toLowerCase())
+      ? <strong key={i}>{parte}</strong>
+      : <span key={i}>{parte}</span>
+  ));
+};
+
 export default function CertificacionDocumento({cert}){
   const {empresaConfig}=useAppData();
   const firmaImg=getFirmaImg(empresaConfig);
@@ -20,13 +43,13 @@ export default function CertificacionDocumento({cert}){
         <div>Envigado, {fmtL(hoy())}</div>
         <div style={{marginTop:10,fontWeight:700}}>SEÑORES:</div>
         <div style={{fontWeight:700}}>{(cert.cliente||"").toUpperCase()}</div>
-        {cert.nit&&<div>NIT: {cert.nit}</div>}
-        {cert.direccion&&<div>DIRECCIÓN: {cert.direccion.toUpperCase()}</div>}
+        {cert.nit&&<div>NIT: <strong>{cert.nit}</strong></div>}
+        {cert.direccion&&<div>DIRECCIÓN: <strong>{cert.direccion.toUpperCase()}</strong></div>}
       </div>
       <div style={{textAlign:"center",fontWeight:700,fontSize:15,marginBottom:20}}>INGEANCLAJES S.A.S</div>
 
       <div style={{textAlign:"justify",marginBottom:20,lineHeight:1.8}}>
-        {cert.sistema}
+        {conNegritas(cert.sistema, [cert.nit, cert.cliente, cert.direccion, cert.lugar])}
       </div>
 
       <div style={{marginBottom:16}}>Los elementos utilizados en dicha labor son:</div>

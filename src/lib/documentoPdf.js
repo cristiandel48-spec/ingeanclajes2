@@ -22,6 +22,10 @@
 // desproporcionada".
 const PX_A_PT = 72 / 96;
 
+// A cuanto se dibuja el documento antes de meterlo en el PDF. A 2 el texto se
+// lee limpio sin disparar el peso del archivo.
+const ESCALA_DIBUJO = 2;
+
 // Carta a 96 ppp: 8,5 x 11 pulgadas.
 const ANCHO_HOJA = 816;
 const ALTO_HOJA = 1056;
@@ -177,7 +181,7 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
     const cortes = limitesSeguros(raiz);
 
     const lienzo = await html2canvas(raiz, {
-      scale: 2,
+      scale: ESCALA_DIBUJO,
       useCORS: true,
       backgroundColor: "#ffffff",
       logging: false,
@@ -185,7 +189,17 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
       windowHeight: altoTotal,
     });
 
-    const escala = lienzo.height / altoTotal;
+    // La escala es la que se le pidio al dibujar, NO la que se deduzca de la
+    // altura del lienzo.
+    //
+    // POR QUE: html2canvas suele dibujar unos pixeles menos de alto que el
+    // scrollHeight del documento -no pinta el margen que sobra al final-.
+    // Dividiendo esa altura entre la del documento salia 1,965 en vez de 2, y
+    // ese error se repartia por toda la hoja: el corte que se habia calculado
+    // en el pixel 846 se recortaba en el 832, catorce pixeles mas arriba, o
+    // sea A MEDIO RENGLON. De ahi que la ultima linea saliera cortada por la
+    // mitad, con la parte de arriba en una hoja y la de abajo en la siguiente.
+    const escala = ESCALA_DIBUJO;
     const altoPagina = ALTO_UTIL;
 
     const pdf = new jsPDF({ unit: "pt", format: HOJA_PT, orientation: "portrait" });
@@ -212,8 +226,16 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
       recorte.height = altoTrozo;
       pincel.fillStyle = "#ffffff";
       pincel.fillRect(0, 0, recorte.width, recorte.height);
-      pincel.drawImage(lienzo, 0, Math.round(desde * escala), lienzo.width, altoTrozo,
-                       0, 0, lienzo.width, altoTrozo);
+
+      // Del dibujo se toma solo lo que existe: como puede quedarse corto al
+      // final, pedirle mas pintaria una banda negra en el pie de la ultima
+      // hoja. Lo que falte se queda en blanco, que es lo que habia ahi.
+      const yLienzo = Math.round(desde * escala);
+      const disponible = Math.max(0, Math.min(altoTrozo, lienzo.height - yLienzo));
+      if (disponible > 0) {
+        pincel.drawImage(lienzo, 0, yLienzo, lienzo.width, disponible,
+                         0, 0, lienzo.width, disponible);
+      }
 
       if (!primera) pdf.addPage(HOJA_PT, "portrait");
       primera = false;

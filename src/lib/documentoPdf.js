@@ -235,9 +235,22 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
   }
 }
 
+// Windows no deja guardar un archivo con \ / : * ? " < > | en el nombre, y el
+// nombre se arma con datos escritos a mano -proyectos como "SEDE 1/2"-, asi
+// que se limpian antes de descargar en vez de que falle el guardado.
+function nombreDeArchivo(nombre) {
+  const limpio = String(nombre || "")
+    .replace(/[\\/:*?"<>|]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  // 120 caracteres: deja sitio para la carpeta de destino sin pasarse del
+  // limite de ruta de Windows.
+  return limpio.slice(0, 120) || "Documento";
+}
+
 /** Genera el PDF y lo descarga. */
 export async function descargarDocumentoPdf(nodo, nombre) {
-  const { blob, nombre: archivo } = await generarDocumentoPdf(nodo, nombre);
+  const { blob, nombre: archivo } = await generarDocumentoPdf(nodo, nombreDeArchivo(nombre));
   const url = URL.createObjectURL(blob);
   const enlace = document.createElement("a");
   enlace.href = url;

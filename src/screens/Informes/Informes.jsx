@@ -579,9 +579,13 @@ export default function Informes({ctx}){
               onClick={async()=>{
                 setGenerandoPdf(true);
                 try{
+                  // Con el proyecto en el nombre, igual que las
+                  // certificaciones: "INF-002" a secas no dice de que obra es.
                   await descargarDocumentoPdf(
                     document.getElementById("pz"),
-                    "Informe de actividades " + (sel?.id || ""),
+                    `Informe de actividades ${sel?.id || ""} ${sel?.proyecto || sel?.cliente || ""}`
+                      .replace(/\s+/g, " ")
+                      .trim(),
                   );
                 }catch(fallo){
                   window.alert(fallo.message || "No se pudo generar el PDF.");

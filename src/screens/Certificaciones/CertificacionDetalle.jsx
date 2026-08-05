@@ -11,9 +11,15 @@ export default function CertificacionDetalle({cert,onVolver,onEditar,onImprimir,
   const descargar=async()=>{
     setGenerando(true);
     try{
+      // Al nombre del archivo se le pone tambien el proyecto: en una carpeta
+      // con varias certificaciones, "CERT-002" a secas no dice de cual obra
+      // es. Queda "Recertificación CERT-002 CREAFAM SEDE SAN BLAS".
+      const proyecto = cert.lugar || cert.cliente || "";
       await descargarDocumentoPdf(
         document.getElementById("pz"),
-        `${cert.tipo || "Certificación"} ${cert.numero || cert.id || ""}`.trim(),
+        `${cert.tipo || "Certificación"} ${cert.numero || cert.id || ""} ${proyecto}`
+          .replace(/\s+/g, " ")
+          .trim(),
       );
     }catch(fallo){
       window.alert(fallo.message || "No se pudo generar el PDF.");

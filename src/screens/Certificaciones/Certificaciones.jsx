@@ -12,7 +12,7 @@ import { getEstadoFlujoObra } from "../../lib/flujoObra";
 import { printCurrentPz } from "../../lib/print";
 import { siguienteIdUnico } from "../../lib/identificadores";
 export default function Certificaciones({ctx}){
-  const {certs,setCerts,obras,clientes,cotizaciones,intencion,limpiarIntencion,irAPantalla}=ctx;
+  const {certs,setCerts,obras,clientes,cotizaciones,informes,intencion,limpiarIntencion,irAPantalla}=ctx;
   const [sel,setSel]=useState(null);
   // Obra que llega desde el detalle de obra ("Crear certificación").
   const obraSolicitada = intencion?.pantalla==="certificaciones" ? intencion.obraId : null;
@@ -52,6 +52,24 @@ export default function Certificaciones({ctx}){
   useEffect(()=>()=>limpiarIntencion(),[limpiarIntencion]);
   const [nuevoElem,setNuevoElem]=useState("");
 
+  // Lo que se anoto en el informe de actividades de esta misma obra.
+  //
+  // La observacion del informe -"1 linea de vida horizontal de 7 m
+  // perimetral"- es justo lo que dice QUE se esta certificando. Estaba escrita
+  // en un documento y hacia falta en el otro, asi que habia que abrir el
+  // informe para comprobar que el certificado cubria lo instalado.
+  //
+  // Se unen por el numero de obra, que es lo que tienen en comun.
+  const observacionesDeObra = (obraId)=>{
+    if(!obraId) return "";
+    const textos = (informes||[])
+      .filter((inf)=>inf?.obraId===obraId)
+      .flatMap((inf)=>(inf.actividades||[]).map((a)=>String(a?.observaciones||"").trim()))
+      .filter(Boolean);
+    // Sin repetir: varios informes de la misma obra suelen traer la misma nota.
+    return [...new Set(textos)].join(". ");
+  };
+
   // Cambia algo del encabezado -tipo, sistema, cantidad, cliente, dirección o
   // fecha- y el párrafo se rehace. Solo mientras nadie lo haya editado a mano:
   // en cuanto se toca, manda lo escrito y esto deja de pisarlo.
@@ -66,6 +84,7 @@ export default function Certificaciones({ctx}){
           cliente:siguiente.cliente,
           direccion:siguiente.direccion,
           fechaLarga:fmtL(siguiente.fecha),
+          observaciones:observacionesDeObra(siguiente.obraId),
         });
         if(texto) siguiente.sistema=texto;
       }
@@ -81,6 +100,7 @@ export default function Certificaciones({ctx}){
       cliente:form.cliente,
       direccion:form.direccion,
       fechaLarga:fmtL(form.fecha),
+      observaciones:observacionesDeObra(form.obraId),
     });
     if(!texto){
       window.alert("Para armar el texto hacen falta la cantidad y el cliente.");
@@ -254,6 +274,15 @@ export default function Certificaciones({ctx}){
                 ? "Lo estás escribiendo a mano, así que ya no se rehace solo. Usa el botón para volver al texto automático."
                 : "Se actualiza solo con lo que elijas arriba. En cuanto lo edites, deja de hacerlo."}
             </div>
+            {/* De donde sale el alcance, para que no parezca que se lo invento
+                el sistema y se pueda ir a corregirlo a su sitio. */}
+            {observacionesDeObra(form.obraId) && (
+              <div style={{fontSize:10.5,color:"#166534",marginTop:5,lineHeight:1.5}}>
+                El <strong>alcance certificado</strong> viene de las observaciones del informe de
+                actividades de {form.obraId}: «{observacionesDeObra(form.obraId)}». Si no cuadra,
+                corrígelo en el informe y vuelve a armar el texto.
+              </div>
+            )}
           </div>
           <div style={{marginBottom:12}}>
             <LBL>Elementos utilizados</LBL>

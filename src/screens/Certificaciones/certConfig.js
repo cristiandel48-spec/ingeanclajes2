@@ -108,6 +108,11 @@ export const construirTextoSistema = ({
   direccion = "",
   fecha = "",
   fechaLarga = "",
+  // Lo que se anoto en las observaciones del informe de actividades de esa
+  // misma obra: "1 linea de vida horizontal de 7 m perimetral". Es la frase que
+  // dice QUE se esta certificando, y quien firma necesita verla en el
+  // certificado, no ir a buscarla al informe.
+  observaciones = "",
 } = {})=>{
   const n = Number(cantidad) || 0;
   if(!n || !cliente.trim()) return "";
@@ -119,12 +124,20 @@ export const construirTextoSistema = ({
     : `en las instalaciones de ${enMayuscula(cliente)}`;
   const cuando = (fechaLarga || fecha) ? ` El ${fechaLarga || fecha}` : " El día de la visita";
 
+  // El alcance va al final y en su propia frase: es lo que se busca de un
+  // vistazo cuando hay que comprobar que el certificado cubre lo instalado.
+  const alcance = String(observaciones || "").trim();
+  const cierre = alcance
+    ? ` Alcance certificado: ${alcance.replace(/\.+$/, "")}.`
+    : "";
+
   if(esRecert){
     return (
       `Se realizó la recertificación de ${sistema.nombra(n)} ${lugar}.` +
       `${cuando} se realizaron las correspondientes pruebas de carga o presión, que permiten medir ` +
       `la resistencia de ${sistema.cadaUno} para cumplir con las 5.000 lb requeridas. ` +
-      `A cada punto se le realizó su mantenimiento correspondiente y ${sistema.remate}.`
+      `A cada punto se le realizó su mantenimiento correspondiente y ${sistema.remate}.` +
+      cierre
     );
   }
 
@@ -132,7 +145,8 @@ export const construirTextoSistema = ({
     `Se realizó la instalación de ${sistema.nombra(n)} ${lugar}.` +
     `${cuando} se realizaron las correspondientes pruebas de carga o presión, que permiten medir ` +
     `la resistencia de ${sistema.cadaUno} para cumplir con las 5.000 lb requeridas. ` +
-    `Adicionalmente, ${sistema.remate}.`
+    `Adicionalmente, ${sistema.remate}.` +
+    cierre
   );
 };
 

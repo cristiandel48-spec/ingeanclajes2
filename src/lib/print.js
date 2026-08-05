@@ -15,6 +15,14 @@ export function printCurrentPz(title = "Documento"){
       .doc-shell{background:#fff;color:#111;}
       .doc-shell table{width:100%;border-collapse:collapse;}
       table,tr,td,th{break-inside:avoid;page-break-inside:avoid;}
+      /* Una viñeta o un pie de firma no se parten por la mitad: el corte de
+         hoja caia dentro del renglon y la frase salia cortada a lo ancho,
+         media arriba y media en la hoja siguiente. */
+      li,figure,img{break-inside:avoid;page-break-inside:avoid;}
+      /* Y en los parrafos largos, que no quede un renglon suelto a un lado
+         del corte. Solo en parrafos y viñetas: puesto en todos los `div`
+         empuja bloques enteros y deja las hojas a medio llenar. */
+      p,li{orphans:2;widows:2;}
       img{max-width:100%;}
     </style>
   </head><body>${node.outerHTML}</body></html>`;

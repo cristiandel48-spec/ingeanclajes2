@@ -274,7 +274,9 @@ export default function Certificaciones({ctx}){
         </div>
       )}
 
-      {!sel&&(
+      {/* Se esconde mientras se esta llenando una certificacion: la pantalla se
+          dedica al formulario y no a las que ya estan hechas. */}
+      {!sel&&!nueva&&(
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,alignContent:"start"}}>
           {certs.map(c=>(
             <div key={c.id} style={{...CD,border:"1px solid " + (sel?.id===c.id?"#f47c20":"#1a3050"),cursor:"pointer"}} onClick={()=>setSel(c)}>

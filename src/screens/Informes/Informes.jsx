@@ -530,8 +530,9 @@ export default function Informes({ctx}){
         </div>
       )}
 
-      {/* Lista de informes */}
-      {!sel&&(
+      {/* Lista de informes. Se esconde mientras se esta escribiendo uno: la
+          pantalla se dedica al formulario y no a los que ya estan hechos. */}
+      {!sel&&!nuevo&&(
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
           {informes.map(inf=>(
             <div key={inf.id} style={{...CD,border:"1px solid #e2e8f0",cursor:"pointer"}}

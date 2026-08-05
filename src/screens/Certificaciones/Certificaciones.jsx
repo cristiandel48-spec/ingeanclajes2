@@ -11,6 +11,7 @@ import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { getEstadoFlujoObra } from "../../lib/flujoObra";
 import { printCurrentPz } from "../../lib/print";
 import { siguienteIdUnico } from "../../lib/identificadores";
+import { getQuoteActiveProposal, normalizeQuoteItems } from "../../lib/cotizaciones";
 export default function Certificaciones({ctx}){
   const {certs,setCerts,obras,clientes,cotizaciones,informes,intencion,limpiarIntencion,irAPantalla}=ctx;
   const [sel,setSel]=useState(null);
@@ -52,6 +53,40 @@ export default function Certificaciones({ctx}){
   useEffect(()=>()=>limpiarIntencion(),[limpiarIntencion]);
   const [nuevoElem,setNuevoElem]=useState("");
 
+  // Lo que se cotizo para esta obra: el detalle de los items.
+  //
+  // Es la fuente mas fiable de QUE se certifica, porque es lo que se vendio y
+  // lo que se cobra. Antes habia que abrir la cotizacion para verlo, y la
+  // cantidad se escribia a mano mirando ese documento.
+  //
+  // El camino es obra → cotizacionId → cotizacion → propuesta activa → items.
+  const itemsDeLaObra = (obraId)=>{
+    const obra = (obras||[]).find((o)=>o.id===obraId);
+    if(!obra?.cotizacionId) return [];
+    const cot = (cotizaciones||[]).find((c)=>c.id===obra.cotizacionId);
+    if(!cot) return [];
+    return normalizeQuoteItems(getQuoteActiveProposal(cot).items?.length
+      ? {...cot, items:getQuoteActiveProposal(cot).items}
+      : cot);
+  };
+
+  // "26 UND · RECERTIFICACION ANUAL PUNTOS DE ANCLAJES"
+  const detalleDeItems = (items)=>(items||[])
+    .filter((it)=>String(it?.desc||"").trim())
+    .map((it)=>{
+      const cant = Number(it.cant||0);
+      const unidad = String(it.unit||"").trim();
+      const medida = cant ? `${cant % 1 === 0 ? cant : cant.toFixed(2)}${unidad?` ${unidad}`:""} · ` : "";
+      return `${medida}${String(it.desc).trim()}`;
+    })
+    .join("; ");
+
+  // La cantidad del certificado: la suma de lo cotizado.
+  const cantidadDeLaObra = (obraId)=>{
+    const total = itemsDeLaObra(obraId).reduce((s,it)=>s + (Number(it.cant)||0), 0);
+    return total ? String(total % 1 === 0 ? total : total.toFixed(2)) : "";
+  };
+
   // Lo que se anoto en el informe de actividades de esta misma obra.
   //
   // La observacion del informe -"1 linea de vida horizontal de 7 m
@@ -70,6 +105,20 @@ export default function Certificaciones({ctx}){
     return [...new Set(textos)].join(". ");
   };
 
+  // Lo que se escribe como "Alcance certificado".
+  //
+  // Manda el detalle de la cotizacion, que es lo que se vendio y se cobra. La
+  // nota del informe se suma detras solo si aporta algo que los items no digan
+  // ya, para no repetir lo mismo con otras palabras.
+  const alcanceCompleto = (obraId)=>{
+    const cotizado = detalleDeItems(itemsDeLaObra(obraId));
+    const anotado = observacionesDeObra(obraId);
+    if(!cotizado) return anotado;
+    if(!anotado) return cotizado;
+    const yaEsta = cotizado.toLowerCase().includes(anotado.toLowerCase().replace(/\.+$/, ""));
+    return yaEsta ? cotizado : `${cotizado}. ${anotado}`;
+  };
+
   // Cambia algo del encabezado -tipo, sistema, cantidad, cliente, dirección o
   // fecha- y el párrafo se rehace. Solo mientras nadie lo haya editado a mano:
   // en cuanto se toca, manda lo escrito y esto deja de pisarlo.
@@ -84,7 +133,7 @@ export default function Certificaciones({ctx}){
           cliente:siguiente.cliente,
           direccion:siguiente.direccion,
           fechaLarga:fmtL(siguiente.fecha),
-          observaciones:observacionesDeObra(siguiente.obraId),
+          observaciones:alcanceCompleto(siguiente.obraId),
         });
         if(texto) siguiente.sistema=texto;
       }
@@ -100,7 +149,7 @@ export default function Certificaciones({ctx}){
       cliente:form.cliente,
       direccion:form.direccion,
       fechaLarga:fmtL(form.fecha),
-      observaciones:observacionesDeObra(form.obraId),
+      observaciones:alcanceCompleto(form.obraId),
     });
     if(!texto){
       window.alert("Para armar el texto hacen falta la cantidad y el cliente.");
@@ -242,7 +291,7 @@ export default function Certificaciones({ctx}){
             </div>
             <div><LBL>Número</LBL><input value={form.numero} onChange={e=>setForm({...form,numero:e.target.value})} placeholder="C-2026-001" style={SI}/></div>
             <div><LBL>Fecha</LBL><input type="date" value={form.fecha} onChange={e=>aplicarCambio({fecha:e.target.value})} style={SI}/></div>
-            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const o=obras.find(x=>x.id===e.target.value);aplicarCambio({obraId:e.target.value,cliente:o?.cliente||"",direccion:o?.direccion||o?.ciudad||"",nit:buscarNit(o)});}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
+            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const id=e.target.value;const o=obras.find(x=>x.id===id);const cant=cantidadDeLaObra(id);aplicarCambio({obraId:id,cliente:o?.cliente||"",direccion:o?.direccion||o?.ciudad||"",nit:buscarNit(o),...(cant?{cantidad:cant}:{})});}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
             <div><LBL>Cliente</LBL><input value={form.cliente} onChange={e=>aplicarCambio({cliente:e.target.value})} onBlur={e=>{
               const nombre=normalizarRazonSocial(e.target.value);
               // Si el NIT esta vacio se busca el de ese cliente; si ya hay uno
@@ -276,11 +325,13 @@ export default function Certificaciones({ctx}){
             </div>
             {/* De donde sale el alcance, para que no parezca que se lo invento
                 el sistema y se pueda ir a corregirlo a su sitio. */}
-            {observacionesDeObra(form.obraId) && (
+            {alcanceCompleto(form.obraId) && (
               <div style={{fontSize:10.5,color:"#166534",marginTop:5,lineHeight:1.5}}>
-                El <strong>alcance certificado</strong> viene de las observaciones del informe de
-                actividades de {form.obraId}: «{observacionesDeObra(form.obraId)}». Si no cuadra,
-                corrígelo en el informe y vuelve a armar el texto.
+                El <strong>alcance certificado</strong> sale de {form.obraId}:
+                {detalleDeItems(itemsDeLaObra(form.obraId))
+                  ? <> los ítems de su cotización{observacionesDeObra(form.obraId) ? " y las observaciones del informe" : ""}</>
+                  : <> las observaciones del informe de actividades</>}.
+                Si no cuadra, corrígelo ahí y vuelve a armar el texto.
               </div>
             )}
           </div>

@@ -9,6 +9,7 @@ import { B, CD, PAL, SI, ST } from "../../styles/tokens";
 import { fmtD, fmtL, today } from "../../lib/format";
 import { abrirWhatsApp, normalizarCelular } from "../../lib/whatsapp";
 import { puedeCrearPersonal } from "../../lib/permisos";
+import { normalizarMayusculas } from "../../lib/normalizarEntrada";
 export default function Horarios({ctx}){
   const {obras,empleados,horarios,setHorarios,irAPantalla,membresia}=ctx;
   const firstObraId = obras[0]?.id || "";
@@ -207,14 +208,24 @@ export default function Horarios({ctx}){
       porObra.get(h.obraId).push(h);
     });
 
+    // Cada dato con su rotulo y en su renglon. Antes iban el proyecto en
+    // negrita y debajo "cliente · direccion" separados por un punto, y en el
+    // grupo no habia forma de saber cual era la obra, cual el cliente y cual la
+    // direccion: se leia como una sola linea de texto.
     const bloques=[...porObra.entries()].map(([obraId,turnos])=>{
       const o=obras.find(x=>x.id===obraId);
-      const donde=[o?.cliente,o?.direccion||o?.ciudad].filter(Boolean).join(" · ");
+      const lugar=[o?.direccion,o?.ciudad].filter(Boolean).join(", ");
       const lineas=turnos.map((h)=>{
         const e=empleados.find(x=>x.id===h.empleadoId);
         return `• ${e?.nombre||"—"} · ${fmtTurno12Local(h.turno)} · ${h.tarea}`;
       });
-      return [`*${o?.proyecto||"Obra"}*${donde?`\n${donde}`:""}`,...lineas].join("\n");
+      return [
+        `📍 *OBRA:* ${normalizarMayusculas(o?.proyecto||"SIN OBRA")}`,
+        o?.cliente ? `*CLIENTE:* ${normalizarMayusculas(o.cliente)}` : "",
+        lugar ? `*DIRECCIÓN:* ${lugar}` : "",
+        "",
+        ...lineas,
+      ].filter((linea,i)=>linea!=="" || i>0).join("\n");
     });
 
     return [
@@ -515,13 +526,31 @@ export default function Horarios({ctx}){
       {porAvisar.length>0&&(
         <div style={{...CD,marginBottom:20,border:"1px solid #166534"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:4}}>
-            <div style={ST}>Falta avisarles · {porAvisar.filter(p=>!p.enviado).length} de {porAvisar.length}</div>
+            <div style={ST}>Turnos guardados · {porAvisar.length} {porAvisar.length===1?"persona":"personas"}</div>
             <button onClick={()=>setPorAvisar([])} style={{...B("#f1f5f9","#475569"),fontSize:11.5,padding:"6px 12px"}}>Listo, cerrar</button>
           </div>
-          <div style={{fontSize:11.5,color:"#64748b",marginBottom:12,lineHeight:1.5}}>
-            Los turnos <strong>ya quedaron guardados</strong>. WhatsApp solo deja abrir un chat a la vez,
-            así que se manda de a uno. Si el horario se comparte en el grupo, es más rápido usar
-            <strong> «Enviar horario al grupo»</strong> aquí abajo.
+
+          {/* El mensaje al grupo va PRIMERO y en grande. Es un solo envio y
+              resuelve el dia entero; la lista de abajo es para el caso suelto.
+              Antes estaba al reves y parecia que tocaba ir uno por uno. */}
+          <div style={{fontSize:11.5,color:"#64748b",marginBottom:10,lineHeight:1.5}}>
+            Los turnos <strong>ya quedaron guardados</strong>. Lo más rápido es mandar
+            <strong> un solo mensaje al grupo</strong> con todos los turnos del día:
+          </div>
+          <button
+            onClick={abrirHorarioDelDia}
+            style={{...B("#166534","#ffffff"),fontSize:13,fontWeight:700,width:"100%",justifyContent:"center",padding:"11px 16px"}}
+          >
+            📋 Enviar horario al grupo · un solo mensaje
+          </button>
+
+          <div style={{display:"flex",alignItems:"center",gap:10,margin:"16px 0 10px"}}>
+            <div style={{flex:1,height:1,background:"#e2e8f0"}}/>
+            <span style={{fontSize:10.5,color:"#94a3b8"}}>o avisa a alguien en particular</span>
+            <div style={{flex:1,height:1,background:"#e2e8f0"}}/>
+          </div>
+          <div style={{fontSize:10.5,color:"#94a3b8",marginBottom:10,lineHeight:1.5}}>
+            WhatsApp solo deja abrir un chat a la vez, así que por aquí se manda de a uno.
           </div>
           {porAvisar.map((p)=>{
             const e=empleados.find(x=>x.id===p.empleadoId);

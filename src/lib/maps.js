@@ -175,6 +175,31 @@ export function loadGoogleMapsJsApi(){
   if(typeof window === "undefined") return Promise.reject(new Error("Google Maps solo está disponible en el navegador."));
   if(window.google?.maps) return Promise.resolve(window.google.maps);
   if(googleMapsJsPromise) return googleMapsJsPromise;
+  // Google no rechaza el script cuando la clave falla: lo carga igual, pinta el
+  // mapa con la marca de agua "For development purposes only" y avisa por un
+  // camino aparte -esta funcion global y un console.error-. Sin engancharse ahi,
+  // la app cree que todo fue bien y la persona se queda mirando un mapa gris sin
+  // saber por que.
+  //
+  // El caso real: BillingNotEnabledMapError, o sea que el proyecto de Google
+  // Cloud no tiene la facturacion activada. No es un fallo del sistema y no se
+  // arregla desde aqui.
+  window.gm_authFailure = () => {
+    const aviso = document.getElementById("gmaps-aviso-clave");
+    if (aviso) return;
+    const caja = document.createElement("div");
+    caja.id = "gmaps-aviso-clave";
+    caja.style.cssText = "position:fixed;left:50%;bottom:18px;transform:translateX(-50%);" +
+      "z-index:9999;max-width:520px;background:#fffaf0;border:1px solid #fde3c4;color:#b54708;" +
+      "border-radius:10px;padding:12px 16px;font-size:13px;line-height:1.5;" +
+      "box-shadow:0 8px 24px rgba(16,24,40,.14);font-family:inherit";
+    caja.textContent = "Google Maps rechazó la clave, así que la medición satelital no funciona. " +
+      "Suele ser que el proyecto de Google Cloud no tiene la facturación activada. " +
+      "Los mapas del PDF de la cotización también saldrán vacíos hasta que se resuelva.";
+    document.body.appendChild(caja);
+    setTimeout(() => caja.remove(), 15000);
+  };
+
   googleMapsJsPromise = new Promise((resolve,reject)=>{
     const existing = document.getElementById("gmaps-js-api");
     const finish = ()=> window.google?.maps ? resolve(window.google.maps) : reject(new Error("Google Maps no cargó correctamente."));

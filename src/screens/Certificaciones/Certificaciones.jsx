@@ -105,6 +105,25 @@ export default function Certificaciones({ctx}){
     return [...new Set(textos)].join(". ");
   };
 
+  // La fecha del certificado sale del informe de actividades de esa obra.
+  //
+  // Se certifica lo que se termino de hacer, y esa fecha esta en el periodo del
+  // informe. Antes el certificado nacia con la fecha de hoy, que es la de
+  // escribirlo, no la del trabajo: si se certificaba una semana despues, el
+  // documento decia una fecha en la que no se hizo nada.
+  //
+  // Se toma el FIN del periodo -el ultimo dia trabajado- y, si hay varios
+  // informes de la obra, el mas reciente.
+  const fechaDeLaObra = (obraId)=>{
+    if(!obraId) return "";
+    const fechas = (informes||[])
+      .filter((inf)=>inf?.obraId===obraId)
+      .map((inf)=>String(inf.periodoFin || inf.fechaInforme || "").trim())
+      .filter(Boolean)
+      .sort();
+    return fechas.length ? fechas[fechas.length-1] : "";
+  };
+
   // Lo que se escribe como "Alcance certificado".
   //
   // Manda el detalle de la cotizacion, que es lo que se vendio y se cobra. La
@@ -164,6 +183,10 @@ export default function Certificaciones({ctx}){
     const obra = obras.find((x)=>x.id===obraId) || obras[0] || null;
     setEditId(null);
     setNuevoElem("");
+    // La cantidad y la fecha tambien se traen de una: son los dos datos que se
+    // copiaban a mano de la cotizacion y del informe.
+    const cant = cantidadDeLaObra(obra?.id);
+    const fechaObra = fechaDeLaObra(obra?.id);
     setForm(buildCertForm({
       tipo,
       elementos:getCertDefaultElements(tipo),
@@ -171,6 +194,8 @@ export default function Certificaciones({ctx}){
       cliente: obra?.cliente || "",
       direccion: obra?.direccion || obra?.ciudad || "",
       nit: buscarNit(obra),
+      ...(cant ? {cantidad:cant} : {}),
+      ...(fechaObra ? {fecha:fechaObra} : {}),
     }));
     setNueva(true);
   };
@@ -290,8 +315,20 @@ export default function Certificaciones({ctx}){
               </div>
             </div>
             <div><LBL>Número</LBL><input value={form.numero} onChange={e=>setForm({...form,numero:e.target.value})} placeholder="C-2026-001" style={SI}/></div>
-            <div><LBL>Fecha</LBL><input type="date" value={form.fecha} onChange={e=>aplicarCambio({fecha:e.target.value})} style={SI}/></div>
-            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const id=e.target.value;const o=obras.find(x=>x.id===id);const cant=cantidadDeLaObra(id);aplicarCambio({obraId:id,cliente:o?.cliente||"",direccion:o?.direccion||o?.ciudad||"",nit:buscarNit(o),...(cant?{cantidad:cant}:{})});}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
+            <div>
+              <LBL>Fecha</LBL>
+              <input type="date" value={form.fecha} onChange={e=>aplicarCambio({fecha:e.target.value})} style={SI}/>
+              {/* De donde salio, para que se note que no es la de hoy sino la
+                  del trabajo, y se pueda cambiar sabiendo lo que se cambia. */}
+              {fechaDeLaObra(form.obraId) && (
+                <div style={{fontSize:10,color: form.fecha===fechaDeLaObra(form.obraId) ? "#166534" : "#b45309", marginTop:3, lineHeight:1.4}}>
+                  {form.fecha===fechaDeLaObra(form.obraId)
+                    ? <>Es el fin del período del informe de {form.obraId}.</>
+                    : <>El informe de {form.obraId} termina el {fmtD(fechaDeLaObra(form.obraId))}.</>}
+                </div>
+              )}
+            </div>
+            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const id=e.target.value;const o=obras.find(x=>x.id===id);const cant=cantidadDeLaObra(id);const f=fechaDeLaObra(id);aplicarCambio({obraId:id,cliente:o?.cliente||"",direccion:o?.direccion||o?.ciudad||"",nit:buscarNit(o),...(cant?{cantidad:cant}:{}),...(f?{fecha:f}:{})});}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
             <div><LBL>Cliente</LBL><input value={form.cliente} onChange={e=>aplicarCambio({cliente:e.target.value})} onBlur={e=>{
               const nombre=normalizarRazonSocial(e.target.value);
               // Si el NIT esta vacio se busca el de ese cliente; si ya hay uno

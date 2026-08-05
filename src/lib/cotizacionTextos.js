@@ -4,6 +4,14 @@
 // campo queda vacio se usa el valor por defecto de aqui.
 
 export const TEXTOS_DOCUMENTO_DEFAULT = {
+  // Titulo grande de la portada. Es editable porque no todas las cotizaciones
+  // son de trabajo en alturas: tambien hay certificaciones, mantenimiento de
+  // fachadas y obra blanca, y el documento salia diciendo lo mismo siempre.
+  //
+  // Un renglon por linea: se imprimen tal cual, para poder partir el titulo
+  // donde convenga en vez de dejar que caiga solo.
+  tituloPortada: ["Sistema de Anclajes Certificado", "para Trabajo en Alturas"].join("\n"),
+
   // Frase de apertura. El documento le agrega " en la obra X." cuando la
   // cotizacion tiene obra, asi que va SIN punto final.
   saludo:

@@ -656,6 +656,20 @@ export default function Cotizacion({ctx}){
 
       <div style={{...CD,marginBottom:14}}>
         <div style={ST}>01 · Carta de presentación</div>
+        {/* Va primero porque es lo primero que se ve del documento. */}
+        <div style={{marginBottom:14}}>
+          <LBL>Título de la portada</LBL>
+          <textarea
+            value={textosDocumento.tituloPortada}
+            onChange={e=>setTexto("tituloPortada",e.target.value)}
+            rows={2}
+            style={{...SI,resize:"vertical",lineHeight:1.5,fontSize:14,fontWeight:600}}
+          />
+          <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>
+            El título grande de la primera hoja. Cámbialo según el trabajo: certificación, mantenimiento
+            de fachadas, obra blanca… Cada renglón que escribas sale en una línea distinta del título.
+          </div>
+        </div>
         <div style={{marginBottom:14}}>
           <LBL>Frase de apertura</LBL>
           <textarea

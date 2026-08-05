@@ -548,7 +548,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
           </div>
           <div class="cover-title">
             <div class="cover-kicker">Propuesta Comercial</div>
-            <h1>Sistema de Anclajes Certificado<br/>para Trabajo en Alturas</h1>
+            <h1>${lineasDeTexto(textos.tituloPortada).map((l)=>escapeHtml(l)).join("<br/>")}</h1>
           </div>
           <div class="meta-strip">
             <div class="meta-cell">

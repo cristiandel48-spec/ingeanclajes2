@@ -7,6 +7,7 @@ import { useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmtD, today } from "../../lib/format";
 import { printCurrentPz } from "../../lib/print";
+import { siguienteIdUnico } from "../../lib/identificadores";
 export default function Vencimientos({ctx}){
   const {certs,setCerts,obras}=ctx;
   const hoy=new Date();
@@ -39,7 +40,7 @@ export default function Vencimientos({ctx}){
 
   const guardarRecert=()=>{
     if(!recertData.fecha||!recertData.proxMant)return;
-    const newId="CERT-" + (String(certs.length+1).padStart(3,"0"));
+    const newId=siguienteIdUnico(certs,"CERT");
     const nuevaCert={id:newId,...recertData,estado:"Vigente"};
     // Marca la cert anterior como "Recertificado" y guarda nueva fecha
     setCerts(p=>[

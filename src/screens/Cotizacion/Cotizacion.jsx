@@ -22,6 +22,7 @@ import { getFirmaImg } from "../../lib/firmaEmpresa";
 import { asuntoAprobacion, mensajeAprobacion } from "../../lib/correoAprobacion";
 import { blobABase64, generarCotizacionPdf } from "../../lib/cotizacionPdf";
 import { enviarCotizacionPorCorreo } from "../../lib/backend/usuarios";
+import { siguienteIdUnico } from "../../lib/identificadores";
 export default function Cotizacion({ctx}){
   const {cotizaciones,setCotizaciones,obras,setObras,clientes,empresaConfig}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
@@ -267,7 +268,7 @@ export default function Cotizacion({ctx}){
     });
     const activa = propuestasFinales.find((x)=>x.id===propuestaActivaId) || propuestasFinales[0];
     const prev = editCot ? cotizaciones.find((cotizacion)=>cotizacion.id===editCot) : null;
-    const data = {id:editCot || `COT-${String(cotizaciones.length+1).padStart(3,"0")}`,numero:cot,fecha,val,cliente:normalizarRazonSocial(cl.nombre),nit:cl.nit,contacto:cl.contacto,contactoEmail:cl.contactoEmail,obra:normalizarMayusculas(cl.obra),telefono:cl.telefono,ciudad:normalizarMayusculas(cl.ciudad),direccion:normalizarMayusculas(cl.direccion),coords:cl.coords,textoInicial:textoInicial.trim(),observaciones:observacionesCot.trim(),textosDocumento,items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:activa.mapImg || null,geoMediciones:activa.geoMediciones || [],geoMapView:activa.geoMapView || null,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,incluyeTexto:activa.incluyeTexto || "",propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
+    const data = {id:editCot || siguienteIdUnico(cotizaciones,"COT"),numero:cot,fecha,val,cliente:normalizarRazonSocial(cl.nombre),nit:cl.nit,contacto:cl.contacto,contactoEmail:cl.contactoEmail,obra:normalizarMayusculas(cl.obra),telefono:cl.telefono,ciudad:normalizarMayusculas(cl.ciudad),direccion:normalizarMayusculas(cl.direccion),coords:cl.coords,textoInicial:textoInicial.trim(),observaciones:observacionesCot.trim(),textosDocumento,items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:activa.mapImg || null,geoMediciones:activa.geoMediciones || [],geoMapView:activa.geoMapView || null,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,incluyeTexto:activa.incluyeTexto || "",propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
     setCotizaciones((prevList)=>editCot ? prevList.map((cotizacion)=>cotizacion.id===editCot?{...cotizacion,...data}:cotizacion) : [...prevList,data]);
     setPropuestas(propuestasFinales);
     setEditCot(data.id);
@@ -317,7 +318,7 @@ export default function Cotizacion({ctx}){
     const snapshot = base ? getQuoteApprovalAccountingSnapshot(base) : null;
     const cotizacion = snapshot?.cotizacion || null;
     if(!cotizacion || !snapshot) return;
-    const obraId = `OB-${String(obras.length+1).padStart(3,"0")}`;
+    const obraId = siguienteIdUnico(obras,"OB");
     setObras((prev)=>[...prev,{
       id:obraId,
       cliente:cotizacion.cliente,

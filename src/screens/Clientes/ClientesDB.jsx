@@ -6,6 +6,7 @@ import { useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmt } from "../../lib/format";
 import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarFrase, normalizarMayusculas, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
+import { siguienteIdUnico } from "../../lib/identificadores";
 export default function ClientesDB({ctx}){
   const {clientes,setClientes,obras,cotizaciones,certs,setObras,setCotizaciones,setCerts}=ctx;
   const clienteBase={nombre:"",nit:"",telefono:"",ciudad:"",direccion:"",contacto:"",email:"",estado:"Activo",notas:""};
@@ -127,7 +128,7 @@ export default function ClientesDB({ctx}){
         setCerts(prev=>prev.map(c=>c.cliente===anterior.nombre?{...c,cliente:payload.nombre,nit:payload.nit||c.nit,direccion:payload.direccion||c.direccion}:c));
       }
     }else{
-      const id="CLI-" + (String(clientes.length+1).padStart(3,"0"));
+      const id=siguienteIdUnico(clientes,"CLI");
       setClientes(prev=>[...prev,{id,...payload}]);
     }
 

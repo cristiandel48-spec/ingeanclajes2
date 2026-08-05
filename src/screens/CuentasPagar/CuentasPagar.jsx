@@ -8,6 +8,7 @@ import { B, CD, SI, ST } from "../../styles/tokens";
 import { downloadExcelWorkbook } from "../../lib/nomina";
 import { fmt, scrollAppToTop, today } from "../../lib/format";
 import { parseIsoDate } from "../../lib/dates";
+import { siguienteIdUnico } from "../../lib/identificadores";
 export default function CuentasPagar({ctx}){
   const {cuentas,setCuentas,proveedores,setProveedores,obras}=ctx;
 
@@ -344,7 +345,7 @@ export default function CuentasPagar({ctx}){
     if(editProvId){
       setProveedores(prev=>prev.map(p=>p.id===editProvId?{...p,...payload}:p));
     }else{
-      newId="PROV-" + (String(proveedores.length+1).padStart(3,"0"));
+      newId=siguienteIdUnico(proveedores,"PROV");
       setProveedores(prev=>[...prev,{id:newId,...payload}]);
     }
     if(newId){
@@ -445,7 +446,7 @@ export default function CuentasPagar({ctx}){
     if(editCxPId){
       setCuentas(prev=>prev.map(c=>c.id===editCxPId?{...c,...withMirror,id:editCxPId}:c));
     }else{
-      const id="CP-" + (String(cuentas.length+1).padStart(3,"0"));
+      const id=siguienteIdUnico(cuentas,"CP");
       setCuentas(prev=>[...prev,{id,...withMirror}]);
     }
     resetCuenta(proveedorSel?.id || proveedoresData[0]?.id || "");

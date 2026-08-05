@@ -10,6 +10,7 @@ import { fmt, fmtD, fmtL } from "../../lib/format";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { getEstadoFlujoObra } from "../../lib/flujoObra";
 import { printCurrentPz } from "../../lib/print";
+import { siguienteIdUnico } from "../../lib/identificadores";
 export default function Certificaciones({ctx}){
   const {certs,setCerts,obras,clientes,cotizaciones,intencion,limpiarIntencion,irAPantalla}=ctx;
   const [sel,setSel]=useState(null);
@@ -116,7 +117,7 @@ export default function Certificaciones({ctx}){
   const guardar=()=>{
     const c=editId
       ? {...form,id:editId,estado:form.estado||"Vigente"}
-      : {id:"CERT-" + (String(certs.length+1).padStart(3,"0")),estado:"Vigente",...form};
+      : {id:siguienteIdUnico(certs,"CERT"),estado:"Vigente",...form};
     setCerts(prev=>editId ? prev.map(item=>item.id===editId?{...item,...c}:item) : [...prev,c]);
     setNueva(false);
     setSel(c);

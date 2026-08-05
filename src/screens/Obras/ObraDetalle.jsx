@@ -11,6 +11,7 @@ import { fmt, fmtD, today } from "../../lib/format";
 import { resumenBitacora } from "../../lib/bitacoraObra";
 import { estadoSegunAvance } from "../../lib/flujoObra";
 import { puedeCrearPersonal, puedeVerDinero } from "../../lib/permisos";
+import { siguienteIdUnico } from "../../lib/identificadores";
 export default function ObraDetalle({obraId,ctx,onVolver}){
   const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,horarios,irAPantalla,membresia}=ctx;
   // Las cifras de la obra son confidenciales: quien organiza el trabajo no ve
@@ -43,7 +44,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
 
   const guardarGasto=()=>{
     if(!gastoForm.concepto)return;
-    const id="CP-" + (String(cuentas.length+1).padStart(3,"0"));
+    const id=siguienteIdUnico(cuentas,"CP");
     setCuentas(p=>[...p,{id,...gastoForm,obraId,estado:"Pendiente"}]);
     setGastoForm({proveedorId:"PROV-001",concepto:"",monto:0,fecha:today(),fechaVence:"",factura:""});
     setShowGasto(false);

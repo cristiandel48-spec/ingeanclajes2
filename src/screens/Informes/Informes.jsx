@@ -13,6 +13,7 @@ import { leerImagenComprimida } from "../../lib/imagenes";
 import { normalizarFrase, normalizarMayusculas, normalizarNombrePropio, normalizarParrafos } from "../../lib/normalizarEntrada";
 import { DEFAULT_INFORME_ACTIVIDADES, DEFAULT_INFORME_DESCRIPCION, DEFAULT_INFORME_RECOMENDACIONES } from "../../data/seed";
 import { conActividadSeparada } from "../../lib/informeTextos";
+import { siguienteIdUnico } from "../../lib/identificadores";
 export default function Informes({ctx}){
   const {informes,setInformes,obras,empleados,horarios,intencion,limpiarIntencion,empresaConfig,irAPantalla}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
@@ -303,7 +304,7 @@ export default function Informes({ctx}){
     const legacyActividad = actividades[0] || emptyActividad();
     const inf=editId
       ? {id:editId,...form,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos}
-      : {id:"INF-" + (String(informes.length+1).padStart(3,"0")),...form,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos};
+      : {id:siguienteIdUnico(informes,"INF"),...form,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos};
     setInformes(prev=>editId ? prev.map(item=>item.id===editId?{...item,...inf}:item) : [...prev,inf]);
     setNuevo(false);
     setEditId(null);

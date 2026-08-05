@@ -167,10 +167,11 @@ export const construirTextoSistema = ({
   const n = Number(cantidad) || 0;
   const sistema = SISTEMAS[tipoSistema] || SISTEMA_GENERICO;
 
+  // Sin anteponer la cantidad: lo que llega ya la lleva escrita dentro
+  // ("1 linea de vida horizontal de 7 m perimetral"). Ponerla otra vez daba
+  // cosas como "4 1 linea de vida...".
   const loInstalado = String(detalle || "").trim();
-  const que = loInstalado
-    ? `${n ? `${n} ` : ""}${loInstalado}`
-    : sistema.nombra(n);
+  const que = loInstalado || sistema.nombra(n);
 
   const partes = [que];
 

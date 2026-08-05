@@ -30,6 +30,25 @@ const fechaDesdeInformes = (informes, obraId, informeId = "")=>{
   return fechas.length ? fechas[fechas.length-1] : "";
 };
 
+// El nombre del proyecto del informe: "CREAFAM SEDE SAN BLAS". Es el DONDE
+// del certificado, y distingue una sede de otra dentro de la misma obra.
+const proyectoDesdeInformes = (informes, obraId, informeId = "")=>{
+  const nombres = [...new Set(informesFuente(informes, obraId, informeId)
+    .map((i)=>String(i.proyecto || "").trim())
+    .filter(Boolean))];
+  return nombres[0] || "";
+};
+
+// Lo que se hizo, tal como se anoto al registrar el avance de la obra:
+// "Creafam san blas recertificacion 1 linea de vida". Sirve de respaldo
+// cuando el informe no trae observaciones.
+const actividadesDesdeInformes = (informes, obraId, informeId = "")=>{
+  const titulos = [...new Set(informesFuente(informes, obraId, informeId)
+    .flatMap((i)=>(i.actividades||[]).map((a)=>String(a?.titulo||"").trim()))
+    .filter(Boolean))];
+  return titulos.join("; ");
+};
+
 // Lo anotado en las observaciones de esos informes, sin repetir.
 const observacionesDesdeInformes = (informes, obraId, informeId = "")=>{
   const textos = informesFuente(informes, obraId, informeId)
@@ -111,16 +130,6 @@ export default function Certificaciones({ctx}){
       : cot);
   };
 
-  // Solo las descripciones, sin cantidades ni unidades: es lo que se lee en el
-  // certificado. "Global" es una unidad para cotizar, no algo que se instale.
-  const descripcionesDeItems = (items)=>{
-    const nombres = [...new Set((items||[])
-      .map((it)=>String(it?.desc||"").trim())
-      .filter(Boolean))];
-    if(nombres.length <= 1) return nombres[0] || "";
-    return `${nombres.slice(0,-1).join(", ")} y ${nombres[nombres.length-1]}`;
-  };
-
   // "26 UND · RECERTIFICACION ANUAL PUNTOS DE ANCLAJES" — para el aviso de
   // pantalla, donde si conviene ver la cantidad y la unidad.
   const detalleDeItems = (items)=>(items||[])
@@ -148,6 +157,20 @@ export default function Certificaciones({ctx}){
   //
   // Se unen por el numero de obra, que es lo que tienen en comun.
   const observacionesDeObra = (obraId)=>observacionesDesdeInformes(informes, obraId, informeRef);
+  const proyectoDeObra = (obraId)=>
+    proyectoDesdeInformes(informes, obraId, informeRef)
+    || String((obras||[]).find((o)=>o.id===obraId)?.proyecto || "").trim();
+
+  // QUE se certifica: la observacion del informe -"1 linea de vida horizontal
+  // de 7 m perimetral"-, que es la frase escrita a mano y en limpio. Si no la
+  // hay, lo anotado en "¿Que se hizo?" al registrar el avance.
+  //
+  // NO sale de los items de la cotizacion: alli las lineas son de cobrar
+  // -"CERTIFICACION SISTEMA ANTICAIDAS SAN BLAS", "1 Global"- y en un
+  // certificado quedaban ilegibles.
+  const queSeCertifica = (obraId)=>
+    observacionesDesdeInformes(informes, obraId, informeRef)
+    || actividadesDesdeInformes(informes, obraId, informeRef);
 
   // La fecha del certificado sale del informe de actividades de esa obra.
   //
@@ -190,8 +213,8 @@ export default function Certificaciones({ctx}){
           direccion:siguiente.direccion,
           fechaLarga:fmtL(siguiente.fecha),
           normativa:siguiente.normativa,
-          lugar:siguiente.lugar,
-          detalle:descripcionesDeItems(itemsDeLaObra(siguiente.obraId)),
+          lugar:siguiente.lugar || proyectoDeObra(siguiente.obraId),
+          detalle:queSeCertifica(siguiente.obraId),
         });
         if(texto) siguiente.sistema=texto;
       }
@@ -209,8 +232,8 @@ export default function Certificaciones({ctx}){
       direccion:form.direccion,
       fechaLarga:fmtL(form.fecha),
       normativa:form.normativa,
-      lugar:form.lugar,
-      detalle:descripcionesDeItems(itemsDeLaObra(form.obraId)),
+      lugar:form.lugar || proyectoDeObra(form.obraId),
+      detalle:queSeCertifica(form.obraId),
     });
     if(!texto){
       window.alert("Para armar el texto hace falta el cliente. Elige la obra y se completa solo.");
@@ -413,12 +436,13 @@ export default function Certificaciones({ctx}){
             <input
               value={form.lugar || ""}
               onChange={e=>aplicarCambio({lugar:e.target.value})}
-              placeholder="El cuarto de ascensores · La cubierta del bloque 2 · La fachada norte…"
+              placeholder={proyectoDeObra(form.obraId) || "El cuarto de ascensores · La cubierta del bloque 2…"}
               style={SI}
             />
             <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>
-              Sale en el certificado: «instalados en <strong>{(form.lugar||"…").toUpperCase()}</strong>».
-              Déjalo vacío si no aplica y esa parte no se imprime.
+              Sale en el certificado: «instalados en <strong>{(form.lugar||proyectoDeObra(form.obraId)||"…").toUpperCase()}</strong>».
+              Vacío toma el nombre del proyecto del informe. Escribe aquí si quieres precisar el
+              sitio: «el cuarto de ascensores», «la cubierta del bloque 2».
             </div>
           </div>
           <div style={{marginBottom:12}}>
@@ -443,13 +467,11 @@ export default function Certificaciones({ctx}){
             </div>
             {/* De donde sale el alcance, para que no parezca que se lo invento
                 el sistema y se pueda ir a corregirlo a su sitio. */}
-            {alcanceCompleto(form.obraId) && (
+            {queSeCertifica(form.obraId) && (
               <div style={{fontSize:10.5,color:"#166534",marginTop:5,lineHeight:1.5}}>
-                Se arma con lo que ya hay en {form.obraId}:
-                {detalleDeItems(itemsDeLaObra(form.obraId)) && <> <strong>qué se instaló</strong> de los ítems de su cotización</>}
-                {detalleDeItems(itemsDeLaObra(form.obraId)) && observacionesDeObra(form.obraId) && <>,</>}
-                {observacionesDeObra(form.obraId) && <> <strong>dónde</strong> de las observaciones del informe</>}
-                , y el NIT y la dirección del cliente. Si algo no cuadra, corrígelo ahí y vuelve a
+                Se arma con lo registrado en la obra: <strong>qué se certifica</strong> de las
+                observaciones del informe, <strong>dónde</strong> del nombre del proyecto, y el NIT
+                y la dirección del cliente. Si algo no cuadra, corrígelo en el informe y vuelve a
                 armar el texto.
               </div>
             )}

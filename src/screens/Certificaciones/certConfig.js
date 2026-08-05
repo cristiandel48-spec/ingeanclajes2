@@ -126,6 +126,26 @@ const enMayuscula = (texto)=>String(texto || "").trim().toUpperCase();
  * Lo que no haya, simplemente no sale: la frase se arma con lo que hay en vez
  * de dejar huecos o poner "sin datos".
  */
+/**
+ * El cuerpo de la frase que certifica.
+ *
+ * El documento lo envuelve: "CERTIFICA que ___ cumplen a cabalidad con la
+ * Resolucion 4272...". Aqui va solo lo del medio:
+ *
+ *   5 puntos de anclaje NACIONALES ARTICO SAFE WORK instalados en EL CUARTO DE
+ *   ASCENSORES con NIT: 901204204-0 (SRP CONSTRUCCIONES S.A.S) con DIRECCION:
+ *   CALLE 11 SUR #29D 27 TERRAZAS DE SAN MICHEL
+ *
+ * OJO CON `detalle`: tiene que llegar limpio, solo la descripcion de lo
+ * instalado. Un primer intento le paso el detalle tal cual de la cotizacion,
+ * con sus cantidades y unidades dentro, y salio esto:
+ *
+ *   "4 1 Global · CERTIFICACION SISTEMA ANTICAIDAS SAN BLAS; 1 Global · ..."
+ *
+ * La cantidad iba dos veces y "Global" -que es una unidad de cotizar, no algo
+ * que se instale- se colaba en un certificado. Por eso la cantidad se pone
+ * aqui una sola vez y el detalle llega ya sin cifras ni unidades.
+ */
 export const construirTextoSistema = ({
   tipo = "Certificación",
   tipoSistema = "",
@@ -135,9 +155,10 @@ export const construirTextoSistema = ({
   direccion = "",
   fecha = "",
   fechaLarga = "",
-  // Lo que se anoto en el informe: donde se instalo.
-  observaciones = "",
-  // El detalle de los items de la cotizacion: que se instalo.
+  // Donde se instalo. Lo escribe quien hace el certificado: "el cuarto de
+  // ascensores", "la cubierta del bloque 2". No se adivina de otro documento.
+  lugar = "",
+  // Que se instalo, ya en limpio.
   detalle = "",
 } = {})=>{
   if(!cliente.trim() && !nit.trim()) return "";
@@ -145,15 +166,14 @@ export const construirTextoSistema = ({
   const n = Number(cantidad) || 0;
   const sistema = SISTEMAS[tipoSistema] || SISTEMA_GENERICO;
 
-  // Que se instalo. Manda el detalle de la cotizacion, que trae la marca y la
-  // referencia exactas; si no hay, se cae al nombre generico del sistema.
-  const que = String(detalle || "").trim()
-    ? `${n ? `${n} ` : ""}${String(detalle).trim()}`
+  const loInstalado = String(detalle || "").trim();
+  const que = loInstalado
+    ? `${n ? `${n} ` : ""}${loInstalado}`
     : sistema.nombra(n);
 
   const partes = [que];
 
-  const donde = String(observaciones || "").trim().replace(/\.+$/, "");
+  const donde = String(lugar || "").trim().replace(/[.\s]+$/, "");
   if(donde) partes.push(`instalados en ${enMayuscula(donde)}`);
 
   if(String(nit || "").trim()){
@@ -164,11 +184,7 @@ export const construirTextoSistema = ({
 
   if(String(direccion || "").trim()) partes.push(`con DIRECCION: ${enMayuscula(direccion)}`);
 
-  // `tipo`, `fecha` y `fechaLarga` se siguen aceptando porque el formulario los
-  // manda, pero esta redaccion no los usa: la fecha va en el encabezado del
-  // documento y el tipo en su titulo.
   void tipo; void fecha; void fechaLarga;
-
   return partes.join(" ");
 };
 
@@ -180,6 +196,8 @@ export const buildCertForm = (overrides={})=>{
     // mostraba otra pero se guardaba un id inexistente, y el cliente y la
     // direccion quedaban vacios. Ahora lo define quien abre el formulario.
     obraId: overrides.obraId ?? "",
+    // Donde se instalo, con sus palabras. No sale de ningun otro documento.
+    lugar: overrides.lugar ?? "",
     tipo,
     tipoSistema,
     numero: "",

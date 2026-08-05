@@ -111,7 +111,18 @@ export default function Certificaciones({ctx}){
       : cot);
   };
 
-  // "26 UND · RECERTIFICACION ANUAL PUNTOS DE ANCLAJES"
+  // Solo las descripciones, sin cantidades ni unidades: es lo que se lee en el
+  // certificado. "Global" es una unidad para cotizar, no algo que se instale.
+  const descripcionesDeItems = (items)=>{
+    const nombres = [...new Set((items||[])
+      .map((it)=>String(it?.desc||"").trim())
+      .filter(Boolean))];
+    if(nombres.length <= 1) return nombres[0] || "";
+    return `${nombres.slice(0,-1).join(", ")} y ${nombres[nombres.length-1]}`;
+  };
+
+  // "26 UND · RECERTIFICACION ANUAL PUNTOS DE ANCLAJES" — para el aviso de
+  // pantalla, donde si conviene ver la cantidad y la unidad.
   const detalleDeItems = (items)=>(items||[])
     .filter((it)=>String(it?.desc||"").trim())
     .map((it)=>{
@@ -178,8 +189,8 @@ export default function Certificaciones({ctx}){
           nit:siguiente.nit,
           direccion:siguiente.direccion,
           fechaLarga:fmtL(siguiente.fecha),
-          observaciones:observacionesDeObra(siguiente.obraId),
-          detalle:detalleDeItems(itemsDeLaObra(siguiente.obraId)),
+          lugar:siguiente.lugar,
+          detalle:descripcionesDeItems(itemsDeLaObra(siguiente.obraId)),
         });
         if(texto) siguiente.sistema=texto;
       }
@@ -196,8 +207,8 @@ export default function Certificaciones({ctx}){
       nit:form.nit,
       direccion:form.direccion,
       fechaLarga:fmtL(form.fecha),
-      observaciones:observacionesDeObra(form.obraId),
-      detalle:detalleDeItems(itemsDeLaObra(form.obraId)),
+      lugar:form.lugar,
+      detalle:descripcionesDeItems(itemsDeLaObra(form.obraId)),
     });
     if(!texto){
       window.alert("Para armar el texto hace falta el cliente. Elige la obra y se completa solo.");
@@ -390,6 +401,23 @@ export default function Certificaciones({ctx}){
             <div><LBL>NIT</LBL><input value={form.nit} onChange={e=>setForm({...form,nit:e.target.value})} style={SI}/></div>
             <div style={{gridColumn:"span 2"}}><LBL>Dirección de la obra</LBL><input value={form.direccion} onChange={e=>aplicarCambio({direccion:e.target.value})} style={SI}/></div>
             <div><LBL>Próximo mantenimiento</LBL><input type="date" value={form.proxMant} onChange={e=>setForm({...form,proxMant:e.target.value})} style={SI}/></div>
+          </div>
+          {/* El sitio concreto dentro del edificio. Se escribe aqui porque no
+              esta en ningun otro documento: se intento sacarlo de las
+              observaciones del informe y salia "instalados en 1 LINEA DE VIDA
+              HORIZONTAL DE 7 M PERIMETRAL", que dice que se hizo, no donde. */}
+          <div style={{marginBottom:12}}>
+            <LBL>¿Dónde se instaló?</LBL>
+            <input
+              value={form.lugar || ""}
+              onChange={e=>aplicarCambio({lugar:e.target.value})}
+              placeholder="El cuarto de ascensores · La cubierta del bloque 2 · La fachada norte…"
+              style={SI}
+            />
+            <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>
+              Sale en el certificado: «instalados en <strong>{(form.lugar||"…").toUpperCase()}</strong>».
+              Déjalo vacío si no aplica y esa parte no se imprime.
+            </div>
           </div>
           <div style={{marginBottom:12}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}}>

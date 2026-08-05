@@ -336,14 +336,17 @@ export default function Certificaciones({ctx}){
                     setInformeRef(id);
                     const inf=(informes||[]).find((x)=>x.id===id);
                     if(!inf) return;
-                    // La sede del informe dice DONDE se instalo, no cual es la
-                    // direccion del cliente: esa se vuelve a traer de su ficha,
-                    // porque antes se pisaba con la del informe y salia mal en
-                    // certificaciones ya guardadas.
+                    // El "instalados en" es el NOMBRE del proyecto del informe
+                    // -"CREAFAM SEDE SAN BLAS"-, no su localizacion, que es la
+                    // direccion de la sede y no pinta nada ahi.
+                    //
+                    // La direccion se vuelve a traer de la ficha del cliente:
+                    // antes se pisaba con la del informe y en el documento
+                    // salia la de la sede en vez de la del cliente.
                     const obraSel=obras.find((x)=>x.id===form.obraId);
                     aplicarCambio({
                       direccion:buscarDireccionCliente(obraSel, form.cliente),
-                      ...(inf.localizacion ? {lugar:inf.localizacion} : {}),
+                      lugar:proyectoDesdeInformes(informes, form.obraId, id),
                       ...(inf.periodoFin || inf.fechaInforme ? {fecha:inf.periodoFin || inf.fechaInforme} : {}),
                     }, id);
                   }}

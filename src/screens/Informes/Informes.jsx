@@ -619,7 +619,12 @@ export default function Informes({ctx}){
               <tbody>{(sel.personal||[]).map((p,i)=><tr key={i}><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px"}}>{p.cargo}</td><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px"}}>{p.nombre}</td></tr>)}</tbody>
             </table>
             {/* Múltiples actividades */}
-            {(sel.actividades||[{titulo:sel.actividad,descripcion:sel.descripcion,observaciones:sel.observaciones,fotos:sel.fotos||[]}]).map((act,ai)=>(
+            {/* conActividadSeparada tambien AQUI, no solo al editar: esta vista
+                lee el informe tal como esta guardado, y los que se hicieron
+                cuando los dos bloques iban en un mismo campo seguian saliendo
+                pegados en el papel aunque en la pantalla de edicion ya se vieran
+                separados. */}
+            {(sel.actividades||[{titulo:sel.actividad,descripcion:sel.descripcion,observaciones:sel.observaciones,fotos:sel.fotos||[]}]).map(conActividadSeparada).map((act,ai)=>(
               <div key={ai} style={{marginBottom:22}}>
                 <table style={{width:"100%",borderCollapse:"collapse",marginBottom:12}}>
                   <tbody>

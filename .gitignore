@@ -39,3 +39,10 @@ Inge.txt
 .claude/settings.local.json
 *.out.log
 *.err.log
+
+# Sesion de WhatsApp Web del script de avisos: quien copie esta carpeta entra
+# al WhatsApp de la empresa.
+scripts/avisar-whatsapp/.sesion-whatsapp/
+scripts/avisar-whatsapp/node_modules/
+scripts/avisar-whatsapp/*.json
+!scripts/avisar-whatsapp/package.json

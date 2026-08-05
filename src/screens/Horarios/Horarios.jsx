@@ -105,6 +105,25 @@ export default function Horarios({ctx}){
     );
   };
 
+  // El texto que le llega a una persona. Vive aparte porque lo usan dos cosas:
+  // el boton que abre su WhatsApp y la exportacion para el envio automatico.
+  const armarMensajePersonal=(e,o,f,turnos)=>{
+    const fechaMsg = fmtD(f) || f;
+    const detalle = turnos.map((item,idx)=>(idx+1) + ". " + (fmtTurno12Local(item.turno)) + (item.tarea ? " - " + (item.tarea) : "")).join("\n");
+    // Las lineas llevan saltos de verdad. Antes se escribian escapados y
+    // WhatsApp los mostraba tal cual: el mensaje llegaba como un bloque con
+    // las barras a la vista.
+    return [
+      "Hola " + (e.nombre) + ", has sido asignado a la obra *" + (normalizarMayusculas(o.proyecto)) + "* del cliente *" + (normalizarMayusculas(o.cliente)) + "* para el día *" + (fechaMsg) + "* en *" + (o.direccion||o.ciudad) + "*.",
+      "",
+      "Turnos asignados:",
+      detalle,
+      "",
+      "Por favor confirma tu asistencia.",
+      "*INGEANCLAJES S.A.S*",
+    ].join("\n");
+  };
+
   const enviarWA=(eid,oid,f,turnosInfo=[])=>{
     const e=empleados.find(x=>x.id===eid);
     const o=obras.find(x=>x.id===oid);
@@ -122,21 +141,7 @@ export default function Horarios({ctx}){
       return;
     }
 
-    const fechaMsg = fmtD(f) || f;
-    const detalleTurnos = conHorario.map((item,idx)=>(idx+1) + ". " + (fmtTurno12Local(item.turno)) + (item.tarea ? " - " + (item.tarea) : "")).join('\n');
-    // Las lineas llevan saltos de verdad. Antes se escribian escapados y
-    // WhatsApp los mostraba tal cual: el mensaje llegaba como un bloque con
-    // las barras a la vista.
-    const msg = [
-      "Hola " + (e.nombre) + ", has sido asignado a la obra *" + (o.proyecto) + "* del cliente *" + (o.cliente) + "* para el día *" + (fechaMsg) + "* en *" + (o.direccion||o.ciudad) + "*.",
-      "",
-      "Turnos asignados:",
-      detalleTurnos,
-      "",
-      "Por favor confirma tu asistencia.",
-      "*INGEANCLAJES S.A.S*",
-    ].join("\n");
-
+    const msg = armarMensajePersonal(e,o,f,conHorario);
     const problema = abrirWhatsApp(e.tel, msg);
     setNotif(problema
       ? {ok:false, texto: e.nombre + ": " + problema + " El turno quedó guardado; avísale por otro medio."}
@@ -235,6 +240,56 @@ export default function Horarios({ctx}){
       "Por favor confirmar asistencia.",
       "*INGEANCLAJES S.A.S*",
     ].join("\n");
+  };
+
+  // Saca un archivo con los avisos del dia para el envio automatico.
+  //
+  // No se le dan al script las llaves de la base: la app arma aqui los mensajes
+  // ya escritos y el script solo los manda. Asi se puede abrir el archivo y ver
+  // exactamente que le va a llegar a cada quien antes de que salga nada.
+  const exportarAvisosDelDia=()=>{
+    const porEmpleado=new Map();
+    dia.forEach((h)=>{
+      if(!String(h.turno||"").trim()) return;
+      const clave=`${h.empleadoId}|${h.obraId}`;
+      if(!porEmpleado.has(clave)) porEmpleado.set(clave,[]);
+      porEmpleado.get(clave).push(h);
+    });
+
+    const avisos=[...porEmpleado.entries()].map(([clave,turnos])=>{
+      const [eid,oid]=clave.split("|");
+      const e=empleados.find(x=>x.id===eid);
+      const o=obras.find(x=>x.id===oid);
+      if(!e||!o) return null;
+      const tel=normalizarCelular(e.tel);
+      return tel ? {nombre:e.nombre, telefono:tel, mensaje:armarMensajePersonal(e,o,fechaF,turnos)} : null;
+    }).filter(Boolean);
+
+    const sinCelular=porEmpleado.size-avisos.length;
+    if(!avisos.length){
+      setNotif({ok:false,texto:"No hay avisos con celular válido para ese día."});
+      setTimeout(()=>setNotif(null),7000);
+      return;
+    }
+
+    const archivo=new Blob(
+      [JSON.stringify({fecha:fechaF, generado:new Date().toISOString(), avisos}, null, 2)],
+      {type:"application/json"},
+    );
+    const url=URL.createObjectURL(archivo);
+    const enlace=document.createElement("a");
+    enlace.href=url;
+    enlace.download=`avisos-${fechaF}.json`;
+    document.body.appendChild(enlace);
+    enlace.click();
+    enlace.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),4000);
+
+    setNotif({ok:true,texto:
+      `Archivo descargado con ${avisos.length} aviso(s).` +
+      (sinCelular?` Se dejaron fuera ${sinCelular} sin celular válido.`:"") +
+      " Ejecuta el script de envío con ese archivo."});
+    setTimeout(()=>setNotif(null),10000);
   };
 
   const copiarAlPortapapeles=async(texto)=>{
@@ -542,6 +597,15 @@ export default function Horarios({ctx}){
             style={{...B("#166534","#ffffff"),fontSize:13,fontWeight:700,width:"100%",justifyContent:"center",padding:"11px 16px"}}
           >
             📋 Enviar horario al grupo · un solo mensaje
+          </button>
+
+          {/* Envio automatico: la app saca el archivo, el script lo manda. */}
+          <button
+            onClick={exportarAvisosDelDia}
+            title="Descarga los avisos del día para enviarlos con el script automático"
+            style={{...B("#f1f5f9","#475569"),fontSize:12,width:"100%",justifyContent:"center",marginTop:8}}
+          >
+            ⬇ Descargar avisos para el envío automático
           </button>
 
           <div style={{display:"flex",alignItems:"center",gap:10,margin:"16px 0 10px"}}>

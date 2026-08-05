@@ -1,0 +1,14 @@
+{
+  "name": "avisar-whatsapp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Envia los turnos del dia por WhatsApp Web. Se ejecuta a mano, no forma parte de la app.",
+  "scripts": {
+    "avisar": "node avisar.mjs",
+    "instalar-navegador": "playwright install chromium"
+  },
+  "dependencies": {
+    "playwright": "^1.49.0"
+  }
+}

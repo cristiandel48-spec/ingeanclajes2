@@ -1,7 +1,7 @@
 import { useAppData } from "../../context/AppDataContext";
 import { getFirmaImg } from "../../lib/firmaEmpresa";
 import PrintHeader from "../../components/print/PrintHeader";
-import { fmtL } from "../../lib/format";
+import { fmtL, today as hoy } from "../../lib/format";
 export default function CertificacionDocumento({cert}){
   const {empresaConfig}=useAppData();
   const firmaImg=getFirmaImg(empresaConfig);
@@ -17,7 +17,7 @@ export default function CertificacionDocumento({cert}){
         {esRecertificacion ? "Recertificación de Sistemas Anticaídas · Res. 4272/2021" : "Certificación de Sistemas Anticaídas · Res. 4272/2021"}
       </div>
       <div style={{marginBottom:20}}>
-        <div>Envigado, {fmtL(cert.fecha)}</div>
+        <div>Envigado, {fmtL(hoy())}</div>
         <div style={{marginTop:10,fontWeight:700}}>SEÑORES:</div>
         <div style={{fontWeight:700}}>{(cert.cliente||"").toUpperCase()}</div>
         {cert.nit&&<div>NIT: {cert.nit}</div>}
@@ -37,7 +37,7 @@ export default function CertificacionDocumento({cert}){
         </div>
       ):(
         <div style={{textAlign:"justify",marginBottom:20,lineHeight:1.8}}>
-          CERTIFICA que {cert.sistema} cumple a cabalidad con la {cert.normativa} del ministerio de trabajo, por la cual se establece el reglamento de seguridad para protección contra caídas en trabajo en altura.
+          CERTIFICA que {cert.sistema} cumplen a cabalidad con la {cert.normativa} del ministerio de trabajo, por la cual se establece el reglamento de seguridad para protección contra caídas en trabajo en altura.
         </div>
       )}
 

@@ -101,68 +101,75 @@ const SISTEMA_GENERICO = {
 
 const enMayuscula = (texto)=>String(texto || "").trim().toUpperCase();
 
-// "de" + "el sistema..." = "del sistema...". Sin esto el parrafo salia con un
-// "de el" cuando no hay cantidad y se habla del sistema en singular.
-const contraerDe = (texto)=>{
-  const t = String(texto || "").trim();
-  return t.startsWith("el ") ? `del ${t.slice(3)}` : `de ${t}`;
-};
 
 /**
  * Arma el parrafo del sistema certificado con los datos del encabezado.
  * Devuelve "" si falta lo minimo para que la frase tenga sentido.
+ */
+/**
+ * El cuerpo de la frase que certifica.
+ *
+ * El documento lo envuelve: "CERTIFICA que ___ cumplen a cabalidad con la
+ * Resolucion 4272...". Aqui se arma solo lo del medio, con los datos que ya
+ * estan en el sistema:
+ *
+ *   5 puntos de anclaje NACIONALES ARTICO SAFE WORK instalados en EL CUARTO DE
+ *   ASCENSORES con NIT: 901204204-0 (SRP CONSTRUCCIONES S.A.S) con DIRECCION:
+ *   CALLE 11 SUR #29D 27 TERRAZAS DE SAN MICHEL
+ *
+ * De donde sale cada parte:
+ *   cantidad y descripcion → los items de la cotizacion de la obra
+ *   donde se instalo       → las observaciones del informe de actividades
+ *   NIT y cliente          → la ficha del cliente o la obra
+ *   direccion              → la obra
+ *
+ * Lo que no haya, simplemente no sale: la frase se arma con lo que hay en vez
+ * de dejar huecos o poner "sin datos".
  */
 export const construirTextoSistema = ({
   tipo = "Certificación",
   tipoSistema = "",
   cantidad = 0,
   cliente = "",
+  nit = "",
   direccion = "",
   fecha = "",
   fechaLarga = "",
-  // Lo que se anoto en las observaciones del informe de actividades de esa
-  // misma obra: "1 linea de vida horizontal de 7 m perimetral". Es la frase que
-  // dice QUE se esta certificando, y quien firma necesita verla en el
-  // certificado, no ir a buscarla al informe.
+  // Lo que se anoto en el informe: donde se instalo.
   observaciones = "",
+  // El detalle de los items de la cotizacion: que se instalo.
+  detalle = "",
 } = {})=>{
+  if(!cliente.trim() && !nit.trim()) return "";
+
   const n = Number(cantidad) || 0;
-  // La cantidad dejo de pedirse en pantalla: se calcula sola desde la
-  // cotizacion, y cuando no hay se redacta sin cifra. Lo unico imprescindible
-  // es saber de quien es la obra.
-  if(!cliente.trim()) return "";
-
   const sistema = SISTEMAS[tipoSistema] || SISTEMA_GENERICO;
-  const esRecert = tipo === "Recertificación";
-  const lugar = direccion.trim()
-    ? `en las instalaciones de ${enMayuscula(cliente)}, ubicadas en ${enMayuscula(direccion)}`
-    : `en las instalaciones de ${enMayuscula(cliente)}`;
-  const cuando = (fechaLarga || fecha) ? ` El ${fechaLarga || fecha}` : " El día de la visita";
 
-  // El alcance va al final y en su propia frase: es lo que se busca de un
-  // vistazo cuando hay que comprobar que el certificado cubre lo instalado.
-  const alcance = String(observaciones || "").trim();
-  const cierre = alcance
-    ? ` Alcance certificado: ${alcance.replace(/\.+$/, "")}.`
-    : "";
+  // Que se instalo. Manda el detalle de la cotizacion, que trae la marca y la
+  // referencia exactas; si no hay, se cae al nombre generico del sistema.
+  const que = String(detalle || "").trim()
+    ? `${n ? `${n} ` : ""}${String(detalle).trim()}`
+    : sistema.nombra(n);
 
-  if(esRecert){
-    return (
-      `Se realizó la recertificación ${contraerDe(sistema.nombra(n))} ${lugar}.` +
-      `${cuando} se realizaron las correspondientes pruebas de carga o presión, que permiten medir ` +
-      `la resistencia de ${sistema.cadaUno} para cumplir con las 5.000 lb requeridas. ` +
-      `A cada punto se le realizó su mantenimiento correspondiente y ${sistema.remate}.` +
-      cierre
-    );
+  const partes = [que];
+
+  const donde = String(observaciones || "").trim().replace(/\.+$/, "");
+  if(donde) partes.push(`instalados en ${enMayuscula(donde)}`);
+
+  if(String(nit || "").trim()){
+    partes.push(`con NIT: ${String(nit).trim()}${cliente.trim() ? ` (${enMayuscula(cliente)})` : ""}`);
+  }else if(cliente.trim()){
+    partes.push(`de ${enMayuscula(cliente)}`);
   }
 
-  return (
-    `Se realizó la instalación ${contraerDe(sistema.nombra(n))} ${lugar}.` +
-    `${cuando} se realizaron las correspondientes pruebas de carga o presión, que permiten medir ` +
-    `la resistencia de ${sistema.cadaUno} para cumplir con las 5.000 lb requeridas. ` +
-    `Adicionalmente, ${sistema.remate}.` +
-    cierre
-  );
+  if(String(direccion || "").trim()) partes.push(`con DIRECCION: ${enMayuscula(direccion)}`);
+
+  // `tipo`, `fecha` y `fechaLarga` se siguen aceptando porque el formulario los
+  // manda, pero esta redaccion no los usa: la fecha va en el encabezado del
+  // documento y el tipo en su titulo.
+  void tipo; void fecha; void fechaLarga;
+
+  return partes.join(" ");
 };
 
 export const buildCertForm = (overrides={})=>{

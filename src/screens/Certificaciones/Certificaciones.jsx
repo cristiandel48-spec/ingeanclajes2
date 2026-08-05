@@ -175,9 +175,11 @@ export default function Certificaciones({ctx}){
           tipoSistema:siguiente.tipoSistema,
           cantidad:siguiente.cantidad,
           cliente:siguiente.cliente,
+          nit:siguiente.nit,
           direccion:siguiente.direccion,
           fechaLarga:fmtL(siguiente.fecha),
-          observaciones:alcanceCompleto(siguiente.obraId),
+          observaciones:observacionesDeObra(siguiente.obraId),
+          detalle:detalleDeItems(itemsDeLaObra(siguiente.obraId)),
         });
         if(texto) siguiente.sistema=texto;
       }
@@ -191,9 +193,11 @@ export default function Certificaciones({ctx}){
       tipoSistema:form.tipoSistema,
       cantidad:form.cantidad,
       cliente:form.cliente,
+      nit:form.nit,
       direccion:form.direccion,
       fechaLarga:fmtL(form.fecha),
-      observaciones:alcanceCompleto(form.obraId),
+      observaciones:observacionesDeObra(form.obraId),
+      detalle:detalleDeItems(itemsDeLaObra(form.obraId)),
     });
     if(!texto){
       window.alert("Para armar el texto hace falta el cliente. Elige la obra y se completa solo.");
@@ -411,11 +415,12 @@ export default function Certificaciones({ctx}){
                 el sistema y se pueda ir a corregirlo a su sitio. */}
             {alcanceCompleto(form.obraId) && (
               <div style={{fontSize:10.5,color:"#166534",marginTop:5,lineHeight:1.5}}>
-                El <strong>alcance certificado</strong> sale de {form.obraId}:
-                {detalleDeItems(itemsDeLaObra(form.obraId))
-                  ? <> los ítems de su cotización{observacionesDeObra(form.obraId) ? " y las observaciones del informe" : ""}</>
-                  : <> las observaciones del informe de actividades</>}.
-                Si no cuadra, corrígelo ahí y vuelve a armar el texto.
+                Se arma con lo que ya hay en {form.obraId}:
+                {detalleDeItems(itemsDeLaObra(form.obraId)) && <> <strong>qué se instaló</strong> de los ítems de su cotización</>}
+                {detalleDeItems(itemsDeLaObra(form.obraId)) && observacionesDeObra(form.obraId) && <>,</>}
+                {observacionesDeObra(form.obraId) && <> <strong>dónde</strong> de las observaciones del informe</>}
+                , y el NIT y la dirección del cliente. Si algo no cuadra, corrígelo ahí y vuelve a
+                armar el texto.
               </div>
             )}
           </div>

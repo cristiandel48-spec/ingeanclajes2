@@ -20,7 +20,7 @@ export function printCurrentPz(title = "Documento"){
          media arriba y media en la hoja siguiente. */
       li,figure,img{break-inside:avoid;page-break-inside:avoid;}
       /* Y en los parrafos largos, que no quede un renglon suelto a un lado
-         del corte. Solo en parrafos y viñetas: puesto en todos los `div`
+         del corte. Solo en parrafos y viñetas: puesto en todos los div
          empuja bloques enteros y deja las hojas a medio llenar. */
       p,li{orphans:2;widows:2;}
       img{max-width:100%;}

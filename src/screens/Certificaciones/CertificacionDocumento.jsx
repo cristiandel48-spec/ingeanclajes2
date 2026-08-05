@@ -37,7 +37,7 @@ export default function CertificacionDocumento({cert}){
         </div>
       ):(
         <div style={{textAlign:"justify",marginBottom:20,lineHeight:1.8}}>
-          CERTIFICA que {cert.sistema} cumplen a cabalidad con la {cert.normativa} del ministerio de trabajo, por la cual se establece el reglamento de seguridad para protección contra caídas en trabajo en altura.
+          {cert.sistema}
         </div>
       )}
 

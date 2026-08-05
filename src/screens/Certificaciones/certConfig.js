@@ -155,6 +155,7 @@ export const construirTextoSistema = ({
   direccion = "",
   fecha = "",
   fechaLarga = "",
+  normativa = "Resolución 4272 de 2021",
   // Donde se instalo. Lo escribe quien hace el certificado: "el cuarto de
   // ascensores", "la cubierta del bloque 2". No se adivina de otro documento.
   lugar = "",
@@ -184,8 +185,18 @@ export const construirTextoSistema = ({
 
   if(String(direccion || "").trim()) partes.push(`con DIRECCION: ${enMayuscula(direccion)}`);
 
-  void tipo; void fecha; void fechaLarga;
-  return partes.join(" ");
+  void fecha; void fechaLarga;
+
+  const medio = partes.join(" ");
+
+  // La recertificacion usa este texto DENTRO de otra frase del documento
+  // ("Ha realizado el mantenimiento preventivo en las instalaciones de ___"),
+  // asi que ahi se queda solo el trozo. La certificacion lleva la frase
+  // completa, que es la que se imprime tal cual.
+  if(tipo === "Recertificación") return medio;
+
+  return `CERTIFICA que ${medio} cumplen a cabalidad con la ${normativa} del ministerio de trabajo, ` +
+    "por la cual se establece el reglamento de seguridad para protección contra caídas en trabajo en altura.";
 };
 
 export const buildCertForm = (overrides={})=>{

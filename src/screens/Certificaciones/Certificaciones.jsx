@@ -189,6 +189,7 @@ export default function Certificaciones({ctx}){
           nit:siguiente.nit,
           direccion:siguiente.direccion,
           fechaLarga:fmtL(siguiente.fecha),
+          normativa:siguiente.normativa,
           lugar:siguiente.lugar,
           detalle:descripcionesDeItems(itemsDeLaObra(siguiente.obraId)),
         });
@@ -207,6 +208,7 @@ export default function Certificaciones({ctx}){
       nit:form.nit,
       direccion:form.direccion,
       fechaLarga:fmtL(form.fecha),
+      normativa:form.normativa,
       lugar:form.lugar,
       detalle:descripcionesDeItems(itemsDeLaObra(form.obraId)),
     });

@@ -25,41 +25,24 @@ export default function CertificacionDocumento({cert}){
       </div>
       <div style={{textAlign:"center",fontWeight:700,fontSize:15,marginBottom:20}}>INGEANCLAJES S.A.S</div>
 
-      {esRecertificacion?(
-        <div style={{textAlign:"justify",lineHeight:1.8,marginBottom:20}}>
-          <p style={{marginBottom:12}}>Ha realizado el mantenimiento preventivo del sistema de protección contra caídas, que consta de:</p>
-          <p style={{marginBottom:12}}>Limpieza de todo el sistema. Se verifica ajuste de las tuercas y pernos de los puntos de anclaje, finalmente se procedió a dar una laca protectora anticorrosiva como recubrimiento especial en todos los puntos de anclaje para evitar futuras oxidaciones.</p>
-          <p style={{marginBottom:12}}>Nuestra empresa se compromete a garantizar la calidad y seguridad de los materiales proporcionados para la instalación de los puntos de anclaje. Nos enfocamos en cumplir con todas las normativas y estándares de la industria, así como en utilizar materiales de alta calidad que cumplan con las especificaciones técnicas requeridas.</p>
-          <p style={{marginBottom:12}}>Por otro lado, los pernos utilizados en los puntos de anclaje son seleccionados cuidadosamente para garantizar su resistencia y capacidad de fijación. Trabajamos con proveedores confiables que suministran pernos de alta calidad que cumplen con las normativas de seguridad establecidas.</p>
-          <p style={{marginBottom:12}}>En cuanto al epóxico utilizado, nos aseguramos de utilizar productos de reconocidas marcas y de calidad certificada. Nuestro personal altamente capacitado realiza la instalación siguiendo las instrucciones y recomendaciones del fabricante, asegurando así una correcta adherencia y resistencia en los puntos de anclaje.</p>
-          <p style={{marginBottom:12}}>Nos comprometemos a cumplir con todas las regulaciones legales vigentes y a realizar un seguimiento riguroso de las inspecciones y pruebas necesarias para garantizar la calidad de los materiales y la adecuada instalación de los puntos de anclaje.</p>
-          <p style={{marginBottom:12}}>En caso de que se presenten problemas o fallas relacionadas con los materiales suministrados o la instalación de los puntos de anclaje, nos responsabilizamos totalmente de solventar cualquier inconveniente y cubrir los costos asociados a su corrección.</p>
-          <p style={{marginBottom:12}}>De acuerdo a las labores anteriormente descritas INGEANCLAJES S.A.S. {cert.sistema} Todos los elementos que componen los diferentes sistemas anticaídas se encuentran en excelente estado.</p>
-        </div>
-      ):(
-        <div style={{textAlign:"justify",marginBottom:20,lineHeight:1.8}}>
-          {cert.sistema}
-        </div>
-      )}
+      <div style={{textAlign:"justify",marginBottom:20,lineHeight:1.8}}>
+        {cert.sistema}
+      </div>
 
       <div style={{marginBottom:16}}>Los elementos utilizados en dicha labor son:</div>
       <ul style={{marginLeft:24,marginBottom:20}}>
         {elementos.map((el,i)=><li key={i} style={{marginBottom:6}}>{el}</li>)}
       </ul>
 
-      {/* Cierre de la certificacion. Va DESPUES de la lista porque continua la
-          frase: los elementos de arriba son los que tienen ese objetivo.
-          Estaba solo dentro del parrafo largo de la recertificacion, asi que
-          en las certificaciones se perdia. */}
-      {!esRecertificacion && (
-        <div style={{textAlign:"justify",marginBottom:20,lineHeight:1.8}}>
+      {/* Cierre del documento. Va DESPUES de la lista porque continua la
+          frase: los elementos de arriba son los que tienen ese objetivo. */}
+      <div style={{textAlign:"justify",marginBottom:20,lineHeight:1.8}}>
           cuyo objetivo es la fijación segura de los trabajadores al momento de realizar tareas que
           impliquen riesgo de caída, cumplen a cabalidad con la {cert.normativa} del ministerio de
           trabajo, por la cual se establece el reglamento de seguridad para protección contra caídas
           en trabajo en altura. Todos los elementos que componen los diferentes sistemas anticaídas
-          se encuentran en excelente estado.
-        </div>
-      )}
+        se encuentran en excelente estado.
+      </div>
       <div style={{background:"#f9f9f9",border:"1px solid #ddd",borderRadius:6,padding:"14px 18px",marginBottom:20}}>
         <div style={{fontWeight:700,marginBottom:10,fontSize:12}}>RECOMENDACIONES PARA TENER EN CUENTA</div>
         <div style={{fontSize:12,marginBottom:10,textAlign:"justify"}}>A continuación, se realizan algunas recomendaciones para preservar en buen estado los sistemas anti caídas certificados en dicha sede:</div>

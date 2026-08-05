@@ -183,13 +183,17 @@ export default function Certificaciones({ctx}){
   };
 
   const rehacerTexto=()=>{
+    // Rehacer es volver a armarlo con los datos buenos, asi que la direccion
+    // se vuelve a traer de la ficha del cliente en vez de usar la que quedo.
+    const obraSel=obras.find((x)=>x.id===form.obraId);
+    const direccionCliente=buscarDireccionCliente(obraSel, form.cliente) || form.direccion;
     const texto=construirTextoSistema({
       tipo:form.tipo,
       tipoSistema:form.tipoSistema,
       cantidad:form.cantidad,
       cliente:form.cliente,
       nit:form.nit,
-      direccion:form.direccion,
+      direccion:direccionCliente,
       fechaLarga:fmtL(form.fecha),
       normativa:form.normativa,
       lugar:form.lugar || proyectoDeObra(form.obraId),
@@ -199,7 +203,7 @@ export default function Certificaciones({ctx}){
       window.alert("Para armar el texto hace falta el cliente. Elige la obra y se completa solo.");
       return;
     }
-    setForm((prev)=>({...prev,sistema:texto,sistemaAuto:true}));
+    setForm((prev)=>({...prev,direccion:direccionCliente,sistema:texto,sistemaAuto:true}));
   };
 
   // Al abrir una certificacion nueva se preselecciona la primera obra real
@@ -332,10 +336,14 @@ export default function Certificaciones({ctx}){
                     setInformeRef(id);
                     const inf=(informes||[]).find((x)=>x.id===id);
                     if(!inf) return;
-                    // La sede de ese informe manda sobre la direccion de la obra:
-                    // es la que tiene que salir en el certificado.
+                    // La sede del informe dice DONDE se instalo, no cual es la
+                    // direccion del cliente: esa se vuelve a traer de su ficha,
+                    // porque antes se pisaba con la del informe y salia mal en
+                    // certificaciones ya guardadas.
+                    const obraSel=obras.find((x)=>x.id===form.obraId);
                     aplicarCambio({
-                      ...(inf.localizacion ? {direccion:inf.localizacion} : {}),
+                      direccion:buscarDireccionCliente(obraSel, form.cliente),
+                      ...(inf.localizacion ? {lugar:inf.localizacion} : {}),
                       ...(inf.periodoFin || inf.fechaInforme ? {fecha:inf.periodoFin || inf.fechaInforme} : {}),
                     }, id);
                   }}
@@ -382,7 +390,7 @@ export default function Certificaciones({ctx}){
               aplicarCambio({cliente:nombre,nit});
             }} style={SI}/></div>
             <div><LBL>NIT</LBL><input value={form.nit} onChange={e=>setForm({...form,nit:e.target.value})} style={SI}/></div>
-            <div style={{gridColumn:"span 2"}}><LBL>Dirección de la obra</LBL><input value={form.direccion} onChange={e=>aplicarCambio({direccion:e.target.value})} style={SI}/></div>
+            <div style={{gridColumn:"span 2"}}><LBL>Dirección del cliente</LBL><input value={form.direccion} onChange={e=>aplicarCambio({direccion:e.target.value})} style={SI}/></div>
             <div><LBL>Próximo mantenimiento</LBL><input type="date" value={form.proxMant} onChange={e=>setForm({...form,proxMant:e.target.value})} style={SI}/></div>
           </div>
           {/* El sitio concreto dentro del edificio. Se escribe aqui porque no

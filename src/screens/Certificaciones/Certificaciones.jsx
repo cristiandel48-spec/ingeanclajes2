@@ -138,8 +138,8 @@ export default function Certificaciones({ctx}){
       <H1 title="Certificaciones" subtitle="Certificados y recertificaciones de sistemas anticaídas · Res. 4272/2021"
         action={
           <div style={{display:"flex",gap:8}}>
-            <button style={B("#101828")} onClick={()=>abrirNuevaCertificacion("Certificación")}>+ Nueva Certificación</button>
-            <button style={{...B("#101828","#ffffff"),border:"1px solid #027a48"}} onClick={()=>abrirNuevaCertificacion("Recertificación")}>+ Nueva Recertificación</button>
+            <button style={B("#2b2622")} onClick={()=>abrirNuevaCertificacion("Certificación")}>+ Nueva Certificación</button>
+            <button style={{...B("#2b2622","#ffffff"),border:"1px solid #027a48"}} onClick={()=>abrirNuevaCertificacion("Recertificación")}>+ Nueva Recertificación</button>
           </div>
         }/>
 
@@ -155,7 +155,7 @@ export default function Certificaciones({ctx}){
           accion={
             <button
               onClick={()=>irAPantalla("cotizacion")}
-              style={{...B("#101828"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
+              style={{...B("#2b2622"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
             >
               Ir a Cotizaciones
             </button>
@@ -174,7 +174,7 @@ export default function Certificaciones({ctx}){
       )}
 
       {nueva&&(
-        <div style={{...CD,marginBottom:20,border:"1px solid #eaecf0"}}>
+        <div style={{...CD,marginBottom:20,border:"1px solid #e8dfd2"}}>
           <div style={ST}>{editId ? "Editar Certificación / Recertificación" : "Nueva Certificación / Recertificación"}</div>
 
           {obraDelForm && faltantesObra.length>0 && (
@@ -184,7 +184,7 @@ export default function Certificaciones({ctx}){
               accion={
                 <button
                   onClick={()=>irAPantalla("obras",{obraId:obraDelForm.id})}
-                  style={{...B("#f2f4f7","#475467"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
+                  style={{...B("#f4eee4","#574e44"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
                 >
                   Abrir la obra
                 </button>
@@ -213,7 +213,7 @@ export default function Certificaciones({ctx}){
             </select></div>
             <div><LBL>Cantidad</LBL>
               <input type="number" min={0} value={form.cantidad ?? ""} onChange={e=>aplicarCambio({cantidad:e.target.value})} placeholder="26" style={SI}/>
-              <div style={{fontSize:10.5,color:"#98a2b3",marginTop:3}}>
+              <div style={{fontSize:10.5,color:"#a2988a",marginTop:3}}>
                 {form.tipoSistema?.includes("línea") || form.tipoSistema?.includes("Línea")
                   ? "Metros instalados."
                   : "Cuántos puntos o unidades se certifican."}
@@ -236,7 +236,7 @@ export default function Certificaciones({ctx}){
           <div style={{marginBottom:12}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}}>
               <LBL>Sistema certificado</LBL>
-              <button onClick={rehacerTexto} style={{...B("#f2f4f7","#475467"),fontSize:11,padding:"5px 11px"}}>
+              <button onClick={rehacerTexto} style={{...B("#f4eee4","#574e44"),fontSize:11,padding:"5px 11px"}}>
                 ↻ Rehacer con los datos de arriba
               </button>
             </div>
@@ -248,7 +248,7 @@ export default function Certificaciones({ctx}){
               spellCheck lang="es"
               style={{...SI,resize:"vertical"}}
             />
-            <div style={{fontSize:10.5,color:"#98a2b3",marginTop:3}}>
+            <div style={{fontSize:10.5,color:"#a2988a",marginTop:3}}>
               {form.sistemaAuto===false
                 ? "Lo estás escribiendo a mano, así que ya no se rehace solo. Usa el botón para volver al texto automático."
                 : "Se actualiza solo con lo que elijas arriba. En cuanto lo edites, deja de hacerlo."}
@@ -259,17 +259,17 @@ export default function Certificaciones({ctx}){
             {form.elementos.map((el,i)=>(
               <div key={i} style={{display:"flex",gap:8,alignItems:"center",marginBottom:6}}>
                 <input value={el} onChange={e=>setForm({...form,elementos:form.elementos.map((x,j)=>j===i?e.target.value:x)})} style={{...SI,fontSize:12}} />
-                <button onClick={()=>setForm({...form,elementos:form.elementos.filter((_,j)=>j!==i)})} style={{background:"#feecec",border:"none",color:"#cc0000",borderRadius:6,width:28,height:28,cursor:"pointer",fontSize:14,flexShrink:0}}>×</button>
+                <button onClick={()=>setForm({...form,elementos:form.elementos.filter((_,j)=>j!==i)})} style={{background:"#f9e9e4",border:"none",color:"#cc0000",borderRadius:6,width:28,height:28,cursor:"pointer",fontSize:14,flexShrink:0}}>×</button>
               </div>
             ))}
             <div style={{display:"flex",gap:8,marginTop:6}}>
               <input value={nuevoElem} onChange={e=>setNuevoElem(e.target.value)} placeholder="Agregar elemento..." style={{...SI,fontSize:12}}/>
-              <button onClick={()=>{if(nuevoElem){setForm({...form,elementos:[...form.elementos,nuevoElem]});setNuevoElem("");}}} style={{...B("#f2f4f7","#101828"),border:"1px dashed #cc0000",flexShrink:0}}>+</button>
+              <button onClick={()=>{if(nuevoElem){setForm({...form,elementos:[...form.elementos,nuevoElem]});setNuevoElem("");}}} style={{...B("#f4eee4","#2b2622"),border:"1px dashed #cc0000",flexShrink:0}}>+</button>
             </div>
           </div>
           <div style={{display:"flex",gap:10}}>
-            <button style={B("#101828","#ffffff")} onClick={guardar}>{editId ? "Guardar cambios" : "Guardar certificación"}</button>
-            <button style={B("#f2f4f7","#475467")} onClick={()=>{setNueva(false);setEditId(null);}}>Cancelar</button>
+            <button style={B("#2b2622","#ffffff")} onClick={guardar}>{editId ? "Guardar cambios" : "Guardar certificación"}</button>
+            <button style={B("#f4eee4","#574e44")} onClick={()=>{setNueva(false);setEditId(null);}}>Cancelar</button>
           </div>
         </div>
       )}
@@ -279,25 +279,25 @@ export default function Certificaciones({ctx}){
       {!sel&&!nueva&&(
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,alignContent:"start"}}>
           {certs.map(c=>(
-            <div key={c.id} style={{...CD,border:"1px solid " + (sel?.id===c.id?"#101828":"#eaecf0"),cursor:"pointer"}} onClick={()=>setSel(c)}>
+            <div key={c.id} style={{...CD,border:"1px solid " + (sel?.id===c.id?"#2b2622":"#e8dfd2"),cursor:"pointer"}} onClick={()=>setSel(c)}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
                 <div>
-                  <div style={{fontSize:11,color:"#667085"}}>{c.id} · {c.numero}</div>
+                  <div style={{fontSize:11,color:"#756a5e"}}>{c.id} · {c.numero}</div>
                   <div style={{fontSize:14,fontWeight:700,marginTop:2}}>{c.cliente}</div>
-                  <div style={{fontSize:11,color:"#475467"}}>{c.tipo}</div>
+                  <div style={{fontSize:11,color:"#574e44"}}>{c.tipo}</div>
                 </div>
                 <Badge estado={c.estado}/>
               </div>
-              <div style={{fontSize:11,color:"#667085",marginBottom:6}}>{c.direccion}</div>
-              <div style={{fontSize:11,color:"#475467",marginBottom:10,lineHeight:1.5}}>{c.sistema}</div>
+              <div style={{fontSize:11,color:"#756a5e",marginBottom:6}}>{c.direccion}</div>
+              <div style={{fontSize:11,color:"#574e44",marginBottom:10,lineHeight:1.5}}>{c.sistema}</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
-                <div style={{background:"#f2f4f7",borderRadius:6,padding:"6px 10px"}}><div style={{fontSize:9,color:"#667085"}}>Fecha certif.</div><div style={{fontSize:12,fontWeight:600,color:"#101828"}}>{fmtD(c.fecha)}</div></div>
-                <div style={{background:"#f2f4f7",borderRadius:6,padding:"6px 10px"}}><div style={{fontSize:9,color:"#667085"}}>Próx. mantto.</div><div style={{fontSize:12,fontWeight:600,color:"#fb923c"}}>{fmtD(c.proxMant)||"-"}</div></div>
+                <div style={{background:"#f4eee4",borderRadius:6,padding:"6px 10px"}}><div style={{fontSize:9,color:"#756a5e"}}>Fecha certif.</div><div style={{fontSize:12,fontWeight:600,color:"#2b2622"}}>{fmtD(c.fecha)}</div></div>
+                <div style={{background:"#f4eee4",borderRadius:6,padding:"6px 10px"}}><div style={{fontSize:9,color:"#756a5e"}}>Próx. mantto.</div><div style={{fontSize:12,fontWeight:600,color:"#fb923c"}}>{fmtD(c.proxMant)||"-"}</div></div>
               </div>
               <div style={{display:"flex",gap:8}}>
-                <button style={{...B("#101828"),flex:1,justifyContent:"center",fontSize:12}} onClick={e=>{e.stopPropagation();setSel(c);}}>Ver</button>
-                <button style={{...B("#f2f4f7","#475467"),flex:1,justifyContent:"center",fontSize:12}} onClick={e=>{e.stopPropagation();editarCertificacion(c);}}>Editar</button>
-                <button style={{...B("#f2f4f7","#027a48"),flex:1,justifyContent:"center",fontSize:12}} onClick={e=>{e.stopPropagation();imprimir(c);}}>Imprimir</button>
+                <button style={{...B("#2b2622"),flex:1,justifyContent:"center",fontSize:12}} onClick={e=>{e.stopPropagation();setSel(c);}}>Ver</button>
+                <button style={{...B("#f4eee4","#574e44"),flex:1,justifyContent:"center",fontSize:12}} onClick={e=>{e.stopPropagation();editarCertificacion(c);}}>Editar</button>
+                <button style={{...B("#f4eee4","#027a48"),flex:1,justifyContent:"center",fontSize:12}} onClick={e=>{e.stopPropagation();imprimir(c);}}>Imprimir</button>
               </div>
             </div>
           ))}

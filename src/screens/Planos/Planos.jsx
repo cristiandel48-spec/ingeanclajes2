@@ -133,14 +133,14 @@ export default function Planos({ctx}){
             const linked = cotizaciones.find(c=>c.id===o.cotizacionId);
             const geos = o.geoMediciones || linked?.geoMediciones || [];
             return(
-              <div key={o.id} onClick={()=>abrirObra(o)} style={{...CD,cursor:"pointer",border:"1px solid #eaecf0"}}>
+              <div key={o.id} onClick={()=>abrirObra(o)} style={{...CD,cursor:"pointer",border:"1px solid #e8dfd2"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-                  <div><div style={{fontSize:11,color:"#98a2b3"}}>{o.id}</div><div style={{fontSize:14,fontWeight:700,color:"#101828",marginTop:2}}>{o.cliente}</div><div style={{fontSize:12,color:"#475467"}}>{o.proyecto}</div><div style={{fontSize:11,color:"#98a2b3",marginTop:2}}> {o.ciudad}</div></div>
+                  <div><div style={{fontSize:11,color:"#a2988a"}}>{o.id}</div><div style={{fontSize:14,fontWeight:700,color:"#2b2622",marginTop:2}}>{o.cliente}</div><div style={{fontSize:12,color:"#574e44"}}>{o.proyecto}</div><div style={{fontSize:11,color:"#a2988a",marginTop:2}}> {o.ciudad}</div></div>
                   <Badge estado={o.estado}/>
                 </div>
-                <div style={{marginTop:10,background:"#f2f4f7",borderRadius:6,padding:"6px 10px",fontSize:11,color:"#475467",display:"flex",justifyContent:"space-between"}}>
+                <div style={{marginTop:10,background:"#f4eee4",borderRadius:6,padding:"6px 10px",fontSize:11,color:"#574e44",display:"flex",justifyContent:"space-between"}}>
                   <span>{geos.length + (o.trazos||[]).length} trazos · {geos.length} automaticos</span>
-                  <span style={{color:"#cc0000",fontWeight:600}}>Abrir plano</span>
+                  <span style={{color:"#2b2622",fontWeight:600}}>Abrir plano</span>
                 </div>
               </div>
             );
@@ -152,18 +152,18 @@ export default function Planos({ctx}){
 
   return(
     <div style={{padding:28}}>
-      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,background:"#fff",borderRadius:14,padding:"16px 20px",border:"1px solid #eaecf0",boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
-        <button onClick={()=>setSel(null)} style={{...B("#f2f4f7","#475467"),padding:"8px 16px",fontSize:13,flexShrink:0}}>Volver a obras</button>
-        <div style={{flex:1}}><div style={{fontSize:11,color:"#98a2b3"}}>{sel.id} · Ciudad: {sel.ciudad || "No registrada"}</div><div style={{fontSize:20,fontWeight:700,color:"#101828"}}>{sel.cliente}</div><div style={{fontSize:13,color:"#475467"}}>{sel.proyecto}</div></div>
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,background:"#fff",borderRadius:14,padding:"16px 20px",border:"1px solid #e8dfd2",boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
+        <button onClick={()=>setSel(null)} style={{...B("#f4eee4","#574e44"),padding:"8px 16px",fontSize:13,flexShrink:0}}>Volver a obras</button>
+        <div style={{flex:1}}><div style={{fontSize:11,color:"#a2988a"}}>{sel.id} · Ciudad: {sel.ciudad || "No registrada"}</div><div style={{fontSize:20,fontWeight:700,color:"#2b2622"}}>{sel.cliente}</div><div style={{fontSize:13,color:"#574e44"}}>{sel.proyecto}</div></div>
         <Badge estado={sel.estado}/>
       </div>
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
-        {[["Total ML",(totalML) + " ML","#cc0000"],["Tramos automaticos",(geoMediciones.length),"#475467"],["Trazos manuales",(lineas.length),"#60b4ff"],["Valor total",fmt(sel.total),"#101828"]].map(([k,v,c])=>(<div key={k} style={{background:"#fff",borderRadius:10,padding:"12px 16px",border:"1px solid #eaecf0",textAlign:"center"}}><div style={{fontSize:10,color:"#98a2b3",marginBottom:4}}>{k}</div><div style={{fontSize:15,fontWeight:700,color:c}}>{v}</div></div>))}
+        {[["Total ML",(totalML) + " ML","#cc0000"],["Tramos automaticos",(geoMediciones.length),"#574e44"],["Trazos manuales",(lineas.length),"#60b4ff"],["Valor total",fmt(sel.total),"#2b2622"]].map(([k,v,c])=>(<div key={k} style={{background:"#fff",borderRadius:10,padding:"12px 16px",border:"1px solid #e8dfd2",textAlign:"center"}}><div style={{fontSize:10,color:"#a2988a",marginBottom:4}}>{k}</div><div style={{fontSize:15,fontWeight:700,color:c}}>{v}</div></div>))}
       </div>
 
       <div style={{display:"flex",gap:6,marginBottom:16}}>
-        {[["imagen","Medicion automatica"],["svg","Plano de trazos"],["lista","Lista y cotizacion"]].map(([id,lb])=>(<button key={id} onClick={()=>setTabPlano(id)} style={{...B(tabPlano===id?"#cc0000":"#f2f4f7",tabPlano===id?"#fff":"#475467"),fontSize:12,padding:"8px 16px",border:"1px solid " + (tabPlano===id?"#cc0000":"#eaecf0")}}>{lb}</button>))}
+        {[["imagen","Medicion automatica"],["svg","Plano de trazos"],["lista","Lista y cotizacion"]].map(([id,lb])=>(<button key={id} onClick={()=>setTabPlano(id)} style={{...B(tabPlano===id?"#cc0000":"#f4eee4",tabPlano===id?"#fff":"#574e44"),fontSize:12,padding:"8px 16px",border:"1px solid " + (tabPlano===id?"#cc0000":"#e8dfd2")}}>{lb}</button>))}
       </div>
 
       {tabPlano==="imagen" && (
@@ -171,7 +171,7 @@ export default function Planos({ctx}){
           <GoogleMeasureWorkspace queryValue={coordsInput} onQueryChange={(val)=>{ setCoordsInput(val); guardarEnObra({coords:val}); }} measurements={geoMediciones} onChange={persistGeo} mapView={geoMapView} onMapViewChange={(view)=>{ setGeoMapView(view); guardarEnObra({geoMapView:view}); }} />
           <div style={{...CD,marginTop:16}}>
             <div style={ST}>Imagen heredada para la obra / PDF</div>
-                  {buildGoogleStaticMapUrl(geoMediciones, coordsInput, geoMapView) ? <StaticMapPreview src={buildGoogleStaticMapUrl(geoMediciones, coordsInput, geoMapView)} segments={geoMediciones} query={coordsInput} mapView={geoMapView} alt="Imagen heredada" border="none" borderRadius={8} /> : <div style={{background:"#fafafa",border:"1px dashed #d0d5dd",borderRadius:8,padding:24,textAlign:"center",fontSize:12,color:"#667085"}}>Mide el primer tramo y aquí aparecerá la imagen que viene de la cotización.</div>}
+                  {buildGoogleStaticMapUrl(geoMediciones, coordsInput, geoMapView) ? <StaticMapPreview src={buildGoogleStaticMapUrl(geoMediciones, coordsInput, geoMapView)} segments={geoMediciones} query={coordsInput} mapView={geoMapView} alt="Imagen heredada" border="none" borderRadius={8} /> : <div style={{background:"#fbf8f3",border:"1px dashed #d9cdbb",borderRadius:8,padding:24,textAlign:"center",fontSize:12,color:"#756a5e"}}>Mide el primer tramo y aquí aparecerá la imagen que viene de la cotización.</div>}
           </div>
         </div>
       )}
@@ -181,13 +181,13 @@ export default function Planos({ctx}){
           <div style={{...CD,marginBottom:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
               <div style={ST}>Plano de trazos manual</div>
-              <button onClick={()=>imgRef.current.click()} style={{...B("#f2f4f7","#475467"),fontSize:11,padding:"5px 10px"}}>Cargar imagen de fondo</button>
+              <button onClick={()=>imgRef.current.click()} style={{...B("#f4eee4","#574e44"),fontSize:11,padding:"5px 10px"}}>Cargar imagen de fondo</button>
               <input ref={imgRef} type="file" accept="image/*" style={{display:"none"}} onChange={onImgChange}/>
             </div>
-            <div style={{background:"#f0f4f8",borderRadius:8,overflow:"hidden",position:"relative",border:"1px solid #eaecf0"}}>
+            <div style={{background:"#f0f4f8",borderRadius:8,overflow:"hidden",position:"relative",border:"1px solid #e8dfd2"}}>
               <svg ref={manualSvgRef} viewBox="0 0 500 300" style={{width:"100%",display:"block"}} onMouseMove={moverDrag} onMouseUp={finalizarDrag} onMouseLeave={finalizarDrag}>
-                {Array.from({length:16},(_,i)=><line key={"v" + (i)} x1={i*32} y1={0} x2={i*32} y2={300} stroke="#d0d5dd" strokeWidth="0.5"/>) }
-                {Array.from({length:10},(_,i)=><line key={"h" + (i)} x1={0} y1={i*32} x2={500} y2={i*32} stroke="#d0d5dd" strokeWidth="0.5"/>) }
+                {Array.from({length:16},(_,i)=><line key={"v" + (i)} x1={i*32} y1={0} x2={i*32} y2={300} stroke="#d9cdbb" strokeWidth="0.5"/>) }
+                {Array.from({length:10},(_,i)=><line key={"h" + (i)} x1={0} y1={i*32} x2={500} y2={i*32} stroke="#d9cdbb" strokeWidth="0.5"/>) }
                 {imgPlano&&<image href={imgPlano} x={0} y={0} width={500} height={300} opacity={0.45} preserveAspectRatio="xMidYMid slice"/>}
                 {lineas.map(l=>renderShape(l))}
               </svg>
@@ -199,7 +199,7 @@ export default function Planos({ctx}){
               <div><LBL>Tipo</LBL><select value={trazosForm.tipo} onChange={e=>setTrazosForm({...trazosForm,tipo:e.target.value})} style={SI}>{[["LVH","L.V. Horizontal"],["LVV","L.V. Vertical"],["CON","Conexión"],["ESC","Escalera"],["PAN","Punto anclaje"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
               <div><LBL>Metros lineales</LBL><input type="number" value={trazosForm.ml} onChange={e=>setTrazosForm({...trazosForm,ml:parseFloat(e.target.value)||0})} style={SI}/></div>
               <div style={{gridColumn:"span 2"}}><LBL>Etiqueta</LBL><input value={trazosForm.label} onChange={e=>setTrazosForm({...trazosForm,label:e.target.value})} style={SI}/></div>
-              <button onClick={agregarLinea} style={B("#101828")}>+ Agregar</button>
+              <button onClick={agregarLinea} style={B("#2b2622")}>+ Agregar</button>
             </div>
           </div>
         </div>
@@ -208,14 +208,14 @@ export default function Planos({ctx}){
       {tabPlano==="lista" && (
         <div style={CD}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-            <div style={ST}>Trazos registrados · Total: <span style={{color:"#cc0000"}}>{totalML} ML</span></div>
-            <button onClick={pasarACotizacion} style={{...B("#101828","#ffffff"),fontSize:12}}>Llevar a cotizacion</button>
+            <div style={ST}>Trazos registrados · Total: <span style={{color:"#2b2622"}}>{totalML} ML</span></div>
+            <button onClick={pasarACotizacion} style={{...B("#2b2622","#ffffff"),fontSize:12}}>Llevar a cotizacion</button>
           </div>
           <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-            <thead><tr style={{background:"#fafafa"}}>{["Fuente","Tipo","Descripción","Metros",""].map(h=><th key={h} style={{padding:"8px 10px",textAlign:"left",color:"#667085",fontWeight:500,fontSize:11}}>{h}</th>)}</tr></thead>
+            <thead><tr style={{background:"#fbf8f3"}}>{["Fuente","Tipo","Descripción","Metros",""].map(h=><th key={h} style={{padding:"8px 10px",textAlign:"left",color:"#756a5e",fontWeight:500,fontSize:11}}>{h}</th>)}</tr></thead>
             <tbody>
-              {geoMediciones.map(seg=><tr key={seg.id} style={{borderBottom:"1px solid #f2f4f7",background:"#fafafa"}}><td style={{padding:"8px 10px"}}><span style={{background:"#f2f4f7",color:"#475467",borderRadius:4,padding:"2px 6px",fontSize:10}}>Google</span></td><td style={{padding:"8px 10px"}}>{seg.tipo}</td><td style={{padding:"8px 10px",fontWeight:500}}>{seg.label}</td><td style={{padding:"8px 10px",fontWeight:700,color:"#cc0000"}}>{Number(seg.ml||0).toFixed(2)} m</td><td style={{padding:"8px 10px"}}><button onClick={()=>persistGeo(geoMediciones.filter(x=>x.id!==seg.id))} style={{background:"#feecec",border:"none",color:"#cc0000",borderRadius:5,padding:"3px 8px",cursor:"pointer",fontSize:11}}>× Eliminar</button></td></tr>)}
-              {lineas.map(t=><tr key={t.id} style={{borderBottom:"1px solid #f2f4f7"}}><td style={{padding:"8px 10px"}}><span style={{background:"#f2f4f7",color:"#b54708",borderRadius:4,padding:"2px 6px",fontSize:10}}>Manual</span></td><td style={{padding:"8px 10px"}}>{t.tipo}</td><td style={{padding:"8px 10px",fontWeight:500}}>{t.label}</td><td style={{padding:"8px 10px",fontWeight:700,color:"#cc0000"}}>{t.ml} ML</td><td style={{padding:"8px 10px"}}><button onClick={()=>eliminarLinea(t.id)} style={{background:"#feecec",border:"none",color:"#cc0000",borderRadius:5,padding:"3px 8px",cursor:"pointer",fontSize:11}}>× Eliminar</button></td></tr>)}
+              {geoMediciones.map(seg=><tr key={seg.id} style={{borderBottom:"1px solid #f4eee4",background:"#fbf8f3"}}><td style={{padding:"8px 10px"}}><span style={{background:"#f4eee4",color:"#574e44",borderRadius:4,padding:"2px 6px",fontSize:10}}>Google</span></td><td style={{padding:"8px 10px"}}>{seg.tipo}</td><td style={{padding:"8px 10px",fontWeight:500}}>{seg.label}</td><td style={{padding:"8px 10px",fontWeight:700,color:"#cc0000"}}>{Number(seg.ml||0).toFixed(2)} m</td><td style={{padding:"8px 10px"}}><button onClick={()=>persistGeo(geoMediciones.filter(x=>x.id!==seg.id))} style={{background:"#f9e9e4",border:"none",color:"#cc0000",borderRadius:5,padding:"3px 8px",cursor:"pointer",fontSize:11}}>× Eliminar</button></td></tr>)}
+              {lineas.map(t=><tr key={t.id} style={{borderBottom:"1px solid #f4eee4"}}><td style={{padding:"8px 10px"}}><span style={{background:"#f4eee4",color:"#b54708",borderRadius:4,padding:"2px 6px",fontSize:10}}>Manual</span></td><td style={{padding:"8px 10px"}}>{t.tipo}</td><td style={{padding:"8px 10px",fontWeight:500}}>{t.label}</td><td style={{padding:"8px 10px",fontWeight:700,color:"#cc0000"}}>{t.ml} ML</td><td style={{padding:"8px 10px"}}><button onClick={()=>eliminarLinea(t.id)} style={{background:"#f9e9e4",border:"none",color:"#cc0000",borderRadius:5,padding:"3px 8px",cursor:"pointer",fontSize:11}}>× Eliminar</button></td></tr>)}
             </tbody>
           </table>
         </div>

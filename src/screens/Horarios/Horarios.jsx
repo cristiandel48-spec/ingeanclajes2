@@ -339,18 +339,18 @@ export default function Horarios({ctx}){
 
   return(
     <div style={{padding:28}}>
-      <H1 title="Horarios" subtitle="Asigna hasta 2 turnos por día a una persona o a un grupo entero, y avisa por WhatsApp" action={<button style={B("#101828")} onClick={()=>setShowF(!showF)}>+ Asignar turnos</button>}/>
+      <H1 title="Horarios" subtitle="Asigna hasta 2 turnos por día a una persona o a un grupo entero, y avisa por WhatsApp" action={<button style={B("#2b2622")} onClick={()=>setShowF(!showF)}>+ Asignar turnos</button>}/>
 
       {empleados.length===0 && (
         <AvisoFlujo
           tono="falta"
           titulo="Todavía no hay empleados para asignar"
           accion={puedeCrearPersonal(membresia) && !nuevoEmp ? (
-            <button onClick={()=>setNuevoEmp(true)} style={{...B("#101828"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}>
+            <button onClick={()=>setNuevoEmp(true)} style={{...B("#2b2622"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}>
               + Registrar trabajador
             </button>
           ) : (
-            <button onClick={()=>irAPantalla("nomina")} style={{...B("#101828"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}>
+            <button onClick={()=>irAPantalla("nomina")} style={{...B("#2b2622"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}>
               Ir a Nómina
             </button>
           )}
@@ -380,7 +380,7 @@ export default function Horarios({ctx}){
           tono="falta"
           titulo="Todavía no hay obras a las cuales asignar turnos"
           accion={
-            <button onClick={()=>irAPantalla("obras")} style={{...B("#101828"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}>
+            <button onClick={()=>irAPantalla("obras")} style={{...B("#2b2622"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}>
               Ir a Obras
             </button>
           }
@@ -395,7 +395,7 @@ export default function Horarios({ctx}){
           tono="info"
           titulo="Para qué sirve asignar el turno aquí"
           accion={puedeCrearPersonal(membresia) && !nuevoEmp ? (
-            <button onClick={()=>setNuevoEmp(true)} style={{...B("#f2f4f7","#475467"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}>
+            <button onClick={()=>setNuevoEmp(true)} style={{...B("#f4eee4","#574e44"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}>
               + Registrar trabajador
             </button>
           ) : null}
@@ -414,14 +414,14 @@ export default function Horarios({ctx}){
 
       {notif&&(
         <div style={{
-          background: notif.ok?"#f2f4f7":"#f2f4f7",
-          border: "1px solid " + (notif.ok?"#027a48":"#eaecf0"),
+          background: notif.ok?"#f4eee4":"#f4eee4",
+          border: "1px solid " + (notif.ok?"#027a48":"#e8dfd2"),
           color: notif.ok?"#027a48":"#b54708",
           borderRadius:10,padding:"12px 16px",marginBottom:16,fontSize:13,lineHeight:1.5,
         }}>{notif.texto}</div>
       )}
       {showF&&(
-        <div style={{...CD,marginBottom:20,border:"1px solid #eaecf0"}}>
+        <div style={{...CD,marginBottom:20,border:"1px solid #e8dfd2"}}>
           <div style={ST}>Nuevo horario · notificación automática por WhatsApp</div>
           {/* La obra va primero: de ella sale el atajo para marcar al equipo
               completo, que es lo que evita repetir el formulario por persona. */}
@@ -439,49 +439,49 @@ export default function Horarios({ctx}){
               idsDeLaObra={obraSel?.empleados||[]}
               nombreObra={obraSel?.proyecto||""}
             />
-            <div style={{fontSize:10.5,color:"#98a2b3",marginTop:5}}>
+            <div style={{fontSize:10.5,color:"#a2988a",marginTop:5}}>
               Todos los marcados reciben el mismo turno, la misma obra y la misma tarea.
               Si alguno necesita algo distinto, asígnaselo aparte.
             </div>
           </div>
 
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
-            <div style={{background:"#fafafa",border:"1px solid #eaecf0",borderRadius:10,padding:12}}>
-              <div style={{fontSize:11,fontWeight:700,color:"#101828",marginBottom:10}}>Turno 1</div>
+            <div style={{background:"#fbf8f3",border:"1px solid #e8dfd2",borderRadius:10,padding:12}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#2b2622",marginBottom:10}}>Turno 1</div>
               <div style={{marginBottom:10}}>
                 <LBL>Horario personalizado</LBL>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
                   <div>
-                    <div style={{fontSize:11,color:"#667085",marginBottom:4}}>Desde</div>
+                    <div style={{fontSize:11,color:"#756a5e",marginBottom:4}}>Desde</div>
                     <input type="time" value={form.turno1Inicio} onChange={e=>setForm({...form,turno1Inicio:e.target.value})} style={SI}/>
                   </div>
                   <div>
-                    <div style={{fontSize:11,color:"#667085",marginBottom:4}}>Hasta</div>
+                    <div style={{fontSize:11,color:"#756a5e",marginBottom:4}}>Hasta</div>
                     <input type="time" value={form.turno1Fin} onChange={e=>setForm({...form,turno1Fin:e.target.value})} style={SI}/>
                   </div>
                 </div>
-                <div style={{fontSize:11,color:"#667085",marginTop:6}}>Ejemplo: {fmtTurno12Local(armarTurno(form.turno1Inicio, form.turno1Fin))}</div>
+                <div style={{fontSize:11,color:"#756a5e",marginTop:6}}>Ejemplo: {fmtTurno12Local(armarTurno(form.turno1Inicio, form.turno1Fin))}</div>
               </div>
               <div>
                 <LBL>Tarea del turno 1</LBL>
                 <input value={form.tarea1} onChange={e=>setForm({...form,tarea1:e.target.value})} placeholder="Ej: Instalación anclajes" style={SI}/>
               </div>
             </div>
-            <div style={{background:"#fafafa",border:"1px solid #eaecf0",borderRadius:10,padding:12}}>
-              <div style={{fontSize:11,fontWeight:700,color:"#101828",marginBottom:10}}>Turno 2 (opcional)</div>
+            <div style={{background:"#fbf8f3",border:"1px solid #e8dfd2",borderRadius:10,padding:12}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#2b2622",marginBottom:10}}>Turno 2 (opcional)</div>
               <div style={{marginBottom:10}}>
                 <LBL>Horario personalizado</LBL>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
                   <div>
-                    <div style={{fontSize:11,color:"#667085",marginBottom:4}}>Desde</div>
+                    <div style={{fontSize:11,color:"#756a5e",marginBottom:4}}>Desde</div>
                     <input type="time" value={form.turno2Inicio} onChange={e=>setForm({...form,turno2Inicio:e.target.value})} style={SI}/>
                   </div>
                   <div>
-                    <div style={{fontSize:11,color:"#667085",marginBottom:4}}>Hasta</div>
+                    <div style={{fontSize:11,color:"#756a5e",marginBottom:4}}>Hasta</div>
                     <input type="time" value={form.turno2Fin} onChange={e=>setForm({...form,turno2Fin:e.target.value})} style={SI}/>
                   </div>
                 </div>
-                <div style={{fontSize:11,color:"#667085",marginTop:6}}>{form.turno2Inicio && form.turno2Fin ? "Ejemplo: " + (fmtTurno12Local(armarTurno(form.turno2Inicio, form.turno2Fin))) : 'Déjalo vacío si no aplica segundo turno'}</div>
+                <div style={{fontSize:11,color:"#756a5e",marginTop:6}}>{form.turno2Inicio && form.turno2Fin ? "Ejemplo: " + (fmtTurno12Local(armarTurno(form.turno2Inicio, form.turno2Fin))) : 'Déjalo vacío si no aplica segundo turno'}</div>
               </div>
               <div>
                 <LBL>Tarea del turno 2</LBL>
@@ -491,11 +491,11 @@ export default function Horarios({ctx}){
           </div>
 
           {turnosBase.length>0&&seleccionados.length>0&&obraSel&&(
-            <div style={{background:"#f2f4f7",borderRadius:10,padding:14,marginBottom:14}}>
-              <div style={{fontSize:11,color:"#667085",marginBottom:6}}>
+            <div style={{background:"#f4eee4",borderRadius:10,padding:14,marginBottom:14}}>
+              <div style={{fontSize:11,color:"#756a5e",marginBottom:6}}>
                 Vista previa · le llega igual a {seleccionados.length===1?"la persona":`las ${seleccionados.length} personas`}, con su nombre
               </div>
-              <div style={{fontSize:13,color:"#101828",lineHeight:1.7,background:"#fafafa",borderRadius:8,padding:"12px 14px"}}>
+              <div style={{fontSize:13,color:"#2b2622",lineHeight:1.7,background:"#fbf8f3",borderRadius:8,padding:"12px 14px"}}>
                 <div>Hola <strong>{seleccionados[0].nombre}</strong>, has sido asignado a la obra <strong>{obraSel.proyecto}</strong> del cliente <strong>{obraSel.cliente}</strong>.</div>
                 <div>Lugar: <strong>{obraSel.direccion||obraSel.ciudad}, {obraSel.ciudad}</strong></div>
                 <div>Fecha: <strong>{fmtD(form.fecha) || form.fecha}</strong></div>
@@ -505,7 +505,7 @@ export default function Horarios({ctx}){
                 </ul>
                 <div style={{marginTop:8}}>Por favor confirma tu asistencia. <strong>INGEANCLAJES S.A.S</strong></div>
               </div>
-              <div style={{fontSize:11,color:"#667085",marginTop:8}}>
+              <div style={{fontSize:11,color:"#756a5e",marginTop:8}}>
                 Se van a crear <strong>{previewTurnos.length} turno{previewTurnos.length!==1?"s":""}</strong>
                 {seleccionados.length>1 && <> · {seleccionados.map(e=>e.nombre.split(" ")[0]).join(", ")}</>}
               </div>
@@ -513,15 +513,15 @@ export default function Horarios({ctx}){
           )}
           <div style={{display:"flex",gap:10,alignItems:"center"}}>
             <button
-              style={{...B("#101828","#ffffff"),opacity:previewTurnos.length?1:0.5,cursor:previewTurnos.length?"pointer":"not-allowed"}}
+              style={{...B("#2b2622","#ffffff"),opacity:previewTurnos.length?1:0.5,cursor:previewTurnos.length?"pointer":"not-allowed"}}
               onClick={guardar}
               disabled={!previewTurnos.length}
             >
               {seleccionados.length>1?`Guardar turnos de ${seleccionados.length} personas`:"Guardar y enviar WhatsApp"}
             </button>
-            <button style={B("#f2f4f7","#475467")} onClick={()=>setShowF(false)}>Cancelar</button>
+            <button style={B("#f4eee4","#574e44")} onClick={()=>setShowF(false)}>Cancelar</button>
             {!previewTurnos.length && (
-              <span style={{fontSize:11,color:"#98a2b3"}}>
+              <span style={{fontSize:11,color:"#a2988a"}}>
                 {!seleccionados.length?"Marca al menos a una persona":"Falta la tarea del turno"}
               </span>
             )}
@@ -539,10 +539,10 @@ export default function Horarios({ctx}){
             maxHeight:"88vh",display:"flex",flexDirection:"column",
             boxShadow:"0 18px 50px rgba(9,11,16,.28)",
           }}>
-            <div style={{fontSize:15,fontWeight:700,color:"#101828"}}>Horario del día · para el grupo</div>
+            <div style={{fontSize:15,fontWeight:700,color:"#2b2622"}}>Horario del día · para el grupo</div>
             <div style={{
-              background:copiado?"#f2f4f7":"#f2f4f7",
-              border:"1px solid "+(copiado?"#027a48":"#eaecf0"),
+              background:copiado?"#f4eee4":"#f4eee4",
+              border:"1px solid "+(copiado?"#027a48":"#e8dfd2"),
               color:copiado?"#027a48":"#b54708",
               borderRadius:9,padding:"9px 12px",fontSize:12.5,lineHeight:1.5,margin:"11px 0 12px",
             }}>
@@ -558,7 +558,7 @@ export default function Horarios({ctx}){
               value={mensajeGrupo}
               onFocus={(e)=>e.target.select()}
               style={{...SI,flex:1,minHeight:210,resize:"vertical",lineHeight:1.6,
-                fontSize:12.5,fontFamily:"inherit",background:"#fafafa",whiteSpace:"pre-wrap"}}
+                fontSize:12.5,fontFamily:"inherit",background:"#fbf8f3",whiteSpace:"pre-wrap"}}
             />
 
             <div style={{display:"flex",gap:10,marginTop:14}}>
@@ -569,8 +569,8 @@ export default function Horarios({ctx}){
                 }}
                 style={{...B("#027a48","#ffffff"),fontSize:12.5,fontWeight:700}}
               >{copiado?"Copiar otra vez":"Copiar mensaje"}</button>
-              <button onClick={()=>setMensajeGrupo(null)} style={{...B("#f2f4f7","#475467"),fontSize:12.5}}>Cerrar</button>
-              <div style={{marginLeft:"auto",alignSelf:"center",fontSize:11,color:"#98a2b3"}}>
+              <button onClick={()=>setMensajeGrupo(null)} style={{...B("#f4eee4","#574e44"),fontSize:12.5}}>Cerrar</button>
+              <div style={{marginLeft:"auto",alignSelf:"center",fontSize:11,color:"#a2988a"}}>
                 {dia.length} turno{dia.length!==1?"s":""} · {fmtD(fechaF)}
               </div>
             </div>
@@ -582,13 +582,13 @@ export default function Horarios({ctx}){
         <div style={{...CD,marginBottom:20,border:"1px solid #027a48"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:4}}>
             <div style={ST}>Turnos guardados · {porAvisar.length} {porAvisar.length===1?"persona":"personas"}</div>
-            <button onClick={()=>setPorAvisar([])} style={{...B("#f2f4f7","#475467"),fontSize:11.5,padding:"6px 12px"}}>Listo, cerrar</button>
+            <button onClick={()=>setPorAvisar([])} style={{...B("#f4eee4","#574e44"),fontSize:11.5,padding:"6px 12px"}}>Listo, cerrar</button>
           </div>
 
           {/* El mensaje al grupo va PRIMERO y en grande. Es un solo envio y
               resuelve el dia entero; la lista de abajo es para el caso suelto.
               Antes estaba al reves y parecia que tocaba ir uno por uno. */}
-          <div style={{fontSize:11.5,color:"#667085",marginBottom:10,lineHeight:1.5}}>
+          <div style={{fontSize:11.5,color:"#756a5e",marginBottom:10,lineHeight:1.5}}>
             Los turnos <strong>ya quedaron guardados</strong>. Lo más rápido es mandar
             <strong> un solo mensaje al grupo</strong> con todos los turnos del día:
           </div>
@@ -603,28 +603,28 @@ export default function Horarios({ctx}){
           <button
             onClick={exportarAvisosDelDia}
             title="Descarga los avisos del día para enviarlos con el script automático"
-            style={{...B("#f2f4f7","#475467"),fontSize:12,width:"100%",justifyContent:"center",marginTop:8}}
+            style={{...B("#f4eee4","#574e44"),fontSize:12,width:"100%",justifyContent:"center",marginTop:8}}
           >
             ⬇ Descargar avisos para el envío automático
           </button>
 
           <div style={{display:"flex",alignItems:"center",gap:10,margin:"16px 0 10px"}}>
-            <div style={{flex:1,height:1,background:"#eaecf0"}}/>
-            <span style={{fontSize:10.5,color:"#98a2b3"}}>o avisa a alguien en particular</span>
-            <div style={{flex:1,height:1,background:"#eaecf0"}}/>
+            <div style={{flex:1,height:1,background:"#e8dfd2"}}/>
+            <span style={{fontSize:10.5,color:"#a2988a"}}>o avisa a alguien en particular</span>
+            <div style={{flex:1,height:1,background:"#e8dfd2"}}/>
           </div>
-          <div style={{fontSize:10.5,color:"#98a2b3",marginBottom:10,lineHeight:1.5}}>
+          <div style={{fontSize:10.5,color:"#a2988a",marginBottom:10,lineHeight:1.5}}>
             WhatsApp solo deja abrir un chat a la vez, así que por aquí se manda de a uno.
           </div>
           {porAvisar.map((p)=>{
             const e=empleados.find(x=>x.id===p.empleadoId);
             const idx=empleados.findIndex(x=>x.id===p.empleadoId);
             return(
-              <div key={p.empleadoId} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid #f2f4f7"}}>
+              <div key={p.empleadoId} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid #f4eee4"}}>
                 <Av init={e?.avatar||"?"} color={PAL[idx%PAL.length]} size={30}/>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:12.5,fontWeight:600,color:"#101828"}}>{e?.nombre}</div>
-                  <div style={{fontSize:10.5,color:"#667085"}}>
+                  <div style={{fontSize:12.5,fontWeight:600,color:"#2b2622"}}>{e?.nombre}</div>
+                  <div style={{fontSize:10.5,color:"#756a5e"}}>
                     {p.turnos.map((t)=>fmtTurno12Local(t.turno)).join(" · ")}
                   </div>
                 </div>
@@ -633,7 +633,7 @@ export default function Horarios({ctx}){
                     enviarWA(p.empleadoId,p.obraId,p.fecha,p.turnos);
                     setPorAvisar(prev=>prev.map(x=>x.empleadoId===p.empleadoId?{...x,enviado:true}:x));
                   }}
-                  style={{...(p.enviado?B("#f2f4f7","#475467"):B("#f2f4f7","#027a48")),fontSize:11.5,padding:"6px 12px",flexShrink:0}}
+                  style={{...(p.enviado?B("#f4eee4","#574e44"):B("#f4eee4","#027a48")),fontSize:11.5,padding:"6px 12px",flexShrink:0}}
                 >
                   {p.enviado?"✓ Enviado · reenviar":"Avisar por WhatsApp"}
                 </button>
@@ -645,7 +645,7 @@ export default function Horarios({ctx}){
 
       <div style={{display:"flex",gap:14,alignItems:"flex-end",marginBottom:20}}>
         <div><LBL>Filtrar por fecha</LBL><input type="date" value={fechaF} onChange={e=>setFechaF(e.target.value)} style={{...SI,width:"auto"}}/></div>
-        <div style={{fontSize:13,color:"#667085"}}>{dia.length} turno{dia.length!==1?"s":""} · {fmtD(fechaF)}</div>
+        <div style={{fontSize:13,color:"#756a5e"}}>{dia.length} turno{dia.length!==1?"s":""} · {fmtD(fechaF)}</div>
         <button
           onClick={abrirHorarioDelDia}
           disabled={!dia.length}
@@ -658,20 +658,20 @@ export default function Horarios({ctx}){
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
         <div style={CD}>
           <div style={ST}>Turnos del día</div>
-          {dia.length===0?<div style={{textAlign:"center",color:"#98a2b3",fontSize:13,padding:"28px 0"}}>No hay turnos para esta fecha</div>
-          :dia.map(h=>{const e=empleados.find(x=>x.id===h.empleadoId);const o=obras.find(x=>x.id===h.obraId);const idx=empleados.findIndex(x=>x.id===h.empleadoId);return(<div key={h.id} style={{background:"#f2f4f7",borderRadius:10,padding:"12px 14px",marginBottom:10}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}><Av init={e?.avatar||"?"} color={PAL[idx%PAL.length]} size={34}/><div style={{flex:1}}><div style={{fontSize:13,fontWeight:600}}>{e?.nombre}</div><div style={{fontSize:11,color:"#475467"}}>{e?.cargo}</div></div><button onClick={()=>setHorarios(p=>p.filter(x=>x.id!==h.id))} style={{background:"#feecec",border:"none",color:"#cc0000",borderRadius:6,width:24,height:24,cursor:"pointer",fontSize:14}}>×</button></div>
+          {dia.length===0?<div style={{textAlign:"center",color:"#a2988a",fontSize:13,padding:"28px 0"}}>No hay turnos para esta fecha</div>
+          :dia.map(h=>{const e=empleados.find(x=>x.id===h.empleadoId);const o=obras.find(x=>x.id===h.obraId);const idx=empleados.findIndex(x=>x.id===h.empleadoId);return(<div key={h.id} style={{background:"#f4eee4",borderRadius:10,padding:"12px 14px",marginBottom:10}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}><Av init={e?.avatar||"?"} color={PAL[idx%PAL.length]} size={34}/><div style={{flex:1}}><div style={{fontSize:13,fontWeight:600}}>{e?.nombre}</div><div style={{fontSize:11,color:"#574e44"}}>{e?.cargo}</div></div><button onClick={()=>setHorarios(p=>p.filter(x=>x.id!==h.id))} style={{background:"#f9e9e4",border:"none",color:"#cc0000",borderRadius:6,width:24,height:24,cursor:"pointer",fontSize:14}}>×</button></div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,fontSize:11,marginBottom:8}}>
-              <div style={{background:"#ffffff",borderRadius:6,padding:"6px 10px"}}><div style={{color:"#667085",marginBottom:2}}>Obra</div><div style={{color:"#101828",fontWeight:500}}>{o?.proyecto}</div><div style={{color:"#475467"}}>{o?.ciudad}</div></div>
+              <div style={{background:"#ffffff",borderRadius:6,padding:"6px 10px"}}><div style={{color:"#756a5e",marginBottom:2}}>Obra</div><div style={{color:"#2b2622",fontWeight:500}}>{o?.proyecto}</div><div style={{color:"#574e44"}}>{o?.ciudad}</div></div>
               {/* Un turno sin hora se marca en la tarjeta. Antes salia un hueco
                   en blanco y parecia un problema de la pantalla. */}
-              <div style={{background:"#ffffff",borderRadius:6,padding:"6px 10px"}}><div style={{color:"#667085",marginBottom:2}}>Turno</div>{String(h.turno||"").trim() ? (<><div style={{color:"#cc0000",fontWeight:600}}>{fmtTurno12Local(h.turno)}</div><div style={{color:"#475467"}}>{h.tarea}</div></>) : (<div style={{color:"#b54708",fontWeight:600}}>Sin horario · bórralo y vuelve a asignarlo</div>)}</div>
+              <div style={{background:"#ffffff",borderRadius:6,padding:"6px 10px"}}><div style={{color:"#756a5e",marginBottom:2}}>Turno</div>{String(h.turno||"").trim() ? (<><div style={{color:"#2b2622",fontWeight:600}}>{fmtTurno12Local(h.turno)}</div><div style={{color:"#574e44"}}>{h.tarea}</div></>) : (<div style={{color:"#b54708",fontWeight:600}}>Sin horario · bórralo y vuelve a asignarlo</div>)}</div>
             </div>
             <button
               onClick={()=>reenviarDiaEmpleado(h)}
               disabled={!String(h.turno||"").trim()}
               title={String(h.turno||"").trim() ? "" : "Este turno no tiene hora, no hay nada que avisar"}
-              style={{...B("#f2f4f7","#027a48"),width:"100%",justifyContent:"center",fontSize:12,
+              style={{...B("#f4eee4","#027a48"),width:"100%",justifyContent:"center",fontSize:12,
                 opacity:String(h.turno||"").trim()?1:0.45,
                 cursor:String(h.turno||"").trim()?"pointer":"not-allowed"}}
             >Reenviar WhatsApp · +57 {e?.tel}</button>
@@ -679,10 +679,10 @@ export default function Horarios({ctx}){
         </div>
         <div style={CD}>
           <div style={ST}>Todos los turnos por obra</div>
-          {obras.map(o=>{const hs=horarios.filter(h=>h.obraId===o.id);if(!hs.length)return null;return(<div key={o.id} style={{background:"#f2f4f7",borderRadius:10,padding:"12px 14px",marginBottom:12}}>
+          {obras.map(o=>{const hs=horarios.filter(h=>h.obraId===o.id);if(!hs.length)return null;return(<div key={o.id} style={{background:"#f4eee4",borderRadius:10,padding:"12px 14px",marginBottom:12}}>
             <div style={{fontSize:12,fontWeight:600,marginBottom:2}}>{o.cliente}</div>
-            <div style={{fontSize:11,color:"#475467",marginBottom:8}}>{o.proyecto}</div>
-            {hs.map(h=>{const e=empleados.find(x=>x.id===h.empleadoId);return(<div key={h.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid #eaecf0",fontSize:11}}><span style={{color:"#667085",minWidth:88}}>{fmtD(h.fecha)}</span><span style={{color:"#101828",flex:1}}>{e?.nombre}</span><span style={{color:"#cc0000",minWidth:160}}>{fmtTurno12Local(h.turno)}</span><span style={{color:"#475467",flex:1.3}}>{h.tarea}</span></div>);})}
+            <div style={{fontSize:11,color:"#574e44",marginBottom:8}}>{o.proyecto}</div>
+            {hs.map(h=>{const e=empleados.find(x=>x.id===h.empleadoId);return(<div key={h.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid #e8dfd2",fontSize:11}}><span style={{color:"#756a5e",minWidth:88}}>{fmtD(h.fecha)}</span><span style={{color:"#2b2622",flex:1}}>{e?.nombre}</span><span style={{color:"#2b2622",minWidth:160}}>{fmtTurno12Local(h.turno)}</span><span style={{color:"#574e44",flex:1.3}}>{h.tarea}</span></div>);})}
           </div>);})}
         </div>
       </div>

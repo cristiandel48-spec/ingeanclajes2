@@ -78,7 +78,7 @@ export default function BuscadorCliente({ label = "Empresa", valor, clientes, on
       {abierto && encontrados.length > 0 && (
         <div style={{
           position: "absolute", top: "100%", left: 0, right: 0, zIndex: 30,
-          background: "#fff", border: "1px solid #d0d5dd", borderRadius: 8,
+          background: "#fff", border: "1px solid #d9cdbb", borderRadius: 8,
           marginTop: 3, boxShadow: "0 8px 20px rgba(16,24,40,.12)",
           maxHeight: 260, overflowY: "auto",
         }}>
@@ -93,13 +93,13 @@ export default function BuscadorCliente({ label = "Empresa", valor, clientes, on
               style={{
                 display: "block", width: "100%", textAlign: "left",
                 padding: "8px 11px", border: "none", cursor: "pointer",
-                background: i === resaltado ? "#f2f4f7" : "#fff",
-                borderBottom: i < encontrados.length - 1 ? "1px solid #f2f4f7" : "none",
+                background: i === resaltado ? "#f4eee4" : "#fff",
+                borderBottom: i < encontrados.length - 1 ? "1px solid #f4eee4" : "none",
                 fontFamily: "inherit",
               }}
             >
-              <div style={{ fontSize: 12.5, fontWeight: 600, color: "#101828" }}>{c.nombre}</div>
-              <div style={{ fontSize: 10.5, color: "#667085", marginTop: 1 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: "#2b2622" }}>{c.nombre}</div>
+              <div style={{ fontSize: 10.5, color: "#756a5e", marginTop: 1 }}>
                 {[c.nit && `NIT ${c.nit}`, c.ciudad, c.contacto].filter(Boolean).join(" · ") || "sin datos guardados"}
               </div>
             </button>
@@ -107,7 +107,7 @@ export default function BuscadorCliente({ label = "Empresa", valor, clientes, on
         </div>
       )}
 
-      {ayuda && <div style={{ fontSize: 10.5, color: "#98a2b3", marginTop: 3 }}>{ayuda}</div>}
+      {ayuda && <div style={{ fontSize: 10.5, color: "#a2988a", marginTop: 3 }}>{ayuda}</div>}
     </div>
   );
 }

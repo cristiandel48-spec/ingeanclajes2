@@ -40,9 +40,9 @@ export default function FirmaEmpresa() {
           style={{
             width: 190,
             height: 84,
-            border: "1px dashed #d0d5dd",
+            border: "1px dashed #d9cdbb",
             borderRadius: 8,
-            background: "#fafafa",
+            background: "#fbf8f3",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -53,7 +53,7 @@ export default function FirmaEmpresa() {
           {firma ? (
             <img src={firma} alt="Firma de la empresa" style={{ maxWidth: "100%", maxHeight: "100%" }} />
           ) : (
-            <span style={{ fontSize: 10.5, color: "#98a2b3" }}>Sin firma cargada</span>
+            <span style={{ fontSize: 10.5, color: "#a2988a" }}>Sin firma cargada</span>
           )}
         </div>
 
@@ -62,7 +62,7 @@ export default function FirmaEmpresa() {
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              style={{ ...B("#f2f4f7", "#475467"), fontSize: 11, padding: "7px 14px" }}
+              style={{ ...B("#f4eee4", "#574e44"), fontSize: 11, padding: "7px 14px" }}
             >
               {firma ? "Cambiar firma" : "Subir firma"}
             </button>
@@ -70,13 +70,13 @@ export default function FirmaEmpresa() {
               <button
                 type="button"
                 onClick={quitar}
-                style={{ ...B("#f2f4f7", "#475467"), fontSize: 11, padding: "7px 14px" }}
+                style={{ ...B("#f4eee4", "#574e44"), fontSize: 11, padding: "7px 14px" }}
               >
                 Quitar
               </button>
             )}
           </div>
-          <div style={{ fontSize: 10, color: "#98a2b3", maxWidth: 320, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 10, color: "#a2988a", maxWidth: 320, lineHeight: 1.5 }}>
             Imagen PNG o JPG, de preferencia con fondo blanco. Se guarda una sola vez
             y aparece automaticamente en cotizaciones, certificaciones e informes.
           </div>

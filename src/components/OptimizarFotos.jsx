@@ -77,7 +77,7 @@ export default function OptimizarFotos({ ctx }) {
   return (
     <div style={{ ...CD, marginTop: 20 }}>
       <div style={ST}>Mantenimiento · fotos guardadas</div>
-      <div style={{ fontSize: 12, color: "#667085", lineHeight: 1.6, marginBottom: 14 }}>
+      <div style={{ fontSize: 12, color: "#756a5e", lineHeight: 1.6, marginBottom: 14 }}>
         Las fotos se guardan dentro de la obra o la cotización, y cada vez que guardas un cambio
         vuelven a subir enteras. Las que se cargaron antes de septiembre entraron sin reducir y son
         la causa de que la base de datos se quede sin conexión. Esto las reduce de una vez.
@@ -85,18 +85,18 @@ export default function OptimizarFotos({ ctx }) {
       </div>
 
       {!revision && !resultado && !trabajando && (
-        <button onClick={revisar} style={B("#101828")}>Revisar fotos guardadas</button>
+        <button onClick={revisar} style={B("#2b2622")}>Revisar fotos guardadas</button>
       )}
 
       {revision && !trabajando && (
         <div>
           {revision.fotos === 0 ? (
-            <div style={{ background: "#f2f4f7", border: "1px solid #027a48", color: "#027a48", borderRadius: 10, padding: "12px 16px", fontSize: 13 }}>
+            <div style={{ background: "#f4eee4", border: "1px solid #027a48", color: "#027a48", borderRadius: 10, padding: "12px 16px", fontSize: 13 }}>
               Todo en orden: no hay fotos sin reducir. No hay nada que hacer aquí.
             </div>
           ) : (
             <>
-              <div style={{ background: "#f2f4f7", border: "1px solid #eaecf0", borderRadius: 10, padding: "12px 16px", marginBottom: 12 }}>
+              <div style={{ background: "#f4eee4", border: "1px solid #e8dfd2", borderRadius: 10, padding: "12px 16px", marginBottom: 12 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 700, color: "#b54708", marginBottom: 6 }}>
                   {revision.fotos} foto{revision.fotos !== 1 ? "s" : ""} sin reducir · unos {enMB(revision.caracteres).toFixed(1)} MB
                 </div>
@@ -110,8 +110,8 @@ export default function OptimizarFotos({ ctx }) {
                 </div>
               </div>
               <div style={{ display: "flex", gap: 10 }}>
-                <button onClick={optimizar} style={B("#101828", "#ffffff")}>Reducirlas ahora</button>
-                <button onClick={() => setRevision(null)} style={B("#f2f4f7", "#475467")}>Ahora no</button>
+                <button onClick={optimizar} style={B("#2b2622", "#ffffff")}>Reducirlas ahora</button>
+                <button onClick={() => setRevision(null)} style={B("#f4eee4", "#574e44")}>Ahora no</button>
               </div>
             </>
           )}
@@ -120,12 +120,12 @@ export default function OptimizarFotos({ ctx }) {
 
       {trabajando && (
         <div>
-          <div style={{ fontSize: 13, color: "#101828", marginBottom: 8 }}>
+          <div style={{ fontSize: 13, color: "#2b2622", marginBottom: 8 }}>
             Reduciendo {progreso.hechas} de {progreso.total}… no cierres la página.
           </div>
-          <div style={{ background: "#f2f4f7", borderRadius: 999, height: 9, overflow: "hidden" }}>
+          <div style={{ background: "#f4eee4", borderRadius: 999, height: 9, overflow: "hidden" }}>
             <div style={{
-              background: "#101828", height: "100%", borderRadius: 999,
+              background: "#2b2622", height: "100%", borderRadius: 999,
               width: `${progreso.total ? (progreso.hechas / progreso.total) * 100 : 0}%`,
               transition: "width .2s",
             }}/>
@@ -134,7 +134,7 @@ export default function OptimizarFotos({ ctx }) {
       )}
 
       {resultado && (
-        <div style={{ background: "#f2f4f7", border: "1px solid #027a48", color: "#027a48", borderRadius: 10, padding: "12px 16px", fontSize: 13, lineHeight: 1.6 }}>
+        <div style={{ background: "#f4eee4", border: "1px solid #027a48", color: "#027a48", borderRadius: 10, padding: "12px 16px", fontSize: 13, lineHeight: 1.6 }}>
           <strong>Listo.</strong> Se redujeron {resultado.fotos} foto{resultado.fotos !== 1 ? "s" : ""}:
           de {enMB(resultado.antes).toFixed(1)} MB a {enMB(resultado.despues).toFixed(1)} MB
           {resultado.antes > 0 && <> ({Math.round((1 - resultado.despues / resultado.antes) * 100)}% menos)</>}.

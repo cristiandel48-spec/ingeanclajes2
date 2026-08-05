@@ -37,29 +37,29 @@ export default function CotizacionPrint({c}){
         {c.ciudad&&<div><strong>{(c.ciudad||"").toUpperCase()}</strong></div>}
       </div>
       {textoInicial && (
-        <div style={{background:"#fafafa",border:"1px solid #d0d5dd",borderRadius:6,padding:"12px 14px",marginBottom:16}}>
+        <div style={{background:"#fbf8f3",border:"1px solid #d9cdbb",borderRadius:6,padding:"12px 14px",marginBottom:16}}>
           <div style={{whiteSpace:"pre-wrap"}}>{textoInicial}</div>
         </div>
       )}
       {propuestas.map((propuesta, idx)=>{
         const propMapSrc = propuesta.mapImg || null;
         return (
-        <div key={propuesta.id} style={{marginTop:idx===0?0:24,paddingTop:idx===0?0:20,borderTop:idx===0?"none":"2px solid #eaecf0",pageBreakBefore:idx===0?"auto":"always"}}>
+        <div key={propuesta.id} style={{marginTop:idx===0?0:24,paddingTop:idx===0?0:20,borderTop:idx===0?"none":"2px solid #e8dfd2",pageBreakBefore:idx===0?"auto":"always"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:12,marginBottom:4}}>
-            <div style={{fontWeight:800,textTransform:"uppercase",fontSize:16,color:"#101828"}}>{propuesta.nombre}</div>
-            <div style={{fontWeight:800,color:"#cc0000",fontSize:15}}>{fmt(propuesta.tot)}</div>
+            <div style={{fontWeight:800,textTransform:"uppercase",fontSize:16,color:"#2b2622"}}>{propuesta.nombre}</div>
+            <div style={{fontWeight:800,color:"#2b2622",fontSize:15}}>{fmt(propuesta.tot)}</div>
           </div>
-          <div style={{fontSize:11,color:"#667085",marginBottom:10}}>{propuesta.tipoLabel}</div>
+          <div style={{fontSize:11,color:"#756a5e",marginBottom:10}}>{propuesta.tipoLabel}</div>
 
           {propuesta.requerimientoCliente && (
-            <div style={{background:"#fafafa",border:"1px solid #d0d5dd",borderRadius:6,padding:"12px 14px",marginBottom:12}}>
+            <div style={{background:"#fbf8f3",border:"1px solid #d9cdbb",borderRadius:6,padding:"12px 14px",marginBottom:12}}>
               <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8}}>Necesidad del cliente</div>
               <div style={{whiteSpace:"pre-wrap"}}>{propuesta.requerimientoCliente}</div>
             </div>
           )}
 
           {propuesta.alcancePropuesta && (
-            <div style={{background:"#f2f4f7",border:"1px solid #fdba74",borderRadius:6,padding:"12px 14px",marginBottom:12}}>
+            <div style={{background:"#f4eee4",border:"1px solid #fdba74",borderRadius:6,padding:"12px 14px",marginBottom:12}}>
               <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8}}>Alcance de la propuesta</div>
               <div style={{whiteSpace:"pre-wrap"}}>{propuesta.alcancePropuesta}</div>
             </div>
@@ -70,9 +70,9 @@ export default function CotizacionPrint({c}){
               <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8}}>Registro fotográfico</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                 {propuesta.fotos.map((foto,fotoIdx)=>(
-                  <div key={foto.id||fotoIdx} style={{border:"1px solid #d0d5dd",borderRadius:6,overflow:"hidden",background:"#fff"}}>
+                  <div key={foto.id||fotoIdx} style={{border:"1px solid #d9cdbb",borderRadius:6,overflow:"hidden",background:"#fff"}}>
                     <img src={foto.src} alt={foto.label||"Foto " + (fotoIdx+1)} style={{width:"100%",height:"auto",display:"block"}}/>
-                    <div style={{padding:"8px 10px",fontSize:11,color:"#475467",textAlign:"center"}}>{foto.label||"Foto " + (fotoIdx+1)}</div>
+                    <div style={{padding:"8px 10px",fontSize:11,color:"#574e44",textAlign:"center"}}>{foto.label||"Foto " + (fotoIdx+1)}</div>
                   </div>
                 ))}
               </div>
@@ -82,7 +82,7 @@ export default function CotizacionPrint({c}){
           {propMapSrc && (
             <div style={{marginBottom:16,textAlign:"center"}}>
               <div style={{fontWeight:800,textTransform:"uppercase",marginBottom:8,textAlign:"left"}}>Medición satelital</div>
-              <StaticMapPreview src={propMapSrc} segments={propuesta.measurements} query={mapQuery} mapView={propuesta.quote.geoMapView||c.geoMapView} alt="Mapa" maxHeight={360} border="1px solid #eaecf0" borderRadius={4} />
+              <StaticMapPreview src={propMapSrc} segments={propuesta.measurements} query={mapQuery} mapView={propuesta.quote.geoMapView||c.geoMapView} alt="Mapa" maxHeight={360} border="1px solid #e8dfd2" borderRadius={4} />
             </div>
           )}
 

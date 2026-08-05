@@ -120,7 +120,7 @@ export default function Pagos({ctx}){
           type="button"
           onClick={()=>setVistaPago("registro")}
           style={{
-            ...B(vistaPago==="registro" ? "#cc0000" : "#f2f4f7", vistaPago==="registro" ? "#fff" : "#475467"),
+            ...B(vistaPago==="registro" ? "#cc0000" : "#f4eee4", vistaPago==="registro" ? "#fff" : "#574e44"),
             border:vistaPago==="registro" ? "1px solid #cc0000" : "1px solid #fed7aa",
           }}
         >
@@ -130,8 +130,8 @@ export default function Pagos({ctx}){
           type="button"
           onClick={()=>setVistaPago("historial")}
           style={{
-            ...B(vistaPago==="historial" ? "#101828" : "#fafafa", vistaPago==="historial" ? "#fff" : "#475467"),
-            border:vistaPago==="historial" ? "1px solid #101828" : "1px solid #eaecf0",
+            ...B(vistaPago==="historial" ? "#2b2622" : "#fbf8f3", vistaPago==="historial" ? "#fff" : "#574e44"),
+            border:vistaPago==="historial" ? "1px solid #2b2622" : "1px solid #e8dfd2",
           }}
         >
           Historial de pagos
@@ -181,7 +181,7 @@ export default function Pagos({ctx}){
                   placeholder="Ej. 2000000"
                   style={SI}
                 />
-                <div style={{fontSize:11,color:"#667085",marginTop:6}}>
+                <div style={{fontSize:11,color:"#756a5e",marginTop:6}}>
                   {Number(abono.monto || 0)>0 ? fmt(Number(abono.monto || 0)) : "Ingresa el valor manual del abono"}
                 </div>
               </div>
@@ -233,7 +233,7 @@ export default function Pagos({ctx}){
                 onClick={guardarAbonoManual}
                 disabled={!obraPagoId || Number(abono.monto || 0)<=0 || guardandoAbono}
                 style={{
-                  ...B("#101828"),
+                  ...B("#2b2622"),
                   opacity:(!obraPagoId || Number(abono.monto || 0)<=0 || guardandoAbono)?0.6:1,
                   cursor:(!obraPagoId || Number(abono.monto || 0)<=0 || guardandoAbono)?"not-allowed":"pointer",
                 }}
@@ -247,45 +247,45 @@ export default function Pagos({ctx}){
                   setObraPagoId("");
                   setAbono({ tipo:"Abono manual", monto:"", fecha:today(), metodo:"Transferencia", notas:"" });
                 }}
-                style={B("#f2f4f7","#475467")}
+                style={B("#f4eee4","#574e44")}
               >
                 Limpiar
               </button>
             </div>
           </div>
 
-          <div style={{background:"linear-gradient(180deg,#f2f4f7,#ffffff)",border:"1px solid #fed7aa",borderRadius:14,padding:16}}>
-            <div style={{fontSize:11,fontWeight:700,color:"#475467",textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>Obra seleccionada</div>
+          <div style={{background:"linear-gradient(180deg,#f4eee4,#ffffff)",border:"1px solid #fed7aa",borderRadius:14,padding:16}}>
+            <div style={{fontSize:11,fontWeight:700,color:"#574e44",textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>Obra seleccionada</div>
             {obraSeleccionada ? (
               <div style={{display:"grid",gap:10}}>
                 <div>
-                  <div style={{fontSize:11,color:"#667085"}}>{obraSeleccionada.id}</div>
-                  <div style={{fontSize:20,fontWeight:700,color:"#101828"}}>{obraSeleccionada.cliente}</div>
-                  <div style={{fontSize:13,color:"#475467"}}>{obraSeleccionada.proyecto}</div>
+                  <div style={{fontSize:11,color:"#756a5e"}}>{obraSeleccionada.id}</div>
+                  <div style={{fontSize:20,fontWeight:700,color:"#2b2622"}}>{obraSeleccionada.cliente}</div>
+                  <div style={{fontSize:13,color:"#574e44"}}>{obraSeleccionada.proyecto}</div>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                  <div style={{background:"#fff",border:"1px solid #eaecf0",borderRadius:10,padding:"10px 12px"}}>
-                    <div style={{fontSize:10,color:"#667085",textTransform:"uppercase"}}>Total obra</div>
-                    <div style={{fontSize:18,fontWeight:700,color:"#101828"}}>{fmt(Number(obraSeleccionada.total || 0))}</div>
+                  <div style={{background:"#fff",border:"1px solid #e8dfd2",borderRadius:10,padding:"10px 12px"}}>
+                    <div style={{fontSize:10,color:"#756a5e",textTransform:"uppercase"}}>Total obra</div>
+                    <div style={{fontSize:18,fontWeight:700,color:"#2b2622"}}>{fmt(Number(obraSeleccionada.total || 0))}</div>
                   </div>
-                  <div style={{background:"#fff",border:"1px solid #eaecf0",borderRadius:10,padding:"10px 12px"}}>
-                    <div style={{fontSize:10,color:"#667085",textTransform:"uppercase"}}>Cobrado</div>
+                  <div style={{background:"#fff",border:"1px solid #e8dfd2",borderRadius:10,padding:"10px 12px"}}>
+                    <div style={{fontSize:10,color:"#756a5e",textTransform:"uppercase"}}>Cobrado</div>
                     <div style={{fontSize:18,fontWeight:700,color:"#027a48"}}>{fmt(Number(obraSeleccionada.pagado || 0))}</div>
                   </div>
-                  <div style={{background:"#fff",border:"1px solid #eaecf0",borderRadius:10,padding:"10px 12px",gridColumn:"span 2"}}>
-                    <div style={{fontSize:10,color:"#667085",textTransform:"uppercase"}}>Saldo pendiente</div>
-                    <div style={{fontSize:24,fontWeight:800,color:Number(obraSeleccionada.saldo||0)>0?"#475467":"#027a48"}}>
+                  <div style={{background:"#fff",border:"1px solid #e8dfd2",borderRadius:10,padding:"10px 12px",gridColumn:"span 2"}}>
+                    <div style={{fontSize:10,color:"#756a5e",textTransform:"uppercase"}}>Saldo pendiente</div>
+                    <div style={{fontSize:24,fontWeight:800,color:Number(obraSeleccionada.saldo||0)>0?"#574e44":"#027a48"}}>
                       {fmt(Number(obraSeleccionada.saldo || 0))}
                     </div>
                   </div>
                 </div>
-                <div style={{fontSize:12,color:"#667085",lineHeight:1.6}}>
-                  Ciudad: <strong style={{color:"#475467"}}>{obraSeleccionada.ciudad || "No registrada"}</strong><br/>
-                  Dirección: <strong style={{color:"#475467"}}>{obraSeleccionada.direccion || "No registrada"}</strong>
+                <div style={{fontSize:12,color:"#756a5e",lineHeight:1.6}}>
+                  Ciudad: <strong style={{color:"#574e44"}}>{obraSeleccionada.ciudad || "No registrada"}</strong><br/>
+                  Dirección: <strong style={{color:"#574e44"}}>{obraSeleccionada.direccion || "No registrada"}</strong>
                 </div>
               </div>
             ) : (
-              <div style={{fontSize:13,color:"#667085",lineHeight:1.6}}>
+              <div style={{fontSize:13,color:"#756a5e",lineHeight:1.6}}>
                 Busca el cliente o la obra, selecciónala y luego registra el valor exacto del abono manual.
               </div>
             )}
@@ -303,9 +303,9 @@ export default function Pagos({ctx}){
         </div>
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
           <thead>
-            <tr style={{background:"#f2f4f7"}}>
+            <tr style={{background:"#f4eee4"}}>
               {["ID","Obra","Cliente","Tipo","Monto","Fecha","Método","Estado","Acción"].map(h=>(
-                <th key={h} style={{padding:"9px 10px",textAlign:h==="Monto"?"right":"left",color:"#667085",fontWeight:500,fontSize:11}}>{h}</th>
+                <th key={h} style={{padding:"9px 10px",textAlign:h==="Monto"?"right":"left",color:"#756a5e",fontWeight:500,fontSize:11}}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -313,20 +313,20 @@ export default function Pagos({ctx}){
             {pF.map((p,i)=>{
               const ob=obras.find(o=>o.id===p.obraId);
               return(
-                <tr key={p.id} style={{borderBottom:"1px solid #eaecf0",background:i%2===0?"#ffffff":"#fafafa"}}>
+                <tr key={p.id} style={{borderBottom:"1px solid #e8dfd2",background:i%2===0?"#ffffff":"#fbf8f3"}}>
                   <td style={{padding:"10px 10px",color:"#60b4ff",fontSize:11}}>{p.id}</td>
                   <td style={{padding:"10px 10px",fontSize:11}}>{p.obraId}</td>
-                  <td style={{padding:"10px 10px",fontSize:11,color:"#475467"}}>{ob?.cliente}</td>
+                  <td style={{padding:"10px 10px",fontSize:11,color:"#574e44"}}>{ob?.cliente}</td>
                   <td style={{padding:"10px 10px",fontSize:11}}>{p.tipo}</td>
-                  <td style={{padding:"10px 10px",textAlign:"right",fontWeight:700,color:"#cc0000"}}>{fmt(Number(p.monto || 0))}</td>
-                  <td style={{padding:"10px 10px",color:"#475467",fontSize:11}}>{p.fecha}</td>
-                  <td style={{padding:"10px 10px",color:"#475467",fontSize:11}}>{p.metodo}</td>
+                  <td style={{padding:"10px 10px",textAlign:"right",fontWeight:700,color:"#2b2622"}}>{fmt(Number(p.monto || 0))}</td>
+                  <td style={{padding:"10px 10px",color:"#574e44",fontSize:11}}>{p.fecha}</td>
+                  <td style={{padding:"10px 10px",color:"#574e44",fontSize:11}}>{p.metodo}</td>
                   <td style={{padding:"10px 10px"}}><Badge estado={p.estado}/></td>
                   <td style={{padding:"10px 10px"}}>
                     {p.estado==="Pendiente" && (
                       pstep===p.id
-                        ? <span style={{fontSize:11,color:"#cc0000"}}>Procesando...</span>
-                        : <button onClick={()=>cobrar(p.id)} style={{background:"#101828",border:"1px solid #FFCD00",color:"#FFCD00",borderRadius:6,padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:600}}>Marcar pagado</button>
+                        ? <span style={{fontSize:11,color:"#2b2622"}}>Procesando...</span>
+                        : <button onClick={()=>cobrar(p.id)} style={{background:"#2b2622",border:"1px solid #FFCD00",color:"#FFCD00",borderRadius:6,padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:600}}>Marcar pagado</button>
                     )}
                     {p.estado==="Pagado" && <span style={{fontSize:11,color:"#027a48",fontWeight:700}}>Conciliado</span>}
                   </td>

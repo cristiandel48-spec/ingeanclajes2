@@ -3,20 +3,24 @@
 
 export const BRAND = "#cc0000";
 
+// El menu lateral era un bloque negro de lado a lado de la pantalla: la pieza
+// mas grande de la interfaz y la mas dura. Ahora va en beige, con el elemento
+// activo en blanco para que se despegue del fondo. La aplicacion entera queda
+// en tonos claros y el unico oscuro que queda es el de los botones.
 const light = {
-  bg: "#f6f7f9",
+  bg: "#fbf8f3",
   surface: "#ffffff",
-  surfaceTint: "#f2f4f7",
-  text: "#101828",
-  muted: "#667085",
-  divider: "#eaecf0",
-  railBg: "#14151a",
-  railText: "#9aa2b1",
-  railTextActive: "#14151a",
+  surfaceTint: "#f4eee4",
+  text: "#2b2622",
+  muted: "#756a5e",
+  divider: "#e8dfd2",
+  railBg: "#f4eee4",
+  railText: "#6b6155",
+  railTextActive: "#2b2622",
   railActiveBg: "#ffffff",
-  railHoverBg: "rgba(255,255,255,.08)",
-  railDivider: "#262931",
-  railTitle: "#667085",
+  railHoverBg: "rgba(43,38,34,.05)",
+  railDivider: "#e2d8c9",
+  railTitle: "#a2988a",
 };
 
 const dark = {
@@ -32,7 +36,7 @@ const dark = {
   railActiveBg: "#ffffff",
   railHoverBg: "rgba(255,255,255,.08)",
   railDivider: "#24262e",
-  railTitle: "#667085",
+  railTitle: "#756a5e",
 };
 
 export const getTheme = (mode) => (mode === "dark" ? dark : light);

@@ -52,13 +52,13 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
   return(
     <div style={{padding:28}}>
       {/* Barra superior */}
-      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:24,background:"#fff",borderRadius:14,padding:"16px 20px",border:"1px solid #eaecf0",boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
-        <button onClick={onVolver} style={{...B("#f2f4f7","#475467"),padding:"8px 16px",fontSize:13,flexShrink:0}}>← Volver</button>
+      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:24,background:"#fff",borderRadius:14,padding:"16px 20px",border:"1px solid #e8dfd2",boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
+        <button onClick={onVolver} style={{...B("#f4eee4","#574e44"),padding:"8px 16px",fontSize:13,flexShrink:0}}>← Volver</button>
         <div style={{flex:1}}>
-          <div style={{fontSize:11,color:"#98a2b3"}}>{oAct.id} · {fmtD(oAct.fechaInicio)} → {fmtD(oAct.fechaFin)||"En curso"}</div>
-          <div style={{fontSize:20,fontWeight:700,color:"#101828",lineHeight:1.2}}>{oAct.cliente}</div>
-          <div style={{fontSize:13,color:"#475467"}}>{oAct.proyecto} · 📍 {oAct.ciudad}</div>
-          {oAct.direccion&&<div style={{fontSize:11,color:"#98a2b3"}}>{oAct.direccion}</div>}
+          <div style={{fontSize:11,color:"#a2988a"}}>{oAct.id} · {fmtD(oAct.fechaInicio)} → {fmtD(oAct.fechaFin)||"En curso"}</div>
+          <div style={{fontSize:20,fontWeight:700,color:"#2b2622",lineHeight:1.2}}>{oAct.cliente}</div>
+          <div style={{fontSize:13,color:"#574e44"}}>{oAct.proyecto} · 📍 {oAct.ciudad}</div>
+          {oAct.direccion&&<div style={{fontSize:11,color:"#a2988a"}}>{oAct.direccion}</div>}
         </div>
         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
           <Badge estado={oAct.estado}/>
@@ -80,18 +80,18 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       {/* Avance */}
       <div style={{...CD,marginBottom:20}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-          <span style={{fontSize:13,fontWeight:600,color:"#101828"}}>Avance de la obra</span>
-          <span style={{fontSize:18,fontWeight:700,color:oAct.avance===100?"#027a48":"#101828"}}>{oAct.avance}%</span>
+          <span style={{fontSize:13,fontWeight:600,color:"#2b2622"}}>Avance de la obra</span>
+          <span style={{fontSize:18,fontWeight:700,color:oAct.avance===100?"#027a48":"#2b2622"}}>{oAct.avance}%</span>
         </div>
-        <div style={{height:10,background:"#f2f4f7",borderRadius:5,marginBottom:8}}>
-          <div style={{width:(oAct.avance) + "%",height:"100%",background:oAct.avance===100?"#101828":"#101828",borderRadius:5,transition:"width 0.3s"}}/>
+        <div style={{height:10,background:"#f4eee4",borderRadius:5,marginBottom:8}}>
+          <div style={{width:(oAct.avance) + "%",height:"100%",background:oAct.avance===100?"#2b2622":"#2b2622",borderRadius:5,transition:"width 0.3s"}}/>
         </div>
         <input type="range" min={0} max={100} value={oAct.avance}
           onChange={e=>{
             const avance=Number(e.target.value);
             setObras(p=>p.map(o=>o.id===obraId?{...o,avance,estado:estadoSegunAvance(avance,o.estado)}:o));
           }}
-          style={{width:"100%",accentColor:"#101828"}}/>
+          style={{width:"100%",accentColor:"#2b2622"}}/>
       </div>
 
       {/* Tabs */}
@@ -104,7 +104,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           ["horario","📅 Horario"],
         ].map(([id,lb])=>(
           <button key={id} onClick={()=>setDetTab(id)}
-            style={{...B(detTab===id?"#cc0000":"#f2f4f7",detTab===id?"#fff":"#475467"),fontSize:12,padding:"8px 16px",border:"1px solid " + (detTab===id?"#cc0000":"#eaecf0")}}>
+            style={{...B(detTab===id?"#cc0000":"#f4eee4",detTab===id?"#fff":"#574e44"),fontSize:12,padding:"8px 16px",border:"1px solid " + (detTab===id?"#cc0000":"#e8dfd2")}}>
             {lb}
           </button>
         ))}
@@ -123,7 +123,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             accion={puedeCrearPersonal(membresia) && !nuevoEmp ? (
               <button
                 onClick={()=>setNuevoEmp(true)}
-                style={{...B("#101828"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
+                style={{...B("#2b2622"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
               >
                 + Registrar trabajador
               </button>
@@ -152,7 +152,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             />
           )}
           {empObra.length===0&&(
-            <div style={{textAlign:"center",padding:24,color:"#98a2b3",fontSize:13,background:"#fafafa",borderRadius:10,border:"1px dashed #eaecf0",marginBottom:12}}>
+            <div style={{textAlign:"center",padding:24,color:"#a2988a",fontSize:13,background:"#fbf8f3",borderRadius:10,border:"1px dashed #e8dfd2",marginBottom:12}}>
               Sin empleados asignados aún
             </div>
           )}
@@ -163,28 +163,28 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               const diasEmp=diasMap[eid]?diasMap[eid].size:0;
               const jornal=Math.round(emp.salario/26);
               return(
-                <div key={eid} style={{background:"#fafafa",borderRadius:10,padding:"14px 16px",border:"1px solid #eaecf0"}}>
+                <div key={eid} style={{background:"#fbf8f3",borderRadius:10,padding:"14px 16px",border:"1px solid #e8dfd2"}}>
                   <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
                     <Av init={emp.avatar} color={PAL[idx%PAL.length]} size={36}/>
                     <div style={{flex:1}}>
                       <div style={{fontSize:13,fontWeight:700}}>{emp.nombre}</div>
-                      <div style={{fontSize:11,color:"#667085"}}>{emp.cargo}</div>
-                      <div style={{fontSize:10,color:"#98a2b3"}}>📱 {emp.tel}</div>
+                      <div style={{fontSize:11,color:"#756a5e"}}>{emp.cargo}</div>
+                      <div style={{fontSize:10,color:"#a2988a"}}>📱 {emp.tel}</div>
                     </div>
                     <button onClick={()=>setObras(p=>p.map(o=>o.id===obraId?{...o,empleados:(o.empleados||[]).filter(id=>id!==eid)}:o))}
-                      style={{background:"#feecec",border:"1px solid #fca5a5",color:"#cc0000",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11}}>✕</button>
+                      style={{background:"#f9e9e4",border:"1px solid #fca5a5",color:"#2b2622",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11}}>✕</button>
                   </div>
                   {/* El jornal y la cuenta bancaria del companero son datos
                       confidenciales: sin permiso solo se ven los dias. */}
                   <div style={{display:"grid",gridTemplateColumns:verDinero?"1fr 1fr 1fr":"1fr",gap:6,fontSize:10}}>
-                    {[["Días en obra",diasEmp+"d","#475467"],...(verDinero?[["Jornal/día",fmt(jornal),"#027a48"],["Costo obra",fmt(jornal*diasEmp),"#475467"]]:[])].map(([k,v,c])=>(
-                      <div key={k} style={{background:"#fff",borderRadius:5,padding:"6px 8px",textAlign:"center",border:"1px solid #f2f4f7"}}>
-                        <div style={{color:"#98a2b3",marginBottom:2,fontSize:9}}>{k}</div>
+                    {[["Días en obra",diasEmp+"d","#574e44"],...(verDinero?[["Jornal/día",fmt(jornal),"#027a48"],["Costo obra",fmt(jornal*diasEmp),"#574e44"]]:[])].map(([k,v,c])=>(
+                      <div key={k} style={{background:"#fff",borderRadius:5,padding:"6px 8px",textAlign:"center",border:"1px solid #f4eee4"}}>
+                        <div style={{color:"#a2988a",marginBottom:2,fontSize:9}}>{k}</div>
                         <div style={{fontWeight:700,color:c,fontSize:12}}>{v}</div>
                       </div>
                     ))}
                   </div>
-                  {verDinero&&<div style={{marginTop:8,fontSize:10,color:"#98a2b3"}}>🏦 {emp.banco} · {emp.tipoCuenta} · <span style={{fontFamily:"monospace"}}>{emp.numeroCuenta||"—"}</span></div>}
+                  {verDinero&&<div style={{marginTop:8,fontSize:10,color:"#a2988a"}}>🏦 {emp.banco} · {emp.tipoCuenta} · <span style={{fontFamily:"monospace"}}>{emp.numeroCuenta||"—"}</span></div>}
                 </div>
               );
             })}
@@ -196,7 +196,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               if(!v)return;
               if(!empObra.includes(v))
                 setObras(p=>p.map(o=>o.id===obraId?{...o,empleados:[...(o.empleados||[]),v]}:o));
-            }} style={{...SI,border:"1px solid #eaecf0",fontSize:12}}>
+            }} style={{...SI,border:"1px solid #e8dfd2",fontSize:12}}>
               <option value="">Selecciona un empleado...</option>
               {empleados.filter(emp=>!empObra.includes(emp.id)).map(emp=>(
                 <option key={emp.id} value={emp.id}>{emp.nombre} · {emp.cargo}</option>
@@ -211,7 +211,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
         <div style={CD}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
             <div style={ST}>🧾 Gastos y cuentas por pagar</div>
-            <button style={B("#101828")} onClick={()=>setShowGasto(!showGasto)}>+ Agregar gasto</button>
+            <button style={B("#2b2622")} onClick={()=>setShowGasto(!showGasto)}>+ Agregar gasto</button>
           </div>
           <AvisoFlujo tono="info" titulo="Todo gasto que cargues aquí queda cruzado con esta obra">
             Sirve para saber cuánto costó realmente la obra frente a lo que se cobró. El gasto se
@@ -219,7 +219,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             Si el proveedor no aparece en la lista, créalo primero en <strong>Proveedores</strong>.
           </AvisoFlujo>
           {showGasto&&(
-            <div style={{background:"#fafafa",border:"1px solid #cc000033",borderRadius:10,padding:16,marginBottom:16}}>
+            <div style={{background:"#fbf8f3",border:"1px solid #cc000033",borderRadius:10,padding:16,marginBottom:16}}>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
                 <div><LBL>Proveedor</LBL>
                   <select value={gastoForm.proveedorId} onChange={e=>setGastoForm({...gastoForm,proveedorId:e.target.value})} style={SI}>
@@ -233,33 +233,33 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                 <div><LBL>Fecha vencimiento</LBL><input type="date" value={gastoForm.fechaVence} onChange={e=>setGastoForm({...gastoForm,fechaVence:e.target.value})} style={SI}/></div>
               </div>
               <div style={{display:"flex",gap:8}}>
-                <button style={B("#101828")} onClick={guardarGasto}>✅ Guardar gasto</button>
-                <button style={B("#f2f4f7","#475467")} onClick={()=>setShowGasto(false)}>Cancelar</button>
+                <button style={B("#2b2622")} onClick={guardarGasto}>✅ Guardar gasto</button>
+                <button style={B("#f4eee4","#574e44")} onClick={()=>setShowGasto(false)}>Cancelar</button>
               </div>
             </div>
           )}
-          {gastosObra.length===0&&!showGasto&&<div style={{textAlign:"center",padding:24,color:"#98a2b3",fontSize:13}}>Sin gastos registrados aún</div>}
+          {gastosObra.length===0&&!showGasto&&<div style={{textAlign:"center",padding:24,color:"#a2988a",fontSize:13}}>Sin gastos registrados aún</div>}
           {gastosObra.map(c=>{
             const prov=proveedores.find(p=>p.id===c.proveedorId);
             const vencida=c.estado==="Pendiente"&&c.fechaVence&&c.fechaVence<today();
             return(
-              <div key={c.id} style={{background:"#fafafa",borderRadius:10,padding:"12px 14px",marginBottom:8,border:"1px solid " + (vencida?"#fca5a5":c.estado==="Pagado"?"#bbf7d0":"#eaecf0")}}>
+              <div key={c.id} style={{background:"#fbf8f3",borderRadius:10,padding:"12px 14px",marginBottom:8,border:"1px solid " + (vencida?"#fca5a5":c.estado==="Pagado"?"#bbf7d0":"#e8dfd2")}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-                  <div><div style={{fontSize:13,fontWeight:600}}>{c.concepto}</div><div style={{fontSize:11,color:"#667085"}}>{prov?.nombre} · {c.factura}</div></div>
+                  <div><div style={{fontSize:13,fontWeight:600}}>{c.concepto}</div><div style={{fontSize:11,color:"#756a5e"}}>{prov?.nombre} · {c.factura}</div></div>
                   <div style={{textAlign:"right"}}><div style={{fontSize:14,fontWeight:700,color:"#cc0000"}}>{fmt(c.monto)}</div><Badge estado={vencida?"Vencida":c.estado}/></div>
                 </div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11,color:"#98a2b3"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11,color:"#a2988a"}}>
                   <span>Vence: {fmtD(c.fechaVence)||"—"}</span>
-                  {c.estado==="Pendiente"&&<button onClick={()=>setCuentas(p=>p.map(x=>x.id===c.id?{...x,estado:"Pagado"}:x))} style={{background:"#f2f4f7",border:"1px solid #101828",color:"#027a48",borderRadius:6,padding:"3px 10px",fontSize:11,cursor:"pointer",fontWeight:600}}>✓ Pagar</button>}
+                  {c.estado==="Pendiente"&&<button onClick={()=>setCuentas(p=>p.map(x=>x.id===c.id?{...x,estado:"Pagado"}:x))} style={{background:"#f4eee4",border:"1px solid #2b2622",color:"#027a48",borderRadius:6,padding:"3px 10px",fontSize:11,cursor:"pointer",fontWeight:600}}>✓ Pagar</button>}
                 </div>
               </div>
             );
           })}
-          <div style={{background:"#f2f4f7",borderRadius:8,padding:"12px 16px",marginTop:8,display:"flex",justifyContent:"space-between",fontSize:13,fontWeight:600}}>
-            <span style={{color:"#667085"}}>Total gastos</span>
-            <span style={{color:"#cc0000"}}>{fmt(totalGastos)}</span>
+          <div style={{background:"#f4eee4",borderRadius:8,padding:"12px 16px",marginTop:8,display:"flex",justifyContent:"space-between",fontSize:13,fontWeight:600}}>
+            <span style={{color:"#756a5e"}}>Total gastos</span>
+            <span style={{color:"#2b2622"}}>{fmt(totalGastos)}</span>
           </div>
-          {oAct.total>0&&<div style={{background:totalGastos/oAct.total<0.4?"#f2f4f7":"#f2f4f7",borderRadius:8,padding:"10px 14px",marginTop:6,fontSize:11,color:"#475467"}}>Gastos = <strong style={{color:totalGastos/oAct.total<0.4?"#027a48":"#475467"}}>{Math.round(totalGastos/oAct.total*100)}%</strong> del ingreso total</div>}
+          {oAct.total>0&&<div style={{background:totalGastos/oAct.total<0.4?"#f4eee4":"#f4eee4",borderRadius:8,padding:"10px 14px",marginTop:6,fontSize:11,color:"#574e44"}}>Gastos = <strong style={{color:totalGastos/oAct.total<0.4?"#027a48":"#574e44"}}>{Math.round(totalGastos/oAct.total*100)}%</strong> del ingreso total</div>}
         </div>
       )}
 
@@ -273,7 +273,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             si aquí sale 0 días es porque no se han asignado turnos a esa persona en esta obra.
             Esta cifra es informativa; la nómina que se paga se liquida en el módulo de Nómina.
           </AvisoFlujo>
-          {empObra.length===0&&<div style={{textAlign:"center",padding:24,color:"#98a2b3",fontSize:13}}>Sin personal asignado</div>}
+          {empObra.length===0&&<div style={{textAlign:"center",padding:24,color:"#a2988a",fontSize:13}}>Sin personal asignado</div>}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
             {empObra.map((eid,idx)=>{
               const emp=empleados.find(x=>x.id===eid);
@@ -283,30 +283,30 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               const subtotal=jornal*diasEmp;
               const ded=Math.round(subtotal*0.04);
               return(
-                <div key={eid} style={{background:"#fafafa",borderRadius:10,padding:"14px 16px",border:"1px solid #eaecf0"}}>
+                <div key={eid} style={{background:"#fbf8f3",borderRadius:10,padding:"14px 16px",border:"1px solid #e8dfd2"}}>
                   <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
                     <Av init={emp.avatar} color={PAL[idx%PAL.length]} size={34}/>
-                    <div><div style={{fontSize:13,fontWeight:700}}>{emp.nombre}</div><div style={{fontSize:11,color:"#667085"}}>{emp.cargo}</div></div>
+                    <div><div style={{fontSize:13,fontWeight:700}}>{emp.nombre}</div><div style={{fontSize:11,color:"#756a5e"}}>{emp.cargo}</div></div>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
-                    {[["Días",diasEmp+"d","#475467"],["Jornal",fmt(jornal),"#027a48"],["Bruto",fmt(subtotal),"#b54708"],["Neto",fmt(subtotal-ded),"#cc0000"]].map(([k,v,c])=>(
-                      <div key={k} style={{background:"#fff",borderRadius:6,padding:"8px",textAlign:"center",border:"1px solid #f2f4f7"}}>
-                        <div style={{color:"#98a2b3",fontSize:9,marginBottom:3}}>{k}</div>
+                    {[["Días",diasEmp+"d","#574e44"],["Jornal",fmt(jornal),"#027a48"],["Bruto",fmt(subtotal),"#b54708"],["Neto",fmt(subtotal-ded),"#cc0000"]].map(([k,v,c])=>(
+                      <div key={k} style={{background:"#fff",borderRadius:6,padding:"8px",textAlign:"center",border:"1px solid #f4eee4"}}>
+                        <div style={{color:"#a2988a",fontSize:9,marginBottom:3}}>{k}</div>
                         <div style={{fontWeight:700,color:c,fontSize:11}}>{v}</div>
                       </div>
                     ))}
                   </div>
-                  <div style={{marginTop:8,fontSize:10,color:"#98a2b3"}}>🏦 {emp.banco} · {emp.tipoCuenta} · <span style={{fontFamily:"monospace"}}>{emp.numeroCuenta||"—"}</span></div>
+                  <div style={{marginTop:8,fontSize:10,color:"#a2988a"}}>🏦 {emp.banco} · {emp.tipoCuenta} · <span style={{fontFamily:"monospace"}}>{emp.numeroCuenta||"—"}</span></div>
                 </div>
               );
             })}
           </div>
           {empObra.length>0&&(
-            <div style={{background:"#f2f4f7",borderRadius:10,padding:"14px 16px",border:"1px solid #eaecf0"}}>
+            <div style={{background:"#f4eee4",borderRadius:10,padding:"14px 16px",border:"1px solid #e8dfd2"}}>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,textAlign:"center",fontSize:12}}>
-                <div><div style={{color:"#667085",marginBottom:4}}>Total días trabajados</div><div style={{fontWeight:700,color:"#475467",fontSize:18}}>{totalDias}</div></div>
-                <div><div style={{color:"#667085",marginBottom:4}}>Nómina total obra</div><div style={{fontWeight:700,color:"#cc0000",fontSize:18}}>{fmt(nomObraTotal)}</div></div>
-                <div><div style={{color:"#667085",marginBottom:4}}>% del ingreso</div><div style={{fontWeight:700,color:oAct.total>0&&nomObraTotal/oAct.total<0.3?"#027a48":"#475467",fontSize:18}}>{oAct.total>0?Math.round(nomObraTotal/oAct.total*100):0}%</div></div>
+                <div><div style={{color:"#756a5e",marginBottom:4}}>Total días trabajados</div><div style={{fontWeight:700,color:"#574e44",fontSize:18}}>{totalDias}</div></div>
+                <div><div style={{color:"#756a5e",marginBottom:4}}>Nómina total obra</div><div style={{fontWeight:700,color:"#2b2622",fontSize:18}}>{fmt(nomObraTotal)}</div></div>
+                <div><div style={{color:"#756a5e",marginBottom:4}}>% del ingreso</div><div style={{fontWeight:700,color:oAct.total>0&&nomObraTotal/oAct.total<0.3?"#027a48":"#574e44",fontSize:18}}>{oAct.total>0?Math.round(nomObraTotal/oAct.total*100):0}%</div></div>
               </div>
             </div>
           )}
@@ -323,7 +323,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             accion={
               <button
                 onClick={()=>irAPantalla("horarios")}
-                style={{...B("#f2f4f7","#475467"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
+                style={{...B("#f4eee4","#574e44"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
               >
                 Ir a Horarios
               </button>
@@ -333,26 +333,26 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             y además alimenta dos cosas de esta obra: los <strong>días trabajados</strong> de la
             pestaña Nómina y la columna <strong>turno</strong> del informe de actividades.
           </AvisoFlujo>
-          {horariosObra.length===0&&<div style={{textAlign:"center",padding:24,color:"#98a2b3",fontSize:13}}>Sin turnos registrados todavía.</div>}
+          {horariosObra.length===0&&<div style={{textAlign:"center",padding:24,color:"#a2988a",fontSize:13}}>Sin turnos registrados todavía.</div>}
           {horariosObra.sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(h=>{
             const emp=empleados.find(x=>x.id===h.empleadoId);
             const idx=empleados.findIndex(x=>x.id===h.empleadoId);
             return(
-              <div key={h.id} style={{display:"flex",alignItems:"center",gap:12,background:"#fafafa",borderRadius:10,padding:"10px 14px",marginBottom:8,border:"1px solid #eaecf0"}}>
+              <div key={h.id} style={{display:"flex",alignItems:"center",gap:12,background:"#fbf8f3",borderRadius:10,padding:"10px 14px",marginBottom:8,border:"1px solid #e8dfd2"}}>
                 <Av init={emp?.avatar||"?"} color={PAL[idx%PAL.length]} size={32}/>
                 <div style={{flex:1}}>
                   <div style={{fontSize:13,fontWeight:600}}>{emp?.nombre||"—"}</div>
-                  <div style={{fontSize:11,color:"#475467"}}>{h.tarea}</div>
+                  <div style={{fontSize:11,color:"#574e44"}}>{h.tarea}</div>
                 </div>
                 <div style={{textAlign:"right",fontSize:11}}>
-                  <div style={{color:"#667085",fontWeight:500}}>{fmtD(h.fecha)}</div>
-                  <div style={{color:"#cc0000",fontWeight:700}}>{h.turno}</div>
+                  <div style={{color:"#756a5e",fontWeight:500}}>{fmtD(h.fecha)}</div>
+                  <div style={{color:"#2b2622",fontWeight:700}}>{h.turno}</div>
                 </div>
               </div>
             );
           })}
           {horariosObra.length>0&&(
-            <div style={{background:"#f2f4f7",borderRadius:8,padding:"10px 14px",marginTop:8,fontSize:12,color:"#667085"}}>
+            <div style={{background:"#f4eee4",borderRadius:8,padding:"10px 14px",marginTop:8,fontSize:12,color:"#756a5e"}}>
               {horariosObra.length} turno(s) · {new Set(horariosObra.map(h=>h.empleadoId)).size} persona(s)
             </div>
           )}

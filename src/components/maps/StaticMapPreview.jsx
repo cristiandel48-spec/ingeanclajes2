@@ -1,5 +1,5 @@
 import { getStaticMapDimensions, getStaticMapLabelData } from "../../lib/maps";
-export default function StaticMapPreview({ src, segments=[], query="", mapView=null, alt="Mapa automático", maxHeight=null, border="1px solid #eaecf0", borderRadius=8 }){
+export default function StaticMapPreview({ src, segments=[], query="", mapView=null, alt="Mapa automático", maxHeight=null, border="1px solid #e8dfd2", borderRadius=8 }){
   if(!src) return null;
   const labels = getStaticMapLabelData(segments, query, mapView);
   const { width, height } = getStaticMapDimensions(mapView);

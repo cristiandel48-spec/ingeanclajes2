@@ -8,15 +8,15 @@ const MINIMO = 8;
 
 const campo = {
   width: "100%", boxSizing: "border-box",
-  background: "#fff", border: "1px solid #e4e7ec", borderRadius: 10,
-  color: "#101828", padding: "12px 13px",
+  background: "#fff", border: "1px solid #e8dfd2", borderRadius: 10,
+  color: "#2b2622", padding: "12px 13px",
   // 16px evita que Safari en iPhone haga zoom al enfocar.
   fontSize: 16, outline: "none", fontFamily: "inherit",
 };
 
 const etiqueta = {
   display: "block", fontSize: 12.5, fontWeight: 600,
-  color: "#344054", marginBottom: 6,
+  color: "#574e44", marginBottom: 6,
 };
 
 export default function CambiarMiClave({ onCerrar }) {
@@ -78,10 +78,10 @@ export default function CambiarMiClave({ onCerrar }) {
       }}>
         {listo ? (
           <>
-            <h2 style={{ margin: "0 0 8px", fontSize: 20, fontWeight: 800, color: "#101828" }}>
+            <h2 style={{ margin: "0 0 8px", fontSize: 20, fontWeight: 800, color: "#2b2622" }}>
               Contraseña cambiada
             </h2>
-            <p style={{ margin: "0 0 20px", fontSize: 13.5, color: "#667085", lineHeight: 1.6 }}>
+            <p style={{ margin: "0 0 20px", fontSize: 13.5, color: "#756a5e", lineHeight: 1.6 }}>
               La próxima vez que entres, usa la nueva. Si te llegó una por correo, ya puedes borrar
               ese mensaje.
             </p>
@@ -95,10 +95,10 @@ export default function CambiarMiClave({ onCerrar }) {
           </>
         ) : (
           <>
-            <h2 style={{ margin: "0 0 6px", fontSize: 20, fontWeight: 800, color: "#101828" }}>
+            <h2 style={{ margin: "0 0 6px", fontSize: 20, fontWeight: 800, color: "#2b2622" }}>
               Cambiar mi contraseña
             </h2>
-            <p style={{ margin: "0 0 18px", fontSize: 13, color: "#667085", lineHeight: 1.55 }}>
+            <p style={{ margin: "0 0 18px", fontSize: 13, color: "#756a5e", lineHeight: 1.55 }}>
               Mínimo {MINIMO} caracteres. Elige una que recuerdes: nadie más puede verla.
             </p>
 
@@ -117,7 +117,7 @@ export default function CambiarMiClave({ onCerrar }) {
 
             {error && (
               <div style={{
-                background: "#fef3f2", border: "1px solid #fecdca", color: "#cc0000",
+                background: "#f9e9e4", border: "1px solid #eec7bd", color: "#cc0000",
                 borderRadius: 10, padding: "10px 12px", fontSize: 13, marginBottom: 14, lineHeight: 1.5,
               }}>
                 {error}
@@ -134,7 +134,7 @@ export default function CambiarMiClave({ onCerrar }) {
                 {guardando ? "Guardando…" : "Cambiar"}
               </button>
               <button onClick={onCerrar} disabled={guardando} style={{
-                background: "#fff", color: "#475467", border: "1px solid #e4e7ec",
+                background: "#fff", color: "#574e44", border: "1px solid #e8dfd2",
                 borderRadius: 10, padding: "13px 18px", fontSize: 14.5, fontWeight: 600,
                 cursor: "pointer", fontFamily: "inherit",
               }}>

@@ -97,7 +97,7 @@ export default function DocumentoEnVivo({
       style={{
         position: sticky ? "sticky" : "static",
         top: 0,
-        border: "1px solid #eaecf0",
+        border: "1px solid #e8dfd2",
         borderRadius: 12,
         overflow: "hidden",
         background: "#e8eaee",
@@ -107,12 +107,12 @@ export default function DocumentoEnVivo({
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
         gap: 10, padding: "9px 14px", background: "#fff",
-        borderBottom: "1px solid #eaecf0",
+        borderBottom: "1px solid #e8dfd2",
       }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "#667085" }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "#756a5e" }}>
           {titulo}
         </div>
-        <div style={{ fontSize: 10.5, color: "#98a2b3" }}>
+        <div style={{ fontSize: 10.5, color: "#a2988a" }}>
           {html ? nota : "Generando…"}
         </div>
       </div>

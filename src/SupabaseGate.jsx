@@ -13,13 +13,13 @@ const reintentandoSiChocanPestanas = backend.reintentandoSiChocanPestanas;
 // todos los botones principales: si el rojo sale tambien en los botones deja
 // de identificar a la marca y pasa a ser un color mas.
 const MARCA = "#cc0000";
-const ACCION = "#101828";
+const ACCION = "#2b2622";
 
 const inputStyle = {
   background: "#fff",
-  border: "1px solid #e4e7ec",
+  border: "1px solid #e8dfd2",
   borderRadius: 10,
-  color: "#101828",
+  color: "#2b2622",
   padding: "13px 14px",
   // 16px evita que Safari en iPhone haga zoom al enfocar el campo.
   fontSize: 16,
@@ -33,7 +33,7 @@ const labelStyle = {
   display: "block",
   fontSize: 13,
   fontWeight: 600,
-  color: "#344054",
+  color: "#574e44",
   marginBottom: 7,
 };
 
@@ -56,7 +56,7 @@ function Pantalla({ children }) {
     <div
       style={{
         minHeight: "100vh",
-        background: "linear-gradient(160deg, #f4f5f9 0%, #eceef6 100%)",
+        background: "linear-gradient(160deg, #fbf8f3 0%, #f2ebe0 100%)",
         padding: "24px 16px",
         display: "flex",
         alignItems: "center",
@@ -71,7 +71,7 @@ function Pantalla({ children }) {
             background: "#fff",
             borderRadius: 20,
             padding: "36px 34px",
-            boxShadow: "0 24px 60px -20px rgba(16,24,40,.18), 0 2px 6px rgba(16,24,40,.04)",
+            boxShadow: "0 24px 60px -20px rgba(87,78,68,.16), 0 2px 6px rgba(87,78,68,.04)",
             boxSizing: "border-box",
           }}
         >
@@ -94,7 +94,7 @@ function Encabezado({ etiqueta }) {
       >
         <img src={logoIngeanclajes} alt="" style={{ width: 25, height: 25, objectFit: "contain", borderRadius: 5 }} />
       </div>
-      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#98a2b3" }}>
+      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#a2988a" }}>
         {etiqueta}
       </div>
     </div>
@@ -104,7 +104,7 @@ function Encabezado({ etiqueta }) {
 function Aviso({ tono = "error", children }) {
   const colores = tono === "ok"
     ? { bg: "#f0fdf4", border: "#bbf7d0", fg: "#15803d" }
-    : { bg: "#fef3f2", border: "#fecdca", fg: "#cc0000" };
+    : { bg: "#f9e9e4", border: "#eec7bd", fg: "#cc0000" };
   return (
     <div
       style={{
@@ -312,8 +312,8 @@ export default function SupabaseGate({ children }) {
     return (
       <Pantalla>
         <Encabezado etiqueta="Configuración pendiente" />
-        <h1 style={{ margin: "0 0 8px", fontSize: 26, fontWeight: 800, color: "#101828" }}>Falta configurar el servidor</h1>
-        <p style={{ margin: 0, color: "#667085", lineHeight: 1.6, fontSize: 14 }}>
+        <h1 style={{ margin: "0 0 8px", fontSize: 26, fontWeight: 800, color: "#2b2622" }}>Falta configurar el servidor</h1>
+        <p style={{ margin: 0, color: "#756a5e", lineHeight: 1.6, fontSize: 14 }}>
           Hay que definir <code>VITE_SUPABASE_URL</code>, <code>VITE_SUPABASE_ANON_KEY</code> y{" "}
           <code>VITE_SUPABASE_TENANT_SLUG</code> donde está publicada la aplicación.
         </p>
@@ -325,8 +325,8 @@ export default function SupabaseGate({ children }) {
     return (
       <Pantalla>
         <Encabezado etiqueta="Acceso Cloud" />
-        <h1 style={{ margin: "0 0 8px", fontSize: 28, fontWeight: 800, color: "#101828" }}>Validando sesión</h1>
-        <p style={{ margin: 0, color: "#667085", fontSize: 14.5 }}>Un momento, estamos comprobando tu acceso.</p>
+        <h1 style={{ margin: "0 0 8px", fontSize: 28, fontWeight: 800, color: "#2b2622" }}>Validando sesión</h1>
+        <p style={{ margin: 0, color: "#756a5e", fontSize: 14.5 }}>Un momento, estamos comprobando tu acceso.</p>
       </Pantalla>
     );
   }
@@ -335,19 +335,19 @@ export default function SupabaseGate({ children }) {
     return (
       <Pantalla>
         <Encabezado etiqueta="Acceso Cloud" />
-        <h1 style={{ margin: "0 0 8px", fontSize: 26, fontWeight: 800, color: "#101828" }}>
+        <h1 style={{ margin: "0 0 8px", fontSize: 26, fontWeight: 800, color: "#2b2622" }}>
           {motivoBloqueo === "permisos" ? "Tu cuenta no tiene acceso" : "No se pudo abrir la empresa"}
         </h1>
-        <p style={{ margin: "0 0 16px", color: "#667085", lineHeight: 1.6, fontSize: 14 }}>
+        <p style={{ margin: "0 0 16px", color: "#756a5e", lineHeight: 1.6, fontSize: 14 }}>
           {motivoBloqueo === "permisos" ? (
             <>
-              Entraste como <strong style={{ color: "#101828" }}>{user.email}</strong>, pero esa cuenta todavía no
+              Entraste como <strong style={{ color: "#2b2622" }}>{user.email}</strong>, pero esa cuenta todavía no
               tiene permisos asignados en la empresa.
             </>
           ) : (
             <>
               Tu usuario y contraseña están bien: entraste como{" "}
-              <strong style={{ color: "#101828" }}>{user.email}</strong>. Lo que falló fue la conexión con los datos
+              <strong style={{ color: "#2b2622" }}>{user.email}</strong>. Lo que falló fue la conexión con los datos
               de la empresa, así que no es algo que puedas resolver desde aquí.
             </>
           )}
@@ -369,7 +369,7 @@ export default function SupabaseGate({ children }) {
             disabled={busy}
             style={
               motivoBloqueo === "tecnico"
-                ? { ...botonStyle, background: "#fff", color: "#475467", border: "1px solid #e4e7ec", opacity: busy ? 0.7 : 1 }
+                ? { ...botonStyle, background: "#fff", color: "#574e44", border: "1px solid #e8dfd2", opacity: busy ? 0.7 : 1 }
                 : { ...botonStyle, opacity: busy ? 0.7 : 1 }
             }
           >
@@ -385,10 +385,10 @@ export default function SupabaseGate({ children }) {
       <Pantalla>
         <Encabezado etiqueta="Acceso Cloud" />
 
-        <h1 style={{ margin: "0 0 8px", fontSize: 30, fontWeight: 800, color: "#101828", letterSpacing: "-.01em" }}>
+        <h1 style={{ margin: "0 0 8px", fontSize: 30, fontWeight: 800, color: "#2b2622", letterSpacing: "-.01em" }}>
           Inicia sesión
         </h1>
-        <p style={{ margin: "0 0 22px", color: "#667085", fontSize: 14.5, lineHeight: 1.55 }}>
+        <p style={{ margin: "0 0 22px", color: "#756a5e", fontSize: 14.5, lineHeight: 1.55 }}>
           Guarda tus datos automáticamente en la nube.
         </p>
 
@@ -433,7 +433,7 @@ export default function SupabaseGate({ children }) {
             disabled={busy}
             style={{
               background: "none", border: "none", padding: 4,
-              color: "#667085", fontSize: 13, cursor: "pointer",
+              color: "#756a5e", fontSize: 13, cursor: "pointer",
               fontFamily: "inherit", textDecoration: "underline",
             }}
           >

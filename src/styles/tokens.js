@@ -19,31 +19,42 @@
 // -cotizacion, informe, certificado- tienen su propio estilo y no se tocan
 // desde aqui.
 
-// ── 1. Neutro ──────────────────────────────────────────────────────────────
+// ── 1. Neutro: una escala CALIDA ───────────────────────────────────────────
+//
+// Beige y crema en vez de gris azulado. Es el mismo numero de colores -no se
+// añade ninguno-, pero cambia la temperatura de toda la aplicacion: el fondo
+// deja de ser gris frio y el negro deja de ser azulado, que era lo que hacia
+// que se viera duro.
+//
+// Las tarjetas siguen en blanco puro sobre el fondo crema: asi se despegan
+// solas y no hace falta cargarlas de sombra.
 export const N = {
-  tinta:     "#101828", // titulos y texto principal
-  grafito:   "#475467", // texto secundario
-  gris:      "#667085", // texto de apoyo, rotulos
-  claro:     "#98a2b3", // texto deshabilitado, marcas de agua
-  borde:     "#eaecf0", // lineas y bordes
-  bordeFuerte:"#d0d5dd",// borde de boton de contorno
-  superficie:"#f2f4f7", // badges neutros, fondos suaves
-  papel:     "#fafafa", // fondo de pagina
-  blanco:    "#ffffff",
+  tinta:     "#2b2622", // titulos y texto principal · negro calido, no azulado
+  grafito:   "#574e44", // texto secundario
+  gris:      "#756a5e", // texto de apoyo, rotulos
+  claro:     "#a2988a", // texto deshabilitado, marcas de agua
+  borde:     "#e8dfd2", // lineas y bordes
+  bordeFuerte:"#d9cdbb",// borde de boton de contorno
+  superficie:"#f4eee4", // badges neutros, fondos suaves · el beige
+  papel:     "#fbf8f3", // fondo de pagina · crema
+  blanco:    "#ffffff", // tarjetas
 };
 
 // ── 2. Tinta: el color de accion ───────────────────────────────────────────
 // Los botones principales van en casi negro, no en naranja. El negro se lee
 // como caro; el naranja, como oferta. Ademas deja libre al rojo para que
 // signifique algo.
+//
+// Es un negro CALIDO (#2b2622, con marron dentro) y no un negro azulado: sobre
+// un fondo beige, el negro frio se ve como un agujero.
 export const ACCION = N.tinta;
-export const ACCION_HOVER = "#1d2939";
+export const ACCION_HOVER = "#3e3730";
 
 // ── 3. Rojo Ingeanclajes: el acento de marca ───────────────────────────────
 // El del logo. Reservado para la marca y para lo que destruye datos.
 export const MARCA = "#cc0000";
-export const MARCA_TENUE = "#feecec";
-export const MARCA_BORDE = "#f2c1c1";
+export const MARCA_TENUE = "#f9e9e4"; // tenue y calido, para que case con el beige
+export const MARCA_BORDE = "#eec7bd";
 
 // Señales de estado. Solo como TEXTO o punto pequeño, nunca como fondo de un
 // boton ni de una tarjeta: ahi es donde ensuciaban.

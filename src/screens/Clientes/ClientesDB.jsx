@@ -243,11 +243,11 @@ export default function ClientesDB({ctx}){
         action={
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             {sinRegistrar.length>0&&(
-              <button style={B("#f2f4f7","#475467")} onClick={importarClientes}>
+              <button style={B("#f4eee4","#574e44")} onClick={importarClientes}>
                 ⬇ Importar {sinRegistrar.length} sugerido(s)
               </button>
             )}
-            <button style={B("#101828")} onClick={()=>{setShowForm(v=>!v); if(showForm) resetCliente();}}>
+            <button style={B("#2b2622")} onClick={()=>{setShowForm(v=>!v); if(showForm) resetCliente();}}>
               + Cliente
             </button>
           </div>
@@ -256,7 +256,7 @@ export default function ClientesDB({ctx}){
 
 
       {showForm&&(
-        <div style={{...CD,marginBottom:18,border:"1px solid #eaecf0"}}>
+        <div style={{...CD,marginBottom:18,border:"1px solid #e8dfd2"}}>
           <div style={ST}>{editId?"Editar cliente":"Nuevo cliente"}</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
             <CampoTexto label="Nombre / razón social" valor={form.nombre} onChange={v=>setForm({...form,nombre:v})}
@@ -293,8 +293,8 @@ export default function ClientesDB({ctx}){
             </div>
           </div>
           <div style={{display:"flex",gap:8}}>
-            <button style={B("#101828")} onClick={guardarCliente}>{editId?"Guardar cambios":"Crear cliente"}</button>
-            <button style={B("#f2f4f7","#475467")} onClick={resetCliente}>Cancelar</button>
+            <button style={B("#2b2622")} onClick={guardarCliente}>{editId?"Guardar cambios":"Crear cliente"}</button>
+            <button style={B("#f4eee4","#574e44")} onClick={resetCliente}>Cancelar</button>
           </div>
         </div>
       )}
@@ -302,34 +302,34 @@ export default function ClientesDB({ctx}){
       <div style={CD}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
           <div style={ST}>Directorio de clientes</div>
-          <div style={{fontSize:11,color:"#667085"}}>Datos comerciales + relación con obras, cotizaciones y certificaciones</div>
+          <div style={{fontSize:11,color:"#756a5e"}}>Datos comerciales + relación con obras, cotizaciones y certificaciones</div>
         </div>
 
         {clientesData.length===0 ? (
-          <div style={{textAlign:"center",padding:24,color:"#98a2b3",fontSize:13}}>No hay clientes registrados todavía</div>
+          <div style={{textAlign:"center",padding:24,color:"#a2988a",fontSize:13}}>No hay clientes registrados todavía</div>
         ) : (
           <div style={{display:"grid",gap:12}}>
             {clientesData.map(c=>(
-              <div key={c.id} style={{background:"#fafafa",borderRadius:10,padding:"16px 18px",border:"1px solid #eaecf0"}}>
+              <div key={c.id} style={{background:"#fbf8f3",borderRadius:10,padding:"16px 18px",border:"1px solid #e8dfd2"}}>
                 <div style={{display:"flex",justifyContent:"space-between",gap:16,alignItems:"flex-start",marginBottom:10}}>
                   <div>
-                    <div style={{fontSize:15,fontWeight:800,color:"#101828"}}>{normalizarRazonSocial(c.nombre)}</div>
-                    <div style={{fontSize:11,color:"#667085",marginTop:3}}>
+                    <div style={{fontSize:15,fontWeight:800,color:"#2b2622"}}>{normalizarRazonSocial(c.nombre)}</div>
+                    <div style={{fontSize:11,color:"#756a5e",marginTop:3}}>
                       {c.nit || "Sin NIT"} · {c.contacto || "Sin contacto"} · {c.telefono || "Sin teléfono"}
                     </div>
                   </div>
                   <div style={{display:"flex",gap:8,alignItems:"center"}}>
                     <Badge estado={c.estado || "Activo"}/>
-                    <button style={{...B("#f2f4f7","#475467"),padding:"7px 12px",fontSize:11}} onClick={()=>editarCliente(c)}>Editar</button>
+                    <button style={{...B("#f4eee4","#574e44"),padding:"7px 12px",fontSize:11}} onClick={()=>editarCliente(c)}>Editar</button>
                     <button
-                      style={{...B("#f2f4f7","#b54708"),padding:"7px 12px",fontSize:11}}
+                      style={{...B("#f4eee4","#b54708"),padding:"7px 12px",fontSize:11}}
                       onClick={()=>unificarCliente(c)}
                       title="Pasar sus obras y documentos a otro cliente y borrar esta ficha"
                     >
                       Unificar
                     </button>
                     <button
-                      style={{...B("#feecec","#cc0000"),padding:"7px 12px",fontSize:11}}
+                      style={{...B("#f9e9e4","#cc0000"),padding:"7px 12px",fontSize:11}}
                       onClick={()=>eliminarCliente(c)}
                       title="Eliminar la ficha"
                     >
@@ -338,25 +338,25 @@ export default function ClientesDB({ctx}){
                   </div>
                 </div>
 
-                <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr 1fr 1fr",gap:10,fontSize:11,color:"#475467"}}>
-                  <div><strong style={{color:"#101828"}}>Ciudad / dirección</strong><br/>{c.ciudad || "Sin ciudad"}{c.direccion?" · " + (c.direccion):""}</div>
-                  <div><strong style={{color:"#101828"}}>Email</strong><br/>{c.email || "Sin email"}</div>
-                  <div><strong style={{color:"#101828"}}>Obras / cotizaciones</strong><br/>{c.obrasTotal} obra(s) · {c.cotizacionesTotal} cotización(es)</div>
-                  <div><strong style={{color:"#101828"}}>Certificaciones</strong><br/>{c.certificacionesTotal} registro(s)</div>
+                <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr 1fr 1fr",gap:10,fontSize:11,color:"#574e44"}}>
+                  <div><strong style={{color:"#2b2622"}}>Ciudad / dirección</strong><br/>{c.ciudad || "Sin ciudad"}{c.direccion?" · " + (c.direccion):""}</div>
+                  <div><strong style={{color:"#2b2622"}}>Email</strong><br/>{c.email || "Sin email"}</div>
+                  <div><strong style={{color:"#2b2622"}}>Obras / cotizaciones</strong><br/>{c.obrasTotal} obra(s) · {c.cotizacionesTotal} cotización(es)</div>
+                  <div><strong style={{color:"#2b2622"}}>Certificaciones</strong><br/>{c.certificacionesTotal} registro(s)</div>
                 </div>
 
                 <div style={{marginTop:10,display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11,flexWrap:"wrap",gap:10}}>
-                  <div style={{color:"#667085",maxWidth:"70%"}}>
+                  <div style={{color:"#756a5e",maxWidth:"70%"}}>
                     {c.notas || "Sin notas registradas"}
                   </div>
                   <div style={{display:"flex",gap:18,alignItems:"center"}}>
                     <div style={{textAlign:"right"}}>
-                      <div style={{fontSize:10,color:"#98a2b3"}}>Facturado</div>
+                      <div style={{fontSize:10,color:"#a2988a"}}>Facturado</div>
                       <div style={{fontWeight:800,color:"#027a48"}}>{fmt(c.totalFacturado)}</div>
                     </div>
                     <div style={{textAlign:"right"}}>
-                      <div style={{fontSize:10,color:"#98a2b3"}}>Saldo</div>
-                      <div style={{fontWeight:800,color:c.saldoPendiente?"#475467":"#027a48"}}>{c.saldoPendiente?fmt(c.saldoPendiente):"Al día"}</div>
+                      <div style={{fontSize:10,color:"#a2988a"}}>Saldo</div>
+                      <div style={{fontWeight:800,color:c.saldoPendiente?"#574e44":"#027a48"}}>{c.saldoPendiente?fmt(c.saldoPendiente):"Al día"}</div>
                     </div>
                   </div>
                 </div>

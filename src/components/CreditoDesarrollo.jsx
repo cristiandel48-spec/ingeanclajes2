@@ -9,7 +9,7 @@ export const AUTOR_SISTEMA = "Cristian Flórez";
 export default function CreditoDesarrollo({ tono = "claro", style }) {
   // "claro" = sobre fondo blanco (pantalla de acceso).
   // "oscuro" = sobre el riel del menu.
-  const color = tono === "oscuro" ? "rgba(255,255,255,.38)" : "#98a2b3";
+  const color = tono === "oscuro" ? "rgba(255,255,255,.38)" : "#a2988a";
 
   return (
     <div

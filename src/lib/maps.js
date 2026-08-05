@@ -105,7 +105,7 @@ export function buildStaticMapLabelData(segments, center, zoom, width, height){
       x,
       y,
       angle,
-      color: seg.tipo === "CON" ? "#EAB308" : seg.tipo === "LVV" ? "#027a48" : seg.tipo === "ESC" ? "#F97316" : "#475467",
+      color: seg.tipo === "CON" ? "#EAB308" : seg.tipo === "LVV" ? "#027a48" : seg.tipo === "ESC" ? "#F97316" : "#574e44",
       title: String(seg.label || `LINEA ${idx+1}`),
       value: `${Number(seg.ml || 0).toFixed(2)} m`,
     };

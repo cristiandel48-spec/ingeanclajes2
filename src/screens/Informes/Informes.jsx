@@ -316,7 +316,7 @@ export default function Informes({ctx}){
   return(
     <div style={{padding:28}}>
       <H1 title="Informes de Actividades" subtitle="Múltiples actividades por informe con registro fotográfico"
-        action={<button style={B("#101828")} onClick={abrirNuevoInforme}>+ Nuevo Informe</button>}/>
+        action={<button style={B("#2b2622")} onClick={abrirNuevoInforme}>+ Nuevo Informe</button>}/>
 
       {obras.length===0 ? (
         <AvisoFlujo
@@ -331,7 +331,7 @@ export default function Informes({ctx}){
           accion={
             <button
               onClick={()=>irAPantalla("obras")}
-              style={{...B("#101828"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
+              style={{...B("#2b2622"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
             >
               Ir a Obras
             </button>
@@ -346,7 +346,7 @@ export default function Informes({ctx}){
           accion={
             <button
               onClick={()=>irAPantalla("obras",form.obraId?{obraId:form.obraId}:undefined)}
-              style={{...B("#f2f4f7","#475467"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
+              style={{...B("#f4eee4","#574e44"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
             >
               Abrir la obra
             </button>
@@ -359,7 +359,7 @@ export default function Informes({ctx}){
       )}
 
       {nuevo&&(
-        <div style={{...CD,marginBottom:20,border:"1px solid #eaecf0"}}>
+        <div style={{...CD,marginBottom:20,border:"1px solid #e8dfd2"}}>
           <div style={ST}>{editId ? "Editar Informe de Actividades" : "Nuevo Informe de Actividades"}</div>
 
           {/* Datos generales */}
@@ -399,12 +399,12 @@ export default function Informes({ctx}){
           <div style={{marginBottom:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,flexWrap:"wrap",gap:8}}>
               <LBL>Personal en obra</LBL>
-              <div style={{fontSize:11,color:"#667085"}}>Se carga automáticamente según la obra y los horarios del período. Los turnos se muestran en formato 12h.</div>
+              <div style={{fontSize:11,color:"#756a5e"}}>Se carga automáticamente según la obra y los horarios del período. Los turnos se muestran en formato 12h.</div>
             </div>
             <datalist id="turnosInformeList">
               {turnosDisponiblesObra.map((t,i)=><option key={i} value={t} />)}
             </datalist>
-            {form.personal.length===0&&<div style={{background:"#fafafa",border:"1px dashed #eaecf0",borderRadius:8,padding:"12px 14px",fontSize:12,color:"#98a2b3",marginBottom:8}}>No hay personal asignado a esta obra todavía. Puedes agregarlo manualmente.</div>}
+            {form.personal.length===0&&<div style={{background:"#fbf8f3",border:"1px dashed #e8dfd2",borderRadius:8,padding:"12px 14px",fontSize:12,color:"#a2988a",marginBottom:8}}>No hay personal asignado a esta obra todavía. Puedes agregarlo manualmente.</div>}
             {form.personal.map((p,i)=>(
               <div key={i} style={{display:"grid",gridTemplateColumns:"1.4fr 1fr 1fr 1fr 28px",gap:8,marginBottom:6}}>
                 {/* Se elige de la lista y el cargo entra solo. Antes habia que
@@ -453,10 +453,10 @@ export default function Informes({ctx}){
                 <input value={p.cargo} onChange={e=>updPersonal(i,"cargo",e.target.value)} onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==p.cargo)updPersonal(i,"cargo",v);}} placeholder="Cargo" style={{...SI,fontSize:12}}/>
                 <input list="turnosInformeList" value={p.turno1||""} onChange={e=>updPersonal(i,"turno1",e.target.value)} placeholder="Turno 1 · 07:00 AM - 05:00 PM" style={{...SI,fontSize:12}}/>
                 <input list="turnosInformeList" value={p.turno2||""} onChange={e=>updPersonal(i,"turno2",e.target.value)} placeholder="Turno 2 · opcional" style={{...SI,fontSize:12}}/>
-                <button onClick={()=>setForm(pf=>({...pf,personal:pf.personal.filter((_,j)=>j!==i)}))} style={{background:"#feecec",border:"none",color:"#cc0000",borderRadius:6,cursor:"pointer",fontSize:14}}>×</button>
+                <button onClick={()=>setForm(pf=>({...pf,personal:pf.personal.filter((_,j)=>j!==i)}))} style={{background:"#f9e9e4",border:"none",color:"#cc0000",borderRadius:6,cursor:"pointer",fontSize:14}}>×</button>
               </div>
             ))}
-            <button onClick={()=>setForm(p=>({...p,personal:[...p.personal,emptyPersona()]}))} style={{...B("#f2f4f7","#475467"),fontSize:12,marginTop:4}}>+ Agregar persona</button>
+            <button onClick={()=>setForm(p=>({...p,personal:[...p.personal,emptyPersona()]}))} style={{...B("#f4eee4","#574e44"),fontSize:12,marginTop:4}}>+ Agregar persona</button>
           </div>
 
           {/* Actividades */}
@@ -464,13 +464,13 @@ export default function Informes({ctx}){
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
               <LBL>Actividades ejecutadas</LBL>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                <button onClick={traerAvancesDeLaObra} style={{...B("#f2f4f7","#475467"),fontSize:11,padding:"5px 12px"}}>
+                <button onClick={traerAvancesDeLaObra} style={{...B("#f4eee4","#574e44"),fontSize:11,padding:"5px 12px"}}>
                   ↻ Traer avances de la obra ({avancesDisponibles.length})
                 </button>
-                <button onClick={()=>setForm(p=>({...p,actividades:[...p.actividades,emptyActividad()]}))} style={{...B("#101828"),fontSize:11,padding:"5px 12px"}}>+ Agregar actividad</button>
+                <button onClick={()=>setForm(p=>({...p,actividades:[...p.actividades,emptyActividad()]}))} style={{...B("#2b2622"),fontSize:11,padding:"5px 12px"}}>+ Agregar actividad</button>
               </div>
             </div>
-            <div style={{background:"#fafafa",border:"1px solid #eaecf0",borderRadius:8,padding:"10px 13px",fontSize:11.5,color:"#475467",lineHeight:1.55,marginBottom:12}}>
+            <div style={{background:"#fbf8f3",border:"1px solid #e8dfd2",borderRadius:8,padding:"10px 13px",fontSize:11.5,color:"#574e44",lineHeight:1.55,marginBottom:12}}>
               Estas actividades salen de lo que se registró en la obra, en la pestaña
               «Avance y fotos». Aquí las puedes retocar antes de imprimir sin dañar el registro
               original de la obra.
@@ -484,10 +484,10 @@ export default function Informes({ctx}){
               )}
             </div>
             {form.actividades.map((act,ai)=>(
-              <div key={ai} style={{background:"#fafafa",border:"1px solid #eaecf0",borderRadius:10,padding:16,marginBottom:12}}>
+              <div key={ai} style={{background:"#fbf8f3",border:"1px solid #e8dfd2",borderRadius:10,padding:16,marginBottom:12}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                  <div style={{fontSize:12,fontWeight:700,color:"#cc0000"}}>Actividad {ai+1}</div>
-                  {form.actividades.length>1&&<button onClick={()=>setForm(p=>({...p,actividades:p.actividades.filter((_,i)=>i!==ai)}))} style={{background:"#feecec",border:"none",color:"#cc0000",borderRadius:5,padding:"2px 8px",cursor:"pointer",fontSize:11}}>× Eliminar</button>}
+                  <div style={{fontSize:12,fontWeight:700,color:"#2b2622"}}>Actividad {ai+1}</div>
+                  {form.actividades.length>1&&<button onClick={()=>setForm(p=>({...p,actividades:p.actividades.filter((_,i)=>i!==ai)}))} style={{background:"#f9e9e4",border:"none",color:"#cc0000",borderRadius:5,padding:"2px 8px",cursor:"pointer",fontSize:11}}>× Eliminar</button>}
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 170px",gap:10,marginBottom:10}}>
                   <div><LBL>Título / nombre de la actividad</LBL><input value={act.titulo} onChange={e=>updActividad(ai,"titulo",e.target.value)} placeholder="Ej: Instalación de líneas de vida" style={SI}/></div>
@@ -506,13 +506,13 @@ export default function Informes({ctx}){
                 <LBL>Registro fotográfico</LBL>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,alignItems:"start"}}>
                   {act.fotos.map((ft,fi)=>(
-                    <div key={fi} style={{background:"#fff",border:"1px solid #eaecf0",borderRadius:8,overflow:"hidden"}}>
+                    <div key={fi} style={{background:"#fff",border:"1px solid #e8dfd2",borderRadius:8,overflow:"hidden"}}>
                       <div
                         onClick={()=>{const k=(ai) + "-" + (fi);if(!fotoRefs.current[k])return;fotoRefs.current[k].click();}}
-                        style={{minHeight:150,background:"#fafafa",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",position:"relative",padding:ft.img?8:0}}>
+                        style={{minHeight:150,background:"#fbf8f3",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",position:"relative",padding:ft.img?8:0}}>
                         {ft.img
                           ?<img src={ft.img} alt="" style={{width:"100%",height:"auto",maxHeight:220,objectFit:"contain",display:"block",background:"#fff",borderRadius:6}}/>
-                          :<div style={{textAlign:"center",color:"#98a2b3",fontSize:11}}><div style={{fontSize:22}}>Foto</div><div>Foto {fi+1} · Clic para cargar</div></div>}
+                          :<div style={{textAlign:"center",color:"#a2988a",fontSize:11}}><div style={{fontSize:22}}>Foto</div><div>Foto {fi+1} · Clic para cargar</div></div>}
                         {ft.img&&<div style={{position:"absolute",top:6,right:6,background:"rgba(0,0,0,0.55)",borderRadius:4,padding:"2px 6px",fontSize:9,color:"#fff",cursor:"pointer"}} onClick={e=>{e.stopPropagation();updFotoAct(ai,fi,"img",null);}}>× Quitar</div>}
                       </div>
                       <input ref={el=>{fotoRefs.current[(ai) + "-" + (fi)]=el;}} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{cargarFoto(ai,fi,e.target.files[0]);e.target.value="";}}/>
@@ -520,15 +520,15 @@ export default function Informes({ctx}){
                     </div>
                   ))}
                 </div>
-                <button onClick={()=>updActividad(ai,"fotos",[...act.fotos,{img:null,comentario:""}])} style={{...B("#f2f4f7","#475467"),fontSize:11,marginTop:8}}>+ Agregar foto</button>
+                <button onClick={()=>updActividad(ai,"fotos",[...act.fotos,{img:null,comentario:""}])} style={{...B("#f4eee4","#574e44"),fontSize:11,marginTop:8}}>+ Agregar foto</button>
               </div>
             ))}
           </div>
 
           <div style={{marginBottom:14}}><LBL>Recomendaciones generales</LBL><textarea value={form.recomendaciones} onChange={e=>setForm(p=>({...p,recomendaciones:e.target.value}))} rows={3} spellCheck lang="es" style={{...SI,resize:"vertical"}}/></div>
           <div style={{display:"flex",gap:10}}>
-            <button style={B("#101828")} onClick={guardar}>{editId ? "Guardar cambios" : "Guardar informe"}</button>
-            <button style={B("#f2f4f7","#475467")} onClick={()=>{setNuevo(false);setEditId(null);}}>Cancelar</button>
+            <button style={B("#2b2622")} onClick={guardar}>{editId ? "Guardar cambios" : "Guardar informe"}</button>
+            <button style={B("#f4eee4","#574e44")} onClick={()=>{setNuevo(false);setEditId(null);}}>Cancelar</button>
           </div>
         </div>
       )}
@@ -538,29 +538,29 @@ export default function Informes({ctx}){
       {!sel&&!nuevo&&(
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
           {informes.map(inf=>(
-            <div key={inf.id} style={{...CD,border:"1px solid #eaecf0",cursor:"pointer"}}
-              onMouseEnter={e=>e.currentTarget.style.borderColor="#d0d5dd"}
-              onMouseLeave={e=>e.currentTarget.style.borderColor="#eaecf0"}>
+            <div key={inf.id} style={{...CD,border:"1px solid #e8dfd2",cursor:"pointer"}}
+              onMouseEnter={e=>e.currentTarget.style.borderColor="#d9cdbb"}
+              onMouseLeave={e=>e.currentTarget.style.borderColor="#e8dfd2"}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
                 <div>
-                  <div style={{fontSize:10,color:"#98a2b3"}}>{inf.id}</div>
-                  <div style={{fontSize:14,fontWeight:700,color:"#101828"}}>{inf.proyecto}</div>
-                  <div style={{fontSize:11,color:"#475467"}}>{inf.localizacion}</div>
+                  <div style={{fontSize:10,color:"#a2988a"}}>{inf.id}</div>
+                  <div style={{fontSize:14,fontWeight:700,color:"#2b2622"}}>{inf.proyecto}</div>
+                  <div style={{fontSize:11,color:"#574e44"}}>{inf.localizacion}</div>
                 </div>
-                <div style={{textAlign:"right",fontSize:11,color:"#667085"}}>
+                <div style={{textAlign:"right",fontSize:11,color:"#756a5e"}}>
                   <div>{fmtD(inf.fechaInforme)}</div>
-                  <div style={{color:"#98a2b3"}}>{fmtD(inf.periodoInicio)} - {fmtD(inf.periodoFin)}</div>
+                  <div style={{color:"#a2988a"}}>{fmtD(inf.periodoInicio)} - {fmtD(inf.periodoFin)}</div>
                 </div>
               </div>
               <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
                 {(inf.actividades||[{titulo:inf.actividad}]).map((a,i)=>(
-                  <span key={i} style={{background:"#f2f4f7",color:"#475467",borderRadius:4,padding:"2px 8px",fontSize:11,border:"1px solid #eaecf0"}}>{a.titulo||a}</span>
+                  <span key={i} style={{background:"#f4eee4",color:"#574e44",borderRadius:4,padding:"2px 8px",fontSize:11,border:"1px solid #e8dfd2"}}>{a.titulo||a}</span>
                 ))}
               </div>
-              <div style={{fontSize:11,color:"#667085",marginBottom:10}}>{inf.personal?.length||0} personas · {(inf.actividades||[]).length} actividad(es)</div>
+              <div style={{fontSize:11,color:"#756a5e",marginBottom:10}}>{inf.personal?.length||0} personas · {(inf.actividades||[]).length} actividad(es)</div>
               <div style={{display:"flex",gap:8}}>
-                <button style={{...B("#101828"),flex:1,justifyContent:"center",fontSize:12}} onClick={()=>setSel(inf)}>Ver / Imprimir</button>
-                <button style={{...B("#f2f4f7","#475467"),flex:1,justifyContent:"center",fontSize:12}} onClick={()=>editarInforme(inf)}>Editar</button>
+                <button style={{...B("#2b2622"),flex:1,justifyContent:"center",fontSize:12}} onClick={()=>setSel(inf)}>Ver / Imprimir</button>
+                <button style={{...B("#f4eee4","#574e44"),flex:1,justifyContent:"center",fontSize:12}} onClick={()=>editarInforme(inf)}>Editar</button>
               </div>
             </div>
           ))}
@@ -571,12 +571,12 @@ export default function Informes({ctx}){
       {sel&&(
         <div>
           <div style={{display:"flex",gap:10,marginBottom:14}}>
-            <button style={B("#f2f4f7","#475467")} onClick={()=>setSel(null)}>Volver</button>
-            <button style={{...B("#f2f4f7","#475467")}} onClick={()=>editarInforme(sel)}>Editar</button>
+            <button style={B("#f4eee4","#574e44")} onClick={()=>setSel(null)}>Volver</button>
+            <button style={{...B("#f4eee4","#574e44")}} onClick={()=>editarInforme(sel)}>Editar</button>
             {/* Descarga directa: el PDF sale sin el encabezado ni el pie que
                 Chrome estampa al imprimir («about:blank», fecha, 1/7). */}
             <button
-              style={{...B("#101828"),opacity:generandoPdf?0.65:1}}
+              style={{...B("#2b2622"),opacity:generandoPdf?0.65:1}}
               disabled={generandoPdf}
               onClick={async()=>{
                 setGenerandoPdf(true);
@@ -594,7 +594,7 @@ export default function Informes({ctx}){
             >
               {generandoPdf ? "Generando…" : "Descargar PDF"}
             </button>
-            <button style={B("#f2f4f7","#475467")} onClick={()=>printCurrentPz("Informe " + (sel?.id || ""))}>Imprimir</button>
+            <button style={B("#f4eee4","#574e44")} onClick={()=>printCurrentPz("Informe " + (sel?.id || ""))}>Imprimir</button>
           </div>
           <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:T.cuerpo,lineHeight:1.55,border:"1px solid #ddd",padding:"28px 36px"}}>
             <PrintHeader dual={false}/>

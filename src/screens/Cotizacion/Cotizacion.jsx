@@ -290,7 +290,7 @@ export default function Cotizacion({ctx}){
       <button
         onClick={()=>guardarRef.current()}
         style={{
-          background:"#101828", color:"#fff", border:"none", borderRadius:9,
+          background:"#2b2622", color:"#fff", border:"none", borderRadius:9,
           padding:"9px 18px", fontSize:13, fontWeight:700, cursor:"pointer",
           fontFamily:"inherit", whiteSpace:"nowrap",
         }}
@@ -387,11 +387,11 @@ export default function Cotizacion({ctx}){
 
   if(tab==="lista"){
     if(previewCot){
-      return <div style={{padding:28}}><H1 title={`Cotización ${previewCot.numero || previewCot.id}`} subtitle="Vista completa del documento comercial" action={<div style={{display:"flex",gap:10}}><button style={B("#f2f4f7","#475467")} onClick={()=>setPreviewCot(null)}>Volver</button><button style={B("#f2f4f7","#475467")} onClick={()=>{setEditCot(previewCot.id);hydrate(previewCot);setTab("form");setPreviewCot(null);}}>Editar</button><button style={B("#f2f4f7","#475467")} onClick={()=>openCotizacionPrint(previewCot,{firmaImg})}>Imprimir PDF</button><button style={B("#101828")} onClick={()=>setEnviarCot(previewCot)}>Enviar al cliente</button></div>}/><DocumentoEnVivo cotizacion={previewCot} firmaImg={firmaImg} alto="calc(100vh - 190px)" nota="Igual al PDF" sticky={false}/>{enviarCot && <EnviarCotizacion cotizacion={enviarCot} firmaImg={firmaImg} onCerrar={()=>setEnviarCot(null)}/>}</div>;
+      return <div style={{padding:28}}><H1 title={`Cotización ${previewCot.numero || previewCot.id}`} subtitle="Vista completa del documento comercial" action={<div style={{display:"flex",gap:10}}><button style={B("#f4eee4","#574e44")} onClick={()=>setPreviewCot(null)}>Volver</button><button style={B("#f4eee4","#574e44")} onClick={()=>{setEditCot(previewCot.id);hydrate(previewCot);setTab("form");setPreviewCot(null);}}>Editar</button><button style={B("#f4eee4","#574e44")} onClick={()=>openCotizacionPrint(previewCot,{firmaImg})}>Imprimir PDF</button><button style={B("#2b2622")} onClick={()=>setEnviarCot(previewCot)}>Enviar al cliente</button></div>}/><DocumentoEnVivo cotizacion={previewCot} firmaImg={firmaImg} alto="calc(100vh - 190px)" nota="Igual al PDF" sticky={false}/>{enviarCot && <EnviarCotizacion cotizacion={enviarCot} firmaImg={firmaImg} onCerrar={()=>setEnviarCot(null)}/>}</div>;
     }
     return (
       <div style={{padding:28}}>
-        <H1 title="Cotizaciones" subtitle="Ubicación, medición y propuestas comerciales por cliente" action={<button style={B("#101828")} onClick={nuevaCotizacion}>+ Nueva Cotización</button>}/>
+        <H1 title="Cotizaciones" subtitle="Ubicación, medición y propuestas comerciales por cliente" action={<button style={B("#2b2622")} onClick={nuevaCotizacion}>+ Nueva Cotización</button>}/>
 
         {/* Al aprobar, se explica que se creo y cual es el siguiente paso:
             quien cotiza no tiene por que saber que ahora existe una obra. */}
@@ -429,7 +429,7 @@ export default function Cotizacion({ctx}){
                   </div>
                 )}
                 {obraCreada.correo==="fallo" && (
-                  <div style={{fontSize:12,color:"#cc0000",marginTop:8,lineHeight:1.5}}>
+                  <div style={{fontSize:12,color:"#2b2622",marginTop:8,lineHeight:1.5}}>
                     <strong>El correo al cliente no salió</strong> ({obraCreada.motivo}). La obra sí quedó
                     creada; avísale tú.
                   </div>
@@ -450,7 +450,7 @@ export default function Cotizacion({ctx}){
               </button>
               <button
                 onClick={()=>setObraCreada(null)}
-                style={{...B("#f2f4f7","#475467"),fontSize:12,padding:"9px 16px"}}
+                style={{...B("#f4eee4","#574e44"),fontSize:12,padding:"9px 16px"}}
               >
                 Seguir cotizando
               </button>
@@ -460,9 +460,9 @@ export default function Cotizacion({ctx}){
         <div style={{...CD,marginBottom:18,padding:"18px 22px"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:16,flexWrap:"wrap"}}>
             <div style={{minWidth:240}}>
-              <div style={{fontSize:13,letterSpacing:2,textTransform:"uppercase",color:"#cc0000",fontWeight:800}}>Historial de cotizaciones</div>
+              <div style={{fontSize:13,letterSpacing:2,textTransform:"uppercase",color:"#756a5e",fontWeight:800}}>Historial de cotizaciones</div>
               <div style={{width:210,height:1,background:"#dbe4f0",marginTop:14}}/>
-              <div style={{fontSize:12,color:"#667085",marginTop:12}}>{cotizacionesFiltradas.length} registro(s) visibles</div>
+              <div style={{fontSize:12,color:"#756a5e",marginTop:12}}>{cotizacionesFiltradas.length} registro(s) visibles</div>
             </div>
             <div style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
               <input
@@ -483,24 +483,24 @@ export default function Cotizacion({ctx}){
           </div>
         </div>
         <div style={{...CD,padding:0,overflow:"hidden"}}>
-          <div style={{padding:"18px 18px 10px 18px",borderBottom:"1px solid #eaecf0",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+          <div style={{padding:"18px 18px 10px 18px",borderBottom:"1px solid #e8dfd2",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
             <div>
-              <div style={{fontSize:12,letterSpacing:1.2,textTransform:"uppercase",color:"#cc0000",fontWeight:800}}>Listado de cotizaciones</div>
-              <div style={{fontSize:12,color:"#667085",marginTop:4}}>Vista ejecutiva compacta por cliente, obra y propuesta activa</div>
+              <div style={{fontSize:12,letterSpacing:1.2,textTransform:"uppercase",color:"#756a5e",fontWeight:800}}>Listado de cotizaciones</div>
+              <div style={{fontSize:12,color:"#756a5e",marginTop:4}}>Vista ejecutiva compacta por cliente, obra y propuesta activa</div>
             </div>
-            <div style={{fontSize:12,color:"#667085"}}>{cotizacionesFiltradas.length} registro(s)</div>
+            <div style={{fontSize:12,color:"#756a5e"}}>{cotizacionesFiltradas.length} registro(s)</div>
           </div>
           <div style={{overflowX:"auto"}}>
             <table style={{width:"100%",borderCollapse:"separate",borderSpacing:0,minWidth:760}}>
               <thead>
-                <tr style={{background:"#fafafa"}}>
+                <tr style={{background:"#fbf8f3"}}>
                   {[
                     "Número",
                     "Cliente",
                     "Estado",
                     "Acciones",
                   ].map((label)=>(
-                    <th key={label} style={{textAlign:"left",padding:"10px 12px",fontSize:10,color:"#667085",fontWeight:800,borderBottom:"1px solid #eaecf0",whiteSpace:"nowrap",letterSpacing:0.3}}>{label}</th>
+                    <th key={label} style={{textAlign:"left",padding:"10px 12px",fontSize:10,color:"#756a5e",fontWeight:800,borderBottom:"1px solid #e8dfd2",whiteSpace:"nowrap",letterSpacing:0.3}}>{label}</th>
                   ))}
                 </tr>
               </thead>
@@ -508,23 +508,23 @@ export default function Cotizacion({ctx}){
                 {cotizacionesFiltradas.map((cotizacion)=>{
                   return (
                     <tr key={cotizacion.id} style={{background:"#fff"}}>
-                      <td style={{padding:"11px 12px",borderBottom:"1px solid #eaecf0",verticalAlign:"top"}}>
-                        <div style={{fontWeight:800,color:"#475467",fontSize:11}}>{cotizacion.numero || cotizacion.id}</div>
-                        <div style={{fontSize:10,color:"#98a2b3",marginTop:3}}>{cotizacion.id}</div>
+                      <td style={{padding:"11px 12px",borderBottom:"1px solid #e8dfd2",verticalAlign:"top"}}>
+                        <div style={{fontWeight:800,color:"#574e44",fontSize:11}}>{cotizacion.numero || cotizacion.id}</div>
+                        <div style={{fontSize:10,color:"#a2988a",marginTop:3}}>{cotizacion.id}</div>
                       </td>
-                      <td style={{padding:"11px 12px",borderBottom:"1px solid #eaecf0",verticalAlign:"top"}}>
-                        <div style={{fontWeight:700,color:"#101828",fontSize:11}}>{normalizarRazonSocial(cotizacion.cliente)}</div>
-                        {cotizacion.ciudad ? <div style={{fontSize:10,color:"#667085",marginTop:3}}>{normalizarMayusculas(cotizacion.ciudad)}</div> : null}
+                      <td style={{padding:"11px 12px",borderBottom:"1px solid #e8dfd2",verticalAlign:"top"}}>
+                        <div style={{fontWeight:700,color:"#2b2622",fontSize:11}}>{normalizarRazonSocial(cotizacion.cliente)}</div>
+                        {cotizacion.ciudad ? <div style={{fontSize:10,color:"#756a5e",marginTop:3}}>{normalizarMayusculas(cotizacion.ciudad)}</div> : null}
                       </td>
-                      <td style={{padding:"11px 12px",borderBottom:"1px solid #eaecf0",verticalAlign:"top"}}>
+                      <td style={{padding:"11px 12px",borderBottom:"1px solid #e8dfd2",verticalAlign:"top"}}>
                         <Badge estado={cotizacion.estado}/>
                       </td>
-                      <td style={{padding:"11px 12px",borderBottom:"1px solid #eaecf0",verticalAlign:"top",minWidth:260}}>
+                      <td style={{padding:"11px 12px",borderBottom:"1px solid #e8dfd2",verticalAlign:"top",minWidth:260}}>
                         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                          <button style={{...B("#f2f4f7","#475467"),fontSize:10,padding:"5px 10px"}} onClick={()=>setPreviewCot(cotizacion)}>Ver</button>
-                          <button style={{...B("#eaecf0","#b54708"),fontSize:10,padding:"5px 10px"}} onClick={()=>{setEditCot(cotizacion.id);hydrate(cotizacion);setTab("form");}}>Editar</button>
-                          {cotizacion.estado!=="Aprobada" && <button style={{...B("#ffffff","#101828"),border:"1px solid #027a48",fontSize:10,padding:"5px 10px"}} onClick={()=>aprobarCotizacion(cotizacion.id)}>Aprobar y crear obra</button>}
-                          <button style={{...B("#2d1414","#cc0000"),fontSize:10,padding:"5px 10px"}} onClick={()=>openCotizacionPrint(cotizacion,{firmaImg})}>PDF</button><button style={{...B("#101828"),fontSize:10,padding:"5px 10px"}} onClick={()=>setEnviarCot(cotizacion)}>Enviar al cliente</button>
+                          <button style={{...B("#f4eee4","#574e44"),fontSize:10,padding:"5px 10px"}} onClick={()=>setPreviewCot(cotizacion)}>Ver</button>
+                          <button style={{...B("#e8dfd2","#b54708"),fontSize:10,padding:"5px 10px"}} onClick={()=>{setEditCot(cotizacion.id);hydrate(cotizacion);setTab("form");}}>Editar</button>
+                          {cotizacion.estado!=="Aprobada" && <button style={{...B("#ffffff","#2b2622"),border:"1px solid #027a48",fontSize:10,padding:"5px 10px"}} onClick={()=>aprobarCotizacion(cotizacion.id)}>Aprobar y crear obra</button>}
+                          <button style={{...B("#2d1414","#cc0000"),fontSize:10,padding:"5px 10px"}} onClick={()=>openCotizacionPrint(cotizacion,{firmaImg})}>PDF</button><button style={{...B("#2b2622"),fontSize:10,padding:"5px 10px"}} onClick={()=>setEnviarCot(cotizacion)}>Enviar al cliente</button>
                           <button
                             style={{...B("#fff","#cc0000"),border:"1.5px solid #cc0000",fontSize:10,padding:"5px 10px"}}
                             onClick={()=>{
@@ -539,7 +539,7 @@ export default function Cotizacion({ctx}){
                 })}
                 {!cotizacionesFiltradas.length && (
                   <tr>
-                    <td colSpan={9} style={{padding:"28px 16px",textAlign:"center",color:"#667085"}}>No hay cotizaciones para mostrar con este filtro.</td>
+                    <td colSpan={9} style={{padding:"28px 16px",textAlign:"center",color:"#756a5e"}}>No hay cotizaciones para mostrar con este filtro.</td>
                   </tr>
                 )}
               </tbody>
@@ -566,19 +566,19 @@ export default function Cotizacion({ctx}){
             {/* El dictado va con el resto de acciones: en su propia fila se
                 comia un renglon entero antes de empezar el formulario. */}
             {!dictando && (
-              <button style={{...B("#f2f4f7","#475467")}} onClick={()=>setDictando(true)}>
+              <button style={{...B("#f4eee4","#574e44")}} onClick={()=>setDictando(true)}>
                 🎤 Armar hablando
               </button>
             )}
-            <button style={B("#f2f4f7","#475467")} onClick={()=>setTab("lista")}>Volver a lista</button>
+            <button style={B("#f4eee4","#574e44")} onClick={()=>setTab("lista")}>Volver a lista</button>
             <button
-              style={verDocumento ? B("#101828") : B("#f2f4f7","#475467")}
+              style={verDocumento ? B("#2b2622") : B("#f4eee4","#574e44")}
               onClick={()=>setVerDocumento(v=>!v)}
               title="Muestra el documento completo tal como se imprimirá, mientras editas"
             >
               {verDocumento ? "Ocultar documento" : "Ver documento"}
             </button>
-            <button style={{...B("#f2f4f7","#475467"),justifyContent:"center"}} onClick={()=>{const saved=guardarCotizacion();if(saved){setPreviewCot(saved);setTab("lista");}}}>Guardar y ver</button>
+            <button style={{...B("#f4eee4","#574e44"),justifyContent:"center"}} onClick={()=>{const saved=guardarCotizacion();if(saved){setPreviewCot(saved);setTab("lista");}}}>Guardar y ver</button>
           </div>
         }
       />
@@ -663,7 +663,7 @@ export default function Cotizacion({ctx}){
             onChange={e=>setTexto("saludo",e.target.value)}
             style={{...SI,minHeight:60,resize:"vertical",lineHeight:1.6}}
           />
-          <div style={{fontSize:10,color:"#98a2b3",marginTop:4}}>Se imprime después de &quot;Cordial saludo, [cliente]&quot;. Si la obra tiene nombre, se agrega al final. No hace falta el punto final.</div>
+          <div style={{fontSize:10,color:"#a2988a",marginTop:4}}>Se imprime después de &quot;Cordial saludo, [cliente]&quot;. Si la obra tiene nombre, se agrega al final. No hace falta el punto final.</div>
         </div>
         <div style={{marginBottom:14}}>
           <LBL>Presentación de la empresa</LBL>
@@ -672,7 +672,7 @@ export default function Cotizacion({ctx}){
             onChange={e=>setTexto("presentacion",e.target.value)}
             style={{...SI,minHeight:150,resize:"vertical",lineHeight:1.6}}
           />
-          <div style={{fontSize:10,color:"#98a2b3",marginTop:4}}>Quiénes somos y qué garantiza la propuesta. Separa los párrafos con una línea en blanco.</div>
+          <div style={{fontSize:10,color:"#a2988a",marginTop:4}}>Quiénes somos y qué garantiza la propuesta. Separa los párrafos con una línea en blanco.</div>
         </div>
         {/* Se quitaron de la pantalla el «párrafo adicional para este cliente»
             y el «marco técnico»: nadie los llenaba y alargaban el formulario.
@@ -685,15 +685,15 @@ export default function Cotizacion({ctx}){
 
       {/* 03 · Propuestas: todas abiertas, una debajo de otra, en el orden
           en que se imprimen. */}
-      <div style={{...CD,marginBottom:14,border:"2px solid #101828"}}>
+      <div style={{...CD,marginBottom:14,border:"2px solid #2b2622"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
           <div style={{...ST,marginBottom:0,borderBottom:"none",paddingBottom:0}}>03 · Propuestas</div>
           <div style={{display:"flex",gap:8}}>
-            <button onClick={agregarPropuesta} style={{...B("#101828"),fontSize:11,padding:"6px 14px"}}>+ Nueva</button>
-            <button onClick={duplicarPropuesta} style={{...B("#f2f4f7","#475467"),fontSize:11,padding:"6px 14px"}}>Duplicar</button>
+            <button onClick={agregarPropuesta} style={{...B("#2b2622"),fontSize:11,padding:"6px 14px"}}>+ Nueva</button>
+            <button onClick={duplicarPropuesta} style={{...B("#f4eee4","#574e44"),fontSize:11,padding:"6px 14px"}}>Duplicar</button>
           </div>
         </div>
-        <div style={{fontSize:11,color:"#667085",marginTop:8}}>
+        <div style={{fontSize:11,color:"#756a5e",marginTop:8}}>
           Se imprimen en este mismo orden. Cada una lleva sus propios ítems, fotos, medición y condiciones.
         </div>
       </div>
@@ -737,7 +737,7 @@ export default function Cotizacion({ctx}){
             onChange={e=>setTexto("proximosPasos",e.target.value)}
             style={{...SI,minHeight:90,resize:"vertical",lineHeight:1.6}}
           />
-          <div style={{fontSize:10,color:"#98a2b3",marginTop:4}}>Se imprimen numerados en el orden que los escribas.</div>
+          <div style={{fontSize:10,color:"#a2988a",marginTop:4}}>Se imprimen numerados en el orden que los escribas.</div>
         </div>
 
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
@@ -759,12 +759,12 @@ export default function Cotizacion({ctx}){
           />
         </div>
 
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,marginTop:16,paddingTop:12,borderTop:"1px solid #f2f4f7"}}>
-          <div style={{fontSize:10.5,color:"#98a2b3"}}>¿Cambiaste algún texto por error? Puedes volver al estándar de la empresa.</div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,marginTop:16,paddingTop:12,borderTop:"1px solid #f4eee4"}}>
+          <div style={{fontSize:10.5,color:"#a2988a"}}>¿Cambiaste algún texto por error? Puedes volver al estándar de la empresa.</div>
           <button
             type="button"
             onClick={()=>setTextosDocumento(TEXTOS_DOCUMENTO_DEFAULT)}
-            style={{...B("#f2f4f7","#475467"),fontSize:11,padding:"7px 14px"}}
+            style={{...B("#f4eee4","#574e44"),fontSize:11,padding:"7px 14px"}}
           >
             Restaurar textos estándar
           </button>
@@ -776,7 +776,7 @@ export default function Cotizacion({ctx}){
           <button
             type="button"
             onClick={guardarCotizacionYSubir}
-            style={{...B("#101828"),fontSize:11,padding:"7px 16px"}}
+            style={{...B("#2b2622"),fontSize:11,padding:"7px 16px"}}
           >
             Guardar
           </button>

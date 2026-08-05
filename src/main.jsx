@@ -20,16 +20,16 @@ class AppErrorBoundary extends Component {
   render() {
     if (this.state.error) {
       return (
-        <div style={{ minHeight: "100vh", background: "#fafafa", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "'Segoe UI', sans-serif" }}>
+        <div style={{ minHeight: "100vh", background: "#fbf8f3", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "'Segoe UI', sans-serif" }}>
           <div style={{ maxWidth: 720, width: "100%", background: "#fff", border: "1px solid #fecaca", borderRadius: 18, padding: 24, boxShadow: "0 16px 40px rgba(15,23,42,0.08)" }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: "#cc0000", textTransform: "uppercase", letterSpacing: 1 }}>
               Error De Arranque
             </div>
-            <h1 style={{ margin: "10px 0 8px", fontSize: 28, color: "#101828" }}>La aplicación encontró un error al renderizar</h1>
-            <p style={{ margin: 0, color: "#475467", lineHeight: 1.6 }}>
+            <h1 style={{ margin: "10px 0 8px", fontSize: 28, color: "#2b2622" }}>La aplicación encontró un error al renderizar</h1>
+            <p style={{ margin: 0, color: "#574e44", lineHeight: 1.6 }}>
               Ya no debería quedarse en blanco. Si vuelve a pasar, copia este mensaje y seguimos desde ahí.
             </p>
-            <pre style={{ marginTop: 16, background: "#f2f4f7", border: "1px solid #fed7aa", color: "#475467", borderRadius: 12, padding: 16, fontSize: 12, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+            <pre style={{ marginTop: 16, background: "#f4eee4", border: "1px solid #fed7aa", color: "#574e44", borderRadius: 12, padding: 16, fontSize: 12, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
               {this.state.error?.message || String(this.state.error)}
             </pre>
           </div>

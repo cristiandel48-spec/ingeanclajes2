@@ -141,7 +141,7 @@ export default function Certificaciones({ctx}){
   // Cambia algo del encabezado -tipo, sistema, cantidad, cliente, dirección o
   // fecha- y el párrafo se rehace. Solo mientras nadie lo haya editado a mano:
   // en cuanto se toca, manda lo escrito y esto deja de pisarlo.
-  const aplicarCambio=(patch)=>{
+  const aplicarCambio=(patch, refInforme=informeRef)=>{
     setForm((prev)=>{
       const siguiente={...prev,...patch};
       if(siguiente.sistemaAuto!==false){
@@ -154,8 +154,11 @@ export default function Certificaciones({ctx}){
           direccion:siguiente.direccion,
           fechaLarga:fmtL(siguiente.fecha),
           normativa:siguiente.normativa,
-          lugar:siguiente.lugar || proyectoDeObra(siguiente.obraId),
-          detalle:queSeCertifica(siguiente.obraId),
+          lugar:siguiente.lugar
+            || proyectoDesdeInformes(informes, siguiente.obraId, refInforme)
+            || String((obras||[]).find((o)=>o.id===siguiente.obraId)?.proyecto || "").trim(),
+          detalle:observacionesDesdeInformes(informes, siguiente.obraId, refInforme)
+            || actividadesDesdeInformes(informes, siguiente.obraId, refInforme),
         });
         if(texto) siguiente.sistema=texto;
       }
@@ -300,7 +303,7 @@ export default function Certificaciones({ctx}){
             </AvisoFlujo>
           )}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:12}}>
-            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const id=e.target.value;setInformeRef("");const o=obras.find(x=>x.id===id);const f=fechaDeLaObra(id);aplicarCambio({obraId:id,cliente:o?.cliente||"",direccion:o?.direccion||o?.ciudad||"",nit:buscarNit(o),...(f?{fecha:f}:{})});}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
+            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const id=e.target.value;setInformeRef("");const o=obras.find(x=>x.id===id);const f=fechaDeLaObra(id);aplicarCambio({obraId:id,cliente:o?.cliente||"",direccion:o?.direccion||o?.ciudad||"",nit:buscarNit(o),...(f?{fecha:f}:{})}, "");}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
             {/* Una obra con varias sedes lleva un informe por sede, y de cada
                 uno sale su propia certificacion. Aqui se elige cual. */}
             {informesDeObra(form.obraId).length > 1 && (
@@ -318,7 +321,7 @@ export default function Certificaciones({ctx}){
                     aplicarCambio({
                       ...(inf.localizacion ? {direccion:inf.localizacion} : {}),
                       ...(inf.periodoFin || inf.fechaInforme ? {fecha:inf.periodoFin || inf.fechaInforme} : {}),
-                    });
+                    }, id);
                   }}
                   style={SI}
                 >

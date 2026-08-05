@@ -1,4 +1,8 @@
-// Utilidades de mapas y mediciones (Leaflet + Google Maps)
+// Utilidades de mapas y mediciones.
+//
+// Ya no hay nada de Google aqui. La medicion y la imagen del documento se hacen
+// con mosaicos publicos (ver lib/mapaEstatico.js y components/maps/MedidorMapa):
+// no hacen falta ni cuenta, ni clave, ni tarjeta.
 
 export const LEAFLET_CSS_ID = "leaflet-cdn-css";
 export const LEAFLET_JS_ID = "leaflet-cdn-js";
@@ -47,11 +51,6 @@ export function loadLeafletAssets(){
   });
   return leafletLoaderPromise;
 }
-
-// Clave de Google Maps. Configúrala como VITE_GOOGLE_MAPS_KEY en .env (local) y en Vercel (producción).
-// El valor por defecto es TEMPORAL para no romper producción mientras se define la variable;
-// restringe la clave por referrer HTTP en Google Cloud Console y rótala (estuvo expuesta en el historial de git).
-export const GOOGLE_MAPS_EMBED_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || "AIzaSyDz60_QWwUzp_uK1czmH5ajxUbfTQB6C6A";
 
 export function getStaticMapCenter(segments=[], query="", mapView=null){
   if(mapView?.center && Number.isFinite(mapView.center.lat) && Number.isFinite(mapView.center.lng)){
@@ -131,31 +130,6 @@ export function getStaticMapLabelData(segments=[], query="", mapView=null, optio
   }));
 }
 
-export function buildGoogleStaticMapUrl(segments=[], query="", mapView=null, options={}){
-  if(!GOOGLE_MAPS_EMBED_KEY) return "";
-  const { width, height } = getStaticMapDimensions(mapView, options);
-  const center = getStaticMapCenter(segments, query, mapView);
-  if(!center) return "";
-  const zoom = Number.isFinite(mapView?.zoom) ? Number(mapView.zoom) : (Array.isArray(segments) && segments.length ? 20 : 19);
-  const base = "https://maps.googleapis.com/maps/api/staticmap";
-  const params = new URLSearchParams();
-  params.set("size", `${width}x${height}`);
-  params.set("scale", "2");
-  params.set("maptype", "satellite");
-  params.set("format", "png");
-  params.set("key", GOOGLE_MAPS_EMBED_KEY);
-  params.set("center", `${center.lat},${center.lng}`);
-  params.set("zoom", String(zoom));
-  if(!Array.isArray(segments) || !segments.length) return `${base}?${params.toString()}`;
-  (segments||[]).forEach((seg)=>{
-    if(!seg?.start || !seg?.end) return;
-    const color = seg.tipo === "CON" ? "0xEAB308FF" : seg.tipo === "LVV" ? "0x22C55EFF" : seg.tipo === "ESC" ? "0xF97316FF" : "0x3B82F6FF";
-    const weight = seg.tipo === "CON" ? 4 : 5;
-    params.append("path", `color:${color}|weight:${weight}|${Number(seg.start.lat)},${Number(seg.start.lng)}|${Number(seg.end.lat)},${Number(seg.end.lng)}`);
-  });
-  return `${base}?${params.toString()}`;
-}
-
 export function measurementTypeLabel(tipo){
   return tipo === "LVV" ? "Línea de vida vertical" : tipo === "CON" ? "Conexión" : tipo === "ESC" ? "Escalera" : tipo === "PAN" ? "Punto de anclaje" : "Línea horizontal";
 }
@@ -170,56 +144,6 @@ export function buildMeasurementNarrative(list=[]){
   return list.map((seg,idx)=>`${seg.label || `LINEA ${idx+1}`} de ${Number(seg.ml||0).toFixed(2)} ${measurementUnitFromType(seg.tipo)}`).join(', ');
 }
 
-let googleMapsJsPromise = null;
-export function loadGoogleMapsJsApi(){
-  if(typeof window === "undefined") return Promise.reject(new Error("Google Maps solo está disponible en el navegador."));
-  if(window.google?.maps) return Promise.resolve(window.google.maps);
-  if(googleMapsJsPromise) return googleMapsJsPromise;
-  // Google no rechaza el script cuando la clave falla: lo carga igual, pinta el
-  // mapa con la marca de agua "For development purposes only" y avisa por un
-  // camino aparte -esta funcion global y un console.error-. Sin engancharse ahi,
-  // la app cree que todo fue bien y la persona se queda mirando un mapa gris sin
-  // saber por que.
-  //
-  // El caso real: BillingNotEnabledMapError, o sea que el proyecto de Google
-  // Cloud no tiene la facturacion activada. No es un fallo del sistema y no se
-  // arregla desde aqui.
-  window.gm_authFailure = () => {
-    const aviso = document.getElementById("gmaps-aviso-clave");
-    if (aviso) return;
-    const caja = document.createElement("div");
-    caja.id = "gmaps-aviso-clave";
-    caja.style.cssText = "position:fixed;left:50%;bottom:18px;transform:translateX(-50%);" +
-      "z-index:9999;max-width:520px;background:#fffaf0;border:1px solid #fde3c4;color:#b54708;" +
-      "border-radius:10px;padding:12px 16px;font-size:13px;line-height:1.5;" +
-      "box-shadow:0 8px 24px rgba(16,24,40,.14);font-family:inherit";
-    caja.textContent = "Google Maps rechazó la clave, así que la medición satelital no funciona. " +
-      "Suele ser que el proyecto de Google Cloud no tiene la facturación activada. " +
-      "Los mapas del PDF de la cotización también saldrán vacíos hasta que se resuelva.";
-    document.body.appendChild(caja);
-    setTimeout(() => caja.remove(), 15000);
-  };
-
-  googleMapsJsPromise = new Promise((resolve,reject)=>{
-    const existing = document.getElementById("gmaps-js-api");
-    const finish = ()=> window.google?.maps ? resolve(window.google.maps) : reject(new Error("Google Maps no cargó correctamente."));
-    if(existing){
-      existing.addEventListener("load", finish, {once:true});
-      existing.addEventListener("error", ()=>reject(new Error("No fue posible cargar Google Maps.")), {once:true});
-      return;
-    }
-    const script = document.createElement("script");
-    script.id = "gmaps-js-api";
-    script.async = true;
-    script.defer = true;
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_MAPS_EMBED_KEY)}&libraries=geometry&v=weekly`;
-    script.onload = finish;
-    script.onerror = ()=>reject(new Error("No fue posible cargar Google Maps."));
-    document.body.appendChild(script);
-  });
-  return googleMapsJsPromise;
-}
-
 export function measurementsToQuoteItems(list=[]){
   return (list||[]).map((seg,idx)=>({
     id: Date.now() + idx,
@@ -229,55 +153,3 @@ export function measurementsToQuoteItems(list=[]){
     vu: seg.tipo === "LVV" ? 320000 : seg.tipo === "ESC" ? 1200000 : seg.tipo === "CON" ? 280000 : 280000,
   }));
 }
-
-export function createMapLabelOverlay(gm, map, startPos, endPos, labelText, color){
-  class SegmentLabelOverlay extends gm.OverlayView {
-    constructor(){
-      super();
-      this.div = null;
-    }
-    onAdd(){
-      const div = document.createElement("div");
-      div.style.position = "absolute";
-      div.style.transform = "translate(-50%, -50%)";
-      div.style.pointerEvents = "none";
-      div.style.fontFamily = "Aptos, Segoe UI, Arial, sans-serif";
-      div.style.fontSize = "14px";
-      div.style.fontWeight = "700";
-      div.style.lineHeight = "1.15";
-      div.style.textAlign = "center";
-      div.style.color = color;
-      div.style.whiteSpace = "nowrap";
-      div.style.textShadow = "-2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff, 0 0 8px rgba(255,255,255,0.95)";
-      div.innerHTML = labelText;
-      this.div = div;
-      this.getPanes().overlayMouseTarget.appendChild(div);
-    }
-    draw(){
-      if(!this.div) return;
-      const projection = this.getProjection();
-      if(!projection) return;
-      const s = projection.fromLatLngToDivPixel(startPos);
-      const e = projection.fromLatLngToDivPixel(endPos);
-      if(!s || !e) return;
-      const dx = e.x - s.x;
-      const dy = e.y - s.y;
-      const len = Math.max(Math.hypot(dx, dy), 1);
-      const normalX = -dy / len;
-      const normalY = dx / len;
-      const offset = 22;
-      const x = ((s.x + e.x) / 2) + (normalX * offset);
-      const y = ((s.y + e.y) / 2) + (normalY * offset);
-      this.div.style.left = `${x}px`;
-      this.div.style.top = `${y}px`;
-    }
-    onRemove(){
-      if(this.div?.parentNode) this.div.parentNode.removeChild(this.div);
-      this.div = null;
-    }
-  }
-  const overlay = new SegmentLabelOverlay();
-  overlay.setMap(map);
-  return overlay;
-}
-

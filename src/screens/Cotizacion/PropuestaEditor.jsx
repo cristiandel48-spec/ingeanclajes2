@@ -1,12 +1,13 @@
 import { useRef, useState } from "react";
 import BotonDictado from "../../components/ui/BotonDictado";
-import GoogleMeasureWorkspace from "../../components/maps/GoogleMeasureWorkspace";
+import MedidorMapa from "../../components/maps/MedidorMapa";
+import { imagenDelMapa } from "../../lib/mapaEstatico";
 import LBL from "../../components/ui/LBL";
 import { leerImagenComprimida } from "../../lib/imagenes";
 import { normalizarFrase } from "../../lib/normalizarEntrada";
 import { B, SI } from "../../styles/tokens";
 import { DEFAULT_COT_INCLUYE, ITEMS_DB } from "../../data/seed";
-import { buildGoogleStaticMapUrl, measurementsToQuoteItems } from "../../lib/maps";
+import { measurementsToQuoteItems } from "../../lib/maps";
 import { fmt } from "../../lib/format";
 
 // Editor de UNA propuesta. Todas las propuestas se muestran abiertas, una
@@ -48,11 +49,27 @@ export default function PropuestaEditor({
     (Array.isArray(lista) ? lista : []).reduce((max, item) => Math.max(max, Number(item?.id) || 0), 0) + 1;
 
   const medicionActiva = Boolean(p.medicionAutomatica);
-  const autoMapImg = buildGoogleStaticMapUrl(
-    p.geoMediciones,
-    cl.coords || `${cl.obra || ""} ${cl.ciudad || ""}`.trim(),
-    p.geoMapView
-  );
+  // La imagen del mapa ya no se pide a Google: se compone al medir y se guarda
+  // con la propuesta. Aqui solo se lee lo guardado.
+  const autoMapImg = p.mapImg || "";
+
+  // Rehace la imagen del mapa cada vez que cambian los tramos o el encuadre.
+  // Va junto con el dato en un mismo cambio para que no se pisen entre ellos.
+  const guardarConMapa = async (patch, mediciones, vista)=>{
+    onChange(patch);
+    try{
+      const img = await imagenDelMapa(
+        mediciones,
+        vista,
+        cl.coords || `${cl.obra || ""} ${cl.ciudad || ""}`.trim(),
+      );
+      if(img) onChange({mapImg:img});
+    }catch(e){
+      // Sin imagen se sigue trabajando: los metros medidos, que es lo que se
+      // cobra, ya quedaron guardados.
+      console.error("No se pudo componer la imagen del mapa:",e);
+    }
+  };
 
   const sub = items.reduce((s, item) => s + (Number(item.cant) || 0) * (Number(item.vu) || 0), 0);
   const ut = (sub * (Number(p.util) || 0)) / 100;
@@ -162,7 +179,7 @@ export default function PropuestaEditor({
               {autoMapImg && (
                 <button
                   type="button"
-                  onClick={()=>setFotos((prev)=>[...prev,{id:Date.now()+Math.random(),src:autoMapImg,label:"Mapa Google Maps"}])}
+                  onClick={()=>setFotos((prev)=>[...prev,{id:Date.now()+Math.random(),src:autoMapImg,label:"Mapa satelital"}])}
                   style={{...B("#fff7ed","#c2410c"),fontSize:11,padding:"5px 12px",border:"1px solid #fdba74"}}
                 >
                   Agregar mapa como foto
@@ -181,7 +198,14 @@ export default function PropuestaEditor({
             </div>
           ) : medicionActiva ? (
             <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:14}}>
-              <GoogleMeasureWorkspace queryValue={cl.coords||`${cl.obra||""} ${cl.ciudad||""}`.trim()} onQueryChange={(value)=>setCl({...cl,coords:value})} measurements={p.geoMediciones} onChange={(v)=>set("geoMediciones", v)} mapView={p.geoMapView} onMapViewChange={(v)=>set("geoMapView", v)}/>
+              <MedidorMapa
+                queryValue={cl.coords||`${cl.obra||""} ${cl.ciudad||""}`.trim()}
+                onQueryChange={(value)=>setCl({...cl,coords:value})}
+                measurements={p.geoMediciones}
+                onChange={(v)=>guardarConMapa({geoMediciones:v}, v, p.geoMapView)}
+                mapView={p.geoMapView}
+                onMapViewChange={(v)=>guardarConMapa({geoMapView:v}, p.geoMediciones, v)}
+              />
             </div>
           ) : (
             <div style={{background:"#f8fafc",border:"1px dashed #cbd5e1",borderRadius:12,padding:"18px 16px",fontSize:12,color:"#64748b",textAlign:"center"}}>

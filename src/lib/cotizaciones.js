@@ -1,6 +1,6 @@
 // Modelo de cotizaciones y propuestas
 import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_TIEMPO_EJEC, DEFAULT_COT_INCLUYE } from "../data/seed";
-import { measurementsToQuoteItems, buildGoogleStaticMapUrl, buildMeasurementNarrative } from "./maps";
+import { measurementsToQuoteItems, buildMeasurementNarrative } from "./maps";
 
 export function hasAnchorPointsService(propuesta = {}) {
   const ownText = [
@@ -286,10 +286,10 @@ export function getQuotePrintableProposals(baseQuote = {}){
     const iva = ut * 0.19;
     const tot = sub + ut + iva;
     const measurements = Array.isArray(quote.geoMediciones) ? quote.geoMediciones : [];
-    const mapQuery = baseQuote.coords || `${baseQuote.obra||""} ${baseQuote.ciudad||""}`.trim();
-    const mapImg = String(quote.mapImg || "").startsWith("data:")
-      ? quote.mapImg
-      : (buildGoogleStaticMapUrl(measurements, mapQuery, quote.geoMapView || baseQuote.geoMapView) || quote.mapImg || "");
+    // La imagen del mapa se compone al medir y se guarda con la propuesta. Antes
+    // se armaba aqui una URL a la API de Google, que dejo de responder cuando se
+    // cerro la facturacion y vacio el recuadro del mapa en todos los documentos.
+    const mapImg = String(quote.mapImg || baseQuote.mapImg || "");
 
     return {
       ...propuesta,

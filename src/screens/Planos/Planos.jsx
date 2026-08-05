@@ -1,15 +1,16 @@
 import Badge from "../../components/ui/Badge";
-import GoogleMeasureWorkspace from "../../components/maps/GoogleMeasureWorkspace";
+import MedidorMapa from "../../components/maps/MedidorMapa";
+import { imagenDelMapa } from "../../lib/mapaEstatico";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
 import StaticMapPreview from "../../components/maps/StaticMapPreview";
 import { useEffect, useRef, useState } from "react";
 import { B, CD, SI, ST, TC } from "../../styles/tokens";
-import { buildGoogleStaticMapUrl, measurementsToQuoteItems } from "../../lib/maps";
+import { measurementsToQuoteItems } from "../../lib/maps";
 import { fmt } from "../../lib/format";
 import { leerImagenComprimida } from "../../lib/imagenes";
 export default function Planos({ctx}){
-  const {obras,setObras,empleados,cotizaciones,setCotDraft,setScr}=ctx;
+  const {obras,setObras,cotizaciones,setCotDraft,setScr}=ctx;
   const [sel,setSel]=useState(null);
   const [imgPlano,setImgPlano]=useState(null);
   const [trazosForm,setTrazosForm]=useState({tipo:"LVH",ml:0,label:""});
@@ -50,7 +51,14 @@ export default function Planos({ctx}){
   };
 
   const persistLineas=(nuevas)=>{ setLineas(nuevas); guardarEnObra({trazos:nuevas}); };
-  const persistGeo=(nuevas)=>{ setGeoMediciones(nuevas); guardarEnObra({geoMediciones:nuevas, imgSat: buildGoogleStaticMapUrl(nuevas, coordsInput || sel?.coords || cotVinc?.coords || "", geoMapView), geoMapView}); };
+  const persistGeo=async(nuevas)=>{
+    setGeoMediciones(nuevas);
+    guardarEnObra({geoMediciones:nuevas, geoMapView});
+    try{
+      const img = await imagenDelMapa(nuevas, geoMapView, coordsInput || sel?.coords || cotVinc?.coords || "");
+      if(img) guardarEnObra({imgSat:img});
+    }catch(e){ console.error("No se pudo componer la imagen del mapa:",e); }
+  };
 
   const agregarLinea=()=>{
     if(!trazosForm.ml||!trazosForm.label)return;
@@ -102,7 +110,7 @@ export default function Planos({ctx}){
       telefono: sel?.tel||"",
       ciudad: sel?.ciudad||"",
       coords: coordsInput || sel?.coords || cotVinc?.coords || "",
-      mapImg: buildGoogleStaticMapUrl(geoMediciones, coordsInput || sel?.coords || cotVinc?.coords || "", geoMapView) || cotVinc?.mapImg || null,
+      mapImg: sel?.imgSat || cotVinc?.mapImg || null,
       items: [...geoItems, ...manualItems],
       geoMediciones,
       geoMapView,
@@ -168,10 +176,10 @@ export default function Planos({ctx}){
 
       {tabPlano==="imagen" && (
         <div>
-          <GoogleMeasureWorkspace queryValue={coordsInput} onQueryChange={(val)=>{ setCoordsInput(val); guardarEnObra({coords:val}); }} measurements={geoMediciones} onChange={persistGeo} mapView={geoMapView} onMapViewChange={(view)=>{ setGeoMapView(view); guardarEnObra({geoMapView:view}); }} />
+          <MedidorMapa queryValue={coordsInput} onQueryChange={(val)=>{ setCoordsInput(val); guardarEnObra({coords:val}); }} measurements={geoMediciones} onChange={persistGeo} mapView={geoMapView} onMapViewChange={(view)=>{ setGeoMapView(view); guardarEnObra({geoMapView:view}); }} />
           <div style={{...CD,marginTop:16}}>
             <div style={ST}>Imagen heredada para la obra / PDF</div>
-                  {buildGoogleStaticMapUrl(geoMediciones, coordsInput, geoMapView) ? <StaticMapPreview src={buildGoogleStaticMapUrl(geoMediciones, coordsInput, geoMapView)} segments={geoMediciones} query={coordsInput} mapView={geoMapView} alt="Imagen heredada" border="none" borderRadius={8} /> : <div style={{background:"#f8fafc",border:"1px dashed #cbd5e1",borderRadius:8,padding:24,textAlign:"center",fontSize:12,color:"#64748b"}}>Mide el primer tramo y aquí aparecerá la imagen que viene de la cotización.</div>}
+                  {(sel?.imgSat || cotVinc?.mapImg) ? <StaticMapPreview src={sel?.imgSat || cotVinc?.mapImg} segments={geoMediciones} query={coordsInput} mapView={geoMapView} alt="Imagen heredada" border="none" borderRadius={8} /> : <div style={{background:"#f8fafc",border:"1px dashed #cbd5e1",borderRadius:8,padding:24,textAlign:"center",fontSize:12,color:"#64748b"}}>Mide el primer tramo y aquí aparecerá la imagen que viene de la cotización.</div>}
           </div>
         </div>
       )}

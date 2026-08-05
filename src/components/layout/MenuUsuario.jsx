@@ -147,7 +147,7 @@ export default function MenuUsuario({ theme, compact = false }) {
             style={{
               width: "100%", minHeight: 44, display: "flex", alignItems: "center", gap: 10,
               padding: "0 14px", border: "none", cursor: saliendo ? "default" : "pointer",
-              background: "transparent", color: "#cc0000",
+              background: "transparent", color: "#B42318",
               fontSize: 13, fontWeight: 600, fontFamily: "inherit", textAlign: "left",
             }}
           >

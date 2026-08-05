@@ -61,9 +61,9 @@ export default function BotonDictado({ valor, onChange, titulo = "Dictar", compa
           fontSize: compacto ? 13 : 15,
           lineHeight: 1,
           transition: "background .12s ease",
-          background: escuchando ? "#cc0000" : "#f4eee4",
-          color: escuchando ? "#fff" : "#574e44",
-          border: "1px solid " + (escuchando ? "#cc0000" : "#e8dfd2"),
+          background: escuchando ? "#cc0000" : "#f1f5f9",
+          color: escuchando ? "#fff" : "#475569",
+          border: "1px solid " + (escuchando ? "#cc0000" : "#e2e8f0"),
         }}
       >
         {escuchando ? "■" : "🎤"}

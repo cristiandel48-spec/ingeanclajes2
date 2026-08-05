@@ -68,7 +68,7 @@ export default function Vencimientos({ctx}){
 
       {/* Confirmación */}
       {guardado&&(
-        <div style={{background:"#f4eee4",border:"1px solid #2b2622",borderRadius:10,padding:"12px 18px",marginBottom:20,fontSize:13,color:"#027a48",display:"flex",alignItems:"center",gap:10}}>
+        <div style={{background:"#e8f5ee",border:"1px solid #4ade80",borderRadius:10,padding:"12px 18px",marginBottom:20,fontSize:13,color:"#166534",display:"flex",alignItems:"center",gap:10}}>
           <span style={{fontSize:18}}>OK</span>
           <span>Recertificación <strong>{guardado}</strong> creada exitosamente. La certificación original fue marcada como <strong>Recertificado</strong>.</span>
         </div>
@@ -80,18 +80,18 @@ export default function Vencimientos({ctx}){
           <div style={{background:"#fff",borderRadius:16,padding:32,width:"100%",maxWidth:580,boxShadow:"0 20px 60px rgba(0,0,0,0.35)",maxHeight:"90vh",overflowY:"auto"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
               <div>
-                <div style={{fontSize:18,fontWeight:700,color:"#2b2622"}}>Generar Recertificación</div>
-                <div style={{fontSize:12,color:"#756a5e",marginTop:4}}>Basada en: {recertForm.numero} · {recertForm.cliente}</div>
+                <div style={{fontSize:18,fontWeight:700,color:"#1a1a2e"}}>Generar Recertificación</div>
+                <div style={{fontSize:12,color:"#64748b",marginTop:4}}>Basada en: {recertForm.numero} · {recertForm.cliente}</div>
               </div>
-              <button onClick={()=>setRecertForm(null)} style={{background:"#f4eee4",border:"none",borderRadius:8,padding:"6px 12px",cursor:"pointer",color:"#574e44",fontSize:13}}>Cerrar</button>
+              <button onClick={()=>setRecertForm(null)} style={{background:"#f1f5f9",border:"none",borderRadius:8,padding:"6px 12px",cursor:"pointer",color:"#475569",fontSize:13}}>Cerrar</button>
             </div>
 
             {/* Info del cert original */}
-            <div style={{background:"#fbf8f3",borderRadius:10,padding:12,marginBottom:20,border:"1px solid #e8dfd2",fontSize:12}}>
-              <div style={{color:"#756a5e",marginBottom:4}}>Certificado original</div>
-              <div style={{fontWeight:700,color:"#2b2622"}}>{recertForm.cliente} · {recertForm.numero}</div>
-              <div style={{color:"#574e44"}}>{recertForm.sistema}</div>
-              <div style={{color:"#2b2622",marginTop:4}}>Vencía: {fmtD(recertForm.proxMant)||"sin fecha"}</div>
+            <div style={{background:"#f8fafc",borderRadius:10,padding:12,marginBottom:20,border:"1px solid #e2e8f0",fontSize:12}}>
+              <div style={{color:"#64748b",marginBottom:4}}>Certificado original</div>
+              <div style={{fontWeight:700,color:"#1a1a2e"}}>{recertForm.cliente} · {recertForm.numero}</div>
+              <div style={{color:"#475569"}}>{recertForm.sistema}</div>
+              <div style={{color:"#ef4444",marginTop:4}}>Vencía: {fmtD(recertForm.proxMant)||"sin fecha"}</div>
             </div>
 
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
@@ -101,20 +101,20 @@ export default function Vencimientos({ctx}){
               <div><LBL>NIT</LBL><input value={recertData.nit||""} onChange={e=>setRecertData(p=>({...p,nit:e.target.value}))} style={SI}/></div>
               <div style={{gridColumn:"span 2"}}><LBL>Dirección de la obra</LBL><input value={recertData.direccion||""} onChange={e=>setRecertData(p=>({...p,direccion:e.target.value}))} style={SI}/></div>
               <div style={{gridColumn:"span 2"}}><LBL>Sistema recertificado</LBL><textarea value={recertData.sistema||""} onChange={e=>setRecertData(p=>({...p,sistema:e.target.value}))} rows={2} style={{...SI,resize:"vertical"}}/></div>
-              <div style={{gridColumn:"span 2",background:"#f4eee4",borderRadius:8,padding:12,border:"1px solid #e8dfd2"}}>
+              <div style={{gridColumn:"span 2",background:"#fff3e8",borderRadius:8,padding:12,border:"1px solid #f47c2044"}}>
                 <LBL>Próximo mantenimiento (obligatorio)</LBL>
-                <input type="date" value={recertData.proxMant||""} onChange={e=>setRecertData(p=>({...p,proxMant:e.target.value}))} style={{...SI,border:"1px solid #e8dfd2"}}/>
-                {recertData.proxMant&&<div style={{fontSize:11,color:"#2b2622",marginTop:6}}>Próximo mantenimiento: <strong>{fmtD(recertData.proxMant)}</strong></div>}
+                <input type="date" value={recertData.proxMant||""} onChange={e=>setRecertData(p=>({...p,proxMant:e.target.value}))} style={{...SI,border:"2px solid #cc0000"}}/>
+                {recertData.proxMant&&<div style={{fontSize:11,color:"#4ade80",marginTop:6}}>Próximo mantenimiento: <strong>{fmtD(recertData.proxMant)}</strong></div>}
               </div>
             </div>
 
-            {!recertData.proxMant&&<div style={{background:"#f9e9e4",borderRadius:6,padding:"8px 12px",fontSize:11,color:"#2b2622",marginBottom:12}}>Debes asignar la fecha del próximo mantenimiento para guardar.</div>}
+            {!recertData.proxMant&&<div style={{background:"#fee2e2",borderRadius:6,padding:"8px 12px",fontSize:11,color:"#cc0000",marginBottom:12}}>Debes asignar la fecha del próximo mantenimiento para guardar.</div>}
 
             <div style={{display:"flex",gap:10}}>
-              <button style={{...B("#2b2622"),flex:1,justifyContent:"center"}} onClick={guardarRecert}>
+              <button style={{...B("#cc0000"),flex:1,justifyContent:"center"}} onClick={guardarRecert}>
                 Crear Recertificación
               </button>
-              <button style={{...B("#f4eee4","#574e44"),flex:1,justifyContent:"center"}} onClick={()=>setRecertForm(null)}>
+              <button style={{...B("#f1f5f9","#475569"),flex:1,justifyContent:"center"}} onClick={()=>setRecertForm(null)}>
                 Cancelar
               </button>
             </div>
@@ -151,18 +151,18 @@ export default function Vencimientos({ctx}){
                     const ob=obras.find(o=>o.id===cActual.obraId);
                     return(
                       <div key={cActual.id}
-                        style={{background:"#fbf8f3",borderRadius:10,padding:"14px 16px",border:"1px solid " + (colorV(dActual)) + "44",cursor:dActual!==null&&dActual<0?"pointer":"default",transition:"box-shadow 0.15s"}}
+                        style={{background:"#f8fafc",borderRadius:10,padding:"14px 16px",border:"1px solid " + (colorV(dActual)) + "44",cursor:dActual!==null&&dActual<0?"pointer":"default",transition:"box-shadow 0.15s"}}
                         onClick={dActual!==null&&dActual<0?(()=>abrirRecert(cActual)):undefined}
                         onMouseEnter={dActual!==null&&dActual<0?(e=>e.currentTarget.style.boxShadow="0 0 0 3px #ef444433"):undefined}
                         onMouseLeave={dActual!==null&&dActual<0?(e=>e.currentTarget.style.boxShadow="none"):undefined}
                         title={dActual!==null&&dActual<0?"Clic para recertificar":undefined}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
                           <div>
-                            <div style={{fontSize:10,color:"#756a5e"}}>{cActual.id} · {cActual.numero}</div>
-                            <div style={{fontSize:14,fontWeight:700,color:"#2b2622",marginTop:2}}>{cActual.cliente}</div>
-                            <div style={{fontSize:11,color:"#574e44"}}>{cActual.tipo}</div>
+                            <div style={{fontSize:10,color:"#64748b"}}>{cActual.id} · {cActual.numero}</div>
+                            <div style={{fontSize:14,fontWeight:700,color:"#1a1a2e",marginTop:2}}>{cActual.cliente}</div>
+                            <div style={{fontSize:11,color:"#475569"}}>{cActual.tipo}</div>
                             {dActual!==null&&dActual<0&&(
-                              <div style={{background:"#ef444422",border:"1px solid #e8dfd2",borderRadius:6,padding:"3px 8px",marginTop:6,fontSize:10,color:"#2b2622",fontWeight:700,display:"inline-block"}}>
+                              <div style={{background:"#ef444422",border:"1px solid #ef4444",borderRadius:6,padding:"3px 8px",marginTop:6,fontSize:10,color:"#ef4444",fontWeight:700,display:"inline-block"}}>
                                 Clic para recertificar
                               </div>
                             )}
@@ -178,27 +178,27 @@ export default function Vencimientos({ctx}){
                         </div>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
                           <div style={{background:"#fff",borderRadius:6,padding:"7px 10px"}}>
-                            <div style={{fontSize:9,color:"#756a5e"}}>Certificado</div>
+                            <div style={{fontSize:9,color:"#64748b"}}>Certificado</div>
                             <div style={{fontSize:11,fontWeight:600}}>{fmtD(cActual.fecha)}</div>
                           </div>
                           <div style={{background:"#fff",borderRadius:6,padding:"7px 10px"}}>
-                            <div style={{fontSize:9,color:"#756a5e"}}>Próx. mantenimiento</div>
+                            <div style={{fontSize:9,color:"#64748b"}}>Próx. mantenimiento</div>
                             <div style={{fontSize:11,fontWeight:600,color:colorV(dActual)}}>{fmtD(cActual.proxMant)||"—"}</div>
                           </div>
                         </div>
-                        <div style={{fontSize:11,color:"#574e44",marginBottom:8,lineHeight:1.4}}>{cActual.sistema}</div>
-                        {ob&&<div style={{fontSize:10,color:"#756a5e",marginBottom:10}}>{ob.direccion||ob.ciudad}</div>}
+                        <div style={{fontSize:11,color:"#475569",marginBottom:8,lineHeight:1.4}}>{cActual.sistema}</div>
+                        {ob&&<div style={{fontSize:10,color:"#64748b",marginBottom:10}}>{ob.direccion||ob.ciudad}</div>}
                         <div style={{background:colorV(dActual)+"18",border:"1px solid " + (colorV(dActual)) + "44",borderRadius:8,padding:"6px 10px",textAlign:"center",marginBottom:10}}>
                           <div style={{fontSize:12,fontWeight:700,color:colorV(dActual)}}>{labelV(dActual)}</div>
                         </div>
                         <div style={{display:"flex",gap:6}}>
                           <button
-                            style={{...B(dActual!==null&&dActual<0?"#7c1010":"#cc0000"),fontSize:11,padding:"7px 10px",flex:1,justifyContent:"center",border:dActual!==null&&dActual<0?"2px solid #cc0000":"none"}}
+                            style={{...B(dActual!==null&&dActual<0?"#7c1010":"#cc0000"),fontSize:11,padding:"7px 10px",flex:1,justifyContent:"center",border:dActual!==null&&dActual<0?"2px solid #ef4444":"none"}}
                             onClick={(event)=>{event.stopPropagation();abrirRecert(cActual);}}>
                             {dActual!==null&&dActual<0 ? "Recertificar ahora" : "Generar recertificación"}
                           </button>
                           <button
-                            style={{...B("#f4eee4","#027a48"),border:"1px solid #2b2622",fontSize:11,padding:"7px 10px",flex:"0 0 auto",justifyContent:"center"}}
+                            style={{...B("#e8f5ee","#166534"),border:"1px solid #4ade80",fontSize:11,padding:"7px 10px",flex:"0 0 auto",justifyContent:"center"}}
                             onClick={(event)=>{event.stopPropagation();setImprimiendo(cActual);}}>
                             Ver PDF
                           </button>
@@ -213,19 +213,19 @@ export default function Vencimientos({ctx}){
 
           {/* ── SIN FECHA ── */}
           {lista.filter(c=>c.diasRestantes===null).length>0&&(
-            <div style={{...CD,borderLeft:"4px solid #756a5e"}}>
-              <div style={{...ST,color:"#756a5e"}}>Sin fecha de mantenimiento asignada</div>
+            <div style={{...CD,borderLeft:"4px solid #64748b"}}>
+              <div style={{...ST,color:"#64748b"}}>Sin fecha de mantenimiento asignada</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
                 {lista.filter(c=>c.diasRestantes===null).map(c=>(
-                  <div key={c.id} style={{background:"#fbf8f3",borderRadius:10,padding:"14px 16px",border:"1px solid #e8dfd2"}}>
-                    <div style={{fontSize:10,color:"#756a5e"}}>{c.id} · {c.numero}</div>
+                  <div key={c.id} style={{background:"#f8fafc",borderRadius:10,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
+                    <div style={{fontSize:10,color:"#64748b"}}>{c.id} · {c.numero}</div>
                     <div style={{fontSize:14,fontWeight:700}}>{c.cliente}</div>
-                    <div style={{fontSize:11,color:"#574e44",marginBottom:12}}>{c.tipo} · {fmtD(c.fecha)}</div>
+                    <div style={{fontSize:11,color:"#475569",marginBottom:12}}>{c.tipo} · {fmtD(c.fecha)}</div>
                     <div style={{display:"flex",gap:6}}>
-                      <button style={{...B("#2b2622"),fontSize:11,flex:1,justifyContent:"center"}} onClick={()=>abrirRecert(c)}>
+                      <button style={{...B("#cc0000"),fontSize:11,flex:1,justifyContent:"center"}} onClick={()=>abrirRecert(c)}>
                         Generar recertificación
                       </button>
-                      <button style={{...B("#f4eee4","#027a48"),border:"1px solid #2b2622",fontSize:11,flex:"0 0 auto",justifyContent:"center"}} onClick={()=>setImprimiendo(c)}>
+                      <button style={{...B("#e8f5ee","#166534"),border:"1px solid #4ade80",fontSize:11,flex:"0 0 auto",justifyContent:"center"}} onClick={()=>setImprimiendo(c)}>
                         Ver PDF
                       </button>
                     </div>

@@ -40,9 +40,9 @@ export default function FirmaEmpresa() {
           style={{
             width: 190,
             height: 84,
-            border: "1px dashed #d9cdbb",
+            border: "1px dashed #cbd5e1",
             borderRadius: 8,
-            background: "#fbf8f3",
+            background: "#f8fafc",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -53,7 +53,7 @@ export default function FirmaEmpresa() {
           {firma ? (
             <img src={firma} alt="Firma de la empresa" style={{ maxWidth: "100%", maxHeight: "100%" }} />
           ) : (
-            <span style={{ fontSize: 10.5, color: "#a2988a" }}>Sin firma cargada</span>
+            <span style={{ fontSize: 10.5, color: "#94a3b8" }}>Sin firma cargada</span>
           )}
         </div>
 
@@ -62,7 +62,7 @@ export default function FirmaEmpresa() {
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              style={{ ...B("#f4eee4", "#574e44"), fontSize: 11, padding: "7px 14px" }}
+              style={{ ...B("#dbeafe", "#1e40af"), fontSize: 11, padding: "7px 14px" }}
             >
               {firma ? "Cambiar firma" : "Subir firma"}
             </button>
@@ -70,17 +70,17 @@ export default function FirmaEmpresa() {
               <button
                 type="button"
                 onClick={quitar}
-                style={{ ...B("#f4eee4", "#574e44"), fontSize: 11, padding: "7px 14px" }}
+                style={{ ...B("#f1f5f9", "#475569"), fontSize: 11, padding: "7px 14px" }}
               >
                 Quitar
               </button>
             )}
           </div>
-          <div style={{ fontSize: 10, color: "#a2988a", maxWidth: 320, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 10, color: "#94a3b8", maxWidth: 320, lineHeight: 1.5 }}>
             Imagen PNG o JPG, de preferencia con fondo blanco. Se guarda una sola vez
             y aparece automaticamente en cotizaciones, certificaciones e informes.
           </div>
-          {error && <div style={{ fontSize: 10.5, color: "#cc0000" }}>{error}</div>}
+          {error && <div style={{ fontSize: 10.5, color: "#dc2626" }}>{error}</div>}
         </div>
       </div>
 

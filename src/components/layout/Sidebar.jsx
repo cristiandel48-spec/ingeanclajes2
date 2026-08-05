@@ -93,7 +93,7 @@ export default function Sidebar({
             transition: "opacity .15s ease",
             whiteSpace: "nowrap", lineHeight: 1.25,
           }}>
-            <div style={{ color: theme.railTextActive, fontSize: 14, fontWeight: 600, letterSpacing: .2 }}>Ingeanclajes</div>
+            <div style={{ color: "#fff", fontSize: 14, fontWeight: 700, letterSpacing: .2 }}>Ingeanclajes</div>
             <div style={{ color: theme.railTitle, fontSize: 11 }}>Sistema de gestión</div>
           </div>
         </div>

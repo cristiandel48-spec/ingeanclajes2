@@ -101,7 +101,7 @@ export default function Obras({ctx}){
   return(
     <div style={{padding:28}}>
       <H1 title="Ejecución de Obra" subtitle="Gestión completa: personal, gastos, nómina y tiempo por obra"
-        action={<button style={B("#2b2622")} onClick={()=>setShowNO(!showNO)}>+ Nueva Obra</button>}/>
+        action={<button style={B("#cc0000")} onClick={()=>setShowNO(!showNO)}>+ Nueva Obra</button>}/>
 
       <AvisoFlujo
         tono="info"
@@ -119,7 +119,7 @@ export default function Obras({ctx}){
       </AvisoFlujo>
 
       {showNO&&(
-        <div style={{...CD,marginBottom:20,border:"1px solid #e8dfd2"}}>
+        <div style={{...CD,marginBottom:20,border:"1px solid #cc0000"}}>
           <div style={ST}>Nueva Obra</div>
           <AvisoFlujo tono="info" titulo="¿La obra ya está en ejecución?">
             Créala igual aquí. Pon la <strong>fecha real de inicio</strong>, el <strong>% de avance
@@ -144,29 +144,29 @@ export default function Obras({ctx}){
                 cifras son confidenciales. La obra nace en ceros; el valor entra
                 solo al vincular la cotizacion, que la maneja quien cotiza. */}
             <div><LBL>Fecha inicio</LBL><input type="date" value={nob.fechaInicio} onChange={e=>setNob({...nob,fechaInicio:e.target.value})} style={SI}/>
-              <div style={{fontSize:10.5,color:"#a2988a",marginTop:3}}>La fecha real en que empezaron, aunque sea de meses atrás.</div>
+              <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>La fecha real en que empezaron, aunque sea de meses atrás.</div>
             </div>
             <div><LBL>Fecha fin estimada</LBL><input type="date" value={nob.fechaFin} onChange={e=>setNob({...nob,fechaFin:e.target.value})} style={SI}/></div>
             <div><LBL>Estado actual</LBL>
               <select value={nob.estado} onChange={e=>setNob({...nob,estado:e.target.value})} style={SI}>
                 {ESTADOS_OBRA.map(s=><option key={s}>{s}</option>)}
               </select>
-              <div style={{fontSize:10.5,color:"#a2988a",marginTop:3}}>Si está trabajándose ahora, déjalo en «En Obra».</div>
+              <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>Si está trabajándose ahora, déjalo en «En Obra».</div>
             </div>
             <div><LBL>Avance que lleva hoy (%)</LBL><input type="number" min={0} max={100} value={nob.avance} onChange={e=>setNob({...nob,avance:parseInt(e.target.value,10)||0})} style={SI}/>
-              <div style={{fontSize:10.5,color:"#a2988a",marginTop:3}}>Al 100% (o en «Finalizado») ya se puede certificar.</div>
+              <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>Al 100% (o en «Finalizado») ya se puede certificar.</div>
             </div>
             <div><LBL>Vincular cotización (opcional)</LBL>
               <select value={nob.cotizacionId} onChange={e=>setNob({...nob,cotizacionId:e.target.value})} style={SI}>
                 <option value="">Sin cotización</option>
                 {cotizaciones.filter(c=>!c.obraId).map(c=><option key={c.id} value={c.id}>{c.numero} · {c.cliente}</option>)}
               </select>
-              <div style={{fontSize:10.5,color:"#a2988a",marginTop:3}}>Si la vinculas, el valor total lo toma de la cotización y esa queda «Aprobada».</div>
+              <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>Si la vinculas, el valor total lo toma de la cotización y esa queda «Aprobada».</div>
             </div>
           </div>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={guardarObra} style={B("#2b2622")}>✅ Crear Obra</button>
-            <button onClick={()=>setShowNO(false)} style={B("#f4eee4","#574e44")}>Cancelar</button>
+            <button onClick={guardarObra} style={B("#cc0000")}>✅ Crear Obra</button>
+            <button onClick={()=>setShowNO(false)} style={B("#f1f5f9","#475569")}>Cancelar</button>
           </div>
         </div>
       )}
@@ -176,29 +176,29 @@ export default function Obras({ctx}){
           const cotVinc=cotizaciones.find(c=>c.id===o.cotizacionId);
           const avanceReg=resumenBitacora(o.bitacora);
           return(
-            <div key={o.id} style={{...CD,border:"1px solid #e8dfd2",cursor:"pointer",transition:"all 0.15s"}}
-              onMouseEnter={e=>e.currentTarget.style.borderColor="#d9cdbb"}
-              onMouseLeave={e=>e.currentTarget.style.borderColor="#e8dfd2"}
+            <div key={o.id} style={{...CD,border:"1px solid #e2e8f0",cursor:"pointer",transition:"all 0.15s"}}
+              onMouseEnter={e=>e.currentTarget.style.borderColor="#cc0000"}
+              onMouseLeave={e=>e.currentTarget.style.borderColor="#e2e8f0"}
               onClick={()=>setSel(o)}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
                 <div>
-                  <div style={{fontSize:10,color:"#a2988a"}}>{o.id} · {fmtD(o.fechaInicio)}</div>
-                  <div style={{fontSize:15,fontWeight:700,marginTop:2,color:"#2b2622"}}>{normalizarRazonSocial(o.cliente)}</div>
-                  <div style={{fontSize:12,color:"#574e44"}}>{o.proyecto}</div>
-                  {cotVinc&&<div style={{fontSize:10,color:"#b54708",marginTop:2}}>📄 {o.cotizacionId}</div>}
+                  <div style={{fontSize:10,color:"#94a3b8"}}>{o.id} · {fmtD(o.fechaInicio)}</div>
+                  <div style={{fontSize:15,fontWeight:700,marginTop:2,color:"#1a1a2e"}}>{normalizarRazonSocial(o.cliente)}</div>
+                  <div style={{fontSize:12,color:"#475569"}}>{o.proyecto}</div>
+                  {cotVinc&&<div style={{fontSize:10,color:"#b45309",marginTop:2}}>📄 {o.cotizacionId}</div>}
                 </div>
                 <Badge estado={o.estado}/>
               </div>
               <div style={{marginBottom:10}}>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#756a5e",marginBottom:4}}>
-                  <span>Avance</span><span style={{color:o.avance===100?"#027a48":"#2b2622",fontWeight:600}}>{o.avance}%</span>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#64748b",marginBottom:4}}>
+                  <span>Avance</span><span style={{color:o.avance===100?"#166534":"#f47c20",fontWeight:600}}>{o.avance}%</span>
                 </div>
-                <div style={{height:5,background:"#e8dfd2",borderRadius:3}}>
-                  <div style={{width:(o.avance) + "%",height:"100%",background:o.avance===100?"#2b2622":"#2b2622",borderRadius:3}}/>
+                <div style={{height:5,background:"#e2e8f0",borderRadius:3}}>
+                  <div style={{width:(o.avance) + "%",height:"100%",background:o.avance===100?"#4ade80":"#f47c20",borderRadius:3}}/>
                 </div>
                 <input type="range" min={0} max={100} value={o.avance}
                   onChange={e=>updAv(o.id,Number(e.target.value))}
-                  style={{width:"100%",marginTop:4,accentColor:"#2b2622"}}
+                  style={{width:"100%",marginTop:4,accentColor:"#f47c20"}}
                   onClick={e=>e.stopPropagation()}/>
               </div>
               {/* Aqui no van cifras, para nadie. La lista de obras es una
@@ -210,14 +210,14 @@ export default function Obras({ctx}){
                   style={{...SI,fontSize:11,padding:"5px 8px",flex:1}} onClick={e=>e.stopPropagation()}>
                   {[...new Set([...ESTADOS_OBRA,o.estado].filter(Boolean))].map(s=><option key={s}>{s}</option>)}
                 </select>
-                <span style={{fontSize:11,color:"#a2988a",flexShrink:0}}>{(o.empleados||[]).length} 👷</span>
+                <span style={{fontSize:11,color:"#94a3b8",flexShrink:0}}>{(o.empleados||[]).length} 👷</span>
                 <span
                   title={avanceReg.fotos?"Fotos de avance cargadas para el informe":"Sin fotos de avance: el informe saldría vacío"}
-                  style={{fontSize:11,color:avanceReg.fotos?"#a2988a":"#b54708",flexShrink:0}}
+                  style={{fontSize:11,color:avanceReg.fotos?"#94a3b8":"#b54708",flexShrink:0}}
                 >
                   {avanceReg.fotos} 📸
                 </span>
-                <span style={{fontSize:11,color:"#2b2622",fontWeight:600,flexShrink:0}}>Ver →</span>
+                <span style={{fontSize:11,color:"#cc0000",fontWeight:600,flexShrink:0}}>Ver →</span>
               </div>
             </div>
           );

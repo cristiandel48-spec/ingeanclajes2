@@ -615,10 +615,10 @@ export default function CuentasPagar({ctx}){
   const cxpPreview=calcCuentaTributaria(cxpForm, proveedorSel);
 
   const Stat=({title,value,color,sub})=>(
-    <div style={{background:"#fff",border:"1px solid #e8dfd2",borderRadius:12,padding:"12px 14px",minWidth:170,flex:"1 1 170px"}}>
-      <div style={{fontSize:11,color:"#756a5e",marginBottom:6}}>{title}</div>
-      <div style={{fontSize:20,fontWeight:800,color:color||"#2b2622",lineHeight:1.1}}>{value}</div>
-      <div style={{fontSize:11,color:"#a2988a",marginTop:4}}>{sub}</div>
+    <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:12,padding:"12px 14px",minWidth:170,flex:"1 1 170px"}}>
+      <div style={{fontSize:11,color:"#64748b",marginBottom:6}}>{title}</div>
+      <div style={{fontSize:20,fontWeight:800,color:color||"#0f172a",lineHeight:1.1}}>{value}</div>
+      <div style={{fontSize:11,color:"#94a3b8",marginTop:4}}>{sub}</div>
     </div>
   );
 
@@ -629,13 +629,13 @@ export default function CuentasPagar({ctx}){
         subtitle="Causación de facturas, egresos a proveedores y base tributaria del ERP"
         action={
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            <button style={B("#b54708","#3b2f00")} onClick={()=>{setTab("proveedores");setShowProv(v=>!v);if(showProv&&tab==="proveedores") resetProveedor();}}>
+            <button style={B("#f5c842","#3b2f00")} onClick={()=>{setTab("proveedores");setShowProv(v=>!v);if(showProv&&tab==="proveedores") resetProveedor();}}>
               + Proveedor
             </button>
-            <button style={B("#2b2622")} onClick={()=>{setTab("causacion");setShowCxP(v=>{const next=!v;if(next&&!editCxPId)setCxpForm(createCuentaBase(cxpForm.proveedorId));if(!next)resetCuenta(cxpForm.proveedorId);return next;});}}>
+            <button style={B("#cc0000")} onClick={()=>{setTab("causacion");setShowCxP(v=>{const next=!v;if(next&&!editCxPId)setCxpForm(createCuentaBase(cxpForm.proveedorId));if(!next)resetCuenta(cxpForm.proveedorId);return next;});}}>
               + Causación / factura
             </button>
-            <button style={B("#2b2622")} onClick={()=>{setTab("pagos");setVistaPagoCxP("registro");scrollAppToTop("smooth");}}>
+            <button style={B("#003B71")} onClick={()=>{setTab("pagos");setVistaPagoCxP("registro");scrollAppToTop("smooth");}}>
               Registrar pago
             </button>
           </div>
@@ -648,7 +648,7 @@ export default function CuentasPagar({ctx}){
           <button
             key={id}
             onClick={()=>setTab(id)}
-            style={{...B(tab===id?"#cc0000":"#f4eee4",tab===id?"#fff":"#574e44"),fontSize:12,padding:"8px 16px",border:"1px solid " + (tab===id?"#cc0000":"#e8dfd2")}}
+            style={{...B(tab===id?"#cc0000":"#f1f5f9",tab===id?"#fff":"#475569"),fontSize:12,padding:"8px 16px",border:"1px solid " + (tab===id?"#cc0000":"#e2e8f0")}}
           >
             {lb}
           </button>
@@ -664,7 +664,7 @@ export default function CuentasPagar({ctx}){
               type="button"
               onClick={()=>setVistaPagoCxP("registro")}
               style={{
-                ...B(vistaPagoCxP==="registro" ? "#cc0000" : "#f4eee4", vistaPagoCxP==="registro" ? "#fff" : "#574e44"),
+                ...B(vistaPagoCxP==="registro" ? "#cc0000" : "#fff7ed", vistaPagoCxP==="registro" ? "#fff" : "#9a3412"),
                 border:vistaPagoCxP==="registro" ? "1px solid #cc0000" : "1px solid #fed7aa",
               }}
             >
@@ -674,8 +674,8 @@ export default function CuentasPagar({ctx}){
               type="button"
               onClick={()=>setVistaPagoCxP("historial")}
               style={{
-                ...B(vistaPagoCxP==="historial" ? "#2b2622" : "#fbf8f3", vistaPagoCxP==="historial" ? "#fff" : "#574e44"),
-                border:vistaPagoCxP==="historial" ? "1px solid #2b2622" : "1px solid #e8dfd2",
+                ...B(vistaPagoCxP==="historial" ? "#003B71" : "#eff6ff", vistaPagoCxP==="historial" ? "#fff" : "#1d4ed8"),
+                border:vistaPagoCxP==="historial" ? "1px solid #003B71" : "1px solid #bfdbfe",
               }}
             >
               Historial de pagos
@@ -724,7 +724,7 @@ export default function CuentasPagar({ctx}){
                         placeholder="Ej. 2000000"
                         style={SI}
                       />
-                      <div style={{fontSize:11,color:"#756a5e",marginTop:6}}>
+                      <div style={{fontSize:11,color:"#64748b",marginTop:6}}>
                         {Number(pagoProv.monto || 0)>0 ? fmt(Number(pagoProv.monto || 0)) : "Ingresa el valor manual del pago"}
                       </div>
                     </div>
@@ -771,57 +771,57 @@ export default function CuentasPagar({ctx}){
                       onClick={()=>registrarPagoProveedor()}
                       disabled={!proveedorPagoId || Number(pagoProv.monto || 0)<=0 || guardandoPagoProv || totalPendienteProveedor<=0}
                       style={{
-                        ...B("#2b2622"),
+                        ...B("#cc0000"),
                         opacity:(!proveedorPagoId || Number(pagoProv.monto || 0)<=0 || guardandoPagoProv || totalPendienteProveedor<=0)?0.6:1,
                         cursor:(!proveedorPagoId || Number(pagoProv.monto || 0)<=0 || guardandoPagoProv || totalPendienteProveedor<=0)?"not-allowed":"pointer",
                       }}
                     >
                       {guardandoPagoProv ? "Guardando..." : "Guardar pago"}
                     </button>
-                    <button type="button" onClick={resetPagoProveedor} style={B("#f4eee4","#574e44")}>Limpiar</button>
+                    <button type="button" onClick={resetPagoProveedor} style={B("#f1f5f9","#475569")}>Limpiar</button>
                   </div>
                 </div>
 
-                <div style={{background:"linear-gradient(180deg,#f4eee4,#ffffff)",border:"1px solid #fed7aa",borderRadius:14,padding:16}}>
-                  <div style={{fontSize:11,fontWeight:700,color:"#574e44",textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>Proveedor seleccionado</div>
+                <div style={{background:"linear-gradient(180deg,#fff7ed,#ffffff)",border:"1px solid #fed7aa",borderRadius:14,padding:16}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"#9a3412",textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>Proveedor seleccionado</div>
                   {proveedorPagoSel ? (
                     <div style={{display:"grid",gap:10}}>
                       <div>
-                        <div style={{fontSize:11,color:"#756a5e"}}>{proveedorPagoSel.id}</div>
-                        <div style={{fontSize:20,fontWeight:700,color:"#2b2622"}}>{proveedorPagoSel.nombre}</div>
-                        <div style={{fontSize:13,color:"#574e44"}}>{proveedorPagoSel.categoria || "Proveedor"}</div>
+                        <div style={{fontSize:11,color:"#64748b"}}>{proveedorPagoSel.id}</div>
+                        <div style={{fontSize:20,fontWeight:700,color:"#1a1a2e"}}>{proveedorPagoSel.nombre}</div>
+                        <div style={{fontSize:13,color:"#475569"}}>{proveedorPagoSel.categoria || "Proveedor"}</div>
                       </div>
                       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                        <div style={{background:"#fff",border:"1px solid #e8dfd2",borderRadius:10,padding:"10px 12px"}}>
-                          <div style={{fontSize:10,color:"#756a5e",textTransform:"uppercase"}}>Saldo pendiente</div>
-                          <div style={{fontSize:20,fontWeight:800,color:Number(totalPendienteProveedor||0)>0?"#574e44":"#027a48"}}>{fmt(totalPendienteProveedor)}</div>
+                        <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px"}}>
+                          <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase"}}>Saldo pendiente</div>
+                          <div style={{fontSize:20,fontWeight:800,color:Number(totalPendienteProveedor||0)>0?"#c2410c":"#166534"}}>{fmt(totalPendienteProveedor)}</div>
                         </div>
-                        <div style={{background:"#fff",border:"1px solid #e8dfd2",borderRadius:10,padding:"10px 12px"}}>
-                          <div style={{fontSize:10,color:"#756a5e",textTransform:"uppercase"}}>Pagado</div>
-                          <div style={{fontSize:18,fontWeight:700,color:"#027a48"}}>{fmt(totalPagadoProveedor)}</div>
+                        <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px"}}>
+                          <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase"}}>Pagado</div>
+                          <div style={{fontSize:18,fontWeight:700,color:"#166534"}}>{fmt(totalPagadoProveedor)}</div>
                         </div>
-                        <div style={{background:"#fff",border:"1px solid #e8dfd2",borderRadius:10,padding:"10px 12px"}}>
-                          <div style={{fontSize:10,color:"#756a5e",textTransform:"uppercase"}}>Facturas pendientes</div>
-                          <div style={{fontSize:18,fontWeight:700,color:"#2b2622"}}>{String(cuentasPendientesProveedor.length)}</div>
+                        <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px"}}>
+                          <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase"}}>Facturas pendientes</div>
+                          <div style={{fontSize:18,fontWeight:700,color:"#1a1a2e"}}>{String(cuentasPendientesProveedor.length)}</div>
                         </div>
-                        <div style={{background:"#fff",border:"1px solid #e8dfd2",borderRadius:10,padding:"10px 12px"}}>
-                          <div style={{fontSize:10,color:"#756a5e",textTransform:"uppercase"}}>Banco</div>
-                          <div style={{fontSize:14,fontWeight:700,color:"#2b2622"}}>{proveedorPagoSel.banco || "Sin banco"}</div>
+                        <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px"}}>
+                          <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase"}}>Banco</div>
+                          <div style={{fontSize:14,fontWeight:700,color:"#1a1a2e"}}>{proveedorPagoSel.banco || "Sin banco"}</div>
                         </div>
                       </div>
-                      <div style={{fontSize:12,color:"#756a5e",lineHeight:1.6}}>
-                        NIT: <strong style={{color:"#574e44"}}>{proveedorPagoSel.nit || "No registrado"}</strong><br/>
-                        Contacto: <strong style={{color:"#574e44"}}>{proveedorPagoSel.contacto || "No registrado"}</strong><br/>
-                        Cuenta: <strong style={{color:"#574e44"}}>{proveedorPagoSel.numeroCuenta || "No registrada"}</strong>
+                      <div style={{fontSize:12,color:"#64748b",lineHeight:1.6}}>
+                        NIT: <strong style={{color:"#334155"}}>{proveedorPagoSel.nit || "No registrado"}</strong><br/>
+                        Contacto: <strong style={{color:"#334155"}}>{proveedorPagoSel.contacto || "No registrado"}</strong><br/>
+                        Cuenta: <strong style={{color:"#334155"}}>{proveedorPagoSel.numeroCuenta || "No registrada"}</strong>
                       </div>
                       {cuentasPendientesProveedor.length>0 && (
-                        <div style={{background:"#fff",border:"1px solid #e8dfd2",borderRadius:10,padding:"10px 12px"}}>
-                          <div style={{fontSize:10,color:"#756a5e",textTransform:"uppercase",marginBottom:8}}>Aplicación automática del pago</div>
+                        <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px"}}>
+                          <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase",marginBottom:8}}>Aplicación automática del pago</div>
                           <div style={{display:"grid",gap:6,maxHeight:180,overflow:"auto"}}>
                             {cuentasPendientesProveedor.slice(0,5).map((c)=>(
                               <div key={c.id} style={{display:"flex",justifyContent:"space-between",gap:10,fontSize:12}}>
-                                <div style={{color:"#574e44"}}>{c.factura || c.id} · {c.concepto}</div>
-                                <strong style={{color:"#574e44"}}>{fmt(c.saldoPendienteActual)}</strong>
+                                <div style={{color:"#334155"}}>{c.factura || c.id} · {c.concepto}</div>
+                                <strong style={{color:"#c2410c"}}>{fmt(c.saldoPendienteActual)}</strong>
                               </div>
                             ))}
                           </div>
@@ -829,7 +829,7 @@ export default function CuentasPagar({ctx}){
                       )}
                     </div>
                   ) : (
-                    <div style={{fontSize:13,color:"#756a5e",lineHeight:1.6}}>
+                    <div style={{fontSize:13,color:"#64748b",lineHeight:1.6}}>
                       Busca el proveedor, selecciónalo y luego registra el valor exacto del pago manual.
                     </div>
                   )}
@@ -848,22 +848,22 @@ export default function CuentasPagar({ctx}){
             </div>
             <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
               <thead>
-                <tr style={{background:"#f4eee4"}}>
+                <tr style={{background:"#f1f5f9"}}>
                   {["ID","Proveedor","Factura","Concepto","Monto","Fecha","Método","Estado"].map(h=>(
-                    <th key={h} style={{padding:"9px 10px",textAlign:h==="Monto"?"right":"left",color:"#756a5e",fontWeight:500,fontSize:11}}>{h}</th>
+                    <th key={h} style={{padding:"9px 10px",textAlign:h==="Monto"?"right":"left",color:"#64748b",fontWeight:500,fontSize:11}}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {pagosProveedorFiltrados.length===0 ? (
-                  <tr><td colSpan={8} style={{padding:18,textAlign:"center",color:"#a2988a"}}>No hay pagos registrados para este filtro</td></tr>
+                  <tr><td colSpan={8} style={{padding:18,textAlign:"center",color:"#94a3b8"}}>No hay pagos registrados para este filtro</td></tr>
                 ) : pagosProveedorFiltrados.map((p)=> (
-                  <tr key={p.id + "-" + p.cuentaId} style={{borderBottom:"1px solid #e8dfd2"}}>
-                    <td style={{padding:"10px 10px",color:"#574e44",fontWeight:500}}>{p.id}</td>
+                  <tr key={p.id + "-" + p.cuentaId} style={{borderBottom:"1px solid #e2e8f0"}}>
+                    <td style={{padding:"10px 10px",color:"#2563eb",fontWeight:500}}>{p.id}</td>
                     <td style={{padding:"10px 10px"}}>{p.proveedorNombre}</td>
                     <td style={{padding:"10px 10px"}}>{p.factura || "—"}</td>
                     <td style={{padding:"10px 10px"}}>{p.conceptoFactura || "Cuenta por pagar"}</td>
-                    <td style={{padding:"10px 10px",textAlign:"right",fontWeight:700,color:"#2b2622"}}>{fmt(p.monto)}</td>
+                    <td style={{padding:"10px 10px",textAlign:"right",fontWeight:700,color:"#cc0000"}}>{fmt(p.monto)}</td>
                     <td style={{padding:"10px 10px"}}>{p.fecha || "—"}</td>
                     <td style={{padding:"10px 10px"}}>{p.metodo || p.medio || "—"}</td>
                     <td style={{padding:"10px 10px"}}><Badge estado={p.estado || "Pagado"}/></td>
@@ -878,7 +878,7 @@ export default function CuentasPagar({ctx}){
           {tab==="causacion" && (
             <>
           {showCxP&&(
-            <div style={{...CD,marginBottom:18,border:"1px solid #e8dfd2"}}>
+            <div style={{...CD,marginBottom:18,border:"1px solid #cc0000"}}>
               <div style={ST}>{editCxPId?"Editar causación de factura o gasto":"Registrar causación de factura o gasto"}</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
                 <div>
@@ -925,7 +925,7 @@ export default function CuentasPagar({ctx}){
                 </div>
                 <div>
                   <LBL>Valor IVA</LBL>
-                  <input value={fmt(cxpPreview.valorIva)} readOnly style={{...SI,background:"#fbf8f3"}}/>
+                  <input value={fmt(cxpPreview.valorIva)} readOnly style={{...SI,background:"#f8fafc"}}/>
                 </div>
 
                 <div>
@@ -945,12 +945,12 @@ export default function CuentasPagar({ctx}){
                 </div>
                 <div>
                   <LBL>Valor retefuente</LBL>
-                  <input value={fmt(cxpPreview.valorRetFuente)} readOnly style={{...SI,background:"#fbf8f3"}}/>
+                  <input value={fmt(cxpPreview.valorRetFuente)} readOnly style={{...SI,background:"#f8fafc"}}/>
                 </div>
 
                 <div style={{gridColumn:"span 3",display:"flex",gap:10,flexWrap:"wrap",marginTop:-2}}>
-                  {proveedorSel?.autorretenedorRenta && <div style={{fontSize:11,color:"#027a48",background:"#ecfdf5",border:"1px solid #bbf7d0",padding:"8px 10px",borderRadius:999}}>Proveedor autorretenedor: no se calcula retención en la fuente</div>}
-                  {proveedorSel && (proveedorSel.responsableIva===false || proveedorSel.regimenTributario==="No responsable de IVA") && <div style={{fontSize:11,color:"#574e44",background:"#fbf8f3",border:"1px solid #e8dfd2",padding:"8px 10px",borderRadius:999}}>Proveedor no responsable de IVA: la tarifa IVA se ajusta a 0%</div>}
+                  {proveedorSel?.autorretenedorRenta && <div style={{fontSize:11,color:"#166534",background:"#ecfdf5",border:"1px solid #bbf7d0",padding:"8px 10px",borderRadius:999}}>Proveedor autorretenedor: no se calcula retención en la fuente</div>}
+                  {proveedorSel && (proveedorSel.responsableIva===false || proveedorSel.regimenTributario==="No responsable de IVA") && <div style={{fontSize:11,color:"#1d4ed8",background:"#eff6ff",border:"1px solid #bfdbfe",padding:"8px 10px",borderRadius:999}}>Proveedor no responsable de IVA: la tarifa IVA se ajusta a 0%</div>}
                 </div>
 
                 <div style={{gridColumn:"span 3",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
@@ -967,7 +967,7 @@ export default function CuentasPagar({ctx}){
                   </div>
                   <div>
                     <LBL>Valor reteIVA</LBL>
-                    <input value={fmt(cxpPreview.valorReteiva)} readOnly style={{...SI,background:"#fbf8f3"}}/>
+                    <input value={fmt(cxpPreview.valorReteiva)} readOnly style={{...SI,background:"#f8fafc"}}/>
                   </div>
                 </div>
 
@@ -991,20 +991,20 @@ export default function CuentasPagar({ctx}){
               </div>
 
               <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:14}}>
-                <div style={{background:"#f4eee4",border:"1px solid #fed7aa",borderRadius:10,padding:"12px 14px"}}>
-                  <div style={{fontSize:11,color:"#574e44",marginBottom:4}}>Valor bruto factura</div>
-                  <div style={{fontSize:18,fontWeight:800,color:"#574e44"}}>{fmt(cxpPreview.valorBrutoFactura)}</div>
+                <div style={{background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:10,padding:"12px 14px"}}>
+                  <div style={{fontSize:11,color:"#9a3412",marginBottom:4}}>Valor bruto factura</div>
+                  <div style={{fontSize:18,fontWeight:800,color:"#c2410c"}}>{fmt(cxpPreview.valorBrutoFactura)}</div>
                 </div>
-                <div style={{background:"#f9e9e4",border:"1px solid #fecaca",borderRadius:10,padding:"12px 14px"}}>
-                  <div style={{fontSize:11,color:"#574e44",marginBottom:4}}>Total retenciones</div>
-                  <div style={{fontSize:18,fontWeight:800,color:"#2b2622"}}>{fmt(cxpPreview.valorTotalRetenciones)}</div>
+                <div style={{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:10,padding:"12px 14px"}}>
+                  <div style={{fontSize:11,color:"#9a3412",marginBottom:4}}>Total retenciones</div>
+                  <div style={{fontSize:18,fontWeight:800,color:"#b91c1c"}}>{fmt(cxpPreview.valorTotalRetenciones)}</div>
                 </div>
                 <div style={{background:"#ecfdf5",border:"1px solid #bbf7d0",borderRadius:10,padding:"12px 14px"}}>
-                  <div style={{fontSize:11,color:"#027a48",marginBottom:4}}>Total a pagar</div>
-                  <div style={{fontSize:18,fontWeight:800,color:"#027a48"}}>{fmt(cxpPreview.valorTotalPagar)}</div>
+                  <div style={{fontSize:11,color:"#166534",marginBottom:4}}>Total a pagar</div>
+                  <div style={{fontSize:18,fontWeight:800,color:"#166534"}}>{fmt(cxpPreview.valorTotalPagar)}</div>
                 </div>
-                <div style={{background:"#fbf8f3",border:"1px solid #e8dfd2",borderRadius:10,padding:"12px 14px"}}>
-                  <div style={{fontSize:11,color:"#574e44",marginBottom:4}}>Fecha vencimiento</div>
+                <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:10,padding:"12px 14px"}}>
+                  <div style={{fontSize:11,color:"#1d4ed8",marginBottom:4}}>Fecha vencimiento</div>
                   <input type="date" value={cxpForm.fechaVence} onChange={e=>setCxpForm({...cxpForm,fechaVence:e.target.value})} style={{...SI,margin:0,padding:"8px 10px"}}/>
                 </div>
               </div>
@@ -1014,14 +1014,14 @@ export default function CuentasPagar({ctx}){
                   <LBL>Fecha factura</LBL>
                   <input type="date" value={cxpForm.fecha} onChange={e=>setCxpForm({...cxpForm,fecha:e.target.value})} style={SI}/>
                 </div>
-                <div style={{alignSelf:"end",fontSize:12,color:"#756a5e"}}>
+                <div style={{alignSelf:"end",fontSize:12,color:"#64748b"}}>
                   Se conserva el historial de pagos si editas una cuenta ya registrada.
                 </div>
               </div>
 
               <div style={{display:"flex",gap:8}}>
-                <button style={B("#2b2622")} onClick={guardarCuenta}>{editCxPId?"Guardar cambios":"Guardar cuenta"}</button>
-                <button style={B("#f4eee4","#574e44")} onClick={()=>resetCuenta(cxpForm.proveedorId)}>Cancelar</button>
+                <button style={B("#cc0000")} onClick={guardarCuenta}>{editCxPId?"Guardar cambios":"Guardar cuenta"}</button>
+                <button style={B("#f1f5f9","#475569")} onClick={()=>resetCuenta(cxpForm.proveedorId)}>Cancelar</button>
               </div>
             </div>
           )}
@@ -1049,25 +1049,25 @@ export default function CuentasPagar({ctx}){
                 <button
                   type="button"
                   onClick={exportarExcelVencimientos}
-                  style={{...B("#027a48","#d1fae5"),padding:"10px 16px"}}
+                  style={{...B("#166534","#d1fae5"),padding:"10px 16px"}}
                 >
                   Exportar Excel
                 </button>
               </div>
             </div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10,marginBottom:12,fontSize:11,color:"#756a5e"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10,marginBottom:12,fontSize:11,color:"#64748b"}}>
               <div>
                 {busquedaFacturaActiva
                   ? `Mostrando solo los resultados de "${busquedaProveedorFactura.trim()}".`
                   : "Escribe la factura, proveedor, concepto u obra que quieres consultar para ver resultados."}
               </div>
-              <div style={{fontWeight:700,color:"#027a48"}}>
+              <div style={{fontWeight:700,color:"#166534"}}>
                 Corte reporte: {fechaCorteReporteFactura || "Sin fecha"} · {cuentasVencimientoReporte.length} factura(s) · {fmt(totalVencimientoReporte)}
               </div>
             </div>
 
             {cuentasCausadasFiltradas.length===0 ? (
-              <div style={{textAlign:"center",padding:24,color:"#a2988a",fontSize:13}}>
+              <div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13}}>
                 {busquedaFacturaActiva
                   ? "No hay facturas causadas con ese criterio de búsqueda"
                   : "La vista está limpia. Escribe una factura para consultarla."}
@@ -1079,39 +1079,39 @@ export default function CuentasPagar({ctx}){
                   const obra=obras.find(o=>o.id===c.obraId);
                   const vencida=c.estado==="Pendiente"&&c.fechaVence&&c.fechaVence<today();
                   return(
-                    <div key={c.id} style={{background:"#fbf8f3",borderRadius:10,padding:"14px 16px",border:"1px solid " + (vencida?"#fca5a5":c.estado==="Pagado"?"#bbf7d0":"#e8dfd2")}}>
+                    <div key={c.id} style={{background:"#f8fafc",borderRadius:10,padding:"14px 16px",border:"1px solid " + (vencida?"#fca5a5":c.estado==="Pagado"?"#bbf7d0":"#e2e8f0")}}>
                       <div style={{display:"flex",justifyContent:"space-between",gap:16,alignItems:"flex-start",marginBottom:8}}>
                         <div style={{flex:1}}>
-                          <div style={{fontSize:14,fontWeight:700,color:"#2b2622"}}>{c.concepto}</div>
-                          <div style={{fontSize:11,color:"#756a5e",marginTop:2}}>
+                          <div style={{fontSize:14,fontWeight:700,color:"#1a1a2e"}}>{c.concepto}</div>
+                          <div style={{fontSize:11,color:"#64748b",marginTop:2}}>
                             {prov?.nombre || "Proveedor sin registro"} · Factura {c.factura || "—"} {obra?"· " + obra.id + " · " + obra.cliente:"· gasto general"}
                           </div>
                         </div>
                         <div style={{textAlign:"right"}}>
-                          <div style={{fontSize:15,fontWeight:800,color:"#2b2622"}}>{fmt(c.valorTotalPagar)}</div>
+                          <div style={{fontSize:15,fontWeight:800,color:"#cc0000"}}>{fmt(c.valorTotalPagar)}</div>
                           <Badge estado={vencida?"Vencida":c.estado}/>
                         </div>
                       </div>
 
-                      <div style={{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",gap:10,fontSize:11,color:"#574e44"}}>
-                        <div><strong style={{color:"#2b2622"}}>Factura</strong><br/>{c.factura || "Sin consecutivo"}</div>
-                        <div><strong style={{color:"#2b2622"}}>Fecha factura</strong><br/>{c.fecha || "—"}</div>
-                        <div><strong style={{color:"#2b2622"}}>Vencimiento</strong><br/>{c.fechaVence || "Sin fecha"}</div>
-                        <div><strong style={{color:"#2b2622"}}>Saldo pendiente</strong><br/>{Number(c.saldoPendienteActual||0)>0?fmt(c.saldoPendienteActual):"0"}</div>
-                        <div><strong style={{color:"#2b2622"}}>Subtotal</strong><br/>{fmt(c.subtotal || 0)}</div>
-                        <div><strong style={{color:"#2b2622"}}>IVA</strong><br/>{fmt(c.valorIva ?? c.valor_iva ?? 0)}</div>
-                        <div><strong style={{color:"#2b2622"}}>Retenciones</strong><br/>{fmt(c.valorTotalRetenciones ?? c.valor_total_retenciones ?? 0)}</div>
-                        <div><strong style={{color:"#2b2622"}}>Pagado acumulado</strong><br/>{fmt(c.montoPagado || 0)}</div>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",gap:10,fontSize:11,color:"#475569"}}>
+                        <div><strong style={{color:"#1a1a2e"}}>Factura</strong><br/>{c.factura || "Sin consecutivo"}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>Fecha factura</strong><br/>{c.fecha || "—"}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>Vencimiento</strong><br/>{c.fechaVence || "Sin fecha"}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>Saldo pendiente</strong><br/>{Number(c.saldoPendienteActual||0)>0?fmt(c.saldoPendienteActual):"0"}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>Subtotal</strong><br/>{fmt(c.subtotal || 0)}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>IVA</strong><br/>{fmt(c.valorIva ?? c.valor_iva ?? 0)}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>Retenciones</strong><br/>{fmt(c.valorTotalRetenciones ?? c.valor_total_retenciones ?? 0)}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>Pagado acumulado</strong><br/>{fmt(c.montoPagado || 0)}</div>
                       </div>
 
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:12,flexWrap:"wrap",gap:10}}>
-                        <div style={{fontSize:11,color:"#756a5e"}}>
+                        <div style={{fontSize:11,color:"#64748b"}}>
                           {c.estado==="Pagado" ? "Pagada" + (c.fechaPago?" el " + c.fechaPago:"") : (vencida?"Cuenta vencida":"Pendiente de pago")}
                         </div>
                         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                          <button style={{...B("#f4eee4","#574e44"),padding:"7px 12px",fontSize:11}} onClick={()=>editarCuenta(c)}>Editar</button>
+                          <button style={{...B("#f1f5f9","#475569"),padding:"7px 12px",fontSize:11}} onClick={()=>editarCuenta(c)}>Editar</button>
                           {Number(c.saldoPendienteActual||0)>0 && (
-                            <button style={{...B("#2b2622"),padding:"7px 12px",fontSize:11}} onClick={()=>{setTab("pagos"); setProveedorPagoId(c.proveedorId); setBusquedaProveedorPago(prov?.nombre || ""); setPagoProv(prev=>({...prev,tipo:"Pago a proveedor",monto:String(Math.round(Number(c.saldoPendienteActual||0))),fecha:today()})); setVistaPagoCxP("registro"); scrollAppToTop("smooth");}}>Registrar pago</button>
+                            <button style={{...B("#003B71"),padding:"7px 12px",fontSize:11}} onClick={()=>{setTab("pagos"); setProveedorPagoId(c.proveedorId); setBusquedaProveedorPago(prov?.nombre || ""); setPagoProv(prev=>({...prev,tipo:"Pago a proveedor",monto:String(Math.round(Number(c.saldoPendienteActual||0))),fecha:today()})); setVistaPagoCxP("registro"); scrollAppToTop("smooth");}}>Registrar pago</button>
                           )}
                           {c.estado!=="Pagado" && <button style={{...B("#16a34a"),padding:"7px 12px",fontSize:11}} onClick={()=>marcarPagada(c.id)}>Marcar pagada</button>}
                         </div>
@@ -1130,7 +1130,7 @@ export default function CuentasPagar({ctx}){
       {tab==="proveedores"&&(
         <>
           {showProv&&(
-            <div style={{...CD,marginBottom:18,border:"1px solid #b54708"}}>
+            <div style={{...CD,marginBottom:18,border:"1px solid #f5c842"}}>
               <div style={ST}>{editProvId?"Editar proveedor":"Nuevo proveedor"}</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
                 <CampoTexto label="Nombre del proveedor" valor={provForm.nombre} onChange={v=>setProvForm({...provForm,nombre:v})}
@@ -1164,17 +1164,17 @@ export default function CuentasPagar({ctx}){
                   <input value={provForm.codigoIca} onChange={e=>setProvForm({...provForm,codigoIca:e.target.value})} placeholder="Actividad ICA" style={SI}/>
                 </div>
                 <div style={{display:"flex",gap:12,alignItems:"center",paddingTop:26,gridColumn:"span 3",flexWrap:"wrap"}}>
-                  <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:"#574e44"}}><input type="checkbox" checked={provForm.responsableIva} onChange={e=>setProvForm({...provForm,responsableIva:e.target.checked})}/> Responsable de IVA</label>
-                  <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:"#574e44"}}><input type="checkbox" checked={provForm.agenteReteiva} onChange={e=>setProvForm({...provForm,agenteReteiva:e.target.checked})}/> Agente reteIVA</label>
-                  <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:"#574e44"}}><input type="checkbox" checked={provForm.autorretenedorRenta} onChange={e=>setProvForm({...provForm,autorretenedorRenta:e.target.checked})}/> Autorretenedor renta</label>
+                  <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:"#334155"}}><input type="checkbox" checked={provForm.responsableIva} onChange={e=>setProvForm({...provForm,responsableIva:e.target.checked})}/> Responsable de IVA</label>
+                  <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:"#334155"}}><input type="checkbox" checked={provForm.agenteReteiva} onChange={e=>setProvForm({...provForm,agenteReteiva:e.target.checked})}/> Agente reteIVA</label>
+                  <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:"#334155"}}><input type="checkbox" checked={provForm.autorretenedorRenta} onChange={e=>setProvForm({...provForm,autorretenedorRenta:e.target.checked})}/> Autorretenedor renta</label>
                 </div>
                 <CampoTexto label="Email" valor={provForm.email} onChange={v=>setProvForm({...provForm,email:v})}
                   normalizar={normalizarCorreo} revisar={avisoCorreo} placeholder="correo@proveedor.com"
                   inputMode="email" autoCapitalize="off" spellCheck={false} wrapStyle={{gridColumn:"span 3"}}/>
               </div>
               <div style={{display:"flex",gap:8}}>
-                <button style={B("#b54708","#3b2f00")} onClick={guardarProveedor}>{editProvId?"Guardar cambios":"Crear proveedor"}</button>
-                <button style={B("#f4eee4","#574e44")} onClick={resetProveedor}>Cancelar</button>
+                <button style={B("#f5c842","#3b2f00")} onClick={guardarProveedor}>{editProvId?"Guardar cambios":"Crear proveedor"}</button>
+                <button style={B("#f1f5f9","#475569")} onClick={resetProveedor}>Cancelar</button>
               </div>
             </div>
           )}
@@ -1182,48 +1182,48 @@ export default function CuentasPagar({ctx}){
           <div style={CD}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
               <div style={ST}>Base de datos de proveedores</div>
-              <div style={{fontSize:11,color:"#756a5e"}}>Incluye perfil bancario y perfil tributario del proveedor</div>
+              <div style={{fontSize:11,color:"#64748b"}}>Incluye perfil bancario y perfil tributario del proveedor</div>
             </div>
 
             {proveedoresData.length===0 ? (
-              <div style={{textAlign:"center",padding:24,color:"#a2988a",fontSize:13}}>No hay proveedores registrados</div>
+              <div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13}}>No hay proveedores registrados</div>
             ) : (
               <div style={{display:"grid",gap:12}}>
                 {proveedoresData.map(p=>{
                   const pendientesProv=cuentasNorm.filter(c=>c.proveedorId===p.id&&Number(c.saldoPendienteActual||0)>0);
                   const totalProv=pendientesProv.reduce((s,c)=>s+Number(c.saldoPendienteActual||0),0);
                   return(
-                    <div key={p.id} style={{background:"#fbf8f3",borderRadius:10,padding:"16px 18px",border:"1px solid #e8dfd2"}}>
+                    <div key={p.id} style={{background:"#f8fafc",borderRadius:10,padding:"16px 18px",border:"1px solid #e2e8f0"}}>
                       <div style={{display:"flex",justifyContent:"space-between",gap:16,alignItems:"flex-start",marginBottom:10}}>
                         <div>
-                          <div style={{fontSize:15,fontWeight:800,color:"#2b2622"}}>{p.nombre}</div>
-                          <div style={{fontSize:11,color:"#756a5e",marginTop:3}}>
+                          <div style={{fontSize:15,fontWeight:800,color:"#1a1a2e"}}>{p.nombre}</div>
+                          <div style={{fontSize:11,color:"#64748b",marginTop:3}}>
                             {p.nit || "Sin NIT"} · {p.contacto || "Sin contacto"} · {p.telefono || p.tel || "Sin teléfono"}
                           </div>
                         </div>
                         <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
                           <Badge estado={pendientesProv.length?"Pendiente":"Pagado"}/>
-                          {p.autorretenedorRenta && <span style={{fontSize:10,fontWeight:700,color:"#027a48",background:"#ecfdf5",border:"1px solid #bbf7d0",padding:"5px 8px",borderRadius:999}}>Autorretenedor</span>}
-                          <button style={{...B("#f4eee4","#574e44"),padding:"7px 12px",fontSize:11}} onClick={()=>editarProveedor(p)}>Editar</button>
+                          {p.autorretenedorRenta && <span style={{fontSize:10,fontWeight:700,color:"#166534",background:"#ecfdf5",border:"1px solid #bbf7d0",padding:"5px 8px",borderRadius:999}}>Autorretenedor</span>}
+                          <button style={{...B("#f1f5f9","#475569"),padding:"7px 12px",fontSize:11}} onClick={()=>editarProveedor(p)}>Editar</button>
                         </div>
                       </div>
 
-                      <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr 1fr 1fr",gap:10,fontSize:11,color:"#574e44"}}>
-                        <div><strong style={{color:"#2b2622"}}>Dirección</strong><br/>{p.direccion || "Sin dirección registrada"}</div>
-                        <div><strong style={{color:"#2b2622"}}>Banco</strong><br/>{p.banco || "Sin banco"}</div>
-                        <div><strong style={{color:"#2b2622"}}>Cuenta</strong><br/>{p.numeroCuenta || "Sin número de cuenta"}</div>
-                        <div><strong style={{color:"#2b2622"}}>Correo</strong><br/>{p.email || "Sin email"}</div>
+                      <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr 1fr 1fr",gap:10,fontSize:11,color:"#475569"}}>
+                        <div><strong style={{color:"#1a1a2e"}}>Dirección</strong><br/>{p.direccion || "Sin dirección registrada"}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>Banco</strong><br/>{p.banco || "Sin banco"}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>Cuenta</strong><br/>{p.numeroCuenta || "Sin número de cuenta"}</div>
+                        <div><strong style={{color:"#1a1a2e"}}>Correo</strong><br/>{p.email || "Sin email"}</div>
                       </div>
 
                       <div style={{marginTop:10,display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11,flexWrap:"wrap",gap:10}}>
-                        <div style={{color:"#756a5e"}}>
+                        <div style={{color:"#64748b"}}>
                           {pendientesProv.length ? "Tiene " + pendientesProv.length + " cuenta(s) pendiente(s)" : "Sin cuentas pendientes"}
                         </div>
                         <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
-                          <div style={{fontWeight:800,color:pendientesProv.length?"#574e44":"#027a48"}}>
+                          <div style={{fontWeight:800,color:pendientesProv.length?"#c2410c":"#166534"}}>
                             {pendientesProv.length ? fmt(totalProv) : "Al día"}
                           </div>
-                          <button style={{...B("#2b2622"),padding:"7px 12px",fontSize:11}} onClick={()=>{setTab("pagos"); setVistaPagoCxP("registro"); setProveedorPagoId(p.id); setBusquedaProveedorPago(p.nombre || ""); scrollAppToTop("smooth");}}>Registrar pago</button>
+                          <button style={{...B("#003B71"),padding:"7px 12px",fontSize:11}} onClick={()=>{setTab("pagos"); setVistaPagoCxP("registro"); setProveedorPagoId(p.id); setBusquedaProveedorPago(p.nombre || ""); scrollAppToTop("smooth");}}>Registrar pago</button>
                         </div>
                       </div>
                     </div>

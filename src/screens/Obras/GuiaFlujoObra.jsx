@@ -9,8 +9,8 @@ import { B } from "../../styles/tokens";
 function Fila({ estado, titulo, detalle, accion }) {
   const colores = {
     listo: { fg: "#15803D", bg: "#F0FDF4", borde: "#BBF7D0", icono: "✓" },
-    falta: { fg: "#B54708", bg: "#f4eee4", borde: "#e8dfd2", icono: "!" },
-    aviso: { fg: "#cc0000", bg: "#f9e9e4", borde: "#eec7bd", icono: "!" },
+    falta: { fg: "#B54708", bg: "#FFFAF0", borde: "#FDE3C4", icono: "!" },
+    aviso: { fg: "#B42318", bg: "#FEF3F2", borde: "#FECDCA", icono: "!" },
   }[estado];
 
   return (
@@ -28,8 +28,8 @@ function Fila({ estado, titulo, detalle, accion }) {
         {colores.icono}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 12.5, fontWeight: 600, color: "#2b2622" }}>{titulo}</div>
-        <div style={{ fontSize: 11.5, color: "#756a5e", marginTop: 2, lineHeight: 1.45 }}>{detalle}</div>
+        <div style={{ fontSize: 12.5, fontWeight: 600, color: "#1a1a2e" }}>{titulo}</div>
+        <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2, lineHeight: 1.45 }}>{detalle}</div>
       </div>
       {accion}
     </div>
@@ -73,14 +73,14 @@ export default function GuiaFlujoObra({
 
   return (
     <div style={{
-      background: "#fff", border: "1px solid #e8dfd2", borderRadius: 14,
+      background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14,
       padding: 18, marginBottom: 18,
     }}>
       <div style={{ marginBottom: 4 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: "#2b2622" }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: "#f47c20" }}>
           Qué sigue en esta obra
         </div>
-        <div style={{ fontSize: 11.5, color: "#756a5e", marginTop: 3, lineHeight: 1.5 }}>
+        <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 3, lineHeight: 1.5 }}>
           El informe y la certificación toman los datos de aquí. Entre más completa esté la obra,
           menos hay que escribir después: <strong>lo que se alimenta en la obra no se vuelve a
           escribir en el informe</strong>.
@@ -120,7 +120,7 @@ export default function GuiaFlujoObra({
             onVerAvance && (
               <button
                 onClick={onVerAvance}
-                style={{ ...B("#f4eee4", "#574e44"), fontSize: 11, padding: "7px 12px", flexShrink: 0, alignSelf: "center" }}
+                style={{ ...B("#f1f5f9", "#475569"), fontSize: 11, padding: "7px 12px", flexShrink: 0, alignSelf: "center" }}
               >
                 {fotos > 0 ? "Ver" : "Registrar"}
               </button>
@@ -157,25 +157,25 @@ export default function GuiaFlujoObra({
 
       <div style={{
         display: "flex", gap: 8, flexWrap: "wrap", marginTop: 16,
-        paddingTop: 14, borderTop: "1px solid #f4eee4",
+        paddingTop: 14, borderTop: "1px solid #f1f5f9",
       }}>
         <button
           onClick={onCrearInforme}
-          style={{ ...B("#f4eee4", "#574e44"), fontSize: 12, padding: "9px 16px" }}
+          style={{ ...B("#dbeafe", "#1e40af"), fontSize: 12, padding: "9px 16px" }}
         >
           Crear informe de actividades
         </button>
         <button
           onClick={pedirConfirmacionCertificado}
           style={{
-            ...B(estaPagada && estaTerminada ? "#16a34a" : "#f4eee4",
-                 estaPagada && estaTerminada ? "#fff" : "#574e44"),
+            ...B(estaPagada && estaTerminada ? "#16a34a" : "#f1f5f9",
+                 estaPagada && estaTerminada ? "#fff" : "#475569"),
             fontSize: 12, padding: "9px 16px",
           }}
         >
           Crear certificación
         </button>
-        <div style={{ fontSize: 10.5, color: "#a2988a", alignSelf: "center", flex: "1 1 180px" }}>
+        <div style={{ fontSize: 10.5, color: "#94a3b8", alignSelf: "center", flex: "1 1 180px" }}>
           Se abren con los datos de esta obra ya cargados.
         </div>
       </div>

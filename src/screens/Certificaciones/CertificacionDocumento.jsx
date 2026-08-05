@@ -9,11 +9,11 @@ export default function CertificacionDocumento({cert}){
   const esRecertificacion = cert.tipo==="Recertificación";
   const elementos = Array.isArray(cert.elementos) ? cert.elementos : [];
   return(
-    <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:12,lineHeight:1.7,border:"1px solid #e8dfd2",borderRadius:4,padding:"36px 44px"}}>
+    <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:12,lineHeight:1.7,border:"1px solid #ddd",borderRadius:4,padding:"36px 44px"}}>
       <div style={{padding:"0 0 14px"}}>
         <PrintHeader dual={true}/>
       </div>
-      <div style={{textAlign:"center",fontSize:10,fontWeight:700,letterSpacing:2,padding:"6px 0",borderBottom:"1px solid #e8dfd2",color:"#574e44",textTransform:"uppercase",marginBottom:20}}>
+      <div style={{textAlign:"center",fontSize:10,fontWeight:700,letterSpacing:2,padding:"6px 0",borderBottom:"1px solid #ddd",color:"#333",textTransform:"uppercase",marginBottom:20}}>
         {esRecertificacion ? "Recertificación de Sistemas Anticaídas · Res. 4272/2021" : "Certificación de Sistemas Anticaídas · Res. 4272/2021"}
       </div>
       <div style={{marginBottom:20}}>
@@ -45,7 +45,7 @@ export default function CertificacionDocumento({cert}){
       <ul style={{marginLeft:24,marginBottom:20}}>
         {elementos.map((el,i)=><li key={i} style={{marginBottom:6}}>{el}</li>)}
       </ul>
-      <div style={{background:"#f9f9f9",border:"1px solid #e8dfd2",borderRadius:6,padding:"14px 18px",marginBottom:20}}>
+      <div style={{background:"#f9f9f9",border:"1px solid #ddd",borderRadius:6,padding:"14px 18px",marginBottom:20}}>
         <div style={{fontWeight:700,marginBottom:10,fontSize:12}}>RECOMENDACIONES PARA TENER EN CUENTA</div>
         <div style={{fontSize:12,marginBottom:10,textAlign:"justify"}}>A continuación, se realizan algunas recomendaciones para preservar en buen estado los sistemas anti caídas certificados en dicha sede:</div>
         <ul style={{marginLeft:20,fontSize:12,lineHeight:1.9,marginBottom:10}}>
@@ -63,12 +63,12 @@ export default function CertificacionDocumento({cert}){
         {firmaImg && <img src={firmaImg} alt="" style={{maxHeight:70,maxWidth:230,objectFit:"contain"}}/>}
       </div>
       <div>
-        <div style={{borderTop:"1px solid #574e44",paddingTop:10,display:"inline-block",minWidth:240}}>
+        <div style={{borderTop:"1px solid #333",paddingTop:10,display:"inline-block",minWidth:240}}>
           <div style={{fontWeight:700}}>{cert.ingeniero}</div>
           <div>{cert.matricula}</div>
         </div>
       </div>
-      <div style={{borderTop:"1px solid #d9cdbb",paddingTop:10,marginTop:30,textAlign:"center",fontSize:10,color:"#756a5e"}}>
+      <div style={{borderTop:"1px solid #ccc",paddingTop:10,marginTop:30,textAlign:"center",fontSize:10,color:"#555"}}>
         Cl 38 sur # 36-48, Envigado, tel. 448 26 86 · Cel. 314 863 40 72 · Nit. 900193965-4 · ingeanclajes.sas@gmail.com
       </div>
     </div>

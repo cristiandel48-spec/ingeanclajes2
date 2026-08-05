@@ -249,11 +249,11 @@ export default function Contabilidad({ctx}){
     return map;
   }, new Map()).values()).sort((a,b)=>String(a.tercero || "").localeCompare(String(b.tercero || ""),"es"));
   const cuentasTributariasRapidas = [
-    {codigo:configActual.cuentaRetefuente, etiqueta:"Retefuente", color:"#2b2622"},
-    {codigo:configActual.cuentaReteiva, etiqueta:"ReteIVA", color:"#574e44"},
+    {codigo:configActual.cuentaRetefuente, etiqueta:"Retefuente", color:"#b91c1c"},
+    {codigo:configActual.cuentaReteiva, etiqueta:"ReteIVA", color:"#7c3aed"},
     {codigo:configActual.cuentaReteica, etiqueta:"ReteICA", color:"#0f766e"},
-    {codigo:configActual.cuentaIvaDescontable, etiqueta:"IVA descontable", color:"#574e44"},
-    {codigo:configActual.cuentaIvaGenerado, etiqueta:"IVA generado", color:"#027a48"},
+    {codigo:configActual.cuentaIvaDescontable, etiqueta:"IVA descontable", color:"#1d4ed8"},
+    {codigo:configActual.cuentaIvaGenerado, etiqueta:"IVA generado", color:"#166534"},
   ].filter((item, index, array)=>item.codigo && array.findIndex((candidate)=>candidate.codigo===item.codigo)===index);
   const saldosTributarios = cuentasTributariasRapidas.map((item)=>{
     const row = balancePrueba.find((candidate)=>candidate.codigo===item.codigo);
@@ -720,18 +720,18 @@ export default function Contabilidad({ctx}){
         subtitle="Plan de cuentas, comprobantes y reportes contables integrados con CxC, CxP y nómina"
         action={
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            <button style={B("#2b2622")} onClick={()=>setTab("comprobantes")}>Comprobantes</button>
-            <button style={B("#2b2622")} onClick={()=>setTab("reportes")}>Reportes</button>
+            <button style={B("#cc0000")} onClick={()=>setTab("comprobantes")}>Comprobantes</button>
+            <button style={B("#003B71")} onClick={()=>setTab("reportes")}>Reportes</button>
           </div>
         }
       />
 
       <div style={{display:"flex",gap:10,marginBottom:18,flexWrap:"wrap"}}>
         {[
-          ["resumen","Resumen","#cc0000","#f4eee4","#574e44"],
-          ["catalogo","Catalogo","#2b2622","#fbf8f3","#574e44"],
-          ["comprobantes","Comprobantes","#027a48","#ecfdf5","#027a48"],
-          ["reportes","Reportes","#574e44","#faf5ff","#574e44"],
+          ["resumen","Resumen","#cc0000","#fff7ed","#9a3412"],
+          ["catalogo","Catalogo","#003B71","#eff6ff","#1d4ed8"],
+          ["comprobantes","Comprobantes","#166534","#ecfdf5","#166534"],
+          ["reportes","Reportes","#7c3aed","#faf5ff","#7c3aed"],
         ].map(([id,label,bg,inactiveBg,inactiveColor])=>(
           <button
             key={id}
@@ -752,14 +752,14 @@ export default function Contabilidad({ctx}){
           <div style={{display:"grid",gridTemplateColumns:"1.1fr 1fr",gap:18}}>
             <div style={CD}>
               <div style={ST}>Base contable 2026</div>
-              <div style={{fontSize:13,color:"#574e44",lineHeight:1.7}}>
-                <div><strong style={{color:"#2b2622"}}>Marco sugerido:</strong> {configActual.marcoNormativoLabel}</div>
-                <div><strong style={{color:"#2b2622"}}>UVT 2026:</strong> {fmt(configActual.uvt)}</div>
-                <div><strong style={{color:"#2b2622"}}>Moneda:</strong> {configActual.moneda}</div>
-                <div><strong style={{color:"#2b2622"}}>Automatico CxC:</strong> {configActual.autoCxc ? "Activo" : "Inactivo"}</div>
-                <div><strong style={{color:"#2b2622"}}>Automatico CxP:</strong> {configActual.autoCxp ? "Activo" : "Inactivo"}</div>
-                <div><strong style={{color:"#2b2622"}}>Automatico nómina:</strong> {configActual.autoNomina ? "Activo" : "Inactivo"}</div>
-                <div style={{marginTop:10,background:"#fbf8f3",border:"1px solid #e8dfd2",borderRadius:12,padding:"12px 14px"}}>
+              <div style={{fontSize:13,color:"#475569",lineHeight:1.7}}>
+                <div><strong style={{color:"#1a1a2e"}}>Marco sugerido:</strong> {configActual.marcoNormativoLabel}</div>
+                <div><strong style={{color:"#1a1a2e"}}>UVT 2026:</strong> {fmt(configActual.uvt)}</div>
+                <div><strong style={{color:"#1a1a2e"}}>Moneda:</strong> {configActual.moneda}</div>
+                <div><strong style={{color:"#1a1a2e"}}>Automatico CxC:</strong> {configActual.autoCxc ? "Activo" : "Inactivo"}</div>
+                <div><strong style={{color:"#1a1a2e"}}>Automatico CxP:</strong> {configActual.autoCxp ? "Activo" : "Inactivo"}</div>
+                <div><strong style={{color:"#1a1a2e"}}>Automatico nómina:</strong> {configActual.autoNomina ? "Activo" : "Inactivo"}</div>
+                <div style={{marginTop:10,background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:"12px 14px"}}>
                   {ACCOUNTING_NORMATIVE_NOTE}
                 </div>
               </div>
@@ -767,19 +767,19 @@ export default function Contabilidad({ctx}){
             <div style={CD}>
               <div style={ST}>Alertas operativas</div>
               <div style={{display:"grid",gap:12}}>
-                <div style={{background:"#fbf8f3",border:"1px solid #e8dfd2",borderRadius:12,padding:"12px 14px"}}>
-                  <div style={{fontSize:11,color:"#574e44",textTransform:"uppercase",marginBottom:4}}>Comprobantes automáticos</div>
-                  <div style={{fontSize:22,fontWeight:800,color:"#574e44"}}>{resumenPeriodo.totalAutomaticos}</div>
-                  <div style={{fontSize:12,color:"#756a5e",marginTop:6}}>
+                <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:12,padding:"12px 14px"}}>
+                  <div style={{fontSize:11,color:"#1d4ed8",textTransform:"uppercase",marginBottom:4}}>Comprobantes automáticos</div>
+                  <div style={{fontSize:22,fontWeight:800,color:"#1d4ed8"}}>{resumenPeriodo.totalAutomaticos}</div>
+                  <div style={{fontSize:12,color:"#64748b",marginTop:6}}>
                     CxC: {automaticosCxc} · CxP: {automaticosCxp} · Nómina: {automaticosNomina}
                   </div>
                 </div>
                 <div style={{background:"#faf5ff",border:"1px solid #e9d5ff",borderRadius:12,padding:"12px 14px"}}>
-                  <div style={{fontSize:11,color:"#574e44",textTransform:"uppercase",marginBottom:4}}>Nóminas generadas</div>
-                  <div style={{fontSize:22,fontWeight:800,color:"#574e44"}}>{nominasProcesadas}</div>
-                  <div style={{fontSize:12,color:"#756a5e",marginTop:6}}>Cada nómina puede causar gasto y, al descargar el plano banco, generar egreso bancario.</div>
+                  <div style={{fontSize:11,color:"#7c3aed",textTransform:"uppercase",marginBottom:4}}>Nóminas generadas</div>
+                  <div style={{fontSize:22,fontWeight:800,color:"#7c3aed"}}>{nominasProcesadas}</div>
+                  <div style={{fontSize:12,color:"#64748b",marginTop:6}}>Cada nómina puede causar gasto y, al descargar el plano banco, generar egreso bancario.</div>
                 </div>
-                <div style={{fontSize:12,color:"#756a5e",lineHeight:1.7}}>
+                <div style={{fontSize:12,color:"#64748b",lineHeight:1.7}}>
                   El libro diario del periodo se nutre de causaciones y recaudos de cuentas por cobrar, causaciones y egresos de cuentas por pagar, y comprobantes automáticos de nómina. Los ajustes especiales siguen disponibles desde comprobantes manuales.
                 </div>
               </div>
@@ -828,12 +828,12 @@ export default function Contabilidad({ctx}){
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:14,flexWrap:"wrap"}}>
               <div style={ST}>Plan de cuentas</div>
               <div style={{display:"flex",gap:8}}>
-                <button style={B("#2b2622")} onClick={()=>{setShowCuentaForm(true);setCuentaForm(buildEmptyPlanCuenta());setEditCuentaId(null);}}>+ Nueva cuenta</button>
-                <button style={B("#f4eee4","#574e44")} onClick={()=>setPlanCuentas(buildDefaultPlanCuentas())}>Restablecer base</button>
+                <button style={B("#003B71")} onClick={()=>{setShowCuentaForm(true);setCuentaForm(buildEmptyPlanCuenta());setEditCuentaId(null);}}>+ Nueva cuenta</button>
+                <button style={B("#f1f5f9","#475569")} onClick={()=>setPlanCuentas(buildDefaultPlanCuentas())}>Restablecer base</button>
               </div>
             </div>
             <div style={{marginBottom:12}}><input value={busquedaCuenta} onChange={(e)=>setBusquedaCuenta(e.target.value)} placeholder="Busca por codigo, nombre o categoria" style={SI}/></div>
-            {showCuentaForm && <div style={{background:"#fbf8f3",border:"1px solid #dbe4f0",borderRadius:12,padding:16,marginBottom:14}}>
+            {showCuentaForm && <div style={{background:"#f8fafc",border:"1px solid #dbe4f0",borderRadius:12,padding:16,marginBottom:14}}>
               <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:12}}>
                 <div><LBL>Codigo</LBL><input value={cuentaForm.codigo} onChange={(e)=>setCuentaForm({...cuentaForm,codigo:e.target.value})} style={SI}/></div>
                 <div><LBL>Nombre</LBL><input value={cuentaForm.nombre} onChange={(e)=>setCuentaForm({...cuentaForm,nombre:e.target.value})} style={SI}/></div>
@@ -845,17 +845,17 @@ export default function Contabilidad({ctx}){
                 <div><LBL>Activa</LBL><select value={cuentaForm.activo?"si":"no"} onChange={(e)=>setCuentaForm({...cuentaForm,activo:e.target.value==="si"})} style={SI}><option value="si">Si</option><option value="no">No</option></select></div>
               </div>
               <div style={{display:"flex",gap:8}}>
-                <button style={B("#2b2622")} onClick={guardarCuentaPlan}>{editCuentaId?"Guardar cambios":"Guardar cuenta"}</button>
-                <button style={B("#f4eee4","#574e44")} onClick={resetCuentaPlan}>Cancelar</button>
+                <button style={B("#cc0000")} onClick={guardarCuentaPlan}>{editCuentaId?"Guardar cambios":"Guardar cuenta"}</button>
+                <button style={B("#f1f5f9","#475569")} onClick={resetCuentaPlan}>Cancelar</button>
               </div>
             </div>}
             <div style={{overflowX:"auto"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-                <thead><tr style={{background:"#f4eee4"}}>{["Codigo","Cuenta","Grupo","Categoria","Naturaleza","Estado","Acciones"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:"left",color:"#756a5e",fontWeight:600,fontSize:11}}>{label}</th>)}</tr></thead>
+                <thead><tr style={{background:"#f1f5f9"}}>{["Codigo","Cuenta","Grupo","Categoria","Naturaleza","Estado","Acciones"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:"left",color:"#64748b",fontWeight:600,fontSize:11}}>{label}</th>)}</tr></thead>
                 <tbody>
                   {cuentasFiltradas.map((cuenta)=>(
-                    <tr key={cuenta.codigo} style={{borderBottom:"1px solid #e8dfd2"}}>
-                      <td style={{padding:"10px",fontWeight:700,color:"#2b2622"}}>{cuenta.codigo}</td>
+                    <tr key={cuenta.codigo} style={{borderBottom:"1px solid #e2e8f0"}}>
+                      <td style={{padding:"10px",fontWeight:700,color:"#003B71"}}>{cuenta.codigo}</td>
                       <td style={{padding:"10px"}}>{cuenta.nombre}</td>
                       <td style={{padding:"10px"}}>{cuenta.grupoReporteLabel}</td>
                       <td style={{padding:"10px"}}>{cuenta.categoriaEstadoLabel}</td>
@@ -863,8 +863,8 @@ export default function Contabilidad({ctx}){
                       <td style={{padding:"10px"}}><Badge estado={cuenta.activo?"Activa":"Inactiva"}/></td>
                       <td style={{padding:"10px"}}>
                         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                          <button style={{...B("#f4eee4","#574e44"),padding:"6px 10px",fontSize:11}} onClick={()=>editarCuentaPlan(cuenta)}>Editar</button>
-                          <button style={{...B(cuenta.activo?"#f4eee4":"#ecfdf5",cuenta.activo?"#574e44":"#027a48"),padding:"6px 10px",fontSize:11}} onClick={()=>alternarCuentaActiva(cuenta.codigo)}>{cuenta.activo?"Desactivar":"Activar"}</button>
+                          <button style={{...B("#f1f5f9","#475569"),padding:"6px 10px",fontSize:11}} onClick={()=>editarCuentaPlan(cuenta)}>Editar</button>
+                          <button style={{...B(cuenta.activo?"#fff7ed":"#ecfdf5",cuenta.activo?"#9a3412":"#166534"),padding:"6px 10px",fontSize:11}} onClick={()=>alternarCuentaActiva(cuenta.codigo)}>{cuenta.activo?"Desactivar":"Activar"}</button>
                         </div>
                       </td>
                     </tr>
@@ -881,19 +881,19 @@ export default function Contabilidad({ctx}){
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap"}}>
             <div style={{...CD,flex:1,padding:16}}>
               <div style={ST}>Libro diario del periodo</div>
-              <div style={{fontSize:12,color:"#756a5e"}}>
+              <div style={{fontSize:12,color:"#64748b"}}>
                 {mostrarComprobantesBuscados
                   ? `${asientosFiltrados.length} comprobante(s) visibles en ${periodo || "todos los periodos"}.`
                   : `Escribe en el buscador para consultar comprobantes de ${periodo || "todos los periodos"}.`}
               </div>
             </div>
             <div style={{display:"flex",gap:8}}>
-              <button style={B("#027a48")} onClick={()=>{setShowAsientoForm(true);setAsientoForm(buildEmptyManualAsiento(manuales, today()));setEditAsientoId(null);}}>+ Nuevo comprobante</button>
+              <button style={B("#166534")} onClick={()=>{setShowAsientoForm(true);setAsientoForm(buildEmptyManualAsiento(manuales, today()));setEditAsientoId(null);}}>+ Nuevo comprobante</button>
             </div>
           </div>
 
           {showAsientoForm && (
-            <div style={{...CD,border:"1px solid #027a48"}}>
+            <div style={{...CD,border:"1px solid #166534"}}>
               <div style={ST}>{editAsientoId?"Editar comprobante manual":"Nuevo comprobante manual"}</div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:12}}>
                 <div><LBL>Fecha</LBL><input type="date" value={asientoForm.fecha} onChange={(e)=>setAsientoForm({...asientoForm,fecha:e.target.value,periodo:e.target.value?.slice(0,7)||""})} style={SI}/></div>
@@ -918,21 +918,21 @@ export default function Contabilidad({ctx}){
                   <input
                     value={asientoForm.terceroNombre ? `${asientoForm.terceroNombre}${resolverTerceroRef(asientoForm.terceroId, asientoForm.terceroNit, asientoForm.terceroNombre) ? ` · ${buscarTerceroERP(resolverTerceroRef(asientoForm.terceroId, asientoForm.terceroNit, asientoForm.terceroNombre))?.tipo || ""}` : ""}` : ""}
                     readOnly
-                    style={{...SI,background:"#fbf8f3",color:"#574e44"}}
+                    style={{...SI,background:"#f8fafc",color:"#334155"}}
                     placeholder="Se completa con el NIT"
                   />
                 </div>
                 <div><LBL>Soporte</LBL><input value={asientoForm.soporte} onChange={(e)=>setAsientoForm({...asientoForm,soporte:e.target.value})} style={SI}/></div>
-                <div><LBL>Nombre tercero</LBL><input value={asientoForm.terceroNombre || ""} readOnly style={{...SI,background:"#fbf8f3",color:"#574e44"}} placeholder="Se completa con el tercero"/></div>
+                <div><LBL>Nombre tercero</LBL><input value={asientoForm.terceroNombre || ""} readOnly style={{...SI,background:"#f8fafc",color:"#334155"}} placeholder="Se completa con el tercero"/></div>
                 <div style={{gridColumn:"span 4"}}><LBL>Descripcion</LBL><input value={asientoForm.descripcion} onChange={(e)=>setAsientoForm({...asientoForm,descripcion:e.target.value})} style={SI}/></div>
               </div>
 
               <div style={{overflowX:"auto",marginBottom:12}}>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:980}}>
-                  <thead><tr style={{background:"#f4eee4"}}>{["Cuenta","Detalle","Tercero","Centro costo","Debito","Credito",""].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:label==="Debito"||label==="Credito"?"right":"left",color:"#756a5e",fontWeight:600,fontSize:11}}>{label}</th>)}</tr></thead>
+                  <thead><tr style={{background:"#f1f5f9"}}>{["Cuenta","Detalle","Tercero","Centro costo","Debito","Credito",""].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:label==="Debito"||label==="Credito"?"right":"left",color:"#64748b",fontWeight:600,fontSize:11}}>{label}</th>)}</tr></thead>
                   <tbody>
                     {(asientoForm.lineas || []).map((linea)=>(
-                      <tr key={linea.id} style={{borderBottom:"1px solid #e8dfd2"}}>
+                      <tr key={linea.id} style={{borderBottom:"1px solid #e2e8f0"}}>
                         <td style={{padding:"8px 10px",minWidth:220}}>
                           <input
                             list="cuentas-movimiento-list"
@@ -951,7 +951,7 @@ export default function Contabilidad({ctx}){
                             <option value="">Usar tercero del encabezado...</option>
                             {tercerosERP.map((tercero)=><option key={tercero.ref} value={tercero.ref}>{tercero.tipo} · {tercero.terceroNombre}</option>)}
                           </select>
-                          <div style={{fontSize:10,color:"#756a5e",marginTop:4}}>
+                          <div style={{fontSize:10,color:"#64748b",marginTop:4}}>
                             NIT: {linea.terceroNit || asientoForm.terceroNit || "—"} · {linea.terceroNombre || asientoForm.terceroNombre || "Sin tercero"}
                           </div>
                         </td>
@@ -967,14 +967,14 @@ export default function Contabilidad({ctx}){
 
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
                 <div style={{display:"flex",gap:8}}>
-                  <button style={B("#2b2622")} onClick={agregarLinea}>+ Linea</button>
-                  <button style={B("#2b2622")} onClick={guardarAsiento}>{editAsientoId?"Guardar cambios":"Guardar comprobante"}</button>
-                  <button style={B("#f4eee4","#574e44")} onClick={resetAsiento}>Cancelar</button>
+                  <button style={B("#003B71")} onClick={agregarLinea}>+ Linea</button>
+                  <button style={B("#cc0000")} onClick={guardarAsiento}>{editAsientoId?"Guardar cambios":"Guardar comprobante"}</button>
+                  <button style={B("#f1f5f9","#475569")} onClick={resetAsiento}>Cancelar</button>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(3,auto)",gap:12,fontSize:12}}>
                   <div><strong>Debito:</strong> {fmt(totalDebitoForm)}</div>
                   <div><strong>Credito:</strong> {fmt(totalCreditoForm)}</div>
-                  <div><strong>Diferencia:</strong> <span style={{color:diferenciaForm===0?"#027a48":"#cc0000"}}>{fmt(diferenciaForm)}</span></div>
+                  <div><strong>Diferencia:</strong> <span style={{color:diferenciaForm===0?"#166534":"#b91c1c"}}>{fmt(diferenciaForm)}</span></div>
                 </div>
               </div>
             </div>
@@ -991,43 +991,43 @@ export default function Contabilidad({ctx}){
             {!mostrarComprobantesBuscados ? null : (
             <div style={{display:"grid",gap:12}}>
               {asientosFiltrados.map((entry)=>(
-                <div key={entry.id} style={{border:"1px solid #e8dfd2",borderRadius:12,overflow:"hidden",background:"#fff"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center",padding:"12px 14px",background:entry.automatico?"#fbf8f3":"#fbf8f3",borderBottom:"1px solid #e8dfd2",flexWrap:"wrap"}}>
+                <div key={entry.id} style={{border:"1px solid #e2e8f0",borderRadius:12,overflow:"hidden",background:"#fff"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center",padding:"12px 14px",background:entry.automatico?"#eff6ff":"#f8fafc",borderBottom:"1px solid #e2e8f0",flexWrap:"wrap"}}>
                     <div>
-                      <div style={{fontWeight:800,color:"#2b2622"}}>{entry.consecutivo || entry.id} · {entry.tipoComprobante}</div>
-                      <div style={{fontSize:12,color:"#756a5e",marginTop:4}}>{fmtD(entry.fecha)} · {entry.descripcion}</div>
-                      <div style={{fontSize:12,color:"#574e44",marginTop:6}}>
+                      <div style={{fontWeight:800,color:"#1a1a2e"}}>{entry.consecutivo || entry.id} · {entry.tipoComprobante}</div>
+                      <div style={{fontSize:12,color:"#64748b",marginTop:4}}>{fmtD(entry.fecha)} · {entry.descripcion}</div>
+                      <div style={{fontSize:12,color:"#334155",marginTop:6}}>
                         <strong>NIT:</strong> {entry.terceroNit || "—"} · <strong>Tercero:</strong> {entry.terceroNombre || "Sin tercero"}
                       </div>
                     </div>
                     <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
                       <Badge estado={entry.automatico?"Automatico":entry.estado}/>
-                      {!entry.automatico && <button style={{...B("#f4eee4","#574e44"),padding:"6px 10px",fontSize:11}} onClick={()=>editarAsiento(entry)}>Editar</button>}
+                      {!entry.automatico && <button style={{...B("#f1f5f9","#475569"),padding:"6px 10px",fontSize:11}} onClick={()=>editarAsiento(entry)}>Editar</button>}
                       {!entry.automatico && entry.estado!=="Anulado" && <button style={{...B("#fff1f2","#be123c"),padding:"6px 10px",fontSize:11}} onClick={()=>anularAsiento(entry.id)}>Anular</button>}
                     </div>
                   </div>
                   <div style={{overflowX:"auto"}}>
                     <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:760}}>
-                      <thead><tr style={{background:"#fbf8f3"}}>{["Cuenta","Detalle","Tercero","Centro costo","Debito","Credito"].map((label)=><th key={label} style={{padding:"8px 10px",textAlign:label==="Debito"||label==="Credito"?"right":"left",fontSize:11,color:"#756a5e"}}>{label}</th>)}</tr></thead>
+                      <thead><tr style={{background:"#fafafa"}}>{["Cuenta","Detalle","Tercero","Centro costo","Debito","Credito"].map((label)=><th key={label} style={{padding:"8px 10px",textAlign:label==="Debito"||label==="Credito"?"right":"left",fontSize:11,color:"#64748b"}}>{label}</th>)}</tr></thead>
                       <tbody>
                         {(entry.lineas || []).map((linea)=>(
-                          <tr key={linea.id} style={{borderTop:"1px solid #f4eee4"}}>
+                          <tr key={linea.id} style={{borderTop:"1px solid #f1f5f9"}}>
                             <td style={{padding:"8px 10px"}}>{linea.cuentaCodigo} · {linea.cuentaNombre}</td>
                             <td style={{padding:"8px 10px"}}>{linea.detalle || "—"}</td>
                             <td style={{padding:"8px 10px"}}>{(linea.terceroNit || entry.terceroNit) ? `${linea.terceroNit || entry.terceroNit} · ` : ""}{linea.terceroNombre || entry.terceroNombre || "—"}</td>
                             <td style={{padding:"8px 10px"}}>{linea.centroCosto || "—"}</td>
-                            <td style={{padding:"8px 10px",textAlign:"right",color:"#027a48"}}>{fmt(linea.debito)}</td>
-                            <td style={{padding:"8px 10px",textAlign:"right",color:"#574e44"}}>{fmt(linea.credito)}</td>
+                            <td style={{padding:"8px 10px",textAlign:"right",color:"#166534"}}>{fmt(linea.debito)}</td>
+                            <td style={{padding:"8px 10px",textAlign:"right",color:"#7c3aed"}}>{fmt(linea.credito)}</td>
                           </tr>
                         ))}
                       </tbody>
-                      <tfoot><tr style={{background:"#fbf8f3"}}><td colSpan={4} style={{padding:"8px 10px",fontWeight:700}}>Totales</td><td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:"#027a48"}}>{fmt(entry.totalDebito)}</td><td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:"#574e44"}}>{fmt(entry.totalCredito)}</td></tr></tfoot>
+                      <tfoot><tr style={{background:"#f8fafc"}}><td colSpan={4} style={{padding:"8px 10px",fontWeight:700}}>Totales</td><td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:"#166534"}}>{fmt(entry.totalDebito)}</td><td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:"#7c3aed"}}>{fmt(entry.totalCredito)}</td></tr></tfoot>
                     </table>
                   </div>
                 </div>
               ))}
               {!asientosFiltrados.length && (
-                <div style={{border:"1px dashed #d9cdbb",borderRadius:14,background:"#fbf8f3",padding:"22px",textAlign:"center",color:"#756a5e",fontSize:13}}>
+                <div style={{border:"1px dashed #cbd5e1",borderRadius:14,background:"#f8fafc",padding:"22px",textAlign:"center",color:"#64748b",fontSize:13}}>
                   No hay comprobantes que coincidan con esa búsqueda.
                 </div>
               )}
@@ -1041,21 +1041,21 @@ export default function Contabilidad({ctx}){
         <div id="pz" className="doc-shell">
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:18,flexWrap:"wrap"}}>
             <div>
-              <div style={{fontSize:24,fontWeight:800,color:"#2b2622"}}>Reportes contables</div>
-              <div style={{fontSize:12,color:"#756a5e",marginTop:4}}>Estados financieros, libro auxiliar por cuenta/tercero y conciliación bancaria para {periodo || "todos los periodos"}.</div>
+              <div style={{fontSize:24,fontWeight:800,color:"#1a1a2e"}}>Reportes contables</div>
+              <div style={{fontSize:12,color:"#64748b",marginTop:4}}>Estados financieros, libro auxiliar por cuenta/tercero y conciliación bancaria para {periodo || "todos los periodos"}.</div>
             </div>
             <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
               <input type="month" value={periodo} onChange={(e)=>setPeriodo(e.target.value)} style={{...SI,width:"auto"}}/>
-              <button style={B("#027a48")} onClick={exportarExcelContabilidad}>Exportar Excel</button>
-              <button style={B("#574e44")} onClick={()=>printCurrentPz("Contabilidad " + (periodo || "general"))}>Imprimir</button>
+              <button style={B("#166534")} onClick={exportarExcelContabilidad}>Exportar Excel</button>
+              <button style={B("#7c3aed")} onClick={()=>printCurrentPz("Contabilidad " + (periodo || "general"))}>Imprimir</button>
             </div>
           </div>
 
           <div style={{display:"flex",gap:8,marginBottom:18,flexWrap:"wrap"}}>
             {[
-              ["general","Vista general","#574e44","#faf5ff","#574e44"],
-              ["movimientos","Auxiliar por cuenta","#2b2622","#fbf8f3","#574e44"],
-              ["conciliacion","Conciliación bancaria","#027a48","#ecfdf5","#027a48"],
+              ["general","Vista general","#7c3aed","#faf5ff","#7c3aed"],
+              ["movimientos","Auxiliar por cuenta","#003B71","#eff6ff","#1d4ed8"],
+              ["conciliacion","Conciliación bancaria","#166534","#ecfdf5","#166534"],
             ].map(([id,label,bg,inactiveBg,inactiveColor])=>(
               <button
                 key={id}
@@ -1077,19 +1077,19 @@ export default function Contabilidad({ctx}){
                 <div style={CD}>
                   <div style={ST}>Estado de resultados</div>
                   <div style={{display:"grid",gap:8,fontSize:13}}>
-                    <div style={{display:"flex",justifyContent:"space-between"}}><span>Ingresos</span><strong style={{color:"#027a48"}}>{fmt(estados.resultados.totalIngresos)}</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between"}}><span>Costos</span><strong style={{color:"#574e44"}}>{fmt(estados.resultados.totalCostos)}</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between"}}><span>Utilidad bruta</span><strong style={{color:estados.resultados.utilidadBruta>=0?"#027a48":"#cc0000"}}>{fmt(estados.resultados.utilidadBruta)}</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between"}}><span>Gastos</span><strong style={{color:"#574e44"}}>{fmt(estados.resultados.totalGastos)}</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between",paddingTop:8,borderTop:"1px solid #e8dfd2"}}><span>Utilidad operacional</span><strong style={{color:estados.resultados.utilidadOperacional>=0?"#027a48":"#cc0000"}}>{fmt(estados.resultados.utilidadOperacional)}</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between"}}><span>Ingresos</span><strong style={{color:"#166534"}}>{fmt(estados.resultados.totalIngresos)}</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between"}}><span>Costos</span><strong style={{color:"#c2410c"}}>{fmt(estados.resultados.totalCostos)}</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between"}}><span>Utilidad bruta</span><strong style={{color:estados.resultados.utilidadBruta>=0?"#166534":"#b91c1c"}}>{fmt(estados.resultados.utilidadBruta)}</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between"}}><span>Gastos</span><strong style={{color:"#7c3aed"}}>{fmt(estados.resultados.totalGastos)}</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between",paddingTop:8,borderTop:"1px solid #e2e8f0"}}><span>Utilidad operacional</span><strong style={{color:estados.resultados.utilidadOperacional>=0?"#166534":"#b91c1c"}}>{fmt(estados.resultados.utilidadOperacional)}</strong></div>
                   </div>
                 </div>
                 <div style={CD}>
                   <div style={ST}>Estado de situacion financiera</div>
                   <div style={{display:"grid",gap:8,fontSize:13}}>
-                    <div style={{display:"flex",justifyContent:"space-between"}}><span>Activos</span><strong style={{color:"#027a48"}}>{fmt(estados.balance.totalActivos)}</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between"}}><span>Pasivos</span><strong style={{color:"#574e44"}}>{fmt(estados.balance.totalPasivos)}</strong></div>
-                    <div style={{display:"flex",justifyContent:"space-between"}}><span>Patrimonio total</span><strong style={{color:"#2b2622"}}>{fmt(estados.balance.totalPatrimonio)}</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between"}}><span>Activos</span><strong style={{color:"#166534"}}>{fmt(estados.balance.totalActivos)}</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between"}}><span>Pasivos</span><strong style={{color:"#c2410c"}}>{fmt(estados.balance.totalPasivos)}</strong></div>
+                    <div style={{display:"flex",justifyContent:"space-between"}}><span>Patrimonio total</span><strong style={{color:"#003B71"}}>{fmt(estados.balance.totalPatrimonio)}</strong></div>
                   </div>
                 </div>
               </div>
@@ -1098,11 +1098,11 @@ export default function Contabilidad({ctx}){
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:12,flexWrap:"wrap"}}>
                   <div>
                     <div style={ST}>Saldos tributarios relevantes</div>
-                    <div style={{fontSize:12,color:"#756a5e"}}>Consulta rápida de retenciones e IVA del periodo.</div>
+                    <div style={{fontSize:12,color:"#64748b"}}>Consulta rápida de retenciones e IVA del periodo.</div>
                   </div>
                   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                     {cuentasTributariasRapidas.map((item)=>(
-                      <button key={item.codigo} style={{...B("#fbf8f3",item.color),border:`1px solid ${item.color}`}} onClick={()=>aplicarConsultaTributaria(item.codigo)}>
+                      <button key={item.codigo} style={{...B("#f8fafc",item.color),border:`1px solid ${item.color}`}} onClick={()=>aplicarConsultaTributaria(item.codigo)}>
                         {item.etiqueta}
                       </button>
                     ))}
@@ -1110,16 +1110,16 @@ export default function Contabilidad({ctx}){
                 </div>
                 <div style={{overflowX:"auto"}}>
                   <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:820}}>
-                    <thead><tr style={{background:"#f4eee4"}}>{["Consulta","Codigo","Cuenta","Debitos","Creditos","Saldo natural"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:["Debitos","Creditos","Saldo natural"].includes(label)?"right":"left",color:"#756a5e",fontWeight:600,fontSize:11}}>{label}</th>)}</tr></thead>
+                    <thead><tr style={{background:"#f1f5f9"}}>{["Consulta","Codigo","Cuenta","Debitos","Creditos","Saldo natural"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:["Debitos","Creditos","Saldo natural"].includes(label)?"right":"left",color:"#64748b",fontWeight:600,fontSize:11}}>{label}</th>)}</tr></thead>
                     <tbody>
                       {saldosTributarios.map((row)=>(
-                        <tr key={row.codigo} style={{borderBottom:"1px solid #e8dfd2"}}>
+                        <tr key={row.codigo} style={{borderBottom:"1px solid #e2e8f0"}}>
                           <td style={{padding:"8px 10px",fontWeight:700,color:row.color}}>{row.etiqueta}</td>
-                          <td style={{padding:"8px 10px",fontWeight:700,color:"#2b2622"}}>{row.codigo}</td>
+                          <td style={{padding:"8px 10px",fontWeight:700,color:"#003B71"}}>{row.codigo}</td>
                           <td style={{padding:"8px 10px"}}>{row.nombre}</td>
-                          <td style={{padding:"8px 10px",textAlign:"right",color:"#027a48"}}>{fmt(row.debitos)}</td>
-                          <td style={{padding:"8px 10px",textAlign:"right",color:"#574e44"}}>{fmt(row.creditos)}</td>
-                          <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:Number(row.saldoNatural || 0)>=0?"#2b2622":"#cc0000"}}>{fmt(row.saldoNatural)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",color:"#166534"}}>{fmt(row.debitos)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",color:"#7c3aed"}}>{fmt(row.creditos)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:Number(row.saldoNatural || 0)>=0?"#1a1a2e":"#b91c1c"}}>{fmt(row.saldoNatural)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1131,16 +1131,16 @@ export default function Contabilidad({ctx}){
                 <div style={ST}>Balance de prueba</div>
                 <div style={{overflowX:"auto"}}>
                   <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:980}}>
-                    <thead><tr style={{background:"#f4eee4"}}>{["Codigo","Cuenta","Grupo","Debitos","Creditos","Saldo natural"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:["Debitos","Creditos","Saldo natural"].includes(label)?"right":"left",color:"#756a5e",fontWeight:600,fontSize:11}}>{label}</th>)}</tr></thead>
+                    <thead><tr style={{background:"#f1f5f9"}}>{["Codigo","Cuenta","Grupo","Debitos","Creditos","Saldo natural"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:["Debitos","Creditos","Saldo natural"].includes(label)?"right":"left",color:"#64748b",fontWeight:600,fontSize:11}}>{label}</th>)}</tr></thead>
                     <tbody>
                       {balancePrueba.map((row)=>(
-                        <tr key={row.codigo} style={{borderBottom:"1px solid #e8dfd2"}}>
-                          <td style={{padding:"8px 10px",fontWeight:700,color:"#2b2622"}}>{row.codigo}</td>
+                        <tr key={row.codigo} style={{borderBottom:"1px solid #e2e8f0"}}>
+                          <td style={{padding:"8px 10px",fontWeight:700,color:"#003B71"}}>{row.codigo}</td>
                           <td style={{padding:"8px 10px"}}>{row.nombre}</td>
                           <td style={{padding:"8px 10px"}}>{row.grupoReporteLabel}</td>
-                          <td style={{padding:"8px 10px",textAlign:"right",color:"#027a48"}}>{fmt(row.debitos)}</td>
-                          <td style={{padding:"8px 10px",textAlign:"right",color:"#574e44"}}>{fmt(row.creditos)}</td>
-                          <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:row.saldoNatural>=0?"#2b2622":"#cc0000"}}>{fmt(row.saldoNatural)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",color:"#166534"}}>{fmt(row.debitos)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",color:"#7c3aed"}}>{fmt(row.creditos)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:row.saldoNatural>=0?"#1a1a2e":"#b91c1c"}}>{fmt(row.saldoNatural)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1152,18 +1152,18 @@ export default function Contabilidad({ctx}){
                 <div style={ST}>Libro diario resumido</div>
                 <div style={{overflowX:"auto"}}>
                   <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:980}}>
-                    <thead><tr style={{background:"#f4eee4"}}>{["Fecha","Comprobante","NIT","Tercero","Descripcion","Origen","Debito","Credito"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:label==="Debito"||label==="Credito"?"right":"left",color:"#756a5e",fontWeight:600,fontSize:11}}>{label}</th>)}</tr></thead>
+                    <thead><tr style={{background:"#f1f5f9"}}>{["Fecha","Comprobante","NIT","Tercero","Descripcion","Origen","Debito","Credito"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:label==="Debito"||label==="Credito"?"right":"left",color:"#64748b",fontWeight:600,fontSize:11}}>{label}</th>)}</tr></thead>
                     <tbody>
                       {asientosFiltrados.map((entry)=>(
-                        <tr key={entry.id} style={{borderBottom:"1px solid #e8dfd2"}}>
+                        <tr key={entry.id} style={{borderBottom:"1px solid #e2e8f0"}}>
                           <td style={{padding:"8px 10px"}}>{fmtD(entry.fecha)}</td>
-                          <td style={{padding:"8px 10px",fontWeight:700,color:"#2b2622"}}>{entry.consecutivo || entry.id}</td>
+                          <td style={{padding:"8px 10px",fontWeight:700,color:"#003B71"}}>{entry.consecutivo || entry.id}</td>
                           <td style={{padding:"8px 10px"}}>{entry.terceroNit || "—"}</td>
                           <td style={{padding:"8px 10px"}}>{entry.terceroNombre || "Sin tercero"}</td>
                           <td style={{padding:"8px 10px"}}>{entry.descripcion}</td>
                           <td style={{padding:"8px 10px"}}>{entry.automatico?"Automatico":"Manual"}</td>
-                          <td style={{padding:"8px 10px",textAlign:"right",color:"#027a48"}}>{fmt(entry.totalDebito)}</td>
-                          <td style={{padding:"8px 10px",textAlign:"right",color:"#574e44"}}>{fmt(entry.totalCredito)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",color:"#166534"}}>{fmt(entry.totalDebito)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",color:"#7c3aed"}}>{fmt(entry.totalCredito)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1202,39 +1202,39 @@ export default function Contabilidad({ctx}){
               </div>
               <div style={CD}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:12,flexWrap:"wrap"}}>
-                  <div style={{fontSize:12,color:"#756a5e"}}>
+                  <div style={{fontSize:12,color:"#64748b"}}>
                     {movimientosCuenta.length} movimiento(s) · Débitos {fmt(resumenAuxiliar.debitos)} · Créditos {fmt(resumenAuxiliar.creditos)} · Saldo {fmt(resumenAuxiliar.saldo)}
                   </div>
-                  <div style={{fontSize:12,color:"#756a5e"}}>
+                  <div style={{fontSize:12,color:"#64748b"}}>
                     {filtroTerceroMovimientoRef ? `Filtro tercero: ${filtroTerceroMovimientoRef}` : "Sin filtro de tercero"}
                   </div>
                 </div>
                 <div style={{overflowX:"auto"}}>
                   <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:1200}}>
                     <thead>
-                      <tr style={{background:"#f4eee4"}}>
-                        {["Fecha","Comprobante","Cuenta","NIT","Tercero","Detalle","Centro costo","Debito","Credito","Saldo acumulado","Origen"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:["Debito","Credito","Saldo acumulado"].includes(label)?"right":"left",color:"#756a5e",fontWeight:600,fontSize:11}}>{label}</th>)}
+                      <tr style={{background:"#f1f5f9"}}>
+                        {["Fecha","Comprobante","Cuenta","NIT","Tercero","Detalle","Centro costo","Debito","Credito","Saldo acumulado","Origen"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:["Debito","Credito","Saldo acumulado"].includes(label)?"right":"left",color:"#64748b",fontWeight:600,fontSize:11}}>{label}</th>)}
                       </tr>
                     </thead>
                     <tbody>
                       {movimientosCuenta.length===0 ? (
                         <tr>
-                          <td colSpan={11} style={{padding:18,textAlign:"center",color:"#a2988a"}}>
+                          <td colSpan={11} style={{padding:18,textAlign:"center",color:"#94a3b8"}}>
                             No hay movimientos para ese NIT, cédula, tercero o cuenta en el rango seleccionado.
                           </td>
                         </tr>
                       ) : movimientosCuenta.map((row)=>(
-                        <tr key={row.rowId} style={{borderBottom:"1px solid #e8dfd2"}}>
+                        <tr key={row.rowId} style={{borderBottom:"1px solid #e2e8f0"}}>
                           <td style={{padding:"8px 10px"}}>{fmtD(row.fecha)}</td>
-                          <td style={{padding:"8px 10px",fontWeight:700,color:"#2b2622"}}>{row.consecutivo}</td>
+                          <td style={{padding:"8px 10px",fontWeight:700,color:"#003B71"}}>{row.consecutivo}</td>
                           <td style={{padding:"8px 10px"}}>{row.cuentaCodigo} · {row.cuentaNombre || "Cuenta"}</td>
                           <td style={{padding:"8px 10px"}}>{row.terceroNit || "—"}</td>
                           <td style={{padding:"8px 10px"}}>{row.terceroNombre || "Sin tercero"}</td>
                           <td style={{padding:"8px 10px"}}>{row.detalle || row.descripcion || "—"}</td>
                           <td style={{padding:"8px 10px"}}>{row.centroCosto || "—"}</td>
-                          <td style={{padding:"8px 10px",textAlign:"right",color:"#027a48"}}>{fmt(row.debito)}</td>
-                          <td style={{padding:"8px 10px",textAlign:"right",color:"#574e44"}}>{fmt(row.credito)}</td>
-                          <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:Number(row.saldoAcumulado || 0)>=0?"#2b2622":"#cc0000"}}>{fmt(row.saldoAcumulado)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",color:"#166534"}}>{fmt(row.debito)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",color:"#7c3aed"}}>{fmt(row.credito)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:Number(row.saldoAcumulado || 0)>=0?"#1a1a2e":"#b91c1c"}}>{fmt(row.saldoAcumulado)}</td>
                           <td style={{padding:"8px 10px"}}>{row.origen || "manual"}</td>
                         </tr>
                       ))}
@@ -1264,17 +1264,17 @@ export default function Contabilidad({ctx}){
                     <LBL>Fecha final</LBL>
                     <input type="date" value={rangoReportes.fin} onChange={(e)=>setRangoReportes((prev)=>({...prev,fin:e.target.value}))} style={SI}/>
                   </div>
-                  <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:"#574e44",paddingBottom:12}}>
+                  <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:"#334155",paddingBottom:12}}>
                     <input type="checkbox" checked={soloPendientesConciliacion} onChange={(e)=>setSoloPendientesConciliacion(e.target.checked)}/>
                     Mostrar solo pendientes
                   </label>
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",gap:10,flexWrap:"wrap"}}>
                   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                    <button style={B("#027a48")} onClick={()=>marcarMovimientosConciliacionVisible(true)}>Marcar visibles conciliados</button>
-                    <button style={B("#f4eee4","#574e44")} onClick={()=>marcarMovimientosConciliacionVisible(false)}>Quitar conciliación visible</button>
+                    <button style={B("#166534")} onClick={()=>marcarMovimientosConciliacionVisible(true)}>Marcar visibles conciliados</button>
+                    <button style={B("#f1f5f9","#475569")} onClick={()=>marcarMovimientosConciliacionVisible(false)}>Quitar conciliación visible</button>
                   </div>
-                  <div style={{fontSize:12,color:"#756a5e"}}>
+                  <div style={{fontSize:12,color:"#64748b"}}>
                     Cuenta de trabajo: <strong>{cuentaConciliacion || "Sin seleccionar"}</strong>
                   </div>
                 </div>
@@ -1283,31 +1283,31 @@ export default function Contabilidad({ctx}){
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:12,flexWrap:"wrap"}}>
                   <div>
                     <div style={ST}>Conciliación bancaria</div>
-                    <div style={{fontSize:12,color:"#756a5e"}}>Selecciona los movimientos del banco conciliados a cierre de mes.</div>
+                    <div style={{fontSize:12,color:"#64748b"}}>Selecciona los movimientos del banco conciliados a cierre de mes.</div>
                   </div>
-                  <div style={{fontSize:12,color:"#756a5e"}}>
+                  <div style={{fontSize:12,color:"#64748b"}}>
                     Débitos {fmt(resumenConciliacion.debitos)} · Créditos {fmt(resumenConciliacion.creditos)}
                   </div>
                 </div>
                 <div style={{overflowX:"auto"}}>
                   <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:1120}}>
-                    <thead><tr style={{background:"#f4eee4"}}>{["OK","Fecha","Comprobante","Detalle","NIT","Tercero","Debito","Credito","Saldo","Origen"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:["Debito","Credito","Saldo"].includes(label)?"right":"left",color:"#756a5e",fontWeight:600,fontSize:11}}>{label}</th>)}</tr></thead>
+                    <thead><tr style={{background:"#f1f5f9"}}>{["OK","Fecha","Comprobante","Detalle","NIT","Tercero","Debito","Credito","Saldo","Origen"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:["Debito","Credito","Saldo"].includes(label)?"right":"left",color:"#64748b",fontWeight:600,fontSize:11}}>{label}</th>)}</tr></thead>
                     <tbody>
                       {movimientosConciliacionVisibles.length===0 ? (
-                        <tr><td colSpan={10} style={{padding:18,textAlign:"center",color:"#a2988a"}}>No hay movimientos bancarios para el filtro actual.</td></tr>
+                        <tr><td colSpan={10} style={{padding:18,textAlign:"center",color:"#94a3b8"}}>No hay movimientos bancarios para el filtro actual.</td></tr>
                       ) : movimientosConciliacionVisibles.map((row)=>(
-                        <tr key={row.rowId} style={{borderBottom:"1px solid #e8dfd2",background:row.conciliado?"#f0fdf4":"#fff"}}>
+                        <tr key={row.rowId} style={{borderBottom:"1px solid #e2e8f0",background:row.conciliado?"#f0fdf4":"#fff"}}>
                           <td style={{padding:"8px 10px"}}>
                             <input type="checkbox" checked={row.conciliado} onChange={()=>alternarMovimientoConciliado(row.rowId)}/>
                           </td>
                           <td style={{padding:"8px 10px"}}>{fmtD(row.fecha)}</td>
-                          <td style={{padding:"8px 10px",fontWeight:700,color:"#2b2622"}}>{row.consecutivo}</td>
+                          <td style={{padding:"8px 10px",fontWeight:700,color:"#003B71"}}>{row.consecutivo}</td>
                           <td style={{padding:"8px 10px"}}>{row.detalle || row.descripcion || "—"}</td>
                           <td style={{padding:"8px 10px"}}>{row.terceroNit || "—"}</td>
                           <td style={{padding:"8px 10px"}}>{row.terceroNombre || "Sin tercero"}</td>
-                          <td style={{padding:"8px 10px",textAlign:"right",color:"#027a48"}}>{fmt(row.debito)}</td>
-                          <td style={{padding:"8px 10px",textAlign:"right",color:"#574e44"}}>{fmt(row.credito)}</td>
-                          <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:Number(row.saldoAcumulado || 0)>=0?"#2b2622":"#cc0000"}}>{fmt(row.saldoAcumulado)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",color:"#166534"}}>{fmt(row.debito)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",color:"#7c3aed"}}>{fmt(row.credito)}</td>
+                          <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:Number(row.saldoAcumulado || 0)>=0?"#1a1a2e":"#b91c1c"}}>{fmt(row.saldoAcumulado)}</td>
                           <td style={{padding:"8px 10px"}}>{row.origen || "manual"}</td>
                         </tr>
                       ))}

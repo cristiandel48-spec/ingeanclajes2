@@ -154,7 +154,7 @@ Cancelar: se la entregas tú.`);
       <H1
         title="Usuarios y permisos"
         subtitle="Quién entra al sistema y a qué módulos"
-        action={<button style={B("#2b2622")} onClick={abrirNuevo}>+ Nuevo usuario</button>}
+        action={<button style={B("#f47c20")} onClick={abrirNuevo}>+ Nuevo usuario</button>}
       />
 
       <AvisoFlujo tono="info" titulo="Cada persona ve solo lo que le marques">
@@ -198,26 +198,26 @@ Cancelar: se la entregas tú.`);
               <input type="email" value={form.email} disabled={Boolean(editId)}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 placeholder="persona@ingeanclajes.com"
-                style={{ ...SI, ...(editId ? { background: "#fbf8f3", color: "#a2988a" } : {}) }} />
-              {editId && <div style={{ fontSize: 10, color: "#a2988a", marginTop: 4 }}>El correo no se puede cambiar.</div>}
+                style={{ ...SI, ...(editId ? { background: "#f8fafc", color: "#94a3b8" } : {}) }} />
+              {editId && <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 4 }}>El correo no se puede cambiar.</div>}
             </div>
             {!editId && (
               <div>
                 <LBL>Contraseña provisional</LBL>
                 <input value={form.clave} onChange={(e) => setForm({ ...form, clave: e.target.value })}
                   placeholder="Mínimo 8 caracteres" style={SI} />
-                <label style={{ display: "flex", alignItems: "flex-start", gap: 7, marginTop: 7, fontSize: 11.5, color: "#574e44", cursor: "pointer" }}>
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 7, marginTop: 7, fontSize: 11.5, color: "#334155", cursor: "pointer" }}>
                   <input type="checkbox" checked={form.enviarCorreo} style={{ marginTop: 2 }}
                     onChange={(e) => setForm({ ...form, enviarCorreo: e.target.checked })} />
                   <span>
                     Enviarle estos datos por correo desde la cuenta de la empresa.
                     {form.enviarCorreo && (
-                      <span style={{ display: "block", color: "#a2988a", marginTop: 3 }}>
+                      <span style={{ display: "block", color: "#94a3b8", marginTop: 3 }}>
                         La contraseña queda escrita en su bandeja de entrada. El correo le pide cambiarla al entrar.
                       </span>
                     )}
                     {!form.enviarCorreo && (
-                      <span style={{ display: "block", color: "#a2988a", marginTop: 3 }}>
+                      <span style={{ display: "block", color: "#94a3b8", marginTop: 3 }}>
                         Anótala y entrégasela tú.
                       </span>
                     )}
@@ -230,7 +230,7 @@ Cancelar: se la entregas tú.`);
               <select value={form.rol} onChange={(e) => setForm({ ...form, rol: e.target.value })} style={SI}>
                 {ROLES.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
               </select>
-              <div style={{ fontSize: 10, color: "#a2988a", marginTop: 4 }}>
+              <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 4 }}>
                 {ROLES.find((r) => r.id === form.rol)?.detalle}
               </div>
             </div>
@@ -248,8 +248,8 @@ Cancelar: se la entregas tú.`);
                   .map((s) => ({ ...s, items: s.items.filter((i) => !MODULOS_SOLO_ADMIN.includes(i.id)) }))
                   .filter((s) => s.items.length > 0)
                   .map((seccion) => (
-                  <div key={seccion.title} style={{ border: "1px solid #e8dfd2", borderRadius: 10, padding: "10px 12px" }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "#a2988a", marginBottom: 7 }}>
+                  <div key={seccion.title} style={{ border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px 12px" }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "#94a3b8", marginBottom: 7 }}>
                       {seccion.title}
                     </div>
                     {seccion.items.filter((item) => !MODULOS_SOLO_ADMIN.includes(item.id)).map((item) => {
@@ -257,7 +257,7 @@ Cancelar: se la entregas tú.`);
                       return (
                         <label key={item.id} style={{
                           display: "flex", alignItems: "center", gap: 8, padding: "4px 0",
-                          fontSize: 12, color: fijo ? "#a2988a" : "#574e44",
+                          fontSize: 12, color: fijo ? "#94a3b8" : "#334155",
                           cursor: fijo ? "default" : "pointer",
                         }}>
                           <input type="checkbox" disabled={fijo}
@@ -274,10 +274,10 @@ Cancelar: se la entregas tú.`);
           )}
 
           <div style={{ display: "flex", gap: 10 }}>
-            <button style={B("#2b2622", "#ffffff")} onClick={guardar} disabled={guardando}>
+            <button style={B("#4ade80", "#0f2d1a")} onClick={guardar} disabled={guardando}>
               {guardando ? "Guardando…" : editId ? "Guardar cambios" : "Crear usuario"}
             </button>
-            <button style={B("#f4eee4", "#574e44")} onClick={() => { setAbierto(false); setEditId(null); }} disabled={guardando}>
+            <button style={B("#f1f5f9", "#475569")} onClick={() => { setAbierto(false); setEditId(null); }} disabled={guardando}>
               Cancelar
             </button>
           </div>
@@ -285,7 +285,7 @@ Cancelar: se la entregas tú.`);
       )}
 
       {cargando ? (
-        <div style={{ ...CD, color: "#756a5e", fontSize: 13 }}>Cargando el equipo…</div>
+        <div style={{ ...CD, color: "#64748b", fontSize: 13 }}>Cargando el equipo…</div>
       ) : (
         <div style={{ display: "grid", gap: 12 }}>
           {sinCuentasSoporte(usuarios).map((u) => {
@@ -299,14 +299,14 @@ Cancelar: se la entregas tú.`);
                           antes de esto quedaron en minuscula y no se van a
                           arreglar solas hasta que alguien las edite. */}
                       {normalizarNombrePropio(u.nombre) || u.email}
-                      {soyYo(u) && <span style={{ fontSize: 11, fontWeight: 600, color: "#2b2622" }}> · tú</span>}
+                      {soyYo(u) && <span style={{ fontSize: 11, fontWeight: 600, color: "#f47c20" }}> · tú</span>}
                     </div>
-                    <div style={{ fontSize: 11.5, color: "#756a5e", marginTop: 2 }}>{u.email}</div>
-                    <div style={{ fontSize: 11.5, color: "#574e44", marginTop: 6 }}>
+                    <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2 }}>{u.email}</div>
+                    <div style={{ fontSize: 11.5, color: "#475569", marginTop: 6 }}>
                       <strong>{ROL_LABEL[u.role] || u.role}</strong>
-                      {!u.activo && <span style={{ color: "#cc0000" }}> · acceso suspendido</span>}
+                      {!u.activo && <span style={{ color: "#b42318" }}> · acceso suspendido</span>}
                     </div>
-                    <div style={{ fontSize: 11.5, color: "#756a5e", marginTop: 4, lineHeight: 1.5 }}>
+                    <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 4, lineHeight: 1.5 }}>
                       {modulos === null
                         ? "Entra a todos los módulos."
                         : modulos.length === 0
@@ -316,21 +316,21 @@ Cancelar: se la entregas tú.`);
                   </div>
 
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}>
-                    <button style={{ ...B("#f4eee4", "#574e44"), fontSize: 11.5, padding: "7px 13px" }}
+                    <button style={{ ...B("#dbeafe", "#1e40af"), fontSize: 11.5, padding: "7px 13px" }}
                       onClick={() => abrirEdicion(u)} disabled={guardando}>Editar</button>
-                    <button style={{ ...B("#f4eee4", "#574e44"), fontSize: 11.5, padding: "7px 13px" }}
+                    <button style={{ ...B("#f1f5f9", "#475569"), fontSize: 11.5, padding: "7px 13px" }}
                       onClick={() => nuevaClave(u)} disabled={guardando}>Cambiar contraseña</button>
                     {!soyYo(u) && (u.activo ? (
-                      <button style={{ ...B("#f4eee4", "#b54708"), fontSize: 11.5, padding: "7px 13px" }}
+                      <button style={{ ...B("#fff7ed", "#b45309"), fontSize: 11.5, padding: "7px 13px" }}
                         onClick={() => ejecutar(() => desactivarUsuario(u.user_id), `${u.email} quedó suspendido.`)}
                         disabled={guardando}>Suspender</button>
                     ) : (
-                      <button style={{ ...B("#f4eee4", "#027a48"), fontSize: 11.5, padding: "7px 13px" }}
+                      <button style={{ ...B("#e8f5ee", "#166534"), fontSize: 11.5, padding: "7px 13px" }}
                         onClick={() => ejecutar(() => reactivarUsuario(u.user_id), `${u.email} volvió a tener acceso.`)}
                         disabled={guardando}>Reactivar</button>
                     ))}
                     {!soyYo(u) && (
-                      <button style={{ ...B("#f9e9e4", "#cc0000"), fontSize: 11.5, padding: "7px 13px" }}
+                      <button style={{ ...B("#fef2f2", "#b42318"), fontSize: 11.5, padding: "7px 13px" }}
                         onClick={() => quitarAcceso(u)} disabled={guardando}>Quitar</button>
                     )}
                   </div>

@@ -45,6 +45,20 @@ export default function CertificacionDocumento({cert}){
       <ul style={{marginLeft:24,marginBottom:20}}>
         {elementos.map((el,i)=><li key={i} style={{marginBottom:6}}>{el}</li>)}
       </ul>
+
+      {/* Cierre de la certificacion. Va DESPUES de la lista porque continua la
+          frase: los elementos de arriba son los que tienen ese objetivo.
+          Estaba solo dentro del parrafo largo de la recertificacion, asi que
+          en las certificaciones se perdia. */}
+      {!esRecertificacion && (
+        <div style={{textAlign:"justify",marginBottom:20,lineHeight:1.8}}>
+          cuyo objetivo es la fijación segura de los trabajadores al momento de realizar tareas que
+          impliquen riesgo de caída, cumplen a cabalidad con la {cert.normativa} del ministerio de
+          trabajo, por la cual se establece el reglamento de seguridad para protección contra caídas
+          en trabajo en altura. Todos los elementos que componen los diferentes sistemas anticaídas
+          se encuentran en excelente estado.
+        </div>
+      )}
       <div style={{background:"#f9f9f9",border:"1px solid #ddd",borderRadius:6,padding:"14px 18px",marginBottom:20}}>
         <div style={{fontWeight:700,marginBottom:10,fontSize:12}}>RECOMENDACIONES PARA TENER EN CUENTA</div>
         <div style={{fontSize:12,marginBottom:10,textAlign:"justify"}}>A continuación, se realizan algunas recomendaciones para preservar en buen estado los sistemas anti caídas certificados en dicha sede:</div>

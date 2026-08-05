@@ -11,7 +11,6 @@ import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { getEstadoFlujoObra } from "../../lib/flujoObra";
 import { printCurrentPz } from "../../lib/print";
 import { siguienteIdUnico } from "../../lib/identificadores";
-import { getQuoteActiveProposal, normalizeQuoteItems } from "../../lib/cotizaciones";
 // Informes de una obra. Si se indica uno concreto, solo ese.
 const informesFuente = (informes, obraId, informeId = "")=>{
   if(!obraId) return [];
@@ -113,50 +112,6 @@ export default function Certificaciones({ctx}){
   // El informe elegido en el formulario, si hay mas de uno.
   const [informeRef,setInformeRef]=useState("");
 
-  // Lo que se cotizo para esta obra: el detalle de los items.
-  //
-  // Es la fuente mas fiable de QUE se certifica, porque es lo que se vendio y
-  // lo que se cobra. Antes habia que abrir la cotizacion para verlo, y la
-  // cantidad se escribia a mano mirando ese documento.
-  //
-  // El camino es obra → cotizacionId → cotizacion → propuesta activa → items.
-  const itemsDeLaObra = (obraId)=>{
-    const obra = (obras||[]).find((o)=>o.id===obraId);
-    if(!obra?.cotizacionId) return [];
-    const cot = (cotizaciones||[]).find((c)=>c.id===obra.cotizacionId);
-    if(!cot) return [];
-    return normalizeQuoteItems(getQuoteActiveProposal(cot).items?.length
-      ? {...cot, items:getQuoteActiveProposal(cot).items}
-      : cot);
-  };
-
-  // "26 UND · RECERTIFICACION ANUAL PUNTOS DE ANCLAJES" — para el aviso de
-  // pantalla, donde si conviene ver la cantidad y la unidad.
-  const detalleDeItems = (items)=>(items||[])
-    .filter((it)=>String(it?.desc||"").trim())
-    .map((it)=>{
-      const cant = Number(it.cant||0);
-      const unidad = String(it.unit||"").trim();
-      const medida = cant ? `${cant % 1 === 0 ? cant : cant.toFixed(2)}${unidad?` ${unidad}`:""} · ` : "";
-      return `${medida}${String(it.desc).trim()}`;
-    })
-    .join("; ");
-
-  // La cantidad del certificado: la suma de lo cotizado.
-  const cantidadDeLaObra = (obraId)=>{
-    const total = itemsDeLaObra(obraId).reduce((s,it)=>s + (Number(it.cant)||0), 0);
-    return total ? String(total % 1 === 0 ? total : total.toFixed(2)) : "";
-  };
-
-  // Lo que se anoto en el informe de actividades de esta misma obra.
-  //
-  // La observacion del informe -"1 linea de vida horizontal de 7 m
-  // perimetral"- es justo lo que dice QUE se esta certificando. Estaba escrita
-  // en un documento y hacia falta en el otro, asi que habia que abrir el
-  // informe para comprobar que el certificado cubria lo instalado.
-  //
-  // Se unen por el numero de obra, que es lo que tienen en comun.
-  const observacionesDeObra = (obraId)=>observacionesDesdeInformes(informes, obraId, informeRef);
   const proyectoDeObra = (obraId)=>
     proyectoDesdeInformes(informes, obraId, informeRef)
     || String((obras||[]).find((o)=>o.id===obraId)?.proyecto || "").trim();
@@ -182,20 +137,6 @@ export default function Certificaciones({ctx}){
   // Se toma el FIN del periodo -el ultimo dia trabajado- y, si hay varios
   // informes de la obra, el mas reciente.
   const fechaDeLaObra = (obraId)=>fechaDesdeInformes(informes, obraId, informeRef);
-
-  // Lo que se escribe como "Alcance certificado".
-  //
-  // Manda el detalle de la cotizacion, que es lo que se vendio y se cobra. La
-  // nota del informe se suma detras solo si aporta algo que los items no digan
-  // ya, para no repetir lo mismo con otras palabras.
-  const alcanceCompleto = (obraId)=>{
-    const cotizado = detalleDeItems(itemsDeLaObra(obraId));
-    const anotado = observacionesDeObra(obraId);
-    if(!cotizado) return anotado;
-    if(!anotado) return cotizado;
-    const yaEsta = cotizado.toLowerCase().includes(anotado.toLowerCase().replace(/\.+$/, ""));
-    return yaEsta ? cotizado : `${cotizado}. ${anotado}`;
-  };
 
   // Cambia algo del encabezado -tipo, sistema, cantidad, cliente, dirección o
   // fecha- y el párrafo se rehace. Solo mientras nadie lo haya editado a mano:
@@ -251,7 +192,6 @@ export default function Certificaciones({ctx}){
     setInformeRef("");
     // La cantidad y la fecha tambien se traen de una: son los dos datos que se
     // copiaban a mano de la cotizacion y del informe.
-    const cant = cantidadDeLaObra(obra?.id);
     const fechaObra = fechaDeLaObra(obra?.id);
     setForm(buildCertForm({
       tipo,
@@ -260,7 +200,6 @@ export default function Certificaciones({ctx}){
       cliente: obra?.cliente || "",
       direccion: obra?.direccion || obra?.ciudad || "",
       nit: buscarNit(obra),
-      ...(cant ? {cantidad:cant} : {}),
       ...(fechaObra ? {fecha:fechaObra} : {}),
     }));
     setNueva(true);
@@ -361,7 +300,7 @@ export default function Certificaciones({ctx}){
             </AvisoFlujo>
           )}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:12}}>
-            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const id=e.target.value;setInformeRef("");const o=obras.find(x=>x.id===id);const cant=cantidadDeLaObra(id);const f=fechaDeLaObra(id);aplicarCambio({obraId:id,cliente:o?.cliente||"",direccion:o?.direccion||o?.ciudad||"",nit:buscarNit(o),...(cant?{cantidad:cant}:{}),...(f?{fecha:f}:{})});}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
+            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const id=e.target.value;setInformeRef("");const o=obras.find(x=>x.id===id);const f=fechaDeLaObra(id);aplicarCambio({obraId:id,cliente:o?.cliente||"",direccion:o?.direccion||o?.ciudad||"",nit:buscarNit(o),...(f?{fecha:f}:{})});}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
             {/* Una obra con varias sedes lleva un informe por sede, y de cada
                 uno sale su propia certificacion. Aqui se elige cual. */}
             {informesDeObra(form.obraId).length > 1 && (

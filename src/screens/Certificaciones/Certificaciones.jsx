@@ -12,6 +12,32 @@ import { getEstadoFlujoObra } from "../../lib/flujoObra";
 import { printCurrentPz } from "../../lib/print";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import { getQuoteActiveProposal, normalizeQuoteItems } from "../../lib/cotizaciones";
+// Informes de una obra. Si se indica uno concreto, solo ese.
+const informesFuente = (informes, obraId, informeId = "")=>{
+  if(!obraId) return [];
+  const elegido = informeId ? (informes||[]).find((i)=>i?.id===informeId) : null;
+  return elegido && elegido.obraId===obraId
+    ? [elegido]
+    : (informes||[]).filter((i)=>i?.obraId===obraId);
+};
+
+// La fecha del trabajo: el fin del periodo del informe, o su fecha de emision.
+const fechaDesdeInformes = (informes, obraId, informeId = "")=>{
+  const fechas = informesFuente(informes, obraId, informeId)
+    .map((i)=>String(i.periodoFin || i.fechaInforme || "").trim())
+    .filter(Boolean)
+    .sort();
+  return fechas.length ? fechas[fechas.length-1] : "";
+};
+
+// Lo anotado en las observaciones de esos informes, sin repetir.
+const observacionesDesdeInformes = (informes, obraId, informeId = "")=>{
+  const textos = informesFuente(informes, obraId, informeId)
+    .flatMap((i)=>(i.actividades||[]).map((a)=>String(a?.observaciones||"").trim()))
+    .filter(Boolean);
+  return [...new Set(textos)].join(". ");
+};
+
 export default function Certificaciones({ctx}){
   const {certs,setCerts,obras,clientes,cotizaciones,informes,intencion,limpiarIntencion,irAPantalla}=ctx;
   const [sel,setSel]=useState(null);
@@ -41,13 +67,18 @@ export default function Certificaciones({ctx}){
 
   const [nueva,setNueva]=useState(()=>Boolean(obraSolicitada));
   const [editId,setEditId]=useState(null);
-  const [form,setForm]=useState(()=>buildCertForm({
-    elementos:getCertDefaultElements("Certificación"),
-    obraId: obraInicial?.id || "",
-    cliente: obraInicial?.cliente || "",
-    direccion: obraInicial?.direccion || obraInicial?.ciudad || "",
-    nit: buscarNit(obraInicial),
-  }));
+  const [form,setForm]=useState(()=>{
+    // La fecha del informe TAMBIEN al montar, no solo al elegir obra a mano.
+    const fechaObra = fechaDesdeInformes(ctx.informes, obraInicial?.id);
+    return buildCertForm({
+      elementos:getCertDefaultElements("Certificación"),
+      obraId: obraInicial?.id || "",
+      cliente: obraInicial?.cliente || "",
+      direccion: obraInicial?.direccion || obraInicial?.ciudad || "",
+      nit: buscarNit(obraInicial),
+      ...(fechaObra ? {fecha:fechaObra} : {}),
+    });
+  });
 
   // Se descarta al salir, para que al volver por el menu no se reabra.
   useEffect(()=>()=>limpiarIntencion(),[limpiarIntencion]);
@@ -62,7 +93,6 @@ export default function Certificaciones({ctx}){
 
   // El informe elegido en el formulario, si hay mas de uno.
   const [informeRef,setInformeRef]=useState("");
-  const informeElegido = (informes||[]).find((inf)=>inf?.id===informeRef) || null;
 
   // Lo que se cotizo para esta obra: el detalle de los items.
   //
@@ -106,19 +136,7 @@ export default function Certificaciones({ctx}){
   // informe para comprobar que el certificado cubria lo instalado.
   //
   // Se unen por el numero de obra, que es lo que tienen en comun.
-  const observacionesDeObra = (obraId)=>{
-    if(!obraId) return "";
-    // Con un informe elegido manda ese solo. Sin eleccion se juntan todos, que
-    // es lo correcto cuando la obra tiene un unico informe.
-    const fuente = informeElegido && informeElegido.obraId===obraId
-      ? [informeElegido]
-      : (informes||[]).filter((inf)=>inf?.obraId===obraId);
-    const textos = fuente
-      .flatMap((inf)=>(inf.actividades||[]).map((a)=>String(a?.observaciones||"").trim()))
-      .filter(Boolean);
-    // Sin repetir: varios informes de la misma obra suelen traer la misma nota.
-    return [...new Set(textos)].join(". ");
-  };
+  const observacionesDeObra = (obraId)=>observacionesDesdeInformes(informes, obraId, informeRef);
 
   // La fecha del certificado sale del informe de actividades de esa obra.
   //
@@ -129,17 +147,7 @@ export default function Certificaciones({ctx}){
   //
   // Se toma el FIN del periodo -el ultimo dia trabajado- y, si hay varios
   // informes de la obra, el mas reciente.
-  const fechaDeLaObra = (obraId)=>{
-    if(!obraId) return "";
-    const fuente = informeElegido && informeElegido.obraId===obraId
-      ? [informeElegido]
-      : (informes||[]).filter((inf)=>inf?.obraId===obraId);
-    const fechas = fuente
-      .map((inf)=>String(inf.periodoFin || inf.fechaInforme || "").trim())
-      .filter(Boolean)
-      .sort();
-    return fechas.length ? fechas[fechas.length-1] : "";
-  };
+  const fechaDeLaObra = (obraId)=>fechaDesdeInformes(informes, obraId, informeRef);
 
   // Lo que se escribe como "Alcance certificado".
   //

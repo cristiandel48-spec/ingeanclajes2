@@ -53,6 +53,17 @@ export default function Certificaciones({ctx}){
   useEffect(()=>()=>limpiarIntencion(),[limpiarIntencion]);
   const [nuevoElem,setNuevoElem]=useState("");
 
+  // Una obra puede tener VARIOS informes -una sede por informe- y de cada uno
+  // sale su propia certificacion. Por eso se elige de cual se toman los datos
+  // en vez de juntarlos todos: certificar "San Blas" y "Medellin" en el mismo
+  // documento seria decir que se hizo en un sitio lo que se hizo en otro.
+  const informesDeObra = (obraId)=>
+    (informes||[]).filter((inf)=>inf?.obraId===obraId);
+
+  // El informe elegido en el formulario, si hay mas de uno.
+  const [informeRef,setInformeRef]=useState("");
+  const informeElegido = (informes||[]).find((inf)=>inf?.id===informeRef) || null;
+
   // Lo que se cotizo para esta obra: el detalle de los items.
   //
   // Es la fuente mas fiable de QUE se certifica, porque es lo que se vendio y
@@ -97,8 +108,12 @@ export default function Certificaciones({ctx}){
   // Se unen por el numero de obra, que es lo que tienen en comun.
   const observacionesDeObra = (obraId)=>{
     if(!obraId) return "";
-    const textos = (informes||[])
-      .filter((inf)=>inf?.obraId===obraId)
+    // Con un informe elegido manda ese solo. Sin eleccion se juntan todos, que
+    // es lo correcto cuando la obra tiene un unico informe.
+    const fuente = informeElegido && informeElegido.obraId===obraId
+      ? [informeElegido]
+      : (informes||[]).filter((inf)=>inf?.obraId===obraId);
+    const textos = fuente
       .flatMap((inf)=>(inf.actividades||[]).map((a)=>String(a?.observaciones||"").trim()))
       .filter(Boolean);
     // Sin repetir: varios informes de la misma obra suelen traer la misma nota.
@@ -116,8 +131,10 @@ export default function Certificaciones({ctx}){
   // informes de la obra, el mas reciente.
   const fechaDeLaObra = (obraId)=>{
     if(!obraId) return "";
-    const fechas = (informes||[])
-      .filter((inf)=>inf?.obraId===obraId)
+    const fuente = informeElegido && informeElegido.obraId===obraId
+      ? [informeElegido]
+      : (informes||[]).filter((inf)=>inf?.obraId===obraId);
+    const fechas = fuente
       .map((inf)=>String(inf.periodoFin || inf.fechaInforme || "").trim())
       .filter(Boolean)
       .sort();
@@ -183,6 +200,7 @@ export default function Certificaciones({ctx}){
     const obra = obras.find((x)=>x.id===obraId) || obras[0] || null;
     setEditId(null);
     setNuevoElem("");
+    setInformeRef("");
     // La cantidad y la fecha tambien se traen de una: son los dos datos que se
     // copiaban a mano de la cotizacion y del informe.
     const cant = cantidadDeLaObra(obra?.id);
@@ -328,7 +346,43 @@ export default function Certificaciones({ctx}){
                 </div>
               )}
             </div>
-            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const id=e.target.value;const o=obras.find(x=>x.id===id);const cant=cantidadDeLaObra(id);const f=fechaDeLaObra(id);aplicarCambio({obraId:id,cliente:o?.cliente||"",direccion:o?.direccion||o?.ciudad||"",nit:buscarNit(o),...(cant?{cantidad:cant}:{}),...(f?{fecha:f}:{})});}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
+            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const id=e.target.value;setInformeRef("");const o=obras.find(x=>x.id===id);const cant=cantidadDeLaObra(id);const f=fechaDeLaObra(id);aplicarCambio({obraId:id,cliente:o?.cliente||"",direccion:o?.direccion||o?.ciudad||"",nit:buscarNit(o),...(cant?{cantidad:cant}:{}),...(f?{fecha:f}:{})});}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
+            {/* Una obra con varias sedes lleva un informe por sede, y de cada
+                uno sale su propia certificacion. Aqui se elige cual. */}
+            {informesDeObra(form.obraId).length > 1 && (
+              <div style={{gridColumn:"span 2"}}>
+                <LBL>¿De cuál informe?</LBL>
+                <select
+                  value={informeRef}
+                  onChange={e=>{
+                    const id=e.target.value;
+                    setInformeRef(id);
+                    const inf=(informes||[]).find((x)=>x.id===id);
+                    if(!inf) return;
+                    // La sede de ese informe manda sobre la direccion de la obra:
+                    // es la que tiene que salir en el certificado.
+                    aplicarCambio({
+                      ...(inf.localizacion ? {direccion:inf.localizacion} : {}),
+                      ...(inf.periodoFin || inf.fechaInforme ? {fecha:inf.periodoFin || inf.fechaInforme} : {}),
+                    });
+                  }}
+                  style={SI}
+                >
+                  <option value="">Todos los informes de la obra</option>
+                  {informesDeObra(form.obraId).map((inf)=>(
+                    <option key={inf.id} value={inf.id}>
+                      {inf.id} · {inf.proyecto || inf.localizacion || "sin nombre"}
+                      {inf.periodoFin ? ` · hasta ${fmtD(inf.periodoFin)}` : ""}
+                    </option>
+                  ))}
+                </select>
+                <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3,lineHeight:1.45}}>
+                  Esta obra tiene {informesDeObra(form.obraId).length} informes. Elige uno y el
+                  certificado toma su sede, su fecha y lo que se hizo ahí. Haz una certificación
+                  por cada informe.
+                </div>
+              </div>
+            )}
             <div><LBL>Cliente</LBL><input value={form.cliente} onChange={e=>aplicarCambio({cliente:e.target.value})} onBlur={e=>{
               const nombre=normalizarRazonSocial(e.target.value);
               // Si el NIT esta vacio se busca el de ese cliente; si ya hay uno

@@ -128,7 +128,70 @@ function limitesSeguros(raiz) {
     else agrupados.push(limite);
   }
 
-  return agrupados;
+  // Y ADEMAS, entre renglon y renglon.
+  //
+  // Hasta aqui solo se sabia cortar entre bloques enteros. Cuando un parrafo
+  // largo no cabia en lo que quedaba de hoja, no habia ningun sitio valido
+  // dentro y el corte se hacia a la fuerza por donde tocara: a media letra,
+  // con la parte de arriba del renglon en una hoja y la de abajo en la
+  // siguiente. Sabiendo donde termina cada renglon, el corte cae en el hueco
+  // que hay entre dos y la frase se lee entera en su hoja.
+  return [...new Set([...agrupados, ...limitesEntreRenglones(raiz, arriba)])]
+    .sort((a, b) => a - b);
+}
+
+/**
+ * Los huecos entre renglon y renglon, en pixeles del documento.
+ *
+ * No entra donde haya imagenes: entre una foto y su pie tambien hay un hueco,
+ * y cortar ahi las separaria. Tampoco en las tablas: dos celdas de la misma
+ * fila no siempre empiezan a la misma altura, y ese desnivel se confundiria
+ * con un hueco entre renglones y partiria la fila. Las filas ya aportan sus
+ * propios cortes.
+ */
+function limitesEntreRenglones(raiz, arriba) {
+  const doc = raiz.ownerDocument;
+  const rango = doc.createRange();
+  const renglones = [];
+
+  const recorrer = (elemento) => {
+    // Si en el bloque hay una foto o una tabla, se deja entero en paz.
+    //
+    // Se intento bajar hijo a hijo para aprovechar los que estuvieran libres,
+    // y salio peor: en la rejilla de fotos, los pies de dos tarjetas vecinas
+    // no empiezan a la misma altura, ese desnivel se tomaba por un hueco
+    // entre renglones y el corte partia la foto de al lado. Medido: 16 fotos
+    // partidas en 14 informes. Aqui no hacen falta cortes finos; los limites
+    // de bloque ya los dan.
+    if (elemento.tagName === "TABLE" || elemento.tagName === "IMG") return;
+    if (elemento.querySelector("img, table")) return;
+    const paseo = doc.createTreeWalker(elemento, NodeFilter.SHOW_TEXT);
+    let nodo;
+    while ((nodo = paseo.nextNode())) {
+      if (!nodo.nodeValue || !nodo.nodeValue.trim()) continue;
+      rango.selectNodeContents(nodo);
+      for (const linea of rango.getClientRects()) {
+        if (linea.height > 0) {
+          renglones.push({ top: linea.top - arriba, bottom: linea.bottom - arriba });
+        }
+      }
+    }
+  };
+  // Se arranca por los bloques de primer nivel: la raiz suele llevar alguna
+  // foto y se descartaria el documento entero.
+  raiz.querySelectorAll(":scope > *").forEach(recorrer);
+
+  renglones.sort((a, b) => a.top - b.top);
+
+  // El corte va en mitad del hueco, no pegado a la letra: asi no se llevan por
+  // delante los rabos de las jotas y las ges del renglon de arriba.
+  const cortes = [];
+  for (let i = 0; i < renglones.length - 1; i += 1) {
+    const fin = renglones[i].bottom;
+    const empieza = renglones[i + 1].top;
+    if (empieza > fin) cortes.push(Math.round((fin + empieza) / 2));
+  }
+  return cortes;
 }
 
 /**

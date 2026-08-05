@@ -175,8 +175,10 @@ export const construirTextoSistema = ({
 
   const partes = [que];
 
+  // El sitio va entre parentesis, como en los certificados que se entregan:
+  // "instalados en (SEDE SAN BLAS)".
   const donde = String(lugar || "").trim().replace(/[.\s]+$/, "");
-  if(donde) partes.push(`instalados en ${enMayuscula(donde)}`);
+  if(donde) partes.push(`instalados en (${enMayuscula(donde)})`);
 
   if(String(nit || "").trim()){
     partes.push(`con NIT: ${String(nit).trim()}${cliente.trim() ? ` (${enMayuscula(cliente)})` : ""}`);
@@ -188,16 +190,14 @@ export const construirTextoSistema = ({
 
   void fecha; void fechaLarga;
 
-  const medio = partes.join(" ");
+  // El verbo lo decide el tipo: lo que se instala se CERTIFICA y lo que ya
+  // estaba se RECERTIFICA. Es la primera palabra del documento y decia
+  // "CERTIFICA" en los dos casos.
+  const verbo = tipo === "Recertificación" ? "RECERTIFICA" : "CERTIFICA";
 
-  // La recertificacion usa este texto DENTRO de otra frase del documento
-  // ("Ha realizado el mantenimiento preventivo en las instalaciones de ___"),
-  // asi que ahi se queda solo el trozo. La certificacion lleva la frase
-  // completa, que es la que se imprime tal cual.
-  if(tipo === "Recertificación") return medio;
-
-  return `CERTIFICA que ${medio} cumplen a cabalidad con la ${normativa} del ministerio de trabajo, ` +
-    "por la cual se establece el reglamento de seguridad para protección contra caídas en trabajo en altura.";
+  return `${verbo} que ${partes.join(" ")}, cumplen a cabalidad con la ${normativa} del ministerio ` +
+    "de trabajo, por la cual se establece el reglamento de seguridad para protección contra caídas " +
+    "en trabajo en altura.";
 };
 
 export const buildCertForm = (overrides={})=>{

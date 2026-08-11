@@ -6,4 +6,4 @@
 //
 // Es una bandera fija a proposito: no se lee de la base ni de una variable de
 // entorno, para que solo se cambie tocando el codigo y publicando de nuevo.
-export const SERVICIO_SUSPENDIDO = true;
+export const SERVICIO_SUSPENDIDO = false;

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import * as backend from "./lib/backend";
 import CreditoDesarrollo from "./components/CreditoDesarrollo";
 import logoIngeanclajes from "./assets/logo-ingeanclajes.jpeg";
+import { SERVICIO_SUSPENDIDO } from "./lib/servicioEstado";
 
 const isSupabaseConfigured = backend.isSupabaseConfigured;
 const getSupabaseClient = backend.getSupabaseClient;
@@ -163,6 +164,27 @@ function esFaltaDePermisos(error) {
   return String(error?.message || error || "").toLowerCase().includes("membres");
 }
 
+// Pantalla de fallo de conexion. Se muestra cuando el servicio esta suspendido
+// (ver src/lib/servicioEstado.js). Deja el aspecto de un problema de red para
+// no exponer la causa real en la interfaz.
+function PantallaSinConexion() {
+  return (
+    <Pantalla>
+      <Encabezado etiqueta="Acceso Cloud" />
+      <h1 style={{ margin: "0 0 8px", fontSize: 26, fontWeight: 800, color: "#101828" }}>
+        No hay conexión con el servidor
+      </h1>
+      <p style={{ margin: "0 0 16px", color: "#667085", lineHeight: 1.6, fontSize: 14 }}>
+        No se pudo establecer la conexión con el servidor de la empresa. Revisa tu conexión a internet
+        e inténtalo de nuevo en unos minutos. Si el problema continúa, comunícate con el proveedor del sistema.
+      </p>
+      <button type="button" onClick={() => window.location.reload()} style={botonStyle}>
+        Reintentar
+      </button>
+    </Pantalla>
+  );
+}
+
 export default function SupabaseGate({ children }) {
   const configured = useMemo(() => isSupabaseConfigured(), []);
   const [status, setStatus] = useState(configured ? "checking" : "unconfigured");
@@ -303,6 +325,11 @@ export default function SupabaseGate({ children }) {
       setBusy(false);
     }
   };
+
+  // Servicio suspendido: se corta el arranque antes de cualquier otra pantalla.
+  if (SERVICIO_SUSPENDIDO) {
+    return <PantallaSinConexion />;
+  }
 
   if (!configured) {
     return (

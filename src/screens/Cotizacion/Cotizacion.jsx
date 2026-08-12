@@ -324,11 +324,9 @@ export default function Cotizacion({ctx}){
           {verDocumento ? "Ocultar documento" : "Ver documento"}
         </button>
 
-        <button
-          style={{...BOTON_BASE, background:"#fff", color:"#c2410c", border:"1.5px solid #f47c20"}}
-          onClick={()=>{const guardada=guardarRef.current();if(guardada){setPreviewCot(guardada);setTab("lista");}}}
-          title="Guarda y abre el documento terminado">Guardar y ver</button>
-
+        {/* Se quito "Guardar y ver": hacia casi lo mismo que Guardar y dos
+            botones naranjas seguidos se confundian. Para ver el documento
+            estan "Ver documento" aqui al lado y el boton Ver del listado. */}
         <button
           style={{...BOTON_BASE, background:"#f47c20", color:"#fff", border:"1px solid #f47c20", fontWeight:700, padding:"8px 18px"}}
           onClick={()=>guardarRef.current()}>Guardar</button>

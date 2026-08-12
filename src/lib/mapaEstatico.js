@@ -84,7 +84,11 @@ export async function componerMapaEstatico({
   alto = 420,
   segmentos = [],
   capa = "satelite",
-  calidad = 0.82,
+  // 0,72 y no mas alto: la imagen se guarda DENTRO de la fila de la cotizacion,
+  // como las fotos, asi que cada punto de calidad se paga en peso de base. A
+  // 0,82 pesaba 283 KB por cotizacion y a 0,72 pesa 222; comparadas al tamaño
+  // al que salen en el documento -y ampliadas- no se distingue una de otra.
+  calidad = 0.72,
 } = {}) {
   if (!centro || !Number.isFinite(centro.lat) || !Number.isFinite(centro.lng)) return "";
 

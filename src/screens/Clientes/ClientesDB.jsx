@@ -4,7 +4,6 @@ import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
 import { useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
-import { fmt } from "../../lib/format";
 import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarFrase, normalizarMayusculas, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
 import { siguienteIdUnico } from "../../lib/identificadores";
 export default function ClientesDB({ctx}){
@@ -80,15 +79,11 @@ export default function ClientesDB({ctx}){
       obrasTotal:obrasCli.length,
       cotizacionesTotal:cotCli.length,
       certificacionesTotal:certCli.length,
-      totalFacturado:obrasCli.reduce((s,o)=>s+Number(o.total||0),0),
-      saldoPendiente:obrasCli.reduce((s,o)=>s+Number(o.saldo||0),0),
     };
   }).sort((a,b)=>String(a.nombre||"").localeCompare(String(b.nombre||"")));
 
   const sinRegistrar=sugeridos.filter(s=>!clientes.some(c=>String(c.nombre||"").trim().toLowerCase()===String(s.nombre||"").trim().toLowerCase()));
 
-  const totalFacturado=clientesData.reduce((s,c)=>s+c.totalFacturado,0);
-  const saldoPendiente=clientesData.reduce((s,c)=>s+c.saldoPendiente,0);
 
   const resetCliente=()=>{
     setForm(clienteBase);
@@ -240,7 +235,7 @@ export default function ClientesDB({ctx}){
     <div style={{padding:28}}>
       <H1
         title="Clientes"
-        subtitle="Base de datos comercial con historial de obras, saldo y contactos"
+        subtitle="Datos de contacto e historial de obras, cotizaciones y certificaciones"
         action={
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             {sinRegistrar.length>0&&(
@@ -346,20 +341,14 @@ export default function ClientesDB({ctx}){
                   <div><strong style={{color:"#1a1a2e"}}>Certificaciones</strong><br/>{c.certificacionesTotal} registro(s)</div>
                 </div>
 
-                <div style={{marginTop:10,display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11,flexWrap:"wrap",gap:10}}>
-                  <div style={{color:"#64748b",maxWidth:"70%"}}>
-                    {c.notas || "Sin notas registradas"}
-                  </div>
-                  <div style={{display:"flex",gap:18,alignItems:"center"}}>
-                    <div style={{textAlign:"right"}}>
-                      <div style={{fontSize:10,color:"#94a3b8"}}>Facturado</div>
-                      <div style={{fontWeight:800,color:"#166534"}}>{fmt(c.totalFacturado)}</div>
-                    </div>
-                    <div style={{textAlign:"right"}}>
-                      <div style={{fontSize:10,color:"#94a3b8"}}>Saldo</div>
-                      <div style={{fontWeight:800,color:c.saldoPendiente?"#c2410c":"#166534"}}>{c.saldoPendiente?fmt(c.saldoPendiente):"Al día"}</div>
-                    </div>
-                  </div>
+                {/* Aqui no van cifras, igual que en el listado de obras y en
+                    el de cotizaciones. Este es el directorio: quien es el
+                    cliente y como se le ubica. Lo facturado y lo que debe se
+                    consultan en Cuentas por cobrar y en el informe
+                    financiero, que es donde tienen contexto y donde se puede
+                    ver de que factura sale cada peso. */}
+                <div style={{marginTop:10,fontSize:11,color:"#64748b"}}>
+                  {c.notas || "Sin notas registradas"}
                 </div>
               </div>
             ))}

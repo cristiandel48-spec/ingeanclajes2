@@ -14,7 +14,12 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
   const propuestas = getQuotePrintableProposals(c);
   const textoInicial = String(c?.textoInicial || "").trim();
   const textos = getTextosDocumento(c);
-  const showVerticalAppendix = propuestas.some((propuesta)=>hasVerticalLifeLineService(propuesta?.quote));
+  // La lamina de la escalera sale si la nombra cualquier propuesta o los
+  // textos del documento: en algunas cotizaciones la escalera solo aparece en
+  // el titulo de la portada -"Linea de Vida en Acero Galvanizado y Escalera"-
+  // y los items son metros a secas.
+  const showVerticalAppendix = propuestas.some((propuesta)=>hasVerticalLifeLineService(propuesta?.quote))
+    || hasVerticalLifeLineService({ alcance: textos?.tituloPortada, requerimientoCliente: textoInicial });
   const showTechnicalPage = propuestas.some((propuesta)=>propuesta?.quote?.tipoCotizacion === "linea_vida");
 
   const mapCenter = c?.geoMapView?.center || c?.geoMapView || { lat: 0, lng: 0 };

@@ -250,12 +250,30 @@ export function getQuoteProposalTotals(baseQuote={}, propuesta){
   return { quote, items, sub, ut, iva, tot };
 }
 
+// Si la cotizacion lleva escalera o linea de vida vertical, el documento
+// incluye la lamina del sistema certificado para escalera fija.
+//
+// Antes solo miraba que la descripcion dijera "LINEA DE VIDA VERTICAL" tal
+// cual, y con eso se quedaban fuera casi todas: "ESCALERA TIPO GATO",
+// "ESCALERA MARINERA" o cualquier escalera escrita a mano no la traian, y la
+// lamina no salia en el documento aunque el trabajo fuera justamente ese.
 export function hasVerticalLifeLineService(c={}){
-  if((c.geoMediciones || []).some(seg => seg?.tipo === "LVV")) return true;
-  return normalizeQuoteItems(c).some(it => {
-    const desc = String(it?.desc || "").toUpperCase();
-    return desc.includes("LINEA DE VIDA VERTICAL");
-  });
+  // LVV es linea de vida vertical y ESC escalera, de las medidas del mapa.
+  if((c.geoMediciones || []).some(seg => seg?.tipo === "LVV" || seg?.tipo === "ESC")) return true;
+
+  const nombraEscalera = (texto)=>{
+    const t = String(texto || "").toUpperCase();
+    return t.includes("LINEA DE VIDA VERTICAL")
+        || t.includes("LÍNEA DE VIDA VERTICAL")
+        || t.includes("ESCALERA");
+  };
+
+  // Se mira tambien el alcance y lo que pidio el cliente, no solo las lineas
+  // de cobrar: hay cotizaciones donde la escalera se nombra ahi y los items
+  // son solo metros.
+  if(nombraEscalera(c.alcance) || nombraEscalera(c.requerimientoCliente)) return true;
+
+  return normalizeQuoteItems(c).some(it => nombraEscalera(it?.desc));
 }
 
 export function getQuoteProposalPhotos(baseQuote = {}, propuesta = {}, activeProposalId = null){

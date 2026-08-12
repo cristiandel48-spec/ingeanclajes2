@@ -241,29 +241,40 @@ export default function Informes({ctx}){
   const updPersonal=(i,f,v)=>setForm(p=>({...p,personal:p.personal.map((x,j)=>j===i?{...x,[f]:v}:x)}));
   const updActividad=(ai,field,val)=>setForm(p=>({...p,actividades:p.actividades.map((a,i)=>i===ai?{...a,[field]:val}:a)}));
 
+  // Actividades cuyo titulo se esta escribiendo a mano, por su posicion.
+  const [escribiendoTitulo,setEscribiendoTitulo]=useState([]);
+  const marcarLibre=(ai,libre)=>setEscribiendoTitulo((prev)=>
+    libre ? [...new Set([...prev,ai])] : prev.filter((i)=>i!==ai));
+
   // El titulo de la actividad trae consigo sus textos.
   //
   // Los trabajos son siempre los mismos y el texto que se escribia era casi
-  // igual cada vez. Al elegir uno de la lista se rellenan "Actividades
-  // realizadas" y "Descripcion"; se pueden corregir despues, que para eso
-  // siguen siendo campos de escribir.
+  // igual cada vez. Al elegir uno se rellenan "Actividades realizadas" y
+  // "Descripcion"; se pueden corregir despues, que para eso siguen siendo
+  // campos de escribir.
   //
   // Solo se pisa lo que hay si venia de otra plantilla o estaba vacio. Si esta
   // escrito a mano se pregunta antes: puede ser el informe de media jornada.
-  const ponerTitulo=(ai,titulo)=>{
-    const plantilla=buscarPlantillaActividad(titulo);
-    if(!plantilla){ updActividad(ai,"titulo",titulo); return; }
+  const elegirTitulo=(ai,valor)=>{
+    if(valor==="__libre__"){ marcarLibre(ai,true); return; }
+    marcarLibre(ai,false);
+
+    // "— Elige el trabajo —": se limpia el titulo y se deja el resto como esta.
+    if(!valor){ updActividad(ai,"titulo",""); return; }
+
+    const plantilla=buscarPlantillaActividad(valor);
+    if(!plantilla){ updActividad(ai,"titulo",valor); return; }
 
     const act=form.actividades[ai]||{};
     if(!esTextoDePlantilla(act.actividadesRealizadas,act.descripcion)
        && !window.confirm(`Ya hay texto escrito en esta actividad.\n\n¿Reemplazarlo por el de «${plantilla.titulo}»?`)){
-      updActividad(ai,"titulo",titulo);
+      updActividad(ai,"titulo",valor);
       return;
     }
 
     setForm(p=>({...p,actividades:p.actividades.map((a,i)=>i===ai?{
       ...a,
-      titulo,
+      titulo:plantilla.titulo,
       actividadesRealizadas:plantilla.actividadesRealizadas,
       descripcion:plantilla.descripcion,
     }:a)}));
@@ -556,25 +567,51 @@ export default function Informes({ctx}){
               <div key={ai} style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:16,marginBottom:12}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                   <div style={{fontSize:12,fontWeight:700,color:"#cc0000"}}>Actividad {ai+1}</div>
-                  {form.actividades.length>1&&<button onClick={()=>setForm(p=>({...p,actividades:p.actividades.filter((_,i)=>i!==ai)}))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:5,padding:"2px 8px",cursor:"pointer",fontSize:11}}>× Eliminar</button>}
+                  {form.actividades.length>1&&<button onClick={()=>{
+                    setForm(p=>({...p,actividades:p.actividades.filter((_,i)=>i!==ai)}));
+                    // Las actividades se guardan por su posicion, asi que al
+                    // quitar una hay que correr las de despues; si no, la
+                    // marca de "titulo escrito a mano" se queda en la de al
+                    // lado.
+                    setEscribiendoTitulo((prev)=>prev
+                      .filter((i)=>i!==ai)
+                      .map((i)=>(i>ai ? i-1 : i)));
+                  }} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:5,padding:"2px 8px",cursor:"pointer",fontSize:11}}>× Eliminar</button>}
                 </div>
-                <datalist id="plantillas-actividad">
-                  {PLANTILLAS_ACTIVIDAD.map((p)=><option key={p.titulo} value={p.titulo}/>)}
-                </datalist>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 170px",gap:10,marginBottom:10}}>
                   <div>
                     <LBL>Título / nombre de la actividad</LBL>
-                    {/* Con lista: se puede elegir uno de los trabajos de
-                        siempre -y entonces los textos se rellenan solos- o
-                        escribir cualquier otro a mano. */}
-                    <input
-                      value={act.titulo}
-                      list="plantillas-actividad"
-                      onChange={e=>ponerTitulo(ai,e.target.value)}
-                      placeholder="Elige uno de la lista o escríbelo"
-                      style={SI}/>
-                    <div style={{fontSize:10.5,color:"#64748b",marginTop:3}}>
-                      Al elegir uno de la lista se completan los textos de abajo.
+                    {/* Desplegable de verdad y no una lista de sugerencias.
+                        Con la lista de sugerencias habia que BORRAR lo escrito
+                        para volver a ver las opciones -solo enseña las que
+                        empiezan por lo que hay puesto-, y ademas no se notaba
+                        que aquello se pudiera desplegar. */}
+                    <select
+                      value={escribiendoTitulo.includes(ai) ? "__libre__" : (buscarPlantillaActividad(act.titulo) ? act.titulo : "")}
+                      onChange={e=>elegirTitulo(ai,e.target.value)}
+                      style={SI}>
+                      <option value="">— Elige el trabajo —</option>
+                      {PLANTILLAS_ACTIVIDAD.map((p)=>(
+                        <option key={p.titulo} value={p.titulo}>{p.titulo}</option>
+                      ))}
+                      <option value="__libre__">Otro (lo escribo yo)</option>
+                    </select>
+
+                    {/* El campo de escribir solo aparece cuando hace falta:
+                        si se eligio "Otro" o si lo que hay puesto no sale en
+                        la lista -por ejemplo un informe de los de antes-. */}
+                    {(escribiendoTitulo.includes(ai) || (act.titulo && !buscarPlantillaActividad(act.titulo))) && (
+                      <input
+                        value={act.titulo}
+                        onChange={e=>updActividad(ai,"titulo",e.target.value)}
+                        placeholder="Escribe el nombre de la actividad"
+                        style={{...SI,marginTop:6}}/>
+                    )}
+
+                    <div style={{fontSize:10.5,color:"#64748b",marginTop:4}}>
+                      {escribiendoTitulo.includes(ai) || (act.titulo && !buscarPlantillaActividad(act.titulo))
+                        ? "Escrito a mano: los textos de abajo no se tocan."
+                        : "Al elegir uno se completan los textos de abajo."}
                     </div>
                   </div>
                   <div><LBL>Fecha de ejecución</LBL><input type="date" value={act.fecha||""} onChange={e=>updActividad(ai,"fecha",e.target.value)} style={SI}/></div>

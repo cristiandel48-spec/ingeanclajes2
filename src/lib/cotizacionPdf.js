@@ -135,7 +135,7 @@ export async function generarCotizacionPdf(cotizacion, { firmaImg = "", onProgre
       if (!vistas.some((v) => v.toLowerCase() === parte.toLowerCase())) vistas.push(parte);
     }
     const nombre = ("Cotizacion " + vistas.join(" "))
-      .replace(/[\/:*?"<>|]/g, " ")
+      .replace(/[\\/:*?"<>|]/g, " ")
       .replace(/\s+/g, " ")
       .trim()
       .slice(0, 120);

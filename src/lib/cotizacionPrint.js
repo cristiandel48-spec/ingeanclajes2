@@ -552,7 +552,13 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
           </div>
           <div class="cover-title">
             <div class="cover-kicker">Propuesta Comercial</div>
-            <h1>${lineasDeTexto(textos.tituloPortada).map((l)=>escapeHtml(l)).join("<br/>")}</h1>
+            <!-- El titulo va seguido, en una sola frase. Antes cada renglon
+                 que se escribiera en el formulario salia como una linea
+                 aparte; ahora el propio titulo parte donde toque segun el
+                 ancho, que es lo que hace que quede bien centrado. Se sigue
+                 leyendo lo guardado con saltos -las cotizaciones de antes-,
+                 pero unido con un espacio. -->
+            <h1>${escapeHtml(lineasDeTexto(textos.tituloPortada).join(" "))}</h1>
           </div>
           <div class="meta-strip">
             <div class="meta-cell">

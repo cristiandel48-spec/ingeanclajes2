@@ -8,7 +8,7 @@ import DocumentoEnVivo from "./DocumentoEnVivo";
 import EnviarCotizacion from "./EnviarCotizacion";
 import PropuestaEditor from "./PropuestaEditor";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
-import { TEXTOS_DOCUMENTO_DEFAULT, getTextosDocumento } from "../../lib/cotizacionTextos";
+import { TEXTOS_DOCUMENTO_DEFAULT, getTextosDocumento, lineasDeTexto } from "../../lib/cotizacionTextos";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
 import { useEffect, useRef, useState } from "react";
@@ -764,19 +764,22 @@ export default function Cotizacion({ctx}){
         {/* Va primero porque es lo primero que se ve del documento. */}
         <div style={{marginBottom:14}}>
           <LBL>Título de la portada</LBL>
-          {/* Centrado y en mayuscula, igual que sale impreso: asi lo que se
-              escribe aqui se parece a lo que va a salir en la hoja. */}
-          <textarea
-            value={textosDocumento.tituloPortada}
-            onChange={e=>setTexto("tituloPortada",e.target.value)}
-            rows={2}
-            style={{...SI,resize:"vertical",lineHeight:1.5,fontSize:14,fontWeight:600,
+          {/* De una sola linea, centrado y en mayuscula: igual que sale
+              impreso. Era un campo de varios renglones y cada uno salia como
+              una linea aparte del titulo; ahora va seguido y es la hoja la
+              que lo parte donde toque, que es lo que lo deja bien centrado.
+              Lo guardado con saltos -las cotizaciones de antes- se muestra
+              unido con un espacio. */}
+          <input
+            value={lineasDeTexto(textosDocumento.tituloPortada).join(" ")}
+            onChange={e=>setTexto("tituloPortada",e.target.value.replace(/\s+/g," "))}
+            style={{...SI,fontSize:14,fontWeight:600,
               textAlign:"center",textTransform:"uppercase"}}
           />
           <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>
             El título grande de la primera hoja. Cámbialo según el trabajo: certificación, mantenimiento
-            de fachadas, obra blanca… Cada renglón que escribas sale en una línea distinta del título.
-            Sale centrado y en mayúscula, como se ve aquí.
+            de fachadas, obra blanca… Sale centrado y en mayúscula, como se ve aquí; si es largo, la hoja
+            lo reparte solo en varias líneas.
           </div>
         </div>
         <div style={{marginBottom:14}}>

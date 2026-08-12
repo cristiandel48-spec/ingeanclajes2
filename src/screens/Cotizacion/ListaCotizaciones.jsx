@@ -162,14 +162,14 @@ export default function ListaCotizaciones({ cotizaciones, acciones }) {
 
   return (
     <div style={{ ...CD, padding: 0, overflow: "hidden" }}>
-      <div style={{ padding: "16px 18px 14px", display: "flex", flexDirection: "column", gap: 12,
+      <div style={{ padding: "12px 14px 11px", display: "flex", flexDirection: "column", gap: 9,
         borderBottom: `1px solid ${C.borde}` }}>
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <Buscador refCampo={campoBusqueda} valor={busqueda} alCambiar={setBusqueda} />
 
           <Resaltable as="button" onClick={() => setFiltrosAbiertos((v) => !v)}
             estiloHover={{ borderColor: C.acento }}
-            style={{ height: 42, padding: "0 14px", borderRadius: 10,
+            style={{ height: 36, padding: "0 12px", borderRadius: 9,
               border: `1.5px solid ${filtrosAbiertos ? C.tinta : C.bordeFuerte}`,
               background: filtrosAbiertos ? C.tinta : "#fff",
               color: filtrosAbiertos ? "#fff" : C.suave,
@@ -183,9 +183,9 @@ export default function ListaCotizaciones({ cotizaciones, acciones }) {
             )}
           </Resaltable>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 6, height: 42, padding: "0 6px 0 12px",
-            borderRadius: 10, border: `1.5px solid ${C.bordeFuerte}`, background: "#fff" }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: C.tenue, whiteSpace: "nowrap" }}>Ordenar</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, height: 36, padding: "0 5px 0 11px",
+            borderRadius: 9, border: `1.5px solid ${C.bordeFuerte}`, background: "#fff" }}>
+            <span style={{ fontSize: 11.5, fontWeight: 600, color: C.tenue, whiteSpace: "nowrap" }}>Ordenar</span>
             <select value={orden} onChange={(e) => setOrden(e.target.value)}
               style={{ height: 32, border: "none", background: "transparent", fontSize: 13, fontWeight: 600,
                 color: C.tinta, outline: "none", cursor: "pointer", fontFamily: "inherit" }}>
@@ -193,11 +193,11 @@ export default function ListaCotizaciones({ cotizaciones, acciones }) {
             </select>
           </div>
 
-          <div style={{ display: "flex", padding: 4, gap: 3, background: C.rellenoFuerte, borderRadius: 10,
-            height: 42, alignItems: "center" }}>
+          <div style={{ display: "flex", padding: 3, gap: 3, background: C.rellenoFuerte, borderRadius: 9,
+            height: 36, alignItems: "center" }}>
             {[["lista", "☰", "Lista"], ["cuadricula", "▦", "Cuadrícula"]].map(([clave, icono, titulo]) => (
               <button key={clave} title={titulo} onClick={() => setVista(clave)}
-                style={{ width: 34, height: 34, border: "none", borderRadius: 8, cursor: "pointer", fontSize: 14,
+                style={{ width: 30, height: 30, border: "none", borderRadius: 7, cursor: "pointer", fontSize: 13,
                   background: vista === clave ? "#fff" : "transparent",
                   color: vista === clave ? C.tinta : "#8a94a6",
                   boxShadow: vista === clave ? "0 1px 3px rgba(16,24,40,.16)" : "none" }}>{icono}</button>
@@ -211,7 +211,7 @@ export default function ListaCotizaciones({ cotizaciones, acciones }) {
             return (
               <Resaltable key={e} as="button" onClick={() => setEstado(e)}
                 estiloHover={{ borderColor: activa ? C.tinta : "#c3cad8" }}
-                style={{ height: 31, padding: "0 12px", borderRadius: 999,
+                style={{ height: 28, padding: "0 11px", borderRadius: 999,
                   border: `1.5px solid ${activa ? C.tinta : C.bordeFuerte}`,
                   background: activa ? C.tinta : "#fff", color: activa ? "#fff" : C.suave,
                   fontSize: 12.5, fontWeight: 600, cursor: "pointer",
@@ -279,16 +279,16 @@ export default function ListaCotizaciones({ cotizaciones, acciones }) {
 
       {/* Cuantas salieron. Sin sumar valores: esta pantalla es para buscar y
           abrir documentos, y las cifras se ven al abrirlos. */}
-      <div style={{ padding: "12px 18px", borderBottom: `1px solid ${C.borde}`, fontSize: 13, color: C.apagado }}>
+      <div style={{ padding: "8px 14px", borderBottom: `1px solid ${C.borde}`, fontSize: 12, color: C.apagado }}>
         <strong style={{ color: C.tinta, fontVariantNumeric: "tabular-nums" }}>{lista.length}</strong>{" "}
         {lista.length === 1 ? "cotización" : "cotizaciones"} {busqueda || puestos ? "encontradas" : "en total"}
       </div>
 
       {lista.length > 0 && (
-        <div style={{ padding: 16, display: "grid",
-          gridTemplateColumns: vista === "cuadricula" ? "repeat(auto-fill,minmax(340px,1fr))" : "minmax(0,1fr)",
-          gap: 12 }}>
-          {lista.map((c) => <Tarjeta key={c.id} cotizacion={c} acciones={acciones} />)}
+        <div style={{ padding: vista === "lista" ? "10px 14px 14px" : 14, display: "grid",
+          gridTemplateColumns: vista === "cuadricula" ? "repeat(auto-fill,minmax(330px,1fr))" : "minmax(0,1fr)",
+          gap: vista === "lista" ? 6 : 11 }}>
+          {lista.map((c) => <Tarjeta key={c.id} cotizacion={c} acciones={acciones} compacta={vista === "lista"} />)}
         </div>
       )}
 
@@ -321,7 +321,7 @@ function Buscador({ valor, alCambiar, refCampo }) {
       <input ref={refCampo} value={valor} onChange={(e) => alCambiar(e.target.value)}
         onFocus={() => setEnfocado(true)} onBlur={() => setEnfocado(false)}
         placeholder="Buscar por número, cliente, obra o ciudad…"
-        style={{ ...SI, height: 42, padding: "0 84px 0 13px",
+        style={{ ...SI, height: 36, padding: "0 80px 0 12px", fontSize: 13,
           border: `1.5px solid ${enfocado ? C.acento : C.bordeFuerte}`,
           background: enfocado ? "#fff" : C.relleno,
           boxShadow: enfocado ? "0 0 0 3px rgba(244,124,32,.14)" : "none" }} />
@@ -340,20 +340,81 @@ function Buscador({ valor, alCambiar, refCampo }) {
 }
 
 const boton = (fondo, color, extra = {}) => ({
-  background: fondo, color, border: "none", borderRadius: 8, padding: "5px 10px",
-  fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", ...extra,
+  background: fondo, color, border: "none", borderRadius: 7, padding: "4px 9px",
+  fontSize: 10.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+  whiteSpace: "nowrap", lineHeight: 1.4, ...extra,
 });
 
-function Tarjeta({ cotizacion: c, acciones }) {
+function Tarjeta({ cotizacion: c, acciones, compacta }) {
   const aprobada = c.estado === "Aprobada";
   const alPulsar = (fn) => (e) => { e.stopPropagation(); fn(c); };
+
+  // La obra suele llamarse igual que el cliente, y salia el mismo nombre dos
+  // veces seguidas. Solo se pone si aporta algo distinto. Lo mismo la ciudad:
+  // va detras de la obra en la misma linea en vez de gastar otro renglon.
+  const cliente = normalizarRazonSocial(c.cliente);
+  const obra = normalizarMayusculas(c.obra || "");
+  const ciudad = normalizarMayusculas(c.ciudad || "");
+  const mismoNombre = obra && obra.replace(/[.\s]/g, "") === cliente.replace(/[.\s]/g, "");
+  const debajo = [mismoNombre ? "" : obra, ciudad].filter(Boolean).join(" · ");
+
+  const botones = (
+    <>
+      <button style={boton("#dbeafe", "#1e40af")} onClick={alPulsar(acciones.ver)}>Ver</button>
+      <button style={boton("#1a3050", "#f5c842")} onClick={alPulsar(acciones.editar)}>Editar</button>
+      {!aprobada
+        ? <button style={boton("#0f2d1a", "#4ade80", { border: "1px solid #166534" })}
+            title="Aprueba la cotización y crea la obra"
+            onClick={alPulsar(acciones.aprobar)}>Aprobar</button>
+        : <button style={boton("#fff", "#b54708", { border: "1.5px solid #fde3c4" })}
+            title="Devuelve la cotización a Pendiente. La obra solo se borra si está sin empezar y tú lo confirmas."
+            onClick={alPulsar(acciones.desaprobar)}>↩ Desaprobar</button>}
+      <button style={boton("#2d1414", "#ef4444")} onClick={alPulsar(acciones.pdf)}>PDF</button>
+      <button style={boton("#f47c20", "#fff")} title="Enviar al cliente"
+        onClick={alPulsar(acciones.enviar)}>Enviar</button>
+      <button style={boton("#fff", "#ef4444", { border: "1.5px solid #ef4444" })}
+        title="Eliminar" onClick={alPulsar(acciones.eliminar)}>🗑</button>
+    </>
+  );
+
+  // EN LISTA todo va en un renglon: los datos a la izquierda, el estado y los
+  // botones a la derecha. Asi caben muchas mas de un vistazo, que es para lo
+  // que se usa esta vista.
+  if (compacta) {
+    return (
+      <Resaltable as="article"
+        onClick={() => acciones.ver(c)}
+        estiloHover={{ borderColor: C.acentoFuerte, background: "#fffdfb" }}
+        style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 10, background: "#fff",
+          padding: "9px 12px 9px 14px", display: "flex", alignItems: "center", gap: 12,
+          cursor: "pointer", position: "relative", overflow: "hidden",
+          transition: "border-color .16s ease, background .16s ease" }}>
+        <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3,
+          background: aprobada ? "#12B76A" : C.acento }} />
+
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 13.5, fontWeight: 700, color: C.tinta }}>{cliente}</span>
+            <span style={{ fontSize: 11, color: C.tenue, fontVariantNumeric: "tabular-nums" }}>
+              {c.numero || c.id}{c.fecha ? ` · ${fmtD(c.fecha)}` : ""}
+            </span>
+          </div>
+          {debajo && <div style={{ fontSize: 11.5, color: C.apagado, marginTop: 1,
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{debajo}</div>}
+        </div>
+
+        <Badge estado={c.estado} />
+        <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>{botones}</div>
+      </Resaltable>
+    );
+  }
 
   return (
     <Resaltable as="article"
       onClick={() => acciones.ver(c)}
       estiloHover={{ borderColor: C.acentoFuerte, boxShadow: "0 12px 28px -16px rgba(15,23,42,.30)" }}
-      style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 14, background: "#fff",
-        padding: "14px 15px 12px", display: "flex", flexDirection: "column", gap: 11,
+      style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 12, background: "#fff",
+        padding: "12px 13px 10px", display: "flex", flexDirection: "column", gap: 9,
         cursor: "pointer", position: "relative", overflow: "hidden",
         transition: "box-shadow .2s ease, border-color .2s ease" }}>
       <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3,
@@ -364,30 +425,14 @@ function Tarjeta({ cotizacion: c, acciones }) {
           <div style={{ fontSize: 10.5, color: C.tenue }}>
             {c.numero || c.id}{c.fecha ? ` · ${fmtD(c.fecha)}` : ""}
           </div>
-          <div style={{ fontSize: 15, fontWeight: 700, marginTop: 2, color: C.tinta }}>
-            {normalizarRazonSocial(c.cliente)}
-          </div>
-          {c.obra && <div style={{ fontSize: 12, color: C.suave }}>{normalizarMayusculas(c.obra)}</div>}
-          {c.ciudad && <div style={{ fontSize: 11.5, color: C.tenue, marginTop: 1 }}>{normalizarMayusculas(c.ciudad)}</div>}
+          <div style={{ fontSize: 14, fontWeight: 700, marginTop: 1, color: C.tinta }}>{cliente}</div>
+          {debajo && <div style={{ fontSize: 11.5, color: C.apagado }}>{debajo}</div>}
         </div>
         <Badge estado={c.estado} />
       </div>
 
-      <div style={{ display: "flex", gap: 5, flexWrap: "wrap", paddingTop: 9,
-        borderTop: `1px solid ${C.borde}` }}>
-        <button style={boton("#dbeafe", "#1e40af")} onClick={alPulsar(acciones.ver)}>Ver</button>
-        <button style={boton("#1a3050", "#f5c842")} onClick={alPulsar(acciones.editar)}>Editar</button>
-        {!aprobada
-          ? <button style={boton("#0f2d1a", "#4ade80", { border: "1px solid #166534" })}
-              onClick={alPulsar(acciones.aprobar)}>Aprobar y crear obra</button>
-          : <button style={boton("#fff", "#b54708", { border: "1.5px solid #fde3c4" })}
-              title="Devuelve la cotización a Pendiente. La obra solo se borra si está sin empezar y tú lo confirmas."
-              onClick={alPulsar(acciones.desaprobar)}>↩ Desaprobar</button>}
-        <button style={boton("#2d1414", "#ef4444")} onClick={alPulsar(acciones.pdf)}>PDF</button>
-        <button style={boton("#f47c20", "#fff")} onClick={alPulsar(acciones.enviar)}>Enviar al cliente</button>
-        <button style={boton("#fff", "#ef4444", { border: "1.5px solid #ef4444" })}
-          onClick={alPulsar(acciones.eliminar)}>🗑</button>
-      </div>
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", paddingTop: 8,
+        borderTop: `1px solid ${C.borde}` }}>{botones}</div>
     </Resaltable>
   );
 }

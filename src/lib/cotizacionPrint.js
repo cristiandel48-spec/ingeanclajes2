@@ -710,18 +710,34 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
 
   // Alto aprovechable de una hoja carta, en milimetros, ya descontados los
   // margenes, el encabezado y el sitio que ocupa el pie.
-  const ALTO_UTIL_CIERRE = 200;
+  //
+  // MEDIDO sobre el documento: el area de contenido de una hoja da 219,6 mm.
+  // Estaba puesto en 200 -veinte milimetros por debajo de lo que hay- y por
+  // eso el cierre se iba a una hoja mas dejando un tercio de la anterior en
+  // blanco. Se dejan cinco de colchon por si una fuente rinde distinto.
+  const ALTO_UTIL_CIERRE = 214;
 
   // Cuanto ocupa el bloque de "esta cotizacion incluye". Se estima por el texto
   // porque no hay forma de medirlo de verdad: el HTML se arma aqui y solo el
   // navegador sabe donde parte cada renglon. ~95 caracteres entran por renglon
   // al ancho de la hoja.
+  //
+  // OJO al contar el texto: al quitar las etiquetas hay que juntar los
+  // espacios que dejan. Sin eso, cada `<div class="incluye-item">` contaba
+  // como un puñado de caracteres de texto, salian renglones de mas y el
+  // bloque se estimaba en 58 mm cuando mide 45. Esos trece milimetros de
+  // humo eran los que empujaban la firma a una hoja para ella sola.
+  //
+  // Los numeros salen de medir en el navegador: con los seis puntos de
+  // siempre mide 45,2 mm y esta cuenta devuelve 49,2. Se queda un pelo por
+  // encima a proposito: pasarse parte una hoja de mas, pero quedarse corto
+  // imprime encima del pie.
   const altoIncluye = (html) => {
     if (!html.trim()) return 0;
     const renglones = (html.match(/class="incluye-item"/g) || []).length;
-    const textoPlano = html.replace(/<[^>]+>/g, " ");
+    const textoPlano = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
     const renglonesReales = Math.max(renglones, Math.ceil(textoPlano.length / 95));
-    return 16 + renglonesReales * 4.8 + renglones * 1.7;
+    return 12 + renglonesReales * 4.8 + renglones * 1.4;
   };
 
   // El cierre deja de ser un bloque unico y pasa a ser una lista de piezas con
@@ -735,7 +751,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
       bloques.push({ alto: 34 + propuestas.length * 7, html: renderResumenBlock() });
     }
 
-    bloques.push({ alto: 54, html: `
+    bloques.push({ alto: 53, html: `
     <div class="keep conditions-block">
       <div class="card-label block-label centered">Condiciones comerciales</div>
       <div class="conditions-grid">
@@ -763,14 +779,14 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
       bloques.push({ alto: altoIncluye(incluyeCierreHtml), html: incluyeCierreHtml });
     }
 
-    bloques.push({ alto: 44, html: `
+    bloques.push({ alto: 39, html: `
     <div class="keep sst-block">
       <div class="sst-title">Sistema de Gestión de Seguridad y Salud en el Trabajo</div>
       <p>${escapeHtml(textos.sst)}</p>
     </div>
     ` });
 
-    bloques.push({ alto: 72, html: `
+    bloques.push({ alto: 66, html: `
     <div class="signature keep">
       <div>
         <div class="card-label block-label">Próximos pasos</div>

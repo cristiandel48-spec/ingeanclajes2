@@ -617,7 +617,10 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
               : `${escapeHtml(apertura)}.`;
             return `<p class="doc-copy">${conObra}</p>`;
           })()}
-          ${lineasDeTexto(textos.presentacion).map((parrafo)=>`<p class="doc-copy">${escapeHtml(parrafo)}</p>`).join("")}
+          <!-- Los renglones de la presentacion van seguidos, sin hueco entre
+               ellos: son un mismo texto partido en lineas, no parrafos
+               distintos, y separados dejaban tres huecos en mitad de la hoja. -->
+          ${lineasDeTexto(textos.presentacion).map((parrafo)=>`<p class="doc-copy junto">${escapeHtml(parrafo)}</p>`).join("")}
           ${textoInicial ? `<p class="doc-copy">${escapeHtml(textoInicial)}</p>` : ""}
 
           <h3 class="doc-h3 con-espacio">Definiciones que estructuran el alcance</h3>
@@ -952,6 +955,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
       .doc-h2 { font-size: var(--titulo); line-height:1.3; text-align:center; margin:0 auto 5mm; max-width:170mm; }
       .doc-h3.con-espacio { margin-top:12mm; }
       .doc-h3 { font-size: var(--titulo); text-align:center; margin:0 0 4.5mm; }
+      .doc-copy.junto { margin-bottom:0; }
       .doc-copy { font-size: var(--texto); line-height:1.65; color:#2A2A2A; max-width:160mm; margin:0 auto 3mm;
                   text-align: justify; text-justify: inter-word; hyphens: auto; }
 

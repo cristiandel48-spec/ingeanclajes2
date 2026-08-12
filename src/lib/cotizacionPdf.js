@@ -121,8 +121,25 @@ export async function generarCotizacionPdf(cotizacion, { firmaImg = "", onProgre
       pdf.addImage(imagen, "JPEG", 0, 0, ANCHO_HOJA, ALTO_HOJA, undefined, "FAST");
     }
 
-    const numero = String(cotizacion?.numero || cotizacion?.id || "cotizacion").replace(/[^\w-]+/g, "_");
-    return { blob: pdf.output("blob"), nombre: `Cotizacion ${numero}.pdf` };
+    // El nombre lleva numero, cliente y obra, como el de los informes y las
+    // certificaciones: en una carpeta con veinte, "Cotizacion C-26121" a
+    // secas no dice de quien es. Se limpian los caracteres que Windows no
+    // admite en un nombre de archivo.
+    const numero = String(cotizacion?.numero || cotizacion?.id || "cotizacion");
+    const partes = [numero, cotizacion?.cliente, cotizacion?.obra]
+      .map((t) => String(t || "").trim())
+      .filter(Boolean);
+    // La obra se repite muchas veces con el nombre del cliente; asi no sale dos veces.
+    const vistas = [];
+    for (const parte of partes) {
+      if (!vistas.some((v) => v.toLowerCase() === parte.toLowerCase())) vistas.push(parte);
+    }
+    const nombre = ("Cotizacion " + vistas.join(" "))
+      .replace(/[\/:*?"<>|]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 120);
+    return { blob: pdf.output("blob"), nombre: `${nombre}.pdf` };
   } finally {
     marco.remove();
   }

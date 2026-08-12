@@ -19,7 +19,7 @@ import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_TIEMPO_EJEC, ITEMS_DB } from "../..
 import { buildQuoteProposal, createQuoteProposalId, getQuoteApprovalAccountingSnapshot, getQuoteProposalLabel, getQuoteProposals, normalizeProposalItems, normalizeQuoteItems } from "../../lib/cotizaciones";
 import { scrollAppToTop, today } from "../../lib/format";
 import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarMayusculas, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
-import { openCotizacionPrint } from "../../lib/cotizacionPrint";
+import { downloadGeneratedFile } from "../../lib/download";
 import { getFirmaImg } from "../../lib/firmaEmpresa";
 import { asuntoAprobacion, mensajeAprobacion } from "../../lib/correoAprobacion";
 import { blobABase64, generarCotizacionPdf } from "../../lib/cotizacionPdf";
@@ -305,6 +305,27 @@ export default function Cotizacion({ctx}){
   };
   const SECUNDARIO = { ...BOTON_BASE, background:"#f1f5f9", color:"#475569", border:"1px solid #e2e8f0" };
 
+  // Descarga la cotizacion en PDF, sin pasar por el dialogo de impresion.
+  //
+  // Antes abria una pestaña con el documento y el dialogo del navegador, y
+  // habia que elegir "Guardar como PDF" y ponerle nombre a mano. Ahora baja
+  // el archivo ya armado y con su nombre -numero, cliente y obra-, igual que
+  // en los informes y las certificaciones.
+  const [bajandoPdf,setBajandoPdf]=useState(null);
+  const descargarPdf = async (cotizacion)=>{
+    if(bajandoPdf) return;
+    setBajandoPdf(cotizacion.id);
+    try{
+      const {blob,nombre} = await generarCotizacionPdf(cotizacion,{firmaImg});
+      downloadGeneratedFile(new File([blob],nombre,{type:"application/pdf"}));
+    }catch(e){
+      console.error("No se pudo generar el PDF de la cotizacion:",e);
+      window.alert(e?.message || "No se pudo generar el PDF. Inténtalo de nuevo.");
+    }finally{
+      setBajandoPdf(null);
+    }
+  };
+
   // En el listado, la barra lleva el boton de crear. Antes vivia en el
   // titulo de la pantalla, que ocupaba dos renglones para decir algo que ya
   // pone la barra de arriba.
@@ -515,7 +536,7 @@ export default function Cotizacion({ctx}){
 
   if(tab==="lista"){
     if(previewCot){
-      return <div style={{padding:28}}><H1 title={`Cotización ${previewCot.numero || previewCot.id}`} subtitle="Vista completa del documento comercial" action={<div style={{display:"flex",gap:10}}><button style={B("#f1f5f9","#475569")} onClick={()=>setPreviewCot(null)}>Volver</button><button style={B("#dbeafe","#1e40af")} onClick={()=>{setEditCot(previewCot.id);hydrate(previewCot);setTab("form");setPreviewCot(null);}}>Editar</button><button style={B("#f1f5f9","#475569")} onClick={()=>openCotizacionPrint(previewCot,{firmaImg})}>Imprimir PDF</button><button style={B("#f47c20")} onClick={()=>setEnviarCot(previewCot)}>Enviar al cliente</button></div>}/><DocumentoEnVivo cotizacion={previewCot} firmaImg={firmaImg} alto="calc(100vh - 190px)" nota="Igual al PDF" sticky={false}/>{enviarCot && <EnviarCotizacion cotizacion={enviarCot} firmaImg={firmaImg} onCerrar={()=>setEnviarCot(null)}/>}</div>;
+      return <div style={{padding:28}}><H1 title={`Cotización ${previewCot.numero || previewCot.id}`} subtitle="Vista completa del documento comercial" action={<div style={{display:"flex",gap:10}}><button style={B("#f1f5f9","#475569")} onClick={()=>setPreviewCot(null)}>Volver</button><button style={B("#dbeafe","#1e40af")} onClick={()=>{setEditCot(previewCot.id);hydrate(previewCot);setTab("form");setPreviewCot(null);}}>Editar</button><button style={B("#f1f5f9","#475569")} disabled={Boolean(bajandoPdf)} onClick={()=>descargarPdf(previewCot)}>{bajandoPdf?"Generando…":"Descargar PDF"}</button><button style={B("#f47c20")} onClick={()=>setEnviarCot(previewCot)}>Enviar al cliente</button></div>}/><DocumentoEnVivo cotizacion={previewCot} firmaImg={firmaImg} alto="calc(100vh - 190px)" nota="Igual al PDF" sticky={false}/>{enviarCot && <EnviarCotizacion cotizacion={enviarCot} firmaImg={firmaImg} onCerrar={()=>setEnviarCot(null)}/>}</div>;
     }
     return (
       <div style={{padding:28}}>
@@ -598,7 +619,7 @@ export default function Cotizacion({ctx}){
             editar: (c)=>{setEditCot(c.id);hydrate(c);setTab("form");},
             aprobar: (c)=>aprobarCotizacion(c.id),
             desaprobar: (c)=>desaprobarCotizacion(c.id),
-            pdf: (c)=>openCotizacionPrint(c,{firmaImg}),
+            pdf: (c)=>descargarPdf(c),
             enviar: (c)=>setEnviarCot(c),
             eliminar: (c)=>{
               if(!window.confirm(`¿Eliminar la cotización "${c.numero || c.id}" de ${c.cliente || "este cliente"}? Esta acción no se puede deshacer.`)) return;

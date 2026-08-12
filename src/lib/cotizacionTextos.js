@@ -23,7 +23,10 @@ export const TEXTOS_DOCUMENTO_DEFAULT = {
     "INGEANCLAJES S.A.S. es una empresa especializada en el diseño, fabricación e instalación de sistemas de protección contra caídas. Cada sistema se entrega certificado bajo la Resolución 4272 de 2021, con los certificados de fábrica de todos los elementos instalados y una recertificación anual sin costo.",
     "Nuestro personal está afiliado a ARL, salud y pensión, cuenta con los elementos de protección personal requeridos, y un coordinador de trabajo seguro en alturas acompaña la obra durante toda la ejecución. Entregamos las pólizas que exija el contratante y respondemos por los daños que puedan ocasionarse durante los trabajos.",
     "Quedamos atentos a cualquier inquietud sobre el alcance, los materiales o las condiciones comerciales de esta propuesta.",
-  ].join("\n\n"),
+    // Un salto y no dos: la linea en blanco entre parrafos se veia en el campo
+    // y gastaba tres renglones de pantalla sin aportar nada. En la hoja
+    // impresa los parrafos salen seguidos igual.
+  ].join("\n"),
 
   // Si se deja vacio, el documento arma las definiciones automaticamente
   // segun el tipo de cotizacion (linea de vida, puntos de anclaje, obra blanca).

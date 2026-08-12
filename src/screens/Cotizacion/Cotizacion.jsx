@@ -755,12 +755,16 @@ export default function Cotizacion({ctx}){
         </div>
         <div style={{marginBottom:14}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><LBL>Presentación de la empresa</LBL><BotonCorregir valor={textosDocumento.presentacion} onChange={(v)=>setTexto("presentacion",v)} compacto/></div>
+          {/* Sin lineas en blanco entre parrafos: gastaban tres renglones de
+              pantalla y en la hoja los parrafos salen seguidos igual. Se
+              quitan tambien al mostrar, para las cotizaciones que ya estaban
+              guardadas con ellas. */}
           <textarea
-            value={textosDocumento.presentacion}
-            onChange={e=>setTexto("presentacion",e.target.value)}
-            style={{...SI,minHeight:150,resize:"vertical",lineHeight:1.6}}
+            value={lineasDeTexto(textosDocumento.presentacion).join("\n")}
+            onChange={e=>setTexto("presentacion",e.target.value.replace(/\n{2,}/g,"\n"))}
+            style={{...SI,minHeight:120,resize:"vertical",lineHeight:1.6}}
           />
-          <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Quiénes somos y qué garantiza la propuesta. Separa los párrafos con una línea en blanco.</div>
+          <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Quiénes somos y qué garantiza la propuesta. Un párrafo por renglón.</div>
         </div>
         {/* Se quitaron de la pantalla el «párrafo adicional para este cliente»
             y el «marco técnico»: nadie los llenaba y alargaban el formulario.

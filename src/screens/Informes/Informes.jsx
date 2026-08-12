@@ -14,6 +14,7 @@ import { normalizarFrase, normalizarMayusculas, normalizarNombrePropio, normaliz
 import { DEFAULT_INFORME_ACTIVIDADES, DEFAULT_INFORME_DESCRIPCION, DEFAULT_INFORME_RECOMENDACIONES } from "../../data/seed";
 import { conActividadSeparada } from "../../lib/informeTextos";
 import { siguienteIdUnico } from "../../lib/identificadores";
+import { PLANTILLAS_ACTIVIDAD, buscarPlantillaActividad, esTextoDePlantilla } from "./plantillasActividad";
 export default function Informes({ctx}){
   const {informes,setInformes,obras,empleados,horarios,intencion,limpiarIntencion,empresaConfig,irAPantalla}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
@@ -239,6 +240,34 @@ export default function Informes({ctx}){
 
   const updPersonal=(i,f,v)=>setForm(p=>({...p,personal:p.personal.map((x,j)=>j===i?{...x,[f]:v}:x)}));
   const updActividad=(ai,field,val)=>setForm(p=>({...p,actividades:p.actividades.map((a,i)=>i===ai?{...a,[field]:val}:a)}));
+
+  // El titulo de la actividad trae consigo sus textos.
+  //
+  // Los trabajos son siempre los mismos y el texto que se escribia era casi
+  // igual cada vez. Al elegir uno de la lista se rellenan "Actividades
+  // realizadas" y "Descripcion"; se pueden corregir despues, que para eso
+  // siguen siendo campos de escribir.
+  //
+  // Solo se pisa lo que hay si venia de otra plantilla o estaba vacio. Si esta
+  // escrito a mano se pregunta antes: puede ser el informe de media jornada.
+  const ponerTitulo=(ai,titulo)=>{
+    const plantilla=buscarPlantillaActividad(titulo);
+    if(!plantilla){ updActividad(ai,"titulo",titulo); return; }
+
+    const act=form.actividades[ai]||{};
+    if(!esTextoDePlantilla(act.actividadesRealizadas,act.descripcion)
+       && !window.confirm(`Ya hay texto escrito en esta actividad.\n\n¿Reemplazarlo por el de «${plantilla.titulo}»?`)){
+      updActividad(ai,"titulo",titulo);
+      return;
+    }
+
+    setForm(p=>({...p,actividades:p.actividades.map((a,i)=>i===ai?{
+      ...a,
+      titulo,
+      actividadesRealizadas:plantilla.actividadesRealizadas,
+      descripcion:plantilla.descripcion,
+    }:a)}));
+  };
   const updFotoAct=(ai,fi,field,val)=>setForm(p=>({...p,actividades:p.actividades.map((a,i)=>i===ai?{...a,fotos:a.fotos.map((ft,j)=>j===fi?{...ft,[field]:val}:ft)}:a)}));
 
   // Se reduce la imagen antes de guardarla: van como dataURL dentro del
@@ -529,8 +558,25 @@ export default function Informes({ctx}){
                   <div style={{fontSize:12,fontWeight:700,color:"#cc0000"}}>Actividad {ai+1}</div>
                   {form.actividades.length>1&&<button onClick={()=>setForm(p=>({...p,actividades:p.actividades.filter((_,i)=>i!==ai)}))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:5,padding:"2px 8px",cursor:"pointer",fontSize:11}}>× Eliminar</button>}
                 </div>
+                <datalist id="plantillas-actividad">
+                  {PLANTILLAS_ACTIVIDAD.map((p)=><option key={p.titulo} value={p.titulo}/>)}
+                </datalist>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 170px",gap:10,marginBottom:10}}>
-                  <div><LBL>Título / nombre de la actividad</LBL><input value={act.titulo} onChange={e=>updActividad(ai,"titulo",e.target.value)} placeholder="Ej: Instalación de líneas de vida" style={SI}/></div>
+                  <div>
+                    <LBL>Título / nombre de la actividad</LBL>
+                    {/* Con lista: se puede elegir uno de los trabajos de
+                        siempre -y entonces los textos se rellenan solos- o
+                        escribir cualquier otro a mano. */}
+                    <input
+                      value={act.titulo}
+                      list="plantillas-actividad"
+                      onChange={e=>ponerTitulo(ai,e.target.value)}
+                      placeholder="Elige uno de la lista o escríbelo"
+                      style={SI}/>
+                    <div style={{fontSize:10.5,color:"#64748b",marginTop:3}}>
+                      Al elegir uno de la lista se completan los textos de abajo.
+                    </div>
+                  </div>
                   <div><LBL>Fecha de ejecución</LBL><input type="date" value={act.fecha||""} onChange={e=>updActividad(ai,"fecha",e.target.value)} style={SI}/></div>
                 </div>
                 {/* Dos campos y no uno solo con los encabezados dentro: puestos

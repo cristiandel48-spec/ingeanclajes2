@@ -12,6 +12,7 @@ import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { TEXTOS_DOCUMENTO_DEFAULT, getTextosDocumento, lineasDeTexto } from "../../lib/cotizacionTextos";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
+import BotonCorregir from "../../components/ui/BotonCorregir";
 import { useEffect, useRef, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_TIEMPO_EJEC, ITEMS_DB } from "../../data/seed";
@@ -723,7 +724,7 @@ export default function Cotizacion({ctx}){
           </div>
         </div>
         <div style={{marginBottom:14}}>
-          <LBL>Frase de apertura</LBL>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><LBL>Frase de apertura</LBL><BotonCorregir valor={textosDocumento.saludo} onChange={(v)=>setTexto("saludo",v)} compacto/></div>
           <textarea
             value={textosDocumento.saludo}
             onChange={e=>setTexto("saludo",e.target.value)}
@@ -732,7 +733,7 @@ export default function Cotizacion({ctx}){
           <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Se imprime después de &quot;Cordial saludo, [cliente]&quot;. Si la obra tiene nombre, se agrega al final. No hace falta el punto final.</div>
         </div>
         <div style={{marginBottom:14}}>
-          <LBL>Presentación de la empresa</LBL>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><LBL>Presentación de la empresa</LBL><BotonCorregir valor={textosDocumento.presentacion} onChange={(v)=>setTexto("presentacion",v)} compacto/></div>
           <textarea
             value={textosDocumento.presentacion}
             onChange={e=>setTexto("presentacion",e.target.value)}

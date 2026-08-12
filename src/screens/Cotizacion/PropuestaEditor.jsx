@@ -3,6 +3,7 @@ import BotonDictado from "../../components/ui/BotonDictado";
 import MedidorMapa from "../../components/maps/MedidorMapa";
 import { imagenDelMapa } from "../../lib/mapaEstatico";
 import LBL from "../../components/ui/LBL";
+import BotonCorregir from "../../components/ui/BotonCorregir";
 import { leerImagenComprimida } from "../../lib/imagenes";
 import { normalizarFrase } from "../../lib/normalizarEntrada";
 import { B, SI } from "../../styles/tokens";
@@ -122,7 +123,7 @@ export default function PropuestaEditor({
           <div style={{marginBottom:18}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
               <LBL>Necesidad del cliente</LBL>
-              <BotonDictado valor={p.requerimientoCliente} onChange={v=>set("requerimientoCliente", v)} titulo="Dictar la necesidad del cliente" compacto/>
+              <div style={{display:"flex",gap:6}}><BotonCorregir valor={p.requerimientoCliente} onChange={v=>set("requerimientoCliente", v)} compacto/><BotonDictado valor={p.requerimientoCliente} onChange={v=>set("requerimientoCliente", v)} titulo="Dictar la necesidad del cliente" compacto/></div>
             </div>
             <textarea value={p.requerimientoCliente} onChange={e=>set("requerimientoCliente", e.target.value)} onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==p.requerimientoCliente)set("requerimientoCliente", v);}} spellCheck lang="es" style={{...SI,minHeight:100,resize:"vertical",lineHeight:1.5}}/>
           </div>
@@ -314,6 +315,7 @@ export default function PropuestaEditor({
         <div style={{marginTop:18}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:2}}>
             <div style={{fontSize:11,fontWeight:700,color:"#1a1a2e"}}>Esta cotización incluye</div>
+            <BotonCorregir valor={p.incluyeTexto} onChange={v=>set("incluyeTexto", v)} compacto/>
             <button
               onClick={()=>set("incluyeTexto", DEFAULT_COT_INCLUYE)}
               disabled={p.incluyeTexto===DEFAULT_COT_INCLUYE}

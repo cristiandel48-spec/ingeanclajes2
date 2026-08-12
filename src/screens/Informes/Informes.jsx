@@ -2,6 +2,7 @@ import AvisoFlujo from "../../components/AvisoFlujo";
 import { getFirmaImg } from "../../lib/firmaEmpresa";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
+import BotonCorregir from "../../components/ui/BotonCorregir";
 import PrintHeader from "../../components/print/PrintHeader";
 import { useEffect, useRef, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
@@ -651,9 +652,9 @@ export default function Informes({ctx}){
 
                     normalizarParrafos y no normalizarFrase: estos campos llevan
                     varios parrafos y el otro los aplasta en uno solo. */}
-                <div style={{marginBottom:10}}><LBL>Actividades realizadas</LBL><textarea value={act.actividadesRealizadas||""} onChange={e=>updActividad(ai,"actividadesRealizadas",e.target.value)} onBlur={e=>{const v=normalizarParrafos(e.target.value);if(v!==act.actividadesRealizadas)updActividad(ai,"actividadesRealizadas",v);}} rows={7} placeholder="Qué se ejecutó en campo: inspección, ajustes, limpieza..." spellCheck lang="es" style={{...SI,resize:"vertical",lineHeight:1.5}}/></div>
-                <div style={{marginBottom:10}}><LBL>Descripción</LBL><textarea value={act.descripcion} onChange={e=>updActividad(ai,"descripcion",e.target.value)} onBlur={e=>{const v=normalizarParrafos(e.target.value);if(v!==act.descripcion)updActividad(ai,"descripcion",v);}} rows={6} placeholder="Descripción del proceso ejecutado..." spellCheck lang="es" style={{...SI,resize:"vertical",lineHeight:1.5}}/></div>
-                <div style={{marginBottom:12}}><LBL>Observaciones</LBL><input value={act.observaciones} onChange={e=>updActividad(ai,"observaciones",e.target.value)} onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==act.observaciones)updActividad(ai,"observaciones",v);}} placeholder="Ej: 1 Línea de vida horizontal de 119 metros" spellCheck lang="es" style={SI}/></div>
+                <div style={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><LBL>Actividades realizadas</LBL><BotonCorregir valor={act.actividadesRealizadas||""} onChange={(v)=>updActividad(ai,"actividadesRealizadas",v)} compacto/></div><textarea value={act.actividadesRealizadas||""} onChange={e=>updActividad(ai,"actividadesRealizadas",e.target.value)} onBlur={e=>{const v=normalizarParrafos(e.target.value);if(v!==act.actividadesRealizadas)updActividad(ai,"actividadesRealizadas",v);}} rows={7} placeholder="Qué se ejecutó en campo: inspección, ajustes, limpieza..." spellCheck lang="es" style={{...SI,resize:"vertical",lineHeight:1.5}}/></div>
+                <div style={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><LBL>Descripción</LBL><BotonCorregir valor={act.descripcion} onChange={(v)=>updActividad(ai,"descripcion",v)} compacto/></div><textarea value={act.descripcion} onChange={e=>updActividad(ai,"descripcion",e.target.value)} onBlur={e=>{const v=normalizarParrafos(e.target.value);if(v!==act.descripcion)updActividad(ai,"descripcion",v);}} rows={6} placeholder="Descripción del proceso ejecutado..." spellCheck lang="es" style={{...SI,resize:"vertical",lineHeight:1.5}}/></div>
+                <div style={{marginBottom:12}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><LBL>Observaciones</LBL><BotonCorregir valor={act.observaciones} onChange={(v)=>updActividad(ai,"observaciones",v)} compacto/></div><input value={act.observaciones} onChange={e=>updActividad(ai,"observaciones",e.target.value)} onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==act.observaciones)updActividad(ai,"observaciones",v);}} placeholder="Ej: 1 Línea de vida horizontal de 119 metros" spellCheck lang="es" style={SI}/></div>
                 {/* Fotos de esta actividad */}
                 <LBL>Registro fotográfico</LBL>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,alignItems:"start"}}>
@@ -697,7 +698,7 @@ export default function Informes({ctx}){
             ))}
           </div>
 
-          <div style={{marginBottom:14}}><LBL>Recomendaciones generales</LBL><textarea value={form.recomendaciones} onChange={e=>setForm(p=>({...p,recomendaciones:e.target.value}))} rows={3} spellCheck lang="es" style={{...SI,resize:"vertical"}}/></div>
+          <div style={{marginBottom:14}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><LBL>Recomendaciones generales</LBL><BotonCorregir valor={form.recomendaciones} onChange={(v)=>setForm(p=>({...p,recomendaciones:v}))} compacto/></div><textarea value={form.recomendaciones} onChange={e=>setForm(p=>({...p,recomendaciones:e.target.value}))} rows={3} spellCheck lang="es" style={{...SI,resize:"vertical"}}/></div>
           <div style={{display:"flex",gap:10}}>
             <button style={B("#cc0000")} onClick={guardar}>{editId ? "Guardar cambios" : "Guardar informe"}</button>
             <button style={B("#f1f5f9","#475569")} onClick={()=>{setNuevo(false);setEditId(null);}}>Cancelar</button>

@@ -5,6 +5,7 @@ import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
 import ObraDetalle from "./ObraDetalle";
 import { useEffect, useState } from "react";
+import { useAccionesPantalla } from "../../context/accionesPantalla";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { today } from "../../lib/format";
 import { getQuoteApprovalAccountingSnapshot } from "../../lib/cotizaciones";
@@ -93,15 +94,30 @@ export default function Obras({ctx}){
     setShowNO(false);
   };
 
+  // El boton de crear vive en la barra de arriba, no en un titulo propio.
+  // `setShowNO` no cambia entre renders, asi que se puede llamar directo sin
+  // guardarlo en una referencia.
+  useAccionesPantalla(
+    sel ? null : (
+      <button
+        style={{
+          background:"#cc0000", color:"#fff", border:"1px solid #cc0000", borderRadius:9,
+          padding:"8px 16px", fontSize:12.5, fontWeight:700, cursor:"pointer",
+          fontFamily:"inherit", whiteSpace:"nowrap",
+        }}
+        onClick={()=>setShowNO((v)=>!v)}
+      >+ Nueva Obra</button>
+    ),
+    [sel]
+  );
+
   // Si hay obra seleccionada, mostramos pantalla completa de esa obra
   if(sel){
     return <ObraDetalle obraId={sel.id} ctx={ctx} onVolver={()=>setSel(null)}/>;
   }
 
   return(
-    <div style={{padding:28}}>
-      <H1 title="Ejecución de Obra" subtitle="Gestión completa: personal, gastos, nómina y tiempo por obra"
-        action={<button style={B("#cc0000")} onClick={()=>setShowNO(!showNO)}>+ Nueva Obra</button>}/>
+    <div style={{padding:"14px 28px 28px"}}>
 
       <AvisoFlujo
         tono="info"

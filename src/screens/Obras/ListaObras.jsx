@@ -96,7 +96,9 @@ export default function ListaObras({ obras, cotizaciones, onAbrir, onCambiarAvan
   const [fecha, setFecha] = useState(null);
   const [registro, setRegistro] = useState(null);
   const [orden, setOrden] = useState("recientes");
-  const [vista, setVista] = useState("cuadricula");
+  // Empieza en lista, igual que el listado de cotizaciones: asi caben mas
+  // obras de un vistazo.
+  const [vista, setVista] = useState("lista");
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
   const campoBusqueda = useRef(null);
   // La hora se toma UNA vez, al abrir la pantalla. Leerla dentro del calculo
@@ -174,7 +176,7 @@ export default function ListaObras({ obras, cotizaciones, onAbrir, onCambiarAvan
   return (
     <div style={{ ...CD, padding: 0, overflow: "hidden" }}>
       {/* ── buscador y controles ── */}
-      <div style={{ padding: "16px 18px 14px", display: "flex", flexDirection: "column", gap: 12,
+      <div style={{ padding: "12px 14px 11px", display: "flex", flexDirection: "column", gap: 9,
         borderBottom: `1px solid ${C.borde}` }}>
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <Buscador refCampo={campoBusqueda} valor={busqueda} alCambiar={setBusqueda} />
@@ -183,7 +185,7 @@ export default function ListaObras({ obras, cotizaciones, onAbrir, onCambiarAvan
             as="button"
             onClick={() => setFiltrosAbiertos((v) => !v)}
             estiloHover={{ borderColor: C.acento }}
-            style={{ height: 42, padding: "0 14px", borderRadius: 10,
+            style={{ height: 36, padding: "0 12px", borderRadius: 9,
               border: `1.5px solid ${filtrosAbiertos ? C.tinta : C.bordeFuerte}`,
               background: filtrosAbiertos ? C.tinta : "#fff",
               color: filtrosAbiertos ? "#fff" : C.suave,
@@ -197,7 +199,7 @@ export default function ListaObras({ obras, cotizaciones, onAbrir, onCambiarAvan
             )}
           </Resaltable>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 6, height: 42, padding: "0 6px 0 12px",
+          <div style={{ display: "flex", alignItems: "center", gap: 6, height: 36, padding: "0 5px 0 11px",
             borderRadius: 10, border: `1.5px solid ${C.bordeFuerte}`, background: "#fff" }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: C.tenue, whiteSpace: "nowrap" }}>Ordenar</span>
             <select value={orden} onChange={(e) => setOrden(e.target.value)}
@@ -207,11 +209,11 @@ export default function ListaObras({ obras, cotizaciones, onAbrir, onCambiarAvan
             </select>
           </div>
 
-          <div style={{ display: "flex", padding: 4, gap: 3, background: C.rellenoFuerte, borderRadius: 10,
-            height: 42, alignItems: "center" }}>
-            {[["cuadricula", "▦", "Cuadrícula"], ["lista", "☰", "Lista"]].map(([clave, icono, titulo]) => (
+          <div style={{ display: "flex", padding: 3, gap: 3, background: C.rellenoFuerte, borderRadius: 9,
+            height: 36, alignItems: "center" }}>
+            {[["lista", "☰", "Lista"], ["cuadricula", "▦", "Cuadrícula"]].map(([clave, icono, titulo]) => (
               <button key={clave} title={titulo} onClick={() => setVista(clave)}
-                style={{ width: 34, height: 34, border: "none", borderRadius: 8, cursor: "pointer", fontSize: 14,
+                style={{ width: 30, height: 30, border: "none", borderRadius: 7, cursor: "pointer", fontSize: 13,
                   background: vista === clave ? "#fff" : "transparent",
                   color: vista === clave ? C.tinta : "#8a94a6",
                   boxShadow: vista === clave ? "0 1px 3px rgba(16,24,40,.16)" : "none" }}>{icono}</button>
@@ -226,7 +228,7 @@ export default function ListaObras({ obras, cotizaciones, onAbrir, onCambiarAvan
             return (
               <Resaltable key={e} as="button" onClick={() => setEstado(e)}
                 estiloHover={{ borderColor: activa ? C.tinta : "#c3cad8" }}
-                style={{ height: 31, padding: "0 12px", borderRadius: 999,
+                style={{ height: 28, padding: "0 11px", borderRadius: 999,
                   border: `1.5px solid ${activa ? C.tinta : C.bordeFuerte}`,
                   background: activa ? C.tinta : "#fff", color: activa ? "#fff" : C.suave,
                   fontSize: 12.5, fontWeight: 600, cursor: "pointer",
@@ -241,6 +243,11 @@ export default function ListaObras({ obras, cotizaciones, onAbrir, onCambiarAvan
               </Resaltable>
             );
           })}
+          {/* El avance promedio va aqui, al final de las pestañas: es un dato
+              suelto y no merece un renglon para el solo. */}
+          <span style={{ marginLeft: "auto", fontSize: 11.5, color: C.tenue, fontWeight: 600 }}>
+            Avance promedio <strong style={{ color: C.tinta }}>{promedio}%</strong>
+          </span>
         </div>
 
         {/* panel de filtros */}
@@ -288,23 +295,11 @@ export default function ListaObras({ obras, cotizaciones, onAbrir, onCambiarAvan
         )}
       </div>
 
-      {/* ── cuántas salieron ── */}
-      <div style={{ padding: "12px 18px", display: "flex", alignItems: "center", justifyContent: "space-between",
-        borderBottom: `1px solid ${C.borde}` }}>
-        <div style={{ fontSize: 13, color: C.apagado }}>
-          <strong style={{ color: C.tinta, fontVariantNumeric: "tabular-nums" }}>{lista.length}</strong>{" "}
-          {lista.length === 1 ? "obra" : "obras"} {busqueda || filtrosPuestos ? "encontradas" : "en total"}
-        </div>
-        <div style={{ fontSize: 12, color: C.tenue, fontWeight: 600 }}>
-          Avance promedio <span style={{ color: C.tinta, fontVariantNumeric: "tabular-nums" }}>{promedio}%</span>
-        </div>
-      </div>
-
       {/* ── las obras ── */}
       {lista.length > 0 && (
-        <div style={{ padding: 16, display: "grid",
+        <div style={{ padding: vista === "lista" ? "10px 14px 14px" : 14, display: "grid",
           gridTemplateColumns: vista === "cuadricula" ? "repeat(auto-fill,minmax(320px,1fr))" : "minmax(0,1fr)",
-          gap: 12 }}>
+          gap: vista === "lista" ? 6 : 11 }}>
           {lista.map((o) => (
             <TarjetaObra
               key={o.id}
@@ -314,6 +309,7 @@ export default function ListaObras({ obras, cotizaciones, onAbrir, onCambiarAvan
               onAbrir={() => onAbrir(o)}
               onCambiarAvance={onCambiarAvance}
               onCambiarEstado={onCambiarEstado}
+              compacta={vista === "lista"}
             />
           ))}
         </div>
@@ -352,7 +348,7 @@ function Buscador({ valor, alCambiar, refCampo }) {
         onFocus={() => setEnfocado(true)}
         onBlur={() => setEnfocado(false)}
         placeholder="Buscar por cliente, proyecto, número de obra, ciudad o cotización…"
-        style={{ ...SI, height: 42, padding: "0 84px 0 13px",
+        style={{ ...SI, height: 36, padding: "0 80px 0 12px", fontSize: 13,
           border: `1.5px solid ${enfocado ? C.acento : C.bordeFuerte}`,
           background: enfocado ? "#fff" : C.relleno,
           boxShadow: enfocado ? "0 0 0 3px rgba(244,124,32,.14)" : "none" }}
@@ -394,31 +390,99 @@ function Pastilla({ activa, onClick, children }) {
 
 // La tarjeta conserva lo que ya se hacia desde el listado: mover el avance,
 // cambiar el estado y ver de un vistazo cuanta gente y cuantas fotos hay.
-function TarjetaObra({ obra: o, cotizacion, resumen, onAbrir, onCambiarAvance, onCambiarEstado }) {
+function TarjetaObra({ obra: o, cotizacion, resumen, onAbrir, onCambiarAvance, onCambiarEstado, compacta }) {
   const avance = Number(o.avance) || 0;
   const color = avance === 100 ? "#4ade80" : C.acento;
   const fotos = resumen?.fotos || 0;
+
+  // El proyecto suele llamarse igual que el cliente, y salia el mismo nombre
+  // dos veces. Solo se pone si aporta algo, y la ciudad va detras en la misma
+  // linea en vez de gastar otro renglon.
+  const cliente = normalizarRazonSocial(o.cliente);
+  const proyecto = String(o.proyecto || "").trim();
+  const mismoNombre = proyecto && proyecto.replace(/[.\s]/g, "").toUpperCase() === cliente.replace(/[.\s]/g, "").toUpperCase();
+  const debajo = [mismoNombre ? "" : proyecto, o.ciudad].filter(Boolean).join(" · ");
+
+  const selectorEstado = (
+    <select value={o.estado}
+      onChange={(e) => { e.stopPropagation(); onCambiarEstado(o.id, e.target.value); }}
+      onClick={(e) => e.stopPropagation()}
+      style={{ ...SI, fontSize: 11, padding: "4px 7px", width: "auto", minWidth: 108 }}>
+      {[...new Set([...ESTADOS_OBRA, o.estado].filter(Boolean))].map((s) => <option key={s}>{s}</option>)}
+    </select>
+  );
+  const contadores = (
+    <>
+      <span style={{ fontSize: 11, color: C.tenue, flexShrink: 0 }}>{(o.empleados || []).length} 👷</span>
+      <span
+        title={fotos ? "Fotos de avance cargadas para el informe" : "Sin fotos de avance: el informe saldría vacío"}
+        style={{ fontSize: 11, color: fotos ? C.tenue : "#b54708", flexShrink: 0 }}>{fotos} 📸</span>
+    </>
+  );
+
+  // EN LISTA todo va en un renglon: datos, barra de avance y controles.
+  if (compacta) {
+    return (
+      <Resaltable as="article" onClick={onAbrir}
+        estiloHover={{ borderColor: C.acentoFuerte, background: "#fffdfb" }}
+        style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 10, background: "#fff",
+          padding: "9px 12px 9px 14px", display: "flex", alignItems: "center", gap: 12,
+          cursor: "pointer", position: "relative", overflow: "hidden",
+          transition: "border-color .16s ease, background .16s ease" }}>
+        <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, background: color }} />
+
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 13.5, fontWeight: 700, color: C.tinta }}>{cliente}</span>
+            <span style={{ fontSize: 11, color: C.tenue }}>
+              {o.id} · {fmtD(o.fechaInicio)}{cotizacion ? ` · 📄 ${o.cotizacionId}` : ""}
+            </span>
+          </div>
+          {debajo && <div style={{ fontSize: 11.5, color: C.apagado, marginTop: 1,
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{debajo}</div>}
+        </div>
+
+        {/* La barra sigue siendo la de mover el avance, solo que aqui va
+            estrecha y con el porcentaje al lado. */}
+        <div style={{ width: 150, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5,
+            color: C.apagado, marginBottom: 2 }}>
+            <span>Avance</span>
+            <span style={{ color: avance === 100 ? "#166534" : C.acento, fontWeight: 700,
+              fontVariantNumeric: "tabular-nums" }}>{avance}%</span>
+          </div>
+          <input type="range" min={0} max={100} value={avance}
+            onChange={(e) => onCambiarAvance(o.id, Number(e.target.value))}
+            style={{ width: "100%", accentColor: C.acento, display: "block", margin: 0 }} />
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          {contadores}
+          {selectorEstado}
+          <span style={{ fontSize: 11, color: C.acentoFuerte, fontWeight: 600 }}>Ver →</span>
+        </div>
+      </Resaltable>
+    );
+  }
 
   return (
     <Resaltable
       as="article"
       onClick={onAbrir}
       estiloHover={{ borderColor: C.acentoFuerte, boxShadow: "0 12px 28px -16px rgba(15,23,42,.30)" }}
-      style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 14, background: "#fff",
-        padding: "14px 15px 12px", display: "flex", flexDirection: "column", gap: 11,
+      style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 12, background: "#fff",
+        padding: "12px 13px 10px", display: "flex", flexDirection: "column", gap: 9,
         cursor: "pointer", position: "relative", overflow: "hidden",
         transition: "box-shadow .2s ease, border-color .2s ease" }}>
       <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, background: color }} />
 
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 10.5, color: C.tenue }}>{o.id} · {fmtD(o.fechaInicio)}</div>
-          <div style={{ fontSize: 15, fontWeight: 700, marginTop: 2, color: C.tinta }}>
-            {normalizarRazonSocial(o.cliente)}
+          <div style={{ fontSize: 10.5, color: C.tenue }}>
+            {o.id} · {fmtD(o.fechaInicio)}{cotizacion ? ` · 📄 ${o.cotizacionId}` : ""}
           </div>
-          {o.proyecto && <div style={{ fontSize: 12, color: C.suave }}>{o.proyecto}</div>}
-          {o.ciudad && <div style={{ fontSize: 11.5, color: C.tenue, marginTop: 1 }}>{o.ciudad}</div>}
-          {cotizacion && <div style={{ fontSize: 10.5, color: "#b45309", marginTop: 2 }}>📄 {o.cotizacionId}</div>}
+          <div style={{ fontSize: 14, fontWeight: 700, marginTop: 1, color: C.tinta }}>{cliente}</div>
+          {debajo && <div style={{ fontSize: 11.5, color: C.apagado }}>{debajo}</div>}
         </div>
         <Badge estado={o.estado} />
       </div>
@@ -440,19 +504,9 @@ function TarjetaObra({ obra: o, cotizacion, resumen, onAbrir, onCambiarAvance, o
           style={{ width: "100%", marginTop: 4, accentColor: C.acento }} />
       </div>
 
-      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-        <select value={o.estado}
-          onChange={(e) => { e.stopPropagation(); onCambiarEstado(o.id, e.target.value); }}
-          onClick={(e) => e.stopPropagation()}
-          style={{ ...SI, fontSize: 11, padding: "5px 8px", flex: 1 }}>
-          {[...new Set([...ESTADOS_OBRA, o.estado].filter(Boolean))].map((s) => <option key={s}>{s}</option>)}
-        </select>
-        <span style={{ fontSize: 11, color: C.tenue, flexShrink: 0 }}>{(o.empleados || []).length} 👷</span>
-        <span
-          title={fotos ? "Fotos de avance cargadas para el informe" : "Sin fotos de avance: el informe saldría vacío"}
-          style={{ fontSize: 11, color: fotos ? C.tenue : "#b54708", flexShrink: 0 }}>
-          {fotos} 📸
-        </span>
+      <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
+        <div style={{ flex: 1 }} onClick={(e) => e.stopPropagation()}>{selectorEstado}</div>
+        {contadores}
         <span style={{ fontSize: 11, color: C.acentoFuerte, fontWeight: 600, flexShrink: 0 }}>Ver →</span>
       </div>
     </Resaltable>

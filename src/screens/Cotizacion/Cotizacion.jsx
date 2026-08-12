@@ -304,8 +304,23 @@ export default function Cotizacion({ctx}){
   };
   const SECUNDARIO = { ...BOTON_BASE, background:"#f1f5f9", color:"#475569", border:"1px solid #e2e8f0" };
 
+  // En el listado, la barra lleva el boton de crear. Antes vivia en el
+  // titulo de la pantalla, que ocupaba dos renglones para decir algo que ya
+  // pone la barra de arriba.
+  const nuevaRef = useRef(nuevaCotizacion);
+  useEffect(()=>{ nuevaRef.current = nuevaCotizacion; });
+
   useAccionesPantalla(
-    tab==="form" ? (
+    tab==="lista" ? (
+      <button
+        style={{
+          background:"#f47c20", color:"#fff", border:"1px solid #f47c20", borderRadius:9,
+          padding:"8px 16px", fontSize:12.5, fontWeight:700, cursor:"pointer",
+          fontFamily:"inherit", whiteSpace:"nowrap",
+        }}
+        onClick={()=>nuevaRef.current()}
+      >+ Nueva Cotización</button>
+    ) : tab==="form" ? (
       <div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap"}}>
         <button style={SECUNDARIO} onClick={()=>setTab("lista")}
           title="Volver al listado de cotizaciones">← Lista</button>
@@ -503,7 +518,6 @@ export default function Cotizacion({ctx}){
     }
     return (
       <div style={{padding:28}}>
-        <H1 title="Cotizaciones" subtitle="Ubicación, medición y propuestas comerciales por cliente" action={<button style={B("#f47c20")} onClick={nuevaCotizacion}>+ Nueva Cotización</button>}/>
 
         {/* Al aprobar, se explica que se creo y cual es el siguiente paso:
             quien cotiza no tiene por que saber que ahora existe una obra. */}

@@ -277,12 +277,6 @@ export default function ListaCotizaciones({ cotizaciones, acciones }) {
         )}
       </div>
 
-      {/* Cuantas salieron. Sin sumar valores: esta pantalla es para buscar y
-          abrir documentos, y las cifras se ven al abrirlos. */}
-      <div style={{ padding: "8px 14px", borderBottom: `1px solid ${C.borde}`, fontSize: 12, color: C.apagado }}>
-        <strong style={{ color: C.tinta, fontVariantNumeric: "tabular-nums" }}>{lista.length}</strong>{" "}
-        {lista.length === 1 ? "cotización" : "cotizaciones"} {busqueda || puestos ? "encontradas" : "en total"}
-      </div>
 
       {lista.length > 0 && (
         <div style={{ padding: vista === "lista" ? "10px 14px 14px" : 14, display: "grid",

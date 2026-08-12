@@ -43,6 +43,20 @@ export const MODULOS_MINIMOS = [];
 // - dashboard: es el resumen economico de la empresa.
 export const MODULOS_SOLO_ADMIN = ["usuarios", "dashboard", "auditoria"];
 
+// Y esto solo lo ve el dueño, ni siquiera los demas administradores.
+//
+// La auditoria dice quien creo y quien toco cada documento. Es informacion
+// sobre el propio equipo, y quien la mira no deberia poder ser mirado por los
+// demas: si la ve todo el que sea administrador, deja de servir para lo que
+// se pidio.
+//
+// OJO: esto lo esconde del MENU, no lo blinda en la base. Igual que los
+// permisos por modulo, es la interfaz la que decide, asi que alguien con
+// conocimientos tecnicos y una sesion valida podria consultar las columnas
+// por fuera de la aplicacion. Para bloqueo de verdad harian falta politicas
+// RLS por tabla.
+export const MODULOS_SOLO_DUENO = ["auditoria"];
+
 export function esAdmin(membresia) {
   return membresia?.role === "admin";
 }
@@ -67,6 +81,14 @@ export function esCuentaSoporte(correo) {
   return CUENTAS_SOPORTE.includes(String(correo ?? "").trim().toLowerCase());
 }
 
+/**
+ * El dueño del programa. Es la misma lista de correos de arriba: quien lo
+ * mantiene es tambien quien puede ver la auditoria.
+ */
+export function esDueno(membresia) {
+  return esCuentaSoporte(membresia?.email);
+}
+
 /** Quita del listado del equipo las cuentas de soporte. */
 export function sinCuentasSoporte(usuarios) {
   return (usuarios ?? []).filter((usuario) => !esCuentaSoporte(usuario?.email));
@@ -89,11 +111,17 @@ export function puedeVerDinero(membresia) {
 export function modulosPermitidos(membresia) {
   const todos = NAV_ITEMS.map((item) => item.id);
   if (!membresia || !membresia.activo) return [];
-  if (esAdmin(membresia)) return todos;
 
-  const asignados = membresia.modulos == null ? todos : membresia.modulos;
+  // Lo del dueño se descuenta antes que nada, incluso para un administrador.
+  const visibles = esDueno(membresia)
+    ? todos
+    : todos.filter((id) => !MODULOS_SOLO_DUENO.includes(id));
+
+  if (esAdmin(membresia)) return visibles;
+
+  const asignados = membresia.modulos == null ? visibles : membresia.modulos;
   const marcados = new Set([...MODULOS_MINIMOS, ...asignados]);
-  return todos.filter((id) => marcados.has(id) && !MODULOS_SOLO_ADMIN.includes(id));
+  return visibles.filter((id) => marcados.has(id) && !MODULOS_SOLO_ADMIN.includes(id));
 }
 
 export function puedeVer(membresia, moduloId) {

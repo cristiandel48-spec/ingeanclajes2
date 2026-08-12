@@ -69,13 +69,28 @@ export function registroTieneContenido(registro) {
 
 // Convierte los registros de bitacora en las actividades del informe. Es la
 // traduccion de un formato al otro: mismo contenido, distinta pantalla.
+//
+// A DONDE VA CADA COSA:
+//
+//   obra · ¿Que se hizo?        ->  informe · Observaciones
+//   obra · Descripcion          ->  informe · Descripcion
+//   obra · Observaciones        ->  informe · Observaciones (detras de lo anterior)
+//   obra · fecha y fotos        ->  informe · fecha y fotos
+//   (el titulo queda vacio, se elige de la lista)
+//
+// El "¿que se hizo?" iba antes al TITULO, y no era su sitio: lo que se
+// escribe en campo es una narracion -"Se realizo los 3 ensayos de traccion
+// con el enerpac naranjado de los puntos de anclaje instalados el dia
+// anterior"- y de titulo quedaba larguisimo. Ahora va a Observaciones, que
+// es de donde la certificacion saca QUE se certifica, y el titulo se elige
+// de la lista de trabajos.
 export function bitacoraAActividades(registros) {
   return registros
     .filter(registroTieneContenido)
     .map((registro) => ({
-      titulo: registro.actividad || "Actividad ejecutada",
+      titulo: "",
       descripcion: registro.descripcion || "",
-      observaciones: registro.observaciones || "",
+      observaciones: unirObservaciones(registro.actividad, registro.observaciones),
       fecha: registro.fecha || "",
       origenBitacoraId: registro.id,
       fotos: (registro.fotos || []).filter((foto) => foto.img).map((foto) => ({
@@ -83,6 +98,23 @@ export function bitacoraAActividades(registros) {
         comentario: foto.comentario || "",
       })),
     }));
+}
+
+// Junta lo que se hizo con las observaciones sueltas del registro, sin
+// repetir si resultan ser lo mismo y cerrando la frase con punto.
+function unirObservaciones(queSeHizo, observaciones) {
+  const partes = [queSeHizo, observaciones]
+    .map((t) => String(t || "").trim())
+    .filter(Boolean);
+
+  const vistas = [];
+  for (const parte of partes) {
+    const yaEsta = vistas.some((v) => v.toLowerCase() === parte.toLowerCase());
+    if (!yaEsta) vistas.push(parte);
+  }
+  return vistas
+    .map((t) => (/[.;:!?]$/.test(t) ? t : t + "."))
+    .join(" ");
 }
 
 // Resumen para mostrar en la obra y en la guia de flujo.

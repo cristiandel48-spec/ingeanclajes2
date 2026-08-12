@@ -345,6 +345,14 @@ export default function Informes({ctx}){
     a.titulo?.trim() || a.descripcion?.trim() || a.observaciones?.trim() || (a.fotos||[]).some((f)=>f.img)
   );
 
+  // Trae los avances de la obra SIN duplicar ni pisar lo escrito.
+  //
+  // Cada avance viaja con la marca del registro del que salio
+  // (`origenBitacoraId`), asi que se sabe cual ya esta en el informe. Se puede
+  // pulsar el boton las veces que haga falta -se registro un avance mas en
+  // campo y se quiere completar el informe- y solo entran los que faltan.
+  //
+  // Lo escrito a mano, que no tiene esa marca, no se toca nunca.
   const traerAvancesDeLaObra = ()=>{
     if(!avancesDisponibles.length){
       window.alert(
@@ -354,15 +362,36 @@ export default function Informes({ctx}){
       );
       return;
     }
-    if(hayContenidoEscrito){
-      const seguir = window.confirm(
-        `Se van a reemplazar las actividades de este informe por los ${avancesDisponibles.length} avance(s) registrados en la obra.\n\n` +
-        "Lo que hayas escrito a mano aquí se pierde. ¿Continuar?"
+
+    const yaEstan = new Set(
+      form.actividades.map((a)=>a.origenBitacoraId).filter(Boolean)
+    );
+    const nuevos = avancesDisponibles.filter((a)=>!yaEstan.has(a.origenBitacoraId));
+
+    if(!nuevos.length){
+      window.alert(
+        `Los ${avancesDisponibles.length} avance(s) de la obra ya están en este informe.\n\n` +
+        "No se agregó nada para no repetirlos. Si registras un avance nuevo en la obra, " +
+        "vuelve a pulsar este botón y se añadirá solo ese."
       );
-      if(!seguir) return;
+      return;
     }
+
+    // Las actividades vacías que hubiera -las que se crean al abrir el
+    // informe- estorban: se quitan para que no queden huecos en el documento.
+    const propias = form.actividades.filter((a)=>
+      a.origenBitacoraId
+      || a.titulo?.trim() || a.descripcion?.trim() || a.observaciones?.trim()
+      || (a.fotos||[]).some((f)=>f.img)
+    );
+
     fotoRefs.current={};
-    setForm(p=>({...p,actividades:avancesDisponibles}));
+    setForm(p=>({...p,actividades:[...propias,...nuevos]}));
+    window.alert(
+      nuevos.length===avancesDisponibles.length
+        ? `Se agregaron ${nuevos.length} avance(s) de la obra.`
+        : `Se agregaron ${nuevos.length} avance(s) nuevo(s). Los otros ${avancesDisponibles.length-nuevos.length} ya estaban.`
+    );
   };
 
   const abrirNuevoInforme = ()=>{

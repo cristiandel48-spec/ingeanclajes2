@@ -764,15 +764,19 @@ export default function Cotizacion({ctx}){
         {/* Va primero porque es lo primero que se ve del documento. */}
         <div style={{marginBottom:14}}>
           <LBL>Título de la portada</LBL>
+          {/* Centrado y en mayuscula, igual que sale impreso: asi lo que se
+              escribe aqui se parece a lo que va a salir en la hoja. */}
           <textarea
             value={textosDocumento.tituloPortada}
             onChange={e=>setTexto("tituloPortada",e.target.value)}
             rows={2}
-            style={{...SI,resize:"vertical",lineHeight:1.5,fontSize:14,fontWeight:600}}
+            style={{...SI,resize:"vertical",lineHeight:1.5,fontSize:14,fontWeight:600,
+              textAlign:"center",textTransform:"uppercase"}}
           />
           <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>
             El título grande de la primera hoja. Cámbialo según el trabajo: certificación, mantenimiento
             de fachadas, obra blanca… Cada renglón que escribas sale en una línea distinta del título.
+            Sale centrado y en mayúscula, como se ve aquí.
           </div>
         </div>
         <div style={{marginBottom:14}}>

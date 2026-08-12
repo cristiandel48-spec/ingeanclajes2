@@ -5,6 +5,7 @@ import { useAccionesPantalla } from "../../context/accionesPantalla";
 import DictarCotizacion from "./DictarCotizacion";
 import FirmaEmpresa from "../../components/FirmaEmpresa";
 import DocumentoEnVivo from "./DocumentoEnVivo";
+import ListaCotizaciones from "./ListaCotizaciones";
 import EnviarCotizacion from "./EnviarCotizacion";
 import PropuestaEditor from "./PropuestaEditor";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
@@ -14,10 +15,10 @@ import LBL from "../../components/ui/LBL";
 import { useEffect, useRef, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_TIEMPO_EJEC, ITEMS_DB } from "../../data/seed";
-import { buildQuoteProposal, createQuoteProposalId, getQuoteActiveProposal, getQuoteApprovalAccountingSnapshot, getQuoteProposalLabel, getQuoteProposals, normalizeProposalItems, normalizeQuoteItems } from "../../lib/cotizaciones";
+import { buildQuoteProposal, createQuoteProposalId, getQuoteApprovalAccountingSnapshot, getQuoteProposalLabel, getQuoteProposals, normalizeProposalItems, normalizeQuoteItems } from "../../lib/cotizaciones";
 import { scrollAppToTop, today } from "../../lib/format";
 import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarMayusculas, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
-import { normalizeEntityKey, openCotizacionPrint } from "../../lib/cotizacionPrint";
+import { openCotizacionPrint } from "../../lib/cotizacionPrint";
 import { getFirmaImg } from "../../lib/firmaEmpresa";
 import { asuntoAprobacion, mensajeAprobacion } from "../../lib/correoAprobacion";
 import { blobABase64, generarCotizacionPdf } from "../../lib/cotizacionPdf";
@@ -34,8 +35,6 @@ export default function Cotizacion({ctx}){
   // completos mientras se edita.
   const [verDocumento,setVerDocumento]=useState(false);
   const cabeEnDosColumnas=useMediaQuery("(min-width: 1250px)");
-  const [busqueda,setBusqueda]=useState("");
-  const [filtroObraCot,setFiltroObraCot]=useState("todas");
   // Aviso posterior a aprobar: explica que se creo y que sigue.
   const [obraCreada,setObraCreada]=useState(null);
   const [editCot,setEditCot]=useState(null);
@@ -464,18 +463,6 @@ export default function Cotizacion({ctx}){
     setObraCreada(null);
   };
 
-  const term = normalizeEntityKey(busqueda || "");
-  const obrasFiltroCotizacion = Array.from(new Set(
-    cotizaciones
-      .map((cotizacion)=>String(cotizacion.obra || "").trim())
-      .filter(Boolean)
-  )).sort((a,b)=>a.localeCompare(b,"es"));
-  const cotizacionesFiltradas = cotizaciones.filter((cotizacion)=>{
-    if(filtroObraCot!=="todas" && String(cotizacion.obra || "").trim()!==filtroObraCot) return false;
-    if(!term) return true;
-    const activa = getQuoteActiveProposal(cotizacion);
-    return [cotizacion.id,cotizacion.numero,cotizacion.cliente,cotizacion.obra,cotizacion.ciudad,activa.nombre].some((value)=>normalizeEntityKey(value || "").includes(term));
-  });
 
   if(tab==="lista"){
     if(previewCot){
@@ -556,101 +543,21 @@ export default function Cotizacion({ctx}){
             </div>
           </div>
         )}
-        <div style={{...CD,marginBottom:18,padding:"18px 22px"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:16,flexWrap:"wrap"}}>
-            <div style={{minWidth:240}}>
-              <div style={{fontSize:13,letterSpacing:2,textTransform:"uppercase",color:"#cc0000",fontWeight:800}}>Historial de cotizaciones</div>
-              <div style={{width:210,height:1,background:"#dbe4f0",marginTop:14}}/>
-              <div style={{fontSize:12,color:"#64748b",marginTop:12}}>{cotizacionesFiltradas.length} registro(s) visibles</div>
-            </div>
-            <div style={{display:"flex",gap:12,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
-              <input
-                value={busqueda}
-                onChange={(e)=>setBusqueda(e.target.value)}
-                placeholder="Buscar cliente, obra o número"
-                style={{...SI,width:300,minHeight:44,padding:"10px 14px"}}
-              />
-              <select
-                value={filtroObraCot}
-                onChange={(e)=>setFiltroObraCot(e.target.value)}
-                style={{...SI,width:260,minHeight:44,padding:"10px 14px"}}
-              >
-                <option value="todas">Todas las obras</option>
-                {obrasFiltroCotizacion.map((obra)=><option key={obra} value={obra}>{obra}</option>)}
-              </select>
-            </div>
-          </div>
-        </div>
-        <div style={{...CD,padding:0,overflow:"hidden"}}>
-          <div style={{padding:"18px 18px 10px 18px",borderBottom:"1px solid #e2e8f0",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
-            <div>
-              <div style={{fontSize:12,letterSpacing:1.2,textTransform:"uppercase",color:"#b91c1c",fontWeight:800}}>Listado de cotizaciones</div>
-              <div style={{fontSize:12,color:"#64748b",marginTop:4}}>Vista ejecutiva compacta por cliente, obra y propuesta activa</div>
-            </div>
-            <div style={{fontSize:12,color:"#64748b"}}>{cotizacionesFiltradas.length} registro(s)</div>
-          </div>
-          <div style={{overflowX:"auto"}}>
-            <table style={{width:"100%",borderCollapse:"separate",borderSpacing:0,minWidth:760}}>
-              <thead>
-                <tr style={{background:"#f8fafc"}}>
-                  {[
-                    "Número",
-                    "Cliente",
-                    "Estado",
-                    "Acciones",
-                  ].map((label)=>(
-                    <th key={label} style={{textAlign:"left",padding:"10px 12px",fontSize:10,color:"#64748b",fontWeight:800,borderBottom:"1px solid #e2e8f0",whiteSpace:"nowrap",letterSpacing:0.3}}>{label}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {cotizacionesFiltradas.map((cotizacion)=>{
-                  return (
-                    <tr key={cotizacion.id} style={{background:"#fff"}}>
-                      <td style={{padding:"11px 12px",borderBottom:"1px solid #e2e8f0",verticalAlign:"top"}}>
-                        <div style={{fontWeight:800,color:"#2563eb",fontSize:11}}>{cotizacion.numero || cotizacion.id}</div>
-                        <div style={{fontSize:10,color:"#94a3b8",marginTop:3}}>{cotizacion.id}</div>
-                      </td>
-                      <td style={{padding:"11px 12px",borderBottom:"1px solid #e2e8f0",verticalAlign:"top"}}>
-                        <div style={{fontWeight:700,color:"#0f172a",fontSize:11}}>{normalizarRazonSocial(cotizacion.cliente)}</div>
-                        {cotizacion.ciudad ? <div style={{fontSize:10,color:"#64748b",marginTop:3}}>{normalizarMayusculas(cotizacion.ciudad)}</div> : null}
-                      </td>
-                      <td style={{padding:"11px 12px",borderBottom:"1px solid #e2e8f0",verticalAlign:"top"}}>
-                        <Badge estado={cotizacion.estado}/>
-                      </td>
-                      <td style={{padding:"11px 12px",borderBottom:"1px solid #e2e8f0",verticalAlign:"top",minWidth:260}}>
-                        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                          <button style={{...B("#dbeafe","#1e40af"),fontSize:10,padding:"5px 10px"}} onClick={()=>setPreviewCot(cotizacion)}>Ver</button>
-                          <button style={{...B("#1a3050","#f5c842"),fontSize:10,padding:"5px 10px"}} onClick={()=>{setEditCot(cotizacion.id);hydrate(cotizacion);setTab("form");}}>Editar</button>
-                          {cotizacion.estado!=="Aprobada"
-                            ? <button style={{...B("#0f2d1a","#4ade80"),border:"1px solid #166534",fontSize:10,padding:"5px 10px"}} onClick={()=>aprobarCotizacion(cotizacion.id)}>Aprobar y crear obra</button>
-                            : <button
-                                style={{...B("#fff","#b54708"),border:"1.5px solid #fde3c4",fontSize:10,padding:"5px 10px"}}
-                                title="Devuelve la cotización a Pendiente. La obra solo se borra si está sin empezar y tú lo confirmas."
-                                onClick={()=>desaprobarCotizacion(cotizacion.id)}
-                              >↩ Desaprobar</button>}
-                          <button style={{...B("#2d1414","#ef4444"),fontSize:10,padding:"5px 10px"}} onClick={()=>openCotizacionPrint(cotizacion,{firmaImg})}>PDF</button><button style={{...B("#f47c20"),fontSize:10,padding:"5px 10px"}} onClick={()=>setEnviarCot(cotizacion)}>Enviar al cliente</button>
-                          <button
-                            style={{...B("#fff","#ef4444"),border:"1.5px solid #ef4444",fontSize:10,padding:"5px 10px"}}
-                            onClick={()=>{
-                              if(!window.confirm(`¿Eliminar la cotización "${cotizacion.numero || cotizacion.id}" de ${cotizacion.cliente || "este cliente"}? Esta acción no se puede deshacer.`)) return;
-                              setCotizaciones((prev)=>prev.filter((c)=>c.id!==cotizacion.id));
-                            }}
-                          >🗑 Eliminar</button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-                {!cotizacionesFiltradas.length && (
-                  <tr>
-                    <td colSpan={9} style={{padding:"28px 16px",textAlign:"center",color:"#64748b"}}>No hay cotizaciones para mostrar con este filtro.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <ListaCotizaciones
+          cotizaciones={cotizaciones}
+          acciones={{
+            ver: (c)=>setPreviewCot(c),
+            editar: (c)=>{setEditCot(c.id);hydrate(c);setTab("form");},
+            aprobar: (c)=>aprobarCotizacion(c.id),
+            desaprobar: (c)=>desaprobarCotizacion(c.id),
+            pdf: (c)=>openCotizacionPrint(c,{firmaImg}),
+            enviar: (c)=>setEnviarCot(c),
+            eliminar: (c)=>{
+              if(!window.confirm(`¿Eliminar la cotización "${c.numero || c.id}" de ${c.cliente || "este cliente"}? Esta acción no se puede deshacer.`)) return;
+              setCotizaciones((prev)=>prev.filter((x)=>x.id!==c.id));
+            },
+          }}
+        />
 
         {/* La lista tiene su propio return, aparte del formulario. Sin montar
             aqui el dialogo, el boton de enviar guardaba el estado y no pasaba

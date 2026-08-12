@@ -41,7 +41,7 @@ export const MODULOS_MINIMOS = [];
 //
 // - usuarios: si se pudiera dar, cualquiera con ese modulo se daria el resto.
 // - dashboard: es el resumen economico de la empresa.
-export const MODULOS_SOLO_ADMIN = ["usuarios", "dashboard"];
+export const MODULOS_SOLO_ADMIN = ["usuarios", "dashboard", "auditoria"];
 
 export function esAdmin(membresia) {
   return membresia?.role === "admin";

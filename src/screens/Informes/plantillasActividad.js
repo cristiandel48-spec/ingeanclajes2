@@ -178,6 +178,46 @@ export const PLANTILLAS_ACTIVIDAD = [
       "durabilidad.",
   },
   {
+    // Escrita a partir de la memoria tecnica que va en la cotizacion, pasada
+    // a lo que se hizo. Las medidas y los perfiles se cambian en cada obra:
+    // los de aqui son los que mas se repiten, no una regla.
+    titulo: "Instalación de pérgola",
+    actividadesRealizadas: [
+      "Se fabricó la estructura metálica de la pérgola de acuerdo con los cálculos estructurales aprobados.",
+      "Se instalaron las columnas en tubería cuadrada de 150 mm x 150 mm en 4.0 mm (Acero ASTM A36).",
+      "Se montaron las vigas longitudinales y transversales en tubería rectangular de 305 x 80 mm en 2.5 mm (Acero ASTM A36).",
+      "Se instalaron las correas en tubería rectangular de 80 mm x 40 mm en 2.5 mm (Acero ASTM A36).",
+      "Se instaló la cubierta en teja UPVC de 2.5 mm, cresta alta.",
+      "Se aplicaron dos capas de anticorrosivo y dos capas del color final acordado con el cliente.",
+      "Se verificó el aplome de las columnas y el estado de la soldadura, que no presentara porosidad.",
+    ].join("\n"),
+    descripcion:
+      "Se realizó la fabricación e instalación de la estructura de la pérgola en estructura metálica, de acuerdo " +
+      "con los cálculos estructurales aprobados. Las columnas se ejecutaron en tubería cuadrada de 150 mm x 150 " +
+      "mm en 4.0 mm y las vigas longitudinales y transversales en tubería rectangular de 305 x 80 mm en 2.5 mm, " +
+      "ambas en acero ASTM A36, con correas en tubería rectangular de 80 mm x 40 mm. La cubierta se instaló en " +
+      "teja UPVC de 2.5 mm de cresta alta. Toda la estructura fue pintada con dos capas de anticorrosivo y dos " +
+      "capas del color final acordado con el cliente. Finalmente se verificó el aplome de las columnas y el " +
+      "estado de las soldaduras, garantizando que la pérgola quedara estable y terminada.",
+  },
+  {
+    // Distinta de "Instalación de escalera": aquella es la escalera fija a
+    // fachada con linea de vida vertical, y esta es la de acceso a cubierta
+    // sin linea de vida. En obra son dos trabajos que se cotizan aparte.
+    titulo: "Instalación de escalera metálica",
+    actividadesRealizadas: [
+      "Se fabricó la escalera metálica de acceso a cubierta según las medidas tomadas en sitio.",
+      "Se instaló la escalera y se ancló firmemente a la estructura.",
+      "Se verificó la fijación de peldaños y largueros, y el estado de la soldadura, que no presentara porosidad.",
+      "Se aplicó pintura anticorrosiva sobre los elementos instalados.",
+    ].join("\n"),
+    descripcion:
+      "Se realizó el suministro e instalación de una escalera metálica para el acceso a cubierta. La escalera " +
+      "quedó anclada firmemente a la estructura, garantizando estabilidad estructural y durabilidad. Se " +
+      "verificó la fijación de peldaños y largueros y el estado de las soldaduras, y se aplicó pintura " +
+      "anticorrosiva sobre los elementos instalados.",
+  },
+  {
     titulo: "Instalación Puntos de Anclaje",
     actividadesRealizadas: [
       "Se realizó el replanteo y la marcación de los puntos de anclaje de acuerdo con el diseño aprobado.",

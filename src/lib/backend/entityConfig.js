@@ -367,6 +367,16 @@ export const entityConfig = {
       fotosCotizacion: safeArray(row.fotos_cotizacion),
       geoMapView: row.geo_map_view,
       estado: row.estado,
+      // Autoria. Solo se LEE: la escribe un disparador de la base con el
+      // usuario de la sesion, para que no dependa de que la pantalla se
+      // acuerde de mandarla ni se pueda falsear desde el cliente. Por eso
+      // no aparece en `toRow`.
+      creadoPor: row.creado_por ?? null,
+      creadoPorNombre: row.creado_por_nombre ?? "",
+      creadoEn: row.creado_en ?? null,
+      modificadoPor: row.modificado_por ?? null,
+      modificadoPorNombre: row.modificado_por_nombre ?? "",
+      modificadoEn: row.modificado_en ?? null,
     }),
   },
   certificaciones: {

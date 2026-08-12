@@ -13,7 +13,7 @@ import { fmt } from "../../lib/format";
 // Editor de UNA propuesta. Todas las propuestas se muestran abiertas, una
 // debajo de otra, igual que salen en el documento.
 //
-// El mapa de Google se monta solo en la propuesta marcada como activa: cada
+// El mapa se monta solo en la propuesta marcada como activa: cada
 // instancia carga la API y consume cuota, asi que tener tres a la vez pondria
 // lenta la pantalla sin aportar nada.
 export default function PropuestaEditor({
@@ -167,7 +167,7 @@ export default function PropuestaEditor({
 
         <div style={{marginBottom:18}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-            <span style={{fontSize:12,fontWeight:600,color:"#1a1a2e"}}>Medición automática con Google Maps</span>
+            <span style={{fontSize:12,fontWeight:600,color:"#1a1a2e"}}>Medición sobre foto satelital</span>
             <div style={{display:"flex",gap:8}}>
               <button
                 type="button"
@@ -209,7 +209,7 @@ export default function PropuestaEditor({
             </div>
           ) : (
             <div style={{background:"#f8fafc",border:"1px dashed #cbd5e1",borderRadius:12,padding:"18px 16px",fontSize:12,color:"#64748b",textAlign:"center"}}>
-              Activa la medición automática si esta propuesta necesita mapa satelital o tramos medidos con Google Maps.
+              Activa la medición si esta propuesta necesita mapa satelital o tramos medidos sobre el terreno.
             </div>
           )}
         </div>

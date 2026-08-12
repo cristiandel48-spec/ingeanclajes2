@@ -998,8 +998,15 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
       .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 0 5mm; }
       .photo-grid.single { grid-template-columns:1fr; }
       .photo-card { border:1px solid #DDD; border-radius:6px; overflow:hidden; background:#fff; }
-      .photo { display:block; width:100%; height:62mm; object-fit:cover; object-position:center; background:#F4F4F2; }
-      .photo-grid.single .photo { height:72mm; }
+      /* La foto entra ENTERA en su recuadro, no recortada.
+         Estaba con object-fit cover, que llena el hueco a base de cortar lo
+         que sobresale: en una foto de obra se nota poco, pero en un plano
+         -que es lo que se adjunta en estas propuestas- se comia el cajetin,
+         las cotas y media leyenda. Con contain se ve completo; lo que sobra
+         a los lados queda en blanco, que en una hoja impresa ni se nota. La
+         altura sigue fija para que las dos columnas queden alineadas. */
+      .photo { display:block; width:100%; height:62mm; object-fit:contain; object-position:center; background:#ffffff; }
+      .photo-grid.single .photo { height:100mm; }
       .proposal-3-photo { height:52mm; object-fit:contain; object-position:center; background:#ffffff; }
       .photo-caption { padding:5px 8px 6px; text-align:center; font-size: var(--texto); letter-spacing:.04em; text-transform:uppercase; color:#777; border-top:1px solid #EEE; }
 

@@ -13,6 +13,12 @@
 //
 // PARA AÑADIR UNA: se copia un bloque y se cambian los tres campos. Aparece
 // sola en la lista del titulo.
+//
+// DE DONDE SALE CADA TEXTO: las que llevan la nota "tal cual la de los
+// informes que ya se entregaron" estan copiadas de documentos reales y no hay
+// que tocarlas. Las demas estan escritas a semejanza de esas, cambiando el
+// vocabulario a cada sistema, y conviene que las revise quien firma el
+// informe antes de darlas por buenas.
 
 /**
  * @typedef {Object} PlantillaActividad
@@ -140,21 +146,36 @@ export const PLANTILLAS_ACTIVIDAD = [
       "para su uso.",
   },
   {
-    titulo: "Instalación Líneas de Vida Horizontales",
+    // Descripcion tal cual la de los informes que ya se entregaron.
+    titulo: "Instalación de línea de vida horizontal",
     actividadesRealizadas: [
-      "Se realizó el replanteo y la marcación de los puntos de fijación de acuerdo con el diseño aprobado.",
-      "Se instalaron los soportes laterales e intermedios y se verificó su fijación a la estructura.",
-      "Se tendió y tensionó el cable, dejándolo dentro del rango de tensión indicado por el fabricante.",
-      "Se instalaron guardacables, tensor y absorbedor de energía.",
-      "Se realizó el ajuste a tornillería y se verificó el estado de la soldadura que no presentara porosidad",
-      "Se aplicó pintura anticorrosiva sobre los elementos instalados y se instalaron las tarjetas de identificación del sistema.",
+      "Se realizó una evaluación detallada de la cubierta para determinar las ubicaciones óptimas para los soportes.",
+      "Se instalaron los soportes asegurándolos firmemente a la cubierta.",
+      "Se realizó la instalación de los cables o líneas horizontales, deslizándolos a través de los soportes.",
+      "Se aseguró el cable con tensores para mantener la línea en la posición deseada y evitar movimientos indeseados.",
+      "Se realizó la verificación de la tensión y la alineación de los cables.",
     ].join("\n"),
     descripcion:
-      "Se realizó la instalación de la línea de vida horizontal de acuerdo con el diseño aprobado, incluyendo el " +
-      "montaje de los soportes laterales e intermedios, el tendido y tensionado del cable y la instalación de " +
-      "sus accesorios. Se aplicó pintura anticorrosiva sobre los elementos instalados y se verificó el sistema " +
-      "completo, asegurando que todos los elementos quedaran en óptimas condiciones. Con estas acciones, se " +
-      "garantizó que la línea de vida quedara completamente operativa y segura para su uso.",
+      "Primero, se realizó una evaluación detallada de la cubierta para determinar las ubicaciones óptimas para " +
+      "los soportes que sostendrán las líneas. A continuación, se instalaron estos soportes asegurándolos " +
+      "firmemente a la cubierta, por ultimo se realizó la instalación de los cables o líneas horizontales. Este " +
+      "cable se desliza a través de los soportes, asegurándolo con tensores para mantener la línea en la " +
+      "posición deseada y evitar movimientos indeseados. Finalmente, se realiza una verificación de la tensión " +
+      "y la alineación de los cables para asegurar que cumpla con los estándares de seguridad y funcionalidad.",
+  },
+  {
+    // Descripcion tal cual la de los informes que ya se entregaron.
+    titulo: "Instalación de escalera",
+    actividadesRealizadas: [
+      "Se realizó la instalación de una escalera vertical fija a la fachada para el acceso a las cubiertas con cerramiento.",
+      "Se ancló la escalera firmemente a la estructura para garantizar estabilidad estructural y durabilidad.",
+      "Se instaló la línea de vida vertical sobre la escalera.",
+      "Se realizó el ajuste a tornillería y se verificó el estado de la soldadura que no presentara porosidad",
+    ].join("\n"),
+    descripcion:
+      "Se realizó la instalación de una escalera vertical fija a la fachada para el acceso a las cubiertas con " +
+      "cerramiento. La escalera se encuentra anclada firmemente para garantizar estabilidad estructural y " +
+      "durabilidad.",
   },
   {
     titulo: "Instalación Puntos de Anclaje",
@@ -192,13 +213,19 @@ export const PLANTILLAS_ACTIVIDAD = [
 
 const normalizar = (t) => String(t || "").trim().replace(/\s+/g, " ");
 
-/** Devuelve la plantilla cuyo titulo coincide, sin fijarse en mayusculas ni espacios. */
+// Para comparar titulos: sin mayusculas, sin tildes y sin espacios de sobra.
+//
+// Lo de las tildes no es un capricho: en los informes ya entregados el titulo
+// esta escrito "instalacion de escalera", sin tilde. Comparando tal cual, esa
+// no encontraba su plantilla y habia que escribir los textos a mano.
+const paraComparar = (t) =>
+  normalizar(t).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+
+/** Devuelve la plantilla cuyo titulo coincide, se escriba como se escriba. */
 export function buscarPlantillaActividad(titulo) {
-  const buscado = normalizar(titulo).toLowerCase();
+  const buscado = paraComparar(titulo);
   if (!buscado) return null;
-  return PLANTILLAS_ACTIVIDAD.find(
-    (p) => normalizar(p.titulo).toLowerCase() === buscado
-  ) || null;
+  return PLANTILLAS_ACTIVIDAD.find((p) => paraComparar(p.titulo) === buscado) || null;
 }
 
 /**

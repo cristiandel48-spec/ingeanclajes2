@@ -239,7 +239,11 @@ export default function PropuestaEditor({
             </div>
             {p.items.map((it,idx)=>(
               <div key={it.id} style={{display:"grid",gridTemplateColumns:"3fr 0.65fr 0.75fr 1.1fr 1.1fr 28px",alignItems:"center",padding:"5px 10px",background:idx%2===0?"#f8fafc":"#fff",borderTop:"1px solid #f1f5f9"}}>
-                <input value={it.desc} onChange={e=>setItems(prev=>prev.map(item=>item.id===it.id?{...item,desc:e.target.value}:item))} style={{...SI,fontSize:12,padding:"5px 7px"}}/>
+                {/* La descripcion se guarda SIEMPRE en mayuscula, se escriba
+                    o se pegue como se escriba: en la tabla del documento van
+                    todas asi y una en minuscula canta. Se pasa al escribir
+                    -no solo al mostrarla- para que quede tambien en la base. */}
+                <input value={it.desc} onChange={e=>setItems(prev=>prev.map(item=>item.id===it.id?{...item,desc:e.target.value.toUpperCase()}:item))} style={{...SI,fontSize:12,padding:"5px 7px",textTransform:"uppercase"}}/>
                 <input type="number" value={it.cant} onChange={e=>setItems(prev=>prev.map(item=>item.id===it.id?{...item,cant:parseFloat(e.target.value)||0}:item))} style={{...SI,fontSize:12,padding:"5px 7px"}}/>
                 <input value={it.unit} onChange={e=>setItems(prev=>prev.map(item=>item.id===it.id?{...item,unit:e.target.value}:item))} style={{...SI,fontSize:12,padding:"5px 7px"}}/>
                 <input type="number" value={it.vu} onChange={e=>setItems(prev=>prev.map(item=>item.id===it.id?{...item,vu:parseFloat(e.target.value)||0}:item))} style={{...SI,fontSize:12,padding:"5px 7px"}}/>

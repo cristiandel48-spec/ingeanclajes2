@@ -392,7 +392,10 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     const lista = itemsHoja ?? propuesta.items ?? [];
     const rows = lista.map((item, i) => {
       const idx = desde + i;
-      const desc = escapeHtml(item?.desc || `ITEM ${idx + 1}`);
+      // En mayuscula tambien aqui, no solo en el formulario: las cotizaciones
+      // que ya estaban guardadas traen descripciones escritas en minuscula y
+      // en la tabla desentonan al lado de las demas.
+      const desc = escapeHtml(String(item?.desc || `ITEM ${idx + 1}`).toUpperCase());
       const qtyNumber = Number(item?.cant || 0);
       const qty = Number.isInteger(qtyNumber) ? String(qtyNumber) : qtyNumber.toFixed(2).replace(/\.00$/, "");
       const unit = escapeHtml(item?.unit || "UND");

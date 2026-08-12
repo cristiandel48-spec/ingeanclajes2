@@ -937,7 +937,13 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
       .cover-firm-name { font-weight:700; color:#1E1E1E; letter-spacing:.08em; }
       .cover-title { margin-top:14mm; text-align:center; }
       .cover-kicker { font-size: var(--texto); letter-spacing:.18em; text-transform:uppercase; color:#6B6B6B; margin-bottom:5mm; font-weight:700; }
-      .cover-title h1 { font-size: var(--titulo); line-height:1.3; }
+      /* El titulo de la portada, centrado y en mayuscula. El centrado va
+         tambien aqui y no solo en el contenedor porque el h1 trae el suyo del
+         navegador; y el ancho limitado es para que un titulo largo parta en
+         varias lineas centradas en vez de irse de lado a lado de la hoja. */
+      .cover-title h1 { font-size: var(--titulo); line-height:1.3;
+        text-align:center; text-transform:uppercase;
+        max-width:150mm; margin-left:auto; margin-right:auto; }
       .meta-strip { margin-top:13mm; display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid #CCC; border-bottom:1px solid #CCC; padding:6mm 0; }
       .meta-cell { padding:0 4mm; border-right:1px solid #DDD; text-align:center; }
       .meta-cell.last { border-right:none; }
@@ -1035,7 +1041,13 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
       .conditions-grid { display:grid; grid-template-columns:1fr 1fr; border-top:1px solid #DDD; }
       .meta-card { padding:4.5mm 6mm 4.5mm 0; border-bottom:1px solid #DDD; }
       .meta-card.pad-left { padding-left:6mm; padding-right:0; border-left:1px solid #EEE; }
-      .meta-strong { font-size: var(--texto); font-weight:600; margin-top:1.6mm; }
+      /* Los cuatro valores de las condiciones comerciales van en mayuscula.
+         La forma de pago y el tiempo de ejecucion se escriben a mano y salian
+         como los hubiera escrito cada quien; la validez y la certificacion
+         venian del codigo en minuscula. Puestos aqui, los cuatro se ven
+         iguales sin tener que acordarse al escribirlos. */
+      .meta-strong { font-size: var(--texto); font-weight:600; margin-top:1.6mm;
+        text-transform:uppercase; }
 
       .sst-block { margin:6mm 0; padding-top:4mm; border-top:2px solid #1E1E1E; }
       .sst-title { font-size: var(--texto); letter-spacing:.08em; text-transform:uppercase; font-weight:700; margin-bottom:2.6mm; }

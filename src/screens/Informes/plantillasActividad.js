@@ -234,6 +234,27 @@ export const PLANTILLAS_ACTIVIDAD = [
       "su uso.",
   },
   {
+    // La prueba de carga con la que se comprueba que un punto de anclaje
+    // aguanta. Escrita a partir de los informes de esos dias: el ensayo con
+    // el gato hidraulico, las 5.000 lb de la resolucion y las tarjetas.
+    titulo: "Ensayos de tracción",
+    actividadesRealizadas: [
+      "Se realizaron los ensayos de tracción con gato hidráulico sobre los puntos de anclaje instalados.",
+      "Se aplicó la carga de prueba a cada punto para medir su resistencia y verificar el cumplimiento de las 5.000 lb exigidas.",
+      "Se verificó que ningún punto presentara deformación, desprendimiento ni juego en su fijación tras la prueba.",
+      "Se realizó el mantenimiento de cada punto y se aplicó pintura anticorrosiva para su acabado final.",
+      "Se instalaron las placas y tarjetas de identificación de los puntos ensayados.",
+      "No se identificaron puntos afectados o en mal estado, por lo tanto no fue necesario ningún reemplazo.",
+    ].join("\n"),
+    descripcion:
+      "Se realizaron los ensayos de tracción sobre los puntos de anclaje instalados, aplicando con gato " +
+      "hidráulico las correspondientes pruebas de carga o presión, las cuales permiten medir la resistencia de " +
+      "cada punto de anclaje para cumplir con las 5.000 lb de carga. Se verificó que ninguno presentara " +
+      "deformación ni desprendimiento tras la prueba. A cada punto se le hizo mantenimiento y para su acabado " +
+      "final se pintaron con anticorrosivo, y por último se instalaron las placas para su identificación. Con " +
+      "estas acciones se garantizó que los puntos de anclaje quedaran certificados y seguros para su uso.",
+  },
+  {
     titulo: "Mantenimiento Preventivo de Sistemas Anticaídas",
     actividadesRealizadas: [
       "Se realizó la inspección visual y física de todos los sistemas anticaídas instalados en la sede.",

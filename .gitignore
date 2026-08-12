@@ -46,3 +46,8 @@ scripts/avisar-whatsapp/.sesion-whatsapp/
 scripts/avisar-whatsapp/node_modules/
 scripts/avisar-whatsapp/*.json
 !scripts/avisar-whatsapp/package.json
+
+# Datos locales del enlace con el proyecto de Supabase (supabase link).
+# Son de esta maquina: la referencia del proyecto y las versiones de los
+# servicios. No van al repositorio.
+supabase/.temp/

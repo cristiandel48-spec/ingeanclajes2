@@ -6,7 +6,6 @@ import { LOGO_INGEANCLAJES } from "../assets/embeddedImages";
 import { getQuotePrintableProposals } from "./cotizaciones";
 import { getStaticMapDimensions, buildStaticMapLabelData } from "./maps";
 import { hasVerticalLifeLineService } from "./cotizaciones";
-import { downloadGeneratedFile } from "./download";
 import { getTextosDocumento, lineasDeTexto } from "./cotizacionTextos";
 import articoLineaVidaVertical from "../assets/artico-linea-vida-vertical.jpg";
 
@@ -48,7 +47,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
       month = Number(match[2]) - 1;
       day = Number(match[3]);
     } else {
-      match = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+      match = raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
       if (match) {
         day = Number(match[1]);
         month = Number(match[2]) - 1;
@@ -1138,7 +1137,7 @@ async function normalizeCotizacionForPrint(c={}){
   let clone;
   try {
     clone = structuredClone(c);
-  } catch(_err){
+  } catch {
     clone = JSON.parse(JSON.stringify(c || {}));
   }
 
@@ -1268,61 +1267,14 @@ export function openPrintTab(fullHtml, title){
   w.document.close();
 }
 
-async function sendCotizacionEmail(c, clienteInfo, pdfFile){
-  const email = getCotizacionClientEmail(clienteInfo);
-  if(!email) throw new Error("El cliente no tiene correo registrado en la base de datos.");
-  const subject = buildCotizacionEmailSubject(c);
-  const body = buildCotizacionEmailBody(c, clienteInfo);
-
-  if(COTIZACION_AUTO_SEND_ENDPOINTS.email){
-    const fd = new FormData();
-    fd.append("to", email);
-    fd.append("subject", subject);
-    fd.append("body", body);
-    fd.append("quoteId", c?.id || "");
-    fd.append("quoteNumber", c?.numero || "");
-    fd.append("pdf", pdfFile, pdfFile.name);
-    const res = await fetch(COTIZACION_AUTO_SEND_ENDPOINTS.email, { method:"POST", body:fd });
-    if(!res.ok) throw new Error("El endpoint de correo no respondió correctamente.");
-    return { ok:true, message:`Correo enviado a ${email}` };
-  }
-
-  downloadGeneratedFile(pdfFile);
-  window.location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  return { ok:true, manual:true, message:`Correo preparado para ${email}. El PDF se descargó para adjuntarlo.` };
-}
-
-async function sendCotizacionWhatsApp(c, clienteInfo, pdfFile){
-  const phone = getCotizacionClientPhone(clienteInfo, c);
-  if(!phone) throw new Error("El cliente no tiene teléfono registrado en la cotización o en la base de datos.");
-  const message = buildCotizacionShareMessage(c, clienteInfo);
-
-  if(COTIZACION_AUTO_SEND_ENDPOINTS.whatsapp){
-    const fd = new FormData();
-    fd.append("phone", phone);
-    fd.append("message", message);
-    fd.append("quoteId", c?.id || "");
-    fd.append("quoteNumber", c?.numero || "");
-    fd.append("pdf", pdfFile, pdfFile.name);
-    const res = await fetch(COTIZACION_AUTO_SEND_ENDPOINTS.whatsapp, { method:"POST", body:fd });
-    if(!res.ok) throw new Error("El endpoint de WhatsApp no respondió correctamente.");
-    return { ok:true, message:`WhatsApp enviado a +${phone}` };
-  }
-
-  try{
-    if(navigator.share && navigator.canShare && navigator.canShare({ files:[pdfFile] })){
-      await navigator.share({
-        title: buildCotizacionEmailSubject(c),
-        text: message,
-        files: [pdfFile],
-      });
-      return { ok:true, manual:true, message:`Se abrió el selector para compartir el PDF por WhatsApp con +${phone}` };
-    }
-  }catch(err){
-    // continúa al fallback de wa.me
-  }
-
-  downloadGeneratedFile(pdfFile);
-  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank");
-  return { ok:true, manual:true, message:`WhatsApp abierto para +${phone}. El PDF se descargó para adjuntarlo.` };
-}
+// AQUI ESTABAN sendCotizacionEmail y sendCotizacionWhatsApp.
+//
+// Se quitaron porque no las llamaba nadie: el envio de la cotizacion va
+// por correoAprobacion.js y su Edge Function, que es la que manda el
+// correo con el PDF adjunto al aprobar. Estas eran de una version
+// anterior y se quedaron colgadas.
+//
+// Lo que usaban -COTIZACION_AUTO_SEND_ENDPOINTS, getCotizacionClientEmail,
+// getCotizacionClientPhone, buildCotizacionEmailSubject,
+// buildCotizacionEmailBody y buildCotizacionShareMessage- sigue aqui
+// arriba y exportado, por si algun dia se quiere volver a enganchar.

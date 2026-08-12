@@ -243,13 +243,55 @@ export default function Informes({ctx}){
 
   // Se reduce la imagen antes de guardarla: van como dataURL dentro del
   // informe y una foto de celular sin comprimir hace fallar el guardado.
-  const cargarFoto=async(ai,fi,file)=>{
-    if(!file)return;
-    try{
-      const img=await leerImagenComprimida(file);
-      updFotoAct(ai,fi,"img",img);
-    }catch{
-      window.alert("No se pudo cargar esa foto. Intenta con otra imagen.");
+  //
+  // Se admiten VARIAS de una vez: en obra se toman diez o quince fotos y
+  // subirlas de una en una -crear el recuadro, clic, buscar el archivo, y
+  // otra vez- era el rato mas largo de hacer el informe. La primera ocupa el
+  // recuadro donde se hizo clic y las demas van llenando los que esten
+  // vacios; si se acaban, se crean.
+  const [subiendoFotos,setSubiendoFotos]=useState(null);
+
+  // `reemplazar` distingue los dos modos: desde un recuadro, la primera foto
+  // ocupa ese recuadro aunque ya tuviera una -es lo que se espera al hacer
+  // clic encima-; desde el boton de subir varias, no se pisa nada y solo se
+  // llenan los huecos libres.
+  const cargarFotos=async(ai,fi,archivos,reemplazar=true)=>{
+    const lista=[...(archivos||[])].filter(Boolean);
+    if(!lista.length)return;
+
+    setSubiendoFotos({actividad:ai,hechas:0,total:lista.length});
+    const imagenes=[];
+    let fallidas=0;
+    // De una en una y no todas a la vez: son fotos de celular de varios MB y
+    // comprimir quince en paralelo deja sin memoria a los equipos flojos.
+    for(const archivo of lista){
+      try{ imagenes.push(await leerImagenComprimida(archivo)); }
+      catch{ fallidas+=1; }
+      setSubiendoFotos({actividad:ai,hechas:imagenes.length+fallidas,total:lista.length});
+    }
+    setSubiendoFotos(null);
+
+    if(imagenes.length){
+      setForm(p=>({...p,actividades:p.actividades.map((a,i)=>{
+        if(i!==ai)return a;
+        const fotos=[...a.fotos];
+        let pos=reemplazar?fi+1:0;
+        imagenes.forEach((img,n)=>{
+          // La primera va donde se pidio, aunque ya hubiera una: se cambia.
+          if(n===0 && reemplazar && fi<fotos.length){ fotos[fi]={...fotos[fi],img}; return; }
+          while(pos<fotos.length && fotos[pos].img) pos+=1;
+          if(pos<fotos.length) fotos[pos]={...fotos[pos],img};
+          else fotos.push({img,comentario:""});
+          pos+=1;
+        });
+        return {...a,fotos};
+      })}));
+    }
+
+    if(fallidas){
+      window.alert(fallidas===lista.length
+        ? "No se pudo cargar ninguna de esas fotos. Intenta con otras imágenes."
+        : `Se subieron ${imagenes.length} fotos. ${fallidas} no se pudieron cargar.`);
     }
   };
 
@@ -510,15 +552,35 @@ export default function Informes({ctx}){
                         style={{minHeight:150,background:"#f8fafc",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",position:"relative",padding:ft.img?8:0}}>
                         {ft.img
                           ?<img src={ft.img} alt="" style={{width:"100%",height:"auto",maxHeight:220,objectFit:"contain",display:"block",background:"#fff",borderRadius:6}}/>
-                          :<div style={{textAlign:"center",color:"#94a3b8",fontSize:11}}><div style={{fontSize:22}}>Foto</div><div>Foto {fi+1} · Clic para cargar</div></div>}
+                          :<div style={{textAlign:"center",color:"#94a3b8",fontSize:11}}><div style={{fontSize:22}}>Foto</div><div>Foto {fi+1} · Clic para cargar</div><div style={{fontSize:10,marginTop:2}}>puedes elegir varias</div></div>}
                         {ft.img&&<div style={{position:"absolute",top:6,right:6,background:"rgba(0,0,0,0.55)",borderRadius:4,padding:"2px 6px",fontSize:9,color:"#fff",cursor:"pointer"}} onClick={e=>{e.stopPropagation();updFotoAct(ai,fi,"img",null);}}>× Quitar</div>}
                       </div>
-                      <input ref={el=>{fotoRefs.current[(ai) + "-" + (fi)]=el;}} type="file" accept="image/*" style={{display:"none"}} onChange={e=>{cargarFoto(ai,fi,e.target.files[0]);e.target.value="";}}/>
+                      <input ref={el=>{fotoRefs.current[(ai) + "-" + (fi)]=el;}} type="file" accept="image/*" multiple style={{display:"none"}} onChange={e=>{cargarFotos(ai,fi,e.target.files);e.target.value="";}}/>
                       <div style={{padding:"6px 8px"}}><input value={ft.comentario} onChange={e=>updFotoAct(ai,fi,"comentario",e.target.value)} placeholder="Descripción de la foto..." style={{...SI,fontSize:11,padding:"4px 8px"}}/></div>
                     </div>
                   ))}
                 </div>
-                <button onClick={()=>updActividad(ai,"fotos",[...act.fotos,{img:null,comentario:""}])} style={{...B("#f1f5f9","#475569"),fontSize:11,marginTop:8}}>+ Agregar foto</button>
+                <div style={{display:"flex",gap:8,alignItems:"center",marginTop:8,flexWrap:"wrap"}}>
+                  {/* Sube varias de golpe sin tener que crear antes los
+                      recuadros: es la forma normal de trabajar al volver de
+                      obra con el carrete lleno. */}
+                  <button
+                    onClick={()=>{const k="lote-"+ai;if(fotoRefs.current[k])fotoRefs.current[k].click();}}
+                    disabled={subiendoFotos?.actividad===ai}
+                    style={{...B("#dbeafe","#1e40af"),fontSize:11,opacity:subiendoFotos?.actividad===ai?0.6:1}}>
+                    + Subir varias fotos
+                  </button>
+                  <input
+                    ref={el=>{fotoRefs.current["lote-"+ai]=el;}}
+                    type="file" accept="image/*" multiple style={{display:"none"}}
+                    onChange={e=>{cargarFotos(ai,0,e.target.files,false);e.target.value="";}}/>
+                  <button onClick={()=>updActividad(ai,"fotos",[...act.fotos,{img:null,comentario:""}])} style={{...B("#f1f5f9","#475569"),fontSize:11}}>+ Agregar recuadro</button>
+                  {subiendoFotos?.actividad===ai && (
+                    <span style={{fontSize:11,color:"#64748b"}}>
+                      Cargando fotos… {subiendoFotos.hechas} de {subiendoFotos.total}
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>

@@ -6,10 +6,10 @@ import LBL from "../../components/ui/LBL";
 import ObraDetalle from "./ObraDetalle";
 import { useEffect, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
-import { fmtD, today } from "../../lib/format";
+import { today } from "../../lib/format";
 import { getQuoteApprovalAccountingSnapshot } from "../../lib/cotizaciones";
-import { resumenBitacora } from "../../lib/bitacoraObra";
 import { ESTADOS_OBRA, estadoSegunAvance } from "../../lib/flujoObra";
+import ListaObras from "./ListaObras";
 import { avisoCelular, normalizarMayusculas, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
 
 // Siguiente consecutivo de obra. Se calcula sobre el numero mas alto que ya
@@ -171,58 +171,13 @@ export default function Obras({ctx}){
         </div>
       )}
 
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
-        {obras.map(o=>{
-          const cotVinc=cotizaciones.find(c=>c.id===o.cotizacionId);
-          const avanceReg=resumenBitacora(o.bitacora);
-          return(
-            <div key={o.id} style={{...CD,border:"1px solid #e2e8f0",cursor:"pointer",transition:"all 0.15s"}}
-              onMouseEnter={e=>e.currentTarget.style.borderColor="#cc0000"}
-              onMouseLeave={e=>e.currentTarget.style.borderColor="#e2e8f0"}
-              onClick={()=>setSel(o)}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-                <div>
-                  <div style={{fontSize:10,color:"#94a3b8"}}>{o.id} · {fmtD(o.fechaInicio)}</div>
-                  <div style={{fontSize:15,fontWeight:700,marginTop:2,color:"#1a1a2e"}}>{normalizarRazonSocial(o.cliente)}</div>
-                  <div style={{fontSize:12,color:"#475569"}}>{o.proyecto}</div>
-                  {cotVinc&&<div style={{fontSize:10,color:"#b45309",marginTop:2}}>📄 {o.cotizacionId}</div>}
-                </div>
-                <Badge estado={o.estado}/>
-              </div>
-              <div style={{marginBottom:10}}>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#64748b",marginBottom:4}}>
-                  <span>Avance</span><span style={{color:o.avance===100?"#166534":"#f47c20",fontWeight:600}}>{o.avance}%</span>
-                </div>
-                <div style={{height:5,background:"#e2e8f0",borderRadius:3}}>
-                  <div style={{width:(o.avance) + "%",height:"100%",background:o.avance===100?"#4ade80":"#f47c20",borderRadius:3}}/>
-                </div>
-                <input type="range" min={0} max={100} value={o.avance}
-                  onChange={e=>updAv(o.id,Number(e.target.value))}
-                  style={{width:"100%",marginTop:4,accentColor:"#f47c20"}}
-                  onClick={e=>e.stopPropagation()}/>
-              </div>
-              {/* Aqui no van cifras, para nadie. La lista de obras es una
-                  pantalla operativa -quien trabaja, como va, cuantas fotos
-                  hay- y el total, el cobrado y el saldo se consultan donde
-                  tienen contexto: Cuentas por cobrar y el informe financiero. */}
-              <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                <select value={o.estado} onChange={e=>{e.stopPropagation();updEst(o.id,e.target.value);}}
-                  style={{...SI,fontSize:11,padding:"5px 8px",flex:1}} onClick={e=>e.stopPropagation()}>
-                  {[...new Set([...ESTADOS_OBRA,o.estado].filter(Boolean))].map(s=><option key={s}>{s}</option>)}
-                </select>
-                <span style={{fontSize:11,color:"#94a3b8",flexShrink:0}}>{(o.empleados||[]).length} 👷</span>
-                <span
-                  title={avanceReg.fotos?"Fotos de avance cargadas para el informe":"Sin fotos de avance: el informe saldría vacío"}
-                  style={{fontSize:11,color:avanceReg.fotos?"#94a3b8":"#b54708",flexShrink:0}}
-                >
-                  {avanceReg.fotos} 📸
-                </span>
-                <span style={{fontSize:11,color:"#cc0000",fontWeight:600,flexShrink:0}}>Ver →</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <ListaObras
+        obras={obras}
+        cotizaciones={cotizaciones}
+        onAbrir={setSel}
+        onCambiarAvance={updAv}
+        onCambiarEstado={updEst}
+      />
     </div>
   );
 }

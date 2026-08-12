@@ -246,7 +246,22 @@ export default function PropuestaEditor({
                 <input value={it.desc} onChange={e=>setItems(prev=>prev.map(item=>item.id===it.id?{...item,desc:e.target.value.toUpperCase()}:item))} style={{...SI,fontSize:12,padding:"5px 7px",textTransform:"uppercase"}}/>
                 <input type="number" value={it.cant} onChange={e=>setItems(prev=>prev.map(item=>item.id===it.id?{...item,cant:parseFloat(e.target.value)||0}:item))} style={{...SI,fontSize:12,padding:"5px 7px"}}/>
                 <input value={it.unit} onChange={e=>setItems(prev=>prev.map(item=>item.id===it.id?{...item,unit:e.target.value}:item))} style={{...SI,fontSize:12,padding:"5px 7px"}}/>
-                <input type="number" value={it.vu} onChange={e=>setItems(prev=>prev.map(item=>item.id===it.id?{...item,vu:parseFloat(e.target.value)||0}:item))} style={{...SI,fontSize:12,padding:"5px 7px"}}/>
+                {/* Con separador de miles y no como numero pelado.
+                    Escrito seguido, 6720000 y 672000 se distinguen contando
+                    ceros de uno en uno, y equivocarse en uno son seis
+                    millones de diferencia. Escrito 6.720.000 se ve de un
+                    vistazo. Se guarda el numero limpio, no el texto. */}
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={Number(it.vu) ? Number(it.vu).toLocaleString("es-CO") : ""}
+                  onChange={e=>{
+                    const digitos=e.target.value.replace(/\D/g,"");
+                    const valor=digitos ? parseInt(digitos,10) : 0;
+                    setItems(prev=>prev.map(item=>item.id===it.id?{...item,vu:valor}:item));
+                  }}
+                  placeholder="0"
+                  style={{...SI,fontSize:12,padding:"5px 7px",textAlign:"right"}}/>
                 <div style={{textAlign:"right",fontSize:12,fontWeight:600,color:"#cc0000",paddingRight:4}}>{fmt(it.cant*it.vu)}</div>
                 <button onClick={()=>setItems(prev=>prev.filter(item=>item.id!==it.id))} style={{background:"none",border:"none",color:"#ef4444",cursor:"pointer",fontSize:16,padding:0,lineHeight:1}}>×</button>
               </div>

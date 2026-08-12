@@ -286,20 +286,55 @@ export default function Cotizacion({ctx}){
   const guardarRef = useRef(guardarCotizacion);
   useEffect(()=>{ guardarRef.current = guardarCotizacion; });
 
+  // Todas las acciones del formulario viven en la barra de arriba.
+  //
+  // Estaban repartidas: "Guardar" arriba y las otras cuatro en el titulo de
+  // la pantalla, que ademas ocupaba dos renglones antes de empezar el
+  // formulario. Juntas ahi arriba se ahorra ese alto y no hay que buscar el
+  // boton en dos sitios.
+  //
+  // Se ven en tres niveles: lo secundario -volver, dictar, ver el
+  // documento- en gris; "Guardar" en naranja, que es lo que se hace mas
+  // veces; y "Guardar y ver" con el naranja solo en el borde, para que se
+  // note que es hermano del anterior sin competir con el.
+  const BOTON_BASE = {
+    borderRadius:9, padding:"8px 14px", fontSize:12.5, fontWeight:600,
+    cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap", lineHeight:1.2,
+    display:"inline-flex", alignItems:"center", gap:6,
+  };
+  const SECUNDARIO = { ...BOTON_BASE, background:"#f1f5f9", color:"#475569", border:"1px solid #e2e8f0" };
+
   useAccionesPantalla(
     tab==="form" ? (
-      <button
-        onClick={()=>guardarRef.current()}
-        style={{
-          background:"#f47c20", color:"#fff", border:"none", borderRadius:9,
-          padding:"9px 18px", fontSize:13, fontWeight:700, cursor:"pointer",
-          fontFamily:"inherit", whiteSpace:"nowrap",
-        }}
-      >
-        Guardar
-      </button>
+      <div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap"}}>
+        <button style={SECUNDARIO} onClick={()=>setTab("lista")}
+          title="Volver al listado de cotizaciones">← Lista</button>
+
+        {!dictando && (
+          <button style={SECUNDARIO} onClick={()=>setDictando(true)}
+            title="Armar la cotización hablando">🎤 Dictar</button>
+        )}
+
+        <button
+          style={verDocumento
+            ? { ...BOTON_BASE, background:"#111827", color:"#fff", border:"1px solid #111827" }
+            : SECUNDARIO}
+          onClick={()=>setVerDocumento(v=>!v)}
+          title="Muestra el documento completo tal como se imprimirá, mientras editas">
+          {verDocumento ? "Ocultar documento" : "Ver documento"}
+        </button>
+
+        <button
+          style={{...BOTON_BASE, background:"#fff", color:"#c2410c", border:"1.5px solid #f47c20"}}
+          onClick={()=>{const guardada=guardarRef.current();if(guardada){setPreviewCot(guardada);setTab("lista");}}}
+          title="Guarda y abre el documento terminado">Guardar y ver</button>
+
+        <button
+          style={{...BOTON_BASE, background:"#f47c20", color:"#fff", border:"1px solid #f47c20", fontWeight:700, padding:"8px 18px"}}
+          onClick={()=>guardarRef.current()}>Guardar</button>
+      </div>
     ) : null,
-    [tab]
+    [tab, dictando, verDocumento]
   );
 
   const guardarCotizacionYSubir = ()=>{
@@ -570,30 +605,16 @@ export default function Cotizacion({ctx}){
   return (
     // Menos aire arriba: el formulario es largo y arrancaba muy abajo.
     <div style={{padding:"16px 28px 28px"}}>
-      <H1
-        title={editCot?"Editar Cotización":"Nueva Cotización"}
-        subtitle="Construye propuestas comerciales para una misma obra"
-        action={
-          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            {/* El dictado va con el resto de acciones: en su propia fila se
-                comia un renglon entero antes de empezar el formulario. */}
-            {!dictando && (
-              <button style={{...B("#dbeafe","#1e40af")}} onClick={()=>setDictando(true)}>
-                🎤 Armar hablando
-              </button>
-            )}
-            <button style={B("#f1f5f9","#475569")} onClick={()=>setTab("lista")}>Volver a lista</button>
-            <button
-              style={verDocumento ? B("#111827") : B("#f1f5f9","#475569")}
-              onClick={()=>setVerDocumento(v=>!v)}
-              title="Muestra el documento completo tal como se imprimirá, mientras editas"
-            >
-              {verDocumento ? "Ocultar documento" : "Ver documento"}
-            </button>
-            <button style={{...B("#dbeafe","#1e40af"),justifyContent:"center"}} onClick={()=>{const saved=guardarCotizacion();if(saved){setPreviewCot(saved);setTab("lista");}}}>Guardar y ver</button>
-          </div>
-        }
-      />
+      {/* Sin el titulo grande: ocupaba dos renglones -"Editar Cotización" y
+          su explicacion- antes de empezar el formulario, y las acciones que
+          llevaba al lado ya estan arriba en la barra. Queda solo este
+          renglon, que dice lo unico que no se sabe de memoria: si es nueva o
+          cual se esta editando. */}
+      <div style={{fontSize:12,color:"#64748b",marginBottom:12}}>
+        {editCot
+          ? <>Editando <strong style={{color:"#101828"}}>{cot || editCot}</strong>{cl.nombre ? ` · ${cl.nombre}` : ""}</>
+          : <>Cotización nueva{cot ? <> · <strong style={{color:"#101828"}}>{cot}</strong></> : null}</>}
+      </div>
 
       <div style={{
         display:"grid",

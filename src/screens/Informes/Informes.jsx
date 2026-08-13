@@ -16,6 +16,8 @@ import { DEFAULT_INFORME_ACTIVIDADES, DEFAULT_INFORME_DESCRIPCION, DEFAULT_INFOR
 import { conActividadSeparada } from "../../lib/informeTextos";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import { PLANTILLAS_ACTIVIDAD, buscarPlantillaActividad, esTextoDePlantilla } from "./plantillasActividad";
+import ListaInformes from "./ListaInformes";
+import { useAccionesPantalla } from "../../context/accionesPantalla";
 export default function Informes({ctx}){
   const {informes,setInformes,obras,empleados,horarios,intencion,limpiarIntencion,empresaConfig,irAPantalla}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
@@ -395,6 +397,21 @@ export default function Informes({ctx}){
     );
   };
 
+  const abrirNuevoInformeRef = useRef(null);
+  useEffect(()=>{ abrirNuevoInformeRef.current = abrirNuevoInforme; });
+
+  // El boton de crear vive en la barra de arriba, no en un titulo propio.
+  useAccionesPantalla(
+    (sel || nuevo || editId) ? null : (
+      <button
+        style={{background:"#f47c20",color:"#fff",border:"1px solid #f47c20",borderRadius:9,
+          padding:"8px 16px",fontSize:12.5,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
+        onClick={()=>abrirNuevoInformeRef.current()}
+      >+ Nuevo Informe</button>
+    ),
+    [sel, nuevo, editId]
+  );
+
   const abrirNuevoInforme = ()=>{
     setEditId(null);
     setSel(null);
@@ -424,9 +441,7 @@ export default function Informes({ctx}){
   };
 
   return(
-    <div style={{padding:28}}>
-      <H1 title="Informes de Actividades" subtitle="Múltiples actividades por informe con registro fotográfico"
-        action={<button style={B("#f47c20")} onClick={abrirNuevoInforme}>+ Nuevo Informe</button>}/>
+    <div style={{padding:"14px 28px 28px"}}>
 
       {obras.length===0 ? (
         <AvisoFlujo
@@ -709,35 +724,13 @@ export default function Informes({ctx}){
       {/* Lista de informes. Se esconde mientras se esta escribiendo uno: la
           pantalla se dedica al formulario y no a los que ya estan hechos. */}
       {!sel&&!nuevo&&(
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-          {informes.map(inf=>(
-            <div key={inf.id} style={{...CD,border:"1px solid #e2e8f0",cursor:"pointer"}}
-              onMouseEnter={e=>e.currentTarget.style.borderColor="#cc0000"}
-              onMouseLeave={e=>e.currentTarget.style.borderColor="#e2e8f0"}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-                <div>
-                  <div style={{fontSize:10,color:"#94a3b8"}}>{inf.id}</div>
-                  <div style={{fontSize:14,fontWeight:700,color:"#1a1a2e"}}>{inf.proyecto}</div>
-                  <div style={{fontSize:11,color:"#475569"}}>{inf.localizacion}</div>
-                </div>
-                <div style={{textAlign:"right",fontSize:11,color:"#64748b"}}>
-                  <div>{fmtD(inf.fechaInforme)}</div>
-                  <div style={{color:"#94a3b8"}}>{fmtD(inf.periodoInicio)} - {fmtD(inf.periodoFin)}</div>
-                </div>
-              </div>
-              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
-                {(inf.actividades||[{titulo:inf.actividad}]).map((a,i)=>(
-                  <span key={i} style={{background:"#fff3e8",color:"#cc6600",borderRadius:4,padding:"2px 8px",fontSize:11,border:"1px solid #f47c2044"}}>{a.titulo||a}</span>
-                ))}
-              </div>
-              <div style={{fontSize:11,color:"#64748b",marginBottom:10}}>{inf.personal?.length||0} personas · {(inf.actividades||[]).length} actividad(es)</div>
-              <div style={{display:"flex",gap:8}}>
-                <button style={{...B("#f47c20"),flex:1,justifyContent:"center",fontSize:12}} onClick={()=>setSel(inf)}>Ver / Imprimir</button>
-                <button style={{...B("#dbeafe","#1e40af"),flex:1,justifyContent:"center",fontSize:12}} onClick={()=>editarInforme(inf)}>Editar</button>
-              </div>
-            </div>
-          ))}
-        </div>
+        <ListaInformes
+          informes={informes}
+          acciones={{
+            ver: (inf)=>setSel(inf),
+            editar: (inf)=>editarInforme(inf),
+          }}
+        />
       )}
 
       {/* Vista detalle + impresión */}

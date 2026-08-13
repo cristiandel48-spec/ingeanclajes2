@@ -11,6 +11,8 @@ import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { getEstadoFlujoObra } from "../../lib/flujoObra";
 import { printCurrentPz } from "../../lib/print";
 import { siguienteIdUnico } from "../../lib/identificadores";
+import ListaCertificaciones from "./ListaCertificaciones";
+import { useAccionesPantalla } from "../../context/accionesPantalla";
 // Informes de una obra. Si se indica uno concreto, solo ese.
 const informesFuente = (informes, obraId, informeId = "")=>{
   if(!obraId) return [];
@@ -246,6 +248,27 @@ export default function Certificaciones({ctx}){
     setEditId(null);
   };
 
+  // Los dos botones de crear viven en la barra de arriba, no en un titulo
+  // propio. Se esconden mientras se llena una certificacion o se mira una: la
+  // pantalla se dedica a eso.
+  useAccionesPantalla(
+    (sel || nueva) ? null : (
+      <div style={{display:"flex",gap:7}}>
+        <button
+          style={{background:"#f47c20",color:"#fff",border:"1px solid #f47c20",borderRadius:9,
+            padding:"8px 14px",fontSize:12.5,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
+          onClick={()=>abrirNuevaCertificacion("Certificación")}
+        >+ Certificación</button>
+        <button
+          style={{background:"#0f2d1a",color:"#4ade80",border:"1px solid #166534",borderRadius:9,
+            padding:"8px 14px",fontSize:12.5,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
+          onClick={()=>abrirNuevaCertificacion("Recertificación")}
+        >+ Recertificación</button>
+      </div>
+    ),
+    [sel, nueva]
+  );
+
   const imprimir=(c)=>{setSel(c);setTimeout(()=>printCurrentPz("Certificación " + (c?.numero || c?.id || "")),250);};
 
   // Estado de la obra elegida en el formulario, para avisar en el momento
@@ -257,14 +280,7 @@ export default function Certificaciones({ctx}){
   if(flujo && !flujo.estaPagada) faltantesObra.push(`queda un saldo por cobrar de ${fmt(flujo.saldo)}`);
 
   return(
-    <div style={{padding:28}}>
-      <H1 title="Certificaciones" subtitle="Certificados y recertificaciones de sistemas anticaídas · Res. 4272/2021"
-        action={
-          <div style={{display:"flex",gap:8}}>
-            <button style={B("#f47c20")} onClick={()=>abrirNuevaCertificacion("Certificación")}>+ Nueva Certificación</button>
-            <button style={{...B("#4ade80","#0f2d1a"),border:"1px solid #166534"}} onClick={()=>abrirNuevaCertificacion("Recertificación")}>+ Nueva Recertificación</button>
-          </div>
-        }/>
+    <div style={{padding:"14px 28px 28px"}}>
 
       {obras.length===0 ? (
         <AvisoFlujo
@@ -468,31 +484,14 @@ export default function Certificaciones({ctx}){
       {/* Se esconde mientras se esta llenando una certificacion: la pantalla se
           dedica al formulario y no a las que ya estan hechas. */}
       {!sel&&!nueva&&(
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,alignContent:"start"}}>
-          {certs.map(c=>(
-            <div key={c.id} style={{...CD,border:"1px solid " + (sel?.id===c.id?"#f47c20":"#1a3050"),cursor:"pointer"}} onClick={()=>setSel(c)}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-                <div>
-                  <div style={{fontSize:11,color:"#64748b"}}>{c.id} · {c.numero}</div>
-                  <div style={{fontSize:14,fontWeight:700,marginTop:2}}>{c.cliente}</div>
-                  <div style={{fontSize:11,color:"#475569"}}>{c.tipo}</div>
-                </div>
-                <Badge estado={c.estado}/>
-              </div>
-              <div style={{fontSize:11,color:"#64748b",marginBottom:6}}>{c.direccion}</div>
-              <div style={{fontSize:11,color:"#475569",marginBottom:10,lineHeight:1.5}}>{c.sistema}</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
-                <div style={{background:"#f1f5f9",borderRadius:6,padding:"6px 10px"}}><div style={{fontSize:9,color:"#64748b"}}>Fecha certif.</div><div style={{fontSize:12,fontWeight:600,color:"#1a1a2e"}}>{fmtD(c.fecha)}</div></div>
-                <div style={{background:"#f1f5f9",borderRadius:6,padding:"6px 10px"}}><div style={{fontSize:9,color:"#64748b"}}>Próx. mantto.</div><div style={{fontSize:12,fontWeight:600,color:"#fb923c"}}>{fmtD(c.proxMant)||"-"}</div></div>
-              </div>
-              <div style={{display:"flex",gap:8}}>
-                <button style={{...B("#f47c20"),flex:1,justifyContent:"center",fontSize:12}} onClick={e=>{e.stopPropagation();setSel(c);}}>Ver</button>
-                <button style={{...B("#dbeafe","#1e40af"),flex:1,justifyContent:"center",fontSize:12}} onClick={e=>{e.stopPropagation();editarCertificacion(c);}}>Editar</button>
-                <button style={{...B("#e8f5ee","#166534"),flex:1,justifyContent:"center",fontSize:12}} onClick={e=>{e.stopPropagation();imprimir(c);}}>Imprimir</button>
-              </div>
-            </div>
-          ))}
-        </div>
+        <ListaCertificaciones
+          certs={certs}
+          acciones={{
+            ver: (c)=>setSel(c),
+            editar: (c)=>editarCertificacion(c),
+            imprimir: (c)=>imprimir(c),
+          }}
+        />
       )}
 
       {sel&&(

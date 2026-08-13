@@ -213,7 +213,15 @@ export default function Contabilidad({ctx}){
       String(a.consecutivo || "").localeCompare(String(b.consecutivo || ""),"es") ||
       String(a.rowId || "").localeCompare(String(b.rowId || ""),"es")
     );
-  let saldoAuxiliarAcumulado = 0;
+  // El saldo acumulado del libro auxiliar: cada fila lleva la suma de todo lo
+  // anterior mas su propio movimiento.
+  //
+  // Se arma con `reduce` y no con una variable que se va reasignando dentro
+  // del `map`. Da exactamente lo mismo -esta comprobado con saldos positivos,
+  // negativos, con decimales y en cero-, pero React avisa de lo segundo: si
+  // algun dia se activa el compilador, puede memoizar ese bloque y saltarse el
+  // recalculo, y entonces los acumulados se quedarian pegados de un dibujado
+  // anterior. Asi no hay nada que se reasigne.
   const movimientosCuenta = movimientosReporteBase
     .filter((row)=>!filtroCuentaMovimientoNormalizado || row.cuentaCodigo.startsWith(filtroCuentaMovimientoNormalizado))
     .filter((row)=>{
@@ -221,33 +229,24 @@ export default function Contabilidad({ctx}){
       return [row.terceroNit, row.terceroId, row.terceroNombre]
         .some((value)=>normalizeTerceroLookup(value).includes(filtroTerceroMovimientoLookup));
     })
-    .map((row)=>{
-      saldoAuxiliarAcumulado = money(saldoAuxiliarAcumulado + Number(row.saldoMovimiento || 0));
-      return {
+    .reduce((filas,row)=>{
+      const previo = filas.length ? filas[filas.length-1].saldoAcumulado : 0;
+      filas.push({
         ...row,
-        saldoAcumulado:saldoAuxiliarAcumulado,
-      };
-    });
+        saldoAcumulado: money(previo + Number(row.saldoMovimiento || 0)),
+      });
+      return filas;
+    },[]);
   const resumenAuxiliar = movimientosCuenta.reduce((acc,row)=>({
     debitos:money(acc.debitos + Number(row.debito || 0)),
     creditos:money(acc.creditos + Number(row.credito || 0)),
     saldo:money(acc.saldo + Number(row.saldoMovimiento || 0)),
   }),{debitos:0,creditos:0,saldo:0});
-  const resumenMovimientoTerceros = Array.from(movimientosCuenta.reduce((map,row)=>{
-    const key = `${row.terceroNit || row.terceroId || "SIN-TERCERO"}|${row.terceroNombre || "Sin tercero"}`;
-    const current = map.get(key) || {
-      nit:row.terceroNit || row.terceroId || "—",
-      tercero:row.terceroNombre || "Sin tercero",
-      debitos:0,
-      creditos:0,
-      saldo:0,
-    };
-    current.debitos = money(current.debitos + Number(row.debito || 0));
-    current.creditos = money(current.creditos + Number(row.credito || 0));
-    current.saldo = money(current.saldo + Number(row.saldoMovimiento || 0));
-    map.set(key, current);
-    return map;
-  }, new Map()).values()).sort((a,b)=>String(a.tercero || "").localeCompare(String(b.tercero || ""),"es"));
+  // AQUI SE CALCULABA `resumenMovimientoTerceros`: los movimientos del libro
+  // auxiliar agrupados por tercero, con sus debitos, creditos y saldo. Se
+  // rehacia en cada dibujado y no se pintaba en ningun sitio, asi que se
+  // quito. Si alguna vez se quiere esa tabla, es agrupar `movimientosCuenta`
+  // por `terceroNit` y sumar las tres columnas.
   const cuentasTributariasRapidas = [
     {codigo:configActual.cuentaRetefuente, etiqueta:"Retefuente", color:"#b91c1c"},
     {codigo:configActual.cuentaReteiva, etiqueta:"ReteIVA", color:"#7c3aed"},
@@ -265,17 +264,20 @@ export default function Contabilidad({ctx}){
       creditos:Number(row?.creditos || 0),
     };
   });
-  let saldoBancoAcumulado = 0;
+  // El saldo corrido de la conciliacion bancaria, por el mismo motivo que el
+  // del libro auxiliar: con `reduce` no queda ninguna variable reasignandose
+  // dentro del dibujado.
   const movimientosConciliacion = movimientosReporteBase
     .filter((row)=>!cuentaConciliacion || row.cuentaCodigo===cuentaConciliacion)
-    .map((row)=>{
-      saldoBancoAcumulado = money(saldoBancoAcumulado + Number(row.saldoMovimiento || 0));
-      return {
+    .reduce((filas,row)=>{
+      const previo = filas.length ? filas[filas.length-1].saldoAcumulado : 0;
+      filas.push({
         ...row,
-        saldoAcumulado:saldoBancoAcumulado,
+        saldoAcumulado: money(previo + Number(row.saldoMovimiento || 0)),
         conciliado:!!movimientosConciliados[row.rowId],
-      };
-    });
+      });
+      return filas;
+    },[]);
   const movimientosConciliacionVisibles = soloPendientesConciliacion
     ? movimientosConciliacion.filter((row)=>!row.conciliado)
     : movimientosConciliacion;
@@ -499,21 +501,6 @@ export default function Contabilidad({ctx}){
     });
   };
 
-  const aplicarTerceroAsiento = (ref)=>{
-    const tercero = buscarTerceroERP(ref);
-    setAsientoForm((prev)=>({
-      ...prev,
-      terceroId:tercero?.terceroId || "",
-      terceroNit:tercero?.terceroNit || "",
-      terceroNombre:tercero?.terceroNombre || "",
-      lineas:(prev.lineas || []).map((linea)=>({
-        ...linea,
-        terceroId:tercero?.terceroId || "",
-        terceroNit:tercero?.terceroNit || "",
-        terceroNombre:tercero?.terceroNombre || "",
-      })),
-    }));
-  };
   const aplicarTerceroAsientoPorNit = (nit)=>{
     const nitValue = String(nit || "").trim();
     const tercero = buscarTerceroERPPorNit(nitValue);

@@ -2,7 +2,9 @@ import Badge from "../../components/ui/Badge";
 import CampoTexto from "../../components/ui/CampoTexto";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import ListaClientes from "./ListaClientes";
+import { useAccionesPantalla } from "../../context/accionesPantalla";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarFrase, normalizarMayusculas, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
 import { siguienteIdUnico } from "../../lib/identificadores";
@@ -231,24 +233,34 @@ export default function ClientesDB({ctx}){
     ]);
   };
 
+  const importarRef = useRef(null);
+  const nuevoRef = useRef(null);
+  useEffect(()=>{
+    importarRef.current = importarClientes;
+    nuevoRef.current = ()=>{ setShowForm((v)=>!v); if(showForm) resetCliente(); };
+  });
+
+  // Los botones viven en la barra de arriba, no en un titulo propio.
+  useAccionesPantalla(
+    <div style={{display:"flex",gap:7}}>
+      {sinRegistrar.length>0 && (
+        <button
+          style={{background:"#dbeafe",color:"#1d4ed8",border:"1px solid #bfdbfe",borderRadius:9,
+            padding:"8px 14px",fontSize:12.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
+          onClick={()=>importarRef.current()}
+        >⬇ Importar {sinRegistrar.length} sugerido(s)</button>
+      )}
+      <button
+        style={{background:"#cc0000",color:"#fff",border:"1px solid #cc0000",borderRadius:9,
+          padding:"8px 16px",fontSize:12.5,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
+        onClick={()=>nuevoRef.current()}
+      >+ Cliente</button>
+    </div>,
+    [sinRegistrar.length]
+  );
+
   return(
     <div style={{padding:28}}>
-      <H1
-        title="Clientes"
-        subtitle="Datos de contacto e historial de obras, cotizaciones y certificaciones"
-        action={
-          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            {sinRegistrar.length>0&&(
-              <button style={B("#dbeafe","#1d4ed8")} onClick={importarClientes}>
-                ⬇ Importar {sinRegistrar.length} sugerido(s)
-              </button>
-            )}
-            <button style={B("#cc0000")} onClick={()=>{setShowForm(v=>!v); if(showForm) resetCliente();}}>
-              + Cliente
-            </button>
-          </div>
-        }
-      />
 
 
       {showForm&&(
@@ -295,66 +307,14 @@ export default function ClientesDB({ctx}){
         </div>
       )}
 
-      <div style={CD}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-          <div style={ST}>Directorio de clientes</div>
-          <div style={{fontSize:11,color:"#64748b"}}>Datos comerciales + relación con obras, cotizaciones y certificaciones</div>
-        </div>
-
-        {clientesData.length===0 ? (
-          <div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13}}>No hay clientes registrados todavía</div>
-        ) : (
-          <div style={{display:"grid",gap:12}}>
-            {clientesData.map(c=>(
-              <div key={c.id} style={{background:"#f8fafc",borderRadius:10,padding:"16px 18px",border:"1px solid #e2e8f0"}}>
-                <div style={{display:"flex",justifyContent:"space-between",gap:16,alignItems:"flex-start",marginBottom:10}}>
-                  <div>
-                    <div style={{fontSize:15,fontWeight:800,color:"#1a1a2e"}}>{normalizarRazonSocial(c.nombre)}</div>
-                    <div style={{fontSize:11,color:"#64748b",marginTop:3}}>
-                      {c.nit || "Sin NIT"} · {c.contacto || "Sin contacto"} · {c.telefono || "Sin teléfono"}
-                    </div>
-                  </div>
-                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                    <Badge estado={c.estado || "Activo"}/>
-                    <button style={{...B("#f1f5f9","#475569"),padding:"7px 12px",fontSize:11}} onClick={()=>editarCliente(c)}>Editar</button>
-                    <button
-                      style={{...B("#fff7ed","#b45309"),padding:"7px 12px",fontSize:11}}
-                      onClick={()=>unificarCliente(c)}
-                      title="Pasar sus obras y documentos a otro cliente y borrar esta ficha"
-                    >
-                      Unificar
-                    </button>
-                    <button
-                      style={{...B("#fef2f2","#b91c1c"),padding:"7px 12px",fontSize:11}}
-                      onClick={()=>eliminarCliente(c)}
-                      title="Eliminar la ficha"
-                    >
-                      Eliminar
-                    </button>
-                  </div>
-                </div>
-
-                <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr 1fr 1fr",gap:10,fontSize:11,color:"#475569"}}>
-                  <div><strong style={{color:"#1a1a2e"}}>Ciudad / dirección</strong><br/>{c.ciudad || "Sin ciudad"}{c.direccion?" · " + (c.direccion):""}</div>
-                  <div><strong style={{color:"#1a1a2e"}}>Email</strong><br/>{c.email || "Sin email"}</div>
-                  <div><strong style={{color:"#1a1a2e"}}>Obras / cotizaciones</strong><br/>{c.obrasTotal} obra(s) · {c.cotizacionesTotal} cotización(es)</div>
-                  <div><strong style={{color:"#1a1a2e"}}>Certificaciones</strong><br/>{c.certificacionesTotal} registro(s)</div>
-                </div>
-
-                {/* Aqui no van cifras, igual que en el listado de obras y en
-                    el de cotizaciones. Este es el directorio: quien es el
-                    cliente y como se le ubica. Lo facturado y lo que debe se
-                    consultan en Cuentas por cobrar y en el informe
-                    financiero, que es donde tienen contexto y donde se puede
-                    ver de que factura sale cada peso. */}
-                <div style={{marginTop:10,fontSize:11,color:"#64748b"}}>
-                  {c.notas || "Sin notas registradas"}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <ListaClientes
+        clientes={clientesData}
+        acciones={{
+          editar: (c)=>editarCliente(c),
+          unificar: (c)=>unificarCliente(c),
+          eliminar: (c)=>eliminarCliente(c),
+        }}
+      />
     </div>
   );
 }

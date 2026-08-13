@@ -2,6 +2,7 @@ import Av from "../../components/ui/Av";
 import AvisoFlujo from "../../components/AvisoFlujo";
 import CampoTexto from "../../components/ui/CampoTexto";
 import H1 from "../../components/ui/H1";
+import { useAccionesPantalla } from "../../context/accionesPantalla";
 import PasosNomina, { NavegacionPasos } from "./PasosNomina";
 import PeriodoCorte from "./PeriodoCorte";
 import LBL from "../../components/ui/LBL";
@@ -40,6 +41,17 @@ export default function Nomina({ctx}){
   const [diasVacLiquidar,setDiasVacLiquidar]=useState({});
   const [guardandoNomina,setGuardandoNomina]=useState(false);
   const [mensajeGuardadoNomina,setMensajeGuardadoNomina]=useState("");
+
+  // El boton de crear vive en la barra de arriba, no en un titulo propio.
+  useAccionesPantalla(
+    <button
+      style={{background:"#cc0000",color:"#fff",border:"1px solid #cc0000",borderRadius:9,
+        padding:"8px 16px",fontSize:12.5,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
+      onClick={()=>setTab("nuevo")}
+    >+ Nuevo Empleado</button>,
+    []
+  );
+
   const nominasGeneradasMap = (Array.isArray(nominasGeneradas) ? nominasGeneradas : [])
     .map(normalizeNominaGeneratedRecord)
     .reduce((acc,item)=>{
@@ -528,9 +540,7 @@ export default function Nomina({ctx}){
   };
 
   return(
-    <div style={{padding:28}}>
-      <H1 title="Nómina y Empleados" subtitle="Proceso quincenal: preparar el corte, revisar novedades y generar el pago"
-        action={<button style={B("#cc0000")} onClick={()=>setTab("nuevo")}>+ Nuevo Empleado</button>}/>
+    <div style={{padding:"14px 28px 28px"}}>
 
       {/* Altas hechas desde la obra: llegan con lo basico y el minimo puesto,
           esperando que aqui se defina la parte contractual. */}

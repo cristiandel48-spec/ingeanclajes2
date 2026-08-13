@@ -1,9 +1,10 @@
 import Badge from "../../components/ui/Badge";
 import CampoTexto from "../../components/ui/CampoTexto";
 import H1 from "../../components/ui/H1";
+import { useAccionesPantalla } from "../../context/accionesPantalla";
 import LBL from "../../components/ui/LBL";
 import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarFrase, normalizarNombrePropio, normalizarTelefono } from "../../lib/normalizarEntrada";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { downloadExcelWorkbook } from "../../lib/nomina";
 import { fmt, scrollAppToTop, today } from "../../lib/format";
@@ -77,6 +78,7 @@ export default function CuentasPagar({ctx}){
   const [guardandoPagoProv,setGuardandoPagoProv]=useState(false);
   const [filtroPagoProv,setFiltroPagoProv]=useState("todos");
   const [pagoProv,setPagoProv]=useState({
+
     tipo:"Pago a proveedor",
     monto:"",
     fecha:today(),
@@ -623,25 +625,33 @@ export default function CuentasPagar({ctx}){
     </div>
   );
 
+  // Los tres botones viven en la barra de arriba, no en un titulo propio.
+  // Se llaman por referencia porque lo que hacen se declara mas abajo.
+  const accionesRef = useRef({});
+  useEffect(()=>{
+    accionesRef.current = {
+      proveedor: ()=>{ setTab("proveedores"); setShowProv((v)=>!v); if(showProv && tab==="proveedores") resetProveedor(); },
+      causacion: ()=>{ setTab("causacion"); setShowCxP((v)=>{ const next=!v; if(next && !editCxPId) setCxpForm(createCuentaBase(cxpForm.proveedorId)); if(!next) resetCuenta(cxpForm.proveedorId); return next; }); },
+      pago: ()=>{ setTab("pagos"); setVistaPagoCxP("registro"); scrollAppToTop("smooth"); },
+    };
+  });
+  useAccionesPantalla(
+    <div style={{display:"flex",gap:7}}>
+      <button style={{background:"#f5c842",color:"#3b2f00",border:"1px solid #f5c842",borderRadius:9,
+        padding:"8px 14px",fontSize:12.5,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
+        onClick={()=>accionesRef.current.proveedor()}>+ Proveedor</button>
+      <button style={{background:"#cc0000",color:"#fff",border:"1px solid #cc0000",borderRadius:9,
+        padding:"8px 14px",fontSize:12.5,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
+        onClick={()=>accionesRef.current.causacion()}>+ Causación</button>
+      <button style={{background:"#003B71",color:"#fff",border:"1px solid #003B71",borderRadius:9,
+        padding:"8px 14px",fontSize:12.5,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
+        onClick={()=>accionesRef.current.pago()}>Registrar pago</button>
+    </div>,
+    []
+  );
+
   return(
-    <div style={{padding:28}}>
-      <H1
-        title="Causación o ingreso de facturas y gastos"
-        subtitle="Causación de facturas, egresos a proveedores y base tributaria del ERP"
-        action={
-          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            <button style={B("#f5c842","#3b2f00")} onClick={()=>{setTab("proveedores");setShowProv(v=>!v);if(showProv&&tab==="proveedores") resetProveedor();}}>
-              + Proveedor
-            </button>
-            <button style={B("#cc0000")} onClick={()=>{setTab("causacion");setShowCxP(v=>{const next=!v;if(next&&!editCxPId)setCxpForm(createCuentaBase(cxpForm.proveedorId));if(!next)resetCuenta(cxpForm.proveedorId);return next;});}}>
-              + Causación / factura
-            </button>
-            <button style={B("#003B71")} onClick={()=>{setTab("pagos");setVistaPagoCxP("registro");scrollAppToTop("smooth");}}>
-              Registrar pago
-            </button>
-          </div>
-        }
-      />
+    <div style={{padding:"14px 28px 28px"}}>
 
 
       <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>

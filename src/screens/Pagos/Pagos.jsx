@@ -112,8 +112,7 @@ export default function Pagos({ctx}){
   };
 
   return(
-    <div style={{padding:28}}>
-      <H1 title="Cuentas por cobrar" subtitle="Registro de abonos y seguimiento por obra"/>
+    <div style={{padding:"14px 28px 28px"}}>
 
       <div style={{display:"flex",gap:10,marginBottom:18,flexWrap:"wrap"}}>
         <button

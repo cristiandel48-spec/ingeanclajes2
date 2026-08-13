@@ -592,6 +592,91 @@ export default function CuentasPagar({ctx}){
     setTimeout(()=>setGuardandoPagoProv(false), 500);
   };
 
+  // ── BORRAR LO QUE SE REGISTRO POR EQUIVOCACION ────────────────────────
+  //
+  // Antes no habia forma: una factura mal causada o un pago con el valor
+  // cambiado se quedaba ahi para siempre y descuadraba los informes.
+  //
+  // Las dos operaciones DESHACEN lo que hicieron, no solo borran la fila. Un
+  // pago habia bajado el saldo de sus facturas; al borrarlo hay que
+  // devolverselo, o las facturas quedarian diciendo que se pagaron con un
+  // dinero que ya no esta registrado.
+
+  const eliminarCuenta = (cuenta) => {
+    const prov = proveedoresData.find((p)=>p.id===cuenta.proveedorId);
+    const abonos = (cuenta.pagosHistorial || []).length;
+    const aviso =
+      `¿Eliminar esta factura causada?
+
+` +
+      `${cuenta.factura || cuenta.id} · ${fmt(Number(cuenta.valorTotalPagar || 0))}
+` +
+      `${prov?.nombre || "Proveedor sin registro"}
+` +
+      `${cuenta.concepto || "Sin concepto"}
+
+` +
+      (abonos
+        ? `OJO: tiene ${abonos} pago(s) registrados contra ella. Al borrar la ` +
+          `factura, esos pagos dejan de estar aplicados a nada.
+
+`
+        : "") +
+      `Esto no se puede deshacer.`;
+    if(!window.confirm(aviso)) return;
+    setCuentas((prev)=>prev.filter((c)=>c.id!==cuenta.id));
+  };
+
+  // Borra un pago a proveedor y le devuelve el saldo a las facturas que
+  // habia abonado. Un mismo pago puede repartirse entre varias.
+  const eliminarPagoProveedor = (pago) => {
+    const prov = proveedoresData.find((p)=>p.id===pago.proveedorId);
+    const aviso =
+      `¿Eliminar este pago a proveedor?
+
+` +
+      `${pago.id} · ${fmt(Number(pago.monto || 0))}
+` +
+      `${prov?.nombre || "Proveedor sin registro"}
+` +
+      (pago.factura ? `Factura ${pago.factura}
+` : "") +
+      (pago.fecha ? `Fecha: ${pago.fecha}
+` : "") +
+      `
+Ese valor volverá a quedar pendiente en la factura.
+
+` +
+      `Esto no se puede deshacer.`;
+    if(!window.confirm(aviso)) return;
+
+    setCuentas((prev)=>prev.map((raw)=>{
+      const cuenta = normalizarCuenta(raw);
+      const historial = cuenta.pagosHistorial || [];
+      // Un pago se reparte entre varias facturas con el mismo id, asi que se
+      // busca en cada una lo que le tocaba a ella.
+      const suyo = historial.find((h)=>h.id===pago.id);
+      if(!suyo) return raw;
+
+      const devuelto = Number(suyo.monto || 0);
+      const total = Number(cuenta.valorTotalPagar || 0);
+      const nuevoPagado = Math.max(0, Number(cuenta.montoPagado || 0) - devuelto);
+      const nuevoSaldo = Math.max(0, total - nuevoPagado);
+      const resto = historial.filter((h)=>h.id!==pago.id);
+      return {
+        ...raw,
+        estado:nuevoSaldo<=0 ? "Pagado" : "Pendiente",
+        fechaPago:nuevoSaldo<=0 ? raw.fechaPago : "",
+        saldoPendienteActual:nuevoSaldo,
+        saldo_pendiente_actual:nuevoSaldo,
+        montoPagado:nuevoPagado,
+        monto_pagado:nuevoPagado,
+        pagosHistorial:resto,
+        pagos_historial:resto,
+      };
+    }));
+  };
+
   const cuentasProveedorPago = cuentasNorm.filter(c=>c.proveedorId===proveedorPagoId);
   const cuentasPendientesProveedor = cuentasProveedorPago.filter(c=>Number(c.saldoPendienteActual || 0)>0);
   const totalPendienteProveedor = cuentasPendientesProveedor.reduce((s,c)=>s+Number(c.saldoPendienteActual || 0),0);
@@ -860,14 +945,14 @@ export default function CuentasPagar({ctx}){
             <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
               <thead>
                 <tr style={{background:"#f1f5f9"}}>
-                  {["ID","Proveedor","Factura","Concepto","Monto","Fecha","Método","Estado"].map(h=>(
+                  {["ID","Proveedor","Factura","Concepto","Monto","Fecha","Método","Estado","Acción"].map(h=>(
                     <th key={h} style={{padding:"9px 10px",textAlign:h==="Monto"?"right":"left",color:"#64748b",fontWeight:500,fontSize:11}}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {pagosProveedorFiltrados.length===0 ? (
-                  <tr><td colSpan={8} style={{padding:18,textAlign:"center",color:"#94a3b8"}}>No hay pagos registrados para este filtro</td></tr>
+                  <tr><td colSpan={9} style={{padding:18,textAlign:"center",color:"#94a3b8"}}>No hay pagos registrados para este filtro</td></tr>
                 ) : pagosProveedorFiltrados.map((p)=> (
                   <tr key={p.id + "-" + p.cuentaId} style={{borderBottom:"1px solid #e2e8f0"}}>
                     <td style={{padding:"10px 10px",color:"#2563eb",fontWeight:500}}>{p.id}</td>
@@ -878,6 +963,13 @@ export default function CuentasPagar({ctx}){
                     <td style={{padding:"10px 10px"}}>{p.fecha || "—"}</td>
                     <td style={{padding:"10px 10px"}}>{p.metodo || p.medio || "—"}</td>
                     <td style={{padding:"10px 10px"}}><Badge estado={p.estado || "Pagado"}/></td>
+                    <td style={{padding:"10px 10px"}}>
+                      <button
+                        style={{...B("#fff","#ef4444"),border:"1.5px solid #ef4444",padding:"5px 9px",fontSize:10.5}}
+                        title="Eliminar este pago y devolver el saldo a la factura"
+                        onClick={()=>eliminarPagoProveedor(p)}
+                      >🗑</button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -1125,6 +1217,11 @@ export default function CuentasPagar({ctx}){
                             <button style={{...B("#003B71"),padding:"7px 12px",fontSize:11}} onClick={()=>{setTab("pagos"); setProveedorPagoId(c.proveedorId); setBusquedaProveedorPago(prov?.nombre || ""); setPagoProv(prev=>({...prev,tipo:"Pago a proveedor",monto:String(Math.round(Number(c.saldoPendienteActual||0))),fecha:today()})); setVistaPagoCxP("registro"); scrollAppToTop("smooth");}}>Registrar pago</button>
                           )}
                           {c.estado!=="Pagado" && <button style={{...B("#16a34a"),padding:"7px 12px",fontSize:11}} onClick={()=>marcarPagada(c.id)}>Marcar pagada</button>}
+                          <button
+                            style={{...B("#fff","#ef4444"),border:"1.5px solid #ef4444",padding:"7px 12px",fontSize:11}}
+                            title="Eliminar esta factura causada"
+                            onClick={()=>eliminarCuenta(c)}
+                          >🗑 Eliminar</button>
                         </div>
                       </div>
                     </div>

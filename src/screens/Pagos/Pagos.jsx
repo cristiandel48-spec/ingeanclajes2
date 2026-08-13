@@ -1,4 +1,5 @@
 import Badge from "../../components/ui/Badge";
+import ListaPagos from "./ListaPagos";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
 import { useState } from "react";
@@ -6,8 +7,6 @@ import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmt, today } from "../../lib/format";
 export default function Pagos({ctx}){
   const {obras,setObras,pagos,setPagos}=ctx;
-  const [filtro,setFiltro]=useState("todas");
-  const [pstep,setPstep]=useState(null);
   const [busquedaPago,setBusquedaPago]=useState("");
   const [obraPagoId,setObraPagoId]=useState("");
   const [guardandoAbono,setGuardandoAbono]=useState(false);
@@ -45,9 +44,6 @@ export default function Pagos({ctx}){
   });
 
   const obraSeleccionada = obras.find((obra)=>obra.id===obraPagoId) || null;
-  const pF = filtro==="todas" ? pagosNormalizados : pagosNormalizados.filter((p)=>p.obraId===filtro);
-  const tCob = pagosNormalizados.filter((p)=>p.estado==="Pagado").reduce((s,p)=>s+Number(p.monto||0),0);
-  const tPend = pagosNormalizados.filter((p)=>p.estado==="Pendiente").reduce((s,p)=>s+Number(p.monto||0),0);
 
   const actualizarSaldoObra = (obraId, montoAbono) => {
     if(!obraId || !Number.isFinite(montoAbono) || montoAbono<=0) return;
@@ -66,10 +62,65 @@ export default function Pagos({ctx}){
     }));
   };
 
+  // Devuelve a la obra lo que sumaba un abono. Es el contrario exacto de
+  // `actualizarSaldoObra`: si no se hiciera, borrar un abono dejaria la obra
+  // diciendo que se cobro un dinero que ya no esta registrado en ningun lado.
+  const devolverSaldoObra = (obraId, montoAbono) => {
+    if(!obraId || !Number.isFinite(montoAbono) || montoAbono<=0) return;
+    setObras((prev)=>prev.map((obra)=>{
+      if(obra.id!==obraId) return obra;
+      const totalActual = Number(obra.total || 0);
+      // Nunca por debajo de cero: si los numeros venian descuadrados de antes,
+      // restar a ciegas dejaria un "pagado" negativo.
+      const nuevoPagado = Math.max(0, Number(obra.pagado || 0) - montoAbono);
+      const nuevoSaldo = Math.max(0, totalActual - nuevoPagado);
+      return {
+        ...obra,
+        pagado:nuevoPagado,
+        saldo:nuevoSaldo,
+        // Si vuelve a quedar saldo, la obra deja de estar pagada.
+        estado:nuevoSaldo>0 && obra.estado==="Pagado" ? "En Obra" : obra.estado,
+      };
+    }));
+  };
+
+  // Borra un abono registrado. Se pregunta con el valor y la obra delante,
+  // porque esto mueve plata: no es lo mismo equivocarse de fila aqui que en
+  // un listado de documentos.
+  const eliminarPago = (pago) => {
+    const obra = obras.find((o)=>o.id===pago.obraId);
+    const monto = Number(pago.monto || 0);
+    const aviso =
+      `¿Eliminar este abono?
+
+` +
+      `${pago.id} · ${fmt(monto)}
+` +
+      `Obra: ${pago.obraId}${obra?.cliente ? ` · ${obra.cliente}` : ""}
+` +
+      (pago.fecha ? `Fecha: ${pago.fecha}
+` : "") +
+      `
+` +
+      (pago.estado==="Pagado"
+        ? `Ese dinero se le devolverá al saldo pendiente de la obra.
+
+`
+        : `Estaba sin cobrar, así que el saldo de la obra no cambia.
+
+`) +
+      `Esto no se puede deshacer.`;
+    if(!window.confirm(aviso)) return;
+
+    // Solo se devuelve lo que de verdad se habia descontado: un abono
+    // pendiente nunca llego a tocar el saldo.
+    if(pago.estado==="Pagado") devolverSaldoObra(pago.obraId, monto);
+    setPagos((prev)=>prev.filter((p)=>p.id!==pago.id));
+  };
+
   const cobrar = (id) => {
     const pagoActual = pagosNormalizados.find((p)=>p.id===id);
     if(!pagoActual || pagoActual.estado==="Pagado") return;
-    setPstep(id);
     setTimeout(()=>{
       actualizarSaldoObra(pagoActual.obraId, Number(pagoActual.monto || 0));
       setPagos((prev)=>prev.map((p)=>p.id===id ? {
@@ -78,7 +129,6 @@ export default function Pagos({ctx}){
         fecha:today(),
         metodo:p.metodo ?? p.medio ?? "PSE",
       } : p));
-      setPstep(null);
     }, 700);
   };
 
@@ -100,7 +150,6 @@ export default function Pagos({ctx}){
     setGuardandoAbono(true);
     setPagos((prev)=>[nuevoPago, ...prev]);
     actualizarSaldoObra(obraPagoId, monto);
-    setFiltro(obraPagoId);
     setAbono({
       tipo:"Abono manual",
       monto:"",
@@ -292,49 +341,14 @@ export default function Pagos({ctx}){
         </div>
       </div>}
 
-      <div style={CD}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-          <div style={ST}>Historial de pagos</div>
-          <select value={filtro} onChange={e=>setFiltro(e.target.value)} style={{...SI,width:"auto",fontSize:12}}>
-            <option value="todas">Todas las obras</option>
-            {obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}
-          </select>
-        </div>
-        <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-          <thead>
-            <tr style={{background:"#f1f5f9"}}>
-              {["ID","Obra","Cliente","Tipo","Monto","Fecha","Método","Estado","Acción"].map(h=>(
-                <th key={h} style={{padding:"9px 10px",textAlign:h==="Monto"?"right":"left",color:"#64748b",fontWeight:500,fontSize:11}}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {pF.map((p,i)=>{
-              const ob=obras.find(o=>o.id===p.obraId);
-              return(
-                <tr key={p.id} style={{borderBottom:"1px solid #e2e8f0",background:i%2===0?"#ffffff":"#f8fafc"}}>
-                  <td style={{padding:"10px 10px",color:"#60b4ff",fontSize:11}}>{p.id}</td>
-                  <td style={{padding:"10px 10px",fontSize:11}}>{p.obraId}</td>
-                  <td style={{padding:"10px 10px",fontSize:11,color:"#475569"}}>{ob?.cliente}</td>
-                  <td style={{padding:"10px 10px",fontSize:11}}>{p.tipo}</td>
-                  <td style={{padding:"10px 10px",textAlign:"right",fontWeight:700,color:"#cc0000"}}>{fmt(Number(p.monto || 0))}</td>
-                  <td style={{padding:"10px 10px",color:"#475569",fontSize:11}}>{p.fecha}</td>
-                  <td style={{padding:"10px 10px",color:"#475569",fontSize:11}}>{p.metodo}</td>
-                  <td style={{padding:"10px 10px"}}><Badge estado={p.estado}/></td>
-                  <td style={{padding:"10px 10px"}}>
-                    {p.estado==="Pendiente" && (
-                      pstep===p.id
-                        ? <span style={{fontSize:11,color:"#cc0000"}}>Procesando...</span>
-                        : <button onClick={()=>cobrar(p.id)} style={{background:"#003B71",border:"1px solid #FFCD00",color:"#FFCD00",borderRadius:6,padding:"4px 10px",fontSize:11,cursor:"pointer",fontWeight:600}}>Marcar pagado</button>
-                    )}
-                    {p.estado==="Pagado" && <span style={{fontSize:11,color:"#166534",fontWeight:700}}>Conciliado</span>}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <ListaPagos
+        pagos={pagosNormalizados}
+        obras={obras}
+        acciones={{
+          cobrar: (p)=>cobrar(p.id),
+          eliminar: (p)=>eliminarPago(p),
+        }}
+      />
     </div>
   );
 }

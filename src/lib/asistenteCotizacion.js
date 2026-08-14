@@ -36,6 +36,21 @@ const clave = (texto) => sinTildes(texto).split(" ").filter((p) => p && !VACIAS.
  * IA. Primero por coincidencia limpia; si no, por palabras, para que "linea de
  * vida horizontal en cubierta" encuentre "LINEA DE VIDA HORIZONTAL".
  */
+// El catalogo esta en singular ("PUNTO DE ANCLAJE EPOXICO") y la gente pide en
+// plural ("cuatro puntos de anclaje epoxico"). Comparando palabras completas
+// "PUNTO" no estaba en lo pedido y el servicio se descartaba entero, tanto al
+// dictar como al importar un documento.
+//
+// Basta con que una empiece por la otra: PUNTO/PUNTOS, ANCLAJE/ANCLAJES,
+// VERTICAL/VERTICALES. Se piden cuatro letras para no emparejar por un
+// pedacito suelto.
+function estaLaPalabra(palabra, pedidas) {
+  return pedidas.some((otra) =>
+    otra === palabra ||
+    (palabra.length >= 4 && otra.length >= 4 &&
+      (otra.startsWith(palabra) || palabra.startsWith(otra))));
+}
+
 export function buscarItemCatalogo(desc) {
   const buscado = sinTildes(desc);
   if (!buscado) return null;
@@ -52,7 +67,7 @@ export function buscarItemCatalogo(desc) {
   const palabrasBuscadas = clave(desc);
   const candidatos = todos
     .map((item) => ({ item, palabras: clave(item.desc) }))
-    .filter(({ palabras }) => palabras.length && palabras.every((p) => palabrasBuscadas.includes(p)))
+    .filter(({ palabras }) => palabras.length && palabras.every((p) => estaLaPalabra(p, palabrasBuscadas)))
     .sort((a, b) => b.palabras.length - a.palabras.length);
 
   return candidatos[0]?.item ?? null;
@@ -102,23 +117,30 @@ export async function armarCotizacionDesdeTexto(texto) {
   // Con el precio se distingue quien lo decidio. Si la persona dicto un valor
   // ("a 100 mil cada uno") manda ese, porque es una decision suya y no un
   // invento del modelo. Si no dijo nada, manda el del catalogo.
-  const items = (data?.items ?? [])
-    .map((propuesto) => {
-      const real = buscarItemCatalogo(propuesto.desc);
-      if (!real) return null;
-      const dictado = Number(propuesto.vu) > 0 ? Number(propuesto.vu) : null;
-      return {
-        desc: real.desc,
-        unit: real.unit,
-        cant: propuesto.cant,
-        vu: dictado ?? real.vu,
-        vuCatalogo: real.vu,
-        precioDictado: dictado !== null,
-      };
-    })
-    .filter(Boolean);
+  const items = [];
+  // Lo que se pidio y no existe en el catalogo. Antes solo se contaba, y al
+  // importar un documento hace falta poder decir QUE quedo fuera: si el
+  // cliente pidio seis arneses, hay que verlo escrito para decidir.
+  const fuera = [];
 
-  const descartados = (data?.items ?? []).length - items.length;
+  for (const propuesto of data?.items ?? []) {
+    const real = buscarItemCatalogo(propuesto.desc);
+    if (!real) {
+      fuera.push({ desc: String(propuesto.desc || ""), cant: propuesto.cant });
+      continue;
+    }
+    const dictado = Number(propuesto.vu) > 0 ? Number(propuesto.vu) : null;
+    items.push({
+      desc: real.desc,
+      unit: real.unit,
+      cant: propuesto.cant,
+      vu: dictado ?? real.vu,
+      vuCatalogo: real.vu,
+      precioDictado: dictado !== null,
+      // Lo que decia el documento, para poder mostrar con que se emparejo.
+      textoOriginal: String(propuesto.desc || ""),
+    });
+  }
 
   return {
     cliente: data?.cliente ?? "",
@@ -128,10 +150,11 @@ export async function armarCotizacionDesdeTexto(texto) {
     telefono: data?.telefono ?? "",
     alcance: data?.alcance ?? "",
     items,
+    fuera,
     avisos: [
       ...(data?.avisos ?? []),
-      ...(descartados > 0
-        ? [`${descartados} servicio(s) mencionados no están en el catálogo y quedaron fuera. Agrégalos a mano.`]
+      ...(fuera.length > 0
+        ? [`${fuera.length} servicio(s) mencionados no están en el catálogo y quedaron fuera. Agrégalos a mano.`]
         : []),
     ],
   };

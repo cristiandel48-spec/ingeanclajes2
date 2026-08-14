@@ -3,6 +3,7 @@ import BuscadorCliente from "../../components/BuscadorCliente";
 import CampoTexto from "../../components/ui/CampoTexto";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
 import DictarCotizacion from "./DictarCotizacion";
+import ImportarCotizacion from "./ImportarCotizacion";
 import FirmaEmpresa from "../../components/FirmaEmpresa";
 import DocumentoEnVivo from "./DocumentoEnVivo";
 import ListaCotizaciones from "./ListaCotizaciones";
@@ -40,6 +41,7 @@ export default function Cotizacion({ctx}){
   const [obraCreada,setObraCreada]=useState(null);
   const [editCot,setEditCot]=useState(null);
   const [dictando,setDictando]=useState(false);
+  const [importando,setImportando]=useState(false);
   const [cot,setCot]=useState("");
   const [fecha,setFecha]=useState(today());
   const [val,setVal]=useState(30);
@@ -102,6 +104,11 @@ export default function Cotizacion({ctx}){
       ciudad: prev.ciudad || propuesta.ciudad || "",
       obra: prev.obra || propuesta.obra || "",
       telefono: prev.telefono || propuesta.telefono || "",
+      // Los tres ultimos solo llegan al importar un documento: el dictado no
+      // los trae y quedan como estaban.
+      nit: prev.nit || propuesta.nit || "",
+      contactoEmail: prev.contactoEmail || propuesta.contactoEmail || "",
+      direccion: prev.direccion || propuesta.direccion || "",
     }));
 
     if(propuesta.alcance || propuesta.items.length){
@@ -352,6 +359,11 @@ export default function Cotizacion({ctx}){
             title="Armar la cotización hablando">🎤 Dictar</button>
         )}
 
+        {!importando && (
+          <button style={SECUNDARIO} onClick={()=>setImportando(true)}
+            title="Leer la solicitud que mandó el cliente y armar la cotización con ella">📄 Importar</button>
+        )}
+
         <button
           style={verDocumento
             ? { ...BOTON_BASE, background:"#111827", color:"#fff", border:"1px solid #111827" }
@@ -369,7 +381,7 @@ export default function Cotizacion({ctx}){
           onClick={()=>guardarRef.current()}>Guardar</button>
       </div>
     ) : null,
-    [tab, dictando, verDocumento]
+    [tab, dictando, importando, verDocumento]
   );
 
   const guardarCotizacionYSubir = ()=>{
@@ -663,6 +675,15 @@ export default function Cotizacion({ctx}){
       {/* Armar hablando: rellena el formulario a partir de un dictado. El
           botón que lo abre está arriba, con el resto de acciones. */}
       {dictando && <DictarCotizacion onAplicar={aplicarDictado} onCerrar={()=>setDictando(false)}/>}
+
+      {/* Misma puerta que el dictado: cambia de donde sale el texto. */}
+      {importando && (
+        <ImportarCotizacion
+          clientes={clientes}
+          onAplicar={(propuesta)=>{ aplicarDictado(propuesta); setImportando(false); }}
+          onCerrar={()=>setImportando(false)}
+        />
+      )}
 
       {/* Identificación */}
       <div style={{...CD,marginBottom:14}}>

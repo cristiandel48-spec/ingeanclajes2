@@ -9,7 +9,7 @@ import ListaCotizaciones from "./ListaCotizaciones";
 import EnviarCotizacion from "./EnviarCotizacion";
 import PropuestaEditor from "./PropuestaEditor";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
-import { TEXTOS_DOCUMENTO_DEFAULT, getTextosDocumento, lineasDeTexto } from "../../lib/cotizacionTextos";
+import { TEXTOS_DOCUMENTO_DEFAULT, getTextosDocumento } from "../../lib/cotizacionTextos";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
 import BotonCorregir from "../../components/ui/BotonCorregir";
@@ -731,9 +731,16 @@ export default function Cotizacion({ctx}){
               una linea aparte del titulo; ahora va seguido y es la hoja la
               que lo parte donde toque, que es lo que lo deja bien centrado.
               Lo guardado con saltos -las cotizaciones de antes- se muestra
-              unido con un espacio. */}
+              unido con un espacio.
+
+              OJO: aqui no se puede recortar el texto -ni trim() ni
+              lineasDeTexto()-. Lo que se muestra se recalcula en cada tecla,
+              asi que el espacio del final se borraba en el mismo instante en
+              que se pulsaba la barra: no habia forma de separar dos palabras.
+              Los espacios de sobra los quita el onChange y, al imprimir, la
+              hoja. */}
           <input
-            value={lineasDeTexto(textosDocumento.tituloPortada).join(" ")}
+            value={String(textosDocumento.tituloPortada||"").replace(/\n+/g," ")}
             onChange={e=>setTexto("tituloPortada",e.target.value.replace(/\s+/g," "))}
             style={{...SI,fontSize:14,fontWeight:600,
               textAlign:"center",textTransform:"uppercase"}}
@@ -758,9 +765,11 @@ export default function Cotizacion({ctx}){
           {/* Sin lineas en blanco entre parrafos: gastaban tres renglones de
               pantalla y en la hoja los parrafos salen seguidos igual. Se
               quitan tambien al mostrar, para las cotizaciones que ya estaban
-              guardadas con ellas. */}
+              guardadas con ellas. Solo eso: recortar cada renglon impedia
+              escribir un espacio al final de una palabra, igual que pasaba en
+              el titulo de arriba. */}
           <textarea
-            value={lineasDeTexto(textosDocumento.presentacion).join("\n")}
+            value={String(textosDocumento.presentacion||"").replace(/\n{2,}/g,"\n")}
             onChange={e=>setTexto("presentacion",e.target.value.replace(/\n{2,}/g,"\n"))}
             style={{...SI,minHeight:120,resize:"vertical",lineHeight:1.6}}
           />

@@ -148,12 +148,18 @@ export const PLANTILLAS_ACTIVIDAD = [
   {
     // Descripcion tal cual la de los informes que ya se entregaron.
     titulo: "Instalación de línea de vida horizontal",
+    // Las actividades siguen el orden real del trabajo: primero se decide
+    // donde van los soportes, luego se fijan, se tiende el cable, se tensiona
+    // y al final se comprueba y se identifica. La descripcion de abajo es la
+    // de los informes ya entregados y no se toca; esto es el desglose.
     actividadesRealizadas: [
-      "Se realizó una evaluación detallada de la cubierta para determinar las ubicaciones óptimas para los soportes.",
-      "Se instalaron los soportes asegurándolos firmemente a la cubierta.",
-      "Se realizó la instalación de los cables o líneas horizontales, deslizándolos a través de los soportes.",
-      "Se aseguró el cable con tensores para mantener la línea en la posición deseada y evitar movimientos indeseados.",
-      "Se realizó la verificación de la tensión y la alineación de los cables.",
+      "Se realizó una evaluación detallada de la cubierta para determinar las ubicaciones óptimas de los soportes laterales e intermedios.",
+      "Se instalaron los soportes de extremo y los intermedios, asegurándolos firmemente a la estructura de la cubierta.",
+      "Se realizó el ajuste a tornillería y se verificó el estado de la soldadura, que no presentara porosidad.",
+      "Se tendió el cable de acero a través de los soportes y se instalaron guardacables, tensor y absorbedor de energía.",
+      "Se tensionó la línea dejándola dentro del rango indicado por el fabricante, para que en caso de caída la distancia sea mínima.",
+      "Se verificó la tensión y la alineación del cable, y el libre desplazamiento del carro deslizador en todo el recorrido.",
+      "Se aplicó pintura anticorrosiva sobre los elementos instalados y se instalaron las tarjetas de identificación del sistema.",
     ].join("\n"),
     descripcion:
       "Primero, se realizó una evaluación detallada de la cubierta para determinar las ubicaciones óptimas para " +
@@ -162,6 +168,33 @@ export const PLANTILLAS_ACTIVIDAD = [
       "cable se desliza a través de los soportes, asegurándolo con tensores para mantener la línea en la " +
       "posición deseada y evitar movimientos indeseados. Finalmente, se realiza una verificación de la tensión " +
       "y la alineación de los cables para asegurar que cumpla con los estándares de seguridad y funcionalidad.",
+  },
+  {
+    // La vertical no es la horizontal puesta de pie: no lleva soportes
+    // intermedios ni tensor a lo largo, sino un anclaje arriba y otro abajo,
+    // el cable tensionado entre los dos y un deslizador que sube con la
+    // persona. Por eso tiene su propia plantilla y no se reaprovecha aquella.
+    titulo: "Instalación de línea de vida vertical",
+    actividadesRealizadas: [
+      "Se realizó la evaluación del sitio para definir el recorrido de la línea y los puntos de anclaje superior e inferior.",
+      "Se instaló el anclaje superior sobre la estructura, verificando su fijación y capacidad de carga.",
+      "Se instaló el anclaje inferior y se tendió el cable de acero entre los dos extremos.",
+      "Se tensionó el cable dentro del rango indicado por el fabricante y se instaló el absorbedor de energía.",
+      "Se instalaron las guiaderas intermedias para mantener el cable alineado en todo el recorrido.",
+      "Se realizó el ajuste a tornillería y se verificó el estado de la soldadura, que no presentara porosidad.",
+      "Se verificó el libre desplazamiento del deslizador de arriba abajo y su bloqueo ante una caída simulada.",
+      "Se aplicó pintura anticorrosiva sobre los elementos instalados y se instalaron las tarjetas de identificación del sistema.",
+    ].join("\n"),
+    descripcion:
+      "Se realizó la instalación de la línea de vida vertical para el acceso seguro en altura. Primero se " +
+      "evaluó el sitio para definir el recorrido de la línea y la ubicación de los anclajes superior e " +
+      "inferior. Se instaló el anclaje superior sobre la estructura, verificando su fijación, y a " +
+      "continuación el anclaje inferior, tendiendo entre ambos el cable de acero. El cable se tensionó " +
+      "dentro del rango indicado por el fabricante y se le instaló su absorbedor de energía, junto con las " +
+      "guiaderas que lo mantienen alineado en todo el recorrido. Finalmente se verificó el libre " +
+      "desplazamiento del deslizador de arriba abajo y su bloqueo ante una caída, y se aplicó pintura " +
+      "anticorrosiva sobre los elementos instalados. Con estas acciones se garantizó que la línea de vida " +
+      "quedara completamente operativa y segura para su uso.",
   },
   {
     // Descripcion tal cual la de los informes que ya se entregaron.

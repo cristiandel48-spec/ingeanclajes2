@@ -3,6 +3,7 @@ import { B, CD, ST } from "../../styles/tokens";
 import { fmt, fmtD } from "../../lib/format";
 import { getQuoteActiveProposal } from "../../lib/cotizaciones";
 import { resumenVencimientos, colorVencimiento, etiquetaVencimiento } from "../../lib/vencimientos";
+import { resumenSeguimiento, colorSeguimiento, etiquetaSeguimiento } from "../../lib/seguimientoCotizaciones";
 import { puedeVerDinero } from "../../lib/permisos";
 export default function Dashboard({ctx,go}){
   const {obras,cotizaciones,certs,membresia}=ctx;
@@ -10,6 +11,7 @@ export default function Dashboard({ctx,go}){
   const saldoPendiente = obras.reduce((sum, obra)=>sum + Number(obra.saldo || 0), 0);
   const recientes = [...cotizaciones].sort((a,b)=>String(b.fecha||"").localeCompare(String(a.fecha||""))).slice(0,4);
   const venc = resumenVencimientos(certs);
+  const seg = resumenSeguimiento(cotizaciones);
 
   return(
     <div style={{padding:28}}>
@@ -131,6 +133,83 @@ export default function Dashboard({ctx,go}){
                     >
                       Ver vencimientos
                     </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Cotizaciones sin respuesta. El campo «Válida (días)» se
+                llenaba desde siempre y no lo miraba nadie: una propuesta se
+                enfriaba sin que nos enteráramos. Aquí se avisa igual que con
+                las certificaciones. */}
+            <div style={{
+              background: seg.hayAlgoQueHacer ? "#fff7ed" : "#f8fafc",
+              border: `1px solid ${seg.hayAlgoQueHacer ? "#fdba74" : "#e2e8f0"}`,
+              borderRadius:12, padding:"14px 16px",
+            }}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:10,marginBottom:8}}>
+                <div style={{fontSize:11,color:"#64748b",textTransform:"uppercase"}}>Cotizaciones sin respuesta</div>
+                {seg.hayAlgoQueHacer && (
+                  <div style={{fontSize:11,fontWeight:700,color:"#c2410c"}}>
+                    {seg.requierenAccion.length} por llamar
+                  </div>
+                )}
+              </div>
+
+              {seg.hayAlgoQueHacer ? (
+                <>
+                  <div style={{display:"flex",gap:14,marginBottom:10,fontSize:11.5}}>
+                    {seg.vencidas.length>0 && <span style={{color:"#ef4444",fontWeight:700}}>{seg.vencidas.length} vencida{seg.vencidas.length===1?"":"s"}</span>}
+                    {seg.porVencer.length>0 && <span style={{color:"#c2410c",fontWeight:700}}>{seg.porVencer.length} por vencer</span>}
+                    {seg.alDia.length>0 && <span style={{color:"#64748b"}}>{seg.alDia.length} al día</span>}
+                  </div>
+
+                  <div style={{display:"grid",gap:6,marginBottom:12}}>
+                    {seg.destacadas.map((cotizacion)=>(
+                      <div key={cotizacion.id} style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",background:"#fff",border:"1px solid #fed7aa",borderRadius:8,padding:"8px 10px"}}>
+                        <div style={{minWidth:0}}>
+                          <div style={{fontSize:12.5,fontWeight:600,color:"#1a1a2e",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                            {cotizacion.cliente || cotizacion.numero || cotizacion.id}
+                          </div>
+                          <div style={{fontSize:10.5,color:"#94a3b8",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                            {[cotizacion.numero, cotizacion.obra].filter(Boolean).join(" · ")}
+                          </div>
+                        </div>
+                        <div style={{fontSize:11,fontWeight:800,color:colorSeguimiento(cotizacion.diasParaVencer),flexShrink:0,textAlign:"right"}}>
+                          {etiquetaSeguimiento(cotizacion.diasParaVencer)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {seg.requierenAccion.length > seg.destacadas.length && (
+                    <div style={{fontSize:11,color:"#94a3b8",marginBottom:10}}>
+                      y {seg.requierenAccion.length - seg.destacadas.length} más.
+                    </div>
+                  )}
+
+                  {seg.masVieja && (
+                    <div style={{fontSize:11,color:"#b45309",marginBottom:10}}>
+                      La más antigua lleva {seg.masVieja.diasSinRespuesta} días esperando respuesta.
+                    </div>
+                  )}
+
+                  <button
+                    style={{...B("#f47c20"),fontSize:12,padding:"8px 14px",width:"100%",justifyContent:"center"}}
+                    onClick={()=>go("cotizacion")}
+                  >
+                    Ver cotizaciones
+                  </button>
+                </>
+              ) : (
+                <div style={{fontSize:12.5,color:"#475569"}}>
+                  {seg.alDia.length>0
+                    ? <>Ninguna vencida. {seg.alDia.length} en seguimiento, todas dentro del plazo.</>
+                    : <>No hay cotizaciones pendientes de respuesta.</>}
+                  {seg.sinFecha.length>0 && (
+                    <div style={{marginTop:6,color:"#b45309"}}>
+                      {seg.sinFecha.length} sin fecha, no se pueden controlar.
+                    </div>
                   )}
                 </div>
               )}

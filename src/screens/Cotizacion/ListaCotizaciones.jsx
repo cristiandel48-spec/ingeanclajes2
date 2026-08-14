@@ -13,6 +13,7 @@ import Badge from "../../components/ui/Badge";
 import { SI } from "../../styles/tokens";
 import { fmtD } from "../../lib/format";
 import { normalizarMayusculas, normalizarRazonSocial } from "../../lib/normalizarEntrada";
+import { seguimientoDe, colorSeguimiento, etiquetaSeguimiento, UMBRAL_POR_VENCER } from "../../lib/seguimientoCotizaciones";
 
 const ORDENES = [
   { key: "recientes", label: "Más recientes", comparar: (a, b) => enMilis(b.fecha) - enMilis(a.fecha) || String(b.id).localeCompare(String(a.id)) },
@@ -39,16 +40,40 @@ export default function ListaCotizaciones({ cotizaciones, acciones }) {
       fechaDe={(c) => c.fecha}
       ordenes={ORDENES}
       filtrosExtra={({ valores, poner }) => (
-        <GrupoFiltro titulo="Obra">
-          <select value={valores.obra || "todas"}
-            onChange={(e) => poner("obra", e.target.value === "todas" ? null : e.target.value)}
-            style={{ ...SI, fontSize: 12, padding: "6px 8px" }}>
-            <option value="todas">Todas las obras</option>
-            {obras.map((o) => <option key={o} value={o}>{o}</option>)}
-          </select>
-        </GrupoFiltro>
+        <>
+          <GrupoFiltro titulo="Obra">
+            <select value={valores.obra || "todas"}
+              onChange={(e) => poner("obra", e.target.value === "todas" ? null : e.target.value)}
+              style={{ ...SI, fontSize: 12, padding: "6px 8px" }}>
+              <option value="todas">Todas las obras</option>
+              {obras.map((o) => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </GrupoFiltro>
+          {/* Para sentarse a llamar: saca las que se estan enfriando. */}
+          <GrupoFiltro titulo="Seguimiento">
+            <select value={valores.seguimiento || "todas"}
+              onChange={(e) => poner("seguimiento", e.target.value === "todas" ? null : e.target.value)}
+              style={{ ...SI, fontSize: 12, padding: "6px 8px" }}>
+              <option value="todas">Sin filtrar</option>
+              <option value="llamar">Por llamar (vencidas o a punto)</option>
+              <option value="vencidas">Solo vencidas</option>
+              <option value="alDia">Dentro del plazo</option>
+            </select>
+          </GrupoFiltro>
+        </>
       )}
-      aplicarExtra={(c, v) => !v.obra || String(c.obra || "").trim() === v.obra}
+      aplicarExtra={(c, v) => {
+        if (v.obra && String(c.obra || "").trim() !== v.obra) return false;
+        if (!v.seguimiento) return true;
+        // Las aprobadas y las que no tienen fecha no estan en seguimiento, asi
+        // que no aparecen en ninguno de los tres grupos.
+        const { diasParaVencer } = seguimientoDe(c);
+        if (diasParaVencer === null) return false;
+        if (v.seguimiento === "vencidas") return diasParaVencer < 0;
+        if (v.seguimiento === "llamar") return diasParaVencer <= UMBRAL_POR_VENCER;
+        if (v.seguimiento === "alDia") return diasParaVencer > UMBRAL_POR_VENCER;
+        return true;
+      }}
       fila={(c, { compacta }) => <Fila key={c.id} c={c} compacta={compacta} acciones={acciones} />}
       vacio={{
         titulo: "Todavía no hay cotizaciones",
@@ -61,6 +86,12 @@ export default function ListaCotizaciones({ cotizaciones, acciones }) {
 function Fila({ c, compacta, acciones }) {
   const aprobada = c.estado === "Aprobada";
   const alPulsar = (fn) => (e) => { e.stopPropagation(); fn(c); };
+
+  // Solo se marca lo que hay que mirar: una cotizacion dentro del plazo no
+  // necesita etiqueta, seria ruido en todas las filas.
+  const { diasParaVencer } = seguimientoDe(c);
+  const avisa = diasParaVencer !== null && diasParaVencer <= UMBRAL_POR_VENCER;
+  const colorBarra = aprobada ? "#12B76A" : (avisa && diasParaVencer < 0 ? "#ef4444" : C.acento);
 
   // La obra suele llamarse igual que el cliente, y salia el mismo nombre dos
   // veces. Solo se pone si aporta algo distinto.
@@ -96,6 +127,15 @@ function Fila({ c, compacta, acciones }) {
         <span style={{ fontSize: 11, color: C.tenue }}>
           {c.numero || c.id}{c.fecha ? ` · ${fmtD(c.fecha)}` : ""}
         </span>
+        {avisa && (
+          <span title={`Enviada hace ${seguimientoDe(c).diasSinRespuesta} días y sigue sin respuesta`}
+            style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: .2,
+              color: colorSeguimiento(diasParaVencer),
+              border: `1px solid ${colorSeguimiento(diasParaVencer)}`,
+              borderRadius: 5, padding: "1px 5px", whiteSpace: "nowrap" }}>
+            {etiquetaSeguimiento(diasParaVencer)}
+          </span>
+        )}
       </div>
       {debajo && (
         <div style={{ fontSize: 11.5, color: C.apagado, marginTop: 1,
@@ -113,7 +153,7 @@ function Fila({ c, compacta, acciones }) {
           cursor: "pointer", position: "relative", overflow: "hidden",
           transition: "border-color .16s ease, background .16s ease" }}>
         <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3,
-          background: aprobada ? "#12B76A" : C.acento }} />
+          background: colorBarra }} />
         <div style={{ minWidth: 0, flex: 1 }}>{datos}</div>
         <Badge estado={c.estado} />
         <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>{botones}</div>
@@ -129,7 +169,7 @@ function Fila({ c, compacta, acciones }) {
         cursor: "pointer", position: "relative", overflow: "hidden",
         transition: "box-shadow .2s ease, border-color .2s ease" }}>
       <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3,
-        background: aprobada ? "#12B76A" : C.acento }} />
+        background: colorBarra }} />
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
         <div style={{ minWidth: 0 }}>{datos}</div>
         <Badge estado={c.estado} />

@@ -193,7 +193,27 @@ export function createDataService({ supabase, tenantId }) {
 
     if (!prepared.length) return;
 
-    const chunks = chunkArray(prepared);
+    // Postgres no acepta que un mismo INSERT ... ON CONFLICT traiga dos veces
+    // la misma clave: responde «ON CONFLICT DO UPDATE command cannot affect
+    // row a second time» y se pierde el guardado ENTERO, no solo la fila
+    // repetida. Pasa cuando en pantalla quedan dos registros con el mismo id
+    // -una cotizacion duplicada, un consecutivo que se repitio-.
+    //
+    // Se manda uno solo, el ultimo, que es lo que habria quedado guardandolos
+    // uno detras de otro. El aviso queda en la consola para poder rastrear de
+    // donde salio el repetido.
+    const porId = new Map();
+    for (const item of prepared) porId.set(item.row.id, item);
+    const unicos = [...porId.values()];
+    if (unicos.length < prepared.length) {
+      const repetidos = prepared.length - unicos.length;
+      console.warn(
+        `[${cfg.table}] ${repetidos} ${repetidos === 1 ? "registro repetido" : "registros repetidos"} al guardar. ` +
+        "Se conserva el ultimo de cada id."
+      );
+    }
+
+    const chunks = chunkArray(unicos);
     for (const chunk of chunks) {
       const rows = chunk.map((item) => item.row);
       const { error } = await supabase

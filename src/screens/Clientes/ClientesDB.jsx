@@ -222,15 +222,23 @@ export default function ClientesDB({ctx}){
     setShowForm(true);
   };
 
+  // El id se saca del numero mas alto que ya existe, no de cuantos clientes
+  // hay. Contando bastaba con haber borrado uno para que el id nuevo cayera
+  // encima de otro que seguia ahi -con dos CLI-003 en la lista-, y al guardar
+  // Postgres rechazaba el lote entero: «ON CONFLICT DO UPDATE command cannot
+  // affect row a second time». Se perdia el guardado completo, no solo el
+  // cliente repetido.
   const importarClientes=()=>{
     if(!sinRegistrar.length) return;
-    setClientes(prev=>[
-      ...prev,
-      ...sinRegistrar.map((c,idx)=>({
-        id:"CLI-" + (String(prev.length+idx+1).padStart(3,"0")),
-        ...c,
-      }))
-    ]);
+    setClientes(prev=>{
+      // Se van acumulando para que los importados de un mismo golpe tampoco
+      // choquen entre ellos.
+      const nuevos=[];
+      for(const c of sinRegistrar){
+        nuevos.push({ id:siguienteIdUnico([...prev,...nuevos],"CLI"), ...c });
+      }
+      return [...prev,...nuevos];
+    });
   };
 
   const importarRef = useRef(null);

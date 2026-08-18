@@ -56,6 +56,11 @@ export function AppDataProvider({ children }) {
   // Rol y modulos de quien tiene la sesion abierta. null mientras carga.
   const [membresia, setMembresia] = useState(null);
   const [cotDraft, setCotDraft] = useState(null);
+  // Los datos de muestra se pueden quitar de en medio sin esperar a tener los
+  // reales. Se apagan de una vez en todas las pantallas -tambien en la de
+  // WhatsApp, que trae los suyos- porque apagarlos de una en una seria peor
+  // que dejarlos.
+  const [ejemplosOcultos, setEjemplosOcultos] = useState(false);
 
   // Permite saltar a otra pantalla llevando contexto, por ejemplo "abre un
   // informe para la obra OB-001". La pantalla destino lo lee al montarse y
@@ -344,7 +349,21 @@ export function AppDataProvider({ children }) {
     // Para que la barra de arriba pueda avisar que lo que se ve es de muestra.
     // Se apaga solo: en cuanto haya un registro de verdad en TODAS las
     // pantallas que traen ejemplo, deja de haber ejemplos que anunciar.
-    verEjemplos: hayEjemplos(obras, cotizaciones, clientes, informes, certs, pagos),
+    verEjemplos: !ejemplosOcultos
+      && hayEjemplos(obras, cotizaciones, clientes, informes, certs, pagos),
+    ejemplosOcultos,
+    // Quita los de muestra de todas las listas a la vez. No hay vuelta atras
+    // en la sesion, y no hace falta: al recargar vuelven, porque las tablas
+    // siguen vacias.
+    ocultarEjemplos: () => {
+      setEjemplosOcultos(true);
+      setObras(sinEjemplos);
+      setCotizaciones(sinEjemplos);
+      setClientes(sinEjemplos);
+      setInformes(sinEjemplos);
+      setCerts(sinEjemplos);
+      setPagos(sinEjemplos);
+    },
     obras, setObras,
     empleados, setEmpleados,
     cargos, setCargos,

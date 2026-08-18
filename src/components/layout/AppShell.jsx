@@ -39,18 +39,26 @@ const writeStored = (key, value) => {
 // Es lo primero que se lee al entrar, a proposito: confundir una obra de
 // ejemplo con una real seria mucho peor que un cartel de mas.
 function AvisoDeEjemplos() {
-  const { verEjemplos } = useAppData();
+  const { verEjemplos, ocultarEjemplos } = useAppData();
   if (!verEjemplos) return null;
 
   return (
     <div style={{
       background: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: 12,
-      padding: "10px 14px", margin: "14px 0 0", fontSize: 12, color: "#3730a3",
-      lineHeight: 1.55,
+      padding: "9px 12px 9px 14px", margin: "14px 0 0", fontSize: 12, color: "#3730a3",
+      lineHeight: 1.55, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
     }}>
-      <strong style={{ color: "#312e81" }}>Datos de muestra.</strong> Los clientes,
-      cotizaciones y obras que ve son un ejemplo para conocer el programa: no están
-      guardados en la base y desaparecen en cuanto registre los primeros de verdad.
+      <div style={{ flex: 1, minWidth: 220 }}>
+        <strong style={{ color: "#312e81" }}>Datos de muestra.</strong> Los clientes,
+        cotizaciones, obras y conversaciones que ve son un ejemplo para conocer el programa:
+        no están guardados y desaparecen en cuanto registre los primeros de verdad.
+      </div>
+      <button
+        onClick={ocultarEjemplos}
+        style={{ background: "#fff", color: "#4338ca", border: "1px solid #c7d2fe",
+          borderRadius: 8, padding: "6px 12px", fontSize: 11.5, fontWeight: 700,
+          cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
+      >Ocultar</button>
     </div>
   );
 }

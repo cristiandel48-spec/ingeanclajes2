@@ -7,6 +7,7 @@ import PegarConversacion from "./PegarConversacion";
 import { getSupabaseClient, isSupabaseConfigured } from "../../lib/backend/supabaseClient";
 import { agruparEnConversaciones } from "../../lib/whatsappCrm";
 import { mensajesEjemplo } from "../../lib/whatsappEjemplo";
+import { useAppData } from "../../context/AppDataContext";
 
 // Los mensajes que entran por WhatsApp y que se hizo con cada uno.
 //
@@ -23,7 +24,9 @@ export default function WhatsAppCRM() {
   const [error, setError] = useState("");
   const [abierta, setAbierta] = useState(null);   // telefono de la conversacion abierta
   const [pegando, setPegando] = useState(false);
-  const [ocultarEjemplo, setOcultarEjemplo] = useState(false);
+  // Se apagan desde el aviso del marco, junto con los del resto del programa:
+  // esta pantalla no lleva su propio cartel ni su propio boton.
+  const { ejemplosOcultos } = useAppData();
 
   const cargar = useCallback(async () => {
     if (!isSupabaseConfigured()) {
@@ -94,7 +97,7 @@ export default function WhatsAppCRM() {
   // conversaciones de muestra. Vacía no se entiende qué hace, y el que la abre
   // por primera vez es justo el que necesita entenderlo. Se apagan solas en
   // cuanto entra el primer mensaje de verdad; no tocan la base.
-  const enEjemplo = !cargando && !error && mensajes.length === 0 && !ocultarEjemplo;
+  const enEjemplo = !cargando && !error && mensajes.length === 0 && !ejemplosOcultos;
   const conversaciones = useMemo(
     () => agruparEnConversaciones(enEjemplo ? mensajesEjemplo() : mensajes),
     [enEjemplo, mensajes],
@@ -158,12 +161,17 @@ export default function WhatsAppCRM() {
 
           {/* Dos cosas que conviene saber ANTES de migrar el numero, porque
               despues cuestan caro. La segunda no tiene vuelta atras facil. */}
-          <div style={{ background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 12,
-            padding: "13px 16px", fontSize: 12, color: "#78350f", lineHeight: 1.6, marginBottom: 14 }}>
-            <div style={{ fontWeight: 700, color: "#451a03", marginBottom: 6 }}>
-              Dos cosas antes de dar el paso
-            </div>
-            <div style={{ marginBottom: 7 }}>
+          {/* Va plegado. Es importante, pero son dos parrafos largos que solo
+              hacen falta el dia que se decide migrar el numero: abiertos,
+              empujaban la lista fuera de la pantalla y lo primero que veia
+              quien entraba era un muro de texto. */}
+          <details style={{ background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 12,
+            padding: "11px 16px", fontSize: 12, color: "#78350f", lineHeight: 1.6, marginBottom: 14 }}>
+            <summary style={{ fontWeight: 700, color: "#451a03", cursor: "pointer",
+              listStyle: "revert" }}>
+              Dos cosas que conviene saber antes de conectar el número
+            </summary>
+            <div style={{ margin: "9px 0 7px" }}>
               <strong>Los chats que ya existen no se van a subir.</strong> WhatsApp solo entrega los
               mensajes que llegan a partir del momento en que se conecta; el historial anterior no se
               puede descargar. Aquí vas a ver las conversaciones nuevas, desde cero.
@@ -176,33 +184,8 @@ export default function WhatsAppCRM() {
               el sistema. Por eso suele convenir conectar un número nuevo y dejar el de siempre para
               el trato directo.
             </div>
-          </div>
+          </details>
         </>
-      )}
-
-      {/* El cartel del ejemplo. Va pegado encima de la lista y no se puede
-          confundir con un aviso del sistema: si alguien creyera que son
-          clientes de verdad, llamaria a cuatro telefonos inventados. */}
-      {enEjemplo && (
-        <div style={{ background: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: 12,
-          padding: "12px 15px", marginBottom: 14, display: "flex", alignItems: "flex-start",
-          gap: 12, flexWrap: "wrap" }}>
-          <div style={{ flex: 1, minWidth: 240, fontSize: 12, color: "#3730a3", lineHeight: 1.6 }}>
-            <div style={{ fontWeight: 700, color: "#312e81", marginBottom: 4 }}>
-              Esto es un ejemplo, no son clientes reales
-            </div>
-            Así se va a ver la pantalla cuando el número esté conectado. Ábrelas para leer la
-            conversación completa: el sistema contesta solo, pide los datos que faltan y de ahí sale
-            la cotización. <strong>Desaparecen solas</strong> en cuanto entre el primer mensaje de
-            verdad.
-          </div>
-          <button
-            onClick={() => setOcultarEjemplo(true)}
-            style={{ background: "#fff", color: "#4338ca", border: "1px solid #c7d2fe",
-              borderRadius: 9, padding: "7px 14px", fontSize: 12, fontWeight: 700,
-              cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
-          >Ocultar el ejemplo</button>
-        </div>
       )}
 
       {sinAtender > 0 && (

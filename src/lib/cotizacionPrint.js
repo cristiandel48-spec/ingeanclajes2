@@ -605,6 +605,9 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
           </div>
           <div class="cover-foot">
             <span>Documento confidencial &middot; Uso exclusivo del destinatario</span>
+            ${sello
+              ? `<span class="cover-sello"><b>${escapeHtml(sello.codigo)}</b>${sello.linea ? ` &middot; ${escapeHtml(sello.linea)}` : ""}</span>`
+              : ""}
             <span>${escapeHtml(encabezadoFecha)}</span>
           </div>
         </div>
@@ -1004,7 +1007,12 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       .cover-client-grid { display:inline-grid; grid-template-columns:repeat(2,auto); gap:4mm 14mm; text-align:left; }
       .ccg-k { font-size: var(--texto); letter-spacing:.08em; text-transform:uppercase; color:#777; margin-bottom:.8mm; }
       .ccg-v { font-size: var(--titulo); font-weight:700; color:#1E1E1E; line-height:1.3; }
-      .cover-foot { margin-top:12mm; padding-top:4mm; border-top:1px solid #DDD; display:flex; justify-content:space-between; font-size: var(--texto); color:#777; }
+      .cover-foot { margin-top:12mm; padding-top:4mm; border-top:1px solid #DDD; display:flex; justify-content:space-between; align-items:center; gap:6mm; font-size: var(--texto); color:#777; }
+      /* El codigo del formato en la portada. Discreto y en el centro del
+         pie: es lo primero que se mira en una auditoria, pero no es lo que
+         el cliente tiene que leer. */
+      .cover-sello { font-family:Consolas,"Courier New",monospace; font-size:calc(var(--texto) * .95); color:#8A8A8A; white-space:nowrap; }
+      .cover-sello b { color:#4A4A4A; font-weight:700; }
 
       .def-list { border-top:1px solid #DDD; max-width:170mm; margin:0 auto; }
       .def-row { display:grid; grid-template-columns:44mm 1fr; gap:7mm; padding:4.5mm 0; border-bottom:1px solid #DDD; }

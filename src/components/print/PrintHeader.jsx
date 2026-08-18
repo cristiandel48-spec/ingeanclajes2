@@ -31,13 +31,18 @@ export default function PrintHeader({ dual, formato, empresaConfig }) {
 
       {/* El cuadro de control documental. Va con borde y en la esquina, que es
           donde lo busca quien audita. */}
+      {/* Ocupa todo el alto del encabezado, con las dos filas repartidas: asi
+          queda a ras de la linea roja y se lee como una celda del formato, no
+          como una etiqueta pegada encima. */}
       {sello && (
         <div style={{border:"1px solid #333",marginLeft:12,width:150,flexShrink:0,
-          display:"flex",flexDirection:"column",alignSelf:"center"}}>
+          display:"flex",flexDirection:"column",alignSelf:"stretch"}}>
           <div style={{borderBottom:"1px solid #333",padding:"4px 6px",textAlign:"center",
-            fontSize:8,color:"#333",lineHeight:1.3}}>{sello.linea}</div>
+            fontSize:8,color:"#333",lineHeight:1.3,flex:1,
+            display:"flex",alignItems:"center",justifyContent:"center"}}>{sello.linea}</div>
           <div style={{padding:"4px 6px",textAlign:"center",fontSize:8.5,fontWeight:700,
-            letterSpacing:.3,fontFamily:"Consolas, monospace",color:"#111"}}>{sello.codigo}</div>
+            letterSpacing:.3,fontFamily:"Consolas, monospace",color:"#111",flex:1,
+            display:"flex",alignItems:"center",justifyContent:"center"}}>{sello.codigo}</div>
         </div>
       )}
     </div>

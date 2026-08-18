@@ -3,7 +3,7 @@ import H1 from "../../components/ui/H1";
 import { calcularVencimientos } from "../../lib/vencimientos";
 import ListaVencimientos from "./ListaVencimientos";
 import LBL from "../../components/ui/LBL";
-import { RECERT_ELEMENTOS_DEFAULT } from "../Certificaciones/certConfig";
+import { RECERT_ELEMENTOS_DEFAULT, unAnoDespues } from "../Certificaciones/certConfig";
 import { useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmtD, today } from "../../lib/format";
@@ -32,7 +32,9 @@ export default function Vencimientos({ctx}){
       normativa: c.normativa||"Resolución 4272 de 2021",
       ingeniero: c.ingeniero||"ING. JHON JAIME SEPULVEDA LONDOÑO",
       matricula: c.matricula||"MP. 05256-409949",
-      proxMant: "",
+      // Propuesto a un año, igual que en una certificacion nueva. Nacia vacio
+      // y ademas bloqueaba el boton de guardar hasta que alguien lo llenara.
+      proxMant: unAnoDespues(today()),
       elementos: [...RECERT_ELEMENTOS_DEFAULT],
       certOrigenId: c.id,
     });

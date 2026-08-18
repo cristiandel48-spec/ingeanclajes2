@@ -200,9 +200,33 @@ export const construirTextoSistema = ({
     "en trabajo en altura.";
 };
 
+/**
+ * Un año justo despues de la fecha dada, en formato YYYY-MM-DD.
+ *
+ * Es la fecha del proximo mantenimiento, y no se la inventa nadie: el propio
+ * certificado dice que debe hacerse «maximo dentro de un año contado a partir
+ * de la expedicion del presente documento». Aqui solo se escribe en el campo
+ * lo que el documento ya promete.
+ *
+ * El 29 de febrero se echa un dia atras -al 28- en vez de pasarse al 1 de
+ * marzo: el documento dice MAXIMO un año, no un año y un dia.
+ */
+export const unAnoDespues = (fecha)=>{
+  const texto = String(fecha || "").trim();
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(texto)) return "";
+  const [ano,mes,dia] = texto.split("-").map(Number);
+  const destino = new Date(ano+1, mes-1, dia, 12);
+  // Si el dia se desbordo de mes -del 29/02 al 01/03- se retrocede al ultimo
+  // dia que si existe.
+  if(destino.getMonth() !== mes-1) destino.setDate(0);
+  const dos = (n)=>String(n).padStart(2,"0");
+  return `${destino.getFullYear()}-${dos(destino.getMonth()+1)}-${dos(destino.getDate())}`;
+};
+
 export const buildCertForm = (overrides={})=>{
   const tipo = overrides.tipo || "Certificación";
   const tipoSistema = overrides.tipoSistema || "";
+  const fecha = overrides.fecha || today();
   return {
     // Antes venia fijo en "OB-001": si esa obra no existia, el desplegable
     // mostraba otra pero se guardaba un id inexistente, y el cliente y la
@@ -213,7 +237,7 @@ export const buildCertForm = (overrides={})=>{
     tipo,
     tipoSistema,
     numero: "",
-    fecha: today(),
+    fecha,
     cliente: "",
     nit: "",
     direccion: "",
@@ -226,7 +250,14 @@ export const buildCertForm = (overrides={})=>{
     normativa: "Resolución 4272 de 2021",
     ingeniero: "ING. JHON JAIME SEPULVEDA LONDOÑO",
     matricula: "MP. 05256-409949",
-    proxMant: "",
+    // Este campo es el que alimenta las alertas de Vencimientos y del
+    // Dashboard. Nacia vacio y habia que acordarse de llenarlo: el que se
+    // olvidaba dejaba el certificado invisible, y la recertificacion del año
+    // siguiente se perdia sin que nadie se enterara. Ahora viene propuesto.
+    proxMant: unAnoDespues(fecha),
+    // Mientras nadie lo toque a mano se rehace al cambiar la fecha, igual que
+    // el parrafo del sistema con `sistemaAuto`.
+    proxMantAuto: true,
     elementos: getCertDefaultElements(tipo, tipoSistema, overrides.elementos),
     ...overrides,
   };

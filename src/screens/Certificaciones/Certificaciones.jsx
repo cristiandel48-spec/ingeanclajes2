@@ -5,7 +5,7 @@ import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
 import { useEffect, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
-import { buildCertForm, construirTextoSistema, getCertDefaultElements } from "./certConfig";
+import { buildCertForm, construirTextoSistema, getCertDefaultElements, unAnoDespues } from "./certConfig";
 import { fmt, fmtD, fmtL } from "../../lib/format";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { getEstadoFlujoObra } from "../../lib/flujoObra";
@@ -63,6 +63,9 @@ export default function Certificaciones({ctx}){
   const [sel,setSel]=useState(null);
   // Obra que llega desde el detalle de obra ("Crear certificación").
   const obraSolicitada = intencion?.pantalla==="certificaciones" ? intencion.obraId : null;
+  // Al llegar desde el boton «Certificar» de un informe viene tambien de cual,
+  // para no tener que elegirlo a mano cuando la obra tiene varios.
+  const informeSolicitado = intencion?.pantalla==="certificaciones" ? (intencion.informeId || "") : "";
   const obraInicial = obras.find((x)=>x.id===obraSolicitada) || obras[0] || null;
   // El NIT no se escribe a mano: ya esta en algun lado del sistema. Se busca
   // en la propia obra, luego en la ficha del cliente y por ultimo en la
@@ -105,7 +108,7 @@ export default function Certificaciones({ctx}){
   const [editId,setEditId]=useState(null);
   const [form,setForm]=useState(()=>{
     // La fecha del informe TAMBIEN al montar, no solo al elegir obra a mano.
-    const fechaObra = fechaDesdeInformes(ctx.informes, obraInicial?.id);
+    const fechaObra = fechaDesdeInformes(ctx.informes, obraInicial?.id, informeSolicitado);
     return buildCertForm({
       elementos:getCertDefaultElements("Certificación"),
       obraId: obraInicial?.id || "",
@@ -128,7 +131,7 @@ export default function Certificaciones({ctx}){
     (informes||[]).filter((inf)=>inf?.obraId===obraId);
 
   // El informe elegido en el formulario, si hay mas de uno.
-  const [informeRef,setInformeRef]=useState("");
+  const [informeRef,setInformeRef]=useState(informeSolicitado);
 
   const proyectoDeObra = (obraId)=>
     proyectoDesdeInformes(informes, obraId, informeRef)
@@ -179,6 +182,12 @@ export default function Certificaciones({ctx}){
             || actividadesDesdeInformes(informes, siguiente.obraId, refInforme),
         });
         if(texto) siguiente.sistema=texto;
+      }
+      // El proximo mantenimiento va pegado a la fecha del certificado -un año
+      // justo, que es lo que promete el documento- mientras nadie lo haya
+      // escrito a mano.
+      if(patch.fecha!==undefined && siguiente.proxMantAuto!==false){
+        siguiente.proxMant=unAnoDespues(siguiente.fecha);
       }
       return siguiente;
     });
@@ -410,7 +419,19 @@ export default function Certificaciones({ctx}){
             }} style={SI}/></div>
             <div><LBL>NIT</LBL><input value={form.nit} onChange={e=>setForm({...form,nit:e.target.value})} style={SI}/></div>
             <div style={{gridColumn:"span 2"}}><LBL>Dirección del cliente</LBL><input value={form.direccion} onChange={e=>aplicarCambio({direccion:e.target.value})} style={SI}/></div>
-            <div><LBL>Próximo mantenimiento</LBL><input type="date" value={form.proxMant} onChange={e=>setForm({...form,proxMant:e.target.value})} style={SI}/></div>
+            <div>
+              <LBL>Próximo mantenimiento</LBL>
+              {/* Al escribirlo a mano deja de seguir a la fecha. */}
+              <input type="date" value={form.proxMant}
+                onChange={e=>setForm({...form,proxMant:e.target.value,proxMantAuto:false})} style={SI}/>
+              <div style={{fontSize:10,color:form.proxMant?"#166534":"#b45309",marginTop:3,lineHeight:1.4}}>
+                {form.proxMant
+                  ? (form.proxMantAuto!==false
+                      ? "Propuesto a un año de la fecha, como dice el documento. Cámbialo si aplica otro plazo."
+                      : "Fecha puesta a mano.")
+                  : "Sin esta fecha la certificación no aparece en Vencimientos ni en las alertas."}
+              </div>
+            </div>
           </div>
           {/* El sitio concreto dentro del edificio. Se escribe aqui porque no
               esta en ningun otro documento: se intento sacarlo de las

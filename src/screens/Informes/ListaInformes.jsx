@@ -69,6 +69,11 @@ function Fila({ inf, compacta, acciones }) {
     <>
       <button style={boton("#dbeafe", "#1e40af")} onClick={alPulsar(acciones.ver)}>Ver</button>
       <button style={boton("#1a3050", "#f5c842")} onClick={alPulsar(acciones.editar)}>Editar</button>
+      {acciones.certificar && (
+        <button style={boton("#0f2d1a", "#4ade80", { border: "1px solid #166534" })}
+          title="Abre la certificación de esta obra con los datos de este informe"
+          onClick={alPulsar(acciones.certificar)}>Certificar</button>
+      )}
     </>
   );
 

@@ -729,6 +729,11 @@ export default function Informes({ctx}){
           acciones={{
             ver: (inf)=>setSel(inf),
             editar: (inf)=>editarInforme(inf),
+            // El puente informe -> certificacion ya existia, pero habia que
+            // salir a Certificaciones y buscar la obra a mano. Se pasa tambien
+            // CUAL informe, que es lo que decide el proyecto y el detalle
+            // cuando la obra tiene varios -una sede por informe-.
+            certificar: (inf)=>irAPantalla("certificaciones",{obraId:inf.obraId,informeId:inf.id}),
           }}
         />
       )}

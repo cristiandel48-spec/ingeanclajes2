@@ -9,7 +9,8 @@ import { useAccionesPantalla } from "../../context/accionesPantalla";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { today } from "../../lib/format";
 import { getQuoteApprovalAccountingSnapshot } from "../../lib/cotizaciones";
-import { ESTADOS_OBRA, estadoSegunAvance } from "../../lib/flujoObra";
+import { ESTADOS_OBRA, estadoSegunAvance, obraEstaCerrada } from "../../lib/flujoObra";
+import { esAdmin } from "../../lib/permisos";
 import ListaObras from "./ListaObras";
 import { avisoCelular, normalizarMayusculas, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
 
@@ -24,7 +25,10 @@ const siguienteIdObra = (obras) => {
   return "OB-" + String(mayor + 1).padStart(3, "0");
 };
 export default function Obras({ctx}){
-  const {obras,setObras,cotizaciones,intencion,limpiarIntencion}=ctx;
+  const {obras,setObras,cotizaciones,intencion,limpiarIntencion,membresia}=ctx;
+  // Una obra entregada la reabre solo un administrador. Aqui se decide una
+  // vez y baja a la lista y al detalle.
+  const puedeDesbloquear = esAdmin(membresia);
   // Se puede llegar aqui desde otra pantalla pidiendo una obra concreta, por
   // ejemplo desde el aviso de "esta obra no esta lista para certificar".
   const obraSolicitada = intencion?.pantalla==="obras" ? intencion.obraId : null;
@@ -38,12 +42,19 @@ export default function Obras({ctx}){
   // dejaba mal desde el primer dia.
   const [nob,setNob]=useState({cliente:"",tel:"",proyecto:"",ciudad:"",direccion:"",fechaInicio:today(),fechaFin:"",estado:"En Obra",avance:0,cotizacionId:""});
 
+  // Las dos comprueban el bloqueo aunque la pantalla ya lo esconda: la funcion
+  // se puede seguir llamando desde otro sitio, y el dato es el mismo.
   const updAv=(id,v)=>setObras(p=>p.map((o)=>{
     if(o.id!==id) return o;
+    if(obraEstaCerrada(o) && !puedeDesbloquear) return o;
     const avance=Math.min(100,Math.max(0,v));
     return {...o,avance,estado:estadoSegunAvance(avance,o.estado)};
   }));
-  const updEst=(id,e)=>setObras(p=>p.map(o=>o.id===id?{...o,estado:e}:o));
+  const updEst=(id,e)=>setObras(p=>p.map((o)=>{
+    if(o.id!==id) return o;
+    if(obraEstaCerrada(o) && !puedeDesbloquear) return o;
+    return {...o,estado:e};
+  }));
 
   const guardarObra=()=>{
     if(!nob.cliente.trim()){
@@ -193,6 +204,7 @@ export default function Obras({ctx}){
         onAbrir={setSel}
         onCambiarAvance={updAv}
         onCambiarEstado={updEst}
+        puedeDesbloquear={puedeDesbloquear}
       />
     </div>
   );

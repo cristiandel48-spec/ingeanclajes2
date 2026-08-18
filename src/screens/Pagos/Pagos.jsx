@@ -53,11 +53,14 @@ export default function Pagos({ctx}){
       const totalActual = Number(obra.total || 0);
       const nuevoPagado = pagadoActual + montoAbono;
       const nuevoSaldo = Math.max(0, totalActual - nuevoPagado);
+      // El estado NO se toca: dice como va el trabajo, no la plata. Antes se
+      // escribia "Pagado" encima y una obra en curso pagada por adelantado
+      // desaparecia de las obras activas. Como va el cobro se deduce del
+      // saldo con estadoCobroDe().
       return {
         ...obra,
         pagado:nuevoPagado,
         saldo:nuevoSaldo,
-        estado:nuevoSaldo>0 ? obra.estado : "Pagado",
       };
     }));
   };
@@ -74,12 +77,13 @@ export default function Pagos({ctx}){
       // restar a ciegas dejaria un "pagado" negativo.
       const nuevoPagado = Math.max(0, Number(obra.pagado || 0) - montoAbono);
       const nuevoSaldo = Math.max(0, totalActual - nuevoPagado);
+      // Tampoco aqui se toca el estado. Antes, al borrar un abono, la obra se
+      // devolvia a "En Obra" aunque el trabajo estuviera entregado: se perdia
+      // el avance real por un movimiento de plata.
       return {
         ...obra,
         pagado:nuevoPagado,
         saldo:nuevoSaldo,
-        // Si vuelve a quedar saldo, la obra deja de estar pagada.
-        estado:nuevoSaldo>0 && obra.estado==="Pagado" ? "En Obra" : obra.estado,
       };
     }));
   };

@@ -12,7 +12,7 @@ import ListadoConFiltros, { GrupoFiltro, Pastilla, Resaltable } from "../../comp
 import { C, enMilis } from "../../components/listadoEstilos";
 import Badge from "../../components/ui/Badge";
 import { SI } from "../../styles/tokens";
-import { ESTADOS_OBRA } from "../../lib/flujoObra";
+import { ESTADOS_OBRA, estadoCobroDe, estadoObraDe, obraEstaCerrada } from "../../lib/flujoObra";
 import { resumenBitacora } from "../../lib/bitacoraObra";
 import { fmtD } from "../../lib/format";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
@@ -32,7 +32,7 @@ const ORDENES = [
   { key: "cliente",     label: "Cliente A–Z",   comparar: (a, b) => String(a.cliente || "").localeCompare(String(b.cliente || ""), "es") },
 ];
 
-export default function ListaObras({ obras, cotizaciones, onAbrir, onCambiarAvance, onCambiarEstado }) {
+export default function ListaObras({ obras, cotizaciones, onAbrir, onCambiarAvance, onCambiarEstado, puedeDesbloquear }) {
   // Las fotos se cuentan una vez por obra y no en cada filtro.
   const fotosPorObra = useMemo(() => {
     const mapa = new Map();
@@ -47,7 +47,7 @@ export default function ListaObras({ obras, cotizaciones, onAbrir, onCambiarAvan
       nombrePlural="obras"
       marcador="Buscar por cliente, proyecto, número de obra, ciudad o cotización…"
       buscarEn={(o) => [o.cliente, o.id, o.proyecto, o.ciudad, o.direccion, o.cotizacionId].filter(Boolean).join(" ")}
-      estadoDe={(o) => o.estado}
+      estadoDe={(o) => estadoObraDe(o)}
       estadosFijos={ESTADOS_OBRA}
       fechaDe={(o) => o.fechaInicio}
       ordenes={ORDENES}
@@ -95,7 +95,8 @@ export default function ListaObras({ obras, cotizaciones, onAbrir, onCambiarAvan
           resumen={fotosPorObra.get(o.id)}
           onAbrir={() => onAbrir(o)}
           onCambiarAvance={onCambiarAvance}
-          onCambiarEstado={onCambiarEstado} />
+          onCambiarEstado={onCambiarEstado}
+          puedeDesbloquear={puedeDesbloquear} />
       )}
       vacio={{
         titulo: "Todavía no hay obras",
@@ -105,7 +106,7 @@ export default function ListaObras({ obras, cotizaciones, onAbrir, onCambiarAvan
   );
 }
 
-function Fila({ o, compacta, cotizacion, resumen, onAbrir, onCambiarAvance, onCambiarEstado }) {
+function Fila({ o, compacta, cotizacion, resumen, onAbrir, onCambiarAvance, onCambiarEstado, puedeDesbloquear }) {
   const avance = Number(o.avance) || 0;
   const color = avance === 100 ? "#4ade80" : C.acento;
   const fotos = resumen?.fotos || 0;
@@ -117,13 +118,44 @@ function Fila({ o, compacta, cotizacion, resumen, onAbrir, onCambiarAvance, onCa
     && proyecto.replace(/[.\s]/g, "").toUpperCase() === cliente.replace(/[.\s]/g, "").toUpperCase();
   const debajo = [repetido ? "" : proyecto, o.ciudad].filter(Boolean).join(" · ");
 
-  const selectorEstado = (
-    <select value={o.estado}
+  // Una obra entregada no se sigue tocando: los informes y los certificados
+  // que salieron de ella dicen lo que decia la obra ese dia.
+  const bloqueada = obraEstaCerrada(o) && !puedeDesbloquear;
+
+  const selectorEstado = bloqueada ? (
+    <span
+      title="Obra finalizada: no se puede cambiar. Solo un administrador puede reabrirla."
+      onClick={(e) => e.stopPropagation()}
+      style={{ fontSize: 11, fontWeight: 700, color: "#166534", background: "#ecfdf5",
+        border: "1px solid #a7f3d0", borderRadius: 7, padding: "4px 9px",
+        minWidth: 108, display: "inline-flex", alignItems: "center", gap: 5,
+        justifyContent: "center", whiteSpace: "nowrap" }}>
+      🔒 Finalizado
+    </span>
+  ) : (
+    <select value={estadoObraDe(o)}
       onChange={(e) => { e.stopPropagation(); onCambiarEstado(o.id, e.target.value); }}
       onClick={(e) => e.stopPropagation()}
       style={{ ...SI, fontSize: 11, padding: "4px 7px", width: "auto", minWidth: 108 }}>
-      {[...new Set([...ESTADOS_OBRA, o.estado].filter(Boolean))].map((s) => <option key={s}>{s}</option>)}
+      {ESTADOS_OBRA.map((s) => <option key={s}>{s}</option>)}
     </select>
+  );
+
+  // Como va la plata, aparte del trabajo. Sale del saldo, no de una columna:
+  // asi no puede contradecir a los abonos registrados.
+  const cobro = estadoCobroDe(o);
+  const COLOR_COBRO = {
+    "Cobrado":    { texto: "#166534", fondo: "#ecfdf5", borde: "#a7f3d0" },
+    "Abonado":    { texto: "#b45309", fondo: "#fffbeb", borde: "#fcd34d" },
+    "Sin cobrar": { texto: "#64748b", fondo: "#f8fafc", borde: "#e2e8f0" },
+  };
+  const insigniaCobro = cobro && (
+    <span title={`Cobro: ${cobro.toLowerCase()}`}
+      style={{ fontSize: 10, fontWeight: 700, whiteSpace: "nowrap",
+        color: COLOR_COBRO[cobro].texto, background: COLOR_COBRO[cobro].fondo,
+        border: `1px solid ${COLOR_COBRO[cobro].borde}`, borderRadius: 20, padding: "2px 8px" }}>
+      {cobro}
+    </span>
   );
 
   const contadores = (
@@ -169,13 +201,18 @@ function Fila({ o, compacta, cotizacion, resumen, onAbrir, onCambiarAvance, onCa
             <span style={{ color: avance === 100 ? "#166534" : C.acento, fontWeight: 700,
               fontVariantNumeric: "tabular-nums" }}>{avance}%</span>
           </div>
-          <input type="range" min={0} max={100} value={avance}
+          {/* Mover la barra en una obra cerrada la reabriria: el avance y el
+              estado van pegados por estadoSegunAvance(). */}
+          <input type="range" min={0} max={100} value={avance} disabled={bloqueada}
+            title={bloqueada ? "Obra finalizada: el avance ya no se cambia." : undefined}
             onChange={(e) => onCambiarAvance(o.id, Number(e.target.value))}
-            style={{ width: "100%", accentColor: C.acento, display: "block", margin: 0 }} />
+            style={{ width: "100%", accentColor: C.acento, display: "block", margin: 0,
+              opacity: bloqueada ? 0.5 : 1, cursor: bloqueada ? "not-allowed" : "pointer" }} />
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           {contadores}
+          {insigniaCobro}
           {selectorEstado}
           <span style={{ fontSize: 11, color: C.acentoFuerte, fontWeight: 600 }}>Ver →</span>
         </div>
@@ -208,14 +245,17 @@ function Fila({ o, compacta, cotizacion, resumen, onAbrir, onCambiarAvance, onCa
           <div style={{ width: avance + "%", height: "100%", background: color, borderRadius: 3,
             transition: "width .4s ease" }} />
         </div>
-        <input type="range" min={0} max={100} value={avance}
+        <input type="range" min={0} max={100} value={avance} disabled={bloqueada}
+          title={bloqueada ? "Obra finalizada: el avance ya no se cambia." : undefined}
           onChange={(e) => onCambiarAvance(o.id, Number(e.target.value))}
           onClick={(e) => e.stopPropagation()}
-          style={{ width: "100%", marginTop: 4, accentColor: C.acento }} />
+          style={{ width: "100%", marginTop: 4, accentColor: C.acento,
+            opacity: bloqueada ? 0.5 : 1, cursor: bloqueada ? "not-allowed" : "pointer" }} />
       </div>
 
       <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
         <div style={{ flex: 1 }} onClick={(e) => e.stopPropagation()}>{selectorEstado}</div>
+        {insigniaCobro}
         {contadores}
         <span style={{ fontSize: 11, color: C.acentoFuerte, fontWeight: 600, flexShrink: 0 }}>Ver →</span>
       </div>

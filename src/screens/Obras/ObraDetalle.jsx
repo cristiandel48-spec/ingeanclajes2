@@ -9,14 +9,16 @@ import { B, CD, PAL, SI, ST } from "../../styles/tokens";
 import GuiaFlujoObra from "./GuiaFlujoObra";
 import { fmt, fmtD, today } from "../../lib/format";
 import { resumenBitacora } from "../../lib/bitacoraObra";
-import { estadoSegunAvance } from "../../lib/flujoObra";
-import { puedeCrearPersonal, puedeVerDinero } from "../../lib/permisos";
+import { estadoSegunAvance, obraEstaCerrada } from "../../lib/flujoObra";
+import { esAdmin, puedeCrearPersonal, puedeVerDinero } from "../../lib/permisos";
 import { siguienteIdUnico } from "../../lib/identificadores";
 export default function ObraDetalle({obraId,ctx,onVolver}){
   const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,horarios,irAPantalla,membresia}=ctx;
   // Las cifras de la obra son confidenciales: quien organiza el trabajo no ve
   // cuanto se cobro ni el jornal de sus companeros.
   const verDinero=puedeVerDinero(membresia);
+  // Obra entregada: se consulta, no se edita. La reabre un administrador.
+  const bloqueada = obraEstaCerrada(obras.find((o)=>o.id===obraId)) && !esAdmin(membresia);
   const [detTab,setDetTab]=useState("avance");
   const [nuevoEmp,setNuevoEmp]=useState(false);
   const [gastoForm,setGastoForm]=useState({proveedorId:"PROV-001",concepto:"",monto:0,fecha:today(),fechaVence:"",factura:""});
@@ -87,12 +89,22 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
         <div style={{height:10,background:"#f1f5f9",borderRadius:5,marginBottom:8}}>
           <div style={{width:(oAct.avance) + "%",height:"100%",background:oAct.avance===100?"#4ade80":"#f47c20",borderRadius:5,transition:"width 0.3s"}}/>
         </div>
-        <input type="range" min={0} max={100} value={oAct.avance}
+        <input type="range" min={0} max={100} value={oAct.avance} disabled={bloqueada}
+          title={bloqueada?"Obra finalizada: el avance ya no se cambia.":undefined}
           onChange={e=>{
             const avance=Number(e.target.value);
             setObras(p=>p.map(o=>o.id===obraId?{...o,avance,estado:estadoSegunAvance(avance,o.estado)}:o));
           }}
-          style={{width:"100%",accentColor:"#f47c20"}}/>
+          style={{width:"100%",accentColor:"#f47c20",
+            opacity:bloqueada?0.5:1,cursor:bloqueada?"not-allowed":"pointer"}}/>
+        {bloqueada&&(
+          <div style={{fontSize:11,color:"#166534",background:"#ecfdf5",border:"1px solid #a7f3d0",
+            borderRadius:8,padding:"7px 11px",marginTop:8,lineHeight:1.5}}>
+            🔒 <strong>Obra finalizada.</strong> Los informes y certificados ya emitidos se apoyan en
+            estos datos, así que no se modifican. Si hay que corregir algo, un administrador puede
+            reabrirla. El registro de pagos sí sigue disponible.
+          </div>
+        )}
       </div>
 
       {/* Tabs */}

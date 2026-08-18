@@ -13,6 +13,9 @@ export const ICONS = {
   cotizacion: ico(<><path d="M6 2h8l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="14" y2="17"/></>),
   clientes: ico(<><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17" cy="8" r="2.6"/><path d="M17.5 14.6c2.4.4 3.9 2.2 3.9 5.4"/></>),
   obras: ico(<><rect x="4" y="3" width="10" height="18" rx="1.5"/><rect x="14" y="9" width="6" height="12" rx="1.5"/><line x1="7" y1="7" x2="7" y2="7.01"/><line x1="11" y1="7" x2="11" y2="7.01"/><line x1="7" y1="11" x2="7" y2="11.01"/><line x1="11" y1="11" x2="11" y2="11.01"/></>),
+  // La burbuja de WhatsApp, dibujada con el mismo trazo que las demas para que
+  // no desentone: el logotipo oficial es macizo y aqui todos son de linea.
+  whatsapp: ico(<><path d="M3.5 20.5l1.3-4.4A8.2 8.2 0 1 1 8 19.3l-4.5 1.2z"/><path d="M9 9.2c.2 1 .7 2 1.4 2.8.8.8 1.7 1.3 2.7 1.6l.9-1.1c.2-.2.4-.2.6-.1l1.7.8c.2.1.3.3.3.5-.1.9-.9 1.6-1.8 1.5a7.7 7.7 0 0 1-6.8-6.8c-.1-.9.6-1.7 1.5-1.8.2 0 .4.1.5.3l.8 1.7c.1.2.1.4-.1.6z"/></>),
   pagos: ico(<><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18"/><circle cx="16.5" cy="14.5" r="1.2"/></>),
   certificaciones: ico(<><path d="M12 3l7 3v6c0 4.5-3 7.7-7 9-4-1.3-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></>),
   vencimientos: ico(<><circle cx="12" cy="13" r="7.5"/><path d="M12 9v4l2.5 2.5"/><path d="M5 3 2.5 5.5"/><path d="M19 3l2.5 2.5"/></>),

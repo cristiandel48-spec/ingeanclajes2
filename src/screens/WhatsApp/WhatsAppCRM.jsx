@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AvisoFlujo from "../../components/AvisoFlujo";
-import H1 from "../../components/ui/H1";
+import { useAccionesPantalla } from "../../context/accionesPantalla";
 import ListaConversaciones from "./ListaConversaciones";
 import HiloConversacion from "./HiloConversacion";
-import { B } from "../../styles/tokens";
 import { getSupabaseClient, isSupabaseConfigured } from "../../lib/backend/supabaseClient";
 import { agruparEnConversaciones } from "../../lib/whatsappCrm";
 
@@ -57,6 +56,23 @@ export default function WhatsAppCRM() {
 
   useEffect(() => { cargar(); }, [cargar]);
 
+  // El boton vive en la barra superior, no dentro de la pantalla.
+  useAccionesPantalla(
+    abierta ? null : (
+      <button
+        style={{
+          background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0",
+          borderRadius: 9, padding: "8px 16px", fontSize: 12.5, fontWeight: 700,
+          cursor: cargando ? "default" : "pointer", fontFamily: "inherit",
+          whiteSpace: "nowrap", opacity: cargando ? 0.6 : 1,
+        }}
+        onClick={cargar}
+        disabled={cargando}
+      >{cargando ? "Cargando…" : "Actualizar"}</button>
+    ),
+    [cargando, abierta, cargar]
+  );
+
   const conversaciones = useMemo(() => agruparEnConversaciones(mensajes), [mensajes]);
   const hilo = useMemo(
     () => (abierta ? conversaciones.find((c) => c.telefono === abierta) : null),
@@ -71,18 +87,17 @@ export default function WhatsAppCRM() {
 
   return (
     <div style={{ padding: "14px 28px 28px" }}>
-      <H1
-        title="WhatsApp"
-        subtitle={config
-          ? `Número ${config.numero_visible || config.phone_number_id} · ${config.activo ? "activo" : "apagado"} · modo ${config.modo}`
-          : "Mensajes que llegan al WhatsApp de la empresa"}
-        action={
-          <button style={{ ...B("#f1f5f9", "#475569"), fontSize: 12, padding: "8px 14px" }}
-            onClick={cargar} disabled={cargando}>
-            {cargando ? "Cargando…" : "Actualizar"}
-          </button>
-        }
-      />
+      {/* Sin titulo propio: la barra de arriba ya dice «WhatsApp», y repetirlo
+          gastaba una franja entera de pantalla. Igual que en cotizaciones y
+          obras. Lo que si aporta -que numero es y en que modo esta- se pone en
+          una linea fina. */}
+      {config && (
+        <div style={{ fontSize: 11.5, color: "#64748b", marginBottom: 12 }}>
+          Número <strong style={{ color: "#0f172a" }}>{config.numero_visible || config.phone_number_id}</strong>
+          {" · "}{config.activo ? "activo" : "apagado"}
+          {" · "}modo {config.modo}
+        </div>
+      )}
 
       {error && (
         <div style={{ background: "#FEF3F2", border: "1px solid #FECDCA", color: "#B42318",
@@ -92,14 +107,48 @@ export default function WhatsAppCRM() {
       )}
 
       {!error && !config && !cargando && (
-        <AvisoFlujo tono="info" titulo="WhatsApp todavía no está conectado">
-          Cuando se conecte el número, aquí van a aparecer solos los mensajes que le escriban a la
-          empresa, con lo que el sistema respondió a cada uno.
-          <div style={{ marginTop: 5 }}>
-            Falta darlo de alta en Meta, poner los tres secretos en Supabase y registrar el número
-            en la tabla <code>wa_config</code>. Esta pantalla ya funciona: está esperando datos.
+        <>
+          <AvisoFlujo
+            tono="info"
+            titulo="El programa ya está listo. Falta conectar el número en Meta"
+            pasos={[
+              "Crea la cuenta de WhatsApp Business API en Meta (business.facebook.com) y verifica el negocio. Es el paso que más tarda: Meta puede pedir documentos y demorarse días.",
+              "En la app de Meta, apunta el webhook a la función whatsapp-entrada de Supabase y pega el token de verificación que inventaste.",
+              "Guarda en Supabase los tres secretos: WA_VERIFY_TOKEN, WA_APP_SECRET y WA_TOKEN (el permanente del System User, no el de pruebas, que caduca en 24 horas).",
+              "Registra el número en la tabla wa_config con su phone_number_id. Desde ese momento esta pantalla se llena sola.",
+            ]}
+          >
+            Las tablas, la función que recibe los mensajes y esta pantalla ya están funcionando.
+            Lo único que falta es del lado de Meta.
+            <div style={{ marginTop: 7 }}>
+              <strong>Vale la pena el trámite.</strong> Hoy, una solicitud que entra un sábado por la
+              noche espera hasta el lunes. Con esto el cliente recibe respuesta <strong>en segundos y
+              a cualquier hora</strong>, su solicitud queda registrada y el asesor la ve al llegar.
+              El que escribe y no recibe respuesta pronto termina llamando a otro: esto lo evita, y
+              de paso ahorra el tiempo de contestar a mano lo mismo de siempre.
+            </div>
+          </AvisoFlujo>
+
+          {/* Dos cosas que conviene saber ANTES de migrar el numero, porque
+              despues cuestan caro. La segunda no tiene vuelta atras facil. */}
+          <div style={{ background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 12,
+            padding: "13px 16px", fontSize: 12, color: "#78350f", lineHeight: 1.6, marginBottom: 14 }}>
+            <div style={{ fontWeight: 700, color: "#451a03", marginBottom: 6 }}>
+              Dos cosas antes de dar el paso
+            </div>
+            <div style={{ marginBottom: 7 }}>
+              <strong>Los chats que ya existen no se van a subir.</strong> WhatsApp solo entrega los
+              mensajes que llegan a partir del momento en que se conecta; el historial anterior no se
+              puede descargar. Aquí vas a ver las conversaciones nuevas, desde cero.
+            </div>
+            <div>
+              <strong>El número que se conecte deja de funcionar en la aplicación normal de
+              WhatsApp.</strong> Ya no se contesta desde el celular como hasta ahora: todo pasa por
+              el sistema. Por eso suele convenir conectar un número nuevo y dejar el de siempre para
+              el trato directo.
+            </div>
           </div>
-        </AvisoFlujo>
+        </>
       )}
 
       {sinAtender > 0 && (

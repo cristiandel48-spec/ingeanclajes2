@@ -4,7 +4,7 @@ import NuevoEmpleadoRapido from "../../components/NuevoEmpleadoRapido";
 import SelectorEmpleados from "../../components/SelectorEmpleados";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { B, CD, PAL, SI, ST } from "../../styles/tokens";
 import { fmtD, fmtL, today } from "../../lib/format";
 import { abrirWhatsApp, normalizarCelular } from "../../lib/whatsapp";
@@ -50,7 +50,19 @@ export default function Horarios({ctx}){
     turno2Fin:"",
     tarea2:"",
   };
-  const [form,setForm]=useState(FORM_VACIO);
+  const [formEscrito,setForm]=useState(FORM_VACIO);
+  // Si a alguien lo dan de baja -o desaparece la obra- mientras el formulario
+  // esta abierto, sale de la seleccion en vez de guardarse un turno de un id
+  // que ya no existe.
+  //
+  // Se descarta al leer el formulario, no corrigiendo el estado despues: asi no
+  // queda un render intermedio con el id fantasma todavia dentro, que es justo
+  // el que podia alcanzar a guardar quien le diera al boton en ese momento.
+  const form={
+    ...formEscrito,
+    empleadoIds:formEscrito.empleadoIds.filter(id=>empleados.some(e=>e.id===id)),
+    obraId:obras.some(o=>o.id===formEscrito.obraId) ? formEscrito.obraId : firstObraId,
+  };
   // {texto, ok}. Un fallo al abrir WhatsApp salia en verde igual que un envio
   // correcto, asi que se leia como si hubiera salido bien.
   const [notif,setNotif]=useState(null);
@@ -64,16 +76,6 @@ export default function Horarios({ctx}){
   const dia=horarios.filter(h=>h.fecha===fechaF);
   const obraSel=obras.find(o=>o.id===form.obraId);
   const seleccionados=empleados.filter(e=>form.empleadoIds.includes(e.id));
-
-  useEffect(()=>{
-    setForm(prev=>({
-      ...prev,
-      // Si a alguien lo dan de baja mientras el formulario esta abierto, sale
-      // de la seleccion en vez de guardarse un turno de un id que ya no existe.
-      empleadoIds: prev.empleadoIds.filter(id=>empleados.some(e=>e.id===id)),
-      obraId: obras.some(o=>o.id===prev.obraId) ? prev.obraId : firstObraId,
-    }));
-  },[firstObraId,empleados,obras]);
 
   const armarTurno=(inicio,fin)=>{
     if(!inicio || !fin) return "";

@@ -1,5 +1,5 @@
 import LBL from "../ui/LBL";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { B, SI, ST } from "../../styles/tokens";
 import { loadLeafletAssets, parseLatLngValue, measurementTypeLabel } from "../../lib/maps";
 import { distanciaEnMetros } from "../../lib/mapaEstatico";
@@ -41,7 +41,10 @@ export default function MedidorMapa({
   const [capa, setCapa] = useState("satelite");
   const [buscando, setBuscando] = useState(false);
 
-  const tramos = Array.isArray(measurements) ? measurements : [];
+  // La lista vacia se memoriza para que sea siempre la misma: si no, cuando la
+  // propuesta llega sin mediciones, cada render daria un array nuevo y el
+  // efecto que redibuja los tramos se creeria que cambiaron.
+  const tramos = useMemo(() => (Array.isArray(measurements) ? measurements : []), [measurements]);
 
   // Se guarda donde quedo el mapa para que la imagen del documento salga
   // encuadrada igual que en pantalla.
@@ -125,9 +128,20 @@ export default function MedidorMapa({
         }),
       }).addTo(mapa));
     });
-  }, [measurements]);
+  }, [tramos]);
+
+  // Lo ultimo que llego del padre, para que el manejador del clic lo lea al
+  // vuelo sin tener que volver a suscribirse. Ver el efecto de abajo.
+  const ultimoRef = useRef({ tramos, onChange, guardarVista });
+  useEffect(() => { ultimoRef.current = { tramos, onChange, guardarVista }; });
 
   // Modo medicion: dos clics hacen un tramo.
+  //
+  // El manejador se engancha UNA vez por sesion de medicion y no depende de
+  // onChange ni de los tramos: las dos pantallas que usan el medidor escriben
+  // esa funcion dentro del JSX, o sea que llega distinta en cada render. Si el
+  // efecto se rehiciera por eso, su limpieza borraria el primer punto entre
+  // clic y clic y el tramo no se cerraria nunca.
   useEffect(() => {
     const mapa = mapaRef.current, L = LRef.current;
     if (!mapa || !L) return;
@@ -150,15 +164,16 @@ export default function MedidorMapa({
       const a = primerPuntoRef.current;
       const metros = distanciaEnMetros(a, punto);
       limpiarProvisional();
-      onChange([...tramos, {
+      const { tramos: tramosActuales, onChange: emitirTramos, guardarVista: guardarEncuadre } = ultimoRef.current;
+      emitirTramos([...tramosActuales, {
         id: `m${Date.now()}`,
         tipo: "LVH",
-        label: `LÍNEA ${tramos.length + 1}`,
+        label: `LÍNEA ${tramosActuales.length + 1}`,
         ml: Number(metros.toFixed(2)),
         start: a,
         end: punto,
       }]);
-      guardarVista();
+      guardarEncuadre();
     };
 
     if (midiendo) {
@@ -170,7 +185,7 @@ export default function MedidorMapa({
       if (mapa.getContainer()) mapa.getContainer().style.cursor = "";
       limpiarProvisional();
     };
-  }, [midiendo, measurements]);
+  }, [midiendo]);
 
   // Busca una direccion con el buscador libre de OpenStreetMap.
   const buscar = async () => {

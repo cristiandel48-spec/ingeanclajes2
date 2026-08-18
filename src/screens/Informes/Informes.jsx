@@ -4,7 +4,7 @@ import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
 import BotonCorregir from "../../components/ui/BotonCorregir";
 import PrintHeader from "../../components/print/PrintHeader";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmtD, fmtL, today } from "../../lib/format";
 import { printCurrentPz } from "../../lib/print";
@@ -18,6 +18,28 @@ import { siguienteIdUnico } from "../../lib/identificadores";
 import { PLANTILLAS_ACTIVIDAD, buscarPlantillaActividad, esTextoDePlantilla } from "./plantillasActividad";
 import ListaInformes from "./ListaInformes";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
+// Formateo de horas. Vive fuera del componente porque no depende de nada suyo:
+// asi es la misma funcion en cada render y buildPersonalDesdeObra puede
+// memorizarse sin arrastrarla como dependencia.
+const fmtHora12=(hhmm)=>{
+  if(!hhmm||!hhmm.includes(':')) return hhmm||"";
+  const [hs,ms] = hhmm.trim().split(':');
+  const h = Number(hs);
+  if(Number.isNaN(h)) return hhmm;
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  const h12 = ((h + 11) % 12) + 1;
+  return (String(h12).padStart(2,'0')) + ":" + (ms) + " " + (suffix);
+};
+
+const fmtTurno12=(turno)=>{
+  if(!turno) return "";
+  const parts = turno.split('-').map(p=>p.trim()).filter(Boolean);
+  if(parts.length===2 && parts[0].includes(':') && parts[1].includes(':')){
+    return (fmtHora12(parts[0])) + " - " + (fmtHora12(parts[1]));
+  }
+  return turno;
+};
+
 export default function Informes({ctx}){
   const {informes,setInformes,obras,empleados,horarios,intencion,limpiarIntencion,empresaConfig,irAPantalla}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
@@ -37,26 +59,10 @@ export default function Informes({ctx}){
   // lo normal es elegir a alguien registrado, no escribirlo.
   const emptyPersona=()=>({empleadoId:"",cargo:"",nombre:"",turno1:"",turno2:"",manual:false,agregada:true});
 
-  const fmtHora12=(hhmm)=>{
-    if(!hhmm||!hhmm.includes(':')) return hhmm||"";
-    const [hs,ms] = hhmm.trim().split(':');
-    const h = Number(hs);
-    if(Number.isNaN(h)) return hhmm;
-    const suffix = h >= 12 ? 'PM' : 'AM';
-    const h12 = ((h + 11) % 12) + 1;
-    return (String(h12).padStart(2,'0')) + ":" + (ms) + " " + (suffix);
-  };
-
-  const fmtTurno12=(turno)=>{
-    if(!turno) return "";
-    const parts = turno.split('-').map(p=>p.trim()).filter(Boolean);
-    if(parts.length===2 && parts[0].includes(':') && parts[1].includes(':')){
-      return (fmtHora12(parts[0])) + " - " + (fmtHora12(parts[1]));
-    }
-    return turno;
-  };
-
-  const buildPersonalDesdeObra=(obraId,periodoInicio,periodoFin,prevPersonal=[])=>{
+  // Se memoriza porque dos efectos la usan para rellenar el personal: sin esto
+  // seria una funcion distinta en cada render y los efectos no podrian
+  // declararla como dependencia sin volver a correr sin parar.
+  const buildPersonalDesdeObra=useCallback((obraId,periodoInicio,periodoFin,prevPersonal=[])=>{
     const obraSel = obras.find(o=>o.id===obraId);
     const idsObra = obraSel?.empleados || [];
     const horariosObra = horarios.filter(h=>
@@ -91,7 +97,7 @@ export default function Informes({ctx}){
       (p.agregada || (p.manual && !p.empleadoId)) && !yaVinculado.has(p.empleadoId)
     );
     return [...vinculados, ...agregadas];
-  };
+  },[obras,empleados,horarios]);
 
   // Escala tipografica del documento impreso, en pixeles a 96 ppp (1 pt = 1,33
   // px). Son los mismos valores del documento de cotizacion, que es el formato
@@ -226,7 +232,9 @@ export default function Informes({ctx}){
       if(sameProyecto && sameLocal && samePersonal && obraSel.id===prev.obraId) return prev;
       return {...prev,obraId:obraSel.id,proyecto:nextProyecto,localizacion:nextLocal,personal:nextPersonal};
     });
-  },[obras,empleados,horarios]);
+    // buildPersonalDesdeObra ya cambia cuando cambian empleados u horarios, asi
+    // que nombrarla cubre lo mismo que listarlos aqui otra vez.
+  },[obras,buildPersonalDesdeObra]);
 
   useEffect(()=>{
     if(!form.obraId) return;
@@ -239,7 +247,7 @@ export default function Informes({ctx}){
       if(samePersonal && nextProyecto===prev.proyecto && nextLocal===prev.localizacion) return prev;
       return {...prev,proyecto:nextProyecto,localizacion:nextLocal,personal:nextPersonal};
     });
-  },[form.obraId,form.periodoInicio,form.periodoFin,obras,empleados,horarios]);
+  },[form.obraId,form.periodoInicio,form.periodoFin,obras,buildPersonalDesdeObra]);
 
   const updPersonal=(i,f,v)=>setForm(p=>({...p,personal:p.personal.map((x,j)=>j===i?{...x,[f]:v}:x)}));
   const updActividad=(ai,field,val)=>setForm(p=>({...p,actividades:p.actividades.map((a,i)=>i===ai?{...a,[field]:val}:a)}));

@@ -124,7 +124,13 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       </div>
 
       {/* TAB AVANCE Y FOTOS (bitacora que alimenta el informe) */}
-      {detTab==="avance"&&<BitacoraObra obra={oAct} setObras={setObras} bloqueada={bloqueada}/>}
+      {/* Mientras las fotos no hayan llegado no se deja editar: un cambio
+          hecho ahora se perderia al guardar, porque el registro esta a medias. */}
+      {detTab==="avance"&&(
+        <BitacoraObra obra={oAct} setObras={setObras}
+          bloqueada={bloqueada || oAct.__parcial===true}
+          cargandoFotos={oAct.__parcial===true}/>
+      )}
 
       {/* TAB PERSONAL */}
       {detTab==="personal"&&(

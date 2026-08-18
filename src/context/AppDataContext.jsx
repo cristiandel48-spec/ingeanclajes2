@@ -279,8 +279,50 @@ export function AppDataProvider({ children }) {
     empresaConfig,
   ]);
 
+  // Registros cuyo detalle ya se pidio, para no volver a pedirlo cada vez que
+  // se abre la misma pantalla.
+  const detallesPedidos = useRef(new Set());
+
+  /**
+   * Completa un registro con las columnas de imagenes, que la carga inicial no
+   * trae. Se llama al ABRIR un informe, una obra o una cotizacion.
+   *
+   * Si falla no pasa nada grave: se sigue viendo el registro sin las fotos, y
+   * el guardado tiene su propia proteccion para no borrarlas.
+   */
+  // Devuelve el registro completo la primera vez que se pide. Despues devuelve
+  // undefined, que significa «el que tienes ya esta completo»: al mezclarlo en
+  // el estado, lo que llega del listado a partir de entonces ya trae todo.
+  //
+  // Quien vaya a EDITAR debe esperar a esto antes de llenar el formulario. Si
+  // lo llena con un registro sin fotos y despues guarda, las borraria.
+  const asegurarDetalle = useCallback(async (entidad, id) => {
+    if (!id) return undefined;
+    const clave = `${entidad}:${id}`;
+    if (detallesPedidos.current.has(clave)) return undefined;
+    detallesPedidos.current.add(clave);
+
+    const completo = await backend.cargarDetalleNube(entidad, id);
+    if (!completo) {
+      // Se olvida para poder reintentar la proxima vez que se abra.
+      detallesPedidos.current.delete(clave);
+      return undefined;
+    }
+
+    const mezclar = (prev) => (prev || []).map((x) => (
+      x.id === id ? { ...x, ...completo, __parcial: false } : x
+    ));
+
+    if (entidad === "informes") setInformes(mezclar);
+    else if (entidad === "obras") setObras(mezclar);
+    else if (entidad === "cotizaciones") setCotizaciones(mezclar);
+
+    return { ...completo, __parcial: false };
+  }, []);
+
   const value = {
     scr, setScr,
+    asegurarDetalle,
     obras, setObras,
     empleados, setEmpleados,
     cargos, setCargos,

@@ -41,7 +41,7 @@ const fmtTurno12=(turno)=>{
 };
 
 export default function Informes({ctx}){
-  const {informes,setInformes,obras,empleados,horarios,intencion,limpiarIntencion,empresaConfig,irAPantalla}=ctx;
+  const {informes,setInformes,obras,empleados,horarios,intencion,limpiarIntencion,empresaConfig,irAPantalla,asegurarDetalle}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
   const [sel,setSel]=useState(null);
   const [generandoPdf,setGenerandoPdf]=useState(false);
@@ -428,11 +428,15 @@ export default function Informes({ctx}){
     setNuevo(true);
   };
 
-  const editarInforme = (inf)=>{
-    setEditId(inf.id);
+  const editarInforme = async (inf)=>{
+    // Las fotos no vienen en la carga inicial. Se piden ANTES de llenar el
+    // formulario: con las actividades vacias, guardar borraria el registro
+    // fotografico entero.
+    const completo = (await asegurarDetalle("informes", inf.id)) || inf;
+    setEditId(completo.id);
     fotoRefs.current={};
-    setForm(buildInformeForm(inf));
-    setSel(inf);
+    setForm(buildInformeForm(completo));
+    setSel(completo);
     setNuevo(true);
   };
 
@@ -735,7 +739,11 @@ export default function Informes({ctx}){
         <ListaInformes
           informes={informes}
           acciones={{
-            ver: (inf)=>setSel(inf),
+            ver: async (inf)=>{
+              setSel(inf);
+              const completo = await asegurarDetalle("informes", inf.id);
+              if(completo) setSel(completo);
+            },
             editar: (inf)=>editarInforme(inf),
             // El puente informe -> certificacion ya existia, pero habia que
             // salir a Certificaciones y buscar la obra a mano. Se pasa tambien

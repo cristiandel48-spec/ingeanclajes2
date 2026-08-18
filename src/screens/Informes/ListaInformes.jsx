@@ -15,8 +15,18 @@ const ORDENES = [
   { key: "proyecto",  label: "Proyecto A–Z",  comparar: (a, b) => String(a.proyecto || "").localeCompare(String(b.proyecto || ""), "es") },
 ];
 
-const contarFotos = (inf) =>
-  (inf?.actividades || []).reduce((s, a) => s + (a?.fotos || []).filter((f) => f?.img).length, 0);
+// Con el informe cargado se cuentan las fotos que hay; si todavia no llegaron
+// -no vienen en la carga inicial por lo que pesan-, se usa el numero que
+// mantiene la base. Asi el filtro «con fotos / sin fotos» sigue siendo cierto.
+const contarFotos = (inf) => {
+  if (inf?.__parcial && Number.isFinite(inf?.totalFotos)) return inf.totalFotos;
+  return (inf?.actividades || []).reduce((s, a) => s + (a?.fotos || []).filter((f) => f?.img).length, 0);
+};
+
+const contarActividades = (inf) => {
+  if (inf?.__parcial && Number.isFinite(inf?.totalActividades)) return inf.totalActividades;
+  return (inf?.actividades || []).length;
+};
 
 export default function ListaInformes({ informes, acciones }) {
   return (
@@ -52,7 +62,7 @@ export default function ListaInformes({ informes, acciones }) {
 
 function Fila({ inf, compacta, acciones }) {
   const fotos = contarFotos(inf);
-  const actividades = (inf.actividades || []).length;
+  const actividades = contarActividades(inf);
   const alPulsar = (fn) => (e) => { e.stopPropagation(); fn(inf); };
 
   // La localizacion suele repetir el proyecto; solo se pone si aporta.
@@ -134,7 +144,7 @@ function Fila({ inf, compacta, acciones }) {
         <div style={{ minWidth: 0 }}>{datos}</div>
         <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "flex-start" }}>{contadores}</div>
       </div>
-      {actividades > 0 && (
+      {!inf.__parcial && actividades > 0 && (
         <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
           {(inf.actividades || []).slice(0, 3).map((a, i) => (
             <span key={i} style={{ background: "#fff3e8", color: "#cc6600", borderRadius: 4,

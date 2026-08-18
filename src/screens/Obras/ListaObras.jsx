@@ -109,7 +109,10 @@ export default function ListaObras({ obras, cotizaciones, onAbrir, onCambiarAvan
 function Fila({ o, compacta, cotizacion, resumen, onAbrir, onCambiarAvance, onCambiarEstado, puedeDesbloquear }) {
   const avance = Number(o.avance) || 0;
   const color = avance === 100 ? "#4ade80" : C.acento;
-  const fotos = resumen?.fotos || 0;
+  // Si la bitacora no se ha traido, el numero lo pone la base.
+  const fotos = (o.__parcial && Number.isFinite(o.totalFotosAvance))
+    ? o.totalFotosAvance
+    : (resumen?.fotos || 0);
 
   // El proyecto suele llamarse igual que el cliente; solo se pone si aporta.
   const cliente = normalizarRazonSocial(o.cliente);
@@ -161,6 +164,9 @@ function Fila({ o, compacta, cotizacion, resumen, onAbrir, onCambiarAvance, onCa
   const contadores = (
     <>
       <span style={{ fontSize: 11, color: C.tenue, flexShrink: 0 }}>{(o.empleados || []).length} 👷</span>
+      {/* Las fotos ya no viajan en la carga inicial: hasta que se abra la obra
+          no se sabe cuantas hay. Se pone un guion en vez de un cero, que seria
+          decir que no hay ninguna. */}
       <span
         title={fotos ? "Fotos de avance cargadas para el informe" : "Sin fotos de avance: el informe saldría vacío"}
         style={{ fontSize: 11, color: fotos ? C.tenue : "#b54708", flexShrink: 0 }}>{fotos} 📸</span>

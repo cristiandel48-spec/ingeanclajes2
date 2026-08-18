@@ -181,6 +181,11 @@ export const entityConfig = {
   },
   obras: {
     table: "obras",
+    // Las fotos de avance y los planos: no se traen al arrancar.
+    columnasPesadas: ["bitacora", "img_plano", "img_sat", "trazos", "anclajes", "geo_mediciones"],
+    // Contadores que mantiene la base, para que el listado pueda decir
+    // cuantas fotos hay sin traerlas.
+    columnasCalculadas: ["total_registros_avance", "total_fotos_avance"],
     coerceNullCols: ["avance", "total", "pagado", "saldo", "costos", "subtotal_cotizacion", "utilidad_cotizacion", "base_ingreso_contable", "iva_generado_cotizacion", "fecha_inicio", "fecha_fin"],
     toRow: (item) => ({
       id: item.id,
@@ -248,6 +253,10 @@ export const entityConfig = {
     }),
     fromRow: (row) => ({
       id: row.id,
+      // Los cuenta la base. Sirven en el listado cuando la bitacora todavia no
+      // se ha traido, para no decir «0 fotos» de todas las obras.
+      totalRegistrosAvance: row.total_registros_avance ?? null,
+      totalFotosAvance: row.total_fotos_avance ?? null,
       cliente: row.cliente,
       nit: row.nit,
       tel: row.tel,
@@ -280,6 +289,10 @@ export const entityConfig = {
   },
   cotizaciones: {
     table: "cotizaciones",
+    // Las fotos de la propuesta y la imagen del mapa. `propuestas` NO entra
+    // aqui aunque tambien lleve imagenes dentro: de ahi lee el Dashboard el
+    // total de cada cotizacion, y sin ella saldrian todas en cero.
+    columnasPesadas: ["fotos_cotizacion", "map_img"],
     coerceNullCols: ["fecha", "validez_dias", "utilidad_pct", "total"],
     toRow: (item) => ({
       id: item.id,
@@ -419,6 +432,9 @@ export const entityConfig = {
   },
   informes: {
     table: "informes",
+    // El registro fotografico. Es lo que mas pesa de toda la base.
+    columnasPesadas: ["actividades", "fotos"],
+    columnasCalculadas: ["total_actividades", "total_fotos"],
     coerceNullCols: ["fecha_informe", "periodo_inicio", "periodo_fin"],
     toRow: (item) => ({
       id: item.id,
@@ -471,6 +487,10 @@ export const entityConfig = {
           );
       return {
       id: row.id,
+      // Los cuenta la base, para que el listado sepa cuantas fotos hay sin
+      // tener que traerlas.
+      totalActividades: row.total_actividades ?? null,
+      totalFotos: row.total_fotos ?? null,
       obraId: row.obra_id,
       proyecto: row.proyecto,
       localizacion: row.localizacion,

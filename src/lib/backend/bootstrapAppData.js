@@ -86,6 +86,24 @@ async function getService() {
   return cachedService;
 }
 
+/**
+ * Trae UN registro completo, con las columnas de imagenes que la carga inicial
+ * deja fuera. Se llama al abrir un informe, una obra o una cotizacion.
+ *
+ * Devuelve null si no se pudo -sin conexion, o el registro ya no esta-. Quien
+ * llama debe quedarse con lo que ya tenia: es preferible ver un informe sin
+ * fotos que no ver nada.
+ */
+export async function cargarDetalleNube(entity, id) {
+  try {
+    const service = await reintentandoSiChocanPestanas(() => getService());
+    return await reintentandoSiChocanPestanas(() => service.cargarDetalle(entity, id));
+  } catch (error) {
+    console.error(`No se pudo traer el detalle de ${entity} ${id}:`, error);
+    return null;
+  }
+}
+
 export async function loadCloudAppData() {
   // Hasta que esta carga termine bien, no se debe guardar.
   baselineLoaded = false;

@@ -6,6 +6,7 @@ export {
   saveCloudAppData,
   syncCloudCollection,
   mapStateKeyToEntity,
+  cargarDetalleNube,
 } from "./bootstrapAppData";
 export {
   getMiMembresia,

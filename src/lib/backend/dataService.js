@@ -146,15 +146,41 @@ export function createDataService({ supabase, tenantId }) {
   // limite aunque las filas lleven fotos.
   const FILAS_POR_PAGINA = 50;
 
+  // Las columnas que se piden al arrancar. Las de imagenes se quedan fuera:
+  // pesan casi todo -seis informes ocupaban 75 MB- y se descargaban enteras
+  // cada vez que alguien abria el programa, aunque no fuera a mirarlas. Se
+  // traen despues, al abrir el registro concreto, con `cargarDetalle`.
+  //
+  // Las columnas se deducen de toRow() para que esto no se quede viejo: el dia
+  // que se agregue una columna nueva, entra sola.
+  const columnasDeLista = (cfg) => {
+    if (!cfg.columnasPesadas?.length) return "*";
+    try {
+      const todas = Object.keys(cfg.toRow({}));
+      const ligeras = todas.filter((c) => !cfg.columnasPesadas.includes(c));
+      // tenant_id no sale de toRow y hace falta para saber de quien es la
+      // fila. Las calculadas tampoco: las escribe un disparador y aqui solo
+      // se leen, para poder decir cuantas fotos hay sin traerlas.
+      return ["tenant_id", ...ligeras, ...(cfg.columnasCalculadas ?? [])].join(",");
+    } catch {
+      // Si toRow no soporta un objeto vacio, mejor traerlo todo que romper la
+      // carga: se pierde el ahorro, no los datos.
+      return "*";
+    }
+  };
+
   const list = async (entity) => {
     const cfg = assertEntity(entity);
     const filas = [];
     let desde = 0;
+    // Se puede degradar a "*" a mitad si la base todavia no tiene las columnas
+    // de contadores; por eso no es constante.
+    let columnas = columnasDeLista(cfg);
 
     for (;;) {
       const { data, error } = await supabase
         .from(cfg.table)
-        .select("*")
+        .select(columnas)
         .eq("tenant_id", tenantId)
         .order("updated_at", { ascending: true })
         .range(desde, desde + FILAS_POR_PAGINA - 1);
@@ -162,6 +188,20 @@ export function createDataService({ supabase, tenantId }) {
       if (error) {
         if (cfg.optional && isMissingRelationError(error)) {
           return [];
+        }
+        // La aplicacion puede llegar antes que la migracion que crea los
+        // contadores. Si falta una columna se pide todo, como siempre: se
+        // pierde el ahorro de esa carga, pero el programa abre igual. Sin
+        // esto, el orden de publicacion dejaria a todo el mundo sin datos.
+        if (isMissingColumnError(error) && columnas !== "*") {
+          console.warn(
+            `[${cfg.table}] faltan columnas del esquema nuevo; se carga la tabla entera. ` +
+            "Ejecuta las migraciones pendientes para recuperar el ahorro."
+          );
+          columnas = "*";
+          filas.length = 0;
+          desde = 0;
+          continue;
         }
         throw error;
       }
@@ -173,23 +213,60 @@ export function createDataService({ supabase, tenantId }) {
       desde += FILAS_POR_PAGINA;
     }
 
-    return filas.map(cfg.fromRow);
+    // Se marca lo que viene incompleto. La marca es la que impide despues que
+    // un guardado deje sin fotos un registro que solo se cargo a medias.
+    const parcial = columnas !== "*";
+    return filas.map((fila) => {
+      const item = cfg.fromRow(fila);
+      return parcial ? { ...item, __parcial: true } : item;
+    });
+  };
+
+  /**
+   * Trae UN registro completo, con las columnas de imagenes. Se llama al abrir
+   * un informe, una obra o una cotizacion.
+   */
+  const cargarDetalle = async (entity, id) => {
+    const cfg = assertEntity(entity);
+    if (!id) return null;
+
+    const { data, error } = await supabase
+      .from(cfg.table)
+      .select("*")
+      .eq("tenant_id", tenantId)
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) {
+      if (cfg.optional && isMissingRelationError(error)) return null;
+      throw error;
+    }
+    return data ? cfg.fromRow(data) : null;
   };
 
   const upsertMany = async (entity, items) => {
     const cfg = assertEntity(entity);
     const prepared = (items ?? [])
       .filter((item) => item && item.id)
-      .map((item) => ({
-        source: item,
-        row: coerceEmptyToNull(
+      .map((item) => {
+        const row = coerceEmptyToNull(
           {
             tenant_id: tenantId,
             ...cfg.toRow(item),
           },
           cfg.coerceNullCols
-        ),
-      }));
+        );
+
+        // ESTO ES LO QUE EVITA PERDER LAS FOTOS. Si el registro se cargo sin
+        // las columnas pesadas, toRow() las arma vacias -no estaban en
+        // memoria- y guardarlas asi borraria de la base las fotos de verdad.
+        // Se quitan del envio: lo que no se trajo, no se pisa.
+        if (item.__parcial && cfg.columnasPesadas?.length) {
+          for (const columna of cfg.columnasPesadas) delete row[columna];
+        }
+
+        return { source: item, row };
+      });
 
     if (!prepared.length) return;
 
@@ -298,6 +375,7 @@ export function createDataService({ supabase, tenantId }) {
   return {
     tenantId,
     list,
+    cargarDetalle,
     upsertMany,
     deleteMany,
     replaceAll,

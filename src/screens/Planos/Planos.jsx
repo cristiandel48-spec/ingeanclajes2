@@ -12,7 +12,7 @@ import { leerImagenComprimida } from "../../lib/imagenes";
 import { obraEstaCerrada } from "../../lib/flujoObra";
 import { esAdmin } from "../../lib/permisos";
 export default function Planos({ctx}){
-  const {obras,setObras,cotizaciones,setCotDraft,setScr,membresia}=ctx;
+  const {obras,setObras,cotizaciones,setCotDraft,setScr,membresia,asegurarDetalle}=ctx;
   const [sel,setSel]=useState(null);
   const [imgPlano,setImgPlano]=useState(null);
   const [trazosForm,setTrazosForm]=useState({tipo:"LVH",ml:0,label:""});
@@ -34,7 +34,11 @@ export default function Planos({ctx}){
     return ()=>window.removeEventListener("mouseup", stop);
   },[drag]);
 
-  const abrirObra=(o)=>{
+  const abrirObra=async(obra)=>{
+    // El plano, los trazos y las mediciones no vienen en la carga inicial: se
+    // esperan ANTES de copiarlos al estado de la pantalla. Si se copiaran
+    // vacios, el primer trazo que se dibuje se guardaria sobre la nada.
+    const o = (await asegurarDetalle("obras", obra.id)) || obra;
     const linked = cotizaciones.find(c=>c.id===o.cotizacionId);
     setSel(o);
     setImgPlano(o.imgPlano||null);

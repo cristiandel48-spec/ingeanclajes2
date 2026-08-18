@@ -27,7 +27,7 @@ import { blobABase64, generarCotizacionPdf } from "../../lib/cotizacionPdf";
 import { enviarCotizacionPorCorreo } from "../../lib/backend/usuarios";
 import { siguienteIdUnico } from "../../lib/identificadores";
 export default function Cotizacion({ctx}){
-  const {cotizaciones,setCotizaciones,obras,setObras,clientes,empresaConfig}=ctx;
+  const {cotizaciones,setCotizaciones,obras,setObras,clientes,empresaConfig,asegurarDetalle}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
   const [tab,setTab]=useState("lista");
   const [previewCot,setPreviewCot]=useState(null);
@@ -627,12 +627,21 @@ export default function Cotizacion({ctx}){
         <ListaCotizaciones
           cotizaciones={cotizaciones}
           acciones={{
-            ver: (c)=>setPreviewCot(c),
-            editar: (c)=>{setEditCot(c.id);hydrate(c);setTab("form");},
+            ver: async (c)=>{
+              setPreviewCot(c);
+              const completa = await asegurarDetalle("cotizaciones", c.id);
+              if(completa) setPreviewCot(completa);
+            },
+            editar: async (c)=>{
+              // Se esperan las fotos ANTES de llenar el formulario: si se
+              // llenara sin ellas, el siguiente guardado las borraria.
+              const completa = (await asegurarDetalle("cotizaciones", c.id)) || c;
+              setEditCot(completa.id); hydrate(completa); setTab("form");
+            },
             aprobar: (c)=>aprobarCotizacion(c.id),
             desaprobar: (c)=>desaprobarCotizacion(c.id),
-            pdf: (c)=>descargarPdf(c),
-            enviar: (c)=>setEnviarCot(c),
+            pdf: async (c)=>descargarPdf((await asegurarDetalle("cotizaciones", c.id)) || c),
+            enviar: async (c)=>setEnviarCot((await asegurarDetalle("cotizaciones", c.id)) || c),
             eliminar: (c)=>{
               if(!window.confirm(`¿Eliminar la cotización "${c.numero || c.id}" de ${c.cliente || "este cliente"}? Esta acción no se puede deshacer.`)) return;
               setCotizaciones((prev)=>prev.filter((x)=>x.id!==c.id));

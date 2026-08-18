@@ -25,7 +25,7 @@ const siguienteIdObra = (obras) => {
   return "OB-" + String(mayor + 1).padStart(3, "0");
 };
 export default function Obras({ctx}){
-  const {obras,setObras,cotizaciones,intencion,limpiarIntencion,membresia}=ctx;
+  const {obras,setObras,cotizaciones,intencion,limpiarIntencion,membresia,asegurarDetalle}=ctx;
   // Una obra entregada la reabre solo un administrador. Aqui se decide una
   // vez y baja a la lista y al detalle.
   const puedeDesbloquear = esAdmin(membresia);
@@ -201,7 +201,7 @@ export default function Obras({ctx}){
       <ListaObras
         obras={obras}
         cotizaciones={cotizaciones}
-        onAbrir={setSel}
+        onAbrir={(o)=>{ setSel(o); asegurarDetalle("obras", o.id); }}
         onCambiarAvance={updAv}
         onCambiarEstado={updEst}
         puedeDesbloquear={puedeDesbloquear}

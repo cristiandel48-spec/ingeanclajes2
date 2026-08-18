@@ -16,7 +16,7 @@ import { fotoVacia, normalizarBitacora, registroVacio, resumenBitacora } from ".
 // Por eso cada registro lleva fecha: es la que decide si entra o no al
 // informe de esa quincena o de ese mes.
 
-export default function BitacoraObra({ obra, setObras, bloqueada = false }) {
+export default function BitacoraObra({ obra, setObras, bloqueada = false, cargandoFotos = false }) {
   const registros = normalizarBitacora(obra.bitacora);
   const resumen = resumenBitacora(obra.bitacora);
   const fotoRefs = useRef({});
@@ -112,7 +112,15 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false }) {
       {/* Las fotos de aqui son las que salen impresas en el informe de
           actividades. Cambiarlas despues de entregarlo dejaria el documento
           diciendo una cosa y la obra otra. */}
-      {bloqueada && (
+      {cargandoFotos && (
+        <div style={{ fontSize: 11.5, color: "#1e40af", background: "#eff6ff",
+          border: "1px solid #bfdbfe", borderRadius: 9, padding: "9px 12px",
+          marginBottom: 14, lineHeight: 1.5, pointerEvents: "auto" }}>
+          Cargando las fotos de esta obra… Un momento, para no perder ningún cambio.
+        </div>
+      )}
+
+      {bloqueada && !cargandoFotos && (
         <div style={{ fontSize: 11.5, color: "#166534", background: "#ecfdf5",
           border: "1px solid #a7f3d0", borderRadius: 9, padding: "9px 12px",
           marginBottom: 14, lineHeight: 1.5, pointerEvents: "auto" }}>

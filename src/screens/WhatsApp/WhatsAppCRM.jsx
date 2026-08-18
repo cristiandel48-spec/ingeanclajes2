@@ -6,6 +6,7 @@ import HiloConversacion from "./HiloConversacion";
 import PegarConversacion from "./PegarConversacion";
 import { getSupabaseClient, isSupabaseConfigured } from "../../lib/backend/supabaseClient";
 import { agruparEnConversaciones } from "../../lib/whatsappCrm";
+import { mensajesEjemplo } from "../../lib/whatsappEjemplo";
 
 // Los mensajes que entran por WhatsApp y que se hizo con cada uno.
 //
@@ -22,6 +23,7 @@ export default function WhatsAppCRM() {
   const [error, setError] = useState("");
   const [abierta, setAbierta] = useState(null);   // telefono de la conversacion abierta
   const [pegando, setPegando] = useState(false);
+  const [ocultarEjemplo, setOcultarEjemplo] = useState(false);
 
   const cargar = useCallback(async () => {
     if (!isSupabaseConfigured()) {
@@ -88,7 +90,15 @@ export default function WhatsAppCRM() {
     [cargando, abierta, cargar, pegando]
   );
 
-  const conversaciones = useMemo(() => agruparEnConversaciones(mensajes), [mensajes]);
+  // Mientras no haya llegado ni un mensaje, la pantalla se enseña con cuatro
+  // conversaciones de muestra. Vacía no se entiende qué hace, y el que la abre
+  // por primera vez es justo el que necesita entenderlo. Se apagan solas en
+  // cuanto entra el primer mensaje de verdad; no tocan la base.
+  const enEjemplo = !cargando && !error && mensajes.length === 0 && !ocultarEjemplo;
+  const conversaciones = useMemo(
+    () => agruparEnConversaciones(enEjemplo ? mensajesEjemplo() : mensajes),
+    [enEjemplo, mensajes],
+  );
   const hilo = useMemo(
     () => (abierta ? conversaciones.find((c) => c.telefono === abierta) : null),
     [abierta, conversaciones],
@@ -97,7 +107,7 @@ export default function WhatsAppCRM() {
   const sinAtender = conversaciones.filter((c) => c.sinAtender).length;
 
   if (hilo) {
-    return <HiloConversacion conversacion={hilo} onVolver={() => setAbierta(null)} />;
+    return <HiloConversacion conversacion={hilo} ejemplo={enEjemplo} onVolver={() => setAbierta(null)} />;
   }
 
   return (
@@ -168,6 +178,31 @@ export default function WhatsAppCRM() {
             </div>
           </div>
         </>
+      )}
+
+      {/* El cartel del ejemplo. Va pegado encima de la lista y no se puede
+          confundir con un aviso del sistema: si alguien creyera que son
+          clientes de verdad, llamaria a cuatro telefonos inventados. */}
+      {enEjemplo && (
+        <div style={{ background: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: 12,
+          padding: "12px 15px", marginBottom: 14, display: "flex", alignItems: "flex-start",
+          gap: 12, flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: 240, fontSize: 12, color: "#3730a3", lineHeight: 1.6 }}>
+            <div style={{ fontWeight: 700, color: "#312e81", marginBottom: 4 }}>
+              Esto es un ejemplo, no son clientes reales
+            </div>
+            Así se va a ver la pantalla cuando el número esté conectado. Ábrelas para leer la
+            conversación completa: el sistema contesta solo, pide los datos que faltan y de ahí sale
+            la cotización. <strong>Desaparecen solas</strong> en cuanto entre el primer mensaje de
+            verdad.
+          </div>
+          <button
+            onClick={() => setOcultarEjemplo(true)}
+            style={{ background: "#fff", color: "#4338ca", border: "1px solid #c7d2fe",
+              borderRadius: 9, padding: "7px 14px", fontSize: 12, fontWeight: 700,
+              cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
+          >Ocultar el ejemplo</button>
+        </div>
       )}
 
       {sinAtender > 0 && (

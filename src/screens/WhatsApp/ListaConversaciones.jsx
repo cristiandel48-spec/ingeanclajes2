@@ -79,9 +79,14 @@ function Fila({ c, compacta, acciones }) {
           {c.cuantos > 1 ? ` · ${c.cuantos} mensajes` : ""}
         </span>
       </div>
+      {/* Un mensaje sin texto es una foto, un audio o una ubicacion: WhatsApp
+          los entrega aparte y aqui no hay nada que escribir. Decia «—», que
+          parecia un fallo; se dice lo que es, para que quien lo vea sepa que
+          tiene que abrir la conversacion. */}
       <div style={{ fontSize: 11.5, color: C.apagado, marginTop: 1,
-        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-        {c.ultimoTexto || "—"}
+        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        fontStyle: c.ultimoTexto ? "normal" : "italic" }}>
+        {c.ultimoTexto || "Mandó una foto, un audio o una ubicación"}
       </div>
     </>
   );

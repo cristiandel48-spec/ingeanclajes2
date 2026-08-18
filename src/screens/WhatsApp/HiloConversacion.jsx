@@ -28,7 +28,7 @@ const hora = (valor) => {
   } catch { return ""; }
 };
 
-export default function HiloConversacion({ conversacion, onVolver }) {
+export default function HiloConversacion({ conversacion, ejemplo = false, onVolver }) {
   const { telefono, nombre, mensajes = [] } = conversacion;
 
   return (
@@ -47,15 +47,24 @@ export default function HiloConversacion({ conversacion, onVolver }) {
             {telefonoLegible(telefono)} · {mensajes.length} {mensajes.length === 1 ? "mensaje" : "mensajes"}
           </div>
         </div>
-        {/* Para seguir la conversacion a mano: abre WhatsApp con ese numero. */}
-        <button
-          style={{ ...B("#25D366", "#fff"), fontSize: 12, padding: "8px 14px", flexShrink: 0 }}
-          onClick={() => {
-            const fallo = abrirWhatsApp(telefono, "");
-            if (fallo) window.alert(fallo);
-          }}>
-          Escribirle por WhatsApp
-        </button>
+        {/* Para seguir la conversacion a mano: abre WhatsApp con ese numero.
+            En el ejemplo no se enseña: el telefono es inventado y abriria un
+            chat con un numero que no existe. */}
+        {ejemplo ? (
+          <div style={{ background: "#eef2ff", border: "1px solid #c7d2fe", color: "#3730a3",
+            borderRadius: 9, padding: "7px 12px", fontSize: 11.5, fontWeight: 700, flexShrink: 0 }}>
+            Conversación de ejemplo
+          </div>
+        ) : (
+          <button
+            style={{ ...B("#25D366", "#fff"), fontSize: 12, padding: "8px 14px", flexShrink: 0 }}
+            onClick={() => {
+              const fallo = abrirWhatsApp(telefono, "");
+              if (fallo) window.alert(fallo);
+            }}>
+            Escribirle por WhatsApp
+          </button>
+        )}
       </div>
 
       <div style={{ ...CD, background: "#f0f2f5" }}>

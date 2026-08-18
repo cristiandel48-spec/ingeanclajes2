@@ -182,10 +182,13 @@ const pesosCo = (valor: unknown) => {
   return "$ " + Math.round(n).toLocaleString("es-CO", { maximumFractionDigits: 0 });
 };
 
-const cantidadCo = (valor: unknown) => {
-  const n = Number(valor);
-  if (!Number.isFinite(n)) return "";
-  return n.toLocaleString("es-CO", { maximumFractionDigits: 2 });
+// La misma cuenta que hace el PDF, copiada tal cual: entero sin decimales,
+// y con decimales a dos cifras. Tiene que dar la misma cadena, porque el
+// cliente ve los dos documentos y una cantidad escrita distinta en cada uno
+// parece un error de la cotizacion.
+const cantidadPdf = (valor: unknown) => {
+  const n = Number(valor) || 0;
+  return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.00$/, "");
 };
 
 type DetalleCotizacion = {
@@ -207,14 +210,19 @@ const GRIS = "#5f6368";
 const TINTA = "#202124";
 const BORDE_SUAVE = "#e8eaed";
 
+// Fila de totales: ocupa las cuatro primeras columnas y deja la cifra en la
+// quinta, igual que en la tabla del PDF.
 function filaTotal(k: string, v: string, fuerte = false) {
-  const tam = fuerte ? "15px" : "13px";
+  const fondo = fuerte ? "#f1f3f4" : "#fafbfc";
+  const tam = fuerte ? "14px" : "12.5px";
   const peso = fuerte ? "700" : "400";
   const color = fuerte ? TINTA : GRIS;
-  return '<tr><td style="padding:3px 0;color:' + color + ';font-size:' + tam + ';font-weight:' + peso + '">'
-    + escapeHtml(k)
-    + '</td><td align="right" style="padding:3px 0;color:' + color + ';font-size:' + tam
-    + ';font-weight:' + peso + ';white-space:nowrap">' + escapeHtml(v) + '</td></tr>';
+  const borde = fuerte ? "border-top:1.5px solid #dadce0;" : "";
+  return '<tr><td colspan="4" style="' + borde + 'background:' + fondo + ';padding:8px 12px;color:'
+    + color + ';font-size:' + tam + ';font-weight:' + peso + '">' + escapeHtml(k) + '</td>'
+    + '<td align="right" style="' + borde + 'background:' + fondo + ';padding:8px 12px;color:'
+    + (fuerte ? TINTA : GRIS) + ';font-size:' + tam + ';font-weight:' + (fuerte ? "700" : "600")
+    + ';white-space:nowrap">' + escapeHtml(v) + '</td></tr>';
 }
 
 function celdaCondicion(k: string, v: string) {
@@ -229,34 +237,48 @@ function celdaCondicion(k: string, v: string) {
 function htmlCotizacion(numero: string, mensaje: string, d: DetalleCotizacion | null) {
   const items = (d?.items ?? []).filter((i) => i && i.desc);
 
+  // Las mismas cinco columnas de la tabla del PDF, en el mismo orden y con los
+  // mismos anchos: descripcion, cantidad, unidad, valor unitario y subtotal.
+  // El cliente abre el adjunto y encuentra lo mismo que acaba de leer.
+  const celda = (contenido: string, al: string, extra = "") =>
+    '<td align="' + al + '" style="padding:9px 10px;border-bottom:1px solid ' + BORDE_SUAVE
+    + ';font-size:12px;' + extra + '">' + contenido + '</td>';
+
   const filas = items.map((i) => (
-    '<tr><td style="padding:9px 12px;border-bottom:1px solid ' + BORDE_SUAVE + ';color:' + TINTA + ';font-size:13px">'
-    + escapeHtml(String(i.desc)) + '</td>'
-    + '<td align="right" style="padding:9px 12px;border-bottom:1px solid ' + BORDE_SUAVE + ';color:' + GRIS + ';font-size:13px;white-space:nowrap">'
-    + escapeHtml(cantidadCo(i.cant)) + " " + escapeHtml(String(i.unit ?? "")) + '</td>'
-    + '<td align="right" style="padding:9px 12px;border-bottom:1px solid ' + BORDE_SUAVE + ';color:' + TINTA + ';font-size:13px;white-space:nowrap">'
-    + escapeHtml(pesosCo(Number(i.cant ?? 0) * Number(i.vu ?? 0))) + '</td></tr>'
+    '<tr>'
+    + celda(escapeHtml(String(i.desc).toUpperCase()), "left", "color:" + TINTA)
+    + celda(escapeHtml(cantidadPdf(i.cant)), "center", "color:" + GRIS + ";white-space:nowrap")
+    + celda(escapeHtml(String(i.unit ?? "UND")), "center", "color:" + GRIS)
+    + celda(escapeHtml(pesosCo(i.vu)), "right", "color:" + GRIS + ";white-space:nowrap")
+    + celda(escapeHtml(pesosCo(Number(i.cant ?? 0) * Number(i.vu ?? 0))), "right",
+      "color:" + TINTA + ";font-weight:700;white-space:nowrap")
+    + '</tr>'
   )).join("");
 
-  const encabezado = (t: string, al = "left") =>
-    '<th align="' + al + '" style="padding:8px 12px;background:#f8f9fa;border-bottom:1px solid ' + BORDE_SUAVE
-    + ';font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:' + GRIS + ';font-weight:700">' + t + '</th>';
+  const encabezado = (t: string, al: string, ancho: string) =>
+    '<th align="' + al + '" width="' + ancho + '" style="padding:8px 10px;background:#f8f9fa;'
+    + 'border-bottom:1px solid ' + BORDE_SUAVE + ';font-size:9.5px;letter-spacing:.6px;'
+    + 'text-transform:uppercase;color:' + GRIS + ';font-weight:700">' + t + '</th>';
 
   const tabla = filas
     ? '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;margin:4px 0 18px"><tr>'
-      + encabezado("Servicio") + encabezado("Cantidad", "right") + encabezado("Valor", "right")
-      + '</tr>' + filas + '</table>'
-    : "";
-
-  const totales = Number(d?.total)
-    ? '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;background:#f8f9fa;border-radius:6px;margin:0 0 18px">'
-      + '<tr><td style="padding:12px 14px"><table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse">'
-      + (d?.subtotal ? filaTotal("Subtotal", pesosCo(d.subtotal)) : "")
-      + (d?.utilidad ? filaTotal("Utilidad (" + (d.utilidadPct ?? 10) + "%)", pesosCo(d.utilidad)) : "")
-      + (d?.iva ? filaTotal("IVA (19% sobre la utilidad)", pesosCo(d.iva)) : "")
-      + '<tr><td colspan="2" style="border-top:1px solid #dadce0;padding-top:8px"></td></tr>'
-      + filaTotal("Total", pesosCo(d?.total), true)
-      + '</table></td></tr></table>'
+      + encabezado("Descripción", "left", "44%")
+      + encabezado("Cant.", "center", "10%")
+      + encabezado("Unidad", "center", "12%")
+      + encabezado("V. unitario", "right", "17%")
+      + encabezado("Subtotal", "right", "17%")
+      + '</tr>' + filas
+      // Los totales van dentro de la misma tabla, como en el PDF: asi las
+      // cifras caen bajo la columna de subtotales y no en un recuadro aparte.
+      + (Number(d?.total)
+        ? (d?.subtotal ? filaTotal("Subtotal", pesosCo(d.subtotal)) : "")
+          + (d?.utilidad
+            ? filaTotal("Utilidades (" + (d.utilidadPct ?? 10) + "% del valor de la obra)", pesosCo(d.utilidad))
+            : "")
+          + (d?.iva ? filaTotal("IVA (19% sobre utilidades)", pesosCo(d.iva)) : "")
+          + filaTotal("Total propuesta", pesosCo(d?.total), true)
+        : "")
+      + '</table>'
     : "";
 
   const condiciones = (d?.validez || d?.tiempoEjec || d?.formaPago)
@@ -285,7 +307,7 @@ function htmlCotizacion(numero: string, mensaje: string, d: DetalleCotizacion | 
       + escapeHtml(d?.saludo || "Buen día") + '.</p>'
       + '<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:' + TINTA + '">Adjunto encontrará la cotización'
       + (d?.obra ? " para <strong>" + escapeHtml(String(d.obra)) + "</strong>" : "") + '.</p>'
-      + nota + tabla + totales + condiciones
+      + nota + tabla + condiciones
       + '<p style="margin:0;font-size:14px;line-height:1.6;color:' + TINTA + '">Quedamos atentos a sus comentarios y a cualquier ajuste que necesite.</p>'
     : '<div style="font-size:14px;line-height:1.6;color:' + TINTA + ';white-space:pre-line">' + escapeHtml(mensaje) + '</div>';
 

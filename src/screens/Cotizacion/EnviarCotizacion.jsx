@@ -25,47 +25,30 @@ function asuntoPorDefecto(c) {
 // Detalle de la propuesta activa: qué se cotiza, cuánto y a qué precio. Sin
 // esto el correo solo daba un total, y el cliente tenía que abrir el adjunto
 // para saber qué estaba comprando.
-// Los tramos medidos en el plano entran como items separados -«Linea de vida
-// horizontal 1», «2», «3»...-, y en el correo salian diez renglones seguidos
-// del mismo servicio al mismo precio. Se juntan en uno solo con los metros
-// sumados, que es lo que el cliente quiere leer. El desglose tramo por tramo
-// sigue estando en el PDF adjunto, que es su sitio.
 //
-// Solo se juntan si coinciden el servicio, la unidad Y el precio: dos cosas
-// distintas nunca se suman.
-const sinNumeroFinal = (desc) => String(desc || "").replace(/\s+\d+\s*$/, "").trim();
-
-function agruparItems(items) {
-  const grupos = new Map();
-  for (const item of items ?? []) {
-    const desc = sinNumeroFinal(item.desc);
-    const unit = item.unit || "und";
-    const vu = Number(item.vu) || 0;
-    const clave = `${desc.toLowerCase()}|${unit}|${vu}`;
-    const previo = grupos.get(clave);
-    const cant = Number(item.cant) || 0;
-    if (previo) previo.cant += cant;
-    else grupos.set(clave, { desc, unit, vu, cant });
-  }
-  return [...grupos.values()];
+// LOS RENGLONES VAN SIN AGRUPAR, uno por item, igual que en el PDF. Los tramos
+// medidos en el plano entran separados -«Linea de vida horizontal 1», «2»...-
+// y durante un tiempo se juntaron en uno solo con los metros sumados, porque
+// diez renglones seguidos parecian de relleno. Pero el cliente lee el correo
+// con el adjunto abierto al lado, y una tabla que dice 120,75 ML frente a otra
+// que dice diez tramos distintos obliga a comprobar si cuadran. Que digan lo
+// mismo vale mas que ahorrar nueve renglones.
+function propuestaActiva(c) {
+  const propuestas = getQuotePrintableProposals(c);
+  return propuestas.find((p) => p.id === c?.propuestaActivaId) || propuestas[0] || null;
 }
 
 // 120.75 -> "120,75"; 4 -> "4". Sin decimales de relleno.
 const cantidadLegible = (n) =>
   Number(n).toLocaleString("es-CO", { maximumFractionDigits: 2 });
 
-function propuestaActiva(c) {
-  const propuestas = getQuotePrintableProposals(c);
-  return propuestas.find((p) => p.id === c?.propuestaActivaId) || propuestas[0] || null;
-}
-
 function detallePropuesta(c) {
   const activa = propuestaActiva(c);
   if (!activa?.items?.length) return [];
 
-  const lineas = agruparItems(activa.items).map((item) => (
-    `· ${cantidadLegible(item.cant)} ${item.unit} de ${comoFrase(item.desc)}` +
-    ` — ${fmt(item.vu)} c/u — ${fmt(item.cant * item.vu)}`
+  const lineas = activa.items.map((item) => (
+    `· ${cantidadLegible(item.cant)} ${item.unit || "UND"} de ${comoFrase(item.desc)}` +
+    ` — ${fmt(item.vu)} c/u — ${fmt(Number(item.cant || 0) * Number(item.vu || 0))}`
   ));
 
   return [
@@ -73,15 +56,18 @@ function detallePropuesta(c) {
     ...lineas,
     "",
     `Subtotal: ${fmt(activa.sub)}`,
-    `Utilidad (${activa.quote?.util ?? 10}%): ${fmt(activa.ut)}`,
-    `IVA (19% sobre la utilidad): ${fmt(activa.iva)}`,
-    `Valor total: ${fmt(activa.tot)}`,
+    `Utilidades (${activa.quote?.util ?? 10}% del valor de la obra): ${fmt(activa.ut)}`,
+    `IVA (19% sobre utilidades): ${fmt(activa.iva)}`,
+    `Total propuesta: ${fmt(activa.tot)}`,
   ];
 }
 
 // Las mismas cifras, pero sin convertir a texto: el correo las pinta en una
 // tabla y necesita los números, no los renglones. El texto de arriba sigue
 // yendo como alternativa en texto plano, para quien lea el correo sin formato.
+//
+// La descripción viaja tal como está guardada; el correo la pasa a mayúscula,
+// que es lo que hace el PDF al imprimirla.
 function detalleParaCorreo(c) {
   const activa = propuestaActiva(c);
   if (!activa?.items?.length) return null;
@@ -89,8 +75,8 @@ function detalleParaCorreo(c) {
   return {
     saludo: primerNombre(c?.contacto) ? `${primerNombre(c.contacto)}, buen día` : "Buen día",
     obra: comoNombre(c?.obra || ""),
-    items: agruparItems(activa.items).map((i) => ({
-      desc: comoFrase(i.desc), cant: i.cant, unit: i.unit, vu: i.vu,
+    items: activa.items.map((i) => ({
+      desc: i.desc, cant: i.cant, unit: i.unit || "UND", vu: i.vu,
     })),
     subtotal: activa.sub,
     utilidad: activa.ut,

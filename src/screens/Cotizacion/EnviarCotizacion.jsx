@@ -25,16 +25,44 @@ function asuntoPorDefecto(c) {
 // Detalle de la propuesta activa: qué se cotiza, cuánto y a qué precio. Sin
 // esto el correo solo daba un total, y el cliente tenía que abrir el adjunto
 // para saber qué estaba comprando.
+// Los tramos medidos en el plano entran como items separados -«Linea de vida
+// horizontal 1», «2», «3»...-, y en el correo salian diez renglones seguidos
+// del mismo servicio al mismo precio. Se juntan en uno solo con los metros
+// sumados, que es lo que el cliente quiere leer. El desglose tramo por tramo
+// sigue estando en el PDF adjunto, que es su sitio.
+//
+// Solo se juntan si coinciden el servicio, la unidad Y el precio: dos cosas
+// distintas nunca se suman.
+const sinNumeroFinal = (desc) => String(desc || "").replace(/\s+\d+\s*$/, "").trim();
+
+function agruparItems(items) {
+  const grupos = new Map();
+  for (const item of items ?? []) {
+    const desc = sinNumeroFinal(item.desc);
+    const unit = item.unit || "und";
+    const vu = Number(item.vu) || 0;
+    const clave = `${desc.toLowerCase()}|${unit}|${vu}`;
+    const previo = grupos.get(clave);
+    const cant = Number(item.cant) || 0;
+    if (previo) previo.cant += cant;
+    else grupos.set(clave, { desc, unit, vu, cant });
+  }
+  return [...grupos.values()];
+}
+
+// 120.75 -> "120,75"; 4 -> "4". Sin decimales de relleno.
+const cantidadLegible = (n) =>
+  Number(n).toLocaleString("es-CO", { maximumFractionDigits: 2 });
+
 function detallePropuesta(c) {
   const propuestas = getQuotePrintableProposals(c);
   const activa = propuestas.find((p) => p.id === c?.propuestaActivaId) || propuestas[0];
   if (!activa?.items?.length) return [];
 
-  const lineas = activa.items.map((item) => {
-    const cant = Number(item.cant) || 0;
-    const vu = Number(item.vu) || 0;
-    return `· ${cant} ${item.unit || "und"} de ${comoFrase(item.desc)} — ${fmt(vu)} c/u — ${fmt(cant * vu)}`;
-  });
+  const lineas = agruparItems(activa.items).map((item) => (
+    `· ${cantidadLegible(item.cant)} ${item.unit} de ${comoFrase(item.desc)}` +
+    ` — ${fmt(item.vu)} c/u — ${fmt(item.cant * item.vu)}`
+  ));
 
   return [
     "Detalle de la propuesta:",

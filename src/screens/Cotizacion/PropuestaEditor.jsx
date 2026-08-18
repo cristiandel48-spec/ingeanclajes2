@@ -7,7 +7,9 @@ import BotonCorregir from "../../components/ui/BotonCorregir";
 import { leerImagenComprimida } from "../../lib/imagenes";
 import { normalizarFrase } from "../../lib/normalizarEntrada";
 import { B, SI } from "../../styles/tokens";
-import { DEFAULT_COT_INCLUYE, ITEMS_DB } from "../../data/seed";
+import { DEFAULT_COT_INCLUYE } from "../../data/seed";
+import { agruparCatalogo } from "../../lib/catalogo";
+import { useAppData } from "../../context/AppDataContext";
 import { measurementsToQuoteItems } from "../../lib/maps";
 import { fmt } from "../../lib/format";
 
@@ -31,6 +33,11 @@ export default function PropuestaEditor({
   const p = propuesta;
   const [showDB, setShowDB] = useState(false);
   const [dbCat, setDbCat] = useState(0);
+  // El catalogo sale de la base; si todavia no hay nada guardado, del codigo.
+  const { catalogoItems } = useAppData();
+  const catalogo = agruparCatalogo(catalogoItems);
+  // Si se borro una categoria entera, el indice guardado puede quedar fuera.
+  const categoria = catalogo[dbCat] || catalogo[0] || { items: [] };
   const fotosRef = useRef();
 
   const set = (campo, valor) => onChange({ [campo]: valor });
@@ -227,8 +234,8 @@ export default function PropuestaEditor({
 
           {showDB&&(
             <div style={{background:"#f8fafc",borderRadius:10,padding:16,marginBottom:14,border:"1px solid #f47c2044"}}>
-              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>{ITEMS_DB.map((cat,i)=><button key={i} onClick={()=>setDbCat(i)} style={{...B(dbCat===i?"#f47c20":"#142840",dbCat===i?"#fff":"#7da5c8"),border:`1px solid ${dbCat===i?"#f47c20":"#1a3050"}`,fontSize:11,padding:"5px 12px"}}>{cat.categoria}</button>)}</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>{ITEMS_DB[dbCat].items.map((it,i)=><div key={i} style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:"#1a1a2e",marginBottom:2}}>{it.desc}</div><div style={{fontSize:11,color:"#475569"}}>{it.unit} · {fmt(it.vu)}</div></div><button onClick={()=>{setItems(prev=>[...prev,{id:siguienteId(prev),desc:it.desc,cant:1,unit:it.unit,vu:it.vu}]);}} style={{...B("#f47c20"),padding:"5px 12px",fontSize:12,flexShrink:0}}>+</button></div>)}</div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>{catalogo.map((cat,i)=><button key={i} onClick={()=>setDbCat(i)} style={{...B(dbCat===i?"#f47c20":"#142840",dbCat===i?"#fff":"#7da5c8"),border:`1px solid ${dbCat===i?"#f47c20":"#1a3050"}`,fontSize:11,padding:"5px 12px"}}>{cat.categoria}</button>)}</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>{(categoria.items||[]).map((it,i)=><div key={i} style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:"#1a1a2e",marginBottom:2}}>{it.desc}</div><div style={{fontSize:11,color:"#475569"}}>{it.unit} · {fmt(it.vu)}</div></div><button onClick={()=>{setItems(prev=>[...prev,{id:siguienteId(prev),desc:it.desc,cant:1,unit:it.unit,vu:it.vu}]);}} style={{...B("#f47c20"),padding:"5px 12px",fontSize:12,flexShrink:0}}>+</button></div>)}</div>
             </div>
           )}
 

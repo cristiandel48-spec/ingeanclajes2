@@ -6,6 +6,7 @@ import Dashboard from "./screens/Dashboard/Dashboard";
 import Cotizacion from "./screens/Cotizacion/Cotizacion";
 import ClientesDB from "./screens/Clientes/ClientesDB";
 import WhatsAppCRM from "./screens/WhatsApp/WhatsAppCRM";
+import Catalogo from "./screens/Catalogo/Catalogo";
 import Pagos from "./screens/Pagos/Pagos";
 import Obras from "./screens/Obras/Obras";
 import Certificaciones from "./screens/Certificaciones/Certificaciones";
@@ -26,6 +27,7 @@ const SCREENS = {
   cotizacion: Cotizacion,
   clientes: ClientesDB,
   whatsapp: WhatsAppCRM,
+  catalogo: Catalogo,
   obras: Obras,
   pagos: Pagos,
   certificaciones: Certificaciones,

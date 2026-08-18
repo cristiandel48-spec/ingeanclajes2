@@ -2,6 +2,8 @@ import { useRef, useState } from "react";
 import AvisoFlujo from "../../components/AvisoFlujo";
 import { B, SI } from "../../styles/tokens";
 import { armarCotizacionDesdeTexto } from "../../lib/asistenteCotizacion";
+import { agruparCatalogo } from "../../lib/catalogo";
+import { useAppData } from "../../context/AppDataContext";
 import { TIPOS_ACEPTADOS, datosSueltos, leerTextoDeArchivo, marcarFragmentos } from "../../lib/leerDocumento";
 import { fmt } from "../../lib/format";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
@@ -24,6 +26,8 @@ const COLORES = {
 };
 
 export default function ImportarCotizacion({ onAplicar, onCerrar, clientes = [] }) {
+  const { catalogoItems } = useAppData();
+  const catalogo = agruparCatalogo(catalogoItems);
   const entrada = useRef(null);
   const [archivo, setArchivo] = useState(null);
   const [texto, setTexto] = useState("");
@@ -51,7 +55,7 @@ export default function ImportarCotizacion({ onAplicar, onCerrar, clientes = [] 
       setSueltos(datosSueltos(leido));
 
       setPaso("interpretando");
-      const armada = await armarCotizacionDesdeTexto(leido);
+      const armada = await armarCotizacionDesdeTexto(leido, catalogo);
       setPropuesta(armada);
       setCantidades(Object.fromEntries(armada.items.map((item, i) => [i, item.cant])));
     } catch (fallo) {

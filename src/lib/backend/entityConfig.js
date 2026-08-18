@@ -677,6 +677,30 @@ export const entityConfig = {
   // Configuracion general de la empresa: una sola fila por tenant. Marcada
   // como opcional para que la app siga funcionando si aun no se aplico la
   // migracion 023.
+  catalogo_items: {
+    table: "catalogo_items",
+    // Puede no existir todavia si no se corrio la migracion 035: la
+    // aplicacion sigue con el catalogo del codigo y no se rompe nada.
+    optional: true,
+    coerceNullCols: ["precio_base"],
+    toRow: (item) => ({
+      id: item.id,
+      categoria: item.categoria ?? null,
+      descripcion: item.descripcion,
+      unidad: item.unidad,
+      precio_base: item.precioBase ?? 0,
+      disponible: item.disponible ?? true,
+    }),
+    fromRow: (row) => ({
+      id: row.id,
+      categoria: row.categoria ?? "",
+      descripcion: row.descripcion ?? "",
+      unidad: row.unidad ?? "",
+      precioBase: Number(row.precio_base ?? 0),
+      disponible: row.disponible !== false,
+      actualizadoEn: row.actualizado_en ?? null,
+    }),
+  },
   empresa_config: {
     table: "empresa_config",
     optional: true,

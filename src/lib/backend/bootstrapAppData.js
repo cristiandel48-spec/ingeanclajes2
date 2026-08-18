@@ -18,6 +18,7 @@ const ENTITY_TO_STATE = {
   asientos_contables: "asientosContables",
   nominas_generadas: "nominasGeneradasCloud",
   empresa_config: "empresaConfig",
+  catalogo_items: "catalogoItems",
 };
 
 // Baseline en memoria: por entidad, un Map(id -> JSON serializado de la última

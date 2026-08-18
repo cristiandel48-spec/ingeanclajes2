@@ -4,6 +4,8 @@ import BotonDictado from "../../components/ui/BotonDictado";
 import LBL from "../../components/ui/LBL";
 import { B, SI } from "../../styles/tokens";
 import { armarCotizacionDesdeTexto } from "../../lib/asistenteCotizacion";
+import { agruparCatalogo } from "../../lib/catalogo";
+import { useAppData } from "../../context/AppDataContext";
 import { dictadoDisponible } from "../../hooks/useDictado";
 import { fmt } from "../../lib/format";
 
@@ -17,6 +19,10 @@ import { fmt } from "../../lib/format";
 // sistema y de ahi salen el valor unitario y la unidad.
 
 export default function DictarCotizacion({ onAplicar, onCerrar }) {
+  // Los precios salen de la base, no del codigo: si se cambian en la
+  // pantalla de catalogo, el dictado usa los nuevos.
+  const { catalogoItems } = useAppData();
+  const catalogo = agruparCatalogo(catalogoItems);
   const [texto, setTexto] = useState("");
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
@@ -27,7 +33,7 @@ export default function DictarCotizacion({ onAplicar, onCerrar }) {
     setError("");
     setPropuesta(null);
     try {
-      setPropuesta(await armarCotizacionDesdeTexto(texto));
+      setPropuesta(await armarCotizacionDesdeTexto(texto, catalogo));
     } catch (fallo) {
       setError(fallo.message);
     } finally {

@@ -49,6 +49,9 @@ export function AppDataProvider({ children }) {
   const [nominasGeneradas, setNominasGeneradas] = useState(NOMINAS_GENERADAS_INIT);
   // Configuracion de empresa (firma escaneada). Una sola fila.
   const [empresaConfig, setEmpresaConfig] = useState([]);
+  // El catalogo de servicios. Vive en la base para que los precios se
+  // cambien sin publicar una version del programa.
+  const [catalogoItems, setCatalogoItems] = useState([]);
   // Rol y modulos de quien tiene la sesion abierta. null mientras carga.
   const [membresia, setMembresia] = useState(null);
   const [cotDraft, setCotDraft] = useState(null);
@@ -98,6 +101,7 @@ export function AppDataProvider({ children }) {
     asientosContables,
     nominasGeneradasCloud: nominasGeneradas,
     empresaConfig,
+    catalogoItems,
   });
 
   payloadRef.current = buildCloudPayload;
@@ -191,6 +195,7 @@ export function AppDataProvider({ children }) {
           setAsientosContables(cloud.asientosContables.map((entry) => normalizeAsientoContable(entry, cloud.planCuentas?.length ? cloud.planCuentas.map(normalizePlanCuenta) : PLAN_CUENTAS_INIT)));
         }
         if (Array.isArray(cloud.empresaConfig)) setEmpresaConfig(cloud.empresaConfig);
+        if (Array.isArray(cloud.catalogoItems)) setCatalogoItems(cloud.catalogoItems);
         if (Array.isArray(cloud.nominasGeneradasCloud)) {
           setNominasGeneradas(cloud.nominasGeneradasCloud.map(normalizeNominaGeneratedRecord));
         }
@@ -277,6 +282,7 @@ export function AppDataProvider({ children }) {
     asientosContables,
     nominasGeneradas,
     empresaConfig,
+    catalogoItems,
   ]);
 
   // Registros cuyo detalle ya se pidio, para no volver a pedirlo cada vez que
@@ -339,6 +345,7 @@ export function AppDataProvider({ children }) {
     asientosContables, setAsientosContables,
     nominasGeneradas, setNominasGeneradas,
     empresaConfig, setEmpresaConfig,
+    catalogoItems, setCatalogoItems,
     membresia,
     cotDraft, setCotDraft,
     intencion, irAPantalla, limpiarIntencion,

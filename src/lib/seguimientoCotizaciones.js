@@ -20,8 +20,17 @@ export const VALIDEZ_POR_DEFECTO = 30;
 // para mal. Todo lo demas -lo que sigue Pendiente- es lo que hay que perseguir.
 const ESTADOS_CERRADOS = ["Aprobada", "Rechazada", "Anulada"];
 
+// Un borrador tampoco se persigue, pero por el motivo contrario: no se ha
+// enviado. Las que nacen de WhatsApp entran asi, y contarlas como «sin
+// respuesta» seria reclamarle al cliente algo que nunca recibio.
+const ESTADOS_SIN_ENVIAR = ["Borrador"];
+
 export function estaCerrada(cotizacion) {
   return ESTADOS_CERRADOS.includes(String(cotizacion?.estado || "").trim());
+}
+
+export function estaSinEnviar(cotizacion) {
+  return ESTADOS_SIN_ENVIAR.includes(String(cotizacion?.estado || "").trim());
 }
 
 function aFecha(texto) {
@@ -39,7 +48,7 @@ function aFecha(texto) {
  */
 export function seguimientoDe(cotizacion, hoy = new Date()) {
   const nada = { diasParaVencer: null, diasSinRespuesta: null, validezUsada: null };
-  if (!cotizacion || estaCerrada(cotizacion)) return nada;
+  if (!cotizacion || estaCerrada(cotizacion) || estaSinEnviar(cotizacion)) return nada;
 
   const emitida = aFecha(cotizacion.fecha);
   if (!emitida) return nada;
@@ -68,7 +77,7 @@ export function seguimientoDe(cotizacion, hoy = new Date()) {
  */
 export function calcularSeguimiento(cotizaciones = [], hoy = new Date()) {
   return (Array.isArray(cotizaciones) ? cotizaciones : [])
-    .filter((cotizacion) => cotizacion && !estaCerrada(cotizacion))
+    .filter((cotizacion) => cotizacion && !estaCerrada(cotizacion) && !estaSinEnviar(cotizacion))
     .map((cotizacion) => ({ ...cotizacion, ...seguimientoDe(cotizacion, hoy) }))
     .sort((a, b) => {
       if (a.diasParaVencer === null) return 1;

@@ -25,7 +25,7 @@
 //   supabase secrets set WA_TOKEN=<token permanente del System User>
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { armarLineas, redactarEstimado } from "./cotizar.ts";
+import { armarLineas, calcularTotales, redactarEstimado, UTILIDAD_PCT } from "./cotizar.ts";
 
 const WA_VERIFY_TOKEN = Deno.env.get("WA_VERIFY_TOKEN") ?? "";
 const WA_APP_SECRET   = Deno.env.get("WA_APP_SECRET") ?? "";
@@ -265,6 +265,7 @@ Deno.serve(async (peticion) => {
 
         const nombre = suyo?.contacto || suyo?.nombre || perfil || null;
         let respuesta = mensajeAcuse(nombre);
+        let cotizacionCreada: string | null = null;
 
         if (config.modo === "preliminar") {
           try {
@@ -290,6 +291,35 @@ Deno.serve(async (peticion) => {
                 fuera,
                 telefonoEmpresa: WA_FIRMA,
               });
+
+              // Y la cotizacion queda hecha, en borrador, para que el asesor
+              // la abra y la revise en vez de volver a teclearla.
+              //
+              // Solo cuando se reconocio algo: si no hay items, no hay nada
+              // que cotizar y se gastaria un consecutivo para nada.
+              try {
+                const totales = calcularTotales(lineas);
+                const { data: creada } = await db.rpc("crear_cotizacion_whatsapp", {
+                  p_tenant: config.tenant_id,
+                  p_cliente: suyo?.nombre || entendido?.cliente || perfil || "",
+                  p_contacto: suyo?.contacto || entendido?.contacto || perfil || "",
+                  p_telefono: telefono,
+                  p_ciudad: suyo?.ciudad || entendido?.ciudad || "",
+                  p_obra: entendido?.obra || "",
+                  p_items: lineas.map((l) => ({
+                    desc: l.descripcion, cant: l.cantidad, unit: l.unidad, vu: l.precio,
+                  })),
+                  p_utilidad: UTILIDAD_PCT,
+                  p_total: totales.total,
+                  p_alcance: entendido?.alcance || "",
+                });
+                const fila = Array.isArray(creada) ? creada[0] : creada;
+                if (fila?.id) cotizacionCreada = fila.id;
+              } catch (falloCot) {
+                // Si falla, el cliente ya recibio su estimado igual. Queda en
+                // los registros y el asesor la hace a mano.
+                console.error("No se pudo dejar la cotizacion en borrador:", falloCot);
+              }
             }
           } catch (falloIa) {
             // Si la IA falla o tarda, se responde el acuse y se deja anotado.
@@ -299,7 +329,7 @@ Deno.serve(async (peticion) => {
         }
 
         await responderWhatsApp(phoneNumberId, telefono, respuesta);
-        await cerrar({ estado: "respondido", respuesta });
+        await cerrar({ estado: "respondido", respuesta, cotizacion_id: cotizacionCreada });
       } catch (fallo) {
         console.error("No se pudo atender el mensaje:", fallo);
         await cerrar({

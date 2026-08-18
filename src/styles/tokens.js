@@ -4,6 +4,9 @@ export const EC={
   "Cotización":{bg:"#FEECEC",text:"#B42318"},
   "Pagado":{bg:"#ECFDF3",text:"#027A48"},
   "Pendiente":{bg:"#FFFAEB",text:"#B54708"},
+  // Nace de WhatsApp y todavia no la ha visto nadie. Gris a proposito: no
+  // pide accion del cliente, pide que un asesor la revise.
+  "Borrador":{bg:"#F2F4F7",text:"#475467"},
   "Finalizado":{bg:"#F4F3FF",text:"#5925DC"},
   "Vigente":{bg:"#ECFDF3",text:"#027A48"},
   "Vencida":{bg:"#FEE4E2",text:"#B42318"},

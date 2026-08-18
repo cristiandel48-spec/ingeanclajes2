@@ -36,7 +36,7 @@ export default function ListaCotizaciones({ cotizaciones, acciones }) {
       marcador="Buscar por número, cliente, obra o ciudad…"
       buscarEn={(c) => [c.numero, c.id, c.cliente, c.obra, c.ciudad].filter(Boolean).join(" ")}
       estadoDe={(c) => c.estado}
-      estadosFijos={["Pendiente", "Aprobada"]}
+      estadosFijos={["Borrador", "Pendiente", "Aprobada"]}
       fechaDe={(c) => c.fecha}
       ordenes={ORDENES}
       filtrosExtra={({ valores, poner }) => (

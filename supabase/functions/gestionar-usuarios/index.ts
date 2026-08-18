@@ -159,6 +159,156 @@ function escapeHtml(v: string) {
   ));
 }
 
+// ── El correo de la cotizacion ──────────────────────────────────────────────
+//
+// Antes se armaba partiendo el mensaje por renglones y metiendo cada uno en un
+// <p> con margen, y las lineas en blanco en <p>&nbsp;</p>. El resultado eran
+// huecos enormes, sin logo, sin alineacion y con las cifras sueltas: parecia
+// un borrador, no una propuesta de treinta millones.
+//
+// Se arma con TABLAS y estilos en linea, no con clases ni flex: los clientes
+// de correo -Gmail, Outlook, el de iPhone- descartan las hojas de estilo y
+// entienden poco CSS. Lo que aqui parece anticuado es lo unico que se ve igual
+// en todos.
+//
+// EL ENCABEZADO NO LLEVA IMAGEN A PROPOSITO: Gmail esconde las imagenes hasta
+// que el destinatario pulsa «mostrar», asi que un logo saldria como un
+// recuadro roto en el primer vistazo, que es el que cuenta. El nombre
+// compuesto con tipografia se ve siempre.
+
+const pesosCo = (valor: unknown) => {
+  const n = Number(valor);
+  if (!Number.isFinite(n)) return "";
+  return "$ " + Math.round(n).toLocaleString("es-CO", { maximumFractionDigits: 0 });
+};
+
+const cantidadCo = (valor: unknown) => {
+  const n = Number(valor);
+  if (!Number.isFinite(n)) return "";
+  return n.toLocaleString("es-CO", { maximumFractionDigits: 2 });
+};
+
+type DetalleCotizacion = {
+  saludo?: string;
+  obra?: string;
+  nota?: string;
+  items?: Array<{ desc?: string; cant?: number; unit?: string; vu?: number }>;
+  subtotal?: number;
+  utilidad?: number;
+  utilidadPct?: number;
+  iva?: number;
+  total?: number;
+  validez?: number | string;
+  tiempoEjec?: string;
+  formaPago?: string;
+};
+
+const GRIS = "#5f6368";
+const TINTA = "#202124";
+const BORDE_SUAVE = "#e8eaed";
+
+function filaTotal(k: string, v: string, fuerte = false) {
+  const tam = fuerte ? "15px" : "13px";
+  const peso = fuerte ? "700" : "400";
+  const color = fuerte ? TINTA : GRIS;
+  return '<tr><td style="padding:3px 0;color:' + color + ';font-size:' + tam + ';font-weight:' + peso + '">'
+    + escapeHtml(k)
+    + '</td><td align="right" style="padding:3px 0;color:' + color + ';font-size:' + tam
+    + ';font-weight:' + peso + ';white-space:nowrap">' + escapeHtml(v) + '</td></tr>';
+}
+
+function celdaCondicion(k: string, v: string) {
+  return '<td width="33%" valign="top" style="padding:0 4px">'
+    + '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#f8f9fa;border-radius:6px">'
+    + '<tr><td style="padding:10px 12px">'
+    + '<div style="font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;color:' + GRIS + '">' + escapeHtml(k) + '</div>'
+    + '<div style="font-size:12.5px;color:' + TINTA + ';font-weight:600;margin-top:3px;line-height:1.4">' + escapeHtml(v) + '</div>'
+    + '</td></tr></table></td>';
+}
+
+function htmlCotizacion(numero: string, mensaje: string, d: DetalleCotizacion | null) {
+  const items = (d?.items ?? []).filter((i) => i && i.desc);
+
+  const filas = items.map((i) => (
+    '<tr><td style="padding:9px 12px;border-bottom:1px solid ' + BORDE_SUAVE + ';color:' + TINTA + ';font-size:13px">'
+    + escapeHtml(String(i.desc)) + '</td>'
+    + '<td align="right" style="padding:9px 12px;border-bottom:1px solid ' + BORDE_SUAVE + ';color:' + GRIS + ';font-size:13px;white-space:nowrap">'
+    + escapeHtml(cantidadCo(i.cant)) + " " + escapeHtml(String(i.unit ?? "")) + '</td>'
+    + '<td align="right" style="padding:9px 12px;border-bottom:1px solid ' + BORDE_SUAVE + ';color:' + TINTA + ';font-size:13px;white-space:nowrap">'
+    + escapeHtml(pesosCo(Number(i.cant ?? 0) * Number(i.vu ?? 0))) + '</td></tr>'
+  )).join("");
+
+  const encabezado = (t: string, al = "left") =>
+    '<th align="' + al + '" style="padding:8px 12px;background:#f8f9fa;border-bottom:1px solid ' + BORDE_SUAVE
+    + ';font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:' + GRIS + ';font-weight:700">' + t + '</th>';
+
+  const tabla = filas
+    ? '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;margin:4px 0 18px"><tr>'
+      + encabezado("Servicio") + encabezado("Cantidad", "right") + encabezado("Valor", "right")
+      + '</tr>' + filas + '</table>'
+    : "";
+
+  const totales = Number(d?.total)
+    ? '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;background:#f8f9fa;border-radius:6px;margin:0 0 18px">'
+      + '<tr><td style="padding:12px 14px"><table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse">'
+      + (d?.subtotal ? filaTotal("Subtotal", pesosCo(d.subtotal)) : "")
+      + (d?.utilidad ? filaTotal("Utilidad (" + (d.utilidadPct ?? 10) + "%)", pesosCo(d.utilidad)) : "")
+      + (d?.iva ? filaTotal("IVA (19% sobre la utilidad)", pesosCo(d.iva)) : "")
+      + '<tr><td colspan="2" style="border-top:1px solid #dadce0;padding-top:8px"></td></tr>'
+      + filaTotal("Total", pesosCo(d?.total), true)
+      + '</table></td></tr></table>'
+    : "";
+
+  const condiciones = (d?.validez || d?.tiempoEjec || d?.formaPago)
+    ? '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 18px"><tr>'
+      + (d?.validez ? celdaCondicion("Validez", d.validez + " días") : "")
+      + (d?.tiempoEjec ? celdaCondicion("Tiempo de ejecución", String(d.tiempoEjec)) : "")
+      + (d?.formaPago ? celdaCondicion("Forma de pago", String(d.formaPago)) : "")
+      + '</tr></table>'
+    : "";
+
+  // Lo que la persona escribio de su puno y letra. Va destacado y antes de las
+  // cifras: si alguien se tomo el trabajo de escribirlo, es lo mas importante
+  // del correo.
+  const nota = String(d?.nota ?? "").trim()
+    ? '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 18px">'
+      + '<tr><td style="border-left:3px solid #f47c20;padding:2px 0 2px 12px;font-size:14px;'
+      + 'line-height:1.6;color:' + TINTA + ';white-space:pre-line">'
+      + escapeHtml(String(d?.nota).trim()) + '</td></tr></table>'
+    : "";
+
+  // Sin datos -una version vieja de la pantalla abierta en otra maquina- se
+  // muestra el texto tal cual, pero dentro del mismo marco: sigue viendose
+  // mejor que antes y el correo sale igual.
+  const cuerpo = Number(d?.total)
+    ? '<p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:' + TINTA + '">'
+      + escapeHtml(d?.saludo || "Buen día") + '.</p>'
+      + '<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:' + TINTA + '">Adjunto encontrará la cotización'
+      + (d?.obra ? " para <strong>" + escapeHtml(String(d.obra)) + "</strong>" : "") + '.</p>'
+      + nota + tabla + totales + condiciones
+      + '<p style="margin:0;font-size:14px;line-height:1.6;color:' + TINTA + '">Quedamos atentos a sus comentarios y a cualquier ajuste que necesite.</p>'
+    : '<div style="font-size:14px;line-height:1.6;color:' + TINTA + ';white-space:pre-line">' + escapeHtml(mensaje) + '</div>';
+
+  return '<!doctype html><html><head><meta charset="utf-8">'
+    + '<meta name="viewport" content="width=device-width,initial-scale=1"></head>'
+    + '<body style="margin:0;padding:0;background:#f1f3f4">'
+    + '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#f1f3f4">'
+    + '<tr><td align="center" style="padding:22px 12px">'
+    + '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px;background:#ffffff;border-radius:10px;overflow:hidden;font-family:Arial,Helvetica,sans-serif">'
+    + '<tr><td style="background:#111111;padding:16px 22px">'
+    + '<table role="presentation" cellpadding="0" cellspacing="0" width="100%"><tr><td>'
+    + '<div style="color:#ffffff;font-size:17px;font-weight:bold;letter-spacing:-.3px">INGEANCLAJES</div>'
+    + '<div style="color:#bdbdbd;font-size:8px;letter-spacing:2px;margin-top:2px">ESPECIALISTAS EN ANCLAJES</div>'
+    + '</td><td align="right" style="color:#ffffff;font-size:12px;font-family:Courier New,monospace">'
+    + escapeHtml(numero) + '</td></tr></table></td></tr>'
+    + '<tr><td style="padding:22px">' + cuerpo + '</td></tr>'
+    + '<tr><td style="border-top:1px solid ' + BORDE_SUAVE + ';padding:14px 22px;color:#80868b;font-size:11px;line-height:1.7">'
+    + '<strong style="color:#5f6368">Ingeanclajes S.A.S</strong> &middot; NIT 900193965-4<br>'
+    + 'Calle 38 Sur # 36 &ndash; 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541<br>'
+    + 'www.ingeanclajessas.com'
+    + '</td></tr></table></td></tr></table></body></html>';
+}
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -271,13 +421,13 @@ Deno.serve(async (req) => {
         return error("El PDF pesa más de 20 MB. Quita algunas fotos de la cotización.");
       }
 
-      // El mensaje lo escribe una persona en un campo de texto, asi que se
-      // escapa antes de meterlo en el HTML.
-      const parrafos = mensaje
-        .split(/\r?\n/)
-        .map((l) => `<p style="margin:0 0 10px">${escapeHtml(l) || "&nbsp;"}</p>`)
-        .join("");
-      const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1E1E1E;line-height:1.6;max-width:560px">${parrafos}</div>`;
+      // `detalle` trae las cifras aparte para poder pintarlas en una tabla. El
+      // `mensaje` sigue viajando y es lo que se envia como texto plano, para
+      // quien lee el correo sin formato. Todo se escapa: lo escribe una
+      // persona en un campo de texto.
+      const detalle = (cuerpo.detalle ?? null) as DetalleCotizacion | null;
+      const numero = String(cuerpo.numero ?? "").trim();
+      const html = htmlCotizacion(numero, mensaje, detalle);
 
       const resultado = await enviarCorreo({
         para,

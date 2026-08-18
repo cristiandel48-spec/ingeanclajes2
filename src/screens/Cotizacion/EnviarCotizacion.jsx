@@ -54,9 +54,13 @@ function agruparItems(items) {
 const cantidadLegible = (n) =>
   Number(n).toLocaleString("es-CO", { maximumFractionDigits: 2 });
 
-function detallePropuesta(c) {
+function propuestaActiva(c) {
   const propuestas = getQuotePrintableProposals(c);
-  const activa = propuestas.find((p) => p.id === c?.propuestaActivaId) || propuestas[0];
+  return propuestas.find((p) => p.id === c?.propuestaActivaId) || propuestas[0] || null;
+}
+
+function detallePropuesta(c) {
+  const activa = propuestaActiva(c);
   if (!activa?.items?.length) return [];
 
   const lineas = agruparItems(activa.items).map((item) => (
@@ -73,6 +77,43 @@ function detallePropuesta(c) {
     `IVA (19% sobre la utilidad): ${fmt(activa.iva)}`,
     `Valor total: ${fmt(activa.tot)}`,
   ];
+}
+
+// Las mismas cifras, pero sin convertir a texto: el correo las pinta en una
+// tabla y necesita los números, no los renglones. El texto de arriba sigue
+// yendo como alternativa en texto plano, para quien lea el correo sin formato.
+function detalleParaCorreo(c) {
+  const activa = propuestaActiva(c);
+  if (!activa?.items?.length) return null;
+
+  return {
+    saludo: primerNombre(c?.contacto) ? `${primerNombre(c.contacto)}, buen día` : "Buen día",
+    obra: comoNombre(c?.obra || ""),
+    items: agruparItems(activa.items).map((i) => ({
+      desc: comoFrase(i.desc), cant: i.cant, unit: i.unit, vu: i.vu,
+    })),
+    subtotal: activa.sub,
+    utilidad: activa.ut,
+    utilidadPct: activa.quote?.util ?? 10,
+    iva: activa.iva,
+    total: activa.tot,
+    validez: c?.val || 30,
+    tiempoEjec: c?.tiempoEjec ? comoFrase(c.tiempoEjec) : "",
+    formaPago: c?.formaPago ? comoFrase(c.formaPago) : "",
+  };
+}
+
+// El mensaje es editable, y el correo con formato lo arma la función a partir
+// de las cifras: si alguien agrega una línea a mano -«el lunes paso por la
+// obra»- se perdería. Se rescata comparando con lo que propuso el programa;
+// lo que no reconoce, viaja aparte y sale destacado antes de la tabla.
+function notaEscritaAMano(mensaje, original) {
+  const propuestas = new Set(original.split("\n").map((l) => l.trim()).filter(Boolean));
+  return mensaje
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l && !propuestas.has(l))
+    .join("\n");
 }
 
 function mensajePorDefecto(c) {
@@ -100,7 +141,8 @@ function mensajePorDefecto(c) {
 export default function EnviarCotizacion({ cotizacion, firmaImg = "", onCerrar }) {
   const [para, setPara] = useState(cotizacion?.contactoEmail || "");
   const [asunto, setAsunto] = useState(asuntoPorDefecto(cotizacion));
-  const [mensaje, setMensaje] = useState(mensajePorDefecto(cotizacion));
+  const [mensajeOriginal] = useState(() => mensajePorDefecto(cotizacion));
+  const [mensaje, setMensaje] = useState(mensajeOriginal);
   const [estado, setEstado] = useState("");     // texto de avance
   const [error, setError] = useState("");
   const [enviado, setEnviado] = useState(false);
@@ -124,6 +166,10 @@ export default function EnviarCotizacion({ cotizacion, firmaImg = "", onCerrar }
         // editable y una tilde escrita a mano rompe las cabeceras del correo.
         asunto: asuntoSeguro(asunto),
         mensaje,
+        detalle: {
+          ...(detalleParaCorreo(cotizacion) || {}),
+          nota: notaEscritaAMano(mensaje, mensajeOriginal),
+        },
         pdfBase64: await blobABase64(blob),
         nombreArchivo: nombre,
         numero: cotizacion?.numero || "",

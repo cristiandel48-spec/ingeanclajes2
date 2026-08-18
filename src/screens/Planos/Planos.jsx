@@ -9,8 +9,10 @@ import { B, CD, SI, ST, TC } from "../../styles/tokens";
 import { measurementsToQuoteItems } from "../../lib/maps";
 import { fmt } from "../../lib/format";
 import { leerImagenComprimida } from "../../lib/imagenes";
+import { obraEstaCerrada } from "../../lib/flujoObra";
+import { esAdmin } from "../../lib/permisos";
 export default function Planos({ctx}){
-  const {obras,setObras,cotizaciones,setCotDraft,setScr}=ctx;
+  const {obras,setObras,cotizaciones,setCotDraft,setScr,membresia}=ctx;
   const [sel,setSel]=useState(null);
   const [imgPlano,setImgPlano]=useState(null);
   const [trazosForm,setTrazosForm]=useState({tipo:"LVH",ml:0,label:""});
@@ -44,8 +46,14 @@ export default function Planos({ctx}){
     setTabPlano("imagen");
   };
 
+  // Los trazos, los anclajes y las mediciones son parte del trabajo entregado:
+  // salen en el plano que se le paso al cliente. Una obra cerrada no los
+  // cambia. La base ademas lo revierte, asi que sin esto la pantalla diria
+  // que guardo algo que no se guardo.
+  const bloqueada = obraEstaCerrada(sel) && !esAdmin(membresia);
+
   const guardarEnObra=(patch={})=>{
-    if(!sel) return;
+    if(!sel || bloqueada) return;
     setObras(prev=>prev.map(o=>o.id===sel.id?{...o,...patch}:o));
     setSel(prev=>prev?{...prev,...patch}:prev);
   };
@@ -165,6 +173,15 @@ export default function Planos({ctx}){
         <div style={{flex:1}}><div style={{fontSize:11,color:"#94a3b8"}}>{sel.id} · Ciudad: {sel.ciudad || "No registrada"}</div><div style={{fontSize:20,fontWeight:700,color:"#1a1a2e"}}>{sel.cliente}</div><div style={{fontSize:13,color:"#475569"}}>{sel.proyecto}</div></div>
         <Badge estado={sel.estado}/>
       </div>
+
+      {bloqueada&&(
+        <div style={{fontSize:11.5,color:"#166534",background:"#ecfdf5",border:"1px solid #a7f3d0",
+          borderRadius:10,padding:"10px 14px",marginBottom:20,lineHeight:1.5}}>
+          🔒 <strong>Obra finalizada.</strong> El plano y las mediciones son parte de lo que ya se
+          entregó, así que se consultan pero no se modifican. Si hay que corregir algo, un
+          administrador puede reabrir la obra.
+        </div>
+      )}
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
         {[["Total ML",(totalML) + " ML","#cc0000"],["Tramos automaticos",(geoMediciones.length),"#2563eb"],["Trazos manuales",(lineas.length),"#60b4ff"],["Valor total",fmt(sel.total),"#f47c20"]].map(([k,v,c])=>(<div key={k} style={{background:"#fff",borderRadius:10,padding:"12px 16px",border:"1px solid #e2e8f0",textAlign:"center"}}><div style={{fontSize:10,color:"#94a3b8",marginBottom:4}}>{k}</div><div style={{fontSize:15,fontWeight:700,color:c}}>{v}</div></div>))}

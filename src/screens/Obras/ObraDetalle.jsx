@@ -133,7 +133,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           <AvisoFlujo
             tono="info"
             titulo="Quién trabajó en esta obra"
-            accion={puedeCrearPersonal(membresia) && !nuevoEmp ? (
+            accion={puedeCrearPersonal(membresia) && !nuevoEmp && !bloqueada ? (
               <button
                 onClick={()=>setNuevoEmp(true)}
                 style={{...B("#cc0000"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}

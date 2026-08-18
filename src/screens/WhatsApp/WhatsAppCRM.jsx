@@ -3,6 +3,7 @@ import AvisoFlujo from "../../components/AvisoFlujo";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
 import ListaConversaciones from "./ListaConversaciones";
 import HiloConversacion from "./HiloConversacion";
+import PegarConversacion from "./PegarConversacion";
 import { getSupabaseClient, isSupabaseConfigured } from "../../lib/backend/supabaseClient";
 import { agruparEnConversaciones } from "../../lib/whatsappCrm";
 
@@ -20,6 +21,7 @@ export default function WhatsAppCRM() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
   const [abierta, setAbierta] = useState(null);   // telefono de la conversacion abierta
+  const [pegando, setPegando] = useState(false);
 
   const cargar = useCallback(async () => {
     if (!isSupabaseConfigured()) {
@@ -59,6 +61,18 @@ export default function WhatsAppCRM() {
   // El boton vive en la barra superior, no dentro de la pantalla.
   useAccionesPantalla(
     abierta ? null : (
+      <div style={{ display: "flex", gap: 7 }}>
+      {!pegando && (
+        <button
+          style={{
+            background: "#25D366", color: "#fff", border: "1px solid #25D366",
+            borderRadius: 9, padding: "8px 16px", fontSize: 12.5, fontWeight: 700,
+            cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+          }}
+          onClick={() => setPegando(true)}
+          title="Pegar una conversación y sacar de ahí la cotización"
+        >💬 Pegar conversación</button>
+      )}
       <button
         style={{
           background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0",
@@ -69,8 +83,9 @@ export default function WhatsAppCRM() {
         onClick={cargar}
         disabled={cargando}
       >{cargando ? "Cargando…" : "Actualizar"}</button>
+      </div>
     ),
-    [cargando, abierta, cargar]
+    [cargando, abierta, cargar, pegando]
   );
 
   const conversaciones = useMemo(() => agruparEnConversaciones(mensajes), [mensajes]);
@@ -98,6 +113,8 @@ export default function WhatsAppCRM() {
           {" · "}modo {config.modo}
         </div>
       )}
+
+      {pegando && <PegarConversacion onCerrar={() => setPegando(false)} />}
 
       {error && (
         <div style={{ background: "#FEF3F2", border: "1px solid #FECDCA", color: "#B42318",
@@ -140,6 +157,8 @@ export default function WhatsAppCRM() {
               <strong>Los chats que ya existen no se van a subir.</strong> WhatsApp solo entrega los
               mensajes que llegan a partir del momento en que se conecta; el historial anterior no se
               puede descargar. Aquí vas a ver las conversaciones nuevas, desde cero.
+              {" "}Para los que ya tiene, y mientras llega lo de Meta, está el botón
+              <strong> «Pegar conversación»</strong> de arriba: copia el chat y sale la cotización.
             </div>
             <div>
               <strong>El número que se conecte deja de funcionar en la aplicación normal de

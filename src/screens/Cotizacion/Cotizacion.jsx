@@ -29,7 +29,7 @@ import { blobABase64, generarCotizacionPdf } from "../../lib/cotizacionPdf";
 import { enviarCotizacionPorCorreo } from "../../lib/backend/usuarios";
 import { siguienteIdUnico } from "../../lib/identificadores";
 export default function Cotizacion({ctx}){
-  const {cotizaciones,setCotizaciones,obras,setObras,clientes,empresaConfig,asegurarDetalle}=ctx;
+  const {cotizaciones,setCotizaciones,obras,setObras,clientes,empresaConfig,asegurarDetalle,cotDraft,setCotDraft}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
   // Codigo y version del formato de cotizacion. Null si no esta configurado,
   // y entonces el documento sale como antes.
@@ -140,6 +140,36 @@ export default function Cotizacion({ctx}){
     setDictando(false);
     scrollAppToTop();
   };
+
+  // Borrador que deja otra pantalla: el plano que pasa sus mediciones a una
+  // cotizacion, o una conversacion de WhatsApp ya interpretada.
+  //
+  // Existia el buzon -cotDraft en el contexto- y Planos escribia en el, pero
+  // aqui nadie lo recogia: se pulsaba «pasar a cotizacion» y no llegaba nada.
+  // Se aplica por la misma puerta que el dictado, que ya sabe rellenar solo lo
+  // vacio y agregar los items sin pisar los que haya.
+  const draftAplicadoRef = useRef(null);
+  useEffect(()=>{
+    if(!cotDraft || draftAplicadoRef.current===cotDraft) return;
+    draftAplicadoRef.current = cotDraft;
+    aplicarDictado({
+      cliente: cotDraft.cliente ?? "",
+      contacto: cotDraft.contacto ?? "",
+      ciudad: cotDraft.ciudad ?? "",
+      obra: cotDraft.obra ?? "",
+      telefono: cotDraft.telefono ?? "",
+      nit: cotDraft.nit ?? "",
+      contactoEmail: cotDraft.contactoEmail ?? "",
+      direccion: cotDraft.direccion ?? "",
+      alcance: cotDraft.alcance ?? "",
+      items: Array.isArray(cotDraft.items) ? cotDraft.items : [],
+    });
+    setTab("form");
+    setCotDraft(null);
+  // Solo depende del buzon: aplicarDictado se rehace en cada render y meterlo
+  // aqui haria correr el efecto sin parar.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[cotDraft]);
 
   // Clientes que ya estan en el sistema, vengan de su ficha, de una cotizacion
   // anterior o de una obra. Se juntan por razon social acomodada, para que

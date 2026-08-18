@@ -1,16 +1,15 @@
 // Codigo y version de cada formato de la empresa.
 //
-// Va aqui, al lado de la firma, porque es lo mismo: se configura una vez y
-// vale para todos los documentos que salen del programa.
-//
 // LO IMPORTANTE ES QUE SE PUEDA SUBIR LA VERSION SIN TOCAR EL PROGRAMA. El
 // control de documentos no consiste en poner un codigo bonito, sino en que
 // cuando la plantilla cambia, el numero de version cambie con ella. Si eso
 // obligara a publicar una version nueva del sistema, nadie lo haria y el
 // codigo impreso mentiria.
+//
+// La tabla la pinta este componente; el titulo lo pone la pantalla que lo
+// muestra -Sistema > Formatos y versiones-.
 import { useAppData } from "../context/AppDataContext";
 import { FORMATOS, getControlDocumental, setControlDocumental } from "../lib/controlDocumental";
-import LBL from "./ui/LBL";
 import { SI } from "../styles/tokens";
 
 export default function ControlDocumentalConfig() {
@@ -22,8 +21,7 @@ export default function ControlDocumentalConfig() {
 
   return (
     <div>
-      <LBL>Control de documentos</LBL>
-      <div style={{ fontSize: 11, color: "#64748b", marginBottom: 10, lineHeight: 1.55 }}>
+      <div style={{ fontSize: 12, color: "#64748b", marginBottom: 14, lineHeight: 1.6 }}>
         El código y la versión salen impresos en el encabezado de cada documento. Identifican
         <strong> la plantilla</strong>, no el documento: el número de la cotización o del informe
         sigue siendo el de siempre. <strong>Cuando cambies un formato, sube aquí su versión.</strong>

@@ -41,7 +41,10 @@ export const MODULOS_MINIMOS = [];
 //
 // - usuarios: si se pudiera dar, cualquiera con ese modulo se daria el resto.
 // - dashboard: es el resumen economico de la empresa.
-export const MODULOS_SOLO_ADMIN = ["usuarios", "dashboard", "auditoria"];
+// - formatos: cambia el codigo y la version que se imprimen en TODOS los
+//   documentos de la empresa. Un dedazo ahi sale en cada cotizacion y en cada
+//   certificado, y es justo lo que revisa quien audita.
+export const MODULOS_SOLO_ADMIN = ["usuarios", "dashboard", "auditoria", "formatos"];
 
 // Y esto solo lo ve el dueño, ni siquiera los demas administradores.
 //

@@ -5,7 +5,6 @@ import { useAccionesPantalla } from "../../context/accionesPantalla";
 import DictarCotizacion from "./DictarCotizacion";
 import ImportarCotizacion from "./ImportarCotizacion";
 import FirmaEmpresa from "../../components/FirmaEmpresa";
-import ControlDocumentalConfig from "../../components/ControlDocumentalConfig";
 import DocumentoEnVivo from "./DocumentoEnVivo";
 import ListaCotizaciones from "./ListaCotizaciones";
 import EnviarCotizacion from "./EnviarCotizacion";
@@ -917,11 +916,9 @@ export default function Cotizacion({ctx}){
         </div>
         <FirmaEmpresa/>
 
-        {/* Codigo y version de los formatos. Se configura una vez y vale para
-            los tres documentos, no solo para la cotizacion. */}
-        <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #e2e8f0"}}>
-          <ControlDocumentalConfig/>
-        </div>
+        {/* El codigo y la version de los formatos se configuran en
+            Sistema > Formatos y versiones. Estaban aqui, pero valen para los
+            tres documentos y no para la cotizacion sola. */}
 
         <div style={{marginTop:12}}>
           <LBL>Firma — datos adicionales (uno por línea)</LBL>

@@ -19,6 +19,7 @@ import Horarios from "./screens/Horarios/Horarios";
 import Vencimientos from "./screens/Vencimientos/Vencimientos";
 import Usuarios from "./screens/Usuarios/Usuarios";
 import Auditoria from "./screens/Auditoria/Auditoria";
+import Formatos from "./screens/Formatos/Formatos";
 
 // Registro de pantallas. Las claves coinciden con los `id` de
 // config/navigation.jsx: para sumar una pantalla se agrega aqui y alli.
@@ -40,6 +41,7 @@ const SCREENS = {
   financiero: Financiero,
   usuarios: Usuarios,
   auditoria: Auditoria,
+  formatos: Formatos,
 };
 
 export default function App() {

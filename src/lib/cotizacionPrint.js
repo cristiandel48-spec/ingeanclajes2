@@ -203,7 +203,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
   const footerHtml = `
     <div class="footer">
       <span>Calle 38 Sur # 36 &ndash; 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; NIT 900193965-4</span>
-      <span>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajes.com</span>
+      <span>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajessas.com</span>
     </div>
   `;
 

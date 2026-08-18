@@ -197,7 +197,7 @@ Cancelar: se la entregas tú.`);
               <LBL>Correo</LBL>
               <input type="email" value={form.email} disabled={Boolean(editId)}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
-                placeholder="persona@ingeanclajes.com"
+                placeholder="persona@ingeanclajessas.com"
                 style={{ ...SI, ...(editId ? { background: "#f8fafc", color: "#94a3b8" } : {}) }} />
               {editId && <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 4 }}>El correo no se puede cambiar.</div>}
             </div>

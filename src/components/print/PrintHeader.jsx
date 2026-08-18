@@ -26,7 +26,10 @@ export default function PrintHeader({ dual, formato, empresaConfig }) {
         <div>Calle 38 sur # 36 - 48, Envigado</div>
         <div>PBX 448 26 86 · Cel 3152889541</div>
         <div>Nit. 900193965-4</div>
-        <div style={{color:"#cc0000",fontWeight:600}}>www.ingeanclajes.com</div>
+        {/* OJO: el dominio lleva «sas» al final. Durante mucho tiempo los
+            documentos dijeron www.ingeanclajes.com, que no existe: el
+            cliente que la tecleaba no llegaba a ninguna parte. */}
+        <div style={{color:"#cc0000",fontWeight:600}}>www.ingeanclajessas.com</div>
       </div>
 
       {/* El cuadro de control documental. Va con borde y en la esquina, que es

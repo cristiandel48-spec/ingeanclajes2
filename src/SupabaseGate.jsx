@@ -427,7 +427,7 @@ export default function SupabaseGate({ children }) {
               autoComplete="username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="correo@ingeanclajes.com"
+              placeholder="correo@ingeanclajessas.com"
               style={inputStyle}
             />
           </div>

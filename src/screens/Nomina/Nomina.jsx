@@ -648,7 +648,7 @@ export default function Nomina({ctx}){
                 onChange={(v)=>setNf({...nf,email:v})}
                 normalizar={normalizarCorreo}
                 revisar={avisoCorreo}
-                placeholder="correo@ingeanclajes.com"
+                placeholder="correo@ingeanclajessas.com"
                 inputMode="email"
                 autoCapitalize="off"
                 spellCheck={false}

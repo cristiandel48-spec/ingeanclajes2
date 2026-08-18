@@ -698,7 +698,7 @@ export const entityConfig = {
       unidad: row.unidad ?? "",
       precioBase: Number(row.precio_base ?? 0),
       disponible: row.disponible !== false,
-      actualizadoEn: row.actualizado_en ?? null,
+      actualizadoEn: row.updated_at ?? null,
     }),
   },
   empresa_config: {

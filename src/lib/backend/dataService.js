@@ -176,13 +176,21 @@ export function createDataService({ supabase, tenantId }) {
     // Se puede degradar a "*" a mitad si la base todavia no tiene las columnas
     // de contadores; por eso no es constante.
     let columnas = columnasDeLista(cfg);
+    // Se ordena por updated_at, que tienen todas las tablas. Si alguna no la
+    // tiene se pide sin orden: es preferible una lista sin ordenar a que se
+    // caiga la carga entera y la aplicacion se quede sin NINGUN dato, que es
+    // lo que pasaba con el catalogo -«column catalogo_items.updated_at does
+    // not exist»-.
+    let ordenar = true;
 
     for (;;) {
-      const { data, error } = await supabase
+      let consulta = supabase
         .from(cfg.table)
         .select(columnas)
-        .eq("tenant_id", tenantId)
-        .order("updated_at", { ascending: true })
+        .eq("tenant_id", tenantId);
+      if (ordenar) consulta = consulta.order("updated_at", { ascending: true });
+
+      const { data, error } = await consulta
         .range(desde, desde + FILAS_POR_PAGINA - 1);
 
       if (error) {
@@ -199,6 +207,15 @@ export function createDataService({ supabase, tenantId }) {
             "Ejecuta las migraciones pendientes para recuperar el ahorro."
           );
           columnas = "*";
+          filas.length = 0;
+          desde = 0;
+          continue;
+        }
+
+        // La que falta puede ser la de ordenar. Sin orden se carga igual.
+        if (isMissingColumnError(error) && ordenar) {
+          console.warn(`[${cfg.table}] no tiene updated_at; se carga sin ordenar.`);
+          ordenar = false;
           filas.length = 0;
           desde = 0;
           continue;

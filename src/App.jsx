@@ -5,6 +5,7 @@ import { pantallaInicial, puedeVer } from "./lib/permisos";
 import Dashboard from "./screens/Dashboard/Dashboard";
 import Cotizacion from "./screens/Cotizacion/Cotizacion";
 import ClientesDB from "./screens/Clientes/ClientesDB";
+import WhatsAppCRM from "./screens/WhatsApp/WhatsAppCRM";
 import Pagos from "./screens/Pagos/Pagos";
 import Obras from "./screens/Obras/Obras";
 import Certificaciones from "./screens/Certificaciones/Certificaciones";
@@ -24,6 +25,7 @@ const SCREENS = {
   dashboard: Dashboard,
   cotizacion: Cotizacion,
   clientes: ClientesDB,
+  whatsapp: WhatsAppCRM,
   obras: Obras,
   pagos: Pagos,
   certificaciones: Certificaciones,

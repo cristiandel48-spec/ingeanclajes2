@@ -40,6 +40,9 @@ export const NAV_SECTIONS = [
     items: [
       { id: "cotizacion", label: "Cotizaciones" },
       { id: "clientes", label: "Clientes" },
+      // Los mensajes que entran por WhatsApp: van aqui porque es de donde
+      // salen los clientes nuevos y las solicitudes de cotizacion.
+      { id: "whatsapp", label: "WhatsApp" },
       { id: "obras", label: "Ejecución de obra", short: "Obras" },
       // Los horarios se arman al lado de la obra: es donde se decide quien va
       // a cada sitio y se le avisa.

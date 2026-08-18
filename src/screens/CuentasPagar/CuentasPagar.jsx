@@ -135,8 +135,15 @@ export default function CuentasPagar({ctx}){
   };
 
   const cuentasNorm=cuentas.map(normalizarCuenta);
-  const proveedorSel=proveedoresData.find(p=>p.id===cxpForm.proveedorId) || null;
-  const proveedorPagoSel=proveedoresData.find(p=>p.id===proveedorPagoId) || null;
+  // Al abrir la pantalla los proveedores todavia no han llegado de la nube, asi
+  // que el formulario arranca sin ninguno y se toma el primero en cuanto estan.
+  // Se resuelve al leer, no corrigiendo el estado despues: el selector nunca
+  // llega a pintarse en blanco y no hay un render intermedio en el que guardar
+  // dejaria la factura sin proveedor.
+  const proveedorIdActivo=cxpForm.proveedorId || proveedoresData[0]?.id || "";
+  const proveedorPagoActivo=proveedorPagoId || proveedoresData[0]?.id || "";
+  const proveedorSel=proveedoresData.find(p=>p.id===proveedorIdActivo) || null;
+  const proveedorPagoSel=proveedoresData.find(p=>p.id===proveedorPagoActivo) || null;
 
   const calcCuentaTributaria=(form, proveedorActivo)=>{
     const subtotal=clampNum(form.subtotal);
@@ -186,28 +193,24 @@ export default function CuentasPagar({ctx}){
     };
   };
 
-  useEffect(()=>{
-    if(!cxpForm.proveedorId && proveedoresData[0]?.id){
-      setCxpForm(prev=>({...prev,proveedorId:proveedoresData[0].id}));
-    }
-  },[proveedoresData, cxpForm.proveedorId]);
-
-  useEffect(()=>{
-    if(!proveedorPagoId && proveedoresData[0]?.id){
-      setProveedorPagoId(proveedoresData[0].id);
-    }
-  },[proveedoresData, proveedorPagoId]);
-
-  useEffect(()=>{
-    if(!proveedorSel) return;
-    setCxpForm(prev=>{
-      const next={...prev};
-      if(!next.municipioReteica) next.municipioReteica=proveedorSel.municipioIca||"Envigado";
-      if(!next.codigoIca) next.codigoIca=proveedorSel.codigoIca||"";
-      if(!next.aplicaReteiva && proveedorSel.agenteReteiva) next.aplicaReteiva=true;
-      return next;
-    });
-  },[proveedorSel?.id]);
+  // El municipio de ICA, el codigo de actividad y la retencion de IVA se copian
+  // del proveedor sobre lo que este en blanco; lo que ya se escribio no se
+  // toca, y por eso se hace una sola vez por proveedor: si se repitiera, quien
+  // hubiera quitado la reteiva a mano se la veria volver a marcar sola.
+  //
+  // Se ajusta durante el render y no desde un efecto porque con el efecto
+  // quedaba un render con el formulario a medias -proveedor nuevo arriba,
+  // impuestos del anterior abajo- y ahi ya se podia darle a guardar.
+  const [proveedorTributarioAplicado,setProveedorTributarioAplicado]=useState(null);
+  if(proveedorSel && proveedorSel.id!==proveedorTributarioAplicado){
+    setProveedorTributarioAplicado(proveedorSel.id);
+    setCxpForm(prev=>({
+      ...prev,
+      municipioReteica:prev.municipioReteica || proveedorSel.municipioIca || "Envigado",
+      codigoIca:prev.codigoIca || proveedorSel.codigoIca || "",
+      aplicaReteiva:prev.aplicaReteiva || Boolean(proveedorSel.agenteReteiva),
+    }));
+  }
 
   const cuentasOrdenadas=[...cuentasNorm].sort((a,b)=>{
     if(a.estado!==b.estado) return a.estado==="Pendiente"?-1:1;
@@ -284,11 +287,6 @@ export default function CuentasPagar({ctx}){
       },
     ]);
   };
-
-  const totalPendiente=cuentasNorm.filter(c=>c.estado==="Pendiente").reduce((s,c)=>s+Number(c.saldoPendienteActual||0),0);
-  const totalPagado=cuentasNorm.reduce((s,c)=>s+Number(c.montoPagado||0),0);
-  const vencidas=cuentasNorm.filter(c=>c.estado==="Pendiente"&&c.fechaVence&&c.fechaVence<today());
-  const porVencer=cuentasNorm.filter(c=>c.estado==="Pendiente"&&c.fechaVence&&c.fechaVence>=today()&&((new Date(c.fechaVence+"T12:00:00")-new Date(today()+"T12:00:00"))/(1000*60*60*24))<=7);
 
   const resetProveedor=()=>{
     setProvForm(proveedorBase);
@@ -381,9 +379,12 @@ export default function CuentasPagar({ctx}){
   };
 
   const guardarCuenta=()=>{
-    if(!cxpForm.proveedorId || !cxpForm.concepto.trim() || Number(cxpForm.subtotal||0)<=0) return;
+    if(!proveedorIdActivo || !cxpForm.concepto.trim() || Number(cxpForm.subtotal||0)<=0) return;
     const payload=calcCuentaTributaria({
       ...cxpForm,
+      // El proveedor que vale es el que muestra el selector, que puede ser el
+      // primero de la lista sin que nadie lo haya elegido a mano.
+      proveedorId:proveedorIdActivo,
       factura:cxpForm.factura.trim(),
       concepto:cxpForm.concepto.trim(),
       observacionTributaria:(cxpForm.observacionTributaria||"").trim(),
@@ -509,7 +510,7 @@ export default function CuentasPagar({ctx}){
   };
 
   const registrarPagoProveedor=(proveedorIdPreset="")=>{
-    const pid = proveedorIdPreset || proveedorPagoId;
+    const pid = proveedorIdPreset || proveedorPagoActivo;
     const monto = Math.round(Number(pagoProv.monto || 0));
     if(!pid || !Number.isFinite(monto) || monto<=0) return;
 
@@ -540,7 +541,17 @@ export default function CuentasPagar({ctx}){
     const montoAplicado = afectaciones.reduce((s,a)=>s+Number(a.abono||0),0);
     if(montoAplicado<=0) return;
 
-    const pagoId = "PP-" + Date.now();
+    // Los pagos no tienen lista propia: cada uno se copia en el historial de
+    // cada factura que abona, asi que un mismo pago aparece repetido tantas
+    // veces como facturas cubrio. Se juntan los ids sin repetir para pedir el
+    // siguiente libre; contra la lista en bruto la numeracion iria saltando.
+    const pagosRegistrados = [...new Set(
+      cuentasNorm
+        .flatMap((cuenta)=>cuenta.pagosHistorial || [])
+        .map((pago)=>String(pago?.id || "").trim())
+        .filter(Boolean)
+    )].map((id)=>({ id }));
+    const pagoId = siguienteIdUnico(pagosRegistrados,"PP");
     const pagoRecord={
       id:pagoId,
       proveedorId:pid,
@@ -677,7 +688,7 @@ Ese valor volverá a quedar pendiente en la factura.
     }));
   };
 
-  const cuentasProveedorPago = cuentasNorm.filter(c=>c.proveedorId===proveedorPagoId);
+  const cuentasProveedorPago = cuentasNorm.filter(c=>c.proveedorId===proveedorPagoActivo);
   const cuentasPendientesProveedor = cuentasProveedorPago.filter(c=>Number(c.saldoPendienteActual || 0)>0);
   const totalPendienteProveedor = cuentasPendientesProveedor.reduce((s,c)=>s+Number(c.saldoPendienteActual || 0),0);
   const totalPagadoProveedor = cuentasProveedorPago.reduce((s,c)=>s+Number(c.montoPagado || 0),0);
@@ -716,7 +727,7 @@ Ese valor volverá a quedar pendiente en la factura.
   useEffect(()=>{
     accionesRef.current = {
       proveedor: ()=>{ setTab("proveedores"); setShowProv((v)=>!v); if(showProv && tab==="proveedores") resetProveedor(); },
-      causacion: ()=>{ setTab("causacion"); setShowCxP((v)=>{ const next=!v; if(next && !editCxPId) setCxpForm(createCuentaBase(cxpForm.proveedorId)); if(!next) resetCuenta(cxpForm.proveedorId); return next; }); },
+      causacion: ()=>{ setTab("causacion"); setShowCxP((v)=>{ const next=!v; if(next && !editCxPId) setCxpForm(createCuentaBase(proveedorIdActivo)); if(!next) resetCuenta(proveedorIdActivo); return next; }); },
       pago: ()=>{ setTab("pagos"); setVistaPagoCxP("registro"); scrollAppToTop("smooth"); },
     };
   });
@@ -801,7 +812,7 @@ Ese valor volverá a quedar pendiente en la factura.
                   </div>
                   <div>
                     <LBL>Seleccionar proveedor</LBL>
-                    <select value={proveedorPagoId} onChange={(e)=>setProveedorPagoId(e.target.value)} style={SI}>
+                    <select value={proveedorPagoActivo} onChange={(e)=>setProveedorPagoId(e.target.value)} style={SI}>
                       <option value="">Seleccionar proveedor...</option>
                       {proveedorBusquedaFiltrado.map((prov)=>(
                         <option key={prov.id} value={prov.id}>{prov.nombre} · {prov.nit || prov.id}</option>
@@ -865,11 +876,11 @@ Ese valor volverá a quedar pendiente en la factura.
                     <button
                       type="button"
                       onClick={()=>registrarPagoProveedor()}
-                      disabled={!proveedorPagoId || Number(pagoProv.monto || 0)<=0 || guardandoPagoProv || totalPendienteProveedor<=0}
+                      disabled={!proveedorPagoActivo || Number(pagoProv.monto || 0)<=0 || guardandoPagoProv || totalPendienteProveedor<=0}
                       style={{
                         ...B("#cc0000"),
-                        opacity:(!proveedorPagoId || Number(pagoProv.monto || 0)<=0 || guardandoPagoProv || totalPendienteProveedor<=0)?0.6:1,
-                        cursor:(!proveedorPagoId || Number(pagoProv.monto || 0)<=0 || guardandoPagoProv || totalPendienteProveedor<=0)?"not-allowed":"pointer",
+                        opacity:(!proveedorPagoActivo || Number(pagoProv.monto || 0)<=0 || guardandoPagoProv || totalPendienteProveedor<=0)?0.6:1,
+                        cursor:(!proveedorPagoActivo || Number(pagoProv.monto || 0)<=0 || guardandoPagoProv || totalPendienteProveedor<=0)?"not-allowed":"pointer",
                       }}
                     >
                       {guardandoPagoProv ? "Guardando..." : "Guardar pago"}
@@ -986,7 +997,7 @@ Ese valor volverá a quedar pendiente en la factura.
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
                 <div>
                   <LBL>Proveedor</LBL>
-                  <select value={cxpForm.proveedorId} onChange={e=>setCxpForm({...cxpForm,proveedorId:e.target.value})} style={SI}>
+                  <select value={proveedorIdActivo} onChange={e=>setCxpForm({...cxpForm,proveedorId:e.target.value})} style={SI}>
                     <option value="">Selecciona un proveedor...</option>
                     {proveedoresData.map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}
                   </select>
@@ -1124,7 +1135,7 @@ Ese valor volverá a quedar pendiente en la factura.
 
               <div style={{display:"flex",gap:8}}>
                 <button style={B("#cc0000")} onClick={guardarCuenta}>{editCxPId?"Guardar cambios":"Guardar cuenta"}</button>
-                <button style={B("#f1f5f9","#475569")} onClick={()=>resetCuenta(cxpForm.proveedorId)}>Cancelar</button>
+                <button style={B("#f1f5f9","#475569")} onClick={()=>resetCuenta(proveedorIdActivo)}>Cancelar</button>
               </div>
             </div>
           )}

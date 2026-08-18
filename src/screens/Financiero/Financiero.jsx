@@ -7,7 +7,7 @@ import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmt, fmtK } from "../../lib/format";
 import { printCurrentPz } from "../../lib/print";
 export default function Financiero({ctx}){
-  const {obras,pagos,cuentas,empleados}=ctx;
+  const {obras,cuentas,empleados}=ctx;
   const [obraFiltro,setObraFiltro]=useState("todas");
   const nomMes=empleados.filter(e=>e.activo).reduce((s,e)=>s+e.salario+200000,0);
 

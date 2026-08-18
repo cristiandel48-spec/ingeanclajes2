@@ -53,7 +53,6 @@ export const buildNominaPeriodo = (mes, corte="primera")=>{
 };
 export const buildPeriodoLiquidacionRetiro = (fechaSalida, periodoFallback=null)=>{
   if(!fechaSalida) return periodoFallback;
-  const [safeMes, safeDayText] = String(fechaSalida).split("-");
   const mes = String(fechaSalida).slice(0,7);
   const day = Number(String(fechaSalida).slice(-2));
   if(!mes || !Number.isFinite(day)) return periodoFallback;
@@ -780,7 +779,11 @@ export const loadStoredNominasGeneradas = () => {
         .map((snapshot)=>buildNominaGeneratedRecord(snapshot))
         .filter((item)=>item.id);
     }
-  }catch{}
+  }catch{
+    // La copia local es una comodidad, no la fuente de verdad: si el navegador
+    // la tiene bloqueada o quedo un JSON a medias, se sigue con la lista vacia
+    // y la nomina se lee de la nube. Cortar aqui dejaria la pantalla en blanco.
+  }
   return [];
 };
 
@@ -792,7 +795,7 @@ export const upsertNominaGeneratedRecord = (list=[], record={}) => {
 
 export const sanitizeExcelSheetName = (value="Hoja") =>
   String(value || "Hoja")
-    .replace(/[\\/:*?\[\]]/g, " ")
+    .replace(/[\\/:*?[\]]/g, " ")
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 31) || "Hoja";

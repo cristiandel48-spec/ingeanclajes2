@@ -11,6 +11,7 @@ import { B, CD, PAL, SI, ST } from "../../styles/tokens";
 import { INCAPACIDAD_ORIGEN_LABELS, INCAPACIDAD_RESPONSABLE_LABELS, NOMINA_CO_2026, NOMINA_GENERATED_STORAGE_KEY, NOMINA_PLANO_BANCO_DEFAULTS, PRESTACION_ESTADOS_LABELS, PRESTACION_TIPOS_LABELS, RECARGOS_CO_2026, TIPOS_CONTRATO_LABELS, buildIncapacidadFormDefault, buildLiquidacionPrestacionRecord, buildNominaGeneratedRecord, buildNominaPeriodo, buildNominaPlanoBancoContent, buildNominaSnapshot, calcularLiquidacionRetiro, calcularParafiscales, calcularPrestacionSocialEmpleado, calcularResumenIncapacidadesRegistros, calcularResumenNominaEmpleado, calcularTotalHoraExtraItem, calcularVacacionesPendientes, calcularValorHoraBase, calcularValorHoraRecargo, downloadTextFile, formatNominaGeneratedAt, getPctRecargo, isDateInPeriodo, normalizarCargos, normalizarEmpleado, normalizarIncapacidades, normalizarPrestacionesSociales, normalizeNominaGeneratedRecord, upsertNominaGeneratedRecord, upsertPrestacionSocial } from "../../lib/nomina";
 import { LOGO_INGEANCLAJES } from "../../assets/embeddedImages";
 import { fmt, fmtD, today } from "../../lib/format";
+import { siguienteIdUnico } from "../../lib/identificadores";
 import { parseIsoDate, round1 } from "../../lib/dates";
 import { avisoCedula, avisoCelular, avisoCorreo, avisoNombre, normalizarCorreo, normalizarDocumento, normalizarNombrePropio, normalizarTelefono } from "../../lib/normalizarEntrada";
 import { printColilla, printCurrentPz, printLiquidacion, printVacaciones } from "../../lib/print";
@@ -39,7 +40,6 @@ export default function Nomina({ctx}){
   const [diasVacPagar,setDiasVacPagar]=useState({});
   const [vacacionesId,setVacacionesId]=useState(null);
   const [diasVacLiquidar,setDiasVacLiquidar]=useState({});
-  const [guardandoNomina,setGuardandoNomina]=useState(false);
   const [mensajeGuardadoNomina,setMensajeGuardadoNomina]=useState("");
 
   // El boton de crear vive en la barra de arriba, no en un titulo propio.
@@ -63,36 +63,10 @@ export default function Nomina({ctx}){
   const periodoNomina = buildNominaPeriodo(mes, corteNomina);
   const activos=empleadosBase.filter((empleado)=>empleado.activo);
   const resumenesActivos = activos.map((empleado)=>({ empleado, resumen:calcularResumenNominaEmpleado(empleado, periodoNomina) }));
-  const resumenesPlanilla = empleadosBase
-    .map((empleado)=>{
-      const resumen = calcularResumenNominaEmpleado(empleado, periodoNomina);
-      const liquidacion = calcularLiquidacionRetiro(empleado, periodoNomina, diasVacPagar[empleado.id]);
-      const tieneMovimiento = resumen.diasNomina>0 || resumen.incapacidadTotal>0 || resumen.horasExtras>0 || resumen.comisiones>0 || liquidacion.retiroEnPeriodo;
-      if(!tieneMovimiento) return null;
-      const liquidacionPrestaciones = liquidacion.retiroEnPeriodo ? liquidacion.prestaciones : 0;
-      const totalPagar = resumen.neto + liquidacionPrestaciones;
-      if(totalPagar<=0) return null;
-      return {
-        empleado,
-        resumen,
-        liquidacionPrestaciones,
-        totalPagar,
-        retiroEnPeriodo: liquidacion.retiroEnPeriodo,
-        fechaSalida: empleado.fechaSalida || null,
-      };
-    })
-    .filter(Boolean);
-  const totSal=resumenesActivos.reduce((total,item)=>total+item.resumen.salario,0);
-  const totalAuxilio=resumenesActivos.reduce((total,item)=>total+item.resumen.auxilioTransporte,0);
-  const totalSalud=resumenesActivos.reduce((total,item)=>total+item.resumen.salud,0);
-  const totalPension=resumenesActivos.reduce((total,item)=>total+item.resumen.pension,0);
-  const totalOtrasDeducciones=resumenesActivos.reduce((total,item)=>total+item.resumen.otrasDeducciones,0);
-  const totalDeducciones=resumenesActivos.reduce((total,item)=>total+item.resumen.totalDeducciones,0);
-  const totalNeto=resumenesActivos.reduce((total,item)=>total+item.resumen.neto,0);
-  const totalDevengado=resumenesActivos.reduce((total,item)=>total+item.resumen.totalDevengado,0);
-  const totalNominaPlanilla=resumenesPlanilla.reduce((total,item)=>total+item.resumen.neto,0);
-  const totalLiquidacionesPlanilla=resumenesPlanilla.reduce((total,item)=>total+item.liquidacionPrestaciones,0);
-  const totalPagarPlanilla=resumenesPlanilla.reduce((total,item)=>total+item.totalPagar,0);
+  // Quien entra al corte y cuanto suma cada cosa lo decide buildNominaSnapshot,
+  // que es lo que se genera, se imprime y se manda al banco. Aqui se rehacia el
+  // mismo filtro y los mismos totales a mano y no los leia nadie: dos cuentas
+  // del mismo dinero es como se empieza a discutir cual de las dos esta bien.
   const nominaPreview = buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar);
   const nominaGeneradaActual = nominasGeneradasMap[nominaPreview.id] || null;
   const nominaVistaActual = nominaGeneradaActual?.snapshot || nominaPreview;
@@ -132,20 +106,33 @@ export default function Nomina({ctx}){
     if(typeof window==="undefined") return;
     try{
       window.localStorage.setItem(NOMINA_GENERATED_STORAGE_KEY, JSON.stringify(nominasGeneradas));
-    }catch{}
+    }catch{
+      // Guardar aqui es solo para no perder el corte al recargar; lo serio va a
+      // la nube. Si el navegador no deja escribir -modo privado, cuota llena-
+      // no hay nada que avisarle a quien esta liquidando la nomina.
+    }
   }, [nominasGeneradas]);
 
-  useEffect(()=>{
-    if(!empleadoIncapacidadActivo) return;
-    setIncapacidadForm((prev)=>{
-      if(prev.empleadoId===empleadoIncapacidadActivo.id) return prev;
-      return {
+  // Al cambiar de empleado -o de corte- el formulario de incapacidad se pone al
+  // dia y el calculo que hubiera en pantalla se descarta: era de otra persona o
+  // de otro periodo, y dejarlo ahi es como se termina guardando lo que no es.
+  //
+  // Se ajusta durante el render y no con un efecto para que no exista un render
+  // con el empleado nuevo arriba y las fechas y el IBL del anterior debajo.
+  const contextoIncapacidad = empleadoIncapacidadActivo
+    ? empleadoIncapacidadActivo.id + "|" + (periodoNomina.startIso || "")
+    : null;
+  const [contextoIncapacidadAplicado,setContextoIncapacidadAplicado]=useState(null);
+  if(contextoIncapacidad && contextoIncapacidad!==contextoIncapacidadAplicado){
+    setContextoIncapacidadAplicado(contextoIncapacidad);
+    if(incapacidadForm.empleadoId!==empleadoIncapacidadActivo.id){
+      setIncapacidadForm({
         ...buildIncapacidadFormDefault(empleadoIncapacidadActivo.id, periodoNomina.startIso || today()),
         iblMensual:empleadoIncapacidadActivo.salario || "",
-      };
-    });
+      });
+    }
     setIncapacidadPreview(null);
-  }, [empleadoIncapacidadActivo?.id, periodoNomina.startIso]);
+  }
 
   const actualizarEmpleado=(id,updater)=>{
     setEmpleados((prev)=>
@@ -225,13 +212,19 @@ export default function Nomina({ctx}){
       setCargoForm({nombre:"",descripcion:""});
       return;
     }
+    // El id sale de la lista ya normalizada, y se guarda ESA misma lista: si se
+    // numerara contra una y se anadiera a otra, el cargo nuevo podria llevar un
+    // id que la segunda ya tiene y pisarlo. Ademas queda con el formato del
+    // resto -CAR-004- en vez de la marca de tiempo que se usaba aqui, que era
+    // la unica de todo el programa.
+    const cargosActuales=normalizarCargos(cargos);
     const nuevoCargo={
-      id:"CAR-" + (Date.now()),
+      id:siguienteIdUnico(cargosActuales,"CAR"),
       nombre,
       descripcion:cargoForm.descripcion.trim(),
       activo:true,
     };
-    setCargos((prev)=>[...normalizarCargos(prev),nuevoCargo]);
+    setCargos([...cargosActuales,nuevoCargo]);
     setNf((prev)=>({ ...prev, cargo:nombre }));
     setCargoForm({nombre:"",descripcion:""});
   };
@@ -273,9 +266,13 @@ export default function Nomina({ctx}){
     }));
   };
 
+  // El id se pide contra las incapacidades que ya tiene esa persona, que es
+  // donde va a quedar guardada. Con la marca de tiempo que se usaba antes, dos
+  // incapacidades registradas en el mismo milisegundo salian con el mismo id y
+  // la segunda borraba a la primera al guardar.
   const buildIncapacidadRecordFromForm = (empleado)=>
     normalizarIncapacidades([{
-      id:"INC-" + Date.now(),
+      id:siguienteIdUnico(empleado?.incapacidades,"INC"),
       ...incapacidadForm,
       empleadoId:empleado?.id || incapacidadForm.empleadoId,
       iblMensual:Math.max(0, Number(incapacidadForm.iblMensual || empleado?.salario || 0)),
@@ -350,14 +347,12 @@ export default function Nomina({ctx}){
       setMensajeGuardadoNomina("No hay sincronización cloud disponible en esta sesión.");
       return;
     }
-    setGuardandoNomina(true);
     const result = await saveAllToCloud(override);
     if(result?.ok===false){
       setMensajeGuardadoNomina("No se pudo guardar: " + (result.error?.message||"revisa la conexión con Supabase"));
     }else{
       setMensajeGuardadoNomina(mensajeExito);
     }
-    setGuardandoNomina(false);
     setTimeout(()=>setMensajeGuardadoNomina(""), 3500);
   };
 

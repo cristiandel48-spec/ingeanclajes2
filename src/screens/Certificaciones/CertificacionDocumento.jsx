@@ -34,7 +34,7 @@ export default function CertificacionDocumento({cert}){
   return(
     <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:12,lineHeight:1.7,border:"1px solid #ddd",borderRadius:4,padding:"36px 44px"}}>
       <div style={{padding:"0 0 14px"}}>
-        <PrintHeader dual={true}/>
+        <PrintHeader dual={true} formato="certificacion" empresaConfig={empresaConfig}/>
       </div>
       <div style={{textAlign:"center",fontSize:10,fontWeight:700,letterSpacing:2,padding:"6px 0",borderBottom:"1px solid #ddd",color:"#333",textTransform:"uppercase",marginBottom:20}}>
         {esRecertificacion ? "Recertificación de Sistemas Anticaídas · Res. 4272/2021" : "Certificación de Sistemas Anticaídas · Res. 4272/2021"}

@@ -5,6 +5,7 @@ import { useAccionesPantalla } from "../../context/accionesPantalla";
 import DictarCotizacion from "./DictarCotizacion";
 import ImportarCotizacion from "./ImportarCotizacion";
 import FirmaEmpresa from "../../components/FirmaEmpresa";
+import ControlDocumentalConfig from "../../components/ControlDocumentalConfig";
 import DocumentoEnVivo from "./DocumentoEnVivo";
 import ListaCotizaciones from "./ListaCotizaciones";
 import EnviarCotizacion from "./EnviarCotizacion";
@@ -22,6 +23,7 @@ import { scrollAppToTop, today } from "../../lib/format";
 import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarMayusculas, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
 import { downloadGeneratedFile } from "../../lib/download";
 import { getFirmaImg } from "../../lib/firmaEmpresa";
+import { selloDe } from "../../lib/controlDocumental";
 import { asuntoAprobacion, mensajeAprobacion } from "../../lib/correoAprobacion";
 import { blobABase64, generarCotizacionPdf } from "../../lib/cotizacionPdf";
 import { enviarCotizacionPorCorreo } from "../../lib/backend/usuarios";
@@ -29,6 +31,9 @@ import { siguienteIdUnico } from "../../lib/identificadores";
 export default function Cotizacion({ctx}){
   const {cotizaciones,setCotizaciones,obras,setObras,clientes,empresaConfig,asegurarDetalle}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
+  // Codigo y version del formato de cotizacion. Null si no esta configurado,
+  // y entonces el documento sale como antes.
+  const selloCotizacion=selloDe(empresaConfig,"cotizacion");
   const [tab,setTab]=useState("lista");
   const [previewCot,setPreviewCot]=useState(null);
   // Cotizacion que se esta por enviar al cliente.
@@ -323,7 +328,7 @@ export default function Cotizacion({ctx}){
     if(bajandoPdf) return;
     setBajandoPdf(cotizacion.id);
     try{
-      const {blob,nombre} = await generarCotizacionPdf(cotizacion,{firmaImg});
+      const {blob,nombre} = await generarCotizacionPdf(cotizacion,{firmaImg,sello:selloCotizacion});
       downloadGeneratedFile(new File([blob],nombre,{type:"application/pdf"}));
     }catch(e){
       console.error("No se pudo generar el PDF de la cotizacion:",e);
@@ -451,7 +456,7 @@ export default function Cotizacion({ctx}){
     (async ()=>{
       let adjunto = {nombreArchivo:"", pdfBase64:""};
       try{
-        const {blob, nombre} = await generarCotizacionPdf(cotizacion,{firmaImg});
+        const {blob, nombre} = await generarCotizacionPdf(cotizacion,{firmaImg,sello:selloCotizacion});
         adjunto = {nombreArchivo:nombre, pdfBase64:await blobABase64(blob)};
       }catch(e){
         console.error("No se pudo generar el PDF para adjuntarlo a la aprobacion:",e);
@@ -548,7 +553,7 @@ export default function Cotizacion({ctx}){
 
   if(tab==="lista"){
     if(previewCot){
-      return <div style={{padding:28}}><H1 title={`Cotización ${previewCot.numero || previewCot.id}`} subtitle="Vista completa del documento comercial" action={<div style={{display:"flex",gap:10}}><button style={B("#f1f5f9","#475569")} onClick={()=>setPreviewCot(null)}>Volver</button><button style={B("#dbeafe","#1e40af")} onClick={()=>{setEditCot(previewCot.id);hydrate(previewCot);setTab("form");setPreviewCot(null);}}>Editar</button><button style={B("#f1f5f9","#475569")} disabled={Boolean(bajandoPdf)} onClick={()=>descargarPdf(previewCot)}>{bajandoPdf?"Generando…":"Descargar PDF"}</button><button style={B("#f47c20")} onClick={()=>setEnviarCot(previewCot)}>Enviar al cliente</button></div>}/><DocumentoEnVivo cotizacion={previewCot} firmaImg={firmaImg} alto="calc(100vh - 190px)" nota="Igual al PDF" sticky={false}/>{enviarCot && <EnviarCotizacion cotizacion={enviarCot} firmaImg={firmaImg} onCerrar={()=>setEnviarCot(null)}/>}</div>;
+      return <div style={{padding:28}}><H1 title={`Cotización ${previewCot.numero || previewCot.id}`} subtitle="Vista completa del documento comercial" action={<div style={{display:"flex",gap:10}}><button style={B("#f1f5f9","#475569")} onClick={()=>setPreviewCot(null)}>Volver</button><button style={B("#dbeafe","#1e40af")} onClick={()=>{setEditCot(previewCot.id);hydrate(previewCot);setTab("form");setPreviewCot(null);}}>Editar</button><button style={B("#f1f5f9","#475569")} disabled={Boolean(bajandoPdf)} onClick={()=>descargarPdf(previewCot)}>{bajandoPdf?"Generando…":"Descargar PDF"}</button><button style={B("#f47c20")} onClick={()=>setEnviarCot(previewCot)}>Enviar al cliente</button></div>}/><DocumentoEnVivo cotizacion={previewCot} firmaImg={firmaImg} sello={selloCotizacion} alto="calc(100vh - 190px)" nota="Igual al PDF" sticky={false}/>{enviarCot && <EnviarCotizacion cotizacion={enviarCot} firmaImg={firmaImg} onCerrar={()=>setEnviarCot(null)}/>}</div>;
     }
     return (
       <div style={{padding:28}}>
@@ -881,6 +886,13 @@ export default function Cotizacion({ctx}){
           <div><LBL>Firma — cargo</LBL><input value={textosDocumento.firmaCargo} onChange={e=>setTexto("firmaCargo",e.target.value)} style={SI}/></div>
         </div>
         <FirmaEmpresa/>
+
+        {/* Codigo y version de los formatos. Se configura una vez y vale para
+            los tres documentos, no solo para la cotizacion. */}
+        <div style={{marginTop:16,paddingTop:14,borderTop:"1px solid #e2e8f0"}}>
+          <ControlDocumentalConfig/>
+        </div>
+
         <div style={{marginTop:12}}>
           <LBL>Firma — datos adicionales (uno por línea)</LBL>
           <textarea
@@ -920,6 +932,7 @@ export default function Cotizacion({ctx}){
         <DocumentoEnVivo
           cotizacion={cotizacionEnVivo}
           firmaImg={firmaImg}
+          sello={selloCotizacion}
           alto={cabeEnDosColumnas ? "calc(100vh - 210px)" : "calc(100vh - 260px)"}
         />
       )}

@@ -685,12 +685,16 @@ export const entityConfig = {
       firma_img: item.firmaImg ?? null,
       firma_nombre: item.firmaNombre ?? null,
       firma_cargo: item.firmaCargo ?? null,
+      // Codigo y version de cada formato. Null y no {} para poder distinguir
+      // «nunca se ha configurado» de «se configuro vacio a proposito».
+      control_documental: item.controlDocumental ?? null,
     }),
     fromRow: (row) => ({
       id: row.id,
       firmaImg: row.firma_img ?? "",
       firmaNombre: row.firma_nombre ?? "",
       firmaCargo: row.firma_cargo ?? "",
+      controlDocumental: row.control_documental ?? null,
     }),
   },
   contabilidad_config: {

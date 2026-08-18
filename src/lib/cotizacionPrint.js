@@ -9,7 +9,7 @@ import { hasVerticalLifeLineService } from "./cotizaciones";
 import { getTextosDocumento, lineasDeTexto } from "./cotizacionTextos";
 import articoLineaVidaVertical from "../assets/artico-linea-vida-vertical.jpg";
 
-export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
+export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}){
   const propuestas = getQuotePrintableProposals(c);
   const textoInicial = String(c?.textoInicial || "").trim();
   const textos = getTextosDocumento(c);
@@ -207,10 +207,21 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     </div>
   `;
 
+  // El codigo y la version del formato, si estan configurados. Aqui el
+  // encabezado es una sola linea y no un cuadro con bordes como en el informe:
+  // la cotizacion lleva su propia caja de datos debajo y otro recuadro mas
+  // arriba cargaba la hoja.
+  const selloHtml = sello
+    ? `<div class="header-sello"><b>${escapeHtml(sello.codigo)}</b>${sello.linea ? ` &middot; ${escapeHtml(sello.linea)}` : ""}</div>`
+    : "";
+
   const headerHtml = `
     <div class="header">
       <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
-      <div class="header-right">Especialistas en anclajes &middot; Cotización ${escapeHtml(c?.numero || c?.id || "")}</div>
+      <div class="header-right">
+        <div>Especialistas en anclajes &middot; Cotización ${escapeHtml(c?.numero || c?.id || "")}</div>
+        ${selloHtml}
+      </div>
     </div>
   `;
 
@@ -932,7 +943,11 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
 
       .header { display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid #1E1E1E; padding-bottom:2.6mm; margin:0 9mm 6mm 9mm; }
       .logo { height:30px; width:auto; object-fit:contain; }
-      .header-right { font-size: var(--texto); letter-spacing:.06em; text-transform:uppercase; color:#6B6B6B; font-weight:600; }
+      .header-right { font-size: var(--texto); letter-spacing:.06em; text-transform:uppercase; color:#6B6B6B; font-weight:600; text-align:right; }
+      /* El codigo del formato: mas pequeno y en monoespaciada, para que se
+         lea como un codigo y no compita con el numero de la cotizacion. */
+      .header-sello { font-family:Consolas,"Courier New",monospace; font-size:calc(var(--texto) * .92); letter-spacing:.02em; text-transform:none; color:#8A8A8A; font-weight:400; margin-top:2px; }
+      .header-sello b { color:#4A4A4A; font-weight:700; }
 
       .footer {
         position:absolute;

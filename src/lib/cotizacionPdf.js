@@ -57,7 +57,7 @@ async function esperarRecursos(doc, ventana) {
  * onProgreso recibe (hojaActual, hojasTotales) para poder mostrar avance:
  * en una cotización con fotos esto tarda varios segundos.
  */
-export async function generarCotizacionPdf(cotizacion, { firmaImg = "", onProgreso } = {}) {
+export async function generarCotizacionPdf(cotizacion, { firmaImg = "", sello = null, onProgreso } = {}) {
   // Las dos librerias pesan cerca de un mega, asi que se cargan solo al
   // generar un PDF. El precio es que si se publica una version nueva mientras
   // alguien tiene la pagina abierta, el navegador pide un archivo que ya no
@@ -74,7 +74,7 @@ export async function generarCotizacionPdf(cotizacion, { firmaImg = "", onProgre
     );
   }
 
-  const html = prepararHtmlParaPdf(buildCotizacionPrintHtml(cotizacion, { firmaImg }));
+  const html = prepararHtmlParaPdf(buildCotizacionPrintHtml(cotizacion, { firmaImg, sello }));
 
   // Se dibuja fuera de la vista, no oculto: display:none o visibility:hidden
   // hacen que html2canvas mida todo en cero.

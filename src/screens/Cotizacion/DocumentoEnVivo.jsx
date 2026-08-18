@@ -12,6 +12,7 @@ const ANCHO_HOJA = 816;
 export default function DocumentoEnVivo({
   cotizacion,
   firmaImg = "",
+  sello = null,
   alto = "calc(100vh - 220px)",
   titulo = "Documento como se imprimirá",
   nota = "Se actualiza al escribir",
@@ -22,6 +23,7 @@ export default function DocumentoEnVivo({
   // generar el documento con el objeto completo (imagenes incluidas).
   const cotizacionRef = useRef(cotizacion);
   const firmaRef = useRef(firmaImg);
+  const selloRef = useRef(sello);
   const [html, setHtml] = useState("");
   const [escala, setEscala] = useState(1);
   const [error, setError] = useState(null);
@@ -35,7 +37,7 @@ export default function DocumentoEnVivo({
   );
 
   // Se actualiza tras cada commit, nunca durante el render.
-  useEffect(() => { cotizacionRef.current = cotizacion; firmaRef.current = firmaImg; });
+  useEffect(() => { cotizacionRef.current = cotizacion; firmaRef.current = firmaImg; selloRef.current = sello; });
 
   // Regenerar el documento es costoso, asi que se espera a que la persona
   // deje de escribir. La PRIMERA vez no se espera: al abrir "Ver" el documento
@@ -44,7 +46,7 @@ export default function DocumentoEnVivo({
   useEffect(() => {
     const generar = () => {
       try {
-        setHtml(buildCotizacionPrintHtml(cotizacionRef.current, { firmaImg: firmaRef.current }));
+        setHtml(buildCotizacionPrintHtml(cotizacionRef.current, { firmaImg: firmaRef.current, sello: selloRef.current }));
         setError(null);
       } catch (e) {
         console.error("No se pudo generar la vista previa:", e);

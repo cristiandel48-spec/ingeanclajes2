@@ -28,7 +28,7 @@ const sinTildes = (texto) =>
     .trim();
 
 // Palabras que no distinguen un servicio de otro y solo estorban al comparar.
-const VACIAS = new Set(["DE", "DEL", "LA", "EL", "LOS", "LAS", "EN", "Y", "CON", "A"]);
+const VACIAS = new Set(["DE", "DEL", "LA", "EL", "LOS", "LAS", "EN", "Y", "CON", "A", "PARA"]);
 const clave = (texto) => sinTildes(texto).split(" ").filter((p) => p && !VACIAS.has(p));
 
 /**

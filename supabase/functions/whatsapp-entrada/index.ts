@@ -1,9 +1,14 @@
 // Puerta de entrada de WhatsApp.
 //
-// Meta manda aqui cada mensaje que le escriben al numero de la empresa. Esta
-// funcion NO cotiza: recibe, guarda, evita duplicados y contesta. El motor de
-// cotizacion ya existe -armar-cotizacion- y se llama despues, cuando el modo
-// configurado lo pida.
+// Meta manda aqui cada mensaje que le escriben al numero de la empresa: se
+// recibe, se guarda, se evita repetirlo y se contesta.
+//
+// Que se contesta lo decide `modo` en wa_config:
+//   acuse       confirma que llego y avisa al asesor. Es el de arranque.
+//   preliminar  ademas manda los valores, sacados del catalogo de la base.
+//
+// El interprete es «armar-cotizacion», la misma funcion que usa el boton de
+// dictar: las instrucciones de la IA viven en un solo sitio.
 //
 // Desplegar:  supabase functions deploy whatsapp-entrada --no-verify-jwt
 //
@@ -20,11 +25,14 @@
 //   supabase secrets set WA_TOKEN=<token permanente del System User>
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { armarLineas, redactarEstimado } from "./cotizar.ts";
 
 const WA_VERIFY_TOKEN = Deno.env.get("WA_VERIFY_TOKEN") ?? "";
 const WA_APP_SECRET   = Deno.env.get("WA_APP_SECRET") ?? "";
 const WA_TOKEN        = Deno.env.get("WA_TOKEN") ?? "";
 const WA_API          = Deno.env.get("WA_API") ?? "https://graph.facebook.com/v21.0";
+// El telefono que va al pie de los mensajes. Se puede cambiar sin publicar.
+const WA_FIRMA        = Deno.env.get("WA_FIRMA") ?? "315 288 9541";
 
 // Un pedido de cotizacion son unas frases. Mas que esto se guarda recortado:
 // no se procesa un libro ni se llena la base con el.
@@ -89,6 +97,27 @@ async function responderWhatsApp(phoneNumberId: string, para: string, texto: str
   }
 }
 
+// Le pasa el texto al interprete que ya usa el boton de dictar. Se llama por
+// HTTP a la otra funcion en vez de repetir aqui las instrucciones de la IA:
+// con dos copias, el dia que se afine una, la otra se queda vieja.
+async function interpretar(texto: string, catalogo: string[]) {
+  const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/armar-cotizacion`;
+  const clave = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+  const respuesta = await fetch(url, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${clave}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ texto, catalogo }),
+  });
+
+  if (!respuesta.ok) {
+    throw new Error(`armar-cotizacion respondio ${respuesta.status}: ${await respuesta.text()}`);
+  }
+  const datos = await respuesta.json();
+  if (datos?.error) throw new Error(datos.error);
+  return datos;
+}
+
 // «Buenos dias» segun la hora de Colombia, no la del servidor.
 function saludo(fecha = new Date()) {
   const hora = Number(
@@ -102,12 +131,9 @@ function saludo(fecha = new Date()) {
 }
 
 // ── Lo que se contesta ──────────────────────────────────────────────────────
-// De momento solo el acuse. Es a proposito: una cotizacion de esta empresa
-// depende de metros medidos en sitio y de una visita tecnica, y un total
-// mandado sin que nadie lo mire puede tomarse como oferta en firme. Cuando se
-// vea que el interprete acierta con los pedidos reales, se pasa el modo de la
-// empresa a «preliminar» y se agregan los valores. El resto del flujo no
-// cambia.
+// El acuse es el modo de arranque, y sigue siendo el que se usa cuando la IA
+// no reconoce ningun servicio: antes que mandar un total a medias, se pasa al
+// asesor. Una cotizacion de esta empresa depende de metros medidos en sitio.
 function mensajeAcuse(nombre: string | null) {
   const quien = nombre ? `, ${nombre}` : "";
   return [
@@ -238,7 +264,39 @@ Deno.serve(async (peticion) => {
         const suyo = Array.isArray(encontrados) ? encontrados[0] : encontrados;
 
         const nombre = suyo?.contacto || suyo?.nombre || perfil || null;
-        const respuesta = mensajeAcuse(nombre);
+        let respuesta = mensajeAcuse(nombre);
+
+        if (config.modo === "preliminar") {
+          try {
+            const { data: catalogo } = await db
+              .from("catalogo_items")
+              .select("id, descripcion, unidad, precio_base")
+              .eq("tenant_id", config.tenant_id)
+              .eq("disponible", true);
+
+            const entendido = await interpretar(
+              texto!,
+              (catalogo ?? []).map((c) => `${c.descripcion} (${c.unidad})`),
+            );
+            const { lineas, fuera } = armarLineas(entendido?.items ?? [], catalogo ?? []);
+
+            // Sin ninguna linea reconocida no hay estimado que mandar: se queda
+            // el acuse. Mandar «TOTAL: $0» seria peor que no mandar nada.
+            if (lineas.length) {
+              respuesta = redactarEstimado({
+                saludo: saludo(),
+                nombre,
+                lineas,
+                fuera,
+                telefonoEmpresa: WA_FIRMA,
+              });
+            }
+          } catch (falloIa) {
+            // Si la IA falla o tarda, se responde el acuse y se deja anotado.
+            // NUNCA se contesta con precios a medias.
+            console.error("No se pudo armar el estimado, se manda el acuse:", falloIa);
+          }
+        }
 
         await responderWhatsApp(phoneNumberId, telefono, respuesta);
         await cerrar({ estado: "respondido", respuesta });

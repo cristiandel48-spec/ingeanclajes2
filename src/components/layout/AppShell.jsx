@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import { useAccionesTopbar } from "../../context/accionesPantalla";
+import { useAppData } from "../../context/AppDataContext";
 import GlobalStyles from "../../styles/GlobalStyles";
 import { getTheme } from "../../styles/shellTheme";
 import { useIsMobile } from "../../hooks/useMediaQuery";
@@ -28,6 +29,32 @@ const writeStored = (key, value) => {
 
 // Arma la estructura de la aplicacion: navegacion, barra superior y area
 // de contenido. Las pantallas se reciben ya resueltas en `children`.
+// El aviso de que lo que se ve en las listas es de muestra.
+//
+// Va en el marco y no en cada pantalla porque los ejemplos se reparten por
+// varias -clientes, cotizaciones, obras, informes, certificaciones, cobros- y
+// repetir el cartel seis veces seria peor. Desaparece solo en cuanto haya
+// registros de verdad.
+//
+// Es lo primero que se lee al entrar, a proposito: confundir una obra de
+// ejemplo con una real seria mucho peor que un cartel de mas.
+function AvisoDeEjemplos() {
+  const { verEjemplos } = useAppData();
+  if (!verEjemplos) return null;
+
+  return (
+    <div style={{
+      background: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: 12,
+      padding: "10px 14px", margin: "14px 0 0", fontSize: 12, color: "#3730a3",
+      lineHeight: 1.55,
+    }}>
+      <strong style={{ color: "#312e81" }}>Datos de muestra.</strong> Los clientes,
+      cotizaciones y obras que ve son un ejemplo para conocer el programa: no están
+      guardados en la base y desaparecen en cuanto registre los primeros de verdad.
+    </div>
+  );
+}
+
 export default function AppShell({ scr, onNavigate, children }) {
   const isMobile = useIsMobile();
   // Botones que publica la pantalla abierta, para que queden junto al
@@ -113,6 +140,7 @@ export default function AppShell({ scr, onNavigate, children }) {
               : "40px",
           }}
         >
+          <AvisoDeEjemplos />
           {children}
         </main>
       </div>

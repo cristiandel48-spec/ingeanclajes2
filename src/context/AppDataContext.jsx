@@ -16,6 +16,7 @@ import {
 import {
   normalizeContabilidadConfig, normalizePlanCuenta, normalizeAsientoContable,
 } from "../lib/accounting";
+import { EJEMPLOS, hayEjemplos, sinEjemplos } from "../data/ejemplos";
 
 const isSupabaseConfigured = backend.isSupabaseConfigured;
 const loadCloudAppData = backend.loadCloudAppData;
@@ -84,18 +85,22 @@ export function AppDataProvider({ children }) {
   // debe subir el estado actual, no el que existia cuando fallo.
   const payloadRef = useRef(null);
 
+  // AQUI SE CORTAN LOS REGISTROS DE EJEMPLO, y es el unico sitio donde se
+  // cortan: si alguien agrega mañana otra entidad de muestra, tiene que pasar
+  // por `sinEjemplos` o se le subiran a la base del cliente como si fueran
+  // suyos. El autoguardado sube lo que salga de aqui.
   const buildCloudPayload = () => ({
-    obras,
+    obras: sinEjemplos(obras),
     empleados,
     cargos,
-    pagos,
+    pagos: sinEjemplos(pagos),
     horarios,
-    certs,
-    informes,
-    clientes,
+    certs: sinEjemplos(certs),
+    informes: sinEjemplos(informes),
+    clientes: sinEjemplos(clientes),
     proveedores,
     cuentas,
-    cotizaciones,
+    cotizaciones: sinEjemplos(cotizaciones),
     contabilidadConfig,
     planCuentas,
     asientosContables,
@@ -174,17 +179,24 @@ export function AppDataProvider({ children }) {
         const cloud = await loadCloudAppData();
         if (cancel) return;
 
-        if (Array.isArray(cloud.obras)) setObras(cloud.obras);
+        // Con la tabla vacia se dejan los registros de ejemplo: una pantalla
+        // que dice «todavia no hay nada» no enseña para que sirve, y quien la
+        // abre por primera vez es justo el que necesita entenderlo. Se van
+        // solos en cuanto haya un registro de verdad, y el autoguardado los
+        // descarta (ver buildCloudPayload).
+        const oEjemplo = (lista, ejemplo) => (lista.length ? lista : ejemplo);
+
+        if (Array.isArray(cloud.obras)) setObras(oEjemplo(cloud.obras, EJEMPLOS.obras));
         if (Array.isArray(cloud.empleados)) setEmpleados(cloud.empleados.map(normalizarEmpleado));
         if (Array.isArray(cloud.cargos)) setCargos(normalizarCargos(cloud.cargos));
-        if (Array.isArray(cloud.pagos)) setPagos(cloud.pagos);
+        if (Array.isArray(cloud.pagos)) setPagos(oEjemplo(cloud.pagos, EJEMPLOS.pagos));
         if (Array.isArray(cloud.horarios)) setHorarios(cloud.horarios);
-        if (Array.isArray(cloud.certs)) setCerts(cloud.certs);
-        if (Array.isArray(cloud.informes)) setInformes(cloud.informes);
-        if (Array.isArray(cloud.clientes)) setClientes(cloud.clientes);
+        if (Array.isArray(cloud.certs)) setCerts(oEjemplo(cloud.certs, EJEMPLOS.certs));
+        if (Array.isArray(cloud.informes)) setInformes(oEjemplo(cloud.informes, EJEMPLOS.informes));
+        if (Array.isArray(cloud.clientes)) setClientes(oEjemplo(cloud.clientes, EJEMPLOS.clientes));
         if (Array.isArray(cloud.proveedores)) setProveedores(cloud.proveedores);
         if (Array.isArray(cloud.cuentas)) setCuentas(cloud.cuentas);
-        if (Array.isArray(cloud.cotizaciones)) setCotizaciones(cloud.cotizaciones);
+        if (Array.isArray(cloud.cotizaciones)) setCotizaciones(oEjemplo(cloud.cotizaciones, EJEMPLOS.cotizaciones));
         if (Array.isArray(cloud.contabilidadConfig) && cloud.contabilidadConfig.length) {
           setContabilidadConfig(cloud.contabilidadConfig.map(normalizeContabilidadConfig));
         }
@@ -329,6 +341,10 @@ export function AppDataProvider({ children }) {
   const value = {
     scr, setScr,
     asegurarDetalle,
+    // Para que la barra de arriba pueda avisar que lo que se ve es de muestra.
+    // Se apaga solo: en cuanto haya un registro de verdad en TODAS las
+    // pantallas que traen ejemplo, deja de haber ejemplos que anunciar.
+    verEjemplos: hayEjemplos(obras, cotizaciones, clientes, informes, certs, pagos),
     obras, setObras,
     empleados, setEmpleados,
     cargos, setCargos,

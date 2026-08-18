@@ -30,7 +30,10 @@ const CORS = {
 };
 
 const IA_URL = Deno.env.get("IA_URL") ?? "https://api.groq.com/openai/v1/chat/completions";
-const IA_MODELO = Deno.env.get("IA_MODELO") ?? "llama-3.3-70b-versatile";
+// Mismo secreto que «armar-cotizacion»: cambiando IA_MODELO en Supabase se
+// arreglan las dos a la vez. El anterior -llama-3.3-70b-versatile- lo retiro
+// Groq el 16/08/2026.
+const IA_MODELO = Deno.env.get("IA_MODELO") ?? "openai/gpt-oss-120b";
 
 // Los campos mas largos -la descripcion de un informe- rondan los 1.500
 // caracteres. El tope deja aire de sobra y corta que alguien mande un libro.

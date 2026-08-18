@@ -27,7 +27,13 @@ const CORS = {
 };
 
 const IA_URL = Deno.env.get("IA_URL") ?? "https://api.groq.com/openai/v1/chat/completions";
-const IA_MODELO = Deno.env.get("IA_MODELO") ?? "llama-3.3-70b-versatile";
+// Los modelos de Groq se retiran cada pocos meses y el que estaba aqui
+// -llama-3.3-70b-versatile- se apago el 16/08/2026. Cuando eso pasa, la
+// respuesta de la IA falla entera y no hay pista en pantalla.
+//
+// El nombre se puede cambiar sin publicar nada: basta el secreto IA_MODELO
+// en Supabase. Esto es solo el valor por defecto.
+const IA_MODELO = Deno.env.get("IA_MODELO") ?? "openai/gpt-oss-120b";
 
 // Un dictado de cotizacion son unas pocas frases. El tope corta de raiz que
 // alguien mande un libro y consuma la cuota gratuita de una sentada.
@@ -148,7 +154,23 @@ Deno.serve(async (peticion) => {
       if (respuestaIa.status === 401 || respuestaIa.status === 403) {
         return responder({ error: "La clave de la IA no es válida o venció. Hay que actualizarla en Supabase." }, 500);
       }
-      return responder({ error: "El servicio de IA no respondió bien. Intenta de nuevo en un momento." }, 502);
+
+      // El modelo retirado es el fallo que mas cuesta diagnosticar: el mensaje
+      // generico no dice nada y hay que ir a los registros de la funcion.
+      if (/decommission|deprecat|does not exist|not found/i.test(detalle)) {
+        return responder({
+          error: `El modelo de IA «${IA_MODELO}» ya no está disponible. ` +
+            "Hay que cambiar el secreto IA_MODELO en Supabase por uno vigente.",
+        }, 502);
+      }
+
+      // Se manda un pedazo del motivo real: sin esto, cualquier fallo nuevo
+      // vuelve a ser un «no respondió bien» que no se puede diagnosticar.
+      const motivo = String(detalle || "").slice(0, 200);
+      return responder({
+        error: `El servicio de IA respondió ${respuestaIa.status}. ` +
+          (motivo ? `Dice: ${motivo}` : "Intenta de nuevo en un momento."),
+      }, 502);
     }
 
     const datos = await respuestaIa.json();

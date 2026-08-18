@@ -124,7 +124,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       </div>
 
       {/* TAB AVANCE Y FOTOS (bitacora que alimenta el informe) */}
-      {detTab==="avance"&&<BitacoraObra obra={oAct} setObras={setObras}/>}
+      {detTab==="avance"&&<BitacoraObra obra={oAct} setObras={setObras} bloqueada={bloqueada}/>}
 
       {/* TAB PERSONAL */}
       {detTab==="personal"&&(
@@ -184,8 +184,10 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                       <div style={{fontSize:11,color:"#64748b"}}>{emp.cargo}</div>
                       <div style={{fontSize:10,color:"#94a3b8"}}>📱 {emp.tel}</div>
                     </div>
-                    <button onClick={()=>setObras(p=>p.map(o=>o.id===obraId?{...o,empleados:(o.empleados||[]).filter(id=>id!==eid)}:o))}
-                      style={{background:"#fee2e2",border:"1px solid #fca5a5",color:"#cc0000",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11}}>✕</button>
+                    {!bloqueada&&(
+                      <button onClick={()=>setObras(p=>p.map(o=>o.id===obraId?{...o,empleados:(o.empleados||[]).filter(id=>id!==eid)}:o))}
+                        style={{background:"#fee2e2",border:"1px solid #fca5a5",color:"#cc0000",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11}}>✕</button>
+                    )}
                   </div>
                   {/* El jornal y la cuenta bancaria del companero son datos
                       confidenciales: sin permiso solo se ven los dias. */}
@@ -202,7 +204,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               );
             })}
           </div>
-          <div>
+          <div style={bloqueada?{display:"none"}:undefined}>
             <LBL>➕ Asignar empleado a esta obra</LBL>
             <select value="" onChange={ev=>{
               const v=ev.target.value;

@@ -16,13 +16,18 @@ import { fotoVacia, normalizarBitacora, registroVacio, resumenBitacora } from ".
 // Por eso cada registro lleva fecha: es la que decide si entra o no al
 // informe de esa quincena o de ese mes.
 
-export default function BitacoraObra({ obra, setObras }) {
+export default function BitacoraObra({ obra, setObras, bloqueada = false }) {
   const registros = normalizarBitacora(obra.bitacora);
   const resumen = resumenBitacora(obra.bitacora);
   const fotoRefs = useRef({});
   const [subiendo, setSubiendo] = useState(false);
 
-  const guardarBitacora = (siguiente) =>
+  const guardarBitacora = (siguiente) => {
+    if (bloqueada) return;
+    return guardarBitacoraReal(siguiente);
+  };
+
+  const guardarBitacoraReal = (siguiente) =>
     setObras((prev) => prev.map((o) => (o.id === obra.id ? { ...o, bitacora: siguiente } : o)));
 
   const agregarRegistro = () => {
@@ -88,7 +93,10 @@ export default function BitacoraObra({ obra, setObras }) {
   };
 
   return (
-    <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", padding: 20 }}>
+    // En una obra cerrada la pestaña se mira pero no se toca. El aviso de
+    // abajo queda fuera del apagado para que se pueda leer y seleccionar.
+    <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", padding: 20,
+      ...(bloqueada ? { pointerEvents: "none", opacity: 0.8 } : null) }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1a2e" }}>📸 Avance y fotos de la obra</div>
@@ -96,8 +104,22 @@ export default function BitacoraObra({ obra, setObras }) {
             {resumen.registros} registro(s) · {resumen.fotos} foto(s) cargadas
           </div>
         </div>
-        <button style={B("#cc0000")} onClick={agregarRegistro}>+ Registrar avance del día</button>
+        {!bloqueada && (
+          <button style={B("#cc0000")} onClick={agregarRegistro}>+ Registrar avance del día</button>
+        )}
       </div>
+
+      {/* Las fotos de aqui son las que salen impresas en el informe de
+          actividades. Cambiarlas despues de entregarlo dejaria el documento
+          diciendo una cosa y la obra otra. */}
+      {bloqueada && (
+        <div style={{ fontSize: 11.5, color: "#166534", background: "#ecfdf5",
+          border: "1px solid #a7f3d0", borderRadius: 9, padding: "9px 12px",
+          marginBottom: 14, lineHeight: 1.5, pointerEvents: "auto" }}>
+          🔒 <strong>Obra finalizada.</strong> El registro de avance queda como está: estas fotos son
+          las que salen en el informe. Un administrador puede reabrir la obra si hay que corregir algo.
+        </div>
+      )}
 
       <AvisoFlujo tono="info" titulo="Esto es lo que después sale en el informe de actividades">
         Cada vez que se trabaje en la obra, agrega un registro con la fecha, lo que se hizo y las

@@ -1,4 +1,4 @@
-﻿const safeArray = (value) => (Array.isArray(value) ? value : []);
+const safeArray = (value) => (Array.isArray(value) ? value : []);
 
 export const entityConfig = {
   clientes: {
@@ -293,6 +293,16 @@ export const entityConfig = {
     // aqui aunque tambien lleve imagenes dentro: de ahi lee el Dashboard el
     // total de cada cotizacion, y sin ella saldrian todas en cero.
     columnasPesadas: ["fotos_cotizacion", "map_img"],
+    // Auditoria: columnas que llena el trigger de la base (migracion 030).
+    // Deben pedirse explicitamente para que columnasDeLista las incluya en el select.
+    columnasCalculadas: [
+      "creado_por",
+      "creado_por_nombre",
+      "creado_en",
+      "modificado_por",
+      "modificado_por_nombre",
+      "modificado_en",
+    ],
     coerceNullCols: ["fecha", "validez_dias", "utilidad_pct", "total"],
     toRow: (item) => ({
       id: item.id,

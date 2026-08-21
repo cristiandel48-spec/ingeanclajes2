@@ -309,7 +309,50 @@ export default function Cotizacion({ctx}){
     });
     const activa = propuestasFinales.find((x)=>x.id===propuestaActivaId) || propuestasFinales[0];
     const prev = editCot ? cotizaciones.find((cotizacion)=>cotizacion.id===editCot) : null;
-    const data = {id:editCot || siguienteIdUnico(cotizaciones,"COT"),numero:cot,fecha,val,cliente:normalizarRazonSocial(cl.nombre),nit:cl.nit,contacto:cl.contacto,contactoEmail:cl.contactoEmail,obra:normalizarMayusculas(cl.obra),telefono:cl.telefono,ciudad:normalizarMayusculas(cl.ciudad),direccion:normalizarMayusculas(cl.direccion),coords:cl.coords,textoInicial:textoInicial.trim(),observaciones:observacionesCot.trim(),textosDocumento,items:activa.items,util:activa.util,total:activa.total,formaPago:activa.formaPago,tiempoEjec:activa.tiempoEjec,mapImg:activa.mapImg || null,geoMediciones:activa.geoMediciones || [],geoMapView:activa.geoMapView || null,tipoCotizacion:activa.tipoCotizacion,requerimientoCliente:activa.requerimientoCliente,incluyeTexto:activa.incluyeTexto || "",propuestaNombre:activa.nombre,propuestaAlcance:activa.alcance,propuestas:propuestasFinales,propuestaActivaId:activa.id,fotosCotizacion:activa.fotos||[],estado:prev?.estado || "Pendiente",obraId:prev?.obraId || null};
+    const miNombre = ctx?.membresia?.nombre || ctx?.membresia?.email || "";
+    const miUserId = ctx?.membresia?.userId || null;
+    const data = {
+      id: editCot || siguienteIdUnico(cotizaciones, "COT"),
+      numero: cot,
+      fecha,
+      val,
+      cliente: normalizarRazonSocial(cl.nombre),
+      nit: cl.nit,
+      contacto: cl.contacto,
+      contactoEmail: cl.contactoEmail,
+      obra: normalizarMayusculas(cl.obra),
+      telefono: cl.telefono,
+      ciudad: normalizarMayusculas(cl.ciudad),
+      direccion: normalizarMayusculas(cl.direccion),
+      coords: cl.coords,
+      textoInicial: textoInicial.trim(),
+      observaciones: observacionesCot.trim(),
+      textosDocumento,
+      items: activa.items,
+      util: activa.util,
+      total: activa.total,
+      formaPago: activa.formaPago,
+      tiempoEjec: activa.tiempoEjec,
+      mapImg: activa.mapImg || null,
+      geoMediciones: activa.geoMediciones || [],
+      geoMapView: activa.geoMapView || null,
+      tipoCotizacion: activa.tipoCotizacion,
+      requerimientoCliente: activa.requerimientoCliente,
+      incluyeTexto: activa.incluyeTexto || "",
+      propuestaNombre: activa.nombre,
+      propuestaAlcance: activa.alcance,
+      propuestas: propuestasFinales,
+      propuestaActivaId: activa.id,
+      fotosCotizacion: activa.fotos || [],
+      estado: prev?.estado || "Pendiente",
+      obraId: prev?.obraId || null,
+      creadoPor: prev?.creadoPor || miUserId,
+      creadoPorNombre: prev?.creadoPorNombre || miNombre,
+      creadoEn: prev?.creadoEn || new Date().toISOString(),
+      modificadoPor: miUserId,
+      modificadoPorNombre: miNombre,
+      modificadoEn: new Date().toISOString(),
+    };
     setCotizaciones((prevList)=>editCot ? prevList.map((cotizacion)=>cotizacion.id===editCot?{...cotizacion,...data}:cotizacion) : [...prevList,data]);
     setPropuestas(propuestasFinales);
     setEditCot(data.id);

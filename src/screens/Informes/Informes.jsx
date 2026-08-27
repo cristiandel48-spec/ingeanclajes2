@@ -7,8 +7,9 @@ import PrintHeader from "../../components/print/PrintHeader";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmtD, fmtL, today } from "../../lib/format";
-import { printCurrentPz } from "../../lib/print";
-import { descargarDocumentoPdf } from "../../lib/documentoPdf";
+import { openPrintTab } from "../../lib/cotizacionPrint";
+import { descargarInformePdf } from "../../lib/informePdf";
+import { buildInformePrintHtml } from "../../lib/informePrint";
 import { bitacoraAActividades, normalizarBitacora, registrosDelPeriodo } from "../../lib/bitacoraObra";
 import { leerImagenComprimida } from "../../lib/imagenes";
 import { normalizarFrase, normalizarMayusculas, normalizarNombrePropio, normalizarParrafos } from "../../lib/normalizarEntrada";
@@ -771,22 +772,14 @@ export default function Informes({ctx}){
           <div style={{display:"flex",gap:10,marginBottom:14}}>
             <button style={B("#f1f5f9","#475569")} onClick={()=>setSel(null)}>Volver</button>
             <button style={{...B("#dbeafe","#1e40af")}} onClick={()=>editarInforme(sel)}>Editar</button>
-            {/* Descarga directa: el PDF sale sin el encabezado ni el pie que
-                Chrome estampa al imprimir («about:blank», fecha, 1/7). */}
+            {/* Descarga directa: el PDF sale organizado por hojas sin cortes */}
             <button
               style={{...B("#f47c20"),opacity:generandoPdf?0.65:1}}
               disabled={generandoPdf}
               onClick={async()=>{
                 setGenerandoPdf(true);
                 try{
-                  // Con el proyecto en el nombre, igual que las
-                  // certificaciones: "INF-002" a secas no dice de que obra es.
-                  await descargarDocumentoPdf(
-                    document.getElementById("pz"),
-                    `Informe de actividades ${sel?.id || ""} ${sel?.proyecto || sel?.cliente || ""}`
-                      .replace(/\s+/g, " ")
-                      .trim(),
-                  );
+                  await descargarInformePdf(sel, { empresaConfig, firmaImg });
                 }catch(fallo){
                   window.alert(fallo.message || "No se pudo generar el PDF.");
                 }finally{
@@ -794,9 +787,17 @@ export default function Informes({ctx}){
                 }
               }}
             >
-              {generandoPdf ? "Generando…" : "Descargar PDF"}
+              {generandoPdf ? "Generando PDF…" : "Descargar PDF"}
             </button>
-            <button style={B("#f1f5f9","#475569")} onClick={()=>printCurrentPz("Informe " + (sel?.id || ""))}>Imprimir</button>
+            <button
+              style={B("#f1f5f9","#475569")}
+              onClick={()=>{
+                const html = buildInformePrintHtml(sel, { empresaConfig, firmaImg });
+                openPrintTab(html, `Informe ${sel?.id || ""}`);
+              }}
+            >
+              Imprimir
+            </button>
           </div>
           <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:T.cuerpo,lineHeight:1.55,border:"1px solid #ddd",padding:"28px 36px"}}>
             <PrintHeader dual={false} formato="informe" empresaConfig={empresaConfig}/>

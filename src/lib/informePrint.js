@@ -34,6 +34,8 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
   const actividades = rawActividades.map(conActividadSeparada);
   const recomendaciones = String(informe?.recomendaciones || "").trim();
 
+  const numDoc = informe?.id ? String(informe.id).trim() : "";
+
   // --- RENDERIZADORES DE FRAGMENTOS ---
 
   const renderHeaderPortada = () => `
@@ -48,10 +50,15 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
         <div>Nit. 900193965-4</div>
         <div style="color:#cc0000;font-weight:600;">www.ingeanclajessas.com</div>
       </div>
-      ${sello ? `
-        <div style="border:1px solid #333;margin-left:12px;width:140px;flex-shrink:0;display:flex;flex-direction:column;align-self:stretch;">
-          <div style="border-bottom:1px solid #333;padding:3px 6px;text-align:center;font-size:7.5px;color:#333;line-height:1.2;flex:1;display:flex;align-items:center;justify-content:center;">${escapeHtml(sello.linea)}</div>
-          <div style="padding:3px 6px;text-align:center;font-size:8px;font-weight:700;letter-spacing:.3px;font-family:Consolas, monospace;color:#111;flex:1;display:flex;align-items:center;justify-content:center;">${escapeHtml(sello.codigo)}</div>
+      ${sello || numDoc ? `
+        <div style="border:1px solid #333;margin-left:12px;width:145px;flex-shrink:0;display:flex;flex-direction:column;align-self:stretch;overflow:hidden;">
+          ${sello ? `
+            <div style="border-bottom:1px solid #333;padding:2px 4px;text-align:center;font-size:7.5px;color:#444;line-height:1.2;flex:1;display:flex;align-items:center;justify-content:center;">${escapeHtml(sello.linea)}</div>
+            <div style="border-bottom:${numDoc ? "1px solid #333" : "none"};padding:2px 4px;text-align:center;font-size:8px;font-weight:700;letter-spacing:.3px;font-family:Consolas, monospace;color:#111;flex:1;display:flex;align-items:center;justify-content:center;">${escapeHtml(sello.codigo)}</div>
+          ` : ""}
+          ${numDoc ? `
+            <div style="padding:2px 4px;text-align:center;font-size:8.5px;font-weight:800;letter-spacing:.4px;font-family:Consolas, monospace;color:#cc0000;background:#fff5f5;flex:1;display:flex;align-items:center;justify-content:center;">${escapeHtml(numDoc)}</div>
+          ` : ""}
         </div>
       ` : ""}
     </div>

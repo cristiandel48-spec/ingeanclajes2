@@ -800,7 +800,7 @@ export default function Informes({ctx}){
             </button>
           </div>
           <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:T.cuerpo,lineHeight:1.55,border:"1px solid #ddd",padding:"28px 36px"}}>
-            <PrintHeader dual={false} formato="informe" empresaConfig={empresaConfig}/>
+            <PrintHeader dual={false} formato="informe" empresaConfig={empresaConfig} numeroDocumento={sel?.id || sel?.numero || ""}/>
             <div style={{textAlign:"center",fontSize:T.titulo,fontWeight:700,letterSpacing:1.5,padding:"2px 0 10px",borderBottom:"2px solid #333",color:"#111",textTransform:"uppercase",marginBottom:22,marginTop:14}}>Informe de Actividades</div>
             <table style={{width:"100%",borderCollapse:"collapse",marginBottom:20}}>
               <tbody>

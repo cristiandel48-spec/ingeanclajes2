@@ -1,4 +1,6 @@
-// Generacion del HTML imprimible de Informes de Actividades organizado por paginas limpias
+// Generacion del HTML imprimible de Informes de Actividades organizado
+// mediante empaquetado fluido por paginas para evitar espacios en blanco innecesarios.
+
 import { fmtL } from "./format";
 import { escapeHtml } from "./html";
 import { normalizarMayusculas } from "./normalizarEntrada";
@@ -8,6 +10,16 @@ import { conActividadSeparada } from "./informeTextos";
 
 const BORDE = "#ddd";
 const GRIS_ROTULO = "#6B6B6B";
+
+// Capacidad util de contenido por pagina Carta (a 96 DPI: 1056px - padding vertical 64px - footer 30px)
+const MAX_ALTO_PAGINA = 940;
+
+function estimarLineas(texto, caracteresPorLinea = 78) {
+  const str = String(texto || "").trim();
+  if (!str) return 0;
+  const parrafos = str.split(/\r?\n/).filter(Boolean);
+  return parrafos.reduce((total, p) => total + Math.max(1, Math.ceil(p.length / caracteresPorLinea)), 0);
+}
 
 export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } = {}) {
   const sello = selloDe(empresaConfig, "informe");
@@ -22,83 +34,92 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
   const actividades = rawActividades.map(conActividadSeparada);
   const recomendaciones = String(informe?.recomendaciones || "").trim();
 
-  // Construir las páginas
-  const paginasHtml = [];
+  // --- RENDERIZADORES DE FRAGMENTOS ---
 
-  // Encabezado estándar de página 1
   const renderHeaderPortada = () => `
-    <div style="display:flex;justify-content:space-between;align-items:stretch;border-bottom:2.5px solid #cc0000;padding-bottom:12px;margin-bottom:0;">
-      <img src="${LOGO_INGEANCLAJES}" alt="Ingeanclajes" style="height:52px;object-fit:contain;align-self:center;"/>
+    <div style="display:flex;justify-content:space-between;align-items:stretch;border-bottom:2.5px solid #cc0000;padding-bottom:10px;margin-bottom:0;">
+      <img src="${LOGO_INGEANCLAJES}" alt="Ingeanclajes" style="height:50px;object-fit:contain;align-self:center;"/>
       <div style="text-align:center;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-        <div style="font-size:10px;letter-spacing:3px;color:#333;text-transform:uppercase;font-weight:700;">Especialistas en Anclajes</div>
+        <div style="font-size:9.5px;letter-spacing:3px;color:#333;text-transform:uppercase;font-weight:700;">Especialistas en Anclajes</div>
       </div>
-      <div style="text-align:right;font-size:9.5px;color:#555;line-height:1.6;display:flex;flex-direction:column;justify-content:center;">
+      <div style="text-align:right;font-size:9px;color:#555;line-height:1.5;display:flex;flex-direction:column;justify-content:center;">
         <div>Calle 38 sur # 36 - 48, Envigado</div>
         <div>PBX 448 26 86 · Cel 3152889541</div>
         <div>Nit. 900193965-4</div>
         <div style="color:#cc0000;font-weight:600;">www.ingeanclajessas.com</div>
       </div>
       ${sello ? `
-        <div style="border:1px solid #333;margin-left:12px;width:145px;flex-shrink:0;display:flex;flex-direction:column;align-self:stretch;">
-          <div style="border-bottom:1px solid #333;padding:3px 6px;text-align:center;font-size:8px;color:#333;line-height:1.3;flex:1;display:flex;align-items:center;justify-content:center;">${escapeHtml(sello.linea)}</div>
-          <div style="padding:3px 6px;text-align:center;font-size:8.5px;font-weight:700;letter-spacing:.3px;font-family:Consolas, monospace;color:#111;flex:1;display:flex;align-items:center;justify-content:center;">${escapeHtml(sello.codigo)}</div>
+        <div style="border:1px solid #333;margin-left:12px;width:140px;flex-shrink:0;display:flex;flex-direction:column;align-self:stretch;">
+          <div style="border-bottom:1px solid #333;padding:3px 6px;text-align:center;font-size:7.5px;color:#333;line-height:1.2;flex:1;display:flex;align-items:center;justify-content:center;">${escapeHtml(sello.linea)}</div>
+          <div style="padding:3px 6px;text-align:center;font-size:8px;font-weight:700;letter-spacing:.3px;font-family:Consolas, monospace;color:#111;flex:1;display:flex;align-items:center;justify-content:center;">${escapeHtml(sello.codigo)}</div>
         </div>
       ` : ""}
     </div>
   `;
 
-  // Encabezado compacto para páginas 2 en adelante
   const renderHeaderSecundario = () => `
-    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid #cc0000;padding-bottom:6px;margin-bottom:14px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid #cc0000;padding-bottom:5px;margin-bottom:12px;">
       <div style="display:flex;align-items:center;gap:8px;">
-        <img src="${LOGO_INGEANCLAJES}" alt="Ingeanclajes" style="height:26px;object-fit:contain;"/>
-        <span style="font-size:10px;font-weight:700;color:#111;letter-spacing:1px;text-transform:uppercase;">Informe de Actividades · ${escapeHtml(proyecto)}</span>
+        <img src="${LOGO_INGEANCLAJES}" alt="Ingeanclajes" style="height:24px;object-fit:contain;"/>
+        <span style="font-size:9.5px;font-weight:700;color:#111;letter-spacing:1px;text-transform:uppercase;">Informe de Actividades · ${escapeHtml(proyecto)}</span>
       </div>
-      <div style="font-size:9px;color:#64748b;font-family:Consolas, monospace;font-weight:600;">${escapeHtml(informe?.id || "")}</div>
+      <div style="font-size:8.5px;color:#64748b;font-family:Consolas, monospace;font-weight:600;">${escapeHtml(informe?.id || "")}</div>
     </div>
   `;
 
-  // Tabla general de datos
-  const renderTablaGeneral = () => `
-    <table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:10px;">
+  const renderPortadaTop = () => `
+    ${renderHeaderPortada()}
+    <div style="text-align:center;font-size:14px;font-weight:700;letter-spacing:1.5px;padding:2px 0 6px;border-bottom:2px solid #333;color:#111;text-transform:uppercase;margin-bottom:12px;margin-top:8px;">Informe de Actividades</div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:12px;font-size:9.5px;">
       <tbody>
-        <tr><td style="border:1px solid ${BORDE};padding:5px 10px;background:#f0f0f0;font-weight:700;width:28%;color:${GRIS_ROTULO};letter-spacing:.05em;">PROYECTO</td><td style="border:1px solid ${BORDE};padding:5px 10px;">${escapeHtml(proyecto)}</td></tr>
-        <tr><td style="border:1px solid ${BORDE};padding:5px 10px;background:#f0f0f0;font-weight:700;color:${GRIS_ROTULO};letter-spacing:.05em;">LOCALIZACIÓN</td><td style="border:1px solid ${BORDE};padding:5px 10px;">${escapeHtml(localizacion)}</td></tr>
-        <tr><td style="border:1px solid ${BORDE};padding:5px 10px;background:#f0f0f0;font-weight:700;color:${GRIS_ROTULO};letter-spacing:.05em;">FECHA INFORME</td><td style="border:1px solid ${BORDE};padding:5px 10px;">${escapeHtml(fechaInforme)}</td></tr>
-        <tr><td style="border:1px solid ${BORDE};padding:5px 10px;background:#f0f0f0;font-weight:700;color:${GRIS_ROTULO};letter-spacing:.05em;">PERÍODO DE INFORME</td><td style="border:1px solid ${BORDE};padding:5px 10px;">${escapeHtml(periodo)}</td></tr>
+        <tr><td style="border:1px solid ${BORDE};padding:4px 8px;background:#f0f0f0;font-weight:700;width:28%;color:${GRIS_ROTULO};letter-spacing:.05em;">PROYECTO</td><td style="border:1px solid ${BORDE};padding:4px 8px;">${escapeHtml(proyecto)}</td></tr>
+        <tr><td style="border:1px solid ${BORDE};padding:4px 8px;background:#f0f0f0;font-weight:700;color:${GRIS_ROTULO};letter-spacing:.05em;">LOCALIZACIÓN</td><td style="border:1px solid ${BORDE};padding:4px 8px;">${escapeHtml(localizacion)}</td></tr>
+        <tr><td style="border:1px solid ${BORDE};padding:4px 8px;background:#f0f0f0;font-weight:700;color:${GRIS_ROTULO};letter-spacing:.05em;">FECHA INFORME</td><td style="border:1px solid ${BORDE};padding:4px 8px;">${escapeHtml(fechaInforme)}</td></tr>
+        <tr><td style="border:1px solid ${BORDE};padding:4px 8px;background:#f0f0f0;font-weight:700;color:${GRIS_ROTULO};letter-spacing:.05em;">PERÍODO DE INFORME</td><td style="border:1px solid ${BORDE};padding:4px 8px;">${escapeHtml(periodo)}</td></tr>
       </tbody>
     </table>
-  `;
-
-  // Tabla personal en obra
-  const renderTablaPersonal = () => `
-    <table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:10px;">
+    <table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:9.5px;">
       <thead>
-        <tr style="background:#ddd;"><td colspan="2" style="border:1px solid ${BORDE};padding:6px 10px;font-weight:700;text-align:center;font-size:10px;letter-spacing:.04em;">PERSONAL EN OBRA</td></tr>
+        <tr style="background:#ddd;"><td colspan="2" style="border:1px solid ${BORDE};padding:5px 8px;font-weight:700;text-align:center;font-size:9.5px;letter-spacing:.04em;">PERSONAL EN OBRA</td></tr>
         <tr style="background:#f5f5f5;">
-          <th style="border:1px solid ${BORDE};padding:5px 10px;text-align:left;width:35%;color:${GRIS_ROTULO};letter-spacing:.05em;font-size:10px;">CARGO</th>
-          <th style="border:1px solid ${BORDE};padding:5px 10px;text-align:left;color:${GRIS_ROTULO};letter-spacing:.05em;font-size:10px;">NOMBRE</th>
+          <th style="border:1px solid ${BORDE};padding:4px 8px;text-align:left;width:35%;color:${GRIS_ROTULO};letter-spacing:.05em;font-size:9.5px;">CARGO</th>
+          <th style="border:1px solid ${BORDE};padding:4px 8px;text-align:left;color:${GRIS_ROTULO};letter-spacing:.05em;font-size:9.5px;">NOMBRE</th>
         </tr>
       </thead>
       <tbody>
         ${personal.map((p) => `
           <tr>
-            <td style="border:1px solid ${BORDE};padding:5px 10px;">${escapeHtml(p.cargo || "")}</td>
-            <td style="border:1px solid ${BORDE};padding:5px 10px;">${escapeHtml(p.nombre || "")}</td>
+            <td style="border:1px solid ${BORDE};padding:4px 8px;">${escapeHtml(p.cargo || "")}</td>
+            <td style="border:1px solid ${BORDE};padding:4px 8px;">${escapeHtml(p.nombre || "")}</td>
           </tr>
         `).join("")}
       </tbody>
     </table>
   `;
 
-  // Render de tarjeta de foto individual
+  const renderTablaActividad = (act) => `
+    <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:9.5px;">
+      <tbody>
+        <tr><td colspan="2" style="border:1px solid ${BORDE};padding:5px 8px;background:#ddd;font-weight:700;text-align:center;font-size:9.5px;letter-spacing:.04em;">${escapeHtml(act.titulo || "Actividad")}</td></tr>
+        ${act.fecha ? `<tr><td style="border:1px solid ${BORDE};padding:4px 8px;font-weight:700;width:22%;color:${GRIS_ROTULO};letter-spacing:.05em;">FECHA</td><td style="border:1px solid ${BORDE};padding:4px 8px;">${escapeHtml(fmtL(act.fecha))}</td></tr>` : ""}
+        ${(act.actividadesRealizadas || "").trim() ? `<tr><td style="border:1px solid ${BORDE};padding:4px 8px;font-weight:700;width:22%;vertical-align:top;color:${GRIS_ROTULO};letter-spacing:.05em;">ACTIVIDADES REALIZADAS</td><td style="border:1px solid ${BORDE};padding:5px 8px;text-align:justify;white-space:pre-line;line-height:1.4;">${escapeHtml(act.actividadesRealizadas)}</td></tr>` : ""}
+        ${(act.descripcion || "").trim() ? `<tr><td style="border:1px solid ${BORDE};padding:4px 8px;font-weight:700;width:22%;vertical-align:top;color:${GRIS_ROTULO};letter-spacing:.05em;">DESCRIPCIÓN</td><td style="border:1px solid ${BORDE};padding:5px 8px;text-align:justify;white-space:pre-line;line-height:1.4;">${escapeHtml(act.descripcion)}</td></tr>` : ""}
+        <tr><td style="border:1px solid ${BORDE};padding:4px 8px;font-weight:700;vertical-align:top;color:${GRIS_ROTULO};letter-spacing:.05em;">OBSERVACIONES</td><td style="border:1px solid ${BORDE};padding:4px 8px;">${escapeHtml(act.observaciones || "")}</td></tr>
+      </tbody>
+    </table>
+  `;
+
+  const renderTituloFotos = (titulo) => `
+    <div style="font-weight:700;text-align:center;background:#ddd;border:1px solid ${BORDE};padding:5px;margin-bottom:8px;font-size:9.5px;letter-spacing:.04em;">${escapeHtml(titulo)}</div>
+  `;
+
   const renderFotoCard = (ft, idx) => `
     <div style="border:1px solid ${BORDE};border-radius:4px;overflow:hidden;background:#fff;padding:6px;display:flex;flex-direction:column;">
-      <div style="height:215px;display:flex;align-items:center;justify-content:center;background:#f8fafc;border-radius:3px;overflow:hidden;">
+      <div style="height:205px;display:flex;align-items:center;justify-content:center;background:#f8fafc;border-radius:3px;overflow:hidden;">
         <img src="${ft.img || ft.url}" alt="foto ${idx + 1}" style="width:100%;height:100%;object-fit:contain;display:block;background:#fff;"/>
       </div>
       ${ft.comentario ? `
-        <div style="padding:5px 2px 0;font-size:8.5px;color:${GRIS_ROTULO};border-top:1px solid #eee;margin-top:4px;line-height:1.35;">
+        <div style="padding:4px 2px 0;font-size:8.5px;color:${GRIS_ROTULO};border-top:1px solid #eee;margin-top:4px;line-height:1.3;">
           ${escapeHtml(ft.comentario)}
         </div>
       ` : `
@@ -107,127 +128,138 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
     </div>
   `;
 
-  // Render de cuadrícula de fotos
-  const renderFotosGrid = (fotosLote, inicioIdx = 0) => `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;align-items:start;">
-      ${fotosLote.map((ft, i) => renderFotoCard(ft, inicioIdx + i)).join("")}
+  const renderFotosFila = (parFotos, startIdx = 0) => `
+    <div style="display:grid;grid-template-columns:${parFotos.length === 1 ? "1fr 1fr" : "1fr 1fr"};gap:10px;margin-bottom:8px;align-items:start;">
+      ${parFotos.map((ft, i) => renderFotoCard(ft, startIdx + i)).join("")}
+      ${parFotos.length === 1 ? `<div></div>` : ""}
     </div>
   `;
 
-  // Render de tabla de actividad
-  const renderTablaActividad = (act) => `
-    <table style="width:100%;border-collapse:collapse;margin-bottom:12px;font-size:10px;">
-      <tbody>
-        <tr><td colspan="2" style="border:1px solid ${BORDE};padding:6px 10px;background:#ddd;font-weight:700;text-align:center;font-size:10px;letter-spacing:.04em;">${escapeHtml(act.titulo || "Actividad")}</td></tr>
-        ${act.fecha ? `<tr><td style="border:1px solid ${BORDE};padding:5px 10px;font-weight:700;width:22%;color:${GRIS_ROTULO};letter-spacing:.05em;">FECHA</td><td style="border:1px solid ${BORDE};padding:5px 10px;">${escapeHtml(fmtL(act.fecha))}</td></tr>` : ""}
-        ${(act.actividadesRealizadas || "").trim() ? `<tr><td style="border:1px solid ${BORDE};padding:5px 10px;font-weight:700;width:22%;vertical-align:top;color:${GRIS_ROTULO};letter-spacing:.05em;">ACTIVIDADES REALIZADAS</td><td style="border:1px solid ${BORDE};padding:5px 10px;text-align:justify;white-space:pre-line;line-height:1.45;">${escapeHtml(act.actividadesRealizadas)}</td></tr>` : ""}
-        ${(act.descripcion || "").trim() ? `<tr><td style="border:1px solid ${BORDE};padding:5px 10px;font-weight:700;width:22%;vertical-align:top;color:${GRIS_ROTULO};letter-spacing:.05em;">DESCRIPCIÓN</td><td style="border:1px solid ${BORDE};padding:5px 10px;text-align:justify;white-space:pre-line;line-height:1.45;">${escapeHtml(act.descripcion)}</td></tr>` : ""}
-        <tr><td style="border:1px solid ${BORDE};padding:5px 10px;font-weight:700;vertical-align:top;color:${GRIS_ROTULO};letter-spacing:.05em;">OBSERVACIONES</td><td style="border:1px solid ${BORDE};padding:5px 10px;">${escapeHtml(act.observaciones || "")}</td></tr>
-      </tbody>
-    </table>
-  `;
-
-  // Render de bloque de firma
-  const renderBloqueFirma = () => `
-    <div style="margin-top:16px;font-size:10px;">
-      <div style="margin-bottom:6px;">Cordialmente,</div>
-      <div style="height:60px;display:flex;align-items:flex-end;margin-bottom:4px;">
-        ${firmaImg ? `<img src="${firmaImg}" alt="Firma" style="max-height:58px;max-width:210px;object-fit:contain;"/>` : ""}
-      </div>
-      <div>
-        <div style="display:inline-block;border-top:1px solid #333;padding-top:6px;min-width:230px;">
-          <div style="font-weight:700;font-size:10px;letter-spacing:.02em;">ING. JHON JAIME SEPULVEDA LONDOÑO</div>
-          <div style="font-size:9px;color:${GRIS_ROTULO};margin-top:2px;">Cl 38 sur # 36-48, Envigado · PBX 448 26 86 · Cel. 314 863 40 72</div>
-          <div style="font-size:9px;color:${GRIS_ROTULO};">Nit. 900193965-4 · ingeanclajes.sas@gmail.com</div>
-        </div>
-      </div>
-    </div>
-  `;
-
-  // Render de tabla recomendaciones
   const renderTablaRecomendaciones = () => `
-    <table style="width:100%;border-collapse:collapse;margin-bottom:12px;font-size:10px;">
+    <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:9.5px;">
       <tbody>
         <tr>
-          <td style="border:1px solid ${BORDE};padding:6px 10px;font-weight:700;width:22%;vertical-align:top;color:${GRIS_ROTULO};letter-spacing:.05em;">RECOMENDACIONES</td>
-          <td style="border:1px solid ${BORDE};padding:6px 10px;text-align:justify;white-space:pre-line;line-height:1.45;">${escapeHtml(recomendaciones)}</td>
+          <td style="border:1px solid ${BORDE};padding:5px 8px;font-weight:700;width:22%;vertical-align:top;color:${GRIS_ROTULO};letter-spacing:.05em;">RECOMENDACIONES</td>
+          <td style="border:1px solid ${BORDE};padding:5px 8px;text-align:justify;white-space:pre-line;line-height:1.4;">${escapeHtml(recomendaciones)}</td>
         </tr>
       </tbody>
     </table>
   `;
 
-  // --- DISTRIBUCION EN PAGINAS ---
-  // PAGINA 1: Portada + Datos Generales + Personal en Obra
-  const p1Contenido = `
-    ${renderHeaderPortada()}
-    <div style="text-align:center;font-size:14px;font-weight:700;letter-spacing:1.5px;padding:2px 0 8px;border-bottom:2px solid #333;color:#111;text-transform:uppercase;margin-bottom:16px;margin-top:10px;">Informe de Actividades</div>
-    ${renderTablaGeneral()}
-    ${renderTablaPersonal()}
+  const renderBloqueFirma = () => `
+    <div style="margin-top:14px;font-size:9.5px;">
+      <div style="margin-bottom:4px;">Cordialmente,</div>
+      <div style="height:55px;display:flex;align-items:flex-end;margin-bottom:4px;">
+        ${firmaImg ? `<img src="${firmaImg}" alt="Firma" style="max-height:52px;max-width:200px;object-fit:contain;"/>` : ""}
+      </div>
+      <div>
+        <div style="display:inline-block;border-top:1px solid #333;padding-top:5px;min-width:220px;">
+          <div style="font-weight:700;font-size:9.5px;letter-spacing:.02em;">ING. JHON JAIME SEPULVEDA LONDOÑO</div>
+          <div style="font-size:8.5px;color:${GRIS_ROTULO};margin-top:2px;">Cl 38 sur # 36-48, Envigado · PBX 448 26 86 · Cel. 314 863 40 72</div>
+          <div style="font-size:8.5px;color:${GRIS_ROTULO};">Nit. 900193965-4 · ingeanclajes.sas@gmail.com</div>
+        </div>
+      </div>
+    </div>
   `;
-  paginasHtml.push(p1Contenido);
 
-  // PAGINAS PARA CADA ACTIVIDAD
+  // --- MOTOR DE EMPAQUETADO FLUIDO DE PÁGINAS ---
+  const paginas = [[]];
+  let pIdx = 0;
+  let alturaActual = 0;
+
+  const nuevaPagina = () => {
+    pIdx += 1;
+    paginas[pIdx] = [renderHeaderSecundario()];
+    alturaActual = 32; // Altura del encabezado secundario
+  };
+
+  // 1. Empaquetar Portada Top
+  const altoPortadaTop = 60 + 32 + 88 + (35 + personal.length * 20);
+  paginas[0].push(renderPortadaTop());
+  alturaActual = altoPortadaTop;
+
+  // 2. Empaquetar Actividades y Fotos de forma continua
   actividades.forEach((act) => {
+    // Altura estimada de la tabla de la actividad
+    const lineasAct = estimarLineas(act.actividadesRealizadas);
+    const lineasDesc = estimarLineas(act.descripcion);
+    const lineasObs = estimarLineas(act.observaciones);
+    const altoTabla = 26 + (act.fecha ? 20 : 0) + Math.max(22, lineasAct * 14 + 10) + Math.max(22, lineasDesc * 14 + 10) + Math.max(20, lineasObs * 14 + 10) + 12;
+
     const fotos = (act.fotos || []).filter((ft) => ft.img || ft.url);
 
-    if (!fotos.length) {
-      // Actividad sin fotos
-      paginasHtml.push(`
-        ${renderHeaderSecundario()}
-        ${renderTablaActividad(act)}
-      `);
-      return;
+    // Si la tabla no cabe en la hoja actual, abrir una nueva hoja
+    if (alturaActual + altoTabla > MAX_ALTO_PAGINA) {
+      nuevaPagina();
     }
 
-    // Actividad con fotos:
-    // Si tiene 1 o 2 fotos, la tabla y las 2 fotos caben en una misma pagina
-    if (fotos.length <= 2) {
-      paginasHtml.push(`
-        ${renderHeaderSecundario()}
-        ${renderTablaActividad(act)}
-        <div style="font-weight:700;text-align:center;background:#ddd;border:1px solid ${BORDE};padding:5px;margin-bottom:8px;font-size:9.5px;letter-spacing:.04em;">REGISTRO FOTOGRÁFICO · ${escapeHtml(act.titulo || "")}</div>
-        ${renderFotosGrid(fotos, 0)}
-      `);
-    } else {
-      // Si tiene mas de 2 fotos (ej: 4, 6 fotos):
-      // Pagina con la tabla de actividad y titulo de fotos
-      paginasHtml.push(`
-        ${renderHeaderSecundario()}
-        ${renderTablaActividad(act)}
-        <div style="font-weight:700;text-align:center;background:#ddd;border:1px solid ${BORDE};padding:5px;margin-bottom:8px;font-size:9.5px;letter-spacing:.04em;">REGISTRO FOTOGRÁFICO · ${escapeHtml(act.titulo || "")}</div>
-        ${renderFotosGrid(fotos.slice(0, 2), 0)}
-      `);
+    paginas[pIdx].push(renderTablaActividad(act));
+    alturaActual += altoTabla;
 
-      // Las fotos restantes van de a 6 fotos por pagina completa (3 filas de 2)
-      const restantes = fotos.slice(2);
-      const FOTOS_POR_PAGINA = 6;
-      for (let f = 0; f < restantes.length; f += FOTOS_POR_PAGINA) {
-        const lote = restantes.slice(f, f + FOTOS_POR_PAGINA);
-        paginasHtml.push(`
-          ${renderHeaderSecundario()}
-          <div style="font-weight:700;text-align:center;background:#ddd;border:1px solid ${BORDE};padding:5px;margin-bottom:8px;font-size:9.5px;letter-spacing:.04em;">REGISTRO FOTOGRÁFICO · ${escapeHtml(act.titulo || "")} ${restantes.length > FOTOS_POR_PAGINA ? `(Continuación)` : ""}</div>
-          ${renderFotosGrid(lote, 2 + f)}
-        `);
+    // Procesar fotos de la actividad
+    if (fotos.length > 0) {
+      // Agrupar fotos de a pares (filas de 2)
+      const filas = [];
+      for (let i = 0; i < fotos.length; i += 2) {
+        filas.push(fotos.slice(i, i + 2));
       }
+
+      const altoTituloFotos = 28;
+      const altoFilaFotos = 240;
+
+      let tituloPuesto = false;
+
+      filas.forEach((fila, fIdx) => {
+        const esPrimeraFila = fIdx === 0;
+        const espacioRequerido = (esPrimeraFila && !tituloPuesto) ? (altoTituloFotos + altoFilaFotos) : altoFilaFotos;
+
+        // Si la fila de fotos (o título + fila) no cabe en la hoja actual
+        if (alturaActual + espacioRequerido > MAX_ALTO_PAGINA) {
+          nuevaPagina();
+          tituloPuesto = false;
+        }
+
+        if (!tituloPuesto) {
+          const textoTitulo = `REGISTRO FOTOGRÁFICO · ${act.titulo || ""}${fIdx > 0 ? " (Continuación)" : ""}`;
+          paginas[pIdx].push(renderTituloFotos(textoTitulo));
+          alturaActual += altoTituloFotos;
+          tituloPuesto = true;
+        }
+
+        paginas[pIdx].push(renderFotosFila(fila, fIdx * 2));
+        alturaActual += altoFilaFotos;
+      });
     }
   });
 
-  // PAGINA FINAL: RECOMENDACIONES Y FIRMA
-  paginasHtml.push(`
-    ${renderHeaderSecundario()}
-    ${renderTablaRecomendaciones()}
-    ${renderBloqueFirma()}
-  `);
+  // 3. Empaquetar Recomendaciones y Firma
+  const lineasRec = estimarLineas(recomendaciones);
+  const altoRecomendaciones = Math.max(30, lineasRec * 14 + 16) + 12;
+  const altoFirma = 135;
 
-  const totalHojas = paginasHtml.length;
+  // Si no caben recomendaciones en la hoja actual
+  if (alturaActual + altoRecomendaciones > MAX_ALTO_PAGINA) {
+    nuevaPagina();
+  }
+  paginas[pIdx].push(renderTablaRecomendaciones());
+  alturaActual += altoRecomendaciones;
 
-  // Envolver cada fragmento en un elemento <section class="page">
-  const seccionesHtml = paginasHtml.map((contenido, idx) => `
-    <section class="page" style="width:816px;height:1056px;padding:32px 40px 24px;box-sizing:border-box;background:#fff;position:relative;display:flex;flex-direction:column;justify-content:space-between;page-break-after:always;break-after:page;">
+  // Si no cabe la firma en la hoja actual
+  if (alturaActual + altoFirma > MAX_ALTO_PAGINA) {
+    nuevaPagina();
+  }
+  paginas[pIdx].push(renderBloqueFirma());
+  alturaActual += altoFirma;
+
+  // Total de hojas consolidadas
+  const totalHojas = paginas.length;
+
+  const seccionesHtml = paginas.map((bloques, idx) => `
+    <section class="page" style="width:816px;height:1056px;padding:30px 40px 22px;box-sizing:border-box;background:#fff;position:relative;display:flex;flex-direction:column;justify-content:space-between;page-break-after:always;break-after:page;">
       <div style="flex:1;">
-        ${contenido}
+        ${bloques.join("\n")}
       </div>
-      <div style="border-top:1px solid #e2e8f0;padding-top:5px;display:flex;justify-content:space-between;align-items:center;font-size:8px;color:#94a3b8;margin-top:6px;">
+      <div style="border-top:1px solid #e2e8f0;padding-top:4px;display:flex;justify-content:space-between;align-items:center;font-size:8px;color:#94a3b8;margin-top:6px;">
         <span>Ingeanclajes S.A.S · Nit. 900193965-4</span>
         <span>Página ${idx + 1} de ${totalHojas}</span>
       </div>

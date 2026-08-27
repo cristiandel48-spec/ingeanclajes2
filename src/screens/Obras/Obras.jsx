@@ -42,14 +42,8 @@ export default function Obras({ctx}){
   // dejaba mal desde el primer dia.
   const [nob,setNob]=useState({cliente:"",tel:"",proyecto:"",ciudad:"",direccion:"",fechaInicio:today(),fechaFin:"",estado:"En Obra",avance:0,cotizacionId:""});
 
-  // Las dos comprueban el bloqueo aunque la pantalla ya lo esconda: la funcion
+  // Comprueba el bloqueo aunque la pantalla ya lo esconda: la funcion
   // se puede seguir llamando desde otro sitio, y el dato es el mismo.
-  const updAv=(id,v)=>setObras(p=>p.map((o)=>{
-    if(o.id!==id) return o;
-    if(obraEstaCerrada(o) && !puedeDesbloquear) return o;
-    const avance=Math.min(100,Math.max(0,v));
-    return {...o,avance,estado:estadoSegunAvance(avance,o.estado)};
-  }));
   const updEst=(id,e)=>setObras(p=>p.map((o)=>{
     if(o.id!==id) return o;
     if(obraEstaCerrada(o) && !puedeDesbloquear) return o;
@@ -180,9 +174,6 @@ export default function Obras({ctx}){
               </select>
               <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>Si está trabajándose ahora, déjalo en «En Obra».</div>
             </div>
-            <div><LBL>Avance que lleva hoy (%)</LBL><input type="number" min={0} max={100} value={nob.avance} onChange={e=>setNob({...nob,avance:parseInt(e.target.value,10)||0})} style={SI}/>
-              <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>Al 100% (o en «Finalizado») ya se puede certificar.</div>
-            </div>
             <div><LBL>Vincular cotización (opcional)</LBL>
               <select value={nob.cotizacionId} onChange={e=>setNob({...nob,cotizacionId:e.target.value})} style={SI}>
                 <option value="">Sin cotización</option>
@@ -202,7 +193,6 @@ export default function Obras({ctx}){
         obras={obras}
         cotizaciones={cotizaciones}
         onAbrir={(o)=>{ setSel(o); asegurarDetalle("obras", o.id); }}
-        onCambiarAvance={updAv}
         onCambiarEstado={updEst}
         puedeDesbloquear={puedeDesbloquear}
       />

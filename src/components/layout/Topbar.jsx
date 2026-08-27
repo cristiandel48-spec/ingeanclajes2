@@ -2,6 +2,9 @@ import MenuUsuario from "./MenuUsuario";
 import SaveIndicator from "./SaveIndicator";
 import { getScreenTitle, getScreenSection } from "../../config/navigation";
 import { TOPBAR_HEIGHT } from "../../styles/shellTheme";
+import { useAppData } from "../../context/AppDataContext";
+import { resumenSeguimiento } from "../../lib/seguimientoCotizaciones";
+import { esDestinatarioAlerta } from "../../lib/permisos";
 
 // Barra superior: ubicacion actual, acciones de la pantalla, tema y usuario.
 // En movil incluye el boton que abre el menu lateral.
@@ -10,8 +13,13 @@ import { TOPBAR_HEIGHT } from "../../styles/shellTheme";
 // Sirve para que un boton importante -guardar una cotizacion larga- quede
 // siempre a la vista junto al indicador de guardado, sin tener que subir.
 export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOpenMenu, acciones }) {
+  const { cotizaciones, membresia } = useAppData();
   const title = getScreenTitle(scr);
   const section = getScreenSection(scr);
+
+  const esAdminDestinatario = esDestinatarioAlerta(membresia);
+  const seg = resumenSeguimiento(cotizaciones || [], new Date(), 100);
+  const totalPendientes = seg.requierenAccion?.length || 0;
 
   return (
     <header
@@ -64,6 +72,31 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
         {acciones}
+        {esAdminDestinatario && totalPendientes > 0 && (
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("abrir-alerta-cotizaciones"))}
+            aria-label="Ver recordatorio de cotizaciones"
+            title={`${totalPendientes} cotizaciones sin respuesta o por vencer`}
+            style={{
+              position: "relative",
+              height: 36,
+              padding: isMobile ? "0 10px" : "0 12px",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              background: "#fff7ed",
+              border: "1px solid #fdba74",
+              borderRadius: 999,
+              color: "#c2410c",
+              cursor: "pointer",
+              fontSize: 12,
+              fontWeight: 700,
+            }}
+          >
+            <span style={{ fontSize: 13 }}>🔔</span>
+            <span>{totalPendientes} {isMobile ? "" : "por llamar"}</span>
+          </button>
+        )}
         <SaveIndicator theme={theme} compact={isMobile} />
 
         <button

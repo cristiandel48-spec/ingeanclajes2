@@ -20,6 +20,7 @@ import Vencimientos from "./screens/Vencimientos/Vencimientos";
 import Usuarios from "./screens/Usuarios/Usuarios";
 import Auditoria from "./screens/Auditoria/Auditoria";
 import Formatos from "./screens/Formatos/Formatos";
+import ModalAlertaCotizaciones from "./components/ModalAlertaCotizaciones";
 
 // Registro de pantallas. Las claves coinciden con los `id` de
 // config/navigation.jsx: para sumar una pantalla se agrega aqui y alli.
@@ -104,6 +105,7 @@ function AppRoot() {
   return (
     <AppShell scr={destino} onNavigate={setScr}>
       <Screen ctx={ctx} go={setScr} />
+      <ModalAlertaCotizaciones onNavigate={setScr} />
     </AppShell>
   );
 }

@@ -92,6 +92,26 @@ export function esDueno(membresia) {
   return esCuentaSoporte(membresia?.email);
 }
 
+/**
+ * Determina si el usuario actual es Camila Sepúlveda, Cristian Flórez o un Administrador del sistema
+ * para recibir alertas comerciales y recordatorios de cotizaciones sin respuesta.
+ */
+export function esDestinatarioAlerta(membresia) {
+  if (!membresia) return false;
+  const role = String(membresia.role || "").toLowerCase().trim();
+  const nombre = String(membresia.nombre || "").toLowerCase().trim();
+  const email = String(membresia.email || "").toLowerCase().trim();
+
+  if (role === "admin" || role === "superadmin" || role === "owner" || role === "administrador") return true;
+  if (esDueno(membresia)) return true;
+
+  if (nombre.includes("camila") || nombre.includes("sepulveda") || nombre.includes("sepúlveda")) return true;
+  if (nombre.includes("cristian") || nombre.includes("florez") || nombre.includes("flórez")) return true;
+  if (email.includes("camila") || email.includes("cristian")) return true;
+
+  return false;
+}
+
 /** Quita del listado del equipo las cuentas de soporte. */
 export function sinCuentasSoporte(usuarios) {
   return (usuarios ?? []).filter((usuario) => !esCuentaSoporte(usuario?.email));

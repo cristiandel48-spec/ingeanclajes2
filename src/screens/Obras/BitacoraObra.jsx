@@ -20,7 +20,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
   const registros = normalizarBitacora(obra.bitacora);
   const resumen = resumenBitacora(obra.bitacora);
   const fotoRefs = useRef({});
-  const [subiendo, setSubiendo] = useState(false);
+  const [subiendoFotos, setSubiendoFotos] = useState(null);
 
   const guardarBitacora = (siguiente) => {
     if (bloqueada) return;
@@ -77,18 +77,55 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
       )
     );
 
-  const cargarFoto = async (registroId, indice, file) => {
-    if (!file) return;
-    setSubiendo(true);
-    try {
-      // Se reduce antes de guardar: las fotos van dentro de la obra y una foto
-      // de celular sin comprimir hace fallar el guardado.
-      const img = await leerImagenComprimida(file);
-      actualizarFoto(registroId, indice, "img", img);
-    } catch {
-      window.alert("No se pudo cargar esa foto. Intenta con otra imagen.");
-    } finally {
-      setSubiendo(false);
+  // Sube una o varias fotos a la vez. La primera ocupa el recuadro donde se
+  // hizo clic (si reemplazar es true) y las demás van llenando los recuadros
+  // vacíos o creando nuevos si se acaban.
+  const cargarFotos = async (registroId, indice, archivos, reemplazar = true) => {
+    const lista = Array.from(archivos || []).filter(Boolean);
+    if (!lista.length) return;
+
+    setSubiendoFotos({ registroId, hechas: 0, total: lista.length });
+    const imagenes = [];
+    let fallidas = 0;
+
+    // Se procesan secuencialmente para no saturar memoria en móviles o equipos de bajos recursos
+    for (const archivo of lista) {
+      try {
+        imagenes.push(await leerImagenComprimida(archivo));
+      } catch {
+        fallidas += 1;
+      }
+      setSubiendoFotos({ registroId, hechas: imagenes.length + fallidas, total: lista.length });
+    }
+    setSubiendoFotos(null);
+
+    if (imagenes.length) {
+      guardarBitacora(
+        registros.map((r) => {
+          if (r.id !== registroId) return r;
+          const fotos = [...(r.fotos || [])];
+          let pos = reemplazar ? indice + 1 : 0;
+          imagenes.forEach((img, n) => {
+            if (n === 0 && reemplazar && indice < fotos.length) {
+              fotos[indice] = { ...fotos[indice], img };
+              return;
+            }
+            while (pos < fotos.length && fotos[pos].img) pos += 1;
+            if (pos < fotos.length) fotos[pos] = { ...fotos[pos], img };
+            else fotos.push({ img, comentario: "" });
+            pos += 1;
+          });
+          return { ...r, fotos };
+        })
+      );
+    }
+
+    if (fallidas) {
+      window.alert(
+        fallidas === lista.length
+          ? "No se pudo cargar ninguna de esas fotos. Intenta con otras imágenes."
+          : `Se subieron ${imagenes.length} fotos. ${fallidas} no se pudieron cargar.`
+      );
     }
   };
 
@@ -136,9 +173,9 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
         decide si el registro entra o no en el informe</strong>, así que ponla siempre.
       </AvisoFlujo>
 
-      {subiendo && (
+      {subiendoFotos && (
         <div style={{ background: "#F0F6FF", border: "1px solid #BFD8FF", color: "#1E40AF", borderRadius: 10, padding: "9px 13px", fontSize: 12, marginBottom: 12 }}>
-          Procesando la foto… espera un momento.
+          Procesando {subiendoFotos.total > 1 ? `${subiendoFotos.hechas} de ${subiendoFotos.total} fotos…` : "la foto…"} espera un momento.
         </div>
       )}
 
@@ -230,8 +267,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
 
             <LBL>Fotos del avance</LBL>
             <div style={{ fontSize: 11, color: "#64748b", marginBottom: 8 }}>
-              Toca el recuadro para subir la foto y escribe debajo qué se ve en ella. Ese comentario
-              es el que aparece bajo la foto en el informe impreso.
+              Toca el recuadro o el botón para subir una o varias fotos a la vez. Escribe debajo qué se ve en cada una.
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, alignItems: "start" }}>
               {(registro.fotos || []).map((foto, fi) => {
@@ -247,7 +283,8 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                       ) : (
                         <div style={{ textAlign: "center", color: "#94a3b8", fontSize: 11 }}>
                           <div style={{ fontSize: 22 }}>📷</div>
-                          <div>Clic para subir la foto</div>
+                          <div>Clic para subir foto(s)</div>
+                          <div style={{ fontSize: 10, marginTop: 2, color: "#94a3b8" }}>puedes elegir varias a la vez</div>
                         </div>
                       )}
                       {foto.img && (
@@ -263,8 +300,9 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                       ref={(el) => { fotoRefs.current[clave] = el; }}
                       type="file"
                       accept="image/*"
+                      multiple
                       style={{ display: "none" }}
-                      onChange={(e) => { cargarFoto(registro.id, fi, e.target.files[0]); e.target.value = ""; }}
+                      onChange={(e) => { cargarFotos(registro.id, fi, e.target.files, true); e.target.value = ""; }}
                     />
                     <div style={{ padding: "6px 8px", display: "flex", gap: 6 }}>
                       <input
@@ -291,9 +329,37 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                 );
               })}
             </div>
-            <button onClick={() => agregarFoto(registro.id)} style={{ ...B("#f1f5f9", "#475569"), fontSize: 11, marginTop: 8 }}>
-              + Agregar otra foto
-            </button>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8, flexWrap: "wrap" }}>
+              <button
+                onClick={() => {
+                  const k = "lote-" + registro.id;
+                  if (fotoRefs.current[k]) fotoRefs.current[k].click();
+                }}
+                disabled={subiendoFotos?.registroId === registro.id}
+                style={{ ...B("#dbeafe", "#1e40af"), fontSize: 11, opacity: subiendoFotos?.registroId === registro.id ? 0.6 : 1 }}
+              >
+                + Subir varias fotos
+              </button>
+              <input
+                ref={(el) => { fotoRefs.current["lote-" + registro.id] = el; }}
+                type="file"
+                accept="image/*"
+                multiple
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  cargarFotos(registro.id, 0, e.target.files, false);
+                  e.target.value = "";
+                }}
+              />
+              <button onClick={() => agregarFoto(registro.id)} style={{ ...B("#f1f5f9", "#475569"), fontSize: 11 }}>
+                + Agregar recuadro
+              </button>
+              {subiendoFotos?.registroId === registro.id && (
+                <span style={{ fontSize: 11, color: "#64748b" }}>
+                  Cargando fotos… {subiendoFotos.hechas} de {subiendoFotos.total}
+                </span>
+              )}
+            </div>
           </div>
         );
       })}

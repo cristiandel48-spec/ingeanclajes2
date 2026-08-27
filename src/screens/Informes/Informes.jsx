@@ -846,7 +846,7 @@ export default function Informes({ctx}){
                 </table>
                 {(act.fotos||[]).some(ft=>ft.img||ft.url)&&(
                   <>
-                    <div style={{fontWeight:700,textAlign:"center",background:"#ddd",border:`1px solid ${BORDE}`,padding:"7px 6px",marginBottom:10,fontSize:T.seccion,letterSpacing:".04em"}}>REGISTRO FOTOGRÁFICO · {act.titulo}</div>
+                    <div className="seccion-header" style={{fontWeight:700,textAlign:"center",background:"#ddd",border:`1px solid ${BORDE}`,padding:"7px 6px",marginBottom:10,fontSize:T.seccion,letterSpacing:".04em",pageBreakInside:"avoid",breakInside:"avoid"}}>REGISTRO FOTOGRÁFICO · {act.titulo}</div>
                     {/* Alto FIJO y no maximo: asi las dos fotos de una fila
                         miden igual, la rejilla queda pareja y -sobre todo- el
                         corte de pagina cae siempre en el mismo sitio. Con alto
@@ -854,7 +854,7 @@ export default function Informes({ctx}){
                         mas facil que una foto quedara partida entre hojas. */}
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12,alignItems:"start"}}>
                       {(act.fotos||[]).filter(ft=>ft.img||ft.url).map((ft,i)=>(
-                        <div key={i} style={{border:`1px solid ${BORDE}`,borderRadius:4,overflow:"hidden",background:"#fff",padding:8}}>
+                        <div key={i} className="foto-card" style={{border:`1px solid ${BORDE}`,borderRadius:4,overflow:"hidden",background:"#fff",padding:8,pageBreakInside:"avoid",breakInside:"avoid"}}>
                           <img src={ft.img||ft.url} alt={"foto" + (i+1)} style={{width:"100%",height:250,objectFit:"contain",display:"block",background:"#fff"}} onError={e=>{e.target.style.display="none";}}/>
                           {ft.comentario&&<div style={{padding:"6px 2px 0",fontSize:T.pie,color:GRIS_ROTULO,borderTop:"1px solid #eee",marginTop:6,lineHeight:1.45}}>{ft.comentario}</div>}
                         </div>
@@ -864,10 +864,10 @@ export default function Informes({ctx}){
                 )}
               </div>
             ))}
-            <table style={{width:"100%",borderCollapse:"collapse",marginBottom:26}}>
+            <table style={{width:"100%",borderCollapse:"collapse",marginBottom:26,pageBreakInside:"avoid",breakInside:"avoid"}}>
               <tbody><tr><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",fontWeight:700,width:"20%",verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".07em"}}>RECOMENDACIONES</td><td style={{border:`1px solid ${BORDE}`,padding:"8px 10px",textAlign:"justify",whiteSpace:"pre-line",lineHeight:1.5}}>{sel.recomendaciones}</td></tr></tbody>
             </table>
-            <div style={{marginTop:30}}>
+            <div className="firma-bloque" style={{marginTop:30,pageBreakInside:"avoid",breakInside:"avoid"}}>
               <div style={{marginBottom:12,fontSize:T.cuerpo}}>Cordialmente,</div>
               <div style={{height:72,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
                 {firmaImg && <img src={firmaImg} alt="" style={{maxHeight:70,maxWidth:230,objectFit:"contain"}}/>}

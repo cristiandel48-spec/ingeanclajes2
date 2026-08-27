@@ -248,10 +248,21 @@ export default function Certificaciones({ctx}){
   };
 
   const guardar=()=>{
-    const c=editId
-      ? {...form,id:editId,estado:form.estado||"Vigente"}
-      : {id:siguienteIdUnico(certs,"CERT"),estado:"Vigente",...form};
-    setCerts(prev=>editId ? prev.map(item=>item.id===editId?{...item,...c}:item) : [...prev,c]);
+    const miNombre = ctx?.membresia?.nombre || ctx?.membresia?.email || "";
+    const miUserId = ctx?.membresia?.userId || null;
+    const prev = editId ? certs.find((item) => item.id === editId) : null;
+    const c = {
+      ...(editId
+        ? { ...form, id: editId, estado: form.estado || "Vigente" }
+        : { id: siguienteIdUnico(certs, "CERT"), estado: "Vigente", ...form }),
+      creadoPor: prev?.creadoPor || miUserId,
+      creadoPorNombre: prev?.creadoPorNombre || miNombre,
+      creadoEn: prev?.creadoEn || new Date().toISOString(),
+      modificadoPor: miUserId,
+      modificadoPorNombre: miNombre,
+      modificadoEn: new Date().toISOString(),
+    };
+    setCerts(prevList=>editId ? prevList.map(item=>item.id===editId?{...item,...c}:item) : [...prevList,c]);
     setNueva(false);
     setSel(c);
     setEditId(null);

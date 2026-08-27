@@ -404,6 +404,14 @@ export const entityConfig = {
   },
   certificaciones: {
     table: "certificaciones",
+    columnasCalculadas: [
+      "creado_por",
+      "creado_por_nombre",
+      "creado_en",
+      "modificado_por",
+      "modificado_por_nombre",
+      "modificado_en",
+    ],
     coerceNullCols: ["fecha", "prox_mant"],
     toRow: (item) => ({
       id: item.id,
@@ -438,13 +446,28 @@ export const entityConfig = {
       matricula: row.matricula,
       estado: row.estado,
       proxMant: row.prox_mant,
+      creadoPor: row.creado_por ?? null,
+      creadoPorNombre: row.creado_por_nombre ?? "",
+      creadoEn: row.creado_en ?? null,
+      modificadoPor: row.modificado_por ?? null,
+      modificadoPorNombre: row.modificado_por_nombre ?? "",
+      modificadoEn: row.modificado_en ?? null,
     }),
   },
   informes: {
     table: "informes",
     // El registro fotografico. Es lo que mas pesa de toda la base.
     columnasPesadas: ["actividades", "fotos"],
-    columnasCalculadas: ["total_actividades", "total_fotos"],
+    columnasCalculadas: [
+      "total_actividades",
+      "total_fotos",
+      "creado_por",
+      "creado_por_nombre",
+      "creado_en",
+      "modificado_por",
+      "modificado_por_nombre",
+      "modificado_en",
+    ],
     coerceNullCols: ["fecha_informe", "periodo_inicio", "periodo_fin"],
     toRow: (item) => ({
       id: item.id,
@@ -496,24 +519,30 @@ export const entityConfig = {
               : []
           );
       return {
-      id: row.id,
-      // Los cuenta la base, para que el listado sepa cuantas fotos hay sin
-      // tener que traerlas.
-      totalActividades: row.total_actividades ?? null,
-      totalFotos: row.total_fotos ?? null,
-      obraId: row.obra_id,
-      proyecto: row.proyecto,
-      localizacion: row.localizacion,
-      fechaInforme: row.fecha_informe,
-      periodoInicio: row.periodo_inicio,
-      periodoFin: row.periodo_fin,
-      personal: safeArray(row.personal),
-      actividad: row.actividad,
-      descripcion: row.descripcion,
-      observaciones: row.observaciones,
-      recomendaciones: row.recomendaciones,
-      fotos: legacyFotos,
-      actividades: actividadesNormalizadas,
+        id: row.id,
+        // Los cuenta la base, para que el listado sepa cuantas fotos hay sin
+        // tener que traerlas.
+        totalActividades: row.total_actividades ?? null,
+        totalFotos: row.total_fotos ?? null,
+        obraId: row.obra_id,
+        proyecto: row.proyecto,
+        localizacion: row.localizacion,
+        fechaInforme: row.fecha_informe,
+        periodoInicio: row.periodo_inicio,
+        periodoFin: row.periodo_fin,
+        personal: safeArray(row.personal),
+        actividad: row.actividad,
+        descripcion: row.descripcion,
+        observaciones: row.observaciones,
+        recomendaciones: row.recomendaciones,
+        fotos: legacyFotos,
+        actividades: actividadesNormalizadas,
+        creadoPor: row.creado_por ?? null,
+        creadoPorNombre: row.creado_por_nombre ?? "",
+        creadoEn: row.creado_en ?? null,
+        modificadoPor: row.modificado_por ?? null,
+        modificadoPorNombre: row.modificado_por_nombre ?? "",
+        modificadoEn: row.modificado_en ?? null,
       };
     },
   },

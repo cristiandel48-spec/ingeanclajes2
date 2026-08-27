@@ -3,7 +3,7 @@
 // Estuvo un rato dentro de Usuarios y permisos, pero es una consulta que se
 // hace por si misma -"¿quien tocó esta cotización?"- y buscarla dentro de la
 // pantalla de crear cuentas no tenia sentido.
-import AuditoriaCotizaciones from "../../components/AuditoriaCotizaciones";
+import AuditoriaDocumentos from "../../components/AuditoriaDocumentos";
 import H1 from "../../components/ui/H1";
 
 export default function Auditoria({ ctx }) {
@@ -13,7 +13,7 @@ export default function Auditoria({ ctx }) {
         title="Auditoría de documentos"
         subtitle="Quién creó cada documento y quién fue el último en modificarlo"
       />
-      <AuditoriaCotizaciones ctx={ctx} />
+      <AuditoriaDocumentos ctx={ctx} />
     </div>
   );
 }

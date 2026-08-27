@@ -441,12 +441,23 @@ export default function Informes({ctx}){
   };
 
   const guardar=()=>{
+    const miNombre = ctx?.membresia?.nombre || ctx?.membresia?.email || "";
+    const miUserId = ctx?.membresia?.userId || null;
+    const prev = editId ? informes.find((item) => item.id === editId) : null;
     const actividades = normalizeInformeActividades(form);
     const legacyActividad = actividades[0] || emptyActividad();
-    const inf=editId
-      ? {id:editId,...form,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos}
-      : {id:siguienteIdUnico(informes,"INF"),...form,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos};
-    setInformes(prev=>editId ? prev.map(item=>item.id===editId?{...item,...inf}:item) : [...prev,inf]);
+    const inf={
+      ...(editId
+        ? {id:editId,...form,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos}
+        : {id:siguienteIdUnico(informes,"INF"),...form,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos}),
+      creadoPor: prev?.creadoPor || miUserId,
+      creadoPorNombre: prev?.creadoPorNombre || miNombre,
+      creadoEn: prev?.creadoEn || new Date().toISOString(),
+      modificadoPor: miUserId,
+      modificadoPorNombre: miNombre,
+      modificadoEn: new Date().toISOString(),
+    };
+    setInformes(prevList=>editId ? prevList.map(item=>item.id===editId?{...item,...inf}:item) : [...prevList,inf]);
     setNuevo(false);
     setEditId(null);
     setSel(inf);

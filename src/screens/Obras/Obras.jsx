@@ -13,7 +13,6 @@ import { ESTADOS_OBRA, estadoSegunAvance, obraEstaCerrada } from "../../lib/fluj
 import { esAdmin } from "../../lib/permisos";
 import ListaObras from "./ListaObras";
 import BuscadorCliente from "../../components/BuscadorCliente";
-import OptimizarFotos from "../../components/OptimizarFotos";
 import { avisoCelular, normalizarMayusculas, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
 
 // Siguiente consecutivo de obra. Se calcula sobre el numero mas alto que ya
@@ -28,7 +27,6 @@ const siguienteIdObra = (obras) => {
 };
 export default function Obras({ctx}){
   const {obras,setObras,cotizaciones,horarios,intencion,limpiarIntencion,membresia,asegurarDetalle,clientes}=ctx;
-  const [showOptFotos, setShowOptFotos] = useState(false);
 
   const clientesConocidos = (() => {
     const mapa = new Map();
@@ -125,27 +123,14 @@ export default function Obras({ctx}){
   // guardarlo en una referencia.
   useAccionesPantalla(
     sel ? null : (
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <button
-          style={{
-            background:"#fff", color:"#334155", border:"1px solid #cbd5e1", borderRadius:9,
-            padding:"8px 14px", fontSize:12.5, fontWeight:600, cursor:"pointer",
-            fontFamily:"inherit", whiteSpace:"nowrap", display:"flex", alignItems:"center", gap:6
-          }}
-          onClick={()=>setShowOptFotos(true)}
-          title="Optimizar el peso de las fotos de obras para que carguen más rápido"
-        >
-          📷 Mantenimiento de fotos
-        </button>
-        <button
-          style={{
-            background:"#cc0000", color:"#fff", border:"1px solid #cc0000", borderRadius:9,
-            padding:"8px 16px", fontSize:12.5, fontWeight:700, cursor:"pointer",
-            fontFamily:"inherit", whiteSpace:"nowrap",
-          }}
-          onClick={()=>setShowNO((v)=>!v)}
-        >+ Nueva Obra</button>
-      </div>
+      <button
+        style={{
+          background:"#cc0000", color:"#fff", border:"1px solid #cc0000", borderRadius:9,
+          padding:"8px 16px", fontSize:12.5, fontWeight:700, cursor:"pointer",
+          fontFamily:"inherit", whiteSpace:"nowrap",
+        }}
+        onClick={()=>setShowNO((v)=>!v)}
+      >+ Nueva Obra</button>
     ),
     [sel]
   );
@@ -242,9 +227,6 @@ export default function Obras({ctx}){
         onCambiarEstado={updEst}
         puedeDesbloquear={puedeDesbloquear}
       />
-      {showOptFotos && (
-        <OptimizarFotos ctx={ctx} enModal={true} onCerrar={()=>setShowOptFotos(false)} />
-      )}
     </div>
   );
 }

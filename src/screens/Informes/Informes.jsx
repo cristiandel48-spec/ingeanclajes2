@@ -18,7 +18,6 @@ import { conActividadSeparada } from "../../lib/informeTextos";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import { PLANTILLAS_ACTIVIDAD, buscarPlantillaActividad, esTextoDePlantilla } from "./plantillasActividad";
 import ListaInformes from "./ListaInformes";
-import OptimizarFotos from "../../components/OptimizarFotos";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
 // Formateo de horas. Vive fuera del componente porque no depende de nada suyo:
 // asi es la misma funcion en cada render y buildPersonalDesdeObra puede
@@ -49,7 +48,6 @@ export default function Informes({ctx}){
   const [generandoPdf,setGenerandoPdf]=useState(false);
   const [nuevo,setNuevo]=useState(()=>Boolean(ctx.intencion?.pantalla==="informes" && ctx.intencion?.obraId));
   const [editId,setEditId]=useState(null);
-  const [showOptFotos,setShowOptFotos]=useState(false);
   const fotoRefs=useRef({});
 
   // La descripcion arranca con el texto de mantenimiento que se repite en casi
@@ -413,29 +411,11 @@ export default function Informes({ctx}){
   // El boton de crear vive en la barra de arriba, no en un titulo propio.
   useAccionesPantalla(
     (sel || nuevo || editId) ? null : (
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <button
-          style={{
-            background: "#fff", color: "#334155", border: "1px solid #cbd5e1", borderRadius: 9,
-            padding: "8px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer",
-            fontFamily: "inherit", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6,
-          }}
-          onClick={() => setShowOptFotos(true)}
-          title="Optimizar el peso de las fotos de informes y obras para que carguen rápido"
-        >
-          📷 Mantenimiento de fotos
-        </button>
-        <button
-          style={{
-            background: "#f47c20", color: "#fff", border: "1px solid #f47c20", borderRadius: 9,
-            padding: "8px 16px", fontSize: 12.5, fontWeight: 700, cursor: "pointer",
-            fontFamily: "inherit", whiteSpace: "nowrap",
-          }}
-          onClick={() => abrirNuevoInformeRef.current()}
-        >
-          + Nuevo Informe
-        </button>
-      </div>
+      <button
+        style={{background:"#f47c20",color:"#fff",border:"1px solid #f47c20",borderRadius:9,
+          padding:"8px 16px",fontSize:12.5,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
+        onClick={()=>abrirNuevoInformeRef.current()}
+      >+ Nuevo Informe</button>
     ),
     [sel, nuevo, editId]
   );
@@ -935,9 +915,6 @@ export default function Informes({ctx}){
             </div>
           </div>
         </div>
-      )}
-      {showOptFotos && (
-        <OptimizarFotos ctx={ctx} enModal={true} onCerrar={() => setShowOptFotos(false)} />
       )}
     </div>
   );

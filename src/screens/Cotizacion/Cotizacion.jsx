@@ -9,7 +9,6 @@ import DocumentoEnVivo from "./DocumentoEnVivo";
 import ListaCotizaciones from "./ListaCotizaciones";
 import EnviarCotizacion from "./EnviarCotizacion";
 import PropuestaEditor from "./PropuestaEditor";
-import OptimizarFotos from "../../components/OptimizarFotos";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { TEXTOS_DOCUMENTO_DEFAULT, getTextosDocumento } from "../../lib/cotizacionTextos";
 import H1 from "../../components/ui/H1";
@@ -58,7 +57,6 @@ export default function Cotizacion({ctx}){
   const setTexto=(clave,valor)=>setTextosDocumento(prev=>({...prev,[clave]:valor}));
   const [propuestas,setPropuestas]=useState([buildQuoteProposal({id:createQuoteProposalId("new"),nombre:getQuoteProposalLabel(0),formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,util:10,items:[],incluyeTexto:""},0)]);
   const [propuestaActivaId,setPropuestaActivaId]=useState(null);
-  const [showOptFotos,setShowOptFotos]=useState(false);
 
   // Numeracion real de la empresa: C-26115, C-26116, ... Si la base esta
   // vacia se arranca desde el ultimo numero emitido a mano, para no repetir
@@ -420,27 +418,14 @@ export default function Cotizacion({ctx}){
 
   useAccionesPantalla(
     tab==="lista" ? (
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <button
-          style={{
-            background: "#fff", color: "#334155", border: "1px solid #cbd5e1", borderRadius: 9,
-            padding: "8px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer",
-            fontFamily: "inherit", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6,
-          }}
-          onClick={() => setShowOptFotos(true)}
-          title="Optimizar el peso de las fotos de cotizaciones para que carguen rápido"
-        >
-          📷 Mantenimiento de fotos
-        </button>
-        <button
-          style={{
-            background:"#f47c20", color:"#fff", border:"1px solid #f47c20", borderRadius:9,
-            padding:"8px 16px", fontSize:12.5, fontWeight:700, cursor:"pointer",
-            fontFamily:"inherit", whiteSpace:"nowrap",
-          }}
-          onClick={()=>nuevaRef.current()}
-        >+ Nueva Cotización</button>
-      </div>
+      <button
+        style={{
+          background:"#f47c20", color:"#fff", border:"1px solid #f47c20", borderRadius:9,
+          padding:"8px 16px", fontSize:12.5, fontWeight:700, cursor:"pointer",
+          fontFamily:"inherit", whiteSpace:"nowrap",
+        }}
+        onClick={()=>nuevaRef.current()}
+      >+ Nueva Cotización</button>
     ) : tab==="form" ? (
       <div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap"}}>
         <button style={SECUNDARIO} onClick={()=>setTab("lista")}
@@ -1022,7 +1007,6 @@ export default function Cotizacion({ctx}){
         />
       )}
       {enviarCot && <EnviarCotizacion cotizacion={enviarCot} firmaImg={firmaImg} onCerrar={()=>setEnviarCot(null)}/>}
-      {showOptFotos && <OptimizarFotos ctx={ctx} enModal={true} onCerrar={()=>setShowOptFotos(false)}/>}
 
       </div>
     </div>

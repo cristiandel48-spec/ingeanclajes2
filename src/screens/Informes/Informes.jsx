@@ -60,47 +60,111 @@ export default function Informes({ctx}){
   // lo normal es elegir a alguien registrado, no escribirlo.
   const emptyPersona=()=>({empleadoId:"",cargo:"",nombre:"",turno1:"",turno2:"",manual:false,agregada:true});
 
+  // Normaliza y asocia una obra con un registro de horario
+  const coincideObra = (h, oId) => {
+    if (!h || !oId) return false;
+    const target = String(oId).trim().toUpperCase();
+    const hId = String(h.obraId || h.obra || "").trim().toUpperCase();
+    if (hId === target) return true;
+    if (hId.startsWith(target + " ") || hId.startsWith(target + "·") || hId.startsWith(target + " -")) return true;
+    return false;
+  };
+
+  // Resuelve un empleado por id, cédula o nombre
+  const resolverEmpleado = useCallback((eid) => {
+    if (!eid) return null;
+    if (typeof eid === "object" && eid !== null) {
+      if (eid.nombre) return eid;
+      const subId = eid.id || eid.empleadoId;
+      if (subId) return resolverEmpleado(subId);
+    }
+    const raw = String(eid).trim();
+    const lower = raw.toLowerCase();
+    return (
+      empleados.find((e) => e && String(e.id).trim() === raw) ||
+      empleados.find((e) => e && String(e.id).trim().toLowerCase() === lower) ||
+      empleados.find((e) => e && String(e.cedula).trim() === raw) ||
+      empleados.find((e) => e && e.nombre && e.nombre.trim().toLowerCase() === lower) ||
+      null
+    );
+  }, [empleados]);
+
   // Se memoriza porque dos efectos la usan para rellenar el personal: sin esto
   // seria una funcion distinta en cada render y los efectos no podrian
   // declararla como dependencia sin volver a correr sin parar.
   const buildPersonalDesdeObra=useCallback((obraId,periodoInicio,periodoFin,prevPersonal=[])=>{
+    if(!obraId) return prevPersonal || [];
     const obraSel = obras.find(o=>o.id===obraId);
-    const horariosObra = horarios.filter(h=>
-      h.obraId===obraId &&
+
+    // Todos los horarios registrados para esta obra
+    const horariosTodosObra = horarios.filter(h => coincideObra(h, obraId));
+
+    // Horarios dentro del período del informe (para saber los turnos específicos de esos días)
+    const horariosPeriodo = horariosTodosObra.filter(h =>
       (!periodoInicio || h.fecha>=periodoInicio) &&
       (!periodoFin || h.fecha<=periodoFin)
     );
+
+    // Personal asignado directamente a la obra (pestaña Personal en Obra)
     const idsDirectos = Array.isArray(obraSel?.empleados) ? obraSel.empleados : [];
-    const idsHorarios = horariosObra.map(h=>h.empleadoId).filter(Boolean);
-    const idsObra = [...new Set([...idsDirectos, ...idsHorarios])];
+
+    // Personal asignado por horarios (del período y de toda la obra)
+    const idsHorariosPeriodo = horariosPeriodo.map(h => h.empleadoId).filter(Boolean);
+    const idsHorariosTodos = horariosTodosObra.map(h => h.empleadoId).filter(Boolean);
+
+    // Unificamos todo el personal de la obra
+    const idsObra = [...new Set([
+      ...idsHorariosPeriodo,
+      ...idsDirectos,
+      ...idsHorariosTodos,
+    ])];
 
     const vinculados = idsObra.map((eid)=>{
-      const emp = empleados.find(e=>e.id===eid);
-      const prev = prevPersonal.find(p=>p.empleadoId===eid) || {};
-      const turnosEmp = [...new Set(
-        horariosObra
-          .filter(h=>h.empleadoId===eid)
-          .map(h=>fmtTurno12(h.turno))
+      const emp = resolverEmpleado(eid);
+      const empIdReal = emp?.id || (typeof eid === "string" ? eid : "");
+      const empNombreReal = emp?.nombre || (typeof eid === "string" && !eid.startsWith("EMP-") ? eid : "");
+
+      const prev = (prevPersonal || []).find(p =>
+        (empIdReal && p.empleadoId === empIdReal) ||
+        (empNombreReal && p.nombre && p.nombre.trim().toLowerCase() === empNombreReal.trim().toLowerCase())
+      ) || {};
+
+      // Turnos en el período del informe
+      const turnosPeriodo = [...new Set(
+        horariosPeriodo
+          .filter(h => (empIdReal && h.empleadoId === empIdReal) || (emp?.id && h.empleadoId === emp.id))
+          .map(h => fmtTurno12(h.turno))
           .filter(Boolean)
-      )].slice(0,2);
+      )];
+
+      // Turnos históricos o habituales en la obra si no hay en ese rango exacto
+      const turnosHistoricos = [...new Set(
+        horariosTodosObra
+          .filter(h => (empIdReal && h.empleadoId === empIdReal) || (emp?.id && h.empleadoId === emp.id))
+          .map(h => fmtTurno12(h.turno))
+          .filter(Boolean)
+      )];
+
+      const turnosElegidos = turnosPeriodo.length ? turnosPeriodo : turnosHistoricos;
+
       return {
-        empleadoId:eid,
+        empleadoId: empIdReal,
         cargo: prev.cargo || emp?.cargo || 'Instalador',
-        nombre: emp?.nombre || prev.nombre || '',
-        turno1: prev.turno1 || turnosEmp[0] || '',
-        turno2: prev.turno2 || turnosEmp[1] || '',
-        manual:false,
+        nombre: empNombreReal || prev.nombre || '',
+        turno1: prev.turno1 || turnosElegidos[0] || '',
+        turno2: prev.turno2 || turnosElegidos[1] || '',
+        manual: false,
       };
-    });
+    }).filter(v => v.nombre || v.empleadoId);
 
     // Las filas agregadas a mano se conservan, sean de alguien registrado o
     // escritas a pulso. Se descartan las que dupliquen a un vinculado.
-    const yaVinculado = new Set(vinculados.map((v)=>v.empleadoId));
-    const agregadas = prevPersonal.filter((p)=>
-      (p.agregada || (p.manual && !p.empleadoId)) && !yaVinculado.has(p.empleadoId)
+    const yaVinculado = new Set(vinculados.map((v)=>v.empleadoId || v.nombre));
+    const agregadas = (prevPersonal || []).filter((p)=>
+      (p.agregada || (p.manual && !p.empleadoId)) && !yaVinculado.has(p.empleadoId) && !yaVinculado.has(p.nombre)
     );
     return [...vinculados, ...agregadas];
-  },[obras,empleados,horarios]);
+  },[obras,resolverEmpleado,horarios]);
 
   // Escala tipografica del documento impreso, en pixeles a 96 ppp (1 pt = 1,33
   // px). Son los mismos valores del documento de cotizacion, que es el formato
@@ -175,13 +239,16 @@ export default function Informes({ctx}){
     // abrir un informe nuevo, y el proyecto quedaba en blanco.
     const obraBase = obras.find((o)=>o.id===(data.obraId ?? firstObraId)) || obras[0] || null;
 
-    // En un informe nuevo el periodo se deduce de la bitacora de la obra: va
-    // desde el primer avance registrado hasta el ultimo. Antes arrancaba en
-    // "hoy - hoy" y no traia nada, que es justo lo contrario de lo util.
+    // En un informe nuevo el periodo se deduce de la bitacora de la obra o sus horarios
     const registrosObra = normalizarBitacora(obraBase?.bitacora);
     const fechasAvance = registrosObra.map((r)=>r.fecha).filter(Boolean);
-    const periodoInicio = data.periodoInicio ?? fechasAvance[0] ?? today();
-    const periodoFin = data.periodoFin ?? fechasAvance[fechasAvance.length-1] ?? today();
+    const fechasHorarios = (horarios || [])
+      .filter((h) => coincideObra(h, obraBase?.id))
+      .map((h) => h.fecha)
+      .filter(Boolean);
+    const todasFechas = [...fechasAvance, ...fechasHorarios].sort();
+    const periodoInicio = data.periodoInicio ?? todasFechas[0] ?? today();
+    const periodoFin = data.periodoFin ?? todasFechas[todasFechas.length-1] ?? today();
 
     // Si el informe ya venia con actividades escritas (se esta editando), se
     // respetan. Si es nuevo, se llena con lo que se alimento en la obra.
@@ -220,7 +287,7 @@ export default function Informes({ctx}){
 
   const turnosDisponiblesObra = [...new Set(
     horarios
-      .filter(h=>h.obraId===form.obraId && (!form.periodoInicio || h.fecha>=form.periodoInicio) && (!form.periodoFin || h.fecha<=form.periodoFin))
+      .filter(h=>coincideObra(h, form.obraId))
       .map(h=>fmtTurno12(h.turno))
       .filter(Boolean)
   )];
@@ -516,13 +583,14 @@ export default function Informes({ctx}){
               const nuevaObraId=e.target.value;
               const o=obras.find(x=>x.id===nuevaObraId);
               // Al cambiar de obra se reencuadra el periodo con las fechas de
-              // avance de esa obra y se traen sus registros, salvo que la
-              // persona ya haya escrito algo a mano (eso no se pisa solo).
+              // avance o de turnos de esa obra y se traen sus registros.
               const registros=normalizarBitacora(o?.bitacora);
-              const fechas=registros.map(r=>r.fecha).filter(Boolean);
+              const fechasBitacora=registros.map(r=>r.fecha).filter(Boolean);
+              const fechasHorarios=(horarios||[]).filter(h=>coincideObra(h, nuevaObraId)).map(h=>h.fecha).filter(Boolean);
+              const todasFechas=[...fechasBitacora, ...fechasHorarios].sort();
               setForm(p=>{
-                const inicio=fechas[0]||p.periodoInicio;
-                const fin=fechas[fechas.length-1]||p.periodoFin;
+                const inicio=todasFechas[0]||p.periodoInicio;
+                const fin=todasFechas[todasFechas.length-1]||p.periodoFin;
                 const traidas=actividadesDesdeObra(nuevaObraId,inicio,fin);
                 return {
                   ...p,
@@ -531,7 +599,7 @@ export default function Informes({ctx}){
                   localizacion:normalizarMayusculas(o?.ciudad||""),
                   periodoInicio:inicio,
                   periodoFin:fin,
-                  personal:buildPersonalDesdeObra(nuevaObraId,inicio,fin,p.personal),
+                  personal:buildPersonalDesdeObra(nuevaObraId,inicio,fin,[]),
                   actividades:(!hayContenidoEscrito && traidas.length) ? traidas : p.actividades,
                 };
               });
@@ -546,8 +614,35 @@ export default function Informes({ctx}){
           {/* Personal */}
           <div style={{marginBottom:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,flexWrap:"wrap",gap:8}}>
-              <LBL>Personal en obra</LBL>
-              <div style={{fontSize:11,color:"#64748b"}}>Se carga automáticamente según la obra y los horarios del período. Los turnos se muestran en formato 12h.</div>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <LBL>Personal en obra</LBL>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForm(p => ({
+                      ...p,
+                      personal: buildPersonalDesdeObra(p.obraId, p.periodoInicio, p.periodoFin, [])
+                    }));
+                  }}
+                  style={{
+                    background: "#f1f5f9",
+                    border: "1px solid #cbd5e1",
+                    color: "#334155",
+                    borderRadius: 6,
+                    padding: "3px 9px",
+                    fontSize: 11,
+                    cursor: "pointer",
+                    fontWeight: 600,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                  }}
+                  title="Recargar el personal asignado a esta obra y sus horarios"
+                >
+                  🔄 Sincronizar de la obra ({form.personal.length})
+                </button>
+              </div>
+              <div style={{fontSize:11,color:"#64748b"}}>Se carga automáticamente según la obra y los horarios. Los turnos se muestran en formato 12h.</div>
             </div>
             <datalist id="turnosInformeList">
               {turnosDisponiblesObra.map((t,i)=><option key={i} value={t} />)}

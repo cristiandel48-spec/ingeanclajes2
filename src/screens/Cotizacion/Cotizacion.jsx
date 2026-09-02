@@ -9,6 +9,7 @@ import DocumentoEnVivo from "./DocumentoEnVivo";
 import ListaCotizaciones from "./ListaCotizaciones";
 import EnviarCotizacion from "./EnviarCotizacion";
 import PropuestaEditor from "./PropuestaEditor";
+import SelectorCiudadColombia from "../../components/SelectorCiudadColombia";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { TEXTOS_DOCUMENTO_DEFAULT, getTextosDocumento } from "../../lib/cotizacionTextos";
 import H1 from "../../components/ui/H1";
@@ -28,7 +29,8 @@ import { blobABase64, generarCotizacionPdf } from "../../lib/cotizacionPdf";
 import { enviarCotizacionPorCorreo } from "../../lib/backend/usuarios";
 import { siguienteIdUnico } from "../../lib/identificadores";
 export default function Cotizacion({ctx}){
-  const {cotizaciones,setCotizaciones,obras,setObras,clientes,empresaConfig,asegurarDetalle,cotDraft,setCotDraft}=ctx;
+  const {cotizaciones,setCotizaciones,obras,setObras,clientes,setClientes,empresaConfig,asegurarDetalle,cotDraft,setCotDraft}=ctx;
+  const [erroresCliente, setErroresCliente] = useState({});
   const firmaImg=getFirmaImg(empresaConfig);
   // Codigo y version del formato de cotizacion. Null si no esta configurado,
   // y entonces el documento sale como antes.
@@ -298,7 +300,32 @@ export default function Cotizacion({ctx}){
     setTab("form");
   };
 
+  const validarClienteCotizacion = () => {
+    const errs = {};
+    if (!cl.nombre?.trim()) errs.nombre = "La empresa o cliente es obligatorio";
+    if (!cl.nit?.trim()) errs.nit = "El NIT o Cédula es obligatorio";
+    if (!cl.direccion?.trim()) errs.direccion = "La dirección de la obra es obligatoria";
+
+    if (Object.keys(errs).length > 0) {
+      setErroresCliente(errs);
+      const faltantes = [];
+      if (errs.nombre) faltantes.push("• Empresa / Razón Social");
+      if (errs.nit) faltantes.push("• NIT o Cédula de ciudadanía");
+      if (errs.direccion) faltantes.push("• Dirección de la obra");
+      window.alert(
+        `Para continuar con la cotización debes diligenciar los datos obligatorios del cliente:\n\n${faltantes.join("\n")}\n\nNo se pueden crear clientes ni cotizaciones sin documento de identidad (NIT o Cédula) ni dirección.`
+      );
+      return false;
+    }
+    setErroresCliente({});
+    return true;
+  };
+
   const persistCotizacion = ({volverALista=true}={})=>{
+    if (!validarClienteCotizacion()) {
+      return null;
+    }
+
     // Cada propuesta se normaliza y recalcula con SUS propios items.
     const propuestasFinales = propuestasSnapshot.map((propuesta,index)=>{
       const finalItems = normalizeQuoteItems({items:propuesta.items,geoMediciones:propuesta.geoMediciones,propuestas:propuestasSnapshot});
@@ -354,6 +381,42 @@ export default function Cotizacion({ctx}){
       modificadoEn: new Date().toISOString(),
     };
     setCotizaciones((prevList)=>editCot ? prevList.map((cotizacion)=>cotizacion.id===editCot?{...cotizacion,...data}:cotizacion) : [...prevList,data]);
+
+    // Sincronizar automáticamente en la tabla de Clientes para que quede registrado con su NIT y Dirección
+    if (setClientes && cl.nombre?.trim() && cl.nit?.trim()) {
+      const nomNorm = normalizarRazonSocial(cl.nombre);
+      const nitNorm = normalizarDocumento(cl.nit);
+      setClientes((prevList) => {
+        const index = prevList.findIndex((c) =>
+          (c.nit && normalizarDocumento(c.nit) === nitNorm) ||
+          normalizarRazonSocial(c.nombre) === nomNorm
+        );
+        const cliData = {
+          nombre: nomNorm,
+          nit: nitNorm,
+          direccion: normalizarMayusculas(cl.direccion),
+          ciudad: normalizarMayusculas(cl.ciudad),
+          telefono: normalizarTelefono(cl.telefono),
+          contacto: normalizarNombrePropio(cl.contacto),
+          email: normalizarCorreo(cl.contactoEmail),
+          estado: "Activo",
+        };
+        if (index >= 0) {
+          const previo = prevList[index];
+          const actualizado = {
+            ...previo,
+            ...cliData,
+            nit: cliData.nit || previo.nit,
+            direccion: cliData.direccion || previo.direccion,
+            telefono: cliData.telefono || previo.telefono,
+            ciudad: cliData.ciudad || previo.ciudad,
+          };
+          return prevList.map((c, i) => (i === index ? actualizado : c));
+        }
+        return [...prevList, { id: siguienteIdUnico(prevList, "CLI"), ...cliData }];
+      });
+    }
+
     setPropuestas(propuestasFinales);
     setEditCot(data.id);
     if(volverALista) setTab("lista");
@@ -789,27 +852,44 @@ export default function Cotizacion({ctx}){
           {/* La razon social va en mayuscula, no como nombre propio: es como
               se escribe en la portada de los documentos de la empresa. */}
           <BuscadorCliente
-            label="Empresa"
+            label="Empresa / Cliente *"
             valor={cl.nombre}
             clientes={clientesConocidos}
-            onEscribir={(v)=>setCl((prev)=>({...prev,nombre:v}))}
-            onElegir={(c)=>setCl((prev)=>({
-              ...prev,
-              nombre:c.nombre,
-              nit:c.nit || prev.nit,
-              contacto:c.contacto || prev.contacto,
-              contactoEmail:c.contactoEmail || prev.contactoEmail,
-              telefono:c.telefono || prev.telefono,
-              ciudad:c.ciudad || prev.ciudad,
-              direccion:c.direccion || prev.direccion,
-            }))}
+            onEscribir={(v)=>{
+              setCl((prev)=>({...prev,nombre:v}));
+              if(erroresCliente.nombre) setErroresCliente(p=>({...p,nombre:""}));
+            }}
+            onElegir={(c)=>{
+              setCl((prev)=>({
+                ...prev,
+                nombre:c.nombre,
+                nit:c.nit || prev.nit,
+                contacto:c.contacto || prev.contacto,
+                contactoEmail:c.contactoEmail || prev.contactoEmail,
+                telefono:c.telefono || prev.telefono,
+                ciudad:c.ciudad || prev.ciudad,
+                direccion:c.direccion || prev.direccion,
+              }));
+              setErroresCliente({});
+            }}
             ayuda={clientesConocidos.length
               ? `Toca el campo o la flecha ▼ para desplegar los ${clientesConocidos.length} clientes existentes y autocompletar sus datos.`
               : "Va en la portada del documento, en mayúscula."}
           />
-          <CampoTexto label="NIT / Cédula" valor={cl.nit} onChange={v=>setCl({...cl,nit:v})}
-            normalizar={normalizarDocumento} placeholder="900123456-7" spellCheck={false}
-            ayuda="Viaja hasta el comprobante contable al aprobar la cotización."/>
+          <CampoTexto
+            label="NIT / Cédula"
+            obligatorio={true}
+            error={erroresCliente.nit}
+            valor={cl.nit}
+            onChange={(v)=>{
+              setCl({...cl,nit:v});
+              if(erroresCliente.nit) setErroresCliente(p=>({...p,nit:""}));
+            }}
+            normalizar={normalizarDocumento}
+            placeholder="900123456-7 o cédula"
+            spellCheck={false}
+            ayuda="Obligatorio. Viaja al comprobante contable y a la ficha del cliente."
+          />
           <CampoTexto label="Contacto" valor={cl.contacto} onChange={v=>setCl({...cl,contacto:v})}
             normalizar={normalizarNombrePropio} autoCapitalize="words"/>
           <CampoTexto label="Correo del contacto" valor={cl.contactoEmail} onChange={v=>setCl({...cl,contactoEmail:v})}
@@ -820,11 +900,26 @@ export default function Cotizacion({ctx}){
             normalizar={normalizarMayusculas} autoCapitalize="characters"/>
           <CampoTexto label="Teléfono" valor={cl.telefono} onChange={v=>setCl({...cl,telefono:v})}
             normalizar={normalizarTelefono} revisar={avisoCelular} inputMode="tel" spellCheck={false}/>
-          <CampoTexto label="Ciudad" valor={cl.ciudad} onChange={v=>setCl({...cl,ciudad:v})}
-            normalizar={normalizarMayusculas} autoCapitalize="characters"/>
-          <CampoTexto label="Dirección de la obra" valor={cl.direccion} onChange={v=>setCl({...cl,direccion:v})}
-            normalizar={normalizarMayusculas} autoCapitalize="characters"
-            ayuda="Viaja a la ficha del cliente y a la obra cuando se apruebe."/>
+          <SelectorCiudadColombia
+            label="Ciudad / Ubicación"
+            valor={cl.ciudad}
+            onChange={(v)=>setCl({...cl,ciudad:v})}
+            ayuda="Inicia en Antioquia. Selecciona el municipio y se completa automáticamente."
+          />
+          <CampoTexto
+            label="Dirección de la obra"
+            obligatorio={true}
+            error={erroresCliente.direccion}
+            valor={cl.direccion}
+            onChange={(v)=>{
+              setCl({...cl,direccion:v});
+              if(erroresCliente.direccion) setErroresCliente(p=>({...p,direccion:""}));
+            }}
+            normalizar={normalizarMayusculas}
+            placeholder="Ej: CALLE 10 # 43E-20"
+            autoCapitalize="characters"
+            ayuda="Obligatorio. Viaja a la ficha del cliente y a la obra cuando se apruebe."
+          />
         </div>
       </div>
 

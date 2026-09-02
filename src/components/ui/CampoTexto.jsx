@@ -18,6 +18,8 @@ export default function CampoTexto({
   normalizar,
   revisar,
   ayuda,
+  obligatorio = false,
+  error = "",
   style,
   // Para colocar el campo en la rejilla del formulario (gridColumn, etc.):
   // va al contenedor, no al input.
@@ -26,6 +28,9 @@ export default function CampoTexto({
 }) {
   const [tocado, setTocado] = useState(false);
   const aviso = tocado && revisar ? revisar(valor) : "";
+  const faltaObligatorio = (tocado || Boolean(error)) && obligatorio && !String(valor ?? "").trim();
+  const mensaje = error || (faltaObligatorio ? "Este campo es obligatorio" : aviso);
+  const esErrorRojo = Boolean(error || faltaObligatorio);
 
   const alSalir = () => {
     setTocado(true);
@@ -36,7 +41,12 @@ export default function CampoTexto({
 
   return (
     <div style={wrapStyle}>
-      {label && <LBL>{label}</LBL>}
+      {label && (
+        <LBL>
+          {label}
+          {obligatorio && <span style={{ color: "#dc2626", marginLeft: 4, fontWeight: 700 }} title="Obligatorio">*</span>}
+        </LBL>
+      )}
       {/* El corrector del navegador va encendido y en español: subraya en rojo
           lo que no reconoce y ofrece la palabra buena con clic derecho. Los
           campos que no lo quieren -cédulas, cuentas, correos- lo apagan con
@@ -47,11 +57,17 @@ export default function CampoTexto({
         value={valor ?? ""}
         onChange={(e) => onChange(e.target.value)}
         onBlur={alSalir}
-        style={{ ...SI, ...(aviso ? { borderColor: "#f0a24a" } : null), ...style }}
+        style={{
+          ...SI,
+          ...(mensaje ? { borderColor: esErrorRojo ? "#dc2626" : "#f0a24a" } : null),
+          ...style,
+        }}
         {...props}
       />
-      {aviso ? (
-        <div style={{ fontSize: 10.5, color: "#b54708", marginTop: 3, lineHeight: 1.4 }}>{aviso}</div>
+      {mensaje ? (
+        <div style={{ fontSize: 10.5, color: esErrorRojo ? "#dc2626" : "#b54708", marginTop: 3, lineHeight: 1.4, fontWeight: esErrorRojo ? 600 : 400 }}>
+          {mensaje}
+        </div>
       ) : ayuda ? (
         <div style={{ fontSize: 10.5, color: "#94a3b8", marginTop: 3, lineHeight: 1.4 }}>{ayuda}</div>
       ) : null}

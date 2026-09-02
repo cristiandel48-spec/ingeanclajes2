@@ -5,6 +5,7 @@ import LBL from "../../components/ui/LBL";
 import { useEffect, useRef, useState } from "react";
 import ListaClientes from "./ListaClientes";
 import ModalUnificarCliente from "./ModalUnificarCliente";
+import SelectorCiudadColombia from "../../components/SelectorCiudadColombia";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarFrase, normalizarMayusculas, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
@@ -96,8 +97,16 @@ export default function ClientesDB({ctx}){
   };
 
   const guardarCliente=()=>{
-    if(!form.nombre.trim()){
+    if(!form.nombre?.trim()){
       window.alert("Falta el nombre o razón social del cliente.");
+      return;
+    }
+    if(!form.nit?.trim()){
+      window.alert("El NIT o Cédula de ciudadanía es obligatorio para registrar al cliente.");
+      return;
+    }
+    if(!form.direccion?.trim()){
+      window.alert("La dirección es obligatoria para registrar al cliente.");
       return;
     }
     // Se acomoda tambien aqui: quien pega el dato y guarda de una no dispara
@@ -266,17 +275,22 @@ export default function ClientesDB({ctx}){
         <div style={{...CD,marginBottom:18,border:"1px solid #cc0000"}}>
           <div style={ST}>{editId?"Editar cliente":"Nuevo cliente"}</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
-            <CampoTexto label="Nombre / razón social" valor={form.nombre} onChange={v=>setForm({...form,nombre:v})}
+            <CampoTexto label="Nombre / razón social" obligatorio={true} valor={form.nombre} onChange={v=>setForm({...form,nombre:v})}
               normalizar={normalizarRazonSocial} placeholder="Nombre del cliente" autoCapitalize="characters"
               ayuda="Sale impreso en cotizaciones y certificados."/>
-            <CampoTexto label="NIT" valor={form.nit} onChange={v=>setForm({...form,nit:v})}
-              normalizar={normalizarDocumento} placeholder="900.123.456-7" spellCheck={false}/>
+            <CampoTexto label="NIT / Cédula" obligatorio={true} valor={form.nit} onChange={v=>setForm({...form,nit:v})}
+              normalizar={normalizarDocumento} placeholder="900.123.456-7" spellCheck={false}
+              ayuda="Obligatorio. Identificación tributaria o personal."/>
             <CampoTexto label="Contacto" valor={form.contacto} onChange={v=>setForm({...form,contacto:v})}
               normalizar={normalizarNombrePropio} placeholder="Persona de contacto" autoCapitalize="words"/>
             <CampoTexto label="Teléfono" valor={form.telefono} onChange={v=>setForm({...form,telefono:v})}
               normalizar={normalizarTelefono} revisar={avisoCelular} placeholder="3001234567" inputMode="tel" spellCheck={false}/>
-            <CampoTexto label="Ciudad" valor={form.ciudad} onChange={v=>setForm({...form,ciudad:v})}
-              normalizar={normalizarMayusculas} placeholder="Medellín, Antioquia" autoCapitalize="characters"/>
+            <SelectorCiudadColombia
+              label="Ciudad / Ubicación"
+              valor={form.ciudad}
+              onChange={v=>setForm({...form,ciudad:v})}
+              ayuda="Inicia en Antioquia. Selecciona el municipio y se completa automáticamente."
+            />
             <div>
               <LBL>Estado</LBL>
               <select value={form.estado} onChange={e=>setForm({...form,estado:e.target.value})} style={SI}>
@@ -285,8 +299,9 @@ export default function ClientesDB({ctx}){
                 <option value="Inactivo">Inactivo</option>
               </select>
             </div>
-            <CampoTexto label="Dirección" valor={form.direccion} onChange={v=>setForm({...form,direccion:v})}
-              normalizar={normalizarMayusculas} placeholder="Dirección principal" autoCapitalize="characters" wrapStyle={{gridColumn:"span 2"}}/>
+            <CampoTexto label="Dirección" obligatorio={true} valor={form.direccion} onChange={v=>setForm({...form,direccion:v})}
+              normalizar={normalizarMayusculas} placeholder="Dirección principal" autoCapitalize="characters" wrapStyle={{gridColumn:"span 2"}}
+              ayuda="Obligatorio. Domicilio principal del cliente."/>
             <CampoTexto label="Email" valor={form.email} onChange={v=>setForm({...form,email:v})}
               normalizar={normalizarCorreo} revisar={avisoCorreo} placeholder="correo@cliente.com"
               inputMode="email" autoCapitalize="off" spellCheck={false}

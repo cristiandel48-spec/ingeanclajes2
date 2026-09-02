@@ -819,7 +819,7 @@ export default function Cotizacion({ctx}){
               direccion:c.direccion || prev.direccion,
             }))}
             ayuda={clientesConocidos.length
-              ? `Escribe dos letras y elige: se traen NIT, contacto, correo, teléfono, ciudad y dirección. Hay ${clientesConocidos.length} clientes.`
+              ? `Toca el campo o la flecha ▼ para desplegar los ${clientesConocidos.length} clientes existentes y autocompletar sus datos.`
               : "Va en la portada del documento, en mayúscula."}
           />
           <CampoTexto label="NIT / Cédula" valor={cl.nit} onChange={v=>setCl({...cl,nit:v})}

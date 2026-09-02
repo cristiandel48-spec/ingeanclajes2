@@ -12,6 +12,7 @@ import { getQuoteApprovalAccountingSnapshot } from "../../lib/cotizaciones";
 import { ESTADOS_OBRA, estadoSegunAvance, obraEstaCerrada } from "../../lib/flujoObra";
 import { esAdmin } from "../../lib/permisos";
 import ListaObras from "./ListaObras";
+import BuscadorCliente from "../../components/BuscadorCliente";
 import OptimizarFotos from "../../components/OptimizarFotos";
 import { avisoCelular, normalizarMayusculas, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
 
@@ -26,8 +27,26 @@ const siguienteIdObra = (obras) => {
   return "OB-" + String(mayor + 1).padStart(3, "0");
 };
 export default function Obras({ctx}){
-  const {obras,setObras,cotizaciones,horarios,intencion,limpiarIntencion,membresia,asegurarDetalle}=ctx;
+  const {obras,setObras,cotizaciones,horarios,intencion,limpiarIntencion,membresia,asegurarDetalle,clientes}=ctx;
   const [showOptFotos, setShowOptFotos] = useState(false);
+
+  const clientesConocidos = (() => {
+    const mapa = new Map();
+    const registrar = (d) => {
+      const nom = normalizarRazonSocial(d?.nombre || d?.cliente);
+      if (!nom) return;
+      mapa.set(nom, {
+        nombre: nom,
+        telefono: d.telefono || d.tel || "",
+        ciudad: d.ciudad || "",
+        direccion: d.direccion || "",
+      });
+    };
+    (clientes || []).forEach(registrar);
+    (obras || []).forEach(registrar);
+    (cotizaciones || []).forEach(registrar);
+    return [...mapa.values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
+  })();
   // Una obra entregada la reabre solo un administrador. Aqui se decide una
   // vez y baja a la lista y al detalle.
   const puedeDesbloquear = esAdmin(membresia);
@@ -164,9 +183,20 @@ export default function Obras({ctx}){
             lo demás se puede completar después.
           </AvisoFlujo>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
-            <CampoTexto label="Cliente" valor={nob.cliente} onChange={v=>setNob({...nob,cliente:v})}
-              normalizar={normalizarRazonSocial} placeholder="Nombre del cliente" autoCapitalize="characters"
-              ayuda="Sale impreso en la cotización y el certificado."/>
+            <BuscadorCliente
+              label="Cliente"
+              valor={nob.cliente}
+              clientes={clientesConocidos}
+              onEscribir={(v) => setNob({ ...nob, cliente: v })}
+              onElegir={(c) => setNob({
+                ...nob,
+                cliente: c.nombre,
+                tel: c.telefono || nob.tel,
+                ciudad: c.ciudad || nob.ciudad,
+                direccion: c.direccion || nob.direccion,
+              })}
+              ayuda="Toca o escribe para elegir un cliente existente y evitar duplicados."
+            />
             <CampoTexto label="Teléfono" valor={nob.tel} onChange={v=>setNob({...nob,tel:v})}
               normalizar={normalizarTelefono} revisar={avisoCelular} placeholder="3001234567" inputMode="tel" spellCheck={false}/>
             <CampoTexto label="Proyecto / Descripción" valor={nob.proyecto} onChange={v=>setNob({...nob,proyecto:v})}

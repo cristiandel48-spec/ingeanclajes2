@@ -769,8 +769,8 @@ export default function Cotizacion({ctx}){
           acciones={{
             ver: async (c)=>{
               setPreviewCot(c);
-              const completa = await asegurarDetalle("cotizaciones", c.id);
-              if(completa) setPreviewCot(completa);
+              const completa = (await asegurarDetalle("cotizaciones", c.id)) || cotizaciones.find((x)=>x.id===c.id) || c;
+              setPreviewCot(completa);
             },
             editar: async (c)=>{
               // Se esperan las fotos ANTES de llenar el formulario: si se

@@ -1157,19 +1157,6 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
     ${showTechnicalPage ? renderTechnicalPage() : ""}
     ${mostrarResumenFinal ? "" : renderResumenPropuestas()}
     ${closingSections}
-    <script>
-      async function waitForImages(){
-        const images = Array.from(document.images || []);
-        await Promise.all(images.map((img)=>{
-          if(img.complete) return Promise.resolve();
-          return new Promise((resolve)=>{
-            img.onload = resolve;
-            img.onerror = resolve;
-          });
-        }));
-      }
-      window.addEventListener('load', async ()=>{ await waitForImages(); });
-    </script>
   </body>
   </html>`;
 }

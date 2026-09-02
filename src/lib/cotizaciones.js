@@ -106,7 +106,12 @@ export function buildQuoteProposal(propuesta = {}, index = 0) {
 
 export function getQuoteProposals(cotizacion = {}) {
   if (Array.isArray(cotizacion.propuestas) && cotizacion.propuestas.length) {
-    return cotizacion.propuestas.map((propuesta, index) => buildQuoteProposal(propuesta, index));
+    return cotizacion.propuestas.map((propuesta, index) => {
+      const itemsPropuesta = (Array.isArray(propuesta.items) && propuesta.items.length)
+        ? propuesta.items
+        : (index === 0 && Array.isArray(cotizacion.items) && cotizacion.items.length ? cotizacion.items : (propuesta.items || []));
+      return buildQuoteProposal({ ...propuesta, items: itemsPropuesta }, index);
+    });
   }
 
   return [

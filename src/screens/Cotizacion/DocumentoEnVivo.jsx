@@ -19,11 +19,6 @@ export default function DocumentoEnVivo({
   sticky = true,
 }) {
   const contenedorRef = useRef(null);
-  // Referencia siempre fresca: el efecto se dispara por contenido, pero debe
-  // generar el documento con el objeto completo (imagenes incluidas).
-  const cotizacionRef = useRef(cotizacion);
-  const firmaRef = useRef(firmaImg);
-  const selloRef = useRef(sello);
   const [html, setHtml] = useState("");
   const [escala, setEscala] = useState(1);
   const [error, setError] = useState(null);
@@ -36,9 +31,6 @@ export default function DocumentoEnVivo({
     typeof v === "string" && v.length > 200 ? `${v.length}:${v.slice(0, 40)}` : v
   );
 
-  // Se actualiza tras cada commit, nunca durante el render.
-  useEffect(() => { cotizacionRef.current = cotizacion; firmaRef.current = firmaImg; selloRef.current = sello; });
-
   // Regenerar el documento es costoso, asi que se espera a que la persona
   // deje de escribir. La PRIMERA vez no se espera: al abrir "Ver" el documento
   // debe aparecer de una, no medio segundo despues.
@@ -46,7 +38,7 @@ export default function DocumentoEnVivo({
   useEffect(() => {
     const generar = () => {
       try {
-        setHtml(buildCotizacionPrintHtml(cotizacionRef.current, { firmaImg: firmaRef.current, sello: selloRef.current }));
+        setHtml(buildCotizacionPrintHtml(cotizacion, { firmaImg, sello }));
         setError(null);
       } catch (e) {
         console.error("No se pudo generar la vista previa:", e);
@@ -57,11 +49,11 @@ export default function DocumentoEnVivo({
       generar();
       return undefined;
     }
-    const id = setTimeout(generar, 450);
+    const id = setTimeout(generar, 400);
     return () => clearTimeout(id);
     // yaHayDocumento solo distingue el primer render; no debe reprogramar nada.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clave, firmaImg]);
+  }, [clave, firmaImg, sello]);
 
   // Ajusta el zoom al ancho disponible del panel.
   useEffect(() => {
@@ -69,7 +61,7 @@ export default function DocumentoEnVivo({
     if (!el) return;
     const medir = () => {
       const ancho = el.clientWidth;
-      if (ancho > 0) setEscala(Math.min(1, ancho / (ANCHO_HOJA + 24)));
+      if (ancho > 0) setEscala(Math.max(0.2, Math.min(1, ancho / (ANCHO_HOJA + 24))));
     };
     medir();
     if (typeof ResizeObserver === "undefined") {
@@ -86,8 +78,8 @@ export default function DocumentoEnVivo({
     ? html.replace(
         "</head>",
         `<style>
-          html { zoom: ${escala}; }
-          body { background: #e8eaee; padding: 14px 0 24px; }
+          html { zoom: ${escala}; transform-origin: top center; }
+          body { background: #e8eaee; padding: 14px 0 24px; margin: 0; min-height: 100vh; }
           .page { box-shadow: 0 2px 14px rgba(15,23,42,.18); margin: 0 auto 16px; }
         </style></head>`
       )
@@ -127,7 +119,6 @@ export default function DocumentoEnVivo({
         <iframe
           title="Vista previa de la cotización"
           srcDoc={htmlAjustado}
-          sandbox="allow-same-origin"
           style={{ display: "block", width: "100%", height: alto, border: 0, background: "#e8eaee" }}
         />
       )}

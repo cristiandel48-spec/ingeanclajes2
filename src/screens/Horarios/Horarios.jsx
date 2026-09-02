@@ -4,14 +4,14 @@ import NuevoEmpleadoRapido from "../../components/NuevoEmpleadoRapido";
 import SelectorEmpleados from "../../components/SelectorEmpleados";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { B, CD, PAL, SI, ST } from "../../styles/tokens";
 import { fmtD, fmtL, today } from "../../lib/format";
 import { abrirWhatsApp, normalizarCelular } from "../../lib/whatsapp";
 import { puedeCrearPersonal } from "../../lib/permisos";
 import { normalizarMayusculas } from "../../lib/normalizarEntrada";
 export default function Horarios({ctx}){
-  const {obras,empleados,horarios,setHorarios,irAPantalla,membresia}=ctx;
+  const {obras,setObras,empleados,horarios,setHorarios,irAPantalla,membresia}=ctx;
   const firstObraId = obras[0]?.id || "";
   const fmtHora12Local=(hhmm)=>{
     if(!hhmm || !String(hhmm).includes(':')) return hhmm || "";
@@ -75,6 +75,12 @@ export default function Horarios({ctx}){
   const [copiado,setCopiado]=useState(false);
   const dia=horarios.filter(h=>h.fecha===fechaF);
   const obraSel=obras.find(o=>o.id===form.obraId);
+  const idsDeLaObra = useMemo(() => {
+    if (!obraSel) return [];
+    const idsDirectos = Array.isArray(obraSel.empleados) ? obraSel.empleados : [];
+    const idsHorarios = (horarios || []).filter(h => h.obraId === obraSel.id).map(h => h.empleadoId).filter(Boolean);
+    return [...new Set([...idsDirectos, ...idsHorarios])];
+  }, [obraSel, horarios]);
   const seleccionados=empleados.filter(e=>form.empleadoIds.includes(e.id));
 
   const armarTurno=(inicio,fin)=>{
@@ -174,6 +180,19 @@ export default function Horarios({ctx}){
       ...p,
       ...nuevos.map((item,idx)=>({id:"H" + (Date.now()) + (idx),...item}))
     ]);
+
+    // Los empleados asignados a turnos en esta obra viajan automáticamente al módulo de obras
+    if(form.obraId && setObras){
+      const idsNuevos = [...new Set(payload.map(n=>n.empleadoId).filter(Boolean))];
+      if(idsNuevos.length > 0){
+        setObras(prevObras => prevObras.map(o => {
+          if(o.id !== form.obraId) return o;
+          const actuales = Array.isArray(o.empleados) ? o.empleados : [];
+          const combinados = [...new Set([...actuales, ...idsNuevos])];
+          return { ...o, empleados: combinados };
+        }));
+      }
+    }
 
     // Una sola persona: se abre su WhatsApp de una, como siempre. Un grupo:
     // quedan en la lista de avisos y se mandan de a uno.
@@ -438,7 +457,7 @@ export default function Horarios({ctx}){
               empleados={empleados}
               seleccionados={form.empleadoIds}
               onCambiar={(ids)=>setForm(prev=>({...prev,empleadoIds:ids}))}
-              idsDeLaObra={obraSel?.empleados||[]}
+              idsDeLaObra={idsDeLaObra}
               nombreObra={obraSel?.proyecto||""}
             />
             <div style={{fontSize:10.5,color:"#94a3b8",marginTop:5}}>

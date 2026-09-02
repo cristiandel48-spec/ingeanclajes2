@@ -65,12 +65,14 @@ export default function Informes({ctx}){
   // declararla como dependencia sin volver a correr sin parar.
   const buildPersonalDesdeObra=useCallback((obraId,periodoInicio,periodoFin,prevPersonal=[])=>{
     const obraSel = obras.find(o=>o.id===obraId);
-    const idsObra = obraSel?.empleados || [];
     const horariosObra = horarios.filter(h=>
       h.obraId===obraId &&
       (!periodoInicio || h.fecha>=periodoInicio) &&
       (!periodoFin || h.fecha<=periodoFin)
     );
+    const idsDirectos = Array.isArray(obraSel?.empleados) ? obraSel.empleados : [];
+    const idsHorarios = horariosObra.map(h=>h.empleadoId).filter(Boolean);
+    const idsObra = [...new Set([...idsDirectos, ...idsHorarios])];
 
     const vinculados = idsObra.map((eid)=>{
       const emp = empleados.find(e=>e.id===eid);

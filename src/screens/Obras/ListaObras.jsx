@@ -22,7 +22,7 @@ const ORDENES = [
   { key: "cliente",     label: "Cliente A–Z",   comparar: (a, b) => String(a.cliente || "").localeCompare(String(b.cliente || ""), "es") },
 ];
 
-export default function ListaObras({ obras, cotizaciones, onAbrir, onCambiarEstado, puedeDesbloquear }) {
+export default function ListaObras({ obras, cotizaciones, horarios = [], onAbrir, onCambiarEstado, puedeDesbloquear }) {
   // Las fotos se cuentan una vez por obra y no en cada filtro.
   const fotosPorObra = useMemo(() => {
     const mapa = new Map();
@@ -61,6 +61,7 @@ export default function ListaObras({ obras, cotizaciones, onAbrir, onCambiarEsta
         <Fila key={o.id} o={o} compacta={compacta}
           cotizacion={(cotizaciones || []).find((c) => c.id === o.cotizacionId)}
           resumen={fotosPorObra.get(o.id)}
+          horarios={horarios}
           onAbrir={() => onAbrir(o)}
           onCambiarEstado={onCambiarEstado}
           puedeDesbloquear={puedeDesbloquear} />
@@ -73,7 +74,10 @@ export default function ListaObras({ obras, cotizaciones, onAbrir, onCambiarEsta
   );
 }
 
-function Fila({ o, compacta, cotizacion, resumen, onAbrir, onCambiarEstado, puedeDesbloquear }) {
+function Fila({ o, compacta, cotizacion, resumen, horarios = [], onAbrir, onCambiarEstado, puedeDesbloquear }) {
+  const idsDirectos = Array.isArray(o.empleados) ? o.empleados : [];
+  const idsHorarios = (horarios || []).filter((h) => h.obraId === o.id).map((h) => h.empleadoId).filter(Boolean);
+  const totalEmpleados = [...new Set([...idsDirectos, ...idsHorarios])].length;
   const avance = Number(o.avance) || 0;
   const color = avance === 100 ? "#4ade80" : C.acento;
   // Si la bitacora no se ha traido, el numero lo pone la base.
@@ -113,7 +117,7 @@ function Fila({ o, compacta, cotizacion, resumen, onAbrir, onCambiarEstado, pued
 
   const contadores = (
     <>
-      <span style={{ fontSize: 11, color: C.tenue, flexShrink: 0 }}>{(o.empleados || []).length} 👷</span>
+      <span style={{ fontSize: 11, color: C.tenue, flexShrink: 0 }}>{totalEmpleados} 👷</span>
       {/* Las fotos ya no viajan en la carga inicial: hasta que se abra la obra
           no se sabe cuantas hay. Se pone un guion en vez de un cero, que seria
           decir que no hay ninguna. */}

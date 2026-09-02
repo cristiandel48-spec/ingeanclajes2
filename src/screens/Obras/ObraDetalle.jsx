@@ -13,15 +13,15 @@ import { obraEstaCerrada } from "../../lib/flujoObra";
 import { esAdmin, puedeCrearPersonal, puedeVerDinero } from "../../lib/permisos";
 import { siguienteIdUnico } from "../../lib/identificadores";
 export default function ObraDetalle({obraId,ctx,onVolver}){
-  const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,horarios,irAPantalla,membresia}=ctx;
   // Las cifras de la obra son confidenciales: quien organiza el trabajo no ve
   // cuanto se cobro ni el jornal de sus companeros.
   const verDinero=puedeVerDinero(membresia);
   // Obra entregada: se consulta, no se edita. La reabre un administrador.
   const bloqueada = obraEstaCerrada(obras.find((o)=>o.id===obraId)) && !esAdmin(membresia);
-  const [detTab,setDetTab]=useState("avance");
-  const [nuevoEmp,setNuevoEmp]=useState(false);
+  const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,horarios,setHorarios,irAPantalla,membresia}=ctx;
+  const [detTab,setDetTab]=useState("bitacora");
   const [gastoForm,setGastoForm]=useState({proveedorId:"PROV-001",concepto:"",monto:0,fecha:today(),fechaVence:"",factura:""});
+  const [nuevoEmp,setNuevoEmp]=useState(false);
   const [showGasto,setShowGasto]=useState(false);
 
   const oAct=obras.find(o=>o.id===obraId);
@@ -30,7 +30,8 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
   const gastosObra=cuentas.filter(c=>c.obraId===obraId);
   const totalGastos=gastosObra.reduce((s,c)=>s+c.monto,0);
   const horariosObra=horarios.filter(h=>h.obraId===obraId);
-  const empObra=oAct.empleados||[];
+  const idsHorarios=horariosObra.map(h=>h.empleadoId).filter(Boolean);
+  const empObra=[...new Set([...(oAct.empleados||[]), ...idsHorarios])];
   const cotVinc=cotizaciones.find(c=>c.id===oAct.cotizacionId);
   const resumenAvance=resumenBitacora(oAct.bitacora);
 
@@ -164,7 +165,10 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                       <div style={{fontSize:10,color:"#94a3b8"}}>📱 {emp.tel}</div>
                     </div>
                     {!bloqueada&&(
-                      <button onClick={()=>setObras(p=>p.map(o=>o.id===obraId?{...o,empleados:(o.empleados||[]).filter(id=>id!==eid)}:o))}
+                      <button onClick={()=>{
+                        setObras(p=>p.map(o=>o.id===obraId?{...o,empleados:(o.empleados||[]).filter(id=>id!==eid)}:o));
+                        if(setHorarios) setHorarios(p=>p.filter(h=>!(h.obraId===obraId && h.empleadoId===eid)));
+                      }}
                         style={{background:"#fee2e2",border:"1px solid #fca5a5",color:"#cc0000",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11}}>✕</button>
                     )}
                   </div>

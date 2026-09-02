@@ -13,12 +13,12 @@ import { obraEstaCerrada } from "../../lib/flujoObra";
 import { esAdmin, puedeCrearPersonal, puedeVerDinero } from "../../lib/permisos";
 import { siguienteIdUnico } from "../../lib/identificadores";
 export default function ObraDetalle({obraId,ctx,onVolver}){
+  const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,horarios,setHorarios,irAPantalla,membresia}=ctx;
   // Las cifras de la obra son confidenciales: quien organiza el trabajo no ve
   // cuanto se cobro ni el jornal de sus companeros.
   const verDinero=puedeVerDinero(membresia);
   // Obra entregada: se consulta, no se edita. La reabre un administrador.
   const bloqueada = obraEstaCerrada(obras.find((o)=>o.id===obraId)) && !esAdmin(membresia);
-  const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,horarios,setHorarios,irAPantalla,membresia}=ctx;
   const [detTab,setDetTab]=useState("bitacora");
   const [gastoForm,setGastoForm]=useState({proveedorId:"PROV-001",concepto:"",monto:0,fecha:today(),fechaVence:"",factura:""});
   const [nuevoEmp,setNuevoEmp]=useState(false);

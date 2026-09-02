@@ -254,7 +254,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
               <span style={{ fontSize: 10.5, color: "#94a3b8" }}>Se imprimen en el informe</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 10, alignItems: "start" }}>
-              {(registro.fotos || []).filter((f) => f.img).map((foto, fi) => (
+              {(registro.fotos || []).map((foto, fi) => (
                 <div key={fi} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden" }}>
                   <div style={{ background: "#f8fafc", padding: 6, minHeight: 130, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <img src={foto.img} alt="" style={{ width: "100%", height: "auto", maxHeight: 180, objectFit: "contain", display: "block", borderRadius: 4, background: "#fff" }} />

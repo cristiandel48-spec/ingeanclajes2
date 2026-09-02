@@ -40,7 +40,8 @@ export function normalizarBitacora(bitacora) {
       fotos: Array.isArray(registro.fotos)
         ? registro.fotos
             .filter(Boolean)
-            .map((foto) => ({ img: foto.img || foto.url || null, comentario: foto.comentario || "" }))
+            .filter((foto) => Boolean(foto?.img || foto?.url))
+            .map((foto) => ({ img: foto.img || foto.url, comentario: foto.comentario || "" }))
         : [],
     }))
     .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));

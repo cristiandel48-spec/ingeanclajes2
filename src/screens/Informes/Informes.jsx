@@ -146,9 +146,11 @@ export default function Informes({ctx}){
       return data.actividades.map(conActividadSeparada).map((actividad)=>({
         ...emptyActividad(),
         ...actividad,
-        fotos:Array.isArray(actividad?.fotos) && actividad.fotos.length
-          ? actividad.fotos.map((foto)=>({img:foto?.img||foto?.url||null,comentario:foto?.comentario||""}))
-          : emptyActividad().fotos,
+        fotos:Array.isArray(actividad?.fotos)
+          ? actividad.fotos
+              .filter(foto=>Boolean(foto?.img||foto?.url))
+              .map((foto)=>({img:foto.img||foto.url,comentario:foto.comentario||""}))
+          : [],
       }));
     }
     if(data.actividad || data.descripcion || data.observaciones || (Array.isArray(data.fotos) && data.fotos.length)){
@@ -157,9 +159,11 @@ export default function Informes({ctx}){
         titulo:data.actividad||"",
         descripcion:data.descripcion||"",
         observaciones:data.observaciones||"",
-        fotos:(Array.isArray(data.fotos) && data.fotos.length
-          ? data.fotos.map((foto)=>({img:foto?.img||foto?.url||null,comentario:foto?.comentario||""}))
-          : emptyActividad().fotos),
+        fotos:Array.isArray(data.fotos)
+          ? data.fotos
+              .filter(foto=>Boolean(foto?.img||foto?.url))
+              .map((foto)=>({img:foto.img||foto.url,comentario:foto.comentario||""}))
+          : [],
       }];
     }
     return [emptyActividad()];
@@ -695,7 +699,7 @@ export default function Informes({ctx}){
                   <span style={{fontSize:10.5,color:"#94a3b8"}}>Se imprimen en el informe</span>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(170px, 1fr))",gap:10,alignItems:"start"}}>
-                  {(act.fotos||[]).filter(f=>f.img).map((ft,fi)=>(
+                  {(act.fotos||[]).map((ft,fi)=>(
                     <div key={fi} style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,overflow:"hidden"}}>
                       <div style={{background:"#f8fafc",padding:6,minHeight:130,display:"flex",alignItems:"center",justifyContent:"center"}}>
                         <img src={ft.img} alt="" style={{width:"100%",height:"auto",maxHeight:180,objectFit:"contain",display:"block",borderRadius:4,background:"#fff"}}/>

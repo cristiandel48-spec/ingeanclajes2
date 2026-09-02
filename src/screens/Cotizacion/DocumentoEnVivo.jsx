@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { buildCotizacionPrintHtml } from "../../lib/cotizacionPrint";
 
 // Ancho real de una hoja carta a 96 ppp. El documento se genera a ese ancho,
@@ -19,7 +19,18 @@ export default function DocumentoEnVivo({
   sticky = true,
 }) {
   const contenedorRef = useRef(null);
-  const [html, setHtml] = useState("");
+  const iframeRef = useRef(null);
+
+  // Inicializar el html de inmediato en el primer render para que no haya pantalla en blanco
+  const [html, setHtml] = useState(() => {
+    try {
+      return buildCotizacionPrintHtml(cotizacion, { firmaImg, sello });
+    } catch (e) {
+      console.error("Error al generar vista previa inicial:", e);
+      return "";
+    }
+  });
+
   const [escala, setEscala] = useState(1);
   const [error, setError] = useState(null);
 
@@ -31,12 +42,9 @@ export default function DocumentoEnVivo({
     typeof v === "string" && v.length > 200 ? `${v.length}:${v.slice(0, 40)}` : v
   );
 
-  // Regenerar el documento es costoso, asi que se espera a que la persona
-  // deje de escribir. La PRIMERA vez no se espera: al abrir "Ver" el documento
-  // debe aparecer de una, no medio segundo despues.
-  const yaHayDocumento = html !== "";
+  // Regenerar el documento cuando cambie la cotizacion
   useEffect(() => {
-    const generar = () => {
+    const id = setTimeout(() => {
       try {
         setHtml(buildCotizacionPrintHtml(cotizacion, { firmaImg, sello }));
         setError(null);
@@ -44,14 +52,8 @@ export default function DocumentoEnVivo({
         console.error("No se pudo generar la vista previa:", e);
         setError(e);
       }
-    };
-    if (!yaHayDocumento) {
-      generar();
-      return undefined;
-    }
-    const id = setTimeout(generar, 400);
+    }, 300);
     return () => clearTimeout(id);
-    // yaHayDocumento solo distingue el primer render; no debe reprogramar nada.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clave, firmaImg, sello]);
 
@@ -85,6 +87,27 @@ export default function DocumentoEnVivo({
       )
     : "";
 
+  const escribirEnIframe = useCallback((contenido) => {
+    const frame = iframeRef.current;
+    if (!frame || !contenido) return;
+    try {
+      const doc = frame.contentDocument || frame.contentWindow?.document;
+      if (doc) {
+        doc.open();
+        doc.write(contenido);
+        doc.close();
+      }
+    } catch (e) {
+      console.warn("Escritura directa en iframe no disponible:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (htmlAjustado) {
+      escribirEnIframe(htmlAjustado);
+    }
+  }, [htmlAjustado, escribirEnIframe]);
+
   return (
     <div
       ref={contenedorRef}
@@ -117,8 +140,11 @@ export default function DocumentoEnVivo({
         </div>
       ) : (
         <iframe
+          ref={iframeRef}
+          key={cotizacion?.id || cotizacion?.numero || "preview"}
           title="Vista previa de la cotización"
           srcDoc={htmlAjustado}
+          onLoad={() => escribirEnIframe(htmlAjustado)}
           style={{ display: "block", width: "100%", height: alto, border: 0, background: "#e8eaee" }}
         />
       )}

@@ -4,6 +4,7 @@ import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
 import { useEffect, useRef, useState } from "react";
 import ListaClientes from "./ListaClientes";
+import ModalUnificarCliente from "./ModalUnificarCliente";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarFrase, normalizarMayusculas, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
@@ -14,6 +15,7 @@ export default function ClientesDB({ctx}){
   const [showForm,setShowForm]=useState(false);
   const [editId,setEditId]=useState(null);
   const [form,setForm]=useState(clienteBase);
+  const [clienteAUnificar,setClienteAUnificar]=useState(null);
 
   const fuentesBrutas=[
     ...obras.map(o=>({
@@ -135,60 +137,49 @@ export default function ClientesDB({ctx}){
   // Unifica dos fichas del mismo tercero. Pasa cuando el nombre se escribio
   // distinto -"SANDIEDO" por "SANDIEGO"- y el sistema las tomo por clientes
   // distintos: cada una se quedo con parte de las obras y las cotizaciones.
-  //
-  // No basta con borrar la repetida: sus obras seguirian con el nombre mal
-  // escrito, y volveria a aparecer como cliente sugerido. Hay que mover todo
-  // lo suyo al que se queda y despues si borrarla.
+  // Unifica dos fichas del mismo tercero. Abre el modal interactivo con buscador.
   const unificarCliente=(cli)=>{
     const otros=clientesData.filter(c=>c.id!==cli.id);
     if(!otros.length){
-      window.alert("No hay otro cliente con el que unificar.");
+      window.alert("No hay otro cliente registrado con el que se pueda unificar.");
       return;
     }
+    setClienteAUnificar(cli);
+  };
 
-    const lista=otros.map((c,i)=>`${i+1}. ${c.nombre}`).join("\n");
-    const elegido=window.prompt(
-      `Unificar «${cli.nombre}» con otro cliente.\n\n` +
-      `Se moverán sus ${cli.obrasTotal} obra(s), ${cli.cotizacionesTotal} cotización(es) y ` +
-      `${cli.certificacionesTotal} certificación(es) al que elijas, y esta ficha se eliminará.\n\n` +
-      `Escribe el número del cliente que se queda:\n\n${lista}`
-    );
-    if(elegido===null) return;
-
-    const destino=otros[Number(elegido)-1];
-    if(!destino){
-      window.alert("Ese número no está en la lista. No se hizo nada.");
-      return;
-    }
-
-    const confirmar=window.confirm(
-      `Se va a hacer esto:\n\n` +
-      `• Las obras, cotizaciones y certificaciones de «${cli.nombre}» pasarán a «${destino.nombre}».\n` +
-      `• La ficha «${cli.nombre}» se eliminará.\n\n` +
-      `Esto no se puede deshacer. ¿Continuar?`
-    );
-    if(!confirmar) return;
-
-    const viejo=cli.nombre;
+  const ejecutarUnificacion=(origen, destino)=>{
+    if(!origen || !destino || origen.id === destino.id) return;
+    const viejo=origen.nombre;
     const nuevo=destino.nombre;
-    setObras(prev=>prev.map(o=>o.cliente===viejo?{...o,cliente:nuevo}:o));
-    setCotizaciones(prev=>prev.map(c=>c.cliente===viejo?{...c,cliente:nuevo}:c));
-    setCerts(prev=>prev.map(c=>c.cliente===viejo?{...c,cliente:nuevo}:c));
+
+    const coincideNombre=(nombre)=>{
+      if(!nombre) return false;
+      const n1 = normalizarRazonSocial(nombre);
+      const n2 = normalizarRazonSocial(viejo);
+      if(n1 && n2 && n1 === n2) return true;
+      return String(nombre).trim().toLowerCase() === String(viejo).trim().toLowerCase();
+    };
+
+    setObras(prev=>prev.map(o=>coincideNombre(o.cliente)?{...o,cliente:nuevo}:o));
+    setCotizaciones(prev=>prev.map(c=>coincideNombre(c.cliente)?{...c,cliente:nuevo}:c));
+    setCerts(prev=>prev.map(c=>coincideNombre(c.cliente)?{...c,cliente:nuevo}:c));
 
     // Lo que le falte al que se queda se completa con lo de la ficha que se va.
     setClientes(prev=>prev
       .map(c=>c.id!==destino.id ? c : {
         ...c,
-        nit:c.nit || cli.nit || "",
-        telefono:c.telefono || cli.telefono || "",
-        ciudad:c.ciudad || cli.ciudad || "",
-        direccion:c.direccion || cli.direccion || "",
-        contacto:c.contacto || cli.contacto || "",
-        email:c.email || cli.email || "",
-        notas:[c.notas,cli.notas].filter(Boolean).join(" · "),
+        nit:c.nit || origen.nit || "",
+        telefono:c.telefono || origen.telefono || "",
+        ciudad:c.ciudad || origen.ciudad || "",
+        direccion:c.direccion || origen.direccion || "",
+        contacto:c.contacto || origen.contacto || "",
+        email:c.email || origen.email || "",
+        notas:[c.notas,origen.notas].filter(Boolean).join(" · "),
       })
-      .filter(c=>c.id!==cli.id)
+      .filter(c=>c.id!==origen.id)
     );
+
+    setClienteAUnificar(null);
   };
 
   const eliminarCliente=(cli)=>{
@@ -323,6 +314,15 @@ export default function ClientesDB({ctx}){
           eliminar: (c)=>eliminarCliente(c),
         }}
       />
+
+      {clienteAUnificar && (
+        <ModalUnificarCliente
+          clienteOrigen={clienteAUnificar}
+          clientesDisponibles={clientesData}
+          onCerrar={()=>setClienteAUnificar(null)}
+          onUnificar={ejecutarUnificacion}
+        />
+      )}
     </div>
   );
 }

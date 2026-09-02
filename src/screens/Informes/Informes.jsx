@@ -54,7 +54,7 @@ export default function Informes({ctx}){
   // todos los informes. Es solo el punto de partida: se edita encima y lo
   // escrito manda. Las actividades que llegan de la bitacora de la obra traen
   // su propia descripcion y no pasan por aqui.
-  const emptyActividad=()=>({titulo:"",actividadesRealizadas:DEFAULT_INFORME_ACTIVIDADES,descripcion:DEFAULT_INFORME_DESCRIPCION,observaciones:"",fecha:"",fotos:[{img:null,comentario:""},{img:null,comentario:""},{img:null,comentario:""},{img:null,comentario:""}]});
+  const emptyActividad=()=>({titulo:"",actividadesRealizadas:DEFAULT_INFORME_ACTIVIDADES,descripcion:DEFAULT_INFORME_DESCRIPCION,observaciones:"",fecha:"",fotos:[]});
   // `agregada` marca las filas que puso la persona a mano en el informe, para
   // conservarlas cuando se resincroniza con la obra. Arranca en modo lista:
   // lo normal es elegir a alguien registrado, no escribirlo.
@@ -305,19 +305,20 @@ export default function Informes({ctx}){
   // vacios; si se acaban, se crean.
   const [subiendoFotos,setSubiendoFotos]=useState(null);
 
-  // `reemplazar` distingue los dos modos: desde un recuadro, la primera foto
-  // ocupa ese recuadro aunque ya tuviera una -es lo que se espera al hacer
-  // clic encima-; desde el boton de subir varias, no se pisa nada y solo se
-  // llenan los huecos libres.
-  const cargarFotos=async(ai,fi,archivos,reemplazar=true)=>{
+  const quitarFotoAct=(ai,fi)=>{
+    setForm(p=>({...p,actividades:p.actividades.map((a,i)=>{
+      if(i!==ai) return a;
+      return {...a,fotos:(a.fotos||[]).filter((_,idx)=>idx!==fi)};
+    })}));
+  };
+
+  const cargarFotos=async(ai,archivos)=>{
     const lista=[...(archivos||[])].filter(Boolean);
     if(!lista.length)return;
 
     setSubiendoFotos({actividad:ai,hechas:0,total:lista.length});
     const imagenes=[];
     let fallidas=0;
-    // De una en una y no todas a la vez: son fotos de celular de varios MB y
-    // comprimir quince en paralelo deja sin memoria a los equipos flojos.
     for(const archivo of lista){
       try{ imagenes.push(await leerImagenComprimida(archivo)); }
       catch{ fallidas+=1; }
@@ -328,17 +329,9 @@ export default function Informes({ctx}){
     if(imagenes.length){
       setForm(p=>({...p,actividades:p.actividades.map((a,i)=>{
         if(i!==ai)return a;
-        const fotos=[...a.fotos];
-        let pos=reemplazar?fi+1:0;
-        imagenes.forEach((img,n)=>{
-          // La primera va donde se pidio, aunque ya hubiera una: se cambia.
-          if(n===0 && reemplazar && fi<fotos.length){ fotos[fi]={...fotos[fi],img}; return; }
-          while(pos<fotos.length && fotos[pos].img) pos+=1;
-          if(pos<fotos.length) fotos[pos]={...fotos[pos],img};
-          else fotos.push({img,comentario:""});
-          pos+=1;
-        });
-        return {...a,fotos};
+        const existentes=(a.fotos||[]).filter(f=>f.img);
+        const nuevas=imagenes.map(img=>({img,comentario:""}));
+        return {...a,fotos:[...existentes,...nuevas]};
       })}));
     }
 
@@ -697,44 +690,77 @@ export default function Informes({ctx}){
                 <div style={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><LBL>Descripción</LBL><BotonCorregir valor={act.descripcion} onChange={(v)=>updActividad(ai,"descripcion",v)} compacto/></div><textarea value={act.descripcion} onChange={e=>updActividad(ai,"descripcion",e.target.value)} onBlur={e=>{const v=normalizarParrafos(e.target.value);if(v!==act.descripcion)updActividad(ai,"descripcion",v);}} rows={6} placeholder="Descripción del proceso ejecutado..." spellCheck lang="es" style={{...SI,resize:"vertical",lineHeight:1.5}}/></div>
                 <div style={{marginBottom:12}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><LBL>Observaciones</LBL><BotonCorregir valor={act.observaciones} onChange={(v)=>updActividad(ai,"observaciones",v)} compacto/></div><input value={act.observaciones} onChange={e=>updActividad(ai,"observaciones",e.target.value)} onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==act.observaciones)updActividad(ai,"observaciones",v);}} placeholder="Ej: 1 Línea de vida horizontal de 119 metros" spellCheck lang="es" style={SI}/></div>
                 {/* Fotos de esta actividad */}
-                <LBL>Registro fotográfico</LBL>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,alignItems:"start"}}>
-                  {act.fotos.map((ft,fi)=>(
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,marginTop:12}}>
+                  <LBL>Registro fotográfico</LBL>
+                  <span style={{fontSize:10.5,color:"#94a3b8"}}>Se imprimen en el informe</span>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(170px, 1fr))",gap:10,alignItems:"start"}}>
+                  {(act.fotos||[]).filter(f=>f.img).map((ft,fi)=>(
                     <div key={fi} style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,overflow:"hidden"}}>
-                      <div
-                        onClick={()=>{const k=(ai) + "-" + (fi);if(!fotoRefs.current[k])return;fotoRefs.current[k].click();}}
-                        style={{minHeight:150,background:"#f8fafc",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",position:"relative",padding:ft.img?8:0}}>
-                        {ft.img
-                          ?<img src={ft.img} alt="" style={{width:"100%",height:"auto",maxHeight:220,objectFit:"contain",display:"block",background:"#fff",borderRadius:6}}/>
-                          :<div style={{textAlign:"center",color:"#94a3b8",fontSize:11}}><div style={{fontSize:22}}>Foto</div><div>Foto {fi+1} · Clic para cargar</div><div style={{fontSize:10,marginTop:2}}>puedes elegir varias</div></div>}
-                        {ft.img&&<div style={{position:"absolute",top:6,right:6,background:"rgba(0,0,0,0.55)",borderRadius:4,padding:"2px 6px",fontSize:9,color:"#fff",cursor:"pointer"}} onClick={e=>{e.stopPropagation();updFotoAct(ai,fi,"img",null);}}>× Quitar</div>}
+                      <div style={{background:"#f8fafc",padding:6,minHeight:130,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                        <img src={ft.img} alt="" style={{width:"100%",height:"auto",maxHeight:180,objectFit:"contain",display:"block",borderRadius:4,background:"#fff"}}/>
                       </div>
-                      <input ref={el=>{fotoRefs.current[(ai) + "-" + (fi)]=el;}} type="file" accept="image/*" multiple style={{display:"none"}} onChange={e=>{cargarFotos(ai,fi,e.target.files);e.target.value="";}}/>
-                      <div style={{padding:"6px 8px"}}><input value={ft.comentario} onChange={e=>updFotoAct(ai,fi,"comentario",e.target.value)} placeholder="Descripción de la foto..." style={{...SI,fontSize:11,padding:"4px 8px"}}/></div>
+                      <div style={{padding:"6px 8px",display:"flex",gap:4,alignItems:"center"}}>
+                        <input
+                          value={ft.comentario||""}
+                          onChange={e=>updFotoAct(ai,fi,"comentario",e.target.value)}
+                          onBlur={e=>{
+                            const limpio=normalizarFrase(e.target.value);
+                            if(limpio!==ft.comentario) updFotoAct(ai,fi,"comentario",limpio);
+                          }}
+                          placeholder={`Foto ${fi+1}`}
+                          style={{...SI,fontSize:11,padding:"3px 6px",flex:1}}
+                        />
+                        <button
+                          onClick={()=>quitarFotoAct(ai,fi)}
+                          title="Eliminar foto"
+                          style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:6,width:22,height:22,cursor:"pointer",fontSize:14,flexShrink:0,lineHeight:1}}
+                        >
+                          ×
+                        </button>
+                      </div>
                     </div>
                   ))}
-                </div>
-                <div style={{display:"flex",gap:8,alignItems:"center",marginTop:8,flexWrap:"wrap"}}>
-                  {/* Sube varias de golpe sin tener que crear antes los
-                      recuadros: es la forma normal de trabajar al volver de
-                      obra con el carrete lleno. */}
-                  <button
+
+                  <div
                     onClick={()=>{const k="lote-"+ai;if(fotoRefs.current[k])fotoRefs.current[k].click();}}
-                    disabled={subiendoFotos?.actividad===ai}
-                    style={{...B("#dbeafe","#1e40af"),fontSize:11,opacity:subiendoFotos?.actividad===ai?0.6:1}}>
-                    + Subir varias fotos
-                  </button>
-                  <input
-                    ref={el=>{fotoRefs.current["lote-"+ai]=el;}}
-                    type="file" accept="image/*" multiple style={{display:"none"}}
-                    onChange={e=>{cargarFotos(ai,0,e.target.files,false);e.target.value="";}}/>
-                  <button onClick={()=>updActividad(ai,"fotos",[...act.fotos,{img:null,comentario:""}])} style={{...B("#f1f5f9","#475569"),fontSize:11}}>+ Agregar recuadro</button>
-                  {subiendoFotos?.actividad===ai && (
-                    <span style={{fontSize:11,color:"#64748b"}}>
-                      Cargando fotos… {subiendoFotos.hechas} de {subiendoFotos.total}
-                    </span>
-                  )}
+                    style={{
+                      border:"2px dashed #f47c20",
+                      borderRadius:10,
+                      minHeight:140,
+                      display:"flex",
+                      flexDirection:"column",
+                      alignItems:"center",
+                      justifyContent:"center",
+                      cursor:"pointer",
+                      background:"#fff8f3",
+                      color:"#f47c20",
+                      fontWeight:600,
+                      gap:6,
+                    }}
+                  >
+                    <span style={{fontSize:24,lineHeight:1}}>+</span>
+                    <span style={{fontSize:12}}>Agregar foto</span>
+                  </div>
                 </div>
+
+                <input
+                  ref={el=>{fotoRefs.current["lote-"+ai]=el;}}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  style={{display:"none"}}
+                  onChange={e=>{
+                    cargarFotos(ai,e.target.files);
+                    e.target.value="";
+                  }}
+                />
+
+                {subiendoFotos?.actividad===ai && (
+                  <div style={{fontSize:11.5,color:"#f47c20",marginTop:8,fontWeight:600}}>
+                    ⏳ Cargando fotos… {subiendoFotos.hechas} de {subiendoFotos.total}
+                  </div>
+                )}
               </div>
             ))}
           </div>

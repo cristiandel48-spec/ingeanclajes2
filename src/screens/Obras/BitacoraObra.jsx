@@ -6,7 +6,7 @@ import { B, SI } from "../../styles/tokens";
 import { fmtD, today } from "../../lib/format";
 import { leerImagenComprimida } from "../../lib/imagenes";
 import { normalizarFrase } from "../../lib/normalizarEntrada";
-import { fotoVacia, normalizarBitacora, registroVacio, resumenBitacora } from "../../lib/bitacoraObra";
+import { normalizarBitacora, registroVacio, resumenBitacora } from "../../lib/bitacoraObra";
 
 // Pestana «Avance y fotos» del detalle de obra.
 //
@@ -33,7 +33,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
   const agregarRegistro = () => {
     // Nace con una foto vacia lista para tocar: es lo primero que hace la
     // gente cuando llega del sitio.
-    const nuevo = { ...registroVacio(today()), fotos: [fotoVacia()] };
+    const nuevo = { ...registroVacio(today()), fotos: [] };
     guardarBitacora([...registros, nuevo]);
   };
 
@@ -65,22 +65,17 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
       )
     );
 
-  const agregarFoto = (registroId) =>
-    guardarBitacora(
-      registros.map((r) => (r.id === registroId ? { ...r, fotos: [...r.fotos, fotoVacia()] } : r))
-    );
-
   const quitarFoto = (registroId, indice) =>
     guardarBitacora(
       registros.map((r) =>
-        r.id === registroId ? { ...r, fotos: r.fotos.filter((_, i) => i !== indice) } : r
+        r.id === registroId
+          ? { ...r, fotos: (r.fotos || []).filter((_, i) => i !== indice) }
+          : r
       )
     );
 
-  // Sube una o varias fotos a la vez. La primera ocupa el recuadro donde se
-  // hizo clic (si reemplazar es true) y las demás van llenando los recuadros
-  // vacíos o creando nuevos si se acaban.
-  const cargarFotos = async (registroId, indice, archivos, reemplazar = true) => {
+  // Sube una o varias fotos a la vez y las añade al avance, exactamente como en Cotizaciones
+  const cargarFotos = async (registroId, archivos) => {
     const lista = Array.from(archivos || []).filter(Boolean);
     if (!lista.length) return;
 
@@ -88,7 +83,6 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
     const imagenes = [];
     let fallidas = 0;
 
-    // Se procesan secuencialmente para no saturar memoria en móviles o equipos de bajos recursos
     for (const archivo of lista) {
       try {
         imagenes.push(await leerImagenComprimida(archivo));
@@ -103,19 +97,9 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
       guardarBitacora(
         registros.map((r) => {
           if (r.id !== registroId) return r;
-          const fotos = [...(r.fotos || [])];
-          let pos = reemplazar ? indice + 1 : 0;
-          imagenes.forEach((img, n) => {
-            if (n === 0 && reemplazar && indice < fotos.length) {
-              fotos[indice] = { ...fotos[indice], img };
-              return;
-            }
-            while (pos < fotos.length && fotos[pos].img) pos += 1;
-            if (pos < fotos.length) fotos[pos] = { ...fotos[pos], img };
-            else fotos.push({ img, comentario: "" });
-            pos += 1;
-          });
-          return { ...r, fotos };
+          const existentes = (r.fotos || []).filter((f) => f.img);
+          const nuevas = imagenes.map((img) => ({ img, comentario: "" }));
+          return { ...r, fotos: [...existentes, ...nuevas] };
         })
       );
     }
@@ -265,101 +249,79 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
               />
             </div>
 
-            <LBL>Fotos del avance</LBL>
-            <div style={{ fontSize: 11, color: "#64748b", marginBottom: 8 }}>
-              Toca el recuadro o el botón para subir una o varias fotos a la vez. Escribe debajo qué se ve en cada una.
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <LBL>Fotos del avance</LBL>
+              <span style={{ fontSize: 10.5, color: "#94a3b8" }}>Se imprimen en el informe</span>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, alignItems: "start" }}>
-              {(registro.fotos || []).map((foto, fi) => {
-                const clave = registro.id + "-" + fi;
-                return (
-                  <div key={fi} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden" }}>
-                    <div
-                      onClick={() => fotoRefs.current[clave]?.click()}
-                      style={{ minHeight: 150, background: "#f8fafc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative", padding: foto.img ? 8 : 0 }}
-                    >
-                      {foto.img ? (
-                        <img src={foto.img} alt="" style={{ width: "100%", height: "auto", maxHeight: 220, objectFit: "contain", display: "block", background: "#fff", borderRadius: 6 }} />
-                      ) : (
-                        <div style={{ textAlign: "center", color: "#94a3b8", fontSize: 11 }}>
-                          <div style={{ fontSize: 22 }}>📷</div>
-                          <div>Clic para subir foto(s)</div>
-                          <div style={{ fontSize: 10, marginTop: 2, color: "#94a3b8" }}>puedes elegir varias a la vez</div>
-                        </div>
-                      )}
-                      {foto.img && (
-                        <div
-                          style={{ position: "absolute", top: 6, right: 6, background: "rgba(0,0,0,0.55)", borderRadius: 4, padding: "2px 6px", fontSize: 9, color: "#fff", cursor: "pointer" }}
-                          onClick={(e) => { e.stopPropagation(); actualizarFoto(registro.id, fi, "img", null); }}
-                        >
-                          × Quitar imagen
-                        </div>
-                      )}
-                    </div>
-                    <input
-                      ref={(el) => { fotoRefs.current[clave] = el; }}
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      style={{ display: "none" }}
-                      onChange={(e) => { cargarFotos(registro.id, fi, e.target.files, true); e.target.value = ""; }}
-                    />
-                    <div style={{ padding: "6px 8px", display: "flex", gap: 6 }}>
-                      <input
-                        value={foto.comentario}
-                        onChange={(e) => actualizarFoto(registro.id, fi, "comentario", e.target.value)}
-                        onBlur={(e) => {
-                          const limpio = normalizarFrase(e.target.value);
-                          if (limpio !== foto.comentario) actualizarFoto(registro.id, fi, "comentario", limpio);
-                        }}
-                        placeholder="¿Qué se ve en esta foto?"
-                        spellCheck
-                        lang="es"
-                        style={{ ...SI, fontSize: 11, padding: "4px 8px" }}
-                      />
-                      <button
-                        onClick={() => quitarFoto(registro.id, fi)}
-                        title="Quitar este espacio de foto"
-                        style={{ background: "#fee2e2", border: "none", color: "#ef4444", borderRadius: 6, width: 26, cursor: "pointer", fontSize: 13, flexShrink: 0 }}
-                      >
-                        ×
-                      </button>
-                    </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 10, alignItems: "start" }}>
+              {(registro.fotos || []).filter((f) => f.img).map((foto, fi) => (
+                <div key={fi} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden" }}>
+                  <div style={{ background: "#f8fafc", padding: 6, minHeight: 130, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <img src={foto.img} alt="" style={{ width: "100%", height: "auto", maxHeight: 180, objectFit: "contain", display: "block", borderRadius: 4, background: "#fff" }} />
                   </div>
-                );
-              })}
-            </div>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8, flexWrap: "wrap" }}>
-              <button
-                onClick={() => {
-                  const k = "lote-" + registro.id;
-                  if (fotoRefs.current[k]) fotoRefs.current[k].click();
+                  <div style={{ padding: "6px 8px", display: "flex", gap: 4, alignItems: "center" }}>
+                    <input
+                      value={foto.comentario || ""}
+                      onChange={(e) => actualizarFoto(registro.id, fi, "comentario", e.target.value)}
+                      onBlur={(e) => {
+                        const limpio = normalizarFrase(e.target.value);
+                        if (limpio !== foto.comentario) actualizarFoto(registro.id, fi, "comentario", limpio);
+                      }}
+                      placeholder={`Foto ${fi + 1}`}
+                      spellCheck
+                      lang="es"
+                      style={{ ...SI, fontSize: 11, padding: "3px 6px", flex: 1 }}
+                    />
+                    <button
+                      onClick={() => quitarFoto(registro.id, fi)}
+                      title="Eliminar foto"
+                      style={{ background: "#fee2e2", border: "none", color: "#ef4444", borderRadius: 6, width: 22, height: 22, cursor: "pointer", fontSize: 14, flexShrink: 0, lineHeight: 1 }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              <div
+                onClick={() => fotoRefs.current["lote-" + registro.id]?.click()}
+                style={{
+                  border: "2px dashed #f47c20",
+                  borderRadius: 10,
+                  minHeight: 140,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  background: "#fff8f3",
+                  color: "#f47c20",
+                  fontWeight: 600,
+                  gap: 6,
                 }}
-                disabled={subiendoFotos?.registroId === registro.id}
-                style={{ ...B("#dbeafe", "#1e40af"), fontSize: 11, opacity: subiendoFotos?.registroId === registro.id ? 0.6 : 1 }}
               >
-                + Subir varias fotos
-              </button>
-              <input
-                ref={(el) => { fotoRefs.current["lote-" + registro.id] = el; }}
-                type="file"
-                accept="image/*"
-                multiple
-                style={{ display: "none" }}
-                onChange={(e) => {
-                  cargarFotos(registro.id, 0, e.target.files, false);
-                  e.target.value = "";
-                }}
-              />
-              <button onClick={() => agregarFoto(registro.id)} style={{ ...B("#f1f5f9", "#475569"), fontSize: 11 }}>
-                + Agregar recuadro
-              </button>
-              {subiendoFotos?.registroId === registro.id && (
-                <span style={{ fontSize: 11, color: "#64748b" }}>
-                  Cargando fotos… {subiendoFotos.hechas} de {subiendoFotos.total}
-                </span>
-              )}
+                <span style={{ fontSize: 24, lineHeight: 1 }}>+</span>
+                <span style={{ fontSize: 12 }}>Agregar foto</span>
+              </div>
             </div>
+
+            <input
+              ref={(el) => { fotoRefs.current["lote-" + registro.id] = el; }}
+              type="file"
+              accept="image/*"
+              multiple
+              style={{ display: "none" }}
+              onChange={(e) => {
+                cargarFotos(registro.id, e.target.files);
+                e.target.value = "";
+              }}
+            />
+
+            {subiendoFotos?.registroId === registro.id && (
+              <div style={{ fontSize: 11.5, color: "#f47c20", marginTop: 8, fontWeight: 600 }}>
+                ⏳ Cargando fotos… {subiendoFotos.hechas} de {subiendoFotos.total}
+              </div>
+            )}
           </div>
         );
       })}

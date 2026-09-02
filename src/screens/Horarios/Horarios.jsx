@@ -10,6 +10,7 @@ import { fmtD, fmtL, today } from "../../lib/format";
 import { abrirWhatsApp, normalizarCelular } from "../../lib/whatsapp";
 import { puedeCrearPersonal } from "../../lib/permisos";
 import { normalizarMayusculas } from "../../lib/normalizarEntrada";
+import { resolverAutorGuardado } from "../../lib/autorAuditoria";
 export default function Horarios({ctx}){
   const {obras,setObras,empleados,horarios,setHorarios,irAPantalla,membresia}=ctx;
   const firstObraId = obras[0]?.id || "";
@@ -176,9 +177,21 @@ export default function Horarios({ctx}){
       return;
     }
 
+    const autorActual = resolverAutorGuardado(ctx?.membresia);
+    const ahoraIso = new Date().toISOString();
+
     setHorarios(p=>[
       ...p,
-      ...nuevos.map((item,idx)=>({id:"H" + (Date.now()) + (idx),...item}))
+      ...nuevos.map((item,idx)=>({
+        id:"H" + (Date.now()) + (idx),
+        ...item,
+        creadoPor: ctx?.membresia?.userId || null,
+        creadoPorNombre: autorActual || "Administración",
+        creadoEn: ahoraIso,
+        modificadoPor: ctx?.membresia?.userId || null,
+        modificadoPorNombre: autorActual,
+        modificadoEn: ahoraIso,
+      }))
     ]);
 
     // Los empleados asignados a turnos en esta obra viajan automáticamente al módulo de obras

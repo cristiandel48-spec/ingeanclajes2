@@ -185,7 +185,7 @@ export const entityConfig = {
     columnasPesadas: ["bitacora", "img_plano", "img_sat", "trazos", "anclajes", "geo_mediciones"],
     // Contadores que mantiene la base, para que el listado pueda decir
     // cuantas fotos hay sin traerlas.
-    columnasCalculadas: ["total_registros_avance", "total_fotos_avance"],
+    columnasCalculadas: ["total_registros_avance", "total_fotos_avance", "created_at", "updated_at"],
     coerceNullCols: ["avance", "total", "pagado", "saldo", "costos", "subtotal_cotizacion", "utilidad_cotizacion", "base_ingreso_contable", "iva_generado_cotizacion", "fecha_inicio", "fecha_fin"],
     toRow: (item) => ({
       id: item.id,
@@ -285,6 +285,12 @@ export const entityConfig = {
       imgSat: row.img_sat,
       geoMapView: row.geo_map_view,
       bitacora: safeArray(row.bitacora),
+      creadoPor: row.creado_por ?? null,
+      creadoPorNombre: row.creado_por_nombre ?? "",
+      creadoEn: row.creado_en ?? row.created_at ?? null,
+      modificadoPor: row.modificado_por ?? null,
+      modificadoPorNombre: row.modificado_por_nombre ?? "",
+      modificadoEn: row.modificado_en ?? row.updated_at ?? null,
     }),
   },
   cotizaciones: {
@@ -711,6 +717,12 @@ export const entityConfig = {
       // "Turno completo", vuelve tal cual.
       turno: [row.hora_inicio, row.hora_fin].filter(Boolean).join(" - "),
       tarea: row.notas ?? "",
+      creadoPor: row.creado_por ?? null,
+      creadoPorNombre: row.creado_por_nombre ?? "",
+      creadoEn: row.creado_en ?? row.created_at ?? null,
+      modificadoPor: row.modificado_por ?? null,
+      modificadoPorNombre: row.modificado_por_nombre ?? "",
+      modificadoEn: row.modificado_en ?? row.updated_at ?? null,
     }),
   },
   // Configuracion general de la empresa: una sola fila por tenant. Marcada

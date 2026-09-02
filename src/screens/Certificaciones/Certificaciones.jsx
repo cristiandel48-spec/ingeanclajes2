@@ -13,6 +13,7 @@ import { printCurrentPz } from "../../lib/print";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import ListaCertificaciones from "./ListaCertificaciones";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
+import { resolverAutorGuardado } from "../../lib/autorAuditoria";
 // Informes de una obra. Si se indica uno concreto, solo ese.
 const informesFuente = (informes, obraId, informeId = "")=>{
   if(!obraId) return [];
@@ -248,7 +249,7 @@ export default function Certificaciones({ctx}){
   };
 
   const guardar=()=>{
-    const miNombre = ctx?.membresia?.nombre || ctx?.membresia?.email || "";
+    const miNombre = resolverAutorGuardado(ctx?.membresia, prev?.modificadoPorNombre);
     const miUserId = ctx?.membresia?.userId || null;
     const prev = editId ? certs.find((item) => item.id === editId) : null;
     const c = {
@@ -256,7 +257,7 @@ export default function Certificaciones({ctx}){
         ? { ...form, id: editId, estado: form.estado || "Vigente" }
         : { id: siguienteIdUnico(certs, "CERT"), estado: "Vigente", ...form }),
       creadoPor: prev?.creadoPor || miUserId,
-      creadoPorNombre: prev?.creadoPorNombre || miNombre,
+      creadoPorNombre: prev?.creadoPorNombre || resolverAutorGuardado(ctx?.membresia) || "Administración",
       creadoEn: prev?.creadoEn || new Date().toISOString(),
       modificadoPor: miUserId,
       modificadoPorNombre: miNombre,

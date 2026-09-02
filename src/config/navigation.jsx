@@ -83,7 +83,7 @@ export const NAV_SECTIONS = [
     title: "Sistema",
     items: [
       { id: "usuarios", label: "Usuarios y permisos", short: "Usuarios" },
-      { id: "auditoria", label: "Auditoría de documentos", short: "Auditoría" },
+      { id: "auditoria", label: "Auditoría y registro de cambios", short: "Auditoría" },
       // El codigo y la version que se imprimen en cada formato. Se toca cuando
       // cambia una plantilla, no todos los dias.
       { id: "formatos", label: "Formatos y versiones", short: "Formatos" },

@@ -47,18 +47,10 @@ export const MODULOS_MINIMOS = [];
 export const MODULOS_SOLO_ADMIN = ["usuarios", "dashboard", "auditoria", "formatos"];
 
 // Y esto solo lo ve el dueño, ni siquiera los demas administradores.
-//
-// La auditoria dice quien creo y quien toco cada documento. Es informacion
-// sobre el propio equipo, y quien la mira no deberia poder ser mirado por los
-// demas: si la ve todo el que sea administrador, deja de servir para lo que
-// se pidio.
-//
-// OJO: esto lo esconde del MENU, no lo blinda en la base. Igual que los
-// permisos por modulo, es la interfaz la que decide, asi que alguien con
-// conocimientos tecnicos y una sesion valida podria consultar las columnas
-// por fuera de la aplicacion. Para bloqueo de verdad harian falta politicas
-// RLS por tabla.
-export const MODULOS_SOLO_DUENO = ["auditoria"];
+// Módulos reservados exclusivamente al dueño.
+// La auditoría antes estaba solo para dueño; ahora está publicada para Camila Sepúlveda
+// y cualquier usuario con rol de Administrador.
+export const MODULOS_SOLO_DUENO = [];
 
 export function esAdmin(membresia) {
   return membresia?.role === "admin";

@@ -1,14 +1,13 @@
 import { useMemo, useState } from "react";
 import { CD, SI, ST } from "../styles/tokens";
+import { limpiarCreador, limpiarModificador } from "../lib/autorAuditoria";
 
-// Quien hizo cada documento y quien fue el ultimo en tocarlo.
+// Registro unificado de auditoría y cambios en el sistema.
+// Aplica para Obras (Ejecución de obra), Horarios, Cotizaciones, Informes y Certificaciones.
 //
-// Aplica para Cotizaciones, Informes de actividades y Certificaciones.
-// El dato lo escribe un disparador de la base con el usuario de la sesion
-// (migraciones 030 y 040). Asi queda registrado venga el cambio de donde venga,
-// y no se puede falsear desde el cliente.
-//
-// ALCANCE: creador original y ultimo cambio.
+// Diseñado para que la gerencia y administración (Camila Sepúlveda y administradores)
+// tengan trazabilidad completa de qué persona creó y qué persona modificó cada registro.
+// Cuentas técnicas y de desarrollo no se muestran como modificadores para que los parches no ensucien el historial.
 
 const fechaHora = (valor) => {
   if (!valor) return "";
@@ -24,6 +23,18 @@ const fechaHora = (valor) => {
 };
 
 const ESTILOS_TIPO = {
+  obra: {
+    etiqueta: "Ejecución de obra",
+    bg: "#fdf2f8",
+    text: "#be185d",
+    border: "#fbcfe8",
+  },
+  horario: {
+    etiqueta: "Horarios y turnos",
+    bg: "#f5f3ff",
+    text: "#6d28d9",
+    border: "#ede9fe",
+  },
   cotizacion: {
     etiqueta: "Cotización",
     bg: "#fff7ed",
@@ -31,7 +42,7 @@ const ESTILOS_TIPO = {
     border: "#ffedd5",
   },
   informe: {
-    etiqueta: "Informe",
+    etiqueta: "Informe de actividades",
     bg: "#eff6ff",
     text: "#1d4ed8",
     border: "#dbeafe",
@@ -45,66 +56,154 @@ const ESTILOS_TIPO = {
 };
 
 export default function AuditoriaDocumentos({ ctx }) {
-  const { cotizaciones = [], informes = [], certs = [] } = ctx || {};
+  const {
+    cotizaciones = [],
+    informes = [],
+    certs = [],
+    obras = [],
+    horarios = [],
+    empleados = [],
+  } = ctx || {};
+
   const [tab, setTab] = useState("todos");
   const [busqueda, setBusqueda] = useState("");
   const [verTodas, setVerTodas] = useState(false);
 
-  // Normalizar registros para consulta unificada
+  // 1. Obras (Ejecución de obra)
+  const listaObras = useMemo(() => {
+    return (obras || []).map((o) => {
+      const creadorLimpio = limpiarCreador(o.creadoPorNombre, o.creadoEn || o.created_at);
+      const modificadorLimpio = limpiarModificador(o.modificadoPorNombre);
+      const fechaCreacion = o.creadoEn || o.created_at || null;
+      const fechaMod = modificadorLimpio ? (o.modificadoEn || o.updated_at || null) : null;
+
+      return {
+        id: `obra_${o.id}`,
+        originalId: o.id,
+        tipoKey: "obra",
+        tipoDoc: "Ejecución de obra",
+        codigo: o.id,
+        referencia: o.proyecto || o.cliente || "—",
+        subreferencia: o.cliente ? `Cliente: ${o.cliente} · Estado: ${o.estado || "En Obra"}` : "",
+        creadoPorNombre: creadorLimpio,
+        creadoEn: fechaCreacion,
+        modificadoPorNombre: modificadorLimpio,
+        modificadoEn: fechaMod,
+      };
+    });
+  }, [obras]);
+
+  // 2. Horarios y turnos de personal
+  const listaHorarios = useMemo(() => {
+    const empMap = new Map((empleados || []).map((e) => [e.id, e.nombre]));
+    const obraMap = new Map((obras || []).map((o) => [o.id, o.proyecto || o.cliente || o.id]));
+
+    return (horarios || []).map((h) => {
+      const nombreEmp = empMap.get(h.empleadoId) || h.empleadoNombre || h.empleadoId || "Personal";
+      const nombreObra = obraMap.get(h.obraId) || (h.obraId ? `Obra ${h.obraId}` : "Sin obra");
+      const turnoTexto = h.turno || (h.horaInicio && h.horaFin ? `${h.horaInicio} - ${h.horaFin}` : "") || "Turno";
+
+      const creadorLimpio = limpiarCreador(h.creadoPorNombre, h.creadoEn || h.created_at);
+      const modificadorLimpio = limpiarModificador(h.modificadoPorNombre);
+      const fechaCreacion = h.creadoEn || h.created_at || null;
+      const fechaMod = modificadorLimpio ? (h.modificadoEn || h.updated_at || null) : null;
+
+      return {
+        id: `hor_${h.id}`,
+        originalId: h.id,
+        tipoKey: "horario",
+        tipoDoc: "Horarios y turnos",
+        codigo: h.fecha ? `${h.fecha}` : h.id,
+        referencia: `${nombreEmp} (${turnoTexto})`,
+        subreferencia: `${nombreObra}${h.tarea ? ` · Tarea: ${h.tarea}` : ""}`,
+        creadoPorNombre: creadorLimpio,
+        creadoEn: fechaCreacion,
+        modificadoPorNombre: modificadorLimpio,
+        modificadoEn: fechaMod,
+      };
+    });
+  }, [horarios, empleados, obras]);
+
+  // 3. Cotizaciones
   const listaCotizaciones = useMemo(() => {
-    return (cotizaciones || []).map((c) => ({
-      id: `cot_${c.id}`,
-      originalId: c.id,
-      tipoKey: "cotizacion",
-      tipoDoc: "Cotización",
-      codigo: c.numero || c.id,
-      referencia: c.cliente || c.obra || "—",
-      subreferencia: c.obra && c.cliente ? c.obra : "",
-      creadoPorNombre: c.creadoPorNombre || "",
-      creadoEn: c.creadoEn || null,
-      modificadoPorNombre: c.modificadoPorNombre || "",
-      modificadoEn: c.modificadoEn || null,
-    }));
+    return (cotizaciones || []).map((c) => {
+      const creadorLimpio = limpiarCreador(c.creadoPorNombre, c.creadoEn);
+      const modificadorLimpio = limpiarModificador(c.modificadoPorNombre);
+
+      return {
+        id: `cot_${c.id}`,
+        originalId: c.id,
+        tipoKey: "cotizacion",
+        tipoDoc: "Cotización",
+        codigo: c.numero || c.id,
+        referencia: c.cliente || c.obra || "—",
+        subreferencia: c.obra && c.cliente ? c.obra : "",
+        creadoPorNombre: creadorLimpio,
+        creadoEn: c.creadoEn || null,
+        modificadoPorNombre: modificadorLimpio,
+        modificadoEn: modificadorLimpio ? (c.modificadoEn || null) : null,
+      };
+    });
   }, [cotizaciones]);
 
+  // 4. Informes de actividades
   const listaInformes = useMemo(() => {
-    return (informes || []).map((i) => ({
-      id: `inf_${i.id}`,
-      originalId: i.id,
-      tipoKey: "informe",
-      tipoDoc: "Informe de actividades",
-      codigo: i.id,
-      referencia: i.proyecto || i.localizacion || i.obraId || "—",
-      subreferencia: i.obraId ? `Obra: ${i.obraId}` : "",
-      creadoPorNombre: i.creadoPorNombre || "",
-      creadoEn: i.creadoEn || null,
-      modificadoPorNombre: i.modificadoPorNombre || "",
-      modificadoEn: i.modificadoEn || null,
-    }));
+    return (informes || []).map((i) => {
+      const creadorLimpio = limpiarCreador(i.creadoPorNombre, i.creadoEn);
+      const modificadorLimpio = limpiarModificador(i.modificadoPorNombre);
+
+      return {
+        id: `inf_${i.id}`,
+        originalId: i.id,
+        tipoKey: "informe",
+        tipoDoc: "Informe de actividades",
+        codigo: i.id,
+        referencia: i.proyecto || i.localizacion || i.obraId || "—",
+        subreferencia: i.obraId ? `Obra: ${i.obraId}` : "",
+        creadoPorNombre: creadorLimpio,
+        creadoEn: i.creadoEn || null,
+        modificadoPorNombre: modificadorLimpio,
+        modificadoEn: modificadorLimpio ? (i.modificadoEn || null) : null,
+      };
+    });
   }, [informes]);
 
+  // 5. Certificaciones
   const listaCertificaciones = useMemo(() => {
-    return (certs || []).map((c) => ({
-      id: `cert_${c.id}`,
-      originalId: c.id,
-      tipoKey: "certificacion",
-      tipoDoc: c.tipo || "Certificación",
-      codigo: c.numero || c.id,
-      referencia: c.cliente || c.sistema || "—",
-      subreferencia: c.sistema || (c.obraId ? `Obra: ${c.obraId}` : ""),
-      creadoPorNombre: c.creadoPorNombre || "",
-      creadoEn: c.creadoEn || null,
-      modificadoPorNombre: c.modificadoPorNombre || "",
-      modificadoEn: c.modificadoEn || null,
-    }));
+    return (certs || []).map((c) => {
+      const creadorLimpio = limpiarCreador(c.creadoPorNombre, c.creadoEn);
+      const modificadorLimpio = limpiarModificador(c.modificadoPorNombre);
+
+      return {
+        id: `cert_${c.id}`,
+        originalId: c.id,
+        tipoKey: "certificacion",
+        tipoDoc: c.tipo || "Certificación",
+        codigo: c.numero || c.id,
+        referencia: c.cliente || c.sistema || "—",
+        subreferencia: c.sistema || (c.obraId ? `Obra: ${c.obraId}` : ""),
+        creadoPorNombre: creadorLimpio,
+        creadoEn: c.creadoEn || null,
+        modificadoPorNombre: modificadorLimpio,
+        modificadoEn: modificadorLimpio ? (c.modificadoEn || null) : null,
+      };
+    });
   }, [certs]);
 
   const pool = useMemo(() => {
+    if (tab === "obras") return listaObras;
+    if (tab === "horarios") return listaHorarios;
     if (tab === "cotizaciones") return listaCotizaciones;
     if (tab === "informes") return listaInformes;
     if (tab === "certificaciones") return listaCertificaciones;
-    return [...listaCotizaciones, ...listaInformes, ...listaCertificaciones];
-  }, [tab, listaCotizaciones, listaInformes, listaCertificaciones]);
+    return [
+      ...listaObras,
+      ...listaHorarios,
+      ...listaCotizaciones,
+      ...listaInformes,
+      ...listaCertificaciones,
+    ];
+  }, [tab, listaObras, listaHorarios, listaCotizaciones, listaInformes, listaCertificaciones]);
 
   const filas = useMemo(() => {
     const texto = busqueda.trim().toLowerCase();
@@ -121,16 +220,24 @@ export default function AuditoriaDocumentos({ ctx }) {
           item.modificadoPorNombre,
         ].some((v) => String(v || "").toLowerCase().includes(texto));
       })
-      // El documento modificado más recientemente primero
-      .sort((a, b) => String(b.modificadoEn || "").localeCompare(String(a.modificadoEn || "")));
+      // El registro modificado o creado más recientemente primero
+      .sort((a, b) => {
+        const fechaB = b.modificadoEn || b.creadoEn || "";
+        const fechaA = a.modificadoEn || a.creadoEn || "";
+        return String(fechaB).localeCompare(String(fechaA));
+      });
   }, [pool, busqueda]);
 
-  const visibles = verTodas ? filas : filas.slice(0, 15);
+  const visibles = verTodas ? filas : filas.slice(0, 20);
 
-  const sinRegistro = pool.filter((c) => !c.creadoPorNombre && !c.modificadoPorNombre).length;
+  const sinRegistro = pool.filter(
+    (c) => (!c.creadoPorNombre || c.creadoPorNombre === "no registrado") && !c.modificadoPorNombre
+  ).length;
 
   const tabs = [
-    { id: "todos", label: "Todos los documentos", total: listaCotizaciones.length + listaInformes.length + listaCertificaciones.length },
+    { id: "todos", label: "Todo el historial", total: pool.length },
+    { id: "obras", label: "Ejecución de obra", total: listaObras.length },
+    { id: "horarios", label: "Horarios", total: listaHorarios.length },
     { id: "cotizaciones", label: "Cotizaciones", total: listaCotizaciones.length },
     { id: "informes", label: "Informes de actividades", total: listaInformes.length },
     { id: "certificaciones", label: "Certificaciones", total: listaCertificaciones.length },
@@ -138,13 +245,13 @@ export default function AuditoriaDocumentos({ ctx }) {
 
   return (
     <div style={{ ...CD, marginTop: 18 }}>
-      <div style={ST}>Registro de auditoría de documentos</div>
+      <div style={ST}>Registro de auditoría y control de cambios</div>
       <div style={{ fontSize: 11.5, color: "#64748b", marginBottom: 14 }}>
-        Quién creó cada cotización, informe o certificación y quién fue el último en modificarlo.
-        Lo registra automáticamente la base de datos con la sesión del usuario.
+        Consulta quién creó y quién realizó los últimos cambios en ejecución de obra, horarios, cotizaciones, informes y certificaciones.
+        Módulo visible para Camila Sepúlveda y el equipo de Administración.
       </div>
 
-      {/* Pestañas de tipo de documento */}
+      {/* Pestañas de tipo de registro */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
         {tabs.map((t) => {
           const activo = tab === t.id;
@@ -189,7 +296,7 @@ export default function AuditoriaDocumentos({ ctx }) {
         })}
       </div>
 
-      {sinRegistro > 0 && (
+      {sinRegistro > 0 && tab === "todos" && (
         <div
           style={{
             fontSize: 11.5,
@@ -202,40 +309,39 @@ export default function AuditoriaDocumentos({ ctx }) {
             lineHeight: 1.5,
           }}
         >
-          Hay <strong>{sinRegistro} {sinRegistro === 1 ? "documento anterior" : "documentos anteriores"}</strong> sin
-          autor registrado en esta vista. No es un fallo: son registros creados antes de activar la auditoría.
-          Los documentos nuevos o modificados quedan registrados automáticamente.
+          Hay <strong>{sinRegistro} registros anteriores</strong> creados de forma previa a la activación de la auditoría.
+          A partir de ahora, todo registro nuevo o modificado queda registrado automáticamente con la sesión del usuario.
         </div>
       )}
 
       <input
         value={busqueda}
         onChange={(e) => setBusqueda(e.target.value)}
-        placeholder="Buscar por código, cliente, proyecto, obra o persona…"
+        placeholder="Buscar por código, cliente, proyecto, empleado, obra o usuario…"
         style={{ ...SI, marginBottom: 14 }}
       />
 
       {!filas.length ? (
         <div style={{ fontSize: 12, color: "#64748b", padding: "14px 0" }}>
           {busqueda
-            ? "Ningún documento coincide con esa búsqueda."
-            : "Todavía no hay documentos registrados en esta sección."}
+            ? "Ningún registro coincide con esa búsqueda."
+            : "Todavía no hay registros en esta sección."}
         </div>
       ) : (
         <>
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 760 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 800 }}>
               <thead>
                 <tr style={{ background: "#f8fafc", textAlign: "left" }}>
-                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "#475569" }}>Documento</th>
+                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "#475569" }}>Identificador / Fecha</th>
                   {tab === "todos" && (
-                    <th style={{ padding: "8px 10px", fontWeight: 600, color: "#475569" }}>Tipo</th>
+                    <th style={{ padding: "8px 10px", fontWeight: 600, color: "#475569" }}>Módulo</th>
                   )}
-                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "#475569" }}>Cliente / Proyecto</th>
+                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "#475569" }}>Detalle / Proyecto / Obra</th>
                   <th style={{ padding: "8px 10px", fontWeight: 600, color: "#475569" }}>Lo creó</th>
-                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "#475569" }}>Cuándo</th>
+                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "#475569" }}>Fecha creación</th>
                   <th style={{ padding: "8px 10px", fontWeight: 600, color: "#475569" }}>Último cambio</th>
-                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "#475569" }}>Cuándo</th>
+                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "#475569" }}>Fecha cambio</th>
                 </tr>
               </thead>
               <tbody>
@@ -277,17 +383,17 @@ export default function AuditoriaDocumentos({ ctx }) {
                           </div>
                         )}
                       </td>
-                      <td style={{ padding: "8px 10px", color: doc.creadoPorNombre ? "#334155" : "#94a3b8" }}>
+                      <td style={{ padding: "8px 10px", color: doc.creadoPorNombre && doc.creadoPorNombre !== "no registrado" ? "#334155" : "#94a3b8" }}>
                         {doc.creadoPorNombre || "no registrado"}
                       </td>
                       <td style={{ padding: "8px 10px", color: "#64748b", whiteSpace: "nowrap" }}>
                         {fechaHora(doc.creadoEn) || "—"}
                       </td>
                       <td style={{ padding: "8px 10px", color: doc.modificadoPorNombre ? "#334155" : "#94a3b8" }}>
-                        {doc.modificadoPorNombre || "no registrado"}
+                        {doc.modificadoPorNombre || "Sin modificaciones"}
                       </td>
                       <td style={{ padding: "8px 10px", color: "#64748b", whiteSpace: "nowrap" }}>
-                        {fechaHora(doc.modificadoEn) || "—"}
+                        {doc.modificadoPorNombre ? (fechaHora(doc.modificadoEn) || "—") : "—"}
                       </td>
                     </tr>
                   );
@@ -296,7 +402,7 @@ export default function AuditoriaDocumentos({ ctx }) {
             </table>
           </div>
 
-          {filas.length > 15 && (
+          {filas.length > 20 && (
             <button
               onClick={() => setVerTodas((v) => !v)}
               style={{
@@ -310,7 +416,7 @@ export default function AuditoriaDocumentos({ ctx }) {
                 padding: 0,
               }}
             >
-              {verTodas ? "Ver solo las últimas 15" : `Ver los ${filas.length} documentos`}
+              {verTodas ? "Ver solo las primeras 20" : `Ver los ${filas.length} registros`}
             </button>
           )}
         </>

@@ -14,6 +14,7 @@ import { esAdmin } from "../../lib/permisos";
 import ListaObras from "./ListaObras";
 import BuscadorCliente from "../../components/BuscadorCliente";
 import { avisoCelular, normalizarMayusculas, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
+import { resolverAutorGuardado } from "../../lib/autorAuditoria";
 
 // Siguiente consecutivo de obra. Se calcula sobre el numero mas alto que ya
 // existe, no sobre cuantas obras hay: al borrar una obra intermedia, contar
@@ -66,7 +67,13 @@ export default function Obras({ctx}){
   const updEst=(id,e)=>setObras(p=>p.map((o)=>{
     if(o.id!==id) return o;
     if(obraEstaCerrada(o) && !puedeDesbloquear) return o;
-    return {...o,estado:e};
+    const autorActual = resolverAutorGuardado(ctx?.membresia, o.modificadoPorNombre);
+    return {
+      ...o,
+      estado:e,
+      modificadoPorNombre: autorActual || o.modificadoPorNombre,
+      modificadoEn: new Date().toISOString(),
+    };
   }));
 
   const guardarObra=()=>{
@@ -84,6 +91,9 @@ export default function Obras({ctx}){
     // formulario no se piden cifras.
     const totalObra = snapshot?.totalObra ?? 0;
     const cobrado = 0;
+    const autorActual = resolverAutorGuardado(ctx?.membresia);
+    const ahoraIso = new Date().toISOString();
+
     setObras(p=>[...p,{
       ...nob,
       // Igual que en el empleado: quien pega y guarda de una no dispara el
@@ -110,6 +120,12 @@ export default function Obras({ctx}){
       utilidadCotizacion:snapshot?.utilidadCotizacion ?? 0,
       baseIngresoContable:snapshot?.baseIngresoContable ?? totalObra,
       ivaGeneradoCotizacion:snapshot?.ivaGeneradoCotizacion ?? 0,
+      creadoPor: ctx?.membresia?.userId || null,
+      creadoPorNombre: autorActual || "Administración",
+      creadoEn: ahoraIso,
+      modificadoPor: ctx?.membresia?.userId || null,
+      modificadoPorNombre: autorActual,
+      modificadoEn: ahoraIso,
     }]);
     if(nob.cotizacionId){
       ctx.setCotizaciones(p=>p.map(c=>c.id===nob.cotizacionId?{...c,estado:"Aprobada",obraId:id}:c));

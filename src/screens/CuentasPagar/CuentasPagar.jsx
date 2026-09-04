@@ -31,37 +31,58 @@ export default function CuentasPagar({ctx}){
     codigoIca:"",
   };
 
-  const createCuentaBase=(proveedorId="")=>({
-    proveedorId:proveedorId||proveedores[0]?.id||"",
-    obraId:"",
-    factura:"",
-    concepto:"",
-    tipoOperacion:"servicio",
-    subtotal:0,
-    tarifaIva:19,
-    valorIva:0,
-    conceptoRetFuente:"servicios",
-    baseRetFuente:0,
-    tarifaRetFuente:4,
-    valorRetFuente:0,
-    aplicaReteiva:false,
-    baseReteiva:0,
-    tarifaReteiva:15,
-    valorReteiva:0,
-    municipioReteica:"Envigado",
-    actividadIca:"",
-    codigoIca:"",
-    baseReteica:0,
-    tarifaReteica:0,
-    valorReteica:0,
-    valorBrutoFactura:0,
-    valorTotalRetenciones:0,
-    valorTotalPagar:0,
-    monto:0,
-    fecha:today(),
-    fechaVence:"",
-    observacionTributaria:"",
-  });
+  const getTarifaRetFuenteSugerida=(concepto, esAutorret=false)=>{
+    if(esAutorret) return 0;
+    switch(concepto){
+      case "compras": return 2.5;
+      case "servicios": return 4.0;
+      case "honorarios": return 11.0;
+      case "comisiones": return 11.0;
+      case "arrendamientos": return 3.5;
+      case "otros": return 0;
+      default: return 4.0;
+    }
+  };
+
+  const createCuentaBase=(proveedorId="")=>{
+    const pSel = proveedoresData.find(p=>p.id===(proveedorId || proveedores[0]?.id)) || null;
+    const esAutorret = !!pSel?.autorretenedorRenta;
+    const tipo = "servicio";
+    const concepto = "servicios";
+    const tarifaRet = getTarifaRetFuenteSugerida(concepto, esAutorret);
+    const noIva = pSel && (pSel.responsableIva===false || pSel.regimenTributario==="No responsable de IVA");
+    return {
+      proveedorId:proveedorId||proveedores[0]?.id||"",
+      obraId:"",
+      factura:"",
+      concepto:"",
+      tipoOperacion:tipo,
+      subtotal:0,
+      tarifaIva:noIva ? 0 : 19,
+      valorIva:0,
+      conceptoRetFuente:concepto,
+      baseRetFuente:0,
+      tarifaRetFuente:tarifaRet,
+      valorRetFuente:0,
+      aplicaReteiva:Boolean(pSel?.agenteReteiva),
+      baseReteiva:0,
+      tarifaReteiva:15,
+      valorReteiva:0,
+      municipioReteica:pSel?.municipioIca || "Envigado",
+      actividadIca:"",
+      codigoIca:pSel?.codigoIca || "",
+      baseReteica:0,
+      tarifaReteica:0,
+      valorReteica:0,
+      valorBrutoFactura:0,
+      valorTotalRetenciones:0,
+      valorTotalPagar:0,
+      monto:0,
+      fecha:today(),
+      fechaVence:"",
+      observacionTributaria:"",
+    };
+  };
 
   const [tab,setTab]=useState("causacion");
   const [showProv,setShowProv]=useState(false);
@@ -204,11 +225,15 @@ export default function CuentasPagar({ctx}){
   const [proveedorTributarioAplicado,setProveedorTributarioAplicado]=useState(null);
   if(proveedorSel && proveedorSel.id!==proveedorTributarioAplicado){
     setProveedorTributarioAplicado(proveedorSel.id);
+    const esAutorret = !!proveedorSel.autorretenedorRenta;
+    const noIva = proveedorSel.responsableIva===false || proveedorSel.regimenTributario==="No responsable de IVA";
     setCxpForm(prev=>({
       ...prev,
       municipioReteica:prev.municipioReteica || proveedorSel.municipioIca || "Envigado",
       codigoIca:prev.codigoIca || proveedorSel.codigoIca || "",
       aplicaReteiva:prev.aplicaReteiva || Boolean(proveedorSel.agenteReteiva),
+      tarifaRetFuente: esAutorret ? 0 : (prev.tarifaRetFuente === 0 ? getTarifaRetFuenteSugerida(prev.conceptoRetFuente, false) : prev.tarifaRetFuente),
+      tarifaIva: noIva ? 0 : prev.tarifaIva,
     }));
   }
 
@@ -1073,10 +1098,36 @@ Ese valor volverá a quedar pendiente en la factura.
               <div style={ST}>{editCxPId?"Editar causación de factura o gasto":"Registrar causación de factura o gasto"}</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
                 <div>
-                  <LBL>Proveedor</LBL>
-                  <select value={proveedorIdActivo} onChange={e=>setCxpForm({...cxpForm,proveedorId:e.target.value})} style={SI}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <LBL>Proveedor</LBL>
+                    {proveedorSel?.autorretenedorRenta && (
+                      <span style={{fontSize:10.5,fontWeight:700,color:"#166534",background:"#ecfdf5",border:"1px solid #bbf7d0",padding:"2px 8px",borderRadius:999}}>
+                        Autorretenedor
+                      </span>
+                    )}
+                  </div>
+                  <select
+                    value={proveedorIdActivo}
+                    onChange={e=>{
+                      const pid=e.target.value;
+                      const pNuevo=proveedoresData.find(p=>p.id===pid)||null;
+                      const esAutorret=!!pNuevo?.autorretenedorRenta;
+                      const tarifa=esAutorret ? 0 : getTarifaRetFuenteSugerida(cxpForm.conceptoRetFuente, false);
+                      const noIva=pNuevo && (pNuevo.responsableIva===false || pNuevo.regimenTributario==="No responsable de IVA");
+                      setCxpForm(prev=>({
+                        ...prev,
+                        proveedorId:pid,
+                        municipioReteica:pNuevo?.municipioIca || prev.municipioReteica || "Envigado",
+                        codigoIca:pNuevo?.codigoIca || prev.codigoIca || "",
+                        aplicaReteiva:Boolean(pNuevo?.agenteReteiva),
+                        tarifaRetFuente:tarifa,
+                        tarifaIva:noIva ? 0 : prev.tarifaIva,
+                      }));
+                    }}
+                    style={SI}
+                  >
                     <option value="">Selecciona un proveedor...</option>
-                    {proveedoresData.map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}
+                    {proveedoresData.map(p=><option key={p.id} value={p.id}>{p.nombre}{p.autorretenedorRenta ? " (Autorretenedor)" : ""}</option>)}
                   </select>
                 </div>
                 <div>
@@ -1097,8 +1148,23 @@ Ese valor volverá a quedar pendiente en la factura.
                 </div>
                 <div>
                   <LBL>Tipo de operación</LBL>
-                  <select value={cxpForm.tipoOperacion} onChange={e=>setCxpForm({...cxpForm,tipoOperacion:e.target.value,conceptoRetFuente:e.target.value==="honorario"?"honorarios":e.target.value==="arrendamiento"?"arrendamientos":e.target.value==="bien"?"compras":"servicios"})} style={SI}>
-                    <option value="bien">Bien</option>
+                  <select
+                    value={cxpForm.tipoOperacion}
+                    onChange={e=>{
+                      const tipo=e.target.value;
+                      const concepto = tipo==="bien" ? "compras" : tipo==="honorario" ? "honorarios" : tipo==="arrendamiento" ? "arrendamientos" : tipo==="otro" ? "otros" : "servicios";
+                      const esAutorret = !!proveedorSel?.autorretenedorRenta;
+                      const tarifa = getTarifaRetFuenteSugerida(concepto, esAutorret);
+                      setCxpForm(prev=>({
+                        ...prev,
+                        tipoOperacion:tipo,
+                        conceptoRetFuente:concepto,
+                        tarifaRetFuente:tarifa,
+                      }));
+                    }}
+                    style={SI}
+                  >
+                    <option value="bien">Bien / Compras</option>
                     <option value="servicio">Servicio</option>
                     <option value="honorario">Honorario</option>
                     <option value="arrendamiento">Arrendamiento</option>
@@ -1121,18 +1187,45 @@ Ese valor volverá a quedar pendiente en la factura.
 
                 <div>
                   <LBL>Concepto retención</LBL>
-                  <select value={cxpForm.conceptoRetFuente} onChange={e=>setCxpForm({...cxpForm,conceptoRetFuente:e.target.value})} style={SI}>
-                    <option value="compras">Compras</option>
-                    <option value="servicios">Servicios</option>
-                    <option value="honorarios">Honorarios</option>
-                    <option value="comisiones">Comisiones</option>
-                    <option value="arrendamientos">Arrendamientos</option>
-                    <option value="otros">Otros</option>
+                  <select
+                    value={cxpForm.conceptoRetFuente}
+                    onChange={e=>{
+                      const concepto=e.target.value;
+                      const esAutorret=!!proveedorSel?.autorretenedorRenta;
+                      const tarifa=getTarifaRetFuenteSugerida(concepto, esAutorret);
+                      setCxpForm(prev=>({
+                        ...prev,
+                        conceptoRetFuente:concepto,
+                        tarifaRetFuente:tarifa,
+                      }));
+                    }}
+                    style={SI}
+                  >
+                    <option value="compras">Compras (2.5%)</option>
+                    <option value="servicios">Servicios (4.0%)</option>
+                    <option value="honorarios">Honorarios (11.0%)</option>
+                    <option value="comisiones">Comisiones (11.0%)</option>
+                    <option value="arrendamientos">Arrendamientos (3.5%)</option>
+                    <option value="otros">Otros / Exento (0.0%)</option>
                   </select>
                 </div>
                 <div>
                   <LBL>Tarifa retefuente %</LBL>
-                  <input type="number" value={cxpForm.tarifaRetFuente} onChange={e=>setCxpForm({...cxpForm,tarifaRetFuente:parseFloat(e.target.value)||0})} style={SI} disabled={!!proveedorSel?.autorretenedorRenta}/>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={proveedorSel?.autorretenedorRenta ? 0 : cxpForm.tarifaRetFuente}
+                    onChange={e=>setCxpForm({...cxpForm,tarifaRetFuente:parseFloat(e.target.value)||0})}
+                    style={{
+                      ...SI,
+                      background: proveedorSel?.autorretenedorRenta ? "#f8fafc" : "#ffffff",
+                      color: proveedorSel?.autorretenedorRenta ? "#166534" : "inherit",
+                      fontWeight: proveedorSel?.autorretenedorRenta ? 700 : 400,
+                      cursor: proveedorSel?.autorretenedorRenta ? "not-allowed" : "text",
+                    }}
+                    disabled={!!proveedorSel?.autorretenedorRenta}
+                    title={proveedorSel?.autorretenedorRenta ? "Proveedor autorretenedor: no se practica retención en la fuente" : "Tarifa de retención en la fuente"}
+                  />
                 </div>
                 <div>
                   <LBL>Valor retefuente</LBL>
@@ -1140,8 +1233,18 @@ Ese valor volverá a quedar pendiente en la factura.
                 </div>
 
                 <div style={{gridColumn:"span 3",display:"flex",gap:10,flexWrap:"wrap",marginTop:-2}}>
-                  {proveedorSel?.autorretenedorRenta && <div style={{fontSize:11,color:"#166534",background:"#ecfdf5",border:"1px solid #bbf7d0",padding:"8px 10px",borderRadius:999}}>Proveedor autorretenedor: no se calcula retención en la fuente</div>}
-                  {proveedorSel && (proveedorSel.responsableIva===false || proveedorSel.regimenTributario==="No responsable de IVA") && <div style={{fontSize:11,color:"#1d4ed8",background:"#eff6ff",border:"1px solid #bfdbfe",padding:"8px 10px",borderRadius:999}}>Proveedor no responsable de IVA: la tarifa IVA se ajusta a 0%</div>}
+                  {proveedorSel?.autorretenedorRenta && (
+                    <div style={{fontSize:11.5,fontWeight:600,color:"#166534",background:"#ecfdf5",border:"1px solid #bbf7d0",padding:"8px 12px",borderRadius:8,display:"flex",alignItems:"center",gap:6}}>
+                      <span>🛡️</span>
+                      <span>Proveedor marcado como <strong>Autorretenedor de renta</strong>: No se le practica retención en la fuente (Tarifa 0%, Valor $0).</span>
+                    </div>
+                  )}
+                  {proveedorSel && (proveedorSel.responsableIva===false || proveedorSel.regimenTributario==="No responsable de IVA") && (
+                    <div style={{fontSize:11.5,fontWeight:600,color:"#1d4ed8",background:"#eff6ff",border:"1px solid #bfdbfe",padding:"8px 12px",borderRadius:8,display:"flex",alignItems:"center",gap:6}}>
+                      <span>ℹ️</span>
+                      <span>Proveedor <strong>No responsable de IVA</strong>: La tarifa IVA se ajusta automáticamente a 0%.</span>
+                    </div>
+                  )}
                 </div>
 
                 <div style={{gridColumn:"span 3",display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>

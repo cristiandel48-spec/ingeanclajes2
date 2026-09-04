@@ -12,6 +12,7 @@ const ENTITY_TO_STATE = {
   clientes: "clientes",
   proveedores: "proveedores",
   cuentas: "cuentas",
+  ordenes_compra: "ordenesCompra",
   cotizaciones: "cotizaciones",
   contabilidad_config: "contabilidadConfig",
   plan_cuentas: "planCuentas",

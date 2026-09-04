@@ -126,6 +126,7 @@ export function AppDataProvider({ children }) {
     clientes: sinEjemplos(clientes),
     proveedores,
     cuentas,
+    ordenesCompra,
     cotizaciones: sinEjemplos(cotizaciones),
     contabilidadConfig,
     planCuentas,
@@ -222,6 +223,7 @@ export function AppDataProvider({ children }) {
         if (Array.isArray(cloud.clientes)) setClientes(oEjemplo(cloud.clientes, EJEMPLOS.clientes));
         if (Array.isArray(cloud.proveedores)) setProveedores(cloud.proveedores);
         if (Array.isArray(cloud.cuentas)) setCuentas(cloud.cuentas);
+        if (Array.isArray(cloud.ordenesCompra) && cloud.ordenesCompra.length) setOrdenesCompra(cloud.ordenesCompra);
         if (Array.isArray(cloud.cotizaciones)) setCotizaciones(oEjemplo(cloud.cotizaciones, EJEMPLOS.cotizaciones));
         if (Array.isArray(cloud.contabilidadConfig) && cloud.contabilidadConfig.length) {
           setContabilidadConfig(cloud.contabilidadConfig.map(normalizeContabilidadConfig));

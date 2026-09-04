@@ -30,12 +30,46 @@ export default function OrdenesCompra({
   setOrdenesCompra,
   proveedores = [],
   obras = [],
+  empleados = [],
   cuentas = [],
   setCuentas,
   membresia = null,
   onIrACausacion,
 }) {
   const esAprobador = puedeAprobarOrdenCompra(membresia);
+
+  // Empleados del sistema disponibles para Solicitante y Aprobador
+  const empleadosParaSeleccion = useMemo(() => {
+    const arr = Array.isArray(empleados) ? empleados : [];
+    const activos = arr.filter((e) => e.activo !== false);
+    const list = [...(activos.length > 0 ? activos : arr)];
+
+    // Asegurar que María Camila Sepúlveda esté disponible como opción
+    const tieneCamila = list.some((e) =>
+      String(e.nombre || "").toLowerCase().includes("camila")
+    );
+    if (!tieneCamila) {
+      list.push({
+        id: "EMP-MCS",
+        nombre: "María Camila Sepúlveda",
+        cargo: "Aprobaciones y Compras",
+      });
+    }
+
+    // Si el usuario actual tiene nombre y no está en la lista, lo agregamos
+    if (
+      membresia?.nombre &&
+      !list.some((e) => e.nombre.toLowerCase() === membresia.nombre.toLowerCase())
+    ) {
+      list.push({
+        id: `MEM-${membresia.id || "USR"}`,
+        nombre: membresia.nombre,
+        cargo: membresia.rol || "Usuario del Sistema",
+      });
+    }
+
+    return list;
+  }, [empleados, membresia]);
 
   // Estados para filtros
   const [busqueda, setBusqueda] = useState("");
@@ -55,7 +89,9 @@ export default function OrdenesCompra({
   const [form, setForm] = useState({
     obraId: obras[0]?.id || "",
     proveedorId: proveedores[0]?.id || "",
-    solicitante: membresia?.nombre ? `${membresia.nombre} (Solicitante)` : "Residente de Obra",
+    solicitanteId: "",
+    solicitante: "",
+    aprobadorId: "",
     comprador: "María Camila Sepúlveda",
     documentoOrigen: "",
     fecha: today(),
@@ -88,11 +124,36 @@ export default function OrdenesCompra({
 
   const abrirNuevaOrden = () => {
     const selObraId = obras[0]?.id || "";
+    const obraSel = obras.find((o) => o.id === selObraId);
+    const empsObraIds = Array.isArray(obraSel?.empleados) ? obraSel.empleados : [];
+
+    // Empleado solicitante sugerido: asignado a la obra, usuario en sesión, o residente
+    const empSolicitanteDefault =
+      empleadosParaSeleccion.find((e) => empsObraIds.includes(e.id)) ||
+      empleadosParaSeleccion.find((e) =>
+        membresia?.nombre && e.nombre.toLowerCase().includes(membresia.nombre.toLowerCase())
+      ) ||
+      empleadosParaSeleccion.find((e) =>
+        String(e.cargo || "").toLowerCase().includes("residente")
+      ) ||
+      empleadosParaSeleccion[0];
+
+    // Usuario aprobador sugerido: María Camila Sepúlveda
+    const empAprobadorDefault =
+      empleadosParaSeleccion.find((e) =>
+        String(e.nombre || "").toLowerCase().includes("camila")
+      ) ||
+      empleadosParaSeleccion[0];
+
     setForm({
       obraId: selObraId,
       proveedorId: proveedores[0]?.id || "",
-      solicitante: membresia?.nombre ? `${membresia.nombre} (Solicitante)` : "Carlos Restrepo (Residente)",
-      comprador: "María Camila Sepúlveda",
+      solicitanteId: empSolicitanteDefault?.id || "",
+      solicitante: empSolicitanteDefault
+        ? `${empSolicitanteDefault.nombre}${empSolicitanteDefault.cargo ? ` (${empSolicitanteDefault.cargo})` : ""}`
+        : "",
+      aprobadorId: empAprobadorDefault?.id || "",
+      comprador: empAprobadorDefault?.nombre || "María Camila Sepúlveda",
       documentoOrigen: generarDocumentoOrigen(selObraId),
       fecha: today(),
       fechaEntregaEsperada: today(),
@@ -153,6 +214,17 @@ export default function OrdenesCompra({
     e.preventDefault();
     const provSel = proveedores.find((p) => p.id === form.proveedorId);
     const obraSel = obras.find((o) => o.id === form.obraId);
+    const empSol = empleadosParaSeleccion.find((e) => String(e.id) === String(form.solicitanteId));
+    const empAprob = empleadosParaSeleccion.find((e) => String(e.id) === String(form.aprobadorId));
+
+    if (!form.solicitanteId && !form.solicitante) {
+      alert("Por favor seleccione el empleado solicitante en obra.");
+      return;
+    }
+    if (!form.aprobadorId && !form.comprador) {
+      alert("Por favor seleccione el usuario aprobador.");
+      return;
+    }
 
     if (!form.items.some((it) => it.desc.trim() && it.total > 0)) {
       alert("Por favor agregue al menos un ítem con descripción y valor.");
@@ -165,10 +237,16 @@ export default function OrdenesCompra({
       fechaEntregaEsperada: form.fechaEntregaEsperada || today(),
       proveedorId: form.proveedorId,
       proveedorNombre: provSel?.nombre || "Proveedor General",
-      solicitante: form.solicitante.trim() || "Residente de Obra",
-      comprador: form.comprador.trim() || "María Camila Sepúlveda",
+      solicitanteId: form.solicitanteId || empSol?.id || "",
+      solicitante: empSol
+        ? `${empSol.nombre}${empSol.cargo ? ` (${empSol.cargo})` : ""}`
+        : form.solicitante.trim() || "Residente de Obra",
+      aprobadorId: form.aprobadorId || empAprob?.id || "",
+      comprador: empAprob ? empAprob.nombre : form.comprador.trim() || "María Camila Sepúlveda",
       obraId: form.obraId,
-      obraNombre: obraSel ? `${obraSel.nombre} — ${obraSel.cliente || ""}` : "Obra General",
+      obraNombre: obraSel
+        ? `${obraSel.id} · ${obraSel.cliente || ""}${obraSel.proyecto ? ` — ${obraSel.proyecto}` : ""}`
+        : "Obra General",
       documentoOrigen: form.documentoOrigen.trim() || `OP/${Math.floor(54000 + Math.random() * 9000)}`,
       items: form.items.filter((it) => it.desc.trim()),
       subtotal: subtotalForm,
@@ -189,22 +267,24 @@ export default function OrdenesCompra({
 
   // Acciones de Aprobación
   const aprobarOrden = (orden) => {
+    const aprobadorEsperado = orden.comprador || "María Camila Sepúlveda";
     const confirmacion = window.confirm(
       `¿Confirmas la APROBACIÓN de la orden ${orden.id}?\n\n` +
       `Proveedor: ${orden.proveedorNombre}\n` +
       `Total: ${fmtMonedaErp(orden.total)}\n` +
-      `Aprobador: María Camila Sepúlveda`
+      `Usuario Aprobador: ${aprobadorEsperado}`
     );
     if (!confirmacion) return;
 
     const fechaAprobacion = obtenerTimestampActual();
+    const aprobadorFinal = orden.comprador || membresia?.nombre || "María Camila Sepúlveda";
     setOrdenesCompra((prev) =>
       prev.map((o) =>
         o.id === orden.id
           ? {
               ...o,
               estadoAprobacion: "Aprobada",
-              aprobadoPor: "María Camila Sepúlveda",
+              aprobadoPor: aprobadorFinal,
               aprobadoEn: fechaAprobacion,
               estadoFacturacion: o.estadoFacturacion === "Nada por facturar" ? "Para facturar" : o.estadoFacturacion,
             }
@@ -216,7 +296,7 @@ export default function OrdenesCompra({
       setOrdenDetalle((prev) => ({
         ...prev,
         estadoAprobacion: "Aprobada",
-        aprobadoPor: "María Camila Sepúlveda",
+        aprobadoPor: aprobadorFinal,
         aprobadoEn: fechaAprobacion,
         estadoFacturacion: prev.estadoFacturacion === "Nada por facturar" ? "Para facturar" : prev.estadoFacturacion,
       }));
@@ -230,13 +310,14 @@ export default function OrdenesCompra({
     }
 
     const fechaRechazo = obtenerTimestampActual();
+    const rechazadorFinal = ordenDetalle?.comprador || membresia?.nombre || "María Camila Sepúlveda";
     setOrdenesCompra((prev) =>
       prev.map((o) =>
         o.id === ordenDetalle.id
           ? {
               ...o,
               estadoAprobacion: "Rechazada",
-              aprobadoPor: "María Camila Sepúlveda",
+              aprobadoPor: rechazadorFinal,
               aprobadoEn: fechaRechazo,
               motivoRechazo: motivoRechazo.trim(),
             }
@@ -247,7 +328,7 @@ export default function OrdenesCompra({
     setOrdenDetalle((prev) => ({
       ...prev,
       estadoAprobacion: "Rechazada",
-      aprobadoPor: "María Camila Sepúlveda",
+      aprobadoPor: rechazadorFinal,
       aprobadoEn: fechaRechazo,
       motivoRechazo: motivoRechazo.trim(),
     }));
@@ -490,7 +571,7 @@ export default function OrdenesCompra({
               <option value="todos">Todas las obras</option>
               {obras.map((o) => (
                 <option key={o.id} value={o.id}>
-                  {o.nombre}
+                  {o.id} · {o.cliente}
                 </option>
               ))}
             </select>
@@ -864,10 +945,19 @@ export default function OrdenesCompra({
                     value={form.obraId}
                     onChange={(e) => {
                       const selId = e.target.value;
+                      const obraNueva = obras.find((o) => o.id === selId);
+                      const empsObra = Array.isArray(obraNueva?.empleados) ? obraNueva.empleados : [];
+                      const empSugerido = empleadosParaSeleccion.find((emp) => empsObra.includes(emp.id));
                       setForm((prev) => ({
                         ...prev,
                         obraId: selId,
                         documentoOrigen: prev.documentoOrigen || generarDocumentoOrigen(selId),
+                        ...(empSugerido && !prev.solicitanteId
+                          ? {
+                              solicitanteId: empSugerido.id,
+                              solicitante: `${empSugerido.nombre}${empSugerido.cargo ? ` (${empSugerido.cargo})` : ""}`,
+                            }
+                          : {}),
                       }));
                     }}
                     style={SI}
@@ -876,7 +966,7 @@ export default function OrdenesCompra({
                     <option value="">Seleccione la obra...</option>
                     {obras.map((o) => (
                       <option key={o.id} value={o.id}>
-                        {o.nombre} ({o.cliente || "Cliente"})
+                        {o.id} · {o.cliente}{o.proyecto ? ` — ${o.proyecto}` : ""}
                       </option>
                     ))}
                   </select>
@@ -914,27 +1004,83 @@ export default function OrdenesCompra({
                 </div>
 
                 <div>
-                  <LBL>Solicitante en obra</LBL>
-                  <input
-                    type="text"
-                    value={form.solicitante}
-                    onChange={(e) => setForm({ ...form, solicitante: e.target.value })}
-                    placeholder="Nombre y rol del solicitante"
+                  <LBL>Solicitante en obra (Empleado)</LBL>
+                  <select
+                    value={form.solicitanteId}
+                    onChange={(e) => {
+                      const sId = e.target.value;
+                      const emp = empleadosParaSeleccion.find((x) => String(x.id) === String(sId));
+                      setForm((prev) => ({
+                        ...prev,
+                        solicitanteId: sId,
+                        solicitante: emp ? `${emp.nombre}${emp.cargo ? ` (${emp.cargo})` : ""}` : "",
+                      }));
+                    }}
                     style={SI}
                     required
-                  />
+                  >
+                    <option value="">Seleccione el solicitante en obra...</option>
+                    {(() => {
+                      const obraActual = obras.find((o) => o.id === form.obraId);
+                      const empsObraIds = Array.isArray(obraActual?.empleados) ? obraActual.empleados : [];
+                      const empsObra = empleadosParaSeleccion.filter((e) => empsObraIds.includes(e.id));
+                      const otrosEmps = empsObra.length > 0
+                        ? empleadosParaSeleccion.filter((e) => !empsObraIds.includes(e.id))
+                        : empleadosParaSeleccion;
+
+                      if (empsObra.length > 0) {
+                        return (
+                          <>
+                            <optgroup label={`Personal asignado a ${obraActual.id}`}>
+                              {empsObra.map((emp) => (
+                                <option key={`ob-${emp.id}`} value={emp.id}>
+                                  {emp.nombre} {emp.cargo ? `— ${emp.cargo}` : ""}
+                                </option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Demás empleados del sistema">
+                              {otrosEmps.map((emp) => (
+                                <option key={emp.id} value={emp.id}>
+                                  {emp.nombre} {emp.cargo ? `— ${emp.cargo}` : ""}
+                                </option>
+                              ))}
+                            </optgroup>
+                          </>
+                        );
+                      }
+
+                      return empleadosParaSeleccion.map((emp) => (
+                        <option key={emp.id} value={emp.id}>
+                          {emp.nombre} {emp.cargo ? `— ${emp.cargo}` : ""}
+                        </option>
+                      ));
+                    })()}
+                  </select>
                 </div>
 
                 <div>
-                  <LBL>Comprador / Responsable</LBL>
-                  <input
-                    type="text"
-                    value={form.comprador}
-                    onChange={(e) => setForm({ ...form, comprador: e.target.value })}
-                    placeholder="María Camila Sepúlveda"
+                  <LBL>Usuario aprobador (Empleado)</LBL>
+                  <select
+                    value={form.aprobadorId}
+                    onChange={(e) => {
+                      const aId = e.target.value;
+                      const emp = empleadosParaSeleccion.find((x) => String(x.id) === String(aId));
+                      setForm((prev) => ({
+                        ...prev,
+                        aprobadorId: aId,
+                        comprador: emp ? emp.nombre : "",
+                      }));
+                    }}
                     style={SI}
                     required
-                  />
+                  >
+                    <option value="">Seleccione el usuario aprobador...</option>
+                    {empleadosParaSeleccion.map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.nombre} {emp.cargo ? `— ${emp.cargo}` : ""}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -1205,7 +1351,7 @@ export default function OrdenesCompra({
                   <div><strong style={{ color: "#0f172a" }}>👤 Solicitante en Obra:</strong> {ordenDetalle.solicitante}</div>
                 </div>
                 <div>
-                  <div style={{ marginBottom: 6 }}><strong style={{ color: "#0f172a" }}>💼 Comprador:</strong> {ordenDetalle.comprador}</div>
+                  <div style={{ marginBottom: 6 }}><strong style={{ color: "#0f172a" }}>💼 Comprador / Aprobador:</strong> {ordenDetalle.comprador}</div>
                   <div style={{ marginBottom: 6 }}><strong style={{ color: "#0f172a" }}>📅 Entrega esperada:</strong> {ordenDetalle.fechaEntregaEsperada}</div>
                   <div><strong style={{ color: "#0f172a" }}>🧾 Facturación:</strong> {ordenDetalle.estadoFacturacion} {ordenDetalle.numFacturaProveedor ? `(Factura: ${ordenDetalle.numFacturaProveedor})` : ""}</div>
                 </div>

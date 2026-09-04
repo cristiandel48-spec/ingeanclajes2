@@ -13,7 +13,7 @@ import { siguienteIdUnico } from "../../lib/identificadores";
 import ImportarFacturaDian from "./ImportarFacturaDian";
 import OrdenesCompra from "./OrdenesCompra";
 export default function CuentasPagar({ctx}){
-  const {cuentas,setCuentas,proveedores,setProveedores,obras,ordenesCompra=[],setOrdenesCompra,membresia}=ctx;
+  const {cuentas,setCuentas,proveedores,setProveedores,obras,ordenesCompra=[],setOrdenesCompra,membresia,empleados=[]}=ctx;
 
   const proveedoresData=proveedores.map(p=>({
     ...p,
@@ -1011,6 +1011,7 @@ Ese valor volverá a quedar pendiente en la factura.
           setOrdenesCompra={setOrdenesCompra}
           proveedores={proveedoresData}
           obras={obras}
+          empleados={empleados}
           cuentas={cuentasNorm}
           setCuentas={setCuentas}
           membresia={membresia}

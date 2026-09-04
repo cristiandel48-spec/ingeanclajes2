@@ -106,17 +106,23 @@ export default function Cotizacion({ctx}){
   const aplicarDictado = (propuesta)=>{
     setCl((prev)=>({
       ...prev,
-      nombre: prev.nombre || propuesta.cliente || "",
-      contacto: prev.contacto || propuesta.contacto || "",
-      ciudad: prev.ciudad || propuesta.ciudad || "",
-      obra: prev.obra || propuesta.obra || "",
-      telefono: prev.telefono || propuesta.telefono || "",
-      // Los tres ultimos solo llegan al importar un documento: el dictado no
-      // los trae y quedan como estaban.
-      nit: prev.nit || propuesta.nit || "",
-      contactoEmail: prev.contactoEmail || propuesta.contactoEmail || "",
-      direccion: prev.direccion || propuesta.direccion || "",
+      nombre: propuesta.cliente || prev.nombre || "",
+      contacto: propuesta.contacto || prev.contacto || "",
+      ciudad: propuesta.ciudad || prev.ciudad || "",
+      obra: propuesta.obra || prev.obra || "",
+      telefono: propuesta.telefono || prev.telefono || "",
+      nit: propuesta.nit || prev.nit || "",
+      contactoEmail: propuesta.contactoEmail || prev.contactoEmail || "",
+      direccion: propuesta.direccion || prev.direccion || "",
     }));
+
+    setErroresCliente((prev) => {
+      const nuevo = { ...prev };
+      if (propuesta.cliente) delete nuevo.nombre;
+      if (propuesta.nit) delete nuevo.nit;
+      if (propuesta.direccion) delete nuevo.direccion;
+      return nuevo;
+    });
 
     if(propuesta.alcance || propuesta.items.length){
       const destino = propuestas.find((x)=>x.id===propuestaActivaId) || propuestas[0];

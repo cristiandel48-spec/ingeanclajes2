@@ -131,14 +131,22 @@ export async function leerTextoDeArchivo(archivo) {
 // «armar-cotizacion» no los devuelve, asi que se sacan aqui.
 
 // 800.201.989-3 · 900123456-7 · NIT 901455782
-const NIT = /\b(?:nit|n\.i\.t|rut|c\.?c\.?)[.:\s]*([\d][\d.,-]{6,15}[\dkK])\b/i;
-const CORREO = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/;
+const NIT_REGEX = /\b(?:nit|n\.i\.t|rut|c\.?c\.?)[.:\s]*([\d][\d.,-]{6,15}[\dkK])\b/gi;
+const CORREO_REGEX = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
 
 export function datosSueltos(texto = "") {
   const plano = String(texto || "");
+  const nits = [...plano.matchAll(NIT_REGEX)]
+    .map((m) => (m[1] || "").replace(/,/g, "").trim())
+    .filter((n) => !n.replace(/\D/g, "").startsWith("900193965"));
+
+  const correos = [...plano.matchAll(CORREO_REGEX)]
+    .map((m) => (m[0] || "").toLowerCase())
+    .filter((c) => !c.includes("ingeanclajes"));
+
   return {
-    nit: (plano.match(NIT)?.[1] || "").replace(/,/g, "").trim(),
-    correo: (plano.match(CORREO)?.[0] || "").toLowerCase(),
+    nit: nits[0] || "",
+    correo: correos[0] || "",
   };
 }
 

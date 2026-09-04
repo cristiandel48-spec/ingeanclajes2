@@ -35,9 +35,9 @@ const IA_URL = Deno.env.get("IA_URL") ?? "https://api.groq.com/openai/v1/chat/co
 // en Supabase. Esto es solo el valor por defecto.
 const IA_MODELO = Deno.env.get("IA_MODELO") ?? "openai/gpt-oss-120b";
 
-// Un dictado de cotizacion son unas pocas frases. El tope corta de raiz que
-// alguien mande un libro y consuma la cuota gratuita de una sentada.
-const MAX_CARACTERES = 4000;
+// Un dictado de cotizacion son unas pocas frases, pero un documento importado
+// en PDF puede contener tablas y condiciones extensas.
+const MAX_CARACTERES = 25000;
 
 const responder = (cuerpo: unknown, status = 200) =>
   new Response(JSON.stringify(cuerpo), {

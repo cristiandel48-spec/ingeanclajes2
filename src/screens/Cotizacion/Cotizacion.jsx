@@ -244,11 +244,13 @@ export default function Cotizacion({ctx}){
     obra: cl.obra,
     telefono: cl.telefono,
     ciudad: cl.ciudad,
+    direccion: cl.direccion || "",
     coords: cl.coords,
     textoInicial: textoInicial.trim(),
     observaciones: observacionesCot.trim(),
     textosDocumento,
     items: propuestaActiva?.items,
+    sinAiu: Boolean(propuestaActiva?.sinAiu),
     util: propuestaActiva?.util,
     total: propuestaActiva?.total,
     formaPago: propuestaActiva?.formaPago,
@@ -283,9 +285,11 @@ export default function Cotizacion({ctx}){
     // Datos viejos guardaban fotos y mediciones a nivel de cotizacion, no de
     // propuesta: se migran a la que estaba activa para no perderlos.
     const migradas = all.map((propuesta)=>{
-      if(propuesta.id!==activeId) return buildQuoteProposal({...propuesta,items:normalizeProposalItems(propuesta.items)},0);
+      const sinAiu = Boolean(propuesta.sinAiu ?? source.sinAiu ?? false);
+      if(propuesta.id!==activeId) return buildQuoteProposal({...propuesta,sinAiu,items:normalizeProposalItems(propuesta.items)},0);
       return buildQuoteProposal({
         ...propuesta,
+        sinAiu,
         items: normalizeProposalItems(propuesta.items),
         fotos: (propuesta.fotos && propuesta.fotos.length) ? propuesta.fotos : (source.fotosCotizacion || []),
         geoMediciones: (propuesta.geoMediciones && propuesta.geoMediciones.length) ? propuesta.geoMediciones : (source.geoMediciones || []),
@@ -303,7 +307,7 @@ export default function Cotizacion({ctx}){
   const nuevaCotizacion = ()=>{
     setEditCot(null);
     setPreviewCot(null);
-    hydrate({numero:getNextCotizacionNumero(cotizaciones),fecha:today(),val:30,cliente:"",obra:"",telefono:"",ciudad:"",coords:"",geoMediciones:[],geoMapView:null,fotosCotizacion:[],propuestas:[buildQuoteProposal({id:createQuoteProposalId("new"),nombre:getQuoteProposalLabel(0),formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,util:10,items:[],geoMediciones:[],geoMapView:null,mapImg:null,medicionAutomatica:false,incluyeTexto:""},0)]});
+    hydrate({numero:getNextCotizacionNumero(cotizaciones),fecha:today(),val:30,cliente:"",obra:"",telefono:"",ciudad:"",coords:"",geoMediciones:[],geoMapView:null,fotosCotizacion:[],propuestas:[buildQuoteProposal({id:createQuoteProposalId("new"),nombre:getQuoteProposalLabel(0),formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,sinAiu:false,util:10,items:[],geoMediciones:[],geoMapView:null,mapImg:null,medicionAutomatica:false,incluyeTexto:""},0)]});
     setTab("form");
   };
 
@@ -337,9 +341,11 @@ export default function Cotizacion({ctx}){
     const propuestasFinales = propuestasSnapshot.map((propuesta,index)=>{
       const finalItems = normalizeQuoteItems({items:propuesta.items,geoMediciones:propuesta.geoMediciones,propuestas:propuestasSnapshot});
       const subtotal = finalItems.reduce((sum,item)=>sum + (Number(item.cant)||0)*(Number(item.vu)||0),0);
-      const utilidad = subtotal * (Number(propuesta.util || 10) / 100);
-      const total = Math.round(subtotal + utilidad + utilidad * 0.19);
-      return buildQuoteProposal({...propuesta,items:finalItems,total},index);
+      const sinAiu = Boolean(propuesta.sinAiu);
+      const utilidad = sinAiu ? 0 : (subtotal * (Number(propuesta.util || 10) / 100));
+      const iva = sinAiu ? (subtotal * 0.19) : (utilidad * 0.19);
+      const total = Math.round(subtotal + utilidad + iva);
+      return buildQuoteProposal({...propuesta,sinAiu,items:finalItems,total},index);
     });
     const activa = propuestasFinales.find((x)=>x.id===propuestaActivaId) || propuestasFinales[0];
     const prev = editCot ? cotizaciones.find((cotizacion)=>cotizacion.id===editCot) : null;
@@ -362,6 +368,7 @@ export default function Cotizacion({ctx}){
       observaciones: observacionesCot.trim(),
       textosDocumento,
       items: activa.items,
+      sinAiu: Boolean(activa.sinAiu),
       util: activa.util,
       total: activa.total,
       formaPago: activa.formaPago,
@@ -452,9 +459,9 @@ export default function Cotizacion({ctx}){
   // veces; y "Guardar y ver" con el naranja solo en el borde, para que se
   // note que es hermano del anterior sin competir con el.
   const BOTON_BASE = {
-    borderRadius:9, padding:"8px 14px", fontSize:12.5, fontWeight:600,
+    borderRadius:9, padding:"7px 13px", fontSize:12, fontWeight:600,
     cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap", lineHeight:1.2,
-    display:"inline-flex", alignItems:"center", gap:6,
+    display:"inline-flex", alignItems:"center", gap:5,
   };
   const SECUNDARIO = { ...BOTON_BASE, background:"#f1f5f9", color:"#475569", border:"1px solid #e2e8f0" };
 
@@ -479,6 +486,22 @@ export default function Cotizacion({ctx}){
     }
   };
 
+  const descargarPdfDesdeEditor = async ()=>{
+    if(bajandoPdf) return;
+    setBajandoPdf("editor");
+    try{
+      const guardada = persistCotizacion({volverALista:false});
+      const cotizacionParaPdf = guardada || cotizacionEnEdicion;
+      const {blob,nombre} = await generarCotizacionPdf(cotizacionParaPdf,{firmaImg,sello:selloCotizacion});
+      downloadGeneratedFile(new File([blob],nombre,{type:"application/pdf"}));
+    }catch(e){
+      console.error("No se pudo generar el PDF desde el editor:",e);
+      window.alert(e?.message || "No se pudo generar el PDF. Inténtalo de nuevo.");
+    }finally{
+      setBajandoPdf(null);
+    }
+  };
+
   // En el listado, la barra lleva el boton de crear. Antes vivia en el
   // titulo de la pantalla, que ocupaba dos renglones para decir algo que ya
   // pone la barra de arriba.
@@ -496,7 +519,7 @@ export default function Cotizacion({ctx}){
         onClick={()=>nuevaRef.current()}
       >+ Nueva Cotización</button>
     ) : tab==="form" ? (
-      <div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap"}}>
+      <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"nowrap"}}>
         <button style={SECUNDARIO} onClick={()=>setTab("lista")}
           title="Volver al listado de cotizaciones">← Lista</button>
 
@@ -519,15 +542,26 @@ export default function Cotizacion({ctx}){
           {verDocumento ? "Ocultar documento" : "Ver documento"}
         </button>
 
-        {/* Se quito "Guardar y ver": hacia casi lo mismo que Guardar y dos
-            botones naranjas seguidos se confundian. Para ver el documento
-            estan "Ver documento" aqui al lado y el boton Ver del listado. */}
         <button
-          style={{...BOTON_BASE, background:"#f47c20", color:"#fff", border:"1px solid #f47c20", fontWeight:700, padding:"8px 18px"}}
+          style={{
+            ...BOTON_BASE,
+            background: bajandoPdf==="editor" ? "#e2e8f0" : "#eff6ff",
+            color: bajandoPdf==="editor" ? "#94a3b8" : "#1d4ed8",
+            border: `1px solid ${bajandoPdf==="editor" ? "#cbd5e1" : "#bfdbfe"}`,
+            fontWeight: 700,
+          }}
+          disabled={Boolean(bajandoPdf)}
+          onClick={descargarPdfDesdeEditor}
+          title="Descarga el documento de la cotización en formato PDF directamente">
+          {bajandoPdf==="editor" ? "Generando…" : "Descargar PDF"}
+        </button>
+
+        <button
+          style={{...BOTON_BASE, background:"#f47c20", color:"#fff", border:"1px solid #f47c20", fontWeight:700, padding:"7px 16px"}}
           onClick={()=>guardarRef.current()}>Guardar</button>
       </div>
     ) : null,
-    [tab, dictando, importando, verDocumento]
+    [tab, dictando, importando, verDocumento, bajandoPdf]
   );
 
   const guardarCotizacionYSubir = ()=>{

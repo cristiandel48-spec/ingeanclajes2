@@ -51,13 +51,19 @@ function detallePropuesta(c) {
     ` — ${fmt(item.vu)} c/u — ${fmt(Number(item.cant || 0) * Number(item.vu || 0))}`
   ));
 
+  const sinAiu = Boolean(activa.sinAiu ?? activa.quote?.sinAiu);
+
   return [
     "Detalle de la propuesta:",
     ...lineas,
     "",
     `Subtotal: ${fmt(activa.sub)}`,
-    `Utilidades (${activa.quote?.util ?? 10}% del valor de la obra): ${fmt(activa.ut)}`,
-    `IVA (19% sobre utilidades): ${fmt(activa.iva)}`,
+    ...(sinAiu
+      ? [`IVA (19%): ${fmt(activa.iva)}`]
+      : [
+          `Utilidades (${activa.quote?.util ?? 10}% del valor de la obra): ${fmt(activa.ut)}`,
+          `IVA (19% sobre utilidades): ${fmt(activa.iva)}`,
+        ]),
     `Total propuesta: ${fmt(activa.tot)}`,
   ];
 }
@@ -72,6 +78,8 @@ function detalleParaCorreo(c) {
   const activa = propuestaActiva(c);
   if (!activa?.items?.length) return null;
 
+  const sinAiu = Boolean(activa.sinAiu ?? activa.quote?.sinAiu);
+
   return {
     saludo: primerNombre(c?.contacto) ? `${primerNombre(c.contacto)}, buen día` : "Buen día",
     obra: comoNombre(c?.obra || ""),
@@ -79,8 +87,9 @@ function detalleParaCorreo(c) {
       desc: i.desc, cant: i.cant, unit: i.unit || "UND", vu: i.vu,
     })),
     subtotal: activa.sub,
-    utilidad: activa.ut,
-    utilidadPct: activa.quote?.util ?? 10,
+    sinAiu,
+    utilidad: sinAiu ? 0 : activa.ut,
+    utilidadPct: sinAiu ? 0 : (activa.quote?.util ?? 10),
     iva: activa.iva,
     total: activa.tot,
     validez: c?.val || 30,

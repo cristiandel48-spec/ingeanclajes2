@@ -79,9 +79,10 @@ export default function PropuestaEditor({
     }
   };
 
+  const sinAiu = Boolean(p.sinAiu);
   const sub = items.reduce((s, item) => s + (Number(item.cant) || 0) * (Number(item.vu) || 0), 0);
-  const ut = (sub * (Number(p.util) || 0)) / 100;
-  const iva = ut * 0.19;
+  const ut = sinAiu ? 0 : (sub * (Number(p.util) || 0)) / 100;
+  const iva = sinAiu ? (sub * 0.19) : (ut * 0.19);
   const tot = sub + ut + iva;
 
   return (
@@ -279,9 +280,80 @@ export default function PropuestaEditor({
 
           <button onClick={()=>{setItems(prev=>[...prev,{id:siguienteId(prev),desc:"",cant:1,unit:"ML",vu:0}]);}} style={{...B("#fff3e8","#f47c20"),border:"1px dashed #cc0000",width:"100%",justifyContent:"center",marginBottom:16,fontSize:12}}>+ Agregar ítem manual</button>
 
+          {/* Selector Con AIU vs Sin AIU (IVA Pleno) */}
+          <div style={{
+            display:"flex",
+            justifyContent:"space-between",
+            alignItems:"center",
+            flexWrap:"wrap",
+            gap:10,
+            marginBottom:12,
+            padding:"10px 14px",
+            background:sinAiu?"#f0fdf4":"#f8fafc",
+            border:`1px solid ${sinAiu?"#86efac":"#e2e8f0"}`,
+            borderRadius:10
+          }}>
+            <div>
+              <div style={{fontSize:12,fontWeight:700,color:"#1e293b",display:"flex",alignItems:"center",gap:6}}>
+                <span>Régimen AIU / IVA:</span>
+                <span style={{
+                  fontSize:10.5,
+                  padding:"2px 8px",
+                  borderRadius:12,
+                  fontWeight:700,
+                  background:sinAiu?"#dcfce7":"#e0e7ff",
+                  color:sinAiu?"#15803d":"#3730a3"
+                }}>
+                  {sinAiu ? "IVA Pleno 19% (Sin AIU)" : "Con AIU (IVA s/ Utilidad)"}
+                </span>
+              </div>
+              <div style={{fontSize:10.5,color:"#64748b",marginTop:2}}>
+                {sinAiu
+                  ? "No se muestra AIU ni sale en la impresión. El IVA 19% aplica pleno sobre el subtotal."
+                  : "Esquema con Administración, Imprevistos y Utilidad (IVA 19% sobre la utilidad)."}
+              </div>
+            </div>
+
+            <div style={{display:"inline-flex",gap:6}}>
+              <button
+                type="button"
+                onClick={()=>set("sinAiu", false)}
+                style={{
+                  ...B(!sinAiu ? "#1a2840" : "#ffffff", !sinAiu ? "#ffffff" : "#475569"),
+                  border:`1px solid ${!sinAiu ? "#1a2840" : "#cbd5e1"}`,
+                  fontSize:11.5,
+                  fontWeight:700,
+                  padding:"6px 12px",
+                  borderRadius:8,
+                  cursor:"pointer"
+                }}
+              >
+                Con AIU
+              </button>
+              <button
+                type="button"
+                onClick={()=>set("sinAiu", true)}
+                style={{
+                  ...B(sinAiu ? "#16a34a" : "#ffffff", sinAiu ? "#ffffff" : "#475569"),
+                  border:`1px solid ${sinAiu ? "#16a34a" : "#cbd5e1"}`,
+                  fontSize:11.5,
+                  fontWeight:700,
+                  padding:"6px 12px",
+                  borderRadius:8,
+                  cursor:"pointer"
+                }}
+              >
+                Sin AIU (IVA Pleno)
+              </button>
+            </div>
+          </div>
+
           {/* Tabla de totales */}
           <div style={{border:"1px solid #e2e8f0",borderRadius:10,overflow:"hidden"}}>
-            {[["SUBTOTAL",sub],["ADMINISTRACIÓN",0],["IMPREVISTOS",0],["UTILIDAD "+p.util+"%",ut],["IVA SOBRE LA UTILIDAD (19%)",iva]].map(([lbl,v])=>(
+            {(sinAiu
+              ? [["SUBTOTAL",sub],["IVA (19%)",iva]]
+              : [["SUBTOTAL",sub],["ADMINISTRACIÓN",0],["IMPREVISTOS",0],["UTILIDAD "+p.util+"%",ut],["IVA SOBRE LA UTILIDAD (19%)",iva]]
+            ).map(([lbl,v])=>(
               <div key={lbl} style={{display:"flex",justifyContent:"space-between",padding:"9px 14px",borderBottom:"1px solid #f1f5f9",fontSize:12,color:"#475569"}}>
                 <span>{lbl}</span><span style={{fontWeight:500,color:"#1a1a2e"}}>{v?fmt(v):"$  -"}</span>
               </div>
@@ -296,13 +368,28 @@ export default function PropuestaEditor({
               <span style={{fontSize:13,fontWeight:700,color:"#cfd8e6",letterSpacing:".06em"}}>TOTAL</span>
               <span style={{fontSize:17,fontWeight:700,color:"#ffffff"}}>{fmt(tot)}</span>
             </div>
-            <div style={{padding:"6px 14px",fontSize:10,color:"#94a3b8",textAlign:"center",background:"#f8fafc"}}>EL IVA ES EL 19% DE LA UTILIDAD</div>
+            <div style={{
+              padding:"6px 14px",
+              fontSize:10,
+              color:sinAiu?"#15803d":"#94a3b8",
+              textAlign:"center",
+              background:sinAiu?"#f0fdf4":"#f8fafc",
+              fontWeight:sinAiu?600:400
+            }}>
+              {sinAiu ? "IVA PLENO DEL 19% CALCULADO SOBRE EL SUBTOTAL (SIN AIU)" : "EL IVA ES EL 19% DE LA UTILIDAD"}
+            </div>
           </div>
 
-          <div style={{marginTop:12,display:"grid",gridTemplateColumns:"120px 1fr",gap:12,alignItems:"end"}}>
-            <div><LBL>Utilidad %</LBL><input type="number" value={p.util} onChange={e=>set("util", Number(e.target.value))} style={SI}/></div>
-            <div style={{fontSize:11,color:"#64748b",paddingBottom:10}}>Ajusta el porcentaje de utilidad para recalcular el total</div>
-          </div>
+          {!sinAiu ? (
+            <div style={{marginTop:12,display:"grid",gridTemplateColumns:"120px 1fr",gap:12,alignItems:"end"}}>
+              <div><LBL>Utilidad %</LBL><input type="number" value={p.util} onChange={e=>set("util", Number(e.target.value))} style={SI}/></div>
+              <div style={{fontSize:11,color:"#64748b",paddingBottom:10}}>Ajusta el porcentaje de utilidad para recalcular el total</div>
+            </div>
+          ) : (
+            <div style={{marginTop:10,padding:"8px 12px",background:"#f8fafc",border:"1px dashed #cbd5e1",borderRadius:8,fontSize:11,color:"#64748b"}}>
+              ✓ Esta propuesta está configurada con <strong>IVA Pleno (19%)</strong>. No aplica porcentaje de utilidad ni saldrá ningún campo de AIU en la impresión del documento.
+            </div>
+          )}
         </div>
 
         {/* 5. Condiciones comerciales. Son datos de la propuesta, pero en el

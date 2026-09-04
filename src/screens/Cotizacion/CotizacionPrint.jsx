@@ -91,8 +91,14 @@ export default function CotizacionPrint({c}){
             <tbody>
               {propuesta.items.map((it,i)=><tr key={i}><td style={{border:"1px solid #222",padding:"7px 8px"}}>{it.desc}</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{it.cant}</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{it.unit}</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{fmt(it.vu)}</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{fmt((Number(it.cant)||0)*(Number(it.vu)||0))}</td></tr>)}
               <tr><td colSpan={4} style={{border:"1px solid #222",padding:"7px 8px",fontWeight:700}}>SUBTOTAL</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right",fontWeight:700}}>{fmt(propuesta.sub)}</td></tr>
-              <tr><td colSpan={4} style={{border:"1px solid #222",padding:"7px 8px"}}>UTILIDADES ({propuesta.quote.util||10}% VALOR DE LA OBRA)</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{fmt(propuesta.ut)}</td></tr>
-              <tr><td colSpan={4} style={{border:"1px solid #222",padding:"7px 8px"}}>IVA (19% VALOR DE LAS UTILIDADES)</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{fmt(propuesta.iva)}</td></tr>
+              {propuesta.sinAiu ? (
+                <tr><td colSpan={4} style={{border:"1px solid #222",padding:"7px 8px"}}>IVA (19%)</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{fmt(propuesta.iva)}</td></tr>
+              ) : (
+                <>
+                  <tr><td colSpan={4} style={{border:"1px solid #222",padding:"7px 8px"}}>UTILIDADES ({propuesta.quote?.util||10}% VALOR DE LA OBRA)</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{fmt(propuesta.ut)}</td></tr>
+                  <tr><td colSpan={4} style={{border:"1px solid #222",padding:"7px 8px"}}>IVA (19% VALOR DE LAS UTILIDADES)</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{fmt(propuesta.iva)}</td></tr>
+                </>
+              )}
               <tr><td colSpan={4} style={{border:"1px solid #222",padding:"7px 8px",background:"#fff369",fontWeight:800}}>TOTAL</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right",background:"#fff369",fontWeight:800}}>{fmt(propuesta.tot)}</td></tr>
             </tbody>
           </table>

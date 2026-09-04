@@ -76,10 +76,11 @@ export function buildQuoteProposal(propuesta = {}, index = 0) {
     ? propuesta.items.map((item, itemIndex) => normalizeQuoteItem(item, itemIndex))
     : [];
 
+  const sinAiu = Boolean(propuesta.sinAiu ?? propuesta.ivaPleno ?? false);
   const util = Number(propuesta.util ?? 10);
   const subtotal = items.reduce((sum, item) => sum + (Number(item.cant || 0) * Number(item.vu || 0)), 0);
-  const utilidadValor = subtotal * (util / 100);
-  const ivaValor = utilidadValor * 0.19;
+  const utilidadValor = sinAiu ? 0 : (subtotal * (util / 100));
+  const ivaValor = sinAiu ? (subtotal * 0.19) : (utilidadValor * 0.19);
   const totalCalculado = Math.round(subtotal + utilidadValor + ivaValor);
 
   const base = {
@@ -91,6 +92,7 @@ export function buildQuoteProposal(propuesta = {}, index = 0) {
     incluyeTexto: String(propuesta.incluyeTexto || ""),
     formaPago: propuesta.formaPago || DEFAULT_COT_FORMA_PAGO,
     tiempoEjec: propuesta.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC,
+    sinAiu,
     util,
     items,
     fotos: Array.isArray(propuesta.fotos) ? propuesta.fotos : [],
@@ -125,6 +127,7 @@ export function getQuoteProposals(cotizacion = {}) {
         incluyeTexto: cotizacion.incluyeTexto || "",
         formaPago: cotizacion.formaPago || DEFAULT_COT_FORMA_PAGO,
         tiempoEjec: cotizacion.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC,
+        sinAiu: Boolean(cotizacion.sinAiu),
         util: Number(cotizacion.util ?? 10),
         items: Array.isArray(cotizacion.items) ? cotizacion.items : [],
         geoMediciones: Array.isArray(cotizacion.geoMediciones) ? cotizacion.geoMediciones : [],
@@ -158,6 +161,7 @@ export function mergeQuoteWithProposal(cotizacion = {}, propuesta = null) {
     incluyeTexto: activeProposal.incluyeTexto,
     formaPago: activeProposal.formaPago,
     tiempoEjec: activeProposal.tiempoEjec,
+    sinAiu: Boolean(activeProposal.sinAiu),
     util: activeProposal.util,
     items: activeProposal.items,
     geoMediciones: activeProposal.geoMediciones,
@@ -169,7 +173,7 @@ export function mergeQuoteWithProposal(cotizacion = {}, propuesta = null) {
 
 export function getQuoteApprovalAccountingSnapshot(cotizacion = {}) {
   const activeProposal = getQuoteActiveProposal(cotizacion);
-  const { quote, sub, ut, iva, tot } = getQuoteProposalTotals(cotizacion, activeProposal);
+  const { quote, sub, ut, iva, tot, sinAiu } = getQuoteProposalTotals(cotizacion, activeProposal);
   const totalObra = Math.round(Number(quote.total || tot || 0));
   const subtotalCotizacion = Math.round(Number(sub || 0));
   const utilidadCotizacion = Math.round(Number(ut || 0));
@@ -177,6 +181,7 @@ export function getQuoteApprovalAccountingSnapshot(cotizacion = {}) {
 
   return {
     cotizacion: quote,
+    sinAiu,
     totalObra,
     subtotalCotizacion,
     utilidadCotizacion,
@@ -247,12 +252,13 @@ export function normalizeProposalItems(items=[]){
 
 export function getQuoteProposalTotals(baseQuote={}, propuesta){
   const quote = mergeQuoteWithProposal(baseQuote, propuesta);
+  const sinAiu = Boolean(propuesta?.sinAiu ?? quote.sinAiu);
   const items = normalizeQuoteItems({ ...quote, items: propuesta?.items || [] });
   const sub = items.reduce((sum, item)=>sum + (Number(item.cant) || 0) * (Number(item.vu) || 0), 0);
-  const ut = sub * (Number(propuesta?.util ?? 10) || 0) / 100;
-  const iva = ut * 0.19;
+  const ut = sinAiu ? 0 : (sub * (Number(propuesta?.util ?? quote.util ?? 10) || 0) / 100);
+  const iva = sinAiu ? (sub * 0.19) : (ut * 0.19);
   const tot = sub + ut + iva;
-  return { quote, items, sub, ut, iva, tot };
+  return { quote, items, sub, ut, iva, tot, sinAiu };
 }
 
 // Si la cotizacion lleva escalera o linea de vida vertical, el documento
@@ -303,10 +309,11 @@ export function getQuotePrintableProposals(baseQuote = {}){
 
   return proposals.map((propuesta, index)=>{
     const quote = mergeQuoteWithProposal(baseQuote, propuesta);
+    const sinAiu = Boolean(propuesta.sinAiu ?? quote.sinAiu);
     const items = normalizeQuoteItems(quote);
     const sub = items.reduce((sum, item)=>sum + (Number(item.cant) || 0) * (Number(item.vu) || 0), 0);
-    const ut = sub * (Number(quote.util || 10) / 100);
-    const iva = ut * 0.19;
+    const ut = sinAiu ? 0 : (sub * (Number(quote.util || 10) / 100));
+    const iva = sinAiu ? (sub * 0.19) : (ut * 0.19);
     const tot = sub + ut + iva;
     const measurements = Array.isArray(quote.geoMediciones) ? quote.geoMediciones : [];
     // La imagen del mapa se compone al medir y se guarda con la propuesta. Antes
@@ -316,6 +323,7 @@ export function getQuotePrintableProposals(baseQuote = {}){
 
     return {
       ...propuesta,
+      sinAiu,
       index,
       quote,
       items,

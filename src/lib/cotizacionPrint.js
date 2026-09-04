@@ -442,6 +442,12 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
               <td colspan="4">Subtotal</td>
               <td class="t-right tnum strong">${money(propuesta.sub || 0)}</td>
             </tr>
+            ${propuesta.sinAiu ? `
+            <tr class="soft-row">
+              <td colspan="4">IVA (19%)</td>
+              <td class="t-right tnum">${money(propuesta.iva || 0)}</td>
+            </tr>
+            ` : `
             <tr class="soft-row">
               <td colspan="4">Utilidades (${numberFmt(propuesta.quote?.util || 10)}% del valor de la obra)</td>
               <td class="t-right tnum">${money(propuesta.ut || 0)}</td>
@@ -450,6 +456,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
               <td colspan="4">IVA (19% sobre utilidades)</td>
               <td class="t-right tnum">${money(propuesta.iva || 0)}</td>
             </tr>
+            `}
             <tr class="grand-total">
               <td colspan="4" class="total-label">Total propuesta</td>
               <td class="t-right tnum total-amount">${money(propuesta.tot || 0)}</td>

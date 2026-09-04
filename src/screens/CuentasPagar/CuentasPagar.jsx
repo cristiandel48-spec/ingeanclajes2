@@ -732,35 +732,112 @@ Ese valor volverá a quedar pendiente en la factura.
     };
   });
   useAccionesPantalla(
-    <div style={{display:"flex",gap:7}}>
-      <button style={{background:"#f5c842",color:"#3b2f00",border:"1px solid #f5c842",borderRadius:9,
-        padding:"8px 14px",fontSize:12.5,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
-        onClick={()=>accionesRef.current.proveedor()}>+ Proveedor</button>
-      <button style={{background:"#cc0000",color:"#fff",border:"1px solid #cc0000",borderRadius:9,
-        padding:"8px 14px",fontSize:12.5,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
-        onClick={()=>accionesRef.current.causacion()}>+ Causación</button>
-      <button style={{background:"#003B71",color:"#fff",border:"1px solid #003B71",borderRadius:9,
-        padding:"8px 14px",fontSize:12.5,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
-        onClick={()=>accionesRef.current.pago()}>Registrar pago</button>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      {/* Pestañas de navegación arriba */}
+      <div style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 3,
+        background: "#f1f5f9",
+        padding: "3px 4px",
+        borderRadius: 10,
+        border: "1px solid #e2e8f0",
+      }}>
+        {[
+          ["causacion", "🧾 Causación / facturas"],
+          ["pagos", "🏦 Pagos y egresos"],
+          ["proveedores", "🏢 Proveedores"],
+        ].map(([id, lb]) => {
+          const activo = tab === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTab(id)}
+              style={{
+                background: activo ? "#cc0000" : "transparent",
+                color: activo ? "#ffffff" : "#475569",
+                border: activo ? "1px solid #cc0000" : "1px solid transparent",
+                borderRadius: 7,
+                padding: "6px 12px",
+                fontSize: 12,
+                fontWeight: activo ? 700 : 500,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                whiteSpace: "nowrap",
+                transition: "all .15s ease",
+                boxShadow: activo ? "0 1px 3px rgba(204,0,0,0.25)" : "none",
+              }}
+            >
+              {lb}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Separador vertical sutil */}
+      <div style={{ width: 1, height: 22, background: "#e2e8f0" }} />
+
+      {/* Botones de acción rápida */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <button
+          style={{
+            background: "#f5c842",
+            color: "#3b2f00",
+            border: "1px solid #eab308",
+            borderRadius: 8,
+            padding: "6.5px 12px",
+            fontSize: 12,
+            fontWeight: 700,
+            cursor: "pointer",
+            fontFamily: "inherit",
+            whiteSpace: "nowrap",
+          }}
+          onClick={() => accionesRef.current.proveedor()}
+        >
+          + Proveedor
+        </button>
+        <button
+          style={{
+            background: "#cc0000",
+            color: "#ffffff",
+            border: "1px solid #cc0000",
+            borderRadius: 8,
+            padding: "6.5px 12px",
+            fontSize: 12,
+            fontWeight: 700,
+            cursor: "pointer",
+            fontFamily: "inherit",
+            whiteSpace: "nowrap",
+          }}
+          onClick={() => accionesRef.current.causacion()}
+        >
+          + Causación
+        </button>
+        <button
+          style={{
+            background: "#003B71",
+            color: "#ffffff",
+            border: "1px solid #003B71",
+            borderRadius: 8,
+            padding: "6.5px 12px",
+            fontSize: 12,
+            fontWeight: 700,
+            cursor: "pointer",
+            fontFamily: "inherit",
+            whiteSpace: "nowrap",
+          }}
+          onClick={() => accionesRef.current.pago()}
+        >
+          Registrar pago
+        </button>
+      </div>
     </div>,
-    []
+    [tab]
   );
 
   return(
     <div style={{padding:"14px 28px 28px"}}>
-
-
-      <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
-        {[["causacion","🧾 Causación / facturas"],["pagos","🏦 Pagos y egresos"],["proveedores","🏢 Proveedores"]].map(([id,lb])=>(
-          <button
-            key={id}
-            onClick={()=>setTab(id)}
-            style={{...B(tab===id?"#cc0000":"#f1f5f9",tab===id?"#fff":"#475569"),fontSize:12,padding:"8px 16px",border:"1px solid " + (tab===id?"#cc0000":"#e2e8f0")}}
-          >
-            {lb}
-          </button>
-        ))}
-      </div>
 
       {(tab==="causacion" || tab==="pagos")&&(
         <>

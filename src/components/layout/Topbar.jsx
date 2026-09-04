@@ -37,13 +37,13 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
         paddingTop: "env(safe-area-inset-top)",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 12, minWidth: 0, flex: 1 }}>
         {isMobile && (
           <button
             onClick={onOpenMenu}
             aria-label="Abrir menú"
             style={{
-              width: 44, height: 44, flexShrink: 0,
+              width: 40, height: 40, flexShrink: 0,
               display: "flex", alignItems: "center", justifyContent: "center",
               borderRadius: 10, border: "none", cursor: "pointer",
               background: theme.surfaceTint, color: theme.text,
@@ -55,14 +55,14 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
           </button>
         )}
 
-        <div style={{ minWidth: 0 }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
           {!isMobile && section && (
             <div style={{ fontSize: 11.5, color: theme.muted, letterSpacing: .2 }}>
               {section}
             </div>
           )}
           <div style={{
-            fontSize: isMobile ? 15 : 16.5, fontWeight: 700, color: theme.text,
+            fontSize: isMobile ? 14.5 : 16.5, fontWeight: 700, color: theme.text,
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
           }}>
             {title}
@@ -70,8 +70,26 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-        {acciones}
+      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 10, flexShrink: 0 }}>
+        {acciones && (
+          <div
+            className="topbar-acciones"
+            data-no-wrap="true"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              maxWidth: isMobile ? "46vw" : "none",
+              overflowX: isMobile ? "auto" : "visible",
+              WebkitOverflowScrolling: "touch",
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
+              flexShrink: 1,
+            }}
+          >
+            {acciones}
+          </div>
+        )}
         {esAdminDestinatario && totalPendientes > 0 && (
           <button
             onClick={() => window.dispatchEvent(new CustomEvent("abrir-alerta-cotizaciones"))}

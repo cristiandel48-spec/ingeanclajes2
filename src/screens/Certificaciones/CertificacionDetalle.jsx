@@ -42,7 +42,7 @@ export default function CertificacionDetalle({cert,onVolver,onEditar,onImprimir,
         <div style={{fontSize:11,fontWeight:700,color:"#9a3412",textTransform:"uppercase",letterSpacing:0.7}}>Certificación</div>
         <div style={{fontSize:13,color:"#7c2d12",marginTop:4}}>{subtitle}</div>
       </div>
-      <div style={{maxWidth:980}}>
+      <div className="doc-paper-wrapper" style={{maxWidth:920,margin:"0 auto"}}>
         <CertificacionDocumento cert={cert}/>
       </div>
     </div>

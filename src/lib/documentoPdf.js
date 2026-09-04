@@ -237,7 +237,7 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
 
   const marco = document.createElement("iframe");
   marco.setAttribute("aria-hidden", "true");
-  marco.style.cssText = `position:fixed;left:-10000px;top:0;width:${ANCHO_UTIL}px;border:0;`;
+  marco.style.cssText = `position:fixed;left:0;top:0;width:${ANCHO_UTIL}px;opacity:0.01;pointer-events:none;z-index:-9999;border:0;`;
   document.body.appendChild(marco);
 
   try {

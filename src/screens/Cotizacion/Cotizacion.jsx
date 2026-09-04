@@ -728,7 +728,24 @@ export default function Cotizacion({ctx}){
 
   if(tab==="lista"){
     if(previewCot){
-      return <div style={{padding:28}}><H1 title={`Cotización ${previewCot.numero || previewCot.id}`} subtitle="Vista completa del documento comercial" action={<div style={{display:"flex",gap:10}}><button style={B("#f1f5f9","#475569")} onClick={()=>setPreviewCot(null)}>Volver</button><button style={B("#dbeafe","#1e40af")} onClick={()=>{setEditCot(previewCot.id);hydrate(previewCot);setTab("form");setPreviewCot(null);}}>Editar</button><button style={B("#f1f5f9","#475569")} disabled={Boolean(bajandoPdf)} onClick={()=>descargarPdf(previewCot)}>{bajandoPdf?"Generando…":"Descargar PDF"}</button><button style={B("#f47c20")} onClick={()=>setEnviarCot(previewCot)}>Enviar al cliente</button></div>}/><DocumentoEnVivo cotizacion={previewCot} firmaImg={firmaImg} sello={selloCotizacion} alto="calc(100vh - 190px)" nota="Igual al PDF" sticky={false}/>{enviarCot && <EnviarCotizacion cotizacion={enviarCot} firmaImg={firmaImg} onCerrar={()=>setEnviarCot(null)}/>}</div>;
+      return (
+        <div style={{padding:28}}>
+          <H1
+            title={`Cotización ${previewCot.numero || previewCot.id}`}
+            subtitle="Vista completa del documento comercial"
+            action={
+              <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+                <button style={B("#f1f5f9","#475569")} onClick={()=>setPreviewCot(null)}>Volver</button>
+                <button style={B("#dbeafe","#1e40af")} onClick={()=>{setEditCot(previewCot.id);hydrate(previewCot);setTab("form");setPreviewCot(null);}}>Editar</button>
+                <button style={B("#f1f5f9","#475569")} disabled={Boolean(bajandoPdf)} onClick={()=>descargarPdf(previewCot)}>{bajandoPdf?"Generando…":"Descargar PDF"}</button>
+                <button style={B("#f47c20")} onClick={()=>setEnviarCot(previewCot)}>Enviar al cliente</button>
+              </div>
+            }
+          />
+          <DocumentoEnVivo cotizacion={previewCot} firmaImg={firmaImg} sello={selloCotizacion} alto="calc(100dvh - 210px)" nota="Igual al PDF" sticky={false}/>
+          {enviarCot && <EnviarCotizacion cotizacion={enviarCot} firmaImg={firmaImg} onCerrar={()=>setEnviarCot(null)}/>}
+        </div>
+      );
     }
     return (
       <div style={{padding:28}}>

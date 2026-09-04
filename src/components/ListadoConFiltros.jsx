@@ -96,8 +96,10 @@ export default function ListadoConFiltros({
   const [hasta, setHasta] = useState("");
   const [extra, setExtra] = useState({});
   const [orden, setOrden] = useState(ordenes[0]?.key || "");
-  // Empieza en lista: se busca leyendo renglones, no mirando tarjetas.
-  const [vista, setVista] = useState("lista");
+  // En móvil arranca en cuadrícula para que los botones y datos quepan con holgura; en escritorio en lista.
+  const [vista, setVista] = useState(() => (
+    typeof window !== "undefined" && window.innerWidth < 768 ? "cuadricula" : "lista"
+  ));
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
   const campoBusqueda = useRef(null);
   // La hora se lee UNA vez, al abrir: dentro del calculo haria que el
@@ -297,7 +299,7 @@ export default function ListadoConFiltros({
 function Buscador({ valor, alCambiar, refCampo, marcador }) {
   const [enfocado, setEnfocado] = useState(false);
   return (
-    <div style={{ position: "relative", flex: 1, minWidth: 280 }}>
+    <div style={{ position: "relative", flex: 1, minWidth: 180 }}>
       <input ref={refCampo} value={valor} onChange={(e) => alCambiar(e.target.value)}
         onFocus={() => setEnfocado(true)} onBlur={() => setEnfocado(false)}
         placeholder={marcador}

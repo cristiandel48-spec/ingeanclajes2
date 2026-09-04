@@ -14,6 +14,9 @@ export default function GlobalStyles({ divider }) {
 
     body {
       margin: 0;
+      width: 100%;
+      max-width: 100vw;
+      overflow-x: hidden;
       /* Sin rebote elastico al llegar al final en iOS. */
       overscroll-behavior-y: none;
     }
@@ -33,6 +36,8 @@ export default function GlobalStyles({ divider }) {
        direcciones y deja contenido cortado; 100dvh la descuenta.
        El orden importa: el navegador se queda con la ultima que entiende. */
     .app-shell {
+      width: 100%;
+      max-width: 100vw;
       height: 100vh;
       height: -webkit-fill-available;
       height: 100dvh;
@@ -61,25 +66,32 @@ export default function GlobalStyles({ divider }) {
        etiquetas no caben y el texto se monta. Aqui se colapsan a una sola
        columna. Hace falta !important porque los estilos son en linea. */
     @media (max-width: 760px) {
-      main [style*="grid-template-columns"] {
+      /* Neutraliza el doble margen horizontal acumulado en teléfonos */
+      main > div[style*="padding: 28px"],
+      main > div[style*="padding:28px"],
+      main > div[style*="padding: 14px 28px 28px"],
+      main > div[style*="padding:14px 28px 28px"] {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+      }
+
+      /* Colapsa formularios a 1 columna sin tocar los documentos impresos ni cuadrículas especiales */
+      main [style*="grid-template-columns"]:not(.doc-shell):not(.doc-shell *):not(#pz):not(#pz *):not(.tabla-items):not(.no-collapse-grid) {
         grid-template-columns: 1fr !important;
       }
 
-      /* Las filas de botones y encabezados se acomodan en varias lineas en
-         vez de comprimirse. */
-      main [style*="display: flex"] { flex-wrap: wrap; }
+      /* Permite salto de línea en grupos de botones y formularios sin romper encabezados ni documentos */
+      main [style*="display: flex"]:not([data-no-wrap]):not([style*="nowrap"]):not(.doc-shell):not(.doc-shell *):not(#pz):not(#pz *):not(.print-header-root):not(.print-header-root *) {
+        flex-wrap: wrap;
+      }
 
-      /* Varios campos traen un ancho fijo en pixeles (por ejemplo el
-         buscador en 300 px). No basta con max-width: el contenedor flexible
-         se estira para acomodar al hijo, asi que hay que imponer el ancho.
-         Se excluyen casillas y botones de opcion, que deben mantener su
-         tamano. */
-      main input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
-      main select,
-      main textarea {
+      /* Los campos de texto ocupan todo el ancho, excluyendo controles especiales y deslizadores */
+      main input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not(.no-full-width),
+      main select:not(.no-full-width),
+      main textarea:not(.no-full-width) {
         width: 100% !important;
       }
-      main img { max-width: 100%; }
+      main img:not(.no-responsive-img) { max-width: 100%; }
 
       /* Varias pantallas tienen tablas sin contenedor desplazable, y una
          tabla de 7 columnas no cabe en un telefono. Con :has se hace
@@ -88,6 +100,19 @@ export default function GlobalStyles({ divider }) {
       main div:has(> table) {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+      }
+
+      /* Contenedor protector para documentos tipo hoja Carta en pantallas móviles */
+      .doc-paper-wrapper {
+        width: 100%;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding-bottom: 16px;
+      }
+      .doc-paper-wrapper > #pz,
+      .doc-paper-wrapper > .doc-shell {
+        min-width: 620px;
+        margin: 0 auto;
       }
 
       /* La tabla de items es lo unico que conserva sus columnas: apilarla

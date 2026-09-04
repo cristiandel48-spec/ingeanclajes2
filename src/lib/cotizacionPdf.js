@@ -81,7 +81,7 @@ export async function generarCotizacionPdf(cotizacion, { firmaImg = "", sello = 
   const marco = document.createElement("iframe");
   marco.setAttribute("aria-hidden", "true");
   marco.style.cssText =
-    `position:fixed;left:-10000px;top:0;width:${ANCHO_HOJA}px;height:${ALTO_HOJA}px;border:0;`;
+    `position:fixed;left:0;top:0;width:${ANCHO_HOJA}px;height:${ALTO_HOJA}px;opacity:0.01;pointer-events:none;z-index:-9999;border:0;`;
   document.body.appendChild(marco);
 
   try {

@@ -156,7 +156,7 @@ function Fila({ c, compacta, acciones }) {
           background: colorBarra }} />
         <div style={{ minWidth: 0, flex: 1 }}>{datos}</div>
         <Badge estado={c.estado} />
-        <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>{botones}</div>
+        <div style={{ display: "flex", gap: 4, flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>{botones}</div>
       </Resaltable>
     );
   }

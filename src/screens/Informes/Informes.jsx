@@ -897,7 +897,7 @@ export default function Informes({ctx}){
       {/* Vista detalle + impresión */}
       {sel&&(
         <div>
-          <div style={{display:"flex",gap:10,marginBottom:14}}>
+          <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
             <button style={B("#f1f5f9","#475569")} onClick={()=>setSel(null)}>Volver</button>
             <button style={{...B("#dbeafe","#1e40af")}} onClick={()=>editarInforme(sel)}>Editar</button>
             {/* Descarga directa: el PDF sale organizado por hojas sin cortes */}
@@ -927,6 +927,7 @@ export default function Informes({ctx}){
               Imprimir
             </button>
           </div>
+          <div className="doc-paper-wrapper" style={{maxWidth:920,margin:"0 auto",width:"100%"}}>
           <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:T.cuerpo,lineHeight:1.55,border:"1px solid #ddd",padding:"28px 36px"}}>
             <PrintHeader dual={false} formato="informe" empresaConfig={empresaConfig} numeroDocumento={sel?.id || sel?.numero || ""}/>
             <div style={{textAlign:"center",fontSize:T.titulo,fontWeight:700,letterSpacing:1.5,padding:"2px 0 10px",borderBottom:"2px solid #333",color:"#111",textTransform:"uppercase",marginBottom:22,marginTop:14}}>Informe de Actividades</div>
@@ -1009,6 +1010,7 @@ export default function Informes({ctx}){
                 </div>
               </div>
             </div>
+          </div>
           </div>
         </div>
       )}

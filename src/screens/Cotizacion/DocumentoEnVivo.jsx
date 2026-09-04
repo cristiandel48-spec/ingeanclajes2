@@ -1,27 +1,26 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { buildCotizacionPrintHtml } from "../../lib/cotizacionPrint";
 
-// Ancho real de una hoja carta a 96 ppp. El documento se genera a ese ancho,
-// asi que para que quepa en el panel se reduce con zoom.
+// Ancho real de una hoja carta a 96 ppp (8.5 x 96 = 816 px)
 const ANCHO_HOJA = 816;
 
-// Vista previa del documento tal como saldra impreso. Usa la MISMA plantilla
-// del PDF, no una version resumida: lo que se ve aqui es exactamente lo que se
-// imprime. Sirve para los dos casos: mientras se escribe la cotizacion y al
-// abrir una guardada con "Ver".
+// Vista previa responsiva del documento tal como saldrá impreso.
+// Compatible 100% con navegadores móviles (Android Chrome, iOS Safari) y escritorio.
 export default function DocumentoEnVivo({
   cotizacion,
   firmaImg = "",
   sello = null,
-  alto = "calc(100vh - 220px)",
+  alto = "calc(100dvh - 200px)",
   titulo = "Documento como se imprimirá",
   nota = "Se actualiza al escribir",
   sticky = true,
 }) {
   const contenedorRef = useRef(null);
-  const iframeRef = useRef(null);
+  const [modo, setModo] = useState("auto"); // "auto" (ajustar a pantalla) o "real" (100% tamaño lectura)
+  const [escala, setEscala] = useState(1);
+  const [error, setError] = useState(null);
 
-  // Inicializar el html de inmediato en el primer render para que no haya pantalla en blanco
+  // Inicializar el html
   const [html, setHtml] = useState(() => {
     try {
       return buildCotizacionPrintHtml(cotizacion, { firmaImg, sello });
@@ -31,18 +30,10 @@ export default function DocumentoEnVivo({
     }
   });
 
-  const [escala, setEscala] = useState(1);
-  const [error, setError] = useState(null);
-
-  // La cotizacion llega como objeto nuevo en cada render, asi que compararla
-  // por identidad reiniciaria el temporizador aunque no haya cambiado nada.
-  // Se compara por contenido, resumiendo los textos largos (imagenes en base64)
-  // para que la comparacion sea barata.
   const clave = JSON.stringify(cotizacion, (_k, v) =>
     typeof v === "string" && v.length > 200 ? `${v.length}:${v.slice(0, 40)}` : v
   );
 
-  // Regenerar el documento cuando cambie la cotizacion
   useEffect(() => {
     const id = setTimeout(() => {
       try {
@@ -57,13 +48,16 @@ export default function DocumentoEnVivo({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clave, firmaImg, sello]);
 
-  // Ajusta el zoom al ancho disponible del panel.
+  // Medir ancho disponible para escala automática
   useEffect(() => {
     const el = contenedorRef.current;
     if (!el) return;
     const medir = () => {
       const ancho = el.clientWidth;
-      if (ancho > 0) setEscala(Math.max(0.2, Math.min(1, ancho / (ANCHO_HOJA + 24))));
+      if (ancho > 0) {
+        const factor = Math.max(0.25, Math.min(1, (ancho - 16) / ANCHO_HOJA));
+        setEscala(factor);
+      }
     };
     medir();
     if (typeof ResizeObserver === "undefined") {
@@ -75,38 +69,50 @@ export default function DocumentoEnVivo({
     return () => observer.disconnect();
   }, []);
 
-  // Se inyecta el zoom y un fondo de "mesa de trabajo" sin tocar la plantilla.
-  const htmlAjustado = html
-    ? html.replace(
-        "</head>",
-        `<style>
-          html { zoom: ${escala}; transform-origin: top center; }
-          body { background: #e8eaee; padding: 14px 0 24px; margin: 0; min-height: 100vh; }
-          .page { box-shadow: 0 2px 14px rgba(15,23,42,.18); margin: 0 auto 16px; }
-        </style></head>`
-      )
-    : "";
+  const escalaEfectiva = modo === "real" ? 1 : escala;
 
-  const escribirEnIframe = useCallback((contenido) => {
-    const frame = iframeRef.current;
-    if (!frame || !contenido) return;
-    try {
-      const doc = frame.contentDocument || frame.contentWindow?.document;
-      if (doc) {
-        doc.open();
-        doc.write(contenido);
-        doc.close();
-      }
-    } catch (e) {
-      console.warn("Escritura directa en iframe no disponible:", e);
-    }
-  }, []);
+  const htmlAjustado = useMemo(() => {
+    if (!html) return "";
+    const cssInyectado = `
+      <style>
+        html {
+          background: #e8eaee;
+          margin: 0;
+          padding: 0;
+          -webkit-text-size-adjust: 100%;
+          text-size-adjust: 100%;
+          overflow-x: ${escalaEfectiva === 1 ? "auto" : "hidden"};
+          -webkit-overflow-scrolling: touch;
+        }
+        body {
+          background: #e8eaee;
+          padding: ${escalaEfectiva === 1 ? "18px 14px 36px" : "12px 0 24px"};
+          margin: 0;
+          min-height: 100vh;
+          box-sizing: border-box;
+          ${escalaEfectiva !== 1 ? `
+            width: ${ANCHO_HOJA}px;
+            margin: 0 auto;
+            transform: scale(${escalaEfectiva});
+            transform-origin: top center;
+          ` : `
+            min-width: ${ANCHO_HOJA + 28}px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          `}
+        }
+        .page {
+          box-shadow: 0 4px 20px rgba(15, 23, 42, 0.16);
+          margin: 0 auto 18px !important;
+        }
+      </style>
+    `;
 
-  useEffect(() => {
-    if (htmlAjustado) {
-      escribirEnIframe(htmlAjustado);
-    }
-  }, [htmlAjustado, escribirEnIframe]);
+    return html.includes("</head>")
+      ? html.replace("</head>", `${cssInyectado}</head>`)
+      : `${html}${cssInyectado}`;
+  }, [html, escalaEfectiva]);
 
   return (
     <div
@@ -123,14 +129,48 @@ export default function DocumentoEnVivo({
     >
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        gap: 10, padding: "9px 14px", background: "#fff",
-        borderBottom: "1px solid #e2e8f0",
+        gap: 8, padding: "8px 12px", background: "#fff",
+        borderBottom: "1px solid #e2e8f0", flexWrap: "wrap",
       }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "#64748b" }}>
-          {titulo}
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "#64748b" }}>
+            {titulo}
+          </div>
+          <div style={{ fontSize: 10.5, color: "#94a3b8" }}>
+            {html ? nota : "Generando…"}
+          </div>
         </div>
-        <div style={{ fontSize: 10.5, color: "#94a3b8" }}>
-          {html ? nota : "Generando…"}
+
+        {/* Controles de vista: Ajustar a pantalla o 100% Lectura */}
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <button
+            type="button"
+            onClick={() => setModo("auto")}
+            title="Ajusta el documento al ancho completo de tu pantalla"
+            style={{
+              background: modo === "auto" ? "#1e293b" : "#f1f5f9",
+              color: modo === "auto" ? "#fff" : "#475569",
+              border: `1px solid ${modo === "auto" ? "#1e293b" : "#cbd5e1"}`,
+              borderRadius: 6, padding: "4px 8px", fontSize: 10.5, fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Ajustar
+          </button>
+          <button
+            type="button"
+            onClick={() => setModo("real")}
+            title="Muestra el documento al 100% de tamaño para lectura cómoda con desplazamiento táctil"
+            style={{
+              background: modo === "real" ? "#1e293b" : "#f1f5f9",
+              color: modo === "real" ? "#fff" : "#475569",
+              border: `1px solid ${modo === "real" ? "#1e293b" : "#cbd5e1"}`,
+              borderRadius: 6, padding: "4px 8px", fontSize: 10.5, fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            100% Lectura
+          </button>
         </div>
       </div>
 
@@ -140,12 +180,17 @@ export default function DocumentoEnVivo({
         </div>
       ) : (
         <iframe
-          ref={iframeRef}
-          key={cotizacion?.id || cotizacion?.numero || "preview"}
+          key={`${cotizacion?.id || cotizacion?.numero || "prev"}-${modo}`}
           title="Vista previa de la cotización"
           srcDoc={htmlAjustado}
-          onLoad={() => escribirEnIframe(htmlAjustado)}
-          style={{ display: "block", width: "100%", height: alto, border: 0, background: "#e8eaee" }}
+          style={{
+            display: "block",
+            width: "100%",
+            height: alto,
+            border: 0,
+            background: "#e8eaee",
+            WebkitOverflowScrolling: "touch",
+          }}
         />
       )}
     </div>

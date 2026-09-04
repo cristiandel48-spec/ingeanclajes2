@@ -13,7 +13,20 @@ export default function PrintHeader({ dual, formato, empresaConfig, numeroDocume
   const num = numeroDocumento ? String(numeroDocumento).trim() : "";
 
   return (
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"stretch",borderBottom:"2.5px solid #cc0000",paddingBottom:10,marginBottom:0}}>
+    <div
+      className="print-header-root"
+      data-no-wrap="true"
+      style={{
+        display: "flex",
+        flexWrap: "nowrap",
+        justifyContent: "space-between",
+        alignItems: "stretch",
+        borderBottom: "2.5px solid #cc0000",
+        paddingBottom: 10,
+        marginBottom: 0,
+        gap: 8,
+      }}
+    >
       {/* 54 y no 82: a 82 el logo se comia la cuarta parte de la cabecera y
           dejaba en desventaja al titulo del documento. En la cotizacion va a
           30, y este encabezado es mas alto porque lleva cuatro lineas de datos

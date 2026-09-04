@@ -18,19 +18,52 @@ export const TIPOS_ACEPTADOS = ".pdf,.txt";
 
 async function cargarPdfJs() {
   const pdfjs = await import("pdfjs-dist");
-  // El worker se resuelve contra el propio paquete para que Vite lo empaquete
-  // y no salga a buscarlo a internet.
-  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    "pdfjs-dist/build/pdf.worker.min.mjs",
-    import.meta.url,
-  ).toString();
+  try {
+    const workerModule = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
+    pdfjs.GlobalWorkerOptions.workerSrc = workerModule.default || "/pdf.worker.min.mjs";
+  } catch {
+    pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+  }
   return pdfjs;
 }
 
 async function textoDePdf(archivo) {
   const pdfjs = await cargarPdfJs();
   const datos = new Uint8Array(await archivo.arrayBuffer());
-  const documento = await pdfjs.getDocument({ data: datos }).promise;
+
+  const version = pdfjs.version || "6.2.108";
+  const cMapUrl = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${version}/cmaps/`;
+  const standardFontDataUrl = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${version}/standard_fonts/`;
+
+  let documento;
+  try {
+    documento = await pdfjs.getDocument({
+      data: datos,
+      cMapUrl,
+      cMapPacked: true,
+      standardFontDataUrl,
+    }).promise;
+  } catch (err1) {
+    console.warn("Fallo lectura inicial de PDF con worker, reintentando con worker público:", err1);
+    try {
+      pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+      documento = await pdfjs.getDocument({
+        data: datos,
+        cMapUrl,
+        cMapPacked: true,
+        standardFontDataUrl,
+      }).promise;
+    } catch (err2) {
+      console.warn("Fallo lectura de PDF con worker local, reintentando con CDN:", err2);
+      pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
+      documento = await pdfjs.getDocument({
+        data: datos,
+        cMapUrl,
+        cMapPacked: true,
+        standardFontDataUrl,
+      }).promise;
+    }
+  }
 
   const paginas = [];
   for (let n = 1; n <= documento.numPages; n += 1) {
@@ -70,12 +103,12 @@ export async function leerTextoDeArchivo(archivo) {
       texto = await textoDePdf(archivo);
     } catch (fallo) {
       console.error("No se pudo abrir el PDF:", fallo);
-      throw new Error("No se pudo abrir ese PDF. Puede estar dañado o protegido con contraseña.");
+      throw new Error(`No se pudo leer ese archivo PDF: ${fallo?.message || "Puede estar protegido o en un formato no soportado."}`);
     }
     if (texto.length < MINIMO_CARACTERES) {
       throw new Error(
         "Ese PDF no tiene texto dentro: es un escaneado o una foto. " +
-        "Por ahora solo se pueden leer los PDF que traen el texto, como los que salen de Word o de este mismo programa.",
+        "Por ahora solo se pueden leer los PDF que traen el texto digital, como los generados desde Word o exportados con texto seleccionable.",
       );
     }
     return { texto, comoSeLeyo: "pdf-con-texto" };

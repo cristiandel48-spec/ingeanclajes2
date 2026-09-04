@@ -8,7 +8,7 @@ import { B, CD, SI, ST } from "../../styles/tokens";
 import { NAV_SECTIONS } from "../../config/navigation";
 import CampoTexto from "../../components/ui/CampoTexto";
 import OptimizarFotos from "../../components/OptimizarFotos";
-import { MODULOS_MINIMOS, MODULOS_SOLO_ADMIN, ROLES, ROL_LABEL, sinCuentasSoporte } from "../../lib/permisos";
+import { MODULOS_CONTADOR, MODULOS_MINIMOS, MODULOS_SOLO_ADMIN, ROLES, ROL_LABEL, sinCuentasSoporte } from "../../lib/permisos";
 import { avisoNombre, normalizarNombrePropio } from "../../lib/normalizarEntrada";
 import {
   actualizarUsuario, cambiarClave, crearUsuario, desactivarUsuario,
@@ -227,7 +227,18 @@ Cancelar: se la entregas tú.`);
             )}
             <div>
               <LBL>Rol</LBL>
-              <select value={form.rol} onChange={(e) => setForm({ ...form, rol: e.target.value })} style={SI}>
+              <select
+                value={form.rol}
+                onChange={(e) => {
+                  const nuevoRol = e.target.value;
+                  setForm((p) => ({
+                    ...p,
+                    rol: nuevoRol,
+                    modulos: nuevoRol === "contador" ? [...MODULOS_CONTADOR] : p.modulos,
+                  }));
+                }}
+                style={SI}
+              >
                 {ROLES.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
               </select>
               <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 4 }}>

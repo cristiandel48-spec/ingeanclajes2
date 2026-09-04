@@ -12,6 +12,11 @@ export const ROLES = [
     detalle: "Ve todo y puede crear usuarios y darles accesos.",
   },
   {
+    id: "contador",
+    label: "Contador / Tributario",
+    detalle: "Acceso contable completo: causaciones, facturas DIAN, contabilidad, pagos e informes.",
+  },
+  {
     id: "manager",
     label: "Coordinador",
     detalle: "Entra solo a los módulos que se le marquen.",
@@ -29,6 +34,15 @@ export const ROLES = [
 ];
 
 export const ROL_LABEL = Object.fromEntries(ROLES.map((r) => [r.id, r.label]));
+
+// Módulos sugeridos por defecto para el rol de Contador
+export const MODULOS_CONTADOR = [
+  "proveedores",
+  "contabilidad",
+  "pagos",
+  "nomina",
+  "financiero",
+];
 
 // Ningun modulo se concede por defecto: cada quien entra solo a lo que se le
 // marca. Antes el dashboard era obligatorio para todos, pero resume la plata
@@ -54,6 +68,10 @@ export const MODULOS_SOLO_DUENO = [];
 
 export function esAdmin(membresia) {
   return membresia?.role === "admin";
+}
+
+export function esContador(membresia) {
+  return membresia?.role === "contador";
 }
 
 // Cuentas de soporte del desarrollo, que no se listan en la pantalla de
@@ -119,7 +137,7 @@ export function sinCuentasSoporte(usuarios) {
 // Mientras la membresia carga (null) se oculta: es preferible que aparezca un
 // segundo despues a que asome un dato que no debia verse.
 export function puedeVerDinero(membresia) {
-  return esAdmin(membresia);
+  return esAdmin(membresia) || esContador(membresia);
 }
 
 // Modulos permitidos, ya resueltos. null en la base significa "todos".

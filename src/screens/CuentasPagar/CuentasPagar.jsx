@@ -10,6 +10,7 @@ import { downloadExcelWorkbook } from "../../lib/nomina";
 import { fmt, scrollAppToTop, today } from "../../lib/format";
 import { parseIsoDate } from "../../lib/dates";
 import { siguienteIdUnico } from "../../lib/identificadores";
+import ImportarFacturaDian from "./ImportarFacturaDian";
 export default function CuentasPagar({ctx}){
   const {cuentas,setCuentas,proveedores,setProveedores,obras}=ctx;
 
@@ -100,12 +101,16 @@ export default function CuentasPagar({ctx}){
       fecha:today(),
       fechaVence:"",
       observacionTributaria:"",
+      cufe:"",
+      estadoRadian:"pendiente",
+      eventosRadian:[],
     };
   };
 
   const [tab,setTab]=useState("causacion");
   const [showProv,setShowProv]=useState(false);
   const [showCxP,setShowCxP]=useState(false);
+  const [showImportarDian,setShowImportarDian]=useState(false);
   const [editProvId,setEditProvId]=useState(null);
   const [editCxPId,setEditCxPId]=useState(null);
   const [provForm,setProvForm]=useState(proveedorBase);
@@ -152,6 +157,13 @@ export default function CuentasPagar({ctx}){
       saldoPendienteActual,
       pagosHistorial,
       montoPagado,
+      cufe:cuenta.cufe || cuenta.cufe_dian || "",
+      estadoRadian:cuenta.estadoRadian || cuenta.estado_radian || "pendiente",
+      eventosRadian:Array.isArray(cuenta.eventosRadian)
+        ? cuenta.eventosRadian
+        : Array.isArray(cuenta.eventos_radian)
+        ? cuenta.eventos_radian
+        : [],
     };
   };
 
@@ -534,6 +546,108 @@ export default function CuentasPagar({ctx}){
     }));
   };
 
+  const aplicarFacturaDian = (datos) => {
+    let pid = datos.proveedorExistenteId;
+
+    if (!pid) {
+      const nuevoProvId = siguienteIdUnico(proveedores, "PRV");
+      const nuevoProv = {
+        id: nuevoProvId,
+        nombre: normalizarNombrePropio(datos.proveedorData.nombre),
+        nit: normalizarDocumento(datos.proveedorData.nit),
+        dv: datos.proveedorData.dv || "",
+        direccion: normalizarFrase(datos.proveedorData.direccion || ""),
+        ciudad: normalizarNombrePropio(datos.proveedorData.ciudad || "Envigado"),
+        municipioIca: normalizarNombrePropio(datos.proveedorData.municipioIca || "Envigado"),
+        telefono: normalizarTelefono(datos.proveedorData.telefono || ""),
+        email: normalizarCorreo(datos.proveedorData.email || ""),
+        responsableIva: !!datos.proveedorData.responsableIva,
+        responsable_iva: !!datos.proveedorData.responsableIva,
+        regimenTributario: datos.proveedorData.responsableIva ? "Responsable de IVA" : "No responsable de IVA",
+        regimen_tributario: datos.proveedorData.responsableIva ? "Responsable de IVA" : "No responsable de IVA",
+        autorretenedorRenta: !!datos.proveedorData.autorretenedorRenta,
+        autorretenedor_renta: !!datos.proveedorData.autorretenedorRenta,
+        banco: "Bancolombia",
+        numeroCuenta: "",
+        categoria: "General",
+      };
+      setProveedores((prev) => [...prev, nuevoProv]);
+      pid = nuevoProvId;
+    }
+
+    const nuevaCuentaId = siguienteIdUnico(cuentas, "CXP");
+    const nuevaCuenta = {
+      id: nuevaCuentaId,
+      proveedorId: pid,
+      obraId: datos.obraId || "",
+      factura: datos.factura || "FE-001",
+      concepto: datos.concepto || "Factura electrónica DIAN",
+      tipoOperacion: datos.tipoOperacion || "compras",
+      subtotal: datos.subtotal,
+      tarifaIva: datos.tarifaIva,
+      valorIva: datos.valorIva,
+      conceptoRetFuente: datos.conceptoRetFuente || "compras",
+      baseRetFuente: datos.baseRetFuente,
+      tarifaRetFuente: datos.tarifaRetFuente,
+      valorRetFuente: datos.valorRetFuente,
+      aplicaReteiva: false,
+      baseReteiva: 0,
+      tarifaReteiva: 0,
+      valorReteiva: 0,
+      municipioReteica: "Envigado",
+      codigoIca: "",
+      baseReteica: 0,
+      tarifaReteica: 0,
+      valorReteica: 0,
+      valorBrutoFactura: Number((datos.subtotal + datos.valorIva).toFixed(2)),
+      valorTotalRetenciones: Number((datos.valorRetFuente).toFixed(2)),
+      valorTotalPagar: datos.valorTotalPagar,
+      monto: datos.valorTotalPagar,
+      saldoPendienteActual: datos.valorTotalPagar,
+      montoPagado: 0,
+      estado: "Pendiente",
+      fecha: datos.fecha || today(),
+      fechaVence: datos.fechaVence || datos.fecha || today(),
+      observacionTributaria: `Factura electrónica importada. CUFE: ${datos.cufe || "N/A"}`,
+      cufe: datos.cufe || "",
+      estadoRadian: datos.estadoRadian || "pendiente",
+      eventosRadian: datos.eventosRadian || [],
+      pagosHistorial: [],
+    };
+
+    setCuentas((prev) => [nuevaCuenta, ...prev]);
+    setShowImportarDian(false);
+    setTab("causacion");
+  };
+
+  const avanzarEventoRadian = (cuentaId, nuevoEstado, codigoEvento, nombreEvento) => {
+    setCuentas((prev) =>
+      prev.map((c) => {
+        if (c.id !== cuentaId) return c;
+        const historial = Array.isArray(c.eventosRadian)
+          ? c.eventosRadian
+          : Array.isArray(c.eventos_radian)
+          ? c.eventos_radian
+          : [];
+        const nuevoHistorial = [
+          ...historial,
+          {
+            codigo: codigoEvento,
+            nombre: nombreEvento,
+            fecha: new Date().toISOString(),
+          },
+        ];
+        return {
+          ...c,
+          estadoRadian: nuevoEstado,
+          estado_radian: nuevoEstado,
+          eventosRadian: nuevoHistorial,
+          eventos_radian: nuevoHistorial,
+        };
+      })
+    );
+  };
+
   const registrarPagoProveedor=(proveedorIdPreset="")=>{
     const pid = proveedorIdPreset || proveedorPagoActivo;
     const monto = Math.round(Number(pagoProv.monto || 0));
@@ -754,6 +868,7 @@ Ese valor volverá a quedar pendiente en la factura.
       proveedor: ()=>{ setTab("proveedores"); setShowProv((v)=>!v); if(showProv && tab==="proveedores") resetProveedor(); },
       causacion: ()=>{ setTab("causacion"); setShowCxP((v)=>{ const next=!v; if(next && !editCxPId) setCxpForm(createCuentaBase(proveedorIdActivo)); if(!next) resetCuenta(proveedorIdActivo); return next; }); },
       pago: ()=>{ setTab("pagos"); setVistaPagoCxP("registro"); scrollAppToTop("smooth"); },
+      importarDian: ()=>{ setTab("causacion"); setShowImportarDian((v)=>!v); setShowCxP(false); },
     };
   });
   useAccionesPantalla(
@@ -805,6 +920,29 @@ Ese valor volverá a quedar pendiente en la factura.
 
       {/* Botones de acción rápida */}
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <button
+          type="button"
+          style={{
+            background: "#2563eb",
+            color: "#ffffff",
+            border: "1px solid #1d4ed8",
+            borderRadius: 8,
+            padding: "6.5px 12px",
+            fontSize: 12,
+            fontWeight: 700,
+            cursor: "pointer",
+            fontFamily: "inherit",
+            whiteSpace: "nowrap",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 5,
+            boxShadow: "0 1px 3px rgba(37,99,235,0.25)",
+          }}
+          onClick={() => accionesRef.current.importarDian?.()}
+        >
+          <span>⚡</span>
+          <span>Importar DIAN</span>
+        </button>
         <button
           style={{
             background: "#f5c842",
@@ -1093,6 +1231,15 @@ Ese valor volverá a quedar pendiente en la factura.
 
           {tab==="causacion" && (
             <>
+              {showImportarDian && (
+                <ImportarFacturaDian
+                  proveedores={proveedoresData}
+                  obras={obras}
+                  onAplicar={aplicarFacturaDian}
+                  onCerrar={() => setShowImportarDian(false)}
+                />
+              )}
+
           {showCxP&&(
             <div style={{...CD,marginBottom:18,border:"1px solid #cc0000"}}>
               <div style={ST}>{editCxPId?"Editar causación de factura o gasto":"Registrar causación de factura o gasto"}</div>
@@ -1397,6 +1544,88 @@ Ese valor volverá a quedar pendiente en la factura.
                         <div><strong style={{color:"#1a1a2e"}}>Retenciones</strong><br/>{fmt(c.valorTotalRetenciones ?? c.valor_total_retenciones ?? 0)}</div>
                         <div><strong style={{color:"#1a1a2e"}}>Pagado acumulado</strong><br/>{fmt(c.montoPagado || 0)}</div>
                       </div>
+
+                      {/* Información DIAN y RADIAN */}
+                      {c.cufe && (
+                        <div style={{ marginTop: 10, padding: "8px 10px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", fontSize: 11 }}>
+                            <span style={{ fontWeight: 700, color: "#166534" }}>⚡ DIAN CUFE:</span>
+                            <span style={{ fontFamily: "Consolas, monospace", color: "#1e3a8a", background: "#fff", padding: "1px 5px", borderRadius: 4, border: "1px solid #cbd5e1" }}>
+                              {c.cufe.slice(0, 16)}...{c.cufe.slice(-8)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(c.cufe);
+                                window.alert("CUFE copiado al portapapeles.");
+                              }}
+                              style={{ ...B("#fff", "#0f172a"), border: "1px solid #cbd5e1", fontSize: 10, padding: "2px 6px" }}
+                            >
+                              Copiar
+                            </button>
+                            <a
+                              href={`https://catalogo-vpfe.dian.gov.co/document/searchqr?documentkey=${c.cufe}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{ fontSize: 10.5, color: "#2563eb", textDecoration: "underline", marginLeft: 4 }}
+                            >
+                              Ver en DIAN ↗
+                            </a>
+                          </div>
+
+                          {/* Estado RADIAN y avance de eventos */}
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontSize: 10.5, color: "#64748b", fontWeight: 600 }}>Estado RADIAN:</span>
+                            {c.estadoRadian === "aceptada" ? (
+                              <span style={{ fontSize: 11, fontWeight: 700, color: "#166534", background: "#dcfce7", border: "1px solid #86efac", padding: "2px 7px", borderRadius: 6 }}>
+                                ✓ 033 Aceptada (Título Valor)
+                              </span>
+                            ) : c.estadoRadian === "recibo_bienes" ? (
+                              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: "#0284c7", background: "#e0f2fe", border: "1px solid #bae6fd", padding: "2px 7px", borderRadius: 6 }}>
+                                  📦 032 Bienes Recibidos
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => avanzarEventoRadian(c.id, "aceptada", "033", "Aceptación expresa de la factura")}
+                                  style={{ ...B("#166534", "#fff"), fontSize: 10.5, padding: "3px 8px" }}
+                                  title="Registrar aceptación formal ante la DIAN para título valor"
+                                >
+                                  Dar Aceptación (033)
+                                </button>
+                              </div>
+                            ) : c.estadoRadian === "acuse_recibo" ? (
+                              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: "#d97706", background: "#fef3c7", border: "1px solid #fde68a", padding: "2px 7px", borderRadius: 6 }}>
+                                  📩 030 Acuse Registrado
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => avanzarEventoRadian(c.id, "recibo_bienes", "032", "Recibo del bien o prestación del servicio")}
+                                  style={{ ...B("#0284c7", "#fff"), fontSize: 10.5, padding: "3px 8px" }}
+                                  title="Confirmar que se recibieron los bienes o servicios en obra/oficina"
+                                >
+                                  Registrar Recibo Bienes (032)
+                                </button>
+                              </div>
+                            ) : (
+                              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: "#dc2626", background: "#fee2e2", border: "1px solid #fecaca", padding: "2px 7px", borderRadius: 6 }}>
+                                  ⏳ Pendiente Acuse
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => avanzarEventoRadian(c.id, "acuse_recibo", "030", "Acuse de recibo de la factura electrónica")}
+                                  style={{ ...B("#2563eb", "#fff"), fontSize: 10.5, padding: "3px 8px" }}
+                                  title="Registrar acuse de recibo de la factura"
+                                >
+                                  Emitir Acuse (030)
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:12,flexWrap:"wrap",gap:10}}>
                         <div style={{fontSize:11,color:"#64748b"}}>

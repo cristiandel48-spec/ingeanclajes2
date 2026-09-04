@@ -24,14 +24,17 @@ create index if not exists idx_plan_cuentas_tenant_updated on app.plan_cuentas(t
 create index if not exists idx_asientos_tenant_updated on app.asientos_contables(tenant_id, updated_at desc);
 create index if not exists idx_nominas_tenant_updated on app.nominas_generadas(tenant_id, updated_at desc);
 
--- 2. Índices de búsqueda operativa frecuente
+-- 2. Índices de búsqueda operativa frecuente (columnas verificadas)
 create index if not exists idx_cotizaciones_numero on app.cotizaciones(tenant_id, numero);
+create index if not exists idx_cotizaciones_estado on app.cotizaciones(tenant_id, estado);
 create index if not exists idx_obras_fechas on app.obras(tenant_id, fecha_inicio, fecha_fin);
-create index if not exists idx_informes_tipo_fecha on app.informes(tenant_id, tipo, fecha desc);
+create index if not exists idx_obras_estado on app.obras(tenant_id, estado);
+create index if not exists idx_informes_fecha on app.informes(tenant_id, fecha_informe desc);
+create index if not exists idx_certificaciones_tipo_num on app.certificaciones(tenant_id, tipo, numero);
 create index if not exists idx_asientos_fecha_origen on app.asientos_contables(tenant_id, fecha desc, origen);
-create index if not exists idx_pagos_fecha_cuenta on app.pagos(tenant_id, fecha desc, cuenta_por_pagar_id);
+create index if not exists idx_pagos_fecha on app.pagos(tenant_id, fecha desc);
 
--- 3. Si la columna CUFE no existe en cuentas_por_pagar, se añade de forma segura
+-- 3. Columnas seguras para facturación DIAN y CUFE
 do $$
 begin
   if not exists (

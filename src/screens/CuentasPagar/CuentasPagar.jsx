@@ -11,8 +11,9 @@ import { fmt, scrollAppToTop, today } from "../../lib/format";
 import { parseIsoDate } from "../../lib/dates";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import ImportarFacturaDian from "./ImportarFacturaDian";
+import OrdenesCompra from "./OrdenesCompra";
 export default function CuentasPagar({ctx}){
-  const {cuentas,setCuentas,proveedores,setProveedores,obras}=ctx;
+  const {cuentas,setCuentas,proveedores,setProveedores,obras,ordenesCompra=[],setOrdenesCompra,membresia}=ctx;
 
   const proveedoresData=proveedores.map(p=>({
     ...p,
@@ -867,6 +868,7 @@ Ese valor volverá a quedar pendiente en la factura.
     accionesRef.current = {
       proveedor: ()=>{ setTab("proveedores"); setShowProv((v)=>!v); if(showProv && tab==="proveedores") resetProveedor(); },
       causacion: ()=>{ setTab("causacion"); setShowCxP((v)=>{ const next=!v; if(next && !editCxPId) setCxpForm(createCuentaBase(proveedorIdActivo)); if(!next) resetCuenta(proveedorIdActivo); return next; }); },
+      ordenes: ()=>{ setTab("ordenes"); scrollAppToTop("smooth"); },
       pago: ()=>{ setTab("pagos"); setVistaPagoCxP("registro"); scrollAppToTop("smooth"); },
       importarDian: ()=>{ setTab("causacion"); setShowImportarDian((v)=>!v); setShowCxP(false); },
     };
@@ -885,6 +887,7 @@ Ese valor volverá a quedar pendiente en la factura.
       }}>
         {[
           ["causacion", "🧾 Causación / facturas"],
+          ["ordenes", "📦 Órdenes de compra"],
           ["pagos", "🏦 Pagos y egresos"],
           ["proveedores", "🏢 Proveedores"],
         ].map(([id, lb]) => {
@@ -1001,6 +1004,19 @@ Ese valor volverá a quedar pendiente en la factura.
 
   return(
     <div style={{padding:"14px 28px 28px"}}>
+
+      {tab==="ordenes" && (
+        <OrdenesCompra
+          ordenesCompra={ordenesCompra}
+          setOrdenesCompra={setOrdenesCompra}
+          proveedores={proveedoresData}
+          obras={obras}
+          cuentas={cuentasNorm}
+          setCuentas={setCuentas}
+          membresia={membresia}
+          onIrACausacion={()=>setTab("causacion")}
+        />
+      )}
 
       {(tab==="causacion" || tab==="pagos")&&(
         <>

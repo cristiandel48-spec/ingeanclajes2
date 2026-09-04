@@ -13,7 +13,7 @@ import { estadoSegunAvance, obraEstaCerrada } from "../../lib/flujoObra";
 import { esAdmin, puedeCrearPersonal, puedeVerDinero } from "../../lib/permisos";
 import { siguienteIdUnico } from "../../lib/identificadores";
 export default function ObraDetalle({obraId,ctx,onVolver}){
-  const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,horarios,setHorarios,irAPantalla,membresia}=ctx;
+  const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,ordenesCompra=[],setOrdenesCompra,horarios,setHorarios,irAPantalla,membresia}=ctx;
   // Las cifras de la obra son confidenciales: quien organiza el trabajo no ve
   // cuanto se cobro ni el jornal de sus companeros.
   const verDinero=puedeVerDinero(membresia);
@@ -29,6 +29,9 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
 
   const gastosObra=cuentas.filter(c=>c.obraId===obraId);
   const totalGastos=gastosObra.reduce((s,c)=>s+c.monto,0);
+  const ordenesObra=ordenesCompra.filter(o=>o.obraId===obraId);
+  const ordenesAprobadasObra=ordenesObra.filter(o=>o.estadoAprobacion==="Aprobada");
+  const totalOrdenesAprobadas=ordenesAprobadasObra.reduce((s,o)=>s+(Number(o.total)||0),0);
   const horariosObra=horarios.filter(h=>h.obraId===obraId);
   const idsHorarios=horariosObra.map(h=>h.empleadoId).filter(Boolean);
   const empObra=[...new Set([...(oAct.empleados||[]), ...idsHorarios])];
@@ -280,11 +283,76 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               </div>
             );
           })}
-          <div style={{background:"#f1f5f9",borderRadius:8,padding:"12px 16px",marginTop:8,display:"flex",justifyContent:"space-between",fontSize:13,fontWeight:600}}>
-            <span style={{color:"#64748b"}}>Total gastos</span>
-            <span style={{color:"#cc0000"}}>{fmt(totalGastos)}</span>
+          {/* SECCIÓN ÓRDENES DE COMPRA VINCULADAS */}
+          <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1.5px dashed #cbd5e1" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>
+                📦 Órdenes de compra vinculadas a esta obra ({ordenesObra.length})
+              </div>
+              <button
+                type="button"
+                onClick={() => irAPantalla("proveedores")}
+                style={{ ...B("#0284c7", "#fff"), fontSize: 11, padding: "5px 10px" }}
+              >
+                Ver en Causación ↗
+              </button>
+            </div>
+
+            {ordenesObra.length === 0 ? (
+              <div style={{ textAlign: "center", padding: 14, color: "#94a3b8", fontSize: 12, background: "#f8fafc", borderRadius: 8 }}>
+                No hay órdenes de compra emitidas para esta obra todavía.
+              </div>
+            ) : (
+              <div style={{ display: "grid", gap: 8 }}>
+                {ordenesObra.map((oc) => (
+                  <div key={oc.id} style={{ background: "#f8fafc", borderRadius: 8, padding: "10px 14px", border: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <strong style={{ color: "#0284c7", fontSize: 12.5 }}>{oc.id}</strong>
+                        <span style={{ fontSize: 11, color: "#64748b" }}>Doc: {oc.documentoOrigen}</span>
+                        {oc.estadoAprobacion === "Aprobada" ? (
+                          <span style={{ fontSize: 10, fontWeight: 700, color: "#166534", background: "#dcfce7", border: "1px solid #86efac", padding: "1px 6px", borderRadius: 4 }}>
+                            ✓ Aprobada (Camila Sepúlveda)
+                          </span>
+                        ) : oc.estadoAprobacion === "Rechazada" ? (
+                          <span style={{ fontSize: 10, fontWeight: 700, color: "#991b1b", background: "#fee2e2", border: "1px solid #fca5a5", padding: "1px 6px", borderRadius: 4 }}>
+                            ✕ Rechazada
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: 10, fontWeight: 700, color: "#c2410c", background: "#ffedd5", border: "1px solid #fed7aa", padding: "1px 6px", borderRadius: 4 }}>
+                            ⏳ Pendiente Aprobación
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 11, color: "#475569", marginTop: 3 }}>
+                        {oc.proveedorNombre} · Solicitado por: {oc.solicitante}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{fmt(oc.total)}</div>
+                      <div style={{ fontSize: 10, color: "#64748b" }}>Estado: {oc.estadoFacturacion}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          {oAct.total>0&&<div style={{background:totalGastos/oAct.total<0.4?"#dcfce7":"#fff7ed",borderRadius:8,padding:"10px 14px",marginTop:6,fontSize:11,color:"#475569"}}>Gastos = <strong style={{color:totalGastos/oAct.total<0.4?"#166534":"#c2410c"}}>{Math.round(totalGastos/oAct.total*100)}%</strong> del ingreso total</div>}
+
+          <div style={{ background: "#f1f5f9", borderRadius: 8, padding: "12px 16px", marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, textAlign: "center", fontSize: 12 }}>
+            <div>
+              <div style={{ color: "#64748b", marginBottom: 3 }}>Facturas causadas</div>
+              <div style={{ fontWeight: 700, color: "#cc0000", fontSize: 14 }}>{fmt(totalGastos)}</div>
+            </div>
+            <div>
+              <div style={{ color: "#64748b", marginBottom: 3 }}>Órdenes aprobadas</div>
+              <div style={{ fontWeight: 700, color: "#0284c7", fontSize: 14 }}>{fmt(totalOrdenesAprobadas)}</div>
+            </div>
+            <div>
+              <div style={{ color: "#64748b", marginBottom: 3 }}>Costo comprometido</div>
+              <div style={{ fontWeight: 800, color: "#0f172a", fontSize: 15 }}>{fmt(totalGastos + totalOrdenesAprobadas)}</div>
+            </div>
+          </div>
+          {oAct.total>0&&<div style={{background:(totalGastos+totalOrdenesAprobadas)/oAct.total<0.4?"#dcfce7":"#fff7ed",borderRadius:8,padding:"10px 14px",marginTop:8,fontSize:11,color:"#475569"}}>Compromiso total = <strong style={{color:(totalGastos+totalOrdenesAprobadas)/oAct.total<0.4?"#166534":"#c2410c"}}>{Math.round(((totalGastos+totalOrdenesAprobadas)/oAct.total)*100)}%</strong> del ingreso de la obra</div>}
         </div>
       )}
 

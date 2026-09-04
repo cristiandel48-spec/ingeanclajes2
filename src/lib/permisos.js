@@ -122,6 +122,25 @@ export function esDestinatarioAlerta(membresia) {
   return false;
 }
 
+/**
+ * Determina si el usuario actual tiene permisos para aprobar o rechazar Órdenes de Compra.
+ * Está asignado a María Camila Sepúlveda y a los Administradores / Dueños del sistema.
+ */
+export function puedeAprobarOrdenCompra(membresia) {
+  if (!membresia) return false;
+  if (esAdmin(membresia) || esDueno(membresia)) return true;
+  const role = String(membresia.role || "").toLowerCase().trim();
+  if (role === "admin" || role === "superadmin" || role === "owner" || role === "administrador") return true;
+  const nombre = String(membresia.nombre || "").toLowerCase().trim();
+  const email = String(membresia.email || "").toLowerCase().trim();
+  return (
+    nombre.includes("camila") ||
+    nombre.includes("sepulveda") ||
+    nombre.includes("sepúlveda") ||
+    email.includes("camila")
+  );
+}
+
 /** Quita del listado del equipo las cuentas de soporte. */
 export function sinCuentasSoporte(usuarios) {
   return (usuarios ?? []).filter((usuario) => !esCuentaSoporte(usuario?.email));

@@ -7,7 +7,7 @@ import {
   OBRAS_INIT, EMPLEADOS_INIT, CARGOS_INIT, PAGOS_INIT, HORARIOS_INIT,
   CERTIFICACIONES_INIT, INFORMES_INIT, CLIENTES_INIT, PROVEEDORES_INIT,
   CUENTAS_PAGAR_INIT, COTIZACIONES_INIT, CONTABILIDAD_CONFIG_INIT,
-  PLAN_CUENTAS_INIT, ASIENTOS_CONTABLES_INIT,
+  PLAN_CUENTAS_INIT, ASIENTOS_CONTABLES_INIT, ORDENES_COMPRA_INIT,
 } from "../data/seed";
 import {
   normalizarEmpleado, normalizarCargos, normalizeNominaGeneratedRecord,
@@ -43,6 +43,27 @@ export function AppDataProvider({ children }) {
   const [clientes, setClientes] = useState(CLIENTES_INIT);
   const [proveedores, setProveedores] = useState(PROVEEDORES_INIT);
   const [cuentas, setCuentas] = useState(CUENTAS_PAGAR_INIT);
+  const [ordenesCompra, setOrdenesCompra] = useState(() => {
+    try {
+      const guardado = localStorage.getItem("ordenes_compra");
+      if (guardado) {
+        const parsed = JSON.parse(guardado);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn("No se pudo cargar ordenes_compra de localStorage", e);
+    }
+    return ORDENES_COMPRA_INIT;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("ordenes_compra", JSON.stringify(ordenesCompra));
+    } catch (e) {
+      console.warn("No se pudo guardar ordenes_compra en localStorage", e);
+    }
+  }, [ordenesCompra]);
+
   const [cotizaciones, setCotizaciones] = useState(COTIZACIONES_INIT);
   const [contabilidadConfig, setContabilidadConfig] = useState(CONTABILIDAD_CONFIG_INIT);
   const [planCuentas, setPlanCuentas] = useState(PLAN_CUENTAS_INIT);
@@ -374,6 +395,7 @@ export function AppDataProvider({ children }) {
     clientes, setClientes,
     proveedores, setProveedores,
     cuentas, setCuentas,
+    ordenesCompra, setOrdenesCompra,
     cotizaciones, setCotizaciones,
     contabilidadConfig, setContabilidadConfig,
     planCuentas, setPlanCuentas,

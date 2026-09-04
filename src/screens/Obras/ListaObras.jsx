@@ -10,19 +10,29 @@
 import { useMemo } from "react";
 import ListadoConFiltros, { GrupoFiltro, Pastilla, Resaltable } from "../../components/ListadoConFiltros";
 import { C, enMilis } from "../../components/listadoEstilos";
+import Badge from "../../components/ui/Badge";
 import { SI } from "../../styles/tokens";
-import { ESTADOS_OBRA, estadoObraDe, obraEstaCerrada } from "../../lib/flujoObra";
+import { ESTADOS_OBRA, estadoCobroDe, estadoObraDe, obraEstaCerrada } from "../../lib/flujoObra";
 import { resumenBitacora } from "../../lib/bitacoraObra";
 import { fmtD } from "../../lib/format";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 
+const TRAMOS_AVANCE = [
+  { key: "sin",   label: "Sin iniciar (0%)", test: (v) => v === 0 },
+  { key: "bajo",  label: "1–49%",            test: (v) => v > 0 && v < 50 },
+  { key: "medio", label: "50–99%",           test: (v) => v >= 50 && v < 100 },
+  { key: "full",  label: "Terminadas",       test: (v) => v === 100 },
+];
+
 const ORDENES = [
   { key: "recientes",   label: "Más recientes", comparar: (a, b) => enMilis(b.fechaInicio) - enMilis(a.fechaInicio) || String(b.id).localeCompare(String(a.id)) },
   { key: "antiguas",    label: "Más antiguas",  comparar: (a, b) => enMilis(a.fechaInicio) - enMilis(b.fechaInicio) },
+  { key: "avance-desc", label: "Mayor avance",  comparar: (a, b) => (b.avance || 0) - (a.avance || 0) },
+  { key: "avance-asc",  label: "Menor avance",  comparar: (a, b) => (a.avance || 0) - (b.avance || 0) },
   { key: "cliente",     label: "Cliente A–Z",   comparar: (a, b) => String(a.cliente || "").localeCompare(String(b.cliente || ""), "es") },
 ];
 
-export default function ListaObras({ obras, cotizaciones, horarios = [], onAbrir, onCambiarEstado, puedeDesbloquear }) {
+export default function ListaObras({ obras, cotizaciones, horarios = [], onAbrir, onCambiarAvance, onCambiarEstado, puedeDesbloquear }) {
   // Las fotos se cuentan una vez por obra y no en cada filtro.
   const fotosPorObra = useMemo(() => {
     const mapa = new Map();
@@ -42,14 +52,26 @@ export default function ListaObras({ obras, cotizaciones, horarios = [], onAbrir
       fechaDe={(o) => o.fechaInicio}
       ordenes={ORDENES}
       filtrosExtra={({ valores, poner }) => (
-        <GrupoFiltro titulo="Registro de fotos">
-          <Pastilla activa={valores.fotos === "con"}
-            onClick={() => poner("fotos", valores.fotos === "con" ? null : "con")}>Con fotos</Pastilla>
-          <Pastilla activa={valores.fotos === "sin"}
-            onClick={() => poner("fotos", valores.fotos === "sin" ? null : "sin")}>Sin fotos</Pastilla>
-        </GrupoFiltro>
+        <>
+          <GrupoFiltro titulo="Avance">
+            {TRAMOS_AVANCE.map((t) => (
+              <Pastilla key={t.key} activa={valores.avance === t.key}
+                onClick={() => poner("avance", valores.avance === t.key ? null : t.key)}>{t.label}</Pastilla>
+            ))}
+          </GrupoFiltro>
+          <GrupoFiltro titulo="Registro de avance">
+            <Pastilla activa={valores.fotos === "con"}
+              onClick={() => poner("fotos", valores.fotos === "con" ? null : "con")}>Con fotos</Pastilla>
+            <Pastilla activa={valores.fotos === "sin"}
+              onClick={() => poner("fotos", valores.fotos === "sin" ? null : "sin")}>Sin fotos</Pastilla>
+          </GrupoFiltro>
+        </>
       )}
       aplicarExtra={(o, v) => {
+        if (v.avance) {
+          const tramo = TRAMOS_AVANCE.find((t) => t.key === v.avance);
+          if (tramo && !tramo.test(Number(o.avance) || 0)) return false;
+        }
         if (v.fotos) {
           const tiene = (fotosPorObra.get(o.id)?.fotos || 0) > 0;
           if (v.fotos === "con" && !tiene) return false;
@@ -57,12 +79,23 @@ export default function ListaObras({ obras, cotizaciones, horarios = [], onAbrir
         }
         return true;
       }}
+      derecha={(lista) => {
+        const promedio = lista.length
+          ? Math.round(lista.reduce((t, o) => t + (Number(o.avance) || 0), 0) / lista.length)
+          : 0;
+        return (
+          <span style={{ fontSize: 11.5, color: C.tenue, fontWeight: 600 }}>
+            Avance promedio <strong style={{ color: C.tinta }}>{promedio}%</strong>
+          </span>
+        );
+      }}
       fila={(o, { compacta }) => (
         <Fila key={o.id} o={o} compacta={compacta}
           cotizacion={(cotizaciones || []).find((c) => c.id === o.cotizacionId)}
           resumen={fotosPorObra.get(o.id)}
           horarios={horarios}
           onAbrir={() => onAbrir(o)}
+          onCambiarAvance={onCambiarAvance}
           onCambiarEstado={onCambiarEstado}
           puedeDesbloquear={puedeDesbloquear} />
       )}
@@ -74,7 +107,7 @@ export default function ListaObras({ obras, cotizaciones, horarios = [], onAbrir
   );
 }
 
-function Fila({ o, compacta, cotizacion, resumen, horarios = [], onAbrir, onCambiarEstado, puedeDesbloquear }) {
+function Fila({ o, compacta, cotizacion, resumen, horarios = [], onAbrir, onCambiarAvance, onCambiarEstado, puedeDesbloquear }) {
   const idsDirectos = Array.isArray(o.empleados) ? o.empleados : [];
   const idsHorarios = (horarios || []).filter((h) => h.obraId === o.id).map((h) => h.empleadoId).filter(Boolean);
   const totalEmpleados = [...new Set([...idsDirectos, ...idsHorarios])].length;
@@ -115,6 +148,23 @@ function Fila({ o, compacta, cotizacion, resumen, horarios = [], onAbrir, onCamb
     </select>
   );
 
+  // Como va la plata, aparte del trabajo. Sale del saldo, no de una columna:
+  // asi no puede contradecir a los abonos registrados.
+  const cobro = estadoCobroDe(o);
+  const COLOR_COBRO = {
+    "Cobrado":    { texto: "#166534", fondo: "#ecfdf5", borde: "#a7f3d0" },
+    "Abonado":    { texto: "#b45309", fondo: "#fffbeb", borde: "#fcd34d" },
+    "Sin cobrar": { texto: "#64748b", fondo: "#f8fafc", borde: "#e2e8f0" },
+  };
+  const insigniaCobro = cobro && (
+    <span title={`Cobro: ${cobro.toLowerCase()}`}
+      style={{ fontSize: 10, fontWeight: 700, whiteSpace: "nowrap",
+        color: COLOR_COBRO[cobro].texto, background: COLOR_COBRO[cobro].fondo,
+        border: `1px solid ${COLOR_COBRO[cobro].borde}`, borderRadius: 20, padding: "2px 8px" }}>
+      {cobro}
+    </span>
+  );
+
   const contadores = (
     <>
       <span style={{ fontSize: 11, color: C.tenue, flexShrink: 0 }}>{totalEmpleados} 👷</span>
@@ -153,8 +203,26 @@ function Fila({ o, compacta, cotizacion, resumen, horarios = [], onAbrir, onCamb
         <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, background: color }} />
         <div style={{ minWidth: 0, flex: 1 }}>{datos}</div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+        {/* La barra sigue siendo la de mover el avance, aqui estrecha. */}
+        <div style={{ width: 150, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5,
+            color: C.apagado, marginBottom: 2 }}>
+            <span>Avance</span>
+            <span style={{ color: avance === 100 ? "#166534" : C.acento, fontWeight: 700,
+              fontVariantNumeric: "tabular-nums" }}>{avance}%</span>
+          </div>
+          {/* Mover la barra en una obra cerrada la reabriria: el avance y el
+              estado van pegados por estadoSegunAvance(). */}
+          <input type="range" min={0} max={100} value={avance} disabled={bloqueada}
+            title={bloqueada ? "Obra finalizada: el avance ya no se cambia." : undefined}
+            onChange={(e) => onCambiarAvance(o.id, Number(e.target.value))}
+            style={{ width: "100%", accentColor: C.acento, display: "block", margin: 0,
+              opacity: bloqueada ? 0.5 : 1, cursor: bloqueada ? "not-allowed" : "pointer" }} />
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           {contadores}
+          {insigniaCobro}
           {selectorEstado}
           <span style={{ fontSize: 11, color: C.acentoFuerte, fontWeight: 600 }}>Ver →</span>
         </div>
@@ -166,18 +234,40 @@ function Fila({ o, compacta, cotizacion, resumen, horarios = [], onAbrir, onCamb
     <Resaltable as="article" onClick={onAbrir}
       estiloHover={{ borderColor: C.acentoFuerte, boxShadow: "0 12px 28px -16px rgba(15,23,42,.30)" }}
       style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 12, background: "#fff",
-        padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8,
+        padding: "12px 13px 10px", display: "flex", flexDirection: "column", gap: 9,
         cursor: "pointer", position: "relative", overflow: "hidden",
         transition: "box-shadow .2s ease, border-color .2s ease" }}>
       <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, background: color }} />
 
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
-        <div style={{ minWidth: 0, flex: 1 }}>{datos}</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          {contadores}
-          <div onClick={(e) => e.stopPropagation()}>{selectorEstado}</div>
-          <span style={{ fontSize: 11, color: C.acentoFuerte, fontWeight: 600 }}>Ver →</span>
+        <div style={{ minWidth: 0 }}>{datos}</div>
+        <Badge estado={o.estado} />
+      </div>
+
+      <div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.apagado,
+          marginBottom: 4 }}>
+          <span>Avance</span>
+          <span style={{ color: avance === 100 ? "#166534" : C.acento, fontWeight: 600,
+            fontVariantNumeric: "tabular-nums" }}>{avance}%</span>
         </div>
+        <div style={{ height: 5, background: C.bordeFuerte, borderRadius: 3 }}>
+          <div style={{ width: avance + "%", height: "100%", background: color, borderRadius: 3,
+            transition: "width .4s ease" }} />
+        </div>
+        <input type="range" min={0} max={100} value={avance} disabled={bloqueada}
+          title={bloqueada ? "Obra finalizada: el avance ya no se cambia." : undefined}
+          onChange={(e) => onCambiarAvance(o.id, Number(e.target.value))}
+          onClick={(e) => e.stopPropagation()}
+          style={{ width: "100%", marginTop: 4, accentColor: C.acento,
+            opacity: bloqueada ? 0.5 : 1, cursor: bloqueada ? "not-allowed" : "pointer" }} />
+      </div>
+
+      <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
+        <div style={{ flex: 1 }} onClick={(e) => e.stopPropagation()}>{selectorEstado}</div>
+        {insigniaCobro}
+        {contadores}
+        <span style={{ fontSize: 11, color: C.acentoFuerte, fontWeight: 600, flexShrink: 0 }}>Ver →</span>
       </div>
     </Resaltable>
   );

@@ -77,7 +77,15 @@ async function textoDePdf(archivo) {
       .join("");
     paginas.push(texto);
   }
-  documento.destroy();
+  try {
+    if (typeof documento?.destroy === "function") {
+      documento.destroy();
+    } else if (typeof documento?.cleanup === "function") {
+      documento.cleanup();
+    }
+  } catch (errLimpieza) {
+    console.warn("No se pudo invocar limpieza de documento PDF:", errLimpieza);
+  }
 
   return paginas.join("\n\n").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
 }

@@ -13,6 +13,25 @@ import { siguienteIdUnico } from "../../lib/identificadores";
 export default function CuentasPagar({ctx}){
   const {cuentas,setCuentas,proveedores,setProveedores,obras}=ctx;
 
+  const proveedoresData=proveedores.map(p=>({
+    ...p,
+    telefono:p.telefono||p.tel||"",
+    tel:p.telefono||p.tel||"",
+    numeroCuenta:p.numeroCuenta||"",
+    banco:p.banco||"",
+    direccion:p.direccion||"",
+    nit:p.nit||"",
+    contacto:p.contacto||"",
+    email:p.email||"",
+    categoria:p.categoria||"General",
+    responsableIva:p.responsableIva ?? p.responsable_iva ?? true,
+    regimenTributario:p.regimenTributario||p.regimen_tributario||"Ordinario",
+    agenteReteiva:p.agenteReteiva ?? p.agente_reteiva ?? false,
+    autorretenedorRenta:p.autorretenedorRenta ?? p.autorretenedor_renta ?? false,
+    municipioIca:p.municipioIca||p.municipio_ica||"Envigado",
+    codigoIca:p.codigoIca||p.codigo_ica||"",
+  }));
+
   const proveedorBase={
     nombre:"",
     numeroCuenta:"",
@@ -117,25 +136,6 @@ export default function CuentasPagar({ctx}){
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase();
-
-  const proveedoresData=proveedores.map(p=>({
-    ...p,
-    telefono:p.telefono||p.tel||"",
-    tel:p.telefono||p.tel||"",
-    numeroCuenta:p.numeroCuenta||"",
-    banco:p.banco||"",
-    direccion:p.direccion||"",
-    nit:p.nit||"",
-    contacto:p.contacto||"",
-    email:p.email||"",
-    categoria:p.categoria||"General",
-    responsableIva:p.responsableIva ?? p.responsable_iva ?? true,
-    regimenTributario:p.regimenTributario||p.regimen_tributario||"Ordinario",
-    agenteReteiva:p.agenteReteiva ?? p.agente_reteiva ?? false,
-    autorretenedorRenta:p.autorretenedorRenta ?? p.autorretenedor_renta ?? false,
-    municipioIca:p.municipioIca||p.municipio_ica||"Envigado",
-    codigoIca:p.codigoIca||p.codigo_ica||"",
-  }));
 
   const normalizarCuenta=(cuenta)=>{
     const total=Number(cuenta.valorTotalPagar ?? cuenta.valor_total_pagar ?? cuenta.monto ?? 0);

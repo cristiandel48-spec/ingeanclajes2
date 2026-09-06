@@ -491,7 +491,7 @@ export default function Cotizacion({ctx}){
     setBajandoPdf("editor");
     try{
       const guardada = persistCotizacion({volverALista:false});
-      const cotizacionParaPdf = guardada || cotizacionEnEdicion;
+      const cotizacionParaPdf = guardada || cotizacionEnVivo;
       const {blob,nombre} = await generarCotizacionPdf(cotizacionParaPdf,{firmaImg,sello:selloCotizacion});
       downloadGeneratedFile(new File([blob],nombre,{type:"application/pdf"}));
     }catch(e){

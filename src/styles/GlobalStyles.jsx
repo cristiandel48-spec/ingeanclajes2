@@ -140,11 +140,22 @@ export default function GlobalStyles({ divider }) {
       #pz, #pz * { visibility: visible !important; }
       #pz {
         position: relative !important; left: auto !important; top: auto !important;
-        width: auto !important; max-width: none !important; margin: 0 !important;
+        width: 100% !important; max-width: none !important; margin: 0 auto !important;
         padding: 0 !important; border: none !important; border-radius: 0 !important;
         box-shadow: none !important; background: #fff !important; overflow: visible !important;
       }
       .no-print { display: none !important; }
+      .print-modal-parent {
+        position: static !important;
+        display: block !important;
+        max-height: none !important;
+        overflow: visible !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
       .print-avoid-break, table, tr, td, th { break-inside: avoid; page-break-inside: avoid; }
     }
 

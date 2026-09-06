@@ -13,7 +13,7 @@ import { estadoSegunAvance, obraEstaCerrada } from "../../lib/flujoObra";
 import { esAdmin, puedeCrearPersonal, puedeVerDinero } from "../../lib/permisos";
 import { siguienteIdUnico } from "../../lib/identificadores";
 export default function ObraDetalle({obraId,ctx,onVolver}){
-  const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,ordenesCompra=[],setOrdenesCompra,horarios,setHorarios,irAPantalla,membresia}=ctx;
+  const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,ordenesCompra=[],horarios,setHorarios,irAPantalla,membresia}=ctx;
   // Las cifras de la obra son confidenciales: quien organiza el trabajo no ve
   // cuanto se cobro ni el jornal de sus companeros.
   const verDinero=puedeVerDinero(membresia);

@@ -1,9 +1,13 @@
 import React, { useState, useMemo } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
-import { fmt, today } from "../../lib/format";
+import { today } from "../../lib/format";
 import { puedeAprobarOrdenCompra } from "../../lib/permisos";
 import Badge from "../../components/ui/Badge";
 import LBL from "../../components/ui/LBL";
+import { useAppData } from "../../context/AppDataContext";
+import PrintHeader from "../../components/print/PrintHeader";
+import { descargarDocumentoPdf } from "../../lib/documentoPdf";
+import { siguienteIdUnico } from "../../lib/identificadores";
 
 // Formatea moneda con decimales exactos al estilo ERP: $ 7.567.436,10
 function fmtMonedaErp(valor) {
@@ -36,7 +40,34 @@ export default function OrdenesCompra({
   membresia = null,
   onIrACausacion,
 }) {
+  const { empresaConfig } = useAppData();
   const esAprobador = puedeAprobarOrdenCompra(membresia);
+  const [generandoPdf, setGenerandoPdf] = useState(false);
+
+  const imprimirOrden = () => {
+    window.print();
+  };
+
+  const descargarPdfOrden = async () => {
+    const el = document.getElementById("pz");
+    if (!el) {
+      window.alert("No se encontró el documento para generar el PDF.");
+      return;
+    }
+    setGenerandoPdf(true);
+    try {
+      const nombreArchivo = `Orden de Compra ${ordenDetalle?.id || ""} ${ordenDetalle?.proveedorNombre || ""}`
+        .replace(/[\\/:*?"<>|]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      await descargarDocumentoPdf(el, nombreArchivo);
+    } catch (err) {
+      console.error(err);
+      window.alert("Error al generar PDF: " + (err?.message || err));
+    } finally {
+      setGenerandoPdf(false);
+    }
+  };
 
   // Empleados del sistema disponibles para Solicitante y Aprobador
   const empleadosParaSeleccion = useMemo(() => {
@@ -117,7 +148,7 @@ export default function OrdenesCompra({
   };
 
   // Genera número de Documento Origen sugerido (OP/xxxxx)
-  const generarDocumentoOrigen = (obraId) => {
+  const generarDocumentoOrigen = () => {
     const randomNum = Math.floor(54000 + Math.random() * 9000);
     return `OP/${randomNum}`;
   };
@@ -347,7 +378,7 @@ export default function OrdenesCompra({
     const orden = ordenDetalle;
     if (!orden) return;
 
-    const nuevaCuentaId = "CXP-" + Math.floor(1000 + Math.random() * 9000);
+    const nuevaCuentaId = siguienteIdUnico(cuentas, "CXP");
     const nuevaCuenta = {
       id: nuevaCuentaId,
       proveedorId: orden.proveedorId,
@@ -391,7 +422,7 @@ export default function OrdenesCompra({
     setOrdenesCompra((prev) =>
       prev.map((o) =>
         o.id === orden.id
-          ? {
+            ? {
               ...o,
               estadoFacturacion: "Facturado",
               facturaVinculadaId: nuevaCuentaId,
@@ -411,6 +442,9 @@ export default function OrdenesCompra({
     setShowModalCausar(false);
     setNumFacturaCausacion("");
     alert(`Factura ${numFacturaCausacion.trim()} causada exitosamente en Contabilidad vinculada a la Orden ${orden.id}.`);
+    if (typeof onIrACausacion === "function" && window.confirm("¿Deseas ir al módulo de Causación para ver la cuenta registrada?")) {
+      onIrACausacion();
+    }
   };
 
   const eliminarOrden = (id) => {
@@ -495,6 +529,26 @@ export default function OrdenesCompra({
           </button>
         </div>
       )}
+
+      {/* Métricas clave de Órdenes de Compra */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 16 }}>
+        <div style={{ ...CD, padding: "12px 14px", borderLeft: "4px solid #cc0000" }}>
+          <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>Total Órdenes</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", marginTop: 4 }}>{totalOrdenes}</div>
+        </div>
+        <div style={{ ...CD, padding: "12px 14px", borderLeft: "4px solid #f59e0b" }}>
+          <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>Pendientes Aprobación</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: "#d97706", marginTop: 4 }}>{pendientesAprobacion}</div>
+        </div>
+        <div style={{ ...CD, padding: "12px 14px", borderLeft: "4px solid #16a34a" }}>
+          <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>Aprobadas</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: "#166534", marginTop: 4 }}>{aprobadas}</div>
+        </div>
+        <div style={{ ...CD, padding: "12px 14px", borderLeft: "4px solid #0284c7" }}>
+          <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>Monto Comprometido</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: "#0369a1", marginTop: 4 }}>{fmtMonedaErp(montoComprometido)}</div>
+        </div>
+      </div>
 
       {/* Barra de Filtros y Acciones */}
       <div style={{ ...CD, marginBottom: 16, padding: "14px 18px" }}>
@@ -813,6 +867,24 @@ export default function OrdenesCompra({
                             title="Ver detalle completo de la orden"
                           >
                             Ver
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOrdenDetalle(orden);
+                              setTimeout(() => window.print(), 150);
+                            }}
+                            style={{
+                              ...B("#f8fafc", "#334155"),
+                              border: "1px solid #cbd5e1",
+                              fontSize: 11,
+                              padding: "4px 7px",
+                              borderRadius: 5,
+                            }}
+                            title="Imprimir Orden de Compra oficial"
+                          >
+                            🖨️
                           </button>
 
                           {/* Botón directo de aprobación para Camila Sepúlveda */}
@@ -1274,42 +1346,54 @@ export default function OrdenesCompra({
       )}
 
       {/* ======================================================= */}
-      {/* MODAL: DETALLE Y APROBACIÓN POR MARÍA CAMILA SEPÚLVEDA */}
+      {/* MODAL: DETALLE, IMPRESIÓN Y APROBACIÓN DE ORDEN        */}
       {/* ======================================================= */}
       {ordenDetalle && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(15, 23, 42, 0.6)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 16,
-          zIndex: 9999,
-          backdropFilter: "blur(3px)",
-        }}>
-          <div style={{
-            background: "#fff",
-            borderRadius: 12,
-            maxWidth: 820,
-            width: "100%",
-            maxHeight: "92vh",
-            overflowY: "auto",
-            boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
-            border: "1px solid #e2e8f0",
-          }}>
-            {/* Cabecera del Detalle */}
-            <div style={{
-              padding: "16px 24px",
-              borderBottom: "1px solid #e2e8f0",
+        <div
+          className="print-modal-parent"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(15, 23, 42, 0.65)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+            zIndex: 9999,
+            backdropFilter: "blur(3px)",
+          }}
+        >
+          <div
+            className="print-modal-parent"
+            style={{
+              background: "#fff",
+              borderRadius: 12,
+              maxWidth: 880,
+              width: "100%",
+              maxHeight: "94vh",
               display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              background: "#f8fafc",
-            }}>
+              flexDirection: "column",
+              overflow: "hidden",
+              boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
+              border: "1px solid #e2e8f0",
+            }}
+          >
+            {/* Cabecera del Detalle (no-print) */}
+            <div
+              className="no-print"
+              style={{
+                padding: "14px 20px",
+                borderBottom: "1px solid #e2e8f0",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                background: "#f8fafc",
+                flexShrink: 0,
+              }}
+            >
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ fontSize: 18, fontWeight: 800, color: "#0f172a" }}>
@@ -1333,171 +1417,395 @@ export default function OrdenesCompra({
                   Doc. Origen: <strong>{ordenDetalle.documentoOrigen}</strong> · Creada: {ordenDetalle.fecha}
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setOrdenDetalle(null)}
-                style={{ background: "transparent", border: "none", fontSize: 20, cursor: "pointer", color: "#94a3b8" }}
-              >
-                ✕
-              </button>
+
+              {/* Botones de acción rápida en la barra superior */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={imprimirOrden}
+                  style={{
+                    ...B("#0f172a", "#ffffff"),
+                    fontSize: 12,
+                    padding: "7px 14px",
+                    fontWeight: 700,
+                    borderRadius: 7,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                  }}
+                  title="Imprimir Orden de Compra oficial"
+                >
+                  <span>🖨️</span>
+                  <span>Imprimir OC</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={generandoPdf}
+                  onClick={descargarPdfOrden}
+                  style={{
+                    ...B("#cc0000", "#ffffff"),
+                    fontSize: 12,
+                    padding: "7px 14px",
+                    fontWeight: 700,
+                    borderRadius: 7,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    opacity: generandoPdf ? 0.7 : 1,
+                    boxShadow: "0 1px 3px rgba(204,0,0,0.2)",
+                  }}
+                  title="Descargar archivo PDF oficial de la Orden"
+                >
+                  <span>📥</span>
+                  <span>{generandoPdf ? "Generando..." : "Descargar PDF"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setOrdenDetalle(null)}
+                  style={{ background: "transparent", border: "none", fontSize: 22, cursor: "pointer", color: "#94a3b8", padding: "4px 8px", marginLeft: 4 }}
+                  title="Cerrar ventana"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
-            <div style={{ padding: 24 }}>
-              {/* Bloque de Información General */}
-              <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 16, marginBottom: 20, background: "#f8fafc", padding: 14, borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }}>
-                <div>
-                  <div style={{ marginBottom: 6 }}><strong style={{ color: "#0f172a" }}>🏢 Obra Vinculada:</strong> {ordenDetalle.obraNombre || "—"}</div>
-                  <div style={{ marginBottom: 6 }}><strong style={{ color: "#0f172a" }}>🏭 Proveedor:</strong> {ordenDetalle.proveedorNombre}</div>
-                  <div><strong style={{ color: "#0f172a" }}>👤 Solicitante en Obra:</strong> {ordenDetalle.solicitante}</div>
-                </div>
-                <div>
-                  <div style={{ marginBottom: 6 }}><strong style={{ color: "#0f172a" }}>💼 Comprador / Aprobador:</strong> {ordenDetalle.comprador}</div>
-                  <div style={{ marginBottom: 6 }}><strong style={{ color: "#0f172a" }}>📅 Entrega esperada:</strong> {ordenDetalle.fechaEntregaEsperada}</div>
-                  <div><strong style={{ color: "#0f172a" }}>🧾 Facturación:</strong> {ordenDetalle.estadoFacturacion} {ordenDetalle.numFacturaProveedor ? `(Factura: ${ordenDetalle.numFacturaProveedor})` : ""}</div>
-                </div>
-              </div>
-
-              {/* Estado de Aprobación y Trazabilidad */}
-              <div style={{
-                background: ordenDetalle.estadoAprobacion === "Aprobada" ? "#f0fdf4" : ordenDetalle.estadoAprobacion === "Rechazada" ? "#fef2f2" : "#fffbeb",
-                border: `1px solid ${ordenDetalle.estadoAprobacion === "Aprobada" ? "#bbf7d0" : ordenDetalle.estadoAprobacion === "Rechazada" ? "#fecaca" : "#fde68a"}`,
-                borderRadius: 8,
-                padding: "12px 16px",
-                marginBottom: 20,
-              }}>
-                <div style={{ fontSize: 12.5, fontWeight: 700, color: ordenDetalle.estadoAprobacion === "Aprobada" ? "#166534" : ordenDetalle.estadoAprobacion === "Rechazada" ? "#991b1b" : "#92400e" }}>
-                  {ordenDetalle.estadoAprobacion === "Aprobada"
-                    ? `✓ Aprobada oficialmente por María Camila Sepúlveda`
-                    : ordenDetalle.estadoAprobacion === "Rechazada"
-                    ? `✕ Rechazada por María Camila Sepúlveda`
-                    : `⏳ Pendiente de revisión y aprobación por María Camila Sepúlveda`}
-                </div>
-                {ordenDetalle.aprobadoEn && (
-                  <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
-                    Fecha y hora de decisión: {ordenDetalle.aprobadoEn}
+            {/* Contenedor scrolleable con el Documento Oficial Imprimible (#pz) */}
+            <div
+              className="print-modal-parent"
+              style={{
+                flex: 1,
+                overflowY: "auto",
+                background: "#f1f5f9",
+                padding: "20px 16px",
+              }}
+            >
+              <div
+                className="doc-paper-wrapper"
+                style={{
+                  maxWidth: 820,
+                  margin: "0 auto",
+                  width: "100%",
+                }}
+              >
+                <div
+                  id="pz"
+                  className="doc-shell print-orden-compra"
+                  style={{
+                    background: "#fff",
+                    color: "#111",
+                    fontFamily: "'Aptos', 'Segoe UI', Arial, sans-serif",
+                    fontSize: 12,
+                    lineHeight: 1.5,
+                    border: "1px solid #d6dde6",
+                    boxShadow: "0 4px 20px rgba(15,23,42,0.06)",
+                    padding: "28px 36px",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  {/* Encabezado Corporativo Ingeanclajes con Logo y Sello */}
+                  <div style={{ marginBottom: 16 }}>
+                    <PrintHeader
+                      dual={false}
+                      formato="orden_compra"
+                      empresaConfig={empresaConfig}
+                      numeroDocumento={ordenDetalle.id}
+                    />
                   </div>
-                )}
-                {ordenDetalle.motivoRechazo && (
-                  <div style={{ fontSize: 11.5, color: "#b91c1c", marginTop: 4, background: "#fff", padding: "6px 10px", borderRadius: 6, border: "1px solid #fecaca" }}>
-                    <strong>Motivo de rechazo:</strong> {ordenDetalle.motivoRechazo}
-                  </div>
-                )}
-              </div>
 
-              {/* Tabla de Ítems */}
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>
-                  Detalle de ítems cotizados
-                </div>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, border: "1px solid #e2e8f0" }}>
-                  <thead>
-                    <tr style={{ background: "#f1f5f9", borderBottom: "1px solid #e2e8f0", color: "#475569" }}>
-                      <th style={{ padding: "8px 10px", textAlign: "left" }}>Descripción</th>
-                      <th style={{ padding: "8px 10px", width: 70, textAlign: "center" }}>Cant.</th>
-                      <th style={{ padding: "8px 10px", width: 70, textAlign: "center" }}>Unidad</th>
-                      <th style={{ padding: "8px 10px", width: 120, textAlign: "right" }}>Valor Unitario</th>
-                      <th style={{ padding: "8px 10px", width: 130, textAlign: "right" }}>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(ordenDetalle.items || []).map((it, idx) => (
-                      <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                        <td style={{ padding: "8px 10px", color: "#1e293b" }}>{it.desc}</td>
-                        <td style={{ padding: "8px 10px", textAlign: "center" }}>{it.cant}</td>
-                        <td style={{ padding: "8px 10px", textAlign: "center", color: "#64748b" }}>{it.unit}</td>
-                        <td style={{ padding: "8px 10px", textAlign: "right" }}>{fmtMonedaErp(it.vu)}</td>
-                        <td style={{ padding: "8px 10px", textAlign: "right", fontWeight: 700 }}>{fmtMonedaErp(it.total)}</td>
+                  {/* Título Oficial */}
+                  <div style={{
+                    textAlign: "center",
+                    padding: "6px 0 10px",
+                    borderBottom: "2px solid #111",
+                    marginBottom: 16,
+                  }}>
+                    <div style={{
+                      fontSize: 15.5,
+                      fontWeight: 800,
+                      letterSpacing: 1.5,
+                      color: "#0f172a",
+                      textTransform: "uppercase",
+                    }}>
+                      ORDEN DE COMPRA No. {ordenDetalle.id}
+                    </div>
+                    <div style={{ fontSize: 10.5, color: "#64748b", textTransform: "uppercase", letterSpacing: 1, marginTop: 2 }}>
+                      Documento Comercial Oficial y Autorización de Suministros
+                    </div>
+                  </div>
+
+                  {/* Bloque de Información General en Cuadrícula Institucional */}
+                  <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 16, fontSize: 11.5 }}>
+                    <tbody>
+                      <tr>
+                        <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px", background: "#f8fafc", width: "18%", fontWeight: 700, color: "#334155" }}>
+                          FECHA EMISIÓN:
+                        </td>
+                        <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px", width: "32%" }}>
+                          {ordenDetalle.fecha}
+                        </td>
+                        <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px", background: "#f8fafc", width: "18%", fontWeight: 700, color: "#334155" }}>
+                          DOC. ORIGEN:
+                        </td>
+                        <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px", width: "32%" }}>
+                          <strong>{ordenDetalle.documentoOrigen}</strong>
+                        </td>
                       </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr style={{ background: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
-                      <td colSpan="4" style={{ padding: "8px 10px", textAlign: "right", color: "#64748b" }}>Subtotal:</td>
-                      <td style={{ padding: "8px 10px", textAlign: "right", fontWeight: 600 }}>{fmtMonedaErp(ordenDetalle.subtotal)}</td>
-                    </tr>
-                    {ordenDetalle.iva > 0 && (
-                      <tr style={{ background: "#f8fafc" }}>
-                        <td colSpan="4" style={{ padding: "8px 10px", textAlign: "right", color: "#64748b" }}>IVA:</td>
-                        <td style={{ padding: "8px 10px", textAlign: "right", fontWeight: 600 }}>{fmtMonedaErp(ordenDetalle.iva)}</td>
+                      <tr>
+                        <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px", background: "#f8fafc", fontWeight: 700, color: "#334155" }}>
+                          PROVEEDOR:
+                        </td>
+                        <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px" }}>
+                          <strong>{ordenDetalle.proveedorNombre}</strong>
+                        </td>
+                        <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px", background: "#f8fafc", fontWeight: 700, color: "#334155" }}>
+                          OBRA / DESTINO:
+                        </td>
+                        <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px" }}>
+                          <strong>{ordenDetalle.obraNombre || "Sede Principal / Stock"}</strong>
+                        </td>
                       </tr>
+                      <tr>
+                        <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px", background: "#f8fafc", fontWeight: 700, color: "#334155" }}>
+                          SOLICITANTE:
+                        </td>
+                        <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px" }}>
+                          {ordenDetalle.solicitante}
+                        </td>
+                        <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px", background: "#f8fafc", fontWeight: 700, color: "#334155" }}>
+                          ENTREGA ESPERADA:
+                        </td>
+                        <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px" }}>
+                          {ordenDetalle.fechaEntregaEsperada}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px", background: "#f8fafc", fontWeight: 700, color: "#334155" }}>
+                          COMPRADOR:
+                        </td>
+                        <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px" }}>
+                          {ordenDetalle.comprador}
+                        </td>
+                        <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px", background: "#f8fafc", fontWeight: 700, color: "#334155" }}>
+                          FACTURACIÓN:
+                        </td>
+                        <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px" }}>
+                          {ordenDetalle.estadoFacturacion} {ordenDetalle.numFacturaProveedor ? `(Factura: ${ordenDetalle.numFacturaProveedor})` : ""}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  {/* Sello de Aprobación y Decisión Oficial */}
+                  <div style={{
+                    background: ordenDetalle.estadoAprobacion === "Aprobada" ? "#f0fdf4" : ordenDetalle.estadoAprobacion === "Rechazada" ? "#fef2f2" : "#fffbeb",
+                    border: `1px solid ${ordenDetalle.estadoAprobacion === "Aprobada" ? "#86efac" : ordenDetalle.estadoAprobacion === "Rechazada" ? "#fecaca" : "#fde68a"}`,
+                    borderRadius: 6,
+                    padding: "8px 12px",
+                    marginBottom: 16,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    fontSize: 11.5,
+                  }}>
+                    <div>
+                      <span style={{
+                        fontWeight: 700,
+                        color: ordenDetalle.estadoAprobacion === "Aprobada" ? "#166534" : ordenDetalle.estadoAprobacion === "Rechazada" ? "#991b1b" : "#92400e",
+                      }}>
+                        ESTADO: {ordenDetalle.estadoAprobacion === "Aprobada" ? "✓ APROBADA OFICIALMENTE" : ordenDetalle.estadoAprobacion.toUpperCase()}
+                      </span>
+                      <span style={{ marginLeft: 8, color: "#334155" }}>
+                        por <strong>{ordenDetalle.aprobadoPor || "María Camila Sepúlveda"}</strong>
+                      </span>
+                    </div>
+                    {ordenDetalle.aprobadoEn && (
+                      <div style={{ color: "#64748b", fontSize: 11 }}>
+                        Fecha y hora: <strong>{ordenDetalle.aprobadoEn}</strong>
+                      </div>
                     )}
-                    <tr style={{ background: "#f1f5f9", fontWeight: 800 }}>
-                      <td colSpan="4" style={{ padding: "10px", textAlign: "right", color: "#0f172a", fontSize: 13 }}>TOTAL:</td>
-                      <td style={{ padding: "10px", textAlign: "right", color: "#cc0000", fontSize: 14 }}>{fmtMonedaErp(ordenDetalle.total)}</td>
-                    </tr>
-                  </tfoot>
-                </table>
+                  </div>
+
+                  {ordenDetalle.motivoRechazo && (
+                    <div style={{ fontSize: 11.5, color: "#b91c1c", marginBottom: 16, background: "#fef2f2", padding: "8px 12px", borderRadius: 6, border: "1px solid #fecaca" }}>
+                      <strong>Motivo de rechazo:</strong> {ordenDetalle.motivoRechazo}
+                    </div>
+                  )}
+
+                  {/* Tabla Detallada de Ítems */}
+                  <div style={{ marginBottom: 16 }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, border: "1.5px solid #334155" }}>
+                      <thead>
+                        <tr style={{ background: "#f1f5f9", borderBottom: "1.5px solid #334155", color: "#0f172a" }}>
+                          <th style={{ border: "1px solid #cbd5e1", padding: "7px 8px", width: 35, textAlign: "center" }}>#</th>
+                          <th style={{ border: "1px solid #cbd5e1", padding: "7px 10px", textAlign: "left" }}>Descripción del Material o Suministro</th>
+                          <th style={{ border: "1px solid #cbd5e1", padding: "7px 8px", width: 65, textAlign: "center" }}>Cant.</th>
+                          <th style={{ border: "1px solid #cbd5e1", padding: "7px 8px", width: 65, textAlign: "center" }}>Unidad</th>
+                          <th style={{ border: "1px solid #cbd5e1", padding: "7px 10px", width: 120, textAlign: "right" }}>Valor Unitario</th>
+                          <th style={{ border: "1px solid #cbd5e1", padding: "7px 10px", width: 130, textAlign: "right" }}>Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(ordenDetalle.items || []).map((it, idx) => (
+                          <tr key={idx} style={{ background: idx % 2 === 0 ? "#fff" : "#f8fafc" }}>
+                            <td style={{ border: "1px solid #e2e8f0", padding: "6px 8px", textAlign: "center", color: "#64748b" }}>{idx + 1}</td>
+                            <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px", color: "#1e293b", fontWeight: 500 }}>{it.desc}</td>
+                            <td style={{ border: "1px solid #e2e8f0", padding: "6px 8px", textAlign: "center", fontWeight: 700 }}>{it.cant}</td>
+                            <td style={{ border: "1px solid #e2e8f0", padding: "6px 8px", textAlign: "center", color: "#475569" }}>{it.unit}</td>
+                            <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px", textAlign: "right", fontFamily: "Consolas, monospace" }}>{fmtMonedaErp(it.vu)}</td>
+                            <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px", textAlign: "right", fontWeight: 700, fontFamily: "Consolas, monospace" }}>{fmtMonedaErp(it.total)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr>
+                          <td colSpan="4" rowSpan={ordenDetalle.iva > 0 ? 3 : 2} style={{ border: "1px solid #cbd5e1", padding: "10px", verticalAlign: "top", background: "#f8fafc", fontSize: 10.5, color: "#475569" }}>
+                            <strong>Observaciones / Condiciones de Entrega:</strong>
+                            <div style={{ marginTop: 4, whiteSpace: "pre-wrap" }}>
+                              {ordenDetalle.observaciones || "Sin observaciones adicionales. La entrega debe corresponder exactamente a las referencias y especificaciones indicadas."}
+                            </div>
+                          </td>
+                          <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px", textAlign: "right", fontWeight: 600, color: "#475569", background: "#f8fafc" }}>Subtotal:</td>
+                          <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px", textAlign: "right", fontWeight: 700, fontFamily: "Consolas, monospace" }}>{fmtMonedaErp(ordenDetalle.subtotal)}</td>
+                        </tr>
+                        {ordenDetalle.iva > 0 && (
+                          <tr>
+                            <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px", textAlign: "right", fontWeight: 600, color: "#475569", background: "#f8fafc" }}>IVA (19%):</td>
+                            <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px", textAlign: "right", fontWeight: 700, fontFamily: "Consolas, monospace" }}>{fmtMonedaErp(ordenDetalle.iva)}</td>
+                          </tr>
+                        )}
+                        <tr style={{ background: "#f1f5f9" }}>
+                          <td style={{ border: "1px solid #cbd5e1", padding: "8px 10px", textAlign: "right", fontWeight: 800, color: "#0f172a", fontSize: 12 }}>TOTAL:</td>
+                          <td style={{ border: "1px solid #cbd5e1", padding: "8px 10px", textAlign: "right", fontWeight: 800, color: "#cc0000", fontSize: 13, fontFamily: "Consolas, monospace" }}>{fmtMonedaErp(ordenDetalle.total)}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+
+                  {/* Firmas de Autorización y Recepción */}
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    gap: 16,
+                    marginTop: 26,
+                    pageBreakInside: "avoid",
+                    breakInside: "avoid",
+                  }}>
+                    <div style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "12px 10px", textAlign: "center", background: "#fff" }}>
+                      <div style={{ height: 44, borderBottom: "1px solid #94a3b8", marginBottom: 6 }} />
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#0f172a" }}>{ordenDetalle.solicitante || "Solicitante en Obra"}</div>
+                      <div style={{ fontSize: 9.5, color: "#64748b" }}>Solicitado por (Obra)</div>
+                    </div>
+
+                    <div style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "12px 10px", textAlign: "center", background: "#fff" }}>
+                      <div style={{ height: 44, borderBottom: "1px solid #94a3b8", marginBottom: 6, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+                        {ordenDetalle.estadoAprobacion === "Aprobada" && (
+                          <span style={{ fontSize: 11, color: "#166534", fontWeight: 700, paddingBottom: 4 }}>
+                            ✓ Aprobado digitalmente
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#0f172a" }}>María Camila Sepúlveda</div>
+                      <div style={{ fontSize: 9.5, color: "#64748b" }}>Aprobaciones y Compras Autorizadas</div>
+                    </div>
+
+                    <div style={{ border: "1px solid #cbd5e1", borderRadius: 6, padding: "12px 10px", textAlign: "center", background: "#fff" }}>
+                      <div style={{ height: 44, borderBottom: "1px solid #94a3b8", marginBottom: 6 }} />
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#0f172a" }}>{ordenDetalle.proveedorNombre}</div>
+                      <div style={{ fontSize: 9.5, color: "#64748b" }}>Firma / C.C. Recibido Proveedor</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Pie del modal fijo (Sticky Footer - no-print) */}
+            <div
+              className="no-print"
+              style={{
+                padding: "12px 20px",
+                borderTop: "1px solid #e2e8f0",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 10,
+                background: "#ffffff",
+                flexShrink: 0,
+                boxShadow: "0 -4px 6px -1px rgba(0,0,0,0.04)",
+              }}
+            >
+              <div>
+                {ordenDetalle.estadoAprobacion !== "Aprobada" && (
+                  <button
+                    type="button"
+                    onClick={() => eliminarOrden(ordenDetalle.id)}
+                    style={{ ...B("#fee2e2", "#ef4444"), border: "1px solid #fca5a5", fontSize: 11.5, padding: "6px 12px" }}
+                  >
+                    🗑 Eliminar orden
+                  </button>
+                )}
               </div>
 
-              {/* Observaciones */}
-              {ordenDetalle.observaciones && (
-                <div style={{ background: "#f8fafc", padding: "10px 14px", borderRadius: 8, fontSize: 11.5, color: "#475569", marginBottom: 20 }}>
-                  <strong>Observaciones:</strong> {ordenDetalle.observaciones}
-                </div>
-              )}
-
-              {/* Botones de Aprobación y Acciones */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
-                <div>
-                  {ordenDetalle.estadoAprobacion !== "Aprobada" && (
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                {/* Si está pendiente y el usuario tiene permisos de aprobación */}
+                {esAprobador && ordenDetalle.estadoAprobacion === "Pendiente" && (
+                  <>
                     <button
                       type="button"
-                      onClick={() => eliminarOrden(ordenDetalle.id)}
-                      style={{ ...B("#fee2e2", "#ef4444"), border: "1px solid #fca5a5", fontSize: 11.5, padding: "6px 12px" }}
+                      onClick={() => setShowModalRechazar(true)}
+                      style={{ ...B("#fff", "#dc2626"), border: "1px solid #dc2626", fontSize: 12, padding: "8px 14px", fontWeight: 600 }}
                     >
-                      🗑 Eliminar orden
+                      ✕ Rechazar con motivo
                     </button>
-                  )}
-                </div>
-
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  {/* Si está pendiente y el usuario tiene permisos de aprobación */}
-                  {esAprobador && ordenDetalle.estadoAprobacion === "Pendiente" && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setShowModalRechazar(true)}
-                        style={{ ...B("#fff", "#dc2626"), border: "1px solid #dc2626", fontSize: 12, padding: "8px 14px", fontWeight: 600 }}
-                      >
-                        ✕ Rechazar con motivo
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => aprobarOrden(ordenDetalle)}
-                        style={{ ...B("#16a34a", "#ffffff"), fontSize: 12, padding: "8px 16px", fontWeight: 700 }}
-                      >
-                        ✓ Aprobar Orden (María Camila Sepúlveda)
-                      </button>
-                    </>
-                  )}
-
-                  {/* Si ya está aprobada y no facturada */}
-                  {ordenDetalle.estadoAprobacion === "Aprobada" && ordenDetalle.estadoFacturacion !== "Facturado" && (
                     <button
                       type="button"
-                      onClick={() => setShowModalCausar(true)}
-                      style={{ ...B("#0284c7", "#ffffff"), fontSize: 12, padding: "8px 16px", fontWeight: 700 }}
+                      onClick={() => aprobarOrden(ordenDetalle)}
+                      style={{ ...B("#16a34a", "#ffffff"), fontSize: 12, padding: "8px 16px", fontWeight: 700 }}
                     >
-                      🧾 Causar Factura en Contabilidad
+                      ✓ Aprobar Orden (María Camila Sepúlveda)
                     </button>
-                  )}
+                  </>
+                )}
 
+                {/* Si ya está aprobada y no facturada */}
+                {ordenDetalle.estadoAprobacion === "Aprobada" && ordenDetalle.estadoFacturacion !== "Facturado" && (
                   <button
                     type="button"
-                    onClick={() => window.print()}
-                    style={{ ...B("#f1f5f9", "#334155"), fontSize: 12, padding: "8px 14px" }}
+                    onClick={() => setShowModalCausar(true)}
+                    style={{ ...B("#0284c7", "#ffffff"), fontSize: 12, padding: "8px 16px", fontWeight: 700 }}
                   >
-                    🖨️ Imprimir OC
+                    🧾 Causar Factura en Contabilidad
                   </button>
+                )}
 
-                  <button
-                    type="button"
-                    onClick={() => setOrdenDetalle(null)}
-                    style={{ ...B("#0f172a", "#ffffff"), fontSize: 12, padding: "8px 16px" }}
-                  >
-                    Cerrar
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={imprimirOrden}
+                  style={{ ...B("#0f172a", "#ffffff"), fontSize: 12, padding: "8px 14px", fontWeight: 700 }}
+                >
+                  🖨️ Imprimir OC
+                </button>
+
+                <button
+                  type="button"
+                  disabled={generandoPdf}
+                  onClick={descargarPdfOrden}
+                  style={{ ...B("#cc0000", "#ffffff"), fontSize: 12, padding: "8px 14px", fontWeight: 700, opacity: generandoPdf ? 0.7 : 1 }}
+                >
+                  📥 {generandoPdf ? "Generando..." : "Descargar PDF"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setOrdenDetalle(null)}
+                  style={{ ...B("#f1f5f9", "#334155"), fontSize: 12, padding: "8px 16px" }}
+                >
+                  Cerrar
+                </button>
               </div>
             </div>
           </div>

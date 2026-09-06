@@ -24,6 +24,7 @@ export const FORMATOS = [
   { clave: "cotizacion",    etiqueta: "Cotización" },
   { clave: "informe",       etiqueta: "Informe de actividades" },
   { clave: "certificacion", etiqueta: "Certificación" },
+  { clave: "orden_compra",  etiqueta: "Orden de Compra" },
 ];
 
 // Los primeros codigos de Ingeanclajes. Sirven de punto de partida: se cambian
@@ -37,6 +38,7 @@ export const CONTROL_POR_DEFECTO = {
   cotizacion:    { codigo: "IA-FT-01", version: "1", fecha: "2026-08-14" },
   informe:       { codigo: "IA-FT-02", version: "1", fecha: "2026-08-14" },
   certificacion: { codigo: "IA-FT-03", version: "1", fecha: "2026-08-14" },
+  orden_compra:  { codigo: "IA-FT-04", version: "1", fecha: "2026-09-04" },
 };
 
 /** Lee la configuracion completa, con los valores por defecto de respaldo. */

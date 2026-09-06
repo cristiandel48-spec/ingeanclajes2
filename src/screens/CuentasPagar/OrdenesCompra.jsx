@@ -480,12 +480,7 @@ export default function OrdenesCompra({
   }, [ordenesCompra, busqueda, filtroAprobacion, filtroFacturacion, filtroObra]);
 
   // Métricas
-  const totalOrdenes = ordenesCompra.length;
   const pendientesAprobacion = ordenesCompra.filter((o) => o.estadoAprobacion === "Pendiente").length;
-  const aprobadas = ordenesCompra.filter((o) => o.estadoAprobacion === "Aprobada").length;
-  const montoComprometido = ordenesCompra
-    .filter((o) => o.estadoAprobacion === "Aprobada")
-    .reduce((acc, o) => acc + (Number(o.total) || 0), 0);
 
   return (
     <div>
@@ -529,26 +524,6 @@ export default function OrdenesCompra({
           </button>
         </div>
       )}
-
-      {/* Métricas clave de Órdenes de Compra */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 16 }}>
-        <div style={{ ...CD, padding: "12px 14px", borderLeft: "4px solid #cc0000" }}>
-          <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>Total Órdenes</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", marginTop: 4 }}>{totalOrdenes}</div>
-        </div>
-        <div style={{ ...CD, padding: "12px 14px", borderLeft: "4px solid #f59e0b" }}>
-          <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>Pendientes Aprobación</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: "#d97706", marginTop: 4 }}>{pendientesAprobacion}</div>
-        </div>
-        <div style={{ ...CD, padding: "12px 14px", borderLeft: "4px solid #16a34a" }}>
-          <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>Aprobadas</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: "#166534", marginTop: 4 }}>{aprobadas}</div>
-        </div>
-        <div style={{ ...CD, padding: "12px 14px", borderLeft: "4px solid #0284c7" }}>
-          <div style={{ fontSize: 11, color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>Monto Comprometido</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: "#0369a1", marginTop: 4 }}>{fmtMonedaErp(montoComprometido)}</div>
-        </div>
-      </div>
 
       {/* Barra de Filtros y Acciones */}
       <div style={{ ...CD, marginBottom: 16, padding: "14px 18px" }}>

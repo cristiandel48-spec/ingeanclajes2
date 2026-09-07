@@ -37,7 +37,7 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
         paddingTop: "env(safe-area-inset-top)",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 12, minWidth: 0, flex: 1 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 12, flexShrink: 0, minWidth: isMobile ? 0 : "max-content" }}>
         {isMobile && (
           <button
             onClick={onOpenMenu}
@@ -55,22 +55,22 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
           </button>
         )}
 
-        <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ flexShrink: 0 }}>
           {!isMobile && section && (
-            <div style={{ fontSize: 11.5, color: theme.muted, letterSpacing: .2 }}>
+            <div style={{ fontSize: 11.5, color: theme.muted, letterSpacing: .2, whiteSpace: "nowrap" }}>
               {section}
             </div>
           )}
           <div style={{
             fontSize: isMobile ? 14.5 : 16.5, fontWeight: 700, color: theme.text,
-            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            whiteSpace: "nowrap",
           }}>
             {title}
           </div>
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 10, flexShrink: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 10, flex: 1, minWidth: 0, justifyContent: "flex-end" }}>
         {acciones && (
           <div
             className="topbar-acciones"

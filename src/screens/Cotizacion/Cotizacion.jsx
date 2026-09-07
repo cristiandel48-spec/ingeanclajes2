@@ -519,49 +519,32 @@ export default function Cotizacion({ctx}){
         onClick={()=>nuevaRef.current()}
       >+ Nueva Cotización</button>
     ) : tab==="form" ? (
-      <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"nowrap"}}>
-        <button style={SECUNDARIO} onClick={()=>setTab("lista")}
-          title="Volver al listado de cotizaciones">← Lista</button>
-
-        {!dictando && (
-          <button style={SECUNDARIO} onClick={()=>setDictando(true)}
-            title="Armar la cotización hablando">🎤 Dictar</button>
-        )}
-
-        {!importando && (
-          <button style={SECUNDARIO} onClick={()=>setImportando(true)}
-            title="Leer la solicitud que mandó el cliente y armar la cotización con ella">📄 Importar</button>
-        )}
-
+      <div style={{display:"flex",gap:8,alignItems:"center"}}>
         <button
-          style={verDocumento
-            ? { ...BOTON_BASE, background:"#111827", color:"#fff", border:"1px solid #111827" }
-            : SECUNDARIO}
-          onClick={()=>setVerDocumento(v=>!v)}
-          title="Muestra el documento completo tal como se imprimirá, mientras editas">
-          {verDocumento ? "Ocultar documento" : "Ver documento"}
+          style={{ ...SECUNDARIO, padding: "6px 12px", fontSize: 12, fontWeight: 600 }}
+          onClick={()=>setTab("lista")}
+          title="Volver al listado de cotizaciones"
+        >
+          ← Volver a lista
         </button>
-
         <button
           style={{
             ...BOTON_BASE,
-            background: bajandoPdf==="editor" ? "#e2e8f0" : "#eff6ff",
-            color: bajandoPdf==="editor" ? "#94a3b8" : "#1d4ed8",
-            border: `1px solid ${bajandoPdf==="editor" ? "#cbd5e1" : "#bfdbfe"}`,
-            fontWeight: 700,
+            background:"#f47c20",
+            color:"#fff",
+            border:"1px solid #ea580c",
+            fontWeight:700,
+            padding:"6.5px 16px",
+            fontSize: 12.5,
+            boxShadow: "0 1px 3px rgba(244,124,32,0.25)",
           }}
-          disabled={Boolean(bajandoPdf)}
-          onClick={descargarPdfDesdeEditor}
-          title="Descarga el documento de la cotización en formato PDF directamente">
-          {bajandoPdf==="editor" ? "Generando…" : "Descargar PDF"}
+          onClick={()=>guardarRef.current()}
+        >
+          💾 Guardar
         </button>
-
-        <button
-          style={{...BOTON_BASE, background:"#f47c20", color:"#fff", border:"1px solid #f47c20", fontWeight:700, padding:"7px 16px"}}
-          onClick={()=>guardarRef.current()}>Guardar</button>
       </div>
     ) : null,
-    [tab, dictando, importando, verDocumento, bajandoPdf]
+    [tab]
   );
 
   const guardarCotizacionYSubir = ()=>{
@@ -862,10 +845,122 @@ export default function Cotizacion({ctx}){
           llevaba al lado ya estan arriba en la barra. Queda solo este
           renglon, que dice lo unico que no se sabe de memoria: si es nueva o
           cual se esta editando. */}
-      <div style={{fontSize:12,color:"#64748b",marginBottom:12}}>
-        {editCot
-          ? <>Editando <strong style={{color:"#101828"}}>{cot || editCot}</strong>{cl.nombre ? ` · ${cl.nombre}` : ""}</>
-          : <>Cotización nueva{cot ? <> · <strong style={{color:"#101828"}}>{cot}</strong></> : null}</>}
+      {/* Barra de herramientas y acciones del editor de cotización */}
+      <div
+        style={{
+          background: "#ffffff",
+          borderRadius: 12,
+          border: "1px solid #e2e8f0",
+          padding: "10px 16px",
+          marginBottom: 16,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 12,
+          boxShadow: "0 1px 3px rgba(15,23,42,0.04)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            style={{
+              ...SECUNDARIO,
+              fontSize: 12,
+              padding: "6px 12px",
+              fontWeight: 600,
+            }}
+            onClick={() => setTab("lista")}
+            title="Volver al listado de cotizaciones"
+          >
+            ← Volver a la lista
+          </button>
+          <div style={{ fontSize: 13, color: "#475569" }}>
+            {editCot
+              ? <>Editando <strong style={{ color: "#0f172a" }}>{cot || editCot}</strong>{cl.nombre ? ` · ${cl.nombre}` : ""}</>
+              : <>Cotización nueva{cot ? <> · <strong style={{ color: "#0f172a" }}>{cot}</strong></> : null}</>}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          {!dictando && (
+            <button
+              type="button"
+              style={{
+                ...SECUNDARIO,
+                fontSize: 12,
+                padding: "6px 12px",
+                fontWeight: 600,
+              }}
+              onClick={() => setDictando(true)}
+              title="Armar la cotización hablando"
+            >
+              🎤 Dictar
+            </button>
+          )}
+
+          {!importando && (
+            <button
+              type="button"
+              style={{
+                ...SECUNDARIO,
+                fontSize: 12,
+                padding: "6px 12px",
+                fontWeight: 600,
+              }}
+              onClick={() => setImportando(true)}
+              title="Leer la solicitud que mandó el cliente y armar la cotización con ella"
+            >
+              📄 Importar
+            </button>
+          )}
+
+          <button
+            type="button"
+            style={verDocumento
+              ? { ...BOTON_BASE, background: "#0f172a", color: "#fff", border: "1px solid #0f172a", fontSize: 12, padding: "6px 12px", fontWeight: 600 }
+              : { ...SECUNDARIO, fontSize: 12, padding: "6px 12px", fontWeight: 600 }}
+            onClick={() => setVerDocumento((v) => !v)}
+            title="Muestra el documento completo tal como se imprimirá, mientras editas"
+          >
+            {verDocumento ? "👁️ Ocultar documento" : "👁️ Ver documento"}
+          </button>
+
+          <button
+            type="button"
+            style={{
+              ...BOTON_BASE,
+              background: bajandoPdf === "editor" ? "#e2e8f0" : "#eff6ff",
+              color: bajandoPdf === "editor" ? "#94a3b8" : "#1d4ed8",
+              border: `1px solid ${bajandoPdf === "editor" ? "#cbd5e1" : "#bfdbfe"}`,
+              fontSize: 12,
+              padding: "6px 12px",
+              fontWeight: 700,
+            }}
+            disabled={Boolean(bajandoPdf)}
+            onClick={descargarPdfDesdeEditor}
+            title="Descarga el documento de la cotización en formato PDF directamente"
+          >
+            {bajandoPdf === "editor" ? "Generando…" : "📥 Descargar PDF"}
+          </button>
+
+          <button
+            type="button"
+            style={{
+              ...BOTON_BASE,
+              background: "#f47c20",
+              color: "#ffffff",
+              border: "1px solid #ea580c",
+              fontSize: 12,
+              padding: "6px 16px",
+              fontWeight: 700,
+              boxShadow: "0 1px 3px rgba(244,124,32,0.25)",
+            }}
+            onClick={() => guardarRef.current()}
+          >
+            💾 Guardar cotización
+          </button>
+        </div>
       </div>
 
       <div style={{

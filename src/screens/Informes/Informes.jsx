@@ -509,15 +509,16 @@ export default function Informes({ctx}){
   };
 
   const guardar=()=>{
-    const miNombre = resolverAutorGuardado(ctx?.membresia, prev?.modificadoPorNombre);
-    const miUserId = ctx?.membresia?.userId || null;
     const prev = editId ? informes.find((item) => item.id === editId) : null;
+    const miUserId = ctx?.membresia?.userId || null;
+    const miNombre = resolverAutorGuardado(ctx?.membresia, prev?.modificadoPorNombre);
     const actividades = normalizeInformeActividades(form);
     const legacyActividad = actividades[0] || emptyActividad();
+    const obraIdNormalizado = form.obraId || null;
     const inf={
       ...(editId
-        ? {id:editId,...form,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos}
-        : {id:siguienteIdUnico(informes,"INF"),...form,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos}),
+        ? {id:editId,...form,obraId:obraIdNormalizado,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos}
+        : {id:siguienteIdUnico(informes,"INF"),...form,obraId:obraIdNormalizado,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos}),
       creadoPor: prev?.creadoPor || miUserId,
       creadoPorNombre: prev?.creadoPorNombre || resolverAutorGuardado(ctx?.membresia) || "Administración",
       creadoEn: prev?.creadoEn || new Date().toISOString(),

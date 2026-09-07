@@ -126,7 +126,7 @@ export function AppDataProvider({ children }) {
     clientes: sinEjemplos(clientes),
     proveedores,
     cuentas,
-    ordenesCompra,
+    ordenesCompra: sinEjemplos(ordenesCompra),
     cotizaciones: sinEjemplos(cotizaciones),
     contabilidadConfig,
     planCuentas,

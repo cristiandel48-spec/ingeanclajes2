@@ -3,8 +3,8 @@
 // falle o quede lentisimo, asi que se reduce antes de guardar: lado maximo
 // 1400 px y JPEG de calidad media, que es mas que suficiente para el PDF.
 
-const LADO_MAX = 1400;
-const CALIDAD = 0.72;
+const LADO_MAX = 1200;
+const CALIDAD = 0.68;
 
 export function leerImagenComprimida(file, { ladoMax = LADO_MAX, calidad = CALIDAD } = {}) {
   return new Promise((resolve, reject) => {
@@ -25,7 +25,7 @@ export function leerImagenComprimida(file, { ladoMax = LADO_MAX, calidad = CALID
       img.onload = () => {
         try {
           const escala = Math.min(1, ladoMax / Math.max(img.width, img.height));
-          if (escala === 1 && original.length < 900_000) {
+          if (escala === 1 && original.length < 250_000) {
             resolve(original);
             return;
           }

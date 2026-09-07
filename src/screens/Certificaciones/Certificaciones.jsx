@@ -249,13 +249,14 @@ export default function Certificaciones({ctx}){
   };
 
   const guardar=()=>{
-    const miNombre = resolverAutorGuardado(ctx?.membresia, prev?.modificadoPorNombre);
-    const miUserId = ctx?.membresia?.userId || null;
     const prev = editId ? certs.find((item) => item.id === editId) : null;
+    const miUserId = ctx?.membresia?.userId || null;
+    const miNombre = resolverAutorGuardado(ctx?.membresia, prev?.modificadoPorNombre);
+    const obraIdNormalizado = form.obraId || null;
     const c = {
       ...(editId
-        ? { ...form, id: editId, estado: form.estado || "Vigente" }
-        : { id: siguienteIdUnico(certs, "CERT"), estado: "Vigente", ...form }),
+        ? { ...form, obraId: obraIdNormalizado, id: editId, estado: form.estado || "Vigente" }
+        : { id: siguienteIdUnico(certs, "CERT"), estado: "Vigente", ...form, obraId: obraIdNormalizado }),
       creadoPor: prev?.creadoPor || miUserId,
       creadoPorNombre: prev?.creadoPorNombre || resolverAutorGuardado(ctx?.membresia) || "Administración",
       creadoEn: prev?.creadoEn || new Date().toISOString(),

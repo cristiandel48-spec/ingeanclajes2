@@ -418,10 +418,10 @@ export const entityConfig = {
       "modificado_por_nombre",
       "modificado_en",
     ],
-    coerceNullCols: ["fecha", "prox_mant"],
+    coerceNullCols: ["fecha", "prox_mant", "obra_id"],
     toRow: (item) => ({
       id: item.id,
-      obra_id: item.obraId ?? null,
+      obra_id: item.obraId || null,
       tipo: item.tipo ?? null,
       numero: item.numero ?? null,
       fecha: item.fecha ?? null,
@@ -474,10 +474,10 @@ export const entityConfig = {
       "modificado_por_nombre",
       "modificado_en",
     ],
-    coerceNullCols: ["fecha_informe", "periodo_inicio", "periodo_fin"],
+    coerceNullCols: ["fecha_informe", "periodo_inicio", "periodo_fin", "obra_id"],
     toRow: (item) => ({
       id: item.id,
-      obra_id: item.obraId ?? null,
+      obra_id: item.obraId || null,
       proyecto: item.proyecto ?? null,
       localizacion: item.localizacion ?? null,
       fecha_informe: item.fechaInforme ?? null,
@@ -495,7 +495,7 @@ export const entityConfig = {
       const primeraActividad = safeArray(item.actividades)[0] ?? {};
       return {
         id: item.id,
-        obra_id: item.obraId ?? null,
+        obra_id: item.obraId || null,
         proyecto: item.proyecto ?? null,
         localizacion: item.localizacion ?? null,
         fecha_informe: item.fechaInforme ?? null,
@@ -554,11 +554,11 @@ export const entityConfig = {
   },
   cuentas: {
     table: "cuentas_por_pagar",
-    coerceNullCols: ["monto", "fecha", "fecha_vence", "subtotal", "tarifa_iva", "valor_iva", "base_ret_fuente", "tarifa_ret_fuente", "valor_ret_fuente", "base_reteiva", "tarifa_reteiva", "valor_reteiva", "base_reteica", "tarifa_reteica", "valor_reteica", "valor_bruto_factura", "valor_total_retenciones", "valor_total_pagar", "saldo_pendiente_actual", "monto_pagado", "fecha_pago"],
+    coerceNullCols: ["monto", "fecha", "fecha_vence", "subtotal", "tarifa_iva", "valor_iva", "base_ret_fuente", "tarifa_ret_fuente", "valor_ret_fuente", "base_reteiva", "tarifa_reteiva", "valor_reteiva", "base_reteica", "tarifa_reteica", "valor_reteica", "valor_bruto_factura", "valor_total_retenciones", "valor_total_pagar", "saldo_pendiente_actual", "monto_pagado", "fecha_pago", "proveedor_id", "obra_id"],
     toRow: (item) => ({
       id: item.id,
-      proveedor_id: item.proveedorId ?? null,
-      obra_id: item.obraId ?? null,
+      proveedor_id: item.proveedorId || null,
+      obra_id: item.obraId || null,
       concepto: item.concepto ?? null,
       monto: item.monto ?? null,
       fecha: item.fecha ?? null,
@@ -644,16 +644,16 @@ export const entityConfig = {
   ordenes_compra: {
     table: "ordenes_compra",
     optional: true,
-    coerceNullCols: ["subtotal", "iva", "total"],
+    coerceNullCols: ["subtotal", "iva", "total", "proveedor_id", "obra_id"],
     toRow: (item) => ({
       id: item.id,
       fecha: item.fecha ?? null,
       fecha_entrega_esperada: item.fechaEntregaEsperada ?? null,
-      proveedor_id: item.proveedorId ?? null,
+      proveedor_id: item.proveedorId || null,
       proveedor_nombre: item.proveedorNombre ?? null,
       solicitante: item.solicitante ?? null,
       comprador: item.comprador ?? null,
-      obra_id: item.obraId ?? null,
+      obra_id: item.obraId || null,
       obra_nombre: item.obraNombre ?? null,
       documento_origen: item.documentoOrigen ?? null,
       items: safeArray(item.items),
@@ -696,10 +696,10 @@ export const entityConfig = {
   },
   pagos: {
     table: "pagos",
-    coerceNullCols: ["fecha", "valor"],
+    coerceNullCols: ["fecha", "valor", "obra_id"],
     toRow: (item) => ({
       id: item.id,
-      obra_id: item.obraId ?? null,
+      obra_id: item.obraId || null,
       fecha: item.fecha ?? null,
       valor: item.monto ?? item.valor ?? null,
       medio: item.metodo ?? item.medio ?? null,
@@ -710,7 +710,7 @@ export const entityConfig = {
     }),
     toLegacyRow: (item) => ({
       id: item.id,
-      obra_id: item.obraId ?? null,
+      obra_id: item.obraId || null,
       fecha: item.fecha ?? null,
       valor: item.monto ?? item.valor ?? null,
       medio: item.metodo ?? item.medio ?? null,
@@ -733,7 +733,7 @@ export const entityConfig = {
   },
   horarios: {
     table: "horarios",
-    coerceNullCols: ["fecha", "horas"],
+    coerceNullCols: ["fecha", "horas", "empleado_id", "obra_id"],
     // La pantalla trabaja con `turno` ("07:00 - 17:00") y `tarea`, pero la
     // tabla nunca tuvo esas columnas: guardaba hora_inicio, hora_fin y notas.
     // El turno y la tarea se subian a un campo que no existia y se perdian, asi
@@ -746,8 +746,8 @@ export const entityConfig = {
         .map((parte) => parte.trim());
       return {
         id: item.id,
-        empleado_id: item.empleadoId ?? null,
-        obra_id: item.obraId ?? null,
+        empleado_id: item.empleadoId || null,
+        obra_id: item.obraId || null,
         fecha: item.fecha ?? null,
         // El turno manda sobre horaInicio/horaFin: es el campo que la pantalla
         // edita, y los otros dos solo son como se guarda por dentro.

@@ -4,7 +4,7 @@ import H1 from "../../components/ui/H1";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
 import LBL from "../../components/ui/LBL";
 import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarFrase, normalizarNombrePropio, normalizarTelefono } from "../../lib/normalizarEntrada";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { downloadExcelWorkbook } from "../../lib/nomina";
 import { fmt, scrollAppToTop, today } from "../../lib/format";
@@ -108,7 +108,8 @@ export default function CuentasPagar({ctx}){
     };
   };
 
-  const [tab,setTab]=useState("causacion");
+  const [tab,setTab]=useState("ordenes");
+  const [triggerNuevaOrden,setTriggerNuevaOrden]=useState(0);
   const [showProv,setShowProv]=useState(false);
   const [showCxP,setShowCxP]=useState(false);
   const [showImportarDian,setShowImportarDian]=useState(false);
@@ -861,149 +862,241 @@ Ese valor volverá a quedar pendiente en la factura.
     </div>
   );
 
-  // Los tres botones viven en la barra de arriba, no en un titulo propio.
-  // Se llaman por referencia porque lo que hacen se declara mas abajo.
-  const accionesRef = useRef({});
-  useEffect(()=>{
-    accionesRef.current = {
-      proveedor: ()=>{ setTab("proveedores"); setShowProv((v)=>!v); if(showProv && tab==="proveedores") resetProveedor(); },
-      causacion: ()=>{ setTab("causacion"); setShowCxP((v)=>{ const next=!v; if(next && !editCxPId) setCxpForm(createCuentaBase(proveedorIdActivo)); if(!next) resetCuenta(proveedorIdActivo); return next; }); },
-      ordenes: ()=>{ setTab("ordenes"); scrollAppToTop("smooth"); },
-      pago: ()=>{ setTab("pagos"); setVistaPagoCxP("registro"); scrollAppToTop("smooth"); },
-      importarDian: ()=>{ setTab("causacion"); setShowImportarDian((v)=>!v); setShowCxP(false); },
-    };
-  });
-  useAccionesPantalla(
-    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-      {/* Pestañas de navegación arriba */}
-      <div style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 3,
-        background: "#f1f5f9",
-        padding: "3px 4px",
-        borderRadius: 10,
-        border: "1px solid #e2e8f0",
-      }}>
-        {[
-          ["causacion", "🧾 Causación / facturas"],
-          ["ordenes", "📦 Órdenes de compra"],
-          ["pagos", "🏦 Pagos y egresos"],
-          ["proveedores", "🏢 Proveedores"],
-        ].map(([id, lb]) => {
-          const activo = tab === id;
-          return (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setTab(id)}
-              style={{
-                background: activo ? "#cc0000" : "transparent",
-                color: activo ? "#ffffff" : "#475569",
-                border: activo ? "1px solid #cc0000" : "1px solid transparent",
-                borderRadius: 7,
-                padding: "6px 12px",
-                fontSize: 12,
-                fontWeight: activo ? 700 : 500,
-                cursor: "pointer",
-                fontFamily: "inherit",
-                whiteSpace: "nowrap",
-                transition: "all .15s ease",
-                boxShadow: activo ? "0 1px 3px rgba(204,0,0,0.25)" : "none",
-              }}
-            >
-              {lb}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Separador vertical sutil */}
-      <div style={{ width: 1, height: 22, background: "#e2e8f0" }} />
-
-      {/* Botones de acción rápida */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <button
-          type="button"
-          style={{
-            background: "#2563eb",
-            color: "#ffffff",
-            border: "1px solid #1d4ed8",
-            borderRadius: 8,
-            padding: "6.5px 12px",
-            fontSize: 12,
-            fontWeight: 700,
-            cursor: "pointer",
-            fontFamily: "inherit",
-            whiteSpace: "nowrap",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 5,
-            boxShadow: "0 1px 3px rgba(37,99,235,0.25)",
-          }}
-          onClick={() => accionesRef.current.importarDian?.()}
-        >
-          <span>⚡</span>
-          <span>Importar DIAN</span>
-        </button>
-        <button
-          style={{
-            background: "#f5c842",
-            color: "#3b2f00",
-            border: "1px solid #eab308",
-            borderRadius: 8,
-            padding: "6.5px 12px",
-            fontSize: 12,
-            fontWeight: 700,
-            cursor: "pointer",
-            fontFamily: "inherit",
-            whiteSpace: "nowrap",
-          }}
-          onClick={() => accionesRef.current.proveedor()}
-        >
-          + Proveedor
-        </button>
-        <button
-          style={{
-            background: "#cc0000",
-            color: "#ffffff",
-            border: "1px solid #cc0000",
-            borderRadius: 8,
-            padding: "6.5px 12px",
-            fontSize: 12,
-            fontWeight: 700,
-            cursor: "pointer",
-            fontFamily: "inherit",
-            whiteSpace: "nowrap",
-          }}
-          onClick={() => accionesRef.current.causacion()}
-        >
-          + Causación
-        </button>
-        <button
-          style={{
-            background: "#003B71",
-            color: "#ffffff",
-            border: "1px solid #003B71",
-            borderRadius: 8,
-            padding: "6.5px 12px",
-            fontSize: 12,
-            fontWeight: 700,
-            cursor: "pointer",
-            fontFamily: "inherit",
-            whiteSpace: "nowrap",
-          }}
-          onClick={() => accionesRef.current.pago()}
-        >
-          Registrar pago
-        </button>
-      </div>
-    </div>,
-    [tab]
-  );
+  // La barra superior del AppShell queda limpia y despejada para que el título
+  // de la pantalla no se corte ("Ac...") ni se amontonen botones de colores.
+  useAccionesPantalla(null);
 
   return(
     <div style={{padding:"14px 28px 28px"}}>
+
+      {/* Barra Superior de Flujo Contable / Compras (1. Órdenes -> 2. Causación -> 3. Pagos | 4. Proveedores) */}
+      <div
+        style={{
+          background: "#ffffff",
+          borderRadius: 14,
+          border: "1px solid #e2e8f0",
+          padding: "10px 16px",
+          marginBottom: 18,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 12,
+          boxShadow: "0 1px 3px rgba(15,23,42,0.04)",
+        }}
+      >
+        {/* Pestañas de Flujo Cronológico */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+          {[
+            { id: "ordenes", num: "1", label: "Órdenes de compra", icon: "📦", badge: ordenesCompra.filter(o => o.estadoAprobacion === "Pendiente").length },
+            { id: "causacion", num: "2", label: "Causación / Facturas", icon: "🧾", badge: cuentasNorm.filter(c => c.estado === "Pendiente").length },
+            { id: "pagos", num: "3", label: "Pagos y egresos", icon: "🏦" },
+            { id: "proveedores", num: "4", label: "Proveedores", icon: "🏢" },
+          ].map((t, idx) => {
+            const activo = tab === t.id;
+            return (
+              <Fragment key={t.id}>
+                <button
+                  type="button"
+                  onClick={() => setTab(t.id)}
+                  style={{
+                    background: activo ? "#cc0000" : "#f8fafc",
+                    color: activo ? "#ffffff" : "#475569",
+                    border: activo ? "1px solid #cc0000" : "1px solid #e2e8f0",
+                    borderRadius: 9,
+                    padding: "7px 14px",
+                    fontSize: 12.5,
+                    fontWeight: activo ? 700 : 500,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 7,
+                    transition: "all .15s ease",
+                    boxShadow: activo ? "0 2px 6px rgba(204,0,0,0.2)" : "none",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 800,
+                      background: activo ? "rgba(255,255,255,0.25)" : "#e2e8f0",
+                      color: activo ? "#ffffff" : "#64748b",
+                      width: 18,
+                      height: 18,
+                      borderRadius: "50%",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {t.num}
+                  </span>
+                  <span>{t.icon}</span>
+                  <span>{t.label}</span>
+                  {t.badge > 0 && (
+                    <span
+                      style={{
+                        background: activo ? "#ffffff" : "#fef3c7",
+                        color: activo ? "#cc0000" : "#d97706",
+                        fontSize: 10.5,
+                        fontWeight: 700,
+                        padding: "1px 6px",
+                        borderRadius: 999,
+                        marginLeft: 2,
+                      }}
+                    >
+                      {t.badge}
+                    </span>
+                  )}
+                </button>
+                {idx < 2 && (
+                  <span style={{ color: "#cbd5e1", fontSize: 13, userSelect: "none", margin: "0 2px" }}>→</span>
+                )}
+                {idx === 2 && (
+                  <div style={{ width: 1, height: 20, background: "#e2e8f0", margin: "0 4px" }} />
+                )}
+              </Fragment>
+            );
+          })}
+        </div>
+
+        {/* Acciones contextuales y limpias según la pestaña activa */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          {tab === "ordenes" && (
+            <button
+              type="button"
+              onClick={() => setTriggerNuevaOrden((v) => v + 1)}
+              style={{
+                background: "#cc0000",
+                color: "#ffffff",
+                border: "1px solid #cc0000",
+                borderRadius: 8,
+                padding: "7px 14px",
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                boxShadow: "0 1px 3px rgba(204,0,0,0.2)",
+              }}
+            >
+              <span>+</span>
+              <span>Nueva orden de compra</span>
+            </button>
+          )}
+
+          {tab === "causacion" && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowImportarDian((v) => !v);
+                  setShowCxP(false);
+                }}
+                style={{
+                  background: showImportarDian ? "#dbeafe" : "#eff6ff",
+                  color: "#1d4ed8",
+                  border: "1px solid #bfdbfe",
+                  borderRadius: 8,
+                  padding: "7px 13px",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                }}
+              >
+                <span>⚡</span>
+                <span>{showImportarDian ? "Ocultar DIAN" : "Importar DIAN"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCxP((v) => {
+                    const next = !v;
+                    if (next && !editCxPId) setCxpForm(createCuentaBase(proveedorIdActivo));
+                    if (!next) resetCuenta(proveedorIdActivo);
+                    return next;
+                  });
+                }}
+                style={{
+                  background: "#cc0000",
+                  color: "#ffffff",
+                  border: "1px solid #cc0000",
+                  borderRadius: 8,
+                  padding: "7px 14px",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  boxShadow: "0 1px 3px rgba(204,0,0,0.2)",
+                }}
+              >
+                <span>{showCxP ? "✕" : "+"}</span>
+                <span>{showCxP ? "Cerrar formulario" : "Nueva causación"}</span>
+              </button>
+            </>
+          )}
+
+          {tab === "pagos" && (
+            <button
+              type="button"
+              onClick={() => {
+                setVistaPagoCxP("registro");
+                scrollAppToTop("smooth");
+              }}
+              style={{
+                background: "#cc0000",
+                color: "#ffffff",
+                border: "1px solid #cc0000",
+                borderRadius: 8,
+                padding: "7px 14px",
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                boxShadow: "0 1px 3px rgba(204,0,0,0.2)",
+              }}
+            >
+              <span>+</span>
+              <span>Registrar pago</span>
+            </button>
+          )}
+
+          {tab === "proveedores" && (
+            <button
+              type="button"
+              onClick={() => {
+                setShowProv((v) => !v);
+                if (showProv) resetProveedor();
+              }}
+              style={{
+                background: "#cc0000",
+                color: "#ffffff",
+                border: "1px solid #cc0000",
+                borderRadius: 8,
+                padding: "7px 14px",
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                boxShadow: "0 1px 3px rgba(204,0,0,0.2)",
+              }}
+            >
+              <span>{showProv ? "✕" : "+"}</span>
+              <span>{showProv ? "Cerrar formulario" : "Nuevo proveedor"}</span>
+            </button>
+          )}
+        </div>
+      </div>
 
       {tab==="ordenes" && (
         <OrdenesCompra
@@ -1016,6 +1109,7 @@ Ese valor volverá a quedar pendiente en la factura.
           setCuentas={setCuentas}
           membresia={membresia}
           onIrACausacion={()=>setTab("causacion")}
+          nuevaOrdenTrigger={triggerNuevaOrden}
         />
       )}
 

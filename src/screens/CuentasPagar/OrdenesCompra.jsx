@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { today } from "../../lib/format";
 import { puedeAprobarOrdenCompra } from "../../lib/permisos";
@@ -39,6 +39,7 @@ export default function OrdenesCompra({
   setCuentas,
   membresia = null,
   onIrACausacion,
+  nuevaOrdenTrigger = 0,
 }) {
   const { empresaConfig } = useAppData();
   const esAprobador = puedeAprobarOrdenCompra(membresia);
@@ -197,6 +198,13 @@ export default function OrdenesCompra({
     });
     setShowNuevaOrden(true);
   };
+
+  useEffect(() => {
+    if (nuevaOrdenTrigger > 0) {
+      abrirNuevaOrden();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nuevaOrdenTrigger]);
 
   // Cálculo de subtotales del formulario
   const subtotalForm = useMemo(() => {

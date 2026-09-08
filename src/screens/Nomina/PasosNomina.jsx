@@ -24,7 +24,7 @@ function Circulo({ numero, estado }) {
   );
 }
 
-export default function PasosNomina({ activo, onIr }) {
+export default function PasosNomina({ activo, onIr, conteos = {} }) {
   const indiceActivo = indiceDePaso(activo);
 
   return (
@@ -79,8 +79,27 @@ export default function PasosNomina({ activo, onIr }) {
                       fontSize: 11.5,
                       fontWeight: paso.id === activo ? 700 : 600,
                       color: paso.id === activo ? "#9a3412" : "#475569",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 5,
                     }}>
                       {paso.label}
+                      {conteos[paso.id] !== undefined && (
+                        <span style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: "1px 6px",
+                          borderRadius: 999,
+                          background: conteos[paso.id] > 0
+                            ? (paso.id === activo ? "#ea580c" : "#e2e8f0")
+                            : "#f1f5f9",
+                          color: conteos[paso.id] > 0
+                            ? (paso.id === activo ? "#fff" : "#0f172a")
+                            : "#94a3b8",
+                        }}>
+                          {conteos[paso.id]}
+                        </span>
+                      )}
                     </span>
                   </button>
                 </div>

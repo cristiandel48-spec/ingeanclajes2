@@ -67,6 +67,19 @@ export default function Nomina({ctx}){
   const periodoNomina = buildNominaPeriodo(mes, corteNomina);
   const activos=empleadosBase.filter((empleado)=>empleado.activo);
   const resumenesActivos = activos.map((empleado)=>({ empleado, resumen:calcularResumenNominaEmpleado(empleado, periodoNomina) }));
+  const conteoNovedadesCorte = {
+    lista: activos.length,
+    he: empleadosBase.reduce((acc, e) =>
+      acc + (e.horasExtrasPorObra || []).filter(h => isDateInPeriodo(h.fecha, periodoNomina)).length +
+            (e.comisionesPorObra || []).filter(c => isDateInPeriodo(c.fecha, periodoNomina)).length,
+      0),
+    incapacidades: empleadosBase.reduce((acc, e) =>
+      acc + (e.incapacidades || []).filter(inc => isDateInPeriodo(inc.fechaInicio, periodoNomina) || isDateInPeriodo(inc.fechaFin, periodoNomina)).length,
+      0),
+    vacaciones: empleadosBase.filter(e => (e.vacacionesPagadasDias || 0) > 0).length,
+    deducciones: empleadosBase.filter(e => (e.deduccionesPersonalizadas || []).length > 0).length,
+    contratos: empleadosBase.filter(e => e.fechaSalida && isDateInPeriodo(e.fechaSalida, periodoNomina)).length,
+  };
   // Quien entra al corte y cuanto suma cada cosa lo decide buildNominaSnapshot,
   // que es lo que se genera, se imprime y se manda al banco. Aqui se rehacia el
   // mismo filtro y los mismos totales a mano y no los leia nadie: dos cuentas
@@ -572,7 +585,7 @@ export default function Nomina({ctx}){
         </AvisoFlujo>
       )}
 
-      <PasosNomina activo={tab} onIr={setTab}/>
+      <PasosNomina activo={tab} onIr={setTab} conteos={conteoNovedadesCorte}/>
 
       {/* Al dar de alta a alguien no hay corte que elegir, asi que ni aparece. */}
       {tab!=="nuevo" && (

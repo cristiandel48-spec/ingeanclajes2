@@ -45,6 +45,8 @@ export default function Nomina({ctx}){
   const [busquedaDeduccion,setBusquedaDeduccion]=useState("");
   const [filtroDeduccion,setFiltroDeduccion]=useState("todos");
   const [empDeduccionModalId,setEmpDeduccionModalId]=useState(null);
+  const [modoEdicionNomina,setModoEdicionNomina]=useState(false);
+  const [mostrarHistorialNominas,setMostrarHistorialNominas]=useState(false);
 
   // El boton de crear vive en la barra de arriba, no en un titulo propio.
   useAccionesPantalla(
@@ -86,8 +88,8 @@ export default function Nomina({ctx}){
   // del mismo dinero es como se empieza a discutir cual de las dos esta bien.
   const nominaPreview = buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar);
   const nominaGeneradaActual = nominasGeneradasMap[nominaPreview.id] || null;
-  const nominaVistaActual = nominaGeneradaActual?.snapshot || nominaPreview;
   const nominaEstaGenerada = Boolean(nominaGeneradaActual);
+  const nominaVistaActual = (nominaEstaGenerada && !modoEdicionNomina) ? (nominaGeneradaActual?.snapshot || nominaPreview) : nominaPreview;
   const empleadoDeduccionActivo =
     empleadosBase.find((empleado)=>empleado.id===selId) ||
     activos[0] ||
@@ -484,30 +486,54 @@ export default function Nomina({ctx}){
     await guardarCambiosNomina("Liquidación de retiro sincronizada y enviada a contabilidad.", { empleados: nextEmployees });
   };
 
-  const generarNominaCorte = ()=>{
+  const generarNominaCorte = async ()=>{
     const empleadosSincronizados = empleadosBase.map((empleado)=>
       empleado?.fechaSalida ? sincronizarLiquidacionPrestacionalEmpleado(empleado) : empleado
     );
     const snapshot = buildNominaSnapshot(empleadosSincronizados, periodoNomina, diasVacPagar);
     const record = buildNominaGeneratedRecord(snapshot);
     setEmpleados(empleadosSincronizados);
-    setNominasGeneradas((prev)=>upsertNominaGeneratedRecord(prev, record));
-    setMensajeGuardadoNomina(
-      "Nómina generada para " + snapshot.periodo.label + " con " + snapshot.totals.totalRegistros + " registros."
+    const updatedNominas = upsertNominaGeneratedRecord(nominasGeneradas, record);
+    setNominasGeneradas(updatedNominas);
+    setModoEdicionNomina(false);
+    await guardarCambiosNomina(
+      "✓ Nómina guardada exitosamente para " + snapshot.periodo.label + " con " + snapshot.totals.totalRegistros + " registros.",
+      { nominasGeneradas: updatedNominas, empleados: empleadosSincronizados }
     );
-    setTimeout(()=>setMensajeGuardadoNomina(""), 3500);
   };
 
-  const descargarPlanoBanco = ()=>{
-    const snapshot = nominaEstaGenerada ? nominaVistaActual : buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar);
-    if(!snapshot.registrosBanco.length){
+  const eliminarNominaHistorial = async (idAEliminar)=>{
+    if(!window.confirm("¿Seguro que deseas eliminar este corte guardado del historial?")) return;
+    const filtradas = (Array.isArray(nominasGeneradas) ? nominasGeneradas : []).filter(item => item.id !== idAEliminar);
+    setNominasGeneradas(filtradas);
+    await guardarCambiosNomina("Corte de nómina eliminado del historial.", { nominasGeneradas: filtradas });
+  };
+
+  const cargarNominaHistorial = (record, activarEdicion = false)=>{
+    if(record?.snapshot?.periodo?.mes) setMes(record.snapshot.periodo.mes);
+    if(record?.snapshot?.periodo?.corte) setCorteNomina(record.snapshot.periodo.corte);
+    setModoEdicionNomina(activarEdicion);
+    setMostrarHistorialNominas(false);
+    if(activarEdicion){
+      setMensajeGuardadoNomina(`✏️ Modo corrección activo para ${record.periodoLabel || record.id}. Modifica novedades o deducciones y pulsa 'Guardar nómina'.`);
+      setTimeout(()=>setMensajeGuardadoNomina(""), 5000);
+    }
+  };
+
+  const descargarPlanoBanco = (customSnapshot = null)=>{
+    const snapshot = customSnapshot || (nominaEstaGenerada ? nominaVistaActual : buildNominaSnapshot(empleadosBase, periodoNomina, diasVacPagar));
+    if(!snapshot?.registrosBanco?.length){
       setMensajeGuardadoNomina("No hay registros listos para el banco. Revisa cédula y cuenta bancaria de los empleados del corte.");
       setTimeout(()=>setMensajeGuardadoNomina(""), 3500);
       return;
     }
     const contenido = buildNominaPlanoBancoContent(snapshot, NOMINA_PLANO_BANCO_DEFAULTS);
     const record = buildNominaGeneratedRecord(snapshot, contenido);
-    setNominasGeneradas((prev)=>upsertNominaGeneratedRecord(prev, record));
+    const updatedNominas = upsertNominaGeneratedRecord(nominasGeneradas, record);
+    setNominasGeneradas(updatedNominas);
+    if(typeof saveAllToCloud === "function"){
+      saveAllToCloud({ nominasGeneradas: updatedNominas });
+    }
     const nombreArchivo = `NOMINA_${snapshot.periodo.mes}_${snapshot.periodo.corte.toUpperCase()}.txt`;
     downloadTextFile(nombreArchivo, contenido);
     setMensajeGuardadoNomina("Plano banco descargado: " + nombreArchivo);
@@ -594,7 +620,60 @@ export default function Nomina({ctx}){
           corte={corteNomina} onCorte={setCorteNomina}
           periodo={periodoNomina}
           soloLectura={tab==="lista"}
+          estaGenerada={nominaEstaGenerada}
+          modoEdicion={modoEdicionNomina}
+          onGuardar={generarNominaCorte}
+          onEditar={()=>{
+            setModoEdicionNomina(true);
+            setMensajeGuardadoNomina("✏️ Modo corrección activo. Realiza los cambios necesarios en deducciones, horas extras o contratos.");
+            setTimeout(()=>setMensajeGuardadoNomina(""), 4500);
+          }}
+          onVerHistorial={()=>setMostrarHistorialNominas(true)}
+          totalHistorial={(nominasGeneradas||[]).length}
         />
+      )}
+
+      {/* Banner de corrección activa si el usuario está editando una nómina guardada */}
+      {modoEdicionNomina && (
+        <div style={{
+          display:"flex",alignItems:"center",justifyContent:"space-between",
+          background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,
+          padding:"11px 16px",marginBottom:14,boxShadow:"0 1px 3px rgba(0,0,0,0.05)"
+        }}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:18}}>✏️</span>
+            <div>
+              <div style={{fontSize:12.5,fontWeight:700,color:"#92400e"}}>
+                Modo corrección de nómina activo: {periodoNomina.label}
+              </div>
+              <div style={{fontSize:11.5,color:"#78350f",marginTop:2}}>
+                Puedes ajustar horas extras, comisiones, incapacidades o deducciones libremente. Al finalizar, guarda los cambios.
+              </div>
+            </div>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <button
+              type="button"
+              onClick={()=>setModoEdicionNomina(false)}
+              style={{
+                background:"#fff",color:"#475569",border:"1px solid #cbd5e1",borderRadius:7,
+                padding:"6px 12px",fontSize:11.5,fontWeight:600,cursor:"pointer"
+              }}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={generarNominaCorte}
+              style={{
+                background:"#166534",color:"#4ade80",border:"1px solid #14532d",borderRadius:7,
+                padding:"6px 14px",fontSize:11.5,fontWeight:700,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:5
+              }}
+            >
+              💾 Guardar nómina corregida
+            </button>
+          </div>
+        </div>
       )}
 
       {tab==="nuevo"&&(
@@ -1137,12 +1216,83 @@ export default function Nomina({ctx}){
       })()}
       {tab==="colillas"&&(
         <div>
-          <div style={{display:"flex",gap:12,alignItems:"center",justifyContent:"space-between",marginBottom:16,background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:12,padding:"12px 14px"}}>
+          <div style={{
+            display:"flex",gap:12,alignItems:"center",justifyContent:"space-between",
+            marginBottom:16,background:modoEdicionNomina ? "#fffbeb" : "#fff7ed",
+            border:"1px solid " + (modoEdicionNomina ? "#fde68a" : "#fed7aa"),
+            borderRadius:12,padding:"14px 16px",flexWrap:"wrap"
+          }}>
             <div>
-              <div style={{fontSize:11,fontWeight:700,color:"#9a3412",textTransform:"uppercase",letterSpacing:0.7}}>Colillas de pago</div>
-              <div style={{fontSize:12,color:"#7c2d12",marginTop:4}}>Formato media carta con logo, con detalle del corte activo, incapacidades reconocidas y sin provisiones informativas.</div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <div style={{fontSize:11,fontWeight:700,color:modoEdicionNomina ? "#92400e" : "#9a3412",textTransform:"uppercase",letterSpacing:0.7}}>
+                  {modoEdicionNomina ? "✏️ Editando corte de nómina" : "Colillas de pago"}
+                </div>
+                {nominaEstaGenerada && !modoEdicionNomina && (
+                  <span style={{background:"#dcfce7",color:"#166534",border:"1px solid #bbf7d0",borderRadius:6,padding:"2px 7px",fontSize:10.5,fontWeight:700}}>
+                    ✓ Guardada
+                  </span>
+                )}
+                {modoEdicionNomina && (
+                  <span style={{background:"#fef3c7",color:"#92400e",border:"1px solid #fde68a",borderRadius:6,padding:"2px 7px",fontSize:10.5,fontWeight:700}}>
+                    ✏️ En corrección
+                  </span>
+                )}
+              </div>
+              <div style={{fontSize:12,color:modoEdicionNomina ? "#78350f" : "#7c2d12",marginTop:4}}>
+                {modoEdicionNomina
+                  ? "Ajusta las novedades o deducciones necesarias. Haz clic en 'Guardar nómina' para actualizar los valores y colillas."
+                  : "Formato media carta con logo, con detalle del corte activo, incapacidades reconocidas y sin provisiones informativas."}
+              </div>
             </div>
-            <button style={B("#142840","#4ade80")} onClick={()=>resumenesActivos.forEach(({empleado:e,resumen})=>printColilla(e,resumen,periodoNomina))}>🧾 Imprimir colillas masivas</button>
+
+            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+              {/* Consultar historial de nóminas */}
+              <button
+                type="button"
+                style={{...B("#ffffff","#1e293b"),border:"1px solid #cbd5e1",fontSize:11.5,fontWeight:600}}
+                onClick={()=>setMostrarHistorialNominas(true)}
+                title="Consultar todas las nóminas anteriores guardadas"
+              >
+                📜 Consultar historial {nominasGeneradas?.length > 0 ? `(${nominasGeneradas.length})` : ""}
+              </button>
+
+              {/* Botón Editar nómina (si hubo equivocación) */}
+              {nominaEstaGenerada && !modoEdicionNomina && (
+                <button
+                  type="button"
+                  style={{...B("#eff6ff","#1d4ed8"),border:"1px solid #bfdbfe",fontSize:11.5,fontWeight:600}}
+                  onClick={()=>{
+                    setModoEdicionNomina(true);
+                    setMensajeGuardadoNomina("✏️ Modo corrección activo. Puedes ir a Deducciones, Horas Extras o Empleados para corregir.");
+                    setTimeout(()=>setMensajeGuardadoNomina(""), 4500);
+                  }}
+                  title="¿Hubo algún error o equivocación? Haz clic aquí para corregir novedades o deducciones"
+                >
+                  ✏️ Editar nómina
+                </button>
+              )}
+
+              {/* Botón Guardar nómina */}
+              {(!nominaEstaGenerada || modoEdicionNomina) && (
+                <button
+                  type="button"
+                  style={{...B("#166534","#4ade80"),border:"1px solid #14532d",fontSize:11.5,fontWeight:700}}
+                  onClick={generarNominaCorte}
+                  title="Guardar y congelar la nómina de este corte"
+                >
+                  💾 Guardar nómina
+                </button>
+              )}
+
+              {/* Botón Imprimir colillas masivas */}
+              <button
+                type="button"
+                style={B("#142840","#4ade80")}
+                onClick={()=>resumenesActivos.forEach(({empleado:e,resumen})=>printColilla(e,resumen,periodoNomina))}
+              >
+                🧾 Imprimir colillas masivas
+              </button>
+            </div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
             {resumenesActivos.map(({empleado:e,resumen},i)=>{
@@ -2093,38 +2243,66 @@ export default function Nomina({ctx}){
                 </div>
               </div>
             </div>
-            <div style={{display:"flex",flexDirection:"column",gap:10,minWidth:230}}>
-              {/* Primero se genera; hasta entonces lo demas no tiene sentido y
-                  se muestra apagado para que nadie lo intente antes. */}
+            <div style={{display:"flex",flexDirection:"column",gap:8,minWidth:240}}>
+              {/* Botón Principal: Guardar nómina */}
               <button
-                style={{...B("#f47c20"),justifyContent:"center",padding:"13px 20px",fontSize:13.5,fontWeight:700}}
+                style={{
+                  ...B(modoEdicionNomina ? "#166534" : (nominaEstaGenerada ? "#1e293b" : "#f47c20"), modoEdicionNomina ? "#4ade80" : "#ffffff"),
+                  justifyContent:"center",padding:"12px 18px",fontSize:13,fontWeight:700,
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                }}
                 onClick={generarNominaCorte}
               >
-                {nominaEstaGenerada ? "Regenerar nómina" : "1 · Generar nómina"}
+                {modoEdicionNomina
+                  ? "💾 Guardar nómina corregida"
+                  : (nominaEstaGenerada ? "💾 Volver a guardar corte" : "💾 Guardar nómina de este corte")}
               </button>
 
-              <div style={{fontSize:10.5,color:"#94a3b8",lineHeight:1.45,textAlign:"center"}}>
-                {nominaEstaGenerada
-                  ? "Ya puedes descargar el archivo del banco."
-                  : "Congela el corte con los datos actuales."}
-              </div>
+              {/* Botón Editar nómina si ya estaba generada y no está en modo edición */}
+              {nominaEstaGenerada && !modoEdicionNomina && (
+                <button
+                  style={{
+                    ...B("#eff6ff","#1d4ed8"),border:"1px solid #bfdbfe",
+                    justifyContent:"center",padding:"10px 16px",fontSize:12,fontWeight:600
+                  }}
+                  onClick={()=>{
+                    setModoEdicionNomina(true);
+                    setMensajeGuardadoNomina("✏️ Modo edición activo. Realiza las correcciones que necesites y vuelve a guardar.");
+                    setTimeout(()=>setMensajeGuardadoNomina(""), 4500);
+                  }}
+                  title="¿Hubo algún error o equivocación? Haz clic aquí para corregir novedades o deducciones"
+                >
+                  ✏️ Editar nómina (corregir error)
+                </button>
+              )}
+
+              {/* Botón Consultar Historial */}
+              <button
+                style={{
+                  ...B("#ffffff","#1e293b"),border:"1px solid #cbd5e1",
+                  justifyContent:"center",padding:"9px 16px",fontSize:12,fontWeight:600
+                }}
+                onClick={()=>setMostrarHistorialNominas(true)}
+              >
+                📜 Consultar historial {nominasGeneradas?.length > 0 ? `(${nominasGeneradas.length})` : ""}
+              </button>
 
               <button
                 style={{
                   ...B(nominaEstaGenerada?"#142840":"#f1f5f9", nominaEstaGenerada?"#dbeafe":"#94a3b8"),
-                  justifyContent:"center",padding:"12px 20px",fontSize:12.5,
+                  justifyContent:"center",padding:"11px 18px",fontSize:12,
                 }}
                 onClick={descargarPlanoBanco}
                 title={nominaEstaGenerada ? "" : "Genera la nómina primero"}
               >
-                2 · Descargar plano banco
+                🏦 Descargar plano banco
               </button>
 
               <button
-                style={{...B("#f8fafc","#475569"),border:"1px solid #dbe4f0",justifyContent:"center",padding:"12px 20px",fontSize:12.5}}
+                style={{...B("#f8fafc","#475569"),border:"1px solid #dbe4f0",justifyContent:"center",padding:"10px 18px",fontSize:12}}
                 onClick={()=>printCurrentPz("Planilla Nómina " + (nominaVistaActual.periodo.label))}
               >
-                Imprimir planilla
+                🖨 Imprimir planilla
               </button>
             </div>
           </div>
@@ -2182,6 +2360,227 @@ export default function Nomina({ctx}){
             </div>
             <div style={{marginTop:30,display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:20}}>
               {["REPRESENTANTE LEGAL","CONTADOR","APROBADO POR"].map((l)=><div key={l} style={{textAlign:"center",borderTop:"1px solid #333",paddingTop:8}}><div style={{fontSize:10,color:"#555"}}>{l}</div></div>)}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal / Historial de Nóminas Generadas */}
+      {mostrarHistorialNominas && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.65)",
+          backdropFilter: "blur(4px)", zIndex: 9999, display: "flex",
+          alignItems: "center", justifyContent: "center", padding: 16
+        }}>
+          <div style={{
+            background: "#fff", borderRadius: 16, width: "100%", maxWidth: 840,
+            maxHeight: "90vh", display: "flex", flexDirection: "column",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)", border: "1px solid #e2e8f0",
+            overflow: "hidden"
+          }}>
+            {/* Header */}
+            <div style={{
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+              padding: "16px 20px", borderBottom: "1px solid #e2e8f0", background: "#f8fafc"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 22 }}>📜</span>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>
+                    Historial de Nóminas Generadas
+                  </div>
+                  <div style={{ fontSize: 11.5, color: "#64748b" }}>
+                    Consulta cortes archivados, reimprime colillas, descarga archivos bancarios o corrige equivocaciones.
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMostrarHistorialNominas(false)}
+                style={{
+                  background: "#fff", border: "1px solid #cbd5e1", borderRadius: 8,
+                  width: 32, height: 32, cursor: "pointer", fontSize: 14, fontWeight: 700,
+                  color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center"
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Metrics summary bar */}
+            {(Array.isArray(nominasGeneradas) && nominasGeneradas.length > 0) && (
+              <div style={{
+                display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10,
+                padding: "12px 20px", background: "#f1f5f9", borderBottom: "1px solid #e2e8f0"
+              }}>
+                <div style={{ background: "#fff", padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                  <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 600 }}>Cortes archivados</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "#1e293b", marginTop: 2 }}>{nominasGeneradas.length} períodos</div>
+                </div>
+                <div style={{ background: "#fff", padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                  <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 600 }}>Último corte guardado</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#2563eb", marginTop: 3 }}>{nominasGeneradas[0]?.periodoLabel || nominasGeneradas[0]?.id || "—"}</div>
+                </div>
+                <div style={{ background: "#fff", padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                  <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 600 }}>Total nómina acumulada</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "#166534", marginTop: 2 }}>
+                    {fmt(nominasGeneradas.reduce((acc, item) => acc + Number(item.snapshot?.totals?.totalPagar || item.snapshot?.totals?.totalBanco || 0), 0))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* List */}
+            <div style={{ padding: "16px 20px", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
+              {(!Array.isArray(nominasGeneradas) || nominasGeneradas.length === 0) ? (
+                <div style={{ textAlign: "center", padding: "40px 20px", color: "#64748b" }}>
+                  <div style={{ fontSize: 36, marginBottom: 10 }}>📭</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#1e293b" }}>No hay nóminas guardadas en el historial aún</div>
+                  <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 6, maxWidth: 420, margin: "6px auto 0" }}>
+                    Cuando calcules un corte de nómina y hagas clic en <strong>'Guardar nómina'</strong>, quedará archivado aquí para consulta, descarga de planos bancarios y reimpresión de colillas.
+                  </div>
+                </div>
+              ) : (
+                nominasGeneradas.map((item) => {
+                  const esCorteActivo = item.id === nominaPreview.id;
+                  const totalPagarCorte = item.snapshot?.totals?.totalPagar || item.snapshot?.totals?.totalBanco || 0;
+                  const totalRegistros = item.snapshot?.totals?.totalRegistros || (item.snapshot?.registros || []).length;
+                  const totalBanco = item.snapshot?.totals?.totalRegistrosBanco || 0;
+
+                  return (
+                    <div
+                      key={item.id}
+                      style={{
+                        border: esCorteActivo ? "2px solid #3b82f6" : "1px solid #e2e8f0",
+                        background: esCorteActivo ? "#f8faff" : "#ffffff",
+                        borderRadius: 12, padding: "14px 16px", display: "flex",
+                        flexDirection: "column", gap: 10, transition: "all 0.15s ease"
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <strong style={{ fontSize: 14, color: "#0f172a" }}>
+                              {item.periodoLabel || item.id}
+                            </strong>
+                            {esCorteActivo && (
+                              <span style={{
+                                background: "#dbeafe", color: "#1d4ed8", border: "1px solid #bfdbfe",
+                                borderRadius: 6, padding: "2px 7px", fontSize: 10.5, fontWeight: 700
+                              }}>
+                                ★ Corte en pantalla
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: 11, color: "#64748b", marginTop: 3 }}>
+                            Guardada el {formatNominaGeneratedAt(item.generadoEn)}
+                          </div>
+                        </div>
+
+                        {/* Badges / Metrics */}
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <span style={{ background: "#f1f5f9", color: "#334155", padding: "4px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600 }}>
+                            👥 {totalRegistros} empleados
+                          </span>
+                          <span style={{ background: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0", padding: "4px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
+                            💰 {fmt(totalPagarCorte)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Action buttons row */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #f1f5f9", paddingTop: 10, flexWrap: "wrap", gap: 6 }}>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          <button
+                            type="button"
+                            onClick={() => cargarNominaHistorial(item, false)}
+                            style={{
+                              background: "#fff", color: "#1e293b", border: "1px solid #cbd5e1",
+                              borderRadius: 7, padding: "5px 10px", fontSize: 11.5, fontWeight: 600, cursor: "pointer"
+                            }}
+                            title="Cargar y consultar este corte"
+                          >
+                            👁️ Consultar corte
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              cargarNominaHistorial(item, true);
+                            }}
+                            style={{
+                              background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe",
+                              borderRadius: 7, padding: "5px 10px", fontSize: 11.5, fontWeight: 600, cursor: "pointer"
+                            }}
+                            title="Si hubo alguna equivocación, pulsa aquí para editar y corregir los valores"
+                          >
+                            ✏️ Editar / Corregir
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              cargarNominaHistorial(item, false);
+                              setTab("colillas");
+                            }}
+                            style={{
+                              background: "#fff7ed", color: "#c2410c", border: "1px solid #fed7aa",
+                              borderRadius: 7, padding: "5px 10px", fontSize: 11.5, fontWeight: 600, cursor: "pointer"
+                            }}
+                            title="Ir a las colillas de pago de este corte"
+                          >
+                            🧾 Colillas
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => descargarPlanoBanco(item.snapshot)}
+                            style={{
+                              background: "#f0fdf4", color: "#15803d", border: "1px solid #bbf7d0",
+                              borderRadius: 7, padding: "5px 10px", fontSize: 11.5, fontWeight: 600, cursor: "pointer"
+                            }}
+                            title="Descargar archivo plano para Bancolombia"
+                          >
+                            🏦 Plano banco {totalBanco > 0 ? `(${totalBanco})` : ""}
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => eliminarNominaHistorial(item.id)}
+                          style={{
+                            background: "#fff", color: "#dc2626", border: "1px solid #fecaca",
+                            borderRadius: 7, padding: "5px 9px", fontSize: 11, cursor: "pointer"
+                          }}
+                          title="Eliminar este corte archivado del historial"
+                        >
+                          🗑️ Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Footer */}
+            <div style={{
+              padding: "12px 20px", borderTop: "1px solid #e2e8f0", background: "#f8fafc",
+              display: "flex", justifyContent: "space-between", alignItems: "center"
+            }}>
+              <div style={{ fontSize: 11, color: "#64748b" }}>
+                💡 <em>Tip: Al editar un corte archivado se activa el modo corrección, permitiendo retocar novedades o deducciones y volver a guardar.</em>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMostrarHistorialNominas(false)}
+                style={{
+                  background: "#142840", color: "#fff", border: "none", borderRadius: 8,
+                  padding: "6px 16px", fontSize: 12, fontWeight: 600, cursor: "pointer"
+                }}
+              >
+                Cerrar
+              </button>
             </div>
           </div>
         </div>

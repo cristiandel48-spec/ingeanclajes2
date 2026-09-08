@@ -1,5 +1,5 @@
 // Historial de recibos de caja (ingresos y recaudos de clientes).
-// Incluye botón para reimprimir el soporte oficial en formato Media Carta.
+// Incluye soporte para retenciones en la fuente, ICA e IVA y botón de impresión Media Carta.
 import ListadoConFiltros, { GrupoFiltro, Resaltable } from "../../components/ListadoConFiltros";
 import { C, boton, enMilis } from "../../components/listadoEstilos";
 import Badge from "../../components/ui/Badge";
@@ -47,11 +47,18 @@ export default function ListaPagos({ pagos, obras, acciones }) {
       )}
       aplicarExtra={(p, v) => !v.obra || p.obraId === v.obra}
       derecha={(lista) => {
-        const cobrado = lista.filter((p) => p.estado === "Pagado")
-          .reduce((s, p) => s + Number(p.monto || 0), 0);
+        const cobradoNeto = lista.filter((p) => p.estado === "Pagado")
+          .reduce((s, p) => s + Number(p.valorNeto ?? (Number(p.monto || 0) - Number(p.totalRetenciones || 0))), 0);
+        const retencionesTotal = lista.filter((p) => p.estado === "Pagado")
+          .reduce((s, p) => s + Number(p.totalRetenciones || 0), 0);
         return (
           <span style={{ fontSize: 11.5, color: C.tenue, fontWeight: 600 }}>
-            Total recaudado <strong style={{ color: "#166534" }}>{fmt(cobrado)}</strong>
+            Total neto recaudado <strong style={{ color: "#166534" }}>{fmt(cobradoNeto)}</strong>
+            {retencionesTotal > 0 && (
+              <span style={{ marginLeft: 6, color: "#9a3412" }}>
+                (Retenciones a favor: <strong>{fmt(retencionesTotal)}</strong>)
+              </span>
+            )}
           </span>
         );
       }}
@@ -60,7 +67,7 @@ export default function ListaPagos({ pagos, obras, acciones }) {
       )}
       vacio={{
         titulo: "Todavía no hay recibos de caja registrados",
-        texto: "Los recibos de caja se registran arriba, buscando al cliente por NIT u obra y digitando el valor recibido.",
+        texto: "Los recibos de caja se registran arriba, buscando al cliente por NIT u obra y digitando el valor recibido con sus retenciones.",
       }}
     />
   );
@@ -69,14 +76,17 @@ export default function ListaPagos({ pagos, obras, acciones }) {
 function Fila({ p, compacta, obra, acciones }) {
   const pagado = p.estado === "Pagado";
   const alPulsar = (fn) => (e) => { e.stopPropagation(); fn(p); };
-  const monto = Number(p.monto || 0);
+  const montoBruto = Number(p.monto || p.valor || 0);
+  const totalRet = Number(p.totalRetenciones || 0);
+  const montoNeto = Number(p.valorNeto ?? Math.max(0, montoBruto - totalRet));
+  const tieneRet = totalRet > 0;
 
   const botones = (
     <>
       {acciones.imprimir && (
         <button
           style={boton("#eff6ff", "#1d4ed8", { border: "1px solid #93c5fd", fontWeight: 700 })}
-          title="Ver e imprimir Recibo de Caja Media Carta"
+          title="Ver e imprimir Recibo de Caja Media Carta (IA-FT-05)"
           onClick={alPulsar(acciones.imprimir)}
         >
           🖨️ Recibo
@@ -126,15 +136,21 @@ function Fila({ p, compacta, obra, acciones }) {
   );
 
   const valor = (
-    <span style={{
-      fontSize: 14,
-      fontWeight: 700,
-      color: pagado ? "#166534" : "#c2410c",
-      whiteSpace: "nowrap",
-      fontVariantNumeric: "tabular-nums",
-    }}>
-      {fmt(monto)}
-    </span>
+    <div style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+      <div style={{
+        fontSize: 14,
+        fontWeight: 700,
+        color: pagado ? "#166534" : "#c2410c",
+        fontVariantNumeric: "tabular-nums",
+      }}>
+        {fmt(tieneRet ? montoNeto : montoBruto)}
+      </div>
+      {tieneRet && (
+        <div style={{ fontSize: 10.5, color: "#64748b" }}>
+          Bruto: {fmt(montoBruto)} · Ret: <span style={{ color: "#c2410c" }}>-{fmt(totalRet)}</span>
+        </div>
+      )}
+    </div>
   );
 
   if (compacta) {
@@ -201,7 +217,9 @@ function Fila({ p, compacta, obra, acciones }) {
         <Badge estado={p.estado} />
       </div>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-        <span style={{ fontSize: 11, color: C.apagado }}>Valor recibido en caja</span>
+        <span style={{ fontSize: 11, color: C.apagado }}>
+          {tieneRet ? "Valor neto recibido (tras retenciones)" : "Valor recibido en caja"}
+        </span>
         {valor}
       </div>
       {p.notas && <div style={{ fontSize: 11, color: C.tenue }}>{p.notas}</div>}

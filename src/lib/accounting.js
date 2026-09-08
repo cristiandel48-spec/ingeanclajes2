@@ -106,6 +106,39 @@ const DEFAULT_PLAN_TEMPLATE = [
     descripcion: "Saldos a favor por retenciones practicadas.",
   },
   {
+    codigo: "135517",
+    nombre: "Impuesto a las ventas retenido a favor (ReteIVA)",
+    naturaleza: "debito",
+    grupoReporte: "activo",
+    categoriaEstado: "activo_corriente",
+    permiteMovimientos: true,
+    requiereTercero: true,
+    requiereCentroCosto: false,
+    descripcion: "Anticipo de impuesto por ReteIVA practicado por clientes.",
+  },
+  {
+    codigo: "135518",
+    nombre: "Impuesto de industria y comercio retenido (ReteICA a favor)",
+    naturaleza: "debito",
+    grupoReporte: "activo",
+    categoriaEstado: "activo_corriente",
+    permiteMovimientos: true,
+    requiereTercero: true,
+    requiereCentroCosto: false,
+    descripcion: "Anticipo de impuesto por ReteICA practicado por clientes.",
+  },
+  {
+    codigo: "135595",
+    nombre: "Otras retenciones y contribuciones a favor",
+    naturaleza: "debito",
+    grupoReporte: "activo",
+    categoriaEstado: "activo_corriente",
+    permiteMovimientos: true,
+    requiereTercero: true,
+    requiereCentroCosto: false,
+    descripcion: "Otras retenciones, estampillas o deducciones a favor.",
+  },
+  {
     codigo: "240810",
     nombre: "IVA descontable",
     naturaleza: "debito",
@@ -1298,26 +1331,97 @@ export function buildAutomaticAccountingEntries({
             terceroNit,
             terceroNombre,
             soporte: payment.id,
-            lineas: [
-              createAsientoLine({
-                cuentaCodigo: cashAccount,
-                detalle: `Recaudo ${payment.tipo || "abono"} ${obra.proyecto || ""}`.trim(),
-                debito: payment.monto,
-                terceroId,
-                terceroNit,
-                terceroNombre,
-                centroCosto: payment.obraId || "",
-              }),
-              createAsientoLine({
-                cuentaCodigo: settings.cuentaClientes,
-                detalle: `Abono cuenta por cobrar ${obra.proyecto || payment.obraId || ""}`.trim(),
-                credito: payment.monto,
-                terceroId,
-                terceroNit,
-                terceroNombre,
-                centroCosto: payment.obraId || "",
-              }),
-            ],
+            lineas: (() => {
+              const ret = payment.retenciones || {};
+              const vFuente = Number(ret.reteFuente?.valor ?? payment.valorRetFuente ?? 0);
+              const vIva = Number(ret.reteIva?.valor ?? payment.valorReteiva ?? 0);
+              const vIca = Number(ret.reteIca?.valor ?? payment.valorReteica ?? 0);
+              const vOtras = Number(ret.otras?.valor ?? payment.valorOtrasRet ?? 0);
+              const totalRet = vFuente + vIva + vIca + vOtras;
+              const neto = Number(payment.valorNeto ?? Math.max(0, payment.monto - totalRet));
+
+              const l = [
+                createAsientoLine({
+                  cuentaCodigo: cashAccount,
+                  detalle: `Recaudo neto ${payment.tipo || "recibo de caja"} ${obra.proyecto || ""}`.trim(),
+                  debito: totalRet > 0 ? neto : payment.monto,
+                  terceroId,
+                  terceroNit,
+                  terceroNombre,
+                  centroCosto: payment.obraId || "",
+                }),
+              ];
+
+              if (vFuente > 0) {
+                l.push(
+                  createAsientoLine({
+                    cuentaCodigo: ret.reteFuente?.cuenta || "135515",
+                    detalle: `ReteFuente a favor (${ret.reteFuente?.tarifa || 0}%) ${obra.proyecto || ""}`.trim(),
+                    debito: vFuente,
+                    terceroId,
+                    terceroNit,
+                    terceroNombre,
+                    centroCosto: payment.obraId || "",
+                  })
+                );
+              }
+
+              if (vIva > 0) {
+                l.push(
+                  createAsientoLine({
+                    cuentaCodigo: ret.reteIva?.cuenta || "135517",
+                    detalle: `ReteIVA a favor ${obra.proyecto || ""}`.trim(),
+                    debito: vIva,
+                    terceroId,
+                    terceroNit,
+                    terceroNombre,
+                    centroCosto: payment.obraId || "",
+                  })
+                );
+              }
+
+              if (vIca > 0) {
+                l.push(
+                  createAsientoLine({
+                    cuentaCodigo: ret.reteIca?.cuenta || "135518",
+                    detalle: `ReteICA a favor (${ret.reteIca?.tarifa || 0}‰) ${obra.proyecto || ""}`.trim(),
+                    debito: vIca,
+                    terceroId,
+                    terceroNit,
+                    terceroNombre,
+                    centroCosto: payment.obraId || "",
+                  })
+                );
+              }
+
+              if (vOtras > 0) {
+                l.push(
+                  createAsientoLine({
+                    cuentaCodigo: ret.otras?.cuenta || "135595",
+                    detalle: `Otras retenciones a favor ${obra.proyecto || ""}`.trim(),
+                    debito: vOtras,
+                    terceroId,
+                    terceroNit,
+                    terceroNombre,
+                    centroCosto: payment.obraId || "",
+                  })
+                );
+              }
+
+              l.push(
+                createAsientoLine({
+                  cuentaCodigo: settings.cuentaClientes || "130505",
+                  detalle: `Abono cuenta por cobrar ${obra.proyecto || payment.obraId || ""}`.trim(),
+                  credito: payment.monto,
+                  terceroId,
+                  terceroNit,
+                  terceroNombre,
+                  centroCosto: payment.obraId || "",
+                })
+              );
+
+              return l;
+            })(),
             planMap,
           })
         );

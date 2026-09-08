@@ -6,12 +6,29 @@ import BuscadorCliente from "../../components/BuscadorCliente";
 import ReciboCajaMediaCarta, { generarHtmlMediaCarta } from "./ReciboCajaMediaCarta";
 import { openPrintTab } from "../../lib/cotizacionPrint";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
+import {
+  CONCEPTOS_RETEFUENTE,
+  CONCEPTOS_RETEIVA,
+  CONCEPTOS_RETEICA,
+  CONCEPTOS_OTRAS,
+  CUENTAS_RETENCION,
+  calcularRetencionesRecibo,
+} from "../../lib/retencionesRecibo";
 import { useState, useMemo } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmt, today } from "../../lib/format";
 
 export default function Pagos({ ctx }) {
-  const { obras = [], setObras, pagos = [], setPagos, clientes = [], cotizaciones = [], empresaConfig = [], membresia } = ctx;
+  const {
+    obras = [],
+    setObras,
+    pagos = [],
+    setPagos,
+    clientes = [],
+    cotizaciones = [],
+    empresaConfig = [],
+    membresia,
+  } = ctx;
 
   const [nombreCliente, setNombreCliente] = useState("");
   const [clienteObj, setClienteObj] = useState(null);
@@ -20,6 +37,7 @@ export default function Pagos({ ctx }) {
   const [vistaPago, setVistaPago] = useState("registro");
   const [reciboParaImprimir, setReciboParaImprimir] = useState(null);
 
+  // Datos base del recibo de caja
   const [reciboCaja, setReciboCaja] = useState({
     tipo: "Abono a obra",
     monto: "",
@@ -27,6 +45,29 @@ export default function Pagos({ ctx }) {
     metodo: "Transferencia",
     notas: "",
   });
+
+  // Retenciones practicadas por el cliente (amarradas a cuentas PUC)
+  const [reteFuenteConcepto, setReteFuenteConcepto] = useState("obra_2"); // 2.0% contratos construcción
+  const [reteFuenteTarifa, setReteFuenteTarifa] = useState(2.0);
+  const [reteFuenteManual, setReteFuenteManual] = useState(false);
+  const [reteFuenteValor, setReteFuenteValor] = useState(0);
+
+  const [reteIcaConcepto, setReteIcaConcepto] = useState("ica_69"); // 6.9 por mil Envigado/Medellín
+  const [reteIcaTarifa, setReteIcaTarifa] = useState(6.9);
+  const [reteIcaManual, setReteIcaManual] = useState(false);
+  const [reteIcaValor, setReteIcaValor] = useState(0);
+
+  const [reteIvaConcepto, setReteIvaConcepto] = useState("ninguna");
+  const [reteIvaTarifa, setReteIvaTarifa] = useState(0);
+  const [reteIvaManual, setReteIvaManual] = useState(false);
+  const [reteIvaValor, setReteIvaValor] = useState(0);
+
+  const [otrasConcepto, setOtrasConcepto] = useState("ninguna");
+  const [otrasTarifa, setOtrasTarifa] = useState(0);
+  const [otrasManual, setOtrasManual] = useState(false);
+  const [otrasValor, setOtrasValor] = useState(0);
+
+  const [mostrarRetenciones, setMostrarRetenciones] = useState(true);
 
   const normalizarTexto = (valor = "") =>
     String(valor || "")
@@ -58,11 +99,42 @@ export default function Pagos({ ctx }) {
     return [...mapa.values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
   }, [clientes, cotizaciones, obras]);
 
+  // Cálculo automático de retenciones y valores netos
+  const retencionesCalc = useMemo(() => {
+    const base = Math.round(Number(reciboCaja.monto || 0));
+    return calcularRetencionesRecibo({
+      base,
+      reteFuente: { concepto: reteFuenteConcepto, tarifa: reteFuenteTarifa, valor: reteFuenteValor, manual: reteFuenteManual },
+      reteIva: { concepto: reteIvaConcepto, tarifa: reteIvaTarifa, valor: reteIvaValor, manual: reteIvaManual },
+      reteIca: { concepto: reteIcaConcepto, tarifa: reteIcaTarifa, valor: reteIcaValor, manual: reteIcaManual },
+      otras: { concepto: otrasConcepto, tarifa: otrasTarifa, valor: otrasValor, manual: otrasManual },
+    });
+  }, [
+    reciboCaja.monto,
+    reteFuenteConcepto,
+    reteFuenteTarifa,
+    reteFuenteValor,
+    reteFuenteManual,
+    reteIvaConcepto,
+    reteIvaTarifa,
+    reteIvaValor,
+    reteIvaManual,
+    reteIcaConcepto,
+    reteIcaTarifa,
+    reteIcaValor,
+    reteIcaManual,
+    otrasConcepto,
+    otrasTarifa,
+    otrasValor,
+    otrasManual,
+  ]);
+
   const pagosNormalizados = useMemo(() => {
     return (Array.isArray(pagos) ? pagos : []).map((pago) => ({
       ...pago,
       monto: Number(pago?.monto ?? pago?.valor ?? 0),
       valor: Number(pago?.monto ?? pago?.valor ?? 0),
+      valorNeto: Number(pago?.valorNeto ?? pago?.monto ?? 0),
       metodo: pago?.metodo ?? pago?.medio ?? "",
       medio: pago?.metodo ?? pago?.medio ?? "",
       tipo: pago?.tipo ?? pago?.referencia ?? "Recibo de caja",
@@ -135,6 +207,43 @@ export default function Pagos({ ctx }) {
           }
         }
       }
+    }
+  };
+
+  // Manejo de cambio de conceptos de retención con cálculo automático
+  const alCambiarReteFuente = (id) => {
+    setReteFuenteConcepto(id);
+    const c = CONCEPTOS_RETEFUENTE.find((item) => item.id === id);
+    if (c && c.tarifa !== null) {
+      setReteFuenteTarifa(c.tarifa);
+      setReteFuenteManual(false);
+    }
+  };
+
+  const alCambiarReteIca = (id) => {
+    setReteIcaConcepto(id);
+    const c = CONCEPTOS_RETEICA.find((item) => item.id === id);
+    if (c && c.tarifa !== null) {
+      setReteIcaTarifa(c.tarifa);
+      setReteIcaManual(false);
+    }
+  };
+
+  const alCambiarReteIva = (id) => {
+    setReteIvaConcepto(id);
+    const c = CONCEPTOS_RETEIVA.find((item) => item.id === id);
+    if (c && c.tarifa !== null) {
+      setReteIvaTarifa(c.tarifa);
+      setReteIvaManual(false);
+    }
+  };
+
+  const alCambiarOtras = (id) => {
+    setOtrasConcepto(id);
+    const c = CONCEPTOS_OTRAS.find((item) => item.id === id);
+    if (c && c.tarifa !== null) {
+      setOtrasTarifa(c.tarifa);
+      setOtrasManual(false);
     }
   };
 
@@ -224,12 +333,12 @@ export default function Pagos({ ctx }) {
   };
 
   const guardarRecibo = () => {
-    const monto = Math.round(Number(reciboCaja.monto || 0));
-    if (!obraPagoId || !Number.isFinite(monto) || monto <= 0) return;
+    const montoBruto = retencionesCalc.montoBruto;
+    if (!obraPagoId || !Number.isFinite(montoBruto) || montoBruto <= 0) return;
 
     const idRC = generarConsecutivoRC();
     const saldoAnterior = Number(obraSeleccionada?.saldo || 0);
-    const nuevoSaldo = Math.max(0, saldoAnterior - monto);
+    const nuevoSaldo = Math.max(0, saldoAnterior - montoBruto);
 
     const clienteFinal = clienteObj?.nombre || obraSeleccionada?.cliente || nombreCliente || "Cliente Ingeanclajes";
     const nitFinal = clienteObj?.nit || obraSeleccionada?.nit || "";
@@ -241,8 +350,16 @@ export default function Pagos({ ctx }) {
       cliente: clienteFinal,
       nit: nitFinal,
       tipo: reciboCaja.tipo?.trim() || "Abono a obra",
-      monto,
-      valor: monto,
+      monto: montoBruto,
+      valor: montoBruto,
+      valorBruto: montoBruto,
+      valorNeto: retencionesCalc.montoNeto,
+      totalRetenciones: retencionesCalc.totalRetenciones,
+      valorRetFuente: retencionesCalc.reteFuente.valor,
+      valorReteIva: retencionesCalc.reteIva.valor,
+      valorReteIca: retencionesCalc.reteIca.valor,
+      valorOtrasRet: retencionesCalc.otras.valor,
+      retenciones: retencionesCalc,
       fecha: reciboCaja.fecha || today(),
       estado: "Pagado",
       metodo: reciboCaja.metodo || "Transferencia",
@@ -256,12 +373,12 @@ export default function Pagos({ ctx }) {
 
     setGuardandoRecibo(true);
     setPagos((prev) => [nuevoPago, ...prev]);
-    actualizarSaldoObra(obraPagoId, monto);
+    actualizarSaldoObra(obraPagoId, montoBruto);
 
     // Abrir modal de impresión Media Carta de inmediato
     setReciboParaImprimir(nuevoPago);
 
-    // Limpiar formulario
+    // Limpiar formulario a valores por defecto
     setReciboCaja({
       tipo: "Abono a obra",
       monto: "",
@@ -269,6 +386,10 @@ export default function Pagos({ ctx }) {
       metodo: "Transferencia",
       notas: "",
     });
+    setReteFuenteManual(false);
+    setReteIcaManual(false);
+    setReteIvaManual(false);
+    setOtrasManual(false);
 
     setTimeout(() => setGuardandoRecibo(false), 350);
   };
@@ -284,10 +405,22 @@ export default function Pagos({ ctx }) {
       metodo: "Transferencia",
       notas: "",
     });
+    setReteFuenteConcepto("obra_2");
+    setReteFuenteTarifa(2.0);
+    setReteFuenteManual(false);
+    setReteIcaConcepto("ica_69");
+    setReteIcaTarifa(6.9);
+    setReteIcaManual(false);
+    setReteIvaConcepto("ninguna");
+    setReteIvaTarifa(0);
+    setReteIvaManual(false);
+    setOtrasConcepto("ninguna");
+    setOtrasTarifa(0);
+    setOtrasManual(false);
   };
 
   const saldoProyectado = obraSeleccionada
-    ? Math.max(0, Number(obraSeleccionada.saldo || 0) - Number(reciboCaja.monto || 0))
+    ? Math.max(0, Number(obraSeleccionada.saldo || 0) - Number(retencionesCalc.montoBruto || 0))
     : 0;
 
   return (
@@ -383,8 +516,8 @@ export default function Pagos({ ctx }) {
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 20, alignItems: "start" }}>
-            <div style={{ display: "grid", gap: 13 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1.25fr 0.95fr", gap: 20, alignItems: "start" }}>
+            <div style={{ display: "grid", gap: 14 }}>
               {/* Buscador de Cliente por NIT o Razón Social como en Cotizaciones */}
               <div>
                 <BuscadorCliente
@@ -441,23 +574,23 @@ export default function Pagos({ ctx }) {
                 </select>
               </div>
 
-              {/* Valor recibido y fecha */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {/* Valor del Abono Bruto a Cartera y Fecha */}
+              <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 12 }}>
                 <div>
-                  <LBL>Valor recibido en caja *</LBL>
+                  <LBL>Valor bruto del abono a la obra (Base de retención) *</LBL>
                   <input
                     type="number"
                     min="0"
                     step="1000"
                     value={reciboCaja.monto}
                     onChange={(e) => setReciboCaja({ ...reciboCaja, monto: e.target.value })}
-                    placeholder="Ej. 2500000"
-                    style={SI}
+                    placeholder="Ej. 10000000"
+                    style={{ ...SI, fontSize: 15, fontWeight: 700 }}
                   />
-                  <div style={{ fontSize: 11.5, color: "#166534", marginTop: 4, fontWeight: 700 }}>
+                  <div style={{ fontSize: 11, color: "#003B71", marginTop: 4, fontWeight: 600 }}>
                     {Number(reciboCaja.monto || 0) > 0
-                      ? fmt(Number(reciboCaja.monto || 0))
-                      : "Ingresa el valor del recaudo"}
+                      ? `Abono a cartera: ${fmt(Number(reciboCaja.monto || 0))}`
+                      : "Ingresa el valor total que se abonará a la deuda"}
                   </div>
                 </div>
                 <div>
@@ -468,6 +601,229 @@ export default function Pagos({ ctx }) {
                     onChange={(e) => setReciboCaja({ ...reciboCaja, fecha: e.target.value })}
                     style={SI}
                   />
+                </div>
+              </div>
+
+              {/* SECCIÓN ESPECIAL: RETENCIONES QUE PRACTICA EL CLIENTE */}
+              <div
+                style={{
+                  background: "#fffbeb",
+                  border: "1.5px solid #fde68a",
+                  borderRadius: 10,
+                  padding: "12px 14px",
+                  display: "grid",
+                  gap: 10,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px dashed #fcd34d", paddingBottom: 6 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 16 }}>🛡️</span>
+                    <strong style={{ fontSize: 12.5, color: "#92400e", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                      Retenciones practicadas por el cliente (Anticipo de Impuestos a favor)
+                    </strong>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setMostrarRetenciones(!mostrarRetenciones)}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: "#b45309",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {mostrarRetenciones ? "Ocultar opciones ▲" : "Mostrar opciones ▼"}
+                  </button>
+                </div>
+
+                {mostrarRetenciones && (
+                  <div style={{ display: "grid", gap: 10 }}>
+                    {/* 1. ReteFuente (Cuenta 135515) */}
+                    <div style={{ background: "#ffffff", padding: "8px 10px", borderRadius: 8, border: "1px solid #fef3c7" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                        <span style={{ fontSize: 11.5, fontWeight: 700, color: "#78350f" }}>
+                          1. Retención en la fuente (Renta)
+                        </span>
+                        <span style={{ fontSize: 10, background: "#e0f2fe", color: "#0369a1", padding: "1px 7px", borderRadius: 4, fontWeight: 800, fontFamily: "Consolas, monospace" }}>
+                          Cuenta PUC: 135515
+                        </span>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 140px", gap: 8, alignItems: "center" }}>
+                        <select
+                          value={reteFuenteConcepto}
+                          onChange={(e) => alCambiarReteFuente(e.target.value)}
+                          style={{ ...SI, fontSize: 11.5, padding: "5px 8px" }}
+                        >
+                          {CONCEPTOS_RETEFUENTE.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.label}
+                            </option>
+                          ))}
+                        </select>
+                        <div style={{ textAlign: "right", fontFamily: "Consolas, monospace", fontWeight: 800, color: retencionesCalc.reteFuente.valor > 0 ? "#b45309" : "#64748b", fontSize: 12.5 }}>
+                          -{fmt(retencionesCalc.reteFuente.valor)}
+                        </div>
+                      </div>
+                      {reteFuenteConcepto === "personalizada" && (
+                        <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
+                          <span style={{ fontSize: 11, color: "#78350f" }}>Tarifa %:</span>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            value={reteFuenteTarifa}
+                            onChange={(e) => setReteFuenteTarifa(Number(e.target.value))}
+                            style={{ ...SI, width: 80, padding: "3px 6px", fontSize: 11 }}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 2. ReteICA (Cuenta 135518) */}
+                    <div style={{ background: "#ffffff", padding: "8px 10px", borderRadius: 8, border: "1px solid #fef3c7" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                        <span style={{ fontSize: 11.5, fontWeight: 700, color: "#78350f" }}>
+                          2. Retención de Industria y Comercio (ReteICA)
+                        </span>
+                        <span style={{ fontSize: 10, background: "#e0f2fe", color: "#0369a1", padding: "1px 7px", borderRadius: 4, fontWeight: 800, fontFamily: "Consolas, monospace" }}>
+                          Cuenta PUC: 135518
+                        </span>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 140px", gap: 8, alignItems: "center" }}>
+                        <select
+                          value={reteIcaConcepto}
+                          onChange={(e) => alCambiarReteIca(e.target.value)}
+                          style={{ ...SI, fontSize: 11.5, padding: "5px 8px" }}
+                        >
+                          {CONCEPTOS_RETEICA.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.label}
+                            </option>
+                          ))}
+                        </select>
+                        <div style={{ textAlign: "right", fontFamily: "Consolas, monospace", fontWeight: 800, color: retencionesCalc.reteIca.valor > 0 ? "#b45309" : "#64748b", fontSize: 12.5 }}>
+                          -{fmt(retencionesCalc.reteIca.valor)}
+                        </div>
+                      </div>
+                      {reteIcaConcepto === "personalizada" && (
+                        <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
+                          <span style={{ fontSize: 11, color: "#78350f" }}>Tarifa por mil (‰):</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={reteIcaTarifa}
+                            onChange={(e) => setReteIcaTarifa(Number(e.target.value))}
+                            style={{ ...SI, width: 80, padding: "3px 6px", fontSize: 11 }}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 3. ReteIVA (Cuenta 135517) */}
+                    <div style={{ background: "#ffffff", padding: "8px 10px", borderRadius: 8, border: "1px solid #fef3c7" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                        <span style={{ fontSize: 11.5, fontWeight: 700, color: "#78350f" }}>
+                          3. Retención de IVA (ReteIVA)
+                        </span>
+                        <span style={{ fontSize: 10, background: "#e0f2fe", color: "#0369a1", padding: "1px 7px", borderRadius: 4, fontWeight: 800, fontFamily: "Consolas, monospace" }}>
+                          Cuenta PUC: 135517
+                        </span>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 140px", gap: 8, alignItems: "center" }}>
+                        <select
+                          value={reteIvaConcepto}
+                          onChange={(e) => alCambiarReteIva(e.target.value)}
+                          style={{ ...SI, fontSize: 11.5, padding: "5px 8px" }}
+                        >
+                          {CONCEPTOS_RETEIVA.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.label}
+                            </option>
+                          ))}
+                        </select>
+                        <div style={{ textAlign: "right", fontFamily: "Consolas, monospace", fontWeight: 800, color: retencionesCalc.reteIva.valor > 0 ? "#b45309" : "#64748b", fontSize: 12.5 }}>
+                          -{fmt(retencionesCalc.reteIva.valor)}
+                        </div>
+                      </div>
+                      {reteIvaConcepto === "manual" && (
+                        <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
+                          <span style={{ fontSize: 11, color: "#78350f" }}>Valor manual en pesos ($):</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={reteIvaValor}
+                            onChange={(e) => {
+                              setReteIvaValor(Number(e.target.value));
+                              setReteIvaManual(true);
+                            }}
+                            style={{ ...SI, width: 120, padding: "3px 6px", fontSize: 11 }}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 4. Otras Deducciones / Estampillas (Cuenta 135595) */}
+                    <div style={{ background: "#ffffff", padding: "8px 10px", borderRadius: 8, border: "1px solid #fef3c7" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                        <span style={{ fontSize: 11.5, fontWeight: 700, color: "#78350f" }}>
+                          4. Otras deducciones / Estampillas
+                        </span>
+                        <span style={{ fontSize: 10, background: "#e0f2fe", color: "#0369a1", padding: "1px 7px", borderRadius: 4, fontWeight: 800, fontFamily: "Consolas, monospace" }}>
+                          Cuenta PUC: 135595
+                        </span>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 140px", gap: 8, alignItems: "center" }}>
+                        <select
+                          value={otrasConcepto}
+                          onChange={(e) => alCambiarOtras(e.target.value)}
+                          style={{ ...SI, fontSize: 11.5, padding: "5px 8px" }}
+                        >
+                          {CONCEPTOS_OTRAS.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.label}
+                            </option>
+                          ))}
+                        </select>
+                        <div style={{ textAlign: "right", fontFamily: "Consolas, monospace", fontWeight: 800, color: retencionesCalc.otras.valor > 0 ? "#b45309" : "#64748b", fontSize: 12.5 }}>
+                          -{fmt(retencionesCalc.otras.valor)}
+                        </div>
+                      </div>
+                      {otrasConcepto === "manual" && (
+                        <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
+                          <span style={{ fontSize: 11, color: "#78350f" }}>Valor manual ($):</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={otrasValor}
+                            onChange={(e) => {
+                              setOtrasValor(Number(e.target.value));
+                              setOtrasManual(true);
+                            }}
+                            style={{ ...SI, width: 120, padding: "3px 6px", fontSize: 11 }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Resumen contable de liquidación */}
+                <div style={{ background: "#fef3c7", padding: "8px 12px", borderRadius: 8, display: "grid", gap: 4 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#78350f" }}>
+                    <span>Valor Bruto Abonado a Cartera (Cuenta 130505):</span>
+                    <strong style={{ fontFamily: "Consolas, monospace" }}>{fmt(retencionesCalc.montoBruto)}</strong>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#c2410c" }}>
+                    <span>(-) Total Retenciones Practicadas (Cuentas 1355):</span>
+                    <strong style={{ fontFamily: "Consolas, monospace" }}>-{fmt(retencionesCalc.totalRetenciones)}</strong>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#166534", borderTop: "1.5px solid #fde68a", paddingTop: 4, marginTop: 2 }}>
+                    <span style={{ fontWeight: 800 }}>(=) Valor Neto que ingresa a Caja/Bancos (Cuenta 111005):</span>
+                    <strong style={{ fontFamily: "Consolas, monospace", fontSize: 15, fontWeight: 900 }}>{fmt(retencionesCalc.montoNeto)}</strong>
+                  </div>
                 </div>
               </div>
 
@@ -506,8 +862,8 @@ export default function Pagos({ ctx }) {
                   value={reciboCaja.notas}
                   onChange={(e) => setReciboCaja({ ...reciboCaja, notas: e.target.value })}
                   rows={2}
-                  placeholder="Referencia de transferencia, número de aprobación, banco o detalle"
-                  style={{ ...SI, minHeight: 70, resize: "vertical" }}
+                  placeholder="Referencia de transferencia, número de aprobación bancaria o soporte"
+                  style={{ ...SI, minHeight: 60, resize: "vertical" }}
                 />
               </div>
 
@@ -516,15 +872,15 @@ export default function Pagos({ ctx }) {
                 <button
                   type="button"
                   onClick={guardarRecibo}
-                  disabled={!obraPagoId || Number(reciboCaja.monto || 0) <= 0 || guardandoRecibo}
+                  disabled={!obraPagoId || retencionesCalc.montoBruto <= 0 || guardandoRecibo}
                   style={{
                     ...B("#cc0000"),
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 8,
                     fontWeight: 800,
-                    opacity: (!obraPagoId || Number(reciboCaja.monto || 0) <= 0 || guardandoRecibo) ? 0.6 : 1,
-                    cursor: (!obraPagoId || Number(reciboCaja.monto || 0) <= 0 || guardandoRecibo) ? "not-allowed" : "pointer",
+                    opacity: (!obraPagoId || retencionesCalc.montoBruto <= 0 || guardandoRecibo) ? 0.6 : 1,
+                    cursor: (!obraPagoId || retencionesCalc.montoBruto <= 0 || guardandoRecibo) ? "not-allowed" : "pointer",
                   }}
                 >
                   <span>💾</span>
@@ -616,7 +972,7 @@ export default function Pagos({ ctx }) {
                       </div>
                     </div>
 
-                    {Number(reciboCaja.monto || 0) > 0 && (
+                    {retencionesCalc.montoBruto > 0 && (
                       <div
                         style={{
                           background: "#f0fdf4",
@@ -631,6 +987,9 @@ export default function Pagos({ ctx }) {
                         </div>
                         <div style={{ fontSize: 20, fontWeight: 900, color: saldoProyectado > 0 ? "#c2410c" : "#166534" }}>
                           {fmt(saldoProyectado)}
+                        </div>
+                        <div style={{ fontSize: 11, color: "#15803d", marginTop: 4 }}>
+                          Se descuentan {fmt(retencionesCalc.montoBruto)} del saldo (Neto recibido: {fmt(retencionesCalc.montoNeto)} + Retenciones reconocidas: {fmt(retencionesCalc.totalRetenciones)})
                         </div>
                       </div>
                     )}
@@ -798,4 +1157,3 @@ export default function Pagos({ ctx }) {
     </div>
   );
 }
-

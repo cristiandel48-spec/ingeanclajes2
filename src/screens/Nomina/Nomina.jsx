@@ -48,16 +48,6 @@ export default function Nomina({ctx}){
   const [modoEdicionNomina,setModoEdicionNomina]=useState(false);
   const [mostrarHistorialNominas,setMostrarHistorialNominas]=useState(false);
 
-  // El boton de crear vive en la barra de arriba, no en un titulo propio.
-  useAccionesPantalla(
-    <button
-      style={{background:"#cc0000",color:"#fff",border:"1px solid #cc0000",borderRadius:9,
-        padding:"8px 16px",fontSize:12.5,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
-      onClick={()=>setTab("nuevo")}
-    >+ Nuevo Empleado</button>,
-    []
-  );
-
   const nominasGeneradasMap = (Array.isArray(nominasGeneradas) ? nominasGeneradas : [])
     .map(normalizeNominaGeneratedRecord)
     .reduce((acc,item)=>{
@@ -540,6 +530,97 @@ export default function Nomina({ctx}){
     setTimeout(()=>setMensajeGuardadoNomina(""), 3500);
   };
 
+  useAccionesPantalla(
+    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "nowrap" }}>
+      {/* Consultar historial de nóminas */}
+      <button
+        type="button"
+        style={{
+          background: "#ffffff", color: "#1e293b", border: "1px solid #cbd5e1", borderRadius: 8,
+          padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer",
+          display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", height: 34
+        }}
+        onClick={() => setMostrarHistorialNominas(true)}
+        title="Consultar historial de nóminas generadas y archivadas"
+      >
+        📜 Consultar historial {nominasGeneradas?.length > 0 ? `(${nominasGeneradas.length})` : ""}
+      </button>
+
+      {/* Estado Guardada */}
+      {nominaEstaGenerada && !modoEdicionNomina && (
+        <span style={{
+          background: "#dcfce7", color: "#166534", border: "1px solid #bbf7d0",
+          borderRadius: 8, padding: "0 10px", fontSize: 11.5, fontWeight: 700,
+          display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", height: 34, boxSizing: "border-box"
+        }}>
+          ✓ Guardada
+        </span>
+      )}
+
+      {/* Modo Corrección / Edición */}
+      {modoEdicionNomina && (
+        <span style={{
+          background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a",
+          borderRadius: 8, padding: "0 10px", fontSize: 11.5, fontWeight: 700,
+          display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", height: 34, boxSizing: "border-box"
+        }}>
+          ✏️ Editando corte
+        </span>
+      )}
+
+      {/* Botón Editar nómina si ya está guardada */}
+      {nominaEstaGenerada && !modoEdicionNomina && (
+        <button
+          type="button"
+          style={{
+            background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", borderRadius: 8,
+            padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer",
+            display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", height: 34
+          }}
+          onClick={() => {
+            setModoEdicionNomina(true);
+            setMensajeGuardadoNomina("✏️ Modo edición activo. Realiza las correcciones que necesites y vuelve a guardar.");
+            setTimeout(() => setMensajeGuardadoNomina(""), 4500);
+          }}
+          title="¿Hubo algún error o equivocación? Haz clic aquí para corregir novedades o deducciones"
+        >
+          ✏️ Editar nómina
+        </button>
+      )}
+
+      {/* Botón Guardar nómina */}
+      {(!nominaEstaGenerada || modoEdicionNomina) && (
+        <button
+          type="button"
+          style={{
+            background: "#166534", color: "#4ade80", border: "1px solid #14532d", borderRadius: 8,
+            padding: "6px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer",
+            display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", height: 34,
+            boxShadow: "0 1px 2px rgba(0,0,0,0.1)"
+          }}
+          onClick={generarNominaCorte}
+          title="Guardar y congelar la nómina de este corte"
+        >
+          💾 {modoEdicionNomina ? "Guardar nómina corregida" : "Guardar nómina"}
+        </button>
+      )}
+
+      {/* Botón Nuevo Empleado */}
+      <button
+        type="button"
+        style={{
+          background: "#cc0000", color: "#fff", border: "1px solid #cc0000", borderRadius: 8,
+          padding: "6px 14px", fontSize: 12.5, fontWeight: 700, cursor: "pointer",
+          fontFamily: "inherit", whiteSpace: "nowrap", height: 34
+        }}
+        onClick={() => setTab("nuevo")}
+      >
+        + Nuevo Empleado
+      </button>
+    </div>,
+    [tab, nominaEstaGenerada, modoEdicionNomina, nominasGeneradas, periodoNomina.id, diasVacPagar, empleadosBase]
+  );
+
   const renderNominaMetricCard=({label,value,color="#142840",hint="",span=1})=>(
     <div style={{background:"#fff",borderRadius:8,padding:"10px 12px",gridColumn:span>1?("span " + span):undefined}}>
       <div style={{fontSize:10,color:"#64748b"}}>{label}</div>
@@ -620,16 +701,6 @@ export default function Nomina({ctx}){
           corte={corteNomina} onCorte={setCorteNomina}
           periodo={periodoNomina}
           soloLectura={tab==="lista"}
-          estaGenerada={nominaEstaGenerada}
-          modoEdicion={modoEdicionNomina}
-          onGuardar={generarNominaCorte}
-          onEditar={()=>{
-            setModoEdicionNomina(true);
-            setMensajeGuardadoNomina("✏️ Modo corrección activo. Realiza los cambios necesarios en deducciones, horas extras o contratos.");
-            setTimeout(()=>setMensajeGuardadoNomina(""), 4500);
-          }}
-          onVerHistorial={()=>setMostrarHistorialNominas(true)}
-          totalHistorial={(nominasGeneradas||[]).length}
         />
       )}
 

@@ -2,111 +2,191 @@ import Badge from "../../components/ui/Badge";
 import ListaPagos from "./ListaPagos";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
-import { useState } from "react";
+import BuscadorCliente from "../../components/BuscadorCliente";
+import ReciboCajaMediaCarta, { generarHtmlMediaCarta } from "./ReciboCajaMediaCarta";
+import { openPrintTab } from "../../lib/cotizacionPrint";
+import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
+import { useState, useMemo } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmt, today } from "../../lib/format";
-export default function Pagos({ctx}){
-  const {obras,setObras,pagos,setPagos}=ctx;
-  const [busquedaPago,setBusquedaPago]=useState("");
-  const [obraPagoId,setObraPagoId]=useState("");
-  const [guardandoAbono,setGuardandoAbono]=useState(false);
-  const [vistaPago,setVistaPago]=useState("registro");
-  const [abono,setAbono]=useState({
-    tipo:"Abono manual",
-    monto:"",
-    fecha:today(),
-    metodo:"Transferencia",
-    notas:"",
+
+export default function Pagos({ ctx }) {
+  const { obras = [], setObras, pagos = [], setPagos, clientes = [], cotizaciones = [], empresaConfig = [], membresia } = ctx;
+
+  const [nombreCliente, setNombreCliente] = useState("");
+  const [clienteObj, setClienteObj] = useState(null);
+  const [obraPagoId, setObraPagoId] = useState("");
+  const [guardandoRecibo, setGuardandoRecibo] = useState(false);
+  const [vistaPago, setVistaPago] = useState("registro");
+  const [reciboParaImprimir, setReciboParaImprimir] = useState(null);
+
+  const [reciboCaja, setReciboCaja] = useState({
+    tipo: "Abono a obra",
+    monto: "",
+    fecha: today(),
+    metodo: "Transferencia",
+    notas: "",
   });
 
-  const normalizarTexto = (valor="") =>
+  const normalizarTexto = (valor = "") =>
     String(valor || "")
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase();
 
-  const pagosNormalizados = (Array.isArray(pagos) ? pagos : []).map((pago)=>({
-    ...pago,
-    monto:Number(pago?.monto ?? pago?.valor ?? 0),
-    valor:Number(pago?.monto ?? pago?.valor ?? 0),
-    metodo:pago?.metodo ?? pago?.medio ?? "",
-    medio:pago?.metodo ?? pago?.medio ?? "",
-    tipo:pago?.tipo ?? pago?.referencia ?? "Abono",
-    estado:pago?.estado ?? "Pagado",
-    fecha:pago?.fecha || today(),
-  }));
+  // Consolida todos los clientes conocidos de clientes, cotizaciones y obras con su NIT
+  const clientesConocidos = useMemo(() => {
+    const mapa = new Map();
+    const registrar = (datos) => {
+      const nombre = normalizarRazonSocial(datos.nombre);
+      if (!nombre) return;
+      const previo = mapa.get(nombre) || {};
+      const contacto = normalizarRazonSocial(datos.contacto) === nombre ? "" : (datos.contacto || "");
+      mapa.set(nombre, {
+        nombre,
+        nit: previo.nit || datos.nit || "",
+        contacto: previo.contacto || contacto,
+        contactoEmail: previo.contactoEmail || datos.contactoEmail || "",
+        telefono: previo.telefono || datos.telefono || "",
+        ciudad: previo.ciudad || datos.ciudad || "",
+        direccion: previo.direccion || datos.direccion || "",
+      });
+    };
+    (clientes || []).forEach((c) => registrar({ nombre: c.nombre, nit: c.nit, contacto: c.contacto, contactoEmail: c.email, telefono: c.telefono, ciudad: c.ciudad, direccion: c.direccion }));
+    (cotizaciones || []).forEach((c) => registrar({ nombre: c.cliente, nit: c.nit, contacto: c.contacto, contactoEmail: c.contactoEmail, telefono: c.telefono, ciudad: c.ciudad, direccion: c.direccion }));
+    (obras || []).forEach((o) => registrar({ nombre: o.cliente, nit: o.nit, telefono: o.tel, ciudad: o.ciudad, direccion: o.direccion }));
+    return [...mapa.values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }, [clientes, cotizaciones, obras]);
 
-  const obrasFiltradasBusqueda = obras.filter((obra)=>{
-    const term = normalizarTexto(busquedaPago);
-    if(!term) return true;
-    return [obra.id, obra.cliente, obra.proyecto, obra.obra, obra.ciudad, obra.direccion]
-      .some((campo)=>normalizarTexto(campo).includes(term));
-  });
+  const pagosNormalizados = useMemo(() => {
+    return (Array.isArray(pagos) ? pagos : []).map((pago) => ({
+      ...pago,
+      monto: Number(pago?.monto ?? pago?.valor ?? 0),
+      valor: Number(pago?.monto ?? pago?.valor ?? 0),
+      metodo: pago?.metodo ?? pago?.medio ?? "",
+      medio: pago?.metodo ?? pago?.medio ?? "",
+      tipo: pago?.tipo ?? pago?.referencia ?? "Recibo de caja",
+      estado: pago?.estado ?? "Pagado",
+      fecha: pago?.fecha || today(),
+    }));
+  }, [pagos]);
 
-  const obraSeleccionada = obras.find((obra)=>obra.id===obraPagoId) || null;
+  // Filtra obras por el cliente seleccionado o por búsqueda de texto
+  const obrasDelCliente = useMemo(() => {
+    const term = normalizarTexto(nombreCliente).trim();
+    const nitTerm = (clienteObj?.nit || "").replace(/\D/g, "");
+    if (!term && !nitTerm) return obras;
+
+    const filtradas = obras.filter((obra) => {
+      const obCli = normalizarTexto(obra.cliente);
+      const matchNom = obCli.includes(term) || term.includes(obCli);
+      const obNit = (obra.nit || "").replace(/\D/g, "");
+      const matchNit = nitTerm && obNit && obNit === nitTerm;
+      return matchNom || matchNit;
+    });
+
+    return filtradas.length > 0 ? filtradas : obras;
+  }, [obras, nombreCliente, clienteObj]);
+
+  const obraSeleccionada = obras.find((obra) => obra.id === obraPagoId) || null;
+
+  const alElegirCliente = (c) => {
+    setNombreCliente(c.nombre);
+    setClienteObj(c);
+    const cNit = (c.nit || "").replace(/\D/g, "");
+    const cNom = normalizarTexto(c.nombre);
+    const obrasMatch = obras.filter((o) => {
+      const oNit = (o.nit || "").replace(/\D/g, "");
+      const oNom = normalizarTexto(o.cliente);
+      return (cNit && oNit && cNit === oNit) || oNom.includes(cNom) || cNom.includes(oNom);
+    });
+
+    if (obrasMatch.length === 1) {
+      setObraPagoId(obrasMatch[0].id);
+    } else if (obrasMatch.length > 1) {
+      const conSaldo = obrasMatch.find((o) => Number(o.saldo || 0) > 0) || obrasMatch[0];
+      setObraPagoId(conSaldo.id);
+    }
+  };
+
+  const alElegirObra = (id) => {
+    setObraPagoId(id);
+    if (id) {
+      const obra = obras.find((o) => o.id === id);
+      if (obra) {
+        if (!nombreCliente) {
+          setNombreCliente(obra.cliente || "");
+        }
+        if (!clienteObj || !clienteObj.nit) {
+          const cMatch = clientesConocidos.find((c) =>
+            normalizarTexto(c.nombre) === normalizarTexto(obra.cliente) ||
+            (obra.nit && c.nit && c.nit.replace(/\D/g, "") === obra.nit.replace(/\D/g, ""))
+          );
+          if (cMatch) {
+            setClienteObj(cMatch);
+          } else {
+            setClienteObj({
+              nombre: obra.cliente || "",
+              nit: obra.nit || "",
+              ciudad: obra.ciudad || "",
+              direccion: obra.direccion || "",
+              telefono: obra.tel || "",
+            });
+          }
+        }
+      }
+    }
+  };
 
   const actualizarSaldoObra = (obraId, montoAbono) => {
-    if(!obraId || !Number.isFinite(montoAbono) || montoAbono<=0) return;
-    setObras((prev)=>prev.map((obra)=>{
-      if(obra.id!==obraId) return obra;
+    if (!obraId || !Number.isFinite(montoAbono) || montoAbono <= 0) return;
+    setObras((prev) => prev.map((obra) => {
+      if (obra.id !== obraId) return obra;
       const pagadoActual = Number(obra.pagado || 0);
       const totalActual = Number(obra.total || 0);
       const nuevoPagado = pagadoActual + montoAbono;
       const nuevoSaldo = Math.max(0, totalActual - nuevoPagado);
-      // El estado NO se toca: dice como va el trabajo, no la plata. Antes se
-      // escribia "Pagado" encima y una obra en curso pagada por adelantado
-      // desaparecia de las obras activas. Como va el cobro se deduce del
-      // saldo con estadoCobroDe().
       return {
         ...obra,
-        pagado:nuevoPagado,
-        saldo:nuevoSaldo,
+        pagado: nuevoPagado,
+        saldo: nuevoSaldo,
       };
     }));
   };
 
-  // Devuelve a la obra lo que sumaba un abono. Es el contrario exacto de
-  // `actualizarSaldoObra`: si no se hiciera, borrar un abono dejaria la obra
-  // diciendo que se cobro un dinero que ya no esta registrado en ningun lado.
   const devolverSaldoObra = (obraId, montoAbono) => {
-    if(!obraId || !Number.isFinite(montoAbono) || montoAbono<=0) return;
-    setObras((prev)=>prev.map((obra)=>{
-      if(obra.id!==obraId) return obra;
+    if (!obraId || !Number.isFinite(montoAbono) || montoAbono <= 0) return;
+    setObras((prev) => prev.map((obra) => {
+      if (obra.id !== obraId) return obra;
       const totalActual = Number(obra.total || 0);
-      // Nunca por debajo de cero: si los numeros venian descuadrados de antes,
-      // restar a ciegas dejaria un "pagado" negativo.
       const nuevoPagado = Math.max(0, Number(obra.pagado || 0) - montoAbono);
       const nuevoSaldo = Math.max(0, totalActual - nuevoPagado);
-      // Tampoco aqui se toca el estado. Antes, al borrar un abono, la obra se
-      // devolvia a "En Obra" aunque el trabajo estuviera entregado: se perdia
-      // el avance real por un movimiento de plata.
       return {
         ...obra,
-        pagado:nuevoPagado,
-        saldo:nuevoSaldo,
+        pagado: nuevoPagado,
+        saldo: nuevoSaldo,
       };
     }));
   };
 
-  // Borra un abono registrado. Se pregunta con el valor y la obra delante,
-  // porque esto mueve plata: no es lo mismo equivocarse de fila aqui que en
-  // un listado de documentos.
   const eliminarPago = (pago) => {
-    const obra = obras.find((o)=>o.id===pago.obraId);
+    const obra = obras.find((o) => o.id === pago.obraId);
     const monto = Number(pago.monto || 0);
     const aviso =
-      `¿Eliminar este abono?
+      `¿Eliminar este recibo de caja?
 
 ` +
       `${pago.id} · ${fmt(monto)}
 ` +
-      `Obra: ${pago.obraId}${obra?.cliente ? ` · ${obra.cliente}` : ""}
+      `Cliente: ${pago.cliente || obra?.cliente || "General"}
+` +
+      `Obra: ${pago.obraId}${obra?.proyecto ? ` · ${obra.proyecto}` : ""}
 ` +
       (pago.fecha ? `Fecha: ${pago.fecha}
 ` : "") +
       `
 ` +
-      (pago.estado==="Pagado"
+      (pago.estado === "Pagado"
         ? `Ese dinero se le devolverá al saldo pendiente de la obra.
 
 `
@@ -114,245 +194,607 @@ export default function Pagos({ctx}){
 
 `) +
       `Esto no se puede deshacer.`;
-    if(!window.confirm(aviso)) return;
+    if (!window.confirm(aviso)) return;
 
-    // Solo se devuelve lo que de verdad se habia descontado: un abono
-    // pendiente nunca llego a tocar el saldo.
-    if(pago.estado==="Pagado") devolverSaldoObra(pago.obraId, monto);
-    setPagos((prev)=>prev.filter((p)=>p.id!==pago.id));
+    if (pago.estado === "Pagado") devolverSaldoObra(pago.obraId, monto);
+    setPagos((prev) => prev.filter((p) => p.id !== pago.id));
   };
 
   const cobrar = (id) => {
-    const pagoActual = pagosNormalizados.find((p)=>p.id===id);
-    if(!pagoActual || pagoActual.estado==="Pagado") return;
-    setTimeout(()=>{
+    const pagoActual = pagosNormalizados.find((p) => p.id === id);
+    if (!pagoActual || pagoActual.estado === "Pagado") return;
+    setTimeout(() => {
       actualizarSaldoObra(pagoActual.obraId, Number(pagoActual.monto || 0));
-      setPagos((prev)=>prev.map((p)=>p.id===id ? {
+      setPagos((prev) => prev.map((p) => p.id === id ? {
         ...p,
-        estado:"Pagado",
-        fecha:today(),
-        metodo:p.metodo ?? p.medio ?? "PSE",
+        estado: "Pagado",
+        fecha: today(),
+        metodo: p.metodo ?? p.medio ?? "Transferencia",
       } : p));
-    }, 700);
+    }, 500);
   };
 
-  const guardarAbonoManual = () => {
-    const monto = Math.round(Number(abono.monto || 0));
-    if(!obraPagoId || !Number.isFinite(monto) || monto<=0) return;
+  const generarConsecutivoRC = () => {
+    const maxNum = (pagos || []).reduce((max, p) => {
+      const idStr = String(p.id || p.consecutivo || "");
+      const match = idStr.match(/RC-(\d+)/i);
+      return match ? Math.max(max, parseInt(match[1], 10)) : max;
+    }, 0);
+    return `RC-${String(maxNum + 1).padStart(4, "0")}`;
+  };
+
+  const guardarRecibo = () => {
+    const monto = Math.round(Number(reciboCaja.monto || 0));
+    if (!obraPagoId || !Number.isFinite(monto) || monto <= 0) return;
+
+    const idRC = generarConsecutivoRC();
+    const saldoAnterior = Number(obraSeleccionada?.saldo || 0);
+    const nuevoSaldo = Math.max(0, saldoAnterior - monto);
+
+    const clienteFinal = clienteObj?.nombre || obraSeleccionada?.cliente || nombreCliente || "Cliente Ingeanclajes";
+    const nitFinal = clienteObj?.nit || obraSeleccionada?.nit || "";
+
     const nuevoPago = {
-      id:"PG-" + (Date.now()),
-      obraId:obraPagoId,
-      tipo:abono.tipo?.trim() || "Abono manual",
+      id: idRC,
+      consecutivo: idRC,
+      obraId: obraPagoId,
+      cliente: clienteFinal,
+      nit: nitFinal,
+      tipo: reciboCaja.tipo?.trim() || "Abono a obra",
       monto,
-      valor:monto,
-      fecha:abono.fecha || today(),
-      estado:"Pagado",
-      metodo:abono.metodo || "Transferencia",
-      medio:abono.metodo || "Transferencia",
-      notas:(abono.notas || "").trim(),
+      valor: monto,
+      fecha: reciboCaja.fecha || today(),
+      estado: "Pagado",
+      metodo: reciboCaja.metodo || "Transferencia",
+      medio: reciboCaja.metodo || "Transferencia",
+      notas: (reciboCaja.notas || "").trim(),
+      saldoAnterior,
+      saldoNuevo,
+      totalObra: Number(obraSeleccionada?.total || 0),
+      elaboradoPor: membresia?.nombre || "Administración Ingeanclajes",
     };
-    setGuardandoAbono(true);
-    setPagos((prev)=>[nuevoPago, ...prev]);
+
+    setGuardandoRecibo(true);
+    setPagos((prev) => [nuevoPago, ...prev]);
     actualizarSaldoObra(obraPagoId, monto);
-    setAbono({
-      tipo:"Abono manual",
-      monto:"",
-      fecha:today(),
-      metodo:"Transferencia",
-      notas:"",
+
+    // Abrir modal de impresión Media Carta de inmediato
+    setReciboParaImprimir(nuevoPago);
+
+    // Limpiar formulario
+    setReciboCaja({
+      tipo: "Abono a obra",
+      monto: "",
+      fecha: today(),
+      metodo: "Transferencia",
+      notas: "",
     });
-    setTimeout(()=>setGuardandoAbono(false), 500);
+
+    setTimeout(() => setGuardandoRecibo(false), 350);
   };
 
-  return(
-    <div style={{padding:"14px 28px 28px"}}>
+  const limpiarFormulario = () => {
+    setNombreCliente("");
+    setClienteObj(null);
+    setObraPagoId("");
+    setReciboCaja({
+      tipo: "Abono a obra",
+      monto: "",
+      fecha: today(),
+      metodo: "Transferencia",
+      notas: "",
+    });
+  };
 
-      <div style={{display:"flex",gap:10,marginBottom:18,flexWrap:"wrap"}}>
+  const saldoProyectado = obraSeleccionada
+    ? Math.max(0, Number(obraSeleccionada.saldo || 0) - Number(reciboCaja.monto || 0))
+    : 0;
+
+  return (
+    <div style={{ padding: "14px 28px 28px" }}>
+      {/* 1. Barra de Navegación de Recibos de Caja (Alineada y moderna) */}
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          marginBottom: 20,
+          flexWrap: "wrap",
+          alignItems: "center",
+          background: "#ffffff",
+          padding: "8px 12px",
+          borderRadius: 12,
+          border: "1px solid #e2e8f0",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+        }}
+      >
         <button
           type="button"
-          onClick={()=>setVistaPago("registro")}
+          onClick={() => setVistaPago("registro")}
           style={{
-            ...B(vistaPago==="registro" ? "#cc0000" : "#fff7ed", vistaPago==="registro" ? "#fff" : "#9a3412"),
-            border:vistaPago==="registro" ? "1px solid #cc0000" : "1px solid #fed7aa",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "10px 18px",
+            borderRadius: 9,
+            fontSize: 13,
+            fontWeight: 700,
+            cursor: "pointer",
+            border: vistaPago === "registro" ? "1.5px solid #cc0000" : "1.5px solid #e2e8f0",
+            background: vistaPago === "registro" ? "#cc0000" : "#ffffff",
+            color: vistaPago === "registro" ? "#ffffff" : "#334155",
+            boxShadow: vistaPago === "registro" ? "0 4px 12px rgba(204,0,0,0.2)" : "none",
+            transition: "all 0.15s ease",
           }}
         >
-          Registrar abono
+          <span style={{ fontSize: 16 }}>🧾</span>
+          <span>1. Registrar Recibo de Caja</span>
         </button>
+
         <button
           type="button"
-          onClick={()=>setVistaPago("historial")}
+          onClick={() => setVistaPago("historial")}
           style={{
-            ...B(vistaPago==="historial" ? "#003B71" : "#eff6ff", vistaPago==="historial" ? "#fff" : "#1d4ed8"),
-            border:vistaPago==="historial" ? "1px solid #003B71" : "1px solid #bfdbfe",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "10px 18px",
+            borderRadius: 9,
+            fontSize: 13,
+            fontWeight: 700,
+            cursor: "pointer",
+            border: vistaPago === "historial" ? "1.5px solid #003B71" : "1.5px solid #e2e8f0",
+            background: vistaPago === "historial" ? "#003B71" : "#ffffff",
+            color: vistaPago === "historial" ? "#ffffff" : "#334155",
+            boxShadow: vistaPago === "historial" ? "0 4px 12px rgba(0,59,113,0.2)" : "none",
+            transition: "all 0.15s ease",
           }}
         >
-          Historial de pagos
+          <span style={{ fontSize: 16 }}>📋</span>
+          <span>2. Historial de Recibos</span>
+          <span
+            style={{
+              fontSize: 11,
+              background: vistaPago === "historial" ? "rgba(255,255,255,0.25)" : "#f1f5f9",
+              color: vistaPago === "historial" ? "#ffffff" : "#475569",
+              padding: "2px 8px",
+              borderRadius: 999,
+              fontWeight: 800,
+            }}
+          >
+            {pagosNormalizados.length}
+          </span>
         </button>
       </div>
 
-      {vistaPago==="registro" && <div style={{...CD,marginBottom:20,border:"1px solid #fed7aa",boxShadow:"0 18px 40px rgba(244,124,32,0.08)"}}>
-        <div style={ST}>Registrar abono manual</div>
-        <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr",gap:18,alignItems:"start"}}>
-          <div style={{display:"grid",gap:12}}>
-            <div>
-              <LBL>Buscar cliente u obra</LBL>
-              <input
-                value={busquedaPago}
-                onChange={(e)=>{
-                  const v=e.target.value;
-                  setBusquedaPago(v);
-                  const t=normalizarTexto(v);
-                  if(!t){setObraPagoId("");return;}
-                  const matches=obras.filter((obra)=>[obra.id,obra.cliente,obra.proyecto,obra.obra,obra.ciudad,obra.direccion].some((campo)=>normalizarTexto(campo).includes(t)));
-                  setObraPagoId(matches[0]?.id || "");
-                }}
-                placeholder="Escribe cliente, obra, ciudad o ID"
-                style={SI}
-              />
+      {/* 2. Formulario de Registro de Recibo de Caja */}
+      {vistaPago === "registro" && (
+        <div
+          style={{
+            ...CD,
+            marginBottom: 22,
+            border: "1px solid #fed7aa",
+            boxShadow: "0 18px 40px rgba(244,124,32,0.08)",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <div style={ST}>Registrar Recibo de Caja (Comprobante de Ingreso)</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#cc0000", fontFamily: "Consolas, monospace" }}>
+              Próximo consecutivo: {generarConsecutivoRC()}
             </div>
-            <div>
-              <LBL>Seleccionar obra</LBL>
-              <select value={obraPagoId} onChange={(e)=>setObraPagoId(e.target.value)} style={SI}>
-                <option value="">Seleccionar obra...</option>
-                {obrasFiltradasBusqueda.map((obra)=>(
-                  <option key={obra.id} value={obra.id}>
-                    {obra.id} · {obra.cliente} · {obra.proyecto}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 20, alignItems: "start" }}>
+            <div style={{ display: "grid", gap: 13 }}>
+              {/* Buscador de Cliente por NIT o Razón Social como en Cotizaciones */}
               <div>
-                <LBL>Valor del abono</LBL>
-                <input
-                  type="number"
-                  min="0"
-                  step="1000"
-                  value={abono.monto}
-                  onChange={(e)=>setAbono({...abono,monto:e.target.value})}
-                  placeholder="Ej. 2000000"
-                  style={SI}
+                <BuscadorCliente
+                  label="Cliente / Razón Social (Buscar por NIT o Nombre) *"
+                  valor={nombreCliente}
+                  clientes={clientesConocidos}
+                  onEscribir={(v) => {
+                    setNombreCliente(v);
+                  }}
+                  onElegir={alElegirCliente}
+                  ayuda="Escribe el NIT o razón social para desplegar los clientes registrados y autocompletar su información."
                 />
-                <div style={{fontSize:11,color:"#64748b",marginTop:6}}>
-                  {Number(abono.monto || 0)>0 ? fmt(Number(abono.monto || 0)) : "Ingresa el valor manual del abono"}
-                </div>
+
+                {clienteObj?.nit && (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      marginTop: 4,
+                      background: "#f8fafc",
+                      padding: "5px 10px",
+                      borderRadius: 6,
+                      border: "1px solid #e2e8f0",
+                    }}
+                  >
+                    <span style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>NIT / C.C.:</span>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: "#0f172a", fontFamily: "Consolas, monospace" }}>
+                      {clienteObj.nit}
+                    </span>
+                    {clienteObj.ciudad && (
+                      <span style={{ fontSize: 11, color: "#475569", marginLeft: "auto" }}>
+                        📍 {clienteObj.ciudad}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
+
+              {/* Selector de Obra vinculada */}
               <div>
-                <LBL>Fecha del abono</LBL>
-                <input
-                  type="date"
-                  value={abono.fecha}
-                  onChange={(e)=>setAbono({...abono,fecha:e.target.value})}
+                <LBL>Obra / Proyecto a abonar *</LBL>
+                <select
+                  value={obraPagoId}
+                  onChange={(e) => alElegirObra(e.target.value)}
                   style={SI}
-                />
-              </div>
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-              <div>
-                <LBL>Tipo</LBL>
-                <input
-                  value={abono.tipo}
-                  onChange={(e)=>setAbono({...abono,tipo:e.target.value})}
-                  placeholder="Abono manual / anticipo / pago parcial"
-                  style={SI}
-                />
-              </div>
-              <div>
-                <LBL>Método</LBL>
-                <select value={abono.metodo} onChange={(e)=>setAbono({...abono,metodo:e.target.value})} style={SI}>
-                  <option value="Transferencia">Transferencia</option>
-                  <option value="Consignación">Consignación</option>
-                  <option value="Efectivo">Efectivo</option>
-                  <option value="PSE">PSE</option>
-                  <option value="Cheque">Cheque</option>
-                  <option value="Otro">Otro</option>
+                >
+                  <option value="">Seleccionar obra o proyecto...</option>
+                  {obrasDelCliente.map((obra) => (
+                    <option key={obra.id} value={obra.id}>
+                      {obra.id} · {obra.cliente} · {obra.proyecto} {Number(obra.saldo || 0) > 0 ? `(Pendiente: ${fmt(Number(obra.saldo))})` : "(Al día)"}
+                    </option>
+                  ))}
                 </select>
               </div>
-            </div>
-            <div>
-              <LBL>Notas</LBL>
-              <textarea
-                value={abono.notas}
-                onChange={(e)=>setAbono({...abono,notas:e.target.value})}
-                rows={3}
-                placeholder="Referencia, observación del pago o soporte recibido"
-                style={{...SI,minHeight:86,resize:"vertical"}}
-              />
-            </div>
-            <div style={{display:"flex",gap:10}}>
-              <button
-                type="button"
-                onClick={guardarAbonoManual}
-                disabled={!obraPagoId || Number(abono.monto || 0)<=0 || guardandoAbono}
-                style={{
-                  ...B("#cc0000"),
-                  opacity:(!obraPagoId || Number(abono.monto || 0)<=0 || guardandoAbono)?0.6:1,
-                  cursor:(!obraPagoId || Number(abono.monto || 0)<=0 || guardandoAbono)?"not-allowed":"pointer",
-                }}
-              >
-                {guardandoAbono ? "Guardando..." : "Guardar abono"}
-              </button>
-              <button
-                type="button"
-                onClick={()=>{
-                  setBusquedaPago("");
-                  setObraPagoId("");
-                  setAbono({ tipo:"Abono manual", monto:"", fecha:today(), metodo:"Transferencia", notas:"" });
-                }}
-                style={B("#f1f5f9","#475569")}
-              >
-                Limpiar
-              </button>
-            </div>
-          </div>
 
-          <div style={{background:"linear-gradient(180deg,#fff7ed,#ffffff)",border:"1px solid #fed7aa",borderRadius:14,padding:16}}>
-            <div style={{fontSize:11,fontWeight:700,color:"#9a3412",textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>Obra seleccionada</div>
-            {obraSeleccionada ? (
-              <div style={{display:"grid",gap:10}}>
+              {/* Valor recibido y fecha */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div>
-                  <div style={{fontSize:11,color:"#64748b"}}>{obraSeleccionada.id}</div>
-                  <div style={{fontSize:20,fontWeight:700,color:"#1a1a2e"}}>{obraSeleccionada.cliente}</div>
-                  <div style={{fontSize:13,color:"#475569"}}>{obraSeleccionada.proyecto}</div>
+                  <LBL>Valor recibido en caja *</LBL>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={reciboCaja.monto}
+                    onChange={(e) => setReciboCaja({ ...reciboCaja, monto: e.target.value })}
+                    placeholder="Ej. 2500000"
+                    style={SI}
+                  />
+                  <div style={{ fontSize: 11.5, color: "#166534", marginTop: 4, fontWeight: 700 }}>
+                    {Number(reciboCaja.monto || 0) > 0
+                      ? fmt(Number(reciboCaja.monto || 0))
+                      : "Ingresa el valor del recaudo"}
+                  </div>
                 </div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                  <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px"}}>
-                    <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase"}}>Total obra</div>
-                    <div style={{fontSize:18,fontWeight:700,color:"#1a1a2e"}}>{fmt(Number(obraSeleccionada.total || 0))}</div>
-                  </div>
-                  <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px"}}>
-                    <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase"}}>Cobrado</div>
-                    <div style={{fontSize:18,fontWeight:700,color:"#166534"}}>{fmt(Number(obraSeleccionada.pagado || 0))}</div>
-                  </div>
-                  <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px",gridColumn:"span 2"}}>
-                    <div style={{fontSize:10,color:"#64748b",textTransform:"uppercase"}}>Saldo pendiente</div>
-                    <div style={{fontSize:24,fontWeight:800,color:Number(obraSeleccionada.saldo||0)>0?"#c2410c":"#166534"}}>
-                      {fmt(Number(obraSeleccionada.saldo || 0))}
+                <div>
+                  <LBL>Fecha de recaudo *</LBL>
+                  <input
+                    type="date"
+                    value={reciboCaja.fecha}
+                    onChange={(e) => setReciboCaja({ ...reciboCaja, fecha: e.target.value })}
+                    style={SI}
+                  />
+                </div>
+              </div>
+
+              {/* Tipo y Método */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <LBL>Concepto del ingreso</LBL>
+                  <input
+                    value={reciboCaja.tipo}
+                    onChange={(e) => setReciboCaja({ ...reciboCaja, tipo: e.target.value })}
+                    placeholder="Abono a obra / anticipo 50% / saldo"
+                    style={SI}
+                  />
+                </div>
+                <div>
+                  <LBL>Forma de pago</LBL>
+                  <select
+                    value={reciboCaja.metodo}
+                    onChange={(e) => setReciboCaja({ ...reciboCaja, metodo: e.target.value })}
+                    style={SI}
+                  >
+                    <option value="Transferencia">Transferencia bancaria</option>
+                    <option value="Consignación">Consignación</option>
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="PSE">PSE / Pasarela</option>
+                    <option value="Cheque">Cheque</option>
+                    <option value="Otro">Otro</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Notas y soporte */}
+              <div>
+                <LBL>Notas o soporte de pago</LBL>
+                <textarea
+                  value={reciboCaja.notas}
+                  onChange={(e) => setReciboCaja({ ...reciboCaja, notas: e.target.value })}
+                  rows={2}
+                  placeholder="Referencia de transferencia, número de aprobación, banco o detalle"
+                  style={{ ...SI, minHeight: 70, resize: "vertical" }}
+                />
+              </div>
+
+              {/* Botones de acción */}
+              <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+                <button
+                  type="button"
+                  onClick={guardarRecibo}
+                  disabled={!obraPagoId || Number(reciboCaja.monto || 0) <= 0 || guardandoRecibo}
+                  style={{
+                    ...B("#cc0000"),
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    fontWeight: 800,
+                    opacity: (!obraPagoId || Number(reciboCaja.monto || 0) <= 0 || guardandoRecibo) ? 0.6 : 1,
+                    cursor: (!obraPagoId || Number(reciboCaja.monto || 0) <= 0 || guardandoRecibo) ? "not-allowed" : "pointer",
+                  }}
+                >
+                  <span>💾</span>
+                  <span>{guardandoRecibo ? "Guardando..." : "Guardar e Imprimir Recibo"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={limpiarFormulario}
+                  style={B("#f1f5f9", "#475569")}
+                >
+                  Limpiar
+                </button>
+              </div>
+            </div>
+
+            {/* Panel lateral con resumen del estado de cuenta de la obra */}
+            <div
+              style={{
+                background: "linear-gradient(180deg,#fff7ed,#ffffff)",
+                border: "1px solid #fed7aa",
+                borderRadius: 14,
+                padding: 16,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#9a3412",
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                  marginBottom: 10,
+                }}
+              >
+                Estado de Cuenta de la Obra
+              </div>
+
+              {obraSeleccionada ? (
+                <div style={{ display: "grid", gap: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: "#64748b", fontFamily: "Consolas, monospace" }}>
+                      {obraSeleccionada.id}
+                    </div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: "#1a1a2e" }}>
+                      {obraSeleccionada.cliente}
+                    </div>
+                    <div style={{ fontSize: 13, color: "#475569", fontWeight: 500 }}>
+                      {obraSeleccionada.proyecto}
                     </div>
                   </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px 12px" }}>
+                      <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 600 }}>
+                        Total Contrato
+                      </div>
+                      <div style={{ fontSize: 17, fontWeight: 700, color: "#1a1a2e" }}>
+                        {fmt(Number(obraSeleccionada.total || 0))}
+                      </div>
+                    </div>
+                    <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px 12px" }}>
+                      <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 600 }}>
+                        Cobrado hasta hoy
+                      </div>
+                      <div style={{ fontSize: 17, fontWeight: 700, color: "#166534" }}>
+                        {fmt(Number(obraSeleccionada.pagado || 0))}
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        background: "#fff",
+                        border: "1.5px solid #fed7aa",
+                        borderRadius: 10,
+                        padding: "10px 12px",
+                        gridColumn: "span 2",
+                      }}
+                    >
+                      <div style={{ fontSize: 10, color: "#9a3412", textTransform: "uppercase", fontWeight: 700 }}>
+                        Saldo Pendiente Actual
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 22,
+                          fontWeight: 900,
+                          color: Number(obraSeleccionada.saldo || 0) > 0 ? "#c2410c" : "#166534",
+                        }}
+                      >
+                        {fmt(Number(obraSeleccionada.saldo || 0))}
+                      </div>
+                    </div>
+
+                    {Number(reciboCaja.monto || 0) > 0 && (
+                      <div
+                        style={{
+                          background: "#f0fdf4",
+                          border: "1px dashed #86efac",
+                          borderRadius: 10,
+                          padding: "10px 12px",
+                          gridColumn: "span 2",
+                        }}
+                      >
+                        <div style={{ fontSize: 10, color: "#166534", textTransform: "uppercase", fontWeight: 700 }}>
+                          Nuevo Saldo tras este Recibo
+                        </div>
+                        <div style={{ fontSize: 20, fontWeight: 900, color: saldoProyectado > 0 ? "#c2410c" : "#166534" }}>
+                          {fmt(saldoProyectado)}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.6, borderTop: "1px solid #fed7aa", paddingTop: 8 }}>
+                    Ciudad: <strong style={{ color: "#334155" }}>{obraSeleccionada.ciudad || "No registrada"}</strong><br />
+                    Dirección: <strong style={{ color: "#334155" }}>{obraSeleccionada.direccion || "No registrada"}</strong>
+                  </div>
                 </div>
-                <div style={{fontSize:12,color:"#64748b",lineHeight:1.6}}>
-                  Ciudad: <strong style={{color:"#334155"}}>{obraSeleccionada.ciudad || "No registrada"}</strong><br/>
-                  Dirección: <strong style={{color:"#334155"}}>{obraSeleccionada.direccion || "No registrada"}</strong>
+              ) : (
+                <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6 }}>
+                  Busca al cliente por su <strong>NIT</strong> o razón social para filtrar sus obras y proyectos.
+                  Al seleccionar una obra, se calculará el saldo anterior y el nuevo saldo del recibo de caja.
                 </div>
-              </div>
-            ) : (
-              <div style={{fontSize:13,color:"#64748b",lineHeight:1.6}}>
-                Busca el cliente o la obra, selecciónala y luego registra el valor exacto del abono manual.
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
-      </div>}
+      )}
 
+      {/* 3. Listado e Historial de Recibos de Caja */}
       <ListaPagos
         pagos={pagosNormalizados}
         obras={obras}
         acciones={{
-          cobrar: (p)=>cobrar(p.id),
-          eliminar: (p)=>eliminarPago(p),
+          cobrar: (p) => cobrar(p.id),
+          eliminar: (p) => eliminarPago(p),
+          imprimir: (p) => setReciboParaImprimir(p),
         }}
       />
+
+      {/* 4. Modal de Vista Previa e Impresión en Formato Media Carta (IA-FT-05) */}
+      {reciboParaImprimir && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.75)",
+            backdropFilter: "blur(3px)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setReciboParaImprimir(null);
+          }}
+        >
+          <div
+            style={{
+              background: "#ffffff",
+              borderRadius: 12,
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.35)",
+              width: "100%",
+              maxWidth: 820,
+              maxHeight: "92vh",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+              border: "1px solid #cbd5e1",
+            }}
+          >
+            {/* Cabecera del Modal */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "12px 20px",
+                background: "#0f172a",
+                color: "#ffffff",
+                borderBottom: "1px solid #334155",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 22 }}>🧾</span>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 800, letterSpacing: 0.5 }}>
+                    RECIBO DE CAJA {reciboParaImprimir.id}
+                  </div>
+                  <div style={{ fontSize: 11, color: "#94a3b8" }}>
+                    Formato Oficial Media Carta (8.5" × 5.5" / 216 mm × 140 mm) · IA-FT-05
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const ob = obras.find((o) => o.id === reciboParaImprimir.obraId);
+                    const cl = clientesConocidos.find((c) =>
+                      normalizarTexto(c.nombre) === normalizarTexto(reciboParaImprimir.cliente || ob?.cliente)
+                    );
+                    const html = generarHtmlMediaCarta(
+                      reciboParaImprimir,
+                      ob,
+                      cl || { nombre: reciboParaImprimir.cliente, nit: reciboParaImprimir.nit },
+                      empresaConfig,
+                      reciboParaImprimir.elaboradoPor || membresia?.nombre || "Administración Ingeanclajes"
+                    );
+                    openPrintTab(html, `Recibo de Caja ${reciboParaImprimir.id}`);
+                  }}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    background: "#cc0000",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "8px 16px",
+                    fontSize: 12.5,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    boxShadow: "0 2px 8px rgba(204,0,0,0.4)",
+                  }}
+                >
+                  <span>🖨️</span>
+                  <span>Imprimir Media Carta</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setReciboParaImprimir(null)}
+                  style={{
+                    background: "rgba(255,255,255,0.15)",
+                    border: "none",
+                    color: "#ffffff",
+                    borderRadius: "50%",
+                    width: 32,
+                    height: 32,
+                    fontSize: 16,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  title="Cerrar vista previa"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Documento Recibo de Caja Media Carta */}
+            <div style={{ padding: "18px 20px", overflowY: "auto", background: "#f8fafc" }}>
+              <ReciboCajaMediaCarta
+                recibo={reciboParaImprimir}
+                obra={obras.find((o) => o.id === reciboParaImprimir.obraId)}
+                cliente={
+                  clientesConocidos.find((c) =>
+                    normalizarTexto(c.nombre) === normalizarTexto(reciboParaImprimir.cliente)
+                  ) || { nombre: reciboParaImprimir.cliente, nit: reciboParaImprimir.nit }
+                }
+                empresaConfig={empresaConfig}
+                elaboradoPor={reciboParaImprimir.elaboradoPor || membresia?.nombre || "Administración Ingeanclajes"}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

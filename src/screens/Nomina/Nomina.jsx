@@ -745,18 +745,34 @@ export default function Nomina({ctx}){
                       {editEmpId===e.id&&editEmpData&&(
                         <div>
                           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
-                            <div><LBL>Cédula</LBL><input value={editEmpData.cedula||""} onChange={ev=>setEditEmpData(p=>({...p,cedula:ev.target.value}))} style={{...SI,fontSize:11}}/></div>
+                            <div style={{gridColumn:"span 2"}}><LBL>Nombre completo</LBL><input value={editEmpData.nombre||""} onChange={ev=>setEditEmpData(p=>({...p,nombre:ev.target.value}))} onBlur={ev=>setEditEmpData(p=>({...p,nombre:normalizarNombrePropio(ev.target.value)}))} style={{...SI,fontSize:11}}/></div>
+                            <div><LBL>Cédula</LBL><input value={editEmpData.cedula||""} onChange={ev=>setEditEmpData(p=>({...p,cedula:ev.target.value}))} onBlur={ev=>setEditEmpData(p=>({...p,cedula:normalizarDocumento(ev.target.value)}))} style={{...SI,fontSize:11}}/></div>
                             <div><LBL>Cargo</LBL><select value={editEmpData.cargo||""} onChange={ev=>setEditEmpData(p=>({...p,cargo:ev.target.value}))} style={{...SI,fontSize:11,padding:"5px 8px"}}><option value="">Seleccionar...</option>{cargosDisponibles.map(cargo=><option key={cargo} value={cargo}>{cargo}</option>)}</select></div>
                             <div><LBL>Salario base</LBL><input type="number" value={editEmpData.salario} onChange={ev=>setEditEmpData(p=>({...p,salario:parseFloat(ev.target.value)||0}))} style={{...SI,fontSize:11}}/></div>
                             <div><LBL>Tipo contrato</LBL><select value={editEmpData.tipoContrato||"indefinido"} onChange={ev=>setEditEmpData(p=>({...p,tipoContrato:ev.target.value}))} style={{...SI,fontSize:11,padding:"5px 8px"}}>{Object.entries(TIPOS_CONTRATO_LABELS).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
                             <div><LBL>Fecha de ingreso</LBL><input type="date" value={editEmpData.fechaIngreso||""} onChange={ev=>setEditEmpData(p=>({...p,fechaIngreso:ev.target.value}))} style={{...SI,fontSize:11}}/></div>
-                            <div><LBL>Teléfono</LBL><input value={editEmpData.tel||""} onChange={ev=>setEditEmpData(p=>({...p,tel:ev.target.value}))} style={{...SI,fontSize:11}}/></div>
+                            <div><LBL>Teléfono / Celular</LBL><input value={editEmpData.tel||""} onChange={ev=>setEditEmpData(p=>({...p,tel:ev.target.value}))} onBlur={ev=>setEditEmpData(p=>({...p,tel:normalizarTelefono(ev.target.value)}))} placeholder="3001234567" style={{...SI,fontSize:11}}/></div>
+                            <div style={{gridColumn:"span 2"}}><LBL>Correo electrónico</LBL><input type="email" value={editEmpData.email||""} onChange={ev=>setEditEmpData(p=>({...p,email:ev.target.value}))} onBlur={ev=>setEditEmpData(p=>({...p,email:normalizarCorreo(ev.target.value)}))} placeholder="empleado@correo.com" style={{...SI,fontSize:11}}/></div>
                             <div><LBL>Banco</LBL><select value={editEmpData.banco||""} onChange={ev=>setEditEmpData(p=>({...p,banco:ev.target.value}))} style={{...SI,fontSize:11,padding:"5px 8px"}}>{["Bancolombia","Davivienda","Banco Bogotá","BBVA","Nequi","Daviplata","Banco Caja Social","Banco Popular","Scotiabank","AV Villas"].map(b=><option key={b}>{b}</option>)}</select></div>
                             <div><LBL>Tipo cuenta</LBL><select value={editEmpData.tipoCuenta||"Ahorros"} onChange={ev=>setEditEmpData(p=>({...p,tipoCuenta:ev.target.value}))} style={{...SI,fontSize:11,padding:"5px 8px"}}>{["Ahorros","Corriente"].map(t=><option key={t}>{t}</option>)}</select></div>
-                            <div><LBL>Número de cuenta</LBL><input value={editEmpData.numeroCuenta||""} onChange={ev=>setEditEmpData(p=>({...p,numeroCuenta:ev.target.value}))} style={{...SI,fontSize:11}}/></div>
+                            <div style={{gridColumn:"span 2"}}><LBL>Número de cuenta</LBL><input value={editEmpData.numeroCuenta||""} onChange={ev=>setEditEmpData(p=>({...p,numeroCuenta:ev.target.value}))} onBlur={ev=>setEditEmpData(p=>({...p,numeroCuenta:normalizarDocumento(ev.target.value)}))} style={{...SI,fontSize:11}}/></div>
                           </div>
                           <div style={{display:"flex",gap:8,marginBottom:10}}>
-                            <button onClick={()=>{actualizarEmpleado(e.id,editEmpData);setEditEmpId(null);setEditEmpData(null);}} style={{...B("#166534","#4ade80"),fontSize:11,flex:1,justifyContent:"center"}}>💾 Guardar cambios</button>
+                            <button onClick={()=>{
+                              const nombreNorm = normalizarNombrePropio(editEmpData.nombre || e.nombre || "");
+                              const av = nombreNorm.split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase() || e.avatar || "EM";
+                              actualizarEmpleado(e.id,{
+                                ...editEmpData,
+                                nombre: nombreNorm || e.nombre,
+                                avatar: av,
+                                cedula: normalizarDocumento(editEmpData.cedula || ""),
+                                tel: normalizarTelefono(editEmpData.tel || ""),
+                                email: normalizarCorreo(editEmpData.email || ""),
+                                numeroCuenta: normalizarDocumento(editEmpData.numeroCuenta || "")
+                              });
+                              setEditEmpId(null);
+                              setEditEmpData(null);
+                            }} style={{...B("#166534","#4ade80"),fontSize:11,flex:1,justifyContent:"center"}}>💾 Guardar cambios</button>
                             <button onClick={()=>{setEditEmpId(null);setEditEmpData(null);}} style={{...B("#fee2e2","#ef4444"),fontSize:11,justifyContent:"center"}}>✕ Cancelar</button>
                           </div>
                         </div>
@@ -1131,8 +1147,54 @@ export default function Nomina({ctx}){
                     </div>
                   ))}
                 </div>
-                <div style={{display:"flex",gap:6}}>
-                  <button onClick={()=>printColilla(e,resumen,periodoNomina)} style={{...B("#142840","#f5c842"),fontSize:11,flex:1,justifyContent:"center"}}>🖨 Ver / imprimir colilla</button>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                  <button onClick={()=>printColilla(e,resumen,periodoNomina)} style={{...B("#142840","#f5c842"),fontSize:11,flex:1,minWidth:140,justifyContent:"center"}}>🖨 Ver / imprimir colilla</button>
+                  {e.email ? (
+                    <button
+                      onClick={() => {
+                        const asunto = encodeURIComponent(`Colilla de pago - ${periodoNomina.label} - ${e.nombre}`);
+                        const desglose = [
+                          `• Días laborados: ${resumen.diasNomina}`,
+                          `• Salario básico corte: ${fmt(resumen.salario)}`,
+                          resumen.auxilioTransporte > 0 ? `• Auxilio de transporte: ${fmt(resumen.auxilioTransporte)}` : null,
+                          (resumen.horasExtras + resumen.comisiones) > 0 ? `• Horas extras y comisiones: ${fmt(resumen.horasExtras + resumen.comisiones)}` : null,
+                          resumen.incapacidadTotal > 0 ? `• Incapacidades: ${fmt(resumen.incapacidadTotal)}` : null,
+                          `• Salud (4%): -${fmt(resumen.salud)}`,
+                          `• Pensión (4%): -${fmt(resumen.pension)}`,
+                          (resumen.totalDeducciones > (resumen.salud + resumen.pension)) ? `• Otras deducciones: -${fmt(resumen.totalDeducciones - resumen.salud - resumen.pension)}` : null,
+                        ].filter(Boolean).join("\n");
+                        const cuerpo = encodeURIComponent(
+                          `Estimado(a) ${e.nombre},\n\n` +
+                          `Le compartimos el detalle de su colilla de pago correspondiente al período ${periodoNomina.label}:\n\n` +
+                          `Cargo: ${e.cargo}\n` +
+                          `Documento: ${e.cedula || "N/A"}\n\n` +
+                          `RESUMEN DE DEVENGOS Y DEDUCCIONES:\n` +
+                          `${desglose}\n\n` +
+                          `-----------------------------------------\n` +
+                          `TOTAL NETO A PAGAR: ${fmt(resumen.neto)}\n` +
+                          (e.banco ? `Forma de pago: ${e.banco} (${e.tipoCuenta || "Ahorros"} N° ${e.numeroCuenta || "N/A"})\n` : "") +
+                          `-----------------------------------------\n\n` +
+                          `Para cualquier duda o aclaración sobre este corte, comuníquese con el área administrativa.\n\n` +
+                          `Cordialmente,\n` +
+                          `INGEANCLAJES S.A.S.\n` +
+                          `Gestión Humana y Nómina`
+                        );
+                        window.open(`mailto:${e.email}?subject=${asunto}&body=${cuerpo}`, '_blank');
+                      }}
+                      style={{ ...B("#2563eb", "#ffffff"), fontSize: 11, justifyContent: "center" }}
+                      title={`Enviar colilla por correo electrónico a ${e.email}`}
+                    >
+                      ✉️ Correo
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => window.alert(`El empleado ${e.nombre} aún no tiene correo electrónico configurado.\nPuedes agregarlo en la pestaña 'Empleados' haciendo clic en '✏️ Editar datos del empleado'.`)}
+                      style={{ ...B("#f1f5f9", "#94a3b8"), fontSize: 11, justifyContent: "center", cursor: "pointer" }}
+                      title="Sin correo registrado (haz clic para saber cómo agregarlo)"
+                    >
+                      ✉️ Sin correo
+                    </button>
+                  )}
                   {e.tel&&<button onClick={()=>window.open("https://wa.me/57" + (Array.from(e.tel).filter(ch=>ch>="0"&&ch<="9").join("")) + "?text=" + (encodeURIComponent("Hola "+e.nombre+", adjuntamos tu colilla de pago del corte "+periodoNomina.label+". Neto a pagar: "+fmt(resumen.neto)+". Att. Ingeanclajes S.A.S")),'_blank')} style={{...B("#166534","#4ade80"),fontSize:11,justifyContent:"center"}}>WhatsApp</button>}
                 </div>
               </div>

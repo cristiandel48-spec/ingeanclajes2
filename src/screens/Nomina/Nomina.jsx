@@ -1941,9 +1941,9 @@ export default function Nomina({ctx}){
           {/* Selector de modo y encabezado */}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12,marginBottom:16}}>
             <div>
-              <div style={{fontSize:16,fontWeight:700,color:"#0f172a"}}>Revisión y Control de Deducciones</div>
+              <div style={{fontSize:16,fontWeight:700,color:"#0f172a"}}>Revisión General del Corte y Deducciones</div>
               <div style={{fontSize:11,color:"#64748b",marginTop:2}}>
-                Corte activo: <strong>{periodoNomina.label}</strong> · Las deducciones de ley (Salud 4% y Pensión 4%) se calculan automáticamente sobre la base IBC.
+                Corte activo: <strong>{periodoNomina.label}</strong> · Sábana consolidada de salarios, bases IBC, deducciones de ley y netos quincenales antes del cierre.
               </div>
             </div>
             <div style={{display:"flex",gap:4,background:"#f1f5f9",padding:3,borderRadius:8,border:"1px solid #e2e8f0"}}>

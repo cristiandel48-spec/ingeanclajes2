@@ -13,7 +13,7 @@ export const FASES = [
       { id: "he", label: "Horas extras y comisiones" },
       { id: "incapacidades", label: "Incapacidades" },
       { id: "vacaciones", label: "Vacaciones" },
-      { id: "deducciones", label: "Deducciones" },
+      { id: "deducciones", label: "Revisión general" },
     ],
   },
   {

@@ -41,6 +41,10 @@ export default function Nomina({ctx}){
   const [vacacionesId,setVacacionesId]=useState(null);
   const [diasVacLiquidar,setDiasVacLiquidar]=useState({});
   const [mensajeGuardadoNomina,setMensajeGuardadoNomina]=useState("");
+  const [modoVistaDeducciones,setModoVistaDeducciones]=useState("tabla");
+  const [busquedaDeduccion,setBusquedaDeduccion]=useState("");
+  const [filtroDeduccion,setFiltroDeduccion]=useState("todos");
+  const [empDeduccionModalId,setEmpDeduccionModalId]=useState(null);
 
   // El boton de crear vive en la barra de arriba, no en un titulo propio.
   useAccionesPantalla(
@@ -1569,105 +1573,484 @@ export default function Nomina({ctx}){
 
       {tab==="deducciones"&&(
         <div>
-          <div style={{...CD,maxWidth:900,margin:"0 auto"}}>
-            <div style={ST}>Revisión de deducciones por empleado</div>
-            <div style={{display:"grid",gap:14}}>
-              <div>
-                <LBL>Empleado</LBL>
-                <select value={empleadoDeduccionActivo?.id || ""} onChange={(e)=>setSelId(e.target.value || null)} style={SI}>
-                  <option value="">Seleccionar empleado...</option>
-                  {empleadosBase.map((empleado)=>(
-                    <option key={empleado.id} value={empleado.id}>{empleado.nombre}</option>
-                  ))}
-                </select>
-              </div>
-
-              {empleadoDeduccionActivo ? (
-                <>
-                  <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:"14px 16px"}}>
-                    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-                      <Av init={empleadoDeduccionActivo.avatar} color={PAL[0]} size={34}/>
-                      <div style={{flex:1}}>
-                        <div style={{fontWeight:700,color:"#0f172a"}}>{empleadoDeduccionActivo.nombre}</div>
-                        <div style={{fontSize:11,color:"#64748b"}}>{empleadoDeduccionActivo.cargo || "Sin cargo"} · {empleadoDeduccionActivo.cedula || "Sin documento"} · {periodoNomina.label}</div>
+          {/* Modal rápido para editar deducciones de un empleado específico */}
+          {empDeduccionModalId && (()=>{
+            const empModal = empleadosBase.find(e => e.id === empDeduccionModalId);
+            if (!empModal) return null;
+            const resModal = calcularResumenNominaEmpleado(empModal, periodoNomina);
+            return (
+              <div
+                style={{
+                  position:"fixed",inset:0,background:"rgba(15,23,42,0.6)",zIndex:999,
+                  display:"flex",alignItems:"center",justifyContent:"center",padding:16
+                }}
+                onClick={()=>setEmpDeduccionModalId(null)}
+              >
+                <div
+                  style={{
+                    background:"#fff",borderRadius:16,width:"100%",maxWidth:580,
+                    maxHeight:"90vh",overflowY:"auto",padding:24,
+                    boxShadow:"0 20px 25px -5px rgba(0,0,0,0.15)",border:"1px solid #e2e8f0"
+                  }}
+                  onClick={e=>e.stopPropagation()}
+                >
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
+                    <div style={{display:"flex",alignItems:"center",gap:12}}>
+                      <Av init={empModal.avatar} color={PAL[0]} size={42}/>
+                      <div>
+                        <div style={{fontSize:15,fontWeight:700,color:"#0f172a"}}>{empModal.nombre}</div>
+                        <div style={{fontSize:11,color:"#64748b"}}>{empModal.cargo||"Sin cargo"} · C.C. {empModal.cedula||"Sin documento"}</div>
                       </div>
                     </div>
-                    {(()=>{
-                      const resumenDeduccion = calcularResumenNominaEmpleado(empleadoDeduccionActivo, periodoNomina);
-                      return(
-                        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
-                          <div style={{background:"#fff",borderRadius:8,padding:"10px 12px",gridColumn:"span 3"}}>
-                            <div style={{fontSize:10,color:"#64748b"}}>Base salud / pensión del corte</div>
-                            <div style={{fontWeight:700,color:"#142840",fontSize:16}}>{fmt(resumenDeduccion.baseSaludPension)}</div>
-                            <div style={{fontSize:10,color:"#94a3b8",marginTop:3}}>Incluye salario del corte + incapacidades + horas extras + comisiones.</div>
-                          </div>
-                          <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Salud</div><div style={{fontWeight:700,color:"#dc2626"}}>{fmt(resumenDeduccion.salud)}</div></div>
-                          <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Pensión</div><div style={{fontWeight:700,color:"#e11d48"}}>{fmt(resumenDeduccion.pension)}</div></div>
-                          <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Incapacidades</div><div style={{fontWeight:700,color:"#166534"}}>{fmt(resumenDeduccion.incapacidadTotal)}</div></div>
-                          <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Otras deducciones</div><div style={{fontWeight:700,color:"#7c3aed"}}>{fmt(resumenDeduccion.otrasDeducciones)}</div></div>
-                          <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Total descuentos</div><div style={{fontWeight:700,color:"#c2410c"}}>{fmt(resumenDeduccion.totalDeducciones)}</div></div>
-                          <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Neto del corte</div><div style={{fontWeight:700,color:"#0f766e"}}>{fmt(resumenDeduccion.neto)}</div></div>
-                          <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Extras + comisiones</div><div style={{fontWeight:700,color:"#f59e0b"}}>{fmt(resumenDeduccion.horasExtras + resumenDeduccion.comisiones)}</div></div>
-                        </div>
-                      );
-                    })()}
+                    <button
+                      onClick={()=>setEmpDeduccionModalId(null)}
+                      style={{background:"#f1f5f9",border:"none",borderRadius:8,width:32,height:32,cursor:"pointer",color:"#64748b",fontWeight:700,fontSize:14}}
+                    >
+                      ✕
+                    </button>
                   </div>
 
-                  <div style={{background:"#ffffff",borderRadius:12,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
-                    <div style={{fontSize:11,fontWeight:700,color:"#142840",textTransform:"uppercase",marginBottom:10}}>Deducciones personalizadas</div>
-                    {(empleadoDeduccionActivo.deduccionesPersonalizadas||[]).length>0 ? (
-                      <div style={{display:"grid",gap:8,marginBottom:12}}>
-                        {(empleadoDeduccionActivo.deduccionesPersonalizadas||[]).map((deduccion)=>(
-                          <div key={deduccion.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}>
-                            <div>
-                              <div style={{fontWeight:700,color:"#0f172a"}}>{deduccion.nombre}</div>
-                              <div style={{fontSize:11,color:"#64748b"}}>{fmt(deduccion.valor)} mensual</div>
-                            </div>
-                            <button type="button" onClick={()=>quitarDeduccion(empleadoDeduccionActivo.id,deduccion.id)} style={{...B("#fee2e2","#b91c1c"),border:"1px solid #fecaca",padding:"6px 10px",fontSize:11}}>Quitar</button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div style={{fontSize:11,color:"#64748b",marginBottom:12}}>
-                        Este empleado no tiene deducciones adicionales. Aquí puedes revisar y agregar conceptos como natillera, libranza o descuentos internos autorizados.
-                      </div>
-                    )}
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(3, 1fr)",gap:8,background:"#f8fafc",borderRadius:10,padding:12,marginBottom:16}}>
+                    <div><div style={{fontSize:10,color:"#64748b"}}>Base IBC</div><div style={{fontSize:12,fontWeight:700,color:"#0f172a"}}>{fmt(resModal.baseSaludPension)}</div></div>
+                    <div><div style={{fontSize:10,color:"#64748b"}}>Salud (4%)</div><div style={{fontSize:12,fontWeight:700,color:"#dc2626"}}>{fmt(resModal.salud)}</div></div>
+                    <div><div style={{fontSize:10,color:"#64748b"}}>Pensión (4%)</div><div style={{fontSize:12,fontWeight:700,color:"#e11d48"}}>{fmt(resModal.pension)}</div></div>
+                    <div><div style={{fontSize:10,color:"#64748b"}}>Otras ded.</div><div style={{fontSize:12,fontWeight:700,color:"#7c3aed"}}>{fmt(resModal.otrasDeducciones)}</div></div>
+                    <div><div style={{fontSize:10,color:"#64748b"}}>Total desc.</div><div style={{fontSize:12,fontWeight:700,color:"#c2410c"}}>{fmt(resModal.totalDeducciones)}</div></div>
+                    <div><div style={{fontSize:10,color:"#64748b"}}>Neto a pagar</div><div style={{fontSize:12,fontWeight:700,color:"#166534"}}>{fmt(resModal.neto)}</div></div>
+                  </div>
 
-                    <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr auto",gap:8,marginBottom:12}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"#142840",textTransform:"uppercase",marginBottom:8}}>
+                    Deducciones adicionales activas
+                  </div>
+                  {(empModal.deduccionesPersonalizadas||[]).length > 0 ? (
+                    <div style={{display:"grid",gap:6,marginBottom:16}}>
+                      {(empModal.deduccionesPersonalizadas||[]).map(ded=>(
+                        <div key={ded.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#f1f5f9",borderRadius:8,padding:"8px 12px",fontSize:12}}>
+                          <div>
+                            <span style={{fontWeight:600,color:"#0f172a"}}>{ded.nombre}</span>
+                            <span style={{color:"#64748b",marginLeft:8}}>({fmt(ded.valor)} mensual)</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={()=>quitarDeduccion(empModal.id, ded.id)}
+                            style={{background:"#fee2e2",color:"#b91c1c",border:"1px solid #fecaca",borderRadius:6,padding:"4px 8px",fontSize:11,fontWeight:600,cursor:"pointer"}}
+                          >
+                            Quitar
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{fontSize:11,color:"#94a3b8",marginBottom:16,fontStyle:"italic"}}>
+                      Sin deducciones adicionales registradas.
+                    </div>
+                  )}
+
+                  <div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:14,marginBottom:16}}>
+                    <div style={{fontSize:11,fontWeight:700,color:"#92400e",marginBottom:8}}>➕ Agregar deducción personalizada</div>
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+                      {["Natillera","Préstamo","Anticipo","Ahorro interno","Libranza"].map(concepto=>(
+                        <button
+                          key={concepto}
+                          type="button"
+                          onClick={()=>setDedForm(prev=>({...prev, nombre:concepto}))}
+                          style={{background:"#fff",border:"1px solid #d97706",color:"#92400e",borderRadius:20,padding:"2px 9px",fontSize:10.5,fontWeight:600,cursor:"pointer"}}
+                        >
+                          + {concepto}
+                        </button>
+                      ))}
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"1.4fr 1fr auto",gap:8}}>
                       <div>
                         <LBL>Concepto</LBL>
-                        <input value={dedForm.nombre} onChange={(event)=>setDedForm({...dedForm,nombre:event.target.value})} placeholder="Ej: Natillera" style={{...SI,fontSize:11}}/>
+                        <input
+                          value={dedForm.nombre}
+                          onChange={e=>setDedForm(p=>({...p, nombre:e.target.value}))}
+                          placeholder="Ej: Natillera"
+                          style={{...SI,fontSize:11}}
+                        />
                       </div>
                       <div>
-                        <LBL>Valor mensual</LBL>
-                        <input type="number" value={dedForm.valor} onChange={(event)=>setDedForm({...dedForm,valor:parseFloat(event.target.value)||0})} placeholder="0" style={{...SI,fontSize:11}}/>
+                        <LBL>Valor mensual ($)</LBL>
+                        <input
+                          type="number"
+                          value={dedForm.valor}
+                          onChange={e=>setDedForm(p=>({...p, valor:parseFloat(e.target.value)||0}))}
+                          placeholder="0"
+                          style={{...SI,fontSize:11}}
+                        />
                       </div>
                       <button
                         type="button"
-                        onClick={()=>{
-                          if(empleadoDeduccionActivo?.id){
-                            setSelId(empleadoDeduccionActivo.id);
-                            agregarDeduccion(empleadoDeduccionActivo.id);
-                          }
-                        }}
-                        style={{...B("#142840"),justifyContent:"center",alignSelf:"end"}}
+                        onClick={()=>agregarDeduccion(empModal.id)}
+                        style={{...B("#142840","#fff"),fontSize:11,alignSelf:"end",justifyContent:"center",padding:"8px 14px"}}
                       >
                         Agregar
                       </button>
                     </div>
-                    <div style={{display:"flex",justifyContent:"flex-end"}}>
-                      <button type="button" onClick={()=>guardarCambiosNomina("Cambios de deducciones sincronizados")} style={{...B("#142840","#4ade80")}}>Guardar cambios</button>
-                    </div>
-                    {mensajeGuardadoNomina && <div style={{fontSize:11,color:"#166534",fontWeight:700,marginTop:8,textAlign:"right"}}>{mensajeGuardadoNomina}</div>}
                   </div>
-                </>
-              ) : (
-                <div style={{textAlign:"center",color:"#94a3b8",padding:"28px 0"}}>
-                  Selecciona un empleado para revisar sus deducciones.
+
+                  <div style={{display:"flex",justifyContent:"flex-end",gap:8}}>
+                    <button
+                      type="button"
+                      onClick={()=>{guardarCambiosNomina("Deducciones actualizadas");setEmpDeduccionModalId(null);}}
+                      style={{...B("#166534","#4ade80"),fontSize:11.5,padding:"8px 18px"}}
+                    >
+                      💾 Guardar y cerrar
+                    </button>
+                  </div>
                 </div>
-              )}
+              </div>
+            );
+          })()}
+
+          {/* Selector de modo y encabezado */}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12,marginBottom:16}}>
+            <div>
+              <div style={{fontSize:16,fontWeight:700,color:"#0f172a"}}>Revisión y Control de Deducciones</div>
+              <div style={{fontSize:11,color:"#64748b",marginTop:2}}>
+                Corte activo: <strong>{periodoNomina.label}</strong> · Las deducciones de ley (Salud 4% y Pensión 4%) se calculan automáticamente sobre la base IBC.
+              </div>
+            </div>
+            <div style={{display:"flex",gap:4,background:"#f1f5f9",padding:3,borderRadius:8,border:"1px solid #e2e8f0"}}>
+              <button
+                type="button"
+                onClick={()=>setModoVistaDeducciones("tabla")}
+                style={{
+                  ...B(modoVistaDeducciones==="tabla"?"#142840":"transparent",modoVistaDeducciones==="tabla"?"#fff":"#64748b"),
+                  fontSize:11,padding:"6px 12px",borderRadius:6,border:"none",fontWeight:modoVistaDeducciones==="tabla"?700:500
+                }}
+              >
+                📊 Vista Consolidada
+              </button>
+              <button
+                type="button"
+                onClick={()=>setModoVistaDeducciones("individual")}
+                style={{
+                  ...B(modoVistaDeducciones==="individual"?"#142840":"transparent",modoVistaDeducciones==="individual"?"#fff":"#64748b"),
+                  fontSize:11,padding:"6px 12px",borderRadius:6,border:"none",fontWeight:modoVistaDeducciones==="individual"?700:500
+                }}
+              >
+                👤 Vista Individual
+              </button>
             </div>
           </div>
+
+          {/* Tarjetas métricas consolidadas del corte */}
+          {(()=>{
+            const totalBaseIBC = resumenesActivos.reduce((sum, { resumen }) => sum + (resumen.baseSaludPension || 0), 0);
+            const totalSalud = resumenesActivos.reduce((sum, { resumen }) => sum + (resumen.salud || 0), 0);
+            const totalPension = resumenesActivos.reduce((sum, { resumen }) => sum + (resumen.pension || 0), 0);
+            const totalOtrasDeducciones = resumenesActivos.reduce((sum, { resumen }) => sum + (resumen.otrasDeducciones || 0), 0);
+            const totalDescuentos = resumenesActivos.reduce((sum, { resumen }) => sum + (resumen.totalDeducciones || 0), 0);
+            const totalNeto = resumenesActivos.reduce((sum, { resumen }) => sum + (resumen.neto || 0), 0);
+
+            return (
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))",gap:10,marginBottom:16}}>
+                <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+                  <div style={{fontSize:9.5,color:"#64748b",textTransform:"uppercase",fontWeight:600}}>Empleados corte</div>
+                  <div style={{fontSize:16,fontWeight:700,color:"#0f172a",marginTop:3}}>{resumenesActivos.length} activos</div>
+                </div>
+                <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+                  <div style={{fontSize:9.5,color:"#64748b",textTransform:"uppercase",fontWeight:600}}>Base IBC Total</div>
+                  <div style={{fontSize:15,fontWeight:700,color:"#0f172a",marginTop:3}}>{fmt(totalBaseIBC)}</div>
+                </div>
+                <div style={{background:"#fff",border:"1px solid #fee2e2",borderRadius:10,padding:"10px 12px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+                  <div style={{fontSize:9.5,color:"#b91c1c",textTransform:"uppercase",fontWeight:600}}>Salud 4% Total</div>
+                  <div style={{fontSize:15,fontWeight:700,color:"#dc2626",marginTop:3}}>{fmt(totalSalud)}</div>
+                </div>
+                <div style={{background:"#fff",border:"1px solid #ffe4e6",borderRadius:10,padding:"10px 12px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+                  <div style={{fontSize:9.5,color:"#be123c",textTransform:"uppercase",fontWeight:600}}>Pensión 4% Total</div>
+                  <div style={{fontSize:15,fontWeight:700,color:"#e11d48",marginTop:3}}>{fmt(totalPension)}</div>
+                </div>
+                <div style={{background:"#fff",border:"1px solid #ede9fe",borderRadius:10,padding:"10px 12px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+                  <div style={{fontSize:9.5,color:"#6d28d9",textTransform:"uppercase",fontWeight:600}}>Otras deducciones</div>
+                  <div style={{fontSize:15,fontWeight:700,color:"#7c3aed",marginTop:3}}>{fmt(totalOtrasDeducciones)}</div>
+                </div>
+                <div style={{background:"#fff",border:"1px solid #dcfce7",borderRadius:10,padding:"10px 12px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+                  <div style={{fontSize:9.5,color:"#15803d",textTransform:"uppercase",fontWeight:600}}>Neto a dispersar</div>
+                  <div style={{fontSize:15,fontWeight:700,color:"#166534",marginTop:3}}>{fmt(totalNeto)}</div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* VISTA 1: TABLA CONSOLIDADA */}
+          {modoVistaDeducciones === "tabla" && (()=>{
+            const listaFiltrada = resumenesActivos.filter(({ empleado: e })=>{
+              const cumpleTexto = !busquedaDeduccion.trim() || 
+                (e.nombre||"").toLowerCase().includes(busquedaDeduccion.toLowerCase()) ||
+                (e.cedula||"").includes(busquedaDeduccion.trim()) ||
+                (e.cargo||"").toLowerCase().includes(busquedaDeduccion.toLowerCase());
+              
+              if (!cumpleTexto) return false;
+              if (filtroDeduccion === "con_adicionales") return (e.deduccionesPersonalizadas||[]).length > 0;
+              if (filtroDeduccion === "solo_ley") return (e.deduccionesPersonalizadas||[]).length === 0;
+              return true;
+            });
+
+            return (
+              <div style={{background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",boxShadow:"0 2px 6px rgba(0,0,0,0.04)",padding:18}}>
+                {/* Filtro y buscador */}
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap",marginBottom:14}}>
+                  <div style={{position:"relative",minWidth:260,flex:1}}>
+                    <input
+                      type="text"
+                      placeholder="🔍 Buscar por nombre, cédula o cargo..."
+                      value={busquedaDeduccion}
+                      onChange={e=>setBusquedaDeduccion(e.target.value)}
+                      style={{...SI,fontSize:11.5,padding:"7px 12px"}}
+                    />
+                    {busquedaDeduccion && (
+                      <button
+                        onClick={()=>setBusquedaDeduccion("")}
+                        style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",border:"none",background:"transparent",color:"#94a3b8",cursor:"pointer",fontSize:12}}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                  <div style={{display:"flex",gap:6}}>
+                    {[
+                      ["todos", `Todos (${resumenesActivos.length})`],
+                      ["con_adicionales", `Con deducción adicional (${resumenesActivos.filter(i=>(i.empleado.deduccionesPersonalizadas||[]).length>0).length})`],
+                      ["solo_ley", `Solo retenciones de ley (${resumenesActivos.filter(i=>(i.empleado.deduccionesPersonalizadas||[]).length===0).length})`]
+                    ].map(([key, label])=>(
+                      <button
+                        key={key}
+                        onClick={()=>setFiltroDeduccion(key)}
+                        style={{
+                          background:filtroDeduccion===key?"#142840":"#f8fafc",
+                          color:filtroDeduccion===key?"#fff":"#475569",
+                          border:`1px solid ${filtroDeduccion===key?"#142840":"#cbd5e1"}`,
+                          borderRadius:20,padding:"4px 10px",fontSize:11,fontWeight:600,cursor:"pointer"
+                        }}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Tabla */}
+                <div style={{overflowX:"auto"}}>
+                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:11.5}}>
+                    <thead>
+                      <tr style={{background:"#142840",color:"#fff",textAlign:"left"}}>
+                        <th style={{padding:"8px 10px",borderRadius:"6px 0 0 0"}}>Empleado</th>
+                        <th style={{padding:"8px 10px",textAlign:"right"}}>Básico</th>
+                        <th style={{padding:"8px 10px",textAlign:"center"}}>Días</th>
+                        <th style={{padding:"8px 10px",textAlign:"right"}}>Base IBC</th>
+                        <th style={{padding:"8px 10px",textAlign:"right",color:"#fca5a5"}}>Salud (4%)</th>
+                        <th style={{padding:"8px 10px",textAlign:"right",color:"#fda4af"}}>Pensión (4%)</th>
+                        <th style={{padding:"8px 10px"}}>Otras deducciones</th>
+                        <th style={{padding:"8px 10px",textAlign:"right"}}>Total desc.</th>
+                        <th style={{padding:"8px 10px",textAlign:"right",color:"#86efac"}}>Neto</th>
+                        <th style={{padding:"8px 10px",textAlign:"center",borderRadius:"0 6px 0 0"}}>Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {listaFiltrada.length === 0 ? (
+                        <tr>
+                          <td colSpan={10} style={{padding:24,textAlign:"center",color:"#94a3b8"}}>
+                            No se encontraron empleados con los filtros aplicados.
+                          </td>
+                        </tr>
+                      ) : (
+                        listaFiltrada.map(({ empleado: e, resumen: r }, idx)=>{
+                          const tieneAdicionales = (e.deduccionesPersonalizadas||[]).length > 0;
+                          return (
+                            <tr
+                              key={e.id}
+                              style={{
+                                background: idx % 2 === 0 ? "#ffffff" : "#f8fafc",
+                                borderBottom:"1px solid #e2e8f0"
+                              }}
+                            >
+                              <td style={{padding:"8px 10px"}}>
+                                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                                  <Av init={e.avatar} color={PAL[idx%PAL.length]} size={28}/>
+                                  <div>
+                                    <div style={{fontWeight:600,color:"#0f172a"}}>{e.nombre}</div>
+                                    <div style={{fontSize:10,color:"#64748b"}}>{e.cargo || "Sin cargo"} · C.C. {e.cedula || "N/A"}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td style={{padding:"8px 10px",textAlign:"right",color:"#475569"}}>{fmt(e.salario)}</td>
+                              <td style={{padding:"8px 10px",textAlign:"center",fontWeight:600,color:"#2563eb"}}>{r.diasNomina}</td>
+                              <td style={{padding:"8px 10px",textAlign:"right",fontWeight:600,color:"#0f172a"}}>{fmt(r.baseSaludPension)}</td>
+                              <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:"#dc2626"}}>{fmt(r.salud)}</td>
+                              <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:"#e11d48"}}>{fmt(r.pension)}</td>
+                              <td style={{padding:"8px 10px"}}>
+                                {tieneAdicionales ? (
+                                  <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+                                    {(e.deduccionesPersonalizadas||[]).map(ded=>(
+                                      <span
+                                        key={ded.id}
+                                        style={{background:"#f3e8ff",color:"#6b21a8",border:"1px solid #d8b4fe",borderRadius:4,padding:"1px 6px",fontSize:10,fontWeight:600}}
+                                        title={`${ded.nombre}: ${fmt(ded.valor)} mensual`}
+                                      >
+                                        {ded.nombre}: {fmt(ded.valor)}
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span style={{color:"#94a3b8",fontSize:11}}>—</span>
+                                )}
+                              </td>
+                              <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:"#c2410c"}}>{fmt(r.totalDeducciones)}</td>
+                              <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:"#166534"}}>{fmt(r.neto)}</td>
+                              <td style={{padding:"8px 10px",textAlign:"center"}}>
+                                <button
+                                  type="button"
+                                  onClick={()=>{setEmpDeduccionModalId(e.id);setSelId(e.id);}}
+                                  style={{
+                                    ...B(tieneAdicionales?"#eff6ff":"#f8fafc", tieneAdicionales?"#1d4ed8":"#475569"),
+                                    border:`1px solid ${tieneAdicionales?"#bfdbfe":"#cbd5e1"}`,
+                                    padding:"4px 8px",fontSize:10.5,borderRadius:6,justifyContent:"center"
+                                  }}
+                                  title="Agregar o quitar conceptos de deducción personalizada"
+                                >
+                                  {tieneAdicionales ? "✏️ Editar" : "➕ Concepto"}
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pie de tabla con botón de avance */}
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12,marginTop:16,paddingTop:12,borderTop:"1px solid #e2e8f0"}}>
+                  <div style={{fontSize:11.5,color:"#166534",fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
+                    <span>✓</span> Todas las deducciones de ley están calculadas y sincronizadas para el corte.
+                  </div>
+                  <div style={{display:"flex",gap:8}}>
+                    <button
+                      type="button"
+                      onClick={()=>guardarCambiosNomina("Deducciones del corte sincronizadas")}
+                      style={{...B("#166534","#4ade80"),fontSize:11.5,padding:"8px 16px"}}
+                    >
+                      💾 Guardar cambios
+                    </button>
+                    <button
+                      type="button"
+                      onClick={()=>setTab("planilla")}
+                      style={{...B("#f47c20","#ffffff"),fontSize:11.5,padding:"8px 18px",fontWeight:700}}
+                    >
+                      ➡️ Ir a Generar Nómina (Paso 8)
+                    </button>
+                  </div>
+                </div>
+                {mensajeGuardadoNomina && <div style={{fontSize:11,color:"#166534",fontWeight:700,marginTop:8,textAlign:"right"}}>{mensajeGuardadoNomina}</div>}
+              </div>
+            );
+          })()}
+
+          {/* VISTA 2: INDIVIDUAL (Original preservada para quien prefiera ver ficha a ficha) */}
+          {modoVistaDeducciones === "individual" && (
+            <div style={{...CD,maxWidth:900,margin:"0 auto"}}>
+              <div style={ST}>Revisión de deducciones por empleado (Ficha individual)</div>
+              <div style={{display:"grid",gap:14}}>
+                <div>
+                  <LBL>Empleado</LBL>
+                  <select value={empleadoDeduccionActivo?.id || ""} onChange={(e)=>setSelId(e.target.value || null)} style={SI}>
+                    <option value="">Seleccionar empleado...</option>
+                    {empleadosBase.map((empleado)=>(
+                      <option key={empleado.id} value={empleado.id}>{empleado.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {empleadoDeduccionActivo ? (
+                  <>
+                    <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:"14px 16px"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                        <Av init={empleadoDeduccionActivo.avatar} color={PAL[0]} size={34}/>
+                        <div style={{flex:1}}>
+                          <div style={{fontWeight:700,color:"#0f172a"}}>{empleadoDeduccionActivo.nombre}</div>
+                          <div style={{fontSize:11,color:"#64748b"}}>{empleadoDeduccionActivo.cargo || "Sin cargo"} · {empleadoDeduccionActivo.cedula || "Sin documento"} · {periodoNomina.label}</div>
+                        </div>
+                      </div>
+                      {(()=>{
+                        const resumenDeduccion = calcularResumenNominaEmpleado(empleadoDeduccionActivo, periodoNomina);
+                        return(
+                          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+                            <div style={{background:"#fff",borderRadius:8,padding:"10px 12px",gridColumn:"span 3"}}>
+                              <div style={{fontSize:10,color:"#64748b"}}>Base salud / pensión del corte</div>
+                              <div style={{fontWeight:700,color:"#142840",fontSize:16}}>{fmt(resumenDeduccion.baseSaludPension)}</div>
+                              <div style={{fontSize:10,color:"#94a3b8",marginTop:3}}>Incluye salario del corte + incapacidades + horas extras + comisiones.</div>
+                            </div>
+                            <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Salud</div><div style={{fontWeight:700,color:"#dc2626"}}>{fmt(resumenDeduccion.salud)}</div></div>
+                            <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Pensión</div><div style={{fontWeight:700,color:"#e11d48"}}>{fmt(resumenDeduccion.pension)}</div></div>
+                            <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Incapacidades</div><div style={{fontWeight:700,color:"#166534"}}>{fmt(resumenDeduccion.incapacidadTotal)}</div></div>
+                            <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Otras deducciones</div><div style={{fontWeight:700,color:"#7c3aed"}}>{fmt(resumenDeduccion.otrasDeducciones)}</div></div>
+                            <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Total descuentos</div><div style={{fontWeight:700,color:"#c2410c"}}>{fmt(resumenDeduccion.totalDeducciones)}</div></div>
+                            <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Neto del corte</div><div style={{fontWeight:700,color:"#0f766e"}}>{fmt(resumenDeduccion.neto)}</div></div>
+                            <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Extras + comisiones</div><div style={{fontWeight:700,color:"#f59e0b"}}>{fmt(resumenDeduccion.horasExtras + resumenDeduccion.comisiones)}</div></div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    <div style={{background:"#ffffff",borderRadius:12,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
+                      <div style={{fontSize:11,fontWeight:700,color:"#142840",textTransform:"uppercase",marginBottom:10}}>Deducciones personalizadas</div>
+                      {(empleadoDeduccionActivo.deduccionesPersonalizadas||[]).length>0 ? (
+                        <div style={{display:"grid",gap:8,marginBottom:12}}>
+                          {(empleadoDeduccionActivo.deduccionesPersonalizadas||[]).map((deduccion)=>(
+                            <div key={deduccion.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}>
+                              <div>
+                                <div style={{fontWeight:700,color:"#0f172a"}}>{deduccion.nombre}</div>
+                                <div style={{fontSize:11,color:"#64748b"}}>{fmt(deduccion.valor)} mensual</div>
+                              </div>
+                              <button type="button" onClick={()=>quitarDeduccion(empleadoDeduccionActivo.id,deduccion.id)} style={{...B("#fee2e2","#b91c1c"),border:"1px solid #fecaca",padding:"6px 10px",fontSize:11}}>Quitar</button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{fontSize:11,color:"#64748b",marginBottom:12}}>
+                          Este empleado no tiene deducciones adicionales. Aquí puedes revisar y agregar conceptos como natillera, libranza o descuentos internos autorizados.
+                        </div>
+                      )}
+
+                      <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr auto",gap:8,marginBottom:12}}>
+                        <div>
+                          <LBL>Concepto</LBL>
+                          <input value={dedForm.nombre} onChange={(event)=>setDedForm({...dedForm,nombre:event.target.value})} placeholder="Ej: Natillera" style={{...SI,fontSize:11}}/>
+                        </div>
+                        <div>
+                          <LBL>Valor mensual</LBL>
+                          <input type="number" value={dedForm.valor} onChange={(event)=>setDedForm({...dedForm,valor:parseFloat(event.target.value)||0})} placeholder="0" style={{...SI,fontSize:11}}/>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={()=>{
+                            if(empleadoDeduccionActivo?.id){
+                              setSelId(empleadoDeduccionActivo.id);
+                              agregarDeduccion(empleadoDeduccionActivo.id);
+                            }
+                          }}
+                          style={{...B("#142840"),justifyContent:"center",alignSelf:"end"}}
+                        >
+                          Agregar
+                        </button>
+                      </div>
+                      <div style={{display:"flex",justifyContent:"flex-end"}}>
+                        <button type="button" onClick={()=>guardarCambiosNomina("Cambios de deducciones sincronizados")} style={{...B("#142840","#4ade80")}}>Guardar cambios</button>
+                      </div>
+                      {mensajeGuardadoNomina && <div style={{fontSize:11,color:"#166534",fontWeight:700,marginTop:8,textAlign:"right"}}>{mensajeGuardadoNomina}</div>}
+                    </div>
+                  </>
+                ) : (
+                  <div style={{textAlign:"center",color:"#94a3b8",padding:"28px 0"}}>
+                    Selecciona un empleado para revisar sus deducciones.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

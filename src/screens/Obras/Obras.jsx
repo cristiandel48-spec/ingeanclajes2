@@ -127,10 +127,10 @@ export default function Obras({ctx}){
       baseIngresoContable:snapshot?.baseIngresoContable ?? totalObra,
       ivaGeneradoCotizacion:snapshot?.ivaGeneradoCotizacion ?? 0,
       creadoPor: ctx?.membresia?.userId || null,
-      creadoPorNombre: autorActual || "Cristian Flórez",
+      creadoPorNombre: autorActual || "Camila Sepúlveda",
       creadoEn: ahoraIso,
       modificadoPor: ctx?.membresia?.userId || null,
-      modificadoPorNombre: autorActual || "Cristian Flórez",
+      modificadoPorNombre: autorActual || "Camila Sepúlveda",
       modificadoEn: ahoraIso,
     }]);
     if(nob.cotizacionId){

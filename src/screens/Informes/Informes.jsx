@@ -520,10 +520,10 @@ export default function Informes({ctx}){
         ? {id:editId,...form,obraId:obraIdNormalizado,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos}
         : {id:siguienteIdUnico(informes,"INF"),...form,obraId:obraIdNormalizado,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos}),
       creadoPor: prev?.creadoPor || miUserId,
-      creadoPorNombre: prev?.creadoPorNombre ? normalizarNombrePersona(prev.creadoPorNombre, "Cristian Flórez") : (resolverAutorGuardado(ctx?.membresia) || "Cristian Flórez"),
+      creadoPorNombre: prev?.creadoPorNombre ? normalizarNombrePersona(prev.creadoPorNombre, "Camila Sepúlveda") : (resolverAutorGuardado(ctx?.membresia) || "Camila Sepúlveda"),
       creadoEn: prev?.creadoEn || new Date().toISOString(),
       modificadoPor: miUserId,
-      modificadoPorNombre: miNombre || resolverAutorGuardado(ctx?.membresia, prev?.modificadoPorNombre) || "Cristian Flórez",
+      modificadoPorNombre: miNombre || resolverAutorGuardado(ctx?.membresia, prev?.modificadoPorNombre) || "Camila Sepúlveda",
       modificadoEn: new Date().toISOString(),
     };
     setInformes(prevList=>editId ? prevList.map(item=>item.id===editId?{...item,...inf}:item) : [...prevList,inf]);

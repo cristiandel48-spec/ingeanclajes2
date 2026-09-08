@@ -387,10 +387,10 @@ export default function Cotizacion({ctx}){
       estado: prev?.estado || "Pendiente",
       obraId: prev?.obraId || null,
       creadoPor: prev?.creadoPor || miUserId,
-      creadoPorNombre: prev?.creadoPorNombre ? normalizarNombrePersona(prev.creadoPorNombre, "Cristian Flórez") : (resolverAutorGuardado(ctx?.membresia) || "Cristian Flórez"),
+      creadoPorNombre: prev?.creadoPorNombre ? normalizarNombrePersona(prev.creadoPorNombre, "Camila Sepúlveda") : (resolverAutorGuardado(ctx?.membresia) || "Camila Sepúlveda"),
       creadoEn: prev?.creadoEn || new Date().toISOString(),
       modificadoPor: miUserId,
-      modificadoPorNombre: resolverAutorGuardado(ctx?.membresia, prev?.modificadoPorNombre) || "Cristian Flórez",
+      modificadoPorNombre: resolverAutorGuardado(ctx?.membresia, prev?.modificadoPorNombre) || "Camila Sepúlveda",
       modificadoEn: new Date().toISOString(),
     };
     setCotizaciones((prevList)=>editCot ? prevList.map((cotizacion)=>cotizacion.id===editCot?{...cotizacion,...data}:cotizacion) : [...prevList,data]);

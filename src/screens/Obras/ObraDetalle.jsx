@@ -105,7 +105,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               avance,
               estado:estadoSegunAvance(avance,o.estado),
               modificadoPor: membresia?.userId || null,
-              modificadoPorNombre: autorActual || o.modificadoPorNombre || "Cristian Flórez",
+              modificadoPorNombre: autorActual || o.modificadoPorNombre || "Camila Sepúlveda",
               modificadoEn: ahoraIso,
             }:o));
           }}
@@ -212,7 +212,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                           ...o,
                           empleados:(o.empleados||[]).filter(id=>id!==eid),
                           modificadoPor: membresia?.userId || null,
-                          modificadoPorNombre: autorActual || o.modificadoPorNombre || "Cristian Flórez",
+                          modificadoPorNombre: autorActual || o.modificadoPorNombre || "Camila Sepúlveda",
                           modificadoEn: ahoraIso,
                         }:o));
                         if(setHorarios) setHorarios(p=>p.filter(h=>!(h.obraId===obraId && h.empleadoId===eid)));
@@ -247,7 +247,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                   ...o,
                   empleados:[...(o.empleados||[]),v],
                   modificadoPor: membresia?.userId || null,
-                  modificadoPorNombre: autorActual || o.modificadoPorNombre || "Cristian Flórez",
+                  modificadoPorNombre: autorActual || o.modificadoPorNombre || "Camila Sepúlveda",
                   modificadoEn: ahoraIso,
                 }:o));
               }

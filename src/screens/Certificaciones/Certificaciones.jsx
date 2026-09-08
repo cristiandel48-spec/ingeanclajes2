@@ -258,10 +258,10 @@ export default function Certificaciones({ctx}){
         ? { ...form, obraId: obraIdNormalizado, id: editId, estado: form.estado || "Vigente" }
         : { id: siguienteIdUnico(certs, "CERT"), estado: "Vigente", ...form, obraId: obraIdNormalizado }),
       creadoPor: prev?.creadoPor || miUserId,
-      creadoPorNombre: prev?.creadoPorNombre ? normalizarNombrePersona(prev.creadoPorNombre, "Cristian Flórez") : (resolverAutorGuardado(ctx?.membresia) || "Cristian Flórez"),
+      creadoPorNombre: prev?.creadoPorNombre ? normalizarNombrePersona(prev.creadoPorNombre, "Camila Sepúlveda") : (resolverAutorGuardado(ctx?.membresia) || "Camila Sepúlveda"),
       creadoEn: prev?.creadoEn || new Date().toISOString(),
       modificadoPor: miUserId,
-      modificadoPorNombre: miNombre || resolverAutorGuardado(ctx?.membresia, prev?.modificadoPorNombre) || "Cristian Flórez",
+      modificadoPorNombre: miNombre || resolverAutorGuardado(ctx?.membresia, prev?.modificadoPorNombre) || "Camila Sepúlveda",
       modificadoEn: new Date().toISOString(),
     };
     setCerts(prevList=>editId ? prevList.map(item=>item.id===editId?{...item,...c}:item) : [...prevList,c]);

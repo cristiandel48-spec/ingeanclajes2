@@ -6,7 +6,7 @@ import { listarUsuarios } from "../lib/backend";
 // Registro unificado de auditoría y cambios en el sistema.
 // Aplica para Obras (Ejecución de obra), Horarios, Cotizaciones, Informes y Certificaciones.
 //
-// Diseñado para que la gerencia y administración (Camila Sepúlveda, Cristian Flórez y administradores)
+// Diseñado para que la gerencia y administración (Camila Sepúlveda y administradores)
 // tengan trazabilidad completa de qué persona creó y qué persona modificó cada registro.
 
 const fechaHora = (valor) => {
@@ -278,7 +278,7 @@ export default function AuditoriaDocumentos({ ctx }) {
       <div style={ST}>Registro de auditoría y control de cambios</div>
       <div style={{ fontSize: 11.5, color: "#64748b", marginBottom: 14 }}>
         Consulta qué persona creó y qué persona realizó los últimos cambios en ejecución de obra, horarios, cotizaciones, informes y certificaciones.
-        Módulo visible para Camila Sepúlveda, Cristian Flórez y el equipo administrativo.
+        Módulo visible para Camila Sepúlveda y el equipo de Administración.
       </div>
 
       {/* Pestañas de tipo de registro */}

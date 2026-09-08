@@ -19,7 +19,7 @@ import { siguienteIdUnico } from "../../lib/identificadores";
 import { PLANTILLAS_ACTIVIDAD, buscarPlantillaActividad, esTextoDePlantilla } from "./plantillasActividad";
 import ListaInformes from "./ListaInformes";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
-import { resolverAutorGuardado } from "../../lib/autorAuditoria";
+import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
 // Formateo de horas. Vive fuera del componente porque no depende de nada suyo:
 // asi es la misma funcion en cada render y buildPersonalDesdeObra puede
 // memorizarse sin arrastrarla como dependencia.
@@ -520,10 +520,10 @@ export default function Informes({ctx}){
         ? {id:editId,...form,obraId:obraIdNormalizado,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos}
         : {id:siguienteIdUnico(informes,"INF"),...form,obraId:obraIdNormalizado,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos}),
       creadoPor: prev?.creadoPor || miUserId,
-      creadoPorNombre: prev?.creadoPorNombre || resolverAutorGuardado(ctx?.membresia) || "Administración",
+      creadoPorNombre: prev?.creadoPorNombre ? normalizarNombrePersona(prev.creadoPorNombre, "Cristian Flórez") : (resolverAutorGuardado(ctx?.membresia) || "Cristian Flórez"),
       creadoEn: prev?.creadoEn || new Date().toISOString(),
       modificadoPor: miUserId,
-      modificadoPorNombre: miNombre,
+      modificadoPorNombre: miNombre || resolverAutorGuardado(ctx?.membresia, prev?.modificadoPorNombre) || "Cristian Flórez",
       modificadoEn: new Date().toISOString(),
     };
     setInformes(prevList=>editId ? prevList.map(item=>item.id===editId?{...item,...inf}:item) : [...prevList,inf]);

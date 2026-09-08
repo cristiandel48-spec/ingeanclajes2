@@ -12,6 +12,7 @@ import { resumenBitacora } from "../../lib/bitacoraObra";
 import { estadoSegunAvance, obraEstaCerrada } from "../../lib/flujoObra";
 import { esAdmin, puedeCrearPersonal, puedeVerDinero } from "../../lib/permisos";
 import { siguienteIdUnico } from "../../lib/identificadores";
+import { resolverAutorGuardado } from "../../lib/autorAuditoria";
 export default function ObraDetalle({obraId,ctx,onVolver}){
   const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,ordenesCompra=[],horarios,setHorarios,irAPantalla,membresia}=ctx;
   // Las cifras de la obra son confidenciales: quien organiza el trabajo no ve
@@ -97,7 +98,16 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           title={bloqueada?"Obra finalizada: el avance ya no se cambia.":undefined}
           onChange={e=>{
             const avance=Number(e.target.value);
-            setObras(p=>p.map(o=>o.id===obraId?{...o,avance,estado:estadoSegunAvance(avance,o.estado)}:o));
+            const autorActual = resolverAutorGuardado(membresia);
+            const ahoraIso = new Date().toISOString();
+            setObras(p=>p.map(o=>o.id===obraId?{
+              ...o,
+              avance,
+              estado:estadoSegunAvance(avance,o.estado),
+              modificadoPor: membresia?.userId || null,
+              modificadoPorNombre: autorActual || o.modificadoPorNombre || "Cristian Flórez",
+              modificadoEn: ahoraIso,
+            }:o));
           }}
           style={{width:"100%",accentColor:"#f47c20",
             opacity:bloqueada?0.5:1,cursor:bloqueada?"not-allowed":"pointer"}}/>
@@ -196,7 +206,15 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                     </div>
                     {!bloqueada&&(
                       <button onClick={()=>{
-                        setObras(p=>p.map(o=>o.id===obraId?{...o,empleados:(o.empleados||[]).filter(id=>id!==eid)}:o));
+                        const autorActual = resolverAutorGuardado(membresia);
+                        const ahoraIso = new Date().toISOString();
+                        setObras(p=>p.map(o=>o.id===obraId?{
+                          ...o,
+                          empleados:(o.empleados||[]).filter(id=>id!==eid),
+                          modificadoPor: membresia?.userId || null,
+                          modificadoPorNombre: autorActual || o.modificadoPorNombre || "Cristian Flórez",
+                          modificadoEn: ahoraIso,
+                        }:o));
                         if(setHorarios) setHorarios(p=>p.filter(h=>!(h.obraId===obraId && h.empleadoId===eid)));
                       }}
                         style={{background:"#fee2e2",border:"1px solid #fca5a5",color:"#cc0000",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11}}>✕</button>
@@ -222,8 +240,17 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             <select value="" onChange={ev=>{
               const v=ev.target.value;
               if(!v)return;
-              if(!empObra.includes(v))
-                setObras(p=>p.map(o=>o.id===obraId?{...o,empleados:[...(o.empleados||[]),v]}:o));
+              if(!empObra.includes(v)) {
+                const autorActual = resolverAutorGuardado(membresia);
+                const ahoraIso = new Date().toISOString();
+                setObras(p=>p.map(o=>o.id===obraId?{
+                  ...o,
+                  empleados:[...(o.empleados||[]),v],
+                  modificadoPor: membresia?.userId || null,
+                  modificadoPorNombre: autorActual || o.modificadoPorNombre || "Cristian Flórez",
+                  modificadoEn: ahoraIso,
+                }:o));
+              }
             }} style={{...SI,border:"2px solid #cc0000",fontSize:12}}>
               <option value="">Selecciona un empleado...</option>
               {empleados.filter(emp=>!empObra.includes(emp.id)).map(emp=>(

@@ -13,7 +13,7 @@ import { printCurrentPz } from "../../lib/print";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import ListaCertificaciones from "./ListaCertificaciones";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
-import { resolverAutorGuardado } from "../../lib/autorAuditoria";
+import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
 // Informes de una obra. Si se indica uno concreto, solo ese.
 const informesFuente = (informes, obraId, informeId = "")=>{
   if(!obraId) return [];
@@ -258,10 +258,10 @@ export default function Certificaciones({ctx}){
         ? { ...form, obraId: obraIdNormalizado, id: editId, estado: form.estado || "Vigente" }
         : { id: siguienteIdUnico(certs, "CERT"), estado: "Vigente", ...form, obraId: obraIdNormalizado }),
       creadoPor: prev?.creadoPor || miUserId,
-      creadoPorNombre: prev?.creadoPorNombre || resolverAutorGuardado(ctx?.membresia) || "Administración",
+      creadoPorNombre: prev?.creadoPorNombre ? normalizarNombrePersona(prev.creadoPorNombre, "Cristian Flórez") : (resolverAutorGuardado(ctx?.membresia) || "Cristian Flórez"),
       creadoEn: prev?.creadoEn || new Date().toISOString(),
       modificadoPor: miUserId,
-      modificadoPorNombre: miNombre,
+      modificadoPorNombre: miNombre || resolverAutorGuardado(ctx?.membresia, prev?.modificadoPorNombre) || "Cristian Flórez",
       modificadoEn: new Date().toISOString(),
     };
     setCerts(prevList=>editId ? prevList.map(item=>item.id===editId?{...item,...c}:item) : [...prevList,c]);

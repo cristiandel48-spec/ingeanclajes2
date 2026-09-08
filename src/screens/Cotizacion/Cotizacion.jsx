@@ -28,7 +28,7 @@ import { asuntoAprobacion, mensajeAprobacion } from "../../lib/correoAprobacion"
 import { blobABase64, generarCotizacionPdf } from "../../lib/cotizacionPdf";
 import { enviarCotizacionPorCorreo } from "../../lib/backend/usuarios";
 import { siguienteIdUnico } from "../../lib/identificadores";
-import { resolverAutorGuardado } from "../../lib/autorAuditoria";
+import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
 export default function Cotizacion({ctx}){
   const {cotizaciones,setCotizaciones,obras,setObras,clientes,setClientes,empresaConfig,asegurarDetalle,cotDraft,setCotDraft}=ctx;
   const [erroresCliente, setErroresCliente] = useState({});
@@ -387,10 +387,10 @@ export default function Cotizacion({ctx}){
       estado: prev?.estado || "Pendiente",
       obraId: prev?.obraId || null,
       creadoPor: prev?.creadoPor || miUserId,
-      creadoPorNombre: prev?.creadoPorNombre || resolverAutorGuardado(ctx?.membresia) || "Administración",
+      creadoPorNombre: prev?.creadoPorNombre ? normalizarNombrePersona(prev.creadoPorNombre, "Cristian Flórez") : (resolverAutorGuardado(ctx?.membresia) || "Cristian Flórez"),
       creadoEn: prev?.creadoEn || new Date().toISOString(),
       modificadoPor: miUserId,
-      modificadoPorNombre: resolverAutorGuardado(ctx?.membresia, prev?.modificadoPorNombre),
+      modificadoPorNombre: resolverAutorGuardado(ctx?.membresia, prev?.modificadoPorNombre) || "Cristian Flórez",
       modificadoEn: new Date().toISOString(),
     };
     setCotizaciones((prevList)=>editCot ? prevList.map((cotizacion)=>cotizacion.id===editCot?{...cotizacion,...data}:cotizacion) : [...prevList,data]);

@@ -186,10 +186,10 @@ export default function Horarios({ctx}){
         id:"H" + (Date.now()) + (idx),
         ...item,
         creadoPor: ctx?.membresia?.userId || null,
-        creadoPorNombre: autorActual || "Administración",
+        creadoPorNombre: autorActual || "Cristian Flórez",
         creadoEn: ahoraIso,
         modificadoPor: ctx?.membresia?.userId || null,
-        modificadoPorNombre: autorActual,
+        modificadoPorNombre: autorActual || "Cristian Flórez",
         modificadoEn: ahoraIso,
       }))
     ]);

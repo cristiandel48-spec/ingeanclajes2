@@ -184,8 +184,19 @@ export const entityConfig = {
     // Las fotos de avance y los planos: no se traen al arrancar.
     columnasPesadas: ["bitacora", "img_plano", "img_sat", "trazos", "anclajes", "geo_mediciones"],
     // Contadores que mantiene la base, para que el listado pueda decir
-    // cuantas fotos hay sin traerlas.
-    columnasCalculadas: ["total_registros_avance", "total_fotos_avance", "created_at", "updated_at"],
+    // cuantas fotos hay sin traerlas, más columnas de auditoría y autoría.
+    columnasCalculadas: [
+      "total_registros_avance",
+      "total_fotos_avance",
+      "creado_por",
+      "creado_por_nombre",
+      "creado_en",
+      "modificado_por",
+      "modificado_por_nombre",
+      "modificado_en",
+      "created_at",
+      "updated_at",
+    ],
     coerceNullCols: ["avance", "total", "pagado", "saldo", "costos", "subtotal_cotizacion", "utilidad_cotizacion", "base_ingreso_contable", "iva_generado_cotizacion", "fecha_inicio", "fecha_fin"],
     toRow: (item) => ({
       id: item.id,
@@ -209,6 +220,12 @@ export const entityConfig = {
       utilidad_cotizacion: item.utilidadCotizacion ?? null,
       base_ingreso_contable: item.baseIngresoContable ?? null,
       iva_generado_cotizacion: item.ivaGeneradoCotizacion ?? null,
+      creado_por: item.creadoPor ?? null,
+      creado_por_nombre: item.creadoPorNombre ?? null,
+      creado_en: item.creadoEn ?? null,
+      modificado_por: item.modificadoPor ?? null,
+      modificado_por_nombre: item.modificadoPorNombre ?? null,
+      modificado_en: item.modificadoEn ?? null,
       empleados: safeArray(item.empleados),
       trazos: safeArray(item.trazos),
       anclajes: safeArray(item.anclajes),
@@ -243,6 +260,12 @@ export const entityConfig = {
       utilidad_cotizacion: item.utilidadCotizacion ?? null,
       base_ingreso_contable: item.baseIngresoContable ?? null,
       iva_generado_cotizacion: item.ivaGeneradoCotizacion ?? null,
+      creado_por: item.creadoPor ?? null,
+      creado_por_nombre: item.creadoPorNombre ?? null,
+      creado_en: item.creadoEn ?? null,
+      modificado_por: item.modificadoPor ?? null,
+      modificado_por_nombre: item.modificadoPorNombre ?? null,
+      modificado_en: item.modificadoEn ?? null,
       empleados: safeArray(item.empleados),
       trazos: safeArray(item.trazos),
       anclajes: safeArray(item.anclajes),
@@ -739,6 +762,14 @@ export const entityConfig = {
     // El turno y la tarea se subian a un campo que no existia y se perdian, asi
     // que al recargar la pagina los turnos aparecian en blanco.
     //
+    columnasCalculadas: [
+      "creado_por",
+      "creado_por_nombre",
+      "creado_en",
+      "modificado_por",
+      "modificado_por_nombre",
+      "modificado_en",
+    ],
     // Se traducen aqui, sin migracion: las columnas ya estan y son de texto.
     toRow: (item) => {
       const [inicio = "", fin = ""] = String(item.turno ?? "")
@@ -755,6 +786,12 @@ export const entityConfig = {
         hora_fin: fin || item.horaFin || null,
         horas: item.horas ?? null,
         notas: item.tarea ?? item.notas ?? null,
+        creado_por: item.creadoPor ?? null,
+        creado_por_nombre: item.creadoPorNombre ?? null,
+        creado_en: item.creadoEn ?? null,
+        modificado_por: item.modificadoPor ?? null,
+        modificado_por_nombre: item.modificadoPorNombre ?? null,
+        modificado_en: item.modificadoEn ?? null,
       };
     },
     fromRow: (row) => ({

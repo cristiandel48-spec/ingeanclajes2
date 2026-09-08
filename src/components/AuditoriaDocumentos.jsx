@@ -1,13 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CD, SI, ST } from "../styles/tokens";
 import { limpiarCreador, limpiarModificador } from "../lib/autorAuditoria";
+import { listarUsuarios } from "../lib/backend";
 
 // Registro unificado de auditoría y cambios en el sistema.
 // Aplica para Obras (Ejecución de obra), Horarios, Cotizaciones, Informes y Certificaciones.
 //
-// Diseñado para que la gerencia y administración (Camila Sepúlveda y administradores)
+// Diseñado para que la gerencia y administración (Camila Sepúlveda, Cristian Flórez y administradores)
 // tengan trazabilidad completa de qué persona creó y qué persona modificó cada registro.
-// Cuentas técnicas y de desarrollo no se muestran como modificadores para que los parches no ensucien el historial.
 
 const fechaHora = (valor) => {
   if (!valor) return "";
@@ -68,12 +68,41 @@ export default function AuditoriaDocumentos({ ctx }) {
   const [tab, setTab] = useState("todos");
   const [busqueda, setBusqueda] = useState("");
   const [verTodas, setVerTodas] = useState(false);
+  const [usuarios, setUsuarios] = useState([]);
+
+  useEffect(() => {
+    let activo = true;
+    listarUsuarios()
+      .then((data) => {
+        if (activo && Array.isArray(data)) {
+          setUsuarios(data);
+        }
+      })
+      .catch((err) => {
+        console.warn("No se pudo cargar la lista de usuarios para auditoría:", err);
+      });
+    return () => {
+      activo = false;
+    };
+  }, []);
+
+  // Mapeo id/userId -> nombre de persona registrado en la empresa
+  const mapUsuarios = useMemo(() => {
+    const map = new Map();
+    (usuarios || []).forEach((u) => {
+      const id = u.user_id || u.id;
+      if (id) {
+        map.set(id, u.nombre || u.email || "");
+      }
+    });
+    return map;
+  }, [usuarios]);
 
   // 1. Obras (Ejecución de obra)
   const listaObras = useMemo(() => {
     return (obras || []).map((o) => {
-      const creadorLimpio = limpiarCreador(o.creadoPorNombre, o.creadoEn || o.created_at);
-      const modificadorLimpio = limpiarModificador(o.modificadoPorNombre);
+      const creadorLimpio = limpiarCreador(o.creadoPorNombre, o.creadoEn || o.created_at, o.creadoPor, mapUsuarios);
+      const modificadorLimpio = limpiarModificador(o.modificadoPorNombre, o.modificadoPor, mapUsuarios);
       const fechaCreacion = o.creadoEn || o.created_at || null;
       const fechaMod = modificadorLimpio ? (o.modificadoEn || o.updated_at || null) : null;
 
@@ -91,7 +120,7 @@ export default function AuditoriaDocumentos({ ctx }) {
         modificadoEn: fechaMod,
       };
     });
-  }, [obras]);
+  }, [obras, mapUsuarios]);
 
   // 2. Horarios y turnos de personal
   const listaHorarios = useMemo(() => {
@@ -103,8 +132,8 @@ export default function AuditoriaDocumentos({ ctx }) {
       const nombreObra = obraMap.get(h.obraId) || (h.obraId ? `Obra ${h.obraId}` : "Sin obra");
       const turnoTexto = h.turno || (h.horaInicio && h.horaFin ? `${h.horaInicio} - ${h.horaFin}` : "") || "Turno";
 
-      const creadorLimpio = limpiarCreador(h.creadoPorNombre, h.creadoEn || h.created_at);
-      const modificadorLimpio = limpiarModificador(h.modificadoPorNombre);
+      const creadorLimpio = limpiarCreador(h.creadoPorNombre, h.creadoEn || h.created_at, h.creadoPor, mapUsuarios);
+      const modificadorLimpio = limpiarModificador(h.modificadoPorNombre, h.modificadoPor, mapUsuarios);
       const fechaCreacion = h.creadoEn || h.created_at || null;
       const fechaMod = modificadorLimpio ? (h.modificadoEn || h.updated_at || null) : null;
 
@@ -122,13 +151,13 @@ export default function AuditoriaDocumentos({ ctx }) {
         modificadoEn: fechaMod,
       };
     });
-  }, [horarios, empleados, obras]);
+  }, [horarios, empleados, obras, mapUsuarios]);
 
   // 3. Cotizaciones
   const listaCotizaciones = useMemo(() => {
     return (cotizaciones || []).map((c) => {
-      const creadorLimpio = limpiarCreador(c.creadoPorNombre, c.creadoEn);
-      const modificadorLimpio = limpiarModificador(c.modificadoPorNombre);
+      const creadorLimpio = limpiarCreador(c.creadoPorNombre, c.creadoEn, c.creadoPor, mapUsuarios);
+      const modificadorLimpio = limpiarModificador(c.modificadoPorNombre, c.modificadoPor, mapUsuarios);
 
       return {
         id: `cot_${c.id}`,
@@ -144,13 +173,13 @@ export default function AuditoriaDocumentos({ ctx }) {
         modificadoEn: modificadorLimpio ? (c.modificadoEn || null) : null,
       };
     });
-  }, [cotizaciones]);
+  }, [cotizaciones, mapUsuarios]);
 
   // 4. Informes de actividades
   const listaInformes = useMemo(() => {
     return (informes || []).map((i) => {
-      const creadorLimpio = limpiarCreador(i.creadoPorNombre, i.creadoEn);
-      const modificadorLimpio = limpiarModificador(i.modificadoPorNombre);
+      const creadorLimpio = limpiarCreador(i.creadoPorNombre, i.creadoEn, i.creadoPor, mapUsuarios);
+      const modificadorLimpio = limpiarModificador(i.modificadoPorNombre, i.modificadoPor, mapUsuarios);
 
       return {
         id: `inf_${i.id}`,
@@ -166,13 +195,13 @@ export default function AuditoriaDocumentos({ ctx }) {
         modificadoEn: modificadorLimpio ? (i.modificadoEn || null) : null,
       };
     });
-  }, [informes]);
+  }, [informes, mapUsuarios]);
 
   // 5. Certificaciones
   const listaCertificaciones = useMemo(() => {
     return (certs || []).map((c) => {
-      const creadorLimpio = limpiarCreador(c.creadoPorNombre, c.creadoEn);
-      const modificadorLimpio = limpiarModificador(c.modificadoPorNombre);
+      const creadorLimpio = limpiarCreador(c.creadoPorNombre, c.creadoEn, c.creadoPor, mapUsuarios);
+      const modificadorLimpio = limpiarModificador(c.modificadoPorNombre, c.modificadoPor, mapUsuarios);
 
       return {
         id: `cert_${c.id}`,
@@ -188,7 +217,8 @@ export default function AuditoriaDocumentos({ ctx }) {
         modificadoEn: modificadorLimpio ? (c.modificadoEn || null) : null,
       };
     });
-  }, [certs]);
+  }, [certs, mapUsuarios]);
+
 
   const pool = useMemo(() => {
     if (tab === "obras") return listaObras;
@@ -247,8 +277,8 @@ export default function AuditoriaDocumentos({ ctx }) {
     <div style={{ ...CD, marginTop: 18 }}>
       <div style={ST}>Registro de auditoría y control de cambios</div>
       <div style={{ fontSize: 11.5, color: "#64748b", marginBottom: 14 }}>
-        Consulta quién creó y quién realizó los últimos cambios en ejecución de obra, horarios, cotizaciones, informes y certificaciones.
-        Módulo visible para Camila Sepúlveda y el equipo de Administración.
+        Consulta qué persona creó y qué persona realizó los últimos cambios en ejecución de obra, horarios, cotizaciones, informes y certificaciones.
+        Módulo visible para Camila Sepúlveda, Cristian Flórez y el equipo administrativo.
       </div>
 
       {/* Pestañas de tipo de registro */}

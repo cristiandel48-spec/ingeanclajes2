@@ -416,9 +416,7 @@ export function AppDataProvider({ children }) {
     asegurarDetalle,
     // Para que la barra de arriba pueda avisar que lo que se ve es de muestra.
     // Se apaga solo: en cuanto haya un registro de verdad en TODAS las
-    // pantallas que traen ejemplo, deja de haber ejemplos que anunciar.
-    verEjemplos: !ejemplosOcultos
-      && hayEjemplos(obras, cotizaciones, clientes, informes, certs, pagos),
+    verEjemplos: false,
     ejemplosOcultos,
     // Quita los de muestra de todas las listas a la vez. No hay vuelta atras
     // en la sesion, y no hace falta: al recargar vuelven, porque las tablas

@@ -27,10 +27,23 @@ export function siguienteIdUnico(lista, prefijo, ancho = 3) {
     registros.map((r) => String(r?.id ?? "").trim()).filter(Boolean)
   );
 
-  let n = registros.length + 1;
+  // Busca el mayor consecutivo numérico ya usado para este prefijo (ej: OB-030 -> 30)
+  const regex = new RegExp(`^${prefijo}-(\\d+)$`, "i");
+  let maxNum = 0;
+  for (const id of usados) {
+    const match = id.match(regex);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (Number.isFinite(num) && num > maxNum) {
+        maxNum = num;
+      }
+    }
+  }
+
+  let n = maxNum > 0 ? maxNum + 1 : registros.length + 1;
   let id = `${prefijo}-${String(n).padStart(ancho, "0")}`;
   // El tope evita un bucle infinito si algo raro pasa con la lista.
-  const tope = registros.length + 1000;
+  const tope = Math.max(n, registros.length) + 1000;
   while (usados.has(id) && n <= tope) {
     n += 1;
     id = `${prefijo}-${String(n).padStart(ancho, "0")}`;

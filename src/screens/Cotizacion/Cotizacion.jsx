@@ -562,36 +562,106 @@ export default function Cotizacion({ctx}){
     const snapshot = base ? getQuoteApprovalAccountingSnapshot(base) : null;
     const cotizacion = snapshot?.cotizacion || null;
     if(!cotizacion || !snapshot) return;
-    const obraId = siguienteIdUnico(obras,"OB");
-    setObras((prev)=>[...prev,{
-      id:obraId,
-      cliente:cotizacion.cliente,
-      nit:cotizacion.nit || "",
-      tel:cotizacion.telefono,
-      proyecto:cotizacion.obra,
-      ciudad:cotizacion.ciudad,
-      direccion:cotizacion.direccion || "",
-      coords:cotizacion.coords || "",
-      estado:"En Obra",
-      avance:0,
-      total:snapshot.totalObra,
-      pagado:0,
-      saldo:snapshot.totalObra,
-      costos:0,
-      fechaInicio:today(),
-      fechaFin:"",
-      empleados:[],
-      trazos:[],
-      anclajes:[],
-      imgSat:cotizacion.mapImg || null,
-      geoMediciones:cotizacion.geoMediciones || [],
-      geoMapView:cotizacion.geoMapView || null,
-      cotizacionId:cotizacion.id,
-      subtotalCotizacion:snapshot.subtotalCotizacion,
-      utilidadCotizacion:snapshot.utilidadCotizacion,
-      baseIngresoContable:snapshot.baseIngresoContable,
-      ivaGeneradoCotizacion:snapshot.ivaGeneradoCotizacion,
-    }]);
+
+    // Buscar si ya existe alguna obra vinculada a esta cotización
+    const obrasAsociadas = obras.filter((o) =>
+      (cotizacion.obraId && o.id === cotizacion.obraId) ||
+      (o.cotizacionId && (
+        String(o.cotizacionId).trim() === String(cotizacion.id).trim() ||
+        (cotizacion.numero && String(o.cotizacionId).trim() === String(cotizacion.numero).trim())
+      ))
+    );
+
+    let obraExistente = null;
+    if (obrasAsociadas.length > 0) {
+      const tieneTrabajo = (o) => Boolean(
+        Number(o?.avance || 0) > 0 ||
+        Number(o?.pagado || 0) > 0 ||
+        Number(o?.costos || 0) > 0 ||
+        (Array.isArray(o?.bitacora) && o.bitacora.length > 0) ||
+        (Array.isArray(o?.empleados) && o.empleados.length > 0) ||
+        (Array.isArray(o?.trazos) && o.trazos.length > 0) ||
+        (Array.isArray(o?.anclajes) && o.anclajes.length > 0) ||
+        Number(o?.totalFotosAvance || 0) > 0
+      );
+
+      const ordenadas = [...obrasAsociadas].sort((a, b) => {
+        const aTrab = tieneTrabajo(a) ? (Number(a.avance || 0) || 1) : 0;
+        const bTrab = tieneTrabajo(b) ? (Number(b.avance || 0) || 1) : 0;
+        if (aTrab !== bTrab) return bTrab - aTrab;
+        const numA = parseInt(String(a.id || "").replace(/\D/g, ""), 10) || 0;
+        const numB = parseInt(String(b.id || "").replace(/\D/g, ""), 10) || 0;
+        return numA - numB;
+      });
+      obraExistente = ordenadas[0];
+    }
+
+    let obraId;
+    if (obraExistente) {
+      // REUTILIZAR LA OBRA EXISTENTE: No crear una nueva ni gastar otro consecutivo
+      obraId = obraExistente.id;
+      const idsClonesSobrantes = obrasAsociadas
+        .filter((o) => o.id !== obraId && Number(o.avance || 0) === 0)
+        .map((o) => o.id);
+
+      setObras((prev) => prev
+        .filter((o) => !idsClonesSobrantes.includes(o.id))
+        .map((o) => {
+          if (o.id !== obraId) return o;
+          return {
+            ...o,
+            cliente: cotizacion.cliente,
+            nit: cotizacion.nit || o.nit || "",
+            tel: cotizacion.telefono || o.tel,
+            proyecto: cotizacion.obra || o.proyecto,
+            ciudad: cotizacion.ciudad || o.ciudad,
+            direccion: cotizacion.direccion || o.direccion || "",
+            coords: cotizacion.coords || o.coords || "",
+            estado: o.estado === "Cancelada" ? "En Obra" : (o.estado || "En Obra"),
+            total: snapshot.totalObra,
+            saldo: Math.max(0, snapshot.totalObra - Number(o.pagado || 0)),
+            cotizacionId: cotizacion.id,
+            subtotalCotizacion: snapshot.subtotalCotizacion,
+            utilidadCotizacion: snapshot.utilidadCotizacion,
+            baseIngresoContable: snapshot.baseIngresoContable,
+            ivaGeneradoCotizacion: snapshot.ivaGeneradoCotizacion,
+          };
+        })
+      );
+    } else {
+      // Si no existe, crear la obra con el siguiente consecutivo
+      obraId = siguienteIdUnico(obras,"OB");
+      setObras((prev)=>[...prev,{
+        id:obraId,
+        cliente:cotizacion.cliente,
+        nit:cotizacion.nit || "",
+        tel:cotizacion.telefono,
+        proyecto:cotizacion.obra,
+        ciudad:cotizacion.ciudad,
+        direccion:cotizacion.direccion || "",
+        coords:cotizacion.coords || "",
+        estado:"En Obra",
+        avance:0,
+        total:snapshot.totalObra,
+        pagado:0,
+        saldo:snapshot.totalObra,
+        costos:0,
+        fechaInicio:today(),
+        fechaFin:"",
+        empleados:[],
+        trazos:[],
+        anclajes:[],
+        imgSat:cotizacion.mapImg || null,
+        geoMediciones:cotizacion.geoMediciones || [],
+        geoMapView:cotizacion.geoMapView || null,
+        cotizacionId:cotizacion.id,
+        subtotalCotizacion:snapshot.subtotalCotizacion,
+        utilidadCotizacion:snapshot.utilidadCotizacion,
+        baseIngresoContable:snapshot.baseIngresoContable,
+        ivaGeneradoCotizacion:snapshot.ivaGeneradoCotizacion,
+      }]);
+    }
+
     setCotizaciones((prev)=>prev.map((item)=>item.id===cotId?{...item,estado:"Aprobada",obraId}:item));
     setObraCreada({id:obraId,cliente:cotizacion.cliente,proyecto:cotizacion.obra,correo:"enviando"});
 
@@ -656,55 +726,95 @@ export default function Cotizacion({ctx}){
     })();
   };
 
-  // Deshacer una aprobacion. Se aprueba de un clic y hasta ahora no habia
-  // vuelta atras: si se aprobaba la cotizacion equivocada, quedaba una obra de
-  // mas y una cotizacion marcada como aprobada para siempre.
-  //
-  // La obra NO se borra sin preguntar. Puede llevar dias de avance, fotos,
-  // personal y pagos encima, y eso no se puede rehacer. Solo se ofrece borrarla
-  // cuando esta como recien creada.
+  // Deshacer una aprobación. Se desaprueba de forma segura:
+  // - Si la obra tiene trabajo registrado (avance, bitácora, pagos, fotos, etc.),
+  //   la obra SE CONSERVA y la cotización mantiene la vinculación para que al
+  //   re-aprobar se reutilice la misma obra sin crear duplicados ni gastar consecutivos.
+  // - Si la obra está sin empezar (0% avance, recién creada), se retira para no
+  //   dejar registros vacíos y permitir que el consecutivo quede intacto.
+  // - Si el usuario pulsa "Cancelar" en el cuadro de confirmación, la acción se aborta
+  //   completamente (no se modifica nada).
   const desaprobarCotizacion = (cotId)=>{
     const cotizacion = cotizaciones.find((c)=>c.id===cotId);
     if(!cotizacion) return;
 
-    const obra = obras.find((o)=>o.id===cotizacion.obraId);
-    const conTrabajo = obra && (
-      Number(obra.avance||0) > 0 ||
-      Number(obra.pagado||0) > 0 ||
-      Number(obra.costos||0) > 0 ||
-      (Array.isArray(obra.bitacora) && obra.bitacora.length > 0) ||
-      (Array.isArray(obra.empleados) && obra.empleados.length > 0) ||
-      (Array.isArray(obra.trazos) && obra.trazos.length > 0) ||
-      (Array.isArray(obra.anclajes) && obra.anclajes.length > 0)
+    // Buscar todas las obras asociadas a esta cotización (por obraId o por cotizacionId)
+    const obrasAsociadas = obras.filter((o) =>
+      (cotizacion.obraId && o.id === cotizacion.obraId) ||
+      (o.cotizacionId && (
+        String(o.cotizacionId).trim() === String(cotizacion.id).trim() ||
+        (cotizacion.numero && String(o.cotizacionId).trim() === String(cotizacion.numero).trim())
+      ))
     );
 
-    let borrarObra = false;
-    if(!obra){
-      if(!window.confirm(
+    const tieneTrabajo = (o) => Boolean(
+      Number(o?.avance || 0) > 0 ||
+      Number(o?.pagado || 0) > 0 ||
+      Number(o?.costos || 0) > 0 ||
+      (Array.isArray(o?.bitacora) && o.bitacora.length > 0) ||
+      (Array.isArray(o?.empleados) && o.empleados.length > 0) ||
+      (Array.isArray(o?.trazos) && o.trazos.length > 0) ||
+      (Array.isArray(o?.anclajes) && o.anclajes.length > 0) ||
+      Number(o?.totalFotosAvance || 0) > 0
+    );
+
+    const obraPrincipal = obrasAsociadas.length > 0
+      ? [...obrasAsociadas].sort((a, b) => {
+          const aTrab = tieneTrabajo(a) ? (Number(a.avance || 0) || 1) : 0;
+          const bTrab = tieneTrabajo(b) ? (Number(b.avance || 0) || 1) : 0;
+          if (aTrab !== bTrab) return bTrab - aTrab;
+          const numA = parseInt(String(a.id || "").replace(/\D/g, ""), 10) || 0;
+          const numB = parseInt(String(b.id || "").replace(/\D/g, ""), 10) || 0;
+          return numA - numB;
+        })[0]
+      : null;
+
+    const algunaConTrabajo = obrasAsociadas.some(tieneTrabajo);
+
+    if (!obraPrincipal) {
+      if (!window.confirm(
         `¿Devolver la cotización ${cotizacion.numero || cotizacion.id} a "Pendiente"?`
       )) return;
-    }else if(conTrabajo){
-      if(!window.confirm(
-        `La cotización ${cotizacion.numero || cotizacion.id} vuelve a "Pendiente".\n\n` +
-        `La obra ${obra.id} (${obra.proyecto || obra.cliente}) SE CONSERVA: ya tiene ` +
-        `trabajo registrado —avance, fotos, personal o pagos— y borrarla haría perder todo eso.\n\n` +
-        "Queda suelta, sin cotización asociada. Si de verdad sobra, bórrala desde Ejecución de obra.\n\n¿Continuar?"
+
+      setCotizaciones((prev) => prev.map((c) => (
+        c.id === cotId ? { ...c, estado: "Pendiente", obraId: null } : c
+      )));
+    } else if (algunaConTrabajo) {
+      if (!window.confirm(
+        `La cotización ${cotizacion.numero || cotizacion.id} volverá a "Pendiente".\n\n` +
+        `La obra ${obraPrincipal.id} (${obraPrincipal.proyecto || obraPrincipal.cliente}) SE CONSERVA intacta: ya tiene trabajo registrado (avance, fotos, pagos, etc.).\n\n` +
+        `Si más adelante vuelves a aprobarla, se reutilizará la misma obra ${obraPrincipal.id} sin generar duplicados ni alterar el consecutivo.\n\n` +
+        `¿Deseas continuar?`
       )) return;
-    }else{
-      borrarObra = window.confirm(
-        `La cotización ${cotizacion.numero || cotizacion.id} vuelve a "Pendiente".\n\n` +
-        `La obra ${obra.id} (${obra.proyecto || obra.cliente}) está sin empezar: 0% de avance, ` +
-        "sin fotos, sin personal y sin pagos.\n\n" +
-        "Aceptar → se borra también la obra.\nCancelar → la obra se conserva sin cotización asociada."
-      );
+
+      // Conservar obraId para saber qué obra reactivar al aprobar de nuevo
+      setCotizaciones((prev) => prev.map((c) => (
+        c.id === cotId ? { ...c, estado: "Pendiente", obraId: obraPrincipal.id } : c
+      )));
+
+      // Limpiar clones vacíos sobrantes si existieran
+      const idsClonesVacios = obrasAsociadas
+        .filter((o) => o.id !== obraPrincipal.id && !tieneTrabajo(o))
+        .map((o) => o.id);
+
+      if (idsClonesVacios.length > 0) {
+        setObras((prev) => prev.filter((o) => !idsClonesVacios.includes(o.id)));
+      }
+    } else {
+      if (!window.confirm(
+        `¿Devolver la cotización ${cotizacion.numero || cotizacion.id} a "Pendiente" y retirar la obra creada (${obraPrincipal.id})?\n\n` +
+        `La obra está sin empezar (0% de avance). Al retirarla, no afectará el consecutivo ni dejará registros vacíos.`
+      )) return;
+
+      setCotizaciones((prev) => prev.map((c) => (
+        c.id === cotId ? { ...c, estado: "Pendiente", obraId: null } : c
+      )));
+
+      // Eliminar las obras vacías para liberar el consecutivo y evitar duplicados
+      const idsObrasABorrar = obrasAsociadas.map((o) => o.id);
+      setObras((prev) => prev.filter((o) => !idsObrasABorrar.includes(o.id)));
     }
 
-    setCotizaciones((prev)=>prev.map((c)=>(
-      c.id===cotId ? {...c, estado:"Pendiente", obraId:null} : c
-    )));
-    if(borrarObra && obra){
-      setObras((prev)=>prev.filter((o)=>o.id!==obra.id));
-    }
     setObraCreada(null);
   };
 

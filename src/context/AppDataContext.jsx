@@ -17,6 +17,7 @@ import {
   normalizeContabilidadConfig, normalizePlanCuenta, normalizeAsientoContable,
 } from "../lib/accounting";
 import { EJEMPLOS, hayEjemplos, sinEjemplos } from "../data/ejemplos";
+import { depurarObrasDuplicadas } from "../lib/obrasDuplicadas";
 
 const isSupabaseConfigured = backend.isSupabaseConfigured;
 const loadCloudAppData = backend.loadCloudAppData;
@@ -206,6 +207,29 @@ export function AppDataProvider({ children }) {
         const cloud = await loadCloudAppData();
         if (cancel) return;
 
+        // Limpiar automáticamente obras duplicadas generadas por aprobaciones repetidas
+        let obrasList = Array.isArray(cloud.obras) ? cloud.obras : [];
+        let cotizacionesList = Array.isArray(cloud.cotizaciones) ? cloud.cotizaciones : [];
+
+        const { obrasDepuradas, cotizacionesAjustadas, huboLimpieza, eliminadas } =
+          depurarObrasDuplicadas(obrasList, cotizacionesList);
+
+        if (huboLimpieza) {
+          console.info(`[Depuración Obras] Clones eliminados: ${eliminadas.join(", ")}`);
+          obrasList = obrasDepuradas;
+          cotizacionesList = cotizacionesAjustadas;
+          try {
+            await saveCloudAppData({
+              ...cloud,
+              obras: obrasDepuradas,
+              cotizaciones: cotizacionesAjustadas,
+            });
+            console.info("[Depuración Obras] Base de datos actualizada sin duplicados.");
+          } catch (e) {
+            console.warn("[Depuración Obras] No se pudo guardar la depuración en la nube:", e);
+          }
+        }
+
         // Con la tabla vacia se dejan los registros de ejemplo: una pantalla
         // que dice «todavia no hay nada» no enseña para que sirve, y quien la
         // abre por primera vez es justo el que necesita entenderlo. Se van
@@ -213,7 +237,7 @@ export function AppDataProvider({ children }) {
         // descarta (ver buildCloudPayload).
         const oEjemplo = (lista, ejemplo) => (lista.length ? lista : ejemplo);
 
-        if (Array.isArray(cloud.obras)) setObras(oEjemplo(cloud.obras, EJEMPLOS.obras));
+        if (Array.isArray(cloud.obras)) setObras(oEjemplo(obrasList, EJEMPLOS.obras));
         if (Array.isArray(cloud.empleados)) setEmpleados(cloud.empleados.map(normalizarEmpleado));
         if (Array.isArray(cloud.cargos)) setCargos(normalizarCargos(cloud.cargos));
         if (Array.isArray(cloud.pagos)) setPagos(oEjemplo(cloud.pagos, EJEMPLOS.pagos));
@@ -224,7 +248,7 @@ export function AppDataProvider({ children }) {
         if (Array.isArray(cloud.proveedores)) setProveedores(cloud.proveedores);
         if (Array.isArray(cloud.cuentas)) setCuentas(cloud.cuentas);
         if (Array.isArray(cloud.ordenesCompra) && cloud.ordenesCompra.length) setOrdenesCompra(cloud.ordenesCompra);
-        if (Array.isArray(cloud.cotizaciones)) setCotizaciones(oEjemplo(cloud.cotizaciones, EJEMPLOS.cotizaciones));
+        if (Array.isArray(cloud.cotizaciones)) setCotizaciones(oEjemplo(cotizacionesList, EJEMPLOS.cotizaciones));
         if (Array.isArray(cloud.contabilidadConfig) && cloud.contabilidadConfig.length) {
           setContabilidadConfig(cloud.contabilidadConfig.map(normalizeContabilidadConfig));
         }

@@ -24,6 +24,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
   const [gastoForm,setGastoForm]=useState({proveedorId:"PROV-001",concepto:"",monto:0,fecha:today(),fechaVence:"",factura:""});
   const [nuevoEmp,setNuevoEmp]=useState(false);
   const [showGasto,setShowGasto]=useState(false);
+  const [mostrarGuia,setMostrarGuia]=useState(false);
 
   const oAct=obras.find(o=>o.id===obraId);
   if(!oAct)return null;
@@ -69,21 +70,48 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           {oAct.direccion&&<div style={{fontSize:11,color:"#94a3b8"}}>{oAct.direccion}</div>}
         </div>
         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
-          <Badge estado={oAct.estado}/>
-          {cotVinc&&<div style={{fontSize:11,color:"#b45309"}}>📄 {cotVinc.numero}</div>}
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            {cotVinc&&<div style={{fontSize:11,color:"#b45309",fontWeight:600}}>📄 {cotVinc.numero}</div>}
+            <Badge estado={oAct.estado}/>
+          </div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center",justifyContent:"flex-end"}}>
+            <button
+              onClick={()=>irAPantalla("informes",{obraId:oAct.id})}
+              style={{...B("#eff6ff","#1d4ed8"),fontSize:11.5,padding:"5px 11px",fontWeight:600}}
+              title="Crear informe de actividades para esta obra"
+            >
+              📄 Crear informe
+            </button>
+            <button
+              onClick={()=>irAPantalla("certificaciones",{obraId:oAct.id})}
+              style={{...B("#f0fdf4","#166534"),fontSize:11.5,padding:"5px 11px",fontWeight:600}}
+              title="Crear certificación para esta obra"
+            >
+              📜 Certificar
+            </button>
+            <button
+              onClick={()=>setMostrarGuia(!mostrarGuia)}
+              style={{...B(mostrarGuia ? "#fef3c7" : "#f8fafc", mostrarGuia ? "#92400e" : "#64748b"),fontSize:11,padding:"5px 9px",border:"1px solid #e2e8f0"}}
+              title={mostrarGuia ? "Ocultar guía y qué sigue" : "Mostrar guía de flujo y qué sigue en esta obra"}
+            >
+              {mostrarGuia ? "Ocultar qué sigue" : "💡 Qué sigue"}
+            </button>
+          </div>
         </div>
       </div>
 
-      <GuiaFlujoObra
-        obra={oAct}
-        empleadosAsignados={empObra.length}
-        registrosAvance={resumenAvance.registros}
-        fotosAvance={resumenAvance.fotos}
-        verDinero={verDinero}
-        onVerAvance={()=>setDetTab("avance")}
-        onCrearInforme={()=>irAPantalla("informes",{obraId:oAct.id})}
-        onCrearCertificacion={()=>irAPantalla("certificaciones",{obraId:oAct.id})}
-      />
+      {mostrarGuia && (
+        <GuiaFlujoObra
+          obra={oAct}
+          empleadosAsignados={empObra.length}
+          registrosAvance={resumenAvance.registros}
+          fotosAvance={resumenAvance.fotos}
+          verDinero={verDinero}
+          onVerAvance={()=>setDetTab("avance")}
+          onCrearInforme={()=>irAPantalla("informes",{obraId:oAct.id})}
+          onCrearCertificacion={()=>irAPantalla("certificaciones",{obraId:oAct.id})}
+        />
+      )}
 
       {/* Avance */}
       <div style={{...CD,marginBottom:20}}>

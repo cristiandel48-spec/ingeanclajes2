@@ -165,21 +165,6 @@ export default function Obras({ctx}){
   return(
     <div style={{padding:"14px 28px 28px"}}>
 
-      <AvisoFlujo
-        tono="info"
-        titulo="Cómo funciona este módulo"
-        pasos={[
-          "Crea la obra: con «+ Nueva Obra» si ya está en ejecución, o aprobando una cotización (ahí se crea sola con sus valores).",
-          "Abre la obra y asigna en «Personal» quién trabaja en ella. Si alguien no aparece, créalo primero en Nómina.",
-          "Asigna los turnos desde Horarios: le llegan por WhatsApp y cuentan los días trabajados.",
-          "En «Avance y fotos» registra cada día lo que se hizo, con fotos y comentarios.",
-          "Con eso ya salen el informe de actividades y la certificación, sin volver a escribir nada.",
-        ]}
-      >
-        La obra es el centro de todo: es donde se junta la información que después alimenta los
-        documentos que se le entregan al cliente.
-      </AvisoFlujo>
-
       {showNO&&(
         <div style={{...CD,marginBottom:20,border:"1px solid #cc0000"}}>
           <div style={ST}>Nueva Obra</div>

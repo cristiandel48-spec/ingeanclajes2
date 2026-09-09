@@ -207,26 +207,47 @@ export function AppDataProvider({ children }) {
         const cloud = await loadCloudAppData();
         if (cancel) return;
 
-        // Limpiar automáticamente obras duplicadas generadas por aprobaciones repetidas
+        // Limpiar automáticamente obras duplicadas y corregir saltos de consecutivo
         let obrasList = Array.isArray(cloud.obras) ? cloud.obras : [];
         let cotizacionesList = Array.isArray(cloud.cotizaciones) ? cloud.cotizaciones : [];
+        let otrasEntidades = {
+          cuentas: Array.isArray(cloud.cuentas) ? cloud.cuentas : [],
+          pagos: Array.isArray(cloud.pagos) ? cloud.pagos : [],
+          horarios: Array.isArray(cloud.horarios) ? cloud.horarios : [],
+          certs: Array.isArray(cloud.certs) ? cloud.certs : [],
+          informes: Array.isArray(cloud.informes) ? cloud.informes : [],
+          ordenesCompra: Array.isArray(cloud.ordenesCompra) ? cloud.ordenesCompra : [],
+        };
 
-        const { obrasDepuradas, cotizacionesAjustadas, huboLimpieza, eliminadas } =
-          depurarObrasDuplicadas(obrasList, cotizacionesList);
+        const {
+          obrasDepuradas,
+          cotizacionesAjustadas,
+          otrasEntidadesAjustadas,
+          huboLimpieza,
+          eliminadas,
+          renombradas,
+        } = depurarObrasDuplicadas(obrasList, cotizacionesList, otrasEntidades);
 
         if (huboLimpieza) {
-          console.info(`[Depuración Obras] Clones eliminados: ${eliminadas.join(", ")}`);
+          console.info(`[Depuración Obras] Eliminadas: ${eliminadas.join(", ")}`);
+          if (renombradas?.length) {
+            console.info("[Depuración Obras] Obras recompactadas para consecutivo:", renombradas);
+          }
           obrasList = obrasDepuradas;
           cotizacionesList = cotizacionesAjustadas;
+          if (otrasEntidadesAjustadas) {
+            otrasEntidades = { ...otrasEntidades, ...otrasEntidadesAjustadas };
+          }
           try {
             await saveCloudAppData({
               ...cloud,
               obras: obrasDepuradas,
               cotizaciones: cotizacionesAjustadas,
+              ...otrasEntidadesAjustadas,
             });
-            console.info("[Depuración Obras] Base de datos actualizada sin duplicados.");
+            console.info("[Depuración Obras] Base de datos y consecutivos corregidos en la nube.");
           } catch (e) {
-            console.warn("[Depuración Obras] No se pudo guardar la depuración en la nube:", e);
+            console.warn("[Depuración Obras] No se pudo guardar la corrección en la nube:", e);
           }
         }
 
@@ -240,14 +261,14 @@ export function AppDataProvider({ children }) {
         if (Array.isArray(cloud.obras)) setObras(oEjemplo(obrasList, EJEMPLOS.obras));
         if (Array.isArray(cloud.empleados)) setEmpleados(cloud.empleados.map(normalizarEmpleado));
         if (Array.isArray(cloud.cargos)) setCargos(normalizarCargos(cloud.cargos));
-        if (Array.isArray(cloud.pagos)) setPagos(oEjemplo(cloud.pagos, EJEMPLOS.pagos));
-        if (Array.isArray(cloud.horarios)) setHorarios(cloud.horarios);
-        if (Array.isArray(cloud.certs)) setCerts(oEjemplo(cloud.certs, EJEMPLOS.certs));
-        if (Array.isArray(cloud.informes)) setInformes(oEjemplo(cloud.informes, EJEMPLOS.informes));
+        if (Array.isArray(cloud.pagos)) setPagos(oEjemplo(otrasEntidades.pagos, EJEMPLOS.pagos));
+        if (Array.isArray(cloud.horarios)) setHorarios(otrasEntidades.horarios);
+        if (Array.isArray(cloud.certs)) setCerts(oEjemplo(otrasEntidades.certs, EJEMPLOS.certs));
+        if (Array.isArray(cloud.informes)) setInformes(oEjemplo(otrasEntidades.informes, EJEMPLOS.informes));
         if (Array.isArray(cloud.clientes)) setClientes(oEjemplo(cloud.clientes, EJEMPLOS.clientes));
         if (Array.isArray(cloud.proveedores)) setProveedores(cloud.proveedores);
-        if (Array.isArray(cloud.cuentas)) setCuentas(cloud.cuentas);
-        if (Array.isArray(cloud.ordenesCompra) && cloud.ordenesCompra.length) setOrdenesCompra(cloud.ordenesCompra);
+        if (Array.isArray(cloud.cuentas)) setCuentas(otrasEntidades.cuentas);
+        if (Array.isArray(cloud.ordenesCompra) && cloud.ordenesCompra.length) setOrdenesCompra(otrasEntidades.ordenesCompra);
         if (Array.isArray(cloud.cotizaciones)) setCotizaciones(oEjemplo(cotizacionesList, EJEMPLOS.cotizaciones));
         if (Array.isArray(cloud.contabilidadConfig) && cloud.contabilidadConfig.length) {
           setContabilidadConfig(cloud.contabilidadConfig.map(normalizeContabilidadConfig));

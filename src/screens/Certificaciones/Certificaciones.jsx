@@ -304,7 +304,7 @@ export default function Certificaciones({ctx}){
   return(
     <div style={{padding:"14px 28px 28px"}}>
 
-      {obras.length===0 ? (
+      {obras.length===0 && (
         <AvisoFlujo
           tono="falta"
           titulo="Primero hay que aprobar la obra"
@@ -323,14 +323,6 @@ export default function Certificaciones({ctx}){
           }
         >
           Todavía no hay obras en el sistema, y el certificado se genera a partir de una obra.
-        </AvisoFlujo>
-      ) : (
-        <AvisoFlujo
-          tono="info"
-          titulo="Recuerda: el certificado sale de una obra aprobada"
-        >
-          No hay que escribir nada dos veces. Al aprobar la cotización se crea la obra,
-          y el certificado toma de ahí el cliente, la dirección y el trabajo hecho.
         </AvisoFlujo>
       )}
 

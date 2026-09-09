@@ -535,7 +535,7 @@ export default function Informes({ctx}){
   return(
     <div style={{padding:"14px 28px 28px"}}>
 
-      {obras.length===0 ? (
+      {obras.length===0 && (
         <AvisoFlujo
           tono="falta"
           titulo="Primero hay que crear la obra"
@@ -555,23 +555,6 @@ export default function Informes({ctx}){
           }
         >
           Todavía no hay obras en el sistema, y el informe de actividades se hace sobre una obra.
-        </AvisoFlujo>
-      ) : (
-        <AvisoFlujo
-          tono="info"
-          titulo="Este informe no se escribe a mano: se arma con lo que se alimentó en la obra"
-          accion={
-            <button
-              onClick={()=>irAPantalla("obras",form.obraId?{obraId:form.obraId}:undefined)}
-              style={{...B("#f1f5f9","#475569"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
-            >
-              Abrir la obra
-            </button>
-          }
-        >
-          Las <strong>fotos y los comentarios</strong> salen de la pestaña «Avance y fotos» de la
-          obra; el <strong>personal y los turnos</strong>, de la pestaña «Personal» y de Horarios.
-          Si el informe sale vacío, es porque nadie ha registrado el avance en la obra todavía.
         </AvisoFlujo>
       )}
 

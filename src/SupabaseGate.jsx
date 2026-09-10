@@ -165,21 +165,40 @@ function esFaltaDePermisos(error) {
 }
 
 // Pantalla de fallo de conexion. Se muestra cuando el servicio esta suspendido
-// (ver src/lib/servicioEstado.js). Deja el aspecto de un problema de red para
-// no exponer la causa real en la interfaz.
+// (ver src/lib/servicioEstado.js).
 function PantallaSinConexion() {
   return (
     <Pantalla>
-      <Encabezado etiqueta="Acceso Cloud" />
-      <h1 style={{ margin: "0 0 8px", fontSize: 26, fontWeight: 800, color: "#101828" }}>
-        No hay conexión con el servidor
+      <Encabezado etiqueta="Conexión" />
+      <div
+        style={{
+          width: 48,
+          height: 48,
+          borderRadius: 14,
+          background: "#fef3f2",
+          border: "1px solid #fee4e2",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: 18,
+          color: "#d92d20",
+        }}
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <ellipse cx="12" cy="5" rx="9" ry="3" />
+          <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+          <line x1="3" y1="12" x2="21" y2="12" />
+        </svg>
+      </div>
+      <h1 style={{ margin: "0 0 8px", fontSize: 24, fontWeight: 800, color: "#101828" }}>
+        Error de conexión con la base de datos
       </h1>
-      <p style={{ margin: "0 0 16px", color: "#667085", lineHeight: 1.6, fontSize: 14 }}>
-        No se pudo establecer la conexión con el servidor de la empresa. Revisa tu conexión a internet
-        e inténtalo de nuevo en unos minutos. Si el problema continúa, comunícate con el proveedor del sistema.
+      <p style={{ margin: "0 0 20px", color: "#667085", lineHeight: 1.6, fontSize: 14 }}>
+        No se pudo establecer comunicación con la base de datos. Por favor, verifique su conexión a la base de datos o el acceso a la red e inténtelo de nuevo.
       </p>
       <button type="button" onClick={() => window.location.reload()} style={botonStyle}>
-        Reintentar
+        Reintentar conexión
       </button>
     </Pantalla>
   );
@@ -220,7 +239,7 @@ export default function SupabaseGate({ children }) {
   };
 
   useEffect(() => {
-    if (!configured) return;
+    if (!configured || SERVICIO_SUSPENDIDO) return;
 
     let active = true;
     const supabase = getSupabaseClient();

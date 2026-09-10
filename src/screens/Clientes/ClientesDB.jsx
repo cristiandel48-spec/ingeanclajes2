@@ -101,10 +101,6 @@ export default function ClientesDB({ctx}){
       window.alert("Falta el nombre o razón social del cliente.");
       return;
     }
-    if(!form.nit?.trim()){
-      window.alert("El NIT o Cédula de ciudadanía es obligatorio para registrar al cliente.");
-      return;
-    }
     if(!form.direccion?.trim()){
       window.alert("La dirección es obligatoria para registrar al cliente.");
       return;
@@ -113,7 +109,7 @@ export default function ClientesDB({ctx}){
     // el arreglo del campo, y estos textos salen impresos.
     const payload={
       nombre:normalizarRazonSocial(form.nombre),
-      nit:normalizarDocumento(form.nit),
+      nit:form.nit?.trim() ? normalizarDocumento(form.nit) : "",
       telefono:normalizarTelefono(form.telefono),
       ciudad:normalizarMayusculas(form.ciudad),
       direccion:normalizarMayusculas(form.direccion),
@@ -278,9 +274,9 @@ export default function ClientesDB({ctx}){
             <CampoTexto label="Nombre / razón social" obligatorio={true} valor={form.nombre} onChange={v=>setForm({...form,nombre:v})}
               normalizar={normalizarRazonSocial} placeholder="Nombre del cliente" autoCapitalize="characters"
               ayuda="Sale impreso en cotizaciones y certificados."/>
-            <CampoTexto label="NIT / Cédula" obligatorio={true} valor={form.nit} onChange={v=>setForm({...form,nit:v})}
+            <CampoTexto label="NIT / Cédula" valor={form.nit} onChange={v=>setForm({...form,nit:v})}
               normalizar={normalizarDocumento} placeholder="900.123.456-7" spellCheck={false}
-              ayuda="Obligatorio. Identificación tributaria o personal."/>
+              ayuda="Opcional. Identificación tributaria o personal."/>
             <CampoTexto label="Contacto" valor={form.contacto} onChange={v=>setForm({...form,contacto:v})}
               normalizar={normalizarNombrePropio} placeholder="Persona de contacto" autoCapitalize="words"/>
             <CampoTexto label="Teléfono" valor={form.telefono} onChange={v=>setForm({...form,telefono:v})}

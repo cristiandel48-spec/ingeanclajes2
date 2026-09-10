@@ -314,17 +314,15 @@ export default function Cotizacion({ctx}){
   const validarClienteCotizacion = () => {
     const errs = {};
     if (!cl.nombre?.trim()) errs.nombre = "La empresa o cliente es obligatorio";
-    if (!cl.nit?.trim()) errs.nit = "El NIT o Cédula es obligatorio";
     if (!cl.direccion?.trim()) errs.direccion = "La dirección de la obra es obligatoria";
 
     if (Object.keys(errs).length > 0) {
       setErroresCliente(errs);
       const faltantes = [];
       if (errs.nombre) faltantes.push("• Empresa / Razón Social");
-      if (errs.nit) faltantes.push("• NIT o Cédula de ciudadanía");
       if (errs.direccion) faltantes.push("• Dirección de la obra");
       window.alert(
-        `Para continuar con la cotización debes diligenciar los datos obligatorios del cliente:\n\n${faltantes.join("\n")}\n\nNo se pueden crear clientes ni cotizaciones sin documento de identidad (NIT o Cédula) ni dirección.`
+        `Para continuar con la cotización debes diligenciar los datos obligatorios del cliente:\n\n${faltantes.join("\n")}\n\nNo se pueden crear cotizaciones sin cliente ni dirección de la obra.`
       );
       return false;
     }
@@ -395,13 +393,13 @@ export default function Cotizacion({ctx}){
     };
     setCotizaciones((prevList)=>editCot ? prevList.map((cotizacion)=>cotizacion.id===editCot?{...cotizacion,...data}:cotizacion) : [...prevList,data]);
 
-    // Sincronizar automáticamente en la tabla de Clientes para que quede registrado con su NIT y Dirección
-    if (setClientes && cl.nombre?.trim() && cl.nit?.trim()) {
+    // Sincronizar automáticamente en la tabla de Clientes para que quede registrado con su NIT (si tiene) y Dirección
+    if (setClientes && cl.nombre?.trim()) {
       const nomNorm = normalizarRazonSocial(cl.nombre);
-      const nitNorm = normalizarDocumento(cl.nit);
+      const nitNorm = cl.nit?.trim() ? normalizarDocumento(cl.nit) : "";
       setClientes((prevList) => {
         const index = prevList.findIndex((c) =>
-          (c.nit && normalizarDocumento(c.nit) === nitNorm) ||
+          (nitNorm && c.nit && normalizarDocumento(c.nit) === nitNorm) ||
           normalizarRazonSocial(c.nombre) === nomNorm
         );
         const cliData = {
@@ -419,7 +417,7 @@ export default function Cotizacion({ctx}){
           const actualizado = {
             ...previo,
             ...cliData,
-            nit: cliData.nit || previo.nit,
+            nit: cliData.nit || previo.nit || "",
             direccion: cliData.direccion || previo.direccion,
             telefono: cliData.telefono || previo.telefono,
             ciudad: cliData.ciudad || previo.ciudad,
@@ -1140,7 +1138,6 @@ export default function Cotizacion({ctx}){
           />
           <CampoTexto
             label="NIT / Cédula"
-            obligatorio={true}
             error={erroresCliente.nit}
             valor={cl.nit}
             onChange={(v)=>{
@@ -1150,7 +1147,7 @@ export default function Cotizacion({ctx}){
             normalizar={normalizarDocumento}
             placeholder="900123456-7 o cédula"
             spellCheck={false}
-            ayuda="Obligatorio. Viaja al comprobante contable y a la ficha del cliente."
+            ayuda="Opcional. Viaja a la ficha del cliente y al comprobante contable."
           />
           <CampoTexto label="Contacto" valor={cl.contacto} onChange={v=>setCl({...cl,contacto:v})}
             normalizar={normalizarNombrePropio} autoCapitalize="words"/>

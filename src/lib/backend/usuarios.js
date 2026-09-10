@@ -50,12 +50,41 @@ export async function listarUsuarios() {
 
   const { data, error } = await supabase
     .from("memberships")
-    .select("user_id, role, nombre, email, modulos, activo, created_at")
+    .select("user_id, role, nombre, email, modulos, activo, created_at, ultima_conexion")
     .eq("tenant_id", tenantId)
     .order("created_at", { ascending: true });
 
-  if (error) throw error;
+  if (error) {
+    // Si la columna ultima_conexion todavía no fue migrada en la base, hace fallback seguro
+    if (error.code === "PGRST204" || error.code === "42703" || String(error.message || "").includes("ultima_conexion")) {
+      const fallback = await supabase
+        .from("memberships")
+        .select("user_id, role, nombre, email, modulos, activo, created_at")
+        .eq("tenant_id", tenantId)
+        .order("created_at", { ascending: true });
+      if (fallback.error) throw fallback.error;
+      return fallback.data ?? [];
+    }
+    throw error;
+  }
   return data ?? [];
+}
+
+/**
+ * Registra un latido (heartbeat) de actividad del usuario en app.memberships
+ */
+export async function registrarActividadUsuario() {
+  try {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase.rpc("registrar_actividad");
+    if (error) {
+      // Si la función RPC todavía no está en Supabase, no interrumpe el flujo
+      return null;
+    }
+    return data;
+  } catch {
+    return null;
+  }
 }
 
 // Llama a la funcion de borde con la sesion de quien esta usando la app.

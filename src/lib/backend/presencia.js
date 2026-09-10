@@ -124,10 +124,26 @@ export function suscribirPresencia({
       }
     });
 
+    // Asegurar que la propia sesión activa del usuario actual siempre figure en línea
+    conectados[miUserId] = {
+      userId: miUserId,
+      email: miEmail,
+      nombre: miNombre,
+      dispositivo,
+      onlineAt: new Date().toISOString(),
+      conexiones: 1,
+    };
+    if (miEmail) {
+      conectados[miEmail] = conectados[miUserId];
+    }
+
     if (typeof onPresenciaSync === "function") {
       onPresenciaSync(conectados);
     }
   };
+
+  // Emitir estado inicial con la propia sesión de inmediato
+  emitirPresencia();
 
   canal.on("presence", { event: "sync" }, emitirPresencia);
   canal.on("presence", { event: "join" }, emitirPresencia);

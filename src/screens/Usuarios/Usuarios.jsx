@@ -14,6 +14,8 @@ import {
   actualizarUsuario, cambiarClave, crearUsuario, desactivarUsuario,
   eliminarUsuario, listarUsuarios, reactivarUsuario,
 } from "../../lib/backend/usuarios";
+import { formatearUltimaConexion } from "../../lib/seguridadSesion";
+import { detectarDispositivo } from "../../lib/backend";
 
 const FORM_VACIO = {
   nombre: "", email: "", clave: "", rol: "operator",
@@ -34,11 +36,12 @@ export default function Usuarios({ ctx }) {
 
   const usuariosEnLineaIds = useMemo(() => {
     const vistos = new Set();
+    if (membresia?.user_id) vistos.add(membresia.user_id);
     Object.values(usuariosEnLinea || {}).forEach((u) => {
       if (u?.userId) vistos.add(u.userId);
     });
     return vistos;
-  }, [usuariosEnLinea]);
+  }, [usuariosEnLinea, membresia]);
 
   const recargar = useCallback(async () => {
     setCargando(true);
@@ -224,7 +227,24 @@ Cancelar: se la entregas tú.`);
                 </div>
               </div>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span
+                style={{
+                  background: "rgba(244, 124, 32, 0.12)",
+                  color: "#ea580c",
+                  border: "1px solid rgba(244, 124, 32, 0.3)",
+                  padding: "5px 12px",
+                  borderRadius: 999,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                }}
+                title="Si un usuario permanece más de 5 minutos inactivo o desconectado, el sistema cierra automáticamente su sesión por seguridad."
+              >
+                ⏱️ Límite: 5 min de inactividad
+              </span>
               <span
                 style={{
                   background: "#10b981",
@@ -389,10 +409,14 @@ Cancelar: se la entregas tú.`);
         <div style={{ display: "grid", gap: 12 }}>
           {(esSuperAdminCristian ? usuarios : sinCuentasSoporte(usuarios)).map((u) => {
             const modulos = u.role === "admin" || u.modulos == null ? null : u.modulos;
+            const esMiUsuario = soyYo(u);
             const conexion = esSuperAdminCristian
-              ? (usuariosEnLinea[u.user_id] || (u.email && usuariosEnLinea[u.email.toLowerCase()]))
+              ? (esMiUsuario
+                  ? { dispositivo: detectarDispositivo(), onlineAt: new Date().toISOString() }
+                  : (usuariosEnLinea[u.user_id] || (u.email && usuariosEnLinea[u.email.toLowerCase()])))
               : null;
-            const estaEnLinea = Boolean(conexion);
+            const estaEnLinea = esMiUsuario || Boolean(conexion);
+            const textoUltimaConexion = formatearUltimaConexion(conexion?.onlineAt || u.ultima_conexion);
             return (
               <div key={u.user_id} style={{ ...CD, opacity: u.activo ? 1 : 0.6 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
@@ -401,7 +425,7 @@ Cancelar: se la entregas tú.`);
                       <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-main)" }}>
                         {normalizarNombrePropio(u.nombre) || u.email}
                       </span>
-                      {soyYo(u) && <span style={{ fontSize: 11, fontWeight: 600, color: "var(--accent, #f47c20)" }}> · tú</span>}
+                      {esMiUsuario && <span style={{ fontSize: 11, fontWeight: 600, color: "var(--accent, #f47c20)" }}> · tú</span>}
                       {esSuperAdminCristian && (
                         estaEnLinea ? (
                           <span
@@ -409,7 +433,7 @@ Cancelar: se la entregas tú.`);
                               display: "inline-flex",
                               alignItems: "center",
                               gap: 5,
-                              padding: "2px 8px",
+                              padding: "2px 9px",
                               borderRadius: 999,
                               background: "rgba(34, 197, 94, 0.15)",
                               color: "#16a34a",
@@ -417,10 +441,10 @@ Cancelar: se la entregas tú.`);
                               fontSize: 11,
                               fontWeight: 600,
                             }}
-                            title={`Conectado en tiempo real desde ${conexion.dispositivo || "dispositivo"}`}
+                            title={`Conectado en tiempo real desde ${conexion?.dispositivo || "dispositivo"}`}
                           >
-                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#16a34a" }} />
-                            En línea · {conexion.dispositivo || "Activo"}
+                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#16a34a", boxShadow: "0 0 6px #16a34a" }} />
+                            En línea · {conexion?.dispositivo || "Activo"} {esMiUsuario ? "(esta sesión)" : ""}
                           </span>
                         ) : (
                           <span
@@ -428,20 +452,35 @@ Cancelar: se la entregas tú.`);
                               display: "inline-flex",
                               alignItems: "center",
                               gap: 5,
-                              padding: "2px 8px",
+                              padding: "2px 9px",
                               borderRadius: 999,
                               background: "var(--surface-subtle)",
                               color: "var(--text-muted)",
                               border: "1px solid var(--border)",
                               fontSize: 11,
                             }}
+                            title={`Última hora de conexión registrada: ${textoUltimaConexion}`}
                           >
-                            ⚪ Desconectado
+                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#9ca3af" }} />
+                            Desconectado · Última vez: {textoUltimaConexion}
                           </span>
                         )
                       )}
                     </div>
                     <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 2 }}>{u.email}</div>
+                    {esSuperAdminCristian && (
+                      <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        <span>Última hora de conexión:</span>
+                        <strong style={{ color: estaEnLinea ? "#16a34a" : "var(--text-main)" }}>
+                          {estaEnLinea ? "Conectado ahora" : textoUltimaConexion}
+                        </strong>
+                        {!estaEnLinea && (
+                          <span style={{ fontSize: 10.5, color: "#9ca3af" }}>
+                            (Cierre automático tras 5 min desconectado)
+                          </span>
+                        )}
+                      </div>
+                    )}
                     <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 6 }}>
                       <strong style={{ color: "var(--text-main)" }}>{ROL_LABEL[u.role] || u.role}</strong>
                       {!u.activo && <span style={{ color: "#ef4444" }}> · acceso suspendido</span>}

@@ -17,6 +17,7 @@ export {
   reactivarUsuario,
   eliminarUsuario,
   cambiarClave,
+  registrarActividadUsuario,
 } from "./usuarios";
 export {
   suscribirPresencia,

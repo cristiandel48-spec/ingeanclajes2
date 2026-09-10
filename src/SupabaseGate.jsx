@@ -3,6 +3,7 @@ import * as backend from "./lib/backend";
 import CreditoDesarrollo from "./components/CreditoDesarrollo";
 import logoIngeanclajes from "./assets/logo-ingeanclajes.jpeg";
 import { SERVICIO_SUSPENDIDO } from "./lib/servicioEstado";
+import { obtenerMensajeCierreInactividad } from "./lib/seguridadSesion";
 
 const isSupabaseConfigured = backend.isSupabaseConfigured;
 const getSupabaseClient = backend.getSupabaseClient;
@@ -215,6 +216,14 @@ export default function SupabaseGate({ children }) {
   const [user, setUser] = useState(null);
   // "permisos" = a la cuenta le falta membresia; "tecnico" = algo fallo.
   const [motivoBloqueo, setMotivoBloqueo] = useState("permisos");
+  const [mensajeInactividad, setMensajeInactividad] = useState(null);
+
+  useEffect(() => {
+    const msg = obtenerMensajeCierreInactividad();
+    if (msg) {
+      setMensajeInactividad(msg);
+    }
+  }, []);
 
   const validateAccess = async (currentUser) => {
     if (!currentUser) {
@@ -433,6 +442,27 @@ export default function SupabaseGate({ children }) {
         <p style={{ margin: "0 0 22px", color: "#667085", fontSize: 14.5, lineHeight: 1.55 }}>
           Guarda tus datos automáticamente en la nube.
         </p>
+
+        {mensajeInactividad && (
+          <div
+            style={{
+              marginBottom: 18,
+              padding: "12px 14px",
+              background: "rgba(245, 158, 11, 0.12)",
+              border: "1px solid rgba(245, 158, 11, 0.4)",
+              borderRadius: 10,
+              color: "#b45309",
+              fontSize: 13,
+              lineHeight: 1.45,
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 9,
+            }}
+          >
+            <span style={{ fontSize: 16, lineHeight: 1 }}>⏱️</span>
+            <span>{mensajeInactividad}</span>
+          </div>
+        )}
 
         {error ? <div style={{ marginBottom: 20 }}><Aviso>{error}</Aviso></div> : null}
         {aviso ? <div style={{ marginBottom: 20 }}><Aviso tono="ok">{aviso}</Aviso></div> : null}

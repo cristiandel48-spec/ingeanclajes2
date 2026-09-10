@@ -18,6 +18,7 @@ import {
 } from "../lib/accounting";
 import { EJEMPLOS, hayEjemplos, sinEjemplos } from "../data/ejemplos";
 import { depurarObrasDuplicadas } from "../lib/obrasDuplicadas";
+import { iniciarVigilanteInactividad } from "../lib/seguridadSesion";
 
 const isSupabaseConfigured = backend.isSupabaseConfigured;
 const loadCloudAppData = backend.loadCloudAppData;
@@ -471,6 +472,22 @@ export function AppDataProvider({ children }) {
       }
     };
   }, [membresia]);
+
+  // Vigilante de inactividad de 5 minutos (cierre automático si pasa 5 min inactivo o desconectado)
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+
+    const vigilante = iniciarVigilanteInactividad({
+      onCierrePorInactividad: () => {
+        backend.signOut().catch(() => {});
+        window.location.reload();
+      },
+    });
+
+    return () => {
+      vigilante.destruir();
+    };
+  }, []);
 
   const cerrarSesionRemota = useCallback(async (targetUserId, targetEmail, targetNombre) => {
     if (!presenciaManagerRef.current) {

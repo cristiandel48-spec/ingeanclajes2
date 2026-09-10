@@ -1,5 +1,6 @@
 import { createDataService, resolveTenantId } from "./dataService";
 import { getSupabaseClient, isSupabaseConfigured, reintentandoSiChocanPestanas } from "./supabaseClient";
+import { entityConfig } from "./entityConfig";
 
 const ENTITY_TO_STATE = {
   obras: "obras",
@@ -44,10 +45,12 @@ function serializeForCompare(item) {
 }
 
 function setBaseline(entity, items) {
+  const cfg = entityConfig[entity];
   const map = new Map();
   for (const item of items ?? []) {
     if (item && item.id) {
-      map.set(item.id, serializeForCompare(item));
+      const row = cfg?.toRow ? cfg.toRow(item) : item;
+      map.set(item.id, serializeForCompare(row));
     }
   }
   baselineByEntity[entity] = map;
@@ -148,6 +151,7 @@ export async function saveCloudAppData(appData) {
   for (const [entity, stateKey] of Object.entries(ENTITY_TO_STATE)) {
     if (!Object.prototype.hasOwnProperty.call(appData ?? {}, stateKey)) continue;
 
+    const cfg = entityConfig[entity];
     const items = (appData[stateKey] ?? []).filter((item) => item && item.id);
     const baseline = baselineByEntity[entity] ?? new Map();
 
@@ -155,7 +159,8 @@ export async function saveCloudAppData(appData) {
     const nextMap = new Map();
     const upserts = [];
     for (const item of items) {
-      const serialized = serializeForCompare(item);
+      const row = cfg?.toRow ? cfg.toRow(item) : item;
+      const serialized = serializeForCompare(row);
       nextMap.set(item.id, serialized);
       if (serialized === null || baseline.get(item.id) !== serialized) {
         upserts.push(item);

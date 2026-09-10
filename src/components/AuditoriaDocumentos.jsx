@@ -22,6 +22,54 @@ const fechaHora = (valor) => {
   });
 };
 
+// Obtiene una clave normalizada por minuto ("AAAA-MM-DD HH:mm") para detectar operaciones masivas en lote
+const claveMinuto = (valor) => {
+  if (!valor) return "";
+  const d = new Date(valor);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+// Cuenta cuántos registros comparten el mismo minuto de modificación en una colección
+const contarMinutos = (items, getFecha) => {
+  const mapa = new Map();
+  for (const item of items || []) {
+    const f = getFecha(item);
+    const min = claveMinuto(f);
+    if (min) {
+      mapa.set(min, (mapa.get(min) || 0) + 1);
+    }
+  }
+  return mapa;
+};
+
+// Determina si una modificación corresponde a una edición humana real y no a:
+// 1) La creación inicial del documento (donde modificadoEn ≈ creadoEn, diferencia < 90s).
+// 2) Una sincronización masiva técnica en lote o migración (3 o más registros en el mismo minuto).
+const esEdicionHumanaValida = (creadoEn, modificadoEn, mapaFrecuencia) => {
+  if (!modificadoEn) return false;
+
+  // 1. Si la fecha de creación y la de modificación coinciden o distan menos de 90 segundos,
+  // es la marca de inserción inicial generada por el disparador de base de datos.
+  if (creadoEn) {
+    const tC = new Date(creadoEn).getTime();
+    const tM = new Date(modificadoEn).getTime();
+    if (!Number.isNaN(tC) && !Number.isNaN(tM) && Math.abs(tM - tC) < 90 * 1000) {
+      return false;
+    }
+  }
+
+  // 2. Si 3 o más registros comparten el mismo minuto exacto de modificación,
+  // fue una sincronización técnica en lote o migración de datos, no una edición manual de usuario.
+  const min = claveMinuto(modificadoEn);
+  if (min && (mapaFrecuencia?.get(min) || 0) >= 3) {
+    return false;
+  }
+
+  return true;
+};
+
 const ESTILOS_TIPO = {
   obra: {
     etiqueta: "Ejecución de obra",
@@ -98,13 +146,21 @@ export default function AuditoriaDocumentos({ ctx }) {
     return map;
   }, [usuarios]);
 
+  // Frecuencia de modificación por minuto para depurar marcas de sincronizaciones masivas
+  const freqModObras = useMemo(() => contarMinutos(obras, (o) => o.modificadoEn || o.updated_at), [obras]);
+  const freqModHorarios = useMemo(() => contarMinutos(horarios, (h) => h.modificadoEn || h.updated_at), [horarios]);
+  const freqModCotizaciones = useMemo(() => contarMinutos(cotizaciones, (c) => c.modificadoEn), [cotizaciones]);
+  const freqModInformes = useMemo(() => contarMinutos(informes, (i) => i.modificadoEn), [informes]);
+  const freqModCerts = useMemo(() => contarMinutos(certs, (c) => c.modificadoEn), [certs]);
+
   // 1. Obras (Ejecución de obra)
   const listaObras = useMemo(() => {
     return (obras || []).map((o) => {
       const creadorLimpio = limpiarCreador(o.creadoPorNombre, o.creadoEn || o.created_at, o.creadoPor, mapUsuarios);
       const modificadorLimpio = limpiarModificador(o.modificadoPorNombre, o.modificadoPor, mapUsuarios);
       const fechaCreacion = o.creadoEn || o.created_at || null;
-      const fechaMod = modificadorLimpio ? (o.modificadoEn || o.updated_at || null) : null;
+      const fechaModRaw = o.modificadoEn || o.updated_at || null;
+      const tieneModReal = Boolean(modificadorLimpio) && esEdicionHumanaValida(fechaCreacion, fechaModRaw, freqModObras);
 
       return {
         id: `obra_${o.id}`,
@@ -116,11 +172,11 @@ export default function AuditoriaDocumentos({ ctx }) {
         subreferencia: o.cliente ? `Cliente: ${o.cliente} · Estado: ${o.estado || "En Obra"}` : "",
         creadoPorNombre: creadorLimpio,
         creadoEn: fechaCreacion,
-        modificadoPorNombre: modificadorLimpio,
-        modificadoEn: fechaMod,
+        modificadoPorNombre: tieneModReal ? modificadorLimpio : "",
+        modificadoEn: tieneModReal ? fechaModRaw : null,
       };
     });
-  }, [obras, mapUsuarios]);
+  }, [obras, mapUsuarios, freqModObras]);
 
   // 2. Horarios y turnos de personal
   const listaHorarios = useMemo(() => {
@@ -135,7 +191,8 @@ export default function AuditoriaDocumentos({ ctx }) {
       const creadorLimpio = limpiarCreador(h.creadoPorNombre, h.creadoEn || h.created_at, h.creadoPor, mapUsuarios);
       const modificadorLimpio = limpiarModificador(h.modificadoPorNombre, h.modificadoPor, mapUsuarios);
       const fechaCreacion = h.creadoEn || h.created_at || null;
-      const fechaMod = modificadorLimpio ? (h.modificadoEn || h.updated_at || null) : null;
+      const fechaModRaw = h.modificadoEn || h.updated_at || null;
+      const tieneModReal = Boolean(modificadorLimpio) && esEdicionHumanaValida(fechaCreacion, fechaModRaw, freqModHorarios);
 
       return {
         id: `hor_${h.id}`,
@@ -147,17 +204,20 @@ export default function AuditoriaDocumentos({ ctx }) {
         subreferencia: `${nombreObra}${h.tarea ? ` · Tarea: ${h.tarea}` : ""}`,
         creadoPorNombre: creadorLimpio,
         creadoEn: fechaCreacion,
-        modificadoPorNombre: modificadorLimpio,
-        modificadoEn: fechaMod,
+        modificadoPorNombre: tieneModReal ? modificadorLimpio : "",
+        modificadoEn: tieneModReal ? fechaModRaw : null,
       };
     });
-  }, [horarios, empleados, obras, mapUsuarios]);
+  }, [horarios, empleados, obras, mapUsuarios, freqModHorarios]);
 
   // 3. Cotizaciones
   const listaCotizaciones = useMemo(() => {
     return (cotizaciones || []).map((c) => {
-      const creadorLimpio = limpiarCreador(c.creadoPorNombre, c.creadoEn, c.creadoPor, mapUsuarios);
+      const creadorLimpio = limpiarCreador(c.creadoPorNombre, c.creadoEn || c.fecha, c.creadoPor, mapUsuarios);
       const modificadorLimpio = limpiarModificador(c.modificadoPorNombre, c.modificadoPor, mapUsuarios);
+      const fechaCreacion = c.creadoEn || c.fecha || null;
+      const fechaModRaw = c.modificadoEn || null;
+      const tieneModReal = Boolean(modificadorLimpio) && esEdicionHumanaValida(fechaCreacion, fechaModRaw, freqModCotizaciones);
 
       return {
         id: `cot_${c.id}`,
@@ -168,18 +228,21 @@ export default function AuditoriaDocumentos({ ctx }) {
         referencia: c.cliente || c.obra || "—",
         subreferencia: c.obra && c.cliente ? c.obra : "",
         creadoPorNombre: creadorLimpio,
-        creadoEn: c.creadoEn || null,
-        modificadoPorNombre: modificadorLimpio,
-        modificadoEn: modificadorLimpio ? (c.modificadoEn || null) : null,
+        creadoEn: fechaCreacion,
+        modificadoPorNombre: tieneModReal ? modificadorLimpio : "",
+        modificadoEn: tieneModReal ? fechaModRaw : null,
       };
     });
-  }, [cotizaciones, mapUsuarios]);
+  }, [cotizaciones, mapUsuarios, freqModCotizaciones]);
 
   // 4. Informes de actividades
   const listaInformes = useMemo(() => {
     return (informes || []).map((i) => {
-      const creadorLimpio = limpiarCreador(i.creadoPorNombre, i.creadoEn, i.creadoPor, mapUsuarios);
+      const creadorLimpio = limpiarCreador(i.creadoPorNombre, i.creadoEn || i.fecha, i.creadoPor, mapUsuarios);
       const modificadorLimpio = limpiarModificador(i.modificadoPorNombre, i.modificadoPor, mapUsuarios);
+      const fechaCreacion = i.creadoEn || i.fecha || null;
+      const fechaModRaw = i.modificadoEn || null;
+      const tieneModReal = Boolean(modificadorLimpio) && esEdicionHumanaValida(fechaCreacion, fechaModRaw, freqModInformes);
 
       return {
         id: `inf_${i.id}`,
@@ -190,18 +253,21 @@ export default function AuditoriaDocumentos({ ctx }) {
         referencia: i.proyecto || i.localizacion || i.obraId || "—",
         subreferencia: i.obraId ? `Obra: ${i.obraId}` : "",
         creadoPorNombre: creadorLimpio,
-        creadoEn: i.creadoEn || null,
-        modificadoPorNombre: modificadorLimpio,
-        modificadoEn: modificadorLimpio ? (i.modificadoEn || null) : null,
+        creadoEn: fechaCreacion,
+        modificadoPorNombre: tieneModReal ? modificadorLimpio : "",
+        modificadoEn: tieneModReal ? fechaModRaw : null,
       };
     });
-  }, [informes, mapUsuarios]);
+  }, [informes, mapUsuarios, freqModInformes]);
 
   // 5. Certificaciones
   const listaCertificaciones = useMemo(() => {
     return (certs || []).map((c) => {
-      const creadorLimpio = limpiarCreador(c.creadoPorNombre, c.creadoEn, c.creadoPor, mapUsuarios);
+      const creadorLimpio = limpiarCreador(c.creadoPorNombre, c.creadoEn || c.fecha, c.creadoPor, mapUsuarios);
       const modificadorLimpio = limpiarModificador(c.modificadoPorNombre, c.modificadoPor, mapUsuarios);
+      const fechaCreacion = c.creadoEn || c.fecha || null;
+      const fechaModRaw = c.modificadoEn || null;
+      const tieneModReal = Boolean(modificadorLimpio) && esEdicionHumanaValida(fechaCreacion, fechaModRaw, freqModCerts);
 
       return {
         id: `cert_${c.id}`,
@@ -212,12 +278,12 @@ export default function AuditoriaDocumentos({ ctx }) {
         referencia: c.cliente || c.sistema || "—",
         subreferencia: c.sistema || (c.obraId ? `Obra: ${c.obraId}` : ""),
         creadoPorNombre: creadorLimpio,
-        creadoEn: c.creadoEn || null,
-        modificadoPorNombre: modificadorLimpio,
-        modificadoEn: modificadorLimpio ? (c.modificadoEn || null) : null,
+        creadoEn: fechaCreacion,
+        modificadoPorNombre: tieneModReal ? modificadorLimpio : "",
+        modificadoEn: tieneModReal ? fechaModRaw : null,
       };
     });
-  }, [certs, mapUsuarios]);
+  }, [certs, mapUsuarios, freqModCerts]);
 
 
   const pool = useMemo(() => {

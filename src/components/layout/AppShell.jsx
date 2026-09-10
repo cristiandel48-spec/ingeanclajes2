@@ -95,6 +95,7 @@ export default function AppShell({ scr, onNavigate, children }) {
         scr={scr}
         onNavigate={onNavigate}
         theme={theme}
+        dark={dark}
         isMobile={isMobile}
         mobileOpen={drawerOpen}
         onCloseMobile={() => setMobileOpen(false)}

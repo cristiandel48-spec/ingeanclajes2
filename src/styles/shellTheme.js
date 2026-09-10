@@ -10,13 +10,16 @@ const light = {
   text: "#101828",
   muted: "#667085",
   divider: "#eaecf0",
-  railBg: "#14151a",
-  railText: "#9aa2b1",
-  railTextActive: "#14151a",
-  railActiveBg: "#ffffff",
-  railHoverBg: "rgba(255,255,255,.08)",
-  railDivider: "#262931",
-  railTitle: "#6b7280",
+  railBg: "#ffffff",
+  railBorder: "#eaecf0",
+  railText: "#475467",
+  railTextHover: "#101828",
+  railTextActive: "#E0342A",
+  railActiveBg: "rgba(224, 52, 42, 0.09)",
+  railHoverBg: "#f2f4f7",
+  railDivider: "#eaecf0",
+  railTitle: "#98a2b3",
+  railBrandText: "#101828",
 };
 
 const dark = {
@@ -27,12 +30,15 @@ const dark = {
   muted: "#98a1b0",
   divider: "#2a2d36",
   railBg: "#101116",
+  railBorder: "#24262e",
   railText: "#9aa2b1",
-  railTextActive: "#14151a",
-  railActiveBg: "#ffffff",
-  railHoverBg: "rgba(255,255,255,.08)",
+  railTextHover: "#ffffff",
+  railTextActive: "#ffffff",
+  railActiveBg: "rgba(255,255,255,.08)",
+  railHoverBg: "rgba(255,255,255,.04)",
   railDivider: "#24262e",
   railTitle: "#6b7280",
+  railBrandText: "#ffffff",
 };
 
 export const getTheme = (mode) => (mode === "dark" ? dark : light);

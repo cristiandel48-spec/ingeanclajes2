@@ -14,6 +14,7 @@ export default function Sidebar({
   scr,
   onNavigate,
   theme,
+  dark,
   isMobile,
   mobileOpen,
   onCloseMobile,
@@ -38,6 +39,7 @@ export default function Sidebar({
     zIndex: 60,
     width: isMobile ? 280 : open ? RAIL_WIDTH_EXPANDED : RAIL_WIDTH,
     background: theme.railBg,
+    borderRight: `1px solid ${theme.railBorder || theme.divider}`,
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",
@@ -48,7 +50,7 @@ export default function Sidebar({
     paddingBottom: "env(safe-area-inset-bottom)",
     paddingLeft: "env(safe-area-inset-left)",
     boxShadow: (isMobile && mobileOpen) || (!isMobile && hovered && !pinned)
-      ? "0 0 0 100vmax rgba(9,11,16,.32), 8px 0 28px rgba(9,11,16,.28)"
+      ? (dark ? "0 0 0 100vmax rgba(9,11,16,.32), 8px 0 28px rgba(9,11,16,.28)" : "0 0 0 100vmax rgba(16,24,40,.08), 8px 0 24px rgba(16,24,40,.06)")
       : "none",
   };
 
@@ -93,7 +95,7 @@ export default function Sidebar({
             transition: "opacity .15s ease",
             whiteSpace: "nowrap", lineHeight: 1.25,
           }}>
-            <div style={{ color: "#fff", fontSize: 14, fontWeight: 700, letterSpacing: .2 }}>Ingeanclajes</div>
+            <div style={{ color: theme.railBrandText || theme.text, fontSize: 14, fontWeight: 700, letterSpacing: .2 }}>Ingeanclajes</div>
             <div style={{ color: theme.railTitle, fontSize: 11 }}>Sistema de gestión</div>
           </div>
         </div>
@@ -140,6 +142,18 @@ export default function Sidebar({
                       whiteSpace: "nowrap",
                       transition: "background .12s ease, color .12s ease",
                     }}
+                    onMouseEnter={(e) => {
+                      if (!active) {
+                        e.currentTarget.style.background = theme.railHoverBg;
+                        e.currentTarget.style.color = theme.railTextHover || theme.text;
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!active) {
+                        e.currentTarget.style.background = "transparent";
+                        e.currentTarget.style.color = theme.railText;
+                      }
+                    }}
                     onFocus={(e) => { if (!active) e.currentTarget.style.background = theme.railHoverBg; }}
                     onBlur={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
                   >
@@ -164,7 +178,7 @@ export default function Sidebar({
             en escritorio se muestra bajo el boton de fijar, mas abajo. */}
         {isMobile && (
           <div style={{ padding: "10px 12px 16px", borderTop: `1px solid ${theme.railDivider}`, flexShrink: 0 }}>
-            <CreditoDesarrollo tono="oscuro" />
+            <CreditoDesarrollo tono={dark ? "oscuro" : "claro"} />
           </div>
         )}
 
@@ -179,6 +193,15 @@ export default function Sidebar({
                 padding: "0 12px", borderRadius: 10, border: "none", cursor: "pointer",
                 background: "transparent", color: theme.railText,
                 fontSize: 12.5, fontFamily: "inherit", whiteSpace: "nowrap",
+                transition: "background .12s ease, color .12s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = theme.railHoverBg;
+                e.currentTarget.style.color = theme.railTextHover || theme.text;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.color = theme.railText;
               }}
             >
               <span style={{ flexShrink: 0, display: "flex", width: 20, justifyContent: "center" }}>
@@ -194,7 +217,7 @@ export default function Sidebar({
             </button>
             {/* Solo con el menu desplegado: en el riel angosto se cortaria. */}
             <CreditoDesarrollo
-              tono="oscuro"
+              tono={dark ? "oscuro" : "claro"}
               style={{
                 marginTop: 6,
                 opacity: showLabels ? 1 : 0,

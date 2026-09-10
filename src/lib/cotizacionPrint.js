@@ -19,7 +19,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
   // y los items son metros a secas.
   const showVerticalAppendix = propuestas.some((propuesta)=>hasVerticalLifeLineService(propuesta?.quote))
     || hasVerticalLifeLineService({ alcance: textos?.tituloPortada, requerimientoCliente: textoInicial });
-  const showTechnicalPage = propuestas.some((propuesta)=>propuesta?.quote?.tipoCotizacion === "linea_vida");
+  const showTechnicalPage = propuestas.some((propuesta)=>(propuesta?.quote?.tipoCotizacion || propuesta?.tipoCotizacion || c?.tipoCotizacion) === "linea_vida");
 
   const mapCenter = c?.geoMapView?.center || c?.geoMapView || { lat: 0, lng: 0 };
   const mapZoom = Number(c?.geoMapView?.zoom || 18);
@@ -668,7 +668,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
                 ).join("")
               }</div>`;
             }
-            const tipo = propuestas[0]?.quote?.tipoCotizacion || "linea_vida";
+            const tipo = propuestas[0]?.quote?.tipoCotizacion || propuestas[0]?.tipoCotizacion || c?.tipoCotizacion || "linea_vida";
             if(tipo === "obra_blanca") return `
               <div class="def-list">
                 <div class="def-row">

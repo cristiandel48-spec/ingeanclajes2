@@ -824,6 +824,44 @@ export default function Cotizacion({ctx}){
     setObraCreada(null);
   };
 
+  // Duplicar una cotización existente creando una copia idéntica con nuevo folio
+  const duplicarCotizacion = async (cotId) => {
+    const origen = (await asegurarDetalle("cotizaciones", cotId)) || cotizaciones.find((c) => c.id === cotId);
+    if (!origen) return;
+
+    const nuevoId = siguienteIdUnico(cotizaciones, "COT");
+    const nuevoNumero = getNextCotizacionNumero(cotizaciones);
+    const miUserId = ctx?.membresia?.userId || null;
+    const miNombre = resolverAutorGuardado(ctx?.membresia) || "Camila Sepúlveda";
+
+    const propuestasClonadas = (Array.isArray(origen.propuestas) && origen.propuestas.length > 0
+      ? origen.propuestas
+      : [buildQuoteProposal({ id: createQuoteProposalId(origen.id || "draft"), items: origen.items || [] }, 0)]
+    ).map((p, idx) => ({
+      ...p,
+      id: createQuoteProposalId(nuevoId + "_" + idx),
+    }));
+
+    const copia = {
+      ...origen,
+      id: nuevoId,
+      numero: nuevoNumero,
+      fecha: today(),
+      estado: "Pendiente",
+      obraId: null,
+      propuestas: propuestasClonadas,
+      propuestaActivaId: propuestasClonadas[0]?.id || null,
+      creadoPor: miUserId,
+      creadoPorNombre: miNombre,
+      creadoEn: new Date().toISOString(),
+      modificadoPor: miUserId,
+      modificadoPorNombre: miNombre,
+      modificadoEn: new Date().toISOString(),
+    };
+
+    setCotizaciones((prev) => [copia, ...prev]);
+  };
+
 
   if(tab==="lista"){
     if(previewCot){
@@ -936,6 +974,7 @@ export default function Cotizacion({ctx}){
             },
             aprobar: (c)=>aprobarCotizacion(c.id),
             desaprobar: (c)=>desaprobarCotizacion(c.id),
+            duplicar: (c)=>duplicarCotizacion(c.id),
             pdf: async (c)=>descargarPdf((await asegurarDetalle("cotizaciones", c.id)) || c),
             enviar: async (c)=>setEnviarCot((await asegurarDetalle("cotizaciones", c.id)) || c),
             eliminar: (c)=>{

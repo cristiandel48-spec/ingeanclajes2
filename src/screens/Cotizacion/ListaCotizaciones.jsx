@@ -6,12 +6,12 @@
 //
 // AQUI NO SE VEN CIFRAS, como en el resto de listados: se viene a buscar y
 // abrir documentos, y el dinero se ve al abrirlos o en el informe financiero.
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import ListadoConFiltros, { GrupoFiltro, Resaltable } from "../../components/ListadoConFiltros";
 import { C, boton, enMilis } from "../../components/listadoEstilos";
 import Badge from "../../components/ui/Badge";
 import MenuAccionesFila from "../../components/ui/MenuAccionesFila";
-import { SI } from "../../styles/tokens";
+import { EC, SI } from "../../styles/tokens";
 import { fmt, fmtD } from "../../lib/format";
 import { normalizarMayusculas, normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { seguimientoDe, colorSeguimiento, etiquetaSeguimiento, UMBRAL_POR_VENCER } from "../../lib/seguimientoCotizaciones";
@@ -84,9 +84,71 @@ export default function ListaCotizaciones({ cotizaciones, acciones }) {
   );
 }
 
+function BotonEstadoAprobacion({ cotizacion, acciones }) {
+  const [hover, setHover] = useState(false);
+  const aprobada = cotizacion.estado === "Aprobada" || Boolean(cotizacion.obraId);
+  const estado = cotizacion.estado || "Pendiente";
+  const conf = EC[estado] || (aprobada ? { bg: "#ECFDF3", text: "#027A48" } : { bg: "#FFFAEB", text: "#B54708" });
+
+  const handleClick = (e) => {
+    e.stopPropagation();
+    if (aprobada) {
+      if (typeof acciones?.desaprobar === "function") {
+        acciones.desaprobar(cotizacion);
+      }
+    } else {
+      if (typeof acciones?.aprobar === "function") {
+        acciones.aprobar(cotizacion);
+      }
+    }
+  };
+
+  const bgHover = aprobada ? "#fee2e2" : "#dcfce7";
+  const textHover = aprobada ? "#dc2626" : "#15803d";
+  const borderHover = aprobada ? "#fca5a5" : "#86efac";
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      title={
+        aprobada
+          ? "Cotización aprobada. Haz clic aquí para desaprobarla (devolver a Pendiente)"
+          : "Cotización pendiente. Haz clic aquí para aprobarla y crear la obra automáticamente"
+      }
+      style={{
+        background: hover ? bgHover : conf.bg,
+        color: hover ? textHover : conf.text,
+        border: `1px solid ${hover ? borderHover : (aprobada ? "rgba(2, 122, 72, 0.25)" : "rgba(181, 71, 8, 0.25)")}`,
+        borderRadius: 999,
+        padding: "4px 12px",
+        fontSize: 11.5,
+        fontWeight: 700,
+        whiteSpace: "nowrap",
+        cursor: "pointer",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 5,
+        transition: "all 0.16s ease-in-out",
+        transform: hover ? "scale(1.04)" : "scale(1)",
+        boxShadow: hover ? "0 2px 8px rgba(0,0,0,0.08)" : "none",
+        userSelect: "none",
+      }}
+    >
+      <span style={{ fontSize: 11 }}>
+        {hover
+          ? (aprobada ? "↩ Desaprobar" : "✓ Aprobar")
+          : (aprobada ? "✓ Aprobada" : estado)}
+      </span>
+    </button>
+  );
+}
+
 function Fila({ c, compacta, acciones }) {
   const aprobada = c.estado === "Aprobada";
-  const alPulsar = (fn) => (e) => { e.stopPropagation(); fn(c); };
+  const alPulsar = (fn) => (e) => { e.stopPropagation(); if (typeof fn === "function") fn(c); };
 
   // Solo se marca lo que hay que mirar: una cotizacion dentro del plazo no
   // necesita etiqueta, seria ruido en todas las filas.
@@ -110,6 +172,10 @@ function Fila({ c, compacta, acciones }) {
   );
 
   const menuItems = [
+    { label: "Ver documento", icon: "👁️", onClick: alPulsar(acciones.ver) },
+    { label: "Editar propuesta", icon: "✏️", onClick: alPulsar(acciones.editar) },
+    { label: "Duplicar cotización", icon: "📋", onClick: alPulsar(acciones.duplicar) },
+    { divider: true },
     !aprobada
       ? { label: "Aprobar cotización", icon: "✓", success: true, onClick: alPulsar(acciones.aprobar), title: "Aprueba la cotización y crea la obra" }
       : { label: "Devolver a Pendiente", icon: "↩", onClick: alPulsar(acciones.desaprobar), title: "Devuelve a Pendiente" },
@@ -156,6 +222,45 @@ function Fila({ c, compacta, acciones }) {
       >
         Editar
       </button>
+      <button
+        type="button"
+        title="Duplicar cotización (crea una copia idéntica con nuevo folio)"
+        style={{
+          background: "transparent",
+          color: "var(--text-muted, #475467)",
+          border: "1px solid var(--border, #eaecf0)",
+          borderRadius: 8,
+          padding: "5px 10px",
+          fontSize: 12,
+          fontWeight: 600,
+          cursor: "pointer",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 4,
+        }}
+        onClick={alPulsar(acciones.duplicar)}
+      >
+        <span>📋 Duplicar</span>
+      </button>
+      <button
+        type="button"
+        title="Eliminar cotización permanentemente"
+        style={{
+          background: "rgba(239, 68, 68, 0.06)",
+          color: "#dc2626",
+          border: "1px solid rgba(239, 68, 68, 0.25)",
+          borderRadius: 8,
+          padding: "5px 9px",
+          fontSize: 12,
+          fontWeight: 600,
+          cursor: "pointer",
+          display: "inline-flex",
+          alignItems: "center",
+        }}
+        onClick={alPulsar(acciones.eliminar)}
+      >
+        <span>🗑️</span>
+      </button>
       <MenuAccionesFila items={menuItems} />
     </div>
   );
@@ -200,7 +305,7 @@ function Fila({ c, compacta, acciones }) {
             {fmt(totalEstimado)}
           </div>
         )}
-        <Badge estado={c.estado} />
+        <BotonEstadoAprobacion cotizacion={c} acciones={acciones} />
         <div style={{ display: "flex", gap: 4, flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>{botones}</div>
       </Resaltable>
     );
@@ -223,7 +328,7 @@ function Fila({ c, compacta, acciones }) {
               {fmt(totalEstimado)}
             </div>
           )}
-          <Badge estado={c.estado} />
+          <BotonEstadoAprobacion cotizacion={c} acciones={acciones} />
         </div>
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 8,

@@ -10,6 +10,7 @@ export const EC={
   "Finalizado":{bg:"#F4F3FF",text:"#5925DC"},
   "Vigente":{bg:"#ECFDF3",text:"#027A48"},
   "Vencida":{bg:"#FEE4E2",text:"#B42318"},
+  "Aprobada":{bg:"#ECFDF3",text:"#027A48"},
 };
 export const PAL=["#E0342A","#3538CD","#12B76A","#7A5AF8","#F79009","#EE46BC","#06AED4","#667085"];
 export const TC={LVH:"#3538CD",LVV:"#12B76A",CON:"#F79009",ESC:"#E0342A"};

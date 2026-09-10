@@ -622,10 +622,10 @@ export default function Nomina({ctx}){
   );
 
   const renderNominaMetricCard=({label,value,color="#142840",hint="",span=1})=>(
-    <div style={{background:"#fff",borderRadius:8,padding:"10px 12px",gridColumn:span>1?("span " + span):undefined}}>
-      <div style={{fontSize:10,color:"#64748b"}}>{label}</div>
-      <div style={{fontWeight:700,color,fontSize:span>1?16:15,marginTop:3}}>{value}</div>
-      {hint ? <div style={{fontSize:10,color:"#94a3b8",marginTop:4,lineHeight:1.4}}>{hint}</div> : null}
+    <div style={{background:"var(--surface, #fff)",borderRadius:8,padding:"10px 12px",gridColumn:span>1?("span " + span):undefined,border:"1px solid var(--border, #e2e8f0)"}}>
+      <div style={{fontSize:10,color:"var(--text-muted, #64748b)"}}>{label}</div>
+      <div style={{fontWeight:700,color:color==="#142840"?"var(--text-main, #142840)":color,fontSize:span>1?16:15,marginTop:3}}>{value}</div>
+      {hint ? <div style={{fontSize:10,color:"var(--text-subtle, #94a3b8)",marginTop:4,lineHeight:1.4}}>{hint}</div> : null}
     </div>
   );
 
@@ -633,20 +633,20 @@ export default function Nomina({ctx}){
     empleado,
     index=0,
     badgeLabel="Empleado",
-    badgeBg="#eff6ff",
-    badgeColor="#1d4ed8",
+    badgeBg="rgba(37, 99, 235, 0.15)",
+    badgeColor="#60a5fa",
     subtitle="",
     principal=null,
     metrics=[],
   })=>{
     if(!empleado) return null;
     return(
-      <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:"14px 16px"}}>
+      <div style={{background:"var(--surface-subtle, #f8fafc)",border:"1px solid var(--border, #e2e8f0)",borderRadius:12,padding:"14px 16px"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
           <Av init={empleado.avatar} color={PAL[index%PAL.length]} size={34}/>
           <div style={{flex:1}}>
-            <div style={{fontWeight:700,color:"#0f172a"}}>{empleado.nombre}</div>
-            <div style={{fontSize:11,color:"#64748b"}}>{subtitle}</div>
+            <div style={{fontWeight:700,color:"var(--text-main, #0f172a)"}}>{empleado.nombre}</div>
+            <div style={{fontSize:11,color:"var(--text-muted, #64748b)"}}>{subtitle}</div>
           </div>
           <span style={{background:badgeBg,color:badgeColor,borderRadius:20,padding:"3px 12px",fontSize:10,fontWeight:700}}>{badgeLabel}</span>
         </div>
@@ -674,7 +674,7 @@ export default function Nomina({ctx}){
           bancarios</strong>; al cambiar el salario la ficha queda confirmada sola.
           <div style={{marginTop:7,display:"flex",flexWrap:"wrap",gap:8}}>
             {pendientesRevision.map((e)=>(
-              <span key={e.id} style={{background:"#fff",border:"1px solid #FDE3C4",borderRadius:6,padding:"4px 4px 4px 9px",fontSize:11.5,color:"#B54708",display:"inline-flex",alignItems:"center",gap:7}}>
+              <span key={e.id} style={{background:"var(--surface, #fff)",border:"1px solid rgba(245, 158, 11, 0.4)",borderRadius:6,padding:"4px 4px 4px 9px",fontSize:11.5,color:"#f59e0b",display:"inline-flex",alignItems:"center",gap:7}}>
                 {e.nombre} · {e.cargo || "sin cargo"}
                 {e.altaCreadoPor ? ` · por ${e.altaCreadoPor}` : ""}
                 {/* Si de verdad gana el minimo no habra cambio de salario que
@@ -682,7 +682,7 @@ export default function Nomina({ctx}){
                 <button
                   onClick={()=>confirmarAlta(e.id)}
                   title="Ya la revisé, el salario queda como está"
-                  style={{background:"#FDF6E9",border:"1px solid #E3C287",color:"#8A5200",borderRadius:4,padding:"1px 7px",fontSize:11,cursor:"pointer"}}
+                  style={{background:"rgba(245, 158, 11, 0.15)",border:"1px solid rgba(245, 158, 11, 0.3)",color:"#f59e0b",borderRadius:4,padding:"1px 7px",fontSize:11,cursor:"pointer"}}
                 >
                   ✓ revisada
                 </button>
@@ -708,16 +708,16 @@ export default function Nomina({ctx}){
       {modoEdicionNomina && (
         <div style={{
           display:"flex",alignItems:"center",justifyContent:"space-between",
-          background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,
+          background:"rgba(245, 158, 11, 0.12)",border:"1px solid rgba(245, 158, 11, 0.3)",borderRadius:10,
           padding:"11px 16px",marginBottom:14,boxShadow:"0 1px 3px rgba(0,0,0,0.05)"
         }}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <span style={{fontSize:18}}>✏️</span>
             <div>
-              <div style={{fontSize:12.5,fontWeight:700,color:"#92400e"}}>
+              <div style={{fontSize:12.5,fontWeight:700,color:"#fbbf24"}}>
                 Modo corrección de nómina activo: {periodoNomina.label}
               </div>
-              <div style={{fontSize:11.5,color:"#78350f",marginTop:2}}>
+              <div style={{fontSize:11.5,color:"var(--text-muted, #78350f)",marginTop:2}}>
                 Puedes ajustar horas extras, comisiones, incapacidades o deducciones libremente. Al finalizar, guarda los cambios.
               </div>
             </div>
@@ -727,7 +727,7 @@ export default function Nomina({ctx}){
               type="button"
               onClick={()=>setModoEdicionNomina(false)}
               style={{
-                background:"#fff",color:"#475569",border:"1px solid #cbd5e1",borderRadius:7,
+                background:"var(--surface, #fff)",color:"var(--text-main, #475569)",border:"1px solid var(--border, #cbd5e1)",borderRadius:7,
                 padding:"6px 12px",fontSize:11.5,fontWeight:600,cursor:"pointer"
               }}
             >
@@ -749,8 +749,8 @@ export default function Nomina({ctx}){
 
       {tab==="nuevo"&&(
         <div style={{display:"grid",gap:16,maxWidth:980}}>
-          <div style={{background:"#ffffff",border:"1px solid #e2e8f0",borderRadius:12,padding:20,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
-            <div style={{fontSize:11,fontWeight:700,color:"#142840",textTransform:"uppercase",letterSpacing:1,marginBottom:16,borderBottom:"1px solid #e2e8f0",paddingBottom:10}}>
+          <div style={{background:"var(--surface, #ffffff)",border:"1px solid var(--border, #e2e8f0)",borderRadius:12,padding:20,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+            <div style={{fontSize:11,fontWeight:700,color:"var(--text-main, #142840)",textTransform:"uppercase",letterSpacing:1,marginBottom:16,borderBottom:"1px solid var(--border, #e2e8f0)",paddingBottom:10}}>
               Catálogo de cargos
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1.1fr 1.4fr auto",gap:12,alignItems:"end"}}>
@@ -760,14 +760,14 @@ export default function Nomina({ctx}){
             </div>
             <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:14}}>
               {cargosDisponibles.map((cargo)=>(
-                <span key={cargo} style={{background:nf.cargo===cargo?"#fef3c7":"#f1f5f9",color:nf.cargo===cargo?"#92400e":"#334155",border:"1px solid " + (nf.cargo===cargo?"#f59e0b":"#cbd5e1"),borderRadius:999,padding:"6px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}} onClick={()=>setNf({...nf,cargo:cargo})}>
+                <span key={cargo} style={{background:nf.cargo===cargo?"rgba(245, 158, 11, 0.2)":"var(--surface-subtle, #f1f5f9)",color:nf.cargo===cargo?"#fbbf24":"var(--text-main, #334155)",border:"1px solid " + (nf.cargo===cargo?"rgba(245, 158, 11, 0.4)":"var(--border, #cbd5e1)"),borderRadius:999,padding:"6px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}} onClick={()=>setNf({...nf,cargo:cargo})}>
                   {cargo}
                 </span>
               ))}
             </div>
           </div>
 
-          <div style={{background:"#ffffff",border:"1px solid #e2e8f0",borderRadius:12,padding:24,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
+          <div style={{background:"var(--surface, #ffffff)",border:"1px solid var(--border, #e2e8f0)",borderRadius:12,padding:24,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
             <div style={{fontSize:11,fontWeight:700,color:"#cc0000",textTransform:"uppercase",letterSpacing:1,marginBottom:18,borderBottom:"2px solid #cc000022",paddingBottom:10}}>
               👤 Datos del Nuevo Empleado
             </div>
@@ -827,19 +827,19 @@ export default function Nomina({ctx}){
                 </select>
               </div>
               <div><LBL>Fecha de ingreso</LBL><input type="date" value={nf.fechaIngreso||""} onChange={e=>setNf({...nf,fechaIngreso:e.target.value})} style={SI}/></div>
-              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px",fontSize:12,color:"#475569",display:"flex",alignItems:"center",gap:8}}>
+              <div style={{background:"var(--surface-subtle, #f8fafc)",borderRadius:8,padding:"10px 12px",fontSize:12,color:"var(--text-main, #475569)",display:"flex",alignItems:"center",gap:8}}>
                 <span style={{fontSize:18}}>💵</span>
                 <div>
-                  <div style={{fontSize:10,color:"#94a3b8"}}>Salario ingresado</div>
+                  <div style={{fontSize:10,color:"var(--text-subtle, #94a3b8)"}}>Salario ingresado</div>
                   <div style={{fontWeight:700,color:"#4ade80",fontSize:14}}>{fmt(nf.salario)}</div>
-                  <div style={{fontSize:10,color:"#64748b",marginTop:2}}>
+                  <div style={{fontSize:10,color:"var(--text-muted, #64748b)",marginTop:2}}>
                     {nf.salario<=NOMINA_CO_2026.topeAuxilio ? "Aplica auxilio 2026: " + (fmt(NOMINA_CO_2026.auxilioTransporte)) : "No aplica auxilio de transporte"}
                   </div>
                 </div>
               </div>
             </div>
-            <div style={{background:"#f8fafc",borderRadius:10,padding:16,marginBottom:16,border:"1px solid #e2e8f0"}}>
-              <div style={{fontSize:11,fontWeight:700,color:"#475569",textTransform:"uppercase",marginBottom:12,letterSpacing:0.5}}>🏦 Datos Bancarios</div>
+            <div style={{background:"var(--surface-subtle, #f8fafc)",borderRadius:10,padding:16,marginBottom:16,border:"1px solid var(--border, #e2e8f0)"}}>
+              <div style={{fontSize:11,fontWeight:700,color:"var(--text-main, #475569)",textTransform:"uppercase",marginBottom:12,letterSpacing:0.5}}>🏦 Datos Bancarios</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
                 <div><LBL>Banco</LBL>
                   <select value={nf.banco} onChange={e=>setNf({...nf,banco:e.target.value})} style={SI}>
@@ -864,7 +864,7 @@ export default function Nomina({ctx}){
             </div>
             <div style={{display:"flex",gap:10}}>
               <button onClick={guardarNuevoEmp} style={B("#cc0000")}>✅ Guardar Empleado</button>
-              <button onClick={()=>setTab("lista")} style={B("#f1f5f9","#475569")}>Cancelar</button>
+              <button onClick={()=>setTab("lista")} style={{...B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)"),border:"1px solid var(--border, #cbd5e1)"}}>Cancelar</button>
             </div>
           </div>
         </div>
@@ -877,13 +877,13 @@ export default function Nomina({ctx}){
               {empleadosBase.map((e,idx)=>{
                 const resumen=calcularResumenNominaEmpleado(e, periodoNomina);
                 return(
-                <div key={e.id} style={{background:"#f1f5f9",borderRadius:10,padding:"14px 16px",border:selId===e.id?"1px solid #cc0000":"1px solid #e2e8f0",cursor:"pointer"}} onClick={()=>setSelId(selId===e.id?null:e.id)}>
+                <div key={e.id} style={{background:"var(--surface-subtle, #f1f5f9)",borderRadius:10,padding:"14px 16px",border:selId===e.id?"1px solid #cc0000":"1px solid var(--border, #e2e8f0)",cursor:"pointer"}} onClick={()=>setSelId(selId===e.id?null:e.id)}>
                   <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
                     <Av init={e.avatar} color={PAL[idx%PAL.length]} size={38}/>
-                    <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600}}>{e.nombre}</div><div style={{fontSize:11,color:"#475569"}}>{e.cargo}</div></div>
+                    <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:"var(--text-main, #0f172a)"}}>{e.nombre}</div><div style={{fontSize:11,color:"var(--text-muted, #475569)"}}>{e.cargo}</div></div>
                     <div style={{textAlign:"right"}}><div style={{fontSize:13,fontWeight:700,color:"#4ade80"}}>{fmt(e.salario)}</div></div>
                   </div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,fontSize:11,color:"#64748b",marginBottom:6}}>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,fontSize:11,color:"var(--text-muted, #64748b)",marginBottom:6}}>
                     <div>🪪 {e.cedula||"Sin documento"}</div>
                     <div>📱 {e.tel||"Sin teléfono"}</div>
                     <div style={{gridColumn:"span 2",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>✉️ {e.email||"Sin email"}</div>
@@ -892,21 +892,21 @@ export default function Nomina({ctx}){
                     const pf=calcularParafiscales(e, e.fechaSalida||periodoNomina.endIso);
                     const vacacionesPendientes = calcularVacacionesPendientes(e, e.fechaSalida||periodoNomina.endIso);
                     return pf.diasTrabajados>0 ? (
-                      <div style={{background:"#f0fdf4",borderRadius:6,padding:"7px 10px",fontSize:11,marginBottom:6,display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
-                        <div><span style={{color:"#64748b"}}>📅 Ingreso: </span><strong>{e.fechaIngreso||"N/A"}</strong></div>
-                        <div><span style={{color:"#64748b"}}>Contrato: </span><strong>{TIPOS_CONTRATO_LABELS[e.tipoContrato]||e.tipoContrato||"Sin definir"}</strong></div>
-                        <div><span style={{color:"#64748b"}}>✈️ Vacac.: </span><strong style={{color:"#166534"}}>{vacacionesPendientes.dias}d</strong></div>
-                        <div><span style={{color:"#64748b"}}>Días corte: </span><strong style={{color:"#2563eb"}}>{resumen.diasNomina}</strong></div>
+                      <div style={{background:"rgba(22, 163, 74, 0.12)",border:"1px solid rgba(22, 163, 74, 0.25)",borderRadius:6,padding:"7px 10px",fontSize:11,marginBottom:6,display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
+                        <div><span style={{color:"var(--text-muted, #64748b)"}}>📅 Ingreso: </span><strong>{e.fechaIngreso||"N/A"}</strong></div>
+                        <div><span style={{color:"var(--text-muted, #64748b)"}}>Contrato: </span><strong>{TIPOS_CONTRATO_LABELS[e.tipoContrato]||e.tipoContrato||"Sin definir"}</strong></div>
+                        <div><span style={{color:"var(--text-muted, #64748b)"}}>✈️ Vacac.: </span><strong style={{color:"#4ade80"}}>{vacacionesPendientes.dias}d</strong></div>
+                        <div><span style={{color:"var(--text-muted, #64748b)"}}>Días corte: </span><strong style={{color:"#60a5fa"}}>{resumen.diasNomina}</strong></div>
                       </div>
                     ) : null;
                   })()}
-                  <div style={{background:"#f8fafc",borderRadius:6,padding:"7px 10px",fontSize:11,marginBottom:6}}>
-                    <div style={{color:"#64748b",marginBottom:2}}>🏦 Datos bancarios</div>
-                    <div style={{color:"#1a1a2e"}}>{e.banco||"-"} · {e.tipoCuenta||"-"}</div>
-                    <div style={{color:"#475569",fontFamily:"monospace"}}>{e.numeroCuenta||"-"}</div>
+                  <div style={{background:"var(--surface, #f8fafc)",borderRadius:6,padding:"7px 10px",marginBottom:6,border:"1px solid var(--border, #e2e8f0)"}}>
+                    <div style={{color:"var(--text-muted, #64748b)",marginBottom:2}}>🏦 Datos bancarios</div>
+                    <div style={{color:"var(--text-main, #1a1a2e)"}}>{e.banco||"-"} · {e.tipoCuenta||"-"}</div>
+                    <div style={{color:"var(--text-muted, #475569)",fontFamily:"monospace"}}>{e.numeroCuenta||"-"}</div>
                   </div>
                   {selId===e.id&&(
-                    <div style={{marginTop:10,borderTop:"1px solid rgba(255,255,255,0.2)",paddingTop:10}} onClick={(event)=>event.stopPropagation()}>
+                    <div style={{marginTop:10,borderTop:"1px solid var(--border, #e2e8f0)",paddingTop:10}} onClick={(event)=>event.stopPropagation()}>
                       <div style={{fontSize:10,color:"#cc0000",fontWeight:600,textTransform:"uppercase",marginBottom:8}}>Datos del empleado</div>
                       {editEmpId!==e.id&&<button onClick={()=>{setEditEmpId(e.id);setEditEmpData({...e});}} style={{...B("#1a3050","#60b4ff"),fontSize:11,width:"100%",justifyContent:"center",marginBottom:10}}>✏️ Editar datos del empleado</button>}
                       {editEmpId===e.id&&editEmpData&&(
@@ -946,22 +946,22 @@ export default function Nomina({ctx}){
                       )}
                       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:10}}>
                         {[["Días laborados",resumen.diasNomina,"#2563eb"],["Días incapacidad",resumen.diasIncapacidad,"#dc2626"],["Salario corte",fmt(resumen.salario),"#4ade80"],["Incapacidad",fmt(resumen.incapacidadTotal),"#166534"],["Aux. transp.",fmt(resumen.auxilioTransporte),"#60b4ff"],["H. extras",fmt(resumen.horasExtras),"#f5c842"],["Comisiones",fmt(resumen.comisiones),"#c084fc"],["Salud 4%",fmt(resumen.salud),"#ef4444"],["Pensión 4%",fmt(resumen.pension),"#fb7185"],["Neto",fmt(resumen.neto),"#f47c20"]].map(([k,v,c])=>(
-                          <div key={k} style={{background:"#ffffff",borderRadius:6,padding:"8px 10px"}}><div style={{fontSize:9,color:"#64748b",marginBottom:2}}>{k}</div><div style={{fontSize:11,fontWeight:700,color:c}}>{v}</div></div>
+                          <div key={k} style={{background:"var(--surface, #ffffff)",border:"1px solid var(--border, #e2e8f0)",borderRadius:6,padding:"8px 10px"}}><div style={{fontSize:9,color:"var(--text-muted, #64748b)",marginBottom:2}}>{k}</div><div style={{fontSize:11,fontWeight:700,color:c}}>{v}</div></div>
                         ))}
                       </div>
-                      <div style={{background:"#ffffff",borderRadius:8,padding:"10px 12px",marginBottom:10,border:"1px solid #e2e8f0"}}>
-                        <div style={{fontSize:10,color:"#142840",fontWeight:700,textTransform:"uppercase",marginBottom:8}}>Deducciones personalizadas</div>
+                      <div style={{background:"var(--surface, #ffffff)",borderRadius:8,padding:"10px 12px",marginBottom:10,border:"1px solid var(--border, #e2e8f0)"}}>
+                        <div style={{fontSize:10,color:"var(--text-main, #142840)",fontWeight:700,textTransform:"uppercase",marginBottom:8}}>Deducciones personalizadas</div>
                         {(e.deduccionesPersonalizadas||[]).length>0 ? (
                           <div style={{display:"grid",gap:6,marginBottom:10}}>
                             {(e.deduccionesPersonalizadas||[]).map((deduccion)=>(
-                              <div key={deduccion.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#f8fafc",borderRadius:6,padding:"8px 10px",fontSize:11}}>
-                                <div><div style={{fontWeight:600,color:"#0f172a"}}>{deduccion.nombre}</div><div style={{color:"#64748b"}}>{fmt(deduccion.valor)} mensual</div></div>
+                              <div key={deduccion.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"var(--surface-subtle, #f8fafc)",border:"1px solid var(--border, #e2e8f0)",borderRadius:6,padding:"8px 10px",fontSize:11}}>
+                                <div><div style={{fontWeight:600,color:"var(--text-main, #0f172a)"}}>{deduccion.nombre}</div><div style={{color:"var(--text-muted, #64748b)"}}>{fmt(deduccion.valor)} mensual</div></div>
                                 <button type="button" onClick={()=>quitarDeduccion(e.id,deduccion.id)} style={{...B("#fee2e2","#b91c1c"),border:"1px solid #fecaca",padding:"6px 10px",fontSize:11}}>Quitar</button>
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <div style={{fontSize:11,color:"#64748b",marginBottom:10}}>Sin deducciones adicionales.</div>
+                          <div style={{fontSize:11,color:"var(--text-muted, #64748b)",marginBottom:10}}>Sin deducciones adicionales.</div>
                         )}
                         <div style={{display:"grid",gridTemplateColumns:"1.3fr 1fr auto",gap:8}}>
                           <div><LBL>Concepto</LBL><input value={dedForm.nombre} onChange={(event)=>setDedForm({...dedForm,nombre:event.target.value})} placeholder="Ej: Natillera" style={{...SI,fontSize:11}}/></div>
@@ -969,7 +969,7 @@ export default function Nomina({ctx}){
                           <button type="button" onClick={agregarDeduccion} style={{...B("#142840"),justifyContent:"center",alignSelf:"end"}}>Agregar</button>
                         </div>
                       </div>
-                      <button onClick={()=>{setShowHE(e.id);setTab("he");}} style={{...B("#142840","#f5c842"),border:"1px solid #7a6610",fontSize:11,width:"100%",justifyContent:"center"}}>➕ Agregar horas extras / comisiones</button>
+                      <button onClick={()=>{setShowHE(e.id);setTab("he");}} style={{...B("var(--surface-subtle, #142840)","#f5c842"),border:"1px solid var(--border, #7a6610)",fontSize:11,width:"100%",justifyContent:"center"}}>➕ Agregar horas extras / comisiones</button>
                     </div>
                   )}
                 </div>
@@ -1042,54 +1042,54 @@ export default function Nomina({ctx}){
 
                 <div style={{height:14}}/>
 
-                <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:12,padding:"14px 16px",marginBottom:16}}>
+                <div style={{background:"rgba(22, 163, 74, 0.12)",border:"1px solid rgba(22, 163, 74, 0.25)",borderRadius:12,padding:"14px 16px",marginBottom:16}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap",marginBottom:10}}>
                     <div>
-                      <div style={{fontSize:11,fontWeight:700,color:"#166534",textTransform:"uppercase",letterSpacing:0.7}}>Provisión prestacional</div>
-                      <div style={{fontSize:12,color:"#475569",marginTop:4}}>
+                      <div style={{fontSize:11,fontWeight:700,color:"#4ade80",textTransform:"uppercase",letterSpacing:0.7}}>Provisión prestacional</div>
+                      <div style={{fontSize:12,color:"var(--text-muted, #475569)",marginTop:4}}>
                         La provisión contable viaja con la cédula del empleado como tercero y luego podrás pagarla o consignarla desde este mismo módulo.
                       </div>
                     </div>
                     <button onClick={guardarPrestacionSocial} style={{...B("#166534","#d1fae5"),fontSize:11,justifyContent:"center"}}>Provisionar prestación</button>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
-                    <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Tipo</div><div style={{fontWeight:700,color:"#0f172a",marginTop:4}}>{PRESTACION_TIPOS_LABELS[prestacionTipo]}</div></div>
-                    <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Periodo</div><div style={{fontWeight:700,color:"#0f172a",marginTop:4}}>{prestacionPreview?.periodoLabel || "—"}</div></div>
-                    <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Días trabajados</div><div style={{fontWeight:700,color:"#0f172a",marginTop:4}}>{prestacionPreview?.diasLiquidados || 0}</div></div>
-                    <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Valor provisionado</div><div style={{fontWeight:700,color:(prestacionPreview?.valor || 0)>0?"#166534":"#94a3b8",marginTop:4}}>{fmt(prestacionPreview?.valor || 0)}</div></div>
+                    <div style={{background:"var(--surface, #fff)",borderRadius:8,padding:"10px 12px",border:"1px solid var(--border, #e2e8f0)"}}><div style={{fontSize:10,color:"var(--text-muted, #64748b)"}}>Tipo</div><div style={{fontWeight:700,color:"var(--text-main, #0f172a)",marginTop:4}}>{PRESTACION_TIPOS_LABELS[prestacionTipo]}</div></div>
+                    <div style={{background:"var(--surface, #fff)",borderRadius:8,padding:"10px 12px",border:"1px solid var(--border, #e2e8f0)"}}><div style={{fontSize:10,color:"var(--text-muted, #64748b)"}}>Periodo</div><div style={{fontWeight:700,color:"var(--text-main, #0f172a)",marginTop:4}}>{prestacionPreview?.periodoLabel || "—"}</div></div>
+                    <div style={{background:"var(--surface, #fff)",borderRadius:8,padding:"10px 12px",border:"1px solid var(--border, #e2e8f0)"}}><div style={{fontSize:10,color:"var(--text-muted, #64748b)"}}>Días trabajados</div><div style={{fontWeight:700,color:"var(--text-main, #0f172a)",marginTop:4}}>{prestacionPreview?.diasLiquidados || 0}</div></div>
+                    <div style={{background:"var(--surface, #fff)",borderRadius:8,padding:"10px 12px",border:"1px solid var(--border, #e2e8f0)"}}><div style={{fontSize:10,color:"var(--text-muted, #64748b)"}}>Valor provisionado</div><div style={{fontWeight:700,color:(prestacionPreview?.valor || 0)>0?"#4ade80":"var(--text-muted, #94a3b8)",marginTop:4}}>{fmt(prestacionPreview?.valor || 0)}</div></div>
                   </div>
                 </div>
 
-                <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:12,padding:"14px 16px"}}>
+                <div style={{background:"var(--surface, #fff)",border:"1px solid var(--border, #e2e8f0)",borderRadius:12,padding:"14px 16px"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:12,flexWrap:"wrap"}}>
                     <div>
-                      <div style={{fontSize:11,fontWeight:700,color:"#142840",textTransform:"uppercase",letterSpacing:0.7}}>Historial prestacional</div>
-                      <div style={{fontSize:12,color:"#64748b",marginTop:4}}>Consulta, paga o consigna prestaciones del empleado seleccionado.</div>
+                      <div style={{fontSize:11,fontWeight:700,color:"var(--text-main, #142840)",textTransform:"uppercase",letterSpacing:0.7}}>Historial prestacional</div>
+                      <div style={{fontSize:12,color:"var(--text-muted, #64748b)",marginTop:4}}>Consulta, paga o consigna prestaciones del empleado seleccionado.</div>
                     </div>
-                    <div style={{fontSize:12,color:"#64748b"}}>{historialPrestacionesEmpleado.length} registro(s)</div>
+                    <div style={{fontSize:12,color:"var(--text-muted, #64748b)"}}>{historialPrestacionesEmpleado.length} registro(s)</div>
                   </div>
                   <div style={{overflowX:"auto"}}>
                     <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:920}}>
                       <thead>
-                        <tr style={{background:"#f8fafc"}}>
-                          {["Concepto","Periodo","Valor","Causación","Pago","Estado","Acciones"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:label==="Valor"?"right":"left",color:"#64748b",fontWeight:600,fontSize:11}}>{label}</th>)}
+                        <tr style={{background:"var(--surface-subtle, #f8fafc)"}}>
+                          {["Concepto","Periodo","Valor","Causación","Pago","Estado","Acciones"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:label==="Valor"?"right":"left",color:"var(--text-muted, #64748b)",fontWeight:600,fontSize:11}}>{label}</th>)}
                         </tr>
                       </thead>
                       <tbody>
                         {historialPrestacionesEmpleado.length===0 ? (
-                          <tr><td colSpan={7} style={{padding:18,textAlign:"center",color:"#94a3b8"}}>Aún no hay prestaciones registradas para este empleado.</td></tr>
+                          <tr><td colSpan={7} style={{padding:18,textAlign:"center",color:"var(--text-muted, #94a3b8)"}}>Aún no hay prestaciones registradas para este empleado.</td></tr>
                         ) : historialPrestacionesEmpleado.map((prestacion)=>(
-                          <tr key={prestacion.id} style={{borderBottom:"1px solid #e2e8f0"}}>
+                          <tr key={prestacion.id} style={{borderBottom:"1px solid var(--border, #e2e8f0)"}}>
                             <td style={{padding:"9px 10px"}}>
-                              <div style={{fontWeight:700,color:"#0f172a"}}>{PRESTACION_TIPOS_LABELS[prestacion.tipo]}</div>
-                              <div style={{fontSize:10,color:"#64748b",marginTop:3}}>{prestacion.observacion || "Registro contable por tercero"}</div>
+                              <div style={{fontWeight:700,color:"var(--text-main, #0f172a)"}}>{PRESTACION_TIPOS_LABELS[prestacion.tipo]}</div>
+                              <div style={{fontSize:10,color:"var(--text-muted, #64748b)",marginTop:3}}>{prestacion.observacion || "Registro contable por tercero"}</div>
                             </td>
-                            <td style={{padding:"9px 10px"}}>{prestacion.periodoLabel || "—"}</td>
-                            <td style={{padding:"9px 10px",textAlign:"right",fontWeight:700,color:"#166534"}}>{fmt(prestacion.valor || 0)}</td>
-                            <td style={{padding:"9px 10px"}}>{prestacion.fechaCausacion ? fmtD(prestacion.fechaCausacion) : "—"}</td>
-                            <td style={{padding:"9px 10px"}}>{prestacion.fechaPago ? fmtD(prestacion.fechaPago) : "Pendiente"}</td>
+                            <td style={{padding:"9px 10px",color:"var(--text-main, #0f172a)"}}>{prestacion.periodoLabel || "—"}</td>
+                            <td style={{padding:"9px 10px",textAlign:"right",fontWeight:700,color:"#4ade80"}}>{fmt(prestacion.valor || 0)}</td>
+                            <td style={{padding:"9px 10px",color:"var(--text-muted, #64748b)"}}>{prestacion.fechaCausacion ? fmtD(prestacion.fechaCausacion) : "—"}</td>
+                            <td style={{padding:"9px 10px",color:"var(--text-muted, #64748b)"}}>{prestacion.fechaPago ? fmtD(prestacion.fechaPago) : "Pendiente"}</td>
                             <td style={{padding:"9px 10px"}}>
-                              <span style={{background:prestacion.estado==="pagada"||prestacion.estado==="consignada"?"#dcfce7":prestacion.estado==="en_nomina"?"#dbeafe":"#fef3c7",color:prestacion.estado==="pagada"||prestacion.estado==="consignada"?"#166534":prestacion.estado==="en_nomina"?"#1d4ed8":"#92400e",borderRadius:999,padding:"4px 10px",fontSize:10,fontWeight:700}}>
+                              <span style={{background:prestacion.estado==="pagada"||prestacion.estado==="consignada"?"rgba(34, 197, 94, 0.2)":prestacion.estado==="en_nomina"?"rgba(59, 130, 246, 0.2)":"rgba(245, 158, 11, 0.2)",color:prestacion.estado==="pagada"||prestacion.estado==="consignada"?"#86efac":prestacion.estado==="en_nomina"?"#93c5fd":"#fde047",borderRadius:999,padding:"4px 10px",fontSize:10,fontWeight:700}}>
                                 {PRESTACION_ESTADOS_LABELS[prestacion.estado] || prestacion.estado}
                               </span>
                             </td>
@@ -1101,7 +1101,7 @@ export default function Nomina({ctx}){
                                   </button>
                                 )}
                                 {prestacion.liquidacionEnNomina && (
-                                  <span style={{fontSize:10,color:"#1d4ed8",fontWeight:700,alignSelf:"center"}}>Se paga en nómina</span>
+                                  <span style={{fontSize:10,color:"#60a5fa",fontWeight:700,alignSelf:"center"}}>Se paga en nómina</span>
                                 )}
                                 <button onClick={()=>quitarPrestacionSocial(empleadoPrestacionActivo, prestacion.id)} style={{...B("#fee2e2","#b91c1c"),fontSize:10,padding:"6px 10px"}}>Eliminar</button>
                               </div>
@@ -1141,13 +1141,13 @@ export default function Nomina({ctx}){
                   empleado:eVac,
                   index:idxVac,
                   badgeLabel:"Vacaciones",
-                  badgeBg:"#ecfdf5",
-                  badgeColor:"#166534",
+                  badgeBg:"rgba(22, 163, 74, 0.15)",
+                  badgeColor:"#4ade80",
                   subtitle:(eVac.cargo||"Sin cargo") + " · " + (eVac.cedula||"Sin documento") + " · Ingreso " + (eVac.fechaIngreso||"sin fecha"),
                   principal:{
                     label:"Saldo disponible de vacaciones",
                     value:vacaciones.dias + " días",
-                    color:"#166534",
+                    color:"#4ade80",
                     hint:"Pagadas sin retiro: " + round1(eVac.vacacionesPagadasDias||0) + " días · Valor acumulado: " + fmt(vacaciones.valor),
                   },
                   metrics:[
@@ -1155,29 +1155,29 @@ export default function Nomina({ctx}){
                     {label:"Valor día", value:fmt(Math.round((Number(eVac.salario)||0)/30)), color:"#0f766e"},
                     {label:"Corte activo", value:periodoNomina.label, color:"#f47c20"},
                     {label:"Días a pagar", value:diasLiquidar + " días", color:"#2563eb"},
-                    {label:"Valor vacaciones", value:fmt(valorLiquidar), color:"#166534"},
+                    {label:"Valor vacaciones", value:fmt(valorLiquidar), color:"#4ade80"},
                     {label:"Saldo restante", value:saldoVacaciones + " días", color:"#7c3aed"},
                   ],
                 })}
                 <div style={{height:14}}/>
-                <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:12,padding:"14px 16px"}}>
-                  <div style={{fontSize:11,fontWeight:700,color:"#166534",textTransform:"uppercase",letterSpacing:0.7,marginBottom:12}}>Liquidar vacaciones — {eVac.nombre}</div>
+                <div style={{background:"rgba(22, 163, 74, 0.12)",border:"1px solid rgba(22, 163, 74, 0.25)",borderRadius:12,padding:"14px 16px"}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"#4ade80",textTransform:"uppercase",letterSpacing:0.7,marginBottom:12}}>Liquidar vacaciones — {eVac.nombre}</div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
                     <div>
                       <LBL>Días a pagar</LBL>
                       <input type="number" min={0} max={vacaciones.dias} step={0.1} value={diasLiquidar} onChange={ev=>setDiasVacLiquidar(prev=>({...prev,[eVac.id]:round1(ev.target.value)}))} style={SI}/>
                     </div>
-                    <div style={{background:"#fff",borderRadius:8,padding:"10px 12px",border:"1px solid #bbf7d0",alignSelf:"end"}}>
-                      <div style={{fontSize:10,color:"#64748b"}}>Valor a pagar</div>
-                      <div style={{fontSize:18,fontWeight:700,color:"#166534"}}>{fmt(valorLiquidar)}</div>
-                      <div style={{fontSize:10,color:"#64748b",marginTop:4}}>Saldo restante: {saldoVacaciones} días</div>
+                    <div style={{background:"var(--surface, #fff)",borderRadius:8,padding:"10px 12px",border:"1px solid var(--border, #bbf7d0)",alignSelf:"end"}}>
+                      <div style={{fontSize:10,color:"var(--text-muted, #64748b)"}}>Valor a pagar</div>
+                      <div style={{fontSize:18,fontWeight:700,color:"#4ade80"}}>{fmt(valorLiquidar)}</div>
+                      <div style={{fontSize:10,color:"var(--text-muted, #64748b)",marginTop:4}}>Saldo restante: {saldoVacaciones} días</div>
                     </div>
                   </div>
                   <div style={{display:"flex",gap:8}}>
                     <button onClick={()=>registrarVacacionesPagadas(eVac)} style={{...B("#142840","#4ade80"),fontSize:11,flex:1,justifyContent:"center"}}>Guardar cambios</button>
                     <button onClick={()=>printVacaciones(eVac,diasLiquidar,valorLiquidar)} style={{...B("#166534","#d1fae5"),fontSize:11,flex:1,justifyContent:"center"}}>Imprimir vacaciones</button>
                   </div>
-                  {mensajeGuardadoNomina&&<div style={{fontSize:11,color:"#166534",fontWeight:700,marginTop:8,textAlign:"center"}}>{mensajeGuardadoNomina}</div>}
+                  {mensajeGuardadoNomina&&<div style={{fontSize:11,color:"#4ade80",fontWeight:700,marginTop:8,textAlign:"center"}}>{mensajeGuardadoNomina}</div>}
                 </div>
               </>
             )}
@@ -1215,13 +1215,13 @@ export default function Nomina({ctx}){
                   empleado:eCont,
                   index:idxCont,
                   badgeLabel:eCont.activo?"Activo":"Retirado",
-                  badgeBg:eCont.activo?"#dcfce7":"#fee2e2",
-                  badgeColor:eCont.activo?"#166534":"#b91c1c",
+                  badgeBg:eCont.activo?"rgba(34, 197, 94, 0.2)":"rgba(239, 68, 68, 0.2)",
+                  badgeColor:eCont.activo?"#86efac":"#fca5a5",
                   subtitle:(eCont.cargo||"Sin cargo") + " · " + (eCont.cedula||"Sin documento") + " · " + periodoNomina.label,
                   principal:{
                     label:"Liquidación estimada del retiro",
                     value:fmt(total||0),
-                    color:"#92400e",
+                    color:"#fbbf24",
                     hint:(liquidacion?.retiroEnPeriodo
                       ? ("Se incluirá en planilla del corte " + periodoLiquidacion.label)
                       : "Define fecha de salida dentro del corte para que aparezca en planilla"),
@@ -1231,13 +1231,13 @@ export default function Nomina({ctx}){
                     {label:"Días corte", value:resumenCorte.diasNomina + " días", color:"#2563eb"},
                     {label:"Neto corte", value:fmt(resumenCorte.neto), color:"#0f766e"},
                     {label:"Descuentos", value:fmt(resumenCorte.totalDeducciones), color:"#c2410c"},
-                    {label:"Vacaciones pendientes", value:(vacacionesPendientesRetiro?.dias||0) + " días", color:"#166534"},
-                    {label:"Estado planilla", value:liquidacion?.retiroEnPeriodo?"Incluida":"Pendiente", color:liquidacion?.retiroEnPeriodo?"#166534":"#64748b"},
+                    {label:"Vacaciones pendientes", value:(vacacionesPendientesRetiro?.dias||0) + " días", color:"#4ade80"},
+                    {label:"Estado planilla", value:liquidacion?.retiroEnPeriodo?"Incluida":"Pendiente", color:liquidacion?.retiroEnPeriodo?"#4ade80":"var(--text-muted, #64748b)"},
                   ],
                 })}
                 <div style={{height:14}}/>
-                <div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:12,padding:"14px 16px"}}>
-                  <div style={{fontSize:11,fontWeight:700,color:"#92400e",textTransform:"uppercase",letterSpacing:0.7,marginBottom:12}}>Liquidación de retiro — {eCont.nombre}</div>
+                <div style={{background:"rgba(245, 158, 11, 0.12)",border:"1px solid rgba(245, 158, 11, 0.3)",borderRadius:12,padding:"14px 16px"}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"#fbbf24",textTransform:"uppercase",letterSpacing:0.7,marginBottom:12}}>Liquidación de retiro — {eCont.nombre}</div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
                     <div><LBL>Fecha de salida</LBL><input type="date" value={eCont.fechaSalida||""} onChange={ev=>updEmp(eCont.id,"fechaSalida",ev.target.value)} style={{...SI,fontSize:11}}/></div>
                     <div><LBL>Causa del retiro</LBL><select value={eCont.causaRetiro||""} onChange={ev=>updEmp(eCont.id,"causaRetiro",ev.target.value)} style={{...SI,fontSize:11,padding:"5px 8px"}}>
@@ -1245,10 +1245,10 @@ export default function Nomina({ctx}){
                       {["Renuncia voluntaria","Despido sin justa causa","Despido con justa causa","Mutuo acuerdo","Vencimiento contrato","Fallecimiento","Incapacidad permanente"].map(c=><option key={c}>{c}</option>)}
                     </select></div>
                   </div>
-                  <div style={{background:"#f0fdf4",borderRadius:6,padding:"8px 10px",marginBottom:10,display:"flex",alignItems:"center",gap:12,fontSize:11}}>
-                    <span style={{color:"#166534",fontWeight:600}}>Días de vacaciones a pagar con retiro:</span>
-                    <input type="number" min={0} max={vacacionesPendientesRetiro?.dias||0} step={0.1} value={dvp} onChange={ev=>setDiasVacPagar(prev=>({...prev,[eCont.id]:round1(ev.target.value)}))} style={{width:70,padding:"4px 8px",borderRadius:5,border:"1px solid #bbf7d0",fontSize:12,fontWeight:700,textAlign:"center"}}/>
-                    <span style={{color:"#64748b",fontSize:10}}>Disponibles: {vacacionesPendientesRetiro?.dias||0} días · Valor: {fmt(vacValorReal||0)}</span>
+                  <div style={{background:"rgba(22, 163, 74, 0.12)",border:"1px solid rgba(22, 163, 74, 0.25)",borderRadius:6,padding:"8px 10px",marginBottom:10,display:"flex",alignItems:"center",gap:12,fontSize:11}}>
+                    <span style={{color:"#4ade80",fontWeight:600}}>Días de vacaciones a pagar con retiro:</span>
+                    <input type="number" min={0} max={vacacionesPendientesRetiro?.dias||0} step={0.1} value={dvp} onChange={ev=>setDiasVacPagar(prev=>({...prev,[eCont.id]:round1(ev.target.value)}))} style={{width:70,padding:"4px 8px",borderRadius:5,border:"1px solid var(--border, #bbf7d0)",background:"var(--surface, #fff)",color:"var(--text-main)",fontSize:12,fontWeight:700,textAlign:"center"}}/>
+                    <span style={{color:"var(--text-muted, #64748b)",fontSize:10}}>Disponibles: {vacacionesPendientesRetiro?.dias||0} días · Valor: {fmt(vacValorReal||0)}</span>
                   </div>
                   <table style={{width:"100%",borderCollapse:"collapse",fontSize:11,marginBottom:10}}>
                     <thead><tr style={{background:"#142840",color:"#fff"}}><th style={{padding:"5px 8px",textAlign:"left"}}>Concepto</th><th style={{padding:"5px 8px",textAlign:"left"}}>Base cálculo</th><th style={{padding:"5px 8px",textAlign:"right"}}>Valor</th></tr></thead>
@@ -1267,17 +1267,17 @@ export default function Nomina({ctx}){
                         ["Vacaciones",dvp+" días × salario÷30",vacValorReal||0],
                         ...((indemn||0)>0?[["Indemnización (sin justa causa)","CST art. 64",indemn]]:[])
                       ].map(([k,b,v])=>(
-                        <tr key={k} style={{borderBottom:"1px solid #f1f5f9"}}><td style={{padding:"5px 8px"}}>{k}</td><td style={{padding:"5px 8px",color:"#64748b",fontSize:10}}>{b}</td><td style={{padding:"5px 8px",textAlign:"right",fontWeight:600,color:"#0f172a"}}>{fmt(v)}</td></tr>
+                        <tr key={k} style={{borderBottom:"1px solid var(--border, #f1f5f9)"}}><td style={{padding:"5px 8px",color:"var(--text-main, #0f172a)"}}>{k}</td><td style={{padding:"5px 8px",color:"var(--text-muted, #64748b)",fontSize:10}}>{b}</td><td style={{padding:"5px 8px",textAlign:"right",fontWeight:600,color:"var(--text-main, #0f172a)"}}>{fmt(v)}</td></tr>
                       ))}
                     </tbody>
-                    <tfoot><tr style={{background:"#f5c842"}}><td colSpan={2} style={{padding:"7px 8px",fontWeight:700}}>TOTAL LIQUIDACIÓN</td><td style={{padding:"7px 8px",textAlign:"right",fontWeight:700,fontSize:13}}>{fmt(total||0)}</td></tr></tfoot>
+                    <tfoot><tr style={{background:"#f5c842",color:"#000"}}><td colSpan={2} style={{padding:"7px 8px",fontWeight:700}}>TOTAL LIQUIDACIÓN</td><td style={{padding:"7px 8px",textAlign:"right",fontWeight:700,fontSize:13}}>{fmt(total||0)}</td></tr></tfoot>
                   </table>
                   <div style={{display:"flex",gap:6,marginBottom:6}}>
                     <button onClick={()=>guardarLiquidacionRetiro(eCont)} style={{...B("#166534","#d1fae5"),fontSize:11,flex:1,justifyContent:"center"}}>Guardar cambios</button>
                     <button onClick={()=>printLiquidacion(eCont,pf,indemn||0,dvp,eCont.fechaSalida||null,resumenLiquidacion,periodoLiquidacion)} style={{...B("#142840","#f5c842"),fontSize:11,flex:1,justifyContent:"center"}}>Imprimir liquidación</button>
                     <button onClick={()=>updEmp(eCont.id,"activo",false)} style={{...B("#2d1414","#ef4444"),fontSize:11,flex:1,justifyContent:"center"}}>Marcar como retirado</button>
                   </div>
-                  {mensajeGuardadoNomina&&<div style={{fontSize:11,color:"#166534",fontWeight:700,marginTop:6,textAlign:"center"}}>{mensajeGuardadoNomina}</div>}
+                  {mensajeGuardadoNomina&&<div style={{fontSize:11,color:"#4ade80",fontWeight:700,marginTop:6,textAlign:"center"}}>{mensajeGuardadoNomina}</div>}
                 </div>
               </>
             )}
@@ -1289,27 +1289,27 @@ export default function Nomina({ctx}){
         <div>
           <div style={{
             display:"flex",gap:12,alignItems:"center",justifyContent:"space-between",
-            marginBottom:16,background:modoEdicionNomina ? "#fffbeb" : "#fff7ed",
-            border:"1px solid " + (modoEdicionNomina ? "#fde68a" : "#fed7aa"),
+            marginBottom:16,background:modoEdicionNomina ? "rgba(245, 158, 11, 0.12)" : "var(--surface-subtle)",
+            border:"1px solid " + (modoEdicionNomina ? "rgba(245, 158, 11, 0.35)" : "var(--border)"),
             borderRadius:12,padding:"14px 16px",flexWrap:"wrap"
           }}>
             <div>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <div style={{fontSize:11,fontWeight:700,color:modoEdicionNomina ? "#92400e" : "#9a3412",textTransform:"uppercase",letterSpacing:0.7}}>
+                <div style={{fontSize:11,fontWeight:700,color:modoEdicionNomina ? "#f59e0b" : "var(--text-main)",textTransform:"uppercase",letterSpacing:0.7}}>
                   {modoEdicionNomina ? "✏️ Editando corte de nómina" : "Colillas de pago"}
                 </div>
                 {nominaEstaGenerada && !modoEdicionNomina && (
-                  <span style={{background:"#dcfce7",color:"#166534",border:"1px solid #bbf7d0",borderRadius:6,padding:"2px 7px",fontSize:10.5,fontWeight:700}}>
+                  <span style={{background:"rgba(34, 197, 94, 0.15)",color:"#4ade80",border:"1px solid rgba(34, 197, 94, 0.35)",borderRadius:6,padding:"2px 7px",fontSize:10.5,fontWeight:700}}>
                     ✓ Guardada
                   </span>
                 )}
                 {modoEdicionNomina && (
-                  <span style={{background:"#fef3c7",color:"#92400e",border:"1px solid #fde68a",borderRadius:6,padding:"2px 7px",fontSize:10.5,fontWeight:700}}>
+                  <span style={{background:"rgba(245, 158, 11, 0.15)",color:"#f59e0b",border:"1px solid rgba(245, 158, 11, 0.35)",borderRadius:6,padding:"2px 7px",fontSize:10.5,fontWeight:700}}>
                     ✏️ En corrección
                   </span>
                 )}
               </div>
-              <div style={{fontSize:12,color:modoEdicionNomina ? "#78350f" : "#7c2d12",marginTop:4}}>
+              <div style={{fontSize:12,color:modoEdicionNomina ? "var(--text-main)" : "var(--text-muted)",marginTop:4}}>
                 {modoEdicionNomina
                   ? "Ajusta las novedades o deducciones necesarias. Haz clic en 'Guardar nómina' para actualizar los valores y colillas."
                   : "Formato media carta con logo, con detalle del corte activo, incapacidades reconocidas y sin provisiones informativas."}
@@ -1320,7 +1320,7 @@ export default function Nomina({ctx}){
               {/* Consultar historial de nóminas */}
               <button
                 type="button"
-                style={{...B("#ffffff","#1e293b"),border:"1px solid #cbd5e1",fontSize:11.5,fontWeight:600}}
+                style={{...B("var(--surface)","var(--text-main)"),border:"1px solid var(--border)",fontSize:11.5,fontWeight:600}}
                 onClick={()=>setMostrarHistorialNominas(true)}
                 title="Consultar todas las nóminas anteriores guardadas"
               >
@@ -1331,7 +1331,7 @@ export default function Nomina({ctx}){
               {nominaEstaGenerada && !modoEdicionNomina && (
                 <button
                   type="button"
-                  style={{...B("#eff6ff","#1d4ed8"),border:"1px solid #bfdbfe",fontSize:11.5,fontWeight:600}}
+                  style={{...B("rgba(37, 99, 235, 0.15)","#60a5fa"),border:"1px solid rgba(37, 99, 235, 0.35)",fontSize:11.5,fontWeight:600}}
                   onClick={()=>{
                     setModoEdicionNomina(true);
                     setMensajeGuardadoNomina("✏️ Modo corrección activo. Puedes ir a Deducciones, Horas Extras o Empleados para corregir.");
@@ -1368,19 +1368,19 @@ export default function Nomina({ctx}){
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
             {resumenesActivos.map(({empleado:e,resumen},i)=>{
               return(
-              <div key={e.id} style={{background:"#f8fafc",borderRadius:10,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
+              <div key={e.id} style={{background:"var(--surface-subtle)",borderRadius:10,padding:"14px 16px",border:"1px solid var(--border)"}}>
                 <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:10}}>
                   <Av init={e.avatar} color={PAL[i%PAL.length]} size={32}/>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:13,fontWeight:700}}>{e.nombre}</div>
-                    <div style={{fontSize:10,color:"#64748b"}}>{e.cargo} · {periodoNomina.label}</div>
+                    <div style={{fontSize:13,fontWeight:700,color:"var(--text-main)"}}>{e.nombre}</div>
+                    <div style={{fontSize:10,color:"var(--text-muted)"}}>{e.cargo} · {periodoNomina.label}</div>
                   </div>
                   <div style={{textAlign:"right",fontSize:12,fontWeight:700,color:"#4ade80"}}>{fmt(resumen.neto)}</div>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,fontSize:10,marginBottom:12}}>
                   {[["Días laborados",resumen.diasNomina,"#2563eb"],["Días incapacidad",resumen.diasIncapacidad,"#dc2626"],["Salario",fmt(resumen.salario),"#4ade80"],["Incapacidades",fmt(resumen.incapacidadTotal),"#166534"],["Aux. transp.",fmt(resumen.auxilioTransporte),"#60b4ff"],["Extras + com.",fmt(resumen.horasExtras+resumen.comisiones),"#f59e0b"],["Base salud/pens.",fmt(resumen.baseSaludPension),"#7c3aed"],["Deducciones",fmt(resumen.totalDeducciones),"#dc2626"]].map(([k,v,col])=>(
-                    <div key={k} style={{background:"#fff",borderRadius:8,padding:"8px 9px",border:"1px solid #e2e8f0"}}>
-                      <div style={{color:"#94a3b8",fontSize:9,textTransform:"uppercase",letterSpacing:0.5}}>{k}</div>
+                    <div key={k} style={{background:"var(--surface)",borderRadius:8,padding:"8px 9px",border:"1px solid var(--border)"}}>
+                      <div style={{color:"var(--text-muted)",fontSize:9,textTransform:"uppercase",letterSpacing:0.5}}>{k}</div>
                       <div style={{fontWeight:700,color:col,fontSize:11,marginTop:3}}>{v}</div>
                     </div>
                   ))}
@@ -1427,7 +1427,7 @@ export default function Nomina({ctx}){
                   ) : (
                     <button
                       onClick={() => window.alert(`El empleado ${e.nombre} aún no tiene correo electrónico configurado.\nPuedes agregarlo en la pestaña 'Empleados' haciendo clic en '✏️ Editar datos del empleado'.`)}
-                      style={{ ...B("#f1f5f9", "#94a3b8"), fontSize: 11, justifyContent: "center", cursor: "pointer" }}
+                      style={{ ...B("var(--surface-subtle)", "var(--text-muted)"), border:"1px solid var(--border)", fontSize: 11, justifyContent: "center", cursor: "pointer" }}
                       title="Sin correo registrado (haz clic para saber cómo agregarlo)"
                     >
                       ✉️ Sin correo
@@ -1485,7 +1485,7 @@ export default function Nomina({ctx}){
                             hint:"Esta base también entra al cálculo de salud y pensión del corte.",
                           },
                           metrics:[
-                            {label:"Salario base", value:fmt(empleadoHEActivo.salario), color:"#142840"},
+                            {label:"Salario base", value:fmt(empleadoHEActivo.salario), color:"var(--text-main)"},
                             {label:"Valor hora base", value:fmt(valorHoraBase), color:"#0f766e"},
                             {label:"Horas extras", value:fmt(resumenHE.horasExtras), color:"#f59e0b"},
                             {label:"Comisiones", value:fmt(resumenHE.comisiones), color:"#7c3aed"},
@@ -1494,8 +1494,8 @@ export default function Nomina({ctx}){
                           ],
                         })}
 
-                        <div style={{background:"#ffffff",borderRadius:12,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
-                          <div style={{fontSize:11,fontWeight:700,color:"#142840",textTransform:"uppercase",marginBottom:10}}>Registrar movimiento</div>
+                        <div style={{background:"var(--surface)",borderRadius:12,padding:"14px 16px",border:"1px solid var(--border)"}}>
+                          <div style={{fontSize:11,fontWeight:700,color:"var(--text-main)",textTransform:"uppercase",marginBottom:10}}>Registrar movimiento</div>
                           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
                             <div><LBL>Obra</LBL>
                               <select value={heForm.obraId} onChange={e=>setHeForm({...heForm,obraId:e.target.value})} style={SI}>
@@ -1523,9 +1523,9 @@ export default function Nomina({ctx}){
                                 <div><LBL>Horas</LBL><input type="number" value={heForm.horas} onChange={e=>setHeForm({...heForm,horas:parseFloat(e.target.value)||0})} style={SI}/></div>
                                 {pctRecargo===null
                                   ? <div><LBL>Valor/hora</LBL><input type="number" value={heForm.valorHora} onChange={e=>setHeForm({...heForm,valorHora:parseFloat(e.target.value)||0})} style={SI}/></div>
-                                  : <div><LBL>Valor/hora (automático)</LBL><input type="number" value={valorHoraRecargo} readOnly style={{...SI,background:"#f1f5f9",color:"#64748b",cursor:"not-allowed"}}/></div>
+                                  : <div><LBL>Valor/hora (automático)</LBL><input type="number" value={valorHoraRecargo} readOnly style={{...SI,background:"var(--surface-subtle)",color:"var(--text-muted)",cursor:"not-allowed"}}/></div>
                                 }
-                                <div style={{gridColumn:"span 2",background:"#f8fafc",borderRadius:8,padding:"10px 12px",fontSize:12}}>Total {infoRec?.label||"horas extras"}: <strong style={{color:"#f59e0b"}}>{fmt(totalHE)}</strong></div>
+                                <div style={{gridColumn:"span 2",background:"var(--surface-subtle)",border:"1px solid var(--border)",borderRadius:8,padding:"10px 12px",fontSize:12,color:"var(--text-main)"}}>Total {infoRec?.label||"horas extras"}: <strong style={{color:"#f59e0b"}}>{fmt(totalHE)}</strong></div>
                               </>
                             )}
                             {heForm.tipo==="comision"&&(
@@ -1539,10 +1539,10 @@ export default function Nomina({ctx}){
                           </div>
                         </div>
 
-                        <div style={{background:"#ffffff",borderRadius:12,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
-                          <div style={{fontSize:11,fontWeight:700,color:"#142840",textTransform:"uppercase",marginBottom:10}}>Movimientos del corte</div>
+                        <div style={{background:"var(--surface)",borderRadius:12,padding:"14px 16px",border:"1px solid var(--border)"}}>
+                          <div style={{fontSize:11,fontWeight:700,color:"var(--text-main)",textTransform:"uppercase",marginBottom:10}}>Movimientos del corte</div>
                           {horasPeriodo.length===0 && comisionesPeriodo.length===0 ? (
-                            <div style={{fontSize:12,color:"#94a3b8"}}>Este empleado no tiene horas extras ni comisiones registradas en el corte activo.</div>
+                            <div style={{fontSize:12,color:"var(--text-muted)"}}>Este empleado no tiene horas extras ni comisiones registradas en el corte activo.</div>
                           ) : (
                             <div style={{display:"grid",gap:8}}>
                               {horasPeriodo.map((horaExtra)=>{
@@ -1550,10 +1550,10 @@ export default function Nomina({ctx}){
                                 const recargo = RECARGOS_CO_2026.find((item)=>item.id===horaExtra.tipoRecargo);
                                 const totalHoraExtra = calcularTotalHoraExtraItem(empleadoHEActivo, horaExtra);
                                 return(
-                                  <div key={horaExtra.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}>
+                                  <div key={horaExtra.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"var(--surface-subtle)",border:"1px solid var(--border)",borderRadius:8,padding:"10px 12px"}}>
                                     <div>
-                                      <div style={{fontWeight:700,color:"#0f172a"}}>{recargo?.label||"Hora extra"}</div>
-                                      <div style={{fontSize:11,color:"#64748b"}}>{horaExtra.horas} h · {obra?.cliente||horaExtra.obraId} · {horaExtra.fecha}</div>
+                                      <div style={{fontWeight:700,color:"var(--text-main)"}}>{recargo?.label||"Hora extra"}</div>
+                                      <div style={{fontSize:11,color:"var(--text-muted)"}}>{horaExtra.horas} h · {obra?.cliente||horaExtra.obraId} · {horaExtra.fecha}</div>
                                     </div>
                                     <div style={{fontWeight:700,color:"#f59e0b"}}>{fmt(totalHoraExtra)}</div>
                                   </div>
@@ -1562,10 +1562,10 @@ export default function Nomina({ctx}){
                               {comisionesPeriodo.map((comision)=>{
                                 const obra = obras.find((item)=>item.id===comision.obraId);
                                 return(
-                                  <div key={comision.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}>
+                                  <div key={comision.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"var(--surface-subtle)",border:"1px solid var(--border)",borderRadius:8,padding:"10px 12px"}}>
                                     <div>
-                                      <div style={{fontWeight:700,color:"#0f172a"}}>{comision.concepto||"Comisión"}</div>
-                                      <div style={{fontSize:11,color:"#64748b"}}>{obra?.cliente||comision.obraId} · {comision.fecha}</div>
+                                      <div style={{fontWeight:700,color:"var(--text-main)"}}>{comision.concepto||"Comisión"}</div>
+                                      <div style={{fontSize:11,color:"var(--text-muted)"}}>{obra?.cliente||comision.obraId} · {comision.fecha}</div>
                                     </div>
                                     <div style={{fontWeight:700,color:"#7c3aed"}}>{fmt(comision.comision)}</div>
                                   </div>
@@ -1576,7 +1576,7 @@ export default function Nomina({ctx}){
                         </div>
                       </>
                     ) : (
-                      <div style={{textAlign:"center",color:"#94a3b8",padding:"28px 0"}}>
+                      <div style={{textAlign:"center",color:"var(--text-muted)",padding:"28px 0"}}>
                         Selecciona un empleado para revisar y registrar sus horas extras o comisiones.
                       </div>
                     )}
@@ -1641,8 +1641,8 @@ export default function Nomina({ctx}){
                           ],
                         })}
 
-                        <div style={{background:"#ffffff",borderRadius:12,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
-                          <div style={{fontSize:11,fontWeight:700,color:"#142840",textTransform:"uppercase",marginBottom:10}}>Registrar y calcular incapacidad</div>
+                        <div style={{background:"var(--surface)",borderRadius:12,padding:"14px 16px",border:"1px solid var(--border)"}}>
+                          <div style={{fontSize:11,fontWeight:700,color:"var(--text-main)",textTransform:"uppercase",marginBottom:10}}>Registrar y calcular incapacidad</div>
                           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
                             <div>
                               <LBL>Origen</LBL>
@@ -1695,7 +1695,7 @@ export default function Nomina({ctx}){
                                 onChange={(e)=>setIncapacidadForm((prev)=>({ ...prev, diasPrevios:Math.max(0, parseInt(e.target.value || "0", 10) || 0) }))}
                                 style={SI}
                               />
-                              <div style={{fontSize:10,color:"#64748b",marginTop:4}}>Úsalo cuando la incapacidad sea prórroga y ya vengan días reconocidos de certificados anteriores.</div>
+                              <div style={{fontSize:10,color:"var(--text-muted)",marginTop:4}}>Úsalo cuando la incapacidad sea prórroga y ya vengan días reconocidos de certificados anteriores.</div>
                             </div>
                             <div>
                               <LBL>Número de soporte</LBL>
@@ -1727,8 +1727,8 @@ export default function Nomina({ctx}){
                             </div>
                           </div>
 
-                          <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:"12px 14px",fontSize:12,color:"#475569",lineHeight:1.7,marginBottom:12}}>
-                            <div style={{fontWeight:700,color:"#142840",marginBottom:6}}>Base legal aplicada para empresa privada</div>
+                          <div style={{background:"var(--surface-subtle)",border:"1px solid var(--border)",borderRadius:10,padding:"12px 14px",fontSize:12,color:"var(--text-muted)",lineHeight:1.7,marginBottom:12}}>
+                            <div style={{fontWeight:700,color:"var(--text-main)",marginBottom:6}}>Base legal aplicada para empresa privada</div>
                             <div>Origen común: 66.67% del IBC en días 1 a 90 y 50% del IBC en días 91 a 540, con empleador días 1-2, EPS desde día 3 y Colpensiones desde día 181. Origen laboral: 100% del IBC a cargo de la ARL.</div>
                           </div>
 
@@ -1740,41 +1740,41 @@ export default function Nomina({ctx}){
                         </div>
 
                         {incapacidadPreview && previewRegistro ? (
-                          <div style={{background:"#ffffff",borderRadius:12,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
-                            <div style={{fontSize:11,fontWeight:700,color:"#142840",textTransform:"uppercase",marginBottom:10}}>Vista previa del cálculo</div>
+                          <div style={{background:"var(--surface)",borderRadius:12,padding:"14px 16px",border:"1px solid var(--border)"}}>
+                            <div style={{fontSize:11,fontWeight:700,color:"var(--text-main)",textTransform:"uppercase",marginBottom:10}}>Vista previa del cálculo</div>
                             <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:12}}>
-                              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Origen</div><div style={{fontWeight:700,color:"#142840"}}>{INCAPACIDAD_ORIGEN_LABELS[previewRegistro.origen]}</div></div>
-                              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Días en el corte</div><div style={{fontWeight:700,color:"#dc2626"}}>{previewRegistro.diasPeriodo}</div></div>
-                              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Valor reconocido</div><div style={{fontWeight:700,color:"#166534"}}>{fmt(previewRegistro.totalPeriodo)}</div></div>
-                              <div style={{background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Neto estimado</div><div style={{fontWeight:700,color:"#0f766e"}}>{fmt(incapacidadPreview.nominaConPreview.neto)}</div></div>
+                              <div style={{background:"var(--surface-subtle)",border:"1px solid var(--border)",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"var(--text-muted)"}}>Origen</div><div style={{fontWeight:700,color:"var(--text-main)"}}>{INCAPACIDAD_ORIGEN_LABELS[previewRegistro.origen]}</div></div>
+                              <div style={{background:"var(--surface-subtle)",border:"1px solid var(--border)",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"var(--text-muted)"}}>Días en el corte</div><div style={{fontWeight:700,color:"#dc2626"}}>{previewRegistro.diasPeriodo}</div></div>
+                              <div style={{background:"var(--surface-subtle)",border:"1px solid var(--border)",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"var(--text-muted)"}}>Valor reconocido</div><div style={{fontWeight:700,color:"#166534"}}>{fmt(previewRegistro.totalPeriodo)}</div></div>
+                              <div style={{background:"var(--surface-subtle)",border:"1px solid var(--border)",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"var(--text-muted)"}}>Neto estimado</div><div style={{fontWeight:700,color:"#0f766e"}}>{fmt(incapacidadPreview.nominaConPreview.neto)}</div></div>
                             </div>
                             <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
                               {Object.entries(previewRegistro.totalesResponsable)
                                 .filter(([,valor])=>Number(valor||0)>0)
                                 .map(([responsable, valor])=>(
-                                  <div key={responsable} style={{background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:8,padding:"10px 12px"}}>
-                                    <div style={{fontSize:10,color:"#9a3412"}}>{INCAPACIDAD_RESPONSABLE_LABELS[responsable]}</div>
-                                    <div style={{fontWeight:700,color:"#c2410c",marginTop:3}}>{fmt(valor)}</div>
+                                  <div key={responsable} style={{background:"rgba(245, 158, 11, 0.12)",border:"1px solid rgba(245, 158, 11, 0.35)",borderRadius:8,padding:"10px 12px"}}>
+                                    <div style={{fontSize:10,color:"#f59e0b"}}>{INCAPACIDAD_RESPONSABLE_LABELS[responsable]}</div>
+                                    <div style={{fontWeight:700,color:"#f59e0b",marginTop:3}}>{fmt(valor)}</div>
                                   </div>
                                 ))}
                             </div>
                           </div>
                         ) : null}
 
-                        <div style={{background:"#ffffff",borderRadius:12,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
-                          <div style={{fontSize:11,fontWeight:700,color:"#142840",textTransform:"uppercase",marginBottom:10}}>Incapacidades registradas en el corte</div>
+                        <div style={{background:"var(--surface)",borderRadius:12,padding:"14px 16px",border:"1px solid var(--border)"}}>
+                          <div style={{fontSize:11,fontWeight:700,color:"var(--text-main)",textTransform:"uppercase",marginBottom:10}}>Incapacidades registradas en el corte</div>
                           {resumenIncapacidadActivo?.registros?.length ? (
                             <div style={{display:"grid",gap:8}}>
                               {resumenIncapacidadActivo.registros.map((registro)=>(
-                                <div key={registro.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#f8fafc",borderRadius:8,padding:"10px 12px",gap:12}}>
+                                <div key={registro.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"var(--surface-subtle)",border:"1px solid var(--border)",borderRadius:8,padding:"10px 12px",gap:12}}>
                                   <div style={{flex:1}}>
-                                    <div style={{fontWeight:700,color:"#0f172a"}}>{INCAPACIDAD_ORIGEN_LABELS[registro.origen]} · {registro.fechaInicio}{registro.fechaFin!==registro.fechaInicio ? " al " + registro.fechaFin : ""}</div>
-                                    <div style={{fontSize:11,color:"#64748b"}}>{registro.diasPeriodo} día(s) en el corte · {registro.numeroSoporte || "Sin soporte"}{registro.diagnostico ? " · " + registro.diagnostico : ""}</div>
-                                    <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:6,fontSize:10,color:"#475569"}}>
+                                    <div style={{fontWeight:700,color:"var(--text-main)"}}>{INCAPACIDAD_ORIGEN_LABELS[registro.origen]} · {registro.fechaInicio}{registro.fechaFin!==registro.fechaInicio ? " al " + registro.fechaFin : ""}</div>
+                                    <div style={{fontSize:11,color:"var(--text-muted)"}}>{registro.diasPeriodo} día(s) en el corte · {registro.numeroSoporte || "Sin soporte"}{registro.diagnostico ? " · " + registro.diagnostico : ""}</div>
+                                    <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:6,fontSize:10,color:"var(--text-muted)"}}>
                                       {Object.entries(registro.totalesResponsable)
                                         .filter(([,valor])=>Number(valor||0)>0)
                                         .map(([responsable, valor])=>(
-                                          <span key={responsable} style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:999,padding:"4px 8px"}}>
+                                          <span key={responsable} style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:999,padding:"4px 8px",color:"var(--text-main)"}}>
                                             {INCAPACIDAD_RESPONSABLE_LABELS[responsable]}: <strong>{fmt(valor)}</strong>
                                           </span>
                                         ))}
@@ -1788,12 +1788,12 @@ export default function Nomina({ctx}){
                               ))}
                             </div>
                           ) : (
-                            <div style={{fontSize:12,color:"#94a3b8"}}>Este empleado no tiene incapacidades aplicadas en el corte activo.</div>
+                            <div style={{fontSize:12,color:"var(--text-muted)"}}>Este empleado no tiene incapacidades aplicadas en el corte activo.</div>
                           )}
                         </div>
                       </>
                     ) : (
-                      <div style={{textAlign:"center",color:"#94a3b8",padding:"28px 0"}}>
+                      <div style={{textAlign:"center",color:"var(--text-muted)",padding:"28px 0"}}>
                         Selecciona un empleado para calcular y guardar incapacidades en nómina.
                       </div>
                     )}
@@ -1822,9 +1822,9 @@ export default function Nomina({ctx}){
               >
                 <div
                   style={{
-                    background:"#fff",borderRadius:16,width:"100%",maxWidth:580,
+                    background:"var(--surface)",borderRadius:16,width:"100%",maxWidth:580,
                     maxHeight:"90vh",overflowY:"auto",padding:24,
-                    boxShadow:"0 20px 25px -5px rgba(0,0,0,0.15)",border:"1px solid #e2e8f0"
+                    boxShadow:"0 20px 25px -5px rgba(0,0,0,0.3)",border:"1px solid var(--border)"
                   }}
                   onClick={e=>e.stopPropagation()}
                 >
@@ -1832,37 +1832,37 @@ export default function Nomina({ctx}){
                     <div style={{display:"flex",alignItems:"center",gap:12}}>
                       <Av init={empModal.avatar} color={PAL[0]} size={42}/>
                       <div>
-                        <div style={{fontSize:15,fontWeight:700,color:"#0f172a"}}>{empModal.nombre}</div>
-                        <div style={{fontSize:11,color:"#64748b"}}>{empModal.cargo||"Sin cargo"} · C.C. {empModal.cedula||"Sin documento"}</div>
+                        <div style={{fontSize:15,fontWeight:700,color:"var(--text-main)"}}>{empModal.nombre}</div>
+                        <div style={{fontSize:11,color:"var(--text-muted)"}}>{empModal.cargo||"Sin cargo"} · C.C. {empModal.cedula||"Sin documento"}</div>
                       </div>
                     </div>
                     <button
                       onClick={()=>setEmpDeduccionModalId(null)}
-                      style={{background:"#f1f5f9",border:"none",borderRadius:8,width:32,height:32,cursor:"pointer",color:"#64748b",fontWeight:700,fontSize:14}}
+                      style={{background:"var(--surface-subtle)",border:"1px solid var(--border)",borderRadius:8,width:32,height:32,cursor:"pointer",color:"var(--text-muted)",fontWeight:700,fontSize:14}}
                     >
                       ✕
                     </button>
                   </div>
 
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(3, 1fr)",gap:8,background:"#f8fafc",borderRadius:10,padding:12,marginBottom:16}}>
-                    <div><div style={{fontSize:10,color:"#64748b"}}>Base IBC</div><div style={{fontSize:12,fontWeight:700,color:"#0f172a"}}>{fmt(resModal.baseSaludPension)}</div></div>
-                    <div><div style={{fontSize:10,color:"#64748b"}}>Salud (4%)</div><div style={{fontSize:12,fontWeight:700,color:"#dc2626"}}>{fmt(resModal.salud)}</div></div>
-                    <div><div style={{fontSize:10,color:"#64748b"}}>Pensión (4%)</div><div style={{fontSize:12,fontWeight:700,color:"#e11d48"}}>{fmt(resModal.pension)}</div></div>
-                    <div><div style={{fontSize:10,color:"#64748b"}}>Otras ded.</div><div style={{fontSize:12,fontWeight:700,color:"#7c3aed"}}>{fmt(resModal.otrasDeducciones)}</div></div>
-                    <div><div style={{fontSize:10,color:"#64748b"}}>Total desc.</div><div style={{fontSize:12,fontWeight:700,color:"#c2410c"}}>{fmt(resModal.totalDeducciones)}</div></div>
-                    <div><div style={{fontSize:10,color:"#64748b"}}>Neto a pagar</div><div style={{fontSize:12,fontWeight:700,color:"#166534"}}>{fmt(resModal.neto)}</div></div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(3, 1fr)",gap:8,background:"var(--surface-subtle)",border:"1px solid var(--border)",borderRadius:10,padding:12,marginBottom:16}}>
+                    <div><div style={{fontSize:10,color:"var(--text-muted)"}}>Base IBC</div><div style={{fontSize:12,fontWeight:700,color:"var(--text-main)"}}>{fmt(resModal.baseSaludPension)}</div></div>
+                    <div><div style={{fontSize:10,color:"var(--text-muted)"}}>Salud (4%)</div><div style={{fontSize:12,fontWeight:700,color:"#dc2626"}}>{fmt(resModal.salud)}</div></div>
+                    <div><div style={{fontSize:10,color:"var(--text-muted)"}}>Pensión (4%)</div><div style={{fontSize:12,fontWeight:700,color:"#e11d48"}}>{fmt(resModal.pension)}</div></div>
+                    <div><div style={{fontSize:10,color:"var(--text-muted)"}}>Otras ded.</div><div style={{fontSize:12,fontWeight:700,color:"#7c3aed"}}>{fmt(resModal.otrasDeducciones)}</div></div>
+                    <div><div style={{fontSize:10,color:"var(--text-muted)"}}>Total desc.</div><div style={{fontSize:12,fontWeight:700,color:"#c2410c"}}>{fmt(resModal.totalDeducciones)}</div></div>
+                    <div><div style={{fontSize:10,color:"var(--text-muted)"}}>Neto a pagar</div><div style={{fontSize:12,fontWeight:700,color:"#166534"}}>{fmt(resModal.neto)}</div></div>
                   </div>
 
-                  <div style={{fontSize:11,fontWeight:700,color:"#142840",textTransform:"uppercase",marginBottom:8}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"var(--text-main)",textTransform:"uppercase",marginBottom:8}}>
                     Deducciones adicionales activas
                   </div>
                   {(empModal.deduccionesPersonalizadas||[]).length > 0 ? (
                     <div style={{display:"grid",gap:6,marginBottom:16}}>
                       {(empModal.deduccionesPersonalizadas||[]).map(ded=>(
-                        <div key={ded.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#f1f5f9",borderRadius:8,padding:"8px 12px",fontSize:12}}>
+                        <div key={ded.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"var(--surface-subtle)",border:"1px solid var(--border)",borderRadius:8,padding:"8px 12px",fontSize:12}}>
                           <div>
-                            <span style={{fontWeight:600,color:"#0f172a"}}>{ded.nombre}</span>
-                            <span style={{color:"#64748b",marginLeft:8}}>({fmt(ded.valor)} mensual)</span>
+                            <span style={{fontWeight:600,color:"var(--text-main)"}}>{ded.nombre}</span>
+                            <span style={{color:"var(--text-muted)",marginLeft:8}}>({fmt(ded.valor)} mensual)</span>
                           </div>
                           <button
                             type="button"
@@ -1875,20 +1875,20 @@ export default function Nomina({ctx}){
                       ))}
                     </div>
                   ) : (
-                    <div style={{fontSize:11,color:"#94a3b8",marginBottom:16,fontStyle:"italic"}}>
+                    <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:16,fontStyle:"italic"}}>
                       Sin deducciones adicionales registradas.
                     </div>
                   )}
 
-                  <div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:14,marginBottom:16}}>
-                    <div style={{fontSize:11,fontWeight:700,color:"#92400e",marginBottom:8}}>➕ Agregar deducción personalizada</div>
+                  <div style={{background:"rgba(245, 158, 11, 0.12)",border:"1px solid rgba(245, 158, 11, 0.35)",borderRadius:10,padding:14,marginBottom:16}}>
+                    <div style={{fontSize:11,fontWeight:700,color:"#f59e0b",marginBottom:8}}>➕ Agregar deducción personalizada</div>
                     <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
                       {["Natillera","Préstamo","Anticipo","Ahorro interno","Libranza"].map(concepto=>(
                         <button
                           key={concepto}
                           type="button"
                           onClick={()=>setDedForm(prev=>({...prev, nombre:concepto}))}
-                          style={{background:"#fff",border:"1px solid #d97706",color:"#92400e",borderRadius:20,padding:"2px 9px",fontSize:10.5,fontWeight:600,cursor:"pointer"}}
+                          style={{background:"var(--surface)",border:"1px solid #d97706",color:"#f59e0b",borderRadius:20,padding:"2px 9px",fontSize:10.5,fontWeight:600,cursor:"pointer"}}
                         >
                           + {concepto}
                         </button>
@@ -1941,17 +1941,17 @@ export default function Nomina({ctx}){
           {/* Selector de modo y encabezado */}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12,marginBottom:16}}>
             <div>
-              <div style={{fontSize:16,fontWeight:700,color:"#0f172a"}}>Revisión General del Corte y Deducciones</div>
-              <div style={{fontSize:11,color:"#64748b",marginTop:2}}>
+              <div style={{fontSize:16,fontWeight:700,color:"var(--text-main)"}}>Revisión General del Corte y Deducciones</div>
+              <div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}>
                 Corte activo: <strong>{periodoNomina.label}</strong> · Sábana consolidada de salarios, bases IBC, deducciones de ley y netos quincenales antes del cierre.
               </div>
             </div>
-            <div style={{display:"flex",gap:4,background:"#f1f5f9",padding:3,borderRadius:8,border:"1px solid #e2e8f0"}}>
+            <div style={{display:"flex",gap:4,background:"var(--surface-subtle)",padding:3,borderRadius:8,border:"1px solid var(--border)"}}>
               <button
                 type="button"
                 onClick={()=>setModoVistaDeducciones("tabla")}
                 style={{
-                  ...B(modoVistaDeducciones==="tabla"?"#142840":"transparent",modoVistaDeducciones==="tabla"?"#fff":"#64748b"),
+                  ...B(modoVistaDeducciones==="tabla"?"#142840":"transparent",modoVistaDeducciones==="tabla"?"#fff":"var(--text-muted)"),
                   fontSize:11,padding:"6px 12px",borderRadius:6,border:"none",fontWeight:modoVistaDeducciones==="tabla"?700:500
                 }}
               >
@@ -1961,7 +1961,7 @@ export default function Nomina({ctx}){
                 type="button"
                 onClick={()=>setModoVistaDeducciones("individual")}
                 style={{
-                  ...B(modoVistaDeducciones==="individual"?"#142840":"transparent",modoVistaDeducciones==="individual"?"#fff":"#64748b"),
+                  ...B(modoVistaDeducciones==="individual"?"#142840":"transparent",modoVistaDeducciones==="individual"?"#fff":"var(--text-muted)"),
                   fontSize:11,padding:"6px 12px",borderRadius:6,border:"none",fontWeight:modoVistaDeducciones==="individual"?700:500
                 }}
               >
@@ -1981,28 +1981,28 @@ export default function Nomina({ctx}){
 
             return (
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))",gap:10,marginBottom:16}}>
-                <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-                  <div style={{fontSize:9.5,color:"#64748b",textTransform:"uppercase",fontWeight:600}}>Empleados corte</div>
-                  <div style={{fontSize:16,fontWeight:700,color:"#0f172a",marginTop:3}}>{resumenesActivos.length} activos</div>
+                <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:10,padding:"10px 12px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+                  <div style={{fontSize:9.5,color:"var(--text-muted)",textTransform:"uppercase",fontWeight:600}}>Empleados corte</div>
+                  <div style={{fontSize:16,fontWeight:700,color:"var(--text-main)",marginTop:3}}>{resumenesActivos.length} activos</div>
                 </div>
-                <div style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:10,padding:"10px 12px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-                  <div style={{fontSize:9.5,color:"#64748b",textTransform:"uppercase",fontWeight:600}}>Base IBC Total</div>
-                  <div style={{fontSize:15,fontWeight:700,color:"#0f172a",marginTop:3}}>{fmt(totalBaseIBC)}</div>
+                <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:10,padding:"10px 12px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+                  <div style={{fontSize:9.5,color:"var(--text-muted)",textTransform:"uppercase",fontWeight:600}}>Base IBC Total</div>
+                  <div style={{fontSize:15,fontWeight:700,color:"var(--text-main)",marginTop:3}}>{fmt(totalBaseIBC)}</div>
                 </div>
-                <div style={{background:"#fff",border:"1px solid #fee2e2",borderRadius:10,padding:"10px 12px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-                  <div style={{fontSize:9.5,color:"#b91c1c",textTransform:"uppercase",fontWeight:600}}>Salud 4% Total</div>
+                <div style={{background:"var(--surface)",border:"1px solid rgba(239, 68, 68, 0.3)",borderRadius:10,padding:"10px 12px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+                  <div style={{fontSize:9.5,color:"#ef4444",textTransform:"uppercase",fontWeight:600}}>Salud 4% Total</div>
                   <div style={{fontSize:15,fontWeight:700,color:"#dc2626",marginTop:3}}>{fmt(totalSalud)}</div>
                 </div>
-                <div style={{background:"#fff",border:"1px solid #ffe4e6",borderRadius:10,padding:"10px 12px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-                  <div style={{fontSize:9.5,color:"#be123c",textTransform:"uppercase",fontWeight:600}}>Pensión 4% Total</div>
+                <div style={{background:"var(--surface)",border:"1px solid rgba(244, 63, 94, 0.3)",borderRadius:10,padding:"10px 12px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+                  <div style={{fontSize:9.5,color:"#f43f5e",textTransform:"uppercase",fontWeight:600}}>Pensión 4% Total</div>
                   <div style={{fontSize:15,fontWeight:700,color:"#e11d48",marginTop:3}}>{fmt(totalPension)}</div>
                 </div>
-                <div style={{background:"#fff",border:"1px solid #ede9fe",borderRadius:10,padding:"10px 12px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-                  <div style={{fontSize:9.5,color:"#6d28d9",textTransform:"uppercase",fontWeight:600}}>Otras deducciones</div>
+                <div style={{background:"var(--surface)",border:"1px solid rgba(139, 92, 246, 0.3)",borderRadius:10,padding:"10px 12px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+                  <div style={{fontSize:9.5,color:"#a855f7",textTransform:"uppercase",fontWeight:600}}>Otras deducciones</div>
                   <div style={{fontSize:15,fontWeight:700,color:"#7c3aed",marginTop:3}}>{fmt(totalOtrasDeducciones)}</div>
                 </div>
-                <div style={{background:"#fff",border:"1px solid #dcfce7",borderRadius:10,padding:"10px 12px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-                  <div style={{fontSize:9.5,color:"#15803d",textTransform:"uppercase",fontWeight:600}}>Neto a dispersar</div>
+                <div style={{background:"var(--surface)",border:"1px solid rgba(34, 197, 94, 0.3)",borderRadius:10,padding:"10px 12px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+                  <div style={{fontSize:9.5,color:"#4ade80",textTransform:"uppercase",fontWeight:600}}>Neto a dispersar</div>
                   <div style={{fontSize:15,fontWeight:700,color:"#166534",marginTop:3}}>{fmt(totalNeto)}</div>
                 </div>
               </div>
@@ -2024,7 +2024,7 @@ export default function Nomina({ctx}){
             });
 
             return (
-              <div style={{background:"#fff",borderRadius:12,border:"1px solid #e2e8f0",boxShadow:"0 2px 6px rgba(0,0,0,0.04)",padding:18}}>
+              <div style={{background:"var(--surface)",borderRadius:12,border:"1px solid var(--border)",boxShadow:"0 2px 6px rgba(0,0,0,0.04)",padding:18}}>
                 {/* Filtro y buscador */}
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap",marginBottom:14}}>
                   <div style={{position:"relative",minWidth:260,flex:1}}>
@@ -2038,7 +2038,7 @@ export default function Nomina({ctx}){
                     {busquedaDeduccion && (
                       <button
                         onClick={()=>setBusquedaDeduccion("")}
-                        style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",border:"none",background:"transparent",color:"#94a3b8",cursor:"pointer",fontSize:12}}
+                        style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",border:"none",background:"transparent",color:"var(--text-muted)",cursor:"pointer",fontSize:12}}
                       >
                         ✕
                       </button>
@@ -2054,9 +2054,9 @@ export default function Nomina({ctx}){
                         key={key}
                         onClick={()=>setFiltroDeduccion(key)}
                         style={{
-                          background:filtroDeduccion===key?"#142840":"#f8fafc",
-                          color:filtroDeduccion===key?"#fff":"#475569",
-                          border:`1px solid ${filtroDeduccion===key?"#142840":"#cbd5e1"}`,
+                          background:filtroDeduccion===key?"#142840":"var(--surface-subtle)",
+                          color:filtroDeduccion===key?"#fff":"var(--text-muted)",
+                          border:`1px solid ${filtroDeduccion===key?"#142840":"var(--border)"}`,
                           borderRadius:20,padding:"4px 10px",fontSize:11,fontWeight:600,cursor:"pointer"
                         }}
                       >
@@ -2086,7 +2086,7 @@ export default function Nomina({ctx}){
                     <tbody>
                       {listaFiltrada.length === 0 ? (
                         <tr>
-                          <td colSpan={10} style={{padding:24,textAlign:"center",color:"#94a3b8"}}>
+                          <td colSpan={10} style={{padding:24,textAlign:"center",color:"var(--text-muted)"}}>
                             No se encontraron empleados con los filtros aplicados.
                           </td>
                         </tr>
@@ -2097,22 +2097,22 @@ export default function Nomina({ctx}){
                             <tr
                               key={e.id}
                               style={{
-                                background: idx % 2 === 0 ? "#ffffff" : "#f8fafc",
-                                borderBottom:"1px solid #e2e8f0"
+                                background: idx % 2 === 0 ? "var(--surface)" : "var(--surface-subtle)",
+                                borderBottom:"1px solid var(--border)"
                               }}
                             >
                               <td style={{padding:"8px 10px"}}>
                                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                                   <Av init={e.avatar} color={PAL[idx%PAL.length]} size={28}/>
                                   <div>
-                                    <div style={{fontWeight:600,color:"#0f172a"}}>{e.nombre}</div>
-                                    <div style={{fontSize:10,color:"#64748b"}}>{e.cargo || "Sin cargo"} · C.C. {e.cedula || "N/A"}</div>
+                                    <div style={{fontWeight:600,color:"var(--text-main)"}}>{e.nombre}</div>
+                                    <div style={{fontSize:10,color:"var(--text-muted)"}}>{e.cargo || "Sin cargo"} · C.C. {e.cedula || "N/A"}</div>
                                   </div>
                                 </div>
                               </td>
-                              <td style={{padding:"8px 10px",textAlign:"right",color:"#475569"}}>{fmt(e.salario)}</td>
+                              <td style={{padding:"8px 10px",textAlign:"right",color:"var(--text-muted)"}}>{fmt(e.salario)}</td>
                               <td style={{padding:"8px 10px",textAlign:"center",fontWeight:600,color:"#2563eb"}}>{r.diasNomina}</td>
-                              <td style={{padding:"8px 10px",textAlign:"right",fontWeight:600,color:"#0f172a"}}>{fmt(r.baseSaludPension)}</td>
+                              <td style={{padding:"8px 10px",textAlign:"right",fontWeight:600,color:"var(--text-main)"}}>{fmt(r.baseSaludPension)}</td>
                               <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:"#dc2626"}}>{fmt(r.salud)}</td>
                               <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:"#e11d48"}}>{fmt(r.pension)}</td>
                               <td style={{padding:"8px 10px"}}>
@@ -2121,7 +2121,7 @@ export default function Nomina({ctx}){
                                     {(e.deduccionesPersonalizadas||[]).map(ded=>(
                                       <span
                                         key={ded.id}
-                                        style={{background:"#f3e8ff",color:"#6b21a8",border:"1px solid #d8b4fe",borderRadius:4,padding:"1px 6px",fontSize:10,fontWeight:600}}
+                                        style={{background:"rgba(147, 51, 234, 0.15)",color:"#c084fc",border:"1px solid rgba(147, 51, 234, 0.35)",borderRadius:4,padding:"1px 6px",fontSize:10,fontWeight:600}}
                                         title={`${ded.nombre}: ${fmt(ded.valor)} mensual`}
                                       >
                                         {ded.nombre}: {fmt(ded.valor)}
@@ -2129,7 +2129,7 @@ export default function Nomina({ctx}){
                                     ))}
                                   </div>
                                 ) : (
-                                  <span style={{color:"#94a3b8",fontSize:11}}>—</span>
+                                  <span style={{color:"var(--text-muted)",fontSize:11}}>—</span>
                                 )}
                               </td>
                               <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:"#c2410c"}}>{fmt(r.totalDeducciones)}</td>
@@ -2139,8 +2139,8 @@ export default function Nomina({ctx}){
                                   type="button"
                                   onClick={()=>{setEmpDeduccionModalId(e.id);setSelId(e.id);}}
                                   style={{
-                                    ...B(tieneAdicionales?"#eff6ff":"#f8fafc", tieneAdicionales?"#1d4ed8":"#475569"),
-                                    border:`1px solid ${tieneAdicionales?"#bfdbfe":"#cbd5e1"}`,
+                                    ...B(tieneAdicionales?"rgba(37, 99, 235, 0.15)":"var(--surface-subtle)", tieneAdicionales?"#60a5fa":"var(--text-muted)"),
+                                    border:`1px solid ${tieneAdicionales?"rgba(37, 99, 235, 0.35)":"var(--border)"}`,
                                     padding:"4px 8px",fontSize:10.5,borderRadius:6,justifyContent:"center"
                                   }}
                                   title="Agregar o quitar conceptos de deducción personalizada"
@@ -2157,8 +2157,8 @@ export default function Nomina({ctx}){
                 </div>
 
                 {/* Pie de tabla con botón de avance */}
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12,marginTop:16,paddingTop:12,borderTop:"1px solid #e2e8f0"}}>
-                  <div style={{fontSize:11.5,color:"#166534",fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12,marginTop:16,paddingTop:12,borderTop:"1px solid var(--border)"}}>
+                  <div style={{fontSize:11.5,color:"#4ade80",fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
                     <span>✓</span> Todas las deducciones de ley están calculadas y sincronizadas para el corte.
                   </div>
                   <div style={{display:"flex",gap:8}}>
@@ -2200,51 +2200,51 @@ export default function Nomina({ctx}){
 
                 {empleadoDeduccionActivo ? (
                   <>
-                    <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:"14px 16px"}}>
+                    <div style={{background:"var(--surface-subtle)",border:"1px solid var(--border)",borderRadius:12,padding:"14px 16px"}}>
                       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
                         <Av init={empleadoDeduccionActivo.avatar} color={PAL[0]} size={34}/>
                         <div style={{flex:1}}>
-                          <div style={{fontWeight:700,color:"#0f172a"}}>{empleadoDeduccionActivo.nombre}</div>
-                          <div style={{fontSize:11,color:"#64748b"}}>{empleadoDeduccionActivo.cargo || "Sin cargo"} · {empleadoDeduccionActivo.cedula || "Sin documento"} · {periodoNomina.label}</div>
+                          <div style={{fontWeight:700,color:"var(--text-main)"}}>{empleadoDeduccionActivo.nombre}</div>
+                          <div style={{fontSize:11,color:"var(--text-muted)"}}>{empleadoDeduccionActivo.cargo || "Sin cargo"} · {empleadoDeduccionActivo.cedula || "Sin documento"} · {periodoNomina.label}</div>
                         </div>
                       </div>
                       {(()=>{
                         const resumenDeduccion = calcularResumenNominaEmpleado(empleadoDeduccionActivo, periodoNomina);
                         return(
                           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
-                            <div style={{background:"#fff",borderRadius:8,padding:"10px 12px",gridColumn:"span 3"}}>
-                              <div style={{fontSize:10,color:"#64748b"}}>Base salud / pensión del corte</div>
-                              <div style={{fontWeight:700,color:"#142840",fontSize:16}}>{fmt(resumenDeduccion.baseSaludPension)}</div>
-                              <div style={{fontSize:10,color:"#94a3b8",marginTop:3}}>Incluye salario del corte + incapacidades + horas extras + comisiones.</div>
+                            <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:8,padding:"10px 12px",gridColumn:"span 3"}}>
+                              <div style={{fontSize:10,color:"var(--text-muted)"}}>Base salud / pensión del corte</div>
+                              <div style={{fontWeight:700,color:"var(--text-main)",fontSize:16}}>{fmt(resumenDeduccion.baseSaludPension)}</div>
+                              <div style={{fontSize:10,color:"var(--text-muted)",marginTop:3}}>Incluye salario del corte + incapacidades + horas extras + comisiones.</div>
                             </div>
-                            <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Salud</div><div style={{fontWeight:700,color:"#dc2626"}}>{fmt(resumenDeduccion.salud)}</div></div>
-                            <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Pensión</div><div style={{fontWeight:700,color:"#e11d48"}}>{fmt(resumenDeduccion.pension)}</div></div>
-                            <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Incapacidades</div><div style={{fontWeight:700,color:"#166534"}}>{fmt(resumenDeduccion.incapacidadTotal)}</div></div>
-                            <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Otras deducciones</div><div style={{fontWeight:700,color:"#7c3aed"}}>{fmt(resumenDeduccion.otrasDeducciones)}</div></div>
-                            <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Total descuentos</div><div style={{fontWeight:700,color:"#c2410c"}}>{fmt(resumenDeduccion.totalDeducciones)}</div></div>
-                            <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Neto del corte</div><div style={{fontWeight:700,color:"#0f766e"}}>{fmt(resumenDeduccion.neto)}</div></div>
-                            <div style={{background:"#fff",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"#64748b"}}>Extras + comisiones</div><div style={{fontWeight:700,color:"#f59e0b"}}>{fmt(resumenDeduccion.horasExtras + resumenDeduccion.comisiones)}</div></div>
+                            <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"var(--text-muted)"}}>Salud</div><div style={{fontWeight:700,color:"#dc2626"}}>{fmt(resumenDeduccion.salud)}</div></div>
+                            <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"var(--text-muted)"}}>Pensión</div><div style={{fontWeight:700,color:"#e11d48"}}>{fmt(resumenDeduccion.pension)}</div></div>
+                            <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"var(--text-muted)"}}>Incapacidades</div><div style={{fontWeight:700,color:"#166534"}}>{fmt(resumenDeduccion.incapacidadTotal)}</div></div>
+                            <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"var(--text-muted)"}}>Otras deducciones</div><div style={{fontWeight:700,color:"#7c3aed"}}>{fmt(resumenDeduccion.otrasDeducciones)}</div></div>
+                            <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"var(--text-muted)"}}>Total descuentos</div><div style={{fontWeight:700,color:"#c2410c"}}>{fmt(resumenDeduccion.totalDeducciones)}</div></div>
+                            <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"var(--text-muted)"}}>Neto del corte</div><div style={{fontWeight:700,color:"var(--text-main)"}}>{fmt(resumenDeduccion.neto)}</div></div>
+                            <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:8,padding:"10px 12px"}}><div style={{fontSize:10,color:"var(--text-muted)"}}>Extras + comisiones</div><div style={{fontWeight:700,color:"#f59e0b"}}>{fmt(resumenDeduccion.horasExtras + resumenDeduccion.comisiones)}</div></div>
                           </div>
                         );
                       })()}
                     </div>
 
-                    <div style={{background:"#ffffff",borderRadius:12,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
-                      <div style={{fontSize:11,fontWeight:700,color:"#142840",textTransform:"uppercase",marginBottom:10}}>Deducciones personalizadas</div>
+                    <div style={{background:"var(--surface)",borderRadius:12,padding:"14px 16px",border:"1px solid var(--border)"}}>
+                      <div style={{fontSize:11,fontWeight:700,color:"var(--text-main)",textTransform:"uppercase",marginBottom:10}}>Deducciones personalizadas</div>
                       {(empleadoDeduccionActivo.deduccionesPersonalizadas||[]).length>0 ? (
                         <div style={{display:"grid",gap:8,marginBottom:12}}>
                           {(empleadoDeduccionActivo.deduccionesPersonalizadas||[]).map((deduccion)=>(
-                            <div key={deduccion.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#f8fafc",borderRadius:8,padding:"10px 12px"}}>
+                            <div key={deduccion.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"var(--surface-subtle)",border:"1px solid var(--border)",borderRadius:8,padding:"10px 12px"}}>
                               <div>
-                                <div style={{fontWeight:700,color:"#0f172a"}}>{deduccion.nombre}</div>
-                                <div style={{fontSize:11,color:"#64748b"}}>{fmt(deduccion.valor)} mensual</div>
+                                <div style={{fontWeight:700,color:"var(--text-main)"}}>{deduccion.nombre}</div>
+                                <div style={{fontSize:11,color:"var(--text-muted)"}}>{fmt(deduccion.valor)} mensual</div>
                               </div>
                               <button type="button" onClick={()=>quitarDeduccion(empleadoDeduccionActivo.id,deduccion.id)} style={{...B("#fee2e2","#b91c1c"),border:"1px solid #fecaca",padding:"6px 10px",fontSize:11}}>Quitar</button>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <div style={{fontSize:11,color:"#64748b",marginBottom:12}}>
+                        <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:12}}>
                           Este empleado no tiene deducciones adicionales. Aquí puedes revisar y agregar conceptos como natillera, libranza o descuentos internos autorizados.
                         </div>
                       )}
@@ -2278,7 +2278,7 @@ export default function Nomina({ctx}){
                     </div>
                   </>
                 ) : (
-                  <div style={{textAlign:"center",color:"#94a3b8",padding:"28px 0"}}>
+                  <div style={{textAlign:"center",color:"var(--text-muted)",padding:"28px 0"}}>
                     Selecciona un empleado para revisar sus deducciones.
                   </div>
                 )}
@@ -2291,26 +2291,26 @@ export default function Nomina({ctx}){
       {tab==="planilla"&&(
         <div>
           <div style={{display:"flex",gap:12,alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
-            <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:12,padding:"12px 14px"}}>
-              <div style={{fontSize:11,fontWeight:700,color:"#1d4ed8",textTransform:"uppercase",letterSpacing:0.7}}>Generación de nómina y plano banco</div>
-              <div style={{fontSize:13,color:"#0f172a",marginTop:4}}>Corte activo: {periodoNomina.label}</div>
-              <div style={{fontSize:11,color:"#64748b",marginTop:4}}>
+            <div style={{background:"var(--surface-subtle)",border:"1px solid var(--border)",borderRadius:12,padding:"12px 14px"}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#3b82f6",textTransform:"uppercase",letterSpacing:0.7}}>Generación de nómina y plano banco</div>
+              <div style={{fontSize:13,color:"var(--text-main)",marginTop:4}}>Corte activo: {periodoNomina.label}</div>
+              <div style={{fontSize:11,color:"var(--text-muted)",marginTop:4}}>
                 {nominaEstaGenerada
                   ? ("Nómina generada el " + formatNominaGeneratedAt(nominaVistaActual.generadoEn) + ". Si cambias incapacidades, horas extras, comisiones o deducciones, usa Regenerar nómina.")
                   : "Esta es la vista previa del corte. Cuando ya revises incapacidades, horas extras, comisiones, deducciones y liquidaciones, pulsa Generar nómina para congelar el periodo."}
               </div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(3, minmax(120px, 1fr))",gap:8,marginTop:12}}>
-                <div style={{background:"#fff",borderRadius:10,padding:"9px 10px",border:"1px solid #dbeafe"}}>
-                  <div style={{fontSize:9,color:"#64748b",textTransform:"uppercase"}}>Registros nómina</div>
-                  <div style={{fontWeight:700,color:"#142840",marginTop:4}}>{nominaVistaActual.totals.totalRegistros}</div>
+                <div style={{background:"var(--surface)",borderRadius:10,padding:"9px 10px",border:"1px solid var(--border)"}}>
+                  <div style={{fontSize:9,color:"var(--text-muted)",textTransform:"uppercase"}}>Registros nómina</div>
+                  <div style={{fontWeight:700,color:"var(--text-main)",marginTop:4}}>{nominaVistaActual.totals.totalRegistros}</div>
                 </div>
-                <div style={{background:"#fff",borderRadius:10,padding:"9px 10px",border:"1px solid #dbeafe"}}>
-                  <div style={{fontSize:9,color:"#64748b",textTransform:"uppercase"}}>Listos para banco</div>
+                <div style={{background:"var(--surface)",borderRadius:10,padding:"9px 10px",border:"1px solid var(--border)"}}>
+                  <div style={{fontSize:9,color:"var(--text-muted)",textTransform:"uppercase"}}>Listos para banco</div>
                   <div style={{fontWeight:700,color:"#166534",marginTop:4}}>{nominaVistaActual.totals.totalRegistrosBanco}</div>
                 </div>
-                <div style={{background:"#fff",borderRadius:10,padding:"9px 10px",border:"1px solid #dbeafe"}}>
-                  <div style={{fontSize:9,color:"#64748b",textTransform:"uppercase"}}>Total banco</div>
-                  <div style={{fontWeight:700,color:"#003B71",marginTop:4}}>{fmt(nominaVistaActual.totals.totalBanco)}</div>
+                <div style={{background:"var(--surface)",borderRadius:10,padding:"9px 10px",border:"1px solid var(--border)"}}>
+                  <div style={{fontSize:9,color:"var(--text-muted)",textTransform:"uppercase"}}>Total banco</div>
+                  <div style={{fontWeight:700,color:"#60a5fa",marginTop:4}}>{fmt(nominaVistaActual.totals.totalBanco)}</div>
                 </div>
               </div>
             </div>
@@ -2333,7 +2333,7 @@ export default function Nomina({ctx}){
               {nominaEstaGenerada && !modoEdicionNomina && (
                 <button
                   style={{
-                    ...B("#eff6ff","#1d4ed8"),border:"1px solid #bfdbfe",
+                    ...B("rgba(37, 99, 235, 0.15)","#60a5fa"),border:"1px solid rgba(37, 99, 235, 0.35)",
                     justifyContent:"center",padding:"10px 16px",fontSize:12,fontWeight:600
                   }}
                   onClick={()=>{
@@ -2350,7 +2350,7 @@ export default function Nomina({ctx}){
               {/* Botón Consultar Historial */}
               <button
                 style={{
-                  ...B("#ffffff","#1e293b"),border:"1px solid #cbd5e1",
+                  ...B("var(--surface)","var(--text-main)"),border:"1px solid var(--border)",
                   justifyContent:"center",padding:"9px 16px",fontSize:12,fontWeight:600
                 }}
                 onClick={()=>setMostrarHistorialNominas(true)}
@@ -2360,7 +2360,7 @@ export default function Nomina({ctx}){
 
               <button
                 style={{
-                  ...B(nominaEstaGenerada?"#142840":"#f1f5f9", nominaEstaGenerada?"#dbeafe":"#94a3b8"),
+                  ...B(nominaEstaGenerada?"#142840":"var(--surface-subtle)", nominaEstaGenerada?"#dbeafe":"var(--text-muted)"),border:"1px solid var(--border)",
                   justifyContent:"center",padding:"11px 18px",fontSize:12,
                 }}
                 onClick={descargarPlanoBanco}
@@ -2370,7 +2370,7 @@ export default function Nomina({ctx}){
               </button>
 
               <button
-                style={{...B("#f8fafc","#475569"),border:"1px solid #dbe4f0",justifyContent:"center",padding:"10px 18px",fontSize:12}}
+                style={{...B("var(--surface)","var(--text-main)"),border:"1px solid var(--border)",justifyContent:"center",padding:"10px 18px",fontSize:12}}
                 onClick={()=>printCurrentPz("Planilla Nómina " + (nominaVistaActual.periodo.label))}
               >
                 🖨 Imprimir planilla
@@ -2444,23 +2444,23 @@ export default function Nomina({ctx}){
           alignItems: "center", justifyContent: "center", padding: 16
         }}>
           <div style={{
-            background: "#fff", borderRadius: 16, width: "100%", maxWidth: 840,
+            background: "var(--surface)", borderRadius: 16, width: "100%", maxWidth: 840,
             maxHeight: "90vh", display: "flex", flexDirection: "column",
-            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)", border: "1px solid #e2e8f0",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.4)", border: "1px solid var(--border)",
             overflow: "hidden"
           }}>
             {/* Header */}
             <div style={{
               display: "flex", justifyContent: "space-between", alignItems: "center",
-              padding: "16px 20px", borderBottom: "1px solid #e2e8f0", background: "#f8fafc"
+              padding: "16px 20px", borderBottom: "1px solid var(--border)", background: "var(--surface-subtle)"
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ fontSize: 22 }}>📜</span>
                 <div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-main)" }}>
                     Historial de Nóminas Generadas
                   </div>
-                  <div style={{ fontSize: 11.5, color: "#64748b" }}>
+                  <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>
                     Consulta cortes archivados, reimprime colillas, descarga archivos bancarios o corrige equivocaciones.
                   </div>
                 </div>
@@ -2469,9 +2469,9 @@ export default function Nomina({ctx}){
                 type="button"
                 onClick={() => setMostrarHistorialNominas(false)}
                 style={{
-                  background: "#fff", border: "1px solid #cbd5e1", borderRadius: 8,
+                  background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8,
                   width: 32, height: 32, cursor: "pointer", fontSize: 14, fontWeight: 700,
-                  color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center"
+                  color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center"
                 }}
               >
                 ✕
@@ -2482,18 +2482,18 @@ export default function Nomina({ctx}){
             {(Array.isArray(nominasGeneradas) && nominasGeneradas.length > 0) && (
               <div style={{
                 display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10,
-                padding: "12px 20px", background: "#f1f5f9", borderBottom: "1px solid #e2e8f0"
+                padding: "12px 20px", background: "var(--surface-subtle)", borderBottom: "1px solid var(--border)"
               }}>
-                <div style={{ background: "#fff", padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0" }}>
-                  <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 600 }}>Cortes archivados</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "#1e293b", marginTop: 2 }}>{nominasGeneradas.length} períodos</div>
+                <div style={{ background: "var(--surface)", padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)" }}>
+                  <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 600 }}>Cortes archivados</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-main)", marginTop: 2 }}>{nominasGeneradas.length} períodos</div>
                 </div>
-                <div style={{ background: "#fff", padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0" }}>
-                  <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 600 }}>Último corte guardado</div>
+                <div style={{ background: "var(--surface)", padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)" }}>
+                  <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 600 }}>Último corte guardado</div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: "#2563eb", marginTop: 3 }}>{nominasGeneradas[0]?.periodoLabel || nominasGeneradas[0]?.id || "—"}</div>
                 </div>
-                <div style={{ background: "#fff", padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0" }}>
-                  <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 600 }}>Total nómina acumulada</div>
+                <div style={{ background: "var(--surface)", padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)" }}>
+                  <div style={{ fontSize: 10, color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 600 }}>Total nómina acumulada</div>
                   <div style={{ fontSize: 15, fontWeight: 700, color: "#166534", marginTop: 2 }}>
                     {fmt(nominasGeneradas.reduce((acc, item) => acc + Number(item.snapshot?.totals?.totalPagar || item.snapshot?.totals?.totalBanco || 0), 0))}
                   </div>
@@ -2504,10 +2504,10 @@ export default function Nomina({ctx}){
             {/* List */}
             <div style={{ padding: "16px 20px", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
               {(!Array.isArray(nominasGeneradas) || nominasGeneradas.length === 0) ? (
-                <div style={{ textAlign: "center", padding: "40px 20px", color: "#64748b" }}>
+                <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--text-muted)" }}>
                   <div style={{ fontSize: 36, marginBottom: 10 }}>📭</div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: "#1e293b" }}>No hay nóminas guardadas en el historial aún</div>
-                  <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 6, maxWidth: 420, margin: "6px auto 0" }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-main)" }}>No hay nóminas guardadas en el historial aún</div>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 6, maxWidth: 420, margin: "6px auto 0" }}>
                     Cuando calcules un corte de nómina y hagas clic en <strong>'Guardar nómina'</strong>, quedará archivado aquí para consulta, descarga de planos bancarios y reimpresión de colillas.
                   </div>
                 </div>
@@ -2522,8 +2522,8 @@ export default function Nomina({ctx}){
                     <div
                       key={item.id}
                       style={{
-                        border: esCorteActivo ? "2px solid #3b82f6" : "1px solid #e2e8f0",
-                        background: esCorteActivo ? "#f8faff" : "#ffffff",
+                        border: esCorteActivo ? "2px solid #3b82f6" : "1px solid var(--border)",
+                        background: esCorteActivo ? "var(--surface-subtle)" : "var(--surface)",
                         borderRadius: 12, padding: "14px 16px", display: "flex",
                         flexDirection: "column", gap: 10, transition: "all 0.15s ease"
                       }}
@@ -2531,42 +2531,42 @@ export default function Nomina({ctx}){
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
                         <div>
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <strong style={{ fontSize: 14, color: "#0f172a" }}>
+                            <strong style={{ fontSize: 14, color: "var(--text-main)" }}>
                               {item.periodoLabel || item.id}
                             </strong>
                             {esCorteActivo && (
                               <span style={{
-                                background: "#dbeafe", color: "#1d4ed8", border: "1px solid #bfdbfe",
+                                background: "rgba(37, 99, 235, 0.15)", color: "#60a5fa", border: "1px solid rgba(37, 99, 235, 0.35)",
                                 borderRadius: 6, padding: "2px 7px", fontSize: 10.5, fontWeight: 700
                               }}>
                                 ★ Corte en pantalla
                               </span>
                             )}
                           </div>
-                          <div style={{ fontSize: 11, color: "#64748b", marginTop: 3 }}>
+                          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>
                             Guardada el {formatNominaGeneratedAt(item.generadoEn)}
                           </div>
                         </div>
 
                         {/* Badges / Metrics */}
                         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                          <span style={{ background: "#f1f5f9", color: "#334155", padding: "4px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600 }}>
+                          <span style={{ background: "var(--surface-subtle)", color: "var(--text-main)", border: "1px solid var(--border)", padding: "4px 8px", borderRadius: 6, fontSize: 11, fontWeight: 600 }}>
                             👥 {totalRegistros} empleados
                           </span>
-                          <span style={{ background: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0", padding: "4px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
+                          <span style={{ background: "rgba(34, 197, 94, 0.15)", color: "#4ade80", border: "1px solid rgba(34, 197, 94, 0.35)", padding: "4px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
                             💰 {fmt(totalPagarCorte)}
                           </span>
                         </div>
                       </div>
 
                       {/* Action buttons row */}
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #f1f5f9", paddingTop: 10, flexWrap: "wrap", gap: 6 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--border)", paddingTop: 10, flexWrap: "wrap", gap: 6 }}>
                         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                           <button
                             type="button"
                             onClick={() => cargarNominaHistorial(item, false)}
                             style={{
-                              background: "#fff", color: "#1e293b", border: "1px solid #cbd5e1",
+                              background: "var(--surface)", color: "var(--text-main)", border: "1px solid var(--border)",
                               borderRadius: 7, padding: "5px 10px", fontSize: 11.5, fontWeight: 600, cursor: "pointer"
                             }}
                             title="Cargar y consultar este corte"
@@ -2580,7 +2580,7 @@ export default function Nomina({ctx}){
                               cargarNominaHistorial(item, true);
                             }}
                             style={{
-                              background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe",
+                              background: "rgba(37, 99, 235, 0.15)", color: "#60a5fa", border: "1px solid rgba(37, 99, 235, 0.35)",
                               borderRadius: 7, padding: "5px 10px", fontSize: 11.5, fontWeight: 600, cursor: "pointer"
                             }}
                             title="Si hubo alguna equivocación, pulsa aquí para editar y corregir los valores"
@@ -2595,7 +2595,7 @@ export default function Nomina({ctx}){
                               setTab("colillas");
                             }}
                             style={{
-                              background: "#fff7ed", color: "#c2410c", border: "1px solid #fed7aa",
+                              background: "rgba(245, 158, 11, 0.15)", color: "#f59e0b", border: "1px solid rgba(245, 158, 11, 0.35)",
                               borderRadius: 7, padding: "5px 10px", fontSize: 11.5, fontWeight: 600, cursor: "pointer"
                             }}
                             title="Ir a las colillas de pago de este corte"
@@ -2607,7 +2607,7 @@ export default function Nomina({ctx}){
                             type="button"
                             onClick={() => descargarPlanoBanco(item.snapshot)}
                             style={{
-                              background: "#f0fdf4", color: "#15803d", border: "1px solid #bbf7d0",
+                              background: "rgba(34, 197, 94, 0.15)", color: "#4ade80", border: "1px solid rgba(34, 197, 94, 0.35)",
                               borderRadius: 7, padding: "5px 10px", fontSize: 11.5, fontWeight: 600, cursor: "pointer"
                             }}
                             title="Descargar archivo plano para Bancolombia"
@@ -2620,7 +2620,7 @@ export default function Nomina({ctx}){
                           type="button"
                           onClick={() => eliminarNominaHistorial(item.id)}
                           style={{
-                            background: "#fff", color: "#dc2626", border: "1px solid #fecaca",
+                            background: "var(--surface)", color: "#dc2626", border: "1px solid rgba(239, 68, 68, 0.35)",
                             borderRadius: 7, padding: "5px 9px", fontSize: 11, cursor: "pointer"
                           }}
                           title="Eliminar este corte archivado del historial"
@@ -2636,10 +2636,10 @@ export default function Nomina({ctx}){
 
             {/* Footer */}
             <div style={{
-              padding: "12px 20px", borderTop: "1px solid #e2e8f0", background: "#f8fafc",
+              padding: "12px 20px", borderTop: "1px solid var(--border)", background: "var(--surface-subtle)",
               display: "flex", justifyContent: "space-between", alignItems: "center"
             }}>
-              <div style={{ fontSize: 11, color: "#64748b" }}>
+              <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
                 💡 <em>Tip: Al editar un corte archivado se activa el modo corrección, permitiendo retocar novedades o deducciones y volver a guardar.</em>
               </div>
               <button

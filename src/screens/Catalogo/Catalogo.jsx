@@ -60,7 +60,7 @@ export default function Catalogo({ ctx }) {
     puedeEditar ? (
       <div style={{ display: "flex", gap: 7 }}>
         {filas.length === 0 && (
-          <button style={{ ...B("#f1f5f9", "#475569"), fontSize: 12.5, padding: "8px 14px" }}
+          <button style={{ ...B("var(--surface-subtle)", "var(--text-muted)"), border: "1px solid var(--border)", fontSize: 12.5, padding: "8px 14px" }}
             onClick={sembrar}>Cargar los de siempre</button>
         )}
         <button style={{ ...B("#f47c20"), fontSize: 12.5, padding: "8px 16px", fontWeight: 700 }}
@@ -85,18 +85,18 @@ export default function Catalogo({ ctx }) {
       </AvisoFlujo>
 
       {!puedeEditar && (
-        <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10,
-          padding: "10px 14px", fontSize: 12, color: "#475569", marginBottom: 14 }}>
+        <div style={{ background: "var(--surface-subtle)", border: "1px solid var(--border)", borderRadius: 10,
+          padding: "10px 14px", fontSize: 12, color: "var(--text-muted)", marginBottom: 14 }}>
           Puedes consultar los precios, pero solo un administrador los cambia.
         </div>
       )}
 
       {filas.length === 0 ? (
         <div style={{ ...CD, textAlign: "center", padding: 34 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1a2e", marginBottom: 6 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-main)", marginBottom: 6 }}>
             El catálogo todavía está vacío
           </div>
-          <div style={{ fontSize: 12.5, color: "#64748b", lineHeight: 1.6, maxWidth: 460, margin: "0 auto" }}>
+          <div style={{ fontSize: 12.5, color: "var(--text-muted)", lineHeight: 1.6, maxWidth: 460, margin: "0 auto" }}>
             Mientras esté vacío se usan los servicios con los que venía el programa, así que nada
             deja de funcionar. {puedeEditar
               ? "Con «Cargar los de siempre» los traes aquí para poder editarlos."
@@ -107,20 +107,20 @@ export default function Catalogo({ ctx }) {
         <div style={CD}>
           <div style={{ ...ST, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
             <span>Servicios y precios</span>
-            <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 400 }}>
+            <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 400 }}>
               {activos} activo{activos === 1 ? "" : "s"} de {filas.length}
             </span>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1.1fr 2.4fr .8fr 1.1fr .7fr",
-            gap: 8, padding: "7px 10px", background: "#f8fafc", borderRadius: 8,
-            fontSize: 9.5, fontWeight: 800, letterSpacing: .4, color: "#94a3b8", textTransform: "uppercase" }}>
+            gap: 8, padding: "7px 10px", background: "var(--surface-subtle)", borderRadius: 8,
+            fontSize: 9.5, fontWeight: 800, letterSpacing: .4, color: "var(--text-muted)", textTransform: "uppercase" }}>
             <span>Categoría</span><span>Servicio</span><span>Unidad</span><span>Precio</span><span>Activo</span>
           </div>
 
           {filas.map((fila) => (
             <div key={fila.id} style={{ display: "grid", gridTemplateColumns: "1.1fr 2.4fr .8fr 1.1fr .7fr",
-              gap: 8, padding: "7px 10px", alignItems: "center", borderBottom: "1px solid #f8fafc",
+              gap: 8, padding: "7px 10px", alignItems: "center", borderBottom: "1px solid var(--border)",
               opacity: fila.disponible === false ? .55 : 1 }}>
               <input value={fila.categoria || ""} disabled={!puedeEditar}
                 onChange={(e) => cambiar(fila.id, "categoria", e.target.value)}
@@ -146,14 +146,14 @@ export default function Catalogo({ ctx }) {
                   onChange={(e) => cambiar(fila.id, "precioBase", Number(e.target.value) || 0)}
                   style={{ ...SI, fontSize: 11.5, padding: "5px 8px", textAlign: "right",
                     fontVariantNumeric: "tabular-nums" }} />
-                <div style={{ fontSize: 9.5, color: "#94a3b8", textAlign: "right", marginTop: 1 }}>
+                <div style={{ fontSize: 9.5, color: "var(--text-muted)", textAlign: "right", marginTop: 1 }}>
                   {fmt(Number(fila.precioBase) || 0)}
                 </div>
               </div>
 
               {/* Un servicio que se deja de prestar se APAGA, no se borra: las
                   cotizaciones viejas siguen diciendo de donde salio su precio. */}
-              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#475569" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--text-main)" }}>
                 <input type="checkbox" checked={fila.disponible !== false} disabled={!puedeEditar}
                   onChange={(e) => cambiar(fila.id, "disponible", e.target.checked)} />
                 {fila.disponible === false ? "No" : "Sí"}
@@ -162,8 +162,8 @@ export default function Catalogo({ ctx }) {
           ))}
 
           {nuevo && (
-            <div style={{ fontSize: 11.5, color: "#166534", background: "#ecfdf5",
-              border: "1px solid #a7f3d0", borderRadius: 8, padding: "8px 11px", marginTop: 10 }}>
+            <div style={{ fontSize: 11.5, color: "#166534", background: "rgba(34, 197, 94, 0.15)",
+              border: "1px solid rgba(34, 197, 94, 0.3)", borderRadius: 8, padding: "8px 11px", marginTop: 10 }}>
               Servicio agregado al final. Ponle nombre y precio; se guarda solo.
             </div>
           )}

@@ -7,8 +7,8 @@ const NARANJA = "#f47c20";
 function Circulo({ numero, estado }) {
   const estilos = {
     actual: { fondo: NARANJA, texto: "#fff", borde: NARANJA },
-    hecho: { fondo: "#fff", texto: NARANJA, borde: NARANJA },
-    pendiente: { fondo: "#fff", texto: "#94a3b8", borde: "#dbe4f0" },
+    hecho: { fondo: "var(--surface, #fff)", texto: NARANJA, borde: NARANJA },
+    pendiente: { fondo: "var(--surface, #fff)", texto: "var(--text-muted, #94a3b8)", borde: "var(--border, #dbe4f0)" },
   }[estado];
 
   return (
@@ -35,16 +35,16 @@ export default function PasosNomina({ activo, onIr, conteos = {} }) {
       {FASES.map((fase, iFase) => (
         <div key={fase.titulo} style={{
           flex: "0 0 auto",
-          border: "1px solid #e8edf4", borderRadius: 14,
-          background: "#fbfcfe", padding: "11px 14px 12px",
+          border: "1px solid var(--border, #e8edf4)", borderRadius: 14,
+          background: "var(--surface-subtle, #fbfcfe)", padding: "11px 14px 12px",
         }}>
           <div style={{
             fontSize: 9.5, fontWeight: 700, letterSpacing: ".07em",
-            textTransform: "uppercase", color: "#94a3b8", marginBottom: 2,
+            textTransform: "uppercase", color: "var(--text-muted, #94a3b8)", marginBottom: 2,
           }}>
             Fase {iFase + 1} · {fase.titulo}
           </div>
-          <div style={{ fontSize: 10.5, color: "#94a3b8", marginBottom: 9 }}>
+          <div style={{ fontSize: 10.5, color: "var(--text-muted, #94a3b8)", marginBottom: 9 }}>
             {fase.detalle}
           </div>
 
@@ -60,15 +60,15 @@ export default function PasosNomina({ activo, onIr, conteos = {} }) {
               return (
                 <div key={paso.id} style={{ display: "flex", alignItems: "center" }}>
                   {iPaso > 0 && (
-                    <div style={{ width: 14, height: 1.5, background: "#e2e8f0", flexShrink: 0 }} />
+                    <div style={{ width: 14, height: 1.5, background: "var(--border, #e2e8f0)", flexShrink: 0 }} />
                   )}
                   <button
                     onClick={() => onIr(paso.id)}
                     title={`Paso ${indice + 1} de ${PASOS.length}: ${paso.label}`}
                     style={{
                       display: "flex", alignItems: "center", gap: 7,
-                      background: paso.id === activo ? "#fff7ed" : "transparent",
-                      border: `1px solid ${paso.id === activo ? "#fed7aa" : "transparent"}`,
+                      background: paso.id === activo ? "rgba(244, 124, 32, 0.15)" : "transparent",
+                      border: `1px solid ${paso.id === activo ? "rgba(244, 124, 32, 0.4)" : "transparent"}`,
                       borderRadius: 10, padding: "5px 9px 5px 5px",
                       cursor: "pointer", fontFamily: "inherit",
                       minHeight: 38, whiteSpace: "nowrap",
@@ -78,7 +78,7 @@ export default function PasosNomina({ activo, onIr, conteos = {} }) {
                     <span style={{
                       fontSize: 11.5,
                       fontWeight: paso.id === activo ? 700 : 600,
-                      color: paso.id === activo ? "#9a3412" : "#475569",
+                      color: paso.id === activo ? "var(--orange, #f47c20)" : "var(--text-main, #475569)",
                       display: "inline-flex",
                       alignItems: "center",
                       gap: 5,
@@ -91,11 +91,11 @@ export default function PasosNomina({ activo, onIr, conteos = {} }) {
                           padding: "1px 6px",
                           borderRadius: 999,
                           background: conteos[paso.id] > 0
-                            ? (paso.id === activo ? "#ea580c" : "#e2e8f0")
-                            : "#f1f5f9",
+                            ? (paso.id === activo ? "#ea580c" : "var(--border, #e2e8f0)")
+                            : "var(--surface-subtle, #f1f5f9)",
                           color: conteos[paso.id] > 0
-                            ? (paso.id === activo ? "#fff" : "#0f172a")
-                            : "#94a3b8",
+                            ? (paso.id === activo ? "#fff" : "var(--text-main, #0f172a)")
+                            : "var(--text-muted, #94a3b8)",
                         }}>
                           {conteos[paso.id]}
                         </span>
@@ -129,11 +129,11 @@ export function NavegacionPasos({ activo, onIr }) {
     <div style={{
       display: "flex", justifyContent: "space-between", alignItems: "center",
       gap: 12, flexWrap: "wrap",
-      marginTop: 22, paddingTop: 16, borderTop: "1px solid #e8edf4",
+      marginTop: 22, paddingTop: 16, borderTop: "1px solid var(--border, #e8edf4)",
     }}>
       {previo ? (
         <button onClick={() => onIr(previo.id)}
-          style={{ ...boton, background: "#f8fafc", border: "1px solid #dbe4f0", color: "#475569" }}>
+          style={{ ...boton, background: "var(--surface-subtle, #f8fafc)", border: "1px solid var(--border, #dbe4f0)", color: "var(--text-main, #475569)" }}>
           ← {previo.label}
         </button>
       ) : <span />}

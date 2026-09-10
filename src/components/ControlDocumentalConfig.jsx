@@ -21,23 +21,23 @@ export default function ControlDocumentalConfig() {
 
   return (
     <div>
-      <div style={{ fontSize: 12, color: "#64748b", marginBottom: 14, lineHeight: 1.6 }}>
+      <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 14, lineHeight: 1.6 }}>
         El código y la versión salen impresos en el encabezado de cada documento. Identifican
         <strong> la plantilla</strong>, no el documento: el número de la cotización o del informe
         sigue siendo el de siempre. <strong>Cuando cambies un formato, sube aquí su versión.</strong>
       </div>
 
-      <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, overflow: "hidden" }}>
+      <div style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1.1fr .6fr 1fr",
-          gap: 8, padding: "7px 12px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0",
-          fontSize: 9.5, fontWeight: 800, letterSpacing: .4, color: "#94a3b8", textTransform: "uppercase" }}>
+          gap: 8, padding: "7px 12px", background: "var(--surface-subtle)", borderBottom: "1px solid var(--border)",
+          fontSize: 9.5, fontWeight: 800, letterSpacing: .4, color: "var(--text-muted)", textTransform: "uppercase" }}>
           <span>Documento</span><span>Código</span><span>Versión</span><span>Desde</span>
         </div>
 
         {FORMATOS.map(({ clave, etiqueta }) => (
           <div key={clave} style={{ display: "grid", gridTemplateColumns: "1.4fr 1.1fr .6fr 1fr",
-            gap: 8, padding: "8px 12px", alignItems: "center", borderBottom: "1px solid #f8fafc" }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "#1a1a2e" }}>{etiqueta}</span>
+            gap: 8, padding: "8px 12px", alignItems: "center", borderBottom: "1px solid var(--border)" }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-main)" }}>{etiqueta}</span>
             <input
               value={valores[clave].codigo}
               onChange={(e) => cambiar(clave, "codigo", e.target.value.toUpperCase())}
@@ -58,7 +58,7 @@ export default function ControlDocumentalConfig() {
         ))}
       </div>
 
-      <div style={{ fontSize: 10.5, color: "#94a3b8", marginTop: 7, lineHeight: 1.5 }}>
+      <div style={{ fontSize: 10.5, color: "var(--text-muted)", marginTop: 7, lineHeight: 1.5 }}>
         Deja el código en blanco y ese documento sale sin el cuadro de control, como antes.
       </div>
     </div>

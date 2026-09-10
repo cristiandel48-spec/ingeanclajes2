@@ -146,16 +146,16 @@ export default function ImportarFacturaDian({
   };
 
   return (
-    <div style={{ background: "#fff", border: "1.5px solid #2563eb", borderRadius: 14, padding: 20, marginBottom: 16, boxShadow: "0 4px 16px rgba(37,99,235,0.08)" }}>
+    <div style={{ background: "var(--surface, #fff)", border: "1.5px solid var(--primary, #2563eb)", borderRadius: 14, padding: 20, marginBottom: 16, boxShadow: "0 4px 16px rgba(37,99,235,0.08)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 20 }}>⚡</span>
           <div>
-            <div style={{ fontSize: 14.5, fontWeight: 800, color: "#1e3a8a" }}>Importar Factura Electrónica DIAN (XML / HTML)</div>
-            <div style={{ fontSize: 11, color: "#64748b" }}>Lee AttachedDocument UBL 2.1, CUFE y representaciones oficiales de compras</div>
+            <div style={{ fontSize: 14.5, fontWeight: 800, color: "var(--primary, #2563eb)" }}>Importar Factura Electrónica DIAN (XML / HTML)</div>
+            <div style={{ fontSize: 11, color: "var(--text-muted, #64748b)" }}>Lee AttachedDocument UBL 2.1, CUFE y representaciones oficiales de compras</div>
           </div>
         </div>
-        <button type="button" onClick={onCerrar} style={{ ...B("#f1f5f9", "#475569"), fontSize: 12, padding: "6px 12px" }}>
+        <button type="button" onClick={onCerrar} style={{ ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)"), border: "1px solid var(--border, #cbd5e1)", fontSize: 12, padding: "6px 12px" }}>
           Cerrar
         </button>
       </div>
@@ -186,7 +186,7 @@ export default function ImportarFacturaDian({
         <button
           type="button"
           onClick={() => setModoPegar(!modoPegar)}
-          style={{ ...B("#f8fafc", "#334155"), border: "1px solid #cbd5e1" }}
+          style={{ ...B("var(--surface-subtle, #f8fafc)", "var(--text-main, #334155)"), border: "1px solid var(--border, #cbd5e1)" }}
         >
           {modoPegar ? "Ocultar área de texto" : "Pegar XML / HTML / CUFE"}
         </button>
@@ -198,7 +198,7 @@ export default function ImportarFacturaDian({
         )}
 
         {cargando && (
-          <span style={{ fontSize: 12, color: "#2563eb", fontWeight: 700 }}>
+          <span style={{ fontSize: 12, color: "var(--primary, #2563eb)", fontWeight: 700 }}>
             Leyendo y validando estructura DIAN UBL 2.1…
           </span>
         )}
@@ -222,7 +222,7 @@ export default function ImportarFacturaDian({
       )}
 
       {error && (
-        <div style={{ background: "#FEF3F2", border: "1px solid #FECDCA", color: "#B42318", borderRadius: 10, padding: "10px 14px", fontSize: 12, marginTop: 12 }}>
+        <div style={{ background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "var(--red, #f87171)", borderRadius: 10, padding: "10px 14px", fontSize: 12, marginTop: 12 }}>
           <strong>Error de lectura:</strong> {error}
         </div>
       )}
@@ -232,46 +232,46 @@ export default function ImportarFacturaDian({
         <div style={{ marginTop: 16 }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>
             {/* Columna 1: Proveedor y Documento */}
-            <div style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: 14, background: "#f8fafc" }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "#1e3a8a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
+            <div style={{ border: "1px solid var(--border, #e2e8f0)", borderRadius: 12, padding: 14, background: "var(--surface-subtle, #f8fafc)" }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "var(--primary, #1e3a8a)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
                 🏢 Datos del Proveedor (Emisor)
               </div>
 
               {proveedorExistente ? (
-                <div style={{ background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: 8, padding: "6px 10px", fontSize: 11.5, color: "#166534", marginBottom: 10 }}>
+                <div style={{ background: "rgba(22, 163, 74, 0.15)", border: "1px solid rgba(22, 163, 74, 0.3)", borderRadius: 8, padding: "6px 10px", fontSize: 11.5, color: "#4ade80", marginBottom: 10 }}>
                   ✓ <strong>Proveedor registrado:</strong> {proveedorExistente.nombre} ({proveedorExistente.id})
                 </div>
               ) : (
-                <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, padding: "6px 10px", fontSize: 11.5, color: "#92400e", marginBottom: 10 }}>
+                <div style={{ background: "rgba(245, 158, 11, 0.15)", border: "1px solid rgba(245, 158, 11, 0.3)", borderRadius: 8, padding: "6px 10px", fontSize: 11.5, color: "#fbbf24", marginBottom: 10 }}>
                   ✨ <strong>Proveedor nuevo:</strong> Se registrará automáticamente en la base de datos al causar.
                 </div>
               )}
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 <div>
-                  <div style={{ fontSize: 9.5, color: "#64748b", textTransform: "uppercase" }}>Razón Social</div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a" }}>{resultado.proveedor.nombre}</div>
+                  <div style={{ fontSize: 9.5, color: "var(--text-muted, #64748b)", textTransform: "uppercase" }}>Razón Social</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>{resultado.proveedor.nombre}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 9.5, color: "#64748b", textTransform: "uppercase" }}>NIT / Documento</div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a" }}>
+                  <div style={{ fontSize: 9.5, color: "var(--text-muted, #64748b)", textTransform: "uppercase" }}>NIT / Documento</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>
                     {resultado.proveedor.nit} {resultado.proveedor.dv ? `-${resultado.proveedor.dv}` : ""}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 9.5, color: "#64748b", textTransform: "uppercase" }}>Ciudad / Municipio</div>
-                  <div style={{ fontSize: 11.5, color: "#334155" }}>{resultado.proveedor.ciudad || "No indicada"}</div>
+                  <div style={{ fontSize: 9.5, color: "var(--text-muted, #64748b)", textTransform: "uppercase" }}>Ciudad / Municipio</div>
+                  <div style={{ fontSize: 11.5, color: "var(--text-main, #334155)" }}>{resultado.proveedor.ciudad || "No indicada"}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 9.5, color: "#64748b", textTransform: "uppercase" }}>Correo Emisor</div>
-                  <div style={{ fontSize: 11.5, color: "#334155", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <div style={{ fontSize: 9.5, color: "var(--text-muted, #64748b)", textTransform: "uppercase" }}>Correo Emisor</div>
+                  <div style={{ fontSize: 11.5, color: "var(--text-main, #334155)", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {resultado.proveedor.email || "No indicado"}
                   </div>
                 </div>
               </div>
 
-              <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid #e2e8f0" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11.5, color: "#334155", cursor: "pointer" }}>
+              <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--border, #e2e8f0)" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11.5, color: "var(--text-main, #334155)", cursor: "pointer" }}>
                   <input
                     type="checkbox"
                     checked={esAutorretenedor}
@@ -285,38 +285,38 @@ export default function ImportarFacturaDian({
                 </label>
               </div>
 
-              <div style={{ marginTop: 14, paddingTop: 10, borderTop: "1px solid #e2e8f0" }}>
-                <div style={{ fontSize: 12, fontWeight: 800, color: "#1e3a8a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+              <div style={{ marginTop: 14, paddingTop: 10, borderTop: "1px solid var(--border, #e2e8f0)" }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: "var(--primary, #1e3a8a)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
                   📄 Factura Electrónica y CUFE
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                   <div>
-                    <div style={{ fontSize: 9.5, color: "#64748b", textTransform: "uppercase" }}>N° Factura</div>
+                    <div style={{ fontSize: 9.5, color: "var(--text-muted, #64748b)", textTransform: "uppercase" }}>N° Factura</div>
                     <div style={{ fontSize: 13, fontWeight: 800, color: "#cc0000" }}>{resultado.factura}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 9.5, color: "#64748b", textTransform: "uppercase" }}>Fecha Emisión</div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: "#0f172a" }}>{resultado.fecha}</div>
+                    <div style={{ fontSize: 9.5, color: "var(--text-muted, #64748b)", textTransform: "uppercase" }}>Fecha Emisión</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-main, #0f172a)" }}>{resultado.fecha}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 9.5, color: "#64748b", textTransform: "uppercase" }}>Fecha Vencimiento</div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: "#0f172a" }}>{resultado.fechaVence}</div>
+                    <div style={{ fontSize: 9.5, color: "var(--text-muted, #64748b)", textTransform: "uppercase" }}>Fecha Vencimiento</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-main, #0f172a)" }}>{resultado.fechaVence}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 9.5, color: "#64748b", textTransform: "uppercase" }}>Estado RADIAN</div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "#2563eb" }}>⚡ Pendiente Acuse (030)</div>
+                    <div style={{ fontSize: 9.5, color: "var(--text-muted, #64748b)", textTransform: "uppercase" }}>Estado RADIAN</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--primary, #2563eb)" }}>⚡ Pendiente Acuse (030)</div>
                   </div>
                 </div>
 
                 {resultado.cufe && (
-                  <div style={{ marginTop: 8, background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: 8, padding: "8px 10px" }}>
+                  <div style={{ marginTop: 8, background: "var(--surface, #ffffff)", border: "1px solid var(--border, #cbd5e1)", borderRadius: 8, padding: "8px 10px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
-                      <span style={{ fontSize: 9.5, color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>CUFE OFICIAL DIAN</span>
-                      <button type="button" onClick={copiarCufe} style={{ ...B("#f1f5f9", "#0f172a"), fontSize: 10, padding: "2px 6px" }}>
+                      <span style={{ fontSize: 9.5, color: "var(--text-muted, #64748b)", fontWeight: 700, textTransform: "uppercase" }}>CUFE OFICIAL DIAN</span>
+                      <button type="button" onClick={copiarCufe} style={{ ...B("var(--surface-subtle, #f1f5f9)", "var(--text-main, #0f172a)"), border: "1px solid var(--border, #cbd5e1)", fontSize: 10, padding: "2px 6px" }}>
                         Copiar
                       </button>
                     </div>
-                    <div style={{ fontFamily: "Consolas, monospace", fontSize: 10, color: "#334155", wordBreak: "break-all" }}>
+                    <div style={{ fontFamily: "Consolas, monospace", fontSize: 10, color: "var(--text-main, #334155)", wordBreak: "break-all" }}>
                       {resultado.cufe}
                     </div>
                   </div>
@@ -325,14 +325,14 @@ export default function ImportarFacturaDian({
             </div>
 
             {/* Columna 2: Desglose Tributario y Económico */}
-            <div style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: 14, background: "#ffffff" }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "#1e3a8a", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
+            <div style={{ border: "1px solid var(--border, #e2e8f0)", borderRadius: 12, padding: 14, background: "var(--surface, #ffffff)" }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "var(--primary, #1e3a8a)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
                 💰 Liquidación Tributaria
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
                 <div>
-                  <div style={{ fontSize: 9.5, color: "#64748b", textTransform: "uppercase", marginBottom: 2 }}>Tipo de Operación</div>
+                  <div style={{ fontSize: 9.5, color: "var(--text-muted, #64748b)", textTransform: "uppercase", marginBottom: 2 }}>Tipo de Operación</div>
                   <select
                     value={tipoOperacion}
                     onChange={(e) => {
@@ -352,7 +352,7 @@ export default function ImportarFacturaDian({
                 </div>
 
                 <div>
-                  <div style={{ fontSize: 9.5, color: "#64748b", textTransform: "uppercase", marginBottom: 2 }}>Asignar a Obra (Opcional)</div>
+                  <div style={{ fontSize: 9.5, color: "var(--text-muted, #64748b)", textTransform: "uppercase", marginBottom: 2 }}>Asignar a Obra (Opcional)</div>
                   <select
                     value={obraIdSeleccionada}
                     onChange={(e) => setObraIdSeleccionada(e.target.value)}
@@ -369,18 +369,18 @@ export default function ImportarFacturaDian({
               </div>
 
               {/* Tabla de valores */}
-              <div style={{ background: "#f8fafc", borderRadius: 8, padding: 10, border: "1px solid #f1f5f9" }}>
+              <div style={{ background: "var(--surface-subtle, #f8fafc)", borderRadius: 8, padding: 10, border: "1px solid var(--border, #f1f5f9)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 12 }}>
-                  <span style={{ color: "#475569" }}>Subtotal / Base gravable:</span>
-                  <span style={{ fontWeight: 700, color: "#0f172a" }}>{fmt(subtotal)}</span>
+                  <span style={{ color: "var(--text-muted, #475569)" }}>Subtotal / Base gravable:</span>
+                  <span style={{ fontWeight: 700, color: "var(--text-main, #0f172a)" }}>{fmt(subtotal)}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 12 }}>
-                  <span style={{ color: "#475569" }}>IVA ({resultado.tarifaIva}%):</span>
-                  <span style={{ fontWeight: 700, color: "#166534" }}>+ {fmt(valorIva)}</span>
+                  <span style={{ color: "var(--text-muted, #475569)" }}>IVA ({resultado.tarifaIva}%):</span>
+                  <span style={{ fontWeight: 700, color: "#16a34a" }}>+ {fmt(valorIva)}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", fontSize: 12 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ color: "#475569" }}>Retefuente:</span>
+                    <span style={{ color: "var(--text-muted, #475569)" }}>Retefuente:</span>
                     <input
                       type="number"
                       min="0"
@@ -389,16 +389,16 @@ export default function ImportarFacturaDian({
                       disabled={esAutorretenedor}
                       value={tarifaRetFuente}
                       onChange={(e) => setTarifaRetFuente(Number(e.target.value) || 0)}
-                      style={{ ...SI, width: 55, padding: "2px 4px", fontSize: 11, textAlign: "center", background: esAutorretenedor ? "#e2e8f0" : "#fff" }}
+                      style={{ ...SI, width: 55, padding: "2px 4px", fontSize: 11, textAlign: "center", background: esAutorretenedor ? "var(--surface-subtle, #e2e8f0)" : "var(--surface, #fff)", color: "var(--text-main)" }}
                     />
-                    <span style={{ fontSize: 11, color: "#64748b" }}>%</span>
+                    <span style={{ fontSize: 11, color: "var(--text-muted, #64748b)" }}>%</span>
                   </div>
-                  <span style={{ fontWeight: 700, color: "#b91c1c" }}>
+                  <span style={{ fontWeight: 700, color: "var(--red, #b91c1c)" }}>
                     - {fmt(valorRet)}
                   </span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0 4px 0", marginTop: 6, borderTop: "1.5px solid #e2e8f0", fontSize: 13.5 }}>
-                  <span style={{ fontWeight: 800, color: "#0f172a" }}>Neto a pagar:</span>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0 4px 0", marginTop: 6, borderTop: "1.5px solid var(--border, #e2e8f0)", fontSize: 13.5 }}>
+                  <span style={{ fontWeight: 800, color: "var(--text-main, #0f172a)" }}>Neto a pagar:</span>
                   <span style={{ fontWeight: 800, color: "#cc0000" }}>{fmt(valorTotalPagar)}</span>
                 </div>
               </div>
@@ -406,16 +406,16 @@ export default function ImportarFacturaDian({
               {/* Ítems detallados */}
               {resultado.items.length > 0 && (
                 <div style={{ marginTop: 12 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "#64748b", textTransform: "uppercase", marginBottom: 6 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted, #64748b)", textTransform: "uppercase", marginBottom: 6 }}>
                     Ítems facturados ({resultado.items.length})
                   </div>
-                  <div style={{ maxHeight: 110, overflowY: "auto", fontSize: 11, border: "1px solid #f1f5f9", borderRadius: 6, padding: "4px 8px" }}>
+                  <div style={{ maxHeight: 110, overflowY: "auto", fontSize: 11, border: "1px solid var(--border, #f1f5f9)", borderRadius: 6, padding: "4px 8px" }}>
                     {resultado.items.map((item, idx) => (
-                      <div key={idx} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", borderBottom: idx < resultado.items.length - 1 ? "1px solid #f8fafc" : "none" }}>
-                        <span style={{ color: "#334155", flex: 1, marginRight: 8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <div key={idx} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", borderBottom: idx < resultado.items.length - 1 ? "1px solid var(--border, #f8fafc)" : "none" }}>
+                        <span style={{ color: "var(--text-main, #334155)", flex: 1, marginRight: 8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {item.cant}x {item.desc}
                         </span>
-                        <span style={{ color: "#0f172a", fontWeight: 600 }}>{fmt(item.total || item.cant * item.vu)}</span>
+                        <span style={{ color: "var(--text-main, #0f172a)", fontWeight: 600 }}>{fmt(item.total || item.cant * item.vu)}</span>
                       </div>
                     ))}
                   </div>
@@ -425,8 +425,8 @@ export default function ImportarFacturaDian({
           </div>
 
           {/* Botones de acción final */}
-          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", alignItems: "center", marginTop: 16, paddingTop: 12, borderTop: "1px solid #e2e8f0" }}>
-            <button type="button" onClick={limpiar} style={{ ...B("#f1f5f9", "#475569"), fontSize: 12 }}>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", alignItems: "center", marginTop: 16, paddingTop: 12, borderTop: "1px solid var(--border, #e2e8f0)" }}>
+            <button type="button" onClick={limpiar} style={{ ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)"), border: "1px solid var(--border, #cbd5e1)", fontSize: 12 }}>
               Descartar
             </button>
             <button

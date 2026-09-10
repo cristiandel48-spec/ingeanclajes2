@@ -65,11 +65,11 @@ export default function CampoTexto({
         {...props}
       />
       {mensaje ? (
-        <div style={{ fontSize: 10.5, color: esErrorRojo ? "#dc2626" : "#b54708", marginTop: 3, lineHeight: 1.4, fontWeight: esErrorRojo ? 600 : 400 }}>
+        <div style={{ fontSize: 10.5, color: esErrorRojo ? "#dc2626" : "var(--c-tag-text, #b54708)", marginTop: 3, lineHeight: 1.4, fontWeight: esErrorRojo ? 600 : 400 }}>
           {mensaje}
         </div>
       ) : ayuda ? (
-        <div style={{ fontSize: 10.5, color: "#94a3b8", marginTop: 3, lineHeight: 1.4 }}>{ayuda}</div>
+        <div style={{ fontSize: 10.5, color: "var(--text-subtle, #94a3b8)", marginTop: 3, lineHeight: 1.4 }}>{ayuda}</div>
       ) : null}
     </div>
   );

@@ -61,37 +61,37 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
   return(
     <div style={{padding:28}}>
       {/* Barra superior */}
-      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:24,background:"#fff",borderRadius:14,padding:"16px 20px",border:"1px solid #e2e8f0",boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
-        <button onClick={onVolver} style={{...B("#f1f5f9","#475569"),padding:"8px 16px",fontSize:13,flexShrink:0}}>← Volver</button>
+      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:24,background:"var(--surface, #fff)",borderRadius:14,padding:"16px 20px",border:"1px solid var(--border, #e2e8f0)",boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
+        <button onClick={onVolver} style={{...B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)"),padding:"8px 16px",fontSize:13,flexShrink:0}}>← Volver</button>
         <div style={{flex:1}}>
-          <div style={{fontSize:11,color:"#94a3b8"}}>{oAct.id} · {fmtD(oAct.fechaInicio)} → {fmtD(oAct.fechaFin)||"En curso"}</div>
-          <div style={{fontSize:20,fontWeight:700,color:"#1a1a2e",lineHeight:1.2}}>{oAct.cliente}</div>
-          <div style={{fontSize:13,color:"#475569"}}>{oAct.proyecto} · 📍 {oAct.ciudad}</div>
-          {oAct.direccion&&<div style={{fontSize:11,color:"#94a3b8"}}>{oAct.direccion}</div>}
+          <div style={{fontSize:11,color:"var(--text-subtle, #94a3b8)"}}>{oAct.id} · {fmtD(oAct.fechaInicio)} → {fmtD(oAct.fechaFin)||"En curso"}</div>
+          <div style={{fontSize:20,fontWeight:700,color:"var(--text-main, #1a1a2e)",lineHeight:1.2}}>{oAct.cliente}</div>
+          <div style={{fontSize:13,color:"var(--text-muted, #475569)"}}>{oAct.proyecto} · 📍 {oAct.ciudad}</div>
+          {oAct.direccion&&<div style={{fontSize:11,color:"var(--text-subtle, #94a3b8)"}}>{oAct.direccion}</div>}
         </div>
         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
-            {cotVinc&&<div style={{fontSize:11,color:"#b45309",fontWeight:600}}>📄 {cotVinc.numero}</div>}
+            {cotVinc&&<div style={{fontSize:11,color:"#f59e0b",fontWeight:600}}>📄 {cotVinc.numero}</div>}
             <Badge estado={oAct.estado}/>
           </div>
           <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center",justifyContent:"flex-end"}}>
             <button
               onClick={()=>irAPantalla("informes",{obraId:oAct.id})}
-              style={{...B("#eff6ff","#1d4ed8"),fontSize:11.5,padding:"5px 11px",fontWeight:600}}
+              style={{...B("rgba(30, 64, 175, 0.15)","#60a5fa"),fontSize:11.5,padding:"5px 11px",fontWeight:600}}
               title="Crear informe de actividades para esta obra"
             >
               📄 Crear informe
             </button>
             <button
               onClick={()=>irAPantalla("certificaciones",{obraId:oAct.id})}
-              style={{...B("#f0fdf4","#166534"),fontSize:11.5,padding:"5px 11px",fontWeight:600}}
+              style={{...B("rgba(16, 185, 129, 0.15)","#34d399"),fontSize:11.5,padding:"5px 11px",fontWeight:600}}
               title="Crear certificación para esta obra"
             >
               📜 Certificar
             </button>
             <button
               onClick={()=>setMostrarGuia(!mostrarGuia)}
-              style={{...B(mostrarGuia ? "#fef3c7" : "#f8fafc", mostrarGuia ? "#92400e" : "#64748b"),fontSize:11,padding:"5px 9px",border:"1px solid #e2e8f0"}}
+              style={{...B(mostrarGuia ? "rgba(245, 158, 11, 0.15)" : "var(--surface-subtle, #f8fafc)", mostrarGuia ? "#fbbf24" : "var(--text-muted, #64748b)"),fontSize:11,padding:"5px 9px",border:"1px solid var(--border, #e2e8f0)"}}
               title={mostrarGuia ? "Ocultar guía y qué sigue" : "Mostrar guía de flujo y qué sigue en esta obra"}
             >
               {mostrarGuia ? "Ocultar qué sigue" : "💡 Qué sigue"}
@@ -116,10 +116,10 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       {/* Avance */}
       <div style={{...CD,marginBottom:20}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-          <span style={{fontSize:13,fontWeight:600,color:"#1a1a2e"}}>Avance de la obra</span>
-          <span style={{fontSize:18,fontWeight:700,color:oAct.avance===100?"#166534":"#f47c20"}}>{oAct.avance}%</span>
+          <span style={{fontSize:13,fontWeight:600,color:"var(--text-main, #1a1a2e)"}}>Avance de la obra</span>
+          <span style={{fontSize:18,fontWeight:700,color:oAct.avance===100?"#34d399":"#f47c20"}}>{oAct.avance}%</span>
         </div>
-        <div style={{height:10,background:"#f1f5f9",borderRadius:5,marginBottom:8}}>
+        <div style={{height:10,background:"var(--surface-subtle, #f1f5f9)",borderRadius:5,marginBottom:8}}>
           <div style={{width:(oAct.avance) + "%",height:"100%",background:oAct.avance===100?"#4ade80":"#f47c20",borderRadius:5,transition:"width 0.3s"}}/>
         </div>
         <input type="range" min={0} max={100} value={oAct.avance} disabled={bloqueada}
@@ -140,7 +140,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           style={{width:"100%",accentColor:"#f47c20",
             opacity:bloqueada?0.5:1,cursor:bloqueada?"not-allowed":"pointer"}}/>
         {bloqueada&&(
-          <div style={{fontSize:11,color:"#166534",background:"#ecfdf5",border:"1px solid #a7f3d0",
+          <div style={{fontSize:11,color:"#34d399",background:"rgba(16, 185, 129, 0.15)",border:"1px solid rgba(167, 243, 208, 0.3)",
             borderRadius:8,padding:"7px 11px",marginTop:8,lineHeight:1.5}}>
             🔒 <strong>Obra finalizada.</strong> Los informes y certificados ya emitidos se apoyan en
             estos datos, así que no se modifican. Si hay que corregir algo, un administrador puede
@@ -159,7 +159,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           ["horario","📅 Horario"],
         ].map(([id,lb])=>(
           <button key={id} onClick={()=>setDetTab(id)}
-            style={{...B(detTab===id?"#cc0000":"#f1f5f9",detTab===id?"#fff":"#475569"),fontSize:12,padding:"8px 16px",border:"1px solid " + (detTab===id?"#cc0000":"#e2e8f0")}}>
+            style={{...B(detTab===id?"#cc0000":"var(--btn-cancelar-bg, #f1f5f9)",detTab===id?"#fff":"var(--btn-cancelar-txt, #475569)"),fontSize:12,padding:"8px 16px",border:"1px solid " + (detTab===id?"#cc0000":"var(--border, #e2e8f0)")}}>
             {lb}
           </button>
         ))}
@@ -213,7 +213,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             />
           )}
           {empObra.length===0&&(
-            <div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13,background:"#f8fafc",borderRadius:10,border:"1px dashed #e2e8f0",marginBottom:12}}>
+            <div style={{textAlign:"center",padding:24,color:"var(--text-subtle, #94a3b8)",fontSize:13,background:"var(--surface-subtle, #f8fafc)",borderRadius:10,border:"1px dashed var(--border, #e2e8f0)",marginBottom:12}}>
               Sin empleados asignados aún
             </div>
           )}
@@ -224,13 +224,13 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               const diasEmp=diasMap[eid]?diasMap[eid].size:0;
               const jornal=Math.round(emp.salario/26);
               return(
-                <div key={eid} style={{background:"#f8fafc",borderRadius:10,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
+                <div key={eid} style={{background:"var(--surface-subtle, #f8fafc)",borderRadius:10,padding:"14px 16px",border:"1px solid var(--border, #e2e8f0)"}}>
                   <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
                     <Av init={emp.avatar} color={PAL[idx%PAL.length]} size={36}/>
                     <div style={{flex:1}}>
-                      <div style={{fontSize:13,fontWeight:700}}>{emp.nombre}</div>
-                      <div style={{fontSize:11,color:"#64748b"}}>{emp.cargo}</div>
-                      <div style={{fontSize:10,color:"#94a3b8"}}>📱 {emp.tel}</div>
+                      <div style={{fontSize:13,fontWeight:700,color:"var(--text-main)"}}>{emp.nombre}</div>
+                      <div style={{fontSize:11,color:"var(--text-muted, #64748b)"}}>{emp.cargo}</div>
+                      <div style={{fontSize:10,color:"var(--text-subtle, #94a3b8)"}}>📱 {emp.tel}</div>
                     </div>
                     {!bloqueada&&(
                       <button onClick={()=>{
@@ -245,20 +245,20 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                         }:o));
                         if(setHorarios) setHorarios(p=>p.filter(h=>!(h.obraId===obraId && h.empleadoId===eid)));
                       }}
-                        style={{background:"#fee2e2",border:"1px solid #fca5a5",color:"#cc0000",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11}}>✕</button>
+                        style={{background:"rgba(220, 38, 38, 0.15)",border:"1px solid rgba(248, 113, 113, 0.4)",color:"#f87171",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11}}>✕</button>
                     )}
                   </div>
                   {/* El jornal y la cuenta bancaria del companero son datos
                       confidenciales: sin permiso solo se ven los dias. */}
                   <div style={{display:"grid",gridTemplateColumns:verDinero?"1fr 1fr 1fr":"1fr",gap:6,fontSize:10}}>
-                    {[["Días en obra",diasEmp+"d","#1d4ed8"],...(verDinero?[["Jornal/día",fmt(jornal),"#166534"],["Costo obra",fmt(jornal*diasEmp),"#7c3aed"]]:[])].map(([k,v,c])=>(
-                      <div key={k} style={{background:"#fff",borderRadius:5,padding:"6px 8px",textAlign:"center",border:"1px solid #f1f5f9"}}>
-                        <div style={{color:"#94a3b8",marginBottom:2,fontSize:9}}>{k}</div>
+                    {[["Días en obra",diasEmp+"d","#60a5fa"],...(verDinero?[["Jornal/día",fmt(jornal),"#34d399"],["Costo obra",fmt(jornal*diasEmp),"#a78bfa"]]:[])].map(([k,v,c])=>(
+                      <div key={k} style={{background:"var(--surface, #fff)",borderRadius:5,padding:"6px 8px",textAlign:"center",border:"1px solid var(--border, #f1f5f9)"}}>
+                        <div style={{color:"var(--text-subtle, #94a3b8)",marginBottom:2,fontSize:9}}>{k}</div>
                         <div style={{fontWeight:700,color:c,fontSize:12}}>{v}</div>
                       </div>
                     ))}
                   </div>
-                  {verDinero&&<div style={{marginTop:8,fontSize:10,color:"#94a3b8"}}>🏦 {emp.banco} · {emp.tipoCuenta} · <span style={{fontFamily:"monospace"}}>{emp.numeroCuenta||"—"}</span></div>}
+                  {verDinero&&<div style={{marginTop:8,fontSize:10,color:"var(--text-subtle, #94a3b8)"}}>🏦 {emp.banco} · {emp.tipoCuenta} · <span style={{fontFamily:"monospace"}}>{emp.numeroCuenta||"—"}</span></div>}
                 </div>
               );
             })}
@@ -302,7 +302,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             Si el proveedor no aparece en la lista, créalo primero en <strong>Proveedores</strong>.
           </AvisoFlujo>
           {showGasto&&(
-            <div style={{background:"#f8fafc",border:"1px solid #cc000033",borderRadius:10,padding:16,marginBottom:16}}>
+            <div style={{background:"var(--surface-subtle, #f8fafc)",border:"1px solid #cc000033",borderRadius:10,padding:16,marginBottom:16}}>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
                 <div><LBL>Proveedor</LBL>
                   <select value={gastoForm.proveedorId} onChange={e=>setGastoForm({...gastoForm,proveedorId:e.target.value})} style={SI}>
@@ -317,31 +317,31 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               </div>
               <div style={{display:"flex",gap:8}}>
                 <button style={B("#cc0000")} onClick={guardarGasto}>✅ Guardar gasto</button>
-                <button style={B("#f1f5f9","#475569")} onClick={()=>setShowGasto(false)}>Cancelar</button>
+                <button style={B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)")} onClick={()=>setShowGasto(false)}>Cancelar</button>
               </div>
             </div>
           )}
-          {gastosObra.length===0&&!showGasto&&<div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13}}>Sin gastos registrados aún</div>}
+          {gastosObra.length===0&&!showGasto&&<div style={{textAlign:"center",padding:24,color:"var(--text-subtle, #94a3b8)",fontSize:13}}>Sin gastos registrados aún</div>}
           {gastosObra.map(c=>{
             const prov=proveedores.find(p=>p.id===c.proveedorId);
             const vencida=c.estado==="Pendiente"&&c.fechaVence&&c.fechaVence<today();
             return(
-              <div key={c.id} style={{background:"#f8fafc",borderRadius:10,padding:"12px 14px",marginBottom:8,border:"1px solid " + (vencida?"#fca5a5":c.estado==="Pagado"?"#bbf7d0":"#e2e8f0")}}>
+              <div key={c.id} style={{background:"var(--surface-subtle, #f8fafc)",borderRadius:10,padding:"12px 14px",marginBottom:8,border:"1px solid " + (vencida?"#fca5a5":c.estado==="Pagado"?"#4ade80":"var(--border, #e2e8f0)")}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-                  <div><div style={{fontSize:13,fontWeight:600}}>{c.concepto}</div><div style={{fontSize:11,color:"#64748b"}}>{prov?.nombre} · {c.factura}</div></div>
+                  <div><div style={{fontSize:13,fontWeight:600,color:"var(--text-main)"}}>{c.concepto}</div><div style={{fontSize:11,color:"var(--text-muted, #64748b)"}}>{prov?.nombre} · {c.factura}</div></div>
                   <div style={{textAlign:"right"}}><div style={{fontSize:14,fontWeight:700,color:"#cc0000"}}>{fmt(c.monto)}</div><Badge estado={vencida?"Vencida":c.estado}/></div>
                 </div>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11,color:"#94a3b8"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11,color:"var(--text-subtle, #94a3b8)"}}>
                   <span>Vence: {fmtD(c.fechaVence)||"—"}</span>
-                  {c.estado==="Pendiente"&&<button onClick={()=>setCuentas(p=>p.map(x=>x.id===c.id?{...x,estado:"Pagado"}:x))} style={{background:"#dcfce7",border:"1px solid #4ade80",color:"#166534",borderRadius:6,padding:"3px 10px",fontSize:11,cursor:"pointer",fontWeight:600}}>✓ Pagar</button>}
+                  {c.estado==="Pendiente"&&<button onClick={()=>setCuentas(p=>p.map(x=>x.id===c.id?{...x,estado:"Pagado"}:x))} style={{background:"rgba(16, 185, 129, 0.15)",border:"1px solid #4ade80",color:"#34d399",borderRadius:6,padding:"3px 10px",fontSize:11,cursor:"pointer",fontWeight:600}}>✓ Pagar</button>}
                 </div>
               </div>
             );
           })}
           {/* SECCIÓN ÓRDENES DE COMPRA VINCULADAS */}
-          <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1.5px dashed #cbd5e1" }}>
+          <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1.5px dashed var(--border, #cbd5e1)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>
                 📦 Órdenes de compra vinculadas a esta obra ({ordenesObra.length})
               </div>
               <button
@@ -354,38 +354,38 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             </div>
 
             {ordenesObra.length === 0 ? (
-              <div style={{ textAlign: "center", padding: 14, color: "#94a3b8", fontSize: 12, background: "#f8fafc", borderRadius: 8 }}>
+              <div style={{ textAlign: "center", padding: 14, color: "var(--text-subtle, #94a3b8)", fontSize: 12, background: "var(--surface-subtle, #f8fafc)", borderRadius: 8 }}>
                 No hay órdenes de compra emitidas para esta obra todavía.
               </div>
             ) : (
               <div style={{ display: "grid", gap: 8 }}>
                 {ordenesObra.map((oc) => (
-                  <div key={oc.id} style={{ background: "#f8fafc", borderRadius: 8, padding: "10px 14px", border: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+                  <div key={oc.id} style={{ background: "var(--surface-subtle, #f8fafc)", borderRadius: 8, padding: "10px 14px", border: "1px solid var(--border, #e2e8f0)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <strong style={{ color: "#0284c7", fontSize: 12.5 }}>{oc.id}</strong>
-                        <span style={{ fontSize: 11, color: "#64748b" }}>Doc: {oc.documentoOrigen}</span>
+                        <strong style={{ color: "#38bdf8", fontSize: 12.5 }}>{oc.id}</strong>
+                        <span style={{ fontSize: 11, color: "var(--text-muted, #64748b)" }}>Doc: {oc.documentoOrigen}</span>
                         {oc.estadoAprobacion === "Aprobada" ? (
-                          <span style={{ fontSize: 10, fontWeight: 700, color: "#166534", background: "#dcfce7", border: "1px solid #86efac", padding: "1px 6px", borderRadius: 4 }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: "#34d399", background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(134, 239, 172, 0.4)", padding: "1px 6px", borderRadius: 4 }}>
                             ✓ Aprobada (Camila Sepúlveda)
                           </span>
                         ) : oc.estadoAprobacion === "Rechazada" ? (
-                          <span style={{ fontSize: 10, fontWeight: 700, color: "#991b1b", background: "#fee2e2", border: "1px solid #fca5a5", padding: "1px 6px", borderRadius: 4 }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: "#f87171", background: "rgba(220, 38, 38, 0.15)", border: "1px solid rgba(252, 165, 165, 0.4)", padding: "1px 6px", borderRadius: 4 }}>
                             ✕ Rechazada
                           </span>
                         ) : (
-                          <span style={{ fontSize: 10, fontWeight: 700, color: "#c2410c", background: "#ffedd5", border: "1px solid #fed7aa", padding: "1px 6px", borderRadius: 4 }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: "#fb923c", background: "rgba(234, 88, 12, 0.15)", border: "1px solid rgba(254, 215, 170, 0.4)", padding: "1px 6px", borderRadius: 4 }}>
                             ⏳ Pendiente Aprobación
                           </span>
                         )}
                       </div>
-                      <div style={{ fontSize: 11, color: "#475569", marginTop: 3 }}>
+                      <div style={{ fontSize: 11, color: "var(--text-main, #475569)", marginTop: 3 }}>
                         {oc.proveedorNombre} · Solicitado por: {oc.solicitante}
                       </div>
                     </div>
                     <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{fmt(oc.total)}</div>
-                      <div style={{ fontSize: 10, color: "#64748b" }}>Estado: {oc.estadoFacturacion}</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>{fmt(oc.total)}</div>
+                      <div style={{ fontSize: 10, color: "var(--text-muted, #64748b)" }}>Estado: {oc.estadoFacturacion}</div>
                     </div>
                   </div>
                 ))}
@@ -393,18 +393,18 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             )}
           </div>
 
-          <div style={{ background: "#f1f5f9", borderRadius: 8, padding: "12px 16px", marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, textAlign: "center", fontSize: 12 }}>
+          <div style={{ background: "var(--surface-subtle, #f1f5f9)", borderRadius: 8, padding: "12px 16px", marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, textAlign: "center", fontSize: 12 }}>
             <div>
-              <div style={{ color: "#64748b", marginBottom: 3 }}>Facturas causadas</div>
+              <div style={{ color: "var(--text-muted, #64748b)", marginBottom: 3 }}>Facturas causadas</div>
               <div style={{ fontWeight: 700, color: "#cc0000", fontSize: 14 }}>{fmt(totalGastos)}</div>
             </div>
             <div>
-              <div style={{ color: "#64748b", marginBottom: 3 }}>Órdenes aprobadas</div>
-              <div style={{ fontWeight: 700, color: "#0284c7", fontSize: 14 }}>{fmt(totalOrdenesAprobadas)}</div>
+              <div style={{ color: "var(--text-muted, #64748b)", marginBottom: 3 }}>Órdenes aprobadas</div>
+              <div style={{ fontWeight: 700, color: "#38bdf8", fontSize: 14 }}>{fmt(totalOrdenesAprobadas)}</div>
             </div>
             <div>
-              <div style={{ color: "#64748b", marginBottom: 3 }}>Costo comprometido</div>
-              <div style={{ fontWeight: 800, color: "#0f172a", fontSize: 15 }}>{fmt(totalGastos + totalOrdenesAprobadas)}</div>
+              <div style={{ color: "var(--text-muted, #64748b)", marginBottom: 3 }}>Costo comprometido</div>
+              <div style={{ fontWeight: 800, color: "var(--text-main, #0f172a)", fontSize: 15 }}>{fmt(totalGastos + totalOrdenesAprobadas)}</div>
             </div>
           </div>
           {oAct.total>0&&<div style={{background:(totalGastos+totalOrdenesAprobadas)/oAct.total<0.4?"#dcfce7":"#fff7ed",borderRadius:8,padding:"10px 14px",marginTop:8,fontSize:11,color:"#475569"}}>Compromiso total = <strong style={{color:(totalGastos+totalOrdenesAprobadas)/oAct.total<0.4?"#166534":"#c2410c"}}>{Math.round(((totalGastos+totalOrdenesAprobadas)/oAct.total)*100)}%</strong> del ingreso de la obra</div>}
@@ -421,7 +421,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             si aquí sale 0 días es porque no se han asignado turnos a esa persona en esta obra.
             Esta cifra es informativa; la nómina que se paga se liquida en el módulo de Nómina.
           </AvisoFlujo>
-          {empObra.length===0&&<div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13}}>Sin personal asignado</div>}
+          {empObra.length===0&&<div style={{textAlign:"center",padding:24,color:"var(--text-subtle, #94a3b8)",fontSize:13}}>Sin personal asignado</div>}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
             {empObra.map((eid,idx)=>{
               const emp=empleados.find(x=>x.id===eid);
@@ -431,30 +431,30 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               const subtotal=jornal*diasEmp;
               const ded=Math.round(subtotal*0.04);
               return(
-                <div key={eid} style={{background:"#f8fafc",borderRadius:10,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
+                <div key={eid} style={{background:"var(--surface-subtle, #f8fafc)",borderRadius:10,padding:"14px 16px",border:"1px solid var(--border, #e2e8f0)"}}>
                   <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
                     <Av init={emp.avatar} color={PAL[idx%PAL.length]} size={34}/>
-                    <div><div style={{fontSize:13,fontWeight:700}}>{emp.nombre}</div><div style={{fontSize:11,color:"#64748b"}}>{emp.cargo}</div></div>
+                    <div><div style={{fontSize:13,fontWeight:700,color:"var(--text-main)"}}>{emp.nombre}</div><div style={{fontSize:11,color:"var(--text-muted, #64748b)"}}>{emp.cargo}</div></div>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
-                    {[["Días",diasEmp+"d","#1d4ed8"],["Jornal",fmt(jornal),"#166534"],["Bruto",fmt(subtotal),"#b45309"],["Neto",fmt(subtotal-ded),"#cc0000"]].map(([k,v,c])=>(
-                      <div key={k} style={{background:"#fff",borderRadius:6,padding:"8px",textAlign:"center",border:"1px solid #f1f5f9"}}>
-                        <div style={{color:"#94a3b8",fontSize:9,marginBottom:3}}>{k}</div>
+                    {[["Días",diasEmp+"d","#60a5fa"],["Jornal",fmt(jornal),"#34d399"],["Bruto",fmt(subtotal),"#f59e0b"],["Neto",fmt(subtotal-ded),"#cc0000"]].map(([k,v,c])=>(
+                      <div key={k} style={{background:"var(--surface, #fff)",borderRadius:6,padding:"8px",textAlign:"center",border:"1px solid var(--border, #f1f5f9)"}}>
+                        <div style={{color:"var(--text-subtle, #94a3b8)",fontSize:9,marginBottom:3}}>{k}</div>
                         <div style={{fontWeight:700,color:c,fontSize:11}}>{v}</div>
                       </div>
                     ))}
                   </div>
-                  <div style={{marginTop:8,fontSize:10,color:"#94a3b8"}}>🏦 {emp.banco} · {emp.tipoCuenta} · <span style={{fontFamily:"monospace"}}>{emp.numeroCuenta||"—"}</span></div>
+                  <div style={{marginTop:8,fontSize:10,color:"var(--text-subtle, #94a3b8)"}}>🏦 {emp.banco} · {emp.tipoCuenta} · <span style={{fontFamily:"monospace"}}>{emp.numeroCuenta||"—"}</span></div>
                 </div>
               );
             })}
           </div>
           {empObra.length>0&&(
-            <div style={{background:"#f1f5f9",borderRadius:10,padding:"14px 16px",border:"1px solid #e2e8f0"}}>
+            <div style={{background:"var(--surface-subtle, #f1f5f9)",borderRadius:10,padding:"14px 16px",border:"1px solid var(--border, #e2e8f0)"}}>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,textAlign:"center",fontSize:12}}>
-                <div><div style={{color:"#64748b",marginBottom:4}}>Total días trabajados</div><div style={{fontWeight:700,color:"#1d4ed8",fontSize:18}}>{totalDias}</div></div>
-                <div><div style={{color:"#64748b",marginBottom:4}}>Nómina total obra</div><div style={{fontWeight:700,color:"#cc0000",fontSize:18}}>{fmt(nomObraTotal)}</div></div>
-                <div><div style={{color:"#64748b",marginBottom:4}}>% del ingreso</div><div style={{fontWeight:700,color:oAct.total>0&&nomObraTotal/oAct.total<0.3?"#166534":"#c2410c",fontSize:18}}>{oAct.total>0?Math.round(nomObraTotal/oAct.total*100):0}%</div></div>
+                <div><div style={{color:"var(--text-muted, #64748b)",marginBottom:4}}>Total días trabajados</div><div style={{fontWeight:700,color:"#60a5fa",fontSize:18}}>{totalDias}</div></div>
+                <div><div style={{color:"var(--text-muted, #64748b)",marginBottom:4}}>Nómina total obra</div><div style={{fontWeight:700,color:"#cc0000",fontSize:18}}>{fmt(nomObraTotal)}</div></div>
+                <div><div style={{color:"var(--text-muted, #64748b)",marginBottom:4}}>% del ingreso</div><div style={{fontWeight:700,color:oAct.total>0&&nomObraTotal/oAct.total<0.3?"#34d399":"#fb923c",fontSize:18}}>{oAct.total>0?Math.round(nomObraTotal/oAct.total*100):0}%</div></div>
               </div>
             </div>
           )}
@@ -471,7 +471,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             accion={
               <button
                 onClick={()=>irAPantalla("horarios")}
-                style={{...B("#f1f5f9","#475569"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
+                style={{...B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
               >
                 Ir a Horarios
               </button>
@@ -481,26 +481,26 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             y además alimenta dos cosas de esta obra: los <strong>días trabajados</strong> de la
             pestaña Nómina y la columna <strong>turno</strong> del informe de actividades.
           </AvisoFlujo>
-          {horariosObra.length===0&&<div style={{textAlign:"center",padding:24,color:"#94a3b8",fontSize:13}}>Sin turnos registrados todavía.</div>}
+          {horariosObra.length===0&&<div style={{textAlign:"center",padding:24,color:"var(--text-subtle, #94a3b8)",fontSize:13}}>Sin turnos registrados todavía.</div>}
           {horariosObra.sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(h=>{
             const emp=empleados.find(x=>x.id===h.empleadoId);
             const idx=empleados.findIndex(x=>x.id===h.empleadoId);
             return(
-              <div key={h.id} style={{display:"flex",alignItems:"center",gap:12,background:"#f8fafc",borderRadius:10,padding:"10px 14px",marginBottom:8,border:"1px solid #e2e8f0"}}>
+              <div key={h.id} style={{display:"flex",alignItems:"center",gap:12,background:"var(--surface-subtle, #f8fafc)",borderRadius:10,padding:"10px 14px",marginBottom:8,border:"1px solid var(--border, #e2e8f0)"}}>
                 <Av init={emp?.avatar||"?"} color={PAL[idx%PAL.length]} size={32}/>
                 <div style={{flex:1}}>
-                  <div style={{fontSize:13,fontWeight:600}}>{emp?.nombre||"—"}</div>
-                  <div style={{fontSize:11,color:"#475569"}}>{h.tarea}</div>
+                  <div style={{fontSize:13,fontWeight:600,color:"var(--text-main)"}}>{emp?.nombre||"—"}</div>
+                  <div style={{fontSize:11,color:"var(--text-muted, #475569)"}}>{h.tarea}</div>
                 </div>
                 <div style={{textAlign:"right",fontSize:11}}>
-                  <div style={{color:"#64748b",fontWeight:500}}>{fmtD(h.fecha)}</div>
+                  <div style={{color:"var(--text-muted, #64748b)",fontWeight:500}}>{fmtD(h.fecha)}</div>
                   <div style={{color:"#cc0000",fontWeight:700}}>{h.turno}</div>
                 </div>
               </div>
             );
           })}
           {horariosObra.length>0&&(
-            <div style={{background:"#f1f5f9",borderRadius:8,padding:"10px 14px",marginTop:8,fontSize:12,color:"#64748b"}}>
+            <div style={{background:"var(--surface-subtle, #f1f5f9)",borderRadius:8,padding:"10px 14px",marginTop:8,fontSize:12,color:"var(--text-muted, #64748b)"}}>
               {horariosObra.length} turno(s) · {new Set(horariosObra.map(h=>h.empleadoId)).size} persona(s)
             </div>
           )}

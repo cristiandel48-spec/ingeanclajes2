@@ -23,6 +23,9 @@ const isSupabaseConfigured = backend.isSupabaseConfigured;
 const loadCloudAppData = backend.loadCloudAppData;
 const getMiMembresia = backend.getMiMembresia;
 const saveCloudAppData = backend.saveCloudAppData;
+const suscribirPresencia = backend.suscribirPresencia;
+const esSuperAdmin = backend.esSuperAdmin;
+const getSessionUser = backend.getSessionUser;
 
 const AppDataContext = createContext(null);
 
@@ -78,6 +81,12 @@ export function AppDataProvider({ children }) {
   // Rol y modulos de quien tiene la sesion abierta. null mientras carga.
   const [membresia, setMembresia] = useState(null);
   const [cotDraft, setCotDraft] = useState(null);
+
+  // Presencia en tiempo real y superadministración (cristiandel48@gmail.com)
+  const [usuariosEnLinea, setUsuariosEnLinea] = useState({});
+  const [authUserEmail, setAuthUserEmail] = useState("");
+  const presenciaManagerRef = useRef(null);
+  const esSuperAdminCristian = esSuperAdmin(membresia?.email) || esSuperAdmin(authUserEmail);
   // Los datos de muestra se pueden quitar de en medio sin esperar a tener los
   // reales. Se apagan de una vez en todas las pantallas -tambien en la de
   // WhatsApp, que trae los suyos- porque apagarlos de una en una seria peor
@@ -411,6 +420,65 @@ export function AppDataProvider({ children }) {
     return { ...completo, __parcial: false };
   }, []);
 
+  // Presencia en tiempo real (Supabase Realtime Presence) y control de sesiones
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+    let activo = true;
+
+    const inicializarPresencia = async () => {
+      try {
+        const user = await getSessionUser();
+        if (!activo || !user) return;
+        if (user?.email) setAuthUserEmail(user.email);
+
+        if (presenciaManagerRef.current) {
+          presenciaManagerRef.current.destruir();
+          presenciaManagerRef.current = null;
+        }
+
+        const manager = suscribirPresencia({
+          user,
+          membresia,
+          onPresenciaSync: (conectados) => {
+            if (activo) {
+              setUsuariosEnLinea(conectados || {});
+            }
+          },
+          onSesionCerradaForzada: (payload) => {
+            alert(
+              `⚠️ SESIÓN FINALIZADA\n\n` +
+              `El administrador (${payload?.adminEmail || "administración"}) ha cerrado tu sesión remotamente.\n` +
+              `Debes volver a iniciar sesión para continuar.`
+            );
+            backend.signOut().catch(() => {});
+            window.location.reload();
+          },
+        });
+
+        presenciaManagerRef.current = manager;
+      } catch (err) {
+        console.warn("No se pudo iniciar canal de presencia en tiempo real:", err);
+      }
+    };
+
+    inicializarPresencia();
+
+    return () => {
+      activo = false;
+      if (presenciaManagerRef.current) {
+        presenciaManagerRef.current.destruir();
+        presenciaManagerRef.current = null;
+      }
+    };
+  }, [membresia]);
+
+  const cerrarSesionRemota = useCallback(async (targetUserId, targetEmail, targetNombre) => {
+    if (!presenciaManagerRef.current) {
+      return { ok: false, error: "El canal de presencia en tiempo real no está disponible." };
+    }
+    return await presenciaManagerRef.current.forzarCierreSesion(targetUserId, targetEmail, targetNombre);
+  }, []);
+
   const value = {
     scr, setScr,
     asegurarDetalle,
@@ -449,6 +517,10 @@ export function AppDataProvider({ children }) {
     empresaConfig, setEmpresaConfig,
     catalogoItems, setCatalogoItems,
     membresia,
+    // Presencia y control remoto exclusivo (cristiandel48@gmail.com)
+    usuariosEnLinea,
+    esSuperAdminCristian,
+    cerrarSesionRemota,
     cotDraft, setCotDraft,
     intencion, irAPantalla, limpiarIntencion,
     saveAllToCloud,

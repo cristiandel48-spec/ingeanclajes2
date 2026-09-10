@@ -51,14 +51,15 @@ export default function ModalUnificarCliente({ clienteOrigen, clientesDisponible
     >
       <div
         style={{
-          background: "#fff",
+          background: "var(--surface, #fff)",
+          border: "1px solid var(--border, #e2e8f0)",
           borderRadius: 14,
           maxWidth: 620,
           width: "100%",
           maxHeight: "90vh",
           display: "flex",
           flexDirection: "column",
-          boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+          boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.2)",
           overflow: "hidden",
         }}
         onClick={(e) => e.stopPropagation()}
@@ -67,18 +68,18 @@ export default function ModalUnificarCliente({ clienteOrigen, clientesDisponible
         <div
           style={{
             padding: "18px 24px",
-            borderBottom: "1px solid #e2e8f0",
+            borderBottom: "1px solid var(--border, #e2e8f0)",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            background: "#f8fafc",
+            background: "var(--surface-subtle, #f8fafc)",
           }}
         >
           <div>
-            <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "#0f172a" }}>
+            <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>
               🔄 Unificar clientes duplicados
             </h3>
-            <p style={{ margin: "3px 0 0", fontSize: 12, color: "#64748b" }}>
+            <p style={{ margin: "3px 0 0", fontSize: 12, color: "var(--text-muted, #64748b)" }}>
               Transfiere obras, cotizaciones y certificados a una sola ficha oficial
             </p>
           </div>
@@ -89,7 +90,7 @@ export default function ModalUnificarCliente({ clienteOrigen, clientesDisponible
               border: "none",
               fontSize: 20,
               cursor: "pointer",
-              color: "#94a3b8",
+              color: "var(--text-subtle, #94a3b8)",
               lineHeight: 1,
               padding: 4,
             }}
@@ -103,20 +104,20 @@ export default function ModalUnificarCliente({ clienteOrigen, clientesDisponible
           {/* Tarjeta de cliente a eliminar / fusionar */}
           <div
             style={{
-              background: "#fff1f2",
-              border: "1px solid #fecdd3",
+              background: "rgba(220, 38, 38, 0.15)",
+              border: "1px solid rgba(254, 205, 211, 0.3)",
               borderRadius: 10,
               padding: "14px 16px",
               marginBottom: 18,
             }}
           >
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#be123c", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#f87171", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
               Ficha que se eliminará (Origen):
             </div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: "#9f1239", marginBottom: 6 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-main, #9f1239)", marginBottom: 6 }}>
               {clienteOrigen.nombre}
             </div>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", fontSize: 12, color: "#881337" }}>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", fontSize: 12, color: "var(--text-muted, #881337)" }}>
               <span>🏗️ <strong>{clienteOrigen.obrasTotal || 0}</strong> obra(s)</span>
               <span>📄 <strong>{clienteOrigen.cotizacionesTotal || 0}</strong> cotización(es)</span>
               <span>📜 <strong>{clienteOrigen.certificacionesTotal || 0}</strong> certificación(es)</span>
@@ -125,7 +126,7 @@ export default function ModalUnificarCliente({ clienteOrigen, clientesDisponible
 
           {/* Selector de cliente destino */}
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: "#1e293b", marginBottom: 6 }}>
+            <label style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: "var(--text-main, #1e293b)", marginBottom: 6 }}>
               Selecciona el cliente oficial que se queda (Destino):
             </label>
 
@@ -138,7 +139,7 @@ export default function ModalUnificarCliente({ clienteOrigen, clientesDisponible
                 ...SI,
                 marginBottom: 8,
                 fontSize: 12.5,
-                borderColor: "#cbd5e1",
+                borderColor: "var(--border, #cbd5e1)",
               }}
             />
 
@@ -146,13 +147,13 @@ export default function ModalUnificarCliente({ clienteOrigen, clientesDisponible
               style={{
                 maxHeight: 180,
                 overflowY: "auto",
-                border: "1px solid #cbd5e1",
+                border: "1px solid var(--border, #cbd5e1)",
                 borderRadius: 8,
-                background: "#fff",
+                background: "var(--surface, #fff)",
               }}
             >
               {listaFiltrada.length === 0 ? (
-                <div style={{ padding: "16px", textAlign: "center", fontSize: 12.5, color: "#94a3b8" }}>
+                <div style={{ padding: "16px", textAlign: "center", fontSize: 12.5, color: "var(--text-subtle, #94a3b8)" }}>
                   No se encontraron clientes con «{busqueda}»
                 </div>
               ) : (
@@ -164,9 +165,9 @@ export default function ModalUnificarCliente({ clienteOrigen, clientesDisponible
                       onClick={() => setDestinoId(c.id)}
                       style={{
                         padding: "10px 14px",
-                        borderBottom: "1px solid #f1f5f9",
+                        borderBottom: "1px solid var(--border, #f1f5f9)",
                         cursor: "pointer",
-                        background: sel ? "#eff6ff" : "transparent",
+                        background: sel ? "rgba(30, 64, 175, 0.18)" : "transparent",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
@@ -174,10 +175,10 @@ export default function ModalUnificarCliente({ clienteOrigen, clientesDisponible
                       }}
                     >
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: sel ? 700 : 600, color: sel ? "#1d4ed8" : "#1e293b" }}>
+                        <div style={{ fontSize: 13, fontWeight: sel ? 700 : 600, color: sel ? "#60a5fa" : "var(--text-main, #1e293b)" }}>
                           {c.nombre}
                         </div>
-                        <div style={{ fontSize: 11, color: "#64748b" }}>
+                        <div style={{ fontSize: 11, color: "var(--text-muted, #64748b)" }}>
                           {c.nit ? `NIT: ${c.nit}` : "Sin NIT"} {c.ciudad ? `· ${c.ciudad}` : ""} {c.telefono ? `· 📱 ${c.telefono}` : ""}
                         </div>
                       </div>
@@ -199,12 +200,12 @@ export default function ModalUnificarCliente({ clienteOrigen, clientesDisponible
           {destinoSeleccionado && (
             <div
               style={{
-                background: "#f0fdf4",
-                border: "1px solid #bbf7d0",
+                background: "rgba(16, 185, 129, 0.15)",
+                border: "1px solid rgba(187, 247, 208, 0.3)",
                 borderRadius: 10,
                 padding: "12px 16px",
                 fontSize: 12,
-                color: "#166534",
+                color: "#34d399",
                 lineHeight: 1.5,
               }}
             >
@@ -222,17 +223,17 @@ export default function ModalUnificarCliente({ clienteOrigen, clientesDisponible
         <div
           style={{
             padding: "14px 24px",
-            borderTop: "1px solid #e2e8f0",
+            borderTop: "1px solid var(--border, #e2e8f0)",
             display: "flex",
             justifyContent: "flex-end",
             gap: 10,
-            background: "#f8fafc",
+            background: "var(--surface-subtle, #f8fafc)",
           }}
         >
           <button
             onClick={onCerrar}
             style={{
-              ...B("#f1f5f9", "#475569"),
+              ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)"),
               fontSize: 13,
               padding: "8px 16px",
             }}

@@ -202,29 +202,29 @@ export default function Obras({ctx}){
                 cifras son confidenciales. La obra nace en ceros; el valor entra
                 solo al vincular la cotizacion, que la maneja quien cotiza. */}
             <div><LBL>Fecha inicio</LBL><input type="date" value={nob.fechaInicio} onChange={e=>setNob({...nob,fechaInicio:e.target.value})} style={SI}/>
-              <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>La fecha real en que empezaron, aunque sea de meses atrás.</div>
+              <div style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)",marginTop:3}}>La fecha real en que empezaron, aunque sea de meses atrás.</div>
             </div>
             <div><LBL>Fecha fin estimada</LBL><input type="date" value={nob.fechaFin} onChange={e=>setNob({...nob,fechaFin:e.target.value})} style={SI}/></div>
             <div><LBL>Estado actual</LBL>
               <select value={nob.estado} onChange={e=>setNob({...nob,estado:e.target.value})} style={SI}>
                 {ESTADOS_OBRA.map(s=><option key={s}>{s}</option>)}
               </select>
-              <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>Si está trabajándose ahora, déjalo en «En Obra».</div>
+              <div style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)",marginTop:3}}>Si está trabajándose ahora, déjalo en «En Obra».</div>
             </div>
             <div><LBL>Avance que lleva hoy (%)</LBL><input type="number" min={0} max={100} value={nob.avance} onChange={e=>setNob({...nob,avance:parseInt(e.target.value,10)||0})} style={SI}/>
-              <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>Al 100% (o en «Finalizado») ya se puede certificar.</div>
+              <div style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)",marginTop:3}}>Al 100% (o en «Finalizado») ya se puede certificar.</div>
             </div>
             <div><LBL>Vincular cotización (opcional)</LBL>
               <select value={nob.cotizacionId} onChange={e=>setNob({...nob,cotizacionId:e.target.value})} style={SI}>
                 <option value="">Sin cotización</option>
                 {cotizaciones.filter(c=>!c.obraId).map(c=><option key={c.id} value={c.id}>{c.numero} · {c.cliente}</option>)}
               </select>
-              <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>Si la vinculas, el valor total lo toma de la cotización y esa queda «Aprobada».</div>
+              <div style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)",marginTop:3}}>Si la vinculas, el valor total lo toma de la cotización y esa queda «Aprobada».</div>
             </div>
           </div>
           <div style={{display:"flex",gap:10}}>
             <button onClick={guardarObra} style={B("#cc0000")}>✅ Crear Obra</button>
-            <button onClick={()=>setShowNO(false)} style={B("#f1f5f9","#475569")}>Cancelar</button>
+            <button onClick={()=>setShowNO(false)} style={B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)")}>Cancelar</button>
           </div>
         </div>
       )}

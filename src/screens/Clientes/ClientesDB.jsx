@@ -249,7 +249,7 @@ export default function ClientesDB({ctx}){
     <div style={{display:"flex",gap:7}}>
       {sinRegistrar.length>0 && (
         <button
-          style={{background:"#dbeafe",color:"#1d4ed8",border:"1px solid #bfdbfe",borderRadius:9,
+          style={{background:"rgba(30, 64, 175, 0.15)",color:"#60a5fa",border:"1px solid rgba(191, 219, 254, 0.3)",borderRadius:9,
             padding:"8px 14px",fontSize:12.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
           onClick={()=>importarRef.current()}
         >⬇ Importar {sinRegistrar.length} sugerido(s)</button>
@@ -312,7 +312,7 @@ export default function ClientesDB({ctx}){
           </div>
           <div style={{display:"flex",gap:8}}>
             <button style={B("#cc0000")} onClick={guardarCliente}>{editId?"Guardar cambios":"Crear cliente"}</button>
-            <button style={B("#f1f5f9","#475569")} onClick={resetCliente}>Cancelar</button>
+            <button style={B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)")} onClick={resetCliente}>Cancelar</button>
           </div>
         </div>
       )}

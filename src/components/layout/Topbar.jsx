@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import MenuUsuario from "./MenuUsuario";
 import SaveIndicator from "./SaveIndicator";
 import { getScreenTitle, getScreenSection } from "../../config/navigation";
@@ -13,13 +14,22 @@ import { esDestinatarioAlerta } from "../../lib/permisos";
 // Sirve para que un boton importante -guardar una cotizacion larga- quede
 // siempre a la vista junto al indicador de guardado, sin tener que subir.
 export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOpenMenu, acciones }) {
-  const { cotizaciones, membresia } = useAppData();
+  const { cotizaciones, membresia, usuariosEnLinea, esSuperAdminCristian, irAPantalla } = useAppData();
   const title = getScreenTitle(scr);
   const section = getScreenSection(scr);
 
   const esAdminDestinatario = esDestinatarioAlerta(membresia);
   const seg = resumenSeguimiento(cotizaciones || [], new Date(), 100);
   const totalPendientes = seg.requierenAccion?.length || 0;
+
+  const totalEnLinea = useMemo(() => {
+    if (!usuariosEnLinea || typeof usuariosEnLinea !== "object") return 0;
+    const vistos = new Set();
+    Object.values(usuariosEnLinea).forEach((u) => {
+      if (u?.userId) vistos.add(u.userId);
+    });
+    return vistos.size;
+  }, [usuariosEnLinea]);
 
   return (
     <header
@@ -116,6 +126,40 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
           </button>
         )}
         <SaveIndicator theme={theme} compact={isMobile} />
+
+        {esSuperAdminCristian && (
+          <button
+            onClick={() => irAPantalla("usuarios")}
+            aria-label="Ver usuarios en línea"
+            title={`Monitoreo en tiempo real (Exclusivo Cristian Delgado): ${totalEnLinea} usuario(s) conectado(s). Clic para abrir administración.`}
+            style={{
+              height: 36,
+              padding: isMobile ? "0 8px" : "0 12px",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              background: "rgba(16, 185, 129, 0.12)",
+              border: "1px solid rgba(16, 185, 129, 0.35)",
+              borderRadius: 999,
+              color: dark ? "#34d399" : "#065f46",
+              cursor: "pointer",
+              fontSize: 12,
+              fontWeight: 700,
+            }}
+          >
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: "#10b981",
+                boxShadow: "0 0 6px #10b981",
+                display: "inline-block",
+              }}
+            />
+            <span>{totalEnLinea} {isMobile ? "" : "en línea"}</span>
+          </button>
+        )}
 
         <button
           onClick={onToggleTheme}

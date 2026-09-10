@@ -390,7 +390,7 @@ export default function Certificaciones({ctx}){
                     </option>
                   ))}
                 </select>
-                <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3,lineHeight:1.45}}>
+                <div style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)",marginTop:3,lineHeight:1.45}}>
                   Esta obra tiene {informesDeObra(form.obraId).length} informes. Elige uno y el
                   certificado toma su sede, su fecha y lo que se hizo ahí. Haz una certificación
                   por cada informe.
@@ -408,7 +408,7 @@ export default function Certificaciones({ctx}){
               {/* De donde salio, para que se note que no es la de hoy sino la
                   del trabajo, y se pueda cambiar sabiendo lo que se cambia. */}
               {fechaDeLaObra(form.obraId) && (
-                <div style={{fontSize:10,color: form.fecha===fechaDeLaObra(form.obraId) ? "#166534" : "#b45309", marginTop:3, lineHeight:1.4}}>
+                <div style={{fontSize:10,color: form.fecha===fechaDeLaObra(form.obraId) ? "#34d399" : "#f59e0b", marginTop:3, lineHeight:1.4}}>
                   {form.fecha===fechaDeLaObra(form.obraId)
                     ? <>Es el fin del período del informe de {form.obraId}.</>
                     : <>El informe de {form.obraId} termina el {fmtD(fechaDeLaObra(form.obraId))}.</>}
@@ -429,7 +429,7 @@ export default function Certificaciones({ctx}){
               {/* Al escribirlo a mano deja de seguir a la fecha. */}
               <input type="date" value={form.proxMant}
                 onChange={e=>setForm({...form,proxMant:e.target.value,proxMantAuto:false})} style={SI}/>
-              <div style={{fontSize:10,color:form.proxMant?"#166534":"#b45309",marginTop:3,lineHeight:1.4}}>
+              <div style={{fontSize:10,color:form.proxMant?"#34d399":"#f59e0b",marginTop:3,lineHeight:1.4}}>
                 {form.proxMant
                   ? (form.proxMantAuto!==false
                       ? "Propuesto a un año de la fecha, como dice el documento. Cámbialo si aplica otro plazo."
@@ -450,7 +450,7 @@ export default function Certificaciones({ctx}){
               placeholder={proyectoDeObra(form.obraId) || "El cuarto de ascensores · La cubierta del bloque 2…"}
               style={SI}
             />
-            <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>
+            <div style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)",marginTop:3}}>
               Sale en el certificado: «instalados en <strong>{(form.lugar||proyectoDeObra(form.obraId)||"…").toUpperCase()}</strong>».
               Vacío toma el nombre del proyecto del informe. Escribe aquí si quieres precisar el
               sitio: «el cuarto de ascensores», «la cubierta del bloque 2».
@@ -459,7 +459,7 @@ export default function Certificaciones({ctx}){
           <div style={{marginBottom:12}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}}>
               <LBL>Sistema certificado</LBL>
-              <button onClick={rehacerTexto} style={{...B("#f1f5f9","#475569"),fontSize:11,padding:"5px 11px"}}>
+              <button onClick={rehacerTexto} style={{...B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)"),fontSize:11,padding:"5px 11px"}}>
                 ↻ Rehacer con los datos de arriba
               </button>
             </div>
@@ -471,7 +471,7 @@ export default function Certificaciones({ctx}){
               spellCheck lang="es"
               style={{...SI,resize:"vertical"}}
             />
-            <div style={{fontSize:10.5,color:"#94a3b8",marginTop:3}}>
+            <div style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)",marginTop:3}}>
               {form.sistemaAuto===false
                 ? "Lo estás escribiendo a mano, así que ya no se rehace solo. Usa el botón para volver al texto automático."
                 : "Se actualiza solo con lo que elijas arriba. En cuanto lo edites, deja de hacerlo."}
@@ -479,7 +479,7 @@ export default function Certificaciones({ctx}){
             {/* De donde sale el alcance, para que no parezca que se lo invento
                 el sistema y se pueda ir a corregirlo a su sitio. */}
             {queSeCertifica(form.obraId) && (
-              <div style={{fontSize:10.5,color:"#166534",marginTop:5,lineHeight:1.5}}>
+              <div style={{fontSize:10.5,color:"#34d399",marginTop:5,lineHeight:1.5}}>
                 Se arma con lo registrado en la obra: <strong>qué se certifica</strong> de las
                 observaciones del informe, <strong>dónde</strong> del nombre del proyecto, y el NIT
                 y la dirección del cliente. Si algo no cuadra, corrígelo en el informe y vuelve a
@@ -492,17 +492,17 @@ export default function Certificaciones({ctx}){
             {form.elementos.map((el,i)=>(
               <div key={i} style={{display:"flex",gap:8,alignItems:"center",marginBottom:6}}>
                 <input value={el} onChange={e=>setForm({...form,elementos:form.elementos.map((x,j)=>j===i?e.target.value:x)})} style={{...SI,fontSize:12}} />
-                <button onClick={()=>setForm({...form,elementos:form.elementos.filter((_,j)=>j!==i)})} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:6,width:28,height:28,cursor:"pointer",fontSize:14,flexShrink:0}}>×</button>
+                <button onClick={()=>setForm({...form,elementos:form.elementos.filter((_,j)=>j!==i)})} style={{background:"rgba(220, 38, 38, 0.15)",border:"none",color:"#f87171",borderRadius:6,width:28,height:28,cursor:"pointer",fontSize:14,flexShrink:0}}>×</button>
               </div>
             ))}
             <div style={{display:"flex",gap:8,marginTop:6}}>
               <input value={nuevoElem} onChange={e=>setNuevoElem(e.target.value)} placeholder="Agregar elemento..." style={{...SI,fontSize:12}}/>
-              <button onClick={()=>{if(nuevoElem){setForm({...form,elementos:[...form.elementos,nuevoElem]});setNuevoElem("");}}} style={{...B("#fff3e8","#f47c20"),border:"1px dashed #cc0000",flexShrink:0}}>+</button>
+              <button onClick={()=>{if(nuevoElem){setForm({...form,elementos:[...form.elementos,nuevoElem]});setNuevoElem("");}}} style={{...B("rgba(244, 124, 32, 0.12)","#f47c20"),border:"1px dashed #cc0000",flexShrink:0}}>+</button>
             </div>
           </div>
           <div style={{display:"flex",gap:10}}>
             <button style={B("#4ade80","#0f2d1a")} onClick={guardar}>{editId ? "Guardar cambios" : "Guardar certificación"}</button>
-            <button style={B("#f1f5f9","#475569")} onClick={()=>{setNueva(false);setEditId(null);}}>Cancelar</button>
+            <button style={B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)")} onClick={()=>{setNueva(false);setEditId(null);}}>Cancelar</button>
           </div>
         </div>
       )}

@@ -45,7 +45,7 @@ export default function BotonCorregir({ valor, onChange, titulo = "Revisar ortog
         disabled={!hayTexto || trabajando}
         title={hayTexto ? titulo : "Escribe algo primero"}
         style={{
-          background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0",
+          background: "var(--btn-cancelar-bg, #f1f5f9)", color: "var(--btn-cancelar-text, #475569)", border: "1px solid var(--border, #e2e8f0)",
           borderRadius: 7, padding: compacto ? "3px 8px" : "4px 10px",
           fontSize: compacto ? 10.5 : 11, fontWeight: 600, fontFamily: "inherit",
           cursor: hayTexto && !trabajando ? "pointer" : "default",
@@ -74,38 +74,38 @@ export default function BotonCorregir({ valor, onChange, titulo = "Revisar ortog
       )}
 
       {propuesta !== null && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.45)", zIndex: 1000,
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.65)", zIndex: 1000,
           display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
           onClick={() => setPropuesta(null)}>
           <div onClick={(e) => e.stopPropagation()}
-            style={{ background: "#fff", borderRadius: 14, maxWidth: 760, width: "100%",
+            style={{ background: "var(--surface, #fff)", border: "1px solid var(--border, #eef0f3)", borderRadius: 14, maxWidth: 760, width: "100%",
               maxHeight: "80vh", display: "flex", flexDirection: "column", overflow: "hidden",
-              boxShadow: "0 24px 60px -20px rgba(15,23,42,.5)" }}>
-            <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid #eef0f3" }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "#101828" }}>Revisión de ortografía</div>
-              <div style={{ fontSize: 12, color: "#64748b", marginTop: 3 }}>
-                En <span style={{ background: "#fee4e2", textDecoration: "line-through" }}>rojo</span> lo que
-                se quita y en <span style={{ background: "#dcfce7" }}>verde</span> lo que se pone. Nada
+              boxShadow: "0 24px 60px -20px rgba(0,0,0,.6)" }}>
+            <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid var(--border, #eef0f3)" }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-main, #101828)" }}>Revisión de ortografía</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted, #64748b)", marginTop: 3 }}>
+                En <span style={{ background: "rgba(239,68,68,.2)", color: "#fca5a5", padding: "1px 4px", borderRadius: 3, textDecoration: "line-through" }}>rojo</span> lo que
+                se quita y en <span style={{ background: "rgba(34,197,94,.2)", color: "#86efac", padding: "1px 4px", borderRadius: 3 }}>verde</span> lo que se pone. Nada
                 cambia hasta que lo aceptes.
               </div>
             </div>
 
             <div style={{ padding: "14px 20px", overflowY: "auto", fontSize: 13, lineHeight: 1.7,
-              whiteSpace: "pre-wrap", color: "#101828", flex: 1 }}>
+              whiteSpace: "pre-wrap", color: "var(--text-main, #101828)", flex: 1 }}>
               {diferencias(valor, propuesta).map((parte, i) => {
                 if (parte.tipo === "igual") return <span key={i}>{parte.texto}</span>;
                 if (parte.tipo === "quitado") {
-                  return <span key={i} style={{ background: "#fee4e2", color: "#b42318",
+                  return <span key={i} style={{ background: "rgba(239,68,68,.2)", color: "#fca5a5", padding: "1px 3px", borderRadius: 3,
                     textDecoration: "line-through" }}>{parte.texto}</span>;
                 }
-                return <span key={i} style={{ background: "#dcfce7", color: "#166534" }}>{parte.texto}</span>;
+                return <span key={i} style={{ background: "rgba(34,197,94,.2)", color: "#86efac", padding: "1px 3px", borderRadius: 3 }}>{parte.texto}</span>;
               })}
             </div>
 
-            <div style={{ padding: "12px 20px 16px", borderTop: "1px solid #eef0f3",
+            <div style={{ padding: "12px 20px 16px", borderTop: "1px solid var(--border, #eef0f3)",
               display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <button type="button" onClick={() => setPropuesta(null)}
-                style={{ background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0",
+                style={{ background: "var(--btn-cancelar-bg, #f1f5f9)", color: "var(--btn-cancelar-text, #475569)", border: "1px solid var(--border, #e2e8f0)",
                   borderRadius: 9, padding: "8px 16px", fontSize: 12.5, fontWeight: 600,
                   cursor: "pointer", fontFamily: "inherit" }}>Dejarlo como está</button>
               <button type="button" onClick={aplicar}

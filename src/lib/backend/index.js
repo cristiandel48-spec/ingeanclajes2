@@ -1,4 +1,4 @@
-﻿export { getSupabaseClient, getSessionUser, isSupabaseConfigured, signOut, esChoqueEntrePestanas, reintentandoSiChocanPestanas } from "./supabaseClient";
+export { getSupabaseClient, getSessionUser, isSupabaseConfigured, signOut, esChoqueEntrePestanas, reintentandoSiChocanPestanas } from "./supabaseClient";
 export { createDataService, resolveTenantId } from "./dataService";
 export { entityConfig, entityKeys } from "./entityConfig";
 export {
@@ -18,3 +18,9 @@ export {
   eliminarUsuario,
   cambiarClave,
 } from "./usuarios";
+export {
+  suscribirPresencia,
+  esSuperAdmin,
+  EMAIL_SUPERADMIN,
+  detectarDispositivo,
+} from "./presencia";

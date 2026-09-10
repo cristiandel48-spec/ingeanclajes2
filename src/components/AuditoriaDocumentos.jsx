@@ -25,33 +25,33 @@ const fechaHora = (valor) => {
 const ESTILOS_TIPO = {
   obra: {
     etiqueta: "Ejecución de obra",
-    bg: "#fdf2f8",
-    text: "#be185d",
-    border: "#fbcfe8",
+    bg: "rgba(190, 24, 93, 0.12)",
+    text: "#f472b6",
+    border: "rgba(190, 24, 93, 0.25)",
   },
   horario: {
     etiqueta: "Horarios y turnos",
-    bg: "#f5f3ff",
-    text: "#6d28d9",
-    border: "#ede9fe",
+    bg: "rgba(109, 40, 217, 0.12)",
+    text: "#a78bfa",
+    border: "rgba(109, 40, 217, 0.25)",
   },
   cotizacion: {
     etiqueta: "Cotización",
-    bg: "#fff7ed",
-    text: "#c2410c",
-    border: "#ffedd5",
+    bg: "rgba(194, 65, 12, 0.12)",
+    text: "#fb923c",
+    border: "rgba(194, 65, 12, 0.25)",
   },
   informe: {
     etiqueta: "Informe de actividades",
-    bg: "#eff6ff",
-    text: "#1d4ed8",
-    border: "#dbeafe",
+    bg: "rgba(29, 78, 216, 0.12)",
+    text: "#60a5fa",
+    border: "rgba(29, 78, 216, 0.25)",
   },
   certificacion: {
     etiqueta: "Certificación",
-    bg: "#f0fdf4",
-    text: "#15803d",
-    border: "#dcfce7",
+    bg: "rgba(21, 128, 61, 0.12)",
+    text: "#4ade80",
+    border: "rgba(21, 128, 61, 0.25)",
   },
 };
 
@@ -276,7 +276,7 @@ export default function AuditoriaDocumentos({ ctx }) {
   return (
     <div style={{ ...CD, marginTop: 18 }}>
       <div style={ST}>Registro de auditoría y control de cambios</div>
-      <div style={{ fontSize: 11.5, color: "#64748b", marginBottom: 14 }}>
+      <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginBottom: 14 }}>
         Consulta qué persona creó y qué persona realizó los últimos cambios en ejecución de obra, horarios, cotizaciones, informes y certificaciones.
         Módulo visible para Camila Sepúlveda y el equipo de Administración.
       </div>
@@ -294,9 +294,9 @@ export default function AuditoriaDocumentos({ ctx }) {
                 setVerTodas(false);
               }}
               style={{
-                background: activo ? "#1a1a2e" : "#f8fafc",
-                color: activo ? "#fff" : "#475569",
-                border: activo ? "1px solid #1a1a2e" : "1px solid #e2e8f0",
+                background: activo ? "var(--primary, #f47c20)" : "var(--surface-subtle)",
+                color: activo ? "#fff" : "var(--text-muted)",
+                border: activo ? "1px solid var(--primary, #f47c20)" : "1px solid var(--border)",
                 borderRadius: 8,
                 padding: "6px 13px",
                 fontSize: 12,
@@ -314,8 +314,8 @@ export default function AuditoriaDocumentos({ ctx }) {
                   fontSize: 10.5,
                   padding: "1px 6px",
                   borderRadius: 10,
-                  background: activo ? "rgba(255,255,255,0.2)" : "#e2e8f0",
-                  color: activo ? "#fff" : "#64748b",
+                  background: activo ? "rgba(255,255,255,0.2)" : "var(--border)",
+                  color: activo ? "#fff" : "var(--text-muted)",
                   fontWeight: 700,
                 }}
               >
@@ -330,9 +330,9 @@ export default function AuditoriaDocumentos({ ctx }) {
         <div
           style={{
             fontSize: 11.5,
-            color: "#92400e",
-            background: "#fffbeb",
-            border: "1px solid #fde68a",
+            color: "#fbbf24",
+            background: "rgba(245, 158, 11, 0.12)",
+            border: "1px solid rgba(245, 158, 11, 0.3)",
             borderRadius: 8,
             padding: "8px 12px",
             marginBottom: 14,
@@ -352,7 +352,7 @@ export default function AuditoriaDocumentos({ ctx }) {
       />
 
       {!filas.length ? (
-        <div style={{ fontSize: 12, color: "#64748b", padding: "14px 0" }}>
+        <div style={{ fontSize: 12, color: "var(--text-muted)", padding: "14px 0" }}>
           {busqueda
             ? "Ningún registro coincide con esa búsqueda."
             : "Todavía no hay registros en esta sección."}
@@ -362,16 +362,16 @@ export default function AuditoriaDocumentos({ ctx }) {
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 800 }}>
               <thead>
-                <tr style={{ background: "#f8fafc", textAlign: "left" }}>
-                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "#475569" }}>Identificador / Fecha</th>
+                <tr style={{ background: "var(--surface-subtle)", textAlign: "left", borderBottom: "1px solid var(--border)" }}>
+                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Identificador / Fecha</th>
                   {tab === "todos" && (
-                    <th style={{ padding: "8px 10px", fontWeight: 600, color: "#475569" }}>Módulo</th>
+                    <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Módulo</th>
                   )}
-                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "#475569" }}>Detalle / Proyecto / Obra</th>
-                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "#475569" }}>Lo creó</th>
-                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "#475569" }}>Fecha creación</th>
-                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "#475569" }}>Último cambio</th>
-                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "#475569" }}>Fecha cambio</th>
+                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Detalle / Proyecto / Obra</th>
+                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Lo creó</th>
+                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Fecha creación</th>
+                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Último cambio</th>
+                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Fecha cambio</th>
                 </tr>
               </thead>
               <tbody>
@@ -381,11 +381,11 @@ export default function AuditoriaDocumentos({ ctx }) {
                     <tr
                       key={doc.id}
                       style={{
-                        background: i % 2 ? "#fff" : "#fcfcfd",
-                        borderTop: "1px solid #f1f5f9",
+                        background: i % 2 ? "var(--surface)" : "var(--surface-subtle)",
+                        borderTop: "1px solid var(--border)",
                       }}
                     >
-                      <td style={{ padding: "8px 10px", fontWeight: 600, color: "#1e293b", whiteSpace: "nowrap" }}>
+                      <td style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-main)", whiteSpace: "nowrap" }}>
                         {doc.codigo}
                       </td>
                       {tab === "todos" && (
@@ -405,24 +405,24 @@ export default function AuditoriaDocumentos({ ctx }) {
                           </span>
                         </td>
                       )}
-                      <td style={{ padding: "8px 10px", color: "#334155" }}>
+                      <td style={{ padding: "8px 10px", color: "var(--text-main)" }}>
                         <div style={{ fontWeight: 500 }}>{doc.referencia}</div>
                         {doc.subreferencia && doc.subreferencia !== doc.referencia && (
-                          <div style={{ fontSize: 10.5, color: "#64748b", marginTop: 1 }}>
+                          <div style={{ fontSize: 10.5, color: "var(--text-muted)", marginTop: 1 }}>
                             {doc.subreferencia}
                           </div>
                         )}
                       </td>
-                      <td style={{ padding: "8px 10px", color: doc.creadoPorNombre && doc.creadoPorNombre !== "no registrado" ? "#334155" : "#94a3b8" }}>
+                      <td style={{ padding: "8px 10px", color: doc.creadoPorNombre && doc.creadoPorNombre !== "no registrado" ? "var(--text-main)" : "var(--text-muted)" }}>
                         {doc.creadoPorNombre || "no registrado"}
                       </td>
-                      <td style={{ padding: "8px 10px", color: "#64748b", whiteSpace: "nowrap" }}>
+                      <td style={{ padding: "8px 10px", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
                         {fechaHora(doc.creadoEn) || "—"}
                       </td>
-                      <td style={{ padding: "8px 10px", color: doc.modificadoPorNombre ? "#334155" : "#94a3b8" }}>
+                      <td style={{ padding: "8px 10px", color: doc.modificadoPorNombre ? "var(--text-main)" : "var(--text-muted)" }}>
                         {doc.modificadoPorNombre || "Sin modificaciones"}
                       </td>
-                      <td style={{ padding: "8px 10px", color: "#64748b", whiteSpace: "nowrap" }}>
+                      <td style={{ padding: "8px 10px", color: "var(--text-muted)", whiteSpace: "nowrap" }}>
                         {doc.modificadoPorNombre ? (fechaHora(doc.modificadoEn) || "—") : "—"}
                       </td>
                     </tr>

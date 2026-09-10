@@ -188,17 +188,18 @@ export default function EnviarCotizacion({ cotizacion, firmaImg = "", onCerrar }
       }}
     >
       <div style={{
-        background: "#fff", borderRadius: 16, padding: "24px 24px 22px",
+        background: "var(--surface, #fff)", borderRadius: 16, padding: "24px 24px 22px",
         width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto",
-        boxSizing: "border-box", boxShadow: "0 24px 60px -20px rgba(16,24,40,.3)",
+        boxSizing: "border-box", boxShadow: "0 24px 60px -20px rgba(0,0,0,.5)",
+        border: "1px solid var(--border, #e2e8f0)",
       }}>
         {enviado ? (
           <>
-            <h2 style={{ margin: "0 0 8px", fontSize: 20, fontWeight: 800, color: "#101828" }}>
+            <h2 style={{ margin: "0 0 8px", fontSize: 20, fontWeight: 800, color: "var(--text-main, #101828)" }}>
               Cotización enviada
             </h2>
-            <p style={{ margin: "0 0 20px", fontSize: 13.5, color: "#667085", lineHeight: 1.6 }}>
-              Salió a <strong style={{ color: "#101828" }}>{para}</strong> con el PDF adjunto,
+            <p style={{ margin: "0 0 20px", fontSize: 13.5, color: "var(--text-muted, #667085)", lineHeight: 1.6 }}>
+              Salió a <strong style={{ color: "var(--text-main, #101828)" }}>{para}</strong> con el PDF adjunto,
               desde el correo de la empresa.
             </p>
             <button onClick={onCerrar} style={{ ...B("#4ade80", "#0f2d1a"), width: "100%", justifyContent: "center" }}>
@@ -207,10 +208,10 @@ export default function EnviarCotizacion({ cotizacion, firmaImg = "", onCerrar }
           </>
         ) : (
           <>
-            <h2 style={{ margin: "0 0 4px", fontSize: 19, fontWeight: 800, color: "#101828" }}>
+            <h2 style={{ margin: "0 0 4px", fontSize: 19, fontWeight: 800, color: "var(--text-main, #101828)" }}>
               Enviar la cotización al cliente
             </h2>
-            <p style={{ margin: "0 0 16px", fontSize: 12.5, color: "#667085", lineHeight: 1.5 }}>
+            <p style={{ margin: "0 0 16px", fontSize: 12.5, color: "var(--text-muted, #667085)", lineHeight: 1.5 }}>
               Revisa el mensaje. Sale desde el correo de la empresa con el PDF adjunto.
             </p>
 
@@ -219,7 +220,7 @@ export default function EnviarCotizacion({ cotizacion, firmaImg = "", onCerrar }
               <input type="email" value={para} onChange={(e) => setPara(e.target.value)}
                 placeholder="isabel@empresa.com" style={SI} />
               {!cotizacion?.contactoEmail && (
-                <div style={{ fontSize: 10.5, color: "#b45309", marginTop: 4 }}>
+                <div style={{ fontSize: 10.5, color: "#f59e0b", marginTop: 4 }}>
                   Esta cotización no tiene correo guardado. Escríbelo aquí y agrégalo también
                   en el formulario para la próxima.
                 </div>
@@ -239,7 +240,7 @@ export default function EnviarCotizacion({ cotizacion, firmaImg = "", onCerrar }
 
             {estado && (
               <div style={{
-                background: "#f0f6ff", border: "1px solid #bfd8ff", color: "#1e40af",
+                background: "rgba(30, 64, 175, 0.15)", border: "1px solid rgba(191, 216, 255, 0.3)", color: "#60a5fa",
                 borderRadius: 10, padding: "10px 12px", fontSize: 12.5, marginBottom: 12,
               }}>
                 {estado}
@@ -248,7 +249,7 @@ export default function EnviarCotizacion({ cotizacion, firmaImg = "", onCerrar }
 
             {error && (
               <div style={{
-                background: "#fef3f2", border: "1px solid #fecdca", color: "#b42318",
+                background: "rgba(180, 35, 24, 0.15)", border: "1px solid rgba(254, 205, 202, 0.4)", color: "#f87171",
                 borderRadius: 10, padding: "10px 12px", fontSize: 12.5, marginBottom: 12, lineHeight: 1.5,
               }}>
                 {error}
@@ -260,12 +261,12 @@ export default function EnviarCotizacion({ cotizacion, firmaImg = "", onCerrar }
                 style={{ ...B("#f47c20"), flex: 1, justifyContent: "center", opacity: ocupado ? .7 : 1 }}>
                 {ocupado ? "Enviando…" : "Enviar al cliente"}
               </button>
-              <button onClick={onCerrar} disabled={ocupado} style={B("#f1f5f9", "#475569")}>
+              <button onClick={onCerrar} disabled={ocupado} style={B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)")}>
                 Cancelar
               </button>
             </div>
 
-            <div style={{ fontSize: 10.5, color: "#94a3b8", marginTop: 10, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 10.5, color: "var(--text-subtle, #94a3b8)", marginTop: 10, lineHeight: 1.5 }}>
               El PDF se arma en el momento y puede tardar unos segundos si la cotización trae fotos.
             </div>
           </>

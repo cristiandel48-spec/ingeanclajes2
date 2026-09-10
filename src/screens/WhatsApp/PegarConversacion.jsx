@@ -82,10 +82,10 @@ export default function PegarConversacion({ onCerrar }) {
   };
 
   return (
-    <div style={{ background: "#fff", border: "1px solid #25D366", borderRadius: 14, padding: 20, marginBottom: 16 }}>
+    <div style={{ background: "var(--surface)", border: "1px solid #25D366", borderRadius: 14, padding: 20, marginBottom: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 10 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1a2e" }}>💬 Pegar una conversación</div>
-        <button onClick={onCerrar} style={{ ...B("#f1f5f9", "#475569"), fontSize: 12, padding: "6px 12px" }}>Cerrar</button>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-main)" }}>💬 Pegar una conversación</div>
+        <button onClick={onCerrar} style={{ ...B("var(--surface-subtle)", "var(--text-muted)"), border: "1px solid var(--border)", fontSize: 12, padding: "6px 12px" }}>Cerrar</button>
       </div>
 
       {!propuesta && (
@@ -109,7 +109,7 @@ export default function PegarConversacion({ onCerrar }) {
       />
 
       {pegado.trim() && (
-        <div style={{ fontSize: 11.5, color: "#64748b", marginBottom: 10 }}>
+        <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginBottom: 10 }}>
           {mensajes.length} mensaje{mensajes.length === 1 ? "" : "s"}
           {quienes.length > 0 && ` · ${quienes.map((p) => p.quien).join(" y ")}`}
         </div>
@@ -122,26 +122,26 @@ export default function PegarConversacion({ onCerrar }) {
         </button>
         {pegado && !cargando && (
           <button onClick={() => { setPegado(""); setPropuesta(null); setError(""); }}
-            style={{ ...B("#f1f5f9", "#475569"), fontSize: 12 }}>Borrar</button>
+            style={{ ...B("var(--surface-subtle)", "var(--text-muted)"), border: "1px solid var(--border)", fontSize: 12 }}>Borrar</button>
         )}
       </div>
 
       {error && (
-        <div style={{ background: "#FEF3F2", border: "1px solid #FECDCA", color: "#B42318",
+        <div style={{ background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#ef4444",
           borderRadius: 10, padding: "11px 14px", fontSize: 12.5, marginTop: 12, lineHeight: 1.5 }}>
           {error}
         </div>
       )}
 
       {propuesta && (
-        <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 16, marginTop: 14 }}>
-          <div style={{ fontSize: 12.5, fontWeight: 700, color: "#1a1a2e", marginBottom: 10 }}>
+        <div style={{ background: "var(--surface-subtle)", border: "1px solid var(--border)", borderRadius: 12, padding: 16, marginTop: 14 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-main)", marginBottom: 10 }}>
             Esto es lo que se entendió
           </div>
 
           {yaRegistrado && (
-            <div style={{ background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: 9,
-              padding: "8px 11px", fontSize: 11.5, color: "#166534", marginBottom: 10, lineHeight: 1.5 }}>
+            <div style={{ background: "rgba(34, 197, 94, 0.15)", border: "1px solid rgba(34, 197, 94, 0.3)", borderRadius: 9,
+              padding: "8px 11px", fontSize: 11.5, color: "var(--green-700, #4ade80)", marginBottom: 10, lineHeight: 1.5 }}>
               <strong>Ya es cliente</strong> ({yaRegistrado.id}). Se usará su ficha, con su NIT y su dirección.
               {yaCotizado > 0 && ` Tiene ${yaCotizado} cotización(es) anterior(es).`}
             </div>
@@ -155,9 +155,9 @@ export default function PegarConversacion({ onCerrar }) {
               ["Obra", propuesta.obra],
               ["Teléfono", propuesta.telefono],
             ].map(([etiqueta, valor]) => (
-              <div key={etiqueta} style={{ background: "#fff", borderRadius: 8, padding: "8px 10px", border: "1px solid #f1f5f9" }}>
-                <div style={{ fontSize: 9.5, color: "#94a3b8", textTransform: "uppercase", marginBottom: 2 }}>{etiqueta}</div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: valor ? "#1a1a2e" : "#cbd5e1" }}>
+              <div key={etiqueta} style={{ background: "var(--surface)", borderRadius: 8, padding: "8px 10px", border: "1px solid var(--border)" }}>
+                <div style={{ fontSize: 9.5, color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 2 }}>{etiqueta}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: valor ? "var(--text-main)" : "var(--text-muted)" }}>
                   {valor || "no se dijo"}
                 </div>
               </div>
@@ -165,40 +165,40 @@ export default function PegarConversacion({ onCerrar }) {
           </div>
 
           {propuesta.items.length === 0 ? (
-            <div style={{ background: "#FFFAF0", border: "1px solid #FDE3C4", color: "#B54708",
+            <div style={{ background: "rgba(245, 158, 11, 0.12)", border: "1px solid rgba(245, 158, 11, 0.3)", color: "#fbbf24",
               borderRadius: 8, padding: "10px 12px", fontSize: 12 }}>
               No se reconoció ningún servicio del catálogo en la conversación. Puedes crear la
               cotización igual con los datos del cliente y agregar los ítems a mano.
             </div>
           ) : (
-            <div style={{ background: "#fff", borderRadius: 8, border: "1px solid #f1f5f9", overflow: "hidden" }}>
+            <div style={{ background: "var(--surface)", borderRadius: 8, border: "1px solid var(--border)", overflow: "hidden" }}>
               {propuesta.items.map((item, i) => (
                 <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 10,
-                  padding: "8px 12px", borderBottom: "1px solid #f8fafc", fontSize: 12 }}>
-                  <span style={{ color: "#1a1a2e" }}>
+                  padding: "8px 12px", borderBottom: "1px solid var(--border)", fontSize: 12 }}>
+                  <span style={{ color: "var(--text-main)" }}>
                     {item.desc}
                     {item.textoOriginal && (
-                      <span style={{ color: "#94a3b8", fontSize: 10.5, display: "block", marginTop: 2, fontStyle: "italic" }}>
+                      <span style={{ color: "var(--text-muted)", fontSize: 10.5, display: "block", marginTop: 2, fontStyle: "italic" }}>
                         de: «{item.textoOriginal}»
                       </span>
                     )}
                   </span>
-                  <span style={{ color: "#64748b", whiteSpace: "nowrap" }}>
+                  <span style={{ color: "var(--text-muted)", whiteSpace: "nowrap" }}>
                     {item.cant} {item.unit} · {fmt(item.vu * item.cant)}
                   </span>
                 </div>
               ))}
               <div style={{ display: "flex", justifyContent: "space-between", padding: "9px 12px",
-                background: "#f1f5f9", fontSize: 12.5, fontWeight: 700 }}>
-                <span style={{ color: "#64748b" }}>Subtotal</span>
-                <span style={{ color: "#cc0000" }}>{fmt(subtotal)}</span>
+                background: "var(--surface-subtle)", fontSize: 12.5, fontWeight: 700 }}>
+                <span style={{ color: "var(--text-muted)" }}>Subtotal</span>
+                <span style={{ color: "var(--accent, #cc0000)" }}>{fmt(subtotal)}</span>
               </div>
             </div>
           )}
 
           {propuesta.fuera?.length > 0 && (
-            <div style={{ background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 8,
-              padding: "10px 12px", fontSize: 11.5, color: "#78350f", marginTop: 10, lineHeight: 1.55 }}>
+            <div style={{ background: "rgba(245, 158, 11, 0.12)", border: "1px solid rgba(245, 158, 11, 0.3)", borderRadius: 8,
+              padding: "10px 12px", fontSize: 11.5, color: "#fbbf24", marginTop: 10, lineHeight: 1.55 }}>
               <strong>Pidió algo que no está en el catálogo:</strong>{" "}
               {propuesta.fuera.map((f) => `«${f.desc}»`).join(", ")}. No se le pone precio; si se
               cotiza, se agrega a mano.
@@ -207,10 +207,10 @@ export default function PegarConversacion({ onCerrar }) {
 
           <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap", alignItems: "center" }}>
             <button onClick={crear} style={B("#4ade80", "#0f2d1a")}>Crear la cotización</button>
-            <button onClick={() => setPropuesta(null)} style={{ ...B("#f1f5f9", "#475569"), fontSize: 12 }}>
+            <button onClick={() => setPropuesta(null)} style={{ ...B("var(--surface-subtle)", "var(--text-muted)"), border: "1px solid var(--border)", fontSize: 12 }}>
               Descartar
             </button>
-            <div style={{ fontSize: 10.5, color: "#94a3b8", flex: "1 1 200px", lineHeight: 1.5 }}>
+            <div style={{ fontSize: 10.5, color: "var(--text-muted)", flex: "1 1 200px", lineHeight: 1.5 }}>
               Se abre el formulario con todo esto puesto. <strong>Nada se guarda hasta que le des
               Guardar</strong> allí.
             </div>

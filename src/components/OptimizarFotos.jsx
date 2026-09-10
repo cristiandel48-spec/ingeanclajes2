@@ -129,16 +129,16 @@ export default function OptimizarFotos({ ctx, enModal = false, onCerrar = null }
 
   const cuerpo = (
     <div>
-      <div style={{ fontSize: 12.5, color: "#64748b", lineHeight: 1.6, marginBottom: 16 }}>
+      <div style={{ fontSize: 12.5, color: "var(--text-muted)", lineHeight: 1.6, marginBottom: 16 }}>
         Las fotos se guardan dentro de las <strong>obras</strong>, <strong>informes de actividades</strong> o <strong>cotizaciones</strong>.
         Si se tomaron directo del celular sin comprimir, pueden pesar 4 a 8 MB cada una y hacer que la base de datos o los documentos se sientan lentos.
         Esta herramienta busca todas las fotos pesadas existentes y las reduce de una vez.
         <br />
-        <strong style={{ color: "#0f766e" }}>En los PDF y en pantalla se siguen viendo nítidas e iguales.</strong>
+        <strong style={{ color: "var(--accent, #4ade80)" }}>En los PDF y en pantalla se siguen viendo nítidas e iguales.</strong>
       </div>
 
       {cargandoNube && (
-        <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 10, padding: "14px 16px", color: "#1e40af", fontSize: 13, marginBottom: 14 }}>
+        <div style={{ background: "rgba(37, 99, 235, 0.15)", border: "1px solid rgba(37, 99, 235, 0.3)", borderRadius: 10, padding: "14px 16px", color: "#60a5fa", fontSize: 13, marginBottom: 14 }}>
           ⏳ {mensajeCarga || "Consultando fotos en la nube…"}
         </div>
       )}
@@ -146,34 +146,34 @@ export default function OptimizarFotos({ ctx, enModal = false, onCerrar = null }
       {!revision && !resultado && !trabajando && !cargandoNube && (
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={revisar} style={B("#f47c20")}>🔍 Revisar fotos guardadas</button>
-          {enModal && <button onClick={onCerrar} style={B("#f1f5f9", "#475569")}>Cerrar</button>}
+          {enModal && <button onClick={onCerrar} style={{ ...B("var(--surface-subtle)", "var(--text-muted)"), border: "1px solid var(--border)" }}>Cerrar</button>}
         </div>
       )}
 
       {revision && !trabajando && !cargandoNube && (
         <div>
           {revision.fotos === 0 ? (
-            <div style={{ background: "#e8f5ee", border: "1px solid #166534", color: "#166534", borderRadius: 10, padding: "12px 16px", fontSize: 13 }}>
+            <div style={{ background: "rgba(34, 197, 94, 0.15)", border: "1px solid rgba(34, 197, 94, 0.3)", color: "var(--green-700, #4ade80)", borderRadius: 10, padding: "12px 16px", fontSize: 13 }}>
               ✓ Todo en orden: no hay fotos pesadas sin reducir. Todo el sistema está optimizado.
             </div>
           ) : (
             <>
-              <div style={{ background: "#fffaf0", border: "1px solid #fde3c4", borderRadius: 10, padding: "14px 16px", marginBottom: 14 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#b54708", marginBottom: 8 }}>
+              <div style={{ background: "rgba(245, 158, 11, 0.12)", border: "1px solid rgba(245, 158, 11, 0.3)", borderRadius: 10, padding: "14px 16px", marginBottom: 14 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#fbbf24", marginBottom: 8 }}>
                   Se encontraron {revision.fotos} foto{revision.fotos !== 1 ? "s" : ""} pesadas · unos {enMB(revision.caracteres).toFixed(1)} MB
                 </div>
                 {revision.detalle.filter((d) => d.fotos > 0).map((d) => (
-                  <div key={d.nombre} style={{ fontSize: 12.5, color: "#92400e", marginBottom: 4 }}>
+                  <div key={d.nombre} style={{ fontSize: 12.5, color: "#fbbf24", marginBottom: 4 }}>
                     • <strong>{d.nombre}</strong>: {d.fotos} foto{d.fotos !== 1 ? "s" : ""} ({enMB(d.caracteres).toFixed(1)} MB)
                   </div>
                 ))}
-                <div style={{ fontSize: 12, color: "#92400e", marginTop: 10, borderTop: "1px solid #fde3c4", paddingTop: 8 }}>
+                <div style={{ fontSize: 12, color: "#fbbf24", marginTop: 10, borderTop: "1px solid rgba(245, 158, 11, 0.25)", paddingTop: 8 }}>
                   Al optimizarlas quedarían en torno a <strong>{(enMB(revision.caracteres) / 12).toFixed(1)} MB</strong> (aproximadamente un 90% más ligeras).
                 </div>
               </div>
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={optimizar} style={B("#16a34a", "#fff")}>⚡ Reducir y optimizar ahora</button>
-                <button onClick={() => setRevision(null)} style={B("#f1f5f9", "#475569")}>Cancelar</button>
+                <button onClick={() => setRevision(null)} style={{ ...B("var(--surface-subtle)", "var(--text-muted)"), border: "1px solid var(--border)" }}>Cancelar</button>
               </div>
             </>
           )}
@@ -181,11 +181,11 @@ export default function OptimizarFotos({ ctx, enModal = false, onCerrar = null }
       )}
 
       {trabajando && (
-        <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "16px" }}>
-          <div style={{ fontSize: 13, color: "#1a1a2e", marginBottom: 10, fontWeight: 600 }}>
+        <div style={{ background: "var(--surface-subtle)", border: "1px solid var(--border)", borderRadius: 10, padding: "16px" }}>
+          <div style={{ fontSize: 13, color: "var(--text-main)", marginBottom: 10, fontWeight: 600 }}>
             ⏳ Optimizando {progreso.hechas} de {progreso.total} fotos… por favor no cierres la página.
           </div>
-          <div style={{ background: "#e2e8f0", borderRadius: 999, height: 10, overflow: "hidden" }}>
+          <div style={{ background: "var(--border)", borderRadius: 999, height: 10, overflow: "hidden" }}>
             <div style={{
               background: "#f47c20", height: "100%", borderRadius: 999,
               width: `${progreso.total ? (progreso.hechas / progreso.total) * 100 : 0}%`,
@@ -196,7 +196,7 @@ export default function OptimizarFotos({ ctx, enModal = false, onCerrar = null }
       )}
 
       {resultado && (
-        <div style={{ background: "#e8f5ee", border: "1px solid #166534", color: "#166534", borderRadius: 10, padding: "14px 16px", fontSize: 13, lineHeight: 1.6, marginTop: 10 }}>
+        <div style={{ background: "rgba(34, 197, 94, 0.15)", border: "1px solid rgba(34, 197, 94, 0.3)", color: "var(--green-700, #4ade80)", borderRadius: 10, padding: "14px 16px", fontSize: 13, lineHeight: 1.6, marginTop: 10 }}>
           <strong>¡Listo! Mantenimiento completado con éxito.</strong>
           <br />
           Se redujeron {resultado.fotos} foto{resultado.fotos !== 1 ? "s" : ""}:
@@ -219,7 +219,7 @@ export default function OptimizarFotos({ ctx, enModal = false, onCerrar = null }
     return (
       <div
         style={{
-          position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.65)",
+          position: "fixed", inset: 0, background: "rgba(0, 0, 0, 0.65)",
           backdropFilter: "blur(4px)", zIndex: 9999, display: "flex",
           alignItems: "center", justifyContent: "center", padding: 16,
         }}
@@ -227,9 +227,9 @@ export default function OptimizarFotos({ ctx, enModal = false, onCerrar = null }
       >
         <div
           style={{
-            background: "#ffffff", borderRadius: 16, maxWidth: 620, width: "100%",
+            background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, maxWidth: 620, width: "100%",
             maxHeight: "90vh", overflowY: "auto", padding: 24,
-            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
             position: "relative",
           }}
           onClick={(e) => e.stopPropagation()}
@@ -238,7 +238,7 @@ export default function OptimizarFotos({ ctx, enModal = false, onCerrar = null }
             <div style={{ ...ST, marginBottom: 0 }}>📷 Mantenimiento · fotos guardadas</div>
             <button
               onClick={onCerrar}
-              style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "#64748b", lineHeight: 1, padding: 4 }}
+              style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "var(--text-muted)", lineHeight: 1, padding: 4 }}
               title="Cerrar"
             >
               ×

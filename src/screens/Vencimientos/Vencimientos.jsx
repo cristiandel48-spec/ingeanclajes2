@@ -68,7 +68,7 @@ export default function Vencimientos({ctx}){
 
       {/* Confirmación */}
       {guardado&&(
-        <div style={{background:"#e8f5ee",border:"1px solid #4ade80",borderRadius:10,padding:"12px 18px",marginBottom:20,fontSize:13,color:"#166534",display:"flex",alignItems:"center",gap:10}}>
+        <div style={{background:"rgba(34, 197, 94, 0.15)",border:"1px solid rgba(34, 197, 94, 0.3)",borderRadius:10,padding:"12px 18px",marginBottom:20,fontSize:13,color:"var(--green-700, #4ade80)",display:"flex",alignItems:"center",gap:10}}>
           <span style={{fontSize:18}}>OK</span>
           <span>Recertificación <strong>{guardado}</strong> creada exitosamente. La certificación original fue marcada como <strong>Recertificado</strong>.</span>
         </div>
@@ -76,21 +76,21 @@ export default function Vencimientos({ctx}){
 
       {/* Modal de recertificación */}
       {recertForm&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:20,overflowY:"auto"}}>
-          <div style={{background:"#fff",borderRadius:16,padding:32,width:"100%",maxWidth:580,boxShadow:"0 20px 60px rgba(0,0,0,0.35)",maxHeight:"90vh",overflowY:"auto"}}>
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:20,overflowY:"auto"}}>
+          <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:16,padding:32,width:"100%",maxWidth:580,boxShadow:"0 20px 60px rgba(0,0,0,0.5)",maxHeight:"90vh",overflowY:"auto"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
               <div>
-                <div style={{fontSize:18,fontWeight:700,color:"#1a1a2e"}}>Generar Recertificación</div>
-                <div style={{fontSize:12,color:"#64748b",marginTop:4}}>Basada en: {recertForm.numero} · {recertForm.cliente}</div>
+                <div style={{fontSize:18,fontWeight:700,color:"var(--text-main)"}}>Generar Recertificación</div>
+                <div style={{fontSize:12,color:"var(--text-muted)",marginTop:4}}>Basada en: {recertForm.numero} · {recertForm.cliente}</div>
               </div>
-              <button onClick={()=>setRecertForm(null)} style={{background:"#f1f5f9",border:"none",borderRadius:8,padding:"6px 12px",cursor:"pointer",color:"#475569",fontSize:13}}>Cerrar</button>
+              <button onClick={()=>setRecertForm(null)} style={{...B("var(--surface-subtle)","var(--text-muted)"),border:"1px solid var(--border)",borderRadius:8,padding:"6px 12px",cursor:"pointer",fontSize:13}}>Cerrar</button>
             </div>
 
             {/* Info del cert original */}
-            <div style={{background:"#f8fafc",borderRadius:10,padding:12,marginBottom:20,border:"1px solid #e2e8f0",fontSize:12}}>
-              <div style={{color:"#64748b",marginBottom:4}}>Certificado original</div>
-              <div style={{fontWeight:700,color:"#1a1a2e"}}>{recertForm.cliente} · {recertForm.numero}</div>
-              <div style={{color:"#475569"}}>{recertForm.sistema}</div>
+            <div style={{background:"var(--surface-subtle)",borderRadius:10,padding:12,marginBottom:20,border:"1px solid var(--border)",fontSize:12}}>
+              <div style={{color:"var(--text-muted)",marginBottom:4}}>Certificado original</div>
+              <div style={{fontWeight:700,color:"var(--text-main)"}}>{recertForm.cliente} · {recertForm.numero}</div>
+              <div style={{color:"var(--text-muted)"}}>{recertForm.sistema}</div>
               <div style={{color:"#ef4444",marginTop:4}}>Vencía: {fmtD(recertForm.proxMant)||"sin fecha"}</div>
             </div>
 
@@ -101,20 +101,20 @@ export default function Vencimientos({ctx}){
               <div><LBL>NIT</LBL><input value={recertData.nit||""} onChange={e=>setRecertData(p=>({...p,nit:e.target.value}))} style={SI}/></div>
               <div style={{gridColumn:"span 2"}}><LBL>Dirección de la obra</LBL><input value={recertData.direccion||""} onChange={e=>setRecertData(p=>({...p,direccion:e.target.value}))} style={SI}/></div>
               <div style={{gridColumn:"span 2"}}><LBL>Sistema recertificado</LBL><textarea value={recertData.sistema||""} onChange={e=>setRecertData(p=>({...p,sistema:e.target.value}))} rows={2} style={{...SI,resize:"vertical"}}/></div>
-              <div style={{gridColumn:"span 2",background:"#fff3e8",borderRadius:8,padding:12,border:"1px solid #f47c2044"}}>
+              <div style={{gridColumn:"span 2",background:"rgba(244, 124, 32, 0.1)",borderRadius:8,padding:12,border:"1px solid rgba(244, 124, 32, 0.3)"}}>
                 <LBL>Próximo mantenimiento (obligatorio)</LBL>
-                <input type="date" value={recertData.proxMant||""} onChange={e=>setRecertData(p=>({...p,proxMant:e.target.value}))} style={{...SI,border:"2px solid #cc0000"}}/>
-                {recertData.proxMant&&<div style={{fontSize:11,color:"#4ade80",marginTop:6}}>Próximo mantenimiento: <strong>{fmtD(recertData.proxMant)}</strong></div>}
+                <input type="date" value={recertData.proxMant||""} onChange={e=>setRecertData(p=>({...p,proxMant:e.target.value}))} style={{...SI,border:"2px solid var(--accent, #cc0000)"}}/>
+                {recertData.proxMant&&<div style={{fontSize:11,color:"var(--green-700, #4ade80)",marginTop:6}}>Próximo mantenimiento: <strong>{fmtD(recertData.proxMant)}</strong></div>}
               </div>
             </div>
 
-            {!recertData.proxMant&&<div style={{background:"#fee2e2",borderRadius:6,padding:"8px 12px",fontSize:11,color:"#cc0000",marginBottom:12}}>Debes asignar la fecha del próximo mantenimiento para guardar.</div>}
+            {!recertData.proxMant&&<div style={{background:"rgba(239, 68, 68, 0.15)",border:"1px solid rgba(239, 68, 68, 0.3)",borderRadius:6,padding:"8px 12px",fontSize:11,color:"#ef4444",marginBottom:12}}>Debes asignar la fecha del próximo mantenimiento para guardar.</div>}
 
             <div style={{display:"flex",gap:10}}>
               <button style={{...B("#cc0000"),flex:1,justifyContent:"center"}} onClick={guardarRecert}>
                 Crear Recertificación
               </button>
-              <button style={{...B("#f1f5f9","#475569"),flex:1,justifyContent:"center"}} onClick={()=>setRecertForm(null)}>
+              <button style={{...B("var(--surface-subtle)","var(--text-muted)"),border:"1px solid var(--border)",flex:1,justifyContent:"center"}} onClick={()=>setRecertForm(null)}>
                 Cancelar
               </button>
             </div>

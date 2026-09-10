@@ -116,12 +116,12 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
   return (
     // En una obra cerrada la pestaña se mira pero no se toca. El aviso de
     // abajo queda fuera del apagado para que se pueda leer y seleccionar.
-    <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0", padding: 20,
+    <div style={{ background: "var(--surface, #fff)", borderRadius: 14, border: "1px solid var(--border, #e2e8f0)", padding: 20,
       ...(bloqueada ? { pointerEvents: "none", opacity: 0.8 } : null) }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1a2e" }}>📸 Avance y fotos de la obra</div>
-          <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-main, #1a1a2e)" }}>📸 Avance y fotos de la obra</div>
+          <div style={{ fontSize: 11.5, color: "var(--text-muted, #64748b)", marginTop: 2 }}>
             {resumen.registros} registro(s) · {resumen.fotos} foto(s) cargadas
           </div>
         </div>
@@ -134,16 +134,16 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
           actividades. Cambiarlas despues de entregarlo dejaria el documento
           diciendo una cosa y la obra otra. */}
       {cargandoFotos && (
-        <div style={{ fontSize: 11.5, color: "#1e40af", background: "#eff6ff",
-          border: "1px solid #bfdbfe", borderRadius: 9, padding: "9px 12px",
+        <div style={{ fontSize: 11.5, color: "#60a5fa", background: "rgba(30, 64, 175, 0.15)",
+          border: "1px solid rgba(191, 219, 254, 0.3)", borderRadius: 9, padding: "9px 12px",
           marginBottom: 14, lineHeight: 1.5, pointerEvents: "auto" }}>
           Cargando las fotos de esta obra… Un momento, para no perder ningún cambio.
         </div>
       )}
 
       {bloqueada && !cargandoFotos && (
-        <div style={{ fontSize: 11.5, color: "#166534", background: "#ecfdf5",
-          border: "1px solid #a7f3d0", borderRadius: 9, padding: "9px 12px",
+        <div style={{ fontSize: 11.5, color: "#34d399", background: "rgba(16, 185, 129, 0.15)",
+          border: "1px solid rgba(167, 243, 208, 0.3)", borderRadius: 9, padding: "9px 12px",
           marginBottom: 14, lineHeight: 1.5, pointerEvents: "auto" }}>
           🔒 <strong>Obra finalizada.</strong> El registro de avance queda como está: estas fotos son
           las que salen en el informe. Un administrador puede reabrir la obra si hay que corregir algo.
@@ -158,13 +158,13 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
       </AvisoFlujo>
 
       {subiendoFotos && (
-        <div style={{ background: "#F0F6FF", border: "1px solid #BFD8FF", color: "#1E40AF", borderRadius: 10, padding: "9px 13px", fontSize: 12, marginBottom: 12 }}>
+        <div style={{ background: "rgba(30, 64, 175, 0.15)", border: "1px solid rgba(191, 216, 255, 0.3)", color: "#60a5fa", borderRadius: 10, padding: "9px 13px", fontSize: 12, marginBottom: 12 }}>
           Procesando {subiendoFotos.total > 1 ? `${subiendoFotos.hechas} de ${subiendoFotos.total} fotos…` : "la foto…"} espera un momento.
         </div>
       )}
 
       {registros.length === 0 && (
-        <div style={{ textAlign: "center", padding: 30, color: "#94a3b8", fontSize: 13, background: "#f8fafc", borderRadius: 10, border: "1px dashed #e2e8f0" }}>
+        <div style={{ textAlign: "center", padding: 30, color: "var(--text-subtle, #94a3b8)", fontSize: 13, background: "var(--surface-subtle, #f8fafc)", borderRadius: 10, border: "1px dashed var(--border, #e2e8f0)" }}>
           Todavía no hay avances registrados en esta obra.
           <div style={{ fontSize: 11.5, marginTop: 6 }}>
             Dale a «Registrar avance del día» y sube las fotos de lo que se hizo.
@@ -175,14 +175,14 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
       {registros.map((registro, idx) => {
         const fotosConImagen = (registro.fotos || []).filter((f) => f.img).length;
         return (
-          <div key={registro.id} style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 16, marginBottom: 14 }}>
+          <div key={registro.id} style={{ background: "var(--surface-subtle, #f8fafc)", border: "1px solid var(--border, #e2e8f0)", borderRadius: 12, padding: 16, marginBottom: 14 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#cc0000" }}>
                 Avance {idx + 1}
-                {registro.fecha && <span style={{ color: "#64748b", fontWeight: 500 }}> · {fmtD(registro.fecha)}</span>}
-                <span style={{ color: "#94a3b8", fontWeight: 500 }}> · {fotosConImagen} foto(s)</span>
+                {registro.fecha && <span style={{ color: "var(--text-muted, #64748b)", fontWeight: 500 }}> · {fmtD(registro.fecha)}</span>}
+                <span style={{ color: "var(--text-subtle, #94a3b8)", fontWeight: 500 }}> · {fotosConImagen} foto(s)</span>
               </div>
-              <button onClick={() => eliminarRegistro(registro)} style={{ background: "#fee2e2", border: "none", color: "#ef4444", borderRadius: 5, padding: "3px 10px", cursor: "pointer", fontSize: 11 }}>
+              <button onClick={() => eliminarRegistro(registro)} style={{ background: "rgba(220, 38, 38, 0.15)", border: "none", color: "#f87171", borderRadius: 5, padding: "3px 10px", cursor: "pointer", fontSize: 11 }}>
                 × Eliminar
               </button>
             </div>
@@ -251,13 +251,13 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
               <LBL>Fotos del avance</LBL>
-              <span style={{ fontSize: 10.5, color: "#94a3b8" }}>Se imprimen en el informe</span>
+              <span style={{ fontSize: 10.5, color: "var(--text-subtle, #94a3b8)" }}>Se imprimen en el informe</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 10, alignItems: "start" }}>
               {(registro.fotos || []).map((foto, fi) => (
-                <div key={fi} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden" }}>
-                  <div style={{ background: "#f8fafc", padding: 6, minHeight: 130, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <img src={foto.img} alt="" style={{ width: "100%", height: "auto", maxHeight: 180, objectFit: "contain", display: "block", borderRadius: 4, background: "#fff" }} />
+                <div key={fi} style={{ background: "var(--surface, #fff)", border: "1px solid var(--border, #e2e8f0)", borderRadius: 8, overflow: "hidden" }}>
+                  <div style={{ background: "var(--surface-subtle, #f8fafc)", padding: 6, minHeight: 130, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <img src={foto.img} alt="" style={{ width: "100%", height: "auto", maxHeight: 180, objectFit: "contain", display: "block", borderRadius: 4, background: "var(--surface, #fff)" }} />
                   </div>
                   <div style={{ padding: "6px 8px", display: "flex", gap: 4, alignItems: "center" }}>
                     <input
@@ -275,7 +275,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                     <button
                       onClick={() => quitarFoto(registro.id, fi)}
                       title="Eliminar foto"
-                      style={{ background: "#fee2e2", border: "none", color: "#ef4444", borderRadius: 6, width: 22, height: 22, cursor: "pointer", fontSize: 14, flexShrink: 0, lineHeight: 1 }}
+                      style={{ background: "rgba(220, 38, 38, 0.15)", border: "none", color: "#f87171", borderRadius: 6, width: 22, height: 22, cursor: "pointer", fontSize: 14, flexShrink: 0, lineHeight: 1 }}
                     >
                       ×
                     </button>
@@ -294,7 +294,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                   alignItems: "center",
                   justifyContent: "center",
                   cursor: "pointer",
-                  background: "#fff8f3",
+                  background: "rgba(244, 124, 32, 0.08)",
                   color: "#f47c20",
                   fontWeight: 600,
                   gap: 6,
@@ -327,7 +327,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
       })}
 
       {registros.length > 0 && (
-        <div style={{ background: "#f1f5f9", borderRadius: 8, padding: "10px 14px", fontSize: 11.5, color: "#64748b" }}>
+        <div style={{ background: "var(--surface-subtle, #f1f5f9)", borderRadius: 8, padding: "10px 14px", fontSize: 11.5, color: "var(--text-muted, #64748b)" }}>
           Los cambios se guardan solos. {resumen.sinFotos > 0
             ? `Ojo: ${resumen.sinFotos} registro(s) no tienen ninguna foto, y el informe se ve muy pobre sin registro fotográfico.`
             : "Todos los registros tienen foto: el informe va a salir completo."}

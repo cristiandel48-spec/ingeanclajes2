@@ -111,10 +111,10 @@ export default function ImportarCotizacion({ onAplicar, onCerrar, clientes = [] 
   };
 
   return (
-    <div style={{ background: "#fff", border: "1px solid #f47c20", borderRadius: 14, padding: 20, marginBottom: 16 }}>
+    <div style={{ background: "var(--surface, #fff)", border: "1px solid #f47c20", borderRadius: 14, padding: 20, marginBottom: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 10 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1a2e" }}>📄 Importar cotización con IA</div>
-        <button onClick={onCerrar} style={{ ...B("#f1f5f9", "#475569"), fontSize: 12, padding: "6px 12px" }}>Cerrar</button>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-main, #1a1a2e)" }}>📄 Importar cotización con IA</div>
+        <button onClick={onCerrar} style={{ ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)"), fontSize: 12, padding: "6px 12px" }}>Cerrar</button>
       </div>
 
       {!propuesta && (
@@ -136,20 +136,20 @@ export default function ImportarCotizacion({ onAplicar, onCerrar, clientes = [] 
           {archivo ? "Escoger otro archivo" : "Escoger archivo…"}
         </button>
         {archivo && (
-          <span style={{ fontSize: 12, color: "#64748b" }}>
+          <span style={{ fontSize: 12, color: "var(--text-muted, #64748b)" }}>
             {archivo.name}
-            {texto && <span style={{ color: "#166534", fontWeight: 600 }}> · texto leído del archivo</span>}
+            {texto && <span style={{ color: "#4ade80", fontWeight: 600 }}> · texto leído del archivo</span>}
           </span>
         )}
         {paso && (
-          <span style={{ fontSize: 12, color: "#b45309", fontWeight: 600 }}>
+          <span style={{ fontSize: 12, color: "#f59e0b", fontWeight: 600 }}>
             {paso === "leyendo" ? "Abriendo el documento…" : "Interpretando lo que pide…"}
           </span>
         )}
       </div>
 
       {error && (
-        <div style={{ background: "#FEF3F2", border: "1px solid #FECDCA", color: "#B42318", borderRadius: 10, padding: "11px 14px", fontSize: 12.5, marginTop: 12, lineHeight: 1.5 }}>
+        <div style={{ background: "rgba(180, 35, 24, 0.15)", border: "1px solid rgba(254, 205, 202, 0.4)", color: "#f87171", borderRadius: 10, padding: "11px 14px", fontSize: 12.5, marginTop: 12, lineHeight: 1.5 }}>
           {error}
         </div>
       )}
@@ -158,12 +158,12 @@ export default function ImportarCotizacion({ onAplicar, onCerrar, clientes = [] 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(330px,1fr))", gap: 14, marginTop: 14 }}>
 
           {/* ---------- el documento ---------- */}
-          <div style={{ border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
-            <div style={{ padding: "9px 13px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#1a1a2e" }}>Lo que dice el documento</span>
-              <span style={{ fontSize: 10, color: "#94a3b8" }}>resaltado = lo que se usó</span>
+          <div style={{ border: "1px solid var(--border, #e2e8f0)", borderRadius: 12, overflow: "hidden", background: "var(--surface, #fff)" }}>
+            <div style={{ padding: "9px 13px", borderBottom: "1px solid var(--border, #f1f5f9)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, background: "var(--surface-subtle, #f8fafc)" }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #1a1a2e)" }}>Lo que dice el documento</span>
+              <span style={{ fontSize: 10, color: "var(--text-subtle, #94a3b8)" }}>resaltado = lo que se usó</span>
             </div>
-            <div style={{ padding: "12px 14px", fontFamily: "Consolas, monospace", fontSize: 11, lineHeight: 1.7, color: "#334155", whiteSpace: "pre-wrap", maxHeight: 460, overflow: "auto" }}>
+            <div style={{ padding: "12px 14px", fontFamily: "Consolas, monospace", fontSize: 11, lineHeight: 1.7, color: "var(--text-main, #334155)", whiteSpace: "pre-wrap", maxHeight: 460, overflow: "auto" }}>
               {partes.map((parte, i) => (
                 <span key={i} style={parte.clase
                   ? { background: COLORES[parte.clase], borderRadius: 2, padding: "1px 2px", color: "#0f172a" }
@@ -173,14 +173,14 @@ export default function ImportarCotizacion({ onAplicar, onCerrar, clientes = [] 
           </div>
 
           {/* ---------- lo interpretado ---------- */}
-          <div style={{ border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden" }}>
-            <div style={{ padding: "9px 13px", borderBottom: "1px solid #f1f5f9" }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#1a1a2e" }}>Lo que va a quedar en la cotización</span>
+          <div style={{ border: "1px solid var(--border, #e2e8f0)", borderRadius: 12, overflow: "hidden", background: "var(--surface, #fff)" }}>
+            <div style={{ padding: "9px 13px", borderBottom: "1px solid var(--border, #f1f5f9)", background: "var(--surface-subtle, #f8fafc)" }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #1a1a2e)" }}>Lo que va a quedar en la cotización</span>
             </div>
 
-            <div style={{ padding: "12px 14px", borderBottom: "1px solid #f1f5f9" }}>
+            <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--border, #f1f5f9)" }}>
               {yaRegistrado && (
-                <div style={{ background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: 9, padding: "8px 11px", fontSize: 11.5, color: "#166534", marginBottom: 10, lineHeight: 1.5 }}>
+                <div style={{ background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(167, 243, 208, 0.4)", borderRadius: 9, padding: "8px 11px", fontSize: 11.5, color: "#34d399", marginBottom: 10, lineHeight: 1.5 }}>
                   <strong>Este cliente ya está registrado</strong> como {yaRegistrado.id}. Se usará esa
                   ficha en vez de crear otra.
                 </div>
@@ -196,8 +196,8 @@ export default function ImportarCotizacion({ onAplicar, onCerrar, clientes = [] 
                   ["Correo", sueltos.correo],
                 ].map(([etiqueta, valor]) => (
                   <div key={etiqueta}>
-                    <div style={{ fontSize: 9, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .3 }}>{etiqueta}</div>
-                    <div style={{ fontSize: 11.5, fontWeight: valor ? 600 : 400, color: valor ? "#1a1a2e" : "#cbd5e1", fontStyle: valor ? "normal" : "italic", border: "1px solid #e2e8f0", borderRadius: 6, padding: "4px 7px", marginTop: 2, background: "#fcfcfd", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <div style={{ fontSize: 9, color: "var(--text-subtle, #94a3b8)", textTransform: "uppercase", letterSpacing: .3 }}>{etiqueta}</div>
+                    <div style={{ fontSize: 11.5, fontWeight: valor ? 600 : 400, color: valor ? "var(--text-main, #1a1a2e)" : "var(--text-subtle, #cbd5e1)", fontStyle: valor ? "normal" : "italic", border: "1px solid var(--border, #e2e8f0)", borderRadius: 6, padding: "4px 7px", marginTop: 2, background: "var(--surface-subtle, #fcfcfd)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {valor || "no venía en el documento"}
                     </div>
                   </div>
@@ -205,32 +205,32 @@ export default function ImportarCotizacion({ onAplicar, onCerrar, clientes = [] 
               </div>
             </div>
 
-            <div style={{ padding: "12px 14px", borderBottom: "1px solid #f1f5f9" }}>
-              <div style={{ fontSize: 9, color: "#94a3b8", textTransform: "uppercase", letterSpacing: .5, fontWeight: 800, marginBottom: 8 }}>
+            <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--border, #f1f5f9)" }}>
+              <div style={{ fontSize: 9, color: "var(--text-subtle, #94a3b8)", textTransform: "uppercase", letterSpacing: .5, fontWeight: 800, marginBottom: 8 }}>
                 Ítems reconocidos ({itemsFinales.length})
               </div>
               {itemsFinales.length === 0 ? (
-                <div style={{ background: "#FFFAF0", border: "1px solid #FDE3C4", color: "#B54708", borderRadius: 8, padding: "10px 12px", fontSize: 11.5 }}>
+                <div style={{ background: "rgba(245, 158, 11, 0.15)", border: "1px solid rgba(253, 227, 196, 0.3)", color: "#fbbf24", borderRadius: 8, padding: "10px 12px", fontSize: 11.5 }}>
                   No se reconoció ningún servicio del catálogo. Puedes aplicar igual los datos del
                   cliente y agregar los ítems a mano.
                 </div>
               ) : itemsFinales.map((item, i) => (
-                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, padding: "7px 0", borderBottom: i < itemsFinales.length - 1 ? "1px solid #f8fafc" : "none" }}>
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, padding: "7px 0", borderBottom: i < itemsFinales.length - 1 ? "1px solid var(--border, #f8fafc)" : "none" }}>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     {item.textoOriginal && (
-                      <div style={{ fontSize: 10.5, color: "#94a3b8", fontStyle: "italic", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <div style={{ fontSize: 10.5, color: "var(--text-subtle, #94a3b8)", fontStyle: "italic", overflow: "hidden", textOverflow: "ellipsis" }}>
                         «{item.textoOriginal}»
                       </div>
                     )}
-                    <div style={{ fontSize: 11.5, fontWeight: 700, color: "#166534" }}>{item.desc}</div>
+                    <div style={{ fontSize: 11.5, fontWeight: 700, color: "#4ade80" }}>{item.desc}</div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                     <input type="number" min="0" step="any" value={cantidades[i] ?? item.cant}
                       onChange={(e) => setCantidades((prev) => ({ ...prev, [i]: e.target.value }))}
                       title="Revisa esta cantidad"
-                      style={{ ...SI, width: 68, padding: "3px 6px", fontSize: 12, fontWeight: 800, textAlign: "center", border: "1.5px solid #f59e0b", background: "#fffbeb" }} />
-                    <span style={{ fontSize: 10.5, color: "#64748b", width: 42 }}>{item.unit}</span>
-                    <span style={{ fontSize: 11.5, color: "#1a1a2e", fontWeight: 600, width: 92, textAlign: "right", whiteSpace: "nowrap" }}>
+                      style={{ ...SI, width: 68, padding: "3px 6px", fontSize: 12, fontWeight: 800, textAlign: "center", border: "1.5px solid #f59e0b", background: "var(--surface, #fff)" }} />
+                    <span style={{ fontSize: 10.5, color: "var(--text-muted, #64748b)", width: 42 }}>{item.unit}</span>
+                    <span style={{ fontSize: 11.5, color: "var(--text-main, #1a1a2e)", fontWeight: 600, width: 92, textAlign: "right", whiteSpace: "nowrap" }}>
                       {fmt(item.vu * item.cant)}
                     </span>
                   </div>
@@ -239,28 +239,28 @@ export default function ImportarCotizacion({ onAplicar, onCerrar, clientes = [] 
             </div>
 
             {propuesta.fuera.length > 0 && (
-              <div style={{ margin: "12px 14px", background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 10, padding: "10px 13px" }}>
-                <div style={{ fontSize: 11.5, fontWeight: 700, color: "#92400e", marginBottom: 4 }}>
+              <div style={{ margin: "12px 14px", background: "rgba(245, 158, 11, 0.15)", border: "1px solid rgba(252, 211, 77, 0.4)", borderRadius: 10, padding: "10px 13px" }}>
+                <div style={{ fontSize: 11.5, fontWeight: 700, color: "#fbbf24", marginBottom: 4 }}>
                   ⚠ Esto no está en tu catálogo, queda por fuera
                 </div>
                 {propuesta.fuera.map((item, i) => (
-                  <div key={i} style={{ fontSize: 11.5, color: "#78350f", lineHeight: 1.55 }}>«{item.desc}»</div>
+                  <div key={i} style={{ fontSize: 11.5, color: "var(--text-main, #78350f)", lineHeight: 1.55 }}>«{item.desc}»</div>
                 ))}
-                <div style={{ fontSize: 10.5, color: "#92400e", marginTop: 4 }}>
+                <div style={{ fontSize: 10.5, color: "#fbbf24", marginTop: 4 }}>
                   No se le pone precio ni entra en el total. Si lo vas a cotizar, agrégalo a mano.
                 </div>
               </div>
             )}
 
-            <div style={{ padding: "10px 14px", background: "#fafbfc", display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 800 }}>
-              <span style={{ color: "#64748b" }}>Subtotal</span>
+            <div style={{ padding: "10px 14px", background: "var(--surface-subtle, #fafbfc)", display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 800 }}>
+              <span style={{ color: "var(--text-muted, #64748b)" }}>Subtotal</span>
               <span style={{ color: "#cc0000" }}>{fmt(subtotal)}</span>
             </div>
 
             <div style={{ padding: "12px 14px", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
               <button onClick={aplicar} style={B("#4ade80", "#0f2d1a")}>Usar estos datos</button>
-              <button onClick={limpiar} style={{ ...B("#f1f5f9", "#475569"), fontSize: 12 }}>Descartar</button>
-              <div style={{ fontSize: 10.5, color: "#b45309", flex: "1 1 200px", lineHeight: 1.5 }}>
+              <button onClick={limpiar} style={{ ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)"), fontSize: 12 }}>Descartar</button>
+              <div style={{ fontSize: 10.5, color: "#f59e0b", flex: "1 1 200px", lineHeight: 1.5 }}>
                 <strong>Revisa las cantidades</strong> antes de aplicar. Al aplicar solo se rellenan
                 los campos vacíos y se agregan los ítems; nada se guarda todavía.
               </div>

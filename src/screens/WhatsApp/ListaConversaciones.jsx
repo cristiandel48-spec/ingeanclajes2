@@ -17,11 +17,11 @@ const ORDENES = [
 // Como se ve cada estado. El que importa es «fallido»: es el unico que pide
 // que una persona haga algo.
 const COLOR = {
-  respondido: { texto: "#166534", fondo: "#ecfdf5", borde: "#a7f3d0" },
-  fallido:    { texto: "#b91c1c", fondo: "#fef2f2", borde: "#fecaca" },
-  recibido:   { texto: "#b45309", fondo: "#fffbeb", borde: "#fcd34d" },
-  procesando: { texto: "#b45309", fondo: "#fffbeb", borde: "#fcd34d" },
-  ignorado:   { texto: "#64748b", fondo: "#f8fafc", borde: "#e2e8f0" },
+  respondido: { texto: "#4ade80", fondo: "rgba(34, 197, 94, 0.15)", borde: "rgba(34, 197, 94, 0.3)" },
+  fallido:    { texto: "#ef4444", fondo: "rgba(239, 68, 68, 0.15)", borde: "rgba(239, 68, 68, 0.3)" },
+  recibido:   { texto: "#fbbf24", fondo: "rgba(245, 158, 11, 0.15)", borde: "rgba(245, 158, 11, 0.3)" },
+  procesando: { texto: "#fbbf24", fondo: "rgba(245, 158, 11, 0.15)", borde: "rgba(245, 158, 11, 0.3)" },
+  ignorado:   { texto: "var(--text-muted)", fondo: "var(--surface-subtle)", borde: "var(--border)" },
 };
 
 const ETIQUETA = {
@@ -92,7 +92,7 @@ function Fila({ c, compacta, acciones }) {
   );
 
   const botones = (
-    <button style={boton("#dbeafe", "#1e40af")}
+    <button style={boton("rgba(37, 99, 235, 0.15)", "#60a5fa", { border: "1px solid rgba(37, 99, 235, 0.3)" })}
       onClick={(e) => { e.stopPropagation(); acciones.abrir(c); }}>Ver conversación</button>
   );
 
@@ -104,8 +104,8 @@ function Fila({ c, compacta, acciones }) {
   if (compacta) {
     return (
       <Resaltable as="article" onClick={() => acciones.abrir(c)}
-        estiloHover={{ borderColor: C.acentoFuerte, background: "#fffdfb" }}
-        style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 10, background: "#fff",
+        estiloHover={{ borderColor: C.acentoFuerte, background: "var(--surface-hover, #fffdfb)" }}
+        style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 10, background: "var(--surface, #fff)",
           padding: "9px 12px 9px 14px", display: "flex", alignItems: "center", gap: 12,
           cursor: "pointer", position: "relative", overflow: "hidden",
           transition: "border-color .16s ease, background .16s ease" }}>
@@ -120,7 +120,7 @@ function Fila({ c, compacta, acciones }) {
   return (
     <Resaltable as="article" onClick={() => acciones.abrir(c)}
       estiloHover={{ borderColor: C.acentoFuerte, boxShadow: "0 12px 28px -16px rgba(15,23,42,.30)" }}
-      style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 12, background: "#fff",
+      style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 12, background: "var(--surface, #fff)",
         padding: "12px 13px 10px", display: "flex", flexDirection: "column", gap: 9,
         cursor: "pointer", position: "relative", overflow: "hidden",
         transition: "box-shadow .2s ease, border-color .2s ease" }}>

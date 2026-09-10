@@ -80,7 +80,7 @@ export default function WhatsAppCRM() {
       )}
       <button
         style={{
-          background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0",
+          background: "var(--surface-subtle)", color: "var(--text-muted)", border: "1px solid var(--border)",
           borderRadius: 9, padding: "8px 16px", fontSize: 12.5, fontWeight: 700,
           cursor: cargando ? "default" : "pointer", fontFamily: "inherit",
           whiteSpace: "nowrap", opacity: cargando ? 0.6 : 1,
@@ -120,8 +120,8 @@ export default function WhatsAppCRM() {
           obras. Lo que si aporta -que numero es y en que modo esta- se pone en
           una linea fina. */}
       {config && (
-        <div style={{ fontSize: 11.5, color: "#64748b", marginBottom: 12 }}>
-          Número <strong style={{ color: "#0f172a" }}>{config.numero_visible || config.phone_number_id}</strong>
+        <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginBottom: 12 }}>
+          Número <strong style={{ color: "var(--text-main)" }}>{config.numero_visible || config.phone_number_id}</strong>
           {" · "}{config.activo ? "activo" : "apagado"}
           {" · "}modo {config.modo}
         </div>
@@ -130,7 +130,7 @@ export default function WhatsAppCRM() {
       {pegando && <PegarConversacion onCerrar={() => setPegando(false)} />}
 
       {error && (
-        <div style={{ background: "#FEF3F2", border: "1px solid #FECDCA", color: "#B42318",
+        <div style={{ background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#ef4444",
           borderRadius: 10, padding: "11px 14px", fontSize: 12.5, marginBottom: 14, lineHeight: 1.5 }}>
           {error}
         </div>
@@ -165,9 +165,9 @@ export default function WhatsAppCRM() {
               hacen falta el dia que se decide migrar el numero: abiertos,
               empujaban la lista fuera de la pantalla y lo primero que veia
               quien entraba era un muro de texto. */}
-          <details style={{ background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 12,
-            padding: "11px 16px", fontSize: 12, color: "#78350f", lineHeight: 1.6, marginBottom: 14 }}>
-            <summary style={{ fontWeight: 700, color: "#451a03", cursor: "pointer",
+          <details style={{ background: "rgba(245, 158, 11, 0.12)", border: "1px solid rgba(245, 158, 11, 0.3)", borderRadius: 12,
+            padding: "11px 16px", fontSize: 12, color: "#fbbf24", lineHeight: 1.6, marginBottom: 14 }}>
+            <summary style={{ fontWeight: 700, color: "#fbbf24", cursor: "pointer",
               listStyle: "revert" }}>
               Dos cosas que conviene saber antes de conectar el número
             </summary>
@@ -189,8 +189,8 @@ export default function WhatsAppCRM() {
       )}
 
       {sinAtender > 0 && (
-        <div style={{ background: "#fff7ed", border: "1px solid #fdba74", borderRadius: 10,
-          padding: "10px 14px", fontSize: 12.5, color: "#b45309", marginBottom: 14 }}>
+        <div style={{ background: "rgba(245, 158, 11, 0.12)", border: "1px solid rgba(245, 158, 11, 0.3)", borderRadius: 10,
+          padding: "10px 14px", fontSize: 12.5, color: "#fbbf24", marginBottom: 14 }}>
           <strong>{sinAtender}</strong> {sinAtender === 1 ? "conversación" : "conversaciones"} sin
           atender: llegaron pero no se les pudo responder.
         </div>

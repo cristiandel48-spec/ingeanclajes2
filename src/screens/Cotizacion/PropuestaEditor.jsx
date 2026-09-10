@@ -86,13 +86,13 @@ export default function PropuestaEditor({
   const tot = sub + ut + iva;
 
   return (
-    <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 20, marginBottom: 14 }}>
+    <div style={{ background: "var(--surface, #fff)", border: "1px solid var(--border, #e2e8f0)", borderRadius: 12, padding: 20, marginBottom: 14 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 18, paddingBottom: 12, borderBottom: "2px solid #f47c20" }}>
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#f47c20", textTransform: "uppercase", letterSpacing: 1 }}>
             Propuesta {indice + 1} de {totalPropuestas}
           </div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a2e", marginTop: 2 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #1a1a2e)", marginTop: 2 }}>
             {p.nombre || `Propuesta ${indice + 1}`}
           </div>
         </div>
@@ -140,13 +140,13 @@ export default function PropuestaEditor({
         {/* 3. Fotos */}
         <div style={{marginBottom:18}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-            <span style={{fontSize:12,fontWeight:600,color:"#1a1a2e"}}>Fotos de la propuesta</span>
-            <span style={{fontSize:10,color:"#94a3b8"}}>Se imprimen en el PDF</span>
+            <span style={{fontSize:12,fontWeight:600,color:"var(--text-main, #1a1a2e)"}}>Fotos de la propuesta</span>
+            <span style={{fontSize:10,color:"var(--text-subtle, #94a3b8)"}}>Se imprimen en el PDF</span>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
             {fotos.map((f,i)=>(
-              <div key={f.id} style={{borderRadius:8,overflow:"hidden",border:"1px solid #e2e8f0",background:"#f8fafc"}}>
-                <div style={{background:"#fff",padding:6}}>
+              <div key={f.id} style={{borderRadius:8,overflow:"hidden",border:"1px solid var(--border, #e2e8f0)",background:"var(--surface-subtle, #f8fafc)"}}>
+                <div style={{background:"var(--surface, #fff)",padding:6}}>
                   <img src={f.src} alt={f.label||`Foto ${i+1}`} style={{width:"100%",height:"auto",display:"block",borderRadius:4}}/>
                 </div>
                 <div style={{padding:"6px 8px",display:"flex",gap:4,alignItems:"center"}}>
@@ -155,7 +155,7 @@ export default function PropuestaEditor({
                 </div>
               </div>
             ))}
-            <div onClick={()=>fotosRef.current.click()} style={{border:"2px dashed #f47c20",borderRadius:10,minHeight:140,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",background:"#fff8f3",color:"#f47c20",fontWeight:600,gap:6}}>
+            <div onClick={()=>fotosRef.current.click()} style={{border:"2px dashed #f47c20",borderRadius:10,minHeight:140,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",background:"var(--c-acento-suave, #fff8f3)",color:"#f47c20",fontWeight:600,gap:6}}>
               <span style={{fontSize:24,lineHeight:1}}>+</span>
               <span style={{fontSize:12}}>Agregar foto</span>
             </div>
@@ -176,7 +176,7 @@ export default function PropuestaEditor({
 
         <div style={{marginBottom:18}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-            <span style={{fontSize:12,fontWeight:600,color:"#1a1a2e"}}>Medición sobre foto satelital</span>
+            <span style={{fontSize:12,fontWeight:600,color:"var(--text-main, #1a1a2e)"}}>Medición sobre foto satelital</span>
             <div style={{display:"flex",gap:8}}>
               <button
                 type="button"
@@ -200,13 +200,13 @@ export default function PropuestaEditor({
             El mapa y los tramos medidos pertenecen solo a esta propuesta.
           </div>
           {medicionActiva && !mapaHabilitado ? (
-            <div style={{background:"#f8fafc",border:"1px dashed #cbd5e1",borderRadius:12,padding:"18px 16px",fontSize:12,color:"#64748b",textAlign:"center"}}>
+            <div style={{background:"var(--surface-subtle, #f8fafc)",border:"1px dashed var(--border, #cbd5e1)",borderRadius:12,padding:"18px 16px",fontSize:12,color:"var(--text-muted, #64748b)",textAlign:"center"}}>
               Esta propuesta tiene medición activada.{" "}
-              <button type="button" onClick={onPedirMapa} style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"4px 12px",marginLeft:6}}>Abrir su mapa</button>
-              <div style={{marginTop:6,fontSize:10.5,color:"#94a3b8"}}>Se muestra un mapa a la vez para no cargar la pantalla.</div>
+              <button type="button" onClick={onPedirMapa} style={{...B("var(--btn-ver-bg, #dbeafe)","var(--btn-ver-text, #1e40af)"),fontSize:11,padding:"4px 12px",marginLeft:6}}>Abrir su mapa</button>
+              <div style={{marginTop:6,fontSize:10.5,color:"var(--text-subtle, #94a3b8)"}}>Se muestra un mapa a la vez para no cargar la pantalla.</div>
             </div>
           ) : medicionActiva ? (
-            <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:12,padding:14}}>
+            <div style={{background:"var(--surface-subtle, #f8fafc)",border:"1px solid var(--border, #e2e8f0)",borderRadius:12,padding:14}}>
               <MedidorMapa
                 queryValue={cl.coords||`${cl.obra||""} ${cl.ciudad||""}`.trim()}
                 onQueryChange={(value)=>setCl({...cl,coords:value})}
@@ -217,7 +217,7 @@ export default function PropuestaEditor({
               />
             </div>
           ) : (
-            <div style={{background:"#f8fafc",border:"1px dashed #cbd5e1",borderRadius:12,padding:"18px 16px",fontSize:12,color:"#64748b",textAlign:"center"}}>
+            <div style={{background:"var(--surface-subtle, #f8fafc)",border:"1px dashed var(--border, #cbd5e1)",borderRadius:12,padding:"18px 16px",fontSize:12,color:"var(--text-muted, #64748b)",textAlign:"center"}}>
               Activa la medición si esta propuesta necesita mapa satelital o tramos medidos sobre el terreno.
             </div>
           )}
@@ -226,28 +226,28 @@ export default function PropuestaEditor({
         {/* 4. Detalle económico */}
         <div style={{marginBottom:18}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-            <span style={{fontSize:12,fontWeight:600,color:"#1a1a2e"}}>Detalle económico</span>
+            <span style={{fontSize:12,fontWeight:600,color:"var(--text-main, #1a1a2e)"}}>Detalle económico</span>
             <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>{const nuevos=measurementsToQuoteItems(p.geoMediciones);setItems(nuevos.map((item,index)=>({...item,id:index+1})));}} style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"5px 12px"}}>Jalar mediciones</button>
+              <button onClick={()=>{const nuevos=measurementsToQuoteItems(p.geoMediciones);setItems(nuevos.map((item,index)=>({...item,id:index+1})));}} style={{...B("var(--btn-ver-bg, #dbeafe)","var(--btn-ver-text, #1e40af)"),fontSize:11,padding:"5px 12px"}}>Jalar mediciones</button>
               <button onClick={()=>setShowDB(!showDB)} style={{...B(showDB?"#1a3050":"transparent","#f47c20"),border:"1px solid #cc0000",fontSize:11,padding:"5px 12px"}}>{showDB?"Cerrar catálogo":"Catálogo"}</button>
             </div>
           </div>
 
           {showDB&&(
-            <div style={{background:"#f8fafc",borderRadius:10,padding:16,marginBottom:14,border:"1px solid #f47c2044"}}>
+            <div style={{background:"var(--surface-subtle, #f8fafc)",borderRadius:10,padding:16,marginBottom:14,border:"1px solid #f47c2044"}}>
               <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>{catalogo.map((cat,i)=><button key={i} onClick={()=>setDbCat(i)} style={{...B(dbCat===i?"#f47c20":"#142840",dbCat===i?"#fff":"#7da5c8"),border:`1px solid ${dbCat===i?"#f47c20":"#1a3050"}`,fontSize:11,padding:"5px 12px"}}>{cat.categoria}</button>)}</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>{(categoria.items||[]).map((it,i)=><div key={i} style={{background:"#f1f5f9",borderRadius:8,padding:"10px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:"#1a1a2e",marginBottom:2}}>{it.desc}</div><div style={{fontSize:11,color:"#475569"}}>{it.unit} · {fmt(it.vu)}</div></div><button onClick={()=>{setItems(prev=>[...prev,{id:siguienteId(prev),desc:it.desc,cant:1,unit:it.unit,vu:it.vu}]);}} style={{...B("#f47c20"),padding:"5px 12px",fontSize:12,flexShrink:0}}>+</button></div>)}</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>{(categoria.items||[]).map((it,i)=><div key={i} style={{background:"var(--btn-cancelar-bg, #f1f5f9)",borderRadius:8,padding:"10px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:"var(--text-main, #1a1a2e)",marginBottom:2}}>{it.desc}</div><div style={{fontSize:11,color:"var(--text-muted, #475569)"}}>{it.unit} · {fmt(it.vu)}</div></div><button onClick={()=>{setItems(prev=>[...prev,{id:siguienteId(prev),desc:it.desc,cant:1,unit:it.unit,vu:it.vu}]);}} style={{...B("#f47c20"),padding:"5px 12px",fontSize:12,flexShrink:0}}>+</button></div>)}</div>
             </div>
           )}
 
           {/* Tabla de ítems. La clase "tabla-items" evita que en el celular se
               colapse a una columna: conserva sus columnas y se desplaza. */}
-          <div className="tabla-items" style={{border:"1px solid #e2e8f0",borderRadius:10,overflow:"hidden",marginBottom:10}}>
+          <div className="tabla-items" style={{border:"1px solid var(--border, #e2e8f0)",borderRadius:10,overflow:"hidden",marginBottom:10}}>
             <div style={{display:"grid",gridTemplateColumns:"3fr 0.65fr 0.75fr 1.1fr 1.1fr 28px",background:"#1a2840",color:"#94a3b8",fontSize:10,textTransform:"uppercase",padding:"9px 12px",letterSpacing:0.5}}>
               <span>Descripción</span><span>Cant.</span><span>Unidad</span><span>Valor unit.</span><span style={{textAlign:"right"}}>Subtotal</span><span/>
             </div>
             {p.items.map((it,idx)=>(
-              <div key={it.id} style={{display:"grid",gridTemplateColumns:"3fr 0.65fr 0.75fr 1.1fr 1.1fr 28px",alignItems:"center",padding:"5px 10px",background:idx%2===0?"#f8fafc":"#fff",borderTop:"1px solid #f1f5f9"}}>
+              <div key={it.id} style={{display:"grid",gridTemplateColumns:"3fr 0.65fr 0.75fr 1.1fr 1.1fr 28px",alignItems:"center",padding:"5px 10px",background:idx%2===0?"var(--surface-subtle, #f8fafc)":"var(--surface, #fff)",borderTop:"1px solid var(--border, #f1f5f9)"}}>
                 {/* La descripcion se guarda SIEMPRE en mayuscula, se escriba
                     o se pegue como se escriba: en la tabla del documento van
                     todas asi y una en minuscula canta. Se pasa al escribir
@@ -289,25 +289,25 @@ export default function PropuestaEditor({
             gap:10,
             marginBottom:12,
             padding:"10px 14px",
-            background:sinAiu?"#f0fdf4":"#f8fafc",
-            border:`1px solid ${sinAiu?"#86efac":"#e2e8f0"}`,
+            background:sinAiu?"rgba(34, 197, 94, 0.12)":"var(--surface-subtle, #f8fafc)",
+            border:`1px solid ${sinAiu?"rgba(34, 197, 94, 0.35)":"var(--border, #e2e8f0)"}`,
             borderRadius:10
           }}>
             <div>
-              <div style={{fontSize:12,fontWeight:700,color:"#1e293b",display:"flex",alignItems:"center",gap:6}}>
+              <div style={{fontSize:12,fontWeight:700,color:"var(--text-main, #1e293b)",display:"flex",alignItems:"center",gap:6}}>
                 <span>Régimen AIU / IVA:</span>
                 <span style={{
                   fontSize:10.5,
                   padding:"2px 8px",
                   borderRadius:12,
                   fontWeight:700,
-                  background:sinAiu?"#dcfce7":"#e0e7ff",
-                  color:sinAiu?"#15803d":"#3730a3"
+                  background:sinAiu?"rgba(34, 197, 94, 0.2)":"rgba(99, 102, 241, 0.2)",
+                  color:sinAiu?"#86efac":"#a5b4fc"
                 }}>
                   {sinAiu ? "IVA Pleno 19% (Sin AIU)" : "Con AIU (IVA s/ Utilidad)"}
                 </span>
               </div>
-              <div style={{fontSize:10.5,color:"#64748b",marginTop:2}}>
+              <div style={{fontSize:10.5,color:"var(--text-muted, #64748b)",marginTop:2}}>
                 {sinAiu
                   ? "No se muestra AIU ni sale en la impresión. El IVA 19% aplica pleno sobre el subtotal."
                   : "Esquema con Administración, Imprevistos y Utilidad (IVA 19% sobre la utilidad)."}
@@ -319,8 +319,8 @@ export default function PropuestaEditor({
                 type="button"
                 onClick={()=>set("sinAiu", false)}
                 style={{
-                  ...B(!sinAiu ? "#1a2840" : "#ffffff", !sinAiu ? "#ffffff" : "#475569"),
-                  border:`1px solid ${!sinAiu ? "#1a2840" : "#cbd5e1"}`,
+                  ...B(!sinAiu ? "#1a2840" : "var(--surface, #ffffff)", !sinAiu ? "#ffffff" : "var(--text-muted, #475569)"),
+                  border:`1px solid ${!sinAiu ? "#1a2840" : "var(--border, #cbd5e1)"}`,
                   fontSize:11.5,
                   fontWeight:700,
                   padding:"6px 12px",
@@ -334,8 +334,8 @@ export default function PropuestaEditor({
                 type="button"
                 onClick={()=>set("sinAiu", true)}
                 style={{
-                  ...B(sinAiu ? "#16a34a" : "#ffffff", sinAiu ? "#ffffff" : "#475569"),
-                  border:`1px solid ${sinAiu ? "#16a34a" : "#cbd5e1"}`,
+                  ...B(sinAiu ? "#16a34a" : "var(--surface, #ffffff)", sinAiu ? "#ffffff" : "var(--text-muted, #475569)"),
+                  border:`1px solid ${sinAiu ? "#16a34a" : "var(--border, #cbd5e1)"}`,
                   fontSize:11.5,
                   fontWeight:700,
                   padding:"6px 12px",
@@ -349,21 +349,15 @@ export default function PropuestaEditor({
           </div>
 
           {/* Tabla de totales */}
-          <div style={{border:"1px solid #e2e8f0",borderRadius:10,overflow:"hidden"}}>
+          <div style={{border:"1px solid var(--border, #e2e8f0)",borderRadius:10,overflow:"hidden"}}>
             {(sinAiu
               ? [["SUBTOTAL",sub],["IVA (19%)",iva]]
               : [["SUBTOTAL",sub],["ADMINISTRACIÓN",0],["IMPREVISTOS",0],["UTILIDAD "+p.util+"%",ut],["IVA SOBRE LA UTILIDAD (19%)",iva]]
             ).map(([lbl,v])=>(
-              <div key={lbl} style={{display:"flex",justifyContent:"space-between",padding:"9px 14px",borderBottom:"1px solid #f1f5f9",fontSize:12,color:"#475569"}}>
-                <span>{lbl}</span><span style={{fontWeight:500,color:"#1a1a2e"}}>{v?fmt(v):"$  -"}</span>
+              <div key={lbl} style={{display:"flex",justifyContent:"space-between",padding:"9px 14px",borderBottom:"1px solid var(--border, #f1f5f9)",fontSize:12,color:"var(--text-muted, #475569)"}}>
+                <span>{lbl}</span><span style={{fontWeight:500,color:"var(--text-main, #1a1a2e)"}}>{v?fmt(v):"$  -"}</span>
               </div>
             ))}
-            {/* La cifra va en BLANCO y mas grande, antes iba en naranja.
-                El naranja sobre este azul marino cumple el minimo de
-                accesibilidad por poco (5,5:1), pero es un naranja saturado
-                sobre un fondo oscuro: en una pantalla con algo de reflejo, o
-                mirada de lado, el total se perdia y la fila parecia una barra
-                vacia. En blanco son 14,8:1 y no hay forma de no verlo. */}
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"13px 14px",background:"#1a2840"}}>
               <span style={{fontSize:13,fontWeight:700,color:"#cfd8e6",letterSpacing:".06em"}}>TOTAL</span>
               <span style={{fontSize:17,fontWeight:700,color:"#ffffff"}}>{fmt(tot)}</span>
@@ -371,9 +365,9 @@ export default function PropuestaEditor({
             <div style={{
               padding:"6px 14px",
               fontSize:10,
-              color:sinAiu?"#15803d":"#94a3b8",
+              color:sinAiu?"#86efac":"var(--text-subtle, #94a3b8)",
               textAlign:"center",
-              background:sinAiu?"#f0fdf4":"#f8fafc",
+              background:sinAiu?"rgba(34, 197, 94, 0.12)":"var(--surface-subtle, #f8fafc)",
               fontWeight:sinAiu?600:400
             }}>
               {sinAiu ? "IVA PLENO DEL 19% CALCULADO SOBRE EL SUBTOTAL (SIN AIU)" : "EL IVA ES EL 19% DE LA UTILIDAD"}
@@ -383,10 +377,10 @@ export default function PropuestaEditor({
           {!sinAiu ? (
             <div style={{marginTop:12,display:"grid",gridTemplateColumns:"120px 1fr",gap:12,alignItems:"end"}}>
               <div><LBL>Utilidad %</LBL><input type="number" value={p.util} onChange={e=>set("util", Number(e.target.value))} style={SI}/></div>
-              <div style={{fontSize:11,color:"#64748b",paddingBottom:10}}>Ajusta el porcentaje de utilidad para recalcular el total</div>
+              <div style={{fontSize:11,color:"var(--text-muted, #64748b)",paddingBottom:10}}>Ajusta el porcentaje de utilidad para recalcular el total</div>
             </div>
           ) : (
-            <div style={{marginTop:10,padding:"8px 12px",background:"#f8fafc",border:"1px dashed #cbd5e1",borderRadius:8,fontSize:11,color:"#64748b"}}>
+            <div style={{marginTop:10,padding:"8px 12px",background:"var(--surface-subtle, #f8fafc)",border:"1px dashed var(--border, #cbd5e1)",borderRadius:8,fontSize:11,color:"var(--text-muted, #64748b)"}}>
               ✓ Esta propuesta está configurada con <strong>IVA Pleno (19%)</strong>. No aplica porcentaje de utilidad ni saldrá ningún campo de AIU en la impresión del documento.
             </div>
           )}
@@ -394,9 +388,9 @@ export default function PropuestaEditor({
 
         {/* 5. Condiciones comerciales. Son datos de la propuesta, pero en el
             documento se imprimen en el cierre; se avisa para que no confunda. */}
-        <div style={{paddingTop:12,borderTop:"1px solid #f1f5f9",marginTop:4}}>
-          <div style={{fontSize:11,fontWeight:700,color:"#1a1a2e",marginBottom:2}}>Condiciones comerciales</div>
-          <div style={{fontSize:10.5,color:"#94a3b8",marginBottom:10}}>Pertenecen a esta propuesta, pero en el documento salen al final, en el cierre.</div>
+        <div style={{paddingTop:12,borderTop:"1px solid var(--border, #f1f5f9)",marginTop:4}}>
+          <div style={{fontSize:11,fontWeight:700,color:"var(--text-main, #1a1a2e)",marginBottom:2}}>Condiciones comerciales</div>
+          <div style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)",marginBottom:10}}>Pertenecen a esta propuesta, pero en el documento salen al final, en el cierre.</div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
           <div><LBL>Forma de pago</LBL><input value={p.formaPago} onChange={e=>set("formaPago", e.target.value)} style={SI}/></div>
@@ -408,20 +402,20 @@ export default function PropuestaEditor({
             cuando la obra lo pida. */}
         <div style={{marginTop:18}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:2}}>
-            <div style={{fontSize:11,fontWeight:700,color:"#1a1a2e"}}>Esta cotización incluye</div>
+            <div style={{fontSize:11,fontWeight:700,color:"var(--text-main, #1a1a2e)"}}>Esta cotización incluye</div>
             <BotonCorregir valor={p.incluyeTexto} onChange={v=>set("incluyeTexto", v)} compacto/>
             <button
               onClick={()=>set("incluyeTexto", DEFAULT_COT_INCLUYE)}
               disabled={p.incluyeTexto===DEFAULT_COT_INCLUYE}
               style={{
                 background:"none",border:"none",padding:0,fontSize:10.5,fontFamily:"inherit",
-                color:p.incluyeTexto===DEFAULT_COT_INCLUYE?"#cbd5e1":"#f47c20",
+                color:p.incluyeTexto===DEFAULT_COT_INCLUYE?"var(--text-subtle, #cbd5e1)":"#f47c20",
                 cursor:p.incluyeTexto===DEFAULT_COT_INCLUYE?"default":"pointer",
                 textDecoration:p.incluyeTexto===DEFAULT_COT_INCLUYE?"none":"underline",
               }}
             >Restaurar texto estándar</button>
           </div>
-          <div style={{fontSize:10.5,color:"#94a3b8",marginBottom:10}}>
+          <div style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)",marginBottom:10}}>
             Una línea por cada punto. Sale al final del documento, justo debajo de las condiciones comerciales.
           </div>
           <textarea

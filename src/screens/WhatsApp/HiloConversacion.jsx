@@ -15,8 +15,8 @@ const BURBUJA = {
     maxWidth: "78%", padding: "9px 12px", borderRadius: 12, fontSize: 12.5,
     lineHeight: 1.5, whiteSpace: "pre-line", position: "relative",
   },
-  cliente: { alignSelf: "flex-start", background: "#fff", border: "1px solid #e2e8f0", color: "#0f172a" },
-  nuestra: { alignSelf: "flex-end", background: "#dcf8c6", border: "1px solid #bbf0a0", color: "#0f172a" },
+  cliente: { alignSelf: "flex-start", background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-main)" },
+  nuestra: { alignSelf: "flex-end", background: "rgba(37, 211, 102, 0.18)", border: "1px solid rgba(37, 211, 102, 0.35)", color: "var(--text-main)" },
 };
 
 const hora = (valor) => {
@@ -34,16 +34,16 @@ export default function HiloConversacion({ conversacion, ejemplo = false, onVolv
   return (
     <div style={{ padding: "14px 28px 28px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18,
-        background: "#fff", borderRadius: 14, padding: "14px 18px", border: "1px solid #e2e8f0" }}>
+        background: "var(--surface)", borderRadius: 14, padding: "14px 18px", border: "1px solid var(--border)" }}>
         <button onClick={onVolver}
-          style={{ ...B("#f1f5f9", "#475569"), padding: "8px 14px", fontSize: 13, flexShrink: 0 }}>
+          style={{ ...B("var(--surface-subtle)", "var(--text-muted)"), border: "1px solid var(--border)", padding: "8px 14px", fontSize: 13, flexShrink: 0 }}>
           ← Volver
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 17, fontWeight: 700, color: "#1a1a2e" }}>
+          <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text-main)" }}>
             {nombre || telefonoLegible(telefono)}
           </div>
-          <div style={{ fontSize: 12, color: "#64748b" }}>
+          <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
             {telefonoLegible(telefono)} · {mensajes.length} {mensajes.length === 1 ? "mensaje" : "mensajes"}
           </div>
         </div>
@@ -51,7 +51,7 @@ export default function HiloConversacion({ conversacion, ejemplo = false, onVolv
             En el ejemplo no se enseña: el telefono es inventado y abriria un
             chat con un numero que no existe. */}
         {ejemplo ? (
-          <div style={{ background: "#eef2ff", border: "1px solid #c7d2fe", color: "#3730a3",
+          <div style={{ background: "rgba(99, 102, 241, 0.15)", border: "1px solid rgba(99, 102, 241, 0.3)", color: "#818cf8",
             borderRadius: 9, padding: "7px 12px", fontSize: 11.5, fontWeight: 700, flexShrink: 0 }}>
             Conversación de ejemplo
           </div>
@@ -67,16 +67,16 @@ export default function HiloConversacion({ conversacion, ejemplo = false, onVolv
         )}
       </div>
 
-      <div style={{ ...CD, background: "#f0f2f5" }}>
+      <div style={{ ...CD, background: "var(--surface-subtle)" }}>
         <div style={{ ...ST, marginBottom: 14 }}>Conversación</div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {mensajes.map((m) => (
             <div key={m.wa_message_id} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <div style={{ ...BURBUJA.base, ...BURBUJA.cliente }}>
-                {m.texto || <em style={{ color: "#94a3b8" }}>Mandó algo que no es texto (audio, foto o ubicación)</em>}
+                {m.texto || <em style={{ color: "var(--text-muted)" }}>Mandó algo que no es texto (audio, foto o ubicación)</em>}
                 <span style={{ display: "block", textAlign: "right", fontSize: 9.5,
-                  color: "#94a3b8", marginTop: 3 }}>
+                  color: "var(--text-muted)", marginTop: 3 }}>
                   {fmtD(m.recibido_en)} {hora(m.recibido_en)}
                 </span>
               </div>
@@ -85,7 +85,7 @@ export default function HiloConversacion({ conversacion, ejemplo = false, onVolv
                 <div style={{ ...BURBUJA.base, ...BURBUJA.nuestra }}>
                   {m.respuesta}
                   <span style={{ display: "block", textAlign: "right", fontSize: 9.5,
-                    color: "#5c8a4a", marginTop: 3 }}>
+                    color: "var(--green-700, #4ade80)", marginTop: 3 }}>
                     respondido por el sistema
                   </span>
                 </div>
@@ -93,13 +93,13 @@ export default function HiloConversacion({ conversacion, ejemplo = false, onVolv
 
               {/* Lo que hay que mirar: llego y no se le pudo contestar. */}
               {m.estado === "fallido" && (
-                <div style={{ alignSelf: "flex-end", maxWidth: "78%", background: "#fef2f2",
-                  border: "1px solid #fecaca", color: "#b91c1c", borderRadius: 10,
+                <div style={{ alignSelf: "flex-end", maxWidth: "78%", background: "rgba(239, 68, 68, 0.15)",
+                  border: "1px solid rgba(239, 68, 68, 0.3)", color: "#ef4444", borderRadius: 10,
                   padding: "8px 12px", fontSize: 11.5, lineHeight: 1.5 }}>
                   <strong>No se le pudo responder.</strong> Este cliente escribió y no recibió nada:
                   conviene llamarlo.
                   {m.error && (
-                    <div style={{ marginTop: 4, fontSize: 10.5, color: "#7f1d1d", fontFamily: "Consolas, monospace" }}>
+                    <div style={{ marginTop: 4, fontSize: 10.5, color: "#fca5a5", fontFamily: "Consolas, monospace" }}>
                       {m.error}
                     </div>
                   )}
@@ -107,14 +107,14 @@ export default function HiloConversacion({ conversacion, ejemplo = false, onVolv
               )}
 
               {m.estado === "recibido" && (
-                <div style={{ alignSelf: "center", fontSize: 11, color: "#b45309" }}>
+                <div style={{ alignSelf: "center", fontSize: 11, color: "#fbbf24" }}>
                   En cola, todavía sin responder.
                 </div>
               )}
 
               {m.cotizacion_id && (
-                <div style={{ alignSelf: "center", fontSize: 11, color: "#166534",
-                  background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: 8,
+                <div style={{ alignSelf: "center", fontSize: 11, color: "var(--green-700, #4ade80)",
+                  background: "rgba(34, 197, 94, 0.15)", border: "1px solid rgba(34, 197, 94, 0.3)", borderRadius: 8,
                   padding: "5px 10px" }}>
                   De aquí salió la cotización <strong>{m.cotizacion_id}</strong>
                 </div>

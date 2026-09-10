@@ -433,11 +433,11 @@ export default function Pagos({ ctx }) {
           marginBottom: 20,
           flexWrap: "wrap",
           alignItems: "center",
-          background: "#ffffff",
+          background: "var(--surface, #ffffff)",
           padding: "8px 12px",
           borderRadius: 12,
-          border: "1px solid #e2e8f0",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+          border: "1px solid var(--border, #e2e8f0)",
+          boxShadow: "var(--shadow, 0 1px 3px rgba(0,0,0,0.05))",
         }}
       >
         <button
@@ -452,9 +452,9 @@ export default function Pagos({ ctx }) {
             fontSize: 13,
             fontWeight: 700,
             cursor: "pointer",
-            border: vistaPago === "registro" ? "1.5px solid #cc0000" : "1.5px solid #e2e8f0",
-            background: vistaPago === "registro" ? "#cc0000" : "#ffffff",
-            color: vistaPago === "registro" ? "#ffffff" : "#334155",
+            border: vistaPago === "registro" ? "1.5px solid #cc0000" : "1.5px solid var(--border, #e2e8f0)",
+            background: vistaPago === "registro" ? "#cc0000" : "var(--surface, #ffffff)",
+            color: vistaPago === "registro" ? "#ffffff" : "var(--text-main, #334155)",
             boxShadow: vistaPago === "registro" ? "0 4px 12px rgba(204,0,0,0.2)" : "none",
             transition: "all 0.15s ease",
           }}
@@ -475,9 +475,9 @@ export default function Pagos({ ctx }) {
             fontSize: 13,
             fontWeight: 700,
             cursor: "pointer",
-            border: vistaPago === "historial" ? "1.5px solid #003B71" : "1.5px solid #e2e8f0",
-            background: vistaPago === "historial" ? "#003B71" : "#ffffff",
-            color: vistaPago === "historial" ? "#ffffff" : "#334155",
+            border: vistaPago === "historial" ? "1.5px solid #003B71" : "1.5px solid var(--border, #e2e8f0)",
+            background: vistaPago === "historial" ? "#003B71" : "var(--surface, #ffffff)",
+            color: vistaPago === "historial" ? "#ffffff" : "var(--text-main, #334155)",
             boxShadow: vistaPago === "historial" ? "0 4px 12px rgba(0,59,113,0.2)" : "none",
             transition: "all 0.15s ease",
           }}
@@ -487,8 +487,8 @@ export default function Pagos({ ctx }) {
           <span
             style={{
               fontSize: 11,
-              background: vistaPago === "historial" ? "rgba(255,255,255,0.25)" : "#f1f5f9",
-              color: vistaPago === "historial" ? "#ffffff" : "#475569",
+              background: vistaPago === "historial" ? "rgba(255,255,255,0.25)" : "var(--border, #f1f5f9)",
+              color: vistaPago === "historial" ? "#ffffff" : "var(--text-muted, #475569)",
               padding: "2px 8px",
               borderRadius: 999,
               fontWeight: 800,
@@ -505,8 +505,8 @@ export default function Pagos({ ctx }) {
           style={{
             ...CD,
             marginBottom: 22,
-            border: "1px solid #fed7aa",
-            boxShadow: "0 18px 40px rgba(244,124,32,0.08)",
+            border: "1px solid var(--border, #fed7aa)",
+            boxShadow: "0 18px 40px rgba(0,0,0,0.06)",
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
@@ -538,18 +538,18 @@ export default function Pagos({ ctx }) {
                       alignItems: "center",
                       gap: 8,
                       marginTop: 4,
-                      background: "#f8fafc",
+                      background: "var(--surface-subtle, #f8fafc)",
                       padding: "5px 10px",
                       borderRadius: 6,
-                      border: "1px solid #e2e8f0",
+                      border: "1px solid var(--border, #e2e8f0)",
                     }}
                   >
-                    <span style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>NIT / C.C.:</span>
-                    <span style={{ fontSize: 12, fontWeight: 800, color: "#0f172a", fontFamily: "Consolas, monospace" }}>
+                    <span style={{ fontSize: 11, color: "var(--text-muted, #64748b)", fontWeight: 600 }}>NIT / C.C.:</span>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: "var(--text-main, #0f172a)", fontFamily: "Consolas, monospace" }}>
                       {clienteObj.nit}
                     </span>
                     {clienteObj.ciudad && (
-                      <span style={{ fontSize: 11, color: "#475569", marginLeft: "auto" }}>
+                      <span style={{ fontSize: 11, color: "var(--text-muted, #475569)", marginLeft: "auto" }}>
                         📍 {clienteObj.ciudad}
                       </span>
                     )}
@@ -587,7 +587,7 @@ export default function Pagos({ ctx }) {
                     placeholder="Ej. 10000000"
                     style={{ ...SI, fontSize: 15, fontWeight: 700 }}
                   />
-                  <div style={{ fontSize: 11, color: "#003B71", marginTop: 4, fontWeight: 600 }}>
+                  <div style={{ fontSize: 11, color: "var(--color-primario, #003B71)", marginTop: 4, fontWeight: 600 }}>
                     {Number(reciboCaja.monto || 0) > 0
                       ? `Abono a cartera: ${fmt(Number(reciboCaja.monto || 0))}`
                       : "Ingresa el valor total que se abonará a la deuda"}
@@ -607,18 +607,18 @@ export default function Pagos({ ctx }) {
               {/* SECCIÓN ESPECIAL: RETENCIONES QUE PRACTICA EL CLIENTE */}
               <div
                 style={{
-                  background: "#fffbeb",
-                  border: "1.5px solid #fde68a",
+                  background: "rgba(245, 158, 11, 0.08)",
+                  border: "1.5px solid rgba(245, 158, 11, 0.3)",
                   borderRadius: 10,
                   padding: "12px 14px",
                   display: "grid",
                   gap: 10,
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px dashed #fcd34d", paddingBottom: 6 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px dashed rgba(245, 158, 11, 0.4)", paddingBottom: 6 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <span style={{ fontSize: 16 }}>🛡️</span>
-                    <strong style={{ fontSize: 12.5, color: "#92400e", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    <strong style={{ fontSize: 12.5, color: "#f59e0b", textTransform: "uppercase", letterSpacing: 0.5 }}>
                       Retenciones practicadas por el cliente (Anticipo de Impuestos a favor)
                     </strong>
                   </div>
@@ -628,7 +628,7 @@ export default function Pagos({ ctx }) {
                     style={{
                       background: "transparent",
                       border: "none",
-                      color: "#b45309",
+                      color: "#f59e0b",
                       fontSize: 11,
                       fontWeight: 700,
                       cursor: "pointer",
@@ -641,12 +641,12 @@ export default function Pagos({ ctx }) {
                 {mostrarRetenciones && (
                   <div style={{ display: "grid", gap: 10 }}>
                     {/* 1. ReteFuente (Cuenta 135515) */}
-                    <div style={{ background: "#ffffff", padding: "8px 10px", borderRadius: 8, border: "1px solid #fef3c7" }}>
+                    <div style={{ background: "var(--surface, #ffffff)", padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border, #fef3c7)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                        <span style={{ fontSize: 11.5, fontWeight: 700, color: "#78350f" }}>
+                        <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-main, #78350f)" }}>
                           1. Retención en la fuente (Renta)
                         </span>
-                        <span style={{ fontSize: 10, background: "#e0f2fe", color: "#0369a1", padding: "1px 7px", borderRadius: 4, fontWeight: 800, fontFamily: "Consolas, monospace" }}>
+                        <span style={{ fontSize: 10, background: "rgba(3, 105, 161, 0.15)", color: "#38bdf8", padding: "1px 7px", borderRadius: 4, fontWeight: 800, fontFamily: "Consolas, monospace" }}>
                           Cuenta PUC: 135515
                         </span>
                       </div>
@@ -662,13 +662,13 @@ export default function Pagos({ ctx }) {
                             </option>
                           ))}
                         </select>
-                        <div style={{ textAlign: "right", fontFamily: "Consolas, monospace", fontWeight: 800, color: retencionesCalc.reteFuente.valor > 0 ? "#b45309" : "#64748b", fontSize: 12.5 }}>
+                        <div style={{ textAlign: "right", fontFamily: "Consolas, monospace", fontWeight: 800, color: retencionesCalc.reteFuente.valor > 0 ? "#f59e0b" : "var(--text-muted, #64748b)", fontSize: 12.5 }}>
                           -{fmt(retencionesCalc.reteFuente.valor)}
                         </div>
                       </div>
                       {reteFuenteConcepto === "personalizada" && (
                         <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
-                          <span style={{ fontSize: 11, color: "#78350f" }}>Tarifa %:</span>
+                          <span style={{ fontSize: 11, color: "var(--text-muted, #78350f)" }}>Tarifa %:</span>
                           <input
                             type="number"
                             step="0.1"
@@ -682,12 +682,12 @@ export default function Pagos({ ctx }) {
                     </div>
 
                     {/* 2. ReteICA (Cuenta 135518) */}
-                    <div style={{ background: "#ffffff", padding: "8px 10px", borderRadius: 8, border: "1px solid #fef3c7" }}>
+                    <div style={{ background: "var(--surface, #ffffff)", padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border, #fef3c7)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                        <span style={{ fontSize: 11.5, fontWeight: 700, color: "#78350f" }}>
+                        <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-main, #78350f)" }}>
                           2. Retención de Industria y Comercio (ReteICA)
                         </span>
-                        <span style={{ fontSize: 10, background: "#e0f2fe", color: "#0369a1", padding: "1px 7px", borderRadius: 4, fontWeight: 800, fontFamily: "Consolas, monospace" }}>
+                        <span style={{ fontSize: 10, background: "rgba(3, 105, 161, 0.15)", color: "#38bdf8", padding: "1px 7px", borderRadius: 4, fontWeight: 800, fontFamily: "Consolas, monospace" }}>
                           Cuenta PUC: 135518
                         </span>
                       </div>
@@ -703,13 +703,13 @@ export default function Pagos({ ctx }) {
                             </option>
                           ))}
                         </select>
-                        <div style={{ textAlign: "right", fontFamily: "Consolas, monospace", fontWeight: 800, color: retencionesCalc.reteIca.valor > 0 ? "#b45309" : "#64748b", fontSize: 12.5 }}>
+                        <div style={{ textAlign: "right", fontFamily: "Consolas, monospace", fontWeight: 800, color: retencionesCalc.reteIca.valor > 0 ? "#f59e0b" : "var(--text-muted, #64748b)", fontSize: 12.5 }}>
                           -{fmt(retencionesCalc.reteIca.valor)}
                         </div>
                       </div>
                       {reteIcaConcepto === "personalizada" && (
                         <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
-                          <span style={{ fontSize: 11, color: "#78350f" }}>Tarifa por mil (‰):</span>
+                          <span style={{ fontSize: 11, color: "var(--text-muted, #78350f)" }}>Tarifa por mil (‰):</span>
                           <input
                             type="number"
                             step="0.01"
@@ -723,12 +723,12 @@ export default function Pagos({ ctx }) {
                     </div>
 
                     {/* 3. ReteIVA (Cuenta 135517) */}
-                    <div style={{ background: "#ffffff", padding: "8px 10px", borderRadius: 8, border: "1px solid #fef3c7" }}>
+                    <div style={{ background: "var(--surface, #ffffff)", padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border, #fef3c7)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                        <span style={{ fontSize: 11.5, fontWeight: 700, color: "#78350f" }}>
+                        <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-main, #78350f)" }}>
                           3. Retención de IVA (ReteIVA)
                         </span>
-                        <span style={{ fontSize: 10, background: "#e0f2fe", color: "#0369a1", padding: "1px 7px", borderRadius: 4, fontWeight: 800, fontFamily: "Consolas, monospace" }}>
+                        <span style={{ fontSize: 10, background: "rgba(3, 105, 161, 0.15)", color: "#38bdf8", padding: "1px 7px", borderRadius: 4, fontWeight: 800, fontFamily: "Consolas, monospace" }}>
                           Cuenta PUC: 135517
                         </span>
                       </div>
@@ -744,13 +744,13 @@ export default function Pagos({ ctx }) {
                             </option>
                           ))}
                         </select>
-                        <div style={{ textAlign: "right", fontFamily: "Consolas, monospace", fontWeight: 800, color: retencionesCalc.reteIva.valor > 0 ? "#b45309" : "#64748b", fontSize: 12.5 }}>
+                        <div style={{ textAlign: "right", fontFamily: "Consolas, monospace", fontWeight: 800, color: retencionesCalc.reteIva.valor > 0 ? "#f59e0b" : "var(--text-muted, #64748b)", fontSize: 12.5 }}>
                           -{fmt(retencionesCalc.reteIva.valor)}
                         </div>
                       </div>
                       {reteIvaConcepto === "manual" && (
                         <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
-                          <span style={{ fontSize: 11, color: "#78350f" }}>Valor manual en pesos ($):</span>
+                          <span style={{ fontSize: 11, color: "var(--text-muted, #78350f)" }}>Valor manual en pesos ($):</span>
                           <input
                             type="number"
                             min="0"
@@ -766,12 +766,12 @@ export default function Pagos({ ctx }) {
                     </div>
 
                     {/* 4. Otras Deducciones / Estampillas (Cuenta 135595) */}
-                    <div style={{ background: "#ffffff", padding: "8px 10px", borderRadius: 8, border: "1px solid #fef3c7" }}>
+                    <div style={{ background: "var(--surface, #ffffff)", padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border, #fef3c7)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                        <span style={{ fontSize: 11.5, fontWeight: 700, color: "#78350f" }}>
+                        <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-main, #78350f)" }}>
                           4. Otras deducciones / Estampillas
                         </span>
-                        <span style={{ fontSize: 10, background: "#e0f2fe", color: "#0369a1", padding: "1px 7px", borderRadius: 4, fontWeight: 800, fontFamily: "Consolas, monospace" }}>
+                        <span style={{ fontSize: 10, background: "rgba(3, 105, 161, 0.15)", color: "#38bdf8", padding: "1px 7px", borderRadius: 4, fontWeight: 800, fontFamily: "Consolas, monospace" }}>
                           Cuenta PUC: 135595
                         </span>
                       </div>
@@ -787,13 +787,13 @@ export default function Pagos({ ctx }) {
                             </option>
                           ))}
                         </select>
-                        <div style={{ textAlign: "right", fontFamily: "Consolas, monospace", fontWeight: 800, color: retencionesCalc.otras.valor > 0 ? "#b45309" : "#64748b", fontSize: 12.5 }}>
+                        <div style={{ textAlign: "right", fontFamily: "Consolas, monospace", fontWeight: 800, color: retencionesCalc.otras.valor > 0 ? "#f59e0b" : "var(--text-muted, #64748b)", fontSize: 12.5 }}>
                           -{fmt(retencionesCalc.otras.valor)}
                         </div>
                       </div>
                       {otrasConcepto === "manual" && (
                         <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
-                          <span style={{ fontSize: 11, color: "#78350f" }}>Valor manual ($):</span>
+                          <span style={{ fontSize: 11, color: "var(--text-muted, #78350f)" }}>Valor manual ($):</span>
                           <input
                             type="number"
                             min="0"
@@ -811,16 +811,16 @@ export default function Pagos({ ctx }) {
                 )}
 
                 {/* Resumen contable de liquidación */}
-                <div style={{ background: "#fef3c7", padding: "8px 12px", borderRadius: 8, display: "grid", gap: 4 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#78350f" }}>
+                <div style={{ background: "rgba(245, 158, 11, 0.12)", padding: "8px 12px", borderRadius: 8, display: "grid", gap: 4, border: "1px solid rgba(245, 158, 11, 0.25)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--text-main, #78350f)" }}>
                     <span>Valor Bruto Abonado a Cartera (Cuenta 130505):</span>
                     <strong style={{ fontFamily: "Consolas, monospace" }}>{fmt(retencionesCalc.montoBruto)}</strong>
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#c2410c" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#f97316" }}>
                     <span>(-) Total Retenciones Practicadas (Cuentas 1355):</span>
                     <strong style={{ fontFamily: "Consolas, monospace" }}>-{fmt(retencionesCalc.totalRetenciones)}</strong>
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#166534", borderTop: "1.5px solid #fde68a", paddingTop: 4, marginTop: 2 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#22c55e", borderTop: "1.5px solid rgba(245, 158, 11, 0.3)", paddingTop: 4, marginTop: 2 }}>
                     <span style={{ fontWeight: 800 }}>(=) Valor Neto que ingresa a Caja/Bancos (Cuenta 111005):</span>
                     <strong style={{ fontFamily: "Consolas, monospace", fontSize: 15, fontWeight: 900 }}>{fmt(retencionesCalc.montoNeto)}</strong>
                   </div>
@@ -889,7 +889,7 @@ export default function Pagos({ ctx }) {
                 <button
                   type="button"
                   onClick={limpiarFormulario}
-                  style={B("#f1f5f9", "#475569")}
+                  style={B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)")}
                 >
                   Limpiar
                 </button>
@@ -899,8 +899,8 @@ export default function Pagos({ ctx }) {
             {/* Panel lateral con resumen del estado de cuenta de la obra */}
             <div
               style={{
-                background: "linear-gradient(180deg,#fff7ed,#ffffff)",
-                border: "1px solid #fed7aa",
+                background: "var(--surface-subtle, #fff7ed)",
+                border: "1px solid var(--border, #fed7aa)",
                 borderRadius: 14,
                 padding: 16,
               }}
@@ -909,7 +909,7 @@ export default function Pagos({ ctx }) {
                 style={{
                   fontSize: 11,
                   fontWeight: 700,
-                  color: "#9a3412",
+                  color: "#ea580c",
                   textTransform: "uppercase",
                   letterSpacing: 1,
                   marginBottom: 10,
@@ -921,51 +921,51 @@ export default function Pagos({ ctx }) {
               {obraSeleccionada ? (
                 <div style={{ display: "grid", gap: 12 }}>
                   <div>
-                    <div style={{ fontSize: 11, color: "#64748b", fontFamily: "Consolas, monospace" }}>
+                    <div style={{ fontSize: 11, color: "var(--text-muted, #64748b)", fontFamily: "Consolas, monospace" }}>
                       {obraSeleccionada.id}
                     </div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: "#1a1a2e" }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-main, #1a1a2e)" }}>
                       {obraSeleccionada.cliente}
                     </div>
-                    <div style={{ fontSize: 13, color: "#475569", fontWeight: 500 }}>
+                    <div style={{ fontSize: 13, color: "var(--text-muted, #475569)", fontWeight: 500 }}>
                       {obraSeleccionada.proyecto}
                     </div>
                   </div>
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px 12px" }}>
-                      <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 600 }}>
+                    <div style={{ background: "var(--surface, #fff)", border: "1px solid var(--border, #e2e8f0)", borderRadius: 10, padding: "10px 12px" }}>
+                      <div style={{ fontSize: 10, color: "var(--text-muted, #64748b)", textTransform: "uppercase", fontWeight: 600 }}>
                         Total Contrato
                       </div>
-                      <div style={{ fontSize: 17, fontWeight: 700, color: "#1a1a2e" }}>
+                      <div style={{ fontSize: 17, fontWeight: 700, color: "var(--text-main, #1a1a2e)" }}>
                         {fmt(Number(obraSeleccionada.total || 0))}
                       </div>
                     </div>
-                    <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px 12px" }}>
-                      <div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", fontWeight: 600 }}>
+                    <div style={{ background: "var(--surface, #fff)", border: "1px solid var(--border, #e2e8f0)", borderRadius: 10, padding: "10px 12px" }}>
+                      <div style={{ fontSize: 10, color: "var(--text-muted, #64748b)", textTransform: "uppercase", fontWeight: 600 }}>
                         Cobrado hasta hoy
                       </div>
-                      <div style={{ fontSize: 17, fontWeight: 700, color: "#166534" }}>
+                      <div style={{ fontSize: 17, fontWeight: 700, color: "#16a34a" }}>
                         {fmt(Number(obraSeleccionada.pagado || 0))}
                       </div>
                     </div>
                     <div
                       style={{
-                        background: "#fff",
-                        border: "1.5px solid #fed7aa",
+                        background: "var(--surface, #fff)",
+                        border: "1.5px solid var(--border, #fed7aa)",
                         borderRadius: 10,
                         padding: "10px 12px",
                         gridColumn: "span 2",
                       }}
                     >
-                      <div style={{ fontSize: 10, color: "#9a3412", textTransform: "uppercase", fontWeight: 700 }}>
+                      <div style={{ fontSize: 10, color: "#ea580c", textTransform: "uppercase", fontWeight: 700 }}>
                         Saldo Pendiente Actual
                       </div>
                       <div
                         style={{
                           fontSize: 22,
                           fontWeight: 900,
-                          color: Number(obraSeleccionada.saldo || 0) > 0 ? "#c2410c" : "#166534",
+                          color: Number(obraSeleccionada.saldo || 0) > 0 ? "#ea580c" : "#16a34a",
                         }}
                       >
                         {fmt(Number(obraSeleccionada.saldo || 0))}
@@ -975,33 +975,33 @@ export default function Pagos({ ctx }) {
                     {retencionesCalc.montoBruto > 0 && (
                       <div
                         style={{
-                          background: "#f0fdf4",
-                          border: "1px dashed #86efac",
+                          background: "rgba(16, 185, 129, 0.08)",
+                          border: "1px dashed rgba(16, 185, 129, 0.3)",
                           borderRadius: 10,
                           padding: "10px 12px",
                           gridColumn: "span 2",
                         }}
                       >
-                        <div style={{ fontSize: 10, color: "#166534", textTransform: "uppercase", fontWeight: 700 }}>
+                        <div style={{ fontSize: 10, color: "#10b981", textTransform: "uppercase", fontWeight: 700 }}>
                           Nuevo Saldo tras este Recibo
                         </div>
-                        <div style={{ fontSize: 20, fontWeight: 900, color: saldoProyectado > 0 ? "#c2410c" : "#166534" }}>
+                        <div style={{ fontSize: 20, fontWeight: 900, color: saldoProyectado > 0 ? "#ea580c" : "#10b981" }}>
                           {fmt(saldoProyectado)}
                         </div>
-                        <div style={{ fontSize: 11, color: "#15803d", marginTop: 4 }}>
+                        <div style={{ fontSize: 11, color: "var(--text-muted, #15803d)", marginTop: 4 }}>
                           Se descuentan {fmt(retencionesCalc.montoBruto)} del saldo (Neto recibido: {fmt(retencionesCalc.montoNeto)} + Retenciones reconocidas: {fmt(retencionesCalc.totalRetenciones)})
                         </div>
                       </div>
                     )}
                   </div>
 
-                  <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.6, borderTop: "1px solid #fed7aa", paddingTop: 8 }}>
-                    Ciudad: <strong style={{ color: "#334155" }}>{obraSeleccionada.ciudad || "No registrada"}</strong><br />
-                    Dirección: <strong style={{ color: "#334155" }}>{obraSeleccionada.direccion || "No registrada"}</strong>
+                  <div style={{ fontSize: 12, color: "var(--text-muted, #64748b)", lineHeight: 1.6, borderTop: "1px solid var(--border, #fed7aa)", paddingTop: 8 }}>
+                    Ciudad: <strong style={{ color: "var(--text-main, #334155)" }}>{obraSeleccionada.ciudad || "No registrada"}</strong><br />
+                    Dirección: <strong style={{ color: "var(--text-main, #334155)" }}>{obraSeleccionada.direccion || "No registrada"}</strong>
                   </div>
                 </div>
               ) : (
-                <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6 }}>
+                <div style={{ fontSize: 13, color: "var(--text-muted, #64748b)", lineHeight: 1.6 }}>
                   Busca al cliente por su <strong>NIT</strong> o razón social para filtrar sus obras y proyectos.
                   Al seleccionar una obra, se calculará el saldo anterior y el nuevo saldo del recibo de caja.
                 </div>
@@ -1042,7 +1042,7 @@ export default function Pagos({ ctx }) {
         >
           <div
             style={{
-              background: "#ffffff",
+              background: "var(--surface, #ffffff)",
               borderRadius: 12,
               boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.35)",
               width: "100%",
@@ -1051,7 +1051,7 @@ export default function Pagos({ ctx }) {
               display: "flex",
               flexDirection: "column",
               overflow: "hidden",
-              border: "1px solid #cbd5e1",
+              border: "1px solid var(--border, #cbd5e1)",
             }}
           >
             {/* Cabecera del Modal */}
@@ -1138,7 +1138,7 @@ export default function Pagos({ ctx }) {
             </div>
 
             {/* Documento Recibo de Caja Media Carta */}
-            <div style={{ padding: "18px 20px", overflowY: "auto", background: "#f8fafc" }}>
+            <div style={{ padding: "18px 20px", overflowY: "auto", background: "var(--bg-app, #f8fafc)" }}>
               <ReciboCajaMediaCarta
                 recibo={reciboParaImprimir}
                 obra={obras.find((o) => o.id === reciboParaImprimir.obraId)}

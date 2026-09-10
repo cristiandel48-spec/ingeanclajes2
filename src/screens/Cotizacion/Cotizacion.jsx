@@ -461,7 +461,7 @@ export default function Cotizacion({ctx}){
     cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap", lineHeight:1.2,
     display:"inline-flex", alignItems:"center", gap:5,
   };
-  const SECUNDARIO = { ...BOTON_BASE, background:"#f1f5f9", color:"#475569", border:"1px solid #e2e8f0" };
+  const SECUNDARIO = { ...BOTON_BASE, background:"var(--btn-cancelar-bg, #f1f5f9)", color:"var(--btn-cancelar-text, #475569)", border:"1px solid var(--border, #e2e8f0)" };
 
   // Descarga la cotizacion en PDF, sin pasar por el dialogo de impresion.
   //
@@ -956,9 +956,9 @@ export default function Cotizacion({ctx}){
       {/* Barra de herramientas y acciones del editor de cotización */}
       <div
         style={{
-          background: "#ffffff",
+          background: "var(--surface, #ffffff)",
           borderRadius: 12,
-          border: "1px solid #e2e8f0",
+          border: "1px solid var(--border, #e2e8f0)",
           padding: "10px 16px",
           marginBottom: 16,
           display: "flex",
@@ -966,7 +966,7 @@ export default function Cotizacion({ctx}){
           alignItems: "center",
           flexWrap: "wrap",
           gap: 12,
-          boxShadow: "0 1px 3px rgba(15,23,42,0.04)",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -983,10 +983,10 @@ export default function Cotizacion({ctx}){
           >
             ← Volver a la lista
           </button>
-          <div style={{ fontSize: 13, color: "#475569" }}>
+          <div style={{ fontSize: 13, color: "var(--text-muted, #475569)" }}>
             {editCot
-              ? <>Editando <strong style={{ color: "#0f172a" }}>{cot || editCot}</strong>{cl.nombre ? ` · ${cl.nombre}` : ""}</>
-              : <>Cotización nueva{cot ? <> · <strong style={{ color: "#0f172a" }}>{cot}</strong></> : null}</>}
+              ? <>Editando <strong style={{ color: "var(--text-main, #0f172a)" }}>{cot || editCot}</strong>{cl.nombre ? ` · ${cl.nombre}` : ""}</>
+              : <>Cotización nueva{cot ? <> · <strong style={{ color: "var(--text-main, #0f172a)" }}>{cot}</strong></> : null}</>}
           </div>
         </div>
 
@@ -1026,7 +1026,7 @@ export default function Cotizacion({ctx}){
           <button
             type="button"
             style={verDocumento
-              ? { ...BOTON_BASE, background: "#0f172a", color: "#fff", border: "1px solid #0f172a", fontSize: 12, padding: "6px 12px", fontWeight: 600 }
+              ? { ...BOTON_BASE, background: "var(--c-tinta, #0f172a)", color: "var(--bg-app, #fff)", border: "1px solid var(--border, #0f172a)", fontSize: 12, padding: "6px 12px", fontWeight: 600 }
               : { ...SECUNDARIO, fontSize: 12, padding: "6px 12px", fontWeight: 600 }}
             onClick={() => setVerDocumento((v) => !v)}
             title="Muestra el documento completo tal como se imprimirá, mientras editas"
@@ -1038,9 +1038,9 @@ export default function Cotizacion({ctx}){
             type="button"
             style={{
               ...BOTON_BASE,
-              background: bajandoPdf === "editor" ? "#e2e8f0" : "#eff6ff",
-              color: bajandoPdf === "editor" ? "#94a3b8" : "#1d4ed8",
-              border: `1px solid ${bajandoPdf === "editor" ? "#cbd5e1" : "#bfdbfe"}`,
+              background: bajandoPdf === "editor" ? "var(--border, #e2e8f0)" : "var(--btn-ver-bg, #eff6ff)",
+              color: bajandoPdf === "editor" ? "var(--text-subtle, #94a3b8)" : "var(--btn-ver-text, #1d4ed8)",
+              border: `1px solid ${bajandoPdf === "editor" ? "var(--border, #cbd5e1)" : "var(--btn-ver-border, #bfdbfe)"}`,
               fontSize: 12,
               padding: "6px 12px",
               fontWeight: 700,

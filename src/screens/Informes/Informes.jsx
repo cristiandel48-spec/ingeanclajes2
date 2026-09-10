@@ -610,9 +610,9 @@ export default function Informes({ctx}){
                     }));
                   }}
                   style={{
-                    background: "#f1f5f9",
-                    border: "1px solid #cbd5e1",
-                    color: "#334155",
+                    background: "var(--btn-cancelar-bg, #f1f5f9)",
+                    border: "1px solid var(--border, #cbd5e1)",
+                    color: "var(--btn-cancelar-txt, #334155)",
                     borderRadius: 6,
                     padding: "3px 9px",
                     fontSize: 11,
@@ -627,12 +627,12 @@ export default function Informes({ctx}){
                   🔄 Sincronizar de la obra ({form.personal.length})
                 </button>
               </div>
-              <div style={{fontSize:11,color:"#64748b"}}>Se carga automáticamente según la obra y los horarios. Los turnos se muestran en formato 12h.</div>
+              <div style={{fontSize:11,color:"var(--text-muted, #64748b)"}}>Se carga automáticamente según la obra y los horarios. Los turnos se muestran en formato 12h.</div>
             </div>
             <datalist id="turnosInformeList">
               {turnosDisponiblesObra.map((t,i)=><option key={i} value={t} />)}
             </datalist>
-            {form.personal.length===0&&<div style={{background:"#f8fafc",border:"1px dashed #e2e8f0",borderRadius:8,padding:"12px 14px",fontSize:12,color:"#94a3b8",marginBottom:8}}>No hay personal asignado a esta obra todavía. Puedes agregarlo manualmente.</div>}
+            {form.personal.length===0&&<div style={{background:"var(--surface-subtle, #f8fafc)",border:"1px dashed var(--border, #e2e8f0)",borderRadius:8,padding:"12px 14px",fontSize:12,color:"var(--text-subtle, #94a3b8)",marginBottom:8}}>No hay personal asignado a esta obra todavía. Puedes agregarlo manualmente.</div>}
             {form.personal.map((p,i)=>(
               <div key={i} style={{display:"grid",gridTemplateColumns:"1.4fr 1fr 1fr 1fr 28px",gap:8,marginBottom:6}}>
                 {/* Se elige de la lista y el cargo entra solo. Antes habia que
@@ -681,29 +681,29 @@ export default function Informes({ctx}){
                 <input value={p.cargo} onChange={e=>updPersonal(i,"cargo",e.target.value)} onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==p.cargo)updPersonal(i,"cargo",v);}} placeholder="Cargo" style={{...SI,fontSize:12}}/>
                 <input list="turnosInformeList" value={p.turno1||""} onChange={e=>updPersonal(i,"turno1",e.target.value)} placeholder="Turno 1 · 07:00 AM - 05:00 PM" style={{...SI,fontSize:12}}/>
                 <input list="turnosInformeList" value={p.turno2||""} onChange={e=>updPersonal(i,"turno2",e.target.value)} placeholder="Turno 2 · opcional" style={{...SI,fontSize:12}}/>
-                <button onClick={()=>setForm(pf=>({...pf,personal:pf.personal.filter((_,j)=>j!==i)}))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:6,cursor:"pointer",fontSize:14}}>×</button>
+                <button onClick={()=>setForm(pf=>({...pf,personal:pf.personal.filter((_,j)=>j!==i)}))} style={{background:"rgba(220, 38, 38, 0.15)",border:"none",color:"#f87171",borderRadius:6,cursor:"pointer",fontSize:14}}>×</button>
               </div>
             ))}
-            <button onClick={()=>setForm(p=>({...p,personal:[...p.personal,emptyPersona()]}))} style={{...B("#f1f5f9","#475569"),fontSize:12,marginTop:4}}>+ Agregar persona</button>
+            <button onClick={()=>setForm(p=>({...p,personal:[...p.personal,emptyPersona()]}))} style={{...B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)"),fontSize:12,marginTop:4}}>+ Agregar persona</button>
           </div>
 
           {/* Actividades */}
           <div style={{marginBottom:16}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"gap",gap:8}}>
               <LBL>Actividades ejecutadas</LBL>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                <button onClick={traerAvancesDeLaObra} style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"5px 12px"}}>
+                <button onClick={traerAvancesDeLaObra} style={{...B("rgba(30, 64, 175, 0.15)","#60a5fa"),fontSize:11,padding:"5px 12px"}}>
                   ↻ Traer avances de la obra ({avancesDisponibles.length})
                 </button>
                 <button onClick={()=>setForm(p=>({...p,actividades:[...p.actividades,emptyActividad()]}))} style={{...B("#cc0000"),fontSize:11,padding:"5px 12px"}}>+ Agregar actividad</button>
               </div>
             </div>
-            <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:8,padding:"10px 13px",fontSize:11.5,color:"#475569",lineHeight:1.55,marginBottom:12}}>
+            <div style={{background:"var(--surface-subtle, #f8fafc)",border:"1px solid var(--border, #e2e8f0)",borderRadius:8,padding:"10px 13px",fontSize:11.5,color:"var(--text-muted, #475569)",lineHeight:1.55,marginBottom:12}}>
               Estas actividades salen de lo que se registró en la obra, en la pestaña
               «Avance y fotos». Aquí las puedes retocar antes de imprimir sin dañar el registro
               original de la obra.
               {avancesTotalesObra.length>avancesDisponibles.length && (
-                <div style={{color:"#b54708",marginTop:5}}>
+                <div style={{color:"#f59e0b",marginTop:5}}>
                   Ojo: la obra tiene <strong>{avancesTotalesObra.length}</strong> avance(s) en total,
                   pero solo <strong>{avancesDisponibles.length}</strong> caen entre el
                   {" "}{fmtD(form.periodoInicio)} y el {fmtD(form.periodoFin)}. Amplía el período de
@@ -712,7 +712,7 @@ export default function Informes({ctx}){
               )}
             </div>
             {form.actividades.map((act,ai)=>(
-              <div key={ai} style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:16,marginBottom:12}}>
+              <div key={ai} style={{background:"var(--surface-subtle, #f8fafc)",border:"1px solid var(--border, #e2e8f0)",borderRadius:10,padding:16,marginBottom:12}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                   <div style={{fontSize:12,fontWeight:700,color:"#cc0000"}}>Actividad {ai+1}</div>
                   {form.actividades.length>1&&<button onClick={()=>{
@@ -724,7 +724,7 @@ export default function Informes({ctx}){
                     setEscribiendoTitulo((prev)=>prev
                       .filter((i)=>i!==ai)
                       .map((i)=>(i>ai ? i-1 : i)));
-                  }} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:5,padding:"2px 8px",cursor:"pointer",fontSize:11}}>× Eliminar</button>}
+                  }} style={{background:"rgba(220, 38, 38, 0.15)",border:"none",color:"#f87171",borderRadius:5,padding:"2px 8px",cursor:"pointer",fontSize:11}}>× Eliminar</button>}
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 170px",gap:10,marginBottom:10}}>
                   <div>
@@ -756,7 +756,7 @@ export default function Informes({ctx}){
                         style={{...SI,marginTop:6}}/>
                     )}
 
-                    <div style={{fontSize:10.5,color:"#64748b",marginTop:4}}>
+                    <div style={{fontSize:10.5,color:"var(--text-muted, #64748b)",marginTop:4}}>
                       {escribiendoTitulo.includes(ai) || (act.titulo && !buscarPlantillaActividad(act.titulo))
                         ? "Escrito a mano: los textos de abajo no se tocan."
                         : "Al elegir uno se completan los textos de abajo."}
@@ -776,13 +776,13 @@ export default function Informes({ctx}){
                 {/* Fotos de esta actividad */}
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,marginTop:12}}>
                   <LBL>Registro fotográfico</LBL>
-                  <span style={{fontSize:10.5,color:"#94a3b8"}}>Se imprimen en el informe</span>
+                  <span style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)"}}>Se imprimen en el informe</span>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(170px, 1fr))",gap:10,alignItems:"start"}}>
                   {(act.fotos||[]).map((ft,fi)=>(
-                    <div key={fi} style={{background:"#fff",border:"1px solid #e2e8f0",borderRadius:8,overflow:"hidden"}}>
-                      <div style={{background:"#f8fafc",padding:6,minHeight:130,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                        <img src={ft.img} alt="" style={{width:"100%",height:"auto",maxHeight:180,objectFit:"contain",display:"block",borderRadius:4,background:"#fff"}}/>
+                    <div key={fi} style={{background:"var(--surface, #fff)",border:"1px solid var(--border, #e2e8f0)",borderRadius:8,overflow:"hidden"}}>
+                      <div style={{background:"var(--surface-subtle, #f8fafc)",padding:6,minHeight:130,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                        <img src={ft.img} alt="" style={{width:"100%",height:"auto",maxHeight:180,objectFit:"contain",display:"block",borderRadius:4,background:"var(--surface, #fff)"}}/>
                       </div>
                       <div style={{padding:"6px 8px",display:"flex",gap:4,alignItems:"center"}}>
                         <input
@@ -798,7 +798,7 @@ export default function Informes({ctx}){
                         <button
                           onClick={()=>quitarFotoAct(ai,fi)}
                           title="Eliminar foto"
-                          style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:6,width:22,height:22,cursor:"pointer",fontSize:14,flexShrink:0,lineHeight:1}}
+                          style={{background:"rgba(220, 38, 38, 0.15)",border:"none",color:"#f87171",borderRadius:6,width:22,height:22,cursor:"pointer",fontSize:14,flexShrink:0,lineHeight:1}}
                         >
                           ×
                         </button>
@@ -817,7 +817,7 @@ export default function Informes({ctx}){
                       alignItems:"center",
                       justifyContent:"center",
                       cursor:"pointer",
-                      background:"#fff8f3",
+                      background:"rgba(244, 124, 32, 0.08)",
                       color:"#f47c20",
                       fontWeight:600,
                       gap:6,
@@ -852,7 +852,7 @@ export default function Informes({ctx}){
           <div style={{marginBottom:14}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><LBL>Recomendaciones generales</LBL><BotonCorregir valor={form.recomendaciones} onChange={(v)=>setForm(p=>({...p,recomendaciones:v}))} compacto/></div><textarea value={form.recomendaciones} onChange={e=>setForm(p=>({...p,recomendaciones:e.target.value}))} rows={3} spellCheck lang="es" style={{...SI,resize:"vertical"}}/></div>
           <div style={{display:"flex",gap:10}}>
             <button style={B("#cc0000")} onClick={guardar}>{editId ? "Guardar cambios" : "Guardar informe"}</button>
-            <button style={B("#f1f5f9","#475569")} onClick={()=>{setNuevo(false);setEditId(null);}}>Cancelar</button>
+            <button style={B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)")} onClick={()=>{setNuevo(false);setEditId(null);}}>Cancelar</button>
           </div>
         </div>
       )}
@@ -882,8 +882,8 @@ export default function Informes({ctx}){
       {sel&&(
         <div>
           <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
-            <button style={B("#f1f5f9","#475569")} onClick={()=>setSel(null)}>Volver</button>
-            <button style={{...B("#dbeafe","#1e40af")}} onClick={()=>editarInforme(sel)}>Editar</button>
+            <button style={B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)")} onClick={()=>setSel(null)}>Volver</button>
+            <button style={{...B("rgba(30, 64, 175, 0.15)","#60a5fa")}} onClick={()=>editarInforme(sel)}>Editar</button>
             {/* Descarga directa: el PDF sale organizado por hojas sin cortes */}
             <button
               style={{...B("#f47c20"),opacity:generandoPdf?0.65:1}}
@@ -902,7 +902,7 @@ export default function Informes({ctx}){
               {generandoPdf ? "Generando PDF…" : "Descargar PDF"}
             </button>
             <button
-              style={B("#f1f5f9","#475569")}
+              style={B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)")}
               onClick={()=>{
                 const html = buildInformePrintHtml(sel, { empresaConfig, firmaImg });
                 openPrintTab(html, `Informe ${sel?.id || ""}`);

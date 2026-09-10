@@ -495,8 +495,8 @@ export default function OrdenesCompra({
       {/* Banner de bienvenida y control para María Camila Sepúlveda */}
       {esAprobador && pendientesAprobacion > 0 && (
         <div style={{
-          background: "linear-gradient(90deg, #eff6ff 0%, #f0fdf4 100%)",
-          border: "1px solid #bfdbfe",
+          background: "rgba(37, 99, 235, 0.1)",
+          border: "1px solid rgba(37, 99, 235, 0.3)",
           borderRadius: 10,
           padding: "12px 16px",
           marginBottom: 16,
@@ -509,10 +509,10 @@ export default function OrdenesCompra({
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontSize: 24 }}>🛡️</span>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#1e3a8a" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#60a5fa" }}>
                 Panel de Aprobación de Órdenes de Compra — María Camila Sepúlveda
               </div>
-              <div style={{ fontSize: 11.5, color: "#3b82f6" }}>
+              <div style={{ fontSize: 11.5, color: "var(--text-muted, #93c5fd)" }}>
                 Tienes <strong>{pendientesAprobacion}</strong> orden(es) pendiente(s) de revisión y autorización presupuestal.
               </div>
             </div>
@@ -571,7 +571,7 @@ export default function OrdenesCompra({
         {/* Filtros secundarios */}
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", fontSize: 11.5 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ color: "#64748b", fontWeight: 600 }}>Aprobación:</span>
+            <span style={{ color: "var(--text-muted, #64748b)", fontWeight: 600 }}>Aprobación:</span>
             <select
               value={filtroAprobacion}
               onChange={(e) => setFiltroAprobacion(e.target.value)}
@@ -585,7 +585,7 @@ export default function OrdenesCompra({
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ color: "#64748b", fontWeight: 600 }}>Facturación:</span>
+            <span style={{ color: "var(--text-muted, #64748b)", fontWeight: 600 }}>Facturación:</span>
             <select
               value={filtroFacturacion}
               onChange={(e) => setFiltroFacturacion(e.target.value)}
@@ -599,7 +599,7 @@ export default function OrdenesCompra({
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ color: "#64748b", fontWeight: 600 }}>Obra:</span>
+            <span style={{ color: "var(--text-muted, #64748b)", fontWeight: 600 }}>Obra:</span>
             <select
               value={filtroObra}
               onChange={(e) => setFiltroObra(e.target.value)}
@@ -644,13 +644,13 @@ export default function OrdenesCompra({
         ...CD,
         padding: 0,
         overflow: "hidden",
-        border: "1px solid #e2e8f0",
-        boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)",
+        border: "1px solid var(--border, #e2e8f0)",
+        boxShadow: "var(--shadow, 0 4px 6px -1px rgba(0,0,0,0.05))",
       }}>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: 12 }}>
             <thead>
-              <tr style={{ background: "#f8fafc", borderBottom: "1.5px solid #e2e8f0", color: "#475569" }}>
+              <tr style={{ background: "var(--surface-subtle, #f8fafc)", borderBottom: "1.5px solid var(--border, #e2e8f0)", color: "var(--text-muted, #475569)" }}>
                 <th style={{ padding: "11px 14px", fontWeight: 700 }}>Referencia</th>
                 <th style={{ padding: "11px 14px", fontWeight: 700 }}>Fecha</th>
                 <th style={{ padding: "11px 14px", fontWeight: 700 }}>Entrega esperada</th>
@@ -666,7 +666,7 @@ export default function OrdenesCompra({
             <tbody>
               {ordenesFiltradas.length === 0 ? (
                 <tr>
-                  <td colSpan="10" style={{ padding: "36px 14px", textAlign: "center", color: "#94a3b8" }}>
+                  <td colSpan="10" style={{ padding: "36px 14px", textAlign: "center", color: "var(--text-muted, #94a3b8)" }}>
                     No se encontraron órdenes de compra con los filtros seleccionados.
                   </td>
                 </tr>
@@ -681,8 +681,8 @@ export default function OrdenesCompra({
                     <tr
                       key={orden.id}
                       style={{
-                        background: esFilaPar ? "#fbfcfe" : "#ffffff",
-                        borderBottom: "1px solid #f1f5f9",
+                        background: esFilaPar ? "var(--surface-subtle, #fbfcfe)" : "var(--surface, #ffffff)",
+                        borderBottom: "1px solid var(--border, #f1f5f9)",
                         transition: "background 0.15s ease",
                       }}
                     >
@@ -694,7 +694,7 @@ export default function OrdenesCompra({
                           style={{
                             background: "transparent",
                             border: "none",
-                            color: "#0284c7",
+                            color: "#38bdf8",
                             fontWeight: 800,
                             fontFamily: "inherit",
                             cursor: "pointer",
@@ -707,40 +707,40 @@ export default function OrdenesCompra({
                       </td>
 
                       {/* Fecha */}
-                      <td style={{ padding: "12px 14px", color: "#334155", whiteSpace: "nowrap" }}>
+                      <td style={{ padding: "12px 14px", color: "var(--text-main, #334155)", whiteSpace: "nowrap" }}>
                         {orden.fecha || "—"}
                       </td>
 
                       {/* Entrega esperada */}
-                      <td style={{ padding: "12px 14px", color: "#475569", whiteSpace: "nowrap" }}>
+                      <td style={{ padding: "12px 14px", color: "var(--text-muted, #475569)", whiteSpace: "nowrap" }}>
                         {orden.fechaEntregaEsperada || "—"}
                       </td>
 
                       {/* Proveedor */}
-                      <td style={{ padding: "12px 14px", color: "#0f172a", fontWeight: 600 }}>
+                      <td style={{ padding: "12px 14px", color: "var(--text-main, #0f172a)", fontWeight: 600 }}>
                         {orden.proveedorNombre}
                       </td>
 
                       {/* Comprador / Solicitante */}
-                      <td style={{ padding: "12px 14px", color: "#334155" }}>
-                        <div style={{ fontWeight: 600, color: "#1e293b" }}>{orden.comprador || "María Camila Sepúlveda"}</div>
-                        <div style={{ fontSize: 10.5, color: "#64748b" }}>Sol: {orden.solicitante || "Residente"}</div>
+                      <td style={{ padding: "12px 14px", color: "var(--text-main, #334155)" }}>
+                        <div style={{ fontWeight: 600, color: "var(--text-main, #1e293b)" }}>{orden.comprador || "María Camila Sepúlveda"}</div>
+                        <div style={{ fontSize: 10.5, color: "var(--text-muted, #64748b)" }}>Sol: {orden.solicitante || "Residente"}</div>
                       </td>
 
                       {/* Documento Origen */}
                       <td style={{ padding: "12px 14px" }}>
-                        <div style={{ fontFamily: "monospace", fontWeight: 700, color: "#475569" }}>
+                        <div style={{ fontFamily: "monospace", fontWeight: 700, color: "var(--text-muted, #475569)" }}>
                           {orden.documentoOrigen || "—"}
                         </div>
                         {orden.obraNombre && (
-                          <div style={{ fontSize: 10, color: "#0284c7", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={orden.obraNombre}>
+                          <div style={{ fontSize: 10, color: "#38bdf8", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={orden.obraNombre}>
                             🏗️ {orden.obraNombre}
                           </div>
                         )}
                       </td>
 
                       {/* Total */}
-                      <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 800, color: "#0f172a", whiteSpace: "nowrap" }}>
+                      <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 800, color: "var(--text-main, #0f172a)", whiteSpace: "nowrap" }}>
                         {fmtMonedaErp(orden.total)}
                       </td>
 
@@ -842,7 +842,7 @@ export default function OrdenesCompra({
                             type="button"
                             onClick={() => setOrdenDetalle(orden)}
                             style={{
-                              ...B("#f1f5f9", "#334155"),
+                              ...B("var(--surface-subtle, #f1f5f9)", "var(--text-main, #334155)"),
                               fontSize: 11,
                               padding: "4px 8px",
                               borderRadius: 5,
@@ -859,8 +859,8 @@ export default function OrdenesCompra({
                               setTimeout(() => window.print(), 150);
                             }}
                             style={{
-                              ...B("#f8fafc", "#334155"),
-                              border: "1px solid #cbd5e1",
+                              ...B("var(--surface-subtle, #f8fafc)", "var(--text-main, #334155)"),
+                              border: "1px solid var(--border, #cbd5e1)",
                               fontSize: 11,
                               padding: "4px 7px",
                               borderRadius: 5,
@@ -921,10 +921,10 @@ export default function OrdenesCompra({
         {/* Resumen inferior de la tabla */}
         <div style={{
           padding: "10px 16px",
-          background: "#f8fafc",
-          borderTop: "1px solid #e2e8f0",
+          background: "var(--surface-subtle, #f8fafc)",
+          borderTop: "1px solid var(--border, #e2e8f0)",
           fontSize: 11.5,
-          color: "#64748b",
+          color: "var(--text-muted, #64748b)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -932,7 +932,7 @@ export default function OrdenesCompra({
           gap: 8,
         }}>
           <div>Mostrando {ordenesFiltradas.length} de {ordenesCompra.length} órdenes registradas</div>
-          <div style={{ fontWeight: 700, color: "#1e293b" }}>
+          <div style={{ fontWeight: 700, color: "var(--text-main, #1e293b)" }}>
             Total visible: {fmtMonedaErp(ordenesFiltradas.reduce((s, o) => s + Number(o.total || 0), 0))}
           </div>
         </div>
@@ -957,35 +957,35 @@ export default function OrdenesCompra({
           backdropFilter: "blur(3px)",
         }}>
           <div style={{
-            background: "#fff",
+            background: "var(--surface, #fff)",
             borderRadius: 12,
             maxWidth: 820,
             width: "100%",
             maxHeight: "90vh",
             overflowY: "auto",
             boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
-            border: "1px solid #e2e8f0",
+            border: "1px solid var(--border, #e2e8f0)",
           }}>
             <div style={{
               padding: "16px 22px",
-              borderBottom: "1px solid #e2e8f0",
+              borderBottom: "1px solid var(--border, #e2e8f0)",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              background: "#f8fafc",
+              background: "var(--surface-subtle, #f8fafc)",
             }}>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: "#0f172a" }}>
+                <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-main, #0f172a)" }}>
                   📦 Nueva Solicitud / Orden de Compra
                 </div>
-                <div style={{ fontSize: 11.5, color: "#64748b" }}>
+                <div style={{ fontSize: 11.5, color: "var(--text-muted, #64748b)" }}>
                   Requiere aprobación posterior por María Camila Sepúlveda
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setShowNuevaOrden(false)}
-                style={{ background: "transparent", border: "none", fontSize: 20, cursor: "pointer", color: "#94a3b8" }}
+                style={{ background: "transparent", border: "none", fontSize: 20, cursor: "pointer", color: "var(--text-muted, #94a3b8)" }}
               >
                 ✕
               </button>
@@ -1166,7 +1166,7 @@ export default function OrdenesCompra({
               {/* Tabla de Ítems */}
               <div style={{ marginBottom: 18 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>
                     📋 Materiales y Servicios Requeridos
                   </div>
                   <button
@@ -1183,10 +1183,10 @@ export default function OrdenesCompra({
                   </button>
                 </div>
 
-                <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden" }}>
+                <div style={{ border: "1px solid var(--border, #e2e8f0)", borderRadius: 8, overflow: "hidden" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                     <thead>
-                      <tr style={{ background: "#f1f5f9", borderBottom: "1px solid #e2e8f0", color: "#475569" }}>
+                      <tr style={{ background: "var(--surface-subtle, #f1f5f9)", borderBottom: "1px solid var(--border, #e2e8f0)", color: "var(--text-muted, #475569)" }}>
                         <th style={{ padding: "8px 10px", textAlign: "left" }}>Descripción del producto / servicio</th>
                         <th style={{ padding: "8px 10px", width: 70 }}>Cant.</th>
                         <th style={{ padding: "8px 10px", width: 80 }}>Unidad</th>
@@ -1197,7 +1197,7 @@ export default function OrdenesCompra({
                     </thead>
                     <tbody>
                       {form.items.map((item, idx) => (
-                        <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                        <tr key={idx} style={{ borderBottom: "1px solid var(--border, #f1f5f9)" }}>
                           <td style={{ padding: "6px 8px" }}>
                             <input
                               type="text"
@@ -1244,7 +1244,7 @@ export default function OrdenesCompra({
                               required
                             />
                           </td>
-                          <td style={{ padding: "6px 8px", textAlign: "right", fontWeight: 700, color: "#0f172a" }}>
+                          <td style={{ padding: "6px 8px", textAlign: "right", fontWeight: 700, color: "var(--text-main, #0f172a)" }}>
                             {fmtMonedaErp(item.total)}
                           </td>
                           <td style={{ padding: "6px 8px", textAlign: "center" }}>
@@ -1278,7 +1278,7 @@ export default function OrdenesCompra({
                     style={{ ...SI, width: "100%", resize: "vertical" }}
                   />
                   <div style={{ marginTop: 8 }}>
-                    <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "#334155", cursor: "pointer" }}>
+                    <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-main, #334155)", cursor: "pointer" }}>
                       <input
                         type="checkbox"
                         checked={form.aplicaIva}
@@ -1289,19 +1289,19 @@ export default function OrdenesCompra({
                   </div>
                 </div>
 
-                <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: 14 }}>
+                <div style={{ background: "var(--surface-subtle, #f8fafc)", border: "1px solid var(--border, #e2e8f0)", borderRadius: 8, padding: 14 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12 }}>
-                    <span style={{ color: "#64748b" }}>Subtotal:</span>
+                    <span style={{ color: "var(--text-muted, #64748b)" }}>Subtotal:</span>
                     <span style={{ fontWeight: 600 }}>{fmtMonedaErp(subtotalForm)}</span>
                   </div>
                   {form.aplicaIva && (
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12 }}>
-                      <span style={{ color: "#64748b" }}>IVA (19%):</span>
+                      <span style={{ color: "var(--text-muted, #64748b)" }}>IVA (19%):</span>
                       <span style={{ fontWeight: 600 }}>{fmtMonedaErp(ivaForm)}</span>
                     </div>
                   )}
-                  <div style={{ borderTop: "1.5px solid #cbd5e1", paddingTop: 8, display: "flex", justifyContent: "space-between", fontSize: 15, fontWeight: 800 }}>
-                    <span style={{ color: "#0f172a" }}>Total Orden:</span>
+                  <div style={{ borderTop: "1.5px solid var(--border, #cbd5e1)", paddingTop: 8, display: "flex", justifyContent: "space-between", fontSize: 15, fontWeight: 800 }}>
+                    <span style={{ color: "var(--text-main, #0f172a)" }}>Total Orden:</span>
                     <span style={{ color: "#cc0000" }}>{fmtMonedaErp(totalForm)}</span>
                   </div>
                 </div>
@@ -1312,7 +1312,7 @@ export default function OrdenesCompra({
                 <button
                   type="button"
                   onClick={() => setShowNuevaOrden(false)}
-                  style={{ ...B("#f1f5f9", "#475569"), padding: "9px 16px", fontSize: 12 }}
+                  style={{ ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)"), padding: "9px 16px", fontSize: 12 }}
                 >
                   Cancelar
                 </button>
@@ -1352,7 +1352,7 @@ export default function OrdenesCompra({
           <div
             className="print-modal-parent"
             style={{
-              background: "#fff",
+              background: "var(--surface, #fff)",
               borderRadius: 12,
               maxWidth: 880,
               width: "100%",
@@ -1361,7 +1361,7 @@ export default function OrdenesCompra({
               flexDirection: "column",
               overflow: "hidden",
               boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
-              border: "1px solid #e2e8f0",
+              border: "1px solid var(--border, #e2e8f0)",
             }}
           >
             {/* Cabecera del Detalle (no-print) */}
@@ -1369,17 +1369,17 @@ export default function OrdenesCompra({
               className="no-print"
               style={{
                 padding: "14px 20px",
-                borderBottom: "1px solid #e2e8f0",
+                borderBottom: "1px solid var(--border, #e2e8f0)",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                background: "#f8fafc",
+                background: "var(--surface-subtle, #f8fafc)",
                 flexShrink: 0,
               }}
             >
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 18, fontWeight: 800, color: "#0f172a" }}>
+                  <span style={{ fontSize: 18, fontWeight: 800, color: "var(--text-main, #0f172a)" }}>
                     Orden de Compra {ordenDetalle.id}
                   </span>
                   {ordenDetalle.estadoAprobacion === "Aprobada" ? (
@@ -1396,7 +1396,7 @@ export default function OrdenesCompra({
                     </span>
                   )}
                 </div>
-                <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2 }}>
+                <div style={{ fontSize: 11.5, color: "var(--text-muted, #64748b)", marginTop: 2 }}>
                   Doc. Origen: <strong>{ordenDetalle.documentoOrigen}</strong> · Creada: {ordenDetalle.fecha}
                 </div>
               </div>
@@ -1448,7 +1448,7 @@ export default function OrdenesCompra({
                 <button
                   type="button"
                   onClick={() => setOrdenDetalle(null)}
-                  style={{ background: "transparent", border: "none", fontSize: 22, cursor: "pointer", color: "#94a3b8", padding: "4px 8px", marginLeft: 4 }}
+                  style={{ background: "transparent", border: "none", fontSize: 22, cursor: "pointer", color: "var(--text-muted, #94a3b8)", padding: "4px 8px", marginLeft: 4 }}
                   title="Cerrar ventana"
                 >
                   ✕
@@ -1462,7 +1462,7 @@ export default function OrdenesCompra({
               style={{
                 flex: 1,
                 overflowY: "auto",
-                background: "#f1f5f9",
+                background: "var(--bg-app, #f1f5f9)",
                 padding: "20px 16px",
               }}
             >
@@ -1710,13 +1710,13 @@ export default function OrdenesCompra({
               className="no-print"
               style={{
                 padding: "12px 20px",
-                borderTop: "1px solid #e2e8f0",
+                borderTop: "1px solid var(--border, #e2e8f0)",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
                 flexWrap: "wrap",
                 gap: 10,
-                background: "#ffffff",
+                background: "var(--surface, #ffffff)",
                 flexShrink: 0,
                 boxShadow: "0 -4px 6px -1px rgba(0,0,0,0.04)",
               }}
@@ -1740,7 +1740,7 @@ export default function OrdenesCompra({
                     <button
                       type="button"
                       onClick={() => setShowModalRechazar(true)}
-                      style={{ ...B("#fff", "#dc2626"), border: "1px solid #dc2626", fontSize: 12, padding: "8px 14px", fontWeight: 600 }}
+                      style={{ ...B("var(--surface, #fff)", "#dc2626"), border: "1px solid #dc2626", fontSize: 12, padding: "8px 14px", fontWeight: 600 }}
                     >
                       ✕ Rechazar con motivo
                     </button>
@@ -1785,7 +1785,7 @@ export default function OrdenesCompra({
                 <button
                   type="button"
                   onClick={() => setOrdenDetalle(null)}
-                  style={{ ...B("#f1f5f9", "#334155"), fontSize: 12, padding: "8px 16px" }}
+                  style={{ ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #334155)"), border: "1px solid var(--border, #cbd5e1)", fontSize: 12, padding: "8px 16px" }}
                 >
                   Cerrar
                 </button>
@@ -1813,17 +1813,17 @@ export default function OrdenesCompra({
           zIndex: 10000,
         }}>
           <div style={{
-            background: "#fff",
+            background: "var(--surface, #fff)",
             borderRadius: 10,
             maxWidth: 500,
             width: "100%",
             padding: 20,
-            border: "1px solid #fca5a5",
+            border: "1px solid rgba(239, 68, 68, 0.4)",
           }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#991b1b", marginBottom: 8 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--red, #dc2626)", marginBottom: 8 }}>
               ✕ Rechazar Orden de Compra {ordenDetalle?.id}
             </div>
-            <div style={{ fontSize: 12, color: "#64748b", marginBottom: 12 }}>
+            <div style={{ fontSize: 12, color: "var(--text-muted, #64748b)", marginBottom: 12 }}>
               Indica la razón por la cual no se aprueba esta compra para que el solicitante en obra pueda corregirla:
             </div>
             <textarea
@@ -1838,7 +1838,7 @@ export default function OrdenesCompra({
               <button
                 type="button"
                 onClick={() => setShowModalRechazar(false)}
-                style={{ ...B("#f1f5f9", "#475569"), padding: "7px 14px", fontSize: 12 }}
+                style={{ ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)"), border: "1px solid var(--border, #cbd5e1)", padding: "7px 14px", fontSize: 12 }}
               >
                 Cancelar
               </button>
@@ -1872,21 +1872,21 @@ export default function OrdenesCompra({
           zIndex: 10000,
         }}>
           <div style={{
-            background: "#fff",
+            background: "var(--surface, #fff)",
             borderRadius: 10,
             maxWidth: 520,
             width: "100%",
             padding: 22,
-            border: "1px solid #7dd3fc",
+            border: "1px solid var(--border, #7dd3fc)",
           }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "#0369a1", marginBottom: 6 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--primary, #0369a1)", marginBottom: 6 }}>
               🧾 Causar Factura de Proveedor — Orden {ordenDetalle?.id}
             </div>
-            <div style={{ fontSize: 12, color: "#475569", marginBottom: 14 }}>
+            <div style={{ fontSize: 12, color: "var(--text-muted, #475569)", marginBottom: 14 }}>
               Esta acción vinculará formalmente la factura del proveedor con la orden de compra aprobada por María Camila Sepúlveda, registrando la cuenta por pagar en Causación.
             </div>
 
-            <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 8, padding: 12, marginBottom: 14, fontSize: 12 }}>
+            <div style={{ background: "rgba(2, 132, 199, 0.1)", border: "1px solid rgba(2, 132, 199, 0.25)", borderRadius: 8, padding: 12, marginBottom: 14, fontSize: 12, color: "var(--text-main, #0f172a)" }}>
               <div><strong>Proveedor:</strong> {ordenDetalle?.proveedorNombre}</div>
               <div><strong>Obra:</strong> {ordenDetalle?.obraNombre}</div>
               <div><strong>Monto a Causar:</strong> {fmtMonedaErp(ordenDetalle?.total)}</div>
@@ -1908,7 +1908,7 @@ export default function OrdenesCompra({
               <button
                 type="button"
                 onClick={() => setShowModalCausar(false)}
-                style={{ ...B("#f1f5f9", "#475569"), padding: "8px 14px", fontSize: 12 }}
+                style={{ ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)"), border: "1px solid var(--border, #cbd5e1)", padding: "8px 14px", fontSize: 12 }}
               >
                 Cancelar
               </button>

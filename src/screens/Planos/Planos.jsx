@@ -153,14 +153,14 @@ export default function Planos({ctx}){
             const linked = cotizaciones.find(c=>c.id===o.cotizacionId);
             const geos = o.geoMediciones || linked?.geoMediciones || [];
             return(
-              <div key={o.id} onClick={()=>abrirObra(o)} style={{...CD,cursor:"pointer",border:"1px solid #e2e8f0"}}>
+              <div key={o.id} onClick={()=>abrirObra(o)} style={{...CD,cursor:"pointer",border:"1px solid var(--border)"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-                  <div><div style={{fontSize:11,color:"#94a3b8"}}>{o.id}</div><div style={{fontSize:14,fontWeight:700,color:"#1a1a2e",marginTop:2}}>{o.cliente}</div><div style={{fontSize:12,color:"#475569"}}>{o.proyecto}</div><div style={{fontSize:11,color:"#94a3b8",marginTop:2}}> {o.ciudad}</div></div>
+                  <div><div style={{fontSize:11,color:"var(--text-muted)"}}>{o.id}</div><div style={{fontSize:14,fontWeight:700,color:"var(--text-main)",marginTop:2}}>{o.cliente}</div><div style={{fontSize:12,color:"var(--text-muted)"}}>{o.proyecto}</div><div style={{fontSize:11,color:"var(--text-muted)",marginTop:2}}> {o.ciudad}</div></div>
                   <Badge estado={o.estado}/>
                 </div>
-                <div style={{marginTop:10,background:"#f1f5f9",borderRadius:6,padding:"6px 10px",fontSize:11,color:"#475569",display:"flex",justifyContent:"space-between"}}>
+                <div style={{marginTop:10,background:"var(--surface-subtle)",borderRadius:6,padding:"6px 10px",fontSize:11,color:"var(--text-muted)",display:"flex",justifyContent:"space-between"}}>
                   <span>{geos.length + (o.trazos||[]).length} trazos · {geos.length} automaticos</span>
-                  <span style={{color:"#cc0000",fontWeight:600}}>Abrir plano</span>
+                  <span style={{color:"var(--accent, #f47c20)",fontWeight:600}}>Abrir plano</span>
                 </div>
               </div>
             );
@@ -172,14 +172,14 @@ export default function Planos({ctx}){
 
   return(
     <div style={{padding:28}}>
-      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,background:"#fff",borderRadius:14,padding:"16px 20px",border:"1px solid #e2e8f0",boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
-        <button onClick={()=>setSel(null)} style={{...B("#f1f5f9","#475569"),padding:"8px 16px",fontSize:13,flexShrink:0}}>Volver a obras</button>
-        <div style={{flex:1}}><div style={{fontSize:11,color:"#94a3b8"}}>{sel.id} · Ciudad: {sel.ciudad || "No registrada"}</div><div style={{fontSize:20,fontWeight:700,color:"#1a1a2e"}}>{sel.cliente}</div><div style={{fontSize:13,color:"#475569"}}>{sel.proyecto}</div></div>
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,background:"var(--surface)",borderRadius:14,padding:"16px 20px",border:"1px solid var(--border)",boxShadow:"0 2px 8px rgba(0,0,0,0.2)"}}>
+        <button onClick={()=>setSel(null)} style={{...B("var(--surface-subtle)","var(--text-muted)"),border:"1px solid var(--border)",padding:"8px 16px",fontSize:13,flexShrink:0}}>Volver a obras</button>
+        <div style={{flex:1}}><div style={{fontSize:11,color:"var(--text-muted)"}}>{sel.id} · Ciudad: {sel.ciudad || "No registrada"}</div><div style={{fontSize:20,fontWeight:700,color:"var(--text-main)"}}>{sel.cliente}</div><div style={{fontSize:13,color:"var(--text-muted)"}}>{sel.proyecto}</div></div>
         <Badge estado={sel.estado}/>
       </div>
 
       {bloqueada&&(
-        <div style={{fontSize:11.5,color:"#166534",background:"#ecfdf5",border:"1px solid #a7f3d0",
+        <div style={{fontSize:11.5,color:"#4ade80",background:"rgba(34, 197, 94, 0.12)",border:"1px solid rgba(34, 197, 94, 0.25)",
           borderRadius:10,padding:"10px 14px",marginBottom:20,lineHeight:1.5}}>
           🔒 <strong>Obra finalizada.</strong> El plano y las mediciones son parte de lo que ya se
           entregó, así que se consultan pero no se modifican. Si hay que corregir algo, un
@@ -188,11 +188,11 @@ export default function Planos({ctx}){
       )}
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:20}}>
-        {[["Total ML",(totalML) + " ML","#cc0000"],["Tramos automaticos",(geoMediciones.length),"#2563eb"],["Trazos manuales",(lineas.length),"#60b4ff"],["Valor total",fmt(sel.total),"#f47c20"]].map(([k,v,c])=>(<div key={k} style={{background:"#fff",borderRadius:10,padding:"12px 16px",border:"1px solid #e2e8f0",textAlign:"center"}}><div style={{fontSize:10,color:"#94a3b8",marginBottom:4}}>{k}</div><div style={{fontSize:15,fontWeight:700,color:c}}>{v}</div></div>))}
+        {[["Total ML",(totalML) + " ML","#cc0000"],["Tramos automaticos",(geoMediciones.length),"#2563eb"],["Trazos manuales",(lineas.length),"#60b4ff"],["Valor total",fmt(sel.total),"#f47c20"]].map(([k,v,c])=>(<div key={k} style={{background:"var(--surface)",borderRadius:10,padding:"12px 16px",border:"1px solid var(--border)",textAlign:"center"}}><div style={{fontSize:10,color:"var(--text-muted)",marginBottom:4}}>{k}</div><div style={{fontSize:15,fontWeight:700,color:c}}>{v}</div></div>))}
       </div>
 
       <div style={{display:"flex",gap:6,marginBottom:16}}>
-        {[["imagen","Medicion automatica"],["svg","Plano de trazos"],["lista","Lista y cotizacion"]].map(([id,lb])=>(<button key={id} onClick={()=>setTabPlano(id)} style={{...B(tabPlano===id?"#cc0000":"#f1f5f9",tabPlano===id?"#fff":"#475569"),fontSize:12,padding:"8px 16px",border:"1px solid " + (tabPlano===id?"#cc0000":"#e2e8f0")}}>{lb}</button>))}
+        {[["imagen","Medicion automatica"],["svg","Plano de trazos"],["lista","Lista y cotizacion"]].map(([id,lb])=>(<button key={id} onClick={()=>setTabPlano(id)} style={{...B(tabPlano===id?"#cc0000":"var(--surface-subtle)",tabPlano===id?"#fff":"var(--text-muted)"),fontSize:12,padding:"8px 16px",border:"1px solid " + (tabPlano===id?"#cc0000":"var(--border)")}}>{lb}</button>))}
       </div>
 
       {tabPlano==="imagen" && (
@@ -200,7 +200,7 @@ export default function Planos({ctx}){
           <MedidorMapa queryValue={coordsInput} onQueryChange={(val)=>{ setCoordsInput(val); guardarEnObra({coords:val}); }} measurements={geoMediciones} onChange={persistGeo} mapView={geoMapView} onMapViewChange={(view)=>{ setGeoMapView(view); guardarEnObra({geoMapView:view}); }} />
           <div style={{...CD,marginTop:16}}>
             <div style={ST}>Imagen heredada para la obra / PDF</div>
-                  {(sel?.imgSat || cotVinc?.mapImg) ? <StaticMapPreview src={sel?.imgSat || cotVinc?.mapImg} segments={geoMediciones} query={coordsInput} mapView={geoMapView} alt="Imagen heredada" border="none" borderRadius={8} /> : <div style={{background:"#f8fafc",border:"1px dashed #cbd5e1",borderRadius:8,padding:24,textAlign:"center",fontSize:12,color:"#64748b"}}>Mide el primer tramo y aquí aparecerá la imagen que viene de la cotización.</div>}
+                  {(sel?.imgSat || cotVinc?.mapImg) ? <StaticMapPreview src={sel?.imgSat || cotVinc?.mapImg} segments={geoMediciones} query={coordsInput} mapView={geoMapView} alt="Imagen heredada" border="none" borderRadius={8} /> : <div style={{background:"var(--surface-subtle)",border:"1px dashed var(--border)",borderRadius:8,padding:24,textAlign:"center",fontSize:12,color:"var(--text-muted)"}}>Mide el primer tramo y aquí aparecerá la imagen que viene de la cotización.</div>}
           </div>
         </div>
       )}
@@ -210,13 +210,13 @@ export default function Planos({ctx}){
           <div style={{...CD,marginBottom:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
               <div style={ST}>Plano de trazos manual</div>
-              <button onClick={()=>imgRef.current.click()} style={{...B("#f1f5f9","#475569"),fontSize:11,padding:"5px 10px"}}>Cargar imagen de fondo</button>
+              <button onClick={()=>imgRef.current.click()} style={{...B("var(--surface-subtle)","var(--text-muted)"),border:"1px solid var(--border)",fontSize:11,padding:"5px 10px"}}>Cargar imagen de fondo</button>
               <input ref={imgRef} type="file" accept="image/*" style={{display:"none"}} onChange={onImgChange}/>
             </div>
-            <div style={{background:"#f0f4f8",borderRadius:8,overflow:"hidden",position:"relative",border:"1px solid #e2e8f0"}}>
+            <div style={{background:"var(--surface-subtle)",borderRadius:8,overflow:"hidden",position:"relative",border:"1px solid var(--border)"}}>
               <svg ref={manualSvgRef} viewBox="0 0 500 300" style={{width:"100%",display:"block"}} onMouseMove={moverDrag} onMouseUp={finalizarDrag} onMouseLeave={finalizarDrag}>
-                {Array.from({length:16},(_,i)=><line key={"v" + (i)} x1={i*32} y1={0} x2={i*32} y2={300} stroke="#cbd5e1" strokeWidth="0.5"/>) }
-                {Array.from({length:10},(_,i)=><line key={"h" + (i)} x1={0} y1={i*32} x2={500} y2={i*32} stroke="#cbd5e1" strokeWidth="0.5"/>) }
+                {Array.from({length:16},(_,i)=><line key={"v" + (i)} x1={i*32} y1={0} x2={i*32} y2={300} stroke="var(--border)" strokeWidth="0.5"/>) }
+                {Array.from({length:10},(_,i)=><line key={"h" + (i)} x1={0} y1={i*32} x2={500} y2={i*32} stroke="var(--border)" strokeWidth="0.5"/>) }
                 {imgPlano&&<image href={imgPlano} x={0} y={0} width={500} height={300} opacity={0.45} preserveAspectRatio="xMidYMid slice"/>}
                 {lineas.map(l=>renderShape(l))}
               </svg>
@@ -237,14 +237,14 @@ export default function Planos({ctx}){
       {tabPlano==="lista" && (
         <div style={CD}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-            <div style={ST}>Trazos registrados · Total: <span style={{color:"#cc0000"}}>{totalML} ML</span></div>
+            <div style={ST}>Trazos registrados · Total: <span style={{color:"var(--accent, #f47c20)"}}>{totalML} ML</span></div>
             <button onClick={pasarACotizacion} style={{...B("#4ade80","#0f2d1a"),fontSize:12}}>Llevar a cotizacion</button>
           </div>
           <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-            <thead><tr style={{background:"#f8fafc"}}>{["Fuente","Tipo","Descripción","Metros",""].map(h=><th key={h} style={{padding:"8px 10px",textAlign:"left",color:"#64748b",fontWeight:500,fontSize:11}}>{h}</th>)}</tr></thead>
+            <thead><tr style={{background:"var(--surface-subtle)",borderBottom:"1px solid var(--border)"}}>{["Fuente","Tipo","Descripción","Metros",""].map(h=><th key={h} style={{padding:"8px 10px",textAlign:"left",color:"var(--text-muted)",fontWeight:500,fontSize:11}}>{h}</th>)}</tr></thead>
             <tbody>
-              {geoMediciones.map(seg=><tr key={seg.id} style={{borderBottom:"1px solid #f1f5f9",background:"#eff6ff"}}><td style={{padding:"8px 10px"}}><span style={{background:"#dbeafe",color:"#1d4ed8",borderRadius:4,padding:"2px 6px",fontSize:10}}>Mapa</span></td><td style={{padding:"8px 10px"}}>{seg.tipo}</td><td style={{padding:"8px 10px",fontWeight:500}}>{seg.label}</td><td style={{padding:"8px 10px",fontWeight:700,color:"#cc0000"}}>{Number(seg.ml||0).toFixed(2)} m</td><td style={{padding:"8px 10px"}}><button onClick={()=>persistGeo(geoMediciones.filter(x=>x.id!==seg.id))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:5,padding:"3px 8px",cursor:"pointer",fontSize:11}}>× Eliminar</button></td></tr>)}
-              {lineas.map(t=><tr key={t.id} style={{borderBottom:"1px solid #f1f5f9"}}><td style={{padding:"8px 10px"}}><span style={{background:"#fef3c7",color:"#b45309",borderRadius:4,padding:"2px 6px",fontSize:10}}>Manual</span></td><td style={{padding:"8px 10px"}}>{t.tipo}</td><td style={{padding:"8px 10px",fontWeight:500}}>{t.label}</td><td style={{padding:"8px 10px",fontWeight:700,color:"#cc0000"}}>{t.ml} ML</td><td style={{padding:"8px 10px"}}><button onClick={()=>eliminarLinea(t.id)} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:5,padding:"3px 8px",cursor:"pointer",fontSize:11}}>× Eliminar</button></td></tr>)}
+              {geoMediciones.map(seg=><tr key={seg.id} style={{borderBottom:"1px solid var(--border)",background:"rgba(37, 99, 235, 0.08)"}}><td style={{padding:"8px 10px"}}><span style={{background:"rgba(37, 99, 235, 0.2)",color:"#60a5fa",borderRadius:4,padding:"2px 6px",fontSize:10}}>Mapa</span></td><td style={{padding:"8px 10px"}}>{seg.tipo}</td><td style={{padding:"8px 10px",fontWeight:500,color:"var(--text-main)"}}>{seg.label}</td><td style={{padding:"8px 10px",fontWeight:700,color:"var(--accent, #f47c20)"}}>{Number(seg.ml||0).toFixed(2)} m</td><td style={{padding:"8px 10px"}}><button onClick={()=>persistGeo(geoMediciones.filter(x=>x.id!==seg.id))} style={{background:"rgba(239, 68, 68, 0.15)",border:"1px solid rgba(239, 68, 68, 0.3)",color:"#ef4444",borderRadius:5,padding:"3px 8px",cursor:"pointer",fontSize:11}}>× Eliminar</button></td></tr>)}
+              {lineas.map(t=><tr key={t.id} style={{borderBottom:"1px solid var(--border)",background:"var(--surface)"}}><td style={{padding:"8px 10px"}}><span style={{background:"rgba(245, 158, 11, 0.2)",color:"#fbbf24",borderRadius:4,padding:"2px 6px",fontSize:10}}>Manual</span></td><td style={{padding:"8px 10px"}}>{t.tipo}</td><td style={{padding:"8px 10px",fontWeight:500,color:"var(--text-main)"}}>{t.label}</td><td style={{padding:"8px 10px",fontWeight:700,color:"var(--accent, #f47c20)"}}>{t.ml} ML</td><td style={{padding:"8px 10px"}}><button onClick={()=>eliminarLinea(t.id)} style={{background:"rgba(239, 68, 68, 0.15)",border:"1px solid rgba(239, 68, 68, 0.3)",color:"#ef4444",borderRadius:5,padding:"3px 8px",cursor:"pointer",fontSize:11}}>× Eliminar</button></td></tr>)}
             </tbody>
           </table>
         </div>

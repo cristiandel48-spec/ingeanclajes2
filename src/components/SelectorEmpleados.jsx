@@ -48,9 +48,9 @@ export default function SelectorEmpleados({
   const agregar = (ids) => onCambiar([...new Set([...seleccionados, ...ids])]);
 
   const chip = (activo) => ({
-    background: activo ? "#fff4ec" : "#f1f5f9",
-    border: "1px solid " + (activo ? "#f9c99e" : "#e2e8f0"),
-    color: activo ? "#b45309" : "#475569",
+    background: activo ? "rgba(244, 124, 32, 0.15)" : "var(--surface-subtle)",
+    border: "1px solid " + (activo ? "rgba(244, 124, 32, 0.3)" : "var(--border)"),
+    color: activo ? "#fb923c" : "var(--text-muted)",
     borderRadius: 999, padding: "4px 11px", fontSize: 11, fontWeight: 600,
     cursor: activo ? "pointer" : "default", fontFamily: "inherit",
     opacity: activo ? 1 : 0.55,
@@ -59,7 +59,7 @@ export default function SelectorEmpleados({
   return (
     <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:7,flexWrap:"wrap"}}>
-        <span style={{fontSize:11,fontWeight:700,color: seleccionados.length ? "#166534" : "#94a3b8"}}>
+        <span style={{fontSize:11,fontWeight:700,color: seleccionados.length ? "var(--green-700, #4ade80)" : "var(--text-muted)"}}>
           {seleccionados.length
             ? `${seleccionados.length} ${seleccionados.length === 1 ? "persona seleccionada" : "personas seleccionadas"}`
             : "Nadie seleccionado todavía"}
@@ -100,11 +100,11 @@ export default function SelectorEmpleados({
       )}
 
       <div style={{
-        border: "1px solid #e2e8f0", borderRadius: 10, maxHeight: 210,
-        overflowY: "auto", background: "#fff",
+        border: "1px solid var(--border)", borderRadius: 10, maxHeight: 210,
+        overflowY: "auto", background: "var(--surface)",
       }}>
         {filtrados.length === 0 && (
-          <div style={{padding:"16px 12px",textAlign:"center",fontSize:12,color:"#94a3b8"}}>
+          <div style={{padding:"16px 12px",textAlign:"center",fontSize:12,color:"var(--text-muted)"}}>
             Nadie coincide con «{busqueda}»
           </div>
         )}
@@ -116,8 +116,8 @@ export default function SelectorEmpleados({
               key={e.id}
               style={{
                 display:"flex",alignItems:"center",gap:9,padding:"7px 11px",cursor:"pointer",
-                borderBottom:"1px solid #f1f5f9",
-                background: activo ? "#f0fdf4" : "transparent",
+                borderBottom:"1px solid var(--border)",
+                background: activo ? "rgba(34, 197, 94, 0.12)" : "transparent",
               }}
             >
               <input
@@ -128,11 +128,11 @@ export default function SelectorEmpleados({
               />
               <Av init={e.avatar || "?"} color={PAL[idx % PAL.length]} size={26}/>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:12.5,fontWeight:600,color:"#1a1a2e",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{e.nombre}</div>
-                <div style={{fontSize:10.5,color:"#64748b"}}>{e.cargo}</div>
+                <div style={{fontSize:12.5,fontWeight:600,color:"var(--text-main)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{e.nombre}</div>
+                <div style={{fontSize:10.5,color:"var(--text-muted)"}}>{e.cargo}</div>
               </div>
               {delaObra.includes(e.id) && (
-                <span style={{fontSize:9.5,color:"#b45309",background:"#fff4ec",borderRadius:999,padding:"2px 7px",flexShrink:0}}>
+                <span style={{fontSize:9.5,color:"#fbbf24",background:"rgba(245, 158, 11, 0.15)",borderRadius:999,padding:"2px 7px",flexShrink:0}}>
                   en la obra
                 </span>
               )}

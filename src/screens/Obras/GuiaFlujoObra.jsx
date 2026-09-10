@@ -8,9 +8,9 @@ import { B } from "../../styles/tokens";
 
 function Fila({ estado, titulo, detalle, accion }) {
   const colores = {
-    listo: { fg: "#15803D", bg: "#F0FDF4", borde: "#BBF7D0", icono: "✓" },
-    falta: { fg: "#B54708", bg: "#FFFAF0", borde: "#FDE3C4", icono: "!" },
-    aviso: { fg: "#B42318", bg: "#FEF3F2", borde: "#FECDCA", icono: "!" },
+    listo: { fg: "#16a34a", bg: "rgba(16, 185, 129, 0.15)", borde: "rgba(187, 247, 208, 0.3)", icono: "✓" },
+    falta: { fg: "#f59e0b", bg: "rgba(245, 158, 11, 0.15)", borde: "rgba(253, 227, 196, 0.3)", icono: "!" },
+    aviso: { fg: "#f87171", bg: "rgba(220, 38, 38, 0.15)", borde: "rgba(254, 205, 202, 0.3)", icono: "!" },
   }[estado];
 
   return (
@@ -28,8 +28,8 @@ function Fila({ estado, titulo, detalle, accion }) {
         {colores.icono}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 12.5, fontWeight: 600, color: "#1a1a2e" }}>{titulo}</div>
-        <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2, lineHeight: 1.45 }}>{detalle}</div>
+        <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-main, #1a1a2e)" }}>{titulo}</div>
+        <div style={{ fontSize: 11.5, color: "var(--text-muted, #64748b)", marginTop: 2, lineHeight: 1.45 }}>{detalle}</div>
       </div>
       {accion}
     </div>
@@ -73,14 +73,14 @@ export default function GuiaFlujoObra({
 
   return (
     <div style={{
-      background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14,
+      background: "var(--surface, #fff)", border: "1px solid var(--border, #e2e8f0)", borderRadius: 14,
       padding: 18, marginBottom: 18,
     }}>
       <div style={{ marginBottom: 4 }}>
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: "#f47c20" }}>
           Qué sigue en esta obra
         </div>
-        <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 3, lineHeight: 1.5 }}>
+        <div style={{ fontSize: 11.5, color: "var(--text-muted, #64748b)", marginTop: 3, lineHeight: 1.5 }}>
           El informe y la certificación toman los datos de aquí. Entre más completa esté la obra,
           menos hay que escribir después: <strong>lo que se alimenta en la obra no se vuelve a
           escribir en el informe</strong>.
@@ -120,7 +120,7 @@ export default function GuiaFlujoObra({
             onVerAvance && (
               <button
                 onClick={onVerAvance}
-                style={{ ...B("#f1f5f9", "#475569"), fontSize: 11, padding: "7px 12px", flexShrink: 0, alignSelf: "center" }}
+                style={{ ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)"), fontSize: 11, padding: "7px 12px", flexShrink: 0, alignSelf: "center" }}
               >
                 {fotos > 0 ? "Ver" : "Registrar"}
               </button>
@@ -157,25 +157,25 @@ export default function GuiaFlujoObra({
 
       <div style={{
         display: "flex", gap: 8, flexWrap: "wrap", marginTop: 16,
-        paddingTop: 14, borderTop: "1px solid #f1f5f9",
+        paddingTop: 14, borderTop: "1px solid var(--border, #f1f5f9)",
       }}>
         <button
           onClick={onCrearInforme}
-          style={{ ...B("#dbeafe", "#1e40af"), fontSize: 12, padding: "9px 16px" }}
+          style={{ ...B("rgba(30, 64, 175, 0.15)", "#60a5fa"), fontSize: 12, padding: "9px 16px" }}
         >
           Crear informe de actividades
         </button>
         <button
           onClick={pedirConfirmacionCertificado}
           style={{
-            ...B(estaPagada && estaTerminada ? "#16a34a" : "#f1f5f9",
-                 estaPagada && estaTerminada ? "#fff" : "#475569"),
+            ...B(estaPagada && estaTerminada ? "#16a34a" : "var(--btn-cancelar-bg, #f1f5f9)",
+                 estaPagada && estaTerminada ? "#fff" : "var(--btn-cancelar-txt, #475569)"),
             fontSize: 12, padding: "9px 16px",
           }}
         >
           Crear certificación
         </button>
-        <div style={{ fontSize: 10.5, color: "#94a3b8", alignSelf: "center", flex: "1 1 180px" }}>
+        <div style={{ fontSize: 10.5, color: "var(--text-subtle, #94a3b8)", alignSelf: "center", flex: "1 1 180px" }}>
           Se abren con los datos de esta obra ya cargados.
         </div>
       </div>

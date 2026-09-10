@@ -31,16 +31,16 @@ export default function CertificacionDetalle({cert,onVolver,onEditar,onImprimir,
   return(
     <div>
       <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap"}}>
-        <button style={B("#f1f5f9","#475569")} onClick={onVolver}>Volver</button>
-        {typeof onEditar==="function" && <button style={{...B("#dbeafe","#1e40af")}} onClick={()=>onEditar(cert)}>Editar</button>}
+        <button style={B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)")} onClick={onVolver}>Volver</button>
+        {typeof onEditar==="function" && <button style={{...B("rgba(30, 64, 175, 0.15)","#60a5fa")}} onClick={()=>onEditar(cert)}>Editar</button>}
         <button style={{...B("#f47c20"),opacity:generando?0.65:1}} disabled={generando} onClick={descargar}>
           {generando ? "Generando…" : "Descargar PDF"}
         </button>
-        {typeof onImprimir==="function" && <button style={B("#f1f5f9","#475569")} onClick={()=>onImprimir(cert)}>Imprimir</button>}
+        {typeof onImprimir==="function" && <button style={B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)")} onClick={()=>onImprimir(cert)}>Imprimir</button>}
       </div>
-      <div style={{background:"#fff7ed",border:"1px solid #fed7aa",borderRadius:12,padding:"12px 14px",marginBottom:16}}>
-        <div style={{fontSize:11,fontWeight:700,color:"#9a3412",textTransform:"uppercase",letterSpacing:0.7}}>Certificación</div>
-        <div style={{fontSize:13,color:"#7c2d12",marginTop:4}}>{subtitle}</div>
+      <div style={{background:"rgba(244, 124, 32, 0.12)",border:"1px solid rgba(254, 215, 170, 0.3)",borderRadius:12,padding:"12px 14px",marginBottom:16}}>
+        <div style={{fontSize:11,fontWeight:700,color:"#f59e0b",textTransform:"uppercase",letterSpacing:0.7}}>Certificación</div>
+        <div style={{fontSize:13,color:"var(--text-main, #7c2d12)",marginTop:4}}>{subtitle}</div>
       </div>
       <div className="doc-paper-wrapper" style={{maxWidth:920,margin:"0 auto"}}>
         <CertificacionDocumento cert={cert}/>

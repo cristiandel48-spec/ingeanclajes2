@@ -120,23 +120,23 @@ export default function DocumentoEnVivo({
       style={{
         position: sticky ? "sticky" : "static",
         top: 0,
-        border: "1px solid #e2e8f0",
+        border: "1px solid var(--border, #e2e8f0)",
         borderRadius: 12,
         overflow: "hidden",
-        background: "#e8eaee",
+        background: "var(--bg-app, #e8eaee)",
         minWidth: 0,
       }}
     >
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        gap: 8, padding: "8px 12px", background: "#fff",
-        borderBottom: "1px solid #e2e8f0", flexWrap: "wrap",
+        gap: 8, padding: "8px 12px", background: "var(--surface, #fff)",
+        borderBottom: "1px solid var(--border, #e2e8f0)", flexWrap: "wrap",
       }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "#64748b" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--text-muted, #64748b)" }}>
             {titulo}
           </div>
-          <div style={{ fontSize: 10.5, color: "#94a3b8" }}>
+          <div style={{ fontSize: 10.5, color: "var(--text-subtle, #94a3b8)" }}>
             {html ? nota : "Generando…"}
           </div>
         </div>
@@ -148,9 +148,9 @@ export default function DocumentoEnVivo({
             onClick={() => setModo("auto")}
             title="Ajusta el documento al ancho completo de tu pantalla"
             style={{
-              background: modo === "auto" ? "#1e293b" : "#f1f5f9",
-              color: modo === "auto" ? "#fff" : "#475569",
-              border: `1px solid ${modo === "auto" ? "#1e293b" : "#cbd5e1"}`,
+              background: modo === "auto" ? "var(--btn-guardar-bg, #cc0000)" : "var(--btn-cancelar-bg, #f1f5f9)",
+              color: modo === "auto" ? "#fff" : "var(--btn-cancelar-txt, #475569)",
+              border: `1px solid ${modo === "auto" ? "var(--btn-guardar-bg, #cc0000)" : "var(--border, #cbd5e1)"}`,
               borderRadius: 6, padding: "4px 8px", fontSize: 10.5, fontWeight: 600,
               cursor: "pointer",
             }}
@@ -162,9 +162,9 @@ export default function DocumentoEnVivo({
             onClick={() => setModo("real")}
             title="Muestra el documento al 100% de tamaño para lectura cómoda con desplazamiento táctil"
             style={{
-              background: modo === "real" ? "#1e293b" : "#f1f5f9",
-              color: modo === "real" ? "#fff" : "#475569",
-              border: `1px solid ${modo === "real" ? "#1e293b" : "#cbd5e1"}`,
+              background: modo === "real" ? "var(--btn-guardar-bg, #cc0000)" : "var(--btn-cancelar-bg, #f1f5f9)",
+              color: modo === "real" ? "#fff" : "var(--btn-cancelar-txt, #475569)",
+              border: `1px solid ${modo === "real" ? "var(--btn-guardar-bg, #cc0000)" : "var(--border, #cbd5e1)"}`,
               borderRadius: 6, padding: "4px 8px", fontSize: 10.5, fontWeight: 600,
               cursor: "pointer",
             }}
@@ -175,7 +175,7 @@ export default function DocumentoEnVivo({
       </div>
 
       {error ? (
-        <div style={{ padding: 20, fontSize: 12.5, color: "#b42318", background: "#fff" }}>
+        <div style={{ padding: 20, fontSize: 12.5, color: "#f87171", background: "var(--surface, #fff)" }}>
           No se pudo generar la vista previa. Revisa que los ítems tengan cantidad y valor.
         </div>
       ) : (
@@ -188,7 +188,7 @@ export default function DocumentoEnVivo({
             width: "100%",
             height: alto,
             border: 0,
-            background: "#e8eaee",
+            background: "var(--bg-app, #e8eaee)",
             WebkitOverflowScrolling: "touch",
           }}
         />

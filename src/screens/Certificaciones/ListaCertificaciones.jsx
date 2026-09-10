@@ -5,6 +5,7 @@
 // Lo propio de aqui: las pestañas separan certificacion de recertificacion, y
 // cada fila enseña CUANDO VENCE, que es lo que se viene a mirar.
 import ListadoConFiltros, { Resaltable } from "../../components/ListadoConFiltros";
+import MenuAccionesFila from "../../components/ui/MenuAccionesFila";
 import { C, boton, enMilis } from "../../components/listadoEstilos";
 import Badge from "../../components/ui/Badge";
 import { fmtD } from "../../lib/format";
@@ -48,12 +49,86 @@ function Fila({ c, compacta, acciones }) {
   const repetido = lugar && lugar.replace(/[.\s]/g, "").toUpperCase() === cliente.replace(/[.\s]/g, "").toUpperCase();
   const debajo = [repetido ? "" : lugar, c.obraId].filter(Boolean).join(" · ");
 
+  // Semáforo de vigencia comercial de 3 fases
+  const calcularVigencia = (fechaVence) => {
+    if (!fechaVence) return null;
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const venc = new Date(fechaVence);
+    const diffDias = Math.ceil((venc.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffDias < 0) {
+      return {
+        texto: `Vencida (${fmtD(fechaVence)})`,
+        color: "#b42318",
+        bg: "#fee4e2",
+        borde: "#fecdca",
+        icono: "⚠️",
+      };
+    }
+    if (diffDias <= 60) {
+      return {
+        texto: diffDias === 0 ? "Vence hoy" : `Vence en ${diffDias} días`,
+        color: "#b54708",
+        bg: "#fffaeb",
+        borde: "#fedf89",
+        icono: "⏳",
+      };
+    }
+    return {
+      texto: `Vigente · hasta ${fmtD(fechaVence)}`,
+      color: "#027a48",
+      bg: "#ecfdf3",
+      borde: "#a6f4c5",
+      icono: "🛡️",
+    };
+  };
+
+  const semaforo = calcularVigencia(c.proxMant);
+
+  const menuItems = [
+    { label: "Descargar PDF", icon: "📥", onClick: alPulsar(acciones.imprimir) },
+  ];
+
   const botones = (
-    <>
-      <button style={boton("#dbeafe", "#1e40af")} onClick={alPulsar(acciones.ver)}>Ver</button>
-      <button style={boton("#1a3050", "#f5c842")} onClick={alPulsar(acciones.editar)}>Editar</button>
-      <button style={boton("#2d1414", "#ef4444")} onClick={alPulsar(acciones.imprimir)}>PDF</button>
-    </>
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <button
+        type="button"
+        style={{
+          background: "var(--surface-subtle, #f2f4f7)",
+          color: "var(--text-main, #101828)",
+          border: "1px solid var(--border, #eaecf0)",
+          borderRadius: 8,
+          padding: "5px 12px",
+          fontSize: 12,
+          fontWeight: 600,
+          cursor: "pointer",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 5,
+        }}
+        onClick={alPulsar(acciones.ver)}
+      >
+        <span>Ver</span>
+      </button>
+      <button
+        type="button"
+        style={{
+          background: "transparent",
+          color: "var(--text-muted, #475467)",
+          border: "1px solid var(--border, #eaecf0)",
+          borderRadius: 8,
+          padding: "5px 11px",
+          fontSize: 12,
+          fontWeight: 600,
+          cursor: "pointer",
+        }}
+        onClick={alPulsar(acciones.editar)}
+      >
+        Editar
+      </button>
+      <MenuAccionesFila items={menuItems} />
+    </div>
   );
 
   const datos = (
@@ -71,9 +146,24 @@ function Fila({ c, compacta, acciones }) {
     </>
   );
 
-  const vence = c.proxMant
-    ? <span style={{ fontSize: 11, color: C.tenue, flexShrink: 0 }}>vence {fmtD(c.proxMant)}</span>
-    : null;
+  const badgeVigencia = semaforo ? (
+    <span style={{
+      fontSize: 11,
+      fontWeight: 600,
+      color: semaforo.color,
+      background: semaforo.bg,
+      border: `1px solid ${semaforo.borde}`,
+      borderRadius: 6,
+      padding: "2px 8px",
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 4,
+      whiteSpace: "nowrap",
+    }}>
+      <span>{semaforo.icono}</span>
+      <span>{semaforo.texto}</span>
+    </span>
+  ) : null;
 
   if (compacta) {
     return (
@@ -84,10 +174,10 @@ function Fila({ c, compacta, acciones }) {
           cursor: "pointer", position: "relative", overflow: "hidden",
           transition: "border-color .16s ease, background .16s ease" }}>
         <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3,
-          background: recert ? "#7c3aed" : C.acento }} />
+          background: recert ? "#7a5af8" : "#E0342A" }} />
         <div style={{ minWidth: 0, flex: 1 }}>{datos}</div>
         <Badge estado={c.estado} />
-        {vence}
+        {badgeVigencia}
         <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>{botones}</div>
       </Resaltable>
     );
@@ -97,14 +187,17 @@ function Fila({ c, compacta, acciones }) {
     <Resaltable as="article" onClick={() => acciones.ver(c)}
       estiloHover={{ borderColor: C.acentoFuerte, boxShadow: "0 12px 28px -16px rgba(0,0,0,.35)" }}
       style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 12, background: "var(--surface, #fff)",
-        padding: "12px 13px 10px", display: "flex", flexDirection: "column", gap: 9,
+        padding: "12px 14px 11px", display: "flex", flexDirection: "column", gap: 9,
         cursor: "pointer", position: "relative", overflow: "hidden",
         transition: "box-shadow .2s ease, border-color .2s ease" }}>
       <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3,
-        background: recert ? "#7c3aed" : C.acento }} />
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+        background: recert ? "#7a5af8" : "#E0342A" }} />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
         <div style={{ minWidth: 0 }}>{datos}</div>
-        <Badge estado={c.estado} />
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          {badgeVigencia}
+          <Badge estado={c.estado} />
+        </div>
       </div>
       {c.sistema && (
         <div style={{ fontSize: 11.5, color: C.suave, lineHeight: 1.45,
@@ -112,10 +205,9 @@ function Fila({ c, compacta, acciones }) {
           {c.sistema}
         </div>
       )}
-      <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap",
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 4, alignItems: "center", flexWrap: "wrap",
         paddingTop: 8, borderTop: `1px solid ${C.borde}` }}>
         {botones}
-        {vence && <span style={{ marginLeft: "auto" }}>{vence}</span>}
       </div>
     </Resaltable>
   );

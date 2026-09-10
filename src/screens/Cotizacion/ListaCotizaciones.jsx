@@ -10,8 +10,9 @@ import { useMemo } from "react";
 import ListadoConFiltros, { GrupoFiltro, Resaltable } from "../../components/ListadoConFiltros";
 import { C, boton, enMilis } from "../../components/listadoEstilos";
 import Badge from "../../components/ui/Badge";
+import MenuAccionesFila from "../../components/ui/MenuAccionesFila";
 import { SI } from "../../styles/tokens";
-import { fmtD } from "../../lib/format";
+import { fmt, fmtD } from "../../lib/format";
 import { normalizarMayusculas, normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { seguimientoDe, colorSeguimiento, etiquetaSeguimiento, UMBRAL_POR_VENCER } from "../../lib/seguimientoCotizaciones";
 
@@ -101,23 +102,62 @@ function Fila({ c, compacta, acciones }) {
   const mismoNombre = obra && obra.replace(/[.\s]/g, "") === cliente.replace(/[.\s]/g, "");
   const debajo = [mismoNombre ? "" : obra, ciudad].filter(Boolean).join(" · ");
 
+  const totalEstimado = Number(
+    c.total ||
+    c.totalPresupuesto ||
+    (Array.isArray(c.propuestas) ? c.propuestas.reduce((s, p) => s + Number(p?.total || 0), 0) : 0) ||
+    0
+  );
+
+  const menuItems = [
+    !aprobada
+      ? { label: "Aprobar cotización", icon: "✓", success: true, onClick: alPulsar(acciones.aprobar), title: "Aprueba la cotización y crea la obra" }
+      : { label: "Devolver a Pendiente", icon: "↩", onClick: alPulsar(acciones.desaprobar), title: "Devuelve a Pendiente" },
+    { label: "Descargar PDF", icon: "📥", onClick: alPulsar(acciones.pdf) },
+    { label: "Enviar al cliente", icon: "✉️", onClick: alPulsar(acciones.enviar) },
+    { divider: true },
+    { label: "Eliminar cotización", icon: "🗑️", danger: true, onClick: alPulsar(acciones.eliminar) },
+  ];
+
   const botones = (
-    <>
-      <button style={boton("#dbeafe", "#1e40af")} onClick={alPulsar(acciones.ver)}>Ver</button>
-      <button style={boton("#1a3050", "#f5c842")} onClick={alPulsar(acciones.editar)}>Editar</button>
-      {!aprobada
-        ? <button style={boton("#0f2d1a", "#4ade80", { border: "1px solid #166534" })}
-            title="Aprueba la cotización y crea la obra"
-            onClick={alPulsar(acciones.aprobar)}>Aprobar</button>
-        : <button style={boton("#fff", "#b54708", { border: "1.5px solid #fde3c4" })}
-            title="Devuelve la cotización a Pendiente. La obra solo se borra si está sin empezar y tú lo confirmas."
-            onClick={alPulsar(acciones.desaprobar)}>↩ Desaprobar</button>}
-      <button style={boton("#2d1414", "#ef4444")} onClick={alPulsar(acciones.pdf)}>PDF</button>
-      <button style={boton("#f47c20", "#fff")} title="Enviar al cliente"
-        onClick={alPulsar(acciones.enviar)}>Enviar</button>
-      <button style={boton("#fff", "#ef4444", { border: "1.5px solid #ef4444" })}
-        title="Eliminar" onClick={alPulsar(acciones.eliminar)}>🗑</button>
-    </>
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <button
+        type="button"
+        style={{
+          background: "var(--surface-subtle, #f2f4f7)",
+          color: "var(--text-main, #101828)",
+          border: "1px solid var(--border, #eaecf0)",
+          borderRadius: 8,
+          padding: "5px 12px",
+          fontSize: 12,
+          fontWeight: 600,
+          cursor: "pointer",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 5,
+        }}
+        onClick={alPulsar(acciones.ver)}
+      >
+        <span>Ver</span>
+      </button>
+      <button
+        type="button"
+        style={{
+          background: "transparent",
+          color: "var(--text-muted, #475467)",
+          border: "1px solid var(--border, #eaecf0)",
+          borderRadius: 8,
+          padding: "5px 11px",
+          fontSize: 12,
+          fontWeight: 600,
+          cursor: "pointer",
+        }}
+        onClick={alPulsar(acciones.editar)}
+      >
+        Editar
+      </button>
+      <MenuAccionesFila items={menuItems} />
+    </div>
   );
 
   const datos = (
@@ -155,6 +195,11 @@ function Fila({ c, compacta, acciones }) {
         <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3,
           background: colorBarra }} />
         <div style={{ minWidth: 0, flex: 1 }}>{datos}</div>
+        {totalEstimado > 0 && (
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #101828)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+            {fmt(totalEstimado)}
+          </div>
+        )}
         <Badge estado={c.estado} />
         <div style={{ display: "flex", gap: 4, flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>{botones}</div>
       </Resaltable>
@@ -165,16 +210,23 @@ function Fila({ c, compacta, acciones }) {
     <Resaltable as="article" onClick={() => acciones.ver(c)}
       estiloHover={{ borderColor: C.acentoFuerte, boxShadow: "0 12px 28px -16px rgba(0,0,0,.35)" }}
       style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 12, background: "var(--surface, #fff)",
-        padding: "12px 13px 10px", display: "flex", flexDirection: "column", gap: 9,
+        padding: "12px 14px 11px", display: "flex", flexDirection: "column", gap: 10,
         cursor: "pointer", position: "relative", overflow: "hidden",
         transition: "box-shadow .2s ease, border-color .2s ease" }}>
       <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3,
         background: colorBarra }} />
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
         <div style={{ minWidth: 0 }}>{datos}</div>
-        <Badge estado={c.estado} />
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+          {totalEstimado > 0 && (
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-main, #101828)", fontVariantNumeric: "tabular-nums" }}>
+              {fmt(totalEstimado)}
+            </div>
+          )}
+          <Badge estado={c.estado} />
+        </div>
       </div>
-      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", paddingTop: 8,
+      <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 8,
         borderTop: `1px solid ${C.borde}` }}>{botones}</div>
     </Resaltable>
   );

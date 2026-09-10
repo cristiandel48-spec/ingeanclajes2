@@ -327,8 +327,78 @@ export default function Certificaciones({ctx}){
       )}
 
       {nueva&&(
-        <div style={{...CD,marginBottom:20,border:"1px solid #cc0000"}}>
-          <div style={ST}>{editId ? "Editar Certificación / Recertificación" : "Nueva Certificación / Recertificación"}</div>
+        <div style={{
+          ...CD,
+          marginBottom: 24,
+          borderRadius: 14,
+          border: "1px solid var(--border-color, #e2e8f0)",
+          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.06)",
+          padding: 24,
+          background: "var(--card-bg, #ffffff)"
+        }}>
+          {/* Protocol Header Card */}
+          <div style={{
+            background: "linear-gradient(135deg, rgba(224, 52, 42, 0.05) 0%, rgba(224, 52, 42, 0.01) 100%)",
+            border: "1px solid rgba(224, 52, 42, 0.15)",
+            borderRadius: 12,
+            padding: "16px 20px",
+            marginBottom: 20,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 12
+          }}>
+            <div>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                <span style={{
+                  background: "#E0342A",
+                  color: "#ffffff",
+                  fontSize: 10,
+                  fontWeight: 800,
+                  padding: "3px 8px",
+                  borderRadius: 5,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.8
+                }}>
+                  Protocolo Técnico Oficial
+                </span>
+                <span style={{fontSize:11.5,fontWeight:700,color:"var(--text-subtle, #64748b)"}}>
+                  Resolución 4272 de 2021 & ANSI Z359
+                </span>
+              </div>
+              <div style={{fontSize:16,fontWeight:800,color:"var(--text-main, #0f172a)"}}>
+                {editId ? `Editar ${form.tipo || "Certificación"} ${form.numero || ""}` : `Nueva ${form.tipo || "Certificación"} de Seguridad`}
+              </div>
+            </div>
+
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              <div style={{
+                background: "var(--card-bg, #ffffff)",
+                border: "1px solid var(--border-color, #e2e8f0)",
+                borderRadius: 8,
+                padding: "6px 12px",
+                fontSize: 11,
+                color: "var(--text-subtle, #64748b)",
+                textAlign: "center"
+              }}>
+                <div style={{fontSize:9.5,fontWeight:700,textTransform:"uppercase",color:"#94a3b8"}}>Validez Máxima</div>
+                <div style={{fontWeight:800,color:"#059669"}}>12 Meses</div>
+              </div>
+              <div style={{
+                background: "var(--card-bg, #ffffff)",
+                border: "1px solid var(--border-color, #e2e8f0)",
+                borderRadius: 8,
+                padding: "6px 12px",
+                fontSize: 11,
+                color: "var(--text-subtle, #64748b)",
+                textAlign: "center"
+              }}>
+                <div style={{fontSize:9.5,fontWeight:700,textTransform:"uppercase",color:"#94a3b8"}}>Folio Asignado</div>
+                <div style={{fontWeight:800,color:"var(--text-main, #0f172a)"}}>{form.numero || "Auto / Manual"}</div>
+              </div>
+            </div>
+          </div>
 
           {obraDelForm && faltantesObra.length>0 && (
             <AvisoFlujo
@@ -487,22 +557,121 @@ export default function Certificaciones({ctx}){
               </div>
             )}
           </div>
-          <div style={{marginBottom:12}}>
-            <LBL>Elementos utilizados</LBL>
-            {form.elementos.map((el,i)=>(
-              <div key={i} style={{display:"flex",gap:8,alignItems:"center",marginBottom:6}}>
-                <input value={el} onChange={e=>setForm({...form,elementos:form.elementos.map((x,j)=>j===i?e.target.value:x)})} style={{...SI,fontSize:12}} />
-                <button onClick={()=>setForm({...form,elementos:form.elementos.filter((_,j)=>j!==i)})} style={{background:"rgba(220, 38, 38, 0.15)",border:"none",color:"#f87171",borderRadius:6,width:28,height:28,cursor:"pointer",fontSize:14,flexShrink:0}}>×</button>
-              </div>
-            ))}
-            <div style={{display:"flex",gap:8,marginTop:6}}>
-              <input value={nuevoElem} onChange={e=>setNuevoElem(e.target.value)} placeholder="Agregar elemento..." style={{...SI,fontSize:12}}/>
-              <button onClick={()=>{if(nuevoElem){setForm({...form,elementos:[...form.elementos,nuevoElem]});setNuevoElem("");}}} style={{...B("rgba(244, 124, 32, 0.12)","#f47c20"),border:"1px dashed #cc0000",flexShrink:0}}>+</button>
+          <div style={{marginBottom:18}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <LBL>Elementos y Componentes Utilizados ({form.elementos.length})</LBL>
+              <span style={{fontSize:11,color:"var(--text-subtle, #94a3b8)"}}>Componentes certificados instalados o inspeccionados</span>
+            </div>
+
+            <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
+              {form.elementos.map((el,i)=>(
+                <div key={i} style={{
+                  display:"flex",
+                  gap:10,
+                  alignItems:"center",
+                  background:"var(--bg-subtle, #f8fafc)",
+                  border:"1px solid var(--border-color, #e2e8f0)",
+                  borderRadius:8,
+                  padding:"6px 10px"
+                }}>
+                  <span style={{
+                    fontSize: 10.5,
+                    fontWeight: 800,
+                    color: "var(--text-subtle, #94a3b8)",
+                    width: 24,
+                    textAlign: "center",
+                    flexShrink: 0
+                  }}>
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <input
+                    value={el}
+                    onChange={e=>setForm({...form,elementos:form.elementos.map((x,j)=>j===i?e.target.value:x)})}
+                    style={{...SI,fontSize:12.5,border:"none",background:"transparent",padding:"4px 0",boxShadow:"none"}}
+                  />
+                  <button
+                    type="button"
+                    onClick={()=>setForm({...form,elementos:form.elementos.filter((_,j)=>j!==i)})}
+                    title="Eliminar elemento"
+                    style={{
+                      background:"rgba(239, 68, 68, 0.08)",
+                      border:"1px solid rgba(239, 68, 68, 0.2)",
+                      color:"#dc2626",
+                      borderRadius:6,
+                      width:28,
+                      height:28,
+                      cursor:"pointer",
+                      fontSize:14,
+                      display:"flex",
+                      alignItems:"center",
+                      justifyContent:"center",
+                      flexShrink:0
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div style={{display:"flex",gap:10}}>
+              <input
+                value={nuevoElem}
+                onChange={e=>setNuevoElem(e.target.value)}
+                onKeyDown={e=>{
+                  if(e.key==="Enter"){
+                    e.preventDefault();
+                    if(nuevoElem.trim()){
+                      setForm({...form,elementos:[...form.elementos,nuevoElem.trim()]});
+                      setNuevoElem("");
+                    }
+                  }
+                }}
+                placeholder="Escribe un componente y presiona Enter para agregar..."
+                style={{...SI,fontSize:12.5,flex:1}}
+              />
+              <button
+                type="button"
+                onClick={()=>{if(nuevoElem.trim()){setForm({...form,elementos:[...form.elementos,nuevoElem.trim()]});setNuevoElem("");}}}
+                style={{
+                  ...B("#E0342A","#ffffff"),
+                  padding:"8px 16px",
+                  fontSize:12,
+                  fontWeight:700,
+                  borderRadius:8,
+                  flexShrink:0
+                }}
+              >
+                + Agregar Elemento
+              </button>
             </div>
           </div>
-          <div style={{display:"flex",gap:10}}>
-            <button style={B("#4ade80","#0f2d1a")} onClick={guardar}>{editId ? "Guardar cambios" : "Guardar certificación"}</button>
-            <button style={B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)")} onClick={()=>{setNueva(false);setEditId(null);}}>Cancelar</button>
+          <div style={{display:"flex",gap:12,marginTop:18,paddingTop:14,borderTop:"1px solid var(--border-color, #e2e8f0)"}}>
+            <button
+              style={{
+                ...B("#E0342A","#ffffff"),
+                padding:"10px 24px",
+                fontSize:13,
+                fontWeight:700,
+                borderRadius:8,
+                boxShadow:"0 2px 10px rgba(224,52,42,0.25)"
+              }}
+              onClick={guardar}
+            >
+              💾 {editId ? "Guardar cambios" : "Guardar certificación"}
+            </button>
+            <button
+              style={{
+                ...B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)"),
+                padding:"10px 20px",
+                fontSize:13,
+                fontWeight:600,
+                borderRadius:8
+              }}
+              onClick={()=>{setNueva(false);setEditId(null);}}
+            >
+              Cancelar
+            </button>
           </div>
         </div>
       )}

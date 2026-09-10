@@ -19,7 +19,7 @@ import { useEffect, useRef, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_TIEMPO_EJEC } from "../../data/seed";
 import { buildQuoteProposal, createQuoteProposalId, getQuoteApprovalAccountingSnapshot, getQuoteProposalLabel, getQuoteProposals, normalizeProposalItems, normalizeQuoteItems } from "../../lib/cotizaciones";
-import { scrollAppToTop, today } from "../../lib/format";
+import { fmt, scrollAppToTop, today } from "../../lib/format";
 import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarMayusculas, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
 import { downloadGeneratedFile } from "../../lib/download";
 import { getFirmaImg } from "../../lib/firmaEmpresa";
@@ -87,6 +87,14 @@ export default function Cotizacion({ctx}){
   ).map((propuesta,index)=>buildQuoteProposal(propuesta,index));
 
   const propuestaActiva = propuestasSnapshot.find((x)=>x.id===propuestaActivaId) || propuestasSnapshot[0];
+
+  const totalCotizacionCalculado = propuestasSnapshot.reduce((acc, p) => {
+    const pItems = Array.isArray(p.items) ? p.items : [];
+    const sub = pItems.reduce((s, it) => s + (Number(it.cant) || 0) * (Number(it.vu) || 0), 0);
+    const ut = p.sinAiu ? 0 : (sub * (Number(p.util) || 0)) / 100;
+    const iva = p.sinAiu ? (sub * 0.19) : (ut * 0.19);
+    return acc + sub + ut + iva;
+  }, 0);
 
   // El texto de "esta cotizacion incluye" ya no se rellena aqui. Se rellena al
   // construir la propuesta (ensureProposalDefaultTexts), que es una sola vez al
@@ -953,12 +961,15 @@ export default function Cotizacion({ctx}){
           llevaba al lado ya estan arriba en la barra. Queda solo este
           renglon, que dice lo unico que no se sabe de memoria: si es nueva o
           cual se esta editando. */}
-      {/* Barra de herramientas y acciones del editor de cotización */}
+      {/* Barra ejecutiva flotante con KPIs y acciones del editor */}
       <div
         style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 40,
           background: "var(--surface, #ffffff)",
-          borderRadius: 12,
-          border: "1px solid var(--border, #e2e8f0)",
+          borderRadius: 14,
+          border: "1px solid var(--border, #eaecf0)",
           padding: "10px 16px",
           marginBottom: 16,
           display: "flex",
@@ -966,10 +977,10 @@ export default function Cotizacion({ctx}){
           alignItems: "center",
           flexWrap: "wrap",
           gap: 12,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+          boxShadow: "0 4px 12px -2px rgba(16,24,40,0.06), 0 2px 4px -2px rgba(16,24,40,0.04)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <button
             type="button"
             style={{
@@ -981,12 +992,39 @@ export default function Cotizacion({ctx}){
             onClick={() => setTab("lista")}
             title="Volver al listado de cotizaciones"
           >
-            ← Volver a la lista
+            ← Volver
           </button>
-          <div style={{ fontSize: 13, color: "var(--text-muted, #475569)" }}>
-            {editCot
-              ? <>Editando <strong style={{ color: "var(--text-main, #0f172a)" }}>{cot || editCot}</strong>{cl.nombre ? ` · ${cl.nombre}` : ""}</>
-              : <>Cotización nueva{cot ? <> · <strong style={{ color: "var(--text-main, #0f172a)" }}>{cot}</strong></> : null}</>}
+          
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{
+              background: "var(--surface-subtle, #f2f4f7)",
+              color: "var(--text-main, #101828)",
+              border: "1px solid var(--border, #eaecf0)",
+              borderRadius: 6,
+              padding: "2px 8px",
+              fontSize: 11.5,
+              fontWeight: 700,
+            }}>
+              {cot || "Borrador"}
+            </span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-main, #101828)" }}>
+              {cl.nombre ? cl.nombre : "Nuevo Cliente"}
+            </span>
+          </div>
+
+          <div style={{
+            display: "inline-flex",
+            alignItems: "baseline",
+            gap: 6,
+            background: "rgba(224, 52, 42, 0.06)",
+            border: "1px solid rgba(224, 52, 42, 0.15)",
+            borderRadius: 8,
+            padding: "4px 10px",
+          }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted, #667085)" }}>Total COP:</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "#E0342A", fontVariantNumeric: "tabular-nums" }}>
+              {fmt(totalCotizacionCalculado)}
+            </span>
           </div>
         </div>
 
@@ -994,12 +1032,7 @@ export default function Cotizacion({ctx}){
           {!dictando && (
             <button
               type="button"
-              style={{
-                ...SECUNDARIO,
-                fontSize: 12,
-                padding: "6px 12px",
-                fontWeight: 600,
-              }}
+              style={SECUNDARIO}
               onClick={() => setDictando(true)}
               title="Armar la cotización hablando"
             >
@@ -1010,12 +1043,7 @@ export default function Cotizacion({ctx}){
           {!importando && (
             <button
               type="button"
-              style={{
-                ...SECUNDARIO,
-                fontSize: 12,
-                padding: "6px 12px",
-                fontWeight: 600,
-              }}
+              style={SECUNDARIO}
               onClick={() => setImportando(true)}
               title="Leer la solicitud que mandó el cliente y armar la cotización con ella"
             >
@@ -1026,8 +1054,8 @@ export default function Cotizacion({ctx}){
           <button
             type="button"
             style={verDocumento
-              ? { ...BOTON_BASE, background: "var(--c-tinta, #0f172a)", color: "var(--bg-app, #fff)", border: "1px solid var(--border, #0f172a)", fontSize: 12, padding: "6px 12px", fontWeight: 600 }
-              : { ...SECUNDARIO, fontSize: 12, padding: "6px 12px", fontWeight: 600 }}
+              ? { ...BOTON_BASE, background: "var(--c-tinta, #0f172a)", color: "#ffffff", border: "1px solid var(--border, #0f172a)" }
+              : SECUNDARIO}
             onClick={() => setVerDocumento((v) => !v)}
             title="Muestra el documento completo tal como se imprimirá, mientras editas"
           >
@@ -1038,12 +1066,9 @@ export default function Cotizacion({ctx}){
             type="button"
             style={{
               ...BOTON_BASE,
-              background: bajandoPdf === "editor" ? "var(--border, #e2e8f0)" : "var(--btn-ver-bg, #eff6ff)",
-              color: bajandoPdf === "editor" ? "var(--text-subtle, #94a3b8)" : "var(--btn-ver-text, #1d4ed8)",
-              border: `1px solid ${bajandoPdf === "editor" ? "var(--border, #cbd5e1)" : "var(--btn-ver-border, #bfdbfe)"}`,
-              fontSize: 12,
-              padding: "6px 12px",
-              fontWeight: 700,
+              background: bajandoPdf === "editor" ? "var(--border, #e2e8f0)" : "var(--surface-subtle, #f2f4f7)",
+              color: bajandoPdf === "editor" ? "var(--text-subtle, #94a3b8)" : "var(--text-main, #101828)",
+              border: "1px solid var(--border, #eaecf0)",
             }}
             disabled={Boolean(bajandoPdf)}
             onClick={descargarPdfDesdeEditor}
@@ -1056,13 +1081,13 @@ export default function Cotizacion({ctx}){
             type="button"
             style={{
               ...BOTON_BASE,
-              background: "#f47c20",
+              background: "#E0342A",
               color: "#ffffff",
-              border: "1px solid #ea580c",
+              border: "1px solid #B42318",
               fontSize: 12,
-              padding: "6px 16px",
+              padding: "7px 16px",
               fontWeight: 700,
-              boxShadow: "0 1px 3px rgba(244,124,32,0.25)",
+              boxShadow: "0 1px 3px rgba(224,52,42,0.25)",
             }}
             onClick={() => guardarRef.current()}
           >

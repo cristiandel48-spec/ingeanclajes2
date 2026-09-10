@@ -240,137 +240,163 @@ export default function PropuestaEditor({
             </div>
           )}
 
-          {/* Tabla de ítems. La clase "tabla-items" evita que en el celular se
-              colapse a una columna: conserva sus columnas y se desplaza. */}
-          <div className="tabla-items" style={{border:"1px solid var(--border, #e2e8f0)",borderRadius:10,overflow:"hidden",marginBottom:10}}>
-            <div style={{display:"grid",gridTemplateColumns:"3fr 0.65fr 0.75fr 1.1fr 1.1fr 28px",background:"#1a2840",color:"#94a3b8",fontSize:10,textTransform:"uppercase",padding:"9px 12px",letterSpacing:0.5}}>
-              <span>Descripción</span><span>Cant.</span><span>Unidad</span><span>Valor unit.</span><span style={{textAlign:"right"}}>Subtotal</span><span/>
+          {/* Tabla de ítems con Data-Grid corporativo */}
+          <div className="tabla-items" style={{ border: "1px solid var(--border, #eaecf0)", borderRadius: 12, overflow: "hidden", marginBottom: 12, background: "var(--surface, #ffffff)" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "3fr 0.65fr 0.75fr 1.1fr 1.1fr 32px", background: "var(--surface-subtle, #f8fafc)", color: "var(--text-muted, #475467)", fontSize: 11, fontWeight: 700, textTransform: "uppercase", padding: "10px 12px", letterSpacing: ".05em", borderBottom: "1px solid var(--border, #eaecf0)" }}>
+              <span>Descripción</span><span>Cant.</span><span>Unidad</span><span>Valor unit.</span><span style={{ textAlign: "right" }}>Subtotal</span><span />
             </div>
-            {p.items.map((it,idx)=>(
-              <div key={it.id} style={{display:"grid",gridTemplateColumns:"3fr 0.65fr 0.75fr 1.1fr 1.1fr 28px",alignItems:"center",padding:"5px 10px",background:idx%2===0?"var(--surface-subtle, #f8fafc)":"var(--surface, #fff)",borderTop:"1px solid var(--border, #f1f5f9)"}}>
-                {/* La descripcion se guarda SIEMPRE en mayuscula, se escriba
-                    o se pegue como se escriba: en la tabla del documento van
-                    todas asi y una en minuscula canta. Se pasa al escribir
-                    -no solo al mostrarla- para que quede tambien en la base. */}
-                <input value={it.desc} onChange={e=>setItems(prev=>prev.map(item=>item.id===it.id?{...item,desc:e.target.value.toUpperCase()}:item))} style={{...SI,fontSize:12,padding:"5px 7px",textTransform:"uppercase"}}/>
-                <input type="number" value={it.cant} onChange={e=>setItems(prev=>prev.map(item=>item.id===it.id?{...item,cant:parseFloat(e.target.value)||0}:item))} style={{...SI,fontSize:12,padding:"5px 7px"}}/>
-                <input value={it.unit} onChange={e=>setItems(prev=>prev.map(item=>item.id===it.id?{...item,unit:e.target.value}:item))} style={{...SI,fontSize:12,padding:"5px 7px"}}/>
-                {/* Con separador de miles y no como numero pelado.
-                    Escrito seguido, 6720000 y 672000 se distinguen contando
-                    ceros de uno en uno, y equivocarse en uno son seis
-                    millones de diferencia. Escrito 6.720.000 se ve de un
-                    vistazo. Se guarda el numero limpio, no el texto. */}
+            {p.items.map((it, idx) => (
+              <div key={it.id} style={{ display: "grid", gridTemplateColumns: "3fr 0.65fr 0.75fr 1.1fr 1.1fr 32px", alignItems: "center", padding: "6px 10px", background: idx % 2 === 0 ? "var(--surface, #ffffff)" : "var(--surface-subtle, #fafbfd)", borderTop: "1px solid var(--border, #f2f4f7)" }}>
+                <input
+                  value={it.desc}
+                  onChange={e => setItems(prev => prev.map(item => item.id === it.id ? { ...item, desc: e.target.value.toUpperCase() } : item))}
+                  placeholder="DESCRIPCIÓN DEL ÍTEM"
+                  style={{ ...SI, fontSize: 12, padding: "5px 8px", textTransform: "uppercase" }}
+                />
+                <input
+                  type="number"
+                  value={it.cant}
+                  onChange={e => setItems(prev => prev.map(item => item.id === it.id ? { ...item, cant: parseFloat(e.target.value) || 0 } : item))}
+                  style={{ ...SI, fontSize: 12, padding: "5px 8px", textAlign: "center" }}
+                />
+                <input
+                  value={it.unit}
+                  onChange={e => setItems(prev => prev.map(item => item.id === it.id ? { ...item, unit: e.target.value } : item))}
+                  placeholder="UN"
+                  style={{ ...SI, fontSize: 12, padding: "5px 8px", textAlign: "center" }}
+                />
                 <input
                   type="text"
                   inputMode="numeric"
                   value={Number(it.vu) ? Number(it.vu).toLocaleString("es-CO") : ""}
-                  onChange={e=>{
-                    const digitos=e.target.value.replace(/\D/g,"");
-                    const valor=digitos ? parseInt(digitos,10) : 0;
-                    setItems(prev=>prev.map(item=>item.id===it.id?{...item,vu:valor}:item));
+                  onChange={e => {
+                    const digitos = e.target.value.replace(/\D/g, "");
+                    const valor = digitos ? parseInt(digitos, 10) : 0;
+                    setItems(prev => prev.map(item => item.id === it.id ? { ...item, vu: valor } : item));
                   }}
                   placeholder="0"
-                  style={{...SI,fontSize:12,padding:"5px 7px",textAlign:"right"}}/>
-                <div style={{textAlign:"right",fontSize:12,fontWeight:600,color:"#cc0000",paddingRight:4}}>{fmt(it.cant*it.vu)}</div>
-                <button onClick={()=>setItems(prev=>prev.filter(item=>item.id!==it.id))} style={{background:"none",border:"none",color:"#ef4444",cursor:"pointer",fontSize:16,padding:0,lineHeight:1}}>×</button>
+                  style={{ ...SI, fontSize: 12, padding: "5px 8px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}
+                />
+                <div style={{ textAlign: "right", fontSize: 12.5, fontWeight: 700, color: "var(--text-main, #101828)", paddingRight: 6, fontVariantNumeric: "tabular-nums" }}>
+                  {fmt(it.cant * it.vu)}
+                </div>
+                <button
+                  type="button"
+                  title="Quitar ítem"
+                  onClick={() => setItems(prev => prev.filter(item => item.id !== it.id))}
+                  style={{ background: "transparent", border: "none", color: "#98a2b3", cursor: "pointer", fontSize: 16, padding: 2, lineHeight: 1, borderRadius: 6 }}
+                  onMouseEnter={e => { e.currentTarget.style.color = "#d92d20"; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = "#98a2b3"; }}
+                >×</button>
               </div>
             ))}
-            {p.items.length===0&&<div style={{padding:"18px 12px",textAlign:"center",fontSize:12,color:"#94a3b8"}}>Sin ítems — agrega desde catálogo o manualmente</div>}
+            {p.items.length === 0 && (
+              <div style={{ padding: "22px 14px", textAlign: "center", fontSize: 12.5, color: "var(--text-subtle, #98a2b3)" }}>
+                Sin ítems en esta propuesta — agrega ítems desde el catálogo o agrega una línea manual abajo.
+              </div>
+            )}
           </div>
 
-          <button onClick={()=>{setItems(prev=>[...prev,{id:siguienteId(prev),desc:"",cant:1,unit:"ML",vu:0}]);}} style={{...B("#fff3e8","#f47c20"),border:"1px dashed #cc0000",width:"100%",justifyContent:"center",marginBottom:16,fontSize:12}}>+ Agregar ítem manual</button>
+          <button
+            type="button"
+            onClick={() => { setItems(prev => [...prev, { id: siguienteId(prev), desc: "", cant: 1, unit: "ML", vu: 0 }]); }}
+            style={{ ...B("var(--surface-subtle, #f8fafc)", "var(--text-main, #101828)"), border: "1px dashed var(--border, #cbd5e1)", width: "100%", justifyContent: "center", marginBottom: 16, fontSize: 12.5 }}
+          >
+            + Agregar ítem manual
+          </button>
 
-          {/* Selector Con AIU vs Sin AIU (IVA Pleno) */}
+          {/* Selector de Régimen AIU / IVA Pleno */}
           <div style={{
-            display:"flex",
-            justifyContent:"space-between",
-            alignItems:"center",
-            flexWrap:"wrap",
-            gap:10,
-            marginBottom:12,
-            padding:"10px 14px",
-            background:sinAiu?"rgba(34, 197, 94, 0.12)":"var(--surface-subtle, #f8fafc)",
-            border:`1px solid ${sinAiu?"rgba(34, 197, 94, 0.35)":"var(--border, #e2e8f0)"}`,
-            borderRadius:10
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 12,
+            marginBottom: 14,
+            padding: "12px 16px",
+            background: "var(--surface-subtle, #f8fafc)",
+            border: "1px solid var(--border, #eaecf0)",
+            borderRadius: 12,
           }}>
             <div>
-              <div style={{fontSize:12,fontWeight:700,color:"var(--text-main, #1e293b)",display:"flex",alignItems:"center",gap:6}}>
-                <span>Régimen AIU / IVA:</span>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-main, #101828)", display: "flex", alignItems: "center", gap: 8 }}>
+                <span>Régimen Tributario:</span>
                 <span style={{
-                  fontSize:10.5,
-                  padding:"2px 8px",
-                  borderRadius:12,
-                  fontWeight:700,
-                  background:sinAiu?"rgba(34, 197, 94, 0.2)":"rgba(99, 102, 241, 0.2)",
-                  color:sinAiu?"#86efac":"#a5b4fc"
+                  fontSize: 11,
+                  padding: "2px 8px",
+                  borderRadius: 6,
+                  fontWeight: 600,
+                  background: sinAiu ? "rgba(18, 183, 106, 0.12)" : "rgba(224, 52, 42, 0.08)",
+                  color: sinAiu ? "#027a48" : "#E0342A",
                 }}>
-                  {sinAiu ? "IVA Pleno 19% (Sin AIU)" : "Con AIU (IVA s/ Utilidad)"}
+                  {sinAiu ? "IVA Pleno (19%)" : "Con AIU (IVA s/ Utilidad)"}
                 </span>
               </div>
-              <div style={{fontSize:10.5,color:"var(--text-muted, #64748b)",marginTop:2}}>
+              <div style={{ fontSize: 11, color: "var(--text-muted, #667085)", marginTop: 2 }}>
                 {sinAiu
-                  ? "No se muestra AIU ni sale en la impresión. El IVA 19% aplica pleno sobre el subtotal."
-                  : "Esquema con Administración, Imprevistos y Utilidad (IVA 19% sobre la utilidad)."}
+                  ? "El IVA 19% se calcula sobre el subtotal directo. No incluye discriminación de AIU."
+                  : "Esquema estándar de obra civil: Administración, Imprevistos y Utilidad (IVA 19% sobre Utilidad)."}
               </div>
             </div>
 
-            <div style={{display:"inline-flex",gap:6}}>
+            <div style={{ display: "inline-flex", background: "var(--surface, #ffffff)", border: "1px solid var(--border, #eaecf0)", borderRadius: 8, padding: 2 }}>
               <button
                 type="button"
-                onClick={()=>set("sinAiu", false)}
+                onClick={() => set("sinAiu", false)}
                 style={{
-                  ...B(!sinAiu ? "#1a2840" : "var(--surface, #ffffff)", !sinAiu ? "#ffffff" : "var(--text-muted, #475569)"),
-                  border:`1px solid ${!sinAiu ? "#1a2840" : "var(--border, #cbd5e1)"}`,
-                  fontSize:11.5,
-                  fontWeight:700,
-                  padding:"6px 12px",
-                  borderRadius:8,
-                  cursor:"pointer"
+                  ...B(!sinAiu ? "#101828" : "transparent", !sinAiu ? "#ffffff" : "var(--text-muted, #667085)"),
+                  border: "none",
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  padding: "6px 14px",
+                  borderRadius: 6,
+                  cursor: "pointer",
                 }}
               >
                 Con AIU
               </button>
               <button
                 type="button"
-                onClick={()=>set("sinAiu", true)}
+                onClick={() => set("sinAiu", true)}
                 style={{
-                  ...B(sinAiu ? "#16a34a" : "var(--surface, #ffffff)", sinAiu ? "#ffffff" : "var(--text-muted, #475569)"),
-                  border:`1px solid ${sinAiu ? "#16a34a" : "var(--border, #cbd5e1)"}`,
-                  fontSize:11.5,
-                  fontWeight:700,
-                  padding:"6px 12px",
-                  borderRadius:8,
-                  cursor:"pointer"
+                  ...B(sinAiu ? "#027a48" : "transparent", sinAiu ? "#ffffff" : "var(--text-muted, #667085)"),
+                  border: "none",
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  padding: "6px 14px",
+                  borderRadius: 6,
+                  cursor: "pointer",
                 }}
               >
-                Sin AIU (IVA Pleno)
+                Sin AIU (IVA 19%)
               </button>
             </div>
           </div>
 
           {/* Tabla de totales */}
-          <div style={{border:"1px solid var(--border, #e2e8f0)",borderRadius:10,overflow:"hidden"}}>
+          <div style={{ border: "1px solid var(--border, #eaecf0)", borderRadius: 12, overflow: "hidden", background: "var(--surface, #ffffff)" }}>
             {(sinAiu
-              ? [["SUBTOTAL",sub],["IVA (19%)",iva]]
-              : [["SUBTOTAL",sub],["ADMINISTRACIÓN",0],["IMPREVISTOS",0],["UTILIDAD "+p.util+"%",ut],["IVA SOBRE LA UTILIDAD (19%)",iva]]
-            ).map(([lbl,v])=>(
-              <div key={lbl} style={{display:"flex",justifyContent:"space-between",padding:"9px 14px",borderBottom:"1px solid var(--border, #f1f5f9)",fontSize:12,color:"var(--text-muted, #475569)"}}>
-                <span>{lbl}</span><span style={{fontWeight:500,color:"var(--text-main, #1a1a2e)"}}>{v?fmt(v):"$  -"}</span>
+              ? [["Subtotal", sub], ["IVA (19%)", iva]]
+              : [["Subtotal", sub], ["Administración", 0], ["Imprevistos", 0], ["Utilidad (" + p.util + "%)", ut], ["IVA sobre Utilidad (19%)", iva]]
+            ).map(([lbl, v]) => (
+              <div key={lbl} style={{ display: "flex", justifyContent: "space-between", padding: "8px 16px", borderBottom: "1px solid var(--border, #f2f4f7)", fontSize: 12.5, color: "var(--text-muted, #475467)" }}>
+                <span>{lbl}</span><span style={{ fontWeight: 600, color: "var(--text-main, #101828)", fontVariantNumeric: "tabular-nums" }}>{v ? fmt(v) : "$ 0"}</span>
               </div>
             ))}
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"13px 14px",background:"#1a2840"}}>
-              <span style={{fontSize:13,fontWeight:700,color:"#cfd8e6",letterSpacing:".06em"}}>TOTAL</span>
-              <span style={{fontSize:17,fontWeight:700,color:"#ffffff"}}>{fmt(tot)}</span>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", background: "var(--surface-subtle, #f8fafc)", borderTop: "2px solid var(--border, #eaecf0)" }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #101828)", letterSpacing: ".04em" }}>TOTAL PROPUESTA</span>
+              <span style={{ fontSize: 17, fontWeight: 800, color: "#E0342A", fontVariantNumeric: "tabular-nums" }}>{fmt(tot)}</span>
             </div>
             <div style={{
-              padding:"6px 14px",
-              fontSize:10,
-              color:sinAiu?"#86efac":"var(--text-subtle, #94a3b8)",
-              textAlign:"center",
-              background:sinAiu?"rgba(34, 197, 94, 0.12)":"var(--surface-subtle, #f8fafc)",
-              fontWeight:sinAiu?600:400
+              padding: "6px 14px",
+              fontSize: 10.5,
+              color: sinAiu ? "#027a48" : "var(--text-muted, #667085)",
+              textAlign: "center",
+              background: sinAiu ? "rgba(18, 183, 106, 0.06)" : "var(--surface-subtle, #f8fafc)",
+              fontWeight: 500,
+              borderTop: "1px solid var(--border, #f2f4f7)",
             }}>
-              {sinAiu ? "IVA PLENO DEL 19% CALCULADO SOBRE EL SUBTOTAL (SIN AIU)" : "EL IVA ES EL 19% DE LA UTILIDAD"}
+              {sinAiu ? "IVA Pleno (19%) calculado sobre el subtotal" : "IVA (19%) calculado exclusivamente sobre la utilidad"}
             </div>
           </div>
 

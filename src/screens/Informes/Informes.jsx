@@ -1,4 +1,5 @@
 import AvisoFlujo from "../../components/AvisoFlujo";
+import Av from "../../components/ui/Av";
 import { getFirmaImg } from "../../lib/firmaEmpresa";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
@@ -632,58 +633,72 @@ export default function Informes({ctx}){
             <datalist id="turnosInformeList">
               {turnosDisponiblesObra.map((t,i)=><option key={i} value={t} />)}
             </datalist>
-            {form.personal.length===0&&<div style={{background:"var(--surface-subtle, #f8fafc)",border:"1px dashed var(--border, #e2e8f0)",borderRadius:8,padding:"12px 14px",fontSize:12,color:"var(--text-subtle, #94a3b8)",marginBottom:8}}>No hay personal asignado a esta obra todavía. Puedes agregarlo manualmente.</div>}
-            {form.personal.map((p,i)=>(
-              <div key={i} style={{display:"grid",gridTemplateColumns:"1.4fr 1fr 1fr 1fr 28px",gap:8,marginBottom:6}}>
-                {/* Se elige de la lista y el cargo entra solo. Antes habia que
-                    escribir el nombre a mano, y es donde se colaban los
-                    errores: un apellido mal escrito en el informe que se le
-                    entrega al cliente. */}
-                <div style={{display:"flex",flexDirection:"column",gap:4,minWidth:0}}>
-                  <select
-                    value={p.manual ? "__manual__" : (p.empleadoId || "")}
-                    onChange={e=>{
-                      const v=e.target.value;
-                      if(v==="__manual__"){
-                        setForm(pf=>({...pf,personal:pf.personal.map((x,j)=>j===i?{...x,empleadoId:"",nombre:"",manual:true}:x)}));
-                        return;
-                      }
-                      const emp=empleados.find(x=>x.id===v);
-                      setForm(pf=>({...pf,personal:pf.personal.map((x,j)=>j===i?{
-                        ...x,
-                        empleadoId:v,
-                        nombre:emp?.nombre||"",
-                        // El cargo llega de la ficha, pero se puede cambiar:
-                        // en una obra concreta alguien puede haber hecho otro.
-                        cargo:emp?.cargo||x.cargo||"",
-                        manual:false,
-                      }:x)}));
-                    }}
-                    style={{...SI,fontSize:12}}
-                  >
-                    <option value="">Seleccionar persona…</option>
-                    {empleados.filter(e=>e.activo!==false).map(e=>(
-                      <option key={e.id} value={e.id}>{e.nombre}{e.cargo?` · ${e.cargo}`:""}</option>
-                    ))}
-                    <option value="__manual__">Escribir a mano…</option>
-                  </select>
-                  {p.manual && (
-                    <input
-                      value={p.nombre}
-                      onChange={e=>updPersonal(i,"nombre",e.target.value)}
-                      onBlur={e=>{const v=normalizarNombrePropio(e.target.value);if(v!==p.nombre)updPersonal(i,"nombre",v);}}
-                      placeholder="Nombre completo"
-                      autoCapitalize="words"
-                      style={{...SI,fontSize:12}}
-                    />
-                  )}
-                </div>
-                <input value={p.cargo} onChange={e=>updPersonal(i,"cargo",e.target.value)} onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==p.cargo)updPersonal(i,"cargo",v);}} placeholder="Cargo" style={{...SI,fontSize:12}}/>
-                <input list="turnosInformeList" value={p.turno1||""} onChange={e=>updPersonal(i,"turno1",e.target.value)} placeholder="Turno 1 · 07:00 AM - 05:00 PM" style={{...SI,fontSize:12}}/>
-                <input list="turnosInformeList" value={p.turno2||""} onChange={e=>updPersonal(i,"turno2",e.target.value)} placeholder="Turno 2 · opcional" style={{...SI,fontSize:12}}/>
-                <button onClick={()=>setForm(pf=>({...pf,personal:pf.personal.filter((_,j)=>j!==i)}))} style={{background:"rgba(220, 38, 38, 0.15)",border:"none",color:"#f87171",borderRadius:6,cursor:"pointer",fontSize:14}}>×</button>
+            {form.personal.length === 0 && (
+              <div style={{ background: "var(--surface-subtle, #f8fafc)", border: "1px dashed var(--border, #e2e8f0)", borderRadius: 10, padding: "14px 16px", fontSize: 12.5, color: "var(--text-subtle, #98a2b3)", marginBottom: 8 }}>
+                No hay personal asignado a esta obra todavía. Sincroniza desde la obra o agrega personas manualmente.
               </div>
-            ))}
+            )}
+            {form.personal.map((p, i) => {
+              const empObj = empleados.find(x => x.id === p.empleadoId);
+              const nombreDisplay = p.nombre || empObj?.nombre || "Técnico";
+              const initials = (nombreDisplay.split(" ").map(w => w[0]).filter(Boolean).slice(0, 2).join("") || "TE").toUpperCase();
+
+              return (
+                <div key={i} style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr 1fr 1fr 32px", gap: 10, alignItems: "center", marginBottom: 8, background: "var(--surface-subtle, #f8fafc)", border: "1px solid var(--border, #eaecf0)", borderRadius: 10, padding: "8px 10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                    <Av init={initials} size={28} color="#101828" />
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+                      <select
+                        value={p.manual ? "__manual__" : (p.empleadoId || "")}
+                        onChange={e => {
+                          const v = e.target.value;
+                          if (v === "__manual__") {
+                            setForm(pf => ({ ...pf, personal: pf.personal.map((x, j) => j === i ? { ...x, empleadoId: "", nombre: "", manual: true } : x) }));
+                            return;
+                          }
+                          const emp = empleados.find(x => x.id === v);
+                          setForm(pf => ({ ...pf, personal: pf.personal.map((x, j) => j === i ? {
+                            ...x,
+                            empleadoId: v,
+                            nombre: emp?.nombre || "",
+                            cargo: emp?.cargo || x.cargo || "",
+                            manual: false,
+                          } : x) }));
+                        }}
+                        style={{ ...SI, fontSize: 12, padding: "5px 8px" }}
+                      >
+                        <option value="">Seleccionar técnico…</option>
+                        {empleados.filter(e => e.activo !== false).map(e => (
+                          <option key={e.id} value={e.id}>{e.nombre}{e.cargo ? ` · ${e.cargo}` : ""}</option>
+                        ))}
+                        <option value="__manual__">Escribir a mano…</option>
+                      </select>
+                      {p.manual && (
+                        <input
+                          value={p.nombre}
+                          onChange={e => updPersonal(i, "nombre", e.target.value)}
+                          onBlur={e => { const v = normalizarNombrePropio(e.target.value); if (v !== p.nombre) updPersonal(i, "nombre", v); }}
+                          placeholder="Nombre completo"
+                          autoCapitalize="words"
+                          style={{ ...SI, fontSize: 12, padding: "5px 8px" }}
+                        />
+                      )}
+                    </div>
+                  </div>
+                  <input value={p.cargo} onChange={e => updPersonal(i, "cargo", e.target.value)} onBlur={e => { const v = normalizarFrase(e.target.value); if (v !== p.cargo) updPersonal(i, "cargo", v); }} placeholder="Cargo técnico" style={{ ...SI, fontSize: 12, padding: "5px 8px" }} />
+                  <input list="turnosInformeList" value={p.turno1 || ""} onChange={e => updPersonal(i, "turno1", e.target.value)} placeholder="Turno 1 · 07:00 AM - 05:00 PM" style={{ ...SI, fontSize: 12, padding: "5px 8px" }} />
+                  <input list="turnosInformeList" value={p.turno2 || ""} onChange={e => updPersonal(i, "turno2", e.target.value)} placeholder="Turno 2 · opcional" style={{ ...SI, fontSize: 12, padding: "5px 8px" }} />
+                  <button
+                    type="button"
+                    title="Quitar técnico"
+                    onClick={() => setForm(pf => ({ ...pf, personal: pf.personal.filter((_, j) => j !== i) }))}
+                    style={{ background: "transparent", border: "none", color: "#98a2b3", borderRadius: 6, cursor: "pointer", fontSize: 16, padding: 2, lineHeight: 1 }}
+                    onMouseEnter={e => { e.currentTarget.style.color = "#d92d20"; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = "#98a2b3"; }}
+                  >×</button>
+                </div>
+              );
+            })}
             <button onClick={()=>setForm(p=>({...p,personal:[...p.personal,emptyPersona()]}))} style={{...B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)"),fontSize:12,marginTop:4}}>+ Agregar persona</button>
           </div>
 
@@ -778,27 +793,33 @@ export default function Informes({ctx}){
                   <LBL>Registro fotográfico</LBL>
                   <span style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)"}}>Se imprimen en el informe</span>
                 </div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(170px, 1fr))",gap:10,alignItems:"start"}}>
-                  {(act.fotos||[]).map((ft,fi)=>(
-                    <div key={fi} style={{background:"var(--surface, #fff)",border:"1px solid var(--border, #e2e8f0)",borderRadius:8,overflow:"hidden"}}>
-                      <div style={{background:"var(--surface-subtle, #f8fafc)",padding:6,minHeight:130,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                        <img src={ft.img} alt="" style={{width:"100%",height:"auto",maxHeight:180,objectFit:"contain",display:"block",borderRadius:4,background:"var(--surface, #fff)"}}/>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12, alignItems: "start" }}>
+                  {(act.fotos || []).map((ft, fi) => (
+                    <div key={fi} style={{ background: "var(--surface, #ffffff)", border: "1px solid var(--border, #eaecf0)", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+                      <div style={{ background: "var(--surface-subtle, #f8fafc)", padding: 6, minHeight: 130, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+                        <span style={{ position: "absolute", top: 6, left: 6, background: "rgba(16,24,40,0.75)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4 }}>
+                          Evidencia #{fi + 1}
+                        </span>
+                        <img src={ft.img} alt="" style={{ width: "100%", height: "auto", maxHeight: 180, objectFit: "contain", display: "block", borderRadius: 4, background: "var(--surface, #ffffff)" }} />
                       </div>
-                      <div style={{padding:"6px 8px",display:"flex",gap:4,alignItems:"center"}}>
+                      <div style={{ padding: "8px", display: "flex", gap: 4, alignItems: "center", borderTop: "1px solid var(--border, #f2f4f7)" }}>
                         <input
-                          value={ft.comentario||""}
-                          onChange={e=>updFotoAct(ai,fi,"comentario",e.target.value)}
-                          onBlur={e=>{
-                            const limpio=normalizarFrase(e.target.value);
-                            if(limpio!==ft.comentario) updFotoAct(ai,fi,"comentario",limpio);
+                          value={ft.comentario || ""}
+                          onChange={e => updFotoAct(ai, fi, "comentario", e.target.value)}
+                          onBlur={e => {
+                            const limpio = normalizarFrase(e.target.value);
+                            if (limpio !== ft.comentario) updFotoAct(ai, fi, "comentario", limpio);
                           }}
-                          placeholder={`Foto ${fi+1}`}
-                          style={{...SI,fontSize:11,padding:"3px 6px",flex:1}}
+                          placeholder={`Descripción evidencia ${fi + 1}`}
+                          style={{ ...SI, fontSize: 11.5, padding: "4px 6px", flex: 1 }}
                         />
                         <button
-                          onClick={()=>quitarFotoAct(ai,fi)}
+                          type="button"
+                          onClick={() => quitarFotoAct(ai, fi)}
                           title="Eliminar foto"
-                          style={{background:"rgba(220, 38, 38, 0.15)",border:"none",color:"#f87171",borderRadius:6,width:22,height:22,cursor:"pointer",fontSize:14,flexShrink:0,lineHeight:1}}
+                          style={{ background: "transparent", border: "none", color: "#98a2b3", borderRadius: 6, width: 22, height: 22, cursor: "pointer", fontSize: 16, flexShrink: 0, lineHeight: 1 }}
+                          onMouseEnter={e => { e.currentTarget.style.color = "#d92d20"; }}
+                          onMouseLeave={e => { e.currentTarget.style.color = "#98a2b3"; }}
                         >
                           ×
                         </button>
@@ -807,24 +828,36 @@ export default function Informes({ctx}){
                   ))}
 
                   <div
-                    onClick={()=>{const k="lote-"+ai;if(fotoRefs.current[k])fotoRefs.current[k].click();}}
+                    onClick={() => { const k = "lote-" + ai; if (fotoRefs.current[k]) fotoRefs.current[k].click(); }}
                     style={{
-                      border:"2px dashed #f47c20",
-                      borderRadius:10,
-                      minHeight:140,
-                      display:"flex",
-                      flexDirection:"column",
-                      alignItems:"center",
-                      justifyContent:"center",
-                      cursor:"pointer",
-                      background:"rgba(244, 124, 32, 0.08)",
-                      color:"#f47c20",
-                      fontWeight:600,
-                      gap:6,
+                      border: "2px dashed var(--border, #cbd5e1)",
+                      borderRadius: 10,
+                      minHeight: 140,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      background: "var(--surface-subtle, #f8fafc)",
+                      color: "var(--text-main, #101828)",
+                      fontWeight: 600,
+                      gap: 4,
+                      padding: 12,
+                      textAlign: "center",
+                      transition: "border-color .15s ease, background .15s ease",
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.borderColor = "#E0342A";
+                      e.currentTarget.style.background = "rgba(224, 52, 42, 0.04)";
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.borderColor = "var(--border, #cbd5e1)";
+                      e.currentTarget.style.background = "var(--surface-subtle, #f8fafc)";
                     }}
                   >
-                    <span style={{fontSize:24,lineHeight:1}}>+</span>
-                    <span style={{fontSize:12}}>Agregar foto</span>
+                    <span style={{ fontSize: 24, lineHeight: 1, color: "#E0342A" }}>+</span>
+                    <span style={{ fontSize: 12, fontWeight: 700 }}>Subir evidencias</span>
+                    <span style={{ fontSize: 10, color: "var(--text-muted, #667085)" }}>Arrastra fotos o haz clic</span>
                   </div>
                 </div>
 

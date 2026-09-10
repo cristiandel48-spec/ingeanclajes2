@@ -52,7 +52,8 @@ export function Pastilla({ activa, onClick, children }) {
   return (
     <button onClick={onClick} style={{ height: 30, padding: "0 11px", borderRadius: 8,
       border: `1.5px solid ${activa ? C.acento : C.bordeFuerte}`,
-      background: activa ? C.acentoSuave : "#fff", color: activa ? "#b45309" : C.suave,
+      background: activa ? C.acentoSuave : "var(--surface, #fff)",
+      color: activa ? "var(--c-tag-text, #b45309)" : C.suave,
       fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>{children}</button>
   );
 }
@@ -166,8 +167,8 @@ export default function ListadoConFiltros({
             estiloHover={{ borderColor: C.acento }}
             style={{ height: 36, padding: "0 12px", borderRadius: 9,
               border: `1.5px solid ${filtrosAbiertos ? C.tinta : C.bordeFuerte}`,
-              background: filtrosAbiertos ? C.tinta : "#fff",
-              color: filtrosAbiertos ? "#fff" : C.suave,
+              background: filtrosAbiertos ? C.tinta : "var(--surface, #fff)",
+              color: filtrosAbiertos ? "var(--bg-app, #fff)" : C.suave,
               fontSize: 13, fontWeight: 600, cursor: "pointer",
               display: "flex", alignItems: "center", gap: 8, fontFamily: "inherit" }}>
             Filtros
@@ -180,7 +181,7 @@ export default function ListadoConFiltros({
 
           {ordenes.length > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 6, height: 36, padding: "0 5px 0 11px",
-              borderRadius: 9, border: `1.5px solid ${C.bordeFuerte}`, background: "#fff" }}>
+              borderRadius: 9, border: `1.5px solid ${C.bordeFuerte}`, background: "var(--surface, #fff)" }}>
               <span style={{ fontSize: 11.5, fontWeight: 600, color: C.tenue, whiteSpace: "nowrap" }}>Ordenar</span>
               <select value={orden} onChange={(e) => setOrden(e.target.value)}
                 style={{ height: 30, border: "none", background: "transparent", fontSize: 13, fontWeight: 600,
@@ -195,9 +196,9 @@ export default function ListadoConFiltros({
             {[["lista", "☰", "Lista"], ["cuadricula", "▦", "Cuadrícula"]].map(([clave, icono, titulo]) => (
               <button key={clave} title={titulo} onClick={() => setVista(clave)}
                 style={{ width: 30, height: 30, border: "none", borderRadius: 7, cursor: "pointer", fontSize: 13,
-                  background: vista === clave ? "#fff" : "transparent",
-                  color: vista === clave ? C.tinta : "#8a94a6",
-                  boxShadow: vista === clave ? "0 1px 3px rgba(16,24,40,.16)" : "none" }}>{icono}</button>
+                  background: vista === clave ? "var(--surface, #fff)" : "transparent",
+                  color: vista === clave ? C.tinta : "var(--c-apagado, #8a94a6)",
+                  boxShadow: vista === clave ? "0 1px 3px rgba(0,0,0,.2)" : "none" }}>{icono}</button>
             ))}
           </div>
         </div>
@@ -211,12 +212,13 @@ export default function ListadoConFiltros({
                   estiloHover={{ borderColor: activa ? C.tinta : "#c3cad8" }}
                   style={{ height: 28, padding: "0 11px", borderRadius: 999,
                     border: `1.5px solid ${activa ? C.tinta : C.bordeFuerte}`,
-                    background: activa ? C.tinta : "#fff", color: activa ? "#fff" : C.suave,
+                    background: activa ? C.tinta : "var(--surface, #fff)",
+                    color: activa ? "var(--bg-app, #fff)" : C.suave,
                     fontSize: 12.5, fontWeight: 600, cursor: "pointer",
                     display: "flex", alignItems: "center", gap: 7, fontFamily: "inherit" }}>
                   {e}
-                  <span style={{ fontSize: 11, fontWeight: 700, color: activa ? "#fff" : C.apagado,
-                    background: activa ? "rgba(255,255,255,.18)" : C.relleno, borderRadius: 999,
+                  <span style={{ fontSize: 11, fontWeight: 700, color: activa ? "var(--bg-app, #fff)" : C.apagado,
+                    background: activa ? "rgba(128,128,128,.3)" : C.relleno, borderRadius: 999,
                     padding: "1px 6px", fontVariantNumeric: "tabular-nums" }}>{cuantos(e)}</span>
                 </Resaltable>
               );
@@ -305,7 +307,7 @@ function Buscador({ valor, alCambiar, refCampo, marcador }) {
         placeholder={marcador}
         style={{ ...SI, height: 36, padding: "0 80px 0 12px", fontSize: 13,
           border: `1.5px solid ${enfocado ? C.acento : C.bordeFuerte}`,
-          background: enfocado ? "#fff" : C.relleno,
+          background: enfocado ? "var(--input-bg, #fff)" : C.relleno,
           boxShadow: enfocado ? "0 0 0 3px rgba(244,124,32,.14)" : "none" }} />
       <div style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
         display: "flex", alignItems: "center", gap: 7 }}>

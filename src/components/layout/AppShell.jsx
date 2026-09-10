@@ -79,7 +79,8 @@ export default function AppShell({ scr, onNavigate, children }) {
 
   return (
     <div
-      className="app-shell"
+      className={`app-shell ${dark ? "dark-theme" : "light-theme"}`}
+      data-theme={themeMode}
       style={{
         display: "flex",
         fontFamily: "'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif",
@@ -88,7 +89,7 @@ export default function AppShell({ scr, onNavigate, children }) {
         overflow: "hidden",
       }}
     >
-      <GlobalStyles divider={theme.divider} />
+      <GlobalStyles divider={theme.divider} dark={dark} />
 
       <Sidebar
         scr={scr}

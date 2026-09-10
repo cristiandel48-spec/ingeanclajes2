@@ -111,8 +111,8 @@ function Fila({ c, compacta, acciones, obra }) {
     return (
       <Resaltable as="article" onClick={() => acciones.recertificar(c)}
         title={vencida ? "Clic para recertificar" : undefined}
-        estiloHover={{ borderColor: color, background: "#fffdfb" }}
-        style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 10, background: "#fff",
+        estiloHover={{ borderColor: color, background: "var(--surface-hover, #fffdfb)" }}
+        style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 10, background: "var(--surface, #fff)",
           padding: "9px 12px 9px 14px", display: "flex", alignItems: "center", gap: 12,
           cursor: "pointer", position: "relative", overflow: "hidden",
           transition: "border-color .16s ease, background .16s ease" }}>
@@ -127,8 +127,8 @@ function Fila({ c, compacta, acciones, obra }) {
   return (
     <Resaltable as="article" onClick={() => acciones.recertificar(c)}
       title={vencida ? "Clic para recertificar" : undefined}
-      estiloHover={{ borderColor: color, boxShadow: "0 12px 28px -16px rgba(15,23,42,.30)" }}
-      style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 12, background: "#fff",
+      estiloHover={{ borderColor: color, boxShadow: "0 12px 28px -16px rgba(0,0,0,.35)" }}
+      style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 12, background: "var(--surface, #fff)",
         padding: "12px 13px 10px", display: "flex", flexDirection: "column", gap: 9,
         cursor: "pointer", position: "relative", overflow: "hidden",
         transition: "box-shadow .2s ease, border-color .2s ease" }}>

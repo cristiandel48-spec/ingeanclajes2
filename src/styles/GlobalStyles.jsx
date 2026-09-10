@@ -4,6 +4,256 @@
 
 export default function GlobalStyles({ divider }) {
   const css = `
+    :root {
+      --bg-app: #f6f7f9;
+      --surface: #ffffff;
+      --surface-card: #ffffff;
+      --surface-hover: #fffdfb;
+      --surface-subtle: #f8fafc;
+      --text-main: #101828;
+      --text-h1: #101828;
+      --text-muted: #667085;
+      --text-subtle: #94a3b8;
+      --border: #eef0f3;
+      --border-strong: #e2e8f0;
+      --input-bg: #ffffff;
+      --input-color: #101828;
+      --input-border: #eaecf0;
+      --input-placeholder: #94a3b8;
+      --c-tinta: #1a1a2e;
+      --c-suave: #475569;
+      --c-apagado: #64748b;
+      --c-tenue: #64748b;
+      --c-relleno: #f8fafc;
+      --c-relleno-fuerte: #eef0f3;
+      --c-borde: #eef0f3;
+      --c-borde-fuerte: #e2e8f0;
+      --c-acento-suave: #fff3e8;
+      --c-tag-bg: #fff3e8;
+      --c-tag-text: #cc6600;
+      --btn-ver-bg: #dbeafe;
+      --btn-ver-text: #1e40af;
+      --btn-ver-border: transparent;
+      --btn-cancelar-bg: #f1f5f9;
+      --btn-cancelar-text: #475569;
+      color-scheme: light;
+    }
+
+    .app-shell[data-theme="dark"] {
+      --bg-app: #0f1115;
+      --surface: #181a20;
+      --surface-card: #181a20;
+      --surface-hover: #20242e;
+      --surface-subtle: #20232b;
+      --text-main: #f0f2f5;
+      --text-h1: #f0f2f5;
+      --text-muted: #98a1b0;
+      --text-subtle: #6b7280;
+      --border: #2a2d36;
+      --border-strong: #333846;
+      --input-bg: #20232b;
+      --input-color: #f0f2f5;
+      --input-border: #2a2d36;
+      --input-placeholder: #8a94a6;
+      --c-tinta: #f0f2f5;
+      --c-suave: #cbd5e1;
+      --c-apagado: #98a1b0;
+      --c-tenue: #98a1b0;
+      --c-relleno: #20232b;
+      --c-relleno-fuerte: #262b35;
+      --c-borde: #2a2d36;
+      --c-borde-fuerte: #333846;
+      --c-acento-suave: rgba(244,124,32,.18);
+      --c-tag-bg: rgba(244,124,32,.15);
+      --c-tag-text: #fb923c;
+      --btn-ver-bg: #1e3a8a;
+      --btn-ver-text: #93c5fd;
+      --btn-ver-border: #2563eb;
+      --btn-cancelar-bg: #262b35;
+      --btn-cancelar-text: #cbd5e1;
+      color-scheme: dark;
+    }
+
+    .app-shell[data-theme="dark"] input::placeholder,
+    .app-shell[data-theme="dark"] textarea::placeholder {
+      color: #8a94a6 !important;
+      opacity: 1;
+    }
+
+    .app-shell[data-theme="dark"] select option {
+      background: #181a20 !important;
+      color: #f0f2f5 !important;
+    }
+
+    /* Títulos y textos en modo oscuro */
+    .app-shell[data-theme="dark"] h1:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] h2:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] h3:not(.doc-shell *):not(#pz *) {
+      color: #f0f2f5 !important;
+    }
+
+    /* Tablas y encabezados */
+    .app-shell[data-theme="dark"] th:not(.doc-shell th):not(#pz th) {
+      color: #cbd5e1 !important;
+    }
+    .app-shell[data-theme="dark"] td:not(.doc-shell td):not(#pz td) {
+      color: #f0f2f5;
+    }
+
+    /* Tarjetas y fondos blancos */
+    .app-shell[data-theme="dark"] article:not(.doc-shell):not(.doc-shell *):not(#pz):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="background: #fff"]:not(.doc-shell):not(.doc-shell *):not(#pz):not(#pz *):not(img),
+    .app-shell[data-theme="dark"] [style*="background:#fff"]:not(.doc-shell):not(.doc-shell *):not(#pz):not(#pz *):not(img),
+    .app-shell[data-theme="dark"] [style*="background: #ffffff"]:not(.doc-shell):not(.doc-shell *):not(#pz):not(#pz *):not(img),
+    .app-shell[data-theme="dark"] [style*="background:#ffffff"]:not(.doc-shell):not(.doc-shell *):not(#pz):not(#pz *):not(img),
+    .app-shell[data-theme="dark"] [style*="background: rgb(255, 255, 255)"]:not(.doc-shell):not(.doc-shell *):not(#pz):not(#pz *):not(img),
+    .app-shell[data-theme="dark"] [style*="background:rgb(255, 255, 255)"]:not(.doc-shell):not(.doc-shell *):not(#pz):not(#pz *):not(img),
+    .app-shell[data-theme="dark"] [style*="background-color: rgb(255, 255, 255)"]:not(.doc-shell):not(.doc-shell *):not(#pz):not(#pz *):not(img),
+    .app-shell[data-theme="dark"] [style*="background-color:rgb(255, 255, 255)"]:not(.doc-shell):not(.doc-shell *):not(#pz):not(#pz *):not(img),
+    .app-shell[data-theme="dark"] [style*="background: rgb(255,255,255)"]:not(.doc-shell):not(.doc-shell *):not(#pz):not(#pz *):not(img),
+    .app-shell[data-theme="dark"] [style*="background-color: rgb(255,255,255)"]:not(.doc-shell):not(.doc-shell *):not(#pz):not(#pz *):not(img) {
+      background: var(--surface-card, #181a20) !important;
+      border-color: var(--border, #2a2d36) !important;
+    }
+
+    .app-shell[data-theme="dark"] [style*="background: #f8fafc"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="background:#f8fafc"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="rgb(248, 250, 252)"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="background: #f1f5f9"]:not(.doc-shell *):not(#pz *):not(button),
+    .app-shell[data-theme="dark"] [style*="background:#f1f5f9"]:not(.doc-shell *):not(#pz *):not(button),
+    .app-shell[data-theme="dark"] [style*="rgb(241, 245, 249)"]:not(.doc-shell *):not(#pz *):not(button) {
+      background: var(--surface-subtle, #20232b) !important;
+      border-color: var(--border, #2a2d36) !important;
+    }
+
+    /* Bordes sutiles en modo oscuro */
+    .app-shell[data-theme="dark"] [style*="border: 1px solid #e2e8f0"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="border:1px solid #e2e8f0"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="rgb(226, 232, 240)"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="border: 1px solid #eef0f3"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="border:1px solid #eef0f3"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="rgb(238, 240, 243)"]:not(.doc-shell *):not(#pz *) {
+      border-color: var(--border, #2a2d36) !important;
+    }
+
+    /* Textos oscuros en línea para legibilidad en modo oscuro */
+    .app-shell[data-theme="dark"] [style*="color: #1a1a2e"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color:#1a1a2e"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color: rgb(26, 26, 46)"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color:rgb(26, 26, 46)"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color: rgb(26,26,46)"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color: #101828"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color:#101828"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color: rgb(16, 24, 40)"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color:rgb(16, 24, 40)"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color: rgb(16,24,40)"]:not(.doc-shell *):not(#pz *) {
+      color: #f0f2f5 !important;
+    }
+
+    .app-shell[data-theme="dark"] [style*="color: #475569"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color:#475569"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color: rgb(71, 85, 105)"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color:rgb(71, 85, 105)"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color: rgb(71,85,105)"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color: #64748b"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color:#64748b"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color: rgb(100, 116, 139)"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color:rgb(100, 116, 139)"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color: rgb(100,116,139)"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color: #667085"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color:#667085"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color: rgb(102, 112, 133)"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color:rgb(102, 112, 133)"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color: rgb(102,112,133)"]:not(.doc-shell *):not(#pz *) {
+      color: #cbd5e1 !important;
+    }
+
+    .app-shell[data-theme="dark"] [style*="color: #94a3b8"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color:#94a3b8"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color: rgb(148, 163, 184)"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color:rgb(148, 163, 184)"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color: rgb(148,163,184)"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color: #9aa2b1"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="color:#9aa2b1"]:not(.doc-shell *):not(#pz *) {
+      color: #98a1b0 !important;
+    }
+
+    /* Botones y chips con contraste en modo oscuro */
+    .app-shell[data-theme="dark"] [style*="background: #dbeafe"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="background:#dbeafe"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="rgb(219, 234, 254)"]:not(.doc-shell *):not(#pz *) {
+      background: #1e3a8a !important;
+      color: #93c5fd !important;
+      border: 1px solid #2563eb !important;
+    }
+
+    .app-shell[data-theme="dark"] [style*="background: #f1f5f9"]:is(button):not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="background:#f1f5f9"]:is(button):not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="rgb(241, 245, 249)"]:is(button):not(.doc-shell *):not(#pz *) {
+      background: #262b35 !important;
+      color: #cbd5e1 !important;
+      border: 1px solid #333846 !important;
+    }
+
+    .app-shell[data-theme="dark"] [style*="background: #fff3e8"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="background:#fff3e8"]:not(.doc-shell *):not(#pz *) {
+      background: rgba(244,124,32,0.18) !important;
+      color: #fb923c !important;
+      border-color: rgba(244,124,32,0.3) !important;
+    }
+
+    .app-shell[data-theme="dark"] [style*="background: #fff7ed"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="background:#fff7ed"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="rgb(255, 247, 237)"]:not(.doc-shell *):not(#pz *) {
+      background: rgba(245, 158, 11, 0.12) !important;
+      border-color: rgba(245, 158, 11, 0.3) !important;
+    }
+
+    .app-shell[data-theme="dark"] [style*="#fed7aa"]:not(.doc-shell *):not(#pz *),
+    .app-shell[data-theme="dark"] [style*="rgb(254, 215, 170)"]:not(.doc-shell *):not(#pz *) {
+      background: var(--surface, #181a20) !important;
+      border-color: rgba(245, 158, 11, 0.35) !important;
+    }
+
+    /* Badges de estado en modo oscuro */
+    .app-shell[data-theme="dark"] .ui-badge {
+      border: 1px solid transparent;
+    }
+    .app-shell[data-theme="dark"] .ui-badge[data-estado="En Obra"] {
+      background: rgba(59, 130, 246, 0.2) !important;
+      color: #93c5fd !important;
+      border-color: rgba(59, 130, 246, 0.4) !important;
+    }
+    .app-shell[data-theme="dark"] .ui-badge[data-estado="Cotización"],
+    .app-shell[data-theme="dark"] .ui-badge[data-estado="Vencida"] {
+      background: rgba(239, 68, 68, 0.2) !important;
+      color: #fca5a5 !important;
+      border-color: rgba(239, 68, 68, 0.4) !important;
+    }
+    .app-shell[data-theme="dark"] .ui-badge[data-estado="Pagado"],
+    .app-shell[data-theme="dark"] .ui-badge[data-estado="Vigente"],
+    .app-shell[data-theme="dark"] .ui-badge[data-estado="Cobrado"],
+    .app-shell[data-theme="dark"] .ui-badge[data-estado="Activo"] {
+      background: rgba(34, 197, 94, 0.2) !important;
+      color: #86efac !important;
+      border-color: rgba(34, 197, 94, 0.4) !important;
+    }
+    .app-shell[data-theme="dark"] .ui-badge[data-estado="Pendiente"] {
+      background: rgba(245, 158, 11, 0.2) !important;
+      color: #fde047 !important;
+      border-color: rgba(245, 158, 11, 0.4) !important;
+    }
+    .app-shell[data-theme="dark"] .ui-badge[data-estado="Borrador"] {
+      background: rgba(148, 163, 184, 0.2) !important;
+      color: #cbd5e1 !important;
+      border-color: rgba(148, 163, 184, 0.4) !important;
+    }
+    .app-shell[data-theme="dark"] .ui-badge[data-estado="Finalizado"] {
+      background: rgba(168, 85, 247, 0.2) !important;
+      color: #d8b4fe !important;
+      border-color: rgba(168, 85, 247, 0.4) !important;
+    }
+
     *, *::before, *::after { box-sizing: border-box; }
 
     html {

@@ -85,7 +85,7 @@ function Fila({ p, compacta, obra, acciones }) {
     <>
       {acciones.imprimir && (
         <button
-          style={boton("#eff6ff", "#1d4ed8", { border: "1px solid #93c5fd", fontWeight: 700 })}
+          style={boton("var(--btn-ver-bg, #eff6ff)", "var(--btn-ver-text, #1d4ed8)", { border: "1px solid var(--btn-ver-border, #93c5fd)", fontWeight: 700 })}
           title="Ver e imprimir Recibo de Caja Media Carta (IA-FT-05)"
           onClick={alPulsar(acciones.imprimir)}
         >
@@ -101,7 +101,7 @@ function Fila({ p, compacta, obra, acciones }) {
         </button>
       )}
       <button
-        style={boton("#fff", "#ef4444", { border: "1.5px solid #ef4444" })}
+        style={boton("var(--surface-subtle, #fff)", "#ef4444", { border: "1.5px solid #ef4444" })}
         title="Eliminar este recibo y devolver el saldo a la obra"
         onClick={alPulsar(acciones.eliminar)}
       >
@@ -157,11 +157,11 @@ function Fila({ p, compacta, obra, acciones }) {
     return (
       <Resaltable
         as="article"
-        estiloHover={{ borderColor: C.acentoFuerte, background: "#fffdfb" }}
+        estiloHover={{ borderColor: C.acentoFuerte, background: "var(--surface-hover, #fffdfb)" }}
         style={{
           border: `1px solid ${C.bordeFuerte}`,
           borderRadius: 10,
-          background: "#fff",
+          background: "var(--surface, #fff)",
           padding: "9px 12px 9px 14px",
           display: "flex",
           alignItems: "center",
@@ -190,11 +190,11 @@ function Fila({ p, compacta, obra, acciones }) {
   return (
     <Resaltable
       as="article"
-      estiloHover={{ borderColor: C.acentoFuerte, boxShadow: "0 12px 28px -16px rgba(15,23,42,.30)" }}
+      estiloHover={{ borderColor: C.acentoFuerte, boxShadow: "0 12px 28px -16px rgba(0,0,0,.35)" }}
       style={{
         border: `1px solid ${C.bordeFuerte}`,
         borderRadius: 12,
-        background: "#fff",
+        background: "var(--surface, #fff)",
         padding: "12px 13px 10px",
         display: "flex",
         flexDirection: "column",

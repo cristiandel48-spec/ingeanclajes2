@@ -77,7 +77,7 @@ function Fila({ inf, compacta, acciones }) {
 
   const botones = (
     <>
-      <button style={boton("#dbeafe", "#1e40af")} onClick={alPulsar(acciones.ver)}>Ver</button>
+      <button style={boton("var(--btn-ver-bg, #dbeafe)", "var(--btn-ver-text, #1e40af)", { border: "1px solid var(--btn-ver-border, transparent)" })} onClick={alPulsar(acciones.ver)}>Ver</button>
       <button style={boton("#1a3050", "#f5c842")} onClick={alPulsar(acciones.editar)}>Editar</button>
       {acciones.certificar && (
         <button style={boton("#0f2d1a", "#4ade80", { border: "1px solid #166534" })}
@@ -119,8 +119,8 @@ function Fila({ inf, compacta, acciones }) {
   if (compacta) {
     return (
       <Resaltable as="article" onClick={() => acciones.ver(inf)}
-        estiloHover={{ borderColor: C.acentoFuerte, background: "#fffdfb" }}
-        style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 10, background: "#fff",
+        estiloHover={{ borderColor: C.acentoFuerte, background: "var(--surface-hover, #fffdfb)" }}
+        style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 10, background: "var(--surface, #fff)",
           padding: "9px 12px 9px 14px", display: "flex", alignItems: "center", gap: 12,
           cursor: "pointer", position: "relative", overflow: "hidden",
           transition: "border-color .16s ease, background .16s ease" }}>
@@ -134,8 +134,8 @@ function Fila({ inf, compacta, acciones }) {
 
   return (
     <Resaltable as="article" onClick={() => acciones.ver(inf)}
-      estiloHover={{ borderColor: C.acentoFuerte, boxShadow: "0 12px 28px -16px rgba(15,23,42,.30)" }}
-      style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 12, background: "#fff",
+      estiloHover={{ borderColor: C.acentoFuerte, boxShadow: "0 12px 28px -16px rgba(0,0,0,.35)" }}
+      style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 12, background: "var(--surface, #fff)",
         padding: "12px 13px 10px", display: "flex", flexDirection: "column", gap: 9,
         cursor: "pointer", position: "relative", overflow: "hidden",
         transition: "box-shadow .2s ease, border-color .2s ease" }}>
@@ -147,8 +147,8 @@ function Fila({ inf, compacta, acciones }) {
       {!inf.__parcial && actividades > 0 && (
         <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
           {(inf.actividades || []).slice(0, 3).map((a, i) => (
-            <span key={i} style={{ background: "#fff3e8", color: "#cc6600", borderRadius: 4,
-              padding: "2px 7px", fontSize: 10.5, border: "1px solid #f47c2044" }}>
+            <span key={i} style={{ background: "var(--c-tag-bg, #fff3e8)", color: "var(--c-tag-text, #cc6600)", borderRadius: 4,
+              padding: "2px 7px", fontSize: 10.5, border: "1px solid var(--c-acento-suave, #f47c2044)" }}>
               {a.titulo || `Actividad ${i + 1}`}
             </span>
           ))}

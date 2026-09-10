@@ -5,9 +5,17 @@
 // tocar un color se recarga la pagina entera en vez de solo la pieza.
 
 export const C = {
-  borde: "#eef0f3", bordeFuerte: "#e2e8f0", tinta: "#1a1a2e", suave: "#475569",
-  apagado: "#64748b", tenue: "#94a3b8", relleno: "#f8fafc", rellenoFuerte: "#eef0f3",
-  acento: "#f47c20", acentoFuerte: "#cc0000", acentoSuave: "#fff3e8",
+  borde: "var(--c-borde, #eef0f3)",
+  bordeFuerte: "var(--c-borde-fuerte, #e2e8f0)",
+  tinta: "var(--c-tinta, #1a1a2e)",
+  suave: "var(--c-suave, #475569)",
+  apagado: "var(--c-apagado, #64748b)",
+  tenue: "var(--c-tenue, #64748b)",
+  relleno: "var(--c-relleno, #f8fafc)",
+  rellenoFuerte: "var(--c-relleno-fuerte, #eef0f3)",
+  acento: "#f47c20",
+  acentoFuerte: "#cc0000",
+  acentoSuave: "var(--c-acento-suave, #fff3e8)",
 };
 
 /** Rangos de fecha, los mismos en todos los modulos. */

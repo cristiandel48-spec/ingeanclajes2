@@ -4,4 +4,4 @@
 // pantalla de fallo de conexion antes de pedir la sesion. Para reactivarla,
 // poner en false y volver a publicar en Vercel.
 //
-export const SERVICIO_SUSPENDIDO = true;
+export const SERVICIO_SUSPENDIDO = false;

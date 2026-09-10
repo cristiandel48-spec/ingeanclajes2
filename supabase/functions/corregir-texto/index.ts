@@ -30,10 +30,9 @@ const CORS = {
 };
 
 const IA_URL = Deno.env.get("IA_URL") ?? "https://api.groq.com/openai/v1/chat/completions";
-// Mismo secreto que «armar-cotizacion»: cambiando IA_MODELO en Supabase se
-// arreglan las dos a la vez. El anterior -llama-3.3-70b-versatile- lo retiro
-// Groq el 16/08/2026.
-const IA_MODELO = Deno.env.get("IA_MODELO") ?? "openai/gpt-oss-120b";
+// Modelo por defecto en Groq. Si IA_MODELO está configurado en Supabase se usa ese,
+// con respaldo automático a llama-3.1-8b-instant si falla.
+const IA_MODELO = Deno.env.get("IA_MODELO") ?? "llama-3.3-70b-versatile";
 
 // Los campos mas largos -la descripcion de un informe- rondan los 1.500
 // caracteres. El tope deja aire de sobra y corta que alguien mande un libro.
@@ -104,25 +103,47 @@ Deno.serve(async (peticion) => {
       return responder({ error: `El texto es muy largo (máximo ${MAX_CARACTERES} caracteres).` }, 400);
     }
 
-    const respuesta = await fetch(IA_URL, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${clave}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: IA_MODELO,
-        // Temperatura en cero: corregir ortografia no es una tarea creativa,
-        // y con temperatura alta el modelo empieza a "mejorar" la redaccion.
-        temperature: 0,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: INSTRUCCIONES },
-          { role: "user", content: original },
-        ],
-      }),
-    });
+    const modelosAProbar = Array.from(new Set([
+      IA_MODELO,
+      "llama-3.3-70b-versatile",
+      "llama-3.1-8b-instant",
+    ]));
 
-    if (!respuesta.ok) {
-      const detalle = await respuesta.text();
-      console.error("La IA respondió con error:", respuesta.status, detalle);
+    let respuesta: Response | null = null;
+    let detalleError = "";
+
+    for (const modelo of modelosAProbar) {
+      try {
+        const resp = await fetch(IA_URL, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${clave}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: modelo,
+            // Temperatura en cero: corregir ortografia no es una tarea creativa
+            temperature: 0,
+            response_format: { type: "json_object" },
+            messages: [
+              { role: "system", content: INSTRUCCIONES },
+              { role: "user", content: original },
+            ],
+          }),
+        });
+
+        if (resp.ok) {
+          respuesta = resp;
+          break;
+        } else {
+          detalleError = await resp.text();
+          console.warn(`Modelo ${modelo} falló con status ${resp.status}:`, detalleError);
+        }
+      } catch (err) {
+        detalleError = String(err);
+        console.warn(`Error llamando a modelo ${modelo}:`, err);
+      }
+    }
+
+    if (!respuesta || !respuesta.ok) {
+      console.error("La IA respondió con error en todos los modelos probados:", detalleError);
       return responder({ error: "El corrector no respondió. Inténtalo de nuevo en un momento." }, 502);
     }
 

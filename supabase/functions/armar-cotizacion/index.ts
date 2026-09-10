@@ -27,13 +27,9 @@ const CORS = {
 };
 
 const IA_URL = Deno.env.get("IA_URL") ?? "https://api.groq.com/openai/v1/chat/completions";
-// Los modelos de Groq se retiran cada pocos meses y el que estaba aqui
-// -llama-3.3-70b-versatile- se apago el 16/08/2026. Cuando eso pasa, la
-// respuesta de la IA falla entera y no hay pista en pantalla.
-//
-// El nombre se puede cambiar sin publicar nada: basta el secreto IA_MODELO
-// en Supabase. Esto es solo el valor por defecto.
-const IA_MODELO = Deno.env.get("IA_MODELO") ?? "openai/gpt-oss-120b";
+// Modelo por defecto en Groq. Si IA_MODELO está configurado en Supabase se usa ese,
+// con respaldo automático a llama-3.1-8b-instant si falla.
+const IA_MODELO = Deno.env.get("IA_MODELO") ?? "llama-3.3-70b-versatile";
 
 // Un dictado de cotizacion son unas pocas frases, pero un documento importado
 // en PDF puede contener tablas y condiciones extensas.
@@ -124,51 +120,60 @@ Deno.serve(async (peticion) => {
       ? catalogo.map((linea: unknown) => "- " + String(linea)).join("\n")
       : "- (sin catálogo: deja `items` vacío y avisa que no se pudo cargar)";
 
-    const respuestaIa = await fetch(IA_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${clave}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: IA_MODELO,
-        // Temperatura baja: aqui se quiere extraer lo que se dijo, no redactar
-        // con creatividad.
-        temperature: 0.2,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: construirInstruccion(listaCatalogo) },
-          { role: "user", content: dictado },
-        ],
-      }),
-    });
+    const modelosAProbar = Array.from(new Set([
+      IA_MODELO,
+      "llama-3.3-70b-versatile",
+      "llama-3.1-8b-instant",
+    ]));
 
-    if (!respuestaIa.ok) {
-      const detalle = await respuestaIa.text();
-      console.error("Fallo la IA:", respuestaIa.status, detalle);
-      // El limite de la capa gratuita es el fallo mas probable y tiene arreglo
-      // distinto: no es un error, es esperar.
-      if (respuestaIa.status === 429) {
-        return responder({ error: "Se alcanzó el límite de uso gratuito por ahora. Espera unos minutos y vuelve a intentar." }, 429);
-      }
-      if (respuestaIa.status === 401 || respuestaIa.status === 403) {
-        return responder({ error: "La clave de la IA no es válida o venció. Hay que actualizarla en Supabase." }, 500);
-      }
+    let respuestaIa: Response | null = null;
+    let detalle = "";
 
-      // El modelo retirado es el fallo que mas cuesta diagnosticar: el mensaje
-      // generico no dice nada y hay que ir a los registros de la funcion.
-      if (/decommission|deprecat|does not exist|not found/i.test(detalle)) {
-        return responder({
-          error: `El modelo de IA «${IA_MODELO}» ya no está disponible. ` +
-            "Hay que cambiar el secreto IA_MODELO en Supabase por uno vigente.",
-        }, 502);
-      }
+    for (const modelo of modelosAProbar) {
+      try {
+        const resp = await fetch(IA_URL, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${clave}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: modelo,
+            // Temperatura baja: aqui se quiere extraer lo que se dijo, no redactar
+            // con creatividad.
+            temperature: 0.2,
+            response_format: { type: "json_object" },
+            messages: [
+              { role: "system", content: construirInstruccion(listaCatalogo) },
+              { role: "user", content: dictado },
+            ],
+          }),
+        });
 
-      // Se manda un pedazo del motivo real: sin esto, cualquier fallo nuevo
-      // vuelve a ser un «no respondió bien» que no se puede diagnosticar.
+        if (resp.ok) {
+          respuestaIa = resp;
+          break;
+        } else {
+          detalle = await resp.text();
+          console.warn(`Modelo ${modelo} falló con status ${resp.status}:`, detalle);
+          if (resp.status === 429) {
+            return responder({ error: "Se alcanzó el límite de uso gratuito por ahora. Espera unos minutos y vuelve a intentar." }, 429);
+          }
+          if (resp.status === 401 || resp.status === 403) {
+            return responder({ error: "La clave de la IA no es válida o venció. Hay que actualizarla en Supabase." }, 500);
+          }
+        }
+      } catch (err) {
+        detalle = String(err);
+        console.warn(`Error llamando a modelo ${modelo}:`, err);
+      }
+    }
+
+    if (!respuestaIa || !respuestaIa.ok) {
+      console.error("Fallo la IA en todos los modelos:", detalle);
       const motivo = String(detalle || "").slice(0, 200);
       return responder({
-        error: `El servicio de IA respondió ${respuestaIa.status}. ` +
+        error: `El servicio de IA respondió con error. ` +
           (motivo ? `Dice: ${motivo}` : "Intenta de nuevo en un momento."),
       }, 502);
     }

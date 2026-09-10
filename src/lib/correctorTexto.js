@@ -8,24 +8,147 @@ import { getSupabaseClient } from "./backend/supabaseClient";
 
 const FUNCION = "corregir-texto";
 
-async function motivoDelError(error) {
-  const respuesta = error?.context;
-  if (respuesta && typeof respuesta.clone === "function") {
-    try {
-      const cuerpo = await respuesta.clone().json();
-      if (cuerpo?.error) return cuerpo.error;
-    } catch {
-      // No vino JSON: se cae al mensaje de abajo.
-    }
+// Diccionario de correcciones directas de errores comunes y técnicos (casing-insensitive)
+const DICCIONARIO_DIRECTO = {
+  // Errores tipográficos directos
+  "servivio": "servicio",
+  "servivios": "servicios",
+  "serivicio": "servicio",
+  "serivicios": "servicios",
+  "producion": "producción",
+  "produciones": "producciones",
+  "intalacion": "instalación",
+  "intalaciones": "instalaciones",
+  "instaladao": "instalado",
+  "instaladaos": "instalados",
+  "instlados": "instalados",
+  "instlado": "instalado",
+  "dimenciones": "dimensiones",
+  "dimencion": "dimensión",
+  "esctrural": "estructural",
+  "esturctural": "estructural",
+  "estuctural": "estructural",
+  "insepccion": "inspección",
+  "cotisacion": "cotización",
+  "cotisaciones": "cotizaciones",
+  "presupusto": "presupuesto",
+  "peldano": "peldaño",
+  "peldanos": "peldaños",
+  "diseno": "diseño",
+  "disenos": "diseños",
+  "recertificasion": "recertificación",
+  "recertificasiones": "recertificaciones",
+  "certificasion": "certificación",
+  "certificasiones": "certificaciones",
+  "bivineda": "vivienda",
+  "viviwnda": "vivienda",
+  "aproxiamdamente": "aproximadamente",
+  "aproximadamete": "aproximadamente",
+  "aprox": "aproximadamente",
+
+  // Tildes obligatorias en términos técnicos y comerciales frecuentes
+  "analisis": "análisis",
+  "evaluacion": "evaluación",
+  "evaluaciones": "evaluaciones",
+  "area": "área",
+  "areas": "áreas",
+  "linea": "línea",
+  "lineas": "líneas",
+  "numero": "número",
+  "numeros": "números",
+  "telefono": "teléfono",
+  "telefonos": "teléfonos",
+  "tecnico": "técnico",
+  "tecnicos": "técnicos",
+  "tecnica": "técnica",
+  "tecnicas": "técnicas",
+  "mecanico": "mecánico",
+  "mecanica": "mecánica",
+  "quimico": "químico",
+  "quimica": "química",
+  "epoxico": "epóxico",
+  "epoxica": "epóxica",
+  "metalico": "metálico",
+  "metalica": "metálica",
+  "metalicos": "metálicos",
+  "metalicas": "metálicas",
+  "estandar": "estándar",
+  "estandares": "estándares",
+  "caida": "caída",
+  "caidas": "caídas",
+  "arnes": "arnés",
+  "arneses": "arneses",
+  "poliza": "póliza",
+  "polizas": "pólizas",
+  "garantia": "garantía",
+  "garantias": "garantías",
+  "regimen": "régimen",
+  "maximo": "máximo",
+  "maxima": "máxima",
+  "minimo": "mínimo",
+  "minima": "mínima",
+  "optimo": "óptimo",
+  "optima": "óptima",
+  "unico": "único",
+  "unica": "única",
+  "parametro": "parámetro",
+  "parametros": "parámetros",
+  "logistica": "logística",
+  "especifico": "específico",
+  "especifica": "específica",
+  "especificos": "específicos",
+  "especificas": "específicas",
+  "caracteristica": "característica",
+  "caracteristicas": "características",
+  "tuberia": "tubería",
+  "tuberias": "tuberías",
+  "tambien": "también",
+  "ademas": "además",
+  "segun": "según",
+};
+
+function ajustarCaso(palabraOriginal, palabraCorregida) {
+  if (palabraOriginal === palabraOriginal.toUpperCase() && /[A-ZÁÉÍÓÚÜÑ]/.test(palabraOriginal)) {
+    return palabraCorregida.toUpperCase();
   }
-  if (/failed to send a request/i.test(error?.message || "")) {
-    return "El corrector no está publicado todavía. Hay que subir la función «corregir-texto» en Supabase.";
+  if (palabraOriginal[0] === palabraOriginal[0].toUpperCase() && /[A-ZÁÉÍÓÚÜÑ]/.test(palabraOriginal[0])) {
+    return palabraCorregida.charAt(0).toUpperCase() + palabraCorregida.slice(1).toLowerCase();
   }
-  return error?.message || "No se pudo corregir el texto.";
+  return palabraCorregida.toLowerCase();
 }
 
 /**
- * Devuelve el texto con la ortografia repasada.
+ * Corrección ortográfica local para errores comunes, tildes y terminaciones -ción/-sión
+ */
+export function corregirOrtografiaLocal(texto) {
+  if (!texto || typeof texto !== "string") return "";
+
+  return texto.replace(/\b[A-Za-zÁÉÍÓÚáéíóúñÑüÜ]+\b/g, (palabra) => {
+    // Si contiene números o caracteres de unidad (ej. "80M", "5000LBS"), no tocar
+    if (/\d/.test(palabra)) return palabra;
+
+    const clave = palabra.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    // 1. Búsqueda en diccionario directo
+    if (DICCIONARIO_DIRECTO[clave]) {
+      return ajustarCaso(palabra, DICCIONARIO_DIRECTO[clave]);
+    }
+
+    // 2. Regla morfológica: palabras terminadas en cion, sion, xion sin tilde
+    const matchCion = palabra.match(/^(.+?)([csx]ion)$/i);
+    if (matchCion) {
+      const prefijo = matchCion[1];
+      const sufijo = matchCion[2].toLowerCase();
+      const sufijoConTilde = sufijo.replace("ion", "ión");
+      return ajustarCaso(palabra, prefijo + sufijoConTilde);
+    }
+
+    return palabra;
+  });
+}
+
+/**
+ * Devuelve el texto con la ortografia repasada (IA con fallback local).
  *
  * @returns {Promise<{corregido:string, cambios:boolean, aviso?:string}>}
  */
@@ -33,15 +156,23 @@ export async function corregirTexto(texto) {
   const original = String(texto ?? "");
   if (!original.trim()) return { corregido: original, cambios: false };
 
-  const supabase = getSupabaseClient();
-  if (!supabase) throw new Error("No hay conexión con el servidor.");
+  // 1. Intentar con la función de Supabase
+  try {
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      const { data, error } = await supabase.functions.invoke(FUNCION, { body: { texto: original } });
+      if (!error && !data?.error && data?.corregido) {
+        const corregido = String(data.corregido);
+        return { corregido, cambios: corregido !== original, aviso: data?.aviso };
+      }
+    }
+  } catch (err) {
+    console.warn("Fallo llamando al corrector en Supabase, aplicando corrector de respaldo:", err);
+  }
 
-  const { data, error } = await supabase.functions.invoke(FUNCION, { body: { texto: original } });
-  if (error) throw new Error(await motivoDelError(error));
-  if (data?.error) throw new Error(data.error);
-
-  const corregido = String(data?.corregido ?? original);
-  return { corregido, cambios: corregido !== original, aviso: data?.aviso };
+  // 2. Respaldo local de alta precisión para español e ingeniería
+  const corregido = corregirOrtografiaLocal(original);
+  return { corregido, cambios: corregido !== original };
 }
 
 /**

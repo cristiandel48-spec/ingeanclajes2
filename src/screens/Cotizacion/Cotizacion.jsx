@@ -15,6 +15,7 @@ import { TEXTOS_DOCUMENTO_DEFAULT, getTextosDocumento } from "../../lib/cotizaci
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
 import BotonCorregir from "../../components/ui/BotonCorregir";
+import { corregirOrtografiaLocal } from "../../lib/correctorTexto";
 import { useEffect, useRef, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_TIEMPO_EJEC } from "../../data/seed";
@@ -1250,7 +1251,10 @@ export default function Cotizacion({ctx}){
         <div style={ST}>01 · Carta de presentación</div>
         {/* Va primero porque es lo primero que se ve del documento. */}
         <div style={{marginBottom:14}}>
-          <LBL>Título de la portada</LBL>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+            <LBL>Título de la portada</LBL>
+            <BotonCorregir valor={textosDocumento.tituloPortada} onChange={(v)=>setTexto("tituloPortada",v)} compacto/>
+          </div>
           {/* De una sola linea, centrado y en mayuscula: igual que sale
               impreso. Era un campo de varios renglones y cada uno salia como
               una linea aparte del titulo; ahora va seguido y es la hoja la
@@ -1267,6 +1271,13 @@ export default function Cotizacion({ctx}){
           <input
             value={String(textosDocumento.tituloPortada||"").replace(/\n+/g," ")}
             onChange={e=>setTexto("tituloPortada",e.target.value.replace(/\s+/g," "))}
+            onBlur={e=>{
+              const v = e.target.value.replace(/\s+/g," ");
+              const auto = corregirOrtografiaLocal(v);
+              if (auto !== v) {
+                setTexto("tituloPortada", auto);
+              }
+            }}
             style={{...SI,fontSize:14,fontWeight:600,
               textAlign:"center",textTransform:"uppercase"}}
           />

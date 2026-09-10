@@ -43,10 +43,11 @@ export default function CotizacionPrint({c}){
       )}
       {propuestas.map((propuesta, idx)=>{
         const propMapSrc = propuesta.mapImg || null;
+        const esNombreGenerico = !propuesta.nombre || /^propuesta(\s+[a-z0-9]+)?$/i.test(String(propuesta.nombre).trim());
         return (
         <div key={propuesta.id} style={{marginTop:idx===0?0:24,paddingTop:idx===0?0:20,borderTop:idx===0?"none":"2px solid #e2e8f0",pageBreakBefore:idx===0?"auto":"always"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:12,marginBottom:4}}>
-            <div style={{fontWeight:800,textTransform:"uppercase",fontSize:16,color:"#1a1a2e"}}>{propuesta.nombre}</div>
+            {!esNombreGenerico ? <div style={{fontWeight:800,textTransform:"uppercase",fontSize:16,color:"#1a1a2e"}}>{propuesta.nombre}</div> : <div />}
             <div style={{fontWeight:800,color:"#cc0000",fontSize:15}}>{fmt(propuesta.tot)}</div>
           </div>
           <div style={{fontSize:11,color:"#64748b",marginBottom:10}}>{propuesta.tipoLabel}</div>

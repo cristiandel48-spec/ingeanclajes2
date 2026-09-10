@@ -479,17 +479,20 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
     // Las hojas no tienen el mismo numero de filas, asi que el indice de
     // arranque se acumula en vez de multiplicarse.
     let desde = 0;
+    const esNombreGenerico = !propuesta.nombre || /^propuesta(\s+[a-z0-9]+)?$/i.test(String(propuesta.nombre).trim());
     return plan.hojas.map((itemsHoja, i) => {
       const esUltima = i === totalHojas - 1;
       const arranque = desde;
       desde += itemsHoja.length;
-      const titulo = escapeHtml(propuesta.nombre || `Propuesta ${idx + 1}`);
+      const titulo = !esNombreGenerico
+        ? escapeHtml(propuesta.nombre)
+        : "Detalle de la cotización";
       return `
         <section class="page">
           <div class="page-inner">
             ${headerHtml}
             <div class="page-content">
-              <h2 class="doc-h2">${titulo}${totalHojas > 1 ? ` &middot; Detalle ${i + 1} de ${totalHojas}` : " &middot; Detalle"}</h2>
+              <h2 class="doc-h2">${titulo}${totalHojas > 1 ? ` &middot; Parte ${i + 1} de ${totalHojas}` : ""}</h2>
               ${renderItemsTable(propuesta, itemsHoja, { conTotales: esUltima, desde: arranque })}
             </div>
             ${footerHtml}
@@ -520,12 +523,15 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       return renderItemsPages(propuesta, idx, plan);
     }
 
+    const esNombreGenerico = !propuesta.nombre || /^propuesta(\s+[a-z0-9]+)?$/i.test(String(propuesta.nombre).trim());
+    const tituloPropuestaHtml = !esNombreGenerico ? `<h2 class="doc-h2">${escapeHtml(propuesta.nombre)}</h2>` : "";
+
     return `
       <section class="page">
         <div class="page-inner">
           ${headerHtml}
           <div class="page-content">
-            <h2 class="doc-h2">${escapeHtml(propuesta.nombre || `Propuesta ${idx + 1}`)}</h2>
+            ${tituloPropuestaHtml}
 
             ${hasClientReq ? `
               <div class="content-block">

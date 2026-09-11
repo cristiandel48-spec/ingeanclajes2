@@ -1035,11 +1035,11 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       .cover { padding-top:10mm; }
       .cover-header { display:flex; justify-content:center; padding-bottom:6mm; border-bottom:2px solid #1E1E1E; }
       .cover-logo { height:44px; width:auto; }
-      .cover-firm { text-align:center; margin-top:4.5mm; }
-      .cover-firm-name { font-size:14px; font-weight:800; color:#1E1E1E; letter-spacing:.06em; margin-bottom:2mm; }
-      .cover-firm-nit { font-size:11.5px; font-weight:700; color:#334155; margin-bottom:2.5mm; }
-      .cover-firm-nit span { background:#f1f5f9; border:1px solid #cbd5e1; padding:2px 9px; border-radius:4px; letter-spacing:.04em; }
-      .cover-firm-contact { font-size:11px; color:#64748b; letter-spacing:.02em; }
+      .cover-firm { text-align:center; margin-top:5.5mm; }
+      .cover-firm-name { font-size:18px; font-weight:800; color:#0f172a; letter-spacing:.07em; margin-bottom:2.8mm; }
+      .cover-firm-nit { font-size:13px; font-weight:700; color:#1e293b; margin-bottom:2.8mm; }
+      .cover-firm-nit span { background:#f8fafc; border:1.5px solid #cbd5e1; padding:2.5px 12px; border-radius:6px; letter-spacing:.04em; }
+      .cover-firm-contact { font-size:12.5px; color:#475569; font-weight:500; letter-spacing:.01em; }
       .cover-title { margin-top:14mm; text-align:center; }
       .cover-kicker { font-size: var(--texto); letter-spacing:.18em; text-transform:uppercase; color:#6B6B6B; margin-bottom:5mm; font-weight:700; }
       /* El titulo de la portada, centrado y en mayuscula. El centrado va

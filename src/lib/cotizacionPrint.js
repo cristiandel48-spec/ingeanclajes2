@@ -232,7 +232,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
     <div class="header">
       <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
       <div class="header-right">
-        <div>Especialistas en anclajes &middot; Cotización ${escapeHtml(c?.numero || c?.id || "")}</div>
+        <div>Ingeanclajes S.A.S. &middot; Cotización ${escapeHtml(c?.numero || c?.id || "")}</div>
         ${selloHtml}
       </div>
     </div>
@@ -587,8 +587,9 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
             <img src="${LOGO_INGEANCLAJES}" alt="Ingeanclajes" class="cover-logo" />
           </header>
           <div class="cover-firm">
-            <div class="cover-firm-name">ESPECIALISTAS EN ANCLAJES</div>
-            <div>Calle 38 Sur # 36 &ndash; 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; NIT 900193965-4</div>
+            <div class="cover-firm-name">INGEANCLAJES S.A.S.</div>
+            <div class="cover-firm-nit"><span>NIT 900.193.965-4</span></div>
+            <div class="cover-firm-contact">Calle 38 Sur # 36 &ndash; 48, Envigado &middot; PBX: (604) 448 26 86 &middot; Cel: 315 288 9541</div>
           </div>
           <div class="cover-title">
             <div class="cover-kicker">Propuesta Comercial</div>
@@ -1034,8 +1035,11 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       .cover { padding-top:10mm; }
       .cover-header { display:flex; justify-content:center; padding-bottom:6mm; border-bottom:2px solid #1E1E1E; }
       .cover-logo { height:44px; width:auto; }
-      .cover-firm { text-align:center; font-size: var(--texto); color:#444; line-height:1.8; margin-top:4mm; }
-      .cover-firm-name { font-weight:700; color:#1E1E1E; letter-spacing:.08em; }
+      .cover-firm { text-align:center; margin-top:4.5mm; }
+      .cover-firm-name { font-size:14px; font-weight:800; color:#1E1E1E; letter-spacing:.06em; margin-bottom:2mm; }
+      .cover-firm-nit { font-size:11.5px; font-weight:700; color:#334155; margin-bottom:2.5mm; }
+      .cover-firm-nit span { background:#f1f5f9; border:1px solid #cbd5e1; padding:2px 9px; border-radius:4px; letter-spacing:.04em; }
+      .cover-firm-contact { font-size:11px; color:#64748b; letter-spacing:.02em; }
       .cover-title { margin-top:14mm; text-align:center; }
       .cover-kicker { font-size: var(--texto); letter-spacing:.18em; text-transform:uppercase; color:#6B6B6B; margin-bottom:5mm; font-weight:700; }
       /* El titulo de la portada, centrado y en mayuscula. El centrado va

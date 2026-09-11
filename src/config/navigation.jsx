@@ -31,6 +31,7 @@ export const ICONS = {
   auditoria: ico(<><path d="M4 4h13l3 3v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><circle cx="11" cy="12" r="3"/><path d="M13.2 14.2 16 17"/></>),
   // Una hoja con un sello en la esquina: el cuadro de control que se imprime.
   formatos: ico(<><path d="M6 2h8l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 2v6h6"/><rect x="8" y="12" width="8" height="5" rx="1"/></>),
+  soporte: ico(<><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></>),
 };
 
 // Secciones del menu. `label` es el nombre visible; `short` se usa en la
@@ -40,6 +41,7 @@ export const NAV_SECTIONS = [
     title: "General",
     items: [
       { id: "dashboard", label: "Dashboard" },
+      { id: "soporte", label: "Mensajes y Soporte", short: "Mensajes" },
     ],
   },
   {

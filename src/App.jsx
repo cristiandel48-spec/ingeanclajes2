@@ -19,12 +19,15 @@ import Vencimientos from "./screens/Vencimientos/Vencimientos";
 import Usuarios from "./screens/Usuarios/Usuarios";
 import Auditoria from "./screens/Auditoria/Auditoria";
 import Formatos from "./screens/Formatos/Formatos";
+import Soporte from "./screens/Soporte/Soporte";
 import ModalAlertaCotizaciones from "./components/ModalAlertaCotizaciones";
+import BotonSoporteFlotante from "./components/soporte/BotonSoporteFlotante";
 
 // Registro de pantallas. Las claves coinciden con los `id` de
 // config/navigation.jsx: para sumar una pantalla se agrega aqui y alli.
 const SCREENS = {
   dashboard: Dashboard,
+  soporte: Soporte,
   cotizacion: Cotizacion,
   clientes: ClientesDB,
   catalogo: Catalogo,
@@ -104,6 +107,7 @@ function AppRoot() {
     <AppShell scr={destino} onNavigate={setScr}>
       <Screen ctx={ctx} go={setScr} />
       <ModalAlertaCotizaciones onNavigate={setScr} />
+      <BotonSoporteFlotante />
     </AppShell>
   );
 }

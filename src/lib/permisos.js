@@ -44,11 +44,9 @@ export const MODULOS_CONTADOR = [
   "financiero",
 ];
 
-// Ningun modulo se concede por defecto: cada quien entra solo a lo que se le
-// marca. Antes el dashboard era obligatorio para todos, pero resume la plata
-// de la empresa -cobros pendientes, totales- y eso no lo ve el personal
-// operativo. Ahora la pantalla de aterrizaje es el primer modulo permitido.
-export const MODULOS_MINIMOS = [];
+// Cada quien entra a lo que se le marca, más el canal de mensajes y soporte
+// para que cualquier colaborador pueda comunicarse y reportar incidencias.
+export const MODULOS_MINIMOS = ["soporte"];
 
 // Modulos del rol Administrador y de nadie mas. No se pueden conceder
 // marcando una casilla.
@@ -197,7 +195,9 @@ export function puedeCrearPersonal(membresia) {
 export function pantallaInicial(membresia) {
   const permitidos = modulosPermitidos(membresia);
   if (!permitidos.length) return null;
-  return permitidos.includes("dashboard") ? "dashboard" : permitidos[0];
+  if (permitidos.includes("dashboard")) return "dashboard";
+  const principales = permitidos.filter((id) => id !== "soporte");
+  return principales.length ? principales[0] : permitidos[0];
 }
 
 // Secciones del menu filtradas; las que quedan sin items no se muestran.

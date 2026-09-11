@@ -220,20 +220,11 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
     </div>
   `;
 
-  // El codigo y la version del formato, si estan configurados. Aqui el
-  // encabezado es una sola linea y no un cuadro con bordes como en el informe:
-  // la cotizacion lleva su propia caja de datos debajo y otro recuadro mas
-  // arriba cargaba la hoja.
-  const selloHtml = sello
-    ? `<div class="header-sello"><b>${escapeHtml(sello.codigo)}</b>${sello.linea ? ` &middot; ${escapeHtml(sello.linea)}` : ""}</div>`
-    : "";
-
   const headerHtml = `
     <div class="header">
       <img src="${LOGO_INGEANCLAJES}" class="logo" alt="Ingeanclajes" />
       <div class="header-right">
         <div>Ingeanclajes S.A.S. &middot; Cotización ${escapeHtml(c?.numero || c?.id || "")}</div>
-        ${selloHtml}
       </div>
     </div>
   `;
@@ -632,9 +623,6 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
           </div>
           <div class="cover-foot">
             <span>Documento confidencial &middot; Uso exclusivo del destinatario</span>
-            ${sello
-              ? `<span class="cover-sello"><b>${escapeHtml(sello.codigo)}</b>${sello.linea ? ` &middot; ${escapeHtml(sello.linea)}` : ""}</span>`
-              : ""}
             <span>${escapeHtml(encabezadoFecha)}</span>
           </div>
         </div>

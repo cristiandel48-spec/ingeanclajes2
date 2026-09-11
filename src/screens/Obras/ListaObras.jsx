@@ -12,7 +12,7 @@ import ListadoConFiltros, { GrupoFiltro, Pastilla, Resaltable } from "../../comp
 import { C, enMilis } from "../../components/listadoEstilos";
 import Badge from "../../components/ui/Badge";
 import { SI } from "../../styles/tokens";
-import { ESTADOS_OBRA, estadoCobroDe, estadoObraDe, obraEstaCerrada } from "../../lib/flujoObra";
+import { ESTADOS_OBRA, estadoObraDe, obraEstaCerrada } from "../../lib/flujoObra";
 import { resumenBitacora } from "../../lib/bitacoraObra";
 import { fmtD } from "../../lib/format";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
@@ -148,23 +148,6 @@ function Fila({ o, compacta, cotizacion, resumen, horarios = [], onAbrir, onCamb
     </select>
   );
 
-  // Como va la plata, aparte del trabajo. Sale del saldo, no de una columna:
-  // asi no puede contradecir a los abonos registrados.
-  const cobro = estadoCobroDe(o);
-  const COLOR_COBRO = {
-    "Cobrado":    { texto: "#166534", fondo: "#ecfdf5", borde: "#a7f3d0" },
-    "Abonado":    { texto: "#b45309", fondo: "#fffbeb", borde: "#fcd34d" },
-    "Sin cobrar": { texto: "#64748b", fondo: "#f8fafc", borde: "#e2e8f0" },
-  };
-  const insigniaCobro = cobro && (
-    <span title={`Cobro: ${cobro.toLowerCase()}`}
-      style={{ fontSize: 10, fontWeight: 700, whiteSpace: "nowrap",
-        color: COLOR_COBRO[cobro].texto, background: COLOR_COBRO[cobro].fondo,
-        border: `1px solid ${COLOR_COBRO[cobro].borde}`, borderRadius: 20, padding: "2px 8px" }}>
-      {cobro}
-    </span>
-  );
-
   const contadores = (
     <>
       <span style={{ fontSize: 11, color: C.tenue, flexShrink: 0 }}>{totalEmpleados} 👷</span>
@@ -222,7 +205,6 @@ function Fila({ o, compacta, cotizacion, resumen, horarios = [], onAbrir, onCamb
 
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           {contadores}
-          {insigniaCobro}
           {selectorEstado}
           <span style={{ fontSize: 11, color: C.acentoFuerte, fontWeight: 600 }}>Ver →</span>
         </div>
@@ -265,7 +247,6 @@ function Fila({ o, compacta, cotizacion, resumen, horarios = [], onAbrir, onCamb
 
       <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
         <div style={{ flex: 1 }} onClick={(e) => e.stopPropagation()}>{selectorEstado}</div>
-        {insigniaCobro}
         {contadores}
         <span style={{ fontSize: 11, color: C.acentoFuerte, fontWeight: 600, flexShrink: 0 }}>Ver →</span>
       </div>

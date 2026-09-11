@@ -6,11 +6,10 @@ import LBL from "../../components/ui/LBL";
 import { useEffect, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { buildCertForm, construirTextoSistema, getCertDefaultElements, unAnoDespues } from "./certConfig";
-import { fmt, fmtD, fmtL } from "../../lib/format";
+import { fmtD, fmtL } from "../../lib/format";
 import { normalizarRazonSocial, normalizarFrase, normalizarParrafos, normalizarTextoCertificacion } from "../../lib/normalizarEntrada";
 import { corregirOrtografiaLocal } from "../../lib/correctorTexto";
 import BotonCorregir from "../../components/ui/BotonCorregir";
-import { getEstadoFlujoObra } from "../../lib/flujoObra";
 import { printCurrentPz } from "../../lib/print";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import ListaCertificaciones from "./ListaCertificaciones";
@@ -328,13 +327,7 @@ export default function Certificaciones({ctx}){
 
   const imprimir=(c)=>{setSel(c);setTimeout(()=>printCurrentPz("Certificación " + (c?.numero || c?.id || "")),250);};
 
-  // Estado de la obra elegida en el formulario, para avisar en el momento
-  // justo si todavia no esta lista para certificar.
-  const obraDelForm = obras.find((o)=>o.id===form.obraId) || null;
-  const flujo = obraDelForm ? getEstadoFlujoObra(obraDelForm) : null;
-  const faltantesObra = [];
-  if(flujo && !flujo.estaTerminada) faltantesObra.push(`la obra va en ${flujo.avance}% y no está marcada como finalizada`);
-  if(flujo && !flujo.estaPagada) faltantesObra.push(`queda un saldo por cobrar de ${fmt(flujo.saldo)}`);
+
 
   return(
     <div style={{padding:"14px 28px 28px"}}>
@@ -435,28 +428,6 @@ export default function Certificaciones({ctx}){
             </div>
           </div>
 
-          {obraDelForm && faltantesObra.length>0 && (
-            <AvisoFlujo
-              tono="falta"
-              titulo={`La obra ${obraDelForm.id} todavía no está lista para certificar`}
-              accion={
-                <button
-                  onClick={()=>irAPantalla("obras",{obraId:obraDelForm.id})}
-                  style={{...B("#f1f5f9","#475569"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
-                >
-                  Abrir la obra
-                </button>
-              }
-            >
-              Puedes seguir y guardarla igual, pero ten en cuenta que {faltantesObra.join(" y ")}.
-              Según las condiciones de la cotización, el certificado se entrega con el pago total.
-            </AvisoFlujo>
-          )}
-          {obraDelForm && faltantesObra.length===0 && (
-            <AvisoFlujo tono="listo" titulo={`La obra ${obraDelForm.id} está terminada y pagada`}>
-              Todo en orden para entregar el certificado.
-            </AvisoFlujo>
-          )}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:12}}>
             <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const id=e.target.value;setInformeRef("");const o=obras.find(x=>x.id===id);const f=fechaDeLaObra(id);aplicarCambio({obraId:id,cliente:o?.cliente||"",direccion:buscarDireccionCliente(o),nit:buscarNit(o),...(f?{fecha:f}:{})}, "");}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
             {/* Una obra con varias sedes lleva un informe por sede, y de cada

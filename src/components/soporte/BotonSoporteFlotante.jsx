@@ -18,6 +18,9 @@ export default function BotonSoporteFlotante() {
   const [ticketActivoId, setTicketActivoId] = useState(null);
   const [mensajes, setMensajes] = useState([]);
   const [nuevoTexto, setNuevoTexto] = useState("");
+
+  const [destinatario, setDestinatario] = useState("camila");
+  const [nombreDestinatario, setNombreDestinatario] = useState("Camila Sepúlveda");
   const [asunto, setAsunto] = useState("");
   const [obra, setObra] = useState("");
   const [detalle, setDetalle] = useState("");
@@ -66,13 +69,13 @@ export default function BotonSoporteFlotante() {
 
     setEnviando(true);
     try {
-      const remitente = membresia?.nombre || "Usuario";
+      const remitente = membresia?.nombre || "Cristian Flórez";
       const esAdmin = membresia?.role === "admin";
       const guardado = await enviarMensaje({
         ticketId: ticketActivoId,
         texto,
         remitenteNombre: remitente,
-        remitenteId: membresia?.user_id || null,
+        remitenteId: membresia?.user_id || "cristian",
         esAdmin,
       });
 
@@ -95,9 +98,9 @@ export default function BotonSoporteFlotante() {
       const res = await crearTicket({
         asunto: asunto.trim(),
         obraNombre: obra.trim(),
-        usuarioNombre: membresia?.nombre || "Usuario",
-        usuarioEmail: membresia?.email || "",
-        usuarioId: membresia?.user_id || null,
+        usuarioNombre: nombreDestinatario,
+        usuarioEmail: destinatario === "camila" ? "camilasepulveda@ingeanclajes.com" : "",
+        usuarioId: destinatario,
         mensajeInicial: detalle.trim(),
       });
 
@@ -170,10 +173,10 @@ export default function BotonSoporteFlotante() {
               )}
               <div>
                 <div style={{ fontSize: 13, fontWeight: 700 }}>
-                  {vista === "chat" ? (ticketActivo?.asunto || "Chat de Soporte") : "Soporte e Incidencias"}
+                  {vista === "chat" ? (ticketActivo?.asunto || "Chat de Soporte") : "Mensajes y Soporte"}
                 </div>
                 <div style={{ fontSize: 10.5, opacity: 0.9 }}>
-                  {vista === "chat" ? (ticketActivo?.obra_nombre || "Ingeanclajes") : "Déjanos tu duda o problema"}
+                  {vista === "chat" ? (`Con ${ticketActivo?.usuario_nombre || "Usuario"}`) : "Habla con Camila o el equipo"}
                 </div>
               </div>
             </div>
@@ -220,7 +223,7 @@ export default function BotonSoporteFlotante() {
           {vista === "lista" && (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
               <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--border, #eaecf0)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #101828)" }}>Tus Incidencias</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #101828)" }}>Conversaciones</span>
                 <button
                   onClick={() => setVista("nuevo")}
                   style={{
@@ -234,55 +237,61 @@ export default function BotonSoporteFlotante() {
                     cursor: "pointer",
                   }}
                 >
-                  + Reportar Problema
+                  + Nueva Conversación
                 </button>
               </div>
 
               <div style={{ flex: 1, overflowY: "auto", padding: "8px 10px" }}>
                 {tickets.length === 0 ? (
                   <div style={{ padding: 24, textAlign: "center", color: "var(--text-muted, #667085)", fontSize: 12.5 }}>
-                    No tienes problemas reportados aún. Haz clic en <strong>+ Reportar Problema</strong> para escribirnos.
+                    No hay conversaciones aún. Haz clic en <strong>+ Nueva Conversación</strong> para hablar con Camila o el equipo.
                   </div>
                 ) : (
-                  tickets.map((t) => (
-                    <div
-                      key={t.id}
-                      onClick={() => {
-                        setTicketActivoId(t.id);
-                        setVista("chat");
-                      }}
-                      style={{
-                        padding: "10px 12px",
-                        borderRadius: 10,
-                        border: "1px solid var(--border, #eaecf0)",
-                        marginBottom: 8,
-                        cursor: "pointer",
-                        backgroundColor: "var(--surface-subtle, #f9fafb)",
-                        transition: "all 0.12s ease",
-                      }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #101828)" }}>
-                          #{t.numero} {t.asunto}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: 9.5,
-                            fontWeight: 700,
-                            padding: "1px 6px",
-                            borderRadius: 4,
-                            backgroundColor: t.estado === "resuelto" ? "#ECFDF3" : "#FEF0C7",
-                            color: t.estado === "resuelto" ? "#027A48" : "#B54708",
-                          }}
-                        >
-                          {t.estado === "resuelto" ? "Resuelto" : "En atención"}
-                        </span>
+                  tickets.map((t) => {
+                    const esCamila = (t.usuario_nombre || "").toLowerCase().includes("camila");
+                    return (
+                      <div
+                        key={t.id}
+                        onClick={() => {
+                          setTicketActivoId(t.id);
+                          setVista("chat");
+                        }}
+                        style={{
+                          padding: "10px 12px",
+                          borderRadius: 10,
+                          border: "1px solid var(--border, #eaecf0)",
+                          marginBottom: 8,
+                          cursor: "pointer",
+                          backgroundColor: "var(--surface-subtle, #f9fafb)",
+                          transition: "all 0.12s ease",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #101828)", display: "flex", alignItems: "center", gap: 4 }}>
+                            {esCamila ? "💼" : "👤"} {t.usuario_nombre}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: 9.5,
+                              fontWeight: 700,
+                              padding: "1px 6px",
+                              borderRadius: 4,
+                              backgroundColor: t.estado === "resuelto" ? "#ECFDF3" : "#FEF0C7",
+                              color: t.estado === "resuelto" ? "#027A48" : "#B54708",
+                            }}
+                          >
+                            {t.estado === "resuelto" ? "Resuelto" : "En curso"}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-main, #101828)", marginBottom: 2 }}>
+                          {t.asunto}
+                        </div>
+                        <p style={{ fontSize: 11, color: "var(--text-muted, #667085)", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {t.ultimo_mensaje || "Toca para abrir el chat..."}
+                        </p>
                       </div>
-                      <p style={{ fontSize: 11, color: "var(--text-muted, #667085)", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {t.ultimo_mensaje || "Toca para abrir el chat..."}
-                      </p>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -291,13 +300,34 @@ export default function BotonSoporteFlotante() {
           {vista === "nuevo" && (
             <form onSubmit={handleCrearTicket} style={{ flex: 1, padding: 14, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
               <div>
+                <label style={{ fontSize: 11.5, fontWeight: 700, display: "block", marginBottom: 3, color: "var(--text-main, #101828)" }}>
+                  Hablar con *
+                </label>
+                <select
+                  value={destinatario}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setDestinatario(val);
+                    if (val === "camila") setNombreDestinatario("Camila Sepúlveda");
+                    else if (val === "cristian") setNombreDestinatario("Cristian Flórez");
+                    else if (val === "soporte") setNombreDestinatario("Ingeanclajes Soporte");
+                  }}
+                  style={{ ...SI, padding: "7px 10px", fontSize: 12, fontWeight: 600 }}
+                >
+                  <option value="camila">👤 Camila Sepúlveda (Administración / Finanzas)</option>
+                  <option value="cristian">👤 Cristian Flórez (Administrador)</option>
+                  <option value="soporte">🛠️ Soporte Técnico General</option>
+                </select>
+              </div>
+
+              <div>
                 <label style={{ fontSize: 11.5, fontWeight: 600, display: "block", marginBottom: 3, color: "var(--text-main, #101828)" }}>
-                  ¿Qué problema o duda tienes? *
+                  Asunto o Tema *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Ej: Inconsistencia en pernos de anclaje"
+                  placeholder="Ej: Revisión de pagos, cotizaciones, etc."
                   value={asunto}
                   onChange={(e) => setAsunto(e.target.value)}
                   style={{ ...SI, padding: "8px 10px", fontSize: 12.5 }}
@@ -319,14 +349,14 @@ export default function BotonSoporteFlotante() {
 
               <div style={{ flex: 1 }}>
                 <label style={{ fontSize: 11.5, fontWeight: 600, display: "block", marginBottom: 3, color: "var(--text-main, #101828)" }}>
-                  Detalle del problema
+                  Mensaje inicial
                 </label>
                 <textarea
-                  rows={4}
-                  placeholder="Describe la situación para que podamos ayudarte de inmediato..."
+                  rows={3}
+                  placeholder={`Escribe tu mensaje para ${nombreDestinatario}...`}
                   value={detalle}
                   onChange={(e) => setDetalle(e.target.value)}
-                  style={{ ...SI, padding: "8px 10px", fontSize: 12.5, resize: "none", height: 100 }}
+                  style={{ ...SI, padding: "8px 10px", fontSize: 12.5, resize: "none", height: 75 }}
                 />
               </div>
 
@@ -343,7 +373,7 @@ export default function BotonSoporteFlotante() {
                   disabled={enviando || !asunto.trim()}
                   style={{ flex: 1, ...B("#E0342A"), justifyContent: "center", fontSize: 12, padding: "8px" }}
                 >
-                  {enviando ? "Enviando..." : "Enviar Reporte"}
+                  {enviando ? "Enviando..." : "Iniciar Chat"}
                 </button>
               </div>
             </form>
@@ -358,8 +388,15 @@ export default function BotonSoporteFlotante() {
                   </div>
                 ) : (
                   mensajes.map((m) => {
-                    const esAdmin = m.es_admin;
-                    const esMio = (membresia?.role === "admin" && esAdmin) || (membresia?.role !== "admin" && !esAdmin);
+                    const miId = membresia?.user_id;
+                    const miNombre = (membresia?.nombre || "").trim().toLowerCase();
+                    const msgNombre = (m.remitente_nombre || "").trim().toLowerCase();
+
+                    const esMio =
+                      (miId && m.remitente_id === miId) ||
+                      (miNombre && (msgNombre.includes(miNombre) || miNombre.includes(msgNombre))) ||
+                      (!miId && m.remitente_id === "cristian");
+
                     return (
                       <div
                         key={m.id}
@@ -382,7 +419,7 @@ export default function BotonSoporteFlotante() {
                           }}
                         >
                           <div style={{ fontSize: 9.5, opacity: 0.8, marginBottom: 2 }}>
-                            {m.remitente_nombre} {esAdmin ? "· Soporte" : ""}
+                            {esMio ? "Tú" : m.remitente_nombre}
                           </div>
                           <div>{m.texto}</div>
                         </div>
@@ -442,7 +479,7 @@ export default function BotonSoporteFlotante() {
           fontSize: 22,
           transition: "transform 0.15s ease",
         }}
-        title="Soporte y reporte de incidencias"
+        title="Mensajes y soporte"
       >
         {abierto ? "✕" : "💬"}
       </button>

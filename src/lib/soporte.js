@@ -10,6 +10,20 @@ const LOCAL_STORAGE_KEY_MENSAJES = "ingeanclajes_soporte_mensajes_v1";
 
 export const TICKETS_SEED = [
   {
+    id: "ticket-camila",
+    numero: 106,
+    usuario_nombre: "Camila Sepúlveda",
+    usuario_email: "camilasepulveda@ingeanclajes.com",
+    asunto: "Coordinación de pagos, facturas y anticipos",
+    obra_nombre: "General / Administración",
+    obra_id: null,
+    prioridad: "alta",
+    estado: "en_curso",
+    ultimo_mensaje: "Hola Cristian, ya tengo listos los comprobantes de egreso para revisar.",
+    creado_en: new Date(Date.now() - 3600000).toISOString(),
+    actualizado_en: new Date(Date.now() - 1800000).toISOString(),
+  },
+  {
     id: "seed-ticket-104",
     numero: 104,
     usuario_nombre: "Roberto Gómez",
@@ -54,6 +68,35 @@ export const TICKETS_SEED = [
 ];
 
 export const MENSAJES_SEED = {
+  "ticket-camila": [
+    {
+      id: "msg-c1",
+      ticket_id: "ticket-camila",
+      remitente_nombre: "Camila Sepúlveda",
+      remitente_id: "camila",
+      es_admin: true,
+      texto: "Hola Cristian, ¿revisamos el pago del anticipo de la Torre Norte para autorizar la compra de los anclajes?",
+      creado_en: new Date(Date.now() - 3600000).toISOString(),
+    },
+    {
+      id: "msg-c2",
+      ticket_id: "ticket-camila",
+      remitente_nombre: "Cristian Flórez",
+      remitente_id: "cristian",
+      es_admin: true,
+      texto: "Hola Camila, sí. La cotización fue aprobada ayer con el 50% de anticipo. Procedamos con la orden de compra.",
+      creado_en: new Date(Date.now() - 2400000).toISOString(),
+    },
+    {
+      id: "msg-c3",
+      ticket_id: "ticket-camila",
+      remitente_nombre: "Camila Sepúlveda",
+      remitente_id: "camila",
+      es_admin: true,
+      texto: "Perfecto Cristian, ya tengo listos los comprobantes de egreso para revisar.",
+      creado_en: new Date(Date.now() - 1800000).toISOString(),
+    },
+  ],
   "seed-ticket-104": [
     {
       id: "msg-1",
@@ -113,7 +156,17 @@ export const MENSAJES_SEED = {
 function getLocalTickets() {
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY_TICKETS);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        const tieneCamila = parsed.some((t) => t.id === "ticket-camila" || (t.usuario_nombre && t.usuario_nombre.toLowerCase().includes("camila")));
+        if (!tieneCamila && TICKETS_SEED[0]) {
+          parsed.unshift(TICKETS_SEED[0]);
+          saveLocalTickets(parsed);
+        }
+        return parsed;
+      }
+    }
   } catch (e) {
     console.warn("Error leyendo tickets de localStorage:", e);
   }
@@ -131,7 +184,11 @@ function saveLocalTickets(tickets) {
 function getLocalMensajes(ticketId) {
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY_MENSAJES);
-    const store = raw ? JSON.parse(raw) : MENSAJES_SEED;
+    const store = raw ? JSON.parse(raw) : { ...MENSAJES_SEED };
+    if (!store[ticketId] && MENSAJES_SEED[ticketId]) {
+      store[ticketId] = MENSAJES_SEED[ticketId];
+      localStorage.setItem(LOCAL_STORAGE_KEY_MENSAJES, JSON.stringify(store));
+    }
     return store[ticketId] || [];
   } catch (e) {
     console.warn("Error leyendo mensajes de localStorage:", e);

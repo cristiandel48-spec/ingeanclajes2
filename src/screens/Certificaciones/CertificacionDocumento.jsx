@@ -22,7 +22,7 @@ const conNegritas = (texto, datos)=>{
   ));
 };
 
-function generarFranjaSeguridad(ancho = 24, alto = 1100) {
+function generarFranjaSeguridad(ancho = 44, alto = 1100) {
   if (typeof document === "undefined") return "";
   const dpr = 2;
   const canvas = document.createElement("canvas");
@@ -35,35 +35,35 @@ function generarFranjaSeguridad(ancho = 24, alto = 1100) {
 
   // Fondo degradado rojo institucional
   const grad = ctx.createLinearGradient(0, 0, 0, alto);
-  grad.addColorStop(0, "#8b1515");
+  grad.addColorStop(0, "#7f1d1d");
   grad.addColorStop(0.2, "#b91c1c");
   grad.addColorStop(0.5, "#dc2626");
   grad.addColorStop(0.8, "#b91c1c");
-  grad.addColorStop(1, "#8b1515");
+  grad.addColorStop(1, "#7f1d1d");
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, ancho, alto);
 
   // Filete fino de acento blanco translúcido en el borde derecho
-  ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
-  ctx.fillRect(ancho - 1, 0, 1, alto);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+  ctx.fillRect(ancho - 1.5, 0, 1.5, alto);
 
-  // Texto vertical centrado legible y nítido
+  // Texto vertical centrado legible y grande
   ctx.save();
   ctx.translate(ancho / 2, alto / 2);
   ctx.rotate(-Math.PI / 2);
 
   ctx.fillStyle = "#ffffff";
-  ctx.font = "800 10px 'Segoe UI', -apple-system, Arial, sans-serif";
+  ctx.font = "800 13px 'Segoe UI', -apple-system, Arial, sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
   const texto = "INGEANCLAJES S.A.S · PROTOCOLO OFICIAL DE SEGURIDAD · RES. 4272/2021 & ANSI Z359";
   if ("letterSpacing" in ctx) {
-    ctx.letterSpacing = "2.2px";
+    ctx.letterSpacing = "2.8px";
     ctx.fillText(texto, 0, 0);
   } else {
     const caracteres = texto.split("");
-    const espaciado = 2.2;
+    const espaciado = 2.8;
     const anchos = caracteres.map((c) => ctx.measureText(c).width);
     const anchoTotal = anchos.reduce((a, b) => a + b, 0) + (caracteres.length - 1) * espaciado;
     let x = -anchoTotal / 2;
@@ -87,7 +87,7 @@ export default function CertificacionDocumento({cert}){
   const [qrUrl, setQrUrl] = useState("");
   const [franjaUrl, setFranjaUrl] = useState(() => {
     try {
-      return generarFranjaSeguridad(24, 1100);
+      return generarFranjaSeguridad(44, 1100);
     } catch {
       return "";
     }
@@ -98,7 +98,7 @@ export default function CertificacionDocumento({cert}){
   useEffect(() => {
     if (!franjaUrl) {
       try {
-        const u = generarFranjaSeguridad(24, 1100);
+        const u = generarFranjaSeguridad(44, 1100);
         if (u) setFranjaUrl(u);
       } catch (e) {
         console.warn("Error generando franja de seguridad:", e);
@@ -133,6 +133,7 @@ export default function CertificacionDocumento({cert}){
   return(
     <div
       id="pz"
+      data-bleed-left="true"
       className="doc-shell"
       style={{
         background: "#fff",
@@ -154,7 +155,7 @@ export default function CertificacionDocumento({cert}){
           left: 0,
           top: 0,
           bottom: 0,
-          width: 24,
+          width: 44,
           backgroundImage: franjaUrl ? `url("${franjaUrl}")` : "none",
           backgroundColor: "#b91c1c",
           backgroundSize: "100% 100%",
@@ -185,7 +186,7 @@ export default function CertificacionDocumento({cert}){
       />
 
       {/* Contenedor interno con márgenes controlados para separación perfecta de la franja */}
-      <div style={{ marginLeft: 34, marginRight: 22, paddingTop: 18, paddingBottom: 16, position: "relative", zIndex: 1 }}>
+      <div style={{ marginLeft: 62, marginRight: 22, paddingTop: 18, paddingBottom: 16, position: "relative", zIndex: 1 }}>
 
         {/* Encabezado Oficial */}
         <div style={{ padding: "0 0 8px" }}>

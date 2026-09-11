@@ -235,9 +235,13 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
     );
   }
 
+  const bleedLeft = Boolean(nodo?.getAttribute && nodo.getAttribute("data-bleed-left") === "true");
+  const anchoDoc = bleedLeft ? (ANCHO_HOJA - MARGEN) : ANCHO_UTIL;
+  const margenX = bleedLeft ? 0 : MARGEN * PX_A_PT;
+
   const marco = document.createElement("iframe");
   marco.setAttribute("aria-hidden", "true");
-  marco.style.cssText = `position:fixed;left:0;top:0;width:${ANCHO_UTIL}px;opacity:0.01;pointer-events:none;z-index:-9999;border:0;`;
+  marco.style.cssText = `position:fixed;left:0;top:0;width:${anchoDoc}px;opacity:0.01;pointer-events:none;z-index:-9999;border:0;`;
   document.body.appendChild(marco);
 
   try {
@@ -267,7 +271,7 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
       useCORS: true,
       backgroundColor: "#ffffff",
       logging: false,
-      windowWidth: ANCHO_UTIL,
+      windowWidth: anchoDoc,
       windowHeight: altoTotal,
     });
 
@@ -310,9 +314,9 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
       pdf.addImage(
         recorte.toDataURL("image/jpeg", 0.92),
         "JPEG",
+        margenX,
         MARGEN * PX_A_PT,
-        MARGEN * PX_A_PT,
-        ANCHO_UTIL * PX_A_PT,
+        anchoDoc * PX_A_PT,
         (altoTrozo / escala) * PX_A_PT,
         undefined,
         "FAST"

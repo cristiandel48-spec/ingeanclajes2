@@ -205,7 +205,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       <div class="footer-col footer-col-left">
         <div class="footer-label">Sede Principal</div>
         <div class="footer-main">Calle 38 Sur # 36 &ndash; 48</div>
-        <div class="footer-sub">Envigado &middot; NIT 900.193.965-4</div>
+        <div class="footer-sub">Envigado</div>
       </div>
       <div class="footer-col footer-col-center">
         <div class="footer-label">Líneas de Atención</div>
@@ -932,7 +932,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
     <meta charset="utf-8" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet" />
     <title>Cotizacion ${escapeHtml(c?.numero || "")}</title>
     <style>
       @page { size: Letter; margin: 0; }
@@ -975,7 +975,6 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
         display:grid;
         grid-template-columns: 1fr 1fr 1fr;
         gap:4mm;
-        font-size:calc(var(--texto) * 0.9);
         background:#fff;
         line-height:1.35;
       }
@@ -983,26 +982,26 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       .footer-col-center { text-align:center; border-left:1px solid #E2E8F0; border-right:1px solid #E2E8F0; padding:0 2mm; }
       .footer-col-right { text-align:right; }
       .footer-label {
-        font-size:calc(var(--texto) * 0.78);
-        font-weight:700;
+        font-size:calc(var(--texto) * 1.05);
+        font-weight:800;
         text-transform:uppercase;
-        letter-spacing:.08em;
-        color:#1E1E1E;
-        margin-bottom:1.5px;
+        letter-spacing:.07em;
+        color:#0f172a;
+        margin-bottom:2px;
       }
       .footer-main {
-        font-weight:600;
-        color:#334155;
-        font-size:calc(var(--texto) * 0.88);
+        font-weight:700;
+        color:#0f172a;
+        font-size:calc(var(--texto) * 1.22);
       }
       .footer-sub {
-        font-weight:400;
-        color:#64748b;
-        font-size:calc(var(--texto) * 0.84);
+        font-weight:700;
+        color:#1e293b;
+        font-size:calc(var(--texto) * 1.13);
       }
       .footer-brand {
         color:#cc0000;
-        font-weight:700;
+        font-weight:800;
       }
 
       .eyebrow { font-size: var(--texto); letter-spacing:.09em; text-transform:uppercase; color:#6B6B6B; font-weight:600; text-align:center; margin:0 0 6mm; padding-bottom:3mm; border-bottom:2px solid #1E1E1E; }

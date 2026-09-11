@@ -10,7 +10,6 @@ import { useMemo, useState } from "react";
 import ListadoConFiltros, { GrupoFiltro, Resaltable } from "../../components/ListadoConFiltros";
 import { C, boton, enMilis } from "../../components/listadoEstilos";
 import Badge from "../../components/ui/Badge";
-import MenuAccionesFila from "../../components/ui/MenuAccionesFila";
 import { EC, SI } from "../../styles/tokens";
 import { fmt, fmtD } from "../../lib/format";
 import { normalizarMayusculas, normalizarRazonSocial } from "../../lib/normalizarEntrada";
@@ -171,20 +170,6 @@ function Fila({ c, compacta, acciones }) {
     0
   );
 
-  const menuItems = [
-    { label: "Ver documento", icon: "👁️", onClick: alPulsar(acciones.ver) },
-    { label: "Editar propuesta", icon: "✏️", onClick: alPulsar(acciones.editar) },
-    { label: "Duplicar cotización", icon: "📋", onClick: alPulsar(acciones.duplicar) },
-    { divider: true },
-    !aprobada
-      ? { label: "Aprobar cotización", icon: "✓", success: true, onClick: alPulsar(acciones.aprobar), title: "Aprueba la cotización y crea la obra" }
-      : { label: "Devolver a Pendiente", icon: "↩", onClick: alPulsar(acciones.desaprobar), title: "Devuelve a Pendiente" },
-    { label: "Descargar PDF", icon: "📥", onClick: alPulsar(acciones.pdf) },
-    { label: "Enviar al cliente", icon: "✉️", onClick: alPulsar(acciones.enviar) },
-    { divider: true },
-    { label: "Eliminar cotización", icon: "🗑️", danger: true, onClick: alPulsar(acciones.eliminar) },
-  ];
-
   const botones = (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
       <button
@@ -261,7 +246,6 @@ function Fila({ c, compacta, acciones }) {
       >
         <span>🗑️</span>
       </button>
-      <MenuAccionesFila items={menuItems} />
     </div>
   );
 

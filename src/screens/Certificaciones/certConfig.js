@@ -252,6 +252,7 @@ export const buildCertForm = (overrides={})=>{
     sistemaAuto: true,
     normativa: "Resolución 4272 de 2021",
     ingeniero: "ING. JHON JAIME SEPULVEDA LONDOÑO",
+    cargo: overrides.cargo || "Gerente General",
     matricula: "MP. 05256-409949",
     // Este campo es el que alimenta las alertas de Vencimientos y del
     // Dashboard. Nacia vacio y habia que acordarse de llenarlo: el que se

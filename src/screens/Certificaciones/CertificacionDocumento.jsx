@@ -22,6 +22,75 @@ const conNegritas = (texto, datos)=>{
   ));
 };
 
+// Formatea el párrafo del sistema certificado resaltando en negrita todos los datos dinámicos
+const renderTextoSistema = (cert)=>{
+  const t = String(cert?.sistema || "").trim();
+  if(!t) return null;
+
+  const mVerbo = t.match(/^(CERTIFICA|RECERTIFICA)\s+que\s+/i);
+  if(mVerbo){
+    const verbo = mVerbo[1];
+    const afterVerbo = t.slice(mVerbo[0].length);
+    const mCierre = afterVerbo.match(/(,\s*cumplen\s+a\s+cabalidad[\s\S]*)$/i);
+    const cierre = mCierre ? mCierre[1] : "";
+    const cuerpo = mCierre ? afterVerbo.slice(0, mCierre.index) : afterVerbo;
+
+    let remaining = cuerpo;
+    let direccion = null;
+    const mDir = remaining.match(/(?:,\s*|\s+)con\s+DIRECCI[OÓ]N:\s*(.+)$/i);
+    if(mDir){
+      direccion = mDir[1].trim();
+      remaining = remaining.slice(0, mDir.index);
+    }
+
+    let nit = null;
+    let cliente = null;
+    const mNit = remaining.match(/(?:,\s*|\s+)con\s+NIT:\s*([0-9kK.\-]+)\s*(?:\(([^)]+)\))?$/i);
+    if(mNit){
+      nit = mNit[1].trim();
+      cliente = mNit[2] ? mNit[2].trim() : null;
+      remaining = remaining.slice(0, mNit.index);
+    } else {
+      const mClienteDe = remaining.match(/(?:,\s*|\s+)de\s+([^,]+)$/i);
+      if(mClienteDe){
+        cliente = mClienteDe[1].trim();
+        remaining = remaining.slice(0, mClienteDe.index);
+      }
+    }
+
+    let lugar = null;
+    const mLugar = remaining.match(/(?:,\s*|\s+)instalados\s+en\s+(\([^)]+\)|[^,]+)$/i);
+    if(mLugar){
+      lugar = mLugar[1].trim();
+      remaining = remaining.slice(0, mLugar.index);
+    }
+
+    const detalle = remaining.trim().replace(/[,\s]+$/, "");
+
+    return (
+      <span>
+        <strong>{verbo}</strong> que <strong>{detalle}</strong>
+        {lugar && <>, instalados en <strong>{lugar}</strong></>}
+        {nit && <> con NIT: <strong>{nit}</strong></>}
+        {cliente && (mNit?.[2] ? <> (<strong>{cliente}</strong>)</> : <> de <strong>{cliente}</strong></>)}
+        {direccion && <> con DIRECCIÓN: <strong>{direccion}</strong></>}
+        {cierre}
+      </span>
+    );
+  }
+
+  return conNegritas(t, [
+    "CERTIFICA",
+    "RECERTIFICA",
+    cert?.nit,
+    cert?.cliente,
+    cert?.direccion,
+    cert?.lugar,
+    cert?.detalle,
+    ...(t.match(/\([^)]+\)/g) || [])
+  ]);
+};
+
 function generarFranjaSeguridad(ancho = 44, alto = 1100) {
   if (typeof document === "undefined") return "";
   const dpr = 2;
@@ -228,7 +297,7 @@ export default function CertificacionDocumento({cert}){
 
         {/* Texto del Sistema Certificado */}
         <div style={{ textAlign: "justify", marginBottom: 10, lineHeight: 1.6, fontSize: 10.5, color: "#1e293b" }}>
-          {conNegritas(cert.sistema, [cert.nit, cert.cliente, cert.direccion, cert.lugar])}
+          {renderTextoSistema(cert)}
         </div>
 
         {/* Elementos Estructurales Certificados */}
@@ -349,7 +418,7 @@ export default function CertificacionDocumento({cert}){
             </div>
             <div style={{ borderTop: "1.5px solid #0f172a", paddingTop: 4, display: "inline-block", minWidth: 200 }}>
               <div style={{ fontWeight: 800, fontSize: 10.5, color: "#0f172a" }}>{cert.ingeniero}</div>
-              <div style={{ fontSize: 9, color: "#475569" }}>Especialista en Estructuras y Trabajo en Alturas</div>
+              <div style={{ fontSize: 9, color: "#475569", fontWeight: 600 }}>{cert.cargo || "Gerente General"}</div>
               <div style={{ fontSize: 8.5, fontWeight: 700, color: "#0f172a" }}>{cert.matricula}</div>
             </div>
           </div>

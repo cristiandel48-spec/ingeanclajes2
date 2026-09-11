@@ -18,8 +18,13 @@ import { printColilla, printCurrentPz, printLiquidacion, printVacaciones } from 
 export default function Nomina({ctx}){
   const {empleados,setEmpleados,obras,cargos,setCargos,nominasGeneradas,setNominasGeneradas,saveAllToCloud}=ctx;
   const [tab,setTab]=useState("lista");
-  const [mes,setMes]=useState("2026-04");
-  const [corteNomina,setCorteNomina]=useState("primera");
+  const [mes,setMes]=useState(()=>{
+    const ahora = new Date();
+    return `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, "0")}`;
+  });
+  const [corteNomina,setCorteNomina]=useState(()=>{
+    return new Date().getDate() <= 15 ? "primera" : "segunda";
+  });
   const [selId,setSelId]=useState(null);
   const [showHE,setShowHE]=useState(null);
   const [showIncapacidad,setShowIncapacidad]=useState(null);

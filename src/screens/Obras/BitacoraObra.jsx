@@ -150,13 +150,6 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
         </div>
       )}
 
-      <AvisoFlujo tono="info" titulo="Esto es lo que después sale en el informe de actividades">
-        Cada vez que se trabaje en la obra, agrega un registro con la fecha, lo que se hizo y las
-        fotos. Cuando toque hacer el informe, no hay que escribir nada de nuevo: se elige el período
-        y el sistema trae estos registros con sus fotos y comentarios. <strong>La fecha es lo que
-        decide si el registro entra o no en el informe</strong>, así que ponla siempre.
-      </AvisoFlujo>
-
       {subiendoFotos && (
         <div style={{ background: "rgba(30, 64, 175, 0.15)", border: "1px solid rgba(191, 216, 255, 0.3)", color: "#60a5fa", borderRadius: 10, padding: "9px 13px", fontSize: 12, marginBottom: 12 }}>
           Procesando {subiendoFotos.total > 1 ? `${subiendoFotos.hechas} de ${subiendoFotos.total} fotos…` : "la foto…"} espera un momento.

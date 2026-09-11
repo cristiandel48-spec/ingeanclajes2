@@ -61,37 +61,98 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
   return(
     <div style={{padding:28}}>
       {/* Barra superior */}
-      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:24,background:"var(--surface, #fff)",borderRadius:14,padding:"16px 20px",border:"1px solid var(--border, #e2e8f0)",boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
-        <button onClick={onVolver} style={{...B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)"),padding:"8px 16px",fontSize:13,flexShrink:0}}>← Volver</button>
-        <div style={{flex:1}}>
-          <div style={{fontSize:11,color:"var(--text-subtle, #94a3b8)"}}>{oAct.id} · {fmtD(oAct.fechaInicio)} → {fmtD(oAct.fechaFin)||"En curso"}</div>
-          <div style={{fontSize:20,fontWeight:700,color:"var(--text-main, #1a1a2e)",lineHeight:1.2}}>{oAct.cliente}</div>
-          <div style={{fontSize:13,color:"var(--text-muted, #475569)"}}>{oAct.proyecto} · 📍 {oAct.ciudad}</div>
-          {oAct.direccion&&<div style={{fontSize:11,color:"var(--text-subtle, #94a3b8)"}}>{oAct.direccion}</div>}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 16,
+        marginBottom: 24,
+        background: "var(--surface, #fff)",
+        borderRadius: 14,
+        padding: "16px 20px",
+        border: "1px solid var(--border, #e2e8f0)",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+        flexWrap: "wrap",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, flex: "1 1 280px" }}>
+          <button onClick={onVolver} style={{...B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)"),padding:"8px 16px",fontSize:13,flexShrink:0}}>← Volver</button>
+          <div>
+            <div style={{fontSize:11,color:"var(--text-subtle, #94a3b8)"}}>{oAct.id} · {fmtD(oAct.fechaInicio)} → {fmtD(oAct.fechaFin)||"En curso"}</div>
+            <div style={{fontSize:20,fontWeight:700,color:"var(--text-main, #1a1a2e)",lineHeight:1.2}}>{oAct.cliente}</div>
+            <div style={{fontSize:13,color:"var(--text-muted, #475569)"}}>{oAct.proyecto} · 📍 {oAct.ciudad}</div>
+            {oAct.direccion&&<div style={{fontSize:11,color:"var(--text-subtle, #94a3b8)"}}>{oAct.direccion}</div>}
+          </div>
         </div>
-        <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
+
+        {/* Información y acciones seleccionadas: perfectamente centradas */}
+        <div style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+          gap: 8,
+          margin: "0 auto",
+          padding: "4px 8px",
+        }}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
             {cotVinc&&<div style={{fontSize:11,color:"#f59e0b",fontWeight:600}}>📄 {cotVinc.numero}</div>}
             <Badge estado={oAct.estado}/>
           </div>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center",justifyContent:"flex-end"}}>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center",justifyContent:"center"}}>
             <button
               onClick={()=>irAPantalla("informes",{obraId:oAct.id})}
-              style={{...B("rgba(30, 64, 175, 0.15)","#60a5fa"),fontSize:11.5,padding:"5px 11px",fontWeight:600}}
+              style={{
+                background: "rgba(30, 64, 175, 0.08)",
+                color: "#1d4ed8",
+                border: "1px solid rgba(191, 219, 254, 0.6)",
+                borderRadius: 8,
+                fontSize: 11.5,
+                padding: "6px 12px",
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+              }}
               title="Crear informe de actividades para esta obra"
             >
               📄 Crear informe
             </button>
             <button
               onClick={()=>irAPantalla("certificaciones",{obraId:oAct.id})}
-              style={{...B("rgba(16, 185, 129, 0.15)","#34d399"),fontSize:11.5,padding:"5px 11px",fontWeight:600}}
+              style={{
+                background: "rgba(16, 185, 129, 0.08)",
+                color: "#047857",
+                border: "1px solid rgba(167, 243, 208, 0.6)",
+                borderRadius: 8,
+                fontSize: 11.5,
+                padding: "6px 12px",
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+              }}
               title="Crear certificación para esta obra"
             >
               📜 Certificar
             </button>
             <button
               onClick={()=>setMostrarGuia(!mostrarGuia)}
-              style={{...B(mostrarGuia ? "rgba(245, 158, 11, 0.15)" : "var(--surface-subtle, #f8fafc)", mostrarGuia ? "#fbbf24" : "var(--text-muted, #64748b)"),fontSize:11,padding:"5px 9px",border:"1px solid var(--border, #e2e8f0)"}}
+              style={{
+                background: mostrarGuia ? "#FFFAEB" : "var(--surface-subtle, #f2f4f7)",
+                color: mostrarGuia ? "#B54708" : "var(--text-muted, #475467)",
+                border: mostrarGuia ? "1px solid rgba(181, 71, 8, 0.35)" : "1px solid var(--border, #eaecf0)",
+                borderRadius: 8,
+                fontSize: 11.5,
+                padding: "6px 11px",
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+              }}
               title={mostrarGuia ? "Ocultar guía y qué sigue" : "Mostrar guía de flujo y qué sigue en esta obra"}
             >
               {mostrarGuia ? "Ocultar qué sigue" : "💡 Qué sigue"}

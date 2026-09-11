@@ -19,7 +19,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
   const verDinero=puedeVerDinero(membresia);
   // Obra entregada: se consulta, no se edita. La reabre un administrador.
   const bloqueada = obraEstaCerrada(obras.find((o)=>o.id===obraId)) && !esAdmin(membresia);
-  const [detTab,setDetTab]=useState("bitacora");
+  const [detTab,setDetTab]=useState("avance");
   const [gastoForm,setGastoForm]=useState({proveedorId:"PROV-001",concepto:"",monto:0,fecha:today(),fechaVence:"",factura:""});
   const [nuevoEmp,setNuevoEmp]=useState(false);
   const [showGasto,setShowGasto]=useState(false);

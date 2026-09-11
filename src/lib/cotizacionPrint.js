@@ -202,8 +202,21 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
 
   const footerHtml = `
     <div class="footer">
-      <span>Calle 38 Sur # 36 &ndash; 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541 &middot; NIT 900193965-4</span>
-      <span>comercial1ingeanclajes@gmail.com &middot; www.ingeanclajessas.com</span>
+      <div class="footer-col footer-col-left">
+        <div class="footer-label">Sede Principal</div>
+        <div class="footer-main">Calle 38 Sur # 36 &ndash; 48</div>
+        <div class="footer-sub">Envigado &middot; NIT 900.193.965-4</div>
+      </div>
+      <div class="footer-col footer-col-center">
+        <div class="footer-label">Líneas de Atención</div>
+        <div class="footer-main">PBX (604) 448 26 86</div>
+        <div class="footer-sub">Cel. 315 288 9541</div>
+      </div>
+      <div class="footer-col footer-col-right">
+        <div class="footer-label">Contacto Digital</div>
+        <div class="footer-main">comercial1ingeanclajes@gmail.com</div>
+        <div class="footer-sub footer-brand">www.ingeanclajessas.com</div>
+      </div>
     </div>
   `;
 
@@ -967,12 +980,40 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
 
       .footer {
         position:absolute;
-        left:9mm; right:9mm; bottom:8mm;
-        padding-top:2mm;
-        border-top:1px solid #DDD;
-        display:flex; justify-content:space-between; gap:6mm;
-        font-size: var(--texto); letter-spacing:.03em; color:#666;
+        left:9mm; right:9mm; bottom:7mm;
+        padding-top:2.6mm;
+        border-top:1.5px solid #1E1E1E;
+        display:grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap:4mm;
+        font-size:calc(var(--texto) * 0.9);
         background:#fff;
+        line-height:1.35;
+      }
+      .footer-col-left { text-align:left; }
+      .footer-col-center { text-align:center; border-left:1px solid #E2E8F0; border-right:1px solid #E2E8F0; padding:0 2mm; }
+      .footer-col-right { text-align:right; }
+      .footer-label {
+        font-size:calc(var(--texto) * 0.78);
+        font-weight:700;
+        text-transform:uppercase;
+        letter-spacing:.08em;
+        color:#1E1E1E;
+        margin-bottom:1.5px;
+      }
+      .footer-main {
+        font-weight:600;
+        color:#334155;
+        font-size:calc(var(--texto) * 0.88);
+      }
+      .footer-sub {
+        font-weight:400;
+        color:#64748b;
+        font-size:calc(var(--texto) * 0.84);
+      }
+      .footer-brand {
+        color:#cc0000;
+        font-weight:700;
       }
 
       .eyebrow { font-size: var(--texto); letter-spacing:.09em; text-transform:uppercase; color:#6B6B6B; font-weight:600; text-align:center; margin:0 0 6mm; padding-bottom:3mm; border-bottom:2px solid #1E1E1E; }

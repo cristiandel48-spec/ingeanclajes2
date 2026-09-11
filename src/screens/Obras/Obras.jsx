@@ -1,4 +1,3 @@
-import AvisoFlujo from "../../components/AvisoFlujo";
 import Badge from "../../components/ui/Badge";
 import CampoTexto from "../../components/ui/CampoTexto";
 import H1 from "../../components/ui/H1";
@@ -147,9 +146,19 @@ export default function Obras({ctx}){
     sel ? null : (
       <button
         style={{
-          background:"#cc0000", color:"#fff", border:"1px solid #cc0000", borderRadius:9,
-          padding:"8px 16px", fontSize:12.5, fontWeight:700, cursor:"pointer",
-          fontFamily:"inherit", whiteSpace:"nowrap",
+          background: "#FFFAEB",
+          color: "#B54708",
+          border: "1px solid rgba(181, 71, 8, 0.35)",
+          borderRadius: 8,
+          padding: "8px 16px",
+          fontSize: 12.5,
+          fontWeight: 600,
+          cursor: "pointer",
+          fontFamily: "inherit",
+          whiteSpace: "nowrap",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
         }}
         onClick={()=>setShowNO((v)=>!v)}
       >+ Nueva Obra</button>
@@ -166,14 +175,8 @@ export default function Obras({ctx}){
     <div style={{padding:"14px 28px 28px"}}>
 
       {showNO&&(
-        <div style={{...CD,marginBottom:20,border:"1px solid #cc0000"}}>
+        <div style={{...CD,marginBottom:20,border:"1px solid var(--border, #e2e8f0)"}}>
           <div style={ST}>Nueva Obra</div>
-          <AvisoFlujo tono="info" titulo="¿La obra ya está en ejecución?">
-            Créala igual aquí. Pon la <strong>fecha real de inicio</strong>, el <strong>% de avance
-            que lleva</strong> hoy y lo que ya se haya <strong>cobrado</strong>: así el sistema
-            arranca con la realidad de la obra y no en ceros. Lo único obligatorio es el cliente,
-            lo demás se puede completar después.
-          </AvisoFlujo>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
             <BuscadorCliente
               label="Cliente"
@@ -223,8 +226,36 @@ export default function Obras({ctx}){
             </div>
           </div>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={guardarObra} style={B("#cc0000")}>✅ Crear Obra</button>
-            <button onClick={()=>setShowNO(false)} style={B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)")}>Cancelar</button>
+            <button
+              onClick={guardarObra}
+              style={{
+                background: "#ecfdf5",
+                color: "#047857",
+                border: "1px solid #a7f3d0",
+                borderRadius: 8,
+                fontSize: 12.5,
+                fontWeight: 600,
+                padding: "8px 16px",
+                cursor: "pointer"
+              }}
+            >
+              ✅ Crear Obra
+            </button>
+            <button
+              onClick={()=>setShowNO(false)}
+              style={{
+                background: "var(--surface-subtle, #f2f4f7)",
+                color: "var(--text-muted, #475467)",
+                border: "1px solid var(--border, #eaecf0)",
+                borderRadius: 8,
+                fontSize: 12.5,
+                fontWeight: 600,
+                padding: "8px 16px",
+                cursor: "pointer"
+              }}
+            >
+              Cancelar
+            </button>
           </div>
         </div>
       )}

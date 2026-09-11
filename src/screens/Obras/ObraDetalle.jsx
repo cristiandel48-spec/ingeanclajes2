@@ -1,5 +1,4 @@
 import Av from "../../components/ui/Av";
-import AvisoFlujo from "../../components/AvisoFlujo";
 import Badge from "../../components/ui/Badge";
 import BitacoraObra from "./BitacoraObra";
 import LBL from "../../components/ui/LBL";
@@ -60,104 +59,127 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
 
   return(
     <div style={{padding:28}}>
-      {/* Barra superior */}
+      {/* Barra superior - Opción 3 Compacta Integrada */}
       <div style={{
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
         gap: 16,
-        marginBottom: 24,
+        marginBottom: 20,
         background: "var(--surface, #fff)",
         borderRadius: 14,
-        padding: "16px 20px",
+        padding: "14px 20px",
         border: "1px solid var(--border, #e2e8f0)",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
         flexWrap: "wrap",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14, flex: "1 1 280px" }}>
-          <button onClick={onVolver} style={{...B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)"),padding:"8px 16px",fontSize:13,flexShrink:0}}>← Volver</button>
+        {/* Izquierda: Volver + Nombre + Badges + Metadatos */}
+        <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+          <button
+            onClick={onVolver}
+            style={{
+              background: "var(--surface-subtle, #f2f4f7)",
+              color: "var(--text-muted, #475467)",
+              border: "1px solid var(--border, #eaecf0)",
+              borderRadius: 8,
+              fontSize: 12.5,
+              fontWeight: 600,
+              padding: "7px 14px",
+              cursor: "pointer",
+              flexShrink: 0,
+            }}
+          >
+            ← Volver
+          </button>
+          <div style={{ width: 1, height: 32, background: "var(--border, #e2e8f0)" }} />
           <div>
-            <div style={{fontSize:11,color:"var(--text-subtle, #94a3b8)"}}>{oAct.id} · {fmtD(oAct.fechaInicio)} → {fmtD(oAct.fechaFin)||"En curso"}</div>
-            <div style={{fontSize:20,fontWeight:700,color:"var(--text-main, #1a1a2e)",lineHeight:1.2}}>{oAct.cliente}</div>
-            <div style={{fontSize:13,color:"var(--text-muted, #475569)"}}>{oAct.proyecto} · 📍 {oAct.ciudad}</div>
-            {oAct.direccion&&<div style={{fontSize:11,color:"var(--text-subtle, #94a3b8)"}}>{oAct.direccion}</div>}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 18, fontWeight: 700, color: "var(--text-main, #1a1a2e)", lineHeight: 1.2 }}>
+                {oAct.cliente}
+              </span>
+              <Badge estado={oAct.estado}/>
+              {cotVinc && (
+                <span style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "#B54708",
+                  background: "#FFFAEB",
+                  border: "1px solid rgba(181, 71, 8, 0.25)",
+                  borderRadius: 6,
+                  padding: "2px 8px",
+                }}>
+                  📄 {cotVinc.numero}
+                </span>
+              )}
+            </div>
+            <div style={{ fontSize: 11.5, color: "var(--text-muted, #64748b)", marginTop: 2 }}>
+              {oAct.id} · {fmtD(oAct.fechaInicio)} → {fmtD(oAct.fechaFin) || "En curso"} · {oAct.proyecto} · 📍 {oAct.ciudad}{oAct.direccion ? ` · ${oAct.direccion}` : ""}
+            </div>
           </div>
         </div>
 
-        {/* Información y acciones seleccionadas: perfectamente centradas */}
-        <div style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          textAlign: "center",
-          gap: 8,
-          margin: "0 auto",
-          padding: "4px 8px",
-        }}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-            {cotVinc&&<div style={{fontSize:11,color:"#f59e0b",fontWeight:600}}>📄 {cotVinc.numero}</div>}
-            <Badge estado={oAct.estado}/>
-          </div>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center",justifyContent:"center"}}>
-            <button
-              onClick={()=>irAPantalla("informes",{obraId:oAct.id})}
-              style={{
-                background: "rgba(30, 64, 175, 0.08)",
-                color: "#1d4ed8",
-                border: "1px solid rgba(191, 219, 254, 0.6)",
-                borderRadius: 8,
-                fontSize: 11.5,
-                padding: "6px 12px",
-                fontWeight: 600,
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 5,
-              }}
-              title="Crear informe de actividades para esta obra"
-            >
-              📄 Crear informe
-            </button>
-            <button
-              onClick={()=>irAPantalla("certificaciones",{obraId:oAct.id})}
-              style={{
-                background: "rgba(16, 185, 129, 0.08)",
-                color: "#047857",
-                border: "1px solid rgba(167, 243, 208, 0.6)",
-                borderRadius: 8,
-                fontSize: 11.5,
-                padding: "6px 12px",
-                fontWeight: 600,
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 5,
-              }}
-              title="Crear certificación para esta obra"
-            >
-              📜 Certificar
-            </button>
-            <button
-              onClick={()=>setMostrarGuia(!mostrarGuia)}
-              style={{
-                background: mostrarGuia ? "#FFFAEB" : "var(--surface-subtle, #f2f4f7)",
-                color: mostrarGuia ? "#B54708" : "var(--text-muted, #475467)",
-                border: mostrarGuia ? "1px solid rgba(181, 71, 8, 0.35)" : "1px solid var(--border, #eaecf0)",
-                borderRadius: 8,
-                fontSize: 11.5,
-                padding: "6px 11px",
-                fontWeight: 600,
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 5,
-              }}
-              title={mostrarGuia ? "Ocultar guía y qué sigue" : "Mostrar guía de flujo y qué sigue en esta obra"}
-            >
-              {mostrarGuia ? "Ocultar qué sigue" : "💡 Qué sigue"}
-            </button>
-          </div>
+        {/* Derecha: Botones con colores suaves ejecutivos */}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <button
+            onClick={() => irAPantalla("informes", { obraId: oAct.id })}
+            style={{
+              background: "#eff6ff",
+              color: "#1d4ed8",
+              border: "1px solid #bfdbfe",
+              borderRadius: 8,
+              fontSize: 12,
+              padding: "7px 13px",
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              transition: "all 0.15s ease",
+            }}
+            title="Crear informe de actividades para esta obra"
+          >
+            📄 Crear informe
+          </button>
+          <button
+            onClick={() => irAPantalla("certificaciones", { obraId: oAct.id })}
+            style={{
+              background: "#ecfdf5",
+              color: "#047857",
+              border: "1px solid #a7f3d0",
+              borderRadius: 8,
+              fontSize: 12,
+              padding: "7px 13px",
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              transition: "all 0.15s ease",
+            }}
+            title="Crear certificación para esta obra"
+          >
+            📜 Certificar
+          </button>
+          <button
+            onClick={() => setMostrarGuia(!mostrarGuia)}
+            style={{
+              background: mostrarGuia ? "#FFFAEB" : "var(--surface-subtle, #f2f4f7)",
+              color: mostrarGuia ? "#B54708" : "var(--text-muted, #475467)",
+              border: mostrarGuia ? "1px solid rgba(181, 71, 8, 0.35)" : "1px solid var(--border, #eaecf0)",
+              borderRadius: 8,
+              fontSize: 12,
+              padding: "7px 12px",
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              transition: "all 0.15s ease",
+            }}
+            title={mostrarGuia ? "Ocultar qué sigue" : "Mostrar guía de flujo y qué sigue en esta obra"}
+          >
+            {mostrarGuia ? "Ocultar qué sigue" : "💡 Qué sigue"}
+          </button>
         </div>
       </div>
 
@@ -211,19 +233,34 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       </div>
 
       {/* Tabs */}
-      <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
+      <div style={{display:"flex",gap:8,marginBottom:18,flexWrap:"wrap"}}>
         {[
           ["avance","📸 Avance y fotos"],
           ["personal","👷 Personal"],
           // Gastos y Nomina llevan cifras: solo para quien puede verlas.
           ...(verDinero?[["gastos","🧾 Gastos"],["nomina","💰 Nómina"]]:[]),
           ["horario","📅 Horario"],
-        ].map(([id,lb])=>(
-          <button key={id} onClick={()=>setDetTab(id)}
-            style={{...B(detTab===id?"#cc0000":"var(--btn-cancelar-bg, #f1f5f9)",detTab===id?"#fff":"var(--btn-cancelar-txt, #475569)"),fontSize:12,padding:"8px 16px",border:"1px solid " + (detTab===id?"#cc0000":"var(--border, #e2e8f0)")}}>
-            {lb}
-          </button>
-        ))}
+        ].map(([id,lb])=>{
+          const activo = detTab === id;
+          return (
+            <button key={id} onClick={()=>setDetTab(id)}
+              style={{
+                background: activo ? "#FFFAEB" : "var(--surface-subtle, #f2f4f7)",
+                color: activo ? "#B54708" : "var(--text-muted, #475467)",
+                border: activo ? "1px solid rgba(181, 71, 8, 0.35)" : "1px solid var(--border, #eaecf0)",
+                boxShadow: activo ? "0 1px 3px rgba(181, 71, 8, 0.08)" : "none",
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: activo ? 700 : 600,
+                padding: "8px 16px",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                transition: "all 0.15s ease",
+              }}>
+              {lb}
+            </button>
+          );
+        })}
       </div>
 
       {/* TAB AVANCE Y FOTOS (bitacora que alimenta el informe) */}
@@ -238,24 +275,29 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       {/* TAB PERSONAL */}
       {detTab==="personal"&&(
         <div style={CD}>
-          <div style={ST}>👷 Personal en obra</div>
-          <AvisoFlujo
-            tono="info"
-            titulo="Quién trabajó en esta obra"
-            accion={puedeCrearPersonal(membresia) && !nuevoEmp && !bloqueada ? (
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:10}}>
+            <div style={ST}>👷 Personal en obra</div>
+            {puedeCrearPersonal(membresia) && !nuevoEmp && !bloqueada && (
               <button
                 onClick={()=>setNuevoEmp(true)}
-                style={{...B("#cc0000"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
+                style={{
+                  background: "#FFFAEB",
+                  color: "#B54708",
+                  border: "1px solid rgba(181, 71, 8, 0.35)",
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  padding: "7px 14px",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
               >
                 + Registrar trabajador
               </button>
-            ) : null}
-          >
-            El personal que asignes aquí es el que sale en la tabla «Personal en obra» del informe
-            de actividades, con sus turnos. ¿No aparece la persona en la lista? Regístrala aquí
-            mismo con el botón: queda disponible al instante y Nómina completa después el salario
-            y el contrato. Los turnos se cargan solos desde <strong>Horarios</strong>.
-          </AvisoFlujo>
+            )}
+          </div>
 
           {nuevoEmp && (
             <NuevoEmpleadoRapido
@@ -353,17 +395,29 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       {/* TAB GASTOS */}
       {detTab==="gastos"&&verDinero&&(
         <div style={CD}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
             <div style={ST}>🧾 Gastos y cuentas por pagar</div>
-            <button style={B("#cc0000")} onClick={()=>setShowGasto(!showGasto)}>+ Agregar gasto</button>
+            <button
+              style={{
+                background: "#FFFAEB",
+                color: "#B54708",
+                border: "1px solid rgba(181, 71, 8, 0.35)",
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: 600,
+                padding: "7px 14px",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+              onClick={()=>setShowGasto(!showGasto)}
+            >
+              + Agregar gasto
+            </button>
           </div>
-          <AvisoFlujo tono="info" titulo="Todo gasto que cargues aquí queda cruzado con esta obra">
-            Sirve para saber cuánto costó realmente la obra frente a lo que se cobró. El gasto se
-            crea también en <strong>Cuentas por pagar</strong>, no hay que registrarlo dos veces.
-            Si el proveedor no aparece en la lista, créalo primero en <strong>Proveedores</strong>.
-          </AvisoFlujo>
           {showGasto&&(
-            <div style={{background:"var(--surface-subtle, #f8fafc)",border:"1px solid #cc000033",borderRadius:10,padding:16,marginBottom:16}}>
+            <div style={{background:"var(--surface-subtle, #f8fafc)",border:"1px solid var(--border, #e2e8f0)",borderRadius:10,padding:16,marginBottom:16}}>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
                 <div><LBL>Proveedor</LBL>
                   <select value={gastoForm.proveedorId} onChange={e=>setGastoForm({...gastoForm,proveedorId:e.target.value})} style={SI}>
@@ -377,8 +431,36 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                 <div><LBL>Fecha vencimiento</LBL><input type="date" value={gastoForm.fechaVence} onChange={e=>setGastoForm({...gastoForm,fechaVence:e.target.value})} style={SI}/></div>
               </div>
               <div style={{display:"flex",gap:8}}>
-                <button style={B("#cc0000")} onClick={guardarGasto}>✅ Guardar gasto</button>
-                <button style={B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)")} onClick={()=>setShowGasto(false)}>Cancelar</button>
+                <button
+                  style={{
+                    background: "#ecfdf5",
+                    color: "#047857",
+                    border: "1px solid #a7f3d0",
+                    borderRadius: 8,
+                    fontSize: 12,
+                    padding: "7px 14px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                  onClick={guardarGasto}
+                >
+                  ✅ Guardar gasto
+                </button>
+                <button
+                  style={{
+                    background: "var(--surface-subtle, #f2f4f7)",
+                    color: "var(--text-muted, #475467)",
+                    border: "1px solid var(--border, #eaecf0)",
+                    borderRadius: 8,
+                    fontSize: 12,
+                    padding: "7px 14px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                  onClick={()=>setShowGasto(false)}
+                >
+                  Cancelar
+                </button>
               </div>
             </div>
           )}
@@ -408,7 +490,16 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               <button
                 type="button"
                 onClick={() => irAPantalla("proveedores")}
-                style={{ ...B("#0284c7", "#fff"), fontSize: 11, padding: "5px 10px" }}
+                style={{
+                  background: "rgba(2, 132, 199, 0.08)",
+                  color: "#0284c7",
+                  border: "1px solid rgba(186, 230, 253, 0.7)",
+                  borderRadius: 8,
+                  fontSize: 11.5,
+                  padding: "6px 12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
               >
                 Ver en Causación ↗
               </button>
@@ -476,12 +567,6 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       {detTab==="nomina"&&verDinero&&(
         <div style={CD}>
           <div style={ST}>💰 Nómina proporcional por obra</div>
-          <AvisoFlujo tono="info" titulo="Cuánto de la nómina se le carga a esta obra">
-            Es un cálculo automático, no hay nada que llenar: días trabajados × jornal diario
-            (salario ÷ 26 días). Los <strong>días salen de los turnos de Horarios</strong>, así que
-            si aquí sale 0 días es porque no se han asignado turnos a esa persona en esta obra.
-            Esta cifra es informativa; la nómina que se paga se liquida en el módulo de Nómina.
-          </AvisoFlujo>
           {empObra.length===0&&<div style={{textAlign:"center",padding:24,color:"var(--text-subtle, #94a3b8)",fontSize:13}}>Sin personal asignado</div>}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
             {empObra.map((eid,idx)=>{
@@ -525,23 +610,27 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       {/* TAB HORARIO */}
       {detTab==="horario"&&(
         <div style={CD}>
-          <div style={ST}>📅 Horario y turnos en esta obra</div>
-          <AvisoFlujo
-            tono="info"
-            titulo="Los turnos se asignan desde el módulo de Horarios"
-            accion={
-              <button
-                onClick={()=>irAPantalla("horarios")}
-                style={{...B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
-              >
-                Ir a Horarios
-              </button>
-            }
-          >
-            Aquí solo se ven. Cada turno que asignes en Horarios le llega al trabajador por WhatsApp
-            y además alimenta dos cosas de esta obra: los <strong>días trabajados</strong> de la
-            pestaña Nómina y la columna <strong>turno</strong> del informe de actividades.
-          </AvisoFlujo>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:10}}>
+            <div style={ST}>📅 Horario y turnos en esta obra</div>
+            <button
+              onClick={()=>irAPantalla("horarios")}
+              style={{
+                background: "var(--surface-subtle, #f2f4f7)",
+                color: "var(--text-muted, #475467)",
+                border: "1px solid var(--border, #eaecf0)",
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: 600,
+                padding: "7px 14px",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              Ir a Horarios ↗
+            </button>
+          </div>
           {horariosObra.length===0&&<div style={{textAlign:"center",padding:24,color:"var(--text-subtle, #94a3b8)",fontSize:13}}>Sin turnos registrados todavía.</div>}
           {horariosObra.sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(h=>{
             const emp=empleados.find(x=>x.id===h.empleadoId);

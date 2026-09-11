@@ -4,7 +4,7 @@ import { B } from "../../styles/tokens";
 import { descargarDocumentoPdf } from "../../lib/documentoPdf";
 import { fmtD } from "../../lib/format";
 
-export default function CertificacionDetalle({cert,onVolver,onEditar,onImprimir,subtitle="Vista previa del documento"}) {
+export default function CertificacionDetalle({cert,onVolver,onEditar,onImprimir,mostrarBotones=false,subtitle="Vista previa del documento"}) {
   const [generando,setGenerando]=useState(false);
   if(!cert) return null;
 
@@ -41,14 +41,16 @@ export default function CertificacionDetalle({cert,onVolver,onEditar,onImprimir,
 
   return(
     <div>
-      <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
-        <button style={{...B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)"),padding:"8px 16px",borderRadius:8}} onClick={onVolver}>← Volver</button>
-        {typeof onEditar==="function" && <button style={{...B("rgba(30, 64, 175, 0.1)","#2563eb"),border:"1px solid rgba(37,99,235,0.25)",padding:"8px 16px",borderRadius:8}} onClick={()=>onEditar(cert)}>✏️ Editar</button>}
-        <button style={{...B("#E0342A","#ffffff"),boxShadow:"0 2px 8px rgba(224,52,42,0.25)",padding:"8px 18px",borderRadius:8,opacity:generando?0.65:1}} disabled={generando} onClick={descargar}>
-          {generando ? "Generando…" : "📥 Descargar PDF"}
-        </button>
-        {typeof onImprimir==="function" && <button style={{...B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)"),padding:"8px 16px",borderRadius:8}} onClick={()=>onImprimir(cert)}>🖨️ Imprimir</button>}
-      </div>
+      {mostrarBotones && (
+        <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+          <button style={{...B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)"),padding:"8px 16px",borderRadius:8}} onClick={onVolver}>← Volver</button>
+          {typeof onEditar==="function" && <button style={{...B("rgba(30, 64, 175, 0.1)","#2563eb"),border:"1px solid rgba(37,99,235,0.25)",padding:"8px 16px",borderRadius:8}} onClick={()=>onEditar(cert)}>✏️ Editar</button>}
+          <button style={{...B("#E0342A","#ffffff"),boxShadow:"0 2px 8px rgba(224,52,42,0.25)",padding:"8px 18px",borderRadius:8,opacity:generando?0.65:1}} disabled={generando} onClick={descargar}>
+            {generando ? "Generando…" : "📥 Descargar PDF"}
+          </button>
+          {typeof onImprimir==="function" && <button style={{...B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)"),padding:"8px 16px",borderRadius:8}} onClick={()=>onImprimir(cert)}>🖨️ Imprimir</button>}
+        </div>
+      )}
 
       {/* Dossier Técnico Oficial Card */}
       <div style={{

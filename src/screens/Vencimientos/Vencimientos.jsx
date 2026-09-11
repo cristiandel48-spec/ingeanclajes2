@@ -127,6 +127,7 @@ export default function Vencimientos({ctx}){
           cert={certParaImpresion}
           onVolver={()=>setImprimiendo(null)}
           onImprimir={(cert)=>printCurrentPz("Certificación " + (cert?.numero || cert?.id || ""))}
+          mostrarBotones={true}
           subtitle="Vista previa completa del certificado o recertificación."
         />
       )}

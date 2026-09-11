@@ -11,6 +11,7 @@ import { normalizarRazonSocial, normalizarFrase, normalizarParrafos, normalizarT
 import { corregirOrtografiaLocal } from "../../lib/correctorTexto";
 import BotonCorregir from "../../components/ui/BotonCorregir";
 import { printCurrentPz } from "../../lib/print";
+import { descargarDocumentoPdf } from "../../lib/documentoPdf";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import ListaCertificaciones from "./ListaCertificaciones";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
@@ -304,28 +305,131 @@ export default function Certificaciones({ctx}){
     setEditId(null);
   };
 
-  // Los dos botones de crear viven en la barra de arriba, no en un titulo
-  // propio. Se esconden mientras se llena una certificacion o se mira una: la
-  // pantalla se dedica a eso.
-  useAccionesPantalla(
-    (sel || nueva) ? null : (
-      <div style={{display:"flex",gap:7}}>
-        <button
-          style={{background:"#f47c20",color:"#fff",border:"1px solid #f47c20",borderRadius:9,
-            padding:"8px 14px",fontSize:12.5,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
-          onClick={()=>abrirNuevaCertificacion("Certificación")}
-        >+ Certificación</button>
-        <button
-          style={{background:"#0f2d1a",color:"#4ade80",border:"1px solid #166534",borderRadius:9,
-            padding:"8px 14px",fontSize:12.5,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
-          onClick={()=>abrirNuevaCertificacion("Recertificación")}
-        >+ Recertificación</button>
-      </div>
-    ),
-    [sel, nueva]
-  );
+  const [descargando, setDescargando] = useState(false);
 
-  const imprimir=(c)=>{setSel(c);setTimeout(()=>printCurrentPz("Certificación " + (c?.numero || c?.id || "")),250);};
+  const imprimir = (c) => {
+    setSel(c);
+    setTimeout(() => printCurrentPz("Certificación " + (c?.numero || c?.id || "")), 250);
+  };
+
+  const descargarPdf = async (c = sel) => {
+    if (!c) return;
+    setDescargando(true);
+    try {
+      const proyecto = c.lugar || c.cliente || "";
+      await descargarDocumentoPdf(
+        document.getElementById("pz"),
+        `${c.tipo || "Certificación"} ${c.numero || c.id || ""} ${proyecto}`
+          .replace(/\s+/g, " ")
+          .trim()
+      );
+    } catch (e) {
+      window.alert(e.message || "No se pudo generar el PDF.");
+    } finally {
+      setDescargando(false);
+    }
+  };
+
+  // En la barra superior: botones de acción fija para detalle (Volver, Editar, Descargar, Imprimir)
+  // o botones de creación (+ Certificación, + Recertificación) en la lista.
+  useAccionesPantalla(
+    sel && !nueva ? (
+      <div style={{ display: "flex", gap: 7, alignItems: "center", flexWrap: "nowrap" }}>
+        <button
+          style={{
+            ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)"),
+            border: "1px solid #cbd5e1",
+            padding: "7px 14px",
+            borderRadius: 8,
+            fontSize: 12,
+            fontWeight: 600,
+          }}
+          onClick={() => setSel(null)}
+        >
+          ← Volver
+        </button>
+        <button
+          style={{
+            ...B("rgba(37, 99, 235, 0.08)", "#2563eb"),
+            border: "1px solid rgba(37, 99, 235, 0.25)",
+            padding: "7px 14px",
+            borderRadius: 8,
+            fontSize: 12,
+            fontWeight: 700,
+          }}
+          onClick={() => editarCertificacion(sel)}
+        >
+          ✏️ Editar
+        </button>
+        <button
+          style={{
+            ...B("#E0342A", "#ffffff"),
+            boxShadow: "0 2px 8px rgba(224, 52, 42, 0.25)",
+            padding: "7px 16px",
+            borderRadius: 8,
+            fontSize: 12,
+            fontWeight: 700,
+            opacity: descargando ? 0.65 : 1,
+          }}
+          disabled={descargando}
+          onClick={() => descargarPdf(sel)}
+        >
+          {descargando ? "Generando…" : "📥 Descargar PDF"}
+        </button>
+        <button
+          style={{
+            ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)"),
+            border: "1px solid #cbd5e1",
+            padding: "7px 14px",
+            borderRadius: 8,
+            fontSize: 12,
+            fontWeight: 600,
+          }}
+          onClick={() => imprimir(sel)}
+        >
+          🖨️ Imprimir
+        </button>
+      </div>
+    ) : (!sel && !nueva) ? (
+      <div style={{ display: "flex", gap: 7 }}>
+        <button
+          style={{
+            background: "#f47c20",
+            color: "#fff",
+            border: "1px solid #f47c20",
+            borderRadius: 9,
+            padding: "8px 14px",
+            fontSize: 12.5,
+            fontWeight: 700,
+            cursor: "pointer",
+            fontFamily: "inherit",
+            whiteSpace: "nowrap",
+          }}
+          onClick={() => abrirNuevaCertificacion("Certificación")}
+        >
+          + Certificación
+        </button>
+        <button
+          style={{
+            background: "#0f2d1a",
+            color: "#4ade80",
+            border: "1px solid #166534",
+            borderRadius: 9,
+            padding: "8px 14px",
+            fontSize: 12.5,
+            fontWeight: 700,
+            cursor: "pointer",
+            fontFamily: "inherit",
+            whiteSpace: "nowrap",
+          }}
+          onClick={() => abrirNuevaCertificacion("Recertificación")}
+        >
+          + Recertificación
+        </button>
+      </div>
+    ) : null,
+    [sel, nueva, descargando]
+  );
 
 
 
@@ -715,12 +819,13 @@ export default function Certificaciones({ctx}){
         />
       )}
 
-      {sel&&(
+      {sel && !nueva && (
         <CertificacionDetalle
           cert={sel}
           onVolver={()=>setSel(null)}
           onEditar={editarCertificacion}
           onImprimir={imprimir}
+          mostrarBotones={false}
           subtitle="Vista previa completa para revisar, editar e imprimir."
         />
       )}

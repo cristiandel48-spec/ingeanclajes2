@@ -519,9 +519,17 @@ export default function Cotizacion({ctx}){
     tab==="lista" ? (
       <button
         style={{
-          background:"#f47c20", color:"#fff", border:"1px solid #f47c20", borderRadius:9,
-          padding:"8px 16px", fontSize:12.5, fontWeight:700, cursor:"pointer",
-          fontFamily:"inherit", whiteSpace:"nowrap",
+          background: "#FFFAEB",
+          color: "#B54708",
+          border: "1px solid rgba(181, 71, 8, 0.35)",
+          borderRadius: 8,
+          padding: "7px 16px",
+          fontSize: 12.5,
+          fontWeight: 700,
+          cursor: "pointer",
+          fontFamily: "inherit",
+          whiteSpace: "nowrap",
+          boxShadow: "0 1px 2px rgba(181, 71, 8, 0.08)",
         }}
         onClick={()=>nuevaRef.current()}
       >+ Nueva Cotización</button>
@@ -537,13 +545,13 @@ export default function Cotizacion({ctx}){
         <button
           style={{
             ...BOTON_BASE,
-            background:"#f47c20",
-            color:"#fff",
-            border:"1px solid #ea580c",
-            fontWeight:700,
-            padding:"6.5px 16px",
+            background: "#FFFAEB",
+            color: "#B54708",
+            border: "1px solid rgba(181, 71, 8, 0.35)",
+            fontWeight: 700,
+            padding: "6.5px 16px",
             fontSize: 12.5,
-            boxShadow: "0 1px 3px rgba(244,124,32,0.25)",
+            boxShadow: "0 1px 2px rgba(181, 71, 8, 0.08)",
           }}
           onClick={()=>guardarRef.current()}
         >
@@ -873,10 +881,68 @@ export default function Cotizacion({ctx}){
             subtitle="Vista completa del documento comercial"
             action={
               <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
-                <button style={B("#f1f5f9","#475569")} onClick={()=>setPreviewCot(null)}>Volver</button>
-                <button style={B("#dbeafe","#1e40af")} onClick={()=>{setEditCot(previewCot.id);hydrate(previewCot);setTab("form");setPreviewCot(null);}}>Editar</button>
-                <button style={B("#f1f5f9","#475569")} disabled={Boolean(bajandoPdf)} onClick={()=>descargarPdf(previewCot)}>{bajandoPdf?"Generando…":"Descargar PDF"}</button>
-                <button style={B("#f47c20")} onClick={()=>setEnviarCot(previewCot)}>Enviar al cliente</button>
+                <button
+                  style={{
+                    background: "var(--surface-subtle, #f2f4f7)",
+                    color: "var(--text-main, #101828)",
+                    border: "1px solid var(--border, #eaecf0)",
+                    borderRadius: 8,
+                    padding: "6px 14px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                  onClick={()=>setPreviewCot(null)}
+                >
+                  Volver
+                </button>
+                <button
+                  style={{
+                    background: "transparent",
+                    color: "var(--text-muted, #475467)",
+                    border: "1px solid var(--border, #eaecf0)",
+                    borderRadius: 8,
+                    padding: "6px 14px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                  onClick={()=>{setEditCot(previewCot.id);hydrate(previewCot);setTab("form");setPreviewCot(null);}}
+                >
+                  Editar
+                </button>
+                <button
+                  style={{
+                    background: "var(--surface-subtle, #f2f4f7)",
+                    color: "var(--text-main, #101828)",
+                    border: "1px solid var(--border, #eaecf0)",
+                    borderRadius: 8,
+                    padding: "6px 14px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                  disabled={Boolean(bajandoPdf)}
+                  onClick={()=>descargarPdf(previewCot)}
+                >
+                  {bajandoPdf?"Generando…":"📥 Descargar PDF"}
+                </button>
+                <button
+                  style={{
+                    background: "#FFFAEB",
+                    color: "#B54708",
+                    border: "1px solid rgba(181, 71, 8, 0.35)",
+                    borderRadius: 8,
+                    padding: "6px 14px",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    boxShadow: "0 1px 2px rgba(181, 71, 8, 0.08)",
+                  }}
+                  onClick={()=>setEnviarCot(previewCot)}
+                >
+                  ✉️ Enviar al cliente
+                </button>
               </div>
             }
           />
@@ -1121,15 +1187,16 @@ export default function Cotizacion({ctx}){
             type="button"
             style={{
               ...BOTON_BASE,
-              background: "#E0342A",
-              color: "#ffffff",
-              border: "1px solid #B42318",
+              background: "#FFFAEB",
+              color: "#B54708",
+              border: "1px solid rgba(181, 71, 8, 0.35)",
               fontSize: 12,
               padding: "7px 16px",
               fontWeight: 700,
-              boxShadow: "0 1px 3px rgba(224,52,42,0.25)",
+              boxShadow: "0 1px 2px rgba(181, 71, 8, 0.08)",
             }}
             onClick={() => guardarRef.current()}
+            title="Guarda los cambios de la cotización"
           >
             💾 Guardar cotización
           </button>
@@ -1331,12 +1398,47 @@ export default function Cotizacion({ctx}){
 
       {/* 03 · Propuestas: todas abiertas, una debajo de otra, en el orden
           en que se imprimen. */}
-      <div style={{...CD,marginBottom:14,border:"2px solid #142840"}}>
+      <div style={{...CD,marginBottom:14,border:"1px solid var(--border, #eaecf0)"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
           <div style={{...ST,marginBottom:0,borderBottom:"none",paddingBottom:0}}>03 · Propuestas</div>
           <div style={{display:"flex",gap:8}}>
-            <button onClick={agregarPropuesta} style={{...B("#f47c20"),fontSize:11,padding:"6px 14px"}}>+ Nueva</button>
-            <button onClick={duplicarPropuesta} style={{...B("#dbeafe","#1e40af"),fontSize:11,padding:"6px 14px"}}>Duplicar</button>
+            <button
+              onClick={agregarPropuesta}
+              style={{
+                background: "#FFFAEB",
+                color: "#B54708",
+                border: "1px solid rgba(181, 71, 8, 0.35)",
+                borderRadius: 8,
+                fontSize: 11.5,
+                fontWeight: 700,
+                padding: "6px 14px",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                boxShadow: "0 1px 2px rgba(181, 71, 8, 0.08)",
+              }}
+            >
+              + Nueva
+            </button>
+            <button
+              onClick={duplicarPropuesta}
+              style={{
+                background: "var(--surface-subtle, #f2f4f7)",
+                color: "var(--text-main, #101828)",
+                border: "1px solid var(--border, #eaecf0)",
+                borderRadius: 8,
+                fontSize: 11.5,
+                fontWeight: 600,
+                padding: "6px 14px",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+              }}
+            >
+              Duplicar
+            </button>
           </div>
         </div>
         <div style={{fontSize:11,color:"#64748b",marginTop:8}}>
@@ -1450,9 +1552,19 @@ export default function Cotizacion({ctx}){
           <button
             type="button"
             onClick={guardarCotizacionYSubir}
-            style={{...B("#f47c20"),fontSize:11,padding:"7px 16px"}}
+            style={{
+              background: "#FFFAEB",
+              color: "#B54708",
+              border: "1px solid rgba(181, 71, 8, 0.35)",
+              borderRadius: 8,
+              fontSize: 12.5,
+              fontWeight: 700,
+              padding: "7px 20px",
+              cursor: "pointer",
+              boxShadow: "0 1px 2px rgba(181, 71, 8, 0.08)",
+            }}
           >
-            Guardar
+            💾 Guardar Cotización
           </button>
         </div>
       </div>

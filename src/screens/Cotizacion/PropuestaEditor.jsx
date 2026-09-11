@@ -88,49 +88,86 @@ export default function PropuestaEditor({
 
   return (
     <div style={{ background: "var(--surface, #fff)", border: "1px solid var(--border, #e2e8f0)", borderRadius: 12, padding: 20, marginBottom: 14 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 18, paddingBottom: 12, borderBottom: "2px solid #f47c20" }}>
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#f47c20", textTransform: "uppercase", letterSpacing: 1 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 18, paddingBottom: 12, borderBottom: "1px solid var(--border, #eaecf0)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{
+            fontSize: 11,
+            fontWeight: 700,
+            color: "#B54708",
+            background: "#FFFAEB",
+            border: "1px solid rgba(181, 71, 8, 0.25)",
+            borderRadius: 6,
+            padding: "2px 8px",
+            letterSpacing: ".04em",
+          }}>
             Propuesta {indice + 1} de {totalPropuestas}
           </div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #1a1a2e)", marginTop: 2 }}>
-            {p.nombre || `Propuesta ${indice + 1}`}
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #101828)" }}>
+            {p.tipoCotizacion === "linea_vida" ? "Línea de vida" : p.tipoCotizacion === "puntos_anclaje" ? "Puntos de anclaje" : p.tipoCotizacion === "obra_blanca" ? "Obra blanca" : `Propuesta ${indice + 1}`}
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "#cc0000" }}>{fmt(tot)}</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-main, #101828)", fontVariantNumeric: "tabular-nums" }}>{fmt(tot)}</div>
           {totalPropuestas > 1 && (
             <button
               type="button"
               title="Eliminar propuesta"
               onClick={onEliminar}
-              style={{ background: "#fee2e2", border: "none", color: "#ef4444", borderRadius: 6, width: 26, height: 26, cursor: "pointer", fontSize: 15, lineHeight: 1 }}
+              style={{
+                background: "transparent",
+                border: "1px solid var(--border, #eaecf0)",
+                color: "#98a2b3",
+                borderRadius: 6,
+                width: 26,
+                height: 26,
+                cursor: "pointer",
+                fontSize: 16,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                lineHeight: 1,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.color = "#d92d20"; e.currentTarget.style.background = "#fee2e2"; }}
+              onMouseLeave={e => { e.currentTarget.style.color = "#98a2b3"; e.currentTarget.style.background = "transparent"; }}
             >×</button>
           )}
         </div>
       </div>
 
-        {/* 1. Nombre y tipo */}
-        <div style={{display:"grid",gridTemplateColumns:"1.5fr 1fr",gap:12,marginBottom:18}}>
-          <div>
-            <LBL>Nombre de la propuesta</LBL>
-            <input
-              value={p.nombre}
-              onChange={e=>set("nombre", e.target.value)}
-              onBlur={e=>{
-                const auto = corregirOrtografiaLocal(e.target.value);
-                if(auto !== e.target.value) set("nombre", auto);
-              }}
-              style={SI}
-            />
-          </div>
-          <div>
-            <LBL>Tipo</LBL>
-            <div style={{display:"flex",gap:8}}>
-              {[["linea_vida","Línea de vida"],["puntos_anclaje","Puntos de anclaje"],["obra_blanca","Obra blanca"]].map(([v,l])=>(
-                <button key={v} onClick={()=>set("tipoCotizacion", v)} style={{...B(p.tipoCotizacion===v?"#f47c20":"#142840",p.tipoCotizacion===v?"#fff":"#7da5c8"),flex:1,justifyContent:"center",border:"2px solid "+(p.tipoCotizacion===v?"#f47c20":"#1a3050"),fontSize:11,fontWeight:700,padding:"7px 4px"}}>{l}</button>
-              ))}
-            </div>
+        {/* 1. Tipo de trabajo / propuesta */}
+        <div style={{ marginBottom: 18 }}>
+          <LBL>Tipo de trabajo / sistema</LBL>
+          <div style={{ display: "flex", gap: 8, maxWidth: 540 }}>
+            {[["linea_vida", "Línea de vida"], ["puntos_anclaje", "Puntos de anclaje"], ["obra_blanca", "Obra blanca"]].map(([v, l]) => {
+              const activo = p.tipoCotizacion === v;
+              return (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => set("tipoCotizacion", v)}
+                  style={{
+                    flex: 1,
+                    justifyContent: "center",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "7px 12px",
+                    borderRadius: 8,
+                    fontSize: 12,
+                    fontWeight: activo ? 700 : 600,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    transition: "all 0.15s ease-in-out",
+                    background: activo ? "#FFFAEB" : "var(--surface-subtle, #f2f4f7)",
+                    color: activo ? "#B54708" : "var(--text-muted, #475467)",
+                    border: activo ? "1px solid rgba(181, 71, 8, 0.35)" : "1px solid var(--border, #eaecf0)",
+                    boxShadow: activo ? "0 1px 3px rgba(181, 71, 8, 0.08)" : "none",
+                  }}
+                >
+                  {l}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -193,7 +230,16 @@ export default function PropuestaEditor({
               <button
                 type="button"
                 onClick={()=>set("medicionAutomatica", !medicionActiva)}
-                style={{...B(medicionActiva?"#166534":"#dbeafe",medicionActiva?"#ecfdf5":"#1e40af"),fontSize:11,padding:"5px 12px",border:"1px solid " + (medicionActiva?"#166534":"#93c5fd")}}
+                style={{
+                  background: medicionActiva ? "#ECFDF3" : "var(--surface-subtle, #f2f4f7)",
+                  color: medicionActiva ? "#027A48" : "var(--text-main, #101828)",
+                  border: medicionActiva ? "1px solid rgba(2, 122, 72, 0.25)" : "1px solid var(--border, #eaecf0)",
+                  borderRadius: 8,
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  padding: "5px 12px",
+                  cursor: "pointer",
+                }}
               >
                 {medicionActiva ? "Desactivar medición" : "Activar medición"}
               </button>
@@ -201,7 +247,16 @@ export default function PropuestaEditor({
                 <button
                   type="button"
                   onClick={()=>setFotos((prev)=>[...prev,{id:Date.now()+Math.random(),src:autoMapImg,label:"Mapa satelital"}])}
-                  style={{...B("#fff7ed","#c2410c"),fontSize:11,padding:"5px 12px",border:"1px solid #fdba74"}}
+                  style={{
+                    background: "#FFFAEB",
+                    color: "#B54708",
+                    border: "1px solid rgba(181, 71, 8, 0.25)",
+                    borderRadius: 8,
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    padding: "5px 12px",
+                    cursor: "pointer",
+                  }}
                 >
                   Agregar mapa como foto
                 </button>
@@ -214,7 +269,23 @@ export default function PropuestaEditor({
           {medicionActiva && !mapaHabilitado ? (
             <div style={{background:"var(--surface-subtle, #f8fafc)",border:"1px dashed var(--border, #cbd5e1)",borderRadius:12,padding:"18px 16px",fontSize:12,color:"var(--text-muted, #64748b)",textAlign:"center"}}>
               Esta propuesta tiene medición activada.{" "}
-              <button type="button" onClick={onPedirMapa} style={{...B("var(--btn-ver-bg, #dbeafe)","var(--btn-ver-text, #1e40af)"),fontSize:11,padding:"4px 12px",marginLeft:6}}>Abrir su mapa</button>
+              <button
+                type="button"
+                onClick={onPedirMapa}
+                style={{
+                  background: "var(--surface-subtle, #f2f4f7)",
+                  color: "var(--text-main, #101828)",
+                  border: "1px solid var(--border, #eaecf0)",
+                  borderRadius: 8,
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  padding: "4px 12px",
+                  marginLeft: 6,
+                  cursor: "pointer",
+                }}
+              >
+                Abrir su mapa
+              </button>
               <div style={{marginTop:6,fontSize:10.5,color:"var(--text-subtle, #94a3b8)"}}>Se muestra un mapa a la vez para no cargar la pantalla.</div>
             </div>
           ) : medicionActiva ? (
@@ -240,15 +311,87 @@ export default function PropuestaEditor({
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
             <span style={{fontSize:12,fontWeight:600,color:"var(--text-main, #1a1a2e)"}}>Detalle económico</span>
             <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>{const nuevos=measurementsToQuoteItems(p.geoMediciones);setItems(nuevos.map((item,index)=>({...item,id:index+1})));}} style={{...B("var(--btn-ver-bg, #dbeafe)","var(--btn-ver-text, #1e40af)"),fontSize:11,padding:"5px 12px"}}>Jalar mediciones</button>
-              <button onClick={()=>setShowDB(!showDB)} style={{...B(showDB?"#1a3050":"transparent","#f47c20"),border:"1px solid #cc0000",fontSize:11,padding:"5px 12px"}}>{showDB?"Cerrar catálogo":"Catálogo"}</button>
+              <button
+                onClick={()=>{const nuevos=measurementsToQuoteItems(p.geoMediciones);setItems(nuevos.map((item,index)=>({...item,id:index+1})));}}
+                style={{
+                  background: "var(--surface-subtle, #f2f4f7)",
+                  color: "var(--text-main, #101828)",
+                  border: "1px solid var(--border, #eaecf0)",
+                  borderRadius: 8,
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  padding: "5px 12px",
+                  cursor: "pointer",
+                }}
+              >
+                Jalar mediciones
+              </button>
+              <button
+                onClick={()=>setShowDB(!showDB)}
+                style={{
+                  background: showDB ? "#FFFAEB" : "var(--surface-subtle, #f2f4f7)",
+                  color: showDB ? "#B54708" : "var(--text-muted, #475467)",
+                  border: showDB ? "1px solid rgba(181, 71, 8, 0.35)" : "1px solid var(--border, #eaecf0)",
+                  borderRadius: 8,
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  padding: "5px 12px",
+                  cursor: "pointer",
+                }}
+              >
+                {showDB ? "Cerrar catálogo" : "Catálogo"}
+              </button>
             </div>
           </div>
 
           {showDB&&(
-            <div style={{background:"var(--surface-subtle, #f8fafc)",borderRadius:10,padding:16,marginBottom:14,border:"1px solid #f47c2044"}}>
-              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>{catalogo.map((cat,i)=><button key={i} onClick={()=>setDbCat(i)} style={{...B(dbCat===i?"#f47c20":"#142840",dbCat===i?"#fff":"#7da5c8"),border:`1px solid ${dbCat===i?"#f47c20":"#1a3050"}`,fontSize:11,padding:"5px 12px"}}>{cat.categoria}</button>)}</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>{(categoria.items||[]).map((it,i)=><div key={i} style={{background:"var(--btn-cancelar-bg, #f1f5f9)",borderRadius:8,padding:"10px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><div style={{flex:1}}><div style={{fontSize:12,fontWeight:600,color:"var(--text-main, #1a1a2e)",marginBottom:2}}>{it.desc}</div><div style={{fontSize:11,color:"var(--text-muted, #475569)"}}>{it.unit} · {fmt(it.vu)}</div></div><button onClick={()=>{setItems(prev=>[...prev,{id:siguienteId(prev),desc:it.desc,cant:1,unit:it.unit,vu:it.vu}]);}} style={{...B("#f47c20"),padding:"5px 12px",fontSize:12,flexShrink:0}}>+</button></div>)}</div>
+            <div style={{background:"var(--surface-subtle, #f8fafc)",borderRadius:10,padding:16,marginBottom:14,border:"1px solid var(--border, #eaecf0)"}}>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+                {catalogo.map((cat,i)=>(
+                  <button
+                    key={i}
+                    onClick={()=>setDbCat(i)}
+                    style={{
+                      background: dbCat === i ? "#FFFAEB" : "var(--surface, #ffffff)",
+                      color: dbCat === i ? "#B54708" : "var(--text-muted, #475467)",
+                      border: dbCat === i ? "1px solid rgba(181, 71, 8, 0.35)" : "1px solid var(--border, #eaecf0)",
+                      borderRadius: 8,
+                      fontSize: 11.5,
+                      fontWeight: dbCat === i ? 700 : 600,
+                      padding: "5px 12px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {cat.categoria}
+                  </button>
+                ))}
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                {(categoria.items||[]).map((it,i)=>(
+                  <div key={i} style={{background:"var(--surface, #ffffff)",border:"1px solid var(--border, #eaecf0)",borderRadius:8,padding:"10px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:12,fontWeight:600,color:"var(--text-main, #1a1a2e)",marginBottom:2}}>{it.desc}</div>
+                      <div style={{fontSize:11,color:"var(--text-muted, #475569)"}}>{it.unit} · {fmt(it.vu)}</div>
+                    </div>
+                    <button
+                      onClick={()=>{setItems(prev=>[...prev,{id:siguienteId(prev),desc:it.desc,cant:1,unit:it.unit,vu:it.vu}]);}}
+                      style={{
+                        background: "#FFFAEB",
+                        color: "#B54708",
+                        border: "1px solid rgba(181, 71, 8, 0.3)",
+                        borderRadius: 6,
+                        padding: "4px 10px",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        flexShrink: 0,
+                      }}
+                    >
+                      +
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

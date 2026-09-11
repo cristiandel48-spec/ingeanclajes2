@@ -154,6 +154,7 @@ export default function CertificacionDocumento({cert}){
   const {empresaConfig}=useAppData();
   const firmaImg=getFirmaImg(empresaConfig);
   const [qrUrl, setQrUrl] = useState("");
+  const [linkVerificacion, setLinkVerificacion] = useState("");
   const [franjaUrl, setFranjaUrl] = useState(() => {
     try {
       return generarFranjaSeguridad(44, 1100);
@@ -177,11 +178,26 @@ export default function CertificacionDocumento({cert}){
 
   useEffect(() => {
     let activo = true;
-    // URL web directa oficial: cualquier celular (iPhone / Android) la reconoce al instante
-    // y muestra de inmediato el aviso para abrir la página en el navegador.
-    const urlVerificacion = `https://www.ingeanclajessas.com/?verificar=${encodeURIComponent(folioDoc)}`;
+    // URL web directa oficial en la aplicación desplegada
+    const basePublica =
+      typeof window !== "undefined" && window.location?.origin && !window.location.origin.includes("localhost")
+        ? window.location.origin
+        : "https://ingeanclajes2.vercel.app";
 
-    QRCode.toDataURL(urlVerificacion, {
+    const params = new URLSearchParams();
+    params.set("v", "1");
+    params.set("f", folioDoc);
+    if (cert?.cliente) params.set("c", cert.cliente);
+    if (cert?.nit) params.set("n", cert.nit);
+    if (cert?.lugar) params.set("l", cert.lugar);
+    if (cert?.fecha) params.set("fe", cert.fecha);
+    if (cert?.proxMant) params.set("vm", cert.proxMant);
+    if (cert?.tipo && cert.tipo !== "Certificación") params.set("t", cert.tipo);
+
+    const url = `${basePublica}/?${params.toString()}`;
+    setLinkVerificacion(url);
+
+    QRCode.toDataURL(url, {
       width: 260,
       margin: 1,
       errorCorrectionLevel: "M",
@@ -190,14 +206,14 @@ export default function CertificacionDocumento({cert}){
         light: "#ffffff",
       },
     })
-      .then((url) => {
-        if (activo) setQrUrl(url);
+      .then((dataUrl) => {
+        if (activo) setQrUrl(dataUrl);
       })
       .catch((err) => console.warn("Error generando QR:", err));
     return () => {
       activo = false;
     };
-  }, [folioDoc]);
+  }, [folioDoc, cert?.cliente, cert?.nit, cert?.lugar, cert?.fecha, cert?.proxMant, cert?.tipo]);
 
   if(!cert) return null;
   const esRecertificacion = cert.tipo==="Recertificación";
@@ -470,11 +486,11 @@ export default function CertificacionDocumento({cert}){
             >
               {qrUrl ? (
                 <a
-                  href={`https://www.ingeanclajessas.com/?verificar=${encodeURIComponent(folioDoc)}`}
+                  href={linkVerificacion || `https://ingeanclajes2.vercel.app/?v=1&f=${encodeURIComponent(folioDoc)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ display: "block", textDecoration: "none" }}
-                  title="Clic para verificar en la web oficial"
+                  title="Clic para verificar autenticidad en línea"
                 >
                   <img src={qrUrl} alt="QR Validación" style={{ width: 78, height: 78, display: "block", borderRadius: 3 }}/>
                 </a>

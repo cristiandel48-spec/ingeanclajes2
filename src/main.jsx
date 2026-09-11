@@ -2,6 +2,7 @@ import { Component, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
 import SupabaseGate from "./SupabaseGate.jsx";
+import VerificacionPublica from "./screens/Certificaciones/VerificacionPublica.jsx";
 
 class AppErrorBoundary extends Component {
   constructor(props) {
@@ -56,12 +57,19 @@ window.addEventListener("vite:preloadError", (evento) => {
   if (recargar) window.location.reload();
 });
 
+const searchParams = new URLSearchParams(window.location.search);
+const esValidacionPublica = searchParams.has("validar") || searchParams.has("v");
+
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <AppErrorBoundary>
-      <SupabaseGate>
-        <App />
-      </SupabaseGate>
+      {esValidacionPublica ? (
+        <VerificacionPublica />
+      ) : (
+        <SupabaseGate>
+          <App />
+        </SupabaseGate>
+      )}
     </AppErrorBoundary>
   </StrictMode>
 );

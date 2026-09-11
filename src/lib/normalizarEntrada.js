@@ -113,17 +113,179 @@ export function normalizarParrafos(valor) {
     .trim();
 }
 
+const NUMS_FEM = {
+  1: "una (1)",
+  2: "dos (2)",
+  3: "tres (3)",
+  4: "cuatro (4)",
+  5: "cinco (5)",
+  6: "seis (6)",
+  7: "siete (7)",
+  8: "ocho (8)",
+  9: "nueve (9)",
+  10: "diez (10)",
+  12: "doce (12)",
+  15: "quince (15)",
+  20: "veinte (20)",
+};
+
+const NUMS_MASC = {
+  1: "un (1)",
+  2: "dos (2)",
+  3: "tres (3)",
+  4: "cuatro (4)",
+  5: "cinco (5)",
+  6: "seis (6)",
+  7: "siete (7)",
+  8: "ocho (8)",
+  9: "nueve (9)",
+  10: "diez (10)",
+  12: "doce (12)",
+  15: "quince (15)",
+  20: "veinte (20)",
+};
+
+function numTexto(n, fem = true) {
+  const num = parseInt(n, 10);
+  const mapa = fem ? NUMS_FEM : NUMS_MASC;
+  return mapa[num] || String(num);
+}
+
 /**
- * Normaliza y autocorrige el texto del sistema certificado (o campos técnicos extensos).
- * Corrige ortografía técnica, tildes, dobles puntos accidentales (".."), estandariza citas
- * normativas ("Ministerio del Trabajo", "Resolución", "trabajo en alturas", etc.)
- * y organiza la puntuación.
+ * Embellece y sintetiza técnicamente las descripciones de actividades de obra
+ * para convertirlas en un alcance de certificación impecable.
+ */
+function embellecerDetalleCertificacion(raw) {
+  let str = String(raw || "").trim();
+  if (!str) return str;
+
+  // Si ya tiene redacción pulida ("consistentes en:"), no sobreescribir
+  if (/consistentes en:/i.test(str)) return str;
+
+  // Limpiar frases repetitivas de notas de campo ("Instalación de líneas de vida...", "Instalación de puntos de anclaje...")
+  str = str.replace(/(?:^|[.;])\s*instalaci[oó]n\s+(?:de\s+)?(?:l[ií]neas?\s+de\s+vida|puntos?\s+de\s+anclaje[s]?|sistemas?\s+antica[ií]das?)[.:]?\s*/gi, "; ");
+
+  // Normalizar unidades y metros: "10ml" -> "10 m", "32ml" -> "32 m"
+  str = str.replace(/(\d+)\s*(?:ml|mts?|metros?(?:\s+lineales)?)(?!\w)/gi, "$1 m");
+  // Número suelto tras "de" antes de "y", coma o punto: "de 45 y" -> "de 45 m y"
+  str = str.replace(/\bde\s+(\d+)\s+(y|,|\.)/gi, "de $1 m $2");
+
+  // Estandarizar "puntos de anclajes" -> "puntos de anclaje"
+  str = str.replace(/\bpuntos?\s+de\s+anclajes\b/gi, "puntos de anclaje");
+
+  // Limpiar punto y coma inicial si quedó
+  str = str.replace(/^;\s*/, "").trim();
+
+  // Dividir por bloques/tramos si hay puntos seguidos o punto y coma
+  const rawBloques = str.split(/[;.]\s+/).map((s) => s.trim()).filter(Boolean);
+
+  // Procesar números en palabras
+  const bloques = rawBloques.map((bloque) => {
+    let b = bloque;
+    b = b.replace(/\b1\s+l[ií]nea\b/gi, "una (1) línea");
+    b = b.replace(/\b(\d+)\s+l[ií]neas\b/gi, (m, n) => numTexto(n, true) + " líneas");
+    b = b.replace(/\b1\s+punto\s+de\s+anclaje\b/gi, "un (1) punto de anclaje");
+    b = b.replace(/\b(\d+)\s+puntos?\s+de\s+anclaje\b/gi, (m, n) => numTexto(n, false) + " puntos de anclaje");
+    return b;
+  });
+
+  if (bloques.length === 0) return raw;
+
+  let finalDetalle = "";
+  if (bloques.length === 4) {
+    const tramo1 = `${bloques[0]} con ${bloques[1]}`;
+    const tramo2 = `${bloques[2]} con ${bloques[3]} adicionales`;
+    finalDetalle = `${tramo1}; más ${tramo2}`;
+  } else if (bloques.length === 2) {
+    if (/puntos?\s+de\s+anclaje/i.test(bloques[1]) && /l[ií]nea/i.test(bloques[0])) {
+      finalDetalle = `${bloques[0]} con ${bloques[1]}`;
+    } else {
+      finalDetalle = `${bloques[0]}; más ${bloques[1]}`;
+    }
+  } else {
+    finalDetalle = bloques.join("; ");
+  }
+
+  return "los sistemas de protección contra caídas instalados, consistentes en: " + finalDetalle;
+}
+
+/**
+ * Reestructura y embellece el texto completo de una certificación (Opción 2 ejecutiva)
+ */
+function embellecerTextoCompletoCertificacion(texto) {
+  const t = String(texto || "").trim();
+  if (!t) return t;
+
+  const mVerbo = t.match(/^(CERTIFICA|RECERTIFICA)\s+que\s+/i);
+  if (!mVerbo) return t;
+
+  const verbo = mVerbo[1].toUpperCase();
+  const afterVerbo = t.slice(mVerbo[0].length);
+  const mCierre = afterVerbo.match(/(,\s*cumplen\s+a\s+cabalidad[\s\S]*)$/i);
+  const cierre = mCierre ? mCierre[1] : "";
+  const cuerpo = mCierre ? afterVerbo.slice(0, mCierre.index) : afterVerbo;
+
+  let remaining = cuerpo;
+  let direccion = "";
+  const mDir = remaining.match(/(?:,\s*|\s+)con\s+DIRECCI[OÓ]N:\s*(.+)$/i);
+  if (mDir) {
+    direccion = mDir[1].trim();
+    remaining = remaining.slice(0, mDir.index);
+  }
+
+  let nit = "";
+  let cliente = "";
+  const mNit = remaining.match(/(?:,\s*|\s+)con\s+NIT:\s*([0-9kK.\-]+)\s*(?:\(([^)]+)\))?$/i);
+  if (mNit) {
+    nit = mNit[1].trim();
+    cliente = mNit[2] ? mNit[2].trim() : "";
+    remaining = remaining.slice(0, mNit.index);
+  } else {
+    const mClienteDe = remaining.match(/(?:,\s*|\s+)de\s+([^,]+)$/i);
+    if (mClienteDe) {
+      cliente = mClienteDe[1].trim();
+      remaining = remaining.slice(0, mClienteDe.index);
+    }
+  }
+
+  let lugar = "";
+  const mLugar = remaining.match(/(?:,\s*|\s+)instalados\s+en\s+(\([^)]+\)|[^,]+)$/i);
+  if (mLugar) {
+    lugar = mLugar[1].trim();
+    remaining = remaining.slice(0, mLugar.index);
+  }
+
+  const rawDetalle = remaining.trim().replace(/[,\s]+$/, "");
+  const detalleLindo = embellecerDetalleCertificacion(rawDetalle);
+
+  let resultado = `${verbo} que ${detalleLindo}`;
+  if (lugar) resultado += `, instalados en ${lugar.startsWith("(") ? lugar : `(${lugar})`}`;
+  if (nit) {
+    resultado += ` con NIT: ${nit}`;
+    if (cliente) resultado += ` (${cliente.replace(/^\(|\)$/g, "")})`;
+  } else if (cliente) {
+    resultado += ` de ${cliente}`;
+  }
+  if (direccion) resultado += ` con DIRECCIÓN: ${direccion}`;
+  if (cierre) resultado += cierre;
+  else resultado += ", cumplen a cabalidad con la Resolución 4272 de 2021 del Ministerio del Trabajo, por la cual se establece el reglamento de seguridad para protección contra caídas en trabajo en alturas.";
+
+  return resultado;
+}
+
+/**
+ * Normaliza, reestructura y autocorrige el texto del sistema certificado.
+ * Si detecta actividades de campo sin procesar, las sintetiza en un texto
+ * técnico y ejecutivo sin repeticiones, estandariza unidades y cita legal.
  */
 export function normalizarTextoCertificacion(valor) {
   const texto = String(valor ?? "");
   if (!texto.trim()) return "";
 
   let res = corregirOrtografiaLocal(texto);
+
+  // Auto-embellecimiento de certificaciones
+  res = embellecerTextoCompletoCertificacion(res);
 
   // 1. Limpiar dobles puntos accidentales ("..", "...")
   res = res.replace(/\.{2,}/g, ".");

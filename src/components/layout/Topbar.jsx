@@ -100,7 +100,7 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
             {acciones}
           </div>
         )}
-        {esAdminDestinatario && totalPendientes > 0 && (
+        {scr === "cotizacion" && esAdminDestinatario && totalPendientes > 0 && (
           <button
             onClick={() => window.dispatchEvent(new CustomEvent("abrir-alerta-cotizaciones"))}
             aria-label="Ver recordatorio de cotizaciones"

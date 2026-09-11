@@ -477,16 +477,104 @@ export default function Informes({ctx}){
   const abrirNuevoInformeRef = useRef(null);
   useEffect(()=>{ abrirNuevoInformeRef.current = abrirNuevoInforme; });
 
-  // El boton de crear vive en la barra de arriba, no en un titulo propio.
+  const descargarPdf = async (inf = sel) => {
+    if (!inf) return;
+    setGenerandoPdf(true);
+    try {
+      await descargarInformePdf(inf, { empresaConfig, firmaImg });
+    } catch (fallo) {
+      window.alert(fallo.message || "No se pudo generar el PDF.");
+    } finally {
+      setGenerandoPdf(false);
+    }
+  };
+
+  const imprimirInforme = (inf = sel) => {
+    if (!inf) return;
+    const html = buildInformePrintHtml(inf, { empresaConfig, firmaImg });
+    openPrintTab(html, `Informe ${inf?.id || ""}`);
+  };
+
+  // En la barra superior: botones de acción fija para detalle (Volver, Editar, Descargar, Imprimir)
+  // o botón de creación (+ Nuevo Informe) en la lista.
   useAccionesPantalla(
-    (sel || nuevo || editId) ? null : (
+    sel && !nuevo && !editId ? (
+      <div style={{ display: "flex", gap: 7, alignItems: "center", flexWrap: "nowrap" }}>
+        <button
+          style={{
+            ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)"),
+            border: "1px solid #cbd5e1",
+            padding: "7px 14px",
+            borderRadius: 8,
+            fontSize: 12,
+            fontWeight: 600,
+          }}
+          onClick={() => setSel(null)}
+        >
+          ← Volver
+        </button>
+        <button
+          style={{
+            ...B("rgba(37, 99, 235, 0.08)", "#2563eb"),
+            border: "1px solid rgba(37, 99, 235, 0.25)",
+            padding: "7px 14px",
+            borderRadius: 8,
+            fontSize: 12,
+            fontWeight: 700,
+          }}
+          onClick={() => editarInforme(sel)}
+        >
+          ✏️ Editar
+        </button>
+        <button
+          style={{
+            ...B("#f47c20", "#ffffff"),
+            boxShadow: "0 2px 8px rgba(244, 124, 32, 0.25)",
+            padding: "7px 16px",
+            borderRadius: 8,
+            fontSize: 12,
+            fontWeight: 700,
+            opacity: generandoPdf ? 0.65 : 1,
+          }}
+          disabled={generandoPdf}
+          onClick={() => descargarPdf(sel)}
+        >
+          {generandoPdf ? "Generando PDF…" : "📥 Descargar PDF"}
+        </button>
+        <button
+          style={{
+            ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)"),
+            border: "1px solid #cbd5e1",
+            padding: "7px 14px",
+            borderRadius: 8,
+            fontSize: 12,
+            fontWeight: 600,
+          }}
+          onClick={() => imprimirInforme(sel)}
+        >
+          🖨️ Imprimir
+        </button>
+      </div>
+    ) : (!sel && !nuevo && !editId) ? (
       <button
-        style={{background:"#f47c20",color:"#fff",border:"1px solid #f47c20",borderRadius:9,
-          padding:"8px 16px",fontSize:12.5,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
-        onClick={()=>abrirNuevoInformeRef.current()}
-      >+ Nuevo Informe</button>
-    ),
-    [sel, nuevo, editId]
+        style={{
+          background: "#f47c20",
+          color: "#fff",
+          border: "1px solid #f47c20",
+          borderRadius: 9,
+          padding: "8px 16px",
+          fontSize: 12.5,
+          fontWeight: 700,
+          cursor: "pointer",
+          fontFamily: "inherit",
+          whiteSpace: "nowrap",
+        }}
+        onClick={() => abrirNuevoInformeRef.current()}
+      >
+        + Nuevo Informe
+      </button>
+    ) : null,
+    [sel, nuevo, editId, generandoPdf, empresaConfig, firmaImg]
   );
 
   const abrirNuevoInforme = ()=>{
@@ -912,38 +1000,8 @@ export default function Informes({ctx}){
       )}
 
       {/* Vista detalle + impresión */}
-      {sel&&(
+      {sel && !nuevo && !editId && (
         <div>
-          <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
-            <button style={B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)")} onClick={()=>setSel(null)}>Volver</button>
-            <button style={{...B("rgba(30, 64, 175, 0.15)","#60a5fa")}} onClick={()=>editarInforme(sel)}>Editar</button>
-            {/* Descarga directa: el PDF sale organizado por hojas sin cortes */}
-            <button
-              style={{...B("#f47c20"),opacity:generandoPdf?0.65:1}}
-              disabled={generandoPdf}
-              onClick={async()=>{
-                setGenerandoPdf(true);
-                try{
-                  await descargarInformePdf(sel, { empresaConfig, firmaImg });
-                }catch(fallo){
-                  window.alert(fallo.message || "No se pudo generar el PDF.");
-                }finally{
-                  setGenerandoPdf(false);
-                }
-              }}
-            >
-              {generandoPdf ? "Generando PDF…" : "Descargar PDF"}
-            </button>
-            <button
-              style={B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)")}
-              onClick={()=>{
-                const html = buildInformePrintHtml(sel, { empresaConfig, firmaImg });
-                openPrintTab(html, `Informe ${sel?.id || ""}`);
-              }}
-            >
-              Imprimir
-            </button>
-          </div>
           <div className="doc-paper-wrapper" style={{maxWidth:920,margin:"0 auto",width:"100%"}}>
           <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:T.cuerpo,lineHeight:1.55,border:"1px solid #ddd",padding:"28px 36px"}}>
             <PrintHeader dual={false} formato="informe" empresaConfig={empresaConfig} numeroDocumento={sel?.id || sel?.numero || ""}/>

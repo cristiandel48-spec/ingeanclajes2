@@ -4,6 +4,7 @@ import MedidorMapa from "../../components/maps/MedidorMapa";
 import { imagenDelMapa } from "../../lib/mapaEstatico";
 import LBL from "../../components/ui/LBL";
 import BotonCorregir from "../../components/ui/BotonCorregir";
+import { corregirOrtografiaLocal } from "../../lib/correctorTexto";
 import { leerImagenComprimida } from "../../lib/imagenes";
 import { normalizarFrase } from "../../lib/normalizarEntrada";
 import { B, SI } from "../../styles/tokens";
@@ -111,7 +112,18 @@ export default function PropuestaEditor({
 
         {/* 1. Nombre y tipo */}
         <div style={{display:"grid",gridTemplateColumns:"1.5fr 1fr",gap:12,marginBottom:18}}>
-          <div><LBL>Nombre de la propuesta</LBL><input value={p.nombre} onChange={e=>set("nombre", e.target.value)} style={SI}/></div>
+          <div>
+            <LBL>Nombre de la propuesta</LBL>
+            <input
+              value={p.nombre}
+              onChange={e=>set("nombre", e.target.value)}
+              onBlur={e=>{
+                const auto = corregirOrtografiaLocal(e.target.value);
+                if(auto !== e.target.value) set("nombre", auto);
+              }}
+              style={SI}
+            />
+          </div>
           <div>
             <LBL>Tipo</LBL>
             <div style={{display:"flex",gap:8}}>
@@ -250,6 +262,12 @@ export default function PropuestaEditor({
                 <input
                   value={it.desc}
                   onChange={e => setItems(prev => prev.map(item => item.id === it.id ? { ...item, desc: e.target.value.toUpperCase() } : item))}
+                  onBlur={e => {
+                    const auto = corregirOrtografiaLocal(e.target.value).toUpperCase();
+                    if (auto !== it.desc) {
+                      setItems(prev => prev.map(item => item.id === it.id ? { ...item, desc: auto } : item));
+                    }
+                  }}
                   placeholder="DESCRIPCIÓN DEL ÍTEM"
                   style={{ ...SI, fontSize: 12, padding: "5px 8px", textTransform: "uppercase" }}
                 />
@@ -419,8 +437,30 @@ export default function PropuestaEditor({
           <div style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)",marginBottom:10}}>Pertenecen a esta propuesta, pero en el documento salen al final, en el cierre.</div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-          <div><LBL>Forma de pago</LBL><input value={p.formaPago} onChange={e=>set("formaPago", e.target.value)} style={SI}/></div>
-          <div><LBL>Tiempo de ejecución</LBL><input value={p.tiempoEjec} onChange={e=>set("tiempoEjec", e.target.value)} style={SI}/></div>
+          <div>
+            <LBL>Forma de pago</LBL>
+            <input
+              value={p.formaPago}
+              onChange={e=>set("formaPago", e.target.value)}
+              onBlur={e=>{
+                const auto = corregirOrtografiaLocal(e.target.value);
+                if(auto !== e.target.value) set("formaPago", auto);
+              }}
+              style={SI}
+            />
+          </div>
+          <div>
+            <LBL>Tiempo de ejecución</LBL>
+            <input
+              value={p.tiempoEjec}
+              onChange={e=>set("tiempoEjec", e.target.value)}
+              onBlur={e=>{
+                const auto = corregirOrtografiaLocal(e.target.value);
+                if(auto !== e.target.value) set("tiempoEjec", auto);
+              }}
+              style={SI}
+            />
+          </div>
         </div>
 
         {/* 6. Lo que incluye. Se imprime en el cierre, debajo de las condiciones
@@ -447,6 +487,10 @@ export default function PropuestaEditor({
           <textarea
             value={p.incluyeTexto||""}
             onChange={e=>set("incluyeTexto", e.target.value)}
+            onBlur={e=>{
+              const auto = corregirOrtografiaLocal(e.target.value);
+              if(auto !== e.target.value) set("incluyeTexto", auto);
+            }}
             spellCheck lang="es"
             style={{...SI,minHeight:150,resize:"vertical",lineHeight:1.6}}
           />

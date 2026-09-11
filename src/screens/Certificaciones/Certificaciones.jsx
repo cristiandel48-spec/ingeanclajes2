@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { buildCertForm, construirTextoSistema, getCertDefaultElements, unAnoDespues } from "./certConfig";
 import { fmt, fmtD, fmtL } from "../../lib/format";
-import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
+import { normalizarRazonSocial, normalizarFrase, normalizarParrafos } from "../../lib/normalizarEntrada";
 import { getEstadoFlujoObra } from "../../lib/flujoObra";
 import { printCurrentPz } from "../../lib/print";
 import { siguienteIdUnico } from "../../lib/identificadores";
@@ -493,7 +493,7 @@ export default function Certificaciones({ctx}){
               aplicarCambio({cliente:nombre,nit});
             }} style={SI}/></div>
             <div><LBL>NIT</LBL><input value={form.nit} onChange={e=>setForm({...form,nit:e.target.value})} style={SI}/></div>
-            <div style={{gridColumn:"span 2"}}><LBL>Dirección del cliente</LBL><input value={form.direccion} onChange={e=>aplicarCambio({direccion:e.target.value})} style={SI}/></div>
+            <div style={{gridColumn:"span 2"}}><LBL>Dirección del cliente</LBL><input value={form.direccion} onChange={e=>aplicarCambio({direccion:e.target.value})} onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==form.direccion)aplicarCambio({direccion:v});}} style={SI}/></div>
             <div>
               <LBL>Próximo mantenimiento</LBL>
               {/* Al escribirlo a mano deja de seguir a la fecha. */}
@@ -517,6 +517,7 @@ export default function Certificaciones({ctx}){
             <input
               value={form.lugar || ""}
               onChange={e=>aplicarCambio({lugar:e.target.value})}
+              onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==form.lugar)aplicarCambio({lugar:v});}}
               placeholder={proyectoDeObra(form.obraId) || "El cuarto de ascensores · La cubierta del bloque 2…"}
               style={SI}
             />
@@ -536,6 +537,7 @@ export default function Certificaciones({ctx}){
             <textarea
               value={form.sistema}
               onChange={e=>setForm({...form,sistema:e.target.value,sistemaAuto:false})}
+              onBlur={e=>{const v=normalizarParrafos(e.target.value);if(v!==form.sistema)setForm(p=>({...p,sistema:v}));}}
               rows={4}
               placeholder="Se arma solo al llenar el tipo, el sistema, la cantidad y el cliente. También puedes escribirlo a mano."
               spellCheck lang="es"

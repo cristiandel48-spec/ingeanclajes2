@@ -1292,6 +1292,10 @@ export default function Cotizacion({ctx}){
           <textarea
             value={textosDocumento.saludo}
             onChange={e=>setTexto("saludo",e.target.value)}
+            onBlur={e=>{
+              const auto = corregirOrtografiaLocal(e.target.value);
+              if(auto !== e.target.value) setTexto("saludo", auto);
+            }}
             style={{...SI,minHeight:60,resize:"vertical",lineHeight:1.6}}
           />
           <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Se imprime después de &quot;Cordial saludo, [cliente]&quot;. Si la obra tiene nombre, se agrega al final. No hace falta el punto final.</div>
@@ -1307,6 +1311,11 @@ export default function Cotizacion({ctx}){
           <textarea
             value={String(textosDocumento.presentacion||"").replace(/\n{2,}/g,"\n")}
             onChange={e=>setTexto("presentacion",e.target.value.replace(/\n{2,}/g,"\n"))}
+            onBlur={e=>{
+              const v = e.target.value.replace(/\n{2,}/g,"\n");
+              const auto = corregirOrtografiaLocal(v);
+              if(auto !== v) setTexto("presentacion", auto);
+            }}
             style={{...SI,minHeight:120,resize:"vertical",lineHeight:1.6}}
           />
           <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Quiénes somos y qué garantiza la propuesta. Un párrafo por renglón.</div>
@@ -1363,6 +1372,10 @@ export default function Cotizacion({ctx}){
           <textarea
             value={textosDocumento.sst}
             onChange={e=>setTexto("sst",e.target.value)}
+            onBlur={e=>{
+              const auto = corregirOrtografiaLocal(e.target.value);
+              if(auto !== e.target.value) setTexto("sst", auto);
+            }}
             style={{...SI,minHeight:120,resize:"vertical",lineHeight:1.6}}
           />
         </div>
@@ -1372,6 +1385,10 @@ export default function Cotizacion({ctx}){
           <textarea
             value={textosDocumento.proximosPasos}
             onChange={e=>setTexto("proximosPasos",e.target.value)}
+            onBlur={e=>{
+              const auto = corregirOrtografiaLocal(e.target.value);
+              if(auto !== e.target.value) setTexto("proximosPasos", auto);
+            }}
             style={{...SI,minHeight:90,resize:"vertical",lineHeight:1.6}}
           />
           <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Se imprimen numerados en el orden que los escribas.</div>
@@ -1384,7 +1401,18 @@ export default function Cotizacion({ctx}){
 
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
           <div><LBL>Firma — nombre</LBL><input value={textosDocumento.firmaNombre} onChange={e=>setTexto("firmaNombre",e.target.value)} style={SI}/></div>
-          <div><LBL>Firma — cargo</LBL><input value={textosDocumento.firmaCargo} onChange={e=>setTexto("firmaCargo",e.target.value)} style={SI}/></div>
+          <div>
+            <LBL>Firma — cargo</LBL>
+            <input
+              value={textosDocumento.firmaCargo}
+              onChange={e=>setTexto("firmaCargo",e.target.value)}
+              onBlur={e=>{
+                const auto = corregirOrtografiaLocal(e.target.value);
+                if(auto !== e.target.value) setTexto("firmaCargo", auto);
+              }}
+              style={SI}
+            />
+          </div>
         </div>
         <FirmaEmpresa/>
 
@@ -1397,6 +1425,10 @@ export default function Cotizacion({ctx}){
           <textarea
             value={textosDocumento.firmaDetalle}
             onChange={e=>setTexto("firmaDetalle",e.target.value)}
+            onBlur={e=>{
+              const auto = corregirOrtografiaLocal(e.target.value);
+              if(auto !== e.target.value) setTexto("firmaDetalle", auto);
+            }}
             style={{...SI,minHeight:60,resize:"vertical",lineHeight:1.6}}
           />
         </div>

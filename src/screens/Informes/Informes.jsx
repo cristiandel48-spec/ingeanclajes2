@@ -882,7 +882,7 @@ export default function Informes({ctx}){
             ))}
           </div>
 
-          <div style={{marginBottom:14}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><LBL>Recomendaciones generales</LBL><BotonCorregir valor={form.recomendaciones} onChange={(v)=>setForm(p=>({...p,recomendaciones:v}))} compacto/></div><textarea value={form.recomendaciones} onChange={e=>setForm(p=>({...p,recomendaciones:e.target.value}))} rows={3} spellCheck lang="es" style={{...SI,resize:"vertical"}}/></div>
+          <div style={{marginBottom:14}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><LBL>Recomendaciones generales</LBL><BotonCorregir valor={form.recomendaciones} onChange={(v)=>setForm(p=>({...p,recomendaciones:v}))} compacto/></div><textarea value={form.recomendaciones} onChange={e=>setForm(p=>({...p,recomendaciones:e.target.value}))} onBlur={e=>{const v=normalizarParrafos(e.target.value);if(v!==form.recomendaciones)setForm(p=>({...p,recomendaciones:v}));}} rows={3} spellCheck lang="es" style={{...SI,resize:"vertical"}}/></div>
           <div style={{display:"flex",gap:10}}>
             <button style={B("#cc0000")} onClick={guardar}>{editId ? "Guardar cambios" : "Guardar informe"}</button>
             <button style={B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)")} onClick={()=>{setNuevo(false);setEditId(null);}}>Cancelar</button>

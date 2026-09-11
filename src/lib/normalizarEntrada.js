@@ -30,55 +30,11 @@ const SIGLAS = new Set([
 
 const limpiarEspacios = (valor) => String(valor ?? "").trim().replace(/\s+/g, " ");
 
-// ── Correccion de palabras del oficio ──────────────────────────────────────
-//
-// NO es un corrector ortografico: eso necesitaria un diccionario del español
-// entero, y corregir a ciegas haria destrozos con nombres propios, marcas y
-// referencias tecnicas. Es una lista cerrada de errores que se repiten en
-// este sector y que no admiten duda: nadie escribe "recidencial" a proposito.
-//
-// El corrector del navegador (spellCheck) sigue subrayando lo demas.
-const CORRECCIONES = {
-  // Errores de letra
-  recidencial: "residencial", reidencial: "residencial", residensial: "residencial",
-  anclage: "anclaje", ancalje: "anclaje", anclages: "anclajes", ancalges: "anclajes",
-  sertificado: "certificado", sertificacion: "certificación",
-  galvanisado: "galvanizado", galbanizado: "galvanizado",
-  mantenimineto: "mantenimiento", mantenimento: "mantenimiento",
-  estructual: "estructural", estrutura: "estructura",
-  seguriad: "seguridad", segurida: "seguridad",
-  instalacon: "instalación", intalacion: "instalación",
-  // Tildes que faltan en palabras del oficio
-  instalacion: "instalación", certificacion: "certificación",
-  recertificacion: "recertificación", inspeccion: "inspección",
-  proteccion: "protección", senalizacion: "señalización",
-  "señalizacion": "señalización", resolucion: "resolución",
-  construccion: "construcción", edificacion: "edificación",
-  ubicacion: "ubicación", direccion: "dirección",
-  linea: "línea", lineas: "líneas",
-  metalica: "metálica", metalico: "metálico",
-  epoxico: "epóxico", epoxica: "epóxica",
-  tecnico: "técnico", tecnica: "técnica",
-  numero: "número", area: "área", maquina: "máquina",
-  fabricacion: "fabricación", fijacion: "fijación",
-  identificacion: "identificación", verificacion: "verificación",
-};
+import { corregirOrtografiaLocal } from "./correctorTexto";
 
-// Conserva como venia escrita la palabra: MAYUSCULAS, Capitalizada o suelta.
-const conMismaForma = (original, corregida) => {
-  if (original === original.toUpperCase()) return corregida.toUpperCase();
-  if (original[0] === original[0].toUpperCase()) {
-    return corregida[0].toUpperCase() + corregida.slice(1);
-  }
-  return corregida;
-};
-
-/** Arregla las palabras de la lista; el resto del texto no se toca. */
+// ── Correccion de palabras del oficio y ortografía general ─────────────────
 export function corregirPalabras(valor) {
-  return String(valor ?? "").replace(/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+/g, (palabra) => {
-    const corregida = CORRECCIONES[palabra.toLowerCase()];
-    return corregida ? conMismaForma(palabra, corregida) : palabra;
-  });
+  return corregirOrtografiaLocal(valor);
 }
 
 /**

@@ -1399,8 +1399,9 @@ export default function Cotizacion({ctx}){
       {/* 03 · Propuestas: todas abiertas, una debajo de otra, en el orden
           en que se imprimen. */}
       <div style={{...CD,marginBottom:14,border:"1px solid var(--border, #eaecf0)"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
+        <div style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
           <div style={{...ST,marginBottom:0,borderBottom:"none",paddingBottom:0}}>03 · Propuestas</div>
+          <div style={{width:1,height:20,background:"#e2e8f0"}} />
           <div style={{display:"flex",gap:8}}>
             <button
               onClick={agregarPropuesta}
@@ -1419,7 +1420,7 @@ export default function Cotizacion({ctx}){
                 boxShadow: "0 1px 2px rgba(181, 71, 8, 0.08)",
               }}
             >
-              + Nueva
+              ✨ + Nueva propuesta
             </button>
             <button
               onClick={duplicarPropuesta}
@@ -1437,7 +1438,7 @@ export default function Cotizacion({ctx}){
                 gap: 4,
               }}
             >
-              Duplicar
+              📋 Duplicar activa
             </button>
           </div>
         </div>

@@ -121,17 +121,21 @@ function Aviso({ tono = "error", children }) {
   );
 }
 
-// Cuando no hay sesion iniciada, Supabase lanza "Auth session missing".
-// Es el estado normal al abrir la app, no un error que haya que mostrar.
 function esFaltaDeSesion(error) {
   const texto = String(error?.message || error || "").toLowerCase();
-  return texto.includes("auth session missing") || texto.includes("session_not_found");
+  return (
+    texto.includes("auth session missing") ||
+    texto.includes("session_not_found") ||
+    texto.includes("current_user_tenant_ids") ||
+    texto.includes("jwt") ||
+    texto.includes("expired")
+  );
 }
 
 // Traduce los mensajes de Supabase a algo que entienda quien usa la app.
 function mensajeAmable(error) {
   const texto = String(error?.message || error || "").toLowerCase();
-  if (esFaltaDeSesion(error)) return "Tu sesión expiró. Inicia sesión de nuevo.";
+  if (esFaltaDeSesion(error)) return "Se cerró la sesión por inactividad. Por favor vuelve a ingresar.";
   if (texto.includes("invalid login credentials")) return "Correo o contraseña incorrectos.";
   if (texto.includes("email not confirmed")) return "La cuenta existe pero no está confirmada. Pide que la activen desde el panel.";
   if (texto.includes("membres")) return "La cuenta no tiene permisos en esta empresa. Pide que te asignen acceso.";
@@ -383,48 +387,35 @@ export default function SupabaseGate({ children }) {
   }
 
   if (status === "blocked" && user) {
+    const esInactividad = motivoBloqueo !== "permisos";
+
     return (
       <Pantalla>
         <Encabezado etiqueta="Acceso Cloud" />
         <h1 style={{ margin: "0 0 8px", fontSize: 26, fontWeight: 800, color: "#101828" }}>
-          {motivoBloqueo === "permisos" ? "Tu cuenta no tiene acceso" : "No se pudo abrir la empresa"}
+          {esInactividad ? "Sesión cerrada por inactividad" : "Tu cuenta no tiene acceso"}
         </h1>
-        <p style={{ margin: "0 0 16px", color: "#667085", lineHeight: 1.6, fontSize: 14 }}>
-          {motivoBloqueo === "permisos" ? (
+        <p style={{ margin: "0 0 20px", color: "#667085", lineHeight: 1.6, fontSize: 14.5 }}>
+          {esInactividad ? (
+            <>Se cerró la sesión por inactividad. Por favor vuelve a ingresar.</>
+          ) : (
             <>
               Entraste como <strong style={{ color: "#101828" }}>{user.email}</strong>, pero esa cuenta todavía no
               tiene permisos asignados en la empresa.
             </>
-          ) : (
-            <>
-              Tu usuario y contraseña están bien: entraste como{" "}
-              <strong style={{ color: "#101828" }}>{user.email}</strong>. Lo que falló fue la conexión con los datos
-              de la empresa, así que no es algo que puedas resolver desde aquí.
-            </>
           )}
         </p>
-        {error ? <Aviso>{error}</Aviso> : null}
+
+        {!esInactividad && error ? <Aviso>{error}</Aviso> : null}
+
         <div style={{ marginTop: 18, display: "grid", gap: 10 }}>
-          {motivoBloqueo === "tecnico" && (
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              style={botonStyle}
-            >
-              Reintentar
-            </button>
-          )}
           <button
             type="button"
             onClick={handleLogout}
             disabled={busy}
-            style={
-              motivoBloqueo === "tecnico"
-                ? { ...botonStyle, background: "#fff", color: "#475569", border: "1px solid #e4e7ec", opacity: busy ? 0.7 : 1 }
-                : { ...botonStyle, opacity: busy ? 0.7 : 1 }
-            }
+            style={botonStyle}
           >
-            {busy ? "Cerrando…" : "Salir e intentar con otra cuenta"}
+            {busy ? "Cerrando…" : esInactividad ? "Volver a ingresar" : "Salir e intentar con otra cuenta"}
           </button>
         </div>
       </Pantalla>

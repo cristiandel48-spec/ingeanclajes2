@@ -177,10 +177,28 @@ export default function CertificacionDocumento({cert}){
 
   useEffect(() => {
     let activo = true;
-    const textoValidacion = `https://www.ingeanclajessas.com/verificar?folio=${encodeURIComponent(folioDoc)}&nit=${encodeURIComponent(cert?.nit || "")}`;
-    QRCode.toDataURL(textoValidacion, {
-      width: 120,
+    const fichaDigital = [
+      "INGEANCLAJES S.A.S · PROTOCOLO OFICIAL DE SEGURIDAD",
+      `Documento: ${cert?.tipo || "Certificación"} Oficial`,
+      `Folio: ${folioDoc}`,
+      `Cliente: ${cert?.cliente || "N/A"}${cert?.nit ? ` · NIT: ${cert.nit}` : ""}`,
+      cert?.lugar ? `Ubicación: ${cert.lugar}` : "",
+      cert?.direccion ? `Dirección: ${cert.direccion}` : "",
+      `Emisión: ${fmtL(cert?.fecha || hoy())}`,
+      cert?.proxMant ? `Próxima inspección: antes de ${fmtL(cert.proxMant)}` : "Vigencia: Máximo 12 meses",
+      `Normativa: ${cert?.normativa || "Resolución 4272 de 2021 & ANSI Z359"}`,
+      "Estado: CERTIFICACIÓN VIGENTE Y HOMOLOGADA",
+      `Responsable: ${cert?.ingeniero || "ING. JHON JAIME SEPULVEDA LONDOÑO"}`,
+      `Cargo: ${cert?.cargo || "Gerente General"}`,
+      `Matrícula Profesional: ${cert?.matricula || "MP. 05256-409949"}`,
+      "Líneas de atención: PBX (604) 448 26 86 · Cel. 315 288 9541",
+      "Sitio Web: https://www.ingeanclajessas.com",
+    ].filter(Boolean).join("\n");
+
+    QRCode.toDataURL(fichaDigital, {
+      width: 140,
       margin: 1,
+      errorCorrectionLevel: "M",
       color: {
         dark: "#0f172a",
         light: "#ffffff",
@@ -193,7 +211,7 @@ export default function CertificacionDocumento({cert}){
     return () => {
       activo = false;
     };
-  }, [folioDoc, cert?.nit]);
+  }, [folioDoc, cert?.nit, cert?.cliente, cert?.fecha, cert?.proxMant, cert?.lugar, cert?.direccion, cert?.tipo, cert?.normativa, cert?.ingeniero, cert?.cargo, cert?.matricula]);
 
   if(!cert) return null;
   const esRecertificacion = cert.tipo==="Recertificación";

@@ -177,24 +177,14 @@ export default function CertificacionDocumento({cert}){
 
   useEffect(() => {
     let activo = true;
-    const fichaDigital = [
-      "INGEANCLAJES S.A.S · VALIDACIÓN OFICIAL",
-      `Folio: ${folioDoc} (VIGENTE Y HOMOLOGADO)`,
-      `Cliente: ${cert?.cliente || "N/A"}${cert?.nit ? ` · NIT: ${cert.nit}` : ""}`,
-      cert?.lugar ? `Sede: ${cert.lugar}` : "",
-      `Emisión: ${fmtL(cert?.fecha || hoy())}`,
-      cert?.proxMant ? `Próxima inspección: antes de ${fmtL(cert.proxMant)}` : "Vigencia: 12 meses",
-      "Normativa: Res. 4272/2021 & ANSI Z359",
-      `Responsable: ${cert?.ingeniero || "ING. JHON JAIME SEPULVEDA LONDOÑO"} (Gerente General)`,
-      `MP: ${cert?.matricula || "05256-409949"}`,
-      "Atención: PBX (604) 448 26 86 · Cel. 315 288 9541",
-      "Sitio Web: https://www.ingeanclajessas.com",
-    ].filter(Boolean).join("\n");
+    // URL web directa oficial: cualquier celular (iPhone / Android) la reconoce al instante
+    // y muestra de inmediato el aviso para abrir la página en el navegador.
+    const urlVerificacion = `https://www.ingeanclajessas.com/?verificar=${encodeURIComponent(folioDoc)}`;
 
-    QRCode.toDataURL(fichaDigital, {
-      width: 360,
+    QRCode.toDataURL(urlVerificacion, {
+      width: 260,
       margin: 1,
-      errorCorrectionLevel: "L",
+      errorCorrectionLevel: "M",
       color: {
         dark: "#0f172a",
         light: "#ffffff",
@@ -207,7 +197,7 @@ export default function CertificacionDocumento({cert}){
     return () => {
       activo = false;
     };
-  }, [folioDoc, cert?.nit, cert?.cliente, cert?.fecha, cert?.proxMant, cert?.lugar, cert?.tipo, cert?.normativa, cert?.ingeniero, cert?.cargo, cert?.matricula]);
+  }, [folioDoc]);
 
   if(!cert) return null;
   const esRecertificacion = cert.tipo==="Recertificación";
@@ -479,7 +469,15 @@ export default function CertificacionDocumento({cert}){
               }}
             >
               {qrUrl ? (
-                <img src={qrUrl} alt="QR Validación" style={{ width: 78, height: 78, display: "block", borderRadius: 3 }}/>
+                <a
+                  href={`https://www.ingeanclajessas.com/?verificar=${encodeURIComponent(folioDoc)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ display: "block", textDecoration: "none" }}
+                  title="Clic para verificar en la web oficial"
+                >
+                  <img src={qrUrl} alt="QR Validación" style={{ width: 78, height: 78, display: "block", borderRadius: 3 }}/>
+                </a>
               ) : (
                 <div style={{ width: 78, height: 78, background: "#e2e8f0", borderRadius: 3 }}/>
               )}

@@ -94,7 +94,16 @@ export function normalizarParrafos(valor) {
 
   const lineas = texto
     .split("\n")
-    .map((linea) => corregirPalabras(linea).replace(/[ \t]+/g, " ").trim());
+    .map((linea) => {
+      let l = corregirPalabras(linea);
+      // Limpiar puntos accidentales repetidos ("..", "...")
+      l = l.replace(/\.{2,}/g, ".");
+      // Limpiar espacios indebidos antes de signos
+      l = l.replace(/\s+([.,;:])(?!\d)/g, "$1");
+      // Espacio después de coma o punto y coma
+      l = l.replace(/([,;:])([A-Za-zÁÉÍÓÚáéíóúñÑ])/g, "$1 $2");
+      return l.replace(/[ \t]+/g, " ").trim();
+    });
 
   return lineas
     .join("\n")
@@ -102,6 +111,44 @@ export function normalizarParrafos(valor) {
     // mas de una solo abre huecos en el documento impreso.
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+}
+
+/**
+ * Normaliza y autocorrige el texto del sistema certificado (o campos técnicos extensos).
+ * Corrige ortografía técnica, tildes, dobles puntos accidentales (".."), estandariza citas
+ * normativas ("Ministerio del Trabajo", "Resolución", "trabajo en alturas", etc.)
+ * y organiza la puntuación.
+ */
+export function normalizarTextoCertificacion(valor) {
+  const texto = String(valor ?? "");
+  if (!texto.trim()) return "";
+
+  let res = corregirOrtografiaLocal(texto);
+
+  // 1. Limpiar dobles puntos accidentales ("..", "...")
+  res = res.replace(/\.{2,}/g, ".");
+
+  // 2. Limpiar espacios indebidos antes de signos
+  res = res.replace(/\s+([.,;:])(?!\d)/g, "$1");
+
+  // 3. Espacio después de coma, punto y coma o dos puntos si va pegado a una letra
+  res = res.replace(/([,;:])([A-Za-zÁÉÍÓÚáéíóúñÑ])/g, "$1 $2");
+
+  // 4. Espacio después de punto si no es sigla (evita alterar siglas como "S.A.S" o "E.U.")
+  res = res.replace(/(?<!\b[A-Za-zÁÉÍÓÚáéíóúñÑ])\.([A-ZÁÉÍÓÚÑ])/g, ". $1");
+
+  // 5. Limpiar punto suelto antes de "instalados en"
+  res = res.replace(/\.\s+(instalad[oa]s? en)\b/gi, ", $1");
+
+  // 6. Estandarización institucional y normativa oficial
+  res = res.replace(/\bministerio de[l]? trabajo\b/gi, "Ministerio del Trabajo");
+  res = res.replace(/\btrabajo en altura\b/gi, "trabajo en alturas");
+  res = res.replace(/\bDIRECCION\b/g, "DIRECCIÓN");
+  res = res.replace(/\bRESOLUCION\b/g, "RESOLUCIÓN");
+  res = res.replace(/\bCERTIFICACION\b/g, "CERTIFICACIÓN");
+
+  const lineas = res.split("\n").map((l) => l.replace(/[ \t]+/g, " ").trim());
+  return lineas.join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
 /** Correos: siempre en minuscula y sin espacios. */

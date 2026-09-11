@@ -7,7 +7,9 @@ import { useEffect, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { buildCertForm, construirTextoSistema, getCertDefaultElements, unAnoDespues } from "./certConfig";
 import { fmt, fmtD, fmtL } from "../../lib/format";
-import { normalizarRazonSocial, normalizarFrase, normalizarParrafos } from "../../lib/normalizarEntrada";
+import { normalizarRazonSocial, normalizarFrase, normalizarParrafos, normalizarTextoCertificacion } from "../../lib/normalizarEntrada";
+import { corregirOrtografiaLocal } from "../../lib/correctorTexto";
+import BotonCorregir from "../../components/ui/BotonCorregir";
 import { getEstadoFlujoObra } from "../../lib/flujoObra";
 import { printCurrentPz } from "../../lib/print";
 import { siguienteIdUnico } from "../../lib/identificadores";
@@ -55,7 +57,8 @@ const actividadesDesdeInformes = (informes, obraId, informeId = "")=>{
 const observacionesDesdeInformes = (informes, obraId, informeId = "")=>{
   const textos = informesFuente(informes, obraId, informeId)
     .flatMap((i)=>(i.actividades||[]).map((a)=>String(a?.observaciones||"").trim()))
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((t)=>t.replace(/[.\s]+$/, ""));
   return [...new Set(textos)].join(". ");
 };
 
@@ -110,7 +113,7 @@ export default function Certificaciones({ctx}){
   const [form,setForm]=useState(()=>{
     // La fecha del informe TAMBIEN al montar, no solo al elegir obra a mano.
     const fechaObra = fechaDesdeInformes(ctx.informes, obraInicial?.id, informeSolicitado);
-    return buildCertForm({
+    const inicial = buildCertForm({
       elementos:getCertDefaultElements("Certificación"),
       obraId: obraInicial?.id || "",
       cliente: obraInicial?.cliente || "",
@@ -118,6 +121,22 @@ export default function Certificaciones({ctx}){
       nit: buscarNit(obraInicial),
       ...(fechaObra ? {fecha:fechaObra} : {}),
     });
+    if(obraInicial?.id){
+      const t = construirTextoSistema({
+        tipo: inicial.tipo,
+        tipoSistema: inicial.tipoSistema,
+        cantidad: inicial.cantidad,
+        cliente: inicial.cliente,
+        nit: inicial.nit,
+        direccion: inicial.direccion,
+        fechaLarga: fmtL(inicial.fecha),
+        normativa: inicial.normativa,
+        lugar: inicial.lugar || proyectoDesdeInformes(ctx.informes, obraInicial.id, informeSolicitado) || obraInicial.proyecto || "",
+        detalle: observacionesDesdeInformes(ctx.informes, obraInicial.id, informeSolicitado) || actividadesDesdeInformes(ctx.informes, obraInicial.id, informeSolicitado),
+      });
+      if(t) inicial.sistema = t;
+    }
+    return inicial;
   });
 
   // Se descarta al salir, para que al volver por el menu no se reabra.
@@ -228,7 +247,7 @@ export default function Certificaciones({ctx}){
     // La cantidad y la fecha tambien se traen de una: son los dos datos que se
     // copiaban a mano de la cotizacion y del informe.
     const fechaObra = fechaDeLaObra(obra?.id);
-    setForm(buildCertForm({
+    const nuevo = buildCertForm({
       tipo,
       elementos:getCertDefaultElements(tipo),
       obraId: obra?.id || "",
@@ -236,7 +255,23 @@ export default function Certificaciones({ctx}){
       direccion: buscarDireccionCliente(obra),
       nit: buscarNit(obra),
       ...(fechaObra ? {fecha:fechaObra} : {}),
-    }));
+    });
+    if(obra?.id){
+      const t = construirTextoSistema({
+        tipo: nuevo.tipo,
+        tipoSistema: nuevo.tipoSistema,
+        cantidad: nuevo.cantidad,
+        cliente: nuevo.cliente,
+        nit: nuevo.nit,
+        direccion: nuevo.direccion,
+        fechaLarga: fmtL(nuevo.fecha),
+        normativa: nuevo.normativa,
+        lugar: nuevo.lugar || proyectoDeObra(obra.id),
+        detalle: queSeCertifica(obra.id),
+      });
+      if(t) nuevo.sistema = t;
+    }
+    setForm(nuevo);
     setNueva(true);
   };
 
@@ -530,14 +565,21 @@ export default function Certificaciones({ctx}){
           <div style={{marginBottom:12}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}}>
               <LBL>Sistema certificado</LBL>
-              <button onClick={rehacerTexto} style={{...B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)"),fontSize:11,padding:"5px 11px"}}>
-                ↻ Rehacer con los datos de arriba
-              </button>
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                <BotonCorregir
+                  valor={form.sistema}
+                  onChange={(v)=>setForm(p=>({...p,sistema:normalizarTextoCertificacion(v),sistemaAuto:false}))}
+                  compacto
+                />
+                <button onClick={rehacerTexto} style={{...B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)"),fontSize:11,padding:"5px 11px"}}>
+                  ↻ Rehacer con los datos de arriba
+                </button>
+              </div>
             </div>
             <textarea
               value={form.sistema}
               onChange={e=>setForm({...form,sistema:e.target.value,sistemaAuto:false})}
-              onBlur={e=>{const v=normalizarParrafos(e.target.value);if(v!==form.sistema)setForm(p=>({...p,sistema:v}));}}
+              onBlur={e=>{const v=normalizarTextoCertificacion(e.target.value);if(v!==form.sistema)setForm(p=>({...p,sistema:v}));}}
               rows={4}
               placeholder="Se arma solo al llenar el tipo, el sistema, la cantidad y el cliente. También puedes escribirlo a mano."
               spellCheck lang="es"
@@ -589,6 +631,10 @@ export default function Certificaciones({ctx}){
                   <input
                     value={el}
                     onChange={e=>setForm({...form,elementos:form.elementos.map((x,j)=>j===i?e.target.value:x)})}
+                    onBlur={e=>{
+                      const auto=corregirOrtografiaLocal(e.target.value);
+                      if(auto!==el)setForm(prev=>({...prev,elementos:prev.elementos.map((x,j)=>j===i?auto:x)}));
+                    }}
                     style={{...SI,fontSize:12.5,border:"none",background:"transparent",padding:"4px 0",boxShadow:"none"}}
                   />
                   <button
@@ -624,7 +670,8 @@ export default function Certificaciones({ctx}){
                   if(e.key==="Enter"){
                     e.preventDefault();
                     if(nuevoElem.trim()){
-                      setForm({...form,elementos:[...form.elementos,nuevoElem.trim()]});
+                      const val=corregirOrtografiaLocal(nuevoElem.trim());
+                      setForm({...form,elementos:[...form.elementos,val]});
                       setNuevoElem("");
                     }
                   }
@@ -634,7 +681,13 @@ export default function Certificaciones({ctx}){
               />
               <button
                 type="button"
-                onClick={()=>{if(nuevoElem.trim()){setForm({...form,elementos:[...form.elementos,nuevoElem.trim()]});setNuevoElem("");}}}
+                onClick={()=>{
+                  if(nuevoElem.trim()){
+                    const val=corregirOrtografiaLocal(nuevoElem.trim());
+                    setForm({...form,elementos:[...form.elementos,val]});
+                    setNuevoElem("");
+                  }
+                }}
                 style={{
                   ...B("#E0342A","#ffffff"),
                   padding:"8px 16px",

@@ -1,5 +1,6 @@
 // Elementos y formulario por defecto de certificaciones
 import { today } from "../../lib/format";
+import { normalizarTextoCertificacion } from "../../lib/normalizarEntrada";
 
 export const CERT_ELEMENTOS_DEFAULT = [
   "Perno Grado 8 B7 Ø 5/8",
@@ -170,7 +171,7 @@ export const construirTextoSistema = ({
   // Sin anteponer la cantidad: lo que llega ya la lleva escrita dentro
   // ("1 linea de vida horizontal de 7 m perimetral"). Ponerla otra vez daba
   // cosas como "4 1 linea de vida...".
-  const loInstalado = String(detalle || "").trim();
+  const loInstalado = String(detalle || "").trim().replace(/[.\s]+$/, "");
   const que = loInstalado || sistema.nombra(n);
 
   const partes = [que];
@@ -186,7 +187,7 @@ export const construirTextoSistema = ({
     partes.push(`de ${enMayuscula(cliente)}`);
   }
 
-  if(String(direccion || "").trim()) partes.push(`con DIRECCION: ${enMayuscula(direccion)}`);
+  if(String(direccion || "").trim()) partes.push(`con DIRECCIÓN: ${enMayuscula(direccion)}`);
 
   void fecha; void fechaLarga;
 
@@ -195,9 +196,11 @@ export const construirTextoSistema = ({
   // "CERTIFICA" en los dos casos.
   const verbo = tipo === "Recertificación" ? "RECERTIFICA" : "CERTIFICA";
 
-  return `${verbo} que ${partes.join(" ")}, cumplen a cabalidad con la ${normativa} del ministerio ` +
-    "de trabajo, por la cual se establece el reglamento de seguridad para protección contra caídas " +
-    "en trabajo en altura.";
+  const textoGenerado = `${verbo} que ${partes.join(" ")}, cumplen a cabalidad con la ${normativa} del Ministerio del Trabajo, ` +
+    "por la cual se establece el reglamento de seguridad para protección contra caídas " +
+    "en trabajo en alturas.";
+
+  return normalizarTextoCertificacion(textoGenerado);
 };
 
 /**

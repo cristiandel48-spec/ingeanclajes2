@@ -22,12 +22,89 @@ const conNegritas = (texto, datos)=>{
   ));
 };
 
+function generarFranjaSeguridad(ancho = 24, alto = 1100) {
+  if (typeof document === "undefined") return "";
+  const dpr = 2;
+  const canvas = document.createElement("canvas");
+  canvas.width = ancho * dpr;
+  canvas.height = alto * dpr;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return "";
+
+  ctx.scale(dpr, dpr);
+
+  // Fondo degradado rojo institucional
+  const grad = ctx.createLinearGradient(0, 0, 0, alto);
+  grad.addColorStop(0, "#8b1515");
+  grad.addColorStop(0.2, "#b91c1c");
+  grad.addColorStop(0.5, "#dc2626");
+  grad.addColorStop(0.8, "#b91c1c");
+  grad.addColorStop(1, "#8b1515");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, ancho, alto);
+
+  // Filete fino de acento blanco translúcido en el borde derecho
+  ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+  ctx.fillRect(ancho - 1, 0, 1, alto);
+
+  // Texto vertical centrado legible y nítido
+  ctx.save();
+  ctx.translate(ancho / 2, alto / 2);
+  ctx.rotate(-Math.PI / 2);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "800 10px 'Segoe UI', -apple-system, Arial, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  const texto = "INGEANCLAJES S.A.S · PROTOCOLO OFICIAL DE SEGURIDAD · RES. 4272/2021 & ANSI Z359";
+  if ("letterSpacing" in ctx) {
+    ctx.letterSpacing = "2.2px";
+    ctx.fillText(texto, 0, 0);
+  } else {
+    const caracteres = texto.split("");
+    const espaciado = 2.2;
+    const anchos = caracteres.map((c) => ctx.measureText(c).width);
+    const anchoTotal = anchos.reduce((a, b) => a + b, 0) + (caracteres.length - 1) * espaciado;
+    let x = -anchoTotal / 2;
+    for (let i = 0; i < caracteres.length; i++) {
+      ctx.fillText(caracteres[i], x + anchos[i] / 2, 0);
+      x += anchos[i] + espaciado;
+    }
+  }
+  ctx.restore();
+
+  try {
+    return canvas.toDataURL("image/png");
+  } catch {
+    return "";
+  }
+}
+
 export default function CertificacionDocumento({cert}){
   const {empresaConfig}=useAppData();
   const firmaImg=getFirmaImg(empresaConfig);
   const [qrUrl, setQrUrl] = useState("");
+  const [franjaUrl, setFranjaUrl] = useState(() => {
+    try {
+      return generarFranjaSeguridad(24, 1100);
+    } catch {
+      return "";
+    }
+  });
 
   const folioDoc = cert?.numero || cert?.id || "C-2026";
+
+  useEffect(() => {
+    if (!franjaUrl) {
+      try {
+        const u = generarFranjaSeguridad(24, 1100);
+        if (u) setFranjaUrl(u);
+      } catch (e) {
+        console.warn("Error generando franja de seguridad:", e);
+      }
+    }
+  }, [franjaUrl]);
 
   useEffect(() => {
     let activo = true;
@@ -65,36 +142,27 @@ export default function CertificacionDocumento({cert}){
         lineHeight: 1.55,
         border: "1px solid #ddd",
         borderRadius: 4,
-        padding: "20px 24px 20px 32px",
+        padding: 0,
         position: "relative",
         overflow: "hidden"
       }}
     >
-      {/* Franja lateral de seguridad oficial (Opción 3) */}
+      {/* Franja lateral de seguridad oficial */}
       <div
         style={{
           position: "absolute",
           left: 0,
           top: 0,
           bottom: 0,
-          width: 18,
-          background: "linear-gradient(180deg, #991b1b 0%, #c81e1e 50%, #991b1b 100%)",
-          color: "#ffffff",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          writingMode: "vertical-rl",
-          transform: "rotate(180deg)",
-          fontSize: 6.5,
-          fontWeight: 800,
-          letterSpacing: 2,
-          textTransform: "uppercase",
-          userSelect: "none",
+          width: 24,
+          backgroundImage: franjaUrl ? `url("${franjaUrl}")` : "none",
+          backgroundColor: "#b91c1c",
+          backgroundSize: "100% 100%",
+          backgroundRepeat: "no-repeat",
           zIndex: 4,
+          userSelect: "none",
         }}
-      >
-        INGEANCLAJES S.A.S · PROTOCOLO OFICIAL DE SEGURIDAD · RES. 4272/2021 & ANSI Z359
-      </div>
+      />
 
       {/* Marca de agua sutil en el fondo (usando div background para no interferir en cálculo de páginas) */}
       <div
@@ -116,8 +184,8 @@ export default function CertificacionDocumento({cert}){
         }}
       />
 
-      {/* Contenedor interno desplazado para no tocar la franja roja */}
-      <div style={{ marginLeft: 26, paddingRight: 4, position: "relative", zIndex: 1 }}>
+      {/* Contenedor interno con márgenes controlados para separación perfecta de la franja */}
+      <div style={{ marginLeft: 34, marginRight: 22, paddingTop: 18, paddingBottom: 16, position: "relative", zIndex: 1 }}>
 
         {/* Encabezado Oficial */}
         <div style={{ padding: "0 0 8px" }}>

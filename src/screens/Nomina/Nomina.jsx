@@ -15,6 +15,8 @@ import { siguienteIdUnico } from "../../lib/identificadores";
 import { parseIsoDate, round1 } from "../../lib/dates";
 import { avisoCedula, avisoCelular, avisoCorreo, avisoNombre, normalizarCorreo, normalizarDocumento, normalizarNombrePropio, normalizarTelefono } from "../../lib/normalizarEntrada";
 import { printColilla, printCurrentPz, printLiquidacion, printVacaciones } from "../../lib/print";
+import { generarColillaPdf, blobABase64 } from "../../lib/colillaPdf";
+import { enviarColillaPorCorreo } from "../../lib/backend/usuarios";
 import ActualizacionMasivaEmpleados from "./ActualizacionMasivaEmpleados";
 import ModalEnvioMasivoColillas from "./ModalEnvioMasivoColillas";
 export default function Nomina({ctx}){
@@ -55,6 +57,67 @@ export default function Nomina({ctx}){
   const [modoEdicionNomina,setModoEdicionNomina]=useState(false);
   const [mostrarHistorialNominas,setMostrarHistorialNominas]=useState(false);
   const [modalColillasMasivas,setModalColillasMasivas]=useState(false);
+  const [enviandoColillaId, setEnviandoColillaId] = useState({});
+  const [colillaEnviadaId, setColillaEnviadaId] = useState({});
+
+  const enviarColillaIndividualGmail = async (e, resumen) => {
+    if (!e.email?.trim()) return;
+    setEnviandoColillaId((prev) => ({ ...prev, [e.id]: true }));
+    try {
+      let pdfBase64 = "";
+      let nombreArchivo = "";
+      try {
+        const { blob, nombre } = await generarColillaPdf(e, resumen, periodoNomina);
+        pdfBase64 = await blobABase64(blob);
+        nombreArchivo = nombre;
+      } catch (err) {
+        console.warn("No se pudo generar PDF adjunto, enviando desglose:", err);
+      }
+
+      const desglose = [
+        `• Días laborados: ${resumen.diasNomina || 15}`,
+        `• Salario básico corte: ${fmt(resumen.salario)}`,
+        resumen.auxilioTransporte > 0 ? `• Auxilio de transporte: ${fmt(resumen.auxilioTransporte)}` : null,
+        (resumen.horasExtras + resumen.comisiones) > 0 ? `• Extras y comisiones: ${fmt(resumen.horasExtras + resumen.comisiones)}` : null,
+        resumen.incapacidadTotal > 0 ? `• Incapacidades: ${fmt(resumen.incapacidadTotal)}` : null,
+        `• Deducción Salud (4%): -${fmt(resumen.salud)}`,
+        `• Deducción Pensión (4%): -${fmt(resumen.pension)}`,
+        (resumen.totalDeducciones > (resumen.salud + resumen.pension)) ? `• Otras deducciones: -${fmt(resumen.totalDeducciones - resumen.salud - resumen.pension)}` : null,
+      ].filter(Boolean).join("\n");
+
+      const mensaje = 
+        `Estimado(a) ${e.nombre},\n\n` +
+        `Le compartimos su colilla de pago oficial de Ingeanclajes S.A.S. correspondiente al período ${periodoNomina.label}:\n\n` +
+        `Documento: ${e.cedula || "N/A"}\n` +
+        `Cargo: ${e.cargo || "N/A"}\n\n` +
+        `DETALLE DE DEVENGOS Y DEDUCCIONES:\n` +
+        `-----------------------------------------\n` +
+        `${desglose}\n` +
+        `-----------------------------------------\n` +
+        `TOTAL NETO A PAGAR: ${fmt(resumen.neto)}\n` +
+        (e.banco ? `Forma de pago: ${e.banco} (${e.tipoCuenta || "Ahorros"} N° ${e.numeroCuenta || "N/A"})\n` : "") +
+        `-----------------------------------------\n\n` +
+        `En el archivo adjunto encontrará su colilla oficial en formato PDF.\n\n` +
+        `Para cualquier duda, comuníquese con el área administrativa.\n\n` +
+        `Cordialmente,\n` +
+        `INGEANCLAJES S.A.S.`;
+
+      await enviarColillaPorCorreo({
+        para: e.email.trim(),
+        asunto: `Colilla de pago - ${periodoNomina.label} - ${e.nombre}`,
+        mensaje,
+        numero: `COLILLA · ${periodoNomina.label}`,
+        nombreArchivo,
+        pdfBase64,
+      });
+
+      setColillaEnviadaId((prev) => ({ ...prev, [e.id]: true }));
+    } catch (err) {
+      alert("Error al enviar colilla por Gmail: " + (err.message || "No se pudo enviar"));
+    } finally {
+      setEnviandoColillaId((prev) => ({ ...prev, [e.id]: false }));
+    }
+  };
 
   const nominasGeneradasMap = (Array.isArray(nominasGeneradas) ? nominasGeneradas : [])
     .map(normalizeNominaGeneratedRecord)
@@ -1442,40 +1505,23 @@ export default function Nomina({ctx}){
                   <button onClick={()=>printColilla(e,resumen,periodoNomina)} style={{...B("#142840","#f5c842"),fontSize:11,flex:1,minWidth:140,justifyContent:"center"}}>🖨 Ver / imprimir colilla</button>
                   {e.email ? (
                     <button
-                      onClick={() => {
-                        const asunto = encodeURIComponent(`Colilla de pago - ${periodoNomina.label} - ${e.nombre}`);
-                        const desglose = [
-                          `• Días laborados: ${resumen.diasNomina}`,
-                          `• Salario básico corte: ${fmt(resumen.salario)}`,
-                          resumen.auxilioTransporte > 0 ? `• Auxilio de transporte: ${fmt(resumen.auxilioTransporte)}` : null,
-                          (resumen.horasExtras + resumen.comisiones) > 0 ? `• Horas extras y comisiones: ${fmt(resumen.horasExtras + resumen.comisiones)}` : null,
-                          resumen.incapacidadTotal > 0 ? `• Incapacidades: ${fmt(resumen.incapacidadTotal)}` : null,
-                          `• Salud (4%): -${fmt(resumen.salud)}`,
-                          `• Pensión (4%): -${fmt(resumen.pension)}`,
-                          (resumen.totalDeducciones > (resumen.salud + resumen.pension)) ? `• Otras deducciones: -${fmt(resumen.totalDeducciones - resumen.salud - resumen.pension)}` : null,
-                        ].filter(Boolean).join("\n");
-                        const cuerpo = encodeURIComponent(
-                          `Estimado(a) ${e.nombre},\n\n` +
-                          `Le compartimos el detalle de su colilla de pago correspondiente al período ${periodoNomina.label}:\n\n` +
-                          `Cargo: ${e.cargo}\n` +
-                          `Documento: ${e.cedula || "N/A"}\n\n` +
-                          `RESUMEN DE DEVENGOS Y DEDUCCIONES:\n` +
-                          `${desglose}\n\n` +
-                          `-----------------------------------------\n` +
-                          `TOTAL NETO A PAGAR: ${fmt(resumen.neto)}\n` +
-                          (e.banco ? `Forma de pago: ${e.banco} (${e.tipoCuenta || "Ahorros"} N° ${e.numeroCuenta || "N/A"})\n` : "") +
-                          `-----------------------------------------\n\n` +
-                          `Para cualquier duda o aclaración sobre este corte, comuníquese con el área administrativa.\n\n` +
-                          `Cordialmente,\n` +
-                          `INGEANCLAJES S.A.S.\n` +
-                          `Gestión Humana y Nómina`
-                        );
-                        window.open(`mailto:${e.email}?subject=${asunto}&body=${cuerpo}`, '_blank');
+                      type="button"
+                      onClick={() => enviarColillaIndividualGmail(e, resumen)}
+                      disabled={enviandoColillaId[e.id]}
+                      style={{
+                        ...B(colillaEnviadaId[e.id] ? "#166534" : "#2563eb", colillaEnviadaId[e.id] ? "#86efac" : "#ffffff"),
+                        fontSize: 11,
+                        justifyContent: "center",
+                        minWidth: 120,
+                        cursor: enviandoColillaId[e.id] ? "not-allowed" : "pointer",
                       }}
-                      style={{ ...B("#2563eb", "#ffffff"), fontSize: 11, justifyContent: "center" }}
-                      title={`Enviar colilla por correo electrónico a ${e.email}`}
+                      title={`Enviar colilla oficial por Gmail a ${e.email}`}
                     >
-                      ✉️ Correo
+                      {enviandoColillaId[e.id]
+                        ? "⏳ Enviando..."
+                        : colillaEnviadaId[e.id]
+                        ? "✓ Enviada (Gmail)"
+                        : "✉️ Enviar por Gmail"}
                     </button>
                   ) : (
                     <button

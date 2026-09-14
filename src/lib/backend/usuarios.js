@@ -157,6 +157,7 @@ async function invocar(accion, datos = {}) {
 // que solo viven en el servidor. La función deja hacerlo a cualquier miembro
 // activo, no solo a un administrador.
 export const enviarCotizacionPorCorreo = (datos) => invocar("enviar-cotizacion", datos);
+export const enviarColillaPorCorreo = (datos) => invocar("enviar-cotizacion", datos);
 
 export const crearUsuario = (datos) => invocar("crear", datos);
 export const actualizarUsuario = (datos) => invocar("actualizar", datos);

@@ -15,6 +15,7 @@ import { siguienteIdUnico } from "../../lib/identificadores";
 import { parseIsoDate, round1 } from "../../lib/dates";
 import { avisoCedula, avisoCelular, avisoCorreo, avisoNombre, normalizarCorreo, normalizarDocumento, normalizarNombrePropio, normalizarTelefono } from "../../lib/normalizarEntrada";
 import { printColilla, printCurrentPz, printLiquidacion, printVacaciones } from "../../lib/print";
+import ActualizacionMasivaEmpleados from "./ActualizacionMasivaEmpleados";
 export default function Nomina({ctx}){
   const {empleados,setEmpleados,obras,cargos,setCargos,nominasGeneradas,setNominasGeneradas,saveAllToCloud}=ctx;
   const [tab,setTab]=useState("lista");
@@ -876,6 +877,17 @@ export default function Nomina({ctx}){
       )}
       {tab==="lista"&&(
         <div>
+          {/* Banner y herramientas de actualización masiva por formulario Excel */}
+          <ActualizacionMasivaEmpleados
+            empleados={empleadosBase}
+            cargos={cargos}
+            setCargos={setCargos}
+            onActualizarEmpleados={async (nuevosEmpleados, resumenMsg) => {
+              setEmpleados(nuevosEmpleados);
+              await guardarCambiosNomina(resumenMsg, { empleados: nuevosEmpleados });
+            }}
+          />
+
           <div style={CD}>
             <div style={ST}>Empleados ({activos.length})</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>

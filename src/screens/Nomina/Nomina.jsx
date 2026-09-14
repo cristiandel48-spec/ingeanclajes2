@@ -16,6 +16,7 @@ import { parseIsoDate, round1 } from "../../lib/dates";
 import { avisoCedula, avisoCelular, avisoCorreo, avisoNombre, normalizarCorreo, normalizarDocumento, normalizarNombrePropio, normalizarTelefono } from "../../lib/normalizarEntrada";
 import { printColilla, printCurrentPz, printLiquidacion, printVacaciones } from "../../lib/print";
 import ActualizacionMasivaEmpleados from "./ActualizacionMasivaEmpleados";
+import ModalEnvioMasivoColillas from "./ModalEnvioMasivoColillas";
 export default function Nomina({ctx}){
   const {empleados,setEmpleados,obras,cargos,setCargos,nominasGeneradas,setNominasGeneradas,saveAllToCloud}=ctx;
   const [tab,setTab]=useState("lista");
@@ -53,6 +54,7 @@ export default function Nomina({ctx}){
   const [empDeduccionModalId,setEmpDeduccionModalId]=useState(null);
   const [modoEdicionNomina,setModoEdicionNomina]=useState(false);
   const [mostrarHistorialNominas,setMostrarHistorialNominas]=useState(false);
+  const [modalColillasMasivas,setModalColillasMasivas]=useState(false);
 
   const nominasGeneradasMap = (Array.isArray(nominasGeneradas) ? nominasGeneradas : [])
     .map(normalizeNominaGeneratedRecord)
@@ -1395,6 +1397,25 @@ export default function Nomina({ctx}){
               >
                 🧾 Imprimir colillas masivas
               </button>
+
+              {/* Botón Enviar colillas masivas a todos los empleados */}
+              <button
+                type="button"
+                style={{
+                  ...B("#1d4ed8","#ffffff"),
+                  border: "1px solid #2563eb",
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  boxShadow: "0 2px 4px rgba(37,99,235,0.2)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+                onClick={() => setModalColillasMasivas(true)}
+                title="Enviar colillas de pago a todos los empleados por Correo o WhatsApp"
+              >
+                📤 Enviar colillas masivas a todos los empleados
+              </button>
             </div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
@@ -1471,6 +1492,13 @@ export default function Nomina({ctx}){
               );
             })}
           </div>
+
+          <ModalEnvioMasivoColillas
+            abierto={modalColillasMasivas}
+            onCerrar={() => setModalColillasMasivas(false)}
+            resumenesActivos={resumenesActivos}
+            periodoNomina={periodoNomina}
+          />
         </div>
       )}
 

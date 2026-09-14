@@ -610,19 +610,6 @@ export default function Nomina({ctx}){
           💾 {modoEdicionNomina ? "Guardar nómina corregida" : "Guardar nómina"}
         </button>
       )}
-
-      {/* Botón Nuevo Empleado */}
-      <button
-        type="button"
-        style={{
-          background: "#cc0000", color: "#fff", border: "1px solid #cc0000", borderRadius: 8,
-          padding: "6px 14px", fontSize: 12.5, fontWeight: 700, cursor: "pointer",
-          fontFamily: "inherit", whiteSpace: "nowrap", height: 34
-        }}
-        onClick={() => setTab("nuevo")}
-      >
-        + Nuevo Empleado
-      </button>
     </div>,
     [tab, nominaEstaGenerada, modoEdicionNomina, nominasGeneradas, periodoNomina.id, diasVacPagar, empleadosBase]
   );
@@ -893,7 +880,31 @@ export default function Nomina({ctx}){
           />
 
           <div style={CD}>
-            <div style={ST}>Empleados ({activos.length})</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <div style={ST}>Empleados ({activos.length})</div>
+              <button
+                type="button"
+                onClick={() => setTab("nuevo")}
+                style={{
+                  background: "#cc0000",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "7px 16px",
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  boxShadow: "0 2px 6px rgba(204, 0, 0, 0.25)",
+                  fontFamily: "inherit",
+                }}
+                title="Dar de alta un nuevo empleado manualmente"
+              >
+                <span>+</span> Nuevo Empleado
+              </button>
+            </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
               {empleadosBase.map((e,idx)=>{
                 const resumen=calcularResumenNominaEmpleado(e, periodoNomina);

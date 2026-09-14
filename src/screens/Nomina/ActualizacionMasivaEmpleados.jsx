@@ -389,7 +389,20 @@ export default function ActualizacionMasivaEmpleados({
           }
         });
 
-        setCambiosDetectados({ actualizar, nuevos, sinCambio });
+        // Detectar si hay cargos nuevos en el archivo que no existen en el catálogo
+        const cargosActuales = normalizarCargos(cargos);
+        const nombresCargosExistentes = new Set(cargosActuales.map((c) => c.nombre.toLowerCase().trim()));
+        const cargosNuevos = [];
+        [...actualizar.map((a) => a.actualizado.cargo), ...nuevos.map((n) => n.actualizado.cargo)]
+          .filter(Boolean)
+          .forEach((c) => {
+            const tr = c.trim();
+            if (tr && !nombresCargosExistentes.has(tr.toLowerCase()) && !cargosNuevos.includes(tr)) {
+              cargosNuevos.push(tr);
+            }
+          });
+
+        setCambiosDetectados({ actualizar, nuevos, sinCambio, cargosNuevos });
         setModalAbierto(true);
         setProcesando(false);
       } catch (err) {
@@ -441,10 +454,11 @@ export default function ActualizacionMasivaEmpleados({
       // Agregar los nuevos al final
       listaFinal.push(...nuevosConId);
 
-      // Detectar nuevos cargos y agregarlos al catálogo si existen
+      // Detectar nuevos cargos y agregarlos al catálogo oficial
+      let listaCargosFinal = null;
       if (typeof setCargos === "function") {
         const cargosActuales = normalizarCargos(cargos);
-        const nombresCargosExistentes = new Set(cargosActuales.map((c) => c.nombre.toLowerCase()));
+        const nombresCargosExistentes = new Set(cargosActuales.map((c) => c.nombre.toLowerCase().trim()));
         const nuevosCargosParaAgregar = [];
 
         [...cambiosDetectados.actualizar.map((a) => a.actualizado.cargo), ...nuevosConId.map((n) => n.cargo)]
@@ -456,24 +470,29 @@ export default function ActualizacionMasivaEmpleados({
               nuevosCargosParaAgregar.push({
                 id: siguienteIdUnico([...cargosActuales, ...nuevosCargosParaAgregar], "CAR"),
                 nombre: trimmed,
-                descripcion: "Registrado vía importación masiva de empleados",
+                descripcion: "Registrado automáticamente desde formulario Excel de empleados",
                 activo: true,
               });
             }
           });
 
         if (nuevosCargosParaAgregar.length > 0) {
-          setCargos([...cargosActuales, ...nuevosCargosParaAgregar]);
+          listaCargosFinal = [...cargosActuales, ...nuevosCargosParaAgregar];
+          setCargos(listaCargosFinal);
         }
       }
 
       const totalActualizados = cambiosDetectados.actualizar.length;
       const totalNuevos = nuevosConId.length;
+      const totalCargosNuevos = listaCargosFinal ? (listaCargosFinal.length - normalizarCargos(cargos).length) : 0;
 
-      const resumen = `✓ Actualización masiva completada: ${totalActualizados} empleado(s) actualizado(s) y ${totalNuevos} nuevo(s) ingresado(s).`;
+      let resumen = `✓ Actualización masiva completada: ${totalActualizados} empleado(s) actualizado(s) y ${totalNuevos} nuevo(s) ingresado(s).`;
+      if (totalCargosNuevos > 0) {
+        resumen += ` Se crearon ${totalCargosNuevos} nuevo(s) cargo(s) en el catálogo de la empresa.`;
+      }
 
       if (typeof onActualizarEmpleados === "function") {
-        await onActualizarEmpleados(listaFinal, resumen);
+        await onActualizarEmpleados(listaFinal, listaCargosFinal, resumen);
       }
 
       setModalAbierto(false);
@@ -687,6 +706,28 @@ export default function ActualizacionMasivaEmpleados({
                 ✕
               </button>
             </div>
+
+            {/* Aviso de cargos nuevos que se crearán */}
+            {cambiosDetectados.cargosNuevos?.length > 0 && (
+              <div
+                style={{
+                  background: "#fdf4ff",
+                  borderBottom: "1px solid #f0abfc",
+                  padding: "10px 22px",
+                  fontSize: 12,
+                  color: "#86198f",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <span>🏷️</span>
+                <span>
+                  <strong>Nuevos cargos detectados ({cambiosDetectados.cargosNuevos.length}):</strong> Se crearán automáticamente en el catálogo de la empresa:{" "}
+                  <em>{cambiosDetectados.cargosNuevos.join(", ")}</em>
+                </span>
+              </div>
+            )}
 
             {/* Resumen de estadísticas */}
             <div

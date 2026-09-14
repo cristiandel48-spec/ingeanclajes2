@@ -882,9 +882,13 @@ export default function Nomina({ctx}){
             empleados={empleadosBase}
             cargos={cargos}
             setCargos={setCargos}
-            onActualizarEmpleados={async (nuevosEmpleados, resumenMsg) => {
+            onActualizarEmpleados={async (nuevosEmpleados, nuevosCargos, resumenMsg) => {
               setEmpleados(nuevosEmpleados);
-              await guardarCambiosNomina(resumenMsg, { empleados: nuevosEmpleados });
+              if (nuevosCargos) setCargos(nuevosCargos);
+              await guardarCambiosNomina(resumenMsg, {
+                empleados: nuevosEmpleados,
+                ...(nuevosCargos ? { cargos: nuevosCargos } : {})
+              });
             }}
           />
 

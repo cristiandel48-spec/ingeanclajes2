@@ -10,7 +10,7 @@ import ListaCotizaciones from "./ListaCotizaciones";
 import EnviarCotizacion from "./EnviarCotizacion";
 import PropuestaEditor from "./PropuestaEditor";
 import SelectorCiudadColombia from "../../components/SelectorCiudadColombia";
-import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { useMediaQuery, useIsMobile } from "../../hooks/useMediaQuery";
 import { TEXTOS_DOCUMENTO_DEFAULT, getTextosDocumento } from "../../lib/cotizacionTextos";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
@@ -45,6 +45,7 @@ export default function Cotizacion({ctx}){
   // completos mientras se edita.
   const [verDocumento,setVerDocumento]=useState(false);
   const cabeEnDosColumnas=useMediaQuery("(min-width: 1250px)");
+  const isMobile = useIsMobile();
   // Aviso posterior a aprobar: explica que se creo y que sigue.
   const [obraCreada,setObraCreada]=useState(null);
   const [editCot,setEditCot]=useState(null);
@@ -517,22 +518,24 @@ export default function Cotizacion({ctx}){
 
   useAccionesPantalla(
     tab==="lista" ? (
-      <button
-        style={{
-          background: "#FFFAEB",
-          color: "#B54708",
-          border: "1px solid rgba(181, 71, 8, 0.35)",
-          borderRadius: 8,
-          padding: "7px 16px",
-          fontSize: 12.5,
-          fontWeight: 700,
-          cursor: "pointer",
-          fontFamily: "inherit",
-          whiteSpace: "nowrap",
-          boxShadow: "0 1px 2px rgba(181, 71, 8, 0.08)",
-        }}
-        onClick={()=>nuevaRef.current()}
-      >+ Nueva Cotización</button>
+      isMobile ? null : (
+        <button
+          style={{
+            background: "#FFFAEB",
+            color: "#B54708",
+            border: "1px solid rgba(181, 71, 8, 0.35)",
+            borderRadius: 8,
+            padding: "7px 16px",
+            fontSize: 12.5,
+            fontWeight: 700,
+            cursor: "pointer",
+            fontFamily: "inherit",
+            whiteSpace: "nowrap",
+            boxShadow: "0 1px 2px rgba(181, 71, 8, 0.08)",
+          }}
+          onClick={()=>nuevaRef.current()}
+        >+ Nueva Cotización</button>
+      )
     ) : tab==="form" ? (
       <div style={{display:"flex",gap:8,alignItems:"center"}}>
         <button
@@ -875,7 +878,7 @@ export default function Cotizacion({ctx}){
   if(tab==="lista"){
     if(previewCot){
       return (
-        <div style={{padding:28}}>
+        <div style={{padding: isMobile ? "12px 14px 40px" : "24px 28px"}}>
           <H1
             title={`Cotización ${previewCot.numero || previewCot.id}`}
             subtitle="Vista completa del documento comercial"
@@ -952,7 +955,69 @@ export default function Cotizacion({ctx}){
       );
     }
     return (
-      <div style={{padding:28}}>
+      <div style={{padding: isMobile ? "12px 14px 84px" : "24px 28px"}}>
+        {/* Cabecera visual con botón destacado para crear cotización */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 16,
+            gap: 12,
+            flexWrap: "wrap",
+            background: "var(--surface, #ffffff)",
+            border: "1px solid var(--border, #e2e8f0)",
+            borderRadius: 14,
+            padding: isMobile ? "12px 14px" : "14px 20px",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+          }}
+        >
+          <div>
+            <div style={{ fontSize: isMobile ? 16 : 18, fontWeight: 800, color: "var(--text-main, #0f172a)", display: "flex", alignItems: "center", gap: 8 }}>
+              <span>Cotizaciones</span>
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  background: "var(--surface-subtle, #f1f5f9)",
+                  color: "var(--text-muted, #64748b)",
+                  padding: "2px 8px",
+                  borderRadius: 999,
+                  border: "1px solid var(--border, #e2e8f0)",
+                }}
+              >
+                {cotizaciones?.length || 0}
+              </span>
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text-muted, #64748b)", marginTop: 2 }}>
+              Gestión comercial y propuestas de anclajes
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={nuevaCotizacion}
+            style={{
+              background: "linear-gradient(135deg, #ea580c 0%, #c2410c 100%)",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: 10,
+              padding: isMobile ? "11px 16px" : "10px 22px",
+              fontSize: 13.5,
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              boxShadow: "0 2px 8px rgba(194, 65, 12, 0.28)",
+              width: isMobile ? "100%" : "auto",
+            }}
+          >
+            <span style={{ fontSize: 18, lineHeight: 1, fontWeight: 900 }}>+</span>
+            <span>Nueva Cotización</span>
+          </button>
+        </div>
 
         {/* Al aprobar, se explica que se creo y cual es el siguiente paso:
             quien cotiza no tiene por que saber que ahora existe una obra. */}
@@ -1051,6 +1116,37 @@ export default function Cotizacion({ctx}){
           }}
         />
 
+        {/* Botón flotante en dispositivos móviles (Android / iOS) para crear cotización al scrollear */}
+        {isMobile && (
+          <button
+            type="button"
+            onClick={nuevaCotizacion}
+            title="Crear nueva cotización"
+            aria-label="Nueva Cotización"
+            style={{
+              position: "fixed",
+              bottom: 84,
+              right: 18,
+              zIndex: 90,
+              background: "linear-gradient(135deg, #ea580c 0%, #c2410c 100%)",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: 999,
+              padding: "12px 20px",
+              fontSize: 13.5,
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              boxShadow: "0 6px 20px rgba(194, 65, 12, 0.45)",
+            }}
+          >
+            <span style={{ fontSize: 18, lineHeight: 1, fontWeight: 900 }}>+</span>
+            <span>Cotización</span>
+          </button>
+        )}
+
         {/* La lista tiene su propio return, aparte del formulario. Sin montar
             aqui el dialogo, el boton de enviar guardaba el estado y no pasaba
             nada visible. */}
@@ -1061,7 +1157,7 @@ export default function Cotizacion({ctx}){
 
   return (
     // Menos aire arriba: el formulario es largo y arrancaba muy abajo.
-    <div style={{padding:"16px 28px 28px"}}>
+    <div style={{padding: isMobile ? "10px 12px 40px" : "16px 28px 28px"}}>
       {/* Sin el titulo grande: ocupaba dos renglones -"Editar Cotización" y
           su explicacion- antes de empezar el formulario, y las acciones que
           llevaba al lado ya estan arriba en la barra. Queda solo este

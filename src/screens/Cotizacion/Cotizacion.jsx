@@ -294,6 +294,7 @@ export default function Cotizacion({ctx}){
 
     // Datos viejos guardaban fotos y mediciones a nivel de cotizacion, no de
     // propuesta: se migran a la que estaba activa para no perderlos.
+    const esMigracionLegacy = !Array.isArray(source.propuestas) || !source.propuestas.length;
     const migradas = all.map((propuesta)=>{
       const sinAiu = Boolean(propuesta.sinAiu ?? source.sinAiu ?? false);
       if(propuesta.id!==activeId) return buildQuoteProposal({...propuesta,sinAiu,items:normalizeProposalItems(propuesta.items)},0);
@@ -301,11 +302,11 @@ export default function Cotizacion({ctx}){
         ...propuesta,
         sinAiu,
         items: normalizeProposalItems(propuesta.items),
-        fotos: (propuesta.fotos && propuesta.fotos.length) ? propuesta.fotos : (source.fotosCotizacion || []),
-        geoMediciones: (propuesta.geoMediciones && propuesta.geoMediciones.length) ? propuesta.geoMediciones : (source.geoMediciones || []),
-        geoMapView: propuesta.geoMapView || source.geoMapView || null,
-        mapImg: propuesta.mapImg || source.mapImg || null,
-        medicionAutomatica: Boolean(propuesta.medicionAutomatica || (propuesta.geoMediciones && propuesta.geoMediciones.length) || (source.geoMediciones && source.geoMediciones.length)),
+        fotos: (propuesta.fotos && propuesta.fotos.length) ? propuesta.fotos : (esMigracionLegacy ? (source.fotosCotizacion || []) : []),
+        geoMediciones: (propuesta.geoMediciones && propuesta.geoMediciones.length) ? propuesta.geoMediciones : (esMigracionLegacy ? (source.geoMediciones || []) : []),
+        geoMapView: propuesta.geoMapView || (esMigracionLegacy ? (source.geoMapView || null) : null),
+        mapImg: (propuesta.mapImg !== undefined && propuesta.mapImg !== null) ? propuesta.mapImg : (esMigracionLegacy ? (source.mapImg || null) : null),
+        medicionAutomatica: Boolean(propuesta.medicionAutomatica || (esMigracionLegacy && ((propuesta.geoMediciones && propuesta.geoMediciones.length) || (source.geoMediciones && source.geoMediciones.length)))),
       },0);
     });
 

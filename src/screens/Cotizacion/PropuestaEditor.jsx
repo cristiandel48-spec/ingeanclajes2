@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import BotonCorregir from "../../components/ui/BotonCorregir";
 import BotonDictado from "../../components/ui/BotonDictado";
 import MedidorMapa from "../../components/maps/MedidorMapa";
 import { imagenDelMapa } from "../../lib/mapaEstatico";
@@ -64,6 +65,10 @@ export default function PropuestaEditor({
   // Va junto con el dato en un mismo cambio para que no se pisen entre ellos.
   const guardarConMapa = async (patch, mediciones, vista)=>{
     onChange(patch);
+    if (!mediciones || mediciones.length === 0) {
+      onChange({ ...patch, mapImg: null });
+      return;
+    }
     try{
       const img = await imagenDelMapa(
         mediciones,
@@ -222,12 +227,22 @@ export default function PropuestaEditor({
         </div>
 
         <div style={{marginBottom:18}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,gap:8,flexWrap:"wrap"}}>
             <span style={{fontSize:12,fontWeight:600,color:"var(--text-main, #1a1a2e)"}}>Medición sobre foto satelital</span>
-            <div style={{display:"flex",gap:8}}>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
               <button
                 type="button"
-                onClick={()=>set("medicionAutomatica", !medicionActiva)}
+                onClick={() => {
+                  if (medicionActiva) {
+                    if (autoMapImg && window.confirm("¿Deseas también quitar la foto satelital de la cotización para que no aparezca en el PDF?")) {
+                      onChange({ medicionAutomatica: false, mapImg: null });
+                      return;
+                    }
+                    set("medicionAutomatica", false);
+                  } else {
+                    set("medicionAutomatica", true);
+                  }
+                }}
                 style={{
                   background: medicionActiva ? "#ECFDF3" : "var(--surface-subtle, #f2f4f7)",
                   color: medicionActiva ? "#027A48" : "var(--text-main, #101828)",
@@ -242,28 +257,119 @@ export default function PropuestaEditor({
                 {medicionActiva ? "Desactivar medición" : "Activar medición"}
               </button>
               {autoMapImg && (
-                <button
-                  type="button"
-                  onClick={()=>setFotos((prev)=>[...prev,{id:Date.now()+Math.random(),src:autoMapImg,label:"Mapa satelital"}])}
-                  style={{
-                    background: "#FFFAEB",
-                    color: "#B54708",
-                    border: "1px solid rgba(181, 71, 8, 0.25)",
-                    borderRadius: 8,
-                    fontSize: 11.5,
-                    fontWeight: 600,
-                    padding: "5px 12px",
-                    cursor: "pointer",
-                  }}
-                >
-                  Agregar mapa como foto
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm("¿Quitar la imagen satelital de esta propuesta? Ya no se imprimirá en el PDF ni en la cotización.")) {
+                        onChange({ mapImg: null });
+                      }
+                    }}
+                    title="Quitar la imagen satelital para que no aparezca en la cotización"
+                    style={{
+                      background: "#fee2e2",
+                      color: "#b42318",
+                      border: "1px solid #fecdca",
+                      borderRadius: 8,
+                      fontSize: 11.5,
+                      fontWeight: 700,
+                      padding: "5px 12px",
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                    }}
+                  >
+                    🗑️ Quitar imagen satelital
+                  </button>
+                  <button
+                    type="button"
+                    onClick={()=>setFotos((prev)=>[...prev,{id:Date.now()+Math.random(),src:autoMapImg,label:"Mapa satelital"}])}
+                    style={{
+                      background: "#FFFAEB",
+                      color: "#B54708",
+                      border: "1px solid rgba(181, 71, 8, 0.25)",
+                      borderRadius: 8,
+                      fontSize: 11.5,
+                      fontWeight: 600,
+                      padding: "5px 12px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Agregar mapa como foto
+                  </button>
+                </>
               )}
             </div>
           </div>
           <div style={{fontSize:11,color:"#64748b",marginBottom:10}}>
             El mapa y los tramos medidos pertenecen solo a esta propuesta.
           </div>
+
+          {/* Tarjeta de imagen satelital guardada con opción directa para quitarla */}
+          {autoMapImg && (
+            <div style={{
+              background: "var(--surface-subtle, #f8fafc)",
+              border: "1px solid var(--border, #e2e8f0)",
+              borderRadius: 10,
+              padding: "10px 14px",
+              marginBottom: 12,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              flexWrap: "wrap",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <img
+                  src={autoMapImg}
+                  alt="Medición satelital"
+                  style={{
+                    width: 76,
+                    height: 54,
+                    objectFit: "cover",
+                    borderRadius: 6,
+                    border: "1px solid #cbd5e1",
+                  }}
+                />
+                <div>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-main, #0f172a)", display: "flex", alignItems: "center", gap: 6 }}>
+                    <span>Foto satelital adjunta</span>
+                    <span style={{ fontSize: 10.5, fontWeight: 700, background: "#ecfdf5", color: "#047857", padding: "1px 6px", borderRadius: 4, border: "1px solid #a7f3d0" }}>
+                      En el PDF
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted, #64748b)", marginTop: 2 }}>
+                    Esta imagen se imprime en la cotización bajo «Medición satelital».
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm("¿Quitar la imagen satelital de esta propuesta? Ya no se imprimirá en el PDF ni en la cotización.")) {
+                    onChange({ mapImg: null });
+                  }
+                }}
+                style={{
+                  background: "#fee2e2",
+                  color: "#b42318",
+                  border: "1px solid #fecdca",
+                  borderRadius: 8,
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  padding: "6px 14px",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                <span>🗑️</span>
+                <span>Quitar imagen satelital</span>
+              </button>
+            </div>
+          )}
           {medicionActiva && !mapaHabilitado ? (
             <div style={{background:"var(--surface-subtle, #f8fafc)",border:"1px dashed var(--border, #cbd5e1)",borderRadius:12,padding:"18px 16px",fontSize:12,color:"var(--text-muted, #64748b)",textAlign:"center"}}>
               Esta propuesta tiene medición activada.{" "}

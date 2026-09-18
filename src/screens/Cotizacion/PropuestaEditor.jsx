@@ -3,12 +3,10 @@ import BotonDictado from "../../components/ui/BotonDictado";
 import MedidorMapa from "../../components/maps/MedidorMapa";
 import { imagenDelMapa } from "../../lib/mapaEstatico";
 import LBL from "../../components/ui/LBL";
-import BotonCorregir from "../../components/ui/BotonCorregir";
 import { corregirOrtografiaLocal } from "../../lib/correctorTexto";
 import { leerImagenComprimida } from "../../lib/imagenes";
 import { normalizarFrase } from "../../lib/normalizarEntrada";
 import { B, SI } from "../../styles/tokens";
-import { DEFAULT_COT_INCLUYE } from "../../data/seed";
 import { agruparCatalogo } from "../../lib/catalogo";
 import { useAppData } from "../../context/AppDataContext";
 import { measurementsToQuoteItems } from "../../lib/maps";
@@ -606,38 +604,9 @@ export default function PropuestaEditor({
           </div>
         </div>
 
-        {/* 6. Lo que incluye. Se imprime en el cierre, debajo de las condiciones
-            comerciales. Viene con un texto estandar ya escrito y se ajusta aqui
-            cuando la obra lo pida. */}
-        <div style={{marginTop:18}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:2}}>
-            <div style={{fontSize:11,fontWeight:700,color:"var(--text-main, #1a1a2e)"}}>Esta cotización incluye</div>
-            <BotonCorregir valor={p.incluyeTexto} onChange={v=>set("incluyeTexto", v)} compacto/>
-            <button
-              onClick={()=>set("incluyeTexto", DEFAULT_COT_INCLUYE)}
-              disabled={p.incluyeTexto===DEFAULT_COT_INCLUYE}
-              style={{
-                background:"none",border:"none",padding:0,fontSize:10.5,fontFamily:"inherit",
-                color:p.incluyeTexto===DEFAULT_COT_INCLUYE?"var(--text-subtle, #cbd5e1)":"#f47c20",
-                cursor:p.incluyeTexto===DEFAULT_COT_INCLUYE?"default":"pointer",
-                textDecoration:p.incluyeTexto===DEFAULT_COT_INCLUYE?"none":"underline",
-              }}
-            >Restaurar texto estándar</button>
-          </div>
-          <div style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)",marginBottom:10}}>
-            Una línea por cada punto. Sale al final del documento, justo debajo de las condiciones comerciales.
-          </div>
-          <textarea
-            value={p.incluyeTexto||""}
-            onChange={e=>set("incluyeTexto", e.target.value)}
-            onBlur={e=>{
-              const auto = corregirOrtografiaLocal(e.target.value);
-              if(auto !== e.target.value) set("incluyeTexto", auto);
-            }}
-            spellCheck lang="es"
-            style={{...SI,minHeight:150,resize:"vertical",lineHeight:1.6}}
-          />
-        </div>
+        {/* Se oculta de la visual «Esta cotización incluye»: el texto se
+            conserva en p.incluyeTexto (y DEFAULT_COT_INCLUYE) y se sigue
+            imprimiendo al final de la cotización en el documento y PDF. */}
 
     </div>
   );

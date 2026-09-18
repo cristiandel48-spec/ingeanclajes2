@@ -1367,26 +1367,9 @@ export default function Cotizacion({ctx}){
           />
           <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Se imprime después de &quot;Cordial saludo, [cliente]&quot;. Si la obra tiene nombre, se agrega al final. No hace falta el punto final.</div>
         </div>
-        <div style={{marginBottom:14}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><LBL>Presentación de la empresa</LBL><BotonCorregir valor={textosDocumento.presentacion} onChange={(v)=>setTexto("presentacion",v)} compacto/></div>
-          {/* Sin lineas en blanco entre parrafos: gastaban tres renglones de
-              pantalla y en la hoja los parrafos salen seguidos igual. Se
-              quitan tambien al mostrar, para las cotizaciones que ya estaban
-              guardadas con ellas. Solo eso: recortar cada renglon impedia
-              escribir un espacio al final de una palabra, igual que pasaba en
-              el titulo de arriba. */}
-          <textarea
-            value={String(textosDocumento.presentacion||"").replace(/\n{2,}/g,"\n")}
-            onChange={e=>setTexto("presentacion",e.target.value.replace(/\n{2,}/g,"\n"))}
-            onBlur={e=>{
-              const v = e.target.value.replace(/\n{2,}/g,"\n");
-              const auto = corregirOrtografiaLocal(v);
-              if(auto !== v) setTexto("presentacion", auto);
-            }}
-            style={{...SI,minHeight:120,resize:"vertical",lineHeight:1.6}}
-          />
-          <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Quiénes somos y qué garantiza la propuesta. Un párrafo por renglón.</div>
-        </div>
+        {/* Se oculta de la visual «Presentación de la empresa»: el valor se
+            conserva en textosDocumento.presentacion y se sigue imprimiendo en
+            el documento y PDF oficial. */}
         {/* Se quitaron de la pantalla el «párrafo adicional para este cliente»
             y el «marco técnico»: nadie los llenaba y alargaban el formulario.
             Los valores siguen existiendo y viajando al documento, así que las
@@ -1470,32 +1453,10 @@ export default function Cotizacion({ctx}){
             desde aquí. El valor se conserva y se sigue imprimiendo en las
             cotizaciones que lo tengan. */}
 
-        <div style={{marginBottom:14}}>
-          <LBL>Sistema de gestión de seguridad y salud en el trabajo</LBL>
-          <textarea
-            value={textosDocumento.sst}
-            onChange={e=>setTexto("sst",e.target.value)}
-            onBlur={e=>{
-              const auto = corregirOrtografiaLocal(e.target.value);
-              if(auto !== e.target.value) setTexto("sst", auto);
-            }}
-            style={{...SI,minHeight:120,resize:"vertical",lineHeight:1.6}}
-          />
-        </div>
-
-        <div style={{marginBottom:14}}>
-          <LBL>Próximos pasos (uno por línea)</LBL>
-          <textarea
-            value={textosDocumento.proximosPasos}
-            onChange={e=>setTexto("proximosPasos",e.target.value)}
-            onBlur={e=>{
-              const auto = corregirOrtografiaLocal(e.target.value);
-              if(auto !== e.target.value) setTexto("proximosPasos", auto);
-            }}
-            style={{...SI,minHeight:90,resize:"vertical",lineHeight:1.6}}
-          />
-          <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Se imprimen numerados en el orden que los escribas.</div>
-        </div>
+        {/* Se ocultan de la visual «Sistema de gestión de seguridad y salud
+            en el trabajo» y «Próximos pasos»: los valores se conservan en
+            textosDocumento.sst y textosDocumento.proximosPasos y se siguen
+            imprimiendo automáticamente en el documento y PDF oficial. */}
 
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
           <div><LBL>Contacto — teléfono</LBL><input value={textosDocumento.contactoTelefono} onChange={e=>setTexto("contactoTelefono",e.target.value)} style={SI}/></div>

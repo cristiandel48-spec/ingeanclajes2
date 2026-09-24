@@ -4,7 +4,6 @@ import CampoTexto from "../../components/ui/CampoTexto";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
 import DictarCotizacion from "./DictarCotizacion";
 import ImportarCotizacion from "./ImportarCotizacion";
-import FirmaEmpresa from "../../components/FirmaEmpresa";
 import DocumentoEnVivo from "./DocumentoEnVivo";
 import ListaCotizaciones from "./ListaCotizaciones";
 import EnviarCotizacion from "./EnviarCotizacion";
@@ -1556,69 +1555,9 @@ export default function Cotizacion({ctx}){
         />
       ))}
 
-      {/* Cierre del documento, en el mismo orden en que sale impreso */}
-      <div style={{...CD,marginBottom:14}}>
-        <div style={ST}>Cierre · Resumen, condiciones y próximos pasos</div>
-
-        {/* Las «observaciones / condiciones adicionales» ya no se escriben
-            desde aquí. El valor se conserva y se sigue imprimiendo en las
-            cotizaciones que lo tengan. */}
-
-        {/* Se ocultan de la visual «Sistema de gestión de seguridad y salud
-            en el trabajo» y «Próximos pasos»: los valores se conservan en
-            textosDocumento.sst y textosDocumento.proximosPasos y se siguen
-            imprimiendo automáticamente en el documento y PDF oficial. */}
-
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
-          <div><LBL>Contacto — teléfono</LBL><input value={textosDocumento.contactoTelefono} onChange={e=>setTexto("contactoTelefono",e.target.value)} style={SI}/></div>
-          <div><LBL>Contacto — correo</LBL><input value={textosDocumento.contactoEmail} onChange={e=>setTexto("contactoEmail",e.target.value)} style={SI}/></div>
-        </div>
-
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-          <div><LBL>Firma — nombre</LBL><input value={textosDocumento.firmaNombre} onChange={e=>setTexto("firmaNombre",e.target.value)} style={SI}/></div>
-          <div>
-            <LBL>Firma — cargo</LBL>
-            <input
-              value={textosDocumento.firmaCargo}
-              onChange={e=>setTexto("firmaCargo",e.target.value)}
-              onBlur={e=>{
-                const auto = corregirOrtografiaLocal(e.target.value);
-                if(auto !== e.target.value) setTexto("firmaCargo", auto);
-              }}
-              style={SI}
-            />
-          </div>
-        </div>
-        <FirmaEmpresa/>
-
-        {/* El codigo y la version de los formatos se configuran en
-            Sistema > Formatos y versiones. Estaban aqui, pero valen para los
-            tres documentos y no para la cotizacion sola. */}
-
-        <div style={{marginTop:12}}>
-          <LBL>Firma — datos adicionales (uno por línea)</LBL>
-          <textarea
-            value={textosDocumento.firmaDetalle}
-            onChange={e=>setTexto("firmaDetalle",e.target.value)}
-            onBlur={e=>{
-              const auto = corregirOrtografiaLocal(e.target.value);
-              if(auto !== e.target.value) setTexto("firmaDetalle", auto);
-            }}
-            style={{...SI,minHeight:60,resize:"vertical",lineHeight:1.6}}
-          />
-        </div>
-
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,marginTop:16,paddingTop:12,borderTop:"1px solid #f1f5f9"}}>
-          <div style={{fontSize:10.5,color:"#94a3b8"}}>¿Cambiaste algún texto por error? Puedes volver al estándar de la empresa.</div>
-          <button
-            type="button"
-            onClick={()=>setTextosDocumento(TEXTOS_DOCUMENTO_DEFAULT)}
-            style={{...B("#f1f5f9","#475569"),fontSize:11,padding:"7px 14px"}}
-          >
-            Restaurar textos estándar
-          </button>
-        </div>
-      </div>
+      {/* Se oculta de la pantalla de creación/edición el bloque de Cierre (contacto, firma y datos adicionales)
+          porque nunca se edita manualmente aquí, pero todos sus valores se preservan en textosDocumento
+          y se siguen incluyendo automáticamente al imprimir y generar el PDF oficial. */}
 
       <div style={{...CD,marginBottom:14}}>
         <div style={{display:"flex",justifyContent:"flex-end",marginTop:16}}>

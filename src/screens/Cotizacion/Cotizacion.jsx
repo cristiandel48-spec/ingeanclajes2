@@ -11,7 +11,6 @@ import PropuestaEditor from "./PropuestaEditor";
 import SelectorCiudadColombia from "../../components/SelectorCiudadColombia";
 import { useMediaQuery, useIsMobile } from "../../hooks/useMediaQuery";
 import { TEXTOS_DOCUMENTO_DEFAULT, getTextosDocumento } from "../../lib/cotizacionTextos";
-import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
 import BotonCorregir from "../../components/ui/BotonCorregir";
 import { corregirOrtografiaLocal } from "../../lib/correctorTexto";
@@ -878,78 +877,94 @@ export default function Cotizacion({ctx}){
   if(tab==="lista"){
     if(previewCot){
       return (
-        <div style={{padding: isMobile ? "12px 14px 40px" : "24px 28px"}}>
-          <H1
-            title={`Cotización ${previewCot.numero || previewCot.id}`}
-            subtitle="Vista completa del documento comercial"
-            action={
-              <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
-                <button
-                  style={{
-                    background: "var(--surface-subtle, #f2f4f7)",
-                    color: "var(--text-main, #101828)",
-                    border: "1px solid var(--border, #eaecf0)",
-                    borderRadius: 8,
-                    padding: "6px 14px",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                  onClick={()=>setPreviewCot(null)}
-                >
-                  Volver
-                </button>
-                <button
-                  style={{
-                    background: "transparent",
-                    color: "var(--text-muted, #475467)",
-                    border: "1px solid var(--border, #eaecf0)",
-                    borderRadius: 8,
-                    padding: "6px 14px",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                  onClick={()=>{setEditCot(previewCot.id);hydrate(previewCot);setTab("form");setPreviewCot(null);}}
-                >
-                  Editar
-                </button>
-                <button
-                  style={{
-                    background: "var(--surface-subtle, #f2f4f7)",
-                    color: "var(--text-main, #101828)",
-                    border: "1px solid var(--border, #eaecf0)",
-                    borderRadius: 8,
-                    padding: "6px 14px",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                  disabled={Boolean(bajandoPdf)}
-                  onClick={()=>descargarPdf(previewCot)}
-                >
-                  {bajandoPdf?"Generando…":"📥 Descargar PDF"}
-                </button>
-                <button
-                  style={{
-                    background: "#FFFAEB",
-                    color: "#B54708",
-                    border: "1px solid rgba(181, 71, 8, 0.35)",
-                    borderRadius: 8,
-                    padding: "6px 14px",
-                    fontSize: 12,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    boxShadow: "0 1px 2px rgba(181, 71, 8, 0.08)",
-                  }}
-                  onClick={()=>setEnviarCot(previewCot)}
-                >
-                  ✉️ Enviar al cliente
-                </button>
-              </div>
-            }
-          />
-          <DocumentoEnVivo cotizacion={previewCot} firmaImg={firmaImg} sello={selloCotizacion} alto="calc(100dvh - 210px)" nota="Igual al PDF" sticky={false}/>
+        <div style={{padding: isMobile ? "8px 10px 16px" : "8px 18px 12px"}}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 12,
+              flexWrap: "wrap",
+              marginBottom: 8,
+              padding: "2px 0",
+            }}
+          >
+            <div style={{display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap"}}>
+              <h1 style={{fontSize: 17, fontWeight: 800, margin: 0, color: "var(--text-h1, #101828)", lineHeight: 1.2}}>
+                Cotización {previewCot.numero || previewCot.id}
+              </h1>
+              <span style={{fontSize: 12, color: "var(--text-muted, #667085)"}}>
+                Vista completa del documento comercial
+              </span>
+            </div>
+
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+              <button
+                style={{
+                  background: "var(--surface-subtle, #f2f4f7)",
+                  color: "var(--text-main, #101828)",
+                  border: "1px solid var(--border, #eaecf0)",
+                  borderRadius: 6,
+                  padding: "5px 12px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+                onClick={()=>setPreviewCot(null)}
+              >
+                Volver
+              </button>
+              <button
+                style={{
+                  background: "transparent",
+                  color: "var(--text-muted, #475467)",
+                  border: "1px solid var(--border, #eaecf0)",
+                  borderRadius: 6,
+                  padding: "5px 12px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+                onClick={()=>{setEditCot(previewCot.id);hydrate(previewCot);setTab("form");setPreviewCot(null);}}
+              >
+                Editar
+              </button>
+              <button
+                style={{
+                  background: "var(--surface-subtle, #f2f4f7)",
+                  color: "var(--text-main, #101828)",
+                  border: "1px solid var(--border, #eaecf0)",
+                  borderRadius: 6,
+                  padding: "5px 12px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+                disabled={Boolean(bajandoPdf)}
+                onClick={()=>descargarPdf(previewCot)}
+              >
+                {bajandoPdf?"Generando…":"📥 Descargar PDF"}
+              </button>
+              <button
+                style={{
+                  background: "#FFFAEB",
+                  color: "#B54708",
+                  border: "1px solid rgba(181, 71, 8, 0.35)",
+                  borderRadius: 6,
+                  padding: "5px 12px",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  boxShadow: "0 1px 2px rgba(181, 71, 8, 0.08)",
+                }}
+                onClick={()=>setEnviarCot(previewCot)}
+              >
+                ✉️ Enviar al cliente
+              </button>
+            </div>
+          </div>
+
+          <DocumentoEnVivo cotizacion={previewCot} firmaImg={firmaImg} sello={selloCotizacion} alto="calc(100dvh - 120px)" nota="Igual al PDF" sticky={false}/>
           {enviarCot && <EnviarCotizacion cotizacion={enviarCot} firmaImg={firmaImg} onCerrar={()=>setEnviarCot(null)}/>}
         </div>
       );

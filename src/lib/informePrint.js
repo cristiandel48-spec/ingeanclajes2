@@ -46,13 +46,10 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
     <div style="height:4px;background:linear-gradient(90deg, #ea580c 0%, #f97316 40%, #0f172a 100%);border-radius:2px;margin-bottom:12px;"></div>
     <table style="width:100%;border-collapse:collapse;border:1.5px solid #1e293b;margin-bottom:12px;background:#ffffff;">
       <tr>
-        <td style="width:28%;text-align:left;border-right:1.5px solid #1e293b;padding:7px 12px;vertical-align:middle;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            ${LOGO_INGEANCLAJES ? `<img src="${LOGO_INGEANCLAJES}" alt="Ingeanclajes" style="height:28px;object-fit:contain;"/>` : ""}
-            <div style="font-size:16px;font-weight:800;color:#0f172a;letter-spacing:-0.03em;line-height:1.1;">INGE<span style="color:#ea580c;">ANCLAJES</span></div>
-          </div>
-          <div style="font-size:7.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;margin-top:4px;">Especialistas en Anclajes S.A.S</div>
-          <div style="font-size:7.5px;color:#94a3b8;margin-top:2px;">NIT. 900.193.965-4 · PBX (604) 448 26 86</div>
+        <td style="width:28%;text-align:center;border-right:1.5px solid #1e293b;padding:6px 12px;vertical-align:middle;">
+          ${LOGO_INGEANCLAJES ? `<img src="${LOGO_INGEANCLAJES}" alt="Ingeanclajes" style="height:44px;max-width:180px;object-fit:contain;display:block;margin:0 auto 3px;"/>` : `<div style="font-size:16px;font-weight:800;color:#0f172a;letter-spacing:-0.03em;">INGE<span style="color:#ea580c;">ANCLAJES</span></div>`}
+          <div style="font-size:7.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;margin-top:2px;">Especialistas en Anclajes S.A.S</div>
+          <div style="font-size:7.5px;color:#94a3b8;margin-top:1px;">NIT. 900.193.965-4 · PBX (604) 448 26 86</div>
         </td>
         <td style="width:46%;text-align:center;padding:6px 10px;vertical-align:middle;border-right:1px solid #334155;">
           <div style="font-size:8px;font-weight:800;color:#ea580c;letter-spacing:0.12em;text-transform:uppercase;">Sistema de Gestión de la Calidad</div>

@@ -1041,17 +1041,18 @@ export default function Informes({ctx}){
                 <table style={{ width: "100%", borderCollapse: "collapse", border: "1.5px solid #1e293b", marginBottom: 14, background: "#ffffff" }}>
                   <tbody>
                     <tr>
-                      <td style={{ width: "28%", textAlign: "left", borderRight: "1.5px solid #1e293b", padding: "8px 12px", verticalAlign: "middle" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          {LOGO_INGEANCLAJES && <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{ height: 30, objectFit: "contain" }} />}
-                          <div style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+                      <td style={{ width: "28%", textAlign: "center", borderRight: "1.5px solid #1e293b", padding: "8px 12px", verticalAlign: "middle" }}>
+                        {LOGO_INGEANCLAJES ? (
+                          <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{ height: 44, maxWidth: 180, objectFit: "contain", display: "block", margin: "0 auto 4px" }} />
+                        ) : (
+                          <div style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.03em" }}>
                             INGE<span style={{ color: "#ea580c" }}>ANCLAJES</span>
                           </div>
-                        </div>
-                        <div style={{ fontSize: 9, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4 }}>
+                        )}
+                        <div style={{ fontSize: 9, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 2 }}>
                           Especialistas en Anclajes S.A.S
                         </div>
-                        <div style={{ fontSize: 9, color: "#94a3b8", marginTop: 2 }}>
+                        <div style={{ fontSize: 9, color: "#94a3b8", marginTop: 1 }}>
                           NIT. 900.193.965-4 · PBX (604) 448 26 86
                         </div>
                       </td>

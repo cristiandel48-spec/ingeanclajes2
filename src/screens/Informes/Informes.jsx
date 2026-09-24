@@ -11,6 +11,8 @@ import { fmtD, fmtL, today } from "../../lib/format";
 import { openPrintTab } from "../../lib/cotizacionPrint";
 import { descargarInformePdf } from "../../lib/informePdf";
 import { buildInformePrintHtml } from "../../lib/informePrint";
+import { getControlDocumental } from "../../lib/controlDocumental";
+import { LOGO_INGEANCLAJES } from "../../assets/embeddedImages";
 import { bitacoraAActividades, normalizarBitacora, registrosDelPeriodo } from "../../lib/bitacoraObra";
 import { leerImagenComprimida } from "../../lib/imagenes";
 import { normalizarFrase, normalizarMayusculas, normalizarNombrePropio, normalizarParrafos } from "../../lib/normalizarEntrada";
@@ -1000,95 +1002,295 @@ export default function Informes({ctx}){
       )}
 
       {/* Vista detalle + impresión */}
-      {sel && !nuevo && !editId && (
-        <div>
-          <div className="doc-paper-wrapper" style={{maxWidth:920,margin:"0 auto",width:"100%"}}>
-          <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:T.cuerpo,lineHeight:1.55,border:"1px solid #ddd",padding:"28px 36px"}}>
-            <PrintHeader dual={false} formato="informe" empresaConfig={empresaConfig} numeroDocumento={sel?.id || sel?.numero || ""}/>
-            <div style={{textAlign:"center",fontSize:T.titulo,fontWeight:700,letterSpacing:1.5,padding:"2px 0 10px",borderBottom:"2px solid #333",color:"#111",textTransform:"uppercase",marginBottom:22,marginTop:14}}>Informe de Actividades</div>
-            <table style={{width:"100%",borderCollapse:"collapse",marginBottom:20}}>
-              <tbody>
-                {/* Se acomodan también al imprimir: los informes guardados
-                    antes de esto tienen el proyecto en minúscula. */}
-                {[["PROYECTO",normalizarMayusculas(sel.proyecto)],["LOCALIZACIÓN",normalizarMayusculas(sel.localizacion)],["FECHA INFORME",fmtL(sel.fechaInforme)],["PERÍODO DE INFORME",(fmtL(sel.periodoInicio)) + " - " + (fmtL(sel.periodoFin))]].map(([k,v])=>(
-                  <tr key={k}><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",background:"#f0f0f0",fontWeight:700,width:"30%",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".07em"}}>{k}</td><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px"}}>{v}</td></tr>
-                ))}
-              </tbody>
-            </table>
-            <table style={{width:"100%",borderCollapse:"collapse",marginBottom:14}}>
-              <thead>
-                {/* Los turnos se siguen llevando en la pantalla de edicion,
-                    pero NO se imprimen: en el documento que se le entrega al
-                    cliente ocupaban media tabla para mostrar casi siempre un
-                    guion. */}
-                <tr style={{background:"#ddd"}}><td colSpan={2} style={{border:`1px solid ${BORDE}`,padding:"7px 10px",fontWeight:700,textAlign:"center",fontSize:T.seccion,letterSpacing:".04em"}}>PERSONAL EN OBRA</td></tr>
-                <tr style={{background:"#f5f5f5"}}>
-                  <th style={{border:`1px solid ${BORDE}`,padding:"6px 10px",textAlign:"left",width:"35%",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".07em"}}>CARGO</th>
-                  <th style={{border:`1px solid ${BORDE}`,padding:"6px 10px",textAlign:"left",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".07em"}}>NOMBRE</th>
-                </tr>
-              </thead>
-              <tbody>{(sel.personal||[]).map((p,i)=><tr key={i}><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px"}}>{p.cargo}</td><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px"}}>{p.nombre}</td></tr>)}</tbody>
-            </table>
-            {/* Múltiples actividades */}
-            {/* conActividadSeparada tambien AQUI, no solo al editar: esta vista
-                lee el informe tal como esta guardado, y los que se hicieron
-                cuando los dos bloques iban en un mismo campo seguian saliendo
-                pegados en el papel aunque en la pantalla de edicion ya se vieran
-                separados. */}
-            {(sel.actividades||[{titulo:sel.actividad,descripcion:sel.descripcion,observaciones:sel.observaciones,fotos:sel.fotos||[]}]).map(conActividadSeparada).map((act,ai)=>(
-              <div key={ai} style={{marginBottom:22}}>
-                <table style={{width:"100%",borderCollapse:"collapse",marginBottom:12}}>
+      {sel && !nuevo && !editId && (() => {
+        const control = getControlDocumental(empresaConfig)?.informe;
+        const docCodigo = control?.codigo || "FO-ACT-04";
+        const docVersion = control?.version || "03";
+        const docFecha = control?.fecha ? fmtL(control.fecha) : fmtL(sel?.fechaInforme);
+        const proyecto = normalizarMayusculas(sel?.proyecto || "");
+        const localizacion = normalizarMayusculas(sel?.localizacion || "");
+        const cliente = normalizarMayusculas(sel?.cliente || (obras?.find(o => o.id === sel?.obraId)?.cliente) || "");
+        const fechaInforme = fmtL(sel?.fechaInforme);
+        const periodo = `${fmtL(sel?.periodoInicio)} al ${fmtL(sel?.periodoFin)}`;
+        const personal = Array.isArray(sel?.personal) ? sel.personal : [];
+        const numDoc = sel?.id ? String(sel.id).trim() : (sel?.numero ? String(sel.numero).trim() : "");
+        const rawActividades = (sel.actividades || [{ titulo: sel.actividad, descripcion: sel.descripcion, observaciones: sel.observaciones, fotos: sel.fotos || [] }]).map(conActividadSeparada);
+
+        return (
+          <div>
+            <div className="doc-paper-wrapper" style={{ maxWidth: 920, margin: "0 auto", width: "100%" }}>
+              <div
+                id="pz"
+                className="doc-shell"
+                style={{
+                  background: "#fff",
+                  color: "#0f172a",
+                  fontFamily: "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                  fontSize: 12,
+                  lineHeight: 1.5,
+                  border: "1px solid #cbd5e1",
+                  boxShadow: "0 4px 20px rgba(15, 23, 42, 0.08)",
+                  padding: "32px 40px",
+                  borderRadius: 6,
+                }}
+              >
+                {/* Línea de acento superior */}
+                <div style={{ height: 4, background: "linear-gradient(90deg, #ea580c 0%, #f97316 40%, #0f172a 100%)", borderRadius: 2, marginBottom: 14 }}></div>
+
+                {/* Encabezado Matriz SGC */}
+                <table style={{ width: "100%", borderCollapse: "collapse", border: "1.5px solid #1e293b", marginBottom: 14, background: "#ffffff" }}>
                   <tbody>
-                    <tr><td colSpan={2} style={{border:`1px solid ${BORDE}`,padding:"7px 10px",background:"#ddd",fontWeight:700,textAlign:"center",fontSize:T.seccion,letterSpacing:".04em"}}>{act.titulo||act}</td></tr>
-                    {act.fecha&&<tr><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",fontWeight:700,width:"20%",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".07em"}}>FECHA</td><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px"}}>{fmtL(act.fecha)}</td></tr>}
-                    {/* whiteSpace pre-line: en HTML los saltos de linea se
-                        aplastan a un espacio, y el texto escrito en dos bloques
-                        se imprimia como un parrafo corrido. */}
-                    {(act.actividadesRealizadas||"").trim()&&<tr><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",fontWeight:700,width:"20%",verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".07em"}}>ACTIVIDADES REALIZADAS</td><td style={{border:`1px solid ${BORDE}`,padding:"8px 10px",textAlign:"justify",whiteSpace:"pre-line",lineHeight:1.5}}>{act.actividadesRealizadas}</td></tr>}
-                    {(act.descripcion||"").trim()&&<tr><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",fontWeight:700,width:"20%",verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".07em"}}>DESCRIPCIÓN</td><td style={{border:`1px solid ${BORDE}`,padding:"8px 10px",textAlign:"justify",whiteSpace:"pre-line",lineHeight:1.5}}>{act.descripcion}</td></tr>}
-                    <tr><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",fontWeight:700,verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".07em"}}>OBSERVACIONES</td><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px"}}>{act.observaciones}</td></tr>
+                    <tr>
+                      <td style={{ width: "28%", textAlign: "left", borderRight: "1.5px solid #1e293b", padding: "8px 12px", verticalAlign: "middle" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          {LOGO_INGEANCLAJES && <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{ height: 30, objectFit: "contain" }} />}
+                          <div style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.03em", lineHeight: 1.1 }}>
+                            INGE<span style={{ color: "#ea580c" }}>ANCLAJES</span>
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 4 }}>
+                          Especialistas en Anclajes S.A.S
+                        </div>
+                        <div style={{ fontSize: 9, color: "#94a3b8", marginTop: 2 }}>
+                          NIT. 900.193.965-4 · PBX (604) 448 26 86
+                        </div>
+                      </td>
+                      <td style={{ width: "46%", textAlign: "center", padding: "8px 10px", verticalAlign: "middle", borderRight: "1px solid #334155" }}>
+                        <div style={{ fontSize: 9.5, fontWeight: 800, color: "#ea580c", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                          Sistema de Gestión de la Calidad
+                        </div>
+                        <div style={{ fontSize: 13.5, fontWeight: 800, color: "#0f172a", letterSpacing: "0.04em", marginTop: 3, lineHeight: 1.25 }}>
+                          INFORME TÉCNICO DE ACTIVIDADES EN OBRA
+                        </div>
+                        <div style={{ fontSize: 10, fontWeight: 500, color: "#475569", marginTop: 2 }}>
+                          Inspección, Montaje y Pruebas Estructurales
+                        </div>
+                      </td>
+                      <td style={{ width: "26%", fontSize: 9.5, lineHeight: 1.55, background: "#fafafa", padding: "8px 12px", verticalAlign: "middle" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px dashed #e2e8f0", paddingBottom: 2, marginBottom: 2 }}>
+                          <span style={{ color: "#64748b", fontWeight: 600 }}>CÓDIGO:</span>
+                          <span style={{ fontWeight: 700, color: "#0f172a", fontFamily: "monospace" }}>{docCodigo}</span>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px dashed #e2e8f0", paddingBottom: 2, marginBottom: 2 }}>
+                          <span style={{ color: "#64748b", fontWeight: 600 }}>VERSIÓN:</span>
+                          <span style={{ fontWeight: 700, color: "#0f172a", fontFamily: "monospace" }}>{docVersion}</span>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px dashed #e2e8f0", paddingBottom: 2, marginBottom: 2 }}>
+                          <span style={{ color: "#64748b", fontWeight: 600 }}>EMISIÓN:</span>
+                          <span style={{ fontWeight: 700, color: "#0f172a", fontFamily: "monospace" }}>{docFecha}</span>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <span style={{ color: "#64748b", fontWeight: 600 }}>CONSECUTIVO:</span>
+                          <span style={{ color: "#ea580c", fontWeight: 800, fontSize: 11, fontFamily: "monospace" }}>{numDoc || "INF-OFICIAL"}</span>
+                        </div>
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
-                {(act.fotos||[]).some(ft=>ft.img||ft.url)&&(
-                  <>
-                    <div className="seccion-header" style={{fontWeight:700,textAlign:"center",background:"#ddd",border:`1px solid ${BORDE}`,padding:"7px 6px",marginBottom:10,fontSize:T.seccion,letterSpacing:".04em",pageBreakInside:"avoid",breakInside:"avoid"}}>REGISTRO FOTOGRÁFICO · {act.titulo}</div>
-                    {/* Alto FIJO y no maximo: asi las dos fotos de una fila
-                        miden igual, la rejilla queda pareja y -sobre todo- el
-                        corte de pagina cae siempre en el mismo sitio. Con alto
-                        variable cada fila terminaba a una altura distinta y era
-                        mas facil que una foto quedara partida entre hojas. */}
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12,alignItems:"start"}}>
-                      {(act.fotos||[]).filter(ft=>ft.img||ft.url).map((ft,i)=>(
-                        <div key={i} className="foto-card" style={{border:`1px solid ${BORDE}`,borderRadius:4,overflow:"hidden",background:"#fff",padding:8,pageBreakInside:"avoid",breakInside:"avoid"}}>
-                          <img src={ft.img||ft.url} alt={"foto" + (i+1)} style={{width:"100%",height:250,objectFit:"contain",display:"block",background:"#fff"}} onError={e=>{e.target.style.display="none";}}/>
-                          {ft.comentario&&<div style={{padding:"6px 2px 0",fontSize:T.pie,color:GRIS_ROTULO,borderTop:"1px solid #eee",marginTop:6,lineHeight:1.45}}>{ft.comentario}</div>}
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            ))}
-            <table style={{width:"100%",borderCollapse:"collapse",marginBottom:26,pageBreakInside:"avoid",breakInside:"avoid"}}>
-              <tbody><tr><td style={{border:`1px solid ${BORDE}`,padding:"6px 10px",fontWeight:700,width:"20%",verticalAlign:"top",fontSize:T.etiqueta,color:GRIS_ROTULO,letterSpacing:".07em"}}>RECOMENDACIONES</td><td style={{border:`1px solid ${BORDE}`,padding:"8px 10px",textAlign:"justify",whiteSpace:"pre-line",lineHeight:1.5}}>{sel.recomendaciones}</td></tr></tbody>
-            </table>
-            <div className="firma-bloque" style={{marginTop:30,pageBreakInside:"avoid",breakInside:"avoid"}}>
-              <div style={{marginBottom:12,fontSize:T.cuerpo}}>Cordialmente,</div>
-              <div style={{height:72,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-                {firmaImg && <img src={firmaImg} alt="" style={{maxHeight:70,maxWidth:230,objectFit:"contain"}}/>}
-              </div>
-              <div style={{textAlign:"center"}}>
-                <div style={{display:"inline-block",borderTop:"1px solid #333",paddingTop:8,minWidth:240}}>
-                  <div style={{fontWeight:700,fontSize:T.cuerpo,letterSpacing:".02em"}}>ING. JHON JAIME SEPULVEDA LONDOÑO</div>
-                  <div style={{fontSize:T.pie,color:GRIS_ROTULO,marginTop:3}}>Cl 38 sur # 36-48, Envigado · PBX 448 26 86 · Cel. 314 863 40 72</div>
-                  <div style={{fontSize:T.pie,color:GRIS_ROTULO}}>Nit. 900193965-4 · ingeanclajes.sas@gmail.com</div>
+
+                {/* Ficha de Datos del Proyecto */}
+                <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #cbd5e1", fontSize: 11, marginBottom: 14, background: "#ffffff" }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ width: "18%", background: "#f8fafc", fontWeight: 700, color: "#475569", letterSpacing: "0.04em", fontSize: 10, textTransform: "uppercase", border: "1px solid #e2e8f0", padding: "6px 10px" }}>PROYECTO:</td>
+                      <td style={{ width: "36%", fontWeight: 800, color: "#0f172a", border: "1px solid #e2e8f0", padding: "6px 10px" }}>{proyecto || "OBRA GENERAL"}</td>
+                      <td style={{ width: "18%", background: "#f8fafc", fontWeight: 700, color: "#475569", letterSpacing: "0.04em", fontSize: 10, textTransform: "uppercase", border: "1px solid #e2e8f0", padding: "6px 10px" }}>PERÍODO AUDITADO:</td>
+                      <td style={{ width: "28%", color: "#0f172a", fontWeight: 600, border: "1px solid #e2e8f0", padding: "6px 10px" }}>{periodo}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ background: "#f8fafc", fontWeight: 700, color: "#475569", letterSpacing: "0.04em", fontSize: 10, textTransform: "uppercase", border: "1px solid #e2e8f0", padding: "6px 10px" }}>CONTRATANTE:</td>
+                      <td style={{ color: "#0f172a", fontWeight: 600, border: "1px solid #e2e8f0", padding: "6px 10px" }}>{cliente || "A QUIEN INTERESE"}</td>
+                      <td style={{ background: "#f8fafc", fontWeight: 700, color: "#475569", letterSpacing: "0.04em", fontSize: 10, textTransform: "uppercase", border: "1px solid #e2e8f0", padding: "6px 10px" }}>FECHA INFORME:</td>
+                      <td style={{ color: "#0f172a", fontWeight: 600, border: "1px solid #e2e8f0", padding: "6px 10px" }}>{fechaInforme}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ background: "#f8fafc", fontWeight: 700, color: "#475569", letterSpacing: "0.04em", fontSize: 10, textTransform: "uppercase", border: "1px solid #e2e8f0", padding: "6px 10px" }}>LOCALIZACIÓN:</td>
+                      <td style={{ color: "#0f172a", fontWeight: 600, border: "1px solid #e2e8f0", padding: "6px 10px" }}>{localizacion || "MEDELLÍN"}</td>
+                      <td style={{ background: "#f8fafc", fontWeight: 700, color: "#475569", letterSpacing: "0.04em", fontSize: 10, textTransform: "uppercase", border: "1px solid #e2e8f0", padding: "6px 10px" }}>NORMATIVA:</td>
+                      <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px" }}>
+                        <span style={{ background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, display: "inline-block" }}>
+                          Res. 4272/2021 · OSHA 1926.502
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                {/* Sección 1: Personal Técnico en Obra */}
+                <div style={{ background: "linear-gradient(90deg, #0f172a 0%, #1e293b 100%)", color: "#ffffff", padding: "5px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderLeft: "4px solid #ea580c", marginBottom: 8, borderRadius: "0 4px 4px 0" }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.07em", textTransform: "uppercase" }}>1. Personal Técnico en Obra</span>
+                  <span style={{ fontSize: 9.5, fontWeight: 600, color: "#94a3b8", letterSpacing: "0.04em", textTransform: "uppercase" }}>Cuadrilla Asignada en Sitio</span>
                 </div>
+                <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #cbd5e1", fontSize: 11, marginBottom: 16, background: "#ffffff" }}>
+                  <thead>
+                    <tr>
+                      <th style={{ width: "38%", background: "#f1f5f9", border: "1px solid #cbd5e1", padding: "6px 10px", fontWeight: 800, textAlign: "left", color: "#334155", fontSize: 10, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                        CARGO / ESPECIALIDAD EN SITIO
+                      </th>
+                      <th style={{ width: "62%", background: "#f1f5f9", border: "1px solid #cbd5e1", padding: "6px 10px", fontWeight: 800, textAlign: "left", color: "#334155", fontSize: 10, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                        NOMBRE COMPLETO DEL PERSONAL EN OBRA
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {personal.length > 0 ? (
+                      personal.map((p, idx) => (
+                        <tr key={idx} style={{ background: idx % 2 === 1 ? "#fafafa" : "#ffffff" }}>
+                          <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px", verticalAlign: "middle" }}>
+                            <div style={{ fontWeight: 700, color: "#0f172a", display: "flex", alignItems: "center", gap: 6 }}>
+                              <span style={{ width: 6, height: 6, background: "#ea580c", borderRadius: "50%", display: "inline-block", flexShrink: 0 }}></span>
+                              <span>{p.cargo || "Técnico Especialista"}</span>
+                            </div>
+                          </td>
+                          <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px", verticalAlign: "middle", fontWeight: 600, color: "#1e293b", fontSize: 11.5 }}>
+                            {p.nombre || "Sin nombre registrado"}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={2} style={{ border: "1px solid #e2e8f0", padding: "8px 10px", color: "#94a3b8", fontStyle: "italic" }}>
+                          Personal asignado conforme a programación de cuadrilla en obra.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+
+                {/* Sección 2: Actividades Ejecutadas */}
+                <div style={{ background: "linear-gradient(90deg, #0f172a 0%, #1e293b 100%)", color: "#ffffff", padding: "5px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderLeft: "4px solid #ea580c", marginBottom: 8, borderRadius: "0 4px 4px 0" }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.07em", textTransform: "uppercase" }}>2. Registro y Metodología de Actividades Ejecutadas</span>
+                  <span style={{ fontSize: 9.5, fontWeight: 600, color: "#94a3b8", letterSpacing: "0.04em", textTransform: "uppercase" }}>Control Operativo</span>
+                </div>
+                {rawActividades.map((act, ai) => (
+                  <div key={ai} style={{ marginBottom: 16 }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #cbd5e1", fontSize: 11, marginBottom: 12, background: "#ffffff" }}>
+                      <thead>
+                        <tr>
+                          <th colSpan={2} style={{ background: "#f1f5f9", border: "1px solid #cbd5e1", padding: "6px 10px", fontWeight: 800, textAlign: "left", color: "#0f172a", fontSize: 11.5 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                              <span style={{ background: "#0f172a", color: "#ffffff", fontFamily: "monospace", fontSize: 10, padding: "2px 6px", borderRadius: 3, fontWeight: 700 }}>
+                                {String(ai + 1).padStart(2, "0")}
+                              </span>
+                              <span>{act.titulo || "Actividad Ejecutada"}</span>
+                            </div>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {act.fecha && (
+                          <tr>
+                            <td style={{ width: "24%", border: "1px solid #e2e8f0", padding: "5px 10px", background: "#f8fafc", fontWeight: 700, fontSize: 10, color: "#475569", textTransform: "uppercase", letterSpacing: "0.04em" }}>FECHA DE EJECUCIÓN</td>
+                            <td style={{ border: "1px solid #e2e8f0", padding: "5px 10px", fontSize: 11, color: "#0f172a", fontWeight: 600 }}>{fmtL(act.fecha)}</td>
+                          </tr>
+                        )}
+                        {(act.actividadesRealizadas || "").trim() && (
+                          <tr>
+                            <td style={{ width: "24%", border: "1px solid #e2e8f0", padding: "6px 10px", background: "#f8fafc", fontWeight: 700, fontSize: 10, color: "#475569", textTransform: "uppercase", letterSpacing: "0.04em", verticalAlign: "top" }}>ACTIVIDADES REALIZADAS</td>
+                            <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px", fontSize: 11, color: "#334155", lineHeight: 1.5, textAlign: "justify", whiteSpace: "pre-line" }}>{act.actividadesRealizadas}</td>
+                          </tr>
+                        )}
+                        {(act.descripcion || "").trim() && (
+                          <tr>
+                            <td style={{ width: "24%", border: "1px solid #e2e8f0", padding: "6px 10px", background: "#f8fafc", fontWeight: 700, fontSize: 10, color: "#475569", textTransform: "uppercase", letterSpacing: "0.04em", verticalAlign: "top" }}>DESCRIPCIÓN TÉCNICA</td>
+                            <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px", fontSize: 11, color: "#334155", lineHeight: 1.5, textAlign: "justify", whiteSpace: "pre-line" }}>{act.descripcion}</td>
+                          </tr>
+                        )}
+                        <tr>
+                          <td style={{ width: "24%", border: "1px solid #e2e8f0", padding: "6px 10px", background: "#f8fafc", fontWeight: 700, fontSize: 10, color: "#475569", textTransform: "uppercase", letterSpacing: "0.04em", verticalAlign: "top" }}>CRITERIO / OBSERVACIONES</td>
+                          <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px", fontSize: 11, color: "#334155", lineHeight: 1.45 }}>
+                            {(act.observaciones || "").trim() ? (
+                              <span><strong style={{ color: "#059669" }}>✓ Conforme:</strong> {act.observaciones}</span>
+                            ) : (
+                              <span style={{ color: "#64748b", fontStyle: "italic" }}>Ejecutado a conformidad sin novedades reportadas.</span>
+                            )}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    {/* Fotos */}
+                    {(act.fotos || []).some(ft => ft.img || ft.url) && (
+                      <div style={{ marginBottom: 18 }}>
+                        <div style={{ background: "linear-gradient(90deg, #0f172a 0%, #1e293b 100%)", color: "#ffffff", padding: "5px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderLeft: "4px solid #ea580c", marginBottom: 10, borderRadius: "0 4px 4px 0" }}>
+                          <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.07em", textTransform: "uppercase" }}>3. Panel Técnico de Evidencias Fotográficas · {act.titulo || "Actividad"}</span>
+                          <span style={{ fontSize: 9.5, fontWeight: 600, color: "#94a3b8", letterSpacing: "0.04em", textTransform: "uppercase" }}>Registro Visual en Sitio</span>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                          {(act.fotos || []).filter(ft => ft.img || ft.url).map((ft, fi) => (
+                            <div key={fi} style={{ border: "1px solid #cbd5e1", borderRadius: 4, overflow: "hidden", background: "#ffffff", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+                              <div style={{ height: 210, display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+                                <img src={ft.img || ft.url} alt={`Evidencia ${fi + 1}`} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", background: "#ffffff" }} onError={e => { e.target.style.display = "none"; }} />
+                              </div>
+                              <div style={{ padding: "6px 10px", fontSize: 10, color: "#334155", lineHeight: 1.35, background: "#ffffff" }}>
+                                <strong style={{ color: "#ea580c" }}>REF {ai + 1}.{fi + 1}:</strong> {ft.comentario || "Registro fotográfico y trazabilidad de actividades ejecutadas en sitio."}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {/* Recomendaciones */}
+                {sel.recomendaciones && (
+                  <div style={{ border: "1px solid #cbd5e1", borderRadius: 4, overflow: "hidden", marginBottom: 16, background: "#ffffff" }}>
+                    <div style={{ background: "#f1f5f9", padding: "5px 10px", fontSize: 10, fontWeight: 800, color: "#334155", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: "1px solid #cbd5e1" }}>
+                      RECOMENDACIONES TÉCNICAS GENERALES
+                    </div>
+                    <div style={{ padding: "8px 12px", fontSize: 11, color: "#334155", lineHeight: 1.5, textAlign: "justify", whiteSpace: "pre-line" }}>
+                      {sel.recomendaciones}
+                    </div>
+                  </div>
+                )}
+
+                {/* Firmas */}
+                <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 24 }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ width: "50%", padding: "0 14px 0 0", verticalAlign: "top" }}>
+                        <div style={{ borderTop: "2px solid #0f172a", paddingTop: 8, fontSize: 10.5, lineHeight: 1.45 }}>
+                          <div style={{ fontSize: 9.5, fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>
+                            Por el Contratista (Ingeanclajes S.A.S):
+                          </div>
+                          <div style={{ height: 50, display: "flex", alignItems: "flex-end", marginBottom: 4 }}>
+                            {firmaImg ? (
+                              <img src={firmaImg} alt="Firma" style={{ maxHeight: 48, maxWidth: 200, objectFit: "contain" }} />
+                            ) : (
+                              <div style={{ fontFamily: "'Segoe Script', cursive, sans-serif", fontSize: 14, fontWeight: 700, color: "#0f172a" }}>
+                                Jhon Jaime Sepúlveda L.
+                              </div>
+                            )}
+                          </div>
+                          <div style={{ fontWeight: 800, fontSize: 11, color: "#0f172a", letterSpacing: "0.02em" }}>
+                            ING. JHON JAIME SEPÚLVEDA LONDOÑO
+                          </div>
+                          <div style={{ fontSize: 9.5, color: "#64748b" }}>Director Técnico de Obra · MP. 05248-12458</div>
+                          <div style={{ fontSize: 9.5, color: "#64748b" }}>Ingeanclajes S.A.S · NIT. 900.193.965-4</div>
+                        </div>
+                      </td>
+                      <td style={{ width: "50%", padding: "0 0 0 14px", verticalAlign: "top" }}>
+                        <div style={{ borderTop: "2px solid #0f172a", paddingTop: 8, fontSize: 10.5, lineHeight: 1.45 }}>
+                          <div style={{ fontSize: 9.5, fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>
+                            Recibido por la Interventoría / Constructora:
+                          </div>
+                          <div style={{ height: 50, display: "flex", alignItems: "flex-end", marginBottom: 4, fontSize: 9.5, color: "#94a3b8", fontStyle: "italic" }}>
+                            (Firma y sello de recepción a satisfacción)
+                          </div>
+                          <div style={{ fontWeight: 700, fontSize: 10.5, color: "#0f172a" }}>NOMBRE: ____________________________________</div>
+                          <div style={{ fontSize: 9.5, color: "#64748b", marginTop: 2 }}>CARGO / FIRMA: ______________________________</div>
+                          <div style={{ fontSize: 9.5, color: "#64748b" }}>EMPRESA: {cliente || "Constructora / Contratante"}</div>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
-          </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

@@ -239,7 +239,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
               ${firmaImg ? `<img src="${firmaImg}" alt="Firma" style="max-height:42px;max-width:180px;object-fit:contain;"/>` : `<div style="font-family:'Segoe Script',cursive,sans-serif;font-size:13px;font-weight:700;color:#0f172a;">Jhon Jaime Sepúlveda L.</div>`}
             </div>
             <div style="font-weight:800;font-size:9.5px;color:#0f172a;letter-spacing:0.02em;">ING. JHON JAIME SEPÚLVEDA LONDOÑO</div>
-            <div style="font-size:8px;color:#64748b;">Director Técnico de Obra · MP. 05248-12458</div>
+            <div style="font-size:8px;color:#64748b;">Gerente General · MP. 05256-409949</div>
             <div style="font-size:8px;color:#64748b;">Ingeanclajes S.A.S · NIT. 900.193.965-4</div>
           </div>
         </td>

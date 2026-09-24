@@ -1267,7 +1267,7 @@ export default function Informes({ctx}){
                           <div style={{ fontWeight: 800, fontSize: 11, color: "#0f172a", letterSpacing: "0.02em" }}>
                             ING. JHON JAIME SEPÚLVEDA LONDOÑO
                           </div>
-                          <div style={{ fontSize: 9.5, color: "#64748b" }}>Director Técnico de Obra · MP. 05248-12458</div>
+                          <div style={{ fontSize: 9.5, color: "#64748b" }}>Gerente General · MP. 05256-409949</div>
                           <div style={{ fontSize: 9.5, color: "#64748b" }}>Ingeanclajes S.A.S · NIT. 900.193.965-4</div>
                         </div>
                       </td>

@@ -1,9 +1,7 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import JSZip from "jszip";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmtD, today } from "../../lib/format";
-import { leerImagenComprimida } from "../../lib/imagenes";
-import { resolverAutorGuardado } from "../../lib/autorAuditoria";
 import { normalizarBitacora } from "../../lib/bitacoraObra";
 
 // Fases técnicas de trabajo en Ingeanclajes
@@ -33,9 +31,8 @@ function limpiarNombreArchivo(texto = "") {
     .slice(0, 30);
 }
 
-export default function FototecaObra({ obra, setObras, ctx = {}, bloqueada = false }) {
-  const { membresia, informes = [] } = ctx;
-  const autorActual = resolverAutorGuardado(membresia) || "Técnico en obra";
+export default function FototecaObra({ obra, ctx = {} }) {
+  const { informes = [], irAPantalla } = ctx;
 
   // Estados de vista
   const [vista, setVista] = useState("galeria"); // "galeria" | "fases" | "cronologico"
@@ -48,58 +45,36 @@ export default function FototecaObra({ obra, setObras, ctx = {}, bloqueada = fal
   const [rotacion, setRotacion] = useState(0);
   const [zoom, setZoom] = useState(1);
 
-  // Estados de carga y empaquetado ZIP
-  const [comprimiendo, setComprimiendo] = useState(false);
-  const [progresoCarga, setProgresoCarga] = useState({ actual: 0, total: 0 });
+  // Estados de empaquetado ZIP
   const [empaquetandoZip, setEmpaquetandoZip] = useState(false);
   const [progresoZip, setProgresoZip] = useState(0);
-  const [faseCargaSeleccionada, setFaseCargaSeleccionada] = useState("general");
-  const [notaCarga, setNotaCarga] = useState("");
 
-  const inputFileRef = useRef(null);
-
-  // 1. Agrupar y normalizar TODAS las fotos de la obra (Bitácora + Informes + Fototeca directa)
+  // 1. Agrupar y normalizar TODAS las fotos que se subieron en Ejecución de Obra (Bitácora + Informes)
   const todasLasFotos = useMemo(() => {
     const lista = [];
 
-    // A. Fotos subidas directamente a la fototeca
-    if (Array.isArray(obra.fototeca)) {
-      obra.fototeca.forEach((f, idx) => {
-        if (!f?.img) return;
-        lista.push({
-          id: f.id || `fot-${idx}`,
-          img: f.img,
-          comentario: f.comentario || "",
-          fecha: f.fecha || f.creadoEn?.slice(0, 10) || today(),
-          fase: f.fase || "general",
-          autor: f.autor || "Campo",
-          origen: "Fototeca",
-          esPropiaFototeca: true,
-        });
-      });
-    }
-
-    // B. Fotos de la bitácora de avance de la obra
-    const bitacora = normalizarBitacora(obra.bitacora);
-    bitacora.forEach((reg) => {
+    // A. Fotos de la bitácora de avance diario en Ejecución de Obra
+    const bitacora = normalizarBitacora(obra?.bitacora);
+    bitacora.forEach((reg, regIdx) => {
       (reg.fotos || []).forEach((foto, fIdx) => {
         if (!foto?.img) return;
         const faseCalc = inferirFase((foto.comentario || "") + " " + (reg.actividad || "") + " " + (reg.descripcion || ""));
         lista.push({
-          id: `bit-${reg.id}-${fIdx}`,
+          id: `bit-${reg.id || regIdx}-${fIdx}`,
           img: foto.img,
-          comentario: foto.comentario || reg.actividad || reg.descripcion || "Avance en obra",
+          comentario: foto.comentario || reg.actividad || reg.descripcion || "Avance de obra",
+          actividad: reg.actividad || "Jornada de obra",
           fecha: reg.fecha || today(),
           fase: faseCalc,
-          autor: "Bitácora de obra",
-          origen: "Bitácora",
-          esPropiaFototeca: false,
+          autor: "Ejecución de obra",
+          origen: reg.actividad ? `Bitácora: ${reg.actividad}` : "Bitácora diaria",
+          registroId: reg.id,
         });
       });
     });
 
-    // C. Fotos de informes de actividades vinculados a esta obra
-    const informesObra = informes.filter((inf) => inf.obraId === obra.id);
+    // B. Fotos de informes de actividades creados a partir de la ejecución de esta obra
+    const informesObra = (informes || []).filter((inf) => inf.obraId === obra?.id);
     informesObra.forEach((inf) => {
       (inf.actividades || []).forEach((act, actIdx) => {
         (act.fotos || []).forEach((foto, fIdx) => {
@@ -109,19 +84,36 @@ export default function FototecaObra({ obra, setObras, ctx = {}, bloqueada = fal
             id: `inf-${inf.id}-${actIdx}-${fIdx}`,
             img: foto.img,
             comentario: foto.caption || act.titulo || `Informe ${inf.numero || ""}`,
+            actividad: act.titulo || "Informe técnico",
             fecha: act.fecha || inf.fechaEmision || inf.fecha || today(),
             fase: faseCalc,
-            autor: inf.elaboro || "Informe",
+            autor: inf.elaboro || "Informe técnico",
             origen: `Informe ${inf.numero || ""}`,
-            esPropiaFototeca: false,
           });
         });
       });
     });
 
+    // C. Fotos históricas en fototeca si existían previamente
+    if (Array.isArray(obra?.fototeca)) {
+      obra.fototeca.forEach((f, idx) => {
+        if (!f?.img) return;
+        lista.push({
+          id: f.id || `fot-${idx}`,
+          img: f.img,
+          comentario: f.comentario || "",
+          actividad: "Repositorio",
+          fecha: f.fecha || f.creadoEn?.slice(0, 10) || today(),
+          fase: f.fase || "general",
+          autor: f.autor || "Campo",
+          origen: "Registro de obra",
+        });
+      });
+    }
+
     // Ordenar de más reciente a más antigua
     return lista.sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
-  }, [obra.fototeca, obra.bitacora, informes, obra.id]);
+  }, [obra?.bitacora, obra?.fototeca, informes, obra?.id]);
 
   // Fotos filtradas
   const fotosFiltradas = useMemo(() => {
@@ -130,10 +122,11 @@ export default function FototecaObra({ obra, setObras, ctx = {}, bloqueada = fal
       if (busqueda.trim()) {
         const q = busqueda.toLowerCase().trim();
         const coincideComentario = f.comentario.toLowerCase().includes(q);
+        const coincideActividad = f.actividad.toLowerCase().includes(q);
         const coincideFecha = f.fecha.includes(q);
         const coincideOrigen = f.origen.toLowerCase().includes(q);
         const coincideAutor = f.autor.toLowerCase().includes(q);
-        if (!coincideComentario && !coincideFecha && !coincideOrigen && !coincideAutor) return false;
+        if (!coincideComentario && !coincideActividad && !coincideFecha && !coincideOrigen && !coincideAutor) return false;
       }
       return true;
     });
@@ -188,67 +181,18 @@ export default function FototecaObra({ obra, setObras, ctx = {}, bloqueada = fal
     setZoom(1);
   };
 
-  // 2. Subida de fotos desde móvil o PC con compresión automática
-  const procesarArchivos = async (archivos) => {
-    const lista = Array.from(archivos || []).filter(Boolean);
-    if (!lista.length) return;
-
-    setComprimiendo(true);
-    setProgresoCarga({ actual: 0, total: lista.length });
-    const fotosComprimidas = [];
-
-    for (let i = 0; i < lista.length; i++) {
-      try {
-        const dataUrl = await leerImagenComprimida(lista[i]);
-        fotosComprimidas.push({
-          id: `FOT-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
-          img: dataUrl,
-          comentario: notaCarga.trim() || `Registro de ${FASES_OBRA.find((f) => f.id === faseCargaSeleccionada)?.label || "obra"}`,
-          fecha: today(),
-          fase: faseCargaSeleccionada,
-          autor: autorActual,
-          creadoEn: new Date().toISOString(),
-          origen: "fototeca",
-        });
-      } catch (err) {
-        console.error("Error comprimiendo foto:", err);
-      }
-      setProgresoCarga({ actual: i + 1, total: lista.length });
-    }
-
-    if (fotosComprimidas.length) {
-      const fototecaActual = Array.isArray(obra.fototeca) ? obra.fototeca : [];
-      const siguiente = [...fototecaActual, ...fotosComprimidas];
-      setObras((prev) =>
-        prev.map((o) =>
-          o.id === obra.id
-            ? {
-                ...o,
-                fototeca: siguiente,
-                modificadoEn: new Date().toISOString(),
-                modificadoPorNombre: autorActual,
-              }
-            : o
-        )
-      );
-      setNotaCarga("");
-    }
-
-    setComprimiendo(false);
-  };
-
-  // 3. Descarga individual en HD
+  // Descarga individual en HD
   const descargarFotoHD = (foto) => {
     const a = document.createElement("a");
     a.href = foto.img;
     const nombreLimpio = limpiarNombreArchivo(foto.comentario || foto.fase);
-    a.download = `${obra.id || "OBRA"}_${foto.fecha || today()}_${nombreLimpio || "foto"}.jpg`;
+    a.download = `${obra?.id || "OBRA"}_${foto.fecha || today()}_${nombreLimpio || "foto"}.jpg`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
   };
 
-  // 4. Descarga masiva empaquetada en .ZIP con JSZip
+  // Descarga masiva empaquetada en .ZIP con JSZip
   const descargarEnZip = async (fotosADescargar, nombreArchivoZip = null) => {
     if (!fotosADescargar || !fotosADescargar.length) return;
 
@@ -265,7 +209,7 @@ export default function FototecaObra({ obra, setObras, ctx = {}, bloqueada = fal
 
         const base64Data = f.img.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, "");
         const comentarioLimpio = limpiarNombreArchivo(f.comentario);
-        const fileName = `${obra.id || "OBRA"}_${f.fecha}_${f.fase}_${comentarioLimpio ? comentarioLimpio + "_" : ""}${i + 1}.jpg`;
+        const fileName = `${obra?.id || "OBRA"}_${f.fecha}_${f.fase}_${comentarioLimpio ? comentarioLimpio + "_" : ""}${i + 1}.jpg`;
 
         carpetaFase.file(fileName, base64Data, { base64: true });
         setProgresoZip(Math.round(((i + 1) / fotosADescargar.length) * 50));
@@ -285,7 +229,7 @@ export default function FototecaObra({ obra, setObras, ctx = {}, bloqueada = fal
       const url = URL.createObjectURL(zipBlob);
       const a = document.createElement("a");
       a.href = url;
-      const defaultName = `${obra.id || "OBRA"}_Fotos_${today()}`;
+      const defaultName = `${obra?.id || "OBRA"}_Fotos_${today()}`;
       a.download = `${nombreArchivoZip || defaultName}.zip`;
       document.body.appendChild(a);
       a.click();
@@ -300,24 +244,8 @@ export default function FototecaObra({ obra, setObras, ctx = {}, bloqueada = fal
     }
   };
 
-  const eliminarFotoDirecta = (fotoId) => {
-    if (bloqueada) return;
-    if (!window.confirm("¿Seguro que deseas eliminar esta foto de la fototeca?")) return;
-    setObras((prev) =>
-      prev.map((o) =>
-        o.id === obra.id
-          ? {
-              ...o,
-              fototeca: (o.fototeca || []).filter((f) => f.id !== fotoId),
-            }
-          : o
-      )
-    );
-    if (fotoActiva?.id === fotoId) setFotoActiva(null);
-  };
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
       {/* 1. BARRA SUPERIOR: RESUMEN Y BOTONES MASIVOS DE DESCARGA */}
       <div
         style={{
@@ -360,23 +288,23 @@ export default function FototecaObra({ obra, setObras, ctx = {}, bloqueada = fal
                   border: "1px solid #bfdbfe",
                 }}
               >
-                {todasLasFotos.length} {todasLasFotos.length === 1 ? "foto" : "fotos"}
+                {todasLasFotos.length} {todasLasFotos.length === 1 ? "foto disponible" : "fotos disponibles"}
               </span>
             </div>
             <div style={{ fontSize: 12, color: "var(--text-muted, #667085)", marginTop: 2 }}>
-              Fotos protegidas en la nube: no se pierden al cambiar de celular · Listas para descarga en ZIP
+              Alimentado automáticamente desde la bitácora de <strong>Ejecución de obra</strong> · Listas para descarga en ZIP
             </div>
           </div>
         </div>
 
-        {/* Acciones masivas */}
+        {/* Acciones masivas de descarga */}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           {/* Botón Descargar Selección */}
           {seleccionadas.size > 0 && (
             <button
               onClick={() => {
                 const seleccion = todasLasFotos.filter((f) => seleccionadas.has(f.id));
-                descargarEnZip(seleccion, `${obra.id}_Seleccion_${seleccionadas.size}_fotos`);
+                descargarEnZip(seleccion, `${obra?.id || "OBRA"}_Seleccion_${seleccionadas.size}_fotos`);
               }}
               disabled={empaquetandoZip}
               style={{
@@ -390,7 +318,7 @@ export default function FototecaObra({ obra, setObras, ctx = {}, bloqueada = fal
 
           {/* Botón Descargar Todo */}
           <button
-            onClick={() => descargarEnZip(todasLasFotos, `${obra.id}_Album_Completo_${todasLasFotos.length}_fotos`)}
+            onClick={() => descargarEnZip(todasLasFotos, `${obra?.id || "OBRA"}_Album_Completo_${todasLasFotos.length}_fotos`)}
             disabled={empaquetandoZip || todasLasFotos.length === 0}
             style={{
               ...B("#B54708", "#ffffff"),
@@ -402,110 +330,53 @@ export default function FototecaObra({ obra, setObras, ctx = {}, bloqueada = fal
           >
             📦 Descargar todo en .ZIP ({todasLasFotos.length})
           </button>
-
-          {/* Botón Subir rápido */}
-          {!bloqueada && (
-            <button
-              onClick={() => inputFileRef.current?.click()}
-              disabled={comprimiendo}
-              style={{
-                ...B("var(--surface-subtle, #f2f4f7)", "var(--text-main, #101828)"),
-                border: "1px solid var(--border, #eaecf0)",
-              }}
-            >
-              📱 + Subir fotos
-            </button>
-          )}
         </div>
       </div>
 
-      {/* 2. ZONA DE CARGA RÁPIDA MÓVIL (VACIAR FOTOS DEL CELULAR) */}
-      {!bloqueada && (
-        <div
-          style={{
-            ...CD,
-            border: "2px dashed rgba(181, 71, 8, 0.35)",
-            background: "rgba(255, 250, 235, 0.4)",
-            display: "flex",
-            flexDirection: "column",
-            gap: 12,
-            padding: 18,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 18 }}>📲</span>
-              <div>
-                <span style={{ fontSize: 13.5, fontWeight: 700, color: "#9A3412" }}>
-                  Vaciar fotos del celular a la obra
-                </span>
-                <span style={{ fontSize: 12, color: "#78350F", marginLeft: 6 }}>
-                  (Las comprime automáticamente para que no consuman tu memoria ni tu plan de datos)
-                </span>
-              </div>
-            </div>
-
-            {/* Selector de fase al subir */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: "#78350F" }}>Fase técnica:</span>
-              <select
-                value={faseCargaSeleccionada}
-                onChange={(e) => setFaseCargaSeleccionada(e.target.value)}
-                style={{
-                  ...SI,
-                  width: "auto",
-                  padding: "5px 10px",
-                  fontSize: 12,
-                  background: "#ffffff",
-                  borderColor: "rgba(181, 71, 8, 0.3)",
-                }}
-              >
-                {FASES_OBRA.map((fase) => (
-                  <option key={fase.id} value={fase.id}>
-                    {fase.icon} {fase.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-            <input
-              type="text"
-              placeholder="Nota o descripción rápida (ej: Anclajes químicos viga norte, lectura manómetro 12 kN)"
-              value={notaCarga}
-              onChange={(e) => setNotaCarga(e.target.value)}
-              style={{ ...SI, flex: 1, minWidth: 260, fontSize: 12.5 }}
-            />
-
-            <input
-              ref={inputFileRef}
-              type="file"
-              accept="image/*"
-              multiple
-              style={{ display: "none" }}
-              onChange={(e) => {
-                procesarArchivos(e.target.files);
-                e.target.value = "";
-              }}
-            />
-
-            <button
-              onClick={() => inputFileRef.current?.click()}
-              disabled={comprimiendo}
-              style={{
-                ...B("#B54708", "#ffffff"),
-                fontSize: 12.5,
-                padding: "8px 16px",
-              }}
-            >
-              {comprimiendo
-                ? `⏳ Comprimiendo (${progresoCarga.actual}/${progresoCarga.total})...`
-                : "📸 Seleccionar fotos del teléfono o PC"}
-            </button>
-          </div>
+      {/* 2. AVISO EXPLICATIVO: ORIGEN DESDE EJECUCIÓN DE OBRA */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          background: "#eff6ff",
+          border: "1px solid #bfdbfe",
+          borderRadius: 12,
+          padding: "10px 16px",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 18 }}>ℹ️</span>
+          <span style={{ fontSize: 12.5, color: "#1e40af" }}>
+            Este módulo recopila y organiza todas las fotos subidas por el equipo en la pestaña <strong>Avance y fotos</strong> de <strong>Ejecución de obra</strong>.
+          </span>
         </div>
-      )}
+
+        {irAPantalla && obra?.id && (
+          <button
+            onClick={() => irAPantalla("obras", { obraId: obra.id })}
+            style={{
+              background: "#1d4ed8",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: 8,
+              padding: "6px 14px",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              boxShadow: "0 1px 3px rgba(29, 78, 216, 0.2)",
+            }}
+          >
+            <span>Ir a Ejecución de obra para registrar fotos</span>
+            <span>↗</span>
+          </button>
+        )}
+      </div>
 
       {/* 3. BARRA DE HERRAMIENTAS: VISTAS + FILTROS DE FASE + BÚSQUEDA */}
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -545,10 +416,10 @@ export default function FototecaObra({ obra, setObras, ctx = {}, bloqueada = fal
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <input
               type="text"
-              placeholder="🔍 Buscar por nota, fecha o autor..."
+              placeholder="🔍 Buscar por nota, actividad o fecha..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              style={{ ...SI, width: 260, fontSize: 12, padding: "7px 12px" }}
+              style={{ ...SI, width: 280, fontSize: 12, padding: "7px 12px" }}
             />
             {busqueda && (
               <button
@@ -632,7 +503,7 @@ export default function FototecaObra({ obra, setObras, ctx = {}, bloqueada = fal
         </div>
       </div>
 
-      {/* 4. MODAL / OVERLAY DE EMPAQUETADO ZIP */}
+      {/* 4. MODAL DE EMPAQUETADO ZIP */}
       {empaquetandoZip && (
         <div
           style={{
@@ -686,11 +557,19 @@ export default function FototecaObra({ obra, setObras, ctx = {}, bloqueada = fal
             <div style={{ ...CD, textAlign: "center", padding: "40px 20px" }}>
               <div style={{ fontSize: 36, marginBottom: 8 }}>📷</div>
               <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-main, #101828)", marginBottom: 4 }}>
-                No hay fotografías con los filtros seleccionados
+                No hay fotografías registradas para esta obra
               </div>
-              <div style={{ fontSize: 12.5, color: "var(--text-muted, #667085)", maxWidth: 400, margin: "0 auto" }}>
-                Puedes subir fotos directamente con el botón «+ Subir fotos» o registrar avances en la pestaña Bitácora.
+              <div style={{ fontSize: 12.5, color: "var(--text-muted, #667085)", maxWidth: 440, margin: "0 auto 16px" }}>
+                Las fotos se toman y suben desde el módulo <strong>Ejecución de obra</strong> en la pestaña <strong>«Avance y fotos»</strong>. En cuanto el equipo registre el avance diario, aparecerán aquí automáticamente para su descarga en ZIP.
               </div>
+              {irAPantalla && obra?.id && (
+                <button
+                  onClick={() => irAPantalla("obras", { obraId: obra.id })}
+                  style={B("#cc0000")}
+                >
+                  Ir a registrar avance en Ejecución de obra ↗
+                </button>
+              )}
             </div>
           ) : (
             <div
@@ -841,41 +720,22 @@ export default function FototecaObra({ obra, setObras, ctx = {}, bloqueada = fal
                           🔍 Ampliar
                         </button>
 
-                        <div style={{ display: "flex", gap: 6 }}>
-                          <button
-                            onClick={() => descargarFotoHD(foto)}
-                            style={{
-                              background: "#eff6ff",
-                              border: "1px solid #bfdbfe",
-                              borderRadius: 6,
-                              padding: "3px 8px",
-                              fontSize: 11,
-                              color: "#1d4ed8",
-                              fontWeight: 600,
-                              cursor: "pointer",
-                            }}
-                            title="Descargar foto individual en alta resolución"
-                          >
-                            ⬇️ Bajar
-                          </button>
-                          {foto.esPropiaFototeca && !bloqueada && (
-                            <button
-                              onClick={() => eliminarFotoDirecta(foto.id)}
-                              style={{
-                                background: "#fef2f2",
-                                border: "1px solid #fecaca",
-                                borderRadius: 6,
-                                padding: "3px 6px",
-                                fontSize: 11,
-                                color: "#b91c1c",
-                                cursor: "pointer",
-                              }}
-                              title="Eliminar foto"
-                            >
-                              🗑️
-                            </button>
-                          )}
-                        </div>
+                        <button
+                          onClick={() => descargarFotoHD(foto)}
+                          style={{
+                            background: "#eff6ff",
+                            border: "1px solid #bfdbfe",
+                            borderRadius: 6,
+                            padding: "3px 8px",
+                            fontSize: 11,
+                            color: "#1d4ed8",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                          }}
+                          title="Descargar foto individual en alta resolución"
+                        >
+                          ⬇️ Descargar HD
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1007,7 +867,7 @@ export default function FototecaObra({ obra, setObras, ctx = {}, bloqueada = fal
                   </button>
 
                   <button
-                    onClick={() => descargarEnZip(fotosFase, `${obra.id}_${fase.label.split(".")[1]?.trim() || fase.id}_${fotosFase.length}_fotos`)}
+                    onClick={() => descargarEnZip(fotosFase, `${obra?.id || "OBRA"}_${fase.label.split(".")[1]?.trim() || fase.id}_${fotosFase.length}_fotos`)}
                     disabled={empaquetandoZip || fotosFase.length === 0}
                     style={{
                       ...B(fase.color, "#ffffff"),
@@ -1031,7 +891,7 @@ export default function FototecaObra({ obra, setObras, ctx = {}, bloqueada = fal
       {vista === "cronologico" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           {fotosFiltradas.length === 0 ? (
-            <div style={{ ...CD, textAlign: "center", padding: 30 }}>No hay fotos registradas</div>
+            <div style={{ ...CD, textAlign: "center", padding: 30 }}>No hay fotos registradas para esta obra</div>
           ) : (
             (() => {
               // Agrupar por fecha
@@ -1064,7 +924,7 @@ export default function FototecaObra({ obra, setObras, ctx = {}, bloqueada = fal
                     </div>
 
                     <button
-                      onClick={() => descargarEnZip(listaFotos, `${obra.id}_Jornada_${fecha}_${listaFotos.length}_fotos`)}
+                      onClick={() => descargarEnZip(listaFotos, `${obra?.id || "OBRA"}_Jornada_${fecha}_${listaFotos.length}_fotos`)}
                       disabled={empaquetandoZip}
                       style={{
                         ...B("#eff6ff", "#1d4ed8"),
@@ -1161,7 +1021,7 @@ export default function FototecaObra({ obra, setObras, ctx = {}, bloqueada = fal
             >
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <span style={{ fontSize: 13, fontWeight: 700, color: "#f8fafc" }}>
-                  {obra.cliente} · {obra.id}
+                  {obra?.cliente} · {obra?.id}
                 </span>
                 <span style={{ fontSize: 12, color: "#94a3b8" }}>
                   Foto {fotosFiltradas.findIndex((f) => f.id === fotoActiva.id) + 1} de {fotosFiltradas.length}
@@ -1353,7 +1213,7 @@ export default function FototecaObra({ obra, setObras, ctx = {}, bloqueada = fal
               <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 12.5 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 6 }}>
                   <span style={{ color: "#94a3b8" }}>Obra:</span>
-                  <span style={{ fontWeight: 600 }}>{obra.id}</span>
+                  <span style={{ fontWeight: 600 }}>{obra?.id}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 6 }}>
                   <span style={{ color: "#94a3b8" }}>Fecha de toma:</span>
@@ -1364,7 +1224,7 @@ export default function FototecaObra({ obra, setObras, ctx = {}, bloqueada = fal
                   <span style={{ fontWeight: 600, color: "#34d399" }}>{fotoActiva.origen}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 6 }}>
-                  <span style={{ color: "#94a3b8" }}>Registrado por:</span>
+                  <span style={{ color: "#94a3b8" }}>Registrado en:</span>
                   <span style={{ fontWeight: 600 }}>{fotoActiva.autor}</span>
                 </div>
               </div>
@@ -1372,7 +1232,7 @@ export default function FototecaObra({ obra, setObras, ctx = {}, bloqueada = fal
               {/* Nota técnica / Comentario */}
               <div>
                 <div style={{ fontSize: 12, fontWeight: 600, color: "#cbd5e1", marginBottom: 6 }}>
-                  Observaciones / Notas de campo:
+                  Observaciones / Notas registradas:
                 </div>
                 <div
                   style={{
@@ -1405,22 +1265,6 @@ export default function FototecaObra({ obra, setObras, ctx = {}, bloqueada = fal
               >
                 ⬇️ Descargar foto original HD
               </button>
-
-              {fotoActiva.esPropiaFototeca && !bloqueada && (
-                <button
-                  onClick={() => eliminarFotoDirecta(fotoActiva.id)}
-                  style={{
-                    ...B("rgba(239, 68, 68, 0.2)", "#fca5a5"),
-                    border: "1px solid rgba(239, 68, 68, 0.4)",
-                    width: "100%",
-                    justifyContent: "center",
-                    fontSize: 12,
-                    padding: "8px 14px",
-                  }}
-                >
-                  🗑️ Eliminar foto de fototeca
-                </button>
-              )}
             </div>
           </div>
         </div>

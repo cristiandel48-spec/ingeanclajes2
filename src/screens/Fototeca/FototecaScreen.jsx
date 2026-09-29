@@ -136,7 +136,7 @@ export default function FototecaScreen({ ctx }) {
               </span>
             </div>
             <p style={{ fontSize: 13, color: "var(--text-muted, #667085)", margin: "4px 0 0" }}>
-              Repositorio centralizado de fotos por obra para evitar pérdidas en celulares · Descargas en ZIP y respaldo en nube
+              Repositorio fotográfico centralizado que se alimenta de las fotos tomadas en <strong>Ejecución de obra</strong> · Descargas en ZIP e inspección HD
             </p>
           </div>
         </div>
@@ -364,9 +364,7 @@ export default function FototecaScreen({ ctx }) {
           {/* Componente FototecaObra reutilizable */}
           <FototecaObra
             obra={obraActual}
-            setObras={setObras}
             ctx={ctx}
-            bloqueada={bloqueada}
           />
         </div>
       ) : (

@@ -296,7 +296,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
 
       {/* TAB FOTOTECA Y DESCARGA EN ZIP */}
       {detTab==="fototeca"&&(
-        <FototecaObra obra={oAct} setObras={setObras} ctx={ctx} bloqueada={bloqueada}/>
+        <FototecaObra obra={oAct} ctx={ctx}/>
       )}
 
       {/* TAB PERSONAL */}

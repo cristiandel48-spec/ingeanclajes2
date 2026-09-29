@@ -1,6 +1,7 @@
 import Av from "../../components/ui/Av";
 import Badge from "../../components/ui/Badge";
 import BitacoraObra from "./BitacoraObra";
+import FototecaObra from "./FototecaObra";
 import LBL from "../../components/ui/LBL";
 import NuevoEmpleadoRapido from "../../components/NuevoEmpleadoRapido";
 import { useState } from "react";
@@ -161,6 +162,26 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             📜 Certificar
           </button>
           <button
+            onClick={() => setDetTab("fototeca")}
+            style={{
+              background: detTab === "fototeca" ? "#FFFAEB" : "#fdf4ff",
+              color: detTab === "fototeca" ? "#B54708" : "#86198f",
+              border: detTab === "fototeca" ? "1px solid rgba(181, 71, 8, 0.35)" : "1px solid #f5d0fe",
+              borderRadius: 8,
+              fontSize: 12,
+              padding: "7px 13px",
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              transition: "all 0.15s ease",
+            }}
+            title="Ver todas las fotos de la obra y descargar en ZIP"
+          >
+            📸 Fototeca y ZIP
+          </button>
+          <button
             onClick={() => setMostrarGuia(!mostrarGuia)}
             style={{
               background: mostrarGuia ? "#FFFAEB" : "var(--surface-subtle, #f2f4f7)",
@@ -235,7 +256,8 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       {/* Tabs */}
       <div style={{display:"flex",gap:8,marginBottom:18,flexWrap:"wrap"}}>
         {[
-          ["avance","📸 Avance y fotos"],
+          ["avance","📸 Avance diario"],
+          ["fototeca","🖼️ Fototeca y ZIP"],
           ["personal","👷 Personal"],
           // Gastos y Nomina llevan cifras: solo para quien puede verlas.
           ...(verDinero?[["gastos","🧾 Gastos"],["nomina","💰 Nómina"]]:[]),
@@ -270,6 +292,11 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
         <BitacoraObra obra={oAct} setObras={setObras}
           bloqueada={bloqueada || oAct.__parcial===true}
           cargandoFotos={oAct.__parcial===true}/>
+      )}
+
+      {/* TAB FOTOTECA Y DESCARGA EN ZIP */}
+      {detTab==="fototeca"&&(
+        <FototecaObra obra={oAct} setObras={setObras} ctx={ctx} bloqueada={bloqueada}/>
       )}
 
       {/* TAB PERSONAL */}

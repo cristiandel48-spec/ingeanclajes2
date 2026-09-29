@@ -21,6 +21,9 @@ import { conActividadSeparada } from "../../lib/informeTextos";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import { PLANTILLAS_ACTIVIDAD, buscarPlantillaActividad, esTextoDePlantilla } from "./plantillasActividad";
 import ListaInformes from "./ListaInformes";
+import TarjetaCotizacionRef from "./TarjetaCotizacionRef";
+import ModalCotizacionDetalle from "./ModalCotizacionDetalle";
+import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
 // Formateo de horas. Vive fuera del componente porque no depende de nada suyo:
@@ -46,12 +49,14 @@ const fmtTurno12=(turno)=>{
 };
 
 export default function Informes({ctx}){
-  const {informes,setInformes,obras,empleados,horarios,intencion,limpiarIntencion,empresaConfig,irAPantalla,asegurarDetalle}=ctx;
+  const {informes,setInformes,obras,empleados,horarios,intencion,limpiarIntencion,empresaConfig,irAPantalla,asegurarDetalle,cotizaciones=[]}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
   const [sel,setSel]=useState(null);
   const [generandoPdf,setGenerandoPdf]=useState(false);
   const [nuevo,setNuevo]=useState(()=>Boolean(ctx.intencion?.pantalla==="informes" && ctx.intencion?.obraId));
   const [editId,setEditId]=useState(null);
+  const [modalCotizacion,setModalCotizacion]=useState(false);
+  const [cotizacionModalData,setCotizacionModalData]=useState(null);
   const fotoRefs=useRef({});
 
   // La descripcion arranca con el texto de mantenimiento que se repite en casi
@@ -263,8 +268,13 @@ export default function Informes({ctx}){
       ? []
       : actividadesDesdeObra(obraBase?.id, periodoInicio, periodoFin);
 
+    const cotBase = cotizaciones.find((c) => c.id === (data.cotizacionId || obraBase?.cotizacionId))
+      || (obraBase?.cliente ? cotizaciones.find((c) => c.cliente && normalizarRazonSocial(c.cliente) === normalizarRazonSocial(obraBase.cliente)) : null);
+
     return {
     obraId:data.obraId ?? obraBase?.id ?? firstObraId,
+    cotizacionId:data.cotizacionId ?? cotBase?.id ?? obraBase?.cotizacionId ?? "",
+    cotizacionNumero:data.cotizacionNumero ?? cotBase?.numero ?? "",
     // Se acomodan al traerlos: las obras cargadas antes del cambio tienen
     // el proyecto y la ciudad en minuscula, y el informe los imprime tal cual.
     proyecto:normalizarMayusculas(data.proyecto ?? obraBase?.proyecto ?? ""),
@@ -623,6 +633,40 @@ export default function Informes({ctx}){
     setSel(inf);
   };
 
+  const importarItemsDeCotizacion = (itemsCot, cot) => {
+    if (!itemsCot || !itemsCot.length) {
+      window.alert("Esta cotización no tiene ítems registrados para importar.");
+      return;
+    }
+
+    const tieneContenido = form.actividades.some((a) => a.titulo?.trim() || a.fotos?.length);
+    if (tieneContenido && !window.confirm(`¿Deseas agregar ${itemsCot.length} actividades basadas en los ítems de la cotización ${cot?.numero || ""}?`)) {
+      return;
+    }
+
+    const nuevas = itemsCot.map((it) => {
+      const cantStr = `${it.cant || 1} ${it.unit || "Und"}`;
+      return {
+        titulo: it.desc || "Actividad cotizada",
+        actividadesRealizadas: `Suministro e instalación de ${cantStr} de ${it.desc || "ítem contractual"}. Fijación, alineación e inspección técnica conforme a requerimiento.`,
+        descripcion: `Trabajos ejecutados según las especificaciones técnicas de la cotización ${cot?.numero || ""}. Verificación de condiciones de anclaje y seguridad en alturas.`,
+        observaciones: "Instalación completada y verificada.",
+        fecha: form.fechaInforme || today(),
+        fotos: [],
+      };
+    });
+
+    setForm((prev) => {
+      const soloVacia = prev.actividades.length === 1 && !prev.actividades[0].titulo?.trim() && !prev.actividades[0].fotos?.length;
+      return {
+        ...prev,
+        actividades: soloVacia ? nuevas : [...prev.actividades, ...nuevas],
+      };
+    });
+
+    window.alert(`Se agregaron ${itemsCot.length} actividades al informe basadas en la cotización ${cot?.numero || ""}.`);
+  };
+
   return(
     <div style={{padding:"14px 28px 28px"}}>
 
@@ -658,6 +702,8 @@ export default function Informes({ctx}){
             <div><LBL>Obra asociada</LBL><select value={form.obraId} onChange={e=>{
               const nuevaObraId=e.target.value;
               const o=obras.find(x=>x.id===nuevaObraId);
+              const nuevaCot = cotizaciones.find((c) => c.id === o?.cotizacionId)
+                || (o?.cliente ? cotizaciones.find((c) => c.cliente && normalizarRazonSocial(c.cliente) === normalizarRazonSocial(o.cliente)) : null);
               // Al cambiar de obra se reencuadra el periodo con las fechas de
               // avance o de turnos de esa obra y se traen sus registros.
               const registros=normalizarBitacora(o?.bitacora);
@@ -671,6 +717,8 @@ export default function Informes({ctx}){
                 return {
                   ...p,
                   obraId:nuevaObraId,
+                  cotizacionId:nuevaCot?.id || o?.cotizacionId || "",
+                  cotizacionNumero:nuevaCot?.numero || "",
                   proyecto:normalizarMayusculas(o?.proyecto||""),
                   localizacion:normalizarMayusculas(o?.ciudad||""),
                   periodoInicio:inicio,
@@ -686,6 +734,36 @@ export default function Informes({ctx}){
             <div><LBL>Período desde</LBL><input type="date" value={form.periodoInicio} onChange={e=>setForm(p=>({...p,periodoInicio:e.target.value}))} style={SI}/></div>
             <div><LBL>Período hasta</LBL><input type="date" value={form.periodoFin} onChange={e=>setForm(p=>({...p,periodoFin:e.target.value}))} style={SI}/></div>
           </div>
+
+          {/* Cotización de Referencia */}
+          {(() => {
+            const obraAct = obras.find((o) => o.id === form.obraId);
+            const cotVinc = cotizaciones.find((c) => c.id === form.cotizacionId)
+              || (form.cotizacionNumero ? cotizaciones.find((c) => c.numero === form.cotizacionNumero) : null)
+              || cotizaciones.find((c) => c.id === obraAct?.cotizacionId)
+              || (obraAct?.cliente ? cotizaciones.find((c) => c.cliente && normalizarRazonSocial(c.cliente) === normalizarRazonSocial(obraAct.cliente)) : null);
+
+            return (
+              <TarjetaCotizacionRef
+                cotizacion={cotVinc}
+                todasCotizaciones={cotizaciones}
+                obra={obraAct}
+                onSeleccionarCotizacion={(cotId) => {
+                  const selCot = cotizaciones.find((c) => c.id === cotId);
+                  setForm((p) => ({
+                    ...p,
+                    cotizacionId: selCot?.id || cotId || "",
+                    cotizacionNumero: selCot?.numero || "",
+                  }));
+                }}
+                onVerDetalle={() => {
+                  setCotizacionModalData(cotVinc);
+                  setModalCotizacion(true);
+                }}
+                onImportarItems={importarItemsDeCotizacion}
+              />
+            );
+          })()}
 
           {/* Personal */}
           <div style={{marginBottom:16}}>
@@ -1015,9 +1093,27 @@ export default function Informes({ctx}){
         const personal = Array.isArray(sel?.personal) ? sel.personal : [];
         const numDoc = sel?.id ? String(sel.id).trim() : (sel?.numero ? String(sel.numero).trim() : "");
         const rawActividades = (sel.actividades || [{ titulo: sel.actividad, descripcion: sel.descripcion, observaciones: sel.observaciones, fotos: sel.fotos || [] }]).map(conActividadSeparada);
+        const obraDeSel = obras?.find(o => o.id === sel?.obraId);
+        const cotVincSel = cotizaciones.find(c => c.id === sel?.cotizacionId)
+          || (sel?.cotizacionNumero ? cotizaciones.find(c => c.numero === sel?.cotizacionNumero) : null)
+          || (obraDeSel?.cotizacionId ? cotizaciones.find(c => c.id === obraDeSel.cotizacionId) : null)
+          || (obraDeSel?.cliente ? cotizaciones.find(c => c.cliente && normalizarRazonSocial(c.cliente) === normalizarRazonSocial(obraDeSel.cliente)) : null);
 
         return (
           <div>
+            {cotVincSel && (
+              <div style={{ maxWidth: 920, margin: "0 auto 16px", width: "100%" }}>
+                <TarjetaCotizacionRef
+                  cotizacion={cotVincSel}
+                  todasCotizaciones={cotizaciones}
+                  obra={obraDeSel}
+                  onVerDetalle={() => {
+                    setCotizacionModalData(cotVincSel);
+                    setModalCotizacion(true);
+                  }}
+                />
+              </div>
+            )}
             <div className="doc-paper-wrapper" style={{ maxWidth: 920, margin: "0 auto", width: "100%" }}>
               <div
                 id="pz"
@@ -1114,6 +1210,38 @@ export default function Informes({ctx}){
                         </span>
                       </td>
                     </tr>
+                    {(sel.cotizacionNumero || cotVincSel?.numero) && (
+                      <tr>
+                        <td style={{ background: "#fff7ed", fontWeight: 700, color: "#9a3412", letterSpacing: "0.04em", fontSize: 10, textTransform: "uppercase", border: "1px solid #fed7aa", padding: "6px 10px" }}>REF. COTIZACIÓN:</td>
+                        <td colSpan={3} style={{ color: "#0f172a", fontWeight: 700, border: "1px solid #e2e8f0", padding: "6px 10px", fontFamily: "'JetBrains Mono', monospace" }}>
+                          <span style={{ background: "#ffedd5", color: "#c2410c", padding: "2px 8px", borderRadius: 4, border: "1px solid #fdba74", fontSize: 10 }}>
+                            📄 {sel.cotizacionNumero || cotVincSel?.numero}
+                          </span>
+                          {cotVincSel && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCotizacionModalData(cotVincSel);
+                                setModalCotizacion(true);
+                              }}
+                              style={{
+                                marginLeft: 12,
+                                background: "#eff6ff",
+                                color: "#1d4ed8",
+                                border: "1px solid #bfdbfe",
+                                borderRadius: 6,
+                                padding: "3px 9px",
+                                fontSize: 10.5,
+                                fontWeight: 600,
+                                cursor: "pointer",
+                              }}
+                            >
+                              👁️ Ver detalle de cotización
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
 
@@ -1292,6 +1420,17 @@ export default function Informes({ctx}){
           </div>
         );
       })()}
+
+      {modalCotizacion && cotizacionModalData && (
+        <ModalCotizacionDetalle
+          cotizacion={cotizacionModalData}
+          onClose={() => {
+            setModalCotizacion(false);
+            setCotizacionModalData(null);
+          }}
+          onImportarItems={nuevo ? importarItemsDeCotizacion : undefined}
+        />
+      )}
     </div>
   );
 }

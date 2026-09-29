@@ -31,6 +31,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
   const fechaInforme = fmtL(informe?.fechaInforme);
   const periodo = `${fmtL(informe?.periodoInicio)} al ${fmtL(informe?.periodoFin)}`;
   const personal = Array.isArray(informe?.personal) ? informe.personal : [];
+  const cotizacionRef = informe?.cotizacionNumero || informe?.cotizacionRef || informe?.cotizacionId || "";
   
   const rawActividades = Array.isArray(informe?.actividades) && informe.actividades.length
     ? informe.actividades
@@ -112,6 +113,14 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
           <span style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;font-size:8px;font-weight:700;padding:1.5px 6px;border-radius:4px;display:inline-block;letter-spacing:0.02em;">Res. 4272/2021 · OSHA 1926.502</span>
         </td>
       </tr>
+      ${cotizacionRef ? `
+      <tr>
+        <td style="background:#fff7ed;font-weight:700;color:#9a3412;letter-spacing:0.04em;font-size:8px;text-transform:uppercase;border:1px solid #fed7aa;padding:5px 9px;">REF. COTIZACIÓN:</td>
+        <td colspan="3" style="color:#0f172a;font-weight:700;border:1px solid #e2e8f0;padding:5px 9px;font-family:'JetBrains Mono',monospace;">
+          <span style="background:#ffedd5;color:#c2410c;padding:1.5px 7px;border-radius:4px;border:1px solid #fdba74;font-size:8.5px;letter-spacing:0.02em;">📄 ${escapeHtml(cotizacionRef)}</span>
+        </td>
+      </tr>
+      ` : ''}
     </table>
   `;
 

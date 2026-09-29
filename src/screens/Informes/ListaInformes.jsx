@@ -35,8 +35,8 @@ export default function ListaInformes({ informes, acciones }) {
       datos={informes || []}
       nombre="informe"
       nombrePlural="informes"
-      marcador="Buscar por número, obra, proyecto o localización…"
-      buscarEn={(i) => [i.id, i.obraId, i.proyecto, i.localizacion].filter(Boolean).join(" ")}
+      marcador="Buscar por número, obra, cotización, proyecto o localización…"
+      buscarEn={(i) => [i.id, i.obraId, i.cotizacionNumero, i.proyecto, i.localizacion].filter(Boolean).join(" ")}
       fechaDe={(i) => i.fechaInforme}
       ordenes={ORDENES}
       filtrosExtra={({ valores, poner }) => (
@@ -74,7 +74,8 @@ function Fila({ inf, compacta, acciones }) {
   const periodo = inf.periodoInicio || inf.periodoFin
     ? `del ${fmtD(inf.periodoInicio)} al ${fmtD(inf.periodoFin)}`
     : "";
-  const debajo = [repetida ? "" : localizacion, inf.obraId, periodo].filter(Boolean).join(" · ");
+  const cotizacionLabel = inf.cotizacionNumero ? `📄 ${inf.cotizacionNumero}` : "";
+  const debajo = [repetida ? "" : localizacion, inf.obraId, cotizacionLabel, periodo].filter(Boolean).join(" · ");
 
   const menuItems = [
     acciones.certificar && {

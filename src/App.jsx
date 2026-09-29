@@ -8,6 +8,7 @@ import ClientesDB from "./screens/Clientes/ClientesDB";
 import Catalogo from "./screens/Catalogo/Catalogo";
 import Pagos from "./screens/Pagos/Pagos";
 import Obras from "./screens/Obras/Obras";
+import FototecaScreen from "./screens/Fototeca/FototecaScreen";
 import Certificaciones from "./screens/Certificaciones/Certificaciones";
 import Informes from "./screens/Informes/Informes";
 import CuentasPagar from "./screens/CuentasPagar/CuentasPagar";
@@ -32,6 +33,7 @@ const SCREENS = {
   clientes: ClientesDB,
   catalogo: Catalogo,
   obras: Obras,
+  fototeca: FototecaScreen,
   pagos: Pagos,
   certificaciones: Certificaciones,
   vencimientos: Vencimientos,

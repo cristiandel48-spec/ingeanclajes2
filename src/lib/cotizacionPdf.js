@@ -31,7 +31,7 @@ function prepararHtmlParaPdf(html) {
         font-family: Arial, Helvetica, sans-serif !important;
       }
       h1, h2, h3,
-      .cover-client-name, .def-term, .ficha-name, .sig-name {
+      .cover-client-name, .cover-client-nit, .def-term, .ficha-name, .sig-name {
         font-family: Georgia, 'Times New Roman', serif !important;
       }
     </style></head>`);

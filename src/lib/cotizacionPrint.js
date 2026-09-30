@@ -613,7 +613,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
           <div class="cover-client">
             <div class="meta-label">Cotización preparada para</div>
             <div class="cover-client-name">${escapeHtml(c?.cliente || "")}</div>
-            ${c?.nit ? `<div class="cover-client-nit tnum">NIT ${escapeHtml(c.nit)}</div>` : ""}
+            ${c?.nit ? `<div class="cover-client-nit tnum">${/^nit\b/i.test(String(c.nit).trim()) ? escapeHtml(c.nit) : `NIT ${escapeHtml(c.nit)}`}</div>` : ""}
             <div class="cover-client-grid">
               <div><div class="ccg-k">Obra</div><div class="ccg-v">${escapeHtml(normalizarMayusculas(c?.obra || ""))}</div></div>
               <div><div class="ccg-k">Ciudad</div><div class="ccg-v">${escapeHtml(c?.ciudad || "")}</div></div>
@@ -1042,8 +1042,8 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       .meta-label { font-size: var(--texto); letter-spacing:.08em; text-transform:uppercase; color:#777; margin-bottom:2mm; }
       .meta-value { font-size: var(--titulo); font-weight:700; }
       .cover-client { margin-top:10mm; text-align:center; }
-      .cover-client-name { font-size: var(--titulo); font-weight:700; margin:2mm 0 1.5mm; font-family:'Source Serif 4', Georgia, serif; }
-      .cover-client-nit { font-size: var(--texto); color:#667085; margin-bottom:4mm; letter-spacing:.02em; }
+      .cover-client-name { font-size: var(--titulo); font-weight:700; margin:2mm 0 1mm; font-family:'Source Serif 4', Georgia, serif; color:#1E1E1E; }
+      .cover-client-nit { font-size: var(--titulo); font-weight:700; color:#1E1E1E; margin-top:0; margin-bottom:4mm; font-family:'Source Serif 4', Georgia, serif; letter-spacing:.02em; }
       /* Los datos del cliente son lo primero que busca quien recibe el
          documento, asi que van con el mismo peso y tamano que las demas
          cifras destacadas de la portada (.meta-value). En negrita a 11.5px no

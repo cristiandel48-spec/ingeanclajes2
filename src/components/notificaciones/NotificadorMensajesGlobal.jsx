@@ -31,12 +31,32 @@ function esMiMensaje(msg, membresia) {
     }
   }
 
+  const miEmail = normalizarCadena(membresia?.email);
+  const msgEmail = normalizarCadena(msg.remitente_email);
+  if (miEmail && msgEmail && miEmail === msgEmail) {
+    return true;
+  }
+
   const miNombre = normalizarCadena(membresia?.nombre);
   const remitente = normalizarCadena(msg.remitente_nombre);
 
   if (miNombre && remitente) {
     if (miNombre === remitente) return true;
     if (miNombre.includes(remitente) || remitente.includes(miNombre)) return true;
+  }
+
+  // Si mi cuenta es de Cristian y el mensaje dice Cristian
+  if ((!miNombre && !miUserId) || miNombre.includes("cristian") || (miEmail && miEmail.includes("cristian"))) {
+    if (remitente.includes("cristian") || msg.remitente_id === "cristian") {
+      return true;
+    }
+  }
+
+  // Si mi cuenta es de Camila y el mensaje dice Camila
+  if (miNombre.includes("camila") || (miEmail && miEmail.includes("camila"))) {
+    if (remitente.includes("camila") || msg.remitente_id === "camila") {
+      return true;
+    }
   }
 
   return false;
@@ -75,8 +95,8 @@ export default function NotificadorMensajesGlobal({ onIrASoporte }) {
     if (mensajesProcesadosRef.current.has(msgId)) return;
     mensajesProcesadosRef.current.add(msgId);
 
-    // Si el mensaje lo envié yo mismo, no me notifico a mí mismo
-    if (esMiMensaje(msg, membresia)) {
+    // Si fue enviado por mí o detectamos que soy el autor, no me notifico a mí mismo
+    if (msg._enviadoPorMi || esMiMensaje(msg, membresia)) {
       return;
     }
 

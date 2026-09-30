@@ -268,6 +268,8 @@ export async function crearTicket({
   usuarioNombre = "Usuario",
   usuarioEmail = "",
   usuarioId = null,
+  creadorNombre = null,
+  creadorId = null,
   mensajeInicial = "",
 }) {
   let nuevoTicket = null;
@@ -304,7 +306,7 @@ export async function crearTicket({
           nuevoTicket = ticketData;
 
           if (mensajeInicial) {
-            let remitenteUuid = usuarioIdUuid;
+            let remitenteUuid = esUuidValido(creadorId) ? creadorId.trim() : null;
             if (!remitenteUuid) {
               const { data: authData } = await supabase.auth.getUser().catch(() => ({}));
               if (authData?.user?.id && esUuidValido(authData.user.id)) {
@@ -312,16 +314,21 @@ export async function crearTicket({
               }
             }
 
-            await supabase.from("soporte_mensajes").insert([
+            const { data: msgData } = await supabase.from("soporte_mensajes").insert([
               {
                 tenant_id: tenantId,
                 ticket_id: nuevoTicket.id,
-                remitente_nombre: usuarioNombre,
+                remitente_nombre: creadorNombre || "Cristian Flórez",
                 remitente_id: remitenteUuid,
-                es_admin: false,
+                es_admin: true,
                 texto: mensajeInicial,
               },
-            ]);
+            ]).select().single();
+
+            if (msgData) {
+              saveLocalMensaje(nuevoTicket.id, msgData);
+              emitirMensajeEnviadoLocal(msgData);
+            }
           }
 
           // Mantener copia local actualizada
@@ -361,14 +368,17 @@ export async function crearTicket({
   saveLocalTickets(actualizados);
 
   if (mensajeInicial) {
-    saveLocalMensaje(nuevoTicket.id, {
+    const msgLocal = {
       id: "msg-" + Date.now(),
       ticket_id: nuevoTicket.id,
-      remitente_nombre: usuarioNombre,
-      es_admin: false,
+      remitente_nombre: creadorNombre || "Cristian Flórez",
+      remitente_id: creadorId || null,
+      es_admin: true,
       texto: mensajeInicial,
       creado_en: new Date().toISOString(),
-    });
+    };
+    saveLocalMensaje(nuevoTicket.id, msgLocal);
+    emitirMensajeEnviadoLocal(msgLocal);
   }
 
   return nuevoTicket;
@@ -523,17 +533,18 @@ export async function enviarMensaje({
 
 export function emitirMensajeEnviadoLocal(mensaje) {
   if (typeof window === "undefined" || !mensaje) return;
+  const msgConMarca = { ...mensaje, _enviadoPorMi: true };
   try {
     if ("BroadcastChannel" in window) {
       const bc = new BroadcastChannel("ingeanclajes_canal_mensajes");
-      bc.postMessage({ tipo: "nuevo-mensaje", mensaje });
+      bc.postMessage({ tipo: "nuevo-mensaje", mensaje: msgConMarca });
       bc.close();
     }
   } catch {
     // ignore
   }
   window.dispatchEvent(
-    new CustomEvent("notificacion-mensaje-recibido", { detail: mensaje })
+    new CustomEvent("notificacion-mensaje-recibido", { detail: msgConMarca })
   );
 }
 

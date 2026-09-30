@@ -292,6 +292,8 @@ export default function BotonSoporteFlotante() {
         usuarioNombre: nombreDestinatario || targetUser?.nombre || "Usuario",
         usuarioEmail: targetUser?.email || (destinatario === "camila" ? "camilasepulveda@ingeanclajes.com" : ""),
         usuarioId: destinatario,
+        creadorNombre: membresia?.nombre || "Cristian Flórez",
+        creadorId: membresia?.user_id || null,
         mensajeInicial: detalle.trim(),
       });
 

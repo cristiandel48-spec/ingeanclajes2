@@ -412,14 +412,16 @@ export default function Soporte({ ctx }) {
     e.preventDefault();
     if (!nuevoAsunto.trim()) return;
 
-    const creador = nuevoNombre.trim() || "Usuario";
+    const destinatarioNombre = nuevoNombre.trim() || "Usuario";
     const res = await crearTicket({
       asunto: nuevoAsunto.trim(),
       obraNombre: nuevoObra.trim(),
       prioridad: nuevoPrioridad,
-      usuarioNombre: creador,
+      usuarioNombre: destinatarioNombre,
       usuarioEmail: nuevoEmail.trim(),
       usuarioId: nuevoUserId,
+      creadorNombre: membresia?.nombre || "Cristian Flórez",
+      creadorId: membresia?.user_id || null,
       mensajeInicial: nuevoMsgInicial.trim(),
     });
 

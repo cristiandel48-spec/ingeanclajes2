@@ -14,6 +14,7 @@ import ListaObras from "./ListaObras";
 import BuscadorCliente from "../../components/BuscadorCliente";
 import { avisoCelular, normalizarMayusculas, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
 import { resolverAutorGuardado } from "../../lib/autorAuditoria";
+import { useIsMobile } from "../../hooks/useMediaQuery";
 
 // Siguiente consecutivo de obra. Se calcula sobre el numero mas alto que ya
 // existe, no sobre cuantas obras hay: al borrar una obra intermedia, contar
@@ -26,6 +27,7 @@ const siguienteIdObra = (obras) => {
   return "OB-" + String(mayor + 1).padStart(3, "0");
 };
 export default function Obras({ctx}){
+  const isMobile = useIsMobile();
   const {obras,setObras,cotizaciones,horarios,intencion,limpiarIntencion,membresia,asegurarDetalle,clientes}=ctx;
 
   const clientesConocidos = (() => {
@@ -139,11 +141,10 @@ export default function Obras({ctx}){
     setShowNO(false);
   };
 
-  // El boton de crear vive en la barra de arriba, no en un titulo propio.
-  // `setShowNO` no cambia entre renders, asi que se puede llamar directo sin
-  // guardarlo en una referencia.
+  // En móvil el botón se muestra en la cabecera del contenido para que nunca se aplaste
+  // ni se corte en la barra superior. En escritorio se puede ubicar en la barra superior.
   useAccionesPantalla(
-    sel ? null : (
+    sel || isMobile ? null : (
       <button
         style={{
           background: "#FFFAEB",
@@ -163,7 +164,7 @@ export default function Obras({ctx}){
         onClick={()=>setShowNO((v)=>!v)}
       >+ Nueva Obra</button>
     ),
-    [sel]
+    [sel, isMobile]
   );
 
   // Si hay obra seleccionada, mostramos pantalla completa de esa obra
@@ -172,7 +173,51 @@ export default function Obras({ctx}){
   }
 
   return(
-    <div style={{padding:"14px 28px 28px"}}>
+    <div style={{padding: isMobile ? "10px 0 28px" : "14px 28px 28px", width: "100%", boxSizing: "border-box"}}>
+
+      {/* Cabecera de la pantalla con botón visible y cómodo en móvil y escritorio */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 16,
+          flexWrap: "wrap",
+          gap: 10,
+        }}
+      >
+        <div>
+          <h1 style={{ margin: 0, fontSize: isMobile ? 18 : 22, fontWeight: 800, color: "var(--text, #0f172a)" }}>
+            Ejecución de obra
+          </h1>
+          <span style={{ fontSize: 12, color: "var(--text-muted, #64748b)" }}>
+            {obras.length} {obras.length === 1 ? "obra registrada" : "obras registradas"}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowNO((v) => !v)}
+          style={{
+            background: "#FFFAEB",
+            color: "#B54708",
+            border: "1px solid rgba(181, 71, 8, 0.35)",
+            borderRadius: 8,
+            padding: isMobile ? "8px 14px" : "9px 18px",
+            fontSize: isMobile ? 12.5 : 13,
+            fontWeight: 700,
+            cursor: "pointer",
+            fontFamily: "inherit",
+            whiteSpace: "nowrap",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            boxShadow: "0 1px 2px rgba(181, 71, 8, 0.08)",
+          }}
+        >
+          <span style={{ fontSize: 16, fontWeight: 900, lineHeight: 1 }}>+</span>
+          <span>{showNO ? "Cerrar formulario" : "Nueva Obra"}</span>
+        </button>
+      </div>
 
       {showNO&&(
         <div style={{...CD,marginBottom:20,border:"1px solid var(--border, #e2e8f0)"}}>

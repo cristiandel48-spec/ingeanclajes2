@@ -181,13 +181,48 @@ export default function ListadoConFiltros({
             </Resaltable>
 
             {ordenes.length > 0 && (
-              <div style={{ display: "flex", alignItems: "center", gap: 6, height: 36, padding: "0 5px 0 11px",
-                borderRadius: 9, border: `1.5px solid ${C.bordeFuerte}`, background: "var(--surface, #fff)" }}>
-                <span style={{ fontSize: 11.5, fontWeight: 600, color: C.tenue, whiteSpace: "nowrap" }}>Ordenar</span>
-                <select value={orden} onChange={(e) => setOrden(e.target.value)}
-                  style={{ height: 30, border: "none", background: "transparent", fontSize: 13, fontWeight: 600,
-                    color: C.tinta, outline: "none", cursor: "pointer", fontFamily: "inherit" }}>
-                  {ordenes.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  height: 36,
+                  padding: "0 6px 0 10px",
+                  borderRadius: 9,
+                  border: `1.5px solid ${C.bordeFuerte}`,
+                  background: "var(--surface, #fff)",
+                  flexShrink: 0,
+                  maxWidth: "100%",
+                  boxSizing: "border-box",
+                }}
+              >
+                <span style={{ fontSize: 11.5, fontWeight: 600, color: C.tenue, whiteSpace: "nowrap", flexShrink: 0 }}>
+                  Ordenar
+                </span>
+                <select
+                  className="no-full-width select-ordenar"
+                  value={orden}
+                  onChange={(e) => setOrden(e.target.value)}
+                  style={{
+                    height: 28,
+                    border: "none",
+                    background: "transparent",
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    color: C.tinta,
+                    outline: "none",
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    padding: "0 2px",
+                    margin: 0,
+                    lineHeight: "normal",
+                  }}
+                >
+                  {ordenes.map((o) => (
+                    <option key={o.key} value={o.key}>
+                      {o.label}
+                    </option>
+                  ))}
                 </select>
               </div>
             )}

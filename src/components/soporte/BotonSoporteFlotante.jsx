@@ -260,7 +260,6 @@ export default function BotonSoporteFlotante() {
     }
   };
 
-  if (enPantallaSoporte) return null;
 
   return (
     <div style={{

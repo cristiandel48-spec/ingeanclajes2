@@ -94,12 +94,12 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
               display: "flex",
               alignItems: "center",
               gap: 6,
-              maxWidth: isMobile ? "32vw" : "none",
+              maxWidth: isMobile ? "44vw" : "none",
               overflowX: isMobile ? "auto" : "visible",
               WebkitOverflowScrolling: "touch",
               scrollbarWidth: "none",
               msOverflowStyle: "none",
-              flexShrink: 1,
+              flexShrink: 0,
             }}
           >
             {acciones}

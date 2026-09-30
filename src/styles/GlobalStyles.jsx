@@ -303,7 +303,7 @@ export default function GlobalStyles({ divider }) {
       /* Safari en iOS hace zoom al enfocar un campo con texto menor a 16px.
          Se fuerza 16px solo en pantallas tactiles pequenas. */
       input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-      select,
+      select:not(.no-full-width),
       textarea {
         font-size: 16px !important;
       }
@@ -313,6 +313,17 @@ export default function GlobalStyles({ divider }) {
          desplazamiento; poner display:block en la tabla romperia la
          alineacion entre el encabezado y las filas. */
       table { -webkit-overflow-scrolling: touch; }
+    }
+
+    select.no-full-width,
+    .select-ordenar {
+      width: auto !important;
+      max-width: 150px !important;
+      font-size: 12.5px !important;
+      line-height: normal !important;
+      height: 28px !important;
+      padding: 0 4px !important;
+      box-sizing: border-box !important;
     }
 
     /* ---- Telefono ----------------------------------------------------

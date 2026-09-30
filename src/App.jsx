@@ -109,7 +109,7 @@ function AppRoot() {
     <AppShell scr={destino} onNavigate={setScr}>
       <Screen ctx={ctx} go={setScr} />
       <ModalAlertaCotizaciones onNavigate={setScr} />
-      <BotonSoporteFlotante />
+      {destino === "soporte" && <BotonSoporteFlotante />}
     </AppShell>
   );
 }

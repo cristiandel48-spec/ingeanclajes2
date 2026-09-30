@@ -1131,36 +1131,6 @@ export default function Cotizacion({ctx}){
           }}
         />
 
-        {/* Botón flotante en dispositivos móviles (Android / iOS) para crear cotización al scrollear */}
-        {isMobile && (
-          <button
-            type="button"
-            onClick={nuevaCotizacion}
-            title="Crear nueva cotización"
-            aria-label="Nueva Cotización"
-            style={{
-              position: "fixed",
-              bottom: "calc(72px + env(safe-area-inset-bottom))",
-              right: "calc(16px + env(safe-area-inset-right))",
-              zIndex: 90,
-              background: "linear-gradient(135deg, #ea580c 0%, #c2410c 100%)",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: 999,
-              padding: "10px 16px",
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              boxShadow: "0 4px 14px rgba(194, 65, 12, 0.45)",
-            }}
-          >
-            <span style={{ fontSize: 16, lineHeight: 1, fontWeight: 900 }}>+</span>
-            <span>Cotización</span>
-          </button>
-        )}
 
         {/* La lista tiene su propio return, aparte del formulario. Sin montar
             aqui el dialogo, el boton de enviar guardaba el estado y no pasaba

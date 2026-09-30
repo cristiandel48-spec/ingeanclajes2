@@ -54,16 +54,18 @@ export default function FototecaScreen({ ctx }) {
   const obraActual = obras.find((o) => o.id === obraIdSeleccionada) || obras[0];
 
   return (
-    <div style={{ padding: "20px 24px", maxWidth: 1200, margin: "0 auto" }}>
+    <div style={{ padding: "14px 0 24px", maxWidth: 1200, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
       {/* 1. CABECERA LIMPIA: TÍTULO Y SELECTOR / BUSCADOR DE OBRA */}
       <div
         style={{
           background: "var(--surface, #ffffff)",
           border: "1px solid var(--border, #eaecf0)",
           borderRadius: 14,
-          padding: "16px 20px",
+          padding: "16px 16px",
           marginBottom: 16,
           boxShadow: "0 1px 3px rgba(0,0,0,0.03)",
+          width: "100%",
+          boxSizing: "border-box",
         }}
       >
         <div
@@ -73,7 +75,7 @@ export default function FototecaScreen({ ctx }) {
             alignItems: "center",
             flexWrap: "wrap",
             gap: 12,
-            marginBottom: 12,
+            marginBottom: 14,
           }}
         >
           <div>
@@ -86,13 +88,13 @@ export default function FototecaScreen({ ctx }) {
           </div>
 
           {/* Buscador de obras */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", maxWidth: 360 }}>
             <input
               type="text"
               placeholder="🔍 Buscar obra por cliente o código..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              style={{ ...SI, width: 280, fontSize: 12.5, padding: "7px 12px" }}
+              style={{ ...SI, flex: 1, minWidth: 0, width: "100%", fontSize: 12.5, padding: "7px 12px" }}
             />
             {busqueda && (
               <button
@@ -103,6 +105,7 @@ export default function FototecaScreen({ ctx }) {
                   cursor: "pointer",
                   color: "#667085",
                   fontSize: 12,
+                  padding: "4px 8px",
                 }}
               >
                 ✕
@@ -111,8 +114,8 @@ export default function FototecaScreen({ ctx }) {
           </div>
         </div>
 
-        {/* Selector de Obra en dropdown o chips horizontales */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        {/* Selector de Obra en dropdown adaptable */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
           <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted, #475467)" }}>
             Obra seleccionada:
           </span>
@@ -121,13 +124,15 @@ export default function FototecaScreen({ ctx }) {
             onChange={(e) => setObraIdSeleccionada(e.target.value)}
             style={{
               ...SI,
-              width: "auto",
-              minWidth: 320,
+              width: "100%",
+              maxWidth: "100%",
+              minWidth: 0,
               fontSize: 13,
               fontWeight: 600,
-              color: "#101828",
-              padding: "6px 12px",
+              color: "var(--text-main, #101828)",
+              padding: "8px 12px",
               cursor: "pointer",
+              boxSizing: "border-box",
             }}
           >
             {obrasFiltradas.map((o) => {

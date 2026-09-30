@@ -246,7 +246,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
               <LBL>Fotos del avance</LBL>
               <span style={{ fontSize: 10.5, color: "var(--text-subtle, #94a3b8)" }}>Se imprimen en el informe</span>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 10, alignItems: "start" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 140px), 1fr))", gap: 10, alignItems: "start", width: "100%", boxSizing: "border-box" }}>
               {(registro.fotos || []).map((foto, fi) => (
                 <div key={fi} style={{ background: "var(--surface, #fff)", border: "1px solid var(--border, #e2e8f0)", borderRadius: 8, overflow: "hidden" }}>
                   <div style={{ background: "var(--surface-subtle, #f8fafc)", padding: 6, minHeight: 130, display: "flex", alignItems: "center", justifyContent: "center" }}>

@@ -970,7 +970,7 @@ export default function Cotizacion({ctx}){
       );
     }
     return (
-      <div style={{padding: isMobile ? "12px 14px 84px" : "24px 28px"}}>
+      <div style={{padding: isMobile ? "10px 0 30px" : "24px 28px", width: "100%", boxSizing: "border-box"}}>
         {/* Cabecera visual con botón destacado para crear cotización */}
         <div
           style={{
@@ -1140,24 +1140,24 @@ export default function Cotizacion({ctx}){
             aria-label="Nueva Cotización"
             style={{
               position: "fixed",
-              bottom: 84,
-              right: 18,
+              bottom: "calc(72px + env(safe-area-inset-bottom))",
+              right: "calc(16px + env(safe-area-inset-right))",
               zIndex: 90,
               background: "linear-gradient(135deg, #ea580c 0%, #c2410c 100%)",
               color: "#ffffff",
               border: "none",
               borderRadius: 999,
-              padding: "12px 20px",
-              fontSize: 13.5,
+              padding: "10px 16px",
+              fontSize: 13,
               fontWeight: 700,
               cursor: "pointer",
               display: "inline-flex",
               alignItems: "center",
-              gap: 8,
-              boxShadow: "0 6px 20px rgba(194, 65, 12, 0.45)",
+              gap: 6,
+              boxShadow: "0 4px 14px rgba(194, 65, 12, 0.45)",
             }}
           >
-            <span style={{ fontSize: 18, lineHeight: 1, fontWeight: 900 }}>+</span>
+            <span style={{ fontSize: 16, lineHeight: 1, fontWeight: 900 }}>+</span>
             <span>Cotización</span>
           </button>
         )}
@@ -1172,7 +1172,7 @@ export default function Cotizacion({ctx}){
 
   return (
     // Menos aire arriba: el formulario es largo y arrancaba muy abajo.
-    <div style={{padding: isMobile ? "10px 12px 40px" : "16px 28px 28px"}}>
+    <div style={{padding: isMobile ? "10px 0 40px" : "16px 28px 28px", width: "100%", boxSizing: "border-box"}}>
       {/* Sin el titulo grande: ocupaba dos renglones -"Editar Cotización" y
           su explicacion- antes de empezar el formulario, y las acciones que
           llevaba al lado ya estan arriba en la barra. Queda solo este

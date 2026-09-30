@@ -2133,7 +2133,7 @@ export default function Nomina({ctx}){
               <div style={{background:"var(--surface)",borderRadius:12,border:"1px solid var(--border)",boxShadow:"0 2px 6px rgba(0,0,0,0.04)",padding:18}}>
                 {/* Filtro y buscador */}
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap",marginBottom:14}}>
-                  <div style={{position:"relative",minWidth:260,flex:1}}>
+                  <div style={{position:"relative",minWidth:0,flex:"1 1 200px",width:"100%"}}>
                     <input
                       type="text"
                       placeholder="🔍 Buscar por nombre, cédula o cargo..."

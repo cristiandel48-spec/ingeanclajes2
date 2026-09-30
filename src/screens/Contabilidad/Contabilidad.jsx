@@ -713,7 +713,7 @@ export default function Contabilidad({ctx}){
         }
       />
 
-      <div style={{display:"flex",gap:10,marginBottom:18,flexWrap:"wrap"}}>
+      <div className="pills-scroll-container" style={{display:"flex",gap:10,marginBottom:18,flexWrap:"wrap"}}>
         {[
           ["resumen","Resumen","#cc0000"],
           ["catalogo","Catalogo","#003B71"],
@@ -837,7 +837,7 @@ export default function Contabilidad({ctx}){
               </div>
             </div>}
             <div style={{overflowX:"auto"}}>
-              <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,minWidth:640}}>
                 <thead><tr style={{background:"var(--surface-subtle)"}}>{["Codigo","Cuenta","Grupo","Categoria","Naturaleza","Estado","Acciones"].map((label)=><th key={label} style={{padding:"9px 10px",textAlign:"left",color:"var(--text-muted)",fontWeight:600,fontSize:11}}>{label}</th>)}</tr></thead>
                 <tbody>
                   {cuentasFiltradas.map((cuenta)=>(

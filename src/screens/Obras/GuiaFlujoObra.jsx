@@ -15,7 +15,7 @@ function Fila({ estado, titulo, detalle, accion }) {
 
   return (
     <div style={{
-      display: "flex", alignItems: "flex-start", gap: 10,
+      display: "flex", alignItems: "flex-start", gap: 10, flexWrap: "wrap",
       padding: "10px 12px", borderRadius: 10,
       background: colores.bg, border: `1px solid ${colores.borde}`,
     }}>

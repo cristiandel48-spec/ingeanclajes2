@@ -15,9 +15,10 @@ export default function AvisoFlujo({ tono = "info", titulo, children, pasos, acc
 
   return (
     <div style={{
-      display: "flex", alignItems: "flex-start", gap: 11,
+      display: "flex", alignItems: "flex-start", gap: 11, flexWrap: "wrap",
       background: c.bg, border: `1px solid ${c.borde}`,
       borderRadius: 12, padding: "13px 15px", marginBottom: 16,
+      width: "100%", maxWidth: "100%", boxSizing: "border-box",
     }}>
       <div style={{
         width: 20, height: 20, borderRadius: "50%", flexShrink: 0,

@@ -94,42 +94,51 @@ export default function Soporte({ ctx }) {
     };
   }, []);
 
-  // Combinar usuarios por defecto con los de la base de datos y empleados
+  // Combinar usuarios de la base de datos priorizando UUIDs reales de auth.users
   const opcionesUsuarios = useMemo(() => {
-    const base = [
-      { id: "camila", nombre: "Camila Sepúlveda", email: "camilasepulveda@ingeanclajes.com", rol: "Administración / Finanzas" },
-      { id: "cristian", nombre: "Cristian Flórez", email: "cristiandel48@gmail.com", rol: "Administrador / Desarrollo" },
-    ];
+    const combinados = [];
+    const idsRegistrados = new Set();
 
-    const combinados = [...base];
+    // 1. Usuarios reales de la base de datos (con su auth.users UUID)
     (listaUsuarios || []).forEach((u) => {
       const nom = u.nombre || u.email;
-      if (
-        nom &&
-        !combinados.some(
-          (c) =>
-            c.nombre.toLowerCase() === nom.toLowerCase() ||
-            (u.email && c.email && c.email.toLowerCase() === u.email.toLowerCase())
-        )
-      ) {
+      const idReal = u.user_id || u.id;
+      if (nom && idReal) {
         combinados.push({
-          id: u.user_id || u.id,
+          id: idReal,
           nombre: nom,
           email: u.email || "",
           rol: u.role || "Equipo Ingeanclajes",
         });
+        idsRegistrados.add(nom.toLowerCase());
+        if (u.email) idsRegistrados.add(u.email.toLowerCase());
       }
     });
 
+    // 2. Usuarios por defecto (solo si no existen ya en listaUsuarios)
+    const base = [
+      { id: "camila", nombre: "Camila Sepúlveda", email: "camilasepulveda@ingeanclajes.com", rol: "Administración / Finanzas" },
+      { id: "cristian", nombre: "Cristian Flórez", email: "cristiandel48@gmail.com", rol: "Administrador / Desarrollo" },
+    ];
+    base.forEach((b) => {
+      if (!idsRegistrados.has(b.nombre.toLowerCase()) && !idsRegistrados.has(b.email.toLowerCase())) {
+        combinados.push(b);
+        idsRegistrados.add(b.nombre.toLowerCase());
+        idsRegistrados.add(b.email.toLowerCase());
+      }
+    });
+
+    // 3. Empleados de obra
     (empleados || []).forEach((emp) => {
       const nom = `${emp.nombres || emp.nombre || ""} ${emp.apellidos || ""}`.trim();
-      if (nom && !combinados.some((c) => c.nombre.toLowerCase() === nom.toLowerCase())) {
+      if (nom && !idsRegistrados.has(nom.toLowerCase())) {
         combinados.push({
           id: emp.id,
           nombre: nom,
           email: emp.email || "",
           rol: emp.cargo || "Personal de Obra",
         });
+        idsRegistrados.add(nom.toLowerCase());
       }
     });
 
@@ -156,7 +165,7 @@ export default function Soporte({ ctx }) {
     };
   }, []);
 
-  // Cargar mensajes cuando cambia el ticket activo
+  // Cargar mensajes cuando cambia el ticket activo y escuchar cambios Realtime
   useEffect(() => {
     if (!ticketActivoId) {
       setMensajes([]);
@@ -187,6 +196,48 @@ export default function Soporte({ ctx }) {
       desuscribir();
     };
   }, [ticketActivoId]);
+
+  // Polling periódico de mensajes (cada 3.5s) como salvaguarda ante desconexiones de Realtime
+  useEffect(() => {
+    if (!ticketActivoId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const data = await cargarMensajes(ticketActivoId);
+        if (data && data.length > 0) {
+          setMensajes((prev) => {
+            const idsPrev = new Set(prev.map((m) => m.id));
+            const nuevos = data.filter((m) => !idsPrev.has(m.id));
+            if (nuevos.length === 0) return prev;
+            setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
+            return [...prev, ...nuevos].sort(
+              (a, b) => new Date(a.creado_en) - new Date(b.creado_en)
+            );
+          });
+        }
+      } catch {
+        // error de polling silencioso
+      }
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [ticketActivoId]);
+
+  // Polling periódico de tickets (cada 8s) para ver nuevos mensajes o estados en otras conversaciones
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const data = await cargarTickets();
+        if (data && data.length > 0) {
+          setTickets(data);
+        }
+      } catch {
+        // error de polling silencioso
+      }
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const ticketActivo = useMemo(() => {
     return tickets.find((t) => t.id === ticketActivoId) || null;
@@ -219,7 +270,14 @@ export default function Soporte({ ctx }) {
 
   // Abrir modal con Camila seleccionada por defecto
   const abrirModalNuevo = () => {
-    const defecto = opcionesUsuarios.find((u) => u.id === "camila") || opcionesUsuarios[0];
+    const defecto =
+      opcionesUsuarios.find(
+        (u) =>
+          u.nombre?.toLowerCase().includes("camila") ||
+          (u.email && u.email.toLowerCase().includes("camila")) ||
+          u.id === "camila"
+      ) || opcionesUsuarios[0];
+
     if (defecto) {
       setUsuarioSeleccionado(defecto.id);
       setNuevoNombre(defecto.nombre);
@@ -277,19 +335,28 @@ export default function Soporte({ ctx }) {
         ticketId: ticketActivoId,
         texto,
         remitenteNombre,
-        remitenteId: membresia?.user_id || "cristian",
+        remitenteId: membresia?.user_id || null,
         esAdmin,
       });
 
-      setMensajes((prev) => [...prev, guardado]);
+      // Si el ticketId fue migrado o asignado a un UUID en Supabase
+      if (guardado.ticket_id && guardado.ticket_id !== ticketActivoId) {
+        setTicketActivoId(guardado.ticket_id);
+      }
+
+      setMensajes((prev) => {
+        if (prev.some((m) => m.id === guardado.id)) return prev;
+        return [...prev, guardado];
+      });
       setNuevoMensaje("");
 
       // Actualizar la lista de tickets localmente
       setTickets((prev) =>
         prev.map((t) =>
-          t.id === ticketActivoId
+          t.id === ticketActivoId || (guardado.ticket_id && t.id === guardado.ticket_id)
             ? {
                 ...t,
+                id: guardado.ticket_id || t.id,
                 ultimo_mensaje: texto,
                 actualizado_en: new Date().toISOString(),
                 estado: t.estado === "pendiente" ? "en_curso" : t.estado,
@@ -335,8 +402,17 @@ export default function Soporte({ ctx }) {
       mensajeInicial: nuevoMsgInicial.trim(),
     });
 
-    setTickets((prev) => [res, ...prev]);
-    setTicketActivoId(res.id);
+    if (res) {
+      setTickets((prev) => [res, ...prev.filter((t) => t.id !== res.id)]);
+      setTicketActivoId(res.id);
+      if (nuevoMsgInicial.trim()) {
+        const msgs = await cargarMensajes(res.id);
+        setMensajes(msgs);
+      } else {
+        setMensajes([]);
+      }
+    }
+
     setModalNuevoOpen(false);
     setNuevoAsunto("");
     setNuevoObra("");
@@ -658,13 +734,17 @@ export default function Soporte({ ctx }) {
                   mensajes.map((msg) => {
                     const miId = membresia?.user_id;
                     const miNombre = (membresia?.nombre || "").trim().toLowerCase();
+                    const miEmail = (membresia?.email || "").trim().toLowerCase();
                     const msgNombre = (msg.remitente_nombre || "").trim().toLowerCase();
+                    const msgEmail = (msg.remitente_email || "").trim().toLowerCase();
 
                     // Identificar si el mensaje fue enviado por el usuario actual
-                    const esMio =
-                      (miId && msg.remitente_id === miId) ||
-                      (miNombre && (msgNombre.includes(miNombre) || miNombre.includes(msgNombre))) ||
-                      (!miId && msg.remitente_id === "cristian");
+                    const esMio = Boolean(
+                      (miId && msg.remitente_id && msg.remitente_id === miId) ||
+                      (miEmail && msgEmail && miEmail === msgEmail) ||
+                      (miNombre && msgNombre && (msgNombre.includes(miNombre) || miNombre.includes(msgNombre))) ||
+                      (!miId && msg.remitente_id === "cristian")
+                    );
 
                     return (
                       <div

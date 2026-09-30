@@ -262,7 +262,7 @@ export default function GlobalStyles({ divider }) {
       text-size-adjust: 100%;
     }
 
-    body {
+    html, body, #root {
       margin: 0;
       width: 100%;
       max-width: 100vw;
@@ -291,6 +291,7 @@ export default function GlobalStyles({ divider }) {
       height: 100vh;
       height: -webkit-fill-available;
       height: 100dvh;
+      overflow-x: hidden;
     }
 
     ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -301,7 +302,11 @@ export default function GlobalStyles({ divider }) {
     @media (max-width: 900px) {
       /* Safari en iOS hace zoom al enfocar un campo con texto menor a 16px.
          Se fuerza 16px solo en pantallas tactiles pequenas. */
-      input, select, textarea { font-size: 16px !important; }
+      input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+      select,
+      textarea {
+        font-size: 16px !important;
+      }
 
       /* Las tablas anchas ya vienen envueltas en un contenedor con
          overflow-x:auto y su propio min-width. Solo se suaviza el
@@ -316,18 +321,25 @@ export default function GlobalStyles({ divider }) {
        etiquetas no caben y el texto se monta. Aqui se colapsan a una sola
        columna. Hace falta !important porque los estilos son en linea. */
     @media (max-width: 760px) {
-      /* Neutraliza el doble margen horizontal acumulado en teléfonos */
-      main > div[style*="padding: 28px"],
-      main > div[style*="padding:28px"],
-      main > div[style*="padding: 14px 28px 28px"],
-      main > div[style*="padding:14px 28px 28px"] {
+      /* Neutraliza el doble margen horizontal acumulado en teléfonos en cualquier pantalla */
+      main > div,
+      main > section,
+      main > article {
         padding-left: 0 !important;
         padding-right: 0 !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
       }
 
       /* Colapsa formularios a 1 columna sin tocar los documentos impresos ni cuadrículas especiales */
-      main [style*="grid-template-columns"]:not(.doc-shell):not(.doc-shell *):not(#pz):not(#pz *):not(.tabla-items):not(.no-collapse-grid) {
+      main [style*="grid-template-columns"]:not(.doc-shell):not(.doc-shell *):not(#pz):not(#pz *):not(.tabla-items):not(.no-collapse-grid):not(.fototeca-grid) {
         grid-template-columns: 1fr !important;
+      }
+
+      /* Galería de fotos en móvil: 2 columnas limpias */
+      .fototeca-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 10px !important;
       }
 
       /* Permite salto de línea en grupos de botones y formularios sin romper encabezados ni documentos */
@@ -340,8 +352,55 @@ export default function GlobalStyles({ divider }) {
       main select:not(.no-full-width),
       main textarea:not(.no-full-width) {
         width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
       }
-      main img:not(.no-responsive-img) { max-width: 100%; }
+
+      /* Evita que cualquier select o input se quede trabado con min-width fijo excesivo */
+      main select:not(.keep-min-width),
+      main input:not(.keep-min-width) {
+        min-width: 0 !important;
+      }
+
+      main img:not(.no-responsive-img) {
+        max-width: 100% !important;
+        height: auto;
+      }
+
+      /* Evita desbordamiento horizontal en tarjetas y contenedores */
+      main article,
+      main [style*="border-radius"] {
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+
+      /* Ajuste de padding de tarjetas en móviles para ganar espacio útil */
+      main [style*="border-radius: 16px"][style*="padding: 20px"],
+      main [style*="border-radius: 16px"][style*="padding:20px"] {
+        padding: 14px 12px !important;
+      }
+
+      /* Oculta kbd Ctrl K en móviles */
+      .kbd-ctrl-k {
+        display: none !important;
+      }
+
+      /* Pestañas de estado horizontales deslizables suavemente con el dedo */
+      .pills-scroll-container {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important;
+        padding-bottom: 4px !important;
+        max-width: 100% !important;
+      }
+      .pills-scroll-container::-webkit-scrollbar {
+        display: none !important;
+      }
+      .pills-scroll-container > * {
+        flex-shrink: 0 !important;
+      }
 
       /* Varias pantallas tienen tablas sin contenedor desplazable, y una
          tabla de 7 columnas no cabe en un telefono. Con :has se hace
@@ -350,6 +409,7 @@ export default function GlobalStyles({ divider }) {
       main div:has(> table) {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+        max-width: 100%;
       }
 
       /* Contenedor protector para documentos tipo hoja Carta en pantallas móviles */

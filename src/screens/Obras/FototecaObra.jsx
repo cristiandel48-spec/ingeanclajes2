@@ -195,14 +195,14 @@ export default function FototecaObra({ obra, ctx = {} }) {
           )}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", width: "100%" }}>
           {todasLasFotos.length > 3 && (
             <input
               type="text"
               placeholder="🔍 Filtrar fotos por fecha o nota..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              style={{ ...SI, width: 240, fontSize: 12, padding: "6px 10px" }}
+              style={{ ...SI, flex: "1 1 180px", minWidth: 0, width: "100%", maxWidth: "100%", fontSize: 12, padding: "7px 10px" }}
             />
           )}
 
@@ -213,8 +213,9 @@ export default function FototecaObra({ obra, ctx = {} }) {
               style={{
                 ...B("#B54708", "#ffffff"),
                 fontSize: 12,
-                padding: "7px 14px",
+                padding: "8px 14px",
                 borderRadius: 8,
+                maxWidth: "100%",
               }}
             >
               {empaquetandoZip ? `📦 Empaquetando ZIP (${progresoZip}%)...` : `📦 Descargar todo en ZIP (${todasLasFotos.length})`}
@@ -257,10 +258,13 @@ export default function FototecaObra({ obra, ctx = {} }) {
         </div>
       ) : (
         <div
+          className="fototeca-grid no-collapse-grid"
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-            gap: 14,
+            gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 160px), 1fr))",
+            gap: 12,
+            width: "100%",
+            boxSizing: "border-box",
           }}
         >
           {fotosFiltradas.map((foto) => (

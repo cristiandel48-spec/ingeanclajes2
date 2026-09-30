@@ -38,6 +38,7 @@ export default function Sidebar({
     left: 0,
     zIndex: 60,
     width: isMobile ? 280 : open ? RAIL_WIDTH_EXPANDED : RAIL_WIDTH,
+    maxWidth: isMobile ? "85vw" : "none",
     background: theme.railBg,
     borderRight: `1px solid ${theme.railBorder || theme.divider}`,
     display: "flex",

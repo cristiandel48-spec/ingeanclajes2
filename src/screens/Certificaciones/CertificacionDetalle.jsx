@@ -66,7 +66,7 @@ export default function CertificacionDetalle({cert,onVolver,onEditar,onImprimir,
         flexWrap: "wrap",
         gap: 16
       }}>
-        <div style={{minWidth:260}}>
+        <div style={{minWidth:0, flex:"1 1 240px"}}>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
             <span style={{
               background: "rgba(224, 52, 42, 0.1)",

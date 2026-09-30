@@ -209,44 +209,145 @@ function saveLocalMensaje(ticketId, nuevoMensaje) {
 }
 
 /**
- * Carga la lista de tickets. Intenta Supabase; si no existe la tabla o falla, usa local.
+ * Valida si una cadena tiene formato de UUID estándar de PostgreSQL / Supabase
+ */
+export function esUuidValido(val) {
+  if (!val || typeof val !== "string") return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val.trim());
+}
+
+/**
+ * Resuelve el UUID real de un ticket en Supabase a partir de su ID local o sembrado
+ */
+export async function resolverTicketUuid(ticketId) {
+  if (!ticketId) return null;
+  if (esUuidValido(ticketId)) return ticketId;
+  if (!isSupabaseConfigured()) return ticketId;
+
+  try {
+    const supabase = getSupabaseClient();
+    const tenantId = await getTenantIdActual().catch(() => null);
+    if (!tenantId) return ticketId;
+
+    const { data: ticketsDb } = await supabase
+      .from("soporte_tickets")
+      .select("id, asunto, usuario_nombre")
+      .eq("tenant_id", tenantId)
+      .order("actualizado_en", { ascending: false });
+
+    if (ticketsDb && ticketsDb.length > 0) {
+      const match = ticketsDb.find(
+        (t) =>
+          (ticketId === "ticket-camila" && (t.usuario_nombre?.toLowerCase().includes("camila") || t.asunto?.toLowerCase().includes("coordinaci"))) ||
+          t.id === ticketId ||
+          (t.asunto && t.asunto.toLowerCase() === ticketId.toLowerCase())
+      ) || ticketsDb[0];
+
+      if (match) return match.id;
+    }
+  } catch (e) {
+    console.warn("No se pudo resolver UUID del ticket:", e);
+  }
+  return ticketId;
+}
+
+/**
+ * Carga la lista de tickets. Intenta Supabase; si no existen tickets en el tenant,
+ * siembra automáticamente la conversación de coordinación con Camila en la base de datos
+ * para que todos los usuarios compartan el mismo ticket y UUID real.
  */
 export async function cargarTickets() {
   if (isSupabaseConfigured()) {
     try {
       const supabase = getSupabaseClient();
-      const tenantId = await getTenantIdActual();
-      const { data, error } = await supabase
-        .from("soporte_tickets")
-        .select("*")
-        .eq("tenant_id", tenantId)
-        .order("actualizado_en", { ascending: false });
+      const tenantId = await getTenantIdActual().catch(() => null);
 
-      if (!error && data && data.length > 0) {
-        return data;
+      if (tenantId) {
+        const { data, error } = await supabase
+          .from("soporte_tickets")
+          .select("*")
+          .eq("tenant_id", tenantId)
+          .order("actualizado_en", { ascending: false });
+
+        if (!error && data) {
+          if (data.length > 0) {
+            // Guardar copia local de respaldo
+            saveLocalTickets(data);
+            return data;
+          }
+
+          // Si no hay tickets creados aún para este tenant, sembramos la conversación inicial en Supabase
+          try {
+            const seed = TICKETS_SEED[0]; // Ticket con Camila
+            const { data: nuevo, error: errSeed } = await supabase
+              .from("soporte_tickets")
+              .insert([
+                {
+                  tenant_id: tenantId,
+                  asunto: seed.asunto,
+                  obra_nombre: seed.obra_nombre,
+                  prioridad: seed.prioridad,
+                  estado: seed.estado,
+                  usuario_nombre: seed.usuario_nombre,
+                  usuario_email: seed.usuario_email,
+                  ultimo_mensaje: seed.ultimo_mensaje,
+                },
+              ])
+              .select()
+              .single();
+
+            if (!errSeed && nuevo) {
+              const seedMsgs = MENSAJES_SEED["ticket-camila"] || [];
+              for (const sm of seedMsgs) {
+                await supabase.from("soporte_mensajes").insert([
+                  {
+                    tenant_id: tenantId,
+                    ticket_id: nuevo.id,
+                    remitente_nombre: sm.remitente_nombre,
+                    remitente_id: null,
+                    es_admin: Boolean(sm.es_admin),
+                    texto: sm.texto,
+                    creado_en: sm.creado_en,
+                  },
+                ]);
+              }
+              const resultado = [nuevo];
+              saveLocalTickets(resultado);
+              return resultado;
+            }
+          } catch (seedErr) {
+            console.warn("No se pudo sembrar ticket inicial en Supabase:", seedErr);
+          }
+        }
       }
     } catch (e) {
-      console.info("Usando almacenamiento local de tickets mientras se aplica la migración:", e.message);
+      console.info("Usando almacenamiento local de tickets mientras se sincroniza con Supabase:", e.message);
     }
   }
   return getLocalTickets();
 }
 
 /**
- * Carga los mensajes de un ticket determinado.
+ * Carga los mensajes de un ticket determinado desde Supabase o localStorage.
  */
 export async function cargarMensajes(ticketId) {
-  if (isSupabaseConfigured() && !ticketId.startsWith("seed-")) {
+  if (!ticketId) return [];
+
+  if (isSupabaseConfigured()) {
     try {
       const supabase = getSupabaseClient();
-      const { data, error } = await supabase
-        .from("soporte_mensajes")
-        .select("*")
-        .eq("ticket_id", ticketId)
-        .order("creado_en", { ascending: true });
+      const targetId = await resolverTicketUuid(ticketId);
 
-      if (!error && data) {
-        return data;
+      if (esUuidValido(targetId)) {
+        const { data, error } = await supabase
+          .from("soporte_mensajes")
+          .select("*")
+          .eq("ticket_id", targetId)
+          .order("creado_en", { ascending: true });
+
+        if (!error && data) {
+          return data;
+        }
       }
     } catch (e) {
       console.warn("Fallo cargando mensajes desde Supabase, usando local:", e);
@@ -256,7 +357,7 @@ export async function cargarMensajes(ticketId) {
 }
 
 /**
- * Crea un nuevo ticket de soporte.
+ * Crea un nuevo ticket de soporte garantizando tipos UUID válidos.
  */
 export async function crearTicket({
   asunto,
@@ -273,42 +374,63 @@ export async function crearTicket({
   if (isSupabaseConfigured()) {
     try {
       const supabase = getSupabaseClient();
-      const tenantId = await getTenantIdActual();
+      const tenantId = await getTenantIdActual().catch(() => null);
 
-      const { data: ticketData, error: ticketError } = await supabase
-        .from("soporte_tickets")
-        .insert([
-          {
-            tenant_id: tenantId,
-            asunto,
-            obra_nombre: obraNombre,
-            obra_id: obraId,
-            prioridad,
-            estado: "pendiente",
-            usuario_nombre: usuarioNombre,
-            usuario_email: usuarioEmail,
-            usuario_id: usuarioId,
-            ultimo_mensaje: mensajeInicial,
-          },
-        ])
-        .select()
-        .single();
+      if (tenantId) {
+        // Sanitizar usuarioId para que nunca cause error de sintaxis UUID en Postgres
+        const usuarioIdUuid = esUuidValido(usuarioId) ? usuarioId.trim() : null;
 
-      if (!ticketError && ticketData) {
-        nuevoTicket = ticketData;
-        if (mensajeInicial) {
-          await supabase.from("soporte_mensajes").insert([
+        const { data: ticketData, error: ticketError } = await supabase
+          .from("soporte_tickets")
+          .insert([
             {
               tenant_id: tenantId,
-              ticket_id: nuevoTicket.id,
-              remitente_nombre: usuarioNombre,
-              remitente_id: usuarioId,
-              es_admin: false,
-              texto: mensajeInicial,
+              asunto,
+              obra_nombre: obraNombre,
+              obra_id: obraId,
+              prioridad,
+              estado: "pendiente",
+              usuario_nombre: usuarioNombre,
+              usuario_email: usuarioEmail,
+              usuario_id: usuarioIdUuid,
+              ultimo_mensaje: mensajeInicial,
             },
-          ]);
+          ])
+          .select()
+          .single();
+
+        if (!ticketError && ticketData) {
+          nuevoTicket = ticketData;
+
+          if (mensajeInicial) {
+            let remitenteUuid = usuarioIdUuid;
+            if (!remitenteUuid) {
+              const { data: authData } = await supabase.auth.getUser().catch(() => ({}));
+              if (authData?.user?.id && esUuidValido(authData.user.id)) {
+                remitenteUuid = authData.user.id;
+              }
+            }
+
+            await supabase.from("soporte_mensajes").insert([
+              {
+                tenant_id: tenantId,
+                ticket_id: nuevoTicket.id,
+                remitente_nombre: usuarioNombre,
+                remitente_id: remitenteUuid,
+                es_admin: false,
+                texto: mensajeInicial,
+              },
+            ]);
+          }
+
+          // Mantener copia local actualizada
+          const ticketsLocales = getLocalTickets().filter((t) => t.id !== nuevoTicket.id);
+          saveLocalTickets([nuevoTicket, ...ticketsLocales]);
+
+          return nuevoTicket;
+        } else if (ticketError) {
+          console.warn("Error creando ticket en Supabase:", ticketError);
         }
-        return nuevoTicket;
       }
     } catch (e) {
       console.warn("No se pudo crear en Supabase, guardando local:", e);
@@ -352,7 +474,7 @@ export async function crearTicket({
 }
 
 /**
- * Envía un mensaje a un ticket existente.
+ * Envía un mensaje a un ticket existente sincronizando con Supabase y persistiendo en tiempo real.
  */
 export async function enviarMensaje({
   ticketId,
@@ -364,40 +486,102 @@ export async function enviarMensaje({
 }) {
   const ahora = new Date().toISOString();
 
-  if (isSupabaseConfigured() && !ticketId.startsWith("seed-") && !ticketId.startsWith("ticket-")) {
+  if (isSupabaseConfigured()) {
     try {
       const supabase = getSupabaseClient();
-      const tenantId = await getTenantIdActual();
+      const tenantId = await getTenantIdActual().catch(() => null);
 
-      const { data, error } = await supabase
-        .from("soporte_mensajes")
-        .insert([
-          {
-            tenant_id: tenantId,
-            ticket_id: ticketId,
-            remitente_nombre: remitenteNombre,
-            remitente_id: remitenteId,
-            es_admin: esAdmin,
-            texto,
-            adjunto_url: adjuntoUrl,
-            creado_en: ahora,
-          },
-        ])
-        .select()
-        .single();
+      if (tenantId) {
+        let targetTicketId = await resolverTicketUuid(ticketId);
 
-      if (!error && data) {
-        // Actualizar ticket
-        await supabase
-          .from("soporte_tickets")
-          .update({
-            ultimo_mensaje: texto,
-            actualizado_en: ahora,
-            ...(esAdmin ? { estado: "en_curso" } : {}),
-          })
-          .eq("id", ticketId);
+        // Si aún no es un UUID válido, intentar crearlo o emparejarlo en Supabase
+        if (!esUuidValido(targetTicketId)) {
+          const { data: ticketsDb } = await supabase
+            .from("soporte_tickets")
+            .select("id, asunto, usuario_nombre")
+            .eq("tenant_id", tenantId)
+            .order("actualizado_en", { ascending: false });
 
-        return data;
+          const match = ticketsDb?.find(
+            (t) =>
+              (ticketId === "ticket-camila" && (t.usuario_nombre?.toLowerCase().includes("camila") || t.asunto?.toLowerCase().includes("coordinaci"))) ||
+              t.asunto?.toLowerCase() === ticketId.toLowerCase()
+          ) || ticketsDb?.[0];
+
+          if (match) {
+            targetTicketId = match.id;
+          } else {
+            const { data: nuevoT } = await supabase
+              .from("soporte_tickets")
+              .insert([
+                {
+                  tenant_id: tenantId,
+                  asunto: ticketId === "ticket-camila" ? "Coordinación de pagos, facturas y anticipos" : "Conversación de Soporte",
+                  obra_nombre: "General",
+                  prioridad: "alta",
+                  estado: "en_curso",
+                  usuario_nombre: ticketId === "ticket-camila" ? "Camila Sepúlveda" : remitenteNombre,
+                  ultimo_mensaje: texto,
+                },
+              ])
+              .select()
+              .single();
+
+            if (nuevoT) {
+              targetTicketId = nuevoT.id;
+            }
+          }
+        }
+
+        if (esUuidValido(targetTicketId)) {
+          // Resolver UUID válido de remitente
+          let validRemitenteId = esUuidValido(remitenteId) ? remitenteId.trim() : null;
+          if (!validRemitenteId) {
+            try {
+              const { data: authData } = await supabase.auth.getUser();
+              if (authData?.user?.id && esUuidValido(authData.user.id)) {
+                validRemitenteId = authData.user.id;
+              }
+            } catch {
+              // sin sesión auth directa
+            }
+          }
+
+          const { data, error } = await supabase
+            .from("soporte_mensajes")
+            .insert([
+              {
+                tenant_id: tenantId,
+                ticket_id: targetTicketId,
+                remitente_nombre: remitenteNombre,
+                remitente_id: validRemitenteId,
+                es_admin: Boolean(esAdmin),
+                texto,
+                adjunto_url: adjuntoUrl,
+                creado_en: ahora,
+              },
+            ])
+            .select()
+            .single();
+
+          if (!error && data) {
+            // Actualizar ticket (el trigger trg_soporte_mensaje_insert también actualiza en DB)
+            await supabase
+              .from("soporte_tickets")
+              .update({
+                ultimo_mensaje: texto,
+                actualizado_en: ahora,
+                ...(esAdmin ? { estado: "en_curso" } : {}),
+              })
+              .eq("id", targetTicketId);
+
+            // Guardar copia local de respaldo
+            saveLocalMensaje(targetTicketId, data);
+            return data;
+          } else if (error) {
+            console.warn("Error insertando mensaje en Supabase:", error);
+          }
+        }
       }
     } catch (e) {
       console.warn("Error enviando mensaje por Supabase, guardando local:", e);
@@ -409,6 +593,7 @@ export async function enviarMensaje({
     id: "msg-" + Date.now(),
     ticket_id: ticketId,
     remitente_nombre: remitenteNombre,
+    remitente_id: remitenteId,
     es_admin: esAdmin,
     texto,
     adjunto_url: adjuntoUrl,
@@ -417,7 +602,7 @@ export async function enviarMensaje({
 
   saveLocalMensaje(ticketId, nuevoMsg);
 
-  // Actualizar ultimo mensaje del ticket local
+  // Actualizar ticket local
   const tickets = getLocalTickets();
   const index = tickets.findIndex((t) => t.id === ticketId);
   if (index !== -1) {
@@ -439,13 +624,16 @@ export async function enviarMensaje({
 export async function cambiarEstadoTicket(ticketId, nuevoEstado) {
   const ahora = new Date().toISOString();
 
-  if (isSupabaseConfigured() && !ticketId.startsWith("seed-") && !ticketId.startsWith("ticket-")) {
+  if (isSupabaseConfigured()) {
     try {
       const supabase = getSupabaseClient();
-      await supabase
-        .from("soporte_tickets")
-        .update({ estado: nuevoEstado, actualizado_en: ahora })
-        .eq("id", ticketId);
+      const targetId = await resolverTicketUuid(ticketId);
+      if (esUuidValido(targetId)) {
+        await supabase
+          .from("soporte_tickets")
+          .update({ estado: nuevoEstado, actualizado_en: ahora })
+          .eq("id", targetId);
+      }
     } catch (e) {
       console.warn("Error actualizando estado en Supabase:", e);
     }
@@ -464,25 +652,18 @@ export async function cambiarEstadoTicket(ticketId, nuevoEstado) {
   }
 }
 
-/**
- * Suscribe a eventos en tiempo real para un ticket específico.
- */
-export function suscribirChatTicket(ticketId, onNuevoMensaje) {
-  if (!isSupabaseConfigured() || ticketId.startsWith("seed-") || ticketId.startsWith("ticket-")) {
-    return () => {};
-  }
-
+function iniciarCanalRealtime(targetUuid, onNuevoMensaje) {
   try {
     const supabase = getSupabaseClient();
     const canal = supabase
-      .channel(`chat-ticket-${ticketId}`)
+      .channel(`chat-ticket-${targetUuid}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "app",
           table: "soporte_mensajes",
-          filter: `ticket_id=eq.${ticketId}`,
+          filter: `ticket_id=eq.${targetUuid}`,
         },
         (payload) => {
           if (payload.new && onNuevoMensaje) {
@@ -493,10 +674,42 @@ export function suscribirChatTicket(ticketId, onNuevoMensaje) {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(canal);
+      try {
+        supabase.removeChannel(canal);
+      } catch {
+        // ignore
+      }
     };
   } catch (e) {
     console.warn("No se pudo iniciar canal Realtime de chat:", e);
     return () => {};
   }
 }
+
+/**
+ * Suscribe a eventos en tiempo real para un ticket específico.
+ */
+export function suscribirChatTicket(ticketId, onNuevoMensaje) {
+  if (!isSupabaseConfigured() || !ticketId) {
+    return () => {};
+  }
+
+  if (esUuidValido(ticketId)) {
+    return iniciarCanalRealtime(ticketId, onNuevoMensaje);
+  }
+
+  let cancelado = false;
+  let canalRemover = null;
+
+  resolverTicketUuid(ticketId).then((uuid) => {
+    if (!cancelado && esUuidValido(uuid)) {
+      canalRemover = iniciarCanalRealtime(uuid, onNuevoMensaje);
+    }
+  });
+
+  return () => {
+    cancelado = true;
+    if (canalRemover) canalRemover();
+  };
+}
+

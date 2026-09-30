@@ -171,7 +171,7 @@ function Fila({ c, compacta, acciones }) {
   );
 
   const botones = (
-    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", maxWidth: "100%" }}>
       <button
         type="button"
         style={{
@@ -278,12 +278,12 @@ function Fila({ c, compacta, acciones }) {
       <Resaltable as="article" onClick={() => acciones.ver(c)}
         estiloHover={{ borderColor: C.acentoFuerte, background: "var(--surface-hover, #fffdfb)" }}
         style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 10, background: "var(--surface, #fff)",
-          padding: "9px 12px 9px 14px", display: "flex", alignItems: "center", gap: 12,
-          cursor: "pointer", position: "relative", overflow: "hidden",
+          padding: "9px 12px 9px 14px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
+          cursor: "pointer", position: "relative", overflow: "hidden", width: "100%", maxWidth: "100%", boxSizing: "border-box",
           transition: "border-color .16s ease, background .16s ease" }}>
         <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3,
           background: colorBarra }} />
-        <div style={{ minWidth: 0, flex: 1 }}>{datos}</div>
+        <div style={{ minWidth: 0, flex: "1 1 200px" }}>{datos}</div>
         {totalEstimado > 0 && (
           <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #101828)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
             {fmt(totalEstimado)}
@@ -300,13 +300,13 @@ function Fila({ c, compacta, acciones }) {
       estiloHover={{ borderColor: C.acentoFuerte, boxShadow: "0 12px 28px -16px rgba(0,0,0,.35)" }}
       style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 12, background: "var(--surface, #fff)",
         padding: "12px 14px 11px", display: "flex", flexDirection: "column", gap: 10,
-        cursor: "pointer", position: "relative", overflow: "hidden",
+        cursor: "pointer", position: "relative", overflow: "hidden", width: "100%", maxWidth: "100%", boxSizing: "border-box",
         transition: "box-shadow .2s ease, border-color .2s ease" }}>
       <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3,
         background: colorBarra }} />
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
-        <div style={{ minWidth: 0 }}>{datos}</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ minWidth: 0, flex: "1 1 180px" }}>{datos}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, flexWrap: "wrap" }}>
           {totalEstimado > 0 && (
             <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-main, #101828)", fontVariantNumeric: "tabular-nums" }}>
               {fmt(totalEstimado)}
@@ -316,7 +316,7 @@ function Fila({ c, compacta, acciones }) {
         </div>
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 8,
-        borderTop: `1px solid ${C.borde}` }}>{botones}</div>
+        borderTop: `1px solid ${C.borde}`, flexWrap: "wrap", gap: 6 }}>{botones}</div>
     </Resaltable>
   );
 }

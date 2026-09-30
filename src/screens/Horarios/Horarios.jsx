@@ -677,8 +677,8 @@ export default function Horarios({ctx}){
         </div>
       )}
 
-      <div style={{display:"flex",gap:14,alignItems:"flex-end",marginBottom:20}}>
-        <div><LBL>Filtrar por fecha</LBL><input type="date" value={fechaF} onChange={e=>setFechaF(e.target.value)} style={{...SI,width:"auto"}}/></div>
+      <div style={{display:"flex",gap:14,alignItems:"flex-end",marginBottom:20,flexWrap:"wrap",maxWidth:"100%"}}>
+        <div><LBL>Filtrar por fecha</LBL><input type="date" value={fechaF} onChange={e=>setFechaF(e.target.value)} style={{...SI,width:"auto",maxWidth:"100%"}}/></div>
         <div style={{fontSize:13,color:"var(--text-muted)"}}>{dia.length} turno{dia.length!==1?"s":""} · {fmtD(fechaF)}</div>
         <button
           onClick={abrirHorarioDelDia}
@@ -716,7 +716,7 @@ export default function Horarios({ctx}){
           {obras.map(o=>{const hs=horarios.filter(h=>h.obraId===o.id);if(!hs.length)return null;return(<div key={o.id} style={{background:"var(--surface-subtle)",border:"1px solid var(--border)",borderRadius:10,padding:"12px 14px",marginBottom:12}}>
             <div style={{fontSize:12,fontWeight:600,color:"var(--text-main)",marginBottom:2}}>{o.cliente}</div>
             <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>{o.proyecto}</div>
-            {hs.map(h=>{const e=empleados.find(x=>x.id===h.empleadoId);return(<div key={h.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid var(--border)",fontSize:11}}><span style={{color:"var(--text-muted)",minWidth:88}}>{fmtD(h.fecha)}</span><span style={{color:"var(--text-main)",flex:1}}>{e?.nombre}</span><span style={{color:"var(--accent, #f47c20)",minWidth:160}}>{fmtTurno12Local(h.turno)}</span><span style={{color:"var(--text-muted)",flex:1.3}}>{h.tarea}</span></div>);})}
+            {hs.map(h=>{const e=empleados.find(x=>x.id===h.empleadoId);return(<div key={h.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid var(--border)",fontSize:11,flexWrap:"wrap"}}><span style={{color:"var(--text-muted)",minWidth:76}}>{fmtD(h.fecha)}</span><span style={{color:"var(--text-main)",flex:"1 1 110px",fontWeight:600}}>{e?.nombre}</span><span style={{color:"var(--accent, #f47c20)",flex:"1 1 120px",fontWeight:500}}>{fmtTurno12Local(h.turno)}</span><span style={{color:"var(--text-muted)",flex:"1 1 100%"}}>{h.tarea}</span></div>);})}
           </div>);})}
         </div>
       </div>

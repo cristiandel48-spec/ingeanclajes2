@@ -157,54 +157,58 @@ export default function ListadoConFiltros({
   const ponerExtra = (clave, valor) => setExtra((p) => ({ ...p, [clave]: valor }));
 
   return (
-    <div style={{ ...CD, padding: 0, overflow: "hidden" }}>
+    <div style={{ ...CD, padding: 0, overflow: "hidden", width: "100%", boxSizing: "border-box" }}>
       <div style={{ padding: "12px 14px 11px", display: "flex", flexDirection: "column", gap: 9,
-        borderBottom: `1px solid ${C.borde}` }}>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+        borderBottom: `1px solid ${C.borde}`, width: "100%", boxSizing: "border-box" }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", width: "100%" }}>
           <Buscador refCampo={campoBusqueda} valor={busqueda} alCambiar={setBusqueda} marcador={marcador} />
 
-          <Resaltable as="button" onClick={() => setFiltrosAbiertos((v) => !v)}
-            estiloHover={{ borderColor: C.acento }}
-            style={{ height: 36, padding: "0 12px", borderRadius: 9,
-              border: `1.5px solid ${filtrosAbiertos ? C.tinta : C.bordeFuerte}`,
-              background: filtrosAbiertos ? C.tinta : "var(--surface, #fff)",
-              color: filtrosAbiertos ? "var(--bg-app, #fff)" : C.suave,
-              fontSize: 13, fontWeight: 600, cursor: "pointer",
-              display: "flex", alignItems: "center", gap: 8, fontFamily: "inherit" }}>
-            Filtros
-            {puestos > 0 && (
-              <span style={{ background: C.acento, color: "#fff", fontSize: 11, fontWeight: 700,
-                minWidth: 18, height: 18, borderRadius: 999, display: "flex", alignItems: "center",
-                justifyContent: "center", padding: "0 5px" }}>{puestos}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <Resaltable as="button" onClick={() => setFiltrosAbiertos((v) => !v)}
+              estiloHover={{ borderColor: C.acento }}
+              style={{ height: 36, padding: "0 12px", borderRadius: 9,
+                border: `1.5px solid ${filtrosAbiertos ? C.tinta : C.bordeFuerte}`,
+                background: filtrosAbiertos ? C.tinta : "var(--surface, #fff)",
+                color: filtrosAbiertos ? "var(--bg-app, #fff)" : C.suave,
+                fontSize: 13, fontWeight: 600, cursor: "pointer",
+                display: "flex", alignItems: "center", gap: 8, fontFamily: "inherit" }}>
+              Filtros
+              {puestos > 0 && (
+                <span style={{ background: C.acento, color: "#fff", fontSize: 11, fontWeight: 700,
+                  minWidth: 18, height: 18, borderRadius: 999, display: "flex", alignItems: "center",
+                  justifyContent: "center", padding: "0 5px" }}>{puestos}</span>
+              )}
+            </Resaltable>
+
+            {ordenes.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, height: 36, padding: "0 5px 0 11px",
+                borderRadius: 9, border: `1.5px solid ${C.bordeFuerte}`, background: "var(--surface, #fff)" }}>
+                <span style={{ fontSize: 11.5, fontWeight: 600, color: C.tenue, whiteSpace: "nowrap" }}>Ordenar</span>
+                <select value={orden} onChange={(e) => setOrden(e.target.value)}
+                  style={{ height: 30, border: "none", background: "transparent", fontSize: 13, fontWeight: 600,
+                    color: C.tinta, outline: "none", cursor: "pointer", fontFamily: "inherit" }}>
+                  {ordenes.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+                </select>
+              </div>
             )}
-          </Resaltable>
 
-          {ordenes.length > 0 && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, height: 36, padding: "0 5px 0 11px",
-              borderRadius: 9, border: `1.5px solid ${C.bordeFuerte}`, background: "var(--surface, #fff)" }}>
-              <span style={{ fontSize: 11.5, fontWeight: 600, color: C.tenue, whiteSpace: "nowrap" }}>Ordenar</span>
-              <select value={orden} onChange={(e) => setOrden(e.target.value)}
-                style={{ height: 30, border: "none", background: "transparent", fontSize: 13, fontWeight: 600,
-                  color: C.tinta, outline: "none", cursor: "pointer", fontFamily: "inherit" }}>
-                {ordenes.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
-              </select>
+            <div style={{ display: "flex", padding: 3, gap: 3, background: C.rellenoFuerte, borderRadius: 9,
+              height: 36, alignItems: "center" }}>
+              {[["lista", "☰", "Lista"], ["cuadricula", "▦", "Cuadrícula"]].map(([clave, icono, titulo]) => (
+                <button key={clave} title={titulo} onClick={() => setVista(clave)}
+                  style={{ width: 30, height: 30, border: "none", borderRadius: 7, cursor: "pointer", fontSize: 13,
+                    background: vista === clave ? "var(--surface, #fff)" : "transparent",
+                    color: vista === clave ? C.tinta : "var(--c-apagado, #8a94a6)",
+                    boxShadow: vista === clave ? "0 1px 3px rgba(0,0,0,.2)" : "none" }}>{icono}</button>
+              ))}
             </div>
-          )}
-
-          <div style={{ display: "flex", padding: 3, gap: 3, background: C.rellenoFuerte, borderRadius: 9,
-            height: 36, alignItems: "center" }}>
-            {[["lista", "☰", "Lista"], ["cuadricula", "▦", "Cuadrícula"]].map(([clave, icono, titulo]) => (
-              <button key={clave} title={titulo} onClick={() => setVista(clave)}
-                style={{ width: 30, height: 30, border: "none", borderRadius: 7, cursor: "pointer", fontSize: 13,
-                  background: vista === clave ? "var(--surface, #fff)" : "transparent",
-                  color: vista === clave ? C.tinta : "var(--c-apagado, #8a94a6)",
-                  boxShadow: vista === clave ? "0 1px 3px rgba(0,0,0,.2)" : "none" }}>{icono}</button>
-            ))}
           </div>
         </div>
 
         {estadoDe && estados.length > 0 && (
-          <div style={{ display: "flex", gap: 7, flexWrap: "wrap", alignItems: "center" }}>
+          <div
+            className="pills-scroll-container"
+            style={{ display: "flex", gap: 7, flexWrap: "wrap", alignItems: "center", width: "100%", maxWidth: "100%" }}>
             {["Todas", ...estados].map((e) => {
               const activa = estado === e;
               return (
@@ -215,7 +219,7 @@ export default function ListadoConFiltros({
                     background: activa ? C.tinta : "var(--surface, #fff)",
                     color: activa ? "var(--bg-app, #fff)" : C.suave,
                     fontSize: 12.5, fontWeight: 600, cursor: "pointer",
-                    display: "flex", alignItems: "center", gap: 7, fontFamily: "inherit" }}>
+                    display: "flex", alignItems: "center", gap: 7, fontFamily: "inherit", flexShrink: 0 }}>
                   {e}
                   <span style={{ fontSize: 11, fontWeight: 700, color: activa ? "var(--bg-app, #fff)" : C.apagado,
                     background: activa ? "rgba(128,128,128,.3)" : C.relleno, borderRadius: 999,
@@ -223,7 +227,7 @@ export default function ListadoConFiltros({
                 </Resaltable>
               );
             })}
-            {derecha && <span style={{ marginLeft: "auto" }}>{derecha(lista)}</span>}
+            {derecha && <span style={{ marginLeft: "auto", flexShrink: 0 }}>{derecha(lista)}</span>}
           </div>
         )}
 
@@ -242,14 +246,14 @@ export default function ListadoConFiltros({
                   ))}
                 </GrupoFiltro>
                 <GrupoFiltro titulo="…o entre dos fechas">
-                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", width: "100%" }}>
                     <input type="date" value={desde}
                       onChange={(e) => { setDesde(e.target.value); setRango(null); }}
-                      style={{ ...SI, fontSize: 12, padding: "6px 8px", width: 142 }} />
+                      style={{ ...SI, fontSize: 12, padding: "6px 8px", flex: 1, minWidth: 120 }} />
                     <span style={{ fontSize: 12, color: C.tenue }}>a</span>
                     <input type="date" value={hasta}
                       onChange={(e) => { setHasta(e.target.value); setRango(null); }}
-                      style={{ ...SI, fontSize: 12, padding: "6px 8px", width: 142 }} />
+                      style={{ ...SI, fontSize: 12, padding: "6px 8px", flex: 1, minWidth: 120 }} />
                   </div>
                 </GrupoFiltro>
               </>
@@ -269,9 +273,9 @@ export default function ListadoConFiltros({
       </div>
 
       {lista.length > 0 && (
-        <div style={{ padding: vista === "lista" ? "10px 14px 14px" : 14, display: "grid",
-          gridTemplateColumns: vista === "cuadricula" ? "repeat(auto-fill,minmax(330px,1fr))" : "minmax(0,1fr)",
-          gap: vista === "lista" ? 6 : 11 }}>
+        <div style={{ padding: vista === "lista" ? "10px 12px 14px" : 12, display: "grid",
+          gridTemplateColumns: vista === "cuadricula" ? "repeat(auto-fill,minmax(min(100%, 280px),1fr))" : "minmax(0,1fr)",
+          gap: vista === "lista" ? 6 : 10, width: "100%", boxSizing: "border-box" }}>
           {lista.map((d, i) => fila(d, { compacta: vista === "lista", indice: i }))}
         </div>
       )}
@@ -301,22 +305,23 @@ export default function ListadoConFiltros({
 function Buscador({ valor, alCambiar, refCampo, marcador }) {
   const [enfocado, setEnfocado] = useState(false);
   return (
-    <div style={{ position: "relative", flex: 1, minWidth: 180 }}>
+    <div style={{ position: "relative", flex: "1 1 200px", minWidth: 0, width: "100%" }}>
       <input ref={refCampo} value={valor} onChange={(e) => alCambiar(e.target.value)}
         onFocus={() => setEnfocado(true)} onBlur={() => setEnfocado(false)}
         placeholder={marcador}
-        style={{ ...SI, height: 36, padding: "0 80px 0 12px", fontSize: 13,
+        style={{ ...SI, height: 36, padding: "0 40px 0 12px", fontSize: 13,
           border: `1.5px solid ${enfocado ? C.acento : C.bordeFuerte}`,
           background: enfocado ? "var(--input-bg, #fff)" : C.relleno,
-          boxShadow: enfocado ? "0 0 0 3px rgba(244,124,32,.14)" : "none" }} />
-      <div style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
-        display: "flex", alignItems: "center", gap: 7 }}>
+          boxShadow: enfocado ? "0 0 0 3px rgba(244,124,32,.14)" : "none",
+          width: "100%", minWidth: 0, boxSizing: "border-box" }} />
+      <div style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
+        display: "flex", alignItems: "center", gap: 6 }}>
         {valor.length > 0 && (
           <button onClick={() => alCambiar("")} style={{ border: "none", background: C.rellenoFuerte,
             color: C.suave, width: 22, height: 22, borderRadius: "50%", fontSize: 12, cursor: "pointer",
             lineHeight: 1 }}>✕</button>
         )}
-        <kbd style={{ fontSize: 10.5, color: C.tenue, background: C.rellenoFuerte,
+        <kbd className="kbd-ctrl-k" style={{ fontSize: 10.5, color: C.tenue, background: C.rellenoFuerte,
           border: `1px solid ${C.bordeFuerte}`, borderRadius: 5, padding: "2px 6px" }}>Ctrl K</kbd>
       </div>
     </div>

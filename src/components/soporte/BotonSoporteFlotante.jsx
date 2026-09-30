@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useAppData } from "../../context/AppDataContext";
 import {
   cargarTickets,
@@ -7,6 +7,7 @@ import {
   crearTicket,
   suscribirChatTicket,
 } from "../../lib/soporte";
+import { listarUsuarios } from "../../lib/backend/usuarios";
 import { SI, B } from "../../styles/tokens";
 
 export default function BotonSoporteFlotante() {
@@ -19,6 +20,7 @@ export default function BotonSoporteFlotante() {
   const [mensajes, setMensajes] = useState([]);
   const [nuevoTexto, setNuevoTexto] = useState("");
 
+  const [usuariosDisponibles, setUsuariosDisponibles] = useState([]);
   const [destinatario, setDestinatario] = useState("camila");
   const [nombreDestinatario, setNombreDestinatario] = useState("Camila Sepúlveda");
   const [asunto, setAsunto] = useState("");
@@ -31,12 +33,71 @@ export default function BotonSoporteFlotante() {
   // Si el usuario ya está en la pantalla completa de soporte, no mostramos el botón flotante
   const enPantallaSoporte = scr === "soporte";
 
+  // Cargar usuarios del equipo para resolver IDs reales
+  useEffect(() => {
+    listarUsuarios().then((u) => {
+      if (u && u.length > 0) setUsuariosDisponibles(u);
+    }).catch(() => {});
+  }, []);
+
+  const opcionesDestinatarios = useMemo(() => {
+    const list = [];
+    const ids = new Set();
+
+    (usuariosDisponibles || []).forEach((u) => {
+      const nom = u.nombre || u.email;
+      const idReal = u.user_id || u.id;
+      if (nom && idReal) {
+        list.push({
+          id: idReal,
+          nombre: nom,
+          email: u.email || "",
+          rol: u.role || "Equipo Ingeanclajes",
+        });
+        ids.add(nom.toLowerCase());
+        if (u.email) ids.add(u.email.toLowerCase());
+      }
+    });
+
+    const defaults = [
+      { id: "camila", nombre: "Camila Sepúlveda", email: "camilasepulveda@ingeanclajes.com", rol: "Administración / Finanzas" },
+      { id: "cristian", nombre: "Cristian Flórez", email: "cristiandel48@gmail.com", rol: "Administrador / Desarrollo" },
+    ];
+
+    defaults.forEach((def) => {
+      if (!ids.has(def.nombre.toLowerCase()) && !ids.has(def.email.toLowerCase())) {
+        list.push(def);
+        ids.add(def.nombre.toLowerCase());
+      }
+    });
+
+    return list;
+  }, [usuariosDisponibles]);
+
+  // Asignar el destinatario por defecto al usuario de Camila (con su UUID si existe)
+  useEffect(() => {
+    if (opcionesDestinatarios.length > 0 && (!destinatario || destinatario === "camila")) {
+      const def = opcionesDestinatarios.find(
+        (u) =>
+          u.nombre?.toLowerCase().includes("camila") ||
+          (u.email && u.email.toLowerCase().includes("camila")) ||
+          u.id === "camila"
+      ) || opcionesDestinatarios[0];
+
+      if (def) {
+        setDestinatario(def.id);
+        setNombreDestinatario(def.nombre);
+      }
+    }
+  }, [opcionesDestinatarios]);
+
   useEffect(() => {
     if (abierto) {
       cargarTickets().then((data) => setTickets(data));
     }
   }, [abierto]);
 
+  // Cargar mensajes y escuchar cambios Realtime
   useEffect(() => {
     if (!ticketActivoId) return;
     let montado = true;
@@ -49,7 +110,10 @@ export default function BotonSoporteFlotante() {
 
     const desuscribir = suscribirChatTicket(ticketActivoId, (nuevo) => {
       if (montado) {
-        setMensajes((prev) => [...prev, nuevo]);
+        setMensajes((prev) => {
+          if (prev.some((m) => m.id === nuevo.id)) return prev;
+          return [...prev, nuevo];
+        });
         setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
       }
     });
@@ -59,6 +123,50 @@ export default function BotonSoporteFlotante() {
       desuscribir();
     };
   }, [ticketActivoId]);
+
+  // Polling periódico de mensajes cada 3.5s si el chat está abierto
+  useEffect(() => {
+    if (!abierto || !ticketActivoId || vista !== "chat") return;
+
+    const interval = setInterval(async () => {
+      try {
+        const data = await cargarMensajes(ticketActivoId);
+        if (data && data.length > 0) {
+          setMensajes((prev) => {
+            const idsPrev = new Set(prev.map((m) => m.id));
+            const nuevos = data.filter((m) => !idsPrev.has(m.id));
+            if (nuevos.length === 0) return prev;
+            setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
+            return [...prev, ...nuevos].sort(
+              (a, b) => new Date(a.creado_en) - new Date(b.creado_en)
+            );
+          });
+        }
+      } catch {
+        // polling silencioso
+      }
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [abierto, ticketActivoId, vista]);
+
+  // Polling periódico de tickets cada 8s mientras el widget esté abierto
+  useEffect(() => {
+    if (!abierto) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const data = await cargarTickets();
+        if (data && data.length > 0) {
+          setTickets(data);
+        }
+      } catch {
+        // polling silencioso
+      }
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, [abierto]);
 
   const ticketActivo = tickets.find((t) => t.id === ticketActivoId);
 
@@ -75,12 +183,35 @@ export default function BotonSoporteFlotante() {
         ticketId: ticketActivoId,
         texto,
         remitenteNombre: remitente,
-        remitenteId: membresia?.user_id || "cristian",
+        remitenteId: membresia?.user_id || null,
         esAdmin,
       });
 
-      setMensajes((prev) => [...prev, guardado]);
+      if (guardado.ticket_id && guardado.ticket_id !== ticketActivoId) {
+        setTicketActivoId(guardado.ticket_id);
+      }
+
+      setMensajes((prev) => {
+        if (prev.some((m) => m.id === guardado.id)) return prev;
+        return [...prev, guardado];
+      });
       setNuevoTexto("");
+
+      // Actualizar estado del ticket en la lista
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.id === ticketActivoId || (guardado.ticket_id && t.id === guardado.ticket_id)
+            ? {
+                ...t,
+                id: guardado.ticket_id || t.id,
+                ultimo_mensaje: texto,
+                actualizado_en: new Date().toISOString(),
+                estado: t.estado === "pendiente" ? "en_curso" : t.estado,
+              }
+            : t
+        )
+      );
+
       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
     } catch (err) {
       console.error("Error enviando en widget flotante:", err);
@@ -95,17 +226,26 @@ export default function BotonSoporteFlotante() {
 
     setEnviando(true);
     try {
+      const targetUser = opcionesDestinatarios.find((u) => String(u.id) === String(destinatario));
       const res = await crearTicket({
         asunto: asunto.trim(),
         obraNombre: obra.trim(),
-        usuarioNombre: nombreDestinatario,
-        usuarioEmail: destinatario === "camila" ? "camilasepulveda@ingeanclajes.com" : "",
+        usuarioNombre: nombreDestinatario || targetUser?.nombre || "Usuario",
+        usuarioEmail: targetUser?.email || (destinatario === "camila" ? "camilasepulveda@ingeanclajes.com" : ""),
         usuarioId: destinatario,
         mensajeInicial: detalle.trim(),
       });
 
-      setTickets((prev) => [res, ...prev]);
-      setTicketActivoId(res.id);
+      if (res) {
+        setTickets((prev) => [res, ...prev.filter((t) => t.id !== res.id)]);
+        setTicketActivoId(res.id);
+        if (detalle.trim()) {
+          const msgs = await cargarMensajes(res.id);
+          setMensajes(msgs);
+        } else {
+          setMensajes([]);
+        }
+      }
       setVista("chat");
       setAsunto("");
       setObra("");
@@ -120,17 +260,24 @@ export default function BotonSoporteFlotante() {
   if (enPantallaSoporte) return null;
 
   return (
-    <div style={{ position: "fixed", bottom: 22, right: 24, zIndex: 9999, fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div style={{
+      position: "fixed",
+      bottom: "calc(16px + env(safe-area-inset-bottom))",
+      right: "calc(16px + env(safe-area-inset-right))",
+      zIndex: 9999,
+      fontFamily: "'Inter', system-ui, sans-serif"
+    }}>
       {/* Ventana Flotante Emergente */}
       {abierto && (
         <div
           style={{
             position: "absolute",
-            bottom: 60,
+            bottom: 56,
             right: 0,
             width: 360,
-            maxWidth: "92vw",
+            maxWidth: "calc(100vw - 32px)",
             height: 480,
+            maxHeight: "calc(100dvh - 84px)",
             backgroundColor: "var(--surface, #ffffff)",
             borderRadius: 16,
             border: "1px solid var(--border, #eaecf0)",
@@ -308,15 +455,25 @@ export default function BotonSoporteFlotante() {
                   onChange={(e) => {
                     const val = e.target.value;
                     setDestinatario(val);
-                    if (val === "camila") setNombreDestinatario("Camila Sepúlveda");
-                    else if (val === "cristian") setNombreDestinatario("Cristian Flórez");
-                    else if (val === "soporte") setNombreDestinatario("Ingeanclajes Soporte");
+                    const enc = opcionesDestinatarios.find((u) => String(u.id) === String(val));
+                    if (enc) {
+                      setNombreDestinatario(enc.nombre);
+                    } else if (val === "soporte") {
+                      setNombreDestinatario("Ingeanclajes Soporte");
+                    }
                   }}
                   style={{ ...SI, padding: "7px 10px", fontSize: 12, fontWeight: 600 }}
                 >
-                  <option value="camila">👤 Camila Sepúlveda (Administración / Finanzas)</option>
-                  <option value="cristian">👤 Cristian Flórez (Administrador)</option>
-                  <option value="soporte">🛠️ Soporte Técnico General</option>
+                  <optgroup label="Equipo Ingeanclajes">
+                    {opcionesDestinatarios.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        👤 {u.nombre} {u.rol ? `(${u.rol})` : ""}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Canal General">
+                    <option value="soporte">🛠️ Soporte Técnico General</option>
+                  </optgroup>
                 </select>
               </div>
 
@@ -390,12 +547,16 @@ export default function BotonSoporteFlotante() {
                   mensajes.map((m) => {
                     const miId = membresia?.user_id;
                     const miNombre = (membresia?.nombre || "").trim().toLowerCase();
+                    const miEmail = (membresia?.email || "").trim().toLowerCase();
                     const msgNombre = (m.remitente_nombre || "").trim().toLowerCase();
+                    const msgEmail = (m.remitente_email || "").trim().toLowerCase();
 
-                    const esMio =
-                      (miId && m.remitente_id === miId) ||
-                      (miNombre && (msgNombre.includes(miNombre) || miNombre.includes(msgNombre))) ||
-                      (!miId && m.remitente_id === "cristian");
+                    const esMio = Boolean(
+                      (miId && m.remitente_id && m.remitente_id === miId) ||
+                      (miEmail && msgEmail && miEmail === msgEmail) ||
+                      (miNombre && msgNombre && (msgNombre.includes(miNombre) || miNombre.includes(msgNombre))) ||
+                      (!miId && m.remitente_id === "cristian")
+                    );
 
                     return (
                       <div
@@ -465,8 +626,8 @@ export default function BotonSoporteFlotante() {
       <button
         onClick={() => setAbierto((prev) => !prev)}
         style={{
-          width: 48,
-          height: 48,
+          width: 46,
+          height: 46,
           borderRadius: "50%",
           backgroundColor: "#E0342A",
           color: "#ffffff",
@@ -476,12 +637,27 @@ export default function BotonSoporteFlotante() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 22,
+          fontSize: 20,
           transition: "transform 0.15s ease",
+          position: "relative",
         }}
         title="Mensajes y soporte"
       >
         {abierto ? "✕" : "💬"}
+        {!abierto && tickets.some((t) => t.estado === "pendiente" || t.estado === "en_curso") && (
+          <span
+            style={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              width: 11,
+              height: 11,
+              backgroundColor: "#12B76A",
+              border: "2px solid #ffffff",
+              borderRadius: "50%",
+            }}
+          />
+        )}
       </button>
     </div>
   );

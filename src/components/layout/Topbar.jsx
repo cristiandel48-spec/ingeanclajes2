@@ -38,22 +38,26 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        gap: 12,
+        gap: isMobile ? 8 : 12,
         minHeight: TOPBAR_HEIGHT,
-        padding: isMobile ? "0 14px" : "0 28px",
+        padding: isMobile ? "0 12px" : "0 28px",
         background: theme.surface,
         borderBottom: `1px solid ${theme.divider}`,
         // Deja pasar el notch en iPhone cuando la app va a pantalla completa.
         paddingTop: "env(safe-area-inset-top)",
+        width: "100%",
+        maxWidth: "100vw",
+        boxSizing: "border-box",
+        overflowX: "hidden",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 12, flexShrink: 0, minWidth: isMobile ? 0 : "max-content" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 12, flexShrink: 1, minWidth: 0, overflow: "hidden" }}>
         {isMobile && (
           <button
             onClick={onOpenMenu}
             aria-label="Abrir menú"
             style={{
-              width: 40, height: 40, flexShrink: 0,
+              width: 38, height: 38, flexShrink: 0,
               display: "flex", alignItems: "center", justifyContent: "center",
               borderRadius: 10, border: "none", cursor: "pointer",
               background: theme.surfaceTint, color: theme.text,
@@ -65,22 +69,23 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
           </button>
         )}
 
-        <div style={{ flexShrink: 0 }}>
+        <div style={{ flexShrink: 1, minWidth: 0, overflow: "hidden" }}>
           {!isMobile && section && (
             <div style={{ fontSize: 11.5, color: theme.muted, letterSpacing: .2, whiteSpace: "nowrap" }}>
               {section}
             </div>
           )}
           <div style={{
-            fontSize: isMobile ? 14.5 : 16.5, fontWeight: 700, color: theme.text,
-            whiteSpace: "nowrap",
+            fontSize: isMobile ? 14 : 16.5, fontWeight: 700, color: theme.text,
+            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+            maxWidth: isMobile ? "140px" : "none",
           }}>
             {title}
           </div>
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 10, flex: 1, minWidth: 0, justifyContent: "flex-end" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 5 : 10, flexShrink: 0, minWidth: 0, justifyContent: "flex-end" }}>
         {acciones && (
           <div
             className="topbar-acciones"
@@ -89,7 +94,7 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
               display: "flex",
               alignItems: "center",
               gap: 6,
-              maxWidth: isMobile ? "46vw" : "none",
+              maxWidth: isMobile ? "32vw" : "none",
               overflowX: isMobile ? "auto" : "visible",
               WebkitOverflowScrolling: "touch",
               scrollbarWidth: "none",
@@ -107,11 +112,11 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
             title={`${totalPendientes} cotizaciones sin respuesta o por vencer`}
             style={{
               position: "relative",
-              height: 36,
-              padding: isMobile ? "0 10px" : "0 12px",
+              height: 34,
+              padding: isMobile ? "0 8px" : "0 12px",
               display: "flex",
               alignItems: "center",
-              gap: 6,
+              gap: 4,
               background: "#fff7ed",
               border: "1px solid #fdba74",
               borderRadius: 999,
@@ -119,10 +124,11 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
               cursor: "pointer",
               fontSize: 12,
               fontWeight: 700,
+              flexShrink: 0,
             }}
           >
             <span style={{ fontSize: 13 }}>🔔</span>
-            <span>{totalPendientes} {isMobile ? "" : "por llamar"}</span>
+            <span>{totalPendientes}{isMobile ? "" : " por llamar"}</span>
           </button>
         )}
         <SaveIndicator theme={theme} compact={isMobile} />
@@ -133,31 +139,32 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
             aria-label="Ver usuarios en línea"
             title={`Monitoreo en tiempo real (Exclusivo Cristian Delgado): ${totalEnLinea} usuario(s) conectado(s). Clic para abrir administración.`}
             style={{
-              height: 36,
-              padding: isMobile ? "0 8px" : "0 12px",
+              height: 34,
+              padding: isMobile ? "0 6px" : "0 12px",
               display: "flex",
               alignItems: "center",
-              gap: 6,
+              gap: 5,
               background: "rgba(16, 185, 129, 0.12)",
               border: "1px solid rgba(16, 185, 129, 0.35)",
               borderRadius: 999,
               color: dark ? "#34d399" : "#065f46",
               cursor: "pointer",
-              fontSize: 12,
+              fontSize: 11.5,
               fontWeight: 700,
+              flexShrink: 0,
             }}
           >
             <span
               style={{
-                width: 8,
-                height: 8,
+                width: 7,
+                height: 7,
                 borderRadius: "50%",
                 background: "#10b981",
                 boxShadow: "0 0 6px #10b981",
                 display: "inline-block",
               }}
             />
-            <span>{totalEnLinea} {isMobile ? "" : "en línea"}</span>
+            <span>{totalEnLinea}{isMobile ? "" : " en línea"}</span>
           </button>
         )}
 
@@ -166,18 +173,18 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
           aria-label={dark ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
           title={dark ? "Tema oscuro" : "Tema claro"}
           style={{
-            width: 40, height: 40,
+            width: isMobile ? 34 : 40, height: isMobile ? 34 : 40,
             display: "flex", alignItems: "center", justifyContent: "center",
             background: theme.surfaceTint, border: "none", borderRadius: 999,
-            color: theme.text, cursor: "pointer",
+            color: theme.text, cursor: "pointer", flexShrink: 0,
           }}
         >
           {dark ? (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
             </svg>
           ) : (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="4.2"/>
               <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
             </svg>

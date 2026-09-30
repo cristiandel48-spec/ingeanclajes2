@@ -20,7 +20,7 @@ import { SI, B } from "../../styles/tokens";
 
 export default function BotonSoporteFlotante() {
   const ctx = useAppData();
-  const { membresia, scr, setScr, empleados = [] } = ctx || {};
+  const { membresia, scr, setScr } = ctx || {};
   const [abierto, setAbierto] = useState(false);
   const [minimizado, setMinimizado] = useState(false);
   const [vista, setVista] = useState("lista"); // 'lista' | 'chat' | 'nuevo'
@@ -85,35 +85,24 @@ export default function BotonSoporteFlotante() {
     });
 
     const defaults = [
-      { id: "camila", nombre: "Camila Sepúlveda", email: "camilasepulveda@ingeanclajes.com", rol: "Administración / Finanzas" },
-      { id: "cristian", nombre: "Cristian Flórez", email: "cristiandel48@gmail.com", rol: "Administrador / Desarrollo" },
+      { id: "camila", nombre: "Camila Sepúlveda", email: "sistemasingeanclajes@gmail.com", rol: "Administrador" },
+      { id: "cristian", nombre: "Cristian Flórez", email: "cristiandel48@gmail.com", rol: "Administrador" },
+      { id: "miguel", nombre: "Miguel Arenas", email: "ingeanclajes.civil@gmail.com", rol: "Coordinador" },
+      { id: "paola_escobar", nombre: "Paola Escobar", email: "ingeanclajessgssst@gmail.com", rol: "Coordinador" },
+      { id: "paola_cadavid", nombre: "Paola Andrea Cadavid", email: "aux.contableingeanclajes@gmail.com", rol: "Operativo" },
+      { id: "erika", nombre: "Erika Gonzalez", email: "ingeanclajessas@gmail.com", rol: "Operativo" },
     ];
 
     defaults.forEach((def) => {
       if (!esYo(def) && !ids.has(def.nombre.toLowerCase()) && !ids.has(def.email.toLowerCase())) {
         list.push(def);
         ids.add(def.nombre.toLowerCase());
-      }
-    });
-
-    (empleados || []).forEach((emp) => {
-      const nom = `${emp.nombres || emp.nombre || ""} ${emp.apellidos || ""}`.trim();
-      if (nom && !ids.has(nom.toLowerCase())) {
-        const item = {
-          id: emp.id,
-          nombre: nom,
-          email: emp.email || "",
-          rol: emp.cargo || "Personal de Obra",
-        };
-        if (!esYo(item)) {
-          list.push(item);
-          ids.add(nom.toLowerCase());
-        }
+        if (def.email) ids.add(def.email.toLowerCase());
       }
     });
 
     return list;
-  }, [usuariosDisponibles, empleados, membresia]);
+  }, [usuariosDisponibles, membresia]);
 
   // Asignar el destinatario por defecto al primer contacto disponible que no sea yo mismo
   useEffect(() => {

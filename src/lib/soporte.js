@@ -137,8 +137,8 @@ export function esTicketVisibleParaUsuario(ticket, membresia) {
     (miId && destId && miId === destId) ||
     (miEmail && destEmail && miEmail === destEmail) ||
     (miNombre && destNombre && (miNombre === destNombre || destNombre.includes(miNombre) || miNombre.includes(destNombre))) ||
-    (destId === "camila" && (miEmail.includes("camila") || miNombre.includes("camila"))) ||
-    (destId === "cristian" && (miEmail.includes("cristian") || miNombre.includes("cristian")))
+    (destId === "camila" && (miEmail.includes("camila") || miNombre.includes("camila") || miEmail === "sistemasingeanclajes@gmail.com")) ||
+    (destId === "cristian" && (miEmail.includes("cristian") || miNombre.includes("cristian") || miEmail === "cristiandel48@gmail.com"))
   );
 
   if (soyDestinatario) return true;
@@ -153,8 +153,8 @@ export function esTicketVisibleParaUsuario(ticket, membresia) {
     (miId && creadorId && miId === creadorId) ||
     (miEmail && creadorEmail && miEmail === creadorEmail) ||
     (miNombre && creadorNombre && (miNombre === creadorNombre || creadorNombre.includes(miNombre) || miNombre.includes(creadorNombre))) ||
-    (creadorId === "cristian" && (miEmail.includes("cristian") || miNombre.includes("cristian"))) ||
-    (creadorId === "camila" && (miEmail.includes("camila") || miNombre.includes("camila")))
+    (creadorId === "cristian" && (miEmail.includes("cristian") || miNombre.includes("cristian") || miEmail === "cristiandel48@gmail.com")) ||
+    (creadorId === "camila" && (miEmail.includes("camila") || miNombre.includes("camila") || miEmail === "sistemasingeanclajes@gmail.com"))
   );
 
   if (soyCreador) return true;
@@ -244,7 +244,7 @@ export function esMiMensaje(msg, membresia) {
   }
 
   // Si mi cuenta es de Camila
-  const soyCamila = miEmail.includes("camila") || miNombre.includes("camila");
+  const soyCamila = miEmail.includes("camila") || miNombre.includes("camila") || miEmail === "sistemasingeanclajes@gmail.com";
   if (soyCamila) {
     if (remitenteNom.includes("camila") || msgRemitenteId === "camila") {
       return true;

@@ -54,7 +54,7 @@ function formatFechaRelativa(isoString) {
 }
 
 export default function Soporte({ ctx }) {
-  const { membresia, obras = [], empleados = [] } = ctx || {};
+  const { membresia, obras = [] } = ctx || {};
   const [tickets, setTickets] = useState([]);
   const [ticketActivoId, setTicketActivoId] = useState(null);
   const [mensajes, setMensajes] = useState([]);
@@ -71,7 +71,7 @@ export default function Soporte({ ctx }) {
   // Formulario nueva conversación
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState("camila");
   const [nuevoNombre, setNuevoNombre] = useState("Camila Sepúlveda");
-  const [nuevoEmail, setNuevoEmail] = useState("camilasepulveda@ingeanclajes.com");
+  const [nuevoEmail, setNuevoEmail] = useState("sistemasingeanclajes@gmail.com");
   const [nuevoUserId, setNuevoUserId] = useState("camila");
   const [esOtroUsuario, setEsOtroUsuario] = useState(false);
 
@@ -136,10 +136,14 @@ export default function Soporte({ ctx }) {
       }
     });
 
-    // 2. Usuarios por defecto (solo si no existen ya en listaUsuarios y no soy yo)
+    // 2. Usuarios base del sistema (los 6 usuarios registrados en Usuarios y Permisos)
     const base = [
-      { id: "camila", nombre: "Camila Sepúlveda", email: "camilasepulveda@ingeanclajes.com", rol: "Administración / Finanzas" },
-      { id: "cristian", nombre: "Cristian Flórez", email: "cristiandel48@gmail.com", rol: "Administrador / Desarrollo" },
+      { id: "camila", nombre: "Camila Sepúlveda", email: "sistemasingeanclajes@gmail.com", rol: "Administrador" },
+      { id: "cristian", nombre: "Cristian Flórez", email: "cristiandel48@gmail.com", rol: "Administrador" },
+      { id: "miguel", nombre: "Miguel Arenas", email: "ingeanclajes.civil@gmail.com", rol: "Coordinador" },
+      { id: "paola_escobar", nombre: "Paola Escobar", email: "ingeanclajessgssst@gmail.com", rol: "Coordinador" },
+      { id: "paola_cadavid", nombre: "Paola Andrea Cadavid", email: "aux.contableingeanclajes@gmail.com", rol: "Operativo" },
+      { id: "erika", nombre: "Erika Gonzalez", email: "ingeanclajessas@gmail.com", rol: "Operativo" },
     ];
     base.forEach((b) => {
       if (!esYo(b) && !idsRegistrados.has(b.nombre.toLowerCase()) && !idsRegistrados.has(b.email.toLowerCase())) {
@@ -149,25 +153,8 @@ export default function Soporte({ ctx }) {
       }
     });
 
-    // 3. Empleados de obra
-    (empleados || []).forEach((emp) => {
-      const nom = `${emp.nombres || emp.nombre || ""} ${emp.apellidos || ""}`.trim();
-      if (nom && !idsRegistrados.has(nom.toLowerCase())) {
-        const item = {
-          id: emp.id,
-          nombre: nom,
-          email: emp.email || "",
-          rol: emp.cargo || "Personal de Obra",
-        };
-        if (!esYo(item)) {
-          combinados.push(item);
-          idsRegistrados.add(nom.toLowerCase());
-        }
-      }
-    });
-
     return combinados;
-  }, [listaUsuarios, empleados, membresia]);
+  }, [listaUsuarios, membresia]);
 
   const [ticketsConNoLeidosMap, setTicketsConNoLeidosMap] = useState({});
 

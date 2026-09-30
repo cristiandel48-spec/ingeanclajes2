@@ -16,77 +16,24 @@ import { resolverAutorGuardado } from "../../lib/autorAuditoria";
 import { getTextosDocumento } from "../../lib/cotizacionTextos";
 import { getQuoteProposals } from "../../lib/cotizaciones";
 
-function renderTextoSaludoResaltado(texto = "") {
-  if (!texto) return null;
+function extraerObjetoCotizacion(texto = "") {
+  if (!texto) return "";
+  let limpio = String(texto).trim();
 
-  // Busca secuencia de palabras en MAYÚSCULAS continuas (con tildes y números) de longitud relevante
-  const regex = /(?:^|\s)((?:[\p{Lu}\p{Nd}]{1,})(?:\s+[\p{Lu}\p{Nd}]{1,})+)(?=\s|$|[.,])/gu;
-  let match;
-  let mejorMatch = null;
-  while ((match = regex.exec(texto)) !== null) {
-    const hallado = match[1]?.trim();
-    if (hallado && hallado.length >= 6 && (!mejorMatch || hallado.length > mejorMatch.length)) {
-      mejorMatch = hallado;
-    }
-  }
+  // 1. Quitar saludo inicial típico si existe
+  limpio = limpio.replace(/^agradecemos\s+la\s+oportunidad\s+de\s+presentarles\s+nuestra\s+propuesta\s+para\s+/i, "");
+  limpio = limpio.replace(/^nuestra\s+propuesta\s+para\s+/i, "");
+  limpio = limpio.replace(/^propuesta\s+para\s+/i, "");
 
-  if (mejorMatch && texto.includes(mejorMatch)) {
-    const idx = texto.indexOf(mejorMatch);
-    const antes = texto.slice(0, idx);
-    const despues = texto.slice(idx + mejorMatch.length);
-    return (
-      <span>
-        {antes}
-        <mark
-          style={{
-            backgroundColor: "#FEF08A",
-            color: "#713F12",
-            padding: "2px 6px",
-            borderRadius: "4px",
-            fontWeight: 700,
-          }}
-        >
-          {mejorMatch}
-        </mark>
-        {despues}
-      </span>
-    );
-  }
+  // 2. Quitar coletilla final típica si existe
+  limpio = limpio.replace(/\s+para\s+trabajo\s+seguro\s+en\s+alturas\.?$/i, "");
+  limpio = limpio.replace(/\s+para\s+trabajo\s+en\s+alturas\.?$/i, "");
+  limpio = limpio.replace(/\s+en\s+la\s+obra\s+.*?\.?$/i, "");
 
-  const matchFrase = texto.match(/^(.*?\bpropuesta para\s+)(.*?)(\s+para trabajo.*|$)$/i);
-  if (matchFrase && matchFrase[2]) {
-    return (
-      <span>
-        {matchFrase[1]}
-        <mark
-          style={{
-            backgroundColor: "#FEF08A",
-            color: "#713F12",
-            padding: "2px 6px",
-            borderRadius: "4px",
-            fontWeight: 700,
-          }}
-        >
-          {matchFrase[2]}
-        </mark>
-        {matchFrase[3]}
-      </span>
-    );
-  }
+  // Si queda punto final suelto, quitarlo
+  limpio = limpio.replace(/\.+$/, "").trim();
 
-  return (
-    <mark
-      style={{
-        backgroundColor: "#FEF08A",
-        color: "#713F12",
-        padding: "2px 6px",
-        borderRadius: "4px",
-        fontWeight: 600,
-      }}
-    >
-      {texto}
-    </mark>
-  );
+  return limpio;
 }
 
 export default function ObraDetalle({obraId,ctx,onVolver}){
@@ -117,14 +64,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
   const cotProps = cotVinc ? getQuoteProposals(cotVinc) : [];
   const cotTextos = cotVinc ? getTextosDocumento(cotVinc) : null;
   const saludoTexto = cotTextos?.saludo || "";
-  const totalCot = (() => {
-    if (!cotVinc) return null;
-    if (cotVinc.total !== undefined && cotVinc.total !== null && Number(cotVinc.total) > 0) {
-      return Number(cotVinc.total);
-    }
-    const sum = cotProps.reduce((s, p) => s + (Number(p.total) || 0), 0);
-    return sum > 0 ? sum : Number(cotVinc.total || 0);
-  })();
+  const objetoCot = extraerObjetoCotizacion(saludoTexto);
   const itemsCot = cotProps.flatMap((p) => (Array.isArray(p.items) ? p.items : []));
   const resumenAvance=resumenBitacora(oAct.bitacora);
 
@@ -297,183 +237,133 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
         </div>
       </div>
 
-      {/* Cotización de Referencia, Objeto/Frase de apertura con texto resaltado en amarillo e Ítems aprobados */}
+      {/* Cotización de Referencia: Objeto e Ítems técnicos (Sin valores económicos para privacidad y espacio) */}
       {cotVinc && (
         <div style={{
-          ...CD,
-          marginBottom: 20,
-          background: "linear-gradient(135deg, rgba(255, 250, 235, 0.7) 0%, rgba(255, 255, 255, 0.98) 100%)",
+          background: "var(--surface, #fff)",
           border: "1px solid rgba(245, 158, 11, 0.35)",
-          boxShadow: "0 2px 10px rgba(181, 71, 8, 0.05)",
+          borderRadius: 10,
+          padding: "10px 14px",
+          marginBottom: 10,
+          boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
         }}>
-          {/* Fila superior: Cotización de referencia + Total + Botón ver */}
+          {/* Fila superior: Referencia y Botón para ir a la cotización */}
           <div style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            gap: 12,
+            gap: 8,
             flexWrap: "wrap",
-            paddingBottom: 12,
-            borderBottom: "1px solid rgba(245, 158, 11, 0.2)",
-            marginBottom: 14,
+            marginBottom: objetoCot ? 8 : (itemsCot.length ? 8 : 0),
           }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 16 }}>📄</span>
-              <span style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "#92400E" }}>
-                Cotización de Referencia:
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 13 }}>📄</span>
+              <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "#92400E" }}>
+                Cotización Ref:
               </span>
-              <span style={{
-                fontSize: 12.5,
-                fontWeight: 700,
-                color: "#B54708",
-                background: "#FEF3C7",
-                border: "1px solid #FCD34D",
-                borderRadius: 6,
-                padding: "2px 10px",
-              }}>
+              <span
+                onClick={() => irAPantalla("cotizacion", { cotizacionId: cotVinc.id })}
+                style={{
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  color: "#B54708",
+                  background: "#FEF3C7",
+                  border: "1px solid #FCD34D",
+                  borderRadius: 5,
+                  padding: "1px 8px",
+                  cursor: "pointer",
+                }}
+                title="Abrir cotización en pantalla de cotizaciones"
+              >
                 {cotVinc.numero}
               </span>
               {cotVinc.fecha && (
-                <span style={{ fontSize: 12, color: "var(--text-muted, #64748b)" }}>
+                <span style={{ fontSize: 11, color: "var(--text-muted, #64748b)" }}>
                   · {fmtD(cotVinc.fecha)}
                 </span>
               )}
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-              {verDinero && totalCot !== null && (
-                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #101828)" }}>
-                  Total cotizado: <span style={{ color: "#B54708" }}>{fmt(totalCot)} COP</span>
-                </div>
-              )}
-              <button
-                onClick={() => irAPantalla("cotizacion", { cotizacionId: cotVinc.id })}
-                style={{
-                  background: "#fff",
-                  color: "#B54708",
-                  border: "1px solid #FCD34D",
-                  borderRadius: 8,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  padding: "6px 14px",
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-                  transition: "all 0.15s ease",
-                }}
-                title="Abrir cotización en pantalla de cotizaciones"
-              >
-                Ver cotización completa ↗
-              </button>
-            </div>
+            <button
+              onClick={() => irAPantalla("cotizacion", { cotizacionId: cotVinc.id })}
+              style={{
+                background: "#fff",
+                color: "#B54708",
+                border: "1px solid #FCD34D",
+                borderRadius: 6,
+                fontSize: 11,
+                fontWeight: 600,
+                padding: "3px 9px",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+              }}
+              title="Abrir cotización completa"
+            >
+              Ver cotización completa ↗
+            </button>
           </div>
 
-          {/* Objeto de la cotización / Frase de apertura con texto resaltado en amarillo */}
-          {saludoTexto ? (
+          {/* Objeto contratado (Solo el texto en amarillo, sin frases de relleno) */}
+          {objetoCot ? (
             <div style={{
-              background: "#ffffff",
-              border: "1px solid rgba(245, 158, 11, 0.25)",
-              borderRadius: 10,
-              padding: "12px 16px",
-              marginBottom: itemsCot.length ? 14 : 0,
+              background: "#FFFAEB",
+              border: "1px solid #FDE68A",
+              borderRadius: 6,
+              padding: "6px 10px",
+              fontSize: 12,
+              color: "#78350F",
+              lineHeight: 1.4,
+              marginBottom: itemsCot.length ? 8 : 0,
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 6,
             }}>
-              <div style={{
-                fontSize: 11,
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                color: "#78350F",
-                marginBottom: 6,
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-              }}>
-                <span>🎯</span> Objeto del trabajo (Frase de apertura de la cotización):
-              </div>
-              <div style={{ fontSize: 13, color: "var(--text-main, #1e293b)", lineHeight: 1.6 }}>
-                {renderTextoSaludoResaltado(saludoTexto)}
+              <span style={{ flexShrink: 0 }}>🎯</span>
+              <div>
+                <strong style={{ fontWeight: 700 }}>Objeto: </strong>
+                <mark style={{
+                  backgroundColor: "#FEF08A",
+                  color: "#713F12",
+                  padding: "1px 6px",
+                  borderRadius: 4,
+                  fontWeight: 600,
+                }}>
+                  {objetoCot}
+                </mark>
               </div>
             </div>
           ) : null}
 
-          {/* Detalle económico / Ítems contratados */}
+          {/* Detalle de ítems técnicos contratados (Sin columnas monetarias) */}
           {itemsCot.length > 0 && (
-            <div style={{
-              background: "#ffffff",
-              border: "1px solid rgba(245, 158, 11, 0.25)",
-              borderRadius: 10,
-              padding: "12px 16px",
-            }}>
-              <div style={{
-                fontSize: 11,
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                color: "#78350F",
-                marginBottom: 10,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 8,
-                flexWrap: "wrap",
-              }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span>📋</span> Detalle económico / Ítems contratados ({itemsCot.length}):
-                </span>
-                {verDinero && totalCot !== null && (
-                  <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted, #64748b)" }}>
-                    Total: {fmt(totalCot)} COP
-                  </span>
-                )}
-              </div>
-
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5, textAlign: "left" }}>
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid #E2E8F0", background: "var(--surface-subtle, #F8FAFC)" }}>
-                      <th style={{ padding: "8px 10px", color: "#64748B", fontWeight: 600, width: "60px" }}>Cant.</th>
-                      <th style={{ padding: "8px 10px", color: "#64748B", fontWeight: 600, width: "85px" }}>Unidad</th>
-                      <th style={{ padding: "8px 10px", color: "#64748B", fontWeight: 600 }}>Descripción del trabajo</th>
-                      {verDinero && (
-                        <>
-                          <th style={{ padding: "8px 10px", color: "#64748B", fontWeight: 600, textAlign: "right", width: "115px" }}>V. Unitario</th>
-                          <th style={{ padding: "8px 10px", color: "#64748B", fontWeight: 600, textAlign: "right", width: "115px" }}>Subtotal</th>
-                        </>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {itemsCot.map((it, idx) => {
-                      const cant = Number(it.cant) || 1;
-                      const vu = Number(it.vu) || 0;
-                      const sub = Number(it.subtotal !== undefined ? it.subtotal : cant * vu);
-                      const desc = it.desc || it.descripcion || "Sin descripción";
-                      const unidad = it.unit || it.unidad || "Global";
-                      return (
-                        <tr key={it.id || idx} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                          <td style={{ padding: "8px 10px", fontWeight: 700, color: "#92400E" }}>{cant}</td>
-                          <td style={{ padding: "8px 10px", color: "#475569" }}>{unidad}</td>
-                          <td style={{ padding: "8px 10px", color: "var(--text-main, #1E293B)", fontWeight: 500 }}>
-                            {desc}
-                          </td>
-                          {verDinero && (
-                            <>
-                              <td style={{ padding: "8px 10px", textAlign: "right", color: "#475569" }}>
-                                {fmt(vu)}
-                              </td>
-                              <td style={{ padding: "8px 10px", textAlign: "right", fontWeight: 600, color: "var(--text-main, #1E293B)" }}>
-                                {fmt(sub)}
-                              </td>
-                            </>
-                          )}
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5, textAlign: "left" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid #E2E8F0", background: "var(--surface-subtle, #F8FAFC)" }}>
+                    <th style={{ padding: "4px 8px", color: "#64748B", fontWeight: 600, width: "50px" }}>Cant.</th>
+                    <th style={{ padding: "4px 8px", color: "#64748B", fontWeight: 600, width: "65px" }}>Unidad</th>
+                    <th style={{ padding: "4px 8px", color: "#64748B", fontWeight: 600 }}>Descripción del trabajo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {itemsCot.map((it, idx) => {
+                    const cant = Number(it.cant) || 1;
+                    const desc = it.desc || it.descripcion || "Sin descripción";
+                    const unidad = it.unit || it.unidad || "Global";
+                    return (
+                      <tr key={it.id || idx} style={{ borderBottom: "1px solid #F1F5F9" }}>
+                        <td style={{ padding: "4px 8px", fontWeight: 700, color: "#92400E" }}>{cant}</td>
+                        <td style={{ padding: "4px 8px", color: "#475569" }}>{unidad}</td>
+                        <td style={{ padding: "4px 8px", color: "var(--text-main, #1E293B)", fontWeight: 500 }}>
+                          {desc}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
@@ -492,64 +382,91 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
         />
       )}
 
-      {/* Avance */}
-      <div style={{...CD,marginBottom:20}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-          <span style={{fontSize:13,fontWeight:600,color:"var(--text-main, #1a1a2e)"}}>Avance de la obra</span>
-          <span style={{fontSize:18,fontWeight:700,color:oAct.avance===100?"#34d399":"#f47c20"}}>{oAct.avance}%</span>
-        </div>
-        <div style={{height:10,background:"var(--surface-subtle, #f1f5f9)",borderRadius:5,marginBottom:8}}>
-          <div style={{width:(oAct.avance) + "%",height:"100%",background:oAct.avance===100?"#4ade80":"#f47c20",borderRadius:5,transition:"width 0.3s"}}/>
-        </div>
-        <input type="range" min={0} max={100} value={oAct.avance} disabled={bloqueada}
-          title={bloqueada?"Obra finalizada: el avance ya no se cambia.":undefined}
-          onChange={e=>{
-            const avance=Number(e.target.value);
+      {/* Avance de obra en UNA SOLA LÍNEA compacta */}
+      <div style={{
+        background: "var(--surface, #fff)",
+        border: "1px solid var(--border, #e2e8f0)",
+        borderRadius: 10,
+        padding: "8px 14px",
+        marginBottom: 10,
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+        flexWrap: "wrap",
+      }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #1a1a2e)", whiteSpace: "nowrap" }}>
+          Avance de la obra:
+        </span>
+        <span style={{ fontSize: 13, fontWeight: 800, color: oAct.avance === 100 ? "#16a34a" : "#ea580c", minWidth: 38 }}>
+          {oAct.avance}%
+        </span>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={oAct.avance}
+          disabled={bloqueada}
+          title={bloqueada ? "Obra finalizada: el avance ya no se cambia." : undefined}
+          onChange={e => {
+            const avance = Number(e.target.value);
             const autorActual = resolverAutorGuardado(membresia);
             const ahoraIso = new Date().toISOString();
-            setObras(p=>p.map(o=>o.id===obraId?{
+            setObras(p => p.map(o => o.id === obraId ? {
               ...o,
               avance,
-              estado:estadoSegunAvance(avance,o.estado),
+              estado: estadoSegunAvance(avance, o.estado),
               modificadoPor: membresia?.userId || null,
               modificadoPorNombre: autorActual || o.modificadoPorNombre || "Camila Sepúlveda",
               modificadoEn: ahoraIso,
-            }:o));
+            } : o));
           }}
-          style={{width:"100%",accentColor:"#f47c20",
-            opacity:bloqueada?0.5:1,cursor:bloqueada?"not-allowed":"pointer"}}/>
-        {bloqueada&&(
-          <div style={{fontSize:11,color:"#34d399",background:"rgba(16, 185, 129, 0.15)",border:"1px solid rgba(167, 243, 208, 0.3)",
-            borderRadius:8,padding:"7px 11px",marginTop:8,lineHeight:1.5}}>
-            🔒 <strong>Obra finalizada.</strong> Los informes y certificados ya emitidos se apoyan en
-            estos datos, así que no se modifican. Si hay que corregir algo, un administrador puede
-            reabrirla. El registro de pagos sí sigue disponible.
-          </div>
-        )}
+          style={{
+            flex: 1,
+            minWidth: 140,
+            accentColor: oAct.avance === 100 ? "#16a34a" : "#ea580c",
+            cursor: bloqueada ? "not-allowed" : "pointer",
+            opacity: bloqueada ? 0.5 : 1,
+            height: 6,
+          }}
+        />
       </div>
+      {bloqueada && (
+        <div style={{
+          fontSize: 11,
+          color: "#16a34a",
+          background: "rgba(16, 185, 129, 0.1)",
+          border: "1px solid rgba(167, 243, 208, 0.4)",
+          borderRadius: 8,
+          padding: "5px 10px",
+          marginBottom: 10,
+          lineHeight: 1.4,
+        }}>
+          🔒 <strong>Obra finalizada.</strong> El avance ya no se cambia. Si requieres reabrirla, solicítalo a un administrador.
+        </div>
+      )}
 
-      {/* Tabs */}
-      <div style={{display:"flex",gap:8,marginBottom:18,flexWrap:"wrap"}}>
+      {/* Tabs compactos */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
         {[
-          ["avance","📸 Avance diario"],
-          ["fototeca","🖼️ Fototeca y ZIP"],
-          ["personal","👷 Personal"],
-          // Gastos y Nomina llevan cifras: solo para quien puede verlas.
-          ...(verDinero?[["gastos","🧾 Gastos"],["nomina","💰 Nómina"]]:[]),
-          ["horario","📅 Horario"],
-        ].map(([id,lb])=>{
+          ["avance", "📸 Avance diario"],
+          ["fototeca", "🖼️ Fototeca y ZIP"],
+          ["personal", "👷 Personal"],
+          ...(verDinero ? [["gastos", "🧾 Gastos"], ["nomina", "💰 Nómina"]] : []),
+          ["horario", "📅 Horario"],
+        ].map(([id, lb]) => {
           const activo = detTab === id;
           return (
-            <button key={id} onClick={()=>setDetTab(id)}
+            <button key={id} onClick={() => setDetTab(id)}
               style={{
                 background: activo ? "#FFFAEB" : "var(--surface-subtle, #f2f4f7)",
                 color: activo ? "#B54708" : "var(--text-muted, #475467)",
                 border: activo ? "1px solid rgba(181, 71, 8, 0.35)" : "1px solid var(--border, #eaecf0)",
-                boxShadow: activo ? "0 1px 3px rgba(181, 71, 8, 0.08)" : "none",
-                borderRadius: 8,
-                fontSize: 12,
+                boxShadow: activo ? "0 1px 2px rgba(181, 71, 8, 0.08)" : "none",
+                borderRadius: 7,
+                fontSize: 11.5,
                 fontWeight: activo ? 700 : 600,
-                padding: "8px 16px",
+                padding: "5px 12px",
                 cursor: "pointer",
                 fontFamily: "inherit",
                 transition: "all 0.15s ease",

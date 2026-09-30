@@ -116,17 +116,19 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
   return (
     // En una obra cerrada la pestaña se mira pero no se toca. El aviso de
     // abajo queda fuera del apagado para que se pueda leer y seleccionar.
-    <div style={{ background: "var(--surface, #fff)", borderRadius: 14, border: "1px solid var(--border, #e2e8f0)", padding: 20,
+    <div style={{ background: "var(--surface, #fff)", borderRadius: 12, border: "1px solid var(--border, #e2e8f0)", padding: 14,
       ...(bloqueada ? { pointerEvents: "none", opacity: 0.8 } : null) }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-main, #1a1a2e)" }}>📸 Avance y fotos de la obra</div>
-          <div style={{ fontSize: 11.5, color: "var(--text-muted, #64748b)", marginTop: 2 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #1a1a2e)" }}>📸 Avance y fotos de la obra</div>
+          <div style={{ fontSize: 11, color: "var(--text-muted, #64748b)", marginTop: 1 }}>
             {resumen.registros} registro(s) · {resumen.fotos} foto(s) cargadas
           </div>
         </div>
         {!bloqueada && (
-          <button style={B("#cc0000")} onClick={agregarRegistro}>+ Registrar avance del día</button>
+          <button style={{ ...B("#cc0000"), fontSize: 12, padding: "6px 14px", borderRadius: 8 }} onClick={agregarRegistro}>
+            + Registrar avance del día
+          </button>
         )}
       </div>
 

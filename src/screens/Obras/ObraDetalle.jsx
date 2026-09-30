@@ -30,7 +30,7 @@ function extraerObjetoCotizacion(texto = "") {
   limpio = limpio.replace(/\s+para\s+trabajo\s+en\s+alturas\.?$/i, "");
   limpio = limpio.replace(/\s+en\s+la\s+obra\s+.*?\.?$/i, "");
 
-  // Si queda punto final suelto, quitarlo
+  // Quitar puntos finales repetidos o sueltos
   limpio = limpio.replace(/\.+$/, "").trim();
 
   return limpio;
@@ -64,7 +64,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
   const cotProps = cotVinc ? getQuoteProposals(cotVinc) : [];
   const cotTextos = cotVinc ? getTextosDocumento(cotVinc) : null;
   const saludoTexto = cotTextos?.saludo || "";
-  const objetoCot = extraerObjetoCotizacion(saludoTexto);
+  const objetoLimpio = extraerObjetoCotizacion(saludoTexto);
   const itemsCot = cotProps.flatMap((p) => (Array.isArray(p.items) ? p.items : []));
   const resumenAvance=resumenBitacora(oAct.bitacora);
 
@@ -237,7 +237,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
         </div>
       </div>
 
-      {/* Cotización de Referencia: Objeto e Ítems técnicos (Sin valores económicos para privacidad y espacio) */}
+      {/* Cotización de Referencia: Objeto e Ítems (Sin valores monetarios para privacidad y optimización de espacio) */}
       {cotVinc && (
         <div style={{
           background: "var(--surface, #fff)",
@@ -254,7 +254,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             justifyContent: "space-between",
             gap: 8,
             flexWrap: "wrap",
-            marginBottom: objetoCot ? 8 : (itemsCot.length ? 8 : 0),
+            marginBottom: objetoLimpio ? 8 : (itemsCot.length ? 8 : 0),
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
               <span style={{ fontSize: 13 }}>📄</span>
@@ -273,7 +273,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                   padding: "1px 8px",
                   cursor: "pointer",
                 }}
-                title="Abrir cotización en pantalla de cotizaciones"
+                title="Abrir cotización"
               >
                 {cotVinc.numero}
               </span>
@@ -299,14 +299,14 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                 alignItems: "center",
                 gap: 4,
               }}
-              title="Abrir cotización completa"
+              title="Abrir cotización en pantalla de cotizaciones"
             >
               Ver cotización completa ↗
             </button>
           </div>
 
-          {/* Objeto contratado (Solo el texto en amarillo, sin frases de relleno) */}
-          {objetoCot ? (
+          {/* Objeto contratado (Directo en amarillo, sin texto de relleno) */}
+          {objetoLimpio && (
             <div style={{
               background: "#FFFAEB",
               border: "1px solid #FDE68A",
@@ -330,21 +330,21 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                   borderRadius: 4,
                   fontWeight: 600,
                 }}>
-                  {objetoCot}
+                  {objetoLimpio}
                 </mark>
               </div>
             </div>
-          ) : null}
+          )}
 
-          {/* Detalle de ítems técnicos contratados (Sin columnas monetarias) */}
+          {/* Detalle de ítems (Sin valores monetarios: solo Cant, Unidad y Descripción) */}
           {itemsCot.length > 0 && (
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5, textAlign: "left" }}>
                 <thead>
                   <tr style={{ borderBottom: "1px solid #E2E8F0", background: "var(--surface-subtle, #F8FAFC)" }}>
-                    <th style={{ padding: "4px 8px", color: "#64748B", fontWeight: 600, width: "50px" }}>Cant.</th>
-                    <th style={{ padding: "4px 8px", color: "#64748B", fontWeight: 600, width: "65px" }}>Unidad</th>
-                    <th style={{ padding: "4px 8px", color: "#64748B", fontWeight: 600 }}>Descripción del trabajo</th>
+                    <th style={{ padding: "4px 8px", color: "#64748B", fontWeight: 600, width: "55px" }}>Cant.</th>
+                    <th style={{ padding: "4px 8px", color: "#64748B", fontWeight: 600, width: "75px" }}>Unidad</th>
+                    <th style={{ padding: "4px 8px", color: "#64748B", fontWeight: 600 }}>Descripción del trabajo a realizar</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -382,7 +382,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
         />
       )}
 
-      {/* Avance de obra en UNA SOLA LÍNEA compacta */}
+      {/* Avance en una sola línea compacta */}
       <div style={{
         background: "var(--surface, #fff)",
         border: "1px solid var(--border, #e2e8f0)",
@@ -392,77 +392,70 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
         display: "flex",
         alignItems: "center",
         gap: 12,
-        boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
         flexWrap: "wrap",
       }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #1a1a2e)", whiteSpace: "nowrap" }}>
-          Avance de la obra:
-        </span>
-        <span style={{ fontSize: 13, fontWeight: 800, color: oAct.avance === 100 ? "#16a34a" : "#ea580c", minWidth: 38 }}>
-          {oAct.avance}%
-        </span>
-        <input
-          type="range"
-          min={0}
-          max={100}
-          value={oAct.avance}
-          disabled={bloqueada}
-          title={bloqueada ? "Obra finalizada: el avance ya no se cambia." : undefined}
-          onChange={e => {
-            const avance = Number(e.target.value);
-            const autorActual = resolverAutorGuardado(membresia);
-            const ahoraIso = new Date().toISOString();
-            setObras(p => p.map(o => o.id === obraId ? {
-              ...o,
-              avance,
-              estado: estadoSegunAvance(avance, o.estado),
-              modificadoPor: membresia?.userId || null,
-              modificadoPorNombre: autorActual || o.modificadoPorNombre || "Camila Sepúlveda",
-              modificadoEn: ahoraIso,
-            } : o));
-          }}
-          style={{
-            flex: 1,
-            minWidth: 140,
-            accentColor: oAct.avance === 100 ? "#16a34a" : "#ea580c",
-            cursor: bloqueada ? "not-allowed" : "pointer",
-            opacity: bloqueada ? 0.5 : 1,
-            height: 6,
-          }}
-        />
-      </div>
-      {bloqueada && (
-        <div style={{
-          fontSize: 11,
-          color: "#16a34a",
-          background: "rgba(16, 185, 129, 0.1)",
-          border: "1px solid rgba(167, 243, 208, 0.4)",
-          borderRadius: 8,
-          padding: "5px 10px",
-          marginBottom: 10,
-          lineHeight: 1.4,
-        }}>
-          🔒 <strong>Obra finalizada.</strong> El avance ya no se cambia. Si requieres reabrirla, solicítalo a un administrador.
+        <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 160 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #1a1a2e)" }}>
+            Avance de la obra:
+          </span>
+          <span style={{ fontSize: 13, fontWeight: 800, color: oAct.avance === 100 ? "#16a34a" : "#ea580c" }}>
+            {oAct.avance}%
+          </span>
         </div>
-      )}
+        <div style={{ flex: 1, minWidth: 140, display: "flex", alignItems: "center" }}>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={oAct.avance}
+            disabled={bloqueada}
+            title={bloqueada ? "Obra finalizada: el avance ya no se cambia." : undefined}
+            onChange={e => {
+              const avance = Number(e.target.value);
+              const autorActual = resolverAutorGuardado(membresia);
+              const ahoraIso = new Date().toISOString();
+              setObras(p => p.map(o => o.id === obraId ? {
+                ...o,
+                avance,
+                estado: estadoSegunAvance(avance, o.estado),
+                modificadoPor: membresia?.userId || null,
+                modificadoPorNombre: autorActual || o.modificadoPorNombre || "Camila Sepúlveda",
+                modificadoEn: ahoraIso,
+              } : o));
+            }}
+            style={{
+              width: "100%",
+              height: 6,
+              accentColor: oAct.avance === 100 ? "#16a34a" : "#ea580c",
+              cursor: bloqueada ? "not-allowed" : "pointer",
+            }}
+          />
+        </div>
+        {bloqueada && (
+          <span style={{ fontSize: 11, color: "#16a34a", fontWeight: 600 }}>
+            🔒 Finalizada
+          </span>
+        )}
+      </div>
 
-      {/* Tabs compactos */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+      {/* Tabs */}
+      <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
         {[
-          ["avance", "📸 Avance diario"],
-          ["fototeca", "🖼️ Fototeca y ZIP"],
-          ["personal", "👷 Personal"],
-          ...(verDinero ? [["gastos", "🧾 Gastos"], ["nomina", "💰 Nómina"]] : []),
-          ["horario", "📅 Horario"],
-        ].map(([id, lb]) => {
+          ["avance","📸 Avance diario"],
+          ["fototeca","🖼️ Fototeca y ZIP"],
+          ["personal","👷 Personal"],
+          // Gastos y Nomina llevan cifras: solo para quien puede verlas.
+          ...(verDinero?[["gastos","🧾 Gastos"],["nomina","💰 Nómina"]]:[]),
+          ["horario","📅 Horario"],
+        ].map(([id,lb])=>{
           const activo = detTab === id;
           return (
-            <button key={id} onClick={() => setDetTab(id)}
+            <button key={id} onClick={()=>setDetTab(id)}
               style={{
                 background: activo ? "#FFFAEB" : "var(--surface-subtle, #f2f4f7)",
                 color: activo ? "#B54708" : "var(--text-muted, #475467)",
                 border: activo ? "1px solid rgba(181, 71, 8, 0.35)" : "1px solid var(--border, #eaecf0)",
-                boxShadow: activo ? "0 1px 2px rgba(181, 71, 8, 0.08)" : "none",
+                boxShadow: activo ? "0 1px 3px rgba(181, 71, 8, 0.08)" : "none",
                 borderRadius: 7,
                 fontSize: 11.5,
                 fontWeight: activo ? 700 : 600,

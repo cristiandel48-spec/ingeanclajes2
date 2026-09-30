@@ -206,11 +206,11 @@ function embellecerDetalleCertificacion(raw) {
     finalDetalle = bloques.join("; ");
   }
 
-  return "los sistemas de protección contra caídas instalados, consistentes en: " + finalDetalle;
+  return "los sistemas de protección contra caídas consistentes en: " + finalDetalle;
 }
 
 /**
- * Reestructura y embellece el texto completo de una certificación (Opción 2 ejecutiva)
+ * Reestructura y embellece el texto completo de una certificación (Opción A ejecutiva)
  */
 function embellecerTextoCompletoCertificacion(texto) {
   const t = String(texto || "").trim();
@@ -221,13 +221,13 @@ function embellecerTextoCompletoCertificacion(texto) {
 
   const verbo = mVerbo[1].toUpperCase();
   const afterVerbo = t.slice(mVerbo[0].length);
-  const mCierre = afterVerbo.match(/(,\s*cumplen\s+a\s+cabalidad[\s\S]*)$/i);
-  const cierre = mCierre ? mCierre[1] : "";
+  const mCierre = afterVerbo.match(/(,\s*(?:fueron\s+inspeccionados|cumplen\s+a\s+cabalidad)[\s\S]*)$/i);
   const cuerpo = mCierre ? afterVerbo.slice(0, mCierre.index) : afterVerbo;
 
   let remaining = cuerpo;
+
   let direccion = "";
-  const mDir = remaining.match(/(?:,\s*|\s+)con\s+DIRECCI[OÓ]N:\s*(.+)$/i);
+  const mDir = remaining.match(/(?:,\s*|\s+)(?:con\s+DIRECCI[OÓ]N:|\s*ubicad[ao]\s+en\s+la|\s*ubicad[ao]\s+en)\s*(.+)$/i);
   if (mDir) {
     direccion = mDir[1].trim();
     remaining = remaining.slice(0, mDir.index);
@@ -235,42 +235,61 @@ function embellecerTextoCompletoCertificacion(texto) {
 
   let nit = "";
   let cliente = "";
-  const mNit = remaining.match(/(?:,\s*|\s+)con\s+NIT:\s*([0-9kK.\-]+)\s*(?:\(([^)]+)\))?$/i);
-  if (mNit) {
-    nit = mNit[1].trim();
-    cliente = mNit[2] ? mNit[2].trim() : "";
-    remaining = remaining.slice(0, mNit.index);
+  const mSolicitud = remaining.match(/(?:,\s*|\s+)(?:a\s+solicitud\s+de|por\s+encargo\s+de|para)\s+([^(,]+?)(?:\s*\(NIT:\s*([0-9kK.\-]+)\))?$/i);
+  if (mSolicitud) {
+    cliente = mSolicitud[1].trim();
+    nit = mSolicitud[2] ? mSolicitud[2].trim() : "";
+    remaining = remaining.slice(0, mSolicitud.index);
   } else {
-    const mClienteDe = remaining.match(/(?:,\s*|\s+)de\s+([^,]+)$/i);
-    if (mClienteDe) {
-      cliente = mClienteDe[1].trim();
-      remaining = remaining.slice(0, mClienteDe.index);
+    const mNit = remaining.match(/(?:,\s*|\s+)con\s+NIT:\s*([0-9kK.\-]+)\s*(?:\(([^)]+)\))?$/i);
+    if (mNit) {
+      nit = mNit[1].trim();
+      cliente = mNit[2] ? mNit[2].trim() : "";
+      remaining = remaining.slice(0, mNit.index);
+    } else {
+      const mClienteDe = remaining.match(/(?:,\s*|\s+)de\s+([^,]+)$/i);
+      if (mClienteDe) {
+        cliente = mClienteDe[1].trim();
+        remaining = remaining.slice(0, mClienteDe.index);
+      }
     }
   }
 
   let lugar = "";
-  const mLugar = remaining.match(/(?:,\s*|\s+)instalados\s+en\s+(\([^)]+\)|[^,]+)$/i);
+  const mLugar = remaining.match(/(?:,\s*|\s+)instalados\s+en\s+(?:la\s+sede\s+|el\s+proyecto\s+|las\s+instalaciones\s+de\s+)?(\([^)]+\)|[^,]+)$/i);
   if (mLugar) {
     lugar = mLugar[1].trim();
     remaining = remaining.slice(0, mLugar.index);
   }
 
-  const rawDetalle = remaining.trim().replace(/[,\s]+$/, "");
+  let rawDetalle = remaining.trim().replace(/[,\s]+$/, "");
+  rawDetalle = rawDetalle.replace(/^los\s+sistemas\s+de\s+protecci[oó]n\s+contra\s+ca[ií]das\s*(?:instalados,?\s*)?(?:consistentes\s+en:?\s*)?/i, "").trim();
   const detalleLindo = embellecerDetalleCertificacion(rawDetalle);
 
-  let resultado = `${verbo} que ${detalleLindo}`;
-  if (lugar) resultado += `, instalados en ${lugar.startsWith("(") ? lugar : `(${lugar})`}`;
-  if (nit) {
-    resultado += ` con NIT: ${nit}`;
-    if (cliente) resultado += ` (${cliente.replace(/^\(|\)$/g, "")})`;
-  } else if (cliente) {
-    resultado += ` de ${cliente}`;
-  }
-  if (direccion) resultado += ` con DIRECCIÓN: ${direccion}`;
-  if (cierre) resultado += cierre;
-  else resultado += ", cumplen a cabalidad con la Resolución 4272 de 2021 del Ministerio del Trabajo, por la cual se establece el reglamento de seguridad para protección contra caídas en trabajo en alturas.";
+  const cleanLugar = lugar.replace(/^\(|\)$/g, "").trim();
+  const cleanCliente = cliente.replace(/^\(|\)$/g, "").trim();
+  const cleanNit = nit.trim();
+  const cleanDir = direccion.trim();
 
-  return resultado;
+  const partes = [detalleLindo];
+  if (cleanLugar) {
+    const prefijo = /^(sede|proyecto|obra|instalaciones|edificio|planta)/i.test(cleanLugar) ? "" : "la sede ";
+    partes.push(`instalados en ${prefijo}${cleanLugar}`);
+  }
+  if (cleanDir) {
+    partes.push(`ubicada en la ${cleanDir}`);
+  }
+  if (cleanCliente && cleanNit) {
+    partes.push(`a solicitud de ${cleanCliente} (NIT: ${cleanNit})`);
+  } else if (cleanCliente) {
+    partes.push(`a solicitud de ${cleanCliente}`);
+  } else if (cleanNit) {
+    partes.push(`con NIT: ${cleanNit}`);
+  }
+
+  const textoCierre = ", fueron inspeccionados y verificados técnicamente, encontrándose estructuralmente conformes, operativos y aptos para trabajo seguro en alturas, cumpliendo a cabalidad con los requisitos de la Resolución 4272 de 2021 del Ministerio del Trabajo y los estándares de ingeniería aplicables.";
+
+  return `${verbo} que ${partes.join(", ")}${textoCierre}`;
 }
 
 /**

@@ -5,6 +5,7 @@ import { getFirmaImg } from "../../lib/firmaEmpresa";
 import PrintHeader from "../../components/print/PrintHeader";
 import { fmtL, today as hoy } from "../../lib/format";
 import { LOGO_INGEANCLAJES } from "../../assets/embeddedImages";
+import { normalizarTextoCertificacion } from "../../lib/normalizarEntrada";
 
 // Pone en negrita los datos del cliente dentro de una frase escrita en plano.
 const conNegritas = (texto, datos)=>{
@@ -27,59 +28,46 @@ const renderTextoSistema = (cert)=>{
   const t = String(cert?.sistema || "").trim();
   if(!t) return null;
 
-  const mVerbo = t.match(/^(CERTIFICA|RECERTIFICA)\s+que\s+/i);
-  if(mVerbo){
-    const verbo = mVerbo[1];
-    const afterVerbo = t.slice(mVerbo[0].length);
-    const mCierre = afterVerbo.match(/(,\s*cumplen\s+a\s+cabalidad[\s\S]*)$/i);
-    const cierre = mCierre ? mCierre[1] : "";
-    const cuerpo = mCierre ? afterVerbo.slice(0, mCierre.index) : afterVerbo;
+  // Si viene en el formato crudo antiguo ("con NIT: ... con DIRECCIÓN: ..."), lo normalizamos a Opción A
+  const textoLimpio = normalizarTextoCertificacion(t);
 
-    let remaining = cuerpo;
-    let direccion = null;
-    const mDir = remaining.match(/(?:,\s*|\s+)con\s+DIRECCI[OÓ]N:\s*(.+)$/i);
-    if(mDir){
-      direccion = mDir[1].trim();
-      remaining = remaining.slice(0, mDir.index);
-    }
+  const mVerbo = textoLimpio.match(/^(CERTIFICA|RECERTIFICA)\s+que\s+/i);
+  if (mVerbo) {
+    const verbo = mVerbo[1].toUpperCase();
+    const afterVerbo = textoLimpio.slice(mVerbo[0].length);
 
-    let nit = null;
-    let cliente = null;
-    const mNit = remaining.match(/(?:,\s*|\s+)con\s+NIT:\s*([0-9kK.\-]+)\s*(?:\(([^)]+)\))?$/i);
-    if(mNit){
-      nit = mNit[1].trim();
-      cliente = mNit[2] ? mNit[2].trim() : null;
-      remaining = remaining.slice(0, mNit.index);
-    } else {
-      const mClienteDe = remaining.match(/(?:,\s*|\s+)de\s+([^,]+)$/i);
-      if(mClienteDe){
-        cliente = mClienteDe[1].trim();
-        remaining = remaining.slice(0, mClienteDe.index);
-      }
-    }
+    // Extraer fragmentos para negrita precisa
+    const mDetalle = afterVerbo.match(/^los\s+sistemas\s+de\s+protecci[oó]n\s+contra\s+ca[ií]das\s+consistentes\s+en:\s*([^,]+)/i);
+    const detalleTexto = mDetalle ? mDetalle[1].trim() : (cert?.detalle || "");
 
-    let lugar = null;
-    const mLugar = remaining.match(/(?:,\s*|\s+)instalados\s+en\s+(\([^)]+\)|[^,]+)$/i);
-    if(mLugar){
-      lugar = mLugar[1].trim();
-      remaining = remaining.slice(0, mLugar.index);
-    }
+    const mLugar = afterVerbo.match(/instalados\s+en\s+([^,]+)/i);
+    const lugarTexto = mLugar ? mLugar[1].trim() : (cert?.lugar || "");
 
-    const detalle = remaining.trim().replace(/[,\s]+$/, "");
+    const mDir = afterVerbo.match(/ubicad[ao]\s+en\s+la\s+([^,]+)/i);
+    const dirTexto = mDir ? mDir[1].trim() : (cert?.direccion || "");
 
-    return (
-      <span>
-        <strong>{verbo}</strong> que <strong>{detalle}</strong>
-        {lugar && <>, instalados en <strong>{lugar}</strong></>}
-        {nit && <> con NIT: <strong>{nit}</strong></>}
-        {cliente && (mNit?.[2] ? <> (<strong>{cliente}</strong>)</> : <> de <strong>{cliente}</strong></>)}
-        {direccion && <> con DIRECCIÓN: <strong>{direccion}</strong></>}
-        {cierre}
-      </span>
-    );
+    const mCli = afterVerbo.match(/a\s+solicitud\s+de\s+([^(,]+?)(?:\s*\(NIT:\s*([^)]+)\))?(?:,|$)/i);
+    const cliTexto = mCli ? mCli[1].trim() : (cert?.cliente || "");
+    const nitTexto = mCli && mCli[2] ? mCli[2].trim() : (cert?.nit || "");
+
+    const trozosNegrita = [
+      verbo,
+      detalleTexto,
+      lugarTexto,
+      dirTexto,
+      cliTexto,
+      nitTexto,
+      "fueron inspeccionados y verificados técnicamente",
+      "estructuralmente conformes, operativos y aptos para trabajo seguro en alturas",
+      cert?.normativa,
+      "Resolución 4272 de 2021",
+      ...(textoLimpio.match(/\([^)]+\)/g) || [])
+    ].filter(Boolean);
+
+    return conNegritas(textoLimpio, trozosNegrita);
   }
 
-  return conNegritas(t, [
+  return conNegritas(textoLimpio, [
     "CERTIFICA",
     "RECERTIFICA",
     cert?.nit,
@@ -87,7 +75,9 @@ const renderTextoSistema = (cert)=>{
     cert?.direccion,
     cert?.lugar,
     cert?.detalle,
-    ...(t.match(/\([^)]+\)/g) || [])
+    cert?.normativa,
+    "Resolución 4272 de 2021",
+    ...(textoLimpio.match(/\([^)]+\)/g) || [])
   ]);
 };
 
@@ -341,13 +331,9 @@ export default function CertificacionDocumento({cert}){
           </div>
         </div>
 
-        {/* Cierre Técnico del Alcance */}
+        {/* Cierre Técnico de los Componentes */}
         <div style={{ textAlign: "justify", marginBottom: 10, lineHeight: 1.5, fontSize: 10, color: "#334155" }}>
-          cuyo objetivo es la fijación segura de los trabajadores al momento de realizar tareas que
-          impliquen riesgo de caída, cumplen a cabalidad con la {cert.normativa || "Resolución 4272 de 2021"} del Ministerio
-          del Trabajo, por la cual se establece el reglamento de seguridad para protección contra caídas
-          en trabajo en alturas. Todos los elementos que componen los diferentes sistemas anticaídas
-          se encuentran en excelente estado técnico y operativo.
+          Dichos componentes garantizan la fijación, retención y detención segura de los trabajadores durante la ejecución de labores con riesgo de caída en alturas. Todos los elementos que componen los sistemas certificados se encuentran en excelente estado técnico y operativo.
         </div>
 
         {/* Tarjeta de Vigencia Técnica ARL */}

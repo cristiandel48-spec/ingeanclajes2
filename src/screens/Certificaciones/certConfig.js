@@ -172,33 +172,45 @@ export const construirTextoSistema = ({
   // ("1 linea de vida horizontal de 7 m perimetral"). Ponerla otra vez daba
   // cosas como "4 1 linea de vida...".
   const loInstalado = String(detalle || "").trim().replace(/[.\s]+$/, "");
-  const que = loInstalado || sistema.nombra(n);
+  let que = loInstalado || sistema.nombra(n);
+
+  if (!/^los sistemas de protecci[oó]n contra ca[ií]das/i.test(que)) {
+    que = `los sistemas de protección contra caídas consistentes en: ${que}`;
+  }
 
   const partes = [que];
 
-  // El sitio va entre parentesis, como en los certificados que se entregan:
-  // "instalados en (SEDE SAN BLAS)".
   const donde = String(lugar || "").trim().replace(/[.\s]+$/, "");
-  if(donde) partes.push(`instalados en (${enMayuscula(donde)})`);
-
-  if(String(nit || "").trim()){
-    partes.push(`con NIT: ${String(nit).trim()}${cliente.trim() ? ` (${enMayuscula(cliente)})` : ""}`);
-  }else if(cliente.trim()){
-    partes.push(`de ${enMayuscula(cliente)}`);
+  if (donde) {
+    const prefijo = /^(sede|proyecto|obra|instalaciones|edificio|planta)/i.test(donde) ? "" : "la sede ";
+    partes.push(`instalados en ${prefijo}${enMayuscula(donde)}`);
   }
 
-  if(String(direccion || "").trim()) partes.push(`con DIRECCIÓN: ${enMayuscula(direccion)}`);
+  if (String(direccion || "").trim()) {
+    partes.push(`ubicada en la ${enMayuscula(direccion)}`);
+  }
+
+  const cli = String(cliente || "").trim();
+  const nroNit = String(nit || "").trim();
+  if (cli && nroNit) {
+    partes.push(`a solicitud de ${enMayuscula(cli)} (NIT: ${nroNit})`);
+  } else if (cli) {
+    partes.push(`a solicitud de ${enMayuscula(cli)}`);
+  } else if (nroNit) {
+    partes.push(`con NIT: ${nroNit}`);
+  }
 
   void fecha; void fechaLarga;
 
   // El verbo lo decide el tipo: lo que se instala se CERTIFICA y lo que ya
-  // estaba se RECERTIFICA. Es la primera palabra del documento y decia
-  // "CERTIFICA" en los dos casos.
+  // estaba se RECERTIFICA.
   const verbo = tipo === "Recertificación" ? "RECERTIFICA" : "CERTIFICA";
+  const norm = normativa ? normativa.trim() : "Resolución 4272 de 2021";
 
-  const textoGenerado = `${verbo} que ${partes.join(" ")}, cumplen a cabalidad con la ${normativa} del Ministerio del Trabajo, ` +
-    "por la cual se establece el reglamento de seguridad para protección contra caídas " +
-    "en trabajo en alturas.";
+  const textoGenerado = `${verbo} que ${partes.join(", ")}, fueron inspeccionados y verificados técnicamente, ` +
+    `encontrándose estructuralmente conformes, operativos y aptos para trabajo seguro en alturas, ` +
+    `cumpliendo a cabalidad con los requisitos de la ${norm} del Ministerio del Trabajo ` +
+    `y los estándares de ingeniería aplicables.`;
 
   return normalizarTextoCertificacion(textoGenerado);
 };

@@ -664,36 +664,54 @@ export default function BotonSoporteFlotante() {
           {/* Cabecera del Widget */}
           <div
             style={{
-              padding: "12px 16px",
+              paddingTop: isMobile ? "calc(10px + env(safe-area-inset-top))" : "12px",
+              paddingBottom: "12px",
+              paddingLeft: "14px",
+              paddingRight: "14px",
               backgroundColor: "#E0342A",
               color: "#ffffff",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
+              gap: 8,
+              flexShrink: 0,
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}>
-              {vista !== "lista" && (
-                <button
-                  onClick={() => setVista("lista")}
-                  style={{
-                    background: "rgba(255,255,255,0.2)",
-                    border: "none",
-                    color: "#fff",
-                    borderRadius: 6,
-                    padding: "3px 8px",
-                    cursor: "pointer",
-                    fontSize: 12,
-                    marginRight: 2,
-                    flexShrink: 0,
-                  }}
-                  title="Volver a la lista"
-                >
-                  ←
-                </button>
-              )}
-              <div style={{ overflow: "hidden" }}>
-                <div style={{ fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1, overflow: "hidden" }}>
+              {/* Botón Flecha para Regresar al Menú o a la Lista */}
+              <button
+                onClick={() => {
+                  if (vista !== "lista") {
+                    setVista("lista");
+                  } else {
+                    setAbierto(false);
+                    setMinimizado(false);
+                  }
+                }}
+                style={{
+                  background: "rgba(255,255,255,0.22)",
+                  border: "1px solid rgba(255,255,255,0.35)",
+                  color: "#fff",
+                  borderRadius: 8,
+                  padding: "5px 10px",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  fontWeight: 800,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 5,
+                  flexShrink: 0,
+                }}
+                title={vista !== "lista" ? "Volver a la lista de chats" : "Regresar al menú principal"}
+              >
+                <span>←</span>
+                <span style={{ fontSize: 11, fontWeight: 700 }}>
+                  {vista !== "lista" ? "Atrás" : "Menú"}
+                </span>
+              </button>
+
+              <div style={{ minWidth: 0, overflow: "hidden" }}>
+                <div style={{ fontSize: 13, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {vista === "chat" ? (ticketActivo?.asunto || "Chat de Soporte") : "Mensajes y Soporte"}
                 </div>
                 <div style={{ fontSize: 10.5, opacity: 0.9, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -703,7 +721,7 @@ export default function BotonSoporteFlotante() {
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
-              {membresia?.role === "admin" && (
+              {!isMobile && membresia?.role === "admin" && (
                 <button
                   onClick={() => {
                     setAbierto(false);

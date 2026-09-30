@@ -18,6 +18,7 @@ import {
 } from "../../lib/soporte";
 import { listarUsuarios } from "../../lib/backend/usuarios";
 import { reproducirSonidoNotificacion } from "../../lib/sonidoNotificacion";
+import { useIsMobile } from "../../hooks/useMediaQuery";
 
 const ESTADOS = {
   todos: "Todos",
@@ -54,6 +55,7 @@ function formatFechaRelativa(isoString) {
 }
 
 export default function Soporte({ ctx }) {
+  const isMobile = useIsMobile();
   const { membresia, obras = [] } = ctx || {};
   const [tickets, setTickets] = useState([]);
   const [ticketActivoId, setTicketActivoId] = useState(null);
@@ -564,82 +566,91 @@ export default function Soporte({ ctx }) {
   };
 
   return (
-    <div style={{ padding: "24px 28px", maxWidth: 1400, margin: "0 auto" }}>
-      {/* Encabezado */}
-      <H1
-        title="Mensajes y Soporte"
-        subtitle="Comunicación directa entre el equipo (Camila, Cristian), residentes de obra y clientes"
-        action={
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <button
-              onClick={() => reproducirSonidoNotificacion()}
-              style={{ ...B("var(--surface-subtle)", "var(--text-main)"), border: "1px solid var(--border)", fontSize: 12, padding: "8px 14px" }}
-              title="Probar sonido de notificación del computador"
-            >
-              🔊 Probar timbre
-            </button>
-            <button onClick={abrirModalNuevo} style={B("#E0342A")}>
-              <span>+</span> Nueva conversación
-            </button>
-          </div>
-        }
-      />
+    <div style={{ padding: isMobile ? (ticketActivoId ? "6px 4px 14px" : "14px 10px 24px") : "24px 28px", maxWidth: 1400, margin: "0 auto" }}>
+      {/* Encabezado (se oculta en móvil si hay chat activo para maximizar pantalla) */}
+      {(!isMobile || !ticketActivoId) && (
+        <>
+          <H1
+            title="Mensajes y Soporte"
+            subtitle="Comunicación directa entre el equipo (Camila, Cristian), residentes de obra y clientes"
+            action={
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <button
+                  onClick={() => reproducirSonidoNotificacion()}
+                  style={{ ...B("var(--surface-subtle)", "var(--text-main)"), border: "1px solid var(--border)", fontSize: 12, padding: "8px 14px" }}
+                  title="Probar sonido de notificación del computador"
+                >
+                  🔊 Probar timbre
+                </button>
+                <button onClick={abrirModalNuevo} style={B("#E0342A")}>
+                  <span>+</span> Nueva conversación
+                </button>
+              </div>
+            }
+          />
 
-      {/* Tarjetas de Resumen */}
+          {/* Tarjetas de Resumen */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: isMobile ? 8 : 14,
+              marginBottom: 16,
+            }}
+          >
+            <div style={{ ...CD, padding: isMobile ? "10px 14px" : "14px 18px" }}>
+              <div style={{ fontSize: 11, color: "var(--text-muted, #667085)", fontWeight: 600 }}>CONVERSACIONES</div>
+              <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 800, color: "var(--text-main, #101828)", marginTop: 2 }}>
+                {stats.total}
+              </div>
+            </div>
+            <div style={{ ...CD, padding: isMobile ? "10px 14px" : "14px 18px", borderLeft: "4px solid #F79009" }}>
+              <div style={{ fontSize: 11, color: "#B54708", fontWeight: 600 }}>PENDIENTES</div>
+              <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 800, color: "#B54708", marginTop: 2 }}>
+                {stats.pendiente}
+              </div>
+            </div>
+            <div style={{ ...CD, padding: isMobile ? "10px 14px" : "14px 18px", borderLeft: "4px solid #175CD3" }}>
+              <div style={{ fontSize: 11, color: "#175CD3", fontWeight: 600 }}>EN CURSO</div>
+              <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 800, color: "#175CD3", marginTop: 2 }}>
+                {stats.en_curso}
+              </div>
+            </div>
+            <div style={{ ...CD, padding: isMobile ? "10px 14px" : "14px 18px", borderLeft: "4px solid #12B76A" }}>
+              <div style={{ fontSize: 11, color: "#027A48", fontWeight: 600 }}>RESUELTOS</div>
+              <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 800, color: "#027A48", marginTop: 2 }}>
+                {stats.resuelto}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Layout Principal: 2 Columnas en desktop / 1 Columna en móvil */}
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-          gap: 14,
-          marginBottom: 20,
-        }}
-      >
-        <div style={{ ...CD, padding: "14px 18px" }}>
-          <div style={{ fontSize: 12, color: "var(--text-muted, #667085)", fontWeight: 600 }}>CONVERSACIONES</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-main, #101828)", marginTop: 4 }}>
-            {stats.total}
-          </div>
-        </div>
-        <div style={{ ...CD, padding: "14px 18px", borderLeft: "4px solid #F79009" }}>
-          <div style={{ fontSize: 12, color: "#B54708", fontWeight: 600 }}>PENDIENTES</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "#B54708", marginTop: 4 }}>
-            {stats.pendiente}
-          </div>
-        </div>
-        <div style={{ ...CD, padding: "14px 18px", borderLeft: "4px solid #175CD3" }}>
-          <div style={{ fontSize: 12, color: "#175CD3", fontWeight: 600 }}>EN CURSO</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "#175CD3", marginTop: 4 }}>
-            {stats.en_curso}
-          </div>
-        </div>
-        <div style={{ ...CD, padding: "14px 18px", borderLeft: "4px solid #12B76A" }}>
-          <div style={{ fontSize: 12, color: "#027A48", fontWeight: 600 }}>RESUELTOS</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "#027A48", marginTop: 4 }}>
-            {stats.resuelto}
-          </div>
-        </div>
-      </div>
-
-      {/* Layout Principal: 2 Columnas (Bandeja y Chat) */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(320px, 380px) 1fr",
+          display: isMobile ? "flex" : "grid",
+          flexDirection: "column",
+          gridTemplateColumns: isMobile ? "1fr" : "minmax(320px, 380px) 1fr",
           gap: 16,
-          height: "calc(100vh - 270px)",
-          minHeight: 520,
+          height: isMobile
+            ? (ticketActivoId ? "calc(100dvh - 100px)" : "calc(100dvh - 270px)")
+            : "calc(100vh - 270px)",
+          minHeight: isMobile ? (ticketActivoId ? 480 : 380) : 520,
         }}
       >
         {/* Columna Izquierda: Lista de Tickets / Conversaciones */}
-        <div
-          style={{
-            ...CD,
-            padding: 0,
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-          }}
-        >
+        {(!isMobile || !ticketActivoId) && (
+          <div
+            style={{
+              ...CD,
+              padding: 0,
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+              flex: 1,
+            }}
+          >
           {/* Barra de Filtro y Búsqueda */}
           <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--border, #eaecf0)" }}>
             <input
@@ -835,59 +846,85 @@ export default function Soporte({ ctx }) {
             )}
           </div>
         </div>
+        )}
 
         {/* Columna Derecha: Hilo de Chat */}
-        <div
-          style={{
-            ...CD,
-            padding: 0,
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-          }}
-        >
-          {ticketActivo ? (
-            <>
-              {/* Cabecera del Chat */}
-              <div
-                style={{
-                  padding: "12px 20px",
-                  borderBottom: "1px solid var(--border, #eaecf0)",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                  gap: 10,
-                  backgroundColor: "var(--surface, #ffffff)",
-                }}
-              >
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <h3 style={{ fontSize: 15, fontWeight: 800, margin: 0, color: "var(--text-main, #101828)" }}>
-                      {ticketActivo.asunto}
-                    </h3>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        backgroundColor: (BADGES[ticketActivo.estado] || BADGES.pendiente).bg,
-                        color: (BADGES[ticketActivo.estado] || BADGES.pendiente).text,
-                        padding: "2px 8px",
-                        borderRadius: 6,
-                      }}
-                    >
-                      {(BADGES[ticketActivo.estado] || BADGES.pendiente).label}
-                    </span>
+        {(!isMobile || Boolean(ticketActivoId)) && (
+          <div
+            style={{
+              ...CD,
+              padding: 0,
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+              flex: 1,
+            }}
+          >
+            {ticketActivo ? (
+              <>
+                {/* Cabecera del Chat */}
+                <div
+                  style={{
+                    padding: isMobile ? "10px 14px" : "12px 20px",
+                    borderBottom: "1px solid var(--border, #eaecf0)",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: 10,
+                    backgroundColor: "var(--surface, #ffffff)",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: "1 1 200px" }}>
+                    {isMobile && (
+                      <button
+                        onClick={() => setTicketActivoId(null)}
+                        style={{
+                          border: "1px solid var(--border, #eaecf0)",
+                          background: "var(--surface-subtle, #f2f4f7)",
+                          color: "var(--text-main, #101828)",
+                          borderRadius: 8,
+                          padding: "6px 12px",
+                          fontSize: 12.5,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                          flexShrink: 0,
+                        }}
+                        title="Volver a la lista de conversaciones"
+                      >
+                        ← Volver
+                      </button>
+                    )}
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <h3 style={{ fontSize: isMobile ? 14 : 15, fontWeight: 800, margin: 0, color: "var(--text-main, #101828)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {ticketActivo.asunto}
+                        </h3>
+                        <span
+                          style={{
+                            fontSize: 10.5,
+                            fontWeight: 700,
+                            backgroundColor: (BADGES[ticketActivo.estado] || BADGES.pendiente).bg,
+                            color: (BADGES[ticketActivo.estado] || BADGES.pendiente).text,
+                            padding: "2px 7px",
+                            borderRadius: 6,
+                          }}
+                        >
+                          {(BADGES[ticketActivo.estado] || BADGES.pendiente).label}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 11.5, color: "var(--text-muted, #667085)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        Con: <strong>{obtenerNombreInterlocutor(ticketActivo, membresia)}</strong>
+                        {ticketActivo.obra_nombre && ` · ${ticketActivo.obra_nombre}`}
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ fontSize: 12, color: "var(--text-muted, #667085)", marginTop: 2 }}>
-                    Conversación con: <strong>{obtenerNombreInterlocutor(ticketActivo, membresia)}</strong>
-                    {ticketActivo.usuario_email && ` · ${ticketActivo.usuario_email}`}
-                    {ticketActivo.obra_nombre && ` · ${ticketActivo.obra_nombre}`}
-                  </div>
-                </div>
 
-                {/* Acciones de estado */}
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  {/* Acciones de estado */}
+                  <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
                   {ticketActivo.estado === "resuelto" ? (
                     <button
                       onClick={() => handleCambiarEstado("en_curso")}
@@ -1032,10 +1069,10 @@ export default function Soporte({ ctx }) {
               <form
                 onSubmit={handleEnviarMensaje}
                 style={{
-                  padding: "14px 18px",
+                  padding: isMobile ? "10px 12px calc(12px + env(safe-area-inset-bottom))" : "14px 18px",
                   borderTop: "1px solid var(--border, #eaecf0)",
                   display: "flex",
-                  gap: 10,
+                  gap: 8,
                   alignItems: "center",
                   backgroundColor: "var(--surface, #ffffff)",
                 }}
@@ -1046,18 +1083,21 @@ export default function Soporte({ ctx }) {
                   value={nuevoMensaje}
                   onChange={(e) => setNuevoMensaje(e.target.value)}
                   disabled={enviando}
-                  style={{ ...SI, flex: 1, padding: "10px 14px" }}
+                  style={{ ...SI, flex: 1, padding: isMobile ? "9px 12px" : "10px 14px", fontSize: isMobile ? 13 : 14 }}
                 />
                 <button
                   type="submit"
                   disabled={enviando || !nuevoMensaje.trim()}
                   style={{
                     ...B("#E0342A"),
+                    padding: isMobile ? "9px 14px" : "10px 18px",
+                    fontSize: isMobile ? 13 : 14,
                     opacity: enviando || !nuevoMensaje.trim() ? 0.6 : 1,
                     cursor: enviando || !nuevoMensaje.trim() ? "not-allowed" : "pointer",
+                    whiteSpace: "nowrap",
                   }}
                 >
-                  {enviando ? "Enviando…" : "Enviar ➤"}
+                  {enviando ? "..." : "Enviar ➤"}
                 </button>
               </form>
             </>
@@ -1084,6 +1124,7 @@ export default function Soporte({ ctx }) {
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* Modal Nueva Conversación / Incidencia */}

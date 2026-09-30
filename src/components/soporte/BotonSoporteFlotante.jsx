@@ -16,9 +16,11 @@ import {
 } from "../../lib/soporte";
 import { listarUsuarios } from "../../lib/backend/usuarios";
 import { reproducirSonidoNotificacion } from "../../lib/sonidoNotificacion";
+import { useIsMobile } from "../../hooks/useMediaQuery";
 import { SI, B } from "../../styles/tokens";
 
 export default function BotonSoporteFlotante() {
+  const isMobile = useIsMobile();
   const ctx = useAppData();
   const { membresia, scr, setScr } = ctx || {};
   const [abierto, setAbierto] = useState(false);
@@ -510,13 +512,29 @@ export default function BotonSoporteFlotante() {
   };
 
   return (
-    <div style={{
-      position: "fixed",
-      bottom: "calc(16px + env(safe-area-inset-bottom))",
-      right: "calc(16px + env(safe-area-inset-right))",
-      zIndex: 9999,
-      fontFamily: "'Inter', system-ui, sans-serif"
-    }}>
+    <div style={
+      isMobile && abierto && !minimizado
+        ? {
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: "100vw",
+            height: "100dvh",
+            zIndex: 99999,
+            display: "flex",
+            flexDirection: "column",
+            fontFamily: "'Inter', system-ui, sans-serif",
+          }
+        : {
+            position: "fixed",
+            bottom: "calc(16px + env(safe-area-inset-bottom))",
+            right: "calc(16px + env(safe-area-inset-right))",
+            zIndex: 9999,
+            fontFamily: "'Inter', system-ui, sans-serif",
+          }
+    }>
       {/* Barra Minimizada Acoplada */}
       {abierto && minimizado && (
         <div
@@ -525,7 +543,7 @@ export default function BotonSoporteFlotante() {
             position: "absolute",
             bottom: 56,
             right: 0,
-            width: 320,
+            width: isMobile ? "calc(100vw - 32px)" : 320,
             maxWidth: "calc(100vw - 32px)",
             height: 44,
             backgroundColor: "#E0342A",
@@ -605,23 +623,43 @@ export default function BotonSoporteFlotante() {
       {/* Ventana Flotante Emergente (Expandida) */}
       {abierto && !minimizado && (
         <div
-          style={{
-            position: "absolute",
-            bottom: 56,
-            right: 0,
-            width: 360,
-            maxWidth: "calc(100vw - 32px)",
-            height: 480,
-            maxHeight: "calc(100dvh - 84px)",
-            backgroundColor: "var(--surface, #ffffff)",
-            borderRadius: 16,
-            border: "1px solid var(--border, #eaecf0)",
-            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.18), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-            animation: "fadeIn 0.15s ease",
-          }}
+          style={
+            isMobile
+              ? {
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  width: "100vw",
+                  height: "100dvh",
+                  maxWidth: "100vw",
+                  maxHeight: "100dvh",
+                  backgroundColor: "var(--surface, #ffffff)",
+                  display: "flex",
+                  flexDirection: "column",
+                  overflow: "hidden",
+                  zIndex: 100000,
+                  boxSizing: "border-box",
+                }
+              : {
+                  position: "absolute",
+                  bottom: 56,
+                  right: 0,
+                  width: 360,
+                  maxWidth: "calc(100vw - 32px)",
+                  height: 480,
+                  maxHeight: "calc(100dvh - 84px)",
+                  backgroundColor: "var(--surface, #ffffff)",
+                  borderRadius: 16,
+                  border: "1px solid var(--border, #eaecf0)",
+                  boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.18), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+                  display: "flex",
+                  flexDirection: "column",
+                  overflow: "hidden",
+                  animation: "fadeIn 0.15s ease",
+                }
+          }
         >
           {/* Cabecera del Widget */}
           <div
@@ -1048,7 +1086,7 @@ export default function BotonSoporteFlotante() {
               <form
                 onSubmit={handleEnviarChat}
                 style={{
-                  padding: "8px 10px",
+                  padding: isMobile ? "10px 12px calc(12px + env(safe-area-inset-bottom))" : "8px 10px",
                   borderTop: "1px solid var(--border, #eaecf0)",
                   display: "flex",
                   gap: 6,
@@ -1076,74 +1114,76 @@ export default function BotonSoporteFlotante() {
       )}
 
       {/* Botón Circular Flotante */}
-      <button
-        onClick={() => {
-          if (minimizado) {
-            setMinimizado(false);
-            setAbierto(true);
-          } else {
-            setAbierto((prev) => !prev);
-          }
-        }}
-        style={{
-          width: 46,
-          height: 46,
-          borderRadius: "50%",
-          backgroundColor: "#E0342A",
-          color: "#ffffff",
-          border: "none",
-          boxShadow: "0 4px 14px rgba(224, 52, 42, 0.45)",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 20,
-          transition: "transform 0.15s ease",
-          position: "relative",
-        }}
-        title={minimizado ? "Restaurar chat" : abierto ? "Cerrar chat" : "Mensajes y soporte"}
-      >
-        {abierto && !minimizado ? "✕" : "💬"}
-        {(!abierto || minimizado) && totalNoLeidos > 0 ? (
-          <span
-            style={{
-              position: "absolute",
-              top: -5,
-              right: -5,
-              minWidth: 19,
-              height: 19,
-              padding: "0 4px",
-              backgroundColor: "#E0342A",
-              border: "2px solid #ffffff",
-              borderRadius: 10,
-              color: "#ffffff",
-              fontSize: 10.5,
-              fontWeight: 800,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 2px 5px rgba(0,0,0,0.3)",
-            }}
-          >
-            {totalNoLeidos}
-          </span>
-        ) : (
-          (!abierto || minimizado) && ticketsVisibles.some((t) => t.estado === "pendiente" || t.estado === "en_curso") && (
+      {(!isMobile || !abierto || minimizado) && (
+        <button
+          onClick={() => {
+            if (minimizado) {
+              setMinimizado(false);
+              setAbierto(true);
+            } else {
+              setAbierto((prev) => !prev);
+            }
+          }}
+          style={{
+            width: 46,
+            height: 46,
+            borderRadius: "50%",
+            backgroundColor: "#E0342A",
+            color: "#ffffff",
+            border: "none",
+            boxShadow: "0 4px 14px rgba(224, 52, 42, 0.45)",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 20,
+            transition: "transform 0.15s ease",
+            position: "relative",
+          }}
+          title={minimizado ? "Restaurar chat" : abierto ? "Cerrar chat" : "Mensajes y soporte"}
+        >
+          {abierto && !minimizado ? "✕" : "💬"}
+          {(!abierto || minimizado) && totalNoLeidos > 0 ? (
             <span
               style={{
                 position: "absolute",
-                top: 0,
-                right: 0,
-                width: 11,
-                height: 11,
-                backgroundColor: "#12B76A",
+                top: -5,
+                right: -5,
+                minWidth: 19,
+                height: 19,
+                padding: "0 4px",
+                backgroundColor: "#E0342A",
                 border: "2px solid #ffffff",
-                borderRadius: "50%",
+                borderRadius: 10,
+                color: "#ffffff",
+                fontSize: 10.5,
+                fontWeight: 800,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 2px 5px rgba(0,0,0,0.3)",
               }}
-            />
-          )
-        )}
-      </button>
+            >
+              {totalNoLeidos}
+            </span>
+          ) : (
+            (!abierto || minimizado) && ticketsVisibles.some((t) => t.estado === "pendiente" || t.estado === "en_curso") && (
+              <span
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  right: 0,
+                  width: 11,
+                  height: 11,
+                  backgroundColor: "#12B76A",
+                  border: "2px solid #ffffff",
+                  borderRadius: "50%",
+                }}
+              />
+            )
+          )}
+        </button>
+      )}
     </div>
   );
 }

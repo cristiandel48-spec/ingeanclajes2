@@ -15,6 +15,7 @@ export default function BotonSoporteFlotante() {
   const ctx = useAppData();
   const { membresia, scr, setScr } = ctx || {};
   const [abierto, setAbierto] = useState(false);
+  const [minimizado, setMinimizado] = useState(false);
   const [vista, setVista] = useState("lista"); // 'lista' | 'chat' | 'nuevo'
   const [tickets, setTickets] = useState([]);
   const [ticketActivoId, setTicketActivoId] = useState(null);
@@ -92,13 +93,25 @@ export default function BotonSoporteFlotante() {
     }
   }, [opcionesDestinatarios]);
 
+  // Carga inicial y polling periódico continuo de tickets (cada 8s) incluso cerrado
   useEffect(() => {
-    if (abierto) {
-      cargarTickets().then((data) => {
-        setTickets((data || []).filter((t) => !esTicketEjemplo(t)));
-      });
-    }
-  }, [abierto]);
+    cargarTickets().then((data) => {
+      setTickets((data || []).filter((t) => !esTicketEjemplo(t)));
+    });
+
+    const interval = setInterval(async () => {
+      try {
+        const data = await cargarTickets();
+        if (data && data.length >= 0) {
+          setTickets(data.filter((t) => !esTicketEjemplo(t)));
+        }
+      } catch {
+        // polling silencioso
+      }
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Escuchar evento para abrir el chat directamente a un ticket específico
   useEffect(() => {
@@ -108,13 +121,40 @@ export default function BotonSoporteFlotante() {
         setTicketActivoId(targetId);
         setVista("chat");
         setAbierto(true);
+        setMinimizado(false);
       } else {
         setAbierto(true);
+        setMinimizado(false);
       }
     };
     window.addEventListener("abrir-chat-ticket", handleAbrirTicket);
     return () => window.removeEventListener("abrir-chat-ticket", handleAbrirTicket);
   }, []);
+
+  // Escuchar mensajes entrantes en tiempo real disparados por NotificadorMensajesGlobal
+  useEffect(() => {
+    const handleNuevoMsg = (e) => {
+      const msg = e.detail;
+      if (!msg) return;
+
+      // Si corresponde al ticket abierto, agregarlo al chat de inmediato
+      if (ticketActivoId && (msg.ticket_id === ticketActivoId || msg.ticketId === ticketActivoId)) {
+        setMensajes((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          return [...prev, msg].sort((a, b) => new Date(a.creado_en) - new Date(b.creado_en));
+        });
+        setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
+      }
+
+      // Refrescar lista de tickets para mostrar último mensaje actualizado
+      cargarTickets().then((data) => {
+        if (data) setTickets(data.filter((t) => !esTicketEjemplo(t)));
+      });
+    };
+
+    window.addEventListener("notificacion-mensaje-recibido", handleNuevoMsg);
+    return () => window.removeEventListener("notificacion-mensaje-recibido", handleNuevoMsg);
+  }, [ticketActivoId]);
 
   // Cargar mensajes y escuchar cambios Realtime
   useEffect(() => {
@@ -285,8 +325,88 @@ export default function BotonSoporteFlotante() {
       zIndex: 9999,
       fontFamily: "'Inter', system-ui, sans-serif"
     }}>
-      {/* Ventana Flotante Emergente */}
-      {abierto && (
+      {/* Barra Minimizada Acoplada */}
+      {abierto && minimizado && (
+        <div
+          onClick={() => setMinimizado(false)}
+          style={{
+            position: "absolute",
+            bottom: 56,
+            right: 0,
+            width: 320,
+            maxWidth: "calc(100vw - 32px)",
+            height: 44,
+            backgroundColor: "#E0342A",
+            color: "#ffffff",
+            borderRadius: 12,
+            border: "1px solid rgba(255,255,255,0.2)",
+            boxShadow: "0 10px 25px -5px rgba(224, 52, 42, 0.45), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "0 12px",
+            cursor: "pointer",
+            animation: "fadeIn 0.15s ease",
+            userSelect: "none",
+          }}
+          title="Clic para restaurar y continuar chateando"
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}>
+            <span style={{ fontSize: 16 }}>💬</span>
+            <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {vista === "chat" ? (ticketActivo?.asunto || "Chat de Soporte") : "Mensajes y Soporte"}
+              </div>
+              <div style={{ fontSize: 10, opacity: 0.9, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {vista === "chat" ? `Con ${ticketActivo?.usuario_nombre || "Usuario"}` : "Clic para expandir"}
+              </div>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }} onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setMinimizado(false)}
+              style={{
+                background: "rgba(255,255,255,0.2)",
+                border: "none",
+                color: "#fff",
+                borderRadius: 5,
+                padding: "3px 7px",
+                cursor: "pointer",
+                fontSize: 11,
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: 3,
+              }}
+              title="Restaurar / Expandir"
+            >
+              <span>🗖</span>
+            </button>
+            <button
+              onClick={() => {
+                setMinimizado(false);
+                setAbierto(false);
+              }}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#fff",
+                fontSize: 15,
+                cursor: "pointer",
+                padding: "0 4px",
+                display: "flex",
+                alignItems: "center",
+              }}
+              title="Cerrar"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Ventana Flotante Emergente (Expandida) */}
+      {abierto && !minimizado && (
         <div
           style={{
             position: "absolute",
@@ -317,7 +437,7 @@ export default function BotonSoporteFlotante() {
               alignItems: "center",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}>
               {vista !== "lista" && (
                 <button
                   onClick={() => setVista("lista")}
@@ -330,27 +450,29 @@ export default function BotonSoporteFlotante() {
                     cursor: "pointer",
                     fontSize: 12,
                     marginRight: 2,
+                    flexShrink: 0,
                   }}
                   title="Volver a la lista"
                 >
                   ←
                 </button>
               )}
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>
+              <div style={{ overflow: "hidden" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {vista === "chat" ? (ticketActivo?.asunto || "Chat de Soporte") : "Mensajes y Soporte"}
                 </div>
-                <div style={{ fontSize: 10.5, opacity: 0.9 }}>
+                <div style={{ fontSize: 10.5, opacity: 0.9, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {vista === "chat" ? (`Con ${ticketActivo?.usuario_nombre || "Usuario"}`) : "Habla con Camila o el equipo"}
                 </div>
               </div>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
               {membresia?.role === "admin" && (
                 <button
                   onClick={() => {
                     setAbierto(false);
+                    setMinimizado(false);
                     setScr("soporte");
                   }}
                   style={{
@@ -368,8 +490,38 @@ export default function BotonSoporteFlotante() {
                   Pantalla Completa ↗
                 </button>
               )}
+              {/* Botón Minimizar */}
               <button
-                onClick={() => setAbierto(false)}
+                onClick={() => setMinimizado(true)}
+                style={{
+                  background: "rgba(255,255,255,0.2)",
+                  border: "none",
+                  color: "#fff",
+                  borderRadius: 6,
+                  width: 26,
+                  height: 24,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  lineHeight: 1,
+                  transition: "background 0.15s ease",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.35)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.2)")}
+                title="Minimizar chat"
+                aria-label="Minimizar chat"
+              >
+                —
+              </button>
+              {/* Botón Cerrar */}
+              <button
+                onClick={() => {
+                  setAbierto(false);
+                  setMinimizado(false);
+                }}
                 style={{
                   background: "transparent",
                   border: "none",
@@ -377,7 +529,12 @@ export default function BotonSoporteFlotante() {
                   fontSize: 16,
                   cursor: "pointer",
                   padding: "0 4px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
+                title="Cerrar chat"
+                aria-label="Cerrar chat"
               >
                 ✕
               </button>
@@ -646,7 +803,14 @@ export default function BotonSoporteFlotante() {
 
       {/* Botón Circular Flotante */}
       <button
-        onClick={() => setAbierto((prev) => !prev)}
+        onClick={() => {
+          if (minimizado) {
+            setMinimizado(false);
+            setAbierto(true);
+          } else {
+            setAbierto((prev) => !prev);
+          }
+        }}
         style={{
           width: 46,
           height: 46,
@@ -663,10 +827,10 @@ export default function BotonSoporteFlotante() {
           transition: "transform 0.15s ease",
           position: "relative",
         }}
-        title="Mensajes y soporte"
+        title={minimizado ? "Restaurar chat" : abierto ? "Cerrar chat" : "Mensajes y soporte"}
       >
-        {abierto ? "✕" : "💬"}
-        {!abierto && tickets.some((t) => t.estado === "pendiente" || t.estado === "en_curso") && (
+        {abierto && !minimizado ? "✕" : "💬"}
+        {(!abierto || minimizado) && tickets.some((t) => t.estado === "pendiente" || t.estado === "en_curso") && (
           <span
             style={{
               position: "absolute",

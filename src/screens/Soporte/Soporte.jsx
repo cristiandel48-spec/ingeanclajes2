@@ -194,9 +194,27 @@ export default function Soporte({ ctx }) {
       }
     });
 
+    const handleNuevoGlobal = (e) => {
+      const msg = e.detail;
+      if (!msg || !montado) return;
+      if (ticketActivoId && (msg.ticket_id === ticketActivoId || msg.ticketId === ticketActivoId)) {
+        setMensajes((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          return [...prev, msg].sort((a, b) => new Date(a.creado_en) - new Date(b.creado_en));
+        });
+        setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
+      }
+      cargarTickets().then((ts) => {
+        if (ts && montado) setTickets(ts.filter((t) => !esTicketEjemplo(t)));
+      });
+    };
+
+    window.addEventListener("notificacion-mensaje-recibido", handleNuevoGlobal);
+
     return () => {
       montado = false;
       desuscribir();
+      window.removeEventListener("notificacion-mensaje-recibido", handleNuevoGlobal);
     };
   }, [ticketActivoId]);
 

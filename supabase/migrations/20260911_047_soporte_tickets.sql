@@ -84,7 +84,8 @@ with check (tenant_id in (select app.current_user_tenant_ids()));
 create or replace function app.al_insertar_soporte_mensaje()
 returns trigger
 language plpgsql
-security definer
+security invoker
+set search_path = app, public, pg_temp
 as $$
 begin
   update app.soporte_tickets
@@ -94,6 +95,9 @@ begin
   return new;
 end;
 $$;
+
+revoke execute on function app.al_insertar_soporte_mensaje() from public, anon;
+grant execute on function app.al_insertar_soporte_mensaje() to authenticated, service_role;
 
 drop trigger if exists trg_soporte_mensaje_insert on app.soporte_mensajes;
 create trigger trg_soporte_mensaje_insert

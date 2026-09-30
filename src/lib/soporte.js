@@ -327,55 +327,15 @@ export async function cargarTickets() {
         if (!error && data) {
           const reales = data.filter((t) => !esTicketEjemplo(t)).map(parsearTicket);
 
-          // Sincronizar automáticamente tickets locales creados offline o pendientes
-          const locales = getLocalTickets().filter((t) => !esTicketEjemplo(t) && !esUuidValido(t.id));
-          for (const loc of locales) {
-            const yaExiste = reales.some((r) => r.asunto === loc.asunto && r.usuario_nombre === loc.usuario_nombre);
-            if (!yaExiste) {
-              try {
-                const metaCreador = {
-                  cId: loc.creador_id || null,
-                  cEmail: loc.creador_email || null,
-                  cNom: loc.creador_nombre || null,
-                  obraOriginal: loc.obra_id || null,
-                };
-                const obraIdConMeta = `meta:${JSON.stringify(metaCreador)}`;
-
-                const { data: nuevoDb } = await supabase
-                  .from("soporte_tickets")
-                  .insert([{
-                    tenant_id: tenantId,
-                    asunto: loc.asunto,
-                    obra_nombre: loc.obra_nombre || "General",
-                    obra_id: obraIdConMeta,
-                    prioridad: loc.prioridad || "media",
-                    estado: loc.estado || "en_curso",
-                    usuario_nombre: loc.usuario_nombre || "Usuario",
-                    usuario_email: loc.usuario_email || "",
-                    ultimo_mensaje: loc.ultimo_mensaje || "",
-                  }])
-                  .select()
-                  .single();
-
-                if (nuevoDb) {
-                  const parsedNuevo = parsearTicket(nuevoDb);
-                  reales.unshift(parsedNuevo);
-                  const msgsLocales = getLocalMensajes(loc.id);
-                  for (const ml of msgsLocales) {
-                    await supabase.from("soporte_mensajes").insert([{
-                      tenant_id: tenantId,
-                      ticket_id: nuevoDb.id,
-                      remitente_nombre: ml.remitente_nombre || "Usuario",
-                      es_admin: Boolean(ml.es_admin),
-                      texto: ml.texto,
-                      creado_en: ml.creado_en || new Date().toISOString(),
-                    }]).catch(() => {});
-                  }
-                }
-              } catch {
-                // ignorar
-              }
-            }
+          if (reales.length === 0) {
+            // Si la base de datos está completamente vacía (limpiada por SQL),
+            // limpiamos la memoria y storage local para reflejar la bandeja vacía inmediatamente.
+            try {
+              localStorage.removeItem(LOCAL_STORAGE_KEY_TICKETS);
+              localStorage.removeItem(LOCAL_STORAGE_KEY_MENSAJES);
+            } catch {}
+            ticketsMemoriaCache = [];
+            return [];
           }
 
           saveLocalTickets(reales);
@@ -852,4 +812,110 @@ export function suscribirChatTicket(ticketId, onNuevoMensaje) {
     if (canalRemover) canalRemover();
   };
 }
+
+/**
+ * Elimina una conversación y sus mensajes asociados tanto en Supabase como localmente.
+ * Notifica a través de CustomEvent y BroadcastChannel para refrescar la interfaz al instante.
+ */
+export async function eliminarTicket(ticketId) {
+  if (!ticketId) return false;
+
+  let targetUuid = ticketId;
+  if (isSupabaseConfigured()) {
+    try {
+      const resUuid = await resolverTicketUuid(ticketId);
+      if (esUuidValido(resUuid)) {
+        targetUuid = resUuid;
+      }
+      const supabase = getSupabaseClient();
+      if (esUuidValido(targetUuid)) {
+        // Eliminar mensajes asociados primero
+        await supabase
+          .from("soporte_mensajes")
+          .delete()
+          .eq("ticket_id", targetUuid);
+
+        // Eliminar el ticket
+        const { error } = await supabase
+          .from("soporte_tickets")
+          .delete()
+          .eq("id", targetUuid);
+
+        if (error) {
+          console.warn("Aviso al eliminar ticket en Supabase:", error);
+        }
+      }
+    } catch (e) {
+      console.warn("Fallo eliminando ticket en Supabase:", e);
+    }
+  }
+
+  // Limpiar del almacenamiento local (localStorage)
+  try {
+    const rawT = localStorage.getItem(LOCAL_STORAGE_KEY_TICKETS);
+    if (rawT) {
+      const parsed = JSON.parse(rawT);
+      if (Array.isArray(parsed)) {
+        const limpios = parsed.filter(
+          (t) => t.id !== ticketId && t.id !== targetUuid
+        );
+        localStorage.setItem(LOCAL_STORAGE_KEY_TICKETS, JSON.stringify(limpios));
+      }
+    }
+
+    const rawM = localStorage.getItem(LOCAL_STORAGE_KEY_MENSAJES);
+    if (rawM) {
+      const store = JSON.parse(rawM);
+      delete store[ticketId];
+      if (targetUuid && targetUuid !== ticketId) {
+        delete store[targetUuid];
+      }
+      localStorage.setItem(LOCAL_STORAGE_KEY_MENSAJES, JSON.stringify(store));
+    }
+  } catch (e) {
+    console.warn("Error limpiando ticket de localStorage:", e);
+  }
+
+  // Actualizar caché en memoria
+  ticketsMemoriaCache = ticketsMemoriaCache.filter(
+    (t) => t.id !== ticketId && t.id !== targetUuid
+  );
+
+  // Emitir eventos para que todas las pestañas y vistas se actualicen al instante
+  try {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("notificacion-ticket-eliminado", {
+          detail: { ticketId, targetUuid },
+        })
+      );
+
+      if ("BroadcastChannel" in window) {
+        const bc = new BroadcastChannel("ingeanclajes_canal_mensajes");
+        bc.postMessage({ tipo: "ticket-eliminado", ticketId, targetUuid });
+        bc.close();
+      }
+    }
+  } catch {
+    // silencioso
+  }
+
+  return true;
+}
+
+/**
+ * Limpia totalmente cualquier conversación y mensaje local de prueba o historial
+ */
+export function limpiarTodoSoporteLocal() {
+  try {
+    localStorage.removeItem(LOCAL_STORAGE_KEY_TICKETS);
+    localStorage.removeItem(LOCAL_STORAGE_KEY_MENSAJES);
+    localStorage.removeItem("ingeanclajes_soporte_tickets_v1");
+    localStorage.removeItem("ingeanclajes_soporte_mensajes_v1");
+    ticketsMemoriaCache = [];
+  } catch {
+    // silencioso
+  }
+}
+
 

@@ -5,6 +5,7 @@ import {
   cargarMensajes,
   enviarMensaje,
   crearTicket,
+  eliminarTicket,
   suscribirChatTicket,
   esTicketEjemplo,
   esTicketVisibleParaUsuario,
@@ -172,6 +173,42 @@ export default function BotonSoporteFlotante() {
     window.addEventListener("abrir-chat-ticket", handleAbrirTicket);
     return () => window.removeEventListener("abrir-chat-ticket", handleAbrirTicket);
   }, []);
+
+  // Escuchar eliminación de tickets en tiempo real
+  useEffect(() => {
+    const handleTicketEliminado = (e) => {
+      const { ticketId, targetUuid } = e.detail || {};
+      setTickets((prev) => prev.filter((t) => t.id !== ticketId && t.id !== targetUuid));
+      if (ticketActivoId === ticketId || ticketActivoId === targetUuid) {
+        setTicketActivoId(null);
+        setMensajes([]);
+        setVista("lista");
+      }
+    };
+
+    window.addEventListener("notificacion-ticket-eliminado", handleTicketEliminado);
+
+    let bc = null;
+    if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+      bc = new BroadcastChannel("ingeanclajes_canal_mensajes");
+      bc.onmessage = (event) => {
+        if (event.data?.tipo === "ticket-eliminado") {
+          const { ticketId, targetUuid } = event.data;
+          setTickets((prev) => prev.filter((t) => t.id !== ticketId && t.id !== targetUuid));
+          if (ticketActivoId === ticketId || ticketActivoId === targetUuid) {
+            setTicketActivoId(null);
+            setMensajes([]);
+            setVista("lista");
+          }
+        }
+      };
+    }
+
+    return () => {
+      window.removeEventListener("notificacion-ticket-eliminado", handleTicketEliminado);
+      if (bc) bc.close();
+    };
+  }, [ticketActivoId]);
 
   // Escuchar mensajes entrantes en tiempo real disparados por NotificadorMensajesGlobal
   useEffect(() => {
@@ -361,6 +398,24 @@ export default function BotonSoporteFlotante() {
     }
   };
 
+  const handleEliminarTicket = async (id) => {
+    if (!id) return;
+    const ok = window.confirm("¿Estás seguro de que deseas eliminar esta conversación? Esta acción no se puede deshacer.");
+    if (!ok) return;
+
+    try {
+      await eliminarTicket(id);
+      setTickets((prev) => prev.filter((t) => t.id !== id));
+      if (ticketActivoId === id) {
+        setTicketActivoId(null);
+        setMensajes([]);
+        setVista("lista");
+      }
+    } catch (err) {
+      console.error("Error al eliminar conversación:", err);
+      alert("No se pudo eliminar la conversación. Inténtalo de nuevo.");
+    }
+  };
 
   return (
     <div style={{
@@ -535,6 +590,32 @@ export default function BotonSoporteFlotante() {
                   Pantalla Completa ↗
                 </button>
               )}
+              {/* Botón Eliminar conversación */}
+              {vista === "chat" && ticketActivo && (
+                <button
+                  onClick={() => handleEliminarTicket(ticketActivo.id)}
+                  style={{
+                    background: "rgba(255,255,255,0.2)",
+                    border: "none",
+                    color: "#fff",
+                    borderRadius: 6,
+                    width: 26,
+                    height: 24,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    fontSize: 12,
+                    transition: "background 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.3)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.2)")}
+                  title="Eliminar conversación"
+                  aria-label="Eliminar conversación"
+                >
+                  🗑️
+                </button>
+              )}
               {/* Botón Minimizar */}
               <button
                 onClick={() => setMinimizado(true)}
@@ -642,18 +723,50 @@ export default function BotonSoporteFlotante() {
                           <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #101828)", display: "flex", alignItems: "center", gap: 4 }}>
                             {esCamila ? "💼" : "👤"} {interlocutor}
                           </span>
-                          <span
-                            style={{
-                              fontSize: 9.5,
-                              fontWeight: 700,
-                              padding: "1px 6px",
-                              borderRadius: 4,
-                              backgroundColor: t.estado === "resuelto" ? "#ECFDF3" : "#FEF0C7",
-                              color: t.estado === "resuelto" ? "#027A48" : "#B54708",
-                            }}
-                          >
-                            {t.estado === "resuelto" ? "Resuelto" : "En curso"}
-                          </span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span
+                              style={{
+                                fontSize: 9.5,
+                                fontWeight: 700,
+                                padding: "1px 6px",
+                                borderRadius: 4,
+                                backgroundColor: t.estado === "resuelto" ? "#ECFDF3" : "#FEF0C7",
+                                color: t.estado === "resuelto" ? "#027A48" : "#B54708",
+                              }}
+                            >
+                              {t.estado === "resuelto" ? "Resuelto" : "En curso"}
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEliminarTicket(t.id);
+                              }}
+                              style={{
+                                background: "transparent",
+                                border: "none",
+                                color: "var(--text-muted, #667085)",
+                                cursor: "pointer",
+                                padding: "2px 4px",
+                                fontSize: 11,
+                                borderRadius: 4,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                transition: "all 0.15s ease",
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.color = "#E0342A";
+                                e.currentTarget.style.background = "rgba(224, 52, 42, 0.08)";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.color = "var(--text-muted, #667085)";
+                                e.currentTarget.style.background = "transparent";
+                              }}
+                              title="Eliminar conversación"
+                            >
+                              🗑️
+                            </button>
+                          </div>
                         </div>
                         <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-main, #101828)", marginBottom: 2 }}>
                           {t.asunto}

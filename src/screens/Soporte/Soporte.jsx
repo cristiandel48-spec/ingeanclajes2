@@ -7,6 +7,7 @@ import {
   enviarMensaje,
   cambiarEstadoTicket,
   crearTicket,
+  eliminarTicket,
   suscribirChatTicket,
   esTicketEjemplo,
   esTicketVisibleParaUsuario,
@@ -278,6 +279,40 @@ export default function Soporte({ ctx }) {
     return () => clearInterval(interval);
   }, []);
 
+  // Escuchar eliminación de tickets en tiempo real
+  useEffect(() => {
+    const handleTicketEliminado = (e) => {
+      const { ticketId, targetUuid } = e.detail || {};
+      setTickets((prev) => prev.filter((t) => t.id !== ticketId && t.id !== targetUuid));
+      if (ticketActivoId === ticketId || ticketActivoId === targetUuid) {
+        setTicketActivoId(null);
+        setMensajes([]);
+      }
+    };
+
+    window.addEventListener("notificacion-ticket-eliminado", handleTicketEliminado);
+
+    let bc = null;
+    if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+      bc = new BroadcastChannel("ingeanclajes_canal_mensajes");
+      bc.onmessage = (event) => {
+        if (event.data?.tipo === "ticket-eliminado") {
+          const { ticketId, targetUuid } = event.data;
+          setTickets((prev) => prev.filter((t) => t.id !== ticketId && t.id !== targetUuid));
+          if (ticketActivoId === ticketId || ticketActivoId === targetUuid) {
+            setTicketActivoId(null);
+            setMensajes([]);
+          }
+        }
+      };
+    }
+
+    return () => {
+      window.removeEventListener("notificacion-ticket-eliminado", handleTicketEliminado);
+      if (bc) bc.close();
+    };
+  }, [ticketActivoId]);
+
   // Filtrar estrictamente tickets visibles para este usuario (confidencialidad total)
   const ticketsVisibles = useMemo(() => {
     return tickets.filter((t) => esTicketVisibleParaUsuario(t, membresia));
@@ -441,6 +476,25 @@ export default function Soporte({ ctx }) {
           : t
       )
     );
+  };
+
+  // Eliminar conversación y mensajes
+  const handleEliminarTicket = async (id) => {
+    if (!id) return;
+    const ok = window.confirm("¿Estás seguro de que deseas eliminar esta conversación? Esta acción no se puede deshacer.");
+    if (!ok) return;
+
+    try {
+      await eliminarTicket(id);
+      setTickets((prev) => prev.filter((t) => t.id !== id));
+      if (ticketActivoId === id) {
+        setTicketActivoId(null);
+        setMensajes([]);
+      }
+    } catch (err) {
+      console.error("Error al eliminar conversación:", err);
+      alert("No se pudo eliminar la conversación. Inténtalo de nuevo.");
+    }
   };
 
   // Crear nueva conversación / ticket desde el modal
@@ -638,9 +692,40 @@ export default function Soporte({ ctx }) {
                       <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #101828)", display: "flex", alignItems: "center", gap: 6 }}>
                         {esCamila ? "💼" : "👤"} {interlocutor}
                       </span>
-                      <span style={{ fontSize: 11, color: "var(--text-muted, #667085)" }}>
-                        {formatFechaRelativa(ticket.actualizado_en || ticket.creado_en)}
-                      </span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 11, color: "var(--text-muted, #667085)" }}>
+                          {formatFechaRelativa(ticket.actualizado_en || ticket.creado_en)}
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEliminarTicket(ticket.id);
+                          }}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "var(--text-muted, #667085)",
+                            cursor: "pointer",
+                            padding: "2px 5px",
+                            fontSize: 12,
+                            borderRadius: 4,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            transition: "all 0.15s ease",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = "#E0342A";
+                            e.currentTarget.style.background = "rgba(224, 52, 42, 0.08)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = "var(--text-muted, #667085)";
+                            e.currentTarget.style.background = "transparent";
+                          }}
+                          title="Eliminar conversación"
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     </div>
 
                     <div
@@ -789,6 +874,32 @@ export default function Soporte({ ctx }) {
                       ✓ Marcar como resuelto
                     </button>
                   )}
+                  <button
+                    onClick={() => handleEliminarTicket(ticketActivo.id)}
+                    style={{
+                      border: "1px solid #FDA29B",
+                      background: "rgba(240, 68, 56, 0.08)",
+                      color: "#B42318",
+                      borderRadius: 8,
+                      padding: "6px 12px",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 5,
+                      transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "#FEE4E2";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "rgba(240, 68, 56, 0.08)";
+                    }}
+                    title="Eliminar esta conversación por completo"
+                  >
+                    🗑️ Eliminar conversación
+                  </button>
                 </div>
               </div>
 

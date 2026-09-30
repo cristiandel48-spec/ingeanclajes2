@@ -189,7 +189,7 @@ export default function Soporte({ ctx }) {
       if (montado) {
         const limpios = (data || []).filter((t) => !esTicketEjemplo(t));
         setTickets(limpios);
-        if (!ticketActivoId) {
+        if (!ticketActivoId && !isMobile) {
           setTicketActivoId(ticketSeleccionado || limpios[0]?.id || null);
         }
         setCargando(false);
@@ -354,12 +354,12 @@ export default function Soporte({ ctx }) {
     if (ticketActivoId && ticketsVisibles.length > 0) {
       const existe = ticketsVisibles.some((t) => t.id === ticketActivoId);
       if (!existe) {
-        setTicketActivoId(ticketsVisibles[0]?.id || null);
+        setTicketActivoId(isMobile ? null : (ticketsVisibles[0]?.id || null));
       }
-    } else if (!ticketActivoId && ticketsVisibles.length > 0) {
+    } else if (!isMobile && !ticketActivoId && ticketsVisibles.length > 0) {
       setTicketActivoId(ticketsVisibles[0]?.id || null);
     }
-  }, [ticketsVisibles, ticketActivoId]);
+  }, [ticketsVisibles, ticketActivoId, isMobile]);
 
   const ticketActivo = useMemo(() => {
     return ticketsVisibles.find((t) => t.id === ticketActivoId) || null;
@@ -878,7 +878,11 @@ export default function Soporte({ ctx }) {
                   <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: "1 1 200px" }}>
                     {isMobile && (
                       <button
-                        onClick={() => setTicketActivoId(null)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setTicketActivoId(null);
+                        }}
                         style={{
                           border: "1px solid var(--border, #eaecf0)",
                           background: "var(--surface-subtle, #f2f4f7)",
@@ -892,6 +896,7 @@ export default function Soporte({ ctx }) {
                           alignItems: "center",
                           gap: 4,
                           flexShrink: 0,
+                          touchAction: "manipulation",
                         }}
                         title="Volver a la lista de conversaciones"
                       >
@@ -933,13 +938,13 @@ export default function Soporte({ ctx }) {
                         background: "transparent",
                         color: "var(--text-main, #101828)",
                         borderRadius: 8,
-                        padding: "6px 12px",
-                        fontSize: 12,
+                        padding: isMobile ? "5px 9px" : "6px 12px",
+                        fontSize: isMobile ? 11.5 : 12,
                         fontWeight: 600,
                         cursor: "pointer",
                       }}
                     >
-                      ↺ Reabrir conversación
+                      {isMobile ? "↺ Reabrir" : "↺ Reabrir conversación"}
                     </button>
                   ) : (
                     <button
@@ -949,13 +954,13 @@ export default function Soporte({ ctx }) {
                         background: "rgba(18, 183, 106, 0.1)",
                         color: "#027A48",
                         borderRadius: 8,
-                        padding: "6px 14px",
-                        fontSize: 12,
+                        padding: isMobile ? "5px 9px" : "6px 14px",
+                        fontSize: isMobile ? 11.5 : 12,
                         fontWeight: 700,
                         cursor: "pointer",
                       }}
                     >
-                      ✓ Marcar como resuelto
+                      {isMobile ? "✓ Resuelto" : "✓ Marcar como resuelto"}
                     </button>
                   )}
                   <button
@@ -965,13 +970,13 @@ export default function Soporte({ ctx }) {
                       background: "rgba(240, 68, 56, 0.08)",
                       color: "#B42318",
                       borderRadius: 8,
-                      padding: "6px 12px",
-                      fontSize: 12,
+                      padding: isMobile ? "5px 9px" : "6px 12px",
+                      fontSize: isMobile ? 11.5 : 12,
                       fontWeight: 700,
                       cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
-                      gap: 5,
+                      gap: 4,
                       transition: "all 0.15s ease",
                     }}
                     onMouseEnter={(e) => {
@@ -982,7 +987,7 @@ export default function Soporte({ ctx }) {
                     }}
                     title="Eliminar esta conversación por completo"
                   >
-                    🗑️ Eliminar conversación
+                    🗑️ {isMobile ? "Eliminar" : "Eliminar conversación"}
                   </button>
                 </div>
               </div>

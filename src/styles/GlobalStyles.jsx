@@ -264,9 +264,11 @@ export default function GlobalStyles({ divider }) {
 
     html, body, #root {
       margin: 0;
+      padding: 0;
       width: 100%;
+      height: 100%;
       max-width: 100vw;
-      overflow-x: hidden;
+      overflow: hidden;
       /* Sin rebote elastico al llegar al final en iOS. */
       overscroll-behavior-y: none;
     }
@@ -291,7 +293,7 @@ export default function GlobalStyles({ divider }) {
       height: 100vh;
       height: -webkit-fill-available;
       height: 100dvh;
-      overflow-x: hidden;
+      overflow: hidden;
     }
 
     ::-webkit-scrollbar { width: 8px; height: 8px; }

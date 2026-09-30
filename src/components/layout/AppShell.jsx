@@ -83,6 +83,10 @@ export default function AppShell({ scr, onNavigate, children }) {
       data-theme={themeMode}
       style={{
         display: "flex",
+        width: "100%",
+        maxWidth: "100vw",
+        height: "100vh",
+        maxHeight: "100dvh",
         fontFamily: "'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif",
         background: theme.bg,
         color: theme.text,
@@ -103,7 +107,7 @@ export default function AppShell({ scr, onNavigate, children }) {
         onTogglePin={() => setPinned((value) => !value)}
       />
 
-      <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
+      <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0, height: "100%", maxHeight: "100vh", overflow: "hidden" }}>
         <Topbar
           scr={scr}
           theme={theme}

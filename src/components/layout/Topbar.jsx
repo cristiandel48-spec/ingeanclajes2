@@ -34,21 +34,24 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
   return (
     <header
       style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 60,
         flexShrink: 0,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
         gap: isMobile ? 8 : 12,
         minHeight: TOPBAR_HEIGHT,
+        height: TOPBAR_HEIGHT,
         padding: isMobile ? "0 12px" : "0 28px",
         background: theme.surface,
         borderBottom: `1px solid ${theme.divider}`,
         // Deja pasar el notch en iPhone cuando la app va a pantalla completa.
         paddingTop: "env(safe-area-inset-top)",
         width: "100%",
-        maxWidth: "100vw",
+        maxWidth: "100%",
         boxSizing: "border-box",
-        overflowX: "hidden",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 12, flexShrink: 1, minWidth: 0, overflow: "hidden" }}>

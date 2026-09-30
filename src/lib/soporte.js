@@ -208,6 +208,226 @@ export function obtenerNombreInterlocutor(ticket, membresia) {
   return destNombre;
 }
 
+/**
+ * Determina con certeza si un mensaje fue redactado y enviado por el usuario actual.
+ */
+export function esMiMensaje(msg, membresia) {
+  if (!msg) return false;
+  if (msg._enviadoPorMi) return true;
+
+  const miUserId = normalizar(membresia?.user_id || membresia?.userId || membresia?.id);
+  const msgRemitenteId = normalizar(msg.remitente_id);
+  if (miUserId && msgRemitenteId && miUserId === msgRemitenteId) {
+    return true;
+  }
+
+  const miEmail = normalizar(membresia?.email);
+  const msgEmail = normalizar(msg.remitente_email);
+  if (miEmail && msgEmail && miEmail === msgEmail) {
+    return true;
+  }
+
+  const miNombre = normalizar(membresia?.nombre);
+  const remitenteNom = normalizar(msg.remitente_nombre);
+
+  if (miNombre && remitenteNom) {
+    if (miNombre === remitenteNom) return true;
+    if (miNombre.includes(remitenteNom) || remitenteNom.includes(miNombre)) return true;
+  }
+
+  // Si mi cuenta es de Cristian
+  const soyCristian = miEmail.includes("cristian") || miNombre.includes("cristian") || miEmail === "cristiandel48@gmail.com";
+  if (soyCristian) {
+    if (remitenteNom.includes("cristian") || msgRemitenteId === "cristian") {
+      return true;
+    }
+  }
+
+  // Si mi cuenta es de Camila
+  const soyCamila = miEmail.includes("camila") || miNombre.includes("camila");
+  if (soyCamila) {
+    if (remitenteNom.includes("camila") || msgRemitenteId === "camila") {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Marca como leídos todos los mensajes recibidos en un ticket para el usuario actual.
+ */
+export async function marcarMensajesComoLeidos(ticketId, membresia) {
+  if (!ticketId) return;
+  const ahora = new Date().toISOString();
+
+  // 1. En Supabase
+  if (isSupabaseConfigured()) {
+    try {
+      const targetUuid = await resolverTicketUuid(ticketId);
+      if (esUuidValido(targetUuid)) {
+        const supabase = getSupabaseClient();
+        await supabase
+          .from("soporte_mensajes")
+          .update({ leido: true })
+          .eq("ticket_id", targetUuid)
+          .eq("leido", false);
+      }
+    } catch (e) {
+      console.warn("Aviso marcando mensajes leídos en Supabase:", e);
+    }
+  }
+
+  // 2. En localStorage
+  try {
+    const rawM = localStorage.getItem(LOCAL_STORAGE_KEY_MENSAJES);
+    if (rawM) {
+      const store = JSON.parse(rawM);
+      let cambiado = false;
+      const targetUuid = await resolverTicketUuid(ticketId).catch(() => null);
+      [ticketId, targetUuid].forEach((tId) => {
+        if (tId && Array.isArray(store[tId])) {
+          store[tId].forEach((m) => {
+            if (!esMiMensaje(m, membresia)) {
+              m.leido = true;
+              cambiado = true;
+            }
+          });
+        }
+      });
+      if (cambiado) {
+        localStorage.setItem(LOCAL_STORAGE_KEY_MENSAJES, JSON.stringify(store));
+      }
+    }
+  } catch (e) {
+    console.warn("Aviso marcando mensajes leídos en storage:", e);
+  }
+
+  // 3. Emitir evento local y canal de broadcast
+  try {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("notificacion-mensajes-leidos", { detail: { ticketId, leidoEn: ahora } })
+      );
+
+      if ("BroadcastChannel" in window) {
+        const bc = new BroadcastChannel("ingeanclajes_canal_mensajes");
+        bc.postMessage({ tipo: "mensajes-leidos", ticketId, leidoEn: ahora });
+        bc.close();
+      }
+    }
+  } catch {
+    // silencioso
+  }
+}
+
+/**
+ * Obtiene el resumen de mensajes no leídos dirigidos al usuario actual.
+ */
+export async function obtenerMensajesNoLeidos(membresia) {
+  if (!membresia) {
+    return { totalNoLeidos: 0, ticketsConNoLeidos: [], ticketMasReciente: null };
+  }
+
+  const tickets = await cargarTickets();
+  const visibles = (tickets || []).filter((t) => esTicketVisibleParaUsuario(t, membresia));
+  if (visibles.length === 0) {
+    return { totalNoLeidos: 0, ticketsConNoLeidos: [], ticketMasReciente: null };
+  }
+
+  const ticketsMap = new Map();
+  visibles.forEach((t) => {
+    ticketsMap.set(String(t.id).toLowerCase(), t);
+  });
+
+  const noLeidosPorTicket = new Map();
+
+  // 1. Consultar en Supabase si está disponible
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = getSupabaseClient();
+      const tenantId = await getTenantIdActual().catch(() => null);
+
+      let query = supabase
+        .from("soporte_mensajes")
+        .select("id, ticket_id, remitente_id, remitente_nombre, remitente_email, texto, creado_en, leido")
+        .eq("leido", false)
+        .order("creado_en", { ascending: false });
+
+      if (tenantId) {
+        query = query.eq("tenant_id", tenantId);
+      }
+
+      const { data, error } = await query;
+      if (!error && Array.isArray(data)) {
+        for (const msg of data) {
+          if (esMiMensaje(msg, membresia)) continue;
+
+          const tId = String(msg.ticket_id || "").toLowerCase();
+          const ticket = ticketsMap.get(tId) || visibles.find((t) => String(t.id).toLowerCase() === tId);
+
+          if (ticket) {
+            if (!noLeidosPorTicket.has(ticket.id)) {
+              noLeidosPorTicket.set(ticket.id, { ticket, mensajes: [] });
+            }
+            noLeidosPorTicket.get(ticket.id).mensajes.push(msg);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Aviso consultando no leídos en Supabase:", e);
+    }
+  }
+
+  // 2. Revisar almacenamiento local
+  try {
+    const rawM = localStorage.getItem(LOCAL_STORAGE_KEY_MENSAJES);
+    if (rawM) {
+      const store = JSON.parse(rawM);
+      for (const [tId, msgs] of Object.entries(store)) {
+        const ticket = ticketsMap.get(String(tId).toLowerCase()) || visibles.find((t) => String(t.id).toLowerCase() === String(tId).toLowerCase());
+        if (ticket && Array.isArray(msgs)) {
+          for (const m of msgs) {
+            if (m.leido === false && !esMiMensaje(m, membresia)) {
+              if (!noLeidosPorTicket.has(ticket.id)) {
+                noLeidosPorTicket.set(ticket.id, { ticket, mensajes: [] });
+              }
+              const yaEsta = noLeidosPorTicket.get(ticket.id).mensajes.some((x) => x.id === m.id);
+              if (!yaEsta) {
+                noLeidosPorTicket.get(ticket.id).mensajes.push(m);
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {
+    // silencioso
+  }
+
+  const ticketsConNoLeidos = Array.from(noLeidosPorTicket.values()).map((item) => ({
+    ticket: item.ticket,
+    cantidad: item.mensajes.length,
+    ultimoMensaje: item.mensajes[0],
+  }));
+
+  // Ordenar de más reciente a más antiguo
+  ticketsConNoLeidos.sort((a, b) => {
+    const fA = new Date(a.ultimoMensaje?.creado_en || 0).getTime();
+    const fB = new Date(b.ultimoMensaje?.creado_en || 0).getTime();
+    return fB - fA;
+  });
+
+  const totalNoLeidos = ticketsConNoLeidos.reduce((sum, item) => sum + item.cantidad, 0);
+  const ticketMasReciente = ticketsConNoLeidos[0]?.ticket || null;
+
+  return {
+    totalNoLeidos,
+    ticketsConNoLeidos,
+    ticketMasReciente,
+  };
+}
+
 function getLocalTickets() {
   try {
     limpiarStorageEjemplos();

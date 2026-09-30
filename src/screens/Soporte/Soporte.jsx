@@ -12,6 +12,9 @@ import {
   esTicketEjemplo,
   esTicketVisibleParaUsuario,
   obtenerNombreInterlocutor,
+  obtenerMensajesNoLeidos,
+  marcarMensajesComoLeidos,
+  esMiMensaje,
 } from "../../lib/soporte";
 import { listarUsuarios } from "../../lib/backend/usuarios";
 import { reproducirSonidoNotificacion } from "../../lib/sonidoNotificacion";
@@ -166,17 +169,39 @@ export default function Soporte({ ctx }) {
     return combinados;
   }, [listaUsuarios, empleados, membresia]);
 
-  // Cargar tickets al montar
+  const [ticketsConNoLeidosMap, setTicketsConNoLeidosMap] = useState({});
+
+  // Cargar tickets al montar priorizando el ticket con mensajes no leídos
   useEffect(() => {
     let montado = true;
     async function load() {
       setCargando(true);
       const data = await cargarTickets();
+      let ticketSeleccionado = null;
+
+      if (membresia) {
+        try {
+          const info = await obtenerMensajesNoLeidos(membresia);
+          if (info) {
+            const map = {};
+            (info.ticketsConNoLeidos || []).forEach((item) => {
+              map[item.ticket.id] = item.cantidad;
+            });
+            setTicketsConNoLeidosMap(map);
+            if (info.ticketMasReciente) {
+              ticketSeleccionado = info.ticketMasReciente.id;
+            }
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+
       if (montado) {
         const limpios = (data || []).filter((t) => !esTicketEjemplo(t));
         setTickets(limpios);
-        if (limpios.length > 0 && !ticketActivoId) {
-          setTicketActivoId(limpios[0].id);
+        if (!ticketActivoId) {
+          setTicketActivoId(ticketSeleccionado || limpios[0]?.id || null);
         }
         setCargando(false);
       }
@@ -185,7 +210,25 @@ export default function Soporte({ ctx }) {
     return () => {
       montado = false;
     };
-  }, []);
+  }, [membresia]);
+
+  // Marcar como leídos cuando el usuario tiene la conversación abierta en la pantalla completa
+  useEffect(() => {
+    if (!ticketActivoId || !membresia) return;
+
+    const timer = setTimeout(() => {
+      marcarMensajesComoLeidos(ticketActivoId, membresia).then(() => {
+        setMensajes((prev) => prev.map((m) => ({ ...m, leido: true })));
+        setTicketsConNoLeidosMap((prev) => {
+          const next = { ...prev };
+          delete next[ticketActivoId];
+          return next;
+        });
+      });
+    }, 1200);
+
+    return () => clearTimeout(timer);
+  }, [ticketActivoId, membresia, mensajes.length]);
 
   // Cargar mensajes cuando cambia el ticket activo y escuchar cambios Realtime
   useEffect(() => {
@@ -768,19 +811,36 @@ export default function Soporte({ ctx }) {
                         #{ticket.numero} {ticket.obra_nombre ? `· ${ticket.obra_nombre}` : ""}
                       </span>
 
-                      <span
-                        style={{
-                          fontSize: 10.5,
-                          fontWeight: 700,
-                          backgroundColor: badge.bg,
-                          color: badge.text,
-                          border: `1px solid ${badge.border}`,
-                          padding: "2px 7px",
-                          borderRadius: 6,
-                        }}
-                      >
-                        {badge.label}
-                      </span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        {ticketsConNoLeidosMap[ticket.id] > 0 && (
+                          <span
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 800,
+                              backgroundColor: "#FEE4E2",
+                              color: "#B42318",
+                              border: "1px solid #FDA29B",
+                              padding: "2px 6px",
+                              borderRadius: 6,
+                            }}
+                          >
+                            🔴 {ticketsConNoLeidosMap[ticket.id]} nuevo{ticketsConNoLeidosMap[ticket.id] > 1 ? "s" : ""}
+                          </span>
+                        )}
+                        <span
+                          style={{
+                            fontSize: 10.5,
+                            fontWeight: 700,
+                            backgroundColor: badge.bg,
+                            color: badge.text,
+                            border: `1px solid ${badge.border}`,
+                            padding: "2px 7px",
+                            borderRadius: 6,
+                          }}
+                        >
+                          {badge.label}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 );

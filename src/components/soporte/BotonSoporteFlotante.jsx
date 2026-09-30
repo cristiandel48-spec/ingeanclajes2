@@ -10,8 +10,12 @@ import {
   esTicketEjemplo,
   esTicketVisibleParaUsuario,
   obtenerNombreInterlocutor,
+  obtenerMensajesNoLeidos,
+  marcarMensajesComoLeidos,
+  esMiMensaje,
 } from "../../lib/soporte";
 import { listarUsuarios } from "../../lib/backend/usuarios";
+import { reproducirSonidoNotificacion } from "../../lib/sonidoNotificacion";
 import { SI, B } from "../../styles/tokens";
 
 export default function BotonSoporteFlotante() {
@@ -24,6 +28,9 @@ export default function BotonSoporteFlotante() {
   const [ticketActivoId, setTicketActivoId] = useState(null);
   const [mensajes, setMensajes] = useState([]);
   const [nuevoTexto, setNuevoTexto] = useState("");
+  const [totalNoLeidos, setTotalNoLeidos] = useState(0);
+  const [ticketsConNoLeidosMap, setTicketsConNoLeidosMap] = useState({});
+  const autoAbiertoRef = useRef(false);
 
   const [usuariosDisponibles, setUsuariosDisponibles] = useState([]);
   const [destinatario, setDestinatario] = useState("camila");
@@ -210,11 +217,106 @@ export default function BotonSoporteFlotante() {
     };
   }, [ticketActivoId]);
 
+  // Verificar y auto-abrir si hay mensajes no leídos para este usuario al iniciar sesión
+  const refrescarNoLeidos = async (forzarApertura = false) => {
+    if (!membresia) return;
+    try {
+      const info = await obtenerMensajesNoLeidos(membresia);
+      if (info) {
+        setTotalNoLeidos(info.totalNoLeidos);
+        const map = {};
+        (info.ticketsConNoLeidos || []).forEach((item) => {
+          map[item.ticket.id] = item.cantidad;
+        });
+        setTicketsConNoLeidosMap(map);
+
+        // Si hay mensajes no leídos dirigidos a este usuario -> Abrir automáticamente la ventana del chat
+        if (info.totalNoLeidos > 0 && info.ticketMasReciente) {
+          if (!autoAbiertoRef.current || forzarApertura) {
+            autoAbiertoRef.current = true;
+            setTicketActivoId(info.ticketMasReciente.id);
+            setVista("chat");
+            setAbierto(true);
+            setMinimizado(false);
+            try {
+              reproducirSonidoNotificacion({ volumen: 0.45 });
+            } catch {}
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Aviso verificando no leídos:", e);
+    }
+  };
+
+  // Auto-apertura al iniciar sesión / montar si hay mensajes no leídos
+  useEffect(() => {
+    refrescarNoLeidos();
+
+    const interval = setInterval(() => {
+      refrescarNoLeidos();
+    }, 4500);
+
+    return () => clearInterval(interval);
+  }, [membresia]);
+
+  // Marcar mensajes como leídos cuando el usuario tiene la conversación abierta en pantalla
+  useEffect(() => {
+    if (!abierto || minimizado || vista !== "chat" || !ticketActivoId || !membresia) return;
+
+    const timer = setTimeout(() => {
+      marcarMensajesComoLeidos(ticketActivoId, membresia).then(() => {
+        setMensajes((prev) => prev.map((m) => ({ ...m, leido: true })));
+        setTicketsConNoLeidosMap((prev) => {
+          const next = { ...prev };
+          delete next[ticketActivoId];
+          return next;
+        });
+        setTotalNoLeidos((prev) => Math.max(0, prev - (ticketsConNoLeidosMap[ticketActivoId] || 1)));
+      });
+    }, 1200);
+
+    return () => clearTimeout(timer);
+  }, [abierto, minimizado, vista, ticketActivoId, membresia, mensajes.length]);
+
+  // Escuchar cuando se marcan como leídos desde otra pestaña o pantalla
+  useEffect(() => {
+    const handleLeidos = (e) => {
+      const tId = e.detail?.ticketId;
+      if (tId) {
+        setTicketsConNoLeidosMap((prev) => {
+          const next = { ...prev };
+          delete next[tId];
+          return next;
+        });
+        if (ticketActivoId === tId) {
+          setMensajes((prev) => prev.map((m) => ({ ...m, leido: true })));
+        }
+      }
+    };
+    window.addEventListener("notificacion-mensajes-leidos", handleLeidos);
+    return () => window.removeEventListener("notificacion-mensajes-leidos", handleLeidos);
+  }, [ticketActivoId]);
+
   // Escuchar mensajes entrantes en tiempo real disparados por NotificadorMensajesGlobal
   useEffect(() => {
     const handleNuevoMsg = (e) => {
       const msg = e.detail;
       if (!msg) return;
+
+      // Si el mensaje no fue enviado por mí, auto-abrir de inmediato la ventana del chat
+      if (!esMiMensaje(msg, membresia)) {
+        const tId = msg.ticket_id || msg.ticketId;
+        if (tId) {
+          setTicketActivoId(tId);
+          setVista("chat");
+          setAbierto(true);
+          setMinimizado(false);
+          try {
+            reproducirSonidoNotificacion({ volumen: 0.45 });
+          } catch {}
+        }
+      }
 
       // Si corresponde al ticket abierto, agregarlo al chat de inmediato
       if (ticketActivoId && (msg.ticket_id === ticketActivoId || msg.ticketId === ticketActivoId)) {
@@ -225,15 +327,16 @@ export default function BotonSoporteFlotante() {
         setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
       }
 
-      // Refrescar lista de tickets para mostrar último mensaje actualizado
+      // Refrescar lista de tickets y contador de no leídos
       cargarTickets().then((data) => {
         if (data) setTickets(data.filter((t) => !esTicketEjemplo(t)));
       });
+      refrescarNoLeidos();
     };
 
     window.addEventListener("notificacion-mensaje-recibido", handleNuevoMsg);
     return () => window.removeEventListener("notificacion-mensaje-recibido", handleNuevoMsg);
-  }, [ticketActivoId]);
+  }, [ticketActivoId, membresia]);
 
   // Cargar mensajes y escuchar cambios Realtime
   useEffect(() => {
@@ -454,8 +557,13 @@ export default function BotonSoporteFlotante() {
           <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}>
             <span style={{ fontSize: 16 }}>💬</span>
             <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              <div style={{ fontSize: 12, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {vista === "chat" ? (ticketActivo?.asunto || "Chat de Soporte") : "Mensajes y Soporte"}
+              <div style={{ fontSize: 12, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
+                <span>{vista === "chat" ? (ticketActivo?.asunto || "Chat de Soporte") : "Mensajes y Soporte"}</span>
+                {totalNoLeidos > 0 && (
+                  <span style={{ backgroundColor: "#ffffff", color: "#E0342A", borderRadius: 8, padding: "1px 6px", fontSize: 10, fontWeight: 800 }}>
+                    {totalNoLeidos} sin leer
+                  </span>
+                )}
               </div>
               <div style={{ fontSize: 10, opacity: 0.9, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {vista === "chat" ? `Con ${obtenerNombreInterlocutor(ticketActivo, membresia)}` : "Clic para expandir"}
@@ -724,6 +832,24 @@ export default function BotonSoporteFlotante() {
                             {esCamila ? "💼" : "👤"} {interlocutor}
                           </span>
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            {ticketsConNoLeidosMap[t.id] > 0 && (
+                              <span
+                                style={{
+                                  fontSize: 9.5,
+                                  fontWeight: 800,
+                                  padding: "1px 6px",
+                                  borderRadius: 4,
+                                  backgroundColor: "#FEE4E2",
+                                  color: "#B42318",
+                                  border: "1px solid #FDA29B",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 3,
+                                }}
+                              >
+                                🔴 {ticketsConNoLeidosMap[t.id]} nuevo{ticketsConNoLeidosMap[t.id] > 1 ? "s" : ""}
+                              </span>
+                            )}
                             <span
                               style={{
                                 fontSize: 9.5,
@@ -989,19 +1115,44 @@ export default function BotonSoporteFlotante() {
         title={minimizado ? "Restaurar chat" : abierto ? "Cerrar chat" : "Mensajes y soporte"}
       >
         {abierto && !minimizado ? "✕" : "💬"}
-        {(!abierto || minimizado) && ticketsVisibles.some((t) => t.estado === "pendiente" || t.estado === "en_curso") && (
+        {(!abierto || minimizado) && totalNoLeidos > 0 ? (
           <span
             style={{
               position: "absolute",
-              top: 0,
-              right: 0,
-              width: 11,
-              height: 11,
-              backgroundColor: "#12B76A",
+              top: -5,
+              right: -5,
+              minWidth: 19,
+              height: 19,
+              padding: "0 4px",
+              backgroundColor: "#E0342A",
               border: "2px solid #ffffff",
-              borderRadius: "50%",
+              borderRadius: 10,
+              color: "#ffffff",
+              fontSize: 10.5,
+              fontWeight: 800,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 2px 5px rgba(0,0,0,0.3)",
             }}
-          />
+          >
+            {totalNoLeidos}
+          </span>
+        ) : (
+          (!abierto || minimizado) && ticketsVisibles.some((t) => t.estado === "pendiente" || t.estado === "en_curso") && (
+            <span
+              style={{
+                position: "absolute",
+                top: 0,
+                right: 0,
+                width: 11,
+                height: 11,
+                backgroundColor: "#12B76A",
+                border: "2px solid #ffffff",
+                borderRadius: "50%",
+              }}
+            />
+          )
         )}
       </button>
     </div>

@@ -155,11 +155,16 @@ export default function NotificadorMensajesGlobal({ onIrASoporte }) {
       creadoEn: msg.creado_en || new Date().toISOString(),
     });
 
-    // 4. Emitir evento para que cualquier chat abierto (flotante o pantalla) se actualice al instante
+    // 4. Emitir eventos para que el chat se abra automáticamente y se actualice al instante
     if (typeof window !== "undefined") {
       window.dispatchEvent(
         new CustomEvent("notificacion-mensaje-recibido", { detail: msg })
       );
+      if (targetTicketId) {
+        window.dispatchEvent(
+          new CustomEvent("abrir-chat-ticket", { detail: { ticketId: targetTicketId } })
+        );
+      }
     }
   };
 

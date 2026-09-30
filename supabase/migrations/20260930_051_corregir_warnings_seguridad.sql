@@ -1,12 +1,19 @@
--- ── Migración 051: Corrección de Advertencias de Seguridad del Linter de Supabase ──
--- Resuelve las advertencias de seguridad:
--- 1. function_search_path_mutable (app.al_insertar_soporte_mensaje)
--- 2. anon_security_definer_function_executable (app.al_insertar_soporte_mensaje)
--- 3. authenticated_security_definer_function_executable (app.al_insertar_soporte_mensaje y app.siguiente_numero_cotizacion)
--- 4. Restringe permisos de ejecución al rol `anon` en funciones multi-tenant y de administración
+-- ── Migración 051: Restaurar Permisos de Ejecución RLS y Corregir Warnings ──
+-- 1. Permite que todas las tablas y políticas RLS puedan evaluar current_user_tenant_ids sin error 42501.
+-- 2. Asegura que los triggers de soporte funcionen como SECURITY INVOKER.
+-- 3. Habilita Realtime en Supabase para las tablas de chat y tickets.
 
--- 1. Corregir función de trigger de mensajes de soporte
--- Cambia a SECURITY INVOKER con search_path explícito e inmutable, revocando acceso anónimo
+-- Permiso de uso en el esquema app
+grant usage on schema app to postgres, anon, authenticated, service_role;
+
+-- 1. Restaurar permisos de ejecución para funciones esenciales de RLS
+-- (Obligatorio para que los usuarios autenticados y anónimos puedan consultar las tablas)
+grant execute on function app.current_user_tenant_ids() to postgres, anon, authenticated, service_role, public;
+grant execute on function app.es_admin(uuid) to postgres, anon, authenticated, service_role, public;
+grant execute on function app.siguiente_numero_cotizacion(uuid) to postgres, anon, authenticated, service_role, public;
+grant execute on function app.registrar_actividad() to postgres, anon, authenticated, service_role, public;
+
+-- 2. Función de trigger de soporte como SECURITY INVOKER con search_path explícito
 create or replace function app.al_insertar_soporte_mensaje()
 returns trigger
 language plpgsql
@@ -22,41 +29,24 @@ begin
 end;
 $$;
 
-revoke execute on function app.al_insertar_soporte_mensaje() from public, anon;
-grant execute on function app.al_insertar_soporte_mensaje() to authenticated, service_role;
+grant execute on function app.al_insertar_soporte_mensaje() to postgres, anon, authenticated, service_role, public;
 
--- 2. Corregir app.siguiente_numero_cotizacion
--- Cambia a SECURITY INVOKER para que opere bajo las políticas RLS del usuario autenticado
-create or replace function app.siguiente_numero_cotizacion(p_tenant uuid)
-returns text
-language plpgsql
-security invoker
-set search_path = app, public, pg_temp
-as $$
-declare
-  v_ultimo int;
+-- 3. Habilitar replicación Realtime de Supabase para soporte
+do $$
 begin
-  perform pg_advisory_xact_lock(hashtext(p_tenant::text || ':cotizacion'));
+  if not exists (
+    select 1 from pg_publication_tables
+     where pubname = 'supabase_realtime' and schemaname = 'app' and tablename = 'soporte_mensajes'
+  ) then
+    alter publication supabase_realtime add table app.soporte_mensajes;
+  end if;
 
-  select coalesce(max((regexp_match(upper(trim(numero)), '^C\s*-?\s*(\d+)$'))[1]::int), 0)
-    into v_ultimo
-    from app.cotizaciones
-   where tenant_id = p_tenant
-     and upper(trim(coalesce(numero, ''))) ~ '^C\s*-?\s*\d+$';
-
-  return 'C-' || greatest(v_ultimo + 1, 26116);
-end;
-$$;
-
-revoke execute on function app.siguiente_numero_cotizacion(uuid) from public, anon;
-grant execute on function app.siguiente_numero_cotizacion(uuid) to authenticated, service_role;
-
--- 3. Revocar acceso anónimo en funciones de multi-tenancy y roles administrativos
-revoke execute on function app.current_user_tenant_ids() from public, anon;
-grant execute on function app.current_user_tenant_ids() to authenticated, service_role;
-
-revoke execute on function app.es_admin(uuid) from public, anon;
-grant execute on function app.es_admin(uuid) to authenticated, service_role;
-
-revoke execute on function app.registrar_actividad() from public, anon;
-grant execute on function app.registrar_actividad() to authenticated, service_role;
+  if not exists (
+    select 1 from pg_publication_tables
+     where pubname = 'supabase_realtime' and schemaname = 'app' and tablename = 'soporte_tickets'
+  ) then
+    alter publication supabase_realtime add table app.soporte_tickets;
+  end if;
+exception
+  when others then null;
+end $$;

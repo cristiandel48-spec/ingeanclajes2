@@ -174,15 +174,45 @@ export async function cargarTickets() {
           .order("actualizado_en", { ascending: false });
 
         if (!error && data) {
-          // Filtrar tickets de ejemplo
           const reales = data.filter((t) => !esTicketEjemplo(t));
 
-          // Purgar de la base de datos cualquier ticket de ejemplo remanente
-          const ejemplosEnDb = data.filter((t) => esTicketEjemplo(t));
-          if (ejemplosEnDb.length > 0) {
-            for (const ej of ejemplosEnDb) {
-              if (esUuidValido(ej.id)) {
-                supabase.from("soporte_tickets").delete().eq("id", ej.id).catch(() => {});
+          // Sincronizar automáticamente tickets locales creados offline o pendientes
+          const locales = getLocalTickets().filter((t) => !esTicketEjemplo(t) && !esUuidValido(t.id));
+          for (const loc of locales) {
+            const yaExiste = reales.some((r) => r.asunto === loc.asunto && r.usuario_nombre === loc.usuario_nombre);
+            if (!yaExiste) {
+              try {
+                const { data: nuevoDb } = await supabase
+                  .from("soporte_tickets")
+                  .insert([{
+                    tenant_id: tenantId,
+                    asunto: loc.asunto,
+                    obra_nombre: loc.obra_nombre || "General",
+                    prioridad: loc.prioridad || "media",
+                    estado: loc.estado || "en_curso",
+                    usuario_nombre: loc.usuario_nombre || "Usuario",
+                    usuario_email: loc.usuario_email || "",
+                    ultimo_mensaje: loc.ultimo_mensaje || "",
+                  }])
+                  .select()
+                  .single();
+
+                if (nuevoDb) {
+                  reales.unshift(nuevoDb);
+                  const msgsLocales = getLocalMensajes(loc.id);
+                  for (const ml of msgsLocales) {
+                    await supabase.from("soporte_mensajes").insert([{
+                      tenant_id: tenantId,
+                      ticket_id: nuevoDb.id,
+                      remitente_nombre: ml.remitente_nombre || "Usuario",
+                      es_admin: Boolean(ml.es_admin),
+                      texto: ml.texto,
+                      creado_en: ml.creado_en || new Date().toISOString(),
+                    }]).catch(() => {});
+                  }
+                }
+              } catch {
+                // ignorar
               }
             }
           }

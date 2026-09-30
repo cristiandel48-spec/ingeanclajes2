@@ -6,6 +6,7 @@ import {
   enviarMensaje,
   crearTicket,
   suscribirChatTicket,
+  esTicketEjemplo,
 } from "../../lib/soporte";
 import { listarUsuarios } from "../../lib/backend/usuarios";
 import { SI, B } from "../../styles/tokens";
@@ -93,7 +94,9 @@ export default function BotonSoporteFlotante() {
 
   useEffect(() => {
     if (abierto) {
-      cargarTickets().then((data) => setTickets(data));
+      cargarTickets().then((data) => {
+        setTickets((data || []).filter((t) => !esTicketEjemplo(t)));
+      });
     }
   }, [abierto]);
 
@@ -157,8 +160,8 @@ export default function BotonSoporteFlotante() {
     const interval = setInterval(async () => {
       try {
         const data = await cargarTickets();
-        if (data && data.length > 0) {
-          setTickets(data);
+        if (data && data.length >= 0) {
+          setTickets(data.filter((t) => !esTicketEjemplo(t)));
         }
       } catch {
         // polling silencioso
@@ -390,8 +393,12 @@ export default function BotonSoporteFlotante() {
 
               <div style={{ flex: 1, overflowY: "auto", padding: "8px 10px" }}>
                 {tickets.length === 0 ? (
-                  <div style={{ padding: 24, textAlign: "center", color: "var(--text-muted, #667085)", fontSize: 12.5 }}>
-                    No hay conversaciones aún. Haz clic en <strong>+ Nueva Conversación</strong> para hablar con Camila o el equipo.
+                  <div style={{ padding: "36px 16px", textAlign: "center", color: "var(--text-muted, #667085)", fontSize: 12.5 }}>
+                    <div style={{ fontSize: 32, marginBottom: 8 }}>💬</div>
+                    <div style={{ fontWeight: 700, color: "var(--text-main, #101828)", marginBottom: 4, fontSize: 13 }}>
+                      Bandeja limpia
+                    </div>
+                    No hay conversaciones activas. Haz clic en <strong>+ Nueva Conversación</strong> para iniciar un chat con Camila o el equipo.
                   </div>
                 ) : (
                   tickets.map((t) => {

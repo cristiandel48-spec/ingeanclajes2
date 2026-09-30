@@ -8,6 +8,7 @@ import {
   cambiarEstadoTicket,
   crearTicket,
   suscribirChatTicket,
+  esTicketEjemplo,
 } from "../../lib/soporte";
 import { listarUsuarios } from "../../lib/backend/usuarios";
 
@@ -152,9 +153,10 @@ export default function Soporte({ ctx }) {
       setCargando(true);
       const data = await cargarTickets();
       if (montado) {
-        setTickets(data);
-        if (data.length > 0 && !ticketActivoId) {
-          setTicketActivoId(data[0].id);
+        const limpios = (data || []).filter((t) => !esTicketEjemplo(t));
+        setTickets(limpios);
+        if (limpios.length > 0 && !ticketActivoId) {
+          setTicketActivoId(limpios[0].id);
         }
         setCargando(false);
       }
@@ -228,8 +230,8 @@ export default function Soporte({ ctx }) {
     const interval = setInterval(async () => {
       try {
         const data = await cargarTickets();
-        if (data && data.length > 0) {
-          setTickets(data);
+        if (data && data.length >= 0) {
+          setTickets(data.filter((t) => !esTicketEjemplo(t)));
         }
       } catch {
         // error de polling silencioso
@@ -532,8 +534,16 @@ export default function Soporte({ ctx }) {
                 Cargando conversaciones…
               </div>
             ) : ticketsFiltrados.length === 0 ? (
-              <div style={{ padding: 32, textAlign: "center", color: "var(--text-muted, #667085)", fontSize: 13 }}>
-                No se encontraron conversaciones con los filtros aplicados.
+              <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted, #667085)", fontSize: 13 }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>💬</div>
+                <div style={{ fontWeight: 700, color: "var(--text-main, #101828)", marginBottom: 4, fontSize: 14 }}>
+                  {tickets.length === 0 ? "Bandeja limpia" : "Sin resultados"}
+                </div>
+                <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.5 }}>
+                  {tickets.length === 0
+                    ? 'No hay conversaciones registradas. Haz clic en "+ Nueva Conversación" para iniciar un chat.'
+                    : "No se encontraron conversaciones con los filtros aplicados."}
+                </p>
               </div>
             ) : (
               ticketsFiltrados.map((ticket) => {

@@ -5,201 +5,104 @@
 import { getSupabaseClient, isSupabaseConfigured } from "./backend/supabaseClient";
 import { getTenantIdActual } from "./backend/usuarios";
 
-const LOCAL_STORAGE_KEY_TICKETS = "ingeanclajes_soporte_tickets_v1";
-const LOCAL_STORAGE_KEY_MENSAJES = "ingeanclajes_soporte_mensajes_v1";
+const LOCAL_STORAGE_KEY_TICKETS = "ingeanclajes_soporte_tickets_v2";
+const LOCAL_STORAGE_KEY_MENSAJES = "ingeanclajes_soporte_mensajes_v2";
 
-export const TICKETS_SEED = [
-  {
-    id: "ticket-camila",
-    numero: 106,
-    usuario_nombre: "Camila Sepúlveda",
-    usuario_email: "camilasepulveda@ingeanclajes.com",
-    asunto: "Coordinación de pagos, facturas y anticipos",
-    obra_nombre: "General / Administración",
-    obra_id: null,
-    prioridad: "alta",
-    estado: "en_curso",
-    ultimo_mensaje: "Hola Cristian, ya tengo listos los comprobantes de egreso para revisar.",
-    creado_en: new Date(Date.now() - 3600000).toISOString(),
-    actualizado_en: new Date(Date.now() - 1800000).toISOString(),
-  },
-  {
-    id: "seed-ticket-104",
-    numero: 104,
-    usuario_nombre: "Roberto Gómez",
-    usuario_email: "rgomez@torrenorte.com",
-    asunto: "Fallo anclaje de fachada - Obra Norte",
-    obra_nombre: "Torre Norte",
-    obra_id: "OB-001",
-    prioridad: "alta",
-    estado: "en_curso",
-    ultimo_mensaje: "Hola Roberto. Sí, hasta 6cm de tolerancia horizontal está contemplado.",
-    creado_en: new Date(Date.now() - 3600000 * 2).toISOString(),
-    actualizado_en: new Date(Date.now() - 600000).toISOString(),
-  },
-  {
-    id: "seed-ticket-105",
-    numero: 105,
-    usuario_nombre: "María Torres",
-    usuario_email: "mtorres@inversionesandes.com",
-    asunto: "Duda cotización pernos M16 y tiempos de entrega",
-    obra_nombre: "Inversiones Los Andes",
-    obra_id: "OB-003",
-    prioridad: "media",
-    estado: "pendiente",
-    ultimo_mensaje: "¿Tienen disponibilidad de 400 unidades de pernos expansivos para este viernes?",
-    creado_en: new Date(Date.now() - 3600000).toISOString(),
-    actualizado_en: new Date(Date.now() - 3600000).toISOString(),
-  },
-  {
-    id: "seed-ticket-101",
-    numero: 101,
-    usuario_nombre: "Carlos Ruiz",
-    usuario_email: "cruiz@bolivar.com.co",
-    asunto: "Certificado de calidad lote B de anclajes químicos",
-    obra_nombre: "Constructora Bolívar",
-    obra_id: "OB-002",
-    prioridad: "baja",
-    estado: "resuelto",
-    ultimo_mensaje: "Certificado enviado exitosamente al correo de calidad.",
-    creado_en: new Date(Date.now() - 86400000 * 2).toISOString(),
-    actualizado_en: new Date(Date.now() - 86400000).toISOString(),
-  },
-];
+export const TICKETS_SEED = [];
+export const MENSAJES_SEED = {};
 
-export const MENSAJES_SEED = {
-  "ticket-camila": [
-    {
-      id: "msg-c1",
-      ticket_id: "ticket-camila",
-      remitente_nombre: "Camila Sepúlveda",
-      remitente_id: "camila",
-      es_admin: true,
-      texto: "Hola Cristian, ¿revisamos el pago del anticipo de la Torre Norte para autorizar la compra de los anclajes?",
-      creado_en: new Date(Date.now() - 3600000).toISOString(),
-    },
-    {
-      id: "msg-c2",
-      ticket_id: "ticket-camila",
-      remitente_nombre: "Cristian Flórez",
-      remitente_id: "cristian",
-      es_admin: true,
-      texto: "Hola Camila, sí. La cotización fue aprobada ayer con el 50% de anticipo. Procedamos con la orden de compra.",
-      creado_en: new Date(Date.now() - 2400000).toISOString(),
-    },
-    {
-      id: "msg-c3",
-      ticket_id: "ticket-camila",
-      remitente_nombre: "Camila Sepúlveda",
-      remitente_id: "camila",
-      es_admin: true,
-      texto: "Perfecto Cristian, ya tengo listos los comprobantes de egreso para revisar.",
-      creado_en: new Date(Date.now() - 1800000).toISOString(),
-    },
-  ],
-  "seed-ticket-104": [
-    {
-      id: "msg-1",
-      ticket_id: "seed-ticket-104",
-      remitente_nombre: "Roberto Gómez",
-      es_admin: false,
-      texto: "Hola Ing., estamos instalando los anclajes del nivel 4 en Torre Norte pero el taladro encontró una armadura no prevista en el plano. ¿Podemos desplazar 5cm el anclaje o se requiere recalcular la placa?",
-      creado_en: new Date(Date.now() - 3600000 * 2).toISOString(),
-    },
-    {
-      id: "msg-2",
-      ticket_id: "seed-ticket-104",
-      remitente_nombre: "Ingeanclajes Soporte",
-      es_admin: true,
-      texto: "Hola Roberto. Sí, hasta 6cm de tolerancia horizontal está contemplado en la memoria de cálculo para perno M16 con resina epóxica. Asegúrense de mantener la profundidad de perforación mínima de 120mm.",
-      creado_en: new Date(Date.now() - 3600000).toISOString(),
-    },
-    {
-      id: "msg-3",
-      ticket_id: "seed-ticket-104",
-      remitente_nombre: "Roberto Gómez",
-      es_admin: false,
-      texto: "Excelente, procedemos con esa indicación. Ya verificamos profundidad y quedó limpia la perforación. Gracias.",
-      creado_en: new Date(Date.now() - 600000).toISOString(),
-    },
-  ],
-  "seed-ticket-105": [
-    {
-      id: "msg-4",
-      ticket_id: "seed-ticket-105",
-      remitente_nombre: "María Torres",
-      es_admin: false,
-      texto: "Buenas tardes, ¿tienen disponibilidad de 400 unidades de pernos expansivos para este viernes? Requerimos confirmar antes de emitir la orden.",
-      creado_en: new Date(Date.now() - 3600000).toISOString(),
-    },
-  ],
-  "seed-ticket-101": [
-    {
-      id: "msg-5",
-      ticket_id: "seed-ticket-101",
-      remitente_nombre: "Carlos Ruiz",
-      es_admin: false,
-      texto: "Buen día. ¿Nos podrían compartir el certificado de calibración y calidad del lote B entregado la semana pasada?",
-      creado_en: new Date(Date.now() - 86400000 * 2).toISOString(),
-    },
-    {
-      id: "msg-6",
-      ticket_id: "seed-ticket-101",
-      remitente_nombre: "Ingeanclajes Calidad",
-      es_admin: true,
-      texto: "Buen día Carlos. Acabamos de adjuntar y enviar el certificado firmado con la trazabilidad del lote al correo registrado.",
-      creado_en: new Date(Date.now() - 86400000).toISOString(),
-    },
-  ],
-};
+/**
+ * Identifica si un ticket pertenece a las plantillas o mensajes de ejemplo anteriores
+ */
+export function esTicketEjemplo(t) {
+  if (!t) return false;
+  const id = String(t.id || "");
+  const asunto = String(t.asunto || "").toLowerCase();
+  const nombre = String(t.usuario_nombre || "").toLowerCase();
+  return (
+    id.startsWith("seed-") ||
+    id === "ticket-camila" ||
+    asunto.includes("fallo anclaje de fachada") ||
+    asunto.includes("duda cotización pernos m16") ||
+    asunto.includes("certificado de calidad lote b") ||
+    asunto.includes("coordinación de pagos, facturas") ||
+    nombre.includes("roberto gómez") ||
+    nombre.includes("maría torres") ||
+    nombre.includes("carlos ruiz")
+  );
+}
 
-function getLocalTickets() {
+/**
+ * Limpia cualquier residuo de tickets de ejemplo en el almacenamiento local del navegador
+ */
+export function limpiarStorageEjemplos() {
   try {
+    localStorage.removeItem("ingeanclajes_soporte_tickets_v1");
+    localStorage.removeItem("ingeanclajes_soporte_mensajes_v1");
+    localStorage.removeItem("ticket-camila");
+    localStorage.removeItem("seed-ticket-104");
+    localStorage.removeItem("seed-ticket-105");
+    localStorage.removeItem("seed-ticket-101");
+
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY_TICKETS);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        const tieneCamila = parsed.some((t) => t.id === "ticket-camila" || (t.usuario_nombre && t.usuario_nombre.toLowerCase().includes("camila")));
-        if (!tieneCamila && TICKETS_SEED[0]) {
-          parsed.unshift(TICKETS_SEED[0]);
-          saveLocalTickets(parsed);
-        }
-        return parsed;
+        const limpios = parsed.filter((t) => !esTicketEjemplo(t));
+        localStorage.setItem(LOCAL_STORAGE_KEY_TICKETS, JSON.stringify(limpios));
+      }
+    }
+  } catch (e) {
+    // silencioso
+  }
+}
+
+function getLocalTickets() {
+  try {
+    limpiarStorageEjemplos();
+    const raw = localStorage.getItem(LOCAL_STORAGE_KEY_TICKETS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((t) => !esTicketEjemplo(t));
       }
     }
   } catch (e) {
     console.warn("Error leyendo tickets de localStorage:", e);
   }
-  return TICKETS_SEED;
+  return [];
 }
 
 function saveLocalTickets(tickets) {
   try {
-    localStorage.setItem(LOCAL_STORAGE_KEY_TICKETS, JSON.stringify(tickets));
+    const limpios = (tickets || []).filter((t) => !esTicketEjemplo(t));
+    localStorage.setItem(LOCAL_STORAGE_KEY_TICKETS, JSON.stringify(limpios));
   } catch (e) {
     console.warn("Error guardando tickets en localStorage:", e);
   }
 }
 
 function getLocalMensajes(ticketId) {
+  if (!ticketId || String(ticketId).startsWith("seed-") || ticketId === "ticket-camila") {
+    return [];
+  }
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY_MENSAJES);
-    const store = raw ? JSON.parse(raw) : { ...MENSAJES_SEED };
-    if (!store[ticketId] && MENSAJES_SEED[ticketId]) {
-      store[ticketId] = MENSAJES_SEED[ticketId];
-      localStorage.setItem(LOCAL_STORAGE_KEY_MENSAJES, JSON.stringify(store));
-    }
+    const store = raw ? JSON.parse(raw) : {};
     return store[ticketId] || [];
   } catch (e) {
     console.warn("Error leyendo mensajes de localStorage:", e);
-    return MENSAJES_SEED[ticketId] || [];
+    return [];
   }
 }
 
 function saveLocalMensaje(ticketId, nuevoMensaje) {
+  if (!ticketId || String(ticketId).startsWith("seed-") || ticketId === "ticket-camila") {
+    return;
+  }
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY_MENSAJES);
-    const store = raw ? JSON.parse(raw) : { ...MENSAJES_SEED };
+    const store = raw ? JSON.parse(raw) : {};
     if (!store[ticketId]) store[ticketId] = [];
     store[ticketId].push(nuevoMensaje);
     localStorage.setItem(LOCAL_STORAGE_KEY_MENSAJES, JSON.stringify(store));
@@ -217,10 +120,10 @@ export function esUuidValido(val) {
 }
 
 /**
- * Resuelve el UUID real de un ticket en Supabase a partir de su ID local o sembrado
+ * Resuelve el UUID real de un ticket en Supabase a partir de su ID local
  */
 export async function resolverTicketUuid(ticketId) {
-  if (!ticketId) return null;
+  if (!ticketId || String(ticketId).startsWith("seed-") || ticketId === "ticket-camila") return null;
   if (esUuidValido(ticketId)) return ticketId;
   if (!isSupabaseConfigured()) return ticketId;
 
@@ -236,12 +139,12 @@ export async function resolverTicketUuid(ticketId) {
       .order("actualizado_en", { ascending: false });
 
     if (ticketsDb && ticketsDb.length > 0) {
-      const match = ticketsDb.find(
+      const validos = ticketsDb.filter((t) => !esTicketEjemplo(t));
+      const match = validos.find(
         (t) =>
-          (ticketId === "ticket-camila" && (t.usuario_nombre?.toLowerCase().includes("camila") || t.asunto?.toLowerCase().includes("coordinaci"))) ||
           t.id === ticketId ||
           (t.asunto && t.asunto.toLowerCase() === ticketId.toLowerCase())
-      ) || ticketsDb[0];
+      );
 
       if (match) return match.id;
     }
@@ -252,11 +155,12 @@ export async function resolverTicketUuid(ticketId) {
 }
 
 /**
- * Carga la lista de tickets. Intenta Supabase; si no existen tickets en el tenant,
- * siembra automáticamente la conversación de coordinación con Camila en la base de datos
- * para que todos los usuarios compartan el mismo ticket y UUID real.
+ * Carga la lista de tickets reales desde Supabase o localStorage.
+ * No genera ni añade mensajes o conversaciones de ejemplo.
  */
 export async function cargarTickets() {
+  limpiarStorageEjemplos();
+
   if (isSupabaseConfigured()) {
     try {
       const supabase = getSupabaseClient();
@@ -270,54 +174,21 @@ export async function cargarTickets() {
           .order("actualizado_en", { ascending: false });
 
         if (!error && data) {
-          if (data.length > 0) {
-            // Guardar copia local de respaldo
-            saveLocalTickets(data);
-            return data;
-          }
+          // Filtrar tickets de ejemplo
+          const reales = data.filter((t) => !esTicketEjemplo(t));
 
-          // Si no hay tickets creados aún para este tenant, sembramos la conversación inicial en Supabase
-          try {
-            const seed = TICKETS_SEED[0]; // Ticket con Camila
-            const { data: nuevo, error: errSeed } = await supabase
-              .from("soporte_tickets")
-              .insert([
-                {
-                  tenant_id: tenantId,
-                  asunto: seed.asunto,
-                  obra_nombre: seed.obra_nombre,
-                  prioridad: seed.prioridad,
-                  estado: seed.estado,
-                  usuario_nombre: seed.usuario_nombre,
-                  usuario_email: seed.usuario_email,
-                  ultimo_mensaje: seed.ultimo_mensaje,
-                },
-              ])
-              .select()
-              .single();
-
-            if (!errSeed && nuevo) {
-              const seedMsgs = MENSAJES_SEED["ticket-camila"] || [];
-              for (const sm of seedMsgs) {
-                await supabase.from("soporte_mensajes").insert([
-                  {
-                    tenant_id: tenantId,
-                    ticket_id: nuevo.id,
-                    remitente_nombre: sm.remitente_nombre,
-                    remitente_id: null,
-                    es_admin: Boolean(sm.es_admin),
-                    texto: sm.texto,
-                    creado_en: sm.creado_en,
-                  },
-                ]);
+          // Purgar de la base de datos cualquier ticket de ejemplo remanente
+          const ejemplosEnDb = data.filter((t) => esTicketEjemplo(t));
+          if (ejemplosEnDb.length > 0) {
+            for (const ej of ejemplosEnDb) {
+              if (esUuidValido(ej.id)) {
+                supabase.from("soporte_tickets").delete().eq("id", ej.id).catch(() => {});
               }
-              const resultado = [nuevo];
-              saveLocalTickets(resultado);
-              return resultado;
             }
-          } catch (seedErr) {
-            console.warn("No se pudo sembrar ticket inicial en Supabase:", seedErr);
           }
+
+          saveLocalTickets(reales);
+          return reales;
         }
       }
     } catch (e) {
@@ -504,9 +375,9 @@ export async function enviarMensaje({
 
           const match = ticketsDb?.find(
             (t) =>
-              (ticketId === "ticket-camila" && (t.usuario_nombre?.toLowerCase().includes("camila") || t.asunto?.toLowerCase().includes("coordinaci"))) ||
-              t.asunto?.toLowerCase() === ticketId.toLowerCase()
-          ) || ticketsDb?.[0];
+              !esTicketEjemplo(t) &&
+              (t.id === ticketId || (t.asunto && t.asunto.toLowerCase() === ticketId.toLowerCase()))
+          );
 
           if (match) {
             targetTicketId = match.id;
@@ -516,11 +387,11 @@ export async function enviarMensaje({
               .insert([
                 {
                   tenant_id: tenantId,
-                  asunto: ticketId === "ticket-camila" ? "Coordinación de pagos, facturas y anticipos" : "Conversación de Soporte",
+                  asunto: "Conversación de Soporte",
                   obra_nombre: "General",
-                  prioridad: "alta",
+                  prioridad: "media",
                   estado: "en_curso",
-                  usuario_nombre: ticketId === "ticket-camila" ? "Camila Sepúlveda" : remitenteNombre,
+                  usuario_nombre: remitenteNombre,
                   ultimo_mensaje: texto,
                 },
               ])

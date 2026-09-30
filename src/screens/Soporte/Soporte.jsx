@@ -11,6 +11,7 @@ import {
   esTicketEjemplo,
 } from "../../lib/soporte";
 import { listarUsuarios } from "../../lib/backend/usuarios";
+import { reproducirSonidoNotificacion } from "../../lib/sonidoNotificacion";
 
 const ESTADOS = {
   todos: "Todos",
@@ -428,9 +429,18 @@ export default function Soporte({ ctx }) {
         title="Mensajes y Soporte"
         subtitle="Comunicación directa entre el equipo (Camila, Cristian), residentes de obra y clientes"
         action={
-          <button onClick={abrirModalNuevo} style={B("#E0342A")}>
-            <span>+</span> Nueva conversación
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <button
+              onClick={() => reproducirSonidoNotificacion()}
+              style={{ ...B("var(--surface-subtle)", "var(--text-main)"), border: "1px solid var(--border)", fontSize: 12, padding: "8px 14px" }}
+              title="Probar sonido de notificación del computador"
+            >
+              🔊 Probar timbre
+            </button>
+            <button onClick={abrirModalNuevo} style={B("#E0342A")}>
+              <span>+</span> Nueva conversación
+            </button>
+          </div>
         }
       />
 

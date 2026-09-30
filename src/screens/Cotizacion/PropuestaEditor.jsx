@@ -12,6 +12,7 @@ import { agruparCatalogo } from "../../lib/catalogo";
 import { useAppData } from "../../context/AppDataContext";
 import { measurementsToQuoteItems } from "../../lib/maps";
 import { fmt } from "../../lib/format";
+import { DEFAULT_COT_INCLUYE } from "../../data/seed";
 
 // Editor de UNA propuesta. Todas las propuestas se muestran abiertas, una
 // debajo de otra, igual que salen en el documento.
@@ -710,9 +711,56 @@ export default function PropuestaEditor({
           </div>
         </div>
 
-        {/* Se oculta de la visual «Esta cotización incluye»: el texto se
-            conserva en p.incluyeTexto (y DEFAULT_COT_INCLUYE) y se sigue
-            imprimiendo al final de la cotización en el documento y PDF. */}
+        {/* 6. Esta cotización incluye */}
+        <div style={{ marginTop: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 6 }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+              <LBL>Esta cotización incluye</LBL>
+              <span style={{ fontSize: 10.5, color: "var(--text-subtle, #94a3b8)" }}>
+                Un renglón por cada viñeta en el documento oficial
+              </span>
+            </div>
+            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={() => set("incluyeTexto", DEFAULT_COT_INCLUYE)}
+                style={{
+                  ...B("var(--surface-subtle, #f2f4f7)", "var(--text-muted, #475467)"),
+                  border: "1px solid var(--border, #eaecf0)",
+                  fontSize: 10.5,
+                  padding: "4px 8px",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                }}
+                title="Rellena con el texto estándar oficial de la empresa"
+              >
+                ↺ Texto estándar
+              </button>
+              <BotonCorregir valor={p.incluyeTexto !== undefined && p.incluyeTexto !== null ? p.incluyeTexto : DEFAULT_COT_INCLUYE} onChange={v => set("incluyeTexto", v)} compacto />
+              <BotonDictado valor={p.incluyeTexto !== undefined && p.incluyeTexto !== null ? p.incluyeTexto : DEFAULT_COT_INCLUYE} onChange={v => set("incluyeTexto", v)} titulo="Dictar lo que incluye la cotización" compacto />
+            </div>
+          </div>
+          <textarea
+            value={p.incluyeTexto !== undefined && p.incluyeTexto !== null ? p.incluyeTexto : DEFAULT_COT_INCLUYE}
+            onChange={(e) => set("incluyeTexto", e.target.value)}
+            placeholder="Escribe cada elemento que incluye la cotización (un renglón por viñeta)..."
+            spellCheck
+            lang="es"
+            rows={7}
+            style={{
+              ...SI,
+              minHeight: 130,
+              resize: "vertical",
+              lineHeight: 1.6,
+              fontSize: 12,
+              fontFamily: "inherit",
+              whiteSpace: "pre-wrap",
+            }}
+          />
+          <div style={{ fontSize: 10.5, color: "var(--text-subtle, #94a3b8)", marginTop: 4 }}>
+            Cada línea escrita aquí sale como una viñeta con guion en la sección «ESTA COTIZACIÓN INCLUYE» al final de la cotización y en el PDF oficial.
+          </div>
+        </div>
 
     </div>
   );

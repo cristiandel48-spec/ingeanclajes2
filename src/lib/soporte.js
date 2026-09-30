@@ -448,6 +448,7 @@ export async function enviarMensaje({
 
             // Guardar copia local de respaldo
             saveLocalMensaje(targetTicketId, data);
+            emitirMensajeEnviadoLocal(data);
             return data;
           } else if (error) {
             console.warn("Error insertando mensaje en Supabase:", error);
@@ -486,7 +487,24 @@ export async function enviarMensaje({
     saveLocalTickets(tickets);
   }
 
+  emitirMensajeEnviadoLocal(nuevoMsg);
   return nuevoMsg;
+}
+
+export function emitirMensajeEnviadoLocal(mensaje) {
+  if (typeof window === "undefined" || !mensaje) return;
+  try {
+    if ("BroadcastChannel" in window) {
+      const bc = new BroadcastChannel("ingeanclajes_canal_mensajes");
+      bc.postMessage({ tipo: "nuevo-mensaje", mensaje });
+      bc.close();
+    }
+  } catch {
+    // ignore
+  }
+  window.dispatchEvent(
+    new CustomEvent("notificacion-mensaje-recibido", { detail: mensaje })
+  );
 }
 
 /**

@@ -100,6 +100,22 @@ export default function BotonSoporteFlotante() {
     }
   }, [abierto]);
 
+  // Escuchar evento para abrir el chat directamente a un ticket específico
+  useEffect(() => {
+    const handleAbrirTicket = (e) => {
+      const targetId = e.detail?.ticketId || e.detail?.ticket_id;
+      if (targetId) {
+        setTicketActivoId(targetId);
+        setVista("chat");
+        setAbierto(true);
+      } else {
+        setAbierto(true);
+      }
+    };
+    window.addEventListener("abrir-chat-ticket", handleAbrirTicket);
+    return () => window.removeEventListener("abrir-chat-ticket", handleAbrirTicket);
+  }, []);
+
   // Cargar mensajes y escuchar cambios Realtime
   useEffect(() => {
     if (!ticketActivoId) return;

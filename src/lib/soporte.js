@@ -57,6 +57,157 @@ export function limpiarStorageEjemplos() {
   }
 }
 
+let ticketsMemoriaCache = [];
+
+/**
+ * Normaliza cadenas para comparaciones seguras de nombres o correos sin tildes ni mayúsculas
+ */
+function normalizar(val) {
+  return (val || "")
+    .toString()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+/**
+ * Extrae metadatos del creador y restaura la obra original de manera compatible
+ */
+export function parsearTicket(t) {
+  if (!t) return null;
+  let creadorId = t.creador_id || null;
+  let creadorEmail = t.creador_email || null;
+  let creadorNombre = t.creador_nombre || null;
+  let obraRealId = t.obra_id || null;
+
+  if (t.obra_id && typeof t.obra_id === "string") {
+    if (t.obra_id.startsWith("meta:")) {
+      try {
+        const meta = JSON.parse(t.obra_id.slice(5));
+        creadorId = meta.cId || meta.creadorId || creadorId;
+        creadorEmail = meta.cEmail || meta.creadorEmail || creadorEmail;
+        creadorNombre = meta.cNom || meta.creadorNombre || creadorNombre;
+        obraRealId = meta.obraOriginal || meta.obraId || null;
+      } catch {
+        // no era JSON
+      }
+    } else if (t.obra_id.startsWith("{") && t.obra_id.endsWith("}")) {
+      try {
+        const meta = JSON.parse(t.obra_id);
+        creadorId = meta.cId || meta.creadorId || creadorId;
+        creadorEmail = meta.cEmail || meta.creadorEmail || creadorEmail;
+        creadorNombre = meta.cNom || meta.creadorNombre || creadorNombre;
+        obraRealId = meta.obraOriginal || meta.obraId || null;
+      } catch {
+        // no era JSON
+      }
+    }
+  }
+
+  return {
+    ...t,
+    obra_id: obraRealId,
+    creador_id: creadorId,
+    creador_email: creadorEmail,
+    creador_nombre: creadorNombre,
+  };
+}
+
+/**
+ * Determina con estricta confidencialidad si un chat/ticket es visible para el usuario actual.
+ * Cada chat 1 a 1 solo es visible para su creador y su destinatario.
+ */
+export function esTicketVisibleParaUsuario(ticket, membresia) {
+  if (!ticket) return false;
+  if (esTicketEjemplo(ticket)) return false;
+  if (!membresia) return false;
+
+  const miId = normalizar(membresia.user_id || membresia.userId || membresia.id);
+  const miEmail = normalizar(membresia.email);
+  const miNombre = normalizar(membresia.nombre);
+
+  // Datos del destinatario (a quién va dirigido el ticket)
+  const destId = normalizar(ticket.usuario_id);
+  const destEmail = normalizar(ticket.usuario_email);
+  const destNombre = normalizar(ticket.usuario_nombre);
+
+  // 1. ¿Soy el destinatario?
+  const soyDestinatario = Boolean(
+    (miId && destId && miId === destId) ||
+    (miEmail && destEmail && miEmail === destEmail) ||
+    (miNombre && destNombre && (miNombre === destNombre || destNombre.includes(miNombre) || miNombre.includes(destNombre))) ||
+    (destId === "camila" && (miEmail.includes("camila") || miNombre.includes("camila"))) ||
+    (destId === "cristian" && (miEmail.includes("cristian") || miNombre.includes("cristian")))
+  );
+
+  if (soyDestinatario) return true;
+
+  // Datos del creador (quién inició la conversación)
+  const creadorId = normalizar(ticket.creador_id);
+  const creadorEmail = normalizar(ticket.creador_email);
+  const creadorNombre = normalizar(ticket.creador_nombre);
+
+  // 2. ¿Soy el creador del ticket?
+  const soyCreador = Boolean(
+    (miId && creadorId && miId === creadorId) ||
+    (miEmail && creadorEmail && miEmail === creadorEmail) ||
+    (miNombre && creadorNombre && (miNombre === creadorNombre || creadorNombre.includes(miNombre) || miNombre.includes(creadorNombre))) ||
+    (creadorId === "cristian" && (miEmail.includes("cristian") || miNombre.includes("cristian"))) ||
+    (creadorId === "camila" && (miEmail.includes("camila") || miNombre.includes("camila")))
+  );
+
+  if (soyCreador) return true;
+
+  // 3. Canal de Soporte General
+  const esSoporteGeneral = destId === "soporte" || destNombre.includes("soporte") || destEmail.includes("soporte");
+  if (esSoporteGeneral && (membresia.role === "admin" || miEmail.includes("cristian"))) {
+    return true;
+  }
+
+  // 4. Compatibilidad con tickets legacy previos a la migración
+  const esCristianActual = miEmail.includes("cristian") || miNombre.includes("cristian") || miEmail === "cristiandel48@gmail.com";
+  if (esCristianActual && !creadorEmail && !creadorId) {
+    // Cristian fue quien inició los tickets previos como administrador
+    return true;
+  }
+
+  // En cualquier otro caso, este chat es confidencial entre sus dos participantes y NO debe mostrarse
+  return false;
+}
+
+/**
+ * Obtiene el nombre del interlocutor con quien está hablando el usuario actual
+ */
+export function obtenerNombreInterlocutor(ticket, membresia) {
+  if (!ticket) return "Usuario";
+  const miEmail = normalizar(membresia?.email);
+  const miNombre = normalizar(membresia?.nombre);
+  const miId = normalizar(membresia?.user_id || membresia?.userId || membresia?.id);
+
+  const destNombre = ticket.usuario_nombre || "Usuario";
+  const destEmail = normalizar(ticket.usuario_email);
+  const destId = normalizar(ticket.usuario_id);
+
+  const creadorNombre = ticket.creador_nombre || "Cristian Flórez";
+  const creadorEmail = normalizar(ticket.creador_email);
+  const creadorId = normalizar(ticket.creador_id);
+
+  // Si yo soy el destinatario, mi interlocutor es el creador
+  const soyDestinatario = Boolean(
+    (miId && destId && miId === destId) ||
+    (miEmail && destEmail && miEmail === destEmail) ||
+    (miNombre && destNombre && (miNombre === destNombre || normalizar(destNombre).includes(miNombre) || miNombre.includes(normalizar(destNombre)))) ||
+    (destId === "camila" && (miEmail.includes("camila") || miNombre.includes("camila")))
+  );
+
+  if (soyDestinatario) {
+    return creadorNombre;
+  }
+
+  return destNombre;
+}
+
 function getLocalTickets() {
   try {
     limpiarStorageEjemplos();
@@ -64,7 +215,7 @@ function getLocalTickets() {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        return parsed.filter((t) => !esTicketEjemplo(t));
+        return parsed.filter((t) => !esTicketEjemplo(t)).map(parsearTicket);
       }
     }
   } catch (e) {
@@ -174,7 +325,7 @@ export async function cargarTickets() {
           .order("actualizado_en", { ascending: false });
 
         if (!error && data) {
-          const reales = data.filter((t) => !esTicketEjemplo(t));
+          const reales = data.filter((t) => !esTicketEjemplo(t)).map(parsearTicket);
 
           // Sincronizar automáticamente tickets locales creados offline o pendientes
           const locales = getLocalTickets().filter((t) => !esTicketEjemplo(t) && !esUuidValido(t.id));
@@ -182,12 +333,21 @@ export async function cargarTickets() {
             const yaExiste = reales.some((r) => r.asunto === loc.asunto && r.usuario_nombre === loc.usuario_nombre);
             if (!yaExiste) {
               try {
+                const metaCreador = {
+                  cId: loc.creador_id || null,
+                  cEmail: loc.creador_email || null,
+                  cNom: loc.creador_nombre || null,
+                  obraOriginal: loc.obra_id || null,
+                };
+                const obraIdConMeta = `meta:${JSON.stringify(metaCreador)}`;
+
                 const { data: nuevoDb } = await supabase
                   .from("soporte_tickets")
                   .insert([{
                     tenant_id: tenantId,
                     asunto: loc.asunto,
                     obra_nombre: loc.obra_nombre || "General",
+                    obra_id: obraIdConMeta,
                     prioridad: loc.prioridad || "media",
                     estado: loc.estado || "en_curso",
                     usuario_nombre: loc.usuario_nombre || "Usuario",
@@ -198,7 +358,8 @@ export async function cargarTickets() {
                   .single();
 
                 if (nuevoDb) {
-                  reales.unshift(nuevoDb);
+                  const parsedNuevo = parsearTicket(nuevoDb);
+                  reales.unshift(parsedNuevo);
                   const msgsLocales = getLocalMensajes(loc.id);
                   for (const ml of msgsLocales) {
                     await supabase.from("soporte_mensajes").insert([{
@@ -218,6 +379,7 @@ export async function cargarTickets() {
           }
 
           saveLocalTickets(reales);
+          ticketsMemoriaCache = reales;
           return reales;
         }
       }
@@ -225,7 +387,37 @@ export async function cargarTickets() {
       console.info("Usando almacenamiento local de tickets mientras se sincroniza con Supabase:", e.message);
     }
   }
-  return getLocalTickets();
+  const locales = getLocalTickets();
+  ticketsMemoriaCache = locales;
+  return locales;
+}
+
+/**
+ * Obtiene un ticket por su ID buscando en caché en memoria, almacenamiento o Supabase
+ */
+export async function obtenerTicketPorId(ticketId) {
+  if (!ticketId) return null;
+  const enCache = ticketsMemoriaCache.find((t) => t.id === ticketId);
+  if (enCache) return enCache;
+
+  const tickets = await cargarTickets();
+  const match = tickets.find((t) => t.id === ticketId);
+  if (match) return match;
+
+  if (isSupabaseConfigured() && esUuidValido(ticketId)) {
+    try {
+      const supabase = getSupabaseClient();
+      const { data } = await supabase
+        .from("soporte_tickets")
+        .select("*")
+        .eq("id", ticketId)
+        .maybeSingle();
+      if (data) return parsearTicket(data);
+    } catch {
+      // ignore
+    }
+  }
+  return null;
 }
 
 /**
@@ -258,7 +450,7 @@ export async function cargarMensajes(ticketId) {
 }
 
 /**
- * Crea un nuevo ticket de soporte garantizando tipos UUID válidos.
+ * Crea un nuevo ticket de soporte garantizando tipos UUID válidos y metadatos de autor.
  */
 export async function crearTicket({
   asunto,
@@ -270,9 +462,19 @@ export async function crearTicket({
   usuarioId = null,
   creadorNombre = null,
   creadorId = null,
+  creadorEmail = null,
   mensajeInicial = "",
 }) {
   let nuevoTicket = null;
+
+  // Empaquetar metadatos del creador en obra_id para que no dependa de nuevas columnas en la BD
+  const metaCreador = {
+    cId: creadorId || null,
+    cEmail: creadorEmail || null,
+    cNom: creadorNombre || null,
+    obraOriginal: obraId || null,
+  };
+  const obraIdConMeta = `meta:${JSON.stringify(metaCreador)}`;
 
   if (isSupabaseConfigured()) {
     try {
@@ -290,7 +492,7 @@ export async function crearTicket({
               tenant_id: tenantId,
               asunto,
               obra_nombre: obraNombre,
-              obra_id: obraId,
+              obra_id: obraIdConMeta,
               prioridad,
               estado: "pendiente",
               usuario_nombre: usuarioNombre,
@@ -303,7 +505,10 @@ export async function crearTicket({
           .single();
 
         if (!ticketError && ticketData) {
-          nuevoTicket = ticketData;
+          nuevoTicket = parsearTicket(ticketData);
+          nuevoTicket.creador_id = creadorId;
+          nuevoTicket.creador_email = creadorEmail;
+          nuevoTicket.creador_nombre = creadorNombre;
 
           if (mensajeInicial) {
             let remitenteUuid = esUuidValido(creadorId) ? creadorId.trim() : null;
@@ -331,9 +536,10 @@ export async function crearTicket({
             }
           }
 
-          // Mantener copia local actualizada
+          // Mantener copia local actualizada y memoria cache
           const ticketsLocales = getLocalTickets().filter((t) => t.id !== nuevoTicket.id);
           saveLocalTickets([nuevoTicket, ...ticketsLocales]);
+          ticketsMemoriaCache = [nuevoTicket, ...ticketsMemoriaCache.filter((t) => t.id !== nuevoTicket.id)];
 
           return nuevoTicket;
         } else if (ticketError) {
@@ -354,6 +560,9 @@ export async function crearTicket({
     asunto,
     obra_nombre: obraNombre,
     obra_id: obraId,
+    creador_id: creadorId,
+    creador_email: creadorEmail,
+    creador_nombre: creadorNombre,
     prioridad,
     estado: "pendiente",
     usuario_nombre: usuarioNombre,
@@ -366,6 +575,7 @@ export async function crearTicket({
 
   const actualizados = [nuevoTicket, ...tickets];
   saveLocalTickets(actualizados);
+  ticketsMemoriaCache = [nuevoTicket, ...ticketsMemoriaCache.filter((t) => t.id !== nuevoTicket.id)];
 
   if (mensajeInicial) {
     const msgLocal = {

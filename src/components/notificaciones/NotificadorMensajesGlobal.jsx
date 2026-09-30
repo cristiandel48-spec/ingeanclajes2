@@ -7,6 +7,7 @@ import {
   mostrarNotificacionEscritorio,
   solicitarPermisoNotificaciones,
 } from "../../lib/sonidoNotificacion";
+import { obtenerTicketPorId, esTicketVisibleParaUsuario } from "../../lib/soporte";
 import BurbujaMensajeEntrante from "./BurbujaMensajeEntrante";
 import ModalLecturaMensaje from "./ModalLecturaMensaje";
 
@@ -87,7 +88,7 @@ export default function NotificadorMensajesGlobal({ onIrASoporte }) {
   }, []);
 
   // Función común cuando entra un mensaje
-  const procesarMensajeNuevo = (msg) => {
+  const procesarMensajeNuevo = async (msg) => {
     if (!msg || !msg.texto) return;
 
     // Evitar notificar dos veces el mismo mensaje
@@ -100,6 +101,29 @@ export default function NotificadorMensajesGlobal({ onIrASoporte }) {
       return;
     }
 
+    // PRIVACIDAD ESTRICTA:
+    // Verificar si el ticket al que pertenece este mensaje es visible para el usuario actual.
+    // Si Cristian le habla a Paola o Miguel, Camila NO debe recibir notificación acústica ni visual.
+    let ticketAsunto = msg.asunto || "Mensaje en tiempo real";
+    let ticketObra = msg.obra_nombre || "";
+
+    const targetTicketId = msg.ticket_id || msg.ticketId;
+    if (targetTicketId) {
+      try {
+        const ticket = await obtenerTicketPorId(targetTicketId);
+        if (ticket) {
+          if (!esTicketVisibleParaUsuario(ticket, membresia)) {
+            // Este chat es privado entre otras personas -> IGNORAR
+            return;
+          }
+          ticketAsunto = ticket.asunto || ticketAsunto;
+          ticketObra = ticket.obra_nombre || ticketObra;
+        }
+      } catch {
+        // En caso de duda o error al verificar ticket, no emitir ruido a terceros
+      }
+    }
+
     // 1. Reproducir sonido acústico en el computador
     reproducirSonidoNotificacion({ volumen: 0.38 });
 
@@ -109,7 +133,11 @@ export default function NotificadorMensajesGlobal({ onIrASoporte }) {
         titulo: `Mensaje de ${msg.remitente_nombre || "Ingeanclajes"}`,
         cuerpo: msg.texto,
         alHacerClic: () => {
-          setMensajeEntrante(msg);
+          setMensajeEntrante({
+            ...msg,
+            asunto: ticketAsunto,
+            obraNombre: ticketObra,
+          });
           setModalAbierto(true);
         },
       });
@@ -118,12 +146,12 @@ export default function NotificadorMensajesGlobal({ onIrASoporte }) {
     // 3. Mostrar la burbuja flotante en pantalla
     setMensajeEntrante({
       id: msg.id,
-      ticketId: msg.ticket_id,
+      ticketId: targetTicketId,
       remitenteNombre: msg.remitente_nombre || "Compañero de equipo",
       remitenteId: msg.remitente_id,
       texto: msg.texto,
-      asunto: msg.asunto || "Mensaje en tiempo real",
-      obraNombre: msg.obra_nombre || "",
+      asunto: ticketAsunto,
+      obraNombre: ticketObra,
       creadoEn: msg.creado_en || new Date().toISOString(),
     });
 

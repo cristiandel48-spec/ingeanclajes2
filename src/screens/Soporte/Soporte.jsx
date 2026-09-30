@@ -9,6 +9,8 @@ import {
   crearTicket,
   suscribirChatTicket,
   esTicketEjemplo,
+  esTicketVisibleParaUsuario,
+  obtenerNombreInterlocutor,
 } from "../../lib/soporte";
 import { listarUsuarios } from "../../lib/backend/usuarios";
 import { reproducirSonidoNotificacion } from "../../lib/sonidoNotificacion";
@@ -96,34 +98,47 @@ export default function Soporte({ ctx }) {
     };
   }, []);
 
-  // Combinar usuarios de la base de datos priorizando UUIDs reales de auth.users
+  // Combinar usuarios de la base de datos priorizando UUIDs reales de auth.users y excluyendo al usuario actual
   const opcionesUsuarios = useMemo(() => {
     const combinados = [];
     const idsRegistrados = new Set();
+    const miEmail = (membresia?.email || "").toLowerCase().trim();
+    const miNombre = (membresia?.nombre || "").toLowerCase().trim();
+
+    const esYo = (u) => {
+      const uEmail = (u.email || "").toLowerCase().trim();
+      const uNom = (u.nombre || "").toLowerCase().trim();
+      if (miEmail && uEmail && miEmail === uEmail) return true;
+      if (miNombre && uNom && (miNombre === uNom || miNombre.includes(uNom) || uNom.includes(miNombre))) return true;
+      return false;
+    };
 
     // 1. Usuarios reales de la base de datos (con su auth.users UUID)
     (listaUsuarios || []).forEach((u) => {
       const nom = u.nombre || u.email;
       const idReal = u.user_id || u.id;
       if (nom && idReal) {
-        combinados.push({
+        const item = {
           id: idReal,
           nombre: nom,
           email: u.email || "",
           rol: u.role || "Equipo Ingeanclajes",
-        });
-        idsRegistrados.add(nom.toLowerCase());
-        if (u.email) idsRegistrados.add(u.email.toLowerCase());
+        };
+        if (!esYo(item)) {
+          combinados.push(item);
+          idsRegistrados.add(nom.toLowerCase());
+          if (u.email) idsRegistrados.add(u.email.toLowerCase());
+        }
       }
     });
 
-    // 2. Usuarios por defecto (solo si no existen ya en listaUsuarios)
+    // 2. Usuarios por defecto (solo si no existen ya en listaUsuarios y no soy yo)
     const base = [
       { id: "camila", nombre: "Camila Sepúlveda", email: "camilasepulveda@ingeanclajes.com", rol: "Administración / Finanzas" },
       { id: "cristian", nombre: "Cristian Flórez", email: "cristiandel48@gmail.com", rol: "Administrador / Desarrollo" },
     ];
     base.forEach((b) => {
-      if (!idsRegistrados.has(b.nombre.toLowerCase()) && !idsRegistrados.has(b.email.toLowerCase())) {
+      if (!esYo(b) && !idsRegistrados.has(b.nombre.toLowerCase()) && !idsRegistrados.has(b.email.toLowerCase())) {
         combinados.push(b);
         idsRegistrados.add(b.nombre.toLowerCase());
         idsRegistrados.add(b.email.toLowerCase());
@@ -134,18 +149,21 @@ export default function Soporte({ ctx }) {
     (empleados || []).forEach((emp) => {
       const nom = `${emp.nombres || emp.nombre || ""} ${emp.apellidos || ""}`.trim();
       if (nom && !idsRegistrados.has(nom.toLowerCase())) {
-        combinados.push({
+        const item = {
           id: emp.id,
           nombre: nom,
           email: emp.email || "",
           rol: emp.cargo || "Personal de Obra",
-        });
-        idsRegistrados.add(nom.toLowerCase());
+        };
+        if (!esYo(item)) {
+          combinados.push(item);
+          idsRegistrados.add(nom.toLowerCase());
+        }
       }
     });
 
     return combinados;
-  }, [listaUsuarios, empleados]);
+  }, [listaUsuarios, empleados, membresia]);
 
   // Cargar tickets al montar
   useEffect(() => {
@@ -260,34 +278,52 @@ export default function Soporte({ ctx }) {
     return () => clearInterval(interval);
   }, []);
 
+  // Filtrar estrictamente tickets visibles para este usuario (confidencialidad total)
+  const ticketsVisibles = useMemo(() => {
+    return tickets.filter((t) => esTicketVisibleParaUsuario(t, membresia));
+  }, [tickets, membresia]);
+
+  useEffect(() => {
+    if (ticketActivoId && ticketsVisibles.length > 0) {
+      const existe = ticketsVisibles.some((t) => t.id === ticketActivoId);
+      if (!existe) {
+        setTicketActivoId(ticketsVisibles[0]?.id || null);
+      }
+    } else if (!ticketActivoId && ticketsVisibles.length > 0) {
+      setTicketActivoId(ticketsVisibles[0]?.id || null);
+    }
+  }, [ticketsVisibles, ticketActivoId]);
+
   const ticketActivo = useMemo(() => {
-    return tickets.find((t) => t.id === ticketActivoId) || null;
-  }, [tickets, ticketActivoId]);
+    return ticketsVisibles.find((t) => t.id === ticketActivoId) || null;
+  }, [ticketsVisibles, ticketActivoId]);
 
   // Filtrado de tickets
   const ticketsFiltrados = useMemo(() => {
-    return tickets.filter((t) => {
+    return ticketsVisibles.filter((t) => {
       const matchEstado = filtroEstado === "todos" || t.estado === filtroEstado;
       const q = busqueda.toLowerCase().trim();
+      const interlocutor = obtenerNombreInterlocutor(t, membresia).toLowerCase();
       const matchBusqueda =
         !q ||
         (t.asunto || "").toLowerCase().includes(q) ||
         (t.usuario_nombre || "").toLowerCase().includes(q) ||
+        interlocutor.includes(q) ||
         (t.obra_nombre || "").toLowerCase().includes(q) ||
         String(t.numero || "").includes(q);
       return matchEstado && matchBusqueda;
     });
-  }, [tickets, filtroEstado, busqueda]);
+  }, [ticketsVisibles, filtroEstado, busqueda, membresia]);
 
   // Contadores
   const stats = useMemo(() => {
     return {
-      total: tickets.length,
-      pendiente: tickets.filter((t) => t.estado === "pendiente").length,
-      en_curso: tickets.filter((t) => t.estado === "en_curso").length,
-      resuelto: tickets.filter((t) => t.estado === "resuelto").length,
+      total: ticketsVisibles.length,
+      pendiente: ticketsVisibles.filter((t) => t.estado === "pendiente").length,
+      en_curso: ticketsVisibles.filter((t) => t.estado === "en_curso").length,
+      resuelto: ticketsVisibles.filter((t) => t.estado === "resuelto").length,
     };
-  }, [tickets]);
+  }, [ticketsVisibles]);
 
   // Abrir modal con Camila seleccionada por defecto
   const abrirModalNuevo = () => {
@@ -421,7 +457,8 @@ export default function Soporte({ ctx }) {
       usuarioEmail: nuevoEmail.trim(),
       usuarioId: nuevoUserId,
       creadorNombre: membresia?.nombre || "Cristian Flórez",
-      creadorId: membresia?.user_id || null,
+      creadorEmail: membresia?.email || "cristiandel48@gmail.com",
+      creadorId: membresia?.user_id || membresia?.userId || null,
       mensajeInicial: nuevoMsgInicial.trim(),
     });
 
@@ -579,7 +616,8 @@ export default function Soporte({ ctx }) {
               ticketsFiltrados.map((ticket) => {
                 const activo = ticket.id === ticketActivoId;
                 const badge = BADGES[ticket.estado] || BADGES.pendiente;
-                const esCamila = (ticket.usuario_nombre || "").toLowerCase().includes("camila");
+                const interlocutor = obtenerNombreInterlocutor(ticket, membresia);
+                const esCamila = interlocutor.toLowerCase().includes("camila");
 
                 return (
                   <div
@@ -598,7 +636,7 @@ export default function Soporte({ ctx }) {
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                       <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #101828)", display: "flex", alignItems: "center", gap: 6 }}>
-                        {esCamila ? "💼" : "👤"} {ticket.usuario_nombre}
+                        {esCamila ? "💼" : "👤"} {interlocutor}
                       </span>
                       <span style={{ fontSize: 11, color: "var(--text-muted, #667085)" }}>
                         {formatFechaRelativa(ticket.actualizado_en || ticket.creado_en)}
@@ -710,7 +748,7 @@ export default function Soporte({ ctx }) {
                     </span>
                   </div>
                   <div style={{ fontSize: 12, color: "var(--text-muted, #667085)", marginTop: 2 }}>
-                    Participante: <strong>{ticketActivo.usuario_nombre}</strong>
+                    Conversación con: <strong>{obtenerNombreInterlocutor(ticketActivo, membresia)}</strong>
                     {ticketActivo.usuario_email && ` · ${ticketActivo.usuario_email}`}
                     {ticketActivo.obra_nombre && ` · ${ticketActivo.obra_nombre}`}
                   </div>

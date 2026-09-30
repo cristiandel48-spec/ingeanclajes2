@@ -7,13 +7,15 @@ import {
   crearTicket,
   suscribirChatTicket,
   esTicketEjemplo,
+  esTicketVisibleParaUsuario,
+  obtenerNombreInterlocutor,
 } from "../../lib/soporte";
 import { listarUsuarios } from "../../lib/backend/usuarios";
 import { SI, B } from "../../styles/tokens";
 
 export default function BotonSoporteFlotante() {
   const ctx = useAppData();
-  const { membresia, scr, setScr } = ctx || {};
+  const { membresia, scr, setScr, empleados = [] } = ctx || {};
   const [abierto, setAbierto] = useState(false);
   const [minimizado, setMinimizado] = useState(false);
   const [vista, setVista] = useState("lista"); // 'lista' | 'chat' | 'nuevo'
@@ -45,19 +47,32 @@ export default function BotonSoporteFlotante() {
   const opcionesDestinatarios = useMemo(() => {
     const list = [];
     const ids = new Set();
+    const miEmail = (membresia?.email || "").toLowerCase().trim();
+    const miNombre = (membresia?.nombre || "").toLowerCase().trim();
+
+    const esYo = (u) => {
+      const uEmail = (u.email || "").toLowerCase().trim();
+      const uNom = (u.nombre || "").toLowerCase().trim();
+      if (miEmail && uEmail && miEmail === uEmail) return true;
+      if (miNombre && uNom && (miNombre === uNom || miNombre.includes(uNom) || uNom.includes(miNombre))) return true;
+      return false;
+    };
 
     (usuariosDisponibles || []).forEach((u) => {
       const nom = u.nombre || u.email;
       const idReal = u.user_id || u.id;
       if (nom && idReal) {
-        list.push({
+        const item = {
           id: idReal,
           nombre: nom,
           email: u.email || "",
           rol: u.role || "Equipo Ingeanclajes",
-        });
-        ids.add(nom.toLowerCase());
-        if (u.email) ids.add(u.email.toLowerCase());
+        };
+        if (!esYo(item)) {
+          list.push(item);
+          ids.add(nom.toLowerCase());
+          if (u.email) ids.add(u.email.toLowerCase());
+        }
       }
     });
 
@@ -67,31 +82,42 @@ export default function BotonSoporteFlotante() {
     ];
 
     defaults.forEach((def) => {
-      if (!ids.has(def.nombre.toLowerCase()) && !ids.has(def.email.toLowerCase())) {
+      if (!esYo(def) && !ids.has(def.nombre.toLowerCase()) && !ids.has(def.email.toLowerCase())) {
         list.push(def);
         ids.add(def.nombre.toLowerCase());
       }
     });
 
+    (empleados || []).forEach((emp) => {
+      const nom = `${emp.nombres || emp.nombre || ""} ${emp.apellidos || ""}`.trim();
+      if (nom && !ids.has(nom.toLowerCase())) {
+        const item = {
+          id: emp.id,
+          nombre: nom,
+          email: emp.email || "",
+          rol: emp.cargo || "Personal de Obra",
+        };
+        if (!esYo(item)) {
+          list.push(item);
+          ids.add(nom.toLowerCase());
+        }
+      }
+    });
+
     return list;
-  }, [usuariosDisponibles]);
+  }, [usuariosDisponibles, empleados, membresia]);
 
-  // Asignar el destinatario por defecto al usuario de Camila (con su UUID si existe)
+  // Asignar el destinatario por defecto al primer contacto disponible que no sea yo mismo
   useEffect(() => {
-    if (opcionesDestinatarios.length > 0 && (!destinatario || destinatario === "camila")) {
-      const def = opcionesDestinatarios.find(
-        (u) =>
-          u.nombre?.toLowerCase().includes("camila") ||
-          (u.email && u.email.toLowerCase().includes("camila")) ||
-          u.id === "camila"
-      ) || opcionesDestinatarios[0];
-
-      if (def) {
-        setDestinatario(def.id);
-        setNombreDestinatario(def.nombre);
+    if (opcionesDestinatarios.length > 0) {
+      const actualExiste = opcionesDestinatarios.some((u) => String(u.id) === String(destinatario));
+      if (!actualExiste) {
+        const primerContacto = opcionesDestinatarios[0];
+        setDestinatario(primerContacto.id);
+        setNombreDestinatario(primerContacto.nombre);
       }
     }
-  }, [opcionesDestinatarios]);
+  }, [opcionesDestinatarios, destinatario]);
 
   // Carga inicial y polling periódico continuo de tickets (cada 8s) incluso cerrado
   useEffect(() => {
@@ -112,6 +138,22 @@ export default function BotonSoporteFlotante() {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Filtrar estrictamente tickets visibles para este usuario (confidencialidad total)
+  const ticketsVisibles = useMemo(() => {
+    return tickets.filter((t) => esTicketVisibleParaUsuario(t, membresia));
+  }, [tickets, membresia]);
+
+  // Si el ticket activo actual no pertenece a mis tickets visibles, volver a la lista
+  useEffect(() => {
+    if (ticketActivoId && ticketsVisibles.length > 0) {
+      const existe = ticketsVisibles.some((t) => t.id === ticketActivoId);
+      if (!existe) {
+        setTicketActivoId(null);
+        setVista("lista");
+      }
+    }
+  }, [ticketsVisibles, ticketActivoId]);
 
   // Escuchar evento para abrir el chat directamente a un ticket específico
   useEffect(() => {
@@ -227,7 +269,7 @@ export default function BotonSoporteFlotante() {
     return () => clearInterval(interval);
   }, [abierto]);
 
-  const ticketActivo = tickets.find((t) => t.id === ticketActivoId);
+  const ticketActivo = ticketsVisibles.find((t) => t.id === ticketActivoId);
 
   const handleEnviarChat = async (e) => {
     e?.preventDefault();
@@ -293,7 +335,8 @@ export default function BotonSoporteFlotante() {
         usuarioEmail: targetUser?.email || (destinatario === "camila" ? "camilasepulveda@ingeanclajes.com" : ""),
         usuarioId: destinatario,
         creadorNombre: membresia?.nombre || "Cristian Flórez",
-        creadorId: membresia?.user_id || null,
+        creadorEmail: membresia?.email || "cristiandel48@gmail.com",
+        creadorId: membresia?.user_id || membresia?.userId || null,
         mensajeInicial: detalle.trim(),
       });
 
@@ -360,7 +403,7 @@ export default function BotonSoporteFlotante() {
                 {vista === "chat" ? (ticketActivo?.asunto || "Chat de Soporte") : "Mensajes y Soporte"}
               </div>
               <div style={{ fontSize: 10, opacity: 0.9, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {vista === "chat" ? `Con ${ticketActivo?.usuario_nombre || "Usuario"}` : "Clic para expandir"}
+                {vista === "chat" ? `Con ${obtenerNombreInterlocutor(ticketActivo, membresia)}` : "Clic para expandir"}
               </div>
             </div>
           </div>
@@ -464,7 +507,7 @@ export default function BotonSoporteFlotante() {
                   {vista === "chat" ? (ticketActivo?.asunto || "Chat de Soporte") : "Mensajes y Soporte"}
                 </div>
                 <div style={{ fontSize: 10.5, opacity: 0.9, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {vista === "chat" ? (`Con ${ticketActivo?.usuario_nombre || "Usuario"}`) : "Habla con Camila o el equipo"}
+                  {vista === "chat" ? `Con ${obtenerNombreInterlocutor(ticketActivo, membresia)}` : "Habla con Camila o el equipo"}
                 </div>
               </div>
             </div>
@@ -566,17 +609,18 @@ export default function BotonSoporteFlotante() {
               </div>
 
               <div style={{ flex: 1, overflowY: "auto", padding: "8px 10px" }}>
-                {tickets.length === 0 ? (
+                {ticketsVisibles.length === 0 ? (
                   <div style={{ padding: "36px 16px", textAlign: "center", color: "var(--text-muted, #667085)", fontSize: 12.5 }}>
                     <div style={{ fontSize: 32, marginBottom: 8 }}>💬</div>
                     <div style={{ fontWeight: 700, color: "var(--text-main, #101828)", marginBottom: 4, fontSize: 13 }}>
                       Bandeja limpia
                     </div>
-                    No hay conversaciones activas. Haz clic en <strong>+ Nueva Conversación</strong> para iniciar un chat con Camila o el equipo.
+                    No hay conversaciones activas. Haz clic en <strong>+ Nueva Conversación</strong> para iniciar un chat privado.
                   </div>
                 ) : (
-                  tickets.map((t) => {
-                    const esCamila = (t.usuario_nombre || "").toLowerCase().includes("camila");
+                  ticketsVisibles.map((t) => {
+                    const interlocutor = obtenerNombreInterlocutor(t, membresia);
+                    const esCamila = interlocutor.toLowerCase().includes("camila");
                     return (
                       <div
                         key={t.id}
@@ -596,7 +640,7 @@ export default function BotonSoporteFlotante() {
                       >
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
                           <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #101828)", display: "flex", alignItems: "center", gap: 4 }}>
-                            {esCamila ? "💼" : "👤"} {t.usuario_nombre}
+                            {esCamila ? "💼" : "👤"} {interlocutor}
                           </span>
                           <span
                             style={{
@@ -832,7 +876,7 @@ export default function BotonSoporteFlotante() {
         title={minimizado ? "Restaurar chat" : abierto ? "Cerrar chat" : "Mensajes y soporte"}
       >
         {abierto && !minimizado ? "✕" : "💬"}
-        {(!abierto || minimizado) && tickets.some((t) => t.estado === "pendiente" || t.estado === "en_curso") && (
+        {(!abierto || minimizado) && ticketsVisibles.some((t) => t.estado === "pendiente" || t.estado === "en_curso") && (
           <span
             style={{
               position: "absolute",

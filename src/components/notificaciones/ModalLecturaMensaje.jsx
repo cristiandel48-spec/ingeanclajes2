@@ -65,12 +65,16 @@ export default function ModalLecturaMensaje({ notificacion, onCerrar, onIrASopor
 
     setEnviando(true);
     try {
-      const nombreUsuario = membresia?.nombre || "Camila Sepúlveda";
+      const nombreUsuario =
+        membresia?.nombre ||
+        (membresia?.email?.toLowerCase().includes("cristian")
+          ? "Cristian Flórez"
+          : "Camila Sepúlveda");
       const guardado = await enviarMensaje({
         ticketId,
         texto,
         remitenteNombre: nombreUsuario,
-        remitenteId: membresia?.user_id || null,
+        remitenteId: membresia?.user_id || membresia?.userId || null,
         esAdmin: membresia?.role === "admin",
       });
 
@@ -229,10 +233,16 @@ export default function ModalLecturaMensaje({ notificacion, onCerrar, onIrASopor
             </div>
           ) : (
             mensajes.map((msg, i) => {
-              const miNombre = membresia?.nombre || "Camila Sepúlveda";
-              const esMio =
-                msg.remitente_nombre === miNombre ||
-                (membresia?.user_id && msg.remitente_id === membresia.user_id);
+              const miId = membresia?.user_id || membresia?.userId;
+              const miEmail = (membresia?.email || "").toLowerCase().trim();
+              const miNombre = (membresia?.nombre || "").toLowerCase().trim();
+              const msgNombre = (msg.remitente_nombre || "").toLowerCase().trim();
+              const msgEmail = (msg.remitente_email || "").toLowerCase().trim();
+              const esMio = Boolean(
+                (miId && msg.remitente_id && msg.remitente_id === miId) ||
+                (miEmail && msgEmail && miEmail === msgEmail) ||
+                (miNombre && msgNombre && (msgNombre.includes(miNombre) || miNombre.includes(msgNombre)))
+              );
 
               return (
                 <div

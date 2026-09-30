@@ -925,7 +925,7 @@ export default function Cotizacion({ctx}){
                 }}
                 onClick={()=>setPreviewCot(null)}
               >
-                Volver
+                ← Volver
               </button>
               <button
                 style={{

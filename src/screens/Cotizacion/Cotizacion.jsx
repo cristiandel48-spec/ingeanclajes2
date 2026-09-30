@@ -29,7 +29,7 @@ import { enviarCotizacionPorCorreo } from "../../lib/backend/usuarios";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
 export default function Cotizacion({ctx}){
-  const {cotizaciones,setCotizaciones,obras,setObras,clientes,setClientes,empresaConfig,asegurarDetalle,cotDraft,setCotDraft}=ctx;
+  const {cotizaciones,setCotizaciones,obras,setObras,clientes,setClientes,empresaConfig,asegurarDetalle,cotDraft,setCotDraft,intencion,limpiarIntencion}=ctx;
   const [erroresCliente, setErroresCliente] = useState({});
   const firmaImg=getFirmaImg(empresaConfig);
   // Codigo y version del formato de cotizacion. Null si no esta configurado,
@@ -186,6 +186,19 @@ export default function Cotizacion({ctx}){
   // aqui haria correr el efecto sin parar.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[cotDraft]);
+
+  useEffect(() => {
+    if (intencion?.pantalla === "cotizacion" && intencion?.cotizacionId) {
+      const encontrada = cotizaciones.find(
+        (c) => c.id === intencion.cotizacionId || c.numero === intencion.cotizacionId
+      );
+      if (encontrada) {
+        setPreviewCot(encontrada);
+        setTab("lista");
+      }
+      limpiarIntencion?.();
+    }
+  }, [intencion, cotizaciones, limpiarIntencion]);
 
   // Clientes que ya estan en el sistema, vengan de su ficha, de una cotizacion
   // anterior o de una obra. Se juntan por razon social acomodada, para que

@@ -13,6 +13,82 @@ import { estadoSegunAvance, obraEstaCerrada } from "../../lib/flujoObra";
 import { esAdmin, puedeCrearPersonal, puedeVerDinero } from "../../lib/permisos";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import { resolverAutorGuardado } from "../../lib/autorAuditoria";
+import { getTextosDocumento } from "../../lib/cotizacionTextos";
+import { getQuoteProposals } from "../../lib/cotizaciones";
+
+function renderTextoSaludoResaltado(texto = "") {
+  if (!texto) return null;
+
+  // Busca secuencia de palabras en MAYÚSCULAS continuas (con tildes y números) de longitud relevante
+  const regex = /(?:^|\s)((?:[\p{Lu}\p{Nd}]{1,})(?:\s+[\p{Lu}\p{Nd}]{1,})+)(?=\s|$|[.,])/gu;
+  let match;
+  let mejorMatch = null;
+  while ((match = regex.exec(texto)) !== null) {
+    const hallado = match[1]?.trim();
+    if (hallado && hallado.length >= 6 && (!mejorMatch || hallado.length > mejorMatch.length)) {
+      mejorMatch = hallado;
+    }
+  }
+
+  if (mejorMatch && texto.includes(mejorMatch)) {
+    const idx = texto.indexOf(mejorMatch);
+    const antes = texto.slice(0, idx);
+    const despues = texto.slice(idx + mejorMatch.length);
+    return (
+      <span>
+        {antes}
+        <mark
+          style={{
+            backgroundColor: "#FEF08A",
+            color: "#713F12",
+            padding: "2px 6px",
+            borderRadius: "4px",
+            fontWeight: 700,
+          }}
+        >
+          {mejorMatch}
+        </mark>
+        {despues}
+      </span>
+    );
+  }
+
+  const matchFrase = texto.match(/^(.*?\bpropuesta para\s+)(.*?)(\s+para trabajo.*|$)$/i);
+  if (matchFrase && matchFrase[2]) {
+    return (
+      <span>
+        {matchFrase[1]}
+        <mark
+          style={{
+            backgroundColor: "#FEF08A",
+            color: "#713F12",
+            padding: "2px 6px",
+            borderRadius: "4px",
+            fontWeight: 700,
+          }}
+        >
+          {matchFrase[2]}
+        </mark>
+        {matchFrase[3]}
+      </span>
+    );
+  }
+
+  return (
+    <mark
+      style={{
+        backgroundColor: "#FEF08A",
+        color: "#713F12",
+        padding: "2px 6px",
+        borderRadius: "4px",
+        fontWeight: 600,
+      }}
+    >
+      {texto}
+    </mark>
+  );
+}
+
 export default function ObraDetalle({obraId,ctx,onVolver}){
   const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,ordenesCompra=[],horarios,setHorarios,irAPantalla,membresia}=ctx;
   // Las cifras de la obra son confidenciales: quien organiza el trabajo no ve
@@ -38,6 +114,18 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
   const idsHorarios=horariosObra.map(h=>h.empleadoId).filter(Boolean);
   const empObra=[...new Set([...(oAct.empleados||[]), ...idsHorarios])];
   const cotVinc=cotizaciones.find(c=>c.id===oAct.cotizacionId);
+  const cotProps = cotVinc ? getQuoteProposals(cotVinc) : [];
+  const cotTextos = cotVinc ? getTextosDocumento(cotVinc) : null;
+  const saludoTexto = cotTextos?.saludo || "";
+  const totalCot = (() => {
+    if (!cotVinc) return null;
+    if (cotVinc.total !== undefined && cotVinc.total !== null && Number(cotVinc.total) > 0) {
+      return Number(cotVinc.total);
+    }
+    const sum = cotProps.reduce((s, p) => s + (Number(p.total) || 0), 0);
+    return sum > 0 ? sum : Number(cotVinc.total || 0);
+  })();
+  const itemsCot = cotProps.flatMap((p) => (Array.isArray(p.items) ? p.items : []));
   const resumenAvance=resumenBitacora(oAct.bitacora);
 
   const diasMap={};
@@ -100,16 +188,21 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               </span>
               <Badge estado={oAct.estado}/>
               {cotVinc && (
-                <span style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: "#B54708",
-                  background: "#FFFAEB",
-                  border: "1px solid rgba(181, 71, 8, 0.25)",
-                  borderRadius: 6,
-                  padding: "2px 8px",
-                }}>
-                  📄 {cotVinc.numero}
+                <span
+                  onClick={() => irAPantalla("cotizacion", { cotizacionId: cotVinc.id })}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "#B54708",
+                    background: "#FFFAEB",
+                    border: "1px solid rgba(181, 71, 8, 0.25)",
+                    borderRadius: 6,
+                    padding: "2px 8px",
+                    cursor: "pointer",
+                  }}
+                  title="Clic para ver la cotización de referencia completa"
+                >
+                  📄 {cotVinc.numero} ↗
                 </span>
               )}
             </div>
@@ -203,6 +296,188 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           </button>
         </div>
       </div>
+
+      {/* Cotización de Referencia, Objeto/Frase de apertura con texto resaltado en amarillo e Ítems aprobados */}
+      {cotVinc && (
+        <div style={{
+          ...CD,
+          marginBottom: 20,
+          background: "linear-gradient(135deg, rgba(255, 250, 235, 0.7) 0%, rgba(255, 255, 255, 0.98) 100%)",
+          border: "1px solid rgba(245, 158, 11, 0.35)",
+          boxShadow: "0 2px 10px rgba(181, 71, 8, 0.05)",
+        }}>
+          {/* Fila superior: Cotización de referencia + Total + Botón ver */}
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
+            paddingBottom: 12,
+            borderBottom: "1px solid rgba(245, 158, 11, 0.2)",
+            marginBottom: 14,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 16 }}>📄</span>
+              <span style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "#92400E" }}>
+                Cotización de Referencia:
+              </span>
+              <span style={{
+                fontSize: 12.5,
+                fontWeight: 700,
+                color: "#B54708",
+                background: "#FEF3C7",
+                border: "1px solid #FCD34D",
+                borderRadius: 6,
+                padding: "2px 10px",
+              }}>
+                {cotVinc.numero}
+              </span>
+              {cotVinc.fecha && (
+                <span style={{ fontSize: 12, color: "var(--text-muted, #64748b)" }}>
+                  · {fmtD(cotVinc.fecha)}
+                </span>
+              )}
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              {verDinero && totalCot !== null && (
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #101828)" }}>
+                  Total cotizado: <span style={{ color: "#B54708" }}>{fmt(totalCot)} COP</span>
+                </div>
+              )}
+              <button
+                onClick={() => irAPantalla("cotizacion", { cotizacionId: cotVinc.id })}
+                style={{
+                  background: "#fff",
+                  color: "#B54708",
+                  border: "1px solid #FCD34D",
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  padding: "6px 14px",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                  transition: "all 0.15s ease",
+                }}
+                title="Abrir cotización en pantalla de cotizaciones"
+              >
+                Ver cotización completa ↗
+              </button>
+            </div>
+          </div>
+
+          {/* Objeto de la cotización / Frase de apertura con texto resaltado en amarillo */}
+          {saludoTexto ? (
+            <div style={{
+              background: "#ffffff",
+              border: "1px solid rgba(245, 158, 11, 0.25)",
+              borderRadius: 10,
+              padding: "12px 16px",
+              marginBottom: itemsCot.length ? 14 : 0,
+            }}>
+              <div style={{
+                fontSize: 11,
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                color: "#78350F",
+                marginBottom: 6,
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}>
+                <span>🎯</span> Objeto del trabajo (Frase de apertura de la cotización):
+              </div>
+              <div style={{ fontSize: 13, color: "var(--text-main, #1e293b)", lineHeight: 1.6 }}>
+                {renderTextoSaludoResaltado(saludoTexto)}
+              </div>
+            </div>
+          ) : null}
+
+          {/* Detalle económico / Ítems contratados */}
+          {itemsCot.length > 0 && (
+            <div style={{
+              background: "#ffffff",
+              border: "1px solid rgba(245, 158, 11, 0.25)",
+              borderRadius: 10,
+              padding: "12px 16px",
+            }}>
+              <div style={{
+                fontSize: 11,
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                color: "#78350F",
+                marginBottom: 10,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 8,
+                flexWrap: "wrap",
+              }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span>📋</span> Detalle económico / Ítems contratados ({itemsCot.length}):
+                </span>
+                {verDinero && totalCot !== null && (
+                  <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted, #64748b)" }}>
+                    Total: {fmt(totalCot)} COP
+                  </span>
+                )}
+              </div>
+
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5, textAlign: "left" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid #E2E8F0", background: "var(--surface-subtle, #F8FAFC)" }}>
+                      <th style={{ padding: "8px 10px", color: "#64748B", fontWeight: 600, width: "60px" }}>Cant.</th>
+                      <th style={{ padding: "8px 10px", color: "#64748B", fontWeight: 600, width: "85px" }}>Unidad</th>
+                      <th style={{ padding: "8px 10px", color: "#64748B", fontWeight: 600 }}>Descripción del trabajo</th>
+                      {verDinero && (
+                        <>
+                          <th style={{ padding: "8px 10px", color: "#64748B", fontWeight: 600, textAlign: "right", width: "115px" }}>V. Unitario</th>
+                          <th style={{ padding: "8px 10px", color: "#64748B", fontWeight: 600, textAlign: "right", width: "115px" }}>Subtotal</th>
+                        </>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {itemsCot.map((it, idx) => {
+                      const cant = Number(it.cant) || 1;
+                      const vu = Number(it.vu) || 0;
+                      const sub = Number(it.subtotal !== undefined ? it.subtotal : cant * vu);
+                      const desc = it.desc || it.descripcion || "Sin descripción";
+                      const unidad = it.unit || it.unidad || "Global";
+                      return (
+                        <tr key={it.id || idx} style={{ borderBottom: "1px solid #F1F5F9" }}>
+                          <td style={{ padding: "8px 10px", fontWeight: 700, color: "#92400E" }}>{cant}</td>
+                          <td style={{ padding: "8px 10px", color: "#475569" }}>{unidad}</td>
+                          <td style={{ padding: "8px 10px", color: "var(--text-main, #1E293B)", fontWeight: 500 }}>
+                            {desc}
+                          </td>
+                          {verDinero && (
+                            <>
+                              <td style={{ padding: "8px 10px", textAlign: "right", color: "#475569" }}>
+                                {fmt(vu)}
+                              </td>
+                              <td style={{ padding: "8px 10px", textAlign: "right", fontWeight: 600, color: "var(--text-main, #1E293B)" }}>
+                                {fmt(sub)}
+                              </td>
+                            </>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {mostrarGuia && (
         <GuiaFlujoObra

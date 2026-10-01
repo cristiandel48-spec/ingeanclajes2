@@ -19,6 +19,10 @@ import {
 import { listarUsuarios } from "../../lib/backend/usuarios";
 import { reproducirSonidoNotificacion } from "../../lib/sonidoNotificacion";
 import { useIsMobile } from "../../hooks/useMediaQuery";
+import SelectorEmojis from "../../components/soporte/SelectorEmojis";
+import AdjuntoMensaje from "../../components/soporte/AdjuntoMensaje";
+import BarraAdjuntoPrevia from "../../components/soporte/BarraAdjuntoPrevia";
+import { procesarArchivoAdjunto, serializarAdjunto } from "../../lib/soporteAdjuntos";
 
 const ESTADOS = {
   todos: "Todos",
@@ -66,6 +70,13 @@ export default function Soporte({ ctx }) {
   const [nuevoMensaje, setNuevoMensaje] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [modalNuevoOpen, setModalNuevoOpen] = useState(false);
+
+  // Estados para emojis y adjuntos (archivos / capturas)
+  const [adjuntoStaged, setAdjuntoStaged] = useState(null);
+  const [selectorEmojisOpen, setSelectorEmojisOpen] = useState(false);
+  const [procesandoAdjunto, setProcesandoAdjunto] = useState(false);
+  const fileInputRef = useRef(null);
+  const inputTextoRef = useRef(null);
 
   // Lista de usuarios para seleccionar
   const [listaUsuarios, setListaUsuarios] = useState([]);
@@ -444,23 +455,75 @@ export default function Soporte({ ctx }) {
     }
   };
 
-  // Enviar mensaje en el chat
+  // Manejo de pegado directo de capturas de pantalla (Ctrl+V)
+  const handlePaste = async (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type && items[i].type.startsWith("image/")) {
+        const file = items[i].getAsFile();
+        if (file) {
+          e.preventDefault();
+          setProcesandoAdjunto(true);
+          try {
+            const res = await procesarArchivoAdjunto(file, `captura_${Date.now()}.png`);
+            setAdjuntoStaged(res);
+          } catch (err) {
+            alert(err.message || "Error al procesar la captura de pantalla");
+          } finally {
+            setProcesandoAdjunto(false);
+          }
+          break;
+        }
+      }
+    }
+  };
+
+  // Manejo de selección de archivo o imagen desde el botón de clip
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setProcesandoAdjunto(true);
+    try {
+      const res = await procesarArchivoAdjunto(file);
+      setAdjuntoStaged(res);
+    } catch (err) {
+      alert(err.message || "Error al procesar el archivo adjunto");
+    } finally {
+      setProcesandoAdjunto(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  // Manejo de inserción de emoji en el mensaje
+  const handleSeleccionarEmoji = (emoji) => {
+    setNuevoMensaje((prev) => prev + emoji);
+    setSelectorEmojisOpen(false);
+    if (inputTextoRef.current) {
+      inputTextoRef.current.focus();
+    }
+  };
+
+  // Enviar mensaje en el chat (con texto y/o adjunto)
   const handleEnviarMensaje = async (e) => {
     e?.preventDefault();
     const texto = nuevoMensaje.trim();
-    if (!texto || !ticketActivoId || enviando) return;
+    if ((!texto && !adjuntoStaged) || !ticketActivoId || enviando || procesandoAdjunto) return;
 
     setEnviando(true);
     const remitenteNombre = membresia?.nombre || "Cristian Flórez";
     const esAdmin = membresia?.role === "admin";
+    const textoFinal = texto || (adjuntoStaged?.esImagen ? "🖼️ Captura de pantalla" : "📎 Archivo adjunto");
+    const adjuntoSerializado = adjuntoStaged ? serializarAdjunto(adjuntoStaged) : null;
 
     try {
       const guardado = await enviarMensaje({
         ticketId: ticketActivoId,
-        texto,
+        texto: textoFinal,
         remitenteNombre,
         remitenteId: membresia?.user_id || null,
         esAdmin,
+        adjuntoUrl: adjuntoSerializado,
       });
 
       // Si el ticketId fue migrado o asignado a un UUID en Supabase
@@ -473,6 +536,8 @@ export default function Soporte({ ctx }) {
         return [...prev, guardado];
       });
       setNuevoMensaje("");
+      setAdjuntoStaged(null);
+      setSelectorEmojisOpen(false);
 
       // Actualizar la lista de tickets localmente
       setTickets((prev) =>
@@ -481,7 +546,7 @@ export default function Soporte({ ctx }) {
             ? {
                 ...t,
                 id: guardado.ticket_id || t.id,
-                ultimo_mensaje: texto,
+                ultimo_mensaje: textoFinal,
                 actualizado_en: new Date().toISOString(),
                 estado: t.estado === "pendiente" ? "en_curso" : t.estado,
               }
@@ -1058,9 +1123,13 @@ export default function Soporte({ ctx }) {
                               lineHeight: 1.5,
                               border: esMio ? "none" : "1px solid var(--border, #eaecf0)",
                               whiteSpace: "pre-wrap",
+                              wordBreak: "break-word",
                             }}
                           >
-                            {msg.texto}
+                            {msg.texto && <div>{msg.texto}</div>}
+                            {msg.adjunto_url && (
+                              <AdjuntoMensaje adjuntoRaw={msg.adjunto_url} esMio={esMio} />
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1070,39 +1139,118 @@ export default function Soporte({ ctx }) {
                 <div ref={chatEndRef} />
               </div>
 
+              {/* Barra de previsualización del adjunto o captura staged */}
+              <BarraAdjuntoPrevia
+                adjunto={adjuntoStaged}
+                onQuitar={() => setAdjuntoStaged(null)}
+                subiendo={procesandoAdjunto}
+              />
+
               {/* Caja de entrada de texto */}
               <form
                 onSubmit={handleEnviarMensaje}
                 style={{
-                  padding: isMobile ? "10px 12px calc(12px + env(safe-area-inset-bottom))" : "14px 18px",
+                  padding: isMobile ? "10px 12px calc(12px + env(safe-area-inset-bottom))" : "12px 18px",
                   borderTop: "1px solid var(--border, #eaecf0)",
                   display: "flex",
                   gap: 8,
                   alignItems: "center",
                   backgroundColor: "var(--surface, #ffffff)",
+                  position: "relative",
                 }}
               >
+                {/* Selector de Emojis Popover */}
+                {selectorEmojisOpen && (
+                  <SelectorEmojis
+                    onSeleccionar={handleSeleccionarEmoji}
+                    onCerrar={() => setSelectorEmojisOpen(false)}
+                    posicion="arriba"
+                  />
+                )}
+
+                {/* Input de archivo oculto para subir documentos o capturas */}
                 <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain"
+                  style={{ display: "none" }}
+                  onChange={handleFileChange}
+                />
+
+                {/* Botón Emojis */}
+                <button
+                  type="button"
+                  onClick={() => setSelectorEmojisOpen((prev) => !prev)}
+                  style={{
+                    background: selectorEmojisOpen ? "var(--surface-subtle, #f2f4f7)" : "transparent",
+                    border: "1px solid var(--border, #eaecf0)",
+                    borderRadius: 8,
+                    padding: isMobile ? "7px 9px" : "8px 10px",
+                    fontSize: isMobile ? 16 : 18,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    lineHeight: 1,
+                  }}
+                  title="Insertar emojis"
+                >
+                  😀
+                </button>
+
+                {/* Botón Adjuntar Archivo o Imagen */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    background: adjuntoStaged ? "rgba(224, 52, 42, 0.1)" : "transparent",
+                    border: "1px solid var(--border, #eaecf0)",
+                    borderRadius: 8,
+                    padding: isMobile ? "7px 9px" : "8px 10px",
+                    fontSize: isMobile ? 15 : 17,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    color: adjuntoStaged ? "#E0342A" : "var(--text-muted, #667085)",
+                    lineHeight: 1,
+                  }}
+                  title="Adjuntar archivo, imagen o captura de pantalla"
+                >
+                  📎
+                </button>
+
+                {/* Input de texto con soporte para Ctrl+V de capturas */}
+                <input
+                  ref={inputTextoRef}
                   type="text"
-                  placeholder={`Escribe un mensaje para ${ticketActivo.usuario_nombre}...`}
+                  placeholder={
+                    isMobile
+                      ? `Mensaje para ${ticketActivo.usuario_nombre}...`
+                      : `Escribe o pega una captura (Ctrl+V) para ${ticketActivo.usuario_nombre}...`
+                  }
                   value={nuevoMensaje}
                   onChange={(e) => setNuevoMensaje(e.target.value)}
-                  disabled={enviando}
+                  onPaste={handlePaste}
+                  disabled={enviando || procesandoAdjunto}
                   style={{ ...SI, flex: 1, padding: isMobile ? "9px 12px" : "10px 14px", fontSize: isMobile ? 13 : 14 }}
                 />
+
                 <button
                   type="submit"
-                  disabled={enviando || !nuevoMensaje.trim()}
+                  disabled={enviando || procesandoAdjunto || (!nuevoMensaje.trim() && !adjuntoStaged)}
                   style={{
                     ...B("#E0342A"),
                     padding: isMobile ? "9px 14px" : "10px 18px",
                     fontSize: isMobile ? 13 : 14,
-                    opacity: enviando || !nuevoMensaje.trim() ? 0.6 : 1,
-                    cursor: enviando || !nuevoMensaje.trim() ? "not-allowed" : "pointer",
+                    opacity: enviando || procesandoAdjunto || (!nuevoMensaje.trim() && !adjuntoStaged) ? 0.6 : 1,
+                    cursor: enviando || procesandoAdjunto || (!nuevoMensaje.trim() && !adjuntoStaged) ? "not-allowed" : "pointer",
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {enviando ? "..." : "Enviar ➤"}
+                  {enviando || procesandoAdjunto ? "..." : "Enviar ➤"}
                 </button>
               </form>
             </>

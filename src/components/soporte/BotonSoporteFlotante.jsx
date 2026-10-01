@@ -18,6 +18,10 @@ import { listarUsuarios } from "../../lib/backend/usuarios";
 import { reproducirSonidoNotificacion } from "../../lib/sonidoNotificacion";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import { SI, B } from "../../styles/tokens";
+import SelectorEmojis from "./SelectorEmojis";
+import AdjuntoMensaje from "./AdjuntoMensaje";
+import BarraAdjuntoPrevia from "./BarraAdjuntoPrevia";
+import { procesarArchivoAdjunto, serializarAdjunto } from "../../lib/soporteAdjuntos";
 
 export default function BotonSoporteFlotante() {
   const isMobile = useIsMobile();
@@ -41,6 +45,13 @@ export default function BotonSoporteFlotante() {
   const [obra, setObra] = useState("");
   const [detalle, setDetalle] = useState("");
   const [enviando, setEnviando] = useState(false);
+
+  // Estados para emojis y adjuntos (archivos / capturas) en widget flotante
+  const [adjuntoStaged, setAdjuntoStaged] = useState(null);
+  const [selectorEmojisOpen, setSelectorEmojisOpen] = useState(false);
+  const [procesandoAdjunto, setProcesandoAdjunto] = useState(false);
+  const fileInputRef = useRef(null);
+  const inputTextoRef = useRef(null);
 
   const chatEndRef = useRef(null);
 
@@ -402,21 +413,74 @@ export default function BotonSoporteFlotante() {
 
   const ticketActivo = ticketsVisibles.find((t) => t.id === ticketActivoId);
 
+  // Manejo de pegado directo de capturas de pantalla (Ctrl+V) en widget flotante
+  const handlePaste = async (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type && items[i].type.startsWith("image/")) {
+        const file = items[i].getAsFile();
+        if (file) {
+          e.preventDefault();
+          setProcesandoAdjunto(true);
+          try {
+            const res = await procesarArchivoAdjunto(file, `captura_${Date.now()}.png`);
+            setAdjuntoStaged(res);
+          } catch (err) {
+            alert(err.message || "Error al procesar la captura de pantalla");
+          } finally {
+            setProcesandoAdjunto(false);
+          }
+          break;
+        }
+      }
+    }
+  };
+
+  // Manejo de selección de archivo o imagen desde el botón de clip
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setProcesandoAdjunto(true);
+    try {
+      const res = await procesarArchivoAdjunto(file);
+      setAdjuntoStaged(res);
+    } catch (err) {
+      alert(err.message || "Error al procesar el archivo adjunto");
+    } finally {
+      setProcesandoAdjunto(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  // Manejo de inserción de emoji en el mensaje
+  const handleSeleccionarEmoji = (emoji) => {
+    setNuevoTexto((prev) => prev + emoji);
+    setSelectorEmojisOpen(false);
+    if (inputTextoRef.current) {
+      inputTextoRef.current.focus();
+    }
+  };
+
   const handleEnviarChat = async (e) => {
     e?.preventDefault();
     const texto = nuevoTexto.trim();
-    if (!texto || !ticketActivoId || enviando) return;
+    if ((!texto && !adjuntoStaged) || !ticketActivoId || enviando || procesandoAdjunto) return;
 
     setEnviando(true);
     try {
       const remitente = membresia?.nombre || "Cristian Flórez";
       const esAdmin = membresia?.role === "admin";
+      const textoFinal = texto || (adjuntoStaged?.esImagen ? "🖼️ Captura de pantalla" : "📎 Archivo adjunto");
+      const adjuntoSerializado = adjuntoStaged ? serializarAdjunto(adjuntoStaged) : null;
+
       const guardado = await enviarMensaje({
         ticketId: ticketActivoId,
-        texto,
+        texto: textoFinal,
         remitenteNombre: remitente,
         remitenteId: membresia?.user_id || null,
         esAdmin,
+        adjuntoUrl: adjuntoSerializado,
       });
 
       if (guardado.ticket_id && guardado.ticket_id !== ticketActivoId) {
@@ -428,6 +492,8 @@ export default function BotonSoporteFlotante() {
         return [...prev, guardado];
       });
       setNuevoTexto("");
+      setAdjuntoStaged(null);
+      setSelectorEmojisOpen(false);
 
       // Actualizar estado del ticket en la lista
       setTickets((prev) =>
@@ -436,7 +502,7 @@ export default function BotonSoporteFlotante() {
             ? {
                 ...t,
                 id: guardado.ticket_id || t.id,
-                ultimo_mensaje: texto,
+                ultimo_mensaje: textoFinal,
                 actualizado_en: new Date().toISOString(),
                 estado: t.estado === "pendiente" ? "en_curso" : t.estado,
               }
@@ -1091,7 +1157,10 @@ export default function BotonSoporteFlotante() {
                           <div style={{ fontSize: 9.5, opacity: 0.8, marginBottom: 2 }}>
                             {esMio ? "Tú" : m.remitente_nombre}
                           </div>
-                          <div>{m.texto}</div>
+                          {m.texto && <div style={{ wordBreak: "break-word" }}>{m.texto}</div>}
+                          {m.adjunto_url && (
+                            <AdjuntoMensaje adjuntoRaw={m.adjunto_url} esMio={esMio} />
+                          )}
                         </div>
                       </div>
                     );
@@ -1099,6 +1168,13 @@ export default function BotonSoporteFlotante() {
                 )}
                 <div ref={chatEndRef} />
               </div>
+
+              {/* Previsualización del archivo o captura adjunta */}
+              <BarraAdjuntoPrevia
+                adjunto={adjuntoStaged}
+                onQuitar={() => setAdjuntoStaged(null)}
+                subiendo={procesandoAdjunto}
+              />
 
               {/* Input Chat */}
               <form
@@ -1108,22 +1184,95 @@ export default function BotonSoporteFlotante() {
                   borderTop: "1px solid var(--border, #eaecf0)",
                   display: "flex",
                   gap: 6,
+                  alignItems: "center",
                   backgroundColor: "var(--surface, #ffffff)",
+                  position: "relative",
                 }}
               >
+                {/* Selector de Emojis */}
+                {selectorEmojisOpen && (
+                  <SelectorEmojis
+                    onSeleccionar={handleSeleccionarEmoji}
+                    onCerrar={() => setSelectorEmojisOpen(false)}
+                    posicion="arriba"
+                  />
+                )}
+
+                {/* Input de archivo oculto */}
                 <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain"
+                  style={{ display: "none" }}
+                  onChange={handleFileChange}
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setSelectorEmojisOpen((prev) => !prev)}
+                  style={{
+                    background: selectorEmojisOpen ? "var(--surface-subtle, #f2f4f7)" : "transparent",
+                    border: "1px solid var(--border, #eaecf0)",
+                    borderRadius: 6,
+                    padding: "4px 6px",
+                    fontSize: 15,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    lineHeight: 1,
+                  }}
+                  title="Insertar emojis"
+                >
+                  😀
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    background: adjuntoStaged ? "rgba(224, 52, 42, 0.1)" : "transparent",
+                    border: "1px solid var(--border, #eaecf0)",
+                    borderRadius: 6,
+                    padding: "4px 6px",
+                    fontSize: 14,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    color: adjuntoStaged ? "#E0342A" : "var(--text-muted, #667085)",
+                    lineHeight: 1,
+                  }}
+                  title="Adjuntar archivo o imagen"
+                >
+                  📎
+                </button>
+
+                <input
+                  ref={inputTextoRef}
                   type="text"
-                  placeholder="Escribe tu mensaje..."
+                  placeholder="Mensaje o pega captura (Ctrl+V)..."
                   value={nuevoTexto}
                   onChange={(e) => setNuevoTexto(e.target.value)}
+                  onPaste={handlePaste}
+                  disabled={enviando || procesandoAdjunto}
                   style={{ ...SI, flex: 1, padding: "7px 10px", fontSize: 12 }}
                 />
+
                 <button
                   type="submit"
-                  disabled={enviando || !nuevoTexto.trim()}
-                  style={{ ...B("#E0342A"), padding: "6px 12px", fontSize: 12 }}
+                  disabled={enviando || procesandoAdjunto || (!nuevoTexto.trim() && !adjuntoStaged)}
+                  style={{
+                    ...B("#E0342A"),
+                    padding: "6px 12px",
+                    fontSize: 12,
+                    opacity: enviando || procesandoAdjunto || (!nuevoTexto.trim() && !adjuntoStaged) ? 0.6 : 1,
+                    cursor: enviando || procesandoAdjunto || (!nuevoTexto.trim() && !adjuntoStaged) ? "not-allowed" : "pointer",
+                  }}
                 >
-                  ➤
+                  {enviando || procesandoAdjunto ? "..." : "➤"}
                 </button>
               </form>
             </div>

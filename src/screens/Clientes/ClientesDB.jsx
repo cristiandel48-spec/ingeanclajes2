@@ -5,6 +5,8 @@ import LBL from "../../components/ui/LBL";
 import { useEffect, useRef, useState } from "react";
 import ListaClientes from "./ListaClientes";
 import ModalUnificarCliente from "./ModalUnificarCliente";
+import RadarSecop from "./RadarSecop";
+import ImportadorEmpresasCsv from "./ImportadorEmpresasCsv";
 import SelectorCiudadColombia from "../../components/SelectorCiudadColombia";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
 import { B, CD, SI, ST } from "../../styles/tokens";
@@ -17,6 +19,7 @@ export default function ClientesDB({ctx}){
   const [editId,setEditId]=useState(null);
   const [form,setForm]=useState(clienteBase);
   const [clienteAUnificar,setClienteAUnificar]=useState(null);
+  const [subTab, setSubTab] = useState("directorio");
 
   const fuentesBrutas=[
     ...obras.map(o=>({
@@ -247,91 +250,152 @@ export default function ClientesDB({ctx}){
   // Los botones viven en la barra de arriba, no en un titulo propio.
   useAccionesPantalla(
     <div style={{display:"flex",gap:7}}>
-      {sinRegistrar.length>0 && (
+      {subTab === "directorio" && sinRegistrar.length>0 && (
         <button
           style={{background:"rgba(30, 64, 175, 0.15)",color:"#60a5fa",border:"1px solid rgba(191, 219, 254, 0.3)",borderRadius:9,
             padding:"8px 14px",fontSize:12.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
           onClick={()=>importarRef.current()}
         >⬇ Importar {sinRegistrar.length} sugerido(s)</button>
       )}
-      <button
-        style={{background:"#cc0000",color:"#fff",border:"1px solid #cc0000",borderRadius:9,
-          padding:"8px 16px",fontSize:12.5,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
-        onClick={()=>nuevoRef.current()}
-      >+ Cliente</button>
+      {subTab === "directorio" ? (
+        <button
+          style={{background:"#cc0000",color:"#fff",border:"1px solid #cc0000",borderRadius:9,
+            padding:"8px 16px",fontSize:12.5,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
+          onClick={()=>nuevoRef.current()}
+        >+ Cliente</button>
+      ) : (
+        <button
+          style={{background:"var(--surface-subtle, #f2f4f7)",color:"var(--text-main, #334155)",border:"1px solid var(--border, #e2e8f0)",borderRadius:9,
+            padding:"8px 14px",fontSize:12.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
+          onClick={()=>setSubTab("directorio")}
+        >← Volver al Directorio</button>
+      )}
     </div>,
-    [sinRegistrar.length]
+    [sinRegistrar.length, subTab]
   );
 
   return(
     <div style={{padding:28}}>
+      {/* Barra de Sub-pestañas: Directorio | Radar SECOP II | Importar CSV */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 18, flexWrap: "wrap" }}>
+        {[
+          ["directorio", `👥 Directorio (${clientesData.length})`],
+          ["secop", "🛰️ Radar SECOP II (Licitaciones del Estado)"],
+          ["importar", "📥 Importar CSV / Excel (Cámara de Comercio / Camacol)"],
+        ].map(([id, lb]) => {
+          const activo = subTab === id;
+          return (
+            <button
+              key={id}
+              onClick={() => {
+                setSubTab(id);
+                if (showForm) resetCliente();
+              }}
+              style={{
+                background: activo ? "#FFFAEB" : "var(--surface-subtle, #f2f4f7)",
+                color: activo ? "#B54708" : "var(--text-muted, #475467)",
+                border: activo ? "1px solid rgba(181, 71, 8, 0.35)" : "1px solid var(--border, #eaecf0)",
+                boxShadow: activo ? "0 1px 3px rgba(181, 71, 8, 0.08)" : "none",
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: activo ? 700 : 600,
+                padding: "7px 15px",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                transition: "all 0.15s ease",
+              }}
+            >
+              {lb}
+            </button>
+          );
+        })}
+      </div>
 
+      {subTab === "directorio" && (
+        <>
+          {showForm&&(
+            <div style={{...CD,marginBottom:18,border:"1px solid #cc0000"}}>
+              <div style={ST}>{editId?"Editar cliente":"Nuevo cliente"}</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
+                <CampoTexto label="Nombre / razón social" obligatorio={true} valor={form.nombre} onChange={v=>setForm({...form,nombre:v})}
+                  normalizar={normalizarRazonSocial} placeholder="Nombre del cliente" autoCapitalize="characters"
+                  ayuda="Sale impreso en cotizaciones y certificados."/>
+                <CampoTexto label="NIT / Cédula" valor={form.nit} onChange={v=>setForm({...form,nit:v})}
+                  normalizar={normalizarDocumento} placeholder="900.123.456-7" spellCheck={false}
+                  ayuda="Opcional. Identificación tributaria o personal."/>
+                <CampoTexto label="Contacto" valor={form.contacto} onChange={v=>setForm({...form,contacto:v})}
+                  normalizar={normalizarNombrePropio} placeholder="Persona de contacto" autoCapitalize="words"/>
+                <CampoTexto label="Teléfono" valor={form.telefono} onChange={v=>setForm({...form,telefono:v})}
+                  normalizar={normalizarTelefono} revisar={avisoCelular} placeholder="3001234567" inputMode="tel" spellCheck={false}/>
+                <SelectorCiudadColombia
+                  label="Ciudad / Ubicación"
+                  valor={form.ciudad}
+                  onChange={v=>setForm({...form,ciudad:v})}
+                  ayuda="Inicia en Antioquia. Selecciona el municipio y se completa automáticamente."
+                />
+                <div>
+                  <LBL>Estado</LBL>
+                  <select value={form.estado} onChange={e=>setForm({...form,estado:e.target.value})} style={SI}>
+                    <option value="Activo">Activo</option>
+                    <option value="En seguimiento">En seguimiento</option>
+                    <option value="Inactivo">Inactivo</option>
+                  </select>
+                </div>
+                <CampoTexto label="Dirección" obligatorio={true} valor={form.direccion} onChange={v=>setForm({...form,direccion:v})}
+                  normalizar={normalizarMayusculas} placeholder="Dirección principal" autoCapitalize="characters" wrapStyle={{gridColumn:"span 2"}}
+                  ayuda="Obligatorio. Domicilio principal del cliente."/>
+                <CampoTexto label="Email" valor={form.email} onChange={v=>setForm({...form,email:v})}
+                  normalizar={normalizarCorreo} revisar={avisoCorreo} placeholder="correo@cliente.com"
+                  inputMode="email" autoCapitalize="off" spellCheck={false}
+                  ayuda="A este correo se envían las cotizaciones."/>
+                <div style={{gridColumn:"span 3"}}>
+                  <LBL>Notas</LBL>
+                  <textarea value={form.notas} onChange={e=>setForm({...form,notas:e.target.value})}
+                    onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==form.notas)setForm({...form,notas:v});}}
+                    rows={3} placeholder="Observaciones comerciales, sedes, condiciones, etc." spellCheck lang="es"
+                    style={{...SI,minHeight:86,resize:"vertical"}}/>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button style={B("#cc0000")} onClick={guardarCliente}>{editId?"Guardar cambios":"Crear cliente"}</button>
+                <button style={B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)")} onClick={resetCliente}>Cancelar</button>
+              </div>
+            </div>
+          )}
 
-      {showForm&&(
-        <div style={{...CD,marginBottom:18,border:"1px solid #cc0000"}}>
-          <div style={ST}>{editId?"Editar cliente":"Nuevo cliente"}</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
-            <CampoTexto label="Nombre / razón social" obligatorio={true} valor={form.nombre} onChange={v=>setForm({...form,nombre:v})}
-              normalizar={normalizarRazonSocial} placeholder="Nombre del cliente" autoCapitalize="characters"
-              ayuda="Sale impreso en cotizaciones y certificados."/>
-            <CampoTexto label="NIT / Cédula" valor={form.nit} onChange={v=>setForm({...form,nit:v})}
-              normalizar={normalizarDocumento} placeholder="900.123.456-7" spellCheck={false}
-              ayuda="Opcional. Identificación tributaria o personal."/>
-            <CampoTexto label="Contacto" valor={form.contacto} onChange={v=>setForm({...form,contacto:v})}
-              normalizar={normalizarNombrePropio} placeholder="Persona de contacto" autoCapitalize="words"/>
-            <CampoTexto label="Teléfono" valor={form.telefono} onChange={v=>setForm({...form,telefono:v})}
-              normalizar={normalizarTelefono} revisar={avisoCelular} placeholder="3001234567" inputMode="tel" spellCheck={false}/>
-            <SelectorCiudadColombia
-              label="Ciudad / Ubicación"
-              valor={form.ciudad}
-              onChange={v=>setForm({...form,ciudad:v})}
-              ayuda="Inicia en Antioquia. Selecciona el municipio y se completa automáticamente."
+          <ListaClientes
+            clientes={clientesData}
+            acciones={{
+              editar: (c)=>editarCliente(c),
+              unificar: (c)=>unificarCliente(c),
+              eliminar: (c)=>eliminarCliente(c),
+            }}
+          />
+
+          {clienteAUnificar && (
+            <ModalUnificarCliente
+              clienteOrigen={clienteAUnificar}
+              clientesDisponibles={clientesData}
+              onCerrar={()=>setClienteAUnificar(null)}
+              onUnificar={ejecutarUnificacion}
             />
-            <div>
-              <LBL>Estado</LBL>
-              <select value={form.estado} onChange={e=>setForm({...form,estado:e.target.value})} style={SI}>
-                <option value="Activo">Activo</option>
-                <option value="En seguimiento">En seguimiento</option>
-                <option value="Inactivo">Inactivo</option>
-              </select>
-            </div>
-            <CampoTexto label="Dirección" obligatorio={true} valor={form.direccion} onChange={v=>setForm({...form,direccion:v})}
-              normalizar={normalizarMayusculas} placeholder="Dirección principal" autoCapitalize="characters" wrapStyle={{gridColumn:"span 2"}}
-              ayuda="Obligatorio. Domicilio principal del cliente."/>
-            <CampoTexto label="Email" valor={form.email} onChange={v=>setForm({...form,email:v})}
-              normalizar={normalizarCorreo} revisar={avisoCorreo} placeholder="correo@cliente.com"
-              inputMode="email" autoCapitalize="off" spellCheck={false}
-              ayuda="A este correo se envían las cotizaciones."/>
-            <div style={{gridColumn:"span 3"}}>
-              <LBL>Notas</LBL>
-              <textarea value={form.notas} onChange={e=>setForm({...form,notas:e.target.value})}
-                onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==form.notas)setForm({...form,notas:v});}}
-                rows={3} placeholder="Observaciones comerciales, sedes, condiciones, etc." spellCheck lang="es"
-                style={{...SI,minHeight:86,resize:"vertical"}}/>
-            </div>
-          </div>
-          <div style={{display:"flex",gap:8}}>
-            <button style={B("#cc0000")} onClick={guardarCliente}>{editId?"Guardar cambios":"Crear cliente"}</button>
-            <button style={B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)")} onClick={resetCliente}>Cancelar</button>
-          </div>
-        </div>
+          )}
+        </>
       )}
 
-      <ListaClientes
-        clientes={clientesData}
-        acciones={{
-          editar: (c)=>editarCliente(c),
-          unificar: (c)=>unificarCliente(c),
-          eliminar: (c)=>eliminarCliente(c),
-        }}
-      />
+      {subTab === "secop" && (
+        <RadarSecop
+          clientes={clientes}
+          setClientes={setClientes}
+          irAPantalla={ctx.irAPantalla}
+        />
+      )}
 
-      {clienteAUnificar && (
-        <ModalUnificarCliente
-          clienteOrigen={clienteAUnificar}
-          clientesDisponibles={clientesData}
-          onCerrar={()=>setClienteAUnificar(null)}
-          onUnificar={ejecutarUnificacion}
+      {subTab === "importar" && (
+        <ImportadorEmpresasCsv
+          clientes={clientes}
+          setClientes={setClientes}
+          onFinalizado={() => setSubTab("directorio")}
         />
       )}
     </div>

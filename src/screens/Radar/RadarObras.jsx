@@ -33,12 +33,12 @@ export default function RadarObras({ ctx, go }) {
   return (
     <div style={{ padding: 28 }}>
       {/* Encabezado del Módulo */}
-      <div style={{ marginBottom: 20 }}>
+      <div style={{ marginBottom: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-          <span style={{ fontSize: 26 }}>🛰️</span>
+          <span style={{ fontSize: 24 }}>🛰️</span>
           <h1
             style={{
-              fontSize: 22,
+              fontSize: 21,
               fontWeight: 800,
               color: "var(--text-main, #0f172a)",
               margin: 0,
@@ -47,10 +47,25 @@ export default function RadarObras({ ctx, go }) {
           >
             Radar de Licitaciones y Obras
           </h1>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: "#166534",
+              background: "#dcfce7",
+              border: "1px solid #bbf7d0",
+              padding: "2px 8px",
+              borderRadius: 5,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+            }}
+          >
+            🟢 SECOP II en vivo
+          </span>
         </div>
-        <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted, #64748b)", maxWidth: 840, lineHeight: 1.5 }}>
-          Módulo de prospección comercial y búsqueda de nuevas obras. Monitorea convocatorias públicas en tiempo real
-          a través de la API oficial de <strong>SECOP II</strong> (Colombia Compra Eficiente).
+        <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted, #64748b)", lineHeight: 1.5, width: "100%" }}>
+          Módulo de prospección comercial y búsqueda de nuevas obras. Monitorea convocatorias públicas en tiempo real a través de la API oficial de <strong>SECOP II</strong> (Colombia Compra Eficiente).
         </p>
       </div>
 

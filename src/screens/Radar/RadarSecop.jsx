@@ -163,13 +163,13 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla }) 
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {/* Panel de Filtros y Búsqueda */}
       <div style={CD}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
-          <div>
-            <div style={ST}>🛰️ Radar de Licitaciones y Obras del Estado (SECOP II)</div>
-            <div style={{ fontSize: 12, color: "var(--text-muted, #64748b)", marginTop: 2 }}>
-              Monitorea en tiempo real todas las convocatorias y pliegos públicos del país desde la API de <strong>datos.gov.co</strong> (SECOP II).
-            </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #1e293b)" }}>
+            Filtros y Búsqueda de Licitaciones
           </div>
+          <span style={{ fontSize: 11, color: "var(--text-muted, #64748b)" }}>
+            Conectado a la base de datos nacional de <strong>datos.gov.co</strong>
+          </span>
         </div>
 
         {/* Términos rápidos */}

@@ -41,7 +41,7 @@ export default function DocumentoEnVivo({
   });
 
   const clave = JSON.stringify(cotizacion, (_k, v) =>
-    typeof v === "string" && v.length > 200 ? `${v.length}:${v.slice(0, 40)}` : v
+    typeof v === "string" && v.length > 200 ? `${v.length}:${v.slice(0, 20)}:${v.slice(-20)}` : v
   );
 
   useEffect(() => {

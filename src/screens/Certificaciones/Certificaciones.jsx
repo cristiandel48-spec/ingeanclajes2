@@ -6,6 +6,7 @@ import LBL from "../../components/ui/LBL";
 import { useEffect, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { buildCertForm, construirTextoSistema, getCertDefaultElements, unAnoDespues } from "./certConfig";
+import { redactarSistemasDesdeCotizacion } from "../../lib/certificacionTexto";
 import { fmtD, fmtL } from "../../lib/format";
 import { normalizarRazonSocial, normalizarFrase, normalizarParrafos, normalizarTextoCertificacion } from "../../lib/normalizarEntrada";
 import { corregirOrtografiaLocal } from "../../lib/correctorTexto";
@@ -113,15 +114,22 @@ export default function Certificaciones({ctx}){
   const [form,setForm]=useState(()=>{
     // La fecha del informe TAMBIEN al montar, no solo al elegir obra a mano.
     const fechaObra = fechaDesdeInformes(ctx.informes, obraInicial?.id, informeSolicitado);
+    const cotIni = obraInicial?.cotizacionId ? (cotizaciones||[]).find(c=>c.id===obraInicial.cotizacionId) : null;
+    const cotRedactada = cotIni ? redactarSistemasDesdeCotizacion(cotIni) : null;
+    const cantIni = cotRedactada?.cantidadTotal || 1;
     const inicial = buildCertForm({
       elementos:getCertDefaultElements("Certificación"),
       obraId: obraInicial?.id || "",
       cliente: obraInicial?.cliente || "",
       direccion: buscarDireccionCliente(obraInicial),
       nit: buscarNit(obraInicial),
+      cantidad: cantIni,
       ...(fechaObra ? {fecha:fechaObra} : {}),
     });
     if(obraInicial?.id){
+      const detalleIni = cotRedactada?.texto
+        || observacionesDesdeInformes(ctx.informes, obraInicial.id, informeSolicitado)
+        || actividadesDesdeInformes(ctx.informes, obraInicial.id, informeSolicitado);
       const t = construirTextoSistema({
         tipo: inicial.tipo,
         tipoSistema: inicial.tipoSistema,
@@ -132,7 +140,7 @@ export default function Certificaciones({ctx}){
         fechaLarga: fmtL(inicial.fecha),
         normativa: inicial.normativa,
         lugar: inicial.lugar || proyectoDesdeInformes(ctx.informes, obraInicial.id, informeSolicitado) || obraInicial.proyecto || "",
-        detalle: observacionesDesdeInformes(ctx.informes, obraInicial.id, informeSolicitado) || actividadesDesdeInformes(ctx.informes, obraInicial.id, informeSolicitado),
+        detalle: detalleIni,
       });
       if(t) inicial.sistema = t;
     }
@@ -157,16 +165,32 @@ export default function Certificaciones({ctx}){
     proyectoDesdeInformes(informes, obraId, informeRef)
     || String((obras||[]).find((o)=>o.id===obraId)?.proyecto || "").trim();
 
-  // QUE se certifica: la observacion del informe -"1 linea de vida horizontal
-  // de 7 m perimetral"-, que es la frase escrita a mano y en limpio. Si no la
-  // hay, lo anotado en "¿Que se hizo?" al registrar el avance.
-  //
-  // NO sale de los items de la cotizacion: alli las lineas son de cobrar
-  // -"CERTIFICACION SISTEMA ANTICAIDAS SAN BLAS", "1 Global"- y en un
-  // certificado quedaban ilegibles.
-  const queSeCertifica = (obraId)=>
-    observacionesDesdeInformes(informes, obraId, informeRef)
-    || actividadesDesdeInformes(informes, obraId, informeRef);
+  // Obtiene los sistemas redactados gramaticalmente con cantidades en letras y números
+  // a partir de la cotización que dio origen a la obra.
+  const sistemasDesdeCotizacionDeObra = (obraId) => {
+    const o = (obras || []).find((x) => x.id === obraId);
+    if (!o?.cotizacionId) return null;
+    const cot = (cotizaciones || []).find((c) => c.id === o.cotizacionId);
+    if (!cot) return null;
+    return redactarSistemasDesdeCotizacion(cot);
+  };
+
+  // QUE se certifica:
+  // 1. Si la obra proviene de una cotización con sistemas aprobados, se redactan
+  //    automáticamente: "cuatro (4) líneas de vida horizontales de 12 m...".
+  // 2. Si no, se toma la observación escrita a mano en el informe de actividades.
+  // 3. Como respaldo, las actividades registradas.
+  const queSeCertifica = (obraId, fuente = "auto") => {
+    const desdeCot = sistemasDesdeCotizacionDeObra(obraId);
+    const obsInf = observacionesDesdeInformes(informes, obraId, informeRef);
+    const actInf = actividadesDesdeInformes(informes, obraId, informeRef);
+
+    if (fuente === "cotizacion" && desdeCot?.texto) return desdeCot.texto;
+    if (fuente === "informe" && (obsInf || actInf)) return obsInf || actInf;
+
+    if (desdeCot?.texto) return desdeCot.texto;
+    return obsInf || actInf;
+  };
 
   // La fecha del certificado sale del informe de actividades de esa obra.
   //
@@ -182,10 +206,11 @@ export default function Certificaciones({ctx}){
   // Cambia algo del encabezado -tipo, sistema, cantidad, cliente, dirección o
   // fecha- y el párrafo se rehace. Solo mientras nadie lo haya editado a mano:
   // en cuanto se toca, manda lo escrito y esto deja de pisarlo.
-  const aplicarCambio=(patch, refInforme=informeRef)=>{
+  const aplicarCambio=(patch, refInforme=informeRef, fuente="auto")=>{
     setForm((prev)=>{
       const siguiente={...prev,...patch};
       if(siguiente.sistemaAuto!==false){
+        const detalleTexto = queSeCertifica(siguiente.obraId, fuente);
         const texto=construirTextoSistema({
           tipo:siguiente.tipo,
           tipoSistema:siguiente.tipoSistema,
@@ -198,8 +223,7 @@ export default function Certificaciones({ctx}){
           lugar:siguiente.lugar
             || proyectoDesdeInformes(informes, siguiente.obraId, refInforme)
             || String((obras||[]).find((o)=>o.id===siguiente.obraId)?.proyecto || "").trim(),
-          detalle:observacionesDesdeInformes(informes, siguiente.obraId, refInforme)
-            || actividadesDesdeInformes(informes, siguiente.obraId, refInforme),
+          detalle: detalleTexto,
         });
         if(texto) siguiente.sistema=texto;
       }
@@ -213,11 +237,12 @@ export default function Certificaciones({ctx}){
     });
   };
 
-  const rehacerTexto=()=>{
+  const rehacerTexto=(fuente="auto")=>{
     // Rehacer es volver a armarlo con los datos buenos, asi que la direccion
     // se vuelve a traer de la ficha del cliente en vez de usar la que quedo.
     const obraSel=obras.find((x)=>x.id===form.obraId);
     const direccionCliente=buscarDireccionCliente(obraSel, form.cliente) || form.direccion;
+    const detalleTexto = queSeCertifica(form.obraId, fuente);
     const texto=construirTextoSistema({
       tipo:form.tipo,
       tipoSistema:form.tipoSistema,
@@ -228,7 +253,7 @@ export default function Certificaciones({ctx}){
       fechaLarga:fmtL(form.fecha),
       normativa:form.normativa,
       lugar:form.lugar || proyectoDeObra(form.obraId),
-      detalle:queSeCertifica(form.obraId),
+      detalle:detalleTexto,
     });
     if(!texto){
       window.alert("Para armar el texto hace falta el cliente. Elige la obra y se completa solo.");
@@ -247,6 +272,8 @@ export default function Certificaciones({ctx}){
     // La cantidad y la fecha tambien se traen de una: son los dos datos que se
     // copiaban a mano de la cotizacion y del informe.
     const fechaObra = fechaDeLaObra(obra?.id);
+    const cotDeObra = sistemasDesdeCotizacionDeObra(obra?.id);
+    const cantSugerida = cotDeObra?.cantidadTotal || 1;
     const nuevo = buildCertForm({
       tipo,
       elementos:getCertDefaultElements(tipo),
@@ -254,6 +281,7 @@ export default function Certificaciones({ctx}){
       cliente: obra?.cliente || "",
       direccion: buscarDireccionCliente(obra),
       nit: buscarNit(obra),
+      cantidad: cantSugerida,
       ...(fechaObra ? {fecha:fechaObra} : {}),
     });
     if(obra?.id){
@@ -533,7 +561,7 @@ export default function Certificaciones({ctx}){
           </div>
 
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:12}}>
-            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const id=e.target.value;setInformeRef("");const o=obras.find(x=>x.id===id);const f=fechaDeLaObra(id);aplicarCambio({obraId:id,cliente:o?.cliente||"",direccion:buscarDireccionCliente(o),nit:buscarNit(o),...(f?{fecha:f}:{})}, "");}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
+            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const id=e.target.value;setInformeRef("");const o=obras.find(x=>x.id===id);const f=fechaDeLaObra(id);const c=sistemasDesdeCotizacionDeObra(id);aplicarCambio({obraId:id,cliente:o?.cliente||"",direccion:buscarDireccionCliente(o),nit:buscarNit(o),cantidad:c?.cantidadTotal || 1,...(f?{fecha:f}:{})}, "");}} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
             {/* Una obra con varias sedes lleva un informe por sede, y de cada
                 uno sale su propia certificacion. Aqui se elige cual. */}
             {informesDeObra(form.obraId).length > 1 && (
@@ -640,14 +668,57 @@ export default function Certificaciones({ctx}){
           <div style={{marginBottom:12}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}}>
               <LBL>Sistema certificado</LBL>
-              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+              <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+                {sistemasDesdeCotizacionDeObra(form.obraId)?.texto && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const c = sistemasDesdeCotizacionDeObra(form.obraId);
+                      if (c?.texto) {
+                        aplicarCambio({ cantidad: c.cantidadTotal, sistemaAuto: true }, informeRef, "cotizacion");
+                      }
+                    }}
+                    style={{
+                      background: "#FFFAEB",
+                      color: "#B54708",
+                      border: "1px solid rgba(181, 71, 8, 0.35)",
+                      borderRadius: 6,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      padding: "4px 8px",
+                      cursor: "pointer",
+                    }}
+                    title="Cargar los sistemas con cantidades en letras y números desde la cotización vinculada"
+                  >
+                    🪄 Desde cotización ({obras.find(o=>o.id===form.obraId)?.cotizacionId ? (cotizaciones.find(c=>c.id===obras.find(o=>o.id===form.obraId)?.cotizacionId)?.numero || "Cot") : "Cot"})
+                  </button>
+                )}
+                {(observacionesDesdeInformes(informes, form.obraId, informeRef) || actividadesDesdeInformes(informes, form.obraId, informeRef)) && (
+                  <button
+                    type="button"
+                    onClick={() => aplicarCambio({ sistemaAuto: true }, informeRef, "informe")}
+                    style={{
+                      background: "var(--surface-subtle, #f2f4f7)",
+                      color: "var(--text-main, #1e293b)",
+                      border: "1px solid var(--border, #cbd5e1)",
+                      borderRadius: 6,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      padding: "4px 8px",
+                      cursor: "pointer",
+                    }}
+                    title="Cargar la redacción registrada en el informe de actividades"
+                  >
+                    📋 Desde informe
+                  </button>
+                )}
                 <BotonCorregir
                   valor={form.sistema}
                   onChange={(v)=>setForm(p=>({...p,sistema:normalizarTextoCertificacion(v),sistemaAuto:false}))}
                   compacto
                 />
-                <button onClick={rehacerTexto} style={{...B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)"),fontSize:11,padding:"5px 11px"}}>
-                  ↻ Rehacer con los datos de arriba
+                <button onClick={()=>rehacerTexto("auto")} style={{...B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)"),fontSize:11,padding:"5px 11px"}}>
+                  ↻ Rehacer
                 </button>
               </div>
             </div>
@@ -665,16 +736,16 @@ export default function Certificaciones({ctx}){
                 ? "Lo estás escribiendo a mano, así que ya no se rehace solo. Usa el botón para volver al texto automático."
                 : "Se actualiza solo con lo que elijas arriba. En cuanto lo edites, deja de hacerlo."}
             </div>
-            {/* De donde sale el alcance, para que no parezca que se lo invento
-                el sistema y se pueda ir a corregirlo a su sitio. */}
-            {queSeCertifica(form.obraId) && (
-              <div style={{fontSize:10.5,color:"#34d399",marginTop:5,lineHeight:1.5}}>
-                Se arma con lo registrado en la obra: <strong>qué se certifica</strong> de las
-                observaciones del informe, <strong>dónde</strong> del nombre del proyecto, y el NIT
-                y la dirección del cliente. Si algo no cuadra, corrígelo en el informe y vuelve a
-                armar el texto.
+            {/* Indicador de fuente del texto */}
+            {sistemasDesdeCotizacionDeObra(form.obraId)?.texto ? (
+              <div style={{fontSize:10.5,color:"#15803d",marginTop:5,lineHeight:1.5}}>
+                ✓ Redacción legal generada automáticamente desde la <strong>cotización vinculada</strong>: cantidades en letras y números según Res. 4272/2021.
               </div>
-            )}
+            ) : queSeCertifica(form.obraId) ? (
+              <div style={{fontSize:10.5,color:"#34d399",marginTop:5,lineHeight:1.5}}>
+                Se arma con lo registrado en la obra: <strong>qué se certifica</strong> del informe, <strong>dónde</strong> del nombre del proyecto, y el NIT y la dirección del cliente.
+              </div>
+            ) : null}
           </div>
           <div style={{marginBottom:18}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>

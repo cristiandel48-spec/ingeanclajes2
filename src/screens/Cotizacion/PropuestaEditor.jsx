@@ -5,7 +5,7 @@ import MedidorMapa from "../../components/maps/MedidorMapa";
 import { imagenDelMapa } from "../../lib/mapaEstatico";
 import LBL from "../../components/ui/LBL";
 import { corregirOrtografiaLocal } from "../../lib/correctorTexto";
-import { leerImagenComprimida } from "../../lib/imagenes";
+import { leerImagenComprimida, rotarImagen90 } from "../../lib/imagenes";
 import { normalizarFrase } from "../../lib/normalizarEntrada";
 import { B, SI } from "../../styles/tokens";
 import { agruparCatalogo } from "../../lib/catalogo";
@@ -50,6 +50,34 @@ export default function PropuestaEditor({
     typeof siguiente === "function" ? siguiente(actual) : siguiente;
   const setItems = (siguiente) => set("items", aplicar(items, siguiente));
   const setFotos = (siguiente) => set("fotos", aplicar(fotos, siguiente));
+
+  const [rotandoId, setRotandoId] = useState(null);
+
+  const rotarFoto = async (fId) => {
+    const foto = fotos.find((item) => item.id === fId);
+    if (!foto || !foto.src) return;
+    setRotandoId(fId);
+    try {
+      const nuevoSrc = await rotarImagen90(foto.src, 90);
+      setFotos((prev) =>
+        prev.map((item) => (item.id === fId ? { ...item, src: nuevoSrc } : item))
+      );
+    } catch (err) {
+      console.error("Error al rotar imagen:", err);
+    } finally {
+      setRotandoId(null);
+    }
+  };
+
+  const moverFoto = (index, direccion) => {
+    const nuevoIndex = index + direccion;
+    if (nuevoIndex < 0 || nuevoIndex >= fotos.length) return;
+    const nuevasFotos = [...fotos];
+    const temp = nuevasFotos[index];
+    nuevasFotos[index] = nuevasFotos[nuevoIndex];
+    nuevasFotos[nuevoIndex] = temp;
+    setFotos(nuevasFotos);
+  };
 
   // Se calcula sobre la lista que llega al actualizador, no sobre la del
   // render: dos clics seguidos en el catalogo se resolvian con la misma lista
@@ -197,14 +225,164 @@ export default function PropuestaEditor({
             <span style={{fontSize:10,color:"var(--text-subtle, #94a3b8)"}}>Se imprimen en el PDF</span>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
-            {fotos.map((f,i)=>(
-              <div key={f.id} style={{borderRadius:8,overflow:"hidden",border:"1px solid var(--border, #e2e8f0)",background:"var(--surface-subtle, #f8fafc)"}}>
-                <div style={{background:"var(--surface, #fff)",padding:6}}>
-                  <img src={f.src} alt={f.label||`Foto ${i+1}`} style={{width:"100%",height:"auto",display:"block",borderRadius:4}}/>
+            {fotos.map((f, i) => (
+              <div
+                key={f.id}
+                style={{
+                  borderRadius: 8,
+                  overflow: "hidden",
+                  border: "1px solid var(--border, #e2e8f0)",
+                  background: "var(--surface-subtle, #f8fafc)",
+                  display: "flex",
+                  flexDirection: "column",
+                  position: "relative",
+                }}
+              >
+                {/* Visualizador de la foto con fondo oscuro neutro y botón de rotación */}
+                <div
+                  style={{
+                    position: "relative",
+                    background: "#0f172a",
+                    height: 140,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    overflow: "hidden",
+                  }}
+                >
+                  <img
+                    src={f.src}
+                    alt={f.label || `Foto ${i + 1}`}
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: "100%",
+                      objectFit: "contain",
+                      display: "block",
+                      opacity: rotandoId === f.id ? 0.4 : 1,
+                      transition: "opacity 0.2s ease",
+                    }}
+                  />
+
+                  {/* Número de foto */}
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: 6,
+                      left: 6,
+                      background: "rgba(15, 23, 42, 0.75)",
+                      color: "#fff",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      padding: "2px 6px",
+                      borderRadius: 4,
+                      backdropFilter: "blur(4px)",
+                    }}
+                  >
+                    Foto {i + 1}
+                  </span>
+
+                  {/* Botón de rotación 90° rápido */}
+                  <button
+                    type="button"
+                    onClick={() => rotarFoto(f.id)}
+                    disabled={rotandoId === f.id}
+                    title="Rotar 90° en sentido horario (alinea la orientación real de la foto para el PDF)"
+                    style={{
+                      position: "absolute",
+                      top: 6,
+                      right: 6,
+                      background: "rgba(15, 23, 42, 0.8)",
+                      color: "#fff",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      borderRadius: 5,
+                      padding: "3px 7px",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      cursor: rotandoId === f.id ? "wait" : "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      boxShadow: "0 2px 4px rgba(0,0,0,0.3)",
+                    }}
+                  >
+                    <span>{rotandoId === f.id ? "⏳" : "🔄"}</span>
+                    <span style={{ fontSize: 10 }}>Rotar 90°</span>
+                  </button>
                 </div>
-                <div style={{padding:"6px 8px",display:"flex",gap:4,alignItems:"center"}}>
-                  <input value={f.label||""} onChange={e=>setFotos(prev=>prev.map(item=>item.id===f.id?{...item,label:e.target.value}:item))} placeholder={`Foto ${i+1}`} style={{...SI,fontSize:11,padding:"3px 6px",flex:1}}/>
-                  <button onClick={()=>setFotos(prev=>prev.filter(item=>item.id!==f.id))} style={{background:"#fee2e2",border:"none",color:"#ef4444",borderRadius:6,width:22,height:22,cursor:"pointer",fontSize:14,flexShrink:0,lineHeight:1}}>×</button>
+
+                {/* Barra inferior con reordenamiento, pie de foto y eliminar */}
+                <div style={{ padding: "6px 8px", display: "flex", gap: 4, alignItems: "center", background: "var(--surface, #fff)" }}>
+                  <button
+                    type="button"
+                    disabled={i === 0}
+                    onClick={() => moverFoto(i, -1)}
+                    title="Mover foto a la izquierda"
+                    style={{
+                      background: "var(--surface-subtle, #f1f5f9)",
+                      border: "1px solid var(--border, #cbd5e1)",
+                      color: i === 0 ? "#cbd5e1" : "#475569",
+                      borderRadius: 4,
+                      width: 22,
+                      height: 22,
+                      cursor: i === 0 ? "default" : "pointer",
+                      fontSize: 10,
+                      padding: 0,
+                      lineHeight: 1,
+                    }}
+                  >
+                    ◀
+                  </button>
+                  <button
+                    type="button"
+                    disabled={i === fotos.length - 1}
+                    onClick={() => moverFoto(i, 1)}
+                    title="Mover foto a la derecha"
+                    style={{
+                      background: "var(--surface-subtle, #f1f5f9)",
+                      border: "1px solid var(--border, #cbd5e1)",
+                      color: i === fotos.length - 1 ? "#cbd5e1" : "#475569",
+                      borderRadius: 4,
+                      width: 22,
+                      height: 22,
+                      cursor: i === fotos.length - 1 ? "default" : "pointer",
+                      fontSize: 10,
+                      padding: 0,
+                      lineHeight: 1,
+                    }}
+                  >
+                    ▶
+                  </button>
+
+                  <input
+                    value={f.label || ""}
+                    onChange={(e) =>
+                      setFotos((prev) =>
+                        prev.map((item) => (item.id === f.id ? { ...item, label: e.target.value } : item))
+                      )
+                    }
+                    placeholder={`Pie de foto ${i + 1} (ej. Cubierta Norte)`}
+                    style={{ ...SI, fontSize: 11, padding: "3px 6px", flex: 1 }}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setFotos((prev) => prev.filter((item) => item.id !== f.id))}
+                    title="Eliminar foto"
+                    style={{
+                      background: "#fee2e2",
+                      border: "none",
+                      color: "#ef4444",
+                      borderRadius: 6,
+                      width: 22,
+                      height: 22,
+                      cursor: "pointer",
+                      fontSize: 13,
+                      flexShrink: 0,
+                      lineHeight: 1,
+                    }}
+                  >
+                    ×
+                  </button>
                 </div>
               </div>
             ))}

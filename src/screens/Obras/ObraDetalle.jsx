@@ -2,6 +2,7 @@ import Av from "../../components/ui/Av";
 import Badge from "../../components/ui/Badge";
 import BitacoraObra from "./BitacoraObra";
 import FototecaObra from "./FototecaObra";
+import MaterialesDespachoObra from "./MaterialesDespachoObra";
 import LBL from "../../components/ui/LBL";
 import NuevoEmpleadoRapido from "../../components/NuevoEmpleadoRapido";
 import { useState } from "react";
@@ -442,6 +443,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
         {[
           ["avance","📸 Avance diario"],
+          ["materiales","📦 Materiales y Despacho"],
           ["fototeca","🖼️ Fototeca y ZIP"],
           ["personal","👷 Personal"],
           // Gastos y Nomina llevan cifras: solo para quien puede verlas.
@@ -477,6 +479,18 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
         <BitacoraObra obra={oAct} setObras={setObras}
           bloqueada={bloqueada || oAct.__parcial===true}
           cargandoFotos={oAct.__parcial===true}/>
+      )}
+
+      {/* TAB MATERIALES Y DESPACHO DE BODEGA */}
+      {detTab==="materiales"&&(
+        <MaterialesDespachoObra
+          obra={oAct}
+          cotizacion={cotVinc}
+          itemsCot={itemsCot}
+          setObras={setObras}
+          irAPantalla={irAPantalla}
+          bloqueada={bloqueada}
+        />
       )}
 
       {/* TAB FOTOTECA Y DESCARGA EN ZIP */}

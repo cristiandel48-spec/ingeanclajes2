@@ -156,3 +156,45 @@ export function contarFotosPesadas(valor) {
 
   return { fotos: 0, caracteres: 0 };
 }
+
+/**
+ * Rota una imagen en base64 / dataURL 90 grados en sentido horario
+ * usando canvas, preservando alta calidad y fondo blanco.
+ */
+export function rotarImagen90(dataUrl, grados = 90, calidad = CALIDAD) {
+  return new Promise((resolve) => {
+    if (!dataUrl || typeof dataUrl !== "string" || !dataUrl.startsWith("data:image")) {
+      return resolve(dataUrl);
+    }
+
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const rad = (grados * Math.PI) / 180;
+        const swap = Math.abs(grados % 180) === 90;
+        const canvas = document.createElement("canvas");
+        canvas.width = swap ? img.height : img.width;
+        canvas.height = swap ? img.width : img.height;
+
+        const ctx = canvas.getContext("2d");
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+
+        // Fondo blanco para evitar transparencias negras
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate(rad);
+        ctx.drawImage(img, -img.width / 2, -img.height / 2);
+
+        resolve(canvas.toDataURL("image/jpeg", calidad));
+      } catch (err) {
+        console.error("Error al rotar imagen:", err);
+        resolve(dataUrl);
+      }
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}

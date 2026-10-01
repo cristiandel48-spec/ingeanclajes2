@@ -23,6 +23,16 @@ import AdjuntoMensaje from "./AdjuntoMensaje";
 import BarraAdjuntoPrevia from "./BarraAdjuntoPrevia";
 import { procesarArchivoAdjunto, serializarAdjunto } from "../../lib/soporteAdjuntos";
 
+function formatHoraCorta(isoString) {
+  if (!isoString) return "";
+  try {
+    const d = new Date(isoString);
+    return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
+  } catch {
+    return "";
+  }
+}
+
 export default function BotonSoporteFlotante() {
   const isMobile = useIsMobile();
   const ctx = useAppData();
@@ -268,7 +278,9 @@ export default function BotonSoporteFlotante() {
 
     const timer = setTimeout(() => {
       marcarMensajesComoLeidos(ticketActivoId, membresia).then(() => {
-        setMensajes((prev) => prev.map((m) => ({ ...m, leido: true })));
+        setMensajes((prev) =>
+          prev.map((m) => (!esMiMensaje(m, membresia) ? { ...m, leido: true } : m))
+        );
         setTicketsConNoLeidosMap((prev) => {
           const next = { ...prev };
           delete next[ticketActivoId];
@@ -276,7 +288,7 @@ export default function BotonSoporteFlotante() {
         });
         setTotalNoLeidos((prev) => Math.max(0, prev - (ticketsConNoLeidosMap[ticketActivoId] || 1)));
       });
-    }, 1200);
+    }, 800);
 
     return () => clearTimeout(timer);
   }, [abierto, minimizado, vista, ticketActivoId, membresia, mensajes.length]);
@@ -292,12 +304,30 @@ export default function BotonSoporteFlotante() {
           return next;
         });
         if (ticketActivoId === tId) {
-          setMensajes((prev) => prev.map((m) => ({ ...m, leido: true })));
+          cargarMensajes(ticketActivoId).then((data) => {
+            if (data) setMensajes(data);
+          });
         }
       }
     };
     window.addEventListener("notificacion-mensajes-leidos", handleLeidos);
-    return () => window.removeEventListener("notificacion-mensajes-leidos", handleLeidos);
+
+    let bc = null;
+    if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+      bc = new BroadcastChannel("ingeanclajes_canal_mensajes");
+      bc.onmessage = (event) => {
+        if (event.data?.tipo === "mensajes-leidos" && event.data?.ticketId === ticketActivoId) {
+          cargarMensajes(ticketActivoId).then((data) => {
+            if (data) setMensajes(data);
+          });
+        }
+      };
+    }
+
+    return () => {
+      window.removeEventListener("notificacion-mensajes-leidos", handleLeidos);
+      if (bc) bc.close();
+    };
   }, [ticketActivoId]);
 
   // Escuchar mensajes entrantes en tiempo real disparados por NotificadorMensajesGlobal
@@ -351,15 +381,25 @@ export default function BotonSoporteFlotante() {
       }
     });
 
-    const desuscribir = suscribirChatTicket(ticketActivoId, (nuevo) => {
-      if (montado) {
-        setMensajes((prev) => {
-          if (prev.some((m) => m.id === nuevo.id)) return prev;
-          return [...prev, nuevo];
-        });
-        setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
+    const desuscribir = suscribirChatTicket(
+      ticketActivoId,
+      (nuevo) => {
+        if (montado) {
+          setMensajes((prev) => {
+            if (prev.some((m) => m.id === nuevo.id)) return prev;
+            return [...prev, nuevo];
+          });
+          setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
+        }
+      },
+      (actualizado) => {
+        if (montado && actualizado) {
+          setMensajes((prev) =>
+            prev.map((m) => (m.id === actualizado.id ? { ...m, ...actualizado } : m))
+          );
+        }
       }
-    });
+    );
 
     return () => {
       montado = false;
@@ -378,11 +418,16 @@ export default function BotonSoporteFlotante() {
           setMensajes((prev) => {
             const idsPrev = new Set(prev.map((m) => m.id));
             const nuevos = data.filter((m) => !idsPrev.has(m.id));
-            if (nuevos.length === 0) return prev;
-            setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
-            return [...prev, ...nuevos].sort(
-              (a, b) => new Date(a.creado_en) - new Date(b.creado_en)
-            );
+            const algunCambioLeido = data.some((m) => {
+              const prevM = prev.find((p) => p.id === m.id);
+              return prevM && Boolean(prevM.leido) !== Boolean(m.leido);
+            });
+
+            if (nuevos.length === 0 && !algunCambioLeido && prev.length === data.length) return prev;
+            if (nuevos.length > 0) {
+              setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
+            }
+            return data;
           });
         }
       } catch {
@@ -1120,18 +1165,7 @@ export default function BotonSoporteFlotante() {
                   </div>
                 ) : (
                   mensajes.map((m) => {
-                    const miId = membresia?.user_id;
-                    const miNombre = (membresia?.nombre || "").trim().toLowerCase();
-                    const miEmail = (membresia?.email || "").trim().toLowerCase();
-                    const msgNombre = (m.remitente_nombre || "").trim().toLowerCase();
-                    const msgEmail = (m.remitente_email || "").trim().toLowerCase();
-
-                    const esMio = Boolean(
-                      (miId && m.remitente_id && m.remitente_id === miId) ||
-                      (miEmail && msgEmail && miEmail === msgEmail) ||
-                      (miNombre && msgNombre && (msgNombre.includes(miNombre) || miNombre.includes(msgNombre))) ||
-                      (!miId && m.remitente_id === "cristian")
-                    );
+                    const esMio = esMiMensaje(m, membresia);
 
                     return (
                       <div
@@ -1154,12 +1188,53 @@ export default function BotonSoporteFlotante() {
                             border: esMio ? "none" : "1px solid var(--border, #eaecf0)",
                           }}
                         >
-                          <div style={{ fontSize: 9.5, opacity: 0.8, marginBottom: 2 }}>
-                            {esMio ? "Tú" : m.remitente_nombre}
+                          <div style={{ fontSize: 9.5, opacity: 0.85, marginBottom: 2, display: "flex", justifyContent: "space-between", gap: 6 }}>
+                            <span>{esMio ? "Tú" : m.remitente_nombre}</span>
+                            <span>{formatHoraCorta(m.creado_en)}</span>
                           </div>
                           {m.texto && <div style={{ wordBreak: "break-word" }}>{m.texto}</div>}
                           {m.adjunto_url && (
                             <AdjuntoMensaje adjuntoRaw={m.adjunto_url} esMio={esMio} />
+                          )}
+                          {esMio && (
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "flex-end",
+                                gap: 3,
+                                marginTop: 3,
+                                fontSize: 9.5,
+                              }}
+                            >
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 2,
+                                  fontWeight: 700,
+                                  color: m.leido ? "#67e8f9" : "rgba(255, 255, 255, 0.72)",
+                                }}
+                                title={m.leido ? "Visto" : "Enviado · Pendiente de lectura"}
+                              >
+                                {m.leido ? (
+                                  <>
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                                      <polyline points="17 6 8.5 17 3.5 12" />
+                                      <polyline points="21.5 10 13 21 11 19" />
+                                    </svg>
+                                    <span>Visto</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                      <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                    <span>Enviado</span>
+                                  </>
+                                )}
+                              </span>
+                            </div>
                           )}
                         </div>
                       </div>

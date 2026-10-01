@@ -5,6 +5,8 @@ import {
   enviarMensaje,
   suscribirChatTicket,
   cargarTickets,
+  marcarMensajesComoLeidos,
+  esMiMensaje,
 } from "../../lib/soporte";
 import { B, SI } from "../../styles/tokens";
 
@@ -41,22 +43,36 @@ export default function ModalLecturaMensaje({ notificacion, onCerrar, onIrASopor
       }
     });
 
+    if (membresia) {
+      marcarMensajesComoLeidos(ticketId, membresia).catch(() => {});
+    }
+
     // Suscripción en tiempo real a nuevas respuestas de este chat
-    const desuscribir = suscribirChatTicket(ticketId, (nuevo) => {
-      if (montado) {
-        setMensajes((prev) => {
-          if (prev.some((m) => m.id === nuevo.id)) return prev;
-          return [...prev, nuevo];
-        });
-        setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
+    const desuscribir = suscribirChatTicket(
+      ticketId,
+      (nuevo) => {
+        if (montado) {
+          setMensajes((prev) => {
+            if (prev.some((m) => m.id === nuevo.id)) return prev;
+            return [...prev, nuevo];
+          });
+          setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
+        }
+      },
+      (actualizado) => {
+        if (montado && actualizado) {
+          setMensajes((prev) =>
+            prev.map((m) => (m.id === actualizado.id ? { ...m, ...actualizado } : m))
+          );
+        }
       }
-    });
+    );
 
     return () => {
       montado = false;
       desuscribir();
     };
-  }, [ticketId]);
+  }, [ticketId, membresia]);
 
   const handleEnviar = async (e) => {
     e?.preventDefault();
@@ -233,16 +249,7 @@ export default function ModalLecturaMensaje({ notificacion, onCerrar, onIrASopor
             </div>
           ) : (
             mensajes.map((msg, i) => {
-              const miId = membresia?.user_id || membresia?.userId;
-              const miEmail = (membresia?.email || "").toLowerCase().trim();
-              const miNombre = (membresia?.nombre || "").toLowerCase().trim();
-              const msgNombre = (msg.remitente_nombre || "").toLowerCase().trim();
-              const msgEmail = (msg.remitente_email || "").toLowerCase().trim();
-              const esMio = Boolean(
-                (miId && msg.remitente_id && msg.remitente_id === miId) ||
-                (miEmail && msgEmail && miEmail === msgEmail) ||
-                (miNombre && msgNombre && (msgNombre.includes(miNombre) || miNombre.includes(msgNombre)))
-              );
+              const esMio = esMiMensaje(msg, membresia);
 
               return (
                 <div
@@ -276,9 +283,21 @@ export default function ModalLecturaMensaje({ notificacion, onCerrar, onIrASopor
                   >
                     {msg.texto}
                   </div>
-                  <span style={{ fontSize: 9.5, color: "var(--text-subtle, #94a3b8)", marginTop: 2 }}>
-                    {msg.creado_en ? new Date(msg.creado_en).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
-                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 9.5, color: "var(--text-subtle, #94a3b8)", marginTop: 2 }}>
+                    <span>
+                      {msg.creado_en ? new Date(msg.creado_en).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
+                    </span>
+                    {esMio && (
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          color: msg.leido ? "#0284c7" : "#94a3b8",
+                        }}
+                      >
+                        · {msg.leido ? "✓✓ Visto" : "✓ Enviado"}
+                      </span>
+                    )}
+                  </div>
                 </div>
               );
             })

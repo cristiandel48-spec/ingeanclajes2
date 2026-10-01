@@ -267,11 +267,24 @@ export async function marcarMensajesComoLeidos(ticketId, membresia) {
       const targetUuid = await resolverTicketUuid(ticketId);
       if (esUuidValido(targetUuid)) {
         const supabase = getSupabaseClient();
-        await supabase
+        const { data: noLeidos } = await supabase
           .from("soporte_mensajes")
-          .update({ leido: true })
+          .select("id, remitente_id, remitente_nombre, remitente_email")
           .eq("ticket_id", targetUuid)
           .eq("leido", false);
+
+        if (Array.isArray(noLeidos) && noLeidos.length > 0) {
+          const idsParaMarcar = noLeidos
+            .filter((m) => !esMiMensaje(m, membresia))
+            .map((m) => m.id);
+
+          if (idsParaMarcar.length > 0) {
+            await supabase
+              .from("soporte_mensajes")
+              .update({ leido: true })
+              .in("id", idsParaMarcar);
+          }
+        }
       }
     } catch (e) {
       console.warn("Aviso marcando mensajes leídos en Supabase:", e);
@@ -860,6 +873,7 @@ export async function enviarMensaje({
                 texto,
                 adjunto_url: adjuntoUrl,
                 creado_en: ahora,
+                leido: false,
               },
             ])
             .select()
@@ -900,6 +914,7 @@ export async function enviarMensaje({
     texto,
     adjunto_url: adjuntoUrl,
     creado_en: ahora,
+    leido: false,
   };
 
   saveLocalMensaje(ticketId, nuevoMsg);
@@ -972,7 +987,7 @@ export async function cambiarEstadoTicket(ticketId, nuevoEstado) {
   }
 }
 
-function iniciarCanalRealtime(targetUuid, onNuevoMensaje) {
+function iniciarCanalRealtime(targetUuid, onNuevoMensaje, onMensajeActualizado) {
   try {
     const supabase = getSupabaseClient();
     const canal = supabase
@@ -988,6 +1003,20 @@ function iniciarCanalRealtime(targetUuid, onNuevoMensaje) {
         (payload) => {
           if (payload.new && onNuevoMensaje) {
             onNuevoMensaje(payload.new);
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "app",
+          table: "soporte_mensajes",
+          filter: `ticket_id=eq.${targetUuid}`,
+        },
+        (payload) => {
+          if (payload.new && onMensajeActualizado) {
+            onMensajeActualizado(payload.new);
           }
         }
       )
@@ -1009,13 +1038,13 @@ function iniciarCanalRealtime(targetUuid, onNuevoMensaje) {
 /**
  * Suscribe a eventos en tiempo real para un ticket específico.
  */
-export function suscribirChatTicket(ticketId, onNuevoMensaje) {
+export function suscribirChatTicket(ticketId, onNuevoMensaje, onMensajeActualizado) {
   if (!isSupabaseConfigured() || !ticketId) {
     return () => {};
   }
 
   if (esUuidValido(ticketId)) {
-    return iniciarCanalRealtime(ticketId, onNuevoMensaje);
+    return iniciarCanalRealtime(ticketId, onNuevoMensaje, onMensajeActualizado);
   }
 
   let cancelado = false;
@@ -1023,7 +1052,7 @@ export function suscribirChatTicket(ticketId, onNuevoMensaje) {
 
   resolverTicketUuid(ticketId).then((uuid) => {
     if (!cancelado && esUuidValido(uuid)) {
-      canalRemover = iniciarCanalRealtime(uuid, onNuevoMensaje);
+      canalRemover = iniciarCanalRealtime(uuid, onNuevoMensaje, onMensajeActualizado);
     }
   });
 

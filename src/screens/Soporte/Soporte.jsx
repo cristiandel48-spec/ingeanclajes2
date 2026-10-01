@@ -58,6 +58,16 @@ function formatFechaRelativa(isoString) {
   }
 }
 
+function formatHoraCorta(isoString) {
+  if (!isoString) return "";
+  try {
+    const d = new Date(isoString);
+    return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
+  } catch {
+    return "";
+  }
+}
+
 export default function Soporte({ ctx }) {
   const isMobile = useIsMobile();
   const { membresia, obras = [] } = ctx || {};
@@ -212,20 +222,22 @@ export default function Soporte({ ctx }) {
     };
   }, [membresia]);
 
-  // Marcar como leídos cuando el usuario tiene la conversación abierta en la pantalla completa
+  // Marcar como leídos los mensajes entrantes cuando el usuario tiene la conversación abierta en la pantalla completa
   useEffect(() => {
     if (!ticketActivoId || !membresia) return;
 
     const timer = setTimeout(() => {
       marcarMensajesComoLeidos(ticketActivoId, membresia).then(() => {
-        setMensajes((prev) => prev.map((m) => ({ ...m, leido: true })));
+        setMensajes((prev) =>
+          prev.map((m) => (!esMiMensaje(m, membresia) ? { ...m, leido: true } : m))
+        );
         setTicketsConNoLeidosMap((prev) => {
           const next = { ...prev };
           delete next[ticketActivoId];
           return next;
         });
       });
-    }, 1200);
+    }, 800);
 
     return () => clearTimeout(timer);
   }, [ticketActivoId, membresia, mensajes.length]);
@@ -246,15 +258,25 @@ export default function Soporte({ ctx }) {
     }
     loadMsg();
 
-    const desuscribir = suscribirChatTicket(ticketActivoId, (nuevo) => {
-      if (montado) {
-        setMensajes((prev) => {
-          if (prev.some((m) => m.id === nuevo.id)) return prev;
-          return [...prev, nuevo];
-        });
-        setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+    const desuscribir = suscribirChatTicket(
+      ticketActivoId,
+      (nuevo) => {
+        if (montado) {
+          setMensajes((prev) => {
+            if (prev.some((m) => m.id === nuevo.id)) return prev;
+            return [...prev, nuevo];
+          });
+          setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+        }
+      },
+      (actualizado) => {
+        if (montado && actualizado) {
+          setMensajes((prev) =>
+            prev.map((m) => (m.id === actualizado.id ? { ...m, ...actualizado } : m))
+          );
+        }
       }
-    });
+    );
 
     const handleNuevoGlobal = (e) => {
       const msg = e.detail;
@@ -271,12 +293,40 @@ export default function Soporte({ ctx }) {
       });
     };
 
+    const handleLeidosGlobal = (e) => {
+      const tId = e.detail?.ticketId;
+      if (!montado || !ticketActivoId) return;
+      if (tId === ticketActivoId) {
+        cargarMensajes(ticketActivoId).then((data) => {
+          if (montado && data) setMensajes(data);
+        });
+      }
+    };
+
     window.addEventListener("notificacion-mensaje-recibido", handleNuevoGlobal);
+    window.addEventListener("notificacion-mensajes-leidos", handleLeidosGlobal);
+
+    let bc = null;
+    if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+      bc = new BroadcastChannel("ingeanclajes_canal_mensajes");
+      bc.onmessage = (event) => {
+        if (
+          event.data?.tipo === "mensajes-leidos" &&
+          event.data?.ticketId === ticketActivoId
+        ) {
+          cargarMensajes(ticketActivoId).then((data) => {
+            if (montado && data) setMensajes(data);
+          });
+        }
+      };
+    }
 
     return () => {
       montado = false;
       desuscribir();
       window.removeEventListener("notificacion-mensaje-recibido", handleNuevoGlobal);
+      window.removeEventListener("notificacion-mensajes-leidos", handleLeidosGlobal);
+      if (bc) bc.close();
     };
   }, [ticketActivoId]);
 
@@ -291,11 +341,19 @@ export default function Soporte({ ctx }) {
           setMensajes((prev) => {
             const idsPrev = new Set(prev.map((m) => m.id));
             const nuevos = data.filter((m) => !idsPrev.has(m.id));
-            if (nuevos.length === 0) return prev;
-            setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
-            return [...prev, ...nuevos].sort(
-              (a, b) => new Date(a.creado_en) - new Date(b.creado_en)
-            );
+            const algunCambioLeido = data.some((m) => {
+              const prevM = prev.find((p) => p.id === m.id);
+              return prevM && Boolean(prevM.leido) !== Boolean(m.leido);
+            });
+
+            if (nuevos.length === 0 && !algunCambioLeido && prev.length === data.length) {
+              return prev;
+            }
+
+            if (nuevos.length > 0) {
+              setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
+            }
+            return data;
           });
         }
       } catch {
@@ -1075,19 +1133,8 @@ export default function Soporte({ ctx }) {
                   </div>
                 ) : (
                   mensajes.map((msg) => {
-                    const miId = membresia?.user_id;
-                    const miNombre = (membresia?.nombre || "").trim().toLowerCase();
-                    const miEmail = (membresia?.email || "").trim().toLowerCase();
-                    const msgNombre = (msg.remitente_nombre || "").trim().toLowerCase();
-                    const msgEmail = (msg.remitente_email || "").trim().toLowerCase();
-
-                    // Identificar si el mensaje fue enviado por el usuario actual
-                    const esMio = Boolean(
-                      (miId && msg.remitente_id && msg.remitente_id === miId) ||
-                      (miEmail && msgEmail && miEmail === msgEmail) ||
-                      (miNombre && msgNombre && (msgNombre.includes(miNombre) || miNombre.includes(msgNombre))) ||
-                      (!miId && msg.remitente_id === "cristian")
-                    );
+                    const esMio = esMiMensaje(msg, membresia);
+                    const interlocutorNombre = ticketActivo ? obtenerNombreInterlocutor(ticketActivo, membresia) : "destinatario";
 
                     return (
                       <div
@@ -1104,11 +1151,50 @@ export default function Soporte({ ctx }) {
                               fontSize: 11,
                               color: "var(--text-muted, #667085)",
                               marginBottom: 4,
-                              textAlign: esMio ? "right" : "left",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: esMio ? "flex-end" : "flex-start",
+                              gap: 6,
                               fontWeight: 600,
                             }}
                           >
-                            {esMio ? `Tú (${msg.remitente_nombre || "Yo"})` : msg.remitente_nombre} · {formatFechaRelativa(msg.creado_en)}
+                            <span>
+                              {esMio ? `Tú (${msg.remitente_nombre || "Yo"})` : msg.remitente_nombre} · {formatFechaRelativa(msg.creado_en)}
+                            </span>
+                            {esMio && (
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 3,
+                                  fontSize: 10,
+                                  padding: "1px 6px",
+                                  borderRadius: 10,
+                                  fontWeight: 700,
+                                  backgroundColor: msg.leido ? "#e0f2fe" : "#f1f5f9",
+                                  color: msg.leido ? "#0284c7" : "#64748b",
+                                  border: `1px solid ${msg.leido ? "#bae6fd" : "#e2e8f0"}`,
+                                }}
+                                title={msg.leido ? `Visto por ${interlocutorNombre}` : "Enviado · Pendiente de lectura"}
+                              >
+                                {msg.leido ? (
+                                  <>
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                                      <polyline points="18 6 9 17 4 12" />
+                                      <polyline points="22 10 13 21 11 19" />
+                                    </svg>
+                                    <span>Visto</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                      <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                    <span>Enviado</span>
+                                  </>
+                                )}
+                              </span>
+                            )}
                           </div>
                           <div
                             style={{
@@ -1130,6 +1216,48 @@ export default function Soporte({ ctx }) {
                             {msg.adjunto_url && (
                               <AdjuntoMensaje adjuntoRaw={msg.adjunto_url} esMio={esMio} />
                             )}
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "flex-end",
+                                gap: 4,
+                                marginTop: 6,
+                                fontSize: 10.5,
+                                color: esMio ? "rgba(255, 255, 255, 0.85)" : "var(--text-muted, #94a3b8)",
+                              }}
+                            >
+                              <span>{formatHoraCorta(msg.creado_en)}</span>
+                              {esMio && (
+                                <span
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 2,
+                                    fontWeight: 700,
+                                    color: msg.leido ? "#67e8f9" : "rgba(255, 255, 255, 0.72)",
+                                  }}
+                                  title={msg.leido ? `Visto por ${interlocutorNombre}` : "Enviado · Pendiente de lectura"}
+                                >
+                                  {msg.leido ? (
+                                    <>
+                                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="17 6 8.5 17 3.5 12" />
+                                        <polyline points="21.5 10 13 21 11 19" />
+                                      </svg>
+                                      <span style={{ fontSize: 10.5 }}>Visto</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="20 6 9 17 4 12" />
+                                      </svg>
+                                      <span style={{ fontSize: 10.5 }}>Enviado</span>
+                                    </>
+                                  )}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>

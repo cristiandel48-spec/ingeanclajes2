@@ -4,6 +4,7 @@ import { AccionesPantallaProvider } from "./context/accionesPantalla";
 import { pantallaInicial, puedeVer } from "./lib/permisos";
 import Dashboard from "./screens/Dashboard/Dashboard";
 import Cotizacion from "./screens/Cotizacion/Cotizacion";
+import RadarObras from "./screens/Radar/RadarObras";
 import ClientesDB from "./screens/Clientes/ClientesDB";
 import Catalogo from "./screens/Catalogo/Catalogo";
 import Pagos from "./screens/Pagos/Pagos";
@@ -31,6 +32,7 @@ const SCREENS = {
   dashboard: Dashboard,
   soporte: Soporte,
   cotizacion: Cotizacion,
+  radar: RadarObras,
   clientes: ClientesDB,
   catalogo: Catalogo,
   obras: Obras,

@@ -10,6 +10,7 @@ const ico = (paths) => (
 
 export const ICONS = {
   dashboard: ico(<><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></>),
+  radar: ico(<><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/><line x1="12" y1="3" x2="12" y2="12"/><line x1="12" y1="12" x2="19" y2="7"/></>),
   cotizacion: ico(<><path d="M6 2h8l5 5v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="14" y2="17"/></>),
   clientes: ico(<><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17" cy="8" r="2.6"/><path d="M17.5 14.6c2.4.4 3.9 2.2 3.9 5.4"/></>),
   obras: ico(<><rect x="4" y="3" width="10" height="18" rx="1.5"/><rect x="14" y="9" width="6" height="12" rx="1.5"/><line x1="7" y1="7" x2="7" y2="7.01"/><line x1="11" y1="7" x2="11" y2="7.01"/><line x1="7" y1="11" x2="7" y2="11.01"/><line x1="11" y1="11" x2="11" y2="11.01"/></>),
@@ -49,6 +50,7 @@ export const NAV_SECTIONS = [
     title: "Comercial y proyectos",
     items: [
       { id: "cotizacion", label: "Cotizaciones" },
+      { id: "radar", label: "Radar de licitaciones", short: "Radar" },
       { id: "clientes", label: "Clientes" },
       // Los precios de los que salen todas las cotizaciones.
       { id: "catalogo", label: "Catálogo y precios", short: "Catálogo" },

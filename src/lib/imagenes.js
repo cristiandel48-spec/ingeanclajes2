@@ -3,8 +3,8 @@
 // falle o quede lentisimo, asi que se reduce antes de guardar: lado maximo
 // 1400 px y JPEG de calidad media, que es mas que suficiente para el PDF.
 
-const LADO_MAX = 1200;
-const CALIDAD = 0.68;
+const LADO_MAX = 1800;
+const CALIDAD = 0.85;
 
 export function leerImagenComprimida(file, { ladoMax = LADO_MAX, calidad = CALIDAD } = {}) {
   return new Promise((resolve, reject) => {
@@ -25,7 +25,7 @@ export function leerImagenComprimida(file, { ladoMax = LADO_MAX, calidad = CALID
       img.onload = () => {
         try {
           const escala = Math.min(1, ladoMax / Math.max(img.width, img.height));
-          if (escala === 1 && original.length < 250_000) {
+          if (escala === 1 && original.length < 350_000) {
             resolve(original);
             return;
           }
@@ -33,6 +33,8 @@ export function leerImagenComprimida(file, { ladoMax = LADO_MAX, calidad = CALID
           canvas.width = Math.round(img.width * escala);
           canvas.height = Math.round(img.height * escala);
           const ctx = canvas.getContext("2d");
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
           // Fondo blanco: los PNG con transparencia salen negros en JPEG.
           ctx.fillStyle = "#ffffff";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -59,9 +61,9 @@ export function leerImagenComprimida(file, { ladoMax = LADO_MAX, calidad = CALID
 // entren comprimidas. Esto las arregla sin tener que volver a subirlas.
 
 // Por encima de esto se da por hecho que la foto entro sin reducir. Una ya
-// comprimida (1400 px, calidad media) ronda los 350 mil caracteres, asi que el
+// comprimida (1800 px, calidad alta) ronda los 400-500 mil caracteres, asi que el
 // margen es amplio y no se toca lo que ya estaba bien.
-export const UMBRAL_FOTO_PESADA = 700_000;
+export const UMBRAL_FOTO_PESADA = 1_200_000;
 
 export const esFotoPesada = (valor) =>
   typeof valor === "string" &&
@@ -82,6 +84,8 @@ export function comprimirDataUrl(dataUrl, { ladoMax = LADO_MAX, calidad = CALIDA
         canvas.width = Math.round(img.width * escala);
         canvas.height = Math.round(img.height * escala);
         const ctx = canvas.getContext("2d");
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);

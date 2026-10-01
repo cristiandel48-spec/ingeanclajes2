@@ -106,7 +106,7 @@ export async function generarCotizacionPdf(cotizacion, { firmaImg = "", sello = 
       onProgreso?.(i + 1, hojas.length);
 
       const lienzo = await html2canvas(hojas[i], {
-        scale: 2,              // legible sin disparar el peso
+        scale: 2.4,            // alta nitidez para planos, textos y cotas sin disparar el peso
         useCORS: true,
         backgroundColor: "#ffffff",
         logging: false,
@@ -114,11 +114,10 @@ export async function generarCotizacionPdf(cotizacion, { firmaImg = "", sello = 
         windowHeight: ALTO_HOJA,
       });
 
-      // JPEG en vez de PNG: con fotos, el PNG multiplica el peso por diez y
-      // los correos rebotan por tamaño.
-      const imagen = lienzo.toDataURL("image/jpeg", 0.92);
+      // JPEG de alta calidad: mantiene planos nítidos y sin halos de compresión
+      const imagen = lienzo.toDataURL("image/jpeg", 0.95);
       if (i > 0) pdf.addPage([ANCHO_HOJA, ALTO_HOJA], "portrait");
-      pdf.addImage(imagen, "JPEG", 0, 0, ANCHO_HOJA, ALTO_HOJA, undefined, "FAST");
+      pdf.addImage(imagen, "JPEG", 0, 0, ANCHO_HOJA, ALTO_HOJA, undefined, "MEDIUM");
     }
 
     // El nombre lleva numero, cliente y obra, como el de los informes y las

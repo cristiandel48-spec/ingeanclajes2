@@ -229,9 +229,10 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
     </div>
   `;
 
-  const renderPhotoGrid = (fotos = [], proposalIndex = 0) => {
+  const renderPhotoGrid = (fotos = [], proposalIndex = 0, customHeight = null) => {
     if(!Array.isArray(fotos) || !fotos.length) return "";
     const images = fotos.slice(0, 2);
+    const hStyle = customHeight ? `style="height:${customHeight}mm; --card-photo-h:${customHeight}mm;"` : "";
     return `
       <div class="card-label block-label">Registro fotográfico de la propuesta</div>
       <div class="photo-grid ${images.length === 1 ? "single" : ""}">
@@ -239,11 +240,12 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
           const src = escapeHtml(foto?.src || "");
           const label = escapeHtml(foto?.label || `Foto ${idx + 1}`);
           return `
-            <div class="photo-card">
+            <div class="photo-card" ${customHeight ? `style="--card-photo-h:${customHeight}mm;"` : ""}>
               <img
                 src="${src}"
                 alt="${label}"
                 class="photo ${proposalIndex === 2 ? "proposal-3-photo" : ""}"
+                ${hStyle}
                 loading="eager"
                 referrerpolicy="no-referrer"
               />
@@ -383,7 +385,30 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
   // Reparte los items en hojas y dice si la tabla va junto al texto o aparte.
   const planificarItems = (propuesta) => {
     const items = propuesta.items || [];
-    if (items.length <= FILAS_JUNTO_AL_TEXTO) {
+    const hasFotos = Array.isArray(propuesta.fotos) && propuesta.fotos.length > 0;
+    const hasMap = typeof propuesta?.mapImg === "string" && propuesta.mapImg.trim() !== "";
+    const hasScope = String(propuesta.alcancePropuesta || "").trim().length > 0;
+    const hasNarrative = String(propuesta.narrative || "").trim().length > 0;
+    const hasClientReq = propuesta.esObraBlanca && String(propuesta.requerimientoCliente || "").trim().length > 0;
+    const hasText = hasScope || hasNarrative || hasClientReq;
+
+    // Límite dinámico de filas para mantener la propuesta en 1 hoja compartida sin desbordar:
+    // Con fotos grandes o mapas, la tabla se traslada limpiamente a hojas propias
+    // cuando sobrepasa el espacio disponible, garantizando planos nítidos y amplios.
+    let maxFilasJuntoAlTexto = 8;
+    if (hasMap && hasFotos) {
+      maxFilasJuntoAlTexto = 3;
+    } else if (hasMap) {
+      maxFilasJuntoAlTexto = hasText ? 3 : 5;
+    } else if (hasFotos) {
+      maxFilasJuntoAlTexto = hasText ? 4 : 6;
+    } else if (hasText) {
+      maxFilasJuntoAlTexto = 9;
+    } else {
+      maxFilasJuntoAlTexto = 11;
+    }
+
+    if (items.length <= maxFilasJuntoAlTexto) {
       return { juntoAlTexto: true, hojas: items.length ? [items] : [] };
     }
 
@@ -511,8 +536,38 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
     const hasNarrative = String(propuesta.narrative || "").trim().length > 0;
     const hasClientReq = propuesta.esObraBlanca && String(propuesta.requerimientoCliente || "").trim().length > 0;
     const plan = planificarItems(propuesta);
+    const hasMap = typeof propuesta?.mapImg === "string" && propuesta.mapImg.trim() !== "";
+    const fotos = Array.isArray(propuesta.fotos) ? propuesta.fotos : [];
+    const numFotos = Math.min(2, fotos.length);
 
-    const fotosHtml = renderPhotoGrid(propuesta.fotos, idx);
+    // Cálculo dinámico de altura para aprovechar al máximo el espacio de la hoja:
+    // Permite que planos, fotos e isométricos se expandan entre 100mm y 144mm
+    // (o hasta 84mm en cuadrícula doble) llenando armónicamente la página
+    // sin dejar huecos en blanco y asegurando que las cotas y textos se lean nítidos.
+    let customPhotoHeight = null;
+    if (numFotos > 0 && idx !== 2) {
+      const esNombreGenerico = !propuesta.nombre || /^propuesta(\s+[a-z0-9]+)?$/i.test(String(propuesta.nombre).trim());
+      const tituloH = !esNombreGenerico ? 10 : 0;
+      const reqH = hasClientReq ? Math.max(16, Math.min(42, Math.ceil(String(propuesta.requerimientoCliente).length / 75) * 5.5 + 10)) : 0;
+      const scopeH = hasScope ? Math.max(16, Math.min(45, Math.ceil(String(propuesta.alcancePropuesta).length / 75) * 5.5 + 10)) : 0;
+      const narrH = hasNarrative ? Math.max(14, Math.min(40, Math.ceil(String(propuesta.narrative).length / 75) * 5.5 + 8)) : 0;
+      const mapH = hasMap ? 64 : 0;
+      const tableRows = plan.juntoAlTexto && plan.hojas.length ? plan.hojas[0].length : 0;
+      const tableH = plan.juntoAlTexto
+        ? (38 + tableRows * 7.5)
+        : 8;
+      const photoOverhead = 20;
+
+      const espacioDisponible = 214 - (tituloH + reqH + scopeH + narrH + mapH + tableH + photoOverhead);
+
+      if (numFotos === 1) {
+        customPhotoHeight = Math.min(144, Math.max(98, Math.round(espacioDisponible)));
+      } else {
+        customPhotoHeight = Math.min(84, Math.max(62, Math.round(espacioDisponible * 0.58)));
+      }
+    }
+
+    const fotosHtml = renderPhotoGrid(propuesta.fotos, idx, customPhotoHeight);
     const mapaHtml = renderMapBlock(propuesta, idx);
 
     // Si la propuesta no trae texto, fotos ni mapa, y la tabla se fue a hojas
@@ -1086,18 +1141,32 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
 
       .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 0 5mm; }
       .photo-grid.single { grid-template-columns:1fr; }
-      .photo-card { border:1px solid #DDD; border-radius:6px; overflow:hidden; background:#fff; }
-      /* La foto entra ENTERA en su recuadro, no recortada.
-         Estaba con object-fit cover, que llena el hueco a base de cortar lo
-         que sobresale: en una foto de obra se nota poco, pero en un plano
-         -que es lo que se adjunta en estas propuestas- se comia el cajetin,
-         las cotas y media leyenda. Con contain se ve completo; lo que sobra
-         a los lados queda en blanco, que en una hoja impresa ni se nota. La
-         altura sigue fija para que las dos columnas queden alineadas. */
-      .photo { display:block; width:100%; height:62mm; object-fit:contain; object-position:center; background:#ffffff; }
-      .photo-grid.single .photo { height:100mm; }
-      .proposal-3-photo { height:52mm; object-fit:contain; object-position:center; background:#ffffff; }
-      .photo-caption { padding:5px 8px 6px; text-align:center; font-size: var(--texto); letter-spacing:.04em; text-transform:uppercase; color:#777; border-top:1px solid #EEE; }
+      .photo-card {
+        border:1px solid #CBD5E1;
+        border-radius:6px;
+        overflow:hidden;
+        background:#ffffff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      }
+      /* La foto entra ENTERA en su recuadro con contain.
+         Con altura dinámica y expandida (hasta 144mm en individuales y 84mm en dobles),
+         los planos, isométricos, cotas y detalles de obra se ven nítidos y amplios
+         sin recortes y aprovechando la altura disponible de la hoja. */
+      .photo {
+        display:block;
+        width:100%;
+        height: var(--card-photo-h, 76mm);
+        object-fit:contain;
+        object-position:center;
+        background:#ffffff;
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: auto;
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+      }
+      .photo-grid.single .photo { height: var(--card-photo-h, 140mm); }
+      .proposal-3-photo { height:52mm !important; object-fit:contain; object-position:center; background:#ffffff; }
+      .photo-caption { padding:5px 8px 6px; text-align:center; font-size: var(--texto); letter-spacing:.04em; text-transform:uppercase; color:#64748B; border-top:1px solid #E2E8F0; background:#FAFAFA; font-weight:600; }
 
       .map-wrap {
         position:relative; width:100%; height:52mm;
@@ -1169,7 +1238,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       .sig-meta { font-size: var(--texto); color:#666; margin-top:2mm; line-height:1.65; }
       .thanks-row { margin-top:8mm; padding-top:4mm; border-top:1px solid #DDD; text-align:right; font-size: var(--texto); letter-spacing:.08em; text-transform:uppercase; color:#777; }
 
-      .appendix-img { width:100%; height:auto; max-height:235mm; object-fit:contain; display:block; margin:0 auto; }
+      .appendix-img { width:100%; height:auto; max-height:235mm; object-fit:contain; display:block; margin:0 auto; image-rendering: -webkit-optimize-contrast; image-rendering: auto; }
       .summary-spacing { margin-bottom:8mm; }
       .summary-page .page-content { padding-bottom:30mm; }
 

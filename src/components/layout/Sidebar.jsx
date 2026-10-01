@@ -36,7 +36,7 @@ export default function Sidebar({
     top: 0,
     bottom: 0,
     left: 0,
-    zIndex: 60,
+    zIndex: 100,
     width: isMobile ? 280 : open ? RAIL_WIDTH_EXPANDED : RAIL_WIDTH,
     maxWidth: isMobile ? "85vw" : "none",
     background: theme.railBg,
@@ -70,7 +70,7 @@ export default function Sidebar({
         <div
           onClick={onCloseMobile}
           aria-hidden="true"
-          style={{ position: "fixed", inset: 0, background: "rgba(9,11,16,.45)", zIndex: 55 }}
+          style={{ position: "fixed", inset: 0, background: "rgba(9,11,16,.45)", zIndex: 95 }}
         />
       )}
 

@@ -36,7 +36,7 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
       style={{
         position: "sticky",
         top: 0,
-        zIndex: 60,
+        zIndex: 40,
         flexShrink: 0,
         display: "flex",
         alignItems: "center",

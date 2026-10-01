@@ -62,7 +62,7 @@ function tiempoTranscurrido(iso) {
   }
 }
 
-export default function RadarSecop({ clientes = [], setClientes, irAPantalla }) {
+export default function RadarSecop({ clientes = [], setClientes, irAPantalla, setCotDraft }) {
   const [query, setQuery] = useState("cubiertas");
   const [departamento, setDepartamento] = useState("Antioquia");
   const [anio, setAnio] = useState("2026");
@@ -140,13 +140,41 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla }) 
   };
 
   const cotizarDirecto = (item) => {
-    if (!irAPantalla) return;
-    irAPantalla("cotizacion", {
-      cliente: item.entidad.toUpperCase(),
-      nit: item.nit || "",
-      ciudad: item.ciudad || item.departamento || "Medellín",
-      obra: item.objeto.slice(0, 90),
-    });
+    // 1. Guardar como prospecto en clientes si no existe aún
+    if (!clienteRegistrado(item.entidad, item.nit)) {
+      const id = siguienteIdUnico(clientes, "CLI");
+      const nuevo = {
+        id,
+        nombre: item.entidad.toUpperCase(),
+        nit: item.nit || "",
+        telefono: "",
+        ciudad: item.ciudad || item.departamento || "Medellín",
+        direccion: `Sede principal - ${item.ciudad || item.departamento || ""}`,
+        contacto: "Gerencia / Contratación",
+        email: "",
+        estado: "En seguimiento",
+        notas: `Detectado en SECOP II (${formatearFecha(item.fechaPublicacion)}). Proceso: ${item.objeto}. Presupuesto: ${item.valorTexto}. Enlace: ${item.urlSecop || "Ver SECOP"}`,
+      };
+      setClientes((prev) => [...prev, nuevo]);
+    }
+
+    // 2. Pre-cargar el borrador de cotización en el contexto
+    if (setCotDraft) {
+      setCotDraft({
+        cliente: item.entidad.toUpperCase(),
+        nit: item.nit || "",
+        ciudad: item.ciudad || item.departamento || "Medellín",
+        obra: item.objeto ? item.objeto.slice(0, 120) : "Licitación SECOP II",
+        direccion: item.ciudad ? `${item.ciudad}, ${item.departamento}` : (item.departamento || ""),
+        alcance: `Proceso SECOP II: ${item.objeto}\nPresupuesto referencial: ${item.valorTexto}\nEnlace: ${item.urlSecop || "Ver SECOP"}`,
+        items: [],
+      });
+    }
+
+    // 3. Navegar directamente al módulo de Cotizaciones
+    if (irAPantalla) {
+      irAPantalla("cotizacion");
+    }
   };
 
   // Ordenamiento en memoria garantizado

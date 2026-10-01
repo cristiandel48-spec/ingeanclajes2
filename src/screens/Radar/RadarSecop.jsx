@@ -45,12 +45,30 @@ function formatearFecha(iso) {
   }
 }
 
+function tiempoTranscurrido(iso) {
+  if (!iso) return "";
+  try {
+    const ahora = new Date();
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    const diffDias = Math.floor((ahora - d) / (1000 * 60 * 60 * 24));
+    if (diffDias <= 0) return "Hoy";
+    if (diffDias === 1) return "Ayer";
+    if (diffDias > 1 && diffDias < 30) return `hace ${diffDias} días`;
+    if (diffDias >= 30 && diffDias < 365) return `hace ${Math.floor(diffDias / 30)} meses`;
+    return "";
+  } catch {
+    return "";
+  }
+}
+
 export default function RadarSecop({ clientes = [], setClientes, irAPantalla }) {
   const [query, setQuery] = useState("cubiertas");
   const [departamento, setDepartamento] = useState("Antioquia");
   const [anio, setAnio] = useState("2026");
   const [soloEnLicitacion, setSoloEnLicitacion] = useState(true);
-  const [limite, setLimite] = useState(25);
+  const [orden, setOrden] = useState("reciente");
+  const [limite, setLimite] = useState(30);
   const [resultados, setResultados] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
@@ -130,6 +148,16 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla }) 
       obra: item.objeto.slice(0, 90),
     });
   };
+
+  // Ordenamiento en memoria garantizado
+  const resultadosOrdenados = [...resultados].sort((a, b) => {
+    if (orden === "valor_desc") {
+      return (b.valor || 0) - (a.valor || 0);
+    }
+    const msA = a.fechaPublicacion ? new Date(a.fechaPublicacion).getTime() : 0;
+    const msB = b.fechaPublicacion ? new Date(b.fechaPublicacion).getTime() : 0;
+    return msB - msA; // Más reciente primero
+  });
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -232,8 +260,8 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla }) 
               onChange={(e) => setLimite(Number(e.target.value))}
               style={{ ...SI, padding: "7px 10px", fontSize: 12.5, width: 75 }}
             >
-              <option value={10}>10</option>
-              <option value={25}>25</option>
+              <option value={15}>15</option>
+              <option value={30}>30</option>
               <option value={50}>50</option>
             </select>
           </div>
@@ -281,16 +309,41 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla }) 
 
       {/* Resultados de la búsqueda */}
       <div style={CD}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-          <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-main, #1e293b)" }}>
-            Procesos encontrados {resultados.length > 0 && `(${resultados.length})`}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text-main, #1e293b)" }}>
+              Procesos encontrados {resultadosOrdenados.length > 0 && `(${resultadosOrdenados.length})`}
+            </div>
+            <div style={{ fontSize: 11, color: "var(--text-muted, #64748b)", marginTop: 2 }}>
+              {departamento && departamento !== "Todos" && (
+                <span>Ubicación: <strong>{departamento}</strong> · </span>
+              )}
+              <span>Vigencia: <strong>{anio}</strong> · </span>
+              <span>Búsqueda: <strong>«{query}»</strong></span>
+            </div>
           </div>
-          <div style={{ fontSize: 11, color: "var(--text-muted, #64748b)" }}>
-            {departamento && departamento !== "Todos" && (
-              <span>Ubicación: <strong>{departamento}</strong> · </span>
-            )}
-            <span>Año: <strong>{anio}</strong> · </span>
-            <span>Término: <strong>«{query}»</strong></span>
+
+          {/* Selector de Orden */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <label style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted, #475569)" }}>
+              Ordenar por:
+            </label>
+            <select
+              value={orden}
+              onChange={(e) => setOrden(e.target.value)}
+              style={{
+                ...SI,
+                padding: "5px 12px",
+                fontSize: 12,
+                fontWeight: 600,
+                height: 32,
+                background: "#f8fafc",
+                borderColor: "#cbd5e1",
+              }}
+            >
+              <option value="reciente">📅 Más recientes primero (Fecha)</option>
+              <option value="valor_desc">💰 Mayor presupuesto</option>
+            </select>
           </div>
         </div>
 
@@ -306,16 +359,17 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla }) 
           </div>
         )}
 
-        {!cargando && !error && buscado && resultados.length === 0 && (
+        {!cargando && !error && buscado && resultadosOrdenados.length === 0 && (
           <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--text-muted, #64748b)", fontSize: 12.5 }}>
             No se encontraron licitaciones activas para <strong>«{query}»</strong> en <strong>{departamento}</strong> ({anio}). Prueba con <em>Todos los departamentos</em> o términos como <em>«alturas»</em> o <em>«cubiertas»</em>.
           </div>
         )}
 
-        {!cargando && resultados.length > 0 && (
+        {!cargando && resultadosOrdenados.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {resultados.map((item) => {
+            {resultadosOrdenados.map((item) => {
               const registrado = clienteRegistrado(item.entidad, item.nit);
+              const transcurrido = tiempoTranscurrido(item.fechaPublicacion);
 
               return (
                 <div
@@ -348,23 +402,28 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla }) 
                         </span>
                       </div>
 
-                      {/* Fecha de publicación destacada */}
+                      {/* Fecha de publicación destacada con tiempo transcurrido */}
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
                         <span
                           style={{
-                            fontSize: 11,
+                            fontSize: 11.5,
                             fontWeight: 700,
                             color: "#1d4ed8",
                             background: "#eff6ff",
                             border: "1px solid #bfdbfe",
-                            padding: "2px 8px",
-                            borderRadius: 5,
+                            padding: "3px 9px",
+                            borderRadius: 6,
                             display: "inline-flex",
                             alignItems: "center",
-                            gap: 4,
+                            gap: 5,
                           }}
                         >
                           📅 Publicado: {formatearFecha(item.fechaPublicacion)}
+                          {transcurrido && (
+                            <span style={{ color: "#2563eb", fontWeight: 600 }}>
+                              · {transcurrido}
+                            </span>
+                          )}
                         </span>
                         {item.fechaUltima && item.fechaUltima !== item.fechaPublicacion && (
                           <span style={{ fontSize: 10.5, color: "#64748b" }}>

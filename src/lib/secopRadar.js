@@ -9,13 +9,16 @@ export async function consultarSecop({
   departamento = "Antioquia",
   anio = "2026",
   soloEnLicitacion = true,
-  limite = 25,
+  limite = 35,
 } = {}) {
   try {
     const url = new URL(SOCRATA_ENDPOINT);
     const qLimpio = String(query || "").trim();
 
-    const whereClauses = [];
+    const whereClauses = [
+      // Siempre exigir fecha de publicación válida para garantizar orden cronológico
+      "fecha_de_publicacion_del is not null",
+    ];
 
     // 1. Filtro por año (por defecto 2026: licitaciones de este año)
     if (anio && anio !== "Todos") {
@@ -24,7 +27,7 @@ export async function consultarSecop({
       );
     }
 
-    // 2. Filtro: solo las que están en licitación / abiertas para presentar ofertas
+    // 2. Filtro: solo las que están en licitación / abiertas para presentar ofertas (sin adjudicar)
     if (soloEnLicitacion) {
       whereClauses.push("adjudicado = 'No'");
       whereClauses.push("estado_del_procedimiento in ('Publicado', 'Abierto', 'Seleccionado')");
@@ -33,9 +36,7 @@ export async function consultarSecop({
       );
     }
 
-    if (whereClauses.length > 0) {
-      url.searchParams.set("$where", whereClauses.join(" and "));
-    }
+    url.searchParams.set("$where", whereClauses.join(" and "));
 
     // 3. Filtro por departamento
     if (departamento && departamento !== "Todos") {
@@ -51,7 +52,7 @@ export async function consultarSecop({
     url.searchParams.set("$order", "fecha_de_publicacion_del DESC");
 
     // 6. Límite de resultados
-    url.searchParams.set("$limit", String(limite || 25));
+    url.searchParams.set("$limit", String(limite || 35));
 
     const res = await fetch(url.toString(), {
       method: "GET",
@@ -69,7 +70,7 @@ export async function consultarSecop({
       return [];
     }
 
-    return raw.map((item, idx) => {
+    const items = raw.map((item, idx) => {
       const valorNum =
         Number(String(item.precio_base || item.valor_total_adjudicacion || "").replace(/[^\d]/g, "")) || 0;
       const urlProc = item.urlproceso?.url || (typeof item.urlproceso === "string" ? item.urlproceso : "");
@@ -94,6 +95,15 @@ export async function consultarSecop({
         modalidad: item.modalidad_de_contratacion || "",
       };
     });
+
+    // Ordenamiento estricto por fecha de publicación descendente (más reciente primero)
+    items.sort((a, b) => {
+      const msA = a.fechaPublicacion ? new Date(a.fechaPublicacion).getTime() : 0;
+      const msB = b.fechaPublicacion ? new Date(b.fechaPublicacion).getTime() : 0;
+      return msB - msA;
+    });
+
+    return items;
   } catch (error) {
     console.error("Error al consultar SECOP II:", error);
     throw error;

@@ -1,25 +1,56 @@
 // Servicio de integración en vivo con la API pública de SECOP II (datos.gov.co)
-// Permite buscar licitaciones y contratos de cubiertas, líneas de vida y trabajo en alturas.
+// Dataset oficial: SECOP II - Procesos de Contratación (p6dx-8zbt)
+// Contiene las convocatorias, licitaciones y pliegos de compra pública del Estado en tiempo real.
 
-const SOCRATA_ENDPOINT = "https://www.datos.gov.co/resource/jbjy-vk9h.json";
+const SOCRATA_ENDPOINT = "https://www.datos.gov.co/resource/p6dx-8zbt.json";
 
 export async function consultarSecop({
-  query = "lineas de vida",
+  query = "cubiertas",
   departamento = "Antioquia",
+  anio = "2026",
+  soloEnLicitacion = true,
   limite = 25,
 } = {}) {
   try {
     const url = new URL(SOCRATA_ENDPOINT);
     const qLimpio = String(query || "").trim();
 
+    const whereClauses = [];
+
+    // 1. Filtro por año (por defecto 2026: licitaciones de este año)
+    if (anio && anio !== "Todos") {
+      whereClauses.push(
+        `fecha_de_publicacion_del >= '${anio}-01-01T00:00:00.000' and fecha_de_publicacion_del <= '${anio}-12-31T23:59:59.999'`
+      );
+    }
+
+    // 2. Filtro: solo las que están en licitación / abiertas para presentar ofertas
+    if (soloEnLicitacion) {
+      whereClauses.push("adjudicado = 'No'");
+      whereClauses.push("estado_del_procedimiento in ('Publicado', 'Abierto', 'Seleccionado')");
+      whereClauses.push(
+        "fase in ('Presentación de oferta', 'Fase de ofertas', 'Presentación de observaciones', 'Fase de Selección (Presentación de ofertas)', 'Fase de Concurso', 'Manifestación de interés (Menor Cuantía)')"
+      );
+    }
+
+    if (whereClauses.length > 0) {
+      url.searchParams.set("$where", whereClauses.join(" and "));
+    }
+
+    // 3. Filtro por departamento
+    if (departamento && departamento !== "Todos") {
+      url.searchParams.set("departamento_entidad", departamento);
+    }
+
+    // 4. Búsqueda de texto
     if (qLimpio) {
       url.searchParams.set("$q", qLimpio);
     }
 
-    if (departamento && departamento !== "Todos") {
-      url.searchParams.set("departamento", departamento);
-    }
+    // 5. Orden: las más recientes publicadas primero
+    url.searchParams.set("$order", "fecha_de_publicacion_del DESC");
 
+    // 6. Límite de resultados
     url.searchParams.set("$limit", String(limite || 25));
 
     const res = await fetch(url.toString(), {
@@ -39,22 +70,28 @@ export async function consultarSecop({
     }
 
     return raw.map((item, idx) => {
-      const valorNum = Number(String(item.valor_del_contrato || "").replace(/[^\d]/g, "")) || 0;
-      const urlProc = item.urlproceso?.url || item.urlproceso || "";
+      const valorNum =
+        Number(String(item.precio_base || item.valor_total_adjudicacion || "").replace(/[^\d]/g, "")) || 0;
+      const urlProc = item.urlproceso?.url || (typeof item.urlproceso === "string" ? item.urlproceso : "");
 
       return {
-        id: item.id_contrato || item.proceso_de_compra || `secop-${idx}`,
-        entidad: String(item.nombre_entidad || "Entidad del Estado").trim(),
+        id: item.id_del_proceso || item.referencia_del_proceso || `secop-${idx}`,
+        entidad: String(item.entidad || "Entidad del Estado").trim(),
         nit: String(item.nit_entidad || "").trim(),
-        departamento: String(item.departamento || "").trim(),
-        ciudad: String(item.ciudad || "").trim(),
-        objeto: String(item.descripcion_del_proceso || item.objeto_del_contrato || "Sin descripción").trim(),
+        departamento: String(item.departamento_entidad || "").trim(),
+        ciudad: String(item.ciudad_entidad || "").trim(),
+        objeto: String(item.descripci_n_del_procedimiento || item.nombre_del_procedimiento || "Sin descripción").trim(),
         valor: valorNum,
         valorTexto: valorNum > 0 ? `$${valorNum.toLocaleString("es-CO")}` : "Por definir",
-        estado: String(item.estado_contrato || "Publicado").trim(),
-        fecha: item.fecha_de_firma || item.fecha_de_inicio_del_contrato || null,
+        estado: String(item.fase || item.estado_del_procedimiento || item.estado_resumen || "En licitación").trim(),
+        fase: item.fase || "Presentación de ofertas",
+        estadoProc: item.estado_del_procedimiento || "Publicado",
+        adjudicado: item.adjudicado || "No",
+        fechaPublicacion: item.fecha_de_publicacion_del || null,
+        fechaUltima: item.fecha_de_ultima_publicaci || null,
         urlSecop: urlProc,
         tipoContrato: item.tipo_de_contrato || "Obra / Servicio",
+        modalidad: item.modalidad_de_contratacion || "",
       };
     });
   } catch (error) {

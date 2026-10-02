@@ -91,6 +91,133 @@ export default function ListaObras({ obras, cotizaciones, horarios = [], onAbrir
         }
         return true;
       }}
+      pillsExtra={({ extra, ponerExtra, datos, estado }) => {
+        const obrasContexto = estado && estado !== "Todas"
+          ? (datos || []).filter((o) => estadoObraDe(o) === estado)
+          : (datos || []);
+        const totalEnviadas = obrasContexto.filter((o) => Boolean(o.enviadoAlCliente)).length;
+        const totalSinEnviar = obrasContexto.length - totalEnviadas;
+
+        const activaEnviado = extra.enviado === "si";
+        const activaSinEnviar = extra.enviado === "no";
+
+        return (
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              flexShrink: 0,
+            }}
+          >
+            <span
+              style={{
+                width: 1,
+                height: 18,
+                background: "var(--border, #cbd5e1)",
+                margin: "0 3px",
+                display: "inline-block",
+                flexShrink: 0,
+              }}
+              aria-hidden="true"
+            />
+            {/* Botón Filtro: Enviadas al cliente */}
+            <Resaltable
+              as="button"
+              type="button"
+              title={activaEnviado ? "Quitar filtro de enviadas (mostrar todas)" : "Filtrar obras con documentos enviados al cliente"}
+              onClick={() => ponerExtra("enviado", activaEnviado ? null : "si")}
+              estiloHover={{ borderColor: activaEnviado ? "#15803d" : "#86efac" }}
+              style={{
+                height: 28,
+                padding: "0 11px",
+                borderRadius: 999,
+                border: `1.5px solid ${activaEnviado ? "#15803d" : "var(--border, #cbd5e1)"}`,
+                background: activaEnviado ? "#15803d" : "var(--surface, #fff)",
+                color: activaEnviado ? "#ffffff" : "var(--text-main, #334155)",
+                fontSize: 12.5,
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                fontFamily: "inherit",
+                flexShrink: 0,
+                boxShadow: activaEnviado ? "0 1px 2px rgba(21, 128, 61, 0.25)" : "none",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <IconoPalomita size={16} color={activaEnviado ? "#ffffff" : "#15803d"} />
+              <span>Enviadas</span>
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: activaEnviado ? "#ffffff" : (totalEnviadas > 0 ? "#15803d" : "var(--text-muted, #64748b)"),
+                  background: activaEnviado ? "rgba(255, 255, 255, 0.25)" : (totalEnviadas > 0 ? "#dcfce7" : "var(--surface-subtle, #f1f5f9)"),
+                  borderRadius: 999,
+                  padding: "1px 6px",
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {totalEnviadas}
+              </span>
+            </Resaltable>
+
+            {/* Botón Filtro: Sin enviar */}
+            <Resaltable
+              as="button"
+              type="button"
+              title={activaSinEnviar ? "Quitar filtro de sin enviar (mostrar todas)" : "Filtrar obras pendientes por enviar documentos al cliente"}
+              onClick={() => ponerExtra("enviado", activaSinEnviar ? null : "no")}
+              estiloHover={{ borderColor: activaSinEnviar ? "#475467" : "#94a3b8" }}
+              style={{
+                height: 28,
+                padding: "0 11px",
+                borderRadius: 999,
+                border: `1.5px solid ${activaSinEnviar ? "#475467" : "var(--border, #cbd5e1)"}`,
+                background: activaSinEnviar ? "#475467" : "var(--surface, #fff)",
+                color: activaSinEnviar ? "#ffffff" : "var(--text-main, #334155)",
+                fontSize: 12.5,
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                fontFamily: "inherit",
+                flexShrink: 0,
+                boxShadow: activaSinEnviar ? "0 1px 2px rgba(71, 84, 103, 0.25)" : "none",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 12,
+                  lineHeight: 1,
+                  color: activaSinEnviar ? "#ffffff" : "#94a3b8",
+                  fontWeight: 700,
+                }}
+              >
+                ○
+              </span>
+              <span>Sin enviar</span>
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: activaSinEnviar ? "#ffffff" : "var(--text-muted, #64748b)",
+                  background: activaSinEnviar ? "rgba(255, 255, 255, 0.25)" : "var(--surface-subtle, #f1f5f9)",
+                  borderRadius: 999,
+                  padding: "1px 6px",
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {totalSinEnviar}
+              </span>
+            </Resaltable>
+          </div>
+        );
+      }}
       derecha={(lista) => {
         const promedio = lista.length
           ? Math.round(lista.reduce((t, o) => t + (Number(o.avance) || 0), 0) / lista.length)

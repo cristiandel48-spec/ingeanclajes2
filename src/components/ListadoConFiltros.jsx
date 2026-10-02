@@ -86,6 +86,7 @@ export default function ListadoConFiltros({
   ordenes = [],
   filtrosExtra,
   aplicarExtra,
+  pillsExtra,
   fila,
   vacio,
   derecha,
@@ -261,6 +262,15 @@ export default function ListadoConFiltros({
                     padding: "1px 6px", fontVariantNumeric: "tabular-nums" }}>{cuantos(e)}</span>
                 </Resaltable>
               );
+            })}
+            {typeof pillsExtra === "function" && pillsExtra({
+              extra,
+              ponerExtra,
+              datos,
+              lista,
+              estado,
+              estados,
+              cuantos,
             })}
             {derecha && <span style={{ marginLeft: "auto", flexShrink: 0 }}>{derecha(lista)}</span>}
           </div>

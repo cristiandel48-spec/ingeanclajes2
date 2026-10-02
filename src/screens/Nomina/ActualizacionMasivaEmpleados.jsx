@@ -317,7 +317,7 @@ export default function ActualizacionMasivaEmpleados({
               ...empExistente,
               nombre: nombreRaw ? normalizarNombrePropio(nombreRaw) : empExistente.nombre,
               cedula: cedulaNorm || empExistente.cedula,
-              cargo: cargoRaw || empExistente.cargo,
+              cargo: cargoRaw ? cargoRaw.trim().toUpperCase() : empExistente.cargo,
               salario: salarioNum > 0 ? salarioNum : empExistente.salario,
               tipoContrato: contratoRaw ? mapearTipoContrato(contratoRaw) : empExistente.tipoContrato,
               fechaIngreso: fechaIngresoRaw || empExistente.fechaIngreso,
@@ -366,7 +366,7 @@ export default function ActualizacionMasivaEmpleados({
                 id: idRaw && !mapPorId.has(idRaw) ? idRaw : null, // Se asignará secuencial al aplicar
                 nombre: nombreNorm,
                 cedula: cedulaNorm,
-                cargo: cargoRaw || "Operario",
+                cargo: cargoRaw ? cargoRaw.trim().toUpperCase() : "OPERARIO",
                 salario: salarioNum > 0 ? salarioNum : 1423500,
                 tipoContrato: mapearTipoContrato(contratoRaw),
                 fechaIngreso: fechaIngresoRaw || new Date().toISOString().slice(0, 10),
@@ -391,13 +391,13 @@ export default function ActualizacionMasivaEmpleados({
 
         // Detectar si hay cargos nuevos en el archivo que no existen en el catálogo
         const cargosActuales = normalizarCargos(cargos);
-        const nombresCargosExistentes = new Set(cargosActuales.map((c) => c.nombre.toLowerCase().trim()));
+        const nombresCargosExistentes = new Set(cargosActuales.map((c) => c.nombre.toUpperCase().trim()));
         const cargosNuevos = [];
         [...actualizar.map((a) => a.actualizado.cargo), ...nuevos.map((n) => n.actualizado.cargo)]
           .filter(Boolean)
           .forEach((c) => {
-            const tr = c.trim();
-            if (tr && !nombresCargosExistentes.has(tr.toLowerCase()) && !cargosNuevos.includes(tr)) {
+            const tr = c.trim().toUpperCase();
+            if (tr && !nombresCargosExistentes.has(tr) && !cargosNuevos.includes(tr)) {
               cargosNuevos.push(tr);
             }
           });
@@ -458,15 +458,15 @@ export default function ActualizacionMasivaEmpleados({
       let listaCargosFinal = null;
       if (typeof setCargos === "function") {
         const cargosActuales = normalizarCargos(cargos);
-        const nombresCargosExistentes = new Set(cargosActuales.map((c) => c.nombre.toLowerCase().trim()));
+        const nombresCargosExistentes = new Set(cargosActuales.map((c) => c.nombre.toUpperCase().trim()));
         const nuevosCargosParaAgregar = [];
 
         [...cambiosDetectados.actualizar.map((a) => a.actualizado.cargo), ...nuevosConId.map((n) => n.cargo)]
           .filter(Boolean)
           .forEach((nombreCargo) => {
-            const trimmed = nombreCargo.trim();
-            if (trimmed && !nombresCargosExistentes.has(trimmed.toLowerCase())) {
-              nombresCargosExistentes.add(trimmed.toLowerCase());
+            const trimmed = nombreCargo.trim().toUpperCase();
+            if (trimmed && !nombresCargosExistentes.has(trimmed)) {
+              nombresCargosExistentes.add(trimmed);
               nuevosCargosParaAgregar.push({
                 id: siguienteIdUnico([...cargosActuales, ...nuevosCargosParaAgregar], "CAR"),
                 nombre: trimmed,

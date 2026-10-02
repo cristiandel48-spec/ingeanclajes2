@@ -618,7 +618,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                     <Av init={emp.avatar} color={PAL[idx%PAL.length]} size={36}/>
                     <div style={{flex:1}}>
                       <div style={{fontSize:13,fontWeight:700,color:"var(--text-main)"}}>{emp.nombre}</div>
-                      <div style={{fontSize:11,color:"var(--text-muted, #64748b)"}}>{emp.cargo}</div>
+                      <div style={{fontSize:11,color:"var(--text-muted, #64748b)"}}>{String(emp.cargo || "").toUpperCase()}</div>
                       <div style={{fontSize:10,color:"var(--text-subtle, #94a3b8)"}}>📱 {emp.tel}</div>
                     </div>
                     {!bloqueada&&(
@@ -671,7 +671,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             }} style={{...SI,border:"2px solid #cc0000",fontSize:12}}>
               <option value="">Selecciona un empleado...</option>
               {empleados.filter(emp=>!empObra.includes(emp.id)).map(emp=>(
-                <option key={emp.id} value={emp.id}>{emp.nombre} · {emp.cargo}</option>
+                <option key={emp.id} value={emp.id}>{emp.nombre} · {String(emp.cargo || "").toUpperCase()}</option>
               ))}
             </select>
           </div>
@@ -866,7 +866,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                 <div key={eid} style={{background:"var(--surface-subtle, #f8fafc)",borderRadius:10,padding:"14px 16px",border:"1px solid var(--border, #e2e8f0)"}}>
                   <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
                     <Av init={emp.avatar} color={PAL[idx%PAL.length]} size={34}/>
-                    <div><div style={{fontSize:13,fontWeight:700,color:"var(--text-main)"}}>{emp.nombre}</div><div style={{fontSize:11,color:"var(--text-muted, #64748b)"}}>{emp.cargo}</div></div>
+                    <div><div style={{fontSize:13,fontWeight:700,color:"var(--text-main)"}}>{emp.nombre}</div><div style={{fontSize:11,color:"var(--text-muted, #64748b)"}}>{String(emp.cargo || "").toUpperCase()}</div></div>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
                     {[["Días",diasEmp+"d","#60a5fa"],["Jornal",fmt(jornal),"#34d399"],["Bruto",fmt(subtotal),"#f59e0b"],["Neto",fmt(subtotal-ded),"#cc0000"]].map(([k,v,c])=>(

@@ -31,8 +31,8 @@ export default function NuevoEmpleadoRapido({ ctx, onCreado, onCerrar, obraId = 
   const [error, setError] = useState("");
 
   const cargosDisponibles = [...new Set([
-    ...normalizarCargos(cargos).filter((c) => c.activo !== false).map((c) => c.nombre),
-    ...empleados.map((e) => e.cargo).filter(Boolean),
+    ...normalizarCargos(cargos).filter((c) => c.activo !== false).map((c) => c.nombre.toUpperCase()),
+    ...empleados.map((e) => (e.cargo || "").trim().toUpperCase()).filter(Boolean),
   ])].filter(Boolean).sort((a, b) => a.localeCompare(b));
 
   const nombreCompleto = [form.nombre, form.apellidos]
@@ -44,14 +44,14 @@ export default function NuevoEmpleadoRapido({ ctx, onCreado, onCerrar, obraId = 
   // lista, quien coordina volvia a quedarse bloqueado. Aqui se puede crear.
   // Devuelve el nombre definitivo del cargo, o "" si falta escribirlo.
   const resolverCargo = () => {
-    if (form.cargo !== CARGO_NUEVO) return form.cargo.trim();
+    if (form.cargo !== CARGO_NUEVO) return (form.cargo || "").trim().toUpperCase();
 
-    const nombre = normalizarFrase(cargoNuevo);
+    const nombre = (cargoNuevo || "").trim().toUpperCase();
     if (!nombre) return "";
 
     // Si ya existe con otra grafia se reutiliza, para no acabar con
     // "Instalador" e "instalador" como dos cargos distintos.
-    const existente = cargosDisponibles.find((c) => c.toLowerCase() === nombre.toLowerCase());
+    const existente = cargosDisponibles.find((c) => c.toUpperCase() === nombre);
     if (existente) return existente;
 
     setCargos((prev) => [...normalizarCargos(prev), {

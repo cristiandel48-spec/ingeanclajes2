@@ -178,8 +178,8 @@ export default function Nomina({ctx}){
       ? calcularResumenIncapacidadesRegistros(empleadoIncapacidadActivo, empleadoIncapacidadActivo.incapacidades || [], periodoNomina)
       : null;
   const cargosDisponibles=[...new Set([
-    ...normalizarCargos(cargos).filter((cargo)=>cargo.activo).map((cargo)=>cargo.nombre),
-    ...empleadosBase.map((empleado)=>empleado.cargo).filter(Boolean),
+    ...normalizarCargos(cargos).filter((cargo)=>cargo.activo).map((cargo)=>cargo.nombre.toUpperCase()),
+    ...empleadosBase.map((empleado)=>(empleado.cargo||"").trim().toUpperCase()).filter(Boolean),
   ])].sort((a,b)=>a.localeCompare(b,"es"));
 
   useEffect(()=>{
@@ -247,7 +247,7 @@ export default function Nomina({ctx}){
     // Se normaliza tambien aqui, no solo al salir del campo: quien pega el
     // dato y le da guardar de una nunca dispara el onBlur.
     const nombre=normalizarNombrePropio(nf.nombre);
-    const cargo=nf.cargo.trim();
+    const cargo=(nf.cargo||"").trim().toUpperCase();
     if(!nombre||!cargo){
       window.alert("Faltan datos obligatorios: el nombre completo y el cargo.");
       return;
@@ -284,19 +284,14 @@ export default function Nomina({ctx}){
   };
 
   const guardarCargo=()=>{
-    const nombre=cargoForm.nombre.trim();
+    const nombre=(cargoForm.nombre||"").trim().toUpperCase();
     if(!nombre)return;
-    const yaExiste=cargosDisponibles.find((cargo)=>cargo.toLowerCase()===nombre.toLowerCase());
+    const yaExiste=cargosDisponibles.find((cargo)=>cargo.toUpperCase()===nombre);
     if(yaExiste){
       setNf((prev)=>({ ...prev, cargo:yaExiste }));
       setCargoForm({nombre:"",descripcion:""});
       return;
     }
-    // El id sale de la lista ya normalizada, y se guarda ESA misma lista: si se
-    // numerara contra una y se anadiera a otra, el cargo nuevo podria llevar un
-    // id que la segunda ya tiene y pisarlo. Ademas queda con el formato del
-    // resto -CAR-004- en vez de la marca de tiempo que se usaba aqui, que era
-    // la unica de todo el programa.
     const cargosActuales=normalizarCargos(cargos);
     const nuevoCargo={
       id:siguienteIdUnico(cargosActuales,"CAR"),
@@ -851,7 +846,7 @@ export default function Nomina({ctx}){
                 spellCheck={false}
               />
               <div><LBL>Cargo *</LBL>
-                <select value={nf.cargo} onChange={e=>setNf({...nf,cargo:e.target.value})} style={SI}>
+                <select value={(nf.cargo || "").toUpperCase()} onChange={e=>setNf({...nf,cargo:e.target.value.toUpperCase()})} style={SI}>
                   <option value="">Seleccionar cargo...</option>
                   {cargosDisponibles.map((cargo)=><option key={cargo} value={cargo}>{cargo}</option>)}
                 </select>
@@ -1011,7 +1006,7 @@ export default function Nomina({ctx}){
                           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
                             <div style={{gridColumn:"span 2"}}><LBL>Nombre completo</LBL><input value={editEmpData.nombre||""} onChange={ev=>setEditEmpData(p=>({...p,nombre:ev.target.value}))} onBlur={ev=>setEditEmpData(p=>({...p,nombre:normalizarNombrePropio(ev.target.value)}))} style={{...SI,fontSize:11}}/></div>
                             <div><LBL>Cédula</LBL><input value={editEmpData.cedula||""} onChange={ev=>setEditEmpData(p=>({...p,cedula:ev.target.value}))} onBlur={ev=>setEditEmpData(p=>({...p,cedula:normalizarDocumento(ev.target.value)}))} style={{...SI,fontSize:11}}/></div>
-                            <div><LBL>Cargo</LBL><select value={editEmpData.cargo||""} onChange={ev=>setEditEmpData(p=>({...p,cargo:ev.target.value}))} style={{...SI,fontSize:11,padding:"5px 8px"}}><option value="">Seleccionar...</option>{cargosDisponibles.map(cargo=><option key={cargo} value={cargo}>{cargo}</option>)}</select></div>
+                            <div><LBL>Cargo</LBL><select value={(editEmpData.cargo||"").toUpperCase()} onChange={ev=>setEditEmpData(p=>({...p,cargo:ev.target.value.toUpperCase()}))} style={{...SI,fontSize:11,padding:"5px 8px"}}><option value="">Seleccionar...</option>{cargosDisponibles.map(cargo=><option key={cargo} value={cargo}>{cargo}</option>)}</select></div>
                             <div><LBL>Salario base</LBL><input type="number" value={editEmpData.salario} onChange={ev=>setEditEmpData(p=>({...p,salario:parseFloat(ev.target.value)||0}))} style={{...SI,fontSize:11}}/></div>
                             <div><LBL>Tipo contrato</LBL><select value={editEmpData.tipoContrato||"indefinido"} onChange={ev=>setEditEmpData(p=>({...p,tipoContrato:ev.target.value}))} style={{...SI,fontSize:11,padding:"5px 8px"}}>{Object.entries(TIPOS_CONTRATO_LABELS).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
                             <div><LBL>Fecha de ingreso</LBL><input type="date" value={editEmpData.fechaIngreso||""} onChange={ev=>setEditEmpData(p=>({...p,fechaIngreso:ev.target.value}))} style={{...SI,fontSize:11}}/></div>
@@ -1028,6 +1023,7 @@ export default function Nomina({ctx}){
                               actualizarEmpleado(e.id,{
                                 ...editEmpData,
                                 nombre: nombreNorm || e.nombre,
+                                cargo: (editEmpData.cargo || "").trim().toUpperCase(),
                                 avatar: av,
                                 cedula: normalizarDocumento(editEmpData.cedula || ""),
                                 tel: normalizarTelefono(editEmpData.tel || ""),

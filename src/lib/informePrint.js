@@ -142,7 +142,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
             <td style="border:1px solid #e2e8f0;padding:5px 9px;vertical-align:middle;">
               <div style="font-weight:700;color:#0f172a;display:flex;align-items:center;gap:6px;">
                 <span style="width:6px;height:6px;background:#ea580c;border-radius:50%;display:inline-block;flex-shrink:0;"></span>
-                <span>${escapeHtml(p.cargo || "Técnico Especialista")}</span>
+                <span>${escapeHtml(String(p.cargo || "TÉCNICO ESPECIALISTA").toUpperCase())}</span>
               </div>
             </td>
             <td style="border:1px solid #e2e8f0;padding:5px 9px;vertical-align:middle;font-weight:600;color:#1e293b;font-size:9.5px;">

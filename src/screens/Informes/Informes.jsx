@@ -158,7 +158,7 @@ export default function Informes({ctx}){
 
       return {
         empleadoId: empIdReal,
-        cargo: prev.cargo || emp?.cargo || 'Instalador',
+        cargo: String(prev.cargo || emp?.cargo || 'INSTALADOR').trim().toUpperCase(),
         nombre: empNombreReal || prev.nombre || '',
         turno1: prev.turno1 || turnosElegidos[0] || '',
         turno2: prev.turno2 || turnosElegidos[1] || '',
@@ -829,7 +829,7 @@ export default function Informes({ctx}){
                             ...x,
                             empleadoId: v,
                             nombre: emp?.nombre || "",
-                            cargo: emp?.cargo || x.cargo || "",
+                            cargo: String(emp?.cargo || x.cargo || "").trim().toUpperCase(),
                             manual: false,
                           } : x) }));
                         }}
@@ -837,7 +837,7 @@ export default function Informes({ctx}){
                       >
                         <option value="">Seleccionar técnico…</option>
                         {empleados.filter(e => e.activo !== false).map(e => (
-                          <option key={e.id} value={e.id}>{e.nombre}{e.cargo ? ` · ${e.cargo}` : ""}</option>
+                          <option key={e.id} value={e.id}>{e.nombre}{e.cargo ? ` · ${String(e.cargo).toUpperCase()}` : ""}</option>
                         ))}
                         <option value="__manual__">Escribir a mano…</option>
                       </select>
@@ -853,7 +853,7 @@ export default function Informes({ctx}){
                       )}
                     </div>
                   </div>
-                  <input value={p.cargo} onChange={e => updPersonal(i, "cargo", e.target.value)} onBlur={e => { const v = normalizarFrase(e.target.value); if (v !== p.cargo) updPersonal(i, "cargo", v); }} placeholder="Cargo técnico" style={{ ...SI, fontSize: 12, padding: "5px 8px" }} />
+                  <input value={p.cargo || ""} onChange={e => updPersonal(i, "cargo", e.target.value.toUpperCase())} onBlur={e => { const v = normalizarMayusculas(e.target.value); if (v !== p.cargo) updPersonal(i, "cargo", v); }} placeholder="CARGO TÉCNICO" style={{ ...SI, fontSize: 12, padding: "5px 8px", textTransform: "uppercase" }} />
                   <input list="turnosInformeList" value={p.turno1 || ""} onChange={e => updPersonal(i, "turno1", e.target.value)} placeholder="Turno 1 · 07:00 AM - 05:00 PM" style={{ ...SI, fontSize: 12, padding: "5px 8px" }} />
                   <input list="turnosInformeList" value={p.turno2 || ""} onChange={e => updPersonal(i, "turno2", e.target.value)} placeholder="Turno 2 · opcional" style={{ ...SI, fontSize: 12, padding: "5px 8px" }} />
                   <button
@@ -1268,7 +1268,7 @@ export default function Informes({ctx}){
                           <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px", verticalAlign: "middle" }}>
                             <div style={{ fontWeight: 700, color: "#0f172a", display: "flex", alignItems: "center", gap: 6 }}>
                               <span style={{ width: 6, height: 6, background: "#ea580c", borderRadius: "50%", display: "inline-block", flexShrink: 0 }}></span>
-                              <span>{p.cargo || "Técnico Especialista"}</span>
+                              <span>{String(p.cargo || "TÉCNICO ESPECIALISTA").toUpperCase()}</span>
                             </div>
                           </td>
                           <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px", verticalAlign: "middle", fontWeight: 600, color: "#1e293b", fontSize: 11.5 }}>

@@ -430,6 +430,7 @@ export const calcularResumenIncapacidadesRegistros = (empleado, incapacidades=[]
 
 export const normalizarEmpleado = (empleado)=>({
   ...empleado,
+  cargo:String(empleado?.cargo||"").trim().toUpperCase(),
   cedula:empleado?.cedula||"",
   // Alta desde obra u horarios: el registro llega sin revisar la parte
   // contractual. Lo que ya existia se da por confirmado, que para eso paso
@@ -453,21 +454,24 @@ export const normalizarEmpleado = (empleado)=>({
   prestacionesSociales:normalizarPrestacionesSociales(empleado?.prestacionesSociales),
 });
 
-export const normalizarCargos = (cargos)=>
-  (Array.isArray(cargos)?cargos:[])
+export const normalizarCargos = (cargos)=>{
+  const vistos = new Set();
+  return (Array.isArray(cargos)?cargos:[])
     .filter(Boolean)
     .map((cargo,index)=>{
-      if(typeof cargo==="string"){
-        return { id:"CAR-" + (String(index+1).padStart(3,"0")), nombre:cargo, descripcion:"", activo:true };
-      }
-      return {
-        id:cargo.id||"CAR-" + (String(index+1).padStart(3,"0")),
-        nombre:(cargo.nombre||"").trim(),
-        descripcion:cargo.descripcion||"",
-        activo:cargo.activo!==false,
-      };
+      const nombre = (typeof cargo==="string" ? cargo : (cargo.nombre||"")).trim().toUpperCase();
+      const id = typeof cargo==="object" && cargo.id ? cargo.id : "CAR-" + String(index+1).padStart(3,"0");
+      const descripcion = typeof cargo==="object" && cargo.descripcion ? cargo.descripcion : "";
+      const activo = typeof cargo==="object" ? cargo.activo!==false : true;
+      return { id, nombre, descripcion, activo };
     })
-    .filter((cargo)=>cargo.nombre);
+    .filter((cargo)=>{
+      if(!cargo.nombre) return false;
+      if(vistos.has(cargo.nombre)) return false;
+      vistos.add(cargo.nombre);
+      return true;
+    });
+};
 
 export const calcularValorHoraBase = (empleado)=>Math.round((Number(empleado?.salario)||NOMINA_CO_2026.salarioMinimo)/240);
 export const calcularValorHoraRecargo = (empleado, tipoRecargo, fecha, valorManual=0)=>{

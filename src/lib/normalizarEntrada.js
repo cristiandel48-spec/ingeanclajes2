@@ -371,6 +371,9 @@ export function normalizarMayusculas(valor) {
 /** Nombre de la empresa cliente. Mismo criterio, nombre propio del caso. */
 export const normalizarRazonSocial = normalizarMayusculas;
 
+/** Cargo u oficio del empleado. Siempre en mayúsculas por requerimiento de la empresa. */
+export const normalizarCargo = normalizarMayusculas;
+
 // ── Avisos ────────────────────────────────────────────────────────────────
 // Revisiones simples sobre datos que despues dan problemas: un correo mal
 // escrito hace que la cotizacion no llegue, y un celular de 7 digitos hace

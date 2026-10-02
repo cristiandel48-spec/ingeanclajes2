@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { consultarSecop } from "../../lib/secopRadar";
+import { consultarSecop, consultarDocumentosProceso } from "../../lib/secopRadar";
 import { CD, ST, SI, B } from "../../styles/tokens";
 import { siguienteIdUnico } from "../../lib/identificadores";
 
@@ -28,6 +28,14 @@ const ANIOS = [
   { id: "2026", label: "2026 (Año en curso)" },
   { id: "2025", label: "2025" },
   { id: "Todos", label: "Histórico completo" },
+];
+
+const INSTANCIAS = [
+  { id: "licitacion", label: "🟢 En licitación (Ofertas abiertas)", desc: "Abiertas para presentar propuestas" },
+  { id: "todas", label: "🌐 Todas las instancias (Sin filtro)", desc: "Muestra todo el universo contractual" },
+  { id: "borrador", label: "📝 Pre-pliegos (Observaciones / Borrador)", desc: "Fase previa de pliegos borradores" },
+  { id: "evaluacion", label: "🔍 En evaluación de ofertas", desc: "Propuestas radicadas en revisión técnica" },
+  { id: "adjudicado", label: "🏆 Adjudicados (Con contratista)", desc: "Procesos finalizados con ganador" },
 ];
 
 function formatearFecha(iso) {
@@ -66,7 +74,7 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
   const [query, setQuery] = useState("cubiertas");
   const [departamento, setDepartamento] = useState("Antioquia");
   const [anio, setAnio] = useState("2026");
-  const [soloEnLicitacion, setSoloEnLicitacion] = useState(true);
+  const [instancia, setInstancia] = useState("licitacion");
   const [orden, setOrden] = useState("reciente");
   const [limite, setLimite] = useState(30);
   const [resultados, setResultados] = useState([]);
@@ -74,11 +82,16 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
   const [error, setError] = useState(null);
   const [buscado, setBuscado] = useState(false);
 
+  // Estados para modal de documentos y pliegos oficiales
+  const [procesoSeleccionadoDocs, setProcesoSeleccionadoDocs] = useState(null);
+  const [documentos, setDocumentos] = useState([]);
+  const [cargandoDocs, setCargandoDocs] = useState(false);
+
   const ejecutarBusqueda = async (
     q = query,
     d = departamento,
     a = anio,
-    enLic = soloEnLicitacion
+    inst = instancia
   ) => {
     setCargando(true);
     setError(null);
@@ -88,7 +101,7 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
         query: q,
         departamento: d,
         anio: a,
-        soloEnLicitacion: enLic,
+        instancia: inst,
         limite,
       });
       setResultados(data);
@@ -101,9 +114,24 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
   };
 
   useEffect(() => {
-    ejecutarBusqueda("cubiertas", "Antioquia", "2026", true);
+    ejecutarBusqueda("cubiertas", "Antioquia", "2026", "licitacion");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const abrirDocumentos = async (item) => {
+    setProcesoSeleccionadoDocs(item);
+    setDocumentos([]);
+    setCargandoDocs(true);
+    try {
+      const docs = await consultarDocumentosProceso(item.portafolio);
+      setDocumentos(docs);
+    } catch (e) {
+      console.warn("Aviso cargando documentos del proceso:", e);
+      setDocumentos([]);
+    } finally {
+      setCargandoDocs(false);
+    }
+  };
 
   const clienteRegistrado = (entidad, nit) => {
     const eNorm = String(entidad || "").trim().toLowerCase();
@@ -180,7 +208,7 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
   // Ordenamiento en memoria garantizado
   const resultadosOrdenados = [...resultados].sort((a, b) => {
     if (orden === "valor_desc") {
-      return (b.valor || 0) - (a.valor || 0);
+      return (b.valor || b.valorAdjudicado || 0) - (a.valor || a.valorAdjudicado || 0);
     }
     const msA = a.fechaPublicacion ? new Date(a.fechaPublicacion).getTime() : 0;
     const msB = b.fechaPublicacion ? new Date(b.fechaPublicacion).getTime() : 0;
@@ -193,10 +221,10 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
       <div style={CD}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #1e293b)" }}>
-            Filtros y Búsqueda de Licitaciones
+            Filtros y Búsqueda de Procesos SECOP II
           </div>
           <span style={{ fontSize: 11, color: "var(--text-muted, #64748b)" }}>
-            Conectado a la base de datos nacional de <strong>datos.gov.co</strong>
+            Conectado a la base de datos nacional oficial de <strong>datos.gov.co</strong>
           </span>
         </div>
 
@@ -210,7 +238,7 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
                 type="button"
                 onClick={() => {
                   setQuery(t.query);
-                  ejecutarBusqueda(t.query, departamento, anio, soloEnLicitacion);
+                  ejecutarBusqueda(t.query, departamento, anio, instancia);
                 }}
                 style={{
                   background: activo ? "#FFFAEB" : "var(--surface-subtle, #f8fafc)",
@@ -231,7 +259,7 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
         </div>
 
         {/* Formulario de filtros */}
-        <div style={{ display: "grid", gridTemplateColumns: "2.2fr 1.2fr 1fr auto auto", gap: 10, alignItems: "end" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1.8fr 1.1fr 0.9fr 1.4fr auto auto", gap: 10, alignItems: "end" }}>
           <div>
             <label style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted, #64748b)" }}>Palabra clave o concepto</label>
             <input
@@ -240,7 +268,7 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
               placeholder="Ej. cubiertas, lineas de vida, alturas, anclajes..."
               style={{ ...SI, padding: "7px 10px", fontSize: 12.5 }}
               onKeyDown={(e) => {
-                if (e.key === "Enter") ejecutarBusqueda(query, departamento, anio, soloEnLicitacion);
+                if (e.key === "Enter") ejecutarBusqueda(query, departamento, anio, instancia);
               }}
             />
           </div>
@@ -251,7 +279,7 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
               value={departamento}
               onChange={(e) => {
                 setDepartamento(e.target.value);
-                ejecutarBusqueda(query, e.target.value, anio, soloEnLicitacion);
+                ejecutarBusqueda(query, e.target.value, anio, instancia);
               }}
               style={{ ...SI, padding: "7px 10px", fontSize: 12.5 }}
             >
@@ -269,7 +297,7 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
               value={anio}
               onChange={(e) => {
                 setAnio(e.target.value);
-                ejecutarBusqueda(query, departamento, e.target.value, soloEnLicitacion);
+                ejecutarBusqueda(query, departamento, e.target.value, instancia);
               }}
               style={{ ...SI, padding: "7px 10px", fontSize: 12.5 }}
             >
@@ -281,12 +309,39 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
             </select>
           </div>
 
+          {/* Selector de Instancia / Fase del Proceso */}
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 700, color: "#1e293b" }}>Instancia / Fase del proceso</label>
+            <select
+              value={instancia}
+              onChange={(e) => {
+                const val = e.target.value;
+                setInstancia(val);
+                ejecutarBusqueda(query, departamento, anio, val);
+              }}
+              style={{
+                ...SI,
+                padding: "7px 10px",
+                fontSize: 12,
+                fontWeight: 600,
+                backgroundColor: instancia === "licitacion" ? "#f0fdf4" : instancia === "adjudicado" ? "#fffbeb" : "#ffffff",
+                borderColor: instancia === "licitacion" ? "#86efac" : instancia === "adjudicado" ? "#fde68a" : "#cbd5e1",
+              }}
+            >
+              {INSTANCIAS.map((inst) => (
+                <option key={inst.id} value={inst.id}>
+                  {inst.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div>
             <label style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted, #64748b)" }}>Límite</label>
             <select
               value={limite}
               onChange={(e) => setLimite(Number(e.target.value))}
-              style={{ ...SI, padding: "7px 10px", fontSize: 12.5, width: 75 }}
+              style={{ ...SI, padding: "7px 10px", fontSize: 12.5, width: 70 }}
             >
               <option value={15}>15</option>
               <option value={30}>30</option>
@@ -297,7 +352,7 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
           <button
             type="button"
             disabled={cargando}
-            onClick={() => ejecutarBusqueda(query, departamento, anio, soloEnLicitacion)}
+            onClick={() => ejecutarBusqueda(query, departamento, anio, instancia)}
             style={{
               background: "#0f172a",
               color: "#fff",
@@ -316,23 +371,6 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
             {cargando ? "Buscando…" : "🔍 Buscar"}
           </button>
         </div>
-
-        {/* Filtro rápido: Solo en licitación */}
-        <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--border, #f1f5f9)", display: "flex", alignItems: "center", gap: 16 }}>
-          <label style={{ display: "inline-flex", alignItems: "center", gap: 7, cursor: "pointer", fontSize: 12, fontWeight: 600, color: "var(--text-main, #334155)" }}>
-            <input
-              type="checkbox"
-              checked={soloEnLicitacion}
-              onChange={(e) => {
-                const val = e.target.checked;
-                setSoloEnLicitacion(val);
-                ejecutarBusqueda(query, departamento, anio, val);
-              }}
-              style={{ width: 16, height: 16, accentColor: "#16a34a", cursor: "pointer" }}
-            />
-            <span>🟢 Mostrar únicamente procesos <strong>en licitación / abiertos</strong> (sin adjudicar)</span>
-          </label>
-        </div>
       </div>
 
       {/* Resultados de la búsqueda */}
@@ -347,6 +385,7 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
                 <span>Ubicación: <strong>{departamento}</strong> · </span>
               )}
               <span>Vigencia: <strong>{anio}</strong> · </span>
+              <span>Instancia: <strong>{INSTANCIAS.find((i) => i.id === instancia)?.label || instancia}</strong> · </span>
               <span>Búsqueda: <strong>«{query}»</strong></span>
             </div>
           </div>
@@ -377,7 +416,7 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
 
         {cargando && (
           <div style={{ padding: "36px 20px", textAlign: "center", color: "var(--text-muted, #64748b)", fontSize: 13 }}>
-            Conectando con la base de datos de <strong>datos.gov.co</strong> y buscando licitaciones activas…
+            Conectando con la base de datos de <strong>datos.gov.co</strong> y consultando procesos…
           </div>
         )}
 
@@ -389,7 +428,7 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
 
         {!cargando && !error && buscado && resultadosOrdenados.length === 0 && (
           <div style={{ padding: "30px 20px", textAlign: "center", color: "var(--text-muted, #64748b)", fontSize: 12.5 }}>
-            No se encontraron licitaciones activas para <strong>«{query}»</strong> en <strong>{departamento}</strong> ({anio}). Prueba con <em>Todos los departamentos</em> o términos como <em>«alturas»</em> o <em>«cubiertas»</em>.
+            No se encontraron procesos para <strong>«{query}»</strong> en <strong>{departamento}</strong> ({anio}) en la instancia seleccionada. Prueba cambiando a <em>«Todas las instancias»</em> o <em>Todos los departamentos</em>.
           </div>
         )}
 
@@ -398,6 +437,7 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
             {resultadosOrdenados.map((item) => {
               const registrado = clienteRegistrado(item.entidad, item.nit);
               const transcurrido = tiempoTranscurrido(item.fechaPublicacion);
+              const esAdjudicado = item.adjudicado === "Sí" || item.estadoProc === "Adjudicado" || Boolean(item.proveedorAdjudicado);
 
               return (
                 <div
@@ -420,6 +460,11 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
                         <span style={{ fontSize: 13.5, fontWeight: 800, color: "var(--text-main, #0f172a)" }}>
                           🏛️ {item.entidad}
                         </span>
+                        {item.referencia && item.referencia !== "Sin referencia" && (
+                          <span style={{ fontSize: 10.5, color: "#1e40af", background: "#dbeafe", padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>
+                            Ref: {item.referencia}
+                          </span>
+                        )}
                         {item.nit && (
                           <span style={{ fontSize: 10.5, color: "#64748b", background: "#e2e8f0", padding: "1px 6px", borderRadius: 4 }}>
                             NIT: {item.nit}
@@ -453,6 +498,16 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
                             </span>
                           )}
                         </span>
+                        {item.duracionTexto && (
+                          <span style={{ fontSize: 11, color: "#475569", background: "#f1f5f9", padding: "3px 8px", borderRadius: 6 }}>
+                            ⏱️ Plazo: <strong>{item.duracionTexto}</strong>
+                          </span>
+                        )}
+                        {item.respuestasOfertas > 0 && (
+                          <span style={{ fontSize: 11, color: "#0369a1", background: "#e0f2fe", padding: "3px 8px", borderRadius: 6, fontWeight: 600 }}>
+                            👥 {item.respuestasOfertas} oferta(s) radicada(s)
+                          </span>
+                        )}
                         {item.fechaUltima && item.fechaUltima !== item.fechaPublicacion && (
                           <span style={{ fontSize: 10.5, color: "#64748b" }}>
                             (Última act.: {formatearFecha(item.fechaUltima)})
@@ -463,16 +518,16 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
 
                     {/* Presupuesto y Estado */}
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-                      <span style={{ fontSize: 15, fontWeight: 800, color: "#b45309" }}>
+                      <span style={{ fontSize: 15, fontWeight: 800, color: esAdjudicado ? "#065f46" : "#b45309" }}>
                         {item.valorTexto}
                       </span>
                       <span
                         style={{
                           fontSize: 10.5,
                           fontWeight: 700,
-                          color: "#15803d",
-                          background: "#dcfce7",
-                          border: "1px solid #bbf7d0",
+                          color: esAdjudicado ? "#854d0e" : "#15803d",
+                          background: esAdjudicado ? "#fef9c3" : "#dcfce7",
+                          border: `1px solid ${esAdjudicado ? "#fef08a" : "#bbf7d0"}`,
                           padding: "2px 8px",
                           borderRadius: 4,
                           display: "inline-flex",
@@ -480,10 +535,39 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
                           gap: 4,
                         }}
                       >
-                        🟢 {item.fase || item.estado || "En licitación"}
+                        {esAdjudicado ? "🏆" : "🟢"} {item.fase || item.estado || "En licitación"}
                       </span>
                     </div>
                   </div>
+
+                  {/* Detalle si fue adjudicado a un contratista */}
+                  {esAdjudicado && item.proveedorAdjudicado && (
+                    <div
+                      style={{
+                        padding: "8px 12px",
+                        backgroundColor: "#fefce8",
+                        border: "1px solid #fef08a",
+                        borderRadius: 6,
+                        fontSize: 11.5,
+                        color: "#713f12",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                        gap: 6,
+                      }}
+                    >
+                      <div>
+                        🏆 <strong>Contratista adjudicado:</strong> {item.proveedorAdjudicado}
+                        {item.nitProveedorAdjudicado && <span> (NIT: {item.nitProveedorAdjudicado})</span>}
+                      </div>
+                      {item.valorAdjudicadoTexto && (
+                        <div>
+                          <strong>Valor contratado:</strong> {item.valorAdjudicadoTexto}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Descripción / Objeto de la licitación */}
                   <div style={{ fontSize: 12.5, color: "var(--text-main, #334155)", lineHeight: 1.55 }}>
@@ -510,7 +594,30 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
                       )}
                     </div>
 
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                      {/* BOTÓN PARA VER Y DESCARGAR DOCUMENTOS / PLIEGOS */}
+                      <button
+                        type="button"
+                        onClick={() => abrirDocumentos(item)}
+                        style={{
+                          background: "#eff6ff",
+                          color: "#1d4ed8",
+                          border: "1px solid #bfdbfe",
+                          borderRadius: 6,
+                          padding: "5px 12px",
+                          fontSize: 11.5,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 5,
+                          boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+                        }}
+                        title="Ver y descargar pliegos, estudios previos, formatos y anexos técnicos oficiales"
+                      >
+                        📁 Ver Documentos y Pliegos
+                      </button>
+
                       {item.urlSecop && (
                         <a
                           href={item.urlSecop}
@@ -531,7 +638,7 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
                             boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
                           }}
                         >
-                          Ver en SECOP II ↗
+                          Expediente SECOP II ↗
                         </a>
                       )}
 
@@ -584,6 +691,242 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
           </div>
         )}
       </div>
+
+      {/* MODAL DE DOCUMENTOS Y PLIEGOS OFICIALES DEL PROCESO */}
+      {procesoSeleccionadoDocs && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.65)",
+            backdropFilter: "blur(4px)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+          onClick={() => setProcesoSeleccionadoDocs(null)}
+        >
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: 14,
+              width: "100%",
+              maxWidth: 750,
+              maxHeight: "90vh",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1)",
+              overflow: "hidden",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Encabezado del Modal */}
+            <div
+              style={{
+                padding: "16px 20px",
+                borderBottom: "1px solid #e2e8f0",
+                backgroundColor: "#f8fafc",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                gap: 12,
+              }}
+            >
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#1d4ed8", background: "#dbeafe", padding: "2px 8px", borderRadius: 4 }}>
+                    📁 Documentos y Pliegos Oficiales
+                  </span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#475569" }}>
+                    Ref: {procesoSeleccionadoDocs.referencia}
+                  </span>
+                </div>
+                <div style={{ fontSize: 14.5, fontWeight: 800, color: "#0f172a" }}>
+                  {procesoSeleccionadoDocs.entidad}
+                </div>
+                <div
+                  style={{
+                    fontSize: 11.5,
+                    color: "#64748b",
+                    marginTop: 3,
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {procesoSeleccionadoDocs.objeto}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setProcesoSeleccionadoDocs(null)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  fontSize: 22,
+                  lineHeight: 1,
+                  cursor: "pointer",
+                  color: "#64748b",
+                  padding: 4,
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Contenido / Lista de Documentos */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
+              {cargandoDocs ? (
+                <div style={{ padding: "40px 20px", textAlign: "center", color: "#64748b", fontSize: 13 }}>
+                  Consultando documentos y anexos oficiales en el repositorio de SECOP II…
+                </div>
+              ) : documentos.length === 0 ? (
+                <div style={{ padding: "32px 20px", textAlign: "center", backgroundColor: "#f8fafc", borderRadius: 10, border: "1px dashed #cbd5e1" }}>
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>📑</div>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: "#1e293b", marginBottom: 4 }}>
+                    Documentos disponibles en el expediente de SECOP II
+                  </div>
+                  <p style={{ fontSize: 12, color: "#64748b", maxWidth: 500, margin: "0 auto 16px", lineHeight: 1.5 }}>
+                    Los pliegos de condiciones, estudios previos y formatos de propuesta están cargados en la sala digital oficial del proceso. Puedes abrirlos y descargarlos directamente:
+                  </p>
+                  {procesoSeleccionadoDocs.urlSecop && (
+                    <a
+                      href={procesoSeleccionadoDocs.urlSecop}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        ...B("#0f172a"),
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        padding: "9px 18px",
+                        fontSize: 12.5,
+                        textDecoration: "none",
+                        borderRadius: 8,
+                      }}
+                    >
+                      Abrir carpeta de documentos en SECOP II ↗
+                    </a>
+                  )}
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4, flexWrap: "wrap", gap: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>
+                      {documentos.length} archivo(s) oficial(es) registrado(s):
+                    </span>
+                    {procesoSeleccionadoDocs.urlSecop && (
+                      <a
+                        href={procesoSeleccionadoDocs.urlSecop}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ fontSize: 11.5, color: "#2563eb", textDecoration: "none", fontWeight: 600 }}
+                      >
+                        Ver expediente completo en SECOP II ↗
+                      </a>
+                    )}
+                  </div>
+
+                  {documentos.map((doc) => {
+                    const esPdf = doc.extension === "pdf";
+                    const esExcel = ["xlsx", "xls", "csv"].includes(doc.extension);
+                    const esWord = ["docx", "doc"].includes(doc.extension);
+                    const icono = esPdf ? "📕" : esExcel ? "📊" : esWord ? "📘" : "🗂️";
+
+                    return (
+                      <div
+                        key={doc.id}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          gap: 12,
+                          padding: "10px 14px",
+                          borderRadius: 8,
+                          border: "1px solid #e2e8f0",
+                          backgroundColor: "#f8fafc",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 260 }}>
+                          <span style={{ fontSize: 22 }}>{icono}</span>
+                          <div>
+                            <div style={{ fontSize: 12.5, fontWeight: 700, color: "#0f172a", wordBreak: "break-word" }}>
+                              {doc.nombre}
+                            </div>
+                            <div style={{ fontSize: 10.5, color: "#64748b", display: "flex", gap: 8, marginTop: 2 }}>
+                              <span>Tipo: <strong>.{doc.extension.toUpperCase()}</strong></span>
+                              {doc.tamanoTexto && <span>· Tamaño: <strong>{doc.tamanoTexto}</strong></span>}
+                              {doc.fechaCarga && <span>· Fecha: {formatearFecha(doc.fechaCarga)}</span>}
+                            </div>
+                          </div>
+                        </div>
+
+                        <a
+                          href={doc.urlDescarga}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{
+                            background: "#0284c7",
+                            color: "#ffffff",
+                            border: "none",
+                            borderRadius: 6,
+                            padding: "6px 14px",
+                            fontSize: 11.5,
+                            fontWeight: 700,
+                            textDecoration: "none",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 5,
+                            boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+                          }}
+                        >
+                          ⬇️ Descargar / Ver
+                        </a>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Pie del Modal */}
+            <div
+              style={{
+                padding: "12px 20px",
+                borderTop: "1px solid #e2e8f0",
+                backgroundColor: "#f8fafc",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <span style={{ fontSize: 11, color: "#64748b" }}>
+                Documentos oficiales provistos por la Agencia Nacional de Contratación Pública (Colombia Compra Eficiente)
+              </span>
+              <button
+                type="button"
+                onClick={() => setProcesoSeleccionadoDocs(null)}
+                style={{
+                  ...B("transparent"),
+                  border: "1px solid #cbd5e1",
+                  color: "#334155",
+                  padding: "6px 14px",
+                  fontSize: 12,
+                  borderRadius: 6,
+                  cursor: "pointer",
+                }}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -33,6 +33,15 @@ export default function FototecaObra({ obra, ctx = {} }) {
     }
   }, [obra?.id, obra?.__parcial, asegurarDetalle]);
 
+  // Asegurar la carga de informes asociados a esta obra para incluir sus fotos
+  useEffect(() => {
+    if (!obra?.id || !asegurarDetalle) return;
+    const infsParciales = (informes || []).filter((inf) => inf.obraId === obra.id && inf.__parcial !== false);
+    infsParciales.forEach((inf) => {
+      asegurarDetalle("informes", inf.id);
+    });
+  }, [obra?.id, informes, asegurarDetalle]);
+
   // Recopilar todas las fotos de la obra (Bitácora de obra + Informes)
   const todasLasFotos = useMemo(() => {
     const lista = [];

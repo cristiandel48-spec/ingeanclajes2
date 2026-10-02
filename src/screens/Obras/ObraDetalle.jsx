@@ -5,7 +5,7 @@ import FototecaObra from "./FototecaObra";
 import MaterialesDespachoObra from "./MaterialesDespachoObra";
 import LBL from "../../components/ui/LBL";
 import NuevoEmpleadoRapido from "../../components/NuevoEmpleadoRapido";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { B, CD, PAL, SI, ST } from "../../styles/tokens";
 import GuiaFlujoObra from "./GuiaFlujoObra";
 import { fmt, fmtD, today } from "../../lib/format";
@@ -38,7 +38,7 @@ function extraerObjetoCotizacion(texto = "") {
 }
 
 export default function ObraDetalle({obraId,ctx,onVolver}){
-  const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,ordenesCompra=[],horarios,setHorarios,irAPantalla,membresia}=ctx;
+  const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,ordenesCompra=[],horarios,setHorarios,irAPantalla,membresia,asegurarDetalle}=ctx;
   // Las cifras de la obra son confidenciales: quien organiza el trabajo no ve
   // cuanto se cobro ni el jornal de sus companeros.
   const verDinero=puedeVerDinero(membresia);
@@ -51,6 +51,16 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
   const [mostrarGuia,setMostrarGuia]=useState(false);
 
   const oAct=obras.find(o=>o.id===obraId);
+
+  // Asegura la descarga automática de las fotos y bitácora completa desde la nube
+  useEffect(() => {
+    if (!obraId || !asegurarDetalle) return;
+    const o = obras.find((x) => x.id === obraId);
+    if (o && o.__parcial !== false) {
+      asegurarDetalle("obras", obraId);
+    }
+  }, [obraId, oAct?.__parcial, asegurarDetalle]);
+
   if(!oAct)return null;
 
   const gastosObra=cuentas.filter(c=>c.obraId===obraId);

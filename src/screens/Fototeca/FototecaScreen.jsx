@@ -39,15 +39,21 @@ export default function FototecaScreen({ ctx }) {
     }
   }, [obraIdSeleccionada, asegurarDetalle]);
 
-  // Contador de fotos por obra
+  // Contador de fotos por obra (usa contadores rápidos de Supabase si la fila está en carga diferida)
   const getFotosCount = (o) => {
     if (!o) return 0;
     const bitacora = Array.isArray(o.bitacora) ? o.bitacora : [];
-    const fotosBitacora = bitacora.reduce((acc, b) => acc + (b?.fotos?.length || 0), 0);
+    const fotosBitacora = o.totalFotosAvance != null
+      ? Number(o.totalFotosAvance)
+      : bitacora.reduce((acc, b) => acc + (b?.fotos?.length || 0), 0);
     const fotosInformes = (informes || [])
       .filter((inf) => inf.obraId === o.id)
-      .reduce((acc, inf) => acc + (inf?.actividades || []).reduce((a2, act) => a2 + (act?.fotos?.length || 0), 0), 0);
-    return o.totalFotosAvance || Math.max(fotosBitacora + fotosInformes, fotosBitacora);
+      .reduce((acc, inf) => {
+        if (inf?.totalFotos != null) return acc + Number(inf.totalFotos);
+        const acts = Array.isArray(inf?.actividades) ? inf.actividades : [];
+        return acc + acts.reduce((a2, act) => a2 + (act?.fotos?.length || 0), 0);
+      }, 0);
+    return Math.max(fotosBitacora + fotosInformes, fotosBitacora, fotosInformes, 0);
   };
 
   // Filtrado de obras para el buscador

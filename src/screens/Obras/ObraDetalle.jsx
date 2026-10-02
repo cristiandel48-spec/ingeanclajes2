@@ -1,5 +1,6 @@
 import Av from "../../components/ui/Av";
 import Badge from "../../components/ui/Badge";
+import IconoPalomita from "../../components/ui/IconoPalomita";
 import BitacoraObra from "./BitacoraObra";
 import FototecaObra from "./FototecaObra";
 import MaterialesDespachoObra from "./MaterialesDespachoObra";
@@ -175,10 +176,17 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                   transition: "all .16s ease",
                 }}
               >
-                <span style={{ fontSize: 13, lineHeight: 1, fontWeight: 800, color: oAct.enviadoAlCliente ? "#16a34a" : "#94a3b8" }}>
-                  {oAct.enviadoAlCliente ? "✓" : "○"}
-                </span>
-                <span>{oAct.enviadoAlCliente ? "Enviado al cliente" : "Marcar enviado"}</span>
+                {oAct.enviadoAlCliente ? (
+                  <>
+                    <span>Enviado</span>
+                    <IconoPalomita size={14} color="#15803d" strokeWidth={3} />
+                  </>
+                ) : (
+                  <>
+                    <span>Sin enviar</span>
+                    <span style={{ fontSize: 11, lineHeight: 1, color: "#94a3b8" }}>○</span>
+                  </>
+                )}
               </button>
               {cotVinc && (
                 <span

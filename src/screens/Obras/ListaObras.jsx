@@ -11,6 +11,7 @@ import { useMemo } from "react";
 import ListadoConFiltros, { GrupoFiltro, Pastilla, Resaltable } from "../../components/ListadoConFiltros";
 import { C, enMilis } from "../../components/listadoEstilos";
 import Badge from "../../components/ui/Badge";
+import IconoPalomita from "../../components/ui/IconoPalomita";
 import { SI } from "../../styles/tokens";
 import { ESTADOS_OBRA, estadoObraDe, obraEstaCerrada } from "../../lib/flujoObra";
 import { resumenBitacora } from "../../lib/bitacoraObra";
@@ -67,9 +68,9 @@ export default function ListaObras({ obras, cotizaciones, horarios = [], onAbrir
           </GrupoFiltro>
           <GrupoFiltro titulo="Envío al cliente">
             <Pastilla activa={valores.enviado === "si"}
-              onClick={() => poner("enviado", valores.enviado === "si" ? null : "si")}>✓ Enviado</Pastilla>
+              onClick={() => poner("enviado", valores.enviado === "si" ? null : "si")}>Enviado ✓</Pastilla>
             <Pastilla activa={valores.enviado === "no"}
-              onClick={() => poner("enviado", valores.enviado === "no" ? null : "no")}>○ Sin enviar</Pastilla>
+              onClick={() => poner("enviado", valores.enviado === "no" ? null : "no")}>Sin enviar</Pastilla>
           </GrupoFiltro>
         </>
       )}
@@ -233,10 +234,17 @@ function Fila({ o, compacta, cotizacion, resumen, horarios = [], onAbrir, onCamb
         }
       }}
     >
-      <span style={{ fontSize: 13, lineHeight: 1, fontWeight: 800, color: enviado ? "#16a34a" : "#94a3b8" }}>
-        {enviado ? "✓" : "○"}
-      </span>
-      <span>{enviado ? "Enviado al cliente" : "Marcar enviado"}</span>
+      {enviado ? (
+        <>
+          <span>Enviado</span>
+          <IconoPalomita size={14} color="#15803d" strokeWidth={3} />
+        </>
+      ) : (
+        <>
+          <span>Sin enviar</span>
+          <span style={{ fontSize: 11, lineHeight: 1, color: "#94a3b8" }}>○</span>
+        </>
+      )}
     </button>
   );
 

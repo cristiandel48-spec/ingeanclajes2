@@ -179,7 +179,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                 {oAct.enviadoAlCliente ? (
                   <>
                     <span>Enviado</span>
-                    <IconoPalomita size={14} color="#15803d" strokeWidth={3} />
+                    <IconoPalomita size={19} color="#15803d" />
                   </>
                 ) : (
                   <>

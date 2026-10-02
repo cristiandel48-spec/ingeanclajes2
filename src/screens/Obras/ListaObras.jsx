@@ -68,7 +68,7 @@ export default function ListaObras({ obras, cotizaciones, horarios = [], onAbrir
           </GrupoFiltro>
           <GrupoFiltro titulo="Envío al cliente">
             <Pastilla activa={valores.enviado === "si"}
-              onClick={() => poner("enviado", valores.enviado === "si" ? null : "si")}>Enviado ✓</Pastilla>
+              onClick={() => poner("enviado", valores.enviado === "si" ? null : "si")}>Enviado 🕊️</Pastilla>
             <Pastilla activa={valores.enviado === "no"}
               onClick={() => poner("enviado", valores.enviado === "no" ? null : "no")}>Sin enviar</Pastilla>
           </GrupoFiltro>
@@ -237,7 +237,7 @@ function Fila({ o, compacta, cotizacion, resumen, horarios = [], onAbrir, onCamb
       {enviado ? (
         <>
           <span>Enviado</span>
-          <IconoPalomita size={14} color="#15803d" strokeWidth={3} />
+          <IconoPalomita size={19} color="#15803d" />
         </>
       ) : (
         <>

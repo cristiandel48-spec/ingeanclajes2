@@ -82,6 +82,20 @@ export default function Obras({ctx}){
       modificadoEn: new Date().toISOString(),
     };
   }));
+  const updEnviado=(id,valor)=>setObras(p=>p.map((o)=>{
+    if(o.id!==id) return o;
+    const nuevo = typeof valor === "boolean" ? valor : !o.enviadoAlCliente;
+    const ahoraIso = new Date().toISOString();
+    const autorActual = resolverAutorGuardado(ctx?.membresia, o.modificadoPorNombre);
+    return {
+      ...o,
+      enviadoAlCliente: nuevo,
+      fechaEnvioCliente: nuevo ? (o.fechaEnvioCliente || ahoraIso) : null,
+      modificadoPor: ctx?.membresia?.userId || null,
+      modificadoPorNombre: autorActual || o.modificadoPorNombre,
+      modificadoEn: ahoraIso,
+    };
+  }));
 
   const guardarObra=()=>{
     if(!nob.cliente.trim()){
@@ -123,6 +137,8 @@ export default function Obras({ctx}){
       trazos:[],
       anclajes:[],
       bitacora:[],
+      enviadoAlCliente: false,
+      fechaEnvioCliente: null,
       subtotalCotizacion:snapshot?.subtotalCotizacion ?? 0,
       utilidadCotizacion:snapshot?.utilidadCotizacion ?? 0,
       baseIngresoContable:snapshot?.baseIngresoContable ?? totalObra,
@@ -312,6 +328,7 @@ export default function Obras({ctx}){
         onAbrir={(o)=>{ setSel(o); asegurarDetalle("obras", o.id); }}
         onCambiarAvance={updAv}
         onCambiarEstado={updEst}
+        onToggleEnviado={updEnviado}
         puedeDesbloquear={puedeDesbloquear}
       />
     </div>

@@ -32,7 +32,7 @@ const ORDENES = [
   { key: "cliente",     label: "Cliente A–Z",   comparar: (a, b) => String(a.cliente || "").localeCompare(String(b.cliente || ""), "es") },
 ];
 
-export default function ListaObras({ obras, cotizaciones, horarios = [], onAbrir, onCambiarAvance, onCambiarEstado, puedeDesbloquear }) {
+export default function ListaObras({ obras, cotizaciones, horarios = [], onAbrir, onCambiarAvance, onCambiarEstado, onToggleEnviado, puedeDesbloquear }) {
   // Las fotos se cuentan una vez por obra y no en cada filtro.
   const fotosPorObra = useMemo(() => {
     const mapa = new Map();
@@ -65,6 +65,12 @@ export default function ListaObras({ obras, cotizaciones, horarios = [], onAbrir
             <Pastilla activa={valores.fotos === "sin"}
               onClick={() => poner("fotos", valores.fotos === "sin" ? null : "sin")}>Sin fotos</Pastilla>
           </GrupoFiltro>
+          <GrupoFiltro titulo="Envío al cliente">
+            <Pastilla activa={valores.enviado === "si"}
+              onClick={() => poner("enviado", valores.enviado === "si" ? null : "si")}>✓ Enviado</Pastilla>
+            <Pastilla activa={valores.enviado === "no"}
+              onClick={() => poner("enviado", valores.enviado === "no" ? null : "no")}>○ Sin enviar</Pastilla>
+          </GrupoFiltro>
         </>
       )}
       aplicarExtra={(o, v) => {
@@ -76,6 +82,11 @@ export default function ListaObras({ obras, cotizaciones, horarios = [], onAbrir
           const tiene = (fotosPorObra.get(o.id)?.fotos || 0) > 0;
           if (v.fotos === "con" && !tiene) return false;
           if (v.fotos === "sin" && tiene) return false;
+        }
+        if (v.enviado) {
+          const esEnviado = Boolean(o.enviadoAlCliente);
+          if (v.enviado === "si" && !esEnviado) return false;
+          if (v.enviado === "no" && esEnviado) return false;
         }
         return true;
       }}
@@ -97,6 +108,7 @@ export default function ListaObras({ obras, cotizaciones, horarios = [], onAbrir
           onAbrir={() => onAbrir(o)}
           onCambiarAvance={onCambiarAvance}
           onCambiarEstado={onCambiarEstado}
+          onToggleEnviado={onToggleEnviado}
           puedeDesbloquear={puedeDesbloquear} />
       )}
       vacio={{
@@ -107,7 +119,7 @@ export default function ListaObras({ obras, cotizaciones, horarios = [], onAbrir
   );
 }
 
-function Fila({ o, compacta, cotizacion, resumen, horarios = [], onAbrir, onCambiarAvance, onCambiarEstado, puedeDesbloquear }) {
+function Fila({ o, compacta, cotizacion, resumen, horarios = [], onAbrir, onCambiarAvance, onCambiarEstado, onToggleEnviado, puedeDesbloquear }) {
   const idsDirectos = Array.isArray(o.empleados) ? o.empleados : [];
   const idsHorarios = (horarios || []).filter((h) => h.obraId === o.id).map((h) => h.empleadoId).filter(Boolean);
   const totalEmpleados = [...new Set([...idsDirectos, ...idsHorarios])].length;
@@ -175,6 +187,59 @@ function Fila({ o, compacta, cotizacion, resumen, horarios = [], onAbrir, onCamb
     </>
   );
 
+  const enviado = Boolean(o.enviadoAlCliente);
+  const botonEnviado = (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggleEnviado?.(o.id, !enviado);
+      }}
+      title={
+        enviado
+          ? `Enviado al cliente${o.fechaEnvioCliente ? ` (${fmtD(o.fechaEnvioCliente)})` : ""}. Clic para cambiar.`
+          : "Marcar como enviado al cliente"
+      }
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "5px 12px",
+        borderRadius: 20,
+        fontSize: 11.5,
+        fontWeight: 600,
+        cursor: "pointer",
+        flexShrink: 0,
+        whiteSpace: "nowrap",
+        userSelect: "none",
+        border: enviado ? "1px solid #86efac" : "1px dashed #cbd5e1",
+        background: enviado ? "#ecfdf5" : "var(--surface-subtle, #f8fafc)",
+        color: enviado ? "#15803d" : "#64748b",
+        boxShadow: enviado ? "0 1px 2px rgba(16, 185, 129, 0.12)" : "none",
+        transition: "all .16s ease",
+      }}
+      onMouseEnter={(e) => {
+        if (!enviado) {
+          e.currentTarget.style.borderColor = "#94a3b8";
+          e.currentTarget.style.color = "#334155";
+          e.currentTarget.style.background = "#f1f5f9";
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!enviado) {
+          e.currentTarget.style.borderColor = "#cbd5e1";
+          e.currentTarget.style.color = "#64748b";
+          e.currentTarget.style.background = "var(--surface-subtle, #f8fafc)";
+        }
+      }}
+    >
+      <span style={{ fontSize: 13, lineHeight: 1, fontWeight: 800, color: enviado ? "#16a34a" : "#94a3b8" }}>
+        {enviado ? "✓" : "○"}
+      </span>
+      <span>{enviado ? "Enviado al cliente" : "Marcar enviado"}</span>
+    </button>
+  );
+
   if (compacta) {
     return (
       <Resaltable as="article" onClick={onAbrir}
@@ -185,6 +250,9 @@ function Fila({ o, compacta, cotizacion, resumen, horarios = [], onAbrir, onCamb
           transition: "border-color .16s ease, background .16s ease" }}>
         <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, background: color }} />
         <div style={{ minWidth: 0, flex: 1 }}>{datos}</div>
+
+        {/* Palomita / Indicador de enviado al cliente */}
+        {botonEnviado}
 
         {/* La barra sigue siendo la de mover el avance, aqui estrecha. */}
         <div style={{ width: 150, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
@@ -223,7 +291,10 @@ function Fila({ o, compacta, cotizacion, resumen, horarios = [], onAbrir, onCamb
 
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
         <div style={{ minWidth: 0 }}>{datos}</div>
-        <Badge estado={o.estado} />
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          {botonEnviado}
+          <Badge estado={o.estado} />
+        </div>
       </div>
 
       <div>

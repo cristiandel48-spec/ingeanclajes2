@@ -138,6 +138,48 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                 {oAct.cliente}
               </span>
               <Badge estado={oAct.estado}/>
+              <button
+                type="button"
+                onClick={() => {
+                  const nuevo = !oAct.enviadoAlCliente;
+                  const ahoraIso = new Date().toISOString();
+                  const autorActual = resolverAutorGuardado(membresia, oAct.modificadoPorNombre);
+                  setObras(p => p.map(o => o.id === obraId ? {
+                    ...o,
+                    enviadoAlCliente: nuevo,
+                    fechaEnvioCliente: nuevo ? (o.fechaEnvioCliente || ahoraIso) : null,
+                    modificadoPor: membresia?.userId || null,
+                    modificadoPorNombre: autorActual || o.modificadoPorNombre || "Camila Sepúlveda",
+                    modificadoEn: ahoraIso,
+                  } : o));
+                }}
+                title={
+                  oAct.enviadoAlCliente
+                    ? `Enviado al cliente${oAct.fechaEnvioCliente ? ` (${fmtD(oAct.fechaEnvioCliente)})` : ""}. Clic para cambiar.`
+                    : "Marcar como enviado al cliente"
+                }
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                  padding: "4px 11px",
+                  borderRadius: 20,
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  userSelect: "none",
+                  border: oAct.enviadoAlCliente ? "1px solid #86efac" : "1px dashed #cbd5e1",
+                  background: oAct.enviadoAlCliente ? "#ecfdf5" : "var(--surface-subtle, #f8fafc)",
+                  color: oAct.enviadoAlCliente ? "#15803d" : "#64748b",
+                  transition: "all .16s ease",
+                }}
+              >
+                <span style={{ fontSize: 13, lineHeight: 1, fontWeight: 800, color: oAct.enviadoAlCliente ? "#16a34a" : "#94a3b8" }}>
+                  {oAct.enviadoAlCliente ? "✓" : "○"}
+                </span>
+                <span>{oAct.enviadoAlCliente ? "Enviado al cliente" : "Marcar enviado"}</span>
+              </button>
               {cotVinc && (
                 <span
                   onClick={() => irAPantalla("cotizacion", { cotizacionId: cotVinc.id })}

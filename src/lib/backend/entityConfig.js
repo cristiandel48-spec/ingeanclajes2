@@ -197,7 +197,7 @@ export const entityConfig = {
       "created_at",
       "updated_at",
     ],
-    coerceNullCols: ["avance", "total", "pagado", "saldo", "costos", "subtotal_cotizacion", "utilidad_cotizacion", "base_ingreso_contable", "iva_generado_cotizacion", "fecha_inicio", "fecha_fin"],
+    coerceNullCols: ["avance", "total", "pagado", "saldo", "costos", "subtotal_cotizacion", "utilidad_cotizacion", "base_ingreso_contable", "iva_generado_cotizacion", "fecha_inicio", "fecha_fin", "fecha_envio_cliente"],
     toRow: (item) => ({
       id: item.id,
       cliente: item.cliente,
@@ -226,6 +226,8 @@ export const entityConfig = {
       modificado_por: item.modificadoPor ?? null,
       modificado_por_nombre: item.modificadoPorNombre ?? null,
       modificado_en: item.modificadoEn ?? null,
+      enviado_al_cliente: Boolean(item.enviadoAlCliente),
+      fecha_envio_cliente: item.fechaEnvioCliente ?? null,
       empleados: safeArray(item.empleados),
       trazos: safeArray(item.trazos),
       anclajes: safeArray(item.anclajes),
@@ -314,6 +316,8 @@ export const entityConfig = {
       modificadoPor: row.modificado_por ?? null,
       modificadoPorNombre: row.modificado_por_nombre ?? "",
       modificadoEn: row.modificado_en ?? row.updated_at ?? null,
+      enviadoAlCliente: Boolean(row.enviado_al_cliente),
+      fechaEnvioCliente: row.fecha_envio_cliente ?? null,
     }),
   },
   cotizaciones: {

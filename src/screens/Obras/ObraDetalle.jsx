@@ -106,16 +106,15 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
         alignItems: "center",
         justifyContent: "space-between",
         gap: 16,
-        marginBottom: 20,
+        marginBottom: 16,
         background: "var(--surface, #fff)",
         borderRadius: 14,
-        padding: "14px 20px",
+        padding: "12px 18px",
         border: "1px solid var(--border, #e2e8f0)",
         boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-        flexWrap: "wrap",
       }}>
         {/* Izquierda: Volver + Nombre + Badges + Metadatos */}
-        <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0, flex: 1 }}>
           <button
             onClick={onVolver}
             style={{
@@ -132,10 +131,10 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           >
             ← Volver
           </button>
-          <div style={{ width: 1, height: 32, background: "var(--border, #e2e8f0)" }} />
-          <div>
+          <div style={{ width: 1, height: 34, background: "var(--border, #e2e8f0)", flexShrink: 0 }} />
+          <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 18, fontWeight: 700, color: "var(--text-main, #1a1a2e)", lineHeight: 1.2 }}>
+              <span style={{ fontSize: 17, fontWeight: 700, color: "var(--text-main, #1a1a2e)", lineHeight: 1.2 }}>
                 {oAct.cliente}
               </span>
               <Badge estado={oAct.estado}/>
@@ -163,9 +162,9 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 5,
-                  padding: "4px 11px",
+                  padding: "3px 10px",
                   borderRadius: 20,
-                  fontSize: 11.5,
+                  fontSize: 11,
                   fontWeight: 600,
                   cursor: "pointer",
                   whiteSpace: "nowrap",
@@ -179,7 +178,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                 {oAct.enviadoAlCliente ? (
                   <>
                     <span>Enviado</span>
-                    <IconoPalomita size={19} color="#15803d" />
+                    <IconoPalomita size={16} color="#15803d" />
                   </>
                 ) : (
                   <>
@@ -207,14 +206,24 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                 </span>
               )}
             </div>
-            <div style={{ fontSize: 11.5, color: "var(--text-muted, #64748b)", marginTop: 2 }}>
+            <div
+              style={{
+                fontSize: 11.5,
+                color: "var(--text-muted, #64748b)",
+                marginTop: 2,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+              title={`${oAct.id} · ${fmtD(oAct.fechaInicio)} → ${fmtD(oAct.fechaFin) || "En curso"} · ${oAct.proyecto} · 📍 ${oAct.ciudad}${oAct.direccion ? ` · ${oAct.direccion}` : ""}`}
+            >
               {oAct.id} · {fmtD(oAct.fechaInicio)} → {fmtD(oAct.fechaFin) || "En curso"} · {oAct.proyecto} · 📍 {oAct.ciudad}{oAct.direccion ? ` · ${oAct.direccion}` : ""}
             </div>
           </div>
         </div>
 
         {/* Derecha: Botones con colores suaves ejecutivos */}
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "center" }}>
           <button
             onClick={() => irAPantalla("informes", { obraId: oAct.id })}
             style={{
@@ -223,7 +232,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               border: "1px solid #bfdbfe",
               borderRadius: 8,
               fontSize: 12,
-              padding: "7px 13px",
+              padding: "6px 12px",
               fontWeight: 600,
               cursor: "pointer",
               display: "inline-flex",
@@ -243,7 +252,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               border: "1px solid #a7f3d0",
               borderRadius: 8,
               fontSize: 12,
-              padding: "7px 13px",
+              padding: "6px 12px",
               fontWeight: 600,
               cursor: "pointer",
               display: "inline-flex",
@@ -263,7 +272,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               border: detTab === "fototeca" ? "1px solid rgba(181, 71, 8, 0.35)" : "1px solid #f5d0fe",
               borderRadius: 8,
               fontSize: 12,
-              padding: "7px 13px",
+              padding: "6px 12px",
               fontWeight: 600,
               cursor: "pointer",
               display: "inline-flex",
@@ -283,7 +292,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               border: mostrarGuia ? "1px solid rgba(181, 71, 8, 0.35)" : "1px solid var(--border, #eaecf0)",
               borderRadius: 8,
               fontSize: 12,
-              padding: "7px 12px",
+              padding: "6px 11px",
               fontWeight: 600,
               cursor: "pointer",
               display: "inline-flex",
@@ -315,7 +324,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             justifyContent: "space-between",
             gap: 8,
             flexWrap: "wrap",
-            marginBottom: objetoLimpio ? 8 : (itemsCot.length ? 8 : 0),
+            marginBottom: (objetoLimpio || itemsCot.length) ? 8 : 0,
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
               <span style={{ fontSize: 13 }}>📄</span>
@@ -366,65 +375,79 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             </button>
           </div>
 
-          {/* Objeto contratado (Directo en amarillo, sin texto de relleno) */}
-          {objetoLimpio && (
+          {/* Fila con Objeto a la izquierda e Ítems a la derecha */}
+          {(objetoLimpio || itemsCot.length > 0) && (
             <div style={{
-              background: "#FFFAEB",
-              border: "1px solid #FDE68A",
-              borderRadius: 6,
-              padding: "6px 10px",
-              fontSize: 12,
-              color: "#78350F",
-              lineHeight: 1.4,
-              marginBottom: itemsCot.length ? 8 : 0,
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 6,
+              display: "grid",
+              gridTemplateColumns: (objetoLimpio && itemsCot.length > 0) ? "minmax(280px, 1fr) minmax(320px, 1.25fr)" : "1fr",
+              gap: 10,
+              alignItems: "stretch",
             }}>
-              <span style={{ flexShrink: 0 }}>🎯</span>
-              <div>
-                <strong style={{ fontWeight: 700 }}>Objeto: </strong>
-                <mark style={{
-                  backgroundColor: "#FEF08A",
-                  color: "#713F12",
-                  padding: "1px 6px",
-                  borderRadius: 4,
-                  fontWeight: 600,
+              {/* Objeto contratado (Directo en amarillo, sin texto de relleno) */}
+              {objetoLimpio && (
+                <div style={{
+                  background: "#FFFAEB",
+                  border: "1px solid #FDE68A",
+                  borderRadius: 6,
+                  padding: "6px 10px",
+                  fontSize: 12,
+                  color: "#78350F",
+                  lineHeight: 1.4,
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 6,
                 }}>
-                  {objetoLimpio}
-                </mark>
-              </div>
-            </div>
-          )}
+                  <span style={{ flexShrink: 0 }}>🎯</span>
+                  <div>
+                    <strong style={{ fontWeight: 700 }}>Objeto: </strong>
+                    <mark style={{
+                      backgroundColor: "#FEF08A",
+                      color: "#713F12",
+                      padding: "1px 6px",
+                      borderRadius: 4,
+                      fontWeight: 600,
+                    }}>
+                      {objetoLimpio}
+                    </mark>
+                  </div>
+                </div>
+              )}
 
-          {/* Detalle de ítems (Sin valores monetarios: solo Cant, Unidad y Descripción) */}
-          {itemsCot.length > 0 && (
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5, textAlign: "left" }}>
-                <thead>
-                  <tr style={{ borderBottom: "1px solid #E2E8F0", background: "var(--surface-subtle, #F8FAFC)" }}>
-                    <th style={{ padding: "4px 8px", color: "#64748B", fontWeight: 600, width: "55px" }}>Cant.</th>
-                    <th style={{ padding: "4px 8px", color: "#64748B", fontWeight: 600, width: "75px" }}>Unidad</th>
-                    <th style={{ padding: "4px 8px", color: "#64748B", fontWeight: 600 }}>Descripción del trabajo a realizar</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {itemsCot.map((it, idx) => {
-                    const cant = Number(it.cant) || 1;
-                    const desc = it.desc || it.descripcion || "Sin descripción";
-                    const unidad = it.unit || it.unidad || "Global";
-                    return (
-                      <tr key={it.id || idx} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                        <td style={{ padding: "4px 8px", fontWeight: 700, color: "#92400E" }}>{cant}</td>
-                        <td style={{ padding: "4px 8px", color: "#475569" }}>{unidad}</td>
-                        <td style={{ padding: "4px 8px", color: "var(--text-main, #1E293B)", fontWeight: 500 }}>
-                          {desc}
-                        </td>
+              {/* Detalle de ítems (Sin valores monetarios: solo Cant, Unidad y Descripción) */}
+              {itemsCot.length > 0 && (
+                <div style={{
+                  border: "1px solid #E2E8F0",
+                  borderRadius: 6,
+                  overflowX: "auto",
+                  background: "var(--surface-subtle, #F8FAFC)",
+                }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5, textAlign: "left" }}>
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid #E2E8F0", background: "rgba(0,0,0,0.02)" }}>
+                        <th style={{ padding: "4px 8px", color: "#64748B", fontWeight: 600, width: "45px" }}>Cant.</th>
+                        <th style={{ padding: "4px 8px", color: "#64748B", fontWeight: 600, width: "65px" }}>Unidad</th>
+                        <th style={{ padding: "4px 8px", color: "#64748B", fontWeight: 600 }}>Descripción del trabajo a realizar</th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody>
+                      {itemsCot.map((it, idx) => {
+                        const cant = Number(it.cant) || 1;
+                        const desc = it.desc || it.descripcion || "Sin descripción";
+                        const unidad = it.unit || it.unidad || "Global";
+                        return (
+                          <tr key={it.id || idx} style={{ borderBottom: idx < itemsCot.length - 1 ? "1px solid #F1F5F9" : "none" }}>
+                            <td style={{ padding: "4px 8px", fontWeight: 700, color: "#92400E" }}>{cant}</td>
+                            <td style={{ padding: "4px 8px", color: "#475569" }}>{unidad}</td>
+                            <td style={{ padding: "4px 8px", color: "var(--text-main, #1E293B)", fontWeight: 500 }}>
+                              {desc}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
         </div>

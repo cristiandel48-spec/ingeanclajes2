@@ -271,24 +271,41 @@ Cancelar: se la entregas tú.`);
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: appBloqueada ? "#ef4444" : "var(--text-main)" }}>
-                  Estado de la Plataforma (Apagado remoto)
+                  Estado de la Plataforma (Apagado remoto): {appBloqueada ? "🔴 APAGADA / BLOQUEADA" : "🟢 ACTIVA"}
                 </div>
                 <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-                  Si se apaga, todos los usuarios verán una pantalla en blanco y no podrán entrar.
+                  {appBloqueada
+                    ? "El sistema está apagado. Nadie más puede ver nada (pantalla blanca)."
+                    : "Si se apaga, todos los usuarios verán una pantalla en blanco y no podrán entrar."}
                 </div>
               </div>
               <button
-                onClick={() => {
-                  if (window.confirm(appBloqueada ? "¿Reactivar el acceso a todos los usuarios?" : "🚨 ¿Seguro que quieres apagar la aplicación? Nadie salvo tú podrá entrar y verán la pantalla en blanco.")) {
-                    setAppBloqueada(!appBloqueada);
+                disabled={guardando}
+                onClick={async () => {
+                  const nuevoEstado = !appBloqueada;
+                  const mensajeConfirm = nuevoEstado
+                    ? "🚨 ¿Seguro que quieres APAGAR la aplicación? Nadie salvo tú podrá entrar y verán la pantalla en blanco."
+                    : "¿Reactivar el acceso a todos los usuarios?";
+                  if (window.confirm(mensajeConfirm)) {
+                    setGuardando(true);
+                    try {
+                      await setAppBloqueada(nuevoEstado);
+                      alert(nuevoEstado ? "🛑 La aplicación ha sido APAGADA con éxito en la nube." : "🟢 La aplicación ha sido ACTIVADA con éxito en la nube.");
+                    } catch (e) {
+                      alert("Error al cambiar estado: " + (e.message || e));
+                    } finally {
+                      setGuardando(false);
+                    }
                   }
                 }}
                 style={{
                   ...B(appBloqueada ? "#10b981" : "#ef4444"),
-                  padding: "6px 14px", fontSize: 13,
+                  padding: "8px 18px", fontSize: 13,
+                  opacity: guardando ? 0.7 : 1,
+                  cursor: guardando ? "wait" : "pointer",
                 }}
               >
-                {appBloqueada ? "🟢 Habilitar Sistema" : "🛑 Apagar Sistema"}
+                {guardando ? "⏳ Guardando..." : appBloqueada ? "🟢 Reactivar Sistema" : "🛑 Apagar Sistema Ahora"}
               </button>
             </div>
           </div>

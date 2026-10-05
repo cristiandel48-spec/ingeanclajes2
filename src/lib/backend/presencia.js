@@ -92,6 +92,15 @@ export function suscribirPresencia({
     }
   });
 
+  // Escucha si el superadmin apaga el sistema de forma remota en vivo
+  canal.on("broadcast", { event: "estado_bloqueo_sistema" }, ({ payload }) => {
+    if (!payload) return;
+    if (!esAdmin && payload.bloqueado) {
+      // Recargar para que AppRoot aplique la pantalla en blanco silenciosa de inmediato
+      window.location.reload();
+    }
+  });
+
   // Función para computar el mapa de usuarios en línea
   const emitirPresencia = () => {
     // Si no es el superadmin, no se procesa ni almacena el estado de conexiones ajenas
@@ -190,9 +199,29 @@ export function suscribirPresencia({
     }
   };
 
+  const emitirBloqueoSistema = async (bloqueado) => {
+    if (!esAdmin) return { ok: false, error: "No autorizado." };
+    try {
+      await canal.send({
+        type: "broadcast",
+        event: "estado_bloqueo_sistema",
+        payload: {
+          bloqueado: Boolean(bloqueado),
+          adminEmail: miEmail,
+          fecha: new Date().toISOString(),
+        },
+      });
+      return { ok: true };
+    } catch (error) {
+      console.warn("No se pudo emitir estado_bloqueo_sistema:", error);
+      return { ok: false };
+    }
+  };
+
   return {
     canal,
     forzarCierreSesion,
+    emitirBloqueoSistema,
     destruir: () => {
       try {
         canal.untrack();

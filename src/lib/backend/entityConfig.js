@@ -849,21 +849,28 @@ export const entityConfig = {
   empresa_config: {
     table: "empresa_config",
     optional: true,
-    toRow: (item) => ({
-      id: item.id,
-      firma_img: item.firmaImg ?? null,
-      firma_nombre: item.firmaNombre ?? null,
-      firma_cargo: item.firmaCargo ?? null,
-      // Codigo y version de cada formato. Null y no {} para poder distinguir
-      // «nunca se ha configurado» de «se configuro vacio a proposito».
-      control_documental: item.controlDocumental ?? null,
-    }),
+    toRow: (item) => {
+      const doc = typeof item.controlDocumental === "object" && item.controlDocumental !== null
+        ? { ...item.controlDocumental }
+        : {};
+      if (item.appBloqueada !== undefined) {
+        doc.appBloqueada = Boolean(item.appBloqueada);
+      }
+      return {
+        id: item.id || "empresa",
+        firma_img: item.firmaImg ?? null,
+        firma_nombre: item.firmaNombre ?? null,
+        firma_cargo: item.firmaCargo ?? null,
+        control_documental: Object.keys(doc).length > 0 ? doc : null,
+      };
+    },
     fromRow: (row) => ({
       id: row.id,
       firmaImg: row.firma_img ?? "",
       firmaNombre: row.firma_nombre ?? "",
       firmaCargo: row.firma_cargo ?? "",
       controlDocumental: row.control_documental ?? null,
+      appBloqueada: Boolean(row.control_documental?.appBloqueada),
     }),
   },
   contabilidad_config: {

@@ -99,16 +99,48 @@ export function AppDataProvider({ children }) {
   // desactivarlo desde su panel de control en la pantalla de Usuarios.
   // El estado vive en empresaConfig (id="empresa") y se sincroniza con la nube.
   const appBloqueada = Boolean(
-    Array.isArray(empresaConfig) && empresaConfig.find(row => row?.id === "empresa")?.appBloqueada
+    Array.isArray(empresaConfig) && empresaConfig.some(
+      (row) => row?.appBloqueada || row?.controlDocumental?.appBloqueada
+    )
   );
-  const setAppBloqueada = (valor) => {
-    setEmpresaConfig((prev) => {
-      const lista = Array.isArray(prev) ? prev : [];
-      const actual = lista.find(row => row?.id === "empresa");
-      const fila = { ...(actual || { id: "empresa" }), appBloqueada: Boolean(valor) };
-      if (!actual) return [...lista, fila];
-      return lista.map(row => (row?.id === "empresa" ? fila : row));
-    });
+
+  const setAppBloqueada = async (valor) => {
+    const lista = Array.isArray(empresaConfig) ? empresaConfig : [];
+    const actual = lista.find((row) => row?.id === "empresa") || lista[0];
+    const targetId = actual?.id || "empresa";
+    const fila = {
+      ...(actual || { id: targetId }),
+      id: targetId,
+      appBloqueada: Boolean(valor),
+      controlDocumental: {
+        ...(actual?.controlDocumental || {}),
+        appBloqueada: Boolean(valor),
+      },
+    };
+    const nuevaLista = lista.some((r) => r.id === targetId)
+      ? lista.map((r) => (r.id === targetId ? fila : r))
+      : [...lista, fila];
+
+    setEmpresaConfig(nuevaLista);
+
+    // Guardado inmediato en Supabase
+    try {
+      const payload = payloadRef.current ? payloadRef.current() : {};
+      await saveCloudAppData({
+        ...payload,
+        empresaConfig: nuevaLista,
+      });
+      setSaveState("saved");
+      setLastSavedAt(new Date());
+      setHasPendingChanges(false);
+    } catch (e) {
+      console.error("Error al guardar estado de bloqueo en la nube:", e);
+    }
+
+    // Emisión en tiempo real a todos los clientes conectados
+    if (presenciaManagerRef.current?.emitirBloqueoSistema) {
+      await presenciaManagerRef.current.emitirBloqueoSistema(Boolean(valor));
+    }
   };
 
   // Permite saltar a otra pantalla llevando contexto, por ejemplo "abre un

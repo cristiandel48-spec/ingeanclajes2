@@ -52,6 +52,8 @@ export default function PropuestaEditor({
   const setFotos = (siguiente) => set("fotos", aplicar(fotos, siguiente));
 
   const [rotandoId, setRotandoId] = useState(null);
+  const [fotoModal, setFotoModal] = useState(null);
+  const [zoomModal, setZoomModal] = useState(false);
 
   const rotarFoto = async (fId) => {
     const foto = fotos.find((item) => item.id === fId);
@@ -62,6 +64,7 @@ export default function PropuestaEditor({
       setFotos((prev) =>
         prev.map((item) => (item.id === fId ? { ...item, src: nuevoSrc } : item))
       );
+      setFotoModal((prev) => (prev && prev.id === fId ? { ...prev, src: nuevoSrc } : prev));
     } catch (err) {
       console.error("Error al rotar imagen:", err);
     } finally {
@@ -224,30 +227,38 @@ export default function PropuestaEditor({
             <span style={{fontSize:12,fontWeight:600,color:"var(--text-main, #1a1a2e)"}}>Fotos de la propuesta</span>
             <span style={{fontSize:10,color:"var(--text-subtle, #94a3b8)"}}>Se imprimen en el PDF</span>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))",gap:12}}>
             {fotos.map((f, i) => (
               <div
                 key={f.id}
                 style={{
-                  borderRadius: 8,
+                  borderRadius: 10,
                   overflow: "hidden",
                   border: "1px solid var(--border, #e2e8f0)",
-                  background: "var(--surface-subtle, #f8fafc)",
+                  background: "var(--surface, #ffffff)",
                   display: "flex",
                   flexDirection: "column",
                   position: "relative",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
                 }}
               >
-                {/* Visualizador de la foto con fondo oscuro neutro y botón de rotación */}
+                {/* Visualizador de la foto adaptable, sin barras negras oscuras y con clic para pantalla completa */}
                 <div
+                  onClick={() => {
+                    setFotoModal({ id: f.id, src: f.src, label: f.label, index: i });
+                    setZoomModal(false);
+                  }}
+                  title="Clic para ver en pantalla completa a máxima resolución"
                   style={{
                     position: "relative",
-                    background: "#0f172a",
-                    height: 140,
+                    background: "var(--surface-subtle, #f8fafc)",
+                    height: 240,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     overflow: "hidden",
+                    cursor: "zoom-in",
+                    borderBottom: "1px solid var(--border, #eaecf0)",
                   }}
                 >
                   <img
@@ -267,15 +278,16 @@ export default function PropuestaEditor({
                   <span
                     style={{
                       position: "absolute",
-                      top: 6,
-                      left: 6,
+                      top: 8,
+                      left: 8,
                       background: "rgba(15, 23, 42, 0.75)",
                       color: "#fff",
-                      fontSize: 10,
+                      fontSize: 10.5,
                       fontWeight: 700,
-                      padding: "2px 6px",
-                      borderRadius: 4,
+                      padding: "3px 8px",
+                      borderRadius: 5,
                       backdropFilter: "blur(4px)",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
                     }}
                   >
                     Foto {i + 1}
@@ -284,34 +296,60 @@ export default function PropuestaEditor({
                   {/* Botón de rotación 90° rápido */}
                   <button
                     type="button"
-                    onClick={() => rotarFoto(f.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      rotarFoto(f.id);
+                    }}
                     disabled={rotandoId === f.id}
                     title="Rotar 90° en sentido horario (alinea la orientación real de la foto para el PDF)"
                     style={{
                       position: "absolute",
-                      top: 6,
-                      right: 6,
+                      top: 8,
+                      right: 8,
                       background: "rgba(15, 23, 42, 0.8)",
                       color: "#fff",
                       border: "1px solid rgba(255, 255, 255, 0.2)",
-                      borderRadius: 5,
-                      padding: "3px 7px",
+                      borderRadius: 6,
+                      padding: "4px 8px",
                       fontSize: 11,
                       fontWeight: 600,
                       cursor: rotandoId === f.id ? "wait" : "pointer",
                       display: "inline-flex",
                       alignItems: "center",
                       gap: 4,
-                      boxShadow: "0 2px 4px rgba(0,0,0,0.3)",
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+                      zIndex: 2,
                     }}
                   >
                     <span>{rotandoId === f.id ? "⏳" : "🔄"}</span>
                     <span style={{ fontSize: 10 }}>Rotar 90°</span>
                   </button>
+
+                  {/* Indicador de clic para ampliar */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: 8,
+                      right: 8,
+                      background: "rgba(15, 23, 42, 0.75)",
+                      color: "#fff",
+                      fontSize: 10.5,
+                      fontWeight: 600,
+                      padding: "3px 8px",
+                      borderRadius: 5,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
+                      pointerEvents: "none",
+                    }}
+                  >
+                    <span>🔍 Ver completa</span>
+                  </div>
                 </div>
 
                 {/* Barra inferior con reordenamiento, pie de foto y eliminar */}
-                <div style={{ padding: "6px 8px", display: "flex", gap: 4, alignItems: "center", background: "var(--surface, #fff)" }}>
+                <div style={{ padding: "8px 10px", display: "flex", gap: 6, alignItems: "center", background: "var(--surface, #fff)" }}>
                   <button
                     type="button"
                     disabled={i === 0}
@@ -321,11 +359,11 @@ export default function PropuestaEditor({
                       background: "var(--surface-subtle, #f1f5f9)",
                       border: "1px solid var(--border, #cbd5e1)",
                       color: i === 0 ? "#cbd5e1" : "#475569",
-                      borderRadius: 4,
-                      width: 22,
-                      height: 22,
+                      borderRadius: 5,
+                      width: 24,
+                      height: 24,
                       cursor: i === 0 ? "default" : "pointer",
-                      fontSize: 10,
+                      fontSize: 11,
                       padding: 0,
                       lineHeight: 1,
                     }}
@@ -341,11 +379,11 @@ export default function PropuestaEditor({
                       background: "var(--surface-subtle, #f1f5f9)",
                       border: "1px solid var(--border, #cbd5e1)",
                       color: i === fotos.length - 1 ? "#cbd5e1" : "#475569",
-                      borderRadius: 4,
-                      width: 22,
-                      height: 22,
+                      borderRadius: 5,
+                      width: 24,
+                      height: 24,
                       cursor: i === fotos.length - 1 ? "default" : "pointer",
-                      fontSize: 10,
+                      fontSize: 11,
                       padding: 0,
                       lineHeight: 1,
                     }}
@@ -361,7 +399,7 @@ export default function PropuestaEditor({
                       )
                     }
                     placeholder={`Pie de foto ${i + 1} (ej. Cubierta Norte)`}
-                    style={{ ...SI, fontSize: 11, padding: "3px 6px", flex: 1 }}
+                    style={{ ...SI, fontSize: 11.5, padding: "4px 7px", flex: 1 }}
                   />
 
                   <button
@@ -373,10 +411,10 @@ export default function PropuestaEditor({
                       border: "none",
                       color: "#ef4444",
                       borderRadius: 6,
-                      width: 22,
-                      height: 22,
+                      width: 24,
+                      height: 24,
                       cursor: "pointer",
-                      fontSize: 13,
+                      fontSize: 14,
                       flexShrink: 0,
                       lineHeight: 1,
                     }}
@@ -386,20 +424,37 @@ export default function PropuestaEditor({
                 </div>
               </div>
             ))}
-            <div onClick={()=>fotosRef.current.click()} style={{border:"2px dashed #f47c20",borderRadius:10,minHeight:140,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",background:"var(--c-acento-suave, #fff8f3)",color:"#f47c20",fontWeight:600,gap:6}}>
-              <span style={{fontSize:24,lineHeight:1}}>+</span>
-              <span style={{fontSize:12}}>Agregar foto</span>
+            <div
+              onClick={() => fotosRef.current.click()}
+              style={{
+                border: "2px dashed #f47c20",
+                borderRadius: 10,
+                height: 240,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                background: "var(--c-acento-suave, #fff8f3)",
+                color: "#f47c20",
+                fontWeight: 600,
+                gap: 8,
+                transition: "all 0.15s ease",
+              }}
+            >
+              <span style={{ fontSize: 28, lineHeight: 1 }}>+</span>
+              <span style={{ fontSize: 13, fontWeight: 700 }}>Agregar foto</span>
+              <span style={{ fontSize: 11, color: "var(--text-muted, #94a3b8)", fontWeight: 500 }}>
+                Formatos JPG, PNG, WEBP
+              </span>
             </div>
           </div>
-          {/* Las fotos se reducen ANTES de guardarlas. Sin esto entraban tal
-              como salen del celular -4 a 8 MB cada una en base64- y como la
-              cotizacion viaja entera a la base en cada guardado, unas pocas
-              fotos bastaban para tumbar la conexion. */}
+          {/* Carga de fotos con alta resolución optimizada para documentos y fotos de obra */}
           <input ref={fotosRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={async(e)=>{
             const archivos=Array.from(e.target.files||[]);
             e.target.value="";
             for(const file of archivos){
-              const src=await leerImagenComprimida(file);
+              const src=await leerImagenComprimida(file, { ladoMax: 2400, calidad: 0.90 });
               setFotos(prev=>[...prev,{id:Date.now()+Math.random(),src,label:""}]);
             }
           }}/>
@@ -939,6 +994,270 @@ export default function PropuestaEditor({
             Cada línea escrita aquí sale como una viñeta con guion en la sección «ESTA COTIZACIÓN INCLUYE» al final de la cotización y en el PDF oficial.
           </div>
         </div>
+
+      {/* Modal / Lightbox de visualización de fotos en alta resolución nativa */}
+      {fotoModal && (() => {
+        const idxActual = fotos.findIndex((f) => f.id === fotoModal.id);
+        const fotoActual = (idxActual >= 0 ? fotos[idxActual] : null) || fotoModal;
+        const total = fotos.length;
+
+        const irAnterior = (e) => {
+          e.stopPropagation();
+          if (idxActual > 0) {
+            setFotoModal({ ...fotos[idxActual - 1], index: idxActual - 1 });
+            setZoomModal(false);
+          }
+        };
+
+        const irSiguiente = (e) => {
+          e.stopPropagation();
+          if (idxActual >= 0 && idxActual < total - 1) {
+            setFotoModal({ ...fotos[idxActual + 1], index: idxActual + 1 });
+            setZoomModal(false);
+          }
+        };
+
+        return (
+          <div
+            role="dialog"
+            aria-modal="true"
+            onClick={() => setFotoModal(null)}
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 999999,
+              background: "rgba(15, 23, 42, 0.94)",
+              backdropFilter: "blur(6px)",
+              display: "flex",
+              flexDirection: "column",
+              userSelect: "none",
+            }}
+          >
+            {/* Barra superior de control */}
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "12px 20px",
+                background: "rgba(15, 23, 42, 0.85)",
+                borderBottom: "1px solid rgba(255, 255, 255, 0.12)",
+                gap: 12,
+                flexWrap: "wrap",
+                zIndex: 10,
+              }}
+            >
+              {/* Información y pie de foto */}
+              <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 200, flex: 1 }}>
+                <span
+                  style={{
+                    background: "rgba(255, 255, 255, 0.15)",
+                    color: "#fff",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    padding: "4px 10px",
+                    borderRadius: 6,
+                    letterSpacing: "0.02em",
+                  }}
+                >
+                  Foto {(idxActual >= 0 ? idxActual : 0) + 1} de {total}
+                </span>
+                <span
+                  style={{
+                    color: "rgba(255, 255, 255, 0.9)",
+                    fontSize: 13,
+                    fontWeight: 500,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    maxWidth: 420,
+                  }}
+                  title={fotoActual.label || "Sin pie de foto"}
+                >
+                  {fotoActual.label ? `«${fotoActual.label}»` : "(Sin pie de foto asignado)"}
+                </span>
+              </div>
+
+              {/* Botones de navegación (si hay más de 1 foto) */}
+              {total > 1 && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <button
+                    type="button"
+                    disabled={idxActual <= 0}
+                    onClick={irAnterior}
+                    style={{
+                      background: idxActual <= 0 ? "rgba(255, 255, 255, 0.05)" : "rgba(255, 255, 255, 0.18)",
+                      color: idxActual <= 0 ? "rgba(255, 255, 255, 0.3)" : "#fff",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      borderRadius: 8,
+                      padding: "6px 14px",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: idxActual <= 0 ? "default" : "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                    }}
+                  >
+                    ◀ Anterior
+                  </button>
+                  <button
+                    type="button"
+                    disabled={idxActual >= total - 1}
+                    onClick={irSiguiente}
+                    style={{
+                      background: idxActual >= total - 1 ? "rgba(255, 255, 255, 0.05)" : "rgba(255, 255, 255, 0.18)",
+                      color: idxActual >= total - 1 ? "rgba(255, 255, 255, 0.3)" : "#fff",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      borderRadius: 8,
+                      padding: "6px 14px",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: idxActual >= total - 1 ? "default" : "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                    }}
+                  >
+                    Siguiente ▶
+                  </button>
+                </div>
+              )}
+
+              {/* Acciones: Zoom 100%, Rotar, Cerrar */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => setZoomModal((z) => !z)}
+                  style={{
+                    background: zoomModal ? "#f47c20" : "rgba(255, 255, 255, 0.18)",
+                    color: "#fff",
+                    border: "1px solid " + (zoomModal ? "#f47c20" : "rgba(255, 255, 255, 0.25)"),
+                    borderRadius: 8,
+                    padding: "6px 14px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                  title={zoomModal ? "Ajustar imagen a la pantalla" : "Ver en tamaño real 100% sin reducción de resolución"}
+                >
+                  <span>{zoomModal ? "🔍" : "🔎"}</span>
+                  <span>{zoomModal ? "Ajustar a pantalla" : "Tamaño real (100%)"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => rotarFoto(fotoActual.id)}
+                  disabled={rotandoId === fotoActual.id}
+                  style={{
+                    background: "rgba(255, 255, 255, 0.18)",
+                    color: "#fff",
+                    border: "1px solid rgba(255, 255, 255, 0.25)",
+                    borderRadius: 8,
+                    padding: "6px 14px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: rotandoId === fotoActual.id ? "wait" : "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                  title="Rotar foto 90° en sentido horario (actualiza también el documento)"
+                >
+                  <span>{rotandoId === fotoActual.id ? "⏳" : "🔄"}</span>
+                  <span>Rotar 90°</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFotoModal(null)}
+                  style={{
+                    background: "#E0342A",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "6px 16px",
+                    fontSize: 12.5,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
+                  title="Cerrar visor"
+                >
+                  ✕ Cerrar
+                </button>
+              </div>
+            </div>
+
+            {/* Área de visualización central de la foto */}
+            <div
+              style={{
+                flex: 1,
+                display: "flex",
+                alignItems: zoomModal ? "flex-start" : "center",
+                justifyContent: zoomModal ? "flex-start" : "center",
+                overflow: zoomModal ? "auto" : "hidden",
+                padding: zoomModal ? 24 : 16,
+                position: "relative",
+              }}
+            >
+              <img
+                src={fotoActual.src}
+                alt={fotoActual.label || "Foto completa"}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setZoomModal((z) => !z);
+                }}
+                style={{
+                  maxWidth: zoomModal ? "none" : "96vw",
+                  maxHeight: zoomModal ? "none" : "80vh",
+                  width: zoomModal ? "auto" : undefined,
+                  height: zoomModal ? "auto" : undefined,
+                  objectFit: "contain",
+                  borderRadius: 6,
+                  boxShadow: "0 12px 48px rgba(0, 0, 0, 0.6)",
+                  cursor: zoomModal ? "zoom-out" : "zoom-in",
+                  transition: zoomModal ? "none" : "transform 0.15s ease",
+                  display: "block",
+                  margin: zoomModal ? "auto" : undefined,
+                }}
+                title={zoomModal ? "Clic para ajustar a pantalla" : "Clic para ver en tamaño real 100%"}
+              />
+            </div>
+
+            {/* Barra inferior de ayuda */}
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                padding: "8px 16px",
+                background: "rgba(15, 23, 42, 0.85)",
+                borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+                fontSize: 11.5,
+                color: "rgba(255, 255, 255, 0.7)",
+                textAlign: "center",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 16,
+                flexWrap: "wrap",
+              }}
+            >
+              <span>💡 <strong>Tip:</strong> Haz clic sobre la foto para alternar entre verla completa o verla en su <strong>resolución original (100%)</strong> para inspeccionar letras, planos o detalles.</span>
+              <span style={{ opacity: 0.6 }}>|</span>
+              <span>Usa <strong>Rotar 90°</strong> si la foto se subió de lado o invertida.</span>
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );

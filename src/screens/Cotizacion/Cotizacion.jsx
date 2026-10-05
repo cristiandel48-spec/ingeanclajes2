@@ -578,15 +578,15 @@ export default function Cotizacion({ctx}){
             </button>
           )}
         </div>
-      ) : isMobile ? null : (
+      ) : (
         <button
           style={{
             background: "#FFFAEB",
             color: "#B54708",
             border: "1px solid rgba(181, 71, 8, 0.35)",
             borderRadius: 8,
-            padding: "7px 16px",
-            fontSize: 12.5,
+            padding: isMobile ? "6px 12px" : "7px 16px",
+            fontSize: isMobile ? 12 : 12.5,
             fontWeight: 700,
             cursor: "pointer",
             fontFamily: "inherit",
@@ -1073,70 +1073,7 @@ export default function Cotizacion({ctx}){
       );
     }
     return (
-      <div style={{padding: isMobile ? "10px 0 30px" : "24px 28px", width: "100%", boxSizing: "border-box"}}>
-        {/* Cabecera visual con botón destacado para crear cotización */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 16,
-            gap: 12,
-            flexWrap: "wrap",
-            background: "var(--surface, #ffffff)",
-            border: "1px solid var(--border, #e2e8f0)",
-            borderRadius: 14,
-            padding: isMobile ? "12px 14px" : "14px 20px",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-          }}
-        >
-          <div>
-            <div style={{ fontSize: isMobile ? 16 : 18, fontWeight: 800, color: "var(--text-main, #0f172a)", display: "flex", alignItems: "center", gap: 8 }}>
-              <span>Cotizaciones</span>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  background: "var(--surface-subtle, #f1f5f9)",
-                  color: "var(--text-muted, #64748b)",
-                  padding: "2px 8px",
-                  borderRadius: 999,
-                  border: "1px solid var(--border, #e2e8f0)",
-                }}
-              >
-                {cotizaciones?.length || 0}
-              </span>
-            </div>
-            <div style={{ fontSize: 12, color: "var(--text-muted, #64748b)", marginTop: 2 }}>
-              Gestión comercial y propuestas de anclajes
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={nuevaCotizacion}
-            style={{
-              background: "linear-gradient(135deg, #ea580c 0%, #c2410c 100%)",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: 10,
-              padding: isMobile ? "11px 16px" : "10px 22px",
-              fontSize: 13.5,
-              fontWeight: 700,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              boxShadow: "0 2px 8px rgba(194, 65, 12, 0.28)",
-              width: isMobile ? "100%" : "auto",
-            }}
-          >
-            <span style={{ fontSize: 18, lineHeight: 1, fontWeight: 900 }}>+</span>
-            <span>Nueva Cotización</span>
-          </button>
-        </div>
-
+      <div style={{padding: isMobile ? "8px 0 24px" : "12px 20px", width: "100%", boxSizing: "border-box"}}>
         {/* Al aprobar, se explica que se creo y cual es el siguiente paso:
             quien cotiza no tiene por que saber que ahora existe una obra. */}
         {obraCreada && (

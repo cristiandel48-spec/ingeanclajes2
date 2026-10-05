@@ -15,10 +15,19 @@ export default function DocumentoEnVivo({
   titulo = "Documento como se imprimirá",
   nota = "Se actualiza al escribir",
   sticky = true,
+  modo: modoProp,
+  onModoChange,
+  ocultarControles = false,
+  onEscalaChange,
 }) {
   const isMobile = useIsMobile();
   const contenedorRef = useRef(null);
-  const [modo, setModo] = useState("auto"); // "auto" (ajustar a pantalla) o "real" (100% tamaño lectura)
+  const [modoLocal, setModoLocal] = useState("auto"); // "auto" (ajustar a pantalla) o "real" (100% tamaño lectura)
+  const modo = modoProp !== undefined ? modoProp : modoLocal;
+  const setModo = (m) => {
+    if (typeof onModoChange === "function") onModoChange(m);
+    setModoLocal(m);
+  };
   
   // Escala inicial inteligente según viewport para que en móviles arranque ajustado sin salto
   const [escala, setEscala] = useState(() => {
@@ -28,6 +37,10 @@ export default function DocumentoEnVivo({
     }
     return 1;
   });
+
+  useEffect(() => {
+    if (typeof onEscalaChange === "function") onEscalaChange(escala);
+  }, []);
   const [error, setError] = useState(null);
 
   // Inicializar el html
@@ -68,6 +81,7 @@ export default function DocumentoEnVivo({
         // En móviles dejamos margen de 12px para que la hoja quede centrada con borde visible
         const factor = Math.max(0.2, Math.min(1, (ancho - 12) / ANCHO_HOJA));
         setEscala(factor);
+        if (typeof onEscalaChange === "function") onEscalaChange(factor);
       }
     };
     medir();
@@ -82,7 +96,7 @@ export default function DocumentoEnVivo({
     const observer = new ResizeObserver(medir);
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [onEscalaChange]);
 
   const escalaEfectiva = modo === "real" ? 1 : Number(escala.toFixed(4));
 
@@ -193,50 +207,52 @@ export default function DocumentoEnVivo({
         </div>
 
         {/* Controles de vista: Ajustar a pantalla o 100% Lectura */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <button
-            type="button"
-            onClick={() => setModo("auto")}
-            title="Ajusta el documento al ancho completo de tu pantalla para ver la página entera"
-            style={{
-              background: modo === "auto" ? "var(--btn-guardar-bg, #cc0000)" : "var(--btn-cancelar-bg, #f1f5f9)",
-              color: modo === "auto" ? "#fff" : "var(--btn-cancelar-txt, #475569)",
-              border: `1px solid ${modo === "auto" ? "var(--btn-guardar-bg, #cc0000)" : "var(--border, #cbd5e1)"}`,
-              borderRadius: 6,
-              padding: isMobile ? "5px 9px" : "4px 10px",
-              fontSize: 11,
-              fontWeight: 700,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 4,
-            }}
-          >
-            <span>📱</span>
-            <span>Ajustar ({Math.round(escala * 100)}%)</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setModo("real")}
-            title="Muestra el documento al 100% de tamaño para lectura cómoda deslizando con el dedo"
-            style={{
-              background: modo === "real" ? "var(--btn-guardar-bg, #cc0000)" : "var(--btn-cancelar-bg, #f1f5f9)",
-              color: modo === "real" ? "#fff" : "var(--btn-cancelar-txt, #475569)",
-              border: `1px solid ${modo === "real" ? "var(--btn-guardar-bg, #cc0000)" : "var(--border, #cbd5e1)"}`,
-              borderRadius: 6,
-              padding: isMobile ? "5px 9px" : "4px 10px",
-              fontSize: 11,
-              fontWeight: 700,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 4,
-            }}
-          >
-            <span>🔍</span>
-            <span>100% Lectura</span>
-          </button>
-        </div>
+        {!ocultarControles && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <button
+              type="button"
+              onClick={() => setModo("auto")}
+              title="Ajusta el documento al ancho completo de tu pantalla para ver la página entera"
+              style={{
+                background: modo === "auto" ? "var(--btn-guardar-bg, #cc0000)" : "var(--btn-cancelar-bg, #f1f5f9)",
+                color: modo === "auto" ? "#fff" : "var(--btn-cancelar-txt, #475569)",
+                border: `1px solid ${modo === "auto" ? "var(--btn-guardar-bg, #cc0000)" : "var(--border, #cbd5e1)"}`,
+                borderRadius: 6,
+                padding: isMobile ? "5px 9px" : "4px 10px",
+                fontSize: 11,
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+              }}
+            >
+              <span>📱</span>
+              <span>Ajustar ({Math.round(escala * 100)}%)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setModo("real")}
+              title="Muestra el documento al 100% de tamaño para lectura cómoda deslizando con el dedo"
+              style={{
+                background: modo === "real" ? "var(--btn-guardar-bg, #cc0000)" : "var(--btn-cancelar-bg, #f1f5f9)",
+                color: modo === "real" ? "#fff" : "var(--btn-cancelar-txt, #475569)",
+                border: `1px solid ${modo === "real" ? "var(--btn-guardar-bg, #cc0000)" : "var(--border, #cbd5e1)"}`,
+                borderRadius: 6,
+                padding: isMobile ? "5px 9px" : "4px 10px",
+                fontSize: 11,
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+              }}
+            >
+              <span>🔍</span>
+              <span>100% Lectura</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {error ? (

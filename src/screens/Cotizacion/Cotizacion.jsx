@@ -37,6 +37,8 @@ export default function Cotizacion({ctx}){
   const selloCotizacion=selloDe(empresaConfig,"cotizacion");
   const [tab,setTab]=useState("lista");
   const [previewCot,setPreviewCot]=useState(null);
+  const [modoPreview, setModoPreview]=useState("auto");
+  const [escalaPreview, setEscalaPreview]=useState(1);
   // Cotizacion que se esta por enviar al cliente.
   const [enviarCot,setEnviarCot]=useState(null);
   // Vista previa del documento junto al formulario, para revisar los textos
@@ -529,8 +531,54 @@ export default function Cotizacion({ctx}){
   useEffect(()=>{ nuevaRef.current = nuevaCotizacion; });
 
   useAccionesPantalla(
-    tab==="lista" ? (
-      isMobile ? null : (
+    tab === "lista" ? (
+      previewCot ? (
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button
+            type="button"
+            style={{
+              background: "var(--surface-subtle, #f2f4f7)",
+              color: "var(--text-main, #101828)",
+              border: "1px solid var(--border, #eaecf0)",
+              borderRadius: 8,
+              padding: isMobile ? "6px 12px" : "7px 14px",
+              fontSize: 12.5,
+              fontWeight: 600,
+              cursor: "pointer",
+              fontFamily: "inherit",
+              whiteSpace: "nowrap",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+            }}
+            onClick={() => setPreviewCot(null)}
+            title="Volver al listado de cotizaciones"
+          >
+            ← Volver
+          </button>
+          {!isMobile && (
+            <button
+              type="button"
+              style={{
+                background: "#FFFAEB",
+                color: "#B54708",
+                border: "1px solid rgba(181, 71, 8, 0.35)",
+                borderRadius: 8,
+                padding: "7px 16px",
+                fontSize: 12.5,
+                fontWeight: 700,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                whiteSpace: "nowrap",
+                boxShadow: "0 1px 2px rgba(181, 71, 8, 0.08)",
+              }}
+              onClick={() => nuevaRef.current()}
+            >
+              + Nueva Cotización
+            </button>
+          )}
+        </div>
+      ) : isMobile ? null : (
         <button
           style={{
             background: "#FFFAEB",
@@ -545,14 +593,16 @@ export default function Cotizacion({ctx}){
             whiteSpace: "nowrap",
             boxShadow: "0 1px 2px rgba(181, 71, 8, 0.08)",
           }}
-          onClick={()=>nuevaRef.current()}
-        >+ Nueva Cotización</button>
+          onClick={() => nuevaRef.current()}
+        >
+          + Nueva Cotización
+        </button>
       )
-    ) : tab==="form" ? (
-      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+    ) : tab === "form" ? (
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <button
           style={{ ...SECUNDARIO, padding: "6px 12px", fontSize: 12, fontWeight: 600 }}
-          onClick={()=>setTab("lista")}
+          onClick={() => setTab("lista")}
           title="Volver al listado de cotizaciones"
         >
           ← Volver a lista
@@ -568,13 +618,13 @@ export default function Cotizacion({ctx}){
             fontSize: 12.5,
             boxShadow: "0 1px 2px rgba(181, 71, 8, 0.08)",
           }}
-          onClick={()=>guardarRef.current()}
+          onClick={() => guardarRef.current()}
         >
           💾 Guardar
         </button>
       </div>
     ) : null,
-    [tab]
+    [tab, previewCot, isMobile]
   );
 
   const guardarCotizacionYSubir = ()=>{
@@ -912,21 +962,50 @@ export default function Cotizacion({ctx}){
             </div>
 
             <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+              {/* Controles de vista: Ajustar a pantalla o 100% Lectura (movidos aquí) */}
               <button
+                type="button"
+                onClick={() => setModoPreview("auto")}
+                title="Ajusta el documento al ancho completo de tu pantalla para ver la página entera"
                 style={{
-                  background: "var(--surface-subtle, #f2f4f7)",
-                  color: "var(--text-main, #101828)",
-                  border: "1px solid var(--border, #eaecf0)",
+                  background: modoPreview === "auto" ? "var(--btn-guardar-bg, #cc0000)" : "var(--btn-cancelar-bg, #f1f5f9)",
+                  color: modoPreview === "auto" ? "#fff" : "var(--btn-cancelar-txt, #475569)",
+                  border: `1px solid ${modoPreview === "auto" ? "var(--btn-guardar-bg, #cc0000)" : "var(--border, #cbd5e1)"}`,
                   borderRadius: 6,
-                  padding: "5px 12px",
-                  fontSize: 12,
-                  fontWeight: 600,
+                  padding: isMobile ? "5px 9px" : "5px 11px",
+                  fontSize: 11.5,
+                  fontWeight: 700,
                   cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
                 }}
-                onClick={()=>setPreviewCot(null)}
               >
-                ← Volver
+                <span>📱</span>
+                <span>Ajustar ({Math.round(escalaPreview * 100)}%)</span>
               </button>
+              <button
+                type="button"
+                onClick={() => setModoPreview("real")}
+                title="Muestra el documento al 100% de tamaño para lectura cómoda deslizando con el dedo"
+                style={{
+                  background: modoPreview === "real" ? "var(--btn-guardar-bg, #cc0000)" : "var(--btn-cancelar-bg, #f1f5f9)",
+                  color: modoPreview === "real" ? "#fff" : "var(--btn-cancelar-txt, #475569)",
+                  border: `1px solid ${modoPreview === "real" ? "var(--btn-guardar-bg, #cc0000)" : "var(--border, #cbd5e1)"}`,
+                  borderRadius: 6,
+                  padding: isMobile ? "5px 9px" : "5px 11px",
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                }}
+              >
+                <span>🔍</span>
+                <span>100% Lectura</span>
+              </button>
+
               <button
                 style={{
                   background: "transparent",
@@ -977,7 +1056,18 @@ export default function Cotizacion({ctx}){
             </div>
           </div>
 
-          <DocumentoEnVivo cotizacion={previewCot} firmaImg={firmaImg} sello={selloCotizacion} alto="calc(100dvh - 120px)" nota="Igual al PDF" sticky={false}/>
+          <DocumentoEnVivo
+            cotizacion={previewCot}
+            firmaImg={firmaImg}
+            sello={selloCotizacion}
+            alto="calc(100dvh - 120px)"
+            nota="Igual al PDF"
+            sticky={false}
+            modo={modoPreview}
+            onModoChange={setModoPreview}
+            onEscalaChange={setEscalaPreview}
+            ocultarControles={true}
+          />
           {enviarCot && <EnviarCotizacion cotizacion={enviarCot} firmaImg={firmaImg} onCerrar={()=>setEnviarCot(null)}/>}
         </div>
       );

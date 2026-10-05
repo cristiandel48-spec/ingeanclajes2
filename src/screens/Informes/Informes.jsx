@@ -299,12 +299,7 @@ export default function Informes({ctx}){
   // el menu no se reabra el formulario.
   useEffect(()=>()=>limpiarIntencion(),[limpiarIntencion]);
 
-  const turnosDisponiblesObra = [...new Set(
-    horarios
-      .filter(h=>coincideObra(h, form.obraId))
-      .map(h=>fmtTurno12(h.turno))
-      .filter(Boolean)
-  )];
+
 
   useEffect(()=>{
     if(!obras.length) return;
@@ -791,16 +786,13 @@ export default function Informes({ctx}){
                     alignItems: "center",
                     gap: 5,
                   }}
-                  title="Recargar el personal asignado a esta obra y sus horarios"
+                  title="Recargar el personal asignado a esta obra"
                 >
                   🔄 Sincronizar de la obra ({form.personal.length})
                 </button>
               </div>
-              <div style={{fontSize:11,color:"var(--text-muted, #64748b)"}}>Se carga automáticamente según la obra y los horarios. Los turnos se muestran en formato 12h.</div>
+              <div style={{fontSize:11,color:"var(--text-muted, #64748b)"}}>Se carga automáticamente según el personal asignado a la obra.</div>
             </div>
-            <datalist id="turnosInformeList">
-              {turnosDisponiblesObra.map((t,i)=><option key={i} value={t} />)}
-            </datalist>
             {form.personal.length === 0 && (
               <div style={{ background: "var(--surface-subtle, #f8fafc)", border: "1px dashed var(--border, #e2e8f0)", borderRadius: 10, padding: "14px 16px", fontSize: 12.5, color: "var(--text-subtle, #98a2b3)", marginBottom: 8 }}>
                 No hay personal asignado a esta obra todavía. Sincroniza desde la obra o agrega personas manualmente.
@@ -812,7 +804,7 @@ export default function Informes({ctx}){
               const initials = (nombreDisplay.split(" ").map(w => w[0]).filter(Boolean).slice(0, 2).join("") || "TE").toUpperCase();
 
               return (
-                <div key={i} style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr 1fr 1fr 32px", gap: 10, alignItems: "center", marginBottom: 8, background: "var(--surface-subtle, #f8fafc)", border: "1px solid var(--border, #eaecf0)", borderRadius: 10, padding: "8px 10px" }}>
+                <div key={i} style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 32px", gap: 10, alignItems: "center", marginBottom: 8, background: "var(--surface-subtle, #f8fafc)", border: "1px solid var(--border, #eaecf0)", borderRadius: 10, padding: "8px 10px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                     <Av init={initials} size={28} color="#101828" />
                     <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
@@ -854,8 +846,6 @@ export default function Informes({ctx}){
                     </div>
                   </div>
                   <input value={p.cargo || ""} onChange={e => updPersonal(i, "cargo", e.target.value.toUpperCase())} onBlur={e => { const v = normalizarMayusculas(e.target.value); if (v !== p.cargo) updPersonal(i, "cargo", v); }} placeholder="CARGO TÉCNICO" style={{ ...SI, fontSize: 12, padding: "5px 8px", textTransform: "uppercase" }} />
-                  <input list="turnosInformeList" value={p.turno1 || ""} onChange={e => updPersonal(i, "turno1", e.target.value)} placeholder="Turno 1 · 07:00 AM - 05:00 PM" style={{ ...SI, fontSize: 12, padding: "5px 8px" }} />
-                  <input list="turnosInformeList" value={p.turno2 || ""} onChange={e => updPersonal(i, "turno2", e.target.value)} placeholder="Turno 2 · opcional" style={{ ...SI, fontSize: 12, padding: "5px 8px" }} />
                   <button
                     type="button"
                     title="Quitar técnico"

@@ -1131,13 +1131,13 @@ export default function Informes({ctx}){
                 }}
               >
                 {/* Línea de acento superior */}
-                <div style={{ height: 4, background: "linear-gradient(90deg, #ea580c 0%, #f97316 40%, #0f172a 100%)", borderRadius: 2, marginBottom: 14 }}></div>
+                <div style={{ height: 3, background: "#0f172a", borderRadius: 2, marginBottom: 14 }}></div>
 
                 {/* Encabezado Matriz SGC */}
-                <table style={{ width: "100%", borderCollapse: "collapse", border: "1.5px solid #1e293b", marginBottom: 14, background: "#ffffff" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", border: "1.5px solid #0f172a", marginBottom: 14, background: "#ffffff" }}>
                   <tbody>
                     <tr>
-                      <td style={{ width: "28%", textAlign: "center", borderRight: "1.5px solid #1e293b", padding: "8px 12px", verticalAlign: "middle" }}>
+                      <td style={{ width: "28%", textAlign: "center", borderRight: "1.5px solid #0f172a", padding: "8px 12px", verticalAlign: "middle" }}>
                         {LOGO_INGEANCLAJES ? (
                           <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{ height: 44, maxWidth: 180, objectFit: "contain", display: "block", margin: "0 auto 4px" }} />
                         ) : (
@@ -1145,15 +1145,15 @@ export default function Informes({ctx}){
                             INGE<span style={{ color: "#ea580c" }}>ANCLAJES</span>
                           </div>
                         )}
-                        <div style={{ fontSize: 9, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 2 }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 2 }}>
                           Especialistas en Anclajes S.A.S
                         </div>
-                        <div style={{ fontSize: 9, color: "#94a3b8", marginTop: 1 }}>
+                        <div style={{ fontSize: 9, color: "#475569", marginTop: 1 }}>
                           NIT. 900.193.965-4 · PBX (604) 448 26 86
                         </div>
                       </td>
-                      <td style={{ width: "46%", textAlign: "center", padding: "8px 10px", verticalAlign: "middle", borderRight: "1px solid #334155" }}>
-                        <div style={{ fontSize: 9.5, fontWeight: 800, color: "#ea580c", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                      <td style={{ width: "46%", textAlign: "center", padding: "8px 10px", verticalAlign: "middle", borderRight: "1px solid #cbd5e1" }}>
+                        <div style={{ fontSize: 9.5, fontWeight: 700, color: "#475569", letterSpacing: "0.12em", textTransform: "uppercase" }}>
                           Sistema de Gestión de la Calidad
                         </div>
                         <div style={{ fontSize: 13.5, fontWeight: 800, color: "#0f172a", letterSpacing: "0.04em", marginTop: 3, lineHeight: 1.25 }}>
@@ -1163,21 +1163,21 @@ export default function Informes({ctx}){
                           Inspección, Montaje y Pruebas Estructurales
                         </div>
                       </td>
-                      <td style={{ width: "26%", fontSize: 9.5, lineHeight: 1.55, background: "#fafafa", padding: "8px 12px", verticalAlign: "middle" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px dashed #e2e8f0", paddingBottom: 2, marginBottom: 2 }}>
-                          <span style={{ color: "#64748b", fontWeight: 600 }}>CÓDIGO:</span>
+                      <td style={{ width: "26%", fontSize: 9.5, lineHeight: 1.55, background: "#f8fafc", padding: "8px 12px", verticalAlign: "middle" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px dashed #cbd5e1", paddingBottom: 2, marginBottom: 2 }}>
+                          <span style={{ color: "#475569", fontWeight: 600 }}>CÓDIGO:</span>
                           <span style={{ fontWeight: 700, color: "#0f172a", fontFamily: "monospace" }}>{docCodigo}</span>
                         </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px dashed #e2e8f0", paddingBottom: 2, marginBottom: 2 }}>
-                          <span style={{ color: "#64748b", fontWeight: 600 }}>VERSIÓN:</span>
+                        <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px dashed #cbd5e1", paddingBottom: 2, marginBottom: 2 }}>
+                          <span style={{ color: "#475569", fontWeight: 600 }}>VERSIÓN:</span>
                           <span style={{ fontWeight: 700, color: "#0f172a", fontFamily: "monospace" }}>{docVersion}</span>
                         </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px dashed #e2e8f0", paddingBottom: 2, marginBottom: 2 }}>
-                          <span style={{ color: "#64748b", fontWeight: 600 }}>EMISIÓN:</span>
+                        <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px dashed #cbd5e1", paddingBottom: 2, marginBottom: 2 }}>
+                          <span style={{ color: "#475569", fontWeight: 600 }}>EMISIÓN:</span>
                           <span style={{ fontWeight: 700, color: "#0f172a", fontFamily: "monospace" }}>{docFecha}</span>
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between" }}>
-                          <span style={{ color: "#64748b", fontWeight: 600 }}>CONSECUTIVO:</span>
+                          <span style={{ color: "#475569", fontWeight: 600 }}>CONSECUTIVO:</span>
                           <span style={{ color: "#ea580c", fontWeight: 800, fontSize: 11, fontFamily: "monospace" }}>{numDoc || "INF-OFICIAL"}</span>
                         </div>
                       </td>
@@ -1205,16 +1205,16 @@ export default function Informes({ctx}){
                       <td style={{ color: "#0f172a", fontWeight: 600, border: "1px solid #e2e8f0", padding: "6px 10px" }}>{localizacion || "MEDELLÍN"}</td>
                       <td style={{ background: "#f8fafc", fontWeight: 700, color: "#475569", letterSpacing: "0.04em", fontSize: 10, textTransform: "uppercase", border: "1px solid #e2e8f0", padding: "6px 10px" }}>NORMATIVA:</td>
                       <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px" }}>
-                        <span style={{ background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, display: "inline-block" }}>
+                        <span style={{ background: "#f1f5f9", color: "#0f172a", border: "1px solid #cbd5e1", fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, display: "inline-block" }}>
                           Res. 4272/2021 · OSHA 1926.502
                         </span>
                       </td>
                     </tr>
                     {(sel.cotizacionNumero || cotVincSel?.numero) && (
                       <tr>
-                        <td style={{ background: "#fff7ed", fontWeight: 700, color: "#9a3412", letterSpacing: "0.04em", fontSize: 10, textTransform: "uppercase", border: "1px solid #fed7aa", padding: "6px 10px" }}>REF. COTIZACIÓN:</td>
+                        <td style={{ background: "#f8fafc", fontWeight: 700, color: "#475569", letterSpacing: "0.04em", fontSize: 10, textTransform: "uppercase", border: "1px solid #e2e8f0", padding: "6px 10px" }}>REF. COTIZACIÓN:</td>
                         <td colSpan={3} style={{ color: "#0f172a", fontWeight: 700, border: "1px solid #e2e8f0", padding: "6px 10px", fontFamily: "'JetBrains Mono', monospace" }}>
-                          <span style={{ background: "#ffedd5", color: "#c2410c", padding: "2px 8px", borderRadius: 4, border: "1px solid #fdba74", fontSize: 10 }}>
+                          <span style={{ background: "#f8fafc", color: "#0f172a", padding: "2px 8px", borderRadius: 4, border: "1px solid #cbd5e1", fontSize: 10 }}>
                             📄 {sel.cotizacionNumero || cotVincSel?.numero}
                           </span>
                           {cotVincSel && (
@@ -1226,9 +1226,9 @@ export default function Informes({ctx}){
                               }}
                               style={{
                                 marginLeft: 12,
-                                background: "#eff6ff",
-                                color: "#1d4ed8",
-                                border: "1px solid #bfdbfe",
+                                background: "#f1f5f9",
+                                color: "#0f172a",
+                                border: "1px solid #cbd5e1",
                                 borderRadius: 6,
                                 padding: "3px 9px",
                                 fontSize: 10.5,
@@ -1246,17 +1246,17 @@ export default function Informes({ctx}){
                 </table>
 
                 {/* Sección 1: Personal Técnico en Obra */}
-                <div style={{ background: "linear-gradient(90deg, #0f172a 0%, #1e293b 100%)", color: "#ffffff", padding: "5px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderLeft: "4px solid #ea580c", marginBottom: 8, borderRadius: "0 4px 4px 0" }}>
+                <div style={{ background: "#0f172a", color: "#ffffff", padding: "5px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderLeft: "4px solid #ea580c", marginBottom: 8, borderRadius: "0 4px 4px 0" }}>
                   <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.07em", textTransform: "uppercase" }}>1. Personal Técnico en Obra</span>
                   <span style={{ fontSize: 9.5, fontWeight: 600, color: "#94a3b8", letterSpacing: "0.04em", textTransform: "uppercase" }}>Cuadrilla Asignada en Sitio</span>
                 </div>
                 <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #cbd5e1", fontSize: 11, marginBottom: 16, background: "#ffffff" }}>
                   <thead>
                     <tr>
-                      <th style={{ width: "38%", background: "#f1f5f9", border: "1px solid #cbd5e1", padding: "6px 10px", fontWeight: 800, textAlign: "left", color: "#334155", fontSize: 10, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                      <th style={{ width: "38%", background: "#f8fafc", border: "1px solid #cbd5e1", padding: "6px 10px", fontWeight: 700, textAlign: "left", color: "#475569", fontSize: 10, letterSpacing: "0.05em", textTransform: "uppercase" }}>
                         CARGO / ESPECIALIDAD EN SITIO
                       </th>
-                      <th style={{ width: "62%", background: "#f1f5f9", border: "1px solid #cbd5e1", padding: "6px 10px", fontWeight: 800, textAlign: "left", color: "#334155", fontSize: 10, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                      <th style={{ width: "62%", background: "#f8fafc", border: "1px solid #cbd5e1", padding: "6px 10px", fontWeight: 700, textAlign: "left", color: "#475569", fontSize: 10, letterSpacing: "0.05em", textTransform: "uppercase" }}>
                         NOMBRE COMPLETO DEL PERSONAL EN OBRA
                       </th>
                     </tr>
@@ -1267,18 +1267,18 @@ export default function Informes({ctx}){
                         <tr key={idx} style={{ background: idx % 2 === 1 ? "#fafafa" : "#ffffff" }}>
                           <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px", verticalAlign: "middle" }}>
                             <div style={{ fontWeight: 700, color: "#0f172a", display: "flex", alignItems: "center", gap: 6 }}>
-                              <span style={{ width: 6, height: 6, background: "#ea580c", borderRadius: "50%", display: "inline-block", flexShrink: 0 }}></span>
+                              <span style={{ width: 5, height: 5, background: "#0f172a", borderRadius: "50%", display: "inline-block", flexShrink: 0 }}></span>
                               <span>{String(p.cargo || "TÉCNICO ESPECIALISTA").toUpperCase()}</span>
                             </div>
                           </td>
-                          <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px", verticalAlign: "middle", fontWeight: 600, color: "#1e293b", fontSize: 11.5 }}>
+                          <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px", verticalAlign: "middle", fontWeight: 600, color: "#0f172a", fontSize: 11.5 }}>
                             {p.nombre || "Sin nombre registrado"}
                           </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={2} style={{ border: "1px solid #e2e8f0", padding: "8px 10px", color: "#94a3b8", fontStyle: "italic" }}>
+                        <td colSpan={2} style={{ border: "1px solid #e2e8f0", padding: "8px 10px", color: "#475569", fontStyle: "italic" }}>
                           Personal asignado conforme a programación de cuadrilla en obra.
                         </td>
                       </tr>
@@ -1287,7 +1287,7 @@ export default function Informes({ctx}){
                 </table>
 
                 {/* Sección 2: Actividades Ejecutadas */}
-                <div style={{ background: "linear-gradient(90deg, #0f172a 0%, #1e293b 100%)", color: "#ffffff", padding: "5px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderLeft: "4px solid #ea580c", marginBottom: 8, borderRadius: "0 4px 4px 0" }}>
+                <div style={{ background: "#0f172a", color: "#ffffff", padding: "5px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderLeft: "4px solid #ea580c", marginBottom: 8, borderRadius: "0 4px 4px 0" }}>
                   <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.07em", textTransform: "uppercase" }}>2. Registro y Metodología de Actividades Ejecutadas</span>
                   <span style={{ fontSize: 9.5, fontWeight: 600, color: "#94a3b8", letterSpacing: "0.04em", textTransform: "uppercase" }}>Control Operativo</span>
                 </div>
@@ -1296,7 +1296,7 @@ export default function Informes({ctx}){
                     <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #cbd5e1", fontSize: 11, marginBottom: 12, background: "#ffffff" }}>
                       <thead>
                         <tr>
-                          <th colSpan={2} style={{ background: "#f1f5f9", border: "1px solid #cbd5e1", padding: "6px 10px", fontWeight: 800, textAlign: "left", color: "#0f172a", fontSize: 11.5 }}>
+                          <th colSpan={2} style={{ background: "#f8fafc", border: "1px solid #cbd5e1", padding: "6px 10px", fontWeight: 800, textAlign: "left", color: "#0f172a", fontSize: 11.5 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                               <span style={{ background: "#0f172a", color: "#ffffff", fontFamily: "monospace", fontSize: 10, padding: "2px 6px", borderRadius: 3, fontWeight: 700 }}>
                                 {String(ai + 1).padStart(2, "0")}
@@ -1316,22 +1316,22 @@ export default function Informes({ctx}){
                         {(act.actividadesRealizadas || "").trim() && (
                           <tr>
                             <td style={{ width: "24%", border: "1px solid #e2e8f0", padding: "6px 10px", background: "#f8fafc", fontWeight: 700, fontSize: 10, color: "#475569", textTransform: "uppercase", letterSpacing: "0.04em", verticalAlign: "top" }}>ACTIVIDADES REALIZADAS</td>
-                            <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px", fontSize: 11, color: "#334155", lineHeight: 1.5, textAlign: "justify", whiteSpace: "pre-line" }}>{act.actividadesRealizadas}</td>
+                            <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px", fontSize: 11, color: "#0f172a", lineHeight: 1.5, textAlign: "justify", whiteSpace: "pre-line" }}>{act.actividadesRealizadas}</td>
                           </tr>
                         )}
                         {(act.descripcion || "").trim() && (
                           <tr>
                             <td style={{ width: "24%", border: "1px solid #e2e8f0", padding: "6px 10px", background: "#f8fafc", fontWeight: 700, fontSize: 10, color: "#475569", textTransform: "uppercase", letterSpacing: "0.04em", verticalAlign: "top" }}>DESCRIPCIÓN TÉCNICA</td>
-                            <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px", fontSize: 11, color: "#334155", lineHeight: 1.5, textAlign: "justify", whiteSpace: "pre-line" }}>{act.descripcion}</td>
+                            <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px", fontSize: 11, color: "#0f172a", lineHeight: 1.5, textAlign: "justify", whiteSpace: "pre-line" }}>{act.descripcion}</td>
                           </tr>
                         )}
                         <tr>
                           <td style={{ width: "24%", border: "1px solid #e2e8f0", padding: "6px 10px", background: "#f8fafc", fontWeight: 700, fontSize: 10, color: "#475569", textTransform: "uppercase", letterSpacing: "0.04em", verticalAlign: "top" }}>CRITERIO / OBSERVACIONES</td>
-                          <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px", fontSize: 11, color: "#334155", lineHeight: 1.45 }}>
+                          <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px", fontSize: 11, color: "#0f172a", lineHeight: 1.45 }}>
                             {(act.observaciones || "").trim() ? (
-                              <span><strong style={{ color: "#059669" }}>✓ Conforme:</strong> {act.observaciones}</span>
+                              <span><strong style={{ color: "#0f172a" }}>✓ Conforme:</strong> {act.observaciones}</span>
                             ) : (
-                              <span style={{ color: "#64748b", fontStyle: "italic" }}>Ejecutado a conformidad sin novedades reportadas.</span>
+                              <span style={{ color: "#475569", fontStyle: "italic" }}>Ejecutado a conformidad sin novedades reportadas.</span>
                             )}
                           </td>
                         </tr>
@@ -1341,7 +1341,7 @@ export default function Informes({ctx}){
                     {/* Fotos */}
                     {(act.fotos || []).some(ft => ft.img || ft.url) && (
                       <div style={{ marginBottom: 18 }}>
-                        <div style={{ background: "linear-gradient(90deg, #0f172a 0%, #1e293b 100%)", color: "#ffffff", padding: "5px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderLeft: "4px solid #ea580c", marginBottom: 10, borderRadius: "0 4px 4px 0" }}>
+                        <div style={{ background: "#0f172a", color: "#ffffff", padding: "5px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderLeft: "4px solid #ea580c", marginBottom: 10, borderRadius: "0 4px 4px 0" }}>
                           <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.07em", textTransform: "uppercase" }}>3. Panel Técnico de Evidencias Fotográficas · {act.titulo || "Actividad"}</span>
                           <span style={{ fontSize: 9.5, fontWeight: 600, color: "#94a3b8", letterSpacing: "0.04em", textTransform: "uppercase" }}>Registro Visual en Sitio</span>
                         </div>
@@ -1351,7 +1351,7 @@ export default function Informes({ctx}){
                               <div style={{ height: 210, display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
                                 <img src={ft.img || ft.url} alt={`Evidencia ${fi + 1}`} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", background: "#ffffff" }} onError={e => { e.target.style.display = "none"; }} />
                               </div>
-                              <div style={{ padding: "6px 10px", fontSize: 10, color: "#334155", lineHeight: 1.35, background: "#ffffff" }}>
+                              <div style={{ padding: "6px 10px", fontSize: 10, color: "#0f172a", lineHeight: 1.35, background: "#ffffff" }}>
                                 <strong style={{ color: "#ea580c" }}>REF {ai + 1}.{fi + 1}:</strong> {ft.comentario || "Registro fotográfico y trazabilidad de actividades ejecutadas en sitio."}
                               </div>
                             </div>
@@ -1365,10 +1365,10 @@ export default function Informes({ctx}){
                 {/* Recomendaciones */}
                 {sel.recomendaciones && (
                   <div style={{ border: "1px solid #cbd5e1", borderRadius: 4, overflow: "hidden", marginBottom: 16, background: "#ffffff" }}>
-                    <div style={{ background: "#f1f5f9", padding: "5px 10px", fontSize: 10, fontWeight: 800, color: "#334155", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: "1px solid #cbd5e1" }}>
+                    <div style={{ background: "#f8fafc", padding: "5px 10px", fontSize: 10, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: "1px solid #cbd5e1" }}>
                       RECOMENDACIONES TÉCNICAS GENERALES
                     </div>
-                    <div style={{ padding: "8px 12px", fontSize: 11, color: "#334155", lineHeight: 1.5, textAlign: "justify", whiteSpace: "pre-line" }}>
+                    <div style={{ padding: "8px 12px", fontSize: 11, color: "#0f172a", lineHeight: 1.5, textAlign: "justify", whiteSpace: "pre-line" }}>
                       {sel.recomendaciones}
                     </div>
                   </div>
@@ -1380,7 +1380,7 @@ export default function Informes({ctx}){
                     <tr>
                       <td style={{ width: "50%", padding: "0 14px 0 0", verticalAlign: "top" }}>
                         <div style={{ borderTop: "2px solid #0f172a", paddingTop: 8, fontSize: 10.5, lineHeight: 1.45 }}>
-                          <div style={{ fontSize: 9.5, fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>
+                          <div style={{ fontSize: 9.5, fontWeight: 700, color: "#475569", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>
                             Por el Contratista (Ingeanclajes S.A.S):
                           </div>
                           <div style={{ height: 50, display: "flex", alignItems: "flex-end", marginBottom: 4 }}>
@@ -1395,21 +1395,21 @@ export default function Informes({ctx}){
                           <div style={{ fontWeight: 800, fontSize: 11, color: "#0f172a", letterSpacing: "0.02em" }}>
                             ING. JHON JAIME SEPÚLVEDA LONDOÑO
                           </div>
-                          <div style={{ fontSize: 9.5, color: "#64748b" }}>Gerente General · MP. 05256-409949</div>
-                          <div style={{ fontSize: 9.5, color: "#64748b" }}>Ingeanclajes S.A.S · NIT. 900.193.965-4</div>
+                          <div style={{ fontSize: 9.5, color: "#475569" }}>Gerente General · MP. 05256-409949</div>
+                          <div style={{ fontSize: 9.5, color: "#475569" }}>Ingeanclajes S.A.S · NIT. 900.193.965-4</div>
                         </div>
                       </td>
                       <td style={{ width: "50%", padding: "0 0 0 14px", verticalAlign: "top" }}>
                         <div style={{ borderTop: "2px solid #0f172a", paddingTop: 8, fontSize: 10.5, lineHeight: 1.45 }}>
-                          <div style={{ fontSize: 9.5, fontWeight: 800, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>
+                          <div style={{ fontSize: 9.5, fontWeight: 700, color: "#475569", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>
                             Recibido por la Interventoría / Constructora:
                           </div>
-                          <div style={{ height: 50, display: "flex", alignItems: "flex-end", marginBottom: 4, fontSize: 9.5, color: "#94a3b8", fontStyle: "italic" }}>
+                          <div style={{ height: 50, display: "flex", alignItems: "flex-end", marginBottom: 4, fontSize: 9.5, color: "#475569", fontStyle: "italic" }}>
                             (Firma y sello de recepción a satisfacción)
                           </div>
                           <div style={{ fontWeight: 700, fontSize: 10.5, color: "#0f172a" }}>NOMBRE: ____________________________________</div>
-                          <div style={{ fontSize: 9.5, color: "#64748b", marginTop: 2 }}>CARGO / FIRMA: ______________________________</div>
-                          <div style={{ fontSize: 9.5, color: "#64748b" }}>EMPRESA: {cliente || "Constructora / Contratante"}</div>
+                          <div style={{ fontSize: 9.5, color: "#475569", marginTop: 2 }}>CARGO / FIRMA: ______________________________</div>
+                          <div style={{ fontSize: 9.5, color: "#475569" }}>EMPRESA: {cliente || "Constructora / Contratante"}</div>
                         </div>
                       </td>
                     </tr>

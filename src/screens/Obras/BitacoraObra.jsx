@@ -223,11 +223,11 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                 value={registro.descripcion}
                 onChange={(e) => actualizarRegistro(registro.id, "descripcion", e.target.value)}
                 onBlur={(e) => acomodarTexto(registro.id, "descripcion", e.target.value)}
-                rows={3}
+                rows={6}
                 placeholder="Cuenta el proceso: cómo se hizo, con qué material, en qué parte de la obra. Este texto sale tal cual en el informe."
                 spellCheck
                 lang="es"
-                style={{ ...SI, resize: "vertical" }}
+                style={{ ...SI, resize: "vertical", minHeight: 130, lineHeight: 1.5, fontSize: 13 }}
               />
             </div>
 
@@ -241,14 +241,15 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                   compacto
                 />
               </div>
-              <input
+              <textarea
                 value={registro.observaciones}
                 onChange={(e) => actualizarRegistro(registro.id, "observaciones", e.target.value)}
                 onBlur={(e) => acomodarTexto(registro.id, "observaciones", e.target.value)}
+                rows={3}
                 placeholder="Ej: 1 línea de vida horizontal de 119 metros · quedó pendiente la señalización"
                 spellCheck
                 lang="es"
-                style={SI}
+                style={{ ...SI, resize: "vertical", minHeight: 72, lineHeight: 1.45, fontSize: 13 }}
               />
             </div>
 

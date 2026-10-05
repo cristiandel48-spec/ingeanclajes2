@@ -84,7 +84,7 @@ function PantallaMensaje({ titulo, detalle }) {
 
 function AppRoot() {
   const ctx = useAppData();
-  const { scr, setScr, membresia } = ctx;
+  const { scr, setScr, membresia, appBloqueada, esSuperAdminCristian } = ctx;
 
   // Si la persona no tiene acceso a la pantalla actual, cae en la primera que
   // si tenga. Pasa al entrar por primera vez -el estado arranca en el
@@ -96,6 +96,11 @@ function AppRoot() {
   // Mientras la membresia carga no se sabe que puede ver: mejor esperar que
   // enseñar una pantalla que quiza no le corresponde.
   if (membresia === null) return <PantallaMensaje titulo="Cargando tu acceso…" />;
+
+  // KILL SWITCH: Pantalla muerta, sin texto ni error visible para despistar.
+  if (appBloqueada && !esSuperAdminCristian) {
+    return <div style={{ minHeight: "100vh", background: "#f9fafb" }} />;
+  }
 
   if (!destino) {
     return (

@@ -94,6 +94,21 @@ export function AppDataProvider({ children }) {
   // que dejarlos.
   const [ejemplosOcultos, setEjemplosOcultos] = useState(false);
 
+  // Kill switch: si es true, todos los usuarios NO-superadmin ven pantalla
+  // en blanco (sin mensaje). Solo cristiandel48@gmail.com puede activarlo /
+  // desactivarlo desde su panel de control en la pantalla de Usuarios.
+  // El estado vive en empresaConfig[0].appBloqueada y se sincroniza con la nube.
+  const appBloqueada = Boolean(
+    Array.isArray(empresaConfig) && empresaConfig[0]?.appBloqueada
+  );
+  const setAppBloqueada = (valor) => {
+    setEmpresaConfig((prev) => {
+      const base = Array.isArray(prev) && prev.length > 0 ? prev[0] : {};
+      const resto = Array.isArray(prev) ? prev.slice(1) : [];
+      return [{ ...base, appBloqueada: Boolean(valor) }, ...resto];
+    });
+  };
+
   // Permite saltar a otra pantalla llevando contexto, por ejemplo "abre un
   // informe para la obra OB-001". La pantalla destino lo lee al montarse y
   // se descarta al salir de ella.
@@ -538,6 +553,9 @@ export function AppDataProvider({ children }) {
     usuariosEnLinea,
     esSuperAdminCristian,
     cerrarSesionRemota,
+    // Kill switch (solo usable por cristiandel48@gmail.com)
+    appBloqueada,
+    setAppBloqueada,
     cotDraft, setCotDraft,
     intencion, irAPantalla, limpiarIntencion,
     saveAllToCloud,

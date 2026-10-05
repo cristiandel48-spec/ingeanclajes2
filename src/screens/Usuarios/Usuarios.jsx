@@ -23,7 +23,11 @@ const FORM_VACIO = {
 };
 
 export default function Usuarios({ ctx }) {
-  const { membresia, usuariosEnLinea = {}, esSuperAdminCristian = false, cerrarSesionRemota } = ctx;
+  const {
+    membresia, usuariosEnLinea = {},
+    esSuperAdminCristian = false, cerrarSesionRemota,
+    appBloqueada, setAppBloqueada
+  } = ctx;
   const [usuarios, setUsuarios] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState(null);
@@ -260,6 +264,32 @@ Cancelar: se la entregas tú.`);
               >
                 ● {usuariosEnLineaIds.size} {usuariosEnLineaIds.size === 1 ? "usuario en línea" : "usuarios en línea"}
               </span>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid rgba(16, 185, 129, 0.2)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: appBloqueada ? "#ef4444" : "var(--text-main)" }}>
+                  Estado de la Plataforma (Apagado remoto)
+                </div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                  Si se apaga, todos los usuarios verán una pantalla en blanco y no podrán entrar.
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (window.confirm(appBloqueada ? "¿Reactivar el acceso a todos los usuarios?" : "🚨 ¿Seguro que quieres apagar la aplicación? Nadie salvo tú podrá entrar y verán la pantalla en blanco.")) {
+                    setAppBloqueada(!appBloqueada);
+                  }
+                }}
+                style={{
+                  ...B(appBloqueada ? "#10b981" : "#ef4444"),
+                  padding: "6px 14px", fontSize: 13,
+                }}
+              >
+                {appBloqueada ? "🟢 Habilitar Sistema" : "🛑 Apagar Sistema"}
+              </button>
             </div>
           </div>
         </div>

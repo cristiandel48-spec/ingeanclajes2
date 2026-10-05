@@ -97,15 +97,17 @@ export function AppDataProvider({ children }) {
   // Kill switch: si es true, todos los usuarios NO-superadmin ven pantalla
   // en blanco (sin mensaje). Solo cristiandel48@gmail.com puede activarlo /
   // desactivarlo desde su panel de control en la pantalla de Usuarios.
-  // El estado vive en empresaConfig[0].appBloqueada y se sincroniza con la nube.
+  // El estado vive en empresaConfig (id="empresa") y se sincroniza con la nube.
   const appBloqueada = Boolean(
-    Array.isArray(empresaConfig) && empresaConfig[0]?.appBloqueada
+    Array.isArray(empresaConfig) && empresaConfig.find(row => row?.id === "empresa")?.appBloqueada
   );
   const setAppBloqueada = (valor) => {
     setEmpresaConfig((prev) => {
-      const base = Array.isArray(prev) && prev.length > 0 ? prev[0] : {};
-      const resto = Array.isArray(prev) ? prev.slice(1) : [];
-      return [{ ...base, appBloqueada: Boolean(valor) }, ...resto];
+      const lista = Array.isArray(prev) ? prev : [];
+      const actual = lista.find(row => row?.id === "empresa");
+      const fila = { ...(actual || { id: "empresa" }), appBloqueada: Boolean(valor) };
+      if (!actual) return [...lista, fila];
+      return lista.map(row => (row?.id === "empresa" ? fila : row));
     });
   };
 

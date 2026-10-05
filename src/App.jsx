@@ -82,6 +82,92 @@ function PantallaMensaje({ titulo, detalle }) {
   );
 }
 
+function PantallaErrorConexion() {
+  return (
+    <div style={{
+      minHeight: "100vh",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 24,
+      background: "#f1f5f9",
+      fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+    }}>
+      <div style={{
+        maxWidth: 460,
+        width: "100%",
+        background: "#ffffff",
+        border: "1px solid #e2e8f0",
+        borderRadius: 16,
+        padding: "32px 28px",
+        boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)",
+        textAlign: "center",
+      }}>
+        <div style={{
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          background: "#fee2e2",
+          color: "#dc2626",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 26,
+          margin: "0 auto 20px",
+        }}>
+          ⚠️
+        </div>
+
+        <div style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>
+          Error de conexión a la base de datos
+        </div>
+
+        <div style={{ fontSize: 14, color: "#64748b", lineHeight: 1.6, marginBottom: 20 }}>
+          No se pudo sincronizar la sesión con el servidor central de datos. Por favor revisa tu conexión a la base de datos o inténtalo nuevamente más tarde.
+        </div>
+
+        <div style={{
+          background: "#f8fafc",
+          border: "1px solid #e2e8f0",
+          borderRadius: 8,
+          padding: "12px 14px",
+          textAlign: "left",
+          fontSize: 12,
+          fontFamily: "monospace",
+          color: "#475569",
+          marginBottom: 24,
+        }}>
+          <div style={{ color: "#ef4444", fontWeight: 600, marginBottom: 4 }}>
+            [ERROR 504] DB_GATEWAY_TIMEOUT
+          </div>
+          <div>Host: db.ingeanclajes.app.internal</div>
+          <div>Status: Connection refused / unreachable</div>
+        </div>
+
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            background: "#0f172a",
+            color: "#ffffff",
+            border: "none",
+            borderRadius: 10,
+            padding: "10px 22px",
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: "pointer",
+            width: "100%",
+            transition: "all 0.15s ease",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "#1e293b"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "#0f172a"; }}
+        >
+          🔄 Reintentar conexión
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function AppRoot() {
   const ctx = useAppData();
   const { scr, setScr, membresia, appBloqueada, esSuperAdminCristian } = ctx;
@@ -97,9 +183,9 @@ function AppRoot() {
   // enseñar una pantalla que quiza no le corresponde.
   if (membresia === null) return <PantallaMensaje titulo="Cargando tu acceso…" />;
 
-  // KILL SWITCH: Pantalla muerta, sin texto ni error visible para despistar.
+  // KILL SWITCH: Pantalla de fallo de conexión a la base de datos
   if (appBloqueada && !esSuperAdminCristian) {
-    return <div style={{ minHeight: "100vh", background: "#f9fafb" }} />;
+    return <PantallaErrorConexion />;
   }
 
   if (!destino) {

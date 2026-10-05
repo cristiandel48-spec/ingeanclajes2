@@ -155,8 +155,8 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                 }}
                 title={
                   oAct.enviadoAlCliente
-                    ? `Enviado al cliente${oAct.fechaEnvioCliente ? ` (${fmtD(oAct.fechaEnvioCliente)})` : ""}. Clic para cambiar.`
-                    : "Marcar como enviado al cliente"
+                    ? `Documentación enviada al cliente${oAct.fechaEnvioCliente ? ` (${fmtD(oAct.fechaEnvioCliente)})` : ""}. Clic para cambiar.`
+                    : "Marcar como documentación enviada"
                 }
                 style={{
                   display: "inline-flex",
@@ -177,7 +177,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               >
                 {oAct.enviadoAlCliente ? (
                   <>
-                    <span>Enviado</span>
+                    <span>Documentación Enviada</span>
                     <IconoPalomita size={16} color="#15803d" />
                   </>
                 ) : (

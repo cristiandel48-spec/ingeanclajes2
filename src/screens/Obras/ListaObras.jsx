@@ -325,8 +325,8 @@ function Fila({ o, compacta, cotizacion, resumen, horarios = [], onAbrir, onCamb
       }}
       title={
         enviado
-          ? `Enviado al cliente${o.fechaEnvioCliente ? ` (${fmtD(o.fechaEnvioCliente)})` : ""}. Clic para cambiar.`
-          : "Marcar como enviado al cliente"
+          ? `Documentación enviada al cliente${o.fechaEnvioCliente ? ` (${fmtD(o.fechaEnvioCliente)})` : ""}. Clic para cambiar.`
+          : "Marcar como documentación enviada"
       }
       style={{
         display: "inline-flex",
@@ -363,7 +363,7 @@ function Fila({ o, compacta, cotizacion, resumen, horarios = [], onAbrir, onCamb
     >
       {enviado ? (
         <>
-          <span>Enviado</span>
+          <span>Documentación Enviada</span>
           <IconoPalomita size={19} color="#15803d" />
         </>
       ) : (

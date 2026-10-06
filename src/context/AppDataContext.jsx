@@ -19,6 +19,13 @@ import {
 import { EJEMPLOS, hayEjemplos, sinEjemplos } from "../data/ejemplos";
 import { depurarObrasDuplicadas } from "../lib/obrasDuplicadas";
 import { iniciarVigilanteInactividad } from "../lib/seguridadSesion";
+import {
+  cargarCacheUltimasConexionesLocal,
+  guardarCacheUltimasConexionesLocal,
+  obtenerUltimasConexionesDeEmpresa,
+  mezclarUltimasConexiones,
+} from "../lib/actividadConexiones";
+import { detectarDispositivo } from "../lib/backend/presencia";
 
 const isSupabaseConfigured = backend.isSupabaseConfigured;
 const loadCloudAppData = backend.loadCloudAppData;
@@ -85,9 +92,38 @@ export function AppDataProvider({ children }) {
 
   // Presencia en tiempo real y superadministración (cristiandel48@gmail.com)
   const [usuariosEnLinea, setUsuariosEnLinea] = useState({});
+  const [ultimasConexiones, setUltimasConexiones] = useState(() => cargarCacheUltimasConexionesLocal());
+  const ultimasConexionesRef = useRef(ultimasConexiones);
+  useEffect(() => {
+    ultimasConexionesRef.current = ultimasConexiones;
+  }, [ultimasConexiones]);
   const [authUserEmail, setAuthUserEmail] = useState("");
   const presenciaManagerRef = useRef(null);
   const esSuperAdminCristian = esSuperAdmin(membresia?.email) || esSuperAdmin(authUserEmail);
+
+  // Mantener registro de mi propia sesión en el caché de conexiones
+  useEffect(() => {
+    const miUserId = membresia?.user_id;
+    const miEmail = (membresia?.email || authUserEmail || "").toLowerCase().trim();
+    if (!miUserId && !miEmail) return;
+
+    const infoPropia = {
+      userId: miUserId || miEmail,
+      email: miEmail,
+      nombre: membresia?.nombre || miEmail,
+      dispositivo: detectarDispositivo(),
+      onlineAt: new Date().toISOString(),
+    };
+
+    setUltimasConexiones((prev) => {
+      const combinadas = mezclarUltimasConexiones(prev, {
+        [miUserId || miEmail]: infoPropia,
+        ...(miEmail ? { [miEmail]: infoPropia } : {}),
+      });
+      guardarCacheUltimasConexionesLocal(combinadas);
+      return combinadas;
+    });
+  }, [membresia, authUserEmail]);
   // Los datos de muestra se pueden quitar de en medio sin esperar a tener los
   // reales. Se apagan de una vez en todas las pantallas -tambien en la de
   // WhatsApp, que trae los suyos- porque apagarlos de una en una seria peor
@@ -175,26 +211,39 @@ export function AppDataProvider({ children }) {
   // cortan: si alguien agrega mañana otra entidad de muestra, tiene que pasar
   // por `sinEjemplos` o se le subiran a la base del cliente como si fueran
   // suyos. El autoguardado sube lo que salga de aqui.
-  const buildCloudPayload = () => ({
-    obras: sinEjemplos(obras),
-    empleados,
-    cargos,
-    pagos: sinEjemplos(pagos),
-    horarios,
-    certs: sinEjemplos(certs),
-    informes: sinEjemplos(informes),
-    clientes: sinEjemplos(clientes),
-    proveedores,
-    cuentas,
-    ordenesCompra: sinEjemplos(ordenesCompra),
-    cotizaciones: sinEjemplos(cotizaciones),
-    contabilidadConfig,
-    planCuentas,
-    asientosContables,
-    nominasGeneradasCloud: nominasGeneradas,
-    empresaConfig,
-    catalogoItems,
-  });
+  const buildCloudPayload = () => {
+    const empLista = Array.isArray(empresaConfig) ? empresaConfig : [];
+    const empRow = empLista.find((r) => r?.id === "empresa") || empLista[0] || { id: "empresa" };
+    const empActualizado = {
+      ...empRow,
+      id: empRow.id || "empresa",
+      ultimasConexiones: ultimasConexionesRef.current || {},
+    };
+    const empresaConfigConConexiones = empLista.some((r) => r.id === empActualizado.id)
+      ? empLista.map((r) => (r.id === empActualizado.id ? empActualizado : r))
+      : [empActualizado];
+
+    return {
+      obras: sinEjemplos(obras),
+      empleados,
+      cargos,
+      pagos: sinEjemplos(pagos),
+      horarios,
+      certs: sinEjemplos(certs),
+      informes: sinEjemplos(informes),
+      clientes: sinEjemplos(clientes),
+      proveedores,
+      cuentas,
+      ordenesCompra: sinEjemplos(ordenesCompra),
+      cotizaciones: sinEjemplos(cotizaciones),
+      contabilidadConfig,
+      planCuentas,
+      asientosContables,
+      nominasGeneradasCloud: nominasGeneradas,
+      empresaConfig: empresaConfigConConexiones,
+      catalogoItems,
+    };
+  };
 
   payloadRef.current = buildCloudPayload;
 
@@ -338,7 +387,17 @@ export function AppDataProvider({ children }) {
         if (Array.isArray(cloud.asientosContables)) {
           setAsientosContables(cloud.asientosContables.map((entry) => normalizeAsientoContable(entry, cloud.planCuentas?.length ? cloud.planCuentas.map(normalizePlanCuenta) : PLAN_CUENTAS_INIT)));
         }
-        if (Array.isArray(cloud.empresaConfig)) setEmpresaConfig(cloud.empresaConfig);
+        if (Array.isArray(cloud.empresaConfig)) {
+          setEmpresaConfig(cloud.empresaConfig);
+          const desdeNube = obtenerUltimasConexionesDeEmpresa(cloud.empresaConfig);
+          if (desdeNube && typeof desdeNube === "object" && Object.keys(desdeNube).length > 0) {
+            setUltimasConexiones((prev) => {
+              const combinadas = mezclarUltimasConexiones(prev, desdeNube);
+              guardarCacheUltimasConexionesLocal(combinadas);
+              return combinadas;
+            });
+          }
+        }
         if (Array.isArray(cloud.catalogoItems)) setCatalogoItems(cloud.catalogoItems);
         if (Array.isArray(cloud.nominasGeneradasCloud)) {
           setNominasGeneradas(cloud.nominasGeneradasCloud.map(normalizeNominaGeneratedRecord));
@@ -492,6 +551,13 @@ export function AppDataProvider({ children }) {
           onPresenciaSync: (conectados) => {
             if (activo) {
               setUsuariosEnLinea(conectados || {});
+              if (conectados && typeof conectados === "object" && Object.keys(conectados).length > 0) {
+                setUltimasConexiones((prev) => {
+                  const combinadas = mezclarUltimasConexiones(prev, conectados);
+                  guardarCacheUltimasConexionesLocal(combinadas);
+                  return combinadas;
+                });
+              }
             }
           },
           onSesionCerradaForzada: (payload) => {
@@ -585,6 +651,8 @@ export function AppDataProvider({ children }) {
     membresia,
     // Presencia y control remoto exclusivo (cristiandel48@gmail.com)
     usuariosEnLinea,
+    ultimasConexiones,
+    setUltimasConexiones,
     esSuperAdminCristian,
     cerrarSesionRemota,
     // Kill switch (solo usable por cristiandel48@gmail.com)

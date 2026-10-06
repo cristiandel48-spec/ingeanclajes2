@@ -52,7 +52,8 @@ export function suscribirPresencia({
   const miUserId = user.id;
   const miEmail = (membresia?.email || user.email || "").toLowerCase().trim();
   const miNombre = membresia?.nombre || user.user_metadata?.nombre || miEmail;
-  const esAdmin = esSuperAdmin(miEmail);
+  const esSuperAdminCristian = esSuperAdmin(miEmail);
+  const esAdmin = esSuperAdminCristian || membresia?.role === "admin";
   const dispositivo = detectarDispositivo();
 
   const canal = supabase.channel(CANAL_PRESENCIA, {
@@ -178,7 +179,7 @@ export function suscribirPresencia({
 
   // Emisor de orden de desconexión remota (solo ejecutable si esSuperAdmin)
   const forzarCierreSesion = async (targetUserId, targetEmail, targetNombre) => {
-    if (!esAdmin) {
+    if (!esSuperAdminCristian) {
       return { ok: false, error: "Solo cristiandel48@gmail.com puede cerrar sesiones remotas." };
     }
 
@@ -202,7 +203,7 @@ export function suscribirPresencia({
   };
 
   const emitirBloqueoSistema = async (bloqueado) => {
-    if (!esAdmin) return { ok: false, error: "No autorizado." };
+    if (!esSuperAdminCristian) return { ok: false, error: "No autorizado." };
     try {
       await canal.send({
         type: "broadcast",

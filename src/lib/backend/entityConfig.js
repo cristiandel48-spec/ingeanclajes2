@@ -856,6 +856,9 @@ export const entityConfig = {
       if (item.appBloqueada !== undefined) {
         doc.appBloqueada = Boolean(item.appBloqueada);
       }
+      if (item.ultimasConexiones && typeof item.ultimasConexiones === "object") {
+        doc.ultimasConexiones = item.ultimasConexiones;
+      }
       return {
         id: item.id || "empresa",
         firma_img: item.firmaImg ?? null,
@@ -871,6 +874,7 @@ export const entityConfig = {
       firmaCargo: row.firma_cargo ?? "",
       controlDocumental: row.control_documental ?? null,
       appBloqueada: Boolean(row.control_documental?.appBloqueada),
+      ultimasConexiones: row.control_documental?.ultimasConexiones ?? {},
     }),
   },
   contabilidad_config: {

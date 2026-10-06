@@ -16,6 +16,7 @@ import {
 } from "../../lib/backend/usuarios";
 import { formatearUltimaConexion } from "../../lib/seguridadSesion";
 import { detectarDispositivo } from "../../lib/backend";
+import { resolverEstadoConexionUsuario } from "../../lib/actividadConexiones";
 
 const FORM_VACIO = {
   nombre: "", email: "", clave: "", rol: "operator",
@@ -24,9 +25,18 @@ const FORM_VACIO = {
 
 export default function Usuarios({ ctx }) {
   const {
-    membresia, usuariosEnLinea = {},
-    esSuperAdminCristian = false, cerrarSesionRemota,
-    appBloqueada, setAppBloqueada
+    membresia,
+    usuariosEnLinea = {},
+    ultimasConexiones = {},
+    cotizaciones = [],
+    informes = [],
+    obras = [],
+    certs = [],
+    horarios = [],
+    esSuperAdminCristian = false,
+    cerrarSesionRemota,
+    appBloqueada,
+    setAppBloqueada,
   } = ctx;
   const [usuarios, setUsuarios] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -164,8 +174,13 @@ Cancelar: se la entregas tú.`);
 
   const handleCerrarSesion = async (u) => {
     const nombre = normalizarNombrePropio(u.nombre) || u.email;
-    const conexion = usuariosEnLinea[u.user_id] || (u.email && usuariosEnLinea[u.email.toLowerCase()]);
-    const estadoTxt = conexion ? " (Actualmente EN LÍNEA)" : "";
+    const infoConexion = resolverEstadoConexionUsuario(u, {
+      usuariosEnLinea,
+      ultimasConexiones,
+      colecciones: { cotizaciones, informes, obras, certs, horarios },
+      membresiaActual: membresia,
+    });
+    const estadoTxt = infoConexion.estaEnLinea ? ` (Actualmente EN LÍNEA · ${infoConexion.dispositivo})` : "";
     const confirmar = window.confirm(
       `¿Cerrar la sesión de "${nombre}" (${u.email})${estadoTxt}?\n\n` +
       `Se desconectará de inmediato en su dispositivo y deberá ingresar credenciales de nuevo.`
@@ -458,13 +473,17 @@ Cancelar: se la entregas tú.`);
             const modulos = u.role === "admin" || u.modulos == null ? null : u.modulos;
             const esMiUsuario = soyYo(u);
             const esAdminOdueno = esSuperAdminCristian || membresia?.role === "admin";
-            const conexion = esAdminOdueno
-              ? (esMiUsuario
-                  ? { dispositivo: detectarDispositivo(), onlineAt: new Date().toISOString() }
-                  : (usuariosEnLinea[u.user_id] || (u.email && usuariosEnLinea[u.email.toLowerCase()])))
+            const infoConexion = esAdminOdueno
+              ? resolverEstadoConexionUsuario(u, {
+                  usuariosEnLinea,
+                  ultimasConexiones,
+                  colecciones: { cotizaciones, informes, obras, certs, horarios },
+                  membresiaActual: membresia,
+                })
               : null;
-            const estaEnLinea = esMiUsuario || Boolean(conexion);
-            const textoUltimaConexion = formatearUltimaConexion(conexion?.onlineAt || u.ultima_conexion);
+            const estaEnLinea = Boolean(infoConexion?.estaEnLinea);
+            const textoUltimaConexion = infoConexion?.textoUltimaConexion || "Sin registro previo";
+            const dispositivo = infoConexion?.dispositivo || "Computador";
             return (
               <div key={u.user_id} style={{ ...CD, opacity: u.activo ? 1 : 0.6 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
@@ -489,10 +508,10 @@ Cancelar: se la entregas tú.`);
                               fontSize: 11,
                               fontWeight: 600,
                             }}
-                            title={`Conectado en tiempo real desde ${conexion?.dispositivo || "dispositivo"}`}
+                            title={`Conectado en tiempo real desde ${dispositivo}`}
                           >
                             <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#16a34a", boxShadow: "0 0 6px #16a34a" }} />
-                            En línea · {conexion?.dispositivo || "Activo"} {esMiUsuario ? "(esta sesión)" : ""}
+                            En línea · {dispositivo} {esMiUsuario ? "(esta sesión)" : ""}
                           </span>
                         ) : (
                           <span
@@ -507,7 +526,7 @@ Cancelar: se la entregas tú.`);
                               border: "1px solid var(--border)",
                               fontSize: 11,
                             }}
-                            title={`Última hora de conexión registrada: ${textoUltimaConexion}`}
+                            title={`Última hora de conexión registrada: ${textoUltimaConexion} (${dispositivo})`}
                           >
                             <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#9ca3af" }} />
                             Desconectado · Última vez: {textoUltimaConexion}
@@ -520,7 +539,7 @@ Cancelar: se la entregas tú.`);
                       <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                         <span>Última hora de conexión:</span>
                         <strong style={{ color: estaEnLinea ? "#16a34a" : "var(--text-main)" }}>
-                          {estaEnLinea ? "Conectado ahora" : textoUltimaConexion}
+                          {estaEnLinea ? `Conectado ahora (${dispositivo})` : `${textoUltimaConexion} (${dispositivo})`}
                         </strong>
                         {!estaEnLinea && (
                           <span style={{ fontSize: 10.5, color: "#9ca3af" }}>

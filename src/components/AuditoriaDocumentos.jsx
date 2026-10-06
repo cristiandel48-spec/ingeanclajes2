@@ -5,6 +5,7 @@ import { listarUsuarios, detectarDispositivo } from "../lib/backend";
 import { formatearUltimaConexion } from "../lib/seguridadSesion";
 import { normalizarNombrePropio } from "../lib/normalizarEntrada";
 import { ROL_LABEL, sinCuentasSoporte } from "../lib/permisos";
+import { resolverEstadoConexionUsuario } from "../lib/actividadConexiones";
 
 // Registro unificado de auditoría y cambios en el sistema.
 // Aplica para Ingreso de usuarios, Obras, Horarios, Cotizaciones, Informes y Certificaciones.
@@ -121,6 +122,7 @@ export default function AuditoriaDocumentos({ ctx }) {
     horarios = [],
     empleados = [],
     usuariosEnLinea = {},
+    ultimasConexiones = {},
     membresia = null,
     esSuperAdminCristian = false,
   } = ctx || {};
@@ -303,32 +305,12 @@ export default function AuditoriaDocumentos({ ctx }) {
     const base = esSuperAdminCristian ? usuarios : sinCuentasSoporte(usuarios);
     return (base || []).map((u) => {
       const uId = u.user_id || u.id;
-      const uEmail = (u.email || "").toLowerCase().trim();
-      const miUserId = membresia?.user_id;
-      const miEmail = (membresia?.email || "").toLowerCase().trim();
-      const esMiUsuario = Boolean(
-        (miUserId && uId === miUserId) ||
-        (miEmail && uEmail && miEmail === uEmail)
-      );
-
-      const presencia =
-        usuariosEnLinea?.[uId] ||
-        (uEmail && usuariosEnLinea?.[uEmail]);
-
-      const estaEnLinea = esMiUsuario || Boolean(presencia);
-
-      const dispositivo = esMiUsuario
-        ? detectarDispositivo()
-        : (presencia?.dispositivo || "Computador");
-
-      const fechaConexionRaw = (estaEnLinea ? (presencia?.onlineAt || new Date().toISOString()) : null) ||
-                               u.ultima_conexion ||
-                               u.created_at ||
-                               null;
-
-      const textoUltimaConexion = estaEnLinea
-        ? "Conectado ahora"
-        : formatearUltimaConexion(fechaConexionRaw);
+      const infoConexion = resolverEstadoConexionUsuario(u, {
+        usuariosEnLinea,
+        ultimasConexiones,
+        colecciones: { cotizaciones, informes, obras, certs, horarios },
+        membresiaActual: membresia,
+      });
 
       const rolNombre = ROL_LABEL[u.role] || u.role || "Operario";
 
@@ -341,15 +323,15 @@ export default function AuditoriaDocumentos({ ctx }) {
         role: u.role || "operator",
         rolLabel: rolNombre,
         activo: u.activo !== false,
-        estaEnLinea,
-        esMiUsuario,
-        dispositivo,
-        fechaConexionRaw,
-        textoUltimaConexion,
+        estaEnLinea: infoConexion.estaEnLinea,
+        esMiUsuario: infoConexion.esMiUsuario,
+        dispositivo: infoConexion.dispositivo,
+        fechaConexionRaw: infoConexion.fechaConexionRaw,
+        textoUltimaConexion: infoConexion.textoUltimaConexion,
         modulos: u.modulos,
       };
     });
-  }, [usuarios, usuariosEnLinea, membresia, esSuperAdminCristian]);
+  }, [usuarios, usuariosEnLinea, ultimasConexiones, cotizaciones, informes, obras, certs, horarios, membresia, esSuperAdminCristian]);
 
   const listaItemsConexion = useMemo(() => {
     return listaUsuariosAuditoria.map((u) => {
@@ -361,13 +343,13 @@ export default function AuditoriaDocumentos({ ctx }) {
         codigo: u.estaEnLinea ? "EN LÍNEA" : "ACCESO",
         referencia: `${u.nombreLimpio} (${u.rolLabel})`,
         subreferencia: u.email
-          ? `${u.email} · ${u.estaEnLinea ? `🟢 En línea ahora desde ${u.dispositivo}` : `Último ingreso: ${u.textoUltimaConexion}`}`
-          : (u.estaEnLinea ? `🟢 En línea ahora desde ${u.dispositivo}` : `Último ingreso: ${u.textoUltimaConexion}`),
+          ? `${u.email} · ${u.estaEnLinea ? `🟢 En línea ahora desde ${u.dispositivo}` : `Último ingreso: ${u.textoUltimaConexion} (${u.dispositivo})`}`
+          : (u.estaEnLinea ? `🟢 En línea ahora desde ${u.dispositivo}` : `Último ingreso: ${u.textoUltimaConexion} (${u.dispositivo})`),
         creadoPorNombre: u.nombreLimpio,
         creadoEn: u.fechaConexionRaw,
         modificadoPorNombre: u.estaEnLinea
           ? `🟢 En línea · ${u.dispositivo}`
-          : `Desconectado · Última vez: ${u.textoUltimaConexion}`,
+          : `Desconectado · Última vez: ${u.textoUltimaConexion} (${u.dispositivo})`,
         modificadoEn: u.fechaConexionRaw,
         usuarioData: u,
       };

@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { CD, SI, ST } from "../styles/tokens";
 import { limpiarCreador, limpiarModificador } from "../lib/autorAuditoria";
-import { listarUsuarios } from "../lib/backend";
+import { listarUsuarios, detectarDispositivo } from "../lib/backend";
+import { formatearUltimaConexion } from "../lib/seguridadSesion";
+import { normalizarNombrePropio } from "../lib/normalizarEntrada";
+import { ROL_LABEL, sinCuentasSoporte } from "../lib/permisos";
 
 // Registro unificado de auditoría y cambios en el sistema.
-// Aplica para Obras (Ejecución de obra), Horarios, Cotizaciones, Informes y Certificaciones.
+// Aplica para Ingreso de usuarios, Obras, Horarios, Cotizaciones, Informes y Certificaciones.
 //
-// Diseñado para que la gerencia y administración (Camila Sepúlveda y administradores)
-// tengan trazabilidad completa de qué persona creó y qué persona modificó cada registro.
+// Diseñado para que la gerencia y administración (Camila Sepúlveda, Cristian Flórez y administradores)
+// tengan trazabilidad completa de qué persona se conectó y qué persona creó y modificó cada registro.
 
 const fechaHora = (valor) => {
   if (!valor) return "";
@@ -71,6 +74,12 @@ const esEdicionHumanaValida = (creadoEn, modificadoEn, mapaFrecuencia) => {
 };
 
 const ESTILOS_TIPO = {
+  ingreso: {
+    etiqueta: "Ingreso de usuario",
+    bg: "rgba(16, 185, 129, 0.12)",
+    text: "#10b981",
+    border: "rgba(16, 185, 129, 0.25)",
+  },
   obra: {
     etiqueta: "Ejecución de obra",
     bg: "rgba(190, 24, 93, 0.12)",
@@ -111,6 +120,9 @@ export default function AuditoriaDocumentos({ ctx }) {
     obras = [],
     horarios = [],
     empleados = [],
+    usuariosEnLinea = {},
+    membresia = null,
+    esSuperAdminCristian = false,
   } = ctx || {};
 
   const [tab, setTab] = useState("todos");
@@ -286,20 +298,98 @@ export default function AuditoriaDocumentos({ ctx }) {
   }, [certs, mapUsuarios, freqModCerts]);
 
 
+  // 6. Ingreso de usuarios y sesiones
+  const listaUsuariosAuditoria = useMemo(() => {
+    const base = esSuperAdminCristian ? usuarios : sinCuentasSoporte(usuarios);
+    return (base || []).map((u) => {
+      const uId = u.user_id || u.id;
+      const uEmail = (u.email || "").toLowerCase().trim();
+      const miUserId = membresia?.user_id;
+      const miEmail = (membresia?.email || "").toLowerCase().trim();
+      const esMiUsuario = Boolean(
+        (miUserId && uId === miUserId) ||
+        (miEmail && uEmail && miEmail === uEmail)
+      );
+
+      const presencia =
+        usuariosEnLinea?.[uId] ||
+        (uEmail && usuariosEnLinea?.[uEmail]);
+
+      const estaEnLinea = esMiUsuario || Boolean(presencia);
+
+      const dispositivo = esMiUsuario
+        ? detectarDispositivo()
+        : (presencia?.dispositivo || "Computador");
+
+      const fechaConexionRaw = (estaEnLinea ? (presencia?.onlineAt || new Date().toISOString()) : null) ||
+                               u.ultima_conexion ||
+                               u.created_at ||
+                               null;
+
+      const textoUltimaConexion = estaEnLinea
+        ? "Conectado ahora"
+        : formatearUltimaConexion(fechaConexionRaw);
+
+      const rolNombre = ROL_LABEL[u.role] || u.role || "Operario";
+
+      return {
+        id: `usr_${uId}`,
+        userId: uId,
+        nombre: u.nombre || u.email || "Usuario",
+        nombreLimpio: normalizarNombrePropio(u.nombre) || u.email || "Usuario",
+        email: u.email || "",
+        role: u.role || "operator",
+        rolLabel: rolNombre,
+        activo: u.activo !== false,
+        estaEnLinea,
+        esMiUsuario,
+        dispositivo,
+        fechaConexionRaw,
+        textoUltimaConexion,
+        modulos: u.modulos,
+      };
+    });
+  }, [usuarios, usuariosEnLinea, membresia, esSuperAdminCristian]);
+
+  const listaItemsConexion = useMemo(() => {
+    return listaUsuariosAuditoria.map((u) => {
+      return {
+        id: `conn_${u.userId}`,
+        originalId: u.userId,
+        tipoKey: "ingreso",
+        tipoDoc: "Ingreso de usuario",
+        codigo: u.estaEnLinea ? "EN LÍNEA" : "ACCESO",
+        referencia: `${u.nombreLimpio} (${u.rolLabel})`,
+        subreferencia: u.email
+          ? `${u.email} · ${u.estaEnLinea ? `🟢 En línea ahora desde ${u.dispositivo}` : `Último ingreso: ${u.textoUltimaConexion}`}`
+          : (u.estaEnLinea ? `🟢 En línea ahora desde ${u.dispositivo}` : `Último ingreso: ${u.textoUltimaConexion}`),
+        creadoPorNombre: u.nombreLimpio,
+        creadoEn: u.fechaConexionRaw,
+        modificadoPorNombre: u.estaEnLinea
+          ? `🟢 En línea · ${u.dispositivo}`
+          : `Desconectado · Última vez: ${u.textoUltimaConexion}`,
+        modificadoEn: u.fechaConexionRaw,
+        usuarioData: u,
+      };
+    });
+  }, [listaUsuariosAuditoria]);
+
   const pool = useMemo(() => {
+    if (tab === "ingresos") return listaItemsConexion;
     if (tab === "obras") return listaObras;
     if (tab === "horarios") return listaHorarios;
     if (tab === "cotizaciones") return listaCotizaciones;
     if (tab === "informes") return listaInformes;
     if (tab === "certificaciones") return listaCertificaciones;
     return [
+      ...listaItemsConexion,
       ...listaObras,
       ...listaHorarios,
       ...listaCotizaciones,
       ...listaInformes,
       ...listaCertificaciones,
     ];
-  }, [tab, listaObras, listaHorarios, listaCotizaciones, listaInformes, listaCertificaciones]);
+  }, [tab, listaItemsConexion, listaObras, listaHorarios, listaCotizaciones, listaInformes, listaCertificaciones]);
 
   const filas = useMemo(() => {
     const texto = busqueda.trim().toLowerCase();
@@ -314,10 +404,15 @@ export default function AuditoriaDocumentos({ ctx }) {
           item.subreferencia,
           item.creadoPorNombre,
           item.modificadoPorNombre,
+          item.usuarioData?.email,
+          item.usuarioData?.nombreLimpio,
         ].some((v) => String(v || "").toLowerCase().includes(texto));
       })
-      // El registro modificado o creado más recientemente primero
       .sort((a, b) => {
+        const aOnline = a.usuarioData?.estaEnLinea ? 1 : 0;
+        const bOnline = b.usuarioData?.estaEnLinea ? 1 : 0;
+        if (bOnline !== aOnline) return bOnline - aOnline;
+
         const fechaB = b.modificadoEn || b.creadoEn || "";
         const fechaA = a.modificadoEn || a.creadoEn || "";
         return String(fechaB).localeCompare(String(fechaA));
@@ -326,12 +421,9 @@ export default function AuditoriaDocumentos({ ctx }) {
 
   const visibles = verTodas ? filas : filas.slice(0, 20);
 
-  const sinRegistro = pool.filter(
-    (c) => (!c.creadoPorNombre || c.creadoPorNombre === "no registrado") && !c.modificadoPorNombre
-  ).length;
-
   const tabs = [
     { id: "todos", label: "Todo el historial", total: pool.length },
+    { id: "ingresos", label: "Ingreso de usuarios", total: listaUsuariosAuditoria.length },
     { id: "obras", label: "Ejecución de obra", total: listaObras.length },
     { id: "horarios", label: "Horarios", total: listaHorarios.length },
     { id: "cotizaciones", label: "Cotizaciones", total: listaCotizaciones.length },
@@ -343,7 +435,7 @@ export default function AuditoriaDocumentos({ ctx }) {
     <div style={{ ...CD, marginTop: 18 }}>
       <div style={ST}>Registro de auditoría y control de cambios</div>
       <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginBottom: 14 }}>
-        Consulta qué persona creó y qué persona realizó los últimos cambios en ejecución de obra, horarios, cotizaciones, informes y certificaciones.
+        Consulta qué persona ingresó al sistema y cuándo se conectó, además de quién creó y modificó obras, horarios, cotizaciones, informes y certificaciones.
         Módulo visible para Camila Sepúlveda y el equipo de Administración.
       </div>
 
@@ -392,23 +484,57 @@ export default function AuditoriaDocumentos({ ctx }) {
         })}
       </div>
 
-      {sinRegistro > 0 && tab === "todos" && (
-        <div
+      {/* Barra de monitoreo en tiempo real de conexiones del equipo */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 10,
+          background: "rgba(16, 185, 129, 0.08)",
+          border: "1px solid rgba(16, 185, 129, 0.25)",
+          borderRadius: 10,
+          padding: "9px 14px",
+          marginBottom: 14,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#166534", display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#10b981", boxShadow: "0 0 6px #10b981", display: "inline-block" }} />
+            Auditoría de Conexiones del Equipo:
+          </span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-main)" }}>
+            {listaUsuariosAuditoria.filter((u) => u.estaEnLinea).length} en línea ahora · {listaUsuariosAuditoria.length} usuarios registrados
+          </span>
+          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+            ⏱️ Cierre automático de sesión tras 5 min de inactividad
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setTab(tab === "ingresos" ? "todos" : "ingresos");
+            setVerTodas(true);
+          }}
           style={{
+            background: tab === "ingresos" ? "#10b981" : "transparent",
+            color: tab === "ingresos" ? "#ffffff" : "#166534",
+            border: "1px solid #10b981",
+            borderRadius: 7,
+            padding: "5px 12px",
             fontSize: 11.5,
-            color: "#fbbf24",
-            background: "rgba(245, 158, 11, 0.12)",
-            border: "1px solid rgba(245, 158, 11, 0.3)",
-            borderRadius: 8,
-            padding: "8px 12px",
-            marginBottom: 14,
-            lineHeight: 1.5,
+            fontWeight: 700,
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 5,
+            transition: "all .15s ease",
           }}
         >
-          Hay <strong>{sinRegistro} registros anteriores</strong> creados de forma previa a la activación de la auditoría.
-          A partir de ahora, todo registro nuevo o modificado queda registrado automáticamente con la sesión del usuario.
-        </div>
-      )}
+          {tab === "ingresos" ? "← Ver todo el historial" : "Ver auditoría de ingresos →"}
+        </button>
+      </div>
 
       <input
         value={busqueda}
@@ -423,6 +549,146 @@ export default function AuditoriaDocumentos({ ctx }) {
             ? "Ningún registro coincide con esa búsqueda."
             : "Todavía no hay registros en esta sección."}
         </div>
+      ) : tab === "ingresos" ? (
+        <>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, minWidth: 800 }}>
+              <thead>
+                <tr style={{ background: "var(--surface-subtle)", textAlign: "left", borderBottom: "1px solid var(--border)" }}>
+                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Usuario / Nombre</th>
+                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Correo electrónico</th>
+                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Rol en el sistema</th>
+                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Estado de conexión</th>
+                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Última vez que se conectó</th>
+                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Dispositivo</th>
+                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Límite sesión</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibles.map((doc, i) => {
+                  const u = doc.usuarioData || {};
+                  return (
+                    <tr
+                      key={doc.id}
+                      style={{
+                        background: u.estaEnLinea
+                          ? "rgba(16, 185, 129, 0.05)"
+                          : (i % 2 ? "var(--surface)" : "var(--surface-subtle)"),
+                        borderTop: "1px solid var(--border)",
+                      }}
+                    >
+                      <td style={{ padding: "10px 10px", color: "var(--text-main)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <div
+                            style={{
+                              width: 28,
+                              height: 28,
+                              borderRadius: "50%",
+                              background: u.estaEnLinea ? "rgba(16, 185, 129, 0.2)" : "var(--border)",
+                              color: u.estaEnLinea ? "#10b981" : "var(--text-muted)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontWeight: 700,
+                              fontSize: 11,
+                              flexShrink: 0,
+                            }}
+                          >
+                            {(u.nombreLimpio || "U").slice(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <strong style={{ fontSize: 13, color: "var(--text-main)" }}>{u.nombreLimpio}</strong>
+                            {u.esMiUsuario && (
+                              <span style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 700, color: "var(--accent, #f47c20)" }}>· tú</span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: "10px 10px", color: "var(--text-muted)", fontSize: 11.5 }}>
+                        {u.email || "—"}
+                      </td>
+                      <td style={{ padding: "10px 10px", color: "var(--text-main)", fontSize: 11.5, fontWeight: 600 }}>
+                        {u.rolLabel}
+                        {!u.activo && <span style={{ color: "#ef4444", fontSize: 10.5, fontWeight: 400 }}> (suspendido)</span>}
+                      </td>
+                      <td style={{ padding: "10px 10px", whiteSpace: "nowrap" }}>
+                        {u.estaEnLinea ? (
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 5,
+                              padding: "3px 10px",
+                              borderRadius: 999,
+                              background: "rgba(34, 197, 94, 0.15)",
+                              color: "#16a34a",
+                              border: "1px solid rgba(34, 197, 94, 0.3)",
+                              fontSize: 11,
+                              fontWeight: 700,
+                            }}
+                          >
+                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#16a34a", boxShadow: "0 0 6px #16a34a" }} />
+                            En línea ahora
+                          </span>
+                        ) : (
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 5,
+                              padding: "3px 10px",
+                              borderRadius: 999,
+                              background: "var(--surface-subtle)",
+                              color: "var(--text-muted)",
+                              border: "1px solid var(--border)",
+                              fontSize: 11,
+                              fontWeight: 500,
+                            }}
+                          >
+                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#9ca3af" }} />
+                            Desconectado
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ padding: "10px 10px", whiteSpace: "nowrap" }}>
+                        <strong style={{ color: u.estaEnLinea ? "#16a34a" : "var(--text-main)", fontSize: 12 }}>
+                          {u.estaEnLinea ? "Conectado ahora" : u.textoUltimaConexion}
+                        </strong>
+                        <div style={{ fontSize: 10.5, color: "var(--text-muted)", marginTop: 2 }}>
+                          {fechaHora(u.fechaConexionRaw) || "Sin registro previo"}
+                        </div>
+                      </td>
+                      <td style={{ padding: "10px 10px", color: "var(--text-muted)", fontSize: 11.5 }}>
+                        {u.dispositivo || "Computador"}
+                      </td>
+                      <td style={{ padding: "10px 10px", color: "var(--text-muted)", fontSize: 11 }}>
+                        5 min inactividad
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {filas.length > 20 && (
+            <button
+              onClick={() => setVerTodas((v) => !v)}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#f47c20",
+                cursor: "pointer",
+                fontSize: 11.5,
+                fontWeight: 600,
+                marginTop: 12,
+                padding: 0,
+              }}
+            >
+              {verTodas ? "Ver solo las primeras 20" : `Ver los ${filas.length} usuarios`}
+            </button>
+          )}
+        </>
       ) : (
         <>
           <div style={{ overflowX: "auto" }}>
@@ -434,24 +700,27 @@ export default function AuditoriaDocumentos({ ctx }) {
                     <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Módulo</th>
                   )}
                   <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Detalle / Proyecto / Obra</th>
-                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Lo creó</th>
+                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Lo creó / Usuario</th>
                   <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Fecha creación</th>
-                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Último cambio</th>
-                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Fecha cambio</th>
+                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Última actividad / Edición</th>
+                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Fecha última actividad</th>
                 </tr>
               </thead>
               <tbody>
                 {visibles.map((doc, i) => {
                   const estiloBadge = ESTILOS_TIPO[doc.tipoKey] || ESTILOS_TIPO.cotizacion;
+                  const esIngreso = doc.tipoKey === "ingreso";
                   return (
                     <tr
                       key={doc.id}
                       style={{
-                        background: i % 2 ? "var(--surface)" : "var(--surface-subtle)",
+                        background: esIngreso
+                          ? (doc.usuarioData?.estaEnLinea ? "rgba(16, 185, 129, 0.05)" : "var(--surface)")
+                          : (i % 2 ? "var(--surface)" : "var(--surface-subtle)"),
                         borderTop: "1px solid var(--border)",
                       }}
                     >
-                      <td style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-main)", whiteSpace: "nowrap" }}>
+                      <td style={{ padding: "8px 10px", fontWeight: 600, color: esIngreso ? (doc.usuarioData?.estaEnLinea ? "#16a34a" : "var(--text-main)") : "var(--text-main)", whiteSpace: "nowrap" }}>
                         {doc.codigo}
                       </td>
                       {tab === "todos" && (
@@ -474,7 +743,7 @@ export default function AuditoriaDocumentos({ ctx }) {
                       <td style={{ padding: "8px 10px", color: "var(--text-main)" }}>
                         <div style={{ fontWeight: 500 }}>{doc.referencia}</div>
                         {doc.subreferencia && doc.subreferencia !== doc.referencia && (
-                          <div style={{ fontSize: 10.5, color: "var(--text-muted)", marginTop: 1 }}>
+                          <div style={{ fontSize: 10.5, color: esIngreso && doc.usuarioData?.estaEnLinea ? "#16a34a" : "var(--text-muted)", marginTop: 1 }}>
                             {doc.subreferencia}
                           </div>
                         )}

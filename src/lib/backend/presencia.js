@@ -6,6 +6,7 @@
 // y emitir órdenes de cierre de sesión remoto.
 
 import { getSupabaseClient, isSupabaseConfigured } from "./supabaseClient";
+import { registrarActividadUsuario } from "./usuarios";
 
 export const EMAIL_SUPERADMIN = "cristiandel48@gmail.com";
 
@@ -168,6 +169,7 @@ export function suscribirPresencia({
           dispositivo,
           onlineAt: new Date().toISOString(),
         });
+        registrarActividadUsuario().catch(() => {});
       } catch (err) {
         console.warn("No se pudo reportar presencia:", err);
       }

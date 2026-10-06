@@ -78,7 +78,15 @@ export async function registrarActividadUsuario() {
     const supabase = getSupabaseClient();
     const { data, error } = await supabase.rpc("registrar_actividad");
     if (error) {
-      // Si la función RPC todavía no está en Supabase, no interrumpe el flujo
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        if (authData?.user?.id) {
+          await supabase
+            .from("memberships")
+            .update({ ultima_conexion: new Date().toISOString() })
+            .eq("user_id", authData.user.id);
+        }
+      } catch {}
       return null;
     }
     return data;

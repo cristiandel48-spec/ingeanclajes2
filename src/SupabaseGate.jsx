@@ -242,6 +242,9 @@ export default function SupabaseGate({ children }) {
       setUser(currentUser);
       setError("");
       setStatus("ready");
+      if (typeof backend.registrarActividadUsuario === "function") {
+        backend.registrarActividadUsuario().catch(() => {});
+      }
     } catch (tenantError) {
       console.error("No se pudo resolver la empresa del usuario:", tenantError);
       setUser(currentUser);

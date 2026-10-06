@@ -457,7 +457,8 @@ Cancelar: se la entregas tú.`);
           {(esSuperAdminCristian ? usuarios : sinCuentasSoporte(usuarios)).map((u) => {
             const modulos = u.role === "admin" || u.modulos == null ? null : u.modulos;
             const esMiUsuario = soyYo(u);
-            const conexion = esSuperAdminCristian
+            const esAdminOdueno = esSuperAdminCristian || membresia?.role === "admin";
+            const conexion = esAdminOdueno
               ? (esMiUsuario
                   ? { dispositivo: detectarDispositivo(), onlineAt: new Date().toISOString() }
                   : (usuariosEnLinea[u.user_id] || (u.email && usuariosEnLinea[u.email.toLowerCase()])))
@@ -473,7 +474,7 @@ Cancelar: se la entregas tú.`);
                         {normalizarNombrePropio(u.nombre) || u.email}
                       </span>
                       {esMiUsuario && <span style={{ fontSize: 11, fontWeight: 600, color: "var(--accent, #f47c20)" }}> · tú</span>}
-                      {esSuperAdminCristian && (
+                      {esAdminOdueno && (
                         estaEnLinea ? (
                           <span
                             style={{
@@ -515,7 +516,7 @@ Cancelar: se la entregas tú.`);
                       )}
                     </div>
                     <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 2 }}>{u.email}</div>
-                    {esSuperAdminCristian && (
+                    {esAdminOdueno && (
                       <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                         <span>Última hora de conexión:</span>
                         <strong style={{ color: estaEnLinea ? "#16a34a" : "var(--text-main)" }}>

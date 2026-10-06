@@ -11,7 +11,7 @@ export default function Auditoria({ ctx }) {
     <div style={{ padding: 28 }}>
       <H1
         title="Auditoría y registro de cambios"
-        subtitle="Quién creó y modificó obras, horarios, cotizaciones, informes y certificaciones"
+        subtitle="Control de ingresos y conexiones de usuarios, y quién creó y modificó obras, cotizaciones, informes y certificaciones"
       />
       <AuditoriaDocumentos ctx={ctx} />
     </div>

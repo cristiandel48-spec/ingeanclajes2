@@ -1,6 +1,7 @@
 // Modelo de cotizaciones y propuestas
 import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_TIEMPO_EJEC, DEFAULT_COT_INCLUYE } from "../data/seed";
 import { measurementsToQuoteItems, buildMeasurementNarrative } from "./maps";
+import { corregirOrtografiaLocal } from "./correctorTexto";
 
 export function hasAnchorPointsService(propuesta = {}) {
   const ownText = [
@@ -26,6 +27,7 @@ export function hasAnchorPointsService(propuesta = {}) {
     text.includes("anclaje importado") ||
     text.includes("anclaje nacional") ||
     text.includes("anclaje epoxico") ||
+    text.includes("anclaje químico") ||
     text.includes("anclaje soldado")
   );
 }
@@ -214,7 +216,10 @@ export function normalizeQuoteItems(c={}){
     if(vistos.has(clave)) return false;
     vistos.add(clave);
     return true;
-  });
+  }).map((it) => ({
+    ...it,
+    desc: it?.desc ? corregirOrtografiaLocal(String(it.desc)).toUpperCase() : "",
+  }));
 }
 
 export function normalizeProposalItems(items=[]){
@@ -242,7 +247,7 @@ export function normalizeProposalItems(items=[]){
     yaVistos.add(String(id));
     return {
       id,
-      desc: it?.desc ?? "",
+      desc: it?.desc ? corregirOrtografiaLocal(String(it.desc)).toUpperCase() : "",
       cant: Number(it?.cant || 0),
       unit: it?.unit ?? "UND",
       vu: Number(it?.vu || 0),
@@ -331,8 +336,8 @@ export function getQuotePrintableProposals(baseQuote = {}){
       ut,
       iva,
       tot,
-      tipoLabel: quote.tipoCotizacion === "obra_blanca" ? "Obra blanca" : quote.tipoCotizacion === "puntos_anclaje" ? "Puntos de anclaje" : "Línea de vida",
-      esObraBlanca: quote.tipoCotizacion === "obra_blanca",
+      tipoLabel: quote.tipoCotizacion === "obra_blanca" ? "Obra blanca" : quote.tipoCotizacion === "puntos_anclaje" ? "Puntos de anclaje" : quote.tipoCotizacion === "estructuras_metalicas" ? "Estructuras metálicas" : "Línea de vida",
+      esObraBlanca: quote.tipoCotizacion === "obra_blanca" || quote.tipoCotizacion === "estructuras_metalicas",
       requerimientoCliente: String(quote.requerimientoCliente || "").trim(),
       alcancePropuesta: String(quote.propuestaAlcance || propuesta.alcance || "").trim(),
       fotos: getQuoteProposalPhotos(baseQuote, propuesta, activeProposal?.id),

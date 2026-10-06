@@ -51,6 +51,12 @@ export const PLAN_CUENTAS_INIT = buildDefaultPlanCuentas();
 export const ASIENTOS_CONTABLES_INIT = [];
 
 export const ITEMS_DB = [
+  { categoria:"Estructuras Metálicas", items:[
+    { desc:"ESTRUCTURA METÁLICA CON PLATAFORMA PARA AIRES ACONDICIONADOS", unit:"ML",    vu:8000000 },
+    { desc:"PLATAFORMA METÁLICA ESTRUCTURAL",                            unit:"ML",    vu:6500000 },
+    { desc:"FABRICACIÓN Y MONTAJE DE ESTRUCTURA METÁLICA",               unit:"Kg",    vu:18500   },
+    { desc:"SOPORTE METÁLICO EN PERFIL ESTRUCTURAL",                     unit:"Und",   vu:350000  },
+  ]},
   { categoria:"Lineas de Vida", items:[
     { desc:"LINEA DE VIDA HORIZONTAL",            unit:"ML",  vu:280000 },
     { desc:"LINEA DE VIDA VERTICAL",              unit:"ML",  vu:320000 },

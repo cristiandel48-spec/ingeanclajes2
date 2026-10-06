@@ -138,7 +138,7 @@ export default function PropuestaEditor({
             Propuesta {indice + 1} de {totalPropuestas}
           </div>
           <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #101828)" }}>
-            {p.tipoCotizacion === "linea_vida" ? "Línea de vida" : p.tipoCotizacion === "puntos_anclaje" ? "Puntos de anclaje" : p.tipoCotizacion === "obra_blanca" ? "Obra blanca" : `Propuesta ${indice + 1}`}
+            {p.tipoCotizacion === "linea_vida" ? "Línea de vida" : p.tipoCotizacion === "puntos_anclaje" ? "Puntos de anclaje" : p.tipoCotizacion === "obra_blanca" ? "Obra blanca" : p.tipoCotizacion === "estructuras_metalicas" ? "Estructuras metálicas" : `Propuesta ${indice + 1}`}
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -172,8 +172,13 @@ export default function PropuestaEditor({
         {/* 1. Tipo de trabajo / propuesta */}
         <div style={{ marginBottom: 18 }}>
           <LBL>Tipo de trabajo / sistema</LBL>
-          <div style={{ display: "flex", gap: 8, maxWidth: 540 }}>
-            {[["linea_vida", "Línea de vida"], ["puntos_anclaje", "Puntos de anclaje"], ["obra_blanca", "Obra blanca"]].map(([v, l]) => {
+          <div style={{ display: "flex", gap: 8, maxWidth: 720, flexWrap: "wrap" }}>
+            {[
+              ["linea_vida", "Línea de vida"],
+              ["puntos_anclaje", "Puntos de anclaje"],
+              ["obra_blanca", "Obra blanca"],
+              ["estructuras_metalicas", "Estructuras metálicas"],
+            ].map(([v, l]) => {
               const activo = p.tipoCotizacion === v;
               return (
                 <button
@@ -181,7 +186,7 @@ export default function PropuestaEditor({
                   type="button"
                   onClick={() => set("tipoCotizacion", v)}
                   style={{
-                    flex: 1,
+                    flex: "1 1 140px",
                     justifyContent: "center",
                     display: "inline-flex",
                     alignItems: "center",
@@ -211,13 +216,27 @@ export default function PropuestaEditor({
             escribirla a mano desde aquí. El «esta cotización incluye» sí volvió,
             más abajo, junto a las condiciones comerciales. */}
 
-        {p.tipoCotizacion==="obra_blanca"&&(
-          <div style={{marginBottom:18}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
-              <LBL>Necesidad del cliente</LBL>
-              <div style={{display:"flex",gap:6}}><BotonCorregir valor={p.requerimientoCliente} onChange={v=>set("requerimientoCliente", v)} compacto/><BotonDictado valor={p.requerimientoCliente} onChange={v=>set("requerimientoCliente", v)} titulo="Dictar la necesidad del cliente" compacto/></div>
+        {(p.tipoCotizacion === "obra_blanca" || p.tipoCotizacion === "estructuras_metalicas") && (
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+              <LBL>{p.tipoCotizacion === "estructuras_metalicas" ? "Especificaciones / Necesidad del cliente" : "Necesidad del cliente"}</LBL>
+              <div style={{ display: "flex", gap: 6 }}>
+                <BotonCorregir valor={p.requerimientoCliente} onChange={v => set("requerimientoCliente", v)} compacto />
+                <BotonDictado valor={p.requerimientoCliente} onChange={v => set("requerimientoCliente", v)} titulo="Dictar la necesidad del cliente" compacto />
+              </div>
             </div>
-            <textarea value={p.requerimientoCliente} onChange={e=>set("requerimientoCliente", e.target.value)} onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==p.requerimientoCliente)set("requerimientoCliente", v);}} spellCheck lang="es" style={{...SI,minHeight:100,resize:"vertical",lineHeight:1.5}}/>
+            <textarea
+              value={p.requerimientoCliente}
+              onChange={e => set("requerimientoCliente", e.target.value)}
+              onBlur={e => {
+                const v = normalizarFrase(e.target.value);
+                if (v !== p.requerimientoCliente) set("requerimientoCliente", v);
+              }}
+              spellCheck
+              lang="es"
+              placeholder={p.tipoCotizacion === "estructuras_metalicas" ? "Detalla especificaciones técnicas de la estructura, perfilería, accesos o plataformas requeridas..." : "Detalla la necesidad o solicitud específica del cliente..."}
+              style={{ ...SI, minHeight: 100, resize: "vertical", lineHeight: 1.5 }}
+            />
           </div>
         )}
 
@@ -649,6 +668,34 @@ export default function PropuestaEditor({
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
             <span style={{fontSize:12,fontWeight:600,color:"var(--text-main, #1a1a2e)"}}>Detalle económico</span>
             <div style={{display:"flex",gap:8}}>
+              {p.items.length > 0 && (
+                <button
+                  type="button"
+                  title="Corrige automáticamente la ortografía y tildes de todas las descripciones de los ítems de esta propuesta"
+                  onClick={() => {
+                    setItems(prev => prev.map(item => ({
+                      ...item,
+                      desc: corregirOrtografiaLocal(item.desc || "").toUpperCase(),
+                    })));
+                  }}
+                  style={{
+                    background: "var(--surface-subtle, #f2f4f7)",
+                    color: "var(--text-main, #101828)",
+                    border: "1px solid var(--border, #eaecf0)",
+                    borderRadius: 8,
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    padding: "5px 12px",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
+                >
+                  <span>✨</span>
+                  <span>Corregir ortografía</span>
+                </button>
+              )}
               <button
                 onClick={()=>{const nuevos=measurementsToQuoteItems(p.geoMediciones);setItems(nuevos.map((item,index)=>({...item,id:index+1})));}}
                 style={{
@@ -743,6 +790,20 @@ export default function PropuestaEditor({
                 <input
                   value={it.desc}
                   onChange={e => setItems(prev => prev.map(item => item.id === it.id ? { ...item, desc: e.target.value.toUpperCase() } : item))}
+                  onPaste={e => {
+                    const textoPegado = e.clipboardData?.getData("text");
+                    if (textoPegado) {
+                      e.preventDefault();
+                      const corregido = corregirOrtografiaLocal(textoPegado).toUpperCase();
+                      const input = e.target;
+                      const start = input.selectionStart ?? 0;
+                      const end = input.selectionEnd ?? 0;
+                      const actual = input.value || "";
+                      const nuevo = actual.slice(0, start) + corregido + actual.slice(end);
+                      const finalCorregido = corregirOrtografiaLocal(nuevo).toUpperCase();
+                      setItems(prev => prev.map(item => item.id === it.id ? { ...item, desc: finalCorregido } : item));
+                    }
+                  }}
                   onBlur={e => {
                     const auto = corregirOrtografiaLocal(e.target.value).toUpperCase();
                     if (auto !== it.desc) {
@@ -750,6 +811,7 @@ export default function PropuestaEditor({
                     }
                   }}
                   placeholder="DESCRIPCIÓN DEL ÍTEM"
+                  title="Descripción del ítem (se corrige ortografía y tildes automáticamente)"
                   style={{ ...SI, fontSize: 12, padding: "5px 8px", textTransform: "uppercase" }}
                 />
                 <input
@@ -760,9 +822,16 @@ export default function PropuestaEditor({
                 />
                 <input
                   value={it.unit}
-                  onChange={e => setItems(prev => prev.map(item => item.id === it.id ? { ...item, unit: e.target.value } : item))}
+                  onChange={e => setItems(prev => prev.map(item => item.id === it.id ? { ...item, unit: e.target.value.toUpperCase() } : item))}
+                  onBlur={e => {
+                    const u = e.target.value.trim().toUpperCase();
+                    const unNorm = u === "UN" || u === "UNIDAD" || u === "UNIDADES" ? "UND" : u === "METRO" || u === "METROS" ? "ML" : u;
+                    if (unNorm !== it.unit) {
+                      setItems(prev => prev.map(item => item.id === it.id ? { ...item, unit: unNorm } : item));
+                    }
+                  }}
                   placeholder="UN"
-                  style={{ ...SI, fontSize: 12, padding: "5px 8px", textAlign: "center" }}
+                  style={{ ...SI, fontSize: 12, padding: "5px 8px", textAlign: "center", textTransform: "uppercase" }}
                 />
                 <input
                   type="text"

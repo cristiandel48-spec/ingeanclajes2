@@ -303,7 +303,101 @@ const DICCIONARIO_DIRECTO = {
   "tendra": "tendrá",
   "tendran": "tendrán",
   "habra": "habrá",
+
+  // Aire acondicionado, refrigeración y climatización
+  "acondiconado": "acondicionado",
+  "acondiconados": "acondicionados",
+  "acondiconada": "acondicionada",
+  "acondiconadas": "acondicionadas",
+  "acondisionado": "acondicionado",
+  "acondisionados": "acondicionados",
+  "acondisionada": "acondicionada",
+  "acondisionadas": "acondicionadas",
+  "acondicinado": "acondicionado",
+  "acondicinados": "acondicionados",
+  "acondisionamiento": "acondicionamiento",
+  "acondiconamiento": "acondicionamiento",
+  "acondicionado": "acondicionado",
+  "acondicionados": "acondicionados",
+  "acondicionada": "acondicionada",
+  "acondicionadas": "acondicionadas",
+  "climatizacion": "climatización",
+  "climatizaciones": "climatizaciones",
+  "ventilacion": "ventilación",
+  "ventilaciones": "ventilaciones",
+  "refrigeracion": "refrigeración",
+  "refrigeraciones": "refrigeraciones",
+
+  // Estructuras metálicas, plataformas, soldadura y herrajes
+  "extructura": "estructura",
+  "extructuras": "estructuras",
+  "esctructura": "estructura",
+  "esctructuras": "estructuras",
+  "esturctura": "estructura",
+  "esturcturas": "estructuras",
+  "estuctura": "estructura",
+  "estucturas": "estructuras",
+  "extructural": "estructural",
+  "extructurales": "estructurales",
+  "esctructural": "estructural",
+  "esctructurales": "estructurales",
+  "esturctural": "estructural",
+  "esturcturales": "estructurales",
+  "estuctural": "estructural",
+  "estucturales": "estructurales",
+  "platafomra": "plataforma",
+  "platafomras": "plataformas",
+  "plataforma": "plataforma",
+  "plataformas": "plataformas",
+  "suminitro": "suministro",
+  "suminitros": "suministros",
+  "suministro": "suministro",
+  "suministros": "suministros",
+  "soldadrua": "soldadura",
+  "soldadruas": "soldaduras",
+  "soldadura": "soldadura",
+  "soldaduras": "soldaduras",
+  "perfileria": "perfilería",
+  "perfilerias": "perfilerías",
+  "cerrajeria": "cerrajería",
+  "cerrajerias": "cerrajerías",
+  "tornilleria": "tornillería",
+  "tornillerias": "tornillerías",
+  "tuberia": "tubería",
+  "tuberias": "tuberías",
+  "lamina": "lámina",
+  "laminas": "láminas",
+  "angulo": "ángulo",
+  "angulos": "ángulos",
+  "ancalje": "anclaje",
+  "ancaljes": "anclajes",
+  "galbanizado": "galvanizado",
+  "galbanizada": "galvanizada",
+  "galbanizados": "galvanizados",
+  "galbanizadas": "galvanizadas",
+  "galvanisados": "galvanizados",
+  "galvanisadas": "galvanizadas",
+  "inox": "inoxidable",
+  "inoxidavle": "inoxidable",
+  "inoxidavles": "inoxidables",
 };
+
+function levenshteinDist1(a, b) {
+  if (Math.abs(a.length - b.length) > 1) return false;
+  let diff = 0;
+  let i = 0, j = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i] !== b[j]) {
+      diff++;
+      if (diff > 1) return false;
+      if (a.length > b.length) { i++; continue; }
+      else if (a.length < b.length) { j++; continue; }
+    }
+    i++; j++;
+  }
+  if (i < a.length || j < b.length) diff++;
+  return diff === 1;
+}
 
 function ajustarCaso(palabraOriginal, palabraCorregida) {
   if (palabraOriginal === palabraOriginal.toUpperCase() && /[A-ZÁÉÍÓÚÜÑ]/.test(palabraOriginal)) {
@@ -321,7 +415,7 @@ function ajustarCaso(palabraOriginal, palabraCorregida) {
 export function corregirOrtografiaLocal(texto) {
   if (!texto || typeof texto !== "string") return "";
 
-  return texto.replace(/\b[A-Za-zÁÉÍÓÚáéíóúñÑüÜ]+\b/g, (palabra) => {
+  const corregido = texto.replace(/\b[A-Za-zÁÉÍÓÚáéíóúñÑüÜ]+\b/g, (palabra) => {
     // Si contiene números o caracteres de unidad (ej. "80M", "5000LBS"), no tocar
     if (/\d/.test(palabra)) return palabra;
 
@@ -341,8 +435,19 @@ export function corregirOrtografiaLocal(texto) {
       return ajustarCaso(palabra, prefijo + sufijoConTilde);
     }
 
+    // 3. Coincidencia difusa de distancia 1 para errores de tipeo en palabras técnicas
+    if (clave.length >= 6) {
+      for (const [candClave, candValor] of Object.entries(DICCIONARIO_DIRECTO)) {
+        if (candClave.length >= 6 && levenshteinDist1(clave, candClave)) {
+          return ajustarCaso(palabra, candValor);
+        }
+      }
+    }
+
     return palabra;
   });
+
+  return corregido.replace(/[ \t]+/g, " ");
 }
 
 /**

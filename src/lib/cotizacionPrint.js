@@ -7,6 +7,7 @@ import { getQuotePrintableProposals } from "./cotizaciones";
 import { getStaticMapDimensions, buildStaticMapLabelData } from "./maps";
 import { hasVerticalLifeLineService } from "./cotizaciones";
 import { getTextosDocumento, lineasDeTexto } from "./cotizacionTextos";
+import { corregirOrtografiaLocal } from "./correctorTexto";
 import articoLineaVidaVertical from "../assets/artico-linea-vida-vertical.jpg";
 
 export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}){
@@ -433,9 +434,9 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
     const rows = lista.map((item, i) => {
       const idx = desde + i;
       // En mayuscula tambien aqui, no solo en el formulario: las cotizaciones
-      // que ya estaban guardadas traen descripciones escritas en minuscula y
-      // en la tabla desentonan al lado de las demas.
-      const desc = escapeHtml(String(item?.desc || `ITEM ${idx + 1}`).toUpperCase());
+      // que ya estaban guardadas traen descripciones escritas en minuscula o con errores
+      // y en la tabla salen impecables con ortografía correcta.
+      const desc = escapeHtml(corregirOrtografiaLocal(String(item?.desc || `ITEM ${idx + 1}`)).toUpperCase());
       const qtyNumber = Number(item?.cant || 0);
       const qty = Number.isInteger(qtyNumber) ? String(qtyNumber) : qtyNumber.toFixed(2).replace(/\.00$/, "");
       const unit = escapeHtml(item?.unit || "UND");
@@ -736,6 +737,21 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
                       <li>Instalación de elementos empotrados en la fase de obra para garantizar la mejor estética y durabilidad.</li>
                       <li>Cumplimiento estricto de los estándares constructivos y de seguridad vigentes.</li>
                       <li>Coordinación con el equipo de obra para minimizar el impacto en los cronogramas de construcción.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            `;
+            if(tipo === "estructuras_metalicas") return `
+              <div class="def-list">
+                <div class="def-row">
+                  <div class="def-term">Estructuras metálicas</div>
+                  <div class="def-body">
+                    <p>Comprende el diseño, suministro, fabricación, montaje y adecuación de elementos estructurales, plataformas y perfilería metálica en acero de alta resistencia para soporte de equipos, cubiertas y obras civiles o industriales.</p>
+                    <ul class="def-bullets">
+                      <li>Fabricación bajo especificaciones y normas técnicas estructurales vigentes (NSR-10 / AISC), garantizando capacidades portantes seguras.</li>
+                      <li>Procesos de soldadura y anclajes certificados de alta resistencia química y mecánica.</li>
+                      <li>Tratamiento de superficies con aplicación de pintura anticorrosiva y acabados de alta durabilidad para intemperie.</li>
                     </ul>
                   </div>
                 </div>

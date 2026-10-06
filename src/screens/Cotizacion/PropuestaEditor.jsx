@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import BotonCorregir from "../../components/ui/BotonCorregir";
 import BotonDictado from "../../components/ui/BotonDictado";
 import MedidorMapa from "../../components/maps/MedidorMapa";
@@ -13,6 +13,7 @@ import { useAppData } from "../../context/AppDataContext";
 import { measurementsToQuoteItems } from "../../lib/maps";
 import { fmt } from "../../lib/format";
 import { DEFAULT_COT_INCLUYE } from "../../data/seed";
+import { FOTO_PUNTO_ANCLAJE_DEFAULT } from "../../assets/embeddedImages";
 
 // Editor de UNA propuesta. Todas las propuestas se muestran abiertas, una
 // debajo de otra, igual que salen en el documento.
@@ -50,6 +51,21 @@ export default function PropuestaEditor({
     typeof siguiente === "function" ? siguiente(actual) : siguiente;
   const setItems = (siguiente) => set("items", aplicar(items, siguiente));
   const setFotos = (siguiente) => set("fotos", aplicar(fotos, siguiente));
+
+  useEffect(() => {
+    if (p.tipoCotizacion === "puntos_anclaje") {
+      const listaFotos = Array.isArray(p.fotos) ? p.fotos : [];
+      if (listaFotos.length === 0) {
+        set("fotos", [
+          {
+            id: Date.now() + Math.random(),
+            src: FOTO_PUNTO_ANCLAJE_DEFAULT,
+            label: "Punto de anclaje certificado",
+          },
+        ]);
+      }
+    }
+  }, [p.tipoCotizacion]);
 
   const [rotandoId, setRotandoId] = useState(null);
   const [fotoModal, setFotoModal] = useState(null);
@@ -184,7 +200,26 @@ export default function PropuestaEditor({
                 <button
                   key={v}
                   type="button"
-                  onClick={() => set("tipoCotizacion", v)}
+                  onClick={() => {
+                    if (v === "puntos_anclaje") {
+                      const tieneFoto = (fotos || []).some((f) => f.src === FOTO_PUNTO_ANCLAJE_DEFAULT);
+                      if (!tieneFoto) {
+                        onChange({
+                          tipoCotizacion: v,
+                          fotos: [
+                            ...fotos,
+                            {
+                              id: Date.now() + Math.random(),
+                              src: FOTO_PUNTO_ANCLAJE_DEFAULT,
+                              label: "Punto de anclaje certificado",
+                            },
+                          ],
+                        });
+                        return;
+                      }
+                    }
+                    set("tipoCotizacion", v);
+                  }}
                   style={{
                     flex: "1 1 140px",
                     justifyContent: "center",
@@ -242,9 +277,43 @@ export default function PropuestaEditor({
 
         {/* 3. Fotos */}
         <div style={{marginBottom:18}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,gap:8,flexWrap:"wrap"}}>
             <span style={{fontSize:12,fontWeight:600,color:"var(--text-main, #1a1a2e)"}}>Fotos de la propuesta</span>
-            <span style={{fontSize:10,color:"var(--text-subtle, #94a3b8)"}}>Se imprimen en el PDF</span>
+            <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+              {p.tipoCotizacion === "puntos_anclaje" && !fotos.some(f => f.src === FOTO_PUNTO_ANCLAJE_DEFAULT) && (
+                <button
+                  type="button"
+                  title="Adjuntar la foto oficial de punto de anclaje certificado a esta propuesta"
+                  onClick={() => {
+                    setFotos(prev => [
+                      ...(Array.isArray(prev) ? prev : []),
+                      {
+                        id: Date.now() + Math.random(),
+                        src: FOTO_PUNTO_ANCLAJE_DEFAULT,
+                        label: "Punto de anclaje certificado",
+                      },
+                    ]);
+                  }}
+                  style={{
+                    background: "#FFFAEB",
+                    color: "#B54708",
+                    border: "1px solid rgba(181, 71, 8, 0.3)",
+                    borderRadius: 6,
+                    padding: "3px 8px",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
+                >
+                  <span>📷</span>
+                  <span>+ Foto oficial punto de anclaje</span>
+                </button>
+              )}
+              <span style={{fontSize:10,color:"var(--text-subtle, #94a3b8)"}}>Se imprimen en el PDF</span>
+            </div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))",gap:12}}>
             {fotos.map((f, i) => (

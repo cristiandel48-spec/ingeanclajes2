@@ -2,6 +2,7 @@
 import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_TIEMPO_EJEC, DEFAULT_COT_INCLUYE } from "../data/seed";
 import { measurementsToQuoteItems, buildMeasurementNarrative } from "./maps";
 import { corregirOrtografiaLocal } from "./correctorTexto";
+import { FOTO_PUNTO_ANCLAJE_DEFAULT } from "../assets/embeddedImages";
 
 export function hasAnchorPointsService(propuesta = {}) {
   const ownText = [
@@ -85,11 +86,23 @@ export function buildQuoteProposal(propuesta = {}, index = 0) {
   const ivaValor = sinAiu ? (subtotal * 0.19) : (utilidadValor * 0.19);
   const totalCalculado = Math.round(subtotal + utilidadValor + ivaValor);
 
+  const tipoCotizacion = propuesta.tipoCotizacion || "linea_vida";
+  let fotos = Array.isArray(propuesta.fotos) ? propuesta.fotos : [];
+  if (tipoCotizacion === "puntos_anclaje" && fotos.length === 0) {
+    fotos = [
+      {
+        id: "foto-def-punto-anclaje",
+        src: FOTO_PUNTO_ANCLAJE_DEFAULT,
+        label: "Punto de anclaje certificado",
+      },
+    ];
+  }
+
   const base = {
     id: propuesta.id || createQuoteProposalId(index + 1),
     nombre: propuesta.nombre || getQuoteProposalLabel(index),
     alcance: propuesta.alcance ?? propuesta.propuestaAlcance ?? "",
-    tipoCotizacion: propuesta.tipoCotizacion || "linea_vida",
+    tipoCotizacion,
     requerimientoCliente: propuesta.requerimientoCliente ?? "",
     incluyeTexto: String(propuesta.incluyeTexto || ""),
     formaPago: propuesta.formaPago || DEFAULT_COT_FORMA_PAGO,
@@ -97,7 +110,7 @@ export function buildQuoteProposal(propuesta = {}, index = 0) {
     sinAiu,
     util,
     items,
-    fotos: Array.isArray(propuesta.fotos) ? propuesta.fotos : [],
+    fotos,
     geoMediciones: Array.isArray(propuesta.geoMediciones) ? propuesta.geoMediciones : [],
     geoMapView: propuesta.geoMapView ?? null,
     mapImg: propuesta.mapImg ?? null,
@@ -300,9 +313,19 @@ export function getQuoteProposalPhotos(baseQuote = {}, propuesta = {}, activePro
   if(ownPhotos.length) return ownPhotos;
 
   if(propuesta?.id && propuesta.id === activeProposalId){
-    return Array.isArray(baseQuote?.fotosCotizacion)
+    const basePhotos = Array.isArray(baseQuote?.fotosCotizacion)
       ? baseQuote.fotosCotizacion.filter((foto)=>foto?.src)
       : [];
+    if(basePhotos.length) return basePhotos;
+  }
+
+  const tipo = propuesta?.quote?.tipoCotizacion || propuesta?.tipoCotizacion || baseQuote?.tipoCotizacion;
+  if(tipo === "puntos_anclaje"){
+    return [{
+      id: "foto-def-punto-anclaje",
+      src: FOTO_PUNTO_ANCLAJE_DEFAULT,
+      label: "Punto de anclaje certificado",
+    }];
   }
 
   return [];

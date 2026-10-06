@@ -1,6 +1,7 @@
 import { createDataService, resolveTenantId } from "./dataService";
 import { getSupabaseClient, isSupabaseConfigured, reintentandoSiChocanPestanas } from "./supabaseClient";
 import { entityConfig } from "./entityConfig";
+import { registrarActividadUsuario } from "./usuarios";
 
 const ENTITY_TO_STATE = {
   obras: "obras",
@@ -148,6 +149,7 @@ export async function saveCloudAppData(appData) {
 
   const service = await getService();
 
+  let huboCambios = false;
   for (const [entity, stateKey] of Object.entries(ENTITY_TO_STATE)) {
     if (!Object.prototype.hasOwnProperty.call(appData ?? {}, stateKey)) continue;
 
@@ -174,11 +176,21 @@ export async function saveCloudAppData(appData) {
       if (!nextMap.has(id)) deletes.push(id);
     }
 
-    if (upserts.length) await service.upsertMany(entity, upserts);
-    if (deletes.length) await service.deleteMany(entity, deletes);
+    if (upserts.length) {
+      await service.upsertMany(entity, upserts);
+      huboCambios = true;
+    }
+    if (deletes.length) {
+      await service.deleteMany(entity, deletes);
+      huboCambios = true;
+    }
 
     // 3) Solo tras aplicar los cambios actualizamos el baseline de esta entidad.
     baselineByEntity[entity] = nextMap;
+  }
+
+  if (huboCambios) {
+    registrarActividadUsuario().catch(() => {});
   }
 }
 

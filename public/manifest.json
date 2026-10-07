@@ -1,0 +1,23 @@
+{
+  "name": "Ingeanclajes · Sistema de Gestión",
+  "short_name": "Ingeanclajes",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#14151a",
+  "theme_color": "#14151a",
+  "description": "Sistema de gestión comercial, técnica y operativa de Ingeanclajes S.A.S.",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

@@ -27,12 +27,35 @@ function prepararHtmlParaPdf(html) {
   return html
     .replace(/<link[^>]*fonts\.(?:googleapis|gstatic)\.com[^>]*>/g, "")
     .replace("</head>", `<style>
-      body, .table, .table th, .table td, input, button {
-        font-family: Arial, Helvetica, sans-serif !important;
+      body, .table, .table td, input, button,
+      h1, h2, h3, p, span, div, strong, li,
+      .cover-firm-name, .cover-firm-nit, .cover-firm-contact, .cover-kicker,
+      .cover-client-name, .cover-client-nit, .ccg-k, .ccg-v, .cover-foot, .cover-sello,
+      .def-term, .def-body, .def-bullets, .section-title, .subheading,
+      .ficha-card-title, .ficha-card-tag, .ficha-card-desc, .ficha-name, .ficha-desc,
+      .sig-name, .sig-role, .sig-meta,
+      .card-label, .meta-label, .meta-value, .meta-card, .meta-strong,
+      .steps-list, .contact-box, .contact-line,
+      .sst-title, .sst-block p, .doc-copy, .doc-h2, .doc-h3, .incluye-item {
+        font-family: Arial, 'Segoe UI', Helvetica, sans-serif !important;
+        color: #000000 !important;
       }
-      h1, h2, h3,
-      .cover-client-name, .cover-client-nit, .def-term, .ficha-name, .sig-name {
-        font-family: Georgia, 'Times New Roman', serif !important;
+      .table th {
+        font-family: Arial, 'Segoe UI', Helvetica, sans-serif !important;
+        background: #1E1E1E !important;
+        color: #ffffff !important;
+      }
+      .sig-name {
+        font-size: 15px !important;
+        font-weight: 700 !important;
+        white-space: nowrap !important;
+        color: #000000 !important;
+      }
+      .footer-brand {
+        color: #cc0000 !important;
+      }
+      .total-amount, .accent {
+        color: #8A1518 !important;
       }
     </style></head>`);
 }

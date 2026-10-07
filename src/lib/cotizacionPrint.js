@@ -940,7 +940,6 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
           ${headerHtml}
           <div class="page-content">
             ${piezas.join("\n")}
-            ${i === hojas.length - 1 ? `<div class="thanks-row"><span>Gracias por su confianza</span></div>` : ""}
           </div>
           ${footerHtml}
         </div>
@@ -1034,7 +1033,7 @@ const renderTechnicalPage = () => `
       * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       :root { --texto: 11.5px; --titulo: 17px; }
       html, body { margin:0; padding:0; background:#ffffff; }
-      body { font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; color:#1E1E1E; -webkit-font-smoothing:antialiased; }
+      body { font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; color:#000000; -webkit-font-smoothing:antialiased; }
 
       .page {
         width:8.5in;
@@ -1050,23 +1049,23 @@ const renderTechnicalPage = () => `
       .page-inner { position:relative; width:100%; height:100%; padding:9mm 9mm 0 9mm; }
       .page-content { display:block; padding:0 9mm 30mm 9mm; }
 
-      h1, h2, h3 { margin:0; font-family:'Source Serif 4', Georgia, serif; font-weight:600; text-wrap:balance; }
+      h1, h2, h3 { margin:0; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; font-weight:700; color:#000000; text-wrap:balance; }
       p { margin:0 0 3mm; font-size: var(--texto); line-height:1.6;
-          text-align: justify; text-justify: inter-word; hyphens: auto; }
+          text-align: justify; text-justify: inter-word; hyphens: auto; color:#000000; }
 
-      .header { display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid #1E1E1E; padding-bottom:2.6mm; margin:0 9mm 6mm 9mm; }
+      .header { display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid #000000; padding-bottom:2.6mm; margin:0 9mm 6mm 9mm; }
       .logo { height:30px; width:auto; object-fit:contain; }
-      .header-right { font-size: var(--texto); letter-spacing:.06em; text-transform:uppercase; color:#6B6B6B; font-weight:600; text-align:right; }
+      .header-right { font-size: var(--texto); letter-spacing:.06em; text-transform:uppercase; color:#000000; font-weight:700; text-align:right; }
       /* El codigo del formato: mas pequeno y en monoespaciada, para que se
          lea como un codigo y no compita con el numero de la cotizacion. */
-      .header-sello { font-family:Consolas,"Courier New",monospace; font-size:calc(var(--texto) * .92); letter-spacing:.02em; text-transform:none; color:#8A8A8A; font-weight:400; margin-top:2px; }
-      .header-sello b { color:#4A4A4A; font-weight:700; }
+      .header-sello { font-family:Consolas,"Courier New",monospace; font-size:calc(var(--texto) * .92); letter-spacing:.02em; text-transform:none; color:#000000; font-weight:400; margin-top:2px; }
+      .header-sello b { color:#000000; font-weight:700; }
 
       .footer {
         position:absolute;
         left:9mm; right:9mm; bottom:7mm;
         padding-top:2.6mm;
-        border-top:1.5px solid #1E1E1E;
+        border-top:1.5px solid #000000;
         display:grid;
         grid-template-columns: 1fr 1fr 1fr;
         gap:4mm;
@@ -1081,17 +1080,17 @@ const renderTechnicalPage = () => `
         font-weight:800;
         text-transform:uppercase;
         letter-spacing:.07em;
-        color:#0f172a;
+        color:#000000;
         margin-bottom:2px;
       }
       .footer-main {
         font-weight:700;
-        color:#0f172a;
+        color:#000000;
         font-size:calc(var(--texto) * 1.22);
       }
       .footer-sub {
         font-weight:700;
-        color:#1e293b;
+        color:#000000;
         font-size:calc(var(--texto) * 1.13);
       }
       .footer-brand {
@@ -1099,65 +1098,65 @@ const renderTechnicalPage = () => `
         font-weight:800;
       }
 
-      .eyebrow { font-size: var(--texto); letter-spacing:.09em; text-transform:uppercase; color:#6B6B6B; font-weight:600; text-align:center; margin:0 0 6mm; padding-bottom:3mm; border-bottom:2px solid #1E1E1E; }
+      .eyebrow { font-size: var(--texto); letter-spacing:.09em; text-transform:uppercase; color:#000000; font-weight:700; text-align:center; margin:0 0 6mm; padding-bottom:3mm; border-bottom:2px solid #000000; }
       .eyebrow-gap { margin-top:9mm; }
-      .card-label { font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; color:#6B6B6B; font-weight:600; }
+      .card-label { font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; color:#000000; font-weight:700; }
       .block-label { margin-bottom:2.6mm; }
       .centered { text-align:center; }
       .tnum { font-variant-numeric:tabular-nums; }
       .accent { color:#8A1518; }
 
-      .doc-h2 { font-size: var(--titulo); line-height:1.3; text-align:center; margin:0 auto 5mm; max-width:170mm; }
+      .doc-h2 { font-size: var(--titulo); line-height:1.3; text-align:center; margin:0 auto 5mm; max-width:170mm; color:#000000; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; font-weight:700; }
       .doc-h3.con-espacio { margin-top:12mm; }
-      .doc-h3 { font-size: var(--titulo); text-align:center; margin:0 0 4.5mm; }
+      .doc-h3 { font-size: var(--titulo); text-align:center; margin:0 0 4.5mm; color:#000000; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; font-weight:700; }
       .doc-copy.junto { margin-bottom:0; color:#000000; }
       .doc-copy { font-size: var(--texto); line-height:1.65; color:#000000; max-width:160mm; margin:0 auto 3mm;
                   text-align: justify; text-justify: inter-word; hyphens: auto; }
       .doc-copy strong { color:#000000 !important; font-weight:800; }
 
       .cover { padding-top:10mm; }
-      .cover-header { display:flex; justify-content:center; padding-bottom:6mm; border-bottom:2px solid #1E1E1E; }
+      .cover-header { display:flex; justify-content:center; padding-bottom:6mm; border-bottom:2px solid #000000; }
       .cover-logo { height:44px; width:auto; }
       .cover-firm { text-align:center; margin-top:5.5mm; }
-      .cover-firm-name { font-size:18px; font-weight:800; color:#0f172a; letter-spacing:.07em; margin-bottom:2.8mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      .cover-firm-nit { font-size:13px; font-weight:700; color:#1e293b; margin-bottom:2.8mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      .cover-firm-nit span { background:#f8fafc; border:1.5px solid #cbd5e1; padding:2.5px 12px; border-radius:6px; letter-spacing:.04em; }
-      .cover-firm-contact { font-size:12.5px; color:#475569; font-weight:500; letter-spacing:.01em; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .cover-firm-name { font-size:18px; font-weight:800; color:#000000; letter-spacing:.07em; margin-bottom:2.8mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .cover-firm-nit { font-size:13px; font-weight:700; color:#000000; margin-bottom:2.8mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .cover-firm-nit span { background:#f8fafc; border:1.5px solid #000000; padding:2.5px 12px; border-radius:6px; letter-spacing:.04em; color:#000000; font-weight:700; }
+      .cover-firm-contact { font-size:12.5px; color:#000000; font-weight:600; letter-spacing:.01em; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
       .cover-title { margin-top:14mm; text-align:center; }
-      .cover-kicker { font-size: var(--texto); letter-spacing:.18em; text-transform:uppercase; color:#6B6B6B; margin-bottom:5mm; font-weight:700; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .cover-kicker { font-size: var(--texto); letter-spacing:.18em; text-transform:uppercase; color:#000000; margin-bottom:5mm; font-weight:700; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
       /* El titulo de la portada, centrado y en mayuscula con la misma tipografia institucional */
       .cover-title h1 { font-size: 19px; line-height:1.3; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif;
-        text-align:center; text-transform:uppercase; font-weight:800; color:#0f172a;
+        text-align:center; text-transform:uppercase; font-weight:800; color:#000000;
         max-width:155mm; margin-left:auto; margin-right:auto; }
-      .meta-strip { margin-top:13mm; display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid #CCC; border-bottom:1px solid #CCC; padding:6mm 0; }
+      .meta-strip { margin-top:13mm; display:grid; grid-template-columns:repeat(4,1fr); border-top:1.5px solid #000000; border-bottom:1.5px solid #000000; padding:6mm 0; }
       .meta-cell { padding:0 4mm; border-right:1px solid #DDD; text-align:center; }
       .meta-cell.last { border-right:none; }
-      .meta-label { font-size: var(--texto); letter-spacing:.08em; text-transform:uppercase; color:#777; margin-bottom:2mm; }
-      .meta-value { font-size: var(--titulo); font-weight:700; }
+      .meta-label { font-size: var(--texto); letter-spacing:.08em; text-transform:uppercase; color:#000000; margin-bottom:2mm; font-weight:700; }
+      .meta-value { font-size: var(--titulo); font-weight:700; color:#000000; }
       .cover-client { margin-top:10mm; text-align:center; }
-      .cover-client-name { font-size: 16px; font-weight:800; margin:2mm 0 1mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; color:#0f172a; text-transform:uppercase; letter-spacing:.02em; }
-      .cover-client-nit { font-size: 12.5px; font-weight:700; color:#334155; margin-top:0; margin-bottom:4mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; letter-spacing:.02em; }
+      .cover-client-name { font-size: 16px; font-weight:800; margin:2mm 0 1mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; color:#000000; text-transform:uppercase; letter-spacing:.02em; }
+      .cover-client-nit { font-size: 12.5px; font-weight:700; color:#000000; margin-top:0; margin-bottom:4mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; letter-spacing:.02em; }
       .cover-client-grid { display:inline-grid; grid-template-columns:repeat(2,auto); gap:4mm 14mm; text-align:left; }
-      .ccg-k { font-size: var(--texto); letter-spacing:.08em; text-transform:uppercase; color:#777; margin-bottom:.8mm; }
-      .ccg-v { font-size: var(--titulo); font-weight:700; color:#0f172a; line-height:1.3; text-transform:uppercase; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      .cover-foot { margin-top:12mm; padding-top:4mm; border-top:1px solid #DDD; display:flex; justify-content:space-between; align-items:center; gap:6mm; font-size: var(--texto); color:#777; }
+      .ccg-k { font-size: var(--texto); letter-spacing:.08em; text-transform:uppercase; color:#000000; margin-bottom:.8mm; font-weight:700; }
+      .ccg-v { font-size: var(--titulo); font-weight:700; color:#000000; line-height:1.3; text-transform:uppercase; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .cover-foot { margin-top:12mm; padding-top:4mm; border-top:1px solid #DDD; display:flex; justify-content:space-between; align-items:center; gap:6mm; font-size: var(--texto); color:#000000; }
       /* El codigo del formato en la portada. Discreto y en el centro del
          pie: es lo primero que se mira en una auditoria, pero no es lo que
          el cliente tiene que leer. */
-      .cover-sello { font-family:Consolas,"Courier New",monospace; font-size:calc(var(--texto) * .95); color:#8A8A8A; white-space:nowrap; }
-      .cover-sello b { color:#4A4A4A; font-weight:700; }
+      .cover-sello { font-family:Consolas,"Courier New",monospace; font-size:calc(var(--texto) * .95); color:#000000; white-space:nowrap; }
+      .cover-sello b { color:#000000; font-weight:700; }
 
       .def-list { border-top:1px solid #DDD; max-width:170mm; margin:0 auto; }
       .def-row { display:grid; grid-template-columns:44mm 1fr; gap:7mm; padding:4.5mm 0; border-bottom:1px solid #DDD; }
-      .def-term { font-size: var(--titulo); font-weight:600; font-family:'Source Serif 4', Georgia, serif; }
-      .def-body { font-size: var(--texto); line-height:1.65; color:#333; }
-      .def-body p { font-size: var(--texto); margin:0 0 2.5mm; }
-      .def-bullets { margin:0; padding-left:16px; font-size: var(--texto); line-height:1.65; color:#333; }
+      .def-term { font-size: var(--titulo); font-weight:700; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; color:#000000; }
+      .def-body { font-size: var(--texto); line-height:1.65; color:#000000; }
+      .def-body p { font-size: var(--texto); margin:0 0 2.5mm; color:#000000; }
+      .def-bullets { margin:0; padding-left:16px; font-size: var(--texto); line-height:1.65; color:#000000; }
       .def-bullets li { margin-bottom:1.2mm; }
-      .bullet-list { margin:1.5mm 0 0 0; padding-left:18px; font-size: var(--texto); line-height:1.5; }
+      .bullet-list { margin:1.5mm 0 0 0; padding-left:18px; font-size: var(--texto); line-height:1.5; color:#000000; }
       .bullet-list li { margin-bottom:1.3mm; }
-      .section-title { font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; color:#6B6B6B; font-weight:600; margin-bottom:2.6mm; }
-      .subheading { font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; color:#6B6B6B; font-weight:600; margin-bottom:2.6mm; }
+      .section-title { font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; color:#000000; font-weight:700; margin-bottom:2.6mm; }
+      .subheading { font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; color:#000000; font-weight:700; margin-bottom:2.6mm; }
 
       .incluye-block { margin:6mm 0 0; }
       .incluye-list { border-top:1px solid #DDD; padding-top:3.5mm; }
@@ -1165,10 +1164,10 @@ const renderTechnicalPage = () => `
          quedan alineados bajo la primera palabra, no bajo la vinieta. */
       .incluye-item {
         position:relative; padding-left:5mm; margin-bottom:1.7mm;
-        font-size: var(--texto); line-height:1.55; color:#2A2A2A; text-align:justify;
+        font-size: var(--texto); line-height:1.55; color:#000000; text-align:justify;
       }
       .incluye-item:last-child { margin-bottom:0; }
-      .incluye-item::before { content:"–"; position:absolute; left:1.2mm; color:#6B6B6B; }
+      .incluye-item::before { content:"–"; position:absolute; left:1.2mm; color:#000000; font-weight:700; }
       .content-block { margin-bottom:5mm; }
 
       .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 0 5mm; }
@@ -1198,7 +1197,7 @@ const renderTechnicalPage = () => `
       }
       .photo-grid.single .photo { height: var(--card-photo-h, 140mm); }
       .proposal-3-photo { height:52mm !important; object-fit:contain; object-position:center; background:#ffffff; }
-      .photo-caption { padding:5px 8px 6px; text-align:center; font-size: var(--texto); letter-spacing:.04em; text-transform:uppercase; color:#64748B; border-top:1px solid #E2E8F0; background:#FAFAFA; font-weight:600; }
+      .photo-caption { padding:5px 8px 6px; text-align:center; font-size: var(--texto); letter-spacing:.04em; text-transform:uppercase; color:#000000; border-top:1px solid #E2E8F0; background:#FAFAFA; font-weight:700; }
 
       .map-wrap {
         position:relative; width:100%; height:52mm;
@@ -1222,13 +1221,13 @@ const renderTechnicalPage = () => `
       .table th { background:#1E1E1E; color:#fff; padding:8px 10px; font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; font-weight:600; text-align:center; border:none; }
       .table th.t-left { text-align:left; }
       .table th.t-right { text-align:right; }
-      .table td { border-bottom:1px solid #DDD; padding:8px 10px; vertical-align:middle; color:#1E1E1E; }
-      .table .sub-row td { font-weight:600; }
-      .table .soft-row td { color:#666; font-size: var(--texto); border-bottom:1px solid #EEE; padding:6px 10px; }
+      .table td { border-bottom:1px solid #DDD; padding:8px 10px; vertical-align:middle; color:#000000; }
+      .table .sub-row td { font-weight:700; color:#000000; }
+      .table .soft-row td { color:#000000; font-size: var(--texto); border-bottom:1px solid #EEE; padding:6px 10px; }
       .table .grand-total td { border-top:2px solid #1E1E1E; border-bottom:none; padding-top:12px; }
-      .total-label { font-size: var(--texto); font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
+      .total-label { font-size: var(--texto); font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#000000; }
       .total-amount { font-size: var(--titulo); color:#8A1518; font-weight:700; }
-      .row-num { color:#777; font-size: var(--texto); }
+      .row-num { color:#000000; font-size: var(--texto); }
 
       .t-center { text-align:center; }
       .t-right { text-align:right; }
@@ -1264,8 +1263,8 @@ const renderTechnicalPage = () => `
       .ficha-card-title {
         font-size: 13px;
         font-weight: 700;
-        font-family: 'Source Serif 4', Georgia, serif;
-        color: #0f172a;
+        font-family: 'Source Sans 3', 'Segoe UI', Arial, sans-serif;
+        color: #000000;
         line-height: 1.2;
       }
       .ficha-card-tag {
@@ -1273,9 +1272,9 @@ const renderTechnicalPage = () => `
         font-weight: 700;
         letter-spacing: .04em;
         text-transform: uppercase;
-        color: #64748b;
+        color: #000000;
         background: #F8FAFC;
-        border: 1px solid #E2E8F0;
+        border: 1px solid #CBD5E1;
         padding: 1px 5px;
         border-radius: 4px;
         white-space: nowrap;
@@ -1304,13 +1303,13 @@ const renderTechnicalPage = () => `
       .ficha-card-desc {
         font-size: 10px;
         line-height: 1.42;
-        color: #334155;
+        color: #000000;
         text-align: justify;
         text-justify: inter-word;
         hyphens: auto;
       }
       .ficha-card-desc strong {
-        color: #0f172a;
+        color: #000000;
       }
       .ficha-card-desc .split {
         margin-bottom: 1.5mm;
@@ -1320,7 +1319,7 @@ const renderTechnicalPage = () => `
 
       .ficha-row { display:grid; grid-template-columns:42mm 38mm 1fr; gap:6mm; padding:4.5mm 0; border-top:1px solid #DDD; align-items:center; }
       .ficha-row:last-of-type { border-bottom:1px solid #DDD; }
-      .ficha-name { font-size: var(--titulo); font-weight:600; font-family:'Source Serif 4', Georgia, serif; color:#1E1E1E; }
+      .ficha-name { font-size: var(--titulo); font-weight:700; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; color:#000000; }
       .ficha-img-box {
         width: 100%;
         height: 32mm;
@@ -1334,7 +1333,7 @@ const renderTechnicalPage = () => `
         box-sizing: border-box;
       }
       .ficha-img { max-width:100%; max-height:100%; object-fit:contain; }
-      .ficha-desc { font-size: var(--texto); line-height:1.6; color:#333; }
+      .ficha-desc { font-size: var(--texto); line-height:1.6; color:#000000; }
       .ficha-desc .split { margin-bottom:2.5mm; padding-bottom:2.5mm; border-bottom:1px dashed #DDD; }
 
       .conditions-block { margin:7mm 0 0; }
@@ -1346,23 +1345,22 @@ const renderTechnicalPage = () => `
          como los hubiera escrito cada quien; la validez y la certificacion
          venian del codigo en minuscula. Puestos aqui, los cuatro se ven
          iguales sin tener que acordarse al escribirlos. */
-      .meta-strong { font-size: var(--texto); font-weight:600; margin-top:1.6mm;
-        text-transform:uppercase; }
+      .meta-strong { font-size: var(--texto); font-weight:700; margin-top:1.6mm;
+        text-transform:uppercase; color:#000000; }
 
-      .sst-block { margin:6mm 0; padding-top:4mm; border-top:2px solid #1E1E1E; }
-      .sst-title { font-size: var(--texto); letter-spacing:.08em; text-transform:uppercase; font-weight:700; margin-bottom:2.6mm; }
-      .sst-block p { font-size: var(--texto); line-height:1.7; margin:0; }
+      .sst-block { margin:6mm 0; padding-top:4mm; border-top:2px solid #000000; }
+      .sst-title { font-size: var(--texto); letter-spacing:.08em; text-transform:uppercase; font-weight:700; margin-bottom:2.6mm; color:#000000; }
+      .sst-block p { font-size: var(--texto); line-height:1.7; margin:0; color:#000000; }
 
-      .signature { display:grid; grid-template-columns:1fr 1fr; gap:12mm; padding-top:5mm; border-top:1px solid #DDD; }
-      .steps-list { margin:0; padding-left:17px; font-size: var(--texto); line-height:1.8; color:#2A2A2A; }
-      .contact-box { margin-top:5mm; padding:4mm 5mm; background:#F4F4F2; border:1px solid #DDD; }
-      .contact-line { font-size: var(--texto); line-height:1.6; }
-      .sig-space { height:14mm; border-bottom:1px solid #1E1E1E; margin-bottom:3mm; display:flex; align-items:flex-end; }
+      .signature { display:grid; grid-template-columns:1fr 1.05fr; gap:10mm; padding-top:5mm; border-top:1px solid #000000; }
+      .steps-list { margin:0; padding-left:17px; font-size: var(--texto); line-height:1.8; color:#000000; }
+      .contact-box { margin-top:5mm; padding:4mm 5mm; background:#F8FAFC; border:1px solid #CBD5E1; color:#000000; }
+      .contact-line { font-size: var(--texto); line-height:1.6; color:#000000; }
+      .sig-space { height:14mm; border-bottom:1px solid #000000; margin-bottom:3mm; display:flex; align-items:flex-end; }
       .sig-img { max-height:13mm; max-width:60mm; object-fit:contain; }
-      .sig-name { font-size: var(--titulo); font-weight:600; font-family:'Source Serif 4', Georgia, serif; }
-      .sig-role { font-size: var(--texto); color:#333; margin-top:.6mm; }
-      .sig-meta { font-size: var(--texto); color:#666; margin-top:2mm; line-height:1.65; }
-      .thanks-row { margin-top:8mm; padding-top:4mm; border-top:1px solid #DDD; text-align:right; font-size: var(--texto); letter-spacing:.08em; text-transform:uppercase; color:#777; }
+      .sig-name { font-size: 15px; font-weight:700; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; color:#000000; white-space:nowrap; }
+      .sig-role { font-size: var(--texto); color:#000000; margin-top:.6mm; font-weight:600; }
+      .sig-meta { font-size: var(--texto); color:#000000; margin-top:2mm; line-height:1.65; }
 
       .appendix-img { width:100%; height:auto; max-height:235mm; object-fit:contain; display:block; margin:0 auto; image-rendering: -webkit-optimize-contrast; image-rendering: auto; }
       .summary-spacing { margin-bottom:8mm; }

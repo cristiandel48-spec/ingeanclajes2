@@ -484,11 +484,32 @@ export default function Informes({ctx}){
   const abrirNuevoInformeRef = useRef(null);
   useEffect(()=>{ abrirNuevoInformeRef.current = abrirNuevoInforme; });
 
+  const enriquecerInforme = (inf) => {
+    if (!inf) return inf;
+    const obra = obras?.find((o) => o.id === inf.obraId);
+    const cotVinc = cotizaciones?.find((c) => c.id === inf.cotizacionId)
+      || (inf.cotizacionNumero ? cotizaciones?.find((c) => c.numero === inf.cotizacionNumero) : null)
+      || (obra?.cotizacionId ? cotizaciones?.find((c) => c.id === obra.cotizacionId) : null)
+      || (obra?.cliente ? cotizaciones?.find((c) => c.cliente && normalizarRazonSocial(c.cliente) === normalizarRazonSocial(obra.cliente)) : null);
+
+    const clienteFinal = inf.cliente || inf.contratante || obra?.cliente || "";
+    const cotNumFinal = inf.cotizacionNumero || cotVinc?.numero || cotVinc?.id || obra?.cotizacionId || "";
+
+    return {
+      ...inf,
+      cliente: clienteFinal,
+      contratante: clienteFinal,
+      cotizacionNumero: cotNumFinal,
+      cotizacionRef: inf.cotizacionRef || cotNumFinal,
+    };
+  };
+
   const descargarPdf = async (inf = sel) => {
     if (!inf) return;
+    const listo = enriquecerInforme(inf);
     setGenerandoPdf(true);
     try {
-      await descargarInformePdf(inf, { empresaConfig, firmaImg });
+      await descargarInformePdf(listo, { empresaConfig, firmaImg });
     } catch (fallo) {
       window.alert(fallo.message || "No se pudo generar el PDF.");
     } finally {
@@ -498,8 +519,9 @@ export default function Informes({ctx}){
 
   const imprimirInforme = (inf = sel) => {
     if (!inf) return;
-    const html = buildInformePrintHtml(inf, { empresaConfig, firmaImg });
-    openPrintTab(html, `Informe ${inf?.id || ""}`);
+    const listo = enriquecerInforme(inf);
+    const html = buildInformePrintHtml(listo, { empresaConfig, firmaImg });
+    openPrintTab(html, `Informe ${listo?.id || ""}`);
   };
 
   // En la barra superior: botones de acción fija para detalle (Volver, Editar, Descargar, Imprimir)
@@ -610,11 +632,19 @@ export default function Informes({ctx}){
     const miNombre = resolverAutorGuardado(ctx?.membresia, prev?.modificadoPorNombre);
     const actividades = normalizeInformeActividades(form);
     const legacyActividad = actividades[0] || emptyActividad();
-    const obraIdNormalizado = form.obraId || null;
+    const obraAct = obras?.find((o) => o.id === obraIdNormalizado);
+    const cotVinc = cotizaciones?.find((c) => c.id === form.cotizacionId)
+      || (form.cotizacionNumero ? cotizaciones?.find((c) => c.numero === form.cotizacionNumero) : null)
+      || (obraAct?.cotizacionId ? cotizaciones?.find((c) => c.id === obraAct.cotizacionId) : null)
+      || (obraAct?.cliente ? cotizaciones?.find((c) => c.cliente && normalizarRazonSocial(c.cliente) === normalizarRazonSocial(obraAct.cliente)) : null);
+
+    const clienteFinal = form.cliente || form.contratante || obraAct?.cliente || "";
+    const cotNumFinal = form.cotizacionNumero || cotVinc?.numero || cotVinc?.id || obraAct?.cotizacionId || "";
+
     const inf={
       ...(editId
-        ? {id:editId,...form,obraId:obraIdNormalizado,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos}
-        : {id:siguienteIdUnico(informes,"INF"),...form,obraId:obraIdNormalizado,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos}),
+        ? {id:editId,...form,obraId:obraIdNormalizado,cliente:clienteFinal,contratante:clienteFinal,cotizacionNumero:cotNumFinal,cotizacionRef:cotNumFinal,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos}
+        : {id:siguienteIdUnico(informes,"INF"),...form,obraId:obraIdNormalizado,cliente:clienteFinal,contratante:clienteFinal,cotizacionNumero:cotNumFinal,cotizacionRef:cotNumFinal,actividades,actividad:legacyActividad.titulo,descripcion:legacyActividad.descripcion,observaciones:legacyActividad.observaciones,fotos:legacyActividad.fotos}),
       creadoPor: prev?.creadoPor || miUserId,
       creadoPorNombre: prev?.creadoPorNombre ? normalizarNombrePersona(prev.creadoPorNombre, "Camila Sepúlveda") : (resolverAutorGuardado(ctx?.membresia) || "Camila Sepúlveda"),
       creadoEn: prev?.creadoEn || new Date().toISOString(),

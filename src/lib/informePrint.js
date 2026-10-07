@@ -361,11 +361,11 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
   const totalHojas = paginas.length;
 
   const seccionesHtml = paginas.map((bloques, idx) => `
-    <section class="page" style="width:816px;height:1056px;padding:30px 40px 22px;box-sizing:border-box;background:#ffffff;position:relative;display:flex;flex-direction:column;justify-content:space-between;page-break-after:always;break-after:page;">
+    <section class="page" style="width:8.5in;height:11in;padding:28px 36px 20px;box-sizing:border-box;background:#ffffff;position:relative;display:flex;flex-direction:column;justify-content:space-between;page-break-after:always;break-after:page;">
       <div style="flex:1;">
         ${bloques.join("\n")}
       </div>
-      <div style="border-top:1px solid #cbd5e1;padding-top:5px;display:flex;justify-content:space-between;align-items:center;font-size:8px;color:#475569;margin-top:8px;">
+      <div style="border-top:1px solid #cbd5e1;padding-top:5px;display:flex;justify-content:space-between;align-items:center;font-size:8px;color:#475569;margin-top:6px;">
         <span>Ingeanclajes S.A.S · Documento Técnico Oficial SGC · FO-ACT-04 (V-03)</span>
         <span>Página ${idx + 1} de ${totalHojas}</span>
       </div>
@@ -377,28 +377,54 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
   <head>
     <meta charset="utf-8">
     <title>Informe ${escapeHtml(numDoc)} ${escapeHtml(proyecto)}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
     <style>
-      * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      @page {
+        size: Letter;
+        margin: 0;
+      }
+      * {
+        box-sizing: border-box;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        letter-spacing: normal;
+      }
       html, body {
         margin: 0;
         padding: 0;
         background: #f1f5f9;
-        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         color: #0f172a;
         -webkit-font-smoothing: antialiased;
+        text-rendering: geometricPrecision;
       }
       .page {
-        width: 816px;
-        height: 1056px;
+        width: 8.5in;
+        height: 11in;
         margin: 0 auto 20px;
         box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+        background: #ffffff;
+        position: relative;
+        overflow: hidden;
+        break-after: page;
+        page-break-after: always;
       }
       @media print {
-        body { background: #ffffff; }
-        .page { margin: 0; box-shadow: none; width: 100%; height: 100vh; page-break-after: always; break-after: page; }
+        html, body {
+          background: #ffffff !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        #print-toolbar, #print-toolbar + div {
+          display: none !important;
+        }
+        .page {
+          margin: 0 !important;
+          box-shadow: none !important;
+          width: 8.5in !important;
+          height: 11in !important;
+          page-break-after: always !important;
+          break-after: page !important;
+        }
       }
     </style>
   </head>

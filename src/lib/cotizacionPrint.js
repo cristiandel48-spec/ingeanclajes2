@@ -236,7 +236,6 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
     const images = fotos.slice(0, 2);
     const hStyle = customHeight ? `style="height:${customHeight}mm; --card-photo-h:${customHeight}mm;"` : "";
     return `
-      <div class="card-label block-label">Registro fotográfico de la propuesta</div>
       <div class="photo-grid ${images.length === 1 ? "single" : ""}">
         ${images.map((foto, idx)=>{
           const src = escapeHtml(foto?.src || "");
@@ -558,14 +557,14 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       const tableH = plan.juntoAlTexto
         ? (38 + tableRows * 7.5)
         : 8;
-      const photoOverhead = 20;
+      const photoOverhead = 10;
 
       const espacioDisponible = 214 - (tituloH + reqH + scopeH + narrH + mapH + tableH + photoOverhead);
 
       if (numFotos === 1) {
-        customPhotoHeight = Math.min(144, Math.max(98, Math.round(espacioDisponible)));
+        customPhotoHeight = Math.min(160, Math.max(105, Math.round(espacioDisponible * 0.95)));
       } else {
-        customPhotoHeight = Math.min(84, Math.max(62, Math.round(espacioDisponible * 0.58)));
+        customPhotoHeight = Math.min(105, Math.max(76, Math.round(espacioDisponible * 0.70)));
       }
     }
 
@@ -669,12 +668,12 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
           </div>
           <div class="cover-client">
             <div class="meta-label">Cotización preparada para</div>
-            <div class="cover-client-name">${escapeHtml(c?.cliente || "")}</div>
-            ${c?.nit ? `<div class="cover-client-nit tnum">${/^nit\b/i.test(String(c.nit).trim()) ? escapeHtml(c.nit) : `NIT ${escapeHtml(c.nit)}`}</div>` : ""}
+            <div class="cover-client-name">${escapeHtml(normalizarMayusculas(c?.cliente || ""))}</div>
+            ${c?.nit ? `<div class="cover-client-nit tnum">${/^nit\b/i.test(String(c.nit).trim()) ? escapeHtml(normalizarMayusculas(c.nit)) : `NIT ${escapeHtml(normalizarMayusculas(c.nit))}`}</div>` : ""}
             <div class="cover-client-grid">
               <div><div class="ccg-k">Obra</div><div class="ccg-v">${escapeHtml(normalizarMayusculas(c?.obra || ""))}</div></div>
-              <div><div class="ccg-k">Ciudad</div><div class="ccg-v">${escapeHtml(c?.ciudad || "")}</div></div>
-              <div><div class="ccg-k">Contacto</div><div class="ccg-v">${escapeHtml(c?.contacto || c?.cliente || "")}</div></div>
+              <div><div class="ccg-k">Ciudad</div><div class="ccg-v">${escapeHtml(normalizarMayusculas(c?.ciudad || ""))}</div></div>
+              <div><div class="ccg-k">Contacto</div><div class="ccg-v">${escapeHtml(normalizarMayusculas(c?.contacto || c?.cliente || ""))}</div></div>
               <div><div class="ccg-k">Teléfono</div><div class="ccg-v tnum">${escapeHtml(c?.telefono || "")}</div></div>
             </div>
           </div>
@@ -693,21 +692,21 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       <div class="page-inner">
         ${headerHtml}
         <div class="page-content">
-          <h2 class="doc-h2">Cordial saludo${c?.cliente ? `, ${escapeHtml(c.cliente)}` : ""}</h2>
+          <h2 class="doc-h2">Cordial saludo${c?.cliente ? `, ${escapeHtml(normalizarMayusculas(c.cliente))}` : ""}</h2>
           ${(()=>{
-            // La obra se agrega al final de la frase de apertura. Se quita el
-            // punto final si lo trae, para no imprimir "...alturas. en la obra X".
-            const apertura = String(textos.saludo || "").trim().replace(/\.$/, "");
+            // La obra y el alcance se destacan en negrita negra pura
+            let apertura = String(textos.saludo || "").trim().replace(/\.$/, "");
+            apertura = escapeHtml(apertura).replace(/\b([A-ZÁÉÍÓÚÜÑ0-9\(\)\-]{2,}(?:\s+[A-ZÁÉÍÓÚÜÑ0-9\(\)\-]+){2,})\b/g, '<strong style="color:#000000;font-weight:800;">$1</strong>');
             const conObra = c?.obra
-              ? `${escapeHtml(apertura)} en la obra <strong>${escapeHtml(c.obra)}</strong>.`
-              : `${escapeHtml(apertura)}.`;
-            return `<p class="doc-copy">${conObra}</p>`;
+              ? `${apertura} en la obra <strong style="color:#000000;font-weight:800;">${escapeHtml(normalizarMayusculas(c.obra))}</strong>.`
+              : `${apertura}.`;
+            return `<p class="doc-copy" style="color:#000000;">${conObra}</p>`;
           })()}
           <!-- Los renglones de la presentacion van seguidos, sin hueco entre
                ellos: son un mismo texto partido en lineas, no parrafos
                distintos, y separados dejaban tres huecos en mitad de la hoja. -->
-          ${lineasDeTexto(textos.presentacion).map((parrafo)=>`<p class="doc-copy junto">${escapeHtml(parrafo)}</p>`).join("")}
-          ${textoInicial ? `<p class="doc-copy">${escapeHtml(textoInicial)}</p>` : ""}
+          ${lineasDeTexto(textos.presentacion).map((parrafo)=>`<p class="doc-copy junto" style="color:#000000;">${escapeHtml(parrafo)}</p>`).join("")}
+          ${textoInicial ? `<p class="doc-copy" style="color:#000000;">${escapeHtml(textoInicial)}</p>` : ""}
 
           <h3 class="doc-h3 con-espacio">Definiciones que estructuran el alcance</h3>
           ${(()=>{
@@ -956,39 +955,59 @@ const renderTechnicalPage = () => `
         <div class="page-content">
           <h3 class="doc-h3">Componentes del sistema en acero galvanizado</h3>
 
-          <div class="ficha-row">
-            <div class="ficha-name">Soporte lateral e intermedio</div>
-            <div class="ficha-img-box">
-              <img src="${IMG_SOPORTE}" class="ficha-img" alt="Soporte lateral e intermedio" />
+          <div class="ficha-grid">
+            <div class="ficha-card">
+              <div class="ficha-card-header">
+                <span class="ficha-card-title">Soporte lateral e intermedio</span>
+                <span class="ficha-card-tag">Acero Galv.</span>
+              </div>
+              <div class="ficha-card-img-box">
+                <img src="${IMG_SOPORTE}" class="ficha-card-img" alt="Soporte lateral e intermedio" />
+              </div>
+              <div class="ficha-card-desc">
+                Este elemento está diseñado para ser usado en sistemas de líneas de vida horizontales continuas. Soporta regularmente el cable de acero para no superar la luz máxima permitida y permite el paso continuo del carro deslizador sin desconexión del colaborador.
+              </div>
             </div>
-            <div class="ficha-desc">Este elemento está diseñado para ser usado en sistemas de líneas de vida horizontales de tipo continuo. El componente soporta regularmente el cable de acero para que una sección libre de cable no supere la luz máxima permitida. Este soporte intermedio permite el uso de un carro deslizador para evitar el uso de eslinga en Y por parte del trabajador, y evitar que el colaborador se desconecte.</div>
-          </div>
 
-          <div class="ficha-row">
-            <div class="ficha-name">Tensor</div>
-            <div class="ficha-img-box">
-              <img src="${IMG_TENSOR}" class="ficha-img" alt="Tensor" />
+            <div class="ficha-card">
+              <div class="ficha-card-header">
+                <span class="ficha-card-title">Tensor de línea</span>
+                <span class="ficha-card-tag">Acero Galv.</span>
+              </div>
+              <div class="ficha-card-img-box">
+                <img src="${IMG_TENSOR}" class="ficha-card-img" alt="Tensor" />
+              </div>
+              <div class="ficha-card-desc">
+                Diseñado para líneas de vida horizontales. Se asegura al cable y al absorbedor de energía respectivamente. Su función es mantener la tensión adecuada para que, ante una eventual caída, la deflexión y distancia de caída sean mínimas.
+              </div>
             </div>
-            <div class="ficha-desc">Este elemento está diseñado para ser usado en sistemas de líneas de vida horizontales. En sus extremos el tensor se asegura al cable de la línea de vida y a un absorbedor de energía respectivamente. Su función es tensionar la línea de vida para que, en el momento de una caída, la distancia de caída del trabajador sea mínima.</div>
-          </div>
 
-          <div class="ficha-row">
-            <div class="ficha-name">Empalmes, fijaciones y guardacables</div>
-            <div class="ficha-img-box">
-              <img src="${IMG_EMPALMES}" class="ficha-img" alt="Empalmes y guardacables" />
+            <div class="ficha-card">
+              <div class="ficha-card-header">
+                <span class="ficha-card-title">Empalmes y guardacables</span>
+                <span class="ficha-card-tag">Aluminio / Galv.</span>
+              </div>
+              <div class="ficha-card-img-box">
+                <img src="${IMG_EMPALMES}" class="ficha-card-img" alt="Empalmes y guardacables" />
+              </div>
+              <div class="ficha-card-desc">
+                <div class="split"><strong>Empalmes y fijaciones:</strong> Fabricados en aluminio de alta resistencia a la corrosión. Utilizados para empalme y remate seguro de cables.</div>
+                <div><strong>Guardacables:</strong> En acero galvanizado. Protegen contra el desgaste, cizallamiento y deformación por curvatura, alargando la vida útil del cable.</div>
+              </div>
             </div>
-            <div class="ficha-desc">
-              <div class="split"><strong>Empalmes y fijaciones:</strong> Fabricados en aluminio. Resistentes a la corrosión y oxidación. Se utilizan para empalmar dos cables y fijar barandillas de cables.</div>
-              <div><strong>Guardacables:</strong> Fabricado en acero con acabado galvanizado resistente a la corrosión. Protegen contra el desgaste y deformación del cable, alargando su vida útil.</div>
-            </div>
-          </div>
 
-          <div class="ficha-row">
-            <div class="ficha-name">Cable de acero</div>
-            <div class="ficha-img-box">
-              <img src="${IMG_CABLE}" class="ficha-img" alt="Cable de acero" />
+            <div class="ficha-card">
+              <div class="ficha-card-header">
+                <span class="ficha-card-title">Cable de acero</span>
+                <span class="ficha-card-tag">Certificado</span>
+              </div>
+              <div class="ficha-card-img-box">
+                <img src="${IMG_CABLE}" class="ficha-card-img" alt="Cable de acero" />
+              </div>
+              <div class="ficha-card-desc">
+                Fabricado bajo diseño para absorber desgaste y esfuerzos por contacto con poleas y superficies, así como tensiones dinámicas de detención. Se compone de alambres de acero estirados en frío y trenzados en torones para óptima flexibilidad y resistencia.
+              </div>
             </div>
-            <div class="ficha-desc">El cable de acero se fabrica bajo un diseño que permite que sea capaz de absorber el desgaste y los esfuerzos causados por el contacto con poleas, tambores y otras superficies, así como las tensiones estáticas y dinámicas del trabajo al que se someta. Se compone por alambres de acero, estirados en frío, trenzados en espiral, formando unidades denominadas torones. Mientras más alambres conformen este elemento, mayor será su flexibilidad y resistencia en esfuerzos elevados.</div>
           </div>
         </div>
         ${footerHtml}
@@ -1091,43 +1110,36 @@ const renderTechnicalPage = () => `
       .doc-h2 { font-size: var(--titulo); line-height:1.3; text-align:center; margin:0 auto 5mm; max-width:170mm; }
       .doc-h3.con-espacio { margin-top:12mm; }
       .doc-h3 { font-size: var(--titulo); text-align:center; margin:0 0 4.5mm; }
-      .doc-copy.junto { margin-bottom:0; }
-      .doc-copy { font-size: var(--texto); line-height:1.65; color:#2A2A2A; max-width:160mm; margin:0 auto 3mm;
+      .doc-copy.junto { margin-bottom:0; color:#000000; }
+      .doc-copy { font-size: var(--texto); line-height:1.65; color:#000000; max-width:160mm; margin:0 auto 3mm;
                   text-align: justify; text-justify: inter-word; hyphens: auto; }
+      .doc-copy strong { color:#000000 !important; font-weight:800; }
 
       .cover { padding-top:10mm; }
       .cover-header { display:flex; justify-content:center; padding-bottom:6mm; border-bottom:2px solid #1E1E1E; }
       .cover-logo { height:44px; width:auto; }
       .cover-firm { text-align:center; margin-top:5.5mm; }
-      .cover-firm-name { font-size:18px; font-weight:800; color:#0f172a; letter-spacing:.07em; margin-bottom:2.8mm; }
-      .cover-firm-nit { font-size:13px; font-weight:700; color:#1e293b; margin-bottom:2.8mm; }
+      .cover-firm-name { font-size:18px; font-weight:800; color:#0f172a; letter-spacing:.07em; margin-bottom:2.8mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .cover-firm-nit { font-size:13px; font-weight:700; color:#1e293b; margin-bottom:2.8mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
       .cover-firm-nit span { background:#f8fafc; border:1.5px solid #cbd5e1; padding:2.5px 12px; border-radius:6px; letter-spacing:.04em; }
-      .cover-firm-contact { font-size:12.5px; color:#475569; font-weight:500; letter-spacing:.01em; }
+      .cover-firm-contact { font-size:12.5px; color:#475569; font-weight:500; letter-spacing:.01em; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
       .cover-title { margin-top:14mm; text-align:center; }
-      .cover-kicker { font-size: var(--texto); letter-spacing:.18em; text-transform:uppercase; color:#6B6B6B; margin-bottom:5mm; font-weight:700; }
-      /* El titulo de la portada, centrado y en mayuscula. El centrado va
-         tambien aqui y no solo en el contenedor porque el h1 trae el suyo del
-         navegador; y el ancho limitado es para que un titulo largo parta en
-         varias lineas centradas en vez de irse de lado a lado de la hoja. */
-      .cover-title h1 { font-size: var(--titulo); line-height:1.3;
-        text-align:center; text-transform:uppercase;
-        max-width:150mm; margin-left:auto; margin-right:auto; }
+      .cover-kicker { font-size: var(--texto); letter-spacing:.18em; text-transform:uppercase; color:#6B6B6B; margin-bottom:5mm; font-weight:700; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      /* El titulo de la portada, centrado y en mayuscula con la misma tipografia institucional */
+      .cover-title h1 { font-size: 19px; line-height:1.3; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif;
+        text-align:center; text-transform:uppercase; font-weight:800; color:#0f172a;
+        max-width:155mm; margin-left:auto; margin-right:auto; }
       .meta-strip { margin-top:13mm; display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid #CCC; border-bottom:1px solid #CCC; padding:6mm 0; }
       .meta-cell { padding:0 4mm; border-right:1px solid #DDD; text-align:center; }
       .meta-cell.last { border-right:none; }
       .meta-label { font-size: var(--texto); letter-spacing:.08em; text-transform:uppercase; color:#777; margin-bottom:2mm; }
       .meta-value { font-size: var(--titulo); font-weight:700; }
       .cover-client { margin-top:10mm; text-align:center; }
-      .cover-client-name { font-size: var(--titulo); font-weight:700; margin:2mm 0 1mm; font-family:'Source Serif 4', Georgia, serif; color:#1E1E1E; }
-      .cover-client-nit { font-size: var(--titulo); font-weight:700; color:#1E1E1E; margin-top:0; margin-bottom:4mm; font-family:'Source Serif 4', Georgia, serif; letter-spacing:.02em; }
-      /* Los datos del cliente son lo primero que busca quien recibe el
-         documento, asi que van con el mismo peso y tamano que las demas
-         cifras destacadas de la portada (.meta-value). En negrita a 11.5px no
-         se distinguian del rotulo. La etiqueta pasa arriba, pequena y en gris,
-         para que la vista caiga en el dato. */
+      .cover-client-name { font-size: 16px; font-weight:800; margin:2mm 0 1mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; color:#0f172a; text-transform:uppercase; letter-spacing:.02em; }
+      .cover-client-nit { font-size: 12.5px; font-weight:700; color:#334155; margin-top:0; margin-bottom:4mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; letter-spacing:.02em; }
       .cover-client-grid { display:inline-grid; grid-template-columns:repeat(2,auto); gap:4mm 14mm; text-align:left; }
       .ccg-k { font-size: var(--texto); letter-spacing:.08em; text-transform:uppercase; color:#777; margin-bottom:.8mm; }
-      .ccg-v { font-size: var(--titulo); font-weight:700; color:#1E1E1E; line-height:1.3; }
+      .ccg-v { font-size: var(--titulo); font-weight:700; color:#0f172a; line-height:1.3; text-transform:uppercase; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
       .cover-foot { margin-top:12mm; padding-top:4mm; border-top:1px solid #DDD; display:flex; justify-content:space-between; align-items:center; gap:6mm; font-size: var(--texto); color:#777; }
       /* El codigo del formato en la portada. Discreto y en el centro del
          pie: es lo primero que se mira en una auditoria, pero no es lo que
@@ -1222,6 +1234,89 @@ const renderTechnicalPage = () => `
       .t-right { text-align:right; }
       .t-left { text-align:left; }
       .strong { font-weight:600; }
+
+      .ficha-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        gap: 4.5mm;
+        margin-top: 2mm;
+      }
+      .ficha-card {
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 3mm 3.5mm;
+        background: #FFFFFF;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        box-sizing: border-box;
+      }
+      .ficha-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 2mm;
+        padding-bottom: 1.5mm;
+        border-bottom: 1px solid #F1F5F9;
+        margin-bottom: 2mm;
+      }
+      .ficha-card-title {
+        font-size: 13px;
+        font-weight: 700;
+        font-family: 'Source Serif 4', Georgia, serif;
+        color: #0f172a;
+        line-height: 1.2;
+      }
+      .ficha-card-tag {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: #64748b;
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        padding: 1px 5px;
+        border-radius: 4px;
+        white-space: nowrap;
+      }
+      .ficha-card-img-box {
+        width: 100%;
+        height: 66mm;
+        background: #FAFAFA;
+        border: 1px solid #E5E7EB;
+        border-radius: 6px;
+        padding: 2mm;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        margin-bottom: 2mm;
+      }
+      .ficha-card-img {
+        max-width: 100%;
+        max-height: 100%;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.06));
+      }
+      .ficha-card-desc {
+        font-size: 10px;
+        line-height: 1.42;
+        color: #334155;
+        text-align: justify;
+        text-justify: inter-word;
+        hyphens: auto;
+      }
+      .ficha-card-desc strong {
+        color: #0f172a;
+      }
+      .ficha-card-desc .split {
+        margin-bottom: 1.5mm;
+        padding-bottom: 1.5mm;
+        border-bottom: 1px dashed #E2E8F0;
+      }
 
       .ficha-row { display:grid; grid-template-columns:42mm 38mm 1fr; gap:6mm; padding:4.5mm 0; border-top:1px solid #DDD; align-items:center; }
       .ficha-row:last-of-type { border-bottom:1px solid #DDD; }

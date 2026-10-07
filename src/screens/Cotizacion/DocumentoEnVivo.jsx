@@ -78,8 +78,8 @@ export default function DocumentoEnVivo({
     const medir = () => {
       const ancho = el.clientWidth;
       if (ancho > 0) {
-        // En móviles dejamos margen de 12px para que la hoja quede centrada con borde visible
-        const factor = Math.max(0.2, Math.min(1, (ancho - 12) / ANCHO_HOJA));
+        // Ajusta el documento al ancho disponible aprovechando pantallas de escritorio y móviles
+        const factor = Math.max(0.2, Math.min(1.2, (ancho - 16) / ANCHO_HOJA));
         setEscala(factor);
         if (typeof onEscalaChange === "function") onEscalaChange(factor);
       }
@@ -153,7 +153,7 @@ export default function DocumentoEnVivo({
             if (m !== "auto") return;
             var w = document.documentElement.clientWidth || window.innerWidth;
             if (!w || w <= 0) return;
-            var factor = Math.min(1, Math.max(0.2, (w - 12) / 816));
+            var factor = Math.min(1.2, Math.max(0.2, (w - 16) / 816));
             var pages = document.querySelectorAll('.page');
             for (var i = 0; i < pages.length; i++) {
               pages[i].style.zoom = factor;
@@ -162,12 +162,16 @@ export default function DocumentoEnVivo({
           window.addEventListener('resize', autoAjustar);
           window.addEventListener('orientationchange', autoAjustar);
           if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', autoAjustar);
+            document.addEventListener('DOMContentLoaded', function() {
+              autoAjustar();
+              window.scrollTo(0, 0);
+            });
           } else {
             autoAjustar();
+            window.scrollTo(0, 0);
           }
-          setTimeout(autoAjustar, 60);
-          setTimeout(autoAjustar, 250);
+          setTimeout(function() { autoAjustar(); window.scrollTo(0, 0); }, 60);
+          setTimeout(function() { autoAjustar(); window.scrollTo(0, 0); }, 250);
         })();
       </script>
     `;

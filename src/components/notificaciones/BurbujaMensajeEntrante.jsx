@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
+import { marcarMensajesComoLeidos } from "../../lib/soporte";
 
-export default function BurbujaMensajeEntrante({ notificacion, onAbrir, onCerrar }) {
+export default function BurbujaMensajeEntrante({ notificacion, membresia, onAbrir, onCerrar }) {
   const [visible, setVisible] = useState(false);
   const [pausado, setPausado] = useState(false);
   const timerRef = useRef(null);
@@ -27,6 +28,19 @@ export default function BurbujaMensajeEntrante({ notificacion, onAbrir, onCerrar
     };
   }, [notificacion, pausado]);
 
+  // Si la burbuja está visible en pantalla por más de 2.5 segundos, el usuario
+  // ya ha visto el mensaje de texto entrante -> Marcar como leído de inmediato en Supabase y local
+  useEffect(() => {
+    const tId = notificacion?.ticketId || notificacion?.ticket_id;
+    if (!tId) return;
+
+    const timerLectura = setTimeout(() => {
+      marcarMensajesComoLeidos(tId, membresia).catch(() => {});
+    }, 2500);
+
+    return () => clearTimeout(timerLectura);
+  }, [notificacion?.ticketId, notificacion?.ticket_id, membresia]);
+
   if (!notificacion) return null;
 
   const {
@@ -45,12 +59,20 @@ export default function BurbujaMensajeEntrante({ notificacion, onAbrir, onCerrar
 
   const handleCerrar = (e) => {
     e.stopPropagation();
+    const tId = notificacion?.ticketId || notificacion?.ticket_id;
+    if (tId) {
+      marcarMensajesComoLeidos(tId, membresia).catch(() => {});
+    }
     setVisible(false);
     setTimeout(() => onCerrar?.(), 250);
   };
 
   const handleAbrir = (e) => {
     e.stopPropagation();
+    const tId = notificacion?.ticketId || notificacion?.ticket_id;
+    if (tId) {
+      marcarMensajesComoLeidos(tId, membresia).catch(() => {});
+    }
     onAbrir?.(notificacion);
   };
 

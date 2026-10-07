@@ -47,14 +47,22 @@ function esMiMensaje(msg, membresia) {
   }
 
   // Si mi cuenta es de Cristian y el mensaje dice Cristian
-  if ((!miNombre && !miUserId) || miNombre.includes("cristian") || (miEmail && miEmail.includes("cristian"))) {
+  const soyCristian = Boolean(
+    (miEmail && (miEmail.includes("cristian") || miEmail === "cristiandel48@gmail.com")) ||
+    (miNombre && miNombre.includes("cristian"))
+  );
+  if (soyCristian) {
     if (remitente.includes("cristian") || msg.remitente_id === "cristian") {
       return true;
     }
   }
 
   // Si mi cuenta es de Camila y el mensaje dice Camila
-  if (miNombre.includes("camila") || (miEmail && miEmail.includes("camila"))) {
+  const soyCamila = Boolean(
+    (miEmail && (miEmail.includes("camila") || miEmail === "sistemasingeanclajes@gmail.com")) ||
+    (miNombre && miNombre.includes("camila"))
+  );
+  if (soyCamila) {
     if (remitente.includes("camila") || msg.remitente_id === "camila") {
       return true;
     }
@@ -357,6 +365,7 @@ export default function NotificadorMensajesGlobal({ onIrASoporte }) {
       {!modalAbierto && mensajeEntrante && (
         <BurbujaMensajeEntrante
           notificacion={mensajeEntrante}
+          membresia={membresia}
           onAbrir={handleAbrirBurbuja}
           onCerrar={handleCerrarBurbuja}
         />

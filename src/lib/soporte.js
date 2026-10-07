@@ -236,7 +236,10 @@ export function esMiMensaje(msg, membresia) {
   }
 
   // Si mi cuenta es de Cristian
-  const soyCristian = miEmail.includes("cristian") || miNombre.includes("cristian") || miEmail === "cristiandel48@gmail.com";
+  const soyCristian = Boolean(
+    (miEmail && (miEmail.includes("cristian") || miEmail === "cristiandel48@gmail.com")) ||
+    (miNombre && miNombre.includes("cristian"))
+  );
   if (soyCristian) {
     if (remitenteNom.includes("cristian") || msgRemitenteId === "cristian") {
       return true;
@@ -244,7 +247,10 @@ export function esMiMensaje(msg, membresia) {
   }
 
   // Si mi cuenta es de Camila
-  const soyCamila = miEmail.includes("camila") || miNombre.includes("camila") || miEmail === "sistemasingeanclajes@gmail.com";
+  const soyCamila = Boolean(
+    (miEmail && (miEmail.includes("camila") || miEmail === "sistemasingeanclajes@gmail.com")) ||
+    (miNombre && miNombre.includes("camila"))
+  );
   if (soyCamila) {
     if (remitenteNom.includes("camila") || msgRemitenteId === "camila") {
       return true;
@@ -261,29 +267,63 @@ export async function marcarMensajesComoLeidos(ticketId, membresia) {
   if (!ticketId) return;
   const ahora = new Date().toISOString();
 
+  let targetUuid = ticketId;
+
   // 1. En Supabase
   if (isSupabaseConfigured()) {
     try {
-      const targetUuid = await resolverTicketUuid(ticketId);
+      const resUuid = await resolverTicketUuid(ticketId);
+      if (esUuidValido(resUuid)) {
+        targetUuid = resUuid;
+      }
+
       if (esUuidValido(targetUuid)) {
         const supabase = getSupabaseClient();
-        const { data: noLeidos } = await supabase
+        const tenantId = await getTenantIdActual().catch(() => null);
+
+        // Consultamos mensajes pendientes de lectura en este ticket
+        let q = supabase
           .from("soporte_mensajes")
           .select("id, remitente_id, remitente_nombre, remitente_email")
           .eq("ticket_id", targetUuid)
           .eq("leido", false);
 
-        if (Array.isArray(noLeidos) && noLeidos.length > 0) {
+        if (tenantId) {
+          q = q.eq("tenant_id", tenantId);
+        }
+
+        const { data: noLeidos, error: selectErr } = await q;
+
+        if (!selectErr && Array.isArray(noLeidos) && noLeidos.length > 0) {
           const idsParaMarcar = noLeidos
             .filter((m) => !esMiMensaje(m, membresia))
             .map((m) => m.id);
 
           if (idsParaMarcar.length > 0) {
-            await supabase
+            let updateQ = supabase
               .from("soporte_mensajes")
               .update({ leido: true })
               .in("id", idsParaMarcar);
+
+            if (tenantId) {
+              updateQ = updateQ.eq("tenant_id", tenantId);
+            }
+
+            const { error: updateErr } = await updateQ;
+            if (updateErr) {
+              console.warn("Aviso actualizando mensajes leídos en Supabase:", updateErr);
+            }
           }
+        } else if (selectErr) {
+          // Intento fallback directo para marcar el ticket como leído
+          let fallbackQ = supabase
+            .from("soporte_mensajes")
+            .update({ leido: true })
+            .eq("ticket_id", targetUuid)
+            .eq("leido", false);
+
+          if (tenantId) fallbackQ = fallbackQ.eq("tenant_id", tenantId);
+          await fallbackQ;
         }
       }
     } catch (e) {
@@ -297,8 +337,8 @@ export async function marcarMensajesComoLeidos(ticketId, membresia) {
     if (rawM) {
       const store = JSON.parse(rawM);
       let cambiado = false;
-      const targetUuid = await resolverTicketUuid(ticketId).catch(() => null);
-      [ticketId, targetUuid].forEach((tId) => {
+      const idsToCheck = [ticketId, targetUuid].filter(Boolean);
+      idsToCheck.forEach((tId) => {
         if (tId && Array.isArray(store[tId])) {
           store[tId].forEach((m) => {
             if (!esMiMensaje(m, membresia)) {
@@ -320,12 +360,12 @@ export async function marcarMensajesComoLeidos(ticketId, membresia) {
   try {
     if (typeof window !== "undefined") {
       window.dispatchEvent(
-        new CustomEvent("notificacion-mensajes-leidos", { detail: { ticketId, leidoEn: ahora } })
+        new CustomEvent("notificacion-mensajes-leidos", { detail: { ticketId, targetUuid, leidoEn: ahora } })
       );
 
       if ("BroadcastChannel" in window) {
         const bc = new BroadcastChannel("ingeanclajes_canal_mensajes");
-        bc.postMessage({ tipo: "mensajes-leidos", ticketId, leidoEn: ahora });
+        bc.postMessage({ tipo: "mensajes-leidos", ticketId, targetUuid, leidoEn: ahora });
         bc.close();
       }
     }
@@ -1012,11 +1052,12 @@ function iniciarCanalRealtime(targetUuid, onNuevoMensaje, onMensajeActualizado) 
           event: "UPDATE",
           schema: "app",
           table: "soporte_mensajes",
-          filter: `ticket_id=eq.${targetUuid}`,
         },
         (payload) => {
           if (payload.new && onMensajeActualizado) {
-            onMensajeActualizado(payload.new);
+            if (!payload.new.ticket_id || payload.new.ticket_id === targetUuid) {
+              onMensajeActualizado(payload.new);
+            }
           }
         }
       )

@@ -295,8 +295,9 @@ export default function Soporte({ ctx }) {
 
     const handleLeidosGlobal = (e) => {
       const tId = e.detail?.ticketId;
+      const targetUuid = e.detail?.targetUuid;
       if (!montado || !ticketActivoId) return;
-      if (tId === ticketActivoId) {
+      if (!tId || tId === ticketActivoId || targetUuid === ticketActivoId) {
         cargarMensajes(ticketActivoId).then((data) => {
           if (montado && data) setMensajes(data);
         });
@@ -310,13 +311,14 @@ export default function Soporte({ ctx }) {
     if (typeof window !== "undefined" && "BroadcastChannel" in window) {
       bc = new BroadcastChannel("ingeanclajes_canal_mensajes");
       bc.onmessage = (event) => {
-        if (
-          event.data?.tipo === "mensajes-leidos" &&
-          event.data?.ticketId === ticketActivoId
-        ) {
-          cargarMensajes(ticketActivoId).then((data) => {
-            if (montado && data) setMensajes(data);
-          });
+        if (event.data?.tipo === "mensajes-leidos") {
+          const tId = event.data?.ticketId;
+          const targetUuid = event.data?.targetUuid;
+          if (!tId || tId === ticketActivoId || targetUuid === ticketActivoId) {
+            cargarMensajes(ticketActivoId).then((data) => {
+              if (montado && data) setMensajes(data);
+            });
+          }
         }
       };
     }
@@ -330,9 +332,12 @@ export default function Soporte({ ctx }) {
     };
   }, [ticketActivoId]);
 
-  // Polling periódico de mensajes (cada 3.5s) como salvaguarda ante desconexiones de Realtime
+  // Polling periódico de mensajes como salvaguarda ante desconexiones de Realtime
   useEffect(() => {
     if (!ticketActivoId) return;
+
+    const hayPendientes = mensajes.some((m) => !m.leido);
+    const frecuenciaMs = hayPendientes ? 2000 : 3500;
 
     const interval = setInterval(async () => {
       try {

@@ -297,13 +297,15 @@ export default function BotonSoporteFlotante() {
   useEffect(() => {
     const handleLeidos = (e) => {
       const tId = e.detail?.ticketId;
-      if (tId) {
+      const targetUuid = e.detail?.targetUuid;
+      if (tId || targetUuid) {
         setTicketsConNoLeidosMap((prev) => {
           const next = { ...prev };
-          delete next[tId];
+          if (tId) delete next[tId];
+          if (targetUuid) delete next[targetUuid];
           return next;
         });
-        if (ticketActivoId === tId) {
+        if (!ticketActivoId || ticketActivoId === tId || ticketActivoId === targetUuid) {
           cargarMensajes(ticketActivoId).then((data) => {
             if (data) setMensajes(data);
           });
@@ -316,10 +318,14 @@ export default function BotonSoporteFlotante() {
     if (typeof window !== "undefined" && "BroadcastChannel" in window) {
       bc = new BroadcastChannel("ingeanclajes_canal_mensajes");
       bc.onmessage = (event) => {
-        if (event.data?.tipo === "mensajes-leidos" && event.data?.ticketId === ticketActivoId) {
-          cargarMensajes(ticketActivoId).then((data) => {
-            if (data) setMensajes(data);
-          });
+        if (event.data?.tipo === "mensajes-leidos") {
+          const tId = event.data?.ticketId;
+          const targetUuid = event.data?.targetUuid;
+          if (!ticketActivoId || ticketActivoId === tId || ticketActivoId === targetUuid) {
+            cargarMensajes(ticketActivoId).then((data) => {
+              if (data) setMensajes(data);
+            });
+          }
         }
       };
     }
@@ -407,9 +413,12 @@ export default function BotonSoporteFlotante() {
     };
   }, [ticketActivoId]);
 
-  // Polling periódico de mensajes cada 3.5s si el chat está abierto
+  // Polling periódico de mensajes si el chat está abierto (frecuencia ágil si hay mensajes pendientes de confirmación)
   useEffect(() => {
     if (!abierto || !ticketActivoId || vista !== "chat") return;
+
+    const hayPendientes = mensajes.some((m) => !m.leido);
+    const frecuenciaMs = hayPendientes ? 2000 : 3500;
 
     const interval = setInterval(async () => {
       try {
@@ -433,10 +442,10 @@ export default function BotonSoporteFlotante() {
       } catch {
         // polling silencioso
       }
-    }, 3500);
+    }, frecuenciaMs);
 
     return () => clearInterval(interval);
-  }, [abierto, ticketActivoId, vista]);
+  }, [abierto, ticketActivoId, vista, mensajes.some((m) => !m.leido)]);
 
   // Polling periódico de tickets cada 8s mientras el widget esté abierto
   useEffect(() => {

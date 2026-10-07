@@ -198,27 +198,35 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
         {esCamila && (
           <button
             onClick={() => window.dispatchEvent(new CustomEvent("abrir-motivacion-camila"))}
-            aria-label="Abrir motivación diaria para María Camila"
-            title="Inspiración diaria para María Camila (Clic para leer una frase motivacional)"
+            aria-label="Abrir reflexión diaria para María Camila"
+            title="Palabras de vida y esperanza para María Camila"
             style={{
               height: 34,
               padding: isMobile ? "0 8px" : "0 12px",
               display: "flex",
               alignItems: "center",
               gap: 5,
-              background: dark ? "rgba(244, 114, 182, 0.16)" : "#fdf2f8",
-              border: `1px solid ${dark ? "rgba(244, 114, 182, 0.45)" : "#fbcfe8"}`,
+              background: dark ? "rgba(222, 211, 196, 0.15)" : "#f7f2ea",
+              border: `1px solid ${dark ? "rgba(222, 211, 196, 0.35)" : "#ded3c4"}`,
               borderRadius: 999,
-              color: dark ? "#f472b6" : "#be185d",
+              color: dark ? "#e8ded2" : "#6e4f35",
               cursor: "pointer",
               fontSize: 12,
               fontWeight: 700,
               flexShrink: 0,
               transition: "all .15s ease",
             }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = dark ? "rgba(222, 211, 196, 0.25)" : "#f0e7da";
+              e.currentTarget.style.borderColor = "#cbb9a3";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = dark ? "rgba(222, 211, 196, 0.15)" : "#f7f2ea";
+              e.currentTarget.style.borderColor = dark ? "rgba(222, 211, 196, 0.35)" : "#ded3c4";
+            }}
           >
-            <span>🌸</span>
-            <span>{isMobile ? "Inspiración" : "Inspiración diaria"}</span>
+            <span>🕊️</span>
+            <span>{isMobile ? "Vida y Paz" : "Palabras de vida"}</span>
           </button>
         )}
         <SaveIndicator theme={theme} compact={isMobile} />

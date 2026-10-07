@@ -7,6 +7,7 @@ import { resumenSeguimiento, colorSeguimiento, etiquetaSeguimiento } from "../..
 import { puedeVerDinero } from "../../lib/permisos";
 import { esUsuarioCamila } from "../../lib/motivacionCamila";
 import { TarjetaMotivacionalCamila } from "../../components/ModalBienvenidaCamila";
+import { TarjetaInstalarAppDashboard } from "../../components/pwa/InstaladorApp";
 export default function Dashboard({ctx,go}){
   const {obras,cotizaciones,certs,membresia}=ctx;
   const verDinero=puedeVerDinero(membresia);
@@ -25,6 +26,7 @@ export default function Dashboard({ctx,go}){
       {esUsuarioCamila(membresia, ctx?.authUserEmail) && (
         <TarjetaMotivacionalCamila />
       )}
+      <TarjetaInstalarAppDashboard />
       <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr",gap:18}}>
         <div style={CD}>
           <div style={ST}>Cotizaciones recientes</div>

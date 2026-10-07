@@ -5,6 +5,7 @@ import { NAV_SECTIONS, ICONS } from "../../config/navigation";
 import { useAppData } from "../../context/AppDataContext";
 import { filtrarSecciones } from "../../lib/permisos";
 import { BRAND, RAIL_WIDTH, RAIL_WIDTH_EXPANDED } from "../../styles/shellTheme";
+import { BotonInstalarApp } from "../pwa/InstaladorApp";
 
 // Navegacion lateral.
 // Escritorio: barra de iconos que se despliega al pasar el cursor mostrando
@@ -179,6 +180,7 @@ export default function Sidebar({
             en escritorio se muestra bajo el boton de fijar, mas abajo. */}
         {isMobile && (
           <div style={{ padding: "10px 12px 16px", borderTop: `1px solid ${theme.railDivider}`, flexShrink: 0 }}>
+            <BotonInstalarApp estilo="sidebar" dark={dark} />
             <CreditoDesarrollo tono={dark ? "oscuro" : "claro"} />
           </div>
         )}
@@ -186,6 +188,7 @@ export default function Sidebar({
         {/* Fijar / soltar el panel (solo escritorio) */}
         {!isMobile && (
           <div style={{ padding: "8px 12px 14px", borderTop: `1px solid ${theme.railDivider}`, flexShrink: 0 }}>
+            {showLabels && <BotonInstalarApp estilo="sidebar" dark={dark} />}
             <button
               onClick={onTogglePin}
               title={pinned ? "Contraer menú" : "Mantener menú abierto"}

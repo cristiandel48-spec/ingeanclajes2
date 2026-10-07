@@ -7,6 +7,7 @@ import { useAppData } from "../../context/AppDataContext";
 import { resumenSeguimiento } from "../../lib/seguimientoCotizaciones";
 import { esDestinatarioAlerta, puedeVer, pantallaInicial } from "../../lib/permisos";
 import { esUsuarioCamila } from "../../lib/motivacionCamila";
+import { BotonInstalarApp } from "../pwa/InstaladorApp";
 
 // Barra superior: ubicacion actual, acciones de la pantalla, tema y usuario.
 // En movil incluye el boton que abre el menu lateral.
@@ -256,6 +257,8 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
             <span>{totalEnLinea}{isMobile ? "" : " en línea"}</span>
           </button>
         )}
+
+        <BotonInstalarApp estilo="topbar" dark={dark} />
 
         <button
           onClick={onToggleTheme}

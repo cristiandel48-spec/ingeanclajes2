@@ -5,7 +5,7 @@ import { getScreenTitle, getScreenSection } from "../../config/navigation";
 import { TOPBAR_HEIGHT } from "../../styles/shellTheme";
 import { useAppData } from "../../context/AppDataContext";
 import { resumenSeguimiento } from "../../lib/seguimientoCotizaciones";
-import { esDestinatarioAlerta } from "../../lib/permisos";
+import { esDestinatarioAlerta, puedeVer, pantallaInicial } from "../../lib/permisos";
 import { esUsuarioCamila } from "../../lib/motivacionCamila";
 
 // Barra superior: ubicacion actual, acciones de la pantalla, tema y usuario.
@@ -23,6 +23,13 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
   const esAdminDestinatario = esDestinatarioAlerta(membresia);
   const seg = resumenSeguimiento(cotizaciones || [], new Date(), 100);
   const totalPendientes = seg.requierenAccion?.length || 0;
+
+  const destinoMenu = useMemo(() => {
+    if (!membresia) return "dashboard";
+    return puedeVer(membresia, "dashboard") ? "dashboard" : pantallaInicial(membresia);
+  }, [membresia]);
+
+  const esPantallaMenu = scr === "dashboard" || (!puedeVer(membresia, "dashboard") && scr === destinoMenu);
 
   const totalEnLinea = useMemo(() => {
     if (!usuariosEnLinea || typeof usuariosEnLinea !== "object") return 0;
@@ -91,6 +98,57 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 5 : 10, flexShrink: 0, minWidth: 0, justifyContent: "flex-end" }}>
+        {!esPantallaMenu && (
+          <button
+            onClick={() => irAPantalla(destinoMenu || "dashboard")}
+            aria-label="Volver al menú"
+            title="Volver al menú principal (Dashboard)"
+            style={{
+              height: 34,
+              padding: isMobile ? "0 9px" : "0 13px",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              background: dark ? "rgba(255, 255, 255, 0.08)" : "#ffffff",
+              border: `1px solid ${dark ? "rgba(255, 255, 255, 0.18)" : "#cbd5e1"}`,
+              borderRadius: 8,
+              color: dark ? "#f1f5f9" : "#334155",
+              cursor: "pointer",
+              fontSize: 12.5,
+              fontWeight: 600,
+              flexShrink: 0,
+              boxShadow: "0 1px 2px rgba(0,0,0,.04)",
+              transition: "all .15s ease",
+              whiteSpace: "nowrap",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = dark ? "rgba(255, 255, 255, 0.15)" : "#f8fafc";
+              e.currentTarget.style.borderColor = dark ? "rgba(255, 255, 255, 0.3)" : "#94a3b8";
+              e.currentTarget.style.color = dark ? "#ffffff" : "#0f172a";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = dark ? "rgba(255, 255, 255, 0.08)" : "#ffffff";
+              e.currentTarget.style.borderColor = dark ? "rgba(255, 255, 255, 0.18)" : "#cbd5e1";
+              e.currentTarget.style.color = dark ? "#f1f5f9" : "#334155";
+            }}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            <span>{isMobile ? "Menú" : "Volver al menú"}</span>
+          </button>
+        )}
+
         {acciones && (
           <div
             className="topbar-acciones"

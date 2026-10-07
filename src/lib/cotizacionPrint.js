@@ -1120,33 +1120,33 @@ const renderTechnicalPage = () => `
       }
       .cover-header { display:flex; justify-content:center; padding-bottom:5mm; border-bottom:2px solid #000000; }
       .cover-logo { height:44px; width:auto; }
-      .cover-firm { text-align:center; margin-top:5mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      .cover-firm-name { font-size:18px; font-weight:800; color:#000000; letter-spacing:.06em; margin-bottom:2mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; text-transform:uppercase; }
-      .cover-firm-nit { font-size:13px; font-weight:700; color:#000000; margin-bottom:2mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .cover-firm { text-align:center; margin-top:7mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .cover-firm-name { font-size:18px; font-weight:800; color:#000000; letter-spacing:.06em; margin-bottom:2.2mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; text-transform:uppercase; }
+      .cover-firm-nit { font-size:13px; font-weight:700; color:#000000; margin-bottom:2.2mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
       .cover-firm-nit span { background:#ffffff; border:1.5px solid #000000; padding:2px 14px; border-radius:6px; letter-spacing:.04em; color:#000000; font-weight:700; }
       .cover-firm-contact { font-size:13px; color:#000000; font-weight:600; letter-spacing:.01em; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      /* 1. Bloque Cliente (Primero tras la empresa) */
-      .cover-client { margin-top:8mm; text-align:center; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      .cover-client .meta-label { font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:#000000; font-weight:700; margin-bottom:1.5mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      .cover-client-name { font-size:18px; font-weight:800; margin:0 0 1.5mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; color:#000000; text-transform:uppercase; letter-spacing:.02em; line-height:1.3; }
-      .cover-client-nit { font-size:13px; font-weight:700; color:#000000; margin-top:0; margin-bottom:3.5mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; letter-spacing:.02em; }
-      .cover-client-grid { display:inline-grid; grid-template-columns:repeat(2,auto); gap:3.5mm 14mm; text-align:left; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      .ccg-k { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:#000000; margin-bottom:.8mm; font-weight:700; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      .ccg-v { font-size:13px; font-weight:700; color:#000000; line-height:1.3; text-transform:uppercase; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      /* 2. Bloque Propuesta Comercial (Segundo, antes del pie) */
-      .cover-title { margin-top:8mm; text-align:center; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      .cover-kicker { font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#000000; margin-bottom:3mm; font-weight:700; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      .cover-title h1 { font-size:18px; line-height:1.35; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif;
+      /* 1. Bloque Cliente: con aire generoso arriba y bajo "COTIZACIÓN PREPARADA PARA" */
+      .cover-client { margin-top:18mm; text-align:center; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .cover-client .meta-label { font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#000000; font-weight:700; margin-bottom:4.5mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .cover-client-name { font-size:18px; font-weight:800; margin:0 0 2.5mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; color:#000000; text-transform:uppercase; letter-spacing:.02em; line-height:1.3; }
+      .cover-client-nit { font-size:13px; font-weight:700; color:#000000; margin-top:0; margin-bottom:5.5mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; letter-spacing:.02em; }
+      .cover-client-grid { display:inline-grid; grid-template-columns:repeat(2,auto); gap:4.5mm 16mm; text-align:left; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .ccg-k { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:#000000; margin-bottom:1.2mm; font-weight:700; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .ccg-v { font-size:13px; font-weight:700; color:#000000; line-height:1.35; text-transform:uppercase; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      /* 2. Bloque Propuesta Comercial: con separación clara y aire bajo "PROPUESTA COMERCIAL" */
+      .cover-title { margin-top:20mm; text-align:center; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .cover-kicker { font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#000000; margin-bottom:5mm; font-weight:700; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .cover-title h1 { font-size:18px; line-height:1.4; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif;
         text-align:center; text-transform:uppercase; font-weight:800; color:#000000;
         max-width:155mm; margin-left:auto; margin-right:auto; letter-spacing:.02em; }
-      .meta-strip { margin-top:7mm; display:grid; grid-template-columns:repeat(4,1fr); border-top:1.5px solid #000000; border-bottom:1.5px solid #000000; padding:4.5mm 0; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .meta-strip { margin-top:16mm; display:grid; grid-template-columns:repeat(4,1fr); border-top:1.5px solid #000000; border-bottom:1.5px solid #000000; padding:6.5mm 0; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
       .meta-cell { padding:0 3.5mm; border-right:1px solid #DDD; text-align:center; }
       .meta-cell.last { border-right:none; }
-      .meta-label { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:#000000; margin-bottom:1.5mm; font-weight:700; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .meta-label { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:#000000; margin-bottom:2.5mm; font-weight:700; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
       .meta-value { font-size:13px; font-weight:700; color:#000000; text-transform:uppercase; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
       .meta-value.accent { color:#000000; font-weight:800; }
-      /* 3. Pie de portada */
-      .cover-foot { margin-top:8mm; padding-top:3.5mm; border-top:1px solid #DDD; display:flex; justify-content:space-between; align-items:center; gap:6mm; font-size:10px; color:#000000; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; font-weight:700; letter-spacing:.03em; }
+      /* 3. Pie de portada: expandido hacia abajo para balancear el folio carta */
+      .cover-foot { margin-top:20mm; padding-top:4mm; border-top:1px solid #DDD; display:flex; justify-content:space-between; align-items:center; gap:6mm; font-size:10px; color:#000000; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; font-weight:700; letter-spacing:.03em; }
       .cover-sello { font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; font-size:10px; color:#000000; white-space:nowrap; font-weight:700; }
       .cover-sello b { color:#000000; font-weight:800; }
 

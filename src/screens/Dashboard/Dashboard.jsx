@@ -5,6 +5,8 @@ import { getQuoteActiveProposal } from "../../lib/cotizaciones";
 import { resumenVencimientos, colorVencimiento, etiquetaVencimiento } from "../../lib/vencimientos";
 import { resumenSeguimiento, colorSeguimiento, etiquetaSeguimiento } from "../../lib/seguimientoCotizaciones";
 import { puedeVerDinero } from "../../lib/permisos";
+import { esUsuarioCamila } from "../../lib/motivacionCamila";
+import { TarjetaMotivacionalCamila } from "../../components/ModalBienvenidaCamila";
 export default function Dashboard({ctx,go}){
   const {obras,cotizaciones,certs,membresia}=ctx;
   const verDinero=puedeVerDinero(membresia);
@@ -20,6 +22,9 @@ export default function Dashboard({ctx,go}){
         subtitle="Resumen comercial, operativo y financiero de Ingeanclajes"
         action={<div style={{display:"flex",gap:10}}><button style={B("#f47c20")} onClick={()=>go("cotizacion")}>+ Nueva Cotización</button><button style={B("var(--btn-ver-bg, #dbeafe)","var(--btn-ver-text, #1e40af)")} onClick={()=>go("clientes")}>Clientes</button></div>}
       />
+      {esUsuarioCamila(membresia, ctx?.authUserEmail) && (
+        <TarjetaMotivacionalCamila />
+      )}
       <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr",gap:18}}>
         <div style={CD}>
           <div style={ST}>Cotizaciones recientes</div>

@@ -6,6 +6,7 @@ import { TOPBAR_HEIGHT } from "../../styles/shellTheme";
 import { useAppData } from "../../context/AppDataContext";
 import { resumenSeguimiento } from "../../lib/seguimientoCotizaciones";
 import { esDestinatarioAlerta } from "../../lib/permisos";
+import { esUsuarioCamila } from "../../lib/motivacionCamila";
 
 // Barra superior: ubicacion actual, acciones de la pantalla, tema y usuario.
 // En movil incluye el boton que abre el menu lateral.
@@ -14,7 +15,8 @@ import { esDestinatarioAlerta } from "../../lib/permisos";
 // Sirve para que un boton importante -guardar una cotizacion larga- quede
 // siempre a la vista junto al indicador de guardado, sin tener que subir.
 export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOpenMenu, acciones }) {
-  const { cotizaciones, membresia, usuariosEnLinea, esSuperAdminCristian, irAPantalla } = useAppData();
+  const { cotizaciones, membresia, usuariosEnLinea, esSuperAdminCristian, authUserEmail, irAPantalla } = useAppData();
+  const esCamila = useMemo(() => esUsuarioCamila(membresia, authUserEmail), [membresia, authUserEmail]);
   const title = getScreenTitle(scr);
   const section = getScreenSection(scr);
 
@@ -132,6 +134,32 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
           >
             <span style={{ fontSize: 13 }}>🔔</span>
             <span>{totalPendientes}{isMobile ? "" : " por llamar"}</span>
+          </button>
+        )}
+        {esCamila && (
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("abrir-motivacion-camila"))}
+            aria-label="Abrir motivación diaria para María Camila"
+            title="Inspiración diaria para María Camila (Clic para leer una frase motivacional)"
+            style={{
+              height: 34,
+              padding: isMobile ? "0 8px" : "0 12px",
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              background: dark ? "rgba(244, 114, 182, 0.16)" : "#fdf2f8",
+              border: `1px solid ${dark ? "rgba(244, 114, 182, 0.45)" : "#fbcfe8"}`,
+              borderRadius: 999,
+              color: dark ? "#f472b6" : "#be185d",
+              cursor: "pointer",
+              fontSize: 12,
+              fontWeight: 700,
+              flexShrink: 0,
+              transition: "all .15s ease",
+            }}
+          >
+            <span>🌸</span>
+            <span>{isMobile ? "Inspiración" : "Inspiración diaria"}</span>
           </button>
         )}
         <SaveIndicator theme={theme} compact={isMobile} />

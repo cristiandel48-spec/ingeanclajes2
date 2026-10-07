@@ -314,6 +314,10 @@ export default function SupabaseGate({ children }) {
 
       if (authError) throw authError;
 
+      try {
+        sessionStorage.removeItem("bienvenida_camila_mostrada_sesion");
+      } catch {}
+
       setPassword("");
       await validateAccess(data.user ?? null);
     } catch (authError) {
@@ -351,6 +355,9 @@ export default function SupabaseGate({ children }) {
       setBusy(true);
       setError("");
       await backend.signOut();
+      try {
+        sessionStorage.removeItem("bienvenida_camila_mostrada_sesion");
+      } catch {}
       setUser(null);
       setPassword("");
       setStatus("login");

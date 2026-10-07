@@ -638,6 +638,17 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
             <div class="cover-firm-nit"><span>NIT 900.193.965-4</span></div>
             <div class="cover-firm-contact">Calle 38 Sur # 36 &ndash; 48, Envigado &middot; PBX: (604) 448 26 86 &middot; Cel: 315 288 9541</div>
           </div>
+          <div class="cover-client">
+            <div class="meta-label">Cotización preparada para</div>
+            <div class="cover-client-name">${escapeHtml(normalizarMayusculas(c?.cliente || ""))}</div>
+            ${c?.nit ? `<div class="cover-client-nit tnum">${/^nit\b/i.test(String(c.nit).trim()) ? escapeHtml(normalizarMayusculas(c.nit)) : `NIT ${escapeHtml(normalizarMayusculas(c.nit))}`}</div>` : ""}
+            <div class="cover-client-grid">
+              <div><div class="ccg-k">Obra</div><div class="ccg-v">${escapeHtml(normalizarMayusculas(c?.obra || ""))}</div></div>
+              <div><div class="ccg-k">Ciudad</div><div class="ccg-v">${escapeHtml(normalizarMayusculas(c?.ciudad || ""))}</div></div>
+              <div><div class="ccg-k">Contacto</div><div class="ccg-v">${escapeHtml(normalizarMayusculas(c?.contacto || c?.cliente || ""))}</div></div>
+              <div><div class="ccg-k">Teléfono</div><div class="ccg-v tnum">${escapeHtml(c?.telefono || "")}</div></div>
+            </div>
+          </div>
           <div class="cover-title">
             <div class="cover-kicker">Propuesta Comercial</div>
             <!-- El titulo va seguido, en una sola frase. Antes cada renglon
@@ -664,17 +675,6 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
             <div class="meta-cell last">
               <div class="meta-label">Valor total</div>
               <div class="meta-value tnum accent">${money(totalResumenValor)}</div>
-            </div>
-          </div>
-          <div class="cover-client">
-            <div class="meta-label">Cotización preparada para</div>
-            <div class="cover-client-name">${escapeHtml(normalizarMayusculas(c?.cliente || ""))}</div>
-            ${c?.nit ? `<div class="cover-client-nit tnum">${/^nit\b/i.test(String(c.nit).trim()) ? escapeHtml(normalizarMayusculas(c.nit)) : `NIT ${escapeHtml(normalizarMayusculas(c.nit))}`}</div>` : ""}
-            <div class="cover-client-grid">
-              <div><div class="ccg-k">Obra</div><div class="ccg-v">${escapeHtml(normalizarMayusculas(c?.obra || ""))}</div></div>
-              <div><div class="ccg-k">Ciudad</div><div class="ccg-v">${escapeHtml(normalizarMayusculas(c?.ciudad || ""))}</div></div>
-              <div><div class="ccg-k">Contacto</div><div class="ccg-v">${escapeHtml(normalizarMayusculas(c?.contacto || c?.cliente || ""))}</div></div>
-              <div><div class="ccg-k">Teléfono</div><div class="ccg-v tnum">${escapeHtml(c?.telefono || "")}</div></div>
             </div>
           </div>
           <div class="cover-foot">
@@ -1114,37 +1114,41 @@ const renderTechnicalPage = () => `
                   text-align: justify; text-justify: inter-word; hyphens: auto; }
       .doc-copy strong { color:#000000 !important; font-weight:800; }
 
-      .cover { padding-top:10mm; }
-      .cover-header { display:flex; justify-content:center; padding-bottom:6mm; border-bottom:2px solid #000000; }
+      .cover {
+        padding-top: 8mm;
+        font-family: 'Source Sans 3', 'Segoe UI', Arial, sans-serif;
+      }
+      .cover-header { display:flex; justify-content:center; padding-bottom:5mm; border-bottom:2px solid #000000; }
       .cover-logo { height:44px; width:auto; }
-      .cover-firm { text-align:center; margin-top:5.5mm; }
-      .cover-firm-name { font-size:18px; font-weight:800; color:#000000; letter-spacing:.07em; margin-bottom:2.8mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      .cover-firm-nit { font-size:13px; font-weight:700; color:#000000; margin-bottom:2.8mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      .cover-firm-nit span { background:#f8fafc; border:1.5px solid #000000; padding:2.5px 12px; border-radius:6px; letter-spacing:.04em; color:#000000; font-weight:700; }
-      .cover-firm-contact { font-size:12.5px; color:#000000; font-weight:600; letter-spacing:.01em; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      .cover-title { margin-top:14mm; text-align:center; }
-      .cover-kicker { font-size: var(--texto); letter-spacing:.18em; text-transform:uppercase; color:#000000; margin-bottom:5mm; font-weight:700; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      /* El titulo de la portada, centrado y en mayuscula con la misma tipografia institucional */
-      .cover-title h1 { font-size: 19px; line-height:1.3; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif;
+      .cover-firm { text-align:center; margin-top:5mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .cover-firm-name { font-size:18px; font-weight:800; color:#000000; letter-spacing:.06em; margin-bottom:2mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; text-transform:uppercase; }
+      .cover-firm-nit { font-size:13px; font-weight:700; color:#000000; margin-bottom:2mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .cover-firm-nit span { background:#ffffff; border:1.5px solid #000000; padding:2px 14px; border-radius:6px; letter-spacing:.04em; color:#000000; font-weight:700; }
+      .cover-firm-contact { font-size:13px; color:#000000; font-weight:600; letter-spacing:.01em; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      /* 1. Bloque Cliente (Primero tras la empresa) */
+      .cover-client { margin-top:8mm; text-align:center; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .cover-client .meta-label { font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:#000000; font-weight:700; margin-bottom:1.5mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .cover-client-name { font-size:18px; font-weight:800; margin:0 0 1.5mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; color:#000000; text-transform:uppercase; letter-spacing:.02em; line-height:1.3; }
+      .cover-client-nit { font-size:13px; font-weight:700; color:#000000; margin-top:0; margin-bottom:3.5mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; letter-spacing:.02em; }
+      .cover-client-grid { display:inline-grid; grid-template-columns:repeat(2,auto); gap:3.5mm 14mm; text-align:left; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .ccg-k { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:#000000; margin-bottom:.8mm; font-weight:700; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .ccg-v { font-size:13px; font-weight:700; color:#000000; line-height:1.3; text-transform:uppercase; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      /* 2. Bloque Propuesta Comercial (Segundo, antes del pie) */
+      .cover-title { margin-top:8mm; text-align:center; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .cover-kicker { font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#000000; margin-bottom:3mm; font-weight:700; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .cover-title h1 { font-size:18px; line-height:1.35; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif;
         text-align:center; text-transform:uppercase; font-weight:800; color:#000000;
-        max-width:155mm; margin-left:auto; margin-right:auto; }
-      .meta-strip { margin-top:13mm; display:grid; grid-template-columns:repeat(4,1fr); border-top:1.5px solid #000000; border-bottom:1.5px solid #000000; padding:6mm 0; }
-      .meta-cell { padding:0 4mm; border-right:1px solid #DDD; text-align:center; }
+        max-width:155mm; margin-left:auto; margin-right:auto; letter-spacing:.02em; }
+      .meta-strip { margin-top:7mm; display:grid; grid-template-columns:repeat(4,1fr); border-top:1.5px solid #000000; border-bottom:1.5px solid #000000; padding:4.5mm 0; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .meta-cell { padding:0 3.5mm; border-right:1px solid #DDD; text-align:center; }
       .meta-cell.last { border-right:none; }
-      .meta-label { font-size: var(--texto); letter-spacing:.08em; text-transform:uppercase; color:#000000; margin-bottom:2mm; font-weight:700; }
-      .meta-value { font-size: var(--titulo); font-weight:700; color:#000000; }
-      .cover-client { margin-top:10mm; text-align:center; }
-      .cover-client-name { font-size: 16px; font-weight:800; margin:2mm 0 1mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; color:#000000; text-transform:uppercase; letter-spacing:.02em; }
-      .cover-client-nit { font-size: 12.5px; font-weight:700; color:#000000; margin-top:0; margin-bottom:4mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; letter-spacing:.02em; }
-      .cover-client-grid { display:inline-grid; grid-template-columns:repeat(2,auto); gap:4mm 14mm; text-align:left; }
-      .ccg-k { font-size: var(--texto); letter-spacing:.08em; text-transform:uppercase; color:#000000; margin-bottom:.8mm; font-weight:700; }
-      .ccg-v { font-size: var(--titulo); font-weight:700; color:#000000; line-height:1.3; text-transform:uppercase; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      .cover-foot { margin-top:12mm; padding-top:4mm; border-top:1px solid #DDD; display:flex; justify-content:space-between; align-items:center; gap:6mm; font-size: var(--texto); color:#000000; }
-      /* El codigo del formato en la portada. Discreto y en el centro del
-         pie: es lo primero que se mira en una auditoria, pero no es lo que
-         el cliente tiene que leer. */
-      .cover-sello { font-family:Consolas,"Courier New",monospace; font-size:calc(var(--texto) * .95); color:#000000; white-space:nowrap; }
-      .cover-sello b { color:#000000; font-weight:700; }
+      .meta-label { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:#000000; margin-bottom:1.5mm; font-weight:700; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .meta-value { font-size:13px; font-weight:700; color:#000000; text-transform:uppercase; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .meta-value.accent { color:#000000; font-weight:800; }
+      /* 3. Pie de portada */
+      .cover-foot { margin-top:8mm; padding-top:3.5mm; border-top:1px solid #DDD; display:flex; justify-content:space-between; align-items:center; gap:6mm; font-size:10px; color:#000000; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; font-weight:700; letter-spacing:.03em; }
+      .cover-sello { font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; font-size:10px; color:#000000; white-space:nowrap; font-weight:700; }
+      .cover-sello b { color:#000000; font-weight:800; }
 
       .def-list { border-top:1px solid #DDD; max-width:170mm; margin:0 auto; }
       .def-row { display:grid; grid-template-columns:44mm 1fr; gap:7mm; padding:4.5mm 0; border-bottom:1px solid #DDD; }

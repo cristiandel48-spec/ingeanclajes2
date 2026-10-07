@@ -236,17 +236,41 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
   }
 
   const bleedLeft = Boolean(nodo?.getAttribute && nodo.getAttribute("data-bleed-left") === "true");
-  const anchoDoc = bleedLeft ? (ANCHO_HOJA - MARGEN) : ANCHO_UTIL;
+  const anchoDoc = bleedLeft ? ANCHO_HOJA : ANCHO_UTIL;
   const margenX = bleedLeft ? 0 : MARGEN * PX_A_PT;
+  const margenY = bleedLeft ? 0 : MARGEN * PX_A_PT;
 
   const marco = document.createElement("iframe");
   marco.setAttribute("aria-hidden", "true");
-  marco.style.cssText = `position:fixed;left:0;top:0;width:${anchoDoc}px;opacity:0.01;pointer-events:none;z-index:-9999;border:0;`;
+  marco.style.cssText = `position:fixed;left:0;top:0;width:${anchoDoc}px;height:${bleedLeft ? ALTO_HOJA : 1000}px;opacity:0.01;pointer-events:none;z-index:-9999;border:0;`;
   document.body.appendChild(marco);
 
   try {
+    const estilosBleed = bleedLeft ? `
+      html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+        width: ${ANCHO_HOJA}px !important;
+        height: ${ALTO_HOJA}px !important;
+        min-height: ${ALTO_HOJA}px !important;
+        overflow: hidden !important;
+      }
+      .doc-shell {
+        width: ${ANCHO_HOJA}px !important;
+        height: ${ALTO_HOJA}px !important;
+        min-height: ${ALTO_HOJA}px !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+      }
+    ` : "";
+
     marco.srcdoc = `<!doctype html><html><head><meta charset="utf-8">
-      <style>${HOJA_ESTILOS}</style></head>
+      <style>${HOJA_ESTILOS}${estilosBleed}</style></head>
       <body>${nodo.outerHTML}</body></html>`;
 
     await new Promise((listo, fallo) => {
@@ -261,10 +285,7 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
 
     const raiz = doc.body.firstElementChild;
     if (!raiz) throw new Error("No se pudo leer el documento generado.");
-    const altoTotal = raiz.scrollHeight;
-
-    const cajas = obtenerCajasAtomicas(raiz);
-    const cortes = calcularCortesPagina(cajas, altoTotal, ALTO_UTIL);
+    const altoTotal = bleedLeft ? ALTO_HOJA : raiz.scrollHeight;
 
     const lienzo = await html2canvas(raiz, {
       scale: ESCALA_DIBUJO,
@@ -275,54 +296,71 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
       windowHeight: altoTotal,
     });
 
-    const escala = ESCALA_DIBUJO;
     const pdf = new jsPDF({ unit: "pt", format: HOJA_PT, orientation: "portrait" });
-    const recorte = document.createElement("canvas");
-    const pincel = recorte.getContext("2d");
 
-    let desde = 0;
-    let primera = true;
-
-    for (const hasta of cortes) {
-      const altoTrozo = Math.round((hasta - desde) * escala);
-      if (altoTrozo <= 0) continue;
-
-      recorte.width = lienzo.width;
-      recorte.height = altoTrozo;
-      pincel.fillStyle = "#ffffff";
-      pincel.fillRect(0, 0, recorte.width, recorte.height);
-
-      const yLienzo = Math.round(desde * escala);
-      const disponible = Math.max(0, Math.min(altoTrozo, lienzo.height - yLienzo));
-      if (disponible > 0) {
-        pincel.drawImage(
-          lienzo,
-          0,
-          yLienzo,
-          lienzo.width,
-          disponible,
-          0,
-          0,
-          lienzo.width,
-          disponible
-        );
-      }
-
-      if (!primera) pdf.addPage(HOJA_PT, "portrait");
-      primera = false;
-
+    if (bleedLeft) {
+      // Documento oficial a sangre: llena la hoja Carta completa de borde a borde (sin márgenes blancos arriba ni abajo)
       pdf.addImage(
-        recorte.toDataURL("image/jpeg", 0.92),
+        lienzo.toDataURL("image/jpeg", 0.95),
         "JPEG",
-        margenX,
-        MARGEN * PX_A_PT,
-        anchoDoc * PX_A_PT,
-        (altoTrozo / escala) * PX_A_PT,
+        0,
+        0,
+        HOJA_PT[0],
+        HOJA_PT[1],
         undefined,
         "FAST"
       );
+    } else {
+      const escala = ESCALA_DIBUJO;
+      const cajas = obtenerCajasAtomicas(raiz);
+      const cortes = calcularCortesPagina(cajas, altoTotal, ALTO_UTIL);
+      const recorte = document.createElement("canvas");
+      const pincel = recorte.getContext("2d");
 
-      desde = hasta;
+      let desde = 0;
+      let primera = true;
+
+      for (const hasta of cortes) {
+        const altoTrozo = Math.round((hasta - desde) * escala);
+        if (altoTrozo <= 0) continue;
+
+        recorte.width = lienzo.width;
+        recorte.height = altoTrozo;
+        pincel.fillStyle = "#ffffff";
+        pincel.fillRect(0, 0, recorte.width, recorte.height);
+
+        const yLienzo = Math.round(desde * escala);
+        const disponible = Math.max(0, Math.min(altoTrozo, lienzo.height - yLienzo));
+        if (disponible > 0) {
+          pincel.drawImage(
+            lienzo,
+            0,
+            yLienzo,
+            lienzo.width,
+            disponible,
+            0,
+            0,
+            lienzo.width,
+            disponible
+          );
+        }
+
+        if (!primera) pdf.addPage(HOJA_PT, "portrait");
+        primera = false;
+
+        pdf.addImage(
+          recorte.toDataURL("image/jpeg", 0.92),
+          "JPEG",
+          margenX,
+          margenY,
+          anchoDoc * PX_A_PT,
+          (altoTrozo / escala) * PX_A_PT,
+          undefined,
+          "FAST"
+        );
+
+        desde = hasta;
+      }
     }
 
     return { blob: pdf.output("blob"), nombre: `${nombre}.pdf` };

@@ -224,7 +224,11 @@ export default function CertificacionDocumento({cert}){
         borderRadius: 4,
         padding: 0,
         position: "relative",
-        overflow: "hidden"
+        overflow: "hidden",
+        width: "100%",
+        maxWidth: 816,
+        minHeight: 1056,
+        boxSizing: "border-box"
       }}
     >
       {/* Franja lateral de seguridad oficial */}
@@ -265,7 +269,7 @@ export default function CertificacionDocumento({cert}){
       />
 
       {/* Contenedor interno con márgenes controlados para separación perfecta de la franja */}
-      <div style={{ marginLeft: 62, marginRight: 22, paddingTop: 18, paddingBottom: 16, position: "relative", zIndex: 1 }}>
+      <div style={{ marginLeft: 62, marginRight: 22, paddingTop: 18, paddingBottom: 16, position: "relative", zIndex: 1, minHeight: 1056, boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
 
         {/* Encabezado Oficial */}
         <div style={{ padding: "0 0 8px" }}>
@@ -499,7 +503,7 @@ export default function CertificacionDocumento({cert}){
           style={{
             borderTop: "1px solid #cbd5e1",
             paddingTop: 6,
-            marginTop: 12,
+            marginTop: "auto",
             textAlign: "center",
             fontSize: 8,
             color: "#64748b",

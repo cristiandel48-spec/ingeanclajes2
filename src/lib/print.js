@@ -7,23 +7,56 @@ import { NOMINA_CO_2026 } from "./nomina";
 export function printCurrentPz(title = "Documento"){
   const node = document.getElementById("pz");
   if(!node) return;
+  const bleedLeft = Boolean(node.getAttribute && node.getAttribute("data-bleed-left") === "true");
+
+  const estilosBleed = bleedLeft ? `
+    @page {
+      size: Letter;
+      margin: 0;
+    }
+    html, body {
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #fff !important;
+      color: #111;
+      font-family: Aptos, "Segoe UI", Arial, sans-serif;
+      width: 8.5in;
+      height: 11in;
+    }
+    #print-toolbar, #print-toolbar + div { display: none !important; }
+    .doc-shell {
+      background: #fff;
+      color: #111;
+      width: 8.5in !important;
+      height: 11in !important;
+      min-height: 11in !important;
+      max-height: 11in !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      position: relative !important;
+      overflow: hidden !important;
+      box-sizing: border-box !important;
+      page-break-after: avoid !important;
+      break-after: avoid !important;
+    }
+  ` : `
+    @page { size: Letter; margin: 12mm; }
+    html, body { margin: 0; padding: 0; background: #fff; color: #111; font-family: Aptos, "Segoe UI", Arial, sans-serif; font-size: 12pt; line-height: 1.5; }
+    .doc-shell { background: #fff; color: #111; }
+  `;
+
   const html = `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
     <style>
-      @page{size:Letter;margin:12mm;}
-      *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-      html,body{margin:0;padding:0;background:#fff;color:#111;font-family:Aptos,"Segoe UI",Arial,sans-serif;font-size:12pt;line-height:1.5;}
-      .doc-shell{background:#fff;color:#111;}
-      .doc-shell table{width:100%;border-collapse:collapse;}
-      table,tr,td,th{break-inside:avoid;page-break-inside:avoid;}
-      /* Una viñeta o un pie de firma no se parten por la mitad: el corte de
-         hoja caia dentro del renglon y la frase salia cortada a lo ancho,
-         media arriba y media en la hoja siguiente. */
-      li,figure,img{break-inside:avoid;page-break-inside:avoid;}
-      /* Y en los parrafos largos, que no quede un renglon suelto a un lado
-         del corte. Solo en parrafos y viñetas: puesto en todos los div
-         empuja bloques enteros y deja las hojas a medio llenar. */
-      p,li{orphans:2;widows:2;}
-      img{max-width:100%;}
+      ${estilosBleed}
+      * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .doc-shell table { width: 100%; border-collapse: collapse; }
+      table, tr, td, th { break-inside: avoid; page-break-inside: avoid; }
+      li, figure, img { break-inside: avoid; page-break-inside: avoid; }
+      p, li { orphans: 2; widows: 2; }
+      img { max-width: 100%; }
     </style>
   </head><body>${node.outerHTML}</body></html>`;
   openPrintTab(html, title);

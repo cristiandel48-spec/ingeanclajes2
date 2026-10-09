@@ -24,27 +24,48 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
 
   const showCatLadderAppendix = propuestas.some((propuesta)=>hasCatLadderService(propuesta?.quote || propuesta))
     || hasCatLadderService({ alcance: c?.alcance, requerimientoCliente: textoInicial, items: c?.items, titulo: c?.titulo });
-  // La lamina tecnica de componentes se incluye si la cotizacion o alguna propuesta
-  // es de linea de vida o si se cotizan postes/anclajes de linea de vida (ej. Anclaje Artico).
-  const hasLifelineOrAnchorPost = (texto) => {
+  // La lámina técnica de componentes (poste soporte lateral/intermedio, tensor de línea, etc.)
+  // es EXCLUSIVA de LÍNEA DE VIDA HORIZONTAL.
+  // NO debe incluirse para líneas de vida verticales ni escaleras fijas/tipo gato.
+  const hasHorizontalLifelineOrAnchorPost = (texto) => {
     const t = String(texto || "").toUpperCase();
-    return t.includes("LINEA DE VIDA") ||
-           t.includes("LÍNEA DE VIDA") ||
+    if (!t) return false;
+    // Si menciona explícitamente vertical o escalera y NO menciona horizontal, NO es horizontal
+    const esVerticalOEscalera = t.includes("VERTICAL") || t.includes("ESCALERA") || t.includes("GATO") || t.includes("MARINERA");
+    if (esVerticalOEscalera && !t.includes("HORIZONTAL")) {
+      return false;
+    }
+    return t.includes("HORIZONTAL") ||
+           t.includes("LVH") ||
+           t.includes("SOPORTE LATERAL") ||
+           t.includes("SOPORTE INTERMEDIO") ||
            t.includes("ANCLAJE ARTICO") ||
            t.includes("ANCLAJE ÁRTICO") ||
-           t.includes("SOPORTE LATERAL") ||
-           t.includes("SOPORTE INTERMEDIO");
+           t.includes("POSTE DE ANCLAJE") ||
+           t.includes("POSTE ARTICO") ||
+           t.includes("POSTES");
   };
 
-  const showTechnicalPage = propuestas.some((propuesta) => {
-    const tipo = propuesta?.quote?.tipoCotizacion || propuesta?.tipoCotizacion || c?.tipoCotizacion;
-    if (tipo === "linea_vida") return true;
+  const isOnlyVerticalOrLadder = Boolean(showVerticalLifelineAppendix || showCatLadderAppendix);
+
+  const hasHorizontalItems = propuestas.some((propuesta) => {
     const items = Array.isArray(propuesta?.items)
       ? propuesta.items
       : (Array.isArray(propuesta?.quote?.items) ? propuesta.quote.items : []);
-    return items.some(it => hasLifelineOrAnchorPost(it?.desc || it?.descripcion || it?.nombre));
-  }) || (Array.isArray(c?.items) && c.items.some(it => hasLifelineOrAnchorPost(it?.desc || it?.descripcion || it?.nombre)))
-     || hasLifelineOrAnchorPost(textos?.tituloPortada || c?.titulo || c?.alcance);
+    return items.some(it => hasHorizontalLifelineOrAnchorPost(it?.desc || it?.descripcion || it?.nombre));
+  }) || (Array.isArray(c?.items) && c.items.some(it => hasHorizontalLifelineOrAnchorPost(it?.desc || it?.descripcion || it?.nombre)))
+     || hasHorizontalLifelineOrAnchorPost(textos?.tituloPortada)
+     || hasHorizontalLifelineOrAnchorPost(c?.titulo)
+     || hasHorizontalLifelineOrAnchorPost(c?.alcance);
+
+  const hasMapLvh = (c?.geoMediciones || []).some(seg => seg?.tipo === "LVH");
+
+  // La lámina de componentes horizontales SOLO se muestra si hay componentes/línea horizontal explícita,
+  // o si el tipo es linea_vida pero NO es una cotización de escalera o línea vertical.
+  const showTechnicalPage = hasHorizontalItems || hasMapLvh || (!isOnlyVerticalOrLadder && propuestas.some((propuesta) => {
+    const tipo = propuesta?.quote?.tipoCotizacion || propuesta?.tipoCotizacion || c?.tipoCotizacion;
+    return tipo === "linea_vida";
+  }));
 
   const mapCenter = c?.geoMapView?.center || c?.geoMapView || { lat: 0, lng: 0 };
   const mapZoom = Number(c?.geoMapView?.zoom || 18);
@@ -1461,8 +1482,9 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       .sig-role { font-size: var(--texto); color:#000000; margin-top:.6mm; font-weight:600; }
       .sig-meta { font-size: var(--texto); color:#000000; margin-top:2mm; line-height:1.65; }
 
-      .appendix-page .page-content { padding-bottom:26mm; box-sizing:border-box; }
-      .appendix-img { width:auto; max-width:100%; height:auto; max-height:180mm; object-fit:contain; display:block; margin:0 auto; image-rendering: -webkit-optimize-contrast; image-rendering: auto; }
+      .appendix-page .page-content { padding: 0 9mm 0 9mm; box-sizing: border-box; }
+      .appendix-page .doc-h3 { margin: 0 0 2.5mm; }
+      .appendix-img { width:auto; max-width:100%; height:auto; max-height:202mm; object-fit:contain; display:block; margin:0 auto; image-rendering: -webkit-optimize-contrast; image-rendering: auto; }
       .summary-spacing { margin-bottom:8mm; }
       .summary-page .page-content { padding-bottom:30mm; }
 

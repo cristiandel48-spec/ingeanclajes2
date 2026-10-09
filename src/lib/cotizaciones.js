@@ -292,10 +292,14 @@ export function hasVerticalLifeLineService(c={}){
         || (t.includes("ESCALERA") && (t.includes("LINEA DE VIDA") || t.includes("LÍNEA DE VIDA") || t.includes("GUAYA") || t.includes("CABLE")));
   };
 
+  const items = Array.isArray(c?.items) ? c.items : normalizeQuoteItems(c);
+  if(items.length > 0) {
+    return items.some(it => nombraLineaVidaVertical(it?.desc || it?.descripcion || it?.nombre));
+  }
+
   if(nombraLineaVidaVertical(c.alcance) || nombraLineaVidaVertical(c.requerimientoCliente) || nombraLineaVidaVertical(c.titulo)) return true;
 
-  const items = Array.isArray(c?.items) ? c.items : normalizeQuoteItems(c);
-  return items.some(it => nombraLineaVidaVertical(it?.desc || it?.descripcion || it?.nombre));
+  return false;
 }
 
 export function hasCatLadderService(c={}){
@@ -305,14 +309,18 @@ export function hasCatLadderService(c={}){
   const nombraEscaleraSola = (texto)=>{
     const t = String(texto || "").toUpperCase();
     const tieneEscalera = t.includes("ESCALERA") || t.includes("GATO") || t.includes("MARINERA");
-    const tieneLineaVida = t.includes("LINEA DE VIDA") || t.includes("LÍNEA DE VIDA");
+    const tieneLineaVida = t.includes("LINEA DE VIDA") || t.includes("LÍNEA DE VIDA") || t.includes("VERTICAL");
     return tieneEscalera && !tieneLineaVida;
   };
 
+  const items = Array.isArray(c?.items) ? c.items : normalizeQuoteItems(c);
+  if(items.length > 0) {
+    return items.some(it => nombraEscaleraSola(it?.desc || it?.descripcion || it?.nombre));
+  }
+
   if(nombraEscaleraSola(c.alcance) || nombraEscaleraSola(c.requerimientoCliente) || nombraEscaleraSola(c.titulo)) return true;
 
-  const items = Array.isArray(c?.items) ? c.items : normalizeQuoteItems(c);
-  return items.some(it => nombraEscaleraSola(it?.desc || it?.descripcion || it?.nombre));
+  return false;
 }
 
 export function getQuoteProposalPhotos(baseQuote = {}, propuesta = {}, activeProposalId = null){

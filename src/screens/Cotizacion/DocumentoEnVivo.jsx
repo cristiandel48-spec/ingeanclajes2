@@ -103,6 +103,7 @@ export default function DocumentoEnVivo({
   const htmlAjustado = useMemo(() => {
     if (!html) return "";
     const cssInyectado = `
+      <base href="${typeof window !== 'undefined' && window.location ? window.location.origin : ''}/" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
       <style>
         html {

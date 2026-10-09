@@ -8,8 +8,8 @@ import { getStaticMapDimensions, buildStaticMapLabelData } from "./maps";
 import { hasVerticalLifeLineService, hasCatLadderService } from "./cotizaciones";
 import { getTextosDocumento, lineasDeTexto } from "./cotizacionTextos";
 import { corregirOrtografiaLocal } from "./correctorTexto";
-import articoLineaVidaVertical from "../assets/artico-linea-vida-vertical.jpg";
-import articoEscaleraGato from "../assets/artico-escalera-gato.jpg";
+import articoLineaVidaVertical from "../assets/artico-linea-vida-vertical.jpg?inline";
+import articoEscaleraGato from "../assets/artico-escalera-gato.jpg?inline";
 import { IMG_SOPORTE, IMG_TENSOR, IMG_EMPALMES, IMG_CABLE } from "../assets/componentesLineasVida";
 
 export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}){
@@ -20,10 +20,10 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
   // 1) Escalera fija con línea de vida vertical (cable, absorbedor, tensor)
   // 2) Escalera tipo gato sola (sin línea de vida, sin canastilla)
   const showVerticalLifelineAppendix = propuestas.some((propuesta)=>hasVerticalLifeLineService(propuesta?.quote || propuesta))
-    || hasVerticalLifeLineService({ alcance: textos?.tituloPortada || c?.alcance, requerimientoCliente: textoInicial, items: c?.items, titulo: c?.titulo });
+    || hasVerticalLifeLineService({ alcance: c?.alcance, requerimientoCliente: textoInicial, items: c?.items, titulo: c?.titulo });
 
   const showCatLadderAppendix = propuestas.some((propuesta)=>hasCatLadderService(propuesta?.quote || propuesta))
-    || hasCatLadderService({ alcance: textos?.tituloPortada || c?.alcance, requerimientoCliente: textoInicial, items: c?.items, titulo: c?.titulo });
+    || hasCatLadderService({ alcance: c?.alcance, requerimientoCliente: textoInicial, items: c?.items, titulo: c?.titulo });
   // La lamina tecnica de componentes se incluye si la cotizacion o alguna propuesta
   // es de linea de vida o si se cotizan postes/anclajes de linea de vida (ej. Anclaje Artico).
   const hasLifelineOrAnchorPost = (texto) => {
@@ -1116,6 +1116,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
   return `<!doctype html>
   <html>
   <head>
+    <base href="${typeof window !== 'undefined' && window.location ? window.location.origin : ''}/" />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />

@@ -65,6 +65,7 @@ export const ITEMS_DB = [
   ]},
   { categoria:"Escaleras", items:[
     { desc:"ESCALERA FIJA CON LINEA DE VIDA VERTICAL", unit:"Metro", vu:1200000 },
+    { desc:"ESCALERA TIPO GATO CON LINEA DE VIDA VERTICAL", unit:"Metro", vu:1250000 },
     { desc:"ESCALERA TIPO GATO",                       unit:"Metro", vu:850000  },
     { desc:"ESCALERA MARINERA",                        unit:"Metro", vu:950000  },
   ]},

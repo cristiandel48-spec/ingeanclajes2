@@ -5,21 +5,25 @@ import { normalizarMayusculas } from "./normalizarEntrada";
 import { LOGO_INGEANCLAJES } from "../assets/embeddedImages";
 import { getQuotePrintableProposals } from "./cotizaciones";
 import { getStaticMapDimensions, buildStaticMapLabelData } from "./maps";
-import { hasVerticalLifeLineService } from "./cotizaciones";
+import { hasVerticalLifeLineService, hasCatLadderService } from "./cotizaciones";
 import { getTextosDocumento, lineasDeTexto } from "./cotizacionTextos";
 import { corregirOrtografiaLocal } from "./correctorTexto";
 import articoLineaVidaVertical from "../assets/artico-linea-vida-vertical.jpg";
+import articoEscaleraGato from "../assets/artico-escalera-gato.jpg";
 import { IMG_SOPORTE, IMG_TENSOR, IMG_EMPALMES, IMG_CABLE } from "../assets/componentesLineasVida";
 
 export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}){
   const propuestas = getQuotePrintableProposals(c);
   const textoInicial = String(c?.textoInicial || "").trim();
   const textos = getTextosDocumento(c);
-  // La lamina de la escalera sale si la nombra cualquier propuesta o los
-  // textos del documento: en algunas cotizaciones la escalera solo aparece en
-  // el titulo de la portada -"Linea de Vida en Acero Galvanizado y Escalera"-
-  // y los items son metros a secas.
-  const showVerticalAppendix = propuestas.some((propuesta)=>hasVerticalLifeLineService(propuesta?.quote))
+  // Detección de láminas para escalera:
+  // 1) Escalera fija con línea de vida vertical (cable, absorbedor, tensor)
+  // 2) Escalera tipo gato sola (sin línea de vida, sin canastilla)
+  const showVerticalLifelineAppendix = propuestas.some((propuesta)=>hasVerticalLifeLineService(propuesta?.quote || propuesta))
+    || hasVerticalLifeLineService({ alcance: textos?.tituloPortada || c?.alcance, requerimientoCliente: textoInicial, items: c?.items, titulo: c?.titulo });
+
+  const showCatLadderAppendix = propuestas.some((propuesta)=>hasCatLadderService(propuesta?.quote || propuesta))
+    || hasCatLadderService({ alcance: textos?.tituloPortada || c?.alcance, requerimientoCliente: textoInicial, items: c?.items, titulo: c?.titulo });
   // La lamina tecnica de componentes se incluye si la cotizacion o alguna propuesta
   // es de linea de vida o si se cotizan postes/anclajes de linea de vida (ej. Anclaje Artico).
   const hasLifelineOrAnchorPost = (texto) => {
@@ -1475,12 +1479,24 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
     ${coverPage}
     ${introPage}
     ${proposalSections}
-    ${showVerticalAppendix ? `
+    ${showCatLadderAppendix ? `
       <section class="page">
         <div class="page-inner">
           ${headerHtml}
           <div class="page-content">
-            <h3 class="doc-h3">Sistema certificado para escalera fija</h3>
+            <h3 class="doc-h3">Sistema de escalera fija tipo gato</h3>
+            <img src="${articoEscaleraGato}" alt="Sistema de escalera fija tipo gato Artico Safe Work" class="appendix-img" />
+          </div>
+          ${footerHtml}
+        </div>
+      </section>
+    ` : ""}
+    ${showVerticalLifelineAppendix ? `
+      <section class="page">
+        <div class="page-inner">
+          ${headerHtml}
+          <div class="page-content">
+            <h3 class="doc-h3">Sistema certificado para escalera fija con línea de vida vertical</h3>
             <img src="${articoLineaVidaVertical}" alt="Sistema de linea de vida vertical Artico Safe Work" class="appendix-img" />
           </div>
           ${footerHtml}

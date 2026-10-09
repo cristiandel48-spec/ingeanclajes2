@@ -73,6 +73,7 @@ export const ITEMS_DB = [
     { desc:"PUNTO DE ANCLAJE SOLDADO",                unit:"Und",  vu:290000  },
     { desc:"PUNTO DE ANCLAJE EN FACHADA",             unit:"Und",  vu:420000  },
     { desc:"ANCLAJE ARTICO ACERO GALVANIZADO",        unit:"Und",  vu:450000  },
+    { desc:"ANCLAJE ARTICO ACERO INOXIDABLE",         unit:"Und",  vu:580000  },
   ]},
   { categoria:"Sistemas Completos", items:[
     { desc:"SISTEMA ANTICAIDA CUBIERTA (COMPLETO)",   unit:"Global",vu:8500000 },

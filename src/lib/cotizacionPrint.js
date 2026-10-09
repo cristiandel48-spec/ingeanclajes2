@@ -20,8 +20,27 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
   // el titulo de la portada -"Linea de Vida en Acero Galvanizado y Escalera"-
   // y los items son metros a secas.
   const showVerticalAppendix = propuestas.some((propuesta)=>hasVerticalLifeLineService(propuesta?.quote))
-    || hasVerticalLifeLineService({ alcance: textos?.tituloPortada, requerimientoCliente: textoInicial });
-  const showTechnicalPage = propuestas.some((propuesta)=>(propuesta?.quote?.tipoCotizacion || propuesta?.tipoCotizacion || c?.tipoCotizacion) === "linea_vida");
+  // La lamina tecnica de componentes se incluye si la cotizacion o alguna propuesta
+  // es de linea de vida o si se cotizan postes/anclajes de linea de vida (ej. Anclaje Artico).
+  const hasLifelineOrAnchorPost = (texto) => {
+    const t = String(texto || "").toUpperCase();
+    return t.includes("LINEA DE VIDA") ||
+           t.includes("LÍNEA DE VIDA") ||
+           t.includes("ANCLAJE ARTICO") ||
+           t.includes("ANCLAJE ÁRTICO") ||
+           t.includes("SOPORTE LATERAL") ||
+           t.includes("SOPORTE INTERMEDIO");
+  };
+
+  const showTechnicalPage = propuestas.some((propuesta) => {
+    const tipo = propuesta?.quote?.tipoCotizacion || propuesta?.tipoCotizacion || c?.tipoCotizacion;
+    if (tipo === "linea_vida") return true;
+    const items = Array.isArray(propuesta?.items)
+      ? propuesta.items
+      : (Array.isArray(propuesta?.quote?.items) ? propuesta.quote.items : []);
+    return items.some(it => hasLifelineOrAnchorPost(it?.desc || it?.descripcion || it?.nombre));
+  }) || (Array.isArray(c?.items) && c.items.some(it => hasLifelineOrAnchorPost(it?.desc || it?.descripcion || it?.nombre)))
+     || hasLifelineOrAnchorPost(textos?.tituloPortada || c?.titulo || c?.alcance);
 
   const mapCenter = c?.geoMapView?.center || c?.geoMapView || { lat: 0, lng: 0 };
   const mapZoom = Number(c?.geoMapView?.zoom || 18);
@@ -947,18 +966,51 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
     `).join("");
   };
 
-const renderTechnicalPage = () => `
+  const checkTextForInox = (texto) => /inoxidable|\binox\b/i.test(String(texto || ""));
+
+  const getProposalMaterial = (propuesta) => {
+    const quote = propuesta?.quote || propuesta || {};
+    const items = Array.isArray(propuesta?.items)
+      ? propuesta.items
+      : (Array.isArray(quote?.items) ? quote.items : []);
+
+    const hasInoxItem = items.some(it =>
+      checkTextForInox(it?.desc) ||
+      checkTextForInox(it?.descripcion) ||
+      checkTextForInox(it?.nombre)
+    );
+
+    const hasInoxMeta =
+      checkTextForInox(propuesta?.nombre) ||
+      checkTextForInox(propuesta?.titulo) ||
+      checkTextForInox(propuesta?.alcance) ||
+      checkTextForInox(propuesta?.propuestaAlcance) ||
+      checkTextForInox(quote?.alcance);
+
+    return (hasInoxItem || hasInoxMeta) ? "inoxidable" : "galvanizado";
+  };
+
+  const renderSingleTechnicalSheet = (material = "galvanizado") => {
+    const isInox = material === "inoxidable";
+    const materialTitulo = isInox ? "acero inoxidable" : "acero galvanizado";
+    const tagAcero = isInox ? "Acero Inox." : "Acero Galv.";
+    const tagEmpalmes = isInox ? "Aluminio / Inox." : "Aluminio / Galv.";
+    const descGuardacables = isInox
+      ? "En acero inoxidable. Protegen contra el desgaste, cizallamiento y deformación por curvatura, alargando la vida útil del cable."
+      : "En acero galvanizado. Protegen contra el desgaste, cizallamiento y deformación por curvatura, alargando la vida útil del cable.";
+
+    return `
     <section class="page">
       <div class="page-inner">
         ${headerHtml}
         <div class="page-content">
-          <h3 class="doc-h3">Componentes del sistema en acero galvanizado</h3>
+          <h3 class="doc-h3">Componentes del sistema en ${materialTitulo}</h3>
 
           <div class="ficha-grid">
             <div class="ficha-card">
               <div class="ficha-card-header">
                 <span class="ficha-card-title">Soporte lateral e intermedio</span>
-                <span class="ficha-card-tag">Acero Galv.</span>
+                <span class="ficha-card-tag">${tagAcero}</span>
               </div>
               <div class="ficha-card-img-box">
                 <img src="${IMG_SOPORTE}" class="ficha-card-img" alt="Soporte lateral e intermedio" />
@@ -971,7 +1023,7 @@ const renderTechnicalPage = () => `
             <div class="ficha-card">
               <div class="ficha-card-header">
                 <span class="ficha-card-title">Tensor de línea</span>
-                <span class="ficha-card-tag">Acero Galv.</span>
+                <span class="ficha-card-tag">${tagAcero}</span>
               </div>
               <div class="ficha-card-img-box">
                 <img src="${IMG_TENSOR}" class="ficha-card-img" alt="Tensor" />
@@ -984,14 +1036,14 @@ const renderTechnicalPage = () => `
             <div class="ficha-card">
               <div class="ficha-card-header">
                 <span class="ficha-card-title">Empalmes y guardacables</span>
-                <span class="ficha-card-tag">Aluminio / Galv.</span>
+                <span class="ficha-card-tag">${tagEmpalmes}</span>
               </div>
               <div class="ficha-card-img-box">
                 <img src="${IMG_EMPALMES}" class="ficha-card-img" alt="Empalmes y guardacables" />
               </div>
               <div class="ficha-card-desc">
                 <div class="split"><strong>Empalmes y fijaciones:</strong> Fabricados en aluminio de alta resistencia a la corrosión. Utilizados para empalme y remate seguro de cables.</div>
-                <div><strong>Guardacables:</strong> En acero galvanizado. Protegen contra el desgaste, cizallamiento y deformación por curvatura, alargando la vida útil del cable.</div>
+                <div><strong>Guardacables:</strong> ${descGuardacables}</div>
               </div>
             </div>
 
@@ -1013,6 +1065,44 @@ const renderTechnicalPage = () => `
       </div>
     </section>
   `;
+  };
+
+  const renderTechnicalPage = () => {
+    const quoteLevelInox =
+      checkTextForInox(c?.titulo) ||
+      checkTextForInox(textos?.tituloPortada) ||
+      checkTextForInox(c?.alcance) ||
+      checkTextForInox(textoInicial) ||
+      (Array.isArray(c?.items) && c.items.some(it =>
+        checkTextForInox(it?.desc) ||
+        checkTextForInox(it?.descripcion) ||
+        checkTextForInox(it?.nombre)
+      ));
+
+    const technicalMaterials = [];
+    if (propuestas.length > 0) {
+      propuestas.forEach(p => {
+        const mat = getProposalMaterial(p);
+        if (!technicalMaterials.includes(mat)) {
+          technicalMaterials.push(mat);
+        }
+      });
+    }
+
+    if (quoteLevelInox && !technicalMaterials.includes("inoxidable")) {
+      if (technicalMaterials.length === 1 && technicalMaterials[0] === "galvanizado") {
+        technicalMaterials[0] = "inoxidable";
+      } else {
+        technicalMaterials.push("inoxidable");
+      }
+    }
+
+    if (technicalMaterials.length === 0) {
+      technicalMaterials.push("galvanizado");
+    }
+
+    return technicalMaterials.map(mat => renderSingleTechnicalSheet(mat)).join("\n");
+  };
 
   const proposalSections = propuestas.map((propuesta, idx) => renderProposalPage(propuesta, idx)).join("");
   const closingSections = mostrarResumenFinal

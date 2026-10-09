@@ -1461,7 +1461,8 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       .sig-role { font-size: var(--texto); color:#000000; margin-top:.6mm; font-weight:600; }
       .sig-meta { font-size: var(--texto); color:#000000; margin-top:2mm; line-height:1.65; }
 
-      .appendix-img { width:100%; height:auto; max-height:235mm; object-fit:contain; display:block; margin:0 auto; image-rendering: -webkit-optimize-contrast; image-rendering: auto; }
+      .appendix-page .page-content { padding-bottom:26mm; box-sizing:border-box; }
+      .appendix-img { width:auto; max-width:100%; height:auto; max-height:180mm; object-fit:contain; display:block; margin:0 auto; image-rendering: -webkit-optimize-contrast; image-rendering: auto; }
       .summary-spacing { margin-bottom:8mm; }
       .summary-page .page-content { padding-bottom:30mm; }
 
@@ -1481,7 +1482,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
     ${introPage}
     ${proposalSections}
     ${showCatLadderAppendix ? `
-      <section class="page">
+      <section class="page appendix-page">
         <div class="page-inner">
           ${headerHtml}
           <div class="page-content">
@@ -1493,7 +1494,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       </section>
     ` : ""}
     ${showVerticalLifelineAppendix ? `
-      <section class="page">
+      <section class="page appendix-page">
         <div class="page-inner">
           ${headerHtml}
           <div class="page-content">

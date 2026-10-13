@@ -22,6 +22,7 @@ import Usuarios from "./screens/Usuarios/Usuarios";
 import Auditoria from "./screens/Auditoria/Auditoria";
 import Formatos from "./screens/Formatos/Formatos";
 import Soporte from "./screens/Soporte/Soporte";
+import Agenda from "./screens/Agenda/Agenda";
 import ModalAlertaCotizaciones from "./components/ModalAlertaCotizaciones";
 import ModalBienvenidaCamila from "./components/ModalBienvenidaCamila";
 import BotonSoporteFlotante from "./components/soporte/BotonSoporteFlotante";
@@ -32,6 +33,7 @@ import NotificadorMensajesGlobal from "./components/notificaciones/NotificadorMe
 const SCREENS = {
   dashboard: Dashboard,
   soporte: Soporte,
+  agenda: Agenda,
   cotizacion: Cotizacion,
   radar: RadarObras,
   clientes: ClientesDB,

@@ -8,6 +8,7 @@ import {
   CERTIFICACIONES_INIT, INFORMES_INIT, CLIENTES_INIT, PROVEEDORES_INIT,
   CUENTAS_PAGAR_INIT, COTIZACIONES_INIT, CONTABILIDAD_CONFIG_INIT,
   PLAN_CUENTAS_INIT, ASIENTOS_CONTABLES_INIT, ORDENES_COMPRA_INIT,
+  AGENDA_COMPROMISOS_INIT,
 } from "../data/seed";
 import {
   normalizarEmpleado, normalizarCargos, normalizeNominaGeneratedRecord,
@@ -75,6 +76,27 @@ export function AppDataProvider({ children }) {
       console.warn("No se pudo guardar ordenes_compra en localStorage", e);
     }
   }, [ordenesCompra]);
+
+  const [agenda, setAgenda] = useState(() => {
+    try {
+      const guardado = localStorage.getItem("agenda_compromisos");
+      if (guardado) {
+        const parsed = JSON.parse(guardado);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn("No se pudo cargar agenda_compromisos de localStorage", e);
+    }
+    return (EJEMPLOS.agenda && EJEMPLOS.agenda.length > 0) ? EJEMPLOS.agenda : AGENDA_COMPROMISOS_INIT;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("agenda_compromisos", JSON.stringify(agenda));
+    } catch (e) {
+      console.warn("No se pudo guardar agenda_compromisos en localStorage", e);
+    }
+  }, [agenda]);
 
   const [cotizaciones, setCotizaciones] = useState(COTIZACIONES_INIT);
   const [contabilidadConfig, setContabilidadConfig] = useState(CONTABILIDAD_CONFIG_INIT);
@@ -629,7 +651,9 @@ export function AppDataProvider({ children }) {
       setInformes(sinEjemplos);
       setCerts(sinEjemplos);
       setPagos(sinEjemplos);
+      setAgenda(sinEjemplos);
     },
+    agenda, setAgenda,
     obras, setObras,
     empleados, setEmpleados,
     cargos, setCargos,

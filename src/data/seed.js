@@ -46,6 +46,8 @@ export const CUENTAS_PAGAR_INIT = [];
 
 export const ORDENES_COMPRA_INIT = [];
 
+export const AGENDA_COMPROMISOS_INIT = [];
+
 export const CONTABILIDAD_CONFIG_INIT = [buildDefaultContabilidadConfig()];
 export const PLAN_CUENTAS_INIT = buildDefaultPlanCuentas();
 export const ASIENTOS_CONTABLES_INIT = [];

@@ -400,7 +400,16 @@ export function AppDataProvider({ children }) {
         if (Array.isArray(cloud.proveedores)) setProveedores(cloud.proveedores);
         if (Array.isArray(cloud.cuentas)) setCuentas(otrasEntidades.cuentas);
         if (Array.isArray(cloud.ordenesCompra) && cloud.ordenesCompra.length) setOrdenesCompra(otrasEntidades.ordenesCompra);
-        if (Array.isArray(cloud.agenda) && cloud.agenda.length) setAgenda(oEjemplo(cloud.agenda, EJEMPLOS.agenda));
+        if (Array.isArray(cloud.agenda)) {
+          if (cloud.agenda.length > 0) {
+            setAgenda(cloud.agenda);
+          } else {
+            setAgenda((prev) => {
+              const tieneRealesLocal = Array.isArray(prev) && prev.some((x) => !x.__ejemplo);
+              return tieneRealesLocal ? prev : EJEMPLOS.agenda;
+            });
+          }
+        }
         if (Array.isArray(cloud.cotizaciones)) setCotizaciones(oEjemplo(cotizacionesList, EJEMPLOS.cotizaciones));
         if (Array.isArray(cloud.contabilidadConfig) && cloud.contabilidadConfig.length) {
           setContabilidadConfig(cloud.contabilidadConfig.map(normalizeContabilidadConfig));

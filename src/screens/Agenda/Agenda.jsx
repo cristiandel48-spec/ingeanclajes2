@@ -105,8 +105,10 @@ export default function Agenda({ ctx }) {
   // Fuente de datos
   const compromisos = useMemo(() => {
     const lista = ctx?.agenda;
-    if (Array.isArray(lista) && lista.length > 0) return lista;
-    return EJEMPLOS.agenda || [];
+    if (Array.isArray(lista)) {
+      return lista.filter((item) => !item?.__ejemplo && !String(item?.id || "").startsWith("AG-90"));
+    }
+    return [];
   }, [ctx?.agenda]);
 
   const setCompromisos = (updater) => {
@@ -574,9 +576,9 @@ export default function Agenda({ ctx }) {
       {/* VISTA 1: CALENDARIO MENSUAL ESTILO APPLE CON PANEL LATERAL DE DETALLE */}
       {/* ==================================================================== */}
       {vista === "mes" && (
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.8fr) minmax(360px, 1.2fr)", gap: 20 }}>
-          {/* Columna Izquierda: Calendario Mensual Apple */}
-          <div style={{ ...CD, padding: 20 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%" }}>
+          {/* Calendario Mensual Completo a Ancho Completo */}
+          <div style={{ ...CD, padding: 24, width: "100%", boxSizing: "border-box" }}>
             {/* Navegación del mes */}
             <div
               style={{
@@ -793,8 +795,8 @@ export default function Agenda({ ctx }) {
             </div>
           </div>
 
-          {/* Columna Derecha: Detalle de Compromisos del Día Seleccionado */}
-          <div style={{ ...CD, padding: 20, display: "flex", flexDirection: "column", height: "fit-content" }}>
+          {/* Sección de Detalle de Compromisos del Día Seleccionado (Ancho Completo) */}
+          <div style={{ ...CD, padding: 24, width: "100%", boxSizing: "border-box" }}>
             <div
               style={{
                 display: "flex",
@@ -809,7 +811,7 @@ export default function Agenda({ ctx }) {
                 <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted, #94a3b8)" }}>
                   Compromisos del día
                 </div>
-                <h3 style={{ fontSize: 16, fontWeight: 800, margin: "2px 0 0", color: "var(--text-main, #0f172a)" }}>
+                <h3 style={{ fontSize: 18, fontWeight: 800, margin: "2px 0 0", color: "var(--text-main, #0f172a)" }}>
                   {formatFechaLarga(fechaSeleccionada)}
                 </h3>
               </div>
@@ -820,11 +822,11 @@ export default function Agenda({ ctx }) {
                   ...B("var(--surface-subtle, #f1f5f9)", "var(--text-main, #0f172a)"),
                   border: "1px solid var(--border, #e2e8f0)",
                   fontSize: 12,
-                  padding: "6px 10px",
+                  padding: "6px 12px",
                 }}
                 onClick={() => abrirNuevoModal("visita")}
               >
-                + Agregar
+                + Agregar compromiso
               </button>
             </div>
 
@@ -857,7 +859,7 @@ export default function Agenda({ ctx }) {
                 </button>
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 14 }}>
                 {eventosDelDia.map((item) => {
                   const conf = TIPOS_COMPROMISO[item.tipo] || TIPOS_COMPROMISO.visita;
                   const completado = item.estado === "completado";

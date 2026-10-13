@@ -82,12 +82,14 @@ export function AppDataProvider({ children }) {
       const guardado = localStorage.getItem("agenda_compromisos");
       if (guardado) {
         const parsed = JSON.parse(guardado);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) {
+          return parsed.filter((item) => !item?.__ejemplo && !String(item?.id || "").startsWith("AG-90"));
+        }
       }
     } catch (e) {
       console.warn("No se pudo cargar agenda_compromisos de localStorage", e);
     }
-    return (EJEMPLOS.agenda && EJEMPLOS.agenda.length > 0) ? EJEMPLOS.agenda : AGENDA_COMPROMISOS_INIT;
+    return AGENDA_COMPROMISOS_INIT;
   });
 
   useEffect(() => {
@@ -401,13 +403,11 @@ export function AppDataProvider({ children }) {
         if (Array.isArray(cloud.cuentas)) setCuentas(otrasEntidades.cuentas);
         if (Array.isArray(cloud.ordenesCompra) && cloud.ordenesCompra.length) setOrdenesCompra(otrasEntidades.ordenesCompra);
         if (Array.isArray(cloud.agenda)) {
-          if (cloud.agenda.length > 0) {
-            setAgenda(cloud.agenda);
+          const realesNube = cloud.agenda.filter((item) => !item?.__ejemplo && !String(item?.id || "").startsWith("AG-90"));
+          if (realesNube.length > 0) {
+            setAgenda(realesNube);
           } else {
-            setAgenda((prev) => {
-              const tieneRealesLocal = Array.isArray(prev) && prev.some((x) => !x.__ejemplo);
-              return tieneRealesLocal ? prev : EJEMPLOS.agenda;
-            });
+            setAgenda((prev) => (prev || []).filter((item) => !item?.__ejemplo && !String(item?.id || "").startsWith("AG-90")));
           }
         }
         if (Array.isArray(cloud.cotizaciones)) setCotizaciones(oEjemplo(cotizacionesList, EJEMPLOS.cotizaciones));

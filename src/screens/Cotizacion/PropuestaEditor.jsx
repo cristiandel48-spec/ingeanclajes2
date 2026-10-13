@@ -14,6 +14,7 @@ import { measurementsToQuoteItems } from "../../lib/maps";
 import { fmt } from "../../lib/format";
 import { DEFAULT_COT_INCLUYE } from "../../data/seed";
 import { FOTO_PUNTO_ANCLAJE_DEFAULT } from "../../assets/embeddedImages";
+import { isFotoPuntoAnclajeDefault } from "../../lib/cotizaciones";
 
 // Editor de UNA propuesta. Todas las propuestas se muestran abiertas, una
 // debajo de otra, igual que salen en el documento.
@@ -53,18 +54,24 @@ export default function PropuestaEditor({
   const setFotos = (siguiente) => set("fotos", aplicar(fotos, siguiente));
 
   useEffect(() => {
+    const listaFotos = Array.isArray(p.fotos) ? p.fotos : [];
     if (p.tipoCotizacion === "puntos_anclaje") {
-      const listaFotos = Array.isArray(p.fotos) ? p.fotos : [];
-      if (listaFotos.length === 0) {
+      if (!listaFotos.some(isFotoPuntoAnclajeDefault)) {
         set("fotos", [
           {
-            id: Date.now() + Math.random(),
+            id: "foto-def-punto-anclaje",
             src: FOTO_PUNTO_ANCLAJE_DEFAULT,
             label: "Punto de anclaje certificado",
           },
+          ...listaFotos,
         ]);
       }
+    } else {
+      if (listaFotos.some(isFotoPuntoAnclajeDefault)) {
+        set("fotos", listaFotos.filter((f) => !isFotoPuntoAnclajeDefault(f)));
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.tipoCotizacion]);
 
   const [rotandoId, setRotandoId] = useState(null);
@@ -197,29 +204,33 @@ export default function PropuestaEditor({
             ].map(([v, l]) => {
               const activo = p.tipoCotizacion === v;
               return (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => {
-                    if (v === "puntos_anclaje") {
-                      const tieneFoto = (fotos || []).some((f) => f.src === FOTO_PUNTO_ANCLAJE_DEFAULT);
-                      if (!tieneFoto) {
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => {
+                      const fotosActuales = Array.isArray(fotos) ? fotos : [];
+                      if (v === "puntos_anclaje") {
+                        const tieneFoto = fotosActuales.some(isFotoPuntoAnclajeDefault);
+                        const fotosSinDefault = fotosActuales.filter((f) => !isFotoPuntoAnclajeDefault(f));
                         onChange({
                           tipoCotizacion: v,
-                          fotos: [
-                            ...fotos,
+                          fotos: tieneFoto ? fotosActuales : [
                             {
-                              id: Date.now() + Math.random(),
+                              id: "foto-def-punto-anclaje",
                               src: FOTO_PUNTO_ANCLAJE_DEFAULT,
                               label: "Punto de anclaje certificado",
                             },
+                            ...fotosSinDefault,
                           ],
                         });
-                        return;
+                      } else {
+                        const fotosSinAnclaje = fotosActuales.filter((f) => !isFotoPuntoAnclajeDefault(f));
+                        onChange({
+                          tipoCotizacion: v,
+                          fotos: fotosSinAnclaje,
+                        });
                       }
-                    }
-                    set("tipoCotizacion", v);
-                  }}
+                    }}
                   style={{
                     flex: "1 1 140px",
                     justifyContent: "center",
@@ -280,18 +291,18 @@ export default function PropuestaEditor({
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,gap:8,flexWrap:"wrap"}}>
             <span style={{fontSize:12,fontWeight:600,color:"var(--text-main, #1a1a2e)"}}>Fotos de la propuesta</span>
             <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-              {p.tipoCotizacion === "puntos_anclaje" && !fotos.some(f => f.src === FOTO_PUNTO_ANCLAJE_DEFAULT) && (
+              {p.tipoCotizacion === "puntos_anclaje" && !fotos.some(isFotoPuntoAnclajeDefault) && (
                 <button
                   type="button"
                   title="Adjuntar la foto oficial de punto de anclaje certificado a esta propuesta"
                   onClick={() => {
                     setFotos(prev => [
-                      ...(Array.isArray(prev) ? prev : []),
                       {
-                        id: Date.now() + Math.random(),
+                        id: "foto-def-punto-anclaje",
                         src: FOTO_PUNTO_ANCLAJE_DEFAULT,
                         label: "Punto de anclaje certificado",
                       },
+                      ...(Array.isArray(prev) ? prev.filter(f => !isFotoPuntoAnclajeDefault(f)) : []),
                     ]);
                   }}
                   style={{

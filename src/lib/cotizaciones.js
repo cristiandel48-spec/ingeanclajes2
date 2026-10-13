@@ -4,6 +4,15 @@ import { measurementsToQuoteItems, buildMeasurementNarrative } from "./maps";
 import { corregirOrtografiaLocal } from "./correctorTexto";
 import { FOTO_PUNTO_ANCLAJE_DEFAULT } from "../assets/embeddedImages";
 
+export function isFotoPuntoAnclajeDefault(foto) {
+  if (!foto) return false;
+  return (
+    foto.id === "foto-def-punto-anclaje" ||
+    foto.src === FOTO_PUNTO_ANCLAJE_DEFAULT ||
+    foto.label === "Punto de anclaje certificado"
+  );
+}
+
 export function hasAnchorPointsService(propuesta = {}) {
   const ownText = [
     propuesta?.nombre || "",
@@ -88,14 +97,19 @@ export function buildQuoteProposal(propuesta = {}, index = 0) {
 
   const tipoCotizacion = propuesta.tipoCotizacion || "linea_vida";
   let fotos = Array.isArray(propuesta.fotos) ? propuesta.fotos : [];
-  if (tipoCotizacion === "puntos_anclaje" && fotos.length === 0) {
-    fotos = [
-      {
-        id: "foto-def-punto-anclaje",
-        src: FOTO_PUNTO_ANCLAJE_DEFAULT,
-        label: "Punto de anclaje certificado",
-      },
-    ];
+  if (tipoCotizacion === "puntos_anclaje") {
+    if (!fotos.some(isFotoPuntoAnclajeDefault)) {
+      fotos = [
+        {
+          id: "foto-def-punto-anclaje",
+          src: FOTO_PUNTO_ANCLAJE_DEFAULT,
+          label: "Punto de anclaje certificado",
+        },
+        ...fotos,
+      ];
+    }
+  } else {
+    fotos = fotos.filter((f) => !isFotoPuntoAnclajeDefault(f));
   }
 
   const base = {
@@ -324,20 +338,28 @@ export function hasCatLadderService(c={}){
 }
 
 export function getQuoteProposalPhotos(baseQuote = {}, propuesta = {}, activeProposalId = null){
-  const ownPhotos = Array.isArray(propuesta?.fotos)
+  const tipo = propuesta?.quote?.tipoCotizacion || propuesta?.tipoCotizacion || baseQuote?.tipoCotizacion;
+
+  let ownPhotos = Array.isArray(propuesta?.fotos)
     ? propuesta.fotos.filter((foto)=>foto?.src)
     : [];
+
+  if (tipo !== "puntos_anclaje") {
+    ownPhotos = ownPhotos.filter((f) => !isFotoPuntoAnclajeDefault(f));
+  }
 
   if(ownPhotos.length) return ownPhotos;
 
   if(propuesta?.id && propuesta.id === activeProposalId){
-    const basePhotos = Array.isArray(baseQuote?.fotosCotizacion)
+    let basePhotos = Array.isArray(baseQuote?.fotosCotizacion)
       ? baseQuote.fotosCotizacion.filter((foto)=>foto?.src)
       : [];
+    if (tipo !== "puntos_anclaje") {
+      basePhotos = basePhotos.filter((f) => !isFotoPuntoAnclajeDefault(f));
+    }
     if(basePhotos.length) return basePhotos;
   }
 
-  const tipo = propuesta?.quote?.tipoCotizacion || propuesta?.tipoCotizacion || baseQuote?.tipoCotizacion;
   if(tipo === "puntos_anclaje"){
     return [{
       id: "foto-def-punto-anclaje",

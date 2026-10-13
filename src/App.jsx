@@ -25,6 +25,7 @@ import Soporte from "./screens/Soporte/Soporte";
 import Agenda from "./screens/Agenda/Agenda";
 import BotonSoporteFlotante from "./components/soporte/BotonSoporteFlotante";
 import NotificadorMensajesGlobal from "./components/notificaciones/NotificadorMensajesGlobal";
+import AvisoInteligenteAgenda from "./components/agenda/AvisoInteligenteAgenda";
 
 // Registro de pantallas. Las claves coinciden con los `id` de
 // config/navigation.jsx: para sumar una pantalla se agrega aqui y alli.
@@ -150,6 +151,7 @@ function AppRoot() {
     <AppShell scr={destino} onNavigate={setScr}>
       <Screen ctx={ctx} go={setScr} />
       <NotificadorMensajesGlobal onIrASoporte={() => setScr("soporte")} />
+      <AvisoInteligenteAgenda onIrAAgenda={() => setScr("agenda")} />
       {destino !== "soporte" && <BotonSoporteFlotante />}
     </AppShell>
   );

@@ -14,7 +14,7 @@ export default function MenuUsuario({ theme, compact = false }) {
   const [saliendo, setSaliendo] = useState(false);
   const [cambiandoClave, setCambiandoClave] = useState(false);
   const contenedorRef = useRef(null);
-  const { membresia } = useAppData();
+  const { membresia, agenda } = useAppData();
 
   // Se muestra el nombre de la persona; el correo es un dato tecnico que solo
   // hace falta al soportar un problema, asi que queda dentro del menu.
@@ -47,9 +47,7 @@ export default function MenuUsuario({ theme, compact = false }) {
     };
   }, [abierto]);
 
-  const cerrarSesion = async () => {
-    if (saliendo) return;
-    if (!window.confirm("¿Cerrar sesión? Los cambios guardados se conservan.")) return;
+  const ejecutarCerrarSesion = async () => {
     try {
       setSaliendo(true);
       await backend.signOut();
@@ -61,6 +59,38 @@ export default function MenuUsuario({ theme, compact = false }) {
       setSaliendo(false);
       window.alert("No se pudo cerrar la sesión. Revisa tu conexión e inténtalo de nuevo.");
     }
+  };
+
+  const cerrarSesion = () => {
+    if (saliendo) return;
+    setAbierto(false);
+
+    // Revisar si hay compromisos para mañana antes de cerrar
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const dia = String(d.getDate()).padStart(2, "0");
+    const mananaIso = `${y}-${m}-${dia}`;
+
+    const tieneCompromisosManana = Array.isArray(agenda) && agenda.some(
+      (item) => item.fecha === mananaIso && item.estado !== "completado"
+    );
+
+    if (tieneCompromisosManana) {
+      window.dispatchEvent(
+        new CustomEvent("abrir-aviso-agenda-manana", {
+          detail: {
+            modo: "cierre_sesion",
+            onConfirmar: ejecutarCerrarSesion,
+          },
+        })
+      );
+      return;
+    }
+
+    if (!window.confirm("¿Cerrar sesión? Los cambios guardados se conservan.")) return;
+    ejecutarCerrarSesion();
   };
 
   // Iniciales del nombre ("Camila Montoya" -> "CM"). Sin nombre se cae al

@@ -14,9 +14,23 @@ import { BotonInstalarApp } from "../pwa/InstaladorApp";
 // Sirve para que un boton importante -guardar una cotizacion larga- quede
 // siempre a la vista junto al indicador de guardado, sin tener que subir.
 export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOpenMenu, acciones }) {
-  const { membresia, usuariosEnLinea, esSuperAdminCristian, irAPantalla } = useAppData();
+  const { membresia, usuariosEnLinea, esSuperAdminCristian, irAPantalla, agenda } = useAppData();
   const title = getScreenTitle(scr);
   const section = getScreenSection(scr);
+
+  const mananaIso = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const dia = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${dia}`;
+  }, []);
+
+  const totalManana = useMemo(() => {
+    if (!Array.isArray(agenda)) return 0;
+    return agenda.filter((item) => item.fecha === mananaIso && item.estado !== "completado").length;
+  }, [agenda, mananaIso]);
 
   const destinoMenu = useMemo(() => {
     if (!membresia) return "dashboard";
@@ -196,6 +210,50 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
               }}
             />
             <span>{totalEnLinea}{isMobile ? "" : " en línea"}</span>
+          </button>
+        )}
+
+        {totalManana > 0 && (
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("abrir-aviso-agenda-manana"))}
+            aria-label={`Compromisos de mañana (${totalManana})`}
+            title={`Tienes ${totalManana} compromiso(s) para mañana. Clic para ver el itinerario completo.`}
+            style={{
+              height: 34,
+              padding: isMobile ? "0 8px" : "0 12px",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              background: dark ? "rgba(245, 158, 11, 0.15)" : "#fffbeb",
+              border: `1px solid ${dark ? "rgba(245, 158, 11, 0.4)" : "#fde68a"}`,
+              borderRadius: 8,
+              color: dark ? "#fbbf24" : "#b45309",
+              cursor: "pointer",
+              fontSize: 12,
+              fontWeight: 700,
+              flexShrink: 0,
+              boxShadow: "0 1px 2px rgba(245, 158, 11, 0.08)",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            <span>Mañana ({totalManana})</span>
           </button>
         )}
 

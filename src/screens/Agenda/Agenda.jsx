@@ -99,6 +99,501 @@ function IconoTipo({ tipo, size = 15 }) {
   );
 }
 
+function CompromisosDelDiaSection({
+  fechaSeleccionada,
+  formatFechaLarga,
+  eventosDelDia,
+  abrirNuevoModal,
+  toggleCompletado,
+  abrirEditarModal,
+  eliminarCompromiso,
+  enviarWhatsApp,
+  abrirWaze,
+}) {
+  return (
+    <div style={{ ...CD, padding: 24, width: "100%", boxSizing: "border-box" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingBottom: 14,
+          borderBottom: "1px solid var(--border, #e2e8f0)",
+          marginBottom: 16,
+        }}
+      >
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted, #94a3b8)" }}>
+            Compromisos del día
+          </div>
+          <h3 style={{ fontSize: 18, fontWeight: 800, margin: "2px 0 0", color: "var(--text-main, #0f172a)" }}>
+            {formatFechaLarga(fechaSeleccionada)}
+          </h3>
+        </div>
+
+        <button
+          type="button"
+          style={{
+            ...B("var(--surface-subtle, #f1f5f9)", "var(--text-main, #0f172a)"),
+            border: "1px solid var(--border, #e2e8f0)",
+            fontSize: 12,
+            padding: "6px 12px",
+          }}
+          onClick={() => abrirNuevoModal("visita")}
+        >
+          + Agregar compromiso
+        </button>
+      </div>
+
+      {eventosDelDia.length === 0 ? (
+        <div
+          style={{
+            padding: "36px 20px",
+            textAlign: "center",
+            background: "var(--surface-subtle, #f8fafc)",
+            borderRadius: 12,
+            border: "1px dashed var(--border, #cbd5e1)",
+          }}
+        >
+          <div style={{ color: "var(--text-muted, #94a3b8)", marginBottom: 8 }}>
+            <IconoTipo tipo="coordinacion" size={26} />
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>
+            Sin compromisos para esta fecha
+          </div>
+          <p style={{ fontSize: 12, color: "var(--text-muted, #64748b)", margin: "4px 0 14px" }}>
+            No hay visitas técnicas ni llamadas agendadas para el día seleccionado.
+          </p>
+          <button
+            type="button"
+            style={{ ...B("#f47c20"), fontSize: 12, padding: "7px 14px" }}
+            onClick={() => abrirNuevoModal("visita")}
+          >
+            + Programar compromiso
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 14 }}>
+          {eventosDelDia.map((item) => {
+            const conf = TIPOS_COMPROMISO[item.tipo] || TIPOS_COMPROMISO.visita;
+            const completado = item.estado === "completado";
+
+            return (
+              <div
+                key={item.id}
+                style={{
+                  border: "1px solid var(--border, #e2e8f0)",
+                  borderRadius: 12,
+                  padding: 14,
+                  background: completado ? "var(--surface-subtle, #f8fafc)" : "var(--surface, #ffffff)",
+                  opacity: completado ? 0.65 : 1,
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 5,
+                        padding: "3px 8px",
+                        borderRadius: 6,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        background: conf.bg,
+                        color: conf.color,
+                      }}
+                    >
+                      <IconoTipo tipo={item.tipo} size={12} />
+                      {conf.label}
+                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>
+                      {item.hora}
+                    </span>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <button
+                      type="button"
+                      onClick={() => toggleCompletado(item.id)}
+                      style={{
+                        padding: "4px 8px",
+                        fontSize: 11,
+                        fontWeight: 600,
+                        borderRadius: 6,
+                        border: "1px solid var(--border, #e2e8f0)",
+                        cursor: "pointer",
+                        background: completado ? "#ecfdf5" : "var(--surface, #ffffff)",
+                        color: completado ? "#047857" : "var(--text-muted, #64748b)",
+                      }}
+                    >
+                      {completado ? "✓ Realizada" : "Completar"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => abrirEditarModal(item)}
+                      style={{
+                        padding: "4px 6px",
+                        fontSize: 11,
+                        borderRadius: 6,
+                        border: "1px solid var(--border, #e2e8f0)",
+                        background: "var(--surface, #ffffff)",
+                        cursor: "pointer",
+                        color: "var(--text-muted, #64748b)",
+                      }}
+                      title="Editar"
+                    >
+                      ✎
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => eliminarCompromiso(item.id)}
+                      style={{
+                        padding: "4px 6px",
+                        fontSize: 11,
+                        borderRadius: 6,
+                        border: "1px solid var(--border, #e2e8f0)",
+                        background: "var(--surface, #ffffff)",
+                        cursor: "pointer",
+                        color: "#ef4444",
+                      }}
+                      title="Eliminar"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>
+                  {item.obra || item.titulo}
+                </div>
+                {item.cliente && (
+                  <div style={{ fontSize: 12, color: "var(--text-muted, #64748b)", marginTop: 2 }}>
+                    {item.cliente} {item.ciudad ? `· ${item.ciudad}` : ""}
+                  </div>
+                )}
+
+                {(item.contacto || item.telefono) && (
+                  <div
+                    style={{
+                      fontSize: 11.5,
+                      marginTop: 8,
+                      padding: "6px 10px",
+                      background: "var(--surface-subtle, #f8fafc)",
+                      borderRadius: 6,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div>
+                      <span style={{ color: "var(--text-muted, #64748b)" }}>Contacto: </span>
+                      <span style={{ fontWeight: 600, color: "var(--text-main, #0f172a)" }}>{item.contacto || "N/A"}</span>
+                      {item.telefono && (
+                        <span style={{ marginLeft: 8, color: "#2563eb", fontWeight: 600 }}>{item.telefono}</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {item.notas && (
+                  <div style={{ fontSize: 11.5, color: "var(--text-muted, #475569)", marginTop: 6, lineHeight: 1.4 }}>
+                    {item.notas}
+                  </div>
+                )}
+
+                {item.requerimientoSst && (
+                  <div style={{ fontSize: 11, color: "#059669", fontWeight: 600, marginTop: 4 }}>
+                    SST: {item.requerimientoSst}
+                  </div>
+                )}
+
+                <div style={{ display: "flex", gap: 8, marginTop: 10, paddingTop: 8, borderTop: "1px solid var(--border, #f1f5f9)" }}>
+                  {item.telefono && (
+                    <button
+                      type="button"
+                      onClick={() => enviarWhatsApp(item)}
+                      style={{
+                        ...B("#25D366"),
+                        fontSize: 11.5,
+                        padding: "5px 10px",
+                        borderRadius: 6,
+                      }}
+                    >
+                      WhatsApp
+                    </button>
+                  )}
+                  {(item.obra || item.ciudad) && item.tipo === "visita" && (
+                    <button
+                      type="button"
+                      onClick={() => abrirWaze(item)}
+                      style={{
+                        ...B("var(--surface-subtle, #f1f5f9)", "var(--text-main, #0f172a)"),
+                        border: "1px solid var(--border, #e2e8f0)",
+                        fontSize: 11.5,
+                        padding: "5px 10px",
+                        borderRadius: 6,
+                      }}
+                    >
+                      Abrir Waze
+                    </button>
+                  )}
+                  {item.linkReunion && (
+                    <a
+                      href={item.linkReunion}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        ...B("#7c3aed"),
+                        fontSize: 11.5,
+                        padding: "5px 10px",
+                        borderRadius: 6,
+                        textDecoration: "none",
+                      }}
+                    >
+                      Unirse a Reunión
+                    </a>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CalendarioMensualSection({
+  calMes,
+  mesAnterior,
+  irAHoy,
+  mesSiguiente,
+  celdasMes,
+  eventosPorFecha,
+  setFechaSeleccionada,
+}) {
+  return (
+    <div style={{ ...CD, padding: 24, width: "100%", boxSizing: "border-box" }}>
+      {/* Navegación del mes */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 16,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+          <h2 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: "var(--text-main, #0f172a)" }}>
+            {MESES[calMes.mes]}
+          </h2>
+          <span style={{ fontSize: 16, fontWeight: 500, color: "var(--text-muted, #94a3b8)" }}>
+            {calMes.anio}
+          </span>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <button
+            type="button"
+            onClick={mesAnterior}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              border: "1px solid var(--border, #e2e8f0)",
+              background: "var(--surface, #ffffff)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--text-main, #0f172a)",
+            }}
+            title="Mes anterior"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            onClick={irAHoy}
+            style={{
+              padding: "6px 12px",
+              borderRadius: 8,
+              border: "1px solid var(--border, #e2e8f0)",
+              background: "var(--surface, #ffffff)",
+              cursor: "pointer",
+              fontSize: 12,
+              fontWeight: 600,
+              color: "var(--text-main, #0f172a)",
+            }}
+          >
+            Hoy
+          </button>
+          <button
+            type="button"
+            onClick={mesSiguiente}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              border: "1px solid var(--border, #e2e8f0)",
+              background: "var(--surface, #ffffff)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--text-main, #0f172a)",
+            }}
+            title="Mes siguiente"
+          >
+            ›
+          </button>
+        </div>
+      </div>
+
+      {/* Cabecera de días de la semana */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(7, 1fr)",
+          textAlign: "center",
+          fontSize: 11,
+          fontWeight: 700,
+          color: "var(--text-muted, #94a3b8)",
+          textTransform: "uppercase",
+          letterSpacing: "0.05em",
+          paddingBottom: 10,
+          borderBottom: "1px solid var(--border, #e2e8f0)",
+          marginBottom: 8,
+        }}
+      >
+        {DIAS_CORTO.map((d) => (
+          <div key={d}>{d}</div>
+        ))}
+      </div>
+
+      {/* Cuadrícula de días */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 6 }}>
+        {celdasMes.map((c, idx) => {
+          if (c.otroMes) {
+            return (
+              <div
+                key={idx}
+                style={{
+                  minHeight: 88,
+                  padding: "6px 8px",
+                  borderRadius: 10,
+                  background: "var(--surface-subtle, #f8fafc)",
+                  opacity: 0.4,
+                  border: "1px solid transparent",
+                }}
+              >
+                <span style={{ fontSize: 11.5, color: "var(--text-muted, #94a3b8)" }}>{c.numero}</span>
+              </div>
+            );
+          }
+
+          const evts = eventosPorFecha[c.iso] || [];
+          const esHoy = c.esHoy;
+          const esSeleccionado = c.esSeleccionado;
+
+          return (
+            <div
+              key={idx}
+              onClick={() => setFechaSeleccionada(c.iso)}
+              style={{
+                minHeight: 88,
+                padding: "6px 8px",
+                borderRadius: 10,
+                cursor: "pointer",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                transition: "all 0.12s ease",
+                background: esSeleccionado
+                  ? "var(--surface, #ffffff)"
+                  : "var(--surface, #ffffff)",
+                border: esSeleccionado
+                  ? "2px solid #0f172a"
+                  : "1px solid var(--border, #e2e8f0)",
+                boxShadow: esSeleccionado ? "0 4px 12px rgba(15,23,42,0.08)" : "none",
+              }}
+            >
+              {/* Número del día */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span
+                  style={{
+                    fontSize: 12.5,
+                    fontWeight: esHoy || esSeleccionado ? 800 : 600,
+                    width: 22,
+                    height: 22,
+                    borderRadius: "50%",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: esHoy ? "#f47c20" : "transparent",
+                    color: esHoy ? "#ffffff" : "var(--text-main, #0f172a)",
+                  }}
+                >
+                  {c.numero}
+                </span>
+
+                {evts.length > 0 && (
+                  <div style={{ display: "flex", gap: 3 }}>
+                    {evts.slice(0, 3).map((e) => (
+                      <span
+                        key={e.id}
+                        style={{
+                          width: 5,
+                          height: 5,
+                          borderRadius: "50%",
+                          background: TIPOS_COMPROMISO[e.tipo]?.dot || "#0f172a",
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Chips de eventos en el día */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 3, marginTop: 4 }}>
+                {evts.slice(0, 2).map((e) => {
+                  const conf = TIPOS_COMPROMISO[e.tipo] || TIPOS_COMPROMISO.visita;
+                  return (
+                    <div
+                      key={e.id}
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 600,
+                        padding: "2px 5px",
+                        borderRadius: 4,
+                        background: conf.bg,
+                        color: conf.color,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                      title={`${e.hora || ""} ${e.obra || e.titulo}`}
+                    >
+                      {e.hora ? `${e.hora} ` : ""}{e.obra || e.titulo}
+                    </div>
+                  );
+                })}
+                {evts.length > 2 && (
+                  <span style={{ fontSize: 9.5, color: "var(--text-muted, #94a3b8)", fontWeight: 700 }}>
+                    +{evts.length - 2} más
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function Agenda({ ctx }) {
   const hoyIso = useMemo(() => toIso(new Date()), []);
 
@@ -577,482 +1072,29 @@ export default function Agenda({ ctx }) {
       {/* ==================================================================== */}
       {vista === "mes" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%" }}>
-          {/* Calendario Mensual Completo a Ancho Completo */}
-          <div style={{ ...CD, padding: 24, width: "100%", boxSizing: "border-box" }}>
-            {/* Navegación del mes */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: 16,
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-                <h2 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: "var(--text-main, #0f172a)" }}>
-                  {MESES[calMes.mes]}
-                </h2>
-                <span style={{ fontSize: 16, fontWeight: 500, color: "var(--text-muted, #94a3b8)" }}>
-                  {calMes.anio}
-                </span>
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <button
-                  type="button"
-                  onClick={mesAnterior}
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 8,
-                    border: "1px solid var(--border, #e2e8f0)",
-                    background: "var(--surface, #ffffff)",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "var(--text-main, #0f172a)",
-                  }}
-                  title="Mes anterior"
-                >
-                  ‹
-                </button>
-                <button
-                  type="button"
-                  onClick={irAHoy}
-                  style={{
-                    padding: "6px 12px",
-                    borderRadius: 8,
-                    border: "1px solid var(--border, #e2e8f0)",
-                    background: "var(--surface, #ffffff)",
-                    cursor: "pointer",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: "var(--text-main, #0f172a)",
-                  }}
-                >
-                  Hoy
-                </button>
-                <button
-                  type="button"
-                  onClick={mesSiguiente}
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 8,
-                    border: "1px solid var(--border, #e2e8f0)",
-                    background: "var(--surface, #ffffff)",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "var(--text-main, #0f172a)",
-                  }}
-                  title="Mes siguiente"
-                >
-                  ›
-                </button>
-              </div>
-            </div>
-
-            {/* Cabecera de días de la semana */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(7, 1fr)",
-                textAlign: "center",
-                fontSize: 11,
-                fontWeight: 700,
-                color: "var(--text-muted, #94a3b8)",
-                textTransform: "uppercase",
-                letterSpacing: "0.05em",
-                paddingBottom: 10,
-                borderBottom: "1px solid var(--border, #e2e8f0)",
-                marginBottom: 8,
-              }}
-            >
-              {DIAS_CORTO.map((d) => (
-                <div key={d}>{d}</div>
-              ))}
-            </div>
-
-            {/* Cuadrícula de días */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 6 }}>
-              {celdasMes.map((c, idx) => {
-                if (c.otroMes) {
-                  return (
-                    <div
-                      key={idx}
-                      style={{
-                        minHeight: 88,
-                        padding: "6px 8px",
-                        borderRadius: 10,
-                        background: "var(--surface-subtle, #f8fafc)",
-                        opacity: 0.4,
-                        border: "1px solid transparent",
-                      }}
-                    >
-                      <span style={{ fontSize: 11.5, color: "var(--text-muted, #94a3b8)" }}>{c.numero}</span>
-                    </div>
-                  );
-                }
-
-                const evts = eventosPorFecha[c.iso] || [];
-                const esHoy = c.esHoy;
-                const esSeleccionado = c.esSeleccionado;
-
-                return (
-                  <div
-                    key={idx}
-                    onClick={() => setFechaSeleccionada(c.iso)}
-                    style={{
-                      minHeight: 88,
-                      padding: "6px 8px",
-                      borderRadius: 10,
-                      cursor: "pointer",
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "space-between",
-                      transition: "all 0.12s ease",
-                      background: esSeleccionado
-                        ? "var(--surface, #ffffff)"
-                        : "var(--surface, #ffffff)",
-                      border: esSeleccionado
-                        ? "2px solid #0f172a"
-                        : "1px solid var(--border, #e2e8f0)",
-                      boxShadow: esSeleccionado ? "0 4px 12px rgba(15,23,42,0.08)" : "none",
-                    }}
-                  >
-                    {/* Número del día */}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span
-                        style={{
-                          fontSize: 12.5,
-                          fontWeight: esHoy || esSeleccionado ? 800 : 600,
-                          width: 22,
-                          height: 22,
-                          borderRadius: "50%",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          background: esHoy ? "#f47c20" : "transparent",
-                          color: esHoy ? "#ffffff" : "var(--text-main, #0f172a)",
-                        }}
-                      >
-                        {c.numero}
-                      </span>
-
-                      {evts.length > 0 && (
-                        <div style={{ display: "flex", gap: 3 }}>
-                          {evts.slice(0, 3).map((e) => (
-                            <span
-                              key={e.id}
-                              style={{
-                                width: 5,
-                                height: 5,
-                                borderRadius: "50%",
-                                background: TIPOS_COMPROMISO[e.tipo]?.dot || "#0f172a",
-                              }}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Chips de eventos en el día */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: 3, marginTop: 4 }}>
-                      {evts.slice(0, 2).map((e) => {
-                        const conf = TIPOS_COMPROMISO[e.tipo] || TIPOS_COMPROMISO.visita;
-                        return (
-                          <div
-                            key={e.id}
-                            style={{
-                              fontSize: 10,
-                              fontWeight: 600,
-                              padding: "2px 5px",
-                              borderRadius: 4,
-                              background: conf.bg,
-                              color: conf.color,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                            title={`${e.hora || ""} ${e.obra || e.titulo}`}
-                          >
-                            {e.hora ? `${e.hora} ` : ""}{e.obra || e.titulo}
-                          </div>
-                        );
-                      })}
-                      {evts.length > 2 && (
-                        <span style={{ fontSize: 9.5, color: "var(--text-muted, #94a3b8)", fontWeight: 700 }}>
-                          +{evts.length - 2} más
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Sección de Detalle de Compromisos del Día Seleccionado (Ancho Completo) */}
-          <div style={{ ...CD, padding: 24, width: "100%", boxSizing: "border-box" }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                paddingBottom: 14,
-                borderBottom: "1px solid var(--border, #e2e8f0)",
-                marginBottom: 16,
-              }}
-            >
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted, #94a3b8)" }}>
-                  Compromisos del día
-                </div>
-                <h3 style={{ fontSize: 18, fontWeight: 800, margin: "2px 0 0", color: "var(--text-main, #0f172a)" }}>
-                  {formatFechaLarga(fechaSeleccionada)}
-                </h3>
-              </div>
-
-              <button
-                type="button"
-                style={{
-                  ...B("var(--surface-subtle, #f1f5f9)", "var(--text-main, #0f172a)"),
-                  border: "1px solid var(--border, #e2e8f0)",
-                  fontSize: 12,
-                  padding: "6px 12px",
-                }}
-                onClick={() => abrirNuevoModal("visita")}
-              >
-                + Agregar compromiso
-              </button>
-            </div>
-
-            {/* Listado de compromisos para el día seleccionado */}
-            {eventosDelDia.length === 0 ? (
-              <div
-                style={{
-                  padding: "40px 20px",
-                  textAlign: "center",
-                  background: "var(--surface-subtle, #f8fafc)",
-                  borderRadius: 12,
-                  border: "1px dashed var(--border, #cbd5e1)",
-                }}
-              >
-                <div style={{ color: "var(--text-muted, #94a3b8)", marginBottom: 8 }}>
-                  <IconoTipo tipo="coordinacion" size={28} />
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>
-                  Sin compromisos para esta fecha
-                </div>
-                <p style={{ fontSize: 12, color: "var(--text-muted, #64748b)", margin: "4px 0 14px" }}>
-                  Camila no tiene visitas ni llamadas registradas para este día.
-                </p>
-                <button
-                  type="button"
-                  style={{ ...B("#f47c20"), fontSize: 12, padding: "7px 14px" }}
-                  onClick={() => abrirNuevoModal("visita")}
-                >
-                  + Programar compromiso
-                </button>
-              </div>
-            ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 14 }}>
-                {eventosDelDia.map((item) => {
-                  const conf = TIPOS_COMPROMISO[item.tipo] || TIPOS_COMPROMISO.visita;
-                  const completado = item.estado === "completado";
-
-                  return (
-                    <div
-                      key={item.id}
-                      style={{
-                        border: "1px solid var(--border, #e2e8f0)",
-                        borderRadius: 12,
-                        padding: 14,
-                        background: completado ? "var(--surface-subtle, #f8fafc)" : "var(--surface, #ffffff)",
-                        opacity: completado ? 0.65 : 1,
-                        transition: "all 0.15s ease",
-                      }}
-                    >
-                      {/* Cabecera del item */}
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: 5,
-                              padding: "3px 8px",
-                              borderRadius: 6,
-                              fontSize: 11,
-                              fontWeight: 700,
-                              background: conf.bg,
-                              color: conf.color,
-                            }}
-                          >
-                            <IconoTipo tipo={item.tipo} size={12} />
-                            {conf.label}
-                          </span>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>
-                            {item.hora}
-                          </span>
-                        </div>
-
-                        {/* Botones de acción */}
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <button
-                            type="button"
-                            onClick={() => toggleCompletado(item.id)}
-                            style={{
-                              padding: "4px 8px",
-                              fontSize: 11,
-                              fontWeight: 600,
-                              borderRadius: 6,
-                              border: "1px solid var(--border, #e2e8f0)",
-                              cursor: "pointer",
-                              background: completado ? "#ecfdf5" : "var(--surface, #ffffff)",
-                              color: completado ? "#047857" : "var(--text-muted, #64748b)",
-                            }}
-                          >
-                            {completado ? "✓ Realizada" : "Completar"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => abrirEditarModal(item)}
-                            style={{
-                              padding: "4px 6px",
-                              fontSize: 11,
-                              borderRadius: 6,
-                              border: "1px solid var(--border, #e2e8f0)",
-                              background: "var(--surface, #ffffff)",
-                              cursor: "pointer",
-                              color: "var(--text-muted, #64748b)",
-                            }}
-                            title="Editar"
-                          >
-                            ✎
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => eliminarCompromiso(item.id)}
-                            style={{
-                              padding: "4px 6px",
-                              fontSize: 11,
-                              borderRadius: 6,
-                              border: "1px solid var(--border, #e2e8f0)",
-                              background: "var(--surface, #ffffff)",
-                              cursor: "pointer",
-                              color: "#ef4444",
-                            }}
-                            title="Eliminar"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Título de obra y cliente */}
-                      <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>
-                        {item.obra || item.titulo}
-                      </div>
-                      {item.cliente && (
-                        <div style={{ fontSize: 12, color: "var(--text-muted, #64748b)", marginTop: 2 }}>
-                          {item.cliente} {item.ciudad ? `· ${item.ciudad}` : ""}
-                        </div>
-                      )}
-
-                      {/* Contacto y Notas */}
-                      {(item.contacto || item.telefono) && (
-                        <div
-                          style={{
-                            fontSize: 11.5,
-                            marginTop: 8,
-                            padding: "6px 10px",
-                            background: "var(--surface-subtle, #f8fafc)",
-                            borderRadius: 6,
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                          }}
-                        >
-                          <div>
-                            <span style={{ color: "var(--text-muted, #64748b)" }}>Contacto: </span>
-                            <span style={{ fontWeight: 600, color: "var(--text-main, #0f172a)" }}>{item.contacto || "N/A"}</span>
-                            {item.telefono && (
-                              <span style={{ marginLeft: 8, color: "#2563eb", fontWeight: 600 }}>{item.telefono}</span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {item.notas && (
-                        <div style={{ fontSize: 11.5, color: "var(--text-muted, #475569)", marginTop: 6, lineHeight: 1.4 }}>
-                          {item.notas}
-                        </div>
-                      )}
-
-                      {item.requerimientoSst && (
-                        <div style={{ fontSize: 11, color: "#059669", fontWeight: 600, marginTop: 4 }}>
-                          SST: {item.requerimientoSst}
-                        </div>
-                      )}
-
-                      {/* Botones de acción rápida: WhatsApp & Waze */}
-                      <div style={{ display: "flex", gap: 8, marginTop: 10, paddingTop: 8, borderTop: "1px solid var(--border, #f1f5f9)" }}>
-                        {item.telefono && (
-                          <button
-                            type="button"
-                            onClick={() => enviarWhatsApp(item)}
-                            style={{
-                              ...B("#25D366"),
-                              fontSize: 11.5,
-                              padding: "5px 10px",
-                              borderRadius: 6,
-                            }}
-                          >
-                            WhatsApp
-                          </button>
-                        )}
-                        {(item.obra || item.ciudad) && item.tipo === "visita" && (
-                          <button
-                            type="button"
-                            onClick={() => abrirWaze(item)}
-                            style={{
-                              ...B("var(--surface-subtle, #f1f5f9)", "var(--text-main, #0f172a)"),
-                              border: "1px solid var(--border, #e2e8f0)",
-                              fontSize: 11.5,
-                              padding: "5px 10px",
-                              borderRadius: 6,
-                            }}
-                          >
-                            Abrir Waze
-                          </button>
-                        )}
-                        {item.linkReunion && (
-                          <a
-                            href={item.linkReunion}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              ...B("#7c3aed"),
-                              fontSize: 11.5,
-                              padding: "5px 10px",
-                              borderRadius: 6,
-                              textDecoration: "none",
-                            }}
-                          >
-                            Unirse a Reunión
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          {/* Compromisos del día ARRIBA para visualización inmediata */}
+          <CompromisosDelDiaSection
+            fechaSeleccionada={fechaSeleccionada}
+            formatFechaLarga={formatFechaLarga}
+            eventosDelDia={eventosDelDia}
+            abrirNuevoModal={abrirNuevoModal}
+            toggleCompletado={toggleCompletado}
+            abrirEditarModal={abrirEditarModal}
+            eliminarCompromiso={eliminarCompromiso}
+            enviarWhatsApp={enviarWhatsApp}
+            abrirWaze={abrirWaze}
+          />
+          {/* Calendario Mensual Completo ABAJO */}
+          <CalendarioMensualSection
+            calMes={calMes}
+            mesAnterior={mesAnterior}
+            irAHoy={irAHoy}
+            mesSiguiente={mesSiguiente}
+            celdasMes={celdasMes}
+            eventosPorFecha={eventosPorFecha}
+            fechaSeleccionada={fechaSeleccionada}
+            setFechaSeleccionada={setFechaSeleccionada}
+          />
         </div>
       )}
 

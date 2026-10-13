@@ -22,6 +22,7 @@ const ENTITY_TO_STATE = {
   nominas_generadas: "nominasGeneradasCloud",
   empresa_config: "empresaConfig",
   catalogo_items: "catalogoItems",
+  agenda: "agenda",
 };
 
 // Baseline en memoria: por entidad, un Map(id -> JSON serializado de la última

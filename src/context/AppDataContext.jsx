@@ -17,7 +17,7 @@ import {
 import {
   normalizeContabilidadConfig, normalizePlanCuenta, normalizeAsientoContable,
 } from "../lib/accounting";
-import { EJEMPLOS, hayEjemplos, sinEjemplos } from "../data/ejemplos";
+import { EJEMPLOS, sinEjemplos } from "../data/ejemplos";
 import { depurarObrasDuplicadas } from "../lib/obrasDuplicadas";
 import { iniciarVigilanteInactividad } from "../lib/seguridadSesion";
 import {
@@ -257,6 +257,7 @@ export function AppDataProvider({ children }) {
       proveedores,
       cuentas,
       ordenesCompra: sinEjemplos(ordenesCompra),
+      agenda: sinEjemplos(agenda),
       cotizaciones: sinEjemplos(cotizaciones),
       contabilidadConfig,
       planCuentas,
@@ -399,6 +400,7 @@ export function AppDataProvider({ children }) {
         if (Array.isArray(cloud.proveedores)) setProveedores(cloud.proveedores);
         if (Array.isArray(cloud.cuentas)) setCuentas(otrasEntidades.cuentas);
         if (Array.isArray(cloud.ordenesCompra) && cloud.ordenesCompra.length) setOrdenesCompra(otrasEntidades.ordenesCompra);
+        if (Array.isArray(cloud.agenda) && cloud.agenda.length) setAgenda(oEjemplo(cloud.agenda, EJEMPLOS.agenda));
         if (Array.isArray(cloud.cotizaciones)) setCotizaciones(oEjemplo(cotizacionesList, EJEMPLOS.cotizaciones));
         if (Array.isArray(cloud.contabilidadConfig) && cloud.contabilidadConfig.length) {
           setContabilidadConfig(cloud.contabilidadConfig.map(normalizeContabilidadConfig));
@@ -508,6 +510,7 @@ export function AppDataProvider({ children }) {
     nominasGeneradas,
     empresaConfig,
     catalogoItems,
+    agenda,
   ]);
 
   // Registros cuyo detalle ya se pidio, para no volver a pedirlo cada vez que

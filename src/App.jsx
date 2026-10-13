@@ -23,7 +23,6 @@ import Auditoria from "./screens/Auditoria/Auditoria";
 import Formatos from "./screens/Formatos/Formatos";
 import Soporte from "./screens/Soporte/Soporte";
 import Agenda from "./screens/Agenda/Agenda";
-import ModalAlertaCotizaciones from "./components/ModalAlertaCotizaciones";
 import BotonSoporteFlotante from "./components/soporte/BotonSoporteFlotante";
 import NotificadorMensajesGlobal from "./components/notificaciones/NotificadorMensajesGlobal";
 
@@ -150,7 +149,6 @@ function AppRoot() {
   return (
     <AppShell scr={destino} onNavigate={setScr}>
       <Screen ctx={ctx} go={setScr} />
-      <ModalAlertaCotizaciones onNavigate={setScr} />
       <NotificadorMensajesGlobal onIrASoporte={() => setScr("soporte")} />
       {destino !== "soporte" && <BotonSoporteFlotante />}
     </AppShell>

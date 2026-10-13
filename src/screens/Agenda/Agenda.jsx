@@ -1,20 +1,22 @@
 import { useState, useMemo } from "react";
+import H1 from "../../components/ui/H1";
+import { B, CD, SI } from "../../styles/tokens";
 import { EJEMPLOS } from "../../data/ejemplos";
+import { abrirWhatsApp } from "../../lib/whatsapp";
 
-// Constantes y utilidades de fechas
-const NOMBRES_MESES = [
+// Meses y días en español
+const MESES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
 ];
+const DIAS_CORTO = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+const DIAS_COMPLETO = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
-const DIAS_SEMANA_CORTO = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"];
-const DIAS_SEMANA_COMPLETO = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
-
-function toIsoDate(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+function toIso(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dia = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dia}`;
 }
 
 function parseIso(isoStr) {
@@ -23,75 +25,103 @@ function parseIso(isoStr) {
   return new Date(y, m - 1, d);
 }
 
-// Obtener el lunes de la semana de una fecha
-function getLunesDeSemana(date) {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  return new Date(d.setDate(diff));
+function formatFechaLarga(isoStr) {
+  if (!isoStr) return "";
+  const d = parseIso(isoStr);
+  const diaSemana = DIAS_COMPLETO[d.getDay() === 0 ? 6 : d.getDay() - 1];
+  return `${diaSemana}, ${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`;
 }
 
-// Configuración de tipos con diseño Apple
-const TIPO_CONFIG = {
+// Configuración visual refinada estilo Apple (sin emojis, usando colores armónicos)
+const TIPOS_COMPROMISO = {
   visita: {
     label: "Visita a Obra",
-    icon: "🚗",
-    badgeBg: "rgba(255, 149, 0, 0.12)",
-    badgeColor: "#d97706",
-    dotColor: "#ff9500",
-    borderActive: "#ff9500",
+    color: "#d97706",
+    bg: "#fef3c7",
+    border: "#fde68a",
+    dot: "#f59e0b",
   },
   llamada: {
-    label: "Llamada de Seguimiento",
-    icon: "📞",
-    badgeBg: "rgba(0, 113, 227, 0.12)",
-    badgeColor: "#0071e3",
-    dotColor: "#0071e3",
-    borderActive: "#0071e3",
+    label: "Llamada",
+    color: "#2563eb",
+    bg: "#eff6ff",
+    border: "#dbeafe",
+    dot: "#3b82f6",
   },
   reunion: {
-    label: "Reunión / Comité",
-    icon: "🤝",
-    badgeBg: "rgba(175, 82, 222, 0.12)",
-    badgeColor: "#af52de",
-    dotColor: "#af52de",
-    borderActive: "#af52de",
+    label: "Reunión",
+    color: "#7c3aed",
+    bg: "#f5f3ff",
+    border: "#ede9fe",
+    dot: "#8b5cf6",
   },
   coordinacion: {
-    label: "Coordinar en Obra",
-    icon: "📋",
-    badgeBg: "rgba(52, 199, 89, 0.12)",
-    badgeColor: "#22a049",
-    dotColor: "#34c759",
-    borderActive: "#34c759",
+    label: "Coordinación",
+    color: "#059669",
+    bg: "#ecfdf5",
+    border: "#d1fae5",
+    dot: "#10b981",
   },
 };
 
-export default function Agenda({ ctx }) {
-  const hoyIso = toIsoDate(new Date());
+// Iconos vectoriales minimalistas (estilo Apple SF Symbols)
+function IconoTipo({ tipo, size = 15 }) {
+  if (tipo === "visita") {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+        <circle cx="12" cy="10" r="3" />
+      </svg>
+    );
+  }
+  if (tipo === "llamada") {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+      </svg>
+    );
+  }
+  if (tipo === "reunion") {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    );
+  }
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 11l3 3L22 4" />
+      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+    </svg>
+  );
+}
 
-  // Lista de compromisos (desde ctx con fallback a ejemplos)
+export default function Agenda({ ctx }) {
+  const hoyIso = useMemo(() => toIso(new Date()), []);
+
+  // Fuente de datos
   const compromisos = useMemo(() => {
     const lista = ctx?.agenda;
-    if (Array.isArray(lista) && lista.length > 0) {
-      return lista;
-    }
+    if (Array.isArray(lista) && lista.length > 0) return lista;
     return EJEMPLOS.agenda || [];
   }, [ctx?.agenda]);
 
-  const setCompromisos = (nextOrUpdater) => {
+  const setCompromisos = (updater) => {
     if (typeof ctx?.setAgenda === "function") {
-      ctx.setAgenda(nextOrUpdater);
+      ctx.setAgenda(updater);
     }
   };
 
-  // Estado de vista y selección
-  const [viewMode, setViewMode] = useState("bento"); // "bento" | "fullcal"
+  // Estados principales
+  const [vista, setVista] = useState("mes"); // "mes" | "agenda"
   const [fechaSeleccionada, setFechaSeleccionada] = useState(hoyIso);
   const [filtroTipo, setFiltroTipo] = useState("todos");
   const [busqueda, setBusqueda] = useState("");
 
-  // Estado del calendario mensual
+  // Control del mes visible
   const [calMes, setCalMes] = useState(() => {
     const ahora = new Date();
     return { anio: ahora.getFullYear(), mes: ahora.getMonth() };
@@ -99,9 +129,8 @@ export default function Agenda({ ctx }) {
 
   // Modal de creación / edición
   const [modalAbierto, setModalAbierto] = useState(false);
-  const [itemEnEdicion, setItemEnEdicion] = useState(null);
+  const [itemEdicion, setItemEdicion] = useState(null);
 
-  // Formulario del modal
   const [formTipo, setFormTipo] = useState("visita");
   const [formTitulo, setFormTitulo] = useState("");
   const [formObra, setFormObra] = useState("");
@@ -113,76 +142,9 @@ export default function Agenda({ ctx }) {
   const [formTelefono, setFormTelefono] = useState("");
   const [formNotas, setFormNotas] = useState("");
   const [formSst, setFormSst] = useState("");
-  const [formModalidad, setFormModalidad] = useState("presencial");
   const [formLink, setFormLink] = useState("");
 
-  // Fecha seleccionada como Date
-  const fechaSelDate = useMemo(() => parseIso(fechaSeleccionada), [fechaSeleccionada]);
-
-  // Días de la semana para la tira semanal superior
-  const diasSemana = useMemo(() => {
-    const lunes = getLunesDeSemana(fechaSelDate);
-    return Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(lunes);
-      d.setDate(lunes.getDate() + i);
-      return {
-        iso: toIsoDate(d),
-        diaNum: d.getDate(),
-        nombreCorto: DIAS_SEMANA_CORTO[i],
-        esHoy: toIsoDate(d) === hoyIso,
-        esSeleccionado: toIsoDate(d) === fechaSeleccionada,
-      };
-    });
-  }, [fechaSelDate, fechaSeleccionada, hoyIso]);
-
-  // Cuadrícula del mes actual (para mini-calendario y calendario completo)
-  const matrizMes = useMemo(() => {
-    const primerDia = new Date(calMes.anio, calMes.mes, 1);
-    const ultimoDia = new Date(calMes.anio, calMes.mes + 1, 0);
-
-    let primerDiaSemana = primerDia.getDay() - 1;
-    if (primerDiaSemana === -1) primerDiaSemana = 6; // domingo
-
-    const totalDias = ultimoDia.getDate();
-    const celdas = [];
-
-    // Días del mes anterior para rellenar
-    const ultimoDiaMesAnterior = new Date(calMes.anio, calMes.mes, 0).getDate();
-    for (let i = primerDiaSemana - 1; i >= 0; i--) {
-      celdas.push({
-        num: ultimoDiaMesAnterior - i,
-        otroMes: true,
-        iso: null,
-      });
-    }
-
-    // Días del mes actual
-    for (let dia = 1; dia <= totalDias; dia++) {
-      const fechaDia = new Date(calMes.anio, calMes.mes, dia);
-      const iso = toIsoDate(fechaDia);
-      celdas.push({
-        num: dia,
-        otroMes: false,
-        iso,
-        esHoy: iso === hoyIso,
-        esSeleccionado: iso === fechaSeleccionada,
-      });
-    }
-
-    // Rellenar hasta múltiplo de 7
-    let siguienteDia = 1;
-    while (celdas.length % 7 !== 0) {
-      celdas.push({
-        num: siguienteDia++,
-        otroMes: true,
-        iso: null,
-      });
-    }
-
-    return celdas;
-  }, [calMes, hoyIso, fechaSeleccionada]);
-
-  // Mapeo de eventos por fecha ISO para los puntos de colores del calendario
+  // Mapeo de eventos por fecha
   const eventosPorFecha = useMemo(() => {
     const map = {};
     compromisos.forEach((item) => {
@@ -193,13 +155,60 @@ export default function Agenda({ ctx }) {
     return map;
   }, [compromisos]);
 
-  // Filtrado de compromisos según búsqueda y tipo
+  // Cuadrícula del mes
+  const celdasMes = useMemo(() => {
+    const primerDia = new Date(calMes.anio, calMes.mes, 1);
+    const ultimoDia = new Date(calMes.anio, calMes.mes + 1, 0);
+
+    let inicioSemana = primerDia.getDay() - 1;
+    if (inicioSemana === -1) inicioSemana = 6;
+
+    const totalDias = ultimoDia.getDate();
+    const celdas = [];
+
+    // Días previos
+    const diasMesAnterior = new Date(calMes.anio, calMes.mes, 0).getDate();
+    for (let i = inicioSemana - 1; i >= 0; i--) {
+      celdas.push({
+        numero: diasMesAnterior - i,
+        otroMes: true,
+        iso: null,
+      });
+    }
+
+    // Días del mes
+    for (let d = 1; d <= totalDias; d++) {
+      const fecha = new Date(calMes.anio, calMes.mes, d);
+      const iso = toIso(fecha);
+      celdas.push({
+        numero: d,
+        otroMes: false,
+        iso,
+        esHoy: iso === hoyIso,
+        esSeleccionado: iso === fechaSeleccionada,
+      });
+    }
+
+    // Días siguientes hasta completar filas de 7
+    let siguiente = 1;
+    while (celdas.length % 7 !== 0) {
+      celdas.push({
+        numero: siguiente++,
+        otroMes: true,
+        iso: null,
+      });
+    }
+
+    return celdas;
+  }, [calMes, hoyIso, fechaSeleccionada]);
+
+  // Filtrado de compromisos
   const compromisosFiltrados = useMemo(() => {
-    return compromisos.filter((c) => {
-      if (filtroTipo !== "todos" && c.tipo !== filtroTipo) return false;
+    return compromisos.filter((item) => {
+      if (filtroTipo !== "todos" && item.tipo !== filtroTipo) return false;
       if (busqueda.trim()) {
         const q = busqueda.toLowerCase();
-        const texto = `${c.titulo || ""} ${c.obra || ""} ${c.cliente || ""} ${c.contacto || ""} ${c.notas || ""}`.toLowerCase();
+        const texto = `${item.titulo || ""} ${item.obra || ""} ${item.cliente || ""} ${item.contacto || ""} ${item.notas || ""}`.toLowerCase();
         if (!texto.includes(q)) return false;
       }
       return true;
@@ -207,43 +216,38 @@ export default function Agenda({ ctx }) {
   }, [compromisos, filtroTipo, busqueda]);
 
   // Compromisos del día seleccionado
-  const compromisosDelDia = useMemo(() => {
+  const eventosDelDia = useMemo(() => {
     return compromisosFiltrados.filter((c) => c.fecha === fechaSeleccionada);
   }, [compromisosFiltrados, fechaSeleccionada]);
 
-  // Segmentación para el Bento Grid
-  const visitasDelDia = useMemo(() => compromisosDelDia.filter((c) => c.tipo === "visita"), [compromisosDelDia]);
-  const llamadasDelDia = useMemo(() => compromisosDelDia.filter((c) => c.tipo === "llamada"), [compromisosDelDia]);
-  const reunionesDelDia = useMemo(() => compromisosDelDia.filter((c) => c.tipo === "reunion"), [compromisosDelDia]);
-  const coordinacionesDelDia = useMemo(() => compromisosDelDia.filter((c) => c.tipo === "coordinacion"), [compromisosDelDia]);
-
-  // Conteo de tareas de hoy
-  const conteoHoy = useMemo(() => {
-    const itemsHoy = compromisos.filter((c) => c.fecha === hoyIso && c.estado !== "completado");
+  // Conteo de tareas pendientes de hoy
+  const estadisticas = useMemo(() => {
+    const pendientes = compromisos.filter((c) => c.fecha === hoyIso && c.estado !== "completado");
     return {
-      visitas: itemsHoy.filter((c) => c.tipo === "visita").length,
-      llamadas: itemsHoy.filter((c) => c.tipo === "llamada").length,
-      reuniones: itemsHoy.filter((c) => c.tipo === "reunion").length,
-      coordinaciones: itemsHoy.filter((c) => c.tipo === "coordinacion").length,
+      visitas: pendientes.filter((c) => c.tipo === "visita").length,
+      llamadas: pendientes.filter((c) => c.tipo === "llamada").length,
+      reuniones: pendientes.filter((c) => c.tipo === "reunion").length,
+      coordinaciones: pendientes.filter((c) => c.tipo === "coordinacion").length,
+      totalHoy: pendientes.length,
     };
   }, [compromisos, hoyIso]);
 
-  // Acciones sobre compromisos
-  const toggleEstado = (id) => {
+  // Acciones
+  const toggleCompletado = (id) => {
     setCompromisos((prev) =>
       prev.map((c) => (c.id === id ? { ...c, estado: c.estado === "completado" ? "pendiente" : "completado" } : c))
     );
   };
 
   const eliminarCompromiso = (id) => {
-    if (window.confirm("¿Seguro que deseas eliminar este compromiso?")) {
+    if (window.confirm("¿Deseas eliminar este compromiso?")) {
       setCompromisos((prev) => prev.filter((c) => c.id !== id));
     }
   };
 
-  const abrirNuevoModal = (tipoPredefinido = "visita") => {
-    setItemEnEdicion(null);
-    setFormTipo(tipoPredefinido);
+  const abrirNuevoModal = (tipoInicial = "visita") => {
+    setItemEdicion(null);
+    setFormTipo(tipoInicial);
     setFormTitulo("");
     setFormObra("");
     setFormCliente("");
@@ -254,13 +258,12 @@ export default function Agenda({ ctx }) {
     setFormTelefono("");
     setFormNotas("");
     setFormSst("");
-    setFormModalidad("presencial");
     setFormLink("");
     setModalAbierto(true);
   };
 
   const abrirEditarModal = (item) => {
-    setItemEnEdicion(item);
+    setItemEdicion(item);
     setFormTipo(item.tipo || "visita");
     setFormTitulo(item.titulo || "");
     setFormObra(item.obra || "");
@@ -272,22 +275,21 @@ export default function Agenda({ ctx }) {
     setFormTelefono(item.telefono || "");
     setFormNotas(item.notas || "");
     setFormSst(item.requerimientoSst || "");
-    setFormModalidad(item.modalidad || "presencial");
     setFormLink(item.linkReunion || "");
     setModalAbierto(true);
   };
 
-  const guardarModal = (e) => {
+  const guardarCompromiso = (e) => {
     e.preventDefault();
     if (!formTitulo.trim() && !formObra.trim()) {
-      alert("Por favor ingresa al menos un título o el nombre de la obra.");
+      alert("Por favor ingresa un título o el nombre de la obra.");
       return;
     }
 
-    const nuevo = {
-      id: itemEnEdicion?.id || `AG-${Date.now()}`,
+    const payload = {
+      id: itemEdicion?.id || `AG-${Date.now()}`,
       tipo: formTipo,
-      titulo: formTitulo.trim() || (formTipo === "visita" ? `Visita a ${formObra}` : `Compromiso`),
+      titulo: formTitulo.trim() || `${TIPOS_COMPROMISO[formTipo]?.label || "Compromiso"} - ${formObra.trim()}`,
       obra: formObra.trim(),
       cliente: formCliente.trim(),
       ciudad: formCiudad.trim(),
@@ -297,1032 +299,1157 @@ export default function Agenda({ ctx }) {
       telefono: formTelefono.trim(),
       notas: formNotas.trim(),
       requerimientoSst: formSst.trim(),
-      modalidad: formModalidad,
       linkReunion: formLink.trim(),
-      estado: itemEnEdicion?.estado || "pendiente",
-      prioridad: itemEnEdicion?.prioridad || "alta",
+      estado: itemEdicion?.estado || "pendiente",
+      prioridad: itemEdicion?.prioridad || "normal",
     };
 
     setCompromisos((prev) => {
-      if (itemEnEdicion) {
-        return prev.map((c) => (c.id === itemEnEdicion.id ? nuevo : c));
+      if (itemEdicion) {
+        return prev.map((c) => (c.id === itemEdicion.id ? payload : c));
       }
-      return [nuevo, ...prev];
+      return [payload, ...prev];
     });
 
     setModalAbierto(false);
   };
 
-  // Construir link directo de WhatsApp
-  const openWhatsApp = (item) => {
-    const rawTel = (item.telefono || "").replace(/[^0-9]/g, "");
-    if (!rawTel) {
-      alert("Este contacto no tiene un teléfono celular registrado.");
-      return;
-    }
-    const tel = rawTel.length === 10 ? `57${rawTel}` : rawTel;
-    let mensaje = "";
-    if (item.tipo === "visita") {
-      mensaje = `Hola ${item.contacto || "Ingeniero(a)"}, te saluda Camila Sepúlveda de Ingeanclajes S.A.S. Te confirmo nuestra visita técnica programada para hoy a las ${item.hora || ""} en la obra ${item.obra || ""}.`;
-    } else if (item.tipo === "llamada") {
-      mensaje = `Hola ${item.contacto || ""}, te escribe Camila Sepúlveda de Ingeanclajes S.A.S sobre la obra ${item.obra || ""}. ¿A qué hora te puedo llamar para coordinar detalles?`;
+  const enviarWhatsApp = (c) => {
+    let msg = "";
+    if (c.tipo === "visita") {
+      msg = `Hola ${c.contacto || "Ingeniero(a)"}, te saluda Camila Sepúlveda de Ingeanclajes S.A.S. Te confirmo nuestra visita técnica programada para la obra ${c.obra || ""} a las ${c.hora || ""}.`;
+    } else if (c.tipo === "llamada") {
+      msg = `Hola ${c.contacto || ""}, te escribe Camila Sepúlveda de Ingeanclajes sobre la obra ${c.obra || ""}. ¿A qué hora nos podemos comunicar hoy?`;
     } else {
-      mensaje = `Hola ${item.contacto || ""}, te escribe Camila Sepúlveda de Ingeanclajes sobre ${item.titulo || ""}.`;
+      msg = `Hola ${c.contacto || ""}, te escribe Camila Sepúlveda de Ingeanclajes sobre ${c.titulo || c.obra || "nuestro compromiso"}.`;
     }
-    const url = `https://wa.me/${tel}?text=${encodeURIComponent(mensaje)}`;
-    window.open(url, "_blank");
+    const err = abrirWhatsApp(c.telefono, msg);
+    if (err) alert(err);
   };
 
-  const openWaze = (item) => {
-    const q = encodeURIComponent(`${item.obra || ""} ${item.ciudad || ""}`);
-    window.open(`https://waze.com/ul?q=${q}`, "_blank");
+  const abrirWaze = (c) => {
+    const q = encodeURIComponent(`${c.obra || ""} ${c.ciudad || ""}`);
+    window.open(`https://waze.com/ul?q=${q}`, "_blank", "noopener");
+  };
+
+  const mesSiguiente = () => {
+    setCalMes((prev) => (prev.mes === 11 ? { anio: prev.anio + 1, mes: 0 } : { ...prev, mes: prev.mes + 1 }));
+  };
+
+  const mesAnterior = () => {
+    setCalMes((prev) => (prev.mes === 0 ? { anio: prev.anio - 1, mes: 11 } : { ...prev, mes: prev.mes - 1 }));
+  };
+
+  const irAHoy = () => {
+    const ahora = new Date();
+    setCalMes({ anio: ahora.getFullYear(), mes: ahora.getMonth() });
+    setFechaSeleccionada(hoyIso);
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] p-4 md:p-8 font-sans antialiased">
-      <div className="max-w-6xl mx-auto space-y-6">
-
-        {/* HEADER SUPERIOR ESTILO APPLE */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-[#e5e5ea]">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide uppercase bg-[#0071e3]/10 text-[#0071e3] mb-2">
-              <span>✨ Ingeanclajes • Agenda & Operaciones</span>
-            </div>
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-[#1d1d1f]">
-              Agenda & Coordinación
-            </h1>
-            <p className="text-sm text-[#86868b] mt-1">
-              Visitas a obras, llamadas a clientes y coordinación de proyectos para Camila Sepúlveda.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* Segmented Control Apple */}
-            <div className="inline-flex p-1 bg-[#e5e5ea] rounded-xl shadow-inner">
+    <div style={{ padding: "0 0 24px 0", maxWidth: 1400, margin: "0 auto" }}>
+      {/* Cabecera Principal */}
+      <H1
+        title="Agenda & Visitas"
+        subtitle="Control de visitas técnicas a obras, llamadas de seguimiento y comités para Camila Sepúlveda"
+        action={
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            {/* Selector de Vista Segmentado estilo Apple */}
+            <div
+              style={{
+                display: "inline-flex",
+                background: "var(--surface-subtle, #f1f5f9)",
+                padding: 3,
+                borderRadius: 10,
+                border: "1px solid var(--border, #e2e8f0)",
+              }}
+            >
               <button
-                onClick={() => setViewMode("bento")}
-                className={`px-3.5 py-1.5 text-xs md:text-sm rounded-lg transition-all ${
-                  viewMode === "bento"
-                    ? "bg-white text-[#1d1d1f] font-semibold shadow-sm"
-                    : "text-[#86868b] hover:text-[#1d1d1f]"
-                }`}
+                type="button"
+                onClick={() => setVista("mes")}
+                style={{
+                  padding: "6px 14px",
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  borderRadius: 8,
+                  border: "none",
+                  cursor: "pointer",
+                  background: vista === "mes" ? "var(--surface, #ffffff)" : "transparent",
+                  color: vista === "mes" ? "var(--text-main, #0f172a)" : "var(--text-muted, #64748b)",
+                  boxShadow: vista === "mes" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                  transition: "all 0.15s ease",
+                }}
               >
-                Bento con Mini-Calendario
+                Calendario
               </button>
               <button
-                onClick={() => setViewMode("fullcal")}
-                className={`px-3.5 py-1.5 text-xs md:text-sm rounded-lg transition-all ${
-                  viewMode === "fullcal"
-                    ? "bg-white text-[#1d1d1f] font-semibold shadow-sm"
-                    : "text-[#86868b] hover:text-[#1d1d1f]"
-                }`}
+                type="button"
+                onClick={() => setVista("agenda")}
+                style={{
+                  padding: "6px 14px",
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  borderRadius: 8,
+                  border: "none",
+                  cursor: "pointer",
+                  background: vista === "agenda" ? "var(--surface, #ffffff)" : "transparent",
+                  color: vista === "agenda" ? "var(--text-main, #0f172a)" : "var(--text-muted, #64748b)",
+                  boxShadow: vista === "agenda" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                  transition: "all 0.15s ease",
+                }}
               >
-                Calendario Mensual Completo
+                Lista de Tareas
               </button>
             </div>
 
             <button
+              type="button"
+              style={B("#f47c20")}
               onClick={() => abrirNuevoModal("visita")}
-              className="px-4 py-2 bg-[#0071e3] hover:bg-[#0077ed] text-white rounded-xl text-xs md:text-sm font-semibold transition-all shadow-sm flex items-center gap-1.5"
             >
-              <span className="text-base leading-none">+</span> Nuevo Compromiso
+              + Nuevo compromiso
             </button>
           </div>
-        </div>
+        }
+      />
 
-        {/* RESUMEN PERSONAL DE CAMILA */}
-        <div className="bg-white/80 backdrop-blur-md rounded-2xl p-4 md:p-5 border border-[#e5e5ea] shadow-sm flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-[#0071e3] to-[#40c8e0] text-white font-bold flex items-center justify-center text-sm shadow-sm">
-              CS
-            </div>
-            <div>
-              <div className="text-[11px] text-[#86868b] font-medium">Coordinación Operativa</div>
-              <h2 className="text-base md:text-lg font-bold text-[#1d1d1f]">Camila Sepúlveda</h2>
-            </div>
+      {/* Franja de Resumen Superior y Filtros */}
+      <div
+        style={{
+          ...CD,
+          padding: "14px 20px",
+          marginBottom: 20,
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 14,
+        }}
+      >
+        {/* Estadísticas rápidas de hoy */}
+        <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>
+            Hoy para atender:
           </div>
-
-          <div className="flex flex-wrap items-center gap-2 md:gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#f5f5f7] rounded-xl text-xs font-semibold text-[#1d1d1f]">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#ff9500]"></span>
-              {conteoHoy.visitas} Visitas Hoy
-            </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#f5f5f7] rounded-xl text-xs font-semibold text-[#1d1d1f]">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#0071e3]"></span>
-              {conteoHoy.llamadas} Llamadas
-            </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#f5f5f7] rounded-xl text-xs font-semibold text-[#1d1d1f]">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#af52de]"></span>
-              {conteoHoy.reuniones} Reuniones
-            </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#f5f5f7] rounded-xl text-xs font-semibold text-[#1d1d1f]">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#34c759]"></span>
-              {conteoHoy.coordinaciones} Coordinaciones
-            </div>
-          </div>
-        </div>
-
-        {/* BARRA DE BÚSQUEDA Y FILTROS ESTILO APPLE */}
-        <div className="bg-white rounded-2xl p-4 border border-[#e5e5ea] shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-          {/* Campo de búsqueda */}
-          <div className="relative flex-1">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-[#86868b]">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "4px 10px",
+                borderRadius: 999,
+                fontSize: 12,
+                fontWeight: 600,
+                background: TIPOS_COMPROMISO.visita.bg,
+                color: TIPOS_COMPROMISO.visita.color,
+                border: `1px solid ${TIPOS_COMPROMISO.visita.border}`,
+              }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: TIPOS_COMPROMISO.visita.dot }} />
+              {estadisticas.visitas} Visitas
             </span>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "4px 10px",
+                borderRadius: 999,
+                fontSize: 12,
+                fontWeight: 600,
+                background: TIPOS_COMPROMISO.llamada.bg,
+                color: TIPOS_COMPROMISO.llamada.color,
+                border: `1px solid ${TIPOS_COMPROMISO.llamada.border}`,
+              }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: TIPOS_COMPROMISO.llamada.dot }} />
+              {estadisticas.llamadas} Llamadas
+            </span>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "4px 10px",
+                borderRadius: 999,
+                fontSize: 12,
+                fontWeight: 600,
+                background: TIPOS_COMPROMISO.reunion.bg,
+                color: TIPOS_COMPROMISO.reunion.color,
+                border: `1px solid ${TIPOS_COMPROMISO.reunion.border}`,
+              }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: TIPOS_COMPROMISO.reunion.dot }} />
+              {estadisticas.reuniones} Reuniones
+            </span>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "4px 10px",
+                borderRadius: 999,
+                fontSize: 12,
+                fontWeight: 600,
+                background: TIPOS_COMPROMISO.coordinacion.bg,
+                color: TIPOS_COMPROMISO.coordinacion.color,
+                border: `1px solid ${TIPOS_COMPROMISO.coordinacion.border}`,
+              }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: TIPOS_COMPROMISO.coordinacion.dot }} />
+              {estadisticas.coordinaciones} Coordinaciones
+            </span>
+          </div>
+        </div>
+
+        {/* Buscador minimalista y filtros de tipo */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", flex: "1 1 320px", justifyContent: "flex-end" }}>
+          <div style={{ position: "relative", minWidth: 200, maxWidth: 280, flex: 1 }}>
             <input
               type="text"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              placeholder="Buscar por obra, cliente, contacto o notas..."
-              className="w-full pl-10 pr-9 py-2 bg-[#f5f5f7] border border-transparent rounded-xl text-xs md:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:bg-white focus:border-[#0071e3] focus:outline-none transition-all"
+              placeholder="Buscar obra, cliente..."
+              style={{
+                ...SI,
+                fontSize: 12.5,
+                padding: "7px 28px 7px 10px",
+                borderRadius: 8,
+              }}
             />
             {busqueda && (
               <button
+                type="button"
                 onClick={() => setBusqueda("")}
-                className="absolute inset-y-0 right-0 flex items-center pr-3 text-xs text-[#86868b] hover:text-[#1d1d1f]"
+                style={{
+                  position: "absolute",
+                  right: 8,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--text-muted, #94a3b8)",
+                  fontSize: 12,
+                }}
               >
                 ✕
               </button>
             )}
           </div>
 
-          {/* Chips de filtro por tipo */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+          <div style={{ display: "flex", gap: 4 }}>
             {[
-              { id: "todos", label: "Todos", icon: "✨" },
-              { id: "visita", label: "Visitas", icon: "🚗" },
-              { id: "llamada", label: "Llamadas", icon: "📞" },
-              { id: "reunion", label: "Reuniones", icon: "🤝" },
-              { id: "coordinacion", label: "Coordinación", icon: "📋" },
+              { id: "todos", label: "Todos" },
+              { id: "visita", label: "Visitas" },
+              { id: "llamada", label: "Llamadas" },
+              { id: "reunion", label: "Reuniones" },
+              { id: "coordinacion", label: "Coordinación" },
             ].map((f) => (
               <button
                 key={f.id}
+                type="button"
                 onClick={() => setFiltroTipo(f.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                  filtroTipo === f.id
-                    ? "bg-[#1d1d1f] text-white shadow-xs"
-                    : "bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#e5e5ea]"
-                }`}
+                style={{
+                  padding: "6px 11px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  borderRadius: 8,
+                  border: "1px solid var(--border, #e2e8f0)",
+                  cursor: "pointer",
+                  background: filtroTipo === f.id ? "var(--text-main, #0f172a)" : "var(--surface, #ffffff)",
+                  color: filtroTipo === f.id ? "#ffffff" : "var(--text-muted, #64748b)",
+                  transition: "all 0.15s ease",
+                }}
               >
-                <span>{f.icon}</span>
-                <span>{f.label}</span>
+                {f.label}
               </button>
             ))}
           </div>
         </div>
+      </div>
 
-        {/* TIRA SEMANAL DESLIZANTE DE APPLE (iOS CALENDAR STRIP) */}
-        <div className="bg-white rounded-2xl p-4 border border-[#e5e5ea] shadow-sm">
-          <div className="flex items-center justify-between mb-3 px-1">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#86868b]">Semana en curso</span>
-              <span className="text-xs font-semibold text-[#1d1d1f] bg-[#e5e5ea] px-2 py-0.5 rounded-md">
-                {NOMBRES_MESES[fechaSelDate.getMonth()]} {fechaSelDate.getFullYear()}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  const d = new Date(fechaSelDate);
-                  d.setDate(d.getDate() - 7);
-                  setFechaSeleccionada(toIsoDate(d));
-                }}
-                className="p-1 rounded-lg hover:bg-[#f5f5f7] text-xs font-bold text-[#86868b]"
-                title="Semana anterior"
-              >
-                ‹ Anterior
-              </button>
-              <button
-                onClick={() => setFechaSeleccionada(hoyIso)}
-                className="text-xs font-bold text-[#0071e3] hover:underline px-1"
-              >
-                Hoy
-              </button>
-              <button
-                onClick={() => {
-                  const d = new Date(fechaSelDate);
-                  d.setDate(d.getDate() + 7);
-                  setFechaSeleccionada(toIsoDate(d));
-                }}
-                className="p-1 rounded-lg hover:bg-[#f5f5f7] text-xs font-bold text-[#86868b]"
-                title="Semana siguiente"
-              >
-                Siguiente ›
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-7 gap-2">
-            {diasSemana.map((d) => {
-              const evts = eventosPorFecha[d.iso] || [];
-              const tieneVisita = evts.some((e) => e.tipo === "visita");
-              const tieneLlamada = evts.some((e) => e.tipo === "llamada");
-              const tieneReunion = evts.some((e) => e.tipo === "reunion");
-              const tieneCoord = evts.some((e) => e.tipo === "coordinacion");
-
-              return (
-                <button
-                  key={d.iso}
-                  onClick={() => setFechaSeleccionada(d.iso)}
-                  className={`flex flex-col items-center py-2.5 px-1 rounded-2xl transition-all cursor-pointer ${
-                    d.esSeleccionado
-                      ? "bg-[#0071e3] text-white shadow-md"
-                      : "hover:bg-[#f5f5f7] text-[#86868b]"
-                  }`}
-                >
-                  <span className={`text-[11px] font-semibold ${d.esSeleccionado ? "text-white/80" : ""}`}>
-                    {d.nombreCorto}
-                  </span>
-                  <span
-                    className={`text-base font-bold mt-1 ${
-                      d.esSeleccionado ? "text-white" : d.esHoy ? "text-[#0071e3]" : "text-[#1d1d1f]"
-                    }`}
-                  >
-                    {d.diaNum}
-                  </span>
-                  <div className="flex gap-1 mt-1.5 h-1.5">
-                    {tieneVisita && (
-                      <span className={`w-1.5 h-1.5 rounded-full ${d.esSeleccionado ? "bg-[#ff9500]" : "bg-[#ff9500]"}`} />
-                    )}
-                    {tieneLlamada && (
-                      <span className={`w-1.5 h-1.5 rounded-full ${d.esSeleccionado ? "bg-white" : "bg-[#0071e3]"}`} />
-                    )}
-                    {tieneReunion && (
-                      <span className={`w-1.5 h-1.5 rounded-full ${d.esSeleccionado ? "bg-purple-200" : "bg-[#af52de]"}`} />
-                    )}
-                    {tieneCoord && (
-                      <span className={`w-1.5 h-1.5 rounded-full ${d.esSeleccionado ? "bg-green-200" : "bg-[#34c759]"}`} />
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ============================================================== */}
-        {/* VISTA 1: BENTO GRID CON MINI-CALENDARIO APPLE */}
-        {/* ============================================================== */}
-        {viewMode === "bento" && (
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-
-            {/* BENTO CARD 1: MINI-CALENDARIO MENSUAL APPLE (4 cols) */}
-            <div className="md:col-span-4 bg-white rounded-2xl p-6 border border-[#e5e5ea] shadow-sm flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#0071e3] flex items-center gap-1.5">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <rect x="3" y="4" width="18" height="18" rx="2" strokeWidth="2" />
-                      <line x1="16" y1="2" x2="16" y2="6" strokeWidth="2" />
-                      <line x1="8" y1="2" x2="8" y2="6" strokeWidth="2" />
-                      <line x1="3" y1="10" x2="21" y2="10" strokeWidth="2" />
-                    </svg>
-                    {NOMBRES_MESES[calMes.mes]} {calMes.anio}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() =>
-                        setCalMes((prev) => {
-                          const m = prev.mes === 0 ? 11 : prev.mes - 1;
-                          const a = prev.mes === 0 ? prev.anio - 1 : prev.anio;
-                          return { anio: a, mes: m };
-                        })
-                      }
-                      className="w-6 h-6 rounded-lg hover:bg-[#f5f5f7] flex items-center justify-center text-xs text-[#86868b]"
-                    >
-                      ‹
-                    </button>
-                    <button
-                      onClick={() =>
-                        setCalMes((prev) => {
-                          const m = prev.mes === 11 ? 0 : prev.mes + 1;
-                          const a = prev.mes === 11 ? prev.anio + 1 : prev.anio;
-                          return { anio: a, mes: m };
-                        })
-                      }
-                      className="w-6 h-6 rounded-lg hover:bg-[#f5f5f7] flex items-center justify-center text-xs text-[#86868b]"
-                    >
-                      ›
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-[#86868b] mb-2">
-                  <span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span>
-                </div>
-
-                <div className="grid grid-cols-7 gap-y-2 gap-x-1 text-center text-xs font-semibold text-[#1d1d1f]">
-                  {matrizMes.map((c, idx) => {
-                    if (c.otroMes) {
-                      return (
-                        <span key={idx} className="text-gray-300 py-1">
-                          {c.num}
-                        </span>
-                      );
-                    }
-                    const evts = eventosPorFecha[c.iso] || [];
-                    const tieneEvts = evts.length > 0;
-
-                    return (
-                      <button
-                        key={idx}
-                        onClick={() => setFechaSeleccionada(c.iso)}
-                        className={`py-1 rounded-lg transition-all relative flex flex-col items-center justify-center ${
-                          c.esSeleccionado
-                            ? "bg-[#0071e3] text-white font-bold shadow-sm"
-                            : c.esHoy
-                            ? "border border-[#0071e3] text-[#0071e3] font-bold"
-                            : "hover:bg-[#f5f5f7]"
-                        }`}
-                      >
-                        <span>{c.num}</span>
-                        {tieneEvts && (
-                          <span
-                            className={`w-1 h-1 rounded-full mt-0.5 ${
-                              c.esSeleccionado ? "bg-white" : "bg-[#ff9500]"
-                            }`}
-                          />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-[#e5e5ea] mt-4 flex items-center justify-between text-[11px] font-semibold text-[#86868b]">
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-[#ff9500]"></span> Visitas
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-[#0071e3]"></span> Llamadas
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-[#af52de]"></span> Reuniones
+      {/* ==================================================================== */}
+      {/* VISTA 1: CALENDARIO MENSUAL ESTILO APPLE CON PANEL LATERAL DE DETALLE */}
+      {/* ==================================================================== */}
+      {vista === "mes" && (
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.8fr) minmax(360px, 1.2fr)", gap: 20 }}>
+          {/* Columna Izquierda: Calendario Mensual Apple */}
+          <div style={{ ...CD, padding: 20 }}>
+            {/* Navegación del mes */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 16,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+                <h2 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: "var(--text-main, #0f172a)" }}>
+                  {MESES[calMes.mes]}
+                </h2>
+                <span style={{ fontSize: 16, fontWeight: 500, color: "var(--text-muted, #94a3b8)" }}>
+                  {calMes.anio}
                 </span>
               </div>
-            </div>
 
-            {/* BENTO CARD 2: VISITAS A OBRA DEL DÍA (8 cols) */}
-            <div className="md:col-span-8 bg-gradient-to-br from-white to-[#fbfbfd] rounded-2xl p-6 border border-[#e5e5ea] shadow-sm">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#ff9500]/10 text-[#d97706] flex items-center gap-1.5">
-                    🚗 Visitas a Obra ({visitasDelDia.length})
-                  </span>
-                  <span className="text-xs text-[#86868b] font-semibold">
-                    {fechaSeleccionada === hoyIso ? "Hoy" : fechaSeleccionada}
-                  </span>
-                </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <button
-                  onClick={() => abrirNuevoModal("visita")}
-                  className="px-3 py-1 bg-[#0071e3] text-white rounded-lg text-xs font-semibold hover:bg-[#0077ed] transition-all"
-                >
-                  + Programar Visita
-                </button>
-              </div>
-
-              {visitasDelDia.length === 0 ? (
-                <div className="p-8 text-center bg-[#f5f5f7] rounded-xl text-[#86868b]">
-                  <p className="text-sm font-semibold">No hay visitas a obra programadas para esta fecha.</p>
-                  <p className="text-xs mt-1">Usa el botón "+ Programar Visita" para agendar una inspección técnica.</p>
-                </div>
-              ) : (
-                visitasDelDia.map((visita) => (
-                  <div key={visita.id} className="mb-4 last:mb-0 p-4 border border-[#e5e5ea] rounded-xl bg-white shadow-xs">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-2">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-[#ff9500]">{visita.hora}</span>
-                          <h3 className="text-lg font-bold text-[#1d1d1f]">{visita.obra || visita.titulo}</h3>
-                          {visita.ciudad && (
-                            <span className="text-[11px] bg-[#f5f5f7] text-[#1d1d1f] font-semibold px-2 py-0.5 rounded">
-                              {visita.ciudad}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-[#86868b]">{visita.cliente}</p>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => toggleEstado(visita.id)}
-                          className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                            visita.estado === "completado"
-                              ? "bg-[#34c759]/20 text-[#22a049]"
-                              : "bg-[#f5f5f7] text-[#86868b] hover:text-[#1d1d1f]"
-                          }`}
-                        >
-                          {visita.estado === "completado" ? "✓ Realizada" : "Marcar Realizada"}
-                        </button>
-                        <button
-                          onClick={() => abrirEditarModal(visita)}
-                          className="px-2 py-1 text-xs text-[#86868b] hover:text-[#1d1d1f]"
-                        >
-                          ✎
-                        </button>
-                        <button
-                          onClick={() => eliminarCompromiso(visita.id)}
-                          className="px-2 py-1 text-xs text-red-500 hover:text-red-700"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3 bg-[#f5f5f7] rounded-xl text-xs mb-3">
-                      <div>
-                        <div className="text-[#86868b]">Contacto en obra:</div>
-                        <div className="font-bold text-[#1d1d1f]">{visita.contacto || "No especificado"}</div>
-                        <div className="text-[#0071e3] font-semibold">{visita.telefono || ""}</div>
-                      </div>
-                      <div className="sm:col-span-2">
-                        <div className="text-[#86868b]">Objetivo de visita:</div>
-                        <div className="font-medium text-[#1d1d1f]">{visita.notas || "Inspección y levantamiento técnico."}</div>
-                        {visita.requerimientoSst && (
-                          <div className="text-[#34c759] font-semibold mt-0.5">SST: {visita.requerimientoSst}</div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        onClick={() => openWhatsApp(visita)}
-                        className="py-2 px-3.5 bg-[#25D366] hover:bg-[#20ba59] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs"
-                      >
-                        <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                          <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2z" />
-                        </svg>
-                        WhatsApp Residente
-                      </button>
-                      <button
-                        onClick={() => openWaze(visita)}
-                        className="py-2 px-3 bg-[#f5f5f7] hover:bg-[#e5e5ea] text-[#1d1d1f] rounded-xl text-xs font-bold flex items-center gap-1 transition-all"
-                      >
-                        <svg className="w-3.5 h-3.5 text-[#0071e3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        Waze / Maps
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* BENTO CARD 3: LLAMADAS POR HACER (6 cols) */}
-            <div className="md:col-span-6 bg-white rounded-2xl p-6 border border-[#e5e5ea] shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <span className="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#0071e3]/10 text-[#0071e3] flex items-center gap-1.5">
-                  📞 Llamadas de Seguimiento ({llamadasDelDia.length})
-                </span>
-                <button
-                  onClick={() => abrirNuevoModal("llamada")}
-                  className="text-xs font-bold text-[#0071e3] hover:underline"
-                >
-                  + Nueva Llamada
-                </button>
-              </div>
-
-              {llamadasDelDia.length === 0 ? (
-                <div className="p-6 text-center bg-[#f5f5f7] rounded-xl text-[#86868b] text-xs">
-                  No hay llamadas registradas para este día.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {llamadasDelDia.map((item) => (
-                    <div
-                      key={item.id}
-                      className={`p-3.5 rounded-xl border transition-all ${
-                        item.estado === "completado"
-                          ? "bg-gray-50 border-gray-200 opacity-60"
-                          : "bg-[#f5f5f7] border-transparent hover:border-[#0071e3]"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-[#0071e3]">{item.hora}</span>
-                            <span className="font-bold text-xs text-[#1d1d1f]">{item.cliente || item.obra}</span>
-                          </div>
-                          <div className="text-xs text-[#86868b] mt-0.5">{item.notas}</div>
-                          {item.contacto && (
-                            <div className="text-[11px] text-[#1d1d1f] font-semibold mt-1">
-                              Contacto: {item.contacto}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => toggleEstado(item.id)}
-                            className={`w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold ${
-                              item.estado === "completado" ? "bg-[#34c759] text-white" : "bg-white text-gray-400"
-                            }`}
-                            title="Marcar llamada como hecha"
-                          >
-                            ✓
-                          </button>
-                          <button
-                            onClick={() => abrirEditarModal(item)}
-                            className="w-6 h-6 rounded-md bg-white text-gray-500 hover:text-black flex items-center justify-center text-xs"
-                          >
-                            ✎
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="mt-2.5 flex items-center gap-2 pt-2 border-t border-[#e5e5ea]">
-                        {item.telefono && (
-                          <>
-                            <a
-                              href={`tel:${item.telefono}`}
-                              className="px-2.5 py-1 bg-white hover:bg-[#e5e5ea] text-[#0071e3] font-bold text-xs rounded-lg shadow-xs flex items-center gap-1"
-                            >
-                              📞 {item.telefono}
-                            </a>
-                            <button
-                              onClick={() => openWhatsApp(item)}
-                              className="px-2.5 py-1 bg-[#25D366]/15 hover:bg-[#25D366]/25 text-[#128c7e] font-bold text-xs rounded-lg flex items-center gap-1"
-                            >
-                              WhatsApp
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* BENTO CARD 4: REUNIONES & COORDINACIÓN (6 cols) */}
-            <div className="md:col-span-6 bg-white rounded-2xl p-6 border border-[#e5e5ea] shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <span className="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#af52de]/10 text-[#af52de] flex items-center gap-1.5">
-                  🤝 Reuniones & Coordinación ({reunionesDelDia.length + coordinacionesDelDia.length})
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => abrirNuevoModal("reunion")}
-                    className="text-xs font-bold text-[#af52de] hover:underline"
-                  >
-                    + Reunión
-                  </button>
-                  <span className="text-gray-300">•</span>
-                  <button
-                    onClick={() => abrirNuevoModal("coordinacion")}
-                    className="text-xs font-bold text-[#34c759] hover:underline"
-                  >
-                    + Coordinar
-                  </button>
-                </div>
-              </div>
-
-              {reunionesDelDia.length === 0 && coordinacionesDelDia.length === 0 ? (
-                <div className="p-6 text-center bg-[#f5f5f7] rounded-xl text-[#86868b] text-xs">
-                  No hay reuniones ni coordinaciones para esta fecha.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {reunionesDelDia.map((item) => (
-                    <div key={item.id} className="p-3.5 border border-[#e5e5ea] rounded-xl hover:border-[#af52de] transition-all bg-white">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-bold text-[#af52de]">
-                          {item.hora} • REUNIÓN {item.modalidad === "virtual" ? "(VIRTUAL)" : "(PRESENCIAL)"}
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => toggleEstado(item.id)}
-                            className={`text-xs px-2 py-0.5 rounded font-bold ${
-                              item.estado === "completado" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
-                            }`}
-                          >
-                            {item.estado === "completado" ? "✓ Hecho" : "Pendiente"}
-                          </button>
-                          <button onClick={() => abrirEditarModal(item)} className="text-xs px-1 text-gray-400">✎</button>
-                        </div>
-                      </div>
-                      <h4 className="text-sm font-bold text-[#1d1d1f]">{item.titulo}</h4>
-                      <p className="text-xs text-[#86868b] mt-0.5">{item.notas || item.obra}</p>
-                      {item.linkReunion && (
-                        <div className="mt-2">
-                          <a
-                            href={item.linkReunion}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 px-3 py-1 bg-[#0071e3]/10 text-[#0071e3] rounded-lg text-xs font-semibold hover:bg-[#0071e3]/20"
-                          >
-                            🔗 Unirse a Google Meet
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-
-                  {coordinacionesDelDia.map((item) => (
-                    <div key={item.id} className="p-3.5 border border-[#e5e5ea] rounded-xl hover:border-[#34c759] transition-all bg-white">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-bold text-[#34c759]">
-                          {item.hora} • COORDINACIÓN DE OBRA
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => toggleEstado(item.id)}
-                            className={`text-xs px-2 py-0.5 rounded font-bold ${
-                              item.estado === "completado" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
-                            }`}
-                          >
-                            {item.estado === "completado" ? "✓ Listo" : "Por Coordinar"}
-                          </button>
-                          <button onClick={() => abrirEditarModal(item)} className="text-xs px-1 text-gray-400">✎</button>
-                        </div>
-                      </div>
-                      <h4 className="text-sm font-bold text-[#1d1d1f]">{item.titulo}</h4>
-                      <p className="text-xs text-[#86868b] mt-0.5">{item.notas || item.obra}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-          </div>
-        )}
-
-        {/* ============================================================== */}
-        {/* VISTA 2: CALENDARIO MENSUAL COMPLETO (ESTILO iCAL) */}
-        {/* ============================================================== */}
-        {viewMode === "fullcal" && (
-          <div className="bg-white rounded-2xl p-6 border border-[#e5e5ea] shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#e5e5ea]">
-              <div>
-                <h3 className="text-2xl font-bold text-[#1d1d1f]">
-                  {NOMBRES_MESES[calMes.mes]} {calMes.anio}
-                </h3>
-                <p className="text-xs text-[#86868b]">
-                  Calendario mensual de visitas, llamadas y reuniones para Ingeanclajes
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() =>
-                    setCalMes((prev) => {
-                      const m = prev.mes === 0 ? 11 : prev.mes - 1;
-                      const a = prev.mes === 0 ? prev.anio - 1 : prev.anio;
-                      return { anio: a, mes: m };
-                    })
-                  }
-                  className="px-3 py-1.5 bg-[#f5f5f7] hover:bg-[#e5e5ea] text-xs font-bold rounded-lg transition-all"
-                >
-                  ‹ Mes Anterior
-                </button>
-                <button
-                  onClick={() => {
-                    const ahora = new Date();
-                    setCalMes({ anio: ahora.getFullYear(), mes: ahora.getMonth() });
-                    setFechaSeleccionada(hoyIso);
+                  type="button"
+                  onClick={mesAnterior}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    border: "1px solid var(--border, #e2e8f0)",
+                    background: "var(--surface, #ffffff)",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "var(--text-main, #0f172a)",
                   }}
-                  className="px-3 py-1.5 bg-[#0071e3]/10 text-[#0071e3] text-xs font-bold rounded-lg hover:bg-[#0071e3]/20 transition-all"
+                  title="Mes anterior"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  onClick={irAHoy}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: 8,
+                    border: "1px solid var(--border, #e2e8f0)",
+                    background: "var(--surface, #ffffff)",
+                    cursor: "pointer",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "var(--text-main, #0f172a)",
+                  }}
                 >
                   Hoy
                 </button>
                 <button
-                  onClick={() =>
-                    setCalMes((prev) => {
-                      const m = prev.mes === 11 ? 0 : prev.mes + 1;
-                      const a = prev.mes === 11 ? prev.anio + 1 : prev.anio;
-                      return { anio: a, mes: m };
-                    })
-                  }
-                  className="px-3 py-1.5 bg-[#f5f5f7] hover:bg-[#e5e5ea] text-xs font-bold rounded-lg transition-all"
+                  type="button"
+                  onClick={mesSiguiente}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    border: "1px solid var(--border, #e2e8f0)",
+                    background: "var(--surface, #ffffff)",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "var(--text-main, #0f172a)",
+                  }}
+                  title="Mes siguiente"
                 >
-                  Siguiente Mes ›
+                  ›
                 </button>
               </div>
             </div>
 
-            {/* Cabecera Días */}
-            <div className="grid grid-cols-7 gap-2 text-center font-bold text-xs text-[#86868b] py-1 border-b border-[#e5e5ea]">
-              {DIAS_SEMANA_COMPLETO.map((d) => (
+            {/* Cabecera de días de la semana */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(7, 1fr)",
+                textAlign: "center",
+                fontSize: 11,
+                fontWeight: 700,
+                color: "var(--text-muted, #94a3b8)",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                paddingBottom: 10,
+                borderBottom: "1px solid var(--border, #e2e8f0)",
+                marginBottom: 8,
+              }}
+            >
+              {DIAS_CORTO.map((d) => (
                 <div key={d}>{d}</div>
               ))}
             </div>
 
-            {/* Grilla Mensual iCal */}
-            <div className="grid grid-cols-7 gap-2">
-              {matrizMes.map((c, idx) => {
+            {/* Cuadrícula de días */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 6 }}>
+              {celdasMes.map((c, idx) => {
                 if (c.otroMes) {
                   return (
-                    <div key={idx} className="min-h-[120px] p-2 bg-gray-50/50 rounded-xl border border-gray-100 text-gray-300">
-                      <span className="text-xs font-bold">{c.num}</span>
+                    <div
+                      key={idx}
+                      style={{
+                        minHeight: 88,
+                        padding: "6px 8px",
+                        borderRadius: 10,
+                        background: "var(--surface-subtle, #f8fafc)",
+                        opacity: 0.4,
+                        border: "1px solid transparent",
+                      }}
+                    >
+                      <span style={{ fontSize: 11.5, color: "var(--text-muted, #94a3b8)" }}>{c.numero}</span>
                     </div>
                   );
                 }
 
                 const evts = eventosPorFecha[c.iso] || [];
+                const esHoy = c.esHoy;
+                const esSeleccionado = c.esSeleccionado;
 
                 return (
                   <div
                     key={idx}
-                    onClick={() => {
-                      setFechaSeleccionada(c.iso);
+                    onClick={() => setFechaSeleccionada(c.iso)}
+                    style={{
+                      minHeight: 88,
+                      padding: "6px 8px",
+                      borderRadius: 10,
+                      cursor: "pointer",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      transition: "all 0.12s ease",
+                      background: esSeleccionado
+                        ? "var(--surface, #ffffff)"
+                        : "var(--surface, #ffffff)",
+                      border: esSeleccionado
+                        ? "2px solid #0f172a"
+                        : "1px solid var(--border, #e2e8f0)",
+                      boxShadow: esSeleccionado ? "0 4px 12px rgba(15,23,42,0.08)" : "none",
                     }}
-                    className={`min-h-[120px] p-2 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
-                      c.esSeleccionado
-                        ? "border-[#0071e3] ring-2 ring-[#0071e3]/30 bg-blue-50/20"
-                        : c.esHoy
-                        ? "border-[#0071e3] bg-blue-50/40"
-                        : "border-[#e5e5ea] bg-white hover:border-[#0071e3]/50 hover:bg-[#fbfbfd]"
-                    }`}
                   >
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span
-                          className={`text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center ${
-                            c.esHoy ? "bg-[#0071e3] text-white" : "text-[#1d1d1f]"
-                          }`}
-                        >
-                          {c.num}
-                        </span>
-                        {c.esHoy && <span className="text-[10px] font-bold text-[#0071e3]">HOY</span>}
-                      </div>
+                    {/* Número del día */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span
+                        style={{
+                          fontSize: 12.5,
+                          fontWeight: esHoy || esSeleccionado ? 800 : 600,
+                          width: 22,
+                          height: 22,
+                          borderRadius: "50%",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          background: esHoy ? "#f47c20" : "transparent",
+                          color: esHoy ? "#ffffff" : "var(--text-main, #0f172a)",
+                        }}
+                      >
+                        {c.numero}
+                      </span>
 
-                      <div className="space-y-1 overflow-hidden">
-                        {evts.slice(0, 3).map((e) => {
-                          const conf = TIPO_CONFIG[e.tipo] || TIPO_CONFIG.visita;
-                          return (
-                            <div
+                      {evts.length > 0 && (
+                        <div style={{ display: "flex", gap: 3 }}>
+                          {evts.slice(0, 3).map((e) => (
+                            <span
                               key={e.id}
-                              onClick={(ev) => {
-                                ev.stopPropagation();
-                                abrirEditarModal(e);
+                              style={{
+                                width: 5,
+                                height: 5,
+                                borderRadius: "50%",
+                                background: TIPOS_COMPROMISO[e.tipo]?.dot || "#0f172a",
                               }}
-                              className="text-[10px] font-bold px-1.5 py-0.5 rounded truncate"
-                              style={{ backgroundColor: conf.badgeBg, color: conf.badgeColor }}
-                              title={`${e.hora || ""} ${e.titulo || ""} - ${e.obra || ""}`}
-                            >
-                              {conf.icon} {e.hora ? `${e.hora} ` : ""}{e.obra || e.titulo}
-                            </div>
-                          );
-                        })}
-                        {evts.length > 3 && (
-                          <div className="text-[10px] font-semibold text-[#86868b] px-1">
-                            +{evts.length - 3} más...
-                          </div>
-                        )}
-                      </div>
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
 
-                    <div className="mt-1 pt-1 border-t border-gray-100 flex justify-end">
-                      <button
-                        onClick={(ev) => {
-                          ev.stopPropagation();
-                          setFechaSeleccionada(c.iso);
-                          abrirNuevoModal("visita");
-                        }}
-                        className="text-[11px] text-gray-400 hover:text-[#0071e3] font-bold"
-                        title="Agregar compromiso en este día"
-                      >
-                        +
-                      </button>
+                    {/* Chips de eventos en el día */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 3, marginTop: 4 }}>
+                      {evts.slice(0, 2).map((e) => {
+                        const conf = TIPOS_COMPROMISO[e.tipo] || TIPOS_COMPROMISO.visita;
+                        return (
+                          <div
+                            key={e.id}
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 600,
+                              padding: "2px 5px",
+                              borderRadius: 4,
+                              background: conf.bg,
+                              color: conf.color,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                            title={`${e.hora || ""} ${e.obra || e.titulo}`}
+                          >
+                            {e.hora ? `${e.hora} ` : ""}{e.obra || e.titulo}
+                          </div>
+                        );
+                      })}
+                      {evts.length > 2 && (
+                        <span style={{ fontSize: 9.5, color: "var(--text-muted, #94a3b8)", fontWeight: 700 }}>
+                          +{evts.length - 2} más
+                        </span>
+                      )}
                     </div>
                   </div>
                 );
               })}
             </div>
           </div>
-        )}
 
-      </div>
-
-      {/* ============================================================== */}
-      {/* MODAL APPLE PARA CREAR / EDITAR COMPROMISO */}
-      {/* ============================================================== */}
-      {modalAbierto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-white/60 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-[#e5e5ea]">
+          {/* Columna Derecha: Detalle de Compromisos del Día Seleccionado */}
+          <div style={{ ...CD, padding: 20, display: "flex", flexDirection: "column", height: "fit-content" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingBottom: 14,
+                borderBottom: "1px solid var(--border, #e2e8f0)",
+                marginBottom: 16,
+              }}
+            >
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#0071e3]">
-                  {itemEnEdicion ? "Modificar Compromiso" : "Nuevo Compromiso"}
-                </span>
-                <h3 className="text-xl font-bold text-[#1d1d1f]">
-                  {itemEnEdicion ? "Editar Detalles" : "Agendar en Calendario"}
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted, #94a3b8)" }}>
+                  Compromisos del día
+                </div>
+                <h3 style={{ fontSize: 16, fontWeight: 800, margin: "2px 0 0", color: "var(--text-main, #0f172a)" }}>
+                  {formatFechaLarga(fechaSeleccionada)}
                 </h3>
               </div>
+
               <button
+                type="button"
+                style={{
+                  ...B("var(--surface-subtle, #f1f5f9)", "var(--text-main, #0f172a)"),
+                  border: "1px solid var(--border, #e2e8f0)",
+                  fontSize: 12,
+                  padding: "6px 10px",
+                }}
+                onClick={() => abrirNuevoModal("visita")}
+              >
+                + Agregar
+              </button>
+            </div>
+
+            {/* Listado de compromisos para el día seleccionado */}
+            {eventosDelDia.length === 0 ? (
+              <div
+                style={{
+                  padding: "40px 20px",
+                  textAlign: "center",
+                  background: "var(--surface-subtle, #f8fafc)",
+                  borderRadius: 12,
+                  border: "1px dashed var(--border, #cbd5e1)",
+                }}
+              >
+                <div style={{ color: "var(--text-muted, #94a3b8)", marginBottom: 8 }}>
+                  <IconoTipo tipo="coordinacion" size={28} />
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>
+                  Sin compromisos para esta fecha
+                </div>
+                <p style={{ fontSize: 12, color: "var(--text-muted, #64748b)", margin: "4px 0 14px" }}>
+                  Camila no tiene visitas ni llamadas registradas para este día.
+                </p>
+                <button
+                  type="button"
+                  style={{ ...B("#f47c20"), fontSize: 12, padding: "7px 14px" }}
+                  onClick={() => abrirNuevoModal("visita")}
+                >
+                  + Programar compromiso
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {eventosDelDia.map((item) => {
+                  const conf = TIPOS_COMPROMISO[item.tipo] || TIPOS_COMPROMISO.visita;
+                  const completado = item.estado === "completado";
+
+                  return (
+                    <div
+                      key={item.id}
+                      style={{
+                        border: "1px solid var(--border, #e2e8f0)",
+                        borderRadius: 12,
+                        padding: 14,
+                        background: completado ? "var(--surface-subtle, #f8fafc)" : "var(--surface, #ffffff)",
+                        opacity: completado ? 0.65 : 1,
+                        transition: "all 0.15s ease",
+                      }}
+                    >
+                      {/* Cabecera del item */}
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 5,
+                              padding: "3px 8px",
+                              borderRadius: 6,
+                              fontSize: 11,
+                              fontWeight: 700,
+                              background: conf.bg,
+                              color: conf.color,
+                            }}
+                          >
+                            <IconoTipo tipo={item.tipo} size={12} />
+                            {conf.label}
+                          </span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>
+                            {item.hora}
+                          </span>
+                        </div>
+
+                        {/* Botones de acción */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <button
+                            type="button"
+                            onClick={() => toggleCompletado(item.id)}
+                            style={{
+                              padding: "4px 8px",
+                              fontSize: 11,
+                              fontWeight: 600,
+                              borderRadius: 6,
+                              border: "1px solid var(--border, #e2e8f0)",
+                              cursor: "pointer",
+                              background: completado ? "#ecfdf5" : "var(--surface, #ffffff)",
+                              color: completado ? "#047857" : "var(--text-muted, #64748b)",
+                            }}
+                          >
+                            {completado ? "✓ Realizada" : "Completar"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => abrirEditarModal(item)}
+                            style={{
+                              padding: "4px 6px",
+                              fontSize: 11,
+                              borderRadius: 6,
+                              border: "1px solid var(--border, #e2e8f0)",
+                              background: "var(--surface, #ffffff)",
+                              cursor: "pointer",
+                              color: "var(--text-muted, #64748b)",
+                            }}
+                            title="Editar"
+                          >
+                            ✎
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => eliminarCompromiso(item.id)}
+                            style={{
+                              padding: "4px 6px",
+                              fontSize: 11,
+                              borderRadius: 6,
+                              border: "1px solid var(--border, #e2e8f0)",
+                              background: "var(--surface, #ffffff)",
+                              cursor: "pointer",
+                              color: "#ef4444",
+                            }}
+                            title="Eliminar"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Título de obra y cliente */}
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>
+                        {item.obra || item.titulo}
+                      </div>
+                      {item.cliente && (
+                        <div style={{ fontSize: 12, color: "var(--text-muted, #64748b)", marginTop: 2 }}>
+                          {item.cliente} {item.ciudad ? `· ${item.ciudad}` : ""}
+                        </div>
+                      )}
+
+                      {/* Contacto y Notas */}
+                      {(item.contacto || item.telefono) && (
+                        <div
+                          style={{
+                            fontSize: 11.5,
+                            marginTop: 8,
+                            padding: "6px 10px",
+                            background: "var(--surface-subtle, #f8fafc)",
+                            borderRadius: 6,
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
+                          <div>
+                            <span style={{ color: "var(--text-muted, #64748b)" }}>Contacto: </span>
+                            <span style={{ fontWeight: 600, color: "var(--text-main, #0f172a)" }}>{item.contacto || "N/A"}</span>
+                            {item.telefono && (
+                              <span style={{ marginLeft: 8, color: "#2563eb", fontWeight: 600 }}>{item.telefono}</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {item.notas && (
+                        <div style={{ fontSize: 11.5, color: "var(--text-muted, #475569)", marginTop: 6, lineHeight: 1.4 }}>
+                          {item.notas}
+                        </div>
+                      )}
+
+                      {item.requerimientoSst && (
+                        <div style={{ fontSize: 11, color: "#059669", fontWeight: 600, marginTop: 4 }}>
+                          SST: {item.requerimientoSst}
+                        </div>
+                      )}
+
+                      {/* Botones de acción rápida: WhatsApp & Waze */}
+                      <div style={{ display: "flex", gap: 8, marginTop: 10, paddingTop: 8, borderTop: "1px solid var(--border, #f1f5f9)" }}>
+                        {item.telefono && (
+                          <button
+                            type="button"
+                            onClick={() => enviarWhatsApp(item)}
+                            style={{
+                              ...B("#25D366"),
+                              fontSize: 11.5,
+                              padding: "5px 10px",
+                              borderRadius: 6,
+                            }}
+                          >
+                            WhatsApp
+                          </button>
+                        )}
+                        {(item.obra || item.ciudad) && item.tipo === "visita" && (
+                          <button
+                            type="button"
+                            onClick={() => abrirWaze(item)}
+                            style={{
+                              ...B("var(--surface-subtle, #f1f5f9)", "var(--text-main, #0f172a)"),
+                              border: "1px solid var(--border, #e2e8f0)",
+                              fontSize: 11.5,
+                              padding: "5px 10px",
+                              borderRadius: 6,
+                            }}
+                          >
+                            Abrir Waze
+                          </button>
+                        )}
+                        {item.linkReunion && (
+                          <a
+                            href={item.linkReunion}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              ...B("#7c3aed"),
+                              fontSize: 11.5,
+                              padding: "5px 10px",
+                              borderRadius: 6,
+                              textDecoration: "none",
+                            }}
+                          >
+                            Unirse a Reunión
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* VISTA 2: LISTA DE TAREAS Y SEGUIMIENTO (CRONOGRAMA LINEAL) */}
+      {/* ==================================================================== */}
+      {vista === "agenda" && (
+        <div style={{ ...CD, padding: 24 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: "var(--text-main, #0f172a)" }}>
+              Cronograma de Compromisos ({compromisosFiltrados.length})
+            </h3>
+            <button
+              type="button"
+              style={{ ...B("#f47c20"), fontSize: 12, padding: "6px 12px" }}
+              onClick={() => abrirNuevoModal("visita")}
+            >
+              + Nuevo compromiso
+            </button>
+          </div>
+
+          <div style={{ display: "grid", gap: 10 }}>
+            {compromisosFiltrados.map((item) => {
+              const conf = TIPOS_COMPROMISO[item.tipo] || TIPOS_COMPROMISO.visita;
+              const completado = item.estado === "completado";
+
+              return (
+                <div
+                  key={item.id}
+                  style={{
+                    border: "1px solid var(--border, #e2e8f0)",
+                    borderRadius: 12,
+                    padding: "14px 18px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 16,
+                    background: completado ? "var(--surface-subtle, #f8fafc)" : "var(--surface, #ffffff)",
+                    opacity: completado ? 0.6 : 1,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 16, minWidth: 0, flex: 1 }}>
+                    {/* Badge de Fecha */}
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        minWidth: 54,
+                        padding: "6px 8px",
+                        borderRadius: 8,
+                        background: "var(--surface-subtle, #f1f5f9)",
+                        border: "1px solid var(--border, #e2e8f0)",
+                      }}
+                    >
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted, #64748b)", textTransform: "uppercase" }}>
+                        {item.fecha ? MESES[parseIso(item.fecha).getMonth()].slice(0, 3) : "N/A"}
+                      </span>
+                      <span style={{ fontSize: 16, fontWeight: 800, color: "var(--text-main, #0f172a)" }}>
+                        {item.fecha ? parseIso(item.fecha).getDate() : "-"}
+                      </span>
+                    </div>
+
+                    {/* Detalle */}
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
+                            padding: "2px 7px",
+                            borderRadius: 6,
+                            fontSize: 11,
+                            fontWeight: 700,
+                            background: conf.bg,
+                            color: conf.color,
+                          }}
+                        >
+                          <IconoTipo tipo={item.tipo} size={11} />
+                          {conf.label}
+                        </span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted, #64748b)" }}>
+                          {item.hora}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-main, #0f172a)", marginTop: 2 }}>
+                        {item.obra || item.titulo}
+                      </div>
+                      <div style={{ fontSize: 12, color: "var(--text-muted, #64748b)" }}>
+                        {item.cliente} {item.ciudad ? `· ${item.ciudad}` : ""} {item.contacto ? `· Contacto: ${item.contacto}` : ""}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Acciones */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                    {item.telefono && (
+                      <button
+                        type="button"
+                        onClick={() => enviarWhatsApp(item)}
+                        style={{
+                          ...B("#25D366"),
+                          fontSize: 11.5,
+                          padding: "6px 10px",
+                          borderRadius: 6,
+                        }}
+                      >
+                        WhatsApp
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => toggleCompletado(item.id)}
+                      style={{
+                        padding: "6px 12px",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        borderRadius: 6,
+                        border: "1px solid var(--border, #e2e8f0)",
+                        cursor: "pointer",
+                        background: completado ? "#ecfdf5" : "var(--surface, #ffffff)",
+                        color: completado ? "#047857" : "var(--text-muted, #64748b)",
+                      }}
+                    >
+                      {completado ? "✓ Realizada" : "Marcar realizada"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => abrirEditarModal(item)}
+                      style={{
+                        padding: "6px 8px",
+                        fontSize: 12,
+                        borderRadius: 6,
+                        border: "1px solid var(--border, #e2e8f0)",
+                        background: "var(--surface, #ffffff)",
+                        cursor: "pointer",
+                      }}
+                      title="Editar"
+                    >
+                      ✎
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => eliminarCompromiso(item.id)}
+                      style={{
+                        padding: "6px 8px",
+                        fontSize: 12,
+                        borderRadius: 6,
+                        border: "1px solid var(--border, #e2e8f0)",
+                        background: "var(--surface, #ffffff)",
+                        cursor: "pointer",
+                        color: "#ef4444",
+                      }}
+                      title="Eliminar"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* MODAL CREAR / EDITAR COMPROMISO ESTILO APPLE */}
+      {/* ==================================================================== */}
+      {modalAbierto && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.45)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: 16,
+          }}
+          onClick={() => setModalAbierto(false)}
+        >
+          <div
+            style={{
+              background: "var(--surface, #ffffff)",
+              borderRadius: 16,
+              width: "100%",
+              maxWidth: 540,
+              padding: 24,
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+              border: "1px solid var(--border, #e2e8f0)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: "var(--text-main, #0f172a)" }}>
+                {itemEdicion ? "Editar Compromiso" : "Nuevo Compromiso para Camila"}
+              </h3>
+              <button
+                type="button"
                 onClick={() => setModalAbierto(false)}
-                className="w-8 h-8 rounded-full bg-[#f5f5f7] hover:bg-[#e5e5ea] flex items-center justify-center text-sm font-bold text-gray-500"
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  fontSize: 16,
+                  cursor: "pointer",
+                  color: "var(--text-muted, #94a3b8)",
+                }}
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={guardarModal} className="space-y-4 text-xs">
-              {/* Selector de Tipo */}
+            <form onSubmit={guardarCompromiso} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {/* Selector de Tipo de Compromiso */}
               <div>
-                <label className="block font-bold text-gray-600 mb-1.5 uppercase text-[11px]">Tipo de Compromiso</label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {Object.entries(TIPO_CONFIG).map(([key, cfg]) => (
+                <label style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted, #64748b)", display: "block", marginBottom: 6 }}>
+                  TIPO DE COMPROMISO
+                </label>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
+                  {Object.entries(TIPOS_COMPROMISO).map(([tipoKey, conf]) => (
                     <button
+                      key={tipoKey}
                       type="button"
-                      key={key}
-                      onClick={() => setFormTipo(key)}
-                      className={`p-2.5 rounded-xl border text-center font-bold transition-all flex flex-col items-center gap-1 ${
-                        formTipo === key
-                          ? "border-[#0071e3] bg-blue-50/50 text-[#0071e3] shadow-xs"
-                          : "border-[#e5e5ea] text-gray-600 hover:bg-[#f5f5f7]"
-                      }`}
+                      onClick={() => setFormTipo(tipoKey)}
+                      style={{
+                        padding: "8px 6px",
+                        fontSize: 11.5,
+                        fontWeight: 600,
+                        borderRadius: 8,
+                        border: formTipo === tipoKey ? `2px solid ${conf.color}` : "1px solid var(--border, #e2e8f0)",
+                        background: formTipo === tipoKey ? conf.bg : "var(--surface, #ffffff)",
+                        color: formTipo === tipoKey ? conf.color : "var(--text-muted, #64748b)",
+                        cursor: "pointer",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
                     >
-                      <span className="text-lg">{cfg.icon}</span>
-                      <span className="text-[11px] leading-tight">{cfg.label}</span>
+                      <IconoTipo tipo={tipoKey} size={14} />
+                      {conf.label.split(" ")[0]}
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* Título y Obra */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div>
-                  <label className="block font-bold text-gray-600 mb-1">Título / Asunto *</label>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted, #64748b)", display: "block", marginBottom: 4 }}>
+                    OBRA / PROYECTO
+                  </label>
                   <input
                     type="text"
-                    required
-                    value={formTitulo}
-                    onChange={(e) => setFormTitulo(e.target.value)}
-                    placeholder="Ej. Inspección de puntos de anclaje"
-                    className="w-full px-3 py-2 bg-[#f5f5f7] border border-transparent focus:border-[#0071e3] focus:bg-white rounded-xl outline-none font-medium"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-gray-600 mb-1">Obra / Proyecto</label>
-                  <input
-                    type="text"
-                    list="lista-obras-agenda"
                     value={formObra}
                     onChange={(e) => setFormObra(e.target.value)}
-                    placeholder="Ej. Edificio Los Samanes"
-                    className="w-full px-3 py-2 bg-[#f5f5f7] border border-transparent focus:border-[#0071e3] focus:bg-white rounded-xl outline-none font-medium"
+                    placeholder="Ej. Edificio Samanes"
+                    style={SI}
+                    required
                   />
-                  <datalist id="lista-obras-agenda">
-                    {(ctx?.obras || []).map((o) => (
-                      <option key={o.id} value={o.nombre} />
-                    ))}
-                  </datalist>
                 </div>
-              </div>
-
-              {/* Cliente y Ciudad */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-gray-600 mb-1">Cliente</label>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted, #64748b)", display: "block", marginBottom: 4 }}>
+                    CLIENTE / EMPRESA
+                  </label>
                   <input
                     type="text"
-                    list="lista-clientes-agenda"
                     value={formCliente}
                     onChange={(e) => setFormCliente(e.target.value)}
-                    placeholder="Ej. Inversiones Ingeniería & Arq."
-                    className="w-full px-3 py-2 bg-[#f5f5f7] border border-transparent focus:border-[#0071e3] focus:bg-white rounded-xl outline-none font-medium"
-                  />
-                  <datalist id="lista-clientes-agenda">
-                    {(ctx?.clientes || []).map((cl) => (
-                      <option key={cl.id} value={cl.nombre} />
-                    ))}
-                  </datalist>
-                </div>
-                <div>
-                  <label className="block font-bold text-gray-600 mb-1">Ciudad / Ubicación</label>
-                  <input
-                    type="text"
-                    value={formCiudad}
-                    onChange={(e) => setFormCiudad(e.target.value)}
-                    placeholder="Ej. Pereira, Risaralda"
-                    className="w-full px-3 py-2 bg-[#f5f5f7] border border-transparent focus:border-[#0071e3] focus:bg-white rounded-xl outline-none font-medium"
+                    placeholder="Ej. Constructora Capital"
+                    style={SI}
                   />
                 </div>
               </div>
 
               {/* Fecha y Hora */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div>
-                  <label className="block font-bold text-gray-600 mb-1">Fecha *</label>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted, #64748b)", display: "block", marginBottom: 4 }}>
+                    FECHA
+                  </label>
                   <input
                     type="date"
-                    required
                     value={formFecha}
                     onChange={(e) => setFormFecha(e.target.value)}
-                    className="w-full px-3 py-2 bg-[#f5f5f7] border border-transparent focus:border-[#0071e3] focus:bg-white rounded-xl outline-none font-medium"
+                    style={SI}
+                    required
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-gray-600 mb-1">Hora</label>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted, #64748b)", display: "block", marginBottom: 4 }}>
+                    HORA
+                  </label>
                   <input
                     type="text"
                     value={formHora}
                     onChange={(e) => setFormHora(e.target.value)}
                     placeholder="Ej. 10:00 AM"
-                    className="w-full px-3 py-2 bg-[#f5f5f7] border border-transparent focus:border-[#0071e3] focus:bg-white rounded-xl outline-none font-medium"
+                    style={SI}
                   />
                 </div>
               </div>
 
-              {/* Contacto y Teléfono */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Contacto y Celular */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div>
-                  <label className="block font-bold text-gray-600 mb-1">Contacto en Obra / Cliente</label>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted, #64748b)", display: "block", marginBottom: 4 }}>
+                    CONTACTO / RESIDENTE
+                  </label>
                   <input
                     type="text"
                     value={formContacto}
                     onChange={(e) => setFormContacto(e.target.value)}
-                    placeholder="Ej. Ing. Juan Buitrago (Residente)"
-                    className="w-full px-3 py-2 bg-[#f5f5f7] border border-transparent focus:border-[#0071e3] focus:bg-white rounded-xl outline-none font-medium"
+                    placeholder="Ej. Ing. Juan Buitrago"
+                    style={SI}
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-gray-600 mb-1">Celular / Teléfono (WhatsApp)</label>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted, #64748b)", display: "block", marginBottom: 4 }}>
+                    CELULAR (WHATSAPP)
+                  </label>
                   <input
                     type="text"
                     value={formTelefono}
                     onChange={(e) => setFormTelefono(e.target.value)}
-                    placeholder="Ej. 316 024 0823"
-                    className="w-full px-3 py-2 bg-[#f5f5f7] border border-transparent focus:border-[#0071e3] focus:bg-white rounded-xl outline-none font-medium"
+                    placeholder="Ej. 3160240823"
+                    style={SI}
                   />
                 </div>
               </div>
 
-              {/* Si es reunión: Modalidad y Link */}
-              {formTipo === "reunion" && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-purple-50/40 rounded-xl border border-purple-100">
-                  <div>
-                    <label className="block font-bold text-purple-900 mb-1">Modalidad</label>
-                    <select
-                      value={formModalidad}
-                      onChange={(e) => setFormModalidad(e.target.value)}
-                      className="w-full px-3 py-2 bg-white rounded-xl border border-purple-200"
-                    >
-                      <option value="presencial">Presencial en Obra</option>
-                      <option value="virtual">Virtual (Meet / Teams)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block font-bold text-purple-900 mb-1">Link de Reunión (opcional)</label>
-                    <input
-                      type="url"
-                      value={formLink}
-                      onChange={(e) => setFormLink(e.target.value)}
-                      placeholder="https://meet.google.com/..."
-                      className="w-full px-3 py-2 bg-white rounded-xl border border-purple-200"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Notas y Requerimiento SST */}
+              {/* Notas y Requisitos SST */}
               <div>
-                <label className="block font-bold text-gray-600 mb-1">Notas / Objetivo</label>
+                <label style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted, #64748b)", display: "block", marginBottom: 4 }}>
+                  OBJETIVO DE LA VISITA / NOTAS TÉCNICAS
+                </label>
                 <textarea
-                  rows={2}
                   value={formNotas}
                   onChange={(e) => setFormNotas(e.target.value)}
-                  placeholder="Detalles sobre lo que se debe revisar o coordinar..."
-                  className="w-full px-3 py-2 bg-[#f5f5f7] border border-transparent focus:border-[#0071e3] focus:bg-white rounded-xl outline-none font-medium"
+                  placeholder="Detalles sobre anclajes, líneas de vida o temas a coordinar..."
+                  rows={2}
+                  style={{ ...SI, resize: "vertical" }}
                 />
               </div>
 
               {formTipo === "visita" && (
                 <div>
-                  <label className="block font-bold text-gray-600 mb-1">Requisitos de Ingreso / SST</label>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted, #64748b)", display: "block", marginBottom: 4 }}>
+                    REQUERIMIENTOS SST / PERMISOS DE INGRESO
+                  </label>
                   <input
                     type="text"
                     value={formSst}
                     onChange={(e) => setFormSst(e.target.value)}
-                    placeholder="Ej. ARL vigente, carta radicada para 2 técnicos"
-                    className="w-full px-3 py-2 bg-[#f5f5f7] border border-transparent focus:border-[#0071e3] focus:bg-white rounded-xl outline-none font-medium"
+                    placeholder="Ej. ARL vigente, cartas de acceso, curso de alturas"
+                    style={SI}
                   />
                 </div>
               )}
 
-              <div className="pt-3 border-t border-[#e5e5ea] flex items-center justify-end gap-2">
+              {formTipo === "reunion" && (
+                <div>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted, #64748b)", display: "block", marginBottom: 4 }}>
+                    ENLACE DE REUNIÓN VIRTUAL (MEET / TEAMS)
+                  </label>
+                  <input
+                    type="text"
+                    value={formLink}
+                    onChange={(e) => setFormLink(e.target.value)}
+                    placeholder="https://meet.google.com/..."
+                    style={SI}
+                  />
+                </div>
+              )}
+
+              {/* Botones de acción del modal */}
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 10 }}>
                 <button
                   type="button"
+                  style={{
+                    ...B("var(--surface-subtle, #f1f5f9)", "var(--text-muted, #64748b)"),
+                    border: "1px solid var(--border, #e2e8f0)",
+                  }}
                   onClick={() => setModalAbierto(false)}
-                  className="px-4 py-2 text-gray-500 hover:text-black font-semibold rounded-xl text-xs"
                 >
                   Cancelar
                 </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 bg-[#0071e3] hover:bg-[#0077ed] text-white font-bold rounded-xl text-xs transition-all shadow-sm"
-                >
-                  {itemEnEdicion ? "Guardar Cambios" : "Agendar Compromiso"}
+                <button type="submit" style={B("#f47c20")}>
+                  {itemEdicion ? "Guardar Cambios" : "Guardar Compromiso"}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
-
     </div>
   );
 }

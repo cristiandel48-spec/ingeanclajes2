@@ -25,47 +25,67 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
   const showCatLadderAppendix = propuestas.some((propuesta)=>hasCatLadderService(propuesta?.quote || propuesta))
     || hasCatLadderService({ alcance: c?.alcance, requerimientoCliente: textoInicial, items: c?.items, titulo: c?.titulo });
   // La lámina técnica de componentes (poste soporte lateral/intermedio, tensor de línea, etc.)
-  // es EXCLUSIVA de LÍNEA DE VIDA HORIZONTAL.
-  // NO debe incluirse para líneas de vida verticales ni escaleras fijas/tipo gato.
-  const hasHorizontalLifelineOrAnchorPost = (texto) => {
+  // es EXCLUSIVA de LÍNEA DE VIDA (horizontal / continua).
+  // NO debe incluirse para cotizaciones que solo tengan puntos de anclaje, obra blanca,
+  // estructuras metálicas, ni líneas de vida verticales o escaleras.
+  // SOLO debe salir si la cotización contiene un ítem que tenga una línea de vida.
+  const hasLifelineItem = (texto) => {
     const t = String(texto || "").toUpperCase();
     if (!t) return false;
-    // Si menciona explícitamente vertical o escalera y NO menciona horizontal, NO es horizontal
+
+    // Si menciona explícitamente vertical o escalera y NO menciona horizontal,
+    // corresponde a la lámina vertical / escalera, no a componentes de línea horizontal
     const esVerticalOEscalera = t.includes("VERTICAL") || t.includes("ESCALERA") || t.includes("GATO") || t.includes("MARINERA");
     if (esVerticalOEscalera && !t.includes("HORIZONTAL")) {
       return false;
     }
-    return t.includes("HORIZONTAL") ||
-           t.includes("LVH") ||
-           t.includes("SOPORTE LATERAL") ||
-           t.includes("SOPORTE INTERMEDIO") ||
-           t.includes("ANCLAJE ARTICO") ||
-           t.includes("ANCLAJE ÁRTICO") ||
-           t.includes("POSTE DE ANCLAJE") ||
-           t.includes("POSTE ARTICO") ||
-           t.includes("POSTES");
+
+    if (t.includes("NO INCLUYE LINEA DE VIDA") || t.includes("SIN LINEA DE VIDA") || t.includes("NO INCLUYE LÍNEA DE VIDA")) {
+      return false;
+    }
+
+    // Debe ser un ítem que contenga línea de vida
+    const mencionaLineaVida = t.includes("LINEA DE VIDA") ||
+                              t.includes("LÍNEA DE VIDA") ||
+                              t.includes("LINEAS DE VIDA") ||
+                              t.includes("LÍNEAS DE VIDA") ||
+                              t.includes("LVH");
+
+    // O componentes directos de la línea de vida horizontal, pero descartando puntos de anclaje
+    const esPuntoAnclaje = t.includes("PUNTO DE ANCLAJE") ||
+                           t.includes("PUNTOS DE ANCLAJE") ||
+                           t.includes("ANCLAJE ARTICO") ||
+                           t.includes("ANCLAJE ÁRTICO");
+
+    const mencionaComponenteLinea = !esPuntoAnclaje && (
+      t.includes("SOPORTE LATERAL") ||
+      t.includes("SOPORTE INTERMEDIO") ||
+      t.includes("TENSOR DE LINEA") ||
+      t.includes("TENSOR DE LÍNEA")
+    );
+
+    return mencionaLineaVida || mencionaComponenteLinea;
   };
 
-  const isOnlyVerticalOrLadder = Boolean(showVerticalLifelineAppendix || showCatLadderAppendix);
+  const allQuoteItems = [
+    ...(Array.isArray(c?.items) ? c.items : []),
+    ...propuestas.flatMap((propuesta) =>
+      Array.isArray(propuesta?.items)
+        ? propuesta.items
+        : (Array.isArray(propuesta?.quote?.items) ? propuesta.quote.items : [])
+    ),
+  ];
 
-  const hasHorizontalItems = propuestas.some((propuesta) => {
-    const items = Array.isArray(propuesta?.items)
-      ? propuesta.items
-      : (Array.isArray(propuesta?.quote?.items) ? propuesta.quote.items : []);
-    return items.some(it => hasHorizontalLifelineOrAnchorPost(it?.desc || it?.descripcion || it?.nombre));
-  }) || (Array.isArray(c?.items) && c.items.some(it => hasHorizontalLifelineOrAnchorPost(it?.desc || it?.descripcion || it?.nombre)))
-     || hasHorizontalLifelineOrAnchorPost(textos?.tituloPortada)
-     || hasHorizontalLifelineOrAnchorPost(c?.titulo)
-     || hasHorizontalLifelineOrAnchorPost(c?.alcance);
+  const hasLifelineInItems = allQuoteItems.some((it) =>
+    hasLifelineItem(it?.desc || it?.descripcion || it?.nombre)
+  );
 
-  const hasMapLvh = (c?.geoMediciones || []).some(seg => seg?.tipo === "LVH");
+  const hasMapLvh = (c?.geoMediciones || []).some((seg) => seg?.tipo === "LVH")
+    || propuestas.some((propuesta) => (propuesta?.geoMediciones || []).some((seg) => seg?.tipo === "LVH"));
 
-  // La lámina de componentes horizontales SOLO se muestra si hay componentes/línea horizontal explícita,
-  // o si el tipo es linea_vida pero NO es una cotización de escalera o línea vertical.
-  const showTechnicalPage = hasHorizontalItems || hasMapLvh || (!isOnlyVerticalOrLadder && propuestas.some((propuesta) => {
-    const tipo = propuesta?.quote?.tipoCotizacion || propuesta?.tipoCotizacion || c?.tipoCotizacion;
-    return tipo === "linea_vida";
-  }));
+  // La lámina de componentes SOLO se muestra si el usuario agregó un ítem que tiene línea de vida
+  // o si hay un segmento de línea horizontal medido en el mapa.
+  const showTechnicalPage = hasLifelineInItems || hasMapLvh;
 
   const mapCenter = c?.geoMapView?.center || c?.geoMapView || { lat: 0, lng: 0 };
   const mapZoom = Number(c?.geoMapView?.zoom || 18);
@@ -1106,7 +1126,12 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
 
     const technicalMaterials = [];
     if (propuestas.length > 0) {
-      propuestas.forEach(p => {
+      const propuestasConLinea = propuestas.filter(p => {
+        const items = Array.isArray(p?.items) ? p.items : (Array.isArray(p?.quote?.items) ? p.quote.items : []);
+        return items.some(it => hasLifelineItem(it?.desc || it?.descripcion || it?.nombre));
+      });
+      const targetPropuestas = propuestasConLinea.length > 0 ? propuestasConLinea : propuestas;
+      targetPropuestas.forEach(p => {
         const mat = getProposalMaterial(p);
         if (!technicalMaterials.includes(mat)) {
           technicalMaterials.push(mat);

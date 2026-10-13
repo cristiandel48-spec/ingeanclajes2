@@ -24,7 +24,6 @@ import Formatos from "./screens/Formatos/Formatos";
 import Soporte from "./screens/Soporte/Soporte";
 import Agenda from "./screens/Agenda/Agenda";
 import ModalAlertaCotizaciones from "./components/ModalAlertaCotizaciones";
-import ModalBienvenidaCamila from "./components/ModalBienvenidaCamila";
 import BotonSoporteFlotante from "./components/soporte/BotonSoporteFlotante";
 import NotificadorMensajesGlobal from "./components/notificaciones/NotificadorMensajesGlobal";
 
@@ -151,7 +150,6 @@ function AppRoot() {
   return (
     <AppShell scr={destino} onNavigate={setScr}>
       <Screen ctx={ctx} go={setScr} />
-      <ModalBienvenidaCamila membresia={membresia} authUserEmail={ctx?.authUserEmail} />
       <ModalAlertaCotizaciones onNavigate={setScr} />
       <NotificadorMensajesGlobal onIrASoporte={() => setScr("soporte")} />
       {destino !== "soporte" && <BotonSoporteFlotante />}

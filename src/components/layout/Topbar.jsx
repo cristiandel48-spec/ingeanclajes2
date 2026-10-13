@@ -6,7 +6,6 @@ import { TOPBAR_HEIGHT } from "../../styles/shellTheme";
 import { useAppData } from "../../context/AppDataContext";
 import { resumenSeguimiento } from "../../lib/seguimientoCotizaciones";
 import { esDestinatarioAlerta, puedeVer, pantallaInicial } from "../../lib/permisos";
-import { esUsuarioCamila } from "../../lib/motivacionCamila";
 import { BotonInstalarApp } from "../pwa/InstaladorApp";
 
 // Barra superior: ubicacion actual, acciones de la pantalla, tema y usuario.
@@ -16,8 +15,7 @@ import { BotonInstalarApp } from "../pwa/InstaladorApp";
 // Sirve para que un boton importante -guardar una cotizacion larga- quede
 // siempre a la vista junto al indicador de guardado, sin tener que subir.
 export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOpenMenu, acciones }) {
-  const { cotizaciones, membresia, usuariosEnLinea, esSuperAdminCristian, authUserEmail, irAPantalla } = useAppData();
-  const esCamila = useMemo(() => esUsuarioCamila(membresia, authUserEmail), [membresia, authUserEmail]);
+  const { cotizaciones, membresia, usuariosEnLinea, esSuperAdminCristian, irAPantalla } = useAppData();
   const title = getScreenTitle(scr);
   const section = getScreenSection(scr);
 
@@ -193,40 +191,6 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
           >
             <span style={{ fontSize: 13 }}>🔔</span>
             <span>{totalPendientes}{isMobile ? "" : " por llamar"}</span>
-          </button>
-        )}
-        {esCamila && (
-          <button
-            onClick={() => window.dispatchEvent(new CustomEvent("abrir-motivacion-camila"))}
-            aria-label="Abrir reflexión diaria para María Camila"
-            title="Palabras de vida y esperanza para María Camila"
-            style={{
-              height: 34,
-              padding: isMobile ? "0 8px" : "0 12px",
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              background: dark ? "rgba(222, 211, 196, 0.15)" : "#f7f2ea",
-              border: `1px solid ${dark ? "rgba(222, 211, 196, 0.35)" : "#ded3c4"}`,
-              borderRadius: 999,
-              color: dark ? "#e8ded2" : "#6e4f35",
-              cursor: "pointer",
-              fontSize: 12,
-              fontWeight: 700,
-              flexShrink: 0,
-              transition: "all .15s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = dark ? "rgba(222, 211, 196, 0.25)" : "#f0e7da";
-              e.currentTarget.style.borderColor = "#cbb9a3";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = dark ? "rgba(222, 211, 196, 0.15)" : "#f7f2ea";
-              e.currentTarget.style.borderColor = dark ? "rgba(222, 211, 196, 0.35)" : "#ded3c4";
-            }}
-          >
-            <span>🕊️</span>
-            <span>{isMobile ? "Vida y Paz" : "Palabras de vida"}</span>
           </button>
         )}
         <SaveIndicator theme={theme} compact={isMobile} />

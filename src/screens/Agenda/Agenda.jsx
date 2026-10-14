@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-import H1 from "../../components/ui/H1";
 import { B, CD, SI } from "../../styles/tokens";
 import { EJEMPLOS } from "../../data/ejemplos";
 import { abrirWhatsApp } from "../../lib/whatsapp";
@@ -975,35 +974,128 @@ export default function Agenda({ ctx }) {
         </div>
       )}
 
-      {/* Cabecera Principal */}
-      <H1
-        title="Recordatorio de Agendas & Visitas en Obra"
-        subtitle="Control y recordatorios de visitas técnicas a obras, llamadas de seguimiento y comités para Camila Sepúlveda"
-        action={
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            {/* Selector de Vista Segmentado estilo Apple */}
+      {/* Barra de Controles y Filtros estilo Apple Minimalista */}
+      <div
+        style={{
+          ...CD,
+          padding: "12px 18px",
+          marginBottom: 16,
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
+        }}
+      >
+        {/* Fila 1: Estadísticas de hoy + Acciones principales integradas */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 12,
+          }}
+        >
+          {/* Estadísticas rápidas de hoy */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text-main, #101828)" }}>
+              Hoy para atender:
+            </div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                  padding: "3px 9px",
+                  borderRadius: 999,
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  background: TIPOS_COMPROMISO.visita.bg,
+                  color: TIPOS_COMPROMISO.visita.color,
+                  border: `1px solid ${TIPOS_COMPROMISO.visita.border}`,
+                }}
+              >
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: TIPOS_COMPROMISO.visita.dot }} />
+                {estadisticas.visitas} Visitas
+              </span>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                  padding: "3px 9px",
+                  borderRadius: 999,
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  background: TIPOS_COMPROMISO.llamada.bg,
+                  color: TIPOS_COMPROMISO.llamada.color,
+                  border: `1px solid ${TIPOS_COMPROMISO.llamada.border}`,
+                }}
+              >
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: TIPOS_COMPROMISO.llamada.dot }} />
+                {estadisticas.llamadas} Llamadas
+              </span>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                  padding: "3px 9px",
+                  borderRadius: 999,
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  background: TIPOS_COMPROMISO.reunion.bg,
+                  color: TIPOS_COMPROMISO.reunion.color,
+                  border: `1px solid ${TIPOS_COMPROMISO.reunion.border}`,
+                }}
+              >
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: TIPOS_COMPROMISO.reunion.dot }} />
+                {estadisticas.reuniones} Reuniones
+              </span>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                  padding: "3px 9px",
+                  borderRadius: 999,
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  background: TIPOS_COMPROMISO.coordinacion.bg,
+                  color: TIPOS_COMPROMISO.coordinacion.color,
+                  border: `1px solid ${TIPOS_COMPROMISO.coordinacion.border}`,
+                }}
+              >
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: TIPOS_COMPROMISO.coordinacion.dot }} />
+                {estadisticas.coordinaciones} Coordinaciones
+              </span>
+            </div>
+          </div>
+
+          {/* Acciones principales integradas: Selector Calendario / Tareas y Nuevo compromiso */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <div
               style={{
                 display: "inline-flex",
                 background: "var(--surface-subtle, #f1f5f9)",
-                padding: 3,
-                borderRadius: 10,
-                border: "1px solid var(--border, #e2e8f0)",
+                padding: 2,
+                borderRadius: 8,
+                border: "1px solid var(--border, rgba(0,0,0,0.08))",
               }}
             >
               <button
                 type="button"
                 onClick={() => setVista("mes")}
                 style={{
-                  padding: "6px 14px",
-                  fontSize: 12.5,
+                  padding: "5px 12px",
+                  fontSize: 12,
                   fontWeight: 600,
-                  borderRadius: 8,
+                  borderRadius: 6,
                   border: "none",
                   cursor: "pointer",
                   background: vista === "mes" ? "var(--surface, #ffffff)" : "transparent",
-                  color: vista === "mes" ? "var(--text-main, #0f172a)" : "var(--text-muted, #64748b)",
-                  boxShadow: vista === "mes" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                  color: vista === "mes" ? "var(--text-main, #101828)" : "var(--text-muted, #64748b)",
+                  boxShadow: vista === "mes" ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
                   transition: "all 0.15s ease",
                 }}
               >
@@ -1013,15 +1105,15 @@ export default function Agenda({ ctx }) {
                 type="button"
                 onClick={() => setVista("agenda")}
                 style={{
-                  padding: "6px 14px",
-                  fontSize: 12.5,
+                  padding: "5px 12px",
+                  fontSize: 12,
                   fontWeight: 600,
-                  borderRadius: 8,
+                  borderRadius: 6,
                   border: "none",
                   cursor: "pointer",
                   background: vista === "agenda" ? "var(--surface, #ffffff)" : "transparent",
-                  color: vista === "agenda" ? "var(--text-main, #0f172a)" : "var(--text-muted, #64748b)",
-                  boxShadow: vista === "agenda" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                  color: vista === "agenda" ? "var(--text-main, #101828)" : "var(--text-muted, #64748b)",
+                  boxShadow: vista === "agenda" ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
                   transition: "all 0.15s ease",
                 }}
               >
@@ -1031,107 +1123,41 @@ export default function Agenda({ ctx }) {
 
             <button
               type="button"
-              style={B("#f47c20")}
+              style={{
+                background: "#f47c20",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: 8,
+                padding: "6px 14px",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+                boxShadow: "0 1px 2px rgba(244, 124, 32, 0.25)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                whiteSpace: "nowrap",
+                transition: "opacity 0.15s ease",
+              }}
               onClick={() => abrirNuevoModal("visita")}
             >
               + Nuevo compromiso
             </button>
           </div>
-        }
-      />
-
-      {/* Franja de Resumen Superior y Filtros */}
-      <div
-        style={{
-          ...CD,
-          padding: "14px 20px",
-          marginBottom: 20,
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 14,
-        }}
-      >
-        {/* Estadísticas rápidas de hoy */}
-        <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>
-            Hoy para atender:
-          </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "4px 10px",
-                borderRadius: 999,
-                fontSize: 12,
-                fontWeight: 600,
-                background: TIPOS_COMPROMISO.visita.bg,
-                color: TIPOS_COMPROMISO.visita.color,
-                border: `1px solid ${TIPOS_COMPROMISO.visita.border}`,
-              }}
-            >
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: TIPOS_COMPROMISO.visita.dot }} />
-              {estadisticas.visitas} Visitas
-            </span>
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "4px 10px",
-                borderRadius: 999,
-                fontSize: 12,
-                fontWeight: 600,
-                background: TIPOS_COMPROMISO.llamada.bg,
-                color: TIPOS_COMPROMISO.llamada.color,
-                border: `1px solid ${TIPOS_COMPROMISO.llamada.border}`,
-              }}
-            >
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: TIPOS_COMPROMISO.llamada.dot }} />
-              {estadisticas.llamadas} Llamadas
-            </span>
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "4px 10px",
-                borderRadius: 999,
-                fontSize: 12,
-                fontWeight: 600,
-                background: TIPOS_COMPROMISO.reunion.bg,
-                color: TIPOS_COMPROMISO.reunion.color,
-                border: `1px solid ${TIPOS_COMPROMISO.reunion.border}`,
-              }}
-            >
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: TIPOS_COMPROMISO.reunion.dot }} />
-              {estadisticas.reuniones} Reuniones
-            </span>
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "4px 10px",
-                borderRadius: 999,
-                fontSize: 12,
-                fontWeight: 600,
-                background: TIPOS_COMPROMISO.coordinacion.bg,
-                color: TIPOS_COMPROMISO.coordinacion.color,
-                border: `1px solid ${TIPOS_COMPROMISO.coordinacion.border}`,
-              }}
-            >
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: TIPOS_COMPROMISO.coordinacion.dot }} />
-              {estadisticas.coordinaciones} Coordinaciones
-            </span>
-          </div>
         </div>
 
-        {/* Buscador minimalista y filtros de tipo */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", flex: "1 1 320px", justifyContent: "flex-end" }}>
+        {/* Fila 2: Buscador minimalista y filtros de tipo */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 10,
+            paddingTop: 8,
+            borderTop: "1px solid var(--border, rgba(0,0,0,0.05))",
+          }}
+        >
           <div style={{ position: "relative", minWidth: 200, maxWidth: 280, flex: 1 }}>
             <input
               type="text"
@@ -1140,8 +1166,8 @@ export default function Agenda({ ctx }) {
               placeholder="Buscar obra, cliente..."
               style={{
                 ...SI,
-                fontSize: 12.5,
-                padding: "7px 28px 7px 10px",
+                fontSize: 12,
+                padding: "6px 28px 6px 10px",
                 borderRadius: 8,
               }}
             />
@@ -1166,7 +1192,7 @@ export default function Agenda({ ctx }) {
             )}
           </div>
 
-          <div style={{ display: "flex", gap: 4 }}>
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
             {[
               { id: "todos", label: "Todos" },
               { id: "visita", label: "Visitas" },
@@ -1179,13 +1205,13 @@ export default function Agenda({ ctx }) {
                 type="button"
                 onClick={() => setFiltroTipo(f.id)}
                 style={{
-                  padding: "6px 11px",
-                  fontSize: 12,
+                  padding: "5px 10px",
+                  fontSize: 11.5,
                   fontWeight: 600,
-                  borderRadius: 8,
+                  borderRadius: 6,
                   border: "1px solid var(--border, #e2e8f0)",
                   cursor: "pointer",
-                  background: filtroTipo === f.id ? "var(--text-main, #0f172a)" : "var(--surface, #ffffff)",
+                  background: filtroTipo === f.id ? "var(--text-main, #101828)" : "var(--surface, #ffffff)",
                   color: filtroTipo === f.id ? "#ffffff" : "var(--text-muted, #64748b)",
                   transition: "all 0.15s ease",
                 }}

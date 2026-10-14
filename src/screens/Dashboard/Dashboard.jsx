@@ -42,7 +42,7 @@ export default function Dashboard({ ctx, go }) {
   return (
     <div
       style={{
-        padding: isMobile ? "16px 14px 40px" : "28px 36px 50px",
+        padding: isMobile ? "10px 8px 24px" : "14px 16px 28px",
         maxWidth: 1360,
         margin: "0 auto",
         width: "100%",
@@ -62,21 +62,21 @@ export default function Dashboard({ ctx, go }) {
           flexDirection: isMobile ? "column" : "row",
           justifyContent: "space-between",
           alignItems: isMobile ? "flex-start" : "flex-end",
-          gap: 16,
-          paddingBottom: 20,
+          gap: 12,
+          paddingBottom: 14,
           borderBottom: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
-          marginBottom: 20,
+          marginBottom: 16,
         }}
       >
         <div>
           <div
             style={{
-              fontSize: 11.5,
-              fontWeight: 700,
+              fontSize: 11,
+              fontWeight: 600,
               textTransform: "uppercase",
-              letterSpacing: "0.08em",
-              color: "var(--text-subtle, #86868b)",
-              marginBottom: 4,
+              letterSpacing: "0.05em",
+              color: "var(--text-subtle, #667085)",
+              marginBottom: 3,
             }}
           >
             {formatFechaLegible(hoyIso) || "Centro de Operaciones"}
@@ -84,12 +84,12 @@ export default function Dashboard({ ctx, go }) {
 
           <h1
             style={{
-              fontSize: isMobile ? 26 : 34,
-              fontWeight: 800,
-              letterSpacing: "-0.03em",
+              fontSize: isMobile ? 21 : 25,
+              fontWeight: 600,
+              letterSpacing: "-0.02em",
               margin: 0,
-              color: "var(--text-main, #1d1d1f)",
-              lineHeight: 1.15,
+              color: "var(--text-main, #101828)",
+              lineHeight: 1.2,
             }}
           >
             {saludo}, {nombreUsuario}
@@ -97,16 +97,16 @@ export default function Dashboard({ ctx, go }) {
 
           <p
             style={{
-              fontSize: 13.5,
-              color: "var(--text-muted, #6e6e73)",
-              margin: "6px 0 0",
-              lineHeight: 1.45,
+              fontSize: 12.5,
+              color: "var(--text-muted, #475467)",
+              margin: "4px 0 0",
+              lineHeight: 1.4,
             }}
           >
             {eventosHoy.length > 0 ? (
               <>
                 Tienes{" "}
-                <strong style={{ color: "var(--text-main, #1d1d1f)" }}>
+                <strong style={{ color: "var(--text-main, #101828)", fontWeight: 600 }}>
                   {eventosHoy.length} compromiso{eventosHoy.length > 1 ? "s" : ""} hoy
                 </strong>
               </>
@@ -117,7 +117,7 @@ export default function Dashboard({ ctx, go }) {
               <>
                 {" "}
                 y{" "}
-                <strong style={{ color: "var(--text-main, #1d1d1f)" }}>
+                <strong style={{ color: "var(--text-main, #101828)", fontWeight: 600 }}>
                   {seg.requierenAccion.length} cotización
                   {seg.requierenAccion.length > 1 ? "es" : ""} por llamar
                 </strong>
@@ -132,7 +132,7 @@ export default function Dashboard({ ctx, go }) {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 10,
+            gap: 8,
             flexWrap: "wrap",
             width: isMobile ? "100%" : "auto",
           }}
@@ -141,22 +141,22 @@ export default function Dashboard({ ctx, go }) {
             type="button"
             onClick={() => go("cotizacion")}
             style={{
-              background: "var(--text-main, #1d1d1f)",
+              background: "var(--text-main, #101828)",
               color: "#ffffff",
               border: "1px solid transparent",
-              borderRadius: 12,
-              padding: "9px 16px",
-              fontSize: 13,
-              fontWeight: 700,
+              borderRadius: 10,
+              padding: "7px 14px",
+              fontSize: 12,
+              fontWeight: 600,
               cursor: "pointer",
               display: "inline-flex",
               alignItems: "center",
-              gap: 6,
-              boxShadow: "0 2px 6px rgba(0,0,0,0.12)",
-              transition: "all 0.16s ease",
+              gap: 5,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              transition: "all 0.15s ease",
             }}
           >
-            <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>
+            <span style={{ fontSize: 14, lineHeight: 1 }}>+</span>
             <span>Nueva Cotización</span>
           </button>
 
@@ -165,18 +165,18 @@ export default function Dashboard({ ctx, go }) {
             onClick={() => go("agenda")}
             style={{
               background: "var(--surface, #ffffff)",
-              color: "var(--text-main, #1d1d1f)",
+              color: "var(--text-main, #101828)",
               border: "1px solid var(--border, rgba(0, 0, 0, 0.12))",
-              borderRadius: 12,
-              padding: "9px 15px",
-              fontSize: 13,
+              borderRadius: 10,
+              padding: "7px 12px",
+              fontSize: 12,
               fontWeight: 600,
               cursor: "pointer",
               display: "inline-flex",
               alignItems: "center",
-              gap: 6,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-              transition: "all 0.16s ease",
+              gap: 5,
+              boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+              transition: "all 0.15s ease",
             }}
           >
             <span>📅</span>
@@ -188,18 +188,18 @@ export default function Dashboard({ ctx, go }) {
             onClick={() => go("clientes")}
             style={{
               background: "var(--surface, #ffffff)",
-              color: "var(--text-main, #1d1d1f)",
+              color: "var(--text-main, #101828)",
               border: "1px solid var(--border, rgba(0, 0, 0, 0.12))",
-              borderRadius: 12,
-              padding: "9px 15px",
-              fontSize: 13,
+              borderRadius: 10,
+              padding: "7px 12px",
+              fontSize: 12,
               fontWeight: 600,
               cursor: "pointer",
               display: "inline-flex",
               alignItems: "center",
-              gap: 6,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-              transition: "all 0.16s ease",
+              gap: 5,
+              boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+              transition: "all 0.15s ease",
             }}
           >
             <span>👥</span>
@@ -216,241 +216,27 @@ export default function Dashboard({ ctx, go }) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: isMobile ? "1fr" : "1.25fr 1fr",
-          gap: 22,
+          gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1.22fr) minmax(0, 1fr)",
+          gap: 16,
           alignItems: "start",
         }}
       >
         {/* =========================================================== */}
-        {/* COLUMNA IZQUIERDA: Cotizaciones Recientes & Accesos         */}
+        {/* COLUMNA IZQUIERDA: Accesos Rápidos & Cotizaciones Recientes */}
         {/* =========================================================== */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          {/* Card: Cotizaciones Recientes */}
-          <div
-            style={{
-              background: "var(--surface, #ffffff)",
-              border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
-              borderRadius: 18,
-              padding: isMobile ? 16 : 22,
-              boxShadow: "0 4px 20px -2px rgba(0,0,0,0.03), 0 1px 3px rgba(0,0,0,0.02)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingBottom: 14,
-                marginBottom: 14,
-                borderBottom: "1px solid var(--border, rgba(0, 0, 0, 0.06))",
-              }}
-            >
-              <div>
-                <h2
-                  style={{
-                    fontSize: 14.5,
-                    fontWeight: 600,
-                    margin: 0,
-                    color: "var(--text-main, #101828)",
-                    letterSpacing: "-0.01em",
-                  }}
-                >
-                  Cotizaciones Recientes
-                </h2>
-                <div style={{ fontSize: 11.5, color: "var(--text-muted, #86868b)", marginTop: 2 }}>
-                  Últimas propuestas técnicas emitidas
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => go("cotizacion")}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  color: "#0071e3",
-                  fontSize: 12.5,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 4,
-                  padding: "4px 8px",
-                  borderRadius: 6,
-                }}
-              >
-                Ver todas &rarr;
-              </button>
-            </div>
-
-            {recientes.length === 0 ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "30px 16px",
-                  color: "var(--text-muted, #86868b)",
-                  fontSize: 13,
-                }}
-              >
-                Todavía no hay cotizaciones registradas.
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {recientes.map((c) => {
-                  const activa = getQuoteActiveProposal(c);
-                  const aprobada = c.estado === "Aprobada" || Boolean(c.obraId);
-                  const estado = c.estado || "Pendiente";
-                  const estadoColor = aprobada
-                    ? { bg: "rgba(52, 199, 89, 0.12)", text: "#28a745" }
-                    : estado === "Borrador"
-                    ? { bg: "rgba(142, 142, 147, 0.12)", text: "#8e8e93" }
-                    : { bg: "rgba(255, 149, 0, 0.12)", text: "#d97706" };
-
-                  return (
-                    <div
-                      key={c.id}
-                      onClick={() => go("cotizacion")}
-                      style={{
-                        border: "1px solid var(--border, rgba(0, 0, 0, 0.07))",
-                        borderRadius: 14,
-                        padding: "13px 16px",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        gap: 14,
-                        background: "var(--surface, #ffffff)",
-                        cursor: "pointer",
-                        transition: "all 0.18s cubic-bezier(0.16, 1, 0.3, 1)",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = "#0071e3";
-                        e.currentTarget.style.transform = "translateY(-1px)";
-                        e.currentTarget.style.boxShadow = "0 6px 16px -4px rgba(0,0,0,0.06)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = "var(--border, rgba(0, 0, 0, 0.07))";
-                        e.currentTarget.style.transform = "translateY(0)";
-                        e.currentTarget.style.boxShadow = "none";
-                      }}
-                    >
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                            marginBottom: 4,
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-                              fontSize: 11.5,
-                              fontWeight: 600,
-                              padding: "2px 7px",
-                              borderRadius: 5,
-                              background: "var(--surface-subtle, #f5f5f7)",
-                              color: "var(--text-main, #101828)",
-                              border: "1px solid var(--border, rgba(0,0,0,0.08))",
-                              fontVariantNumeric: "tabular-nums",
-                              letterSpacing: "-0.01em",
-                            }}
-                          >
-                            {c.numero || c.id}
-                          </span>
-                          <span style={{ fontSize: 11, color: "var(--text-muted, #667085)" }}>
-                            {fmtD(c.fecha)}
-                            {c.ciudad ? ` · ${c.ciudad}` : ""}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: 10,
-                              fontWeight: 600,
-                              padding: "2px 7px",
-                              borderRadius: 999,
-                              background: estadoColor.bg,
-                              color: estadoColor.text,
-                            }}
-                          >
-                            {aprobada ? "✓ Aprobada" : estado}
-                          </span>
-                        </div>
-
-                        <div
-                          style={{
-                            fontSize: 13.5,
-                            fontWeight: 600,
-                            color: "var(--text-main, #101828)",
-                            letterSpacing: "-0.01em",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {c.cliente || "Cliente sin nombre"}
-                        </div>
-
-                        <div
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 400,
-                            color: "var(--text-muted, #475467)",
-                            marginTop: 2,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {c.obra || activa.nombre || "Propuesta técnica"}
-                        </div>
-                      </div>
-
-                      <div style={{ textAlign: "right", flexShrink: 0 }}>
-                        {verDinero && (
-                          <div
-                            style={{
-                              fontSize: 13.5,
-                              fontWeight: 600,
-                              color: "var(--text-main, #101828)",
-                              fontVariantNumeric: "tabular-nums",
-                              letterSpacing: "-0.01em",
-                            }}
-                          >
-                            {fmt(Number(activa.total || c.total || 0))}
-                          </div>
-                        )}
-                        <span
-                          style={{
-                            fontSize: 11,
-                            color: "#0071e3",
-                            fontWeight: 600,
-                            marginTop: 2,
-                            display: "block",
-                          }}
-                        >
-                          Abrir &rarr;
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Accesos Rápidos Modulares */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {/* Accesos Rápidos Modulares (Arriba, según lo solicitado) */}
           <div
             style={{
               display: "grid",
               gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)",
-              gap: 12,
+              gap: 8,
             }}
           >
             <TarjetaAcceso
               icono="🏗️"
               titulo="Obras en Curso"
-              subtitulo={`${obrasActivas} proyecto${obrasActivas === 1 ? "" : "s"} activo${obrasActivas === 1 ? "" : "s"}`}
+              subtitulo={`${obrasActivas} proyecto${obrasActivas === 1 ? "" : "s"}`}
               onClick={() => go("obras")}
             />
             <TarjetaAcceso
@@ -472,20 +258,15 @@ export default function Dashboard({ ctx, go }) {
               onClick={() => go("clientes")}
             />
           </div>
-        </div>
 
-        {/* =========================================================== */}
-        {/* COLUMNA DERECHA: Agenda de Hoy & Alertas Operativas          */}
-        {/* =========================================================== */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          {/* Bloque: Visitas & Agenda de Hoy */}
+          {/* Card: Cotizaciones Recientes */}
           <div
             style={{
               background: "var(--surface, #ffffff)",
               border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
-              borderRadius: 18,
-              padding: isMobile ? 16 : 22,
-              boxShadow: "0 4px 20px -2px rgba(0,0,0,0.03), 0 1px 3px rgba(0,0,0,0.02)",
+              borderRadius: 14,
+              padding: isMobile ? 12 : 16,
+              boxShadow: "0 2px 10px -2px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.02)",
             }}
           >
             <div
@@ -493,16 +274,235 @@ export default function Dashboard({ ctx, go }) {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                paddingBottom: 14,
-                marginBottom: 14,
+                paddingBottom: 10,
+                marginBottom: 10,
                 borderBottom: "1px solid var(--border, rgba(0, 0, 0, 0.06))",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div>
+                <h2
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    margin: 0,
+                    color: "var(--text-main, #101828)",
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  Cotizaciones Recientes
+                </h2>
+                <div style={{ fontSize: 11, color: "var(--text-muted, #667085)", marginTop: 1 }}>
+                  Últimas propuestas técnicas emitidas
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => go("cotizacion")}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "#0071e3",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 3,
+                  padding: "3px 6px",
+                  borderRadius: 6,
+                }}
+              >
+                Ver todas &rarr;
+              </button>
+            </div>
+
+            {recientes.length === 0 ? (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "24px 14px",
+                  color: "var(--text-muted, #667085)",
+                  fontSize: 12.5,
+                }}
+              >
+                Todavía no hay cotizaciones registradas.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {recientes.map((c) => {
+                  const activa = getQuoteActiveProposal(c);
+                  const aprobada = c.estado === "Aprobada" || Boolean(c.obraId);
+                  const estado = c.estado || "Pendiente";
+                  const estadoColor = aprobada
+                    ? { bg: "rgba(52, 199, 89, 0.12)", text: "#28a745" }
+                    : estado === "Borrador"
+                    ? { bg: "rgba(142, 142, 147, 0.12)", text: "#8e8e93" }
+                    : { bg: "rgba(255, 149, 0, 0.12)", text: "#d97706" };
+
+                  return (
+                    <div
+                      key={c.id}
+                      onClick={() => go("cotizacion")}
+                      style={{
+                        border: "1px solid var(--border, rgba(0, 0, 0, 0.07))",
+                        borderRadius: 12,
+                        padding: "9px 13px",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: 12,
+                        background: "var(--surface, #ffffff)",
+                        cursor: "pointer",
+                        transition: "all 0.16s cubic-bezier(0.16, 1, 0.3, 1)",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = "#0071e3";
+                        e.currentTarget.style.transform = "translateY(-1px)";
+                        e.currentTarget.style.boxShadow = "0 4px 12px -2px rgba(0,0,0,0.05)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = "var(--border, rgba(0, 0, 0, 0.07))";
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.boxShadow = "none";
+                      }}
+                    >
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                            marginBottom: 3,
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+                              fontSize: 11,
+                              fontWeight: 600,
+                              padding: "1px 6px",
+                              borderRadius: 4,
+                              background: "var(--surface-subtle, #f5f5f7)",
+                              color: "var(--text-main, #101828)",
+                              border: "1px solid var(--border, rgba(0,0,0,0.08))",
+                              fontVariantNumeric: "tabular-nums",
+                              letterSpacing: "-0.01em",
+                            }}
+                          >
+                            {c.numero || c.id}
+                          </span>
+                          <span style={{ fontSize: 11, color: "var(--text-muted, #667085)" }}>
+                            {fmtD(c.fecha)}
+                            {c.ciudad ? ` · ${c.ciudad}` : ""}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 600,
+                              padding: "1px 6px",
+                              borderRadius: 999,
+                              background: estadoColor.bg,
+                              color: estadoColor.text,
+                            }}
+                          >
+                            {aprobada ? "✓ Aprobada" : estado}
+                          </span>
+                        </div>
+
+                        <div
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 600,
+                            color: "var(--text-main, #101828)",
+                            letterSpacing: "-0.01em",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {c.cliente || "Cliente sin nombre"}
+                        </div>
+
+                        <div
+                          style={{
+                            fontSize: 11.5,
+                            fontWeight: 400,
+                            color: "var(--text-muted, #475467)",
+                            marginTop: 1,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {c.obra || activa.nombre || "Propuesta técnica"}
+                        </div>
+                      </div>
+
+                      <div style={{ textAlign: "right", flexShrink: 0 }}>
+                        {verDinero && (
+                          <div
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 600,
+                              color: "var(--text-main, #101828)",
+                              fontVariantNumeric: "tabular-nums",
+                              letterSpacing: "-0.01em",
+                            }}
+                          >
+                            {fmt(Number(activa.total || c.total || 0))}
+                          </div>
+                        )}
+                        <span
+                          style={{
+                            fontSize: 11,
+                            color: "#0071e3",
+                            fontWeight: 500,
+                            marginTop: 1,
+                            display: "block",
+                          }}
+                        >
+                          Abrir &rarr;
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* =========================================================== */}
+        {/* COLUMNA DERECHA: Agenda de Hoy & Alertas Operativas          */}
+        {/* =========================================================== */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {/* Bloque: Visitas & Agenda de Hoy */}
+          <div
+            style={{
+              background: "var(--surface, #ffffff)",
+              border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+              borderRadius: 14,
+              padding: isMobile ? 12 : 16,
+              boxShadow: "0 2px 10px -2px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.02)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingBottom: 10,
+                marginBottom: 10,
+                borderBottom: "1px solid var(--border, rgba(0, 0, 0, 0.06))",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                 <span
                   style={{
-                    width: 8,
-                    height: 8,
+                    width: 7,
+                    height: 7,
                     borderRadius: "50%",
                     background: "#f47c20",
                     display: "inline-block",
@@ -510,7 +510,7 @@ export default function Dashboard({ ctx, go }) {
                 />
                 <h2
                   style={{
-                    fontSize: 14.5,
+                    fontSize: 14,
                     fontWeight: 600,
                     margin: 0,
                     color: "var(--text-main, #101828)",
@@ -530,6 +530,7 @@ export default function Dashboard({ ctx, go }) {
                   fontSize: 12,
                   fontWeight: 600,
                   cursor: "pointer",
+                  padding: "3px 6px",
                 }}
               >
                 Abrir agenda &rarr;
@@ -540,28 +541,28 @@ export default function Dashboard({ ctx, go }) {
               <div
                 style={{
                   textAlign: "center",
-                  padding: "26px 14px",
+                  padding: "16px 12px",
                   background: "var(--surface-subtle, #fbfbfd)",
-                  borderRadius: 14,
+                  borderRadius: 10,
                   border: "1px dashed var(--border, rgba(0,0,0,0.08))",
                 }}
               >
-                <div style={{ fontSize: 24, marginBottom: 4 }}>☕</div>
+                <div style={{ fontSize: 20, marginBottom: 2 }}>☕</div>
                 <div
                   style={{
-                    fontSize: 13,
+                    fontSize: 12.5,
                     fontWeight: 600,
-                    color: "var(--text-main, #1d1d1f)",
+                    color: "var(--text-main, #101828)",
                   }}
                 >
                   Sin compromisos pendientes para hoy
                 </div>
                 <div
                   style={{
-                    fontSize: 11.5,
-                    color: "var(--text-muted, #86868b)",
-                    marginTop: 4,
-                    marginBottom: 12,
+                    fontSize: 11,
+                    color: "var(--text-muted, #667085)",
+                    marginTop: 2,
+                    marginBottom: 10,
                   }}
                 >
                   No hay visitas técnicas ni llamadas de seguimiento para esta fecha.
@@ -573,18 +574,18 @@ export default function Dashboard({ ctx, go }) {
                     background: "var(--surface, #ffffff)",
                     border: "1px solid var(--border, rgba(0,0,0,0.12))",
                     borderRadius: 8,
-                    padding: "6px 12px",
-                    fontSize: 11.5,
+                    padding: "5px 11px",
+                    fontSize: 11,
                     fontWeight: 600,
                     cursor: "pointer",
-                    color: "var(--text-main, #1d1d1f)",
+                    color: "var(--text-main, #101828)",
                   }}
                 >
                   + Programar compromiso
                 </button>
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {eventosHoy.map((item) => {
                   const telLimpio = String(item.telefono || "").replace(/\D/g, "");
                   const urlWa = telLimpio
@@ -756,34 +757,34 @@ export default function Dashboard({ ctx, go }) {
             style={{
               background: "var(--surface, #ffffff)",
               border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
-              borderRadius: 18,
-              padding: isMobile ? 16 : 22,
-              boxShadow: "0 4px 20px -2px rgba(0,0,0,0.03), 0 1px 3px rgba(0,0,0,0.02)",
+              borderRadius: 14,
+              padding: isMobile ? 12 : 16,
+              boxShadow: "0 2px 10px -2px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.02)",
             }}
           >
             <h2
               style={{
-                fontSize: 14.5,
+                fontSize: 14,
                 fontWeight: 600,
                 letterSpacing: "-0.01em",
-                margin: "0 0 14px",
+                margin: "0 0 10px",
                 color: "var(--text-main, #101828)",
-                paddingBottom: 14,
+                paddingBottom: 10,
                 borderBottom: "1px solid var(--border, rgba(0, 0, 0, 0.06))",
               }}
             >
               Alertas Operativas &middot; Atención
             </h2>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {/* Cobro pendiente */}
               {verDinero && (
                 <div
                   style={{
                     background: "var(--surface-subtle, #f8fafc)",
                     border: "1px solid var(--border, rgba(0, 0, 0, 0.07))",
-                    borderRadius: 14,
-                    padding: "13px 16px",
+                    borderRadius: 12,
+                    padding: "10px 14px",
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
@@ -792,21 +793,21 @@ export default function Dashboard({ ctx, go }) {
                   <div>
                     <div
                       style={{
-                        fontSize: 11,
-                        color: "var(--text-muted, #86868b)",
+                        fontSize: 10.5,
+                        color: "var(--text-subtle, #667085)",
                         textTransform: "uppercase",
-                        fontWeight: 700,
-                        letterSpacing: "0.05em",
+                        fontWeight: 600,
+                        letterSpacing: "0.04em",
                       }}
                     >
                       Cobro pendiente en obras
                     </div>
                     <div
                       style={{
-                        fontSize: 22,
-                        fontWeight: 800,
-                        color: Number(saldoPendiente) > 0 ? "#cc0000" : "#166534",
-                        marginTop: 2,
+                        fontSize: 18,
+                        fontWeight: 600,
+                        color: Number(saldoPendiente) > 0 ? "#b91c1c" : "#15803d",
+                        marginTop: 1,
                         fontVariantNumeric: "tabular-nums",
                       }}
                     >
@@ -821,12 +822,12 @@ export default function Dashboard({ ctx, go }) {
                       style={{
                         background: "var(--surface, #ffffff)",
                         border: "1px solid var(--border, rgba(0,0,0,0.12))",
-                        borderRadius: 8,
-                        padding: "6px 12px",
-                        fontSize: 11.5,
-                        fontWeight: 600,
+                        borderRadius: 6,
+                        padding: "5px 10px",
+                        fontSize: 11,
+                        fontWeight: 500,
                         cursor: "pointer",
-                        color: "var(--text-main, #1d1d1f)",
+                        color: "var(--text-main, #101828)",
                       }}
                     >
                       Ver obras &rarr;
@@ -839,13 +840,13 @@ export default function Dashboard({ ctx, go }) {
               <div
                 style={{
                   background: venc.hayAlgoQueHacer
-                    ? "rgba(255, 149, 0, 0.06)"
+                    ? "rgba(255, 149, 0, 0.05)"
                     : "var(--surface-subtle, #f8fafc)",
                   border: `1px solid ${
-                    venc.hayAlgoQueHacer ? "rgba(255, 149, 0, 0.28)" : "var(--border, rgba(0, 0, 0, 0.07))"
+                    venc.hayAlgoQueHacer ? "rgba(255, 149, 0, 0.22)" : "var(--border, rgba(0, 0, 0, 0.06))"
                   }`,
-                  borderRadius: 14,
-                  padding: "13px 16px",
+                  borderRadius: 12,
+                  padding: "10px 14px",
                 }}
               >
                 <div
@@ -853,16 +854,16 @@ export default function Dashboard({ ctx, go }) {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "baseline",
-                    marginBottom: 8,
+                    marginBottom: 6,
                   }}
                 >
                   <div
                     style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: "var(--text-muted, #86868b)",
+                      fontSize: 10.5,
+                      fontWeight: 600,
+                      color: "var(--text-muted, #667085)",
                       textTransform: "uppercase",
-                      letterSpacing: "0.05em",
+                      letterSpacing: "0.04em",
                     }}
                   >
                     Vencimiento de Certificaciones
@@ -871,7 +872,7 @@ export default function Dashboard({ ctx, go }) {
                     <span
                       style={{
                         fontSize: 11,
-                        fontWeight: 700,
+                        fontWeight: 600,
                         color: "#c2410c",
                       }}
                     >
@@ -882,25 +883,25 @@ export default function Dashboard({ ctx, go }) {
 
                 {venc.hayAlgoQueHacer ? (
                   <>
-                    <div style={{ display: "flex", gap: 12, marginBottom: 10, fontSize: 11.5 }}>
+                    <div style={{ display: "flex", gap: 10, marginBottom: 8, fontSize: 11 }}>
                       {venc.vencidas.length > 0 && (
-                        <span style={{ color: "#ef4444", fontWeight: 700 }}>
+                        <span style={{ color: "#ef4444", fontWeight: 600 }}>
                           {venc.vencidas.length} vencida{venc.vencidas.length === 1 ? "" : "s"}
                         </span>
                       )}
                       {venc.urgentes.length > 0 && (
-                        <span style={{ color: "#c2410c", fontWeight: 700 }}>
+                        <span style={{ color: "#c2410c", fontWeight: 600 }}>
                           {venc.urgentes.length} urgente{venc.urgentes.length === 1 ? "" : "s"}
                         </span>
                       )}
                       {venc.proximas.length > 0 && (
-                        <span style={{ color: "#a16207" }}>
+                        <span style={{ color: "#a16207", fontWeight: 500 }}>
                           {venc.proximas.length} próxima{venc.proximas.length === 1 ? "" : "s"}
                         </span>
                       )}
                     </div>
 
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 8 }}>
                       {venc.destacadas.slice(0, 3).map((cert) => (
                         <div
                           key={cert.id}
@@ -909,17 +910,17 @@ export default function Dashboard({ ctx, go }) {
                             justifyContent: "space-between",
                             alignItems: "center",
                             background: "var(--surface, #ffffff)",
-                            border: "1px solid var(--border, rgba(0,0,0,0.08))",
+                            border: "1px solid var(--border, rgba(0,0,0,0.06))",
                             borderRadius: 8,
-                            padding: "7px 10px",
+                            padding: "6px 9px",
                           }}
                         >
                           <div style={{ minWidth: 0 }}>
                             <div
                               style={{
-                                fontSize: 12,
-                                fontWeight: 600,
-                                color: "var(--text-main, #1d1d1f)",
+                                fontSize: 11.5,
+                                fontWeight: 500,
+                                color: "var(--text-main, #101828)",
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
                                 whiteSpace: "nowrap",
@@ -929,8 +930,8 @@ export default function Dashboard({ ctx, go }) {
                             </div>
                             <div
                               style={{
-                                fontSize: 10.5,
-                                color: "var(--text-subtle, #86868b)",
+                                fontSize: 10,
+                                color: "var(--text-muted, #667085)",
                               }}
                             >
                               {cert.tipoSistema || cert.tipo || "Certificación"}
@@ -939,8 +940,8 @@ export default function Dashboard({ ctx, go }) {
                           </div>
                           <span
                             style={{
-                              fontSize: 11,
-                              fontWeight: 800,
+                              fontSize: 10.5,
+                              fontWeight: 600,
                               color: colorVencimiento(cert.diasRestantes),
                               flexShrink: 0,
                             }}
@@ -958,10 +959,10 @@ export default function Dashboard({ ctx, go }) {
                         background: "#f47c20",
                         color: "#ffffff",
                         border: "none",
-                        borderRadius: 10,
-                        fontSize: 12,
-                        fontWeight: 700,
-                        padding: "8px 14px",
+                        borderRadius: 8,
+                        fontSize: 11.5,
+                        fontWeight: 600,
+                        padding: "6px 12px",
                         width: "100%",
                         cursor: "pointer",
                       }}
@@ -970,7 +971,7 @@ export default function Dashboard({ ctx, go }) {
                     </button>
                   </>
                 ) : (
-                  <div style={{ fontSize: 12, color: "var(--text-muted, #6e6e73)" }}>
+                  <div style={{ fontSize: 11.5, color: "var(--text-muted, #667085)" }}>
                     Todas las certificaciones de altura están al día.
                   </div>
                 )}
@@ -980,13 +981,13 @@ export default function Dashboard({ ctx, go }) {
               <div
                 style={{
                   background: seg.hayAlgoQueHacer
-                    ? "rgba(255, 149, 0, 0.06)"
+                    ? "rgba(255, 149, 0, 0.05)"
                     : "var(--surface-subtle, #f8fafc)",
                   border: `1px solid ${
-                    seg.hayAlgoQueHacer ? "rgba(255, 149, 0, 0.28)" : "var(--border, rgba(0, 0, 0, 0.07))"
+                    seg.hayAlgoQueHacer ? "rgba(255, 149, 0, 0.22)" : "var(--border, rgba(0, 0, 0, 0.06))"
                   }`,
-                  borderRadius: 14,
-                  padding: "13px 16px",
+                  borderRadius: 12,
+                  padding: "10px 14px",
                 }}
               >
                 <div
@@ -994,16 +995,16 @@ export default function Dashboard({ ctx, go }) {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "baseline",
-                    marginBottom: 8,
+                    marginBottom: 6,
                   }}
                 >
                   <div
                     style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: "var(--text-muted, #86868b)",
+                      fontSize: 10.5,
+                      fontWeight: 600,
+                      color: "var(--text-muted, #667085)",
                       textTransform: "uppercase",
-                      letterSpacing: "0.05em",
+                      letterSpacing: "0.04em",
                     }}
                   >
                     Cotizaciones sin respuesta
@@ -1012,7 +1013,7 @@ export default function Dashboard({ ctx, go }) {
                     <span
                       style={{
                         fontSize: 11,
-                        fontWeight: 700,
+                        fontWeight: 600,
                         color: "#c2410c",
                       }}
                     >
@@ -1023,20 +1024,20 @@ export default function Dashboard({ ctx, go }) {
 
                 {seg.hayAlgoQueHacer ? (
                   <>
-                    <div style={{ display: "flex", gap: 12, marginBottom: 10, fontSize: 11.5 }}>
+                    <div style={{ display: "flex", gap: 10, marginBottom: 8, fontSize: 11 }}>
                       {seg.vencidas.length > 0 && (
-                        <span style={{ color: "#ef4444", fontWeight: 700 }}>
+                        <span style={{ color: "#ef4444", fontWeight: 600 }}>
                           {seg.vencidas.length} vencida{seg.vencidas.length === 1 ? "" : "s"}
                         </span>
                       )}
                       {seg.porVencer.length > 0 && (
-                        <span style={{ color: "#c2410c", fontWeight: 700 }}>
+                        <span style={{ color: "#c2410c", fontWeight: 600 }}>
                           {seg.porVencer.length} por vencer
                         </span>
                       )}
                     </div>
 
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 8 }}>
                       {seg.destacadas.slice(0, 3).map((cot) => (
                         <div
                           key={cot.id}
@@ -1045,17 +1046,17 @@ export default function Dashboard({ ctx, go }) {
                             justifyContent: "space-between",
                             alignItems: "center",
                             background: "var(--surface, #ffffff)",
-                            border: "1px solid var(--border, rgba(0,0,0,0.08))",
+                            border: "1px solid var(--border, rgba(0,0,0,0.06))",
                             borderRadius: 8,
-                            padding: "7px 10px",
+                            padding: "6px 9px",
                           }}
                         >
                           <div style={{ minWidth: 0 }}>
                             <div
                               style={{
-                                fontSize: 12,
-                                fontWeight: 600,
-                                color: "var(--text-main, #1d1d1f)",
+                                fontSize: 11.5,
+                                fontWeight: 500,
+                                color: "var(--text-main, #101828)",
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
                                 whiteSpace: "nowrap",
@@ -1065,8 +1066,8 @@ export default function Dashboard({ ctx, go }) {
                             </div>
                             <div
                               style={{
-                                fontSize: 10.5,
-                                color: "var(--text-subtle, #86868b)",
+                                fontSize: 10,
+                                color: "var(--text-muted, #667085)",
                               }}
                             >
                               {[cot.numero, cot.obra].filter(Boolean).join(" · ")}
@@ -1074,8 +1075,8 @@ export default function Dashboard({ ctx, go }) {
                           </div>
                           <span
                             style={{
-                              fontSize: 11,
-                              fontWeight: 800,
+                              fontSize: 10.5,
+                              fontWeight: 600,
                               color: colorSeguimiento(cot.diasParaVencer),
                               flexShrink: 0,
                             }}
@@ -1091,12 +1092,12 @@ export default function Dashboard({ ctx, go }) {
                       onClick={() => go("cotizacion")}
                       style={{
                         background: "var(--surface, #ffffff)",
-                        color: "var(--text-main, #1d1d1f)",
+                        color: "var(--text-main, #101828)",
                         border: "1px solid var(--border, rgba(0,0,0,0.12))",
-                        borderRadius: 10,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        padding: "8px 14px",
+                        borderRadius: 8,
+                        fontSize: 11.5,
+                        fontWeight: 500,
+                        padding: "6px 12px",
                         width: "100%",
                         cursor: "pointer",
                       }}
@@ -1105,7 +1106,7 @@ export default function Dashboard({ ctx, go }) {
                     </button>
                   </>
                 ) : (
-                  <div style={{ fontSize: 12, color: "var(--text-muted, #6e6e73)" }}>
+                  <div style={{ fontSize: 11.5, color: "var(--text-muted, #667085)" }}>
                     No hay propuestas técnicas pendientes de respuesta comercial.
                   </div>
                 )}
@@ -1128,32 +1129,36 @@ function TarjetaAcceso({ icono, titulo, subtitulo, onClick }) {
       style={{
         background: "var(--surface, #ffffff)",
         border: `1px solid ${hover ? "#0071e3" : "var(--border, rgba(0, 0, 0, 0.08))"}`,
-        borderRadius: 14,
-        padding: "14px 12px",
+        borderRadius: 12,
+        padding: "10px 10px",
         cursor: "pointer",
-        transition: "all 0.18s cubic-bezier(0.16, 1, 0.3, 1)",
-        transform: hover ? "translateY(-2px)" : "translateY(0)",
-        boxShadow: hover ? "0 8px 20px -4px rgba(0,0,0,0.06)" : "0 1px 3px rgba(0,0,0,0.02)",
+        transition: "all 0.16s cubic-bezier(0.16, 1, 0.3, 1)",
+        transform: hover ? "translateY(-1px)" : "translateY(0)",
+        boxShadow: hover ? "0 4px 12px -2px rgba(0,0,0,0.06)" : "0 1px 2px rgba(0,0,0,0.02)",
+        minWidth: 0,
       }}
     >
-      <div style={{ fontSize: 22, marginBottom: 6 }}>{icono}</div>
+      <div style={{ fontSize: 18, marginBottom: 4 }}>{icono}</div>
       <div
         style={{
-          fontSize: 13,
+          fontSize: 12,
           fontWeight: 600,
           letterSpacing: "-0.01em",
           color: hover ? "#0071e3" : "var(--text-main, #101828)",
           transition: "color 0.15s ease",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
         }}
       >
         {titulo}
       </div>
       <div
         style={{
-          fontSize: 11.5,
+          fontSize: 10.5,
           fontWeight: 400,
           color: "var(--text-muted, #667085)",
-          marginTop: 2,
+          marginTop: 1,
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",

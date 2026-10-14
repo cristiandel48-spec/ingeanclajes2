@@ -477,41 +477,43 @@ export default function ListaCertificaciones({ certs = [], acciones = {} }) {
             background: "var(--surface, #ffffff)",
             border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
             borderRadius: 16,
-            overflow: "hidden",
+            overflowX: "auto",
             boxShadow: "0 2px 8px -2px rgba(0, 0, 0, 0.02)",
           }}
         >
-          {/* Cabecera de la tabla */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "110px 2.2fr 130px 150px 1.8fr 140px",
-              padding: "10px 16px",
-              background: "var(--surface-subtle, #f5f5f7)",
-              borderBottom: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
-              fontSize: 11,
-              fontWeight: 700,
-              color: "var(--text-subtle, #86868b)",
-              textTransform: "uppercase",
-              letterSpacing: "0.04em",
-            }}
-          >
-            <div>Documento</div>
-            <div>Cliente & Obra</div>
-            <div>Tipo</div>
-            <div>Vigencia</div>
-            <div>Sistema Certificado</div>
-            <div style={{ textAlign: "right" }}>Acciones</div>
-          </div>
+          <div style={{ minWidth: 880 }}>
+            {/* Cabecera de la tabla */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "105px minmax(200px, 2.2fr) 130px 160px minmax(180px, 2fr) 120px",
+                padding: "10px 16px",
+                background: "var(--surface-subtle, #f5f5f7)",
+                borderBottom: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+                fontSize: 11,
+                fontWeight: 700,
+                color: "var(--text-subtle, #86868b)",
+                textTransform: "uppercase",
+                letterSpacing: "0.04em",
+              }}
+            >
+              <div>Documento</div>
+              <div>Cliente & Obra</div>
+              <div>Tipo</div>
+              <div>Vigencia</div>
+              <div>Sistema Certificado</div>
+              <div style={{ textAlign: "right" }}>Acciones</div>
+            </div>
 
-          {certsFiltradas.map((c, idx) => (
-            <FilaTablaCertificacion
-              key={c.id}
-              cert={c}
-              acciones={acciones}
-              zebra={idx % 2 === 1}
-            />
-          ))}
+            {certsFiltradas.map((c, idx) => (
+              <FilaTablaCertificacion
+                key={c.id}
+                cert={c}
+                acciones={acciones}
+                zebra={idx % 2 === 1}
+              />
+            ))}
+          </div>
         </div>
       )}
 
@@ -861,7 +863,7 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
       onMouseLeave={() => setHover(false)}
       style={{
         display: "grid",
-        gridTemplateColumns: "110px 2.2fr 130px 150px 1.8fr 140px",
+        gridTemplateColumns: "105px minmax(200px, 2.2fr) 130px 160px minmax(180px, 2fr) 120px",
         alignItems: "center",
         padding: "11px 16px",
         background: hover
@@ -944,26 +946,46 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
       </div>
 
       {/* Vigencia & Próx. Mantenimiento */}
-      <div>
+      <div style={{ minWidth: 0, paddingRight: 8 }}>
         {semaforo ? (
-          <span
-            style={{
-              fontSize: 10.5,
-              fontWeight: 600,
-              color: semaforo.color,
-              background: semaforo.bg,
-              border: `1px solid ${semaforo.borde}`,
-              borderRadius: 6,
-              padding: "2px 6px",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 3,
-              whiteSpace: "nowrap",
-            }}
-          >
-            <span>{semaforo.icono}</span>
-            <span>{semaforo.texto}</span>
-          </span>
+          <div>
+            <span
+              style={{
+                fontSize: 10.5,
+                fontWeight: 600,
+                color: semaforo.color,
+                background: semaforo.bg,
+                border: `1px solid ${semaforo.borde}`,
+                borderRadius: 6,
+                padding: "2px 7px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                whiteSpace: "nowrap",
+              }}
+            >
+              <span>{semaforo.icono}</span>
+              <span>
+                {semaforo.estado === "vigente"
+                  ? "Vigente"
+                  : semaforo.estado === "porVencer"
+                  ? (semaforo.dias === 0 ? "Vence hoy" : `Vence en ${semaforo.dias}d`)
+                  : "Vencida"}
+              </span>
+            </span>
+            {c.proxMant && (
+              <div
+                style={{
+                  fontSize: 10.5,
+                  color: "var(--text-subtle, #86868b)",
+                  marginTop: 2,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Hasta {fmtD(c.proxMant)}
+              </div>
+            )}
+          </div>
         ) : (
           <span style={{ fontSize: 11, color: "var(--text-subtle, #86868b)" }}>
             {c.fecha ? fmtD(c.fecha) : "—"}
@@ -974,6 +996,7 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
       {/* Sistema Certificado */}
       <div
         style={{
+          minWidth: 0,
           fontSize: 11.5,
           color: "var(--text-muted, #475467)",
           overflow: "hidden",
@@ -981,6 +1004,7 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
           whiteSpace: "nowrap",
           paddingRight: 10,
         }}
+        title={c.sistema}
       >
         {c.sistema || "—"}
       </div>

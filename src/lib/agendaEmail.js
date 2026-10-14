@@ -3,6 +3,12 @@ import { enviarCotizacionPorCorreo } from "./backend/usuarios";
 import { asuntoSeguro } from "./asuntoCorreo";
 
 export const EMAIL_CAMILA_DEFAULT = "camilascadavid@gmail.com";
+export const EMAIL_CRISTIAN_DEFAULT = "cristiandel48@gmail.com";
+
+export const DESTINATARIOS_AGENDA_DEFAULT = [
+  EMAIL_CAMILA_DEFAULT,
+  EMAIL_CRISTIAN_DEFAULT,
+];
 
 const MESES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -15,9 +21,9 @@ const DIAS_COMPLETO = [
 
 export function getEmailNotificacionAgenda() {
   try {
-    return localStorage.getItem("agenda_email_notificacion") || EMAIL_CAMILA_DEFAULT;
+    return localStorage.getItem("agenda_email_notificacion") || DESTINATARIOS_AGENDA_DEFAULT.join(", ");
   } catch {
-    return EMAIL_CAMILA_DEFAULT;
+    return DESTINATARIOS_AGENDA_DEFAULT.join(", ");
   }
 }
 
@@ -78,7 +84,7 @@ export function horaA12h(time24) {
 }
 
 // Genera el enlace a Google Calendar para incluirlo en el correo
-export function generarUrlGoogleCalendar(compromiso, emailInvitado = EMAIL_CAMILA_DEFAULT) {
+export function generarUrlGoogleCalendar(compromiso, emailInvitado = DESTINATARIOS_AGENDA_DEFAULT) {
   if (!compromiso) return "";
   const isoFecha = compromiso.fecha || new Date().toISOString().slice(0, 10);
   const { h, m } = parsearHora(compromiso.hora);
@@ -123,20 +129,24 @@ export function generarUrlGoogleCalendar(compromiso, emailInvitado = EMAIL_CAMIL
     "Programado desde el Sistema de Gestion - Ingeanclajes S.A.S.",
   ].filter(Boolean).join("\n");
 
+  const invitadosStr = Array.isArray(emailInvitado)
+    ? emailInvitado.join(",")
+    : String(emailInvitado || "");
+
   const params = new URLSearchParams({
     action: "TEMPLATE",
     text: titulo,
     dates: fechas,
     details: detalles,
     location: ubicacion,
-    add: emailInvitado,
+    add: invitadosStr,
   });
 
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
-// Envía notificación por correo automática a Camila en segundo plano desde sistemasingeanclajes@gmail.com
-export async function enviarNotificacionAgendaPorCorreo(compromiso, emailDestino = EMAIL_CAMILA_DEFAULT) {
+// Envía notificación por correo automática a Camila y Cristian en segundo plano desde sistemasingeanclajes@gmail.com
+export async function enviarNotificacionAgendaPorCorreo(compromiso, destinatarios = DESTINATARIOS_AGENDA_DEFAULT) {
   const tipoLabel = compromiso.tipo === "visita"
     ? "Visita a Obra"
     : compromiso.tipo === "llamada"
@@ -149,10 +159,16 @@ export async function enviarNotificacionAgendaPorCorreo(compromiso, emailDestino
     `Agenda Ingeanclajes: ${tipoLabel} - ${compromiso.obra || compromiso.titulo || "Compromiso"}`
   );
 
-  const enlaceCalendar = generarUrlGoogleCalendar(compromiso, emailDestino);
+  const correos = Array.isArray(destinatarios)
+    ? destinatarios
+    : String(destinatarios || "").split(/[,;]/).map((s) => s.trim()).filter(Boolean);
+
+  const listaCorreos = correos.length ? correos : DESTINATARIOS_AGENDA_DEFAULT;
+
+  const enlaceCalendar = generarUrlGoogleCalendar(compromiso, listaCorreos);
 
   const mensaje = [
-    `Hola Camila,`,
+    `Hola Camila y Cristian,`,
     ``,
     `Se ha agendado un nuevo compromiso en el sistema de Ingeanclajes:`,
     ``,
@@ -174,13 +190,17 @@ export async function enviarNotificacionAgendaPorCorreo(compromiso, emailDestino
   ].filter(Boolean).join("\n");
 
   try {
-    const res = await enviarCotizacionPorCorreo({
-      para: emailDestino,
-      asunto,
-      mensaje,
-      numero: "AGENDA",
-    });
-    return { ok: true, detalle: res };
+    const envios = await Promise.allSettled(
+      listaCorreos.map((correo) =>
+        enviarCotizacionPorCorreo({
+          para: correo,
+          asunto,
+          mensaje,
+          numero: "AGENDA",
+        })
+      )
+    );
+    return { ok: true, envios };
   } catch (err) {
     console.error("Error al enviar notificación de agenda por correo:", err);
     return { ok: false, error: err };

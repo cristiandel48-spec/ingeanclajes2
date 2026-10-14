@@ -44,182 +44,163 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
   // --- RENDERIZADORES DE FRAGMENTOS VISUALES ---
 
   const renderHeaderPortada = () => `
-    <div style="height:3px;background:#0f172a;border-radius:2px;margin-bottom:12px;"></div>
-    <table style="width:100%;border-collapse:collapse;border:1.5px solid #0f172a;margin-bottom:12px;background:#ffffff;">
-      <tr>
-        <td style="width:28%;text-align:center;border-right:1.5px solid #0f172a;padding:6px 12px;vertical-align:middle;">
-          ${LOGO_INGEANCLAJES ? `<img src="${LOGO_INGEANCLAJES}" alt="Ingeanclajes" style="height:44px;max-width:180px;object-fit:contain;display:block;margin:0 auto 3px;"/>` : `<div style="font-size:16px;font-weight:800;color:#0f172a;letter-spacing:-0.03em;">INGE<span style="color:#ea580c;">ANCLAJES</span></div>`}
-          <div style="font-size:7.5px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.08em;margin-top:2px;">Especialistas en Anclajes S.A.S</div>
-          <div style="font-size:7.5px;color:#475569;margin-top:1px;">NIT. 900.193.965-4 · PBX (604) 448 26 86</div>
-        </td>
-        <td style="width:46%;text-align:center;padding:6px 10px;vertical-align:middle;border-right:1px solid #cbd5e1;">
-          <div style="font-size:8px;font-weight:700;color:#475569;letter-spacing:0.12em;text-transform:uppercase;">Sistema de Gestión de la Calidad</div>
-          <div style="font-size:12px;font-weight:800;color:#0f172a;letter-spacing:0.04em;margin-top:3px;line-height:1.25;">INFORME TÉCNICO DE ACTIVIDADES EN OBRA</div>
-          <div style="font-size:8px;font-weight:500;color:#475569;margin-top:2px;">Inspección, Montaje y Pruebas Estructurales</div>
-        </td>
-        <td style="width:26%;font-size:8px;line-height:1.5;background:#f8fafc;padding:6px 10px;vertical-align:middle;">
-          <div style="display:flex;justify-content:space-between;border-bottom:1px dashed #cbd5e1;padding-bottom:1px;margin-bottom:2px;">
-            <span style="color:#475569;font-weight:600;">CÓDIGO:</span>
-            <span style="font-weight:700;color:#0f172a;font-family:'JetBrains Mono',monospace;">${escapeHtml(docCodigo)}</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;border-bottom:1px dashed #cbd5e1;padding-bottom:1px;margin-bottom:2px;">
-            <span style="color:#475569;font-weight:600;">VERSIÓN:</span>
-            <span style="font-weight:700;color:#0f172a;font-family:'JetBrains Mono',monospace;">${escapeHtml(docVersion)}</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;border-bottom:1px dashed #cbd5e1;padding-bottom:1px;margin-bottom:2px;">
-            <span style="color:#475569;font-weight:600;">EMISIÓN:</span>
-            <span style="font-weight:700;color:#0f172a;font-family:'JetBrains Mono',monospace;">${escapeHtml(docFecha)}</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;">
-            <span style="color:#475569;font-weight:600;">CONSECUTIVO:</span>
-            <span style="color:#ea580c;font-weight:800;font-size:9.5px;font-family:'JetBrains Mono',monospace;">${escapeHtml(numDoc || "INF-OFICIAL")}</span>
-          </div>
-        </td>
-      </tr>
-    </table>
+    <div style="height:2px;background:#1d1d1f;border-radius:1px;margin-bottom:12px;"></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid rgba(0,0,0,0.08);padding-bottom:12px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        ${LOGO_INGEANCLAJES ? `<img src="${LOGO_INGEANCLAJES}" alt="Ingeanclajes" style="height:44px;max-width:180px;object-fit:contain;display:block;"/>` : `<div style="font-size:16px;font-weight:800;color:#1d1d1f;letter-spacing:-0.03em;">INGE<span style="color:#f47c20;">ANCLAJES</span></div>`}
+        <div>
+          <div style="font-size:12px;font-weight:800;color:#1d1d1f;letter-spacing:-0.01em;">INGEANCLAJES <span style="font-size:10px;font-weight:600;color:#f47c20;">S.A.S.</span></div>
+          <div style="font-size:8px;font-weight:700;color:#6e6e73;text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;">Sistemas de Ingeniería y Protección Contra Caídas</div>
+          <div style="font-size:7.5px;color:#86868b;margin-top:1px;">NIT. 900.193.965-4 · PBX (604) 448 26 86 · Medellín, Colombia</div>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div style="display:inline-block;padding:2px 7px;border-radius:4px;background:#f5f5f7;border:1px solid #e5e5ea;font-size:8px;color:#6e6e73;font-family:'JetBrains Mono',monospace;margin-bottom:3px;">
+          SISTEMA DE GESTIÓN DE CALIDAD · ${escapeHtml(docCodigo)} (V-${escapeHtml(docVersion)})
+        </div>
+        <div style="font-size:11px;font-weight:800;color:#1d1d1f;letter-spacing:0.02em;text-transform:uppercase;">INFORME TÉCNICO DE ACTIVIDADES EN OBRA</div>
+        <div style="font-size:9px;color:#1d1d1f;font-family:'JetBrains Mono',monospace;font-weight:700;margin-top:2px;">
+          Consecutivo: <span style="background:#1d1d1f;color:#ffffff;padding:1.5px 6px;border-radius:3px;">${escapeHtml(numDoc || "INF-OFICIAL")}</span>
+        </div>
+      </div>
+    </div>
   `;
 
   const renderHeaderSecundario = () => `
-    <div style="height:3px;background:#0f172a;border-radius:2px;margin-bottom:8px;"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #cbd5e1;padding-bottom:5px;margin-bottom:12px;">
+    <div style="height:2px;background:#1d1d1f;border-radius:1px;margin-bottom:8px;"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(0,0,0,0.08);padding-bottom:5px;margin-bottom:12px;">
       <div style="display:flex;align-items:center;gap:7px;">
-        <span style="font-size:11px;font-weight:800;color:#0f172a;">INGE<span style="color:#ea580c;">ANCLAJES</span></span>
-        <span style="color:#cbd5e1;font-size:10px;">·</span>
-        <span style="font-size:9px;font-weight:700;color:#0f172a;text-transform:uppercase;letter-spacing:0.04em;">Informe de Actividades · ${escapeHtml(proyecto)}</span>
+        <span style="font-size:10.5px;font-weight:800;color:#1d1d1f;">INGE<span style="color:#f47c20;">ANCLAJES</span></span>
+        <span style="color:#d2d2d7;font-size:10px;">·</span>
+        <span style="font-size:8.5px;font-weight:700;color:#6e6e73;text-transform:uppercase;letter-spacing:0.04em;">Informe de Actividades · ${escapeHtml(proyecto)}</span>
       </div>
-      <div style="font-size:9px;color:#ea580c;font-family:'JetBrains Mono',monospace;font-weight:800;">${escapeHtml(numDoc)}</div>
+      <div style="font-size:8.5px;color:#1d1d1f;font-family:'JetBrains Mono',monospace;font-weight:700;">${escapeHtml(numDoc)}</div>
     </div>
   `;
 
   const renderDatosProyecto = () => `
-    <table style="width:100%;border-collapse:collapse;border:1px solid #cbd5e1;font-size:9px;margin-bottom:12px;background:#ffffff;">
-      <tr>
-        <td style="width:18%;background:#f8fafc;font-weight:700;color:#475569;letter-spacing:0.04em;font-size:8px;text-transform:uppercase;border:1px solid #e2e8f0;padding:5px 9px;">PROYECTO:</td>
-        <td style="width:36%;font-weight:800;color:#0f172a;border:1px solid #e2e8f0;padding:5px 9px;">${escapeHtml(proyecto || "OBRA GENERAL")}</td>
-        <td style="width:18%;background:#f8fafc;font-weight:700;color:#475569;letter-spacing:0.04em;font-size:8px;text-transform:uppercase;border:1px solid #e2e8f0;padding:5px 9px;">PERÍODO AUDITADO:</td>
-        <td style="width:28%;color:#0f172a;font-weight:600;border:1px solid #e2e8f0;padding:5px 9px;">${escapeHtml(periodo)}</td>
-      </tr>
-      <tr>
-        <td style="background:#f8fafc;font-weight:700;color:#475569;letter-spacing:0.04em;font-size:8px;text-transform:uppercase;border:1px solid #e2e8f0;padding:5px 9px;">CONTRATANTE:</td>
-        <td style="color:#0f172a;font-weight:600;border:1px solid #e2e8f0;padding:5px 9px;">${escapeHtml(cliente || "A QUIEN INTERESE")}</td>
-        <td style="background:#f8fafc;font-weight:700;color:#475569;letter-spacing:0.04em;font-size:8px;text-transform:uppercase;border:1px solid #e2e8f0;padding:5px 9px;">FECHA INFORME:</td>
-        <td style="color:#0f172a;font-weight:600;border:1px solid #e2e8f0;padding:5px 9px;">${escapeHtml(fechaInforme)}</td>
-      </tr>
-      <tr>
-        <td style="background:#f8fafc;font-weight:700;color:#475569;letter-spacing:0.04em;font-size:8px;text-transform:uppercase;border:1px solid #e2e8f0;padding:5px 9px;">LOCALIZACIÓN:</td>
-        <td style="color:#0f172a;font-weight:600;border:1px solid #e2e8f0;padding:5px 9px;">${escapeHtml(localizacion || "MEDELLÍN")}</td>
-        <td style="background:#f8fafc;font-weight:700;color:#475569;letter-spacing:0.04em;font-size:8px;text-transform:uppercase;border:1px solid #e2e8f0;padding:5px 9px;">NORMATIVA:</td>
-        <td style="border:1px solid #e2e8f0;padding:5px 9px;">
-          <span style="background:#f1f5f9;color:#0f172a;border:1px solid #cbd5e1;font-size:8px;font-weight:700;padding:1.5px 6px;border-radius:4px;display:inline-block;letter-spacing:0.02em;">Res. 4272/2021 · OSHA 1926.502</span>
-        </td>
-      </tr>
-      ${cotizacionRef ? `
-      <tr>
-        <td style="background:#f8fafc;font-weight:700;color:#475569;letter-spacing:0.04em;font-size:8px;text-transform:uppercase;border:1px solid #e2e8f0;padding:5px 9px;">REF. COTIZACIÓN:</td>
-        <td colspan="3" style="color:#0f172a;font-weight:700;border:1px solid #e2e8f0;padding:5px 9px;font-family:'JetBrains Mono',monospace;">
-          <span style="background:#f8fafc;color:#0f172a;padding:1.5px 7px;border-radius:4px;border:1px solid #cbd5e1;font-size:8.5px;letter-spacing:0.02em;">📄 ${escapeHtml(cotizacionRef)}</span>
-        </td>
-      </tr>
-      ` : ''}
-    </table>
+    <div style="border:1px solid rgba(0,0,0,0.08);border-radius:8px;padding:9px 12px;margin-bottom:12px;background:#fbfbfd;">
+      <table style="width:100%;border-collapse:collapse;font-size:8.5px;">
+        <tr>
+          <td style="width:17%;font-weight:700;color:#6e6e73;letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;">PROYECTO:</td>
+          <td style="width:38%;font-weight:700;color:#1d1d1f;padding:3.5px 6px;">${escapeHtml(proyecto || "OBRA GENERAL")}</td>
+          <td style="width:17%;font-weight:700;color:#6e6e73;letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;border-left:1px solid rgba(0,0,0,0.06);">PERÍODO:</td>
+          <td style="width:28%;color:#1d1d1f;font-weight:600;padding:3.5px 6px;">${escapeHtml(periodo)}</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:#6e6e73;letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;border-top:1px solid rgba(0,0,0,0.04);">CONTRATANTE:</td>
+          <td style="color:#1d1d1f;font-weight:600;padding:3.5px 6px;border-top:1px solid rgba(0,0,0,0.04);">${escapeHtml(cliente || "A QUIEN INTERESE")}</td>
+          <td style="font-weight:700;color:#6e6e73;letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;border-left:1px solid rgba(0,0,0,0.06);border-top:1px solid rgba(0,0,0,0.04);">FECHA EMISIÓN:</td>
+          <td style="color:#1d1d1f;font-weight:600;padding:3.5px 6px;border-top:1px solid rgba(0,0,0,0.04);">${escapeHtml(fechaInforme)}</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:#6e6e73;letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;border-top:1px solid rgba(0,0,0,0.04);">LOCALIZACIÓN:</td>
+          <td style="color:#1d1d1f;font-weight:600;padding:3.5px 6px;border-top:1px solid rgba(0,0,0,0.04);">${escapeHtml(localizacion || "MEDELLÍN")}</td>
+          <td style="font-weight:700;color:#6e6e73;letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;border-left:1px solid rgba(0,0,0,0.06);border-top:1px solid rgba(0,0,0,0.04);">NORMATIVA:</td>
+          <td style="padding:3.5px 6px;border-top:1px solid rgba(0,0,0,0.04);">
+            <span style="background:#ffffff;color:#1d1d1f;border:1px solid #d2d2d7;font-size:7.5px;font-weight:700;padding:1px 5px;border-radius:3px;display:inline-block;letter-spacing:0.02em;">Res. 4272/2021 · OSHA 1926</span>
+          </td>
+        </tr>
+        ${cotizacionRef ? `
+        <tr>
+          <td style="font-weight:700;color:#6e6e73;letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;border-top:1px solid rgba(0,0,0,0.04);">REF. COTIZACIÓN:</td>
+          <td colspan="3" style="color:#1d1d1f;font-weight:700;padding:3.5px 6px;border-top:1px solid rgba(0,0,0,0.04);font-family:'JetBrains Mono',monospace;">
+            <span style="background:#ffffff;color:#1d1d1f;padding:1px 6px;border-radius:3px;border:1px solid #d2d2d7;font-size:8px;">📄 ${escapeHtml(cotizacionRef)}</span>
+          </td>
+        </tr>
+        ` : ''}
+      </table>
+    </div>
   `;
 
   const renderPersonalEnObra = () => `
-    <div style="background:#0f172a;color:#ffffff;padding:4px 10px;display:flex;align-items:center;justify-content:space-between;border-left:4px solid #ea580c;margin-bottom:6px;border-radius:0 4px 4px 0;">
-      <span style="font-size:9.5px;font-weight:800;letter-spacing:0.07em;text-transform:uppercase;">1. Personal Técnico en Obra</span>
-      <span style="font-size:8px;font-weight:600;color:#94a3b8;letter-spacing:0.04em;text-transform:uppercase;">Cuadrilla Asignada en Sitio</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <span style="font-size:9px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#1d1d1f;">1. Personal Técnico Asignado en Sitio</span>
+      <span style="font-size:8px;font-weight:500;color:#86868b;">Personal con certificación de trabajo en alturas</span>
     </div>
-    <table style="width:100%;border-collapse:collapse;border:1px solid #cbd5e1;font-size:9px;margin-bottom:12px;background:#ffffff;">
-      <thead>
-        <tr>
-          <th style="width:38%;background:#f8fafc;border:1px solid #cbd5e1;padding:5px 9px;font-weight:700;text-align:left;color:#475569;font-size:8.5px;letter-spacing:0.05em;text-transform:uppercase;">CARGO / ESPECIALIDAD EN SITIO</th>
-          <th style="width:62%;background:#f8fafc;border:1px solid #cbd5e1;padding:5px 9px;font-weight:700;text-align:left;color:#475569;font-size:8.5px;letter-spacing:0.05em;text-transform:uppercase;">NOMBRE COMPLETO DEL PERSONAL EN OBRA</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${personal.length > 0 ? personal.map((p, idx) => `
-          <tr style="background:${idx % 2 === 1 ? "#fafafa" : "#ffffff"};">
-            <td style="border:1px solid #e2e8f0;padding:5px 9px;vertical-align:middle;">
-              <div style="font-weight:700;color:#0f172a;display:flex;align-items:center;gap:6px;">
-                <span style="width:5px;height:5px;background:#0f172a;border-radius:50%;display:inline-block;flex-shrink:0;"></span>
-                <span>${escapeHtml(String(p.cargo || "TÉCNICO ESPECIALISTA").toUpperCase())}</span>
-              </div>
-            </td>
-            <td style="border:1px solid #e2e8f0;padding:5px 9px;vertical-align:middle;font-weight:600;color:#0f172a;font-size:9.5px;">
-              ${escapeHtml(p.nombre || "Sin nombre registrado")}
-            </td>
-          </tr>
-        `).join("") : `
-          <tr>
-            <td colspan="2" style="border:1px solid #e2e8f0;padding:6px 9px;color:#475569;font-style:italic;">Personal asignado conforme a programación de cuadrilla en obra.</td>
-          </tr>
-        `}
-      </tbody>
-    </table>
+    <div style="display:grid;grid-template-columns:repeat(${Math.min(3, Math.max(1, personal.length))}, 1fr);gap:8px;margin-bottom:12px;">
+      ${personal.length > 0 ? personal.map((p, idx) => `
+        <div style="border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:6px 9px;background:#ffffff;display:flex;align-items:center;gap:7px;">
+          <div style="width:20px;height:20px;background:#f5f5f7;border-radius:4px;color:#1d1d1f;font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            ${String(idx + 1).padStart(2, "0")}
+          </div>
+          <div style="min-width:0;flex:1;">
+            <div style="font-size:7.5px;font-weight:700;color:#6e6e73;text-transform:uppercase;letter-spacing:0.04em;">${escapeHtml(String(p.cargo || "TÉCNICO ESPECIALISTA").toUpperCase())}</div>
+            <div style="font-size:9px;font-weight:600;color:#1d1d1f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(p.nombre || "Sin nombre")}</div>
+          </div>
+        </div>
+      `).join("") : `
+        <div style="border:1px dashed #d2d2d7;border-radius:6px;padding:6px 9px;color:#6e6e73;font-size:8px;font-style:italic;">Personal asignado conforme a programación de cuadrilla en obra.</div>
+      `}
+    </div>
   `;
 
   const renderBannerActividades = () => `
-    <div style="background:#0f172a;color:#ffffff;padding:4px 10px;display:flex;align-items:center;justify-content:space-between;border-left:4px solid #ea580c;margin-bottom:6px;border-radius:0 4px 4px 0;">
-      <span style="font-size:9.5px;font-weight:800;letter-spacing:0.07em;text-transform:uppercase;">2. Registro y Metodología de Actividades Ejecutadas</span>
-      <span style="font-size:8px;font-weight:600;color:#94a3b8;letter-spacing:0.04em;text-transform:uppercase;">Control Operativo</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;padding-top:2px;">
+      <span style="font-size:9px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#1d1d1f;">2. Metodología y Registro de Actividades Ejecutadas</span>
+      <span style="font-size:8px;font-weight:500;color:#86868b;">Control y Trazabilidad Operativa</span>
     </div>
   `;
 
   const renderTablaActividad = (act, idx) => `
-    <table style="width:100%;border-collapse:collapse;border:1px solid #cbd5e1;font-size:9px;margin-bottom:10px;background:#ffffff;">
-      <thead>
-        <tr>
-          <th colspan="2" style="background:#f8fafc;border:1px solid #cbd5e1;padding:5px 9px;font-weight:800;text-align:left;color:#0f172a;font-size:9.5px;">
-            <div style="display:flex;align-items:center;gap:7px;">
-              <span style="background:#0f172a;color:#ffffff;font-family:'JetBrains Mono',monospace;font-size:8.5px;padding:1px 5px;border-radius:3px;font-weight:700;">${String(idx + 1).padStart(2, "0")}</span>
-              <span>${escapeHtml(act.titulo || "Actividad Ejecutada")}</span>
-            </div>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
+    <div style="border:1px solid rgba(0,0,0,0.08);border-radius:8px;background:#ffffff;padding:10px 12px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,0.02);">
+      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f2f2f7;padding-bottom:5px;margin-bottom:6px;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="background:#1d1d1f;color:#ffffff;font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;">
+            ACT-${String(idx + 1).padStart(2, "0")}
+          </span>
+          <span style="font-size:9.5px;font-weight:700;color:#1d1d1f;">
+            ${escapeHtml(act.titulo || "Actividad Ejecutada")}
+          </span>
+        </div>
         ${act.fecha ? `
-          <tr>
-            <td style="width:24%;border:1px solid #e2e8f0;padding:4px 9px;background:#f8fafc;font-weight:700;font-size:8px;color:#475569;text-transform:uppercase;letter-spacing:0.04em;">FECHA DE EJECUCIÓN</td>
-            <td style="border:1px solid #e2e8f0;padding:4px 9px;font-size:9px;color:#0f172a;font-weight:600;">${escapeHtml(fmtL(act.fecha))}</td>
-          </tr>
+          <span style="font-size:8px;color:#6e6e73;font-family:'JetBrains Mono',monospace;">
+            Fecha: ${escapeHtml(fmtL(act.fecha))}
+          </span>
         ` : ""}
+      </div>
+
+      <div style="font-size:8.5px;color:#1d1d1f;line-height:1.45;text-align:justify;">
         ${(act.actividadesRealizadas || "").trim() ? `
-          <tr>
-            <td style="width:24%;border:1px solid #e2e8f0;padding:5px 9px;background:#f8fafc;font-weight:700;font-size:8px;color:#475569;text-transform:uppercase;letter-spacing:0.04em;vertical-align:top;">ACTIVIDADES REALIZADAS</td>
-            <td style="border:1px solid #e2e8f0;padding:5px 9px;font-size:8.5px;color:#0f172a;line-height:1.45;text-align:justify;white-space:pre-line;">${escapeHtml(act.actividadesRealizadas)}</td>
-          </tr>
+          <div style="margin-bottom:4px;">
+            <strong style="color:#6e6e73;text-transform:uppercase;font-size:7.5px;letter-spacing:0.04em;display:block;">Actividades Realizadas:</strong>
+            ${escapeHtml(act.actividadesRealizadas)}
+          </div>
         ` : ""}
         ${(act.descripcion || "").trim() ? `
-          <tr>
-            <td style="width:24%;border:1px solid #e2e8f0;padding:5px 9px;background:#f8fafc;font-weight:700;font-size:8px;color:#475569;text-transform:uppercase;letter-spacing:0.04em;vertical-align:top;">DESCRIPCIÓN TÉCNICA</td>
-            <td style="border:1px solid #e2e8f0;padding:5px 9px;font-size:8.5px;color:#0f172a;line-height:1.45;text-align:justify;white-space:pre-line;">${escapeHtml(act.descripcion)}</td>
-          </tr>
+          <div style="margin-bottom:4px;">
+            <strong style="color:#6e6e73;text-transform:uppercase;font-size:7.5px;letter-spacing:0.04em;display:block;">Descripción Técnica:</strong>
+            ${escapeHtml(act.descripcion)}
+          </div>
         ` : ""}
-        <tr>
-          <td style="width:24%;border:1px solid #e2e8f0;padding:5px 9px;background:#f8fafc;font-weight:700;font-size:8px;color:#475569;text-transform:uppercase;letter-spacing:0.04em;vertical-align:top;">CRITERIO / OBSERVACIONES</td>
-          <td style="border:1px solid #e2e8f0;padding:5px 9px;font-size:8.5px;color:#0f172a;line-height:1.4;">
-            ${(act.observaciones || "").trim() ? `<span style="color:#0f172a;font-weight:700;">✓ Conforme:</span> ${escapeHtml(act.observaciones)}` : `<span style="color:#475569;font-style:italic;">Ejecutado a conformidad sin novedades reportadas.</span>`}
-          </td>
-        </tr>
-      </tbody>
-    </table>
+      </div>
+
+      <div style="margin-top:6px;padding-top:4px;border-top:1px solid #f2f2f7;display:flex;justify-content:space-between;align-items:center;font-size:8px;">
+        <span style="color:#1d1d1f;">
+          <strong style="color:#047857;">✓ Conforme:</strong> ${(act.observaciones || "").trim() ? escapeHtml(act.observaciones) : "Ejecutado a conformidad sin novedades reportadas."}
+        </span>
+        <span style="color:#6e6e73;font-weight:600;">Estado: Concluido 100%</span>
+      </div>
+    </div>
   `;
 
   const renderBannerFotos = (titulo) => `
-    <div style="background:#0f172a;color:#ffffff;padding:4px 10px;display:flex;align-items:center;justify-content:space-between;border-left:4px solid #ea580c;margin-bottom:8px;border-radius:0 4px 4px 0;">
-      <span style="font-size:9.5px;font-weight:800;letter-spacing:0.07em;text-transform:uppercase;">${escapeHtml(titulo)}</span>
-      <span style="font-size:8px;font-weight:600;color:#94a3b8;letter-spacing:0.04em;text-transform:uppercase;">Registro Visual en Sitio</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;padding-top:2px;">
+      <span style="font-size:9px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#1d1d1f;">${escapeHtml(titulo)}</span>
+      <span style="font-size:8px;font-weight:500;color:#86868b;">Registro Fotográfico en Sitio</span>
     </div>
   `;
 
   const renderFotoCard = (ft, actIdx, fotoIdx) => `
-    <div style="border:1px solid #cbd5e1;border-radius:4px;overflow:hidden;background:#ffffff;box-shadow:0 1px 3px rgba(0,0,0,0.04);display:flex;flex-direction:column;">
-      <div style="height:190px;display:flex;align-items:center;justify-content:center;background:#f8fafc;border-bottom:1px solid #e2e8f0;overflow:hidden;">
+    <div style="border:1px solid rgba(0,0,0,0.08);border-radius:8px;overflow:hidden;background:#ffffff;box-shadow:0 1px 2px rgba(0,0,0,0.02);display:flex;flex-direction:column;">
+      <div style="height:190px;display:flex;align-items:center;justify-content:center;background:#fbfbfd;border-bottom:1px solid #f2f2f7;overflow:hidden;position:relative;">
         <img src="${ft.img || ft.url}" alt="Evidencia ${fotoIdx + 1}" style="width:100%;height:100%;object-fit:contain;display:block;background:#ffffff;"/>
+        <span style="position:absolute;top:6px;left:6px;background:rgba(0,0,0,0.65);color:#ffffff;font-size:7.5px;font-family:'JetBrains Mono',monospace;font-weight:700;padding:2px 6px;border-radius:4px;">
+          EVIDENCIA ${actIdx + 1}.${fotoIdx + 1}
+        </span>
       </div>
-      <div style="padding:5px 8px;font-size:8px;color:#0f172a;line-height:1.35;background:#ffffff;">
-        <strong style="color:#ea580c;">REF ${actIdx + 1}.${fotoIdx + 1}:</strong> ${escapeHtml(ft.comentario || "Registro fotográfico y trazabilidad de actividades ejecutadas en sitio.")}
+      <div style="padding:6px 9px;font-size:8px;color:#1d1d1f;line-height:1.35;background:#ffffff;">
+        ${escapeHtml(ft.comentario || "Registro fotográfico y trazabilidad de actividades ejecutadas en sitio.")}
       </div>
     </div>
   `;
@@ -227,41 +208,37 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
   const renderFotosFila = (parFotos, actIdx, startFotoIdx) => `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;align-items:start;">
       ${parFotos.map((ft, i) => renderFotoCard(ft, actIdx, startFotoIdx + i)).join("")}
-      ${parFotos.length === 1 ? `<div style="border:1px dashed #cbd5e1;border-radius:4px;background:#f8fafc;height:100%;min-height:220px;display:flex;align-items:center;justify-content:center;color:#475569;font-size:8px;">(Espacio reservado)</div>` : ""}
+      ${parFotos.length === 1 ? `<div style="border:1px dashed #d2d2d7;border-radius:8px;background:#fbfbfd;height:100%;min-height:220px;display:flex;align-items:center;justify-content:center;color:#86868b;font-size:8px;">(Espacio reservado)</div>` : ""}
     </div>
   `;
 
   const renderTablaRecomendaciones = () => `
-    <div style="border:1px solid #cbd5e1;border-radius:4px;overflow:hidden;margin-bottom:10px;background:#ffffff;">
-      <div style="background:#f8fafc;padding:4px 9px;font-size:8.5px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #cbd5e1;">RECOMENDACIONES TÉCNICAS GENERALES</div>
-      <div style="padding:6px 9px;font-size:8.5px;color:#0f172a;line-height:1.45;text-align:justify;white-space:pre-line;">${escapeHtml(recomendaciones)}</div>
+    <div style="border:1px solid rgba(0,0,0,0.08);border-radius:8px;overflow:hidden;margin-bottom:10px;background:#fbfbfd;padding:8px 12px;">
+      <div style="font-size:8px;font-weight:700;color:#6e6e73;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">DICTAMEN TÉCNICO Y RECOMENDACIONES</div>
+      <div style="font-size:8.5px;color:#1d1d1f;line-height:1.45;text-align:justify;white-space:pre-line;">${escapeHtml(recomendaciones)}</div>
     </div>
   `;
 
   const renderBloqueFirma = () => `
-    <table style="width:100%;border-collapse:collapse;margin-top:12px;">
+    <table style="width:100%;border-collapse:collapse;margin-top:14px;border-top:1px solid rgba(0,0,0,0.08);padding-top:10px;">
       <tr>
-        <td style="width:50%;padding:0 10px 0 0;vertical-align:top;">
-          <div style="border-top:2px solid #0f172a;padding-top:6px;font-size:8.5px;line-height:1.45;">
-            <div style="font-size:8px;font-weight:700;color:#475569;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:3px;">Por el Contratista (Ingeanclajes S.A.S):</div>
-            <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:2px;">
-              ${firmaImg ? `<img src="${firmaImg}" alt="Firma" style="max-height:42px;max-width:180px;object-fit:contain;"/>` : `<div style="font-family:'Segoe Script',cursive,sans-serif;font-size:13px;font-weight:700;color:#0f172a;">Jhon Jaime Sepúlveda L.</div>`}
-            </div>
-            <div style="font-weight:800;font-size:9.5px;color:#0f172a;letter-spacing:0.02em;">ING. JHON JAIME SEPÚLVEDA LONDOÑO</div>
-            <div style="font-size:8px;color:#475569;">Gerente General · MP. 05256-409949</div>
-            <div style="font-size:8px;color:#475569;">Ingeanclajes S.A.S · NIT. 900.193.965-4</div>
+        <td style="width:50%;padding:10px 14px 0 0;vertical-align:top;border-right:1px solid rgba(0,0,0,0.08);">
+          <div style="font-size:7.5px;font-weight:700;color:#6e6e73;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px;">Por el Contratista Especialista:</div>
+          <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:3px;">
+            ${firmaImg ? `<img src="${firmaImg}" alt="Firma" style="max-height:42px;max-width:180px;object-fit:contain;"/>` : `<div style="font-family:'Segoe Script',cursive,sans-serif;font-size:13px;font-weight:700;color:#1d1d1f;">Jhon Jaime Sepúlveda L.</div>`}
           </div>
+          <div style="font-weight:800;font-size:9.5px;color:#1d1d1f;letter-spacing:0.01em;">ING. JHON JAIME SEPÚLVEDA LONDOÑO</div>
+          <div style="font-size:8px;color:#6e6e73;">Gerente General · MP. 05256-409949</div>
+          <div style="font-size:8px;color:#86868b;">Ingeanclajes S.A.S · NIT. 900.193.965-4</div>
         </td>
-        <td style="width:50%;padding:0 0 0 10px;vertical-align:top;">
-          <div style="border-top:2px solid #0f172a;padding-top:6px;font-size:8.5px;line-height:1.45;">
-            <div style="font-size:8px;font-weight:700;color:#475569;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:3px;">Recibido por la Interventoría / Constructora:</div>
-            <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:2px;font-size:8px;color:#475569;font-style:italic;">
-              (Firma y sello de recepción a satisfacción)
-            </div>
-            <div style="font-weight:700;font-size:9px;color:#0f172a;">NOMBRE: ____________________________________</div>
-            <div style="font-size:8px;color:#475569;margin-top:2px;">CARGO / FIRMA: ______________________________</div>
-            <div style="font-size:8px;color:#475569;">EMPRESA: ${escapeHtml(cliente || "Constructora / Contratante")}</div>
+        <td style="width:50%;padding:10px 0 0 14px;vertical-align:top;">
+          <div style="font-size:7.5px;font-weight:700;color:#6e6e73;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px;">Recibido por la Interventoría / Constructora:</div>
+          <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:3px;font-size:8px;color:#86868b;font-style:italic;">
+            (Firma y sello de recepción a satisfacción)
           </div>
+          <div style="font-weight:700;font-size:9px;color:#1d1d1f;">NOMBRE: ____________________________________</div>
+          <div style="font-size:8px;color:#6e6e73;margin-top:2px;">CARGO / FIRMA: ______________________________</div>
+          <div style="font-size:8px;color:#6e6e73;">EMPRESA: ${escapeHtml(cliente || "Constructora / Contratante")}</div>
         </td>
       </tr>
     </table>

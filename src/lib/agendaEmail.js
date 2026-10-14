@@ -117,15 +117,15 @@ export function generarUrlGoogleCalendar(compromiso, emailInvitado = EMAIL_CAMIL
   const titulo = `${tipoLabel} - ${compromiso.obra || compromiso.titulo || "Ingeanclajes"}`;
   const ubicacion = `${compromiso.obra || ""} ${compromiso.ciudad || ""}`.trim();
 
-  const detalles = [
-    `Cliente / Empresa: ${compromiso.cliente || "N/A"}`,
-    `Contacto: ${compromiso.contacto || "N/A"}${compromiso.telefono ? ` (${compromiso.telefono})` : ""}`,
-    compromiso.requerimientoSst ? `SST / Seguridad: ${compromiso.requerimientoSst}` : "",
+  const partesDetalles = [
+    compromiso.cliente ? `Cliente: ${compromiso.cliente}` : "",
+    compromiso.contacto ? `Contacto: ${compromiso.contacto}${compromiso.telefono ? ` (${compromiso.telefono})` : ""}` : "",
+    compromiso.requerimientoSst ? `SST: ${compromiso.requerimientoSst}` : "",
     compromiso.notas ? `Notas: ${compromiso.notas}` : "",
-    compromiso.linkReunion ? `Enlace de reunion: ${compromiso.linkReunion}` : "",
-    "",
-    "Programado desde el Sistema de Gestion - Ingeanclajes S.A.S.",
-  ].filter(Boolean).join("\n");
+    compromiso.linkReunion ? `Reunión: ${compromiso.linkReunion}` : "",
+  ].filter(Boolean);
+
+  const detalles = partesDetalles.join(" · ") || "Ingeanclajes S.A.S.";
 
   const invitadosStr = Array.isArray(emailInvitado)
     ? emailInvitado.join(",")
@@ -141,6 +141,30 @@ export function generarUrlGoogleCalendar(compromiso, emailInvitado = EMAIL_CAMIL
   });
 
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+// Acorta una URL larga (ej. de Google Calendar) para que el correo no tenga enlaces de 5 líneas
+export async function acortarUrl(urlLarga) {
+  if (!urlLarga || typeof urlLarga !== "string" || !urlLarga.startsWith("http")) {
+    return urlLarga;
+  }
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 3500);
+    const resp = await fetch(`https://da.gd/s?url=${encodeURIComponent(urlLarga)}`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (resp.ok) {
+      const texto = (await resp.text()).trim();
+      if (texto.startsWith("http")) {
+        return texto;
+      }
+    }
+  } catch (err) {
+    console.warn("No se pudo acortar el enlace con da.gd, usando URL completa:", err);
+  }
+  return urlLarga;
 }
 
 // Envía notificación por correo automática a Camila en segundo plano desde sistemasingeanclajes@gmail.com
@@ -164,6 +188,7 @@ export async function enviarNotificacionAgendaPorCorreo(compromiso, destinatario
   const listaCorreos = correos.length ? correos : [EMAIL_CAMILA_DEFAULT];
 
   const enlaceCalendar = generarUrlGoogleCalendar(compromiso, listaCorreos);
+  const enlaceCorto = await acortarUrl(enlaceCalendar);
 
   const mensaje = [
     `Hola Camila,`,
@@ -181,8 +206,8 @@ export async function enviarNotificacionAgendaPorCorreo(compromiso, destinatario
     compromiso.notas ? `• Notas adicionales: ${compromiso.notas}` : "",
     compromiso.linkReunion ? `• Enlace de reunión virtual: ${compromiso.linkReunion}` : "",
     ``,
-    `📅 Para agregarlo con alarma a tu Google Calendar y que tu celular te recuerde:`,
-    enlaceCalendar,
+    `📅 Agendar con alarma en Google Calendar:`,
+    enlaceCorto,
     ``,
     `Equipo Ingeanclajes S.A.S.`,
   ].filter(Boolean).join("\n");

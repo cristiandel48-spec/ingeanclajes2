@@ -49,7 +49,23 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
   const [obraFiltro, setObraFiltro] = useState("todas");
   const [seguimientoFiltro, setSeguimientoFiltro] = useState("todas");
   const [ordenActivo, setOrdenActivo] = useState("recientes");
-  const [vista, setVista] = useState("tarjetas"); // "tarjetas" | "tabla"
+  // Predeterminado en lista (tabla) según solicitud del usuario, persistiendo preferencia
+  const [vista, setVista] = useState(() => {
+    try {
+      return localStorage.getItem("ingeanclajes_cotizaciones_vista") || "tabla";
+    } catch {
+      return "tabla";
+    }
+  });
+
+  const cambiarVista = (nuevaVista) => {
+    setVista(nuevaVista);
+    try {
+      localStorage.setItem("ingeanclajes_cotizaciones_vista", nuevaVista);
+    } catch {
+      // Ignorar si localStorage no está disponible
+    }
+  };
 
   // Inspector lateral interactivo (Slide-Over horizontal)
   const [cotizacionInspector, setCotizacionInspector] = useState(null);
@@ -307,7 +323,7 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
           >
             <button
               type="button"
-              onClick={() => setVista("tarjetas")}
+              onClick={() => cambiarVista("tarjetas")}
               title="Vista de cuadrícula Apple"
               style={{
                 border: "none",
@@ -324,7 +340,7 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
             </button>
             <button
               type="button"
-              onClick={() => setVista("tabla")}
+              onClick={() => cambiarVista("tabla")}
               title="Vista de lista"
               style={{
                 border: "none",
@@ -480,39 +496,43 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
             boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
           }}
         >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "100px 1.8fr 1.2fr 100px 120px 120px 160px",
-              padding: "10px 16px",
-              background: "var(--surface-subtle, #fbfbfd)",
-              borderBottom: "1px solid var(--border, rgba(0,0,0,0.08))",
-              fontSize: 11,
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              color: "var(--text-subtle, #86868b)",
-            }}
-          >
-            <span>Folio</span>
-            <span>Cliente</span>
-            <span>Obra / Proyecto</span>
-            <span>Fecha</span>
-            <span style={{ textAlign: "right" }}>Total COP</span>
-            <span style={{ textAlign: "center" }}>Estado</span>
-            <span style={{ textAlign: "right" }}>Acciones</span>
-          </div>
+          <div style={{ overflowX: "auto", width: "100%" }}>
+            <div style={{ minWidth: 840 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "100px 1.8fr 1.2fr 100px 120px 120px 160px",
+                  padding: "10px 16px",
+                  background: "var(--surface-subtle, #fbfbfd)",
+                  borderBottom: "1px solid var(--border, rgba(0,0,0,0.08))",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  color: "var(--text-subtle, #86868b)",
+                }}
+              >
+                <span>Folio</span>
+                <span>Cliente</span>
+                <span>Obra / Proyecto</span>
+                <span>Fecha</span>
+                <span style={{ textAlign: "right" }}>Total COP</span>
+                <span style={{ textAlign: "center" }}>Estado</span>
+                <span style={{ textAlign: "right" }}>Acciones</span>
+              </div>
 
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            {filtradas.map((c, idx) => (
-              <FilaTablaCotizacion
-                key={c.id}
-                cotizacion={c}
-                acciones={acciones}
-                zebra={idx % 2 === 1}
-                onInspeccionar={() => setCotizacionInspector(c)}
-              />
-            ))}
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                {filtradas.map((c, idx) => (
+                  <FilaTablaCotizacion
+                    key={c.id}
+                    cotizacion={c}
+                    acciones={acciones}
+                    zebra={idx % 2 === 1}
+                    onInspeccionar={() => setCotizacionInspector(c)}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}

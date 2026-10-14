@@ -854,8 +854,8 @@ export default function Agenda({ ctx }) {
     <div style={{ padding: "0 0 24px 0", maxWidth: 1400, margin: "0 auto" }}>
       {/* Cabecera Principal */}
       <H1
-        title="Agenda & Visitas"
-        subtitle="Control de visitas técnicas a obras, llamadas de seguimiento y comités para Camila Sepúlveda"
+        title="Recordatorio de Agendas & Visitas en Obra"
+        subtitle="Control y recordatorios de visitas técnicas a obras, llamadas de seguimiento y comités para Camila Sepúlveda"
         action={
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             {/* Selector de Vista Segmentado estilo Apple */}

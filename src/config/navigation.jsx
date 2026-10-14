@@ -50,7 +50,7 @@ export const NAV_SECTIONS = [
   {
     title: "Comercial y proyectos",
     items: [
-      { id: "agenda", label: "Agenda y visitas", short: "Agenda" },
+      { id: "agenda", label: "Recordatorio de agendas y visitas en obra", short: "Recordatorio de agendas" },
       { id: "cotizacion", label: "Cotizaciones" },
       { id: "clientes", label: "Clientes" },
       // Los precios de los que salen todas las cotizaciones.

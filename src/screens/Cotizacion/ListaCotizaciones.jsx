@@ -49,10 +49,13 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
   const [obraFiltro, setObraFiltro] = useState("todas");
   const [seguimientoFiltro, setSeguimientoFiltro] = useState("todas");
   const [ordenActivo, setOrdenActivo] = useState("recientes");
-  // Predeterminado en lista (tabla) según solicitud del usuario, persistiendo preferencia
+  // Predeterminado en lista (tabla) en escritorio y tarjetas en móvil, persistiendo preferencia
   const [vista, setVista] = useState(() => {
     try {
-      return localStorage.getItem("ingeanclajes_cotizaciones_vista") || "tabla";
+      const guardada = localStorage.getItem("ingeanclajes_cotizaciones_vista");
+      if (guardada) return guardada;
+      if (typeof window !== "undefined" && window.innerWidth <= 768) return "tarjetas";
+      return "tabla";
     } catch {
       return "tabla";
     }

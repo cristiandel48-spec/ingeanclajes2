@@ -61,10 +61,13 @@ export default function ListaObras({
   const [ordenActivo, setOrdenActivo] = useState("recientes");
   const [mostrarFiltrosAvanzados, setMostrarFiltrosAvanzados] = useState(false);
 
-  // Predeterminado en lista (tabla) según solicitud del usuario estilo Apple
+  // Predeterminado en lista (tabla) en escritorio y tarjetas en móvil estilo Apple
   const [vista, setVista] = useState(() => {
     try {
-      return localStorage.getItem("ingeanclajes_obras_vista") || "tabla";
+      const guardada = localStorage.getItem("ingeanclajes_obras_vista");
+      if (guardada) return guardada;
+      if (typeof window !== "undefined" && window.innerWidth <= 768) return "tarjetas";
+      return "tabla";
     } catch {
       return "tabla";
     }

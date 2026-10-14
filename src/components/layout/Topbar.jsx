@@ -96,16 +96,16 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
             </div>
           )}
           <div style={{
-            fontSize: isMobile ? 14 : 16.5, fontWeight: 700, color: theme.text,
+            fontSize: isMobile ? 13.5 : 16.5, fontWeight: 700, color: theme.text,
             whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-            maxWidth: isMobile ? "140px" : "none",
+            maxWidth: isMobile ? "120px" : "none",
           }}>
             {title}
           </div>
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 5 : 10, flexShrink: 0, minWidth: 0, justifyContent: "flex-end" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 4 : 10, flexShrink: 1, minWidth: 0, justifyContent: "flex-end" }}>
         {!esPantallaMenu && (
           <button
             onClick={() => irAPantalla(destinoMenu || "dashboard")}
@@ -113,16 +113,16 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
             title="Volver al menú principal (Dashboard)"
             style={{
               height: 34,
-              padding: isMobile ? "0 9px" : "0 13px",
+              padding: isMobile ? "0 8px" : "0 13px",
               display: "flex",
               alignItems: "center",
-              gap: 6,
+              gap: isMobile ? 4 : 6,
               background: dark ? "rgba(255, 255, 255, 0.08)" : "#ffffff",
               border: `1px solid ${dark ? "rgba(255, 255, 255, 0.18)" : "#cbd5e1"}`,
               borderRadius: 8,
               color: dark ? "#f1f5f9" : "#334155",
               cursor: "pointer",
-              fontSize: 12.5,
+              fontSize: isMobile ? 11.5 : 12.5,
               fontWeight: 600,
               flexShrink: 0,
               boxShadow: "0 1px 2px rgba(0,0,0,.04)",
@@ -164,13 +164,13 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 6,
-              maxWidth: isMobile ? "44vw" : "none",
+              gap: 5,
+              maxWidth: isMobile ? "38vw" : "none",
               overflowX: isMobile ? "auto" : "visible",
               WebkitOverflowScrolling: "touch",
               scrollbarWidth: "none",
               msOverflowStyle: "none",
-              flexShrink: 0,
+              flexShrink: 1,
             }}
           >
             {acciones}
@@ -221,10 +221,10 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
             title={`Tienes ${totalManana} compromiso(s) para mañana. Clic para ver el itinerario completo.`}
             style={{
               height: 34,
-              padding: isMobile ? "0 8px" : "0 12px",
+              padding: isMobile ? "0 7px" : "0 12px",
               display: "flex",
               alignItems: "center",
-              gap: 6,
+              gap: 5,
               background: dark ? "rgba(245, 158, 11, 0.15)" : "#fffbeb",
               border: `1px solid ${dark ? "rgba(245, 158, 11, 0.4)" : "#fde68a"}`,
               borderRadius: 8,
@@ -253,11 +253,11 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
               <line x1="8" y1="2" x2="8" y2="6" />
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
-            <span>Mañana ({totalManana})</span>
+            <span>{isMobile ? `(${totalManana})` : `Mañana (${totalManana})`}</span>
           </button>
         )}
 
-        <BotonInstalarApp estilo="topbar" dark={dark} />
+        <BotonInstalarApp estilo="topbar" dark={dark} compact={isMobile} />
 
         <button
           onClick={onToggleTheme}

@@ -100,9 +100,10 @@ export function ModalInstaladorApp({ abierto, onClose }) {
         style={{
           width: "100%",
           maxWidth: 480,
+          maxHeight: "calc(100dvh - 32px)",
           background: "#ffffff",
           borderRadius: 20,
-          overflow: "hidden",
+          overflowY: "auto",
           boxShadow: "0 20px 40px rgba(0, 0, 0, 0.25)",
           display: "flex",
           flexDirection: "column",
@@ -521,7 +522,7 @@ export function ModalInstaladorApp({ abierto, onClose }) {
 }
 
 // Boton directo reutilizable para colocar en Topbar o Sidebar
-export function BotonInstalarApp({ estilo = "topbar", dark = false }) {
+export function BotonInstalarApp({ estilo = "topbar", dark = false, compact = false }) {
   const [modalAbierto, setModalAbierto] = useState(false);
   const { isStandalone } = usePWAInstallPrompt();
 
@@ -585,9 +586,11 @@ export function BotonInstalarApp({ estilo = "topbar", dark = false }) {
         title="Descargar e instalar la aplicación en tu dispositivo"
         style={{
           height: 34,
-          padding: "0 11px",
+          width: compact ? 34 : "auto",
+          padding: compact ? 0 : "0 11px",
           display: "flex",
           alignItems: "center",
+          justifyContent: "center",
           gap: 6,
           background: dark ? "rgba(220, 38, 38, 0.2)" : "#fef2f2",
           border: `1px solid ${dark ? "rgba(220, 38, 38, 0.4)" : "#fecaca"}`,
@@ -611,7 +614,7 @@ export function BotonInstalarApp({ estilo = "topbar", dark = false }) {
         }}
       >
         <span style={{ fontSize: 13 }}>📲</span>
-        <span>Descargar App</span>
+        {!compact && <span>Descargar App</span>}
       </button>
       <ModalInstaladorApp abierto={modalAbierto} onClose={() => setModalAbierto(false)} />
     </>

@@ -36,6 +36,10 @@ export default function GlobalStyles({ divider }) {
       --btn-ver-border: transparent;
       --btn-cancelar-bg: #f1f5f9;
       --btn-cancelar-text: #475569;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
       color-scheme: light;
     }
 
@@ -268,7 +272,8 @@ export default function GlobalStyles({ divider }) {
       width: 100%;
       height: 100%;
       max-width: 100vw;
-      overflow: hidden;
+      overflow-x: hidden !important;
+      overflow-y: hidden;
       /* Sin rebote elastico al llegar al final en iOS. */
       overscroll-behavior-y: none;
       font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -288,6 +293,7 @@ export default function GlobalStyles({ divider }) {
     .app-scroll {
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
+      overflow-x: hidden !important;
     }
 
     /* Alto real de la ventana. En iOS "100vh" incluye la barra de
@@ -300,6 +306,7 @@ export default function GlobalStyles({ divider }) {
       height: -webkit-fill-available;
       height: 100dvh;
       overflow: hidden;
+      overflow-x: hidden !important;
     }
 
     ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -339,7 +346,18 @@ export default function GlobalStyles({ divider }) {
        componente. En un telefono de 360 px eso deja columnas de 60 px: las
        etiquetas no caben y el texto se monta. Aqui se colapsan a una sola
        columna. Hace falta !important porque los estilos son en linea. */
-    @media (max-width: 760px) {
+    @media (max-width: 768px) {
+      /* Optimización táctil: respuesta inmediata al toque */
+      button, a, input, select, textarea {
+        touch-action: manipulation;
+      }
+
+      /* Modales y paneles fijos restringidos al ancho visual del móvil */
+      [style*="position: fixed"]:not(#soporte-widget-root):not(.app-shell * aside) {
+        max-width: 100vw !important;
+        box-sizing: border-box !important;
+      }
+
       /* Neutraliza el doble margen horizontal acumulado en teléfonos en cualquier pantalla */
       main > div,
       main > section,
@@ -421,14 +439,12 @@ export default function GlobalStyles({ divider }) {
         flex-shrink: 0 !important;
       }
 
-      /* Varias pantallas tienen tablas sin contenedor desplazable, y una
-         tabla de 7 columnas no cabe en un telefono. Con :has se hace
-         desplazable el contenedor que la envuelve, sin tocar cada pantalla
-         ni alterar la maquetacion interna de la tabla. */
-      main div:has(> table) {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        max-width: 100%;
+      /* Varias pantallas tienen tablas sin contenedor desplazable:
+         hacemos desplazable con inercia táctil cualquier contenedor que envuelva tablas */
+      main *:has(> table):not(.doc-shell *):not(#pz *) {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        max-width: 100% !important;
       }
 
       /* Contenedor protector para documentos tipo hoja Carta en pantallas móviles */

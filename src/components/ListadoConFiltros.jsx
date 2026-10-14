@@ -279,7 +279,7 @@ export default function ListadoConFiltros({
         {filtrosAbiertos && (
           <div style={{ border: `1px solid ${C.borde}`, background: C.relleno, borderRadius: 12,
             padding: "14px 16px", display: "grid",
-            gridTemplateColumns: filtrosExtra ? "1fr 1.1fr 1fr" : "1fr 1.2fr", gap: 18 }}>
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: 16 }}>
             {fechaDe && (
               <>
                 <GrupoFiltro titulo="Fecha">

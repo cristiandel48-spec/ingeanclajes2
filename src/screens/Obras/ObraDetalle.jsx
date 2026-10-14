@@ -340,6 +340,33 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             <span>Fototeca y ZIP</span>
           </button>
 
+          {/* Botón TAREAS DE PRODUCCIÓN */}
+          <button
+            onClick={() => irAPantalla("produccion", { obraId: oAct.id })}
+            style={{
+              background: "#ffffff",
+              color: "var(--text-main, #1d1d1f)",
+              border: "1px solid var(--border, #d2d2d7)",
+              borderRadius: 10,
+              fontSize: 12,
+              padding: isMobile ? "9px 10px" : "7px 13px",
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+              transition: "all 0.15s ease",
+              width: isMobile ? "100%" : "auto",
+              boxSizing: "border-box",
+            }}
+            title="Ver o asignar tareas de producción para esta obra"
+          >
+            <span>📋</span>
+            <span>Tareas</span>
+          </button>
+
           {/* Botón QUÉ SIGUE */}
           <button
             onClick={() => setMostrarGuia(!mostrarGuia)}

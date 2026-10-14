@@ -100,6 +100,27 @@ export function AppDataProvider({ children }) {
     }
   }, [agenda]);
 
+  const [tareasProduccion, setTareasProduccion] = useState(() => {
+    try {
+      const guardadas = localStorage.getItem("ingeanclajes_tareas_produccion");
+      if (guardadas) {
+        const parsed = JSON.parse(guardadas);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn("No se pudo cargar ingeanclajes_tareas_produccion de localStorage", e);
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("ingeanclajes_tareas_produccion", JSON.stringify(tareasProduccion));
+    } catch (e) {
+      console.warn("No se pudo guardar ingeanclajes_tareas_produccion en localStorage", e);
+    }
+  }, [tareasProduccion]);
+
   const [cotizaciones, setCotizaciones] = useState(COTIZACIONES_INIT);
   const [contabilidadConfig, setContabilidadConfig] = useState(CONTABILIDAD_CONFIG_INIT);
   const [planCuentas, setPlanCuentas] = useState(PLAN_CUENTAS_INIT);
@@ -669,6 +690,7 @@ export function AppDataProvider({ children }) {
       setAgenda(sinEjemplos);
     },
     agenda, setAgenda,
+    tareasProduccion, setTareasProduccion,
     obras, setObras,
     empleados, setEmpleados,
     cargos, setCargos,

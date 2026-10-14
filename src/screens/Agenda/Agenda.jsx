@@ -5,6 +5,7 @@ import { EJEMPLOS } from "../../data/ejemplos";
 import { abrirWhatsApp } from "../../lib/whatsapp";
 import {
   enviarNotificacionAgendaPorCorreo,
+  generarUrlGoogleCalendar,
   horaA24h,
   horaA12h,
 } from "../../lib/agendaEmail";
@@ -361,6 +362,26 @@ function CompromisosDelDiaSection({
                       Unirse a Reunión
                     </a>
                   )}
+
+                  <a
+                    href={generarUrlGoogleCalendar(item)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      ...B("var(--surface-subtle, #f1f5f9)", "var(--text-main, #0f172a)"),
+                      border: "1px solid var(--border, #e2e8f0)",
+                      fontSize: 11.5,
+                      padding: "5px 10px",
+                      borderRadius: 6,
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                    }}
+                    title="Añadir a Google Calendar con recordatorio para Camila y Cristian"
+                  >
+                    📅 Google Calendar
+                  </a>
                 </div>
               </div>
             );
@@ -646,6 +667,7 @@ export default function Agenda({ ctx }) {
   const [formNotas, setFormNotas] = useState("");
   const [formSst, setFormSst] = useState("");
   const [formLink, setFormLink] = useState("");
+  const [notificacionEnvio, setNotificacionEnvio] = useState(null);
 
   // Mapeo de eventos por fecha
   const eventosPorFecha = useMemo(() => {
@@ -814,12 +836,32 @@ export default function Agenda({ ctx }) {
       return [payload, ...prev];
     });
 
-    // Enviar notificación automática por correo a Camila en segundo plano
-    enviarNotificacionAgendaPorCorreo(payload).catch((err) => {
-      console.error("Error al enviar notificación de agenda por correo:", err);
+    setModalAbierto(false);
+
+    // Estado visible de envío por correo
+    setNotificacionEnvio({
+      tipo: "loading",
+      mensaje: "Enviando notificación por correo a Camila y Cristian...",
     });
 
-    setModalAbierto(false);
+    // Enviar notificación automática por correo a Camila y Cristian en segundo plano
+    enviarNotificacionAgendaPorCorreo(payload)
+      .then(() => {
+        setNotificacionEnvio({
+          tipo: "success",
+          mensaje: "✓ Notificación enviada por correo a Camila (camilascadavid@gmail.com) y Cristian (cristiandel48@gmail.com)",
+        });
+        setTimeout(() => {
+          setNotificacionEnvio((prev) => (prev?.tipo === "success" ? null : prev));
+        }, 7000);
+      })
+      .catch((err) => {
+        console.error("Error al enviar notificación de agenda por correo:", err);
+        setNotificacionEnvio({
+          tipo: "error",
+          mensaje: `Compromiso guardado, pero no se pudo enviar el correo: ${err.message || "Error al conectar"}. Puedes usar el botón "Google Calendar" para agendarlo directamente.`,
+        });
+      });
   };
 
   const enviarWhatsApp = (c) => {
@@ -855,7 +897,84 @@ export default function Agenda({ ctx }) {
   };
 
   return (
-    <div style={{ padding: "0 0 24px 0", maxWidth: 1400, margin: "0 auto" }}>
+    <div style={{ padding: "0 0 24px 0", maxWidth: 1400, margin: "0 auto", position: "relative" }}>
+      {/* Toast Notificación de Envío por Correo estilo Apple */}
+      {notificacionEnvio && (
+        <div
+          role="status"
+          style={{
+            position: "fixed",
+            top: 24,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 99999,
+            maxWidth: "92vw",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "10px 20px",
+            borderRadius: 999,
+            fontSize: 13,
+            fontWeight: 600,
+            boxShadow: "0 10px 25px -5px rgba(0,0,0,0.18), 0 8px 10px -6px rgba(0,0,0,0.1)",
+            background:
+              notificacionEnvio.tipo === "success"
+                ? "#ecfdf5"
+                : notificacionEnvio.tipo === "error"
+                ? "#fef2f2"
+                : "#ffffff",
+            color:
+              notificacionEnvio.tipo === "success"
+                ? "#065f46"
+                : notificacionEnvio.tipo === "error"
+                ? "#991b1b"
+                : "#1e293b",
+            border:
+              notificacionEnvio.tipo === "success"
+                ? "1px solid #a7f3d0"
+                : notificacionEnvio.tipo === "error"
+                ? "1px solid #fecaca"
+                : "1px solid #e2e8f0",
+          }}
+        >
+          {notificacionEnvio.tipo === "loading" && (
+            <span
+              style={{
+                display: "inline-block",
+                width: 14,
+                height: 14,
+                border: "2px solid #cbd5e1",
+                borderTopColor: "#f47c20",
+                borderRadius: "50%",
+                animation: "spin 0.8s linear infinite",
+              }}
+            />
+          )}
+          {notificacionEnvio.tipo === "success" && <span style={{ fontSize: 15 }}>✓</span>}
+          {notificacionEnvio.tipo === "error" && <span style={{ fontSize: 15 }}>⚠</span>}
+          <span>{notificacionEnvio.mensaje}</span>
+          {notificacionEnvio.tipo !== "loading" && (
+            <button
+              type="button"
+              onClick={() => setNotificacionEnvio(null)}
+              style={{
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                fontSize: 16,
+                lineHeight: 1,
+                fontWeight: 700,
+                color: "inherit",
+                marginLeft: 8,
+                padding: "2px 4px",
+              }}
+            >
+              ×
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Cabecera Principal */}
       <H1
         title="Recordatorio de Agendas & Visitas en Obra"
@@ -1204,6 +1323,26 @@ export default function Agenda({ ctx }) {
 
                   {/* Acciones */}
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                    <a
+                      href={generarUrlGoogleCalendar(item)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        ...B("var(--surface-subtle, #f1f5f9)", "var(--text-main, #0f172a)"),
+                        fontSize: 11.5,
+                        padding: "6px 10px",
+                        borderRadius: 6,
+                        textDecoration: "none",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                        border: "1px solid var(--border, #e2e8f0)",
+                      }}
+                      title="Añadir a Google Calendar con recordatorio para Camila y Cristian"
+                    >
+                      📅 Google Calendar
+                    </a>
+
                     {item.telefono && (
                       <button
                         type="button"

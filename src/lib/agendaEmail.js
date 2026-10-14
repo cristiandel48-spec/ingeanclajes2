@@ -189,20 +189,28 @@ export async function enviarNotificacionAgendaPorCorreo(compromiso, destinatario
     `Equipo Ingeanclajes S.A.S.`,
   ].filter(Boolean).join("\n");
 
-  try {
-    const envios = await Promise.allSettled(
-      listaCorreos.map((correo) =>
-        enviarCotizacionPorCorreo({
-          para: correo,
-          asunto,
-          mensaje,
-          numero: "AGENDA",
-        })
-      )
-    );
-    return { ok: true, envios };
-  } catch (err) {
-    console.error("Error al enviar notificación de agenda por correo:", err);
-    return { ok: false, error: err };
+  const envios = await Promise.allSettled(
+    listaCorreos.map((correo) =>
+      enviarCotizacionPorCorreo({
+        para: correo,
+        asunto,
+        mensaje,
+        numero: "AGENDA",
+      })
+    )
+  );
+
+  const fallidos = envios
+    .map((res, i) => ({ correo: listaCorreos[i], res }))
+    .filter((item) => item.res.status === "rejected");
+
+  if (fallidos.length > 0) {
+    const motivos = fallidos
+      .map((f) => `${f.correo}: ${f.res.reason?.message || f.res.reason || "Error"}`)
+      .join("; ");
+    console.error("Error al enviar notificación de agenda por correo:", motivos);
+    throw new Error(motivos);
   }
+
+  return { ok: true, envios };
 }

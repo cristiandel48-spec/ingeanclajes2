@@ -29,8 +29,24 @@ export default function ListaInformes({ informes = [], acciones = {} }) {
   const isMobile = useIsMobile();
   const [busqueda, setBusqueda] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState("Todos");
-  const [orden, setOrden] = useState("recientes");
-  const [modoVista, setModoVista] = useState("cuadricula");
+  const [modoVista, setModoVista] = useState(() => {
+    try {
+      const guardada = localStorage.getItem("ingeanclajes_informes_vista");
+      if (guardada) return guardada;
+      return "tabla";
+    } catch {
+      return "tabla";
+    }
+  });
+
+  const cambiarModoVista = (nuevoModo) => {
+    setModoVista(nuevoModo);
+    try {
+      localStorage.setItem("ingeanclajes_informes_vista", nuevoModo);
+    } catch {
+      // Ignorar si localStorage no está disponible
+    }
+  };
   const inputBusquedaRef = useRef(null);
 
   // Atajo de teclado Spotlight (Cmd+K / Ctrl+K)
@@ -248,7 +264,7 @@ export default function ListaInformes({ informes = [], acciones = {} }) {
           >
             <button
               type="button"
-              onClick={() => setModoVista("tabla")}
+              onClick={() => cambiarModoVista("tabla")}
               title="Vista en tabla"
               style={{
                 background: modoVista === "tabla" ? "#ffffff" : "transparent",
@@ -274,7 +290,7 @@ export default function ListaInformes({ informes = [], acciones = {} }) {
             </button>
             <button
               type="button"
-              onClick={() => setModoVista("cuadricula")}
+              onClick={() => cambiarModoVista("cuadricula")}
               title="Vista en tarjetas"
               style={{
                 background: modoVista === "cuadricula" ? "#ffffff" : "transparent",

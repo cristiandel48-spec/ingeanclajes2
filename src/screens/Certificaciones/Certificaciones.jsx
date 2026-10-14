@@ -468,46 +468,7 @@ export default function Certificaciones({ctx}){
         boxSizing: "border-box",
       }}
     >
-      {!sel && (
-        <H1
-          eyebrow="SISTEMA DE GESTIÓN Y CALIDAD"
-          title="Certificaciones de Calidad"
-          subtitle={`${certs.length} documento(s) emitido(s) · Certificaciones y recertificaciones de líneas de vida y anclajes`}
-          action={
-            !nueva ? (
-              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                <button
-                  style={{
-                    background: "var(--surface, #ffffff)",
-                    color: "var(--text-main, #101828)",
-                    border: "1px solid var(--border, rgba(0, 0, 0, 0.12))",
-                    borderRadius: 10,
-                    padding: "7px 13px",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
-                    fontFamily: "inherit",
-                  }}
-                  onClick={() => abrirNuevaCertificacion("Recertificación")}
-                >
-                  + Recertificación
-                </button>
-                <button
-                  style={{
-                    ...B("#1d1d1f"),
-                    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.12)",
-                    borderRadius: 10,
-                  }}
-                  onClick={() => abrirNuevaCertificacion("Certificación")}
-                >
-                  + Certificación
-                </button>
-              </div>
-            ) : null
-          }
-        />
-      )}
+
 
       {obras.length===0 && (
         <AvisoFlujo

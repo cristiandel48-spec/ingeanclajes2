@@ -705,26 +705,7 @@ export default function Informes({ctx}){
         boxSizing: "border-box",
       }}
     >
-      {!sel && (
-        <H1
-          eyebrow="GESTIÓN DE CALIDAD Y AVANCE"
-          title="Informes de Actividades"
-          subtitle={`${informes.length} informe(s) técnico(s) registrado(s) · Control de actividades, bitácoras y registro fotográfico`}
-          action={
-            !nuevo && !editId ? (
-              <button
-                style={{
-                  ...B("#1d1d1f"),
-                  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.12)",
-                }}
-                onClick={abrirNuevoInforme}
-              >
-                + Nuevo Informe
-              </button>
-            ) : null
-          }
-        />
-      )}
+
 
       {obras.length===0 && (
         <AvisoFlujo

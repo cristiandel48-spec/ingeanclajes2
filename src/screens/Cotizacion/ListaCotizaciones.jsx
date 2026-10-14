@@ -1,85 +1,1001 @@
-// Listado de cotizaciones. Usa el componente comun, igual que obras,
-// certificaciones, informes y vencimientos.
-//
-// Lo propio de aqui: se puede filtrar por obra, y de cada una se hacen seis
-// cosas -ver, editar, aprobar, PDF, enviar y borrar-.
-//
-// AQUI NO SE VEN CIFRAS, como en el resto de listados: se viene a buscar y
-// abrir documentos, y el dinero se ve al abrirlos o en el informe financiero.
-import { useMemo, useState } from "react";
-import ListadoConFiltros, { GrupoFiltro, Resaltable } from "../../components/ListadoConFiltros";
-import { C, boton, enMilis } from "../../components/listadoEstilos";
-import Badge from "../../components/ui/Badge";
-import { EC, SI } from "../../styles/tokens";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { fmt, fmtD } from "../../lib/format";
 import { normalizarMayusculas, normalizarRazonSocial } from "../../lib/normalizarEntrada";
-import { seguimientoDe, colorSeguimiento, etiquetaSeguimiento, UMBRAL_POR_VENCER } from "../../lib/seguimientoCotizaciones";
+import {
+  seguimientoDe,
+  colorSeguimiento,
+  etiquetaSeguimiento,
+  UMBRAL_POR_VENCER,
+} from "../../lib/seguimientoCotizaciones";
+import { getQuoteActiveProposal } from "../../lib/cotizaciones";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
 
 const ORDENES = [
-  { key: "recientes", label: "Más recientes", comparar: (a, b) => enMilis(b.fecha) - enMilis(a.fecha) || String(b.id).localeCompare(String(a.id)) },
-  { key: "antiguas",  label: "Más antiguas",  comparar: (a, b) => enMilis(a.fecha) - enMilis(b.fecha) },
-  { key: "cliente",   label: "Cliente A–Z",   comparar: (a, b) => String(a.cliente || "").localeCompare(String(b.cliente || ""), "es") },
-  { key: "numero",    label: "Número",        comparar: (a, b) => String(a.numero || a.id).localeCompare(String(b.numero || b.id), "es", { numeric: true }) },
+  {
+    key: "recientes",
+    label: "Más recientes",
+    comparar: (a, b) =>
+      enMilis(b.fecha) - enMilis(a.fecha) || String(b.id).localeCompare(String(a.id)),
+  },
+  {
+    key: "antiguas",
+    label: "Más antiguas",
+    comparar: (a, b) => enMilis(a.fecha) - enMilis(b.fecha),
+  },
+  {
+    key: "cliente",
+    label: "Cliente A–Z",
+    comparar: (a, b) =>
+      String(a.cliente || "").localeCompare(String(b.cliente || ""), "es"),
+  },
+  {
+    key: "numero",
+    label: "Número",
+    comparar: (a, b) =>
+      String(a.numero || a.id).localeCompare(String(b.numero || b.id), "es", { numeric: true }),
+  },
 ];
 
-export default function ListaCotizaciones({ cotizaciones, acciones }) {
-  const obras = useMemo(() => (
-    [...new Set((cotizaciones || []).map((c) => String(c.obra || "").trim()).filter(Boolean))]
-      .sort((a, b) => a.localeCompare(b, "es"))
-  ), [cotizaciones]);
+function enMilis(fecha) {
+  if (!fecha) return 0;
+  const t = new Date(fecha).getTime();
+  return Number.isNaN(t) ? 0 : t;
+}
 
-  return (
-    <ListadoConFiltros
-      datos={cotizaciones || []}
-      nombre="cotización"
-      nombrePlural="cotizaciones"
-      marcador="Buscar por número, cliente, obra o ciudad…"
-      buscarEn={(c) => [c.numero, c.id, c.cliente, c.obra, c.ciudad].filter(Boolean).join(" ")}
-      estadoDe={(c) => c.estado}
-      estadosFijos={["Borrador", "Pendiente", "Aprobada"]}
-      fechaDe={(c) => c.fecha}
-      ordenes={ORDENES}
-      filtrosExtra={({ valores, poner }) => (
-        <>
-          <GrupoFiltro titulo="Obra">
-            <select value={valores.obra || "todas"}
-              onChange={(e) => poner("obra", e.target.value === "todas" ? null : e.target.value)}
-              style={{ ...SI, fontSize: 12, padding: "6px 8px" }}>
-              <option value="todas">Todas las obras</option>
-              {obras.map((o) => <option key={o} value={o}>{o}</option>)}
-            </select>
-          </GrupoFiltro>
-          {/* Para sentarse a llamar: saca las que se estan enfriando. */}
-          <GrupoFiltro titulo="Seguimiento">
-            <select value={valores.seguimiento || "todas"}
-              onChange={(e) => poner("seguimiento", e.target.value === "todas" ? null : e.target.value)}
-              style={{ ...SI, fontSize: 12, padding: "6px 8px" }}>
-              <option value="todas">Sin filtrar</option>
-              <option value="llamar">Por llamar (vencidas o a punto)</option>
-              <option value="vencidas">Solo vencidas</option>
-              <option value="alDia">Dentro del plazo</option>
-            </select>
-          </GrupoFiltro>
-        </>
-      )}
-      aplicarExtra={(c, v) => {
-        if (v.obra && String(c.obra || "").trim() !== v.obra) return false;
-        if (!v.seguimiento) return true;
-        // Las aprobadas y las que no tienen fecha no estan en seguimiento, asi
-        // que no aparecen en ninguno de los tres grupos.
+export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) {
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const [busqueda, setBusqueda] = useState("");
+  const [estadoFiltro, setEstadoFiltro] = useState("Todas");
+  const [obraFiltro, setObraFiltro] = useState("todas");
+  const [seguimientoFiltro, setSeguimientoFiltro] = useState("todas");
+  const [ordenActivo, setOrdenActivo] = useState("recientes");
+  const [vista, setVista] = useState("tarjetas"); // "tarjetas" | "tabla"
+
+  // Inspector lateral interactivo (Slide-Over horizontal)
+  const [cotizacionInspector, setCotizacionInspector] = useState(null);
+  const [inspectorExpandido, setInspectorExpandido] = useState(false);
+
+  const campoBusquedaRef = useRef(null);
+
+  // Atajo de teclado Cmd+K / Ctrl+K estilo Spotlight
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        campoBusquedaRef.current?.focus();
+      }
+      if (e.key === "Escape" && cotizacionInspector) {
+        setCotizacionInspector(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [cotizacionInspector]);
+
+  // Lista de obras únicas para el filtro
+  const obras = useMemo(() => {
+    return [
+      ...new Set(
+        (cotizaciones || []).map((c) => String(c.obra || "").trim()).filter(Boolean)
+      ),
+    ].sort((a, b) => a.localeCompare(b, "es"));
+  }, [cotizaciones]);
+
+  // Conteos para el Segmented Control
+  const conteos = useMemo(() => {
+    const lista = cotizaciones || [];
+    return {
+      todas: lista.length,
+      pendientes: lista.filter((c) => c.estado !== "Aprobada" && c.estado !== "Borrador").length,
+      aprobadas: lista.filter((c) => c.estado === "Aprobada" || Boolean(c.obraId)).length,
+      borradores: lista.filter((c) => c.estado === "Borrador").length,
+    };
+  }, [cotizaciones]);
+
+  // Filtrado y ordenamiento de las cotizaciones
+  const filtradas = useMemo(() => {
+    let res = [...(cotizaciones || [])];
+
+    // 1. Filtro por estado
+    if (estadoFiltro === "Pendientes") {
+      res = res.filter((c) => c.estado !== "Aprobada" && c.estado !== "Borrador");
+    } else if (estadoFiltro === "Aprobadas") {
+      res = res.filter((c) => c.estado === "Aprobada" || Boolean(c.obraId));
+    } else if (estadoFiltro === "Borrador") {
+      res = res.filter((c) => c.estado === "Borrador");
+    }
+
+    // 2. Filtro por obra
+    if (obraFiltro !== "todas") {
+      res = res.filter((c) => String(c.obra || "").trim() === obraFiltro);
+    }
+
+    // 3. Filtro por seguimiento
+    if (seguimientoFiltro !== "todas") {
+      res = res.filter((c) => {
         const { diasParaVencer } = seguimientoDe(c);
         if (diasParaVencer === null) return false;
-        if (v.seguimiento === "vencidas") return diasParaVencer < 0;
-        if (v.seguimiento === "llamar") return diasParaVencer <= UMBRAL_POR_VENCER;
-        if (v.seguimiento === "alDia") return diasParaVencer > UMBRAL_POR_VENCER;
+        if (seguimientoFiltro === "vencidas") return diasParaVencer < 0;
+        if (seguimientoFiltro === "llamar") return diasParaVencer <= UMBRAL_POR_VENCER;
+        if (seguimientoFiltro === "alDia") return diasParaVencer > UMBRAL_POR_VENCER;
         return true;
+      });
+    }
+
+    // 4. Búsqueda de texto (Spotlight)
+    if (busqueda.trim()) {
+      const q = busqueda.toLowerCase().trim();
+      res = res.filter((c) => {
+        const texto = [c.numero, c.id, c.cliente, c.obra, c.ciudad]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return texto.includes(q);
+      });
+    }
+
+    // 5. Ordenamiento
+    const ordObj = ORDENES.find((o) => o.key === ordenActivo) || ORDENES[0];
+    res.sort(ordObj.comparar);
+
+    return res;
+  }, [cotizaciones, estadoFiltro, obraFiltro, seguimientoFiltro, busqueda, ordenActivo]);
+
+  return (
+    <div
+      style={{
+        maxWidth: 1360,
+        margin: "0 auto",
+        width: "100%",
+        boxSizing: "border-box",
+        fontFamily:
+          '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif',
+        position: "relative",
       }}
-      fila={(c, { compacta }) => <Fila key={c.id} c={c} compacta={compacta} acciones={acciones} />}
-      vacio={{
-        titulo: "Todavía no hay cotizaciones",
-        texto: "Crea la primera con el botón de arriba.",
+    >
+      {/* ============================================================= */}
+      {/* BARRA DE HERRAMIENTAS: Búsqueda, Filtros y Segmented Control  */}
+      {/* ============================================================= */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          justifyContent: "space-between",
+          alignItems: isMobile ? "stretch" : "center",
+          gap: 14,
+          marginBottom: 20,
+          flexWrap: "wrap",
+        }}
+      >
+        {/* Selector Segmentado de Estados (Estilo Apple macOS) */}
+        <div
+          style={{
+            background: "var(--surface-subtle, #f5f5f7)",
+            padding: 3,
+            borderRadius: 12,
+            display: "inline-flex",
+            alignItems: "center",
+            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+            overflowX: "auto",
+            maxWidth: "100%",
+          }}
+        >
+          <BotonSegmentado
+            activo={estadoFiltro === "Todas"}
+            onClick={() => setEstadoFiltro("Todas")}
+            label={`Todas (${conteos.todas})`}
+          />
+          <BotonSegmentado
+            activo={estadoFiltro === "Pendientes"}
+            onClick={() => setEstadoFiltro("Pendientes")}
+            label={`Pendientes (${conteos.pendientes})`}
+          />
+          <BotonSegmentado
+            activo={estadoFiltro === "Aprobadas"}
+            onClick={() => setEstadoFiltro("Aprobadas")}
+            label={`Aprobadas (${conteos.aprobadas})`}
+          />
+          <BotonSegmentado
+            activo={estadoFiltro === "Borrador"}
+            onClick={() => setEstadoFiltro("Borrador")}
+            label={`Borrador (${conteos.borradores})`}
+          />
+        </div>
+
+        {/* Buscador Spotlight y Conmutador de Vistas */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            flexWrap: isMobile ? "wrap" : "nowrap",
+            width: isMobile ? "100%" : "auto",
+          }}
+        >
+          {/* Input de Búsqueda estilo Spotlight */}
+          <div
+            style={{
+              position: "relative",
+              flex: isMobile ? "1 1 100%" : "0 0 280px",
+            }}
+          >
+            <span
+              style={{
+                position: "absolute",
+                left: 10,
+                top: "50%",
+                transform: "translateY(-50%)",
+                fontSize: 13,
+                color: "var(--text-subtle, #86868b)",
+                pointerEvents: "none",
+              }}
+            >
+              🔍
+            </span>
+            <input
+              ref={campoBusquedaRef}
+              type="text"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar por cliente, obra o N°..."
+              style={{
+                width: "100%",
+                padding: "8px 36px 8px 32px",
+                borderRadius: 10,
+                border: "1px solid var(--border, rgba(0, 0, 0, 0.12))",
+                background: "var(--surface, #ffffff)",
+                color: "var(--text-main, #1d1d1f)",
+                fontSize: 12.5,
+                outline: "none",
+                boxSizing: "border-box",
+                transition: "all 0.15s ease",
+              }}
+            />
+            {busqueda ? (
+              <button
+                type="button"
+                onClick={() => setBusqueda("")}
+                style={{
+                  position: "absolute",
+                  right: 8,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--text-subtle, #86868b)",
+                  fontSize: 14,
+                  padding: 2,
+                }}
+              >
+                ✕
+              </button>
+            ) : (
+              <span
+                style={{
+                  position: "absolute",
+                  right: 8,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  fontSize: 10,
+                  fontFamily: "ui-monospace, SFMono-Regular, monospace",
+                  color: "var(--text-subtle, #86868b)",
+                  background: "var(--surface-subtle, #f5f5f7)",
+                  border: "1px solid var(--border, rgba(0,0,0,0.08))",
+                  padding: "1px 4px",
+                  borderRadius: 4,
+                  pointerEvents: "none",
+                }}
+              >
+                ⌘K
+              </span>
+            )}
+          </div>
+
+          {/* Conmutador Cuadrícula / Lista */}
+          <div
+            style={{
+              background: "var(--surface-subtle, #f5f5f7)",
+              padding: 2,
+              borderRadius: 8,
+              border: "1px solid var(--border, rgba(0,0,0,0.08))",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 2,
+              flexShrink: 0,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setVista("tarjetas")}
+              title="Vista de cuadrícula Apple"
+              style={{
+                border: "none",
+                borderRadius: 6,
+                padding: "5px 8px",
+                background: vista === "tarjetas" ? "var(--surface, #ffffff)" : "transparent",
+                color: vista === "tarjetas" ? "var(--text-main, #1d1d1f)" : "var(--text-muted, #86868b)",
+                boxShadow: vista === "tarjetas" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                cursor: "pointer",
+                fontSize: 13,
+              }}
+            >
+              ⊞
+            </button>
+            <button
+              type="button"
+              onClick={() => setVista("tabla")}
+              title="Vista de lista"
+              style={{
+                border: "none",
+                borderRadius: 6,
+                padding: "5px 8px",
+                background: vista === "tabla" ? "var(--surface, #ffffff)" : "transparent",
+                color: vista === "tabla" ? "var(--text-main, #1d1d1f)" : "var(--text-muted, #86868b)",
+                boxShadow: vista === "tabla" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                cursor: "pointer",
+                fontSize: 13,
+              }}
+            >
+              ☰
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ============================================================= */}
+      {/* FILTROS ADICIONALES PLEGABLES (Obra, Seguimiento, Orden)       */}
+      {/* ============================================================= */}
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          alignItems: "center",
+          flexWrap: "wrap",
+          marginBottom: 18,
+          fontSize: 12,
+          color: "var(--text-muted, #6e6e73)",
+        }}
+      >
+        <span style={{ fontWeight: 600 }}>Filtrar:</span>
+
+        {/* Filtro por Obra */}
+        <select
+          value={obraFiltro}
+          onChange={(e) => setObraFiltro(e.target.value)}
+          style={{
+            background: "var(--surface, #ffffff)",
+            border: "1px solid var(--border, rgba(0, 0, 0, 0.1))",
+            borderRadius: 8,
+            padding: "5px 10px",
+            fontSize: 12,
+            color: "var(--text-main, #1d1d1f)",
+            outline: "none",
+            cursor: "pointer",
+          }}
+        >
+          <option value="todas">Todas las obras ({obras.length})</option>
+          {obras.map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </select>
+
+        {/* Filtro por Seguimiento */}
+        <select
+          value={seguimientoFiltro}
+          onChange={(e) => setSeguimientoFiltro(e.target.value)}
+          style={{
+            background: "var(--surface, #ffffff)",
+            border: "1px solid var(--border, rgba(0, 0, 0, 0.1))",
+            borderRadius: 8,
+            padding: "5px 10px",
+            fontSize: 12,
+            color: "var(--text-main, #1d1d1f)",
+            outline: "none",
+            cursor: "pointer",
+          }}
+        >
+          <option value="todas">Seguimiento: Todos</option>
+          <option value="llamar">Por llamar (a punto o vencidas)</option>
+          <option value="vencidas">Solo vencidas</option>
+          <option value="alDia">Dentro del plazo</option>
+        </select>
+
+        {/* Ordenamiento */}
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontWeight: 600 }}>Ordenar por:</span>
+          <select
+            value={ordenActivo}
+            onChange={(e) => setOrdenActivo(e.target.value)}
+            style={{
+              background: "var(--surface, #ffffff)",
+              border: "1px solid var(--border, rgba(0, 0, 0, 0.1))",
+              borderRadius: 8,
+              padding: "5px 10px",
+              fontSize: 12,
+              color: "var(--text-main, #1d1d1f)",
+              outline: "none",
+              cursor: "pointer",
+            }}
+          >
+            {ORDENES.map((o) => (
+              <option key={o.key} value={o.key}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* ============================================================= */}
+      {/* RESULTADOS / LISTA O CUADRÍCULA                               */}
+      {/* ============================================================= */}
+      {filtradas.length === 0 ? (
+        <div
+          style={{
+            textAlign: "center",
+            padding: "48px 20px",
+            background: "var(--surface, #ffffff)",
+            borderRadius: 18,
+            border: "1px dashed var(--border, rgba(0,0,0,0.1))",
+            color: "var(--text-muted, #86868b)",
+          }}
+        >
+          <div style={{ fontSize: 32, marginBottom: 8 }}>📄</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-main, #1d1d1f)" }}>
+            No se encontraron cotizaciones
+          </div>
+          <p style={{ fontSize: 13, margin: "6px 0 0" }}>
+            Prueba ajustando los términos de búsqueda o los filtros seleccionados.
+          </p>
+        </div>
+      ) : vista === "tarjetas" ? (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isMobile
+              ? "1fr"
+              : "repeat(auto-fill, minmax(360px, 1fr))",
+            gap: 16,
+          }}
+        >
+          {filtradas.map((c) => (
+            <TarjetaCotizacionApple
+              key={c.id}
+              cotizacion={c}
+              acciones={acciones}
+              onInspeccionar={() => setCotizacionInspector(c)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div
+          style={{
+            background: "var(--surface, #ffffff)",
+            borderRadius: 16,
+            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+            overflow: "hidden",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+          }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "100px 1.8fr 1.2fr 100px 120px 120px 160px",
+              padding: "10px 16px",
+              background: "var(--surface-subtle, #fbfbfd)",
+              borderBottom: "1px solid var(--border, rgba(0,0,0,0.08))",
+              fontSize: 11,
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              color: "var(--text-subtle, #86868b)",
+            }}
+          >
+            <span>Folio</span>
+            <span>Cliente</span>
+            <span>Obra / Proyecto</span>
+            <span>Fecha</span>
+            <span style={{ textAlign: "right" }}>Total COP</span>
+            <span style={{ textAlign: "center" }}>Estado</span>
+            <span style={{ textAlign: "right" }}>Acciones</span>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {filtradas.map((c, idx) => (
+              <FilaTablaCotizacion
+                key={c.id}
+                cotizacion={c}
+                acciones={acciones}
+                zebra={idx % 2 === 1}
+                onInspeccionar={() => setCotizacionInspector(c)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================= */}
+      {/* DRAWER / INSPECTOR LATERAL CON ANIMACIÓN HORIZONTAL APPLE     */}
+      {/* ============================================================= */}
+      {/* Fondo oscuro traslúcido */}
+      <div
+        onClick={() => setCotizacionInspector(null)}
+        style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0, 0, 0, 0.28)",
+          backdropFilter: "blur(4px)",
+          WebkitBackdropFilter: "blur(4px)",
+          zIndex: 80,
+          opacity: cotizacionInspector ? 1 : 0,
+          pointerEvents: cotizacionInspector ? "auto" : "none",
+          transition: "opacity 0.26s ease",
+        }}
+      />
+
+      {/* Panel deslizante lateral (Split View / Slide-Over Inspector) */}
+      <aside
+        style={{
+          position: "fixed",
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: isMobile
+            ? "100%"
+            : inspectorExpandido
+            ? "min(780px, 92vw)"
+            : "min(460px, 90vw)",
+          background: "var(--surface, #ffffff)",
+          borderLeft: "1px solid var(--border, rgba(0, 0, 0, 0.12))",
+          zIndex: 90,
+          boxShadow: "-12px 0 36px rgba(0, 0, 0, 0.14)",
+          transform: cotizacionInspector ? "translateX(0)" : "translateX(100%)",
+          transition:
+            "transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), width 0.32s cubic-bezier(0.16, 1, 0.3, 1)",
+          display: "flex",
+          flexDirection: "column",
+          boxSizing: "border-box",
+        }}
+      >
+        {cotizacionInspector && (
+          <ContenidoInspectorHorizontal
+            cotizacion={cotizacionInspector}
+            acciones={acciones}
+            expandido={inspectorExpandido}
+            onToggleExpandir={() => setInspectorExpandido((prev) => !prev)}
+            onCerrar={() => setCotizacionInspector(null)}
+          />
+        )}
+      </aside>
+    </div>
+  );
+}
+
+// ===================================================================
+// SUBCOMPONENTES
+// ===================================================================
+
+function BotonSegmentado({ activo, onClick, label }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        padding: "5px 13px",
+        borderRadius: 9,
+        fontSize: 12,
+        fontWeight: activo ? 700 : 500,
+        color: activo ? "var(--text-main, #1d1d1f)" : "var(--text-muted, #6e6e73)",
+        background: activo ? "var(--surface, #ffffff)" : "transparent",
+        boxShadow: activo ? "0 1px 4px rgba(0,0,0,0.1)" : "none",
+        border: "none",
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+        transition: "all 0.16s ease",
       }}
-    />
+    >
+      {label}
+    </button>
+  );
+}
+
+function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
+  const [hover, setHover] = useState(false);
+  const activa = getQuoteActiveProposal(c);
+
+  const { diasParaVencer } = seguimientoDe(c);
+  const avisa = diasParaVencer !== null && diasParaVencer <= UMBRAL_POR_VENCER;
+
+  const totalEstimado = Number(
+    c.total ||
+      c.totalPresupuesto ||
+      (Array.isArray(c.propuestas)
+        ? c.propuestas.reduce((s, p) => s + Number(p?.total || 0), 0)
+        : 0) ||
+      Number(activa?.total || 0) ||
+      0
+  );
+
+  const clienteNorm = normalizarRazonSocial(c.cliente);
+  const obraNorm = normalizarMayusculas(c.obra || "");
+  const ciudadNorm = normalizarMayusculas(c.ciudad || "");
+
+  const alPulsar = (fn) => (e) => {
+    e.stopPropagation();
+    if (typeof fn === "function") fn(c);
+  };
+
+  return (
+    <article
+      onClick={onInspeccionar}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        background: "var(--surface, #ffffff)",
+        border: `1px solid ${hover ? "#0071e3" : "var(--border, rgba(0, 0, 0, 0.08))"}`,
+        borderRadius: 18,
+        padding: "16px 18px",
+        boxShadow: hover
+          ? "0 14px 30px -6px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04)"
+          : "0 2px 10px -2px rgba(0, 0, 0, 0.02), 0 1px 3px rgba(0, 0, 0, 0.02)",
+        transform: hover ? "translateY(-2px)" : "translateY(0)",
+        transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+        cursor: "pointer",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        gap: 14,
+      }}
+    >
+      <div>
+        {/* Cabecera de la tarjeta: Folio, fecha y estado */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 8,
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span
+              style={{
+                fontFamily: "ui-monospace, SFMono-Regular, monospace",
+                fontSize: 11.5,
+                fontWeight: 700,
+                padding: "2px 7px",
+                borderRadius: 6,
+                background: "var(--surface-subtle, #f5f5f7)",
+                color: "var(--text-main, #1d1d1f)",
+                border: "1px solid var(--border, rgba(0,0,0,0.08))",
+              }}
+            >
+              {c.numero || c.id}
+            </span>
+            <span style={{ fontSize: 11, color: "var(--text-subtle, #86868b)" }}>
+              {fmtD(c.fecha)}
+              {ciudadNorm ? ` · ${ciudadNorm}` : ""}
+            </span>
+          </div>
+
+          <BotonEstadoAprobacion cotizacion={c} acciones={acciones} />
+        </div>
+
+        {/* Alerta de seguimiento comercial */}
+        {avisa && (
+          <div style={{ marginBottom: 6 }}>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 800,
+                color: colorSeguimiento(diasParaVencer),
+                background: "rgba(255, 149, 0, 0.08)",
+                border: `1px solid ${colorSeguimiento(diasParaVencer)}`,
+                borderRadius: 5,
+                padding: "1px 6px",
+              }}
+            >
+              {etiquetaSeguimiento(diasParaVencer)}
+            </span>
+          </div>
+        )}
+
+        {/* Cliente y Obra */}
+        <h3
+          style={{
+            fontSize: 15,
+            fontWeight: 700,
+            color: "var(--text-main, #1d1d1f)",
+            margin: "0 0 3px",
+            lineHeight: 1.25,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {clienteNorm || "Sin razón social"}
+        </h3>
+
+        <div
+          style={{
+            fontSize: 12,
+            color: "var(--text-muted, #6e6e73)",
+            lineHeight: 1.4,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {obraNorm || activa?.nombre || "Cotización técnica"}
+        </div>
+      </div>
+
+      {/* Pie de la tarjeta: Total y Botones de acción */}
+      <div
+        style={{
+          borderTop: "1px solid var(--border, rgba(0, 0, 0, 0.06))",
+          paddingTop: 12,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 10,
+          flexWrap: "wrap",
+        }}
+      >
+        <div>
+          <div
+            style={{
+              fontSize: 10.5,
+              fontWeight: 600,
+              color: "var(--text-subtle, #86868b)",
+              textTransform: "uppercase",
+            }}
+          >
+            Total con AIU
+          </div>
+          <div
+            style={{
+              fontSize: 16,
+              fontWeight: 800,
+              color: "var(--text-main, #1d1d1f)",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {fmt(totalEstimado)}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+          <button
+            type="button"
+            title="Inspeccionar cotización"
+            onClick={(e) => {
+              e.stopPropagation();
+              onInspeccionar();
+            }}
+            style={{
+              background: "var(--surface-subtle, #f5f5f7)",
+              color: "var(--text-main, #1d1d1f)",
+              border: "1px solid var(--border, rgba(0,0,0,0.08))",
+              borderRadius: 8,
+              padding: "5px 10px",
+              fontSize: 11.5,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Ver
+          </button>
+
+          <button
+            type="button"
+            title="Editar propuesta"
+            onClick={alPulsar(acciones.editar)}
+            style={{
+              background: "transparent",
+              color: "var(--text-muted, #6e6e73)",
+              border: "1px solid var(--border, rgba(0,0,0,0.1))",
+              borderRadius: 8,
+              padding: "5px 10px",
+              fontSize: 11.5,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Editar
+          </button>
+
+          <button
+            type="button"
+            title="Duplicar cotización"
+            onClick={alPulsar(acciones.duplicar)}
+            style={{
+              background: "transparent",
+              color: "var(--text-muted, #6e6e73)",
+              border: "1px solid var(--border, rgba(0,0,0,0.1))",
+              borderRadius: 8,
+              padding: "5px 8px",
+              fontSize: 11.5,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            📋
+          </button>
+
+          <button
+            type="button"
+            title="Eliminar permanentemente"
+            onClick={alPulsar(acciones.eliminar)}
+            style={{
+              background: "rgba(239, 68, 68, 0.08)",
+              color: "#dc2626",
+              border: "1px solid rgba(239, 68, 68, 0.2)",
+              borderRadius: 8,
+              padding: "5px 8px",
+              fontSize: 11.5,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            🗑️
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function FilaTablaCotizacion({ cotizacion: c, acciones, zebra, onInspeccionar }) {
+  const activa = getQuoteActiveProposal(c);
+  const totalEstimado = Number(
+    c.total ||
+      c.totalPresupuesto ||
+      (Array.isArray(c.propuestas)
+        ? c.propuestas.reduce((s, p) => s + Number(p?.total || 0), 0)
+        : 0) ||
+      Number(activa?.total || 0) ||
+      0
+  );
+
+  const alPulsar = (fn) => (e) => {
+    e.stopPropagation();
+    if (typeof fn === "function") fn(c);
+  };
+
+  return (
+    <div
+      onClick={onInspeccionar}
+      style={{
+        display: "grid",
+        gridTemplateColumns: "100px 1.8fr 1.2fr 100px 120px 120px 160px",
+        padding: "11px 16px",
+        alignItems: "center",
+        background: zebra ? "var(--surface-subtle, #fafbfd)" : "var(--surface, #ffffff)",
+        borderBottom: "1px solid var(--border, rgba(0,0,0,0.06))",
+        fontSize: 12.5,
+        cursor: "pointer",
+        transition: "background 0.12s ease",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "var(--surface-subtle, #f5f5f7)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = zebra
+          ? "var(--surface-subtle, #fafbfd)"
+          : "var(--surface, #ffffff)";
+      }}
+    >
+      <span
+        style={{
+          fontFamily: "ui-monospace, SFMono-Regular, monospace",
+          fontWeight: 700,
+          color: "var(--text-main, #1d1d1f)",
+        }}
+      >
+        {c.numero || c.id}
+      </span>
+
+      <span
+        style={{
+          fontWeight: 700,
+          color: "var(--text-main, #1d1d1f)",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+          paddingRight: 10,
+        }}
+      >
+        {c.cliente || "Sin cliente"}
+      </span>
+
+      <span
+        style={{
+          color: "var(--text-muted, #6e6e73)",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+          paddingRight: 10,
+        }}
+      >
+        {c.obra || activa?.nombre || "—"}
+      </span>
+
+      <span style={{ color: "var(--text-subtle, #86868b)", fontSize: 11.5 }}>
+        {fmtD(c.fecha)}
+      </span>
+
+      <span
+        style={{
+          textAlign: "right",
+          fontWeight: 700,
+          color: "var(--text-main, #1d1d1f)",
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {fmt(totalEstimado)}
+      </span>
+
+      <div style={{ textAlign: "center" }}>
+        <BotonEstadoAprobacion cotizacion={c} acciones={acciones} />
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 5 }}>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onInspeccionar();
+          }}
+          style={{
+            background: "var(--surface-subtle, #f5f5f7)",
+            border: "1px solid var(--border, rgba(0,0,0,0.08))",
+            borderRadius: 6,
+            padding: "4px 8px",
+            fontSize: 11,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Ver
+        </button>
+        <button
+          type="button"
+          onClick={alPulsar(acciones.editar)}
+          style={{
+            background: "transparent",
+            border: "1px solid var(--border, rgba(0,0,0,0.1))",
+            borderRadius: 6,
+            padding: "4px 8px",
+            fontSize: 11,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Editar
+        </button>
+        <button
+          type="button"
+          onClick={alPulsar(acciones.duplicar)}
+          title="Duplicar"
+          style={{
+            background: "transparent",
+            border: "1px solid var(--border, rgba(0,0,0,0.1))",
+            borderRadius: 6,
+            padding: "4px 6px",
+            fontSize: 11,
+            cursor: "pointer",
+          }}
+        >
+          📋
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -87,7 +1003,6 @@ function BotonEstadoAprobacion({ cotizacion, acciones }) {
   const [hover, setHover] = useState(false);
   const aprobada = cotizacion.estado === "Aprobada" || Boolean(cotizacion.obraId);
   const estado = cotizacion.estado || "Pendiente";
-  const conf = EC[estado] || (aprobada ? { bg: "#ECFDF3", text: "#027A48" } : { bg: "#FFFAEB", text: "#B54708" });
 
   const handleClick = (e) => {
     e.stopPropagation();
@@ -101,6 +1016,10 @@ function BotonEstadoAprobacion({ cotizacion, acciones }) {
       }
     }
   };
+
+  const bgNormal = aprobada ? "rgba(52, 199, 89, 0.12)" : "rgba(255, 149, 0, 0.12)";
+  const textNormal = aprobada ? "#28a745" : "#d97706";
+  const borderNormal = aprobada ? "rgba(52, 199, 89, 0.28)" : "rgba(255, 149, 0, 0.28)";
 
   const bgHover = aprobada ? "#fee2e2" : "#dcfce7";
   const textHover = aprobada ? "#dc2626" : "#15803d";
@@ -118,205 +1037,484 @@ function BotonEstadoAprobacion({ cotizacion, acciones }) {
           : "Cotización pendiente. Haz clic aquí para aprobarla y crear la obra automáticamente"
       }
       style={{
-        background: hover ? bgHover : conf.bg,
-        color: hover ? textHover : conf.text,
-        border: `1px solid ${hover ? borderHover : (aprobada ? "rgba(2, 122, 72, 0.25)" : "rgba(181, 71, 8, 0.25)")}`,
+        background: hover ? bgHover : bgNormal,
+        color: hover ? textHover : textNormal,
+        border: `1px solid ${hover ? borderHover : borderNormal}`,
         borderRadius: 999,
-        padding: "4px 12px",
-        fontSize: 11.5,
+        padding: "3px 10px",
+        fontSize: 11,
         fontWeight: 700,
         whiteSpace: "nowrap",
         cursor: "pointer",
         display: "inline-flex",
         alignItems: "center",
-        gap: 5,
-        transition: "all 0.16s ease-in-out",
-        transform: hover ? "scale(1.04)" : "scale(1)",
-        boxShadow: hover ? "0 2px 8px rgba(0,0,0,0.08)" : "none",
+        gap: 4,
+        transition: "all 0.16s ease",
+        transform: hover ? "scale(1.03)" : "scale(1)",
         userSelect: "none",
       }}
     >
-      <span style={{ fontSize: 11 }}>
-        {hover
-          ? (aprobada ? "↩ Desaprobar" : "✓ Aprobar")
-          : (aprobada ? "✓ Aprobada" : estado)}
+      <span>
+        {hover ? (aprobada ? "↩ Desaprobar" : "✓ Aprobar") : aprobada ? "✓ Aprobada" : estado}
       </span>
     </button>
   );
 }
 
-function Fila({ c, compacta, acciones }) {
-  const aprobada = c.estado === "Aprobada";
-  const alPulsar = (fn) => (e) => { e.stopPropagation(); if (typeof fn === "function") fn(c); };
+// ===================================================================
+// CONTENIDO DEL INSPECTOR LATERAL CON ANIMACIÓN HORIZONTAL APPLE
+// ===================================================================
+function ContenidoInspectorHorizontal({
+  cotizacion: c,
+  acciones,
+  expandido,
+  onToggleExpandir,
+  onCerrar,
+}) {
+  const activa = getQuoteActiveProposal(c);
+  const items = Array.isArray(activa?.items) ? activa.items : [];
 
-  // Solo se marca lo que hay que mirar: una cotizacion dentro del plazo no
-  // necesita etiqueta, seria ruido en todas las filas.
-  const { diasParaVencer } = seguimientoDe(c);
-  const avisa = diasParaVencer !== null && diasParaVencer <= UMBRAL_POR_VENCER;
-  const colorBarra = aprobada ? "#12B76A" : (avisa && diasParaVencer < 0 ? "#ef4444" : C.acento);
-
-  // La obra suele llamarse igual que el cliente, y salia el mismo nombre dos
-  // veces. Solo se pone si aporta algo distinto.
-  const cliente = normalizarRazonSocial(c.cliente);
-  const obra = normalizarMayusculas(c.obra || "");
-  const ciudad = normalizarMayusculas(c.ciudad || "");
-  const mismoNombre = obra && obra.replace(/[.\s]/g, "") === cliente.replace(/[.\s]/g, "");
-  const debajo = [mismoNombre ? "" : obra, ciudad].filter(Boolean).join(" · ");
-
-  const totalEstimado = Number(
-    c.total ||
-    c.totalPresupuesto ||
-    (Array.isArray(c.propuestas) ? c.propuestas.reduce((s, p) => s + Number(p?.total || 0), 0) : 0) ||
+  const subtotal = items.reduce(
+    (sum, it) => sum + (Number(it.cant) || 0) * (Number(it.vu) || 0),
     0
   );
+  const util = activa?.sinAiu ? 0 : (subtotal * (Number(activa?.util) || 10)) / 100;
+  const iva = activa?.sinAiu ? subtotal * 0.19 : util * 0.19;
+  const total = Number(c.total || activa?.total || subtotal + util + iva);
 
-  const botones = (
-    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", maxWidth: "100%" }}>
-      <button
-        type="button"
-        style={{
-          background: "var(--surface-subtle, #f2f4f7)",
-          color: "var(--text-main, #101828)",
-          border: "1px solid var(--border, #eaecf0)",
-          borderRadius: 8,
-          padding: "5px 12px",
-          fontSize: 12,
-          fontWeight: 600,
-          cursor: "pointer",
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 5,
-        }}
-        onClick={alPulsar(acciones.ver)}
-      >
-        <span>Ver</span>
-      </button>
-      <button
-        type="button"
-        style={{
-          background: "transparent",
-          color: "var(--text-muted, #475467)",
-          border: "1px solid var(--border, #eaecf0)",
-          borderRadius: 8,
-          padding: "5px 11px",
-          fontSize: 12,
-          fontWeight: 600,
-          cursor: "pointer",
-        }}
-        onClick={alPulsar(acciones.editar)}
-      >
-        Editar
-      </button>
-      <button
-        type="button"
-        title="Duplicar cotización (crea una copia idéntica con nuevo folio)"
-        style={{
-          background: "transparent",
-          color: "var(--text-muted, #475467)",
-          border: "1px solid var(--border, #eaecf0)",
-          borderRadius: 8,
-          padding: "5px 10px",
-          fontSize: 12,
-          fontWeight: 600,
-          cursor: "pointer",
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 4,
-        }}
-        onClick={alPulsar(acciones.duplicar)}
-      >
-        <span>📋 Duplicar</span>
-      </button>
-      <button
-        type="button"
-        title="Eliminar cotización permanentemente"
-        style={{
-          background: "rgba(239, 68, 68, 0.06)",
-          color: "#dc2626",
-          border: "1px solid rgba(239, 68, 68, 0.25)",
-          borderRadius: 8,
-          padding: "5px 9px",
-          fontSize: 12,
-          fontWeight: 600,
-          cursor: "pointer",
-          display: "inline-flex",
-          alignItems: "center",
-        }}
-        onClick={alPulsar(acciones.eliminar)}
-      >
-        <span>🗑️</span>
-      </button>
-    </div>
-  );
-
-  const datos = (
-    <>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 13.5, fontWeight: 700, color: C.tinta }}>{cliente}</span>
-        <span style={{ fontSize: 11, color: C.tenue }}>
-          {c.numero || c.id}{c.fecha ? ` · ${fmtD(c.fecha)}` : ""}
-        </span>
-        {avisa && (
-          <span title={`Enviada hace ${seguimientoDe(c).diasSinRespuesta} días y sigue sin respuesta`}
-            style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: .2,
-              color: colorSeguimiento(diasParaVencer),
-              border: `1px solid ${colorSeguimiento(diasParaVencer)}`,
-              borderRadius: 5, padding: "1px 5px", whiteSpace: "nowrap" }}>
-            {etiquetaSeguimiento(diasParaVencer)}
-          </span>
-        )}
-      </div>
-      {debajo && (
-        <div style={{ fontSize: 11.5, color: C.apagado, marginTop: 1,
-          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{debajo}</div>
-      )}
-    </>
-  );
-
-  if (compacta) {
-    return (
-      <Resaltable as="article" onClick={() => acciones.ver(c)}
-        estiloHover={{ borderColor: C.acentoFuerte, background: "var(--surface-hover, #fffdfb)" }}
-        style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 10, background: "var(--surface, #fff)",
-          padding: "9px 12px 9px 14px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
-          cursor: "pointer", position: "relative", overflow: "hidden", width: "100%", maxWidth: "100%", boxSizing: "border-box",
-          transition: "border-color .16s ease, background .16s ease" }}>
-        <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3,
-          background: colorBarra }} />
-        <div style={{ minWidth: 0, flex: "1 1 200px" }}>{datos}</div>
-        {totalEstimado > 0 && (
-          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #101828)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
-            {fmt(totalEstimado)}
-          </div>
-        )}
-        <BotonEstadoAprobacion cotizacion={c} acciones={acciones} />
-        <div style={{ display: "flex", gap: 4, flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>{botones}</div>
-      </Resaltable>
-    );
-  }
+  const telLimpio = String(c.telefono || "").replace(/\D/g, "");
+  const urlWa = telLimpio
+    ? `https://wa.me/57${telLimpio}?text=${encodeURIComponent(
+        `Hola ${c.contacto || c.cliente || ""}, te saludo de Ingeanclajes respecto a la cotización ${
+          c.numero || c.id
+        }...`
+      )}`
+    : null;
 
   return (
-    <Resaltable as="article" onClick={() => acciones.ver(c)}
-      estiloHover={{ borderColor: C.acentoFuerte, boxShadow: "0 12px 28px -16px rgba(0,0,0,.35)" }}
-      style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 12, background: "var(--surface, #fff)",
-        padding: "12px 14px 11px", display: "flex", flexDirection: "column", gap: 10,
-        cursor: "pointer", position: "relative", overflow: "hidden", width: "100%", maxWidth: "100%", boxSizing: "border-box",
-        transition: "box-shadow .2s ease, border-color .2s ease" }}>
-      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3,
-        background: colorBarra }} />
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-        <div style={{ minWidth: 0, flex: "1 1 180px" }}>{datos}</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, flexWrap: "wrap" }}>
-          {totalEstimado > 0 && (
-            <div style={{ fontSize: 13.5, fontWeight: 700, color: "var(--text-main, #101828)", fontVariantNumeric: "tabular-nums" }}>
-              {fmt(totalEstimado)}
-            </div>
-          )}
+    <>
+      {/* Cabecera del Inspector */}
+      <div
+        style={{
+          padding: "16px 20px",
+          borderBottom: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 12,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span
+            style={{
+              fontFamily: "ui-monospace, SFMono-Regular, monospace",
+              fontSize: 12,
+              fontWeight: 800,
+              padding: "2px 8px",
+              borderRadius: 6,
+              background: "var(--surface-subtle, #f5f5f7)",
+              color: "var(--text-main, #1d1d1f)",
+              border: "1px solid var(--border, rgba(0,0,0,0.1))",
+            }}
+          >
+            {c.numero || c.id}
+          </span>
           <BotonEstadoAprobacion cotizacion={c} acciones={acciones} />
         </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {/* Botón de Minimizar / Maximizar Horizontal (Efecto pedido por el usuario) */}
+          <button
+            type="button"
+            onClick={onToggleExpandir}
+            title={
+              expandido
+                ? "Minimizar horizontalmente (volver a ancho compacto)"
+                : "Maximizar horizontalmente (expandir vista lateral)"
+            }
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: "50%",
+              border: "1px solid var(--border, rgba(0,0,0,0.12))",
+              background: "var(--surface, #ffffff)",
+              color: "var(--text-main, #1d1d1f)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 13,
+              transition: "all 0.15s ease",
+            }}
+          >
+            ↔
+          </button>
+
+          {/* Botón de cerrar (colapsa horizontalmente) */}
+          <button
+            type="button"
+            onClick={onCerrar}
+            title="Cerrar inspector lateral"
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: "50%",
+              border: "none",
+              background: "var(--surface-subtle, #f5f5f7)",
+              color: "var(--text-muted, #6e6e73)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 16,
+              lineHeight: 1,
+              transition: "all 0.15s ease",
+            }}
+          >
+            ✕
+          </button>
+        </div>
       </div>
-      <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 8,
-        borderTop: `1px solid ${C.borde}`, flexWrap: "wrap", gap: 6 }}>{botones}</div>
-    </Resaltable>
+
+      {/* Cuerpo del Inspector con scroll suave */}
+      <div
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: 20,
+          display: "flex",
+          flexDirection: "column",
+          gap: 16,
+        }}
+      >
+        {/* Título de Obra y Cliente */}
+        <div>
+          <h2
+            style={{
+              fontSize: 18,
+              fontWeight: 800,
+              color: "var(--text-main, #1d1d1f)",
+              margin: 0,
+              lineHeight: 1.25,
+            }}
+          >
+            {c.obra || activa?.nombre || "Cotización Técnica"}
+          </h2>
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: "var(--text-muted, #6e6e73)",
+              marginTop: 4,
+            }}
+          >
+            {c.cliente || "Cliente"}
+            {c.ciudad ? ` · ${c.ciudad}` : ""}
+          </div>
+          {c.contacto && (
+            <div style={{ fontSize: 11.5, color: "var(--text-subtle, #86868b)", marginTop: 2 }}>
+              Contacto: {c.contacto} {c.telefono ? `(${c.telefono})` : ""}
+            </div>
+          )}
+        </div>
+
+        {/* Hero Card de Valor Total con AIU */}
+        <div
+          style={{
+            background: "var(--surface-subtle, #fbfbfd)",
+            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+            borderRadius: 16,
+            padding: 16,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10.5,
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              color: "var(--text-subtle, #86868b)",
+            }}
+          >
+            Valor Total Propuesta (COP)
+          </div>
+
+          <div
+            style={{
+              fontSize: 26,
+              fontWeight: 800,
+              color: "var(--text-main, #1d1d1f)",
+              fontVariantNumeric: "tabular-nums",
+              margin: "4px 0 8px",
+            }}
+          >
+            {fmt(total)}
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: 11.5,
+              color: "var(--text-muted, #6e6e73)",
+              borderTop: "1px solid var(--border, rgba(0,0,0,0.06))",
+              paddingTop: 8,
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            <span>
+              Subtotal: <strong>{fmt(subtotal)}</strong>
+            </span>
+            <span>
+              IVA: <strong>{fmt(iva)}</strong>
+            </span>
+          </div>
+        </div>
+
+        {/* Metadatos en filas compactas Apple */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            fontSize: 12,
+            background: "var(--surface, #ffffff)",
+            border: "1px solid var(--border, rgba(0, 0, 0, 0.07))",
+            borderRadius: 12,
+            padding: "12px 14px",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span style={{ color: "var(--text-subtle, #86868b)" }}>Fecha emisión:</span>
+            <span style={{ fontWeight: 600, color: "var(--text-main, #1d1d1f)" }}>
+              {fmtD(c.fecha)}
+            </span>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span style={{ color: "var(--text-subtle, #86868b)" }}>Validez:</span>
+            <span style={{ fontWeight: 600, color: "var(--text-main, #1d1d1f)" }}>
+              {c.validez || 30} días calendario
+            </span>
+          </div>
+
+          {activa?.tiempoEjec && (
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "var(--text-subtle, #86868b)" }}>Tiempo ejecución:</span>
+              <span style={{ fontWeight: 600, color: "var(--text-main, #1d1d1f)" }}>
+                {activa.tiempoEjec}
+              </span>
+            </div>
+          )}
+
+          {activa?.formaPago && (
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "var(--text-subtle, #86868b)" }}>Forma de pago:</span>
+              <span style={{ fontWeight: 600, color: "var(--text-main, #1d1d1f)" }}>
+                {activa.formaPago}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Tabla resumida de ítems */}
+        <div>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              color: "var(--text-subtle, #86868b)",
+              marginBottom: 8,
+            }}
+          >
+            Ítems de la propuesta ({items.length})
+          </div>
+
+          {items.length === 0 ? (
+            <div
+              style={{
+                fontSize: 11.5,
+                color: "var(--text-subtle, #86868b)",
+                padding: "12px 0",
+              }}
+            >
+              Esta propuesta aún no tiene ítems registrados.
+            </div>
+          ) : (
+            <div
+              style={{
+                border: "1px solid var(--border, rgba(0,0,0,0.08))",
+                borderRadius: 10,
+                overflow: "hidden",
+              }}
+            >
+              {items.map((it, idx) => (
+                <div
+                  key={it.id || idx}
+                  style={{
+                    padding: "8px 12px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 10,
+                    fontSize: 11.5,
+                    background: idx % 2 === 1 ? "var(--surface-subtle, #fafbfd)" : "transparent",
+                    borderBottom:
+                      idx < items.length - 1
+                        ? "1px solid var(--border, rgba(0,0,0,0.06))"
+                        : "none",
+                  }}
+                >
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        color: "var(--text-main, #1d1d1f)",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {it.desc || "Ítem sin descripción"}
+                    </div>
+                    <div style={{ fontSize: 10.5, color: "var(--text-subtle, #86868b)" }}>
+                      {it.cant} {it.unit} · {fmt(it.vu)} c/u
+                    </div>
+                  </div>
+
+                  <span
+                    style={{
+                      fontWeight: 700,
+                      color: "var(--text-main, #1d1d1f)",
+                      fontVariantNumeric: "tabular-nums",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {fmt((Number(it.cant) || 0) * (Number(it.vu) || 0))}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Acciones del pie del Inspector */}
+      <div
+        style={{
+          padding: 16,
+          borderTop: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+          background: "var(--surface, #ffffff)",
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => acciones.editar?.(c)}
+          style={{
+            background: "#0071e3",
+            color: "#ffffff",
+            border: "none",
+            borderRadius: 12,
+            padding: "10px 16px",
+            fontSize: 13,
+            fontWeight: 700,
+            cursor: "pointer",
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+          }}
+        >
+          <span>✏️</span>
+          <span>Abrir y Editar Cotización</span>
+        </button>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => acciones.ver?.(c)}
+            style={{
+              background: "var(--surface-subtle, #f5f5f7)",
+              color: "var(--text-main, #1d1d1f)",
+              border: "1px solid var(--border, rgba(0,0,0,0.1))",
+              borderRadius: 10,
+              padding: "8px 12px",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            📄 Ver Documento
+          </button>
+
+          <button
+            type="button"
+            onClick={() => acciones.pdf?.(c)}
+            style={{
+              background: "var(--surface-subtle, #f5f5f7)",
+              color: "var(--text-main, #1d1d1f)",
+              border: "1px solid var(--border, rgba(0,0,0,0.1))",
+              borderRadius: 10,
+              padding: "8px 12px",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            📥 Descargar PDF
+          </button>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: urlWa ? "1fr 1fr" : "1fr", gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => acciones.enviar?.(c)}
+            style={{
+              background: "rgba(255, 149, 0, 0.1)",
+              color: "#d97706",
+              border: "1px solid rgba(255, 149, 0, 0.3)",
+              borderRadius: 10,
+              padding: "8px 12px",
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            ✉️ Enviar al cliente
+          </button>
+
+          {urlWa && (
+            <a
+              href={urlWa}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                background: "rgba(37, 211, 102, 0.12)",
+                color: "#128C7E",
+                border: "1px solid rgba(37, 211, 102, 0.3)",
+                borderRadius: 10,
+                padding: "8px 12px",
+                fontSize: 12,
+                fontWeight: 700,
+                textAlign: "center",
+                textDecoration: "none",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 4,
+              }}
+            >
+              <span>WhatsApp</span>
+            </a>
+          )}
+        </div>
+      </div>
+    </>
   );
 }

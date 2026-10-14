@@ -37,6 +37,7 @@ export default function Cotizacion({ctx}){
   const selloCotizacion=selloDe(empresaConfig,"cotizacion");
   const [tab,setTab]=useState("lista");
   const [previewCot,setPreviewCot]=useState(null);
+  const [previewExpandido,setPreviewExpandido]=useState(false);
   const [modoPreview, setModoPreview]=useState("auto");
   const [escalaPreview, setEscalaPreview]=useState(1);
   // Cotizacion que se esta por enviar al cliente.
@@ -962,7 +963,35 @@ export default function Cotizacion({ctx}){
             </div>
 
             <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-              {/* Controles de vista: Ajustar a pantalla o 100% Lectura (movidos aquí) */}
+              {/* Botón para Minimizar / Maximizar Horizontalmente */}
+              <button
+                type="button"
+                onClick={() => setPreviewExpandido((prev) => !prev)}
+                title={
+                  previewExpandido
+                    ? "Minimizar horizontalmente (ancho compacto centrado)"
+                    : "Maximizar horizontalmente (pantalla completa)"
+                }
+                style={{
+                  background: previewExpandido ? "#1d1d1f" : "var(--surface-subtle, #f2f4f7)",
+                  color: previewExpandido ? "#ffffff" : "var(--text-main, #101828)",
+                  border: `1px solid ${previewExpandido ? "#1d1d1f" : "var(--border, #eaecf0)"}`,
+                  borderRadius: 6,
+                  padding: isMobile ? "5px 9px" : "5px 11px",
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  transition: "all 0.16s ease",
+                }}
+              >
+                <span>↔</span>
+                <span>{previewExpandido ? "Minimizar" : "Maximizar"}</span>
+              </button>
+
+              {/* Controles de vista: Ajustar a pantalla o 100% Lectura */}
               <button
                 type="button"
                 onClick={() => setModoPreview("auto")}
@@ -1056,18 +1085,27 @@ export default function Cotizacion({ctx}){
             </div>
           </div>
 
-          <DocumentoEnVivo
-            cotizacion={previewCot}
-            firmaImg={firmaImg}
-            sello={selloCotizacion}
-            alto="calc(100dvh - 120px)"
-            nota="Igual al PDF"
-            sticky={false}
-            modo={modoPreview}
-            onModoChange={setModoPreview}
-            onEscalaChange={setEscalaPreview}
-            ocultarControles={true}
-          />
+          <div
+            style={{
+              maxWidth: previewExpandido ? "100%" : "1060px",
+              margin: "0 auto",
+              width: "100%",
+              transition: "max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
+            }}
+          >
+            <DocumentoEnVivo
+              cotizacion={previewCot}
+              firmaImg={firmaImg}
+              sello={selloCotizacion}
+              alto="calc(100dvh - 120px)"
+              nota="Igual al PDF"
+              sticky={false}
+              modo={modoPreview}
+              onModoChange={setModoPreview}
+              onEscalaChange={setEscalaPreview}
+              ocultarControles={true}
+            />
+          </div>
           {enviarCot && <EnviarCotizacion cotizacion={enviarCot} firmaImg={firmaImg} onCerrar={()=>setEnviarCot(null)}/>}
         </div>
       );

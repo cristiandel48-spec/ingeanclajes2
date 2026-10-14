@@ -255,17 +255,17 @@ export default function PropuestaEditor({
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 6,
-                    padding: "7px 12px",
-                    borderRadius: 8,
+                    padding: "8px 14px",
+                    borderRadius: 10,
                     fontSize: 12,
-                    fontWeight: activo ? 700 : 600,
+                    fontWeight: activo ? 700 : 500,
                     cursor: "pointer",
                     fontFamily: "inherit",
-                    transition: "all 0.15s ease-in-out",
-                    background: activo ? "#FFFAEB" : "var(--surface-subtle, #f2f4f7)",
-                    color: activo ? "#B54708" : "var(--text-muted, #475467)",
-                    border: activo ? "1px solid rgba(181, 71, 8, 0.35)" : "1px solid var(--border, #eaecf0)",
-                    boxShadow: activo ? "0 1px 3px rgba(181, 71, 8, 0.08)" : "none",
+                    transition: "all 0.16s ease",
+                    background: activo ? "var(--text-main, #1d1d1f)" : "var(--surface-subtle, #f5f5f7)",
+                    color: activo ? "#ffffff" : "var(--text-muted, #6e6e73)",
+                    border: activo ? "1px solid var(--text-main, #1d1d1f)" : "1px solid var(--border, rgba(0,0,0,0.08))",
+                    boxShadow: activo ? "0 2px 6px rgba(0,0,0,0.12)" : "none",
                   }}
                 >
                   {l}
@@ -828,49 +828,86 @@ export default function PropuestaEditor({
           </div>
 
           {showDB&&(
-            <div style={{background:"var(--surface-subtle, #f8fafc)",borderRadius:10,padding:16,marginBottom:14,border:"1px solid var(--border, #eaecf0)"}}>
-              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+            <div style={{
+              background:"var(--surface-subtle, #f5f5f7)",
+              borderRadius: 14,
+              padding: 16,
+              marginBottom: 16,
+              border:"1px solid var(--border, rgba(0,0,0,0.08))",
+              boxShadow: "0 4px 16px -2px rgba(0,0,0,0.04)",
+              animation: "fadeIn 0.2s ease",
+            }}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                <span style={{fontSize:11.5,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em",color:"var(--text-subtle, #86868b)"}}>
+                  Catálogo Rápido · 1 Clic para Insertar
+                </span>
+                <span style={{fontSize:11,color:"var(--text-muted, #6e6e73)"}}>
+                  Categoría {dbCat + 1} de {catalogo.length}
+                </span>
+              </div>
+
+              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
                 {catalogo.map((cat,i)=>(
                   <button
                     key={i}
                     onClick={()=>setDbCat(i)}
                     style={{
-                      background: dbCat === i ? "#FFFAEB" : "var(--surface, #ffffff)",
-                      color: dbCat === i ? "#B54708" : "var(--text-muted, #475467)",
-                      border: dbCat === i ? "1px solid rgba(181, 71, 8, 0.35)" : "1px solid var(--border, #eaecf0)",
+                      background: dbCat === i ? "var(--text-main, #1d1d1f)" : "var(--surface, #ffffff)",
+                      color: dbCat === i ? "#ffffff" : "var(--text-muted, #6e6e73)",
+                      border: dbCat === i ? "1px solid var(--text-main, #1d1d1f)" : "1px solid var(--border, rgba(0,0,0,0.1))",
                       borderRadius: 8,
                       fontSize: 11.5,
-                      fontWeight: dbCat === i ? 700 : 600,
+                      fontWeight: dbCat === i ? 700 : 500,
                       padding: "5px 12px",
                       cursor: "pointer",
+                      transition: "all 0.15s ease",
                     }}
                   >
                     {cat.categoria}
                   </button>
                 ))}
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))",gap:8}}>
                 {(categoria.items||[]).map((it,i)=>(
-                  <div key={i} style={{background:"var(--surface, #ffffff)",border:"1px solid var(--border, #eaecf0)",borderRadius:8,padding:"10px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
-                    <div style={{flex:1}}>
-                      <div style={{fontSize:12,fontWeight:600,color:"var(--text-main, #1a1a2e)",marginBottom:2}}>{it.desc}</div>
-                      <div style={{fontSize:11,color:"var(--text-muted, #475569)"}}>{it.unit} · {fmt(it.vu)}</div>
+                  <div
+                    key={i}
+                    style={{
+                      background:"var(--surface, #ffffff)",
+                      border:"1px solid var(--border, rgba(0,0,0,0.08))",
+                      borderRadius: 10,
+                      padding:"10px 12px",
+                      display:"flex",
+                      justifyContent:"space-between",
+                      alignItems:"center",
+                      gap:10,
+                      transition: "border-color 0.15s ease",
+                    }}
+                  >
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:12,fontWeight:600,color:"var(--text-main, #1d1d1f)",marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.desc}</div>
+                      <div style={{fontSize:11,color:"var(--text-muted, #86868b)",fontVariantNumeric:"tabular-nums"}}>{it.unit} · {fmt(it.vu)}</div>
                     </div>
                     <button
+                      type="button"
+                      title="Insertar en la cotización"
                       onClick={()=>{setItems(prev=>[...prev,{id:siguienteId(prev),desc:it.desc,cant:1,unit:it.unit,vu:it.vu}]);}}
                       style={{
-                        background: "#FFFAEB",
-                        color: "#B54708",
-                        border: "1px solid rgba(181, 71, 8, 0.3)",
-                        borderRadius: 6,
-                        padding: "4px 10px",
+                        background: "#0071e3",
+                        color: "#ffffff",
+                        border: "none",
+                        borderRadius: 7,
+                        padding: "5px 10px",
                         fontSize: 12,
                         fontWeight: 700,
                         cursor: "pointer",
                         flexShrink: 0,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 3,
                       }}
                     >
-                      +
+                      + Añadir
                     </button>
                   </div>
                 ))}
@@ -1039,30 +1076,46 @@ export default function PropuestaEditor({
             </div>
           </div>
 
-          {/* Tabla de totales */}
-          <div style={{ border: "1px solid var(--border, #eaecf0)", borderRadius: 12, overflow: "hidden", background: "var(--surface, #ffffff)" }}>
+          {/* Tabla de totales con estética Apple Studio */}
+          <div style={{
+            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+            borderRadius: 14,
+            overflow: "hidden",
+            background: "var(--surface, #ffffff)",
+            boxShadow: "0 2px 8px -2px rgba(0,0,0,0.03)",
+          }}>
             {(sinAiu
-              ? [["Subtotal", sub], ["IVA (19%)", iva]]
-              : [["Subtotal", sub], ["Administración", 0], ["Imprevistos", 0], ["Utilidad (" + p.util + "%)", ut], ["IVA sobre Utilidad (19%)", iva]]
+              ? [["Subtotal Costo Directo", sub], ["IVA Pleno (19%)", iva]]
+              : [["Subtotal Costo Directo", sub], ["Utilidad (" + p.util + "%)", ut], ["IVA sobre Utilidad (19%)", iva]]
             ).map(([lbl, v]) => (
-              <div key={lbl} style={{ display: "flex", justifyContent: "space-between", padding: "8px 16px", borderBottom: "1px solid var(--border, #f2f4f7)", fontSize: 12.5, color: "var(--text-muted, #475467)" }}>
-                <span>{lbl}</span><span style={{ fontWeight: 600, color: "var(--text-main, #101828)", fontVariantNumeric: "tabular-nums" }}>{v ? fmt(v) : "$ 0"}</span>
+              <div key={lbl} style={{ display: "flex", justifyContent: "space-between", padding: "10px 18px", borderBottom: "1px solid var(--border, rgba(0,0,0,0.05))", fontSize: 13, color: "var(--text-muted, #6e6e73)" }}>
+                <span>{lbl}</span><span style={{ fontWeight: 600, color: "var(--text-main, #1d1d1f)", fontVariantNumeric: "tabular-nums" }}>{v ? fmt(v) : "$ 0"}</span>
               </div>
             ))}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", background: "var(--surface-subtle, #f8fafc)", borderTop: "2px solid var(--border, #eaecf0)" }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #101828)", letterSpacing: ".04em" }}>TOTAL PROPUESTA</span>
-              <span style={{ fontSize: 17, fontWeight: 800, color: "#E0342A", fontVariantNumeric: "tabular-nums" }}>{fmt(tot)}</span>
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "14px 18px",
+              background: "var(--surface-subtle, #fbfbfd)",
+              borderTop: "1px solid var(--border, rgba(0,0,0,0.08))",
+            }}>
+              <div>
+                <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text-main, #1d1d1f)", letterSpacing: ".02em" }}>VALOR TOTAL PROPUESTA</span>
+                <div style={{ fontSize: 11, color: "var(--text-subtle, #86868b)" }}>Moneda legal colombiana (COP)</div>
+              </div>
+              <span style={{ fontSize: 20, fontWeight: 800, color: "var(--text-main, #1d1d1f)", fontVariantNumeric: "tabular-nums" }}>{fmt(tot)}</span>
             </div>
             <div style={{
-              padding: "6px 14px",
-              fontSize: 10.5,
-              color: sinAiu ? "#027a48" : "var(--text-muted, #667085)",
+              padding: "7px 16px",
+              fontSize: 11,
+              color: sinAiu ? "#027a48" : "var(--text-muted, #6e6e73)",
               textAlign: "center",
-              background: sinAiu ? "rgba(18, 183, 106, 0.06)" : "var(--surface-subtle, #f8fafc)",
+              background: sinAiu ? "rgba(52, 199, 89, 0.08)" : "var(--surface-subtle, #f5f5f7)",
               fontWeight: 500,
-              borderTop: "1px solid var(--border, #f2f4f7)",
+              borderTop: "1px solid var(--border, rgba(0,0,0,0.05))",
             }}>
-              {sinAiu ? "IVA Pleno (19%) calculado sobre el subtotal" : "IVA (19%) calculado exclusivamente sobre la utilidad"}
+              {sinAiu ? "✓ Régimen de IVA Pleno (19%) calculado sobre el subtotal" : "✓ Régimen estándar de obra civil: IVA (19%) calculado sobre la Utilidad"}
             </div>
           </div>
 

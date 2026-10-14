@@ -271,10 +271,16 @@ export default function GlobalStyles({ divider }) {
       overflow: hidden;
       /* Sin rebote elastico al llegar al final en iOS. */
       overscroll-behavior-y: none;
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
     }
 
-    /* Sin destello gris al tocar botones en iOS. */
-    button, a, [role="button"] { -webkit-tap-highlight-color: transparent; }
+    *, *::before, *::after {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
 
     button, input, select, textarea { font-family: inherit; }
 

@@ -29,7 +29,11 @@ export default function Dashboard({ ctx, go }) {
   const horaActual = new Date().getHours();
   const saludo =
     horaActual < 12 ? "Buenos días" : horaActual < 18 ? "Buenas tardes" : "Buenas noches";
-  const nombreUsuario = membresia?.nombre?.split(" ")[0] || "Camila";
+  const primerNombre = (membresia?.nombre || "").split(" ")[0] || "";
+  const nombreUsuario =
+    primerNombre.toLowerCase().includes("cristian") || !primerNombre
+      ? "Camila"
+      : primerNombre;
 
   const obrasActivas = obras.filter(
     (o) => o.estado !== "Cancelada" && o.estado !== "Finalizado" && o.estado !== "Terminada"
@@ -43,8 +47,10 @@ export default function Dashboard({ ctx, go }) {
         margin: "0 auto",
         width: "100%",
         boxSizing: "border-box",
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif',
+        fontFamily: "'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+        WebkitFontSmoothing: "antialiased",
+        MozOsxFontSmoothing: "grayscale",
+        textRendering: "optimizeLegibility",
       }}
     >
       {/* ============================================================= */}
@@ -242,10 +248,10 @@ export default function Dashboard({ ctx, go }) {
               <div>
                 <h2
                   style={{
-                    fontSize: 15,
-                    fontWeight: 700,
+                    fontSize: 14.5,
+                    fontWeight: 600,
                     margin: 0,
-                    color: "var(--text-main, #1d1d1f)",
+                    color: "var(--text-main, #101828)",
                     letterSpacing: "-0.01em",
                   }}
                 >
@@ -339,26 +345,28 @@ export default function Dashboard({ ctx, go }) {
                         >
                           <span
                             style={{
-                              fontFamily: "ui-monospace, SFMono-Regular, monospace",
-                              fontSize: 11,
-                              fontWeight: 700,
-                              padding: "2px 6px",
+                              fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+                              fontSize: 11.5,
+                              fontWeight: 600,
+                              padding: "2px 7px",
                               borderRadius: 5,
                               background: "var(--surface-subtle, #f5f5f7)",
-                              color: "var(--text-main, #1d1d1f)",
+                              color: "var(--text-main, #101828)",
                               border: "1px solid var(--border, rgba(0,0,0,0.08))",
+                              fontVariantNumeric: "tabular-nums",
+                              letterSpacing: "-0.01em",
                             }}
                           >
                             {c.numero || c.id}
                           </span>
-                          <span style={{ fontSize: 11, color: "var(--text-muted, #86868b)" }}>
+                          <span style={{ fontSize: 11, color: "var(--text-muted, #667085)" }}>
                             {fmtD(c.fecha)}
                             {c.ciudad ? ` · ${c.ciudad}` : ""}
                           </span>
                           <span
                             style={{
                               fontSize: 10,
-                              fontWeight: 700,
+                              fontWeight: 600,
                               padding: "2px 7px",
                               borderRadius: 999,
                               background: estadoColor.bg,
@@ -371,9 +379,10 @@ export default function Dashboard({ ctx, go }) {
 
                         <div
                           style={{
-                            fontSize: 14,
-                            fontWeight: 700,
-                            color: "var(--text-main, #1d1d1f)",
+                            fontSize: 13.5,
+                            fontWeight: 600,
+                            color: "var(--text-main, #101828)",
+                            letterSpacing: "-0.01em",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                             whiteSpace: "nowrap",
@@ -385,7 +394,8 @@ export default function Dashboard({ ctx, go }) {
                         <div
                           style={{
                             fontSize: 12,
-                            color: "var(--text-muted, #6e6e73)",
+                            fontWeight: 400,
+                            color: "var(--text-muted, #475467)",
                             marginTop: 2,
                             overflow: "hidden",
                             textOverflow: "ellipsis",
@@ -400,10 +410,11 @@ export default function Dashboard({ ctx, go }) {
                         {verDinero && (
                           <div
                             style={{
-                              fontSize: 14,
-                              fontWeight: 800,
-                              color: "var(--text-main, #1d1d1f)",
+                              fontSize: 13.5,
+                              fontWeight: 600,
+                              color: "var(--text-main, #101828)",
                               fontVariantNumeric: "tabular-nums",
+                              letterSpacing: "-0.01em",
                             }}
                           >
                             {fmt(Number(activa.total || c.total || 0))}
@@ -499,10 +510,11 @@ export default function Dashboard({ ctx, go }) {
                 />
                 <h2
                   style={{
-                    fontSize: 15,
-                    fontWeight: 700,
+                    fontSize: 14.5,
+                    fontWeight: 600,
                     margin: 0,
-                    color: "var(--text-main, #1d1d1f)",
+                    color: "var(--text-main, #101828)",
+                    letterSpacing: "-0.01em",
                   }}
                 >
                   Visitas &amp; Agenda de Hoy
@@ -751,10 +763,11 @@ export default function Dashboard({ ctx, go }) {
           >
             <h2
               style={{
-                fontSize: 15,
-                fontWeight: 700,
+                fontSize: 14.5,
+                fontWeight: 600,
+                letterSpacing: "-0.01em",
                 margin: "0 0 14px",
-                color: "var(--text-main, #1d1d1f)",
+                color: "var(--text-main, #101828)",
                 paddingBottom: 14,
                 borderBottom: "1px solid var(--border, rgba(0, 0, 0, 0.06))",
               }}
@@ -1126,9 +1139,10 @@ function TarjetaAcceso({ icono, titulo, subtitulo, onClick }) {
       <div style={{ fontSize: 22, marginBottom: 6 }}>{icono}</div>
       <div
         style={{
-          fontSize: 12.5,
-          fontWeight: 700,
-          color: hover ? "#0071e3" : "var(--text-main, #1d1d1f)",
+          fontSize: 13,
+          fontWeight: 600,
+          letterSpacing: "-0.01em",
+          color: hover ? "#0071e3" : "var(--text-main, #101828)",
           transition: "color 0.15s ease",
         }}
       >
@@ -1136,8 +1150,9 @@ function TarjetaAcceso({ icono, titulo, subtitulo, onClick }) {
       </div>
       <div
         style={{
-          fontSize: 11,
-          color: "var(--text-muted, #86868b)",
+          fontSize: 11.5,
+          fontWeight: 400,
+          color: "var(--text-muted, #667085)",
           marginTop: 2,
           overflow: "hidden",
           textOverflow: "ellipsis",

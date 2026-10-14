@@ -164,8 +164,10 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
         margin: "0 auto",
         width: "100%",
         boxSizing: "border-box",
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif',
+        fontFamily: "'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+        WebkitFontSmoothing: "antialiased",
+        MozOsxFontSmoothing: "grayscale",
+        textRendering: "optimizeLegibility",
         position: "relative",
       }}
     >
@@ -294,7 +296,7 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
                   top: "50%",
                   transform: "translateY(-50%)",
                   fontSize: 10,
-                  fontFamily: "ui-monospace, SFMono-Regular, monospace",
+                  fontFamily: "'Inter', system-ui, sans-serif",
                   color: "var(--text-subtle, #86868b)",
                   background: "var(--surface-subtle, #f5f5f7)",
                   border: "1px solid var(--border, rgba(0,0,0,0.08))",
@@ -506,10 +508,10 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
                   background: "var(--surface-subtle, #fbfbfd)",
                   borderBottom: "1px solid var(--border, rgba(0,0,0,0.08))",
                   fontSize: 11,
-                  fontWeight: 700,
+                  fontWeight: 600,
                   textTransform: "uppercase",
-                  letterSpacing: "0.05em",
-                  color: "var(--text-subtle, #86868b)",
+                  letterSpacing: "0.04em",
+                  color: "var(--text-subtle, #667085)",
                 }}
               >
                 <span>Folio</span>
@@ -685,19 +687,21 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <span
               style={{
-                fontFamily: "ui-monospace, SFMono-Regular, monospace",
+                fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
                 fontSize: 11.5,
-                fontWeight: 700,
+                fontWeight: 600,
                 padding: "2px 7px",
                 borderRadius: 6,
                 background: "var(--surface-subtle, #f5f5f7)",
-                color: "var(--text-main, #1d1d1f)",
+                color: "var(--text-main, #101828)",
                 border: "1px solid var(--border, rgba(0,0,0,0.08))",
+                fontVariantNumeric: "tabular-nums",
+                letterSpacing: "-0.01em",
               }}
             >
               {c.numero || c.id}
             </span>
-            <span style={{ fontSize: 11, color: "var(--text-subtle, #86868b)" }}>
+            <span style={{ fontSize: 11, color: "var(--text-muted, #667085)" }}>
               {fmtD(c.fecha)}
               {ciudadNorm ? ` · ${ciudadNorm}` : ""}
             </span>
@@ -712,7 +716,7 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
             <span
               style={{
                 fontSize: 10,
-                fontWeight: 800,
+                fontWeight: 700,
                 color: colorSeguimiento(diasParaVencer),
                 background: "rgba(255, 149, 0, 0.08)",
                 border: `1px solid ${colorSeguimiento(diasParaVencer)}`,
@@ -728,11 +732,12 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
         {/* Cliente y Obra */}
         <h3
           style={{
-            fontSize: 15,
-            fontWeight: 700,
-            color: "var(--text-main, #1d1d1f)",
+            fontSize: 14.5,
+            fontWeight: 600,
+            color: "var(--text-main, #101828)",
             margin: "0 0 3px",
-            lineHeight: 1.25,
+            lineHeight: 1.3,
+            letterSpacing: "-0.01em",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
@@ -744,7 +749,8 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
         <div
           style={{
             fontSize: 12,
-            color: "var(--text-muted, #6e6e73)",
+            fontWeight: 400,
+            color: "var(--text-muted, #475467)",
             lineHeight: 1.4,
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -913,9 +919,12 @@ function FilaTablaCotizacion({ cotizacion: c, acciones, zebra, onInspeccionar })
     >
       <span
         style={{
-          fontFamily: "ui-monospace, SFMono-Regular, monospace",
-          fontWeight: 700,
-          color: "var(--text-main, #1d1d1f)",
+          fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+          fontSize: 12.5,
+          fontWeight: 600,
+          color: "var(--text-main, #101828)",
+          fontVariantNumeric: "tabular-nums",
+          letterSpacing: "-0.01em",
         }}
       >
         {c.numero || c.id}
@@ -923,8 +932,11 @@ function FilaTablaCotizacion({ cotizacion: c, acciones, zebra, onInspeccionar })
 
       <span
         style={{
-          fontWeight: 700,
-          color: "var(--text-main, #1d1d1f)",
+          fontSize: 13,
+          fontWeight: 600,
+          color: "var(--text-main, #101828)",
+          letterSpacing: "-0.01em",
+          lineHeight: 1.35,
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
@@ -936,7 +948,10 @@ function FilaTablaCotizacion({ cotizacion: c, acciones, zebra, onInspeccionar })
 
       <span
         style={{
-          color: "var(--text-muted, #6e6e73)",
+          fontSize: 12.5,
+          fontWeight: 400,
+          color: "var(--text-muted, #475467)",
+          letterSpacing: "-0.01em",
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
@@ -946,16 +961,18 @@ function FilaTablaCotizacion({ cotizacion: c, acciones, zebra, onInspeccionar })
         {c.obra || activa?.nombre || "—"}
       </span>
 
-      <span style={{ color: "var(--text-subtle, #86868b)", fontSize: 11.5 }}>
+      <span style={{ color: "var(--text-muted, #667085)", fontSize: 12, fontWeight: 400 }}>
         {fmtD(c.fecha)}
       </span>
 
       <span
         style={{
           textAlign: "right",
-          fontWeight: 700,
-          color: "var(--text-main, #1d1d1f)",
+          fontSize: 13,
+          fontWeight: 600,
+          color: "var(--text-main, #101828)",
           fontVariantNumeric: "tabular-nums",
+          letterSpacing: "-0.01em",
         }}
       >
         {fmt(totalEstimado)}
@@ -1127,14 +1144,16 @@ function ContenidoInspectorHorizontal({
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span
             style={{
-              fontFamily: "ui-monospace, SFMono-Regular, monospace",
+              fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
               fontSize: 12,
-              fontWeight: 800,
+              fontWeight: 600,
               padding: "2px 8px",
               borderRadius: 6,
               background: "var(--surface-subtle, #f5f5f7)",
-              color: "var(--text-main, #1d1d1f)",
+              color: "var(--text-main, #101828)",
               border: "1px solid var(--border, rgba(0,0,0,0.1))",
+              fontVariantNumeric: "tabular-nums",
+              letterSpacing: "-0.01em",
             }}
           >
             {c.numero || c.id}

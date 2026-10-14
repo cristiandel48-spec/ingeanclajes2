@@ -16,10 +16,22 @@ export default function MenuUsuario({ theme, compact = false }) {
   const contenedorRef = useRef(null);
   const { membresia, agenda } = useAppData();
 
-  // Se muestra el nombre de la persona; el correo es un dato tecnico que solo
-  // hace falta al soportar un problema, asi que queda dentro del menu.
-  const nombre = membresia?.nombre?.trim() || "";
-  const titulo = nombre || correo || "Sesión local";
+  // Se muestra el nombre de la persona; si proviene de la cuenta técnica histórica se muestra Camila Sepúlveda
+  const nombreLimpio = useMemo(() => {
+    const n = membresia?.nombre?.trim() || "";
+    if (!n || n.toLowerCase().includes("cristian")) return "Camila Sepúlveda";
+    return n;
+  }, [membresia?.nombre]);
+
+  const correoLimpio = useMemo(() => {
+    if (!correo) return "";
+    if (correo.toLowerCase().includes("cristian") || correo.toLowerCase().includes("cristiandel48")) {
+      return "administracion@ingeanclajes.com";
+    }
+    return correo;
+  }, [correo]);
+
+  const titulo = nombreLimpio || correoLimpio || "Camila Sepúlveda";
   const subtitulo = membresia?.role ? (ROL_LABEL[membresia.role] || "Ingeanclajes") : "Ingeanclajes";
 
   useEffect(() => {
@@ -93,11 +105,10 @@ export default function MenuUsuario({ theme, compact = false }) {
     ejecutarCerrarSesion();
   };
 
-  // Iniciales del nombre ("Camila Montoya" -> "CM"). Sin nombre se cae al
-  // correo, como antes.
-  const iniciales = nombre
-    ? nombre.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase()
-    : (correo || "?").slice(0, 2).toUpperCase();
+  // Iniciales del nombre ("Camila Sepúlveda" -> "CS").
+  const iniciales = nombreLimpio
+    ? nombreLimpio.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase()
+    : "CS";
 
   return (
     <div ref={contenedorRef} style={{ position: "relative", flexShrink: 0 }}>
@@ -105,7 +116,7 @@ export default function MenuUsuario({ theme, compact = false }) {
         onClick={() => setAbierto((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={abierto}
-        title={correo || "Cuenta"}
+        title={titulo || "Cuenta"}
         style={{
           display: "flex", alignItems: "center", gap: 10,
           minHeight: 40, padding: compact ? 0 : "4px 10px 4px 4px",
@@ -148,7 +159,7 @@ export default function MenuUsuario({ theme, compact = false }) {
               Sesión activa
             </div>
             <div style={{ fontSize: 12.5, color: theme.text, marginTop: 4, wordBreak: "break-all" }}>
-              {correo || "Sin sesión de Supabase"}
+              {correoLimpio || "Sin sesión de Supabase"}
             </div>
           </div>
 

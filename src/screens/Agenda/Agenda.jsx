@@ -3,7 +3,11 @@ import H1 from "../../components/ui/H1";
 import { B, CD, SI } from "../../styles/tokens";
 import { EJEMPLOS } from "../../data/ejemplos";
 import { abrirWhatsApp } from "../../lib/whatsapp";
-import { enviarNotificacionAgendaPorCorreo } from "../../lib/agendaEmail";
+import {
+  enviarNotificacionAgendaPorCorreo,
+  horaA24h,
+  horaA12h,
+} from "../../lib/agendaEmail";
 
 // Meses y días en español
 const MESES = [
@@ -636,7 +640,7 @@ export default function Agenda({ ctx }) {
   const [formCliente, setFormCliente] = useState("");
   const [formCiudad, setFormCiudad] = useState("");
   const [formFecha, setFormFecha] = useState(hoyIso);
-  const [formHora, setFormHora] = useState("10:00 AM");
+  const [formHora, setFormHora] = useState("08:00");
   const [formContacto, setFormContacto] = useState("");
   const [formTelefono, setFormTelefono] = useState("");
   const [formNotas, setFormNotas] = useState("");
@@ -752,7 +756,7 @@ export default function Agenda({ ctx }) {
     setFormCliente("");
     setFormCiudad("");
     setFormFecha(fechaSeleccionada);
-    setFormHora("10:00 AM");
+    setFormHora("08:00");
     setFormContacto("");
     setFormTelefono("");
     setFormNotas("");
@@ -769,7 +773,7 @@ export default function Agenda({ ctx }) {
     setFormCliente(item.cliente || "");
     setFormCiudad(item.ciudad || "");
     setFormFecha(item.fecha || hoyIso);
-    setFormHora(item.hora || "10:00 AM");
+    setFormHora(horaA24h(item.hora || "08:00"));
     setFormContacto(item.contacto || "");
     setFormTelefono(item.telefono || "");
     setFormNotas(item.notas || "");
@@ -793,7 +797,7 @@ export default function Agenda({ ctx }) {
       cliente: formCliente.trim(),
       ciudad: formCiudad.trim(),
       fecha: formFecha,
-      hora: formHora.trim(),
+      hora: horaA12h(formHora),
       contacto: formContacto.trim(),
       telefono: formTelefono.trim(),
       notas: formNotas.trim(),
@@ -1397,16 +1401,69 @@ export default function Agenda({ ctx }) {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted, #64748b)", display: "block", marginBottom: 4 }}>
-                    HORA
-                  </label>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                    <label style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted, #64748b)" }}>
+                      HORA (RELOJ)
+                    </label>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: "#c2410c",
+                        background: "#fff7ed",
+                        padding: "1px 7px",
+                        borderRadius: 6,
+                        border: "1px solid #fed7aa",
+                      }}
+                    >
+                      🕒 {horaA12h(formHora)}
+                    </span>
+                  </div>
                   <input
-                    type="text"
+                    type="time"
                     value={formHora}
                     onChange={(e) => setFormHora(e.target.value)}
-                    placeholder="Ej. 10:00 AM"
-                    style={SI}
+                    style={{
+                      ...SI,
+                      cursor: "pointer",
+                      fontWeight: 700,
+                      fontSize: 13.5,
+                    }}
+                    required
                   />
+                  {/* Horarios rápidos habituales en obra y comités */}
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
+                    {[
+                      { l: "6:00 AM", v: "06:00" },
+                      { l: "7:00 AM", v: "07:00" },
+                      { l: "8:00 AM", v: "08:00" },
+                      { l: "9:00 AM", v: "09:00" },
+                      { l: "10:00 AM", v: "10:00" },
+                      { l: "2:00 PM", v: "14:00" },
+                      { l: "3:30 PM", v: "15:30" },
+                    ].map((h) => {
+                      const sel = formHora === h.v;
+                      return (
+                        <button
+                          key={h.v}
+                          type="button"
+                          onClick={() => setFormHora(h.v)}
+                          style={{
+                            fontSize: 10.5,
+                            fontWeight: sel ? 700 : 500,
+                            padding: "3px 6px",
+                            borderRadius: 6,
+                            border: sel ? "1px solid #f97316" : "1px solid var(--border, #e2e8f0)",
+                            background: sel ? "#fff7ed" : "var(--surface, #ffffff)",
+                            color: sel ? "#c2410c" : "var(--text-muted, #64748b)",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {h.l}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 

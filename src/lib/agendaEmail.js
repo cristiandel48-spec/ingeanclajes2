@@ -38,7 +38,7 @@ export function formatFechaLegible(isoStr) {
 }
 
 // Convierte hora legible (ej. "08:30 AM", "14:00", "2:00 PM") a objeto con hora y minuto
-function parsearHora(horaStr) {
+export function parsearHora(horaStr) {
   if (!horaStr) return { h: 9, m: 0 };
   const str = String(horaStr).trim().toUpperCase();
   const match = str.match(/(\d{1,2}):?(\d{2})?\s*(AM|PM)?/i);
@@ -52,6 +52,29 @@ function parsearHora(horaStr) {
   if (ampm === "AM" && h === 12) h = 0;
 
   return { h, m };
+}
+
+// Convierte cualquier hora a formato "HH:mm" (24h) para input type="time"
+export function horaA24h(str) {
+  if (!str) return "09:00";
+  const { h, m } = parsearHora(str);
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+// Convierte formato "HH:mm" (24h) a formato legible "hh:mm AM/PM"
+export function horaA12h(time24) {
+  if (!time24) return "09:00 AM";
+  const str = String(time24).trim();
+  // Si ya viene con AM o PM
+  if (/AM|PM/i.test(str)) return str;
+
+  const [hStr, mStr] = str.split(":");
+  let h = parseInt(hStr || "9", 10);
+  const m = mStr ? mStr.slice(0, 2) : "00";
+  const ampm = h >= 12 ? "PM" : "AM";
+  if (h > 12) h -= 12;
+  if (h === 0) h = 12;
+  return `${String(h).padStart(2, "0")}:${m} ${ampm}`;
 }
 
 // Genera el enlace a Google Calendar para incluirlo en el correo

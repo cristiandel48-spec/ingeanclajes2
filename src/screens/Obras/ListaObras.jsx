@@ -1,461 +1,1191 @@
-// Listado de obras. Usa el componente comun, igual que las demas pantallas de
-// listado.
-//
-// Lo propio de aqui:
-//   · La fila deja HACER cosas sin entrar a la obra: mover el avance con la
-//     barra y cambiar el estado. Eso ya se podia antes y no se pierde.
-//   · Se puede filtrar por tramo de avance y por si la obra tiene fotos de
-//     avance cargadas, que es lo que decide si el informe sale vacio.
-//   · El avance promedio de lo filtrado sale al final de las pestañas.
-import { useMemo } from "react";
-import ListadoConFiltros, { GrupoFiltro, Pastilla, Resaltable } from "../../components/ListadoConFiltros";
-import { C, enMilis } from "../../components/listadoEstilos";
-import Badge from "../../components/ui/Badge";
-import IconoPalomita from "../../components/ui/IconoPalomita";
-import { SI } from "../../styles/tokens";
-import { ESTADOS_OBRA, estadoObraDe, obraEstaCerrada } from "../../lib/flujoObra";
-import { resumenBitacora } from "../../lib/bitacoraObra";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { fmtD } from "../../lib/format";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
-
-const TRAMOS_AVANCE = [
-  { key: "sin",   label: "Sin iniciar (0%)", test: (v) => v === 0 },
-  { key: "bajo",  label: "1–49%",            test: (v) => v > 0 && v < 50 },
-  { key: "medio", label: "50–99%",           test: (v) => v >= 50 && v < 100 },
-  { key: "full",  label: "Terminadas",       test: (v) => v === 100 },
-];
+import { ESTADOS_OBRA, estadoObraDe, obraEstaCerrada } from "../../lib/flujoObra";
+import { resumenBitacora } from "../../lib/bitacoraObra";
+import IconoPalomita from "../../components/ui/IconoPalomita";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
 
 const ORDENES = [
-  { key: "recientes",   label: "Más recientes", comparar: (a, b) => enMilis(b.fechaInicio) - enMilis(a.fechaInicio) || String(b.id).localeCompare(String(a.id)) },
-  { key: "antiguas",    label: "Más antiguas",  comparar: (a, b) => enMilis(a.fechaInicio) - enMilis(b.fechaInicio) },
-  { key: "avance-desc", label: "Mayor avance",  comparar: (a, b) => (b.avance || 0) - (a.avance || 0) },
-  { key: "avance-asc",  label: "Menor avance",  comparar: (a, b) => (a.avance || 0) - (b.avance || 0) },
-  { key: "cliente",     label: "Cliente A–Z",   comparar: (a, b) => String(a.cliente || "").localeCompare(String(b.cliente || ""), "es") },
+  {
+    key: "recientes",
+    label: "Más recientes",
+    comparar: (a, b) =>
+      enMilis(b.fechaInicio) - enMilis(a.fechaInicio) || String(b.id).localeCompare(String(a.id)),
+  },
+  {
+    key: "antiguas",
+    label: "Más antiguas",
+    comparar: (a, b) => enMilis(a.fechaInicio) - enMilis(b.fechaInicio),
+  },
+  {
+    key: "avance-desc",
+    label: "Mayor avance",
+    comparar: (a, b) => (Number(b.avance) || 0) - (Number(a.avance) || 0),
+  },
+  {
+    key: "avance-asc",
+    label: "Menor avance",
+    comparar: (a, b) => (Number(a.avance) || 0) - (Number(b.avance) || 0),
+  },
+  {
+    key: "cliente",
+    label: "Cliente A–Z",
+    comparar: (a, b) =>
+      String(a.cliente || "").localeCompare(String(b.cliente || ""), "es"),
+  },
 ];
 
-export default function ListaObras({ obras, cotizaciones, horarios = [], onAbrir, onCambiarAvance, onCambiarEstado, onToggleEnviado, puedeDesbloquear }) {
-  // Las fotos se cuentan una vez por obra y no en cada filtro.
+function enMilis(fecha) {
+  if (!fecha) return 0;
+  const t = new Date(fecha).getTime();
+  return Number.isNaN(t) ? 0 : t;
+}
+
+export default function ListaObras({
+  obras = [],
+  cotizaciones = [],
+  horarios = [],
+  onAbrir,
+  onCambiarAvance,
+  onCambiarEstado,
+  onToggleEnviado,
+  puedeDesbloquear,
+}) {
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const [busqueda, setBusqueda] = useState("");
+  const [estadoFiltro, setEstadoFiltro] = useState("Todas");
+  const [avanceFiltro, setAvanceFiltro] = useState("todos");
+  const [envioFiltro, setEnvioFiltro] = useState("todos");
+  const [fotosFiltro, setFotosFiltro] = useState("todos");
+  const [ordenActivo, setOrdenActivo] = useState("recientes");
+  const [mostrarFiltrosAvanzados, setMostrarFiltrosAvanzados] = useState(false);
+
+  // Predeterminado en lista (tabla) según solicitud del usuario estilo Apple
+  const [vista, setVista] = useState(() => {
+    try {
+      return localStorage.getItem("ingeanclajes_obras_vista") || "tabla";
+    } catch {
+      return "tabla";
+    }
+  });
+
+  const cambiarVista = (nuevaVista) => {
+    setVista(nuevaVista);
+    try {
+      localStorage.setItem("ingeanclajes_obras_vista", nuevaVista);
+    } catch {
+      // Ignorar si no está disponible localStorage
+    }
+  };
+
+  const campoBusquedaRef = useRef(null);
+
+  // Atajo de teclado Spotlight (Cmd+K / Ctrl+K)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        campoBusquedaRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Pre-computar fotos por obra para filtrado ágil
   const fotosPorObra = useMemo(() => {
     const mapa = new Map();
-    (obras || []).forEach((o) => mapa.set(o.id, resumenBitacora(o.bitacora)));
+    (obras || []).forEach((o) => {
+      const resumen = resumenBitacora(o.bitacora);
+      const totalFotos = (o.__parcial && Number.isFinite(o.totalFotosAvance))
+        ? o.totalFotosAvance
+        : (resumen?.fotos || 0);
+      mapa.set(o.id, totalFotos);
+    });
     return mapa;
   }, [obras]);
 
+  // Conteos para el Segmented Control Apple
+  const conteos = useMemo(() => {
+    const lista = obras || [];
+    return {
+      todas: lista.length,
+      enObra: lista.filter((o) => estadoObraDe(o) === "En Obra").length,
+      finalizadas: lista.filter((o) => estadoObraDe(o) === "Finalizado").length,
+      porIniciar: lista.filter((o) => estadoObraDe(o) === "Por Iniciar").length,
+    };
+  }, [obras]);
+
+  // Filtrado y ordenamiento en tiempo real
+  const filtradas = useMemo(() => {
+    let res = [...(obras || [])];
+
+    // 1. Filtro por Estado (Pestañas principales)
+    if (estadoFiltro !== "Todas") {
+      res = res.filter((o) => estadoObraDe(o) === estadoFiltro);
+    }
+
+    // 2. Filtro por tramo de avance
+    if (avanceFiltro === "0") {
+      res = res.filter((o) => (Number(o.avance) || 0) === 0);
+    } else if (avanceFiltro === "1-49") {
+      res = res.filter((o) => (Number(o.avance) || 0) >= 1 && (Number(o.avance) || 0) <= 49);
+    } else if (avanceFiltro === "50-99") {
+      res = res.filter((o) => (Number(o.avance) || 0) >= 50 && (Number(o.avance) || 0) <= 99);
+    } else if (avanceFiltro === "100") {
+      res = res.filter((o) => (Number(o.avance) || 0) === 100);
+    }
+
+    // 3. Filtro por envío al cliente
+    if (envioFiltro === "si") {
+      res = res.filter((o) => Boolean(o.enviadoAlCliente));
+    } else if (envioFiltro === "no") {
+      res = res.filter((o) => !o.enviadoAlCliente);
+    }
+
+    // 4. Filtro por fotos de bitácora
+    if (fotosFiltro === "con") {
+      res = res.filter((o) => (fotosPorObra.get(o.id) || 0) > 0);
+    } else if (fotosFiltro === "sin") {
+      res = res.filter((o) => (fotosPorObra.get(o.id) || 0) === 0);
+    }
+
+    // 5. Búsqueda de texto tipo Spotlight
+    if (busqueda.trim()) {
+      const q = busqueda.toLowerCase().trim();
+      res = res.filter((o) => {
+        const texto = [
+          o.id,
+          o.cliente,
+          o.proyecto,
+          o.ciudad,
+          o.direccion,
+          o.cotizacionId,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return texto.includes(q);
+      });
+    }
+
+    // 6. Ordenamiento
+    const ordObj = ORDENES.find((o) => o.key === ordenActivo) || ORDENES[0];
+    res.sort(ordObj.comparar);
+
+    return res;
+  }, [obras, estadoFiltro, avanceFiltro, envioFiltro, fotosFiltro, busqueda, ordenActivo, fotosPorObra]);
+
+  const hayFiltrosAvanzadosActivos =
+    avanceFiltro !== "todos" || envioFiltro !== "todos" || fotosFiltro !== "todos";
+
   return (
-    <ListadoConFiltros
-      datos={obras || []}
-      nombre="obra"
-      nombrePlural="obras"
-      marcador="Buscar por cliente, proyecto, número de obra, ciudad o cotización…"
-      buscarEn={(o) => [o.cliente, o.id, o.proyecto, o.ciudad, o.direccion, o.cotizacionId].filter(Boolean).join(" ")}
-      estadoDe={(o) => estadoObraDe(o)}
-      estadosFijos={ESTADOS_OBRA}
-      fechaDe={(o) => o.fechaInicio}
-      ordenes={ORDENES}
-      filtrosExtra={({ valores, poner }) => (
-        <>
-          <GrupoFiltro titulo="Avance">
-            {TRAMOS_AVANCE.map((t) => (
-              <Pastilla key={t.key} activa={valores.avance === t.key}
-                onClick={() => poner("avance", valores.avance === t.key ? null : t.key)}>{t.label}</Pastilla>
-            ))}
-          </GrupoFiltro>
-          <GrupoFiltro titulo="Registro de avance">
-            <Pastilla activa={valores.fotos === "con"}
-              onClick={() => poner("fotos", valores.fotos === "con" ? null : "con")}>Con fotos</Pastilla>
-            <Pastilla activa={valores.fotos === "sin"}
-              onClick={() => poner("fotos", valores.fotos === "sin" ? null : "sin")}>Sin fotos</Pastilla>
-          </GrupoFiltro>
-          <GrupoFiltro titulo="Envío al cliente">
-            <Pastilla activa={valores.enviado === "si"}
-              onClick={() => poner("enviado", valores.enviado === "si" ? null : "si")}>Enviado 🕊️</Pastilla>
-            <Pastilla activa={valores.enviado === "no"}
-              onClick={() => poner("enviado", valores.enviado === "no" ? null : "no")}>Sin enviar</Pastilla>
-          </GrupoFiltro>
-        </>
-      )}
-      aplicarExtra={(o, v) => {
-        if (v.avance) {
-          const tramo = TRAMOS_AVANCE.find((t) => t.key === v.avance);
-          if (tramo && !tramo.test(Number(o.avance) || 0)) return false;
-        }
-        if (v.fotos) {
-          const tiene = (fotosPorObra.get(o.id)?.fotos || 0) > 0;
-          if (v.fotos === "con" && !tiene) return false;
-          if (v.fotos === "sin" && tiene) return false;
-        }
-        if (v.enviado) {
-          const esEnviado = Boolean(o.enviadoAlCliente);
-          if (v.enviado === "si" && !esEnviado) return false;
-          if (v.enviado === "no" && esEnviado) return false;
-        }
-        return true;
+    <div
+      style={{
+        maxWidth: 1360,
+        margin: "0 auto",
+        width: "100%",
+        boxSizing: "border-box",
+        fontFamily: "'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+        WebkitFontSmoothing: "antialiased",
+        MozOsxFontSmoothing: "grayscale",
+        textRendering: "optimizeLegibility",
       }}
-      pillsExtra={({ extra, ponerExtra, datos, estado }) => {
-        const obrasContexto = estado && estado !== "Todas"
-          ? (datos || []).filter((o) => estadoObraDe(o) === estado)
-          : (datos || []);
-        const totalEnviadas = obrasContexto.filter((o) => Boolean(o.enviadoAlCliente)).length;
-        const totalSinEnviar = obrasContexto.length - totalEnviadas;
+    >
+      {/* ============================================================= */}
+      {/* BARRA DE HERRAMIENTAS: Búsqueda, Filtros y Segmented Control  */}
+      {/* ============================================================= */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          justifyContent: "space-between",
+          alignItems: isMobile ? "stretch" : "center",
+          gap: 12,
+          marginBottom: 16,
+          flexWrap: "wrap",
+        }}
+      >
+        {/* Selector Segmentado de Estados (Estilo Apple macOS) */}
+        <div
+          style={{
+            background: "var(--surface-subtle, #f5f5f7)",
+            padding: 3,
+            borderRadius: 12,
+            display: "inline-flex",
+            alignItems: "center",
+            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+            overflowX: "auto",
+            maxWidth: "100%",
+          }}
+        >
+          <BotonSegmentado
+            activo={estadoFiltro === "Todas"}
+            onClick={() => setEstadoFiltro("Todas")}
+            label={`Todas (${conteos.todas})`}
+          />
+          <BotonSegmentado
+            activo={estadoFiltro === "En Obra"}
+            onClick={() => setEstadoFiltro("En Obra")}
+            label={`En Obra (${conteos.enObra})`}
+          />
+          <BotonSegmentado
+            activo={estadoFiltro === "Finalizado"}
+            onClick={() => setEstadoFiltro("Finalizado")}
+            label={`Finalizadas (${conteos.finalizadas})`}
+          />
+          <BotonSegmentado
+            activo={estadoFiltro === "Por Iniciar"}
+            onClick={() => setEstadoFiltro("Por Iniciar")}
+            label={`Por Iniciar (${conteos.porIniciar})`}
+          />
+        </div>
 
-        const activaEnviado = extra.enviado === "si";
-        const activaSinEnviar = extra.enviado === "no";
-
-        return (
-          <div
+        {/* Buscador Spotlight y Conmutador de Vistas */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            flexWrap: isMobile ? "wrap" : "nowrap",
+            width: isMobile ? "100%" : "auto",
+          }}
+        >
+          {/* Botón Filtros Avanzados */}
+          <button
+            type="button"
+            onClick={() => setMostrarFiltrosAvanzados((v) => !v)}
             style={{
+              padding: "7px 12px",
+              borderRadius: 10,
+              fontSize: 12,
+              fontWeight: 500,
               display: "inline-flex",
               alignItems: "center",
               gap: 6,
-              flexShrink: 0,
+              background: hayFiltrosAvanzadosActivos
+                ? "rgba(244, 124, 32, 0.1)"
+                : "var(--surface, #ffffff)",
+              color: hayFiltrosAvanzadosActivos
+                ? "#c2410c"
+                : "var(--text-main, #101828)",
+              border: `1px solid ${
+                hayFiltrosAvanzadosActivos ? "rgba(244, 124, 32, 0.3)" : "var(--border, rgba(0, 0, 0, 0.12))"
+              }`,
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <span>⚡ Filtros</span>
+            {hayFiltrosAvanzadosActivos && (
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  background: "#f47c20",
+                }}
+              />
+            )}
+          </button>
+
+          {/* Input de Búsqueda estilo Spotlight */}
+          <div
+            style={{
+              position: "relative",
+              flex: isMobile ? "1 1 100%" : "0 0 280px",
             }}
           >
             <span
               style={{
-                width: 1,
-                height: 18,
-                background: "var(--border, #cbd5e1)",
-                margin: "0 3px",
-                display: "inline-block",
-                flexShrink: 0,
+                position: "absolute",
+                left: 10,
+                top: "50%",
+                transform: "translateY(-50%)",
+                fontSize: 13,
+                color: "var(--text-subtle, #86868b)",
+                pointerEvents: "none",
               }}
-              aria-hidden="true"
+            >
+              🔍
+            </span>
+            <input
+              ref={campoBusquedaRef}
+              type="text"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar por cliente, proyecto, ciudad o código..."
+              style={{
+                width: "100%",
+                padding: "7px 34px 7px 32px",
+                borderRadius: 10,
+                border: "1px solid var(--border, rgba(0, 0, 0, 0.12))",
+                background: "var(--surface, #ffffff)",
+                color: "var(--text-main, #101828)",
+                fontSize: 12,
+                outline: "none",
+                boxSizing: "border-box",
+                transition: "all 0.15s ease",
+              }}
             />
-            {/* Botón Filtro: Enviadas al cliente */}
-            <Resaltable
-              as="button"
-              type="button"
-              title={activaEnviado ? "Quitar filtro de enviadas (mostrar todas)" : "Filtrar obras con documentos enviados al cliente"}
-              onClick={() => ponerExtra("enviado", activaEnviado ? null : "si")}
-              estiloHover={{ borderColor: activaEnviado ? "#15803d" : "#86efac" }}
-              style={{
-                height: 28,
-                padding: "0 11px",
-                borderRadius: 999,
-                border: `1.5px solid ${activaEnviado ? "#15803d" : "var(--border, #cbd5e1)"}`,
-                background: activaEnviado ? "#15803d" : "var(--surface, #fff)",
-                color: activaEnviado ? "#ffffff" : "var(--text-main, #334155)",
-                fontSize: 12.5,
-                fontWeight: 600,
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                fontFamily: "inherit",
-                flexShrink: 0,
-                boxShadow: activaEnviado ? "0 1px 2px rgba(21, 128, 61, 0.25)" : "none",
-                transition: "all 0.15s ease",
-              }}
-            >
-              <IconoPalomita size={16} color={activaEnviado ? "#ffffff" : "#15803d"} />
-              <span>Enviadas</span>
-              <span
+            {busqueda ? (
+              <button
+                type="button"
+                onClick={() => setBusqueda("")}
                 style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: activaEnviado ? "#ffffff" : (totalEnviadas > 0 ? "#15803d" : "var(--text-muted, #64748b)"),
-                  background: activaEnviado ? "rgba(255, 255, 255, 0.25)" : (totalEnviadas > 0 ? "#dcfce7" : "var(--surface-subtle, #f1f5f9)"),
-                  borderRadius: 999,
-                  padding: "1px 6px",
-                  fontVariantNumeric: "tabular-nums",
+                  position: "absolute",
+                  right: 8,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--text-subtle, #86868b)",
+                  fontSize: 13,
+                  padding: 2,
                 }}
               >
-                {totalEnviadas}
-              </span>
-            </Resaltable>
-
-            {/* Botón Filtro: Sin enviar */}
-            <Resaltable
-              as="button"
-              type="button"
-              title={activaSinEnviar ? "Quitar filtro de sin enviar (mostrar todas)" : "Filtrar obras pendientes por enviar documentos al cliente"}
-              onClick={() => ponerExtra("enviado", activaSinEnviar ? null : "no")}
-              estiloHover={{ borderColor: activaSinEnviar ? "#475467" : "#94a3b8" }}
-              style={{
-                height: 28,
-                padding: "0 11px",
-                borderRadius: 999,
-                border: `1.5px solid ${activaSinEnviar ? "#475467" : "var(--border, #cbd5e1)"}`,
-                background: activaSinEnviar ? "#475467" : "var(--surface, #fff)",
-                color: activaSinEnviar ? "#ffffff" : "var(--text-main, #334155)",
-                fontSize: 12.5,
-                fontWeight: 600,
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                fontFamily: "inherit",
-                flexShrink: 0,
-                boxShadow: activaSinEnviar ? "0 1px 2px rgba(71, 84, 103, 0.25)" : "none",
-                transition: "all 0.15s ease",
-              }}
-            >
+                ✕
+              </button>
+            ) : (
               <span
                 style={{
-                  fontSize: 12,
-                  lineHeight: 1,
-                  color: activaSinEnviar ? "#ffffff" : "#94a3b8",
-                  fontWeight: 700,
+                  position: "absolute",
+                  right: 8,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  fontSize: 10,
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                  color: "var(--text-subtle, #86868b)",
+                  background: "var(--surface-subtle, #f5f5f7)",
+                  border: "1px solid var(--border, rgba(0,0,0,0.08))",
+                  padding: "1px 4px",
+                  borderRadius: 4,
+                  pointerEvents: "none",
                 }}
               >
-                ○
+                ⌘K
               </span>
-              <span>Sin enviar</span>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: activaSinEnviar ? "#ffffff" : "var(--text-muted, #64748b)",
-                  background: activaSinEnviar ? "rgba(255, 255, 255, 0.25)" : "var(--surface-subtle, #f1f5f9)",
-                  borderRadius: 999,
-                  padding: "1px 6px",
-                  fontVariantNumeric: "tabular-nums",
-                }}
-              >
-                {totalSinEnviar}
-              </span>
-            </Resaltable>
+            )}
           </div>
-        );
-      }}
-      derecha={(lista) => {
-        const promedio = lista.length
-          ? Math.round(lista.reduce((t, o) => t + (Number(o.avance) || 0), 0) / lista.length)
-          : 0;
-        return (
-          <span style={{ fontSize: 11.5, color: C.tenue, fontWeight: 600 }}>
-            Avance promedio <strong style={{ color: C.tinta }}>{promedio}%</strong>
-          </span>
-        );
-      }}
-      fila={(o, { compacta }) => (
-        <Fila key={o.id} o={o} compacta={compacta}
-          cotizacion={(cotizaciones || []).find((c) => c.id === o.cotizacionId)}
-          resumen={fotosPorObra.get(o.id)}
-          horarios={horarios}
-          onAbrir={() => onAbrir(o)}
-          onCambiarAvance={onCambiarAvance}
-          onCambiarEstado={onCambiarEstado}
-          onToggleEnviado={onToggleEnviado}
-          puedeDesbloquear={puedeDesbloquear} />
+
+          {/* Conmutador Cuadrícula / Lista */}
+          <div
+            style={{
+              background: "var(--surface-subtle, #f5f5f7)",
+              padding: 2,
+              borderRadius: 8,
+              border: "1px solid var(--border, rgba(0,0,0,0.08))",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 2,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => cambiarVista("tabla")}
+              title="Vista en Lista / Tabla (Predeterminada)"
+              style={{
+                background: vista === "tabla" ? "var(--surface, #ffffff)" : "transparent",
+                color: vista === "tabla" ? "var(--text-main, #101828)" : "var(--text-muted, #6e6e73)",
+                border: "none",
+                borderRadius: 6,
+                padding: "5px 8px",
+                cursor: "pointer",
+                boxShadow: vista === "tabla" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                display: "flex",
+                alignItems: "center",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="4" y1="6" x2="20" y2="6"/>
+                <line x1="4" y1="12" x2="20" y2="12"/>
+                <line x1="4" y1="18" x2="20" y2="18"/>
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={() => cambiarVista("tarjetas")}
+              title="Vista en Cuadrícula / Tarjetas"
+              style={{
+                background: vista === "tarjetas" ? "var(--surface, #ffffff)" : "transparent",
+                color: vista === "tarjetas" ? "var(--text-main, #101828)" : "var(--text-muted, #6e6e73)",
+                border: "none",
+                borderRadius: 6,
+                padding: "5px 8px",
+                cursor: "pointer",
+                boxShadow: vista === "tarjetas" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                display: "flex",
+                alignItems: "center",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+                <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+                <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+                <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ============================================================= */}
+      {/* PANEL EXPANDIBLE DE FILTROS AVANZADOS                         */}
+      {/* ============================================================= */}
+      {mostrarFiltrosAvanzados && (
+        <div
+          style={{
+            background: "var(--surface, #ffffff)",
+            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+            borderRadius: 14,
+            padding: "12px 16px",
+            marginBottom: 16,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 12,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+            {/* Tramo de avance */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted, #667085)" }}>
+                Avance:
+              </span>
+              <select
+                value={avanceFiltro}
+                onChange={(e) => setAvanceFiltro(e.target.value)}
+                style={estiloSelect}
+              >
+                <option value="todos">Todos los tramos</option>
+                <option value="0">0% Sin iniciar</option>
+                <option value="1-49">1–49% En arranque</option>
+                <option value="50-99">50–99% Avanzadas</option>
+                <option value="100">100% Terminadas</option>
+              </select>
+            </div>
+
+            {/* Documentación enviada al cliente */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted, #667085)" }}>
+                Envío cliente:
+              </span>
+              <select
+                value={envioFiltro}
+                onChange={(e) => setEnvioFiltro(e.target.value)}
+                style={estiloSelect}
+              >
+                <option value="todos">Todas</option>
+                <option value="si">Documentación Enviada 🕊️</option>
+                <option value="no">Sin enviar</option>
+              </select>
+            </div>
+
+            {/* Fotos de bitácora */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted, #667085)" }}>
+                Fotos:
+              </span>
+              <select
+                value={fotosFiltro}
+                onChange={(e) => setFotosFiltro(e.target.value)}
+                style={estiloSelect}
+              >
+                <option value="todos">Todas</option>
+                <option value="con">Con fotos de avance 📸</option>
+                <option value="sin">Sin fotos</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Ordenamiento */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted, #667085)" }}>
+              Ordenar por:
+            </span>
+            <select
+              value={ordenActivo}
+              onChange={(e) => setOrdenActivo(e.target.value)}
+              style={estiloSelect}
+            >
+              {ORDENES.map((o) => (
+                <option key={o.key} value={o.key}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       )}
-      vacio={{
-        titulo: "Todavía no hay obras",
-        texto: "Las obras se crean al aprobar una cotización, o a mano con el botón de arriba.",
-      }}
-    />
+
+      {/* ============================================================= */}
+      {/* RESULTADOS: LISTA / TABLA PREDETERMINADA O CUADRÍCULA         */}
+      {/* ============================================================= */}
+      {filtradas.length === 0 ? (
+        <div
+          style={{
+            textAlign: "center",
+            padding: "48px 20px",
+            background: "var(--surface, #ffffff)",
+            borderRadius: 16,
+            border: "1px dashed var(--border, rgba(0,0,0,0.12))",
+            color: "var(--text-muted, #667085)",
+          }}
+        >
+          <div style={{ fontSize: 32, marginBottom: 8 }}>🏗️</div>
+          <div style={{ fontSize: 14.5, fontWeight: 600, color: "var(--text-main, #101828)" }}>
+            No se encontraron obras
+          </div>
+          <p style={{ fontSize: 12.5, margin: "6px 0 0" }}>
+            Prueba ajustando los términos de búsqueda o los filtros seleccionados.
+          </p>
+        </div>
+      ) : vista === "tarjetas" ? (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isMobile
+              ? "1fr"
+              : "repeat(auto-fill, minmax(350px, 1fr))",
+            gap: 14,
+          }}
+        >
+          {filtradas.map((o) => (
+            <TarjetaObraApple
+              key={o.id}
+              o={o}
+              cotizacion={(cotizaciones || []).find((c) => c.id === o.cotizacionId)}
+              fotosCount={fotosPorObra.get(o.id) || 0}
+              horarios={horarios}
+              onAbrir={() => onAbrir(o)}
+              onCambiarAvance={onCambiarAvance}
+              onCambiarEstado={onCambiarEstado}
+              onToggleEnviado={onToggleEnviado}
+              puedeDesbloquear={puedeDesbloquear}
+            />
+          ))}
+        </div>
+      ) : (
+        <div
+          style={{
+            background: "var(--surface, #ffffff)",
+            borderRadius: 14,
+            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+            overflow: "hidden",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+          }}
+        >
+          <div style={{ overflowX: "auto", width: "100%" }}>
+            <div style={{ minWidth: 960 }}>
+              {/* Encabezado de tabla */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "90px 2.2fr 1.2fr 95px 105px 180px 115px 135px 80px",
+                  padding: "10px 16px",
+                  background: "var(--surface-subtle, #f8fafc)",
+                  borderBottom: "1px solid var(--border, rgba(0,0,0,0.08))",
+                  fontSize: 10.5,
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em",
+                  color: "var(--text-subtle, #667085)",
+                  alignItems: "center",
+                }}
+              >
+                <span>Código</span>
+                <span>Cliente &amp; Proyecto</span>
+                <span>Ciudad</span>
+                <span>Inicio</span>
+                <span style={{ textAlign: "center" }}>Equipo / Fotos</span>
+                <span>Avance en Vivo</span>
+                <span style={{ textAlign: "center" }}>Estado</span>
+                <span style={{ textAlign: "center" }}>Documentación</span>
+                <span style={{ textAlign: "right" }}>Acción</span>
+              </div>
+
+              {/* Filas */}
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                {filtradas.map((o, idx) => (
+                  <FilaTablaObraApple
+                    key={o.id}
+                    o={o}
+                    cotizacion={(cotizaciones || []).find((c) => c.id === o.cotizacionId)}
+                    fotosCount={fotosPorObra.get(o.id) || 0}
+                    horarios={horarios}
+                    zebra={idx % 2 === 1}
+                    onAbrir={() => onAbrir(o)}
+                    onCambiarAvance={onCambiarAvance}
+                    onCambiarEstado={onCambiarEstado}
+                    onToggleEnviado={onToggleEnviado}
+                    puedeDesbloquear={puedeDesbloquear}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
-function Fila({ o, compacta, cotizacion, resumen, horarios = [], onAbrir, onCambiarAvance, onCambiarEstado, onToggleEnviado, puedeDesbloquear }) {
+// ===================================================================
+// COMPONENTES SECUNDARIOS DE ALTA CALIDAD ESTILO APPLE
+// ===================================================================
+
+function BotonSegmentado({ activo, onClick, label }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        padding: "5px 12px",
+        borderRadius: 8,
+        fontSize: 12,
+        fontWeight: activo ? 600 : 500,
+        color: activo ? "var(--text-main, #101828)" : "var(--text-muted, #667085)",
+        background: activo ? "var(--surface, #ffffff)" : "transparent",
+        boxShadow: activo ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+        border: "none",
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+        transition: "all 0.15s ease",
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+function FilaTablaObraApple({
+  o,
+  cotizacion,
+  fotosCount = 0,
+  horarios = [],
+  zebra,
+  onAbrir,
+  onCambiarAvance,
+  onCambiarEstado,
+  onToggleEnviado,
+  puedeDesbloquear,
+}) {
   const idsDirectos = Array.isArray(o.empleados) ? o.empleados : [];
   const idsHorarios = (horarios || []).filter((h) => h.obraId === o.id).map((h) => h.empleadoId).filter(Boolean);
   const totalEmpleados = [...new Set([...idsDirectos, ...idsHorarios])].length;
   const avance = Number(o.avance) || 0;
-  const color = avance === 100 ? "#4ade80" : C.acento;
-  // Si la bitacora no se ha traido, el numero lo pone la base.
-  const fotos = (o.__parcial && Number.isFinite(o.totalFotosAvance))
-    ? o.totalFotosAvance
-    : (resumen?.fotos || 0);
+  const bloqueada = obraEstaCerrada(o) && !puedeDesbloquear;
+  const enviado = Boolean(o.enviadoAlCliente);
 
-  // El proyecto suele llamarse igual que el cliente; solo se pone si aporta.
   const cliente = normalizarRazonSocial(o.cliente);
   const proyecto = String(o.proyecto || "").trim();
-  const repetido = proyecto
-    && proyecto.replace(/[.\s]/g, "").toUpperCase() === cliente.replace(/[.\s]/g, "").toUpperCase();
-  const debajo = [repetido ? "" : proyecto, o.ciudad].filter(Boolean).join(" · ");
+  const repetido = proyecto && proyecto.replace(/[.\s]/g, "").toUpperCase() === cliente.replace(/[.\s]/g, "").toUpperCase();
+  const subtitulo = repetido ? "" : proyecto;
 
-  // Una obra entregada no se sigue tocando: los informes y los certificados
-  // que salieron de ella dicen lo que decia la obra ese dia.
-  const bloqueada = obraEstaCerrada(o) && !puedeDesbloquear;
-
-  const selectorEstado = bloqueada ? (
-    <span
-      title="Obra finalizada: no se puede cambiar. Solo un administrador puede reabrirla."
-      onClick={(e) => e.stopPropagation()}
-      style={{ fontSize: 11, fontWeight: 700, color: "#166534", background: "#ecfdf5",
-        border: "1px solid #a7f3d0", borderRadius: 7, padding: "4px 9px",
-        minWidth: 108, display: "inline-flex", alignItems: "center", gap: 5,
-        justifyContent: "center", whiteSpace: "nowrap" }}>
-      🔒 Finalizado
-    </span>
-  ) : (
-    <select value={estadoObraDe(o)}
-      onChange={(e) => { e.stopPropagation(); onCambiarEstado(o.id, e.target.value); }}
-      onClick={(e) => e.stopPropagation()}
-      style={{ ...SI, fontSize: 11, padding: "4px 7px", width: "auto", minWidth: 108 }}>
-      {ESTADOS_OBRA.map((s) => <option key={s}>{s}</option>)}
-    </select>
-  );
-
-  const contadores = (
-    <>
-      <span style={{ fontSize: 11, color: C.tenue, flexShrink: 0 }}>{totalEmpleados} 👷</span>
-      {/* Las fotos ya no viajan en la carga inicial: hasta que se abra la obra
-          no se sabe cuantas hay. Se pone un guion en vez de un cero, que seria
-          decir que no hay ninguna. */}
-      <span
-        title={fotos ? "Fotos de avance cargadas para el informe" : "Sin fotos de avance: el informe saldría vacío"}
-        style={{ fontSize: 11, color: fotos ? C.tenue : "#b54708", flexShrink: 0 }}>{fotos} 📸</span>
-    </>
-  );
-
-  const datos = (
-    <>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 13.5, fontWeight: 700, color: C.tinta }}>{cliente}</span>
-        <span style={{ fontSize: 11, color: C.tenue }}>
-          {o.id} · {fmtD(o.fechaInicio)}{cotizacion ? ` · 📄 ${o.cotizacionId}` : ""}
-        </span>
-      </div>
-      {debajo && (
-        <div style={{ fontSize: 11.5, color: C.apagado, marginTop: 1,
-          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{debajo}</div>
-      )}
-    </>
-  );
-
-  const enviado = Boolean(o.enviadoAlCliente);
-  const botonEnviado = (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        onToggleEnviado?.(o.id, !enviado);
-      }}
-      title={
-        enviado
-          ? `Documentación enviada al cliente${o.fechaEnvioCliente ? ` (${fmtD(o.fechaEnvioCliente)})` : ""}. Clic para cambiar.`
-          : "Marcar como documentación enviada"
-      }
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        padding: "5px 12px",
-        borderRadius: 20,
-        fontSize: 11.5,
-        fontWeight: 600,
-        cursor: "pointer",
-        flexShrink: 0,
-        whiteSpace: "nowrap",
-        userSelect: "none",
-        border: enviado ? "1px solid #86efac" : "1px dashed #cbd5e1",
-        background: enviado ? "#ecfdf5" : "var(--surface-subtle, #f8fafc)",
-        color: enviado ? "#15803d" : "#64748b",
-        boxShadow: enviado ? "0 1px 2px rgba(16, 185, 129, 0.12)" : "none",
-        transition: "all .16s ease",
-      }}
-      onMouseEnter={(e) => {
-        if (!enviado) {
-          e.currentTarget.style.borderColor = "#94a3b8";
-          e.currentTarget.style.color = "#334155";
-          e.currentTarget.style.background = "#f1f5f9";
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!enviado) {
-          e.currentTarget.style.borderColor = "#cbd5e1";
-          e.currentTarget.style.color = "#64748b";
-          e.currentTarget.style.background = "var(--surface-subtle, #f8fafc)";
-        }
-      }}
-    >
-      {enviado ? (
-        <>
-          <span>Documentación Enviada</span>
-          <IconoPalomita size={19} color="#15803d" />
-        </>
-      ) : (
-        <>
-          <span>Sin enviar</span>
-          <span style={{ fontSize: 11, lineHeight: 1, color: "#94a3b8" }}>○</span>
-        </>
-      )}
-    </button>
-  );
-
-  if (compacta) {
-    return (
-      <Resaltable as="article" onClick={onAbrir}
-        estiloHover={{ borderColor: C.acentoFuerte, background: "var(--surface-hover, #fffdfb)" }}
-        style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 10, background: "var(--surface, #fff)",
-          padding: "9px 12px 9px 14px", display: "flex", alignItems: "center", gap: 12,
-          cursor: "pointer", position: "relative", overflow: "hidden",
-          transition: "border-color .16s ease, background .16s ease" }}>
-        <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, background: color }} />
-        <div style={{ minWidth: 0, flex: 1 }}>{datos}</div>
-
-        {/* Palomita / Indicador de enviado al cliente */}
-        {botonEnviado}
-
-        {/* La barra sigue siendo la de mover el avance, aqui estrecha. */}
-        <div style={{ width: 150, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5,
-            color: C.apagado, marginBottom: 2 }}>
-            <span>Avance</span>
-            <span style={{ color: avance === 100 ? "#166534" : C.acento, fontWeight: 700,
-              fontVariantNumeric: "tabular-nums" }}>{avance}%</span>
-          </div>
-          {/* Mover la barra en una obra cerrada la reabriria: el avance y el
-              estado van pegados por estadoSegunAvance(). */}
-          <input type="range" min={0} max={100} value={avance} disabled={bloqueada}
-            title={bloqueada ? "Obra finalizada: el avance ya no se cambia." : undefined}
-            onChange={(e) => onCambiarAvance(o.id, Number(e.target.value))}
-            style={{ width: "100%", accentColor: C.acento, display: "block", margin: 0,
-              opacity: bloqueada ? 0.5 : 1, cursor: bloqueada ? "not-allowed" : "pointer" }} />
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          {contadores}
-          {selectorEstado}
-          <span style={{ fontSize: 11, color: C.acentoFuerte, fontWeight: 600 }}>Ver →</span>
-        </div>
-      </Resaltable>
-    );
-  }
+  const colorBarra = avance === 100 ? "#15803d" : "#f47c20";
 
   return (
-    <Resaltable as="article" onClick={onAbrir}
-      estiloHover={{ borderColor: C.acentoFuerte, boxShadow: "0 12px 28px -16px rgba(0,0,0,.35)" }}
-      style={{ border: `1px solid ${C.bordeFuerte}`, borderRadius: 12, background: "var(--surface, #fff)",
-        padding: "12px 13px 10px", display: "flex", flexDirection: "column", gap: 9,
-        cursor: "pointer", position: "relative", overflow: "hidden",
-        transition: "box-shadow .2s ease, border-color .2s ease" }}>
-      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, background: color }} />
-
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
-        <div style={{ minWidth: 0 }}>{datos}</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-          {botonEnviado}
-          <Badge estado={o.estado} />
-        </div>
-      </div>
-
+    <div
+      onClick={onAbrir}
+      style={{
+        display: "grid",
+        gridTemplateColumns: "90px 2.2fr 1.2fr 95px 105px 180px 115px 135px 80px",
+        padding: "10px 16px",
+        alignItems: "center",
+        background: zebra ? "var(--surface-subtle, #fafbfd)" : "var(--surface, #ffffff)",
+        borderBottom: "1px solid var(--border, rgba(0,0,0,0.05))",
+        fontSize: 12,
+        cursor: "pointer",
+        transition: "background 0.12s ease",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "var(--surface-subtle, #f5f5f7)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = zebra
+          ? "var(--surface-subtle, #fafbfd)"
+          : "var(--surface, #ffffff)";
+      }}
+    >
+      {/* Código */}
       <div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.apagado,
-          marginBottom: 4 }}>
-          <span>Avance</span>
-          <span style={{ color: avance === 100 ? "#166534" : C.acento, fontWeight: 600,
-            fontVariantNumeric: "tabular-nums" }}>{avance}%</span>
-        </div>
-        <div style={{ height: 5, background: C.bordeFuerte, borderRadius: 3 }}>
-          <div style={{ width: avance + "%", height: "100%", background: color, borderRadius: 3,
-            transition: "width .4s ease" }} />
-        </div>
-        <input type="range" min={0} max={100} value={avance} disabled={bloqueada}
-          title={bloqueada ? "Obra finalizada: el avance ya no se cambia." : undefined}
-          onChange={(e) => onCambiarAvance(o.id, Number(e.target.value))}
-          onClick={(e) => e.stopPropagation()}
-          style={{ width: "100%", marginTop: 4, accentColor: C.acento,
-            opacity: bloqueada ? 0.5 : 1, cursor: bloqueada ? "not-allowed" : "pointer" }} />
+        <span
+          style={{
+            fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+            fontSize: 11.5,
+            fontWeight: 600,
+            color: "var(--text-main, #101828)",
+            padding: "2px 7px",
+            background: "var(--surface-subtle, #f1f5f9)",
+            borderRadius: 6,
+            border: "1px solid var(--border, rgba(0,0,0,0.08))",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {o.id}
+        </span>
       </div>
 
-      <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
-        <div style={{ flex: 1 }} onClick={(e) => e.stopPropagation()}>{selectorEstado}</div>
-        {contadores}
-        <span style={{ fontSize: 11, color: C.acentoFuerte, fontWeight: 600, flexShrink: 0 }}>Ver →</span>
+      {/* Cliente & Proyecto */}
+      <div style={{ paddingRight: 10, minWidth: 0 }}>
+        <div
+          style={{
+            fontWeight: 600,
+            color: "var(--text-main, #101828)",
+            fontSize: 12.5,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {cliente || "Sin cliente"}
+        </div>
+        {subtitulo && (
+          <div
+            style={{
+              color: "var(--text-muted, #667085)",
+              fontSize: 11,
+              marginTop: 1,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {subtitulo}
+          </div>
+        )}
       </div>
-    </Resaltable>
+
+      {/* Ciudad */}
+      <div
+        style={{
+          color: "var(--text-muted, #475467)",
+          fontSize: 11.5,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+          paddingRight: 8,
+        }}
+      >
+        {o.ciudad || "—"}
+      </div>
+
+      {/* Fecha Inicio */}
+      <div style={{ color: "var(--text-muted, #667085)", fontSize: 11.5 }}>
+        {fmtD(o.fechaInicio) || "—"}
+      </div>
+
+      {/* Equipo / Fotos */}
+      <div style={{ textAlign: "center", display: "flex", justifyContent: "center", gap: 6 }}>
+        <span
+          title="Personal asignado a la obra"
+          style={{
+            fontSize: 11,
+            color: "var(--text-muted, #475467)",
+            background: "var(--surface-subtle, #f1f5f9)",
+            padding: "1px 6px",
+            borderRadius: 999,
+            fontWeight: 500,
+          }}
+        >
+          {totalEmpleados} 👷
+        </span>
+        <span
+          title={fotosCount > 0 ? "Fotos cargadas en bitácora" : "Sin fotos de avance"}
+          style={{
+            fontSize: 11,
+            color: fotosCount > 0 ? "#0071e3" : "#98a2b3",
+            background: fotosCount > 0 ? "rgba(0, 113, 227, 0.08)" : "var(--surface-subtle, #f1f5f9)",
+            padding: "1px 6px",
+            borderRadius: 999,
+            fontWeight: 500,
+          }}
+        >
+          {fotosCount} 📸
+        </span>
+      </div>
+
+      {/* Avance en Vivo (Slider interactivo en fila) */}
+      <div style={{ paddingRight: 10 }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 2 }}>
+          <span style={{ fontSize: 10.5, color: "var(--text-muted, #667085)" }}>Avance</span>
+          <span
+            style={{
+              fontSize: 11.5,
+              fontWeight: 600,
+              color: colorBarra,
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {avance}%
+          </span>
+        </div>
+        <div
+          style={{
+            width: "100%",
+            height: 4,
+            background: "var(--border, #e2e8f0)",
+            borderRadius: 999,
+            overflow: "hidden",
+            marginBottom: 2,
+          }}
+        >
+          <div
+            style={{
+              width: `${avance}%`,
+              height: "100%",
+              background: colorBarra,
+              borderRadius: 999,
+              transition: "width 0.2s ease",
+            }}
+          />
+        </div>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={avance}
+          disabled={bloqueada}
+          title={bloqueada ? "Obra finalizada: el avance está bloqueado." : "Deslizar para actualizar avance"}
+          onChange={(e) => onCambiarAvance(o.id, Number(e.target.value))}
+          style={{
+            width: "100%",
+            height: 4,
+            accentColor: colorBarra,
+            display: "block",
+            cursor: bloqueada ? "not-allowed" : "pointer",
+            opacity: bloqueada ? 0.5 : 1,
+            margin: 0,
+          }}
+        />
+      </div>
+
+      {/* Estado (Badge o Selector) */}
+      <div style={{ textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+        {bloqueada ? (
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: "#15803d",
+              background: "#ecfdf5",
+              border: "1px solid #a7f3d0",
+              borderRadius: 999,
+              padding: "2px 8px",
+              display: "inline-block",
+            }}
+          >
+            🔒 Finalizado
+          </span>
+        ) : (
+          <select
+            value={estadoObraDe(o)}
+            onChange={(e) => onCambiarEstado(o.id, e.target.value)}
+            style={{
+              ...estiloSelect,
+              fontSize: 11,
+              padding: "3px 6px",
+              fontWeight: 600,
+              color:
+                estadoObraDe(o) === "Finalizado"
+                  ? "#15803d"
+                  : estadoObraDe(o) === "En Obra"
+                  ? "#c2410c"
+                  : "var(--text-main, #101828)",
+            }}
+          >
+            {ESTADOS_OBRA.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      {/* Documentación Enviada (Toggle) */}
+      <div style={{ textAlign: "center" }} onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          onClick={() => onToggleEnviado?.(o.id, !enviado)}
+          title={
+            enviado
+              ? `Documentación enviada al cliente${o.fechaEnvioCliente ? ` (${fmtD(o.fechaEnvioCliente)})` : ""}. Clic para cambiar.`
+              : "Marcar como documentación enviada al cliente"
+          }
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            padding: "3px 9px",
+            borderRadius: 999,
+            fontSize: 11,
+            fontWeight: 600,
+            cursor: "pointer",
+            border: enviado ? "1px solid #a7f3d0" : "1px dashed var(--border, #cbd5e1)",
+            background: enviado ? "#ecfdf5" : "var(--surface-subtle, #f8fafc)",
+            color: enviado ? "#15803d" : "var(--text-muted, #64748b)",
+            transition: "all 0.15s ease",
+          }}
+        >
+          <span>{enviado ? "Enviada" : "Sin enviar"}</span>
+          {enviado ? <IconoPalomita size={14} color="#15803d" /> : <span style={{ fontSize: 9 }}>○</span>}
+        </button>
+      </div>
+
+      {/* Acción: Ver */}
+      <div style={{ textAlign: "right" }}>
+        <span
+          style={{
+            fontSize: 12,
+            fontWeight: 600,
+            color: "#0071e3",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 3,
+          }}
+        >
+          Ver &rarr;
+        </span>
+      </div>
+    </div>
   );
 }
+
+function TarjetaObraApple({
+  o,
+  cotizacion,
+  fotosCount = 0,
+  horarios = [],
+  onAbrir,
+  onCambiarAvance,
+  onCambiarEstado,
+  onToggleEnviado,
+  puedeDesbloquear,
+}) {
+  const [hover, setHover] = useState(false);
+  const idsDirectos = Array.isArray(o.empleados) ? o.empleados : [];
+  const idsHorarios = (horarios || []).filter((h) => h.obraId === o.id).map((h) => h.empleadoId).filter(Boolean);
+  const totalEmpleados = [...new Set([...idsDirectos, ...idsHorarios])].length;
+  const avance = Number(o.avance) || 0;
+  const bloqueada = obraEstaCerrada(o) && !puedeDesbloquear;
+  const enviado = Boolean(o.enviadoAlCliente);
+
+  const cliente = normalizarRazonSocial(o.cliente);
+  const proyecto = String(o.proyecto || "").trim();
+  const repetido = proyecto && proyecto.replace(/[.\s]/g, "").toUpperCase() === cliente.replace(/[.\s]/g, "").toUpperCase();
+  const subtitulo = repetido ? "" : proyecto;
+  const colorBarra = avance === 100 ? "#15803d" : "#f47c20";
+
+  return (
+    <article
+      onClick={onAbrir}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        background: "var(--surface, #ffffff)",
+        border: `1px solid ${hover ? "#0071e3" : "var(--border, rgba(0, 0, 0, 0.08))"}`,
+        borderRadius: 16,
+        padding: "15px 16px",
+        boxShadow: hover
+          ? "0 12px 28px -6px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04)"
+          : "0 2px 8px -2px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.02)",
+        transform: hover ? "translateY(-2px)" : "translateY(0)",
+        transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+        cursor: "pointer",
+        position: "relative",
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        gap: 12,
+      }}
+    >
+      {/* Barra de acento izquierdo */}
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 3.5,
+          background: colorBarra,
+        }}
+      />
+
+      <div>
+        {/* Cabecera: Código, estado y envío */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 8,
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+              fontSize: 11,
+              fontWeight: 600,
+              padding: "2px 7px",
+              borderRadius: 6,
+              background: "var(--surface-subtle, #f1f5f9)",
+              color: "var(--text-main, #101828)",
+              border: "1px solid var(--border, rgba(0,0,0,0.08))",
+            }}
+          >
+            {o.id}
+          </span>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }} onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => onToggleEnviado?.(o.id, !enviado)}
+              style={{
+                fontSize: 10.5,
+                fontWeight: 600,
+                color: enviado ? "#15803d" : "var(--text-muted, #64748b)",
+                background: enviado ? "#ecfdf5" : "transparent",
+                border: `1px solid ${enviado ? "#a7f3d0" : "var(--border, #cbd5e1)"}`,
+                borderRadius: 999,
+                padding: "1px 7px",
+                cursor: "pointer",
+              }}
+            >
+              {enviado ? "🕊️ Enviada" : "Sin enviar"}
+            </button>
+
+            <span
+              style={{
+                fontSize: 10.5,
+                fontWeight: 600,
+                borderRadius: 999,
+                padding: "2px 8px",
+                background:
+                  estadoObraDe(o) === "Finalizado"
+                    ? "#ecfdf5"
+                    : estadoObraDe(o) === "En Obra"
+                    ? "rgba(255, 149, 0, 0.1)"
+                    : "var(--surface-subtle, #f1f5f9)",
+                color:
+                  estadoObraDe(o) === "Finalizado"
+                    ? "#15803d"
+                    : estadoObraDe(o) === "En Obra"
+                    ? "#c2410c"
+                    : "var(--text-muted, #667085)",
+              }}
+            >
+              {estadoObraDe(o)}
+            </span>
+          </div>
+        </div>
+
+        {/* Cliente & Proyecto */}
+        <h3
+          style={{
+            fontSize: 14,
+            fontWeight: 600,
+            color: "var(--text-main, #101828)",
+            margin: "0 0 2px",
+            lineHeight: 1.3,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {cliente || "Sin cliente"}
+        </h3>
+        {subtitulo && (
+          <div
+            style={{
+              fontSize: 11.5,
+              color: "var(--text-muted, #667085)",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {subtitulo}
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: 10, fontSize: 11, color: "var(--text-muted, #475467)", marginTop: 6 }}>
+          <span>📍 {o.ciudad || "—"}</span>
+          <span>📅 {fmtD(o.fechaInicio) || "—"}</span>
+        </div>
+      </div>
+
+      {/* Avance Slider & Acciones */}
+      <div style={{ paddingTop: 8, borderTop: "1px solid var(--border, rgba(0,0,0,0.05))" }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 2 }}>
+          <span style={{ color: "var(--text-muted, #667085)" }}>Avance</span>
+          <span style={{ fontWeight: 600, color: colorBarra, fontVariantNumeric: "tabular-nums" }}>
+            {avance}%
+          </span>
+        </div>
+        <div
+          style={{
+            width: "100%",
+            height: 4,
+            background: "var(--border, #e2e8f0)",
+            borderRadius: 999,
+            overflow: "hidden",
+            marginBottom: 3,
+          }}
+        >
+          <div
+            style={{
+              width: `${avance}%`,
+              height: "100%",
+              background: colorBarra,
+              borderRadius: 999,
+              transition: "width 0.2s ease",
+            }}
+          />
+        </div>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={avance}
+          disabled={bloqueada}
+          onChange={(e) => onCambiarAvance(o.id, Number(e.target.value))}
+          style={{
+            width: "100%",
+            accentColor: colorBarra,
+            display: "block",
+            cursor: bloqueada ? "not-allowed" : "pointer",
+            margin: "0 0 6px",
+          }}
+        />
+
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11 }}>
+          <div style={{ display: "flex", gap: 6 }}>
+            <span style={{ color: "var(--text-muted, #475467)" }}>👷 {totalEmpleados}</span>
+            <span style={{ color: fotosCount > 0 ? "#0071e3" : "#98a2b3" }}>📸 {fotosCount}</span>
+          </div>
+          <span style={{ fontWeight: 600, color: "#0071e3" }}>Ver Obra &rarr;</span>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+const estiloSelect = {
+  background: "var(--surface, #ffffff)",
+  border: "1px solid var(--border, rgba(0, 0, 0, 0.1))",
+  borderRadius: 8,
+  padding: "4px 8px",
+  fontSize: 11.5,
+  color: "var(--text-main, #101828)",
+  outline: "none",
+  cursor: "pointer",
+};

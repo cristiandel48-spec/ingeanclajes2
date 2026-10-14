@@ -163,24 +163,24 @@ export default function Obras({ctx}){
       <button
         type="button"
         style={{
-          background: showNO ? "rgba(220, 38, 38, 0.1)" : "#FFFAEB",
-          color: showNO ? "#b91c1c" : "#B54708",
-          border: `1px solid ${showNO ? "rgba(220, 38, 38, 0.3)" : "rgba(181, 71, 8, 0.35)"}`,
+          background: showNO ? "rgba(220, 38, 38, 0.08)" : "#f47c20",
+          color: showNO ? "#b91c1c" : "#ffffff",
+          border: `1px solid ${showNO ? "rgba(220, 38, 38, 0.25)" : "#f47c20"}`,
           borderRadius: 8,
-          padding: isMobile ? "6px 11px" : "8px 16px",
+          padding: isMobile ? "6px 12px" : "7px 15px",
           fontSize: isMobile ? 12 : 12.5,
-          fontWeight: 700,
+          fontWeight: 600,
           cursor: "pointer",
           fontFamily: "inherit",
           whiteSpace: "nowrap",
           display: "inline-flex",
           alignItems: "center",
           gap: 6,
-          boxShadow: "0 1px 2px rgba(181, 71, 8, 0.08)",
+          boxShadow: showNO ? "none" : "0 1px 2px rgba(244, 124, 32, 0.25)",
         }}
-        onClick={()=>setShowNO((v)=>!v)}
+        onClick={() => setShowNO((v) => !v)}
       >
-        <span style={{ fontSize: 14, fontWeight: 900, lineHeight: 1 }}>{showNO ? "✕" : "+"}</span>
+        <span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1 }}>{showNO ? "✕" : "+"}</span>
         <span>{showNO ? (isMobile ? "Cerrar" : "Cerrar formulario") : "Nueva Obra"}</span>
       </button>
     ),
@@ -195,11 +195,50 @@ export default function Obras({ctx}){
   return(
     <div style={{padding: isMobile ? "10px 0 28px" : "14px 28px 28px", width: "100%", boxSizing: "border-box"}}>
 
+      {showNO && (
+        <div
+          style={{
+            background: "var(--surface, #ffffff)",
+            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+            borderRadius: 16,
+            padding: isMobile ? "16px 14px" : "20px 24px",
+            marginBottom: 20,
+            boxShadow: "0 4px 16px -2px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.02)",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 14 }}>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-main, #101828)", letterSpacing: "-0.01em" }}>
+                Registrar Nueva Obra
+              </div>
+              <div style={{ fontSize: 12, color: "var(--text-muted, #667085)", marginTop: 2 }}>
+                Ingresa los datos del proyecto y vincula una cotización comercial si corresponde.
+              </div>
+            </div>
+            <span
+              style={{
+                fontFamily: "'Inter', system-ui, sans-serif",
+                fontSize: 11.5,
+                fontWeight: 600,
+                color: "var(--text-muted, #667085)",
+                background: "var(--surface-subtle, #f1f5f9)",
+                padding: "3px 8px",
+                borderRadius: 6,
+                border: "1px solid var(--border, rgba(0,0,0,0.08))",
+              }}
+            >
+              Próximo código: {siguienteIdObra(obras)}
+            </span>
+          </div>
 
-      {showNO&&(
-        <div style={{...CD,marginBottom:20,border:"1px solid var(--border, #e2e8f0)"}}>
-          <div style={ST}>Nueva Obra</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",
+              gap: 12,
+              marginBottom: 16,
+            }}
+          >
             <BuscadorCliente
               label="Cliente"
               valor={nob.cliente}
@@ -222,47 +261,36 @@ export default function Obras({ctx}){
               normalizar={normalizarMayusculas} placeholder="Ej: Medellín, Antioquia" autoCapitalize="characters"/>
             <CampoTexto label="Dirección" valor={nob.direccion} onChange={v=>setNob({...nob,direccion:v})}
               normalizar={normalizarMayusculas} placeholder="Dirección de la obra" autoCapitalize="characters"/>
-            {/* Aqui no se pregunta por plata. Quien registra la obra es quien
-                organiza el trabajo -personal, turnos, fotos, avances- y las
-                cifras son confidenciales. La obra nace en ceros; el valor entra
-                solo al vincular la cotizacion, que la maneja quien cotiza. */}
-            <div><LBL>Fecha inicio</LBL><input type="date" value={nob.fechaInicio} onChange={e=>setNob({...nob,fechaInicio:e.target.value})} style={SI}/>
-              <div style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)",marginTop:3}}>La fecha real en que empezaron, aunque sea de meses atrás.</div>
+            <div>
+              <LBL>Fecha inicio</LBL>
+              <input type="date" value={nob.fechaInicio} onChange={e=>setNob({...nob,fechaInicio:e.target.value})} style={SI}/>
+              <div style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)",marginTop:3}}>La fecha real en que empezaron.</div>
             </div>
-            <div><LBL>Fecha fin estimada</LBL><input type="date" value={nob.fechaFin} onChange={e=>setNob({...nob,fechaFin:e.target.value})} style={SI}/></div>
-            <div><LBL>Estado actual</LBL>
+            <div>
+              <LBL>Fecha fin estimada</LBL>
+              <input type="date" value={nob.fechaFin} onChange={e=>setNob({...nob,fechaFin:e.target.value})} style={SI}/>
+            </div>
+            <div>
+              <LBL>Estado actual</LBL>
               <select value={nob.estado} onChange={e=>setNob({...nob,estado:e.target.value})} style={SI}>
                 {ESTADOS_OBRA.map(s=><option key={s}>{s}</option>)}
               </select>
-              <div style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)",marginTop:3}}>Si está trabajándose ahora, déjalo en «En Obra».</div>
             </div>
-            <div><LBL>Avance que lleva hoy (%)</LBL><input type="number" min={0} max={100} value={nob.avance} onChange={e=>setNob({...nob,avance:parseInt(e.target.value,10)||0})} style={SI}/>
-              <div style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)",marginTop:3}}>Al 100% (o en «Finalizado») ya se puede certificar.</div>
+            <div>
+              <LBL>Avance que lleva hoy (%)</LBL>
+              <input type="number" min={0} max={100} value={nob.avance} onChange={e=>setNob({...nob,avance:parseInt(e.target.value,10)||0})} style={SI}/>
             </div>
-            <div><LBL>Vincular cotización (opcional)</LBL>
+            <div style={{ gridColumn: isMobile ? "span 1" : "span 3" }}>
+              <LBL>Vincular cotización comercial (opcional)</LBL>
               <select value={nob.cotizacionId} onChange={e=>setNob({...nob,cotizacionId:e.target.value})} style={SI}>
-                <option value="">Sin cotización</option>
-                {cotizaciones.filter(c=>!c.obraId).map(c=><option key={c.id} value={c.id}>{c.numero} · {c.cliente}</option>)}
+                <option value="">Sin cotización vinculada</option>
+                {cotizaciones.filter(c=>!c.obraId).map(c=><option key={c.id} value={c.id}>{c.numero} · {c.cliente} {c.total ? `($${c.total.toLocaleString()})` : ""}</option>)}
               </select>
-              <div style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)",marginTop:3}}>Si la vinculas, el valor total lo toma de la cotización y esa queda «Aprobada».</div>
+              <div style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)",marginTop:3}}>Si la vinculas, toma el valor total de la cotización y esa pasa a estado «Aprobada».</div>
             </div>
           </div>
-          <div style={{display:"flex",gap:10}}>
-            <button
-              onClick={guardarObra}
-              style={{
-                background: "#ecfdf5",
-                color: "#047857",
-                border: "1px solid #a7f3d0",
-                borderRadius: 8,
-                fontSize: 12.5,
-                fontWeight: 600,
-                padding: "8px 16px",
-                cursor: "pointer"
-              }}
-            >
-              ✅ Crear Obra
-            </button>
+
+          <div style={{display:"flex",gap:10,justifyContent:"flex-end",borderTop:"1px solid var(--border, rgba(0,0,0,0.06))",paddingTop:12}}>
             <button
               onClick={()=>setShowNO(false)}
               style={{
@@ -270,13 +298,31 @@ export default function Obras({ctx}){
                 color: "var(--text-muted, #475467)",
                 border: "1px solid var(--border, #eaecf0)",
                 borderRadius: 8,
-                fontSize: 12.5,
+                fontSize: 12,
                 fontWeight: 600,
-                padding: "8px 16px",
-                cursor: "pointer"
+                padding: "7px 15px",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
               }}
             >
               Cancelar
+            </button>
+            <button
+              onClick={guardarObra}
+              style={{
+                background: "#f47c20",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: 600,
+                padding: "7px 18px",
+                cursor: "pointer",
+                boxShadow: "0 1px 2px rgba(244, 124, 32, 0.25)",
+                transition: "all 0.15s ease",
+              }}
+            >
+              ✓ Crear Obra
             </button>
           </div>
         </div>

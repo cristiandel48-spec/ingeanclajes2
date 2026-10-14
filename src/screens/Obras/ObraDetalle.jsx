@@ -50,6 +50,14 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
   const [nuevoEmp,setNuevoEmp]=useState(false);
   const [showGasto,setShowGasto]=useState(false);
   const [mostrarGuia,setMostrarGuia]=useState(false);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
+  );
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const oAct=obras.find(o=>o.id===obraId);
 
@@ -99,45 +107,57 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
   };
 
   return(
-    <div style={{padding:28}}>
-      {/* Barra superior - Opción 3 Compacta Integrada */}
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 16,
-        marginBottom: 16,
-        background: "var(--surface, #fff)",
-        borderRadius: 14,
-        padding: "12px 18px",
-        border: "1px solid var(--border, #e2e8f0)",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-      }}>
+    <div
+      style={{
+        padding: isMobile ? "14px 16px" : "24px 28px",
+        fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+        WebkitFontSmoothing: "antialiased",
+        MozOsxFontSmoothing: "grayscale",
+      }}
+    >
+      {/* Barra superior de la Obra - Estilo Apple Studio */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          alignItems: isMobile ? "stretch" : "center",
+          justifyContent: "space-between",
+          gap: 16,
+          marginBottom: 16,
+          background: "var(--surface, #ffffff)",
+          borderRadius: 16,
+          padding: isMobile ? "14px 16px" : "16px 22px",
+          border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+          boxShadow: "0 4px 16px -2px rgba(0,0,0,0.02), 0 1px 3px rgba(0,0,0,0.02)",
+        }}
+      >
         {/* Izquierda: Volver + Nombre + Badges + Metadatos */}
-        <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0, flex: 1 }}>
+        <div style={{ display: "flex", alignItems: isMobile ? "flex-start" : "center", gap: 12, minWidth: 0, flex: 1 }}>
           <button
             onClick={onVolver}
             style={{
-              background: "var(--surface-subtle, #f2f4f7)",
-              color: "var(--text-muted, #475467)",
-              border: "1px solid var(--border, #eaecf0)",
+              background: "#ffffff",
+              color: "var(--text-main, #1d1d1f)",
+              border: "1px solid var(--border, #d2d2d7)",
               borderRadius: 8,
-              fontSize: 12.5,
+              fontSize: 12,
               fontWeight: 600,
-              padding: "7px 14px",
+              padding: "6px 12px",
               cursor: "pointer",
               flexShrink: 0,
+              boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+              transition: "all 0.15s ease",
             }}
           >
-            ← Volver
+            ← Obras
           </button>
-          <div style={{ width: 1, height: 34, background: "var(--border, #e2e8f0)", flexShrink: 0 }} />
+          {!isMobile && <div style={{ width: 1, height: 32, background: "var(--border, #e5e5ea)", flexShrink: 0 }} />}
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 17, fontWeight: 700, color: "var(--text-main, #1a1a2e)", lineHeight: 1.2 }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: "var(--text-main, #1d1d1f)", lineHeight: 1.2 }}>
                 {oAct.cliente}
               </span>
-              <Badge estado={oAct.estado}/>
+              <Badge estado={oAct.estado} />
               <button
                 type="button"
                 onClick={() => {
@@ -162,28 +182,28 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 5,
-                  padding: "3px 10px",
-                  borderRadius: 20,
+                  padding: "3px 9px",
+                  borderRadius: 6,
                   fontSize: 11,
                   fontWeight: 600,
                   cursor: "pointer",
                   whiteSpace: "nowrap",
                   userSelect: "none",
-                  border: oAct.enviadoAlCliente ? "1px solid #86efac" : "1px dashed #cbd5e1",
+                  border: oAct.enviadoAlCliente ? "1px solid #a7f3d0" : "1px dashed #cbd5e1",
                   background: oAct.enviadoAlCliente ? "#ecfdf5" : "var(--surface-subtle, #f8fafc)",
-                  color: oAct.enviadoAlCliente ? "#15803d" : "#64748b",
+                  color: oAct.enviadoAlCliente ? "#047857" : "#64748b",
                   transition: "all .16s ease",
                 }}
               >
                 {oAct.enviadoAlCliente ? (
                   <>
                     <span>Documentación Enviada</span>
-                    <IconoPalomita size={16} color="#15803d" />
+                    <IconoPalomita size={14} color="#047857" />
                   </>
                 ) : (
                   <>
                     <span>Sin enviar</span>
-                    <span style={{ fontSize: 11, lineHeight: 1, color: "#94a3b8" }}>○</span>
+                    <span style={{ fontSize: 10, lineHeight: 1, color: "#94a3b8" }}>○</span>
                   </>
                 )}
               </button>
@@ -193,154 +213,177 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                   style={{
                     fontSize: 11,
                     fontWeight: 600,
-                    color: "#B54708",
-                    background: "#FFFAEB",
-                    border: "1px solid rgba(181, 71, 8, 0.25)",
+                    fontFamily: "monospace",
+                    color: "var(--text-main, #1d1d1f)",
+                    background: "var(--surface-subtle, #f5f5f7)",
+                    border: "1px solid var(--border, #d2d2d7)",
                     borderRadius: 6,
-                    padding: "2px 8px",
+                    padding: "2px 7px",
                     cursor: "pointer",
                   }}
                   title="Clic para ver la cotización de referencia completa"
                 >
-                  📄 {cotVinc.numero} ↗
+                  <span style={{ color: "#0071e3" }}>{cotVinc.numero}</span> ↗
                 </span>
               )}
             </div>
             <div
               style={{
                 fontSize: 11.5,
-                color: "var(--text-muted, #64748b)",
-                marginTop: 2,
+                color: "var(--text-muted, #6e6e73)",
+                marginTop: 3,
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
               }}
               title={`${oAct.id} · ${fmtD(oAct.fechaInicio)} → ${fmtD(oAct.fechaFin) || "En curso"} · ${oAct.proyecto} · 📍 ${oAct.ciudad}${oAct.direccion ? ` · ${oAct.direccion}` : ""}`}
             >
-              {oAct.id} · {fmtD(oAct.fechaInicio)} → {fmtD(oAct.fechaFin) || "En curso"} · {oAct.proyecto} · 📍 {oAct.ciudad}{oAct.direccion ? ` · ${oAct.direccion}` : ""}
+              <strong style={{ fontFamily: "monospace", color: "var(--text-main, #1d1d1f)", fontWeight: 600 }}>{oAct.id}</strong> · {fmtD(oAct.fechaInicio)} → {fmtD(oAct.fechaFin) || "En curso"} · {oAct.proyecto} · 📍 {oAct.ciudad}{oAct.direccion ? ` · ${oAct.direccion}` : ""}
             </div>
           </div>
         </div>
 
-        {/* Derecha: Botones con colores suaves ejecutivos */}
-        <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "center" }}>
+        {/* Derecha: Botones con la paleta sobria de Cotizaciones */}
+        <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "center", flexWrap: "wrap" }}>
+          {/* Botón CERTIFICAR en estilo Apple Dark Button */}
           <button
-            onClick={() => irAPantalla("informes", { obraId: oAct.id })}
+            onClick={() => irAPantalla("certificaciones", { obraId: oAct.id })}
             style={{
-              background: "#eff6ff",
-              color: "#1d4ed8",
-              border: "1px solid #bfdbfe",
-              borderRadius: 8,
+              background: "#1d1d1f",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: 10,
               fontSize: 12,
-              padding: "6px 12px",
+              padding: "7px 14px",
               fontWeight: 600,
               cursor: "pointer",
               display: "inline-flex",
               alignItems: "center",
               gap: 6,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
+              transition: "all 0.15s ease",
+            }}
+            title="Crear certificación de calidad para esta obra"
+          >
+            <span>📜</span>
+            <span>Certificar</span>
+            <span style={{ fontSize: 10, background: "rgba(255,255,255,0.2)", padding: "1px 5px", borderRadius: 4, fontWeight: 500 }}>
+              {oAct.avance >= 90 ? "Listo" : `${oAct.avance}%`}
+            </span>
+          </button>
+
+          {/* Botón CREAR INFORME en blanco Apple */}
+          <button
+            onClick={() => irAPantalla("informes", { obraId: oAct.id })}
+            style={{
+              background: "#ffffff",
+              color: "var(--text-main, #1d1d1f)",
+              border: "1px solid var(--border, #d2d2d7)",
+              borderRadius: 10,
+              fontSize: 12,
+              padding: "7px 13px",
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
               transition: "all 0.15s ease",
             }}
             title="Crear informe de actividades para esta obra"
           >
-            📄 Crear informe
+            <span>📄</span>
+            <span>Crear informe</span>
           </button>
-          <button
-            onClick={() => irAPantalla("certificaciones", { obraId: oAct.id })}
-            style={{
-              background: "#ecfdf5",
-              color: "#047857",
-              border: "1px solid #a7f3d0",
-              borderRadius: 8,
-              fontSize: 12,
-              padding: "6px 12px",
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              transition: "all 0.15s ease",
-            }}
-            title="Crear certificación para esta obra"
-          >
-            📜 Certificar
-          </button>
+
+          {/* Botón FOTOTECA Y ZIP */}
           <button
             onClick={() => setDetTab("fototeca")}
             style={{
-              background: detTab === "fototeca" ? "#FFFAEB" : "#fdf4ff",
-              color: detTab === "fototeca" ? "#B54708" : "#86198f",
-              border: detTab === "fototeca" ? "1px solid rgba(181, 71, 8, 0.35)" : "1px solid #f5d0fe",
-              borderRadius: 8,
+              background: detTab === "fototeca" ? "#1d1d1f" : "#ffffff",
+              color: detTab === "fototeca" ? "#ffffff" : "var(--text-main, #1d1d1f)",
+              border: detTab === "fototeca" ? "1px solid #1d1d1f" : "1px solid var(--border, #d2d2d7)",
+              borderRadius: 10,
               fontSize: 12,
-              padding: "6px 12px",
+              padding: "7px 13px",
               fontWeight: 600,
               cursor: "pointer",
               display: "inline-flex",
               alignItems: "center",
               gap: 6,
+              boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
               transition: "all 0.15s ease",
             }}
             title="Ver todas las fotos de la obra y descargar en ZIP"
           >
-            📸 Fototeca y ZIP
+            <span>📸</span>
+            <span>Fototeca y ZIP</span>
           </button>
+
+          {/* Botón QUÉ SIGUE */}
           <button
             onClick={() => setMostrarGuia(!mostrarGuia)}
             style={{
-              background: mostrarGuia ? "#FFFAEB" : "var(--surface-subtle, #f2f4f7)",
-              color: mostrarGuia ? "#B54708" : "var(--text-muted, #475467)",
-              border: mostrarGuia ? "1px solid rgba(181, 71, 8, 0.35)" : "1px solid var(--border, #eaecf0)",
-              borderRadius: 8,
+              background: mostrarGuia ? "var(--surface-subtle, #e5e5ea)" : "var(--surface-subtle, #f5f5f7)",
+              color: "var(--text-main, #1d1d1f)",
+              border: "1px solid var(--border, #e5e5ea)",
+              borderRadius: 10,
               fontSize: 12,
-              padding: "6px 11px",
+              padding: "7px 12px",
               fontWeight: 600,
               cursor: "pointer",
               display: "inline-flex",
               alignItems: "center",
-              gap: 6,
+              gap: 5,
               transition: "all 0.15s ease",
             }}
             title={mostrarGuia ? "Ocultar qué sigue" : "Mostrar guía de flujo y qué sigue en esta obra"}
           >
-            {mostrarGuia ? "Ocultar qué sigue" : "💡 Qué sigue"}
+            <span>💡</span>
+            <span>{mostrarGuia ? "Ocultar qué sigue" : "Qué sigue"}</span>
           </button>
         </div>
       </div>
 
-      {/* Cotización de Referencia: Objeto e Ítems (Sin valores monetarios para privacidad y optimización de espacio) */}
+      {/* Cotización de Referencia: Objeto e Ítems (Sin amarillos, idéntico a Crear Cotización) */}
       {cotVinc && (
-        <div style={{
-          background: "var(--surface, #fff)",
-          border: "1px solid rgba(245, 158, 11, 0.35)",
-          borderRadius: 10,
-          padding: "10px 14px",
-          marginBottom: 10,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
-        }}>
+        <div
+          style={{
+            background: "var(--surface, #ffffff)",
+            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+            borderRadius: 16,
+            padding: "16px 20px",
+            marginBottom: 14,
+            boxShadow: "0 4px 16px -2px rgba(0,0,0,0.02), 0 1px 3px rgba(0,0,0,0.02)",
+          }}
+        >
           {/* Fila superior: Referencia y Botón para ir a la cotización */}
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 8,
-            flexWrap: "wrap",
-            marginBottom: (objetoLimpio || itemsCot.length) ? 8 : 0,
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 13 }}>📄</span>
-              <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "#92400E" }}>
-                Cotización Ref:
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 8,
+              flexWrap: "wrap",
+              marginBottom: (objetoLimpio || itemsCot.length) ? 12 : 0,
+              paddingBottom: 10,
+              borderBottom: "1px solid var(--border, #f2f2f7)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-muted, #6e6e73)" }}>
+                Cotización de Referencia
               </span>
               <span
                 onClick={() => irAPantalla("cotizacion", { cotizacionId: cotVinc.id })}
                 style={{
                   fontSize: 11.5,
                   fontWeight: 700,
-                  color: "#B54708",
-                  background: "#FEF3C7",
-                  border: "1px solid #FCD34D",
-                  borderRadius: 5,
-                  padding: "1px 8px",
+                  fontFamily: "monospace",
+                  color: "#ffffff",
+                  background: "#1d1d1f",
+                  borderRadius: 6,
+                  padding: "2px 8px",
                   cursor: "pointer",
                 }}
                 title="Abrir cotización"
@@ -348,104 +391,143 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                 {cotVinc.numero}
               </span>
               {cotVinc.fecha && (
-                <span style={{ fontSize: 11, color: "var(--text-muted, #64748b)" }}>
-                  · {fmtD(cotVinc.fecha)}
+                <span style={{ fontSize: 11.5, color: "var(--text-muted, #86868b)" }}>
+                  · Aprobada el {fmtD(cotVinc.fecha)}
                 </span>
               )}
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "#047857",
+                  background: "#ecfdf5",
+                  border: "1px solid #a7f3d0",
+                  borderRadius: 4,
+                  padding: "1px 6px",
+                }}
+              >
+                Vinculada
+              </span>
             </div>
 
             <button
               onClick={() => irAPantalla("cotizacion", { cotizacionId: cotVinc.id })}
               style={{
-                background: "#fff",
-                color: "#B54708",
-                border: "1px solid #FCD34D",
-                borderRadius: 6,
-                fontSize: 11,
+                background: "#ffffff",
+                color: "#0071e3",
+                border: "1px solid var(--border, #d2d2d7)",
+                borderRadius: 8,
+                fontSize: 11.5,
                 fontWeight: 600,
-                padding: "3px 9px",
+                padding: "4px 10px",
                 cursor: "pointer",
                 display: "inline-flex",
                 alignItems: "center",
-                gap: 4,
+                gap: 5,
+                transition: "all 0.15s ease",
               }}
               title="Abrir cotización en pantalla de cotizaciones"
             >
-              Ver cotización completa ↗
+              <span>Ver cotización comercial completa</span>
+              <span>↗</span>
             </button>
           </div>
 
           {/* Fila con Objeto a la izquierda e Ítems a la derecha */}
           {(objetoLimpio || itemsCot.length > 0) && (
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: (objetoLimpio && itemsCot.length > 0) ? "minmax(280px, 1fr) minmax(320px, 1.25fr)" : "1fr",
-              gap: 10,
-              alignItems: "stretch",
-            }}>
-              {/* Objeto contratado (Directo en amarillo, sin texto de relleno) */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: (!isMobile && objetoLimpio && itemsCot.length > 0) ? "minmax(280px, 1fr) minmax(340px, 1.35fr)" : "1fr",
+                gap: 12,
+                alignItems: "stretch",
+              }}
+            >
+              {/* Objeto contratado (Sin marcas amarillas, fondo suave con tipografía nítida) */}
               {objetoLimpio && (
-                <div style={{
-                  background: "#FFFAEB",
-                  border: "1px solid #FDE68A",
-                  borderRadius: 6,
-                  padding: "6px 10px",
-                  fontSize: 12,
-                  color: "#78350F",
-                  lineHeight: 1.4,
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: 6,
-                }}>
-                  <span style={{ flexShrink: 0 }}>🎯</span>
+                <div
+                  style={{
+                    background: "var(--surface-subtle, #fbfbfd)",
+                    border: "1px solid var(--border, #e5e5ea)",
+                    borderRadius: 12,
+                    padding: "12px 14px",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                  }}
+                >
                   <div>
-                    <strong style={{ fontWeight: 700 }}>Objeto: </strong>
-                    <mark style={{
-                      backgroundColor: "#FEF08A",
-                      color: "#713F12",
-                      padding: "1px 6px",
-                      borderRadius: 4,
-                      fontWeight: 600,
-                    }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-main, #1d1d1f)", marginBottom: 6 }}>
+                      🎯 Objeto del Contrato a Certificar
+                    </div>
+                    <div
+                      style={{
+                        background: "#ffffff",
+                        border: "1px solid var(--border, #e5e5ea)",
+                        borderRadius: 8,
+                        padding: "10px 12px",
+                        fontSize: 12,
+                        color: "var(--text-main, #1d1d1f)",
+                        lineHeight: 1.5,
+                        boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                      }}
+                    >
                       {objetoLimpio}
-                    </mark>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--text-muted, #6e6e73)", marginTop: 8, display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--border, #f2f2f7)", paddingTop: 6 }}>
+                    <span>Resolución 4272 de 2021 · ANSI Z359</span>
+                    <span style={{ fontWeight: 600, color: "var(--text-main, #1d1d1f)" }}>✓ Conforme</span>
                   </div>
                 </div>
               )}
 
               {/* Detalle de ítems (Sin valores monetarios: solo Cant, Unidad y Descripción) */}
               {itemsCot.length > 0 && (
-                <div style={{
-                  border: "1px solid #E2E8F0",
-                  borderRadius: 6,
-                  overflowX: "auto",
-                  background: "var(--surface-subtle, #F8FAFC)",
-                }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5, textAlign: "left" }}>
-                    <thead>
-                      <tr style={{ borderBottom: "1px solid #E2E8F0", background: "rgba(0,0,0,0.02)" }}>
-                        <th style={{ padding: "4px 8px", color: "#64748B", fontWeight: 600, width: "45px" }}>Cant.</th>
-                        <th style={{ padding: "4px 8px", color: "#64748B", fontWeight: 600, width: "65px" }}>Unidad</th>
-                        <th style={{ padding: "4px 8px", color: "#64748B", fontWeight: 600 }}>Descripción del trabajo a realizar</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {itemsCot.map((it, idx) => {
-                        const cant = Number(it.cant) || 1;
-                        const desc = it.desc || it.descripcion || "Sin descripción";
-                        const unidad = it.unit || it.unidad || "Global";
-                        return (
-                          <tr key={it.id || idx} style={{ borderBottom: idx < itemsCot.length - 1 ? "1px solid #F1F5F9" : "none" }}>
-                            <td style={{ padding: "4px 8px", fontWeight: 700, color: "#92400E" }}>{cant}</td>
-                            <td style={{ padding: "4px 8px", color: "#475569" }}>{unidad}</td>
-                            <td style={{ padding: "4px 8px", color: "var(--text-main, #1E293B)", fontWeight: 500 }}>
-                              {desc}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                <div
+                  style={{
+                    border: "1px solid var(--border, #e5e5ea)",
+                    borderRadius: 12,
+                    overflow: "hidden",
+                    background: "#ffffff",
+                    boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                  }}
+                >
+                  <div style={{ background: "var(--surface-subtle, #fbfbfd)", padding: "7px 12px", borderBottom: "1px solid var(--border, #e5e5ea)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-main, #1d1d1f)" }}>
+                      Ítems Contratados a Certificar
+                    </span>
+                    <span style={{ fontSize: 10.5, color: "var(--text-muted, #86868b)" }}>
+                      {itemsCot.length} actividad(es)
+                    </span>
+                  </div>
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5, textAlign: "left" }}>
+                      <thead>
+                        <tr style={{ borderBottom: "1px solid var(--border, #e5e5ea)", background: "var(--surface-subtle, #f5f5f7)" }}>
+                          <th style={{ padding: "6px 10px", color: "var(--text-muted, #6e6e73)", fontWeight: 600, width: "50px" }}>Cant.</th>
+                          <th style={{ padding: "6px 10px", color: "var(--text-muted, #6e6e73)", fontWeight: 600, width: "70px" }}>Unidad</th>
+                          <th style={{ padding: "6px 10px", color: "var(--text-muted, #6e6e73)", fontWeight: 600 }}>Descripción técnica del trabajo</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {itemsCot.map((it, idx) => {
+                          const cant = Number(it.cant) || 1;
+                          const desc = it.desc || it.descripcion || "Sin descripción";
+                          const unidad = it.unit || it.unidad || "Global";
+                          return (
+                            <tr key={it.id || idx} style={{ borderBottom: idx < itemsCot.length - 1 ? "1px solid var(--border, #f2f2f7)" : "none" }}>
+                              <td style={{ padding: "6px 10px", fontWeight: 700, fontFamily: "monospace", color: "var(--text-main, #1d1d1f)" }}>{cant}</td>
+                              <td style={{ padding: "6px 10px", color: "var(--text-muted, #6e6e73)" }}>{unidad}</td>
+                              <td style={{ padding: "6px 10px", color: "var(--text-main, #1d1d1f)", fontWeight: 500 }}>
+                                {desc}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </div>
@@ -466,27 +548,43 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
         />
       )}
 
-      {/* Avance en una sola línea compacta */}
-      <div style={{
-        background: "var(--surface, #fff)",
-        border: "1px solid var(--border, #e2e8f0)",
-        borderRadius: 10,
-        padding: "8px 14px",
-        marginBottom: 10,
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        flexWrap: "wrap",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 160 }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #1a1a2e)" }}>
+      {/* Barra de Avance interactiva estilo Apple Studio */}
+      <div
+        style={{
+          background: "var(--surface, #ffffff)",
+          border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+          borderRadius: 14,
+          padding: "10px 16px",
+          marginBottom: 14,
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          flexWrap: "wrap",
+          boxShadow: "0 2px 6px rgba(0,0,0,0.02)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 170 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #1d1d1f)" }}>
             Avance de la obra:
           </span>
-          <span style={{ fontSize: 13, fontWeight: 800, color: oAct.avance === 100 ? "#16a34a" : "#ea580c" }}>
+          <span style={{ fontSize: 13.5, fontWeight: 800, fontFamily: "monospace", color: "var(--text-main, #1d1d1f)" }}>
             {oAct.avance}%
           </span>
+          <span
+            style={{
+              fontSize: 10.5,
+              fontWeight: 600,
+              padding: "2px 7px",
+              borderRadius: 5,
+              background: oAct.avance === 100 ? "#ecfdf5" : oAct.avance >= 90 ? "#eff6ff" : "var(--surface-subtle, #f5f5f7)",
+              color: oAct.avance === 100 ? "#047857" : oAct.avance >= 90 ? "#1d4ed8" : "var(--text-muted, #6e6e73)",
+              border: oAct.avance === 100 ? "1px solid #a7f3d0" : oAct.avance >= 90 ? "1px solid #bfdbfe" : "1px solid #e5e5ea",
+            }}
+          >
+            {oAct.avance === 100 ? "✓ Finalizado" : oAct.avance >= 90 ? "Listo para Certificar" : "En Ejecución"}
+          </span>
         </div>
-        <div style={{ flex: 1, minWidth: 140, display: "flex", alignItems: "center" }}>
+        <div style={{ flex: 1, minWidth: 160, display: "flex", alignItems: "center" }}>
           <input
             type="range"
             min={0}
@@ -510,7 +608,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             style={{
               width: "100%",
               height: 6,
-              accentColor: oAct.avance === 100 ? "#16a34a" : "#ea580c",
+              accentColor: "#1d1d1f",
               cursor: bloqueada ? "not-allowed" : "pointer",
             }}
           />
@@ -522,33 +620,48 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
         )}
       </div>
 
-      {/* Tabs */}
-      <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
+      {/* Selector Segmentado de Pestañas (Estilo Apple macOS Studio) */}
+      <div
+        style={{
+          display: "inline-flex",
+          background: "var(--surface-subtle, #e5e5ea)",
+          padding: 3,
+          borderRadius: 10,
+          gap: 2,
+          marginBottom: 14,
+          flexWrap: "wrap",
+        }}
+      >
         {[
-          ["avance","📸 Avance diario"],
-          ["materiales","📦 Materiales y Despacho"],
-          ["fototeca","🖼️ Fototeca y ZIP"],
-          ["personal","👷 Personal"],
-          // Gastos y Nomina llevan cifras: solo para quien puede verlas.
-          ...(verDinero?[["gastos","🧾 Gastos"],["nomina","💰 Nómina"]]:[]),
-          ["horario","📅 Horario"],
-        ].map(([id,lb])=>{
+          ["avance", "📸 Avance diario (Bitácora)"],
+          ["materiales", "📦 Materiales y Despacho"],
+          ["fototeca", "🖼️ Fototeca y ZIP"],
+          ["personal", "👷 Personal"],
+          ...(verDinero ? [["gastos", "🧾 Gastos"], ["nomina", "💰 Nómina"]] : []),
+          ["horario", "📅 Horario"],
+        ].map(([id, lb]) => {
           const activo = detTab === id;
           return (
-            <button key={id} onClick={()=>setDetTab(id)}
+            <button
+              key={id}
+              onClick={() => setDetTab(id)}
               style={{
-                background: activo ? "#FFFAEB" : "var(--surface-subtle, #f2f4f7)",
-                color: activo ? "#B54708" : "var(--text-muted, #475467)",
-                border: activo ? "1px solid rgba(181, 71, 8, 0.35)" : "1px solid var(--border, #eaecf0)",
-                boxShadow: activo ? "0 1px 3px rgba(181, 71, 8, 0.08)" : "none",
-                borderRadius: 7,
-                fontSize: 11.5,
-                fontWeight: activo ? 700 : 600,
-                padding: "5px 12px",
+                background: activo ? "#ffffff" : "transparent",
+                color: activo ? "#1d1d1f" : "#6e6e73",
+                border: "none",
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: activo ? 600 : 500,
+                padding: "6px 14px",
                 cursor: "pointer",
-                fontFamily: "inherit",
+                boxShadow: activo ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
                 transition: "all 0.15s ease",
-              }}>
+                whiteSpace: "nowrap",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
               {lb}
             </button>
           );

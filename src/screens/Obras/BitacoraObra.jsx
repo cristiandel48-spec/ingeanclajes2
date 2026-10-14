@@ -116,12 +116,13 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
   return (
     // En una obra cerrada la pestaña se mira pero no se toca. El aviso de
     // abajo queda fuera del apagado para que se pueda leer y seleccionar.
-    <div style={{ background: "var(--surface, #fff)", borderRadius: 12, border: "1px solid var(--border, #e2e8f0)", padding: "12px 16px",
+    <div style={{ background: "var(--surface, #ffffff)", borderRadius: 16, border: "1px solid var(--border, rgba(0,0,0,0.08))", padding: "16px 20px",
+      boxShadow: "0 4px 16px -2px rgba(0,0,0,0.02), 0 1px 3px rgba(0,0,0,0.02)",
       ...(bloqueada ? { pointerEvents: "none", opacity: 0.8 } : null) }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #1a1a2e)" }}>📸 Avance y fotos de la obra</div>
-          <div style={{ fontSize: 11, color: "var(--text-muted, #64748b)", marginTop: 1 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-main, #1d1d1f)", letterSpacing: "-0.01em" }}>📸 Avance y fotos de la obra</div>
+          <div style={{ fontSize: 11.5, color: "var(--text-muted, #6e6e73)", marginTop: 2 }}>
             {resumen.registros} registro(s) · {resumen.fotos} foto(s) cargadas
           </div>
         </div>
@@ -129,10 +130,19 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
           <button
             onClick={agregarRegistro}
             style={{
-              ...B("#cc0000"),
-              fontSize: 11.5,
-              padding: "5px 12px",
-              borderRadius: 7,
+              background: "#f47c20",
+              color: "#ffffff",
+              border: "none",
+              fontSize: 12,
+              fontWeight: 600,
+              padding: "7px 16px",
+              borderRadius: 10,
+              cursor: "pointer",
+              boxShadow: "0 1px 3px rgba(244, 124, 32, 0.25)",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              transition: "all 0.15s ease",
             }}
           >
             + Registrar avance del día
@@ -144,16 +154,16 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
           actividades. Cambiarlas despues de entregarlo dejaria el documento
           diciendo una cosa y la obra otra. */}
       {cargandoFotos && (
-        <div style={{ fontSize: 11.5, color: "#60a5fa", background: "rgba(30, 64, 175, 0.15)",
-          border: "1px solid rgba(191, 219, 254, 0.3)", borderRadius: 9, padding: "9px 12px",
+        <div style={{ fontSize: 11.5, color: "#1d4ed8", background: "#eff6ff",
+          border: "1px solid #bfdbfe", borderRadius: 9, padding: "9px 12px",
           marginBottom: 14, lineHeight: 1.5, pointerEvents: "auto" }}>
           Cargando las fotos de esta obra… Un momento, para no perder ningún cambio.
         </div>
       )}
 
       {bloqueada && !cargandoFotos && (
-        <div style={{ fontSize: 11.5, color: "#34d399", background: "rgba(16, 185, 129, 0.15)",
-          border: "1px solid rgba(167, 243, 208, 0.3)", borderRadius: 9, padding: "9px 12px",
+        <div style={{ fontSize: 11.5, color: "#047857", background: "#ecfdf5",
+          border: "1px solid #a7f3d0", borderRadius: 9, padding: "9px 12px",
           marginBottom: 14, lineHeight: 1.5, pointerEvents: "auto" }}>
           🔒 <strong>Obra finalizada.</strong> El registro de avance queda como está: estas fotos son
           las que salen en el informe. Un administrador puede reabrir la obra si hay que corregir algo.
@@ -161,15 +171,15 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
       )}
 
       {subiendoFotos && (
-        <div style={{ background: "rgba(30, 64, 175, 0.15)", border: "1px solid rgba(191, 216, 255, 0.3)", color: "#60a5fa", borderRadius: 10, padding: "9px 13px", fontSize: 12, marginBottom: 12 }}>
+        <div style={{ background: "#fbfbfd", border: "1px solid #d2d2d7", color: "#1d1d1f", borderRadius: 10, padding: "9px 13px", fontSize: 12, marginBottom: 12, fontWeight: 600 }}>
           Procesando {subiendoFotos.total > 1 ? `${subiendoFotos.hechas} de ${subiendoFotos.total} fotos…` : "la foto…"} espera un momento.
         </div>
       )}
 
       {registros.length === 0 && (
-        <div style={{ textAlign: "center", padding: 30, color: "var(--text-subtle, #94a3b8)", fontSize: 13, background: "var(--surface-subtle, #f8fafc)", borderRadius: 10, border: "1px dashed var(--border, #e2e8f0)" }}>
+        <div style={{ textAlign: "center", padding: 32, color: "var(--text-muted, #86868b)", fontSize: 13, background: "var(--surface-subtle, #fbfbfd)", borderRadius: 12, border: "1px dashed var(--border, #d2d2d7)" }}>
           Todavía no hay avances registrados en esta obra.
-          <div style={{ fontSize: 11.5, marginTop: 6 }}>
+          <div style={{ fontSize: 11.5, marginTop: 6, color: "var(--text-muted, #6e6e73)" }}>
             Dale a «Registrar avance del día» y sube las fotos de lo que se hizo.
           </div>
         </div>
@@ -178,22 +188,27 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
       {registros.map((registro, idx) => {
         const fotosConImagen = (registro.fotos || []).filter((f) => f.img).length;
         return (
-          <div key={registro.id} style={{ background: "var(--surface-subtle, #f8fafc)", border: "1px solid var(--border, #e2e8f0)", borderRadius: 12, padding: 16, marginBottom: 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#cc0000" }}>
-                Avance {idx + 1}
-                {registro.fecha && <span style={{ color: "var(--text-muted, #64748b)", fontWeight: 500 }}> · {fmtD(registro.fecha)}</span>}
-                <span style={{ color: "var(--text-subtle, #94a3b8)", fontWeight: 500 }}> · {fotosConImagen} foto(s)</span>
+          <div key={registro.id} style={{ background: "var(--surface-subtle, #fbfbfd)", border: "1px solid var(--border, #e5e5ea)", borderRadius: 14, padding: "16px 18px", marginBottom: 14, boxShadow: "0 1px 2px rgba(0,0,0,0.02)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, paddingBottom: 10, borderBottom: "1px solid var(--border, #f2f2f7)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, fontFamily: "monospace", color: "var(--text-main, #1d1d1f)", background: "var(--surface, #ffffff)", border: "1px solid var(--border, #e5e5ea)", padding: "2px 7px", borderRadius: 5 }}>
+                  Avance #{idx + 1}
+                </span>
+                {registro.fecha && <span style={{ color: "var(--text-main, #1d1d1f)", fontWeight: 600, fontSize: 12 }}>· {fmtD(registro.fecha)}</span>}
+                <span style={{ color: "var(--text-muted, #86868b)", fontSize: 11 }}>· {fotosConImagen} foto(s)</span>
               </div>
-              <button onClick={() => eliminarRegistro(registro)} style={{ background: "rgba(220, 38, 38, 0.15)", border: "none", color: "#f87171", borderRadius: 5, padding: "3px 10px", cursor: "pointer", fontSize: 11 }}>
-                × Eliminar
+              <button
+                onClick={() => eliminarRegistro(registro)}
+                style={{ background: "transparent", border: "none", color: "var(--text-muted, #86868b)", borderRadius: 6, padding: "3px 8px", cursor: "pointer", fontSize: 11.5, fontWeight: 500 }}
+              >
+                × Eliminar jornada
               </button>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "180px 1fr", gap: 12, marginBottom: 10 }}>
               <div>
                 <LBL>Fecha del trabajo</LBL>
-                <input type="date" value={registro.fecha} onChange={(e) => actualizarRegistro(registro.id, "fecha", e.target.value)} style={SI} />
+                <input type="date" value={registro.fecha} onChange={(e) => actualizarRegistro(registro.id, "fecha", e.target.value)} style={{ ...SI, background: "#ffffff", border: "1px solid var(--border, #d2d2d7)" }} />
               </div>
               <div>
                 <LBL>¿Qué se hizo?</LBL>
@@ -204,7 +219,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                   placeholder="Ej: Instalación de líneas de vida en cubierta norte"
                   spellCheck
                   lang="es"
-                  style={SI}
+                  style={{ ...SI, background: "#ffffff", border: "1px solid var(--border, #d2d2d7)" }}
                 />
               </div>
             </div>
@@ -223,11 +238,11 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                 value={registro.descripcion}
                 onChange={(e) => actualizarRegistro(registro.id, "descripcion", e.target.value)}
                 onBlur={(e) => acomodarTexto(registro.id, "descripcion", e.target.value)}
-                rows={6}
+                rows={5}
                 placeholder="Cuenta el proceso: cómo se hizo, con qué material, en qué parte de la obra. Este texto sale tal cual en el informe."
                 spellCheck
                 lang="es"
-                style={{ ...SI, resize: "vertical", minHeight: 130, lineHeight: 1.5, fontSize: 13 }}
+                style={{ ...SI, background: "#ffffff", border: "1px solid var(--border, #d2d2d7)", resize: "vertical", minHeight: 110, lineHeight: 1.5, fontSize: 13 }}
               />
             </div>
 
@@ -245,25 +260,25 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                 value={registro.observaciones}
                 onChange={(e) => actualizarRegistro(registro.id, "observaciones", e.target.value)}
                 onBlur={(e) => acomodarTexto(registro.id, "observaciones", e.target.value)}
-                rows={3}
+                rows={2}
                 placeholder="Ej: 1 línea de vida horizontal de 119 metros · quedó pendiente la señalización"
                 spellCheck
                 lang="es"
-                style={{ ...SI, resize: "vertical", minHeight: 72, lineHeight: 1.45, fontSize: 13 }}
+                style={{ ...SI, background: "#ffffff", border: "1px solid var(--border, #d2d2d7)", resize: "vertical", minHeight: 60, lineHeight: 1.45, fontSize: 13 }}
               />
             </div>
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
               <LBL>Fotos del avance</LBL>
-              <span style={{ fontSize: 10.5, color: "var(--text-subtle, #94a3b8)" }}>Se imprimen en el informe</span>
+              <span style={{ fontSize: 10.5, color: "var(--text-muted, #86868b)" }}>Se imprimen en el informe</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 140px), 1fr))", gap: 10, alignItems: "start", width: "100%", boxSizing: "border-box" }}>
               {(registro.fotos || []).map((foto, fi) => (
-                <div key={fi} style={{ background: "var(--surface, #fff)", border: "1px solid var(--border, #e2e8f0)", borderRadius: 8, overflow: "hidden" }}>
-                  <div style={{ background: "var(--surface-subtle, #f8fafc)", padding: 6, minHeight: 130, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div key={fi} style={{ background: "var(--surface, #fff)", border: "1px solid var(--border, #e5e5ea)", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.02)" }}>
+                  <div style={{ background: "var(--surface-subtle, #f8fafc)", padding: 6, minHeight: 120, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <img src={foto.img} alt="" style={{ width: "100%", height: "auto", maxHeight: 180, objectFit: "contain", display: "block", borderRadius: 4, background: "var(--surface, #fff)" }} />
                   </div>
-                  <div style={{ padding: "6px 8px", display: "flex", gap: 4, alignItems: "center" }}>
+                  <div style={{ padding: "6px 8px", display: "flex", gap: 4, alignItems: "center", background: "#fbfbfd" }}>
                     <input
                       value={foto.comentario || ""}
                       onChange={(e) => actualizarFoto(registro.id, fi, "comentario", e.target.value)}
@@ -274,12 +289,12 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                       placeholder={`Foto ${fi + 1}`}
                       spellCheck
                       lang="es"
-                      style={{ ...SI, fontSize: 11, padding: "3px 6px", flex: 1 }}
+                      style={{ ...SI, fontSize: 11, padding: "3px 6px", flex: 1, border: "1px solid var(--border, #d2d2d7)", borderRadius: 6, background: "#ffffff" }}
                     />
                     <button
                       onClick={() => quitarFoto(registro.id, fi)}
                       title="Eliminar foto"
-                      style={{ background: "rgba(220, 38, 38, 0.15)", border: "none", color: "#f87171", borderRadius: 6, width: 22, height: 22, cursor: "pointer", fontSize: 14, flexShrink: 0, lineHeight: 1 }}
+                      style={{ background: "transparent", border: "none", color: "var(--text-muted, #86868b)", borderRadius: 4, width: 20, height: 20, cursor: "pointer", fontSize: 14, flexShrink: 0, lineHeight: 1 }}
                     >
                       ×
                     </button>
@@ -290,7 +305,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
               <div
                 onClick={() => fotoRefs.current["lote-" + registro.id]?.click()}
                 style={{
-                  border: "2px dashed #f47c20",
+                  border: "2px dashed rgba(0, 0, 0, 0.16)",
                   borderRadius: 10,
                   minHeight: 140,
                   display: "flex",
@@ -298,14 +313,16 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                   alignItems: "center",
                   justifyContent: "center",
                   cursor: "pointer",
-                  background: "rgba(244, 124, 32, 0.08)",
-                  color: "#f47c20",
+                  background: "var(--surface-subtle, #fafafc)",
+                  color: "var(--text-main, #1d1d1f)",
                   fontWeight: 600,
-                  gap: 6,
+                  gap: 4,
+                  transition: "all 0.15s ease",
                 }}
               >
-                <span style={{ fontSize: 24, lineHeight: 1 }}>+</span>
-                <span style={{ fontSize: 12 }}>Agregar foto</span>
+                <span style={{ fontSize: 20, lineHeight: 1, color: "#1d1d1f" }}>+</span>
+                <span style={{ fontSize: 11.5, color: "#1d1d1f" }}>Agregar fotos</span>
+                <span style={{ fontSize: 9.5, color: "#86868b" }}>Cámara o galería</span>
               </div>
             </div>
 
@@ -331,10 +348,10 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
       })}
 
       {registros.length > 0 && (
-        <div style={{ background: "var(--surface-subtle, #f1f5f9)", borderRadius: 8, padding: "10px 14px", fontSize: 11.5, color: "var(--text-muted, #64748b)" }}>
-          Los cambios se guardan solos. {resumen.sinFotos > 0
-            ? `Ojo: ${resumen.sinFotos} registro(s) no tienen ninguna foto, y el informe se ve muy pobre sin registro fotográfico.`
-            : "Todos los registros tienen foto: el informe va a salir completo."}
+        <div style={{ background: "var(--surface-subtle, #fbfbfd)", border: "1px solid var(--border, #e5e5ea)", borderRadius: 10, padding: "10px 14px", fontSize: 11.5, color: "var(--text-muted, #6e6e73)" }}>
+          Los cambios se guardan solos automáticamente. {resumen.sinFotos > 0
+            ? `Atención: ${resumen.sinFotos} registro(s) no tienen ninguna foto adjunta.`
+            : "Todos los registros cuentan con soporte fotográfico completo."}
         </div>
       )}
     </div>

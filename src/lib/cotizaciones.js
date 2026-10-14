@@ -83,6 +83,21 @@ export function normalizeQuoteItem(item = {}, index = 0) {
   };
 }
 
+export function getTipoCotizacionLabel(tipo) {
+  if (!tipo) return "Línea de vida";
+  const t = String(tipo).trim().toLowerCase();
+  if (t === "linea_vida" || t === "lineas de vida" || t === "lineas_vida" || t === "lineasdevida") return "Línea de vida";
+  if (t === "puntos_anclaje" || t === "anclajes" || t === "punto_anclaje") return "Puntos de anclaje";
+  if (t === "obra_blanca") return "Obra blanca";
+  if (t === "estructuras_metalicas" || t === "estructuras metálicas") return "Estructuras metálicas";
+  if (t === "escaleras" || t === "escalera") return "Escaleras";
+  if (t === "sistemas_completos" || t === "sistemas completos") return "Sistemas completos";
+  if (t === "servicios" || t === "servicio") return "Servicios";
+  if (t === "caminaderos" || t === "caminadero") return "Caminaderos";
+  const str = String(tipo).trim();
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
 export function buildQuoteProposal(propuesta = {}, index = 0) {
   const items = Array.isArray(propuesta.items)
     ? propuesta.items.map((item, itemIndex) => normalizeQuoteItem(item, itemIndex))
@@ -399,7 +414,7 @@ export function getQuotePrintableProposals(baseQuote = {}){
       ut,
       iva,
       tot,
-      tipoLabel: quote.tipoCotizacion === "obra_blanca" ? "Obra blanca" : quote.tipoCotizacion === "puntos_anclaje" ? "Puntos de anclaje" : quote.tipoCotizacion === "estructuras_metalicas" ? "Estructuras metálicas" : "Línea de vida",
+      tipoLabel: getTipoCotizacionLabel(quote.tipoCotizacion),
       esObraBlanca: quote.tipoCotizacion === "obra_blanca" || quote.tipoCotizacion === "estructuras_metalicas",
       requerimientoCliente: String(quote.requerimientoCliente || "").trim(),
       alcancePropuesta: String(quote.propuestaAlcance || propuesta.alcance || "").trim(),

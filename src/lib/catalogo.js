@@ -169,7 +169,17 @@ export function buscarIndiceCategoriaCatalogo(catalogo, tipoCotizacion) {
       .replace(/[^a-z0-9]/g, "");
 
   const tipoNorm = normalizar(tipoCotizacion);
+  if (!tipoNorm) return 0;
 
+  // 1. Coincidencia directa exacta o parcial por nombre de categoría
+  for (let i = 0; i < catalogo.length; i++) {
+    const catNorm = normalizar(catalogo[i]?.categoria);
+    if (catNorm && (catNorm === tipoNorm || catNorm.includes(tipoNorm) || tipoNorm.includes(catNorm))) {
+      return i;
+    }
+  }
+
+  // 2. Mapeos semánticos expandidos para Ingeanclajes
   let palabrasClave = [];
   if (tipoNorm.includes("anclaje")) {
     palabrasClave = ["anclaje", "anclajes", "punto", "puntos"];
@@ -179,18 +189,26 @@ export function buscarIndiceCategoriaCatalogo(catalogo, tipoCotizacion) {
     palabrasClave = ["estructurasmetalicas", "estructuras", "metalicas"];
   } else if (tipoNorm.includes("blanca") || tipoNorm.includes("obra")) {
     palabrasClave = ["obrablanca", "obra", "blanca", "servicios"];
+  } else if (tipoNorm.includes("escaler")) {
+    palabrasClave = ["escalera", "escaleras"];
+  } else if (tipoNorm.includes("caminad") || tipoNorm.includes("pasarel")) {
+    palabrasClave = ["caminadero", "caminaderos", "pasarela", "pasarelas"];
+  } else if (tipoNorm.includes("sistema")) {
+    palabrasClave = ["sistemascompletos", "sistemas", "sistema"];
+  } else if (tipoNorm.includes("servicio")) {
+    palabrasClave = ["servicios", "servicio"];
   }
 
-  // 1. Coincidencia directa en el nombre de la categoría
-  for (let i = 0; i < catalogo.length; i++) {
-    const catNorm = normalizar(catalogo[i]?.categoria);
-    if (palabrasClave.some((kw) => catNorm.includes(kw) || kw.includes(catNorm))) {
-      return i;
-    }
-  }
-
-  // 2. Coincidencia secundaria: buscar en la descripción de los ítems de la categoría
+  // 3. Coincidencia con palabras clave en nombre de categoría
   if (palabrasClave.length) {
+    for (let i = 0; i < catalogo.length; i++) {
+      const catNorm = normalizar(catalogo[i]?.categoria);
+      if (palabrasClave.some((kw) => catNorm.includes(kw) || kw.includes(catNorm))) {
+        return i;
+      }
+    }
+
+    // 4. Coincidencia secundaria: buscar en la descripción de los ítems de la categoría
     for (let i = 0; i < catalogo.length; i++) {
       const items = catalogo[i]?.items || [];
       if (items.some((it) => {

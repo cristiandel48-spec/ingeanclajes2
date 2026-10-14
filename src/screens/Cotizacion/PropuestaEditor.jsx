@@ -14,7 +14,7 @@ import { measurementsToQuoteItems } from "../../lib/maps";
 import { fmt } from "../../lib/format";
 import { DEFAULT_COT_INCLUYE } from "../../data/seed";
 import { FOTO_PUNTO_ANCLAJE_DEFAULT } from "../../assets/embeddedImages";
-import { isFotoPuntoAnclajeDefault } from "../../lib/cotizaciones";
+import { isFotoPuntoAnclajeDefault, getTipoCotizacionLabel } from "../../lib/cotizaciones";
 
 // Editor de UNA propuesta. Todas las propuestas se muestran abiertas, una
 // debajo de otra, igual que salen en el documento.
@@ -55,6 +55,121 @@ export default function PropuestaEditor({
       }
     }
   }, [p?.tipoCotizacion, catalogo]);
+
+  const normalizarKey = (txt) =>
+    String(txt || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]/g, "");
+
+  // Lista dinámica de tipos de trabajo / sistemas obtenida directamente de las categorías del catálogo
+  const tiposTrabajo = useMemo(() => {
+    const list = [];
+    const vistos = new Set();
+
+    // 1. Cada categoría real que exista en el catálogo de servicios de Ingeanclajes
+    (catalogo || []).forEach((cat, idx) => {
+      const nombre = String(cat.categoria || "").trim();
+      if (!nombre) return;
+      const key = normalizarKey(nombre);
+      if (!vistos.has(key)) {
+        vistos.add(key);
+        list.push({
+          id: key,
+          label: nombre,
+          catIndex: idx,
+          rawCategoria: nombre,
+        });
+      }
+    });
+
+    // 2. Si no están en el catálogo, asegurar las opciones base
+    const estandares = [
+      { id: "linea_vida", label: "Líneas de vida", rawCategoria: "Lineas de Vida" },
+      { id: "puntos_anclaje", label: "Puntos de anclaje", rawCategoria: "Anclajes" },
+      { id: "estructuras_metalicas", label: "Estructuras metálicas", rawCategoria: "Estructuras Metálicas" },
+      { id: "obra_blanca", label: "Obra blanca", rawCategoria: "Obra blanca" },
+    ];
+
+    estandares.forEach((est) => {
+      const key = normalizarKey(est.id);
+      const labelKey = normalizarKey(est.label);
+      const rawKey = normalizarKey(est.rawCategoria);
+      if (!vistos.has(key) && !vistos.has(labelKey) && !vistos.has(rawKey)) {
+        vistos.add(key);
+        const idx = buscarIndiceCategoriaCatalogo(catalogo, est.rawCategoria);
+        list.push({
+          id: est.id,
+          label: est.label,
+          catIndex: idx >= 0 ? idx : 0,
+          rawCategoria: est.rawCategoria,
+        });
+      }
+    });
+
+    return list;
+  }, [catalogo]);
+
+  const esTipoActivo = (tipo) => {
+    const act = normalizarKey(p?.tipoCotizacion);
+    if (!act) return tipo.catIndex === 0;
+    const tipoId = normalizarKey(tipo.id);
+    const tipoLabel = normalizarKey(tipo.label);
+    const tipoRaw = normalizarKey(tipo.rawCategoria);
+    if (act === tipoId || act === tipoLabel || act === tipoRaw) return true;
+    if (act.includes("linea") && (tipoId.includes("linea") || tipoLabel.includes("linea"))) return true;
+    if (act.includes("anclaje") && (tipoId.includes("anclaje") || tipoLabel.includes("anclaje"))) return true;
+    if (act.includes("estructura") && (tipoId.includes("estructura") || tipoLabel.includes("estructura"))) return true;
+    if (act.includes("blanca") && (tipoId.includes("blanca") || tipoLabel.includes("blanca"))) return true;
+    if (act.includes("escaler") && (tipoId.includes("escaler") || tipoLabel.includes("escaler"))) return true;
+    if (act.includes("caminad") && (tipoId.includes("caminad") || tipoLabel.includes("caminad"))) return true;
+    if (act.includes("sistema") && (tipoId.includes("sistema") || tipoLabel.includes("sistema"))) return true;
+    if (act.includes("servicio") && (tipoId.includes("servicio") || tipoLabel.includes("servicio"))) return true;
+    return false;
+  };
+
+  const labelTipoActual = useMemo(() => {
+    if (!p.tipoCotizacion) return "Línea de vida";
+    const act = tiposTrabajo.find((t) => esTipoActivo(t));
+    if (act) return act.label;
+    return getTipoCotizacionLabel(p.tipoCotizacion);
+  }, [p.tipoCotizacion, tiposTrabajo]);
+
+  const seleccionarTipoTrabajo = (tipo) => {
+    const idx = tipo.catIndex >= 0 && tipo.catIndex < catalogo.length
+      ? tipo.catIndex
+      : buscarIndiceCategoriaCatalogo(catalogo, tipo.rawCategoria || tipo.label || tipo.id);
+    if (idx >= 0 && idx < catalogo.length) {
+      setDbCat(idx);
+    }
+    setShowDB(true);
+
+    const fotosActuales = Array.isArray(p.fotos) ? p.fotos : [];
+    const esAnclaje = normalizarKey(tipo.id).includes("anclaje") || normalizarKey(tipo.label).includes("anclaje");
+
+    if (esAnclaje) {
+      const tieneFoto = fotosActuales.some(isFotoPuntoAnclajeDefault);
+      const fotosSinDefault = fotosActuales.filter((f) => !isFotoPuntoAnclajeDefault(f));
+      onChange({
+        tipoCotizacion: tipo.id,
+        fotos: tieneFoto ? fotosActuales : [
+          {
+            id: "foto-def-punto-anclaje",
+            src: FOTO_PUNTO_ANCLAJE_DEFAULT,
+            label: "Punto de anclaje certificado",
+          },
+          ...fotosSinDefault,
+        ],
+      });
+    } else {
+      const fotosSinAnclaje = fotosActuales.filter((f) => !isFotoPuntoAnclajeDefault(f));
+      onChange({
+        tipoCotizacion: tipo.id,
+        fotos: fotosSinAnclaje,
+      });
+    }
+  };
 
   const set = (campo, valor) => onChange({ [campo]: valor });
 
@@ -174,7 +289,7 @@ export default function PropuestaEditor({
             Propuesta {indice + 1} de {totalPropuestas}
           </div>
           <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #101828)" }}>
-            {p.tipoCotizacion === "linea_vida" ? "Línea de vida" : p.tipoCotizacion === "puntos_anclaje" ? "Puntos de anclaje" : p.tipoCotizacion === "obra_blanca" ? "Obra blanca" : p.tipoCotizacion === "estructuras_metalicas" ? "Estructuras metálicas" : `Propuesta ${indice + 1}`}
+            {labelTipoActual}
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -207,55 +322,27 @@ export default function PropuestaEditor({
 
         {/* 1. Tipo de trabajo / propuesta */}
         <div style={{ marginBottom: 18 }}>
-          <LBL>Tipo de trabajo / sistema</LBL>
-          <div style={{ display: "flex", gap: 8, maxWidth: 720, flexWrap: "wrap" }}>
-            {[
-              ["linea_vida", "Línea de vida"],
-              ["puntos_anclaje", "Puntos de anclaje"],
-              ["obra_blanca", "Obra blanca"],
-              ["estructuras_metalicas", "Estructuras metálicas"],
-            ].map(([v, l]) => {
-              const activo = p.tipoCotizacion === v;
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <LBL style={{ margin: 0 }}>Tipo de trabajo / sistema</LBL>
+            <span style={{ fontSize: 11, color: "var(--text-muted, #86868b)" }}>
+              Selecciona el sistema para ver sus ítems en el catálogo rápido
+            </span>
+          </div>
+          <div style={{ display: "flex", gap: 8, maxWidth: "100%", flexWrap: "wrap" }}>
+            {tiposTrabajo.map((tipo) => {
+              const activo = esTipoActivo(tipo);
               return (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => {
-                      const idx = buscarIndiceCategoriaCatalogo(catalogo, v);
-                      if (idx >= 0 && idx < catalogo.length) {
-                        setDbCat(idx);
-                      }
-                      setShowDB(true);
-                      const fotosActuales = Array.isArray(fotos) ? fotos : [];
-                      if (v === "puntos_anclaje") {
-                        const tieneFoto = fotosActuales.some(isFotoPuntoAnclajeDefault);
-                        const fotosSinDefault = fotosActuales.filter((f) => !isFotoPuntoAnclajeDefault(f));
-                        onChange({
-                          tipoCotizacion: v,
-                          fotos: tieneFoto ? fotosActuales : [
-                            {
-                              id: "foto-def-punto-anclaje",
-                              src: FOTO_PUNTO_ANCLAJE_DEFAULT,
-                              label: "Punto de anclaje certificado",
-                            },
-                            ...fotosSinDefault,
-                          ],
-                        });
-                      } else {
-                        const fotosSinAnclaje = fotosActuales.filter((f) => !isFotoPuntoAnclajeDefault(f));
-                        onChange({
-                          tipoCotizacion: v,
-                          fotos: fotosSinAnclaje,
-                        });
-                      }
-                    }}
+                <button
+                  key={tipo.id}
+                  type="button"
+                  onClick={() => seleccionarTipoTrabajo(tipo)}
                   style={{
-                    flex: "1 1 140px",
+                    flex: "0 0 auto",
                     justifyContent: "center",
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 6,
-                    padding: "8px 14px",
+                    padding: "7px 14px",
                     borderRadius: 10,
                     fontSize: 12,
                     fontWeight: activo ? 700 : 500,
@@ -268,7 +355,7 @@ export default function PropuestaEditor({
                     boxShadow: activo ? "0 2px 6px rgba(0,0,0,0.12)" : "none",
                   }}
                 >
-                  {l}
+                  {tipo.label}
                 </button>
               );
             })}
@@ -847,25 +934,40 @@ export default function PropuestaEditor({
               </div>
 
               <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
-                {catalogo.map((cat,i)=>(
-                  <button
-                    key={i}
-                    onClick={()=>setDbCat(i)}
-                    style={{
-                      background: dbCat === i ? "var(--text-main, #1d1d1f)" : "var(--surface, #ffffff)",
-                      color: dbCat === i ? "#ffffff" : "var(--text-muted, #6e6e73)",
-                      border: dbCat === i ? "1px solid var(--text-main, #1d1d1f)" : "1px solid var(--border, rgba(0,0,0,0.1))",
-                      borderRadius: 8,
-                      fontSize: 11.5,
-                      fontWeight: dbCat === i ? 700 : 500,
-                      padding: "5px 12px",
-                      cursor: "pointer",
-                      transition: "all 0.15s ease",
-                    }}
-                  >
-                    {cat.categoria}
-                  </button>
-                ))}
+                {catalogo.map((cat, i) => {
+                  const esActivo = dbCat === i;
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => {
+                        setDbCat(i);
+                        const tipoCoincidente = tiposTrabajo.find(
+                          (t) =>
+                            t.catIndex === i ||
+                            normalizarKey(t.rawCategoria) === normalizarKey(cat.categoria) ||
+                            normalizarKey(t.label) === normalizarKey(cat.categoria)
+                        );
+                        if (tipoCoincidente) {
+                          seleccionarTipoTrabajo(tipoCoincidente);
+                        }
+                      }}
+                      style={{
+                        background: esActivo ? "var(--text-main, #1d1d1f)" : "var(--surface, #ffffff)",
+                        color: esActivo ? "#ffffff" : "var(--text-muted, #6e6e73)",
+                        border: esActivo ? "1px solid var(--text-main, #1d1d1f)" : "1px solid var(--border, rgba(0,0,0,0.1))",
+                        borderRadius: 8,
+                        fontSize: 11.5,
+                        fontWeight: esActivo ? 700 : 500,
+                        padding: "5px 12px",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                      }}
+                    >
+                      {cat.categoria}
+                    </button>
+                  );
+                })}
               </div>
 
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))",gap:8}}>

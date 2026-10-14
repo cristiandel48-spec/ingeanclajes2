@@ -8,7 +8,7 @@ import {
   UMBRAL_POR_VENCER,
 } from "../../lib/seguimientoCotizaciones";
 import { getQuoteActiveProposal } from "../../lib/cotizaciones";
-import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { useMediaQuery, useIsMobile } from "../../hooks/useMediaQuery";
 
 const ORDENES = [
   {
@@ -630,6 +630,7 @@ function BotonSegmentado({ activo, onClick, label }) {
 }
 
 function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
+  const isMobile = useIsMobile();
   const [hover, setHover] = useState(false);
   const activa = getQuoteActiveProposal(c);
 

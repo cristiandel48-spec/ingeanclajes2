@@ -1,21 +1,16 @@
+import { lazy, Suspense } from "react";
 import { AppDataProvider, useAppData } from "./context/AppDataContext";
 import AppShell from "./components/layout/AppShell";
 import { AccionesPantallaProvider } from "./context/accionesPantalla";
 import { pantallaInicial, puedeVer } from "./lib/permisos";
 import Dashboard from "./screens/Dashboard/Dashboard";
 import Cotizacion from "./screens/Cotizacion/Cotizacion";
-import RadarObras from "./screens/Radar/RadarObras";
 import ClientesDB from "./screens/Clientes/ClientesDB";
 import Catalogo from "./screens/Catalogo/Catalogo";
-import Pagos from "./screens/Pagos/Pagos";
 import Obras from "./screens/Obras/Obras";
 import FototecaScreen from "./screens/Fototeca/FototecaScreen";
 import Certificaciones from "./screens/Certificaciones/Certificaciones";
 import Informes from "./screens/Informes/Informes";
-import CuentasPagar from "./screens/CuentasPagar/CuentasPagar";
-import Contabilidad from "./screens/Contabilidad/Contabilidad";
-import Financiero from "./screens/Financiero/Financiero";
-import Nomina from "./screens/Nomina/Nomina";
 import Horarios from "./screens/Horarios/Horarios";
 import Vencimientos from "./screens/Vencimientos/Vencimientos";
 import Usuarios from "./screens/Usuarios/Usuarios";
@@ -26,6 +21,14 @@ import Agenda from "./screens/Agenda/Agenda";
 import BotonSoporteFlotante from "./components/soporte/BotonSoporteFlotante";
 import NotificadorMensajesGlobal from "./components/notificaciones/NotificadorMensajesGlobal";
 import AvisoInteligenteAgenda from "./components/agenda/AvisoInteligenteAgenda";
+
+// Pantallas desactivadas del menú cargadas bajo demanda para no ralentizar el programa
+const RadarObras = lazy(() => import("./screens/Radar/RadarObras"));
+const Pagos = lazy(() => import("./screens/Pagos/Pagos"));
+const CuentasPagar = lazy(() => import("./screens/CuentasPagar/CuentasPagar"));
+const Contabilidad = lazy(() => import("./screens/Contabilidad/Contabilidad"));
+const Financiero = lazy(() => import("./screens/Financiero/Financiero"));
+const Nomina = lazy(() => import("./screens/Nomina/Nomina"));
 
 // Registro de pantallas. Las claves coinciden con los `id` de
 // config/navigation.jsx: para sumar una pantalla se agrega aqui y alli.
@@ -149,7 +152,9 @@ function AppRoot() {
 
   return (
     <AppShell scr={destino} onNavigate={setScr}>
-      <Screen ctx={ctx} go={setScr} />
+      <Suspense fallback={<div style={{ padding: 32, textAlign: "center", color: "var(--text-muted, #64748b)", fontSize: 13 }}>Cargando módulo…</div>}>
+        <Screen ctx={ctx} go={setScr} />
+      </Suspense>
       <NotificadorMensajesGlobal onIrASoporte={() => setScr("soporte")} />
       <AvisoInteligenteAgenda onIrAAgenda={() => setScr("agenda")} />
       {destino !== "soporte" && <BotonSoporteFlotante />}

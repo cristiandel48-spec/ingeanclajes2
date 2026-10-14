@@ -52,7 +52,6 @@ export const NAV_SECTIONS = [
     items: [
       { id: "agenda", label: "Agenda y visitas", short: "Agenda" },
       { id: "cotizacion", label: "Cotizaciones" },
-      { id: "radar", label: "Radar de licitaciones", short: "Radar" },
       { id: "clientes", label: "Clientes" },
       // Los precios de los que salen todas las cotizaciones.
       { id: "catalogo", label: "Catálogo y precios", short: "Catálogo" },
@@ -71,17 +70,6 @@ export const NAV_SECTIONS = [
       { id: "informes", label: "Informes de actividades", short: "Informes" },
       { id: "certificaciones", label: "Certificaciones" },
       { id: "vencimientos", label: "Vencimientos" },
-    ],
-  },
-  {
-    title: "Administración",
-    items: [
-      // Cobrar y pagar quedan juntos, que es como se revisa la plata.
-      { id: "pagos", label: "Cuentas por cobrar", short: "Por cobrar" },
-      { id: "proveedores", label: "Causación / facturas", short: "Causación" },
-      { id: "contabilidad", label: "Contabilidad" },
-      { id: "nomina", label: "Nómina y empleados", short: "Nómina" },
-      { id: "financiero", label: "Informe financiero", short: "Financiero" },
     ],
   },
   {

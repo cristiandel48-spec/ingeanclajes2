@@ -14,35 +14,42 @@ export default function MenuUsuario({ theme, compact = false }) {
   const [saliendo, setSaliendo] = useState(false);
   const [cambiandoClave, setCambiandoClave] = useState(false);
   const contenedorRef = useRef(null);
-  const { membresia, agenda } = useAppData();
-
-  // Se muestra el nombre de la persona; si proviene de la cuenta técnica histórica se muestra Camila Sepúlveda
-  const nombreLimpio = useMemo(() => {
-    const n = membresia?.nombre?.trim() || "";
-    if (!n || n.toLowerCase().includes("cristian")) return "Camila Sepúlveda";
-    return n;
-  }, [membresia?.nombre]);
-
-  const correoLimpio = useMemo(() => {
-    if (!correo) return "";
-    if (correo.toLowerCase().includes("cristian") || correo.toLowerCase().includes("cristiandel48")) {
-      return "administracion@ingeanclajes.com";
-    }
-    return correo;
-  }, [correo]);
-
-  const titulo = nombreLimpio || correoLimpio || "Camila Sepúlveda";
-  const subtitulo = membresia?.role ? (ROL_LABEL[membresia.role] || "Ingeanclajes") : "Ingeanclajes";
+  const { membresia, agenda, authUserEmail, esSuperAdminCristian } = useAppData();
 
   useEffect(() => {
     if (!backend.isSupabaseConfigured()) return;
     let activo = true;
     backend
       .getSessionUser()
-      .then((usuario) => { if (activo) setCorreo(usuario?.email || ""); })
+      .then((usuario) => { if (activo && usuario?.email) setCorreo(usuario.email); })
       .catch(() => { /* sin sesion: se deja vacio */ });
     return () => { activo = false; };
   }, []);
+
+  const correoActivo = correo || membresia?.email || authUserEmail || "";
+
+  // Se muestra el nombre real de la persona conectada
+  const nombreUsuario = useMemo(() => {
+    const n = membresia?.nombre?.trim();
+    if (n) return n;
+    if (correoActivo) {
+      const emailLower = correoActivo.toLowerCase();
+      if (emailLower.includes("cristian") || emailLower.includes("cristiandel48")) {
+        return "Cristian Flórez";
+      }
+      if (emailLower.includes("camila")) {
+        return "Camila Sepúlveda";
+      }
+      const parte = correoActivo.split("@")[0].replace(/[._-]/g, " ");
+      return parte.charAt(0).toUpperCase() + parte.slice(1);
+    }
+    return "";
+  }, [membresia?.nombre, correoActivo]);
+
+  const titulo = nombreUsuario || correoActivo || "Usuario";
+  const subtitulo = membresia?.role
+    ? (ROL_LABEL[membresia.role] || "Ingeanclajes")
+    : (esSuperAdminCristian || correoActivo.toLowerCase().includes("cristian") ? "Super Administrador" : "Ingeanclajes");
 
   // Cierra el menu al hacer clic fuera o con Escape.
   useEffect(() => {
@@ -105,10 +112,10 @@ export default function MenuUsuario({ theme, compact = false }) {
     ejecutarCerrarSesion();
   };
 
-  // Iniciales del nombre ("Camila Sepúlveda" -> "CS").
-  const iniciales = nombreLimpio
-    ? nombreLimpio.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase()
-    : "CS";
+  // Iniciales del nombre ("Cristian Flórez" -> "CF", "Camila Sepúlveda" -> "CS").
+  const iniciales = nombreUsuario
+    ? nombreUsuario.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase()
+    : (correoActivo ? correoActivo.slice(0, 2).toUpperCase() : "U");
 
   return (
     <div ref={contenedorRef} style={{ position: "relative", flexShrink: 0 }}>
@@ -159,7 +166,7 @@ export default function MenuUsuario({ theme, compact = false }) {
               Sesión activa
             </div>
             <div style={{ fontSize: 12.5, color: theme.text, marginTop: 4, wordBreak: "break-all" }}>
-              {correoLimpio || "Sin sesión de Supabase"}
+              {correoActivo || "Sin sesión de Supabase"}
             </div>
           </div>
 

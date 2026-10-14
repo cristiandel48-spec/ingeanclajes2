@@ -332,7 +332,10 @@ export function AppDataProvider({ children }) {
         // El rol decide que ve la persona, asi que se pide junto con los datos.
         try {
           const mia = await getMiMembresia();
-          if (!cancel) setMembresia(mia);
+          if (!cancel) {
+            setMembresia(mia);
+            if (mia?.email) setAuthUserEmail(mia.email);
+          }
         } catch (error) {
           console.error("No se pudo leer el rol del usuario:", error);
         }
@@ -685,6 +688,7 @@ export function AppDataProvider({ children }) {
     empresaConfig, setEmpresaConfig,
     catalogoItems, setCatalogoItems,
     membresia,
+    authUserEmail,
     // Presencia y control remoto exclusivo (cristiandel48@gmail.com)
     usuariosEnLinea,
     ultimasConexiones,

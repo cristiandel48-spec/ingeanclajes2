@@ -29,11 +29,15 @@ export default function Dashboard({ ctx, go }) {
   const horaActual = new Date().getHours();
   const saludo =
     horaActual < 12 ? "Buenos días" : horaActual < 18 ? "Buenas tardes" : "Buenas noches";
-  const primerNombre = (membresia?.nombre || "").split(" ")[0] || "";
+  const authEmail = (ctx?.authUserEmail || ctx?.membresia?.email || "").toLowerCase();
+  const primerNombre = (membresia?.nombre || "").trim().split(" ")[0] || "";
   const nombreUsuario =
-    primerNombre.toLowerCase().includes("cristian") || !primerNombre
+    primerNombre ||
+    (authEmail.includes("cristian")
+      ? "Cristian"
+      : authEmail.includes("camila")
       ? "Camila"
-      : primerNombre;
+      : "Equipo");
 
   const obrasActivas = obras.filter(
     (o) => o.estado !== "Cancelada" && o.estado !== "Finalizado" && o.estado !== "Terminada"

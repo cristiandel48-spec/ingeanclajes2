@@ -34,7 +34,7 @@ export default function PropuestaEditor({
   setCl,
 }) {
   const p = propuesta;
-  const [showDB, setShowDB] = useState(false);
+  const [showDB, setShowDB] = useState(() => (Array.isArray(propuesta?.items) ? propuesta.items.length === 0 : true));
   // El catalogo sale de la base; si todavia no hay nada guardado, del codigo.
   const { catalogoItems } = useAppData();
   const catalogo = useMemo(() => agruparCatalogo(catalogoItems), [catalogoItems]);
@@ -43,11 +43,16 @@ export default function PropuestaEditor({
   const categoria = catalogo[dbCat] || catalogo[0] || { items: [] };
   const fotosRef = useRef();
 
-  // Sincronizar automáticamente la categoría del catálogo con el tipo de propuesta
+  // Sincronizar automáticamente la categoría del catálogo y mostrar el catálogo al cambiar el tipo de propuesta
+  const tipoCotizacionAnteriorRef = useRef(p?.tipoCotizacion);
   useEffect(() => {
     if (catalogo.length && p?.tipoCotizacion) {
       const idx = buscarIndiceCategoriaCatalogo(catalogo, p.tipoCotizacion);
       setDbCat(idx);
+      if (tipoCotizacionAnteriorRef.current !== p.tipoCotizacion) {
+        setShowDB(true);
+        tipoCotizacionAnteriorRef.current = p.tipoCotizacion;
+      }
     }
   }, [p?.tipoCotizacion, catalogo]);
 
@@ -220,6 +225,7 @@ export default function PropuestaEditor({
                       if (idx >= 0 && idx < catalogo.length) {
                         setDbCat(idx);
                       }
+                      setShowDB(true);
                       const fotosActuales = Array.isArray(fotos) ? fotos : [];
                       if (v === "puntos_anclaje") {
                         const tieneFoto = fotosActuales.some(isFotoPuntoAnclajeDefault);

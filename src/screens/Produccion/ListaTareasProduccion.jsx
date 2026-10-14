@@ -65,6 +65,7 @@ export function calcularVigenciaTarea(fechaLimite) {
 export default function ListaTareasProduccion({
   tareas = [],
   obras = [],
+  empleados = [],
   obraInicial = "todas",
   onVerTarea,
   onNuevaTarea,
@@ -72,7 +73,7 @@ export default function ListaTareasProduccion({
   usuarioActual = "Camila",
 }) {
   const isMobile = useIsMobile();
-  const [vista, setVista] = useState("personas"); // "personas" | "kanban" | "radar" | "tabla"
+  const [vista, setVista] = useState("personas"); // "personas" | "radar" | "kanban" | "tabla"
   const [busqueda, setBusqueda] = useState("");
   const [filtroResponsable, setFiltroResponsable] = useState("todos");
   const [filtroObra, setFiltroObra] = useState(obraInicial || "todas");
@@ -97,14 +98,18 @@ export default function ListaTareasProduccion({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Lista única de colaboradores que tienen tareas
+  // Lista única de colaboradores que tienen tareas o pertenecen al equipo
   const colaboradores = useMemo(() => {
     const set = new Set(["Paola", "Camila", "Carlos Restrepo"]);
+    (empleados || []).forEach((e) => {
+      const nom = (e.nombre || e.nombreCompleto || "").trim();
+      if (nom) set.add(nom);
+    });
     (tareas || []).forEach((t) => {
       if (t.responsable) set.add(t.responsable);
     });
     return Array.from(set);
-  }, [tareas]);
+  }, [tareas, empleados]);
 
   // Conteos por persona
   const conteoPorPersona = useMemo(() => {
@@ -201,14 +206,14 @@ export default function ListaTareasProduccion({
               label="👥 Por Colaborador"
             />
             <BotonSegmentado
+              activo={vista === "radar"}
+              onClick={() => setVista("radar")}
+              label="🎯 Lo que delegué (Camila)"
+            />
+            <BotonSegmentado
               activo={vista === "kanban"}
               onClick={() => setVista("kanban")}
               label="📊 Por Estado"
-            />
-            <BotonSegmentado
-              activo={vista === "radar"}
-              onClick={() => setVista("radar")}
-              label="🎯 Mi Radar (Camila)"
             />
             <BotonSegmentado
               activo={vista === "tabla"}
@@ -367,6 +372,14 @@ export default function ListaTareasProduccion({
             .filter((c) => filtroResponsable === "todos" || filtroResponsable === c)
             .map((persona) => {
               const tareasPersona = tareasFiltradas.filter((t) => t.responsable === persona);
+              const pendientesPersona = tareasPersona.filter((t) => t.estado !== "completada");
+              const empInfo = (empleados || []).find((e) => (e.nombre || e.nombreCompleto) === persona);
+              const rolPersona = persona === "Paola"
+                ? "Coordinación & Compras"
+                : persona === "Camila"
+                ? "Dirección & Aprobaciones"
+                : (empInfo?.cargo || empInfo?.rol || "Técnico en obra");
+
               return (
                 <div
                   key={persona}
@@ -396,11 +409,7 @@ export default function ListaTareasProduccion({
                           {persona}
                         </div>
                         <div style={{ fontSize: 11, color: "var(--text-muted, #6e6e73)" }}>
-                          {persona === "Paola"
-                            ? "Coordinación & Compras"
-                            : persona === "Camila"
-                            ? "Dirección & Aprobaciones"
-                            : "Técnico / Instalador"}
+                          {rolPersona}
                         </div>
                       </div>
                     </div>
@@ -409,14 +418,39 @@ export default function ListaTareasProduccion({
                         fontSize: 11,
                         fontWeight: 700,
                         padding: "2px 8px",
-                        background: "rgba(0,0,0,0.06)",
+                        background: pendientesPersona.length > 0 ? "rgba(245, 158, 11, 0.15)" : "rgba(16, 185, 129, 0.15)",
+                        color: pendientesPersona.length > 0 ? "#b45309" : "#047857",
                         borderRadius: 10,
-                        color: "var(--text-main, #1d1d1f)",
                       }}
                     >
-                      {tareasPersona.length}
+                      {pendientesPersona.length} pend.
                     </span>
                   </div>
+
+                  {/* Botón rápido superior para asignar tarea directamente */}
+                  <button
+                    type="button"
+                    onClick={() => onNuevaTarea(persona)}
+                    style={{
+                      background: "#ffffff",
+                      color: "var(--text-main, #1d1d1f)",
+                      border: "1px solid var(--border, rgba(0,0,0,0.12))",
+                      borderRadius: 10,
+                      padding: "7px 10px",
+                      fontSize: 11.5,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 5,
+                      boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    <span>+</span>
+                    <span>Asignar tarea a {persona.split(" ")[0]}</span>
+                  </button>
 
                   {/* Tarjetas de Tareas */}
                   {tareasPersona.length === 0 ? (
@@ -597,9 +631,27 @@ export default function ListaTareasProduccion({
                   Tareas que Camila le delegó al equipo
                 </span>
               </div>
-              <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 7px", background: "#f5f5f7", borderRadius: 10 }}>
-                {tareas.filter((t) => t.responsable !== "Camila" && t.estado !== "completada").length} activas
-              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 7px", background: "#f5f5f7", borderRadius: 10 }}>
+                  {tareas.filter((t) => t.responsable !== "Camila" && t.estado !== "completada").length} activas
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onNuevaTarea("Paola")}
+                  style={{
+                    background: "#1d1d1f",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "4px 9px",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  + Asignar
+                </button>
+              </div>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -985,16 +1037,54 @@ function TarjetaTareaApple({ tarea: t, onClick, onCambiarEstado, mostrarResponsa
         ) : null}
       </div>
 
-      {/* Título */}
-      <div
-        style={{
-          fontSize: 13.5,
-          fontWeight: 600,
-          color: "var(--text-main, #1d1d1f)",
-          lineHeight: 1.35,
-        }}
-      >
-        {t.titulo}
+      {/* Fila Principal con Checkbox Apple y Título */}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
+        <button
+          type="button"
+          title={t.estado === "completada" ? "Marcar como pendiente" : "Marcar como completada"}
+          onClick={(e) => {
+            e.stopPropagation();
+            onCambiarEstado?.(t.id, t.estado === "completada" ? "por_hacer" : "completada");
+          }}
+          style={{
+            width: 18,
+            height: 18,
+            borderRadius: "50%",
+            border: `1.8px solid ${t.estado === "completada" ? "#10b981" : "#d1d5db"}`,
+            background: t.estado === "completada" ? "#10b981" : "transparent",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 0,
+            marginTop: 2,
+            flexShrink: 0,
+            transition: "all 0.15s ease",
+          }}
+        >
+          {t.estado === "completada" && (
+            <span style={{ color: "#ffffff", fontSize: 11, fontWeight: 800 }}>✓</span>
+          )}
+        </button>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              fontSize: 13.5,
+              fontWeight: 600,
+              color: t.estado === "completada" ? "var(--text-subtle, #86868b)" : "var(--text-main, #1d1d1f)",
+              textDecoration: t.estado === "completada" ? "line-through" : "none",
+              lineHeight: 1.35,
+            }}
+          >
+            {t.titulo}
+          </div>
+          {t.asignadoPor && (
+            <div style={{ fontSize: 10.5, color: "var(--text-subtle, #86868b)", marginTop: 2 }}>
+              Delegada por: <strong>{t.asignadoPor}</strong>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Descripción corta */}

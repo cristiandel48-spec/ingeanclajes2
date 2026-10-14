@@ -340,7 +340,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             <span>Fototeca y ZIP</span>
           </button>
 
-          {/* Botón TAREAS DE PRODUCCIÓN */}
+          {/* Botón TAREAS CON EL EQUIPO */}
           <button
             onClick={() => irAPantalla("produccion", { obraId: oAct.id })}
             style={{
@@ -361,10 +361,10 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               width: isMobile ? "100%" : "auto",
               boxSizing: "border-box",
             }}
-            title="Ver o asignar tareas de producción para esta obra"
+            title="Ver o asignar tareas con el equipo para esta obra"
           >
-            <span>📋</span>
-            <span>Tareas</span>
+            <span>👥</span>
+            <span>Tareas con el equipo</span>
           </button>
 
           {/* Botón QUÉ SIGUE */}

@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import H1 from "../../components/ui/H1";
-import { B } from "../../styles/tokens";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import ListaTareasProduccion from "./ListaTareasProduccion";
 import ModalTareaProduccion from "./ModalTareaProduccion";
@@ -95,33 +93,66 @@ export default function Produccion({ ctx = {} }) {
         fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
       }}
     >
-      {/* Encabezado Principal Apple */}
-      <H1
-        eyebrow="CONTROL OPERATIVO Y EQUIPO"
-        title="Gestión de Producción"
-        subtitle={`${tareas.length} tarea(s) en seguimiento · Asignación, avances de obra y control de pendientes del equipo`}
-        action={
-          <button
-            type="button"
+      {/* Cabecera compacta estilo Apple */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 12,
+          marginBottom: 16,
+          flexWrap: "wrap",
+        }}
+      >
+        <div>
+          <div
             style={{
-              ...B("#1d1d1f"),
-              boxShadow: "0 1px 3px rgba(0, 0, 0, 0.12)",
-              borderRadius: 10,
-              padding: "8px 16px",
-              fontSize: 12.5,
-              fontWeight: 600,
+              fontSize: 18,
+              fontWeight: 700,
+              color: "var(--text-main, #1d1d1f)",
+              letterSpacing: "-0.02em",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
             }}
-            onClick={() => abrirNuevaTarea("Paola")}
           >
-            + Nueva Tarea
-          </button>
-        }
-      />
+            <span>👥</span>
+            <span>Tareas con el equipo</span>
+          </div>
+          <div style={{ fontSize: 12, color: "var(--text-muted, #6e6e73)", marginTop: 2 }}>
+            Asigna tareas a tus colaboradores, define fechas límite y revisa pendientes en tiempo real
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => abrirNuevaTarea("Paola")}
+          style={{
+            background: "#1d1d1f",
+            color: "#ffffff",
+            border: "none",
+            borderRadius: 10,
+            padding: "8px 16px",
+            fontSize: 12.5,
+            fontWeight: 600,
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            boxShadow: "0 1px 3px rgba(0, 0, 0, 0.12)",
+            transition: "all 0.15s ease",
+          }}
+        >
+          <span>+</span>
+          <span>Asignar Tarea al Equipo</span>
+        </button>
+      </div>
 
       {/* Tableros y Listas de Tareas */}
       <ListaTareasProduccion
         tareas={tareas}
         obras={obras}
+        empleados={empleados}
         obraInicial={ctx.intencion?.obraId || "todas"}
         onVerTarea={abrirEditarTarea}
         onNuevaTarea={abrirNuevaTarea}

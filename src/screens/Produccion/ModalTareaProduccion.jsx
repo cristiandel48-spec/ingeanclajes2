@@ -185,10 +185,10 @@ ${form.descripcion ? `Detalles: ${form.descripcion}` : ""}`;
                 color: "var(--text-subtle, #86868b)",
               }}
             >
-              GESTIÓN DE PRODUCCIÓN Y OBRA
+              TAREAS CON EL EQUIPO
             </div>
             <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-main, #1d1d1f)" }}>
-              {tarea ? "Editar Tarea" : "Nueva Tarea de Producción"}
+              {tarea ? "Editar Tarea del Equipo" : "Asignar Tarea al Equipo"}
             </div>
           </div>
           <button
@@ -219,7 +219,7 @@ ${form.descripcion ? `Detalles: ${form.descripcion}` : ""}`;
               type="text"
               value={form.titulo}
               onChange={(e) => setForm({ ...form, titulo: e.target.value })}
-              placeholder="Ej: Comprar 6 anclajes químicos Hilti o Radicar informe"
+              placeholder="Ej: Pedir cotización de pernos o Radicar informe Creafam"
               autoFocus
               style={{
                 width: "100%",
@@ -240,8 +240,39 @@ ${form.descripcion ? `Detalles: ${form.descripcion}` : ""}`;
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
             <div>
               <label style={{ display: "block", fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: "var(--text-muted, #6e6e73)", marginBottom: 6 }}>
-                Asignar a (Responsable)
+                Asignar a (Colaborador)
               </label>
+
+              {/* Píldoras rápidas de asignación directa */}
+              <div style={{ display: "flex", gap: 5, marginBottom: 8, flexWrap: "wrap" }}>
+                {["Paola", "Carlos Restrepo", "Camila"].map((nombre) => {
+                  const sel = form.responsable === nombre;
+                  return (
+                    <button
+                      key={nombre}
+                      type="button"
+                      onClick={() => setForm((p) => ({ ...p, responsable: nombre }))}
+                      style={{
+                        background: sel ? "#1d1d1f" : "var(--surface-subtle, #f5f5f7)",
+                        color: sel ? "#ffffff" : "var(--text-main, #1d1d1f)",
+                        border: `1px solid ${sel ? "#1d1d1f" : "var(--border, rgba(0,0,0,0.12))"}`,
+                        borderRadius: 16,
+                        padding: "3px 8px",
+                        fontSize: 11,
+                        fontWeight: sel ? 700 : 500,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <span>{nombre === "Paola" ? "👩‍💼" : nombre === "Camila" ? "👩‍💻" : "👨‍🔧"}</span>
+                      <span>{nombre}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
               <select
                 value={form.responsable}
                 onChange={(e) => setForm({ ...form, responsable: e.target.value })}
@@ -301,6 +332,38 @@ ${form.descripcion ? `Detalles: ${form.descripcion}` : ""}`;
               <label style={{ display: "block", fontSize: 11.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: "var(--text-muted, #6e6e73)", marginBottom: 6 }}>
                 Fecha Límite
               </label>
+
+              {/* Atajos de fecha rápida */}
+              <div style={{ display: "flex", gap: 4, marginBottom: 6, flexWrap: "wrap" }}>
+                {[
+                  { label: "Hoy", dias: 0 },
+                  { label: "Mañana", dias: 1 },
+                  { label: "+3 días", dias: 3 },
+                  { label: "+1 semana", dias: 7 },
+                ].map((s) => (
+                  <button
+                    key={s.label}
+                    type="button"
+                    onClick={() => {
+                      const d = new Date(Date.now() + s.dias * 86400000);
+                      setForm((p) => ({ ...p, fechaLimite: d.toISOString().split("T")[0] }));
+                    }}
+                    style={{
+                      background: "var(--surface-subtle, #f5f5f7)",
+                      border: "1px solid var(--border, rgba(0,0,0,0.08))",
+                      borderRadius: 6,
+                      padding: "2px 6px",
+                      fontSize: 10,
+                      fontWeight: 600,
+                      color: "var(--text-muted, #6e6e73)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+
               <input
                 type="date"
                 value={form.fechaLimite}
@@ -588,7 +651,7 @@ ${form.descripcion ? `Detalles: ${form.descripcion}` : ""}`;
                   boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
                 }}
               >
-                {tarea ? "Guardar Cambios" : "Asignar Tarea"}
+                {tarea ? "Guardar Cambios" : "✓ Asignar Tarea al Equipo"}
               </button>
             </div>
           </div>

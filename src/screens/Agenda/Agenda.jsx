@@ -378,7 +378,7 @@ function CompromisosDelDiaSection({
                       alignItems: "center",
                       gap: 4,
                     }}
-                    title="Añadir a Google Calendar con recordatorio para Camila y Cristian"
+                    title="Añadir a Google Calendar con recordatorio para Camila"
                   >
                     📅 Google Calendar
                   </a>
@@ -841,15 +841,15 @@ export default function Agenda({ ctx }) {
     // Estado visible de envío por correo
     setNotificacionEnvio({
       tipo: "loading",
-      mensaje: "Enviando notificación por correo a Camila y Cristian...",
+      mensaje: "Enviando notificación por correo a Camila...",
     });
 
-    // Enviar notificación automática por correo a Camila y Cristian en segundo plano
+    // Enviar notificación automática por correo a Camila en segundo plano
     enviarNotificacionAgendaPorCorreo(payload)
       .then(() => {
         setNotificacionEnvio({
           tipo: "success",
-          mensaje: "✓ Notificación enviada por correo a Camila (camilascadavid@gmail.com) y Cristian (cristiandel48@gmail.com)",
+          mensaje: "✓ Notificación enviada por correo a Camila (camilascadavid@gmail.com)",
         });
         setTimeout(() => {
           setNotificacionEnvio((prev) => (prev?.tipo === "success" ? null : prev));
@@ -1338,7 +1338,7 @@ export default function Agenda({ ctx }) {
                         gap: 4,
                         border: "1px solid var(--border, #e2e8f0)",
                       }}
-                      title="Añadir a Google Calendar con recordatorio para Camila y Cristian"
+                      title="Añadir a Google Calendar con recordatorio para Camila"
                     >
                       📅 Google Calendar
                     </a>

@@ -11,7 +11,6 @@ import Obras from "./screens/Obras/Obras";
 import FototecaScreen from "./screens/Fototeca/FototecaScreen";
 import Certificaciones from "./screens/Certificaciones/Certificaciones";
 import Informes from "./screens/Informes/Informes";
-import Horarios from "./screens/Horarios/Horarios";
 import Vencimientos from "./screens/Vencimientos/Vencimientos";
 import Usuarios from "./screens/Usuarios/Usuarios";
 import Auditoria from "./screens/Auditoria/Auditoria";
@@ -29,6 +28,7 @@ const CuentasPagar = lazy(() => import("./screens/CuentasPagar/CuentasPagar"));
 const Contabilidad = lazy(() => import("./screens/Contabilidad/Contabilidad"));
 const Financiero = lazy(() => import("./screens/Financiero/Financiero"));
 const Nomina = lazy(() => import("./screens/Nomina/Nomina"));
+const Horarios = lazy(() => import("./screens/Horarios/Horarios"));
 
 // Registro de pantallas. Las claves coinciden con los `id` de
 // config/navigation.jsx: para sumar una pantalla se agrega aqui y alli.

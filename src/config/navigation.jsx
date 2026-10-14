@@ -57,9 +57,6 @@ export const NAV_SECTIONS = [
       { id: "catalogo", label: "Catálogo y precios", short: "Catálogo" },
       { id: "obras", label: "Ejecución de obra", short: "Obras" },
       { id: "fototeca", label: "Fototeca de obras", short: "Fototeca" },
-      // Los horarios se arman al lado de la obra: es donde se decide quien va
-      // a cada sitio y se le avisa.
-      { id: "horarios", label: "Horarios" },
     ],
   },
   {

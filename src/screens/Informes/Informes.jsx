@@ -559,12 +559,12 @@ export default function Informes({ctx}){
         </button>
         <button
           style={{
-            ...B("#f47c20", "#ffffff"),
-            boxShadow: "0 2px 8px rgba(244, 124, 32, 0.25)",
+            ...B("#1d1d1f", "#ffffff"),
+            boxShadow: "0 1px 3px rgba(0, 0, 0, 0.12)",
             padding: "7px 16px",
-            borderRadius: 8,
+            borderRadius: 10,
             fontSize: 12,
-            fontWeight: 700,
+            fontWeight: 600,
             opacity: generandoPdf ? 0.65 : 1,
           }}
           disabled={generandoPdf}
@@ -577,7 +577,7 @@ export default function Informes({ctx}){
             ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)"),
             border: "1px solid #cbd5e1",
             padding: "7px 14px",
-            borderRadius: 8,
+            borderRadius: 10,
             fontSize: 12,
             fontWeight: 600,
           }}
@@ -589,16 +589,17 @@ export default function Informes({ctx}){
     ) : (!sel && !nuevo && !editId) ? (
       <button
         style={{
-          background: "#f47c20",
+          background: "#1d1d1f",
           color: "#fff",
-          border: "1px solid #f47c20",
-          borderRadius: 9,
+          border: "1px solid #1d1d1f",
+          borderRadius: 10,
           padding: "8px 16px",
           fontSize: 12.5,
-          fontWeight: 700,
+          fontWeight: 600,
           cursor: "pointer",
           fontFamily: "inherit",
           whiteSpace: "nowrap",
+          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.12)",
         }}
         onClick={() => abrirNuevoInformeRef.current()}
       >
@@ -713,8 +714,8 @@ export default function Informes({ctx}){
             !nuevo && !editId ? (
               <button
                 style={{
-                  ...B("#f47c20"),
-                  boxShadow: "0 1px 3px rgba(244, 124, 32, 0.25)",
+                  ...B("#1d1d1f"),
+                  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.12)",
                 }}
                 onClick={abrirNuevoInforme}
               >
@@ -738,7 +739,7 @@ export default function Informes({ctx}){
           accion={
             <button
               onClick={()=>irAPantalla("obras")}
-              style={{...B("#f47c20"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
+              style={{...B("#1d1d1f"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
             >
               Ir a Obras
             </button>
@@ -928,7 +929,7 @@ export default function Informes({ctx}){
                 <button onClick={traerAvancesDeLaObra} style={{...B("rgba(30, 64, 175, 0.15)","#60a5fa"),fontSize:11,padding:"5px 12px"}}>
                   ↻ Traer avances de la obra ({avancesDisponibles.length})
                 </button>
-                <button onClick={()=>setForm(p=>({...p,actividades:[...p.actividades,emptyActividad()]}))} style={{...B("#f47c20"),fontSize:11.5,padding:"6px 13px"}}>+ Agregar actividad</button>
+                <button onClick={()=>setForm(p=>({...p,actividades:[...p.actividades,emptyActividad()]}))} style={{...B("#1d1d1f"),fontSize:11.5,padding:"6px 13px"}}>+ Agregar actividad</button>
               </div>
             </div>
             <div style={{background:"var(--surface-subtle, #f8fafc)",border:"1px solid var(--border, #e2e8f0)",borderRadius:8,padding:"10px 13px",fontSize:11.5,color:"var(--text-muted, #475569)",lineHeight:1.55,marginBottom:12}}>
@@ -1092,7 +1093,7 @@ export default function Informes({ctx}){
                 />
 
                 {subiendoFotos?.actividad===ai && (
-                  <div style={{fontSize:11.5,color:"#f47c20",marginTop:8,fontWeight:600}}>
+                  <div style={{fontSize:11.5,color:"#d97706",marginTop:8,fontWeight:600}}>
                     ⏳ Cargando fotos… {subiendoFotos.hechas} de {subiendoFotos.total}
                   </div>
                 )}
@@ -1102,7 +1103,7 @@ export default function Informes({ctx}){
 
           <div style={{marginBottom:14}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><LBL>Recomendaciones generales</LBL><BotonCorregir valor={form.recomendaciones} onChange={(v)=>setForm(p=>({...p,recomendaciones:v}))} compacto/></div><textarea value={form.recomendaciones} onChange={e=>setForm(p=>({...p,recomendaciones:e.target.value}))} onBlur={e=>{const v=normalizarParrafos(e.target.value);if(v!==form.recomendaciones)setForm(p=>({...p,recomendaciones:v}));}} rows={6} placeholder="Recomendaciones para el cliente..." spellCheck lang="es" style={{...SI,resize:"vertical",minHeight:130,lineHeight:1.5,fontSize:13}}/></div>
           <div style={{display:"flex",gap:10}}>
-            <button style={{...B("#f47c20"),boxShadow:"0 1px 3px rgba(244, 124, 32, 0.25)"}} onClick={guardar}>{editId ? "Guardar cambios" : "Guardar informe"}</button>
+            <button style={{...B("#1d1d1f"),boxShadow:"0 1px 3px rgba(0, 0, 0, 0.12)"}} onClick={guardar}>{editId ? "Guardar cambios" : "Guardar informe"}</button>
             <button style={B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)")} onClick={()=>{setNuevo(false);setEditId(null);}}>Cancelar</button>
           </div>
         </div>

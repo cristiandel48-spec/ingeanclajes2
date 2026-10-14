@@ -393,12 +393,12 @@ export default function Certificaciones({ctx}){
         </button>
         <button
           style={{
-            ...B("#f47c20", "#ffffff"),
-            boxShadow: "0 1px 3px rgba(244, 124, 32, 0.25)",
+            ...B("#1d1d1f", "#ffffff"),
+            boxShadow: "0 1px 3px rgba(0, 0, 0, 0.12)",
             padding: "7px 16px",
-            borderRadius: 8,
+            borderRadius: 10,
             fontSize: 12,
-            fontWeight: 700,
+            fontWeight: 600,
             opacity: descargando ? 0.65 : 1,
           }}
           disabled={descargando}
@@ -411,7 +411,7 @@ export default function Certificaciones({ctx}){
             ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)"),
             border: "1px solid #cbd5e1",
             padding: "7px 14px",
-            borderRadius: 8,
+            borderRadius: 10,
             fontSize: 12,
             fontWeight: 600,
           }}
@@ -427,7 +427,7 @@ export default function Certificaciones({ctx}){
             background: "var(--surface, #ffffff)",
             color: "var(--text-main, #101828)",
             border: "1px solid var(--border, rgba(0, 0, 0, 0.12))",
-            borderRadius: 8,
+            borderRadius: 10,
             padding: "7px 13px",
             fontSize: 12,
             fontWeight: 600,
@@ -442,11 +442,12 @@ export default function Certificaciones({ctx}){
         </button>
         <button
           style={{
-            ...B("#f47c20"),
+            ...B("#1d1d1f"),
             fontSize: 12,
             padding: "7px 14px",
             fontWeight: 600,
-            boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+            borderRadius: 10,
+            boxShadow: "0 1px 3px rgba(0, 0, 0, 0.12)",
           }}
           onClick={() => abrirNuevaCertificacion("Certificación")}
         >
@@ -494,8 +495,9 @@ export default function Certificaciones({ctx}){
                 </button>
                 <button
                   style={{
-                    ...B("#f47c20"),
-                    boxShadow: "0 1px 3px rgba(244, 124, 32, 0.25)",
+                    ...B("#1d1d1f"),
+                    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.12)",
+                    borderRadius: 10,
                   }}
                   onClick={() => abrirNuevaCertificacion("Certificación")}
                 >
@@ -519,7 +521,7 @@ export default function Certificaciones({ctx}){
           accion={
             <button
               onClick={()=>irAPantalla("cotizacion")}
-              style={{...B("#f47c20"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}
+              style={{...B("#1d1d1f"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center",borderRadius:10}}
             >
               Ir a Cotizaciones
             </button>
@@ -878,12 +880,13 @@ export default function Certificaciones({ctx}){
                   }
                 }}
                 style={{
-                  ...B("#E0342A","#ffffff"),
+                  ...B("#1d1d1f","#ffffff"),
                   padding:"8px 16px",
                   fontSize:12,
-                  fontWeight:700,
-                  borderRadius:8,
-                  flexShrink:0
+                  fontWeight:600,
+                  borderRadius:10,
+                  flexShrink:0,
+                  boxShadow:"0 1px 3px rgba(0, 0, 0, 0.12)",
                 }}
               >
                 + Agregar Elemento
@@ -893,12 +896,12 @@ export default function Certificaciones({ctx}){
           <div style={{display:"flex",gap:12,marginTop:18,paddingTop:14,borderTop:"1px solid var(--border-color, #e2e8f0)"}}>
             <button
               style={{
-                ...B("#E0342A","#ffffff"),
+                ...B("#1d1d1f","#ffffff"),
                 padding:"10px 24px",
                 fontSize:13,
-                fontWeight:700,
-                borderRadius:8,
-                boxShadow:"0 2px 10px rgba(224,52,42,0.25)"
+                fontWeight:600,
+                borderRadius:10,
+                boxShadow:"0 1px 3px rgba(0, 0, 0, 0.12)"
               }}
               onClick={guardar}
             >
@@ -910,7 +913,7 @@ export default function Certificaciones({ctx}){
                 padding:"10px 20px",
                 fontSize:13,
                 fontWeight:600,
-                borderRadius:8
+                borderRadius:10
               }}
               onClick={()=>{setNueva(false);setEditId(null);}}
             >
@@ -929,6 +932,7 @@ export default function Certificaciones({ctx}){
             ver: (c)=>setSel(c),
             editar: (c)=>editarCertificacion(c),
             imprimir: (c)=>imprimir(c),
+            descargarPdf: (c)=>descargarPdf(c),
           }}
         />
       )}

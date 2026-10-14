@@ -1,5 +1,6 @@
 // Utilidades de integración con Correo y Google Calendar para la Agenda de Camila
 import { enviarCotizacionPorCorreo } from "./backend/usuarios";
+import { asuntoSeguro } from "./asuntoCorreo";
 
 export const EMAIL_CAMILA_DEFAULT = "camilascadavid@gmail.com";
 
@@ -53,7 +54,7 @@ function parsearHora(horaStr) {
   return { h, m };
 }
 
-// Genera el enlace oficial a Google Calendar con la cita lista para guardar
+// Genera el enlace a Google Calendar para incluirlo en el correo
 export function generarUrlGoogleCalendar(compromiso, emailInvitado = EMAIL_CAMILA_DEFAULT) {
   if (!compromiso) return "";
   const isoFecha = compromiso.fecha || new Date().toISOString().slice(0, 10);
@@ -62,7 +63,6 @@ export function generarUrlGoogleCalendar(compromiso, emailInvitado = EMAIL_CAMIL
   const pad = (n) => String(n).padStart(2, "0");
   const dStr = isoFecha.replace(/-/g, "");
 
-  // Hora inicio y duración estimada de 1 hora y 30 minutos
   const hInicio = pad(h);
   const mInicio = pad(m);
 
@@ -84,10 +84,10 @@ export function generarUrlGoogleCalendar(compromiso, emailInvitado = EMAIL_CAMIL
     : compromiso.tipo === "llamada"
     ? "Llamada de Seguimiento"
     : compromiso.tipo === "reunion"
-    ? "Reunión de Coordinación"
+    ? "Reunion de Coordinacion"
     : "Compromiso";
 
-  const titulo = `${tipoLabel} · ${compromiso.obra || compromiso.titulo || "Ingeanclajes"}`;
+  const titulo = `${tipoLabel} - ${compromiso.obra || compromiso.titulo || "Ingeanclajes"}`;
   const ubicacion = `${compromiso.obra || ""} ${compromiso.ciudad || ""}`.trim();
 
   const detalles = [
@@ -95,9 +95,9 @@ export function generarUrlGoogleCalendar(compromiso, emailInvitado = EMAIL_CAMIL
     `Contacto: ${compromiso.contacto || "N/A"}${compromiso.telefono ? ` (${compromiso.telefono})` : ""}`,
     compromiso.requerimientoSst ? `SST / Seguridad: ${compromiso.requerimientoSst}` : "",
     compromiso.notas ? `Notas: ${compromiso.notas}` : "",
-    compromiso.linkReunion ? `Enlace de reunión: ${compromiso.linkReunion}` : "",
+    compromiso.linkReunion ? `Enlace de reunion: ${compromiso.linkReunion}` : "",
     "",
-    "📅 Programado desde el Sistema de Gestión · Ingeanclajes S.A.S.",
+    "Programado desde el Sistema de Gestion - Ingeanclajes S.A.S.",
   ].filter(Boolean).join("\n");
 
   const params = new URLSearchParams({
@@ -112,52 +112,7 @@ export function generarUrlGoogleCalendar(compromiso, emailInvitado = EMAIL_CAMIL
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
-// Genera enlace de redacción web directa a Gmail (por si se quiere abrir Gmail con todo listo)
-export function generarUrlGmailWeb(compromiso, emailDestino = EMAIL_CAMILA_DEFAULT) {
-  const tipoLabel = compromiso.tipo === "visita"
-    ? "Visita a Obra"
-    : compromiso.tipo === "llamada"
-    ? "Llamada"
-    : compromiso.tipo === "reunion"
-    ? "Reunión"
-    : "Compromiso";
-
-  const asunto = `📅 ${tipoLabel}: ${compromiso.obra || compromiso.titulo} · ${compromiso.hora || ""}`;
-
-  const cuerpo = [
-    `Hola Camila,`,
-    ``,
-    `Se ha agendado un nuevo compromiso en Ingeanclajes:`,
-    ``,
-    `• Compromiso: ${compromiso.obra || compromiso.titulo}`,
-    `• Tipo: ${tipoLabel}`,
-    `• Fecha: ${formatFechaLegible(compromiso.fecha)}`,
-    `• Hora: ${compromiso.hora || "Por definir"}`,
-    `• Cliente: ${compromiso.cliente || "N/A"}`,
-    `• Ciudad / Obra: ${compromiso.ciudad ? `${compromiso.ciudad} · ` : ""}${compromiso.obra || ""}`,
-    `• Contacto: ${compromiso.contacto || "N/A"}${compromiso.telefono ? ` (Tel: ${compromiso.telefono})` : ""}`,
-    compromiso.requerimientoSst ? `• Requerimientos SST: ${compromiso.requerimientoSst}` : "",
-    compromiso.notas ? `• Notas: ${compromiso.notas}` : "",
-    compromiso.linkReunion ? `• Enlace de reunión: ${compromiso.linkReunion}` : "",
-    ``,
-    `📅 Agendar en tu Google Calendar para que tu celular te recuerde con alarma:`,
-    generarUrlGoogleCalendar(compromiso, emailDestino),
-    ``,
-    `Equipo Ingeanclajes S.A.S.`,
-  ].filter(Boolean).join("\n");
-
-  const params = new URLSearchParams({
-    view: "cm",
-    fs: "1",
-    to: emailDestino,
-    su: asunto,
-    body: cuerpo,
-  });
-
-  return `https://mail.google.com/mail/?${params.toString()}`;
-}
-
-// Envía notificación por correo a Camila
+// Envía notificación por correo automática a Camila en segundo plano desde sistemasingeanclajes@gmail.com
 export async function enviarNotificacionAgendaPorCorreo(compromiso, emailDestino = EMAIL_CAMILA_DEFAULT) {
   const tipoLabel = compromiso.tipo === "visita"
     ? "Visita a Obra"
@@ -167,14 +122,18 @@ export async function enviarNotificacionAgendaPorCorreo(compromiso, emailDestino
     ? "Reunión"
     : "Compromiso";
 
-  const asunto = `📅 Agenda Ingeanclajes: ${tipoLabel} - ${compromiso.obra || compromiso.titulo} (${compromiso.fecha} ${compromiso.hora || ""})`;
+  const asunto = asuntoSeguro(
+    `Agenda Ingeanclajes: ${tipoLabel} - ${compromiso.obra || compromiso.titulo || "Compromiso"}`
+  );
+
+  const enlaceCalendar = generarUrlGoogleCalendar(compromiso, emailDestino);
 
   const mensaje = [
     `Hola Camila,`,
     ``,
-    `Tienes un compromiso agendado en el sistema de Ingeanclajes:`,
+    `Se ha agendado un nuevo compromiso en el sistema de Ingeanclajes:`,
     ``,
-    `• Actividad: ${compromiso.obra || compromiso.titulo}`,
+    `• Actividad: ${compromiso.obra || compromiso.titulo || "Compromiso"}`,
     `• Tipo: ${tipoLabel}`,
     `• Fecha: ${formatFechaLegible(compromiso.fecha)}`,
     `• Hora: ${compromiso.hora || "Por definir"}`,
@@ -183,28 +142,24 @@ export async function enviarNotificacionAgendaPorCorreo(compromiso, emailDestino
     `• Contacto: ${compromiso.contacto || "N/A"}${compromiso.telefono ? ` (Tel: ${compromiso.telefono})` : ""}`,
     compromiso.requerimientoSst ? `• Requerimientos SST: ${compromiso.requerimientoSst}` : "",
     compromiso.notas ? `• Notas adicionales: ${compromiso.notas}` : "",
-    compromiso.linkReunion ? `• Enlace reunión virtual: ${compromiso.linkReunion}` : "",
+    compromiso.linkReunion ? `• Enlace de reunión virtual: ${compromiso.linkReunion}` : "",
     ``,
-    `📌 Puedes pulsar el siguiente enlace para agregarlo con alarma a tu Google Calendar en el celular:`,
-    generarUrlGoogleCalendar(compromiso, emailDestino),
+    `📅 Para agregarlo con alarma a tu Google Calendar y que tu celular te recuerde:`,
+    enlaceCalendar,
     ``,
     `Equipo Ingeanclajes S.A.S.`,
   ].filter(Boolean).join("\n");
 
   try {
-    // Intentar envío formal desde el servidor de correo corporativo
     const res = await enviarCotizacionPorCorreo({
       para: emailDestino,
       asunto,
       mensaje,
       numero: "AGENDA",
     });
-    return { ok: true, metodo: "servidor", detalle: res };
+    return { ok: true, detalle: res };
   } catch (err) {
-    console.warn("Envío por servidor no disponible, abriendo redacción directa en Gmail:", err);
-    // Si la función de Supabase no tiene SMTP configurado, abre Gmail Web directamente para envío en 1 clic
-    const urlGmail = generarUrlGmailWeb(compromiso, emailDestino);
-    window.open(urlGmail, "_blank");
-    return { ok: true, metodo: "gmail_web", fallback: true };
+    console.error("Error al enviar notificación de agenda por correo:", err);
+    return { ok: false, error: err };
   }
 }

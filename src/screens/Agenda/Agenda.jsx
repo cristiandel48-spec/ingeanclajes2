@@ -3,12 +3,7 @@ import H1 from "../../components/ui/H1";
 import { B, CD, SI } from "../../styles/tokens";
 import { EJEMPLOS } from "../../data/ejemplos";
 import { abrirWhatsApp } from "../../lib/whatsapp";
-import {
-  EMAIL_CAMILA_DEFAULT,
-  getEmailNotificacionAgenda,
-  generarUrlGoogleCalendar,
-  enviarNotificacionAgendaPorCorreo,
-} from "../../lib/agendaEmail";
+import { enviarNotificacionAgendaPorCorreo } from "../../lib/agendaEmail";
 
 // Meses y días en español
 const MESES = [
@@ -345,39 +340,7 @@ function CompromisosDelDiaSection({
                       Abrir Waze
                     </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      enviarNotificacionAgendaPorCorreo(item);
-                      alert(`Enviando notificación e itinerario a ${EMAIL_CAMILA_DEFAULT}`);
-                    }}
-                    title={`Enviar invitación y detalles por correo a ${EMAIL_CAMILA_DEFAULT}`}
-                    style={{
-                      ...B("var(--surface-subtle, #f1f5f9)", "#c2410c"),
-                      border: "1px solid var(--border, #fed7aa)",
-                      fontSize: 11.5,
-                      padding: "5px 10px",
-                      borderRadius: 6,
-                    }}
-                  >
-                    ✉️ Enviar a Gmail
-                  </button>
-                  <a
-                    href={generarUrlGoogleCalendar(item)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Agendar en Google Calendar para que el celular emita alertas y recordatorios"
-                    style={{
-                      ...B("var(--surface-subtle, #f1f5f9)", "#1d4ed8"),
-                      border: "1px solid var(--border, #bfdbfe)",
-                      fontSize: 11.5,
-                      padding: "5px 10px",
-                      borderRadius: 6,
-                      textDecoration: "none",
-                    }}
-                  >
-                    📅 Google Calendar
-                  </a>
+
                   {item.linkReunion && (
                     <a
                       href={item.linkReunion}
@@ -679,8 +642,6 @@ export default function Agenda({ ctx }) {
   const [formNotas, setFormNotas] = useState("");
   const [formSst, setFormSst] = useState("");
   const [formLink, setFormLink] = useState("");
-  const [formNotificarEmail, setFormNotificarEmail] = useState(true);
-  const emailNotificacion = useMemo(() => getEmailNotificacionAgenda(), []);
 
   // Mapeo de eventos por fecha
   const eventosPorFecha = useMemo(() => {
@@ -797,7 +758,6 @@ export default function Agenda({ ctx }) {
     setFormNotas("");
     setFormSst("");
     setFormLink("");
-    setFormNotificarEmail(true);
     setModalAbierto(true);
   };
 
@@ -815,7 +775,6 @@ export default function Agenda({ ctx }) {
     setFormNotas(item.notas || "");
     setFormSst(item.requerimientoSst || "");
     setFormLink(item.linkReunion || "");
-    setFormNotificarEmail(false);
     setModalAbierto(true);
   };
 
@@ -851,17 +810,10 @@ export default function Agenda({ ctx }) {
       return [payload, ...prev];
     });
 
-    if (formNotificarEmail) {
-      enviarNotificacionAgendaPorCorreo(payload, emailNotificacion)
-        .then((res) => {
-          if (res?.metodo === "servidor") {
-            alert(`Notificación e itinerario enviados con éxito a ${emailNotificacion}`);
-          }
-        })
-        .catch((err) => {
-          console.warn("Error enviando correo de agenda:", err);
-        });
-    }
+    // Enviar notificación automática por correo a Camila en segundo plano
+    enviarNotificacionAgendaPorCorreo(payload).catch((err) => {
+      console.error("Error al enviar notificación de agenda por correo:", err);
+    });
 
     setModalAbierto(false);
   };
@@ -1262,39 +1214,7 @@ export default function Agenda({ ctx }) {
                         WhatsApp
                       </button>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        enviarNotificacionAgendaPorCorreo(item);
-                        alert(`Enviando notificación e itinerario a ${EMAIL_CAMILA_DEFAULT}`);
-                      }}
-                      title={`Enviar invitación y detalles por correo a ${EMAIL_CAMILA_DEFAULT}`}
-                      style={{
-                        ...B("var(--surface-subtle, #f1f5f9)", "#c2410c"),
-                        border: "1px solid var(--border, #fed7aa)",
-                        fontSize: 11.5,
-                        padding: "6px 10px",
-                        borderRadius: 6,
-                      }}
-                    >
-                      ✉️ Gmail
-                    </button>
-                    <a
-                      href={generarUrlGoogleCalendar(item)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Agendar en Google Calendar para que el celular emita alertas y recordatorios"
-                      style={{
-                        ...B("var(--surface-subtle, #f1f5f9)", "#1d4ed8"),
-                        border: "1px solid var(--border, #bfdbfe)",
-                        fontSize: 11.5,
-                        padding: "6px 10px",
-                        borderRadius: 6,
-                        textDecoration: "none",
-                      }}
-                    >
-                      📅 Calendar
-                    </a>
+
                     <button
                       type="button"
                       onClick={() => toggleCompletado(item.id)}
@@ -1561,33 +1481,7 @@ export default function Agenda({ ctx }) {
                   />
                 </div>
               )}
-              {/* Notificación automática por correo a Camila */}
-              <div
-                style={{
-                  background: "#fff7ed",
-                  border: "1px solid #fed7aa",
-                  borderRadius: 10,
-                  padding: "10px 14px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  marginTop: 6,
-                }}
-              >
-                <input
-                  type="checkbox"
-                  id="chk-notificar-camila"
-                  checked={formNotificarEmail}
-                  onChange={(e) => setFormNotificarEmail(e.target.checked)}
-                  style={{ width: 16, height: 16, cursor: "pointer", accentColor: "#ea580c" }}
-                />
-                <label
-                  htmlFor="chk-notificar-camila"
-                  style={{ fontSize: 12.5, fontWeight: 600, color: "#9a3412", cursor: "pointer" }}
-                >
-                  ✉️ Enviar notificación e itinerario al correo de Camila ({emailNotificacion})
-                </label>
-              </div>
+
 
               {/* Botones de acción del modal */}
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 10 }}>

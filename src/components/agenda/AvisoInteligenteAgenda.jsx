@@ -5,10 +5,6 @@ import {
   mostrarNotificacionEscritorio,
 } from "../../lib/sonidoNotificacion";
 import { B } from "../../styles/tokens";
-import {
-  enviarNotificacionAgendaPorCorreo,
-  generarUrlGoogleCalendar,
-} from "../../lib/agendaEmail";
 
 function toIso(d) {
   const y = d.getFullYear();
@@ -482,40 +478,6 @@ export default function AvisoInteligenteAgenda({ onIrAAgenda }) {
                     </button>
                   )}
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      enviarNotificacionAgendaPorCorreo(item);
-                      alert("Enviando notificación e itinerario a camilascadavid@gmail.com");
-                    }}
-                    title="Enviar recordatorio e itinerario por correo a camilascadavid@gmail.com"
-                    style={{
-                      ...B("var(--surface-subtle, #f1f5f9)", "#c2410c"),
-                      border: "1px solid var(--border, #fed7aa)",
-                      fontSize: 11,
-                      padding: "4px 8px",
-                      borderRadius: 6,
-                    }}
-                  >
-                    ✉️ Gmail
-                  </button>
-
-                  <a
-                    href={generarUrlGoogleCalendar(item)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="Guardar en Google Calendar para que su celular le recuerde con alarma"
-                    style={{
-                      ...B("var(--surface-subtle, #f1f5f9)", "#1d4ed8"),
-                      border: "1px solid var(--border, #bfdbfe)",
-                      fontSize: 11,
-                      padding: "4px 8px",
-                      borderRadius: 6,
-                      textDecoration: "none",
-                    }}
-                  >
-                    📅 Calendar
-                  </a>
 
                   {item.linkReunion && (
                     <a

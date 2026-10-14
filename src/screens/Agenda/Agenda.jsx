@@ -9,6 +9,11 @@ import {
   horaA24h,
   horaA12h,
 } from "../../lib/agendaEmail";
+import {
+  getFestivoColombia,
+  esDiaFestivoColombia,
+  getFestivosDelMes,
+} from "../../lib/festivosColombia";
 
 // Meses y días en español
 const MESES = [
@@ -116,6 +121,8 @@ function CompromisosDelDiaSection({
   enviarWhatsApp,
   abrirWaze,
 }) {
+  const festivoDelDia = getFestivoColombia(fechaSeleccionada);
+
   return (
     <div style={{ ...CD, padding: 24, width: "100%", boxSizing: "border-box" }}>
       <div
@@ -150,6 +157,62 @@ function CompromisosDelDiaSection({
           + Agregar compromiso
         </button>
       </div>
+
+      {festivoDelDia && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            background: "linear-gradient(135deg, rgba(254, 242, 242, 0.95), rgba(255, 241, 242, 0.75))",
+            border: "1px solid rgba(252, 165, 165, 0.65)",
+            borderRadius: 12,
+            padding: "12px 16px",
+            marginBottom: 16,
+            boxShadow: "0 1px 4px rgba(220, 38, 38, 0.05)",
+          }}
+        >
+          <div
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 10,
+              background: "#fee2e2",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 20,
+              flexShrink: 0,
+            }}
+          >
+            🇨🇴
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 13.5, fontWeight: 800, color: "#991b1b" }}>
+                {festivoDelDia.nombre}
+              </span>
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: "#b91c1c",
+                  background: "#fecaca",
+                  padding: "2px 8px",
+                  borderRadius: 20,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.03em",
+                }}
+              >
+                Festivo Nacional (Colombia)
+              </span>
+            </div>
+            <p style={{ fontSize: 11.5, color: "#7f1d1d", margin: "3px 0 0" }}>
+              Día oficial no laboral en Colombia {festivoDelDia.leyEmiliani ? "(Ley Emiliani)" : ""}. Tenlo presente para coordinación de obra y visitas técnicas.
+            </p>
+          </div>
+        </div>
+      )}
 
       {eventosDelDia.length === 0 ? (
         <div
@@ -402,6 +465,10 @@ function CalendarioMensualSection({
   setFechaSeleccionada,
 }) {
   const isMobile = useIsMobile();
+  const festivosDelMes = useMemo(
+    () => getFestivosDelMes(calMes.anio, calMes.mes),
+    [calMes.anio, calMes.mes]
+  );
 
   return (
     <div style={{ ...CD, padding: isMobile ? "16px 10px" : 24, width: "100%", boxSizing: "border-box" }}>
@@ -412,15 +479,44 @@ function CalendarioMensualSection({
           alignItems: "center",
           justifyContent: "space-between",
           marginBottom: 16,
+          flexWrap: "wrap",
+          gap: 10,
         }}
       >
-        <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-          <h2 style={{ fontSize: isMobile ? 18 : 22, fontWeight: 800, margin: 0, color: "var(--text-main, #0f172a)" }}>
-            {MESES[calMes.mes]}
-          </h2>
-          <span style={{ fontSize: isMobile ? 14 : 16, fontWeight: 500, color: "var(--text-muted, #94a3b8)" }}>
-            {calMes.anio}
-          </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+            <h2 style={{ fontSize: isMobile ? 18 : 22, fontWeight: 800, margin: 0, color: "var(--text-main, #0f172a)" }}>
+              {MESES[calMes.mes]}
+            </h2>
+            <span style={{ fontSize: isMobile ? 14 : 16, fontWeight: 500, color: "var(--text-muted, #94a3b8)" }}>
+              {calMes.anio}
+            </span>
+          </div>
+
+          {festivosDelMes.length > 0 && (
+            <span
+              style={{
+                fontSize: isMobile ? 10 : 11.5,
+                fontWeight: 700,
+                color: "#b91c1c",
+                background: "rgba(254, 226, 226, 0.75)",
+                border: "1px solid rgba(252, 165, 165, 0.55)",
+                padding: isMobile ? "2px 7px" : "3px 10px",
+                borderRadius: 20,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+              }}
+              title={festivosDelMes.map((f) => `${f.fecha.slice(8, 10)} ${MESES[calMes.mes].slice(0, 3)}: ${f.nombre}`).join("\n")}
+            >
+              <span>🇨🇴</span>
+              <span>
+                {festivosDelMes.length === 1
+                  ? `1 festivo: ${festivosDelMes[0].fecha.slice(8, 10)} ${MESES[calMes.mes].slice(0, 3)} (${festivosDelMes[0].nombreCorto})`
+                  : `${festivosDelMes.length} festivos en ${MESES[calMes.mes].toLowerCase()}`}
+              </span>
+            </span>
+          )}
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -538,13 +634,15 @@ function CalendarioMensualSection({
           const evts = eventosPorFecha[c.iso] || [];
           const esHoy = c.esHoy;
           const esSeleccionado = c.esSeleccionado;
+          const esFestivo = c.esFestivo;
+          const festivo = c.festivo;
 
           return (
             <div
               key={idx}
               onClick={() => setFechaSeleccionada(c.iso)}
               style={{
-                minHeight: isMobile ? 46 : 88,
+                minHeight: isMobile ? 48 : 88,
                 padding: isMobile ? "4px 2px" : "6px 8px",
                 borderRadius: isMobile ? 6 : 10,
                 cursor: "pointer",
@@ -554,72 +652,147 @@ function CalendarioMensualSection({
                 transition: "all 0.12s ease",
                 background: esSeleccionado
                   ? (isMobile ? "#f1f5f9" : "var(--surface, #ffffff)")
+                  : esFestivo
+                  ? "rgba(254, 242, 242, 0.42)"
                   : "var(--surface, #ffffff)",
                 border: esSeleccionado
                   ? "2px solid #0f172a"
+                  : esFestivo
+                  ? "1px solid rgba(239, 68, 68, 0.32)"
                   : "1px solid var(--border, #e2e8f0)",
                 boxShadow: esSeleccionado ? "0 4px 12px rgba(15,23,42,0.08)" : "none",
                 minWidth: 0,
                 overflow: "hidden",
                 boxSizing: "border-box",
+                position: "relative",
               }}
+              title={esFestivo ? `🇨🇴 Festivo Colombia: ${festivo?.nombre}` : undefined}
             >
               {/* Número del día */}
               <div style={{ display: "flex", justifyContent: isMobile ? "center" : "space-between", alignItems: "center" }}>
                 <span
                   style={{
                     fontSize: isMobile ? 11 : 12.5,
-                    fontWeight: esHoy || esSeleccionado ? 800 : 600,
+                    fontWeight: esHoy || esSeleccionado || esFestivo ? 800 : 600,
                     width: isMobile ? 20 : 22,
                     height: isMobile ? 20 : 22,
                     borderRadius: "50%",
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    background: esHoy ? "#f47c20" : "transparent",
-                    color: esHoy ? "#ffffff" : "var(--text-main, #0f172a)",
+                    background: esHoy
+                      ? "#f47c20"
+                      : esFestivo && !esSeleccionado
+                      ? "rgba(239, 68, 68, 0.12)"
+                      : "transparent",
+                    color: esHoy ? "#ffffff" : esFestivo ? "#dc2626" : "var(--text-main, #0f172a)",
                   }}
                 >
                   {c.numero}
                 </span>
 
-                {!isMobile && evts.length > 0 && (
-                  <div style={{ display: "flex", gap: 3 }}>
-                    {evts.slice(0, 3).map((e) => (
+                {!isMobile && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    {esFestivo && (
                       <span
-                        key={e.id}
                         style={{
-                          width: 5,
-                          height: 5,
-                          borderRadius: "50%",
-                          background: TIPOS_COMPROMISO[e.tipo]?.dot || "#0f172a",
+                          fontSize: 9,
+                          fontWeight: 700,
+                          color: "#dc2626",
+                          background: "rgba(239, 68, 68, 0.08)",
+                          padding: "1px 5px",
+                          borderRadius: 4,
+                          border: "1px solid rgba(239, 68, 68, 0.22)",
+                          letterSpacing: "-0.01em",
+                          textTransform: "uppercase",
                         }}
-                      />
-                    ))}
+                      >
+                        Festivo
+                      </span>
+                    )}
+
+                    {evts.length > 0 && (
+                      <div style={{ display: "flex", gap: 3 }}>
+                        {evts.slice(0, 3).map((e) => (
+                          <span
+                            key={e.id}
+                            style={{
+                              width: 5,
+                              height: 5,
+                              borderRadius: "50%",
+                              background: TIPOS_COMPROMISO[e.tipo]?.dot || "#0f172a",
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
 
-              {/* Eventos: en móvil se muestran como puntitos elegantes, en escritorio como chips */}
+              {/* Eventos y Festivo: en móvil se muestran compactos, en escritorio con descripción clara */}
               {isMobile ? (
-                evts.length > 0 && (
-                  <div style={{ display: "flex", justifyContent: "center", gap: 2.5, marginTop: 2 }}>
-                    {evts.slice(0, 3).map((e) => (
-                      <span
-                        key={e.id}
-                        style={{
-                          width: 4,
-                          height: 4,
-                          borderRadius: "50%",
-                          background: TIPOS_COMPROMISO[e.tipo]?.dot || "#0f172a",
-                        }}
-                      />
-                    ))}
-                  </div>
-                )
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, marginTop: 2 }}>
+                  {esFestivo && (
+                    <span
+                      style={{
+                        fontSize: 8.5,
+                        lineHeight: 1,
+                        color: "#b91c1c",
+                        background: "#fee2e2",
+                        padding: "1px 3px",
+                        borderRadius: 3,
+                        fontWeight: 700,
+                      }}
+                      title={festivo?.nombre}
+                    >
+                      🇨🇴
+                    </span>
+                  )}
+                  {evts.length > 0 && (
+                    <div style={{ display: "flex", justifyContent: "center", gap: 2.5 }}>
+                      {evts.slice(0, 3).map((e) => (
+                        <span
+                          key={e.id}
+                          style={{
+                            width: 4,
+                            height: 4,
+                            borderRadius: "50%",
+                            background: TIPOS_COMPROMISO[e.tipo]?.dot || "#0f172a",
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 3, marginTop: 4 }}>
-                  {evts.slice(0, 2).map((e) => {
+                  {esFestivo && (
+                    <div
+                      style={{
+                        fontSize: 9.5,
+                        fontWeight: 700,
+                        color: "#991b1b",
+                        background: "rgba(254, 226, 226, 0.82)",
+                        border: "1px solid rgba(252, 165, 165, 0.65)",
+                        borderRadius: 4,
+                        padding: "2px 5px",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                      title={`Festivo Nacional: ${festivo?.nombre}`}
+                    >
+                      <span style={{ fontSize: 10 }}>🇨🇴</span>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {festivo?.nombreCorto || festivo?.nombre}
+                      </span>
+                    </div>
+                  )}
+                  {evts.slice(0, esFestivo ? 1 : 2).map((e) => {
                     const conf = TIPOS_COMPROMISO[e.tipo] || TIPOS_COMPROMISO.visita;
                     return (
                       <div
@@ -641,9 +814,9 @@ function CalendarioMensualSection({
                       </div>
                     );
                   })}
-                  {evts.length > 2 && (
+                  {evts.length > (esFestivo ? 1 : 2) && (
                     <span style={{ fontSize: 9.5, color: "var(--text-muted, #94a3b8)", fontWeight: 700 }}>
-                      +{evts.length - 2} más
+                      +{evts.length - (esFestivo ? 1 : 2)} más
                     </span>
                   )}
                 </div>
@@ -740,12 +913,15 @@ export default function Agenda({ ctx }) {
     for (let d = 1; d <= totalDias; d++) {
       const fecha = new Date(calMes.anio, calMes.mes, d);
       const iso = toIso(fecha);
+      const festivo = getFestivoColombia(iso);
       celdas.push({
         numero: d,
         otroMes: false,
         iso,
         esHoy: iso === hoyIso,
         esSeleccionado: iso === fechaSeleccionada,
+        festivo,
+        esFestivo: Boolean(festivo),
       });
     }
 
@@ -1339,21 +1515,21 @@ export default function Agenda({ ctx }) {
                         minWidth: 54,
                         padding: "6px 8px",
                         borderRadius: 8,
-                        background: "var(--surface-subtle, #f1f5f9)",
-                        border: "1px solid var(--border, #e2e8f0)",
+                        background: esDiaFestivoColombia(item.fecha) ? "rgba(254, 242, 242, 0.75)" : "var(--surface-subtle, #f1f5f9)",
+                        border: esDiaFestivoColombia(item.fecha) ? "1px solid rgba(252, 165, 165, 0.65)" : "1px solid var(--border, #e2e8f0)",
                       }}
                     >
-                      <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted, #64748b)", textTransform: "uppercase" }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: esDiaFestivoColombia(item.fecha) ? "#dc2626" : "var(--text-muted, #64748b)", textTransform: "uppercase" }}>
                         {item.fecha ? MESES[parseIso(item.fecha).getMonth()].slice(0, 3) : "N/A"}
                       </span>
-                      <span style={{ fontSize: 16, fontWeight: 800, color: "var(--text-main, #0f172a)" }}>
+                      <span style={{ fontSize: 16, fontWeight: 800, color: esDiaFestivoColombia(item.fecha) ? "#b91c1c" : "var(--text-main, #0f172a)" }}>
                         {item.fecha ? parseIso(item.fecha).getDate() : "-"}
                       </span>
                     </div>
 
                     {/* Detalle */}
                     <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                         <span
                           style={{
                             display: "inline-flex",
@@ -1373,6 +1549,26 @@ export default function Agenda({ ctx }) {
                         <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-muted, #64748b)" }}>
                           {item.hora}
                         </span>
+                        {getFestivoColombia(item.fecha) && (
+                          <span
+                            style={{
+                              fontSize: 10.5,
+                              fontWeight: 700,
+                              color: "#b91c1c",
+                              background: "#fee2e2",
+                              border: "1px solid #fecaca",
+                              padding: "1px 7px",
+                              borderRadius: 4,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 4,
+                            }}
+                            title={`Festivo: ${getFestivoColombia(item.fecha).nombre}`}
+                          >
+                            <span>🇨🇴</span>
+                            <span>{getFestivoColombia(item.fecha).nombreCorto}</span>
+                          </span>
+                        )}
                       </div>
                       <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-main, #0f172a)", marginTop: 2 }}>
                         {item.obra || item.titulo}
@@ -1600,6 +1796,26 @@ export default function Agenda({ ctx }) {
                     style={SI}
                     required
                   />
+                  {getFestivoColombia(formFecha) && (
+                    <div
+                      style={{
+                        marginTop: 5,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: "#991b1b",
+                        background: "rgba(254, 242, 242, 0.95)",
+                        border: "1px solid rgba(252, 165, 165, 0.7)",
+                        borderRadius: 6,
+                        padding: "3px 8px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
+                      <span>🇨🇴</span>
+                      <span>Festivo oficial: {getFestivoColombia(formFecha).nombre}</span>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>

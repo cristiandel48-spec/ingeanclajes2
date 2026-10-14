@@ -4,6 +4,7 @@ import {
   reproducirSonidoNotificacion,
   mostrarNotificacionEscritorio,
 } from "../../lib/sonidoNotificacion";
+import { getFestivoColombia } from "../../lib/festivosColombia";
 import { B } from "../../styles/tokens";
 
 function toIso(d) {
@@ -305,8 +306,23 @@ export default function AvisoInteligenteAgenda({ onIrAAgenda }) {
                   ? "Tienes 1 compromiso para mañana"
                   : `Tienes ${compromisosManana.length} compromisos para mañana`}
               </h2>
-              <div style={{ fontSize: 12.5, color: "var(--text-muted, #64748b)", marginTop: 2 }}>
-                {formatFechaLarga(mananaIso)}
+              <div style={{ fontSize: 12.5, color: "var(--text-muted, #64748b)", marginTop: 2, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                <span>{formatFechaLarga(mananaIso)}</span>
+                {getFestivoColombia(mananaIso) && (
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: "#b91c1c",
+                      background: "#fee2e2",
+                      border: "1px solid #fecaca",
+                      padding: "1px 7px",
+                      borderRadius: 12,
+                    }}
+                  >
+                    🇨🇴 Festivo: {getFestivoColombia(mananaIso).nombreCorto}
+                  </span>
+                )}
               </div>
             </div>
           </div>

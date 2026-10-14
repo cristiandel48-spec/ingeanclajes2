@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import BotonCorregir from "../../components/ui/BotonCorregir";
 import BotonDictado from "../../components/ui/BotonDictado";
 import MedidorMapa from "../../components/maps/MedidorMapa";
@@ -8,7 +8,7 @@ import { corregirOrtografiaLocal } from "../../lib/correctorTexto";
 import { leerImagenComprimida, rotarImagen90 } from "../../lib/imagenes";
 import { normalizarFrase } from "../../lib/normalizarEntrada";
 import { B, SI } from "../../styles/tokens";
-import { agruparCatalogo } from "../../lib/catalogo";
+import { agruparCatalogo, buscarIndiceCategoriaCatalogo } from "../../lib/catalogo";
 import { useAppData } from "../../context/AppDataContext";
 import { measurementsToQuoteItems } from "../../lib/maps";
 import { fmt } from "../../lib/format";
@@ -35,13 +35,21 @@ export default function PropuestaEditor({
 }) {
   const p = propuesta;
   const [showDB, setShowDB] = useState(false);
-  const [dbCat, setDbCat] = useState(0);
   // El catalogo sale de la base; si todavia no hay nada guardado, del codigo.
   const { catalogoItems } = useAppData();
-  const catalogo = agruparCatalogo(catalogoItems);
+  const catalogo = useMemo(() => agruparCatalogo(catalogoItems), [catalogoItems]);
+  const [dbCat, setDbCat] = useState(() => buscarIndiceCategoriaCatalogo(catalogo, p?.tipoCotizacion));
   // Si se borro una categoria entera, el indice guardado puede quedar fuera.
   const categoria = catalogo[dbCat] || catalogo[0] || { items: [] };
   const fotosRef = useRef();
+
+  // Sincronizar automáticamente la categoría del catálogo con el tipo de propuesta
+  useEffect(() => {
+    if (catalogo.length && p?.tipoCotizacion) {
+      const idx = buscarIndiceCategoriaCatalogo(catalogo, p.tipoCotizacion);
+      setDbCat(idx);
+    }
+  }, [p?.tipoCotizacion, catalogo]);
 
   const set = (campo, valor) => onChange({ [campo]: valor });
 
@@ -208,6 +216,10 @@ export default function PropuestaEditor({
                     key={v}
                     type="button"
                     onClick={() => {
+                      const idx = buscarIndiceCategoriaCatalogo(catalogo, v);
+                      if (idx >= 0 && idx < catalogo.length) {
+                        setDbCat(idx);
+                      }
                       const fotosActuales = Array.isArray(fotos) ? fotos : [];
                       if (v === "puntos_anclaje") {
                         const tieneFoto = fotosActuales.some(isFotoPuntoAnclajeDefault);

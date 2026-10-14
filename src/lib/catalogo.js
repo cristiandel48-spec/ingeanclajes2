@@ -151,3 +151,57 @@ export function filasDesdeSemilla() {
   }
   return filas;
 }
+
+/**
+ * Encuentra el índice de la categoría del catálogo más coherente con el tipo de propuesta seleccionado.
+ * Ej: "puntos_anclaje" -> índice de "Anclajes"
+ *     "linea_vida"     -> índice de "Lineas de Vida"
+ *     "estructuras_metalicas" -> índice de "Estructuras Metálicas"
+ */
+export function buscarIndiceCategoriaCatalogo(catalogo, tipoCotizacion) {
+  if (!Array.isArray(catalogo) || !catalogo.length) return 0;
+
+  const normalizar = (txt) =>
+    String(txt || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]/g, "");
+
+  const tipoNorm = normalizar(tipoCotizacion);
+
+  let palabrasClave = [];
+  if (tipoNorm.includes("anclaje")) {
+    palabrasClave = ["anclaje", "anclajes", "punto", "puntos"];
+  } else if (tipoNorm.includes("linea") || tipoNorm.includes("vida")) {
+    palabrasClave = ["lineasdevida", "lineadevida", "lineas", "vida"];
+  } else if (tipoNorm.includes("estructura") || tipoNorm.includes("metalic")) {
+    palabrasClave = ["estructurasmetalicas", "estructuras", "metalicas"];
+  } else if (tipoNorm.includes("blanca") || tipoNorm.includes("obra")) {
+    palabrasClave = ["obrablanca", "obra", "blanca", "servicios"];
+  }
+
+  // 1. Coincidencia directa en el nombre de la categoría
+  for (let i = 0; i < catalogo.length; i++) {
+    const catNorm = normalizar(catalogo[i]?.categoria);
+    if (palabrasClave.some((kw) => catNorm.includes(kw) || kw.includes(catNorm))) {
+      return i;
+    }
+  }
+
+  // 2. Coincidencia secundaria: buscar en la descripción de los ítems de la categoría
+  if (palabrasClave.length) {
+    for (let i = 0; i < catalogo.length; i++) {
+      const items = catalogo[i]?.items || [];
+      if (items.some((it) => {
+        const descNorm = normalizar(it.desc);
+        return palabrasClave.some((kw) => descNorm.includes(kw));
+      })) {
+        return i;
+      }
+    }
+  }
+
+  return 0;
+}
+

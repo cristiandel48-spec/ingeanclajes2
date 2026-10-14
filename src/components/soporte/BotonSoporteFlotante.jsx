@@ -649,8 +649,8 @@ export default function BotonSoporteFlotante() {
           }
         : {
             position: "fixed",
-            bottom: "calc(16px + env(safe-area-inset-bottom))",
-            right: "calc(16px + env(safe-area-inset-right))",
+            bottom: isMobile ? "calc(14px + env(safe-area-inset-bottom, 0px))" : "calc(16px + env(safe-area-inset-bottom, 0px))",
+            right: isMobile ? "calc(12px + env(safe-area-inset-right, 0px))" : "calc(16px + env(safe-area-inset-right, 0px))",
             zIndex: 9999,
             fontFamily: "'Inter', system-ui, sans-serif",
           }
@@ -1376,8 +1376,8 @@ export default function BotonSoporteFlotante() {
             }
           }}
           style={{
-            width: 46,
-            height: 46,
+            width: isMobile ? 40 : 46,
+            height: isMobile ? 40 : 46,
             borderRadius: "50%",
             backgroundColor: "#E0342A",
             color: "#ffffff",
@@ -1387,7 +1387,7 @@ export default function BotonSoporteFlotante() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 20,
+            fontSize: isMobile ? 18 : 20,
             transition: "transform 0.15s ease",
             position: "relative",
           }}

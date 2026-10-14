@@ -368,9 +368,21 @@ export default function GlobalStyles({ divider }) {
         box-sizing: border-box !important;
       }
 
-      /* Colapsa formularios a 1 columna sin tocar los documentos impresos ni cuadrículas especiales */
-      main [style*="grid-template-columns"]:not(.doc-shell):not(.doc-shell *):not(#pz):not(#pz *):not(.tabla-items):not(.no-collapse-grid):not(.fototeca-grid) {
+      /* Colapsa formularios a 1 columna sin tocar documentos, calendarios ni cuadrículas protegidas */
+      main [style*="grid-template-columns"]:not(.doc-shell):not(.doc-shell *):not(#pz):not(#pz *):not(.tabla-items):not(.no-collapse-grid):not(.fototeca-grid):not(.calendario-grid):not(.calendario-semana):not(.calendario-dias):not(.grid-2-col) {
         grid-template-columns: 1fr !important;
+      }
+
+      /* Rejilla de calendario mensual: exactamente 7 columnas en móvil */
+      .calendario-semana,
+      .calendario-dias,
+      .calendario-grid {
+        grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+      }
+
+      /* Rejilla de 2 columnas protegida para móviles */
+      .grid-2-col {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
       }
 
       /* Galería de fotos en móvil: 2 columnas limpias */
@@ -379,9 +391,25 @@ export default function GlobalStyles({ divider }) {
         gap: 10px !important;
       }
 
-      /* Permite salto de línea en grupos de botones y formularios sin romper encabezados ni documentos */
-      main [style*="display: flex"]:not([data-no-wrap]):not([style*="nowrap"]):not(.doc-shell):not(.doc-shell *):not(#pz):not(#pz *):not(.print-header-root):not(.print-header-root *) {
+      /* Permite salto de línea en grupos de botones y formularios sin romper tarjetas ni encabezados */
+      main [style*="display: flex"]:not([data-no-wrap]):not([style*="nowrap"]):not(.no-wrap):not(.doc-shell):not(.doc-shell *):not(#pz):not(#pz *):not(.print-header-root):not(.print-header-root *):not(article > div):not(article [style*="space-between"]) {
         flex-wrap: wrap;
+      }
+
+      .no-wrap {
+        flex-wrap: nowrap !important;
+      }
+
+      /* Protección estricta contra desbordamientos en tarjetas y flexbox */
+      main article {
+        min-width: 0 !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      main article > div {
+        min-width: 0 !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
       }
 
       /* Los campos de texto ocupan todo el ancho, excluyendo controles especiales y deslizadores */
@@ -417,9 +445,15 @@ export default function GlobalStyles({ divider }) {
         padding: 14px 12px !important;
       }
 
-      /* Oculta kbd Ctrl K en móviles */
-      .kbd-ctrl-k {
+      /* Oculta atajo de teclado Cmd+K / Ctrl+K en móviles */
+      .kbd-ctrl-k,
+      [data-kbd-shortcut] {
         display: none !important;
+      }
+
+      /* Margen inferior para que el botón de soporte flotante nunca tape controles ni sliders */
+      main {
+        padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
       }
 
       /* Pestañas de estado horizontales deslizables suavemente con el dedo */

@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { B, CD, SI } from "../../styles/tokens";
 import { EJEMPLOS } from "../../data/ejemplos";
 import { abrirWhatsApp } from "../../lib/whatsapp";
+import { useIsMobile } from "../../hooks/useMediaQuery";
 import {
   enviarNotificacionAgendaPorCorreo,
   generarUrlGoogleCalendar,
@@ -400,8 +401,10 @@ function CalendarioMensualSection({
   eventosPorFecha,
   setFechaSeleccionada,
 }) {
+  const isMobile = useIsMobile();
+
   return (
-    <div style={{ ...CD, padding: 24, width: "100%", boxSizing: "border-box" }}>
+    <div style={{ ...CD, padding: isMobile ? "16px 10px" : 24, width: "100%", boxSizing: "border-box" }}>
       {/* Navegación del mes */}
       <div
         style={{
@@ -412,10 +415,10 @@ function CalendarioMensualSection({
         }}
       >
         <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-          <h2 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: "var(--text-main, #0f172a)" }}>
+          <h2 style={{ fontSize: isMobile ? 18 : 22, fontWeight: 800, margin: 0, color: "var(--text-main, #0f172a)" }}>
             {MESES[calMes.mes]}
           </h2>
-          <span style={{ fontSize: 16, fontWeight: 500, color: "var(--text-muted, #94a3b8)" }}>
+          <span style={{ fontSize: isMobile ? 14 : 16, fontWeight: 500, color: "var(--text-muted, #94a3b8)" }}>
             {calMes.anio}
           </span>
         </div>
@@ -478,18 +481,19 @@ function CalendarioMensualSection({
         </div>
       </div>
 
-      {/* Cabecera de días de la semana */}
+      {/* Cabecera de días de la semana (7 columnas fijas) */}
       <div
+        className="calendario-semana no-collapse-grid"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(7, 1fr)",
           textAlign: "center",
-          fontSize: 11,
+          fontSize: isMobile ? 10 : 11,
           fontWeight: 700,
           color: "var(--text-muted, #94a3b8)",
           textTransform: "uppercase",
-          letterSpacing: "0.05em",
-          paddingBottom: 10,
+          letterSpacing: isMobile ? "0" : "0.05em",
+          paddingBottom: isMobile ? 6 : 10,
           borderBottom: "1px solid var(--border, #e2e8f0)",
           marginBottom: 8,
         }}
@@ -499,23 +503,34 @@ function CalendarioMensualSection({
         ))}
       </div>
 
-      {/* Cuadrícula de días */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 6 }}>
+      {/* Cuadrícula de días (7 columnas fijas protegidas contra el colapso a 1fr) */}
+      <div
+        className="calendario-dias no-collapse-grid"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(7, 1fr)",
+          gap: isMobile ? 3 : 6,
+        }}
+      >
         {celdasMes.map((c, idx) => {
           if (c.otroMes) {
             return (
               <div
                 key={idx}
                 style={{
-                  minHeight: 88,
-                  padding: "6px 8px",
-                  borderRadius: 10,
+                  minHeight: isMobile ? 46 : 88,
+                  padding: isMobile ? "4px 2px" : "6px 8px",
+                  borderRadius: isMobile ? 6 : 10,
                   background: "var(--surface-subtle, #f8fafc)",
-                  opacity: 0.4,
+                  opacity: 0.35,
                   border: "1px solid transparent",
+                  textAlign: "center",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                <span style={{ fontSize: 11.5, color: "var(--text-muted, #94a3b8)" }}>{c.numero}</span>
+                <span style={{ fontSize: isMobile ? 10.5 : 11.5, color: "var(--text-muted, #94a3b8)" }}>{c.numero}</span>
               </div>
             );
           }
@@ -529,31 +544,34 @@ function CalendarioMensualSection({
               key={idx}
               onClick={() => setFechaSeleccionada(c.iso)}
               style={{
-                minHeight: 88,
-                padding: "6px 8px",
-                borderRadius: 10,
+                minHeight: isMobile ? 46 : 88,
+                padding: isMobile ? "4px 2px" : "6px 8px",
+                borderRadius: isMobile ? 6 : 10,
                 cursor: "pointer",
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
                 transition: "all 0.12s ease",
                 background: esSeleccionado
-                  ? "var(--surface, #ffffff)"
+                  ? (isMobile ? "#f1f5f9" : "var(--surface, #ffffff)")
                   : "var(--surface, #ffffff)",
                 border: esSeleccionado
                   ? "2px solid #0f172a"
                   : "1px solid var(--border, #e2e8f0)",
                 boxShadow: esSeleccionado ? "0 4px 12px rgba(15,23,42,0.08)" : "none",
+                minWidth: 0,
+                overflow: "hidden",
+                boxSizing: "border-box",
               }}
             >
               {/* Número del día */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ display: "flex", justifyContent: isMobile ? "center" : "space-between", alignItems: "center" }}>
                 <span
                   style={{
-                    fontSize: 12.5,
+                    fontSize: isMobile ? 11 : 12.5,
                     fontWeight: esHoy || esSeleccionado ? 800 : 600,
-                    width: 22,
-                    height: 22,
+                    width: isMobile ? 20 : 22,
+                    height: isMobile ? 20 : 22,
                     borderRadius: "50%",
                     display: "inline-flex",
                     alignItems: "center",
@@ -565,7 +583,7 @@ function CalendarioMensualSection({
                   {c.numero}
                 </span>
 
-                {evts.length > 0 && (
+                {!isMobile && evts.length > 0 && (
                   <div style={{ display: "flex", gap: 3 }}>
                     {evts.slice(0, 3).map((e) => (
                       <span
@@ -582,36 +600,54 @@ function CalendarioMensualSection({
                 )}
               </div>
 
-              {/* Chips de eventos en el día */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 3, marginTop: 4 }}>
-                {evts.slice(0, 2).map((e) => {
-                  const conf = TIPOS_COMPROMISO[e.tipo] || TIPOS_COMPROMISO.visita;
-                  return (
-                    <div
-                      key={e.id}
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 600,
-                        padding: "2px 5px",
-                        borderRadius: 4,
-                        background: conf.bg,
-                        color: conf.color,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                      title={`${e.hora || ""} ${e.obra || e.titulo}`}
-                    >
-                      {e.hora ? `${e.hora} ` : ""}{e.obra || e.titulo}
-                    </div>
-                  );
-                })}
-                {evts.length > 2 && (
-                  <span style={{ fontSize: 9.5, color: "var(--text-muted, #94a3b8)", fontWeight: 700 }}>
-                    +{evts.length - 2} más
-                  </span>
-                )}
-              </div>
+              {/* Eventos: en móvil se muestran como puntitos elegantes, en escritorio como chips */}
+              {isMobile ? (
+                evts.length > 0 && (
+                  <div style={{ display: "flex", justifyContent: "center", gap: 2.5, marginTop: 2 }}>
+                    {evts.slice(0, 3).map((e) => (
+                      <span
+                        key={e.id}
+                        style={{
+                          width: 4,
+                          height: 4,
+                          borderRadius: "50%",
+                          background: TIPOS_COMPROMISO[e.tipo]?.dot || "#0f172a",
+                        }}
+                      />
+                    ))}
+                  </div>
+                )
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 3, marginTop: 4 }}>
+                  {evts.slice(0, 2).map((e) => {
+                    const conf = TIPOS_COMPROMISO[e.tipo] || TIPOS_COMPROMISO.visita;
+                    return (
+                      <div
+                        key={e.id}
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 600,
+                          padding: "2px 5px",
+                          borderRadius: 4,
+                          background: conf.bg,
+                          color: conf.color,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                        title={`${e.hora || ""} ${e.obra || e.titulo}`}
+                      >
+                        {e.hora ? `${e.hora} ` : ""}{e.obra || e.titulo}
+                      </div>
+                    );
+                  })}
+                  {evts.length > 2 && (
+                    <span style={{ fontSize: 9.5, color: "var(--text-muted, #94a3b8)", fontWeight: 700 }}>
+                      +{evts.length - 2} más
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}

@@ -351,8 +351,10 @@ export default function ListaObras({
               >
                 ✕
               </button>
-            ) : (
+            ) : !isMobile ? (
               <span
+                className="kbd-ctrl-k"
+                data-kbd-shortcut="true"
                 style={{
                   position: "absolute",
                   right: 8,
@@ -368,9 +370,9 @@ export default function ListaObras({
                   pointerEvents: "none",
                 }}
               >
-                ⌘K
+                {typeof navigator !== "undefined" && navigator.platform?.toUpperCase().indexOf("MAC") >= 0 ? "⌘K" : "Ctrl K"}
               </span>
-            )}
+            ) : null}
           </div>
 
           {/* Conmutador Cuadrícula / Lista */}
@@ -1008,6 +1010,9 @@ function TarjetaObraApple({
         flexDirection: "column",
         justifyContent: "space-between",
         gap: 12,
+        minWidth: 0,
+        maxWidth: "100%",
+        boxSizing: "border-box",
       }}
     >
       {/* Barra de acento izquierdo */}
@@ -1022,15 +1027,18 @@ function TarjetaObraApple({
         }}
       />
 
-      <div>
+      <div style={{ minWidth: 0, maxWidth: "100%", width: "100%", boxSizing: "border-box" }}>
         {/* Cabecera: Código, estado y envío */}
         <div
+          className="no-wrap"
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
             gap: 8,
             marginBottom: 8,
+            width: "100%",
+            minWidth: 0,
           }}
         >
           <span
@@ -1043,12 +1051,13 @@ function TarjetaObraApple({
               background: "var(--surface-subtle, #f1f5f9)",
               color: "var(--text-main, #101828)",
               border: "1px solid var(--border, rgba(0,0,0,0.08))",
+              flexShrink: 0,
             }}
           >
             {o.id}
           </span>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               onClick={() => onToggleEnviado?.(o.id, !enviado)}
@@ -1102,6 +1111,7 @@ function TarjetaObraApple({
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
+            maxWidth: "100%",
           }}
         >
           {cliente || "Sin cliente"}
@@ -1114,21 +1124,22 @@ function TarjetaObraApple({
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
+              maxWidth: "100%",
             }}
           >
             {subtitulo}
           </div>
         )}
 
-        <div style={{ display: "flex", gap: 10, fontSize: 11, color: "var(--text-muted, #475467)", marginTop: 6 }}>
-          <span>📍 {o.ciudad || "—"}</span>
-          <span>📅 {fmtD(o.fechaInicio) || "—"}</span>
+        <div style={{ display: "flex", gap: 10, fontSize: 11, color: "var(--text-muted, #475467)", marginTop: 6, minWidth: 0, maxWidth: "100%" }}>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📍 {o.ciudad || "—"}</span>
+          <span style={{ flexShrink: 0 }}>📅 {fmtD(o.fechaInicio) || "—"}</span>
         </div>
       </div>
 
       {/* Avance Slider & Acciones */}
-      <div style={{ paddingTop: 8, borderTop: "1px solid var(--border, rgba(0,0,0,0.05))" }} onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 2 }}>
+      <div style={{ paddingTop: 8, borderTop: "1px solid var(--border, rgba(0,0,0,0.05))", width: "100%", minWidth: 0, boxSizing: "border-box" }} onClick={(e) => e.stopPropagation()}>
+        <div className="no-wrap" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, marginBottom: 2, width: "100%", minWidth: 0 }}>
           <span style={{ color: "var(--text-muted, #667085)" }}>Avance</span>
           <span style={{ fontWeight: 600, color: colorBarra, fontVariantNumeric: "tabular-nums" }}>
             {avance}%
@@ -1170,12 +1181,12 @@ function TarjetaObraApple({
           }}
         />
 
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11 }}>
-          <div style={{ display: "flex", gap: 6 }}>
+        <div className="no-wrap" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, width: "100%", minWidth: 0 }}>
+          <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
             <span style={{ color: "var(--text-muted, #475467)" }}>👷 {totalEmpleados}</span>
             <span style={{ color: fotosCount > 0 ? "#0071e3" : "#98a2b3" }}>📸 {fotosCount}</span>
           </div>
-          <span style={{ fontWeight: 600, color: "#0071e3" }}>Ver Obra &rarr;</span>
+          <span style={{ fontWeight: 600, color: "#0071e3", flexShrink: 0 }}>Ver Obra &rarr;</span>
         </div>
       </div>
     </article>

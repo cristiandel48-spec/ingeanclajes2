@@ -291,8 +291,10 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
               >
                 ✕
               </button>
-            ) : (
+            ) : !isMobile ? (
               <span
+                className="kbd-ctrl-k"
+                data-kbd-shortcut="true"
                 style={{
                   position: "absolute",
                   right: 8,
@@ -308,9 +310,9 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
                   pointerEvents: "none",
                 }}
               >
-                ⌘K
+                {typeof navigator !== "undefined" && navigator.platform?.toUpperCase().indexOf("MAC") >= 0 ? "⌘K" : "Ctrl K"}
               </span>
-            )}
+            ) : null}
           </div>
 
           {/* Conmutador Cuadrícula / Lista */}
@@ -673,21 +675,26 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
         flexDirection: "column",
         justifyContent: "space-between",
         gap: 14,
+        minWidth: 0,
+        maxWidth: "100%",
+        boxSizing: "border-box",
       }}
     >
-      <div>
+      <div style={{ minWidth: 0, maxWidth: "100%", width: "100%", boxSizing: "border-box" }}>
         {/* Cabecera de la tarjeta: Folio, fecha y estado */}
         <div
+          className="no-wrap"
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
             gap: 8,
             marginBottom: 8,
-            flexWrap: "wrap",
+            width: "100%",
+            minWidth: 0,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, overflow: "hidden" }}>
             <span
               style={{
                 fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
@@ -700,17 +707,20 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
                 border: "1px solid var(--border, rgba(0,0,0,0.08))",
                 fontVariantNumeric: "tabular-nums",
                 letterSpacing: "-0.01em",
+                flexShrink: 0,
               }}
             >
               {c.numero || c.id}
             </span>
-            <span style={{ fontSize: 11, color: "var(--text-muted, #667085)" }}>
+            <span style={{ fontSize: 11, color: "var(--text-muted, #667085)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {fmtD(c.fecha)}
               {ciudadNorm ? ` · ${ciudadNorm}` : ""}
             </span>
           </div>
 
-          <BotonEstadoAprobacion cotizacion={c} acciones={acciones} />
+          <div style={{ flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+            <BotonEstadoAprobacion cotizacion={c} acciones={acciones} />
+          </div>
         </div>
 
         {/* Alerta de seguimiento comercial */}
@@ -744,6 +754,7 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
+            maxWidth: "100%",
           }}
         >
           {clienteNorm || "Sin razón social"}
@@ -758,6 +769,7 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
+            maxWidth: "100%",
           }}
         >
           {obraNorm || activa?.nombre || "Cotización técnica"}
@@ -766,17 +778,20 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
 
       {/* Pie de la tarjeta: Total y Botones de acción */}
       <div
+        className="no-wrap"
         style={{
           borderTop: "1px solid var(--border, rgba(0, 0, 0, 0.06))",
           paddingTop: 12,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          gap: 10,
-          flexWrap: "wrap",
+          gap: 8,
+          width: "100%",
+          minWidth: 0,
+          boxSizing: "border-box",
         }}
       >
-        <div>
+        <div style={{ minWidth: 0, flexShrink: 0 }}>
           <div
             style={{
               fontSize: 10.5,
@@ -799,7 +814,7 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
           <button
             type="button"
             title="Inspeccionar cotización"
@@ -808,14 +823,15 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
               onInspeccionar();
             }}
             style={{
-              background: "var(--surface-subtle, #f5f5f7)",
-              color: "var(--text-main, #1d1d1f)",
-              border: "1px solid var(--border, rgba(0,0,0,0.08))",
+              background: "#1d1d1f",
+              color: "#ffffff",
+              border: "none",
               borderRadius: 8,
-              padding: "5px 10px",
+              padding: "5px 11px",
               fontSize: 11.5,
               fontWeight: 600,
               cursor: "pointer",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
             }}
           >
             Ver
@@ -828,9 +844,9 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
             style={{
               background: "transparent",
               color: "var(--text-muted, #6e6e73)",
-              border: "1px solid var(--border, rgba(0,0,0,0.1))",
+              border: "1px solid var(--border, rgba(0,0,0,0.12))",
               borderRadius: 8,
-              padding: "5px 10px",
+              padding: "5px 9px",
               fontSize: 11.5,
               fontWeight: 600,
               cursor: "pointer",
@@ -846,9 +862,9 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
             style={{
               background: "transparent",
               color: "var(--text-muted, #6e6e73)",
-              border: "1px solid var(--border, rgba(0,0,0,0.1))",
+              border: "1px solid var(--border, rgba(0,0,0,0.12))",
               borderRadius: 8,
-              padding: "5px 8px",
+              padding: "5px 7px",
               fontSize: 11.5,
               fontWeight: 600,
               cursor: "pointer",
@@ -857,23 +873,25 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
             📋
           </button>
 
-          <button
-            type="button"
-            title="Eliminar permanentemente"
-            onClick={alPulsar(acciones.eliminar)}
-            style={{
-              background: "rgba(239, 68, 68, 0.08)",
-              color: "#dc2626",
-              border: "1px solid rgba(239, 68, 68, 0.2)",
-              borderRadius: 8,
-              padding: "5px 8px",
-              fontSize: 11.5,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            🗑️
-          </button>
+          {!isMobile && (
+            <button
+              type="button"
+              title="Eliminar permanentemente"
+              onClick={alPulsar(acciones.eliminar)}
+              style={{
+                background: "rgba(239, 68, 68, 0.08)",
+                color: "#dc2626",
+                border: "1px solid rgba(239, 68, 68, 0.2)",
+                borderRadius: 8,
+                padding: "5px 8px",
+                fontSize: 11.5,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              🗑️
+            </button>
+          )}
         </div>
       </div>
     </article>

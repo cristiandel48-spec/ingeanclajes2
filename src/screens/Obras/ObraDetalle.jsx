@@ -231,10 +231,11 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               style={{
                 fontSize: 11.5,
                 color: "var(--text-muted, #6e6e73)",
-                marginTop: 3,
-                whiteSpace: "nowrap",
+                marginTop: 4,
+                whiteSpace: isMobile ? "normal" : "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
+                lineHeight: 1.4,
               }}
               title={`${oAct.id} · ${fmtD(oAct.fechaInicio)} → ${fmtD(oAct.fechaFin) || "En curso"} · ${oAct.proyecto} · 📍 ${oAct.ciudad}${oAct.direccion ? ` · ${oAct.direccion}` : ""}`}
             >
@@ -243,8 +244,18 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           </div>
         </div>
 
-        {/* Derecha: Botones con la paleta sobria de Cotizaciones */}
-        <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "center", flexWrap: "wrap" }}>
+        {/* Derecha: Botones de acción (cuadrícula 2x2 limpia en móvil para que nunca se desborden) */}
+        <div
+          className={isMobile ? "grid-2-col no-collapse-grid" : ""}
+          style={{
+            display: isMobile ? "grid" : "flex",
+            gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "none",
+            gap: 8,
+            width: isMobile ? "100%" : "auto",
+            flexShrink: 0,
+            alignItems: "center",
+          }}
+        >
           {/* Botón CERTIFICAR en estilo Apple Dark Button */}
           <button
             onClick={() => irAPantalla("certificaciones", { obraId: oAct.id })}
@@ -254,14 +265,17 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               border: "none",
               borderRadius: 10,
               fontSize: 12,
-              padding: "7px 14px",
+              padding: isMobile ? "9px 10px" : "7px 14px",
               fontWeight: 600,
               cursor: "pointer",
               display: "inline-flex",
               alignItems: "center",
+              justifyContent: "center",
               gap: 6,
               boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
               transition: "all 0.15s ease",
+              width: isMobile ? "100%" : "auto",
+              boxSizing: "border-box",
             }}
             title="Crear certificación de calidad para esta obra"
           >
@@ -281,14 +295,17 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               border: "1px solid var(--border, #d2d2d7)",
               borderRadius: 10,
               fontSize: 12,
-              padding: "7px 13px",
+              padding: isMobile ? "9px 10px" : "7px 13px",
               fontWeight: 600,
               cursor: "pointer",
               display: "inline-flex",
               alignItems: "center",
+              justifyContent: "center",
               gap: 6,
               boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
               transition: "all 0.15s ease",
+              width: isMobile ? "100%" : "auto",
+              boxSizing: "border-box",
             }}
             title="Crear informe de actividades para esta obra"
           >
@@ -305,14 +322,17 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               border: detTab === "fototeca" ? "1px solid #1d1d1f" : "1px solid var(--border, #d2d2d7)",
               borderRadius: 10,
               fontSize: 12,
-              padding: "7px 13px",
+              padding: isMobile ? "9px 10px" : "7px 13px",
               fontWeight: 600,
               cursor: "pointer",
               display: "inline-flex",
               alignItems: "center",
+              justifyContent: "center",
               gap: 6,
               boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
               transition: "all 0.15s ease",
+              width: isMobile ? "100%" : "auto",
+              boxSizing: "border-box",
             }}
             title="Ver todas las fotos de la obra y descargar en ZIP"
           >
@@ -329,13 +349,16 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               border: "1px solid var(--border, #e5e5ea)",
               borderRadius: 10,
               fontSize: 12,
-              padding: "7px 12px",
+              padding: isMobile ? "9px 10px" : "7px 12px",
               fontWeight: 600,
               cursor: "pointer",
               display: "inline-flex",
               alignItems: "center",
+              justifyContent: "center",
               gap: 5,
               transition: "all 0.15s ease",
+              width: isMobile ? "100%" : "auto",
+              boxSizing: "border-box",
             }}
             title={mostrarGuia ? "Ocultar qué sigue" : "Mostrar guía de flujo y qué sigue en esta obra"}
           >

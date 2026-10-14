@@ -71,7 +71,7 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
         boxSizing: "border-box",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 12, flexShrink: 1, minWidth: 0, overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 10 : 12, flex: 1, minWidth: 0, overflow: "hidden" }}>
         {isMobile && (
           <button
             onClick={onOpenMenu}
@@ -89,40 +89,40 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
           </button>
         )}
 
-        <div style={{ flexShrink: 1, minWidth: 0, overflow: "hidden" }}>
+        <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
           {!isMobile && section && (
             <div style={{ fontSize: 11.5, color: theme.muted, letterSpacing: .2, whiteSpace: "nowrap" }}>
               {section}
             </div>
           )}
           <div style={{
-            fontSize: isMobile ? 13.5 : 16.5, fontWeight: 700, color: theme.text,
+            fontSize: isMobile ? 15 : 16.5, fontWeight: 700, color: theme.text,
             whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-            maxWidth: isMobile ? "120px" : "none",
+            letterSpacing: "-0.01em",
           }}>
             {title}
           </div>
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 4 : 10, flexShrink: 1, minWidth: 0, justifyContent: "flex-end" }}>
-        {!esPantallaMenu && (
+      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 10, flexShrink: 0, justifyContent: "flex-end" }}>
+        {!isMobile && !esPantallaMenu && (
           <button
             onClick={() => irAPantalla(destinoMenu || "dashboard")}
             aria-label="Volver al menú"
             title="Volver al menú principal (Dashboard)"
             style={{
               height: 34,
-              padding: isMobile ? "0 8px" : "0 13px",
+              padding: "0 13px",
               display: "flex",
               alignItems: "center",
-              gap: isMobile ? 4 : 6,
+              gap: 6,
               background: dark ? "rgba(255, 255, 255, 0.08)" : "#ffffff",
               border: `1px solid ${dark ? "rgba(255, 255, 255, 0.18)" : "#cbd5e1"}`,
               borderRadius: 8,
               color: dark ? "#f1f5f9" : "#334155",
               cursor: "pointer",
-              fontSize: isMobile ? 11.5 : 12.5,
+              fontSize: 12.5,
               fontWeight: 600,
               flexShrink: 0,
               boxShadow: "0 1px 2px rgba(0,0,0,.04)",
@@ -153,7 +153,7 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
             >
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
-            <span>{isMobile ? "Menú" : "Volver al menú"}</span>
+            <span>Volver al menú</span>
           </button>
         )}
 
@@ -178,14 +178,14 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
         )}
         <SaveIndicator theme={theme} compact={isMobile} />
 
-        {esSuperAdminCristian && (
+        {!isMobile && esSuperAdminCristian && (
           <button
             onClick={() => irAPantalla("usuarios")}
             aria-label="Ver usuarios en línea"
             title={`Monitoreo en tiempo real (Exclusivo Cristian Delgado): ${totalEnLinea} usuario(s) conectado(s). Clic para abrir administración.`}
             style={{
               height: 34,
-              padding: isMobile ? "0 6px" : "0 12px",
+              padding: "0 12px",
               display: "flex",
               alignItems: "center",
               gap: 5,
@@ -209,11 +209,11 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
                 display: "inline-block",
               }}
             />
-            <span>{totalEnLinea}{isMobile ? "" : " en línea"}</span>
+            <span>{totalEnLinea} en línea</span>
           </button>
         )}
 
-        {totalManana > 0 && (
+        {!isMobile && totalManana > 0 && (
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("abrir-aviso-agenda-manana"))}
@@ -221,7 +221,7 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
             title={`Tienes ${totalManana} compromiso(s) para mañana. Clic para ver el itinerario completo.`}
             style={{
               height: 34,
-              padding: isMobile ? "0 7px" : "0 12px",
+              padding: "0 12px",
               display: "flex",
               alignItems: "center",
               gap: 5,
@@ -253,11 +253,11 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
               <line x1="8" y1="2" x2="8" y2="6" />
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
-            <span>{isMobile ? `(${totalManana})` : `Mañana (${totalManana})`}</span>
+            <span>Mañana ({totalManana})</span>
           </button>
         )}
 
-        <BotonInstalarApp estilo="topbar" dark={dark} compact={isMobile} />
+        {!isMobile && <BotonInstalarApp estilo="topbar" dark={dark} compact={isMobile} />}
 
         <button
           onClick={onToggleTheme}

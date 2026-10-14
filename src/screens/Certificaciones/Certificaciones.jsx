@@ -17,6 +17,7 @@ import { siguienteIdUnico } from "../../lib/identificadores";
 import ListaCertificaciones from "./ListaCertificaciones";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
+import { useIsMobile } from "../../hooks/useMediaQuery";
 // Informes de una obra. Si se indica uno concreto, solo ese.
 const informesFuente = (informes, obraId, informeId = "")=>{
   if(!obraId) return [];
@@ -64,6 +65,7 @@ const observacionesDesdeInformes = (informes, obraId, informeId = "")=>{
 };
 
 export default function Certificaciones({ctx}){
+  const isMobile = useIsMobile();
   const {certs,setCerts,obras,clientes,cotizaciones,informes,intencion,limpiarIntencion,irAPantalla}=ctx;
   const [sel,setSel]=useState(null);
   // Obra que llega desde el detalle de obra ("Crear certificación").
@@ -391,8 +393,8 @@ export default function Certificaciones({ctx}){
         </button>
         <button
           style={{
-            ...B("#E0342A", "#ffffff"),
-            boxShadow: "0 2px 8px rgba(224, 52, 42, 0.25)",
+            ...B("#f47c20", "#ffffff"),
+            boxShadow: "0 1px 3px rgba(244, 124, 32, 0.25)",
             padding: "7px 16px",
             borderRadius: 8,
             fontSize: 12,
@@ -419,50 +421,91 @@ export default function Certificaciones({ctx}){
         </button>
       </div>
     ) : (!sel && !nueva) ? (
-      <div style={{ display: "flex", gap: 7 }}>
+      <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
         <button
           style={{
-            background: "#f47c20",
-            color: "#fff",
-            border: "1px solid #f47c20",
-            borderRadius: 9,
-            padding: "8px 14px",
-            fontSize: 12.5,
-            fontWeight: 700,
+            background: "var(--surface, #ffffff)",
+            color: "var(--text-main, #101828)",
+            border: "1px solid var(--border, rgba(0, 0, 0, 0.12))",
+            borderRadius: 8,
+            padding: "7px 13px",
+            fontSize: 12,
+            fontWeight: 600,
             cursor: "pointer",
             fontFamily: "inherit",
             whiteSpace: "nowrap",
-          }}
-          onClick={() => abrirNuevaCertificacion("Certificación")}
-        >
-          + Certificación
-        </button>
-        <button
-          style={{
-            background: "#0f2d1a",
-            color: "#4ade80",
-            border: "1px solid #166534",
-            borderRadius: 9,
-            padding: "8px 14px",
-            fontSize: 12.5,
-            fontWeight: 700,
-            cursor: "pointer",
-            fontFamily: "inherit",
-            whiteSpace: "nowrap",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
           }}
           onClick={() => abrirNuevaCertificacion("Recertificación")}
         >
           + Recertificación
+        </button>
+        <button
+          style={{
+            ...B("#f47c20"),
+            fontSize: 12,
+            padding: "7px 14px",
+            fontWeight: 600,
+            boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+          }}
+          onClick={() => abrirNuevaCertificacion("Certificación")}
+        >
+          + Certificación
         </button>
       </div>
     ) : null,
     [sel, nueva, descargando]
   );
 
-
-
   return(
-    <div style={{padding:"14px 28px 28px"}}>
+    <div
+      style={{
+        maxWidth: 1360,
+        margin: "0 auto",
+        padding: isMobile ? "10px 8px 24px" : "14px 16px 28px",
+        width: "100%",
+        boxSizing: "border-box",
+      }}
+    >
+      {!sel && (
+        <H1
+          eyebrow="SISTEMA DE GESTIÓN Y CALIDAD"
+          title="Certificaciones de Calidad"
+          subtitle={`${certs.length} documento(s) emitido(s) · Certificaciones y recertificaciones de líneas de vida y anclajes`}
+          action={
+            !nueva ? (
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <button
+                  style={{
+                    background: "var(--surface, #ffffff)",
+                    color: "var(--text-main, #101828)",
+                    border: "1px solid var(--border, rgba(0, 0, 0, 0.12))",
+                    borderRadius: 10,
+                    padding: "7px 13px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                    fontFamily: "inherit",
+                  }}
+                  onClick={() => abrirNuevaCertificacion("Recertificación")}
+                >
+                  + Recertificación
+                </button>
+                <button
+                  style={{
+                    ...B("#f47c20"),
+                    boxShadow: "0 1px 3px rgba(244, 124, 32, 0.25)",
+                  }}
+                  onClick={() => abrirNuevaCertificacion("Certificación")}
+                >
+                  + Certificación
+                </button>
+              </div>
+            ) : null
+          }
+        />
+      )}
 
       {obras.length===0 && (
         <AvisoFlujo

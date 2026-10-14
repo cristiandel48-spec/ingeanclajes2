@@ -10,7 +10,9 @@ import { useAccionesPantalla } from "../../context/accionesPantalla";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarFrase, normalizarMayusculas, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
 import { siguienteIdUnico } from "../../lib/identificadores";
+import { useIsMobile } from "../../hooks/useMediaQuery";
 export default function ClientesDB({ctx}){
+  const isMobile = useIsMobile();
   const {clientes,setClientes,obras,cotizaciones,certs,setObras,setCotizaciones,setCerts}=ctx;
   const clienteBase={nombre:"",nit:"",telefono:"",ciudad:"",direccion:"",contacto:"",email:"",estado:"Activo",notas:""};
   const [showForm,setShowForm]=useState(false);
@@ -246,31 +248,136 @@ export default function ClientesDB({ctx}){
 
   // Los botones viven en la barra de arriba, no en un titulo propio.
   useAccionesPantalla(
-    <div style={{display:"flex",gap:7}}>
-      {sinRegistrar.length>0 && (
+    <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
+      {sinRegistrar.length > 0 && (
         <button
-          style={{background:"rgba(30, 64, 175, 0.15)",color:"#60a5fa",border:"1px solid rgba(191, 219, 254, 0.3)",borderRadius:9,
-            padding:"8px 14px",fontSize:12.5,fontWeight:600,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
-          onClick={()=>importarRef.current()}
-        >⬇ Importar {sinRegistrar.length} sugerido(s)</button>
+          style={{
+            background: "var(--surface, #ffffff)",
+            color: "var(--text-main, #101828)",
+            border: "1px solid var(--border, rgba(0, 0, 0, 0.12))",
+            borderRadius: 8,
+            padding: "7px 12px",
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: "pointer",
+            fontFamily: "inherit",
+            whiteSpace: "nowrap",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+          }}
+          onClick={() => importarRef.current()}
+        >
+          ⬇ Importar {sinRegistrar.length} sugerido(s)
+        </button>
       )}
       <button
-        style={{background:"#cc0000",color:"#fff",border:"1px solid #cc0000",borderRadius:9,
-          padding:"8px 16px",fontSize:12.5,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}
-        onClick={()=>nuevoRef.current()}
-      >+ Cliente</button>
+        style={{
+          background: showForm ? "var(--surface, #ffffff)" : "#f47c20",
+          color: showForm ? "var(--text-main, #101828)" : "#ffffff",
+          border: showForm ? "1px solid var(--border, rgba(0, 0, 0, 0.12))" : "none",
+          borderRadius: 8,
+          padding: "7px 14px",
+          fontSize: 12,
+          fontWeight: 600,
+          cursor: "pointer",
+          fontFamily: "inherit",
+          whiteSpace: "nowrap",
+          boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+        }}
+        onClick={() => nuevoRef.current()}
+      >
+        {showForm ? "✕ Cerrar" : "+ Cliente"}
+      </button>
     </div>,
-    [sinRegistrar.length]
+    [sinRegistrar.length, showForm]
   );
 
-  return(
-    <div style={{padding:28}}>
+  return (
+    <div
+      style={{
+        maxWidth: 1360,
+        margin: "0 auto",
+        padding: isMobile ? "10px 8px 24px" : "14px 16px 28px",
+        width: "100%",
+        boxSizing: "border-box",
+      }}
+    >
+      <H1
+        eyebrow="DIRECTORIO COMERCIAL"
+        title="Clientes y Contratistas"
+        subtitle={`${clientesData.length} cliente(s) registrado(s) · Base de datos centralizada de clientes y terceros`}
+        action={
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            {sinRegistrar.length > 0 && (
+              <button
+                style={{
+                  background: "var(--surface, #ffffff)",
+                  color: "var(--text-main, #101828)",
+                  border: "1px solid var(--border, rgba(0, 0, 0, 0.12))",
+                  borderRadius: 10,
+                  padding: "7px 13px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  whiteSpace: "nowrap",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+                onClick={importarClientes}
+              >
+                <span>⬇</span>
+                <span>Importar {sinRegistrar.length} sugeridos</span>
+              </button>
+            )}
+            <button
+              style={{
+                background: showForm ? "var(--surface, #ffffff)" : "#f47c20",
+                color: showForm ? "var(--text-main, #101828)" : "#ffffff",
+                border: showForm ? "1px solid var(--border, rgba(0, 0, 0, 0.12))" : "none",
+                borderRadius: 10,
+                padding: "7px 15px",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                whiteSpace: "nowrap",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+              onClick={() => {
+                setShowForm((v) => !v);
+                if (showForm) resetCliente();
+              }}
+            >
+              <span>{showForm ? "✕" : "+"}</span>
+              <span>{showForm ? "Cerrar formulario" : "Nuevo cliente"}</span>
+            </button>
+          </div>
+        }
+      />
 
-
-      {showForm&&(
-        <div style={{...CD,marginBottom:18,border:"1px solid #cc0000"}}>
-          <div style={ST}>{editId?"Editar cliente":"Nuevo cliente"}</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:14}}>
+      {showForm && (
+        <div
+          style={{
+            ...CD,
+            marginBottom: 20,
+            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+            boxShadow: "0 4px 20px -4px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.02)",
+          }}
+        >
+          <div style={ST}>{editId ? "Editar cliente" : "Nuevo cliente"}</div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(260px, 1fr))",
+              gap: 12,
+              marginBottom: 16,
+            }}
+          >
             <CampoTexto label="Nombre / razón social" obligatorio={true} valor={form.nombre} onChange={v=>setForm({...form,nombre:v})}
               normalizar={normalizarRazonSocial} placeholder="Nombre del cliente" autoCapitalize="characters"
               ayuda="Sale impreso en cotizaciones y certificados."/>
@@ -296,13 +403,13 @@ export default function ClientesDB({ctx}){
               </select>
             </div>
             <CampoTexto label="Dirección" obligatorio={true} valor={form.direccion} onChange={v=>setForm({...form,direccion:v})}
-              normalizar={normalizarMayusculas} placeholder="Dirección principal" autoCapitalize="characters" wrapStyle={{gridColumn:"span 2"}}
+              normalizar={normalizarMayusculas} placeholder="Dirección principal" autoCapitalize="characters" wrapStyle={{gridColumn: isMobile ? "auto" : "span 2"}}
               ayuda="Obligatorio. Domicilio principal del cliente."/>
             <CampoTexto label="Email" valor={form.email} onChange={v=>setForm({...form,email:v})}
               normalizar={normalizarCorreo} revisar={avisoCorreo} placeholder="correo@cliente.com"
               inputMode="email" autoCapitalize="off" spellCheck={false}
               ayuda="A este correo se envían las cotizaciones."/>
-            <div style={{gridColumn:"span 3"}}>
+            <div style={{gridColumn: isMobile ? "auto" : "1 / -1"}}>
               <LBL>Notas</LBL>
               <textarea value={form.notas} onChange={e=>setForm({...form,notas:e.target.value})}
                 onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==form.notas)setForm({...form,notas:v});}}
@@ -310,9 +417,13 @@ export default function ClientesDB({ctx}){
                 style={{...SI,minHeight:86,resize:"vertical"}}/>
             </div>
           </div>
-          <div style={{display:"flex",gap:8}}>
-            <button style={B("#cc0000")} onClick={guardarCliente}>{editId?"Guardar cambios":"Crear cliente"}</button>
-            <button style={B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)")} onClick={resetCliente}>Cancelar</button>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            <button style={{...B("#f47c20"),boxShadow:"0 1px 3px rgba(244, 124, 32, 0.25)"}} onClick={guardarCliente}>
+              {editId?"Guardar cambios":"Crear cliente"}
+            </button>
+            <button style={{...B("var(--surface, #ffffff)","var(--text-main, #101828)"),border:"1px solid var(--border, rgba(0, 0, 0, 0.12))"}} onClick={resetCliente}>
+              Cancelar
+            </button>
           </div>
         </div>
       )}

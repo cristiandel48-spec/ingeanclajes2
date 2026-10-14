@@ -8,6 +8,7 @@ import { filasDesdeSemilla, filasEditables } from "../../lib/catalogo";
 import { esAdmin } from "../../lib/permisos";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import { normalizarMayusculas } from "../../lib/normalizarEntrada";
+import { useIsMobile } from "../../hooks/useMediaQuery";
 
 // Los servicios que se cotizan y su precio.
 //
@@ -24,6 +25,7 @@ const UNIDADES = ["ML", "Und", "Metro", "Global", "Dia"];
 
 export default function Catalogo({ ctx }) {
   const { catalogoItems, setCatalogoItems, membresia } = ctx;
+  const isMobile = useIsMobile();
   const puedeEditar = esAdmin(membresia);
   const filas = filasEditables(catalogoItems);
   const [nuevo, setNuevo] = useState(false);
@@ -58,12 +60,12 @@ export default function Catalogo({ ctx }) {
 
   useAccionesPantalla(
     puedeEditar ? (
-      <div style={{ display: "flex", gap: 7 }}>
+      <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
         {filas.length === 0 && (
-          <button style={{ ...B("var(--surface-subtle)", "var(--text-muted)"), border: "1px solid var(--border)", fontSize: 12.5, padding: "8px 14px" }}
+          <button style={{ ...B("var(--surface-subtle)", "var(--text-muted)"), border: "1px solid var(--border)", fontSize: 12, padding: "7px 12px" }}
             onClick={sembrar}>Cargar los de siempre</button>
         )}
-        <button style={{ ...B("#f47c20"), fontSize: 12.5, padding: "8px 16px", fontWeight: 700 }}
+        <button style={{ ...B("#f47c20"), fontSize: 12, padding: "7px 14px", fontWeight: 600, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}
           onClick={agregar}>+ Nuevo servicio</button>
       </div>
     ) : null,
@@ -73,7 +75,55 @@ export default function Catalogo({ ctx }) {
   const activos = filas.filter((f) => f.disponible !== false).length;
 
   return (
-    <div style={{ padding: "14px 28px 28px" }}>
+    <div
+      style={{
+        maxWidth: 1360,
+        margin: "0 auto",
+        padding: isMobile ? "10px 8px 24px" : "14px 16px 28px",
+        width: "100%",
+        boxSizing: "border-box",
+      }}
+    >
+      <H1
+        eyebrow="TARIFARIO BASE Y SERVICIOS"
+        title="Catálogo y Precios"
+        subtitle={`${activos} de ${filas.length} servicio(s) activos · Tarifario oficial para generador de cotizaciones y mediciones`}
+        action={
+          puedeEditar ? (
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              {filas.length === 0 && (
+                <button
+                  style={{
+                    background: "var(--surface, #ffffff)",
+                    color: "var(--text-main, #101828)",
+                    border: "1px solid var(--border, rgba(0, 0, 0, 0.12))",
+                    borderRadius: 10,
+                    padding: "7px 13px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+                    fontFamily: "inherit",
+                  }}
+                  onClick={sembrar}
+                >
+                  Cargar los de siempre
+                </button>
+              )}
+              <button
+                style={{
+                  ...B("#f47c20"),
+                  boxShadow: "0 1px 3px rgba(244, 124, 32, 0.25)",
+                }}
+                onClick={agregar}
+              >
+                + Nuevo servicio
+              </button>
+            </div>
+          ) : null
+        }
+      />
+
       <AvisoFlujo tono="info" titulo="De aquí salen todos los precios">
         Lo que se cambie aquí lo usan al instante el editor de cotizaciones, el dictado, la
         importación de documentos y las respuestas de WhatsApp. <strong>No hace falta publicar
@@ -112,54 +162,58 @@ export default function Catalogo({ ctx }) {
             </span>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1.1fr 2.4fr .8fr 1.1fr .7fr",
-            gap: 8, padding: "7px 10px", background: "var(--surface-subtle)", borderRadius: 8,
-            fontSize: 9.5, fontWeight: 800, letterSpacing: .4, color: "var(--text-muted)", textTransform: "uppercase" }}>
-            <span>Categoría</span><span>Servicio</span><span>Unidad</span><span>Precio</span><span>Activo</span>
-          </div>
-
-          {filas.map((fila) => (
-            <div key={fila.id} style={{ display: "grid", gridTemplateColumns: "1.1fr 2.4fr .8fr 1.1fr .7fr",
-              gap: 8, padding: "7px 10px", alignItems: "center", borderBottom: "1px solid var(--border)",
-              opacity: fila.disponible === false ? .55 : 1 }}>
-              <input value={fila.categoria || ""} disabled={!puedeEditar}
-                onChange={(e) => cambiar(fila.id, "categoria", e.target.value)}
-                style={{ ...SI, fontSize: 11.5, padding: "5px 8px" }} />
-
-              <input value={fila.descripcion || ""} disabled={!puedeEditar}
-                onChange={(e) => cambiar(fila.id, "descripcion", e.target.value)}
-                onBlur={(e) => cambiar(fila.id, "descripcion", normalizarMayusculas(e.target.value))}
-                placeholder="Nombre del servicio, como sale impreso"
-                style={{ ...SI, fontSize: 11.5, padding: "5px 8px", fontWeight: 600 }} />
-
-              <select value={fila.unidad || "Und"} disabled={!puedeEditar}
-                onChange={(e) => cambiar(fila.id, "unidad", e.target.value)}
-                style={{ ...SI, fontSize: 11.5, padding: "5px 6px" }}>
-                {[...new Set([...UNIDADES, fila.unidad].filter(Boolean))].map((u) => (
-                  <option key={u} value={u}>{u}</option>
-                ))}
-              </select>
-
-              <div>
-                <input type="number" min="0" step="1000" value={fila.precioBase ?? 0}
-                  disabled={!puedeEditar}
-                  onChange={(e) => cambiar(fila.id, "precioBase", Number(e.target.value) || 0)}
-                  style={{ ...SI, fontSize: 11.5, padding: "5px 8px", textAlign: "right",
-                    fontVariantNumeric: "tabular-nums" }} />
-                <div style={{ fontSize: 9.5, color: "var(--text-muted)", textAlign: "right", marginTop: 1 }}>
-                  {fmt(Number(fila.precioBase) || 0)}
-                </div>
+          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", width: "100%" }}>
+            <div style={{ minWidth: 640 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1.1fr 2.4fr .8fr 1.1fr .7fr",
+                gap: 8, padding: "8px 10px", background: "var(--surface-subtle, #f5f5f7)", borderRadius: 8,
+                fontSize: 10, fontWeight: 700, letterSpacing: "0.04em", color: "var(--text-muted, #667085)", textTransform: "uppercase" }}>
+                <span>Categoría</span><span>Servicio</span><span>Unidad</span><span>Precio</span><span>Activo</span>
               </div>
 
-              {/* Un servicio que se deja de prestar se APAGA, no se borra: las
-                  cotizaciones viejas siguen diciendo de donde salio su precio. */}
-              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--text-main)" }}>
-                <input type="checkbox" checked={fila.disponible !== false} disabled={!puedeEditar}
-                  onChange={(e) => cambiar(fila.id, "disponible", e.target.checked)} />
-                {fila.disponible === false ? "No" : "Sí"}
-              </label>
+              {filas.map((fila) => (
+                <div key={fila.id} style={{ display: "grid", gridTemplateColumns: "1.1fr 2.4fr .8fr 1.1fr .7fr",
+                  gap: 8, padding: "7px 10px", alignItems: "center", borderBottom: "1px solid var(--border, rgba(0, 0, 0, 0.06))",
+                  opacity: fila.disponible === false ? .55 : 1 }}>
+                  <input value={fila.categoria || ""} disabled={!puedeEditar}
+                    onChange={(e) => cambiar(fila.id, "categoria", e.target.value)}
+                    style={{ ...SI, fontSize: 11.5, padding: "5px 8px" }} />
+
+                  <input value={fila.descripcion || ""} disabled={!puedeEditar}
+                    onChange={(e) => cambiar(fila.id, "descripcion", e.target.value)}
+                    onBlur={(e) => cambiar(fila.id, "descripcion", normalizarMayusculas(e.target.value))}
+                    placeholder="Nombre del servicio, como sale impreso"
+                    style={{ ...SI, fontSize: 11.5, padding: "5px 8px", fontWeight: 600 }} />
+
+                  <select value={fila.unidad || "Und"} disabled={!puedeEditar}
+                    onChange={(e) => cambiar(fila.id, "unidad", e.target.value)}
+                    style={{ ...SI, fontSize: 11.5, padding: "5px 6px" }}>
+                    {[...new Set([...UNIDADES, fila.unidad].filter(Boolean))].map((u) => (
+                      <option key={u} value={u}>{u}</option>
+                    ))}
+                  </select>
+
+                  <div>
+                    <input type="number" min="0" step="1000" value={fila.precioBase ?? 0}
+                      disabled={!puedeEditar}
+                      onChange={(e) => cambiar(fila.id, "precioBase", Number(e.target.value) || 0)}
+                      style={{ ...SI, fontSize: 11.5, padding: "5px 8px", textAlign: "right",
+                        fontVariantNumeric: "tabular-nums" }} />
+                    <div style={{ fontSize: 9.5, color: "var(--text-muted)", textAlign: "right", marginTop: 1 }}>
+                      {fmt(Number(fila.precioBase) || 0)}
+                    </div>
+                  </div>
+
+                  {/* Un servicio que se deja de prestar se APAGA, no se borra: las
+                      cotizaciones viejas siguen diciendo de donde salio su precio. */}
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--text-main)" }}>
+                    <input type="checkbox" checked={fila.disponible !== false} disabled={!puedeEditar}
+                      onChange={(e) => cambiar(fila.id, "disponible", e.target.checked)} />
+                    {fila.disponible === false ? "No" : "Sí"}
+                  </label>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
 
           {nuevo && (
             <div style={{ fontSize: 11.5, color: "#166534", background: "rgba(34, 197, 94, 0.15)",

@@ -9,7 +9,9 @@ import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmtD, today } from "../../lib/format";
 import { printCurrentPz } from "../../lib/print";
 import { siguienteIdUnico } from "../../lib/identificadores";
+import { useIsMobile } from "../../hooks/useMediaQuery";
 export default function Vencimientos({ctx}){
+  const isMobile = useIsMobile();
   const {certs,setCerts,obras}=ctx;
   const hoy=new Date();
 
@@ -64,7 +66,22 @@ export default function Vencimientos({ctx}){
   const certParaImpresion=imprimiendo?certs.find(x=>x.id===imprimiendo.id)||imprimiendo:null;
 
   return(
-    <div style={{padding:"14px 28px 28px"}}>
+    <div
+      style={{
+        maxWidth: 1360,
+        margin: "0 auto",
+        padding: isMobile ? "10px 8px 24px" : "14px 16px 28px",
+        width: "100%",
+        boxSizing: "border-box",
+      }}
+    >
+      {!certParaImpresion && (
+        <H1
+          eyebrow="CONTROL Y VIGENCIA"
+          title="Vencimientos de Certificaciones"
+          subtitle={`${lista.length} certificación(es) en seguimiento · Control preventivo de mantenimiento y recertificaciones`}
+        />
+      )}
 
       {/* Confirmación */}
       {guardado&&(
@@ -76,45 +93,45 @@ export default function Vencimientos({ctx}){
 
       {/* Modal de recertificación */}
       {recertForm&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:20,overflowY:"auto"}}>
-          <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:16,padding:32,width:"100%",maxWidth:580,boxShadow:"0 20px 60px rgba(0,0,0,0.5)",maxHeight:"90vh",overflowY:"auto"}}>
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",backdropFilter:"blur(6px)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:20,overflowY:"auto"}}>
+          <div style={{background:"var(--surface, #ffffff)",border:"1px solid var(--border, rgba(0,0,0,0.08))",borderRadius:16,padding:isMobile ? 20 : 32,width:"100%",maxWidth:580,boxShadow:"0 20px 40px -8px rgba(0,0,0,0.25)",maxHeight:"90vh",overflowY:"auto"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
               <div>
-                <div style={{fontSize:18,fontWeight:700,color:"var(--text-main)"}}>Generar Recertificación</div>
-                <div style={{fontSize:12,color:"var(--text-muted)",marginTop:4}}>Basada en: {recertForm.numero} · {recertForm.cliente}</div>
+                <div style={{fontSize:17,fontWeight:700,letterSpacing:"-0.015em",color:"var(--text-main, #101828)"}}>Generar Recertificación</div>
+                <div style={{fontSize:12,color:"var(--text-muted, #667085)",marginTop:4}}>Basada en: {recertForm.numero} · {recertForm.cliente}</div>
               </div>
-              <button onClick={()=>setRecertForm(null)} style={{...B("var(--surface-subtle)","var(--text-muted)"),border:"1px solid var(--border)",borderRadius:8,padding:"6px 12px",cursor:"pointer",fontSize:13}}>Cerrar</button>
+              <button onClick={()=>setRecertForm(null)} style={{...B("var(--surface-subtle, #f5f5f7)","var(--text-muted, #475467)"),border:"1px solid var(--border, rgba(0,0,0,0.08))",borderRadius:8,padding:"6px 12px",cursor:"pointer",fontSize:12}}>✕ Cerrar</button>
             </div>
 
             {/* Info del cert original */}
-            <div style={{background:"var(--surface-subtle)",borderRadius:10,padding:12,marginBottom:20,border:"1px solid var(--border)",fontSize:12}}>
-              <div style={{color:"var(--text-muted)",marginBottom:4}}>Certificado original</div>
-              <div style={{fontWeight:700,color:"var(--text-main)"}}>{recertForm.cliente} · {recertForm.numero}</div>
-              <div style={{color:"var(--text-muted)"}}>{recertForm.sistema}</div>
-              <div style={{color:"#ef4444",marginTop:4}}>Vencía: {fmtD(recertForm.proxMant)||"sin fecha"}</div>
+            <div style={{background:"var(--surface-subtle, #f8fafc)",borderRadius:12,padding:14,marginBottom:20,border:"1px solid var(--border, rgba(0,0,0,0.08))",fontSize:12}}>
+              <div style={{color:"var(--text-muted, #667085)",fontSize:11,textTransform:"uppercase",letterSpacing:"0.04em",fontWeight:600,marginBottom:4}}>Certificado original</div>
+              <div style={{fontWeight:700,color:"var(--text-main, #101828)"}}>{recertForm.cliente} · {recertForm.numero}</div>
+              <div style={{color:"var(--text-muted, #667085)",marginTop:2}}>{recertForm.sistema}</div>
+              <div style={{color:"#ef4444",marginTop:4,fontWeight:600}}>Vencía: {fmtD(recertForm.proxMant)||"sin fecha"}</div>
             </div>
 
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
+            <div style={{display:"grid",gridTemplateColumns:isMobile ? "1fr" : "1fr 1fr",gap:12,marginBottom:14}}>
               <div><LBL>N° Recertificación</LBL><input value={recertData.numero||""} onChange={e=>setRecertData(p=>({...p,numero:e.target.value}))} style={SI}/></div>
               <div><LBL>Fecha de recertificación</LBL><input type="date" value={recertData.fecha||""} onChange={e=>setRecertData(p=>({...p,fecha:e.target.value}))} style={SI}/></div>
               <div><LBL>Cliente</LBL><input value={recertData.cliente||""} onChange={e=>setRecertData(p=>({...p,cliente:e.target.value}))} style={SI}/></div>
               <div><LBL>NIT</LBL><input value={recertData.nit||""} onChange={e=>setRecertData(p=>({...p,nit:e.target.value}))} style={SI}/></div>
-              <div style={{gridColumn:"span 2"}}><LBL>Dirección de la obra</LBL><input value={recertData.direccion||""} onChange={e=>setRecertData(p=>({...p,direccion:e.target.value}))} style={SI}/></div>
-              <div style={{gridColumn:"span 2"}}><LBL>Sistema recertificado</LBL><textarea value={recertData.sistema||""} onChange={e=>setRecertData(p=>({...p,sistema:e.target.value}))} rows={2} style={{...SI,resize:"vertical"}}/></div>
-              <div style={{gridColumn:"span 2",background:"rgba(244, 124, 32, 0.1)",borderRadius:8,padding:12,border:"1px solid rgba(244, 124, 32, 0.3)"}}>
+              <div style={{gridColumn:isMobile ? "auto" : "span 2"}}><LBL>Dirección de la obra</LBL><input value={recertData.direccion||""} onChange={e=>setRecertData(p=>({...p,direccion:e.target.value}))} style={SI}/></div>
+              <div style={{gridColumn:isMobile ? "auto" : "span 2"}}><LBL>Sistema recertificado</LBL><textarea value={recertData.sistema||""} onChange={e=>setRecertData(p=>({...p,sistema:e.target.value}))} rows={2} style={{...SI,resize:"vertical"}}/></div>
+              <div style={{gridColumn:isMobile ? "auto" : "span 2",background:"rgba(244, 124, 32, 0.08)",borderRadius:10,padding:12,border:"1px solid rgba(244, 124, 32, 0.25)"}}>
                 <LBL>Próximo mantenimiento (obligatorio)</LBL>
-                <input type="date" value={recertData.proxMant||""} onChange={e=>setRecertData(p=>({...p,proxMant:e.target.value}))} style={{...SI,border:"2px solid var(--accent, #cc0000)"}}/>
-                {recertData.proxMant&&<div style={{fontSize:11,color:"var(--green-700, #4ade80)",marginTop:6}}>Próximo mantenimiento: <strong>{fmtD(recertData.proxMant)}</strong></div>}
+                <input type="date" value={recertData.proxMant||""} onChange={e=>setRecertData(p=>({...p,proxMant:e.target.value}))} style={{...SI,border:"1px solid var(--border, rgba(0,0,0,0.14))"}}/>
+                {recertData.proxMant&&<div style={{fontSize:11.5,color:"#15803d",marginTop:6,fontWeight:600}}>Próximo mantenimiento: {fmtD(recertData.proxMant)}</div>}
               </div>
             </div>
 
-            {!recertData.proxMant&&<div style={{background:"rgba(239, 68, 68, 0.15)",border:"1px solid rgba(239, 68, 68, 0.3)",borderRadius:6,padding:"8px 12px",fontSize:11,color:"#ef4444",marginBottom:12}}>Debes asignar la fecha del próximo mantenimiento para guardar.</div>}
+            {!recertData.proxMant&&<div style={{background:"rgba(239, 68, 68, 0.12)",border:"1px solid rgba(239, 68, 68, 0.25)",borderRadius:8,padding:"8px 12px",fontSize:11.5,color:"#dc2626",marginBottom:12}}>Debes asignar la fecha del próximo mantenimiento para guardar.</div>}
 
-            <div style={{display:"flex",gap:10}}>
-              <button style={{...B("#cc0000"),flex:1,justifyContent:"center"}} onClick={guardarRecert}>
+            <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+              <button style={{...B("#f47c20"),boxShadow:"0 1px 3px rgba(244, 124, 32, 0.25)",flex:1,justifyContent:"center"}} onClick={guardarRecert}>
                 Crear Recertificación
               </button>
-              <button style={{...B("var(--surface-subtle)","var(--text-muted)"),border:"1px solid var(--border)",flex:1,justifyContent:"center"}} onClick={()=>setRecertForm(null)}>
+              <button style={{...B("var(--surface, #ffffff)","var(--text-main, #101828)"),border:"1px solid var(--border, rgba(0,0,0,0.12))",flex:1,justifyContent:"center"}} onClick={()=>setRecertForm(null)}>
                 Cancelar
               </button>
             </div>

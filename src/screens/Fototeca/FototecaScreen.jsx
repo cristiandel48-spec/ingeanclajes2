@@ -82,8 +82,8 @@ export default function FototecaScreen({ ctx }) {
   return (
     <div
       style={{
-        padding: isMobile ? "8px 0 32px" : "16px 0 40px",
-        maxWidth: 1200,
+        padding: isMobile ? "10px 8px 24px" : "14px 16px 28px",
+        maxWidth: 1360,
         margin: "0 auto",
         width: "100%",
         boxSizing: "border-box",
@@ -94,11 +94,11 @@ export default function FototecaScreen({ ctx }) {
         <div
           style={{
             background: "var(--surface, #ffffff)",
-            border: "1px solid var(--border, #eaecf0)",
+            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
             borderRadius: 16,
-            padding: isMobile ? "20px 16px" : "32px 28px",
+            padding: isMobile ? "20px 16px" : "30px 28px",
             marginBottom: 20,
-            boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+            boxShadow: "0 2px 12px -2px rgba(0,0,0,0.03), 0 1px 3px rgba(0,0,0,0.02)",
             width: "100%",
             boxSizing: "border-box",
             textAlign: "center",
@@ -109,22 +109,35 @@ export default function FototecaScreen({ ctx }) {
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
-              width: 52,
-              height: 52,
-              borderRadius: 16,
-              background: "rgba(234, 88, 12, 0.1)",
+              width: 48,
+              height: 48,
+              borderRadius: 14,
+              background: "rgba(244, 124, 32, 0.1)",
               color: "#ea580c",
-              fontSize: 26,
+              fontSize: 24,
               marginBottom: 12,
             }}
           >
             📸
           </div>
 
+          <div
+            style={{
+              fontSize: 10.5,
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              color: "var(--text-subtle, #667085)",
+              marginBottom: 4,
+            }}
+          >
+            REGISTRO FOTOGRÁFICO DE OBRA
+          </div>
           <h1
             style={{
-              fontSize: isMobile ? 20 : 24,
-              fontWeight: 800,
+              fontSize: isMobile ? 20 : 23,
+              fontWeight: 700,
+              letterSpacing: "-0.022em",
               color: "var(--text-main, #101828)",
               margin: 0,
             }}
@@ -133,7 +146,7 @@ export default function FototecaScreen({ ctx }) {
           </h1>
           <p
             style={{
-              fontSize: isMobile ? 12.5 : 14,
+              fontSize: 13,
               color: "var(--text-muted, #667085)",
               maxWidth: 540,
               margin: "6px auto 20px",
@@ -143,11 +156,11 @@ export default function FototecaScreen({ ctx }) {
             Busca y consulta todas las fotografías de avances, bitácoras e informes de cada obra para verlas o descargarlas en alta resolución.
           </p>
 
-          {/* BARRA DE BÚSQUEDA GRANDE Y DESTACADA */}
+          {/* BARRA DE BÚSQUEDA ESTILO SPOTLIGHT APPLE */}
           <div
             style={{
               position: "relative",
-              maxWidth: 640,
+              maxWidth: 620,
               margin: "0 auto 16px",
               width: "100%",
               boxSizing: "border-box",
@@ -161,17 +174,18 @@ export default function FototecaScreen({ ctx }) {
               onChange={(e) => setBusqueda(e.target.value)}
               style={{
                 width: "100%",
-                height: 50,
-                padding: "0 46px 0 16px",
-                fontSize: 15,
+                height: 46,
+                padding: "0 44px 0 16px",
+                fontSize: 14,
                 fontWeight: 500,
                 borderRadius: 12,
-                border: "2px solid #ea580c",
-                background: "var(--bg-app, #ffffff)",
+                border: "1px solid var(--border, rgba(0, 0, 0, 0.14))",
+                background: "var(--surface, #ffffff)",
                 color: "var(--text-main, #101828)",
                 outline: "none",
-                boxShadow: "0 2px 10px rgba(234, 88, 12, 0.12)",
+                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04)",
                 boxSizing: "border-box",
+                transition: "border-color .15s ease, box-shadow .15s ease",
               }}
             />
             {busqueda && (

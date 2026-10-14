@@ -11,7 +11,9 @@ import { abrirWhatsApp, normalizarCelular } from "../../lib/whatsapp";
 import { puedeCrearPersonal } from "../../lib/permisos";
 import { normalizarMayusculas } from "../../lib/normalizarEntrada";
 import { resolverAutorGuardado } from "../../lib/autorAuditoria";
+import { useIsMobile } from "../../hooks/useMediaQuery";
 export default function Horarios({ctx}){
+  const isMobile = useIsMobile();
   const {obras,setObras,empleados,horarios,setHorarios,irAPantalla,membresia}=ctx;
   const firstObraId = obras[0]?.id || "";
   const fmtHora12Local=(hhmm)=>{
@@ -372,15 +374,38 @@ export default function Horarios({ctx}){
   };
 
   return(
-    <div style={{padding:28}}>
-      <H1 title="Horarios" subtitle="Asigna hasta 2 turnos por día a una persona o a un grupo entero, y avisa por WhatsApp" action={<button style={B("#f47c20")} onClick={()=>setShowF(!showF)}>+ Asignar turnos</button>}/>
+    <div
+      style={{
+        maxWidth: 1360,
+        margin: "0 auto",
+        padding: isMobile ? "10px 8px 24px" : "14px 16px 28px",
+        width: "100%",
+        boxSizing: "border-box",
+      }}
+    >
+      <H1
+        eyebrow="ASIGNACIÓN DE TURNOS"
+        title="Horarios de Obra"
+        subtitle="Asigna turnos por día a trabajadores o grupos y notifica automáticamente por WhatsApp"
+        action={
+          <button
+            style={{
+              ...B("#f47c20"),
+              boxShadow: "0 1px 3px rgba(244, 124, 32, 0.25)",
+            }}
+            onClick={() => setShowF(!showF)}
+          >
+            {showF ? "✕ Cerrar" : "+ Asignar turnos"}
+          </button>
+        }
+      />
 
       {empleados.length===0 && (
         <AvisoFlujo
           tono="falta"
           titulo="Todavía no hay empleados para asignar"
           accion={puedeCrearPersonal(membresia) && !nuevoEmp ? (
-            <button onClick={()=>setNuevoEmp(true)} style={{...B("#cc0000"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}>
+            <button onClick={()=>setNuevoEmp(true)} style={{...B("#f47c20"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}>
               + Registrar trabajador
             </button>
           ) : (
@@ -455,11 +480,11 @@ export default function Horarios({ctx}){
         }}>{notif.texto}</div>
       )}
       {showF&&(
-        <div style={{...CD,marginBottom:20,border:"1px solid var(--accent, #cc0000)"}}>
+        <div style={{...CD,marginBottom:20,border:"1px solid var(--border, rgba(0, 0, 0, 0.08))",boxShadow:"0 4px 20px -4px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.02)"}}>
           <div style={ST}>Nuevo horario · notificación automática por WhatsApp</div>
           {/* La obra va primero: de ella sale el atajo para marcar al equipo
               completo, que es lo que evita repetir el formulario por persona. */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
+          <div style={{display:"grid",gridTemplateColumns:isMobile ? "1fr" : "1fr 1fr",gap:12,marginBottom:14}}>
             <div><LBL>Obra</LBL><select value={form.obraId} onChange={e=>setForm({...form,obraId:e.target.value})} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
             <div><LBL>Fecha</LBL><input type="date" value={form.fecha} onChange={e=>setForm({...form,fecha:e.target.value})} style={SI}/></div>
           </div>

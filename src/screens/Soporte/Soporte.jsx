@@ -694,23 +694,24 @@ export default function Soporte({ ctx }) {
   };
 
   return (
-    <div style={{ padding: isMobile ? (ticketActivoId ? "6px 4px 14px" : "14px 10px 24px") : "24px 28px", maxWidth: 1400, margin: "0 auto" }}>
+    <div style={{ padding: isMobile ? (ticketActivoId ? "6px 4px 14px" : "10px 8px 24px") : "14px 16px 28px", maxWidth: 1360, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
       {/* Encabezado (se oculta en móvil si hay chat activo para maximizar pantalla) */}
       {(!isMobile || !ticketActivoId) && (
         <>
           <H1
+            eyebrow="COMUNICACIÓN Y ATENCIÓN"
             title="Mensajes y Soporte"
             subtitle="Comunicación directa entre el equipo (Camila, Cristian), residentes de obra y clientes"
             action={
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                 <button
                   onClick={() => reproducirSonidoNotificacion()}
-                  style={{ ...B("var(--surface-subtle)", "var(--text-main)"), border: "1px solid var(--border)", fontSize: 12, padding: "8px 14px" }}
+                  style={{ ...B("var(--surface, #ffffff)", "var(--text-main)"), border: "1px solid var(--border, rgba(0, 0, 0, 0.12))", fontSize: 12, padding: "7px 13px", borderRadius: 10, fontWeight: 600, boxShadow: "0 1px 2px rgba(0,0,0,0.02)" }}
                   title="Probar sonido de notificación del computador"
                 >
                   🔊 Probar timbre
                 </button>
-                <button onClick={abrirModalNuevo} style={B("#E0342A")}>
+                <button onClick={abrirModalNuevo} style={{ ...B("#f47c20"), boxShadow: "0 1px 3px rgba(244, 124, 32, 0.25)" }}>
                   <span>+</span> Nueva conversación
                 </button>
               </div>

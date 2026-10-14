@@ -12,12 +12,23 @@
 import ControlDocumentalConfig from "../../components/ControlDocumentalConfig";
 import H1 from "../../components/ui/H1";
 import { CD } from "../../styles/tokens";
+import { useIsMobile } from "../../hooks/useMediaQuery";
 
 export default function Formatos() {
+  const isMobile = useIsMobile();
   return (
-    <div style={{ padding: 28 }}>
+    <div
+      style={{
+        maxWidth: 1360,
+        margin: "0 auto",
+        padding: isMobile ? "10px 8px 24px" : "14px 16px 28px",
+        width: "100%",
+        boxSizing: "border-box",
+      }}
+    >
       <H1
-        title="Formatos y versiones"
+        eyebrow="SISTEMA DE GESTIÓN DE CALIDAD"
+        title="Formatos y Versiones"
         subtitle="El código y la versión que salen impresos en el encabezado de cada documento"
       />
       <div style={{ ...CD, maxWidth: 860 }}>

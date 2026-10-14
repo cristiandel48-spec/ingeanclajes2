@@ -6,6 +6,7 @@ import LBL from "../../components/ui/LBL";
 import BotonCorregir from "../../components/ui/BotonCorregir";
 import PrintHeader from "../../components/print/PrintHeader";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useIsMobile } from "../../hooks/useMediaQuery";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmtD, fmtL, today } from "../../lib/format";
 import { openPrintTab } from "../../lib/cotizacionPrint";
@@ -49,6 +50,7 @@ const fmtTurno12=(turno)=>{
 };
 
 export default function Informes({ctx}){
+  const isMobile = useIsMobile();
   const {informes,setInformes,obras,empleados,horarios,intencion,limpiarIntencion,empresaConfig,irAPantalla,asegurarDetalle,cotizaciones=[]}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
   const [sel,setSel]=useState(null);
@@ -693,7 +695,35 @@ export default function Informes({ctx}){
   };
 
   return(
-    <div style={{padding:"14px 28px 28px"}}>
+    <div
+      style={{
+        maxWidth: 1360,
+        margin: "0 auto",
+        padding: isMobile ? "10px 8px 24px" : "14px 16px 28px",
+        width: "100%",
+        boxSizing: "border-box",
+      }}
+    >
+      {!sel && (
+        <H1
+          eyebrow="GESTIÓN DE CALIDAD Y AVANCE"
+          title="Informes de Actividades"
+          subtitle={`${informes.length} informe(s) técnico(s) registrado(s) · Control de actividades, bitácoras y registro fotográfico`}
+          action={
+            !nuevo && !editId ? (
+              <button
+                style={{
+                  ...B("#f47c20"),
+                  boxShadow: "0 1px 3px rgba(244, 124, 32, 0.25)",
+                }}
+                onClick={abrirNuevoInforme}
+              >
+                + Nuevo Informe
+              </button>
+            ) : null
+          }
+        />
+      )}
 
       {obras.length===0 && (
         <AvisoFlujo
@@ -719,7 +749,7 @@ export default function Informes({ctx}){
       )}
 
       {nuevo&&(
-        <div style={{...CD,marginBottom:20,border:"1px solid #cc0000"}}>
+        <div style={{...CD,marginBottom:20,border:"1px solid var(--border, rgba(0, 0, 0, 0.08))",boxShadow:"0 4px 20px -4px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.02)"}}>
           <div style={ST}>{editId ? "Editar Informe de Actividades" : "Nuevo Informe de Actividades"}</div>
 
           {/* Datos generales */}
@@ -898,7 +928,7 @@ export default function Informes({ctx}){
                 <button onClick={traerAvancesDeLaObra} style={{...B("rgba(30, 64, 175, 0.15)","#60a5fa"),fontSize:11,padding:"5px 12px"}}>
                   ↻ Traer avances de la obra ({avancesDisponibles.length})
                 </button>
-                <button onClick={()=>setForm(p=>({...p,actividades:[...p.actividades,emptyActividad()]}))} style={{...B("#cc0000"),fontSize:11,padding:"5px 12px"}}>+ Agregar actividad</button>
+                <button onClick={()=>setForm(p=>({...p,actividades:[...p.actividades,emptyActividad()]}))} style={{...B("#f47c20"),fontSize:11.5,padding:"6px 13px"}}>+ Agregar actividad</button>
               </div>
             </div>
             <div style={{background:"var(--surface-subtle, #f8fafc)",border:"1px solid var(--border, #e2e8f0)",borderRadius:8,padding:"10px 13px",fontSize:11.5,color:"var(--text-muted, #475569)",lineHeight:1.55,marginBottom:12}}>
@@ -917,7 +947,7 @@ export default function Informes({ctx}){
             {form.actividades.map((act,ai)=>(
               <div key={ai} style={{background:"var(--surface-subtle, #f8fafc)",border:"1px solid var(--border, #e2e8f0)",borderRadius:10,padding:16,marginBottom:12}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                  <div style={{fontSize:12,fontWeight:700,color:"#cc0000"}}>Actividad {ai+1}</div>
+                  <div style={{fontSize:12.5,fontWeight:700,color:"var(--text-main, #101828)"}}>Actividad {ai+1}</div>
                   {form.actividades.length>1&&<button onClick={()=>{
                     setForm(p=>({...p,actividades:p.actividades.filter((_,i)=>i!==ai)}));
                     // Las actividades se guardan por su posicion, asi que al
@@ -1072,7 +1102,7 @@ export default function Informes({ctx}){
 
           <div style={{marginBottom:14}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><LBL>Recomendaciones generales</LBL><BotonCorregir valor={form.recomendaciones} onChange={(v)=>setForm(p=>({...p,recomendaciones:v}))} compacto/></div><textarea value={form.recomendaciones} onChange={e=>setForm(p=>({...p,recomendaciones:e.target.value}))} onBlur={e=>{const v=normalizarParrafos(e.target.value);if(v!==form.recomendaciones)setForm(p=>({...p,recomendaciones:v}));}} rows={6} placeholder="Recomendaciones para el cliente..." spellCheck lang="es" style={{...SI,resize:"vertical",minHeight:130,lineHeight:1.5,fontSize:13}}/></div>
           <div style={{display:"flex",gap:10}}>
-            <button style={B("#cc0000")} onClick={guardar}>{editId ? "Guardar cambios" : "Guardar informe"}</button>
+            <button style={{...B("#f47c20"),boxShadow:"0 1px 3px rgba(244, 124, 32, 0.25)"}} onClick={guardar}>{editId ? "Guardar cambios" : "Guardar informe"}</button>
             <button style={B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)")} onClick={()=>{setNuevo(false);setEditId(null);}}>Cancelar</button>
           </div>
         </div>

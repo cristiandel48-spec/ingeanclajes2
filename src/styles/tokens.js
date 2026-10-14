@@ -22,11 +22,11 @@ export const BRAND={
   text:"var(--text-main, #101828)",muted:"var(--text-muted, #667085)",divider:"var(--border, #eaecf0)",
 };
 
-export const SI={background:"var(--input-bg, #ffffff)",border:"1px solid var(--input-border, #eaecf0)",borderRadius:10,color:"var(--input-color, #101828)",padding:"9px 12px",fontSize:13.5,width:"100%",outline:"none",boxSizing:"border-box",fontFamily:"inherit"};
+export const SI={background:"var(--input-bg, #ffffff)",border:"1px solid var(--input-border, #eaecf0)",borderRadius:10,color:"var(--input-color, #101828)",padding:"9px 12px",fontSize:13.5,width:"100%",outline:"none",boxSizing:"border-box",fontFamily:"inherit",transition:"border-color .15s ease, box-shadow .15s ease"};
 
-export const B=(bg,c="#fff")=>({background:bg,color:c,border:"none",borderRadius:10,padding:"9px 18px",fontSize:13.5,fontWeight:600,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,fontFamily:"inherit",whiteSpace:"nowrap"});
-export const CD={background:"var(--surface, #ffffff)",border:"1px solid var(--border, #eef0f3)",borderRadius:16,padding:20,boxShadow:"0 1px 2px rgba(16,24,40,.04), 0 4px 16px rgba(16,24,40,.05)"};
-export const ST={fontSize:15,fontWeight:700,color:"var(--text-main, #101828)",marginBottom:14};
+export const B=(bg,c="#fff")=>({background:bg,color:c,border:"none",borderRadius:10,padding:"8px 16px",fontSize:12.5,fontWeight:600,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,fontFamily:"inherit",whiteSpace:"nowrap",boxShadow:"0 1px 2px rgba(0,0,0,0.04)",transition:"all .15s ease"});
+export const CD={background:"var(--surface, #ffffff)",border:"1px solid var(--border, rgba(0, 0, 0, 0.08))",borderRadius:16,padding:20,boxShadow:"0 2px 10px -2px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.02)",boxSizing:"border-box"};
+export const ST={fontSize:14.5,fontWeight:600,letterSpacing:"-0.01em",color:"var(--text-main, #101828)",marginBottom:12};
 
 export const hasBrokenEncoding = (value="") => /[ðâÃÂŸ]/.test(String(value || ""));
 export const buildCardBadge = (icon="", label="") => {

@@ -14,7 +14,7 @@ export const C = {
   relleno: "var(--c-relleno, #f8fafc)",
   rellenoFuerte: "var(--c-relleno-fuerte, #eef0f3)",
   acento: "#f47c20",
-  acentoFuerte: "#cc0000",
+  acentoFuerte: "var(--text-main, #101828)",
   acentoSuave: "var(--c-acento-suave, #fff3e8)",
 };
 
@@ -31,9 +31,20 @@ export const enMilis = (fecha) => {
   return Number.isNaN(t) ? 0 : t;
 };
 
-/** Boton pequeño de accion, el de las filas. */
+/** Boton pequeño de accion, el de las filas estilo Apple. */
 export const boton = (fondo, color, extra = {}) => ({
-  background: fondo, color, border: "none", borderRadius: 7, padding: "4px 9px",
-  fontSize: 10.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-  whiteSpace: "nowrap", lineHeight: 1.4, ...extra,
+  background: fondo,
+  color,
+  border: "1px solid var(--border, rgba(0,0,0,0.08))",
+  borderRadius: 8,
+  padding: "5px 11px",
+  fontSize: 11.5,
+  fontWeight: 600,
+  cursor: "pointer",
+  fontFamily: "inherit",
+  whiteSpace: "nowrap",
+  lineHeight: 1.35,
+  boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
+  transition: "all .15s ease",
+  ...extra,
 });

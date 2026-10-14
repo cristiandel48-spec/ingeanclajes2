@@ -804,7 +804,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                   modificadoEn: ahoraIso,
                 }:o));
               }
-            }} style={{...SI,border:"2px solid #cc0000",fontSize:12}}>
+            }} style={{...SI,fontSize:12}}>
               <option value="">Selecciona un empleado...</option>
               {empleados.filter(emp=>!empObra.includes(emp.id)).map(emp=>(
                 <option key={emp.id} value={emp.id}>{emp.nombre} · {String(emp.cargo || "").toUpperCase()}</option>
@@ -894,7 +894,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               <div key={c.id} style={{background:"var(--surface-subtle, #f8fafc)",borderRadius:10,padding:"12px 14px",marginBottom:8,border:"1px solid " + (vencida?"#fca5a5":c.estado==="Pagado"?"#4ade80":"var(--border, #e2e8f0)")}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
                   <div><div style={{fontSize:13,fontWeight:600,color:"var(--text-main)"}}>{c.concepto}</div><div style={{fontSize:11,color:"var(--text-muted, #64748b)"}}>{prov?.nombre} · {c.factura}</div></div>
-                  <div style={{textAlign:"right"}}><div style={{fontSize:14,fontWeight:700,color:"#cc0000"}}>{fmt(c.monto)}</div><Badge estado={vencida?"Vencida":c.estado}/></div>
+                  <div style={{textAlign:"right"}}><div style={{fontSize:14,fontWeight:700,color:"var(--text-main, #101828)",fontVariantNumeric:"tabular-nums"}}>{fmt(c.monto)}</div><Badge estado={vencida?"Vencida":c.estado}/></div>
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:11,color:"var(--text-subtle, #94a3b8)"}}>
                   <span>Vence: {fmtD(c.fechaVence)||"—"}</span>
@@ -970,7 +970,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           <div style={{ background: "var(--surface-subtle, #f1f5f9)", borderRadius: 8, padding: "12px 16px", marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, textAlign: "center", fontSize: 12 }}>
             <div>
               <div style={{ color: "var(--text-muted, #64748b)", marginBottom: 3 }}>Facturas causadas</div>
-              <div style={{ fontWeight: 700, color: "#cc0000", fontSize: 14 }}>{fmt(totalGastos)}</div>
+              <div style={{ fontWeight: 700, color: "var(--text-main, #101828)", fontSize: 14, fontVariantNumeric: "tabular-nums" }}>{fmt(totalGastos)}</div>
             </div>
             <div>
               <div style={{ color: "var(--text-muted, #64748b)", marginBottom: 3 }}>Órdenes aprobadas</div>
@@ -1005,7 +1005,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                     <div><div style={{fontSize:13,fontWeight:700,color:"var(--text-main)"}}>{emp.nombre}</div><div style={{fontSize:11,color:"var(--text-muted, #64748b)"}}>{String(emp.cargo || "").toUpperCase()}</div></div>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
-                    {[["Días",diasEmp+"d","#60a5fa"],["Jornal",fmt(jornal),"#34d399"],["Bruto",fmt(subtotal),"#f59e0b"],["Neto",fmt(subtotal-ded),"#cc0000"]].map(([k,v,c])=>(
+                    {[["Días",diasEmp+"d","#60a5fa"],["Jornal",fmt(jornal),"#34d399"],["Bruto",fmt(subtotal),"#f59e0b"],["Neto",fmt(subtotal-ded),"var(--text-main, #101828)"]].map(([k,v,c])=>(
                       <div key={k} style={{background:"var(--surface, #fff)",borderRadius:6,padding:"8px",textAlign:"center",border:"1px solid var(--border, #f1f5f9)"}}>
                         <div style={{color:"var(--text-subtle, #94a3b8)",fontSize:9,marginBottom:3}}>{k}</div>
                         <div style={{fontWeight:700,color:c,fontSize:11}}>{v}</div>
@@ -1021,7 +1021,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             <div style={{background:"var(--surface-subtle, #f1f5f9)",borderRadius:10,padding:"14px 16px",border:"1px solid var(--border, #e2e8f0)"}}>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,textAlign:"center",fontSize:12}}>
                 <div><div style={{color:"var(--text-muted, #64748b)",marginBottom:4}}>Total días trabajados</div><div style={{fontWeight:700,color:"#60a5fa",fontSize:18}}>{totalDias}</div></div>
-                <div><div style={{color:"var(--text-muted, #64748b)",marginBottom:4}}>Nómina total obra</div><div style={{fontWeight:700,color:"#cc0000",fontSize:18}}>{fmt(nomObraTotal)}</div></div>
+                <div><div style={{color:"var(--text-muted, #64748b)",marginBottom:4}}>Nómina total obra</div><div style={{fontWeight:700,color:"var(--text-main, #101828)",fontSize:18,fontVariantNumeric:"tabular-nums"}}>{fmt(nomObraTotal)}</div></div>
                 <div><div style={{color:"var(--text-muted, #64748b)",marginBottom:4}}>% del ingreso</div><div style={{fontWeight:700,color:oAct.total>0&&nomObraTotal/oAct.total<0.3?"#34d399":"#fb923c",fontSize:18}}>{oAct.total>0?Math.round(nomObraTotal/oAct.total*100):0}%</div></div>
               </div>
             </div>
@@ -1066,7 +1066,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                 </div>
                 <div style={{textAlign:"right",fontSize:11}}>
                   <div style={{color:"var(--text-muted, #64748b)",fontWeight:500}}>{fmtD(h.fecha)}</div>
-                  <div style={{color:"#cc0000",fontWeight:700}}>{h.turno}</div>
+                  <div style={{color:"var(--text-main, #101828)",fontWeight:600}}>{h.turno}</div>
                 </div>
               </div>
             );

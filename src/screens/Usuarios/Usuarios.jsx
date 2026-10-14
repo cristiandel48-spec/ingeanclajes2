@@ -17,6 +17,7 @@ import {
 import { formatearUltimaConexion } from "../../lib/seguridadSesion";
 import { detectarDispositivo } from "../../lib/backend";
 import { resolverEstadoConexionUsuario } from "../../lib/actividadConexiones";
+import { useIsMobile } from "../../hooks/useMediaQuery";
 
 const FORM_VACIO = {
   nombre: "", email: "", clave: "", rol: "operator",
@@ -38,6 +39,7 @@ export default function Usuarios({ ctx }) {
     appBloqueada,
     setAppBloqueada,
   } = ctx;
+  const isMobile = useIsMobile();
   const [usuarios, setUsuarios] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState(null);
@@ -208,11 +210,30 @@ Cancelar: se la entregas tú.`);
   const soyYo = (u) => u.user_id === membresia?.user_id;
 
   return (
-    <div style={{ padding: 28 }}>
+    <div
+      style={{
+        maxWidth: 1360,
+        margin: "0 auto",
+        padding: isMobile ? "10px 8px 24px" : "14px 16px 28px",
+        width: "100%",
+        boxSizing: "border-box",
+      }}
+    >
       <H1
-        title="Usuarios y permisos"
-        subtitle="Quién entra al sistema y a qué módulos"
-        action={<button style={B("#f47c20")} onClick={abrirNuevo}>+ Nuevo usuario</button>}
+        eyebrow="ADMINISTRACIÓN Y SEGURIDAD"
+        title="Usuarios y Permisos"
+        subtitle="Gestión de accesos, roles y módulos del equipo de trabajo"
+        action={
+          <button
+            style={{
+              ...B("#f47c20"),
+              boxShadow: "0 1px 3px rgba(244, 124, 32, 0.25)",
+            }}
+            onClick={abrirNuevo}
+          >
+            + Nuevo usuario
+          </button>
+        }
       />
 
       {esSuperAdminCristian && (
@@ -350,10 +371,10 @@ Cancelar: se la entregas tú.`);
       )}
 
       {abierto && (
-        <div style={{ ...CD, marginBottom: 20, border: "1px solid var(--accent, #cc0000)" }}>
+        <div style={{ ...CD, marginBottom: 20, border: "1px solid var(--border, rgba(0, 0, 0, 0.08))", boxShadow: "0 4px 20px -4px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.02)" }}>
           <div style={ST}>{editId ? "Editar acceso" : "Nuevo usuario"}</div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 14 }}>
             <CampoTexto
               label="Nombre"
               valor={form.nombre}

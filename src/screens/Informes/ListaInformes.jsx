@@ -29,6 +29,7 @@ export default function ListaInformes({ informes = [], acciones = {} }) {
   const isMobile = useIsMobile();
   const [busqueda, setBusqueda] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState("Todos");
+  const [orden, setOrden] = useState("recientes");
   const [modoVista, setModoVista] = useState(() => {
     try {
       const guardada = localStorage.getItem("ingeanclajes_informes_vista");
@@ -313,6 +314,28 @@ export default function ListaInformes({ informes = [], acciones = {} }) {
               </svg>
             </button>
           </div>
+
+          {/* Selector de Orden */}
+          <select
+            value={orden}
+            onChange={(e) => setOrden(e.target.value)}
+            style={{
+              padding: "7px 10px",
+              fontSize: 12,
+              borderRadius: 8,
+              border: "1px solid var(--border, rgba(0, 0, 0, 0.12))",
+              background: "var(--surface, #ffffff)",
+              color: "var(--text-main, #1d1d1f)",
+              cursor: "pointer",
+              outline: "none",
+            }}
+          >
+            {ORDENES.map((o) => (
+              <option key={o.key} value={o.key}>
+                {o.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 

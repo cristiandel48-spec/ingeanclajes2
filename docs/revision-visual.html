@@ -1,0 +1,957 @@
+<title>Revisión visual Ingeanclajes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Hoja de especificación: una columna de lectura, reglas finas, el propio
+   sistema propuesto aplicado a la página para que se vea funcionando. */
+:root{
+  --accent:#E0342A; --accent-hover:#C42B22; --accent-tint:rgba(224,52,42,.08);
+  --text-primary:#101828; --text-secondary:#475467; --text-tertiary:#667085; --text-quaternary:#98A2B3;
+  --separator:#EAECF0; --fill:#F2F4F7; --bg-app:#F6F7F9; --surface:#FFFFFF;
+  --success:#12B76A; --success-bg:#ECFDF3; --success-text:#027A48;
+  --warning:#F79009; --warning-bg:#FFFAEB; --warning-text:#B54708;
+  --danger:#D92D20;  --danger-bg:#FEF3F2;  --danger-text:#B42318;
+  --sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Consolas,monospace;
+  --sh-sm:0 1px 2px rgba(16,24,40,.05);
+  --sh-md:0 4px 12px -2px rgba(16,24,40,.08);
+  --sh-lg:0 20px 40px -12px rgba(16,24,40,.25);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --accent:#FF6B5E; --accent-hover:#FF8A7F; --accent-tint:rgba(255,107,94,.14);
+  --text-primary:#F0F2F5; --text-secondary:#CBD2DC; --text-tertiary:#98A1B0; --text-quaternary:#6B7280;
+  --separator:#2A2D36; --fill:#20232B; --bg-app:#0F1115; --surface:#181A20;
+  --success:#32D583; --success-bg:rgba(18,183,106,.14); --success-text:#6CE9A6;
+  --warning:#FDB022; --warning-bg:rgba(247,144,9,.14); --warning-text:#FEC84B;
+  --danger:#F97066;  --danger-bg:rgba(217,45,32,.14);  --danger-text:#FDA29B;
+  --sh-sm:0 1px 2px rgba(0,0,0,.4); --sh-md:0 4px 12px -2px rgba(0,0,0,.5); --sh-lg:0 20px 40px -12px rgba(0,0,0,.7);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --accent:#FF6B5E; --accent-hover:#FF8A7F; --accent-tint:rgba(255,107,94,.14);
+  --text-primary:#F0F2F5; --text-secondary:#CBD2DC; --text-tertiary:#98A1B0; --text-quaternary:#6B7280;
+  --separator:#2A2D36; --fill:#20232B; --bg-app:#0F1115; --surface:#181A20;
+  --success:#32D583; --success-bg:rgba(18,183,106,.14); --success-text:#6CE9A6;
+  --warning:#FDB022; --warning-bg:rgba(247,144,9,.14); --warning-text:#FEC84B;
+  --danger:#F97066;  --danger-bg:rgba(217,45,32,.14);  --danger-text:#FDA29B;
+  --sh-sm:0 1px 2px rgba(0,0,0,.4); --sh-md:0 4px 12px -2px rgba(0,0,0,.5); --sh-lg:0 20px 40px -12px rgba(0,0,0,.7);
+  color-scheme:dark;
+}
+
+body{background:var(--bg-app);color:var(--text-primary);font-family:var(--sans);
+  font-size:15px;line-height:1.55;margin:0;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:860px;margin:0 auto;padding-inline:16px;padding-block:40px 72px;}
+h1,h2,h3,h4{text-wrap:balance;margin:0;}
+code,.mono{font-family:var(--mono);font-size:.86em;}
+.eyebrow{font-size:11px;line-height:14px;font-weight:600;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--text-tertiary);}
+.lede{font-size:16px;line-height:1.6;color:var(--text-secondary);max-width:62ch;}
+.muted{color:var(--text-tertiary);}
+hr{border:0;border-top:1px solid var(--separator);margin:0;}
+
+/* Cabecera */
+header{border-bottom:2px solid var(--text-primary);padding-bottom:24px;margin-bottom:32px;}
+header h1{font-size:34px;line-height:1.12;font-weight:700;letter-spacing:-.025em;margin:6px 0 12px;}
+.rule-accent{width:40px;height:3px;background:var(--accent);margin-bottom:18px;}
+
+/* Métricas */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:1px;background:var(--separator);border:1px solid var(--separator);border-radius:14px;overflow:hidden;margin:28px 0 0;}
+.metric{background:var(--surface);padding:16px 18px;}
+.metric b{display:block;font-size:24px;line-height:28px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em;}
+.metric span{display:block;font-size:12px;line-height:16px;font-weight:500;color:var(--text-tertiary);margin-top:2px;}
+.metric em{font-style:normal;color:var(--accent);}
+
+/* Secciones numeradas: el orden es el de ejecución, no decorativo */
+section{margin-top:56px;}
+.sec-head{display:flex;gap:14px;align-items:baseline;border-bottom:1px solid var(--separator);padding-bottom:10px;margin-bottom:24px;}
+.sec-num{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--accent);padding-top:3px;}
+.sec-head h2{font-size:22px;line-height:28px;font-weight:700;letter-spacing:-.02em;}
+.sec-head p{margin:2px 0 0;font-size:13px;line-height:18px;color:var(--text-tertiary);}
+
+h3.block{font-size:18px;line-height:24px;font-weight:600;letter-spacing:-.01em;margin:32px 0 10px;}
+h4.sub{font-size:15px;line-height:20px;font-weight:600;margin:24px 0 8px;}
+p{margin:0 0 12px;}
+ul{margin:0 0 12px;padding-left:18px;}
+li{margin-bottom:5px;}
+li::marker{color:var(--text-quaternary);}
+
+/* Hallazgo */
+.find{display:grid;grid-template-columns:auto 1fr;gap:12px;padding:14px 0;border-top:1px solid var(--separator);}
+.find:first-of-type{border-top:0;}
+.find .n{font-family:var(--mono);font-size:12px;color:var(--text-quaternary);padding-top:3px;}
+.find h4{font-size:15px;line-height:20px;font-weight:600;margin:0 0 3px;}
+.find p{font-size:13.5px;line-height:19px;color:var(--text-secondary);margin:0;}
+.find .ev{font-family:var(--mono);font-size:11.5px;color:var(--text-tertiary);display:block;margin-top:5px;}
+
+/* Tarjeta de módulo */
+.mod{background:var(--surface);border:1px solid var(--separator);border-radius:14px;
+  padding:18px 20px;margin-bottom:14px;box-shadow:var(--sh-sm);}
+.mod-top{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;justify-content:space-between;margin-bottom:10px;}
+.mod h4{font-size:16px;line-height:22px;font-weight:600;letter-spacing:-.01em;margin:0;}
+.mod .file{font-family:var(--mono);font-size:11px;color:var(--text-quaternary);}
+.mod h5{font-size:11px;line-height:14px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--text-tertiary);margin:14px 0 6px;}
+.mod ul{font-size:13.5px;line-height:19px;color:var(--text-secondary);margin-bottom:0;}
+.mod ol{font-size:13.5px;line-height:19px;margin:0;padding-left:20px;}
+.mod ol li{margin-bottom:4px;}
+.mod ol li::marker{color:var(--accent);font-variant-numeric:tabular-nums;}
+.shot{font-size:12.5px;line-height:17px;color:var(--text-tertiary);margin-top:12px;
+  padding-top:10px;border-top:1px dashed var(--separator);}
+.shot b{color:var(--text-secondary);font-weight:600;}
+
+/* Chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px;}
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--fill);color:var(--text-secondary);
+  border-radius:6px;padding:3px 9px;font-size:12px;line-height:16px;font-weight:500;}
+.dot{width:6px;height:6px;border-radius:50%;flex:none;}
+.d-a{background:var(--accent);} .d-s{background:var(--success);} .d-w{background:var(--warning);} .d-d{background:var(--danger);} .d-n{background:var(--text-quaternary);}
+
+/* Tokens de color */
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px;}
+.sw{border:1px solid var(--separator);border-radius:10px;overflow:hidden;background:var(--surface);}
+.sw .chipcolor{height:44px;}
+.sw .meta{padding:8px 10px;}
+.sw .name{font-family:var(--mono);font-size:11.5px;color:var(--text-primary);}
+.sw .hex{font-family:var(--mono);font-size:11px;color:var(--text-tertiary);}
+.sw .use{font-size:11.5px;line-height:15px;color:var(--text-tertiary);margin-top:3px;}
+
+/* Escala tipográfica viva */
+.scale{border:1px solid var(--separator);border-radius:14px;overflow:hidden;background:var(--surface);}
+.row{display:grid;grid-template-columns:118px 1fr auto;gap:14px;align-items:baseline;
+  padding:12px 16px;border-top:1px solid var(--separator);}
+.row:first-child{border-top:0;}
+.row .tag{font-family:var(--mono);font-size:11.5px;color:var(--accent);}
+.row .spec{font-family:var(--mono);font-size:11px;color:var(--text-tertiary);white-space:nowrap;}
+.row .samp{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-primary);}
+.s-lt{font-size:28px;line-height:34px;font-weight:700;letter-spacing:-.022em;}
+.s-t1{font-size:22px;line-height:28px;font-weight:700;letter-spacing:-.018em;}
+.s-t2{font-size:18px;line-height:24px;font-weight:600;letter-spacing:-.01em;}
+.s-hd{font-size:15px;line-height:20px;font-weight:600;}
+.s-bd{font-size:14px;line-height:20px;font-weight:400;}
+.s-cl{font-size:13px;line-height:18px;font-weight:400;}
+.s-fn{font-size:12px;line-height:16px;font-weight:500;}
+.s-cp{font-size:11px;line-height:14px;font-weight:500;}
+
+/* Tablas */
+.tablewrap{overflow-x:auto;border:1px solid var(--separator);border-radius:14px;background:var(--surface);}
+table{border-collapse:collapse;width:100%;min-width:480px;font-size:13.5px;}
+th{text-align:left;font-size:11px;line-height:14px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--text-tertiary);padding:10px 14px;border-bottom:1px solid var(--separator);white-space:nowrap;}
+td{padding:10px 14px;border-bottom:1px solid var(--separator);color:var(--text-secondary);vertical-align:top;}
+tr:last-child td{border-bottom:0;}
+td:first-child{color:var(--text-primary);font-weight:500;}
+td .mono{color:var(--text-tertiary);}
+
+/* Demos */
+.demo{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:16px;
+  background:var(--surface);border:1px solid var(--separator);border-radius:14px;}
+.btn{font-family:inherit;font-size:13px;font-weight:600;border-radius:10px;height:36px;padding:0 16px;
+  display:inline-flex;align-items:center;gap:6px;cursor:default;border:1px solid transparent;transition:background .15s ease;}
+.btn-p{background:var(--accent);color:#fff;box-shadow:var(--sh-sm);}
+.btn-s{background:var(--surface);color:var(--text-primary);border-color:var(--separator);box-shadow:var(--sh-sm);}
+.btn-t{background:transparent;color:var(--accent);}
+.btn-d{background:var(--danger-bg);color:var(--danger-text);}
+.seg{display:inline-flex;background:var(--fill);border-radius:10px;padding:2px;}
+.seg span{font-size:13px;font-weight:600;padding:6px 14px;border-radius:8px;color:var(--text-tertiary);}
+.seg span.on{background:var(--surface);color:var(--text-primary);box-shadow:var(--sh-sm);}
+.radii{display:flex;flex-wrap:wrap;gap:12px;}
+.radii div{background:var(--fill);border:1px solid var(--separator);width:78px;height:62px;
+  display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;
+  font-family:var(--mono);font-size:11px;color:var(--text-tertiary);}
+.spacing{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;}
+.spacing div{text-align:center;}
+.spacing i{display:block;background:var(--accent-tint);border-bottom:2px solid var(--accent);}
+.spacing span{font-family:var(--mono);font-size:11px;color:var(--text-tertiary);display:block;margin-top:4px;}
+.shadows{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;}
+.shadows div{background:var(--surface);border:1px solid var(--separator);border-radius:14px;padding:16px;
+  font-family:var(--mono);font-size:11.5px;color:var(--text-tertiary);}
+
+/* Fases */
+.phase{display:grid;grid-template-columns:auto 1fr;gap:14px;padding:16px 0;border-top:1px solid var(--separator);}
+.phase:first-of-type{border-top:0;}
+.phase .p-n{font-family:var(--mono);font-size:12px;font-weight:500;color:#fff;background:var(--text-primary);
+  width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.phase h4{font-size:15.5px;line-height:21px;font-weight:600;margin:2px 0 4px;}
+.phase p{font-size:13.5px;line-height:19px;color:var(--text-secondary);margin:0;}
+.phase .cost{font-family:var(--mono);font-size:11.5px;color:var(--text-tertiary);margin-top:5px;display:block;}
+
+.callout{background:var(--warning-bg);border:1px solid var(--warning);border-radius:14px;
+  padding:14px 16px;font-size:13.5px;line-height:19px;color:var(--warning-text);}
+.callout b{font-weight:600;}
+footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--separator);
+  font-size:12.5px;line-height:18px;color:var(--text-tertiary);}
+
+@media (max-width:620px){
+  header h1{font-size:28px;}
+  .row{grid-template-columns:1fr;gap:4px;}
+  .row .spec{white-space:normal;}
+  .find{grid-template-columns:1fr;gap:4px;}
+}
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="rule-accent"></div>
+  <div class="eyebrow">Revisión de diseño · Ingeanclajes · 15 de octubre de 2026</div>
+  <h1>Un solo producto, no quince pantallas</h1>
+  <p class="lede">La aplicación funciona y ya tiene buenos momentos. Lo que falta es que todas las
+  pantallas hablen el mismo idioma visual: hoy cada módulo eligió su propio rojo, su propio tamaño de
+  letra y su propia forma de decir «esto está vencido». Abajo está el diagnóstico medido sobre el
+  código, el sistema que propongo y el plan módulo por módulo.</p>
+
+  <div class="metrics">
+    <div class="metric"><b>258 <em>→ 14</em></b><span>colores distintos en el código</span></div>
+    <div class="metric"><b>35 <em>→ 8</em></b><span>tamaños de letra</span></div>
+    <div class="metric"><b>450</b><span>textos por debajo de 11&nbsp;px</span></div>
+    <div class="metric"><b>109</b><span>avisos del navegador (alert y confirm)</span></div>
+    <div class="metric"><b>0</b><span>indicadores de foco de teclado</span></div>
+  </div>
+</header>
+
+<section>
+  <div class="sec-head">
+    <div class="sec-num">01</div>
+    <div>
+      <h2>Diagnóstico</h2>
+      <p>Lo que rompe la sensación de un único producto, en orden de impacto.</p>
+    </div>
+  </div>
+
+  <div class="find">
+    <div class="n">A</div>
+    <div>
+      <h4>No hay un color principal</h4>
+      <p>El rojo del logotipo aparece 45 veces, pero el naranja le gana con 85 y además conviven el azul
+      de Apple, el negro, el ámbar y el verde haciendo de botón principal. En Obras, el rojo de la marca
+      no aparece ni una vez. Un usuario no puede aprender «lo importante es lo rojo» porque no es cierto.</p>
+      <span class="ev">#f47c20 ×85 · #E0342A ×45 · #0071e3 ×22 · #1d1d1f · #B54708 · #4ade80</span>
+    </div>
+  </div>
+
+  <div class="find">
+    <div class="n">B</div>
+    <div>
+      <h4>Texto demasiado pequeño y demasiado grueso</h4>
+      <p>Hay 450 textos por debajo de 11&nbsp;px: datos de obra a 9&nbsp;px, iniciales de avatar a 8&nbsp;px, etiquetas
+      de calendario a 8,5&nbsp;px. Al mismo tiempo casi todo va en negrita 700 u 800, así que nada destaca
+      porque todo grita. Cuatro familias de grises compiten entre sí.</p>
+      <span class="ev">Gris Tailwind + gris Untitled&nbsp;UI + gris Apple + zinc, mezclados en la misma pantalla</span>
+    </div>
+  </div>
+
+  <div class="find">
+    <div class="n">C</div>
+    <div>
+      <h4>Colores de tema oscuro sobre fondo claro</h4>
+      <p>Verde #4ade80, azul #60a5fa, ámbar #fbbf24 y rojo #f87171 se usan como texto sobre fondos
+      blancos en seis módulos. Dan entre 1,7 y 2,8 de contraste, cuando el mínimo legible es 4,5. En obra,
+      con sol y pantalla sucia, eso es texto invisible.</p>
+      <span class="ev">Obras, Cotizaciones, Usuarios, Vencimientos, Informes, Certificaciones</span>
+    </div>
+  </div>
+
+  <div class="find">
+    <div class="n">D</div>
+    <div>
+      <h4>El mismo estado cambia de color según la pantalla</h4>
+      <p>«En Obra» es naranja en la lista e índigo en el detalle. «Finalizado» es verde en un sitio y
+      morado en otro. Hay tres sistemas de estado conviviendo y dos reglas distintas para decidir si algo
+      está por vencer (30, 60 o 90 días según el archivo).</p>
+    </div>
+  </div>
+
+  <div class="find">
+    <div class="n">E</div>
+    <div>
+      <h4>El modo oscuro está sostenido con alfileres</h4>
+      <p>Funciona buscando textos literales dentro de los estilos: si una tarjeta dice <code>background:#fff</code>
+      se corrige, y si dice <code>#FEF0C7</code> no. Además hay seis variables que no existen
+      (<code>--primary</code>, <code>--accent</code>, <code>--green-700</code>…) y siempre caen al valor de
+      respaldo, así que nunca cambian de tema.</p>
+    </div>
+  </div>
+
+  <div class="find">
+    <div class="n">F</div>
+    <div>
+      <h4>La aplicación avisa con ventanas del navegador</h4>
+      <p>109 <code>alert</code> y <code>confirm</code>, incluido un <code>prompt</code> que pide una contraseña
+      en texto plano. Son ventanas grises del sistema, ajenas al producto, y además bloquean la pantalla.
+      Nada confirma visualmente que algo se guardó.</p>
+    </div>
+  </div>
+
+  <div class="find">
+    <div class="n">G</div>
+    <div>
+      <h4>Nada responde al teclado</h4>
+      <p>Cero reglas de foco en todo el proyecto y 30 <code>outline:none</code>. Quien navegue con tabulador
+      no sabe nunca dónde está. Varias filas y tarjetas son <code>div</code> clicables, invisibles para el teclado.</p>
+    </div>
+  </div>
+
+  <div class="find">
+    <div class="n">H</div>
+    <div>
+      <h4>Emojis haciendo de iconos</h4>
+      <p>Más de 200 emojis en botones, pestañas y estados (📅 🛡️ 💾 👥 🇨🇴 ⚠️). Cada sistema operativo los
+      dibuja distinto, no se pueden teñir y rompen la alineación. Conviven con SVG de cinco grosores de trazo.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="sec-num">02</div>
+    <div>
+      <h2>Sistema de diseño</h2>
+      <p>Las reglas. Esta misma página está construida con ellas.</p>
+    </div>
+  </div>
+
+  <h4 class="sub">Color</h4>
+  <p class="lede" style="font-size:14px;margin-bottom:14px;">Un solo acento, el rojo del logotipo. Los grises
+  hacen todo el trabajo de jerarquía. El color semántico (verde, ámbar, rojo) solo aparece para decir un
+  estado, nunca para decorar.</p>
+  <div class="swatches">
+    <div class="sw"><div class="chipcolor" style="background:#E0342A"></div><div class="meta">
+      <div class="name">--accent</div><div class="hex">#E0342A</div>
+      <div class="use">Acción principal, enlaces, selección</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:#101828"></div><div class="meta">
+      <div class="name">--text-primary</div><div class="hex">#101828</div>
+      <div class="use">Títulos y contenido</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:#475467"></div><div class="meta">
+      <div class="name">--text-secondary</div><div class="hex">#475467</div>
+      <div class="use">Texto de apoyo</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:#667085"></div><div class="meta">
+      <div class="name">--text-tertiary</div><div class="hex">#667085</div>
+      <div class="use">Etiquetas y metadatos</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:#98A2B3"></div><div class="meta">
+      <div class="name">--text-quaternary</div><div class="hex">#98A2B3</div>
+      <div class="use">Iconos inactivos. Nunca texto que haya que leer</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:#EAECF0"></div><div class="meta">
+      <div class="name">--separator</div><div class="hex">#EAECF0</div>
+      <div class="use">Líneas y bordes</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:#F2F4F7"></div><div class="meta">
+      <div class="name">--fill</div><div class="hex">#F2F4F7</div>
+      <div class="use">Relleno de chips y campos</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:#F6F7F9"></div><div class="meta">
+      <div class="name">--bg-app</div><div class="hex">#F6F7F9</div>
+      <div class="use">Fondo de la aplicación</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:#12B76A"></div><div class="meta">
+      <div class="name">--success</div><div class="hex">#12B76A</div>
+      <div class="use">Vigente, pagado, realizado</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:#F79009"></div><div class="meta">
+      <div class="name">--warning</div><div class="hex">#F79009</div>
+      <div class="use">Por vencer, pendiente, festivo</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:#D92D20"></div><div class="meta">
+      <div class="name">--danger</div><div class="hex">#D92D20</div>
+      <div class="use">Vencido, error, eliminar</div></div></div>
+    <div class="sw"><div class="chipcolor" style="background:#FFFFFF;border-bottom:1px solid var(--separator)"></div><div class="meta">
+      <div class="name">--surface</div><div class="hex">#FFFFFF</div>
+      <div class="use">Tarjetas y hojas</div></div></div>
+  </div>
+
+  <div class="callout" style="margin-top:16px;">
+    <b>Ojo con el rojo.</b> El acento y el color de peligro son los dos rojos, así que nunca pueden
+    tocarse: lo destructivo va en fondo claro <code>#FEF3F2</code> con texto <code>#B42318</code>, nunca
+    en rojo macizo. Por lo mismo, los festivos del calendario dejan el rojo y pasan a ámbar, o chocarían
+    con la acción principal.
+  </div>
+
+  <h4 class="sub">Tipografía</h4>
+  <p class="lede" style="font-size:14px;margin-bottom:14px;">Inter en cuatro pesos. Ocho escalones, ninguno
+  por debajo de 11&nbsp;px. Se acaban los medios puntos (11,5 · 12,5 · 13,5) y los pesos 800 y 900.</p>
+  <div class="scale">
+    <div class="row"><span class="tag">largeTitle</span><span class="samp s-lt">Ejecución de obra</span><span class="spec">28/34 · 700</span></div>
+    <div class="row"><span class="tag">title1</span><span class="samp s-t1">Cotización C-26115</span><span class="spec">22/28 · 700</span></div>
+    <div class="row"><span class="tag">title2</span><span class="samp s-t2">Línea de vida vertical</span><span class="spec">18/24 · 600</span></div>
+    <div class="row"><span class="tag">headline</span><span class="samp s-hd">Torre 4 · Punto de anclaje</span><span class="spec">15/20 · 600</span></div>
+    <div class="row"><span class="tag">body</span><span class="samp s-bd">Inspección de 12 anclajes certificados en cubierta.</span><span class="spec">14/20 · 400</span></div>
+    <div class="row"><span class="tag">callout</span><span class="samp s-cl">Contratista: Constructora del Norte · Medellín</span><span class="spec">13/18 · 400</span></div>
+    <div class="row"><span class="tag">footnote</span><span class="samp s-fn">Vence el 14 de marzo de 2027</span><span class="spec">12/16 · 500</span></div>
+    <div class="row"><span class="tag">caption</span><span class="samp s-cp">Último movimiento hace 3 días</span><span class="spec">11/14 · 500</span></div>
+    <div class="row"><span class="tag">eyebrow</span><span class="samp s-cp" style="text-transform:uppercase;letter-spacing:.04em;font-weight:600;color:var(--text-tertiary)">Protocolo técnico</span><span class="spec">11/14 · 600 · +.04em</span></div>
+  </div>
+  <p style="font-size:13.5px;color:var(--text-secondary);margin-top:10px;">Todo número que se compare en
+  columna (precios, fechas, metros, consecutivos) lleva <code>font-variant-numeric: tabular-nums</code>.
+  Nada de <code>monospace</code> para códigos de obra: rompe la página y no hace falta.</p>
+
+  <h4 class="sub">Espaciado</h4>
+  <p style="font-size:13.5px;color:var(--text-secondary);">Rejilla de 4. Desaparecen el 3, el 5, el 7, el 9,
+  el 13, el 14 y el 18 que hoy están sueltos por todas partes.</p>
+  <div class="spacing">
+    <div><i style="width:4px;height:28px"></i><span>4</span></div>
+    <div><i style="width:8px;height:28px"></i><span>8</span></div>
+    <div><i style="width:12px;height:28px"></i><span>12</span></div>
+    <div><i style="width:16px;height:28px"></i><span>16</span></div>
+    <div><i style="width:20px;height:28px"></i><span>20</span></div>
+    <div><i style="width:24px;height:28px"></i><span>24</span></div>
+    <div><i style="width:32px;height:28px"></i><span>32</span></div>
+    <div><i style="width:40px;height:28px"></i><span>40</span></div>
+  </div>
+
+  <h4 class="sub">Radios</h4>
+  <p style="font-size:13.5px;color:var(--text-secondary);">Cinco, por función. Hoy hay quince.</p>
+  <div class="radii">
+    <div style="border-radius:6px">6 chip</div>
+    <div style="border-radius:10px">10 botón</div>
+    <div style="border-radius:14px">14 tarjeta</div>
+    <div style="border-radius:20px">20 hoja</div>
+    <div style="border-radius:999px">999 píldora</div>
+  </div>
+
+  <h4 class="sub">Sombras y movimiento</h4>
+  <div class="shadows">
+    <div style="box-shadow:var(--sh-sm)">sm · tarjeta en reposo</div>
+    <div style="box-shadow:var(--sh-md)">md · menú, elemento elevado</div>
+    <div style="box-shadow:var(--sh-lg)">lg · hoja y diálogo</div>
+  </div>
+  <p style="font-size:13.5px;color:var(--text-secondary);margin-top:12px;">150&nbsp;ms al pasar el cursor,
+  250&nbsp;ms al aparecer, con curva <code>cubic-bezier(.2,.8,.2,1)</code>. Hoy hay cinco animaciones
+  invocadas (<code>fadeIn</code>, <code>fadeInModal</code>, <code>spin</code>…) que nunca se definieron:
+  el indicador de guardado no gira y los diálogos no aparecen, simplemente están.</p>
+
+  <h4 class="sub">Foco e iconos</h4>
+  <p style="font-size:13.5px;color:var(--text-secondary);">Un anillo único para todo lo enfocable:
+  <code>outline: 2px solid var(--accent); outline-offset: 2px</code> con <code>:focus-visible</code>, para
+  que aparezca con teclado y no con el ratón. Un solo juego de iconos de trazo 1,8 a 16 y 20&nbsp;px; los
+  emojis salen de la interfaz y se quedan solo donde son contenido escrito por una persona.</p>
+
+  <h4 class="sub">Componentes</h4>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Componente</th><th>Sustituye hoy a</th></tr></thead>
+      <tbody>
+        <tr><td>Button <span class="mono">primary · secondary · tertiary · destructive</span></td><td><code>B(color)</code>, usado 256 veces con 26 fondos distintos. Alturas fijas 32 / 36 / 44.</td></tr>
+        <tr><td>Input</td><td><code>SI</code> sin foco ni estado deshabilitado; campos de 28&nbsp;px.</td></tr>
+        <tr><td>SegmentedControl</td><td>Tres selectores de vista distintos, copiados entre Obras, Tareas, Informes y Certificaciones.</td></tr>
+        <tr><td>Card</td><td><code>CD</code> con radio 16 y cinco variantes manuales.</td></tr>
+        <tr><td>ListRow</td><td>Filas de tabla en rejilla que el CSS móvil aplasta a una columna.</td></tr>
+        <tr><td>StatusPill</td><td>Píldora neutra con punto de color. Reemplaza <code>EC</code>, <code>Badge</code> y los mapas de color de cada pantalla.</td></tr>
+        <tr><td>EmptyState</td><td>Ocho estados vacíos distintos, algunos con emoji de 32&nbsp;px, otros solo texto, varios inexistentes.</td></tr>
+        <tr><td>Toast</td><td>Los 69 <code>alert</code> de éxito y los tres avisos flotantes que hoy no se parecen entre sí.</td></tr>
+        <tr><td>Sheet / Modal</td><td>Seis modales con radios 14/16/18/20, cuatro fondos distintos y ninguno que cierre con Escape.</td></tr>
+        <tr><td>PageHeader</td><td>Cuatro módulos repiten el título que ya pone la barra superior; dos no tienen ninguno.</td></tr>
+        <tr><td>Toolbar</td><td>Barras de filtro reescritas en cada módulo.</td></tr>
+        <tr><td>Callout</td><td>Avisos con colores de tema oscuro sobre fondo claro en cinco archivos.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="demo" style="margin-top:16px;">
+    <span class="btn btn-p">Nueva cotización</span>
+    <span class="btn btn-s">Imprimir</span>
+    <span class="btn btn-t">Ver detalle</span>
+    <span class="btn btn-d">Eliminar</span>
+    <span class="seg"><span class="on">Mes</span><span>Lista</span></span>
+    <span class="chip"><i class="dot d-s"></i>Vigente</span>
+    <span class="chip"><i class="dot d-w"></i>Por vencer</span>
+    <span class="chip"><i class="dot d-d"></i>Vencido</span>
+    <span class="chip"><i class="dot d-n"></i>Borrador</span>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="sec-num">03</div>
+    <div>
+      <h2>Plan por módulo</h2>
+      <p>Cada bloque: lo que falla hoy y los cambios concretos. Nada toca la lógica ni los documentos
+      que se imprimen y se le entregan al cliente.</p>
+    </div>
+  </div>
+
+  <h3 class="block">Armazón y kit compartido</h3>
+
+  <div class="mod">
+    <div class="mod-top"><h4>Menú lateral, barra superior y menú de usuario</h4>
+      <span class="file">components/layout/</span></div>
+    <div class="chips">
+      <span class="chip"><i class="dot d-w"></i>Alturas mezcladas</span>
+      <span class="chip"><i class="dot d-w"></i>Contraste 2,6</span>
+      <span class="chip"><i class="dot d-d"></i>Sin hover ni foco</span>
+    </div>
+    <h5>Problemas</h5>
+    <ul>
+      <li>En una misma barra conviven alturas de 34, 36, 38 y 40&nbsp;px y radios 8, 10 y 999.</li>
+      <li>El título de la barra no alinea con el contenido: la barra usa 28&nbsp;px de margen y el cuerpo 32.</li>
+      <li>«En línea» en verde Tailwind con resplandor, «Mañana» en ámbar, Instalar en degradado rojo: tres lenguajes en 20&nbsp;cm de barra.</li>
+      <li>Las iniciales del avatar salen a 9,6&nbsp;px. Los títulos de sección del menú a 10&nbsp;px con contraste 2,6.</li>
+      <li>En móvil se muestra el nombre largo del módulo aunque ya existe una versión corta definida.</li>
+    </ul>
+    <h5>Cambios</h5>
+    <ol>
+      <li>Todos los controles de la barra: Button tertiary de 32&nbsp;px, radio 10, icono de 16&nbsp;px.</li>
+      <li>Título en headline y sección encima en caption; margen único de 32&nbsp;px con el contenido.</li>
+      <li>«En línea», «Mañana» y el estado de guardado pasan a StatusPill neutra con punto.</li>
+      <li>El menú de usuario pasa a ListRow con hover; cerrar sesión se confirma en hoja, no en ventana del navegador.</li>
+      <li>En móvil, el nombre corto. En modo oscuro, el elemento activo recupera el acento.</li>
+    </ol>
+    <p class="shot"><b>Necesito ver:</b> la barra superior con sus siete controles a 1280&nbsp;px, y el menú lateral contraído.</p>
+  </div>
+
+  <div class="mod">
+    <div class="mod-top"><h4>Kit compartido y tokens</h4><span class="file">styles/ · components/ui/</span></div>
+    <div class="chips">
+      <span class="chip"><i class="dot d-d"></i>Cuatro fuentes de tokens</span>
+      <span class="chip"><i class="dot d-d"></i>Respaldos que engañan</span>
+      <span class="chip"><i class="dot d-n"></i>Primitivos sin usar</span>
+    </div>
+    <h5>Problemas</h5>
+    <ul>
+      <li>Cuatro definiciones de token que se contradicen: <code>tokens.js</code>, <code>shellTheme.js</code>, las variables CSS y <code>listadoEstilos</code>. Cada una tiene su propio gris de borde.</li>
+      <li>Los valores de respaldo mienten: <code>var(--text-subtle,#667085)</code> en realidad resuelve a #94a3b8, que da contraste 2,6. Es el color de casi todas las ayudas.</li>
+      <li><code>B()</code> acepta cualquier color de fondo: 256 usos, 26 fondos. Es la causa directa del problema A.</li>
+      <li><code>MenuAccionesFila</code> existe y no se usa en ninguna pantalla, justo donde hay filas con seis botones.</li>
+      <li>El texto de corrección ortográfica usa verdes y rojos de tema oscuro sobre fondo blanco.</li>
+    </ul>
+    <h5>Cambios</h5>
+    <ol>
+      <li>Un único archivo de tokens; <code>shellTheme</code> y <code>listadoEstilos</code> leen de ahí. Se borra el grupo <code>C</code>.</li>
+      <li><code>B(color)</code> se reemplaza por Button con variantes. El color deja de ser un parámetro.</li>
+      <li><code>SI</code> gana anillo de foco y estado deshabilitado; <code>CD</code> baja a radio 14.</li>
+      <li><code>H1</code> pasa a PageHeader con la escala real; <code>Badge</code> pasa a StatusPill.</li>
+      <li>Se adopta <code>MenuAccionesFila</code> en toda fila con tres o más acciones.</li>
+    </ol>
+    <p class="shot"><b>Necesito ver:</b> el panel de filtros abierto, en claro y en oscuro.</p>
+  </div>
+
+  <div class="mod">
+    <div class="mod-top"><h4>Dashboard</h4><span class="file">screens/Dashboard/</span></div>
+    <div class="chips">
+      <span class="chip"><i class="dot d-d"></i>Texto blanco sobre blanco en oscuro</span>
+      <span class="chip"><i class="dot d-w"></i>Tres acentos</span>
+    </div>
+    <h5>Problemas</h5>
+    <ul>
+      <li>No usa ninguno de los componentes compartidos: rehace encabezado, tarjetas y estados.</li>
+      <li>«Nueva Cotización» usa el color del texto como fondo, así que en modo oscuro queda blanco sobre blanco.</li>
+      <li>Azul de Apple como tercer acento en siete sitios, más naranja, más colores de estado de iOS.</li>
+      <li>Las tarjetas y filas son <code>div</code> clicables: no se alcanzan con el teclado.</li>
+      <li>«Abrir →» en una cotización lleva al listado completo, no a esa cotización.</li>
+    </ul>
+    <h5>Cambios</h5>
+    <ol>
+      <li>PageHeader con la fecha de eyebrow, y Toolbar con un solo Button primary.</li>
+      <li>Accesos directos como Card con icono de trazo; filas recientes como ListRow con StatusPill.</li>
+      <li>Alertas: cifras en title2 tabular, color solo <code>--danger</code> y <code>--warning</code>.</li>
+      <li>Un único EmptyState en lugar de los tres actuales; enlaces en <code>--accent</code>.</li>
+      <li>«Abrir» lleva al registro concreto.</li>
+    </ol>
+    <p class="shot"><b>Necesito ver:</b> el dashboard mientras carga (¿se ven ceros?) y con el aviso de instalación encima.</p>
+  </div>
+
+  <div class="mod">
+    <div class="mod-top"><h4>Inicio de sesión</h4><span class="file">SupabaseGate.jsx</span></div>
+    <h5>Problemas</h5>
+    <ul>
+      <li>Cuatro tamaños distintos de título (24, 26, 28, 30), todos en peso 800.</li>
+      <li>Es la primera pantalla del producto y no comparte ni un componente con el resto.</li>
+      <li>«Validando sesión» sin ningún indicador de progreso; los campos no muestran foco.</li>
+      <li>Trata de «usted» mientras el resto de la aplicación tutea.</li>
+    </ul>
+    <h5>Cambios</h5>
+    <ol>
+      <li>Título en largeTitle y subtítulo en body; un solo tratamiento para los cuatro estados de la pantalla.</li>
+      <li>Input y Button de 44&nbsp;px compartidos con la aplicación.</li>
+      <li>Avisos como Callout con icono de trazo, sin emoji; fondo plano y tarjeta con sombra lg.</li>
+      <li>Tutear, como en el resto.</li>
+    </ol>
+    <p class="shot"><b>Necesito ver:</b> el cambio de contraseña en modo oscuro.</p>
+  </div>
+
+  <h3 class="block">Comercial</h3>
+
+  <div class="mod">
+    <div class="mod-top"><h4>Cotizaciones</h4><span class="file">screens/Cotizacion/</span></div>
+    <div class="chips">
+      <span class="chip"><i class="dot d-d"></i>Aprobar escondido en una etiqueta</span>
+      <span class="chip"><i class="dot d-w"></i>Seis primarios</span>
+      <span class="chip"><i class="dot d-w"></i>Tres «Guardar»</span>
+    </div>
+    <h5>Problemas</h5>
+    <ul>
+      <li>La etiqueta de estado <em>también</em> aprueba: al pasar el cursor cambia de texto, de color y crece. Una acción de alto impacto escondida en lo que parece una etiqueta.</li>
+      <li>Tres botones «Guardar» en la misma vista, uno de ellos solo dentro de una tarjeta vacía.</li>
+      <li>Seis colores haciendo de principal, el más usado el ámbar de advertencia.</li>
+      <li>Las filas alternas y el hover usan el mismo gris: pasar el cursor no se nota.</li>
+      <li>El inspector muestra siempre 30 días de validez porque lee un campo que no es el que se guarda.</li>
+      <li>Sin indicador mientras se trae la cotización completa para editar o generar el PDF.</li>
+      <li>La numeración de pasos salta de 01 a 03.</li>
+    </ul>
+    <h5>Cambios</h5>
+    <ol>
+      <li>Un solo Button primary por vista. Aprobar y desaprobar se mueven al menú de fila y al inspector, con confirmación.</li>
+      <li>La lista adopta la barra común: SegmentedControl de estados, buscador de 36&nbsp;px y filtros en panel.</li>
+      <li>Estado como StatusPill neutra con punto.</li>
+      <li>El inspector pasa a Sheet con radio 20 y cierre con Escape.</li>
+      <li>Corregir el campo de validez y la numeración; indicador de carga al abrir y al generar el PDF.</li>
+      <li>Un Toast por guardado y envío, en lugar de los once avisos del navegador.</li>
+    </ol>
+    <p class="shot"><b>Necesito ver:</b> la barra superior y la barra fija en móvil (hoy el título se corta al 38 % del ancho), y los paneles de dictado e importación en oscuro.</p>
+  </div>
+
+  <div class="mod">
+    <div class="mod-top"><h4>Clientes</h4><span class="file">screens/Clientes/</span></div>
+    <h5>Problemas</h5>
+    <ul>
+      <li>Título y acciones duplicados: aparecen en la barra superior y otra vez dentro de la página, con estilos y textos distintos («+ Cliente» frente a «Nuevo cliente»).</li>
+      <li>Franja de color en el borde de cada fila más tres botones teñidos: gris, ámbar y rojo.</li>
+      <li>«Activo» sale gris en modo claro y verde en oscuro, porque el estado no está definido para claro.</li>
+      <li>El modal de unificar usa azul para lo seleccionado y rojo oscuro para confirmar, y no cierra con Escape.</li>
+    </ul>
+    <h5>Cambios</h5>
+    <ol>
+      <li>Un solo PageHeader; las acciones viven en la barra superior.</li>
+      <li>Filas como ListRow: nombre en headline, datos en callout, acciones secundarias en el menú «…».</li>
+      <li>«Activo» como píldora neutra con punto verde, igual en ambos temas.</li>
+      <li>Unificar como Modal estándar; el botón de confirmar en estilo destructivo.</li>
+    </ol>
+    <p class="shot"><b>Necesito ver:</b> la densidad de lista frente a cuadrícula y el modal de unificar en oscuro.</p>
+  </div>
+
+  <div class="mod">
+    <div class="mod-top"><h4>Catálogo y precios</h4><span class="file">screens/Catalogo/</span></div>
+    <h5>Problemas</h5>
+    <ul>
+      <li>Filas de 30&nbsp;px con campos de 11,5&nbsp;px: imposible de usar con el dedo.</li>
+      <li>Quien no es administrador ve campos deshabilitados sin ningún estilo que lo indique.</li>
+      <li>Dice «se guarda solo» pero no hay confirmación visible junto a la acción.</li>
+      <li>El título de la pantalla no coincide con el del menú.</li>
+    </ul>
+    <h5>Cambios</h5>
+    <ol>
+      <li>Filas de 40&nbsp;px con campos de 32; en móvil, filas de solo lectura en vez de campos deshabilitados.</li>
+      <li>Precio en tabular, sin la segunda línea de 9,5&nbsp;px.</li>
+      <li>«Activo» como interruptor; «Inactivo» como píldora, en lugar de bajar la opacidad.</li>
+      <li>Toast al agregar; el título se iguala al del menú.</li>
+    </ol>
+    <p class="shot"><b>Necesito ver:</b> la tabla en un teléfono.</p>
+  </div>
+
+  <h3 class="block">Operación en obra</h3>
+
+  <div class="mod">
+    <div class="mod-top"><h4>Ejecución de obra</h4><span class="file">screens/Obras/</span></div>
+    <div class="chips">
+      <span class="chip"><i class="dot d-d"></i>Botones de 20&nbsp;px en campo</span>
+      <span class="chip"><i class="dot d-d"></i>Borrados sin confirmar</span>
+      <span class="chip"><i class="dot d-w"></i>El rojo de marca no aparece</span>
+    </div>
+    <h5>Problemas</h5>
+    <ul>
+      <li>Es el módulo que más se usa en campo y tiene los objetivos más pequeños: quitar foto 20&nbsp;px, quitar personal 22, pestañas 28, «Nueva obra» 28. El mínimo con guantes es 44.</li>
+      <li>Quitar a un trabajador borra también sus horarios, sin confirmación.</li>
+      <li>Cinco colores de acción principal en el mismo flujo; el rojo de la marca no aparece ni una vez.</li>
+      <li>Colores de tema oscuro (#34d399, #60a5fa) como texto de indicadores sobre fondo claro: contraste 1,9.</li>
+      <li>Cabecera del detalle con cinco botones, todos con emoji, y siete pestañas con emoji.</li>
+      <li>Los códigos de obra en <code>monospace</code> en una pantalla y en tabular en otra.</li>
+    </ul>
+    <h5>Cambios</h5>
+    <ol>
+      <li>Todo lo táctil a 44&nbsp;px en móvil. El interruptor «Enviada» reemplaza la píldora de 16&nbsp;px.</li>
+      <li>PageHeader con una sola acción principal; el resto en secundario y, en móvil, en un menú «Más».</li>
+      <li>Pestañas como SegmentedControl deslizable, sin emojis.</li>
+      <li>StatusPill único para obra, entregable e insumo; se retiran los cuatro mapas de color locales.</li>
+      <li>Los indicadores económicos en color de texto normal; el color solo cuando hay un umbral superado.</li>
+      <li>Confirmación en hoja para quitar personal, despachar todo y eliminar insumo.</li>
+    </ol>
+    <p class="shot"><b>Necesito ver:</b> la tabla de obras en un teléfono y la barra de siete pestañas cuando se parte en dos filas.</p>
+  </div>
+
+  <div class="mod">
+    <div class="mod-top"><h4>Tareas con el equipo</h4><span class="file">screens/Produccion/</span></div>
+    <h5>Problemas</h5>
+    <ul>
+      <li>Los nombres del equipo están escritos a mano en las etiquetas y en los colores de avatar: cuando entre alguien nuevo, no tendrá color ni aparecerá bien rotulado.</li>
+      <li>El mismo icono ⚡ significa «En ejecución» y «Prioridad alta».</li>
+      <li>Dos botones «Asignar tarea» por columna.</li>
+      <li>La tabla se aplasta a una columna en móvil y el tablero se convierte en una lista larguísima.</li>
+      <li>La inicial del avatar sale a 8&nbsp;px; la casilla de completar mide 18.</li>
+    </ul>
+    <h5>Cambios</h5>
+    <ol>
+      <li>Avatar neutro con iniciales calculadas, sin lista de nombres en el código.</li>
+      <li>Cuatro estados a StatusPill; el vencimiento es lo único que usa color de alerta.</li>
+      <li>Casilla de 22&nbsp;px con zona táctil de 44; un solo botón de asignar por columna.</li>
+      <li>En móvil, la tabla pasa a ListRow; en escritorio se mantiene el tablero.</li>
+      <li>Quitar la cabecera interna, que repite el título de la barra.</li>
+    </ol>
+    <p class="shot"><b>Necesito ver:</b> el tablero en un teléfono de 375&nbsp;px y si el teclado tapa los botones de la hoja.</p>
+  </div>
+
+  <div class="mod">
+    <div class="mod-top"><h4>Fototeca de obras</h4><span class="file">screens/Fototeca/ · Obras/FototecaObra</span></div>
+    <h5>Problemas</h5>
+    <ul>
+      <li>Cinco colores de acento en un solo flujo: naranja, azul, ámbar, verde y rojo, uno por botón.</li>
+      <li>«Obras recientes» en realidad muestra las seis primeras obras con fotos, no las recientes.</li>
+      <li>El visor pide usar las flechas del teclado y no tiene gesto de deslizar; el zoom existe en el código pero no tiene controles.</li>
+      <li>El botón de descargar en ZIP no cambia de aspecto cuando está deshabilitado.</li>
+    </ul>
+    <h5>Cambios</h5>
+    <ol>
+      <li>Quitar la portada; lista de obras en ListRow con el contador como etiqueta neutra.</li>
+      <li>Visor a pantalla completa con iconos de 44&nbsp;px y gesto de deslizar en móvil.</li>
+      <li>Descargar ZIP como acción principal con barra de progreso real.</li>
+      <li>Corregir el rótulo «recientes» o el criterio de orden.</li>
+    </ol>
+    <p class="shot"><b>Necesito ver:</b> el visor a 375&nbsp;px y la cuadrícula con fotos verticales.</p>
+  </div>
+
+  <h3 class="block">Calidad y entregables</h3>
+
+  <div class="mod">
+    <div class="mod-top"><h4>Informes y Certificaciones</h4><span class="file">screens/Informes/ · Certificaciones/</span></div>
+    <div class="chips">
+      <span class="chip"><i class="dot d-w"></i>Listas duplicadas</span>
+      <span class="chip"><i class="dot d-d"></i>Variables inexistentes</span>
+    </div>
+    <h5>Problemas</h5>
+    <ul>
+      <li>Son la misma lista copiada dos veces, con sus componentes duplicados y ya divergiendo.</li>
+      <li>Certificaciones usa cuatro variables CSS que no existen, así que esa pantalla no tiene modo oscuro.</li>
+      <li>Cabeceras decorativas («Protocolo Técnico Oficial», «Dossier Técnico Oficial») con degradado rojo que compiten con el documento real que está justo debajo.</li>
+      <li>«Descargar PDF» es negro en una pantalla y rojo en otra.</li>
+      <li>Dice «arrastra fotos» pero no se pueden arrastrar.</li>
+      <li>Formularios de tres columnas sin versión móvil.</li>
+    </ul>
+    <h5>Cambios</h5>
+    <ol>
+      <li>Una sola lista compartida entre ambos módulos, con el mismo orden de acciones.</li>
+      <li>Reemplazar las variables inexistentes por tokens reales: eso devuelve el modo oscuro.</li>
+      <li>Quitar las cabeceras decorativas; el documento es el protagonista.</li>
+      <li>Vigencia como StatusPill con punto verde, ámbar o rojo, con una única regla de días.</li>
+      <li>Implementar el arrastre o cambiar el texto; barra de progreso al subir fotos.</li>
+      <li>Formularios a una columna en móvil. <em>Los documentos impresos no se tocan.</em></li>
+    </ol>
+    <p class="shot"><b>Necesito ver:</b> las cuatro acciones de la barra en móvil y el formulario en oscuro.</p>
+  </div>
+
+  <div class="mod">
+    <div class="mod-top"><h4>Vencimientos</h4><span class="file">screens/Vencimientos/</span></div>
+    <h5>Problemas</h5>
+    <ul>
+      <li>Hacer clic en una fila recertifica en lugar de abrir el detalle: un clic accidental genera un documento.</li>
+      <li>Los botones usan fondos oscuros con texto pastel, que es paleta de modo oscuro puesta en modo claro.</li>
+      <li>La recertificación está también en Certificaciones, con otro aspecto.</li>
+      <li>El mensaje de confirmación usa una variable inexistente y sale verde claro sobre verde.</li>
+    </ul>
+    <h5>Cambios</h5>
+    <ol>
+      <li>El clic en la fila abre; recertificar es un botón explícito.</li>
+      <li>Misma lista y mismo StatusPill que Certificaciones.</li>
+      <li>El diálogo de recertificación pasa a Sheet, con el botón bloqueado hasta que haya fecha.</li>
+      <li>Confirmación por Toast.</li>
+    </ol>
+    <p class="shot"><b>Necesito ver:</b> cómo se leen de verdad los botones de fila en claro.</p>
+  </div>
+
+  <div class="mod">
+    <div class="mod-top"><h4>Usuarios, Auditoría y Formatos</h4><span class="file">screens/Usuarios/ · Auditoria/ · Formatos/</span></div>
+    <div class="chips"><span class="chip"><i class="dot d-d"></i>Contraseña en texto plano</span></div>
+    <h5>Problemas</h5>
+    <ul>
+      <li>La contraseña se pide con una ventana del navegador que la muestra en texto plano mientras se escribe.</li>
+      <li>Seis botones teñidos por usuario, en pasteles con contraste por debajo de 2.</li>
+      <li>Un usuario suspendido baja la opacidad de toda su tarjeta, botones incluidos: se ven apagados pero siguen activos.</li>
+      <li>En Auditoría, la pestaña activa usa una variable inexistente y sale naranja; los módulos se distinguen por seis pastel ilegibles.</li>
+      <li>En Formatos, cada tecla guarda sin ninguna señal; hay un componente de firma que no se usa en ninguna parte.</li>
+    </ul>
+    <h5>Cambios</h5>
+    <ol>
+      <li>La contraseña se pide en un diálogo propio con campo enmascarado.</li>
+      <li>Usuarios como ListRow: rol como etiqueta, conexión como StatusPill, acciones en el menú «…».</li>
+      <li>Deshabilitado con estilo propio, no con opacidad sobre toda la tarjeta.</li>
+      <li>Auditoría: módulo como etiqueta neutra, cabeceras de tabla en caption, fechas tabulares, sin franjas alternas.</li>
+      <li>Formatos: campos de 36&nbsp;px e indicador «Guardado» tras una pausa. Borrar el componente de firma sin uso.</li>
+    </ol>
+    <p class="shot"><b>Necesito ver:</b> el panel de superadministrador en oscuro y la tabla de auditoría a 1360&nbsp;px.</p>
+  </div>
+
+  <h3 class="block">Agenda, tareas y soporte</h3>
+
+  <div class="mod">
+    <div class="mod-top"><h4>Recordatorio de agendas y visitas en obra</h4><span class="file">screens/Agenda/</span></div>
+    <div class="chips">
+      <span class="chip"><i class="dot d-w"></i>Filtros que no filtran</span>
+      <span class="chip"><i class="dot d-w"></i>Texto a 8,5&nbsp;px</span>
+    </div>
+    <h5>Problemas</h5>
+    <ul>
+      <li>La búsqueda y los filtros afectan al panel del día pero no a la cuadrícula del mes, así que el calendario muestra puntos en días donde «no hay compromisos».</li>
+      <li>En la cuadrícula hay texto de 8,5 a 10&nbsp;px, por debajo de lo legible.</li>
+      <li>La información de tipo está dos veces en la misma barra: contadores y filtros.</li>
+      <li>El día seleccionado pesa más que el día de hoy.</li>
+      <li>El indicador de envío de correo no gira, porque su animación no existe.</li>
+      <li>Cuatro botones de crear, con tres estilos y tres textos distintos. Un correo personal aparece en el mensaje de confirmación.</li>
+    </ul>
+    <h5>Cambios</h5>
+    <ol>
+      <li>Los filtros afectan también a la cuadrícula.</li>
+      <li>Las cuatro categorías se distinguen por icono de trazo y píldora neutra; el punto de color pasa a indicar el estado, no el tipo.</li>
+      <li>Hoy en círculo rojo; el día seleccionado, solo con fondo gris.</li>
+      <li>Los festivos salen del rojo y pasan a ámbar, para no competir con el acento.</li>
+      <li>Una sola barra: SegmentedControl mes/lista, filtros con contador y un botón de crear.</li>
+      <li>Nada por debajo de 11&nbsp;px; el modal pasa a Sheet con cierre por Escape.</li>
+    </ol>
+    <p class="shot"><b>Necesito ver:</b> el formulario de dos columnas en móvil y los tonos de festivo en oscuro.</p>
+  </div>
+
+  <div class="mod">
+    <div class="mod-top"><h4>Mis tareas y recordatorios</h4><span class="file">screens/MisTareas/</span></div>
+    <div class="chips"><span class="chip"><i class="dot d-s"></i>La base del nuevo sistema</span></div>
+    <h5>Estado</h5>
+    <ul>
+      <li>Es la pantalla más cercana al objetivo: separadores con sangría, tachado animado, deshacer en lugar de preguntar, y ya usa los grises correctos.</li>
+      <li>Es también la única que resuelve hover, foco y animación con una hoja de estilos en vez de estilos en línea. Ese patrón debería ser la base de los componentes compartidos.</li>
+    </ul>
+    <h5>Cambios</h5>
+    <ol>
+      <li>El naranja pasa a rojo de marca; el rojo de eliminar pasa a <code>--danger</code>, para que no sean el mismo color.</li>
+      <li>Quitar el título repetido: ya lo pone la barra superior.</li>
+      <li>Un solo indicador de avance, no tres.</li>
+      <li>Distinguir «cargando» de «lista vacía».</li>
+      <li>Extraer su segmentado, su campo y su aviso flotante como los componentes compartidos.</li>
+    </ol>
+    <p class="shot"><b>Necesito ver:</b> la pantalla en modo oscuro.</p>
+  </div>
+
+  <div class="mod">
+    <div class="mod-top"><h4>Mensajes y Soporte</h4><span class="file">screens/Soporte/ · components/soporte/ · notificaciones/</span></div>
+    <div class="chips">
+      <span class="chip"><i class="dot d-d"></i>Tres chats distintos</span>
+      <span class="chip"><i class="dot d-d"></i>Un mensaje, cinco reacciones</span>
+    </div>
+    <h5>Problemas</h5>
+    <ul>
+      <li>Hay tres interfaces de chat con tres aspectos: la pantalla, el widget flotante y el aviso emergente. Cambian de color, de radio y de tamaño de letra.</li>
+      <li>Un solo mensaje entrante dispara cinco cosas a la vez: el sonido suena dos veces, aparece la burbuja, se abre el widget y salta la notificación del sistema. La burbuja tapa el widget que acaba de abrirse.</li>
+      <li>El aviso marca el mensaje como leído a los 2,5 segundos solo por aparecer: el remitente ve «Visto» aunque nadie lo haya leído.</li>
+      <li>Los niveles de apilado van de 40 a 200.000 sin ninguna escala: en móvil, avisos importantes quedan por debajo del widget.</li>
+      <li>El punto verde «en línea» es fijo, no refleja nada real.</li>
+    </ul>
+    <h5>Cambios</h5>
+    <ol>
+      <li>Un solo componente de conversación para las tres superficies.</li>
+      <li>Un mensaje entrante produce una sola reacción: sonido una vez, aviso una vez, y el widget no se abre solo.</li>
+      <li>«Visto» solo cuando el mensaje se abre de verdad.</li>
+      <li>Escala de apilado en tokens: contenido, barra, menú, hoja, aviso, visor.</li>
+      <li>Quitar el punto «en línea» mientras no haya un dato real detrás.</li>
+    </ol>
+    <p class="shot"><b>Necesito ver:</b> qué ocurre en el teléfono cuando entra un mensaje con el widget abierto.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="sec-num">04</div>
+    <div>
+      <h2>Orden de trabajo</h2>
+      <p>De abajo hacia arriba: primero los cimientos, porque cada fase hace más barata la siguiente.</p>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="p-n">1</div>
+    <div>
+      <h4>Tokens</h4>
+      <p>Un único archivo de color, tipografía, espaciado, radios, sombras y apilado. Se borran las
+      otras tres fuentes y las seis variables fantasma. Nada cambia a la vista todavía.</p>
+      <span class="cost">Sin riesgo · habilita todo lo demás</span>
+    </div>
+  </div>
+  <div class="phase">
+    <div class="p-n">2</div>
+    <div>
+      <h4>Componentes</h4>
+      <p>Los doce de la tabla, más el anillo de foco global y las animaciones que hoy se invocan
+      sin existir. Se construyen sobre el patrón de hoja de estilos que ya usa Mis tareas.</p>
+      <span class="cost">Es el grueso del trabajo</span>
+    </div>
+  </div>
+  <div class="phase">
+    <div class="p-n">3</div>
+    <div>
+      <h4>Armazón y Dashboard</h4>
+      <p>Barra superior, menú lateral, inicio de sesión y Dashboard. Es lo que se ve en los primeros
+      cinco segundos y lo que fija la impresión de todo el producto.</p>
+      <span class="cost">El cambio más visible por el esfuerzo</span>
+    </div>
+  </div>
+  <div class="phase">
+    <div class="p-n">4</div>
+    <div>
+      <h4>Lo que se usa en obra</h4>
+      <p>Ejecución de obra, Tareas con el equipo y Fototeca: aquí los objetivos táctiles y el
+      contraste no son estética, son que alguien pueda trabajar con guantes y con sol.</p>
+      <span class="cost">Mayor impacto operativo</span>
+    </div>
+  </div>
+  <div class="phase">
+    <div class="p-n">5</div>
+    <div>
+      <h4>Comercial y calidad</h4>
+      <p>Cotizaciones, Clientes, Catálogo, Informes, Certificaciones y Vencimientos. Dos listas
+      duplicadas se funden en una, lo que reduce el código en vez de aumentarlo.</p>
+      <span class="cost">Incluye corregir la aprobación escondida y la validez errónea</span>
+    </div>
+  </div>
+  <div class="phase">
+    <div class="p-n">6</div>
+    <div>
+      <h4>Agenda, soporte y administración</h4>
+      <p>Agenda, el sistema de mensajería unificado, Usuarios, Auditoría y Formatos. Aquí cae también
+      el diálogo de contraseña y la escala de apilado.</p>
+      <span class="cost">Cierra el recorrido</span>
+    </div>
+  </div>
+  <div class="phase">
+    <div class="p-n">7</div>
+    <div>
+      <h4>Modo oscuro de verdad</h4>
+      <p>Con todo el color en tokens, se borran los trucos que hoy buscan textos literales dentro de
+      los estilos. El modo oscuro deja de ser una capa de parches y pasa a ser una definición.</p>
+      <span class="cost">Solo es posible al final</span>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:20px;">
+    <b>Una regla para que no vuelva a pasar.</b> Mientras no exista un componente, cada pantalla
+    inventa el suyo: así nacieron los seis botones primarios y las tres listas. Después de la fase 2,
+    ningún color va escrito a mano en una pantalla, solo tokens.
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="sec-num">05</div>
+    <div>
+      <h2>Lo que necesito ver</h2>
+      <p>Esto lo saqué todo del código. Hay cosas que solo se juzgan mirando.</p>
+    </div>
+  </div>
+  <ul style="font-size:14px;line-height:21px;color:var(--text-secondary);">
+    <li><b style="color:var(--text-primary);font-weight:600;">En teléfono:</b> la tabla de obras, el tablero de tareas, el visor de fotos y el formulario de agenda. El CSS global aplasta a una columna cualquier tabla hecha con rejilla, y desde el código no se ve el resultado.</li>
+    <li><b style="color:var(--text-primary);font-weight:600;">En modo oscuro:</b> Certificaciones, el modal de contraseña, el panel de superadministrador y los tonos de festivo de la agenda. Son los sitios que los trucos actuales no alcanzan.</li>
+    <li><b style="color:var(--text-primary);font-weight:600;">La barra superior a 1280&nbsp;px</b> con sus siete controles, para saber cuánto hay que quitar.</li>
+    <li><b style="color:var(--text-primary);font-weight:600;">Un mensaje entrante en el teléfono</b> con el widget de soporte abierto, para medir el solape.</li>
+  </ul>
+  <p style="font-size:14px;color:var(--text-secondary);margin-top:14px;">Con capturas de esas cuatro
+  situaciones puedo cerrar las recomendaciones que quedaron marcadas en cada módulo. Mientras tanto,
+  las fases 1 y 2 se pueden empezar: no dependen de nada de esto.</p>
+</section>
+
+<footer>
+  Revisión hecha sobre el código del repositorio ingeanclajes2 en la rama principal, 15 de octubre de 2026.
+  Las cifras salen de contar sobre los archivos de <code>src/</code>. Los documentos que se imprimen y se
+  entregan al cliente —cotización, informe, certificado y la página pública de verificación— quedan fuera
+  de este sistema: tienen su propia maqueta y no se tocan.
+</footer>
+
+</div>

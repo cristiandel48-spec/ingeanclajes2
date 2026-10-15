@@ -66,6 +66,11 @@ export default function DocumentosEquipo({
   const [menuInsertarAbierto, setMenuInsertarAbierto] = useState(false);
   const [toastMensaje, setToastMensaje] = useState("");
 
+  // Modal inline que reemplaza todos los prompt() nativos del navegador
+  const [modalInput, setModalInput] = useState(null);
+  // modalInput = { titulo, placeholder, valorInicial, onConfirmar } | null
+  const inputModalRef = useRef(null);
+
   const docActivo = useMemo(() => {
     if (documentos.length === 0) return null;
     return documentos.find((d) => d.id === docActivoId) || documentos[0];
@@ -102,9 +107,20 @@ export default function DocumentosEquipo({
     setTimeout(() => setToastMensaje(""), 3500);
   };
 
+  // Reemplaza window.prompt() con un modal inline apple-style
+  const pedirInput = ({ titulo, placeholder = "", valorInicial = "" }) =>
+    new Promise((resolve) => {
+      setModalInput({ titulo, placeholder, valorInicial, onConfirmar: resolve });
+      setTimeout(() => inputModalRef.current?.focus(), 80);
+    });
+
   // Crear nuevo documento
-  const crearNuevoDocumento = () => {
-    const nombre = prompt("Nombre del nuevo documento o proyecto:", "Nueva Documentación de Obra");
+  const crearNuevoDocumento = async () => {
+    const nombre = await pedirInput({
+      titulo: "Nombre del documento",
+      placeholder: "Nueva Documentación de Obra",
+      valorInicial: "Nueva Documentación de Obra",
+    });
     if (!nombre || !nombre.trim()) return;
 
     const nuevoDoc = {
@@ -128,7 +144,7 @@ export default function DocumentosEquipo({
         {
           id: `b-${Date.now()}-2`,
           tipo: "checklist",
-          titulo: "Primeros pendientes del equipo",
+          titulo: "Primeros pendientes",
           items: [
             {
               id: `t-${Date.now()}-1`,
@@ -177,8 +193,8 @@ export default function DocumentosEquipo({
   };
 
   // Añadir tarea rápida a un bloque checklist
-  const agregarTareaABloque = (bloqueId) => {
-    const texto = prompt("Nueva tarea o compromiso para el equipo:", "");
+  const agregarTareaABloque = async (bloqueId) => {
+    const texto = await pedirInput({ titulo: "Nueva tarea", placeholder: "Describe la tarea o compromiso..." });
     if (!texto || !texto.trim()) return;
 
     setDocumentos((prev) =>
@@ -215,13 +231,13 @@ export default function DocumentosEquipo({
   };
 
   // Insertar un nuevo bloque según tipo
-  const insertarBloque = (tipo) => {
+  const insertarBloque = async (tipo) => {
     setMenuInsertarAbierto(false);
 
     if (tipo === "enlace") {
-      const tituloEnlace = prompt("Título del enlace o subpágina:", "Nueva subpágina");
+      const tituloEnlace = await pedirInput({ titulo: "Título del enlace o subpágina", placeholder: "Nueva subpágina", valorInicial: "Nueva subpágina" });
       if (!tituloEnlace || !tituloEnlace.trim()) return;
-      const descEnlace = prompt("Descripción breve:", "Documento vinculado") || "";
+      const descEnlace = await pedirInput({ titulo: "Descripción breve", placeholder: "Documento vinculado", valorInicial: "Documento vinculado" }) || "";
 
       // Crear también el documento hijo si no existe
       const idHijo = `doc-sub-${Date.now()}`;
@@ -266,7 +282,7 @@ export default function DocumentosEquipo({
     let nuevoBloque = null;
 
     if (tipo === "desplegable") {
-      const titulo = prompt("Título del desplegable (toggle):", "▶ Sección técnica desplegable");
+      const titulo = await pedirInput({ titulo: "Título del desplegable", placeholder: "▶ Sección técnica desplegable", valorInicial: "▶ Sección técnica desplegable" });
       if (!titulo) return;
       nuevoBloque = {
         id: `b-${Date.now()}`,
@@ -276,7 +292,7 @@ export default function DocumentosEquipo({
         contenido: "Escribe aquí la información que se puede ocultar o expandir...",
       };
     } else if (tipo === "destacado") {
-      const texto = prompt("Texto de la nota destacada (Callout):", "Nota de calidad / seguridad importante para el equipo");
+      const texto = await pedirInput({ titulo: "Texto de la nota destacada", placeholder: "Nota de calidad / seguridad importante para el equipo", valorInicial: "Nota de calidad / seguridad importante para el equipo" });
       if (!texto) return;
       nuevoBloque = {
         id: `b-${Date.now()}`,
@@ -286,7 +302,7 @@ export default function DocumentosEquipo({
         texto: texto.trim(),
       };
     } else if (tipo === "checklist") {
-      const titulo = prompt("Título del grupo de tareas:", "Lista de pendientes de obra");
+      const titulo = await pedirInput({ titulo: "Título del grupo de tareas", placeholder: "Lista de pendientes de obra", valorInicial: "Lista de pendientes de obra" });
       if (!titulo) return;
       nuevoBloque = {
         id: `b-${Date.now()}`,
@@ -899,26 +915,6 @@ export default function DocumentosEquipo({
               </select>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span>🏗️ Obra:</span>
-              <input
-                type="text"
-                value={docActivo?.obraNombre || ""}
-                onChange={(e) => actualizarDocActivo("obraNombre", e.target.value)}
-                placeholder="Nombre de la obra..."
-                style={{
-                  border: "1px solid var(--border, rgba(0,0,0,0.1))",
-                  borderRadius: 6,
-                  padding: "2px 6px",
-                  fontSize: 11.5,
-                  fontWeight: 600,
-                  background: "#ffffff",
-                  color: "var(--text-main, #1d1d1f)",
-                  minWidth: 160,
-                }}
-              />
-            </div>
-
             <span style={{ fontSize: 11, color: "var(--text-muted, #86868b)" }}>
               Actualizado: {docActivo?.fechaActualizacion || "Hoy"}
             </span>
@@ -1244,27 +1240,185 @@ export default function DocumentosEquipo({
             return null;
           })}
         </div>
-
-        {/* Prompt estilo Notion: Pulsa / para comandos */}
-        <div
-          style={{
-            marginTop: 32,
-            paddingTop: 16,
-            borderTop: "1px dashed var(--border, rgba(0, 0, 0, 0.08))",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            fontSize: 11.5,
-            color: "var(--text-muted, #86868b)",
-          }}
-        >
-          <span style={{ width: 8, height: 16, background: NARANJA, display: "inline-block", borderRadius: 2 }} />
-          <span>Haz clic en <strong>+ Insertar Bloque</strong> arriba para agregar subpáginas, listas de tareas, desplegables o notas técnicas vinculadas a tu equipo.</span>
-        </div>
         </>
         )}
 
       </main>
+
+      {/* ================================================================= */}
+      {/* PANEL FLOTANTE DERECHO — Tipos de Bloques (estilo Apple)          */}
+      {/* ================================================================= */}
+      {docActivo && (
+        <div
+          style={{
+            position: "fixed",
+            right: 24,
+            top: "50%",
+            transform: "translateY(-50%)",
+            width: 168,
+            background: "rgba(255,255,255,0.92)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            border: "1px solid rgba(0,0,0,0.07)",
+            borderRadius: 16,
+            padding: "14px 14px",
+            boxShadow: "0 8px 32px -4px rgba(0,0,0,0.10)",
+            zIndex: 900,
+            display: "flex",
+            flexDirection: "column",
+            gap: 4,
+          }}
+        >
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#86868b", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
+            Insertar bloque
+          </div>
+          {[
+            { tipo: "checklist", icono: "☑️", label: "Lista de tareas" },
+            { tipo: "desplegable", icono: "▶", label: "Desplegable" },
+            { tipo: "destacado", icono: "💡", label: "Callout" },
+            { tipo: "enlace", icono: "🔗", label: "Subpágina" },
+            { tipo: "codigo", icono: "⌨️", label: "Código / notas" },
+          ].map((b) => (
+            <button
+              key={b.tipo}
+              type="button"
+              onClick={() => insertarBloque(b.tipo)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 7,
+                background: "transparent",
+                border: "none",
+                borderRadius: 8,
+                padding: "5px 6px",
+                fontSize: 11,
+                fontWeight: 500,
+                color: "var(--text-main, #1d1d1f)",
+                cursor: "pointer",
+                textAlign: "left",
+                width: "100%",
+                transition: "background 0.12s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.05)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+            >
+              <span style={{ fontSize: 13, width: 18, textAlign: "center" }}>{b.icono}</span>
+              <span>{b.label}</span>
+            </button>
+          ))}
+          <div style={{ marginTop: 6, borderTop: "1px solid rgba(0,0,0,0.06)", paddingTop: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "#86868b" }}>
+              <span style={{ width: 6, height: 12, background: NARANJA, display: "inline-block", borderRadius: 2 }} />
+              <span>Clic en <strong>+ Insertar</strong> o usa el panel</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================= */}
+      {/* MODAL INLINE APPLE-STYLE — Reemplaza todos los prompt() nativos   */}
+      {/* ================================================================= */}
+      {modalInput && (
+        <div
+          onClick={() => { setModalInput(null); modalInput.onConfirmar(null); }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.25)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            zIndex: 99999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#ffffff",
+              borderRadius: 20,
+              padding: "28px 28px 22px",
+              maxWidth: 420,
+              width: "90%",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08)",
+              display: "flex",
+              flexDirection: "column",
+              gap: 14,
+            }}
+          >
+            <div style={{ fontSize: 17, fontWeight: 700, color: "#1d1d1f", letterSpacing: "-0.02em" }}>
+              {modalInput.titulo}
+            </div>
+            <input
+              ref={inputModalRef}
+              defaultValue={modalInput.valorInicial || ""}
+              placeholder={modalInput.placeholder || ""}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const val = inputModalRef.current?.value ?? "";
+                  setModalInput(null);
+                  modalInput.onConfirmar(val);
+                } else if (e.key === "Escape") {
+                  setModalInput(null);
+                  modalInput.onConfirmar(null);
+                }
+              }}
+              style={{
+                border: "1px solid rgba(0,0,0,0.12)",
+                borderRadius: 10,
+                padding: "10px 14px",
+                fontSize: 14,
+                color: "#1d1d1f",
+                outline: "none",
+                background: "#f5f5f7",
+                width: "100%",
+                boxSizing: "border-box",
+              }}
+            />
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => { setModalInput(null); modalInput.onConfirmar(null); }}
+                style={{
+                  padding: "8px 18px",
+                  borderRadius: 10,
+                  border: "1px solid rgba(0,0,0,0.1)",
+                  background: "#f5f5f7",
+                  color: "#1d1d1f",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const val = inputModalRef.current?.value ?? "";
+                  setModalInput(null);
+                  modalInput.onConfirmar(val);
+                }}
+                style={{
+                  padding: "8px 22px",
+                  borderRadius: 10,
+                  border: "none",
+                  background: "#1d1d1f",
+                  color: "#ffffff",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+                }}
+              >
+                Aceptar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

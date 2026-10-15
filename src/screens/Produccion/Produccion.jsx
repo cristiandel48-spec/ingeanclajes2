@@ -17,8 +17,7 @@ export default function Produccion({ ctx = {} }) {
   // Si el contexto global provee tareasProduccion usamos esas; si no, estado local persistido
   const [tareas, setTareas] = useState(() => {
     if (Array.isArray(tareasProduccion)) {
-      const limpias = limpiarTareasEjemplo(tareasProduccion);
-      if (limpias.length > 0) return limpias;
+      return limpiarTareasEjemplo(tareasProduccion);
     }
     try {
       const guardadas = localStorage.getItem("ingeanclajes_tareas_produccion");
@@ -36,15 +35,28 @@ export default function Produccion({ ctx = {} }) {
     return [];
   });
 
+  // Sincronizar si cambian las tareas externamente (ej: desde AppDataContext)
+  useEffect(() => {
+    if (Array.isArray(tareasProduccion)) {
+      const limpias = limpiarTareasEjemplo(tareasProduccion);
+      setTareas((prev) => {
+        if (prev === limpias) return prev;
+        if (JSON.stringify(prev) === JSON.stringify(limpias)) return prev;
+        return limpias;
+      });
+    }
+  }, [tareasProduccion]);
+
   // Sincronizar hacia localStorage y hacia AppDataContext
   useEffect(() => {
+    const limpias = limpiarTareasEjemplo(tareas);
     try {
-      localStorage.setItem("ingeanclajes_tareas_produccion", JSON.stringify(tareas));
+      localStorage.setItem("ingeanclajes_tareas_produccion", JSON.stringify(limpias));
     } catch (e) {
       console.warn("No se pudo guardar ingeanclajes_tareas_produccion", e);
     }
     if (typeof setTareasProduccion === "function") {
-      setTareasProduccion(tareas);
+      setTareasProduccion(limpias);
     }
   }, [tareas, setTareasProduccion]);
 

@@ -149,8 +149,9 @@ export function AppDataProvider({ children }) {
   });
 
   useEffect(() => {
+    const limpias = limpiarTareasEjemplo(tareasProduccion);
     try {
-      localStorage.setItem("ingeanclajes_tareas_produccion", JSON.stringify(tareasProduccion));
+      localStorage.setItem("ingeanclajes_tareas_produccion", JSON.stringify(limpias));
     } catch (e) {
       console.warn("No se pudo guardar ingeanclajes_tareas_produccion en localStorage", e);
     }
@@ -174,8 +175,9 @@ export function AppDataProvider({ children }) {
   });
 
   useEffect(() => {
+    const limpias = limpiarDocumentosEjemplo(documentosEquipo);
     try {
-      localStorage.setItem("ingeanclajes_documentos_equipo", JSON.stringify(documentosEquipo));
+      localStorage.setItem("ingeanclajes_documentos_equipo", JSON.stringify(limpias));
     } catch (e) {
       console.warn("No se pudo guardar ingeanclajes_documentos_equipo en localStorage", e);
     }

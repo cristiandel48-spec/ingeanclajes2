@@ -16,8 +16,7 @@ export default function DocumentosEquipo({
   // Estado de documentos persistido localmente y sincronizado (sin ejemplos)
   const [documentos, setDocumentos] = useState(() => {
     if (Array.isArray(documentosExternos)) {
-      const limpias = limpiarDocumentosEjemplo(documentosExternos);
-      if (limpias.length > 0) return limpias;
+      return limpiarDocumentosEjemplo(documentosExternos);
     }
     try {
       const guardados = localStorage.getItem("ingeanclajes_documentos_equipo");
@@ -49,13 +48,14 @@ export default function DocumentosEquipo({
 
   // Guardar en localStorage y propagar si hay callback
   useEffect(() => {
+    const limpias = limpiarDocumentosEjemplo(documentos);
     try {
-      localStorage.setItem("ingeanclajes_documentos_equipo", JSON.stringify(documentos));
+      localStorage.setItem("ingeanclajes_documentos_equipo", JSON.stringify(limpias));
     } catch (e) {
       console.warn("No se pudo guardar ingeanclajes_documentos_equipo", e);
     }
     if (typeof onActualizarDocumentos === "function") {
-      onActualizarDocumentos(documentos);
+      onActualizarDocumentos(limpias);
     }
   }, [documentos, onActualizarDocumentos]);
 

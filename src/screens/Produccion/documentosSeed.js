@@ -9,18 +9,32 @@ export const SEED_DOC_IDS = new Set([
   "doc-claves",
   "doc-cierre",
   "doc-tareas-diarias",
+  "doc-normas",
 ]);
 
 export function limpiarDocumentosEjemplo(documentos = []) {
   if (!Array.isArray(documentos)) return [];
-  return documentos.filter(
-    (d) =>
-      d &&
-      d.id &&
-      !SEED_DOC_IDS.has(d.id) &&
-      !d.__ejemplo &&
-      !String(d.id).startsWith("ejemplo-")
-  );
+  return documentos.filter((d) => {
+    if (!d || !d.id) return false;
+    if (SEED_DOC_IDS.has(d.id)) return false;
+    if (d.__ejemplo) return false;
+    if (String(d.id).startsWith("ejemplo-")) return false;
+
+    // Filtro por títulos conocidos de las semillas
+    const tit = String(d.titulo || "").toLowerCase().trim();
+    if (
+      tit.includes("normas internas de seguridad") ||
+      tit.includes("previsora vivir") ||
+      tit.includes("python intermedio") ||
+      tit.includes("usuarios y contraseñas") ||
+      tit.includes("calendario de cierre") ||
+      tit.includes("tareas diarias e - a")
+    ) {
+      return false;
+    }
+
+    return true;
+  });
 }
 
 export const DOCUMENTOS_EQUIPO_INIT = [];

@@ -324,7 +324,7 @@ export default function MisTareas({ ctx }) {
               whiteSpace: "nowrap",
             }}
           >
-            📄 Documentos &amp; Tareas con el Equipo
+            📄 Documentos &amp; Tareas
           </button>
         </div>
       </div>

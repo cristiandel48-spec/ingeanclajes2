@@ -62,7 +62,7 @@ export default function DocumentosEquipo({
   // Documento actualmente seleccionado
   const [docActivoId, setDocActivoId] = useState(() => documentos[0]?.id || "");
   const [busqueda, setBusqueda] = useState("");
-  const [filtroResponsable, setFiltroResponsable] = useState("todos");
+  const [sidebarVisible, setSidebarVisible] = useState(true);
   const [menuInsertarAbierto, setMenuInsertarAbierto] = useState(false);
   const [toastMensaje, setToastMensaje] = useState("");
 
@@ -76,31 +76,18 @@ export default function DocumentosEquipo({
     return documentos.find((d) => d.id === docActivoId) || documentos[0];
   }, [documentos, docActivoId]);
 
-  // Lista de colaboradores únicos
-  const colaboradores = useMemo(() => {
-    const set = new Set(["Paola", "Camila", "Carlos Restrepo"]);
-    (empleados || []).forEach((e) => {
-      const nom = (e.nombre || e.nombreCompleto || "").trim();
-      if (nom) set.add(nom);
-    });
-    return Array.from(set);
-  }, [empleados]);
+
 
   // Filtrado de documentos en el sidebar
   const docsFiltrados = useMemo(() => {
     return documentos.filter((d) => {
-      if (filtroResponsable !== "todos" && d.responsable !== filtroResponsable) {
-        return false;
-      }
       if (busqueda.trim()) {
         const q = busqueda.toLowerCase();
-        const coincideTitulo = d.titulo.toLowerCase().includes(q);
-        const coincideObra = (d.obraNombre || "").toLowerCase().includes(q);
-        return coincideTitulo || coincideObra;
+        return (d.titulo || "").toLowerCase().includes(q);
       }
       return true;
     });
-  }, [documentos, filtroResponsable, busqueda]);
+  }, [documentos, busqueda]);
 
   const mostrarToast = (msg) => {
     setToastMensaje(msg);
@@ -127,8 +114,8 @@ export default function DocumentosEquipo({
       id: `doc-${Date.now()}`,
       titulo: nombre.trim(),
       icono: "📁",
-      obraNombre: "Obra general",
-      responsable: usuarioActual || "Paola",
+      obraNombre: "",
+      responsable: "",
       favorito: false,
       fechaCreacion: new Date().toISOString().slice(0, 10),
       fechaActualizacion: new Date().toISOString().slice(0, 10),
@@ -139,7 +126,7 @@ export default function DocumentosEquipo({
           tipo: "desplegable",
           titulo: "▶ Alcance inicial y notas de trabajo",
           abierto: true,
-          contenido: "Escribe aquí los detalles técnicos, instrucciones de obra o notas...",
+          contenido: "Escribe aquí los detalles técnicos, instrucciones o notas...",
         },
         {
           id: `b-${Date.now()}-2`,
@@ -148,9 +135,9 @@ export default function DocumentosEquipo({
           items: [
             {
               id: `t-${Date.now()}-1`,
-              texto: "Definir cronograma y asignación de cuadrilla",
+              texto: "Definir cronograma y actividades",
               fecha: new Date().toISOString().slice(0, 10),
-              responsable: usuarioActual || "Paola",
+              responsable: "",
               completada: false,
             },
           ],
@@ -194,7 +181,7 @@ export default function DocumentosEquipo({
 
   // Añadir tarea rápida a un bloque checklist
   const agregarTareaABloque = async (bloqueId) => {
-    const texto = await pedirInput({ titulo: "Nueva tarea", placeholder: "Describe la tarea o compromiso..." });
+    const texto = await pedirInput({ titulo: "Nueva tarea", placeholder: "Describe la tarea o pendiente..." });
     if (!texto || !texto.trim()) return;
 
     setDocumentos((prev) =>
@@ -206,7 +193,7 @@ export default function DocumentosEquipo({
             id: `t-${Date.now()}`,
             texto: texto.trim(),
             fecha: new Date().toISOString().slice(0, 10),
-            responsable: d.responsable || "Paola",
+            responsable: "",
             completada: false,
           };
           return { ...b, items: [...(b.items || []), nuevaTarea] };
@@ -245,8 +232,8 @@ export default function DocumentosEquipo({
         id: idHijo,
         titulo: tituloEnlace.trim(),
         icono: "📄",
-        obraNombre: docActivo?.obraNombre || "Obra general",
-        responsable: docActivo?.responsable || "Paola",
+        obraNombre: "",
+        responsable: "",
         favorito: false,
         fechaCreacion: new Date().toISOString().slice(0, 10),
         fechaActualizacion: new Date().toISOString().slice(0, 10),
@@ -256,7 +243,7 @@ export default function DocumentosEquipo({
             id: `b-${Date.now()}`,
             tipo: "checklist",
             titulo: "Pendientes",
-            items: [{ id: `t-${Date.now()}`, texto: "Primer compromiso", completada: false, responsable: "Paola" }],
+            items: [{ id: `t-${Date.now()}`, texto: "Primer pendiente", completada: false, responsable: "" }],
           },
         ],
       };
@@ -282,7 +269,7 @@ export default function DocumentosEquipo({
     let nuevoBloque = null;
 
     if (tipo === "desplegable") {
-      const titulo = await pedirInput({ titulo: "Título del desplegable", placeholder: "▶ Sección técnica desplegable", valorInicial: "▶ Sección técnica desplegable" });
+      const titulo = await pedirInput({ titulo: "Título del desplegable", placeholder: "▶ Sección desplegable", valorInicial: "▶ Sección desplegable" });
       if (!titulo) return;
       nuevoBloque = {
         id: `b-${Date.now()}`,
@@ -292,7 +279,7 @@ export default function DocumentosEquipo({
         contenido: "Escribe aquí la información que se puede ocultar o expandir...",
       };
     } else if (tipo === "destacado") {
-      const texto = await pedirInput({ titulo: "Texto de la nota destacada", placeholder: "Nota de calidad / seguridad importante para el equipo", valorInicial: "Nota de calidad / seguridad importante para el equipo" });
+      const texto = await pedirInput({ titulo: "Texto de la nota destacada", placeholder: "Nota importante o recordatorio", valorInicial: "Nota importante o recordatorio" });
       if (!texto) return;
       nuevoBloque = {
         id: `b-${Date.now()}`,
@@ -302,7 +289,7 @@ export default function DocumentosEquipo({
         texto: texto.trim(),
       };
     } else if (tipo === "checklist") {
-      const titulo = await pedirInput({ titulo: "Título del grupo de tareas", placeholder: "Lista de pendientes de obra", valorInicial: "Lista de pendientes de obra" });
+      const titulo = await pedirInput({ titulo: "Título del grupo de tareas", placeholder: "Lista de pendientes", valorInicial: "Lista de pendientes" });
       if (!titulo) return;
       nuevoBloque = {
         id: `b-${Date.now()}`,
@@ -311,9 +298,9 @@ export default function DocumentosEquipo({
         items: [
           {
             id: `t-${Date.now()}`,
-            texto: "Primera tarea del checklist",
+            texto: "Primera tarea",
             fecha: new Date().toISOString().slice(0, 10),
-            responsable: docActivo?.responsable || "Paola",
+            responsable: "",
             completada: false,
           },
         ],
@@ -378,7 +365,7 @@ export default function DocumentosEquipo({
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: isMobile ? "1fr" : "300px 1fr",
+        gridTemplateColumns: isMobile ? "1fr" : sidebarVisible ? "280px 1fr" : "1fr",
         background: "var(--surface, #ffffff)",
         border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
         borderRadius: 20,
@@ -412,226 +399,170 @@ export default function DocumentosEquipo({
       {/* =================================================================== */}
       {/* SIDEBAR LATERAL ESTILO APPLE NOTES / NOTION                        */}
       {/* =================================================================== */}
-      <aside
-        style={{
-          background: "var(--surface-subtle, #fbfbfd)",
-          borderRight: "1px solid var(--border, rgba(0, 0, 0, 0.06))",
-          padding: "16px 14px",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          gap: 16,
-        }}
-      >
-        <div>
-          {/* Cabecera Sidebar */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, padding: "0 4px" }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #1d1d1f)", display: "flex", alignItems: "center", gap: 6 }}>
-              <span>📑</span>
-              <span>Documentos y Tareas</span>
-            </div>
-            <button
-              type="button"
-              onClick={crearNuevoDocumento}
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 8,
-                border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
-                background: "#ffffff",
-                color: "#1d1d1f",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 16,
-                fontWeight: 600,
-                boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-              }}
-              title="Crear nuevo documento"
-            >
-              +
-            </button>
-          </div>
-
-          {/* Buscador Rápido */}
-          <div style={{ marginBottom: 12 }}>
-            <input
-              type="text"
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              placeholder="Buscar documentos y tareas..."
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                background: "#ffffff",
-                border: "1px solid var(--border, rgba(0,0,0,0.08))",
-                borderRadius: 10,
-                padding: "6px 10px",
-                fontSize: 11.5,
-                color: "var(--text-main, #1d1d1f)",
-                outline: "none",
-              }}
-            />
-          </div>
-
-          {/* Filtro por Colaborador */}
-          <div style={{ marginBottom: 14, display: "flex", gap: 4, overflowX: "auto", paddingBottom: 2 }}>
-            <button
-              type="button"
-              onClick={() => setFiltroResponsable("todos")}
-              style={{
-                fontSize: 10.5,
-                fontWeight: filtroResponsable === "todos" ? 700 : 500,
-                padding: "3px 8px",
-                borderRadius: 14,
-                border: `1px solid ${filtroResponsable === "todos" ? "#1d1d1f" : "var(--border, rgba(0,0,0,0.08))"}`,
-                background: filtroResponsable === "todos" ? "#1d1d1f" : "#ffffff",
-                color: filtroResponsable === "todos" ? "#ffffff" : "var(--text-muted, #6e6e73)",
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-              }}
-            >
-              Todos
-            </button>
-            {colaboradores.map((colab) => (
+      {sidebarVisible && (
+        <aside
+          style={{
+            background: "var(--surface-subtle, #fbfbfd)",
+            borderRight: "1px solid var(--border, rgba(0, 0, 0, 0.06))",
+            padding: "16px 14px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            gap: 16,
+          }}
+        >
+          <div>
+            {/* Cabecera Sidebar */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, padding: "0 4px" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #1d1d1f)", display: "flex", alignItems: "center", gap: 6 }}>
+                <span>📑</span>
+                <span>Documentos y Tareas</span>
+              </div>
               <button
-                key={colab}
                 type="button"
-                onClick={() => setFiltroResponsable(colab)}
+                onClick={crearNuevoDocumento}
                 style={{
-                  fontSize: 10.5,
-                  fontWeight: filtroResponsable === colab ? 700 : 500,
-                  padding: "3px 8px",
-                  borderRadius: 14,
-                  border: `1px solid ${filtroResponsable === colab ? "#1d1d1f" : "var(--border, rgba(0,0,0,0.08))"}`,
-                  background: filtroResponsable === colab ? "#1d1d1f" : "#ffffff",
-                  color: filtroResponsable === colab ? "#ffffff" : "var(--text-muted, #6e6e73)",
+                  width: 28,
+                  height: 28,
+                  borderRadius: 8,
+                  border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+                  background: "#ffffff",
+                  color: "#1d1d1f",
                   cursor: "pointer",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {colab}
-              </button>
-            ))}
-          </div>
-
-          {/* Lista de Documentos */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted, #86868b)", textTransform: "uppercase", padding: "0 6px 4px", letterSpacing: "0.05em" }}>
-              Páginas de Obra & Equipo ({docsFiltrados.length})
-            </div>
-
-            {docsFiltrados.length === 0 ? (
-              <div
-                style={{
-                  padding: "28px 8px",
-                  textAlign: "center",
-                  fontSize: 12,
-                  color: "var(--text-muted, #86868b)",
-                  lineHeight: 1.5,
-                }}
-              >
-                <div>Sin documentos</div>
-                <button
-                  type="button"
-                  onClick={crearNuevoDocumento}
-                  style={{
-                    marginTop: 8,
-                    background: "#ffffff",
-                    border: "1px solid var(--border, rgba(0,0,0,0.12))",
-                    borderRadius: 8,
-                    padding: "4px 10px",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: "var(--text-main, #1d1d1f)",
-                    cursor: "pointer",
-                  }}
-                >
-                  + Crear documento
-                </button>
-              </div>
-            ) : (
-              docsFiltrados.map((doc) => {
-                const activo = doc.id === docActivoId;
-                return (
-                  <div
-                    key={doc.id}
-                    onClick={() => setDocActivoId(doc.id)}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "8px 10px",
-                      borderRadius: 10,
-                      cursor: "pointer",
-                      background: activo ? "rgba(0, 0, 0, 0.06)" : "transparent",
-                      color: activo ? "var(--text-main, #1d1d1f)" : "var(--text-muted, #6e6e73)",
-                      fontWeight: activo ? 700 : 500,
-                      fontSize: 12,
-                      transition: "all 0.12s ease",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1 }}>
-                      <span style={{ fontSize: 14 }}>{doc.icono || "📄"}</span>
-                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {doc.titulo}
-                      </span>
-                    </div>
-
-                    {doc.responsable && (
-                      <span
-                        style={{
-                          fontSize: 9.5,
-                          fontWeight: 600,
-                          background: "rgba(0,0,0,0.04)",
-                          padding: "1px 6px",
-                          borderRadius: 6,
-                          color: "var(--text-muted, #86868b)",
-                          marginLeft: 6,
-                          flexShrink: 0,
-                        }}
-                      >
-                        {doc.responsable.split(" ")[0]}
-                      </span>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-
-        {/* Footer Sidebar: Progreso */}
-        {docActivo && (
-          <div style={{ borderTop: "1px solid var(--border, rgba(0,0,0,0.06))", paddingTop: 12, paddingLeft: 4, paddingRight: 4 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <div style={{ fontSize: 10.5, color: "var(--text-muted, #86868b)" }}>Progreso en página</div>
-                <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text-main, #1d1d1f)" }}>
-                  {metricasDoc.hechas} de {metricasDoc.total} tareas ({metricasDoc.pct}%)
-                </div>
-              </div>
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: "50%",
-                  background: "rgba(244, 124, 32, 0.1)",
-                  color: NARANJA,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: 11,
-                  fontWeight: 800,
+                  fontSize: 16,
+                  fontWeight: 600,
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
                 }}
+                title="Crear nuevo documento"
               >
-                {metricasDoc.pct}%
+                +
+              </button>
+            </div>
+
+            {/* Buscador Rápido */}
+            <div style={{ marginBottom: 12 }}>
+              <input
+                type="text"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                placeholder="Buscar documentos..."
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  background: "#ffffff",
+                  border: "1px solid var(--border, rgba(0,0,0,0.08))",
+                  borderRadius: 10,
+                  padding: "6px 10px",
+                  fontSize: 11.5,
+                  color: "var(--text-main, #1d1d1f)",
+                  outline: "none",
+                }}
+              />
+            </div>
+
+            {/* Lista de Documentos */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted, #86868b)", textTransform: "uppercase", padding: "0 6px 4px", letterSpacing: "0.05em" }}>
+                Documentos ({docsFiltrados.length})
               </div>
+
+              {docsFiltrados.length === 0 ? (
+                <div
+                  style={{
+                    padding: "28px 8px",
+                    textAlign: "center",
+                    fontSize: 12,
+                    color: "var(--text-muted, #86868b)",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  <div>Sin documentos</div>
+                  <button
+                    type="button"
+                    onClick={crearNuevoDocumento}
+                    style={{
+                      marginTop: 8,
+                      background: "#ffffff",
+                      border: "1px solid var(--border, rgba(0,0,0,0.12))",
+                      borderRadius: 8,
+                      padding: "4px 10px",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: "var(--text-main, #1d1d1f)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    + Crear documento
+                  </button>
+                </div>
+              ) : (
+                docsFiltrados.map((doc) => {
+                  const activo = doc.id === docActivoId;
+                  return (
+                    <div
+                      key={doc.id}
+                      onClick={() => setDocActivoId(doc.id)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "8px 10px",
+                        borderRadius: 10,
+                        cursor: "pointer",
+                        background: activo ? "rgba(0, 0, 0, 0.06)" : "transparent",
+                        color: activo ? "var(--text-main, #1d1d1f)" : "var(--text-muted, #6e6e73)",
+                        fontWeight: activo ? 700 : 500,
+                        fontSize: 12,
+                        transition: "all 0.12s ease",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1 }}>
+                        <span style={{ fontSize: 14 }}>{doc.icono || "📄"}</span>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {doc.titulo}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
-        )}
-      </aside>
+
+          {/* Footer Sidebar: Progreso */}
+          {docActivo && (
+            <div style={{ borderTop: "1px solid var(--border, rgba(0,0,0,0.06))", paddingTop: 12, paddingLeft: 4, paddingRight: 4 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <div style={{ fontSize: 10.5, color: "var(--text-muted, #86868b)" }}>Progreso en página</div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text-main, #1d1d1f)" }}>
+                    {metricasDoc.hechas} de {metricasDoc.total} tareas ({metricasDoc.pct}%)
+                  </div>
+                </div>
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: "50%",
+                    background: "rgba(244, 124, 32, 0.1)",
+                    color: NARANJA,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 11,
+                    fontWeight: 800,
+                  }}
+                >
+                  {metricasDoc.pct}%
+                </div>
+              </div>
+            </div>
+          )}
+        </aside>
+      )}
 
       {/* =================================================================== */}
       {/* ÁREA DE CONTENIDO Y EDITOR DEL DOCUMENTO ESTILO NOTION              */}
@@ -725,25 +656,30 @@ export default function DocumentosEquipo({
             gap: 10,
           }}
         >
-          {/* Breadcrumbs y Obra */}
+          {/* Breadcrumbs y Toggle Sidebar */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--text-muted, #86868b)" }}>
-            <span>Tareas de Obra</span>
+            <button
+              type="button"
+              onClick={() => setSidebarVisible((v) => !v)}
+              title={sidebarVisible ? "Ocultar panel lateral" : "Mostrar panel lateral"}
+              style={{
+                background: "transparent",
+                border: "1px solid var(--border, rgba(0,0,0,0.12))",
+                borderRadius: 6,
+                padding: "2px 7px",
+                fontSize: 12,
+                cursor: "pointer",
+                color: "var(--text-main, #1d1d1f)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+              }}
+            >
+              <span>{sidebarVisible ? "◧" : "◨"}</span>
+            </button>
+            <span>Documentos</span>
             <span>/</span>
             <span style={{ fontWeight: 700, color: "var(--text-main, #1d1d1f)" }}>{docActivo?.titulo}</span>
-            {docActivo?.obraNombre && (
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  background: "rgba(37, 99, 235, 0.08)",
-                  color: "#1d4ed8",
-                  padding: "1px 7px",
-                  borderRadius: 6,
-                }}
-              >
-                📍 {docActivo.obraNombre}
-              </span>
-            )}
           </div>
 
           {/* Botones de acción */}
@@ -892,29 +828,8 @@ export default function DocumentosEquipo({
             }}
           />
 
-          {/* Selector de Responsable y Obra */}
+          {/* Metadatos del documento */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", fontSize: 12, color: "var(--text-muted, #86868b)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span>👤 Responsable:</span>
-              <select
-                value={docActivo?.responsable || "Paola"}
-                onChange={(e) => actualizarDocActivo("responsable", e.target.value)}
-                style={{
-                  border: "1px solid var(--border, rgba(0,0,0,0.1))",
-                  borderRadius: 6,
-                  padding: "2px 6px",
-                  fontSize: 11.5,
-                  fontWeight: 600,
-                  background: "#ffffff",
-                  color: "var(--text-main, #1d1d1f)",
-                }}
-              >
-                {colaboradores.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-
             <span style={{ fontSize: 11, color: "var(--text-muted, #86868b)" }}>
               Actualizado: {docActivo?.fechaActualizacion || "Hoy"}
             </span>
@@ -1141,22 +1056,8 @@ export default function DocumentosEquipo({
                             </span>
                           </div>
 
-                          {/* Responsable y Fecha */}
+                          {/* Fecha */}
                           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                            {tarea.responsable && (
-                              <span
-                                style={{
-                                  fontSize: 10,
-                                  fontWeight: 600,
-                                  background: "var(--surface-subtle, #f1f5f9)",
-                                  padding: "1px 6px",
-                                  borderRadius: 4,
-                                  color: "var(--text-muted, #64748b)",
-                                }}
-                              >
-                                {tarea.responsable}
-                              </span>
-                            )}
                             {tarea.fecha && (
                               <span style={{ fontSize: 10, color: "var(--text-muted, #94a3b8)" }}>
                                 {tarea.fecha.slice(5)}
@@ -1240,38 +1141,22 @@ export default function DocumentosEquipo({
             return null;
           })}
         </div>
-        </>
-        )}
 
-      </main>
-
-      {/* ================================================================= */}
-      {/* PANEL FLOTANTE DERECHO — Tipos de Bloques (estilo Apple)          */}
-      {/* ================================================================= */}
-      {docActivo && (
+        {/* Barra de inserción de bloques al final del documento (estilo Notion / Apple) */}
         <div
           style={{
-            position: "fixed",
-            right: 24,
-            top: "50%",
-            transform: "translateY(-50%)",
-            width: 168,
-            background: "rgba(255,255,255,0.92)",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            border: "1px solid rgba(0,0,0,0.07)",
-            borderRadius: 16,
-            padding: "14px 14px",
-            boxShadow: "0 8px 32px -4px rgba(0,0,0,0.10)",
-            zIndex: 900,
+            marginTop: 32,
+            paddingTop: 18,
+            borderTop: "1px dashed var(--border, rgba(0, 0, 0, 0.08))",
             display: "flex",
-            flexDirection: "column",
-            gap: 4,
+            alignItems: "center",
+            gap: 8,
+            flexWrap: "wrap",
           }}
         >
-          <div style={{ fontSize: 10, fontWeight: 700, color: "#86868b", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
-            Insertar bloque
-          </div>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted, #86868b)", textTransform: "uppercase", letterSpacing: "0.05em", marginRight: 4 }}>
+            + Insertar bloque:
+          </span>
           {[
             { tipo: "checklist", icono: "☑️", label: "Lista de tareas" },
             { tipo: "desplegable", icono: "▶", label: "Desplegable" },
@@ -1284,36 +1169,39 @@ export default function DocumentosEquipo({
               type="button"
               onClick={() => insertarBloque(b.tipo)}
               style={{
-                display: "flex",
+                display: "inline-flex",
                 alignItems: "center",
-                gap: 7,
-                background: "transparent",
-                border: "none",
+                gap: 6,
+                background: "var(--surface-subtle, #f5f5f7)",
+                border: "1px solid var(--border, rgba(0,0,0,0.06))",
                 borderRadius: 8,
-                padding: "5px 6px",
-                fontSize: 11,
-                fontWeight: 500,
+                padding: "6px 12px",
+                fontSize: 11.5,
+                fontWeight: 600,
                 color: "var(--text-main, #1d1d1f)",
                 cursor: "pointer",
-                textAlign: "left",
-                width: "100%",
-                transition: "background 0.12s",
+                transition: "all 0.12s ease",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.05)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#ffffff";
+                e.currentTarget.style.borderColor = "rgba(0,0,0,0.15)";
+                e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "var(--surface-subtle, #f5f5f7)";
+                e.currentTarget.style.borderColor = "var(--border, rgba(0,0,0,0.06))";
+                e.currentTarget.style.boxShadow = "none";
+              }}
             >
-              <span style={{ fontSize: 13, width: 18, textAlign: "center" }}>{b.icono}</span>
+              <span>{b.icono}</span>
               <span>{b.label}</span>
             </button>
           ))}
-          <div style={{ marginTop: 6, borderTop: "1px solid rgba(0,0,0,0.06)", paddingTop: 8 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "#86868b" }}>
-              <span style={{ width: 6, height: 12, background: NARANJA, display: "inline-block", borderRadius: 2 }} />
-              <span>Clic en <strong>+ Insertar</strong> o usa el panel</span>
-            </div>
-          </div>
         </div>
-      )}
+        </>
+        )}
+
+      </main>
 
       {/* ================================================================= */}
       {/* MODAL INLINE APPLE-STYLE — Reemplaza todos los prompt() nativos   */}

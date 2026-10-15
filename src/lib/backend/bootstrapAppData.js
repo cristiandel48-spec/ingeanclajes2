@@ -24,6 +24,7 @@ const ENTITY_TO_STATE = {
   catalogo_items: "catalogoItems",
   agenda: "agenda",
   tareas_personales: "tareasPersonales",
+  documentos_equipo: "documentosEquipo",
 };
 
 // Baseline en memoria: por entidad, un Map(id -> JSON serializado de la última

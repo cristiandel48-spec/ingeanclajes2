@@ -335,6 +335,7 @@ export function AppDataProvider({ children }) {
       // Ver tareasCargadasRef: una clave ausente la salta el guardado entero,
       // que es justo lo que hace falta mientras no se hayan leido.
       ...(tareasCargadasRef.current ? { tareasPersonales } : {}),
+      documentosEquipo,
       cotizaciones: sinEjemplos(cotizaciones),
       contabilidadConfig,
       planCuentas,
@@ -543,6 +544,9 @@ export function AppDataProvider({ children }) {
             setAgenda((prev) => (prev || []).filter((item) => !item?.__ejemplo && !String(item?.id || "").startsWith("AG-90")));
           }
         }
+        if (Array.isArray(cloud.documentosEquipo) && cloud.documentosEquipo.length > 0) {
+          setDocumentosEquipo(cloud.documentosEquipo);
+        }
         if (Array.isArray(cloud.cotizaciones)) setCotizaciones(oEjemplo(cotizacionesList, EJEMPLOS.cotizaciones));
         if (Array.isArray(cloud.contabilidadConfig) && cloud.contabilidadConfig.length) {
           setContabilidadConfig(cloud.contabilidadConfig.map(normalizeContabilidadConfig));
@@ -661,6 +665,7 @@ export function AppDataProvider({ children }) {
     catalogoItems,
     agenda,
     tareasPersonales,
+    documentosEquipo,
   ]);
 
   // Registros cuyo detalle ya se pidio, para no volver a pedirlo cada vez que

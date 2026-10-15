@@ -30,6 +30,16 @@ export default function DocumentosEquipo({
     return DOCUMENTOS_EQUIPO_INIT;
   });
 
+  // Sincronizar si cambian los documentos externamente (ej: carga desde la nube o sincronización)
+  useEffect(() => {
+    if (Array.isArray(documentosExternos) && documentosExternos.length > 0) {
+      setDocumentos((prev) => {
+        if (prev === documentosExternos) return prev;
+        return documentosExternos;
+      });
+    }
+  }, [documentosExternos]);
+
   // Guardar en localStorage y propagar si hay callback
   useEffect(() => {
     try {

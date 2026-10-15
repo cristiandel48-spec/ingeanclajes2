@@ -2,9 +2,31 @@
 // garantizando fidelidad 100%, 0 cortes en fotos ni textos y paginación exacta.
 
 import { buildInformePrintHtml } from "./informePrint";
+import { MARGEN_HOJA } from "./hojaImpresion";
 
 const ANCHO_HOJA = 816;
 const ALTO_HOJA = 1056;
+
+function prepararHtmlParaPdf(html) {
+  return html
+    .replace(/<link[^>]*fonts\.(?:googleapis|gstatic)\.com[^>]*>/g, "")
+    .replace("</head>", `<style>
+      body, table, td, th, input, button,
+      h1, h2, h3, p, span, div, strong, li {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+      }
+      body { background: #ffffff !important; padding: 0 !important; }
+      .page {
+        width: 8.5in !important;
+        height: 11in !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: ${MARGEN_HOJA} !important;
+        box-shadow: none !important;
+        overflow: hidden !important;
+      }
+    </style></head>`);
+}
 
 async function esperarRecursos(doc, ventana) {
   try {
@@ -41,7 +63,7 @@ export async function generarInformePdf(informe, { empresaConfig, firmaImg = "",
     );
   }
 
-  const html = buildInformePrintHtml(informe, { empresaConfig, firmaImg });
+  const html = prepararHtmlParaPdf(buildInformePrintHtml(informe, { empresaConfig, firmaImg }));
 
   const marco = document.createElement("iframe");
   marco.setAttribute("aria-hidden", "true");
@@ -70,7 +92,8 @@ export async function generarInformePdf(informe, { empresaConfig, firmaImg = "",
       onProgreso?.(i + 1, hojas.length);
 
       const lienzo = await html2canvas(hojas[i], {
-        scale: 2,
+        // Escala 3 = 288 ppp (estándar imprenta de alta fidelidad, idéntico a cotizaciones)
+        scale: 3,
         useCORS: true,
         backgroundColor: "#ffffff",
         logging: false,
@@ -78,14 +101,20 @@ export async function generarInformePdf(informe, { empresaConfig, firmaImg = "",
         windowHeight: ALTO_HOJA,
       });
 
-      const imagen = lienzo.toDataURL("image/jpeg", 0.92);
+      const imagen = lienzo.toDataURL("image/jpeg", 0.95);
       if (i > 0) pdf.addPage([ANCHO_HOJA, ALTO_HOJA], "portrait");
-      pdf.addImage(imagen, "JPEG", 0, 0, ANCHO_HOJA, ALTO_HOJA, undefined, "FAST");
+      pdf.addImage(imagen, "JPEG", 0, 0, ANCHO_HOJA, ALTO_HOJA, undefined, "MEDIUM");
     }
 
-    const id = String(informe?.id || "Informe");
-    const proyecto = String(informe?.proyecto || informe?.cliente || "").trim();
-    const nombre = `Informe de actividades ${id} ${proyecto}`
+    const id = String(informe?.id || informe?.numero || "Informe");
+    const partes = [id, informe?.proyecto, informe?.cliente]
+      .map((t) => String(t || "").trim())
+      .filter(Boolean);
+    const vistas = [];
+    for (const parte of partes) {
+      if (!vistas.some((v) => v.toLowerCase() === parte.toLowerCase())) vistas.push(parte);
+    }
+    const nombre = ("Informe de actividades " + vistas.join(" "))
       .replace(/[\\/:*?"<>|]/g, " ")
       .replace(/\s+/g, " ")
       .trim()

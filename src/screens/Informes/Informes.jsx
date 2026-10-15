@@ -11,6 +11,7 @@ import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmtD, fmtL, today } from "../../lib/format";
 import { openPrintTab } from "../../lib/cotizacionPrint";
 import { buildInformePrintHtml } from "../../lib/informePrint";
+import { descargarInformePdf } from "../../lib/informePdf";
 import { getControlDocumental } from "../../lib/controlDocumental";
 import { LOGO_INGEANCLAJES } from "../../assets/embeddedImages";
 import { bitacoraAActividades, normalizarBitacora, registrosDelPeriodo } from "../../lib/bitacoraObra";
@@ -53,6 +54,7 @@ export default function Informes({ctx}){
   const {informes,setInformes,obras,empleados,horarios,intencion,limpiarIntencion,empresaConfig,irAPantalla,asegurarDetalle,cotizaciones=[]}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
   const [sel,setSel]=useState(null);
+  const [generandoPdf,setGenerandoPdf]=useState(false);
   const [nuevo,setNuevo]=useState(()=>Boolean(ctx.intencion?.pantalla==="informes" && ctx.intencion?.obraId));
   const [editId,setEditId]=useState(null);
   const [modalCotizacion,setModalCotizacion]=useState(false);
@@ -510,13 +512,28 @@ export default function Informes({ctx}){
   // -192 puntos por pulgada- y lo guardaba como JPEG, asi que el PDF era una
   // foto del documento: el texto dejaba de ser texto y se veia pixelado al
   // ampliarlo o al imprimirlo. Desde la pestaña de impresion, «Guardar como
-  // PDF» conserva el texto vectorial, se ve nitido a cualquier zoom y el
-  // archivo pesa mucho menos para enviarlo por correo.
+  const descargarPdf = async (inf = sel) => {
+    if (!inf || generandoPdf) return;
+    const listo = enriquecerInforme(inf);
+    setGenerandoPdf(true);
+    try {
+      await descargarInformePdf(listo, { empresaConfig, firmaImg });
+    } catch (fallo) {
+      console.error("Error al generar PDF del informe:", fallo);
+      window.alert(fallo?.message || "No se pudo generar el PDF.");
+    } finally {
+      setGenerandoPdf(false);
+    }
+  };
+
   const imprimirInforme = (inf = sel) => {
     if (!inf) return;
     const listo = enriquecerInforme(inf);
     const html = buildInformePrintHtml(listo, { empresaConfig, firmaImg });
-    openPrintTab(html, `Informe ${listo?.id || ""}`);
+    openPrintTab(
+      html,
+      `Informe ${listo?.id || listo?.numero || ""} ${listo?.proyecto || listo?.cliente || ""}`.trim()
+    );
   };
 
   // En la barra superior: botones de acción fija para detalle (Volver, Editar, Descargar, Imprimir)
@@ -550,9 +567,6 @@ export default function Informes({ctx}){
         >
           ✏️ Editar
         </button>
-        {/* Un solo boton: «Descargar PDF» e «Imprimir» llevaban al mismo
-            sitio en cuanto el PDF dejo de fotografiarse. La pestaña que se
-            abre permite las dos cosas. */}
         <button
           style={{
             ...B("#1d1d1f", "#ffffff"),
@@ -561,8 +575,26 @@ export default function Informes({ctx}){
             borderRadius: 10,
             fontSize: 12,
             fontWeight: 600,
+            opacity: generandoPdf ? 0.65 : 1,
+            cursor: generandoPdf ? "wait" : "pointer",
+          }}
+          disabled={generandoPdf}
+          onClick={() => descargarPdf(sel)}
+          title="Descarga el informe oficial en PDF directamente"
+        >
+          {generandoPdf ? "Generando PDF…" : "📥 Descargar PDF"}
+        </button>
+        <button
+          style={{
+            ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)"),
+            border: "1px solid #cbd5e1",
+            padding: "7px 14px",
+            borderRadius: 10,
+            fontSize: 12,
+            fontWeight: 600,
           }}
           onClick={() => imprimirInforme(sel)}
+          title="Abre la pestaña de impresión del informe"
         >
           🖨️ Imprimir / PDF
         </button>
@@ -587,7 +619,7 @@ export default function Informes({ctx}){
         + Nuevo Informe
       </button>
     ) : null,
-    [sel, nuevo, editId, empresaConfig, firmaImg]
+    [sel, nuevo, editId, generandoPdf, empresaConfig, firmaImg]
   );
 
   const abrirNuevoInforme = ()=>{
@@ -1088,6 +1120,8 @@ export default function Informes({ctx}){
             // CUAL informe, que es lo que decide el proyecto y el detalle
             // cuando la obra tiene varios -una sede por informe-.
             certificar: (inf)=>irAPantalla("certificaciones",{obraId:inf.obraId,informeId:inf.id}),
+            descargarPdf: (inf)=>descargarPdf(inf),
+            imprimir: (inf)=>imprimirInforme(inf),
           }}
         />
       )}
@@ -1113,7 +1147,106 @@ export default function Informes({ctx}){
           || (obraDeSel?.cliente ? cotizaciones.find(c => c.cliente && normalizarRazonSocial(c.cliente) === normalizarRazonSocial(obraDeSel.cliente)) : null);
 
         return (
-          <div>
+          <div style={{ padding: isMobile ? "8px 10px 16px" : "8px 18px 16px" }}>
+            {/* Barra de Título y Acciones IDÉNTICA al módulo de Cotizaciones */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 12,
+                flexWrap: "wrap",
+                marginBottom: 12,
+                padding: "2px 0",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <h1 style={{ fontSize: 17, fontWeight: 800, margin: 0, color: "var(--text-h1, #101828)", lineHeight: 1.2 }}>
+                  Informe {numDoc || sel?.id || sel?.numero || "Técnico"}
+                </h1>
+                <span style={{ fontSize: 12, color: "var(--text-muted, #667085)" }}>
+                  Vista completa del informe de actividades en obra
+                </span>
+              </div>
+
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                <button
+                  type="button"
+                  style={{
+                    background: "var(--surface-subtle, #f2f4f7)",
+                    color: "var(--text-main, #101828)",
+                    border: "1px solid var(--border, #eaecf0)",
+                    borderRadius: 6,
+                    padding: "5px 12px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
+                  onClick={() => setSel(null)}
+                  title="Volver al listado"
+                >
+                  ← Volver
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    background: "transparent",
+                    color: "var(--text-muted, #475467)",
+                    border: "1px solid var(--border, #eaecf0)",
+                    borderRadius: 6,
+                    padding: "5px 12px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                  onClick={() => editarInforme(sel)}
+                >
+                  Editar
+                </button>
+
+                {/* Botón Descargar PDF exacto al de Cotizaciones (señalado en amarillo) */}
+                <button
+                  type="button"
+                  style={{
+                    background: "var(--surface-subtle, #f2f4f7)",
+                    color: "var(--text-main, #101828)",
+                    border: "1px solid var(--border, #eaecf0)",
+                    borderRadius: 6,
+                    padding: "5px 12px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: generandoPdf ? "wait" : "pointer",
+                  }}
+                  disabled={generandoPdf}
+                  onClick={() => descargarPdf(sel)}
+                  title="Descarga el informe oficial en PDF directamente"
+                >
+                  {generandoPdf ? "Generando…" : "📥 Descargar PDF"}
+                </button>
+
+                <button
+                  type="button"
+                  style={{
+                    background: "var(--surface-subtle, #f2f4f7)",
+                    color: "var(--text-main, #101828)",
+                    border: "1px solid var(--border, #eaecf0)",
+                    borderRadius: 6,
+                    padding: "5px 12px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                  onClick={() => imprimirInforme(sel)}
+                  title="Abre la pestaña de impresión del navegador"
+                >
+                  🖨️ Imprimir / PDF
+                </button>
+              </div>
+            </div>
+
             {cotVincSel && (
               <div style={{ maxWidth: 920, margin: "0 auto 16px", width: "100%" }}>
                 <TarjetaCotizacionRef
@@ -1139,9 +1272,11 @@ export default function Informes({ctx}){
                   lineHeight: 1.5,
                   border: "1px solid rgba(0,0,0,0.08)",
                   boxShadow: "0 10px 30px rgba(0, 0, 0, 0.06)",
-                  padding: "36px 44px 28px",
+                  padding: isMobile ? "18px 14px 18px" : "36px 44px 28px",
                   borderRadius: 12,
                   maxWidth: 920,
+                  width: "100%",
+                  boxSizing: "border-box",
                   margin: "0 auto",
                 }}
               >
@@ -1252,7 +1387,7 @@ export default function Informes({ctx}){
                   <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", color: "#18181b" }}>1. Personal Técnico Asignado en Sitio</span>
                   <span style={{ fontSize: 9, fontWeight: 500, color: "#71717a" }}>Personal certificado con trabajo seguro en alturas</span>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(3, Math.max(1, personal.length))}, 1fr)`, gap: 8, marginBottom: 14 }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : `repeat(${Math.min(3, Math.max(1, personal.length))}, 1fr)`, gap: 8, marginBottom: 14 }}>
                   {personal.length > 0 ? (
                     personal.map((p, idx) => (
                       <div key={idx} style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 6, padding: "6px 9px", background: "#ffffff", display: "flex", alignItems: "center", gap: 8 }}>
@@ -1329,7 +1464,7 @@ export default function Informes({ctx}){
                           </span>
                           <span style={{ fontSize: 9, fontWeight: 500, color: "#71717a" }}>Registro Fotográfico en Sitio</span>
                         </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10 }}>
                           {(act.fotos || []).filter(ft => ft.img || ft.url).map((ft, fi) => (
                             <div key={fi} style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, overflow: "hidden", background: "#ffffff", boxShadow: "0 1px 2px rgba(0,0,0,0.02)", display: "flex", flexDirection: "column" }}>
                               <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "#fafafa", borderBottom: "1px solid #f4f4f5", overflow: "hidden", position: "relative" }}>

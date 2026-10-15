@@ -3,7 +3,7 @@
 // fotos, tablas, textos ni firmas entre paginas.
 
 const PX_A_PT = 72 / 96;
-const ESCALA_DIBUJO = 2;
+const ESCALA_DIBUJO = 3;
 
 // Hoja Carta a 96 ppp: 8,5 x 11 pulgadas
 const ANCHO_HOJA = 816;
@@ -15,7 +15,12 @@ const HOJA_PT = [ANCHO_HOJA * PX_A_PT, ALTO_HOJA * PX_A_PT];
 
 const HOJA_ESTILOS = `
   * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  html, body { margin: 0; padding: 0; background: #fff; font-family: 'Aptos', 'Segoe UI', Arial, sans-serif; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  }
   .doc-shell { background: #fff; border: 0 !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
   .doc-shell table { width: 100%; border-collapse: collapse; }
   img { max-width: 100%; }
@@ -254,17 +259,21 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
         width: ${ANCHO_HOJA}px !important;
         height: ${ALTO_HOJA}px !important;
         min-height: ${ALTO_HOJA}px !important;
+        max-height: ${ALTO_HOJA}px !important;
         overflow: hidden !important;
+        box-sizing: border-box !important;
       }
       .doc-shell {
         width: ${ANCHO_HOJA}px !important;
         height: ${ALTO_HOJA}px !important;
         min-height: ${ALTO_HOJA}px !important;
+        max-height: ${ALTO_HOJA}px !important;
         border: 0 !important;
         border-radius: 0 !important;
         box-shadow: none !important;
         margin: 0 !important;
         padding: 0 !important;
+        overflow: hidden !important;
         box-sizing: border-box !important;
       }
     ` : "";

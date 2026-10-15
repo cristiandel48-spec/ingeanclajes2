@@ -705,6 +705,26 @@ function TarjetaInformeApple({ informe: inf, acciones }) {
             Editar
           </button>
 
+          {(acciones.descargarPdf || acciones.imprimir) && (
+            <button
+              type="button"
+              title="Descargar PDF oficial de este informe"
+              onClick={() => (acciones.descargarPdf || acciones.imprimir)?.(inf)}
+              style={{
+                background: "transparent",
+                color: "#b91c1c",
+                border: "1px solid rgba(185, 28, 28, 0.25)",
+                borderRadius: 8,
+                padding: "6px 9px",
+                fontSize: 11.5,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              📥 PDF
+            </button>
+          )}
+
           {acciones.certificar && (
             <button
               type="button"
@@ -836,6 +856,25 @@ function FilaTablaInforme({ informe: inf, acciones, zebra }) {
         >
           Ver
         </button>
+        {(acciones.descargarPdf || acciones.imprimir) && (
+          <button
+            type="button"
+            title="Descargar PDF"
+            onClick={() => (acciones.descargarPdf || acciones.imprimir)?.(inf)}
+            style={{
+              background: "transparent",
+              color: "#b91c1c",
+              border: "1px solid rgba(185, 28, 28, 0.25)",
+              borderRadius: 6,
+              padding: "4px 8px",
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            PDF
+          </button>
+        )}
         <button
           type="button"
           onClick={() => acciones.editar?.(inf)}

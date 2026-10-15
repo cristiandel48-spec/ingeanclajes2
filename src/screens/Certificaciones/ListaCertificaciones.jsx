@@ -1027,6 +1027,28 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
         >
           Ver
         </button>
+        {(acciones.descargarPdf || acciones.imprimir) && (
+          <button
+            type="button"
+            onClick={alPulsar(acciones.descargarPdf || acciones.imprimir)}
+            title="Descargar PDF oficial"
+            style={{
+              background: "transparent",
+              color: "#16a34a",
+              border: "1px solid rgba(22, 163, 74, 0.3)",
+              borderRadius: 8,
+              padding: "4px 8px",
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 3,
+            }}
+          >
+            📥 PDF
+          </button>
+        )}
         {acciones.editar && (
           <button
             type="button"

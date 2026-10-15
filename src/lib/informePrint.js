@@ -10,24 +10,31 @@ import { getControlDocumental } from "./controlDocumental";
 import { conActividadSeparada } from "./informeTextos";
 import { cssHojaImpresion } from "./hojaImpresion";
 
-// Capacidad util de contenido por hoja, en pixeles de pantalla (96 por
-// pulgada). El reparto de bloques en hojas se hace aqui, estimando alturas,
-// y este es el tope.
+// Capacidad util de contenido por hoja, en pixeles de pantalla (96 ppp).
 //
-// Antes eran 945, calculados contra una hoja de 11 pulgadas con margen cero.
-// Con los margenes reales de @page el area util baja a unos 946, asi que 945
-// quedaba al borde: bastaba que alguien imprimiera con margenes un poco mas
-// anchos para que cada hoja se desbordara unos milimetros y se llevara una
-// hoja en blanco detras. 880 deja holgura para eso y cuadra con el alto
-// minimo del bloque en hojaImpresion.js.
-const MAX_ALTO_PAGINA = 880;
+// Una hoja carta mide 1056px de alto. Con los margenes de @page -14mm arriba
+// y 15mm abajo- el area util imprimible es de 946px. Quitando el pie de hoja
+// (~26px) quedan ~920 para el contenido.
+//
+// Es UN solo tope para todas las hojas, portada incluida, porque la altura
+// de los encabezados ya se suma por separado en `alturaActual`: la portada
+// arranca con el encabezado editorial, los datos del proyecto y el personal
+// ya contados, y las demas con el encabezado secundario. Tener un tope
+// aparte para la portada se los cobraba dos veces y la cortaba a media
+// hoja, que es lo que dejaba ese hueco blanco enorme debajo de la primera
+// actividad.
+//
+// 915 deja unos 8mm de holgura sobre el area util, suficiente para que no se
+// desborde a una hoja fantasma aunque los calculos de altura se queden
+// cortos por unos pixeles.
+const MAX_ALTO_PAGINA = 915;
 
-const ALTO_HEADER_PORTADA = 78;
-const ALTO_HEADER_SECUNDARIO = 32;
+const ALTO_HEADER_PORTADA = 88;
+const ALTO_HEADER_SECUNDARIO = 36;
 const ALTO_BANNER_ACTIVIDADES = 22;
-const ALTO_BANNER_FOTOS = 22;
-const ALTO_FILA_FOTOS = 216; // 175px imagen + ~32px caption + 9px margen
-const ALTO_FIRMA = 110;
+const ALTO_BANNER_FOTOS = 24;
+const ALTO_FILA_FOTOS = 196; // 155px imagen + ~30px caption + 9px margen + 2px borde
+const ALTO_FIRMA = 112;
 
 function estimarLineas(texto, caracteresPorLinea = 82) {
   const str = String(texto || "").trim();
@@ -36,26 +43,27 @@ function estimarLineas(texto, caracteresPorLinea = 82) {
   return parrafos.reduce((total, p) => total + Math.max(1, Math.ceil(p.length / caracteresPorLinea)), 0);
 }
 
-const calcularAltoDatos = (hasCotiz) => (hasCotiz ? 116 : 94);
+const calcularAltoDatos = (hasCotiz) => (hasCotiz ? 138 : 115);
 
 const calcularAltoPersonal = (arr) => {
-  if (!arr || arr.length === 0) return 36;
+  if (!arr || arr.length === 0) return 38;
   const filas = Math.ceil(arr.length / 3);
-  return 20 + filas * 36 + 10;
+  return 20 + filas * 38 + 10;
 };
 
 const calcularAltoActividad = (act) => {
   const lAct = estimarLineas(act.actividadesRealizadas, 85);
   const lDesc = estimarLineas(act.descripcion, 85);
-  const altoTextos = (lAct > 0 ? (16 + lAct * 14.8 + 5) : 0) +
+  const lObs = estimarLineas(act.observaciones, 85);
+  const altoTextos = (lAct > 0 ? (16 + lAct * 14.8 + 4) : 0) +
                      (lDesc > 0 ? (16 + lDesc * 14.8 + 4) : 0);
-  return 30 + (act.fecha ? 14 : 0) + altoTextos + 24 + 18 + 10;
+  return 34 + (act.fecha ? 14 : 0) + altoTextos + (lObs > 0 ? 28 : 22) + 16;
 };
 
 const calcularAltoRecomendaciones = (rec) => {
   if (!rec) return 0;
   const lRec = estimarLineas(rec, 85);
-  return 20 + lRec * 14.8 + 16 + 10;
+  return 22 + lRec * 14.8 + 16 + 10;
 };
 
 export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } = {}) {
@@ -232,13 +240,13 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
 
   const renderFotoCard = (ft, actIdx, fotoIdx) => `
     <div class="foto-card" style="border:1px solid rgba(0,0,0,0.08);border-radius:8px;overflow:hidden;background:#ffffff;box-shadow:0 1px 2px rgba(0,0,0,0.02);display:flex;flex-direction:column;">
-      <div style="height:175px;display:flex;align-items:center;justify-content:center;background:#fafafa;border-bottom:1px solid #f4f4f5;overflow:hidden;position:relative;">
+      <div style="height:155px;display:flex;align-items:center;justify-content:center;background:#fafafa;border-bottom:1px solid #f4f4f5;overflow:hidden;position:relative;">
         <img src="${ft.img || ft.url}" alt="Evidencia ${fotoIdx + 1}" style="width:100%;height:100%;object-fit:contain;display:block;background:#ffffff;"/>
         <span style="position:absolute;top:5px;left:5px;background:rgba(0,0,0,0.68);color:#ffffff;font-size:8px;font-family:'JetBrains Mono',monospace;font-weight:700;padding:2px 6px;border-radius:4px;">
           EVIDENCIA ${actIdx + 1}.${fotoIdx + 1}
         </span>
       </div>
-      <div style="padding:6px 9px;font-size:9px;color:#27272a;line-height:1.38;background:#ffffff;">
+      <div style="padding:5px 8px;font-size:8.5px;color:#27272a;line-height:1.35;background:#ffffff;">
         ${escapeHtml(ft.comentario || "Registro fotográfico y trazabilidad de actividades ejecutadas en sitio.")}
       </div>
     </div>
@@ -247,7 +255,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
   const renderFotosFila = (parFotos, actIdx, startFotoIdx) => `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px;align-items:start;">
       ${parFotos.map((ft, i) => renderFotoCard(ft, actIdx, startFotoIdx + i)).join("")}
-      ${parFotos.length === 1 ? `<div style="border:1px dashed #d4d4d8;border-radius:8px;background:#fafafa;height:100%;min-height:205px;display:flex;align-items:center;justify-content:center;color:#71717a;font-size:8.5px;">(Espacio reservado)</div>` : ""}
+      ${parFotos.length === 1 ? `<div style="border:1px dashed #d4d4d8;border-radius:8px;background:#fafafa;height:100%;min-height:185px;display:flex;align-items:center;justify-content:center;color:#71717a;font-size:8.5px;">(Espacio reservado)</div>` : ""}
     </div>
   `;
 
@@ -283,7 +291,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
     </table>
   `;
 
-  // --- MOTOR DE EMPAQUETADO FLUIDO DE PÁGINAS ---
+  // --- MOTOR DE EMPAQUETADO FLUIDO Y SEGURO DE PÁGINAS ---
   const paginas = [[]];
   let pIdx = 0;
   let alturaActual = 0;
@@ -294,6 +302,11 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
     alturaActual = ALTO_HEADER_SECUNDARIO;
   };
 
+  // El mismo tope para todas las hojas: lo que ocupa el encabezado de cada
+  // una ya va sumado en `alturaActual`, asi que no hay que volver a
+  // descontarlo aqui.
+  const getLimiteActual = () => MAX_ALTO_PAGINA;
+
   // 1. Portada Top
   paginas[0].push(renderHeaderPortada());
   paginas[0].push(renderDatosProyecto());
@@ -301,13 +314,13 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
   paginas[0].push(renderBannerActividades());
   alturaActual = ALTO_HEADER_PORTADA + calcularAltoDatos(Boolean(cotizacionRef)) + calcularAltoPersonal(personal) + ALTO_BANNER_ACTIVIDADES;
 
-  // 2. Empaquetar Actividades y Fotos de forma continua
+  // 2. Empaquetar Actividades y Fotos de forma armónica
   actividades.forEach((act, actIdx) => {
     const altoTabla = calcularAltoActividad(act);
     const fotos = (act.fotos || []).filter((ft) => ft.img || ft.url);
 
-    // Si la tabla no cabe en la hoja actual, abrir una nueva hoja
-    if (alturaActual + altoTabla > MAX_ALTO_PAGINA) {
+    // Si la actividad no cabe en la hoja actual, abrir una nueva hoja limpia
+    if (alturaActual + altoTabla > getLimiteActual()) {
       nuevaPagina();
     }
 
@@ -327,7 +340,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
         const esPrimeraFila = fIdx === 0;
         const espacioRequerido = (esPrimeraFila && !tituloPuesto) ? (ALTO_BANNER_FOTOS + ALTO_FILA_FOTOS) : ALTO_FILA_FOTOS;
 
-        if (alturaActual + espacioRequerido > MAX_ALTO_PAGINA) {
+        if (alturaActual + espacioRequerido > getLimiteActual()) {
           nuevaPagina();
           tituloPuesto = false;
         }
@@ -345,16 +358,16 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
     }
   });
 
-  // 3. Empaquetar Recomendaciones y Firma garantizando que nunca quede una hoja huérfana de firma
+  // 3. Empaquetar Recomendaciones y Firma: NUNCA dejar la firma sola/huérfana
   const altoRec = calcularAltoRecomendaciones(recomendaciones);
   const altoFirma = ALTO_FIRMA;
 
   if (recomendaciones) {
-    const cabeRec = (alturaActual + altoRec <= MAX_ALTO_PAGINA);
-    const cabenAmbos = (alturaActual + altoRec + altoFirma <= MAX_ALTO_PAGINA);
+    const cabenAmbos = (alturaActual + altoRec + altoFirma <= getLimiteActual());
 
-    // Si no cabe la recomendación, o si colocarla dejaría menos de altoFirma forzando firma huérfana
-    if (!cabeRec || (!cabenAmbos && (alturaActual + altoRec > MAX_ALTO_PAGINA - 50))) {
+    // Si ambos no caben juntos en lo que queda de página, preferimos pasar
+    // recomendaciones Y firma a una hoja nueva juntos, garantizando equilibrio estético
+    if (!cabenAmbos) {
       nuevaPagina();
     }
     paginas[pIdx].push(renderTablaRecomendaciones());
@@ -362,7 +375,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
   }
 
   // Si no cabe la firma en la hoja actual
-  if (alturaActual + altoFirma > MAX_ALTO_PAGINA) {
+  if (alturaActual + altoFirma > getLimiteActual()) {
     nuevaPagina();
   }
   paginas[pIdx].push(renderBloqueFirma());
@@ -371,17 +384,19 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
   // Total de hojas consolidadas
   const totalHojas = paginas.length;
 
-  // El alto y el relleno de la hoja ya no se escriben aqui: los pone
-  // cssHojaImpresion a traves de la clase .page, y el margen lo decide
-  // @page, que es quien sabe cuanto puede pintar la impresora.
+  // Estructura idéntica a cotización (.page > .page-inner > .page-content + .page-footer)
+  // con margin-top: auto en el pie, garantizando que el pie se pose suavemente al fondo
+  // sin forzar jamás saltos prematuros de hoja ni hojas intermedias en blanco.
   const seccionesHtml = paginas.map((bloques, idx) => `
     <section class="page">
-      <div style="flex:1;">
-        ${bloques.join("\n")}
-      </div>
-      <div class="page-footer" style="border-top:1px solid #e4e4e7;padding-top:5px;display:flex;justify-content:space-between;align-items:center;font-size:8.5px;color:#71717a;">
-        <span>Ingeanclajes S.A.S · Documento Técnico Oficial SGC · ${escapeHtml(docCodigo)} (V-${escapeHtml(docVersion)})</span>
-        <span>Página ${idx + 1} de ${totalHojas}</span>
+      <div class="page-inner">
+        <div class="page-content">
+          ${bloques.join("\n")}
+        </div>
+        <div class="page-footer">
+          <span>Ingeanclajes S.A.S · Documento Técnico Oficial SGC · ${escapeHtml(docCodigo)} (V-${escapeHtml(docVersion)})</span>
+          <span>Página ${idx + 1} de ${totalHojas}</span>
+        </div>
       </div>
     </section>
   `).join("\n");
@@ -400,6 +415,29 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
         color: #18181b;
         -webkit-font-smoothing: antialiased;
         text-rendering: geometricPrecision;
+      }
+      .page-inner {
+        position: relative;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        min-height: 232mm;
+        height: 100%;
+        box-sizing: border-box;
+      }
+      .page-content {
+        display: block;
+        flex: 1 1 auto;
+      }
+      .page-footer {
+        margin-top: auto;
+        border-top: 1px solid #e4e4e7;
+        padding-top: 5px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 8.5px;
+        color: #71717a;
       }
       @media print {
         #print-toolbar, #print-toolbar + div { display: none !important; }

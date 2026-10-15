@@ -1879,7 +1879,7 @@ export default function OrdenesCompra({
             padding: 22,
             border: "1px solid var(--border, #7dd3fc)",
           }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--primary, #0369a1)", marginBottom: 6 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--info-text)", marginBottom: 6 }}>
               🧾 Causar Factura de Proveedor — Orden {ordenDetalle?.id}
             </div>
             <div style={{ fontSize: 12, color: "var(--text-muted, #475569)", marginBottom: 14 }}>

@@ -434,9 +434,9 @@ export default function AuditoriaDocumentos({ ctx }) {
                 setVerTodas(false);
               }}
               style={{
-                background: activo ? "var(--primary, #f47c20)" : "var(--surface-subtle)",
+                background: activo ? "var(--accent)" : "var(--surface-subtle)",
                 color: activo ? "#fff" : "var(--text-muted)",
-                border: activo ? "1px solid var(--primary, #f47c20)" : "1px solid var(--border)",
+                border: activo ? "1px solid var(--accent)" : "1px solid var(--border)",
                 borderRadius: 8,
                 padding: "6px 13px",
                 fontSize: 12,

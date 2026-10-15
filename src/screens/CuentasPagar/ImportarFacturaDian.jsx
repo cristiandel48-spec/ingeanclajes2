@@ -146,12 +146,12 @@ export default function ImportarFacturaDian({
   };
 
   return (
-    <div style={{ background: "var(--surface, #fff)", border: "1.5px solid var(--primary, #2563eb)", borderRadius: 14, padding: 20, marginBottom: 16, boxShadow: "0 4px 16px rgba(37,99,235,0.08)" }}>
+    <div style={{ background: "var(--surface, #fff)", border: "1.5px solid var(--info)", borderRadius: 14, padding: 20, marginBottom: 16, boxShadow: "0 4px 16px rgba(37,99,235,0.08)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 20 }}>⚡</span>
           <div>
-            <div style={{ fontSize: 14.5, fontWeight: 800, color: "var(--primary, #2563eb)" }}>Importar Factura Electrónica DIAN (XML / HTML)</div>
+            <div style={{ fontSize: 14.5, fontWeight: 800, color: "var(--info-text)" }}>Importar Factura Electrónica DIAN (XML / HTML)</div>
             <div style={{ fontSize: 11, color: "var(--text-muted, #64748b)" }}>Lee AttachedDocument UBL 2.1, CUFE y representaciones oficiales de compras</div>
           </div>
         </div>
@@ -304,7 +304,7 @@ export default function ImportarFacturaDian({
                   </div>
                   <div>
                     <div style={{ fontSize: 9.5, color: "var(--text-muted, #64748b)", textTransform: "uppercase" }}>Estado RADIAN</div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--primary, #2563eb)" }}>⚡ Pendiente Acuse (030)</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--info-text)" }}>⚡ Pendiente Acuse (030)</div>
                   </div>
                 </div>
 

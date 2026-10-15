@@ -4,18 +4,25 @@
 // constantes en el mismo modulo rompe la recarga en caliente de Vite: al
 // tocar un color se recarga la pagina entera en vez de solo la pieza.
 
+// Los colores salen de styles/designTokens.js, la unica fuente del sistema.
+// Este objeto ya no define ninguno: solo les pone el nombre que usan los
+// listados. El acento sigue siendo el naranja heredado porque cambiarlo
+// repinta cuatro modulos de golpe; eso es la fase 3 del plan, y entonces
+// bastara con apuntar `acento` a COLOR.accent.
+import { COLOR } from "../styles/designTokens";
+
 export const C = {
-  borde: "var(--c-borde, #eef0f3)",
-  bordeFuerte: "var(--c-borde-fuerte, #e2e8f0)",
-  tinta: "var(--c-tinta, #1a1a2e)",
-  suave: "var(--c-suave, #475569)",
-  apagado: "var(--c-apagado, #64748b)",
-  tenue: "var(--c-tenue, #64748b)",
-  relleno: "var(--c-relleno, #f8fafc)",
-  rellenoFuerte: "var(--c-relleno-fuerte, #eef0f3)",
-  acento: "#f47c20",
-  acentoFuerte: "var(--text-main, #101828)",
-  acentoSuave: "var(--c-acento-suave, #fff3e8)",
+  borde: COLOR.separator,
+  bordeFuerte: "var(--border-strong)",
+  tinta: COLOR.textPrimary,
+  suave: COLOR.textSecondary,
+  apagado: COLOR.textTertiary,
+  tenue: COLOR.textTertiary,
+  relleno: "var(--surface-subtle)",
+  rellenoFuerte: COLOR.separator,
+  acento: "var(--naranja-heredado)",
+  acentoFuerte: COLOR.textPrimary,
+  acentoSuave: "var(--naranja-heredado-tint)",
 };
 
 /** Rangos de fecha, los mismos en todos los modulos. */
@@ -35,7 +42,7 @@ export const enMilis = (fecha) => {
 export const boton = (fondo, color, extra = {}) => ({
   background: fondo,
   color,
-  border: "1px solid var(--border, rgba(0,0,0,0.08))",
+  border: "1px solid var(--border)",
   borderRadius: 8,
   padding: "5px 11px",
   fontSize: 11.5,

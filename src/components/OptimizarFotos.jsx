@@ -134,7 +134,7 @@ export default function OptimizarFotos({ ctx, enModal = false, onCerrar = null }
         Si se tomaron directo del celular sin comprimir, pueden pesar 4 a 8 MB cada una y hacer que la base de datos o los documentos se sientan lentos.
         Esta herramienta busca todas las fotos pesadas existentes y las reduce de una vez.
         <br />
-        <strong style={{ color: "var(--accent, #4ade80)" }}>En los PDF y en pantalla se siguen viendo nítidas e iguales.</strong>
+        <strong style={{ color: "var(--success-text)" }}>En los PDF y en pantalla se siguen viendo nítidas e iguales.</strong>
       </div>
 
       {cargandoNube && (

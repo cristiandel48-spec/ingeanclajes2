@@ -134,24 +134,11 @@ export default function DocumentosEquipo({
           tipo: "banner",
           titulo: "Logros y retos del ciclo",
           color: "verde",
+          colapsado: true,
           items: [
             { id: `v-${Date.now()}-1`, texto: "Primer logro o entrega importante", icono: "verde", nivel: 0 },
             { id: `v-${Date.now()}-2`, texto: "Seguimiento técnico y validaciones", icono: "punto", nivel: 0 },
             { id: `v-${Date.now()}-3`, texto: "Detalle de acuerdos y fechas clave", icono: "punto", nivel: 1 },
-          ],
-        },
-        {
-          id: `b-${Date.now()}-2`,
-          tipo: "checklist",
-          titulo: "Primeros pendientes",
-          items: [
-            {
-              id: `t-${Date.now()}-1`,
-              texto: "Definir cronograma y actividades",
-              fecha: new Date().toISOString().slice(0, 10),
-              responsable: "",
-              completada: false,
-            },
           ],
         },
       ],
@@ -1362,25 +1349,35 @@ export default function DocumentosEquipo({
                         />
                       </div>
 
-                      {/* Contador, Selector de color y Eliminar */}
+                      {/* Botón Ocultar / Desplegar, Selector de color y Eliminar */}
                       <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                        {bloque.items?.length > 0 && (
-                          <span
-                            onClick={() => actualizarBloque(bloque.id, { colapsado: !colapsado })}
-                            style={{
-                              fontSize: 11,
-                              fontWeight: 700,
-                              background: "rgba(255,255,255,0.22)",
-                              padding: "2px 8px",
-                              borderRadius: 999,
-                              cursor: "pointer",
-                              userSelect: "none",
-                            }}
-                            title="Total de puntos en esta lista desplegable (clic para alternar)"
-                          >
-                            {bloque.items.length} {bloque.items.length === 1 ? "punto" : "puntos"}
-                          </span>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => actualizarBloque(bloque.id, { colapsado: !colapsado })}
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            background: "rgba(255,255,255,0.22)",
+                            border: "none",
+                            color: "#ffffff",
+                            padding: "3px 10px",
+                            borderRadius: 8,
+                            cursor: "pointer",
+                            userSelect: "none",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 5,
+                            transition: "background 0.15s ease",
+                          }}
+                          title={colapsado ? "Clic para desplegar y ver viñetas" : "Clic para ocultar viñetas"}
+                        >
+                          <span>{colapsado ? "▶ Desplegar" : "▲ Ocultar"}</span>
+                          {bloque.items?.length > 0 && (
+                            <span style={{ opacity: 0.85, fontSize: 10 }}>
+                              ({bloque.items.length})
+                            </span>
+                          )}
+                        </button>
 
                         {Object.entries(COLOR_BANNERS).map(([cKey, cVal]) => (
                           <button
@@ -1598,6 +1595,7 @@ export default function DocumentosEquipo({
             if (bloque.tipo === "checklist") {
               const items = Array.isArray(bloque.items) ? bloque.items : [];
               const hechas = items.filter((i) => i.completada).length;
+              const colapsado = !!bloque.colapsado;
 
               return (
                 <div
@@ -1605,109 +1603,183 @@ export default function DocumentosEquipo({
                   style={{
                     border: "1px solid var(--border, rgba(0,0,0,0.08))",
                     borderRadius: 16,
-                    padding: "16px 18px",
+                    padding: "14px 18px",
                     background: "#ffffff",
+                    marginBottom: 8,
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text-main, #1d1d1f)", display: "flex", alignItems: "center", gap: 6 }}>
-                      <span>☑</span>
-                      <span>{bloque.titulo || "Checklist de Tareas"}</span>
-                    </div>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted, #86868b)" }}>
-                      {hechas} de {items.length} completadas
-                    </span>
-                  </div>
-
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    {items.map((tarea) => {
-                      const hecha = tarea.completada;
-                      return (
-                        <div
-                          key={tarea.id}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: colapsado ? 0 : 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
+                      <button
+                        type="button"
+                        onClick={() => actualizarBloque(bloque.id, { colapsado: !colapsado })}
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          color: "var(--text-muted, #86868b)",
+                          cursor: "pointer",
+                          width: 20,
+                          height: 20,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 11,
+                          padding: 0,
+                        }}
+                        title={colapsado ? "Desplegar lista de tareas" : "Ocultar lista de tareas"}
+                      >
+                        <span
                           style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 10,
-                            padding: "6px 8px",
-                            borderRadius: 8,
-                            background: hecha ? "rgba(0,0,0,0.02)" : "transparent",
-                            transition: "background 0.12s ease",
+                            display: "inline-block",
+                            transform: colapsado ? "none" : "rotate(90deg)",
+                            transition: "transform 0.15s ease",
                           }}
                         >
-                          {/* Casilla circular estilo Apple Reminders */}
-                          <button
-                            type="button"
-                            onClick={() => toggleTarea(bloque.id, tarea.id)}
-                            style={{
-                              width: 19,
-                              height: 19,
-                              borderRadius: "50%",
-                              border: `1.5px solid ${hecha ? NARANJA : "var(--text-muted, #98a2b3)"}`,
-                              background: hecha ? NARANJA : "transparent",
-                              cursor: "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              padding: 0,
-                              flexShrink: 0,
-                              transition: "all 0.15s ease",
-                            }}
-                          >
-                            {hecha && (
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M5 12l4 4L19 7" />
-                              </svg>
-                            )}
-                          </button>
-
-                          {/* Texto de la tarea */}
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <span
-                              style={{
-                                fontSize: 12.5,
-                                color: hecha ? "var(--text-muted, #94a3b8)" : "var(--text-main, #1d1d1f)",
-                                textDecoration: hecha ? "line-through" : "none",
-                                transition: "all 0.15s ease",
-                              }}
-                            >
-                              {tarea.texto}
-                            </span>
-                          </div>
-
-                          {/* Fecha */}
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                            {tarea.fecha && (
-                              <span style={{ fontSize: 10, color: "var(--text-muted, #94a3b8)" }}>
-                                {tarea.fecha.slice(5)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                          ▶
+                        </span>
+                      </button>
+                      <input
+                        type="text"
+                        value={bloque.titulo || ""}
+                        onChange={(e) => actualizarBloque(bloque.id, { titulo: e.target.value })}
+                        placeholder="Checklist de Tareas..."
+                        style={{
+                          border: "none",
+                          outline: "none",
+                          background: "transparent",
+                          fontSize: 13.5,
+                          fontWeight: 800,
+                          color: "var(--text-main, #1d1d1f)",
+                          width: "100%",
+                          fontFamily: "inherit",
+                        }}
+                      />
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <button
+                        type="button"
+                        onClick={() => actualizarBloque(bloque.id, { colapsado: !colapsado })}
+                        style={{
+                          border: "none",
+                          background: "transparent",
+                          color: "var(--text-muted, #86868b)",
+                          fontSize: 11,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {colapsado ? "▶ Desplegar" : "▲ Ocultar"} ({hechas}/{items.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => eliminarBloque(bloque.id)}
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          color: "var(--text-muted, #86868b)",
+                          cursor: "pointer",
+                          fontSize: 13,
+                        }}
+                        title="Eliminar este checklist"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => agregarTareaABloque(bloque.id)}
-                    style={{
-                      marginTop: 8,
-                      background: "transparent",
-                      border: "none",
-                      color: NARANJA,
-                      fontSize: 11.5,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      padding: "4px 8px",
-                      borderRadius: 6,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 4,
-                    }}
-                  >
-                    <span>+ Añadir tarea</span>
-                  </button>
+                  {!colapsado && (
+                    <>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {items.map((tarea) => {
+                          const hecha = tarea.completada;
+                          return (
+                            <div
+                              key={tarea.id}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 10,
+                                padding: "6px 8px",
+                                borderRadius: 8,
+                                background: hecha ? "rgba(0,0,0,0.02)" : "transparent",
+                                transition: "background 0.12s ease",
+                              }}
+                            >
+                              {/* Casilla circular estilo Apple Reminders */}
+                              <button
+                                type="button"
+                                onClick={() => toggleTarea(bloque.id, tarea.id)}
+                                style={{
+                                  width: 19,
+                                  height: 19,
+                                  borderRadius: "50%",
+                                  border: `1.5px solid ${hecha ? NARANJA : "var(--text-muted, #98a2b3)"}`,
+                                  background: hecha ? NARANJA : "transparent",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  padding: 0,
+                                  flexShrink: 0,
+                                  transition: "all 0.15s ease",
+                                }}
+                              >
+                                {hecha && (
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M5 12l4 4L19 7" />
+                                  </svg>
+                                )}
+                              </button>
+
+                              {/* Texto de la tarea */}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <span
+                                  style={{
+                                    fontSize: 12.5,
+                                    color: hecha ? "var(--text-muted, #94a3b8)" : "var(--text-main, #1d1d1f)",
+                                    textDecoration: hecha ? "line-through" : "none",
+                                    transition: "all 0.15s ease",
+                                  }}
+                                >
+                                  {tarea.texto}
+                                </span>
+                              </div>
+
+                              {/* Fecha */}
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                                {tarea.fecha && (
+                                  <span style={{ fontSize: 10, color: "var(--text-muted, #94a3b8)" }}>
+                                    {tarea.fecha.slice(5)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => agregarTareaABloque(bloque.id)}
+                        style={{
+                          marginTop: 8,
+                          background: "transparent",
+                          border: "none",
+                          color: NARANJA,
+                          fontSize: 11.5,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          padding: "4px 8px",
+                          borderRadius: 6,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                        }}
+                      >
+                        <span>+ Añadir tarea</span>
+                      </button>
+                    </>
+                  )}
                 </div>
               );
             }

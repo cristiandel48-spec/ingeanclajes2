@@ -34,6 +34,17 @@ export function limpiarDocumentosEjemplo(documentos = []) {
     }
 
     return true;
+  }).map((d) => {
+    // Limpiar bloques de ejemplo automáticos que no se desean ("Primeros pendientes")
+    const bloquesLimpios = (d.bloques || [])
+      .filter((b) => b.titulo !== "Primeros pendientes")
+      .map((b) => {
+        if (b.tipo === "banner" && b.colapsado === undefined) {
+          return { ...b, colapsado: true };
+        }
+        return b;
+      });
+    return { ...d, bloques: bloquesLimpios };
   });
 }
 

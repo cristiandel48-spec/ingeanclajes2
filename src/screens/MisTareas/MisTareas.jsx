@@ -371,7 +371,7 @@ export default function MisTareas({ ctx }) {
               whiteSpace: "nowrap",
             }}
           >
-            ✓ Mis Tareas Personales
+            Mis tareas
           </button>
           <button
             type="button"
@@ -390,13 +390,16 @@ export default function MisTareas({ ctx }) {
               whiteSpace: "nowrap",
             }}
           >
-            📄 Documentos &amp; Tareas
+            Mis documentos
           </button>
         </div>
       </div>
 
       {modoVista === "equipo" ? (
-        <div style={{ maxWidth: 1360, margin: "0 auto", width: "100%" }}>
+        // Sin tope de ancho: es un editor de notas, y cuanto mas sitio tenga
+        // para escribir, mejor. El resto de pantallas si llevan maxWidth
+        // porque son listas, donde una linea de 1600px no se lee.
+        <div style={{ width: "100%" }}>
           <DocumentosEquipo
             obras={ctx?.obras}
             empleados={ctx?.empleados}

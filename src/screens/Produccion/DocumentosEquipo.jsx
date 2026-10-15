@@ -1,6 +1,7 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { useIsMobile } from "../../hooks/useMediaQuery";
-import { DOCUMENTOS_EQUIPO_INIT, limpiarDocumentosEjemplo } from "./documentosSeed";
+import { limpiarDocumentosEjemplo } from "./documentosSeed";
+import { Icono } from "../../components/ui";
 
 const NARANJA = "#f47c20";
 
@@ -10,6 +11,15 @@ const COLOR_BANNERS = {
   azul: { nombre: "Azul Desarrollo", bg: "#0071e3", dot: "#007aff", text: "#ffffff" },
   naranja: { nombre: "Naranja Prioridades", bg: "#f47c20", dot: "#ff9500", text: "#ffffff" },
 };
+
+// Deja el campo con el alto justo de su texto. Sirve de ref y de manejador:
+// la ref lo cuadra al montarse y al llegar texto de la nube, y el onChange
+// mientras se escribe.
+function ajustarAlto(el) {
+  if (!el) return;
+  el.style.height = "auto";
+  el.style.height = `${el.scrollHeight}px`;
+}
 
 const TIPOS_BLOQUE = [
   { tipo: "desplegable", icono: "▶", titulo: "Lista desplegable (Toggle)", desc: "Ocultar o expandir contenido" },
@@ -30,51 +40,38 @@ export default function DocumentosEquipo({
 }) {
   const isMobile = useIsMobile();
 
-  // Estado de documentos persistido localmente y sincronizado (sin ejemplos)
-  const [documentos, setDocumentos] = useState(() => {
-    if (Array.isArray(documentosExternos)) {
-      return limpiarDocumentosEjemplo(documentosExternos);
-    }
-    try {
-      const guardados = localStorage.getItem("ingeanclajes_documentos_equipo");
-      if (guardados) {
-        const parsed = JSON.parse(guardados);
-        const limpias = limpiarDocumentosEjemplo(parsed);
-        if (limpias.length !== parsed.length) {
-          localStorage.setItem("ingeanclajes_documentos_equipo", JSON.stringify(limpias));
-        }
-        return limpias;
+  // Los documentos viven en AppDataContext, que es quien los guarda: los sube
+  // a la nube y deja una copia local POR USUARIO. Aqui no se guarda una
+  // segunda copia.
+  //
+  // Antes si la habia, y se sincronizaba con dos efectos: uno copiaba lo de
+  // fuera hacia dentro y el otro lo de dentro hacia fuera. Escribiendo rapido
+  // se perdian letras y hasta viñetas enteras: cada tecla disparaba el efecto
+  // de salida, y el de entrada volvia a meter la version anterior encima de
+  // la que ya tenia la tecla siguiente. En un cuaderno de notas, perder lo
+  // escrito es el peor fallo posible.
+  //
+  // Sin estado propio no hay nada que sincronizar: se lee de la propiedad y
+  // se escribe en el padre, que es la unica copia.
+  const [documentosSueltos, setDocumentosSueltos] = useState([]);
+  const controlado = Array.isArray(documentosExternos);
+  const documentos = controlado ? documentosExternos : documentosSueltos;
+
+  const setDocumentos = useCallback(
+    (actualizar) => {
+      const aplicar = (previos) => {
+        const base = Array.isArray(previos) ? previos : [];
+        const siguiente = typeof actualizar === "function" ? actualizar(base) : actualizar;
+        return limpiarDocumentosEjemplo(siguiente);
+      };
+      if (controlado && typeof onActualizarDocumentos === "function") {
+        onActualizarDocumentos(aplicar);
+      } else {
+        setDocumentosSueltos(aplicar);
       }
-    } catch (e) {
-      console.warn("No se pudo cargar ingeanclajes_documentos_equipo", e);
-    }
-    return [];
-  });
-
-  // Sincronizar si cambian los documentos externamente (ej: carga desde la nube o sincronización)
-  useEffect(() => {
-    if (Array.isArray(documentosExternos)) {
-      const limpias = limpiarDocumentosEjemplo(documentosExternos);
-      setDocumentos((prev) => {
-        if (prev === limpias) return prev;
-        if (JSON.stringify(prev) === JSON.stringify(limpias)) return prev;
-        return limpias;
-      });
-    }
-  }, [documentosExternos]);
-
-  // Guardar en localStorage y propagar si hay callback
-  useEffect(() => {
-    const limpias = limpiarDocumentosEjemplo(documentos);
-    try {
-      localStorage.setItem("ingeanclajes_documentos_equipo", JSON.stringify(limpias));
-    } catch (e) {
-      console.warn("No se pudo guardar ingeanclajes_documentos_equipo", e);
-    }
-    if (typeof onActualizarDocumentos === "function") {
-      onActualizarDocumentos(limpias);
-    }
-  }, [documentos, onActualizarDocumentos]);
+    },
+    [controlado, onActualizarDocumentos]
+  );
 
   // Documento actualmente seleccionado
   const [docActivoId, setDocActivoId] = useState(() => documentos[0]?.id || "");
@@ -82,6 +79,8 @@ export default function DocumentosEquipo({
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [menuInsertarAbierto, setMenuInsertarAbierto] = useState(false);
   const [toastMensaje, setToastMensaje] = useState("");
+  // Id de la viñeta que acaba de crearse y a la que hay que llevar el cursor.
+  const [vinetaEnfocar, setVinetaEnfocar] = useState(null);
 
   // Modal inline que reemplaza todos los prompt() nativos del navegador
   const [modalInput, setModalInput] = useState(null);
@@ -130,7 +129,7 @@ export default function DocumentosEquipo({
     const nuevoDoc = {
       id: `doc-${Date.now()}`,
       titulo: nombre.trim(),
-      icono: "📁",
+      icono: "",
       obraNombre: "",
       responsable: "",
       favorito: false,
@@ -248,6 +247,10 @@ export default function DocumentosEquipo({
       icono: "punto",
       nivel,
     };
+    // El cursor se va a la viñeta recien creada. Sin esto, pulsar Enter la
+    // creaba pero dejaba el cursor donde estaba, asi que lo que se seguia
+    // escribiendo se pegaba al final de la viñeta anterior.
+    setVinetaEnfocar(nuevoItem.id);
     setDocumentos((prev) =>
       prev.map((d) => {
         if (d.id !== docActivoId) return d;
@@ -405,13 +408,13 @@ export default function DocumentosEquipo({
       const nuevoHijo = {
         id: idHijo,
         titulo: tituloEnlace.trim(),
-        icono: "📄",
+        icono: "",
         obraNombre: "",
         responsable: "",
         favorito: false,
         fechaCreacion: new Date().toISOString().slice(0, 10),
         fechaActualizacion: new Date().toISOString().slice(0, 10),
-        enlaces: [{ id: docActivo.id, icono: docActivo.icono || "🏢", titulo: `Volver a ${docActivo.titulo}`, desc: "Página principal" }],
+        enlaces: [{ id: docActivo.id, titulo: `Volver a ${docActivo.titulo}`, desc: "Página principal" }],
         bloques: [
           {
             id: `b-${Date.now()}`,
@@ -427,7 +430,6 @@ export default function DocumentosEquipo({
           if (d.id !== docActivoId) return d;
           const nuevoEnlace = {
             id: idHijo,
-            icono: "📄",
             titulo: tituloEnlace.trim(),
             desc: descEnlace,
           };
@@ -715,13 +717,19 @@ export default function DocumentosEquipo({
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: isMobile ? "1fr" : sidebarVisible ? "280px 1fr" : "1fr",
+        // El panel lateral se estrecha: 280px para una lista de titulos era
+        // casi un tercio de la pantalla en un portatil, y lo que se escribe
+        // esta a la derecha.
+        gridTemplateColumns: isMobile ? "1fr" : sidebarVisible ? "232px minmax(0, 1fr)" : "minmax(0, 1fr)",
         background: "var(--surface, #ffffff)",
         border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
         borderRadius: 20,
         overflow: "hidden",
         boxShadow: "0 4px 20px -4px rgba(0, 0, 0, 0.05)",
-        minHeight: 700,
+        // Ocupa lo que queda de pantalla en vez de cortarse a 700px y dejar
+        // un hueco blanco debajo. 100dvh descuenta la barra del navegador en
+        // el telefono, donde 100vh se pasa de largo.
+        minHeight: isMobile ? "auto" : "calc(100dvh - 190px)",
       }}
     >
       {/* Toast Notificación */}
@@ -764,9 +772,8 @@ export default function DocumentosEquipo({
           <div>
             {/* Cabecera Sidebar */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, padding: "0 4px" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #1d1d1f)", display: "flex", alignItems: "center", gap: 6 }}>
-                <span>📑</span>
-                <span>Documentos y Tareas</span>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #1d1d1f)" }}>
+                Mis documentos
               </div>
               <button
                 type="button"
@@ -776,8 +783,10 @@ export default function DocumentosEquipo({
                   height: 28,
                   borderRadius: 8,
                   border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
-                  background: "#ffffff",
-                  color: "#1d1d1f",
+                  // Con el blanco escrito a mano, en modo oscuro quedaba una
+                  // caja clara con el signo + invisible dentro.
+                  background: "var(--surface)",
+                  color: "var(--text-main, #1d1d1f)",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
@@ -802,11 +811,11 @@ export default function DocumentosEquipo({
                 style={{
                   width: "100%",
                   boxSizing: "border-box",
-                  background: "#ffffff",
+                  background: "var(--surface)",
                   border: "1px solid var(--border, rgba(0,0,0,0.08))",
                   borderRadius: 10,
-                  padding: "6px 10px",
-                  fontSize: 11.5,
+                  padding: "7px 10px",
+                  fontSize: 12.5,
                   color: "var(--text-main, #1d1d1f)",
                   outline: "none",
                 }}
@@ -870,7 +879,7 @@ export default function DocumentosEquipo({
                       }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1 }}>
-                        <span style={{ fontSize: 14 }}>{doc.icono || "📄"}</span>
+                        <Icono nombre="documento" size={15} style={{ opacity: activo ? 0.9 : 0.55 }} />
                         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {doc.titulo}
                         </span>
@@ -917,7 +926,7 @@ export default function DocumentosEquipo({
       {/* =================================================================== */}
       {/* ÁREA DE CONTENIDO Y EDITOR DEL DOCUMENTO ESTILO NOTION              */}
       {/* =================================================================== */}
-      <main style={{ padding: isMobile ? "16px 14px" : "28px 36px", overflowY: "auto", position: "relative" }}>
+      <main style={{ padding: isMobile ? "16px 14px" : "22px 28px 40px", overflowY: "auto", position: "relative", minWidth: 0 }}>
         {!docActivo ? (
           <div
             style={{
@@ -944,7 +953,7 @@ export default function DocumentosEquipo({
                 border: "1px solid var(--border, rgba(0,0,0,0.06))",
               }}
             >
-              📄
+              <Icono nombre="documento" size={30} style={{ opacity: 0.5 }} />
             </div>
             <h3
               style={{
@@ -955,7 +964,7 @@ export default function DocumentosEquipo({
                 letterSpacing: "-0.01em",
               }}
             >
-              No hay documentos de equipo
+              Todavía no tienes documentos
             </h3>
             <p
               style={{
@@ -966,7 +975,8 @@ export default function DocumentosEquipo({
                 lineHeight: 1.55,
               }}
             >
-              Crea tu primer documento interactivo para registrar notas de obra, subpáginas estilo Notion, checklists de tareas o enlaces de interés para el equipo.
+              Aquí anotas lo tuyo: notas de obra, pendientes, listas de chequeo y enlaces.
+              Solo los ves tú.
             </p>
             <button
               type="button"
@@ -1075,11 +1085,10 @@ export default function DocumentosEquipo({
         {/* =================================================================== */}
         {/* CABECERA Y METADATOS DEL DOCUMENTO (Título + Icono + Responsable)   */}
         {/* =================================================================== */}
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 32, marginBottom: 8, cursor: "pointer" }} title="Cambiar icono">
-            {docActivo?.icono || "🏢"}
-          </div>
-
+        {/* Sin el emoji gigante que habia encima del titulo: ocupaba 40px de
+            alto en la parte mas valiosa de la pagina, la de escribir, y no
+            hacia nada -no se podia cambiar aunque dijera «Cambiar icono»-. */}
+        <div style={{ marginBottom: 18 }}>
           <input
             type="text"
             value={docActivo?.titulo || ""}
@@ -1151,7 +1160,7 @@ export default function DocumentosEquipo({
                     e.currentTarget.style.background = "var(--surface, #ffffff)";
                   }}
                 >
-                  <span style={{ fontSize: 18 }}>{enlace.icono || "🌐"}</span>
+                  <Icono nombre="documento" size={17} style={{ opacity: 0.55 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-main, #1d1d1f)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {enlace.titulo}
@@ -1218,11 +1227,26 @@ export default function DocumentosEquipo({
                            item.icono === "check" ? "✓" : "•"}
                         </button>
 
-                        {/* Input de texto in-situ */}
-                        <input
-                          type="text"
+                        {/* Campo de texto in-situ.
+                            Era un <input> de una linea: una nota larga se
+                            salia por la derecha y habia que arrastrar dentro
+                            del campo para leerla, que en el telefono es
+                            inservible. Un textarea que crece solo la envuelve
+                            y se ve entera. */}
+                        <textarea
+                          rows={1}
+                          ref={(el) => {
+                            ajustarAlto(el);
+                            if (el && vinetaEnfocar === item.id) {
+                              el.focus();
+                              setVinetaEnfocar(null);
+                            }
+                          }}
                           value={item.texto || ""}
-                          onChange={(e) => actualizarItemVineta(bloque.id, item.id, { texto: e.target.value })}
+                          onChange={(e) => {
+                            ajustarAlto(e.target);
+                            actualizarItemVineta(bloque.id, item.id, { texto: e.target.value });
+                          }}
                           onKeyDown={(e) => {
                             if (e.key === "Enter" && !e.shiftKey) {
                               e.preventDefault();
@@ -1238,14 +1262,20 @@ export default function DocumentosEquipo({
                           placeholder="Escribe un punto, logro o iniciativa..."
                           style={{
                             flex: 1,
+                            minWidth: 0,
                             border: "none",
                             outline: "none",
                             background: "transparent",
-                            fontSize: esSubnivel ? 13 : 13.5,
+                            // Texto de lectura, no de etiqueta: esto es lo que
+                            // la persona escribe y relee todos los dias.
+                            fontSize: 14,
                             color: "var(--text-main, #1d1d1f)",
-                            lineHeight: 1.5,
+                            lineHeight: "22px",
                             fontFamily: "inherit",
-                            padding: "2px 0",
+                            padding: "4px 0",
+                            resize: "none",
+                            overflow: "hidden",
+                            display: "block",
                           }}
                         />
 

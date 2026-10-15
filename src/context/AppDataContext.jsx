@@ -157,31 +157,33 @@ export function AppDataProvider({ children }) {
     }
   }, [tareasProduccion]);
 
-  const [documentosEquipo, setDocumentosEquipo] = useState(() => {
-    try {
-      const guardadas = localStorage.getItem("ingeanclajes_documentos_equipo");
-      if (guardadas) {
-        const parsed = JSON.parse(guardadas);
-        const limpias = limpiarDocumentosEjemplo(parsed);
-        if (limpias.length !== parsed.length) {
-          localStorage.setItem("ingeanclajes_documentos_equipo", JSON.stringify(limpias));
-        }
-        return limpias;
-      }
-    } catch (e) {
-      console.warn("No se pudo cargar ingeanclajes_documentos_equipo de localStorage", e);
-    }
-    return [];
-  });
+  // Documentos y notas del modulo «Mis tareas y recordatorios». Son de cada
+  // persona, igual que las tareas de arriba: en la nube lo garantiza la RLS
+  // de la migracion 059, y aqui la copia local va por usuario para que en un
+  // computador compartido una persona no abra las notas de otra.
+  //
+  // Antes la copia local era una sola clave para todo el mundo
+  // (`ingeanclajes_documentos_equipo`), asi que en el PC de la obra se veian
+  // las notas de quien hubiera entrado antes.
+  const [documentosEquipo, setDocumentosEquipo] = useState([]);
+  const [almacenDocumentos, setAlmacenDocumentos] = useState(null);
+  // Mientras no se hayan leido, la lista en memoria esta vacia por no haberla
+  // cargado aun: subirla borraria de la base todos los documentos de la
+  // persona. Ver tareasCargadasRef, que resuelve lo mismo para las tareas.
+  const documentosCargadosRef = useRef(false);
 
   useEffect(() => {
+    if (!almacenDocumentos) return;
     const limpias = limpiarDocumentosEjemplo(documentosEquipo);
     try {
-      localStorage.setItem("ingeanclajes_documentos_equipo", JSON.stringify(limpias));
+      localStorage.setItem(
+        almacenDocumentos.clave,
+        JSON.stringify({ v: 1, modoLocal: almacenDocumentos.modoLocal, items: limpias })
+      );
     } catch (e) {
-      console.warn("No se pudo guardar ingeanclajes_documentos_equipo en localStorage", e);
+      console.warn("No se pudo guardar los documentos en localStorage", e);
     }
-  }, [documentosEquipo]);
+  }, [documentosEquipo, almacenDocumentos]);
 
   const [cotizaciones, setCotizaciones] = useState(COTIZACIONES_INIT);
   const [contabilidadConfig, setContabilidadConfig] = useState(CONTABILIDAD_CONFIG_INIT);
@@ -352,7 +354,7 @@ export function AppDataProvider({ children }) {
       // Ver tareasCargadasRef: una clave ausente la salta el guardado entero,
       // que es justo lo que hace falta mientras no se hayan leido.
       ...(tareasCargadasRef.current ? { tareasPersonales } : {}),
-      documentosEquipo,
+      ...(documentosCargadosRef.current ? { documentosEquipo } : {}),
       cotizaciones: sinEjemplos(cotizaciones),
       contabilidadConfig,
       planCuentas,
@@ -431,6 +433,18 @@ export function AppDataProvider({ children }) {
       return { items: [], modoLocal: false };
     };
 
+    // La clave compartida de los documentos se borra en cuanto se pasa por
+    // aqui: mientras exista, en un computador de la oficina cualquiera que
+    // abra la aplicacion ve las notas del anterior antes de que responda la
+    // nube. Lo que hubiera dentro ya esta en la base de su dueño.
+    const borrarCopiaCompartidaDeDocumentos = () => {
+      try {
+        localStorage.removeItem("ingeanclajes_documentos_equipo");
+      } catch (e) {
+        console.warn("No se pudo borrar la copia compartida de documentos", e);
+      }
+    };
+
     const bootstrapCloudData = async () => {
       // Sin nube la lista vive solo aqui, asi que siempre esta pendiente.
       if (!isSupabaseConfigured()) {
@@ -438,6 +452,12 @@ export function AppDataProvider({ children }) {
         setTareasPersonales(leerTareasLocales(clave).items);
         setAlmacenTareas({ clave, modoLocal: true });
         tareasCargadasRef.current = true;
+
+        const claveDocs = "documentos_equipo:local";
+        setDocumentosEquipo(limpiarDocumentosEjemplo(leerTareasLocales(claveDocs).items));
+        setAlmacenDocumentos({ clave: claveDocs, modoLocal: true });
+        documentosCargadosRef.current = true;
+
         bootstrappedRef.current = true;
         return;
       }
@@ -447,9 +467,13 @@ export function AppDataProvider({ children }) {
       // cargarian igual, y antes eso dejaba la lista vacia y el autoguardado
       // borraba de la base todas las de esa persona.
       let claveTareas = "tareas_personales:local";
+      let claveDocumentos = "documentos_equipo:local";
       try {
         const user = await reintentandoSiChocanPestanas(() => getSessionUser());
-        if (user?.id) claveTareas = `tareas_personales:${user.id}`;
+        if (user?.id) {
+          claveTareas = `tareas_personales:${user.id}`;
+          claveDocumentos = `documentos_equipo:${user.id}`;
+        }
       } catch (error) {
         console.warn("No se pudo identificar la sesion para las tareas personales:", error);
       }
@@ -489,6 +513,30 @@ export function AppDataProvider({ children }) {
             setAlmacenTareas({ clave: claveTareas, modoLocal: false });
           }
           tareasCargadasRef.current = true;
+        }
+
+        // Los documentos siguen exactamente la misma regla que las tareas.
+        {
+          const faltaTabla = (cloud.__tablasFaltantes || []).includes("documentos_equipo");
+          const nube = Array.isArray(cloud.documentosEquipo)
+            ? limpiarDocumentosEjemplo(cloud.documentosEquipo)
+            : [];
+          const local = leerTareasLocales(claveDocumentos);
+          const localLimpio = limpiarDocumentosEjemplo(local.items);
+
+          if (faltaTabla) {
+            setDocumentosEquipo(localLimpio);
+            setAlmacenDocumentos({ clave: claveDocumentos, modoLocal: true });
+          } else {
+            const enNube = new Set(nube.map((d) => d?.id));
+            const pendientes = local.modoLocal
+              ? localLimpio.filter((d) => d?.id && !enNube.has(d.id))
+              : [];
+            setDocumentosEquipo([...nube, ...pendientes]);
+            setAlmacenDocumentos({ clave: claveDocumentos, modoLocal: false });
+          }
+          documentosCargadosRef.current = true;
+          borrarCopiaCompartidaDeDocumentos();
         }
 
         // Limpiar automáticamente obras duplicadas y corregir saltos de consecutivo
@@ -560,9 +608,6 @@ export function AppDataProvider({ children }) {
           } else {
             setAgenda((prev) => (prev || []).filter((item) => !item?.__ejemplo && !String(item?.id || "").startsWith("AG-90")));
           }
-        }
-        if (Array.isArray(cloud.documentosEquipo)) {
-          setDocumentosEquipo(limpiarDocumentosEjemplo(cloud.documentosEquipo));
         }
         if (Array.isArray(cloud.cotizaciones)) setCotizaciones(oEjemplo(cotizacionesList, EJEMPLOS.cotizaciones));
         if (Array.isArray(cloud.contabilidadConfig) && cloud.contabilidadConfig.length) {
@@ -822,7 +867,6 @@ export function AppDataProvider({ children }) {
       try {
         localStorage.setItem("ingeanclajes_ejemplos_ocultos", "true");
         localStorage.setItem("ingeanclajes_tareas_produccion", "[]");
-        localStorage.setItem("ingeanclajes_documentos_equipo", "[]");
       } catch {}
       setEjemplosOcultos(true);
       setObras(sinEjemplos);

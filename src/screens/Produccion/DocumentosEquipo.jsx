@@ -128,20 +128,7 @@ export default function DocumentosEquipo({
       fechaCreacion: new Date().toISOString().slice(0, 10),
       fechaActualizacion: new Date().toISOString().slice(0, 10),
       enlaces: [],
-      bloques: [
-        {
-          id: `b-${Date.now()}-1`,
-          tipo: "banner",
-          titulo: "Logros y retos del ciclo",
-          color: "verde",
-          colapsado: true,
-          items: [
-            { id: `v-${Date.now()}-1`, texto: "Primer logro o entrega importante", icono: "verde", nivel: 0 },
-            { id: `v-${Date.now()}-2`, texto: "Seguimiento técnico y validaciones", icono: "punto", nivel: 0 },
-            { id: `v-${Date.now()}-3`, texto: "Detalle de acuerdos y fechas clave", icono: "punto", nivel: 1 },
-          ],
-        },
-      ],
+      bloques: [],
     };
 
     setDocumentos((prev) => [nuevoDoc, ...prev]);
@@ -449,8 +436,8 @@ export default function DocumentosEquipo({
     if (tipo === "banner") {
       const titulo = await pedirInput({
         titulo: "Título de la sección con banner",
-        placeholder: "Logros y retos del ciclo",
-        valorInicial: "Logros y retos del ciclo",
+        placeholder: "Ej: Resumen del proyecto",
+        valorInicial: "",
       });
       if (!titulo) return;
       nuevoBloque = {
@@ -459,14 +446,14 @@ export default function DocumentosEquipo({
         titulo: titulo.trim(),
         color: "verde",
         items: [
-          { id: `v-${Date.now()}-1`, texto: "Primer punto o logro destacado", icono: "punto", nivel: 0 },
+          { id: `v-${Date.now()}-1`, texto: "", icono: "punto", nivel: 0 },
         ],
       };
     } else if (tipo === "vineta") {
       const titulo = await pedirInput({
         titulo: "Título del grupo de viñetas",
-        placeholder: "E. Logros y retos del ciclo",
-        valorInicial: "E. Logros y retos del ciclo",
+        placeholder: "Ej: Puntos clave",
+        valorInicial: "",
       });
       if (!titulo) return;
       nuevoBloque = {
@@ -474,11 +461,11 @@ export default function DocumentosEquipo({
         tipo: "vineta",
         titulo: titulo.trim(),
         items: [
-          { id: `v-${Date.now()}-1`, texto: "Primer punto de seguimiento", icono: "punto", nivel: 0 },
+          { id: `v-${Date.now()}-1`, texto: "", icono: "punto", nivel: 0 },
         ],
       };
     } else if (tipo === "desplegable") {
-      const titulo = await pedirInput({ titulo: "Título del desplegable", placeholder: "▶ Sección desplegable", valorInicial: "▶ Sección desplegable" });
+      const titulo = await pedirInput({ titulo: "Título del desplegable", placeholder: "▶ Sección desplegable", valorInicial: "" });
       if (!titulo) return;
       nuevoBloque = {
         id: `b-${Date.now()}`,
@@ -1334,7 +1321,7 @@ export default function DocumentosEquipo({
                           type="text"
                           value={bloque.titulo || ""}
                           onChange={(e) => actualizarBloque(bloque.id, { titulo: e.target.value })}
-                          placeholder="Título de la sección (ej. Logros y retos del ciclo)..."
+                          placeholder="Título de la sección (ej. Resumen del proyecto)..."
                           style={{
                             background: "transparent",
                             border: "none",
@@ -1476,7 +1463,7 @@ export default function DocumentosEquipo({
                           type="text"
                           value={bloque.titulo || ""}
                           onChange={(e) => actualizarBloque(bloque.id, { titulo: e.target.value })}
-                          placeholder="Título del grupo de viñetas (ej. E. Logros y retos del ciclo)..."
+                          placeholder="Título del grupo de viñetas (ej. Puntos clave)..."
                           style={{
                             border: "none",
                             outline: "none",

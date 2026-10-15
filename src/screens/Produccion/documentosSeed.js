@@ -35,15 +35,20 @@ export function limpiarDocumentosEjemplo(documentos = []) {
 
     return true;
   }).map((d) => {
-    // Limpiar bloques de ejemplo automáticos que no se desean ("Primeros pendientes")
-    const bloquesLimpios = (d.bloques || [])
-      .filter((b) => b.titulo !== "Primeros pendientes")
-      .map((b) => {
-        if (b.tipo === "banner" && b.colapsado === undefined) {
-          return { ...b, colapsado: true };
-        }
-        return b;
-      });
+    // Limpiar bloques de ejemplo automáticos que no se desean ("Primeros pendientes", "Logros y retos del ciclo")
+    const bloquesLimpios = (d.bloques || []).filter((b) => {
+      if (!b) return false;
+      const tit = String(b.titulo || "").toLowerCase().trim();
+      if (
+        tit === "primeros pendientes" ||
+        tit === "logros y retos del ciclo" ||
+        tit.includes("logros y retos") ||
+        tit.includes("primeros pendientes")
+      ) {
+        return false;
+      }
+      return true;
+    });
     return { ...d, bloques: bloquesLimpios };
   });
 }

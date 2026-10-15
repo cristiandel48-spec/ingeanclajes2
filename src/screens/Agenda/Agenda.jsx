@@ -14,6 +14,7 @@ import {
   esDiaFestivoColombia,
   getFestivosDelMes,
 } from "../../lib/festivosColombia";
+import MisTareas from "./MisTareas";
 
 // Meses y días en español
 const MESES = [
@@ -848,7 +849,9 @@ export default function Agenda({ ctx }) {
   };
 
   // Estados principales
-  const [vista, setVista] = useState("mes"); // "mes" | "agenda"
+  const [vista, setVista] = useState("mes"); // "mes" | "agenda" | "tareas"
+  const tareasPendientes = (Array.isArray(ctx?.tareasPersonales) ? ctx.tareasPersonales : [])
+    .filter((t) => !t.completada).length;
   const [fechaSeleccionada, setFechaSeleccionada] = useState(hoyIso);
   const [filtroTipo, setFiltroTipo] = useState("todos");
   const [busqueda, setBusqueda] = useState("");
@@ -1329,7 +1332,48 @@ export default function Agenda({ ctx }) {
                   transition: "all 0.15s ease",
                 }}
               >
-                Lista de Tareas
+                Cronograma
+              </button>
+              <button
+                type="button"
+                onClick={() => setVista("tareas")}
+                style={{
+                  padding: "5px 12px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  borderRadius: 6,
+                  border: "none",
+                  cursor: "pointer",
+                  background: vista === "tareas" ? "var(--surface, #ffffff)" : "transparent",
+                  color: vista === "tareas" ? "var(--text-main, #101828)" : "var(--text-muted, #64748b)",
+                  boxShadow: vista === "tareas" ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
+                  transition: "all 0.15s ease",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                Mis tareas
+                {tareasPendientes > 0 && (
+                  <span
+                    style={{
+                      minWidth: 16,
+                      height: 16,
+                      padding: "0 5px",
+                      borderRadius: 999,
+                      background: "#f47c20",
+                      color: "#ffffff",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxSizing: "border-box",
+                    }}
+                  >
+                    {tareasPendientes}
+                  </span>
+                )}
               </button>
             </div>
 
@@ -1359,6 +1403,7 @@ export default function Agenda({ ctx }) {
         </div>
 
         {/* Fila 2: Buscador minimalista y filtros de tipo */}
+        {vista !== "tareas" && (
         <div
           style={{
             display: "flex",
@@ -1433,7 +1478,13 @@ export default function Agenda({ ctx }) {
             ))}
           </div>
         </div>
+        )}
       </div>
+
+      {/* ==================================================================== */}
+      {/* VISTA 3: MIS TAREAS (LISTA DE CHEQUEO PERSONAL)                       */}
+      {/* ==================================================================== */}
+      {vista === "tareas" && <MisTareas ctx={ctx} />}
 
       {/* ==================================================================== */}
       {/* VISTA 1: CALENDARIO MENSUAL ESTILO APPLE CON PANEL LATERAL DE DETALLE */}

@@ -759,6 +759,28 @@ export const entityConfig = {
       prioridad: row.prioridad || "normal",
     }),
   },
+  // Lista de chequeo personal de cada usuario. El dueño (usuario_id) no sale
+  // de aqui: lo pone la base con auth.uid() y la politica RLS hace que cada
+  // quien solo cargue y guarde las suyas. Opcional mientras no se corra la
+  // migracion 057.
+  tareas_personales: {
+    table: "tareas_personales",
+    optional: true,
+    toRow: (item) => ({
+      id: item.id,
+      texto: item.texto ?? "",
+      fecha: item.fecha ?? null,
+      completada: Boolean(item.completada),
+      completada_en: item.completadaEn ?? null,
+    }),
+    fromRow: (row) => ({
+      id: row.id,
+      texto: row.texto || "",
+      fecha: row.fecha || "",
+      completada: Boolean(row.completada),
+      completadaEn: row.completada_en || null,
+    }),
+  },
   pagos: {
     table: "pagos",
     coerceNullCols: ["fecha", "valor", "obra_id"],

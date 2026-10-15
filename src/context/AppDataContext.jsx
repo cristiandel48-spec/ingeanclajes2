@@ -100,6 +100,21 @@ export function AppDataProvider({ children }) {
     }
   }, [agenda]);
 
+  // Lista de chequeo personal (modulo Agenda > Mis tareas). En la nube cada
+  // usuario solo ve las suyas (RLS). La copia local va por correo para que en
+  // un equipo compartido una persona no vea las tareas de otra.
+  const [tareasPersonales, setTareasPersonales] = useState([]);
+  const [claveTareasLocal, setClaveTareasLocal] = useState(null);
+
+  useEffect(() => {
+    if (!claveTareasLocal) return;
+    try {
+      localStorage.setItem(claveTareasLocal, JSON.stringify(tareasPersonales));
+    } catch (e) {
+      console.warn("No se pudo guardar tareas personales en localStorage", e);
+    }
+  }, [tareasPersonales, claveTareasLocal]);
+
   const [tareasProduccion, setTareasProduccion] = useState(() => {
     try {
       const guardadas = localStorage.getItem("ingeanclajes_tareas_produccion");
@@ -281,6 +296,7 @@ export function AppDataProvider({ children }) {
       cuentas,
       ordenesCompra: sinEjemplos(ordenesCompra),
       agenda: sinEjemplos(agenda),
+      tareasPersonales,
       cotizaciones: sinEjemplos(cotizaciones),
       contabilidadConfig,
       planCuentas,
@@ -343,12 +359,25 @@ export function AppDataProvider({ children }) {
   useEffect(() => {
     let cancel = false;
 
+    const leerTareasLocales = (clave) => {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(clave) || "[]");
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    };
+
     const bootstrapCloudData = async () => {
       if (!isSupabaseConfigured()) {
+        const clave = "tareas_personales:local";
+        setTareasPersonales(leerTareasLocales(clave));
+        setClaveTareasLocal(clave);
         bootstrappedRef.current = true;
         return;
       }
 
+      let claveTareas = null;
       try {
         // El rol decide que ve la persona, asi que se pide junto con los datos.
         try {
@@ -357,12 +386,22 @@ export function AppDataProvider({ children }) {
             setMembresia(mia);
             if (mia?.email) setAuthUserEmail(mia.email);
           }
+          const dueno = (mia?.email || mia?.user_id || "").toLowerCase().trim();
+          if (dueno) claveTareas = `tareas_personales:${dueno}`;
         } catch (error) {
           console.error("No se pudo leer el rol del usuario:", error);
         }
 
         const cloud = await loadCloudAppData();
         if (cancel) return;
+
+        // Si la tabla aun no existe (migracion 057 sin correr) la nube llega
+        // vacia: se usa la copia local para no perder lo que la persona anoto.
+        if (claveTareas) {
+          const nube = Array.isArray(cloud.tareasPersonales) ? cloud.tareasPersonales : [];
+          setTareasPersonales(nube.length ? nube : leerTareasLocales(claveTareas));
+          setClaveTareasLocal(claveTareas);
+        }
 
         // Limpiar automáticamente obras duplicadas y corregir saltos de consecutivo
         let obrasList = Array.isArray(cloud.obras) ? cloud.obras : [];
@@ -462,6 +501,10 @@ export function AppDataProvider({ children }) {
         if (!cancel) setLoadError(null);
       } catch (error) {
         console.error("No se pudo cargar datos de Supabase:", error);
+        if (!cancel && claveTareas) {
+          setTareasPersonales(leerTareasLocales(claveTareas));
+          setClaveTareasLocal(claveTareas);
+        }
         // Sin esto la app mostraba los datos de ejemplo como si fueran los
         // reales del cliente, sin ninguna senal de que algo fallo.
         if (!cancel) setLoadError(error);
@@ -544,6 +587,7 @@ export function AppDataProvider({ children }) {
     empresaConfig,
     catalogoItems,
     agenda,
+    tareasPersonales,
   ]);
 
   // Registros cuyo detalle ya se pidio, para no volver a pedirlo cada vez que
@@ -690,6 +734,7 @@ export function AppDataProvider({ children }) {
       setAgenda(sinEjemplos);
     },
     agenda, setAgenda,
+    tareasPersonales, setTareasPersonales,
     tareasProduccion, setTareasProduccion,
     obras, setObras,
     empleados, setEmpleados,

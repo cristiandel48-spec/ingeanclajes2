@@ -7,10 +7,12 @@
 // unica fuente del sistema.
 
 import { tokensCss } from "./designTokens";
+import { componentesCss } from "./componentesCss";
 
 export default function GlobalStyles({ divider }) {
   const css = `
 ${tokensCss}
+${componentesCss}
 
     /* ── Animaciones compartidas ─────────────────────────────────────────
        Estas cinco se invocaban en una docena de sitios sin estar definidas en

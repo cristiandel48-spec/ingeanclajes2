@@ -22,6 +22,7 @@ import MisTareas from "./screens/MisTareas/MisTareas";
 import BotonSoporteFlotante from "./components/soporte/BotonSoporteFlotante";
 import NotificadorMensajesGlobal from "./components/notificaciones/NotificadorMensajesGlobal";
 import AvisoInteligenteAgenda from "./components/agenda/AvisoInteligenteAgenda";
+import { ToastProvider } from "./components/ui/Toast";
 
 // Pantallas desactivadas del menú cargadas bajo demanda para no ralentizar el programa
 const RadarObras = lazy(() => import("./screens/Radar/RadarObras"));
@@ -64,7 +65,11 @@ export default function App() {
   return (
     <AppDataProvider>
       <AccionesPantallaProvider>
-        <AppRoot />
+        {/* Los avisos flotantes del kit. Cuelgan de aqui para que cualquier
+            pantalla pueda usar useToast() sin montar nada. */}
+        <ToastProvider>
+          <AppRoot />
+        </ToastProvider>
       </AccionesPantallaProvider>
     </AppDataProvider>
   );

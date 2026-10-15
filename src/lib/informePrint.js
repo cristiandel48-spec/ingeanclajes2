@@ -8,9 +8,19 @@ import { normalizarMayusculas } from "./normalizarEntrada";
 import { LOGO_INGEANCLAJES } from "../assets/embeddedImages";
 import { getControlDocumental } from "./controlDocumental";
 import { conActividadSeparada } from "./informeTextos";
+import { cssHojaImpresion } from "./hojaImpresion";
 
-// Capacidad útil de contenido por página Carta (1056px - padding vertical 44px - footer 24px)
-const MAX_ALTO_PAGINA = 945;
+// Capacidad util de contenido por hoja, en pixeles de pantalla (96 por
+// pulgada). El reparto de bloques en hojas se hace aqui, estimando alturas,
+// y este es el tope.
+//
+// Antes eran 945, calculados contra una hoja de 11 pulgadas con margen cero.
+// Con los margenes reales de @page el area util baja a unos 946, asi que 945
+// quedaba al borde: bastaba que alguien imprimiera con margenes un poco mas
+// anchos para que cada hoja se desbordara unos milimetros y se llevara una
+// hoja en blanco detras. 880 deja holgura para eso y cuadra con el alto
+// minimo del bloque en hojaImpresion.js.
+const MAX_ALTO_PAGINA = 880;
 
 const ALTO_HEADER_PORTADA = 78;
 const ALTO_HEADER_SECUNDARIO = 32;
@@ -221,7 +231,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
   `;
 
   const renderFotoCard = (ft, actIdx, fotoIdx) => `
-    <div style="border:1px solid rgba(0,0,0,0.08);border-radius:8px;overflow:hidden;background:#ffffff;box-shadow:0 1px 2px rgba(0,0,0,0.02);display:flex;flex-direction:column;">
+    <div class="foto-card" style="border:1px solid rgba(0,0,0,0.08);border-radius:8px;overflow:hidden;background:#ffffff;box-shadow:0 1px 2px rgba(0,0,0,0.02);display:flex;flex-direction:column;">
       <div style="height:175px;display:flex;align-items:center;justify-content:center;background:#fafafa;border-bottom:1px solid #f4f4f5;overflow:hidden;position:relative;">
         <img src="${ft.img || ft.url}" alt="Evidencia ${fotoIdx + 1}" style="width:100%;height:100%;object-fit:contain;display:block;background:#ffffff;"/>
         <span style="position:absolute;top:5px;left:5px;background:rgba(0,0,0,0.68);color:#ffffff;font-size:8px;font-family:'JetBrains Mono',monospace;font-weight:700;padding:2px 6px;border-radius:4px;">
@@ -249,7 +259,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
   `;
 
   const renderBloqueFirma = () => `
-    <table style="width:100%;border-collapse:collapse;margin-top:10px;border-top:1px solid rgba(0,0,0,0.08);padding-top:8px;">
+    <table class="bloque-firma" style="width:100%;border-collapse:collapse;margin-top:10px;border-top:1px solid rgba(0,0,0,0.08);padding-top:8px;">
       <tr>
         <td style="width:50%;padding:8px 12px 0 0;vertical-align:top;border-right:1px solid rgba(0,0,0,0.08);">
           <div style="font-size:8px;font-weight:700;color:#71717a;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:3px;">Por el Contratista Especialista:</div>
@@ -361,12 +371,15 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
   // Total de hojas consolidadas
   const totalHojas = paginas.length;
 
+  // El alto y el relleno de la hoja ya no se escriben aqui: los pone
+  // cssHojaImpresion a traves de la clase .page, y el margen lo decide
+  // @page, que es quien sabe cuanto puede pintar la impresora.
   const seccionesHtml = paginas.map((bloques, idx) => `
-    <section class="page" style="width:8.5in;height:11in;padding:26px 34px 18px;box-sizing:border-box;background:#ffffff;position:relative;display:flex;flex-direction:column;justify-content:space-between;page-break-after:always;break-after:page;">
+    <section class="page">
       <div style="flex:1;">
         ${bloques.join("\n")}
       </div>
-      <div style="border-top:1px solid #e4e4e7;padding-top:5px;display:flex;justify-content:space-between;align-items:center;font-size:8.5px;color:#71717a;margin-top:4px;">
+      <div class="page-footer" style="border-top:1px solid #e4e4e7;padding-top:5px;display:flex;justify-content:space-between;align-items:center;font-size:8.5px;color:#71717a;">
         <span>Ingeanclajes S.A.S · Documento Técnico Oficial SGC · ${escapeHtml(docCodigo)} (V-${escapeHtml(docVersion)})</span>
         <span>Página ${idx + 1} de ${totalHojas}</span>
       </div>
@@ -379,53 +392,17 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
     <meta charset="utf-8">
     <title>Informe ${escapeHtml(numDoc)} ${escapeHtml(proyecto)}</title>
     <style>
-      @page {
-        size: Letter;
-        margin: 0;
-      }
-      * {
-        box-sizing: border-box;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-        letter-spacing: normal;
-      }
+      ${cssHojaImpresion()}
+
+      * { letter-spacing: normal; }
       html, body {
-        margin: 0;
-        padding: 0;
-        background: #f1f5f9;
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         color: #18181b;
         -webkit-font-smoothing: antialiased;
         text-rendering: geometricPrecision;
       }
-      .page {
-        width: 8.5in;
-        height: 11in;
-        margin: 0 auto 20px;
-        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
-        background: #ffffff;
-        position: relative;
-        overflow: hidden;
-        break-after: page;
-        page-break-after: always;
-      }
       @media print {
-        html, body {
-          background: #ffffff !important;
-          margin: 0 !important;
-          padding: 0 !important;
-        }
-        #print-toolbar, #print-toolbar + div {
-          display: none !important;
-        }
-        .page {
-          margin: 0 !important;
-          box-shadow: none !important;
-          width: 8.5in !important;
-          height: 11in !important;
-          page-break-after: always !important;
-          break-after: page !important;
-        }
+        #print-toolbar, #print-toolbar + div { display: none !important; }
       }
     </style>
   </head>

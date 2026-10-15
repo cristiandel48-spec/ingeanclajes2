@@ -516,7 +516,11 @@ ${componentesCss}
         padding: 0 !important;
         margin: 0 !important;
       }
-      .print-avoid-break, table, tr, td, th { break-inside: avoid; page-break-inside: avoid; }
+      /* «table» se saco de esta lista: con break-inside:avoid sobre la tabla
+         entera, una que no cupiera completa en lo que quedaba de hoja
+         saltaba entera a la siguiente y dejaba media hoja en blanco. Con no
+         partir las filas es suficiente. */
+      .print-avoid-break, tr, td, th { break-inside: avoid; page-break-inside: avoid; }
     }
 
     @media (prefers-reduced-motion: reduce) {

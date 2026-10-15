@@ -8,6 +8,7 @@ import { getStaticMapDimensions, buildStaticMapLabelData } from "./maps";
 import { hasVerticalLifeLineService, hasCatLadderService } from "./cotizaciones";
 import { getTextosDocumento, lineasDeTexto } from "./cotizacionTextos";
 import { corregirOrtografiaLocal } from "./correctorTexto";
+import { cssHojaImpresion } from "./hojaImpresion";
 import articoLineaVidaVertical from "../assets/artico-linea-vida-vertical.jpg?inline";
 import articoEscaleraGato from "../assets/artico-escalera-gato.jpg?inline";
 import { IMG_SOPORTE, IMG_TENSOR, IMG_EMPALMES, IMG_CABLE } from "../assets/componentesLineasVida";
@@ -1170,31 +1171,22 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
     <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet" />
     <title>Cotizacion ${escapeHtml(c?.numero || "")}</title>
     <style>
-      @page { size: Letter; margin: 0; }
-      * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      ${cssHojaImpresion()}
       :root { --texto: 11.5px; --titulo: 17px; }
-      html, body { margin:0; padding:0; background:#ffffff; }
       body { font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; color:#000000; -webkit-font-smoothing:antialiased; }
 
-      .page {
-        width:8.5in;
-        height:11in;
-        margin:0 auto;
-        background:#fff;
-        break-after:page;
-        page-break-after:always;
-        position:relative;
-        overflow:hidden;
-      }
-      .page:last-child { break-after:auto; page-break-after:auto; }
-      .page-inner { position:relative; width:100%; height:100%; padding:9mm 9mm 0 9mm; }
-      .page-content { display:block; padding:0 9mm 30mm 9mm; }
+      /* El relleno interno de 9mm desaparecio: ahora el margen lo pone
+         @page. Antes se sumaban los dos -margen cero de hoja mas 9mm aqui-
+         y el resultado solo cuadraba si quien imprimia escogia «sin
+         margenes» en el cuadro de Chrome. */
+      .page-inner { position:relative; width:100%; display:flex; flex-direction:column; flex:1 1 auto; }
+      .page-content { display:block; flex:1 1 auto; }
 
       h1, h2, h3 { margin:0; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; font-weight:700; color:#000000; text-wrap:balance; }
       p { margin:0 0 3mm; font-size: var(--texto); line-height:1.6;
           text-align: justify; text-justify: inter-word; hyphens: auto; color:#000000; }
 
-      .header { display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid #000000; padding-bottom:2.6mm; margin:0 9mm 6mm 9mm; }
+      .header { display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid #000000; padding-bottom:2.6mm; margin:0 0 6mm; }
       .logo { height:30px; width:auto; object-fit:contain; }
       .header-right { font-size: var(--texto); letter-spacing:.06em; text-transform:uppercase; color:#000000; font-weight:700; text-align:right; }
       /* El codigo del formato: mas pequeno y en monoespaciada, para que se
@@ -1202,9 +1194,13 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       .header-sello { font-family:Consolas,"Courier New",monospace; font-size:calc(var(--texto) * .92); letter-spacing:.02em; text-transform:none; color:#000000; font-weight:400; margin-top:2px; }
       .header-sello b { color:#000000; font-weight:700; }
 
+      /* El pie se apoya en el fondo del bloque de la hoja (margin-top:auto,
+         que viene de .page-footer) en vez de ir anclado con position:absolute
+         contra una hoja de 11 pulgadas clavadas. Asi sigue abajo, pero si el
+         contenido crece lo empuja a la hoja siguiente en lugar de quedar
+         encima del texto. */
       .footer {
-        position:absolute;
-        left:9mm; right:9mm; bottom:7mm;
+        margin-top:auto;
         padding-top:2.6mm;
         border-top:1.5px solid #000000;
         display:grid;
@@ -1507,7 +1503,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       .sig-role { font-size: var(--texto); color:#000000; margin-top:.6mm; font-weight:600; }
       .sig-meta { font-size: var(--texto); color:#000000; margin-top:2mm; line-height:1.65; }
 
-      .appendix-page .page-content { padding: 0 9mm 0 9mm; box-sizing: border-box; }
+      .appendix-page .page-content { padding: 0; box-sizing: border-box; }
       .appendix-page .doc-h3 { margin: 0 0 2.5mm; }
       .appendix-img { width:auto; max-width:100%; height:auto; max-height:202mm; object-fit:contain; display:block; margin:0 auto; image-rendering: -webkit-optimize-contrast; image-rendering: auto; }
       .summary-spacing { margin-bottom:8mm; }

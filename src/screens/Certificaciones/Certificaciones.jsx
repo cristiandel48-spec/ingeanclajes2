@@ -12,7 +12,6 @@ import { normalizarRazonSocial, normalizarFrase, normalizarParrafos, normalizarT
 import { corregirOrtografiaLocal } from "../../lib/correctorTexto";
 import BotonCorregir from "../../components/ui/BotonCorregir";
 import { printCurrentPz } from "../../lib/print";
-import { descargarDocumentoPdf } from "../../lib/documentoPdf";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import ListaCertificaciones from "./ListaCertificaciones";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
@@ -335,29 +334,16 @@ export default function Certificaciones({ctx}){
     setEditId(null);
   };
 
-  const [descargando, setDescargando] = useState(false);
-
+  // El PDF del certificado sale por la impresion del navegador.
+  //
+  // Antes descargarDocumentoPdf lo dibujaba con html2canvas a escala 2 -192
+  // puntos por pulgada- y lo guardaba como JPEG: el certificado que se le
+  // manda al cliente era una foto del certificado, con el texto pixelado al
+  // ampliarlo. Desde la pestaña de impresion, «Guardar como PDF» conserva el
+  // texto vectorial y pesa mucho menos.
   const imprimir = (c) => {
     setSel(c);
     setTimeout(() => printCurrentPz("Certificación " + (c?.numero || c?.id || "")), 250);
-  };
-
-  const descargarPdf = async (c = sel) => {
-    if (!c) return;
-    setDescargando(true);
-    try {
-      const proyecto = c.lugar || c.cliente || "";
-      await descargarDocumentoPdf(
-        document.getElementById("pz"),
-        `${c.tipo || "Certificación"} ${c.numero || c.id || ""} ${proyecto}`
-          .replace(/\s+/g, " ")
-          .trim()
-      );
-    } catch (e) {
-      window.alert(e.message || "No se pudo generar el PDF.");
-    } finally {
-      setDescargando(false);
-    }
   };
 
   // En la barra superior: botones de acción fija para detalle (Volver, Editar, Descargar, Imprimir)
@@ -399,25 +385,10 @@ export default function Certificaciones({ctx}){
             borderRadius: 10,
             fontSize: 12,
             fontWeight: 600,
-            opacity: descargando ? 0.65 : 1,
-          }}
-          disabled={descargando}
-          onClick={() => descargarPdf(sel)}
-        >
-          {descargando ? "Generando…" : "📥 Descargar PDF"}
-        </button>
-        <button
-          style={{
-            ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)"),
-            border: "1px solid #cbd5e1",
-            padding: "7px 14px",
-            borderRadius: 10,
-            fontSize: 12,
-            fontWeight: 600,
           }}
           onClick={() => imprimir(sel)}
         >
-          🖨️ Imprimir
+          🖨️ Imprimir / PDF
         </button>
       </div>
     ) : (!sel && !nueva) ? (
@@ -455,7 +426,7 @@ export default function Certificaciones({ctx}){
         </button>
       </div>
     ) : null,
-    [sel, nueva, descargando]
+    [sel, nueva]
   );
 
   return(
@@ -892,8 +863,9 @@ export default function Certificaciones({ctx}){
           acciones={{
             ver: (c)=>setSel(c),
             editar: (c)=>editarCertificacion(c),
+            // La lista usa `descargarPdf` si existe y si no `imprimir`:
+            // ahora los dos llevan al mismo sitio, la pestaña de impresion.
             imprimir: (c)=>imprimir(c),
-            descargarPdf: (c)=>descargarPdf(c),
           }}
         />
       )}

@@ -9,6 +9,7 @@
 // renderice. Para archivar o firmar sigue siendo mejor el de imprimir.
 
 import { buildCotizacionPrintHtml } from "./cotizacionPrint";
+import { MARGEN_HOJA } from "./hojaImpresion";
 
 // Hoja carta a 96 ppp, que es la unidad en la que está escrita la plantilla.
 const ANCHO_HOJA = 816;
@@ -56,6 +57,23 @@ function prepararHtmlParaPdf(html) {
       }
       .total-amount, .accent {
         color: #8A1518 !important;
+      }
+
+      /* Hoja de tamaño fijo, SOLO para este camino.
+         Este PDF se arma fotografiando cada .page y encajandola en una
+         pagina de 8,5 x 11 exactas, asi que aqui la hoja si tiene que ser
+         una caja de medida fija. La impresion de verdad no la necesita -y
+         no la quiere-: alli el margen lo pone @page y el contenido fluye,
+         que es lo que evita los recortes y las hojas en blanco. */
+      body { background: #ffffff !important; padding: 0 !important; }
+      .page {
+        width: 8.5in !important;
+        height: 11in !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: ${MARGEN_HOJA} !important;
+        box-shadow: none !important;
+        overflow: hidden !important;
       }
     </style></head>`);
 }
@@ -129,7 +147,13 @@ export async function generarCotizacionPdf(cotizacion, { firmaImg = "", sello = 
       onProgreso?.(i + 1, hojas.length);
 
       const lienzo = await html2canvas(hojas[i], {
-        scale: 2.4,            // alta nitidez para planos, textos y cotas sin disparar el peso
+        // 3 = 288 puntos por pulgada, al borde del estandar de imprenta.
+        // Este PDF es el que se le adjunta al cliente en el correo de
+        // aprobacion y no puede salir por la impresion del navegador, asi
+        // que sigue siendo una foto de la hoja: lo unico que se puede hacer
+        // por el es que sea una foto buena. A 2,4 eran 230 ppp y el texto se
+        // veia blando al ampliarlo.
+        scale: 3,
         useCORS: true,
         backgroundColor: "#ffffff",
         logging: false,

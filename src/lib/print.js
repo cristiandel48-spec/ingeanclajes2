@@ -2,6 +2,7 @@
 import { today } from "./format";
 import { LOGO_INGEANCLAJES } from "../assets/embeddedImages";
 import { openPrintTab } from "./cotizacionPrint";
+import { cssHojaImpresion } from "./hojaImpresion";
 import { NOMINA_CO_2026 } from "./nomina";
 
 export function printCurrentPz(title = "Documento"){
@@ -43,8 +44,8 @@ export function printCurrentPz(title = "Documento"){
       break-after: avoid !important;
     }
   ` : `
-    @page { size: Letter; margin: 12mm; }
-    html, body { margin: 0; padding: 0; background: #fff; color: #111; font-family: Aptos, "Segoe UI", Arial, sans-serif; font-size: 12pt; line-height: 1.5; }
+    ${cssHojaImpresion({ vistaPrevia: false })}
+    html, body { color: #111; font-family: Aptos, "Segoe UI", Arial, sans-serif; font-size: 12pt; line-height: 1.5; }
     .doc-shell { background: #fff; color: #111; }
   `;
 
@@ -53,10 +54,13 @@ export function printCurrentPz(title = "Documento"){
       ${estilosBleed}
       * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .doc-shell table { width: 100%; border-collapse: collapse; }
-      table, tr, td, th { break-inside: avoid; page-break-inside: avoid; }
+      /* «table» NO entra aqui: con break-inside:avoid sobre la tabla entera,
+         una que no cupiera completa saltaba a la hoja siguiente y dejaba el
+         hueco anterior en blanco. Basta con no partir cada fila. */
+      tr, td, th { break-inside: avoid; page-break-inside: avoid; }
       li, figure, img { break-inside: avoid; page-break-inside: avoid; }
       p, li { orphans: 2; widows: 2; }
-      img { max-width: 100%; }
+      img { max-width: 100%; height: auto; }
     </style>
   </head><body>${node.outerHTML}</body></html>`;
   openPrintTab(html, title);

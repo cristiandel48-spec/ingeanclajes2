@@ -10,7 +10,6 @@ import { useIsMobile } from "../../hooks/useMediaQuery";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmtD, fmtL, today } from "../../lib/format";
 import { openPrintTab } from "../../lib/cotizacionPrint";
-import { descargarInformePdf } from "../../lib/informePdf";
 import { buildInformePrintHtml } from "../../lib/informePrint";
 import { getControlDocumental } from "../../lib/controlDocumental";
 import { LOGO_INGEANCLAJES } from "../../assets/embeddedImages";
@@ -54,7 +53,6 @@ export default function Informes({ctx}){
   const {informes,setInformes,obras,empleados,horarios,intencion,limpiarIntencion,empresaConfig,irAPantalla,asegurarDetalle,cotizaciones=[]}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
   const [sel,setSel]=useState(null);
-  const [generandoPdf,setGenerandoPdf]=useState(false);
   const [nuevo,setNuevo]=useState(()=>Boolean(ctx.intencion?.pantalla==="informes" && ctx.intencion?.obraId));
   const [editId,setEditId]=useState(null);
   const [modalCotizacion,setModalCotizacion]=useState(false);
@@ -506,19 +504,14 @@ export default function Informes({ctx}){
     };
   };
 
-  const descargarPdf = async (inf = sel) => {
-    if (!inf) return;
-    const listo = enriquecerInforme(inf);
-    setGenerandoPdf(true);
-    try {
-      await descargarInformePdf(listo, { empresaConfig, firmaImg });
-    } catch (fallo) {
-      window.alert(fallo.message || "No se pudo generar el PDF.");
-    } finally {
-      setGenerandoPdf(false);
-    }
-  };
-
+  // El PDF sale por la impresion del navegador, no fotografiando la pantalla.
+  //
+  // Antes descargarInformePdf dibujaba el informe con html2canvas a escala 2
+  // -192 puntos por pulgada- y lo guardaba como JPEG, asi que el PDF era una
+  // foto del documento: el texto dejaba de ser texto y se veia pixelado al
+  // ampliarlo o al imprimirlo. Desde la pestaña de impresion, «Guardar como
+  // PDF» conserva el texto vectorial, se ve nitido a cualquier zoom y el
+  // archivo pesa mucho menos para enviarlo por correo.
   const imprimirInforme = (inf = sel) => {
     if (!inf) return;
     const listo = enriquecerInforme(inf);
@@ -557,6 +550,9 @@ export default function Informes({ctx}){
         >
           ✏️ Editar
         </button>
+        {/* Un solo boton: «Descargar PDF» e «Imprimir» llevaban al mismo
+            sitio en cuanto el PDF dejo de fotografiarse. La pestaña que se
+            abre permite las dos cosas. */}
         <button
           style={{
             ...B("#1d1d1f", "#ffffff"),
@@ -565,25 +561,10 @@ export default function Informes({ctx}){
             borderRadius: 10,
             fontSize: 12,
             fontWeight: 600,
-            opacity: generandoPdf ? 0.65 : 1,
-          }}
-          disabled={generandoPdf}
-          onClick={() => descargarPdf(sel)}
-        >
-          {generandoPdf ? "Generando PDF…" : "📥 Descargar PDF"}
-        </button>
-        <button
-          style={{
-            ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)"),
-            border: "1px solid #cbd5e1",
-            padding: "7px 14px",
-            borderRadius: 10,
-            fontSize: 12,
-            fontWeight: 600,
           }}
           onClick={() => imprimirInforme(sel)}
         >
-          🖨️ Imprimir
+          🖨️ Imprimir / PDF
         </button>
       </div>
     ) : (!sel && !nuevo && !editId) ? (
@@ -606,7 +587,7 @@ export default function Informes({ctx}){
         + Nuevo Informe
       </button>
     ) : null,
-    [sel, nuevo, editId, generandoPdf, empresaConfig, firmaImg]
+    [sel, nuevo, editId, empresaConfig, firmaImg]
   );
 
   const abrirNuevoInforme = ()=>{

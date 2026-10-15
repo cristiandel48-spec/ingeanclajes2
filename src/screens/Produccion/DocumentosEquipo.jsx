@@ -72,7 +72,6 @@ export default function DocumentosEquipo({
   const [busqueda, setBusqueda] = useState("");
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [menuInsertarAbierto, setMenuInsertarAbierto] = useState(false);
-  const [menuInferiorAbierto, setMenuInferiorAbierto] = useState(false);
   const [toastMensaje, setToastMensaje] = useState("");
 
   // Modal inline que reemplaza todos los prompt() nativos del navegador
@@ -412,7 +411,6 @@ export default function DocumentosEquipo({
   // Insertar un nuevo bloque según tipo
   const insertarBloque = async (tipo) => {
     setMenuInsertarAbierto(false);
-    setMenuInferiorAbierto(false);
 
     if (tipo === "enlace") {
       const tituloEnlace = await pedirInput({ titulo: "Título del enlace o subpágina", placeholder: "Nueva subpágina", valorInicial: "Nueva subpágina" });
@@ -1287,22 +1285,23 @@ export default function DocumentosEquipo({
               // 0. BLOQUE BANNER DE SECCIÓN CON VIÑETAS (Estilo Slite / Apple)
               if (bloque.tipo === "banner") {
                 const col = COLOR_BANNERS[bloque.color || "verde"] || COLOR_BANNERS.verde;
+                const colapsado = !!bloque.colapsado;
                 return (
                   <div
                     key={bloque.id}
                     style={{
                       borderRadius: 16,
                       padding: 0,
-                      marginBottom: 6,
+                      marginBottom: 8,
                     }}
                   >
-                    {/* Encabezado con Banner de Color estilo Slite / Apple */}
+                    {/* Encabezado con Banner de Color estilo Slite / Apple + Flecha Desplegable */}
                     <div
                       style={{
                         background: col.bg,
                         color: "#ffffff",
                         borderRadius: 14,
-                        padding: "13px 20px",
+                        padding: "12px 18px",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
@@ -1310,26 +1309,79 @@ export default function DocumentosEquipo({
                         boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
                       }}
                     >
-                      <input
-                        type="text"
-                        value={bloque.titulo || ""}
-                        onChange={(e) => actualizarBloque(bloque.id, { titulo: e.target.value })}
-                        placeholder="Título de la sección (ej. Logros y retos del ciclo)..."
-                        style={{
-                          background: "transparent",
-                          border: "none",
-                          outline: "none",
-                          color: "#ffffff",
-                          fontSize: 17,
-                          fontWeight: 800,
-                          letterSpacing: "-0.01em",
-                          width: "100%",
-                          fontFamily: "inherit",
-                        }}
-                      />
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
+                        {/* Botón Flecha Desplegable (Toggle) estilo Apple / Notion */}
+                        <button
+                          type="button"
+                          onClick={() => actualizarBloque(bloque.id, { colapsado: !colapsado })}
+                          style={{
+                            background: "rgba(255,255,255,0.18)",
+                            border: "none",
+                            borderRadius: 6,
+                            color: "#ffffff",
+                            cursor: "pointer",
+                            width: 24,
+                            height: 24,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: 11,
+                            fontWeight: 800,
+                            flexShrink: 0,
+                            transition: "all 0.15s ease",
+                          }}
+                          title={colapsado ? "Desplegar lista" : "Colapsar / Ocultar lista"}
+                        >
+                          <span
+                            style={{
+                              display: "inline-block",
+                              transform: colapsado ? "none" : "rotate(90deg)",
+                              transition: "transform 0.18s cubic-bezier(0.2, 0, 0, 1)",
+                            }}
+                          >
+                            ▶
+                          </span>
+                        </button>
 
-                      {/* Selector de color y Eliminar */}
-                      <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+                        <input
+                          type="text"
+                          value={bloque.titulo || ""}
+                          onChange={(e) => actualizarBloque(bloque.id, { titulo: e.target.value })}
+                          placeholder="Título de la sección (ej. Logros y retos del ciclo)..."
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            outline: "none",
+                            color: "#ffffff",
+                            fontSize: 17,
+                            fontWeight: 800,
+                            letterSpacing: "-0.01em",
+                            width: "100%",
+                            fontFamily: "inherit",
+                          }}
+                        />
+                      </div>
+
+                      {/* Contador, Selector de color y Eliminar */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                        {bloque.items?.length > 0 && (
+                          <span
+                            onClick={() => actualizarBloque(bloque.id, { colapsado: !colapsado })}
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 700,
+                              background: "rgba(255,255,255,0.22)",
+                              padding: "2px 8px",
+                              borderRadius: 999,
+                              cursor: "pointer",
+                              userSelect: "none",
+                            }}
+                            title="Total de puntos en esta lista desplegable (clic para alternar)"
+                          >
+                            {bloque.items.length} {bloque.items.length === 1 ? "punto" : "puntos"}
+                          </span>
+                        )}
+
                         {Object.entries(COLOR_BANNERS).map(([cKey, cVal]) => (
                           <button
                             key={cKey}
@@ -1348,6 +1400,7 @@ export default function DocumentosEquipo({
                             title={`Color ${cVal.nombre}`}
                           />
                         ))}
+
                         <button
                           type="button"
                           onClick={() => eliminarBloque(bloque.id)}
@@ -1357,7 +1410,7 @@ export default function DocumentosEquipo({
                             color: "rgba(255,255,255,0.7)",
                             cursor: "pointer",
                             fontSize: 14,
-                            marginLeft: 6,
+                            marginLeft: 4,
                             padding: "2px 4px",
                           }}
                           title="Eliminar sección"
@@ -1367,31 +1420,61 @@ export default function DocumentosEquipo({
                       </div>
                     </div>
 
-                    {/* Lista de viñetas dentro del banner */}
-                    <div style={{ padding: "8px 6px 4px" }}>
-                      {renderItemsVineta(bloque)}
-                    </div>
+                    {/* Lista de viñetas dentro del banner (se oculta cuando está colapsado) */}
+                    {!colapsado && (
+                      <div style={{ padding: "8px 6px 4px" }}>
+                        {renderItemsVineta(bloque)}
+                      </div>
+                    )}
                   </div>
                 );
               }
 
               // 0.1 BLOQUE LISTA CON VIÑETAS ESTÁNDAR
               if (bloque.tipo === "vineta") {
+                const colapsado = !!bloque.colapsado;
                 return (
                   <div
                     key={bloque.id}
                     style={{
                       border: "1px solid var(--border, rgba(0,0,0,0.06))",
                       borderRadius: 16,
-                      padding: "16px 20px",
+                      padding: "14px 18px",
                       background: "var(--surface, #ffffff)",
                       boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
-                      marginBottom: 6,
+                      marginBottom: 8,
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: colapsado ? 0 : 6 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
-                        <span style={{ fontSize: 16, color: "var(--text-muted, #86868b)" }}>•</span>
+                        <button
+                          type="button"
+                          onClick={() => actualizarBloque(bloque.id, { colapsado: !colapsado })}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "var(--text-muted, #86868b)",
+                            cursor: "pointer",
+                            width: 20,
+                            height: 20,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: 11,
+                            padding: 0,
+                          }}
+                          title={colapsado ? "Desplegar lista" : "Colapsar lista"}
+                        >
+                          <span
+                            style={{
+                              display: "inline-block",
+                              transform: colapsado ? "none" : "rotate(90deg)",
+                              transition: "transform 0.15s ease",
+                            }}
+                          >
+                            ▶
+                          </span>
+                        </button>
                         <input
                           type="text"
                           value={bloque.titulo || ""}
@@ -1409,23 +1492,30 @@ export default function DocumentosEquipo({
                           }}
                         />
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => eliminarBloque(bloque.id)}
-                        style={{
-                          background: "transparent",
-                          border: "none",
-                          color: "var(--text-muted, #86868b)",
-                          cursor: "pointer",
-                          fontSize: 13,
-                        }}
-                        title="Eliminar grupo de viñetas"
-                      >
-                        🗑️
-                      </button>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        {bloque.items?.length > 0 && (
+                          <span style={{ fontSize: 11, color: "var(--text-muted, #86868b)", fontWeight: 600 }}>
+                            {bloque.items.length} {bloque.items.length === 1 ? "punto" : "puntos"}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => eliminarBloque(bloque.id)}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "var(--text-muted, #86868b)",
+                            cursor: "pointer",
+                            fontSize: 13,
+                          }}
+                          title="Eliminar grupo de viñetas"
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     </div>
 
-                    {renderItemsVineta(bloque)}
+                    {!colapsado && renderItemsVineta(bloque)}
                   </div>
                 );
               }
@@ -1670,134 +1760,6 @@ export default function DocumentosEquipo({
             return null;
           });
         })()}
-        </div>
-
-        {/* Selector de bloques estilo Apple / Notion: Botón (+) con lista desplegable */}
-        <div style={{ position: "relative", marginTop: 36, paddingTop: 16, borderTop: "1px solid var(--border, rgba(0, 0, 0, 0.06))" }}>
-          <div
-            onClick={() => setMenuInferiorAbierto(!menuInferiorAbierto)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              padding: "10px 14px",
-              borderRadius: 12,
-              background: "var(--surface-subtle, #f6f7f9)",
-              cursor: "pointer",
-              transition: "all 0.15s ease",
-              border: "1px solid transparent",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "#ffffff";
-              e.currentTarget.style.borderColor = "rgba(0,0,0,0.1)";
-              e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "var(--surface-subtle, #f6f7f9)";
-              e.currentTarget.style.borderColor = "transparent";
-              e.currentTarget.style.boxShadow = "none";
-            }}
-          >
-            <span
-              style={{
-                width: 24,
-                height: 24,
-                borderRadius: "50%",
-                background: NARANJA,
-                color: "#fff",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-                boxShadow: "0 1px 3px rgba(244,124,32,0.3)",
-              }}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-            </span>
-            <span style={{ fontSize: 13.5, color: "var(--text-muted, #86868b)", fontWeight: 500, flex: 1 }}>
-              Insertar bloque en el documento…
-            </span>
-            <span
-              style={{
-                fontSize: 10,
-                color: "var(--text-muted, #86868b)",
-                background: "rgba(0,0,0,0.05)",
-                padding: "3px 8px",
-                borderRadius: 6,
-                fontWeight: 600,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-              }}
-            >
-              <span>Lista desplegable</span>
-              <span>{menuInferiorAbierto ? "▲" : "▼"}</span>
-            </span>
-          </div>
-
-          {/* Menú Desplegable con opciones de bloques */}
-          {menuInferiorAbierto && (
-            <div
-              style={{
-                position: "absolute",
-                left: 0,
-                bottom: "100%",
-                marginBottom: 8,
-                background: "#ffffff",
-                border: "1px solid var(--border, rgba(0,0,0,0.1))",
-                borderRadius: 14,
-                boxShadow: "0 14px 35px -5px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.06)",
-                padding: 6,
-                zIndex: 9999,
-                width: 320,
-                animation: "fadeIn 0.15s ease",
-              }}
-            >
-              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted, #86868b)", textTransform: "uppercase", padding: "6px 10px 4px", letterSpacing: "0.06em" }}>
-                Tipos de Bloque para Insertar
-              </div>
-              {[
-                { tipo: "banner", icono: "🏷️", titulo: "Banner con Viñetas", desc: "Sección de color con viñetas (Logros / Retos)" },
-                { tipo: "vineta", icono: "•", titulo: "Lista con Viñetas", desc: "Puntos con viñetas, sangría y estados" },
-                { tipo: "checklist", icono: "☑️", titulo: "Lista de Tareas", desc: "Casillas para tachar y organizar" },
-                { tipo: "desplegable", icono: "▶", titulo: "Lista Desplegable (Toggle)", desc: "Sección que se puede ocultar o expandir" },
-                { tipo: "destacado", icono: "💡", titulo: "Destacado (Callout)", desc: "Nota o advertencia visualmente resaltada" },
-                { tipo: "enlace", icono: "🔗", titulo: "Subpágina / Enlace", desc: "Crear documento vinculado" },
-                { tipo: "codigo", icono: "⌨️", titulo: "Notas técnicas / Código", desc: "Comandos, enlaces o snippets formateados" },
-              ].map((item) => (
-                <button
-                  key={item.tipo}
-                  type="button"
-                  onClick={() => insertarBloque(item.tipo)}
-                  style={{
-                    width: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: "8px 10px",
-                    background: "transparent",
-                    border: "none",
-                    borderRadius: 10,
-                    cursor: "pointer",
-                    textAlign: "left",
-                    transition: "all 0.1s ease",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f5f7")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                >
-                  <span style={{ fontSize: 17, width: 22, textAlign: "center", flexShrink: 0 }}>{item.icono}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-main, #1d1d1f)" }}>{item.titulo}</div>
-                    <div style={{ fontSize: 10.5, color: "var(--text-muted, #86868b)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {item.desc}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
         </div>
         </>
         )}

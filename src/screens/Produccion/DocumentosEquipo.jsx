@@ -9,8 +9,17 @@ const COLOR_BANNERS = {
   morado: { nombre: "Morado Iniciativas", bg: "#5856d6", dot: "#af52de", text: "#ffffff" },
   azul: { nombre: "Azul Desarrollo", bg: "#0071e3", dot: "#007aff", text: "#ffffff" },
   naranja: { nombre: "Naranja Prioridades", bg: "#f47c20", dot: "#ff9500", text: "#ffffff" },
-  grafito: { nombre: "Grafito Oscuro", bg: "#1c1c1e", dot: "#8e8e93", text: "#ffffff" },
 };
+
+const TIPOS_BLOQUE = [
+  { tipo: "desplegable", icono: "▶", titulo: "Lista desplegable (Toggle)", desc: "Ocultar o expandir contenido" },
+  { tipo: "vineta", icono: "•", titulo: "Lista con Viñetas", desc: "Puntos clave y sub-viñetas" },
+  { tipo: "checklist", icono: "☑", titulo: "Lista de Tareas", desc: "Casillas para tachar y organizar" },
+  { tipo: "banner", icono: "🏷️", titulo: "Banner con Viñetas", desc: "Sección con encabezado de color" },
+  { tipo: "destacado", icono: "💡", titulo: "Destacado (Callout)", desc: "Nota o aviso resaltado" },
+  { tipo: "codigo", icono: "</>", titulo: "Notas técnicas / Código", desc: "Comandos, enlaces o snippets" },
+  { tipo: "enlace", icono: "📄", titulo: "Subpágina / Enlace", desc: "Crear documento vinculado" },
+];
 
 export default function DocumentosEquipo({
   obras = [],
@@ -465,14 +474,14 @@ export default function DocumentosEquipo({
         ],
       };
     } else if (tipo === "desplegable") {
-      const titulo = await pedirInput({ titulo: "Título del desplegable", placeholder: "▶ Sección desplegable", valorInicial: "" });
+      const titulo = await pedirInput({ titulo: "Título de la lista desplegable", placeholder: "Ej: Documentación requerida", valorInicial: "" });
       if (!titulo) return;
       nuevoBloque = {
         id: `b-${Date.now()}`,
         tipo: "desplegable",
         titulo: titulo.trim(),
         abierto: true,
-        contenido: "Escribe aquí la información que se puede ocultar o expandir...",
+        contenido: "",
       };
     } else if (tipo === "destacado") {
       const texto = await pedirInput({ titulo: "Texto de la nota destacada", placeholder: "Nota importante o recordatorio", valorInicial: "Nota importante o recordatorio" });
@@ -525,6 +534,151 @@ export default function DocumentosEquipo({
       mostrarToast("Bloque añadido");
     }
   };
+
+  // Renderizar botón (+) y menú desplegable inline estilo Apple / Notion
+  const renderBotonInsertarBloque = (textoPlaceholder = "Añadir lista desplegable, viñetas o tareas...") => (
+    <div style={{ position: "relative", zIndex: 90, margin: "14px 0 20px" }}>
+      <div style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+        {/* Botón circular (+) estilo Apple */}
+        <button
+          type="button"
+          onClick={() => setMenuInsertarAbierto(!menuInsertarAbierto)}
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: "50%",
+            border: menuInsertarAbierto ? `2px solid ${NARANJA}` : "1.5px solid var(--border, rgba(0,0,0,0.15))",
+            background: menuInsertarAbierto ? "rgba(244, 124, 32, 0.08)" : "#ffffff",
+            color: menuInsertarAbierto ? NARANJA : "var(--text-main, #1d1d1f)",
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
+            transition: "all 0.15s ease",
+            padding: 0,
+          }}
+          title="Añadir bloque (Lista desplegable, viñetas, tareas...)"
+        >
+          <span
+            style={{
+              fontSize: 20,
+              fontWeight: 600,
+              lineHeight: 1,
+              display: "inline-block",
+              transform: menuInsertarAbierto ? "rotate(45deg)" : "none",
+              transition: "transform 0.18s ease",
+            }}
+          >
+            +
+          </span>
+        </button>
+
+        {/* Texto clicable al lado del botón */}
+        <button
+          type="button"
+          onClick={() => setMenuInsertarAbierto(!menuInsertarAbierto)}
+          style={{
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            padding: "4px 8px",
+            borderRadius: 8,
+            fontSize: 13,
+            color: menuInsertarAbierto ? NARANJA : "var(--text-muted, #86868b)",
+            fontWeight: 600,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            transition: "color 0.15s ease",
+          }}
+        >
+          <span>{textoPlaceholder}</span>
+          <span style={{ fontSize: 9, opacity: 0.7 }}>{menuInsertarAbierto ? "▲" : "▼"}</span>
+        </button>
+      </div>
+
+      {/* Menú Flotante / Lista Desplegable que se abre desde el (+) */}
+      {menuInsertarAbierto && (
+        <>
+          {/* Overlay invisible para cerrar al hacer clic afuera */}
+          <div
+            onClick={() => setMenuInsertarAbierto(false)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 9998,
+            }}
+          />
+
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              top: "calc(100% + 8px)",
+              background: "#ffffff",
+              border: "1px solid var(--border, rgba(0,0,0,0.1))",
+              borderRadius: 14,
+              boxShadow: "0 12px 32px -4px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.06)",
+              padding: "6px",
+              zIndex: 9999,
+              width: 280,
+            }}
+          >
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#86868b", textTransform: "uppercase", padding: "4px 8px 6px", letterSpacing: "0.04em" }}>
+              Insertar contenido
+            </div>
+            {TIPOS_BLOQUE.map((item) => (
+              <button
+                key={item.tipo}
+                type="button"
+                onClick={() => insertarBloque(item.tipo)}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "8px 10px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  transition: "background 0.12s ease",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-subtle, #f5f5f7)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+              >
+                <span
+                  style={{
+                    fontSize: 13,
+                    width: 24,
+                    height: 24,
+                    borderRadius: 6,
+                    background: "rgba(0,0,0,0.04)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  {item.icono}
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #1d1d1f)" }}>
+                    {item.titulo}
+                  </div>
+                  <div style={{ fontSize: 10.5, color: "var(--text-muted, #86868b)" }}>
+                    {item.desc}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
 
   // Eliminar documento
   const eliminarDocumento = (id) => {
@@ -899,89 +1053,6 @@ export default function DocumentosEquipo({
               🔗 Copiar enlace
             </button>
 
-            {/* Menú Insertar Bloque (+) */}
-            <div style={{ position: "relative" }}>
-              <button
-                type="button"
-                onClick={() => setMenuInsertarAbierto(!menuInsertarAbierto)}
-                style={{
-                  background: "#1d1d1f",
-                  color: "#ffffff",
-                  border: "none",
-                  borderRadius: 8,
-                  padding: "6px 12px",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 5,
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                }}
-              >
-                <span>+ Insertar Bloque</span>
-                <span style={{ fontSize: 9 }}>▼</span>
-              </button>
-
-              {menuInsertarAbierto && (
-                <div
-                  style={{
-                    position: "absolute",
-                    right: 0,
-                    top: "100%",
-                    marginTop: 6,
-                    background: "#ffffff",
-                    border: "1px solid var(--border, rgba(0,0,0,0.1))",
-                    borderRadius: 12,
-                    boxShadow: "0 10px 25px -5px rgba(0,0,0,0.15)",
-                    padding: 6,
-                    zIndex: 9999,
-                    width: 230,
-                  }}
-                >
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "#86868b", textTransform: "uppercase", padding: "4px 8px" }}>
-                    Tipos de bloques
-                  </div>
-                  {[
-                    { tipo: "banner", icono: "🏷️", titulo: "Banner con Viñetas", desc: "Sección con encabezado de color y viñetas" },
-                    { tipo: "vineta", icono: "•", titulo: "Lista con Viñetas", desc: "Puntos con viñetas, sangría y estados" },
-                    { tipo: "checklist", icono: "☑", titulo: "Lista de Tareas", desc: "Casilla para tachar y organizar" },
-                    { tipo: "enlace", icono: "📄", titulo: "Subpágina / Enlace", desc: "Crear documento vinculado" },
-                    { tipo: "desplegable", icono: "▶", titulo: "Lista desplegable (Toggle)", desc: "Ocultar o expandir contenido" },
-                    { tipo: "destacado", icono: "💡", titulo: "Destacado (Callout)", desc: "Nota o advertencia resaltada" },
-                    { tipo: "codigo", icono: "</>", titulo: "Notas técnicas / Código", desc: "Comandos, enlaces o snippets" },
-                  ].map((item) => (
-                    <button
-                      key={item.tipo}
-                      type="button"
-                      onClick={() => insertarBloque(item.tipo)}
-                      style={{
-                        width: "100%",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        padding: "6px 8px",
-                        borderRadius: 8,
-                        border: "none",
-                        background: "transparent",
-                        cursor: "pointer",
-                        textAlign: "left",
-                        transition: "background 0.1s ease",
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-subtle, #f5f5f7)")}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                    >
-                      <span style={{ fontSize: 14, width: 20, textAlign: "center" }}>{item.icono}</span>
-                      <div>
-                        <div style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-main, #1d1d1f)" }}>{item.titulo}</div>
-                        <div style={{ fontSize: 10, color: "var(--text-muted, #86868b)" }}>{item.desc}</div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
             <button
               type="button"
               onClick={() => eliminarDocumento(docActivo.id)}
@@ -1033,6 +1104,10 @@ export default function DocumentosEquipo({
             </span>
           </div>
         </div>
+
+        {/* Botón (+) y menú desplegable debajo del título cuando está vacío */}
+        {(docActivo?.bloques || []).length === 0 &&
+          renderBotonInsertarBloque("Añadir lista desplegable, viñetas o tareas...")}
 
         {/* =================================================================== */}
         {/* SUB-PÁGINAS Y ENLACES VINCULADOS ESTILO NOTION                     */}
@@ -1506,53 +1581,139 @@ export default function DocumentosEquipo({
 
               // 1. BLOQUE DESPLEGABLE / TOGGLE
               if (bloque.tipo === "desplegable") {
-              return (
-                <div
-                  key={bloque.id}
-                  style={{
-                    border: "1px solid var(--border, rgba(0,0,0,0.08))",
-                    borderRadius: 14,
-                    padding: "12px 16px",
-                    background: "var(--surface-subtle, #fbfbfd)",
-                  }}
-                >
+                const abierto = bloque.abierto !== false;
+                return (
                   <div
-                    onClick={() => toggleAcordeon(bloque.id)}
+                    key={bloque.id}
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      cursor: "pointer",
-                      userSelect: "none",
+                      border: "1px solid var(--border, rgba(0,0,0,0.08))",
+                      borderRadius: 14,
+                      padding: "12px 16px",
+                      background: "var(--surface-subtle, #fbfbfd)",
+                      marginBottom: 8,
                     }}
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, color: "var(--text-main, #1d1d1f)" }}>
-                      <span style={{ fontSize: 11, color: NARANJA }}>{bloque.abierto ? "▼" : "▶"}</span>
-                      <span>{bloque.titulo}</span>
-                    </div>
-                    <span style={{ fontSize: 10.5, color: "var(--text-muted, #86868b)" }}>
-                      {bloque.abierto ? "Ocultar" : "Desplegar"}
-                    </span>
-                  </div>
-
-                  {bloque.abierto && (
                     <div
                       style={{
-                        marginTop: 10,
-                        paddingLeft: 18,
-                        borderLeft: `2px solid ${NARANJA}`,
-                        fontSize: 12,
-                        color: "var(--text-main, #334155)",
-                        lineHeight: 1.6,
-                        whiteSpace: "pre-line",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 10,
                       }}
                     >
-                      {bloque.contenido}
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
+                        <button
+                          type="button"
+                          onClick={() => toggleAcordeon(bloque.id)}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: NARANJA,
+                            cursor: "pointer",
+                            fontSize: 12,
+                            padding: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: 20,
+                            height: 20,
+                            flexShrink: 0,
+                          }}
+                          title={abierto ? "Colapsar / Ocultar" : "Desplegar"}
+                        >
+                          <span
+                            style={{
+                              display: "inline-block",
+                              transform: abierto ? "rotate(90deg)" : "none",
+                              transition: "transform 0.15s ease",
+                            }}
+                          >
+                            ▶
+                          </span>
+                        </button>
+                        <input
+                          type="text"
+                          value={bloque.titulo || ""}
+                          onChange={(e) => actualizarBloque(bloque.id, { titulo: e.target.value })}
+                          placeholder="Título de la lista desplegable..."
+                          style={{
+                            border: "none",
+                            outline: "none",
+                            background: "transparent",
+                            fontSize: 13.5,
+                            fontWeight: 700,
+                            color: "var(--text-main, #1d1d1f)",
+                            flex: 1,
+                            fontFamily: "inherit",
+                          }}
+                        />
+                      </div>
+
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                        <button
+                          type="button"
+                          onClick={() => toggleAcordeon(bloque.id)}
+                          style={{
+                            background: "rgba(0,0,0,0.04)",
+                            border: "none",
+                            borderRadius: 6,
+                            padding: "3px 8px",
+                            fontSize: 11,
+                            fontWeight: 600,
+                            color: "var(--text-muted, #86868b)",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {abierto ? "▲ Ocultar" : "▶ Desplegar"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => eliminarBloque(bloque.id)}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "var(--text-muted, #86868b)",
+                            cursor: "pointer",
+                            fontSize: 13,
+                          }}
+                          title="Eliminar este desplegable"
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     </div>
-                  )}
-                </div>
-              );
-            }
+
+                    {abierto && (
+                      <div
+                        style={{
+                          marginTop: 10,
+                          paddingLeft: 28,
+                          borderLeft: `2px solid ${NARANJA}`,
+                        }}
+                      >
+                        <textarea
+                          value={bloque.contenido || ""}
+                          onChange={(e) => actualizarBloque(bloque.id, { contenido: e.target.value })}
+                          placeholder="Escribe aquí la información que se puede ocultar o expandir..."
+                          rows={3}
+                          style={{
+                            width: "100%",
+                            border: "none",
+                            outline: "none",
+                            background: "transparent",
+                            fontSize: 12.5,
+                            color: "var(--text-main, #334155)",
+                            lineHeight: 1.6,
+                            fontFamily: "inherit",
+                            resize: "vertical",
+                            boxSizing: "border-box",
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              }
 
             // 2. BLOQUE DESTACADO / CALLOUT
             if (bloque.tipo === "destacado") {
@@ -1819,6 +1980,10 @@ export default function DocumentosEquipo({
             return null;
           });
         })()}
+
+        {/* Botón (+) al final de los bloques existentes */}
+        {(docActivo?.bloques || []).length > 0 &&
+          renderBotonInsertarBloque("Añadir otro bloque...")}
         </div>
         </>
         )}

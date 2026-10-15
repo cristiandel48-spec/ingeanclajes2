@@ -1,104 +1,24 @@
-// Tareas iniciales de producción y obra para Ingeanclajes
-export const TAREAS_PRODUCCION_INIT = [
-  {
-    id: "TAR-001",
-    titulo: "Comprar anclajes químicos Hilti HIT-RE 500 V4",
-    descripcion: "Se requieren 6 cartuchos para fijación de placas base en cubierta norte. Entregar al equipo a primera hora.",
-    responsable: "Paola",
-    asignadoPor: "Camila",
-    obraId: "OBRA-2026-004",
-    obraNombre: "Creafam San Blas",
-    prioridad: "urgente", // "normal" | "alta" | "urgente"
-    estado: "por_hacer", // "por_hacer" | "en_proceso" | "en_revision" | "completada"
-    fechaLimite: new Date().toISOString().split("T")[0], // Vence hoy
-    fechaCreacion: new Date(Date.now() - 86400000).toISOString(),
-    checklist: [
-      { id: "c1", texto: "Cotizar con proveedor Hilti", hecha: true },
-      { id: "c2", texto: "Aprobar orden de compra con Camila", hecha: true },
-      { id: "c3", texto: "Confirmar entrega en obra", hecha: false },
-    ],
-  },
-  {
-    id: "TAR-002",
-    titulo: "Prueba de tracción a 4 cáncamos de anclaje (22.2 kN)",
-    descripcion: "Llevar dinamómetro calibrado y registrar fotografías nítidas del manómetro y la placa para el informe técnico.",
-    responsable: "Carlos Restrepo",
-    asignadoPor: "Camila",
-    obraId: "OBRA-2026-004",
-    obraNombre: "Creafam San Blas",
-    prioridad: "alta",
-    estado: "en_proceso",
-    fechaLimite: new Date(Date.now() + 86400000 * 2).toISOString().split("T")[0],
-    fechaCreacion: new Date(Date.now() - 86400000 * 2).toISOString(),
-    checklist: [
-      { id: "c1", texto: "Verificar calibración del manómetro", hecha: true },
-      { id: "c2", texto: "Ensayo cáncamo 1 y 2", hecha: true },
-      { id: "c3", texto: "Ensayo cáncamo 3 y 4", hecha: false },
-    ],
-  },
-  {
-    id: "TAR-003",
-    titulo: "Enviar informe de actividades y bitácora a Creafam",
-    descripcion: "El informe ya fue verificado en el sistema. Falta anexar el certificado de calidad emitido y radicar por correo.",
-    responsable: "Paola",
-    asignadoPor: "Camila",
-    obraId: "OBRA-2026-003",
-    obraNombre: "Edificio Milla de Oro",
-    prioridad: "alta",
-    estado: "en_proceso",
-    fechaLimite: new Date(Date.now() + 86400000).toISOString().split("T")[0],
-    fechaCreacion: new Date(Date.now() - 86400000 * 3).toISOString(),
-  },
-  {
-    id: "TAR-004",
-    titulo: "Revisar y firmar informe técnico de actividades de Torre 1",
-    descripcion: "Paola consolidó el registro fotográfico de avance. Se requiere mi firma digital como ingeniera para radicar.",
-    responsable: "Camila",
-    asignadoPor: "Paola",
-    obraId: "OBRA-2026-004",
-    obraNombre: "Creafam San Blas",
-    prioridad: "urgente",
-    estado: "en_revision",
-    fechaLimite: new Date().toISOString().split("T")[0],
-    fechaCreacion: new Date().toISOString(),
-  },
-  {
-    id: "TAR-005",
-    titulo: "Instalación de 48m de guaya en acero inoxidable 5/16\"",
-    descripcion: "Montaje de tensor, absorbedor de impacto y fijación a postes estructurales según memoria de cálculo.",
-    responsable: "Carlos Restrepo",
-    asignadoPor: "Camila",
-    obraId: "OBRA-2026-004",
-    obraNombre: "Creafam San Blas",
-    prioridad: "normal",
-    estado: "por_hacer",
-    fechaLimite: new Date(Date.now() + 86400000 * 4).toISOString().split("T")[0],
-    fechaCreacion: new Date(Date.now() - 86400000 * 4).toISOString(),
-  },
-  {
-    id: "TAR-006",
-    titulo: "Gestionar póliza todo riesgo para inicio de obra Éxito",
-    descripcion: "Solicitar cotización con Seguros Bolívar y presentar a interventoría para aprobación de acta de inicio.",
-    responsable: "Paola",
-    asignadoPor: "Camila",
-    obraId: "OBRA-2026-005",
-    obraNombre: "Éxito Envigado",
-    prioridad: "normal",
-    estado: "en_revision",
-    fechaLimite: new Date(Date.now() + 86400000 * 5).toISOString().split("T")[0],
-    fechaCreacion: new Date(Date.now() - 86400000 * 5).toISOString(),
-  },
-  {
-    id: "TAR-007",
-    titulo: "Aprobar cotización comercial COT-2026-089",
-    descripcion: "Revisión de costos de mano de obra y APU de anclajes químicos para licitación con cliente corporativo.",
-    responsable: "Camila",
-    asignadoPor: "Camila",
-    obraId: "general",
-    obraNombre: "Oficina / Licitaciones",
-    prioridad: "normal",
-    estado: "completada",
-    fechaLimite: new Date(Date.now() - 86400000).toISOString().split("T")[0],
-    fechaCreacion: new Date(Date.now() - 86400000 * 3).toISOString(),
-  },
-];
+// Tareas de producción y obra para Ingeanclajes
+// Lista limpia (sin tareas artificiales de ejemplo)
+
+export const SEED_TAREAS_IDS = new Set([
+  "TAR-001",
+  "TAR-002",
+  "TAR-003",
+  "TAR-004",
+  "TAR-005",
+]);
+
+export function limpiarTareasEjemplo(tareas = []) {
+  if (!Array.isArray(tareas)) return [];
+  return tareas.filter(
+    (t) =>
+      t &&
+      t.id &&
+      !SEED_TAREAS_IDS.has(t.id) &&
+      !t.__ejemplo &&
+      !String(t.id).startsWith("ejemplo-")
+  );
+}
+
+export const TAREAS_PRODUCCION_INIT = [];

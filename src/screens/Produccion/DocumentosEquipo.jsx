@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useIsMobile } from "../../hooks/useMediaQuery";
-import { DOCUMENTOS_EQUIPO_INIT } from "./documentosSeed";
+import { DOCUMENTOS_EQUIPO_INIT, limpiarDocumentosEjemplo } from "./documentosSeed";
 
 const NARANJA = "#f47c20";
 
@@ -13,29 +13,36 @@ export default function DocumentosEquipo({
 }) {
   const isMobile = useIsMobile();
 
-  // Estado de documentos persistido localmente y sincronizado
+  // Estado de documentos persistido localmente y sincronizado (sin ejemplos)
   const [documentos, setDocumentos] = useState(() => {
-    if (Array.isArray(documentosExternos) && documentosExternos.length > 0) {
-      return documentosExternos;
+    if (Array.isArray(documentosExternos)) {
+      const limpias = limpiarDocumentosEjemplo(documentosExternos);
+      if (limpias.length > 0) return limpias;
     }
     try {
       const guardados = localStorage.getItem("ingeanclajes_documentos_equipo");
       if (guardados) {
         const parsed = JSON.parse(guardados);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        const limpias = limpiarDocumentosEjemplo(parsed);
+        if (limpias.length !== parsed.length) {
+          localStorage.setItem("ingeanclajes_documentos_equipo", JSON.stringify(limpias));
+        }
+        return limpias;
       }
     } catch (e) {
       console.warn("No se pudo cargar ingeanclajes_documentos_equipo", e);
     }
-    return DOCUMENTOS_EQUIPO_INIT;
+    return [];
   });
 
   // Sincronizar si cambian los documentos externamente (ej: carga desde la nube o sincronización)
   useEffect(() => {
-    if (Array.isArray(documentosExternos) && documentosExternos.length > 0) {
+    if (Array.isArray(documentosExternos)) {
+      const limpias = limpiarDocumentosEjemplo(documentosExternos);
       setDocumentos((prev) => {
-        if (prev === documentosExternos) return prev;
-        return documentosExternos;
+        if (prev === limpias) return prev;
+        if (JSON.stringify(prev) === JSON.stringify(limpias)) return prev;
+        return limpias;
       });
     }
   }, [documentosExternos]);
@@ -53,13 +60,14 @@ export default function DocumentosEquipo({
   }, [documentos, onActualizarDocumentos]);
 
   // Documento actualmente seleccionado
-  const [docActivoId, setDocActivoId] = useState(() => documentos[0]?.id || "doc-previsora");
+  const [docActivoId, setDocActivoId] = useState(() => documentos[0]?.id || "");
   const [busqueda, setBusqueda] = useState("");
   const [filtroResponsable, setFiltroResponsable] = useState("todos");
   const [menuInsertarAbierto, setMenuInsertarAbierto] = useState(false);
   const [toastMensaje, setToastMensaje] = useState("");
 
   const docActivo = useMemo(() => {
+    if (documentos.length === 0) return null;
     return documentos.find((d) => d.id === docActivoId) || documentos[0];
   }, [documentos, docActivoId]);
 
@@ -322,13 +330,16 @@ export default function DocumentosEquipo({
   // Eliminar documento
   const eliminarDocumento = (id) => {
     if (documentos.length <= 1) {
-      alert("Debe haber al menos un documento en el espacio de trabajo.");
+      if (!window.confirm("¿Seguro que deseas eliminar este documento? El espacio quedará vacío.")) return;
+      setDocumentos([]);
+      setDocActivoId("");
+      mostrarToast("Documento eliminado");
       return;
     }
     if (!window.confirm("¿Seguro que deseas eliminar este documento?")) return;
     const restantes = documentos.filter((d) => d.id !== id);
     setDocumentos(restantes);
-    setDocActivoId(restantes[0].id);
+    setDocActivoId(restantes[0]?.id || "");
     mostrarToast("Documento eliminado");
   };
 
@@ -495,91 +506,198 @@ export default function DocumentosEquipo({
               Páginas de Obra & Equipo ({docsFiltrados.length})
             </div>
 
-            {docsFiltrados.map((doc) => {
-              const activo = doc.id === docActivoId;
-              return (
-                <div
-                  key={doc.id}
-                  onClick={() => setDocActivoId(doc.id)}
+            {docsFiltrados.length === 0 ? (
+              <div
+                style={{
+                  padding: "28px 8px",
+                  textAlign: "center",
+                  fontSize: 12,
+                  color: "var(--text-muted, #86868b)",
+                  lineHeight: 1.5,
+                }}
+              >
+                <div>Sin documentos</div>
+                <button
+                  type="button"
+                  onClick={crearNuevoDocumento}
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "8px 10px",
-                    borderRadius: 10,
+                    marginTop: 8,
+                    background: "#ffffff",
+                    border: "1px solid var(--border, rgba(0,0,0,0.12))",
+                    borderRadius: 8,
+                    padding: "4px 10px",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "var(--text-main, #1d1d1f)",
                     cursor: "pointer",
-                    background: activo ? "rgba(0, 0, 0, 0.06)" : "transparent",
-                    color: activo ? "var(--text-main, #1d1d1f)" : "var(--text-muted, #6e6e73)",
-                    fontWeight: activo ? 700 : 500,
-                    fontSize: 12,
-                    transition: "all 0.12s ease",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1 }}>
-                    <span style={{ fontSize: 14 }}>{doc.icono || "📄"}</span>
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {doc.titulo}
-                    </span>
-                  </div>
+                  + Crear documento
+                </button>
+              </div>
+            ) : (
+              docsFiltrados.map((doc) => {
+                const activo = doc.id === docActivoId;
+                return (
+                  <div
+                    key={doc.id}
+                    onClick={() => setDocActivoId(doc.id)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "8px 10px",
+                      borderRadius: 10,
+                      cursor: "pointer",
+                      background: activo ? "rgba(0, 0, 0, 0.06)" : "transparent",
+                      color: activo ? "var(--text-main, #1d1d1f)" : "var(--text-muted, #6e6e73)",
+                      fontWeight: activo ? 700 : 500,
+                      fontSize: 12,
+                      transition: "all 0.12s ease",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1 }}>
+                      <span style={{ fontSize: 14 }}>{doc.icono || "📄"}</span>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {doc.titulo}
+                      </span>
+                    </div>
 
-                  {doc.responsable && (
-                    <span
-                      style={{
-                        fontSize: 9.5,
-                        fontWeight: 600,
-                        background: "rgba(0,0,0,0.04)",
-                        padding: "1px 6px",
-                        borderRadius: 6,
-                        color: "var(--text-muted, #86868b)",
-                        marginLeft: 6,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {doc.responsable.split(" ")[0]}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
+                    {doc.responsable && (
+                      <span
+                        style={{
+                          fontSize: 9.5,
+                          fontWeight: 600,
+                          background: "rgba(0,0,0,0.04)",
+                          padding: "1px 6px",
+                          borderRadius: 6,
+                          color: "var(--text-muted, #86868b)",
+                          marginLeft: 6,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {doc.responsable.split(" ")[0]}
+                      </span>
+                    )}
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
 
         {/* Footer Sidebar: Progreso */}
-        <div style={{ borderTop: "1px solid var(--border, rgba(0,0,0,0.06))", paddingTop: 12, paddingLeft: 4, paddingRight: 4 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <div style={{ fontSize: 10.5, color: "var(--text-muted, #86868b)" }}>Progreso en página</div>
-              <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text-main, #1d1d1f)" }}>
-                {metricasDoc.hechas} de {metricasDoc.total} tareas ({metricasDoc.pct}%)
+        {docActivo && (
+          <div style={{ borderTop: "1px solid var(--border, rgba(0,0,0,0.06))", paddingTop: 12, paddingLeft: 4, paddingRight: 4 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div style={{ fontSize: 10.5, color: "var(--text-muted, #86868b)" }}>Progreso en página</div>
+                <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text-main, #1d1d1f)" }}>
+                  {metricasDoc.hechas} de {metricasDoc.total} tareas ({metricasDoc.pct}%)
+                </div>
+              </div>
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: "50%",
+                  background: "rgba(244, 124, 32, 0.1)",
+                  color: NARANJA,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 11,
+                  fontWeight: 800,
+                }}
+              >
+                {metricasDoc.pct}%
               </div>
             </div>
-            <div
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: "50%",
-                background: "rgba(244, 124, 32, 0.1)",
-                color: NARANJA,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 11,
-                fontWeight: 800,
-              }}
-            >
-              {metricasDoc.pct}%
-            </div>
           </div>
-        </div>
+        )}
       </aside>
 
       {/* =================================================================== */}
       {/* ÁREA DE CONTENIDO Y EDITOR DEL DOCUMENTO ESTILO NOTION              */}
       {/* =================================================================== */}
       <main style={{ padding: isMobile ? "16px 14px" : "28px 36px", overflowY: "auto", position: "relative" }}>
-        
-        {/* Barra superior de herramientas del documento */}
-        <div
+        {!docActivo ? (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: 520,
+              textAlign: "center",
+              padding: "48px 24px",
+            }}
+          >
+            <div
+              style={{
+                width: 72,
+                height: 72,
+                borderRadius: 22,
+                background: "var(--surface-subtle, #f5f5f7)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 34,
+                marginBottom: 18,
+                border: "1px solid var(--border, rgba(0,0,0,0.06))",
+              }}
+            >
+              📄
+            </div>
+            <h3
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                color: "var(--text-main, #1d1d1f)",
+                margin: "0 0 8px",
+                letterSpacing: "-0.01em",
+              }}
+            >
+              No hay documentos de equipo
+            </h3>
+            <p
+              style={{
+                fontSize: 13,
+                color: "var(--text-muted, #86868b)",
+                maxWidth: 440,
+                margin: "0 0 24px",
+                lineHeight: 1.55,
+              }}
+            >
+              Crea tu primer documento interactivo para registrar notas de obra, subpáginas estilo Notion, checklists de tareas o enlaces de interés para el equipo.
+            </p>
+            <button
+              type="button"
+              onClick={crearNuevoDocumento}
+              style={{
+                background: "#1d1d1f",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: 12,
+                padding: "11px 22px",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                boxShadow: "0 4px 14px rgba(0,0,0,0.12)",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <span style={{ fontSize: 16 }}>+</span>
+              <span>Crear Primer Documento</span>
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Barra superior de herramientas del documento */}
+            <div
           style={{
             display: "flex",
             justifyContent: "space-between",
@@ -1143,6 +1261,8 @@ export default function DocumentosEquipo({
           <span style={{ width: 8, height: 16, background: NARANJA, display: "inline-block", borderRadius: 2 }} />
           <span>Haz clic en <strong>+ Insertar Bloque</strong> arriba para agregar subpáginas, listas de tareas, desplegables o notas técnicas vinculadas a tu equipo.</span>
         </div>
+        </>
+        )}
 
       </main>
     </div>

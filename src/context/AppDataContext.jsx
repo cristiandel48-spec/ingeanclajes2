@@ -27,7 +27,8 @@ import {
   mezclarUltimasConexiones,
 } from "../lib/actividadConexiones";
 import { detectarDispositivo } from "../lib/backend/presencia";
-import { DOCUMENTOS_EQUIPO_INIT } from "../screens/Produccion/documentosSeed";
+import { DOCUMENTOS_EQUIPO_INIT, limpiarDocumentosEjemplo } from "../screens/Produccion/documentosSeed";
+import { TAREAS_PRODUCCION_INIT, limpiarTareasEjemplo } from "../screens/Produccion/tareasSeed";
 
 const isSupabaseConfigured = backend.isSupabaseConfigured;
 const loadCloudAppData = backend.loadCloudAppData;
@@ -135,7 +136,11 @@ export function AppDataProvider({ children }) {
       const guardadas = localStorage.getItem("ingeanclajes_tareas_produccion");
       if (guardadas) {
         const parsed = JSON.parse(guardadas);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        const limpias = limpiarTareasEjemplo(parsed);
+        if (limpias.length !== parsed.length) {
+          localStorage.setItem("ingeanclajes_tareas_produccion", JSON.stringify(limpias));
+        }
+        return limpias;
       }
     } catch (e) {
       console.warn("No se pudo cargar ingeanclajes_tareas_produccion de localStorage", e);
@@ -156,12 +161,16 @@ export function AppDataProvider({ children }) {
       const guardadas = localStorage.getItem("ingeanclajes_documentos_equipo");
       if (guardadas) {
         const parsed = JSON.parse(guardadas);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        const limpias = limpiarDocumentosEjemplo(parsed);
+        if (limpias.length !== parsed.length) {
+          localStorage.setItem("ingeanclajes_documentos_equipo", JSON.stringify(limpias));
+        }
+        return limpias;
       }
     } catch (e) {
       console.warn("No se pudo cargar ingeanclajes_documentos_equipo de localStorage", e);
     }
-    return DOCUMENTOS_EQUIPO_INIT;
+    return [];
   });
 
   useEffect(() => {
@@ -224,7 +233,13 @@ export function AppDataProvider({ children }) {
   // reales. Se apagan de una vez en todas las pantallas -tambien en la de
   // WhatsApp, que trae los suyos- porque apagarlos de una en una seria peor
   // que dejarlos.
-  const [ejemplosOcultos, setEjemplosOcultos] = useState(false);
+  const [ejemplosOcultos, setEjemplosOcultos] = useState(() => {
+    try {
+      return localStorage.getItem("ingeanclajes_ejemplos_ocultos") !== "false";
+    } catch {
+      return true;
+    }
+  });
 
   // Kill switch: si es true, todos los usuarios NO-superadmin ven pantalla
   // en blanco (sin mensaje). Solo cristiandel48@gmail.com puede activarlo /
@@ -523,7 +538,7 @@ export function AppDataProvider({ children }) {
         // abre por primera vez es justo el que necesita entenderlo. Se van
         // solos en cuanto haya un registro de verdad, y el autoguardado los
         // descarta (ver buildCloudPayload).
-        const oEjemplo = (lista, ejemplo) => (lista.length ? lista : ejemplo);
+        const oEjemplo = (lista, ejemplo) => (ejemplosOcultos ? lista : (lista.length ? lista : ejemplo));
 
         if (Array.isArray(cloud.obras)) setObras(oEjemplo(obrasList, EJEMPLOS.obras));
         if (Array.isArray(cloud.empleados)) setEmpleados(cloud.empleados.map(normalizarEmpleado));
@@ -544,8 +559,8 @@ export function AppDataProvider({ children }) {
             setAgenda((prev) => (prev || []).filter((item) => !item?.__ejemplo && !String(item?.id || "").startsWith("AG-90")));
           }
         }
-        if (Array.isArray(cloud.documentosEquipo) && cloud.documentosEquipo.length > 0) {
-          setDocumentosEquipo(cloud.documentosEquipo);
+        if (Array.isArray(cloud.documentosEquipo)) {
+          setDocumentosEquipo(limpiarDocumentosEjemplo(cloud.documentosEquipo));
         }
         if (Array.isArray(cloud.cotizaciones)) setCotizaciones(oEjemplo(cotizacionesList, EJEMPLOS.cotizaciones));
         if (Array.isArray(cloud.contabilidadConfig) && cloud.contabilidadConfig.length) {
@@ -802,6 +817,11 @@ export function AppDataProvider({ children }) {
     // en la sesion, y no hace falta: al recargar vuelven, porque las tablas
     // siguen vacias.
     ocultarEjemplos: () => {
+      try {
+        localStorage.setItem("ingeanclajes_ejemplos_ocultos", "true");
+        localStorage.setItem("ingeanclajes_tareas_produccion", "[]");
+        localStorage.setItem("ingeanclajes_documentos_equipo", "[]");
+      } catch {}
       setEjemplosOcultos(true);
       setObras(sinEjemplos);
       setCotizaciones(sinEjemplos);
@@ -810,6 +830,8 @@ export function AppDataProvider({ children }) {
       setCerts(sinEjemplos);
       setPagos(sinEjemplos);
       setAgenda(sinEjemplos);
+      setTareasProduccion([]);
+      setDocumentosEquipo([]);
     },
     agenda, setAgenda,
     tareasPersonales, setTareasPersonales,

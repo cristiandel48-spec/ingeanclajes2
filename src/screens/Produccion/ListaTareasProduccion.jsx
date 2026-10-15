@@ -899,7 +899,20 @@ export default function ListaTareasProduccion({
             <div style={{ textAlign: "right" }}>Acción</div>
           </div>
 
-          {tareasFiltradas.map((t, idx) => {
+          {tareasFiltradas.length === 0 ? (
+            <div
+              style={{
+                padding: "48px 16px",
+                textAlign: "center",
+                color: "var(--text-muted, #86868b)",
+                fontSize: 13,
+                background: "var(--surface, #ffffff)",
+              }}
+            >
+              No hay tareas registradas. Haz clic en <strong>+ Asignar Tarea al Equipo</strong> arriba para comenzar.
+            </div>
+          ) : (
+            tareasFiltradas.map((t, idx) => {
             const vig = calcularVigenciaTarea(t.fechaLimite);
             const estObj = ESTADOS.find((e) => e.id === t.estado) || ESTADOS[0];
             return (
@@ -986,7 +999,8 @@ export default function ListaTareasProduccion({
                 </div>
               </div>
             );
-          })}
+          })
+        )}
         </div>
       )}
     </div>

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import ListaTareasProduccion from "./ListaTareasProduccion";
 import ModalTareaProduccion from "./ModalTareaProduccion";
-import { TAREAS_PRODUCCION_INIT } from "./tareasSeed";
+import { TAREAS_PRODUCCION_INIT, limpiarTareasEjemplo } from "./tareasSeed";
 
 export default function Produccion({ ctx = {} }) {
   const isMobile = useIsMobile();
@@ -16,19 +16,24 @@ export default function Produccion({ ctx = {} }) {
 
   // Si el contexto global provee tareasProduccion usamos esas; si no, estado local persistido
   const [tareas, setTareas] = useState(() => {
-    if (Array.isArray(tareasProduccion) && tareasProduccion.length > 0) {
-      return tareasProduccion;
+    if (Array.isArray(tareasProduccion)) {
+      const limpias = limpiarTareasEjemplo(tareasProduccion);
+      if (limpias.length > 0) return limpias;
     }
     try {
       const guardadas = localStorage.getItem("ingeanclajes_tareas_produccion");
       if (guardadas) {
         const parsed = JSON.parse(guardadas);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        const limpias = limpiarTareasEjemplo(parsed);
+        if (limpias.length !== parsed.length) {
+          localStorage.setItem("ingeanclajes_tareas_produccion", JSON.stringify(limpias));
+        }
+        return limpias;
       }
     } catch (e) {
       console.warn("No se pudo cargar ingeanclajes_tareas_produccion", e);
     }
-    return TAREAS_PRODUCCION_INIT;
+    return [];
   });
 
   // Sincronizar hacia localStorage y hacia AppDataContext

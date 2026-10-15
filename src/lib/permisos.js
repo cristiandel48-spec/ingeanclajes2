@@ -45,8 +45,9 @@ export const MODULOS_CONTADOR = [
 ];
 
 // Cada quien entra a lo que se le marca, más el canal de mensajes y soporte
-// para que cualquier colaborador pueda comunicarse y reportar incidencias.
-export const MODULOS_MINIMOS = ["soporte"];
+// para que cualquier colaborador pueda comunicarse y reportar incidencias, y
+// su lista personal de tareas, que es suya y no muestra datos de nadie mas.
+export const MODULOS_MINIMOS = ["soporte", "tareas"];
 
 // Modulos del rol Administrador y de nadie mas. No se pueden conceder
 // marcando una casilla.
@@ -196,7 +197,9 @@ export function pantallaInicial(membresia) {
   const permitidos = modulosPermitidos(membresia);
   if (!permitidos.length) return null;
   if (permitidos.includes("dashboard")) return "dashboard";
-  const principales = permitidos.filter((id) => id !== "soporte");
+  // Los modulos que tiene todo el mundo no cuentan como pantalla de inicio:
+  // cada quien sigue entrando a su primer modulo de trabajo.
+  const principales = permitidos.filter((id) => !MODULOS_MINIMOS.includes(id));
   return principales.length ? principales[0] : permitidos[0];
 }
 

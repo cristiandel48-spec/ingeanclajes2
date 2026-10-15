@@ -18,6 +18,7 @@ import Auditoria from "./screens/Auditoria/Auditoria";
 import Formatos from "./screens/Formatos/Formatos";
 import Soporte from "./screens/Soporte/Soporte";
 import Agenda from "./screens/Agenda/Agenda";
+import MisTareas from "./screens/MisTareas/MisTareas";
 import BotonSoporteFlotante from "./components/soporte/BotonSoporteFlotante";
 import NotificadorMensajesGlobal from "./components/notificaciones/NotificadorMensajesGlobal";
 import AvisoInteligenteAgenda from "./components/agenda/AvisoInteligenteAgenda";
@@ -36,6 +37,7 @@ const Horarios = lazy(() => import("./screens/Horarios/Horarios"));
 const SCREENS = {
   dashboard: Dashboard,
   soporte: Soporte,
+  tareas: MisTareas,
   agenda: Agenda,
   cotizacion: Cotizacion,
   radar: RadarObras,

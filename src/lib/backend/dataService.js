@@ -168,8 +168,15 @@ export function createDataService({ supabase, tenantId }) {
     }
   };
 
+  // Entidades opcionales cuya tabla todavia no existe en la base. Importa
+  // distinguirlas de una tabla vacia: sin este aviso, «no hay filas» y «no hay
+  // tabla» se ven igual, y quien lee la respuesta no sabe si puede fiarse de
+  // ella o debe recurrir a la copia local.
+  const tablasFaltantes = new Set();
+
   const list = async (entity) => {
     const cfg = assertEntity(entity);
+    tablasFaltantes.delete(entity);
     const filas = [];
     let desde = 0;
     // Se puede degradar a "*" a mitad si la base todavia no tiene las columnas
@@ -194,6 +201,7 @@ export function createDataService({ supabase, tenantId }) {
 
       if (error) {
         if (cfg.optional && isMissingRelationError(error)) {
+          tablasFaltantes.add(entity);
           return [];
         }
         // La aplicacion puede llegar antes que la migracion que crea los
@@ -397,6 +405,7 @@ export function createDataService({ supabase, tenantId }) {
 
   return {
     tenantId,
+    tablasFaltantes,
     list,
     cargarDetalle,
     upsertMany,

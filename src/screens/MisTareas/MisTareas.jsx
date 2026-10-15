@@ -272,6 +272,10 @@ export default function MisTareas({ ctx }) {
   };
 
   return (
+    // El envoltorio recibe la regla global que anula el padding lateral de los
+    // hijos directos de <main> en pantallas angostas, para que la tarjeta
+    // conserve el suyo.
+    <div style={{ width: "100%" }}>
     <div className="mt-card" style={{ ...CD, padding: "28px 28px 20px", maxWidth: 860, margin: "0 auto", width: "100%" }}>
       <style>{ESTILOS}</style>
 
@@ -504,6 +508,7 @@ export default function MisTareas({ ctx }) {
           </button>
         </div>
       )}
+    </div>
     </div>
   );
 }

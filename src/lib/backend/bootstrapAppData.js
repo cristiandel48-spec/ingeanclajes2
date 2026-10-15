@@ -131,6 +131,10 @@ export async function loadCloudAppData() {
     result[stateKey] = items;
   }
 
+  // Tablas opcionales que aun no existen. Quien lee esto sabe que su lista no
+  // vino vacia de la base: no vino de ningun lado.
+  result.__tablasFaltantes = [...service.tablasFaltantes];
+
   baselineLoaded = true;
   return result;
 }

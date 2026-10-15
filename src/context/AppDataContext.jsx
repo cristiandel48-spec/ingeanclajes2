@@ -35,6 +35,7 @@ const saveCloudAppData = backend.saveCloudAppData;
 const suscribirPresencia = backend.suscribirPresencia;
 const esSuperAdmin = backend.esSuperAdmin;
 const getSessionUser = backend.getSessionUser;
+const reintentandoSiChocanPestanas = backend.reintentandoSiChocanPestanas;
 
 const AppDataContext = createContext(null);
 
@@ -100,20 +101,33 @@ export function AppDataProvider({ children }) {
     }
   }, [agenda]);
 
-  // Lista de chequeo personal (modulo Agenda > Mis tareas). En la nube cada
-  // usuario solo ve las suyas (RLS). La copia local va por correo para que en
-  // un equipo compartido una persona no vea las tareas de otra.
+  // Lista de chequeo personal (modulo «Mis tareas y recordatorios»). En la nube
+  // cada usuario solo ve las suyas (RLS). La copia local va por usuario para
+  // que en un equipo compartido una persona no vea las tareas de otra.
+  //
+  // `almacenTareas.modoLocal` dice si lo guardado aqui todavia NO esta en la
+  // nube -porque falta la migracion 057 o porque la carga fallo-. Solo en ese
+  // caso la copia local vuelve a subirse. Sin esa marca, una lista vacia en la
+  // nube se confundiria con «la tabla no existe» y resucitaria tareas que la
+  // persona ya borro desde otro dispositivo.
   const [tareasPersonales, setTareasPersonales] = useState([]);
-  const [claveTareasLocal, setClaveTareasLocal] = useState(null);
+  const [almacenTareas, setAlmacenTareas] = useState(null);
+  // El payload de la nube solo incluye las tareas una vez cargadas. Mientras
+  // no lo esten, la lista en memoria esta vacia por no haberla leido aun, y
+  // subirla borraria de la base todas las tareas de la persona.
+  const tareasCargadasRef = useRef(false);
 
   useEffect(() => {
-    if (!claveTareasLocal) return;
+    if (!almacenTareas) return;
     try {
-      localStorage.setItem(claveTareasLocal, JSON.stringify(tareasPersonales));
+      localStorage.setItem(
+        almacenTareas.clave,
+        JSON.stringify({ v: 2, modoLocal: almacenTareas.modoLocal, items: tareasPersonales })
+      );
     } catch (e) {
       console.warn("No se pudo guardar tareas personales en localStorage", e);
     }
-  }, [tareasPersonales, claveTareasLocal]);
+  }, [tareasPersonales, almacenTareas]);
 
   const [tareasProduccion, setTareasProduccion] = useState(() => {
     try {
@@ -296,7 +310,9 @@ export function AppDataProvider({ children }) {
       cuentas,
       ordenesCompra: sinEjemplos(ordenesCompra),
       agenda: sinEjemplos(agenda),
-      tareasPersonales,
+      // Ver tareasCargadasRef: una clave ausente la salta el guardado entero,
+      // que es justo lo que hace falta mientras no se hayan leido.
+      ...(tareasCargadasRef.current ? { tareasPersonales } : {}),
       cotizaciones: sinEjemplos(cotizaciones),
       contabilidadConfig,
       planCuentas,
@@ -359,35 +375,53 @@ export function AppDataProvider({ children }) {
   useEffect(() => {
     let cancel = false;
 
+    // Devuelve siempre { items, modoLocal }. El formato antiguo era un array
+    // suelto, escrito cuando las tareas aun no subian a la nube: se trata como
+    // pendiente de subir.
     const leerTareasLocales = (clave) => {
       try {
-        const parsed = JSON.parse(localStorage.getItem(clave) || "[]");
-        return Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
+        const guardado = JSON.parse(localStorage.getItem(clave) || "null");
+        if (Array.isArray(guardado)) return { items: guardado, modoLocal: true };
+        if (guardado && Array.isArray(guardado.items)) {
+          return { items: guardado.items, modoLocal: Boolean(guardado.modoLocal) };
+        }
+      } catch (e) {
+        console.warn("No se pudo leer tareas personales de localStorage", e);
       }
+      return { items: [], modoLocal: false };
     };
 
     const bootstrapCloudData = async () => {
+      // Sin nube la lista vive solo aqui, asi que siempre esta pendiente.
       if (!isSupabaseConfigured()) {
         const clave = "tareas_personales:local";
-        setTareasPersonales(leerTareasLocales(clave));
-        setClaveTareasLocal(clave);
+        setTareasPersonales(leerTareasLocales(clave).items);
+        setAlmacenTareas({ clave, modoLocal: true });
+        tareasCargadasRef.current = true;
         bootstrappedRef.current = true;
         return;
       }
 
-      let claveTareas = null;
+      // La clave sale del usuario de la sesion, no de la membresia: si la
+      // membresia falla -un choque de pestanas, un corte- las tareas se
+      // cargarian igual, y antes eso dejaba la lista vacia y el autoguardado
+      // borraba de la base todas las de esa persona.
+      let claveTareas = "tareas_personales:local";
+      try {
+        const user = await reintentandoSiChocanPestanas(() => getSessionUser());
+        if (user?.id) claveTareas = `tareas_personales:${user.id}`;
+      } catch (error) {
+        console.warn("No se pudo identificar la sesion para las tareas personales:", error);
+      }
+
       try {
         // El rol decide que ve la persona, asi que se pide junto con los datos.
         try {
-          const mia = await getMiMembresia();
+          const mia = await reintentandoSiChocanPestanas(() => getMiMembresia());
           if (!cancel) {
             setMembresia(mia);
             if (mia?.email) setAuthUserEmail(mia.email);
           }
-          const dueno = (mia?.email || mia?.user_id || "").toLowerCase().trim();
-          if (dueno) claveTareas = `tareas_personales:${dueno}`;
         } catch (error) {
           console.error("No se pudo leer el rol del usuario:", error);
         }
@@ -395,12 +429,26 @@ export function AppDataProvider({ children }) {
         const cloud = await loadCloudAppData();
         if (cancel) return;
 
-        // Si la tabla aun no existe (migracion 057 sin correr) la nube llega
-        // vacia: se usa la copia local para no perder lo que la persona anoto.
-        if (claveTareas) {
+        {
+          const faltaTabla = (cloud.__tablasFaltantes || []).includes("tareas_personales");
           const nube = Array.isArray(cloud.tareasPersonales) ? cloud.tareasPersonales : [];
-          setTareasPersonales(nube.length ? nube : leerTareasLocales(claveTareas));
-          setClaveTareasLocal(claveTareas);
+          const local = leerTareasLocales(claveTareas);
+
+          if (faltaTabla) {
+            // Sin migracion 057 la nube no guarda nada: manda la copia local.
+            setTareasPersonales(local.items);
+            setAlmacenTareas({ clave: claveTareas, modoLocal: true });
+          } else {
+            // Manda la nube, aunque venga vacia. Lo local solo se suma una vez,
+            // si quedo pendiente de subir, y sin pisar lo que ya esta arriba.
+            const enNube = new Set(nube.map((t) => t?.id));
+            const pendientes = local.modoLocal
+              ? local.items.filter((t) => t?.id && !enNube.has(t.id))
+              : [];
+            setTareasPersonales([...nube, ...pendientes]);
+            setAlmacenTareas({ clave: claveTareas, modoLocal: false });
+          }
+          tareasCargadasRef.current = true;
         }
 
         // Limpiar automáticamente obras duplicadas y corregir saltos de consecutivo
@@ -501,9 +549,12 @@ export function AppDataProvider({ children }) {
         if (!cancel) setLoadError(null);
       } catch (error) {
         console.error("No se pudo cargar datos de Supabase:", error);
-        if (!cancel && claveTareas) {
-          setTareasPersonales(leerTareasLocales(claveTareas));
-          setClaveTareasLocal(claveTareas);
+        // Sin carga no hay guardado (el backend lo bloquea), asi que lo que se
+        // anote ahora queda pendiente de subir: la proxima carga buena lo suma.
+        if (!cancel) {
+          setTareasPersonales(leerTareasLocales(claveTareas).items);
+          setAlmacenTareas({ clave: claveTareas, modoLocal: true });
+          tareasCargadasRef.current = true;
         }
         // Sin esto la app mostraba los datos de ejemplo como si fueran los
         // reales del cliente, sin ninguna senal de que algo fallo.

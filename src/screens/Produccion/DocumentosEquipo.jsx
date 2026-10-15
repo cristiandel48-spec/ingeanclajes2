@@ -4,6 +4,14 @@ import { DOCUMENTOS_EQUIPO_INIT, limpiarDocumentosEjemplo } from "./documentosSe
 
 const NARANJA = "#f47c20";
 
+const COLOR_BANNERS = {
+  verde: { nombre: "Verde Logros", bg: "#2e7d32", dot: "#34c759", text: "#ffffff" },
+  morado: { nombre: "Morado Iniciativas", bg: "#5856d6", dot: "#af52de", text: "#ffffff" },
+  azul: { nombre: "Azul Desarrollo", bg: "#0071e3", dot: "#007aff", text: "#ffffff" },
+  naranja: { nombre: "Naranja Prioridades", bg: "#f47c20", dot: "#ff9500", text: "#ffffff" },
+  grafito: { nombre: "Grafito Oscuro", bg: "#1c1c1e", dot: "#8e8e93", text: "#ffffff" },
+};
+
 export default function DocumentosEquipo({
   obras = [],
   empleados = [],
@@ -95,9 +103,9 @@ export default function DocumentosEquipo({
   };
 
   // Reemplaza window.prompt() con un modal inline apple-style
-  const pedirInput = ({ titulo, placeholder = "", valorInicial = "" }) =>
+  const pedirInput = ({ titulo, placeholder = "", valorInicial = "", multilinea = false }) =>
     new Promise((resolve) => {
-      setModalInput({ titulo, placeholder, valorInicial, onConfirmar: resolve });
+      setModalInput({ titulo, placeholder, valorInicial, multilinea, onConfirmar: resolve });
       setTimeout(() => inputModalRef.current?.focus(), 80);
     });
 
@@ -123,10 +131,14 @@ export default function DocumentosEquipo({
       bloques: [
         {
           id: `b-${Date.now()}-1`,
-          tipo: "desplegable",
-          titulo: "▶ Alcance inicial y notas de trabajo",
-          abierto: true,
-          contenido: "Escribe aquí los detalles técnicos, instrucciones o notas...",
+          tipo: "banner",
+          titulo: "Logros y retos del ciclo",
+          color: "verde",
+          items: [
+            { id: `v-${Date.now()}-1`, texto: "Primer logro o entrega importante", icono: "verde", nivel: 0 },
+            { id: `v-${Date.now()}-2`, texto: "Seguimiento técnico y validaciones", icono: "punto", nivel: 0 },
+            { id: `v-${Date.now()}-3`, texto: "Detalle de acuerdos y fechas clave", icono: "punto", nivel: 1 },
+          ],
         },
         {
           id: `b-${Date.now()}-2`,
@@ -217,6 +229,185 @@ export default function DocumentosEquipo({
     );
   };
 
+  // Actualizar cualquier campo de un bloque
+  const actualizarBloque = (bloqueId, campos) => {
+    setDocumentos((prev) =>
+      prev.map((d) => {
+        if (d.id !== docActivoId) return d;
+        const nuevosBloques = (d.bloques || []).map((b) =>
+          b.id === bloqueId ? { ...b, ...campos } : b
+        );
+        return { ...d, bloques: nuevosBloques, fechaActualizacion: new Date().toISOString().slice(0, 10) };
+      })
+    );
+  };
+
+  // Eliminar un bloque
+  const eliminarBloque = (bloqueId) => {
+    setDocumentos((prev) =>
+      prev.map((d) => {
+        if (d.id !== docActivoId) return d;
+        return {
+          ...d,
+          bloques: (d.bloques || []).filter((b) => b.id !== bloqueId),
+          fechaActualizacion: new Date().toISOString().slice(0, 10),
+        };
+      })
+    );
+    mostrarToast("Bloque eliminado");
+  };
+
+  // Añadir ítem a una lista de viñetas o banner
+  const agregarItemVineta = (bloqueId, texto = "", nivel = 0, despuesDeId = null) => {
+    const nuevoItem = {
+      id: `v-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      texto,
+      icono: "punto",
+      nivel,
+    };
+    setDocumentos((prev) =>
+      prev.map((d) => {
+        if (d.id !== docActivoId) return d;
+        const nuevosBloques = (d.bloques || []).map((b) => {
+          if (b.id !== bloqueId) return b;
+          const itemsActuales = Array.isArray(b.items) ? b.items : [];
+          if (!despuesDeId) {
+            return { ...b, items: [...itemsActuales, nuevoItem] };
+          }
+          const idx = itemsActuales.findIndex((i) => i.id === despuesDeId);
+          if (idx === -1) {
+            return { ...b, items: [...itemsActuales, nuevoItem] };
+          }
+          const copia = [...itemsActuales];
+          copia.splice(idx + 1, 0, nuevoItem);
+          return { ...b, items: copia };
+        });
+        return { ...d, bloques: nuevosBloques, fechaActualizacion: new Date().toISOString().slice(0, 10) };
+      })
+    );
+  };
+
+  // Actualizar texto o propiedades de una viñeta
+  const actualizarItemVineta = (bloqueId, itemId, campos) => {
+    setDocumentos((prev) =>
+      prev.map((d) => {
+        if (d.id !== docActivoId) return d;
+        const nuevosBloques = (d.bloques || []).map((b) => {
+          if (b.id !== bloqueId) return b;
+          const nuevosItems = (b.items || []).map((item) =>
+            item.id === itemId ? { ...item, ...campos } : item
+          );
+          return { ...b, items: nuevosItems };
+        });
+        return { ...d, bloques: nuevosBloques, fechaActualizacion: new Date().toISOString().slice(0, 10) };
+      })
+    );
+  };
+
+  // Eliminar una viñeta
+  const eliminarItemVineta = (bloqueId, itemId) => {
+    setDocumentos((prev) =>
+      prev.map((d) => {
+        if (d.id !== docActivoId) return d;
+        const nuevosBloques = (d.bloques || []).map((b) => {
+          if (b.id !== bloqueId) return b;
+          const filtrados = (b.items || []).filter((item) => item.id !== itemId);
+          return { ...b, items: filtrados };
+        });
+        return { ...d, bloques: nuevosBloques, fechaActualizacion: new Date().toISOString().slice(0, 10) };
+      })
+    );
+  };
+
+  // Ciclar icono de viñeta: punto (•) -> verde (🟢) -> amarillo (🟡) -> rojo (🔴) -> check (✓)
+  const ciclarIconoVineta = (bloqueId, itemId) => {
+    const orden = ["punto", "verde", "amarillo", "rojo", "check"];
+    setDocumentos((prev) =>
+      prev.map((d) => {
+        if (d.id !== docActivoId) return d;
+        const nuevosBloques = (d.bloques || []).map((b) => {
+          if (b.id !== bloqueId) return b;
+          const nuevosItems = (b.items || []).map((item) => {
+            if (item.id !== itemId) return item;
+            const actual = item.icono || "punto";
+            const proximo = orden[(orden.indexOf(actual) + 1) % orden.length];
+            return { ...item, icono: proximo };
+          });
+          return { ...b, items: nuevosItems };
+        });
+        return { ...d, bloques: nuevosBloques, fechaActualizacion: new Date().toISOString().slice(0, 10) };
+      })
+    );
+  };
+
+  // Cambiar nivel de sangría (sub-viñeta)
+  const cambiarNivelVineta = (bloqueId, itemId, delta) => {
+    setDocumentos((prev) =>
+      prev.map((d) => {
+        if (d.id !== docActivoId) return d;
+        const nuevosBloques = (d.bloques || []).map((b) => {
+          if (b.id !== bloqueId) return b;
+          const nuevosItems = (b.items || []).map((item) => {
+            if (item.id !== itemId) return item;
+            const nivelActual = item.nivel || 0;
+            const nuevoNivel = Math.max(0, Math.min(1, nivelActual + delta));
+            return { ...item, nivel: nuevoNivel };
+          });
+          return { ...b, items: nuevosItems };
+        });
+        return { ...d, bloques: nuevosBloques, fechaActualizacion: new Date().toISOString().slice(0, 10) };
+      })
+    );
+  };
+
+  // Pegar múltiples líneas y convertirlas automáticamente en viñetas
+  const pegarMultiplesVinetas = async (bloqueId) => {
+    const texto = await pedirInput({
+      titulo: "Pegar viñetas o texto",
+      placeholder: "Pega tus notas aquí. Cada línea será una viñeta. Puedes incluir •, -, o 🟢",
+      multilinea: true,
+    });
+    if (!texto || !texto.trim()) return;
+
+    const lineas = texto.split("\n").map((l) => l.trim()).filter(Boolean);
+    if (lineas.length === 0) return;
+
+    const nuevosItems = lineas.map((linea) => {
+      const tieneIndent = linea.startsWith("  ") || linea.startsWith("\t");
+      let limpio = linea.replace(/^[-*•\d.)\s]+/, "").trim();
+      let icono = "punto";
+      if (linea.includes("🟢") || limpio.toLowerCase().startsWith("logro") || limpio.toLowerCase().startsWith("exito")) {
+        icono = "verde";
+      } else if (linea.includes("🟡")) {
+        icono = "amarillo";
+      } else if (linea.includes("🔴")) {
+        icono = "rojo";
+      } else if (linea.includes("✓") || linea.includes("[x]")) {
+        icono = "check";
+      }
+      limpio = limpio.replace(/^[🟢🟡🔴✓]\s*/, "");
+
+      return {
+        id: `v-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        texto: limpio || linea,
+        icono,
+        nivel: tieneIndent ? 1 : 0,
+      };
+    });
+
+    setDocumentos((prev) =>
+      prev.map((d) => {
+        if (d.id !== docActivoId) return d;
+        const nuevosBloques = (d.bloques || []).map((b) => {
+          if (b.id !== bloqueId) return b;
+          return { ...b, items: [...(b.items || []), ...nuevosItems] };
+        });
+        return { ...d, bloques: nuevosBloques, fechaActualizacion: new Date().toISOString().slice(0, 10) };
+      })
+    );
+    mostrarToast(`${nuevosItems.length} viñetas añadidas`);
+  };
+
   // Insertar un nuevo bloque según tipo
   const insertarBloque = async (tipo) => {
     setMenuInsertarAbierto(false);
@@ -268,7 +459,38 @@ export default function DocumentosEquipo({
 
     let nuevoBloque = null;
 
-    if (tipo === "desplegable") {
+    if (tipo === "banner") {
+      const titulo = await pedirInput({
+        titulo: "Título de la sección con banner",
+        placeholder: "Logros y retos del ciclo",
+        valorInicial: "Logros y retos del ciclo",
+      });
+      if (!titulo) return;
+      nuevoBloque = {
+        id: `b-${Date.now()}`,
+        tipo: "banner",
+        titulo: titulo.trim(),
+        color: "verde",
+        items: [
+          { id: `v-${Date.now()}-1`, texto: "Primer punto o logro destacado", icono: "punto", nivel: 0 },
+        ],
+      };
+    } else if (tipo === "vineta") {
+      const titulo = await pedirInput({
+        titulo: "Título del grupo de viñetas",
+        placeholder: "E. Logros y retos del ciclo",
+        valorInicial: "E. Logros y retos del ciclo",
+      });
+      if (!titulo) return;
+      nuevoBloque = {
+        id: `b-${Date.now()}`,
+        tipo: "vineta",
+        titulo: titulo.trim(),
+        items: [
+          { id: `v-${Date.now()}-1`, texto: "Primer punto de seguimiento", icono: "punto", nivel: 0 },
+        ],
+      };
+    } else if (tipo === "desplegable") {
       const titulo = await pedirInput({ titulo: "Título del desplegable", placeholder: "▶ Sección desplegable", valorInicial: "▶ Sección desplegable" });
       if (!titulo) return;
       nuevoBloque = {
@@ -747,7 +969,9 @@ export default function DocumentosEquipo({
                     Tipos de bloques
                   </div>
                   {[
-                    { tipo: "checklist", icono: "☑", titulo: "Lista de Tareas", desc: "Casilla para tachar y asignar" },
+                    { tipo: "banner", icono: "🏷️", titulo: "Banner con Viñetas", desc: "Sección con encabezado de color y viñetas" },
+                    { tipo: "vineta", icono: "•", titulo: "Lista con Viñetas", desc: "Puntos con viñetas, sangría y estados" },
+                    { tipo: "checklist", icono: "☑", titulo: "Lista de Tareas", desc: "Casilla para tachar y organizar" },
                     { tipo: "enlace", icono: "📄", titulo: "Subpágina / Enlace", desc: "Crear documento vinculado" },
                     { tipo: "desplegable", icono: "▶", titulo: "Lista desplegable (Toggle)", desc: "Ocultar o expandir contenido" },
                     { tipo: "destacado", icono: "💡", titulo: "Destacado (Callout)", desc: "Nota o advertencia resaltada" },
@@ -900,9 +1124,312 @@ export default function DocumentosEquipo({
         {/* BLOQUES DINÁMICOS DEL DOCUMENTO (Toggles, Callouts, Checklists)      */}
         {/* =================================================================== */}
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          {(docActivo?.bloques || []).map((bloque) => {
-            // 1. BLOQUE DESPLEGABLE / TOGGLE
-            if (bloque.tipo === "desplegable") {
+          {(() => {
+            const renderItemsVineta = (bloque) => {
+              const items = Array.isArray(bloque.items) ? bloque.items : [];
+              return (
+                <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 8 }}>
+                  {items.map((item, idx) => {
+                    const esSubnivel = (item.nivel || 0) > 0;
+                    return (
+                      <div
+                        key={item.id || idx}
+                        style={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: 8,
+                          paddingLeft: esSubnivel ? 26 : 4,
+                          transition: "all 0.12s ease",
+                        }}
+                      >
+                        {/* Viñeta o indicador clicable */}
+                        <button
+                          type="button"
+                          onClick={() => ciclarIconoVineta(bloque.id, item.id)}
+                          title="Clic para cambiar viñeta: • | 🟢 | 🟡 | 🔴 | ✓"
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: "3px 0 0",
+                            fontSize: item.icono === "punto" || !item.icono ? 16 : 13,
+                            lineHeight: 1,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: 18,
+                            flexShrink: 0,
+                            color: "var(--text-main, #1d1d1f)",
+                            userSelect: "none",
+                          }}
+                        >
+                          {item.icono === "verde" ? "🟢" :
+                           item.icono === "amarillo" ? "🟡" :
+                           item.icono === "rojo" ? "🔴" :
+                           item.icono === "check" ? "✓" : "•"}
+                        </button>
+
+                        {/* Input de texto in-situ */}
+                        <input
+                          type="text"
+                          value={item.texto || ""}
+                          onChange={(e) => actualizarItemVineta(bloque.id, item.id, { texto: e.target.value })}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              agregarItemVineta(bloque.id, "", item.nivel || 0, item.id);
+                            } else if (e.key === "Tab") {
+                              e.preventDefault();
+                              cambiarNivelVineta(bloque.id, item.id, e.shiftKey ? -1 : 1);
+                            } else if (e.key === "Backspace" && !item.texto && items.length > 1) {
+                              e.preventDefault();
+                              eliminarItemVineta(bloque.id, item.id);
+                            }
+                          }}
+                          placeholder="Escribe un punto, logro o iniciativa..."
+                          style={{
+                            flex: 1,
+                            border: "none",
+                            outline: "none",
+                            background: "transparent",
+                            fontSize: esSubnivel ? 13 : 13.5,
+                            color: "var(--text-main, #1d1d1f)",
+                            lineHeight: 1.5,
+                            fontFamily: "inherit",
+                            padding: "2px 0",
+                          }}
+                        />
+
+                        {/* Acciones rápidas: Indentar, Desindentar, Borrar */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 2, opacity: 0.5, flexShrink: 0 }}>
+                          <button
+                            type="button"
+                            onClick={() => cambiarNivelVineta(bloque.id, item.id, esSubnivel ? -1 : 1)}
+                            title={esSubnivel ? "Quitar sangría" : "Sangría / Sub-viñeta"}
+                            style={{
+                              background: "transparent",
+                              border: "none",
+                              cursor: "pointer",
+                              fontSize: 11,
+                              color: "var(--text-muted, #86868b)",
+                              padding: "1px 4px",
+                            }}
+                          >
+                            {esSubnivel ? "⇤" : "⇥"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => eliminarItemVineta(bloque.id, item.id)}
+                            title="Eliminar viñeta"
+                            style={{
+                              background: "transparent",
+                              border: "none",
+                              cursor: "pointer",
+                              fontSize: 12,
+                              color: "#e11d48",
+                              padding: "1px 4px",
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Botones de acción al final de la lista de viñetas */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8, paddingLeft: 4 }}>
+                    <button
+                      type="button"
+                      onClick={() => agregarItemVineta(bloque.id, "", 0)}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        color: NARANJA,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                        padding: "2px 4px",
+                      }}
+                    >
+                      <span>+ Añadir viñeta</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => pegarMultiplesVinetas(bloque.id)}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        color: "var(--text-muted, #86868b)",
+                        fontSize: 11.5,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                        padding: "2px 4px",
+                      }}
+                    >
+                      <span>⚡ Pegar varias viñetas</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            };
+
+            return (docActivo?.bloques || []).map((bloque) => {
+              // 0. BLOQUE BANNER DE SECCIÓN CON VIÑETAS (Estilo Slite / Apple)
+              if (bloque.tipo === "banner") {
+                const col = COLOR_BANNERS[bloque.color || "verde"] || COLOR_BANNERS.verde;
+                return (
+                  <div
+                    key={bloque.id}
+                    style={{
+                      borderRadius: 16,
+                      padding: 0,
+                      marginBottom: 6,
+                    }}
+                  >
+                    {/* Encabezado con Banner de Color estilo Slite / Apple */}
+                    <div
+                      style={{
+                        background: col.bg,
+                        color: "#ffffff",
+                        borderRadius: 14,
+                        padding: "13px 20px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 12,
+                        boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
+                      }}
+                    >
+                      <input
+                        type="text"
+                        value={bloque.titulo || ""}
+                        onChange={(e) => actualizarBloque(bloque.id, { titulo: e.target.value })}
+                        placeholder="Título de la sección (ej. Logros y retos del ciclo)..."
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          outline: "none",
+                          color: "#ffffff",
+                          fontSize: 17,
+                          fontWeight: 800,
+                          letterSpacing: "-0.01em",
+                          width: "100%",
+                          fontFamily: "inherit",
+                        }}
+                      />
+
+                      {/* Selector de color y Eliminar */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+                        {Object.entries(COLOR_BANNERS).map(([cKey, cVal]) => (
+                          <button
+                            key={cKey}
+                            type="button"
+                            onClick={() => actualizarBloque(bloque.id, { color: cKey })}
+                            style={{
+                              width: 17,
+                              height: 17,
+                              borderRadius: "50%",
+                              background: cVal.dot,
+                              border: (bloque.color || "verde") === cKey ? "2px solid #ffffff" : "1px solid rgba(255,255,255,0.4)",
+                              cursor: "pointer",
+                              padding: 0,
+                              boxShadow: (bloque.color || "verde") === cKey ? "0 0 6px rgba(0,0,0,0.3)" : "none",
+                            }}
+                            title={`Color ${cVal.nombre}`}
+                          />
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => eliminarBloque(bloque.id)}
+                          style={{
+                            background: "transparent",
+                            border: "none",
+                            color: "rgba(255,255,255,0.7)",
+                            cursor: "pointer",
+                            fontSize: 14,
+                            marginLeft: 6,
+                            padding: "2px 4px",
+                          }}
+                          title="Eliminar sección"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Lista de viñetas dentro del banner */}
+                    <div style={{ padding: "8px 6px 4px" }}>
+                      {renderItemsVineta(bloque)}
+                    </div>
+                  </div>
+                );
+              }
+
+              // 0.1 BLOQUE LISTA CON VIÑETAS ESTÁNDAR
+              if (bloque.tipo === "vineta") {
+                return (
+                  <div
+                    key={bloque.id}
+                    style={{
+                      border: "1px solid var(--border, rgba(0,0,0,0.06))",
+                      borderRadius: 16,
+                      padding: "16px 20px",
+                      background: "var(--surface, #ffffff)",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+                      marginBottom: 6,
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
+                        <span style={{ fontSize: 16, color: "var(--text-muted, #86868b)" }}>•</span>
+                        <input
+                          type="text"
+                          value={bloque.titulo || ""}
+                          onChange={(e) => actualizarBloque(bloque.id, { titulo: e.target.value })}
+                          placeholder="Título del grupo de viñetas (ej. E. Logros y retos del ciclo)..."
+                          style={{
+                            border: "none",
+                            outline: "none",
+                            background: "transparent",
+                            fontSize: 16,
+                            fontWeight: 800,
+                            color: "var(--text-main, #1d1d1f)",
+                            width: "100%",
+                            fontFamily: "inherit",
+                          }}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => eliminarBloque(bloque.id)}
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          color: "var(--text-muted, #86868b)",
+                          cursor: "pointer",
+                          fontSize: 13,
+                        }}
+                        title="Eliminar grupo de viñetas"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+
+                    {renderItemsVineta(bloque)}
+                  </div>
+                );
+              }
+
+              // 1. BLOQUE DESPLEGABLE / TOGGLE
+              if (bloque.tipo === "desplegable") {
               return (
                 <div
                   key={bloque.id}
@@ -1139,7 +1666,8 @@ export default function DocumentosEquipo({
             }
 
             return null;
-          })}
+          });
+        })()}
         </div>
 
         {/* Barra de inserción de bloques al final del documento (estilo Notion / Apple) */}
@@ -1158,6 +1686,8 @@ export default function DocumentosEquipo({
             + Insertar bloque:
           </span>
           {[
+            { tipo: "banner", icono: "🏷️", label: "Banner con viñetas" },
+            { tipo: "vineta", icono: "•", label: "Lista con viñetas" },
             { tipo: "checklist", icono: "☑️", label: "Lista de tareas" },
             { tipo: "desplegable", icono: "▶", label: "Desplegable" },
             { tipo: "destacado", icono: "💡", label: "Callout" },
@@ -1238,33 +1768,67 @@ export default function DocumentosEquipo({
             <div style={{ fontSize: 17, fontWeight: 700, color: "#1d1d1f", letterSpacing: "-0.02em" }}>
               {modalInput.titulo}
             </div>
-            <input
-              ref={inputModalRef}
-              defaultValue={modalInput.valorInicial || ""}
-              placeholder={modalInput.placeholder || ""}
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  const val = inputModalRef.current?.value ?? "";
-                  setModalInput(null);
-                  modalInput.onConfirmar(val);
-                } else if (e.key === "Escape") {
-                  setModalInput(null);
-                  modalInput.onConfirmar(null);
-                }
-              }}
-              style={{
-                border: "1px solid rgba(0,0,0,0.12)",
-                borderRadius: 10,
-                padding: "10px 14px",
-                fontSize: 14,
-                color: "#1d1d1f",
-                outline: "none",
-                background: "#f5f5f7",
-                width: "100%",
-                boxSizing: "border-box",
-              }}
-            />
+            {modalInput.multilinea ? (
+              <textarea
+                ref={inputModalRef}
+                defaultValue={modalInput.valorInicial || ""}
+                placeholder={modalInput.placeholder || ""}
+                autoFocus
+                rows={6}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                    const val = inputModalRef.current?.value ?? "";
+                    setModalInput(null);
+                    modalInput.onConfirmar(val);
+                  } else if (e.key === "Escape") {
+                    setModalInput(null);
+                    modalInput.onConfirmar(null);
+                  }
+                }}
+                style={{
+                  border: "1px solid rgba(0,0,0,0.12)",
+                  borderRadius: 10,
+                  padding: "10px 14px",
+                  fontSize: 13.5,
+                  color: "#1d1d1f",
+                  outline: "none",
+                  background: "#f5f5f7",
+                  width: "100%",
+                  boxSizing: "border-box",
+                  fontFamily: "inherit",
+                  resize: "vertical",
+                  lineHeight: 1.5,
+                }}
+              />
+            ) : (
+              <input
+                ref={inputModalRef}
+                defaultValue={modalInput.valorInicial || ""}
+                placeholder={modalInput.placeholder || ""}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const val = inputModalRef.current?.value ?? "";
+                    setModalInput(null);
+                    modalInput.onConfirmar(val);
+                  } else if (e.key === "Escape") {
+                    setModalInput(null);
+                    modalInput.onConfirmar(null);
+                  }
+                }}
+                style={{
+                  border: "1px solid rgba(0,0,0,0.12)",
+                  borderRadius: 10,
+                  padding: "10px 14px",
+                  fontSize: 14,
+                  color: "#1d1d1f",
+                  outline: "none",
+                  background: "#f5f5f7",
+                  width: "100%",
+                  boxSizing: "border-box",
+                }}
+              />
+            )}
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <button
                 type="button"

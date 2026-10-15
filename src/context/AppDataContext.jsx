@@ -27,6 +27,7 @@ import {
   mezclarUltimasConexiones,
 } from "../lib/actividadConexiones";
 import { detectarDispositivo } from "../lib/backend/presencia";
+import { DOCUMENTOS_EQUIPO_INIT } from "../screens/Produccion/documentosSeed";
 
 const isSupabaseConfigured = backend.isSupabaseConfigured;
 const loadCloudAppData = backend.loadCloudAppData;
@@ -149,6 +150,27 @@ export function AppDataProvider({ children }) {
       console.warn("No se pudo guardar ingeanclajes_tareas_produccion en localStorage", e);
     }
   }, [tareasProduccion]);
+
+  const [documentosEquipo, setDocumentosEquipo] = useState(() => {
+    try {
+      const guardadas = localStorage.getItem("ingeanclajes_documentos_equipo");
+      if (guardadas) {
+        const parsed = JSON.parse(guardadas);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn("No se pudo cargar ingeanclajes_documentos_equipo de localStorage", e);
+    }
+    return DOCUMENTOS_EQUIPO_INIT;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("ingeanclajes_documentos_equipo", JSON.stringify(documentosEquipo));
+    } catch (e) {
+      console.warn("No se pudo guardar ingeanclajes_documentos_equipo en localStorage", e);
+    }
+  }, [documentosEquipo]);
 
   const [cotizaciones, setCotizaciones] = useState(COTIZACIONES_INIT);
   const [contabilidadConfig, setContabilidadConfig] = useState(CONTABILIDAD_CONFIG_INIT);
@@ -787,6 +809,7 @@ export function AppDataProvider({ children }) {
     agenda, setAgenda,
     tareasPersonales, setTareasPersonales,
     tareasProduccion, setTareasProduccion,
+    documentosEquipo, setDocumentosEquipo,
     obras, setObras,
     empleados, setEmpleados,
     cargos, setCargos,

@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { fmtD } from "../../lib/format";
 import { useIsMobile } from "../../hooks/useMediaQuery";
+import DocumentosEquipo from "./DocumentosEquipo";
 
 const ESTADOS = [
   { id: "por_hacer", label: "Por Hacer", icono: "📝", bg: "#f5f5f7", color: "#1d1d1f" },
@@ -71,9 +72,11 @@ export default function ListaTareasProduccion({
   onNuevaTarea,
   onCambiarEstado,
   usuarioActual = "Camila",
+  documentosEquipo,
+  onActualizarDocumentos,
 }) {
   const isMobile = useIsMobile();
-  const [vista, setVista] = useState("personas"); // "personas" | "radar" | "kanban" | "tabla"
+  const [vista, setVista] = useState("documentos"); // "documentos" | "personas" | "radar" | "kanban" | "tabla"
   const [busqueda, setBusqueda] = useState("");
   const [filtroResponsable, setFiltroResponsable] = useState("todos");
   const [filtroObra, setFiltroObra] = useState(obraInicial || "todas");
@@ -201,6 +204,11 @@ export default function ListaTareasProduccion({
             }}
           >
             <BotonSegmentado
+              activo={vista === "documentos"}
+              onClick={() => setVista("documentos")}
+              label="📄 Documentos y Notas"
+            />
+            <BotonSegmentado
               activo={vista === "personas"}
               onClick={() => setVista("personas")}
               label="👥 Por Colaborador"
@@ -208,7 +216,7 @@ export default function ListaTareasProduccion({
             <BotonSegmentado
               activo={vista === "radar"}
               onClick={() => setVista("radar")}
-              label="🎯 Lo que delegué (Camila)"
+              label="🎯 Lo que delegué"
             />
             <BotonSegmentado
               activo={vista === "kanban"}
@@ -355,6 +363,21 @@ export default function ListaTareasProduccion({
           </select>
         </div>
       </div>
+
+      {/* ========================================================= */}
+      {/* VISTA 0: DOCUMENTOS, NOTAS Y ENLACES (ESTILO NOTION)      */}
+      {/* ========================================================= */}
+      {vista === "documentos" && (
+        <div style={{ marginBottom: 24 }}>
+          <DocumentosEquipo
+            obras={obras}
+            empleados={empleados}
+            usuarioActual={usuarioActual}
+            documentosExternos={documentosEquipo}
+            onActualizarDocumentos={onActualizarDocumentos}
+          />
+        </div>
+      )}
 
       {/* ========================================================= */}
       {/* VISTA 1: TABLERO POR COLABORADOR                          */}

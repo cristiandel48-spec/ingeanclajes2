@@ -1,0 +1,240 @@
+/**
+ * Semilla inicial de Documentos y Notas de Obra estilo Notion + Apple.
+ * Proporciona páginas estructuradas con enlaces internos, checklists, desplegables y callouts.
+ */
+
+export const DOCUMENTOS_EQUIPO_INIT = [
+  {
+    id: "doc-previsora",
+    titulo: "Previsora Vivir ( Los Olivos )",
+    icono: "🏢",
+    obraId: "OBRA-PREVISORA",
+    obraNombre: "Previsora Vivir (Los Olivos)",
+    responsable: "Paola",
+    favorito: true,
+    fechaCreacion: "2026-10-10",
+    fechaActualizacion: "2026-10-15",
+    enlaces: [
+      { id: "doc-claves", icono: "🌐", titulo: "Usuarios y Contraseñas", desc: "Credenciales y accesos a portales seguros" },
+      { id: "doc-cierre", icono: "📅", titulo: "Calendario de Cierre", desc: "Cronograma de fechas de corte y actas" },
+      { id: "doc-tareas-diarias", icono: "✅", titulo: "Tareas Diarias E - A", desc: "Protocolo operativo diario en obra" },
+    ],
+    bloques: [
+      {
+        id: "b-toggle-1",
+        tipo: "desplegable",
+        titulo: "▶ Especificaciones Técnicas y Alcance de Obra",
+        abierto: true,
+        contenido: "• Suministro e instalación de 80 ML de línea de vida horizontal en cable de acero inoxidable 5/16\".\n• Pruebas de tracción certificadas a 12 kN con dinamómetro calibrado según norma EN 795.\n• Entrega de memorias de cálculo avaladas por ingeniero calculista.",
+      },
+      {
+        id: "b-callout-1",
+        tipo: "destacado",
+        icono: "💡",
+        color: "amber",
+        texto: "Nota de Calidad & Certificación: Todos los soportes fotográficos de esta obra deben sincronizarse con la Fototeca antes de generar el Informe de Actividades final.",
+      },
+      {
+        id: "b-tareas-1",
+        tipo: "checklist",
+        titulo: "Pendientes Operativos de la Obra",
+        items: [
+          { id: "t-1", texto: "Coordinar ingreso de personal SST a la obra Los Olivos el lunes a las 7:30 AM", fecha: "2026-10-20", responsable: "Paola", completada: false },
+          { id: "t-2", texto: "Revisar cotización aprobada de anclajes químicos Hilti HIT-RE 500", fecha: "2026-10-18", responsable: "Camila", completada: true },
+          { id: "t-3", texto: "Enviar certificado de calibración del dinamómetro al interventor", fecha: "2026-10-19", responsable: "Carlos Restrepo", completada: true },
+        ],
+      },
+    ],
+  },
+  {
+    id: "doc-python",
+    titulo: "Python Intermedio / Capacitación Equipo",
+    icono: "🐍",
+    obraId: "TI-CAPACITACION",
+    obraNombre: "Capacitaciones & TI",
+    responsable: "Carlos Restrepo",
+    favorito: true,
+    fechaCreacion: "2026-10-12",
+    fechaActualizacion: "2026-10-15",
+    enlaces: [
+      { id: "doc-normas", icono: "📋", titulo: "Normas Internas de Seguridad", desc: "Mejores prácticas y estándares de la empresa" },
+    ],
+    bloques: [
+      {
+        id: "b-toggle-py",
+        tipo: "desplegable",
+        titulo: "▼ Tabla de Contenidos del Curso",
+        abierto: true,
+        contenido: "1. Preparación antes de empezar (Zen de Python, Documentación)\n2. Entorno virtual (venv, dependencias con pip, git init)\n3. Automatizaciones internas para cotizaciones y reportes.",
+      },
+      {
+        id: "b-code-py",
+        tipo: "codigo",
+        lenguaje: "bash",
+        titulo: "Comandos de preparación de entorno virtual",
+        codigo: "# 1. Inicializar repositorio\ngit init\n\n# 2. Crear entorno virtual\npy -m venv venv\n\n# 3. Activar en Windows PowerShell\n.\\venv\\Scripts\\activate\n\n# 4. Desactivar cuando termines\ndeactivate",
+      },
+      {
+        id: "b-tareas-py",
+        tipo: "checklist",
+        titulo: "Prácticas del equipo técnico",
+        items: [
+          { id: "tp-1", texto: "Configurar entorno virtual con python -m venv venv", fecha: "2026-10-15", responsable: "Carlos Restrepo", completada: true },
+          { id: "tp-2", texto: "Crear archivo .gitignore con la exclusión de venv/", fecha: "2026-10-16", responsable: "Paola", completada: false },
+          { id: "tp-3", texto: "Probar script de cálculo de cargas de anclaje", fecha: "2026-10-17", responsable: "Camila", completada: false },
+        ],
+      },
+    ],
+  },
+  {
+    id: "doc-claves",
+    titulo: "Usuarios y Contraseñas de Plataformas",
+    icono: "🌐",
+    obraId: "SISTEMAS",
+    obraNombre: "Sistemas & Seguridad",
+    responsable: "Camila",
+    favorito: false,
+    fechaCreacion: "2026-10-08",
+    fechaActualizacion: "2026-10-14",
+    enlaces: [
+      { id: "doc-previsora", icono: "🏢", titulo: "Regresar a Previsora Vivir", desc: "Página principal del proyecto" },
+    ],
+    bloques: [
+      {
+        id: "b-toggle-claves",
+        tipo: "desplegable",
+        titulo: "▶ Acceso a Portales de Clientes y Radicaciones",
+        abierto: true,
+        contenido: "• Portal Constructora Samanes: usuario ingeanclajes_obra / clave en gestor seguro.\n• Portal Dian Facturación: certificado digital cargado en servidor.\n• ARL Sura: radicación de afiliaciones con token empresarial.",
+      },
+      {
+        id: "b-callout-claves",
+        tipo: "destacado",
+        icono: "🔒",
+        color: "blue",
+        texto: "Seguridad de la información: No compartas contraseñas por WhatsApp ni texto abierto. Mantén las credenciales restringidas al personal autorizado.",
+      },
+      {
+        id: "b-tareas-claves",
+        tipo: "checklist",
+        titulo: "Actualizaciones de accesos",
+        items: [
+          { id: "tc-1", texto: "Actualizar contraseña trimestral del portal de pólizas", fecha: "2026-10-25", responsable: "Camila", completada: false },
+          { id: "tc-2", texto: "Verificar acceso de Paola al portal de ARL", fecha: "2026-10-14", responsable: "Camila", completada: true },
+        ],
+      },
+    ],
+  },
+  {
+    id: "doc-cierre",
+    titulo: "Calendario de Cierre de Mes",
+    icono: "📅",
+    obraId: "FINANCIERO",
+    obraNombre: "Administrativo & Financiero",
+    responsable: "Camila",
+    favorito: false,
+    fechaCreacion: "2026-10-05",
+    fechaActualizacion: "2026-10-14",
+    enlaces: [
+      { id: "doc-previsora", icono: "🏢", titulo: "Ir a Previsora Vivir", desc: "Avance de obra" },
+      { id: "doc-tareas-diarias", icono: "✅", titulo: "Ver Tareas Diarias E - A", desc: "Verificación de entregas" },
+    ],
+    bloques: [
+      {
+        id: "b-toggle-cierre",
+        tipo: "desplegable",
+        titulo: "▶ Fechas Límite de Facturación y Actas",
+        abierto: true,
+        contenido: "• Día 25: Corte de actas de avance con interventoría de cada obra.\n• Día 28: Emisión y envío de facturas electrónicas de cobro a clientes.\n• Día 30: Cierre contable y conciliación de anticipos y pagos a proveedores.",
+      },
+      {
+        id: "b-callout-cierre",
+        tipo: "destacado",
+        icono: "⚠️",
+        color: "amber",
+        texto: "Recordatorio festivos: El cierre de mes debe adelantarse al último día hábil si coincide con festivo nacional o fin de semana.",
+      },
+      {
+        id: "b-tareas-cierre",
+        tipo: "checklist",
+        titulo: "Checklist de Cierre Operativo",
+        items: [
+          { id: "tci-1", texto: "Radicar acta de entrega de la obra Samanes", fecha: "2026-10-25", responsable: "Camila", completada: false },
+          { id: "tci-2", texto: "Revisar retenciones en la fuente con contabilidad", fecha: "2026-10-28", responsable: "Camila", completada: false },
+          { id: "tci-3", texto: "Consolidar horas trabajadas y extras de cuadrilla", fecha: "2026-10-29", responsable: "Paola", completada: false },
+        ],
+      },
+    ],
+  },
+  {
+    id: "doc-tareas-diarias",
+    titulo: "Tareas Diarias E - A (Ejecución y Alistamiento)",
+    icono: "✅",
+    obraId: "OPERACIONES",
+    obraNombre: "Operaciones en Terreno",
+    responsable: "Paola",
+    favorito: false,
+    fechaCreacion: "2026-10-06",
+    fechaActualizacion: "2026-10-15",
+    enlaces: [
+      { id: "doc-previsora", icono: "🏢", titulo: "Previsora Vivir (Los Olivos)", desc: "Página principal del proyecto" },
+    ],
+    bloques: [
+      {
+        id: "b-toggle-protocolo",
+        tipo: "desplegable",
+        titulo: "▶ Protocolo de Apertura de Jornada",
+        abierto: true,
+        contenido: "• Charla de 5 minutos de seguridad y prevención de caídas en alturas.\n• Inspección preoperacional de arneses, eslingas y mosquetones.\n• Verificación de líneas de vida provisionales y señalización perimetral.\n• Diligenciamiento de ATS y firma de permiso de trabajo en alturas.",
+      },
+      {
+        id: "b-tareas-diarias-items",
+        tipo: "checklist",
+        titulo: "Checklist Diario de Cuadrilla",
+        items: [
+          { id: "td-1", texto: "Alistamiento de taladros percutores y brocas SDS Plus", fecha: "2026-10-15", responsable: "Paola", completada: true },
+          { id: "td-2", texto: "Inspección visual de cables de acero y prensacables", fecha: "2026-10-15", responsable: "Carlos Restrepo", completada: true },
+          { id: "td-3", texto: "Firma de permiso de trabajo seguro en alturas con el residente", fecha: "2026-10-15", responsable: "Paola", completada: false },
+          { id: "td-4", texto: "Registro fotográfico del avance para el informe de actividades", fecha: "2026-10-15", responsable: "Paola", completada: false },
+        ],
+      },
+    ],
+  },
+  {
+    id: "doc-normas",
+    titulo: "Normas Internas de Seguridad en Alturas",
+    icono: "📋",
+    obraId: "SST",
+    obraNombre: "Seguridad y Salud en el Trabajo",
+    responsable: "Paola",
+    favorito: false,
+    fechaCreacion: "2026-10-01",
+    fechaActualizacion: "2026-10-12",
+    enlaces: [],
+    bloques: [
+      {
+        id: "b-toggle-normas",
+        tipo: "desplegable",
+        titulo: "▶ Normatividad Aplicable Resolución 4272 de 2021",
+        abierto: true,
+        contenido: "• Todo punto de anclaje fijo debe resistir mínimo 5.000 lb (22.2 kN) por persona conectada.\n• Uso obligatorio de absorbedor de impacto en caídas superiores a 1.80 metros.\n• Inspección anual periódica obligatoria de sistemas fijos de protección contra caídas.",
+      },
+      {
+        id: "b-callout-normas",
+        tipo: "destacado",
+        icono: "🛡️",
+        color: "emerald",
+        texto: "Compromiso de cero accidentes: Ningún colaborador inicia labores sin equipo certificado y verificación del coordinador de alturas.",
+      },
+      {
+        id: "b-tareas-normas",
+        tipo: "checklist",
+        titulo: "Acciones de Cumplimiento Normativo",
+        items: [
+          { id: "tn-1", texto: "Difundir actualización de ATS al equipo técnico", fecha: "2026-10-10", responsable: "Paola", completada: true },
+          { id: "tn-2", texto: "Revisar hojas de vida de los equipos de protección personal", fecha: "2026-10-22", responsable: "Paola", completada: false },
+        ],
+      },
+    ],
+  },
+];

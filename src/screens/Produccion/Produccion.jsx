@@ -158,6 +158,8 @@ export default function Produccion({ ctx = {} }) {
         onNuevaTarea={abrirNuevaTarea}
         onCambiarEstado={cambiarEstadoTarea}
         usuarioActual={usuarioNombre}
+        documentosEquipo={ctx.documentosEquipo}
+        onActualizarDocumentos={ctx.setDocumentosEquipo}
       />
 
       {/* Modal para Crear y Editar Tareas */}

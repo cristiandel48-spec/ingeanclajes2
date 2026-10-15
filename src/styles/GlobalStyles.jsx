@@ -1,81 +1,60 @@
-// Estilos globales del armazon: scrollbars, impresion y correcciones
+// Estilos globales del armazon: tokens del sistema de diseño, animaciones
+// compartidas, foco de teclado, scrollbars, impresion y correcciones
 // especificas de Safari en iOS (zoom al enfocar inputs, rebote del scroll,
 // alto real de la ventana y area segura del notch).
+//
+// Los colores NO se escriben aqui: vienen de styles/designTokens.js, que es la
+// unica fuente del sistema.
+
+import { tokensCss } from "./designTokens";
 
 export default function GlobalStyles({ divider }) {
   const css = `
-    :root {
-      --bg-app: #f6f7f9;
-      --surface: #ffffff;
-      --surface-card: #ffffff;
-      --surface-hover: #fffdfb;
-      --surface-subtle: #f8fafc;
-      --text-main: #101828;
-      --text-h1: #101828;
-      --text-muted: #667085;
-      --text-subtle: #94a3b8;
-      --border: #eef0f3;
-      --border-strong: #e2e8f0;
-      --input-bg: #ffffff;
-      --input-color: #101828;
-      --input-border: #eaecf0;
-      --input-placeholder: #94a3b8;
-      --c-tinta: #1a1a2e;
-      --c-suave: #475569;
-      --c-apagado: #64748b;
-      --c-tenue: #64748b;
-      --c-relleno: #f8fafc;
-      --c-relleno-fuerte: #eef0f3;
-      --c-borde: #eef0f3;
-      --c-borde-fuerte: #e2e8f0;
-      --c-acento-suave: #fff3e8;
-      --c-tag-bg: #fff3e8;
-      --c-tag-text: #cc6600;
-      --btn-ver-bg: #dbeafe;
-      --btn-ver-text: #1e40af;
-      --btn-ver-border: transparent;
-      --btn-cancelar-bg: #f1f5f9;
-      --btn-cancelar-text: #475569;
-      --safe-top: env(safe-area-inset-top, 0px);
-      --safe-right: env(safe-area-inset-right, 0px);
-      --safe-bottom: env(safe-area-inset-bottom, 0px);
-      --safe-left: env(safe-area-inset-left, 0px);
-      color-scheme: light;
+${tokensCss}
+
+    /* ── Animaciones compartidas ─────────────────────────────────────────
+       Estas cinco se invocaban en una docena de sitios sin estar definidas en
+       ninguna parte, asi que el indicador de guardado no giraba y los dialogos
+       no tenian entrada: simplemente aparecian de golpe. */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes fadeInModal {
+      from { opacity: 0; transform: scale(.98); }
+      to   { opacity: 1; transform: none; }
+    }
+    @keyframes fadeInMenu {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: none; }
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: none; }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
 
-    .app-shell[data-theme="dark"] {
-      --bg-app: #0f1115;
-      --surface: #181a20;
-      --surface-card: #181a20;
-      --surface-hover: #20242e;
-      --surface-subtle: #20232b;
-      --text-main: #f0f2f5;
-      --text-h1: #f0f2f5;
-      --text-muted: #98a1b0;
-      --text-subtle: #6b7280;
-      --border: #2a2d36;
-      --border-strong: #333846;
-      --input-bg: #20232b;
-      --input-color: #f0f2f5;
-      --input-border: #2a2d36;
-      --input-placeholder: #8a94a6;
-      --c-tinta: #f0f2f5;
-      --c-suave: #cbd5e1;
-      --c-apagado: #98a1b0;
-      --c-tenue: #98a1b0;
-      --c-relleno: #20232b;
-      --c-relleno-fuerte: #262b35;
-      --c-borde: #2a2d36;
-      --c-borde-fuerte: #333846;
-      --c-acento-suave: rgba(244,124,32,.18);
-      --c-tag-bg: rgba(244,124,32,.15);
-      --c-tag-text: #fb923c;
-      --btn-ver-bg: #1e3a8a;
-      --btn-ver-text: #93c5fd;
-      --btn-ver-border: #2563eb;
-      --btn-cancelar-bg: #262b35;
-      --btn-cancelar-text: #cbd5e1;
-      color-scheme: dark;
+    /* ── Foco de teclado ─────────────────────────────────────────────────
+       No habia ninguna regla de foco en todo el proyecto y si 30 reglas que
+       lo apagaban, asi que quien navega con el tabulador no sabia nunca donde
+       estaba. :focus-visible solo se enciende con teclado, no al hacer clic,
+       por eso no ensucia el uso con raton. */
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+    /* Gana a los outline:none escritos en linea en campos y botones. */
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible,
+    button:focus-visible,
+    a:focus-visible,
+    [tabindex]:focus-visible {
+      outline: 2px solid var(--accent) !important;
+      outline-offset: 2px;
     }
 
     .app-shell[data-theme="dark"] input::placeholder,

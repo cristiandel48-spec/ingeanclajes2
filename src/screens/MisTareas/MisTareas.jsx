@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { CD } from "../../styles/tokens";
+import DocumentosEquipo from "../Produccion/DocumentosEquipo";
 
 // Lista de chequeo personal estilo Recordatorios de Apple. Cada usuario ve
 // solo la suya (la nube filtra por dueño); al marcar una tarea se tacha sola.
@@ -187,6 +188,7 @@ export default function MisTareas({ ctx }) {
 
   const [texto, setTexto] = useState("");
   const [filtro, setFiltro] = useState("todas"); // "todas" | "pendientes" | "completadas"
+  const [modoVista, setModoVista] = useState("personal"); // "personal" | "equipo"
   const [deshacer, setDeshacer] = useState(null); // { tareas, indice, mensaje }
   const timerDeshacer = useRef(null);
   const inputRef = useRef(null);
@@ -272,10 +274,72 @@ export default function MisTareas({ ctx }) {
   };
 
   return (
-    // El envoltorio recibe la regla global que anula el padding lateral de los
-    // hijos directos de <main> en pantallas angostas, para que la tarjeta
-    // conserve el suyo.
-    <div style={{ width: "100%" }}>
+    <div style={{ width: "100%", padding: "4px 0 24px" }}>
+      {/* Selector Superior Estilo Apple: Personal vs Equipo */}
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+        <div
+          style={{
+            display: "inline-flex",
+            background: "var(--surface-subtle, #f1f3f5)",
+            padding: 3,
+            borderRadius: 12,
+            border: "1px solid var(--border, rgba(0,0,0,0.08))",
+            maxWidth: "100%",
+            overflowX: "auto",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setModoVista("personal")}
+            style={{
+              padding: "6px 16px",
+              fontSize: 12.5,
+              fontWeight: modoVista === "personal" ? 700 : 500,
+              borderRadius: 9,
+              border: "none",
+              cursor: "pointer",
+              background: modoVista === "personal" ? "#ffffff" : "transparent",
+              color: modoVista === "personal" ? "#101828" : "#667085",
+              boxShadow: modoVista === "personal" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+              transition: "all 0.15s ease",
+              whiteSpace: "nowrap",
+            }}
+          >
+            ✓ Mis Tareas Personales
+          </button>
+          <button
+            type="button"
+            onClick={() => setModoVista("equipo")}
+            style={{
+              padding: "6px 16px",
+              fontSize: 12.5,
+              fontWeight: modoVista === "equipo" ? 700 : 500,
+              borderRadius: 9,
+              border: "none",
+              cursor: "pointer",
+              background: modoVista === "equipo" ? "#ffffff" : "transparent",
+              color: modoVista === "equipo" ? "#101828" : "#667085",
+              boxShadow: modoVista === "equipo" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+              transition: "all 0.15s ease",
+              whiteSpace: "nowrap",
+            }}
+          >
+            📄 Documentos &amp; Tareas con el Equipo
+          </button>
+        </div>
+      </div>
+
+      {modoVista === "equipo" ? (
+        <div style={{ maxWidth: 1360, margin: "0 auto", width: "100%" }}>
+          <DocumentosEquipo
+            obras={ctx?.obras}
+            empleados={ctx?.empleados}
+            usuarioActual={nombre || "Camila"}
+            documentosExternos={ctx?.documentosEquipo}
+            onActualizarDocumentos={ctx?.setDocumentosEquipo}
+          />
+        </div>
+      ) : (
     <div className="mt-card" style={{ ...CD, padding: "28px 28px 20px", maxWidth: 860, margin: "0 auto", width: "100%" }}>
       <style>{ESTILOS}</style>
 
@@ -506,9 +570,10 @@ export default function MisTareas({ ctx }) {
           >
             Deshacer
           </button>
-        </div>
+          </div>
+        )}
+      </div>
       )}
-    </div>
     </div>
   );
 }

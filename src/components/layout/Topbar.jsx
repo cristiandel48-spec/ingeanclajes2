@@ -1,11 +1,13 @@
 import { useMemo } from "react";
 import MenuUsuario from "./MenuUsuario";
 import SaveIndicator from "./SaveIndicator";
-import { getScreenTitle, getScreenSection } from "../../config/navigation";
+import { getScreenTitle, getScreenSection, getScreenShort } from "../../config/navigation";
 import { TOPBAR_HEIGHT } from "../../styles/shellTheme";
 import { useAppData } from "../../context/AppDataContext";
 import { puedeVer, pantallaInicial } from "../../lib/permisos";
 import { BotonInstalarApp } from "../pwa/InstaladorApp";
+import { Button, StatusPill } from "../ui";
+import { TIPO, CAPA } from "../../styles/designTokens";
 
 // Barra superior: ubicacion actual, acciones de la pantalla, tema y usuario.
 // En movil incluye el boton que abre el menu lateral.
@@ -13,9 +15,34 @@ import { BotonInstalarApp } from "../pwa/InstaladorApp";
 // `acciones` lo publica la pantalla que este abierta (ver AccionesPantalla).
 // Sirve para que un boton importante -guardar una cotizacion larga- quede
 // siempre a la vista junto al indicador de guardado, sin tener que subir.
-export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOpenMenu, acciones }) {
+//
+// Todos los controles de aqui son Button del kit en variante tertiary y
+// tamano 32: antes convivian alturas de 34, 36, 38 y 40 y radios 8, 10 y 999
+// en la misma linea de 64px de alto.
+
+// Pastilla de estado que ademas abre algo. El boton no pinta nada: solo
+// aporta el clic y el foco de teclado, que un <span> no tiene.
+function PastillaBoton({ tono, onClick, children, ...props }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        background: "none", border: "none", padding: 0, margin: 0,
+        cursor: "pointer", flexShrink: 0, display: "flex", borderRadius: 999,
+      }}
+      {...props}
+    >
+      <StatusPill tono={tono}>{children}</StatusPill>
+    </button>
+  );
+}
+
+export default function Topbar({ scr, dark, onToggleTheme, isMobile, onOpenMenu, acciones }) {
   const { membresia, usuariosEnLinea, esSuperAdminCristian, irAPantalla, agenda } = useAppData();
-  const title = getScreenTitle(scr);
+  // En el telefono el nombre largo se recortaba con puntos suspensivos:
+  // «Recordatorio de agendas y visi…». El corto ya estaba en navigation.jsx.
+  const title = isMobile ? getScreenShort(scr) : getScreenTitle(scr);
   const section = getScreenSection(scr);
 
   const mananaIso = useMemo(() => {
@@ -53,7 +80,7 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
       style={{
         position: "sticky",
         top: 0,
-        zIndex: 40,
+        zIndex: CAPA.barra,
         flexShrink: 0,
         display: "flex",
         alignItems: "center",
@@ -61,11 +88,19 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
         gap: isMobile ? 8 : 12,
         minHeight: TOPBAR_HEIGHT,
         height: TOPBAR_HEIGHT,
-        padding: isMobile ? "0 12px" : "0 28px",
-        background: theme.surface,
-        borderBottom: `1px solid ${theme.divider}`,
+        // El mismo margen lateral que el contenido de abajo: con 28 aqui y 32
+        // alli el titulo y la pagina no estaban alineados.
+        //
+        // Van sueltos y no como `padding`: mezclar la forma corta con
+        // paddingTop en el mismo estilo hace que React avise de un conflicto y
+        // el valor que gana depende del orden del renderizado.
+        paddingLeft: isMobile ? 12 : 32,
+        paddingRight: isMobile ? 12 : 32,
+        paddingBottom: 0,
         // Deja pasar el notch en iPhone cuando la app va a pantalla completa.
         paddingTop: "env(safe-area-inset-top)",
+        background: "var(--surface)",
+        borderBottom: "1px solid var(--separator)",
         width: "100%",
         maxWidth: "100%",
         boxSizing: "border-box",
@@ -73,88 +108,43 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
     >
       <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 10 : 12, flex: 1, minWidth: 0, overflow: "hidden" }}>
         {isMobile && (
-          <button
+          <Button
+            variante="tertiary"
+            tam="sm"
+            soloIcono
+            icono="menu"
             onClick={onOpenMenu}
             aria-label="Abrir menú"
-            style={{
-              width: 38, height: 38, flexShrink: 0,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              borderRadius: 10, border: "none", cursor: "pointer",
-              background: theme.surfaceTint, color: theme.text,
-            }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
-              <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-            </svg>
-          </button>
+            style={{ color: "var(--text-primary)" }}
+          />
         )}
 
         <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
           {!isMobile && section && (
-            <div style={{ fontSize: 11.5, color: theme.muted, letterSpacing: .2, whiteSpace: "nowrap" }}>
+            <div style={{ ...TIPO.caption, color: "var(--text-tertiary)", whiteSpace: "nowrap" }}>
               {section}
             </div>
           )}
           <div style={{
-            fontSize: isMobile ? 15 : 16.5, fontWeight: 700, color: theme.text,
+            ...TIPO.headline, color: "var(--text-primary)",
             whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-            letterSpacing: "-0.01em",
           }}>
             {title}
           </div>
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 10, flexShrink: 0, justifyContent: "flex-end" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 8, flexShrink: 0, justifyContent: "flex-end" }}>
         {!isMobile && !esPantallaMenu && (
-          <button
+          <Button
+            variante="tertiary"
+            tam="sm"
+            icono="flechaIzq"
             onClick={() => irAPantalla(destinoMenu || "dashboard")}
-            aria-label="Volver al menú"
             title="Volver al menú principal (Dashboard)"
-            style={{
-              height: 34,
-              padding: "0 13px",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              background: dark ? "rgba(255, 255, 255, 0.08)" : "#ffffff",
-              border: `1px solid ${dark ? "rgba(255, 255, 255, 0.18)" : "#cbd5e1"}`,
-              borderRadius: 8,
-              color: dark ? "#f1f5f9" : "#334155",
-              cursor: "pointer",
-              fontSize: 12.5,
-              fontWeight: 600,
-              flexShrink: 0,
-              boxShadow: "0 1px 2px rgba(0,0,0,.04)",
-              transition: "all .15s ease",
-              whiteSpace: "nowrap",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = dark ? "rgba(255, 255, 255, 0.15)" : "#f8fafc";
-              e.currentTarget.style.borderColor = dark ? "rgba(255, 255, 255, 0.3)" : "#94a3b8";
-              e.currentTarget.style.color = dark ? "#ffffff" : "#0f172a";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = dark ? "rgba(255, 255, 255, 0.08)" : "#ffffff";
-              e.currentTarget.style.borderColor = dark ? "rgba(255, 255, 255, 0.18)" : "#cbd5e1";
-              e.currentTarget.style.color = dark ? "#f1f5f9" : "#334155";
-            }}
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-            <span>Volver al menú</span>
-          </button>
+            Volver al menú
+          </Button>
         )}
 
         {acciones && (
@@ -164,7 +154,7 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 5,
+              gap: 6,
               maxWidth: isMobile ? "38vw" : "none",
               overflowX: isMobile ? "auto" : "visible",
               WebkitOverflowScrolling: "touch",
@@ -176,115 +166,46 @@ export default function Topbar({ scr, theme, dark, onToggleTheme, isMobile, onOp
             {acciones}
           </div>
         )}
-        <SaveIndicator theme={theme} compact={isMobile} />
+        <SaveIndicator compact={isMobile} />
 
         {!isMobile && esSuperAdminCristian && (
-          <button
+          <PastillaBoton
+            tono="exito"
             onClick={() => irAPantalla("usuarios")}
             aria-label="Ver usuarios en línea"
             title={`Monitoreo en tiempo real (Exclusivo Cristian Delgado): ${totalEnLinea} usuario(s) conectado(s). Clic para abrir administración.`}
-            style={{
-              height: 34,
-              padding: "0 12px",
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              background: "rgba(16, 185, 129, 0.12)",
-              border: "1px solid rgba(16, 185, 129, 0.35)",
-              borderRadius: 999,
-              color: dark ? "#34d399" : "#065f46",
-              cursor: "pointer",
-              fontSize: 11.5,
-              fontWeight: 700,
-              flexShrink: 0,
-            }}
           >
-            <span
-              style={{
-                width: 7,
-                height: 7,
-                borderRadius: "50%",
-                background: "#10b981",
-                boxShadow: "0 0 6px #10b981",
-                display: "inline-block",
-              }}
-            />
-            <span>{totalEnLinea} en línea</span>
-          </button>
+            {totalEnLinea} en línea
+          </PastillaBoton>
         )}
 
         {!isMobile && totalManana > 0 && (
-          <button
-            type="button"
+          <PastillaBoton
+            tono="aviso"
             onClick={() => window.dispatchEvent(new CustomEvent("abrir-aviso-agenda-manana"))}
             aria-label={`Compromisos de mañana (${totalManana})`}
             title={`Tienes ${totalManana} compromiso(s) para mañana. Clic para ver el itinerario completo.`}
-            style={{
-              height: 34,
-              padding: "0 12px",
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              background: dark ? "rgba(245, 158, 11, 0.15)" : "#fffbeb",
-              border: `1px solid ${dark ? "rgba(245, 158, 11, 0.4)" : "#fde68a"}`,
-              borderRadius: 8,
-              color: dark ? "#fbbf24" : "#b45309",
-              cursor: "pointer",
-              fontSize: 12,
-              fontWeight: 700,
-              flexShrink: 0,
-              boxShadow: "0 1px 2px rgba(245, 158, 11, 0.08)",
-              transition: "all 0.15s ease",
-            }}
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-            <span>Mañana ({totalManana})</span>
-          </button>
+            Mañana ({totalManana})
+          </PastillaBoton>
         )}
 
-        {!isMobile && <BotonInstalarApp estilo="topbar" dark={dark} compact={isMobile} />}
+        {!isMobile && <BotonInstalarApp estilo="topbar" />}
 
-        <button
+        <Button
+          variante="tertiary"
+          tam="sm"
+          soloIcono
+          icono={dark ? "luna" : "sol"}
           onClick={onToggleTheme}
           aria-label={dark ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
           title={dark ? "Tema oscuro" : "Tema claro"}
-          style={{
-            width: isMobile ? 34 : 40, height: isMobile ? 34 : 40,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            background: theme.surfaceTint, border: "none", borderRadius: 999,
-            color: theme.text, cursor: "pointer", flexShrink: 0,
-          }}
-        >
-          {dark ? (
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
-            </svg>
-          ) : (
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="4.2"/>
-              <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
-            </svg>
-          )}
-        </button>
+          style={{ color: "var(--text-secondary)" }}
+        />
 
-        {!isMobile && <div style={{ width: 1, height: 26, background: theme.divider }} />}
+        {!isMobile && <div style={{ width: 1, height: 26, background: "var(--separator)" }} />}
 
-        <MenuUsuario theme={theme} compact={isMobile} />
+        <MenuUsuario compact={isMobile} />
       </div>
     </header>
   );

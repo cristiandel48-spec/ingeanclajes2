@@ -70,6 +70,8 @@ export const componentesCss = `
     .ui-input:disabled { background: var(--fill); color: var(--text-tertiary); cursor: not-allowed; }
     .ui-input[aria-invalid="true"] { border-color: var(--danger); }
     .ui-input[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px var(--danger-bg); }
+    /* Campo tactil, a juego con el boton lg. Lo usa el inicio de sesion. */
+    .ui-input--lg { height: 44px; }
     .ui-help { font-size: 12px; line-height: 16px; color: var(--text-tertiary); margin-top: 5px; }
     .ui-help--error { color: var(--danger-text); }
     /* 16px evita que Safari en iPhone haga zoom al enfocar */

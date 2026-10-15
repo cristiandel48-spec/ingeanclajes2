@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import logoIngeanclajes from "../../assets/logo-ingeanclajes.jpeg";
+import { Button, Card } from "../ui";
+import { TIPO } from "../../styles/designTokens";
 
 // Estado global para capturar el prompt de instalacion de PWA
 let deferredPromptGlobal = null;
@@ -521,8 +523,12 @@ export function ModalInstaladorApp({ abierto, onClose }) {
   );
 }
 
-// Boton directo reutilizable para colocar en Topbar o Sidebar
-export function BotonInstalarApp({ estilo = "topbar", dark = false, compact = false }) {
+// Boton directo reutilizable para colocar en Topbar o Sidebar.
+//
+// Era un boton con degradado rojo, sombra de color y un emoji de telefono:
+// el elemento mas llamativo de toda la barra para la accion menos importante
+// que hay en ella. Ahora es un Button secondary del kit, como los demas.
+export function BotonInstalarApp({ estilo = "topbar" }) {
   const [modalAbierto, setModalAbierto] = useState(false);
   const { isStandalone } = usePWAInstallPrompt();
 
@@ -547,33 +553,17 @@ export function BotonInstalarApp({ estilo = "topbar", dark = false, compact = fa
   if (estilo === "sidebar") {
     return (
       <>
-        <button
+        <Button
+          variante="secondary"
+          tam="sm"
+          bloque
+          icono="descargar"
           onClick={handleClick}
           title="Descargar e instalar la aplicación en tu celular o PC"
-          style={{
-            width: "100%",
-            minHeight: 40,
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "0 12px",
-            marginBottom: 6,
-            borderRadius: 10,
-            border: "none",
-            cursor: "pointer",
-            background: "linear-gradient(135deg, #c81e1e 0%, #991b1b 100%)",
-            color: "#ffffff",
-            fontSize: 12.5,
-            fontWeight: 700,
-            fontFamily: "inherit",
-            textAlign: "left",
-            boxShadow: "0 2px 6px rgba(200, 30, 30, 0.25)",
-            transition: "all .15s ease",
-          }}
+          style={{ marginBottom: 6, justifyContent: "flex-start" }}
         >
-          <span style={{ fontSize: 15, flexShrink: 0 }}>📲</span>
-          <span style={{ whiteSpace: "nowrap", overflow: "hidden" }}>Instalar Aplicación</span>
-        </button>
+          Instalar aplicación
+        </Button>
         <ModalInstaladorApp abierto={modalAbierto} onClose={() => setModalAbierto(false)} />
       </>
     );
@@ -581,41 +571,15 @@ export function BotonInstalarApp({ estilo = "topbar", dark = false, compact = fa
 
   return (
     <>
-      <button
+      <Button
+        variante="secondary"
+        tam="sm"
+        icono="descargar"
         onClick={handleClick}
         title="Descargar e instalar la aplicación en tu dispositivo"
-        style={{
-          height: 34,
-          width: compact ? 34 : "auto",
-          padding: compact ? 0 : "0 11px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 6,
-          background: dark ? "rgba(220, 38, 38, 0.2)" : "#fef2f2",
-          border: `1px solid ${dark ? "rgba(220, 38, 38, 0.4)" : "#fecaca"}`,
-          borderRadius: 8,
-          color: dark ? "#fca5a5" : "#b91c1c",
-          cursor: "pointer",
-          fontSize: 12,
-          fontWeight: 700,
-          flexShrink: 0,
-          boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
-          transition: "all .15s ease",
-          whiteSpace: "nowrap",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = dark ? "rgba(220, 38, 38, 0.3)" : "#fee2e2";
-          e.currentTarget.style.borderColor = "#f87171";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = dark ? "rgba(220, 38, 38, 0.2)" : "#fef2f2";
-          e.currentTarget.style.borderColor = dark ? "rgba(220, 38, 38, 0.4)" : "#fecaca";
-        }}
       >
-        <span style={{ fontSize: 13 }}>📲</span>
-        {!compact && <span>Descargar App</span>}
-      </button>
+        Instalar
+      </Button>
       <ModalInstaladorApp abierto={modalAbierto} onClose={() => setModalAbierto(false)} />
     </>
   );
@@ -655,86 +619,58 @@ export function TarjetaInstalarAppDashboard() {
     }
   };
 
+  // Tarjeta del sistema, no un cartel negro con degradado: es una sugerencia,
+  // no una alarma, y antes pesaba mas que el saludo y las acciones juntas.
   return (
     <>
-      <div
+      <Card
+        ajustado
         style={{
-          background: "linear-gradient(90deg, #1e293b 0%, #0f172a 100%)",
-          color: "#ffffff",
-          borderRadius: 14,
-          padding: "14px 18px",
-          marginBottom: 18,
+          marginBottom: 16,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           gap: 14,
-          boxShadow: "0 4px 14px rgba(0,0,0,0.08)",
           flexWrap: "wrap",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 260, flex: 1 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 240, flex: 1 }}>
           <div
             style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              background: "#ffffff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-              padding: 4,
+              width: 40, height: 40, borderRadius: 12,
+              background: "var(--fill)", border: "1px solid var(--separator)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0, padding: 5, boxSizing: "border-box",
             }}
           >
-            <img src={logoIngeanclajes} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+            <img src={logoIngeanclajes} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
           </div>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#ffffff", display: "flex", alignItems: "center", gap: 6 }}>
-              <span>📲 Instala Ingeanclajes en tu celular o PC</span>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ ...TIPO.headline, color: "var(--text-primary)" }}>
+              Instala Ingeanclajes en tu celular o PC
             </div>
-            <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>
-              Accede con 1 toque en pantalla completa sin barras del navegador y con carga instantánea.
+            <div style={{ ...TIPO.callout, color: "var(--text-tertiary)", marginTop: 2 }}>
+              Se abre a pantalla completa, sin barras del navegador y con carga instantánea.
             </div>
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button
-            onClick={handleInstalar}
-            style={{
-              background: "#dc2626",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: 9,
-              padding: "8px 16px",
-              fontSize: 12.5,
-              fontWeight: 700,
-              cursor: "pointer",
-              boxShadow: "0 2px 6px rgba(220, 38, 38, 0.3)",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-            }}
-          >
-            <span>📥</span>
-            <span>Instalar ahora</span>
-          </button>
-          <button
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <Button variante="secondary" tam="sm" icono="descargar" onClick={handleInstalar}>
+            Instalar
+          </Button>
+          <Button
+            variante="tertiary"
+            tam="sm"
+            soloIcono
+            icono="cerrar"
             onClick={handleDescartar}
+            aria-label="Ocultar este aviso"
             title="Ocultar este aviso"
-            style={{
-              background: "transparent",
-              color: "#94a3b8",
-              border: "none",
-              cursor: "pointer",
-              padding: 6,
-              fontSize: 14,
-            }}
-          >
-            ✕
-          </button>
+            style={{ color: "var(--text-tertiary)" }}
+          />
         </div>
-      </div>
+      </Card>
       <ModalInstaladorApp abierto={modalAbierto} onClose={() => setModalAbierto(false)} />
     </>
   );

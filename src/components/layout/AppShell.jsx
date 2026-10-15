@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import { useAccionesTopbar } from "../../context/accionesPantalla";
-import { useAppData } from "../../context/AppDataContext";
 import GlobalStyles from "../../styles/GlobalStyles";
 import { getTheme } from "../../styles/shellTheme";
 import { useIsMobile } from "../../hooks/useMediaQuery";
@@ -110,7 +109,6 @@ export default function AppShell({ scr, onNavigate, children }) {
       <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0, height: "100%", maxHeight: "100vh", overflow: "hidden" }}>
         <Topbar
           scr={scr}
-          theme={theme}
           dark={dark}
           onToggleTheme={() => setThemeMode(dark ? "light" : "dark")}
           isMobile={isMobile}

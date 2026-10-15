@@ -6,6 +6,7 @@ import { useAppData } from "../../context/AppDataContext";
 import { filtrarSecciones } from "../../lib/permisos";
 import { BRAND, RAIL_WIDTH, RAIL_WIDTH_EXPANDED } from "../../styles/shellTheme";
 import { BotonInstalarApp } from "../pwa/InstaladorApp";
+import { TIPO } from "../../styles/designTokens";
 
 // Navegacion lateral.
 // Escritorio: barra de iconos que se despliega al pasar el cursor mostrando
@@ -107,10 +108,12 @@ export default function Sidebar({
           {secciones.map((section, sectionIndex) => (
             <div key={section.title} style={{ marginBottom: 6 }}>
               {showLabels ? (
+                // Eyebrow del sistema: estaba a 10px sobre --rail-title, con
+                // 2,6 de contraste. Ahora es la misma etiqueta que en el resto
+                // de la aplicacion y se lee.
                 <div style={{
-                  padding: "12px 10px 6px", fontSize: 10, fontWeight: 700,
-                  letterSpacing: ".09em", textTransform: "uppercase",
-                  color: theme.railTitle, whiteSpace: "nowrap",
+                  ...TIPO.eyebrow, padding: "12px 10px 6px",
+                  color: "var(--text-tertiary)", whiteSpace: "nowrap",
                 }}>
                   {section.title}
                 </div>
@@ -180,7 +183,7 @@ export default function Sidebar({
             en escritorio se muestra bajo el boton de fijar, mas abajo. */}
         {isMobile && (
           <div style={{ padding: "10px 12px 16px", borderTop: `1px solid ${theme.railDivider}`, flexShrink: 0 }}>
-            <BotonInstalarApp estilo="sidebar" dark={dark} />
+            <BotonInstalarApp estilo="sidebar" />
             <CreditoDesarrollo tono={dark ? "oscuro" : "claro"} />
           </div>
         )}
@@ -188,7 +191,7 @@ export default function Sidebar({
         {/* Fijar / soltar el panel (solo escritorio) */}
         {!isMobile && (
           <div style={{ padding: "8px 12px 14px", borderTop: `1px solid ${theme.railDivider}`, flexShrink: 0 }}>
-            {showLabels && <BotonInstalarApp estilo="sidebar" dark={dark} />}
+            {showLabels && <BotonInstalarApp estilo="sidebar" />}
             <button
               onClick={onTogglePin}
               title={pinned ? "Contraer menú" : "Mantener menú abierto"}

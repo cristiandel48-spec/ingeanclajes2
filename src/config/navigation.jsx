@@ -95,3 +95,7 @@ export const NAV_BY_ID = Object.fromEntries(NAV_ITEMS.map((item) => [item.id, it
 
 export const getScreenTitle = (id) => NAV_BY_ID[id]?.label || "Dashboard";
 export const getScreenSection = (id) => NAV_BY_ID[id]?.section || "";
+// Nombre corto para la barra superior del telefono. `short` estaba definido
+// desde el principio y no lo leia nadie: en movil se recortaban con puntos
+// suspensivos nombres como «Recordatorio de agendas y visitas en obra».
+export const getScreenShort = (id) => NAV_BY_ID[id]?.short || getScreenTitle(id);

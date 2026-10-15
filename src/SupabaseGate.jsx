@@ -4,6 +4,9 @@ import CreditoDesarrollo from "./components/CreditoDesarrollo";
 import logoIngeanclajes from "./assets/logo-ingeanclajes.jpeg";
 import { SERVICIO_SUSPENDIDO } from "./lib/servicioEstado";
 import { obtenerMensajeCierreInactividad } from "./lib/seguridadSesion";
+import EstilosAcceso from "./styles/EstilosAcceso";
+import { Button, Input, Callout } from "./components/ui";
+import { TIPO, FUENTE, RADIO, SOMBRA, ESPACIO } from "./styles/designTokens";
 
 const isSupabaseConfigured = backend.isSupabaseConfigured;
 const getSupabaseClient = backend.getSupabaseClient;
@@ -11,42 +14,24 @@ const getSessionUser = backend.getSessionUser;
 const resolveTenantId = backend.resolveTenantId;
 const reintentandoSiChocanPestanas = backend.reintentandoSiChocanPestanas;
 
-const MARCA = "#E0342A";
+// Titulo de pantalla de acceso. Los cuatro iban a 24, 26, 28 y 30 px en
+// peso 800, cada uno segun lo que pidiera el momento; ahora todos son el
+// mismo escalon de la escala.
+function Titulo({ children }) {
+  return (
+    <h1 style={{ ...TIPO.largeTitle, color: "var(--text-primary)", margin: "0 0 8px" }}>
+      {children}
+    </h1>
+  );
+}
 
-const inputStyle = {
-  background: "#fff",
-  border: "1px solid #e4e7ec",
-  borderRadius: 10,
-  color: "#101828",
-  padding: "13px 14px",
-  // 16px evita que Safari en iPhone haga zoom al enfocar el campo.
-  fontSize: 16,
-  width: "100%",
-  boxSizing: "border-box",
-  outline: "none",
-  fontFamily: "inherit",
-};
-
-const labelStyle = {
-  display: "block",
-  fontSize: 13,
-  fontWeight: 600,
-  color: "#344054",
-  marginBottom: 7,
-};
-
-const botonStyle = {
-  width: "100%",
-  background: MARCA,
-  color: "#fff",
-  border: "none",
-  borderRadius: 10,
-  padding: "14px 18px",
-  fontSize: 15,
-  fontWeight: 700,
-  cursor: "pointer",
-  fontFamily: "inherit",
-};
+function Subtitulo({ children, style }) {
+  return (
+    <p style={{ ...TIPO.body, color: "var(--text-secondary)", margin: 0, ...style }}>
+      {children}
+    </p>
+  );
+}
 
 // Marco comun de todas las pantallas de acceso.
 function Pantalla({ children }) {
@@ -54,22 +39,24 @@ function Pantalla({ children }) {
     <div
       style={{
         minHeight: "100vh",
-        background: "linear-gradient(160deg, #f4f5f9 0%, #eceef6 100%)",
+        background: "var(--bg-app)",
         padding: "24px 16px",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        fontFamily: "'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif",
+        fontFamily: FUENTE,
         boxSizing: "border-box",
       }}
     >
+      <EstilosAcceso />
       <div style={{ maxWidth: 420, width: "100%" }}>
         <div
           style={{
-            background: "#fff",
-            borderRadius: 20,
+            background: "var(--surface)",
+            border: "1px solid var(--separator)",
+            borderRadius: RADIO.hoja,
             padding: "36px 34px",
-            boxShadow: "0 24px 60px -20px rgba(16,24,40,.18), 0 2px 6px rgba(16,24,40,.04)",
+            boxShadow: SOMBRA.lg,
             boxSizing: "border-box",
           }}
         >
@@ -86,37 +73,15 @@ function Encabezado({ etiqueta }) {
     <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 22 }}>
       <div
         style={{
-          width: 38, height: 38, borderRadius: 11, background: MARCA,
+          width: 38, height: 38, borderRadius: 11, background: "var(--accent)",
           display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
         }}
       >
         <img src={logoIngeanclajes} alt="" style={{ width: 25, height: 25, objectFit: "contain", borderRadius: 5 }} />
       </div>
-      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#98a2b3" }}>
+      <div style={{ ...TIPO.eyebrow, color: "var(--text-tertiary)" }}>
         {etiqueta}
       </div>
-    </div>
-  );
-}
-
-function Aviso({ tono = "error", children }) {
-  const colores = tono === "ok"
-    ? { bg: "#f0fdf4", border: "#bbf7d0", fg: "#15803d" }
-    : { bg: "#fef3f2", border: "#fecdca", fg: "#b42318" };
-  return (
-    <div
-      style={{
-        display: "flex", gap: 9, alignItems: "flex-start",
-        background: colores.bg, border: `1px solid ${colores.border}`,
-        color: colores.fg, borderRadius: 12, padding: "12px 14px",
-        fontSize: 13.5, lineHeight: 1.5,
-      }}
-    >
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }} aria-hidden="true">
-        <circle cx="12" cy="12" r="9.5" />
-        {tono === "ok" ? <path d="M8 12.5l2.5 2.5L16 9.5" /> : <><line x1="12" y1="7.5" x2="12" y2="13" /><line x1="12" y1="16.5" x2="12" y2="16.51" /></>}
-      </svg>
-      <span>{children}</span>
     </div>
   );
 }
@@ -177,34 +142,28 @@ function PantallaSinConexion() {
       <Encabezado etiqueta="Conexión" />
       <div
         style={{
-          width: 48,
-          height: 48,
-          borderRadius: 14,
-          background: "#fef3f2",
-          border: "1px solid #fee4e2",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          marginBottom: 18,
-          color: "#d92d20",
+          width: 48, height: 48, borderRadius: 14,
+          background: "var(--danger-bg)", border: "1px solid var(--danger-bg)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          marginBottom: 18, color: "var(--danger)",
         }}
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <ellipse cx="12" cy="5" rx="9" ry="3" />
           <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
           <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
           <line x1="3" y1="12" x2="21" y2="12" />
         </svg>
       </div>
-      <h1 style={{ margin: "0 0 8px", fontSize: 24, fontWeight: 800, color: "#101828" }}>
-        Error de conexión con la base de datos
-      </h1>
-      <p style={{ margin: "0 0 20px", color: "#667085", lineHeight: 1.6, fontSize: 14 }}>
-        No se pudo establecer comunicación con la base de datos. Por favor, verifique su conexión a la base de datos o el acceso a la red e inténtelo de nuevo.
-      </p>
-      <button type="button" onClick={() => window.location.reload()} style={botonStyle}>
+      <Titulo>Error de conexión con la base de datos</Titulo>
+      {/* El resto de la aplicacion tutea; aqui trataba de usted. */}
+      <Subtitulo style={{ marginBottom: 20 }}>
+        No se pudo establecer comunicación con la base de datos. Revisa tu conexión o el acceso
+        a la red e inténtalo de nuevo.
+      </Subtitulo>
+      <Button variante="primary" tam="lg" bloque onClick={() => window.location.reload()}>
         Reintentar conexión
-      </button>
+      </Button>
     </Pantalla>
   );
 }
@@ -377,11 +336,11 @@ export default function SupabaseGate({ children }) {
     return (
       <Pantalla>
         <Encabezado etiqueta="Configuración pendiente" />
-        <h1 style={{ margin: "0 0 8px", fontSize: 26, fontWeight: 800, color: "#101828" }}>Falta configurar el servidor</h1>
-        <p style={{ margin: 0, color: "#667085", lineHeight: 1.6, fontSize: 14 }}>
+        <Titulo>Falta configurar el servidor</Titulo>
+        <Subtitulo>
           Hay que definir <code>VITE_SUPABASE_URL</code>, <code>VITE_SUPABASE_ANON_KEY</code> y{" "}
           <code>VITE_SUPABASE_TENANT_SLUG</code> donde está publicada la aplicación.
-        </p>
+        </Subtitulo>
       </Pantalla>
     );
   }
@@ -390,8 +349,23 @@ export default function SupabaseGate({ children }) {
     return (
       <Pantalla>
         <Encabezado etiqueta="Acceso Cloud" />
-        <h1 style={{ margin: "0 0 8px", fontSize: 28, fontWeight: 800, color: "#101828" }}>Validando sesión</h1>
-        <p style={{ margin: 0, color: "#667085", fontSize: 14.5 }}>Un momento, estamos comprobando tu acceso.</p>
+        <Titulo>Validando sesión</Titulo>
+        <Subtitulo>Un momento, estamos comprobando tu acceso.</Subtitulo>
+        {/* Antes solo habia texto: cuando el servidor tardaba, la pantalla
+            parecia congelada y no habia forma de saber si seguia trabajando. */}
+        <div
+          role="progressbar"
+          aria-label="Comprobando tu acceso"
+          style={{
+            marginTop: ESPACIO.xl, height: 4, borderRadius: 999,
+            background: "var(--fill)", overflow: "hidden",
+          }}
+        >
+          <div style={{
+            width: "40%", height: "100%", borderRadius: 999,
+            background: "var(--accent)", animation: "accesoProgreso 1.4s ease-in-out infinite",
+          }} />
+        </div>
       </Pantalla>
     );
   }
@@ -402,31 +376,26 @@ export default function SupabaseGate({ children }) {
     return (
       <Pantalla>
         <Encabezado etiqueta="Acceso Cloud" />
-        <h1 style={{ margin: "0 0 8px", fontSize: 26, fontWeight: 800, color: "#101828" }}>
+        <Titulo>
           {esInactividad ? "Sesión cerrada por inactividad" : "Tu cuenta no tiene acceso"}
-        </h1>
-        <p style={{ margin: "0 0 20px", color: "#667085", lineHeight: 1.6, fontSize: 14.5 }}>
+        </Titulo>
+        <Subtitulo style={{ marginBottom: 20 }}>
           {esInactividad ? (
-            <>Se cerró la sesión por inactividad. Por favor vuelve a ingresar.</>
+            <>Se cerró la sesión por inactividad. Vuelve a ingresar.</>
           ) : (
             <>
-              Entraste como <strong style={{ color: "#101828" }}>{user.email}</strong>, pero esa cuenta todavía no
-              tiene permisos asignados en la empresa.
+              Entraste como <strong style={{ color: "var(--text-primary)" }}>{user.email}</strong>, pero esa
+              cuenta todavía no tiene permisos asignados en la empresa.
             </>
           )}
-        </p>
+        </Subtitulo>
 
-        {!esInactividad && error ? <Aviso>{error}</Aviso> : null}
+        {!esInactividad && error ? <Callout tono="peligro">{error}</Callout> : null}
 
-        <div style={{ marginTop: 18, display: "grid", gap: 10 }}>
-          <button
-            type="button"
-            onClick={handleLogout}
-            disabled={busy}
-            style={botonStyle}
-          >
+        <div style={{ marginTop: 18 }}>
+          <Button variante="primary" tam="lg" bloque onClick={handleLogout} cargando={busy}>
             {busy ? "Cerrando…" : esInactividad ? "Volver a ingresar" : "Salir e intentar con otra cuenta"}
-          </button>
+          </Button>
         </div>
       </Pantalla>
     );
@@ -437,81 +406,51 @@ export default function SupabaseGate({ children }) {
       <Pantalla>
         <Encabezado etiqueta="Acceso Cloud" />
 
-        <h1 style={{ margin: "0 0 8px", fontSize: 30, fontWeight: 800, color: "#101828", letterSpacing: "-.01em" }}>
-          Inicia sesión
-        </h1>
-        <p style={{ margin: "0 0 22px", color: "#667085", fontSize: 14.5, lineHeight: 1.55 }}>
+        <Titulo>Inicia sesión</Titulo>
+        <Subtitulo style={{ marginBottom: 22 }}>
           Guarda tus datos automáticamente en la nube.
-        </p>
+        </Subtitulo>
 
         {mensajeInactividad && (
-          <div
-            style={{
-              marginBottom: 18,
-              padding: "12px 14px",
-              background: "rgba(245, 158, 11, 0.12)",
-              border: "1px solid rgba(245, 158, 11, 0.4)",
-              borderRadius: 10,
-              color: "#b45309",
-              fontSize: 13,
-              lineHeight: 1.45,
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 9,
-            }}
-          >
-            <span style={{ fontSize: 16, lineHeight: 1 }}>⏱️</span>
-            <span>{mensajeInactividad}</span>
+          <div style={{ marginBottom: 18 }}>
+            <Callout tono="aviso" icono="reloj">{mensajeInactividad}</Callout>
           </div>
         )}
 
-        {error ? <div style={{ marginBottom: 20 }}><Aviso>{error}</Aviso></div> : null}
-        {aviso ? <div style={{ marginBottom: 20 }}><Aviso tono="ok">{aviso}</Aviso></div> : null}
+        {error ? <div style={{ marginBottom: 20 }}><Callout tono="peligro">{error}</Callout></div> : null}
+        {aviso ? <div style={{ marginBottom: 20 }}><Callout tono="exito">{aviso}</Callout></div> : null}
 
-        <form onSubmit={handleLogin} style={{ display: "grid", gap: 18 }}>
-          <div>
-            <label htmlFor="acceso-correo" style={labelStyle}>Correo</label>
-            <input
-              id="acceso-correo"
-              type="email"
-              autoComplete="username"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="correo@ingeanclajessas.com"
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <label htmlFor="acceso-clave" style={labelStyle}>Contraseña</label>
-            <input
-              id="acceso-clave"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              style={inputStyle}
-            />
-          </div>
+        <form onSubmit={handleLogin} style={{ display: "grid", gap: ESPACIO.lg }}>
+          <Input
+            id="acceso-correo"
+            className="ui-input--lg"
+            label="Correo"
+            type="email"
+            autoComplete="username"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="correo@ingeanclajessas.com"
+          />
+          <Input
+            id="acceso-clave"
+            className="ui-input--lg"
+            label="Contraseña"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+          />
 
-          <button type="submit" style={{ ...botonStyle, opacity: busy ? 0.7 : 1, marginTop: 2 }} disabled={busy}>
+          <Button type="submit" variante="primary" tam="lg" bloque cargando={busy} style={{ marginTop: 2 }}>
             {busy ? "Ingresando…" : "Entrar"}
-          </button>
+          </Button>
         </form>
 
-        <div style={{ textAlign: "center", marginTop: 18 }}>
-          <button
-            type="button"
-            onClick={handleRecuperar}
-            disabled={busy}
-            style={{
-              background: "none", border: "none", padding: 4,
-              color: "#667085", fontSize: 13, cursor: "pointer",
-              fontFamily: "inherit", textDecoration: "underline",
-            }}
-          >
+        <div style={{ textAlign: "center", marginTop: 14 }}>
+          <Button variante="tertiary" tam="sm" onClick={handleRecuperar} disabled={busy}>
             ¿Olvidaste tu contraseña?
-          </button>
+          </Button>
         </div>
       </Pantalla>
     );

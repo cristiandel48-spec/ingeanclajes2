@@ -1,17 +1,126 @@
-import { useState } from "react";
 import { fmt, fmtD, today } from "../../lib/format";
 import { getQuoteActiveProposal } from "../../lib/cotizaciones";
-import { resumenVencimientos, colorVencimiento, etiquetaVencimiento } from "../../lib/vencimientos";
-import { resumenSeguimiento, colorSeguimiento, etiquetaSeguimiento } from "../../lib/seguimientoCotizaciones";
+import { resumenVencimientos, etiquetaVencimiento, UMBRAL_URGENTE } from "../../lib/vencimientos";
+import { resumenSeguimiento, etiquetaSeguimiento, UMBRAL_POR_VENCER } from "../../lib/seguimientoCotizaciones";
 import { puedeVerDinero } from "../../lib/permisos";
 import { TarjetaInstalarAppDashboard } from "../../components/pwa/InstaladorApp";
 import { formatFechaLegible, generarUrlGoogleCalendar } from "../../lib/agendaEmail";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import {
+  Button, Card, ListRow, Lista, StatusPill, EmptyState,
+  PageHeader, Toolbar, Icono,
+} from "../../components/ui";
+import { TIPO, CIFRA, ESPACIO } from "../../styles/designTokens";
+
+// Pantalla de inicio. Era el modulo que menos usaba el sistema: tenia su
+// propio acento (el azul #0071e3), sus propias tarjetas, tres formatos de
+// estado vacio y emojis por iconos. Ahora es todo kit.
+
+// Que tono de pastilla le toca a un plazo. Es presentacion, no negocio: las
+// funciones de color de lib/ siguen igual para los modulos que aun no se han
+// migrado.
+function tonoPorDias(dias, umbralAviso) {
+  if (dias === null || dias === undefined) return "neutro";
+  if (dias < 0) return "peligro";
+  if (dias <= umbralAviso) return "aviso";
+  return "exito";
+}
+
+// Cabecera de una tarjeta del tablero: titulo a la izquierda y, si hay, un
+// enlace a la derecha. Antes cada bloque la escribia a su manera.
+function CabeceraTarjeta({ titulo, descripcion, accion }) {
+  return (
+    <div
+      style={{
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        gap: ESPACIO.md, paddingBottom: ESPACIO.md, marginBottom: ESPACIO.md,
+        borderBottom: "1px solid var(--separator)",
+      }}
+    >
+      <div style={{ minWidth: 0 }}>
+        <h2 style={{ ...TIPO.headline, color: "var(--text-primary)", margin: 0 }}>{titulo}</h2>
+        {descripcion && (
+          <div style={{ ...TIPO.caption, fontWeight: 400, color: "var(--text-tertiary)", marginTop: 2 }}>
+            {descripcion}
+          </div>
+        )}
+      </div>
+      {accion}
+    </div>
+  );
+}
+
+// Acceso directo a un modulo.
+function TarjetaAcceso({ icono, titulo, subtitulo, onClick }) {
+  return (
+    <Card interactivo ajustado onClick={onClick} aria-label={titulo}>
+      <div style={{ color: "var(--text-tertiary)", marginBottom: ESPACIO.sm }}>
+        <Icono nombre={icono} size={20} />
+      </div>
+      <div style={{
+        ...TIPO.footnote, fontWeight: 600, color: "var(--text-primary)",
+        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+      }}>
+        {titulo}
+      </div>
+      <div style={{
+        ...TIPO.caption, fontWeight: 400, color: "var(--text-tertiary)", marginTop: 2,
+        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+      }}>
+        {subtitulo}
+      </div>
+    </Card>
+  );
+}
+
+// Un bloque de la columna de alertas: etiqueta, cuantas faltan y el detalle.
+function BloqueAlerta({ titulo, resumen, children }) {
+  return (
+    <div style={{
+      background: "var(--surface-subtle)", border: "1px solid var(--separator)",
+      borderRadius: 12, padding: "12px 14px",
+    }}>
+      <div style={{
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        gap: ESPACIO.sm, marginBottom: ESPACIO.sm,
+      }}>
+        <div style={{ ...TIPO.eyebrow, color: "var(--text-tertiary)" }}>{titulo}</div>
+        {resumen}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// Fila compacta dentro de un bloque de alertas.
+function FilaAlerta({ titulo, meta, tono, etiqueta }) {
+  return (
+    <div style={{
+      display: "flex", justifyContent: "space-between", alignItems: "center", gap: ESPACIO.sm,
+      background: "var(--surface)", border: "1px solid var(--separator)",
+      borderRadius: 8, padding: "7px 10px",
+    }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{
+          ...TIPO.footnote, color: "var(--text-primary)",
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        }}>
+          {titulo}
+        </div>
+        <div style={{ ...TIPO.caption, fontWeight: 400, color: "var(--text-tertiary)" }}>{meta}</div>
+      </div>
+      <StatusPill tono={tono}>{etiqueta}</StatusPill>
+    </div>
+  );
+}
 
 export default function Dashboard({ ctx, go }) {
   const { obras = [], cotizaciones = [], certs = [], membresia, agenda = [], clientes = [] } = ctx;
   const isMobile = useMediaQuery("(max-width: 768px)");
   const verDinero = puedeVerDinero(membresia);
+  // `go` solo cambia de pantalla; `irAPantalla` ademas lleva contexto, que es
+  // lo que hace falta para abrir UNA cotizacion y no el listado entero.
+  const irAPantalla = ctx.irAPantalla || ((pantalla) => go(pantalla));
 
   const saldoPendiente = obras.reduce((sum, obra) => sum + Number(obra.saldo || 0), 0);
   const recientes = [...cotizaciones]
@@ -43,553 +152,181 @@ export default function Dashboard({ ctx, go }) {
     (o) => o.estado !== "Cancelada" && o.estado !== "Finalizado" && o.estado !== "Terminada"
   ).length;
 
+  const resumenDelDia = [
+    eventosHoy.length > 0
+      ? `Tienes ${eventosHoy.length} compromiso${eventosHoy.length > 1 ? "s" : ""} hoy`
+      : "Agenda de hoy al día",
+    seg.requierenAccion.length > 0
+      ? `${seg.requierenAccion.length} cotización${seg.requierenAccion.length > 1 ? "es" : ""} por llamar`
+      : null,
+  ].filter(Boolean).join(" y ") + ".";
+
   return (
     <div
       style={{
-        padding: isMobile ? "10px 8px 24px" : "14px 16px 28px",
         maxWidth: 1360,
         margin: "0 auto",
         width: "100%",
         boxSizing: "border-box",
-        fontFamily: "'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
-        WebkitFontSmoothing: "antialiased",
-        MozOsxFontSmoothing: "grayscale",
-        textRendering: "optimizeLegibility",
+        paddingBottom: ESPACIO.xxl,
       }}
     >
-      {/* ============================================================= */}
-      {/* CABECERA ESTILO APPLE: Saludo, Fecha y Acciones Rápidas        */}
-      {/* ============================================================= */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: isMobile ? "column" : "row",
-          justifyContent: "space-between",
-          alignItems: isMobile ? "flex-start" : "flex-end",
-          gap: 12,
-          paddingBottom: 14,
-          borderBottom: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
-          marginBottom: 16,
-        }}
-      >
-        <div>
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              color: "var(--text-subtle, #667085)",
-              marginBottom: 3,
-            }}
-          >
-            {formatFechaLegible(hoyIso) || "Centro de Operaciones"}
-          </div>
+      <PageHeader
+        eyebrow={formatFechaLegible(hoyIso) || "Centro de operaciones"}
+        titulo={`${saludo}, ${nombreUsuario}`}
+        subtitulo={resumenDelDia}
+        linea={false}
+      />
 
-          <h1
-            style={{
-              fontSize: isMobile ? 21 : 25,
-              fontWeight: 600,
-              letterSpacing: "-0.02em",
-              margin: 0,
-              color: "var(--text-main, #101828)",
-              lineHeight: 1.2,
-            }}
-          >
-            {saludo}, {nombreUsuario}
-          </h1>
-
-          <p
-            style={{
-              fontSize: 12.5,
-              color: "var(--text-muted, #475467)",
-              margin: "4px 0 0",
-              lineHeight: 1.4,
-            }}
-          >
-            {eventosHoy.length > 0 ? (
-              <>
-                Tienes{" "}
-                <strong style={{ color: "var(--text-main, #101828)", fontWeight: 600 }}>
-                  {eventosHoy.length} compromiso{eventosHoy.length > 1 ? "s" : ""} hoy
-                </strong>
-              </>
-            ) : (
-              "Agenda de hoy al día"
-            )}
-            {seg.requierenAccion.length > 0 && (
-              <>
-                {" "}
-                y{" "}
-                <strong style={{ color: "var(--text-main, #101828)", fontWeight: 600 }}>
-                  {seg.requierenAccion.length} cotización
-                  {seg.requierenAccion.length > 1 ? "es" : ""} por llamar
-                </strong>
-              </>
-            )}
-            .
-          </p>
-        </div>
-
-        {/* Botones de acción rápida con estética Apple */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            flexWrap: "wrap",
-            width: isMobile ? "100%" : "auto",
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => go("cotizacion")}
-            style={{
-              background: "var(--text-main, #101828)",
-              color: "#ffffff",
-              border: "1px solid transparent",
-              borderRadius: 10,
-              padding: "7px 14px",
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 5,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              transition: "all 0.15s ease",
-            }}
-          >
-            <span style={{ fontSize: 14, lineHeight: 1 }}>+</span>
-            <span>Nueva Cotización</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => go("agenda")}
-            style={{
-              background: "var(--surface, #ffffff)",
-              color: "var(--text-main, #101828)",
-              border: "1px solid var(--border, rgba(0, 0, 0, 0.12))",
-              borderRadius: 10,
-              padding: "7px 12px",
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 5,
-              boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
-              transition: "all 0.15s ease",
-            }}
-          >
-            <span>📅</span>
-            <span>Agendar Visita</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => go("clientes")}
-            style={{
-              background: "var(--surface, #ffffff)",
-              color: "var(--text-main, #101828)",
-              border: "1px solid var(--border, rgba(0, 0, 0, 0.12))",
-              borderRadius: 10,
-              padding: "7px 12px",
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 5,
-              boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
-              transition: "all 0.15s ease",
-            }}
-          >
-            <span>👥</span>
-            <span>Clientes</span>
-          </button>
-        </div>
-      </div>
+      {/* La unica accion principal de la pantalla es la primera. */}
+      <Toolbar>
+        <Button variante="primary" icono="mas" onClick={() => go("cotizacion")}>
+          Nueva cotización
+        </Button>
+        <Button variante="secondary" icono="calendario" onClick={() => go("agenda")}>
+          Agendar visita
+        </Button>
+        <Button variante="secondary" icono="usuario" onClick={() => go("clientes")}>
+          Clientes
+        </Button>
+      </Toolbar>
 
       <TarjetaInstalarAppDashboard />
 
-      {/* ============================================================= */}
-      {/* GRID DE DOS COLUMNAS PRINCIPAL                                */}
-      {/* ============================================================= */}
       <div
         style={{
           display: "grid",
           gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1.22fr) minmax(0, 1fr)",
-          gap: 16,
+          gap: ESPACIO.lg,
           alignItems: "start",
         }}
       >
-        {/* =========================================================== */}
-        {/* COLUMNA IZQUIERDA: Accesos Rápidos & Cotizaciones Recientes */}
-        {/* =========================================================== */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {/* Accesos Rápidos Modulares (Arriba, según lo solicitado) */}
+        {/* ── Accesos y cotizaciones recientes ───────────────────────── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: ESPACIO.lg, minWidth: 0 }}>
           <div
+            className="grid-2-col"
             style={{
               display: "grid",
               gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)",
-              gap: 8,
+              gap: ESPACIO.sm,
             }}
           >
             <TarjetaAcceso
-              icono="🏗️"
-              titulo="Obras en Curso"
+              icono="obra"
+              titulo="Obras en curso"
               subtitulo={`${obrasActivas} proyecto${obrasActivas === 1 ? "" : "s"}`}
               onClick={() => go("obras")}
             />
             <TarjetaAcceso
-              icono="🛡️"
+              icono="escudo"
               titulo="Certificaciones"
               subtitulo="Alturas Res. 4272"
               onClick={() => go("certificaciones")}
             />
             <TarjetaAcceso
-              icono="📑"
+              icono="documento"
               titulo="Informes"
-              subtitulo="Técnicos & As-built"
+              subtitulo="Técnicos y as-built"
               onClick={() => go("informes")}
             />
             <TarjetaAcceso
-              icono="💼"
+              icono="usuario"
               titulo="Clientes"
               subtitulo={`${clientes.length} registrados`}
               onClick={() => go("clientes")}
             />
           </div>
 
-          {/* Card: Cotizaciones Recientes */}
-          <div
-            style={{
-              background: "var(--surface, #ffffff)",
-              border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
-              borderRadius: 14,
-              padding: isMobile ? 12 : 16,
-              boxShadow: "0 2px 10px -2px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.02)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingBottom: 10,
-                marginBottom: 10,
-                borderBottom: "1px solid var(--border, rgba(0, 0, 0, 0.06))",
-              }}
-            >
-              <div>
-                <h2
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    margin: 0,
-                    color: "var(--text-main, #101828)",
-                    letterSpacing: "-0.01em",
-                  }}
-                >
-                  Cotizaciones Recientes
-                </h2>
-                <div style={{ fontSize: 11, color: "var(--text-muted, #667085)", marginTop: 1 }}>
-                  Últimas propuestas técnicas emitidas
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => go("cotizacion")}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  color: "#0071e3",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 3,
-                  padding: "3px 6px",
-                  borderRadius: 6,
-                }}
-              >
-                Ver todas &rarr;
-              </button>
-            </div>
+          <Card ajustado>
+            <CabeceraTarjeta
+              titulo="Cotizaciones recientes"
+              descripcion="Últimas propuestas técnicas emitidas"
+              accion={
+                <Button variante="tertiary" tam="sm" iconoDerecha="flechaDer" onClick={() => go("cotizacion")}>
+                  Ver todas
+                </Button>
+              }
+            />
 
             {recientes.length === 0 ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "24px 14px",
-                  color: "var(--text-muted, #667085)",
-                  fontSize: 12.5,
-                }}
-              >
-                Todavía no hay cotizaciones registradas.
-              </div>
+              <EmptyState
+                icono="documento"
+                titulo="Todavía no hay cotizaciones"
+                texto="Cuando emitas la primera propuesta técnica aparecerá aquí."
+                accion={
+                  <Button variante="secondary" icono="mas" onClick={() => go("cotizacion")}>
+                    Crear la primera
+                  </Button>
+                }
+              />
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <Lista>
                 {recientes.map((c) => {
                   const activa = getQuoteActiveProposal(c);
                   const aprobada = c.estado === "Aprobada" || Boolean(c.obraId);
-                  const estado = c.estado || "Pendiente";
-                  const estadoColor = aprobada
-                    ? { bg: "rgba(52, 199, 89, 0.12)", text: "#28a745" }
-                    : estado === "Borrador"
-                    ? { bg: "rgba(142, 142, 147, 0.12)", text: "#8e8e93" }
-                    : { bg: "rgba(255, 149, 0, 0.12)", text: "#d97706" };
+                  const estado = aprobada ? "Aprobada" : (c.estado || "Pendiente");
 
                   return (
-                    <div
+                    <ListRow
                       key={c.id}
-                      onClick={() => go("cotizacion")}
-                      style={{
-                        border: "1px solid var(--border, rgba(0, 0, 0, 0.07))",
-                        borderRadius: 12,
-                        padding: "9px 13px",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        gap: 12,
-                        background: "var(--surface, #ffffff)",
-                        cursor: "pointer",
-                        transition: "all 0.16s cubic-bezier(0.16, 1, 0.3, 1)",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = "#0071e3";
-                        e.currentTarget.style.transform = "translateY(-1px)";
-                        e.currentTarget.style.boxShadow = "0 4px 12px -2px rgba(0,0,0,0.05)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = "var(--border, rgba(0, 0, 0, 0.07))";
-                        e.currentTarget.style.transform = "translateY(0)";
-                        e.currentTarget.style.boxShadow = "none";
-                      }}
-                    >
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 6,
-                            marginBottom: 3,
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-                              fontSize: 11,
-                              fontWeight: 600,
-                              padding: "1px 6px",
-                              borderRadius: 4,
-                              background: "var(--surface-subtle, #f5f5f7)",
-                              color: "var(--text-main, #101828)",
-                              border: "1px solid var(--border, rgba(0,0,0,0.08))",
-                              fontVariantNumeric: "tabular-nums",
-                              letterSpacing: "-0.01em",
-                            }}
-                          >
-                            {c.numero || c.id}
-                          </span>
-                          <span style={{ fontSize: 11, color: "var(--text-muted, #667085)" }}>
-                            {fmtD(c.fecha)}
-                            {c.ciudad ? ` · ${c.ciudad}` : ""}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: 10,
-                              fontWeight: 600,
-                              padding: "1px 6px",
-                              borderRadius: 999,
-                              background: estadoColor.bg,
-                              color: estadoColor.text,
-                            }}
-                          >
-                            {aprobada ? "✓ Aprobada" : estado}
-                          </span>
-                        </div>
-
-                        <div
-                          style={{
-                            fontSize: 13,
-                            fontWeight: 600,
-                            color: "var(--text-main, #101828)",
-                            letterSpacing: "-0.01em",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {c.cliente || "Cliente sin nombre"}
-                        </div>
-
-                        <div
-                          style={{
-                            fontSize: 11.5,
-                            fontWeight: 400,
-                            color: "var(--text-muted, #475467)",
-                            marginTop: 1,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
+                      // Antes llevaba al listado completo: «Abrir» abria otra
+                      // cosa que la que decia abrir.
+                      onClick={() => irAPantalla("cotizacion", { cotizacionId: c.id })}
+                      titulo={c.cliente || "Cliente sin nombre"}
+                      meta={
+                        <>
+                          <span style={CIFRA}>{c.numero || c.id}</span>
+                          {" · "}{fmtD(c.fecha)}{c.ciudad ? ` · ${c.ciudad}` : ""}
+                          <br />
                           {c.obra || activa.nombre || "Propuesta técnica"}
+                        </>
+                      }
+                      derecha={
+                        <div style={{
+                          display: "flex", flexDirection: "column", alignItems: "flex-end",
+                          gap: 4, flexShrink: 0,
+                        }}>
+                          {verDinero && (
+                            <div style={{ ...TIPO.headline, ...CIFRA, color: "var(--text-primary)" }}>
+                              {fmt(Number(activa.total || c.total || 0))}
+                            </div>
+                          )}
+                          <StatusPill estado={estado} />
                         </div>
-                      </div>
-
-                      <div style={{ textAlign: "right", flexShrink: 0 }}>
-                        {verDinero && (
-                          <div
-                            style={{
-                              fontSize: 13,
-                              fontWeight: 600,
-                              color: "var(--text-main, #101828)",
-                              fontVariantNumeric: "tabular-nums",
-                              letterSpacing: "-0.01em",
-                            }}
-                          >
-                            {fmt(Number(activa.total || c.total || 0))}
-                          </div>
-                        )}
-                        <span
-                          style={{
-                            fontSize: 11,
-                            color: "#0071e3",
-                            fontWeight: 500,
-                            marginTop: 1,
-                            display: "block",
-                          }}
-                        >
-                          Abrir &rarr;
-                        </span>
-                      </div>
-                    </div>
+                      }
+                    />
                   );
                 })}
-              </div>
+              </Lista>
             )}
-          </div>
+          </Card>
         </div>
 
-        {/* =========================================================== */}
-        {/* COLUMNA DERECHA: Agenda de Hoy & Alertas Operativas          */}
-        {/* =========================================================== */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {/* Bloque: Visitas & Agenda de Hoy */}
-          <div
-            style={{
-              background: "var(--surface, #ffffff)",
-              border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
-              borderRadius: 14,
-              padding: isMobile ? 12 : 16,
-              boxShadow: "0 2px 10px -2px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.02)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingBottom: 10,
-                marginBottom: 10,
-                borderBottom: "1px solid var(--border, rgba(0, 0, 0, 0.06))",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                <span
-                  style={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: "50%",
-                    background: "#f47c20",
-                    display: "inline-block",
-                  }}
-                />
-                <h2
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    margin: 0,
-                    color: "var(--text-main, #101828)",
-                    letterSpacing: "-0.01em",
-                  }}
-                >
-                  Visitas &amp; Agenda de Hoy
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => go("agenda")}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  color: "#0071e3",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  padding: "3px 6px",
-                }}
-              >
-                Abrir agenda &rarr;
-              </button>
-            </div>
+        {/* ── Agenda de hoy y alertas ────────────────────────────────── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: ESPACIO.lg, minWidth: 0 }}>
+          <Card ajustado>
+            <CabeceraTarjeta
+              titulo="Visitas y agenda de hoy"
+              accion={
+                <Button variante="tertiary" tam="sm" iconoDerecha="flechaDer" onClick={() => go("agenda")}>
+                  Abrir agenda
+                </Button>
+              }
+            />
 
             {eventosHoy.length === 0 ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "16px 12px",
-                  background: "var(--surface-subtle, #fbfbfd)",
-                  borderRadius: 10,
-                  border: "1px dashed var(--border, rgba(0,0,0,0.08))",
-                }}
-              >
-                <div style={{ fontSize: 20, marginBottom: 2 }}>☕</div>
-                <div
-                  style={{
-                    fontSize: 12.5,
-                    fontWeight: 600,
-                    color: "var(--text-main, #101828)",
-                  }}
-                >
-                  Sin compromisos pendientes para hoy
-                </div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: "var(--text-muted, #667085)",
-                    marginTop: 2,
-                    marginBottom: 10,
-                  }}
-                >
-                  No hay visitas técnicas ni llamadas de seguimiento para esta fecha.
-                </div>
-                <button
-                  type="button"
-                  onClick={() => go("agenda")}
-                  style={{
-                    background: "var(--surface, #ffffff)",
-                    border: "1px solid var(--border, rgba(0,0,0,0.12))",
-                    borderRadius: 8,
-                    padding: "5px 11px",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    color: "var(--text-main, #101828)",
-                  }}
-                >
-                  + Programar compromiso
-                </button>
-              </div>
+              <EmptyState
+                icono="calendario"
+                titulo="Sin compromisos para hoy"
+                texto="No hay visitas técnicas ni llamadas de seguimiento para esta fecha."
+                accion={
+                  <Button variante="secondary" icono="mas" onClick={() => go("agenda")}>
+                    Programar compromiso
+                  </Button>
+                }
+              />
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: ESPACIO.sm }}>
                 {eventosHoy.map((item) => {
                   const telLimpio = String(item.telefono || "").replace(/\D/g, "");
                   const urlWa = telLimpio
@@ -608,567 +345,165 @@ export default function Dashboard({ ctx, go }) {
                       key={item.id}
                       style={{
                         padding: 13,
-                        borderRadius: 14,
-                        background: "var(--surface-subtle, #fbfbfd)",
-                        border: "1px solid var(--border, rgba(0,0,0,0.07))",
+                        borderRadius: 12,
+                        background: "var(--surface-subtle)",
+                        border: "1px solid var(--separator)",
                       }}
                     >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          marginBottom: 4,
-                          fontSize: 11.5,
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontWeight: 700,
-                            color: item.tipo === "visita" ? "#f47c20" : "#0071e3",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 5,
-                          }}
-                        >
-                          <span
-                            style={{
-                              width: 6,
-                              height: 6,
-                              borderRadius: "50%",
-                              background: item.tipo === "visita" ? "#f47c20" : "#0071e3",
-                            }}
-                          />
-                          {item.hora || "Hora por definir"} · {item.tipo === "visita" ? "Visita a Obra" : "Llamada / Seguimiento"}
-                        </span>
+                      <div style={{
+                        display: "flex", justifyContent: "space-between",
+                        alignItems: "center", gap: ESPACIO.sm, marginBottom: 4,
+                      }}>
+                        <StatusPill tono={item.tipo === "visita" ? "acento" : "info"}>
+                          {item.hora || "Hora por definir"} · {item.tipo === "visita" ? "Visita a obra" : "Llamada / seguimiento"}
+                        </StatusPill>
                         {item.ciudad && (
-                          <span style={{ color: "var(--text-muted, #86868b)" }}>{item.ciudad}</span>
+                          <span style={{ ...TIPO.caption, fontWeight: 400, color: "var(--text-tertiary)" }}>
+                            {item.ciudad}
+                          </span>
                         )}
                       </div>
 
-                      <div
-                        style={{
-                          fontSize: 13.5,
-                          fontWeight: 700,
-                          color: "var(--text-main, #1d1d1f)",
-                        }}
-                      >
+                      <div style={{ ...TIPO.headline, color: "var(--text-primary)" }}>
                         {item.obra || item.titulo || "Compromiso de obra"}
                       </div>
 
                       {item.cliente && (
-                        <div
-                          style={{
-                            fontSize: 11.5,
-                            color: "var(--text-muted, #6e6e73)",
-                            marginTop: 2,
-                          }}
-                        >
+                        <div style={{ ...TIPO.callout, color: "var(--text-tertiary)", marginTop: 2 }}>
                           {item.cliente}
                           {item.contacto ? ` · ${item.contacto}` : ""}
                         </div>
                       )}
 
-                      {/* Botones de acción directa 1 toque */}
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: 6,
-                          alignItems: "center",
-                          marginTop: 10,
-                          paddingTop: 8,
-                          borderTop: "1px solid var(--border, rgba(0,0,0,0.05))",
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        {urlWa && (
-                          <a
-                            href={urlWa}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              background: "rgba(37, 211, 102, 0.12)",
-                              color: "#128C7E",
-                              padding: "4px 9px",
-                              borderRadius: 6,
-                              fontSize: 11,
-                              fontWeight: 700,
-                              textDecoration: "none",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: 4,
-                            }}
-                          >
-                            <span>WhatsApp</span>
-                          </a>
-                        )}
-
-                        {urlWaze && item.tipo === "visita" && (
-                          <a
-                            href={urlWaze}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              background: "var(--surface, #ffffff)",
-                              color: "var(--text-main, #1d1d1f)",
-                              border: "1px solid var(--border, rgba(0,0,0,0.1))",
-                              padding: "4px 9px",
-                              borderRadius: 6,
-                              fontSize: 11,
-                              fontWeight: 600,
-                              textDecoration: "none",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: 4,
-                            }}
-                          >
-                            <span>Waze</span>
-                          </a>
-                        )}
-
-                        {urlCal && (
-                          <a
-                            href={urlCal}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              background: "var(--surface, #ffffff)",
-                              color: "var(--text-main, #1d1d1f)",
-                              border: "1px solid var(--border, rgba(0,0,0,0.1))",
-                              padding: "4px 9px",
-                              borderRadius: 6,
-                              fontSize: 11,
-                              fontWeight: 600,
-                              textDecoration: "none",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: 4,
-                            }}
-                          >
-                            <span>📅 Cal</span>
-                          </a>
-                        )}
-                      </div>
+                      {(urlWa || (urlWaze && item.tipo === "visita") || urlCal) && (
+                        <div style={{
+                          display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap",
+                          marginTop: ESPACIO.md, paddingTop: ESPACIO.sm,
+                          borderTop: "1px solid var(--separator)",
+                        }}>
+                          {urlWa && (
+                            <Button
+                              variante="secondary" tam="sm"
+                              onClick={() => window.open(urlWa, "_blank", "noopener,noreferrer")}
+                            >
+                              WhatsApp
+                            </Button>
+                          )}
+                          {urlWaze && item.tipo === "visita" && (
+                            <Button
+                              variante="secondary" tam="sm"
+                              onClick={() => window.open(urlWaze, "_blank", "noopener,noreferrer")}
+                            >
+                              Waze
+                            </Button>
+                          )}
+                          {urlCal && (
+                            <Button
+                              variante="secondary" tam="sm" icono="calendario"
+                              onClick={() => window.open(urlCal, "_blank", "noopener,noreferrer")}
+                            >
+                              Calendario
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
             )}
-          </div>
+          </Card>
 
-          {/* Bloque: Alertas Operativas Clave */}
-          <div
-            style={{
-              background: "var(--surface, #ffffff)",
-              border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
-              borderRadius: 14,
-              padding: isMobile ? 12 : 16,
-              boxShadow: "0 2px 10px -2px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.02)",
-            }}
-          >
-            <h2
-              style={{
-                fontSize: 14,
-                fontWeight: 600,
-                letterSpacing: "-0.01em",
-                margin: "0 0 10px",
-                color: "var(--text-main, #101828)",
-                paddingBottom: 10,
-                borderBottom: "1px solid var(--border, rgba(0, 0, 0, 0.06))",
-              }}
-            >
-              Alertas Operativas &middot; Atención
-            </h2>
+          <Card ajustado>
+            <CabeceraTarjeta titulo="Alertas operativas" descripcion="Lo que necesita atención" />
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {/* Cobro pendiente */}
+            <div style={{ display: "flex", flexDirection: "column", gap: ESPACIO.md }}>
               {verDinero && (
-                <div
-                  style={{
-                    background: "var(--surface-subtle, #f8fafc)",
-                    border: "1px solid var(--border, rgba(0, 0, 0, 0.07))",
-                    borderRadius: 12,
-                    padding: "10px 14px",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
+                <BloqueAlerta
+                  titulo="Cobro pendiente en obras"
+                  resumen={
+                    Number(saldoPendiente) > 0 && (
+                      <Button variante="tertiary" tam="sm" iconoDerecha="flechaDer" onClick={() => go("obras")}>
+                        Ver obras
+                      </Button>
+                    )
+                  }
                 >
-                  <div>
-                    <div
-                      style={{
-                        fontSize: 10.5,
-                        color: "var(--text-subtle, #667085)",
-                        textTransform: "uppercase",
-                        fontWeight: 600,
-                        letterSpacing: "0.04em",
-                      }}
-                    >
-                      Cobro pendiente en obras
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 18,
-                        fontWeight: 600,
-                        color: Number(saldoPendiente) > 0 ? "#b91c1c" : "#15803d",
-                        marginTop: 1,
-                        fontVariantNumeric: "tabular-nums",
-                      }}
-                    >
-                      {fmt(Number(saldoPendiente || 0))}
-                    </div>
+                  <div style={{
+                    ...TIPO.title2, ...CIFRA,
+                    color: Number(saldoPendiente) > 0 ? "var(--danger-text)" : "var(--success-text)",
+                  }}>
+                    {fmt(Number(saldoPendiente || 0))}
                   </div>
-
-                  {Number(saldoPendiente) > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => go("obras")}
-                      style={{
-                        background: "var(--surface, #ffffff)",
-                        border: "1px solid var(--border, rgba(0,0,0,0.12))",
-                        borderRadius: 6,
-                        padding: "5px 10px",
-                        fontSize: 11,
-                        fontWeight: 500,
-                        cursor: "pointer",
-                        color: "var(--text-main, #101828)",
-                      }}
-                    >
-                      Ver obras &rarr;
-                    </button>
-                  )}
-                </div>
+                </BloqueAlerta>
               )}
 
-              {/* Vencimientos de certificaciones */}
-              <div
-                style={{
-                  background: venc.hayAlgoQueHacer
-                    ? "rgba(255, 149, 0, 0.05)"
-                    : "var(--surface-subtle, #f8fafc)",
-                  border: `1px solid ${
-                    venc.hayAlgoQueHacer ? "rgba(255, 149, 0, 0.22)" : "var(--border, rgba(0, 0, 0, 0.06))"
-                  }`,
-                  borderRadius: 12,
-                  padding: "10px 14px",
-                }}
+              <BloqueAlerta
+                titulo="Vencimiento de certificaciones"
+                resumen={
+                  venc.hayAlgoQueHacer && (
+                    <StatusPill tono="aviso">{venc.requierenAccion.length} por atender</StatusPill>
+                  )
+                }
               >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "baseline",
-                    marginBottom: 6,
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 10.5,
-                      fontWeight: 600,
-                      color: "var(--text-muted, #667085)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.04em",
-                    }}
-                  >
-                    Vencimiento de Certificaciones
-                  </div>
-                  {venc.hayAlgoQueHacer && (
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: "#c2410c",
-                      }}
-                    >
-                      {venc.requierenAccion.length} por atender
-                    </span>
-                  )}
-                </div>
-
                 {venc.hayAlgoQueHacer ? (
                   <>
-                    <div style={{ display: "flex", gap: 10, marginBottom: 8, fontSize: 11 }}>
-                      {venc.vencidas.length > 0 && (
-                        <span style={{ color: "#ef4444", fontWeight: 600 }}>
-                          {venc.vencidas.length} vencida{venc.vencidas.length === 1 ? "" : "s"}
-                        </span>
-                      )}
-                      {venc.urgentes.length > 0 && (
-                        <span style={{ color: "#c2410c", fontWeight: 600 }}>
-                          {venc.urgentes.length} urgente{venc.urgentes.length === 1 ? "" : "s"}
-                        </span>
-                      )}
-                      {venc.proximas.length > 0 && (
-                        <span style={{ color: "#a16207", fontWeight: 500 }}>
-                          {venc.proximas.length} próxima{venc.proximas.length === 1 ? "" : "s"}
-                        </span>
-                      )}
-                    </div>
-
-                    <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 8 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: ESPACIO.sm }}>
                       {venc.destacadas.slice(0, 3).map((cert) => (
-                        <div
+                        <FilaAlerta
                           key={cert.id}
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            background: "var(--surface, #ffffff)",
-                            border: "1px solid var(--border, rgba(0,0,0,0.06))",
-                            borderRadius: 8,
-                            padding: "6px 9px",
-                          }}
-                        >
-                          <div style={{ minWidth: 0 }}>
-                            <div
-                              style={{
-                                fontSize: 11.5,
-                                fontWeight: 500,
-                                color: "var(--text-main, #101828)",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              {cert.cliente || cert.obra || cert.id}
-                            </div>
-                            <div
-                              style={{
-                                fontSize: 10,
-                                color: "var(--text-muted, #667085)",
-                              }}
-                            >
-                              {cert.tipoSistema || cert.tipo || "Certificación"}
-                              {cert.proxMant ? ` · ${fmtD(cert.proxMant)}` : ""}
-                            </div>
-                          </div>
-                          <span
-                            style={{
-                              fontSize: 10.5,
-                              fontWeight: 600,
-                              color: colorVencimiento(cert.diasRestantes),
-                              flexShrink: 0,
-                            }}
-                          >
-                            {etiquetaVencimiento(cert.diasRestantes)}
-                          </span>
-                        </div>
+                          titulo={cert.cliente || cert.obra || cert.id}
+                          meta={`${cert.tipoSistema || cert.tipo || "Certificación"}${cert.proxMant ? ` · ${fmtD(cert.proxMant)}` : ""}`}
+                          tono={tonoPorDias(cert.diasRestantes, UMBRAL_URGENTE)}
+                          etiqueta={etiquetaVencimiento(cert.diasRestantes)}
+                        />
                       ))}
                     </div>
-
-                    <button
-                      type="button"
-                      onClick={() => go("vencimientos")}
-                      style={{
-                        background: "#f47c20",
-                        color: "#ffffff",
-                        border: "none",
-                        borderRadius: 8,
-                        fontSize: 11.5,
-                        fontWeight: 600,
-                        padding: "6px 12px",
-                        width: "100%",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Generar recertificación &rarr;
-                    </button>
+                    <Button variante="secondary" bloque tam="sm" onClick={() => go("vencimientos")}>
+                      Generar recertificación
+                    </Button>
                   </>
                 ) : (
-                  <div style={{ fontSize: 11.5, color: "var(--text-muted, #667085)" }}>
+                  <div style={{ ...TIPO.callout, color: "var(--text-tertiary)" }}>
                     Todas las certificaciones de altura están al día.
                   </div>
                 )}
-              </div>
+              </BloqueAlerta>
 
-              {/* Cotizaciones sin respuesta */}
-              <div
-                style={{
-                  background: seg.hayAlgoQueHacer
-                    ? "rgba(255, 149, 0, 0.05)"
-                    : "var(--surface-subtle, #f8fafc)",
-                  border: `1px solid ${
-                    seg.hayAlgoQueHacer ? "rgba(255, 149, 0, 0.22)" : "var(--border, rgba(0, 0, 0, 0.06))"
-                  }`,
-                  borderRadius: 12,
-                  padding: "10px 14px",
-                }}
+              <BloqueAlerta
+                titulo="Cotizaciones sin respuesta"
+                resumen={
+                  seg.hayAlgoQueHacer && (
+                    <StatusPill tono="aviso">{seg.requierenAccion.length} por llamar</StatusPill>
+                  )
+                }
               >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "baseline",
-                    marginBottom: 6,
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 10.5,
-                      fontWeight: 600,
-                      color: "var(--text-muted, #667085)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.04em",
-                    }}
-                  >
-                    Cotizaciones sin respuesta
-                  </div>
-                  {seg.hayAlgoQueHacer && (
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: "#c2410c",
-                      }}
-                    >
-                      {seg.requierenAccion.length} por llamar
-                    </span>
-                  )}
-                </div>
-
                 {seg.hayAlgoQueHacer ? (
                   <>
-                    <div style={{ display: "flex", gap: 10, marginBottom: 8, fontSize: 11 }}>
-                      {seg.vencidas.length > 0 && (
-                        <span style={{ color: "#ef4444", fontWeight: 600 }}>
-                          {seg.vencidas.length} vencida{seg.vencidas.length === 1 ? "" : "s"}
-                        </span>
-                      )}
-                      {seg.porVencer.length > 0 && (
-                        <span style={{ color: "#c2410c", fontWeight: 600 }}>
-                          {seg.porVencer.length} por vencer
-                        </span>
-                      )}
-                    </div>
-
-                    <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 8 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: ESPACIO.sm }}>
                       {seg.destacadas.slice(0, 3).map((cot) => (
-                        <div
+                        <FilaAlerta
                           key={cot.id}
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            background: "var(--surface, #ffffff)",
-                            border: "1px solid var(--border, rgba(0,0,0,0.06))",
-                            borderRadius: 8,
-                            padding: "6px 9px",
-                          }}
-                        >
-                          <div style={{ minWidth: 0 }}>
-                            <div
-                              style={{
-                                fontSize: 11.5,
-                                fontWeight: 500,
-                                color: "var(--text-main, #101828)",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              {cot.cliente || cot.numero || cot.id}
-                            </div>
-                            <div
-                              style={{
-                                fontSize: 10,
-                                color: "var(--text-muted, #667085)",
-                              }}
-                            >
-                              {[cot.numero, cot.obra].filter(Boolean).join(" · ")}
-                            </div>
-                          </div>
-                          <span
-                            style={{
-                              fontSize: 10.5,
-                              fontWeight: 600,
-                              color: colorSeguimiento(cot.diasParaVencer),
-                              flexShrink: 0,
-                            }}
-                          >
-                            {etiquetaSeguimiento(cot.diasParaVencer)}
-                          </span>
-                        </div>
+                          titulo={cot.cliente || cot.numero || cot.id}
+                          meta={[cot.numero, cot.obra].filter(Boolean).join(" · ")}
+                          tono={tonoPorDias(cot.diasParaVencer, UMBRAL_POR_VENCER)}
+                          etiqueta={etiquetaSeguimiento(cot.diasParaVencer)}
+                        />
                       ))}
                     </div>
-
-                    <button
-                      type="button"
-                      onClick={() => go("cotizacion")}
-                      style={{
-                        background: "var(--surface, #ffffff)",
-                        color: "var(--text-main, #101828)",
-                        border: "1px solid var(--border, rgba(0,0,0,0.12))",
-                        borderRadius: 8,
-                        fontSize: 11.5,
-                        fontWeight: 500,
-                        padding: "6px 12px",
-                        width: "100%",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Ver cotizaciones &rarr;
-                    </button>
+                    <Button variante="secondary" bloque tam="sm" onClick={() => go("cotizacion")}>
+                      Ver cotizaciones
+                    </Button>
                   </>
                 ) : (
-                  <div style={{ fontSize: 11.5, color: "var(--text-muted, #667085)" }}>
+                  <div style={{ ...TIPO.callout, color: "var(--text-tertiary)" }}>
                     No hay propuestas técnicas pendientes de respuesta comercial.
                   </div>
                 )}
-              </div>
+              </BloqueAlerta>
             </div>
-          </div>
+          </Card>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function TarjetaAcceso({ icono, titulo, subtitulo, onClick }) {
-  const [hover, setHover] = useState(false);
-  return (
-    <div
-      onClick={onClick}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{
-        background: "var(--surface, #ffffff)",
-        border: `1px solid ${hover ? "#0071e3" : "var(--border, rgba(0, 0, 0, 0.08))"}`,
-        borderRadius: 12,
-        padding: "10px 10px",
-        cursor: "pointer",
-        transition: "all 0.16s cubic-bezier(0.16, 1, 0.3, 1)",
-        transform: hover ? "translateY(-1px)" : "translateY(0)",
-        boxShadow: hover ? "0 4px 12px -2px rgba(0,0,0,0.06)" : "0 1px 2px rgba(0,0,0,0.02)",
-        minWidth: 0,
-      }}
-    >
-      <div style={{ fontSize: 18, marginBottom: 4 }}>{icono}</div>
-      <div
-        style={{
-          fontSize: 12,
-          fontWeight: 600,
-          letterSpacing: "-0.01em",
-          color: hover ? "#0071e3" : "var(--text-main, #101828)",
-          transition: "color 0.15s ease",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {titulo}
-      </div>
-      <div
-        style={{
-          fontSize: 10.5,
-          fontWeight: 400,
-          color: "var(--text-muted, #667085)",
-          marginTop: 1,
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {subtitulo}
       </div>
     </div>
   );

@@ -72,6 +72,7 @@ export default function DocumentosEquipo({
   const [busqueda, setBusqueda] = useState("");
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [menuInsertarAbierto, setMenuInsertarAbierto] = useState(false);
+  const [menuInferiorAbierto, setMenuInferiorAbierto] = useState(false);
   const [toastMensaje, setToastMensaje] = useState("");
 
   // Modal inline que reemplaza todos los prompt() nativos del navegador
@@ -411,6 +412,7 @@ export default function DocumentosEquipo({
   // Insertar un nuevo bloque según tipo
   const insertarBloque = async (tipo) => {
     setMenuInsertarAbierto(false);
+    setMenuInferiorAbierto(false);
 
     if (tipo === "enlace") {
       const tituloEnlace = await pedirInput({ titulo: "Título del enlace o subpágina", placeholder: "Nueva subpágina", valorInicial: "Nueva subpágina" });
@@ -1670,63 +1672,132 @@ export default function DocumentosEquipo({
         })()}
         </div>
 
-        {/* Barra de inserción de bloques al final del documento (estilo Notion / Apple) */}
-        <div
-          style={{
-            marginTop: 32,
-            paddingTop: 18,
-            borderTop: "1px dashed var(--border, rgba(0, 0, 0, 0.08))",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            flexWrap: "wrap",
-          }}
-        >
-          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted, #86868b)", textTransform: "uppercase", letterSpacing: "0.05em", marginRight: 4 }}>
-            + Insertar bloque:
-          </span>
-          {[
-            { tipo: "banner", icono: "🏷️", label: "Banner con viñetas" },
-            { tipo: "vineta", icono: "•", label: "Lista con viñetas" },
-            { tipo: "checklist", icono: "☑️", label: "Lista de tareas" },
-            { tipo: "desplegable", icono: "▶", label: "Desplegable" },
-            { tipo: "destacado", icono: "💡", label: "Callout" },
-            { tipo: "enlace", icono: "🔗", label: "Subpágina" },
-            { tipo: "codigo", icono: "⌨️", label: "Código / notas" },
-          ].map((b) => (
-            <button
-              key={b.tipo}
-              type="button"
-              onClick={() => insertarBloque(b.tipo)}
+        {/* Selector de bloques estilo Apple / Notion: Botón (+) con lista desplegable */}
+        <div style={{ position: "relative", marginTop: 36, paddingTop: 16, borderTop: "1px solid var(--border, rgba(0, 0, 0, 0.06))" }}>
+          <div
+            onClick={() => setMenuInferiorAbierto(!menuInferiorAbierto)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "10px 14px",
+              borderRadius: 12,
+              background: "var(--surface-subtle, #f6f7f9)",
+              cursor: "pointer",
+              transition: "all 0.15s ease",
+              border: "1px solid transparent",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#ffffff";
+              e.currentTarget.style.borderColor = "rgba(0,0,0,0.1)";
+              e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "var(--surface-subtle, #f6f7f9)";
+              e.currentTarget.style.borderColor = "transparent";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          >
+            <span
               style={{
+                width: 24,
+                height: 24,
+                borderRadius: "50%",
+                background: NARANJA,
+                color: "#fff",
                 display: "inline-flex",
                 alignItems: "center",
-                gap: 6,
-                background: "var(--surface-subtle, #f5f5f7)",
-                border: "1px solid var(--border, rgba(0,0,0,0.06))",
-                borderRadius: 8,
-                padding: "6px 12px",
-                fontSize: 11.5,
-                fontWeight: 600,
-                color: "var(--text-main, #1d1d1f)",
-                cursor: "pointer",
-                transition: "all 0.12s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "#ffffff";
-                e.currentTarget.style.borderColor = "rgba(0,0,0,0.15)";
-                e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "var(--surface-subtle, #f5f5f7)";
-                e.currentTarget.style.borderColor = "var(--border, rgba(0,0,0,0.06))";
-                e.currentTarget.style.boxShadow = "none";
+                justifyContent: "center",
+                flexShrink: 0,
+                boxShadow: "0 1px 3px rgba(244,124,32,0.3)",
               }}
             >
-              <span>{b.icono}</span>
-              <span>{b.label}</span>
-            </button>
-          ))}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </span>
+            <span style={{ fontSize: 13.5, color: "var(--text-muted, #86868b)", fontWeight: 500, flex: 1 }}>
+              Insertar bloque en el documento…
+            </span>
+            <span
+              style={{
+                fontSize: 10,
+                color: "var(--text-muted, #86868b)",
+                background: "rgba(0,0,0,0.05)",
+                padding: "3px 8px",
+                borderRadius: 6,
+                fontWeight: 600,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+              }}
+            >
+              <span>Lista desplegable</span>
+              <span>{menuInferiorAbierto ? "▲" : "▼"}</span>
+            </span>
+          </div>
+
+          {/* Menú Desplegable con opciones de bloques */}
+          {menuInferiorAbierto && (
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                bottom: "100%",
+                marginBottom: 8,
+                background: "#ffffff",
+                border: "1px solid var(--border, rgba(0,0,0,0.1))",
+                borderRadius: 14,
+                boxShadow: "0 14px 35px -5px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.06)",
+                padding: 6,
+                zIndex: 9999,
+                width: 320,
+                animation: "fadeIn 0.15s ease",
+              }}
+            >
+              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted, #86868b)", textTransform: "uppercase", padding: "6px 10px 4px", letterSpacing: "0.06em" }}>
+                Tipos de Bloque para Insertar
+              </div>
+              {[
+                { tipo: "banner", icono: "🏷️", titulo: "Banner con Viñetas", desc: "Sección de color con viñetas (Logros / Retos)" },
+                { tipo: "vineta", icono: "•", titulo: "Lista con Viñetas", desc: "Puntos con viñetas, sangría y estados" },
+                { tipo: "checklist", icono: "☑️", titulo: "Lista de Tareas", desc: "Casillas para tachar y organizar" },
+                { tipo: "desplegable", icono: "▶", titulo: "Lista Desplegable (Toggle)", desc: "Sección que se puede ocultar o expandir" },
+                { tipo: "destacado", icono: "💡", titulo: "Destacado (Callout)", desc: "Nota o advertencia visualmente resaltada" },
+                { tipo: "enlace", icono: "🔗", titulo: "Subpágina / Enlace", desc: "Crear documento vinculado" },
+                { tipo: "codigo", icono: "⌨️", titulo: "Notas técnicas / Código", desc: "Comandos, enlaces o snippets formateados" },
+              ].map((item) => (
+                <button
+                  key={item.tipo}
+                  type="button"
+                  onClick={() => insertarBloque(item.tipo)}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "8px 10px",
+                    background: "transparent",
+                    border: "none",
+                    borderRadius: 10,
+                    cursor: "pointer",
+                    textAlign: "left",
+                    transition: "all 0.1s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f5f7")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                >
+                  <span style={{ fontSize: 17, width: 22, textAlign: "center", flexShrink: 0 }}>{item.icono}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-main, #1d1d1f)" }}>{item.titulo}</div>
+                    <div style={{ fontSize: 10.5, color: "var(--text-muted, #86868b)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {item.desc}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         </>
         )}

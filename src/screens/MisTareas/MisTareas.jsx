@@ -193,6 +193,64 @@ export default function MisTareas({ ctx }) {
   const timerDeshacer = useRef(null);
   const inputRef = useRef(null);
 
+  // Listas desplegables (Secciones colapsables de tareas)
+  const [secciones, setSecciones] = useState(() => {
+    try {
+      const guardadas = localStorage.getItem("ingeanclajes_secciones_personales");
+      if (guardadas) return JSON.parse(guardadas);
+    } catch (e) {}
+    return ["General"];
+  });
+  const [seccionActiva, setSeccionActiva] = useState("General");
+  const [seccionesColapsadas, setSeccionesColapsadas] = useState({});
+  const [menuPlusAbierto, setMenuPlusAbierto] = useState(false);
+  const [modalSeccion, setModalSeccion] = useState(false);
+  const [nombreNuevaSeccion, setNombreNuevaSeccion] = useState("");
+  const inputNuevaSeccionRef = useRef(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("ingeanclajes_secciones_personales", JSON.stringify(secciones));
+    } catch (e) {}
+  }, [secciones]);
+
+  const todasLasSecciones = useMemo(() => {
+    const s = new Set(secciones);
+    tareas.forEach((t) => {
+      if (t.seccion) s.add(t.seccion);
+    });
+    if (!s.has("General")) s.add("General");
+    return Array.from(s);
+  }, [secciones, tareas]);
+
+  const toggleColapsarSeccion = (sec) => {
+    setSeccionesColapsadas((prev) => ({
+      ...prev,
+      [sec]: !prev[sec],
+    }));
+  };
+
+  const crearSeccion = (nombre) => {
+    const limpio = (nombre || "").trim();
+    if (!limpio) return;
+    if (!secciones.includes(limpio)) {
+      setSecciones((prev) => [...prev, limpio]);
+    }
+    setSeccionActiva(limpio);
+    setNombreNuevaSeccion("");
+    setModalSeccion(false);
+  };
+
+  const eliminarSeccion = (sec) => {
+    if (sec === "General") return;
+    if (!window.confirm(`¿Eliminar la lista desplegable "${sec}"? Las tareas pasarán a General.`)) return;
+    setTareas((prev) =>
+      (prev || []).map((t) => (t.seccion === sec ? { ...t, seccion: "General" } : t))
+    );
+    setSecciones((prev) => prev.filter((s) => s !== sec));
+    if (seccionActiva === sec) setSeccionActiva("General");
+  };
+
   useEffect(() => () => clearTimeout(timerDeshacer.current), []);
 
   const nombre = ctx?.membresia?.nombre || ctx?.authUserEmail || "";
@@ -211,13 +269,21 @@ export default function MisTareas({ ctx }) {
     timerDeshacer.current = setTimeout(() => setDeshacer(null), 6000);
   };
 
-  const agregar = (e) => {
+  const agregar = (e, seccionDestino) => {
     e?.preventDefault();
     const limpio = texto.trim();
     if (!limpio) return;
+    const sec = seccionDestino || seccionActiva || "General";
     setTareas((prev) => [
       ...(prev || []),
-      { id: nuevoId(), texto: limpio, fecha: hoyIso(), completada: false, completadaEn: null },
+      {
+        id: nuevoId(),
+        texto: limpio,
+        fecha: hoyIso(),
+        completada: false,
+        completadaEn: null,
+        seccion: sec,
+      },
     ]);
     setTexto("");
     if (filtro === "completadas") setFiltro("todas");
@@ -399,96 +465,252 @@ export default function MisTareas({ ctx }) {
       </div>
 
       {/* Nueva tarea */}
-      <form className="mt-composer" onSubmit={agregar}>
-        <span
-          style={{
-            width: 22,
-            height: 22,
-            borderRadius: "50%",
-            background: NARANJA,
-            color: "#fff",
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-        </span>
-        <input
-          ref={inputRef}
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
-          placeholder="Nueva tarea…"
-          enterKeyHint="done"
-          aria-label="Nueva tarea"
-        />
-        {texto.trim() && (
+      <div style={{ position: "relative" }}>
+        <form className="mt-composer" onSubmit={agregar}>
           <button
-            type="submit"
+            type="button"
+            onClick={() => setMenuPlusAbierto(!menuPlusAbierto)}
+            title="Opciones de listas desplegables"
             style={{
-              border: "none",
+              width: 24,
+              height: 24,
+              borderRadius: "50%",
               background: NARANJA,
               color: "#fff",
-              fontWeight: 600,
-              fontSize: 12.5,
-              borderRadius: 8,
-              padding: "6px 14px",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              border: "none",
               cursor: "pointer",
-              fontFamily: "inherit",
-              boxShadow: "0 1px 2px rgba(244,124,32,.3)",
+              transition: "transform 0.15s ease",
             }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.08)")}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
           >
-            Agregar
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
           </button>
-        )}
-      </form>
 
-      {/* Filtros */}
-      {tareas.length > 0 && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", margin: "18px 0 6px" }}>
-          <div className="mt-seg" role="tablist">
-            {[
-              { id: "todas", label: `Todas ${tareas.length}` },
-              { id: "pendientes", label: `Pendientes ${pendientes}` },
-              { id: "completadas", label: `Completadas ${hechas}` },
-            ].map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                role="tab"
-                aria-selected={filtro === f.id}
-                className={filtro === f.id ? "activo" : ""}
-                onClick={() => setFiltro(f.id)}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-          {hechas > 0 && (
+          <input
+            ref={inputRef}
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            placeholder={`Nueva tarea en ${seccionActiva}…`}
+            enterKeyHint="done"
+            aria-label="Nueva tarea"
+          />
+
+          {todasLasSecciones.length > 1 && (
+            <select
+              value={seccionActiva}
+              onChange={(e) => setSeccionActiva(e.target.value)}
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: "var(--text-muted, #667085)",
+                background: "rgba(0,0,0,0.04)",
+                border: "none",
+                borderRadius: 8,
+                padding: "5px 8px",
+                outline: "none",
+                cursor: "pointer",
+              }}
+              title="Lista desplegable donde se guardará"
+            >
+              {todasLasSecciones.map((sec) => (
+                <option key={sec} value={sec}>
+                  📂 {sec}
+                </option>
+              ))}
+            </select>
+          )}
+
+          {texto.trim() && (
             <button
-              type="button"
-              onClick={limpiarCompletadas}
+              type="submit"
               style={{
                 border: "none",
-                background: "transparent",
-                color: NARANJA,
-                fontSize: 12.5,
+                background: NARANJA,
+                color: "#fff",
                 fontWeight: 600,
+                fontSize: 12.5,
+                borderRadius: 8,
+                padding: "6px 14px",
                 cursor: "pointer",
                 fontFamily: "inherit",
-                padding: "4px 2px",
+                boxShadow: "0 1px 2px rgba(244,124,32,.3)",
               }}
             >
-              Limpiar completadas
+              Agregar
             </button>
           )}
-        </div>
-      )}
+        </form>
 
-      {/* Lista */}
+        {/* Menú Desplegable flotante del botón (+) */}
+        {menuPlusAbierto && (
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              top: "100%",
+              marginTop: 6,
+              background: "#ffffff",
+              border: "1px solid var(--border, rgba(0,0,0,0.1))",
+              borderRadius: 14,
+              boxShadow: "0 12px 30px -4px rgba(0,0,0,0.15)",
+              padding: 6,
+              zIndex: 9999,
+              width: 270,
+            }}
+          >
+            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted, #86868b)", textTransform: "uppercase", padding: "4px 8px 6px", letterSpacing: "0.05em" }}>
+              Opciones de Tareas
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setMenuPlusAbierto(false);
+                inputRef.current?.focus();
+              }}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 10px",
+                background: "transparent",
+                border: "none",
+                borderRadius: 8,
+                cursor: "pointer",
+                textAlign: "left",
+                fontSize: 12.5,
+                fontWeight: 600,
+                color: "var(--text-main, #101828)",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f5f7")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+            >
+              <span>☑️</span>
+              <span>Añadir tarea normal</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMenuPlusAbierto(false);
+                setModalSeccion(true);
+                setTimeout(() => inputNuevaSeccionRef.current?.focus(), 80);
+              }}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 10px",
+                background: "transparent",
+                border: "none",
+                borderRadius: 8,
+                cursor: "pointer",
+                textAlign: "left",
+                fontSize: 12.5,
+                fontWeight: 600,
+                color: "var(--text-main, #101828)",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f5f7")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+            >
+              <span>📂</span>
+              <div>
+                <div>Nueva lista desplegable</div>
+                <div style={{ fontSize: 10.5, color: "var(--text-muted, #667085)", fontWeight: 400 }}>
+                  Categoría colapsable con flecha ▶
+                </div>
+              </div>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Filtros y Acción Nueva Lista Desplegable */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", margin: "18px 0 10px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          {tareas.length > 0 && (
+            <div className="mt-seg" role="tablist">
+              {[
+                { id: "todas", label: `Todas ${tareas.length}` },
+                { id: "pendientes", label: `Pendientes ${pendientes}` },
+                { id: "completadas", label: `Completadas ${hechas}` },
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={filtro === f.id}
+                  className={filtro === f.id ? "activo" : ""}
+                  onClick={() => setFiltro(f.id)}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => {
+              setModalSeccion(true);
+              setTimeout(() => inputNuevaSeccionRef.current?.focus(), 80);
+            }}
+            style={{
+              border: "1px dashed var(--border, rgba(0,0,0,0.15))",
+              background: "transparent",
+              color: "var(--text-main, #101828)",
+              fontSize: 12,
+              fontWeight: 600,
+              borderRadius: 8,
+              padding: "5px 10px",
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              transition: "all 0.12s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "var(--surface-subtle, #f5f5f7)";
+              e.currentTarget.style.borderColor = "rgba(0,0,0,0.25)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent";
+              e.currentTarget.style.borderColor = "var(--border, rgba(0,0,0,0.15))";
+            }}
+          >
+            <span>+</span>
+            <span>Nueva lista desplegable</span>
+          </button>
+        </div>
+
+        {hechas > 0 && (
+          <button
+            type="button"
+            onClick={limpiarCompletadas}
+            style={{
+              border: "none",
+              background: "transparent",
+              color: NARANJA,
+              fontSize: 12.5,
+              fontWeight: 600,
+              cursor: "pointer",
+              fontFamily: "inherit",
+              padding: "4px 2px",
+            }}
+          >
+            Limpiar completadas
+          </button>
+        )}
+      </div>
+
+      {/* Lista de Tareas organizada en Listas Desplegables */}
       {tareas.length === 0 ? (
         <div style={{ textAlign: "center", padding: "44px 16px 30px" }}>
           <div
@@ -511,7 +733,7 @@ export default function MisTareas({ ctx }) {
           </div>
           <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-main, #101828)" }}>Tu lista está vacía</div>
           <p style={{ fontSize: 13, color: "var(--text-muted, #667085)", margin: "4px 0 0" }}>
-            Anota lo que tienes que hacer hoy. Al terminar una tarea, haz clic y quedará tachada.
+            Anota lo que tienes que hacer hoy. Puedes crear listas desplegables para agruparlas.
           </p>
         </div>
       ) : visibles.length === 0 ? (
@@ -519,10 +741,236 @@ export default function MisTareas({ ctx }) {
           {filtro === "pendientes" ? "No tienes tareas pendientes. ¡Buen trabajo!" : "Aún no has completado ninguna tarea."}
         </div>
       ) : (
-        <div style={{ marginTop: 4 }}>
-          {visibles.map((t) => (
-            <FilaTarea key={t.id} tarea={t} onToggle={toggle} onGuardarTexto={guardarTexto} onEliminar={eliminar} />
-          ))}
+        <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 12 }}>
+          {todasLasSecciones.map((sec) => {
+            const tareasSec = visibles.filter((t) => (t.seccion || "General") === sec);
+            const totalSec = tareas.filter((t) => (t.seccion || "General") === sec).length;
+            const hechasSec = tareas.filter((t) => (t.seccion || "General") === sec && t.completada).length;
+            const colapsada = !!seccionesColapsadas[sec];
+
+            // Si hay filtro activo y la sección no tiene tareas visibles, no mostrarla en esa vista
+            if (filtro !== "todas" && tareasSec.length === 0) return null;
+
+            return (
+              <div
+                key={sec}
+                style={{
+                  border: "1px solid var(--border, rgba(0, 0, 0, 0.07))",
+                  borderRadius: 14,
+                  overflow: "hidden",
+                  background: "var(--surface, #ffffff)",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
+                }}
+              >
+                {/* Encabezado colapsable de la Lista Desplegable */}
+                <div
+                  onClick={() => toggleColapsarSeccion(sec)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "9px 12px",
+                    background: "var(--surface-subtle, #f8f9fa)",
+                    cursor: "pointer",
+                    userSelect: "none",
+                    borderBottom: colapsada ? "none" : "1px solid var(--border, rgba(0,0,0,0.05))",
+                    transition: "background 0.12s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,0,0,0.04)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "var(--surface-subtle, #f8f9fa)")}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        color: "var(--text-muted, #667085)",
+                        display: "inline-block",
+                        transform: colapsada ? "none" : "rotate(90deg)",
+                        transition: "transform 0.15s ease",
+                      }}
+                    >
+                      ▶
+                    </span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #101828)" }}>
+                      {sec}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 10.5,
+                        fontWeight: 600,
+                        color: "var(--text-muted, #667085)",
+                        background: "rgba(0,0,0,0.05)",
+                        padding: "1px 6px",
+                        borderRadius: 999,
+                      }}
+                    >
+                      {hechasSec}/{totalSec}
+                    </span>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSeccionActiva(sec);
+                        inputRef.current?.focus();
+                      }}
+                      style={{
+                        border: "none",
+                        background: "transparent",
+                        color: NARANJA,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        padding: "2px 6px",
+                        borderRadius: 6,
+                      }}
+                      title={`Escribir tarea en ${sec}`}
+                    >
+                      + Tarea
+                    </button>
+                    {sec !== "General" && (
+                      <button
+                        type="button"
+                        onClick={() => eliminarSeccion(sec)}
+                        style={{
+                          border: "none",
+                          background: "transparent",
+                          color: "var(--text-muted, #98a2b3)",
+                          cursor: "pointer",
+                          fontSize: 14,
+                          padding: "1px 5px",
+                        }}
+                        title="Eliminar esta lista desplegable"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Contenido de la Lista Desplegable (Tareas) */}
+                {!colapsada && (
+                  <div style={{ padding: "4px 8px 8px" }}>
+                    {tareasSec.length === 0 ? (
+                      <div style={{ padding: "12px 10px", fontSize: 12, color: "var(--text-muted, #98a2b3)", textAlign: "center", fontStyle: "italic" }}>
+                        Sin tareas en esta lista. Haz clic en '+ Tarea' arriba para añadir una.
+                      </div>
+                    ) : (
+                      tareasSec.map((t) => (
+                        <FilaTarea key={t.id} tarea={t} onToggle={toggle} onGuardarTexto={guardarTexto} onEliminar={eliminar} />
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Modal Apple para Crear Nueva Lista Desplegable */}
+      {modalSeccion && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.45)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+            zIndex: 999999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+          onClick={() => setModalSeccion(false)}
+        >
+          <div
+            style={{
+              background: "#ffffff",
+              borderRadius: 18,
+              padding: "24px 24px 20px",
+              width: "100%",
+              maxWidth: 400,
+              boxShadow: "0 20px 50px -10px rgba(0,0,0,0.3)",
+              display: "flex",
+              flexDirection: "column",
+              gap: 16,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              <div style={{ fontSize: 17, fontWeight: 700, color: "#1d1d1f", letterSpacing: "-0.02em" }}>
+                Nueva Lista Desplegable
+              </div>
+              <div style={{ fontSize: 12.5, color: "#86868b", marginTop: 4 }}>
+                Crea una sección colapsable (con flecha ▶) para organizar tus tareas en grupos.
+              </div>
+            </div>
+
+            <input
+              ref={inputNuevaSeccionRef}
+              value={nombreNuevaSeccion}
+              onChange={(e) => setNombreNuevaSeccion(e.target.value)}
+              placeholder="Ej. Logros del ciclo, Obra, Compras..."
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  crearSeccion(nombreNuevaSeccion);
+                } else if (e.key === "Escape") {
+                  setModalSeccion(false);
+                }
+              }}
+              style={{
+                border: "1px solid rgba(0,0,0,0.12)",
+                borderRadius: 10,
+                padding: "10px 14px",
+                fontSize: 14,
+                color: "#1d1d1f",
+                outline: "none",
+                background: "#f5f5f7",
+                width: "100%",
+                boxSizing: "border-box",
+              }}
+            />
+
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                onClick={() => setModalSeccion(false)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "7px 14px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "#6e6e73",
+                  cursor: "pointer",
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => crearSeccion(nombreNuevaSeccion)}
+                style={{
+                  background: NARANJA,
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "7px 16px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  boxShadow: "0 1px 3px rgba(244,124,32,0.3)",
+                }}
+              >
+                Crear Lista
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

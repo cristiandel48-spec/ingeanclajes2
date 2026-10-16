@@ -119,10 +119,14 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       <div
         style={{
           display: "flex",
-          flexDirection: isMobile ? "column" : "row",
-          alignItems: isMobile ? "stretch" : "center",
-          justifyContent: "space-between",
-          gap: 16,
+          // En columna siempre: el nombre del cliente va en su propia fila,
+          // a todo el ancho. Con el nombre metido en la columna izquierda,
+          // los botones de la derecha -que no ceden ancho- le dejaban unos
+          // 500px, y un cliente de obra publica se partia en cinco lineas
+          // teniendo media pantalla vacia al lado.
+          flexDirection: "column",
+          alignItems: "stretch",
+          gap: 12,
           marginBottom: 16,
           background: "var(--surface, #ffffff)",
           borderRadius: 16,
@@ -131,7 +135,37 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           boxShadow: "0 4px 16px -2px rgba(0,0,0,0.02), 0 1px 3px rgba(0,0,0,0.02)",
         }}
       >
-        {/* Izquierda: Volver + Nombre + Badges + Metadatos */}
+        {/* Nombre del cliente, a todo el ancho y a dos lineas como maximo. */}
+        <div
+          title={oAct.cliente}
+          style={{
+            // Contenido, no cartel: al ocupar una sola linea ya se lee como
+            // el titulo de la pantalla sin necesidad de pesar mas.
+            fontSize: isMobile ? 14 : 15,
+            fontWeight: 700,
+            color: "var(--text-main, #1d1d1f)",
+            lineHeight: 1.3,
+            letterSpacing: "-0.015em",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            overflowWrap: "anywhere",
+          }}
+        >
+          {oAct.cliente}
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: isMobile ? "column" : "row",
+            alignItems: isMobile ? "stretch" : "center",
+            justifyContent: "space-between",
+            gap: 16,
+          }}
+        >
+        {/* Izquierda: Volver + Badges + Metadatos */}
         <div style={{ display: "flex", alignItems: isMobile ? "flex-start" : "center", gap: 12, minWidth: 0, flex: 1 }}>
           <button
             onClick={onVolver}
@@ -154,9 +188,6 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           {!isMobile && <div style={{ width: 1, height: 32, background: "var(--border, #e5e5ea)", flexShrink: 0 }} />}
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: "var(--text-main, #1d1d1f)", lineHeight: 1.2 }}>
-                {oAct.cliente}
-              </span>
               <Badge estado={oAct.estado} />
               <button
                 type="button"
@@ -392,6 +423,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             <span>💡</span>
             <span>{mostrarGuia ? "Ocultar qué sigue" : "Qué sigue"}</span>
           </button>
+        </div>
         </div>
       </div>
 

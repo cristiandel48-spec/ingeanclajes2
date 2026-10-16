@@ -3,19 +3,13 @@ import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_TIEMPO_EJEC, DEFAULT_COT_INCLUYE } 
 import { measurementsToQuoteItems, buildMeasurementNarrative } from "./maps";
 import { corregirOrtografiaLocal } from "./correctorTexto";
 import { FOTO_PUNTO_ANCLAJE_DEFAULT } from "../assets/embeddedImages";
-import { fondoAclaradoEnCache } from "./fondoImagen";
 
-// La foto por defecto del punto de anclaje, lista para enseñarse.
-//
-// El archivo original esta tomado sobre fondo negro de estudio, que impreso
-// deja un rectangulo negro en media hoja. Quien prepara el documento deja
-// calculada la version con el fondo aclarado; aqui se recoge si esta, porque
-// esto es sincrono y no puede esperar a una promesa. Si todavia no esta -la
-// primera pasada-, va la original y el siguiente dibujo ya la trae bien.
+// La foto por defecto del punto de anclaje, tal como es: la foto de
+// producto, sobre su fondo negro de estudio.
 export function fotoPuntoAnclajeDefault() {
   return {
     id: "foto-def-punto-anclaje",
-    src: fondoAclaradoEnCache(FOTO_PUNTO_ANCLAJE_DEFAULT) || FOTO_PUNTO_ANCLAJE_DEFAULT,
+    src: FOTO_PUNTO_ANCLAJE_DEFAULT,
     label: "Punto de anclaje certificado",
   };
 }

@@ -8,7 +8,7 @@
 // al imprimir desde el navegador. Es el precio de armarlo sin un servidor que
 // renderice. Para archivar o firmar sigue siendo mejor el de imprimir.
 
-import { buildCotizacionPrintHtml, normalizeCotizacionForPrint } from "./cotizacionPrint";
+import { buildCotizacionPrintHtml } from "./cotizacionPrint";
 import { MARGEN_HOJA } from "./hojaImpresion";
 
 // Hoja carta a 96 ppp, que es la unidad en la que está escrita la plantilla.
@@ -115,11 +115,7 @@ export async function generarCotizacionPdf(cotizacion, { firmaImg = "", sello = 
     );
   }
 
-  // Igual que al imprimir: las imagenes a data URL y el fondo de la foto del
-  // punto de anclaje aclarado. Sin esto el PDF descargado salia con el
-  // rectangulo negro aunque el de imprimir saliera bien.
-  const preparada = await normalizeCotizacionForPrint(cotizacion);
-  const html = prepararHtmlParaPdf(buildCotizacionPrintHtml(preparada, { firmaImg, sello }));
+  const html = prepararHtmlParaPdf(buildCotizacionPrintHtml(cotizacion, { firmaImg, sello }));
 
   // Se dibuja fuera de la vista, no oculto: display:none o visibility:hidden
   // hacen que html2canvas mida todo en cero.

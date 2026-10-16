@@ -714,13 +714,15 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           flexWrap: "wrap",
         }}
       >
+        {/* Quedan las cuatro que se usan. Materiales y Despacho, Gastos,
+            Nomina y Horario estaban ahi sin usarse: cuatro pestañas de
+            siete que solo servian para alargar la fila y hacer dudar sobre
+            cual es la que importa. El codigo de esas vistas sigue en su
+            sitio por si vuelven a hacer falta. */}
         {[
           ["avance", "📸 Avance diario (Bitácora)"],
-          ["materiales", "📦 Materiales y Despacho"],
           ["fototeca", "🖼️ Fototeca y ZIP"],
           ["personal", "👷 Personal"],
-          ...(verDinero ? [["gastos", "🧾 Gastos"], ["nomina", "💰 Nómina"]] : []),
-          ["horario", "📅 Horario"],
         ].map(([id, lb]) => {
           const activo = detTab === id;
           return (

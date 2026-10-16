@@ -85,6 +85,12 @@ export const COLOR = {
 
 export const FUENTE = "'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
 
+// Monoespaciada para codigos, consecutivos y cifras que se comparan.
+// Es la del sistema: SF Mono en un Mac, Consolas en Windows. Varios sitios
+// pedian 'JetBrains Mono', que no se carga en ninguna parte, asi que caian
+// en la monoespaciada por defecto del navegador -Courier- y desentonaban.
+export const MONO = "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace";
+
 // -- Nombres heredados -------------------------------------------------------
 // Hay cientos de estilos en linea que escriben --text-main, --c-tinta,
 // --border... Renombrarlos ahora seria tocar todas las pantallas a la vez, asi

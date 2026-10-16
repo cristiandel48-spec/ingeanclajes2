@@ -9,6 +9,7 @@ import { LOGO_INGEANCLAJES } from "../assets/embeddedImages";
 import { getControlDocumental } from "./controlDocumental";
 import { conActividadSeparada } from "./informeTextos";
 import { cssHojaImpresion } from "./hojaImpresion";
+import { FUENTE, MONO } from "../styles/designTokens";
 
 // Capacidad util de contenido por hoja, en pixeles de pantalla (96 ppp).
 //
@@ -102,11 +103,11 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
         </div>
       </div>
       <div style="text-align:right;">
-        <div style="display:inline-block;padding:2px 8px;border-radius:4px;background:#f4f4f5;border:1px solid #e4e4e7;font-size:8.5px;color:#52525b;font-family:'JetBrains Mono',monospace;font-weight:600;margin-bottom:3px;">
+        <div style="display:inline-block;padding:2px 8px;border-radius:4px;background:#f4f4f5;border:1px solid #e4e4e7;font-size:8.5px;color:#52525b;font-family:${MONO};font-weight:600;margin-bottom:3px;">
           SISTEMA DE GESTIÓN DE CALIDAD · ${escapeHtml(docCodigo)} (V-${escapeHtml(docVersion)})
         </div>
         <div style="font-size:12px;font-weight:800;color:#18181b;letter-spacing:0.02em;text-transform:uppercase;">INFORME TÉCNICO DE ACTIVIDADES EN OBRA</div>
-        <div style="font-size:10px;color:#18181b;font-family:'JetBrains Mono',monospace;font-weight:700;margin-top:2px;">
+        <div style="font-size:10px;color:#18181b;font-family:${MONO};font-weight:700;margin-top:2px;">
           Consecutivo: <span style="background:#18181b;color:#ffffff;padding:1.5px 7px;border-radius:3px;">${escapeHtml(numDoc || "INF-OFICIAL")}</span>
         </div>
       </div>
@@ -121,7 +122,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
         <span style="color:#d4d4d8;font-size:11px;">·</span>
         <span style="font-size:9.5px;font-weight:700;color:#52525b;text-transform:uppercase;letter-spacing:0.04em;">Informe de Actividades · ${escapeHtml(proyecto)}</span>
       </div>
-      <div style="font-size:9.5px;color:#18181b;font-family:'JetBrains Mono',monospace;font-weight:700;">${escapeHtml(numDoc)}</div>
+      <div style="font-size:9.5px;color:#18181b;font-family:${MONO};font-weight:700;">${escapeHtml(numDoc)}</div>
     </div>
   `;
 
@@ -151,7 +152,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
         ${cotizacionRef ? `
         <tr>
           <td style="font-weight:700;color:#52525b;letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;border-top:1px solid rgba(0,0,0,0.04);">REF. COTIZACIÓN:</td>
-          <td colspan="3" style="color:#18181b;font-weight:700;padding:3.5px 6px;border-top:1px solid rgba(0,0,0,0.04);font-family:'JetBrains Mono',monospace;">
+          <td colspan="3" style="color:#18181b;font-weight:700;padding:3.5px 6px;border-top:1px solid rgba(0,0,0,0.04);font-family:${MONO};">
             <span style="background:#ffffff;color:#18181b;padding:1.5px 6px;border-radius:3px;border:1px solid #d4d4d8;font-size:9px;">📄 ${escapeHtml(cotizacionRef)}</span>
           </td>
         </tr>
@@ -168,7 +169,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
     <div style="display:grid;grid-template-columns:repeat(${Math.min(3, Math.max(1, personal.length))}, 1fr);gap:7px;margin-bottom:10px;">
       ${personal.length > 0 ? personal.map((p, idx) => `
         <div style="border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:5px 8px;background:#ffffff;display:flex;align-items:center;gap:7px;">
-          <div style="width:20px;height:20px;background:#f4f4f5;border-radius:4px;color:#18181b;font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <div style="width:20px;height:20px;background:#f4f4f5;border-radius:4px;color:#18181b;font-family:${MONO};font-size:8.5px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
             ${String(idx + 1).padStart(2, "0")}
           </div>
           <div style="min-width:0;flex:1;">
@@ -193,7 +194,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
     <div style="border:1px solid rgba(0,0,0,0.08);border-radius:8px;background:#ffffff;padding:9px 12px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,0.02);">
       <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f4f4f5;padding-bottom:5px;margin-bottom:6px;">
         <div style="display:flex;align-items:center;gap:7px;">
-          <span style="background:#18181b;color:#ffffff;font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:700;padding:1.5px 6px;border-radius:3px;">
+          <span style="background:#18181b;color:#ffffff;font-family:${MONO};font-size:8.5px;font-weight:700;padding:1.5px 6px;border-radius:3px;">
             ACT-${String(idx + 1).padStart(2, "0")}
           </span>
           <span style="font-size:11px;font-weight:700;color:#18181b;">
@@ -201,7 +202,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
           </span>
         </div>
         ${act.fecha ? `
-          <span style="font-size:8.5px;color:#71717a;font-family:'JetBrains Mono',monospace;">
+          <span style="font-size:8.5px;color:#71717a;font-family:${MONO};">
             Fecha: ${escapeHtml(fmtL(act.fecha))}
           </span>
         ` : ""}
@@ -242,7 +243,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
     <div class="foto-card" style="border:1px solid rgba(0,0,0,0.08);border-radius:8px;overflow:hidden;background:#ffffff;box-shadow:0 1px 2px rgba(0,0,0,0.02);display:flex;flex-direction:column;">
       <div style="height:155px;display:flex;align-items:center;justify-content:center;background:#fafafa;border-bottom:1px solid #f4f4f5;overflow:hidden;position:relative;">
         <img src="${ft.img || ft.url}" alt="Evidencia ${fotoIdx + 1}" style="width:100%;height:100%;object-fit:contain;display:block;background:#ffffff;"/>
-        <span style="position:absolute;top:5px;left:5px;background:rgba(0,0,0,0.68);color:#ffffff;font-size:8px;font-family:'JetBrains Mono',monospace;font-weight:700;padding:2px 6px;border-radius:4px;">
+        <span style="position:absolute;top:5px;left:5px;background:rgba(0,0,0,0.68);color:#ffffff;font-size:8px;font-family:${MONO};font-weight:700;padding:2px 6px;border-radius:4px;">
           EVIDENCIA ${actIdx + 1}.${fotoIdx + 1}
         </span>
       </div>
@@ -415,12 +416,19 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
   <head>
     <meta charset="utf-8">
     <title>Informe ${escapeHtml(numDoc)} ${escapeHtml(proyecto)}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <style>
       ${cssHojaImpresion()}
 
       * { letter-spacing: normal; }
       html, body {
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        /* La misma letra que la aplicacion. Antes declaraba la pila de
+           Apple, que en un Mac da SF Pro pero en Windows cae en Segoe UI:
+           el informe salia con una letra distinta de la del programa desde
+           el que se genera. Inter es la que usa toda la aplicacion. */
+        font-family: ${FUENTE};
         color: #18181b;
         -webkit-font-smoothing: antialiased;
         text-rendering: geometricPrecision;

@@ -5,17 +5,22 @@ import { buildInformePrintHtml } from "./informePrint";
 import { MARGEN_HOJA } from "./hojaImpresion";
 import { repaginarHojas } from "./repaginarHojas";
 import { nombreDocumento } from "./nombreArchivo";
+import { FUENTE } from "../styles/designTokens";
 
 const ANCHO_HOJA = 816;
 const ALTO_HOJA = 1056;
 
 function prepararHtmlParaPdf(html) {
+  // El enlace a la fuente se mantiene: antes se quitaba y luego se forzaba
+  // Arial, asi que el PDF salia con una letra distinta de la del programa.
+  // Esperar a doc.fonts.ready antes de fotografiar las hojas ya garantiza
+  // que este cargada, y el navegador la tiene en cache de la propia
+  // aplicacion. Si no llegara, la pila de respaldo resuelve igual.
   return html
-    .replace(/<link[^>]*fonts\.(?:googleapis|gstatic)\.com[^>]*>/g, "")
     .replace("</head>", `<style>
       body, table, td, th, input, button,
       h1, h2, h3, p, span, div, strong, li {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+        font-family: ${FUENTE} !important;
       }
       body { background: #ffffff !important; padding: 0 !important; }
       .page {

@@ -314,21 +314,34 @@ export function hasVerticalLifeLineService(c={}){
   // LVV es linea de vida vertical de las medidas del mapa.
   if((c.geoMediciones || []).some(seg => seg?.tipo === "LVV")) return true;
 
-  const nombraLineaVidaVertical = (texto)=>{
+  // La descripcion de un item es una linea del catalogo: si ahi aparecen
+  // escalera y cable, no puede significar otra cosa.
+  const nombraEnItem = (texto)=>{
     const t = String(texto || "").toUpperCase();
     return t.includes("LINEA DE VIDA VERTICAL")
         || t.includes("LÍNEA DE VIDA VERTICAL")
         || (t.includes("ESCALERA") && (t.includes("LINEA DE VIDA") || t.includes("LÍNEA DE VIDA") || t.includes("GUAYA") || t.includes("CABLE")));
   };
 
+  // El alcance es un parrafo entero, y ahi esa misma regla se dispara sola:
+  // «linea de vida horizontal en cubierta y escalera de acceso» le bastaria
+  // para colar la lamina vertical. En texto libre se exige que diga vertical.
+  const nombraEnTexto = (texto)=>{
+    const t = String(texto || "").toUpperCase();
+    if(!t) return false;
+    return t.includes("LINEA DE VIDA VERTICAL")
+        || t.includes("LÍNEA DE VIDA VERTICAL")
+        || (t.includes("ESCALERA") && t.includes("VERTICAL"));
+  };
+
+  // Los items mandan, pero si ninguno lo nombra todavia queda mirar el
+  // alcance. Antes esto era un return seco sobre los items: con items -que
+  // es siempre- el alcance no se leia nunca, asi que una cotizacion con
+  // items genericos se quedaba sin lamina aunque el alcance la pidiera.
   const items = Array.isArray(c?.items) ? c.items : normalizeQuoteItems(c);
-  if(items.length > 0) {
-    return items.some(it => nombraLineaVidaVertical(it?.desc || it?.descripcion || it?.nombre));
-  }
+  if(items.some(it => nombraEnItem(it?.desc || it?.descripcion || it?.nombre))) return true;
 
-  if(nombraLineaVidaVertical(c.alcance) || nombraLineaVidaVertical(c.requerimientoCliente) || nombraLineaVidaVertical(c.titulo)) return true;
-
-  return false;
+  return nombraEnTexto(c.alcance) || nombraEnTexto(c.requerimientoCliente) || nombraEnTexto(c.titulo);
 }
 
 export function hasCatLadderService(c={}){
@@ -342,14 +355,14 @@ export function hasCatLadderService(c={}){
     return tieneEscalera && !tieneLineaVida;
   };
 
+  // Igual que arriba: si ningun item la nombra, todavia queda el alcance.
+  // La condicion de «sola» -escalera sin linea de vida- vale tambien para el
+  // parrafo: si el alcance habla de linea de vida, la lamina que toca es la
+  // otra, no esta.
   const items = Array.isArray(c?.items) ? c.items : normalizeQuoteItems(c);
-  if(items.length > 0) {
-    return items.some(it => nombraEscaleraSola(it?.desc || it?.descripcion || it?.nombre));
-  }
+  if(items.some(it => nombraEscaleraSola(it?.desc || it?.descripcion || it?.nombre))) return true;
 
-  if(nombraEscaleraSola(c.alcance) || nombraEscaleraSola(c.requerimientoCliente) || nombraEscaleraSola(c.titulo)) return true;
-
-  return false;
+  return nombraEscaleraSola(c.alcance) || nombraEscaleraSola(c.requerimientoCliente) || nombraEscaleraSola(c.titulo);
 }
 
 export function getQuoteProposalPhotos(baseQuote = {}, propuesta = {}, activeProposalId = null){

@@ -26,6 +26,78 @@ function tonoPorDias(dias, umbralAviso) {
   return "exito";
 }
 
+// ── Pendientes propios ───────────────────────────────────────────────────
+// Lo que el usuario dejo sin marcar: las tareas de «Mis tareas» y las
+// casillas sin tachar de las listas que tenga dentro de sus notas. Las dos
+// cosas son privadas -la nube filtra por dueño-, asi que aqui solo salen las
+// de quien tiene la sesion abierta.
+
+const MAX_PENDIENTES_VISIBLES = 5;
+
+// Dias cumplidos desde una fecha ISO (yyyy-mm-dd). null si no hay fecha.
+function diasDesde(iso) {
+  const texto = String(iso || "").slice(0, 10);
+  if (texto.length < 10) return null;
+  const [anio, mes, dia] = texto.split("-").map(Number);
+  if (!anio || !mes || !dia) return null;
+  const hoy = new Date();
+  const ms = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()) - new Date(anio, mes - 1, dia);
+  return Math.round(ms / 86400000);
+}
+
+function etiquetaAntiguedad(dias) {
+  if (dias === null) return "Sin fecha";
+  if (dias <= 0) return "Hoy";
+  if (dias === 1) return "Ayer";
+  return `Hace ${dias} días`;
+}
+
+// Una tarea recien anotada no es una alarma; una de hace tres semanas si.
+function tonoAntiguedad(dias) {
+  if (dias === null || dias <= 7) return "neutro";
+  if (dias <= 20) return "aviso";
+  return "peligro";
+}
+
+function pendientesSinMarcar(tareas, notas) {
+  const items = [];
+
+  (Array.isArray(tareas) ? tareas : []).forEach((t) => {
+    if (!t || t.completada) return;
+    const texto = String(t.texto || "").trim();
+    if (!texto) return;
+    items.push({
+      id: `tarea-${t.id}`,
+      texto,
+      origen: t.seccion && t.seccion !== "General" ? `Mis tareas · ${t.seccion}` : "Mis tareas",
+      dias: diasDesde(t.fecha),
+    });
+  });
+
+  (Array.isArray(notas) ? notas : []).forEach((nota) => {
+    // Solo los bloques de tipo lista llevan casillas; los de viñetas o texto
+    // no tienen nada que marcar.
+    (nota?.bloques || []).forEach((bloque) => {
+      if (bloque?.tipo !== "checklist" || !Array.isArray(bloque.items)) return;
+      bloque.items.forEach((item) => {
+        if (!item || item.completada) return;
+        const texto = String(item.texto || "").trim();
+        if (!texto) return;
+        items.push({
+          id: `nota-${nota.id}-${item.id}`,
+          texto,
+          origen: [nota.titulo || "Mis notas", bloque.titulo].filter(Boolean).join(" · "),
+          dias: diasDesde(item.fecha || nota.fechaActualizacion),
+        });
+      });
+    });
+  });
+
+  // Lo mas viejo arriba: es lo que lleva mas tiempo sin hacerse. Lo que no
+  // tiene fecha se va al final, porque no se puede decir cuanto lleva ahi.
+  return items.sort((a, b) => (b.dias ?? -1) - (a.dias ?? -1));
+}
+
 // Cabecera de una tarjeta del tablero: titulo a la izquierda y, si hay, un
 // enlace a la derecha. Antes cada bloque la escribia a su manera.
 function CabeceraTarjeta({ titulo, descripcion, accion }) {
@@ -33,11 +105,16 @@ function CabeceraTarjeta({ titulo, descripcion, accion }) {
     <div
       style={{
         display: "flex", justifyContent: "space-between", alignItems: "center",
+        // En el movil el titulo y la accion no caben lado a lado: sin esto
+        // la descripcion se quedaba en una columna de cuatro palabras.
+        flexWrap: "wrap",
         gap: ESPACIO.md, paddingBottom: ESPACIO.md, marginBottom: ESPACIO.md,
         borderBottom: "1px solid var(--separator)",
       }}
     >
-      <div style={{ minWidth: 0 }}>
+      {/* El 170 es el suelo que decide si la accion cabe al lado o baja a su
+          propia linea; sin el, el titulo se encoge y no baja nunca. */}
+      <div style={{ minWidth: 0, flex: "1 1 170px" }}>
         <h2 style={{ ...TIPO.headline, color: "var(--text-primary)", margin: 0 }}>{titulo}</h2>
         {descripcion && (
           <div style={{ ...TIPO.caption, fontWeight: 400, color: "var(--text-tertiary)", marginTop: 2 }}>
@@ -92,30 +169,45 @@ function BloqueAlerta({ titulo, resumen, children }) {
   );
 }
 
-// Fila compacta dentro de un bloque de alertas.
-function FilaAlerta({ titulo, meta, tono, etiqueta }) {
+// Fila compacta dentro de un bloque de alertas. Con `onClick` sale como un
+// boton de verdad, no como un div que responde al raton: asi se alcanza con
+// el tabulador y se activa con Enter.
+function FilaAlerta({ titulo, meta, tono, etiqueta, onClick, multilinea = false }) {
+  const Elemento = onClick ? "button" : "div";
   return (
-    <div style={{
-      display: "flex", justifyContent: "space-between", alignItems: "center", gap: ESPACIO.sm,
-      background: "var(--surface)", border: "1px solid var(--separator)",
-      borderRadius: 8, padding: "7px 10px",
-    }}>
+    <Elemento
+      type={onClick ? "button" : undefined}
+      onClick={onClick}
+      style={{
+        display: "flex", justifyContent: "space-between", alignItems: "center", gap: ESPACIO.sm,
+        background: "var(--surface)", border: "1px solid var(--separator)",
+        borderRadius: 8, padding: "7px 10px",
+        ...(onClick ? { width: "100%", textAlign: "left", font: "inherit", cursor: "pointer" } : null),
+      }}
+    >
       <div style={{ minWidth: 0 }}>
         <div style={{
-          ...TIPO.footnote, color: "var(--text-primary)",
-          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          ...TIPO.footnote, color: "var(--text-primary)", overflow: "hidden",
+          // Un nombre de cliente cabe en una linea; una tarea escrita a mano
+          // no, y cortarla deja un recordatorio que no se entiende.
+          ...(multilinea
+            ? { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }
+            : { textOverflow: "ellipsis", whiteSpace: "nowrap" }),
         }}>
           {titulo}
         </div>
         <div style={{ ...TIPO.caption, fontWeight: 400, color: "var(--text-tertiary)" }}>{meta}</div>
       </div>
-      <StatusPill tono={tono}>{etiqueta}</StatusPill>
-    </div>
+      <StatusPill tono={tono} style={{ flexShrink: 0 }}>{etiqueta}</StatusPill>
+    </Elemento>
   );
 }
 
 export default function Dashboard({ ctx, go }) {
-  const { obras = [], cotizaciones = [], certs = [], membresia, agenda = [], clientes = [] } = ctx;
+  const {
+    obras = [], cotizaciones = [], certs = [], membresia, agenda = [], clientes = [],
+    tareasPersonales = [], documentosEquipo = [],
+  } = ctx;
   const isMobile = useMediaQuery("(max-width: 768px)");
   const verDinero = puedeVerDinero(membresia);
   // `go` solo cambia de pantalla; `irAPantalla` ademas lleva contexto, que es
@@ -129,6 +221,7 @@ export default function Dashboard({ ctx, go }) {
 
   const venc = resumenVencimientos(certs);
   const seg = resumenSeguimiento(cotizaciones);
+  const pendientes = pendientesSinMarcar(tareasPersonales, documentosEquipo);
 
   const hoyIso = today();
   const eventosHoy = (Array.isArray(agenda) ? agenda : []).filter(
@@ -152,14 +245,22 @@ export default function Dashboard({ ctx, go }) {
     (o) => o.estado !== "Cancelada" && o.estado !== "Finalizado" && o.estado !== "Terminada"
   ).length;
 
-  const resumenDelDia = [
+  const partesDelDia = [
     eventosHoy.length > 0
       ? `Tienes ${eventosHoy.length} compromiso${eventosHoy.length > 1 ? "s" : ""} hoy`
       : "Agenda de hoy al día",
     seg.requierenAccion.length > 0
       ? `${seg.requierenAccion.length} cotización${seg.requierenAccion.length > 1 ? "es" : ""} por llamar`
       : null,
-  ].filter(Boolean).join(" y ") + ".";
+    pendientes.length > 0
+      ? `${pendientes.length} tarea${pendientes.length > 1 ? "s" : ""} sin marcar`
+      : null,
+  ].filter(Boolean);
+  // Con tres partes, unirlas todas con «y» suena a lista de la compra.
+  const resumenDelDia =
+    (partesDelDia.length > 1
+      ? `${partesDelDia.slice(0, -1).join(", ")} y ${partesDelDia[partesDelDia.length - 1]}`
+      : partesDelDia[0] || "") + ".";
 
   return (
     <div
@@ -207,7 +308,10 @@ export default function Dashboard({ ctx, go }) {
             className="grid-2-col"
             style={{
               display: "grid",
-              gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)",
+              // minmax(0,…) y no 1fr a secas: con 1fr la pista no baja del
+              // ancho de su contenido y las tarjetas se salian de la columna
+              // en pantallas medianas.
+              gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, minmax(0, 1fr))",
               gap: ESPACIO.sm,
             }}
           >
@@ -236,6 +340,63 @@ export default function Dashboard({ ctx, go }) {
               onClick={() => go("clientes")}
             />
           </div>
+
+          {/* El acceso a las notas y las tareas no va de quinta tarjeta en la
+              fila de arriba: con cinco pistas los titulos no caben en un
+              portatil. Va aqui, donde ademas cabe el recordatorio. */}
+          <Card ajustado>
+            <CabeceraTarjeta
+              titulo="Mis notas y tareas"
+              descripcion="Lo que dejaste sin marcar. Solo tú lo ves."
+              accion={
+                <div style={{ display: "flex", alignItems: "center", gap: ESPACIO.sm }}>
+                  {pendientes.length > 0 && (
+                    <StatusPill tono="aviso">{pendientes.length} sin marcar</StatusPill>
+                  )}
+                  <Button variante="tertiary" tam="sm" iconoDerecha="flechaDer" onClick={() => go("tareas")}>
+                    Abrir
+                  </Button>
+                </div>
+              }
+            />
+
+            {pendientes.length === 0 ? (
+              <EmptyState
+                icono="check"
+                titulo="No tienes nada sin marcar"
+                texto="Aquí te recuerdo las tareas y las casillas de tus notas que dejes sin tachar."
+                accion={
+                  <Button variante="secondary" icono="mas" onClick={() => go("tareas")}>
+                    Anotar algo
+                  </Button>
+                }
+              />
+            ) : (
+              <>
+                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                  {pendientes.slice(0, MAX_PENDIENTES_VISIBLES).map((p) => (
+                    <FilaAlerta
+                      key={p.id}
+                      onClick={() => go("tareas")}
+                      multilinea
+                      titulo={p.texto}
+                      meta={p.origen}
+                      tono={tonoAntiguedad(p.dias)}
+                      etiqueta={etiquetaAntiguedad(p.dias)}
+                    />
+                  ))}
+                </div>
+                {pendientes.length > MAX_PENDIENTES_VISIBLES && (
+                  <div style={{
+                    ...TIPO.caption, fontWeight: 400, color: "var(--text-tertiary)",
+                    marginTop: ESPACIO.sm, textAlign: "center",
+                  }}>
+                    Y {pendientes.length - MAX_PENDIENTES_VISIBLES} más sin marcar.
+                  </div>
+                )}
+              </>
+            )}
+          </Card>
 
           <Card ajustado>
             <CabeceraTarjeta

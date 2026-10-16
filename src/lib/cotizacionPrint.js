@@ -1809,11 +1809,29 @@ async function toDataUrl(src){
 // una foto de obra este tratamiento le comeria las sombras.
 async function prepararFoto(foto){
   const src = await toDataUrl(foto?.src || "");
-  const esLaDelPuntoDeAnclaje = (foto?.src || "") === FOTO_PUNTO_ANCLAJE_DEFAULT;
+  // Se reconoce por el identificador y no solo por comparar la imagen entera:
+  // las cotizaciones guardadas llevan dentro su propia copia de la foto, y si
+  // alguna vez cambia el archivo de origen dejarian de coincidir. El
+  // identificador lo pone el sistema, nunca la persona.
+  const esLaDelPuntoDeAnclaje =
+    foto?.id === "foto-def-punto-anclaje" || (foto?.src || "") === FOTO_PUNTO_ANCLAJE_DEFAULT;
   return { ...foto, src: esLaDelPuntoDeAnclaje ? await aclararFondo(src) : src };
 }
 
-async function normalizeCotizacionForPrint(c={}){
+// Deja la cotizacion lista para dibujarla: las imagenes como data URL y la
+// foto del punto de anclaje con el fondo aclarado.
+//
+// La usan los tres caminos que ensenan el documento -la vista en vivo, el
+// PDF y la impresion del navegador-. Antes solo la llamaba la impresion, y
+// por eso el fondo negro seguia ahi en la pantalla y en el PDF descargado,
+// que es justo donde se mira.
+export async function normalizeCotizacionForPrint(c={}){
+  // Se deja calculada la version aclarada de la foto por defecto. Cuando la
+  // cotizacion no trae fotos propias, esa foto se crea mas tarde, al armar el
+  // HTML, que es sincrono y no puede esperar a una promesa: alli se recoge de
+  // aqui. La segunda vez y siguientes no cuesta nada, va en cache.
+  await aclararFondo(FOTO_PUNTO_ANCLAJE_DEFAULT);
+
   let clone;
   try {
     clone = structuredClone(c);

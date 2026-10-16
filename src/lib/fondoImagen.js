@@ -14,6 +14,21 @@
 const UMBRAL_NEGRO = 42;   // por debajo: fondo, va a blanco del todo
 const UMBRAL_PIEZA = 110;  // por encima: pieza, no se toca
 
+// La vista previa del documento se rehace cada vez que se escribe una letra,
+// y esto recorre la imagen pixel a pixel. Como siempre es la misma foto -la
+// de por defecto del punto de anclaje-, el resultado se guarda y a partir de
+// la segunda vez no cuesta nada.
+const yaAclaradas = new Map();
+
+/**
+ * La version ya aclarada de una imagen, si se calculo antes; null si no.
+ * Sirve para los sitios que arman HTML de forma sincrona y no pueden esperar
+ * a una promesa.
+ */
+export function fondoAclaradoEnCache(dataUrl) {
+  return yaAclaradas.get(dataUrl) || null;
+}
+
 /**
  * @param {string} dataUrl  La imagen de origen.
  * @returns {Promise<string>} La imagen con el fondo en blanco. Si algo
@@ -23,6 +38,12 @@ export function aclararFondo(dataUrl) {
   return new Promise((resolve) => {
     if (typeof document === "undefined" || !dataUrl || !dataUrl.startsWith("data:image")) {
       resolve(dataUrl);
+      return;
+    }
+
+    const guardada = yaAclaradas.get(dataUrl);
+    if (guardada) {
+      resolve(guardada);
       return;
     }
 
@@ -54,7 +75,9 @@ export function aclararFondo(dataUrl) {
         }
 
         ctx.putImageData(datos, 0, 0);
-        resolve(lienzo.toDataURL("image/jpeg", 0.92));
+        const aclarada = lienzo.toDataURL("image/jpeg", 0.92);
+        yaAclaradas.set(dataUrl, aclarada);
+        resolve(aclarada);
       } catch {
         resolve(dataUrl);
       }

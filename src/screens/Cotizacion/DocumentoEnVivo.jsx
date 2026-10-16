@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { buildCotizacionPrintHtml } from "../../lib/cotizacionPrint";
+import { buildCotizacionPrintHtml, normalizeCotizacionForPrint } from "../../lib/cotizacionPrint";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 
 // Ancho real de una hoja carta a 96 ppp (8.5 x 96 = 816 px)
@@ -43,7 +43,9 @@ export default function DocumentoEnVivo({
   }, []);
   const [error, setError] = useState(null);
 
-  // Inicializar el html
+  // El primer dibujo se hace sin preparar las imagenes, para que la hoja
+  // este en pantalla de inmediato. El efecto de abajo lo repite enseguida ya
+  // con la foto del punto de anclaje sin su fondo negro de estudio.
   const [html, setHtml] = useState(() => {
     try {
       return buildCotizacionPrintHtml(cotizacion, { firmaImg, sello });
@@ -52,22 +54,32 @@ export default function DocumentoEnVivo({
       return "";
     }
   });
+  const primerDibujo = useRef(true);
 
   const clave = JSON.stringify(cotizacion, (_k, v) =>
     typeof v === "string" && v.length > 200 ? `${v.length}:${v.slice(0, 20)}:${v.slice(-20)}` : v
   );
 
   useEffect(() => {
-    const id = setTimeout(() => {
+    let cancelado = false;
+    // La primera vez no se espera: lo que se ve en ese momento es la hoja sin
+    // preparar, y cuanto menos dure, mejor. Despues si, que es cuando se esta
+    // escribiendo y rehacer el documento en cada tecla sobra.
+    const espera = primerDibujo.current ? 0 : 300;
+    const id = setTimeout(async () => {
+      primerDibujo.current = false;
       try {
-        setHtml(buildCotizacionPrintHtml(cotizacion, { firmaImg, sello }));
+        const preparada = await normalizeCotizacionForPrint(cotizacion);
+        if (cancelado) return;
+        setHtml(buildCotizacionPrintHtml(preparada, { firmaImg, sello }));
         setError(null);
       } catch (e) {
+        if (cancelado) return;
         console.error("No se pudo generar la vista previa:", e);
         setError(e);
       }
-    }, 300);
-    return () => clearTimeout(id);
+    }, espera);
+    return () => { cancelado = true; clearTimeout(id); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clave, firmaImg, sello]);
 

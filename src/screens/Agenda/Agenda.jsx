@@ -744,11 +744,6 @@ function CalendarioMensualSection({
     [calMes.anio, calMes.mes]
   );
 
-  const fechasEspecialesDelMes = useMemo(() => {
-    if (!esCristian && !esCamila) return [];
-    return obtenerFechasEspecialesDelMes(compromisos, calMes.anio, calMes.mes);
-  }, [compromisos, calMes.anio, calMes.mes, esCristian, esCamila]);
-
   return (
     <div style={{ ...CD, padding: isMobile ? "16px 10px" : 24, width: "100%", boxSizing: "border-box" }}>
       {/* Navegación del mes */}
@@ -795,65 +790,6 @@ function CalendarioMensualSection({
                   : `${festivosDelMes.length} festivos en ${MESES[calMes.mes].toLowerCase()}`}
               </span>
             </span>
-          )}
-
-          {fechasEspecialesDelMes.length > 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                if (fechasEspecialesDelMes[0]?.fecha) {
-                  setFechaSeleccionada(fechasEspecialesDelMes[0].fecha);
-                }
-              }}
-              style={{
-                fontSize: isMobile ? 10 : 11.5,
-                fontWeight: 700,
-                color: "#b45309",
-                background: "linear-gradient(135deg, rgba(254, 243, 199, 0.95), rgba(255, 251, 235, 0.95))",
-                border: "1px solid rgba(251, 191, 36, 0.75)",
-                padding: isMobile ? "2px 7px" : "3px 10px",
-                borderRadius: 20,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 5,
-                boxShadow: "0 1px 3px rgba(245, 158, 11, 0.12)",
-                cursor: "pointer",
-              }}
-              title={fechasEspecialesDelMes.map((f) => `${f.fecha.slice(8, 10)} ${MESES[calMes.mes].slice(0, 3)}: ${f.titulo}`).join("\n") + "\n(Clic para ir a la fecha)"}
-            >
-              <span>⭐</span>
-              <span>
-                {fechasEspecialesDelMes.length === 1
-                  ? `1 fecha especial: ${fechasEspecialesDelMes[0].titulo}`
-                  : `${fechasEspecialesDelMes.length} fechas especiales en ${MESES[calMes.mes].toLowerCase()}`}
-              </span>
-            </button>
-          )}
-
-          {esCristian && fechasEspecialesDelMes.length === 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                abrirModalEstrellita?.(fechaSeleccionada || `${calMes.anio}-${String(calMes.mes + 1).padStart(2, "0")}-01`, null);
-              }}
-              style={{
-                fontSize: isMobile ? 10 : 11,
-                fontWeight: 600,
-                color: "#92400e",
-                background: "rgba(254, 243, 199, 0.6)",
-                border: "1px dashed #fcd34d",
-                padding: isMobile ? "2px 6px" : "3px 9px",
-                borderRadius: 20,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-                cursor: "pointer",
-              }}
-              title="Poner una estrellita en este mes para Camila"
-            >
-              <span>⭐</span>
-              <span>+ Poner estrellita</span>
-            </button>
           )}
         </div>
 
@@ -1083,30 +1019,6 @@ function CalendarioMensualSection({
                     </span>
                   )}
 
-                  {esCristian && !tieneEstrellita && esSeleccionado && !isMobile && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        abrirModalEstrellita?.(c.iso, null);
-                      }}
-                      style={{
-                        background: "#fef3c7",
-                        border: "1px solid #fde68a",
-                        borderRadius: 4,
-                        padding: "1px 4px",
-                        fontSize: 10,
-                        fontWeight: 700,
-                        color: "#92400e",
-                        cursor: "pointer",
-                        lineHeight: 1,
-                        marginLeft: 2,
-                      }}
-                      title="Poner estrellita en este día para Camila"
-                    >
-                      +⭐
-                    </button>
-                  )}
                 </div>
 
                 {!isMobile && (
@@ -1148,25 +1060,9 @@ function CalendarioMensualSection({
                 )}
               </div>
 
-              {/* Eventos, Estrellita y Festivo */}
+              {/* Eventos y Festivo (solo festivos y trabajo, la estrellita queda limpia arriba) */}
               {isMobile ? (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, marginTop: 2 }}>
-                  {tieneEstrellita && (
-                    <span
-                      style={{
-                        fontSize: 9,
-                        lineHeight: 1,
-                        color: "#92400e",
-                        background: "#fef3c7",
-                        padding: "1px 3px",
-                        borderRadius: 3,
-                        fontWeight: 800,
-                      }}
-                      title={fechaEspecial.titulo}
-                    >
-                      {fechaEspecial.icono || "⭐"}
-                    </span>
-                  )}
                   {esFestivo && (
                     <span
                       style={{
@@ -1201,32 +1097,6 @@ function CalendarioMensualSection({
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 3, marginTop: 4 }}>
-                  {tieneEstrellita && (
-                    <div
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        color: "#92400e",
-                        background: "linear-gradient(135deg, #fef3c7, #fef9c3)",
-                        border: "1px solid #fde68a",
-                        borderRadius: 4,
-                        padding: "2px 5px",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 4,
-                        boxShadow: "0 1px 2px rgba(245, 158, 11, 0.08)",
-                      }}
-                      title={`⭐ Fecha Especial: ${fechaEspecial.titulo}`}
-                    >
-                      <span style={{ fontSize: 10 }}>{fechaEspecial.icono || "⭐"}</span>
-                      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {fechaEspecial.titulo}
-                      </span>
-                    </div>
-                  )}
                   {esFestivo && (
                     <div
                       style={{
@@ -1252,7 +1122,7 @@ function CalendarioMensualSection({
                       </span>
                     </div>
                   )}
-                  {evtsTrabajo.slice(0, tieneEstrellita ? (esFestivo ? 1 : 1) : (esFestivo ? 1 : 2)).map((e) => {
+                  {evtsTrabajo.slice(0, esFestivo ? 1 : 2).map((e) => {
                     const conf = TIPOS_COMPROMISO[e.tipo] || TIPOS_COMPROMISO.visita;
                     return (
                       <div
@@ -1274,9 +1144,9 @@ function CalendarioMensualSection({
                       </div>
                     );
                   })}
-                  {evtsTrabajo.length > (tieneEstrellita ? (esFestivo ? 1 : 1) : (esFestivo ? 1 : 2)) && (
+                  {evtsTrabajo.length > (esFestivo ? 1 : 2) && (
                     <span style={{ fontSize: 9.5, color: "var(--text-muted, #94a3b8)", fontWeight: 700 }}>
-                      +{evtsTrabajo.length - (tieneEstrellita ? (esFestivo ? 1 : 1) : (esFestivo ? 1 : 2))} más
+                      +{evtsTrabajo.length - (esFestivo ? 1 : 2)} más
                     </span>
                   )}
                 </div>

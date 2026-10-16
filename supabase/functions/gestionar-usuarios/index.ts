@@ -311,6 +311,125 @@ function htmlCotizacion(numero: string, mensaje: string, d: DetalleCotizacion | 
       + '<p style="margin:0;font-size:14px;line-height:1.6;color:' + TINTA + '">Quedamos atentos a sus comentarios y a cualquier ajuste que necesite.</p>'
     : '<div style="font-size:14px;line-height:1.6;color:' + TINTA + ';white-space:pre-line">' + escapeHtml(mensaje) + '</div>';
 
+  return marcoCorreo(numero, cuerpo, 22);
+}
+
+type DetalleAgenda = {
+  saludo?: string;
+  titulo?: string;
+  tipo?: string;
+  diaSemana?: string;
+  fecha?: string;
+  hora?: string;
+  cliente?: string;
+  ciudad?: string;
+  obra?: string;
+  contacto?: string;
+  telefono?: string;
+  sst?: string;
+  notas?: string;
+  linkReunion?: string;
+  enlaceCalendar?: string;
+};
+
+// Una linea de dato: el rotulo pequeno arriba y el valor debajo, separados de
+// la siguiente por una raya fina. Se escribe con padding en el <td> y no con
+// margin, que es lo unico que respetan todos los clientes de correo.
+function filaAgenda(rotulo: string, valor: string, primera: boolean) {
+  const borde = primera ? "" : "border-top:1px solid " + BORDE_SUAVE + ";";
+  return '<tr><td style="' + borde + 'padding:14px 0 15px">'
+    + '<div style="font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:#9aa0a6;font-weight:700">'
+    + escapeHtml(rotulo) + '</div>'
+    + '<div style="font-size:15px;line-height:1.5;color:' + TINTA + ';margin-top:5px">'
+    + escapeHtml(valor) + '</div>'
+    + '</td></tr>';
+}
+
+// El correo que le llega a Camila al celular cuando se agenda algo.
+//
+// Antes era el texto plano tal cual, una viñeta detras de otra sin aire: en la
+// pantalla del telefono se leia como un parrafo seguido y habia que buscar la
+// hora entre las lineas. Aqui lo que importa -que es, cuando y a que hora- va
+// grande y arriba, y el resto en fichas separadas.
+function htmlAgenda(numero: string, d: DetalleAgenda) {
+  const titulo = String(d.titulo ?? "").trim() || "Compromiso";
+  const diaSemana = String(d.diaSemana ?? "").trim();
+  const fecha = String(d.fecha ?? "").trim();
+  const hora = String(d.hora ?? "").trim() || "Hora por definir";
+  const tipo = String(d.tipo ?? "").trim();
+
+  // La obra suele ser el mismo texto que el titulo -quien agenda escribe la
+  // actividad ahi-, y repetirlo tres lineas mas abajo sobra.
+  const ciudad = String(d.ciudad ?? "").trim();
+  const obra = String(d.obra ?? "").trim();
+  const obraDistinta = obra && obra.toLowerCase() !== titulo.toLowerCase() ? obra : "";
+  const ciudadObra = [ciudad, obraDistinta].filter(Boolean).join(" · ");
+  const rotuloLugar = ciudad && obraDistinta ? "Ciudad y obra" : (ciudad ? "Ciudad" : "Obra");
+
+  const contacto = [
+    String(d.contacto ?? "").trim(),
+    String(d.telefono ?? "").trim() ? "Tel. " + String(d.telefono).trim() : "",
+  ].filter(Boolean).join(" · ");
+
+  const datos: Array<[string, string]> = [];
+  if (String(d.cliente ?? "").trim()) datos.push(["Cliente", String(d.cliente).trim()]);
+  if (ciudadObra) datos.push([rotuloLugar, ciudadObra]);
+  if (contacto) datos.push(["Contacto", contacto]);
+  if (String(d.sst ?? "").trim()) datos.push(["Requerimientos SST", String(d.sst).trim()]);
+  if (String(d.notas ?? "").trim()) datos.push(["Notas", String(d.notas).trim()]);
+  if (String(d.linkReunion ?? "").trim()) datos.push(["Reunión virtual", String(d.linkReunion).trim()]);
+
+  const filas = datos.map((par, i) => filaAgenda(par[0], par[1], i === 0)).join("");
+
+  // El bloque de la fecha es lo primero que se mira en el telefono, asi que
+  // va en su propia caja y con el cuerpo mas grande de todo el correo.
+  const bloqueFecha = '<table role="presentation" cellpadding="0" cellspacing="0" width="100%"'
+    + ' style="background:#f6f7f9;border-radius:12px;margin:0 0 26px">'
+    + '<tr><td style="padding:18px 20px">'
+    + (diaSemana
+      ? '<div style="font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:#9aa0a6;font-weight:700">'
+        + escapeHtml(diaSemana) + '</div>'
+      : "")
+    + '<div style="font-size:19px;line-height:1.35;font-weight:700;color:' + TINTA + ';margin-top:6px;letter-spacing:-.2px">'
+    + escapeHtml(fecha || "Fecha por definir") + '</div>'
+    + '<div style="font-size:19px;line-height:1.35;font-weight:700;color:' + TINTA + ';letter-spacing:-.2px">'
+    + escapeHtml(hora) + '</div>'
+    + '</td></tr></table>';
+
+  const boton = String(d.enlaceCalendar ?? "").trim()
+    ? '<table role="presentation" cellpadding="0" cellspacing="0" style="margin:28px 0 4px">'
+      + '<tr><td style="background:#111111;border-radius:999px">'
+      + '<a href="' + escapeHtml(String(d.enlaceCalendar).trim()) + '"'
+      + ' style="display:inline-block;padding:14px 28px;color:#ffffff;text-decoration:none;'
+      + 'font-size:15px;font-weight:700;letter-spacing:-.1px">Añadir a mi calendario</a>'
+      + '</td></tr></table>'
+      + '<div style="font-size:11.5px;line-height:1.6;color:#9aa0a6;margin-top:10px">'
+      + 'Se abre Google Calendar con el compromiso listo. Desde ahí le pones la alarma.</div>'
+    : "";
+
+  const cuerpo = '<div style="font-size:15px;line-height:1.6;color:' + GRIS + '">'
+    + escapeHtml(String(d.saludo ?? "Hola").trim()) + '</div>'
+    + '<div style="font-size:23px;line-height:1.3;font-weight:700;color:' + TINTA + ';letter-spacing:-.5px;margin:10px 0 22px">'
+    + escapeHtml(titulo) + '</div>'
+    + (tipo
+      ? '<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 20px">'
+        + '<tr><td style="background:#f1f3f4;border-radius:999px;padding:7px 14px;'
+        + 'font-size:11px;letter-spacing:1px;text-transform:uppercase;color:' + GRIS + ';font-weight:700">'
+        + escapeHtml(tipo) + '</td></tr></table>'
+      : "")
+    + bloqueFecha
+    + (filas
+      ? '<table role="presentation" cellpadding="0" cellspacing="0" width="100%">' + filas + '</table>'
+      : "")
+    + boton;
+
+  return marcoCorreo(numero, cuerpo, 26);
+}
+
+// El marco comun de todos los correos: fondo gris, tarjeta blanca, cabecera
+// negra con el nombre de la empresa y pie con los datos. Lo que cambia de un
+// correo a otro es lo que va dentro.
+function marcoCorreo(numero: string, cuerpo: string, relleno = 22) {
   return '<!doctype html><html><head><meta charset="utf-8">'
     + '<meta name="viewport" content="width=device-width,initial-scale=1"></head>'
     + '<body style="margin:0;padding:0;background:#f1f3f4">'
@@ -323,7 +442,7 @@ function htmlCotizacion(numero: string, mensaje: string, d: DetalleCotizacion | 
     + '<div style="color:#bdbdbd;font-size:8px;letter-spacing:2px;margin-top:2px">ESPECIALISTAS EN ANCLAJES</div>'
     + '</td><td align="right" style="color:#ffffff;font-size:12px;font-family:Courier New,monospace">'
     + escapeHtml(numero) + '</td></tr></table></td></tr>'
-    + '<tr><td style="padding:22px">' + cuerpo + '</td></tr>'
+    + '<tr><td style="padding:' + relleno + 'px">' + cuerpo + '</td></tr>'
     + '<tr><td style="border-top:1px solid ' + BORDE_SUAVE + ';padding:14px 22px;color:#80868b;font-size:11px;line-height:1.7">'
     + '<strong style="color:#5f6368">Ingeanclajes S.A.S</strong> &middot; NIT 900193965-4<br>'
     + 'Calle 38 Sur # 36 &ndash; 48, Envigado &middot; PBX 448 26 86 &middot; Cel. 315 288 9541<br>'
@@ -449,7 +568,14 @@ Deno.serve(async (req) => {
       // persona en un campo de texto.
       const detalle = (cuerpo.detalle ?? null) as DetalleCotizacion | null;
       const numero = String(cuerpo.numero ?? "").trim();
-      const html = htmlCotizacion(numero, mensaje, detalle);
+
+      // El aviso de la agenda trae sus campos sueltos y se pinta como ficha.
+      // Si no vienen -una pestaña abierta con la version anterior- se cae al
+      // camino de siempre y el correo sale igual que antes, en texto.
+      const agenda = (cuerpo.agenda ?? null) as DetalleAgenda | null;
+      const html = agenda
+        ? htmlAgenda(numero, agenda)
+        : htmlCotizacion(numero, mensaje, detalle);
 
       const resultado = await enviarCorreo({
         para,

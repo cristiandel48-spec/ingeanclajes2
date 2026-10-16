@@ -33,12 +33,23 @@ export function setEmailNotificacionAgenda(email) {
   }
 }
 
-export function formatFechaLegible(isoStr) {
-  if (!isoStr) return "";
+// El dia de la semana y la fecha por separado, que es como los pinta el
+// correo: el dia arriba en pequeño y la fecha debajo, grande.
+export function partesFechaLegible(isoStr) {
+  if (!isoStr) return { diaSemana: "", fecha: "" };
   const [y, m, d] = isoStr.split("-").map(Number);
+  if (!y || !m || !d) return { diaSemana: "", fecha: "" };
   const fecha = new Date(y, m - 1, d);
-  const diaSemana = DIAS_COMPLETO[fecha.getDay() === 0 ? 6 : fecha.getDay() - 1];
-  return `${diaSemana}, ${d} de ${MESES[m - 1]} de ${y}`;
+  return {
+    diaSemana: DIAS_COMPLETO[fecha.getDay() === 0 ? 6 : fecha.getDay() - 1],
+    fecha: `${d} de ${MESES[m - 1]} de ${y}`,
+  };
+}
+
+export function formatFechaLegible(isoStr) {
+  const { diaSemana, fecha } = partesFechaLegible(isoStr);
+  if (!fecha) return "";
+  return `${diaSemana}, ${fecha}`;
 }
 
 // Convierte hora legible (ej. "08:30 AM", "14:00", "2:00 PM") a objeto con hora y minuto
@@ -212,12 +223,36 @@ export async function enviarNotificacionAgendaPorCorreo(compromiso, destinatario
     `Equipo Ingeanclajes S.A.S.`,
   ].filter(Boolean).join("\n");
 
+  // Los campos van sueltos, no solo dentro del texto: el correo los pinta
+  // como ficha -que es, cuando y a que hora arriba y grande, y lo demas en
+  // lineas separadas-, que es lo que se lee de un vistazo en el celular. El
+  // `mensaje` sigue viajando: es lo que ve quien abre el correo sin formato.
+  const { diaSemana, fecha } = partesFechaLegible(compromiso.fecha);
+  const agenda = {
+    saludo: "Hola Camila,",
+    titulo: compromiso.obra || compromiso.titulo || "Compromiso",
+    tipo: tipoLabel,
+    diaSemana,
+    fecha,
+    hora: compromiso.hora || "",
+    cliente: compromiso.cliente || "",
+    ciudad: compromiso.ciudad || "",
+    obra: compromiso.obra || "",
+    contacto: compromiso.contacto || "",
+    telefono: compromiso.telefono || "",
+    sst: compromiso.requerimientoSst || "",
+    notas: compromiso.notas || "",
+    linkReunion: compromiso.linkReunion || "",
+    enlaceCalendar: enlaceCorto,
+  };
+
   const envios = await Promise.allSettled(
     listaCorreos.map((correo) =>
       enviarCotizacionPorCorreo({
         para: correo,
         asunto,
         mensaje,
+        agenda,
         numero: "AGENDA",
       })
     )

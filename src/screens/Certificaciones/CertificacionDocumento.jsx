@@ -283,7 +283,10 @@ export default function CertificacionDocumento({cert}){
           boxSizing: "border-box",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "space-between",
+          // Sin `space-between`: repartia el sitio sobrante ENTRE los bloques
+          // y abria un hueco enorme justo encima de la firma cuando el
+          // certificado tenia poco texto. Ahora el contenido va seguido y lo
+          // que sobra queda al final, antes del pie, que es donde no estorba.
         }}
       >
 
@@ -432,7 +435,10 @@ export default function CertificacionDocumento({cert}){
             display: "flex",
             justifyContent: "space-between",
             alignItems: "flex-end",
-            marginTop: "auto",
+            // La firma va detras de las recomendaciones, separada por un
+            // espacio normal. Antes llevaba `marginTop:auto` y se pegaba al
+            // fondo de la hoja, dejando el hueco en blanco de en medio.
+            marginTop: 28,
             marginBottom: 6,
             breakInside: "avoid",
           }}
@@ -520,7 +526,10 @@ export default function CertificacionDocumento({cert}){
           style={{
             borderTop: "1px solid #cbd5e1",
             paddingTop: 4,
-            marginTop: 4,
+            // El pie si se queda abajo del todo: es el unico bloque que debe
+            // ir pegado al borde de la hoja, y asi lo que sobra de pagina
+            // queda entre la firma y el, en vez de partir el documento.
+            marginTop: "auto",
             textAlign: "center",
             fontSize: 8,
             color: "#64748b",

@@ -13,6 +13,7 @@ import { corregirOrtografiaLocal } from "../../lib/correctorTexto";
 import BotonCorregir from "../../components/ui/BotonCorregir";
 import { printCurrentPz } from "../../lib/print";
 import { descargarDocumentoPdf } from "../../lib/documentoPdf";
+import { nombreDocumento } from "../../lib/nombreArchivo";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import ListaCertificaciones from "./ListaCertificaciones";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
@@ -335,12 +336,8 @@ export default function Certificaciones({ctx}){
     setEditId(null);
   };
 
-  // El PDF del certificado sale por la impresion del navegador.
-  //
-  // Antes descargarDocumentoPdf lo dibujaba con html2canvas a escala 2 -192
-  // puntos por pulgada- y lo guardaba como JPEG: el certificado que se le
-  // manda al cliente era una foto del certificado, con el texto pixelado al
-  // ampliarlo. Desde la pestaña de impresion, «Guardar como PDF» conserva el
+  // El certificado se descarga solo, con su nombre, sin pasar por el cuadro
+  // de impresion de Chrome. Igual que la cotizacion y el informe.
   const [descargandoPdf, setDescargandoPdf] = useState(false);
 
   const descargarPdf = async (c = sel) => {
@@ -356,8 +353,12 @@ export default function Certificaciones({ctx}){
         alert("No se encontró el documento para generar el PDF.");
         return;
       }
-      const nombre = `${c.tipo || "Certificación"} ${c.numero || c.id || ""} - ${c.cliente || "Cliente"}`;
-      await descargarDocumentoPdf(nodo, nombre);
+      // Con la obra dentro: en una carpeta con veinte certificaciones,
+      // «CERT-002» a secas no dice de cual es.
+      await descargarDocumentoPdf(
+        nodo,
+        nombreDocumento(c.tipo || "Certificación", [c.numero || c.id, c.lugar, c.cliente])
+      );
     } catch (err) {
       console.error("Error al descargar PDF del certificado:", err);
       alert("No se pudo generar el PDF. Puedes imprimirlo con el botón de Imprimir.");

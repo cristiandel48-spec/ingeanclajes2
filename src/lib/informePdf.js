@@ -4,6 +4,7 @@
 import { buildInformePrintHtml } from "./informePrint";
 import { MARGEN_HOJA } from "./hojaImpresion";
 import { repaginarHojas } from "./repaginarHojas";
+import { nombreDocumento } from "./nombreArchivo";
 
 const ANCHO_HOJA = 816;
 const ALTO_HOJA = 1056;
@@ -129,19 +130,11 @@ export async function generarInformePdf(informe, { empresaConfig, firmaImg = "",
       pdf.addImage(imagen, "JPEG", 0, 0, ANCHO_HOJA, ALTO_HOJA, undefined, "MEDIUM");
     }
 
-    const id = String(informe?.id || informe?.numero || "Informe");
-    const partes = [id, informe?.proyecto, informe?.cliente]
-      .map((t) => String(t || "").trim())
-      .filter(Boolean);
-    const vistas = [];
-    for (const parte of partes) {
-      if (!vistas.some((v) => v.toLowerCase() === parte.toLowerCase())) vistas.push(parte);
-    }
-    const nombre = ("Informe de actividades " + vistas.join(" "))
-      .replace(/[\\/:*?"<>|]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 120);
+    const nombre = nombreDocumento("Informe de actividades", [
+      informe?.id || informe?.numero,
+      informe?.proyecto,
+      informe?.cliente,
+    ]);
 
     return { blob: pdf.output("blob"), nombre: `${nombre}.pdf` };
   } finally {

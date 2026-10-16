@@ -3,6 +3,7 @@ import CertificacionDocumento from "./CertificacionDocumento";
 import { printCurrentPz } from "../../lib/print";
 import { fmtD } from "../../lib/format";
 import { descargarDocumentoPdf } from "../../lib/documentoPdf";
+import { nombreDocumento } from "../../lib/nombreArchivo";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 
 export default function CertificacionDetalle({
@@ -68,8 +69,10 @@ export default function CertificacionDetalle({
         alert("No se encontró el documento para generar el PDF.");
         return;
       }
-      const nombre = `${cert.tipo || "Certificación"} ${cert.numero || cert.id || ""} - ${cert.cliente || "Cliente"}`;
-      await descargarDocumentoPdf(nodo, nombre);
+      await descargarDocumentoPdf(
+        nodo,
+        nombreDocumento(cert.tipo || "Certificación", [cert.numero || cert.id, cert.lugar, cert.cliente])
+      );
     } catch (e) {
       console.error("Error al descargar PDF:", e);
       alert("No se pudo generar el PDF. Puedes imprimirlo con el botón de Imprimir.");

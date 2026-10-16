@@ -9,6 +9,8 @@ import { hasVerticalLifeLineService, hasCatLadderService } from "./cotizaciones"
 import { getTextosDocumento, lineasDeTexto } from "./cotizacionTextos";
 import { corregirOrtografiaLocal } from "./correctorTexto";
 import { cssHojaImpresion } from "./hojaImpresion";
+import { aclararFondo } from "./fondoImagen";
+import { FOTO_PUNTO_ANCLAJE_DEFAULT } from "../assets/embeddedImages";
 import articoLineaVidaVertical from "../assets/artico-linea-vida-vertical.jpg?inline";
 import articoEscaleraGato from "../assets/artico-escalera-gato.jpg?inline";
 import { IMG_SOPORTE, IMG_TENSOR, IMG_EMPALMES, IMG_CABLE } from "../assets/componentesLineasVida";
@@ -266,6 +268,36 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       </section>
     `;
   };
+
+  // Ficha de un sistema: el dibujo a la izquierda y las caracteristicas a
+  // la derecha, como texto del documento.
+  //
+  // Antes era la lamina del catalogo del proveedor metida entera como
+  // imagen: el logotipo de Artico impreso en la cotizacion, los textos
+  // incrustados en el JPEG con otra tipografia y recuadros con linea guia.
+  // `recorte` deja a la vista solo el objeto; el resto se escribe aqui.
+  const fichaSistema = ({ titulo, imagen, alt, recorte, notas }) => `
+    <section class="page appendix-page">
+      <div class="page-inner">
+        ${headerHtml}
+        <div class="page-content">
+          <h3 class="doc-h3">${escapeHtml(titulo)}</h3>
+          <div class="ficha-sistema">
+            <div class="ficha-sistema-img">
+              <img src="${imagen}" alt="${escapeHtml(alt)}" style="clip-path: inset(${recorte});" />
+            </div>
+            <dl class="ficha-sistema-datos">
+              ${notas.map(([k, v]) => `
+                <dt>${escapeHtml(k)}</dt>
+                <dd>${escapeHtml(v)}</dd>
+              `).join("")}
+            </dl>
+          </div>
+        </div>
+        ${footerHtml}
+      </div>
+    </section>
+  `;
 
   const footerHtml = `
     <div class="footer">
@@ -1504,6 +1536,42 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       .sig-meta { font-size: var(--texto); color:#000000; margin-top:2mm; line-height:1.65; }
 
       .appendix-page .page-content { padding: 0; box-sizing: border-box; }
+
+      /* Ficha de sistema: dibujo a la izquierda, caracteristicas a la
+         derecha. El recorte de la imagen se hace con clip-path, asi que el
+         archivo original no se toca y se puede reajustar en una linea. */
+      .ficha-sistema {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10mm;
+        align-items: center;
+        margin-top: 4mm;
+      }
+      .ficha-sistema-img {
+        display: flex; align-items: center; justify-content: center;
+        min-height: 150mm;
+      }
+      .ficha-sistema-img img {
+        max-width: 100%;
+        max-height: 160mm;
+        object-fit: contain;
+      }
+      .ficha-sistema-datos { margin: 0; }
+      .ficha-sistema-datos dt {
+        font-size: calc(var(--texto) * .92);
+        font-weight: 700;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        color: #000;
+        margin-top: 5mm;
+      }
+      .ficha-sistema-datos dt:first-child { margin-top: 0; }
+      .ficha-sistema-datos dd {
+        margin: 1.2mm 0 0;
+        font-size: var(--texto);
+        line-height: 1.55;
+        color: #000;
+      }
       .appendix-page .doc-h3 { margin: 0 0 2.5mm; }
       .appendix-img { width:auto; max-width:100%; height:auto; max-height:202mm; object-fit:contain; display:block; margin:0 auto; image-rendering: -webkit-optimize-contrast; image-rendering: auto; }
       .summary-spacing { margin-bottom:8mm; }
@@ -1524,30 +1592,34 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
     ${coverPage}
     ${introPage}
     ${proposalSections}
-    ${showCatLadderAppendix ? `
-      <section class="page appendix-page">
-        <div class="page-inner">
-          ${headerHtml}
-          <div class="page-content">
-            <h3 class="doc-h3">Sistema de escalera fija tipo gato</h3>
-            <img src="${articoEscaleraGato}" alt="Sistema de escalera fija tipo gato Artico Safe Work" class="appendix-img" />
-          </div>
-          ${footerHtml}
-        </div>
-      </section>
-    ` : ""}
-    ${showVerticalLifelineAppendix ? `
-      <section class="page appendix-page">
-        <div class="page-inner">
-          ${headerHtml}
-          <div class="page-content">
-            <h3 class="doc-h3">Sistema certificado para escalera fija con línea de vida vertical</h3>
-            <img src="${articoLineaVidaVertical}" alt="Sistema de linea de vida vertical Artico Safe Work" class="appendix-img" />
-          </div>
-          ${footerHtml}
-        </div>
-      </section>
-    ` : ""}
+    ${showCatLadderAppendix ? fichaSistema({
+      titulo: "Sistema de escalera fija tipo gato",
+      imagen: articoEscaleraGato,
+      alt: "Escalera fija tipo gato en tubería redonda",
+      // Recorte: la lamina original traia el logotipo del proveedor arriba
+      // a la izquierda y los textos dentro del propio JPEG. Se deja solo la
+      // escalera y lo demas se escribe aqui abajo como texto del documento.
+      recorte: "4% 12% 2% 52%",
+      notas: [
+        ["Normatividad", "Resolución 4272 de 2021 del Ministerio del Trabajo y EN 795:2012."],
+        ["Estructura", "Tubería redonda de 2″ en los largueros y de 1 ½″ en los peldaños."],
+        ["Montaje", "Peldaños cada 30 cm y 40 cm de ancho, conforme a la norma."],
+        ["Material", "Acero estructural 1040."],
+      ],
+    }) : ""}
+    ${showVerticalLifelineAppendix ? fichaSistema({
+      titulo: "Escalera fija con línea de vida vertical",
+      imagen: articoLineaVidaVertical,
+      alt: "Sistema de línea de vida vertical sobre escalera fija",
+      recorte: "3% 32% 2% 37%",
+      notas: [
+        ["Normatividad", "Resolución 4272 de 2021 del Ministerio del Trabajo y EN 795:2012."],
+        ["Soporte superior", "Con absorbedor de energía."],
+        ["Cable", "De acero con alma de acero, SAE 316."],
+        ["Soporte inferior", "Con tensor de línea de vida."],
+        ["Estructura", "Tubería de 2″ y peldaños de 1 ½″ cada 30 cm, en acero estructural 1040."],
+      ],
+    }) : ""}
     ${showTechnicalPage ? renderTechnicalPage() : ""}
     ${mostrarResumenFinal ? "" : renderResumenPropuestas()}
     ${closingSections}
@@ -1585,6 +1657,16 @@ async function toDataUrl(src){
   }
 }
 
+// La foto por defecto del punto de anclaje esta sobre fondo negro de
+// estudio. En pantalla queda bien; impresa deja un rectangulo negro en
+// medio de la hoja. Se le aclara el fondo al prepararla, y solo a ella: a
+// una foto de obra este tratamiento le comeria las sombras.
+async function prepararFoto(foto){
+  const src = await toDataUrl(foto?.src || "");
+  const esLaDelPuntoDeAnclaje = (foto?.src || "") === FOTO_PUNTO_ANCLAJE_DEFAULT;
+  return { ...foto, src: esLaDelPuntoDeAnclaje ? await aclararFondo(src) : src };
+}
+
 async function normalizeCotizacionForPrint(c={}){
   let clone;
   try {
@@ -1594,19 +1676,13 @@ async function normalizeCotizacionForPrint(c={}){
   }
 
   if(Array.isArray(clone?.fotosCotizacion)){
-    clone.fotosCotizacion = await Promise.all(clone.fotosCotizacion.map(async (foto)=>({
-      ...foto,
-      src: await toDataUrl(foto?.src || ""),
-    })));
+    clone.fotosCotizacion = await Promise.all(clone.fotosCotizacion.map(prepararFoto));
   }
 
   if(Array.isArray(clone?.propuestas)){
     clone.propuestas = await Promise.all(clone.propuestas.map(async (propuesta)=>{
       const fotos = Array.isArray(propuesta?.fotos)
-        ? await Promise.all(propuesta.fotos.map(async (foto)=>({
-            ...foto,
-            src: await toDataUrl(foto?.src || ""),
-          })))
+        ? await Promise.all(propuesta.fotos.map(prepararFoto))
         : propuesta?.fotos;
 
       const mapImg = propuesta?.mapImg ? await toDataUrl(propuesta.mapImg) : propuesta?.mapImg;

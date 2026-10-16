@@ -296,9 +296,17 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
   let pIdx = 0;
   let alturaActual = 0;
 
+  // Cada bloque sale envuelto con una marca de que es. Asi, al generar el
+  // PDF, se puede volver a repartir en hojas MIDIENDO el documento ya
+  // dibujado en vez de fiarse de las alturas estimadas de aqui arriba.
+  // Ver lib/repaginarHojas.js: es lo que quita los huecos en blanco, porque
+  // una estimacion que se pasa por 100px manda a la hoja siguiente un
+  // bloque que en realidad cabia.
+  const marcar = (html, rol) => `<div data-rol="${rol}">${html}</div>`;
+
   const nuevaPagina = () => {
     pIdx += 1;
-    paginas[pIdx] = [renderHeaderSecundario()];
+    paginas[pIdx] = [marcar(renderHeaderSecundario(), "encabezado")];
     alturaActual = ALTO_HEADER_SECUNDARIO;
   };
 
@@ -307,11 +315,12 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
   // descontarlo aqui.
   const getLimiteActual = () => MAX_ALTO_PAGINA;
 
-  // 1. Portada Top
-  paginas[0].push(renderHeaderPortada());
-  paginas[0].push(renderDatosProyecto());
-  paginas[0].push(renderPersonalEnObra());
-  paginas[0].push(renderBannerActividades());
+  // 1. Portada Top. Va como un solo bloque «fijo»: nunca se mueve de la
+  // primera hoja, pase lo que pase al volver a repartir.
+  paginas[0].push(marcar(
+    renderHeaderPortada() + renderDatosProyecto() + renderPersonalEnObra() + renderBannerActividades(),
+    "fijo"
+  ));
   alturaActual = ALTO_HEADER_PORTADA + calcularAltoDatos(Boolean(cotizacionRef)) + calcularAltoPersonal(personal) + ALTO_BANNER_ACTIVIDADES;
 
   // 2. Empaquetar Actividades y Fotos de forma armónica
@@ -324,7 +333,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
       nuevaPagina();
     }
 
-    paginas[pIdx].push(renderTablaActividad(act, actIdx));
+    paginas[pIdx].push(marcar(renderTablaActividad(act, actIdx), "contenido"));
     alturaActual += altoTabla;
 
     // Procesar fotos de la actividad
@@ -347,12 +356,12 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
 
         if (!tituloPuesto) {
           const textoTitulo = `3. Panel Técnico de Evidencias Fotográficas · ${act.titulo || "Actividad"}${fIdx > 0 ? " (Cont.)" : ""}`;
-          paginas[pIdx].push(renderBannerFotos(textoTitulo));
+          paginas[pIdx].push(marcar(renderBannerFotos(textoTitulo), "contenido"));
           alturaActual += ALTO_BANNER_FOTOS;
           tituloPuesto = true;
         }
 
-        paginas[pIdx].push(renderFotosFila(fila, actIdx, fIdx * 2));
+        paginas[pIdx].push(marcar(renderFotosFila(fila, actIdx, fIdx * 2), "contenido"));
         alturaActual += ALTO_FILA_FOTOS;
       });
     }
@@ -370,7 +379,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
     if (!cabenAmbos) {
       nuevaPagina();
     }
-    paginas[pIdx].push(renderTablaRecomendaciones());
+    paginas[pIdx].push(marcar(renderTablaRecomendaciones(), "contenido"));
     alturaActual += altoRec;
   }
 
@@ -378,7 +387,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
   if (alturaActual + altoFirma > getLimiteActual()) {
     nuevaPagina();
   }
-  paginas[pIdx].push(renderBloqueFirma());
+  paginas[pIdx].push(marcar(renderBloqueFirma(), "contenido"));
   alturaActual += altoFirma;
 
   // Total de hojas consolidadas
@@ -395,7 +404,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
         </div>
         <div class="page-footer">
           <span>Ingeanclajes S.A.S · Documento Técnico Oficial SGC · ${escapeHtml(docCodigo)} (V-${escapeHtml(docVersion)})</span>
-          <span>Página ${idx + 1} de ${totalHojas}</span>
+          <span data-rol="numeracion">Página ${idx + 1} de ${totalHojas}</span>
         </div>
       </div>
     </section>

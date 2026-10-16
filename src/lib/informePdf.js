@@ -3,6 +3,7 @@
 
 import { buildInformePrintHtml } from "./informePrint";
 import { MARGEN_HOJA } from "./hojaImpresion";
+import { repaginarHojas } from "./repaginarHojas";
 
 const ANCHO_HOJA = 816;
 const ALTO_HOJA = 1056;
@@ -82,6 +83,28 @@ export async function generarInformePdf(informe, { empresaConfig, firmaImg = "",
     if (!doc) throw new Error("No se pudo leer el informe generado.");
 
     await esperarRecursos(doc, ventana);
+
+    // Se vuelve a repartir el contenido midiendo el documento ya dibujado.
+    // El reparto que trae informePrint.js se hace con alturas estimadas y
+    // se queda corto: cuando se pasa, manda a la hoja siguiente un bloque
+    // que cabia y deja media hoja en blanco. Aqui ya hay medidas de verdad.
+    //
+    // El alto util es el de la hoja menos los margenes de arriba y abajo
+    // (que aqui son el `padding` de .page) menos el pie.
+    try {
+      const primera = doc.querySelector(".page");
+      const pie = primera?.querySelector(".page-footer");
+      const estilo = primera ? ventana.getComputedStyle(primera) : null;
+      const relleno = estilo
+        ? parseFloat(estilo.paddingTop) + parseFloat(estilo.paddingBottom)
+        : 0;
+      const altoPie = pie ? pie.getBoundingClientRect().height : 0;
+      const altoUtil = ALTO_HOJA - relleno - altoPie - 2; // 2px de respiro
+      if (altoUtil > 200) repaginarHojas(doc, { altoUtil });
+    } catch (fallo) {
+      // Si algo sale mal se usa el reparto estimado, que es el de antes.
+      console.warn("No se pudo recalcular el reparto de hojas:", fallo);
+    }
 
     const hojas = [...doc.querySelectorAll(".page")];
     if (!hojas.length) throw new Error("El documento no contiene páginas.");

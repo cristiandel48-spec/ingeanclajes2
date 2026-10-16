@@ -92,8 +92,22 @@ function IconoTipo({ tipo, size = 15 }) {
   );
 }
 
+import {
+  esUsuarioCristian,
+  esUsuarioCamila,
+  filtrarAgendaPorPermiso,
+} from "../../lib/agendaEspecial";
+
 export default function AvisoInteligenteAgenda({ onIrAAgenda }) {
-  const { agenda } = useAppData();
+  const { agenda, membresia, authUserEmail, esSuperAdminCristian } = useAppData();
+  const esCristian = esUsuarioCristian(membresia, authUserEmail) || esSuperAdminCristian;
+  const esCamila = esUsuarioCamila(membresia, authUserEmail);
+
+  const agendaVisible = useMemo(
+    () => filtrarAgendaPorPermiso(agenda, { esCristian, esCamila }),
+    [agenda, esCristian, esCamila]
+  );
+
   const [modalAbierto, setModalAbierto] = useState(false);
   const [modoCierre, setModoCierre] = useState(false);
   const [accionConfirmarCierre, setAccionConfirmarCierre] = useState(null);
@@ -107,17 +121,17 @@ export default function AvisoInteligenteAgenda({ onIrAAgenda }) {
 
   // Compromisos de mañana no completados
   const compromisosManana = useMemo(() => {
-    if (!Array.isArray(agenda)) return [];
-    return agenda
+    if (!Array.isArray(agendaVisible)) return [];
+    return agendaVisible
       .filter((item) => item.fecha === mananaIso && item.estado !== "completado")
       .sort((a, b) => (a.hora || "").localeCompare(b.hora || ""));
-  }, [agenda, mananaIso]);
+  }, [agendaVisible, mananaIso]);
 
   // Compromisos de hoy aún pendientes (por si hay trabajo por cerrar hoy)
   const compromisosHoyPendientes = useMemo(() => {
-    if (!Array.isArray(agenda)) return [];
-    return agenda.filter((item) => item.fecha === hoyIso && item.estado !== "completado");
-  }, [agenda, hoyIso]);
+    if (!Array.isArray(agendaVisible)) return [];
+    return agendaVisible.filter((item) => item.fecha === hoyIso && item.estado !== "completado");
+  }, [agendaVisible, hoyIso]);
 
   // Escuchar evento personalizado para abrir el modal desde cualquier lugar (Topbar, menú, etc.)
   useEffect(() => {

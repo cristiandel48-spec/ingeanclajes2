@@ -97,8 +97,16 @@ export default function MenuUsuario({ compact = false }) {
     const dia = String(d.getDate()).padStart(2, "0");
     const mananaIso = `${y}-${m}-${dia}`;
 
+    const esCristian = correoActivo.toLowerCase().includes("cristian") || esSuperAdminCristian;
+    const esCamila = correoActivo.toLowerCase().includes("camila");
+
     const tieneCompromisosManana = Array.isArray(agenda) && agenda.some(
-      (item) => item.fecha === mananaIso && item.estado !== "completado"
+      (item) => {
+        if (!esCristian && !esCamila && (item.tipo === "especial" || item.prioridad === "estrella")) {
+          return false;
+        }
+        return item.fecha === mananaIso && item.estado !== "completado";
+      }
     );
 
     if (tieneCompromisosManana) {

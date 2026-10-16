@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { B, CD, SI } from "../../styles/tokens";
 import { EJEMPLOS } from "../../data/ejemplos";
 import { abrirWhatsApp } from "../../lib/whatsapp";
@@ -14,6 +14,14 @@ import {
   esDiaFestivoColombia,
   getFestivosDelMes,
 } from "../../lib/festivosColombia";
+import {
+  esUsuarioCristian,
+  esUsuarioCamila,
+  esCompromisoEspecial,
+  filtrarAgendaPorPermiso,
+  obtenerFechasEspecialesDelMes,
+} from "../../lib/agendaEspecial";
+import ModalEstrellitaEspecial from "../../components/agenda/ModalEstrellitaEspecial";
 
 // Meses y días en español
 const MESES = [
@@ -73,10 +81,24 @@ const TIPOS_COMPROMISO = {
     border: "#d1fae5",
     dot: "#10b981",
   },
+  especial: {
+    label: "Fecha Especial",
+    color: "#b45309",
+    bg: "#fef3c7",
+    border: "#fde68a",
+    dot: "#f59e0b",
+  },
 };
 
 // Iconos vectoriales minimalistas (estilo Apple SF Symbols)
 function IconoTipo({ tipo, size = 15 }) {
+  if (tipo === "especial") {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="#f59e0b" stroke="#d97706" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+      </svg>
+    );
+  }
   if (tipo === "visita") {
     return (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -120,8 +142,16 @@ function CompromisosDelDiaSection({
   eliminarCompromiso,
   enviarWhatsApp,
   abrirWaze,
+  esCristian,
+  esCamila,
+  abrirModalEstrellita,
+  eliminarFechaEspecial,
 }) {
   const festivoDelDia = getFestivoColombia(fechaSeleccionada);
+  const fechaEspecialDelDia = (esCristian || esCamila)
+    ? eventosDelDia.find(esCompromisoEspecial)
+    : null;
+  const compromisosTrabajo = eventosDelDia.filter((c) => !esCompromisoEspecial(c));
 
   return (
     <div style={{ ...CD, padding: 24, width: "100%", boxSizing: "border-box" }}>
@@ -133,6 +163,8 @@ function CompromisosDelDiaSection({
           paddingBottom: 14,
           borderBottom: "1px solid var(--border, #e2e8f0)",
           marginBottom: 16,
+          flexWrap: "wrap",
+          gap: 10,
         }}
       >
         <div>
@@ -144,19 +176,232 @@ function CompromisosDelDiaSection({
           </h3>
         </div>
 
-        <button
-          type="button"
-          style={{
-            ...B("var(--surface-subtle, #f1f5f9)", "var(--text-main, #0f172a)"),
-            border: "1px solid var(--border, #e2e8f0)",
-            fontSize: 12,
-            padding: "6px 12px",
-          }}
-          onClick={() => abrirNuevoModal("visita")}
-        >
-          + Agregar compromiso
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          {esCristian && (
+            <button
+              type="button"
+              style={{
+                background: fechaEspecialDelDia ? "#fef3c7" : "linear-gradient(135deg, #fef3c7, #fef9c3)",
+                color: "#92400e",
+                border: "1px solid #fde68a",
+                fontSize: 12,
+                fontWeight: 700,
+                padding: "6px 12px",
+                borderRadius: 8,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                boxShadow: "0 1px 3px rgba(245, 158, 11, 0.15)",
+                cursor: "pointer",
+              }}
+              onClick={() => abrirModalEstrellita(fechaSeleccionada, fechaEspecialDelDia)}
+              title="Poner o editar una fecha especial con estrellita privada para Camila"
+            >
+              <span>{fechaEspecialDelDia?.icono || "⭐"}</span>
+              <span>{fechaEspecialDelDia ? "Editar Estrellita" : "Poner Estrellita"}</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            style={{
+              ...B("var(--surface-subtle, #f1f5f9)", "var(--text-main, #0f172a)"),
+              border: "1px solid var(--border, #e2e8f0)",
+              fontSize: 12,
+              padding: "6px 12px",
+            }}
+            onClick={() => abrirNuevoModal("visita")}
+          >
+            + Agregar compromiso
+          </button>
+        </div>
       </div>
+
+      {/* Tarjeta de Fecha Especial para Camila */}
+      {fechaEspecialDelDia && esCamila && (
+        <div
+          style={{
+            background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 45%, #fff1f2 100%)",
+            border: "1.5px solid #fcd34d",
+            borderRadius: 14,
+            padding: "16px 20px",
+            marginBottom: 16,
+            boxShadow: "0 4px 14px rgba(245, 158, 11, 0.12), 0 1px 3px rgba(0,0,0,0.05)",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                background: "linear-gradient(135deg, #fde68a, #f59e0b)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 24,
+                flexShrink: 0,
+                boxShadow: "0 2px 8px rgba(245, 158, 11, 0.25)",
+              }}
+            >
+              {fechaEspecialDelDia.icono || "⭐"}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <span
+                  style={{
+                    fontSize: 10.5,
+                    fontWeight: 800,
+                    color: "#b45309",
+                    background: "#fef3c7",
+                    border: "1px solid #fde68a",
+                    padding: "2px 9px",
+                    borderRadius: 20,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  ✨ Fecha Especial
+                </span>
+                {fechaEspecialDelDia.hora && (
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "#92400e" }}>
+                    🕒 {fechaEspecialDelDia.hora}
+                  </span>
+                )}
+              </div>
+              <h4 style={{ fontSize: 18, fontWeight: 800, color: "#78350f", margin: "4px 0 2px" }}>
+                {fechaEspecialDelDia.titulo}
+              </h4>
+              {fechaEspecialDelDia.notas && (
+                <p style={{ fontSize: 13, color: "#92400e", margin: "4px 0 0", lineHeight: 1.45, fontStyle: "italic" }}>
+                  "{fechaEspecialDelDia.notas}"
+                </p>
+              )}
+              <div style={{ marginTop: 8, fontSize: 11.5, fontWeight: 700, color: "#d97706", display: "flex", alignItems: "center", gap: 5 }}>
+                <span>💖</span>
+                <span>Con mucho cariño, Cristian Flores</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tarjeta de Fecha Especial para Cristian */}
+      {fechaEspecialDelDia && esCristian && (
+        <div
+          style={{
+            background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 45%, #fff1f2 100%)",
+            border: "1.5px solid #fcd34d",
+            borderRadius: 14,
+            padding: "16px 20px",
+            marginBottom: 16,
+            boxShadow: "0 4px 14px rgba(245, 158, 11, 0.12)",
+            position: "relative",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 14, flex: 1, minWidth: 260 }}>
+              <div
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: "linear-gradient(135deg, #fde68a, #f59e0b)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 24,
+                  flexShrink: 0,
+                  boxShadow: "0 2px 8px rgba(245, 158, 11, 0.25)",
+                }}
+              >
+                {fechaEspecialDelDia.icono || "⭐"}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span
+                    style={{
+                      fontSize: 10.5,
+                      fontWeight: 800,
+                      color: "#b45309",
+                      background: "#fef3c7",
+                      border: "1px solid #fde68a",
+                      padding: "2px 9px",
+                      borderRadius: 20,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    ⭐ Fecha Especial Guardada
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 10.5,
+                      fontWeight: 700,
+                      color: "#059669",
+                      background: "#ecfdf5",
+                      border: "1px solid #a7f3d0",
+                      padding: "2px 8px",
+                      borderRadius: 20,
+                    }}
+                  >
+                    🔒 Visible solo para Camila y tú
+                  </span>
+                  {fechaEspecialDelDia.hora && (
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#92400e" }}>
+                      🕒 {fechaEspecialDelDia.hora}
+                    </span>
+                  )}
+                </div>
+                <h4 style={{ fontSize: 18, fontWeight: 800, color: "#78350f", margin: "4px 0 2px" }}>
+                  {fechaEspecialDelDia.titulo}
+                </h4>
+                {fechaEspecialDelDia.notas && (
+                  <p style={{ fontSize: 13, color: "#92400e", margin: "4px 0 0", fontStyle: "italic" }}>
+                    "{fechaEspecialDelDia.notas}"
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+              <button
+                type="button"
+                onClick={() => abrirModalEstrellita(fechaSeleccionada, fechaEspecialDelDia)}
+                style={{
+                  padding: "6px 12px",
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  borderRadius: 8,
+                  border: "1px solid #fde68a",
+                  background: "#ffffff",
+                  color: "#92400e",
+                  cursor: "pointer",
+                }}
+              >
+                ✎ Editar
+              </button>
+              <button
+                type="button"
+                onClick={() => eliminarFechaEspecial(fechaEspecialDelDia.id)}
+                style={{
+                  padding: "6px 12px",
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  borderRadius: 8,
+                  border: "1px solid #fecaca",
+                  background: "#ffffff",
+                  color: "#dc2626",
+                  cursor: "pointer",
+                }}
+              >
+                ✕ Quitar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {festivoDelDia && (
         <div
@@ -214,10 +459,10 @@ function CompromisosDelDiaSection({
         </div>
       )}
 
-      {eventosDelDia.length === 0 ? (
+      {compromisosTrabajo.length === 0 ? (
         <div
           style={{
-            padding: "36px 20px",
+            padding: "32px 20px",
             textAlign: "center",
             background: "var(--surface-subtle, #f8fafc)",
             borderRadius: 12,
@@ -228,10 +473,12 @@ function CompromisosDelDiaSection({
             <IconoTipo tipo="coordinacion" size={26} />
           </div>
           <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>
-            Sin compromisos para esta fecha
+            {fechaEspecialDelDia
+              ? "Sin visitas de obra programadas para esta fecha especial"
+              : "Sin compromisos para esta fecha"}
           </div>
           <p style={{ fontSize: 12, color: "var(--text-muted, #64748b)", margin: "4px 0 14px" }}>
-            No hay visitas técnicas ni llamadas agendadas para el día seleccionado.
+            No hay visitas técnicas ni llamadas de obra agendadas para el día seleccionado.
           </p>
           <button
             type="button"
@@ -243,7 +490,7 @@ function CompromisosDelDiaSection({
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 14 }}>
-          {eventosDelDia.map((item) => {
+          {compromisosTrabajo.map((item) => {
             const conf = TIPOS_COMPROMISO[item.tipo] || TIPOS_COMPROMISO.visita;
             const completado = item.estado === "completado";
 
@@ -462,13 +709,45 @@ function CalendarioMensualSection({
   mesSiguiente,
   celdasMes,
   eventosPorFecha,
+  fechaSeleccionada,
   setFechaSeleccionada,
+  esCristian,
+  esCamila,
+  compromisos,
+  abrirModalEstrellita,
+  toggleEstrellitaRapida,
 }) {
   const isMobile = useIsMobile();
+  const lastTapRef = useRef({ time: 0, iso: null });
+
+  const manejarClickDia = (iso, fechaEspecial) => {
+    if (!iso) return;
+    setFechaSeleccionada(iso);
+
+    if (!esCristian) return;
+
+    const ahora = Date.now();
+    const tiempoDiff = ahora - lastTapRef.current.time;
+    const mismoDia = lastTapRef.current.iso === iso;
+
+    if (mismoDia && tiempoDiff > 35 && tiempoDiff < 420) {
+      // ¡Doble clic o doble tap detectado en celular y PC!
+      lastTapRef.current = { time: 0, iso: null };
+      toggleEstrellitaRapida?.(iso, fechaEspecial);
+    } else {
+      lastTapRef.current = { time: ahora, iso };
+    }
+  };
+
   const festivosDelMes = useMemo(
     () => getFestivosDelMes(calMes.anio, calMes.mes),
     [calMes.anio, calMes.mes]
   );
+
+  const fechasEspecialesDelMes = useMemo(() => {
+    if (!esCristian && !esCamila) return [];
+    return obtenerFechasEspecialesDelMes(compromisos, calMes.anio, calMes.mes);
+  }, [compromisos, calMes.anio, calMes.mes, esCristian, esCamila]);
 
   return (
     <div style={{ ...CD, padding: isMobile ? "16px 10px" : 24, width: "100%", boxSizing: "border-box" }}>
@@ -516,6 +795,65 @@ function CalendarioMensualSection({
                   : `${festivosDelMes.length} festivos en ${MESES[calMes.mes].toLowerCase()}`}
               </span>
             </span>
+          )}
+
+          {fechasEspecialesDelMes.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                if (fechasEspecialesDelMes[0]?.fecha) {
+                  setFechaSeleccionada(fechasEspecialesDelMes[0].fecha);
+                }
+              }}
+              style={{
+                fontSize: isMobile ? 10 : 11.5,
+                fontWeight: 700,
+                color: "#b45309",
+                background: "linear-gradient(135deg, rgba(254, 243, 199, 0.95), rgba(255, 251, 235, 0.95))",
+                border: "1px solid rgba(251, 191, 36, 0.75)",
+                padding: isMobile ? "2px 7px" : "3px 10px",
+                borderRadius: 20,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                boxShadow: "0 1px 3px rgba(245, 158, 11, 0.12)",
+                cursor: "pointer",
+              }}
+              title={fechasEspecialesDelMes.map((f) => `${f.fecha.slice(8, 10)} ${MESES[calMes.mes].slice(0, 3)}: ${f.titulo}`).join("\n") + "\n(Clic para ir a la fecha)"}
+            >
+              <span>⭐</span>
+              <span>
+                {fechasEspecialesDelMes.length === 1
+                  ? `1 fecha especial: ${fechasEspecialesDelMes[0].titulo}`
+                  : `${fechasEspecialesDelMes.length} fechas especiales en ${MESES[calMes.mes].toLowerCase()}`}
+              </span>
+            </button>
+          )}
+
+          {esCristian && fechasEspecialesDelMes.length === 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                abrirModalEstrellita?.(fechaSeleccionada || `${calMes.anio}-${String(calMes.mes + 1).padStart(2, "0")}-01`, null);
+              }}
+              style={{
+                fontSize: isMobile ? 10 : 11,
+                fontWeight: 600,
+                color: "#92400e",
+                background: "rgba(254, 243, 199, 0.6)",
+                border: "1px dashed #fcd34d",
+                padding: isMobile ? "2px 6px" : "3px 9px",
+                borderRadius: 20,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                cursor: "pointer",
+              }}
+              title="Poner una estrellita en este mes para Camila"
+            >
+              <span>⭐</span>
+              <span>+ Poner estrellita</span>
+            </button>
           )}
         </div>
 
@@ -632,6 +970,10 @@ function CalendarioMensualSection({
           }
 
           const evts = eventosPorFecha[c.iso] || [];
+          const fechaEspecial = (esCristian || esCamila) ? evts.find(esCompromisoEspecial) : null;
+          const tieneEstrellita = Boolean(fechaEspecial);
+          const evtsTrabajo = evts.filter((e) => !esCompromisoEspecial(e));
+
           const esHoy = c.esHoy;
           const esSeleccionado = c.esSeleccionado;
           const esFestivo = c.esFestivo;
@@ -640,56 +982,132 @@ function CalendarioMensualSection({
           return (
             <div
               key={idx}
-              onClick={() => setFechaSeleccionada(c.iso)}
+              onClick={() => manejarClickDia(c.iso, fechaEspecial)}
+              onDoubleClick={(e) => {
+                e.preventDefault();
+                if (esCristian && c.iso) {
+                  toggleEstrellitaRapida?.(c.iso, fechaEspecial);
+                }
+              }}
               style={{
                 minHeight: isMobile ? 48 : 88,
                 padding: isMobile ? "4px 2px" : "6px 8px",
                 borderRadius: isMobile ? 6 : 10,
                 cursor: "pointer",
+                touchAction: "manipulation",
+                WebkitTapHighlightColor: "transparent",
+                userSelect: "none",
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
                 transition: "all 0.12s ease",
                 background: esSeleccionado
                   ? (isMobile ? "#f1f5f9" : "var(--surface, #ffffff)")
+                  : tieneEstrellita
+                  ? "rgba(254, 243, 199, 0.38)"
                   : esFestivo
                   ? "rgba(254, 242, 242, 0.42)"
                   : "var(--surface, #ffffff)",
                 border: esSeleccionado
                   ? "2px solid #0f172a"
+                  : tieneEstrellita
+                  ? "1.5px solid #fcd34d"
                   : esFestivo
                   ? "1px solid rgba(239, 68, 68, 0.32)"
                   : "1px solid var(--border, #e2e8f0)",
-                boxShadow: esSeleccionado ? "0 4px 12px rgba(15,23,42,0.08)" : "none",
+                boxShadow: esSeleccionado
+                  ? "0 4px 12px rgba(15,23,42,0.08)"
+                  : tieneEstrellita
+                  ? "0 2px 6px rgba(245, 158, 11, 0.15)"
+                  : "none",
                 minWidth: 0,
                 overflow: "hidden",
                 boxSizing: "border-box",
                 position: "relative",
               }}
-              title={esFestivo ? `🇨🇴 Festivo Colombia: ${festivo?.nombre}` : undefined}
+              title={
+                tieneEstrellita
+                  ? `⭐ Fecha Especial: ${fechaEspecial?.titulo}${esCristian ? " (Doble clic o doble tap para quitarla · Clic en la estrella para editar)" : ""}${esFestivo ? `\n🇨🇴 Festivo: ${festivo?.nombre}` : ""}`
+                  : esCristian
+                  ? `Día ${c.numero}${esFestivo ? ` (Festivo: ${festivo?.nombre})` : ""}\nTip: Doble clic o doble tap en celular para poner estrellita a Camila ⭐`
+                  : esFestivo
+                  ? `🇨🇴 Festivo Colombia: ${festivo?.nombre}`
+                  : undefined
+              }
             >
               {/* Número del día */}
               <div style={{ display: "flex", justifyContent: isMobile ? "center" : "space-between", alignItems: "center" }}>
-                <span
-                  style={{
-                    fontSize: isMobile ? 11 : 12.5,
-                    fontWeight: esHoy || esSeleccionado || esFestivo ? 800 : 600,
-                    width: isMobile ? 20 : 22,
-                    height: isMobile ? 20 : 22,
-                    borderRadius: "50%",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: esHoy
-                      ? "#f47c20"
-                      : esFestivo && !esSeleccionado
-                      ? "rgba(239, 68, 68, 0.12)"
-                      : "transparent",
-                    color: esHoy ? "#ffffff" : esFestivo ? "#dc2626" : "var(--text-main, #0f172a)",
-                  }}
-                >
-                  {c.numero}
-                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                  <span
+                    style={{
+                      fontSize: isMobile ? 11 : 12.5,
+                      fontWeight: esHoy || esSeleccionado || esFestivo || tieneEstrellita ? 800 : 600,
+                      width: isMobile ? 20 : 22,
+                      height: isMobile ? 20 : 22,
+                      borderRadius: "50%",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: esHoy
+                        ? "#f47c20"
+                        : esFestivo && !esSeleccionado
+                        ? "rgba(239, 68, 68, 0.12)"
+                        : "transparent",
+                      color: esHoy ? "#ffffff" : esFestivo ? "#dc2626" : "var(--text-main, #0f172a)",
+                    }}
+                  >
+                    {c.numero}
+                  </span>
+
+                  {tieneEstrellita && (
+                    <span
+                      onClick={(e) => {
+                        if (esCristian) {
+                          e.stopPropagation();
+                          abrirModalEstrellita?.(c.iso, fechaEspecial);
+                        }
+                      }}
+                      style={{
+                        fontSize: isMobile ? 12 : 14,
+                        lineHeight: 1,
+                        filter: "drop-shadow(0 1px 2px rgba(245, 158, 11, 0.35))",
+                        cursor: esCristian ? "pointer" : "default",
+                      }}
+                      title={
+                        esCristian
+                          ? `⭐ Fecha Especial: ${fechaEspecial.titulo} (Clic para editar)`
+                          : `⭐ Fecha Especial: ${fechaEspecial.titulo}`
+                      }
+                    >
+                      {fechaEspecial.icono || "⭐"}
+                    </span>
+                  )}
+
+                  {esCristian && !tieneEstrellita && esSeleccionado && !isMobile && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        abrirModalEstrellita?.(c.iso, null);
+                      }}
+                      style={{
+                        background: "#fef3c7",
+                        border: "1px solid #fde68a",
+                        borderRadius: 4,
+                        padding: "1px 4px",
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: "#92400e",
+                        cursor: "pointer",
+                        lineHeight: 1,
+                        marginLeft: 2,
+                      }}
+                      title="Poner estrellita en este día para Camila"
+                    >
+                      +⭐
+                    </button>
+                  )}
+                </div>
 
                 {!isMobile && (
                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -711,9 +1129,9 @@ function CalendarioMensualSection({
                       </span>
                     )}
 
-                    {evts.length > 0 && (
+                    {evtsTrabajo.length > 0 && (
                       <div style={{ display: "flex", gap: 3 }}>
-                        {evts.slice(0, 3).map((e) => (
+                        {evtsTrabajo.slice(0, 3).map((e) => (
                           <span
                             key={e.id}
                             style={{
@@ -730,9 +1148,25 @@ function CalendarioMensualSection({
                 )}
               </div>
 
-              {/* Eventos y Festivo: en móvil se muestran compactos, en escritorio con descripción clara */}
+              {/* Eventos, Estrellita y Festivo */}
               {isMobile ? (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, marginTop: 2 }}>
+                  {tieneEstrellita && (
+                    <span
+                      style={{
+                        fontSize: 9,
+                        lineHeight: 1,
+                        color: "#92400e",
+                        background: "#fef3c7",
+                        padding: "1px 3px",
+                        borderRadius: 3,
+                        fontWeight: 800,
+                      }}
+                      title={fechaEspecial.titulo}
+                    >
+                      {fechaEspecial.icono || "⭐"}
+                    </span>
+                  )}
                   {esFestivo && (
                     <span
                       style={{
@@ -749,9 +1183,9 @@ function CalendarioMensualSection({
                       🇨🇴
                     </span>
                   )}
-                  {evts.length > 0 && (
+                  {evtsTrabajo.length > 0 && (
                     <div style={{ display: "flex", justifyContent: "center", gap: 2.5 }}>
-                      {evts.slice(0, 3).map((e) => (
+                      {evtsTrabajo.slice(0, 3).map((e) => (
                         <span
                           key={e.id}
                           style={{
@@ -767,6 +1201,32 @@ function CalendarioMensualSection({
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 3, marginTop: 4 }}>
+                  {tieneEstrellita && (
+                    <div
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: "#92400e",
+                        background: "linear-gradient(135deg, #fef3c7, #fef9c3)",
+                        border: "1px solid #fde68a",
+                        borderRadius: 4,
+                        padding: "2px 5px",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                        boxShadow: "0 1px 2px rgba(245, 158, 11, 0.08)",
+                      }}
+                      title={`⭐ Fecha Especial: ${fechaEspecial.titulo}`}
+                    >
+                      <span style={{ fontSize: 10 }}>{fechaEspecial.icono || "⭐"}</span>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {fechaEspecial.titulo}
+                      </span>
+                    </div>
+                  )}
                   {esFestivo && (
                     <div
                       style={{
@@ -792,7 +1252,7 @@ function CalendarioMensualSection({
                       </span>
                     </div>
                   )}
-                  {evts.slice(0, esFestivo ? 1 : 2).map((e) => {
+                  {evtsTrabajo.slice(0, tieneEstrellita ? (esFestivo ? 1 : 1) : (esFestivo ? 1 : 2)).map((e) => {
                     const conf = TIPOS_COMPROMISO[e.tipo] || TIPOS_COMPROMISO.visita;
                     return (
                       <div
@@ -814,9 +1274,9 @@ function CalendarioMensualSection({
                       </div>
                     );
                   })}
-                  {evts.length > (esFestivo ? 1 : 2) && (
+                  {evtsTrabajo.length > (tieneEstrellita ? (esFestivo ? 1 : 1) : (esFestivo ? 1 : 2)) && (
                     <span style={{ fontSize: 9.5, color: "var(--text-muted, #94a3b8)", fontWeight: 700 }}>
-                      +{evts.length - (esFestivo ? 1 : 2)} más
+                      +{evtsTrabajo.length - (tieneEstrellita ? (esFestivo ? 1 : 1) : (esFestivo ? 1 : 2))} más
                     </span>
                   )}
                 </div>
@@ -831,6 +1291,19 @@ function CalendarioMensualSection({
 
 export default function Agenda({ ctx }) {
   const hoyIso = useMemo(() => toIso(new Date()), []);
+
+  // Identificación de permisos de usuario para privacidad de las fechas especiales
+  const esCristianReal = Boolean(
+    esUsuarioCristian(ctx?.membresia, ctx?.authUserEmail) || ctx?.esSuperAdminCristian
+  );
+  const esCamilaReal = Boolean(
+    esUsuarioCamila(ctx?.membresia, ctx?.authUserEmail)
+  );
+
+  // Selector de simulación para Cristian (le permite ver el calendario exactamente como Camila o como un tercero)
+  const [vistaRolSimulada, setVistaRolSimulada] = useState("auto");
+  const esCristian = vistaRolSimulada === "auto" ? esCristianReal : (vistaRolSimulada === "cristian");
+  const esCamila = vistaRolSimulada === "auto" ? esCamilaReal : (vistaRolSimulada === "camila");
 
   // Fuente de datos
   const compromisos = useMemo(() => {
@@ -847,6 +1320,11 @@ export default function Agenda({ ctx }) {
     }
   };
 
+  // Compromisos filtrados según permisos (las fechas especiales solo las ven Cristian y Camila)
+  const compromisosVisibles = useMemo(() => {
+    return filtrarAgendaPorPermiso(compromisos, { esCristian, esCamila });
+  }, [compromisos, esCristian, esCamila]);
+
   // Estados principales
   const [vista, setVista] = useState("mes"); // "mes" | "agenda"
   const [fechaSeleccionada, setFechaSeleccionada] = useState(hoyIso);
@@ -859,7 +1337,152 @@ export default function Agenda({ ctx }) {
     return { anio: ahora.getFullYear(), mes: ahora.getMonth() };
   });
 
-  // Modal de creación / edición
+  // Modal de fechas especiales con estrellitas (Cristian para Camila)
+  const [modalEstrellitaAbierto, setModalEstrellitaAbierto] = useState(false);
+  const [itemEstrellitaEdicion, setItemEstrellitaEdicion] = useState(null);
+  const [fechaEstrellitaInicial, setFechaEstrellitaInicial] = useState(hoyIso);
+
+  const abrirModalEstrellita = (fecha = fechaSeleccionada, item = null) => {
+    setFechaEstrellitaInicial(fecha || fechaSeleccionada || hoyIso);
+    setItemEstrellitaEdicion(item || null);
+    setModalEstrellitaAbierto(true);
+  };
+
+  const guardarEstrellita = ({ id, fecha, titulo, notas, hora, icono }) => {
+    const payload = {
+      id: id || `ESP-${Date.now()}`,
+      tipo: "especial",
+      titulo: titulo.trim() || "⭐ Fecha Especial",
+      obra: "Fecha Especial",
+      cliente: "Camila Sepúlveda",
+      ciudad: "",
+      fecha: fecha,
+      hora: hora || "",
+      contacto: "Cristian Flores",
+      telefono: "",
+      notas: notas.trim(),
+      requerimientoSst: "",
+      linkReunion: "",
+      estado: "pendiente",
+      prioridad: "estrella",
+      icono: icono || "⭐",
+      creadoPor: "Cristian Flores",
+    };
+
+    setCompromisos((prev) => {
+      const sinPrevio = (prev || []).filter((c) => c.id !== payload.id);
+      return [payload, ...sinPrevio];
+    });
+
+    setModalEstrellitaAbierto(false);
+
+    if (typeof ctx?.saveAllToCloud === "function") {
+      ctx.saveAllToCloud().catch((err) => {
+        console.warn("No se pudo guardar la estrellita en la nube:", err);
+      });
+    }
+
+    setNotificacionEnvio({
+      tipo: "success",
+      mensaje: `⭐ Estrellita guardada para el ${formatFechaLarga(fecha)}. Solo le saldrá a Camila en su calendario.`,
+    });
+    setTimeout(() => {
+      setNotificacionEnvio((prev) => (prev?.tipo === "success" ? null : prev));
+    }, 6000);
+  };
+
+  const toggleEstrellitaRapida = (fecha, fechaEspecialExistente = null) => {
+    if (!esCristian || !fecha) return;
+
+    if (fechaEspecialExistente) {
+      setCompromisos((prev) => (prev || []).filter((c) => c.id !== fechaEspecialExistente.id));
+      if (typeof ctx?.saveAllToCloud === "function") {
+        ctx.saveAllToCloud().catch((err) => console.warn(err));
+      }
+      try {
+        if (typeof navigator !== "undefined" && navigator.vibrate) {
+          navigator.vibrate([30, 40, 30]);
+        }
+      } catch (_) {}
+
+      setNotificacionEnvio({
+        tipo: "success",
+        mensaje: `✓ Estrellita quitada del ${formatFechaLarga(fecha)}. (Doble clic o tap de nuevo para volver a ponerla).`,
+      });
+      setTimeout(() => {
+        setNotificacionEnvio((prev) => (prev?.tipo === "success" ? null : prev));
+      }, 4000);
+      return;
+    }
+
+    const payload = {
+      id: `ESP-${Date.now()}`,
+      tipo: "especial",
+      titulo: "⭐ Fecha Especial",
+      obra: "Fecha Especial",
+      cliente: "Camila Sepúlveda",
+      ciudad: "",
+      fecha: fecha,
+      hora: "",
+      contacto: "Cristian Flores",
+      telefono: "",
+      notas: "",
+      requerimientoSst: "",
+      linkReunion: "",
+      estado: "pendiente",
+      prioridad: "estrella",
+      icono: "⭐",
+      creadoPor: "Cristian Flores",
+      esEspecial: true,
+    };
+
+    setCompromisos((prev) => {
+      const sinPrevio = (prev || []).filter((c) => !(c.fecha === fecha && esCompromisoEspecial(c)));
+      return [payload, ...sinPrevio];
+    });
+
+    if (typeof ctx?.saveAllToCloud === "function") {
+      ctx.saveAllToCloud().catch((err) => {
+        console.warn("No se pudo guardar la estrellita en la nube:", err);
+      });
+    }
+
+    try {
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate(60);
+      }
+    } catch (_) {}
+
+    setNotificacionEnvio({
+      tipo: "success",
+      mensaje: `⭐ ¡Estrellita puesta automáticamente para el ${formatFechaLarga(fecha)}! Solo le saldrá a Camila.`,
+      accion: {
+        label: "Editar dedicatoria ✍️",
+        onClick: () => abrirModalEstrellita(fecha, payload),
+      },
+    });
+    setTimeout(() => {
+      setNotificacionEnvio((prev) => (prev?.tipo === "success" ? null : prev));
+    }, 6000);
+  };
+
+  const eliminarFechaEspecial = (id) => {
+    if (window.confirm("¿Deseas quitar esta estrellita y fecha especial?")) {
+      setCompromisos((prev) => (prev || []).filter((c) => c.id !== id));
+      if (typeof ctx?.saveAllToCloud === "function") {
+        ctx.saveAllToCloud().catch((err) => console.warn(err));
+      }
+      setNotificacionEnvio({
+        tipo: "success",
+        mensaje: "✓ Estrellita eliminada del calendario.",
+      });
+      setTimeout(() => {
+        setNotificacionEnvio((prev) => (prev?.tipo === "success" ? null : prev));
+      }, 4000);
+    }
+  };
+
+  // Modal de creación / edición de compromiso normal
   const [modalAbierto, setModalAbierto] = useState(false);
   const [itemEdicion, setItemEdicion] = useState(null);
 
@@ -875,18 +1498,19 @@ export default function Agenda({ ctx }) {
   const [formNotas, setFormNotas] = useState("");
   const [formSst, setFormSst] = useState("");
   const [formLink, setFormLink] = useState("");
+  const [formEsEspecial, setFormEsEspecial] = useState(false);
   const [notificacionEnvio, setNotificacionEnvio] = useState(null);
 
   // Mapeo de eventos por fecha
   const eventosPorFecha = useMemo(() => {
     const map = {};
-    compromisos.forEach((item) => {
+    compromisosVisibles.forEach((item) => {
       if (!item.fecha) return;
       if (!map[item.fecha]) map[item.fecha] = [];
       map[item.fecha].push(item);
     });
     return map;
-  }, [compromisos]);
+  }, [compromisosVisibles]);
 
   // Cuadrícula del mes
   const celdasMes = useMemo(() => {
@@ -940,8 +1564,12 @@ export default function Agenda({ ctx }) {
 
   // Filtrado de compromisos
   const compromisosFiltrados = useMemo(() => {
-    return compromisos.filter((item) => {
-      if (filtroTipo !== "todos" && item.tipo !== filtroTipo) return false;
+    return compromisosVisibles.filter((item) => {
+      if (filtroTipo === "especial") {
+        if (!esCompromisoEspecial(item)) return false;
+      } else if (filtroTipo !== "todos" && item.tipo !== filtroTipo) {
+        return false;
+      }
       if (busqueda.trim()) {
         const q = busqueda.toLowerCase();
         const texto = `${item.titulo || ""} ${item.obra || ""} ${item.cliente || ""} ${item.contacto || ""} ${item.notas || ""}`.toLowerCase();
@@ -949,7 +1577,7 @@ export default function Agenda({ ctx }) {
       }
       return true;
     });
-  }, [compromisos, filtroTipo, busqueda]);
+  }, [compromisosVisibles, filtroTipo, busqueda]);
 
   // Compromisos del día seleccionado
   const eventosDelDia = useMemo(() => {
@@ -958,7 +1586,9 @@ export default function Agenda({ ctx }) {
 
   // Conteo de tareas pendientes de hoy
   const estadisticas = useMemo(() => {
-    const pendientes = compromisos.filter((c) => c.fecha === hoyIso && c.estado !== "completado");
+    const pendientes = compromisosVisibles.filter(
+      (c) => c.fecha === hoyIso && c.estado !== "completado" && !esCompromisoEspecial(c)
+    );
     return {
       visitas: pendientes.filter((c) => c.tipo === "visita").length,
       llamadas: pendientes.filter((c) => c.tipo === "llamada").length,
@@ -966,7 +1596,7 @@ export default function Agenda({ ctx }) {
       coordinaciones: pendientes.filter((c) => c.tipo === "coordinacion").length,
       totalHoy: pendientes.length,
     };
-  }, [compromisos, hoyIso]);
+  }, [compromisosVisibles, hoyIso]);
 
   // Acciones
   const toggleCompletado = (id) => {
@@ -995,6 +1625,7 @@ export default function Agenda({ ctx }) {
     setFormNotas("");
     setFormSst("");
     setFormLink("");
+    setFormEsEspecial(false);
     setModalAbierto(true);
   };
 
@@ -1012,6 +1643,7 @@ export default function Agenda({ ctx }) {
     setFormNotas(item.notas || "");
     setFormSst(item.requerimientoSst || "");
     setFormLink(item.linkReunion || "");
+    setFormEsEspecial(esCompromisoEspecial(item));
     setModalAbierto(true);
   };
 
@@ -1024,7 +1656,7 @@ export default function Agenda({ ctx }) {
 
     const payload = {
       id: itemEdicion?.id || `AG-${Date.now()}`,
-      tipo: formTipo,
+      tipo: formEsEspecial ? "especial" : formTipo,
       titulo: formTitulo.trim() || `${TIPOS_COMPROMISO[formTipo]?.label || "Compromiso"} - ${formObra.trim()}`,
       obra: formObra.trim(),
       cliente: formCliente.trim(),
@@ -1037,7 +1669,8 @@ export default function Agenda({ ctx }) {
       requerimientoSst: formSst.trim(),
       linkReunion: formLink.trim(),
       estado: itemEdicion?.estado || "pendiente",
-      prioridad: itemEdicion?.prioridad || "normal",
+      prioridad: formEsEspecial ? "estrella" : (itemEdicion?.prioridad || "normal"),
+      esEspecial: formEsEspecial,
     };
 
     setCompromisos((prev) => {
@@ -1046,6 +1679,10 @@ export default function Agenda({ ctx }) {
       }
       return [payload, ...prev];
     });
+
+    if (typeof ctx?.saveAllToCloud === "function") {
+      ctx.saveAllToCloud().catch((e) => console.warn(e));
+    }
 
     setModalAbierto(false);
 
@@ -1164,6 +1801,30 @@ export default function Agenda({ ctx }) {
           {notificacionEnvio.tipo === "success" && <span style={{ fontSize: 15 }}>✓</span>}
           {notificacionEnvio.tipo === "error" && <span style={{ fontSize: 15 }}>⚠</span>}
           <span>{notificacionEnvio.mensaje}</span>
+          {notificacionEnvio.accion && (
+            <button
+              type="button"
+              onClick={() => {
+                const act = notificacionEnvio.accion.onClick;
+                setNotificacionEnvio(null);
+                act?.();
+              }}
+              style={{
+                background: "#fef3c7",
+                color: "#92400e",
+                border: "1px solid #fde68a",
+                borderRadius: 999,
+                padding: "3px 10px",
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                marginLeft: 4,
+              }}
+            >
+              {notificacionEnvio.accion.label}
+            </button>
+          )}
           {notificacionEnvio.tipo !== "loading" && (
             <button
               type="button"
@@ -1333,6 +1994,78 @@ export default function Agenda({ ctx }) {
               </button>
             </div>
 
+            {/* Control exclusivo de Cristian: Simulación de Vista */}
+            {esCristianReal && (
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 3,
+                  background: "linear-gradient(135deg, rgba(254, 243, 199, 0.5), rgba(255, 251, 235, 0.8))",
+                  border: "1px solid #fde68a",
+                  padding: "2px 6px",
+                  borderRadius: 8,
+                }}
+                title="Herramienta de Cristian Flores: cambia la vista para comprobar cómo se ve el calendario para Camila y para otros usuarios"
+              >
+                <span style={{ fontSize: 10.5, fontWeight: 700, color: "#92400e", padding: "0 3px" }}>
+                  Ver como:
+                </span>
+                {[
+                  { id: "auto", label: "Cristian ⭐" },
+                  { id: "camila", label: "Camila 🌸" },
+                  { id: "operativo", label: "Otros 👥" },
+                ].map((rol) => (
+                  <button
+                    key={rol.id}
+                    type="button"
+                    onClick={() => setVistaRolSimulada(rol.id)}
+                    style={{
+                      padding: "3px 7px",
+                      fontSize: 10.5,
+                      fontWeight: 700,
+                      borderRadius: 6,
+                      border: "none",
+                      cursor: "pointer",
+                      background: vistaRolSimulada === rol.id ? "#f59e0b" : "transparent",
+                      color: vistaRolSimulada === rol.id ? "#ffffff" : "#92400e",
+                    }}
+                  >
+                    {rol.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {esCristian && (
+              <button
+                type="button"
+                style={{
+                  background: "linear-gradient(135deg, #fef3c7, #fef9c3)",
+                  color: "#92400e",
+                  border: "1px solid #fde68a",
+                  borderRadius: 8,
+                  padding: "6px 14px",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  boxShadow: "0 1px 3px rgba(245, 158, 11, 0.15)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  whiteSpace: "nowrap",
+                }}
+                onClick={() => {
+                  const fechaEspecialDelDia = eventosDelDia.find(esCompromisoEspecial);
+                  abrirModalEstrellita(fechaSeleccionada, fechaEspecialDelDia);
+                }}
+                title="Poner o editar una estrellita con fecha especial para Camila"
+              >
+                <span>⭐</span>
+                <span>Poner Estrellita</span>
+              </button>
+            )}
+
             <button
               type="button"
               style={{
@@ -1411,6 +2144,7 @@ export default function Agenda({ ctx }) {
               { id: "llamada", label: "Llamadas" },
               { id: "reunion", label: "Reuniones" },
               { id: "coordinacion", label: "Coordinación" },
+              ...((esCristian || esCamila) ? [{ id: "especial", label: "⭐ Fechas Especiales" }] : []),
             ].map((f) => (
               <button
                 key={f.id}
@@ -1451,6 +2185,10 @@ export default function Agenda({ ctx }) {
             eliminarCompromiso={eliminarCompromiso}
             enviarWhatsApp={enviarWhatsApp}
             abrirWaze={abrirWaze}
+            esCristian={esCristian}
+            esCamila={esCamila}
+            abrirModalEstrellita={abrirModalEstrellita}
+            eliminarFechaEspecial={eliminarFechaEspecial}
           />
           {/* Calendario Mensual Completo ABAJO */}
           <CalendarioMensualSection
@@ -1462,6 +2200,11 @@ export default function Agenda({ ctx }) {
             eventosPorFecha={eventosPorFecha}
             fechaSeleccionada={fechaSeleccionada}
             setFechaSeleccionada={setFechaSeleccionada}
+            esCristian={esCristian}
+            esCamila={esCamila}
+            compromisos={compromisosVisibles}
+            abrirModalEstrellita={abrirModalEstrellita}
+            toggleEstrellitaRapida={toggleEstrellitaRapida}
           />
         </div>
       )}
@@ -1957,6 +2700,33 @@ export default function Agenda({ ctx }) {
               )}
 
 
+              {/* Opción de estrellita para Cristian */}
+              {esCristian && (
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "9px 12px",
+                    borderRadius: 8,
+                    background: formEsEspecial ? "#fef3c7" : "var(--surface-subtle, #f8fafc)",
+                    border: formEsEspecial ? "1px solid #fde68a" : "1px solid var(--border, #e2e8f0)",
+                    cursor: "pointer",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: formEsEspecial ? "#92400e" : "var(--text-main, #0f172a)",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={formEsEspecial}
+                    onChange={(e) => setFormEsEspecial(e.target.checked)}
+                    style={{ accentColor: "#f59e0b", width: 16, height: 16, cursor: "pointer" }}
+                  />
+                  <span>⭐ Marcar con Estrellita como Fecha Especial (Solo visible para Camila y tú)</span>
+                </label>
+              )}
+
               {/* Botones de acción del modal */}
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 10 }}>
                 <button
@@ -1977,6 +2747,16 @@ export default function Agenda({ ctx }) {
           </div>
         </div>
       )}
+
+      {/* Modal para poner / editar Estrellita en Fecha Especial (Cristian para Camila) */}
+      <ModalEstrellitaEspecial
+        abierto={modalEstrellitaAbierto}
+        onCerrar={() => setModalEstrellitaAbierto(false)}
+        fechaInicial={fechaEstrellitaInicial}
+        itemEdicion={itemEstrellitaEdicion}
+        onGuardar={guardarEstrellita}
+        onEliminar={eliminarFechaEspecial}
+      />
     </div>
   );
 }

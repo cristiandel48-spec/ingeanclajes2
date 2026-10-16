@@ -38,8 +38,14 @@ function PastillaBoton({ tono, onClick, children, ...props }) {
   );
 }
 
+import {
+  esUsuarioCristian,
+  esUsuarioCamila,
+  filtrarAgendaPorPermiso,
+} from "../../lib/agendaEspecial";
+
 export default function Topbar({ scr, dark, onToggleTheme, isMobile, onOpenMenu, acciones }) {
-  const { membresia, usuariosEnLinea, esSuperAdminCristian, irAPantalla, agenda } = useAppData();
+  const { membresia, authUserEmail, usuariosEnLinea, esSuperAdminCristian, irAPantalla, agenda } = useAppData();
   // En el telefono el nombre largo se recortaba con puntos suspensivos:
   // «Recordatorio de agendas y visi…». El corto ya estaba en navigation.jsx.
   const title = isMobile ? getScreenShort(scr) : getScreenTitle(scr);
@@ -56,8 +62,11 @@ export default function Topbar({ scr, dark, onToggleTheme, isMobile, onOpenMenu,
 
   const totalManana = useMemo(() => {
     if (!Array.isArray(agenda)) return 0;
-    return agenda.filter((item) => item.fecha === mananaIso && item.estado !== "completado").length;
-  }, [agenda, mananaIso]);
+    const esCristian = esUsuarioCristian(membresia, authUserEmail) || esSuperAdminCristian;
+    const esCamila = esUsuarioCamila(membresia, authUserEmail);
+    const visible = filtrarAgendaPorPermiso(agenda, { esCristian, esCamila });
+    return visible.filter((item) => item.fecha === mananaIso && item.estado !== "completado").length;
+  }, [agenda, mananaIso, membresia, authUserEmail, esSuperAdminCristian]);
 
   const destinoMenu = useMemo(() => {
     if (!membresia) return "dashboard";

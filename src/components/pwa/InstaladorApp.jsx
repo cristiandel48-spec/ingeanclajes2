@@ -51,20 +51,87 @@ export function usePWAInstallPrompt() {
   return { prompt, isStandalone, deferredPromptGlobal };
 }
 
+// Un paso numerado de las instrucciones.
+function Paso({ n, children }) {
+  return (
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+      <div
+        style={{
+          width: 28, height: 28, borderRadius: "50%",
+          background: "#0f172a", color: "#ffffff",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontWeight: 800, fontSize: 12, flexShrink: 0,
+        }}
+      >
+        {n}
+      </div>
+      <div style={{ fontSize: 13, lineHeight: 1.4, color: "#334155" }}>{children}</div>
+    </div>
+  );
+}
+
+// Teclas y nombres de menu, para que se distingan del texto corrido.
+function Tecla({ children }) {
+  return (
+    <span style={{ background: "#e2e8f0", padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>
+      {children}
+    </span>
+  );
+}
+
+// Encabezado de cada bloque de instrucciones de escritorio. La pastilla marca
+// el navegador que la persona tiene delante, para que no lea los tres.
+function TituloBloque({ children, esElSuyo }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+      <div style={{ fontSize: 12.5, fontWeight: 800, color: "#0f172a" }}>{children}</div>
+      {esElSuyo && (
+        <span
+          style={{
+            fontSize: 10, fontWeight: 700, letterSpacing: ".4px", textTransform: "uppercase",
+            background: "#dcfce7", color: "#166534", padding: "3px 8px", borderRadius: 999,
+          }}
+        >
+          Tu navegador
+        </span>
+      )}
+    </div>
+  );
+}
+
+// Que tiene delante quien abre el modal.
+//
+// Safari de Mac se mira aparte porque no tiene el boton de instalar en la
+// barra de direcciones: ahi se hace por el menu Archivo. Sin distinguirlo, la
+// guia de escritorio mandaba a buscar un icono que en ese navegador no existe.
+function detectarDispositivo() {
+  if (typeof navigator === "undefined") return { dispositivo: "pc", esSafariDeMac: false };
+
+  const ua = navigator.userAgent || "";
+  // Un iPad en «modo escritorio» se presenta como Macintosh; lo unico que lo
+  // delata es que tiene pantalla tactil. Un Mac reporta cero.
+  const esTactil = (navigator.maxTouchPoints || 0) > 1;
+  const esIOS = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && esTactil);
+  const esAndroid = /Android/.test(ua);
+
+  return {
+    dispositivo: esIOS ? "ios" : esAndroid ? "android" : "pc",
+    esSafariDeMac:
+      /Macintosh/.test(ua) && !esTactil &&
+      /Safari/.test(ua) && !/Chrome|Chromium|Edg|OPR/.test(ua),
+  };
+}
+
 // Modal interactivo con guia paso a paso segun el dispositivo del usuario
 export function ModalInstaladorApp({ abierto, onClose }) {
-  const [dispositivo, setDispositivo] = useState("auto"); // 'ios' | 'android' | 'pc'
-  const { prompt } = usePWAInstallPrompt();
-
-  useEffect(() => {
-    if (typeof navigator === "undefined") return;
-    const ua = navigator.userAgent || "";
-    const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
-    const isAndroid = /Android/.test(ua);
-    if (isIOS) setDispositivo("ios");
-    else if (isAndroid) setDispositivo("android");
-    else setDispositivo("pc");
-  }, []);
+  // Se mira al crear el estado y no en un efecto: el dato ya esta disponible
+  // en el primer dibujo, asi que no hay un parpadeo con la pestaña equivocada.
+  const [detectado] = useState(detectarDispositivo);
+  const [dispositivo, setDispositivo] = useState(detectado.dispositivo); // 'ios' | 'android' | 'pc'
+  const esSafariDeMac = detectado.esSafariDeMac;
+  // No se usa el valor, pero suscribe el modal: si el navegador ofrece el
+  // instalador mientras esta abierto, aparece el boton de un toque.
+  usePWAInstallPrompt();
 
   if (!abierto) return null;
 
@@ -288,197 +355,84 @@ export function ModalInstaladorApp({ abierto, onClose }) {
                 <strong>Importante en iPhone:</strong> Abre este enlace en <strong>Safari</strong> (Apple solo permite instalar PWAs desde Safari).
               </div>
 
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                <div
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: "50%",
-                    background: "#0f172a",
-                    color: "#ffffff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontWeight: 800,
-                    fontSize: 12,
-                    flexShrink: 0,
-                  }}
-                >
-                  1
-                </div>
-                <div style={{ fontSize: 13, lineHeight: 1.4, color: "#334155" }}>
-                  En la parte inferior de Safari, toca el botón <strong>Compartir</strong> (el ícono del cuadro con flecha hacia arriba <span style={{ background: "#e2e8f0", padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>[ ↑ ]</span>).
-                </div>
-              </div>
-
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                <div
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: "50%",
-                    background: "#0f172a",
-                    color: "#ffffff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontWeight: 800,
-                    fontSize: 12,
-                    flexShrink: 0,
-                  }}
-                >
-                  2
-                </div>
-                <div style={{ fontSize: 13, lineHeight: 1.4, color: "#334155" }}>
-                  Baja en el menú y selecciona <strong>"Agregar al inicio"</strong> <span style={{ background: "#e2e8f0", padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>[ ⊞ ]</span>.
-                </div>
-              </div>
-
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                <div
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: "50%",
-                    background: "#0f172a",
-                    color: "#ffffff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontWeight: 800,
-                    fontSize: 12,
-                    flexShrink: 0,
-                  }}
-                >
-                  3
-                </div>
-                <div style={{ fontSize: 13, lineHeight: 1.4, color: "#334155" }}>
-                  Toca <strong>"Agregar"</strong> en la esquina superior derecha. ¡Listo! Ya queda con su ícono en tu iPhone.
-                </div>
-              </div>
+              <Paso n={1}>
+                En la parte inferior de Safari, toca el botón <strong>Compartir</strong> (el ícono del cuadro con flecha hacia arriba <Tecla>↑</Tecla>).
+              </Paso>
+              <Paso n={2}>
+                Baja en el menú y selecciona <strong>«Agregar al inicio»</strong> <Tecla>⊞</Tecla>.
+              </Paso>
+              <Paso n={3}>
+                Toca <strong>«Agregar»</strong> en la esquina superior derecha. Ya queda con su ícono en tu iPhone.
+              </Paso>
             </div>
           )}
 
           {dispositivo === "android" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                <div
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: "50%",
-                    background: "#0f172a",
-                    color: "#ffffff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontWeight: 800,
-                    fontSize: 12,
-                    flexShrink: 0,
-                  }}
-                >
-                  1
-                </div>
-                <div style={{ fontSize: 13, lineHeight: 1.4, color: "#334155" }}>
-                  Abre la app en <strong>Google Chrome</strong> en tu celular.
-                </div>
-              </div>
-
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                <div
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: "50%",
-                    background: "#0f172a",
-                    color: "#ffffff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontWeight: 800,
-                    fontSize: 12,
-                    flexShrink: 0,
-                  }}
-                >
-                  2
-                </div>
-                <div style={{ fontSize: 13, lineHeight: 1.4, color: "#334155" }}>
-                  Toca los <strong>tres puntos verticales (⋮)</strong> arriba a la derecha en Chrome.
-                </div>
-              </div>
-
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                <div
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: "50%",
-                    background: "#0f172a",
-                    color: "#ffffff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontWeight: 800,
-                    fontSize: 12,
-                    flexShrink: 0,
-                  }}
-                >
-                  3
-                </div>
-                <div style={{ fontSize: 13, lineHeight: 1.4, color: "#334155" }}>
-                  Toca <strong>"Instalar aplicación"</strong> o <strong>"Agregar a la pantalla principal"</strong> y confirma.
-                </div>
-              </div>
+              <Paso n={1}>
+                Abre la app en <strong>Google Chrome</strong> en tu celular.
+              </Paso>
+              <Paso n={2}>
+                Toca los <strong>tres puntos verticales</strong> <Tecla>⋮</Tecla> arriba a la derecha.
+              </Paso>
+              <Paso n={3}>
+                Toca <strong>«Instalar aplicación»</strong> o <strong>«Agregar a la pantalla principal»</strong> y confirma.
+              </Paso>
             </div>
           )}
 
           {dispositivo === "pc" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                <div
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: "50%",
-                    background: "#0f172a",
-                    color: "#ffffff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontWeight: 800,
-                    fontSize: 12,
-                    flexShrink: 0,
-                  }}
-                >
-                  1
-                </div>
-                <div style={{ fontSize: 13, lineHeight: 1.4, color: "#334155" }}>
-                  En <strong>Google Chrome</strong> o <strong>Microsoft Edge</strong>, busca el ícono de <strong>Instalar</strong> <span style={{ background: "#e2e8f0", padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>[ ⊕ ]</span> en la barra de direcciones (a la derecha de la URL).
-                </div>
-              </div>
-
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                <div
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: "50%",
-                    background: "#0f172a",
-                    color: "#ffffff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontWeight: 800,
-                    fontSize: 12,
-                    flexShrink: 0,
-                  }}
-                >
-                  2
-                </div>
-                <div style={{ fontSize: 13, lineHeight: 1.4, color: "#334155" }}>
-                  Haz clic en <strong>"Instalar"</strong>. Se creará un acceso directo en tu escritorio y barra de tareas.
-                </div>
-              </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+              {/* El navegador que la persona tiene delante va primero: si esta
+                  en Safari, los pasos de Chrome no le sirven de nada. */}
+              {[
+                esSafariDeMac ? "safari" : "chrome",
+                esSafariDeMac ? "chrome" : "safari",
+              ].map((cual) => (
+                cual === "safari" ? (
+                  <div key="safari">
+                    <TituloBloque esElSuyo={esSafariDeMac}>Safari en Mac</TituloBloque>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      <Paso n={1}>
+                        En la barra de arriba abre el menú <strong>Archivo</strong> (<em>File</em> si tu Mac está en inglés).
+                      </Paso>
+                      <Paso n={2}>
+                        Elige <strong>«Añadir al Dock…»</strong> <Tecla>Add to Dock…</Tecla>
+                      </Paso>
+                      <Paso n={3}>
+                        Deja el nombre <strong>Ingeanclajes</strong> y pulsa <strong>Añadir</strong>. Queda en el Dock con su ícono y se abre en su propia ventana, sin barra de direcciones.
+                      </Paso>
+                      <div
+                        style={{
+                          background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 10,
+                          padding: "10px 12px", fontSize: 12, color: "#92400e", lineHeight: 1.45,
+                        }}
+                      >
+                        {/* No se dice «los de abajo»: segun el navegador que detecte, el
+                            bloque de Chrome puede quedar encima de este. */}
+                        <strong>Si no aparece «Añadir al Dock»:</strong> esa opción llegó con macOS Sonoma (14).
+                        En un Mac más antiguo no se puede instalar desde Safari; abre la página en Chrome o
+                        Edge y sigue los pasos de ese navegador.
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div key="chrome">
+                    <TituloBloque esElSuyo={!esSafariDeMac}>Chrome o Edge</TituloBloque>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      <Paso n={1}>
+                        Busca el ícono de <strong>Instalar</strong> <Tecla>⊕</Tecla> en la barra de direcciones, a la derecha de la dirección de la página.
+                      </Paso>
+                      <Paso n={2}>
+                        Si no está, abre el menú <strong>⋮</strong> y entra en <strong>Guardar y compartir</strong> o <strong>Más herramientas</strong>, donde aparece <strong>«Instalar Ingeanclajes»</strong>.
+                      </Paso>
+                      <Paso n={3}>
+                        Haz clic en <strong>Instalar</strong>. Queda como una aplicación más, con su acceso directo.
+                      </Paso>
+                    </div>
+                  </div>
+                )
+              ))}
             </div>
           )}
 

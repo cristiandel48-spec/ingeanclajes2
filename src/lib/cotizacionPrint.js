@@ -1609,7 +1609,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
         grid-template-columns: 0.8fr 1.2fr;
         gap: 8mm;
         align-items: center;
-        margin-top: 4mm;
+        margin-top: 2mm;
       }
       /* El dibujo y la columna de llamadas miden EXACTAMENTE lo mismo, y
          por eso se fija el alto en las dos en vez de dejarlo al contenido:
@@ -1673,8 +1673,8 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       /* Cuando ya hubo llamadas al lado del dibujo, lo general va debajo y
          en dos columnas, para no estirar la hoja. */
       .ficha-sistema-datos--pie {
-        margin-top: 6mm;
-        padding-top: 4mm;
+        margin-top: 4mm;
+        padding-top: 3mm;
         border-top: 1px solid #000;
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -1745,12 +1745,18 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       // Comprobado contra las flechas del render original: 14 y 33 caen en
       // el absorbedor y en el cable, y por la misma proporcion el tensor
       // queda en 84. Si se reajusta el recorte hay que repasarlos.
+      // El titulo va corto -una sola linea- y el detalle completo en el
+      // cuerpo. Con el titulo largo ocupaba dos lineas y las dos primeras
+      // llamadas acababan montandose una sobre otra.
       llamadas: [
-        ["14%", "Soporte superior con absorbedor de energía",
-          "Fija el extremo alto de la línea de vida a la estructura. El absorbedor se despliega ante una caída y disipa parte de la energía del impacto, de modo que la fuerza que llega al trabajador y a la estructura se mantiene dentro de los valores admisibles."],
-        ["33%", "Cable de acero con alma de acero, SAE 316",
-          "Es el elemento por el que se desplaza el trabajador mientras sube o baja. El alma de acero le da estabilidad dimensional y reduce el alargamiento bajo carga; la calidad SAE 316 le aporta resistencia a la corrosión, por lo que admite instalación a la intemperie y en ambientes agresivos."],
-        ["84%", "Soporte inferior y tensor de línea de vida",
+        ["14%", "Soporte superior",
+          "Con absorbedor de energía. Fija el extremo alto de la línea de vida a la estructura. El absorbedor se despliega ante una caída y disipa parte de la energía del impacto, de modo que la fuerza que llega al trabajador y a la estructura se mantiene dentro de los valores admisibles."],
+        // El cable recorre toda la escalera, asi que su llamada no tiene
+        // una altura unica: se baja al 45% para separarla de la de arriba.
+        // A 33% los dos bloques de texto se montaban 1mm.
+        ["45%", "Cable de acero",
+          "Con alma de acero, SAE 316. Es el elemento por el que se desplaza el trabajador mientras sube o baja. El alma de acero reduce el alargamiento bajo carga, y la calidad SAE 316 le aporta resistencia a la corrosión, por lo que admite instalación a la intemperie y en ambientes agresivos."],
+        ["84%", "Soporte inferior y tensor",
           "Ancla el extremo bajo del cable y permite regular su tensión. Mantener la tensión correcta evita holguras que alargarían el recorrido de caída, y es el punto donde el sistema se reajusta en cada inspección periódica."],
       ],
       notas: [

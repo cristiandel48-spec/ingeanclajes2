@@ -8,6 +8,7 @@ import LBL from "../../components/ui/LBL";
 import NuevoEmpleadoRapido from "../../components/NuevoEmpleadoRapido";
 import { useEffect, useState } from "react";
 import { B, CD, PAL, SI, ST } from "../../styles/tokens";
+import { MONO } from "../../styles/designTokens";
 import GuiaFlujoObra from "./GuiaFlujoObra";
 import { fmt, fmtD, today } from "../../lib/format";
 import { resumenBitacora } from "../../lib/bitacoraObra";
@@ -185,9 +186,12 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           >
             ← Obras
           </button>
-          {!isMobile && <div style={{ width: 1, height: 32, background: "var(--border, #e5e5ea)", flexShrink: 0 }} />}
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          {!isMobile && <div style={{ width: 1, height: 24, background: "var(--border, #e5e5ea)", flexShrink: 0 }} />}
+          {/* Las etiquetas van en la MISMA linea que el boton de volver.
+              Antes colgaban de una columna al lado, asi que quedaban por
+              encima del boton y la linea de metadatos por debajo: tres
+              alturas distintas en la misma fila. */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minWidth: 0 }}>
               <Badge estado={oAct.estado} />
               <button
                 type="button"
@@ -238,40 +242,10 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                   </>
                 )}
               </button>
-              {cotVinc && (
-                <span
-                  onClick={() => irAPantalla("cotizacion", { cotizacionId: cotVinc.id })}
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    fontFamily: "monospace",
-                    color: "var(--text-main, #1d1d1f)",
-                    background: "var(--surface-subtle, #f5f5f7)",
-                    border: "1px solid var(--border, #d2d2d7)",
-                    borderRadius: 6,
-                    padding: "2px 7px",
-                    cursor: "pointer",
-                  }}
-                  title="Clic para ver la cotización de referencia completa"
-                >
-                  <span style={{ color: "#0071e3" }}>{cotVinc.numero}</span> ↗
-                </span>
-              )}
-            </div>
-            <div
-              style={{
-                fontSize: 11.5,
-                color: "var(--text-muted, #6e6e73)",
-                marginTop: 4,
-                whiteSpace: isMobile ? "normal" : "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                lineHeight: 1.4,
-              }}
-              title={`${oAct.id} · ${fmtD(oAct.fechaInicio)} → ${fmtD(oAct.fechaFin) || "En curso"} · ${oAct.proyecto} · 📍 ${oAct.ciudad}${oAct.direccion ? ` · ${oAct.direccion}` : ""}`}
-            >
-              <strong style={{ fontFamily: "monospace", color: "var(--text-main, #1d1d1f)", fontWeight: 600 }}>{oAct.id}</strong> · {fmtD(oAct.fechaInicio)} → {fmtD(oAct.fechaFin) || "En curso"} · {oAct.proyecto} · 📍 {oAct.ciudad}{oAct.direccion ? ` · ${oAct.direccion}` : ""}
-            </div>
+              {/* El chip con el numero de cotizacion se quito: la tarjeta
+                  que viene justo debajo ya es «COTIZACION DE REFERENCIA
+                  C-26161», con su enlace para abrirla. Aqui solo se
+                  encabalgaba con el boton de volver y repetia el dato. */}
           </div>
         </div>
 
@@ -424,6 +398,27 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             <span>{mostrarGuia ? "Ocultar qué sigue" : "Qué sigue"}</span>
           </button>
         </div>
+        </div>
+
+        {/* Metadatos en su propia fila, a todo el ancho y debajo de todo.
+            Iban apretados en la columna de la izquierda, donde se cortaban
+            con puntos suspensivos («13 de oct de 2026 → En curs…») teniendo
+            la fila entera libre. */}
+        <div
+          style={{
+            fontSize: 11.5,
+            color: "var(--text-muted, #6e6e73)",
+            lineHeight: 1.4,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: isMobile ? "normal" : "nowrap",
+          }}
+          title={`${oAct.id} · ${fmtD(oAct.fechaInicio)} → ${fmtD(oAct.fechaFin) || "En curso"} · ${oAct.proyecto} · ${oAct.ciudad}${oAct.direccion ? ` · ${oAct.direccion}` : ""}`}
+        >
+          <strong style={{ fontFamily: MONO, color: "var(--text-main, #1d1d1f)", fontWeight: 600 }}>{oAct.id}</strong>
+          {" · "}{fmtD(oAct.fechaInicio)} → {fmtD(oAct.fechaFin) || "En curso"}
+          {" · "}{oAct.proyecto}
+          {" · "}{oAct.ciudad}{oAct.direccion ? ` · ${oAct.direccion}` : ""}
         </div>
       </div>
 

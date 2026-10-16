@@ -283,10 +283,15 @@ export default function CertificacionDocumento({cert}){
           boxSizing: "border-box",
           display: "flex",
           flexDirection: "column",
-          // Sin `space-between`: repartia el sitio sobrante ENTRE los bloques
-          // y abria un hueco enorme justo encima de la firma cuando el
-          // certificado tenia poco texto. Ahora el contenido va seguido y lo
-          // que sobra queda al final, antes del pie, que es donde no estorba.
+          // El sitio que sobra en la hoja se reparte entre todos los
+          // bloques, no se acumula en un solo hueco.
+          //
+          // Esto ya estaba, pero no servia de nada: la firma llevaba
+          // `marginTop:auto`, y en flexbox los margenes automaticos se comen
+          // el espacio libre ANTES de que `space-between` lo reparta. Asi que
+          // todo lo que sobraba de pagina se abria de golpe encima de la
+          // firma. Quitado ese `auto`, el reparto vuelve a funcionar.
+          justifyContent: "space-between",
         }}
       >
 
@@ -435,10 +440,9 @@ export default function CertificacionDocumento({cert}){
             display: "flex",
             justifyContent: "space-between",
             alignItems: "flex-end",
-            // La firma va detras de las recomendaciones, separada por un
-            // espacio normal. Antes llevaba `marginTop:auto` y se pegaba al
-            // fondo de la hoja, dejando el hueco en blanco de en medio.
-            marginTop: 28,
+            // Sin `marginTop:auto`: era lo que acaparaba todo el espacio
+            // sobrante de la hoja y lo dejaba en un solo hueco encima.
+            marginTop: 12,
             marginBottom: 6,
             breakInside: "avoid",
           }}
@@ -526,10 +530,7 @@ export default function CertificacionDocumento({cert}){
           style={{
             borderTop: "1px solid #cbd5e1",
             paddingTop: 4,
-            // El pie si se queda abajo del todo: es el unico bloque que debe
-            // ir pegado al borde de la hoja, y asi lo que sobra de pagina
-            // queda entre la firma y el, en vez de partir el documento.
-            marginTop: "auto",
+            marginTop: 4,
             textAlign: "center",
             fontSize: 8,
             color: "#64748b",

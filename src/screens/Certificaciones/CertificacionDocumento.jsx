@@ -218,7 +218,7 @@ export default function CertificacionDocumento({cert}){
         background: "#fff",
         color: "#111",
         fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-        fontSize: 10.5,
+        fontSize: 12,
         lineHeight: 1.45,
         border: "1px solid #ddd",
         borderRadius: 4,
@@ -311,36 +311,36 @@ export default function CertificacionDocumento({cert}){
             marginBottom: 8,
           }}
         >
-          <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: 1.5, color: "#991b1b", textTransform: "uppercase" }}>
+          <div style={{ fontSize: 13.5, fontWeight: 800, letterSpacing: 1.5, color: "#991b1b", textTransform: "uppercase" }}>
             {esRecertificacion ? "Recertificación Oficial de Sistemas Anticaídas" : "Certificación Oficial de Sistemas Anticaídas"}
           </div>
-          <div style={{ fontSize: 9, color: "#64748b", fontWeight: 600, letterSpacing: 0.3, marginTop: 1 }}>
+          <div style={{ fontSize: 10.5, color: "#64748b", fontWeight: 600, letterSpacing: 0.3, marginTop: 1 }}>
             En estricto cumplimiento con la Resolución 4272 de 2021 del Ministerio del Trabajo & Norma ANSI Z359
           </div>
         </div>
 
         {/* Destinatario y Metadatos */}
         <div style={{ marginBottom: 8 }}>
-          <div style={{ fontSize: 10, color: "#475569", marginBottom: 2 }}>Envigado, {fmtL(cert.fecha || hoy())}</div>
-          <div style={{ fontSize: 10.5, fontWeight: 800, color: "#0f172a" }}>SEÑORES:</div>
-          <div style={{ fontSize: 12.5, fontWeight: 800, color: "#0f172a", margin: "1px 0" }}>{(cert.cliente||"").toUpperCase()}</div>
-          {cert.nit && <div style={{ fontSize: 10, color: "#334155" }}>NIT: <strong>{cert.nit}</strong></div>}
-          {cert.direccion && <div style={{ fontSize: 10, color: "#334155" }}>DIRECCIÓN: <strong>{cert.direccion.toUpperCase()}</strong></div>}
+          <div style={{ fontSize: 11.5, color: "#475569", marginBottom: 2 }}>Envigado, {fmtL(cert.fecha || hoy())}</div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "#0f172a" }}>SEÑORES:</div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", margin: "1px 0" }}>{(cert.cliente||"").toUpperCase()}</div>
+          {cert.nit && <div style={{ fontSize: 11.5, color: "#334155" }}>NIT: <strong>{cert.nit}</strong></div>}
+          {cert.direccion && <div style={{ fontSize: 11.5, color: "#334155" }}>DIRECCIÓN: <strong>{cert.direccion.toUpperCase()}</strong></div>}
         </div>
 
         {/* Emisor Oficial */}
-        <div style={{ textAlign: "center", fontWeight: 900, fontSize: 13.5, color: "#0f172a", letterSpacing: 1, marginBottom: 6 }}>
+        <div style={{ textAlign: "center", fontWeight: 900, fontSize: 15, color: "#0f172a", letterSpacing: 1, marginBottom: 6 }}>
           INGEANCLAJES S.A.S
         </div>
 
         {/* Texto del Sistema Certificado */}
-        <div style={{ textAlign: "justify", marginBottom: 8, lineHeight: 1.5, fontSize: 10.5, color: "#1e293b" }}>
+        <div style={{ textAlign: "justify", marginBottom: 8, lineHeight: 1.5, fontSize: 12, color: "#1e293b" }}>
           {renderTextoSistema(cert)}
         </div>
 
         {/* Elementos Estructurales Certificados */}
         <div style={{ marginBottom: 6 }}>
-          <div style={{ fontWeight: 700, fontSize: 10.5, color: "#0f172a", marginBottom: 3 }}>
+          <div style={{ fontWeight: 700, fontSize: 12, color: "#0f172a", marginBottom: 3 }}>
             Componentes y elementos utilizados en dicha labor:
           </div>
           <div style={{
@@ -351,7 +351,7 @@ export default function CertificacionDocumento({cert}){
             marginBottom: 4,
           }}>
             {elementos.map((el, i) => (
-              <div key={i} style={{ fontSize: 10, color: "#334155", display: "flex", alignItems: "center", gap: 5 }}>
+              <div key={i} style={{ fontSize: 11.5, color: "#334155", display: "flex", alignItems: "center", gap: 5 }}>
                 <span style={{ width: 4.5, height: 4.5, background: "#c81e1e", borderRadius: "50%", flexShrink: 0 }} />
                 <span>{el}</span>
               </div>
@@ -360,7 +360,7 @@ export default function CertificacionDocumento({cert}){
         </div>
 
         {/* Cierre Técnico de los Componentes */}
-        <div style={{ textAlign: "justify", marginBottom: 6, lineHeight: 1.45, fontSize: 10, color: "#334155" }}>
+        <div style={{ textAlign: "justify", marginBottom: 6, lineHeight: 1.45, fontSize: 11.5, color: "#334155" }}>
           Dichos componentes garantizan la fijación, retención y detención segura de los trabajadores durante la ejecución de labores con riesgo de caída en alturas. Todos los elementos que componen los sistemas certificados se encuentran en excelente estado técnico y operativo.
         </div>
 
@@ -390,26 +390,26 @@ export default function CertificacionDocumento({cert}){
                 alignItems: "center",
                 justifyContent: "center",
                 fontWeight: 800,
-                fontSize: 11,
+                fontSize: 12.5,
                 flexShrink: 0,
               }}
             >
               ✓
             </div>
             <div>
-              <div style={{ fontSize: 10.5, fontWeight: 800, color: "#166534", textTransform: "uppercase", letterSpacing: 0.2 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#166534", textTransform: "uppercase", letterSpacing: 0.2 }}>
                 Certificación Vigente y Homologada
               </div>
-              <div style={{ fontSize: 9, color: "#15803d", marginTop: 1 }}>
+              <div style={{ fontSize: 10.5, color: "#15803d", marginTop: 1 }}>
                 Apta para auditorías SST, visitas de ARL e inspección de trabajo en alturas.
               </div>
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 8.5, fontWeight: 700, color: "#166534", textTransform: "uppercase" }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "#166534", textTransform: "uppercase" }}>
               Próxima Inspección Anual
             </div>
-            <div style={{ fontSize: 10.5, fontWeight: 800, color: "#0f172a", marginTop: 1 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#0f172a", marginTop: 1 }}>
               {cert.proxMant ? `Antes del ${fmtL(cert.proxMant)}` : "Plazo máximo: 12 meses"}
             </div>
           </div>
@@ -417,19 +417,19 @@ export default function CertificacionDocumento({cert}){
 
         {/* Recomendaciones Técnicas */}
         <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 6, padding: "7px 12px", marginBottom: 8, breakInside: "avoid" }}>
-          <div style={{ fontWeight: 800, marginBottom: 3, fontSize: 10, color: "#0f172a", textTransform: "uppercase", letterSpacing: 0.3 }}>
+          <div style={{ fontWeight: 800, marginBottom: 3, fontSize: 11.5, color: "#0f172a", textTransform: "uppercase", letterSpacing: 0.3 }}>
             RECOMENDACIONES PARA TENER EN CUENTA
           </div>
-          <div style={{ fontSize: 9.5, marginBottom: 3, textAlign: "justify", color: "#334155" }}>
+          <div style={{ fontSize: 11, marginBottom: 3, textAlign: "justify", color: "#334155" }}>
             A continuación, se realizan algunas recomendaciones para preservar en buen estado los sistemas anticaídas certificados en dicha sede:
           </div>
-          <ul style={{ marginLeft: 14, fontSize: 9.5, lineHeight: 1.45, marginBottom: 3, color: "#334155", paddingLeft: 0 }}>
+          <ul style={{ marginLeft: 14, fontSize: 11, lineHeight: 1.45, marginBottom: 3, color: "#334155", paddingLeft: 0 }}>
             <li style={{ margin: "1px 0" }}>Dar aviso de inmediato en caso de registrarse algún evento de caída o impacto para su valoración y diagnóstico.</li>
             <li style={{ margin: "1px 0" }}>Conectar como máximo dos personas por cada línea de vida o en cada tramo entre soportes laterales e intermedios.</li>
             <li style={{ margin: "1px 0" }}>No modificar ningún elemento del sistema, ya que puede perder sus funciones y generar riesgo para los usuarios.</li>
             <li style={{ margin: "1px 0" }}>Limpiar de inmediato las estructuras u otros elementos que entren en contacto con químicos en el área.</li>
           </ul>
-          <div style={{ fontSize: 9, textAlign: "justify", lineHeight: 1.4, color: "#475569" }}>
+          <div style={{ fontSize: 10.5, textAlign: "justify", lineHeight: 1.4, color: "#475569" }}>
             Estas recomendaciones son de carácter técnico; su cumplimiento es obligatorio para minimizar el riesgo en trabajo en alturas. Se debe realizar el próximo mantenimiento preventivo de todo el sistema máximo dentro de un (1) año contado a partir de la expedición del presente documento{cert.proxMant ? " (antes del " + fmtL(cert.proxMant) + ")" : "."}.
           </div>
         </div>
@@ -449,14 +449,14 @@ export default function CertificacionDocumento({cert}){
         >
           {/* Firma del Ingeniero */}
           <div style={{ minWidth: 200 }}>
-            <div style={{ fontSize: 10, color: "#475569", marginBottom: 2 }}>Cordialmente,</div>
+            <div style={{ fontSize: 11.5, color: "#475569", marginBottom: 2 }}>Cordialmente,</div>
             <div style={{ height: 44, display: "flex", alignItems: "flex-end" }}>
               {firmaImg && <img src={firmaImg} alt="Firma" style={{ maxHeight: 42, maxWidth: 190, objectFit: "contain" }}/>}
             </div>
             <div style={{ borderTop: "1.5px solid #0f172a", paddingTop: 3, display: "inline-block", minWidth: 200 }}>
-              <div style={{ fontWeight: 800, fontSize: 11, color: "#0f172a" }}>{cert.ingeniero}</div>
-              <div style={{ fontSize: 9, color: "#475569", fontWeight: 600 }}>{cert.cargo || "Gerente General"}</div>
-              <div style={{ fontSize: 8.5, fontWeight: 700, color: "#0f172a" }}>{cert.matricula}</div>
+              <div style={{ fontWeight: 800, fontSize: 12.5, color: "#0f172a" }}>{cert.ingeniero}</div>
+              <div style={{ fontSize: 10.5, color: "#475569", fontWeight: 600 }}>{cert.cargo || "Gerente General"}</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#0f172a" }}>{cert.matricula}</div>
             </div>
           </div>
 
@@ -481,10 +481,10 @@ export default function CertificacionDocumento({cert}){
                 flexShrink: 0,
               }}
             >
-              <div style={{ fontSize: 6.5, fontWeight: 800, letterSpacing: 0.3, textTransform: "uppercase" }}>SISTEMA CONFORME</div>
-              <div style={{ fontSize: 10, margin: "1px 0" }}>⚙️</div>
-              <div style={{ fontSize: 7.5, fontWeight: 900, lineHeight: 1.1 }}>RES. 4272<br/>2021</div>
-              <div style={{ fontSize: 5.5, fontWeight: 700, letterSpacing: 0.2 }}>INGEANCLAJES</div>
+              <div style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 0.3, textTransform: "uppercase" }}>SISTEMA CONFORME</div>
+              <div style={{ fontSize: 11.5, margin: "1px 0" }}>⚙️</div>
+              <div style={{ fontSize: 9, fontWeight: 900, lineHeight: 1.1 }}>RES. 4272<br/>2021</div>
+              <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: 0.2 }}>INGEANCLAJES</div>
             </div>
 
             {/* Código QR con Folio */}
@@ -514,10 +514,10 @@ export default function CertificacionDocumento({cert}){
               ) : (
                 <div style={{ width: 80, height: 80, background: "#e2e8f0", borderRadius: 3 }}/>
               )}
-              <div style={{ fontSize: 7.5, color: "#475569", lineHeight: 1.3, maxWidth: 110 }}>
-                <strong style={{ fontSize: 9, color: "#0f172a", display: "block", marginBottom: 2 }}>VERIFICACIÓN DIGITAL</strong>
+              <div style={{ fontSize: 9, color: "#475569", lineHeight: 1.3, maxWidth: 110 }}>
+                <strong style={{ fontSize: 10.5, color: "#0f172a", display: "block", marginBottom: 2 }}>VERIFICACIÓN DIGITAL</strong>
                 Escanea para validar autenticidad y vigencia
-                <div style={{ fontFamily: "monospace", fontSize: 9, fontWeight: 800, color: "#c81e1e", marginTop: 3 }}>
+                <div style={{ fontFamily: "monospace", fontSize: 10.5, fontWeight: 800, color: "#c81e1e", marginTop: 3 }}>
                   FOLIO: {folioDoc}
                 </div>
               </div>
@@ -532,7 +532,7 @@ export default function CertificacionDocumento({cert}){
             paddingTop: 4,
             marginTop: 4,
             textAlign: "center",
-            fontSize: 8,
+            fontSize: 9.5,
             color: "#64748b",
             display: "flex",
             justifyContent: "space-between",

@@ -280,6 +280,30 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
   // que esa pieza aparece en el dibujo, con una linea fina hasta ella, como
   // en una ficha tecnica. `notas` es lo que no apunta a ninguna pieza en
   // particular -normativa, material- y va debajo.
+  // Convierte un recorte en una ampliacion que lo haga llenar su caja.
+  //
+  // Con `clip-path` solo, el dibujo salia diminuto: recorta lo que se ve,
+  // pero el elemento sigue ocupando el ancho de la imagen ENTERA. Como la
+  // columna mide 90mm y del ancho original solo se conserva unos 31, el
+  // objeto quedaba en 28mm de ancho, y agrandar la caja no servia de nada
+  // porque lo que manda es el ancho de la imagen completa.
+  //
+  // Aqui se amplia la imagen hasta que el trozo conservado llena el alto de
+  // la caja, y se desplaza para centrar ese trozo. La caja recorta lo que
+  // sobra. Vale para dibujos altos y estrechos, que es lo que hay; uno
+  // apaisado habria que ajustarlo por ancho.
+  const ampliarRecorte = (recorte) => {
+    const [arr, der, aba, izq] = recorte.split(/\s+/).map(parseFloat);
+    const altoConservado = (100 - arr - aba) / 100;
+    const escala = 1 / altoConservado;
+    // Centro del trozo conservado, en fraccion de la imagen.
+    const cx = (izq / 100 + (100 - der) / 100) / 2;
+    const cy = (arr / 100 + (100 - aba) / 100) / 2;
+    // El desplazamiento va DESPUES de escalar -por eso scale() primero-,
+    // asi que los porcentajes son del tamaño sin escalar.
+    return `scale(${escala.toFixed(4)}) translate(${((0.5 - cx) * 100).toFixed(2)}%, ${((0.5 - cy) * 100).toFixed(2)}%)`;
+  };
+
   const fichaSistema = ({ titulo, imagen, alt, recorte, llamadas = [], notas = [] }) => `
     <section class="page appendix-page">
       <div class="page-inner">
@@ -288,7 +312,16 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
           <h3 class="doc-h3">${escapeHtml(titulo)}</h3>
           <div class="ficha-sistema">
             <div class="ficha-sistema-img">
-              <img src="${imagen}" alt="${escapeHtml(alt)}" style="clip-path: inset(${recorte});" />
+              <!-- Los dos hacen falta: clip-path quita lo que sobra -el
+                   logotipo del proveedor y sus recuadros de texto-, y el
+                   transform amplia lo que queda. Solo con el transform, la
+                   caja es mas ancha que el recorte y vuelven a asomar los
+                   recuadros por los lados. -->
+              <img
+                src="${imagen}"
+                alt="${escapeHtml(alt)}"
+                style="clip-path: inset(${recorte}); transform: ${ampliarRecorte(recorte)};"
+              />
             </div>
             ${llamadas.length ? `
               <div class="ficha-llamadas">
@@ -1566,10 +1599,15 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       /* Ficha de sistema: dibujo a la izquierda, caracteristicas a la
          derecha. El recorte de la imagen se hace con clip-path, asi que el
          archivo original no se toca y se puede reajustar en una linea. */
+      /* El dibujo no necesita media hoja: es alto y estrecho, y de su
+         columna solo ocupa unos 40mm de ancho. Lo que sobra se le da al
+         texto, que con descripciones detalladas lo agradece: con las dos
+         columnas iguales, los bloques salian tan altos que las dos
+         primeras llamadas se montaban una sobre otra. */
       .ficha-sistema {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10mm;
+        grid-template-columns: 0.8fr 1.2fr;
+        gap: 8mm;
         align-items: center;
         margin-top: 4mm;
       }
@@ -1578,14 +1616,23 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
          la altura de cada llamada es un porcentaje de su columna, asi que
          si una caja fuera mas alta que la otra las llamadas dejarian de
          caer sobre su pieza. */
+      /* 155mm: medido. Con las descripciones detalladas y el pie, la ficha
+         ocupa 205,8mm de los 208,4 que deja el area util de la hoja. Subir
+         este valor desborda a una segunda hoja; bajarlo acerca entre si
+         las dos primeras llamadas hasta que se montan. */
       .ficha-sistema-img,
       .ficha-llamadas { height: 155mm; }
       .ficha-sistema-img {
         display: flex; align-items: center; justify-content: center;
+        /* Recorta lo que la ampliacion saca de la caja. */
+        overflow: hidden;
       }
       .ficha-sistema-img img {
-        max-width: 100%;
-        max-height: 100%;
+        /* Se ajusta al alto de la caja ANTES de ampliar; la ampliacion la
+           calcula ampliarRecorte() a partir del recorte. */
+        height: 100%;
+        width: auto;
+        max-width: none;
         object-fit: contain;
       }
       /* Llamadas: cada una a la altura de la pieza que describe, con una
@@ -1678,10 +1725,14 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       // escalera y lo demas se escribe aqui abajo como texto del documento.
       recorte: "4% 12% 2% 52%",
       notas: [
-        ["Normatividad", "Resolución 4272 de 2021 del Ministerio del Trabajo y EN 795:2012."],
-        ["Estructura", "Tubería redonda de 2″ en los largueros y de 1 ½″ en los peldaños."],
-        ["Montaje", "Peldaños cada 30 cm y 40 cm de ancho, conforme a la norma."],
-        ["Material", "Acero estructural 1040."],
+        ["Normatividad",
+          "Cumple la Resolución 4272 de 2021 del Ministerio del Trabajo de Colombia y la norma EN 795:2012, aplicables a los sistemas de acceso y a los dispositivos de anclaje para trabajo en alturas."],
+        ["Largueros",
+          "Tubería redonda de 2″ de diámetro, que es el elemento que recibe la carga y la transmite a los soportes de fijación a la estructura."],
+        ["Peldaños",
+          "Tubería redonda de 1 ½″ de diámetro, instalados cada 30 cm y con un ancho útil de 40 cm, de acuerdo con la norma existente."],
+        ["Material",
+          "Acero estructural 1040 en toda la escalera, con acabado y protección definidos según el ambiente de instalación."],
       ],
     }) : ""}
     ${showVerticalLifelineAppendix ? fichaSistema({
@@ -1689,16 +1740,24 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       imagen: articoLineaVidaVertical,
       alt: "Sistema de línea de vida vertical sobre escalera fija",
       recorte: "3% 32% 2% 37%",
-      // El alto de cada llamada es donde queda esa pieza dentro del recorte.
-      // Si se reajusta el recorte hay que repasarlos.
+      // El alto de cada llamada es la posicion de esa pieza DENTRO del
+      // recorte, porque el recorte ampliado llena la caja de arriba abajo.
+      // Comprobado contra las flechas del render original: 14 y 33 caen en
+      // el absorbedor y en el cable, y por la misma proporcion el tensor
+      // queda en 84. Si se reajusta el recorte hay que repasarlos.
       llamadas: [
-        ["14%", "Soporte superior", "Con absorbedor de energía"],
-        ["33%", "Cable de acero", "Con alma de acero, SAE 316"],
-        ["82%", "Soporte inferior", "Con tensor de línea de vida"],
+        ["14%", "Soporte superior con absorbedor de energía",
+          "Fija el extremo alto de la línea de vida a la estructura. El absorbedor se despliega ante una caída y disipa parte de la energía del impacto, de modo que la fuerza que llega al trabajador y a la estructura se mantiene dentro de los valores admisibles."],
+        ["33%", "Cable de acero con alma de acero, SAE 316",
+          "Es el elemento por el que se desplaza el trabajador mientras sube o baja. El alma de acero le da estabilidad dimensional y reduce el alargamiento bajo carga; la calidad SAE 316 le aporta resistencia a la corrosión, por lo que admite instalación a la intemperie y en ambientes agresivos."],
+        ["84%", "Soporte inferior y tensor de línea de vida",
+          "Ancla el extremo bajo del cable y permite regular su tensión. Mantener la tensión correcta evita holguras que alargarían el recorrido de caída, y es el punto donde el sistema se reajusta en cada inspección periódica."],
       ],
       notas: [
-        ["Normatividad", "Resolución 4272 de 2021 del Ministerio del Trabajo y EN 795:2012."],
-        ["Estructura", "Tubería de 2″ y peldaños de 1 ½″ cada 30 cm, en acero estructural 1040."],
+        ["Normatividad",
+          "Cumple la Resolución 4272 de 2021 del Ministerio del Trabajo de Colombia y la norma EN 795:2012, aplicables a los dispositivos de anclaje para protección contra caídas en trabajo en alturas."],
+        ["Estructura de la escalera",
+          "Largueros en tubería redonda de 2″ y peldaños en tubería redonda de 1 ½″. Los peldaños se instalan cada 30 cm y con un ancho de 40 cm, conforme a la norma. Fabricada en acero estructural 1040."],
       ],
     }) : ""}
     ${showTechnicalPage ? renderTechnicalPage() : ""}

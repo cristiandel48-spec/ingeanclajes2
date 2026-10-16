@@ -167,9 +167,9 @@ export default function NuevoEmpleadoRapido({ ctx, onCreado, onCerrar, obraId = 
         <button onClick={onCerrar} style={{ ...B("var(--surface-subtle)", "var(--text-muted)"), border: "1px solid var(--border)", fontSize: 12, padding: "6px 12px" }}>Cerrar</button>
       </div>
 
-      <AvisoFlujo tono="info" titulo="Solo los datos básicos: el resto lo completa Nómina">
+      <AvisoFlujo tono="info" titulo="Solo los datos básicos: el resto se completa en Personal">
         Con esto la persona queda registrada y puedes asignarle turnos de inmediato.
-        El <strong>salario, la cuenta bancaria y el contrato</strong> los define Nómina, que
+        El <strong>salario, la cuenta bancaria y el contrato</strong> se definen en Personal, que
         recibe la ficha marcada como pendiente por revisar.
       </AvisoFlujo>
 

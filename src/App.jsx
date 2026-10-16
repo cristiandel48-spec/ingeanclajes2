@@ -30,6 +30,10 @@ const Pagos = lazy(() => import("./screens/Pagos/Pagos"));
 const CuentasPagar = lazy(() => import("./screens/CuentasPagar/CuentasPagar"));
 const Contabilidad = lazy(() => import("./screens/Contabilidad/Contabilidad"));
 const Financiero = lazy(() => import("./screens/Financiero/Financiero"));
+
+// Horarios y Personal volvieron al menu, pero son de las pantallas mas pesadas
+// del programa: se siguen trayendo al entrar en ellas para que el arranque no
+// se vuelva lento otra vez.
 const Nomina = lazy(() => import("./screens/Nomina/Nomina"));
 const Horarios = lazy(() => import("./screens/Horarios/Horarios"));
 

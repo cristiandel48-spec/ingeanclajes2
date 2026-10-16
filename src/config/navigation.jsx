@@ -61,6 +61,13 @@ export const NAV_SECTIONS = [
       // Los precios de los que salen todas las cotizaciones.
       { id: "catalogo", label: "Catálogo y precios", short: "Catálogo" },
       { id: "obras", label: "Ejecución de obra", short: "Obras" },
+      // Los horarios se arman al lado de la obra: es donde se decide quien va
+      // a cada sitio y se le avisa.
+      { id: "horarios", label: "Horarios" },
+      // De nomina vuelve solo el area de personal: las fichas de la gente que
+      // despues se asigna a la obra y a los turnos. El resto del proceso
+      // (liquidacion, nominas generadas, colillas y planilla) sigue apagado.
+      { id: "nomina", label: "Personal y empleados", short: "Personal" },
       { id: "produccion", label: "Tareas con el equipo", short: "Tareas equipo" },
       { id: "fototeca", label: "Fototeca de obras", short: "Fototeca" },
     ],

@@ -410,12 +410,12 @@ export default function Horarios({ctx}){
             </button>
           ) : (
             <button onClick={()=>irAPantalla("nomina")} style={{...B("#f47c20"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}>
-              Ir a Nómina
+              Ir a Personal
             </button>
           )}
         >
           Regístralo aquí mismo con lo básico —nombre, cargo, cédula y celular— y podrás asignarle
-          turnos de inmediato. El salario y el contrato los completa Nómina después.
+          turnos de inmediato. El salario y el contrato se completan después en Personal.
         </AvisoFlujo>
       )}
 
@@ -428,7 +428,7 @@ export default function Horarios({ctx}){
             setForm((prev)=>({...prev,empleadoIds:[...new Set([...prev.empleadoIds,id])]}));
             window.alert(
               (info?.reactivado ? `${info.nombre} se reactivó.` : `${info?.nombre} quedó registrado.`) +
-              "\n\nYa está seleccionado para asignarle el turno. Nómina revisará su salario y contrato."
+              "\n\nYa está seleccionado para asignarle el turno. En Personal se le completan salario y contrato."
             );
           }}
         />
@@ -460,8 +460,8 @@ export default function Horarios({ctx}){
           ) : null}
         >
           Hace tres cosas de una sola vez: le <strong>avisa al trabajador por WhatsApp</strong>,
-          cuenta los <strong>días trabajados</strong> que se le cargan a esa obra en su pestaña de
-          Nómina, y llena la <strong>columna de turnos</strong> del informe de actividades.
+          cuenta los <strong>días trabajados</strong> que se le cargan a esa obra, y llena la
+          <strong> columna de turnos</strong> del informe de actividades.
           <div style={{marginTop:5}}>
             ¿No aparece la persona en la lista? Regístrala con el botón de arriba.
             ¿No aparece la obra? Créala en <strong>Ejecución de obra</strong>.

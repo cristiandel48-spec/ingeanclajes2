@@ -811,7 +811,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                   (info?.reactivado
                     ? `${info.nombre} se reactivó y quedó asignado a esta obra.`
                     : `${info?.nombre} quedó registrado y asignado a esta obra.`) +
-                  "\n\nYa puedes asignarle turnos en Horarios. Nómina revisará su salario y contrato."
+                  "\n\nYa puedes asignarle turnos en Horarios. En Personal se le completan salario y contrato."
                 );
               }}
             />

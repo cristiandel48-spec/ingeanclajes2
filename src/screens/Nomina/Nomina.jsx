@@ -3,8 +3,6 @@ import AvisoFlujo from "../../components/AvisoFlujo";
 import CampoTexto from "../../components/ui/CampoTexto";
 import H1 from "../../components/ui/H1";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
-import PasosNomina, { NavegacionPasos } from "./PasosNomina";
-import PeriodoCorte from "./PeriodoCorte";
 import LBL from "../../components/ui/LBL";
 import { useEffect, useState } from "react";
 import { B, CD, PAL, SI, ST } from "../../styles/tokens";
@@ -130,19 +128,6 @@ export default function Nomina({ctx}){
   const periodoNomina = buildNominaPeriodo(mes, corteNomina);
   const activos=empleadosBase.filter((empleado)=>empleado.activo);
   const resumenesActivos = activos.map((empleado)=>({ empleado, resumen:calcularResumenNominaEmpleado(empleado, periodoNomina) }));
-  const conteoNovedadesCorte = {
-    lista: activos.length,
-    he: empleadosBase.reduce((acc, e) =>
-      acc + (e.horasExtrasPorObra || []).filter(h => isDateInPeriodo(h.fecha, periodoNomina)).length +
-            (e.comisionesPorObra || []).filter(c => isDateInPeriodo(c.fecha, periodoNomina)).length,
-      0),
-    incapacidades: empleadosBase.reduce((acc, e) =>
-      acc + (e.incapacidades || []).filter(inc => isDateInPeriodo(inc.fechaInicio, periodoNomina) || isDateInPeriodo(inc.fechaFin, periodoNomina)).length,
-      0),
-    vacaciones: empleadosBase.filter(e => (e.vacacionesPagadasDias || 0) > 0).length,
-    deducciones: empleadosBase.filter(e => (e.deduccionesPersonalizadas || []).length > 0).length,
-    contratos: empleadosBase.filter(e => e.fechaSalida && isDateInPeriodo(e.fechaSalida, periodoNomina)).length,
-  };
   // Quien entra al corte y cuanto suma cada cosa lo decide buildNominaSnapshot,
   // que es lo que se genera, se imprime y se manda al banco. Aqui se rehacia el
   // mismo filtro y los mismos totales a mano y no los leia nadie: dos cuentas
@@ -596,81 +581,11 @@ export default function Nomina({ctx}){
     setTimeout(()=>setMensajeGuardadoNomina(""), 3500);
   };
 
+  // La barra de arriba traia el historial de nominas y los botones de guardar y
+  // corregir el corte. Eso es liquidacion, no personal: la pantalla quedo solo
+  // con las fichas de la gente, asi que la barra se va con ellos.
   useAccionesPantalla(
-    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "nowrap" }}>
-      {/* Consultar historial de nóminas */}
-      <button
-        type="button"
-        style={{
-          background: "#ffffff", color: "#1e293b", border: "1px solid #cbd5e1", borderRadius: 8,
-          padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer",
-          display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", height: 34
-        }}
-        onClick={() => setMostrarHistorialNominas(true)}
-        title="Consultar historial de nóminas generadas y archivadas"
-      >
-        📜 Consultar historial {nominasGeneradas?.length > 0 ? `(${nominasGeneradas.length})` : ""}
-      </button>
-
-      {/* Estado Guardada */}
-      {nominaEstaGenerada && !modoEdicionNomina && (
-        <span style={{
-          background: "#dcfce7", color: "#166534", border: "1px solid #bbf7d0",
-          borderRadius: 8, padding: "0 10px", fontSize: 11.5, fontWeight: 700,
-          display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", height: 34, boxSizing: "border-box"
-        }}>
-          ✓ Guardada
-        </span>
-      )}
-
-      {/* Modo Corrección / Edición */}
-      {modoEdicionNomina && (
-        <span style={{
-          background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a",
-          borderRadius: 8, padding: "0 10px", fontSize: 11.5, fontWeight: 700,
-          display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", height: 34, boxSizing: "border-box"
-        }}>
-          ✏️ Editando corte
-        </span>
-      )}
-
-      {/* Botón Editar nómina si ya está guardada */}
-      {nominaEstaGenerada && !modoEdicionNomina && (
-        <button
-          type="button"
-          style={{
-            background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe", borderRadius: 8,
-            padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer",
-            display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", height: 34
-          }}
-          onClick={() => {
-            setModoEdicionNomina(true);
-            setMensajeGuardadoNomina("✏️ Modo edición activo. Realiza las correcciones que necesites y vuelve a guardar.");
-            setTimeout(() => setMensajeGuardadoNomina(""), 4500);
-          }}
-          title="¿Hubo algún error o equivocación? Haz clic aquí para corregir novedades o deducciones"
-        >
-          ✏️ Editar nómina
-        </button>
-      )}
-
-      {/* Botón Guardar nómina */}
-      {(!nominaEstaGenerada || modoEdicionNomina) && (
-        <button
-          type="button"
-          style={{
-            background: "#166534", color: "#4ade80", border: "1px solid #14532d", borderRadius: 8,
-            padding: "6px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer",
-            display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", height: 34,
-            boxShadow: "0 1px 2px rgba(0,0,0,0.1)"
-          }}
-          onClick={generarNominaCorte}
-          title="Guardar y congelar la nómina de este corte"
-        >
-          💾 {modoEdicionNomina ? "Guardar nómina corregida" : "Guardar nómina"}
-        </button>
-      )}
-    </div>,
+    null,
     [tab, nominaEstaGenerada, modoEdicionNomina, nominasGeneradas, periodoNomina.id, diasVacPagar, empleadosBase]
   );
 
@@ -745,17 +660,12 @@ export default function Nomina({ctx}){
         </AvisoFlujo>
       )}
 
-      <PasosNomina activo={tab} onIr={setTab} conteos={conteoNovedadesCorte}/>
-
-      {/* Al dar de alta a alguien no hay corte que elegir, asi que ni aparece. */}
-      {tab!=="nuevo" && (
-        <PeriodoCorte
-          mes={mes} onMes={setMes}
-          corte={corteNomina} onCorte={setCorteNomina}
-          periodo={periodoNomina}
-          soloLectura={tab==="lista"}
-        />
-      )}
+      {/* De esta pantalla la empresa volvio a usar solo el area de personal:
+          crear, editar y listar las fichas de la gente que despues se asigna a
+          la obra y a los turnos. Por eso no esta la barra de pasos del proceso
+          de nomina ni el selector de corte: ese camino (horas extras,
+          incapacidades, vacaciones, contratos, planilla y colillas) sigue
+          escrito mas abajo, pero sin puerta de entrada hasta que se pida. */}
 
       {/* Banner de corrección activa si el usuario está editando una nómina guardada */}
       {modoEdicionNomina && (
@@ -967,7 +877,6 @@ export default function Nomina({ctx}){
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
               {empleadosBase.map((e,idx)=>{
-                const resumen=calcularResumenNominaEmpleado(e, periodoNomina);
                 return(
                 <div key={e.id} style={{background:"var(--surface-subtle, #f1f5f9)",borderRadius:10,padding:"14px 16px",border:selId===e.id?"1px solid #cc0000":"1px solid var(--border, #e2e8f0)",cursor:"pointer"}} onClick={()=>setSelId(selId===e.id?null:e.id)}>
                   <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
@@ -987,8 +896,9 @@ export default function Nomina({ctx}){
                       <div style={{background:"rgba(22, 163, 74, 0.12)",border:"1px solid rgba(22, 163, 74, 0.25)",borderRadius:6,padding:"7px 10px",fontSize:11,marginBottom:6,display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
                         <div><span style={{color:"var(--text-muted, #64748b)"}}>📅 Ingreso: </span><strong>{e.fechaIngreso||"N/A"}</strong></div>
                         <div><span style={{color:"var(--text-muted, #64748b)"}}>Contrato: </span><strong>{TIPOS_CONTRATO_LABELS[e.tipoContrato]||e.tipoContrato||"Sin definir"}</strong></div>
-                        <div><span style={{color:"var(--text-muted, #64748b)"}}>✈️ Vacac.: </span><strong style={{color:"#4ade80"}}>{vacacionesPendientes.dias}d</strong></div>
-                        <div><span style={{color:"var(--text-muted, #64748b)"}}>Días corte: </span><strong style={{color:"#60a5fa"}}>{resumen.diasNomina}</strong></div>
+                        {/* Ocupa el renglon entero: al quitar los dias del
+                            corte quedaba media casilla vacia al lado. */}
+                        <div style={{gridColumn:"span 2"}}><span style={{color:"var(--text-muted, #64748b)"}}>✈️ Vacac.: </span><strong style={{color:"#4ade80"}}>{vacacionesPendientes.dias}d</strong></div>
                       </div>
                     ) : null;
                   })()}
@@ -1037,32 +947,11 @@ export default function Nomina({ctx}){
                           </div>
                         </div>
                       )}
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:10}}>
-                        {[["Días laborados",resumen.diasNomina,"#2563eb"],["Días incapacidad",resumen.diasIncapacidad,"#dc2626"],["Salario corte",fmt(resumen.salario),"#4ade80"],["Incapacidad",fmt(resumen.incapacidadTotal),"#166534"],["Aux. transp.",fmt(resumen.auxilioTransporte),"#60b4ff"],["H. extras",fmt(resumen.horasExtras),"#f5c842"],["Comisiones",fmt(resumen.comisiones),"#c084fc"],["Salud 4%",fmt(resumen.salud),"#ef4444"],["Pensión 4%",fmt(resumen.pension),"#fb7185"],["Neto",fmt(resumen.neto),"#f47c20"]].map(([k,v,c])=>(
-                          <div key={k} style={{background:"var(--surface, #ffffff)",border:"1px solid var(--border, #e2e8f0)",borderRadius:6,padding:"8px 10px"}}><div style={{fontSize:9,color:"var(--text-muted, #64748b)",marginBottom:2}}>{k}</div><div style={{fontSize:11,fontWeight:700,color:c}}>{v}</div></div>
-                        ))}
-                      </div>
-                      <div style={{background:"var(--surface, #ffffff)",borderRadius:8,padding:"10px 12px",marginBottom:10,border:"1px solid var(--border, #e2e8f0)"}}>
-                        <div style={{fontSize:10,color:"var(--text-main, #142840)",fontWeight:700,textTransform:"uppercase",marginBottom:8}}>Deducciones personalizadas</div>
-                        {(e.deduccionesPersonalizadas||[]).length>0 ? (
-                          <div style={{display:"grid",gap:6,marginBottom:10}}>
-                            {(e.deduccionesPersonalizadas||[]).map((deduccion)=>(
-                              <div key={deduccion.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"var(--surface-subtle, #f8fafc)",border:"1px solid var(--border, #e2e8f0)",borderRadius:6,padding:"8px 10px",fontSize:11}}>
-                                <div><div style={{fontWeight:600,color:"var(--text-main, #0f172a)"}}>{deduccion.nombre}</div><div style={{color:"var(--text-muted, #64748b)"}}>{fmt(deduccion.valor)} mensual</div></div>
-                                <button type="button" onClick={()=>quitarDeduccion(e.id,deduccion.id)} style={{...B("#fee2e2","#b91c1c"),border:"1px solid #fecaca",padding:"6px 10px",fontSize:11}}>Quitar</button>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div style={{fontSize:11,color:"var(--text-muted, #64748b)",marginBottom:10}}>Sin deducciones adicionales.</div>
-                        )}
-                        <div style={{display:"grid",gridTemplateColumns:"1.3fr 1fr auto",gap:8}}>
-                          <div><LBL>Concepto</LBL><input value={dedForm.nombre} onChange={(event)=>setDedForm({...dedForm,nombre:event.target.value})} placeholder="Ej: Natillera" style={{...SI,fontSize:11}}/></div>
-                          <div><LBL>Valor mensual</LBL><input type="number" value={dedForm.valor} onChange={(event)=>setDedForm({...dedForm,valor:parseFloat(event.target.value)||0})} placeholder="0" style={{...SI,fontSize:11}}/></div>
-                          <button type="button" onClick={agregarDeduccion} style={{...B("#142840"),justifyContent:"center",alignSelf:"end"}}>Agregar</button>
-                        </div>
-                      </div>
-                      <button onClick={()=>{setShowHE(e.id);setTab("he");}} style={{...B("var(--surface-subtle, #142840)","#f5c842"),border:"1px solid var(--border, #7a6610)",fontSize:11,width:"100%",justifyContent:"center"}}>➕ Agregar horas extras / comisiones</button>
+                      {/* Aqui salian las cuentas del corte (dias, salud,
+                          pension, neto), las deducciones del empleado y el
+                          atajo a horas extras. Son del pago de la quincena, no
+                          de la ficha de la persona, y se fueron con el resto
+                          del proceso de nomina. */}
                     </div>
                   )}
                 </div>
@@ -2759,7 +2648,6 @@ export default function Nomina({ctx}){
         </div>
       )}
 
-      {tab!=="nuevo" && <NavegacionPasos activo={tab} onIr={setTab}/>}
     </div>
   );
 }

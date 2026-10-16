@@ -93,17 +93,49 @@ export function normalizeQuoteItem(item = {}, index = 0) {
   };
 }
 
+// El mismo tipo de trabajo llega escrito de varias formas: el id de siempre
+// -"puntos_anclaje"-, que es el que guardan las cotizaciones viejas; el que
+// sale de normalizar el nombre de la categoria del catalogo -"anclajes"-, que
+// es el que guarda el selector desde que la lista se arma con el catalogo; y
+// el nombre tal cual -"Puntos de anclaje"-. Todo el programa compara contra
+// UN solo valor, el de siempre, para que lo guardado antes y lo que se elige
+// ahora signifiquen lo mismo: sin esto, elegir «Anclajes» dejaba la propuesta
+// sin la foto del punto de anclaje y «Estructuras Metálicas» sin su campo de
+// especificaciones ni su definicion en el documento.
+export function tipoCotizacionCanonico(tipo) {
+  const t = String(tipo || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+  if (!t) return "";
+  if (t.includes("anclaje")) return "puntos_anclaje";
+  if (t.includes("linea") || t.includes("vida")) return "linea_vida";
+  if (t.includes("estructura") || t.includes("metalic")) return "estructuras_metalicas";
+  if (t.includes("blanca")) return "obra_blanca";
+  if (t.includes("escaler")) return "escaleras";
+  if (t.includes("caminad") || t.includes("pasarel")) return "caminaderos";
+  if (t.includes("sistema")) return "sistemas_completos";
+  if (t.includes("servicio")) return "servicios";
+  // Una categoria que el cliente agregue al catalogo se queda con su propio id.
+  return t;
+}
+
+const ETIQUETAS_TIPO = {
+  linea_vida: "Línea de vida",
+  puntos_anclaje: "Puntos de anclaje",
+  obra_blanca: "Obra blanca",
+  estructuras_metalicas: "Estructuras metálicas",
+  escaleras: "Escaleras",
+  caminaderos: "Caminaderos",
+  sistemas_completos: "Sistemas completos",
+  servicios: "Servicios",
+};
+
 export function getTipoCotizacionLabel(tipo) {
   if (!tipo) return "Línea de vida";
-  const t = String(tipo).trim().toLowerCase();
-  if (t === "linea_vida" || t === "lineas de vida" || t === "lineas_vida" || t === "lineasdevida") return "Línea de vida";
-  if (t === "puntos_anclaje" || t === "anclajes" || t === "punto_anclaje") return "Puntos de anclaje";
-  if (t === "obra_blanca") return "Obra blanca";
-  if (t === "estructuras_metalicas" || t === "estructuras metálicas") return "Estructuras metálicas";
-  if (t === "escaleras" || t === "escalera") return "Escaleras";
-  if (t === "sistemas_completos" || t === "sistemas completos") return "Sistemas completos";
-  if (t === "servicios" || t === "servicio") return "Servicios";
-  if (t === "caminaderos" || t === "caminadero") return "Caminaderos";
+  const etiqueta = ETIQUETAS_TIPO[tipoCotizacionCanonico(tipo)];
+  if (etiqueta) return etiqueta;
   const str = String(tipo).trim();
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
@@ -122,7 +154,7 @@ export function buildQuoteProposal(propuesta = {}, index = 0) {
 
   const tipoCotizacion = propuesta.tipoCotizacion || "linea_vida";
   let fotos = Array.isArray(propuesta.fotos) ? propuesta.fotos : [];
-  if (tipoCotizacion === "puntos_anclaje") {
+  if (tipoCotizacionCanonico(tipoCotizacion) === "puntos_anclaje") {
     if (!fotos.some(isFotoPuntoAnclajeDefault)) {
       fotos = [fotoPuntoAnclajeDefault(), ...fotos];
     }
@@ -369,7 +401,9 @@ export function hasCatLadderService(c={}){
 }
 
 export function getQuoteProposalPhotos(baseQuote = {}, propuesta = {}, activeProposalId = null){
-  const tipo = propuesta?.quote?.tipoCotizacion || propuesta?.tipoCotizacion || baseQuote?.tipoCotizacion;
+  const tipo = tipoCotizacionCanonico(
+    propuesta?.quote?.tipoCotizacion || propuesta?.tipoCotizacion || baseQuote?.tipoCotizacion
+  );
 
   let ownPhotos = Array.isArray(propuesta?.fotos)
     ? propuesta.fotos.filter((foto)=>foto?.src)
@@ -427,7 +461,7 @@ export function getQuotePrintableProposals(baseQuote = {}){
       iva,
       tot,
       tipoLabel: getTipoCotizacionLabel(quote.tipoCotizacion),
-      esObraBlanca: quote.tipoCotizacion === "obra_blanca" || quote.tipoCotizacion === "estructuras_metalicas",
+      esObraBlanca: ["obra_blanca", "estructuras_metalicas"].includes(tipoCotizacionCanonico(quote.tipoCotizacion)),
       requerimientoCliente: String(quote.requerimientoCliente || "").trim(),
       alcancePropuesta: String(quote.propuestaAlcance || propuesta.alcance || "").trim(),
       fotos: getQuoteProposalPhotos(baseQuote, propuesta, activeProposal?.id),

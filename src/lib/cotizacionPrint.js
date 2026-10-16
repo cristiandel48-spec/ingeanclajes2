@@ -5,7 +5,7 @@ import { normalizarMayusculas } from "./normalizarEntrada";
 import { LOGO_INGEANCLAJES } from "../assets/embeddedImages";
 import { getQuotePrintableProposals } from "./cotizaciones";
 import { getStaticMapDimensions, buildStaticMapLabelData } from "./maps";
-import { hasVerticalLifeLineService, hasCatLadderService } from "./cotizaciones";
+import { hasVerticalLifeLineService, hasCatLadderService, tipoCotizacionCanonico } from "./cotizaciones";
 import { getTextosDocumento, lineasDeTexto } from "./cotizacionTextos";
 import { corregirOrtografiaLocal } from "./correctorTexto";
 import { cssHojaImpresion } from "./hojaImpresion";
@@ -880,7 +880,9 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
                 ).join("")
               }</div>`;
             }
-            const tipo = propuestas[0]?.quote?.tipoCotizacion || propuestas[0]?.tipoCotizacion || c?.tipoCotizacion || "linea_vida";
+            const tipo = tipoCotizacionCanonico(
+              propuestas[0]?.quote?.tipoCotizacion || propuestas[0]?.tipoCotizacion || c?.tipoCotizacion || "linea_vida"
+            );
             if(tipo === "obra_blanca") return `
               <div class="def-list">
                 <div class="def-row">

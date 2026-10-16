@@ -14,7 +14,7 @@ import { measurementsToQuoteItems } from "../../lib/maps";
 import { fmt } from "../../lib/format";
 import { DEFAULT_COT_INCLUYE } from "../../data/seed";
 import { FOTO_PUNTO_ANCLAJE_DEFAULT } from "../../assets/embeddedImages";
-import { isFotoPuntoAnclajeDefault, getTipoCotizacionLabel } from "../../lib/cotizaciones";
+import { isFotoPuntoAnclajeDefault, getTipoCotizacionLabel, tipoCotizacionCanonico } from "../../lib/cotizaciones";
 
 // Editor de UNA propuesta. Todas las propuestas se muestran abiertas, una
 // debajo de otra, igual que salen en el documento.
@@ -42,6 +42,10 @@ export default function PropuestaEditor({
   // Si se borro una categoria entera, el indice guardado puede quedar fuera.
   const categoria = catalogo[dbCat] || catalogo[0] || { items: [] };
   const fotosRef = useRef();
+  // Lo guardado puede venir con el id de siempre -"puntos_anclaje"- o con el
+  // que salia del nombre de la categoria del catalogo -"anclajes"-. Aqui
+  // dentro se compara siempre contra el mismo valor.
+  const tipoCanon = tipoCotizacionCanonico(p?.tipoCotizacion);
 
   // Sincronizar automáticamente la categoría del catálogo y mostrar el catálogo al cambiar el tipo de propuesta
   const tipoCotizacionAnteriorRef = useRef(p?.tipoCotizacion);
@@ -56,12 +60,6 @@ export default function PropuestaEditor({
     }
   }, [p?.tipoCotizacion, catalogo]);
 
-  const normalizarKey = (txt) =>
-    String(txt || "")
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]/g, "");
 
   // Lista dinámica de tipos de trabajo / sistemas obtenida directamente de las categorías del catálogo
   const tiposTrabajo = useMemo(() => {
@@ -72,7 +70,12 @@ export default function PropuestaEditor({
     (catalogo || []).forEach((cat, idx) => {
       const nombre = String(cat.categoria || "").trim();
       if (!nombre) return;
-      const key = normalizarKey(nombre);
+      // El id que se guarda es el de siempre -«Anclajes» queda como
+      // "puntos_anclaje"-, no el nombre de la categoria normalizado: de lo
+      // contrario la propuesta quedaba marcada con un tipo que el resto del
+      // programa no reconocia y perdia la foto del punto de anclaje, el campo
+      // de especificaciones y las definiciones del documento.
+      const key = tipoCotizacionCanonico(nombre);
       if (!vistos.has(key)) {
         vistos.add(key);
         list.push({
@@ -93,10 +96,10 @@ export default function PropuestaEditor({
     ];
 
     estandares.forEach((est) => {
-      const key = normalizarKey(est.id);
-      const labelKey = normalizarKey(est.label);
-      const rawKey = normalizarKey(est.rawCategoria);
-      if (!vistos.has(key) && !vistos.has(labelKey) && !vistos.has(rawKey)) {
+      // Los ids de arriba ya son los de siempre, asi que una categoria del
+      // catalogo equivalente -«Anclajes»- ya ocupo esta misma clave.
+      const key = tipoCotizacionCanonico(est.id);
+      if (!vistos.has(key)) {
         vistos.add(key);
         const idx = buscarIndiceCategoriaCatalogo(catalogo, est.rawCategoria);
         list.push({
@@ -111,22 +114,12 @@ export default function PropuestaEditor({
     return list;
   }, [catalogo]);
 
+  // Un boton queda marcado cuando significa lo mismo que lo guardado, aunque
+  // se haya guardado con otra escritura: la lista de casos que habia aqui la
+  // resuelve ahora tipoCotizacionCanonico.
   const esTipoActivo = (tipo) => {
-    const act = normalizarKey(p?.tipoCotizacion);
-    if (!act) return tipo.catIndex === 0;
-    const tipoId = normalizarKey(tipo.id);
-    const tipoLabel = normalizarKey(tipo.label);
-    const tipoRaw = normalizarKey(tipo.rawCategoria);
-    if (act === tipoId || act === tipoLabel || act === tipoRaw) return true;
-    if (act.includes("linea") && (tipoId.includes("linea") || tipoLabel.includes("linea"))) return true;
-    if (act.includes("anclaje") && (tipoId.includes("anclaje") || tipoLabel.includes("anclaje"))) return true;
-    if (act.includes("estructura") && (tipoId.includes("estructura") || tipoLabel.includes("estructura"))) return true;
-    if (act.includes("blanca") && (tipoId.includes("blanca") || tipoLabel.includes("blanca"))) return true;
-    if (act.includes("escaler") && (tipoId.includes("escaler") || tipoLabel.includes("escaler"))) return true;
-    if (act.includes("caminad") && (tipoId.includes("caminad") || tipoLabel.includes("caminad"))) return true;
-    if (act.includes("sistema") && (tipoId.includes("sistema") || tipoLabel.includes("sistema"))) return true;
-    if (act.includes("servicio") && (tipoId.includes("servicio") || tipoLabel.includes("servicio"))) return true;
-    return false;
+    if (!tipoCanon) return tipo.catIndex === 0;
+    return tipoCanon === tipoCotizacionCanonico(tipo.id);
   };
 
   const labelTipoActual = useMemo(() => {
@@ -146,7 +139,7 @@ export default function PropuestaEditor({
     setShowDB(true);
 
     const fotosActuales = Array.isArray(p.fotos) ? p.fotos : [];
-    const esAnclaje = normalizarKey(tipo.id).includes("anclaje") || normalizarKey(tipo.label).includes("anclaje");
+    const esAnclaje = tipoCotizacionCanonico(tipo.id) === "puntos_anclaje";
 
     if (esAnclaje) {
       const tieneFoto = fotosActuales.some(isFotoPuntoAnclajeDefault);
@@ -183,7 +176,7 @@ export default function PropuestaEditor({
 
   useEffect(() => {
     const listaFotos = Array.isArray(p.fotos) ? p.fotos : [];
-    if (p.tipoCotizacion === "puntos_anclaje") {
+    if (tipoCanon === "puntos_anclaje") {
       if (!listaFotos.some(isFotoPuntoAnclajeDefault)) {
         set("fotos", [
           {
@@ -367,10 +360,10 @@ export default function PropuestaEditor({
             escribirla a mano desde aquí. El «esta cotización incluye» sí volvió,
             más abajo, junto a las condiciones comerciales. */}
 
-        {(p.tipoCotizacion === "obra_blanca" || p.tipoCotizacion === "estructuras_metalicas") && (
+        {(tipoCanon === "obra_blanca" || tipoCanon === "estructuras_metalicas") && (
           <div style={{ marginBottom: 18 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-              <LBL>{p.tipoCotizacion === "estructuras_metalicas" ? "Especificaciones / Necesidad del cliente" : "Necesidad del cliente"}</LBL>
+              <LBL>{tipoCanon === "estructuras_metalicas" ? "Especificaciones / Necesidad del cliente" : "Necesidad del cliente"}</LBL>
               <div style={{ display: "flex", gap: 6 }}>
                 <BotonCorregir valor={p.requerimientoCliente} onChange={v => set("requerimientoCliente", v)} compacto />
                 <BotonDictado valor={p.requerimientoCliente} onChange={v => set("requerimientoCliente", v)} titulo="Dictar la necesidad del cliente" compacto />
@@ -385,7 +378,7 @@ export default function PropuestaEditor({
               }}
               spellCheck
               lang="es"
-              placeholder={p.tipoCotizacion === "estructuras_metalicas" ? "Detalla especificaciones técnicas de la estructura, perfilería, accesos o plataformas requeridas..." : "Detalla la necesidad o solicitud específica del cliente..."}
+              placeholder={tipoCanon === "estructuras_metalicas" ? "Detalla especificaciones técnicas de la estructura, perfilería, accesos o plataformas requeridas..." : "Detalla la necesidad o solicitud específica del cliente..."}
               style={{ ...SI, minHeight: 100, resize: "vertical", lineHeight: 1.5 }}
             />
           </div>
@@ -396,7 +389,7 @@ export default function PropuestaEditor({
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,gap:8,flexWrap:"wrap"}}>
             <span style={{fontSize:12,fontWeight:600,color:"var(--text-main, #1a1a2e)"}}>Fotos de la propuesta</span>
             <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-              {p.tipoCotizacion === "puntos_anclaje" && !fotos.some(isFotoPuntoAnclajeDefault) && (
+              {tipoCanon === "puntos_anclaje" && !fotos.some(isFotoPuntoAnclajeDefault) && (
                 <button
                   type="button"
                   title="Adjuntar la foto oficial de punto de anclaje certificado a esta propuesta"
@@ -945,8 +938,7 @@ export default function PropuestaEditor({
                         const tipoCoincidente = tiposTrabajo.find(
                           (t) =>
                             t.catIndex === i ||
-                            normalizarKey(t.rawCategoria) === normalizarKey(cat.categoria) ||
-                            normalizarKey(t.label) === normalizarKey(cat.categoria)
+                            tipoCotizacionCanonico(t.id) === tipoCotizacionCanonico(cat.categoria)
                         );
                         if (tipoCoincidente) {
                           seleccionarTipoTrabajo(tipoCoincidente);

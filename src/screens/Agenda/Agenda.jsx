@@ -2014,7 +2014,6 @@ export default function Agenda({ ctx }) {
               { id: "llamada", label: "Llamadas" },
               { id: "reunion", label: "Reuniones" },
               { id: "coordinacion", label: "Coordinación" },
-              ...((esCristian || esCamila) ? [{ id: "especial", label: "⭐ Fechas Especiales" }] : []),
             ].map((f) => (
               <button
                 key={f.id}

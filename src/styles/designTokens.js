@@ -134,6 +134,63 @@ const ALIAS = `
       --green-700: var(--success-text);
 `;
 
+// -- Tema oscuro -------------------------------------------------------------
+// Los valores del modo oscuro, sueltos, para poder colgarlos de mas de un
+// selector sin copiarlos a mano.
+//
+// Hacen falta en dos sitios: el armazon, donde el tema lo decide el
+// interruptor (data-theme), y el inicio de sesion, que vive FUERA del armazon
+// y sigue al tema del sistema operativo. Escribirlos dos veces dejaria una de
+// las dos pantallas descolgada en cuanto se tocara un color, que es justo el
+// problema que la fase 1 vino a cerrar.
+export const VARS_OSCURO = `
+      --accent: #FF6B5E;
+      --accent-hover: #FF8A7F;
+      --accent-tint: rgba(255, 107, 94, 0.14);
+
+      --text-primary: #F0F2F5;
+      --text-secondary: #CBD2DC;
+      --text-tertiary: #98A1B0;
+      --text-quaternary: #6B7280;
+
+      --separator: #2A2D36;
+      --fill: #20232B;
+      --bg-app: #0F1115;
+      --surface: #181A20;
+      --surface-subtle: #20232B;
+      --surface-hover: #20242E;
+      --border-strong: #333846;
+
+      --success: #32D583; --success-bg: rgba(18, 183, 106, 0.14); --success-text: #6CE9A6;
+      --warning: #FDB022; --warning-bg: rgba(247, 144, 9, 0.14);  --warning-text: #FEC84B;
+      --danger:  #F97066; --danger-bg:  rgba(217, 45, 32, 0.14);  --danger-text:  #FDA29B;
+      --info:    #53B1FD; --info-bg:    rgba(46, 144, 250, 0.14); --info-text:    #84CAFF;
+
+      --sombra-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+      --sombra-md: 0 4px 12px -2px rgba(0, 0, 0, 0.5);
+      --sombra-lg: 0 20px 40px -12px rgba(0, 0, 0, 0.7);
+
+      /* El armazon es mas oscuro que las tarjetas, para que estas floten */
+      --rail-bg: #101116;
+      --rail-border: #24262E;
+      --rail-divider: #24262E;
+      --rail-text: #9AA2B1;
+      --rail-text-hover: #FFFFFF;
+      /* Antes el elemento activo perdia el acento en oscuro y quedaba blanco
+         sobre gris, indistinguible del que solo tiene el cursor encima. */
+      --rail-active-bg: rgba(255, 107, 94, 0.16);
+      --rail-title: #6B7280;
+      --rail-brand-text: #FFFFFF;
+
+      --btn-ver-border: #2563EB;
+
+      --naranja-heredado: #FB923C;
+      --naranja-heredado-tint: rgba(244, 124, 32, 0.15);
+      --naranja-heredado-text: #FB923C;
+${ALIAS}
+      color-scheme: dark;
+`;
+
 // -- Definicion en CSS -------------------------------------------------------
 // GlobalStyles inyecta esto. El bloque oscuro cuelga de .app-shell porque es
 // donde vive el interruptor de tema.
@@ -210,50 +267,6 @@ ${ALIAS}
     }
 
     .app-shell[data-theme="dark"] {
-      --accent: #FF6B5E;
-      --accent-hover: #FF8A7F;
-      --accent-tint: rgba(255, 107, 94, 0.14);
-
-      --text-primary: #F0F2F5;
-      --text-secondary: #CBD2DC;
-      --text-tertiary: #98A1B0;
-      --text-quaternary: #6B7280;
-
-      --separator: #2A2D36;
-      --fill: #20232B;
-      --bg-app: #0F1115;
-      --surface: #181A20;
-      --surface-subtle: #20232B;
-      --surface-hover: #20242E;
-      --border-strong: #333846;
-
-      --success: #32D583; --success-bg: rgba(18, 183, 106, 0.14); --success-text: #6CE9A6;
-      --warning: #FDB022; --warning-bg: rgba(247, 144, 9, 0.14);  --warning-text: #FEC84B;
-      --danger:  #F97066; --danger-bg:  rgba(217, 45, 32, 0.14);  --danger-text:  #FDA29B;
-      --info:    #53B1FD; --info-bg:    rgba(46, 144, 250, 0.14); --info-text:    #84CAFF;
-
-      --sombra-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-      --sombra-md: 0 4px 12px -2px rgba(0, 0, 0, 0.5);
-      --sombra-lg: 0 20px 40px -12px rgba(0, 0, 0, 0.7);
-
-      /* El armazon es mas oscuro que las tarjetas, para que estas floten */
-      --rail-bg: #101116;
-      --rail-border: #24262E;
-      --rail-divider: #24262E;
-      --rail-text: #9AA2B1;
-      --rail-text-hover: #FFFFFF;
-      /* Antes el elemento activo perdia el acento en oscuro y quedaba blanco
-         sobre gris, indistinguible del que solo tiene el cursor encima. */
-      --rail-active-bg: rgba(255, 107, 94, 0.16);
-      --rail-title: #6B7280;
-      --rail-brand-text: #FFFFFF;
-
-      --btn-ver-border: #2563EB;
-
-      --naranja-heredado: #FB923C;
-      --naranja-heredado-tint: rgba(244, 124, 32, 0.15);
-      --naranja-heredado-text: #FB923C;
-${ALIAS}
-      color-scheme: dark;
+${VARS_OSCURO}
     }
 `;

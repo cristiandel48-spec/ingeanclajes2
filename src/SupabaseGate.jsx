@@ -5,8 +5,8 @@ import logoIngeanclajes from "./assets/logo-ingeanclajes.jpeg";
 import { SERVICIO_SUSPENDIDO } from "./lib/servicioEstado";
 import { obtenerMensajeCierreInactividad } from "./lib/seguridadSesion";
 import EstilosAcceso from "./styles/EstilosAcceso";
-import { Button, Input, Callout } from "./components/ui";
-import { TIPO, FUENTE, RADIO, SOMBRA, ESPACIO } from "./styles/designTokens";
+import { Button, Callout } from "./components/ui";
+import { TIPO, FUENTE, SOMBRA, ESPACIO } from "./styles/designTokens";
 
 const isSupabaseConfigured = backend.isSupabaseConfigured;
 const getSupabaseClient = backend.getSupabaseClient;
@@ -17,9 +17,23 @@ const reintentandoSiChocanPestanas = backend.reintentandoSiChocanPestanas;
 // Titulo de pantalla de acceso. Los cuatro iban a 24, 26, 28 y 30 px en
 // peso 800, cada uno segun lo que pidiera el momento; ahora todos son el
 // mismo escalon de la escala.
+// Centrados, con el interlineado apretado y la letra un punto mas grande de
+// lo que pide la escala: en una pantalla que solo tiene un titulo y dos
+// campos, el titulo puede permitirse pesar.
 function Titulo({ children }) {
   return (
-    <h1 style={{ ...TIPO.largeTitle, color: "var(--text-primary)", margin: "0 0 8px" }}>
+    <h1
+      style={{
+        fontSize: 30,
+        lineHeight: "36px",
+        fontWeight: 700,
+        letterSpacing: "-0.024em",
+        color: "var(--text-primary)",
+        textAlign: "center",
+        margin: "0 0 8px",
+        textWrap: "balance",
+      }}
+    >
       {children}
     </h1>
   );
@@ -27,20 +41,38 @@ function Titulo({ children }) {
 
 function Subtitulo({ children, style }) {
   return (
-    <p style={{ ...TIPO.body, color: "var(--text-secondary)", margin: 0, ...style }}>
+    <p
+      style={{
+        ...TIPO.body,
+        color: "var(--text-tertiary)",
+        textAlign: "center",
+        margin: "0 auto",
+        maxWidth: "32ch",
+        ...style,
+      }}
+    >
       {children}
     </p>
   );
 }
 
 // Marco comun de todas las pantallas de acceso.
+//
+// Sin tarjeta: el contenido flota centrado sobre el fondo, que es como se
+// presentan las pantallas de acceso de macOS y iOS. Una caja con borde y
+// sombra dentro de otra caja es una capa de mas, y es justo lo que hacia
+// que esto pareciera un formulario web y no una aplicacion.
 function Pantalla({ children }) {
   return (
     <div
       style={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         background: "var(--bg-app)",
-        padding: "24px 16px",
+        // Un halo del color de la marca, muy tenue, detras del contenido.
+        // Es lo unico decorativo de la pantalla.
+        backgroundImage:
+          "radial-gradient(60rem 32rem at 50% -8rem, var(--accent-tint), transparent 70%)",
+        padding: "40px 20px",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -49,38 +81,40 @@ function Pantalla({ children }) {
       }}
     >
       <EstilosAcceso />
-      <div style={{ maxWidth: 420, width: "100%" }}>
-        <div
-          style={{
-            background: "var(--surface)",
-            border: "1px solid var(--separator)",
-            borderRadius: RADIO.hoja,
-            padding: "36px 34px",
-            boxShadow: SOMBRA.lg,
-            boxSizing: "border-box",
-          }}
-        >
-          {children}
-        </div>
-        <CreditoDesarrollo style={{ marginTop: 18 }} />
+      <div style={{ maxWidth: 380, width: "100%" }}>
+        {children}
+        <CreditoDesarrollo style={{ marginTop: 32 }} />
       </div>
     </div>
   );
 }
 
-function Encabezado({ etiqueta }) {
+// El logotipo como icono de aplicacion: cuadrado redondeado, centrado y
+// arriba del todo. Es la primera cosa que se ve al abrir algo en un Mac.
+function Encabezado() {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 22 }}>
+    <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
       <div
         style={{
-          width: 38, height: 38, borderRadius: 11, background: "var(--accent)",
-          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+          width: 64, height: 64,
+          // 22% del lado: la curva continua de los iconos de iOS.
+          borderRadius: 14,
+          // Blanco fijo, no var(--surface): el logotipo es un JPEG con fondo
+          // blanco, asi que sobre una superficie oscura dejaba un recuadro
+          // blanco dentro del icono. Un icono de aplicacion conserva sus
+          // colores en modo oscuro, que es justo lo que hace falta aqui.
+          background: "#ffffff",
+          border: "1px solid var(--separator)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: SOMBRA.md,
+          overflow: "hidden",
         }}
       >
-        <img src={logoIngeanclajes} alt="" style={{ width: 25, height: 25, objectFit: "contain", borderRadius: 5 }} />
-      </div>
-      <div style={{ ...TIPO.eyebrow, color: "var(--text-tertiary)" }}>
-        {etiqueta}
+        <img
+          src={logoIngeanclajes}
+          alt=""
+          style={{ width: 52, height: 52, objectFit: "contain" }}
+        />
       </div>
     </div>
   );
@@ -139,13 +173,15 @@ function esFaltaDePermisos(error) {
 function PantallaSinConexion() {
   return (
     <Pantalla>
-      <Encabezado etiqueta="Conexión" />
+      <Encabezado />
       <div
         style={{
           width: 48, height: 48, borderRadius: 14,
           background: "var(--danger-bg)", border: "1px solid var(--danger-bg)",
           display: "flex", alignItems: "center", justifyContent: "center",
-          marginBottom: 18, color: "var(--danger)",
+          // Centrado como el resto de la pantalla: suelto a la izquierda
+          // rompia la columna.
+          margin: "0 auto 18px", color: "var(--danger)",
         }}
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -161,7 +197,13 @@ function PantallaSinConexion() {
         No se pudo establecer comunicación con la base de datos. Revisa tu conexión o el acceso
         a la red e inténtalo de nuevo.
       </Subtitulo>
-      <Button variante="primary" tam="lg" bloque onClick={() => window.location.reload()}>
+      <Button
+        variante="primary"
+        tam="lg"
+        bloque
+        onClick={() => window.location.reload()}
+        style={{ height: 50, borderRadius: 13 }}
+      >
         Reintentar conexión
       </Button>
     </Pantalla>
@@ -335,7 +377,7 @@ export default function SupabaseGate({ children }) {
   if (!configured) {
     return (
       <Pantalla>
-        <Encabezado etiqueta="Configuración pendiente" />
+        <Encabezado />
         <Titulo>Falta configurar el servidor</Titulo>
         <Subtitulo>
           Hay que definir <code>VITE_SUPABASE_URL</code>, <code>VITE_SUPABASE_ANON_KEY</code> y{" "}
@@ -348,7 +390,7 @@ export default function SupabaseGate({ children }) {
   if (status === "checking") {
     return (
       <Pantalla>
-        <Encabezado etiqueta="Acceso Cloud" />
+        <Encabezado />
         <Titulo>Validando sesión</Titulo>
         <Subtitulo>Un momento, estamos comprobando tu acceso.</Subtitulo>
         {/* Antes solo habia texto: cuando el servidor tardaba, la pantalla
@@ -375,7 +417,7 @@ export default function SupabaseGate({ children }) {
 
     return (
       <Pantalla>
-        <Encabezado etiqueta="Acceso Cloud" />
+        <Encabezado />
         <Titulo>
           {esInactividad ? "Sesión cerrada por inactividad" : "Tu cuenta no tiene acceso"}
         </Titulo>
@@ -393,7 +435,14 @@ export default function SupabaseGate({ children }) {
         {!esInactividad && error ? <Callout tono="peligro">{error}</Callout> : null}
 
         <div style={{ marginTop: 18 }}>
-          <Button variante="primary" tam="lg" bloque onClick={handleLogout} cargando={busy}>
+          <Button
+            variante="primary"
+            tam="lg"
+            bloque
+            onClick={handleLogout}
+            cargando={busy}
+            style={{ height: 50, borderRadius: 13 }}
+          >
             {busy ? "Cerrando…" : esInactividad ? "Volver a ingresar" : "Salir e intentar con otra cuenta"}
           </Button>
         </div>
@@ -404,11 +453,11 @@ export default function SupabaseGate({ children }) {
   if (status !== "ready" || !user) {
     return (
       <Pantalla>
-        <Encabezado etiqueta="Acceso Cloud" />
+        <Encabezado />
 
         <Titulo>Inicia sesión</Titulo>
-        <Subtitulo style={{ marginBottom: 22 }}>
-          Guarda tus datos automáticamente en la nube.
+        <Subtitulo style={{ marginBottom: 28 }}>
+          Tu trabajo se guarda solo en la nube.
         </Subtitulo>
 
         {mensajeInactividad && (
@@ -417,40 +466,53 @@ export default function SupabaseGate({ children }) {
           </div>
         )}
 
-        {error ? <div style={{ marginBottom: 20 }}><Callout tono="peligro">{error}</Callout></div> : null}
-        {aviso ? <div style={{ marginBottom: 20 }}><Callout tono="exito">{aviso}</Callout></div> : null}
+        {error ? <div style={{ marginBottom: 18 }}><Callout tono="peligro">{error}</Callout></div> : null}
+        {aviso ? <div style={{ marginBottom: 18 }}><Callout tono="exito">{aviso}</Callout></div> : null}
 
-        <form onSubmit={handleLogin} style={{ display: "grid", gap: ESPACIO.lg }}>
-          <Input
-            id="acceso-correo"
-            className="ui-input--lg"
-            label="Correo"
-            type="email"
-            autoComplete="username"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="correo@ingeanclajessas.com"
-          />
-          <Input
-            id="acceso-clave"
-            className="ui-input--lg"
-            label="Contraseña"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-          />
+        <form onSubmit={handleLogin}>
+          {/* Los dos campos en un solo bloque, con la etiqueta al lado y no
+              encima: es la lista agrupada de Ajustes de iOS. */}
+          <div className="acceso-grupo">
+            <div className="acceso-fila">
+              <label htmlFor="acceso-correo">Correo</label>
+              <input
+                id="acceso-correo"
+                type="email"
+                autoComplete="username"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tucorreo@ingeanclajessas.com"
+              />
+            </div>
+            <div className="acceso-fila">
+              <label htmlFor="acceso-clave">Contraseña</label>
+              <input
+                id="acceso-clave"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+              />
+            </div>
+          </div>
 
-          <Button type="submit" variante="primary" tam="lg" bloque cargando={busy} style={{ marginTop: 2 }}>
+          <Button
+            type="submit"
+            variante="primary"
+            tam="lg"
+            bloque
+            cargando={busy}
+            style={{ marginTop: ESPACIO.lg, height: 50, borderRadius: 13, fontSize: 15 }}
+          >
             {busy ? "Ingresando…" : "Entrar"}
           </Button>
         </form>
 
-        <div style={{ textAlign: "center", marginTop: 14 }}>
-          <Button variante="tertiary" tam="sm" onClick={handleRecuperar} disabled={busy}>
+        <div style={{ textAlign: "center", marginTop: ESPACIO.md }}>
+          <button type="button" className="acceso-enlace" onClick={handleRecuperar} disabled={busy}>
             ¿Olvidaste tu contraseña?
-          </Button>
+          </button>
         </div>
       </Pantalla>
     );

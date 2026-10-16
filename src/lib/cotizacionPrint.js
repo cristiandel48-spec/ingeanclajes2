@@ -276,7 +276,11 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
   // imagen: el logotipo de Artico impreso en la cotizacion, los textos
   // incrustados en el JPEG con otra tipografia y recuadros con linea guia.
   // `recorte` deja a la vista solo el objeto; el resto se escribe aqui.
-  const fichaSistema = ({ titulo, imagen, alt, recorte, notas }) => `
+  // `llamadas` son las que señalan una pieza concreta: van a la altura a la
+  // que esa pieza aparece en el dibujo, con una linea fina hasta ella, como
+  // en una ficha tecnica. `notas` es lo que no apunta a ninguna pieza en
+  // particular -normativa, material- y va debajo.
+  const fichaSistema = ({ titulo, imagen, alt, recorte, llamadas = [], notas = [] }) => `
     <section class="page appendix-page">
       <div class="page-inner">
         ${headerHtml}
@@ -286,13 +290,35 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
             <div class="ficha-sistema-img">
               <img src="${imagen}" alt="${escapeHtml(alt)}" style="clip-path: inset(${recorte});" />
             </div>
-            <dl class="ficha-sistema-datos">
+            ${llamadas.length ? `
+              <div class="ficha-llamadas">
+                ${llamadas.map(([alto, k, v]) => `
+                  <div class="ficha-llamada" style="top:${alto};">
+                    <span class="ficha-llamada-guia"></span>
+                    <div class="ficha-llamada-texto">
+                      <b>${escapeHtml(k)}</b>
+                      <span>${escapeHtml(v)}</span>
+                    </div>
+                  </div>
+                `).join("")}
+              </div>
+            ` : `
+              <dl class="ficha-sistema-datos">
+                ${notas.map(([k, v]) => `
+                  <dt>${escapeHtml(k)}</dt>
+                  <dd>${escapeHtml(v)}</dd>
+                `).join("")}
+              </dl>
+            `}
+          </div>
+          ${llamadas.length && notas.length ? `
+            <dl class="ficha-sistema-datos ficha-sistema-datos--pie">
               ${notas.map(([k, v]) => `
                 <dt>${escapeHtml(k)}</dt>
                 <dd>${escapeHtml(v)}</dd>
               `).join("")}
             </dl>
-          </div>
+          ` : ""}
         </div>
         ${footerHtml}
       </div>
@@ -1547,16 +1573,67 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
         align-items: center;
         margin-top: 4mm;
       }
+      /* El dibujo y la columna de llamadas miden EXACTAMENTE lo mismo, y
+         por eso se fija el alto en las dos en vez de dejarlo al contenido:
+         la altura de cada llamada es un porcentaje de su columna, asi que
+         si una caja fuera mas alta que la otra las llamadas dejarian de
+         caer sobre su pieza. */
+      .ficha-sistema-img,
+      .ficha-llamadas { height: 155mm; }
       .ficha-sistema-img {
         display: flex; align-items: center; justify-content: center;
-        min-height: 150mm;
       }
       .ficha-sistema-img img {
         max-width: 100%;
-        max-height: 160mm;
+        max-height: 100%;
         object-fit: contain;
       }
+      /* Llamadas: cada una a la altura de la pieza que describe, con una
+         linea fina que llega hasta el dibujo. */
+      .ficha-llamadas { position: relative; }
+      .ficha-llamada {
+        position: absolute;
+        left: 0; right: 0;
+        display: flex;
+        align-items: center;
+        gap: 0;
+        transform: translateY(-50%);
+      }
+      .ficha-llamada-guia {
+        flex: 0 0 9mm;
+        height: 1px;
+        background: #000;
+        opacity: .5;
+      }
+      .ficha-llamada-texto {
+        padding-left: 2.5mm;
+        line-height: 1.4;
+      }
+      .ficha-llamada-texto b {
+        display: block;
+        font-size: calc(var(--texto) * .92);
+        font-weight: 700;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        color: #000;
+      }
+      .ficha-llamada-texto span {
+        font-size: var(--texto);
+        color: #000;
+      }
+
       .ficha-sistema-datos { margin: 0; }
+      /* Cuando ya hubo llamadas al lado del dibujo, lo general va debajo y
+         en dos columnas, para no estirar la hoja. */
+      .ficha-sistema-datos--pie {
+        margin-top: 6mm;
+        padding-top: 4mm;
+        border-top: 1px solid #000;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0 10mm;
+      }
+      .ficha-sistema-datos--pie dt { margin-top: 0; }
       .ficha-sistema-datos dt {
         font-size: calc(var(--texto) * .92);
         font-weight: 700;
@@ -1612,11 +1689,15 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       imagen: articoLineaVidaVertical,
       alt: "Sistema de línea de vida vertical sobre escalera fija",
       recorte: "3% 32% 2% 37%",
+      // El alto de cada llamada es donde queda esa pieza dentro del recorte.
+      // Si se reajusta el recorte hay que repasarlos.
+      llamadas: [
+        ["14%", "Soporte superior", "Con absorbedor de energía"],
+        ["33%", "Cable de acero", "Con alma de acero, SAE 316"],
+        ["82%", "Soporte inferior", "Con tensor de línea de vida"],
+      ],
       notas: [
         ["Normatividad", "Resolución 4272 de 2021 del Ministerio del Trabajo y EN 795:2012."],
-        ["Soporte superior", "Con absorbedor de energía."],
-        ["Cable", "De acero con alma de acero, SAE 316."],
-        ["Soporte inferior", "Con tensor de línea de vida."],
         ["Estructura", "Tubería de 2″ y peldaños de 1 ½″ cada 30 cm, en acero estructural 1040."],
       ],
     }) : ""}

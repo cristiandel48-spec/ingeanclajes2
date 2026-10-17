@@ -428,16 +428,25 @@ export default function Horarios({ctx}){
         titulo="Horarios de obra"
         subtitulo="Asigna turnos por día a trabajadores o grupos y avísales por WhatsApp"
         acciones={
-          <Button
-            // Solo una accion principal a la vez: con el formulario abierto el
-            // boton pasa a cerrarlo, y con turnos recien guardados lo urgente
-            // es avisarle a la gente, no asignar otro.
-            variante={showF || avisarEsLoSiguiente ? "secondary" : "primary"}
-            icono={showF ? "cerrar" : "mas"}
-            onClick={() => setShowF(!showF)}
-          >
-            {showF ? "Cerrar" : "Asignar turnos"}
-          </Button>
+          <>
+            {/* Vivia dentro del aviso «Para qué sirve asignar el turno aquí»,
+                que se quito; el boton se queda porque sigue haciendo falta. */}
+            {empleados.length>0 && puedeCrearPersonal(membresia) && !nuevoEmp && (
+              <Button variante="texto" icono="mas" onClick={()=>setNuevoEmp(true)}>
+                Registrar trabajador
+              </Button>
+            )}
+            <Button
+              // Solo una accion principal a la vez: con el formulario abierto el
+              // boton pasa a cerrarlo, y con turnos recien guardados lo urgente
+              // es avisarle a la gente, no asignar otro.
+              variante={showF || avisarEsLoSiguiente ? "secondary" : "primary"}
+              icono={showF ? "cerrar" : "mas"}
+              onClick={() => setShowF(!showF)}
+            >
+              {showF ? "Cerrar" : "Asignar turnos"}
+            </Button>
+          </>
         }
       />
 
@@ -483,26 +492,6 @@ export default function Horarios({ctx}){
               Ir a Obras
             </Button>
           </div>
-        </Callout>
-      )}
-
-      {empleados.length>0 && obras.length>0 && (
-        <Callout tono="info" titulo="Para qué sirve asignar el turno aquí" style={SEPARA}>
-          Hace tres cosas de una sola vez: le <strong>avisa al trabajador por WhatsApp</strong>,
-          cuenta los <strong>días trabajados</strong> que se le cargan a esa obra, y llena la
-          <strong> columna de turnos</strong> del informe de actividades.
-          <div style={{marginTop:ESPACIO.xs}}>
-            ¿No aparece la obra? Créala en <strong>Ejecución de obra</strong>. Y recuerda asignarla
-            también en la pestaña «Personal» de esa obra, que es de donde el informe saca quién
-            estuvo.
-          </div>
-          {puedeCrearPersonal(membresia) && !nuevoEmp && (
-            <div style={{marginTop:ESPACIO.sm}}>
-              <Button variante="secondary" tam="sm" icono="mas" onClick={()=>setNuevoEmp(true)}>
-                Registrar trabajador
-              </Button>
-            </div>
-          )}
         </Callout>
       )}
 

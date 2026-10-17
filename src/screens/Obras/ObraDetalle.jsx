@@ -1,6 +1,5 @@
 import Av from "../../components/ui/Av";
 import Badge from "../../components/ui/Badge";
-import IconoPalomita from "../../components/ui/IconoPalomita";
 import BitacoraObra from "./BitacoraObra";
 import FototecaObra from "./FototecaObra";
 import MaterialesDespachoObra from "./MaterialesDespachoObra";
@@ -8,7 +7,8 @@ import LBL from "../../components/ui/LBL";
 import NuevoEmpleadoRapido from "../../components/NuevoEmpleadoRapido";
 import { useEffect, useState } from "react";
 import { B, CD, PAL, SI, ST } from "../../styles/tokens";
-import { MONO } from "../../styles/designTokens";
+import { TIPO } from "../../styles/designTokens";
+import { Button, Card, Icono, Input, SegmentedControl, StatusPill } from "../../components/ui";
 import GuiaFlujoObra from "./GuiaFlujoObra";
 import { fmt, fmtD, today } from "../../lib/format";
 import { resumenBitacora } from "../../lib/bitacoraObra";
@@ -107,482 +107,236 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
     setShowGasto(false);
   };
 
+  // Marca o desmarca que la documentacion ya se le mando al cliente.
+  const alternarEnvio = () => {
+    const nuevo = !oAct.enviadoAlCliente;
+    const ahoraIso = new Date().toISOString();
+    const autorActual = resolverAutorGuardado(membresia, oAct.modificadoPorNombre);
+    setObras(p => p.map(o => o.id === obraId ? {
+      ...o,
+      enviadoAlCliente: nuevo,
+      fechaEnvioCliente: nuevo ? (o.fechaEnvioCliente || ahoraIso) : null,
+      modificadoPor: membresia?.userId || null,
+      modificadoPorNombre: autorActual || o.modificadoPorNombre || "Camila Sepúlveda",
+      modificadoEn: ahoraIso,
+    } : o));
+  };
+
+  const estadoAvance = oAct.avance === 100 ? "Finalizado" : oAct.avance >= 90 ? "Listo para certificar" : "En Ejecución";
+
   return(
     <div
       style={{
-        padding: isMobile ? "14px 16px" : "24px 28px",
-        fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+        padding: isMobile ? "14px 16px 28px" : "20px 28px 32px",
+        maxWidth: 1240,
+        margin: "0 auto",
+        boxSizing: "border-box",
         WebkitFontSmoothing: "antialiased",
         MozOsxFontSmoothing: "grayscale",
       }}
     >
-      {/* Barra superior de la Obra - Estilo Apple Studio */}
-      <div
-        style={{
-          display: "flex",
-          // En columna siempre: el nombre del cliente va en su propia fila,
-          // a todo el ancho. Con el nombre metido en la columna izquierda,
-          // los botones de la derecha -que no ceden ancho- le dejaban unos
-          // 500px, y un cliente de obra publica se partia en cinco lineas
-          // teniendo media pantalla vacia al lado.
-          flexDirection: "column",
-          alignItems: "stretch",
-          gap: 12,
-          marginBottom: 16,
-          background: "var(--surface, #ffffff)",
-          borderRadius: 16,
-          padding: isMobile ? "14px 16px" : "16px 22px",
-          border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
-          boxShadow: "0 4px 16px -2px rgba(0,0,0,0.02), 0 1px 3px rgba(0,0,0,0.02)",
-        }}
-      >
-        {/* Nombre del cliente, a todo el ancho y a dos lineas como maximo. */}
-        <div
-          title={oAct.cliente}
-          style={{
-            // Contenido, no cartel: al ocupar una sola linea ya se lee como
-            // el titulo de la pantalla sin necesidad de pesar mas.
-            fontSize: isMobile ? 14 : 15,
-            fontWeight: 700,
-            color: "var(--text-main, #1d1d1f)",
-            lineHeight: 1.3,
-            letterSpacing: "-0.015em",
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-            overflowWrap: "anywhere",
-          }}
-        >
-          {oAct.cliente}
-        </div>
+      {/* Cabecera al estilo de apple.com: sin tarjeta, el cliente como
+          titulo grande, los datos de la obra en gris debajo y las acciones
+          como texto suelto con una sola pildora oscura, Certificar. */}
+      <div style={{ marginBottom: isMobile ? 20 : 28 }}>
+        <Button variante="texto" tam="sm" icono="flechaIzq" onClick={onVolver} style={{ marginLeft: -10 }}>
+          Obras
+        </Button>
 
         <div
           style={{
             display: "flex",
             flexDirection: isMobile ? "column" : "row",
-            alignItems: isMobile ? "stretch" : "center",
+            alignItems: isMobile ? "stretch" : "flex-end",
             justifyContent: "space-between",
-            gap: 16,
+            gap: isMobile ? 14 : 24,
+            marginTop: 8,
           }}
         >
-        {/* Izquierda: Volver + Badges + Metadatos */}
-        <div style={{ display: "flex", alignItems: isMobile ? "flex-start" : "center", gap: 12, minWidth: 0, flex: 1 }}>
-          <button
-            onClick={onVolver}
-            style={{
-              background: "#ffffff",
-              color: "var(--text-main, #1d1d1f)",
-              border: "1px solid var(--border, #d2d2d7)",
-              borderRadius: 8,
-              fontSize: 12,
-              fontWeight: 600,
-              padding: "6px 12px",
-              cursor: "pointer",
-              flexShrink: 0,
-              boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
-              transition: "all 0.15s ease",
-            }}
-          >
-            ← Obras
-          </button>
-          {!isMobile && <div style={{ width: 1, height: 24, background: "var(--border, #e5e5ea)", flexShrink: 0 }} />}
-          {/* Las etiquetas van en la MISMA linea que el boton de volver.
-              Antes colgaban de una columna al lado, asi que quedaban por
-              encima del boton y la linea de metadatos por debajo: tres
-              alturas distintas en la misma fila. */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", minWidth: 0 }}>
-              <Badge estado={oAct.estado} />
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <h1
+              title={oAct.cliente}
+              style={{
+                margin: 0,
+                fontSize: isMobile ? 26 : 34,
+                fontWeight: 700,
+                lineHeight: 1.12,
+                letterSpacing: "-0.025em",
+                color: "var(--text-primary)",
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+                overflowWrap: "anywhere",
+              }}
+            >
+              {oAct.cliente}
+            </h1>
+            <div style={{ fontSize: isMobile ? 14 : 15, color: "var(--text-secondary)", marginTop: 6, lineHeight: 1.4 }}>
+              {[oAct.proyecto, oAct.ciudad, oAct.direccion].filter(Boolean).join(" · ")}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+              <StatusPill estado={oAct.estado} />
               <button
                 type="button"
-                onClick={() => {
-                  const nuevo = !oAct.enviadoAlCliente;
-                  const ahoraIso = new Date().toISOString();
-                  const autorActual = resolverAutorGuardado(membresia, oAct.modificadoPorNombre);
-                  setObras(p => p.map(o => o.id === obraId ? {
-                    ...o,
-                    enviadoAlCliente: nuevo,
-                    fechaEnvioCliente: nuevo ? (o.fechaEnvioCliente || ahoraIso) : null,
-                    modificadoPor: membresia?.userId || null,
-                    modificadoPorNombre: autorActual || o.modificadoPorNombre || "Camila Sepúlveda",
-                    modificadoEn: ahoraIso,
-                  } : o));
-                }}
+                onClick={alternarEnvio}
                 title={
                   oAct.enviadoAlCliente
-                    ? `Documentación enviada al cliente${oAct.fechaEnvioCliente ? ` (${fmtD(oAct.fechaEnvioCliente)})` : ""}. Clic para cambiar.`
-                    : "Marcar como documentación enviada"
+                    ? `Documentación enviada al cliente${oAct.fechaEnvioCliente ? ` (${fmtD(oAct.fechaEnvioCliente)})` : ""}. Toca para cambiar.`
+                    : "Marcar la documentación como enviada al cliente"
                 }
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 5,
-                  padding: "3px 9px",
-                  borderRadius: 6,
-                  fontSize: 11,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                  userSelect: "none",
-                  border: oAct.enviadoAlCliente ? "1px solid #a7f3d0" : "1px dashed #cbd5e1",
-                  background: oAct.enviadoAlCliente ? "#ecfdf5" : "var(--surface-subtle, #f8fafc)",
-                  color: oAct.enviadoAlCliente ? "#047857" : "#64748b",
-                  transition: "all .16s ease",
-                }}
+                style={{ background: "none", border: "none", padding: 0, cursor: "pointer", font: "inherit" }}
               >
-                {oAct.enviadoAlCliente ? (
-                  <>
-                    <span>Documentación Enviada</span>
-                    <IconoPalomita size={14} color="#047857" />
-                  </>
-                ) : (
-                  <>
-                    <span>Sin enviar</span>
-                    <span style={{ fontSize: 10, lineHeight: 1, color: "#94a3b8" }}>○</span>
-                  </>
-                )}
+                <StatusPill tono={oAct.enviadoAlCliente ? "exito" : "neutro"}>
+                  {oAct.enviadoAlCliente ? "Documentación enviada" : "Sin enviar"}
+                </StatusPill>
               </button>
-              {/* El chip con el numero de cotizacion se quito: la tarjeta
-                  que viene justo debajo ya es «COTIZACION DE REFERENCIA
-                  C-26161», con su enlace para abrirla. Aqui solo se
-                  encabalgaba con el boton de volver y repetia el dato. */}
+              <span style={{ fontSize: 12.5, color: "var(--text-tertiary)", fontVariantNumeric: "tabular-nums" }}>
+                {oAct.id} · {fmtD(oAct.fechaInicio)} → {fmtD(oAct.fechaFin) || "En curso"}
+              </span>
+            </div>
           </div>
-        </div>
 
-        {/* Derecha: Botones de acción (cuadrícula 2x2 limpia en móvil para que nunca se desborden) */}
-        <div
-          className={isMobile ? "grid-2-col no-collapse-grid" : ""}
-          style={{
-            display: isMobile ? "grid" : "flex",
-            gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "none",
-            gap: 8,
-            width: isMobile ? "100%" : "auto",
-            flexShrink: 0,
-            alignItems: "center",
-          }}
-        >
-          {/* Botón CERTIFICAR en estilo Apple Dark Button */}
-          <button
-            onClick={() => irAPantalla("certificaciones", { obraId: oAct.id })}
-            style={{
-              background: "#1d1d1f",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: 10,
-              fontSize: 12,
-              padding: isMobile ? "9px 10px" : "7px 14px",
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
-              transition: "all 0.15s ease",
-              width: isMobile ? "100%" : "auto",
-              boxSizing: "border-box",
-            }}
-            title="Crear certificación de calidad para esta obra"
-          >
-            <span>📜</span>
-            <span>Certificar</span>
-            <span style={{ fontSize: 10, background: "rgba(255,255,255,0.2)", padding: "1px 5px", borderRadius: 4, fontWeight: 500 }}>
-              {oAct.avance >= 90 ? "Listo" : `${oAct.avance}%`}
-            </span>
-          </button>
-
-          {/* Botón CREAR INFORME en blanco Apple */}
-          <button
-            onClick={() => irAPantalla("informes", { obraId: oAct.id })}
-            style={{
-              background: "#ffffff",
-              color: "var(--text-main, #1d1d1f)",
-              border: "1px solid var(--border, #d2d2d7)",
-              borderRadius: 10,
-              fontSize: 12,
-              padding: isMobile ? "9px 10px" : "7px 13px",
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-              boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
-              transition: "all 0.15s ease",
-              width: isMobile ? "100%" : "auto",
-              boxSizing: "border-box",
-            }}
-            title="Crear informe de actividades para esta obra"
-          >
-            <span>📄</span>
-            <span>Crear informe</span>
-          </button>
-
-          {/* Botón FOTOTECA Y ZIP */}
-          <button
-            onClick={() => setDetTab("fototeca")}
-            style={{
-              background: detTab === "fototeca" ? "#1d1d1f" : "#ffffff",
-              color: detTab === "fototeca" ? "#ffffff" : "var(--text-main, #1d1d1f)",
-              border: detTab === "fototeca" ? "1px solid #1d1d1f" : "1px solid var(--border, #d2d2d7)",
-              borderRadius: 10,
-              fontSize: 12,
-              padding: isMobile ? "9px 10px" : "7px 13px",
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-              boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
-              transition: "all 0.15s ease",
-              width: isMobile ? "100%" : "auto",
-              boxSizing: "border-box",
-            }}
-            title="Ver todas las fotos de la obra y descargar en ZIP"
-          >
-            <span>📸</span>
-            <span>Fototeca y ZIP</span>
-          </button>
-
-          {/* Botón QUÉ SIGUE */}
-          <button
-            onClick={() => setMostrarGuia(!mostrarGuia)}
-            style={{
-              background: mostrarGuia ? "var(--surface-subtle, #e5e5ea)" : "var(--surface-subtle, #f5f5f7)",
-              color: "var(--text-main, #1d1d1f)",
-              border: "1px solid var(--border, #e5e5ea)",
-              borderRadius: 10,
-              fontSize: 12,
-              padding: isMobile ? "9px 10px" : "7px 12px",
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 5,
-              transition: "all 0.15s ease",
-              width: isMobile ? "100%" : "auto",
-              boxSizing: "border-box",
-            }}
-            title={mostrarGuia ? "Ocultar qué sigue" : "Mostrar guía de flujo y qué sigue en esta obra"}
-          >
-            <span>💡</span>
-            <span>{mostrarGuia ? "Ocultar qué sigue" : "Qué sigue"}</span>
-          </button>
-        </div>
-        </div>
-
-        {/* Metadatos en su propia fila, a todo el ancho y debajo de todo.
-            Iban apretados en la columna de la izquierda, donde se cortaban
-            con puntos suspensivos («13 de oct de 2026 → En curs…») teniendo
-            la fila entera libre. */}
-        <div
-          style={{
-            fontSize: 11.5,
-            color: "var(--text-muted, #6e6e73)",
-            lineHeight: 1.4,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: isMobile ? "normal" : "nowrap",
-          }}
-          title={`${oAct.id} · ${fmtD(oAct.fechaInicio)} → ${fmtD(oAct.fechaFin) || "En curso"} · ${oAct.proyecto} · ${oAct.ciudad}${oAct.direccion ? ` · ${oAct.direccion}` : ""}`}
-        >
-          <strong style={{ fontFamily: MONO, color: "var(--text-main, #1d1d1f)", fontWeight: 600 }}>{oAct.id}</strong>
-          {" · "}{fmtD(oAct.fechaInicio)} → {fmtD(oAct.fechaFin) || "En curso"}
-          {" · "}{oAct.proyecto}
-          {" · "}{oAct.ciudad}{oAct.direccion ? ` · ${oAct.direccion}` : ""}
+          <div style={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap", flexShrink: 0 }}>
+            <Button
+              variante="texto"
+              tam="sm"
+              onClick={() => irAPantalla("informes", { obraId: oAct.id })}
+              title="Crear informe de actividades para esta obra"
+            >
+              Crear informe
+            </Button>
+            <Button
+              variante="texto"
+              tam="sm"
+              aria-pressed={mostrarGuia}
+              onClick={() => setMostrarGuia(!mostrarGuia)}
+              title="Guía de lo que falta para cerrar esta obra"
+            >
+              Qué sigue
+            </Button>
+            <Button
+              variante="oscuro"
+              tam="sm"
+              style={{ marginLeft: 6 }}
+              onClick={() => irAPantalla("certificaciones", { obraId: oAct.id })}
+              title="Crear certificación de calidad para esta obra"
+            >
+              Certificar
+              <span style={{ opacity: 0.6, fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>
+                {oAct.avance >= 90 ? "Listo" : `${oAct.avance}%`}
+              </span>
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Cotización de Referencia: Objeto e Ítems (Sin amarillos, idéntico a Crear Cotización) */}
+      {/* Cotizacion de referencia: lo contratado, para tenerlo a la vista
+          mientras se ejecuta y se certifica. */}
       {cotVinc && (
-        <div
-          style={{
-            background: "var(--surface, #ffffff)",
-            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
-            borderRadius: 16,
-            padding: "16px 20px",
-            marginBottom: 14,
-            boxShadow: "0 4px 16px -2px rgba(0,0,0,0.02), 0 1px 3px rgba(0,0,0,0.02)",
-          }}
-        >
-          {/* Fila superior: Referencia y Botón para ir a la cotización */}
+        <Card ajustado style={{ marginBottom: 16 }}>
           <div
             style={{
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              gap: 8,
+              gap: 10,
               flexWrap: "wrap",
-              marginBottom: (objetoLimpio || itemsCot.length) ? 12 : 0,
-              paddingBottom: 10,
-              borderBottom: "1px solid var(--border, #f2f2f7)",
+              marginBottom: (objetoLimpio || itemsCot.length) ? 16 : 0,
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-muted, #6e6e73)" }}>
-                Cotización de Referencia
-              </span>
-              <span
-                onClick={() => irAPantalla("cotizacion", { cotizacionId: cotVinc.id })}
-                style={{
-                  fontSize: 11.5,
-                  fontWeight: 700,
-                  fontFamily: "monospace",
-                  color: "#ffffff",
-                  background: "#1d1d1f",
-                  borderRadius: 6,
-                  padding: "2px 8px",
-                  cursor: "pointer",
-                }}
-                title="Abrir cotización"
-              >
-                {cotVinc.numero}
-              </span>
-              {cotVinc.fecha && (
-                <span style={{ fontSize: 11.5, color: "var(--text-muted, #86868b)" }}>
-                  · Aprobada el {fmtD(cotVinc.fecha)}
+            <div style={{ minWidth: 0 }}>
+              <div style={{ ...TIPO.eyebrow, color: "var(--text-tertiary)" }}>Cotización de referencia</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
+                <span style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.01em", color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
+                  {cotVinc.numero}
                 </span>
-              )}
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: "#047857",
-                  background: "#ecfdf5",
-                  border: "1px solid #a7f3d0",
-                  borderRadius: 4,
-                  padding: "1px 6px",
-                }}
-              >
-                Vinculada
-              </span>
+                {cotVinc.fecha && (
+                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                    Aprobada el {fmtD(cotVinc.fecha)}
+                  </span>
+                )}
+                <StatusPill tono="exito">Vinculada</StatusPill>
+              </div>
             </div>
-
-            <button
+            <Button
+              variante="tertiary"
+              tam="sm"
+              iconoDerecha="flechaDer"
               onClick={() => irAPantalla("cotizacion", { cotizacionId: cotVinc.id })}
-              style={{
-                background: "#ffffff",
-                color: "#0071e3",
-                border: "1px solid var(--border, #d2d2d7)",
-                borderRadius: 8,
-                fontSize: 11.5,
-                fontWeight: 600,
-                padding: "4px 10px",
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 5,
-                transition: "all 0.15s ease",
-              }}
-              title="Abrir cotización en pantalla de cotizaciones"
+              title="Abrir la cotización en Cotizaciones"
             >
-              <span>Ver cotización comercial completa</span>
-              <span>↗</span>
-            </button>
+              Ver cotización
+            </Button>
           </div>
 
-          {/* Fila con Objeto a la izquierda e Ítems a la derecha */}
           {(objetoLimpio || itemsCot.length > 0) && (
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: (!isMobile && objetoLimpio && itemsCot.length > 0) ? "minmax(280px, 1fr) minmax(340px, 1.35fr)" : "1fr",
-                gap: 12,
-                alignItems: "stretch",
+                gridTemplateColumns: (!isMobile && objetoLimpio && itemsCot.length > 0) ? "minmax(260px, 1fr) minmax(320px, 1.35fr)" : "1fr",
+                gap: isMobile ? 20 : 32,
+                alignItems: "start",
+                borderTop: "1px solid var(--separator)",
+                paddingTop: 16,
               }}
             >
-              {/* Objeto contratado (Sin marcas amarillas, fondo suave con tipografía nítida) */}
               {objetoLimpio && (
-                <div
-                  style={{
-                    background: "var(--surface-subtle, #fbfbfd)",
-                    border: "1px solid var(--border, #e5e5ea)",
-                    borderRadius: 12,
-                    padding: "12px 14px",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-main, #1d1d1f)", marginBottom: 6 }}>
-                      🎯 Objeto del Contrato a Certificar
-                    </div>
-                    <div
-                      style={{
-                        background: "#ffffff",
-                        border: "1px solid var(--border, #e5e5ea)",
-                        borderRadius: 8,
-                        padding: "10px 12px",
-                        fontSize: 12,
-                        color: "var(--text-main, #1d1d1f)",
-                        lineHeight: 1.5,
-                        boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
-                      }}
-                    >
-                      {objetoLimpio}
-                    </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 6 }}>
+                    Objeto del contrato
                   </div>
-                  <div style={{ fontSize: 11, color: "var(--text-muted, #6e6e73)", marginTop: 8, display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--border, #f2f2f7)", paddingTop: 6 }}>
+                  <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: "var(--text-primary)" }}>
+                    {objetoLimpio}
+                  </p>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", marginTop: 12, fontSize: 12.5, color: "var(--text-tertiary)" }}>
                     <span>Resolución 4272 de 2021 · ANSI Z359</span>
-                    <span style={{ fontWeight: 600, color: "var(--text-main, #1d1d1f)" }}>✓ Conforme</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--text-secondary)" }}>
+                      <Icono nombre="check" size={13} /> Conforme
+                    </span>
                   </div>
                 </div>
               )}
 
-              {/* Detalle de ítems (Sin valores monetarios: solo Cant, Unidad y Descripción) */}
               {itemsCot.length > 0 && (
-                <div
-                  style={{
-                    border: "1px solid var(--border, #e5e5ea)",
-                    borderRadius: 12,
-                    overflow: "hidden",
-                    background: "#ffffff",
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
-                  }}
-                >
-                  <div style={{ background: "var(--surface-subtle, #fbfbfd)", padding: "7px 12px", borderBottom: "1px solid var(--border, #e5e5ea)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-main, #1d1d1f)" }}>
-                      Ítems Contratados a Certificar
-                    </span>
-                    <span style={{ fontSize: 10.5, color: "var(--text-muted, #86868b)" }}>
-                      {itemsCot.length} actividad(es)
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>Ítems contratados</span>
+                    <span style={{ fontSize: 12.5, color: "var(--text-tertiary)" }}>
+                      {itemsCot.length} {itemsCot.length === 1 ? "actividad" : "actividades"}
                     </span>
                   </div>
-                  <div style={{ overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11.5, textAlign: "left" }}>
-                      <thead>
-                        <tr style={{ borderBottom: "1px solid var(--border, #e5e5ea)", background: "var(--surface-subtle, #f5f5f7)" }}>
-                          <th style={{ padding: "6px 10px", color: "var(--text-muted, #6e6e73)", fontWeight: 600, width: "50px" }}>Cant.</th>
-                          <th style={{ padding: "6px 10px", color: "var(--text-muted, #6e6e73)", fontWeight: 600, width: "70px" }}>Unidad</th>
-                          <th style={{ padding: "6px 10px", color: "var(--text-muted, #6e6e73)", fontWeight: 600 }}>Descripción técnica del trabajo</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {itemsCot.map((it, idx) => {
-                          const cant = Number(it.cant) || 1;
-                          const desc = it.desc || it.descripcion || "Sin descripción";
-                          const unidad = it.unit || it.unidad || "Global";
-                          return (
-                            <tr key={it.id || idx} style={{ borderBottom: idx < itemsCot.length - 1 ? "1px solid var(--border, #f2f2f7)" : "none" }}>
-                              <td style={{ padding: "6px 10px", fontWeight: 700, fontFamily: "monospace", color: "var(--text-main, #1d1d1f)" }}>{cant}</td>
-                              <td style={{ padding: "6px 10px", color: "var(--text-muted, #6e6e73)" }}>{unidad}</td>
-                              <td style={{ padding: "6px 10px", color: "var(--text-main, #1d1d1f)", fontWeight: 500 }}>
-                                {desc}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                  <div>
+                    {itemsCot.map((it, idx) => {
+                      const cant = Number(it.cant) || 1;
+                      const desc = it.desc || it.descripcion || "Sin descripción";
+                      const unidad = it.unit || it.unidad || "Global";
+                      return (
+                        <div
+                          key={it.id || idx}
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "64px minmax(0,1fr)",
+                            gap: 12,
+                            padding: "10px 0",
+                            borderTop: idx === 0 ? "none" : "1px solid var(--separator)",
+                            alignItems: "baseline",
+                          }}
+                        >
+                          <span style={{ fontSize: 14, color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
+                            <strong style={{ fontWeight: 600 }}>{cant}</strong>{" "}
+                            <span style={{ color: "var(--text-tertiary)", fontSize: 12.5 }}>{unidad}</span>
+                          </span>
+                          <span style={{ fontSize: 14, lineHeight: 1.45, color: "var(--text-primary)" }}>{desc}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
             </div>
           )}
-        </div>
+        </Card>
       )}
 
       {mostrarGuia && (
@@ -598,126 +352,65 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
         />
       )}
 
-      {/* Barra de Avance interactiva estilo Apple Studio */}
-      <div
-        style={{
-          background: "var(--surface, #ffffff)",
-          border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
-          borderRadius: 14,
-          padding: "10px 16px",
-          marginBottom: 14,
-          display: "flex",
-          alignItems: "center",
-          gap: 14,
-          flexWrap: "wrap",
-          boxShadow: "0 2px 6px rgba(0,0,0,0.02)",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 170 }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #1d1d1f)" }}>
-            Avance de la obra:
-          </span>
-          <span style={{ fontSize: 13.5, fontWeight: 800, fontFamily: "monospace", color: "var(--text-main, #1d1d1f)" }}>
-            {oAct.avance}%
-          </span>
-          <span
-            style={{
-              fontSize: 10.5,
-              fontWeight: 600,
-              padding: "2px 7px",
-              borderRadius: 5,
-              background: oAct.avance === 100 ? "#ecfdf5" : oAct.avance >= 90 ? "#eff6ff" : "var(--surface-subtle, #f5f5f7)",
-              color: oAct.avance === 100 ? "#047857" : oAct.avance >= 90 ? "#1d4ed8" : "var(--text-muted, #6e6e73)",
-              border: oAct.avance === 100 ? "1px solid #a7f3d0" : oAct.avance >= 90 ? "1px solid #bfdbfe" : "1px solid #e5e5ea",
-            }}
-          >
-            {oAct.avance === 100 ? "✓ Finalizado" : oAct.avance >= 90 ? "Listo para Certificar" : "En Ejecución"}
-          </span>
+      {/* Avance: la cifra grande, como un precio en apple.com, y la barra
+          para moverlo debajo. */}
+      <Card ajustado style={{ marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>Avance de la obra</span>
+            <span style={{ fontSize: 28, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--text-primary)", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>
+              {oAct.avance}%
+            </span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <StatusPill tono={oAct.avance === 100 ? "exito" : oAct.avance >= 90 ? "info" : "acento"}>{estadoAvance}</StatusPill>
+            {bloqueada && <StatusPill tono="neutro">Obra cerrada</StatusPill>}
+          </div>
         </div>
-        <div style={{ flex: 1, minWidth: 160, display: "flex", alignItems: "center" }}>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={oAct.avance}
-            disabled={bloqueada}
-            title={bloqueada ? "Obra finalizada: el avance ya no se cambia." : undefined}
-            onChange={e => {
-              const avance = Number(e.target.value);
-              const autorActual = resolverAutorGuardado(membresia);
-              const ahoraIso = new Date().toISOString();
-              setObras(p => p.map(o => o.id === obraId ? {
-                ...o,
-                avance,
-                estado: estadoSegunAvance(avance, o.estado),
-                modificadoPor: membresia?.userId || null,
-                modificadoPorNombre: autorActual || o.modificadoPorNombre || "Camila Sepúlveda",
-                modificadoEn: ahoraIso,
-              } : o));
-            }}
-            style={{
-              width: "100%",
-              height: 6,
-              accentColor: "#1d1d1f",
-              cursor: bloqueada ? "not-allowed" : "pointer",
-            }}
-          />
-        </div>
-        {bloqueada && (
-          <span style={{ fontSize: 11, color: "#16a34a", fontWeight: 600 }}>
-            🔒 Finalizada
-          </span>
-        )}
-      </div>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={oAct.avance}
+          disabled={bloqueada}
+          aria-label="Avance de la obra"
+          title={bloqueada ? "Obra finalizada: el avance ya no se cambia." : undefined}
+          onChange={e => {
+            const avance = Number(e.target.value);
+            const autorActual = resolverAutorGuardado(membresia);
+            const ahoraIso = new Date().toISOString();
+            setObras(p => p.map(o => o.id === obraId ? {
+              ...o,
+              avance,
+              estado: estadoSegunAvance(avance, o.estado),
+              modificadoPor: membresia?.userId || null,
+              modificadoPorNombre: autorActual || o.modificadoPorNombre || "Camila Sepúlveda",
+              modificadoEn: ahoraIso,
+            } : o));
+          }}
+          style={{
+            width: "100%",
+            marginTop: 14,
+            accentColor: "var(--text-primary)",
+            cursor: bloqueada ? "not-allowed" : "pointer",
+          }}
+        />
+      </Card>
 
-      {/* Selector Segmentado de Pestañas (Estilo Apple macOS Studio) */}
-      <div
-        style={{
-          display: "inline-flex",
-          background: "var(--surface-subtle, #e5e5ea)",
-          padding: 3,
-          borderRadius: 10,
-          gap: 2,
-          marginBottom: 14,
-          flexWrap: "wrap",
-        }}
-      >
-        {/* Quedan las cuatro que se usan. Materiales y Despacho, Gastos,
-            Nomina y Horario estaban ahi sin usarse: cuatro pestañas de
-            siete que solo servian para alargar la fila y hacer dudar sobre
-            cual es la que importa. El codigo de esas vistas sigue en su
-            sitio por si vuelven a hacer falta. */}
-        {[
-          ["avance", "📸 Avance diario (Bitácora)"],
-          ["fototeca", "🖼️ Fototeca y ZIP"],
-          ["personal", "👷 Personal"],
-        ].map(([id, lb]) => {
-          const activo = detTab === id;
-          return (
-            <button
-              key={id}
-              onClick={() => setDetTab(id)}
-              style={{
-                background: activo ? "#ffffff" : "transparent",
-                color: activo ? "#1d1d1f" : "#6e6e73",
-                border: "none",
-                borderRadius: 8,
-                fontSize: 12,
-                fontWeight: activo ? 600 : 500,
-                padding: "6px 14px",
-                cursor: "pointer",
-                boxShadow: activo ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                transition: "all 0.15s ease",
-                whiteSpace: "nowrap",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-              }}
-            >
-              {lb}
-            </button>
-          );
-        })}
+      {/* Quedan las tres que se usan. Materiales y Despacho, Gastos, Nomina y
+          Horario estaban ahi sin usarse; el codigo de esas vistas sigue mas
+          abajo por si vuelven a hacer falta. */}
+      <div style={{ marginBottom: 16 }}>
+        <SegmentedControl
+          etiqueta="Secciones de la obra"
+          valor={detTab}
+          onChange={setDetTab}
+          opciones={[
+            { id: "avance", label: "Avance diario" },
+            { id: "fototeca", label: "Fototeca y ZIP" },
+            { id: "personal", label: "Personal", cuenta: empObra.length },
+          ]}
+        />
       </div>
 
       {/* TAB AVANCE Y FOTOS (bitacora que alimenta el informe) */}
@@ -748,28 +441,18 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
 
       {/* TAB PERSONAL */}
       {detTab==="personal"&&(
-        <div style={CD}>
+        <Card ajustado>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:10}}>
-            <div style={ST}>👷 Personal en obra</div>
+            <div>
+              <h2 style={{ ...TIPO.headline, margin: 0, color: "var(--text-primary)" }}>Personal en obra</h2>
+              <div style={{ fontSize: 13, color: "var(--text-tertiary)", marginTop: 2 }}>
+                {empObra.length === 0 ? "Nadie asignado todavía" : `${empObra.length} ${empObra.length === 1 ? "persona" : "personas"}`}
+              </div>
+            </div>
             {puedeCrearPersonal(membresia) && !nuevoEmp && !bloqueada && (
-              <button
-                onClick={()=>setNuevoEmp(true)}
-                style={{
-                  background: "#FFFAEB",
-                  color: "#B54708",
-                  border: "1px solid rgba(181, 71, 8, 0.35)",
-                  borderRadius: 8,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  padding: "7px 14px",
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}
-              >
-                + Registrar trabajador
-              </button>
+              <Button variante="secondary" tam="sm" icono="mas" onClick={()=>setNuevoEmp(true)}>
+                Registrar trabajador
+              </Button>
             )}
           </div>
 
@@ -789,63 +472,73 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               }}
             />
           )}
-          {empObra.length===0&&(
-            <div style={{textAlign:"center",padding:24,color:"var(--text-subtle, #94a3b8)",fontSize:13,background:"var(--surface-subtle, #f8fafc)",borderRadius:10,border:"1px dashed var(--border, #e2e8f0)",marginBottom:12}}>
-              Sin empleados asignados aún
-            </div>
-          )}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
-            {empObra.map((eid,idx)=>{
-              const emp=empleados.find(x=>x.id===eid);
-              if(!emp)return null;
-              const diasEmp=diasMap[eid]?diasMap[eid].size:0;
-              const jornal=Math.round(emp.salario/26);
-              return(
-                <div key={eid} style={{background:"var(--surface-subtle, #f8fafc)",borderRadius:10,padding:"14px 16px",border:"1px solid var(--border, #e2e8f0)"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-                    <Av init={emp.avatar} color={PAL[idx%PAL.length]} size={36}/>
-                    <div style={{flex:1}}>
-                      <div style={{fontSize:13,fontWeight:700,color:"var(--text-main)"}}>{emp.nombre}</div>
-                      <div style={{fontSize:11,color:"var(--text-muted, #64748b)"}}>{String(emp.cargo || "").toUpperCase()}</div>
-                      <div style={{fontSize:10,color:"var(--text-subtle, #94a3b8)"}}>📱 {emp.tel}</div>
+          {empObra.length>0&&(
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(260px, 1fr))",gap:12,marginBottom:16}}>
+              {empObra.map((eid,idx)=>{
+                const emp=empleados.find(x=>x.id===eid);
+                if(!emp)return null;
+                const diasEmp=diasMap[eid]?diasMap[eid].size:0;
+                const jornal=Math.round(emp.salario/26);
+                return(
+                  <div key={eid} style={{background:"var(--surface-subtle)",borderRadius:14,padding:"14px 16px"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:12}}>
+                      <Av init={emp.avatar} color={PAL[idx%PAL.length]} size={38}/>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:14,fontWeight:600,color:"var(--text-primary)"}}>{emp.nombre}</div>
+                        <div style={{fontSize:12.5,color:"var(--text-secondary)"}}>
+                          {String(emp.cargo || "Sin cargo").toUpperCase()}{emp.tel ? ` · ${emp.tel}` : ""}
+                        </div>
+                      </div>
+                      {!bloqueada&&(
+                        <Button
+                          variante="texto"
+                          tam="sm"
+                          title="Quitar de esta obra"
+                          onClick={()=>{
+                            const autorActual = resolverAutorGuardado(membresia);
+                            const ahoraIso = new Date().toISOString();
+                            setObras(p=>p.map(o=>o.id===obraId?{
+                              ...o,
+                              empleados:(o.empleados||[]).filter(id=>id!==eid),
+                              modificadoPor: membresia?.userId || null,
+                              modificadoPorNombre: autorActual || o.modificadoPorNombre || "Camila Sepúlveda",
+                              modificadoEn: ahoraIso,
+                            }:o));
+                            if(setHorarios) setHorarios(p=>p.filter(h=>!(h.obraId===obraId && h.empleadoId===eid)));
+                          }}
+                        >
+                          Quitar
+                        </Button>
+                      )}
                     </div>
-                    {!bloqueada&&(
-                      <button onClick={()=>{
-                        const autorActual = resolverAutorGuardado(membresia);
-                        const ahoraIso = new Date().toISOString();
-                        setObras(p=>p.map(o=>o.id===obraId?{
-                          ...o,
-                          empleados:(o.empleados||[]).filter(id=>id!==eid),
-                          modificadoPor: membresia?.userId || null,
-                          modificadoPorNombre: autorActual || o.modificadoPorNombre || "Camila Sepúlveda",
-                          modificadoEn: ahoraIso,
-                        }:o));
-                        if(setHorarios) setHorarios(p=>p.filter(h=>!(h.obraId===obraId && h.empleadoId===eid)));
-                      }}
-                        style={{background:"rgba(220, 38, 38, 0.15)",border:"1px solid rgba(248, 113, 113, 0.4)",color:"#f87171",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11}}>✕</button>
+                    {/* El jornal y la cuenta bancaria del companero son datos
+                        confidenciales: sin permiso solo se ven los dias. */}
+                    <div style={{display:"grid",gridTemplateColumns:verDinero?"1fr 1fr 1fr":"1fr",gap:8,marginTop:12}}>
+                      {[["Días en obra",diasEmp+" d"],...(verDinero?[["Jornal/día",fmt(jornal)],["Costo obra",fmt(jornal*diasEmp)]]:[])].map(([k,v])=>(
+                        <div key={k}>
+                          <div style={{fontSize:11.5,color:"var(--text-tertiary)"}}>{k}</div>
+                          <div style={{fontSize:14,fontWeight:600,color:"var(--text-primary)",fontVariantNumeric:"tabular-nums",marginTop:2}}>{v}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {verDinero&&(
+                      <div style={{marginTop:10,fontSize:12,color:"var(--text-tertiary)"}}>
+                        {emp.banco} · {emp.tipoCuenta} · <span style={{fontVariantNumeric:"tabular-nums"}}>{emp.numeroCuenta||"—"}</span>
+                      </div>
                     )}
                   </div>
-                  {/* El jornal y la cuenta bancaria del companero son datos
-                      confidenciales: sin permiso solo se ven los dias. */}
-                  <div style={{display:"grid",gridTemplateColumns:verDinero?"1fr 1fr 1fr":"1fr",gap:6,fontSize:10}}>
-                    {[["Días en obra",diasEmp+"d","#60a5fa"],...(verDinero?[["Jornal/día",fmt(jornal),"#34d399"],["Costo obra",fmt(jornal*diasEmp),"#a78bfa"]]:[])].map(([k,v,c])=>(
-                      <div key={k} style={{background:"var(--surface, #fff)",borderRadius:5,padding:"6px 8px",textAlign:"center",border:"1px solid var(--border, #f1f5f9)"}}>
-                        <div style={{color:"var(--text-subtle, #94a3b8)",marginBottom:2,fontSize:9}}>{k}</div>
-                        <div style={{fontWeight:700,color:c,fontSize:12}}>{v}</div>
-                      </div>
-                    ))}
-                  </div>
-                  {verDinero&&<div style={{marginTop:8,fontSize:10,color:"var(--text-subtle, #94a3b8)"}}>🏦 {emp.banco} · {emp.tipoCuenta} · <span style={{fontFamily:"monospace"}}>{emp.numeroCuenta||"—"}</span></div>}
-                </div>
-              );
-            })}
-          </div>
-          <div style={bloqueada?{display:"none"}:undefined}>
-            <LBL>➕ Asignar empleado a esta obra</LBL>
-            <select value="" onChange={ev=>{
-              const v=ev.target.value;
-              if(!v)return;
-              if(!empObra.includes(v)) {
+                );
+              })}
+            </div>
+          )}
+          {!bloqueada&&(
+            <Input
+              label="Asignar empleado a esta obra"
+              como="select"
+              value=""
+              onChange={ev=>{
+                const v=ev.target.value;
+                if(!v || empObra.includes(v))return;
                 const autorActual = resolverAutorGuardado(membresia);
                 const ahoraIso = new Date().toISOString();
                 setObras(p=>p.map(o=>o.id===obraId?{
@@ -855,15 +548,15 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                   modificadoPorNombre: autorActual || o.modificadoPorNombre || "Camila Sepúlveda",
                   modificadoEn: ahoraIso,
                 }:o));
-              }
-            }} style={{...SI,fontSize:12}}>
+              }}
+            >
               <option value="">Selecciona un empleado...</option>
               {empleados.filter(emp=>!empObra.includes(emp.id)).map(emp=>(
                 <option key={emp.id} value={emp.id}>{emp.nombre} · {String(emp.cargo || "").toUpperCase()}</option>
               ))}
-            </select>
-          </div>
-        </div>
+            </Input>
+          )}
+        </Card>
       )}
 
       {/* TAB GASTOS */}

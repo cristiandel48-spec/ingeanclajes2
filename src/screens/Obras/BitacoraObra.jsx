@@ -1,6 +1,8 @@
 import AvisoFlujo from "../../components/AvisoFlujo";
 import BotonDictado from "../../components/ui/BotonDictado";
 import LBL from "../../components/ui/LBL";
+import { Button } from "../../components/ui";
+import { TIPO } from "../../styles/designTokens";
 import { useRef, useState } from "react";
 import { B, SI } from "../../styles/tokens";
 import { fmtD, today } from "../../lib/format";
@@ -116,37 +118,18 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
   return (
     // En una obra cerrada la pestaña se mira pero no se toca. El aviso de
     // abajo queda fuera del apagado para que se pueda leer y seleccionar.
-    <div style={{ background: "var(--surface, #ffffff)", borderRadius: 16, border: "1px solid var(--border, rgba(0,0,0,0.08))", padding: "16px 20px",
-      boxShadow: "0 4px 16px -2px rgba(0,0,0,0.02), 0 1px 3px rgba(0,0,0,0.02)",
-      ...(bloqueada ? { pointerEvents: "none", opacity: 0.8 } : null) }}>
+    <div className="ui-card ui-card--ajustado" style={bloqueada ? { pointerEvents: "none", opacity: 0.8 } : undefined}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-main, #1d1d1f)", letterSpacing: "-0.01em" }}>📸 Avance y fotos de la obra</div>
-          <div style={{ fontSize: 11.5, color: "var(--text-muted, #6e6e73)", marginTop: 2 }}>
+          <h2 style={{ ...TIPO.headline, margin: 0, color: "var(--text-primary)" }}>Avance y fotos de la obra</h2>
+          <div style={{ fontSize: 13, color: "var(--text-tertiary)", marginTop: 2 }}>
             {resumen.registros} registro(s) · {resumen.fotos} foto(s) cargadas
           </div>
         </div>
         {!bloqueada && (
-          <button
-            onClick={agregarRegistro}
-            style={{
-              background: "#f47c20",
-              color: "#ffffff",
-              border: "none",
-              fontSize: 12,
-              fontWeight: 600,
-              padding: "7px 16px",
-              borderRadius: 10,
-              cursor: "pointer",
-              boxShadow: "0 1px 3px rgba(244, 124, 32, 0.25)",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              transition: "all 0.15s ease",
-            }}
-          >
-            + Registrar avance del día
-          </button>
+          <Button variante="oscuro" tam="sm" icono="mas" onClick={agregarRegistro}>
+            Registrar avance del día
+          </Button>
         )}
       </div>
 
@@ -177,9 +160,9 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
       )}
 
       {registros.length === 0 && (
-        <div style={{ textAlign: "center", padding: 32, color: "var(--text-muted, #86868b)", fontSize: 13, background: "var(--surface-subtle, #fbfbfd)", borderRadius: 12, border: "1px dashed var(--border, #d2d2d7)" }}>
+        <div style={{ textAlign: "center", padding: "40px 24px", color: "var(--text-primary)", fontSize: 15, fontWeight: 600, background: "var(--surface-subtle)", borderRadius: 14 }}>
           Todavía no hay avances registrados en esta obra.
-          <div style={{ fontSize: 11.5, marginTop: 6, color: "var(--text-muted, #6e6e73)" }}>
+          <div style={{ fontSize: 13, fontWeight: 400, marginTop: 6, color: "var(--text-secondary)" }}>
             Dale a «Registrar avance del día» y sube las fotos de lo que se hizo.
           </div>
         </div>

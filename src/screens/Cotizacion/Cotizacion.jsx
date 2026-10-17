@@ -12,6 +12,7 @@ import SelectorCiudadColombia from "../../components/SelectorCiudadColombia";
 import { useMediaQuery, useIsMobile } from "../../hooks/useMediaQuery";
 import { TEXTOS_DOCUMENTO_DEFAULT, getTextosDocumento } from "../../lib/cotizacionTextos";
 import LBL from "../../components/ui/LBL";
+import { Button } from "../../components/ui";
 import BotonCorregir from "../../components/ui/BotonCorregir";
 import { corregirOrtografiaLocal } from "../../lib/correctorTexto";
 import { useEffect, useRef, useState } from "react";
@@ -470,24 +471,6 @@ export default function Cotizacion({ctx}){
   const guardarRef = useRef(guardarCotizacion);
   useEffect(()=>{ guardarRef.current = guardarCotizacion; });
 
-  // Todas las acciones del formulario viven en la barra de arriba.
-  //
-  // Estaban repartidas: "Guardar" arriba y las otras cuatro en el titulo de
-  // la pantalla, que ademas ocupaba dos renglones antes de empezar el
-  // formulario. Juntas ahi arriba se ahorra ese alto y no hay que buscar el
-  // boton en dos sitios.
-  //
-  // Se ven en tres niveles: lo secundario -volver, dictar, ver el
-  // documento- en gris; "Guardar" en naranja, que es lo que se hace mas
-  // veces; y "Guardar y ver" con el naranja solo en el borde, para que se
-  // note que es hermano del anterior sin competir con el.
-  const BOTON_BASE = {
-    borderRadius:9, padding:"7px 13px", fontSize:12, fontWeight:600,
-    cursor:"pointer", fontFamily:"inherit", whiteSpace:"nowrap", lineHeight:1.2,
-    display:"inline-flex", alignItems:"center", gap:5,
-  };
-  const SECUNDARIO = { ...BOTON_BASE, background:"var(--btn-cancelar-bg, #f1f5f9)", color:"var(--btn-cancelar-text, #475569)", border:"1px solid var(--border, #e2e8f0)" };
-
   // Descarga la cotizacion en PDF, sin pasar por el dialogo de impresion.
   //
   // Antes abria una pestaña con el documento y el dialogo del navegador, y
@@ -531,98 +514,27 @@ export default function Cotizacion({ctx}){
   const nuevaRef = useRef(nuevaCotizacion);
   useEffect(()=>{ nuevaRef.current = nuevaCotizacion; });
 
+  // En el editor la barra de arriba queda vacia: Volver y Guardar ya estan en
+  // la barra fija del formulario, y tenerlos dos veces era ruido.
   useAccionesPantalla(
     tab === "lista" ? (
-      previewCot ? (
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button
-            type="button"
-            style={{
-              background: "var(--surface-subtle, #f2f4f7)",
-              color: "var(--text-main, #101828)",
-              border: "1px solid var(--border, #eaecf0)",
-              borderRadius: 8,
-              padding: isMobile ? "6px 12px" : "7px 14px",
-              fontSize: 12.5,
-              fontWeight: 600,
-              cursor: "pointer",
-              fontFamily: "inherit",
-              whiteSpace: "nowrap",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 4,
-            }}
+      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+        {previewCot && (
+          <Button
+            variante="texto"
+            tam="sm"
+            icono="flechaIzq"
             onClick={() => setPreviewCot(null)}
             title="Volver al listado de cotizaciones"
           >
-            ← Volver
-          </button>
-          {!isMobile && (
-            <button
-              type="button"
-              style={{
-                background: "#FFFAEB",
-                color: "#B54708",
-                border: "1px solid rgba(181, 71, 8, 0.35)",
-                borderRadius: 8,
-                padding: "7px 16px",
-                fontSize: 12.5,
-                fontWeight: 700,
-                cursor: "pointer",
-                fontFamily: "inherit",
-                whiteSpace: "nowrap",
-                boxShadow: "0 1px 2px rgba(181, 71, 8, 0.08)",
-              }}
-              onClick={() => nuevaRef.current()}
-            >
-              + Nueva Cotización
-            </button>
-          )}
-        </div>
-      ) : (
-        <button
-          style={{
-            background: "#FFFAEB",
-            color: "#B54708",
-            border: "1px solid rgba(181, 71, 8, 0.35)",
-            borderRadius: 8,
-            padding: isMobile ? "6px 12px" : "7px 16px",
-            fontSize: isMobile ? 12 : 12.5,
-            fontWeight: 700,
-            cursor: "pointer",
-            fontFamily: "inherit",
-            whiteSpace: "nowrap",
-            boxShadow: "0 1px 2px rgba(181, 71, 8, 0.08)",
-          }}
-          onClick={() => nuevaRef.current()}
-        >
-          + Nueva Cotización
-        </button>
-      )
-    ) : tab === "form" ? (
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <button
-          style={{ ...SECUNDARIO, padding: "6px 12px", fontSize: 12, fontWeight: 600 }}
-          onClick={() => setTab("lista")}
-          title="Volver al listado de cotizaciones"
-        >
-          ← Volver a lista
-        </button>
-        <button
-          style={{
-            ...BOTON_BASE,
-            background: "#FFFAEB",
-            color: "#B54708",
-            border: "1px solid rgba(181, 71, 8, 0.35)",
-            fontWeight: 700,
-            padding: "6.5px 16px",
-            fontSize: 12.5,
-            boxShadow: "0 1px 2px rgba(181, 71, 8, 0.08)",
-          }}
-          onClick={() => guardarRef.current()}
-        >
-          💾 Guardar
-        </button>
+            Volver
+          </Button>
+        )}
+        {!(previewCot && isMobile) && (
+          <Button variante="oscuro" tam="sm" icono="mas" onClick={() => nuevaRef.current()}>
+            Nueva cotización
+          </Button>
+        )}
       </div>
     ) : null,
     [tab, previewCot, isMobile]
@@ -1226,153 +1138,118 @@ export default function Cotizacion({ctx}){
           llevaba al lado ya estan arriba en la barra. Queda solo este
           renglon, que dice lo unico que no se sabe de memoria: si es nueva o
           cual se esta editando. */}
-      {/* Barra ejecutiva flotante con KPIs y acciones del editor en una sola línea */}
+      {/* Barra del editor al estilo de la de apple.com: a la izquierda que
+          cotizacion es y cuanto suma, a la derecha las acciones como texto
+          suelto, sin cajas ni emoji, y solo Guardar como pildora oscura. */}
       <div
         style={{
           position: "sticky",
           top: 0,
           zIndex: 40,
-          background: "var(--surface, #ffffff)",
-          borderRadius: 12,
-          border: "1px solid var(--border, #eaecf0)",
-          padding: isMobile ? "8px 10px" : "8px 14px",
+          background: "color-mix(in srgb, var(--surface) 82%, transparent)",
+          backdropFilter: "saturate(180%) blur(20px)",
+          WebkitBackdropFilter: "saturate(180%) blur(20px)",
+          borderRadius: 14,
+          border: "1px solid var(--separator)",
+          padding: isMobile ? "6px 8px" : "6px 8px 6px 4px",
           marginBottom: 16,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: isMobile ? "wrap" : "nowrap",
           gap: 10,
-          boxShadow: "0 2px 8px -2px rgba(16,24,40,0.06), 0 1px 3px -1px rgba(16,24,40,0.04)",
-          overflowX: isMobile ? "auto" : "visible",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          <button
-            type="button"
-            style={{
-              ...SECUNDARIO,
-              fontSize: 12,
-              padding: "5px 10px",
-              fontWeight: 600,
-            }}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0, minWidth: 0 }}>
+          <Button
+            variante="texto"
+            tam="sm"
+            icono="flechaIzq"
             onClick={() => setTab("lista")}
             title="Volver al listado de cotizaciones"
           >
-            ← Volver
-          </button>
-          
-          <span style={{
-            background: "var(--surface-subtle, #f2f4f7)",
-            color: "var(--text-main, #101828)",
-            border: "1px solid var(--border, #eaecf0)",
-            borderRadius: 6,
-            padding: "2px 7px",
-            fontSize: 11.5,
-            fontWeight: 700,
-            whiteSpace: "nowrap",
-          }}>
+            Cotizaciones
+          </Button>
+
+          <span style={{ width: 1, height: 18, background: "var(--separator)", flexShrink: 0 }} />
+
+          <span style={{ fontSize: 12.5, color: "var(--text-tertiary)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
             {cot || "Borrador"}
           </span>
 
           <span
             style={{
-              fontSize: 13,
+              fontSize: 13.5,
               fontWeight: 600,
-              color: "var(--text-main, #101828)",
+              letterSpacing: "-0.01em",
+              color: "var(--text-primary)",
               whiteSpace: "nowrap",
-              maxWidth: isMobile ? "110px" : "180px",
+              maxWidth: isMobile ? "110px" : "220px",
               overflow: "hidden",
               textOverflow: "ellipsis",
             }}
-            title={cl.nombre ? cl.nombre : "Nuevo Cliente"}
+            title={cl.nombre ? cl.nombre : "Nuevo cliente"}
           >
-            {cl.nombre ? cl.nombre : "Nuevo Cliente"}
+            {cl.nombre ? cl.nombre : "Nuevo cliente"}
           </span>
 
-          <div style={{
-            display: "inline-flex",
-            alignItems: "baseline",
-            gap: 5,
-            background: "rgba(224, 52, 42, 0.06)",
-            border: "1px solid rgba(224, 52, 42, 0.15)",
-            borderRadius: 7,
-            padding: "3px 8px",
-            whiteSpace: "nowrap",
-          }}>
-            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted, #667085)" }}>Total COP:</span>
-            <span style={{ fontSize: 13.5, fontWeight: 700, color: "#E0342A", fontVariantNumeric: "tabular-nums" }}>
-              {fmt(totalCotizacionCalculado)}
-            </span>
-          </div>
+          <span style={{ fontSize: 13.5, color: "var(--text-secondary)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", letterSpacing: "-0.01em" }}>
+            {fmt(totalCotizacionCalculado)}
+          </span>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+        <div style={{
+          display: "flex", alignItems: "center", gap: 2, flexShrink: 0,
+          // En el telefono no caben en un renglon: bajan en vez de salirse.
+          flexWrap: isMobile ? "wrap" : "nowrap",
+          width: isMobile ? "100%" : "auto",
+        }}>
           {!dictando && (
-            <button
-              type="button"
-              style={{ ...SECUNDARIO, padding: "5px 9px" }}
-              onClick={() => setDictando(true)}
-              title="Armar la cotización hablando"
-            >
-              🎤 Dictar
-            </button>
+            <Button variante="texto" tam="sm" onClick={() => setDictando(true)} title="Armar la cotización hablando">
+              Dictar
+            </Button>
           )}
 
           {!importando && (
-            <button
-              type="button"
-              style={{ ...SECUNDARIO, padding: "5px 9px" }}
+            <Button
+              variante="texto"
+              tam="sm"
               onClick={() => setImportando(true)}
               title="Leer la solicitud que mandó el cliente y armar la cotización con ella"
             >
-              📄 Importar
-            </button>
+              Importar
+            </Button>
           )}
 
-          <button
-            type="button"
-            style={verDocumento
-              ? { ...BOTON_BASE, background: "var(--c-tinta, #0f172a)", color: "#ffffff", border: "1px solid var(--border, #0f172a)", padding: "5px 10px" }
-              : { ...SECUNDARIO, padding: "5px 10px" }}
+          <Button
+            variante="texto"
+            tam="sm"
+            aria-pressed={verDocumento}
             onClick={() => setVerDocumento((v) => !v)}
             title="Muestra el documento completo tal como se imprimirá, mientras editas"
           >
-            {verDocumento ? "👁️ Ocultar doc" : "👁️ Ver doc"}
-          </button>
+            {isMobile ? "Documento" : verDocumento ? "Ocultar documento" : "Ver documento"}
+          </Button>
 
-          <button
-            type="button"
-            style={{
-              ...BOTON_BASE,
-              background: bajandoPdf === "editor" ? "var(--border, #e2e8f0)" : "var(--surface-subtle, #f2f4f7)",
-              color: bajandoPdf === "editor" ? "var(--text-subtle, #94a3b8)" : "var(--text-main, #101828)",
-              border: "1px solid var(--border, #eaecf0)",
-              padding: "5px 10px",
-            }}
+          <Button
+            variante="texto"
+            tam="sm"
             disabled={Boolean(bajandoPdf)}
             onClick={descargarPdfDesdeEditor}
             title="Descarga el documento de la cotización en formato PDF directamente"
           >
-            {bajandoPdf === "editor" ? "Generando…" : "📥 PDF"}
-          </button>
+            {bajandoPdf === "editor" ? "Generando…" : "PDF"}
+          </Button>
 
-          <button
-            type="button"
-            style={{
-              ...BOTON_BASE,
-              background: "#FFFAEB",
-              color: "#B54708",
-              border: "1px solid rgba(181, 71, 8, 0.35)",
-              fontSize: 12,
-              padding: "5px 14px",
-              fontWeight: 700,
-              boxShadow: "0 1px 2px rgba(181, 71, 8, 0.08)",
-            }}
+          <Button
+            variante="oscuro"
+            tam="sm"
+            style={{ marginLeft: "auto" }}
             onClick={() => guardarRef.current()}
             title="Guarda los cambios de la cotización"
           >
-            💾 Guardar
-          </button>
+            Guardar
+          </Button>
         </div>
       </div>
 

@@ -41,6 +41,17 @@ export const componentesCss = `
       border-color: var(--danger-bg); }
     .ui-btn--destructive:hover:not(:disabled) { border-color: var(--danger); }
 
+    /* Barra al estilo de la de apple.com: las acciones son solo texto, sin
+       caja ni emoji, y la principal es una pildora oscura. */
+    .ui-btn--texto { background: transparent; color: var(--text-secondary);
+      font-weight: 400; padding: 0 10px; border-radius: 980px; }
+    .ui-btn--texto:hover:not(:disabled) { color: var(--text-primary); background: var(--fill); }
+    .ui-btn--texto[aria-pressed="true"] { color: var(--text-primary); font-weight: 600; background: var(--fill); }
+
+    .ui-btn--oscuro { background: var(--text-primary); color: var(--surface);
+      border-radius: 980px; padding: 0 18px; }
+    .ui-btn--oscuro:hover:not(:disabled) { opacity: .86; }
+
     /* En el telefono y en obra todo lo que se toca mide 44 */
     @media (max-width: 768px) {
       .ui-btn { --ui-btn-alto: 44px; }

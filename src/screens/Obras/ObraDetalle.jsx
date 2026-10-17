@@ -9,9 +9,7 @@ import { useEffect, useState } from "react";
 import { B, CD, PAL, SI, ST } from "../../styles/tokens";
 import { TIPO } from "../../styles/designTokens";
 import { Button, Card, Icono, Input, SegmentedControl, StatusPill } from "../../components/ui";
-import GuiaFlujoObra from "./GuiaFlujoObra";
 import { fmt, fmtD, today } from "../../lib/format";
-import { resumenBitacora } from "../../lib/bitacoraObra";
 import { estadoSegunAvance, obraEstaCerrada } from "../../lib/flujoObra";
 import { esAdmin, puedeCrearPersonal, puedeVerDinero } from "../../lib/permisos";
 import { siguienteIdUnico } from "../../lib/identificadores";
@@ -50,7 +48,6 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
   const [gastoForm,setGastoForm]=useState({proveedorId:"PROV-001",concepto:"",monto:0,fecha:today(),fechaVence:"",factura:""});
   const [nuevoEmp,setNuevoEmp]=useState(false);
   const [showGasto,setShowGasto]=useState(false);
-  const [mostrarGuia,setMostrarGuia]=useState(false);
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" ? window.innerWidth < 768 : false
   );
@@ -87,7 +84,6 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
   const saludoTexto = cotTextos?.saludo || "";
   const objetoLimpio = extraerObjetoCotizacion(saludoTexto);
   const itemsCot = cotProps.flatMap((p) => (Array.isArray(p.items) ? p.items : []));
-  const resumenAvance=resumenBitacora(oAct.bitacora);
 
   const diasMap={};
   horariosObra.forEach(h=>{if(!diasMap[h.empleadoId])diasMap[h.empleadoId]=new Set();diasMap[h.empleadoId].add(h.fecha);});
@@ -205,15 +201,6 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               title="Crear informe de actividades para esta obra"
             >
               Crear informe
-            </Button>
-            <Button
-              variante="texto"
-              tam="sm"
-              aria-pressed={mostrarGuia}
-              onClick={() => setMostrarGuia(!mostrarGuia)}
-              title="Guía de lo que falta para cerrar esta obra"
-            >
-              Qué sigue
             </Button>
             <Button
               variante="oscuro"
@@ -339,18 +326,6 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
         </Card>
       )}
 
-      {mostrarGuia && (
-        <GuiaFlujoObra
-          obra={oAct}
-          empleadosAsignados={empObra.length}
-          registrosAvance={resumenAvance.registros}
-          fotosAvance={resumenAvance.fotos}
-          verDinero={verDinero}
-          onVerAvance={()=>setDetTab("avance")}
-          onCrearInforme={()=>irAPantalla("informes",{obraId:oAct.id})}
-          onCrearCertificacion={()=>irAPantalla("certificaciones",{obraId:oAct.id})}
-        />
-      )}
 
       {/* Avance: la cifra grande, como un precio en apple.com, y la barra
           para moverlo debajo. */}

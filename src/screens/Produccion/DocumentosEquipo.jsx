@@ -1060,7 +1060,7 @@ export default function DocumentosEquipo({
                 cursor: "pointer",
               }}
             >
-              🔗 Copiar enlace
+              Copiar enlace
             </button>
 
             <button

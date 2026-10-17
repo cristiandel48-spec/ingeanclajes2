@@ -51,7 +51,7 @@ export default function BarraAdjuntoPrevia({ adjunto, onQuitar, subiendo = false
 
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#B54708", display: "flex", alignItems: "center", gap: 4 }}>
-            <span>{adjunto.esImagen ? "🖼️ Captura / Imagen lista" : "📎 Archivo listo"}</span>
+            <span>{adjunto.esImagen ? "Captura / Imagen lista" : "Archivo listo"}</span>
             {subiendo && <span style={{ fontSize: 10, color: "#175CD3" }}>· Procesando…</span>}
           </div>
           <div

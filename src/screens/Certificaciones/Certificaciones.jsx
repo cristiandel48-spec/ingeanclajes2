@@ -401,7 +401,7 @@ export default function Certificaciones({ctx}){
           }}
           onClick={() => editarCertificacion(sel)}
         >
-          ✏️ Editar
+          Editar
         </button>
         <button
           disabled={descargandoPdf}
@@ -417,7 +417,7 @@ export default function Certificaciones({ctx}){
           }}
           onClick={() => descargarPdf(sel)}
         >
-          {descargandoPdf ? "⏳ Generando PDF..." : "📥 Descargar PDF"}
+          {descargandoPdf ? "⏳ Generando PDF..." : "Descargar PDF"}
         </button>
         <button
           style={{
@@ -430,7 +430,7 @@ export default function Certificaciones({ctx}){
           }}
           onClick={() => imprimir(sel)}
         >
-          🖨️ Imprimir / PDF
+          Imprimir / PDF
         </button>
       </div>
     ) : (!sel && !nueva) ? (
@@ -509,72 +509,35 @@ export default function Certificaciones({ctx}){
         <div style={{
           ...CD,
           marginBottom: 24,
-          borderRadius: 14,
-          border: "1px solid var(--border-color, #e2e8f0)",
-          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.06)",
-          padding: 24,
-          background: "var(--card-bg, #ffffff)"
         }}>
-          {/* Protocol Header Card */}
+          {/* Cabecera como la del informe: titulo en su tamaño de siempre, la
+              norma en gris debajo y los dos datos clave como texto, sin la
+              caja rosada ni la etiqueta roja. */}
           <div style={{
-            background: "linear-gradient(135deg, rgba(224, 52, 42, 0.05) 0%, rgba(224, 52, 42, 0.01) 100%)",
-            border: "1px solid rgba(224, 52, 42, 0.15)",
-            borderRadius: 12,
-            padding: "16px 20px",
-            marginBottom: 20,
+            marginBottom: 18,
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center",
+            alignItems: "flex-end",
             flexWrap: "wrap",
             gap: 12
           }}>
             <div>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-                <span style={{
-                  background: "#E0342A",
-                  color: "#ffffff",
-                  fontSize: 10,
-                  fontWeight: 800,
-                  padding: "3px 8px",
-                  borderRadius: 5,
-                  textTransform: "uppercase",
-                  letterSpacing: 0.8
-                }}>
-                  Protocolo Técnico Oficial
-                </span>
-                <span style={{fontSize:11.5,fontWeight:700,color:"var(--text-subtle, #64748b)"}}>
-                  Resolución 4272 de 2021 & ANSI Z359
-                </span>
+              <div style={{fontSize:18,fontWeight:700,letterSpacing:"-0.015em",lineHeight:1.25,color:"var(--text-primary)"}}>
+                {editId ? `Editar ${form.tipo || "Certificación"} ${form.numero || ""}` : `Nueva ${(form.tipo || "Certificación").toLowerCase()} de seguridad`}
               </div>
-              <div style={{fontSize:16,fontWeight:800,color:"var(--text-main, #0f172a)"}}>
-                {editId ? `Editar ${form.tipo || "Certificación"} ${form.numero || ""}` : `Nueva ${form.tipo || "Certificación"} de Seguridad`}
+              <div style={{fontSize:12,color:"var(--text-tertiary)",marginTop:3}}>
+                Protocolo técnico oficial · Resolución 4272 de 2021 y ANSI Z359
               </div>
             </div>
 
-            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-              <div style={{
-                background: "var(--card-bg, #ffffff)",
-                border: "1px solid var(--border-color, #e2e8f0)",
-                borderRadius: 8,
-                padding: "6px 12px",
-                fontSize: 11,
-                color: "var(--text-subtle, #64748b)",
-                textAlign: "center"
-              }}>
-                <div style={{fontSize:9.5,fontWeight:700,textTransform:"uppercase",color:"#94a3b8"}}>Validez Máxima</div>
-                <div style={{fontWeight:800,color:"#059669"}}>12 Meses</div>
+            <div style={{display:"flex",gap:20,flexWrap:"wrap"}}>
+              <div>
+                <div style={{fontSize:11,color:"var(--text-tertiary)"}}>Validez máxima</div>
+                <div style={{fontSize:13,fontWeight:600,color:"var(--text-primary)"}}>12 meses</div>
               </div>
-              <div style={{
-                background: "var(--card-bg, #ffffff)",
-                border: "1px solid var(--border-color, #e2e8f0)",
-                borderRadius: 8,
-                padding: "6px 12px",
-                fontSize: 11,
-                color: "var(--text-subtle, #64748b)",
-                textAlign: "center"
-              }}>
-                <div style={{fontSize:9.5,fontWeight:700,textTransform:"uppercase",color:"#94a3b8"}}>Folio Asignado</div>
-                <div style={{fontWeight:800,color:"var(--text-main, #0f172a)"}}>{form.numero || "Auto / Manual"}</div>
+              <div>
+                <div style={{fontSize:11,color:"var(--text-tertiary)"}}>Folio</div>
+                <div style={{fontSize:13,fontWeight:600,color:"var(--text-primary)",fontVariantNumeric:"tabular-nums"}}>{form.numero || "Automático"}</div>
               </div>
             </div>
           </div>
@@ -709,7 +672,7 @@ export default function Certificaciones({ctx}){
                     }}
                     title="Cargar los sistemas con cantidades en letras y números desde la cotización vinculada"
                   >
-                    🪄 Desde cotización ({obras.find(o=>o.id===form.obraId)?.cotizacionId ? (cotizaciones.find(c=>c.id===obras.find(o=>o.id===form.obraId)?.cotizacionId)?.numero || "Cot") : "Cot"})
+                    Desde cotización ({obras.find(o=>o.id===form.obraId)?.cotizacionId ? (cotizaciones.find(c=>c.id===obras.find(o=>o.id===form.obraId)?.cotizacionId)?.numero || "Cot") : "Cot"})
                   </button>
                 )}
                 {(observacionesDesdeInformes(informes, form.obraId, informeRef) || actividadesDesdeInformes(informes, form.obraId, informeRef)) && (
@@ -728,7 +691,7 @@ export default function Certificaciones({ctx}){
                     }}
                     title="Cargar la redacción registrada en el informe de actividades"
                   >
-                    📋 Desde informe
+                    Desde informe
                   </button>
                 )}
                 <BotonCorregir
@@ -737,7 +700,7 @@ export default function Certificaciones({ctx}){
                   compacto
                 />
                 <button onClick={()=>rehacerTexto("auto")} style={{...B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)"),fontSize:11,padding:"5px 11px"}}>
-                  ↻ Rehacer
+                  Rehacer
                 </button>
               </div>
             </div>
@@ -772,16 +735,14 @@ export default function Certificaciones({ctx}){
               <span style={{fontSize:11,color:"var(--text-subtle, #94a3b8)"}}>Componentes certificados instalados o inspeccionados</span>
             </div>
 
-            <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
+            <div style={{display:"flex",flexDirection:"column",marginBottom:12}}>
               {form.elementos.map((el,i)=>(
                 <div key={i} style={{
                   display:"flex",
                   gap:10,
                   alignItems:"center",
-                  background:"var(--bg-subtle, #f8fafc)",
-                  border:"1px solid var(--border-color, #e2e8f0)",
-                  borderRadius:8,
-                  padding:"6px 10px"
+                  borderTop: i===0 ? "none" : "1px solid var(--separator)",
+                  padding:"4px 2px"
                 }}>
                   <span style={{
                     fontSize: 10.5,
@@ -807,9 +768,9 @@ export default function Certificaciones({ctx}){
                     onClick={()=>setForm({...form,elementos:form.elementos.filter((_,j)=>j!==i)})}
                     title="Eliminar elemento"
                     style={{
-                      background:"rgba(239, 68, 68, 0.08)",
-                      border:"1px solid rgba(239, 68, 68, 0.2)",
-                      color:"#dc2626",
+                      background:"transparent",
+                      border:"none",
+                      color:"var(--text-tertiary)",
                       borderRadius:6,
                       width:28,
                       height:28,
@@ -879,7 +840,7 @@ export default function Certificaciones({ctx}){
               }}
               onClick={guardar}
             >
-              💾 {editId ? "Guardar cambios" : "Guardar certificación"}
+              {editId ? "Guardar cambios" : "Guardar certificación"}
             </button>
             <button
               style={{

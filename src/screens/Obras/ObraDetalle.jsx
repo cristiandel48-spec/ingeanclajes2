@@ -134,7 +134,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       {/* Cabecera al estilo de apple.com: sin tarjeta, el cliente como
           titulo grande, los datos de la obra en gris debajo y las acciones
           como texto suelto con una sola pildora oscura, Certificar. */}
-      <div style={{ marginBottom: isMobile ? 20 : 28 }}>
+      <div style={{ marginBottom: 16 }}>
         <Button variante="texto" tam="sm" icono="flechaIzq" onClick={onVolver} style={{ marginLeft: -10 }}>
           Obras
         </Button>
@@ -145,7 +145,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             flexDirection: isMobile ? "column" : "row",
             alignItems: isMobile ? "stretch" : "flex-end",
             justifyContent: "space-between",
-            gap: isMobile ? 14 : 24,
+            gap: isMobile ? 12 : 20,
             marginTop: 8,
           }}
         >
@@ -154,10 +154,10 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               title={oAct.cliente}
               style={{
                 margin: 0,
-                fontSize: isMobile ? 26 : 34,
+                fontSize: isMobile ? 16 : 17,
                 fontWeight: 700,
-                lineHeight: 1.12,
-                letterSpacing: "-0.025em",
+                lineHeight: 1.3,
+                letterSpacing: "-0.015em",
                 color: "var(--text-primary)",
                 display: "-webkit-box",
                 WebkitLineClamp: 2,
@@ -168,7 +168,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             >
               {oAct.cliente}
             </h1>
-            <div style={{ fontSize: isMobile ? 14 : 15, color: "var(--text-secondary)", marginTop: 6, lineHeight: 1.4 }}>
+            <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 3, lineHeight: 1.4 }}>
               {[oAct.proyecto, oAct.ciudad, oAct.direccion].filter(Boolean).join(" · ")}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
@@ -187,7 +187,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                   {oAct.enviadoAlCliente ? "Documentación enviada" : "Sin enviar"}
                 </StatusPill>
               </button>
-              <span style={{ fontSize: 12.5, color: "var(--text-tertiary)", fontVariantNumeric: "tabular-nums" }}>
+              <span style={{ fontSize: 11.5, color: "var(--text-tertiary)", fontVariantNumeric: "tabular-nums" }}>
                 {oAct.id} · {fmtD(oAct.fechaInicio)} → {fmtD(oAct.fechaFin) || "En curso"}
               </span>
             </div>
@@ -235,11 +235,11 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             <div style={{ minWidth: 0 }}>
               <div style={{ ...TIPO.eyebrow, color: "var(--text-tertiary)" }}>Cotización de referencia</div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
-                <span style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.01em", color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
                   {cotVinc.numero}
                 </span>
                 {cotVinc.fecha && (
-                  <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                  <span style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>
                     Aprobada el {fmtD(cotVinc.fecha)}
                   </span>
                 )}
@@ -270,13 +270,13 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             >
               {objetoLimpio && (
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 6 }}>
+                  <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-tertiary)", marginBottom: 4 }}>
                     Objeto del contrato
                   </div>
-                  <p style={{ margin: 0, fontSize: 14, lineHeight: 1.55, color: "var(--text-primary)" }}>
+                  <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.55, color: "var(--text-primary)" }}>
                     {objetoLimpio}
                   </p>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", marginTop: 12, fontSize: 12.5, color: "var(--text-tertiary)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", marginTop: 10, fontSize: 11, color: "var(--text-tertiary)" }}>
                     <span>Resolución 4272 de 2021 · ANSI Z359</span>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--text-secondary)" }}>
                       <Icono nombre="check" size={13} /> Conforme
@@ -288,8 +288,8 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               {itemsCot.length > 0 && (
                 <div style={{ minWidth: 0 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>Ítems contratados</span>
-                    <span style={{ fontSize: 12.5, color: "var(--text-tertiary)" }}>
+                    <span style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-tertiary)" }}>Ítems contratados</span>
+                    <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
                       {itemsCot.length} {itemsCot.length === 1 ? "actividad" : "actividades"}
                     </span>
                   </div>
@@ -305,16 +305,16 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                             display: "grid",
                             gridTemplateColumns: "64px minmax(0,1fr)",
                             gap: 12,
-                            padding: "10px 0",
+                            padding: "8px 0",
                             borderTop: idx === 0 ? "none" : "1px solid var(--separator)",
                             alignItems: "baseline",
                           }}
                         >
-                          <span style={{ fontSize: 14, color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
+                          <span style={{ fontSize: 12.5, color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
                             <strong style={{ fontWeight: 600 }}>{cant}</strong>{" "}
-                            <span style={{ color: "var(--text-tertiary)", fontSize: 12.5 }}>{unidad}</span>
+                            <span style={{ color: "var(--text-tertiary)", fontSize: 11 }}>{unidad}</span>
                           </span>
-                          <span style={{ fontSize: 14, lineHeight: 1.45, color: "var(--text-primary)" }}>{desc}</span>
+                          <span style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--text-primary)" }}>{desc}</span>
                         </div>
                       );
                     })}
@@ -332,8 +332,8 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       <Card ajustado style={{ marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>Avance de la obra</span>
-            <span style={{ fontSize: 28, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--text-primary)", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)" }}>Avance de la obra</span>
+            <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--text-primary)", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>
               {oAct.avance}%
             </span>
           </div>
@@ -365,7 +365,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           }}
           style={{
             width: "100%",
-            marginTop: 14,
+            marginTop: 10,
             accentColor: "var(--text-primary)",
             cursor: bloqueada ? "not-allowed" : "pointer",
           }}
@@ -420,7 +420,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:10}}>
             <div>
               <h2 style={{ ...TIPO.headline, margin: 0, color: "var(--text-primary)" }}>Personal en obra</h2>
-              <div style={{ fontSize: 13, color: "var(--text-tertiary)", marginTop: 2 }}>
+              <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginTop: 2 }}>
                 {empObra.length === 0 ? "Nadie asignado todavía" : `${empObra.length} ${empObra.length === 1 ? "persona" : "personas"}`}
               </div>
             </div>
@@ -459,8 +459,8 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                     <div style={{display:"flex",alignItems:"center",gap:12}}>
                       <Av init={emp.avatar} color={PAL[idx%PAL.length]} size={38}/>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontSize:14,fontWeight:600,color:"var(--text-primary)"}}>{emp.nombre}</div>
-                        <div style={{fontSize:12.5,color:"var(--text-secondary)"}}>
+                        <div style={{fontSize:13,fontWeight:600,color:"var(--text-primary)"}}>{emp.nombre}</div>
+                        <div style={{fontSize:11,color:"var(--text-secondary)"}}>
                           {String(emp.cargo || "Sin cargo").toUpperCase()}{emp.tel ? ` · ${emp.tel}` : ""}
                         </div>
                       </div>
@@ -491,13 +491,13 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                     <div style={{display:"grid",gridTemplateColumns:verDinero?"1fr 1fr 1fr":"1fr",gap:8,marginTop:12}}>
                       {[["Días en obra",diasEmp+" d"],...(verDinero?[["Jornal/día",fmt(jornal)],["Costo obra",fmt(jornal*diasEmp)]]:[])].map(([k,v])=>(
                         <div key={k}>
-                          <div style={{fontSize:11.5,color:"var(--text-tertiary)"}}>{k}</div>
-                          <div style={{fontSize:14,fontWeight:600,color:"var(--text-primary)",fontVariantNumeric:"tabular-nums",marginTop:2}}>{v}</div>
+                          <div style={{fontSize:10.5,color:"var(--text-tertiary)"}}>{k}</div>
+                          <div style={{fontSize:12.5,fontWeight:600,color:"var(--text-primary)",fontVariantNumeric:"tabular-nums",marginTop:2}}>{v}</div>
                         </div>
                       ))}
                     </div>
                     {verDinero&&(
-                      <div style={{marginTop:10,fontSize:12,color:"var(--text-tertiary)"}}>
+                      <div style={{marginTop:10,fontSize:11,color:"var(--text-tertiary)"}}>
                         {emp.banco} · {emp.tipoCuenta} · <span style={{fontVariantNumeric:"tabular-nums"}}>{emp.numeroCuenta||"—"}</span>
                       </div>
                     )}
@@ -538,7 +538,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       {detTab==="gastos"&&verDinero&&(
         <div style={CD}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-            <div style={ST}>🧾 Gastos y cuentas por pagar</div>
+            <div style={ST}>Gastos y cuentas por pagar</div>
             <button
               style={{
                 background: "#FFFAEB",
@@ -586,7 +586,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                   }}
                   onClick={guardarGasto}
                 >
-                  ✅ Guardar gasto
+                  Guardar gasto
                 </button>
                 <button
                   style={{
@@ -627,7 +627,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1.5px dashed var(--border, #cbd5e1)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>
-                📦 Órdenes de compra vinculadas a esta obra ({ordenesObra.length})
+                Órdenes de compra vinculadas a esta obra ({ordenesObra.length})
               </div>
               <button
                 type="button"
@@ -708,7 +708,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       {/* TAB NÓMINA */}
       {detTab==="nomina"&&verDinero&&(
         <div style={CD}>
-          <div style={ST}>💰 Nómina proporcional por obra</div>
+          <div style={ST}>Nómina proporcional por obra</div>
           {empObra.length===0&&<div style={{textAlign:"center",padding:24,color:"var(--text-subtle, #94a3b8)",fontSize:13}}>Sin personal asignado</div>}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
             {empObra.map((eid,idx)=>{

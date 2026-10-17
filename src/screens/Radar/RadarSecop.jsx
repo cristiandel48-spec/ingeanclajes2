@@ -4,7 +4,7 @@ import { CD, ST, SI, B } from "../../styles/tokens";
 import { siguienteIdUnico } from "../../lib/identificadores";
 
 const TERMINOS_RAPIDOS = [
-  { label: "🏗️ Cubiertas", query: "cubiertas" },
+  { label: "Cubiertas", query: "cubiertas" },
   { label: "🧗 Líneas de vida", query: "lineas de vida" },
   { label: "🏢 Mantenimiento cubiertas", query: "mantenimiento cubiertas" },
   { label: "⚠️ Trabajo en alturas", query: "alturas" },
@@ -33,8 +33,8 @@ const ANIOS = [
 const INSTANCIAS = [
   { id: "licitacion", label: "🟢 En licitación (Ofertas abiertas)", desc: "Abiertas para presentar propuestas" },
   { id: "todas", label: "🌐 Todas las instancias (Sin filtro)", desc: "Muestra todo el universo contractual" },
-  { id: "borrador", label: "📝 Pre-pliegos (Observaciones / Borrador)", desc: "Fase previa de pliegos borradores" },
-  { id: "evaluacion", label: "🔍 En evaluación de ofertas", desc: "Propuestas radicadas en revisión técnica" },
+  { id: "borrador", label: "Pre-pliegos (Observaciones / Borrador)", desc: "Fase previa de pliegos borradores" },
+  { id: "evaluacion", label: "En evaluación de ofertas", desc: "Propuestas radicadas en revisión técnica" },
   { id: "adjudicado", label: "🏆 Adjudicados (Con contratista)", desc: "Procesos finalizados con ganador" },
 ];
 
@@ -368,7 +368,7 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
               height: 38,
             }}
           >
-            {cargando ? "Buscando…" : "🔍 Buscar"}
+            {cargando ? "Buscando…" : "Buscar"}
           </button>
         </div>
       </div>
@@ -409,7 +409,7 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
               }}
             >
               <option value="reciente">📅 Más recientes primero (Fecha)</option>
-              <option value="valor_desc">💰 Mayor presupuesto</option>
+              <option value="valor_desc">Mayor presupuesto</option>
             </select>
           </div>
         </div>
@@ -615,7 +615,7 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
                         }}
                         title="Ver y descargar pliegos, estudios previos, formatos y anexos técnicos oficiales"
                       >
-                        📁 Ver Documentos y Pliegos
+                        Ver Documentos y Pliegos
                       </button>
 
                       {item.urlSecop && (
@@ -657,7 +657,7 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
                         }}
                         title="Crear una cotización en el sistema precargando los datos de esta entidad"
                       >
-                        📄 Cotizar
+                        Cotizar
                       </button>
 
                       {registrado ? (
@@ -680,7 +680,7 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
                           }}
                           title="Guardar esta entidad como prospecto en tu directorio de clientes"
                         >
-                          ➕ Guardar prospecto
+                          Guardar prospecto
                         </button>
                       )}
                     </div>
@@ -737,7 +737,7 @@ export default function RadarSecop({ clientes = [], setClientes, irAPantalla, se
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
                   <span style={{ fontSize: 11, fontWeight: 700, color: "#1d4ed8", background: "#dbeafe", padding: "2px 8px", borderRadius: 4 }}>
-                    📁 Documentos y Pliegos Oficiales
+                    Documentos y Pliegos Oficiales
                   </span>
                   <span style={{ fontSize: 11, fontWeight: 700, color: "#475569" }}>
                     Ref: {procesoSeleccionadoDocs.referencia}

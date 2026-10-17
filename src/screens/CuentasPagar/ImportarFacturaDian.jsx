@@ -287,7 +287,7 @@ export default function ImportarFacturaDian({
 
               <div style={{ marginTop: 14, paddingTop: 10, borderTop: "1px solid var(--border, #e2e8f0)" }}>
                 <div style={{ fontSize: 12, fontWeight: 800, color: "var(--primary, #1e3a8a)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
-                  📄 Factura Electrónica y CUFE
+                  Factura Electrónica y CUFE
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                   <div>
@@ -327,7 +327,7 @@ export default function ImportarFacturaDian({
             {/* Columna 2: Desglose Tributario y Económico */}
             <div style={{ border: "1px solid var(--border, #e2e8f0)", borderRadius: 12, padding: 14, background: "var(--surface, #ffffff)" }}>
               <div style={{ fontSize: 12, fontWeight: 800, color: "var(--primary, #1e3a8a)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
-                💰 Liquidación Tributaria
+                Liquidación Tributaria
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
@@ -434,7 +434,7 @@ export default function ImportarFacturaDian({
               onClick={causar}
               style={{ ...B("#166534", "#ffffff"), padding: "9px 18px", fontSize: 13, fontWeight: 800, boxShadow: "0 2px 6px rgba(22,101,52,0.25)" }}
             >
-              ✅ Causar Factura en Contabilidad
+              Causar Factura en Contabilidad
             </button>
           </div>
         </div>

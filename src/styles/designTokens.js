@@ -108,9 +108,11 @@ const ALIAS = `
       --text-muted: var(--text-tertiary);
       --text-subtle: var(--text-quaternary);
       --border: var(--separator);
-      --input-bg: var(--surface);
+      /* Campos rellenos y sin marco, como en apple.com: el gris ya dice
+         «aqui se escribe» sin necesidad de dibujar una caja. */
+      --input-bg: var(--fill);
       --input-color: var(--text-primary);
-      --input-border: var(--separator);
+      --input-border: transparent;
       --input-placeholder: var(--text-quaternary);
       --c-tinta: var(--text-primary);
       --c-suave: var(--text-secondary);

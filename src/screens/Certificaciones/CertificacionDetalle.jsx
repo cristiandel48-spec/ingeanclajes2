@@ -244,7 +244,7 @@ export default function CertificacionDetalle({
             disabled={descargando}
             onClick={descargarPdf}
           >
-            {descargando ? "Generando…" : "📥 Descargar PDF"}
+            {descargando ? "Generando…" : "Descargar PDF"}
           </button>
 
           <button
@@ -261,7 +261,7 @@ export default function CertificacionDetalle({
             }}
             onClick={imprimir}
           >
-            🖨️ Imprimir / PDF
+            Imprimir / PDF
           </button>
         </div>
       </div>

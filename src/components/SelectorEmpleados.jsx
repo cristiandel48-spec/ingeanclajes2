@@ -74,7 +74,7 @@ export default function SelectorEmpleados({
               ? `Marca a los ${delaObra.length} que ya están asignados a ${nombreObra || "esta obra"}`
               : "Esta obra todavía no tiene personal asignado en su pestaña «Personal»"}
           >
-            👷 Equipo de la obra ({delaObra.length})
+            Equipo de la obra ({delaObra.length})
           </button>
           <button type="button" onClick={() => agregar(filtrados.map((e) => e.id))} style={chip(filtrados.length > 0)}>
             Todos{busqueda ? " los visibles" : ""}

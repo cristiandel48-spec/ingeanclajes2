@@ -450,7 +450,7 @@ export function ModalInstaladorApp({ abierto, onClose }) {
             }}
           >
             <div>⚡ Carga instantánea</div>
-            <div>📱 Pantalla completa</div>
+            <div>Pantalla completa</div>
             <div>🔒 Sesión guardada</div>
           </div>
 

@@ -611,7 +611,7 @@ function TarjetaInformeApple({ informe: inf, acciones }) {
               border: "1px solid var(--border, rgba(0,0,0,0.06))",
             }}
           >
-            📋 {actividades} act.
+            {actividades} act.
           </span>
           <span
             style={{
@@ -624,7 +624,7 @@ function TarjetaInformeApple({ informe: inf, acciones }) {
               border: "1px solid var(--border, rgba(0,0,0,0.06))",
             }}
           >
-            👷 {operarios} operarios
+            {operarios} operarios
           </span>
           {inf.cotizacionNumero && (
             <span
@@ -638,7 +638,7 @@ function TarjetaInformeApple({ informe: inf, acciones }) {
                 border: "1px solid var(--border, rgba(0,0,0,0.06))",
               }}
             >
-              📄 {inf.cotizacionNumero}
+              {inf.cotizacionNumero}
             </span>
           )}
         </div>
@@ -721,7 +721,7 @@ function TarjetaInformeApple({ informe: inf, acciones }) {
                 cursor: "pointer",
               }}
             >
-              📥 PDF
+              PDF
             </button>
           )}
 
@@ -819,7 +819,7 @@ function FilaTablaInforme({ informe: inf, acciones, zebra }) {
 
       <div>
         <span style={{ fontSize: 11.5, color: "var(--text-muted, #475467)" }}>
-          👷 {operarios}
+          {operarios}
         </span>
       </div>
 

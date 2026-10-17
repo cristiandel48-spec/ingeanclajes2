@@ -151,7 +151,7 @@ export default function MaterialesDespachoObra({
         }}
       >
         <div>
-          <div style={ST}>📦 Materiales y Lista de Despacho (Bodega)</div>
+          <div style={ST}>Materiales y Lista de Despacho (Bodega)</div>
           <div style={{ fontSize: 11.5, color: "var(--text-muted, #64748b)", marginTop: 2 }}>
             Control de insumos de ingeniería, postes, cables y fijaciones químicas calculados desde la cotización{" "}
             {cotizacion?.numero && <strong>{cotizacion.numero}</strong>}.
@@ -192,7 +192,7 @@ export default function MaterialesDespachoObra({
                   cursor: "pointer",
                 }}
               >
-                ➕ Añadir material
+                Añadir material
               </button>
             </>
           )}

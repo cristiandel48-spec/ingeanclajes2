@@ -1511,7 +1511,7 @@ function ContenidoInspectorHorizontal({
               cursor: "pointer",
             }}
           >
-            📄 Ver Documento
+            Ver Documento
           </button>
 
           <button
@@ -1528,7 +1528,7 @@ function ContenidoInspectorHorizontal({
               cursor: "pointer",
             }}
           >
-            📥 Descargar PDF
+            Descargar PDF
           </button>
         </div>
 
@@ -1547,7 +1547,7 @@ function ContenidoInspectorHorizontal({
               cursor: "pointer",
             }}
           >
-            ✉️ Enviar al cliente
+            Enviar al cliente
           </button>
 
           {urlWa && (

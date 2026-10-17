@@ -208,7 +208,7 @@ export default function FototecaObra({ obra, ctx = {} }) {
           {todasLasFotos.length > 3 && (
             <input
               type="text"
-              placeholder="🔍 Filtrar fotos por fecha o nota..."
+              placeholder="Filtrar fotos por fecha o nota..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               style={{ ...SI, flex: "1 1 180px", minWidth: 0, width: "100%", maxWidth: "100%", fontSize: 12, padding: "7px 10px" }}
@@ -227,7 +227,7 @@ export default function FototecaObra({ obra, ctx = {} }) {
                 maxWidth: "100%",
               }}
             >
-              {empaquetandoZip ? `📦 Empaquetando ZIP (${progresoZip}%)...` : `📦 Descargar todo en ZIP (${todasLasFotos.length})`}
+              {empaquetandoZip ? `Empaquetando ZIP (${progresoZip}%)...` : `Descargar todo en ZIP (${todasLasFotos.length})`}
             </button>
           )}
         </div>
@@ -415,7 +415,7 @@ export default function FototecaObra({ obra, ctx = {} }) {
                   cursor: "pointer",
                 }}
               >
-                🔄 Girar
+                Girar
               </button>
 
               <button

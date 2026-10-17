@@ -89,7 +89,7 @@ function Fila({ p, compacta, obra, acciones }) {
           title="Ver e imprimir Recibo de Caja Media Carta (IA-FT-05)"
           onClick={alPulsar(acciones.imprimir)}
         >
-          🖨️ Recibo
+          Recibo
         </button>
       )}
       {!pagado && acciones.cobrar && (

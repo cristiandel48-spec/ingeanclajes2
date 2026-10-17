@@ -541,7 +541,7 @@ export default function OrdenesCompra({
               type="text"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              placeholder="🔍 Buscar por referencia (OC...), proveedor, solicitante, documento origen..."
+              placeholder="Buscar por referencia (OC...), proveedor, solicitante, documento origen..."
               style={{ ...SI, width: "100%", fontSize: 12.5 }}
             />
           </div>
@@ -734,7 +734,7 @@ export default function OrdenesCompra({
                         </div>
                         {orden.obraNombre && (
                           <div style={{ fontSize: 10, color: "#38bdf8", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={orden.obraNombre}>
-                            🏗️ {orden.obraNombre}
+                            {orden.obraNombre}
                           </div>
                         )}
                       </td>
@@ -905,7 +905,7 @@ export default function OrdenesCompra({
                               }}
                               title="Causar factura electrónica correspondiente a esta orden"
                             >
-                              🧾 Causar
+                              Causar
                             </button>
                           )}
                         </div>
@@ -976,7 +976,7 @@ export default function OrdenesCompra({
             }}>
               <div>
                 <div style={{ fontSize: 16, fontWeight: 800, color: "var(--text-main, #0f172a)" }}>
-                  📦 Nueva Solicitud / Orden de Compra
+                  Nueva Solicitud / Orden de Compra
                 </div>
                 <div style={{ fontSize: 11.5, color: "var(--text-muted, #64748b)" }}>
                   Requiere aprobación posterior por María Camila Sepúlveda
@@ -1167,7 +1167,7 @@ export default function OrdenesCompra({
               <div style={{ marginBottom: 18 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>
-                    📋 Materiales y Servicios Requeridos
+                    Materiales y Servicios Requeridos
                   </div>
                   <button
                     type="button"
@@ -1761,7 +1761,7 @@ export default function OrdenesCompra({
                     onClick={() => setShowModalCausar(true)}
                     style={{ ...B("#0284c7", "#ffffff"), fontSize: 12, padding: "8px 16px", fontWeight: 700 }}
                   >
-                    🧾 Causar Factura en Contabilidad
+                    Causar Factura en Contabilidad
                   </button>
                 )}
 
@@ -1770,7 +1770,7 @@ export default function OrdenesCompra({
                   onClick={imprimirOrden}
                   style={{ ...B("#0f172a", "#ffffff"), fontSize: 12, padding: "8px 14px", fontWeight: 700 }}
                 >
-                  🖨️ Imprimir OC
+                  Imprimir OC
                 </button>
 
                 <button
@@ -1779,7 +1779,7 @@ export default function OrdenesCompra({
                   onClick={descargarPdfOrden}
                   style={{ ...B("#cc0000", "#ffffff"), fontSize: 12, padding: "8px 14px", fontWeight: 700, opacity: generandoPdf ? 0.7 : 1 }}
                 >
-                  📥 {generandoPdf ? "Generando..." : "Descargar PDF"}
+                  {generandoPdf ? "Generando..." : "Descargar PDF"}
                 </button>
 
                 <button
@@ -1880,7 +1880,7 @@ export default function OrdenesCompra({
             border: "1px solid var(--border, #7dd3fc)",
           }}>
             <div style={{ fontSize: 16, fontWeight: 700, color: "var(--info-text)", marginBottom: 6 }}>
-              🧾 Causar Factura de Proveedor — Orden {ordenDetalle?.id}
+              Causar Factura de Proveedor — Orden {ordenDetalle?.id}
             </div>
             <div style={{ fontSize: 12, color: "var(--text-muted, #475569)", marginBottom: 14 }}>
               Esta acción vinculará formalmente la factura del proveedor con la orden de compra aprobada por María Camila Sepúlveda, registrando la cuenta por pagar en Causación.

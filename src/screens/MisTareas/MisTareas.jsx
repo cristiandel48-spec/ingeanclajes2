@@ -524,7 +524,7 @@ export default function MisTareas({ ctx }) {
             >
               {todasLasSecciones.map((sec) => (
                 <option key={sec} value={sec}>
-                  📂 {sec}
+                  {sec}
                 </option>
               ))}
             </select>

@@ -52,7 +52,7 @@ export default function AdjuntoMensaje({ adjuntoRaw, esMio }) {
                 gap: 3,
               }}
             >
-              <span>🔍 Ver</span>
+              <span>Ver</span>
             </div>
           </div>
         ) : (

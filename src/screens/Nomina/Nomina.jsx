@@ -627,7 +627,7 @@ export default function Nomina({ctx}){
     setModoEdicionNomina(activarEdicion);
     setMostrarHistorialNominas(false);
     if(activarEdicion){
-      setMensajeGuardadoNomina(`✏️ Modo corrección activo para ${record.periodoLabel || record.id}. Modifica novedades o deducciones y pulsa 'Guardar nómina'.`);
+      setMensajeGuardadoNomina(`Modo corrección activo para ${record.periodoLabel || record.id}. Modifica novedades o deducciones y pulsa 'Guardar nómina'.`);
       setTimeout(()=>setMensajeGuardadoNomina(""), 5000);
     }
   };
@@ -799,7 +799,7 @@ export default function Nomina({ctx}){
                 padding:"6px 14px",fontSize:11.5,fontWeight:700,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:5
               }}
             >
-              💾 Guardar nómina corregida
+              Guardar nómina corregida
             </button>
           </div>
         </div>
@@ -1427,7 +1427,7 @@ export default function Nomina({ctx}){
             <div>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <div style={{fontSize:11,fontWeight:700,color:modoEdicionNomina ? "#f59e0b" : "var(--text-main)",textTransform:"uppercase",letterSpacing:0.7}}>
-                  {modoEdicionNomina ? "✏️ Editando corte de nómina" : "Colillas de pago"}
+                  {modoEdicionNomina ? "Editando corte de nómina" : "Colillas de pago"}
                 </div>
                 {nominaEstaGenerada && !modoEdicionNomina && (
                   <span style={{background:"rgba(34, 197, 94, 0.15)",color:"#4ade80",border:"1px solid rgba(34, 197, 94, 0.35)",borderRadius:6,padding:"2px 7px",fontSize:10.5,fontWeight:700}}>
@@ -1436,7 +1436,7 @@ export default function Nomina({ctx}){
                 )}
                 {modoEdicionNomina && (
                   <span style={{background:"rgba(245, 158, 11, 0.15)",color:"#f59e0b",border:"1px solid rgba(245, 158, 11, 0.35)",borderRadius:6,padding:"2px 7px",fontSize:10.5,fontWeight:700}}>
-                    ✏️ En corrección
+                    En corrección
                   </span>
                 )}
               </div>
@@ -1465,12 +1465,12 @@ export default function Nomina({ctx}){
                   style={{...B("rgba(37, 99, 235, 0.15)","#60a5fa"),border:"1px solid rgba(37, 99, 235, 0.35)",fontSize:11.5,fontWeight:600}}
                   onClick={()=>{
                     setModoEdicionNomina(true);
-                    setMensajeGuardadoNomina("✏️ Modo corrección activo. Puedes ir a Deducciones, Horas Extras o Empleados para corregir.");
+                    setMensajeGuardadoNomina("Modo corrección activo. Puedes ir a Deducciones, Horas Extras o Empleados para corregir.");
                     setTimeout(()=>setMensajeGuardadoNomina(""), 4500);
                   }}
                   title="¿Hubo algún error o equivocación? Haz clic aquí para corregir novedades o deducciones"
                 >
-                  ✏️ Editar nómina
+                  Editar nómina
                 </button>
               )}
 
@@ -1482,7 +1482,7 @@ export default function Nomina({ctx}){
                   onClick={generarNominaCorte}
                   title="Guardar y congelar la nómina de este corte"
                 >
-                  💾 Guardar nómina
+                  Guardar nómina
                 </button>
               )}
 
@@ -1492,7 +1492,7 @@ export default function Nomina({ctx}){
                 style={B("#142840","#4ade80")}
                 onClick={()=>resumenesActivos.forEach(({empleado:e,resumen})=>printColilla(e,resumen,periodoNomina))}
               >
-                🧾 Imprimir colillas masivas
+                Imprimir colillas masivas
               </button>
 
               {/* Botón Enviar colillas masivas a todos los empleados */}
@@ -1511,7 +1511,7 @@ export default function Nomina({ctx}){
                 onClick={() => setModalColillasMasivas(true)}
                 title="Enviar colillas de pago a todos los empleados por Correo o WhatsApp"
               >
-                📤 Enviar colillas masivas a todos los empleados
+                Enviar colillas masivas a todos los empleados
               </button>
             </div>
           </div>
@@ -1555,15 +1555,15 @@ export default function Nomina({ctx}){
                         ? "⏳ Enviando..."
                         : colillaEnviadaId[e.id]
                         ? "✓ Enviada (Gmail)"
-                        : "✉️ Enviar por Gmail"}
+                        : "Enviar por Gmail"}
                     </button>
                   ) : (
                     <button
-                      onClick={() => window.alert(`El empleado ${e.nombre} aún no tiene correo electrónico configurado.\nPuedes agregarlo en la pestaña 'Empleados' haciendo clic en '✏️ Editar datos del empleado'.`)}
+                      onClick={() => window.alert(`El empleado ${e.nombre} aún no tiene correo electrónico configurado.\nPuedes agregarlo en la pestaña 'Empleados' haciendo clic en 'Editar datos del empleado'.`)}
                       style={{ ...B("var(--surface-subtle)", "var(--text-muted)"), border:"1px solid var(--border)", fontSize: 11, justifyContent: "center", cursor: "pointer" }}
                       title="Sin correo registrado (haz clic para saber cómo agregarlo)"
                     >
-                      ✉️ Sin correo
+                      Sin correo
                     </button>
                   )}
                   {e.tel&&<button onClick={()=>window.open("https://wa.me/57" + (Array.from(e.tel).filter(ch=>ch>="0"&&ch<="9").join("")) + "?text=" + (encodeURIComponent("Hola "+e.nombre+", adjuntamos tu colilla de pago del corte "+periodoNomina.label+". Neto a pagar: "+fmt(resumen.neto)+". Att. Ingeanclajes S.A.S")),'_blank')} style={{...B("#166534","#4ade80"),fontSize:11,justifyContent:"center"}}>WhatsApp</button>}
@@ -2021,7 +2021,7 @@ export default function Nomina({ctx}){
                   )}
 
                   <div style={{background:"rgba(245, 158, 11, 0.12)",border:"1px solid rgba(245, 158, 11, 0.35)",borderRadius:10,padding:14,marginBottom:16}}>
-                    <div style={{fontSize:11,fontWeight:700,color:"#f59e0b",marginBottom:8}}>➕ Agregar deducción personalizada</div>
+                    <div style={{fontSize:11,fontWeight:700,color:"#f59e0b",marginBottom:8}}>Agregar deducción personalizada</div>
                     <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
                       {["Natillera","Préstamo","Anticipo","Ahorro interno","Libranza"].map(concepto=>(
                         <button
@@ -2070,7 +2070,7 @@ export default function Nomina({ctx}){
                       onClick={()=>{guardarCambiosNomina("Deducciones actualizadas");setEmpDeduccionModalId(null);}}
                       style={{...B("#166534","#4ade80"),fontSize:11.5,padding:"8px 18px"}}
                     >
-                      💾 Guardar y cerrar
+                      Guardar y cerrar
                     </button>
                   </div>
                 </div>
@@ -2095,7 +2095,7 @@ export default function Nomina({ctx}){
                   fontSize:11,padding:"6px 12px",borderRadius:6,border:"none",fontWeight:modoVistaDeducciones==="tabla"?700:500
                 }}
               >
-                📊 Vista Consolidada
+                Vista Consolidada
               </button>
               <button
                 type="button"
@@ -2170,7 +2170,7 @@ export default function Nomina({ctx}){
                   <div style={{position:"relative",minWidth:0,flex:"1 1 200px",width:"100%"}}>
                     <input
                       type="text"
-                      placeholder="🔍 Buscar por nombre, cédula o cargo..."
+                      placeholder="Buscar por nombre, cédula o cargo..."
                       value={busquedaDeduccion}
                       onChange={e=>setBusquedaDeduccion(e.target.value)}
                       style={{...SI,fontSize:11.5,padding:"7px 12px"}}
@@ -2285,7 +2285,7 @@ export default function Nomina({ctx}){
                                   }}
                                   title="Agregar o quitar conceptos de deducción personalizada"
                                 >
-                                  {tieneAdicionales ? "✏️ Editar" : "➕ Concepto"}
+                                  {tieneAdicionales ? "Editar" : "Concepto"}
                                 </button>
                               </td>
                             </tr>
@@ -2307,7 +2307,7 @@ export default function Nomina({ctx}){
                       onClick={()=>guardarCambiosNomina("Deducciones del corte sincronizadas")}
                       style={{...B("#166534","#4ade80"),fontSize:11.5,padding:"8px 16px"}}
                     >
-                      💾 Guardar cambios
+                      Guardar cambios
                     </button>
                     <button
                       type="button"
@@ -2465,8 +2465,8 @@ export default function Nomina({ctx}){
                 onClick={generarNominaCorte}
               >
                 {modoEdicionNomina
-                  ? "💾 Guardar nómina corregida"
-                  : (nominaEstaGenerada ? "💾 Volver a guardar corte" : "💾 Guardar nómina de este corte")}
+                  ? "Guardar nómina corregida"
+                  : (nominaEstaGenerada ? "Volver a guardar corte" : "Guardar nómina de este corte")}
               </button>
 
               {/* Botón Editar nómina si ya estaba generada y no está en modo edición */}
@@ -2478,12 +2478,12 @@ export default function Nomina({ctx}){
                   }}
                   onClick={()=>{
                     setModoEdicionNomina(true);
-                    setMensajeGuardadoNomina("✏️ Modo edición activo. Realiza las correcciones que necesites y vuelve a guardar.");
+                    setMensajeGuardadoNomina("Modo edición activo. Realiza las correcciones que necesites y vuelve a guardar.");
                     setTimeout(()=>setMensajeGuardadoNomina(""), 4500);
                   }}
                   title="¿Hubo algún error o equivocación? Haz clic aquí para corregir novedades o deducciones"
                 >
-                  ✏️ Editar nómina (corregir error)
+                  Editar nómina (corregir error)
                 </button>
               )}
 
@@ -2694,7 +2694,7 @@ export default function Nomina({ctx}){
                             👥 {totalRegistros} empleados
                           </span>
                           <span style={{ background: "rgba(34, 197, 94, 0.15)", color: "#4ade80", border: "1px solid rgba(34, 197, 94, 0.35)", padding: "4px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
-                            💰 {fmt(totalPagarCorte)}
+                            {fmt(totalPagarCorte)}
                           </span>
                         </div>
                       </div>
@@ -2711,7 +2711,7 @@ export default function Nomina({ctx}){
                             }}
                             title="Cargar y consultar este corte"
                           >
-                            👁️ Consultar corte
+                            Consultar corte
                           </button>
 
                           <button
@@ -2725,7 +2725,7 @@ export default function Nomina({ctx}){
                             }}
                             title="Si hubo alguna equivocación, pulsa aquí para editar y corregir los valores"
                           >
-                            ✏️ Editar / Corregir
+                            Editar / Corregir
                           </button>
 
                           <button
@@ -2740,7 +2740,7 @@ export default function Nomina({ctx}){
                             }}
                             title="Ir a las colillas de pago de este corte"
                           >
-                            🧾 Colillas
+                            Colillas
                           </button>
 
                           <button
@@ -2765,7 +2765,7 @@ export default function Nomina({ctx}){
                           }}
                           title="Eliminar este corte archivado del historial"
                         >
-                          🗑️ Eliminar
+                          Eliminar
                         </button>
                       </div>
                     </div>

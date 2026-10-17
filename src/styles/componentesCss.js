@@ -27,12 +27,14 @@ export const componentesCss = `
     .ui-btn--bloque { width: 100%; }
     .ui-btn--icono { padding: 0; width: var(--ui-btn-alto); }
 
-    .ui-btn--primary { background: var(--accent); color: #fff; box-shadow: var(--sombra-sm); }
-    .ui-btn--primary:hover:not(:disabled) { background: var(--accent-hover); }
+    /* Todos en pildora y sin sombra, como los de la barra de Cotizaciones:
+       la principal es oscura y las demas grises, sin marco. */
+    .ui-btn--primary { background: var(--text-primary); color: var(--surface); border-radius: 980px; }
+    .ui-btn--primary:hover:not(:disabled) { opacity: .86; }
 
-    .ui-btn--secondary { background: var(--surface); color: var(--text-primary);
-      border-color: var(--separator); box-shadow: var(--sombra-sm); }
-    .ui-btn--secondary:hover:not(:disabled) { background: var(--fill); }
+    .ui-btn--secondary { background: var(--fill); color: var(--text-primary);
+      border-color: transparent; border-radius: 980px; font-weight: 500; }
+    .ui-btn--secondary:hover:not(:disabled) { background: var(--separator); }
 
     .ui-btn--tertiary { background: transparent; color: var(--accent); }
     .ui-btn--tertiary:hover:not(:disabled) { background: var(--accent-tint); }
@@ -70,6 +72,34 @@ export const componentesCss = `
       .transicion-modulo { animation: none; }
     }
 
+    /* ── Botones antiguos con estilo en linea ─────────────────────────────
+       Cientos de botones traen su color, marco y sombra escritos a mano en
+       cada pantalla. En vez de reescribirlos uno por uno, dentro de los
+       modulos se les quita el marco y la sombra y quedan en pildora, que es
+       el lenguaje de la barra de Cotizaciones. Va con !important porque es
+       la unica forma de ganarle a un style={...}. Los del kit (.ui-btn) y
+       los segmentos ya vienen bien y no se tocan. */
+    .transicion-modulo button:not([class*="ui-"]),
+    .topbar-acciones button:not([class*="ui-"]) {
+      border-color: transparent !important;
+      box-shadow: none !important;
+      border-radius: 980px !important;
+    }
+    /* El naranja de «Guardar» y «Nueva …» era la accion principal: pasa a
+       la pildora oscura. Se reconoce por su color de borde, que solo usan
+       esos botones. */
+    .transicion-modulo button[style*="181, 71, 8"],
+    .topbar-acciones button[style*="181, 71, 8"],
+    /* Igual con los fondos naranja (#f47c20) y rojo (#E0342A) escritos a
+       mano: el navegador los guarda como rgb(), y asi se reconocen. */
+    .transicion-modulo button[style*="background: rgb(244, 124, 32)"],
+    .topbar-acciones button[style*="background: rgb(244, 124, 32)"],
+    .transicion-modulo button[style*="background: rgb(224, 52, 42)"],
+    .topbar-acciones button[style*="background: rgb(224, 52, 42)"] {
+      background: var(--text-primary) !important;
+      color: var(--surface) !important;
+    }
+
     /* En el telefono y en obra todo lo que se toca mide 44 */
     @media (max-width: 768px) {
       .ui-btn { --ui-btn-alto: 44px; }
@@ -83,18 +113,19 @@ export const componentesCss = `
     .ui-label__req { color: var(--danger); margin-left: 2px; }
     .ui-input {
       width: 100%; box-sizing: border-box; height: 36px; padding: 0 12px;
-      background: var(--surface); color: var(--text-primary);
-      border: 1px solid var(--separator); border-radius: 10px;
+      background: var(--fill); color: var(--text-primary);
+      border: 1px solid transparent; border-radius: 12px;
       font-family: inherit; font-size: 14px; line-height: 20px;
-      transition: border-color var(--transicion-rapida), box-shadow var(--transicion-rapida);
+      transition: border-color var(--transicion-rapida), box-shadow var(--transicion-rapida),
+                  background var(--transicion-rapida);
     }
     textarea.ui-input { height: auto; min-height: 84px; padding: 9px 12px; resize: vertical; }
     select.ui-input { padding-right: 32px; }
     .ui-input::placeholder { color: var(--text-quaternary); }
-    .ui-input:hover:not(:disabled) { border-color: var(--border-strong); }
+    .ui-input:hover:not(:disabled) { background: var(--separator); }
     .ui-input:focus {
-      outline: none; border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-tint);
+      outline: none; border-color: var(--text-tertiary); background: var(--surface);
+      box-shadow: 0 0 0 3px var(--fill);
     }
     .ui-input:disabled { background: var(--fill); color: var(--text-tertiary); cursor: not-allowed; }
     .ui-input[aria-invalid="true"] { border-color: var(--danger); }
@@ -127,8 +158,10 @@ export const componentesCss = `
     @media (max-width: 768px) { .ui-seg__op { padding: 10px 14px; } }
 
     /* ── Tarjeta ─────────────────────────────────────────────────────── */
-    .ui-card { background: var(--surface); border: 1px solid var(--separator);
-      border-radius: 14px; padding: 20px; box-shadow: var(--sombra-sm); box-sizing: border-box; }
+    /* Sin marco ni sombra, como los bloques de apple.com: el blanco sobre el
+       gris de la pagina ya separa. */
+    .ui-card { background: var(--surface); border: 1px solid transparent;
+      border-radius: 22px; padding: 22px; box-shadow: none; box-sizing: border-box; }
     .ui-card--plano { box-shadow: none; }
     .ui-card--ajustado { padding: 14px 16px; }
     .ui-card--interactivo { cursor: pointer;

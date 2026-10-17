@@ -263,7 +263,7 @@ function CompromisosDelDiaSection({
                     letterSpacing: "0.04em",
                   }}
                 >
-                  ✨ Fecha Especial
+                  Fecha Especial
                 </span>
                 {fechaEspecialDelDia.hora && (
                   <span style={{ fontSize: 12, fontWeight: 700, color: "#92400e" }}>

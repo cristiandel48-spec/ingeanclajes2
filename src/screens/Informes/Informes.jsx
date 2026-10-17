@@ -32,10 +32,12 @@ import { Button } from "../../components/ui";
 // Editor del informe al estilo de apple.com: sin bordes ni sombras. Cada
 // seccion es un bloque blanco sobre el gris de la pagina, con su titulo
 // grande, y los campos van rellenos de gris en vez de enmarcados.
-const BLOQUE = { background: "var(--surface)", borderRadius: 22, padding: "22px 22px", marginBottom: 14 };
-const CAMPO = { ...SI, background: "var(--fill)", border: "1px solid transparent", borderRadius: 12, padding: "11px 14px", fontSize: 14 };
-const TITULO_BLOQUE = { fontSize: 21, fontWeight: 600, letterSpacing: "-0.015em", lineHeight: 1.2, color: "var(--text-primary)", margin: 0 };
-const NOTA = { fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 };
+// Los tamaños de letra son los de siempre (titulo 14.5, notas 11.5, campos
+// 13.5): lo que cambia es el aire y la falta de marcos, no la escala.
+const BLOQUE = { background: "var(--surface)", borderRadius: 22, padding: "20px 22px", marginBottom: 14 };
+const CAMPO = { ...SI, borderRadius: 12 };
+const TITULO_BLOQUE = { fontSize: 14.5, fontWeight: 600, letterSpacing: "-0.01em", lineHeight: 1.3, color: "var(--text-primary)", margin: 0 };
+const NOTA = { fontSize: 11.5, color: "var(--text-tertiary)", lineHeight: 1.5 };
 
 // Formateo de horas. Vive fuera del componente porque no depende de nada suyo:
 // asi es la misma funcion en cada render y buildPersonalDesdeObra puede
@@ -686,11 +688,11 @@ export default function Informes({ctx}){
 
       {nuevo&&(
         <div style={{marginBottom:28}}>
-          <div style={{padding:isMobile?"6px 4px 18px":"8px 4px 26px"}}>
-            <h1 style={{margin:0,fontSize:isMobile?32:44,fontWeight:700,letterSpacing:"-0.03em",lineHeight:1.05,color:"var(--text-primary)"}}>
+          <div style={{padding:"4px 4px 14px"}}>
+            <h1 style={{margin:0,fontSize:18,fontWeight:700,letterSpacing:"-0.015em",lineHeight:1.25,color:"var(--text-primary)"}}>
               {editId ? "Editar informe" : "Nuevo informe"}
             </h1>
-            <div style={{fontSize:isMobile?15:17,color:"var(--text-secondary)",marginTop:8}}>
+            <div style={{fontSize:12,color:"var(--text-tertiary)",marginTop:3}}>
               Informe de actividades en obra, con lo registrado en la bitácora.
             </div>
           </div>
@@ -884,7 +886,7 @@ export default function Informes({ctx}){
             {form.actividades.map((act,ai)=>(
               <div key={ai} style={{borderTop:"1px solid var(--separator)",paddingTop:22,marginTop:22}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                  <div style={{fontSize:17,fontWeight:600,letterSpacing:"-0.01em",color:"var(--text-primary)"}}>Actividad {ai+1}</div>
+                  <div style={{fontSize:13,fontWeight:600,color:"var(--text-primary)"}}>Actividad {ai+1}</div>
                   {form.actividades.length>1&&<button onClick={()=>{
                     setForm(p=>({...p,actividades:p.actividades.filter((_,i)=>i!==ai)}));
                     // Las actividades se guardan por su posicion, asi que al
@@ -1095,14 +1097,14 @@ export default function Informes({ctx}){
                 alignItems: isMobile ? "stretch" : "flex-end",
                 flexDirection: isMobile ? "column" : "row",
                 gap: 14,
-                margin: "8px 0 22px",
+                margin: "4px 0 16px",
               }}
             >
               <div style={{ minWidth: 0 }}>
-                <h1 style={{ fontSize: isMobile ? 32 : 44, fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1.05, margin: 0, color: "var(--text-primary)" }}>
+                <h1 style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.015em", lineHeight: 1.25, margin: 0, color: "var(--text-primary)" }}>
                   Informe {numDoc || sel?.id || sel?.numero || "técnico"}
                 </h1>
-                <div style={{ fontSize: isMobile ? 15 : 17, color: "var(--text-secondary)", marginTop: 8 }}>
+                <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 3 }}>
                   {[cliente, proyecto].filter(Boolean).join(" · ") || "Informe de actividades en obra"}
                 </div>
               </div>
@@ -1229,7 +1231,7 @@ export default function Informes({ctx}){
                           <td style={{ fontWeight: 700, color: "#52525b", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)" }}>REF. COTIZACIÓN:</td>
                           <td colSpan={3} style={{ color: "#18181b", fontWeight: 700, padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)", fontFamily: "'JetBrains Mono', monospace" }}>
                             <span style={{ background: "#ffffff", color: "#18181b", padding: "2px 7px", borderRadius: 4, border: "1px solid #d4d4d8", fontSize: 9.5 }}>
-                              📄 {sel.cotizacionNumero || cotVincSel?.numero}
+                              {sel.cotizacionNumero || cotVincSel?.numero}
                             </span>
                             {cotVincSel && (
                               <button
@@ -1251,7 +1253,7 @@ export default function Informes({ctx}){
                                   transition: "all 0.15s ease",
                                 }}
                               >
-                                👁️ Ver detalle de cotización
+                                Ver detalle de cotización
                               </button>
                             )}
                           </td>

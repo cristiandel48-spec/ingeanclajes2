@@ -8,11 +8,11 @@ import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 // bloques del editor, al estilo de apple.com: fondo blanco sin borde, titulo
 // grande, acciones como texto y el alcance en filas limpias.
 
-const BLOQUE = { background: "var(--surface)", borderRadius: 22, padding: "22px 22px", marginBottom: 14 };
-const TITULO = { fontSize: 21, fontWeight: 600, letterSpacing: "-0.015em", lineHeight: 1.2, color: "var(--text-primary)", margin: 0 };
+const BLOQUE = { background: "var(--surface)", borderRadius: 22, padding: "20px 22px", marginBottom: 14 };
+const TITULO = { fontSize: 14.5, fontWeight: 600, letterSpacing: "-0.01em", lineHeight: 1.3, color: "var(--text-primary)", margin: 0 };
 const SELECTOR = {
   background: "var(--fill)", border: "1px solid transparent", borderRadius: 12,
-  padding: "10px 14px", fontSize: 14, color: "var(--text-primary)", fontFamily: "inherit",
+  padding: "9px 12px", fontSize: 13, color: "var(--text-primary)", fontFamily: "inherit",
   cursor: "pointer", flex: "1 1 260px", maxWidth: 460,
 };
 
@@ -39,7 +39,7 @@ export default function TarjetaCotizacionRef({
     return (
       <section style={BLOQUE}>
         <h2 style={TITULO}>Cotización de referencia</h2>
-        <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 4, marginBottom: 14 }}>
+        <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginTop: 3, marginBottom: 12 }}>
           Sirve para cotejar el alcance presupuestado e importar sus ítems como actividades.
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
@@ -71,7 +71,7 @@ export default function TarjetaCotizacionRef({
             </optgroup>
           </select>
           {todasCotizaciones.length === 0 && (
-            <span style={{ fontSize: 13, color: "var(--text-tertiary)" }}>
+            <span style={{ fontSize: 11.5, color: "var(--text-tertiary)" }}>
               No hay cotizaciones registradas aún en el sistema.
             </span>
           )}
@@ -91,12 +91,12 @@ export default function TarjetaCotizacionRef({
         <div style={{ minWidth: 0 }}>
           <h2 style={TITULO}>Cotización de referencia</h2>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: 8 }}>
-            <span style={{ fontSize: 17, fontWeight: 600, color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
               {cotizacion.numero}
             </span>
             <StatusPill estado={cotizacion.estado || "Aprobada"} />
             {total > 0 && (
-              <span style={{ fontSize: 15, color: "var(--text-secondary)", fontVariantNumeric: "tabular-nums" }}>
+              <span style={{ fontSize: 12.5, color: "var(--text-secondary)", fontVariantNumeric: "tabular-nums" }}>
                 {fmt(total)}
               </span>
             )}
@@ -167,11 +167,11 @@ export default function TarjetaCotizacionRef({
 
       {/* Alcance contratado: una fila por item, como una ficha tecnica. */}
       <div style={{ marginTop: 16 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 4 }}>
+        <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-tertiary)", marginBottom: 2 }}>
           Alcance contratado
         </div>
         {items.length === 0 ? (
-          <div style={{ fontSize: 14, color: "var(--text-tertiary)", padding: "8px 0" }}>Sin ítems especificados</div>
+          <div style={{ fontSize: 12, color: "var(--text-tertiary)", padding: "8px 0" }}>Sin ítems especificados</div>
         ) : (
           items.slice(0, 5).map((it, idx) => (
             <div
@@ -180,15 +180,15 @@ export default function TarjetaCotizacionRef({
                 display: "grid",
                 gridTemplateColumns: "90px minmax(0,1fr)",
                 gap: 12,
-                padding: "10px 0",
+                padding: "8px 0",
                 borderTop: idx === 0 ? "none" : "1px solid var(--separator)",
                 alignItems: "baseline",
-                fontSize: 14,
+                fontSize: 12,
               }}
             >
               <span style={{ color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
                 <strong style={{ fontWeight: 600 }}>{it.cant}</strong>{" "}
-                <span style={{ color: "var(--text-tertiary)", fontSize: 12.5 }}>{it.unit || "Und"}</span>
+                <span style={{ color: "var(--text-tertiary)", fontSize: 11 }}>{it.unit || "Und"}</span>
               </span>
               <span style={{ color: "var(--text-primary)", lineHeight: 1.45 }}>{it.desc}</span>
             </div>

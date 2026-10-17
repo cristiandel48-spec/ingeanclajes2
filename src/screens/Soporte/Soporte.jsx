@@ -576,7 +576,7 @@ export default function Soporte({ ctx }) {
     setEnviando(true);
     const remitenteNombre = membresia?.nombre || "Cristian Flórez";
     const esAdmin = membresia?.role === "admin";
-    const textoFinal = texto || (adjuntoStaged?.esImagen ? "🖼️ Captura de pantalla" : "📎 Archivo adjunto");
+    const textoFinal = texto || (adjuntoStaged?.esImagen ? "Captura de pantalla" : "Archivo adjunto");
     const adjuntoSerializado = adjuntoStaged ? serializarAdjunto(adjuntoStaged) : null;
 
     try {
@@ -784,7 +784,7 @@ export default function Soporte({ ctx }) {
           <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--border, #eaecf0)" }}>
             <input
               type="text"
-              placeholder="🔍 Buscar por persona, asunto, obra..."
+              placeholder="Buscar por persona, asunto, obra..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               style={{ ...SI, padding: "8px 12px", fontSize: 13 }}
@@ -1073,7 +1073,7 @@ export default function Soporte({ ctx }) {
                         cursor: "pointer",
                       }}
                     >
-                      {isMobile ? "↺ Reabrir" : "↺ Reabrir conversación"}
+                      {isMobile ? "Reabrir" : "Reabrir conversación"}
                     </button>
                   ) : (
                     <button
@@ -1116,7 +1116,7 @@ export default function Soporte({ ctx }) {
                     }}
                     title="Eliminar esta conversación por completo"
                   >
-                    🗑️ {isMobile ? "Eliminar" : "Eliminar conversación"}
+                    {isMobile ? "Eliminar" : "Eliminar conversación"}
                   </button>
                 </div>
               </div>

@@ -145,7 +145,7 @@ export default function OptimizarFotos({ ctx, enModal = false, onCerrar = null }
 
       {!revision && !resultado && !trabajando && !cargandoNube && (
         <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={revisar} style={B("#f47c20")}>🔍 Revisar fotos guardadas</button>
+          <button onClick={revisar} style={B("#f47c20")}>Revisar fotos guardadas</button>
           {enModal && <button onClick={onCerrar} style={{ ...B("var(--surface-subtle)", "var(--text-muted)"), border: "1px solid var(--border)" }}>Cerrar</button>}
         </div>
       )}
@@ -235,7 +235,7 @@ export default function OptimizarFotos({ ctx, enModal = false, onCerrar = null }
           onClick={(e) => e.stopPropagation()}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <div style={{ ...ST, marginBottom: 0 }}>📷 Mantenimiento · fotos guardadas</div>
+            <div style={{ ...ST, marginBottom: 0 }}>Mantenimiento · fotos guardadas</div>
             <button
               onClick={onCerrar}
               style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "var(--text-muted)", lineHeight: 1, padding: 4 }}

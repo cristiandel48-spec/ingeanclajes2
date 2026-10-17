@@ -525,7 +525,7 @@ export default function BotonSoporteFlotante() {
     try {
       const remitente = membresia?.nombre || "Cristian Flórez";
       const esAdmin = membresia?.role === "admin";
-      const textoFinal = texto || (adjuntoStaged?.esImagen ? "🖼️ Captura de pantalla" : "📎 Archivo adjunto");
+      const textoFinal = texto || (adjuntoStaged?.esImagen ? "Captura de pantalla" : "Archivo adjunto");
       const adjuntoSerializado = adjuntoStaged ? serializarAdjunto(adjuntoStaged) : null;
 
       const guardado = await enviarMensaje({
@@ -1101,7 +1101,7 @@ export default function BotonSoporteFlotante() {
                     ))}
                   </optgroup>
                   <optgroup label="Canal General">
-                    <option value="soporte">🛠️ Soporte Técnico General</option>
+                    <option value="soporte">Soporte Técnico General</option>
                   </optgroup>
                 </select>
               </div>

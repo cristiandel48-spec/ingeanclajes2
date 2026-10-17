@@ -163,7 +163,7 @@ export default function NuevoEmpleadoRapido({ ctx, onCreado, onCerrar, obraId = 
   return (
     <div style={{ background: "var(--surface)", border: "1px solid var(--accent, #cc0000)", borderRadius: 14, padding: 20, marginBottom: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 12 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-main)" }}>👷 Registrar un trabajador</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-main)" }}>Registrar un trabajador</div>
         <button onClick={onCerrar} style={{ ...B("var(--surface-subtle)", "var(--text-muted)"), border: "1px solid var(--border)", fontSize: 12, padding: "6px 12px" }}>Cerrar</button>
       </div>
 
@@ -236,7 +236,7 @@ export default function NuevoEmpleadoRapido({ ctx, onCreado, onCerrar, obraId = 
       )}
 
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-        <button onClick={guardar} style={B("#cc0000")}>✅ Registrar trabajador</button>
+        <button onClick={guardar} style={B("#cc0000")}>Registrar trabajador</button>
         <button onClick={onCerrar} style={{ ...B("var(--surface-subtle)", "var(--text-muted)"), border: "1px solid var(--border)" }}>Cancelar</button>
         {nombreCompleto && (
           <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>

@@ -37,7 +37,7 @@ export default function Financiero({ctx}){
             {obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}
           </select>
         </div>
-        <button style={{...B("#f47c20"),marginTop:16}} onClick={()=>printCurrentPz("Informe financiero " + (obraFiltro))}>🖨️ Imprimir informe</button>
+        <button style={{...B("#f47c20"),marginTop:16}} onClick={()=>printCurrentPz("Informe financiero " + (obraFiltro))}>Imprimir informe</button>
       </div>
 
       <div id="pz">
@@ -112,10 +112,10 @@ export default function Financiero({ctx}){
             </div>
             <div style={{background:"var(--surface-subtle, #f1f5f9)",borderRadius:8,padding:"12px 14px",fontSize:12,color:"var(--text-muted, #64748b)",lineHeight:1.7,border:"1px solid var(--border, #e2e8f0)"}}>
               <div style={{fontWeight:600,color:"var(--text-main, #1a1a2e)",marginBottom:6}}>Indicadores clave</div>
-              <div>💰 Margen bruto global: <strong style={{color:margenGlobal>25?"#4ade80":"#f5c842"}}>{margenGlobal}%</strong></div>
-              <div>📦 Obras activas: <strong style={{color:"#60b4ff"}}>{obras.filter(o=>o.estado==="En Obra").length}</strong></div>
+              <div>Margen bruto global: <strong style={{color:margenGlobal>25?"#4ade80":"#f5c842"}}>{margenGlobal}%</strong></div>
+              <div>Obras activas: <strong style={{color:"#60b4ff"}}>{obras.filter(o=>o.estado==="En Obra").length}</strong></div>
               <div>💸 Por cobrar: <strong style={{color:"#fb923c"}}>{fmt(obras.reduce((s,o)=>s+o.saldo,0))}</strong></div>
-              <div>🧾 Cuentas x pagar: <strong style={{color:"#c084fc"}}>{fmt(ctx.cuentas.filter(c=>c.estado==="Pendiente").reduce((s,c)=>s+c.monto,0))}</strong></div>
+              <div>Cuentas x pagar: <strong style={{color:"#c084fc"}}>{fmt(ctx.cuentas.filter(c=>c.estado==="Pendiente").reduce((s,c)=>s+c.monto,0))}</strong></div>
             </div>
           </div>
         </div>

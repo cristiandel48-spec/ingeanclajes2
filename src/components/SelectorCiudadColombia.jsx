@@ -76,7 +76,7 @@ export default function SelectorCiudadColombia({
               padding: 0,
             }}
           >
-            ↺ Volver al selector
+            Volver al selector
           </button>
         ) : null}
       </div>
@@ -134,7 +134,7 @@ export default function SelectorCiudadColombia({
                   {m}
                 </option>
               ))}
-              <option value="__MANUAL__">✏️ Escribir a mano…</option>
+              <option value="__MANUAL__">Escribir a mano…</option>
             </select>
           </div>
         </div>

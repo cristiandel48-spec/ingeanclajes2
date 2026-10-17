@@ -160,9 +160,9 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
       )}
 
       {registros.length === 0 && (
-        <div style={{ textAlign: "center", padding: "40px 24px", color: "var(--text-primary)", fontSize: 15, fontWeight: 600, background: "var(--surface-subtle)", borderRadius: 14 }}>
+        <div style={{ textAlign: "center", padding: "40px 24px", color: "var(--text-primary)", fontSize: 13, fontWeight: 600, background: "var(--surface-subtle)", borderRadius: 14 }}>
           Todavía no hay avances registrados en esta obra.
-          <div style={{ fontSize: 13, fontWeight: 400, marginTop: 6, color: "var(--text-secondary)" }}>
+          <div style={{ fontSize: 11.5, fontWeight: 400, marginTop: 6, color: "var(--text-secondary)" }}>
             Dale a «Registrar avance del día» y sube las fotos de lo que se hizo.
           </div>
         </div>

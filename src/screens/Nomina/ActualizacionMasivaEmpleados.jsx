@@ -680,7 +680,7 @@ export default function ActualizacionMasivaEmpleados({
                   cursor: "pointer",
                 }}
               >
-                🔄 Por Actualizar ({totalModificados})
+                Por Actualizar ({totalModificados})
               </button>
 
               <button
@@ -697,7 +697,7 @@ export default function ActualizacionMasivaEmpleados({
                   cursor: "pointer",
                 }}
               >
-                ➕ Nuevos a Ingresar ({totalNuevos})
+                Nuevos a Ingresar ({totalNuevos})
               </button>
 
               <button
@@ -930,7 +930,7 @@ export default function ActualizacionMasivaEmpleados({
                   gap: 6,
                 }}
               >
-                <span>{procesando ? "⏳ Guardando..." : "✅ Confirmar y Aplicar Cambios"}</span>
+                <span>{procesando ? "⏳ Guardando..." : "Confirmar y Aplicar Cambios"}</span>
               </button>
             </div>
           </div>

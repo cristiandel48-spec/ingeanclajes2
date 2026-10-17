@@ -319,7 +319,7 @@ ${form.descripcion ? `Detalles: ${form.descripcion}` : ""}`;
                 <option value="general">🏢 Oficina / General (Sin obra)</option>
                 {(obras || []).map((o) => (
                   <option key={o.id} value={o.id}>
-                    🏗️ {o.id} · {o.nombre || o.cliente}
+                    {o.id} · {o.nombre || o.cliente}
                   </option>
                 ))}
               </select>
@@ -426,10 +426,10 @@ ${form.descripcion ? `Detalles: ${form.descripcion}` : ""}`;
                   boxSizing: "border-box",
                 }}
               >
-                <option value="por_hacer">📝 Por Hacer</option>
+                <option value="por_hacer">Por Hacer</option>
                 <option value="en_proceso">⚡ En Ejecución</option>
                 <option value="en_revision">👀 En Revisión</option>
-                <option value="completada">✅ Completada</option>
+                <option value="completada">Completada</option>
               </select>
             </div>
           </div>
@@ -616,7 +616,7 @@ ${form.descripcion ? `Detalles: ${form.descripcion}` : ""}`;
                   gap: 4,
                 }}
               >
-                <span>📱 WhatsApp</span>
+                <span>WhatsApp</span>
               </button>
             </div>
 

@@ -40,8 +40,38 @@ export const BRAND={
 
 export const SI={background:"var(--input-bg)",border:"1px solid var(--input-border)",borderRadius:RADIO.control,color:"var(--input-color)",padding:"9px 12px",fontSize:13.5,width:"100%",outline:"none",boxSizing:"border-box",fontFamily:"inherit",transition:`border-color ${TRANSICION.rapida}, box-shadow ${TRANSICION.rapida}`};
 
-export const B=(bg,c="#fff")=>({background:bg,color:c,border:"none",borderRadius:RADIO.control,padding:"8px 16px",fontSize:12.5,fontWeight:600,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,fontFamily:"inherit",whiteSpace:"nowrap",boxShadow:SOMBRA.sm,transition:`all ${TRANSICION.rapida}`});
-export const CD={background:COLOR.surface,border:`1px solid ${COLOR.separator}`,borderRadius:16,padding:20,boxShadow:SOMBRA.sm,boxSizing:"border-box"};
+// Boton de las pantallas antiguas. Recibia CUALQUIER color de fondo y de ahi
+// salian verdes, naranjas y azules por todas partes. Ahora el color que se le
+// pase solo decide el peso, como en la barra de apple.com:
+//   - fondo de color solido  -> pildora oscura (la accion principal)
+//   - fondo claro o tinte    -> pildora gris neutra (acciones normales)
+// y el texto rojo se respeta, porque avisa de que la accion borra algo.
+const hexALuz = (valor) => {
+  const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(valor || "").trim());
+  if (!m) return null;
+  const h = m[1].length === 3 ? m[1].split("").map((x) => x + x).join("") : m[1];
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+const esRojo = (valor) => {
+  const m = /^#([0-9a-f]{6})$/i.exec(String(valor || "").trim());
+  if (!m) return false;
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16));
+  return r > 150 && r - g > 70 && r - b > 70;
+};
+export const B=(bg,c="#fff")=>{
+  const luz = hexALuz(bg);
+  const principal = luz !== null && luz < 0.6;
+  return {
+    background: principal ? "var(--text-primary)" : "var(--fill)",
+    color: principal ? "var(--surface)" : esRojo(c) ? "var(--danger-text)" : "var(--text-primary)",
+    border:"none",borderRadius:980,padding:"8px 16px",fontSize:12.5,fontWeight:principal?600:500,
+    cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,fontFamily:"inherit",
+    whiteSpace:"nowrap",boxShadow:"none",transition:`opacity ${TRANSICION.rapida}`,
+  };
+};
+// Tarjeta sin marco ni sombra: un bloque blanco sobre el gris de la pagina.
+export const CD={background:COLOR.surface,border:"none",borderRadius:22,padding:22,boxShadow:"none",boxSizing:"border-box"};
 export const ST={fontSize:14.5,fontWeight:600,letterSpacing:"-0.01em",color:COLOR.textPrimary,marginBottom:12};
 
 export const hasBrokenEncoding = (value="") => /[ðâÃÂŸ]/.test(String(value || ""));

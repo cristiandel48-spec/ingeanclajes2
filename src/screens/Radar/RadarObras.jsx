@@ -25,7 +25,7 @@ export default function RadarObras({ ctx, go }) {
         }}
         onClick={() => irAPantalla && irAPantalla("cotizacion")}
       >
-        📄 Ir a Cotizaciones
+        Ir a Cotizaciones
       </button>
     </div>,
     []

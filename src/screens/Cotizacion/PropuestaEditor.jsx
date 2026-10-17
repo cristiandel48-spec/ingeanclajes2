@@ -541,7 +541,7 @@ export default function PropuestaEditor({
                       pointerEvents: "none",
                     }}
                   >
-                    <span>🔍 Ver completa</span>
+                    <span>Ver completa</span>
                   </div>
                 </div>
 
@@ -711,7 +711,7 @@ export default function PropuestaEditor({
                       gap: 4,
                     }}
                   >
-                    🗑️ Quitar imagen satelital
+                    Quitar imagen satelital
                   </button>
                   <button
                     type="button"
@@ -1281,7 +1281,7 @@ export default function PropuestaEditor({
                 }}
                 title="Rellena con el texto estándar oficial de la empresa"
               >
-                ↺ Texto estándar
+                Texto estándar
               </button>
               <BotonCorregir valor={p.incluyeTexto !== undefined && p.incluyeTexto !== null ? p.incluyeTexto : DEFAULT_COT_INCLUYE} onChange={v => set("incluyeTexto", v)} compacto />
               <BotonDictado valor={p.incluyeTexto !== undefined && p.incluyeTexto !== null ? p.incluyeTexto : DEFAULT_COT_INCLUYE} onChange={v => set("incluyeTexto", v)} titulo="Dictar lo que incluye la cotización" compacto />

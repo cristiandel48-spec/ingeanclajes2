@@ -77,7 +77,7 @@ export default function ModalUnificarCliente({ clienteOrigen, clientesDisponible
         >
           <div>
             <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "var(--text-main, #0f172a)" }}>
-              🔄 Unificar clientes duplicados
+              Unificar clientes duplicados
             </h3>
             <p style={{ margin: "3px 0 0", fontSize: 12, color: "var(--text-muted, #64748b)" }}>
               Transfiere obras, cotizaciones y certificados a una sola ficha oficial
@@ -132,7 +132,7 @@ export default function ModalUnificarCliente({ clienteOrigen, clientesDisponible
 
             <input
               type="text"
-              placeholder="🔍 Buscar cliente por nombre, NIT o ciudad..."
+              placeholder="Buscar cliente por nombre, NIT o ciudad..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               style={{
@@ -252,7 +252,7 @@ export default function ModalUnificarCliente({ clienteOrigen, clientesDisponible
               fontWeight: 700,
             }}
           >
-            🔄 Unificar y transferir
+            Unificar y transferir
           </button>
         </div>
       </div>

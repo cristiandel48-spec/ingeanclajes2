@@ -347,7 +347,7 @@ export default function ModalEnvioMasivoColillas({
                   boxShadow: "0 3px 10px rgba(29,78,216,0.3)",
                 }}
               >
-                <span>{enviandoMasivo ? "⏳ Enviando..." : "🚀 Enviar a todos por Gmail ahora"}</span>
+                <span>{enviandoMasivo ? "⏳ Enviando..." : "Enviar a todos por Gmail ahora"}</span>
               </button>
             ) : (
               <button
@@ -364,7 +364,7 @@ export default function ModalEnvioMasivoColillas({
                   cursor: "pointer",
                 }}
               >
-                {copiado ? "✓ Correos copiados" : "📋 Copiar todos los correos"}
+                {copiado ? "✓ Correos copiados" : "Copiar todos los correos"}
               </button>
             )}
           </div>
@@ -516,7 +516,7 @@ export default function ModalEnvioMasivoColillas({
                               boxShadow: "0 2px 4px rgba(37,99,235,0.2)",
                             }}
                           >
-                            <span>{cargando ? "⏳ Enviando..." : "✉️ Enviar por Gmail"}</span>
+                            <span>{cargando ? "⏳ Enviando..." : "Enviar por Gmail"}</span>
                           </button>
                         )
                       ) : (
@@ -591,7 +591,7 @@ export default function ModalEnvioMasivoColillas({
           }}
         >
           <div style={{ fontSize: 12, color: "#64748b" }}>
-            💡 Los correos se envían de forma directa y silenciosa a través de la cuenta oficial de Ingeanclajes por Gmail.
+            Los correos se envían de forma directa y silenciosa a través de la cuenta oficial de Ingeanclajes por Gmail.
           </div>
           <button
             type="button"

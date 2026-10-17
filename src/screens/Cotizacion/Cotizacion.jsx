@@ -976,7 +976,7 @@ export default function Cotizacion({ctx}){
                 disabled={Boolean(bajandoPdf)}
                 onClick={()=>descargarPdf(previewCot)}
               >
-                {bajandoPdf?"Generando…":"📥 Descargar PDF"}
+                {bajandoPdf?"Generando…":"Descargar PDF"}
               </button>
               <button
                 style={{
@@ -992,7 +992,7 @@ export default function Cotizacion({ctx}){
                 }}
                 onClick={()=>setEnviarCot(previewCot)}
               >
-                ✉️ Enviar al cliente
+                Enviar al cliente
               </button>
             </div>
           </div>
@@ -1453,7 +1453,7 @@ export default function Cotizacion({ctx}){
                 boxShadow: "0 1px 2px rgba(181, 71, 8, 0.08)",
               }}
             >
-              ✨ + Nueva propuesta
+              + Nueva propuesta
             </button>
             <button
               onClick={duplicarPropuesta}
@@ -1471,7 +1471,7 @@ export default function Cotizacion({ctx}){
                 gap: 4,
               }}
             >
-              📋 Duplicar activa
+              Duplicar activa
             </button>
           </div>
         </div>
@@ -1516,7 +1516,7 @@ export default function Cotizacion({ctx}){
               boxShadow: "0 1px 2px rgba(181, 71, 8, 0.08)",
             }}
           >
-            💾 Guardar Cotización
+            Guardar Cotización
           </button>
         </div>
       </div>

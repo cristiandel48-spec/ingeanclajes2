@@ -201,7 +201,7 @@ export default function ImportadorEmpresasCsv({ clientes = [], setClientes, onFi
 
   return (
     <div style={CD}>
-      <div style={ST}>📥 Importar Base de Datos Externa (Cámara de Comercio / Camacol / CSV)</div>
+      <div style={ST}>Importar Base de Datos Externa (Cámara de Comercio / Camacol / CSV)</div>
       <div style={{ fontSize: 12, color: "var(--text-muted, #64748b)", marginBottom: 16 }}>
         Carga cualquier archivo <strong>.csv</strong> descargado de la Cámara de Comercio, Camacol o SECOP II para agregar empresas masivamente como prospectos.
       </div>

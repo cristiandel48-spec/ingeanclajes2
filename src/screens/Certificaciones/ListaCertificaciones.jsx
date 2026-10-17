@@ -753,7 +753,7 @@ function TarjetaCertificacionApple({ cert: c, acciones }) {
           <span>⏳ Próx. mant.: <strong style={{ color: semaforo ? semaforo.color : "var(--text-main, #1d1d1f)" }}>{fmtD(c.proxMant)}</strong></span>
         )}
         {Array.isArray(c.elementos) && c.elementos.length > 0 && (
-          <span>📦 {c.elementos.length} comp.</span>
+          <span>{c.elementos.length} comp.</span>
         )}
       </div>
 
@@ -808,7 +808,7 @@ function TarjetaCertificacionApple({ cert: c, acciones }) {
                 cursor: "pointer",
               }}
             >
-              ✏️ Editar
+              Editar
             </button>
           )}
 
@@ -831,7 +831,7 @@ function TarjetaCertificacionApple({ cert: c, acciones }) {
                 gap: 4,
               }}
             >
-              <span>📥 PDF</span>
+              <span>PDF</span>
             </button>
           )}
         </div>
@@ -1046,7 +1046,7 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
               gap: 3,
             }}
           >
-            📥 PDF
+            PDF
           </button>
         )}
         {acciones.editar && (

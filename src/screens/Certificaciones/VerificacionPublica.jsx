@@ -208,7 +208,7 @@ export default function VerificacionPublica() {
                   fontWeight: 600
                 }}
               >
-                📞 PBX (604) 448 26 86
+                PBX (604) 448 26 86
               </a>
               <a
                 href="https://www.ingeanclajessas.com"

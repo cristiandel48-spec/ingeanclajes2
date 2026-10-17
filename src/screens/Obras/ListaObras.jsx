@@ -1183,8 +1183,8 @@ function TarjetaObraApple({
 
         <div className="no-wrap" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, width: "100%", minWidth: 0 }}>
           <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-            <span style={{ color: "var(--text-muted, #475467)" }}>👷 {totalEmpleados}</span>
-            <span style={{ color: fotosCount > 0 ? "#0071e3" : "#98a2b3" }}>📸 {fotosCount}</span>
+            <span style={{ color: "var(--text-muted, #475467)" }}>{totalEmpleados}</span>
+            <span style={{ color: fotosCount > 0 ? "#0071e3" : "#98a2b3" }}>{fotosCount}</span>
           </div>
           <span style={{ fontWeight: 600, color: "#0071e3", flexShrink: 0 }}>Ver Obra &rarr;</span>
         </div>

@@ -113,7 +113,7 @@ export default function ImportarCotizacion({ onAplicar, onCerrar, clientes = [] 
   return (
     <div style={{ background: "var(--surface, #fff)", border: "1px solid #f47c20", borderRadius: 14, padding: 20, marginBottom: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 10 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-main, #1a1a2e)" }}>📄 Importar cotización con IA</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-main, #1a1a2e)" }}>Importar cotización con IA</div>
         <button onClick={onCerrar} style={{ ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)"), fontSize: 12, padding: "6px 12px" }}>Cerrar</button>
       </div>
 

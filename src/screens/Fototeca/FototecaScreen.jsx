@@ -169,7 +169,7 @@ export default function FototecaScreen({ ctx }) {
             <input
               type="text"
               autoFocus={!isMobile}
-              placeholder={isMobile ? "🔍 Buscar por cliente o código..." : "🔍 Buscar obra por cliente (ej: Conconcreto), código o ciudad..."}
+              placeholder={isMobile ? "Buscar por cliente o código..." : "Buscar obra por cliente (ej: Conconcreto), código o ciudad..."}
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               style={{
@@ -367,7 +367,7 @@ export default function FototecaScreen({ ctx }) {
                               color: count > 0 ? "#047857" : "#64748b",
                             }}
                           >
-                            📷 {count} {count === 1 ? "foto" : "fotos"}
+                            {count} {count === 1 ? "foto" : "fotos"}
                           </span>
                         </div>
                       </div>
@@ -500,7 +500,7 @@ export default function FototecaScreen({ ctx }) {
                           flexShrink: 0,
                         }}
                       >
-                        📷 {o.fotosTotal} fotos
+                        {o.fotosTotal} fotos
                       </span>
                     </div>
                   ))}

@@ -206,7 +206,7 @@ export default function ListaTareasProduccion({
             <BotonSegmentado
               activo={vista === "documentos"}
               onClick={() => setVista("documentos")}
-              label="📄 Documentos y Notas"
+              label="Documentos y Notas"
             />
             <BotonSegmentado
               activo={vista === "personas"}
@@ -221,12 +221,12 @@ export default function ListaTareasProduccion({
             <BotonSegmentado
               activo={vista === "kanban"}
               onClick={() => setVista("kanban")}
-              label="📊 Por Estado"
+              label="Por Estado"
             />
             <BotonSegmentado
               activo={vista === "tabla"}
               onClick={() => setVista("tabla")}
-              label="📋 Tabla"
+              label="Tabla"
             />
           </div>
 
@@ -854,7 +854,7 @@ export default function ListaTareasProduccion({
               }}
             >
               <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #1d1d1f)", marginBottom: 3 }}>
-                💡 Enfoque Ejecutivo
+                Enfoque Ejecutivo
               </div>
               <p style={{ fontSize: 11.5, color: "var(--text-muted, #6e6e73)", margin: 0, lineHeight: 1.45 }}>
                 En 5 segundos sabes si Paola o los técnicos en obra tienen tareas bloqueadas o por vencer, sin tener que revisar reporte por reporte.

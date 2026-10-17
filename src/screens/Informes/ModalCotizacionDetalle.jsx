@@ -327,7 +327,7 @@ export default function ModalCotizacionDetalle({
                   }}
                   title="Cargar estos ítems a las actividades realizadas del informe"
                 >
-                  📋 Importar ítems al informe
+                  Importar ítems al informe
                 </button>
               )}
             </div>
@@ -486,7 +486,7 @@ export default function ModalCotizacionDetalle({
                   padding: "7px 15px",
                 }}
               >
-                📋 Importar ítems al informe
+                Importar ítems al informe
               </button>
             )}
             <button

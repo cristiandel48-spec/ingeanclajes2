@@ -52,6 +52,24 @@ export const componentesCss = `
       border-radius: 980px; padding: 0 18px; }
     .ui-btn--oscuro:hover:not(:disabled) { opacity: .86; }
 
+    /* Entrada de cada modulo, como una ventana que vuelve del Dock en el Mac:
+       crece desde abajo, se enfoca y aparece, despacio y sin rebote.
+       Va con «backwards» y no «both» a proposito: al terminar no deja ningun
+       transform ni filter puesto, que convertirian al envoltorio en el
+       contenedor de los position:fixed y descolocarian modales y avisos. */
+    @keyframes entrar-modulo {
+      0%   { opacity: 0; transform: translateY(60px) scale(.88); filter: blur(10px); }
+      70%  { opacity: 1; filter: blur(0); }
+      100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    }
+    .transicion-modulo {
+      animation: entrar-modulo .9s cubic-bezier(.22, .61, .36, 1) backwards;
+      transform-origin: 50% 100%;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .transicion-modulo { animation: none; }
+    }
+
     /* En el telefono y en obra todo lo que se toca mide 44 */
     @media (max-width: 768px) {
       .ui-btn { --ui-btn-alto: 44px; }

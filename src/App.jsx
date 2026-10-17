@@ -163,9 +163,13 @@ function AppRoot() {
 
   return (
     <AppShell scr={destino} onNavigate={setScr}>
-      <Suspense fallback={<div style={{ padding: 32, textAlign: "center", color: "var(--text-muted, #64748b)", fontSize: 13 }}>Cargando módulo…</div>}>
-        <Screen ctx={ctx} go={setScr} />
-      </Suspense>
+      {/* La clave hace que el envoltorio se monte de nuevo en cada cambio de
+          modulo, y con eso se repite la animacion de entrada. */}
+      <div key={destino} className="transicion-modulo">
+        <Suspense fallback={<div style={{ padding: 32, textAlign: "center", color: "var(--text-muted, #64748b)", fontSize: 13 }}>Cargando módulo…</div>}>
+          <Screen ctx={ctx} go={setScr} />
+        </Suspense>
+      </div>
       <NotificadorMensajesGlobal onIrASoporte={() => setScr("soporte")} />
       <AvisoInteligenteAgenda onIrAAgenda={() => setScr("agenda")} />
       {destino !== "soporte" && <BotonSoporteFlotante />}

@@ -3,7 +3,7 @@
 import AvisoFlujo from "../../components/AvisoFlujo";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { NAV_SECTIONS } from "../../config/navigation";
 import CampoTexto from "../../components/ui/CampoTexto";
@@ -49,6 +49,22 @@ export default function Usuarios({ ctx }) {
   const [abierto, setAbierto] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
+
+  // El formulario sale arriba de la lista. Con muchos usuarios, al darle
+  // «Editar» a uno de los de abajo el formulario se abria fuera de la vista y
+  // habia que subir a buscarlo: ahora la pantalla sube sola hasta el y deja
+  // el cursor en el primer campo. Corre tambien al pasar de un usuario a otro.
+  const formRef = useRef(null);
+  useEffect(() => {
+    if (!abierto) return;
+    const id = requestAnimationFrame(() => {
+      const el = formRef.current;
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      el.querySelector("input:not([disabled])")?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [abierto, editId]);
 
   const usuariosEnLineaIds = useMemo(() => {
     const vistos = new Set();
@@ -371,7 +387,8 @@ Cancelar: se la entregas tú.`);
       )}
 
       {abierto && (
-        <div style={{ ...CD, marginBottom: 20, border: "1px solid var(--border, rgba(0, 0, 0, 0.08))", boxShadow: "0 4px 20px -4px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.02)" }}>
+        // scrollMarginTop: que al subir no quede escondido bajo la barra fija.
+        <div ref={formRef} style={{ ...CD, marginBottom: 20, scrollMarginTop: 96 }}>
           <div style={ST}>{editId ? "Editar acceso" : "Nuevo usuario"}</div>
 
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 14 }}>

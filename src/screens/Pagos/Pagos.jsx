@@ -4,7 +4,7 @@ import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
 import BuscadorCliente from "../../components/BuscadorCliente";
 import ReciboCajaMediaCarta, { generarHtmlMediaCarta } from "./ReciboCajaMediaCarta";
-import { openPrintTab } from "../../lib/cotizacionPrint";
+import { openPrintTab } from "../../lib/abrirImpresion";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import {
   CONCEPTOS_RETEFUENTE,

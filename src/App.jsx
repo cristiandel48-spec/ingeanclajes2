@@ -3,38 +3,61 @@ import { AppDataProvider, useAppData } from "./context/AppDataContext";
 import AppShell from "./components/layout/AppShell";
 import { AccionesPantallaProvider } from "./context/accionesPantalla";
 import { pantallaInicial, puedeVer } from "./lib/permisos";
-import Dashboard from "./screens/Dashboard/Dashboard";
-import Cotizacion from "./screens/Cotizacion/Cotizacion";
-import ClientesDB from "./screens/Clientes/ClientesDB";
-import Catalogo from "./screens/Catalogo/Catalogo";
-import Obras from "./screens/Obras/Obras";
-import FototecaScreen from "./screens/Fototeca/FototecaScreen";
-import Certificaciones from "./screens/Certificaciones/Certificaciones";
-import Informes from "./screens/Informes/Informes";
-import Vencimientos from "./screens/Vencimientos/Vencimientos";
-import Usuarios from "./screens/Usuarios/Usuarios";
-import Auditoria from "./screens/Auditoria/Auditoria";
-import Formatos from "./screens/Formatos/Formatos";
-import Soporte from "./screens/Soporte/Soporte";
-import Agenda from "./screens/Agenda/Agenda";
-import MisTareas from "./screens/MisTareas/MisTareas";
 import BotonSoporteFlotante from "./components/soporte/BotonSoporteFlotante";
 import NotificadorMensajesGlobal from "./components/notificaciones/NotificadorMensajesGlobal";
 import AvisoInteligenteAgenda from "./components/agenda/AvisoInteligenteAgenda";
 import { ToastProvider } from "./components/ui/Toast";
 
-// Pantallas desactivadas del menú cargadas bajo demanda para no ralentizar el programa
-const RadarObras = lazy(() => import("./screens/Radar/RadarObras"));
-const Pagos = lazy(() => import("./screens/Pagos/Pagos"));
-const CuentasPagar = lazy(() => import("./screens/CuentasPagar/CuentasPagar"));
-const Contabilidad = lazy(() => import("./screens/Contabilidad/Contabilidad"));
-const Financiero = lazy(() => import("./screens/Financiero/Financiero"));
+// Cada pantalla se trae al entrar en ella, no al abrir la aplicacion. Antes
+// todas venian en el paquete inicial -y con ellas las fotos de la ficha
+// tecnica de la cotizacion-: unos 3 MB que bajaba cualquiera, incluso para
+// ver el inicio de sesion o una sola pantalla.
+//
+// Si se publica una version nueva con la aplicacion abierta, los archivos de
+// la anterior dejan de existir y el import falla. En ese caso se recarga la
+// pagina una vez para tomar la version nueva; la marca evita un bucle si el
+// fallo es otro (sin conexion, por ejemplo).
+const MARCA_RECARGA = "ingeanclajes_recarga_por_version";
+const pantalla = (cargar) => lazy(() =>
+  cargar()
+    .then((modulo) => {
+      try { sessionStorage.removeItem(MARCA_RECARGA); } catch { /* sin almacenamiento */ }
+      return modulo;
+    })
+    .catch((error) => {
+      let yaRecargo = true;
+      try { yaRecargo = sessionStorage.getItem(MARCA_RECARGA) === "1"; } catch { /* sin almacenamiento */ }
+      if (!yaRecargo) {
+        try { sessionStorage.setItem(MARCA_RECARGA, "1"); } catch { /* sin almacenamiento */ }
+        window.location.reload();
+        return new Promise(() => {});
+      }
+      throw error;
+    })
+);
 
-// Horarios y Personal volvieron al menu, pero son de las pantallas mas pesadas
-// del programa: se siguen trayendo al entrar en ellas para que el arranque no
-// se vuelva lento otra vez.
-const Nomina = lazy(() => import("./screens/Nomina/Nomina"));
-const Horarios = lazy(() => import("./screens/Horarios/Horarios"));
+const Dashboard = pantalla(() => import("./screens/Dashboard/Dashboard"));
+const Cotizacion = pantalla(() => import("./screens/Cotizacion/Cotizacion"));
+const ClientesDB = pantalla(() => import("./screens/Clientes/ClientesDB"));
+const Catalogo = pantalla(() => import("./screens/Catalogo/Catalogo"));
+const Obras = pantalla(() => import("./screens/Obras/Obras"));
+const FototecaScreen = pantalla(() => import("./screens/Fototeca/FototecaScreen"));
+const Certificaciones = pantalla(() => import("./screens/Certificaciones/Certificaciones"));
+const Informes = pantalla(() => import("./screens/Informes/Informes"));
+const Vencimientos = pantalla(() => import("./screens/Vencimientos/Vencimientos"));
+const Usuarios = pantalla(() => import("./screens/Usuarios/Usuarios"));
+const Auditoria = pantalla(() => import("./screens/Auditoria/Auditoria"));
+const Formatos = pantalla(() => import("./screens/Formatos/Formatos"));
+const Soporte = pantalla(() => import("./screens/Soporte/Soporte"));
+const Agenda = pantalla(() => import("./screens/Agenda/Agenda"));
+const MisTareas = pantalla(() => import("./screens/MisTareas/MisTareas"));
+const RadarObras = pantalla(() => import("./screens/Radar/RadarObras"));
+const Pagos = pantalla(() => import("./screens/Pagos/Pagos"));
+const CuentasPagar = pantalla(() => import("./screens/CuentasPagar/CuentasPagar"));
+const Contabilidad = pantalla(() => import("./screens/Contabilidad/Contabilidad"));
+const Financiero = pantalla(() => import("./screens/Financiero/Financiero"));
+const Nomina = pantalla(() => import("./screens/Nomina/Nomina"));
+const Horarios = pantalla(() => import("./screens/Horarios/Horarios"));
 
 // Registro de pantallas. Las claves coinciden con los `id` de
 // config/navigation.jsx: para sumar una pantalla se agrega aqui y alli.

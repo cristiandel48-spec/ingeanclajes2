@@ -9,7 +9,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmtD, fmtL, today } from "../../lib/format";
-import { openPrintTab } from "../../lib/cotizacionPrint";
+import { openPrintTab } from "../../lib/abrirImpresion";
 import { buildInformePrintHtml } from "../../lib/informePrint";
 import { descargarInformePdf } from "../../lib/informePdf";
 import { getControlDocumental } from "../../lib/controlDocumental";

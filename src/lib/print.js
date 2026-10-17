@@ -1,7 +1,7 @@
 // Impresion generica y documentos de nomina (colilla, vacaciones, liquidacion)
 import { today } from "./format";
 import { LOGO_INGEANCLAJES } from "../assets/embeddedImages";
-import { openPrintTab } from "./cotizacionPrint";
+import { openPrintTab } from "./abrirImpresion";
 import { cssHojaImpresion } from "./hojaImpresion";
 import { NOMINA_CO_2026 } from "./nomina";
 

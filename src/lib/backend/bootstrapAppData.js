@@ -39,9 +39,46 @@ let baselineByEntity = {};
 // esto sea false, saveCloudAppData se niega a guardar.
 let baselineLoaded = false;
 
+// Las fotos viajan dentro de los registros como textos base64 de 0,5 a 8 MB.
+// Antes, en cada autoguardado se copiaba cada foto de cada registro entero a
+// un texto nuevo solo para comparar, y el baseline guardaba otra copia: el
+// doble de memoria y varios MB procesados cada 2 s.
+//
+// Ahora un texto largo se compara por su huella (largo + dos hashes de 32
+// bits de TODO el contenido). La huella depende solo del contenido, asi que
+// una foto cambiada siempre da otra huella aunque el objeto se haya
+// modificado en sitio. Calcularla recorre el texto una vez; se recuerda por
+// texto y el navegador cachea el hash de la clave, asi que la misma foto no
+// se vuelve a recorrer en los siguientes guardados.
+const LARGO_MINIMO_HUELLA = 4096;
+const MAX_HUELLAS = 400;
+const huellas = new Map();
+
+function huellaDeTexto(texto) {
+  const guardada = huellas.get(texto);
+  if (guardada) return guardada;
+  // FNV-1a y djb2 a la vez: probabilidad de choque despreciable.
+  let a = 0x811c9dc5;
+  let b = 5381;
+  for (let i = 0; i < texto.length; i++) {
+    const c = texto.charCodeAt(i);
+    a = Math.imul(a ^ c, 0x01000193);
+    b = (Math.imul(b, 33) + c) | 0;
+  }
+  const huella = `\u0000huella:${texto.length}:${(a >>> 0).toString(36)}:${(b >>> 0).toString(36)}`;
+  // Sin limite el Map retendria cada foto vista en la sesion. Vaciarlo solo
+  // cuesta recalcular: la huella sale igual porque depende del contenido.
+  if (huellas.size >= MAX_HUELLAS) huellas.clear();
+  huellas.set(texto, huella);
+  return huella;
+}
+
+const reemplazarTextosLargos = (_clave, valor) =>
+  typeof valor === "string" && valor.length >= LARGO_MINIMO_HUELLA ? huellaDeTexto(valor) : valor;
+
 function serializeForCompare(item) {
   try {
-    return JSON.stringify(item);
+    return JSON.stringify(item, reemplazarTextosLargos);
   } catch {
     // Estructuras con referencias circulares: forzamos "siempre distinto".
     return null;

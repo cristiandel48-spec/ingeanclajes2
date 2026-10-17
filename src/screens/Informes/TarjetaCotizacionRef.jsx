@@ -1,8 +1,20 @@
 import React, { useState } from "react";
 import { fmt } from "../../lib/format";
 import { getQuoteActiveProposal, normalizeProposalItems } from "../../lib/cotizaciones";
-import Badge from "../../components/ui/Badge";
+import { Button, StatusPill } from "../../components/ui";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
+
+// Bloque «Cotización de referencia» del editor de informes. Va como los demas
+// bloques del editor, al estilo de apple.com: fondo blanco sin borde, titulo
+// grande, acciones como texto y el alcance en filas limpias.
+
+const BLOQUE = { background: "var(--surface)", borderRadius: 22, padding: "22px 22px", marginBottom: 14 };
+const TITULO = { fontSize: 21, fontWeight: 600, letterSpacing: "-0.015em", lineHeight: 1.2, color: "var(--text-primary)", margin: 0 };
+const SELECTOR = {
+  background: "var(--fill)", border: "1px solid transparent", borderRadius: 12,
+  padding: "10px 14px", fontSize: 14, color: "var(--text-primary)", fontFamily: "inherit",
+  cursor: "pointer", flex: "1 1 260px", maxWidth: 460,
+};
 
 export default function TarjetaCotizacionRef({
   cotizacion,
@@ -25,31 +37,12 @@ export default function TarjetaCotizacionRef({
 
   if (!cotizacion) {
     return (
-      <div
-        style={{
-          background: "#fafafa",
-          border: "1.5px dashed #cbd5e1",
-          borderRadius: 12,
-          padding: "12px 16px",
-          marginBottom: 16,
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 16 }}>📄</span>
-            <span style={{ fontSize: 12.5, fontWeight: 700, color: "#334155" }}>
-              Cotización de Referencia
-            </span>
-            <span style={{ fontSize: 11, color: "#64748b" }}>
-              (Permite cotejar el alcance presupuestado e importar ítems a las actividades)
-            </span>
-          </div>
+      <section style={BLOQUE}>
+        <h2 style={TITULO}>Cotización de referencia</h2>
+        <div style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 4, marginBottom: 14 }}>
+          Sirve para cotejar el alcance presupuestado e importar sus ítems como actividades.
         </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <select
             value=""
             onChange={(e) => {
@@ -57,19 +50,9 @@ export default function TarjetaCotizacionRef({
                 onSeleccionarCotizacion(e.target.value);
               }
             }}
-            style={{
-              background: "#ffffff",
-              border: "1px solid #cbd5e1",
-              borderRadius: 8,
-              padding: "6px 12px",
-              fontSize: 12,
-              color: "#1e293b",
-              cursor: "pointer",
-              flex: "1 1 260px",
-              maxWidth: 420,
-            }}
+            style={SELECTOR}
           >
-            <option value="">— Vincular cotización a este informe —</option>
+            <option value="">Vincular una cotización a este informe…</option>
             {cotizacionesCliente.length > 0 && (
               <optgroup label={`Cotizaciones de este cliente (${obra?.cliente || ""})`}>
                 {cotizacionesCliente.map((c) => (
@@ -87,13 +70,13 @@ export default function TarjetaCotizacionRef({
               ))}
             </optgroup>
           </select>
-          <span style={{ fontSize: 11.5, color: "#64748b" }}>
-            {todasCotizaciones.length === 0
-              ? "No hay cotizaciones registradas aún en el sistema."
-              : "Selecciona una cotización aprobada para tenerla a la vista."}
-          </span>
+          {todasCotizaciones.length === 0 && (
+            <span style={{ fontSize: 13, color: "var(--text-tertiary)" }}>
+              No hay cotizaciones registradas aún en el sistema.
+            </span>
+          )}
         </div>
-      </div>
+      </section>
     );
   }
 
@@ -103,159 +86,56 @@ export default function TarjetaCotizacionRef({
   const total = propuestaActiva.total ?? cotizacion.total ?? 0;
 
   return (
-    <div
-      style={{
-        background: "linear-gradient(180deg, #fffcfb 0%, #ffffff 100%)",
-        border: "1.5px solid #fed7aa",
-        borderRadius: 14,
-        padding: "14px 18px",
-        marginBottom: 16,
-        boxShadow: "0 2px 6px rgba(234, 88, 12, 0.05)",
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-      }}
-    >
-      {/* Fila superior: Rótulo, Datos clave y Botones */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 12,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <span
-            style={{
-              background: "#ffedd5",
-              color: "#c2410c",
-              border: "1px solid #fdba74",
-              borderRadius: 6,
-              padding: "2px 8px",
-              fontSize: 10.5,
-              fontWeight: 800,
-              letterSpacing: "0.05em",
-              textTransform: "uppercase",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 4,
-            }}
-          >
-            <span>📄</span> Cotización de Referencia
-          </span>
-          <span
-            style={{
-              fontSize: 16,
-              fontWeight: 800,
-              color: "#0f172a",
-              fontFamily: "'JetBrains Mono', monospace",
-            }}
-          >
-            {cotizacion.numero}
-          </span>
-          <Badge estado={cotizacion.estado || "Aprobada"} />
-          {total > 0 && (
-            <span
-              style={{
-                fontSize: 12,
-                fontWeight: 700,
-                color: "#027a48",
-                background: "#ecfdf3",
-                border: "1px solid #a6f4c5",
-                borderRadius: 6,
-                padding: "2px 8px",
-              }}
-            >
-              {fmt(total)}
+    <section style={BLOQUE}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
+        <div style={{ minWidth: 0 }}>
+          <h2 style={TITULO}>Cotización de referencia</h2>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: 8 }}>
+            <span style={{ fontSize: 17, fontWeight: 600, color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
+              {cotizacion.numero}
             </span>
-          )}
+            <StatusPill estado={cotizacion.estado || "Aprobada"} />
+            {total > 0 && (
+              <span style={{ fontSize: 15, color: "var(--text-secondary)", fontVariantNumeric: "tabular-nums" }}>
+                {fmt(total)}
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* Acciones de la cotización */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
           {items.length > 0 && onImportarItems && (
-            <button
-              type="button"
+            <Button
+              variante="texto"
+              tam="sm"
               onClick={() => onImportarItems(items, cotizacion)}
-              style={{
-                background: "#f0fdf4",
-                border: "1px solid #bbf7d0",
-                color: "#166534",
-                borderRadius: 8,
-                padding: "6px 12px",
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 5,
-                transition: "all 0.15s ease",
-              }}
               title="Crear actividades a partir de los ítems cotizados"
             >
-              📋 Importar ítems a actividades
-            </button>
+              Importar ítems
+            </Button>
           )}
-
-          <button
-            type="button"
+          <Button
+            variante="texto"
+            tam="sm"
+            aria-pressed={modoCambiar}
+            onClick={() => setModoCambiar(!modoCambiar)}
+          >
+            {modoCambiar ? "Cerrar" : "Cambiar"}
+          </Button>
+          <Button
+            variante="tertiary"
+            tam="sm"
+            iconoDerecha="flechaDer"
             onClick={onVerDetalle}
-            style={{
-              background: "#eff6ff",
-              border: "1px solid #bfdbfe",
-              color: "#1d4ed8",
-              borderRadius: 8,
-              padding: "6px 12px",
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 5,
-              transition: "all 0.15s ease",
-            }}
             title="Ver desglose completo de la cotización, precios y plano"
           >
-            👁️ Ver cotización completa
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setModoCambiar(!modoCambiar)}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: "#64748b",
-              fontSize: 11.5,
-              fontWeight: 600,
-              cursor: "pointer",
-              textDecoration: "underline",
-              padding: "4px 6px",
-            }}
-          >
-            {modoCambiar ? "Ocultar selector" : "Cambiar…"}
-          </button>
+            Ver cotización
+          </Button>
         </div>
       </div>
 
-      {/* Selector si se quiere cambiar */}
       {modoCambiar && (
-        <div
-          style={{
-            padding: "8px 12px",
-            background: "#fff7ed",
-            borderRadius: 8,
-            border: "1px solid #fed7aa",
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-          }}
-        >
-          <span style={{ fontSize: 11.5, fontWeight: 700, color: "#9a3412" }}>
-            Asociar otra cotización:
-          </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
           <select
             value={cotizacion.id}
             onChange={(e) => {
@@ -264,14 +144,7 @@ export default function TarjetaCotizacionRef({
                 setModoCambiar(false);
               }
             }}
-            style={{
-              background: "#ffffff",
-              border: "1px solid #cbd5e1",
-              borderRadius: 6,
-              padding: "4px 8px",
-              fontSize: 11.5,
-              color: "#1e293b",
-            }}
+            style={SELECTOR}
           >
             {todasCotizaciones.map((c) => (
               <option key={c.id} value={c.id}>
@@ -279,70 +152,54 @@ export default function TarjetaCotizacionRef({
               </option>
             ))}
           </select>
-          <button
-            type="button"
+          <Button
+            variante="destructive"
+            tam="sm"
             onClick={() => {
               onSeleccionarCotizacion("");
               setModoCambiar(false);
             }}
-            style={{
-              background: "#ffffff",
-              border: "1px solid #fca5a5",
-              color: "#b91c1c",
-              borderRadius: 6,
-              padding: "4px 8px",
-              fontSize: 11,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
           >
             Desvincular
-          </button>
+          </Button>
         </div>
       )}
 
-      {/* Alcance e Ítems cotizados en pills/chips */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 12 }}>
-        <span style={{ color: "#64748b", fontWeight: 600 }}>Alcance contratado:</span>
+      {/* Alcance contratado: una fila por item, como una ficha tecnica. */}
+      <div style={{ marginTop: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", marginBottom: 4 }}>
+          Alcance contratado
+        </div>
         {items.length === 0 ? (
-          <span style={{ color: "#94a3b8", fontStyle: "italic" }}>Sin ítems especificados</span>
+          <div style={{ fontSize: 14, color: "var(--text-tertiary)", padding: "8px 0" }}>Sin ítems especificados</div>
         ) : (
           items.slice(0, 5).map((it, idx) => (
-            <span
+            <div
               key={idx}
               style={{
-                background: "#f8fafc",
-                border: "1px solid #e2e8f0",
-                borderRadius: 6,
-                padding: "3px 8px",
-                fontSize: 11.5,
-                color: "#1e293b",
-                fontWeight: 600,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
+                display: "grid",
+                gridTemplateColumns: "90px minmax(0,1fr)",
+                gap: 12,
+                padding: "10px 0",
+                borderTop: idx === 0 ? "none" : "1px solid var(--separator)",
+                alignItems: "baseline",
+                fontSize: 14,
               }}
             >
-              <strong style={{ color: "#ea580c" }}>{it.cant} {it.unit || "Und"}</strong>
-              <span>{it.desc}</span>
-            </span>
+              <span style={{ color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
+                <strong style={{ fontWeight: 600 }}>{it.cant}</strong>{" "}
+                <span style={{ color: "var(--text-tertiary)", fontSize: 12.5 }}>{it.unit || "Und"}</span>
+              </span>
+              <span style={{ color: "var(--text-primary)", lineHeight: 1.45 }}>{it.desc}</span>
+            </div>
           ))
         )}
         {items.length > 5 && (
-          <span
-            onClick={onVerDetalle}
-            style={{
-              color: "#ea580c",
-              fontSize: 11.5,
-              fontWeight: 700,
-              cursor: "pointer",
-              padding: "2px 6px",
-            }}
-          >
-            +{items.length - 5} ítems más…
-          </span>
+          <Button variante="tertiary" tam="sm" onClick={onVerDetalle} style={{ marginLeft: -12 }}>
+            {items.length - 5} ítems más
+          </Button>
         )}
       </div>
-    </div>
+    </section>
   );
 }

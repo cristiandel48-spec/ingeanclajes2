@@ -27,6 +27,16 @@ import ModalCotizacionDetalle from "./ModalCotizacionDetalle";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
+import { Button } from "../../components/ui";
+
+// Editor del informe al estilo de apple.com: sin bordes ni sombras. Cada
+// seccion es un bloque blanco sobre el gris de la pagina, con su titulo
+// grande, y los campos van rellenos de gris en vez de enmarcados.
+const BLOQUE = { background: "var(--surface)", borderRadius: 22, padding: "22px 22px", marginBottom: 14 };
+const CAMPO = { ...SI, background: "var(--fill)", border: "1px solid transparent", borderRadius: 12, padding: "11px 14px", fontSize: 14 };
+const TITULO_BLOQUE = { fontSize: 21, fontWeight: 600, letterSpacing: "-0.015em", lineHeight: 1.2, color: "var(--text-primary)", margin: 0 };
+const NOTA = { fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 };
+
 // Formateo de horas. Vive fuera del componente porque no depende de nada suyo:
 // asi es la misma funcion en cada render y buildPersonalDesdeObra puede
 // memorizarse sin arrastrarla como dependencia.
@@ -538,88 +548,16 @@ export default function Informes({ctx}){
 
   // En la barra superior: botones de acción fija para detalle (Volver, Editar, Descargar, Imprimir)
   // o botón de creación (+ Nuevo Informe) en la lista.
+  // Con un informe abierto la barra de arriba queda vacia: Volver, Editar y
+  // PDF ya estan en la cabecera del propio informe, y tenerlos dos veces era
+  // ruido. En el listado solo va la pildora oscura de crear.
   useAccionesPantalla(
-    sel && !nuevo && !editId ? (
-      <div style={{ display: "flex", gap: 7, alignItems: "center", flexWrap: "nowrap" }}>
-        <button
-          style={{
-            ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)"),
-            border: "1px solid #cbd5e1",
-            padding: "7px 14px",
-            borderRadius: 8,
-            fontSize: 12,
-            fontWeight: 600,
-          }}
-          onClick={() => setSel(null)}
-        >
-          ← Volver
-        </button>
-        <button
-          style={{
-            ...B("rgba(37, 99, 235, 0.08)", "#2563eb"),
-            border: "1px solid rgba(37, 99, 235, 0.25)",
-            padding: "7px 14px",
-            borderRadius: 8,
-            fontSize: 12,
-            fontWeight: 700,
-          }}
-          onClick={() => editarInforme(sel)}
-        >
-          ✏️ Editar
-        </button>
-        <button
-          style={{
-            ...B("#1d1d1f", "#ffffff"),
-            boxShadow: "0 1px 3px rgba(0, 0, 0, 0.12)",
-            padding: "7px 16px",
-            borderRadius: 10,
-            fontSize: 12,
-            fontWeight: 600,
-            opacity: generandoPdf ? 0.65 : 1,
-            cursor: generandoPdf ? "wait" : "pointer",
-          }}
-          disabled={generandoPdf}
-          onClick={() => descargarPdf(sel)}
-          title="Descarga el informe oficial en PDF directamente"
-        >
-          {generandoPdf ? "Generando PDF…" : "📥 Descargar PDF"}
-        </button>
-        <button
-          style={{
-            ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)"),
-            border: "1px solid #cbd5e1",
-            padding: "7px 14px",
-            borderRadius: 10,
-            fontSize: 12,
-            fontWeight: 600,
-          }}
-          onClick={() => imprimirInforme(sel)}
-          title="Abre la pestaña de impresión del informe"
-        >
-          🖨️ Imprimir / PDF
-        </button>
-      </div>
-    ) : (!sel && !nuevo && !editId) ? (
-      <button
-        style={{
-          background: "#1d1d1f",
-          color: "#fff",
-          border: "1px solid #1d1d1f",
-          borderRadius: 10,
-          padding: "8px 16px",
-          fontSize: 12.5,
-          fontWeight: 600,
-          cursor: "pointer",
-          fontFamily: "inherit",
-          whiteSpace: "nowrap",
-          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.12)",
-        }}
-        onClick={() => abrirNuevoInformeRef.current()}
-      >
-        + Nuevo Informe
-      </button>
+    (!sel && !nuevo && !editId) ? (
+      <Button variante="oscuro" tam="sm" icono="mas" onClick={() => abrirNuevoInformeRef.current()}>
+        Nuevo informe
+      </Button>
     ) : null,
-    [sel, nuevo, editId, generandoPdf, empresaConfig, firmaImg]
+    [sel, nuevo, editId]
   );
 
   const abrirNuevoInforme = ()=>{
@@ -648,6 +586,9 @@ export default function Informes({ctx}){
     const miNombre = resolverAutorGuardado(ctx?.membresia, prev?.modificadoPorNombre);
     const actividades = normalizeInformeActividades(form);
     const legacyActividad = actividades[0] || emptyActividad();
+    // Se habia perdido en un cambio posterior a 645fbec y guardar lanzaba
+    // ReferenceError: el informe no se guardaba.
+    const obraIdNormalizado = form.obraId || null;
     const obraAct = obras?.find((o) => o.id === obraIdNormalizado);
     const cotVinc = cotizaciones?.find((c) => c.id === form.cotizacionId)
       || (form.cotizacionNumero ? cotizaciones?.find((c) => c.numero === form.cotizacionNumero) : null)
@@ -744,11 +685,20 @@ export default function Informes({ctx}){
       )}
 
       {nuevo&&(
-        <div style={{...CD,marginBottom:20,border:"1px solid var(--border, rgba(0, 0, 0, 0.08))",boxShadow:"0 4px 20px -4px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.02)"}}>
-          <div style={ST}>{editId ? "Editar Informe de Actividades" : "Nuevo Informe de Actividades"}</div>
+        <div style={{marginBottom:28}}>
+          <div style={{padding:isMobile?"6px 4px 18px":"8px 4px 26px"}}>
+            <h1 style={{margin:0,fontSize:isMobile?32:44,fontWeight:700,letterSpacing:"-0.03em",lineHeight:1.05,color:"var(--text-primary)"}}>
+              {editId ? "Editar informe" : "Nuevo informe"}
+            </h1>
+            <div style={{fontSize:isMobile?15:17,color:"var(--text-secondary)",marginTop:8}}>
+              Informe de actividades en obra, con lo registrado en la bitácora.
+            </div>
+          </div>
 
           {/* Datos generales */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+          <section style={BLOQUE}>
+          <h2 style={{...TITULO_BLOQUE,marginBottom:16}}>Datos generales</h2>
+          <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:14}}>
             <div><LBL>Obra asociada</LBL><select value={form.obraId} onChange={e=>{
               const nuevaObraId=e.target.value;
               const o=obras.find(x=>x.id===nuevaObraId);
@@ -777,13 +727,14 @@ export default function Informes({ctx}){
                   actividades:(!hayContenidoEscrito && traidas.length) ? traidas : p.actividades,
                 };
               });
-            }} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
-            <div><LBL>Nombre del proyecto</LBL><input value={form.proyecto} onChange={e=>setForm(p=>({...p,proyecto:e.target.value}))} onBlur={e=>{const v=normalizarMayusculas(e.target.value);if(v!==form.proyecto)setForm(p=>({...p,proyecto:v}));}} autoCapitalize="characters" style={SI}/></div>
-            <div><LBL>Localización</LBL><input value={form.localizacion} onChange={e=>setForm(p=>({...p,localizacion:e.target.value}))} onBlur={e=>{const v=normalizarMayusculas(e.target.value);if(v!==form.localizacion)setForm(p=>({...p,localizacion:v}));}} autoCapitalize="characters" style={SI}/></div>
-            <div><LBL>Fecha del informe</LBL><input type="date" value={form.fechaInforme} onChange={e=>setForm(p=>({...p,fechaInforme:e.target.value}))} style={SI}/></div>
-            <div><LBL>Período desde</LBL><input type="date" value={form.periodoInicio} onChange={e=>setForm(p=>({...p,periodoInicio:e.target.value}))} style={SI}/></div>
-            <div><LBL>Período hasta</LBL><input type="date" value={form.periodoFin} onChange={e=>setForm(p=>({...p,periodoFin:e.target.value}))} style={SI}/></div>
+            }} style={CAMPO}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
+            <div><LBL>Nombre del proyecto</LBL><input value={form.proyecto} onChange={e=>setForm(p=>({...p,proyecto:e.target.value}))} onBlur={e=>{const v=normalizarMayusculas(e.target.value);if(v!==form.proyecto)setForm(p=>({...p,proyecto:v}));}} autoCapitalize="characters" style={CAMPO}/></div>
+            <div><LBL>Localización</LBL><input value={form.localizacion} onChange={e=>setForm(p=>({...p,localizacion:e.target.value}))} onBlur={e=>{const v=normalizarMayusculas(e.target.value);if(v!==form.localizacion)setForm(p=>({...p,localizacion:v}));}} autoCapitalize="characters" style={CAMPO}/></div>
+            <div><LBL>Fecha del informe</LBL><input type="date" value={form.fechaInforme} onChange={e=>setForm(p=>({...p,fechaInforme:e.target.value}))} style={CAMPO}/></div>
+            <div><LBL>Período desde</LBL><input type="date" value={form.periodoInicio} onChange={e=>setForm(p=>({...p,periodoInicio:e.target.value}))} style={CAMPO}/></div>
+            <div><LBL>Período hasta</LBL><input type="date" value={form.periodoFin} onChange={e=>setForm(p=>({...p,periodoFin:e.target.value}))} style={CAMPO}/></div>
           </div>
+          </section>
 
           {/* Cotización de Referencia */}
           {(() => {
@@ -816,41 +767,29 @@ export default function Informes({ctx}){
           })()}
 
           {/* Personal */}
-          <div style={{marginBottom:16}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,flexWrap:"wrap",gap:8}}>
-              <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <LBL>Personal en obra</LBL>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setForm(p => ({
-                      ...p,
-                      personal: buildPersonalDesdeObra(p.obraId, p.periodoInicio, p.periodoFin, [])
-                    }));
-                  }}
-                  style={{
-                    background: "var(--btn-cancelar-bg, #f1f5f9)",
-                    border: "1px solid var(--border, #cbd5e1)",
-                    color: "var(--btn-cancelar-txt, #334155)",
-                    borderRadius: 6,
-                    padding: "3px 9px",
-                    fontSize: 11,
-                    cursor: "pointer",
-                    fontWeight: 600,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 5,
-                  }}
-                  title="Recargar el personal asignado a esta obra"
-                >
-                  🔄 Sincronizar de la obra ({form.personal.length})
-                </button>
+          <section style={BLOQUE}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10,flexWrap:"wrap",gap:8}}>
+              <div>
+                <h2 style={TITULO_BLOQUE}>Personal en obra</h2>
+                <div style={{...NOTA,marginTop:4}}>Se carga solo con el personal asignado a la obra.</div>
               </div>
-              <div style={{fontSize:11,color:"var(--text-muted, #64748b)"}}>Se carga automáticamente según el personal asignado a la obra.</div>
+              <Button
+                variante="texto"
+                tam="sm"
+                onClick={() => {
+                  setForm(p => ({
+                    ...p,
+                    personal: buildPersonalDesdeObra(p.obraId, p.periodoInicio, p.periodoFin, [])
+                  }));
+                }}
+                title="Recargar el personal asignado a esta obra"
+              >
+                Sincronizar de la obra ({form.personal.length})
+              </Button>
             </div>
             {form.personal.length === 0 && (
-              <div style={{ background: "var(--surface-subtle, #f8fafc)", border: "1px dashed var(--border, #e2e8f0)", borderRadius: 10, padding: "14px 16px", fontSize: 12.5, color: "var(--text-subtle, #98a2b3)", marginBottom: 8 }}>
-                No hay personal asignado a esta obra todavía. Sincroniza desde la obra o agrega personas manualmente.
+              <div style={{ ...NOTA, padding: "18px 0", color: "var(--text-tertiary)" }}>
+                No hay personal asignado a esta obra todavía. Sincroniza desde la obra o agrega personas a mano.
               </div>
             )}
             {form.personal.map((p, i) => {
@@ -859,7 +798,7 @@ export default function Informes({ctx}){
               const initials = (nombreDisplay.split(" ").map(w => w[0]).filter(Boolean).slice(0, 2).join("") || "TE").toUpperCase();
 
               return (
-                <div key={i} style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 32px", gap: 10, alignItems: "center", marginBottom: 8, background: "var(--surface-subtle, #f8fafc)", border: "1px solid var(--border, #eaecf0)", borderRadius: 10, padding: "8px 10px" }}>
+                <div key={i} style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 32px", gap: 10, alignItems: "center", padding: "10px 0", borderTop: i === 0 ? "none" : "1px solid var(--separator)" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                     <Av init={initials} size={28} color="#101828" />
                     <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
@@ -880,7 +819,7 @@ export default function Informes({ctx}){
                             manual: false,
                           } : x) }));
                         }}
-                        style={{ ...SI, fontSize: 12, padding: "5px 8px" }}
+                        style={{ ...CAMPO, fontSize: 12, padding: "5px 8px" }}
                       >
                         <option value="">Seleccionar técnico…</option>
                         {empleados.filter(e => e.activo !== false).map(e => (
@@ -895,12 +834,12 @@ export default function Informes({ctx}){
                           onBlur={e => { const v = normalizarNombrePropio(e.target.value); if (v !== p.nombre) updPersonal(i, "nombre", v); }}
                           placeholder="Nombre completo"
                           autoCapitalize="words"
-                          style={{ ...SI, fontSize: 12, padding: "5px 8px" }}
+                          style={{ ...CAMPO, fontSize: 12, padding: "5px 8px" }}
                         />
                       )}
                     </div>
                   </div>
-                  <input value={p.cargo || ""} onChange={e => updPersonal(i, "cargo", e.target.value.toUpperCase())} onBlur={e => { const v = normalizarMayusculas(e.target.value); if (v !== p.cargo) updPersonal(i, "cargo", v); }} placeholder="CARGO TÉCNICO" style={{ ...SI, fontSize: 12, padding: "5px 8px", textTransform: "uppercase" }} />
+                  <input value={p.cargo || ""} onChange={e => updPersonal(i, "cargo", e.target.value.toUpperCase())} onBlur={e => { const v = normalizarMayusculas(e.target.value); if (v !== p.cargo) updPersonal(i, "cargo", v); }} placeholder="CARGO TÉCNICO" style={{ ...CAMPO, fontSize: 12, padding: "5px 8px", textTransform: "uppercase" }} />
                   <button
                     type="button"
                     title="Quitar técnico"
@@ -912,26 +851,29 @@ export default function Informes({ctx}){
                 </div>
               );
             })}
-            <button onClick={()=>setForm(p=>({...p,personal:[...p.personal,emptyPersona()]}))} style={{...B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)"),fontSize:12,marginTop:4}}>+ Agregar persona</button>
-          </div>
+            <Button variante="texto" tam="sm" icono="mas" style={{marginTop:6,marginLeft:-10}} onClick={()=>setForm(p=>({...p,personal:[...p.personal,emptyPersona()]}))}>
+              Agregar persona
+            </Button>
+          </section>
 
           {/* Actividades */}
-          <div style={{marginBottom:16}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"gap",gap:8}}>
-              <LBL>Actividades ejecutadas</LBL>
-              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                <button onClick={traerAvancesDeLaObra} style={{...B("rgba(30, 64, 175, 0.15)","#60a5fa"),fontSize:11,padding:"5px 12px"}}>
-                  ↻ Traer avances de la obra ({avancesDisponibles.length})
-                </button>
-                <button onClick={()=>setForm(p=>({...p,actividades:[...p.actividades,emptyActividad()]}))} style={{...B("#1d1d1f"),fontSize:11.5,padding:"6px 13px"}}>+ Agregar actividad</button>
+          <section style={BLOQUE}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10,flexWrap:"wrap",gap:8}}>
+              <h2 style={TITULO_BLOQUE}>Actividades ejecutadas</h2>
+              <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
+                <Button variante="texto" tam="sm" onClick={traerAvancesDeLaObra}>
+                  Traer avances de la obra ({avancesDisponibles.length})
+                </Button>
+                <Button variante="oscuro" tam="sm" icono="mas" onClick={()=>setForm(p=>({...p,actividades:[...p.actividades,emptyActividad()]}))}>
+                  Agregar actividad
+                </Button>
               </div>
             </div>
-            <div style={{background:"var(--surface-subtle, #f8fafc)",border:"1px solid var(--border, #e2e8f0)",borderRadius:8,padding:"10px 13px",fontSize:11.5,color:"var(--text-muted, #475569)",lineHeight:1.55,marginBottom:12}}>
-              Estas actividades salen de lo que se registró en la obra, en la pestaña
-              «Avance y fotos». Aquí las puedes retocar antes de imprimir sin dañar el registro
-              original de la obra.
+            <div style={{...NOTA,marginBottom:4}}>
+              Salen de lo que se registró en la obra, en la pestaña «Avance diario». Aquí las
+              puedes retocar antes de imprimir sin dañar el registro original de la obra.
               {avancesTotalesObra.length>avancesDisponibles.length && (
-                <div style={{color:"#f59e0b",marginTop:5}}>
+                <div style={{color:"var(--warning-text, #b54708)",marginTop:5}}>
                   Ojo: la obra tiene <strong>{avancesTotalesObra.length}</strong> avance(s) en total,
                   pero solo <strong>{avancesDisponibles.length}</strong> caen entre el
                   {" "}{fmtD(form.periodoInicio)} y el {fmtD(form.periodoFin)}. Amplía el período de
@@ -940,9 +882,9 @@ export default function Informes({ctx}){
               )}
             </div>
             {form.actividades.map((act,ai)=>(
-              <div key={ai} style={{background:"var(--surface-subtle, #f8fafc)",border:"1px solid var(--border, #e2e8f0)",borderRadius:10,padding:16,marginBottom:12}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                  <div style={{fontSize:12.5,fontWeight:700,color:"var(--text-main, #101828)"}}>Actividad {ai+1}</div>
+              <div key={ai} style={{borderTop:"1px solid var(--separator)",paddingTop:22,marginTop:22}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                  <div style={{fontSize:17,fontWeight:600,letterSpacing:"-0.01em",color:"var(--text-primary)"}}>Actividad {ai+1}</div>
                   {form.actividades.length>1&&<button onClick={()=>{
                     setForm(p=>({...p,actividades:p.actividades.filter((_,i)=>i!==ai)}));
                     // Las actividades se guardan por su posicion, asi que al
@@ -952,9 +894,9 @@ export default function Informes({ctx}){
                     setEscribiendoTitulo((prev)=>prev
                       .filter((i)=>i!==ai)
                       .map((i)=>(i>ai ? i-1 : i)));
-                  }} style={{background:"rgba(220, 38, 38, 0.15)",border:"none",color:"#f87171",borderRadius:5,padding:"2px 8px",cursor:"pointer",fontSize:11}}>× Eliminar</button>}
+                  }} className="ui-btn ui-btn--texto ui-btn--sm">Eliminar</button>}
                 </div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 170px",gap:10,marginBottom:10}}>
+                <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 190px",gap:14,marginBottom:12}}>
                   <div>
                     <LBL>Título / nombre de la actividad</LBL>
                     {/* Desplegable de verdad y no una lista de sugerencias.
@@ -965,7 +907,7 @@ export default function Informes({ctx}){
                     <select
                       value={escribiendoTitulo.includes(ai) ? "__libre__" : (buscarPlantillaActividad(act.titulo) ? act.titulo : "")}
                       onChange={e=>elegirTitulo(ai,e.target.value)}
-                      style={SI}>
+                      style={CAMPO}>
                       <option value="">— Elige el trabajo —</option>
                       {PLANTILLAS_ACTIVIDAD.map((p)=>(
                         <option key={p.titulo} value={p.titulo}>{p.titulo}</option>
@@ -981,7 +923,7 @@ export default function Informes({ctx}){
                         value={act.titulo}
                         onChange={e=>updActividad(ai,"titulo",e.target.value)}
                         placeholder="Escribe el nombre de la actividad"
-                        style={{...SI,marginTop:6}}/>
+                        style={{...CAMPO,marginTop:6}}/>
                     )}
 
                     <div style={{fontSize:10.5,color:"var(--text-muted, #64748b)",marginTop:4}}>
@@ -990,7 +932,7 @@ export default function Informes({ctx}){
                         : "Al elegir uno se completan los textos de abajo."}
                     </div>
                   </div>
-                  <div><LBL>Fecha de ejecución</LBL><input type="date" value={act.fecha||""} onChange={e=>updActividad(ai,"fecha",e.target.value)} style={SI}/></div>
+                  <div><LBL>Fecha de ejecución</LBL><input type="date" value={act.fecha||""} onChange={e=>updActividad(ai,"fecha",e.target.value)} style={CAMPO}/></div>
                 </div>
                 {/* Dos campos y no uno solo con los encabezados dentro: puestos
                     seguidos en el mismo recuadro se leian como un ladrillo, y
@@ -998,9 +940,9 @@ export default function Informes({ctx}){
 
                     normalizarParrafos y no normalizarFrase: estos campos llevan
                     varios parrafos y el otro los aplasta en uno solo. */}
-                <div style={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><LBL>Actividades realizadas</LBL><BotonCorregir valor={act.actividadesRealizadas||""} onChange={(v)=>updActividad(ai,"actividadesRealizadas",v)} compacto/></div><textarea value={act.actividadesRealizadas||""} onChange={e=>updActividad(ai,"actividadesRealizadas",e.target.value)} onBlur={e=>{const v=normalizarParrafos(e.target.value);if(v!==act.actividadesRealizadas)updActividad(ai,"actividadesRealizadas",v);}} rows={7} placeholder="Qué se ejecutó en campo: inspección, ajustes, limpieza..." spellCheck lang="es" style={{...SI,resize:"vertical",lineHeight:1.5}}/></div>
-                <div style={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><LBL>Descripción</LBL><BotonCorregir valor={act.descripcion} onChange={(v)=>updActividad(ai,"descripcion",v)} compacto/></div><textarea value={act.descripcion} onChange={e=>updActividad(ai,"descripcion",e.target.value)} onBlur={e=>{const v=normalizarParrafos(e.target.value);if(v!==act.descripcion)updActividad(ai,"descripcion",v);}} rows={10} placeholder="Descripción del proceso ejecutado..." spellCheck lang="es" style={{...SI,resize:"vertical",minHeight:200,lineHeight:1.5,fontSize:13}}/></div>
-                <div style={{marginBottom:12}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><LBL>Observaciones</LBL><BotonCorregir valor={act.observaciones} onChange={(v)=>updActividad(ai,"observaciones",v)} compacto/></div><input value={act.observaciones} onChange={e=>updActividad(ai,"observaciones",e.target.value)} onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==act.observaciones)updActividad(ai,"observaciones",v);}} placeholder="Ej: 1 Línea de vida horizontal de 119 metros" spellCheck lang="es" style={SI}/></div>
+                <div style={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><LBL>Actividades realizadas</LBL><BotonCorregir valor={act.actividadesRealizadas||""} onChange={(v)=>updActividad(ai,"actividadesRealizadas",v)} compacto/></div><textarea value={act.actividadesRealizadas||""} onChange={e=>updActividad(ai,"actividadesRealizadas",e.target.value)} onBlur={e=>{const v=normalizarParrafos(e.target.value);if(v!==act.actividadesRealizadas)updActividad(ai,"actividadesRealizadas",v);}} rows={7} placeholder="Qué se ejecutó en campo: inspección, ajustes, limpieza..." spellCheck lang="es" style={{...CAMPO,resize:"vertical",lineHeight:1.5}}/></div>
+                <div style={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><LBL>Descripción</LBL><BotonCorregir valor={act.descripcion} onChange={(v)=>updActividad(ai,"descripcion",v)} compacto/></div><textarea value={act.descripcion} onChange={e=>updActividad(ai,"descripcion",e.target.value)} onBlur={e=>{const v=normalizarParrafos(e.target.value);if(v!==act.descripcion)updActividad(ai,"descripcion",v);}} rows={10} placeholder="Descripción del proceso ejecutado..." spellCheck lang="es" style={{...CAMPO,resize:"vertical",minHeight:200,lineHeight:1.5,fontSize:13}}/></div>
+                <div style={{marginBottom:12}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><LBL>Observaciones</LBL><BotonCorregir valor={act.observaciones} onChange={(v)=>updActividad(ai,"observaciones",v)} compacto/></div><input value={act.observaciones} onChange={e=>updActividad(ai,"observaciones",e.target.value)} onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==act.observaciones)updActividad(ai,"observaciones",v);}} placeholder="Ej: 1 Línea de vida horizontal de 119 metros" spellCheck lang="es" style={CAMPO}/></div>
                 {/* Fotos de esta actividad */}
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,marginTop:12}}>
                   <LBL>Registro fotográfico</LBL>
@@ -1008,14 +950,14 @@ export default function Informes({ctx}){
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12, alignItems: "start" }}>
                   {(act.fotos || []).map((ft, fi) => (
-                    <div key={fi} style={{ background: "var(--surface, #ffffff)", border: "1px solid var(--border, #eaecf0)", borderRadius: 10, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-                      <div style={{ background: "var(--surface-subtle, #f8fafc)", padding: 6, minHeight: 130, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+                    <div key={fi} style={{ background: "var(--fill)", borderRadius: 16, overflow: "hidden" }}>
+                      <div style={{ padding: 8, minHeight: 130, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
                         <span style={{ position: "absolute", top: 6, left: 6, background: "rgba(16,24,40,0.75)", color: "#fff", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4 }}>
                           Evidencia #{fi + 1}
                         </span>
-                        <img src={ft.img} alt="" style={{ width: "100%", height: "auto", maxHeight: 180, objectFit: "contain", display: "block", borderRadius: 4, background: "var(--surface, #ffffff)" }} />
+                        <img src={ft.img} alt="" style={{ width: "100%", height: "auto", maxHeight: 180, objectFit: "contain", display: "block", borderRadius: 10 }} />
                       </div>
-                      <div style={{ padding: "8px", display: "flex", gap: 4, alignItems: "center", borderTop: "1px solid var(--border, #f2f4f7)" }}>
+                      <div style={{ padding: "0 8px 8px", display: "flex", gap: 4, alignItems: "center" }}>
                         <input
                           value={ft.comentario || ""}
                           onChange={e => updFotoAct(ai, fi, "comentario", e.target.value)}
@@ -1024,7 +966,7 @@ export default function Informes({ctx}){
                             if (limpio !== ft.comentario) updFotoAct(ai, fi, "comentario", limpio);
                           }}
                           placeholder={`Descripción evidencia ${fi + 1}`}
-                          style={{ ...SI, fontSize: 11.5, padding: "4px 6px", flex: 1 }}
+                          style={{ ...CAMPO, fontSize: 11.5, padding: "4px 6px", flex: 1 }}
                         />
                         <button
                           type="button"
@@ -1043,34 +985,26 @@ export default function Informes({ctx}){
                   <div
                     onClick={() => { const k = "lote-" + ai; if (fotoRefs.current[k]) fotoRefs.current[k].click(); }}
                     style={{
-                      border: "2px dashed var(--border, #cbd5e1)",
-                      borderRadius: 10,
-                      minHeight: 140,
+                      borderRadius: 16,
+                      minHeight: 150,
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
                       justifyContent: "center",
                       cursor: "pointer",
-                      background: "var(--surface-subtle, #f8fafc)",
-                      color: "var(--text-main, #101828)",
-                      fontWeight: 600,
-                      gap: 4,
+                      background: "var(--fill)",
+                      color: "var(--text-primary)",
+                      gap: 6,
                       padding: 12,
                       textAlign: "center",
-                      transition: "border-color .15s ease, background .15s ease",
+                      transition: "opacity .2s ease",
                     }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.borderColor = "#E0342A";
-                      e.currentTarget.style.background = "rgba(224, 52, 42, 0.04)";
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.borderColor = "var(--border, #cbd5e1)";
-                      e.currentTarget.style.background = "var(--surface-subtle, #f8fafc)";
-                    }}
+                    onMouseEnter={e => { e.currentTarget.style.opacity = "0.8"; }}
+                    onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
                   >
-                    <span style={{ fontSize: 24, lineHeight: 1, color: "#E0342A" }}>+</span>
-                    <span style={{ fontSize: 12, fontWeight: 700 }}>Subir evidencias</span>
-                    <span style={{ fontSize: 10, color: "var(--text-muted, #667085)" }}>Arrastra fotos o haz clic</span>
+                    <span style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--text-primary)", color: "var(--surface)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 20, lineHeight: 1 }}>+</span>
+                    <span style={{ fontSize: 13.5, fontWeight: 600 }}>Subir fotos</span>
+                    <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>Toca para elegirlas</span>
                   </div>
                 </div>
 
@@ -1093,12 +1027,12 @@ export default function Informes({ctx}){
                 )}
               </div>
             ))}
-          </div>
+          </section>
 
-          <div style={{marginBottom:14}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}><LBL>Recomendaciones generales</LBL><BotonCorregir valor={form.recomendaciones} onChange={(v)=>setForm(p=>({...p,recomendaciones:v}))} compacto/></div><textarea value={form.recomendaciones} onChange={e=>setForm(p=>({...p,recomendaciones:e.target.value}))} onBlur={e=>{const v=normalizarParrafos(e.target.value);if(v!==form.recomendaciones)setForm(p=>({...p,recomendaciones:v}));}} rows={6} placeholder="Recomendaciones para el cliente..." spellCheck lang="es" style={{...SI,resize:"vertical",minHeight:130,lineHeight:1.5,fontSize:13}}/></div>
-          <div style={{display:"flex",gap:10}}>
-            <button style={{...B("#1d1d1f"),boxShadow:"0 1px 3px rgba(0, 0, 0, 0.12)"}} onClick={guardar}>{editId ? "Guardar cambios" : "Guardar informe"}</button>
-            <button style={B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)")} onClick={()=>{setNuevo(false);setEditId(null);}}>Cancelar</button>
+          <section style={BLOQUE}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:12}}><h2 style={TITULO_BLOQUE}>Recomendaciones generales</h2><BotonCorregir valor={form.recomendaciones} onChange={(v)=>setForm(p=>({...p,recomendaciones:v}))} compacto/></div><textarea value={form.recomendaciones} onChange={e=>setForm(p=>({...p,recomendaciones:e.target.value}))} onBlur={e=>{const v=normalizarParrafos(e.target.value);if(v!==form.recomendaciones)setForm(p=>({...p,recomendaciones:v}));}} rows={6} placeholder="Recomendaciones para el cliente..." spellCheck lang="es" style={{...CAMPO,resize:"vertical",minHeight:130,lineHeight:1.5,fontSize:13}}/></section>
+          <div style={{display:"flex",gap:8,alignItems:"center",justifyContent:"flex-end",flexWrap:"wrap",paddingTop:8}}>
+            <Button variante="texto" onClick={()=>{setNuevo(false);setEditId(null);}}>Cancelar</Button>
+            <Button variante="oscuro" tam="lg" onClick={guardar}>{editId ? "Guardar cambios" : "Guardar informe"}</Button>
           </div>
         </div>
       )}
@@ -1148,102 +1082,47 @@ export default function Informes({ctx}){
 
         return (
           <div style={{ padding: isMobile ? "8px 10px 16px" : "8px 18px 16px" }}>
-            {/* Barra de Título y Acciones IDÉNTICA al módulo de Cotizaciones */}
+            {/* Cabecera al estilo de apple.com, como el editor: el numero del
+                informe como titulo grande y las acciones como texto, con
+                Descargar PDF como unica pildora oscura. */}
+            <Button variante="texto" tam="sm" icono="flechaIzq" onClick={() => setSel(null)} style={{ marginLeft: -10 }}>
+              Informes
+            </Button>
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                alignItems: "center",
-                gap: 12,
-                flexWrap: "wrap",
-                marginBottom: 12,
-                padding: "2px 0",
+                alignItems: isMobile ? "stretch" : "flex-end",
+                flexDirection: isMobile ? "column" : "row",
+                gap: 14,
+                margin: "8px 0 22px",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                <h1 style={{ fontSize: 17, fontWeight: 800, margin: 0, color: "var(--text-h1, #101828)", lineHeight: 1.2 }}>
-                  Informe {numDoc || sel?.id || sel?.numero || "Técnico"}
+              <div style={{ minWidth: 0 }}>
+                <h1 style={{ fontSize: isMobile ? 32 : 44, fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1.05, margin: 0, color: "var(--text-primary)" }}>
+                  Informe {numDoc || sel?.id || sel?.numero || "técnico"}
                 </h1>
-                <span style={{ fontSize: 12, color: "var(--text-muted, #667085)" }}>
-                  Vista completa del informe de actividades en obra
-                </span>
+                <div style={{ fontSize: isMobile ? 15 : 17, color: "var(--text-secondary)", marginTop: 8 }}>
+                  {[cliente, proyecto].filter(Boolean).join(" · ") || "Informe de actividades en obra"}
+                </div>
               </div>
 
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                <button
-                  type="button"
-                  style={{
-                    background: "var(--surface-subtle, #f2f4f7)",
-                    color: "var(--text-main, #101828)",
-                    border: "1px solid var(--border, #eaecf0)",
-                    borderRadius: 6,
-                    padding: "5px 12px",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 4,
-                  }}
-                  onClick={() => setSel(null)}
-                  title="Volver al listado"
-                >
-                  ← Volver
-                </button>
-                <button
-                  type="button"
-                  style={{
-                    background: "transparent",
-                    color: "var(--text-muted, #475467)",
-                    border: "1px solid var(--border, #eaecf0)",
-                    borderRadius: 6,
-                    padding: "5px 12px",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                  onClick={() => editarInforme(sel)}
-                >
-                  Editar
-                </button>
-
-                {/* Botón Descargar PDF exacto al de Cotizaciones (señalado en amarillo) */}
-                <button
-                  type="button"
-                  style={{
-                    background: "var(--surface-subtle, #f2f4f7)",
-                    color: "var(--text-main, #101828)",
-                    border: "1px solid var(--border, #eaecf0)",
-                    borderRadius: 6,
-                    padding: "5px 12px",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: generandoPdf ? "wait" : "pointer",
-                  }}
+              <div style={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center", flexShrink: 0 }}>
+                <Button variante="texto" tam="sm" onClick={() => editarInforme(sel)}>Editar</Button>
+                <Button variante="texto" tam="sm" onClick={() => imprimirInforme(sel)} title="Abre la pestaña de impresión del navegador">
+                  Imprimir
+                </Button>
+                <Button
+                  variante="oscuro"
+                  tam="sm"
+                  icono="descargar"
+                  style={{ marginLeft: 6 }}
                   disabled={generandoPdf}
                   onClick={() => descargarPdf(sel)}
                   title="Descarga el informe oficial en PDF directamente"
                 >
-                  {generandoPdf ? "Generando…" : "📥 Descargar PDF"}
-                </button>
-
-                <button
-                  type="button"
-                  style={{
-                    background: "var(--surface-subtle, #f2f4f7)",
-                    color: "var(--text-main, #101828)",
-                    border: "1px solid var(--border, #eaecf0)",
-                    borderRadius: 6,
-                    padding: "5px 12px",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                  onClick={() => imprimirInforme(sel)}
-                  title="Abre la pestaña de impresión del navegador"
-                >
-                  🖨️ Imprimir / PDF
-                </button>
+                  {generandoPdf ? "Generando…" : "Descargar PDF"}
+                </Button>
               </div>
             </div>
 

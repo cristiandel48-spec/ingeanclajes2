@@ -11,7 +11,6 @@ import Obras from "./screens/Obras/Obras";
 import FototecaScreen from "./screens/Fototeca/FototecaScreen";
 import Certificaciones from "./screens/Certificaciones/Certificaciones";
 import Informes from "./screens/Informes/Informes";
-import Produccion from "./screens/Produccion/Produccion";
 import Vencimientos from "./screens/Vencimientos/Vencimientos";
 import Usuarios from "./screens/Usuarios/Usuarios";
 import Auditoria from "./screens/Auditoria/Auditoria";
@@ -49,7 +48,6 @@ const SCREENS = {
   clientes: ClientesDB,
   catalogo: Catalogo,
   obras: Obras,
-  produccion: Produccion,
   fototeca: FototecaScreen,
   pagos: Pagos,
   certificaciones: Certificaciones,

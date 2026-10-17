@@ -1,17 +1,55 @@
 import Av from "../../components/ui/Av";
-import AvisoFlujo from "../../components/AvisoFlujo";
 import NuevoEmpleadoRapido from "../../components/NuevoEmpleadoRapido";
 import SelectorEmpleados from "../../components/SelectorEmpleados";
-import H1 from "../../components/ui/H1";
-import LBL from "../../components/ui/LBL";
+import {
+  Button, Card, Callout, EmptyState, Input, Lista, ListRow,
+  PageHeader, Sheet, StatusPill, Toolbar, EspacioToolbar,
+} from "../../components/ui";
+import { ESPACIO, TIPO } from "../../styles/designTokens";
 import { useMemo, useState } from "react";
-import { B, CD, PAL, SI, ST } from "../../styles/tokens";
+import { PAL } from "../../styles/tokens";
 import { fmtD, fmtL, today } from "../../lib/format";
 import { abrirWhatsApp, normalizarCelular } from "../../lib/whatsapp";
 import { puedeCrearPersonal } from "../../lib/permisos";
 import { normalizarMayusculas } from "../../lib/normalizarEntrada";
 import { resolverAutorGuardado } from "../../lib/autorAuditoria";
 import { useIsMobile } from "../../hooks/useMediaQuery";
+
+// Aire debajo de cada bloque. El kit no lo trae: lo pone quien coloca la pieza.
+const SEPARA = { marginBottom: ESPACIO.lg };
+
+// Recuadro tenue para agrupar campos dentro de una tarjeta, del mismo tono que
+// usa el Dashboard para sus bloques de alertas.
+const PANEL = {
+  background: "var(--surface-subtle)",
+  border: "1px solid var(--separator)",
+  borderRadius: 12,
+  padding: "12px 14px",
+};
+
+// Cabecera de una tarjeta: titulo a la izquierda y, si hay, una accion a la
+// derecha. La misma que usa el Dashboard, para que las dos pantallas se lean
+// igual.
+function CabeceraCard({ titulo, descripcion, accion }) {
+  return (
+    <div style={{
+      display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap",
+      gap: ESPACIO.md, paddingBottom: ESPACIO.md, marginBottom: ESPACIO.md,
+      borderBottom: "1px solid var(--separator)",
+    }}>
+      <div style={{ minWidth: 0, flex: "1 1 170px" }}>
+        <h2 style={{ ...TIPO.headline, color: "var(--text-primary)", margin: 0 }}>{titulo}</h2>
+        {descripcion && (
+          <div style={{ ...TIPO.caption, fontWeight: 400, color: "var(--text-tertiary)", marginTop: 2 }}>
+            {descripcion}
+          </div>
+        )}
+      </div>
+      {accion}
+    </div>
+  );
+}
+
 export default function Horarios({ctx}){
   const isMobile = useIsMobile();
   const {obras,setObras,empleados,horarios,setHorarios,irAPantalla,membresia}=ctx;
@@ -237,6 +275,8 @@ export default function Horarios({ctx}){
 
   const turnosBase = buildTurnos(form);
   const previewTurnos = buildTurnosPayload(form);
+  // Con turnos recien guardados sin avisar, lo que toca hacer es avisarles.
+  const avisarEsLoSiguiente = porAvisar.length > 0;
 
   // Los turnos tambien se comparten en un grupo de WhatsApp, y a un grupo no
   // se puede escribir desde el sistema: ni el enlace wa.me ni la API oficial
@@ -383,40 +423,40 @@ export default function Horarios({ctx}){
         boxSizing: "border-box",
       }}
     >
-      <H1
-        eyebrow="ASIGNACIÓN DE TURNOS"
-        title="Horarios de Obra"
-        subtitle="Asigna turnos por día a trabajadores o grupos y notifica automáticamente por WhatsApp"
-        action={
-          <button
-            style={{
-              ...B("#f47c20"),
-              boxShadow: "0 1px 3px rgba(244, 124, 32, 0.25)",
-            }}
+      <PageHeader
+        eyebrow="Asignación de turnos"
+        titulo="Horarios de obra"
+        subtitulo="Asigna turnos por día a trabajadores o grupos y avísales por WhatsApp"
+        acciones={
+          <Button
+            // Solo una accion principal a la vez: con el formulario abierto el
+            // boton pasa a cerrarlo, y con turnos recien guardados lo urgente
+            // es avisarle a la gente, no asignar otro.
+            variante={showF || avisarEsLoSiguiente ? "secondary" : "primary"}
+            icono={showF ? "cerrar" : "mas"}
             onClick={() => setShowF(!showF)}
           >
-            {showF ? "✕ Cerrar" : "+ Asignar turnos"}
-          </button>
+            {showF ? "Cerrar" : "Asignar turnos"}
+          </Button>
         }
       />
 
       {empleados.length===0 && (
-        <AvisoFlujo
-          tono="falta"
-          titulo="Todavía no hay empleados para asignar"
-          accion={puedeCrearPersonal(membresia) && !nuevoEmp ? (
-            <button onClick={()=>setNuevoEmp(true)} style={{...B("#f47c20"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}>
-              + Registrar trabajador
-            </button>
-          ) : (
-            <button onClick={()=>irAPantalla("nomina")} style={{...B("#f47c20"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}>
-              Ir a Personal
-            </button>
-          )}
-        >
+        <Callout tono="aviso" titulo="Todavía no hay empleados para asignar" style={SEPARA}>
           Regístralo aquí mismo con lo básico —nombre, cargo, cédula y celular— y podrás asignarle
           turnos de inmediato. El salario y el contrato se completan después en Personal.
-        </AvisoFlujo>
+          <div style={{marginTop:ESPACIO.sm}}>
+            {puedeCrearPersonal(membresia) && !nuevoEmp ? (
+              <Button variante="secondary" tam="sm" icono="mas" onClick={()=>setNuevoEmp(true)}>
+                Registrar trabajador
+              </Button>
+            ) : (
+              <Button variante="secondary" tam="sm" iconoDerecha="flechaDer" onClick={()=>irAPantalla("nomina")}>
+                Ir a Personal
+              </Button>
+            )}
+          </div>
+        </Callout>
       )}
 
       {nuevoEmp && (
@@ -435,62 +475,67 @@ export default function Horarios({ctx}){
       )}
 
       {obras.length===0 && (
-        <AvisoFlujo
-          tono="falta"
-          titulo="Todavía no hay obras a las cuales asignar turnos"
-          accion={
-            <button onClick={()=>irAPantalla("obras")} style={{...B("#f47c20"),fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}>
-              Ir a Obras
-            </button>
-          }
-        >
+        <Callout tono="aviso" titulo="Todavía no hay obras a las cuales asignar turnos" style={SEPARA}>
           Crea primero la obra en <strong>Ejecución de obra</strong>. El WhatsApp que le llega al
           trabajador usa el nombre del proyecto y la dirección de la obra.
-        </AvisoFlujo>
+          <div style={{marginTop:ESPACIO.sm}}>
+            <Button variante="secondary" tam="sm" iconoDerecha="flechaDer" onClick={()=>irAPantalla("obras")}>
+              Ir a Obras
+            </Button>
+          </div>
+        </Callout>
       )}
 
       {empleados.length>0 && obras.length>0 && (
-        <AvisoFlujo
-          tono="info"
-          titulo="Para qué sirve asignar el turno aquí"
-          accion={puedeCrearPersonal(membresia) && !nuevoEmp ? (
-            <button onClick={()=>setNuevoEmp(true)} style={{...B("var(--surface-subtle)","var(--text-muted)"),border:"1px solid var(--border)",fontSize:11.5,padding:"8px 14px",flexShrink:0,alignSelf:"center"}}>
-              + Registrar trabajador
-            </button>
-          ) : null}
-        >
+        <Callout tono="info" titulo="Para qué sirve asignar el turno aquí" style={SEPARA}>
           Hace tres cosas de una sola vez: le <strong>avisa al trabajador por WhatsApp</strong>,
           cuenta los <strong>días trabajados</strong> que se le cargan a esa obra, y llena la
           <strong> columna de turnos</strong> del informe de actividades.
-          <div style={{marginTop:5}}>
-            ¿No aparece la persona en la lista? Regístrala con el botón de arriba.
-            ¿No aparece la obra? Créala en <strong>Ejecución de obra</strong>.
-            Y recuerda asignarla también en la pestaña «Personal» de esa obra, que es de donde el
-            informe saca quién estuvo.
+          <div style={{marginTop:ESPACIO.xs}}>
+            ¿No aparece la obra? Créala en <strong>Ejecución de obra</strong>. Y recuerda asignarla
+            también en la pestaña «Personal» de esa obra, que es de donde el informe saca quién
+            estuvo.
           </div>
-        </AvisoFlujo>
+          {puedeCrearPersonal(membresia) && !nuevoEmp && (
+            <div style={{marginTop:ESPACIO.sm}}>
+              <Button variante="secondary" tam="sm" icono="mas" onClick={()=>setNuevoEmp(true)}>
+                Registrar trabajador
+              </Button>
+            </div>
+          )}
+        </Callout>
       )}
 
       {notif&&(
-        <div style={{
-          background: notif.ok ? "rgba(22, 101, 52, 0.15)" : "rgba(234, 88, 12, 0.15)",
-          border: "1px solid " + (notif.ok ? "rgba(34, 197, 94, 0.3)" : "rgba(249, 115, 22, 0.3)"),
-          color: notif.ok ? "var(--green-700, #4ade80)" : "#f97316",
-          borderRadius:10,padding:"12px 16px",marginBottom:16,fontSize:13,lineHeight:1.5,
-        }}>{notif.texto}</div>
+        <Callout tono={notif.ok ? "exito" : "peligro"} style={SEPARA}>{notif.texto}</Callout>
       )}
       {showF&&(
-        <div style={{...CD,marginBottom:20,border:"1px solid var(--border, rgba(0, 0, 0, 0.08))",boxShadow:"0 4px 20px -4px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.02)"}}>
-          <div style={ST}>Nuevo horario · notificación automática por WhatsApp</div>
+        <Card ajustado style={SEPARA}>
+          <CabeceraCard
+            titulo="Nuevo horario"
+            descripcion="Al guardar se le avisa por WhatsApp a cada persona marcada."
+          />
           {/* La obra va primero: de ella sale el atajo para marcar al equipo
               completo, que es lo que evita repetir el formulario por persona. */}
-          <div style={{display:"grid",gridTemplateColumns:isMobile ? "1fr" : "1fr 1fr",gap:12,marginBottom:14}}>
-            <div><LBL>Obra</LBL><select value={form.obraId} onChange={e=>setForm({...form,obraId:e.target.value})} style={SI}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
-            <div><LBL>Fecha</LBL><input type="date" value={form.fecha} onChange={e=>setForm({...form,fecha:e.target.value})} style={SI}/></div>
+          <div style={{display:"grid",gridTemplateColumns:isMobile ? "1fr" : "1fr 1fr",gap:ESPACIO.md,marginBottom:ESPACIO.lg}}>
+            <Input
+              label="Obra"
+              como="select"
+              value={form.obraId}
+              onChange={e=>setForm({...form,obraId:e.target.value})}
+            >
+              {obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}
+            </Input>
+            <Input
+              label="Fecha"
+              type="date"
+              value={form.fecha}
+              onChange={e=>setForm({...form,fecha:e.target.value})}
+            />
           </div>
 
-          <div style={{marginBottom:14}}>
-            <LBL>¿A quiénes?</LBL>
+          <div style={{marginBottom:ESPACIO.lg}}>
+            <div className="ui-label">¿A quiénes?</div>
             <SelectorEmpleados
               empleados={empleados}
               seleccionados={form.empleadoIds}
@@ -498,252 +543,303 @@ export default function Horarios({ctx}){
               idsDeLaObra={idsDeLaObra}
               nombreObra={obraSel?.proyecto||""}
             />
-            <div style={{fontSize:10.5,color:"var(--text-muted)",marginTop:5}}>
+            <div className="ui-help">
               Todos los marcados reciben el mismo turno, la misma obra y la misma tarea.
               Si alguno necesita algo distinto, asígnaselo aparte.
             </div>
           </div>
 
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
-            <div style={{background:"var(--surface-subtle)",border:"1px solid var(--border)",borderRadius:10,padding:12}}>
-              <div style={{fontSize:11,fontWeight:700,color:"var(--text-main)",marginBottom:10}}>Turno 1</div>
-              <div style={{marginBottom:10}}>
-                <LBL>Horario personalizado</LBL>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                  <div>
-                    <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:4}}>Desde</div>
-                    <input type="time" value={form.turno1Inicio} onChange={e=>setForm({...form,turno1Inicio:e.target.value})} style={SI}/>
-                  </div>
-                  <div>
-                    <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:4}}>Hasta</div>
-                    <input type="time" value={form.turno1Fin} onChange={e=>setForm({...form,turno1Fin:e.target.value})} style={SI}/>
-                  </div>
-                </div>
-                <div style={{fontSize:11,color:"var(--text-muted)",marginTop:6}}>Ejemplo: {fmtTurno12Local(armarTurno(form.turno1Inicio, form.turno1Fin))}</div>
+          <div style={{display:"grid",gridTemplateColumns:isMobile ? "1fr" : "1fr 1fr",gap:ESPACIO.md,marginBottom:ESPACIO.lg}}>
+            <div style={PANEL}>
+              <div style={{...TIPO.eyebrow,color:"var(--text-tertiary)",marginBottom:ESPACIO.md}}>Turno 1</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:ESPACIO.md,marginBottom:ESPACIO.sm}}>
+                <Input label="Desde" type="time" value={form.turno1Inicio} onChange={e=>setForm({...form,turno1Inicio:e.target.value})}/>
+                <Input label="Hasta" type="time" value={form.turno1Fin} onChange={e=>setForm({...form,turno1Fin:e.target.value})}/>
               </div>
-              <div>
-                <LBL>Tarea del turno 1</LBL>
-                <input value={form.tarea1} onChange={e=>setForm({...form,tarea1:e.target.value})} placeholder="Ej: Instalación anclajes" style={SI}/>
-              </div>
+              <Input
+                label="Tarea del turno 1"
+                value={form.tarea1}
+                onChange={e=>setForm({...form,tarea1:e.target.value})}
+                placeholder="Ej: Instalación anclajes"
+                ayuda={`Le llega como «${fmtTurno12Local(armarTurno(form.turno1Inicio, form.turno1Fin))}»`}
+              />
             </div>
-            <div style={{background:"var(--surface-subtle)",border:"1px solid var(--border)",borderRadius:10,padding:12}}>
-              <div style={{fontSize:11,fontWeight:700,color:"var(--text-main)",marginBottom:10}}>Turno 2 (opcional)</div>
-              <div style={{marginBottom:10}}>
-                <LBL>Horario personalizado</LBL>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                  <div>
-                    <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:4}}>Desde</div>
-                    <input type="time" value={form.turno2Inicio} onChange={e=>setForm({...form,turno2Inicio:e.target.value})} style={SI}/>
-                  </div>
-                  <div>
-                    <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:4}}>Hasta</div>
-                    <input type="time" value={form.turno2Fin} onChange={e=>setForm({...form,turno2Fin:e.target.value})} style={SI}/>
-                  </div>
-                </div>
-                <div style={{fontSize:11,color:"var(--text-muted)",marginTop:6}}>{form.turno2Inicio && form.turno2Fin ? "Ejemplo: " + (fmtTurno12Local(armarTurno(form.turno2Inicio, form.turno2Fin))) : 'Déjalo vacío si no aplica segundo turno'}</div>
+            <div style={PANEL}>
+              <div style={{...TIPO.eyebrow,color:"var(--text-tertiary)",marginBottom:ESPACIO.md}}>Turno 2 · opcional</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:ESPACIO.md,marginBottom:ESPACIO.sm}}>
+                <Input label="Desde" type="time" value={form.turno2Inicio} onChange={e=>setForm({...form,turno2Inicio:e.target.value})}/>
+                <Input label="Hasta" type="time" value={form.turno2Fin} onChange={e=>setForm({...form,turno2Fin:e.target.value})}/>
               </div>
-              <div>
-                <LBL>Tarea del turno 2</LBL>
-                <input value={form.tarea2} onChange={e=>setForm({...form,tarea2:e.target.value})} placeholder="Ej: Entrega, cierre, inspección" style={SI}/>
-              </div>
+              <Input
+                label="Tarea del turno 2"
+                value={form.tarea2}
+                onChange={e=>setForm({...form,tarea2:e.target.value})}
+                placeholder="Ej: Entrega, cierre, inspección"
+                ayuda={form.turno2Inicio && form.turno2Fin
+                  ? `Le llega como «${fmtTurno12Local(armarTurno(form.turno2Inicio, form.turno2Fin))}»`
+                  : "Déjalo vacío si no hay segundo turno"}
+              />
             </div>
           </div>
 
           {turnosBase.length>0&&seleccionados.length>0&&obraSel&&(
-            <div style={{background:"var(--surface-subtle)",border:"1px solid var(--border)",borderRadius:10,padding:14,marginBottom:14}}>
-              <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:6}}>
+            <div style={{...PANEL,marginBottom:ESPACIO.lg}}>
+              <div style={{...TIPO.caption,fontWeight:400,color:"var(--text-tertiary)",marginBottom:ESPACIO.sm}}>
                 Vista previa · le llega igual a {seleccionados.length===1?"la persona":`las ${seleccionados.length} personas`}, con su nombre
               </div>
-              <div style={{fontSize:13,color:"var(--text-main)",lineHeight:1.7,background:"var(--surface)",border:"1px solid var(--border)",borderRadius:8,padding:"12px 14px"}}>
+              <div style={{
+                ...TIPO.callout,color:"var(--text-primary)",lineHeight:1.7,
+                background:"var(--surface)",border:"1px solid var(--separator)",
+                borderRadius:10,padding:"12px 14px",
+              }}>
                 <div>Hola <strong>{seleccionados[0].nombre}</strong>, has sido asignado a la obra <strong>{obraSel.proyecto}</strong> del cliente <strong>{obraSel.cliente}</strong>.</div>
                 <div>Lugar: <strong>{obraSel.direccion||obraSel.ciudad}, {obraSel.ciudad}</strong></div>
                 <div>Fecha: <strong>{fmtD(form.fecha) || form.fecha}</strong></div>
-                <div style={{marginTop:8,fontWeight:600}}>Turnos asignados:</div>
+                <div style={{marginTop:ESPACIO.sm,fontWeight:600}}>Turnos asignados:</div>
                 <ul style={{margin:"6px 0 0 18px",padding:0}}>
                   {turnosBase.map((item,idx)=><li key={idx}><strong>{fmtTurno12Local(item.turno)}</strong> · {item.tarea}</li>)}
                 </ul>
-                <div style={{marginTop:8}}>Por favor confirma tu asistencia. <strong>INGEANCLAJES S.A.S</strong></div>
+                <div style={{marginTop:ESPACIO.sm}}>Por favor confirma tu asistencia. <strong>INGEANCLAJES S.A.S</strong></div>
               </div>
-              <div style={{fontSize:11,color:"var(--text-muted)",marginTop:8}}>
+              <div style={{...TIPO.caption,fontWeight:400,color:"var(--text-tertiary)",marginTop:ESPACIO.sm}}>
                 Se van a crear <strong>{previewTurnos.length} turno{previewTurnos.length!==1?"s":""}</strong>
                 {seleccionados.length>1 && <> · {seleccionados.map(e=>e.nombre.split(" ")[0]).join(", ")}</>}
               </div>
             </div>
           )}
-          <div style={{display:"flex",gap:10,alignItems:"center"}}>
-            <button
-              style={{...B("#4ade80","#0f2d1a"),opacity:previewTurnos.length?1:0.5,cursor:previewTurnos.length?"pointer":"not-allowed"}}
-              onClick={guardar}
-              disabled={!previewTurnos.length}
-            >
+          <div style={{display:"flex",gap:ESPACIO.sm,alignItems:"center",flexWrap:"wrap"}}>
+            <Button variante="primary" onClick={guardar} disabled={!previewTurnos.length}>
               {seleccionados.length>1?`Guardar turnos de ${seleccionados.length} personas`:"Guardar y enviar WhatsApp"}
-            </button>
-            <button style={{...B("var(--surface-subtle)","var(--text-muted)"),border:"1px solid var(--border)"}} onClick={()=>setShowF(false)}>Cancelar</button>
+            </Button>
+            <Button variante="secondary" onClick={()=>setShowF(false)}>Cancelar</Button>
             {!previewTurnos.length && (
-              <span style={{fontSize:11,color:"var(--text-muted)"}}>
+              <span style={{...TIPO.caption,fontWeight:400,color:"var(--text-tertiary)"}}>
                 {!seleccionados.length?"Marca al menos a una persona":"Falta la tarea del turno"}
               </span>
             )}
           </div>
-        </div>
+        </Card>
       )}
       {mensajeGrupo!==null&&(
-        <div
-          onClick={()=>setMensajeGrupo(null)}
-          style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,.65)",
-            display:"flex",alignItems:"center",justifyContent:"center",padding:16}}
-        >
-          <div onClick={(e)=>e.stopPropagation()} style={{
-            background:"var(--surface)",border:"1px solid var(--border)",borderRadius:14,padding:22,width:"100%",maxWidth:520,
-            maxHeight:"88vh",display:"flex",flexDirection:"column",
-            boxShadow:"0 18px 50px rgba(0,0,0,.5)",
-          }}>
-            <div style={{fontSize:15,fontWeight:700,color:"var(--text-main)"}}>Horario del día · para el grupo</div>
-            <div style={{
-              background:copiado?"rgba(22, 101, 52, 0.15)":"rgba(234, 88, 12, 0.15)",
-              border:"1px solid "+(copiado?"rgba(34, 197, 94, 0.3)":"rgba(249, 115, 22, 0.3)"),
-              color:copiado?"var(--green-700, #4ade80)":"#f97316",
-              borderRadius:9,padding:"9px 12px",fontSize:12.5,lineHeight:1.5,margin:"11px 0 12px",
-            }}>
-              {copiado
-                ? <><strong>Ya está copiado.</strong> Abre el grupo de WhatsApp y pega el mensaje (Ctrl+V, o mantén pulsado y «Pegar» en el celular).</>
-                : <><strong>El navegador no dejó copiarlo solo.</strong> Selecciona el texto de abajo, cópialo con Ctrl+C y pégalo en el grupo.</>}
-            </div>
-
-            {/* Un textarea y no un div: se puede seleccionar y copiar a mano si
-                el portapapeles falla, que es justo el caso de arriba. */}
-            <textarea
-              readOnly
-              value={mensajeGrupo}
-              onFocus={(e)=>e.target.select()}
-              style={{...SI,flex:1,minHeight:210,resize:"vertical",lineHeight:1.6,
-                fontSize:12.5,fontFamily:"inherit",background:"var(--surface-subtle)",color:"var(--text-main)",whiteSpace:"pre-wrap"}}
-            />
-
-            <div style={{display:"flex",gap:10,marginTop:14}}>
-              <button
+        <Sheet
+          onCerrar={()=>setMensajeGrupo(null)}
+          titulo="Horario del día · para el grupo"
+          subtitulo={`${dia.length} turno${dia.length!==1?"s":""} · ${fmtD(fechaF)}`}
+          pie={
+            <>
+              <Button variante="secondary" onClick={()=>setMensajeGrupo(null)}>Cerrar</Button>
+              <Button
+                variante="primary"
                 onClick={async()=>{
                   const listo=await copiarAlPortapapeles(mensajeGrupo);
                   setCopiado(listo);
                 }}
-                style={{...B("#166534","#ffffff"),fontSize:12.5,fontWeight:700}}
-              >{copiado?"Copiar otra vez":"Copiar mensaje"}</button>
-              <button onClick={()=>setMensajeGrupo(null)} style={{...B("var(--surface-subtle)","var(--text-muted)"),border:"1px solid var(--border)",fontSize:12.5}}>Cerrar</button>
-              <div style={{marginLeft:"auto",alignSelf:"center",fontSize:11,color:"var(--text-muted)"}}>
-                {dia.length} turno{dia.length!==1?"s":""} · {fmtD(fechaF)}
-              </div>
-            </div>
-          </div>
-        </div>
+              >
+                {copiado?"Copiar otra vez":"Copiar mensaje"}
+              </Button>
+            </>
+          }
+        >
+          <Callout tono={copiado?"exito":"aviso"} style={{marginBottom:ESPACIO.md}}>
+            {copiado
+              ? <><strong>Ya está copiado.</strong> Abre el grupo de WhatsApp y pega el mensaje (Ctrl+V, o mantén pulsado y «Pegar» en el celular).</>
+              : <><strong>El navegador no dejó copiarlo solo.</strong> Selecciona el texto de abajo, cópialo con Ctrl+C y pégalo en el grupo.</>}
+          </Callout>
+
+          {/* Un textarea y no un div: se puede seleccionar y copiar a mano si
+              el portapapeles falla, que es justo el caso de arriba. */}
+          <textarea
+            readOnly
+            value={mensajeGrupo}
+            onFocus={(e)=>e.target.select()}
+            className="ui-input"
+            style={{height:"auto",minHeight:210,padding:"10px 12px",resize:"vertical",
+              lineHeight:1.6,whiteSpace:"pre-wrap",background:"var(--surface-subtle)"}}
+          />
+        </Sheet>
       )}
 
       {porAvisar.length>0&&(
-        <div style={{...CD,marginBottom:20,border:"1px solid #166534"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:4}}>
-            <div style={ST}>Turnos guardados · {porAvisar.length} {porAvisar.length===1?"persona":"personas"}</div>
-            <button onClick={()=>setPorAvisar([])} style={{...B("var(--surface-subtle)","var(--text-muted)"),border:"1px solid var(--border)",fontSize:11.5,padding:"6px 12px"}}>Listo, cerrar</button>
-          </div>
+        <Card ajustado style={SEPARA}>
+          <CabeceraCard
+            titulo={`Turnos guardados · ${porAvisar.length} ${porAvisar.length===1?"persona":"personas"}`}
+            descripcion="Ya quedaron guardados. Falta avisarle a la gente."
+            accion={<Button variante="tertiary" tam="sm" onClick={()=>setPorAvisar([])}>Listo, cerrar</Button>}
+          />
 
           {/* El mensaje al grupo va PRIMERO y en grande. Es un solo envio y
               resuelve el dia entero; la lista de abajo es para el caso suelto.
               Antes estaba al reves y parecia que tocaba ir uno por uno. */}
-          <div style={{fontSize:11.5,color:"var(--text-muted)",marginBottom:10,lineHeight:1.5}}>
-            Los turnos <strong>ya quedaron guardados</strong>. Lo más rápido es mandar
-            <strong> un solo mensaje al grupo</strong> con todos los turnos del día:
+          <div style={{display:"grid",gap:ESPACIO.sm,marginBottom:ESPACIO.lg}}>
+            <Button variante="primary" bloque icono="documento" onClick={abrirHorarioDelDia}>
+              Enviar horario al grupo · un solo mensaje
+            </Button>
+            {/* Envio automatico: la app saca el archivo, el script lo manda. */}
+            <Button
+              variante="secondary"
+              bloque
+              icono="descargar"
+              onClick={exportarAvisosDelDia}
+              title="Descarga los avisos del día para enviarlos con el script automático"
+            >
+              Descargar avisos para el envío automático
+            </Button>
           </div>
-          <button
-            onClick={abrirHorarioDelDia}
-            style={{...B("#166534","#ffffff"),fontSize:13,fontWeight:700,width:"100%",justifyContent:"center",padding:"11px 16px"}}
-          >
-            📋 Enviar horario al grupo · un solo mensaje
-          </button>
 
-          {/* Envio automatico: la app saca el archivo, el script lo manda. */}
-          <button
-            onClick={exportarAvisosDelDia}
-            title="Descarga los avisos del día para enviarlos con el script automático"
-            style={{...B("var(--surface-subtle)","var(--text-muted)"),border:"1px solid var(--border)",fontSize:12,width:"100%",justifyContent:"center",marginTop:8}}
-          >
-            ⬇ Descargar avisos para el envío automático
-          </button>
-
-          <div style={{display:"flex",alignItems:"center",gap:10,margin:"16px 0 10px"}}>
-            <div style={{flex:1,height:1,background:"var(--border)"}}/>
-            <span style={{fontSize:10.5,color:"var(--text-muted)"}}>o avisa a alguien en particular</span>
-            <div style={{flex:1,height:1,background:"var(--border)"}}/>
+          <div style={{display:"flex",alignItems:"center",gap:ESPACIO.sm,marginBottom:ESPACIO.xs}}>
+            <div style={{flex:1,height:1,background:"var(--separator)"}}/>
+            <span style={{...TIPO.caption,fontWeight:400,color:"var(--text-tertiary)"}}>o avisa a alguien en particular</span>
+            <div style={{flex:1,height:1,background:"var(--separator)"}}/>
           </div>
-          <div style={{fontSize:10.5,color:"var(--text-muted)",marginBottom:10,lineHeight:1.5}}>
+          <div style={{...TIPO.caption,fontWeight:400,color:"var(--text-tertiary)",textAlign:"center"}}>
             WhatsApp solo deja abrir un chat a la vez, así que por aquí se manda de a uno.
           </div>
-          {porAvisar.map((p)=>{
-            const e=empleados.find(x=>x.id===p.empleadoId);
-            const idx=empleados.findIndex(x=>x.id===p.empleadoId);
-            return(
-              <div key={p.empleadoId} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid var(--border)"}}>
-                <Av init={e?.avatar||"?"} color={PAL[idx%PAL.length]} size={30}/>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:12.5,fontWeight:600,color:"var(--text-main)"}}>{e?.nombre}</div>
-                  <div style={{fontSize:10.5,color:"var(--text-muted)"}}>
-                    {p.turnos.map((t)=>fmtTurno12Local(t.turno)).join(" · ")}
-                  </div>
-                </div>
-                <button
-                  onClick={()=>{
-                    enviarWA(p.empleadoId,p.obraId,p.fecha,p.turnos);
-                    setPorAvisar(prev=>prev.map(x=>x.empleadoId===p.empleadoId?{...x,enviado:true}:x));
-                  }}
-                  style={{...(p.enviado?B("var(--surface-subtle)","var(--text-muted)"):B("rgba(34, 197, 94, 0.15)","var(--green-700, #4ade80)")),border:"1px solid var(--border)",fontSize:11.5,padding:"6px 12px",flexShrink:0}}
-                >
-                  {p.enviado?"✓ Enviado · reenviar":"Avisar por WhatsApp"}
-                </button>
-              </div>
-            );
-          })}
-        </div>
+
+          <Lista>
+            {porAvisar.map((p)=>{
+              const e=empleados.find(x=>x.id===p.empleadoId);
+              const idx=empleados.findIndex(x=>x.id===p.empleadoId);
+              return(
+                <ListRow
+                  key={p.empleadoId}
+                  izquierda={<Av init={e?.avatar||"?"} color={PAL[idx%PAL.length]} size={30}/>}
+                  titulo={e?.nombre || "—"}
+                  meta={p.turnos.map((t)=>fmtTurno12Local(t.turno)).join(" · ")}
+                  derecha={
+                    <Button
+                      variante={p.enviado?"tertiary":"secondary"}
+                      tam="sm"
+                      icono={p.enviado?"check":undefined}
+                      onClick={()=>{
+                        enviarWA(p.empleadoId,p.obraId,p.fecha,p.turnos);
+                        setPorAvisar(prev=>prev.map(x=>x.empleadoId===p.empleadoId?{...x,enviado:true}:x));
+                      }}
+                    >
+                      {p.enviado?"Enviado · reenviar":"Avisar"}
+                    </Button>
+                  }
+                />
+              );
+            })}
+          </Lista>
+        </Card>
       )}
 
-      <div style={{display:"flex",gap:14,alignItems:"flex-end",marginBottom:20,flexWrap:"wrap",maxWidth:"100%"}}>
-        <div><LBL>Filtrar por fecha</LBL><input type="date" value={fechaF} onChange={e=>setFechaF(e.target.value)} style={{...SI,width:"auto",maxWidth:"100%"}}/></div>
-        <div style={{fontSize:13,color:"var(--text-muted)"}}>{dia.length} turno{dia.length!==1?"s":""} · {fmtD(fechaF)}</div>
-        <button
+      <Toolbar>
+        <Input
+          type="date"
+          value={fechaF}
+          onChange={e=>setFechaF(e.target.value)}
+          aria-label="Filtrar por fecha"
+          wrapStyle={{flex:"0 0 auto"}}
+          style={{width:"auto"}}
+        />
+        <span style={{...TIPO.footnote,fontWeight:400,color:"var(--text-tertiary)"}}>
+          {dia.length} turno{dia.length!==1?"s":""} · {fmtD(fechaF)}
+        </span>
+        <EspacioToolbar/>
+        <Button
+          variante="secondary"
+          icono="documento"
           onClick={abrirHorarioDelDia}
           disabled={!dia.length}
           title="Arma el mensaje con todos los turnos del día para pegarlo en el grupo"
-          style={{...B("#166534","#ffffff"),fontSize:12.5,fontWeight:700,opacity:dia.length?1:0.45}}
         >
-          📋 Enviar horario al grupo
-        </button>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
-        <div style={CD}>
-          <div style={ST}>Turnos del día</div>
-          {dia.length===0?<div style={{textAlign:"center",color:"var(--text-muted)",fontSize:13,padding:"28px 0"}}>No hay turnos para esta fecha</div>
-          :dia.map(h=>{const e=empleados.find(x=>x.id===h.empleadoId);const o=obras.find(x=>x.id===h.obraId);const idx=empleados.findIndex(x=>x.id===h.empleadoId);return(<div key={h.id} style={{background:"var(--surface-subtle)",border:"1px solid var(--border)",borderRadius:10,padding:"12px 14px",marginBottom:10}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}><Av init={e?.avatar||"?"} color={PAL[idx%PAL.length]} size={34}/><div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:"var(--text-main)"}}>{e?.nombre}</div><div style={{fontSize:11,color:"var(--text-muted)"}}>{e?.cargo}</div></div><button onClick={()=>setHorarios(p=>p.filter(x=>x.id!==h.id))} style={{background:"rgba(239, 68, 68, 0.15)",border:"1px solid rgba(239, 68, 68, 0.3)",color:"#ef4444",borderRadius:6,width:24,height:24,cursor:"pointer",fontSize:14}}>×</button></div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,fontSize:11,marginBottom:8}}>
-              <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:6,padding:"6px 10px"}}><div style={{color:"var(--text-muted)",marginBottom:2}}>Obra</div><div style={{color:"var(--text-main)",fontWeight:500}}>{o?.proyecto}</div><div style={{color:"var(--text-muted)"}}>{o?.ciudad}</div></div>
-              {/* Un turno sin hora se marca en la tarjeta. Antes salia un hueco
-                  en blanco y parecia un problema de la pantalla. */}
-              <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:6,padding:"6px 10px"}}><div style={{color:"var(--text-muted)",marginBottom:2}}>Turno</div>{String(h.turno||"").trim() ? (<><div style={{color:"var(--accent, #f47c20)",fontWeight:600}}>{fmtTurno12Local(h.turno)}</div><div style={{color:"var(--text-muted)"}}>{h.tarea}</div></>) : (<div style={{color:"#f97316",fontWeight:600}}>Sin horario · bórralo y vuelve a asignarlo</div>)}</div>
-            </div>
-            <button
-              onClick={()=>reenviarDiaEmpleado(h)}
-              disabled={!String(h.turno||"").trim()}
-              title={String(h.turno||"").trim() ? "" : "Este turno no tiene hora, no hay nada que avisar"}
-              style={{...B("rgba(34, 197, 94, 0.15)","var(--green-700, #4ade80)"),border:"1px solid rgba(34, 197, 94, 0.3)",width:"100%",justifyContent:"center",fontSize:12,
-                opacity:String(h.turno||"").trim()?1:0.45,
-                cursor:String(h.turno||"").trim()?"pointer":"not-allowed"}}
-            >Reenviar WhatsApp · +57 {e?.tel}</button>
-          </div>);})}
-        </div>
-        <div style={CD}>
-          <div style={ST}>Todos los turnos por obra</div>
-          {obras.map(o=>{const hs=horarios.filter(h=>h.obraId===o.id);if(!hs.length)return null;return(<div key={o.id} style={{background:"var(--surface-subtle)",border:"1px solid var(--border)",borderRadius:10,padding:"12px 14px",marginBottom:12}}>
-            <div style={{fontSize:12,fontWeight:600,color:"var(--text-main)",marginBottom:2}}>{o.cliente}</div>
-            <div style={{fontSize:11,color:"var(--text-muted)",marginBottom:8}}>{o.proyecto}</div>
-            {hs.map(h=>{const e=empleados.find(x=>x.id===h.empleadoId);return(<div key={h.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:"1px solid var(--border)",fontSize:11,flexWrap:"wrap"}}><span style={{color:"var(--text-muted)",minWidth:76}}>{fmtD(h.fecha)}</span><span style={{color:"var(--text-main)",flex:"1 1 110px",fontWeight:600}}>{e?.nombre}</span><span style={{color:"var(--accent, #f47c20)",flex:"1 1 120px",fontWeight:500}}>{fmtTurno12Local(h.turno)}</span><span style={{color:"var(--text-muted)",flex:"1 1 100%"}}>{h.tarea}</span></div>);})}
-          </div>);})}
-        </div>
+          Enviar horario al grupo
+        </Button>
+      </Toolbar>
+      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:ESPACIO.lg,alignItems:"start"}}>
+        <Card ajustado>
+          <CabeceraCard titulo="Turnos del día" descripcion={fmtD(fechaF)}/>
+          {dia.length===0 ? (
+            <EmptyState
+              icono="calendario"
+              titulo="No hay turnos para esta fecha"
+              texto="Elige otro día arriba, o asigna el primer turno de hoy."
+            />
+          ) : (
+            <Lista>
+              {dia.map(h=>{
+                const e=empleados.find(x=>x.id===h.empleadoId);
+                const o=obras.find(x=>x.id===h.obraId);
+                const idx=empleados.findIndex(x=>x.id===h.empleadoId);
+                const conHora=Boolean(String(h.turno||"").trim());
+                return(
+                  <ListRow
+                    key={h.id}
+                    izquierda={<Av init={e?.avatar||"?"} color={PAL[idx%PAL.length]} size={34}/>}
+                    titulo={e?.nombre || "—"}
+                    meta={<>{o?.proyecto || "Sin obra"}{o?.ciudad ? ` · ${o.ciudad}` : ""}<br/>{h.tarea || "Sin tarea"}</>}
+                    derecha={
+                      // Un turno sin hora se marca en la fila. Antes salia un
+                      // hueco en blanco y parecia un problema de la pantalla.
+                      conHora
+                        ? <StatusPill tono="acento">{fmtTurno12Local(h.turno)}</StatusPill>
+                        : <StatusPill tono="peligro">Sin horario</StatusPill>
+                    }
+                    acciones={
+                      <>
+                        <Button
+                          variante="tertiary"
+                          tam="sm"
+                          onClick={()=>reenviarDiaEmpleado(h)}
+                          disabled={!conHora}
+                          title={conHora ? `Reenviar WhatsApp · +57 ${e?.tel||""}` : "Este turno no tiene hora, no hay nada que avisar"}
+                        >
+                          Reenviar
+                        </Button>
+                        <Button
+                          variante="tertiary"
+                          tam="sm"
+                          soloIcono
+                          icono="papelera"
+                          onClick={()=>setHorarios(p=>p.filter(x=>x.id!==h.id))}
+                          aria-label={`Quitar el turno de ${e?.nombre || "esta persona"}`}
+                          title="Quitar este turno"
+                        />
+                      </>
+                    }
+                  />
+                );
+              })}
+            </Lista>
+          )}
+        </Card>
+
+        <Card ajustado>
+          <CabeceraCard titulo="Todos los turnos por obra" descripcion="El historial completo, agrupado por proyecto."/>
+          {obras.every(o=>!horarios.some(h=>h.obraId===o.id)) ? (
+            <EmptyState
+              icono="obra"
+              titulo="Ninguna obra tiene turnos todavía"
+              texto="Los turnos que asignes van quedando aquí, agrupados por obra."
+            />
+          ) : obras.map(o=>{
+            const hs=horarios.filter(h=>h.obraId===o.id);
+            if(!hs.length) return null;
+            return(
+              <div key={o.id} style={{...PANEL,marginBottom:ESPACIO.md}}>
+                <div style={{...TIPO.footnote,fontWeight:600,color:"var(--text-primary)"}}>{o.cliente}</div>
+                <div style={{...TIPO.caption,fontWeight:400,color:"var(--text-tertiary)",marginBottom:ESPACIO.sm}}>{o.proyecto}</div>
+                {hs.map(h=>{
+                  const e=empleados.find(x=>x.id===h.empleadoId);
+                  return(
+                    <div key={h.id} style={{
+                      display:"flex",alignItems:"center",gap:ESPACIO.sm,flexWrap:"wrap",
+                      padding:"6px 0",borderTop:"1px solid var(--separator)",
+                      ...TIPO.caption,fontWeight:400,
+                    }}>
+                      <span style={{color:"var(--text-tertiary)",minWidth:76}}>{fmtD(h.fecha)}</span>
+                      <span style={{color:"var(--text-primary)",flex:"1 1 110px",fontWeight:600}}>{e?.nombre}</span>
+                      <span style={{color:"var(--text-secondary)",flex:"1 1 120px"}}>{fmtTurno12Local(h.turno)}</span>
+                      <span style={{color:"var(--text-tertiary)",flex:"1 1 100%"}}>{h.tarea}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </Card>
       </div>
     </div>
   );

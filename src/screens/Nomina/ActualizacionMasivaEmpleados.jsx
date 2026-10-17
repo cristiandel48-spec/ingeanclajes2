@@ -9,6 +9,8 @@ import {
 } from "../../lib/normalizarEntrada";
 import { normalizarEmpleado, normalizarCargos, TIPOS_CONTRATO_LABELS } from "../../lib/nomina";
 import { siguienteIdUnico } from "../../lib/identificadores";
+import { Button, Callout } from "../../components/ui";
+import { ESPACIO } from "../../styles/designTokens";
 
 // Mapeo flexible de nombres de columna para aceptar variaciones
 function limpiarClave(k) {
@@ -511,137 +513,44 @@ export default function ActualizacionMasivaEmpleados({
   const totalSinCambio = cambiosDetectados.sinCambio.length;
 
   return (
-    <div style={{ marginBottom: 16 }}>
-      {/* Mensaje flotante o de estado de éxito */}
+    <div style={{ marginBottom: ESPACIO.lg }}>
+      {/* Mensaje de que la carga salio bien */}
       {mensajeExito && (
-        <div
-          style={{
-            background: "#dcfce7",
-            color: "#166534",
-            border: "1px solid #86efac",
-            borderRadius: 10,
-            padding: "10px 16px",
-            fontSize: 13,
-            fontWeight: 700,
-            marginBottom: 12,
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            boxShadow: "0 2px 5px rgba(22,101,52,0.08)",
-          }}
-        >
-          <span>🎉</span>
-          <span>{mensajeExito}</span>
-        </div>
+        <Callout tono="exito" style={{ marginBottom: ESPACIO.md }}>{mensajeExito}</Callout>
       )}
 
-      {/* Tarjeta Banner de Actualización Masiva */}
-      <div
-        style={{
-          background: "linear-gradient(135deg, #f0fdf4 0%, #ffffff 60%, #eff6ff 100%)",
-          border: "1.5px solid #bbf7d0",
-          borderRadius: 12,
-          padding: "14px 18px",
-          boxShadow: "0 2px 8px rgba(15, 23, 42, 0.04)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 12,
-          }}
-        >
-          {/* Lado izquierdo: Explicación amigable */}
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 12, maxWidth: 640 }}>
-            <div
-              style={{
-                width: 42,
-                height: 42,
-                borderRadius: 10,
-                background: "#16a34a",
-                color: "#ffffff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 20,
-                flexShrink: 0,
-                boxShadow: "0 2px 6px rgba(22,163,74,0.3)",
-              }}
-            >
-              📑
-            </div>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#14532d", letterSpacing: -0.2 }}>
-                Actualización Rápida de Empleados por Formulario Excel
-              </div>
-              <div style={{ fontSize: 12, color: "#475569", marginTop: 3, lineHeight: 1.4 }}>
-                <strong>No tienes que editar uno por uno:</strong> Descarga este formulario en Excel con todos los empleados actuales, modifica salarios, cargos o datos bancarios (o añade nuevos empleados abajo) y súbelo para actualizarlos de un solo golpe.
-              </div>
-            </div>
-          </div>
+      <Callout tono="info" titulo="Actualizar varios empleados con un formulario de Excel">
+        <strong>No tienes que editar uno por uno:</strong> descarga el formulario con todos los
+        empleados actuales, cambia salarios, cargos o datos bancarios —o añade gente nueva al
+        final— y súbelo para actualizarlos de un solo golpe.
+        <div style={{ display: "flex", alignItems: "center", gap: ESPACIO.sm, flexWrap: "wrap", marginTop: ESPACIO.md }}>
+          <Button
+            variante="secondary"
+            icono="descargar"
+            onClick={descargarFormularioExcel}
+            title="Descarga un archivo Excel con los empleados actuales listos para editar"
+          >
+            Descargar formulario
+          </Button>
 
-          {/* Lado derecho: Botones de Acción */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            {/* Botón 1: Descargar Formulario */}
-            <button
-              type="button"
-              onClick={descargarFormularioExcel}
-              style={{
-                background: "#ffffff",
-                color: "#166534",
-                border: "1.5px solid #16a34a",
-                borderRadius: 8,
-                padding: "8px 14px",
-                fontSize: 12.5,
-                fontWeight: 700,
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 7,
-                boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                transition: "all 0.15s ease",
-              }}
-              title="Descarga un archivo Excel con los empleados actuales listos para editar"
-            >
-              <span style={{ fontSize: 15 }}>📥</span> Descargar Formulario Excel
-            </button>
-
-            {/* Botón 2: Cargar Formulario */}
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleArchivoSeleccionado}
-              accept=".xlsx, .xls, .csv"
-              style={{ display: "none" }}
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={procesando}
-              style={{
-                background: "#16a34a",
-                color: "#ffffff",
-                border: "1.5px solid #15803d",
-                borderRadius: 8,
-                padding: "8px 16px",
-                fontSize: 12.5,
-                fontWeight: 700,
-                cursor: procesando ? "wait" : "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 7,
-                boxShadow: "0 2px 6px rgba(22,163,74,0.3)",
-              }}
-              title="Cargar el archivo Excel con los cambios realizados"
-            >
-              <span style={{ fontSize: 15 }}>📤</span> {procesando ? "Procesando..." : "Cargar Formulario Diligenciado"}
-            </button>
-          </div>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleArchivoSeleccionado}
+            accept=".xlsx, .xls, .csv"
+            style={{ display: "none" }}
+          />
+          <Button
+            variante="secondary"
+            icono="documento"
+            onClick={() => fileInputRef.current?.click()}
+            cargando={procesando}
+            title="Cargar el archivo Excel con los cambios realizados"
+          >
+            {procesando ? "Procesando…" : "Cargar formulario diligenciado"}
+          </Button>
         </div>
-      </div>
+      </Callout>
 
       {/* Modal de Previsualización y Confirmación de Cambios */}
       {modalAbierto && (

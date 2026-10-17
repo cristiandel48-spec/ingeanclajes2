@@ -4,7 +4,12 @@ import CampoTexto from "../../components/ui/CampoTexto";
 import H1 from "../../components/ui/H1";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
 import LBL from "../../components/ui/LBL";
-import { useEffect, useState } from "react";
+import {
+  BuscadorToolbar, Button, Card, Callout, EmptyState, EspacioToolbar, Input, Lista, ListRow,
+  PageHeader, SegmentedControl, StatusPill, Toolbar,
+} from "../../components/ui";
+import { CIFRA, ESPACIO, TIPO } from "../../styles/designTokens";
+import { Fragment, useEffect, useState } from "react";
 import { B, CD, PAL, SI, ST } from "../../styles/tokens";
 import { INCAPACIDAD_ORIGEN_LABELS, INCAPACIDAD_RESPONSABLE_LABELS, NOMINA_CO_2026, NOMINA_GENERATED_STORAGE_KEY, NOMINA_PLANO_BANCO_DEFAULTS, PRESTACION_ESTADOS_LABELS, PRESTACION_TIPOS_LABELS, RECARGOS_CO_2026, TIPOS_CONTRATO_LABELS, buildIncapacidadFormDefault, buildLiquidacionPrestacionRecord, buildNominaGeneratedRecord, buildNominaPeriodo, buildNominaPlanoBancoContent, buildNominaSnapshot, calcularLiquidacionRetiro, calcularParafiscales, calcularPrestacionSocialEmpleado, calcularResumenIncapacidadesRegistros, calcularResumenNominaEmpleado, calcularTotalHoraExtraItem, calcularVacacionesPendientes, calcularValorHoraBase, calcularValorHoraRecargo, downloadTextFile, formatNominaGeneratedAt, getPctRecargo, isDateInPeriodo, normalizarCargos, normalizarEmpleado, normalizarIncapacidades, normalizarPrestacionesSociales, normalizeNominaGeneratedRecord, upsertNominaGeneratedRecord, upsertPrestacionSocial } from "../../lib/nomina";
 import { LOGO_INGEANCLAJES } from "../../assets/embeddedImages";
@@ -15,8 +20,59 @@ import { avisoCedula, avisoCelular, avisoCorreo, avisoNombre, normalizarCorreo, 
 import { printColilla, printCurrentPz, printLiquidacion, printVacaciones } from "../../lib/print";
 import { generarColillaPdf, blobABase64 } from "../../lib/colillaPdf";
 import { enviarColillaPorCorreo } from "../../lib/backend/usuarios";
-import ActualizacionMasivaEmpleados from "./ActualizacionMasivaEmpleados";
 import ModalEnvioMasivoColillas from "./ModalEnvioMasivoColillas";
+
+// ── Piezas del area de personal ─────────────────────────────────────────────
+// Lo de abajo (horas extras, incapacidades, planilla, colillas) conserva su
+// aspecto antiguo a proposito: esta apagado y sin puerta de entrada, y
+// repintarlo seria trabajo que hoy no ve nadie.
+
+const SEPARA = { marginBottom: ESPACIO.lg };
+
+const PANEL = {
+  background: "var(--surface-subtle)",
+  border: "1px solid var(--separator)",
+  borderRadius: 12,
+  padding: "12px 14px",
+};
+
+function CabeceraCard({ titulo, descripcion, accion }) {
+  return (
+    <div style={{
+      display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap",
+      gap: ESPACIO.md, paddingBottom: ESPACIO.md, marginBottom: ESPACIO.md,
+      borderBottom: "1px solid var(--separator)",
+    }}>
+      <div style={{ minWidth: 0, flex: "1 1 170px" }}>
+        <h2 style={{ ...TIPO.headline, color: "var(--text-primary)", margin: 0 }}>{titulo}</h2>
+        {descripcion && (
+          <div style={{ ...TIPO.caption, fontWeight: 400, color: "var(--text-tertiary)", marginTop: 2 }}>
+            {descripcion}
+          </div>
+        )}
+      </div>
+      {accion}
+    </div>
+  );
+}
+
+// Un dato de la ficha: rotulo arriba, valor debajo. Sustituye a las cajitas de
+// colores que tenia la tarjeta del empleado.
+function Dato({ etiqueta, valor }) {
+  return (
+    <div>
+      <div style={{ ...TIPO.caption, fontWeight: 400, color: "var(--text-tertiary)" }}>{etiqueta}</div>
+      <div style={{ ...TIPO.footnote, color: "var(--text-primary)", marginTop: 2, overflowWrap: "anywhere" }}>
+        {valor || "—"}
+      </div>
+    </div>
+  );
+}
+
+// Rejilla que se acomoda sola: en el telefono cae a una columna sin que la
+// pantalla tenga que preguntar por el ancho.
+const REJILLA = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: ESPACIO.md };
+
 export default function Nomina({ctx}){
   const {empleados,setEmpleados,obras,cargos,setCargos,nominasGeneradas,setNominasGeneradas,saveAllToCloud}=ctx;
   const [tab,setTab]=useState("lista");
@@ -55,6 +111,8 @@ export default function Nomina({ctx}){
   const [modoEdicionNomina,setModoEdicionNomina]=useState(false);
   const [mostrarHistorialNominas,setMostrarHistorialNominas]=useState(false);
   const [modalColillasMasivas,setModalColillasMasivas]=useState(false);
+  const [filtroEmpleados,setFiltroEmpleados]=useState("activos");
+  const [busquedaEmpleados,setBusquedaEmpleados]=useState("");
   const [enviandoColillaId, setEnviandoColillaId] = useState({});
   const [colillaEnviadaId, setColillaEnviadaId] = useState({});
 
@@ -219,6 +277,19 @@ export default function Nomina({ctx}){
   // Fichas creadas desde obra u horarios que nadie ha revisado todavia.
   const pendientesRevision = empleadosBase.filter((e)=>e.altaEstado==="pendiente");
   const confirmarAlta=(id)=>actualizarEmpleado(id,{ altaEstado:"confirmado" });
+
+  // La misma barra que Cotizaciones: segmentos por estado y buscador. Por
+  // defecto se ven los activos; los retirados quedan a un toque.
+  const retirados = empleadosBase.filter((e)=>!e.activo);
+  const textoBusqueda = busquedaEmpleados.trim().toLowerCase();
+  const empleadosVisibles = empleadosBase.filter((e)=>{
+    if(filtroEmpleados==="activos" && !e.activo) return false;
+    if(filtroEmpleados==="retirados" && e.activo) return false;
+    if(filtroEmpleados==="revisar" && e.altaEstado!=="pendiente") return false;
+    if(!textoBusqueda) return true;
+    return [e.nombre,e.cargo,e.cedula,e.tel,e.email]
+      .some((campo)=>String(campo||"").toLowerCase().includes(textoBusqueda));
+  });
 
   const updEmp=(id,field,val)=>actualizarEmpleado(id,{ [field]:val });
   const construirEmpleadosActualizados = (id, updater)=>
@@ -627,37 +698,61 @@ export default function Nomina({ctx}){
   };
 
   return(
-    <div style={{padding:"14px 28px 28px"}}>
+    <div style={{maxWidth:1360,margin:"0 auto",padding:"14px 16px 28px",width:"100%",boxSizing:"border-box"}}>
+      <PageHeader
+        eyebrow="Personal"
+        titulo={tab==="nuevo" ? "Nuevo empleado" : "Empleados"}
+        subtitulo={tab==="nuevo"
+          ? "Con la ficha guardada, la persona ya se puede asignar a una obra y a sus turnos."
+          : "Las fichas de la gente que se asigna a las obras y a los turnos."}
+        acciones={tab==="nuevo"
+          ? (
+            <Button variante="secondary" icono="flechaIzq" onClick={()=>setTab("lista")}>
+              Volver a la lista
+            </Button>
+          ) : (
+            <Button variante="primary" icono="mas" onClick={()=>setTab("nuevo")}>
+              Nuevo empleado
+            </Button>
+          )}
+      />
 
       {/* Altas hechas desde la obra: llegan con lo basico y el minimo puesto,
           esperando que aqui se defina la parte contractual. */}
       {pendientesRevision.length>0&&(
-        <AvisoFlujo
-          tono="falta"
+        <Callout
+          tono="aviso"
           titulo={`${pendientesRevision.length} ficha(s) registradas desde obra, pendientes de revisar`}
+          style={SEPARA}
         >
           Las creó personal de campo con lo básico: nombre, cargo, cédula y celular. Entraron con
           el salario mínimo ({fmt(NOMINA_CO_2026.salarioMinimo)}) como valor de arranque, no como
           decisión salarial. Abre cada una y define <strong>salario, tipo de contrato y datos
           bancarios</strong>; al cambiar el salario la ficha queda confirmada sola.
-          <div style={{marginTop:7,display:"flex",flexWrap:"wrap",gap:8}}>
+          <div style={{marginTop:ESPACIO.sm,display:"flex",flexWrap:"wrap",gap:ESPACIO.sm}}>
             {pendientesRevision.map((e)=>(
-              <span key={e.id} style={{background:"var(--surface, #fff)",border:"1px solid rgba(245, 158, 11, 0.4)",borderRadius:6,padding:"4px 4px 4px 9px",fontSize:11.5,color:"#f59e0b",display:"inline-flex",alignItems:"center",gap:7}}>
+              <span key={e.id} style={{
+                background:"var(--surface)",border:"1px solid var(--separator)",borderRadius:999,
+                padding:"3px 4px 3px 12px",display:"inline-flex",alignItems:"center",gap:ESPACIO.sm,
+                ...TIPO.caption,fontWeight:500,color:"var(--text-secondary)",
+              }}>
                 {e.nombre} · {e.cargo || "sin cargo"}
                 {e.altaCreadoPor ? ` · por ${e.altaCreadoPor}` : ""}
                 {/* Si de verdad gana el minimo no habra cambio de salario que
                     confirme la ficha, y el aviso se quedaria fijo. */}
-                <button
+                <Button
+                  variante="tertiary"
+                  tam="sm"
+                  icono="check"
                   onClick={()=>confirmarAlta(e.id)}
                   title="Ya la revisé, el salario queda como está"
-                  style={{background:"rgba(245, 158, 11, 0.15)",border:"1px solid rgba(245, 158, 11, 0.3)",color:"#f59e0b",borderRadius:4,padding:"1px 7px",fontSize:11,cursor:"pointer"}}
                 >
-                  ✓ revisada
-                </button>
+                  Revisada
+                </Button>
               </span>
             ))}
           </div>
-        </AvisoFlujo>
+        </Callout>
       )}
 
       {/* De esta pantalla la empresa volvio a usar solo el area de personal:
@@ -711,30 +806,57 @@ export default function Nomina({ctx}){
       )}
 
       {tab==="nuevo"&&(
-        <div style={{display:"grid",gap:16,maxWidth:980}}>
-          <div style={{background:"var(--surface, #ffffff)",border:"1px solid var(--border, #e2e8f0)",borderRadius:12,padding:20,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
-            <div style={{fontSize:11,fontWeight:700,color:"var(--text-main, #142840)",textTransform:"uppercase",letterSpacing:1,marginBottom:16,borderBottom:"1px solid var(--border, #e2e8f0)",paddingBottom:10}}>
-              Catálogo de cargos
+        <div style={{display:"grid",gap:ESPACIO.lg,maxWidth:980}}>
+          <Card ajustado>
+            <CabeceraCard
+              titulo="Catálogo de cargos"
+              descripcion="Los cargos que puedes asignarle a la gente. Toca uno para usarlo en la ficha de abajo."
+            />
+            <div style={{...REJILLA,alignItems:"end"}}>
+              <Input
+                label="Nuevo cargo"
+                value={cargoForm.nombre}
+                onChange={(e)=>setCargoForm({...cargoForm,nombre:e.target.value})}
+                placeholder="Ej: Supervisor de cuadrilla"
+              />
+              <Input
+                label="Descripción"
+                value={cargoForm.descripcion}
+                onChange={(e)=>setCargoForm({...cargoForm,descripcion:e.target.value})}
+                placeholder="Uso interno o funciones principales"
+              />
+              <Button variante="secondary" onClick={guardarCargo}>Guardar cargo</Button>
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"1.1fr 1.4fr auto",gap:12,alignItems:"end"}}>
-              <div><LBL>Nuevo cargo</LBL><input value={cargoForm.nombre} onChange={(e)=>setCargoForm({...cargoForm,nombre:e.target.value})} placeholder="Ej: Supervisor de cuadrilla" style={SI}/></div>
-              <div><LBL>Descripción</LBL><input value={cargoForm.descripcion} onChange={(e)=>setCargoForm({...cargoForm,descripcion:e.target.value})} placeholder="Uso interno o funciones principales" style={SI}/></div>
-              <button onClick={guardarCargo} style={{...B("#142840"),justifyContent:"center"}}>Guardar cargo</button>
+            <div style={{display:"flex",flexWrap:"wrap",gap:ESPACIO.sm,marginTop:ESPACIO.lg}}>
+              {cargosDisponibles.map((cargo)=>{
+                const elegido = nf.cargo===cargo;
+                return (
+                  <button
+                    key={cargo}
+                    type="button"
+                    onClick={()=>setNf({...nf,cargo:cargo})}
+                    aria-pressed={elegido}
+                    style={{
+                      ...TIPO.footnote,fontFamily:"inherit",cursor:"pointer",
+                      borderRadius:999,padding:"5px 12px",
+                      background:elegido?"var(--accent-tint)":"var(--fill)",
+                      color:elegido?"var(--accent)":"var(--text-secondary)",
+                      border:`1px solid ${elegido?"var(--accent)":"transparent"}`,
+                    }}
+                  >
+                    {cargo}
+                  </button>
+                );
+              })}
             </div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:14}}>
-              {cargosDisponibles.map((cargo)=>(
-                <span key={cargo} style={{background:nf.cargo===cargo?"rgba(245, 158, 11, 0.2)":"var(--surface-subtle, #f1f5f9)",color:nf.cargo===cargo?"#fbbf24":"var(--text-main, #334155)",border:"1px solid " + (nf.cargo===cargo?"rgba(245, 158, 11, 0.4)":"var(--border, #cbd5e1)"),borderRadius:999,padding:"6px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}} onClick={()=>setNf({...nf,cargo:cargo})}>
-                  {cargo}
-                </span>
-              ))}
-            </div>
-          </div>
+          </Card>
 
-          <div style={{background:"var(--surface, #ffffff)",border:"1px solid var(--border, #e2e8f0)",borderRadius:12,padding:24,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
-            <div style={{fontSize:11,fontWeight:700,color:"#cc0000",textTransform:"uppercase",letterSpacing:1,marginBottom:18,borderBottom:"2px solid #cc000022",paddingBottom:10}}>
-              👤 Datos del Nuevo Empleado
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:16}}>
+          <Card ajustado>
+            <CabeceraCard
+              titulo="Datos del empleado"
+              descripcion="Lo que necesita la ficha. El nombre y el cargo son obligatorios."
+            />
+            <div style={{...REJILLA,marginBottom:ESPACIO.lg}}>
               <CampoTexto
                 label="Nombre completo *"
                 valor={nf.nombre}
@@ -755,12 +877,16 @@ export default function Nomina({ctx}){
                 inputMode="numeric"
                 spellCheck={false}
               />
-              <div><LBL>Cargo *</LBL>
-                <select value={(nf.cargo || "").toUpperCase()} onChange={e=>setNf({...nf,cargo:e.target.value.toUpperCase()})} style={SI}>
-                  <option value="">Seleccionar cargo...</option>
-                  {cargosDisponibles.map((cargo)=><option key={cargo} value={cargo}>{cargo}</option>)}
-                </select>
-              </div>
+              <Input
+                label="Cargo"
+                obligatorio
+                como="select"
+                value={(nf.cargo || "").toUpperCase()}
+                onChange={e=>setNf({...nf,cargo:e.target.value.toUpperCase()})}
+              >
+                <option value="">Seleccionar cargo...</option>
+                {cargosDisponibles.map((cargo)=><option key={cargo} value={cargo}>{cargo}</option>)}
+              </Input>
               <CampoTexto
                 label="Teléfono"
                 valor={nf.tel}
@@ -783,37 +909,49 @@ export default function Nomina({ctx}){
                 autoCapitalize="off"
                 spellCheck={false}
               />
-              <div><LBL>Salario base ($)</LBL><input type="number" value={nf.salario} onChange={e=>setNf({...nf,salario:parseFloat(e.target.value)||0})} style={SI}/></div>
-              <div><LBL>Tipo de contrato</LBL>
-                <select value={nf.tipoContrato||"indefinido"} onChange={e=>setNf({...nf,tipoContrato:e.target.value})} style={SI}>
-                  {["indefinido","fijo","obra_labor","prestacion_servicios"].map((t)=><option key={t} value={t}>{TIPOS_CONTRATO_LABELS[t]}</option>)}
-                </select>
-              </div>
-              <div><LBL>Fecha de ingreso</LBL><input type="date" value={nf.fechaIngreso||""} onChange={e=>setNf({...nf,fechaIngreso:e.target.value})} style={SI}/></div>
-              <div style={{background:"var(--surface-subtle, #f8fafc)",borderRadius:8,padding:"10px 12px",fontSize:12,color:"var(--text-main, #475569)",display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontSize:18}}>💵</span>
-                <div>
-                  <div style={{fontSize:10,color:"var(--text-subtle, #94a3b8)"}}>Salario ingresado</div>
-                  <div style={{fontWeight:700,color:"#4ade80",fontSize:14}}>{fmt(nf.salario)}</div>
-                  <div style={{fontSize:10,color:"var(--text-muted, #64748b)",marginTop:2}}>
-                    {nf.salario<=NOMINA_CO_2026.topeAuxilio ? "Aplica auxilio 2026: " + (fmt(NOMINA_CO_2026.auxilioTransporte)) : "No aplica auxilio de transporte"}
-                  </div>
-                </div>
-              </div>
+              <Input
+                label="Salario base"
+                type="number"
+                value={nf.salario}
+                onChange={e=>setNf({...nf,salario:parseFloat(e.target.value)||0})}
+                ayuda={`${fmt(nf.salario)} · ${nf.salario<=NOMINA_CO_2026.topeAuxilio
+                  ? "aplica auxilio de transporte 2026 (" + fmt(NOMINA_CO_2026.auxilioTransporte) + ")"
+                  : "no aplica auxilio de transporte"}`}
+              />
+              <Input
+                label="Tipo de contrato"
+                como="select"
+                value={nf.tipoContrato||"indefinido"}
+                onChange={e=>setNf({...nf,tipoContrato:e.target.value})}
+              >
+                {["indefinido","fijo","obra_labor","prestacion_servicios"].map((t)=><option key={t} value={t}>{TIPOS_CONTRATO_LABELS[t]}</option>)}
+              </Input>
+              <Input
+                label="Fecha de ingreso"
+                type="date"
+                value={nf.fechaIngreso||""}
+                onChange={e=>setNf({...nf,fechaIngreso:e.target.value})}
+              />
             </div>
-            <div style={{background:"var(--surface-subtle, #f8fafc)",borderRadius:10,padding:16,marginBottom:16,border:"1px solid var(--border, #e2e8f0)"}}>
-              <div style={{fontSize:11,fontWeight:700,color:"var(--text-main, #475569)",textTransform:"uppercase",marginBottom:12,letterSpacing:0.5}}>🏦 Datos Bancarios</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
-                <div><LBL>Banco</LBL>
-                  <select value={nf.banco} onChange={e=>setNf({...nf,banco:e.target.value})} style={SI}>
-                    {["Bancolombia","Davivienda","Banco Bogotá","BBVA","Nequi","Daviplata","Banco Caja Social","Banco Popular","Scotiabank","AV Villas"].map((banco)=><option key={banco}>{banco}</option>)}
-                  </select>
-                </div>
-                <div><LBL>Tipo de cuenta</LBL>
-                  <select value={nf.tipoCuenta} onChange={e=>setNf({...nf,tipoCuenta:e.target.value})} style={SI}>
-                    {["Ahorros","Corriente"].map((tipo)=><option key={tipo}>{tipo}</option>)}
-                  </select>
-                </div>
+            <div style={{...PANEL,marginBottom:ESPACIO.lg}}>
+              <div style={{...TIPO.eyebrow,color:"var(--text-tertiary)",marginBottom:ESPACIO.md}}>Datos bancarios</div>
+              <div style={REJILLA}>
+                <Input
+                  label="Banco"
+                  como="select"
+                  value={nf.banco}
+                  onChange={e=>setNf({...nf,banco:e.target.value})}
+                >
+                  {["Bancolombia","Davivienda","Banco Bogotá","BBVA","Nequi","Daviplata","Banco Caja Social","Banco Popular","Scotiabank","AV Villas"].map((banco)=><option key={banco}>{banco}</option>)}
+                </Input>
+                <Input
+                  label="Tipo de cuenta"
+                  como="select"
+                  value={nf.tipoCuenta}
+                  onChange={e=>setNf({...nf,tipoCuenta:e.target.value})}
+                >
+                  {["Ahorros","Corriente"].map((tipo)=><option key={tipo}>{tipo}</option>)}
+                </Input>
                 <CampoTexto
                   label="Número de cuenta"
                   valor={nf.numeroCuenta}
@@ -825,109 +963,119 @@ export default function Nomina({ctx}){
                 />
               </div>
             </div>
-            <div style={{display:"flex",gap:10}}>
-              <button onClick={guardarNuevoEmp} style={B("#cc0000")}>✅ Guardar Empleado</button>
-              <button onClick={()=>setTab("lista")} style={{...B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)"),border:"1px solid var(--border, #cbd5e1)"}}>Cancelar</button>
+            <div style={{display:"flex",gap:ESPACIO.sm,flexWrap:"wrap"}}>
+              <Button variante="primary" onClick={guardarNuevoEmp}>Guardar empleado</Button>
+              <Button variante="secondary" onClick={()=>setTab("lista")}>Cancelar</Button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
       {tab==="lista"&&(
         <div>
-          {/* Banner y herramientas de actualización masiva por formulario Excel */}
-          <ActualizacionMasivaEmpleados
-            empleados={empleadosBase}
-            cargos={cargos}
-            setCargos={setCargos}
-            onActualizarEmpleados={async (nuevosEmpleados, nuevosCargos, resumenMsg) => {
-              setEmpleados(nuevosEmpleados);
-              if (nuevosCargos) setCargos(nuevosCargos);
-              await guardarCambiosNomina(resumenMsg, {
-                empleados: nuevosEmpleados,
-                ...(nuevosCargos ? { cargos: nuevosCargos } : {})
-              });
-            }}
-          />
-
-          <div style={CD}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <div style={ST}>Empleados ({activos.length})</div>
-              <button
-                type="button"
-                onClick={() => setTab("nuevo")}
-                style={{
-                  background: "#cc0000",
-                  color: "#ffffff",
-                  border: "none",
-                  borderRadius: 8,
-                  padding: "7px 16px",
-                  fontSize: 12.5,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  boxShadow: "0 2px 6px rgba(204, 0, 0, 0.25)",
-                  fontFamily: "inherit",
-                }}
-                title="Dar de alta un nuevo empleado manualmente"
-              >
-                <span>+</span> Nuevo Empleado
-              </button>
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-              {empleadosBase.map((e,idx)=>{
+          {empleadosBase.length>0&&(
+            <Toolbar style={{marginBottom:ESPACIO.lg}}>
+              <SegmentedControl
+                etiqueta="Estado de los empleados"
+                valor={filtroEmpleados}
+                onChange={setFiltroEmpleados}
+                opciones={[
+                  {id:"activos",label:"Activos",cuenta:activos.length},
+                  {id:"retirados",label:"Retirados",cuenta:retirados.length},
+                  ...(pendientesRevision.length>0 ? [{id:"revisar",label:"Por revisar",cuenta:pendientesRevision.length}] : []),
+                  {id:"todos",label:"Todos",cuenta:empleadosBase.length},
+                ]}
+              />
+              <EspacioToolbar/>
+              <BuscadorToolbar
+                valor={busquedaEmpleados}
+                onChange={setBusquedaEmpleados}
+                placeholder="Buscar por nombre, cargo o cédula..."
+              />
+            </Toolbar>
+          )}
+          <Card ajustado>
+            <CabeceraCard
+              titulo={`Empleados (${empleadosVisibles.length})`}
+              descripcion="Toca una ficha para ver sus datos y editarla."
+            />
+            {empleadosBase.length>0&&empleadosVisibles.length===0 ? (
+              <EmptyState
+                icono="buscar"
+                titulo="Nadie coincide"
+                texto={textoBusqueda ? "Prueba con otra parte del nombre, el cargo o la cédula." : "No hay empleados en este grupo."}
+              />
+            ) : empleadosBase.length===0 ? (
+              <EmptyState
+                icono="usuario"
+                titulo="Todavía no hay empleados"
+                texto="Crea la primera ficha y la persona queda lista para asignarla a una obra y a sus turnos."
+                accion={<Button variante="secondary" icono="mas" onClick={()=>setTab("nuevo")}>Nuevo empleado</Button>}
+              />
+            ) : (
+            <Lista>
+              {empleadosVisibles.map((e)=>{
+                const idx = empleadosBase.indexOf(e);
+                const vacaciones = calcularVacacionesPendientes(e, e.fechaSalida||periodoNomina.endIso);
                 return(
-                <div key={e.id} style={{background:"var(--surface-subtle, #f1f5f9)",borderRadius:10,padding:"14px 16px",border:selId===e.id?"1px solid #cc0000":"1px solid var(--border, #e2e8f0)",cursor:"pointer"}} onClick={()=>setSelId(selId===e.id?null:e.id)}>
-                  <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
-                    <Av init={e.avatar} color={PAL[idx%PAL.length]} size={38}/>
-                    <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:"var(--text-main, #0f172a)"}}>{e.nombre}</div><div style={{fontSize:11,color:"var(--text-muted, #475569)"}}>{e.cargo}</div></div>
-                    <div style={{textAlign:"right"}}><div style={{fontSize:13,fontWeight:700,color:"#4ade80"}}>{fmt(e.salario)}</div></div>
-                  </div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,fontSize:11,color:"var(--text-muted, #64748b)",marginBottom:6}}>
-                    <div>🪪 {e.cedula||"Sin documento"}</div>
-                    <div>📱 {e.tel||"Sin teléfono"}</div>
-                    <div style={{gridColumn:"span 2",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>✉️ {e.email||"Sin email"}</div>
-                  </div>
-                  {(()=>{
-                    const pf=calcularParafiscales(e, e.fechaSalida||periodoNomina.endIso);
-                    const vacacionesPendientes = calcularVacacionesPendientes(e, e.fechaSalida||periodoNomina.endIso);
-                    return pf.diasTrabajados>0 ? (
-                      <div style={{background:"rgba(22, 163, 74, 0.12)",border:"1px solid rgba(22, 163, 74, 0.25)",borderRadius:6,padding:"7px 10px",fontSize:11,marginBottom:6,display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
-                        <div><span style={{color:"var(--text-muted, #64748b)"}}>📅 Ingreso: </span><strong>{e.fechaIngreso||"N/A"}</strong></div>
-                        <div><span style={{color:"var(--text-muted, #64748b)"}}>Contrato: </span><strong>{TIPOS_CONTRATO_LABELS[e.tipoContrato]||e.tipoContrato||"Sin definir"}</strong></div>
-                        {/* Ocupa el renglon entero: al quitar los dias del
-                            corte quedaba media casilla vacia al lado. */}
-                        <div style={{gridColumn:"span 2"}}><span style={{color:"var(--text-muted, #64748b)"}}>✈️ Vacac.: </span><strong style={{color:"#4ade80"}}>{vacacionesPendientes.dias}d</strong></div>
-                      </div>
-                    ) : null;
-                  })()}
-                  <div style={{background:"var(--surface, #f8fafc)",borderRadius:6,padding:"7px 10px",marginBottom:6,border:"1px solid var(--border, #e2e8f0)"}}>
-                    <div style={{color:"var(--text-muted, #64748b)",marginBottom:2}}>🏦 Datos bancarios</div>
-                    <div style={{color:"var(--text-main, #1a1a2e)"}}>{e.banco||"-"} · {e.tipoCuenta||"-"}</div>
-                    <div style={{color:"var(--text-muted, #475569)",fontFamily:"monospace"}}>{e.numeroCuenta||"-"}</div>
-                  </div>
+                <Fragment key={e.id}>
+                  <ListRow
+                    onClick={()=>setSelId(selId===e.id?null:e.id)}
+                    activa={selId===e.id}
+                    izquierda={<Av init={e.avatar} color={PAL[idx%PAL.length]} size={38}/>}
+                    titulo={e.nombre}
+                    meta={<>
+                      {e.cargo || "Sin cargo"} · {e.cedula || "Sin documento"}
+                      <br/>
+                      {e.tel || "Sin teléfono"}{e.email ? ` · ${e.email}` : ""}
+                    </>}
+                    derecha={
+                      <span style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}>
+                        <span style={{...TIPO.footnote,...CIFRA,color:"var(--text-secondary)"}}>{fmt(e.salario)}</span>
+                        {!e.activo ? <StatusPill tono="peligro">Retirado</StatusPill>
+                          : e.altaEstado==="pendiente" ? <StatusPill tono="aviso">Por revisar</StatusPill>
+                          : null}
+                      </span>
+                    }
+                  />
                   {selId===e.id&&(
-                    <div style={{marginTop:10,borderTop:"1px solid var(--border, #e2e8f0)",paddingTop:10}} onClick={(event)=>event.stopPropagation()}>
-                      <div style={{fontSize:10,color:"#cc0000",fontWeight:600,textTransform:"uppercase",marginBottom:8}}>Datos del empleado</div>
-                      {editEmpId!==e.id&&<button onClick={()=>{setEditEmpId(e.id);setEditEmpData({...e});}} style={{...B("#1a3050","#60b4ff"),fontSize:11,width:"100%",justifyContent:"center",marginBottom:10}}>✏️ Editar datos del empleado</button>}
+                    <div style={{...PANEL,margin:`0 ${ESPACIO.lg}px ${ESPACIO.md}px`}}>
+                      <div style={{...REJILLA,marginBottom:ESPACIO.md}}>
+                        <Dato etiqueta="Fecha de ingreso" valor={e.fechaIngreso}/>
+                        <Dato etiqueta="Tipo de contrato" valor={TIPOS_CONTRATO_LABELS[e.tipoContrato]||e.tipoContrato||"Sin definir"}/>
+                        <Dato etiqueta="Vacaciones pendientes" valor={`${vacaciones.dias} días`}/>
+                        <Dato etiqueta="Cuenta bancaria" valor={`${e.banco||"—"} · ${e.tipoCuenta||"—"} · ${e.numeroCuenta||"—"}`}/>
+                      </div>
+                      {editEmpId!==e.id&&(
+                        <Button variante="secondary" icono="lapiz" onClick={()=>{setEditEmpId(e.id);setEditEmpData({...e});}}>
+                          Editar datos del empleado
+                        </Button>
+                      )}
                       {editEmpId===e.id&&editEmpData&&(
                         <div>
-                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
-                            <div style={{gridColumn:"span 2"}}><LBL>Nombre completo</LBL><input value={editEmpData.nombre||""} onChange={ev=>setEditEmpData(p=>({...p,nombre:ev.target.value}))} onBlur={ev=>setEditEmpData(p=>({...p,nombre:normalizarNombrePropio(ev.target.value)}))} style={{...SI,fontSize:11}}/></div>
-                            <div><LBL>Cédula</LBL><input value={editEmpData.cedula||""} onChange={ev=>setEditEmpData(p=>({...p,cedula:ev.target.value}))} onBlur={ev=>setEditEmpData(p=>({...p,cedula:normalizarDocumento(ev.target.value)}))} style={{...SI,fontSize:11}}/></div>
-                            <div><LBL>Cargo</LBL><select value={(editEmpData.cargo||"").toUpperCase()} onChange={ev=>setEditEmpData(p=>({...p,cargo:ev.target.value.toUpperCase()}))} style={{...SI,fontSize:11,padding:"5px 8px"}}><option value="">Seleccionar...</option>{cargosDisponibles.map(cargo=><option key={cargo} value={cargo}>{cargo}</option>)}</select></div>
-                            <div><LBL>Salario base</LBL><input type="number" value={editEmpData.salario} onChange={ev=>setEditEmpData(p=>({...p,salario:parseFloat(ev.target.value)||0}))} style={{...SI,fontSize:11}}/></div>
-                            <div><LBL>Tipo contrato</LBL><select value={editEmpData.tipoContrato||"indefinido"} onChange={ev=>setEditEmpData(p=>({...p,tipoContrato:ev.target.value}))} style={{...SI,fontSize:11,padding:"5px 8px"}}>{Object.entries(TIPOS_CONTRATO_LABELS).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
-                            <div><LBL>Fecha de ingreso</LBL><input type="date" value={editEmpData.fechaIngreso||""} onChange={ev=>setEditEmpData(p=>({...p,fechaIngreso:ev.target.value}))} style={{...SI,fontSize:11}}/></div>
-                            <div><LBL>Teléfono / Celular</LBL><input value={editEmpData.tel||""} onChange={ev=>setEditEmpData(p=>({...p,tel:ev.target.value}))} onBlur={ev=>setEditEmpData(p=>({...p,tel:normalizarTelefono(ev.target.value)}))} placeholder="3001234567" style={{...SI,fontSize:11}}/></div>
-                            <div style={{gridColumn:"span 2"}}><LBL>Correo electrónico</LBL><input type="email" value={editEmpData.email||""} onChange={ev=>setEditEmpData(p=>({...p,email:ev.target.value}))} onBlur={ev=>setEditEmpData(p=>({...p,email:normalizarCorreo(ev.target.value)}))} placeholder="empleado@correo.com" style={{...SI,fontSize:11}}/></div>
-                            <div><LBL>Banco</LBL><select value={editEmpData.banco||""} onChange={ev=>setEditEmpData(p=>({...p,banco:ev.target.value}))} style={{...SI,fontSize:11,padding:"5px 8px"}}>{["Bancolombia","Davivienda","Banco Bogotá","BBVA","Nequi","Daviplata","Banco Caja Social","Banco Popular","Scotiabank","AV Villas"].map(b=><option key={b}>{b}</option>)}</select></div>
-                            <div><LBL>Tipo cuenta</LBL><select value={editEmpData.tipoCuenta||"Ahorros"} onChange={ev=>setEditEmpData(p=>({...p,tipoCuenta:ev.target.value}))} style={{...SI,fontSize:11,padding:"5px 8px"}}>{["Ahorros","Corriente"].map(t=><option key={t}>{t}</option>)}</select></div>
-                            <div style={{gridColumn:"span 2"}}><LBL>Número de cuenta</LBL><input value={editEmpData.numeroCuenta||""} onChange={ev=>setEditEmpData(p=>({...p,numeroCuenta:ev.target.value}))} onBlur={ev=>setEditEmpData(p=>({...p,numeroCuenta:normalizarDocumento(ev.target.value)}))} style={{...SI,fontSize:11}}/></div>
+                          <div style={{...REJILLA,marginBottom:ESPACIO.md}}>
+                            <Input label="Nombre completo" value={editEmpData.nombre||""} onChange={ev=>setEditEmpData(p=>({...p,nombre:ev.target.value}))} onBlur={ev=>setEditEmpData(p=>({...p,nombre:normalizarNombrePropio(ev.target.value)}))}/>
+                            <Input label="Cédula" value={editEmpData.cedula||""} onChange={ev=>setEditEmpData(p=>({...p,cedula:ev.target.value}))} onBlur={ev=>setEditEmpData(p=>({...p,cedula:normalizarDocumento(ev.target.value)}))}/>
+                            <Input label="Cargo" como="select" value={(editEmpData.cargo||"").toUpperCase()} onChange={ev=>setEditEmpData(p=>({...p,cargo:ev.target.value.toUpperCase()}))}>
+                              <option value="">Seleccionar...</option>
+                              {cargosDisponibles.map(cargo=><option key={cargo} value={cargo}>{cargo}</option>)}
+                            </Input>
+                            <Input label="Salario base" type="number" value={editEmpData.salario} onChange={ev=>setEditEmpData(p=>({...p,salario:parseFloat(ev.target.value)||0}))}/>
+                            <Input label="Tipo de contrato" como="select" value={editEmpData.tipoContrato||"indefinido"} onChange={ev=>setEditEmpData(p=>({...p,tipoContrato:ev.target.value}))}>
+                              {Object.entries(TIPOS_CONTRATO_LABELS).map(([v,l])=><option key={v} value={v}>{l}</option>)}
+                            </Input>
+                            <Input label="Fecha de ingreso" type="date" value={editEmpData.fechaIngreso||""} onChange={ev=>setEditEmpData(p=>({...p,fechaIngreso:ev.target.value}))}/>
+                            <Input label="Teléfono / celular" value={editEmpData.tel||""} onChange={ev=>setEditEmpData(p=>({...p,tel:ev.target.value}))} onBlur={ev=>setEditEmpData(p=>({...p,tel:normalizarTelefono(ev.target.value)}))} placeholder="3001234567"/>
+                            <Input label="Correo electrónico" type="email" value={editEmpData.email||""} onChange={ev=>setEditEmpData(p=>({...p,email:ev.target.value}))} onBlur={ev=>setEditEmpData(p=>({...p,email:normalizarCorreo(ev.target.value)}))} placeholder="empleado@correo.com"/>
+                            <Input label="Banco" como="select" value={editEmpData.banco||""} onChange={ev=>setEditEmpData(p=>({...p,banco:ev.target.value}))}>
+                              {["Bancolombia","Davivienda","Banco Bogotá","BBVA","Nequi","Daviplata","Banco Caja Social","Banco Popular","Scotiabank","AV Villas"].map(b=><option key={b}>{b}</option>)}
+                            </Input>
+                            <Input label="Tipo de cuenta" como="select" value={editEmpData.tipoCuenta||"Ahorros"} onChange={ev=>setEditEmpData(p=>({...p,tipoCuenta:ev.target.value}))}>
+                              {["Ahorros","Corriente"].map(t=><option key={t}>{t}</option>)}
+                            </Input>
+                            <Input label="Número de cuenta" value={editEmpData.numeroCuenta||""} onChange={ev=>setEditEmpData(p=>({...p,numeroCuenta:ev.target.value}))} onBlur={ev=>setEditEmpData(p=>({...p,numeroCuenta:normalizarDocumento(ev.target.value)}))}/>
                           </div>
-                          <div style={{display:"flex",gap:8,marginBottom:10}}>
-                            <button onClick={()=>{
+                          <div style={{display:"flex",gap:ESPACIO.sm,flexWrap:"wrap"}}>
+                            <Button variante="primary" onClick={()=>{
                               const nombreNorm = normalizarNombrePropio(editEmpData.nombre || e.nombre || "");
                               const av = nombreNorm.split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase() || e.avatar || "EM";
                               actualizarEmpleado(e.id,{
@@ -942,8 +1090,8 @@ export default function Nomina({ctx}){
                               });
                               setEditEmpId(null);
                               setEditEmpData(null);
-                            }} style={{...B("#166534","#4ade80"),fontSize:11,flex:1,justifyContent:"center"}}>💾 Guardar cambios</button>
-                            <button onClick={()=>{setEditEmpId(null);setEditEmpData(null);}} style={{...B("#fee2e2","#ef4444"),fontSize:11,justifyContent:"center"}}>✕ Cancelar</button>
+                            }}>Guardar cambios</Button>
+                            <Button variante="secondary" onClick={()=>{setEditEmpId(null);setEditEmpData(null);}}>Cancelar</Button>
                           </div>
                         </div>
                       )}
@@ -954,10 +1102,11 @@ export default function Nomina({ctx}){
                           del proceso de nomina. */}
                     </div>
                   )}
-                </div>
+                </Fragment>
               )})}
-            </div>
-          </div>
+            </Lista>
+            )}
+          </Card>
         </div>
       )}
 

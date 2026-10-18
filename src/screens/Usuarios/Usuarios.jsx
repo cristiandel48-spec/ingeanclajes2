@@ -3,7 +3,7 @@
 import AvisoFlujo from "../../components/AvisoFlujo";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { NAV_SECTIONS } from "../../config/navigation";
 import CampoTexto from "../../components/ui/CampoTexto";
@@ -18,6 +18,7 @@ import { formatearUltimaConexion } from "../../lib/seguridadSesion";
 import { detectarDispositivo } from "../../lib/backend";
 import { resolverEstadoConexionUsuario } from "../../lib/actividadConexiones";
 import { useIsMobile } from "../../hooks/useMediaQuery";
+import { useSubirAlFormulario } from "../../hooks/useSubirAlFormulario";
 
 const FORM_VACIO = {
   nombre: "", email: "", clave: "", rol: "operator",
@@ -54,17 +55,8 @@ export default function Usuarios({ ctx }) {
   // «Editar» a uno de los de abajo el formulario se abria fuera de la vista y
   // habia que subir a buscarlo: ahora la pantalla sube sola hasta el y deja
   // el cursor en el primer campo. Corre tambien al pasar de un usuario a otro.
-  const formRef = useRef(null);
-  useEffect(() => {
-    if (!abierto) return;
-    const id = requestAnimationFrame(() => {
-      const el = formRef.current;
-      if (!el) return;
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-      el.querySelector("input:not([disabled])")?.focus({ preventScroll: true });
-    });
-    return () => cancelAnimationFrame(id);
-  }, [abierto, editId]);
+  // Tambien al volver a darle «Editar» a la misma persona tras haber bajado.
+  const [formRef, subirAlFormulario] = useSubirAlFormulario();
 
   const usuariosEnLineaIds = useMemo(() => {
     const vistos = new Set();
@@ -94,6 +86,7 @@ export default function Usuarios({ ctx }) {
     setEditId(null);
     setMensaje(null);
     setAbierto(true);
+    subirAlFormulario();
   };
 
   const abrirEdicion = (u) => {
@@ -108,6 +101,7 @@ export default function Usuarios({ ctx }) {
     setEditId(u.user_id);
     setMensaje(null);
     setAbierto(true);
+    subirAlFormulario();
   };
 
   const alternarModulo = (id) => {
@@ -387,8 +381,7 @@ Cancelar: se la entregas tú.`);
       )}
 
       {abierto && (
-        // scrollMarginTop: que al subir no quede escondido bajo la barra fija.
-        <div ref={formRef} style={{ ...CD, marginBottom: 20, scrollMarginTop: 96 }}>
+        <div ref={formRef} style={{ ...CD, marginBottom: 20, scrollMarginTop: 16 }}>
           <div style={ST}>{editId ? "Editar acceso" : "Nuevo usuario"}</div>
 
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 14 }}>

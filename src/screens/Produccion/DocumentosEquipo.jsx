@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from "react";
+import { useSubirAlFormulario } from "../../hooks/useSubirAlFormulario";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import { limpiarDocumentosEjemplo } from "./documentosSeed";
 import { Icono } from "../../components/ui";
@@ -117,6 +118,10 @@ export default function DocumentosEquipo({
       setTimeout(() => inputModalRef.current?.focus(), 80);
     });
 
+  // En el telefono el editor va debajo de la lista de documentos: al crear uno
+  // nuevo se baja hasta el, que si no parecia que no habia pasado nada.
+  const [editorRef, subirAlEditor] = useSubirAlFormulario();
+
   // Crear nuevo documento
   const crearNuevoDocumento = async () => {
     const nombre = await pedirInput({
@@ -141,6 +146,7 @@ export default function DocumentosEquipo({
 
     setDocumentos((prev) => [nuevoDoc, ...prev]);
     setDocActivoId(nuevoDoc.id);
+    subirAlEditor();
     mostrarToast("Documento creado exitosamente");
   };
 
@@ -926,7 +932,7 @@ export default function DocumentosEquipo({
       {/* =================================================================== */}
       {/* ÁREA DE CONTENIDO Y EDITOR DEL DOCUMENTO ESTILO NOTION              */}
       {/* =================================================================== */}
-      <main style={{ padding: isMobile ? "16px 14px" : "22px 28px 40px", overflowY: "auto", position: "relative", minWidth: 0 }}>
+      <main ref={editorRef} style={{ scrollMarginTop: 16, padding: isMobile ? "16px 14px" : "22px 28px 40px", overflowY: "auto", position: "relative", minWidth: 0 }}>
         {!docActivo ? (
           <div
             style={{

@@ -3,7 +3,7 @@ import BotonDictado from "../../components/ui/BotonDictado";
 import LBL from "../../components/ui/LBL";
 import { Button } from "../../components/ui";
 import { TIPO } from "../../styles/designTokens";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { B, SI } from "../../styles/tokens";
 import { fmtD, today } from "../../lib/format";
 import { leerImagenComprimida } from "../../lib/imagenes";
@@ -23,6 +23,21 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
   const resumen = resumenBitacora(obra.bitacora);
   const fotoRefs = useRef({});
   const [subiendoFotos, setSubiendoFotos] = useState(null);
+  // El registro nuevo se agrega al final de la lista, lejos del boton de
+  // arriba que lo crea: se baja hasta el y se deja el cursor en su primer campo.
+  const [registroPorMostrar, setRegistroPorMostrar] = useState(null);
+  useEffect(() => {
+    if (!registroPorMostrar) return undefined;
+    const id = requestAnimationFrame(() => {
+      const el = document.querySelector(`[data-registro-id="${CSS.escape(registroPorMostrar)}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        el.querySelector("input:not([disabled]), textarea:not([disabled])")?.focus({ preventScroll: true });
+      }
+      setRegistroPorMostrar(null);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [registroPorMostrar]);
 
   const guardarBitacora = (siguiente) => {
     if (bloqueada) return;
@@ -37,6 +52,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
     // gente cuando llega del sitio.
     const nuevo = { ...registroVacio(today()), fotos: [] };
     guardarBitacora([...registros, nuevo]);
+    setRegistroPorMostrar(nuevo.id);
   };
 
   const actualizarRegistro = (id, campo, valor) =>
@@ -171,7 +187,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
       {registros.map((registro, idx) => {
         const fotosConImagen = (registro.fotos || []).filter((f) => f.img).length;
         return (
-          <div key={registro.id} style={{ background: "var(--surface-subtle, #fbfbfd)", border: "1px solid var(--border, #e5e5ea)", borderRadius: 14, padding: "16px 18px", marginBottom: 14, boxShadow: "0 1px 2px rgba(0,0,0,0.02)" }}>
+          <div key={registro.id} data-registro-id={registro.id} style={{ scrollMarginTop: 16, background: "var(--surface-subtle, #fbfbfd)", border: "1px solid var(--border, #e5e5ea)", borderRadius: 14, padding: "16px 18px", marginBottom: 14, boxShadow: "0 1px 2px rgba(0,0,0,0.02)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, paddingBottom: 10, borderBottom: "1px solid var(--border, #f2f2f7)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 11, fontWeight: 700, fontFamily: "monospace", color: "var(--text-main, #1d1d1f)", background: "var(--surface, #ffffff)", border: "1px solid var(--border, #e5e5ea)", padding: "2px 7px", borderRadius: 5 }}>

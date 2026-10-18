@@ -1,4 +1,5 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
+import { scrollAppToTop } from "./lib/format";
 import { AppDataProvider, useAppData } from "./context/AppDataContext";
 import AppShell from "./components/layout/AppShell";
 import { AccionesPantallaProvider } from "./context/accionesPantalla";
@@ -156,6 +157,13 @@ Status: Connection refused / unreachable`}
 function AppRoot() {
   const ctx = useAppData();
   const { scr, setScr, membresia, appBloqueada, esSuperAdminCristian } = ctx;
+
+  // <main> es el mismo para todos los modulos y conservaba el scroll: al ir de
+  // un modulo a otro -por ejemplo «Certificar» desde un informe de abajo- el
+  // nuevo se abria a media pagina. Cada modulo empieza arriba.
+  useEffect(() => {
+    scrollAppToTop("auto");
+  }, [scr]);
 
   // Si la persona no tiene acceso a la pantalla actual, cae en la primera que
   // si tenga. Pasa al entrar por primera vez -el estado arranca en el

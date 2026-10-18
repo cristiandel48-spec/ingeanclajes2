@@ -4,9 +4,10 @@ import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
 import ObraDetalle from "./ObraDetalle";
 import { useEffect, useState } from "react";
+import { useSubirAlFormulario } from "../../hooks/useSubirAlFormulario";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
 import { B, CD, SI, ST } from "../../styles/tokens";
-import { today } from "../../lib/format";
+import { scrollAppToTop, today } from "../../lib/format";
 import { getQuoteApprovalAccountingSnapshot } from "../../lib/cotizaciones";
 import { ESTADOS_OBRA, estadoSegunAvance, obraEstaCerrada } from "../../lib/flujoObra";
 import { esAdmin } from "../../lib/permisos";
@@ -58,6 +59,18 @@ export default function Obras({ctx}){
   // Se descarta al salir, para que al volver por el menu no se reabra sola.
   useEffect(()=>()=>limpiarIntencion(),[limpiarIntencion]);
   const [showNO,setShowNO]=useState(false);
+  // «Nueva Obra» va en la barra de arriba y se pulsa con la lista ya bajada;
+  // el formulario sale arriba de la lista, asi que se sube hasta el.
+  const [formRef, subirAlFormulario] = useSubirAlFormulario();
+  const alternarNuevaObra = ()=>{
+    if(!showNO) subirAlFormulario();
+    setShowNO((v)=>!v);
+  };
+  // El detalle de una obra reemplaza a la lista en el mismo <main>: al abrir
+  // una de abajo se caia a media pagina. Empieza arriba.
+  useEffect(()=>{
+    if(sel) scrollAppToTop("auto");
+  }, [sel?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   // `estado` y `avance` van en el formulario porque muchas obras se cargan al
   // sistema cuando ya llevan tiempo ejecutandose: arrancar siempre en 0% las
   // dejaba mal desde el primer dia.
@@ -178,7 +191,7 @@ export default function Obras({ctx}){
           gap: 6,
           boxShadow: showNO ? "none" : "0 1px 2px rgba(244, 124, 32, 0.25)",
         }}
-        onClick={() => setShowNO((v) => !v)}
+        onClick={alternarNuevaObra}
       >
         <span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1 }}>{showNO ? "✕" : "+"}</span>
         <span>{showNO ? (isMobile ? "Cerrar" : "Cerrar formulario") : "Nueva Obra"}</span>
@@ -197,7 +210,9 @@ export default function Obras({ctx}){
 
       {showNO && (
         <div
+          ref={formRef}
           style={{
+            scrollMarginTop: 16,
             background: "var(--surface, #ffffff)",
             border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
             borderRadius: 16,

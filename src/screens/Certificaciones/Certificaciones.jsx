@@ -4,10 +4,11 @@ import CertificacionDetalle from "./CertificacionDetalle";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
 import { useEffect, useState } from "react";
+import { useSubirAlFormulario } from "../../hooks/useSubirAlFormulario";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { buildCertForm, construirTextoSistema, getCertDefaultElements, unAnoDespues } from "./certConfig";
 import { redactarSistemasDesdeCotizacion } from "../../lib/certificacionTexto";
-import { fmtD, fmtL } from "../../lib/format";
+import { fmtD, fmtL, scrollAppToTop } from "../../lib/format";
 import { normalizarRazonSocial, normalizarFrase, normalizarParrafos, normalizarTextoCertificacion } from "../../lib/normalizarEntrada";
 import { corregirOrtografiaLocal } from "../../lib/correctorTexto";
 import BotonCorregir from "../../components/ui/BotonCorregir";
@@ -267,6 +268,14 @@ export default function Certificaciones({ctx}){
 
   // Al abrir una certificacion nueva se preselecciona la primera obra real
   // y se traen sus datos, para no tener que reescribir cliente y direccion.
+  // El formulario va arriba del listado (o del detalle): «Editar» y «+ Certificación»
+  // desde abajo lo abrian fuera de la vista. Sube solo hasta el.
+  const [formRef, subirAlFormulario] = useSubirAlFormulario();
+  // Abrir el detalle de una certificacion de abajo tambien empieza arriba.
+  useEffect(()=>{
+    if(sel && !nueva) scrollAppToTop("auto");
+  }, [sel?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const abrirNuevaCertificacion = (tipo="Certificación", obraId=null)=>{
     const obra = obras.find((x)=>x.id===obraId) || obras[0] || null;
     setEditId(null);
@@ -304,6 +313,7 @@ export default function Certificaciones({ctx}){
     }
     setForm(nuevo);
     setNueva(true);
+    subirAlFormulario();
   };
 
   const editarCertificacion = (cert)=>{
@@ -312,6 +322,7 @@ export default function Certificaciones({ctx}){
     setForm(buildCertForm(cert));
     setNueva(true);
     setSel(cert);
+    subirAlFormulario();
   };
 
   const guardar=()=>{
@@ -506,9 +517,10 @@ export default function Certificaciones({ctx}){
       )}
 
       {nueva&&(
-        <div style={{
+        <div ref={formRef} style={{
           ...CD,
           marginBottom: 24,
+          scrollMarginTop: 16,
         }}>
           {/* Cabecera como la del informe: titulo en su tamaño de siempre, la
               norma en gris debajo y los dos datos clave como texto, sin la

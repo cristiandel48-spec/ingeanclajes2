@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AvisoFlujo from "../../components/AvisoFlujo";
 import H1 from "../../components/ui/H1";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
@@ -29,6 +29,21 @@ export default function Catalogo({ ctx }) {
   const puedeEditar = esAdmin(membresia);
   const filas = filasEditables(catalogoItems);
   const [nuevo, setNuevo] = useState(false);
+  // El servicio nuevo se agrega al final de la tabla y el boton esta arriba:
+  // se baja hasta la fila y se deja el cursor en el nombre.
+  const [filaPorMostrar, setFilaPorMostrar] = useState(null);
+  useEffect(() => {
+    if (!filaPorMostrar) return undefined;
+    const id = requestAnimationFrame(() => {
+      const el = document.querySelector(`[data-fila-id="${CSS.escape(filaPorMostrar)}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.querySelector("input[data-campo='descripcion']")?.focus({ preventScroll: true });
+      }
+      setFilaPorMostrar(null);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [filaPorMostrar]);
 
   const cambiar = (id, campo, valor) =>
     setCatalogoItems((prev) => (prev || []).map((f) => (f.id === id ? { ...f, [campo]: valor } : f)));
@@ -39,6 +54,7 @@ export default function Catalogo({ ctx }) {
       id, categoria: "Servicios", descripcion: "", unidad: "Und", precioBase: 0, disponible: true,
     }]);
     setNuevo(true);
+    setFilaPorMostrar(id);
   };
 
   // La primera vez, para no teclear los dieciocho servicios a mano.
@@ -171,14 +187,14 @@ export default function Catalogo({ ctx }) {
               </div>
 
               {filas.map((fila) => (
-                <div key={fila.id} style={{ display: "grid", gridTemplateColumns: "1.1fr 2.4fr .8fr 1.1fr .7fr",
+                <div key={fila.id} data-fila-id={fila.id} style={{ display: "grid", gridTemplateColumns: "1.1fr 2.4fr .8fr 1.1fr .7fr",
                   gap: 8, padding: "7px 10px", alignItems: "center", borderBottom: "1px solid var(--border, rgba(0, 0, 0, 0.06))",
                   opacity: fila.disponible === false ? .55 : 1 }}>
                   <input value={fila.categoria || ""} disabled={!puedeEditar}
                     onChange={(e) => cambiar(fila.id, "categoria", e.target.value)}
                     style={{ ...SI, fontSize: 11.5, padding: "5px 8px" }} />
 
-                  <input value={fila.descripcion || ""} disabled={!puedeEditar}
+                  <input data-campo="descripcion" value={fila.descripcion || ""} disabled={!puedeEditar}
                     onChange={(e) => cambiar(fila.id, "descripcion", e.target.value)}
                     onBlur={(e) => cambiar(fila.id, "descripcion", normalizarMayusculas(e.target.value))}
                     placeholder="Nombre del servicio, como sale impreso"
@@ -218,7 +234,7 @@ export default function Catalogo({ ctx }) {
           {nuevo && (
             <div style={{ fontSize: 11.5, color: "#166534", background: "rgba(34, 197, 94, 0.15)",
               border: "1px solid rgba(34, 197, 94, 0.3)", borderRadius: 8, padding: "8px 11px", marginTop: 10 }}>
-              Servicio agregado al final. Ponle nombre y precio; se guarda solo.
+              Servicio agregado; el cursor ya está en su nombre. Ponle nombre y precio; se guarda solo.
             </div>
           )}
         </div>

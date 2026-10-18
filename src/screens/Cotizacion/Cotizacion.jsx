@@ -10,6 +10,7 @@ import EnviarCotizacion from "./EnviarCotizacion";
 import PropuestaEditor from "./PropuestaEditor";
 import SelectorCiudadColombia from "../../components/SelectorCiudadColombia";
 import { useMediaQuery, useIsMobile } from "../../hooks/useMediaQuery";
+import { useSubirAlFormulario } from "../../hooks/useSubirAlFormulario";
 import { TEXTOS_DOCUMENTO_DEFAULT, getTextosDocumento } from "../../lib/cotizacionTextos";
 import LBL from "../../components/ui/LBL";
 import { Button } from "../../components/ui";
@@ -237,6 +238,7 @@ export default function Cotizacion({ctx}){
   const agregarPropuesta = ()=>{
     const nueva = buildQuoteProposal({id:createQuoteProposalId(String(propuestasSnapshot.length+1)),nombre:getQuoteProposalLabel(propuestasSnapshot.length),formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,util:10,items:[],incluyeTexto:""},propuestasSnapshot.length);
     setPropuestas([...propuestasSnapshot,nueva]);
+    setPropuestaPorMostrar(nueva.id);
   };
 
   const duplicarPropuesta = ()=>{
@@ -244,6 +246,7 @@ export default function Cotizacion({ctx}){
     if(!base) return;
     const copia = buildQuoteProposal({...base,id:createQuoteProposalId(String(propuestasSnapshot.length+1)),nombre:`${base.nombre} (copia)`},propuestasSnapshot.length);
     setPropuestas([...propuestasSnapshot,copia]);
+    setPropuestaPorMostrar(copia.id);
   };
 
   const eliminarPropuesta = (id)=>{
@@ -513,6 +516,34 @@ export default function Cotizacion({ctx}){
   // pone la barra de arriba.
   const nuevaRef = useRef(nuevaCotizacion);
   useEffect(()=>{ nuevaRef.current = nuevaCotizacion; });
+
+  // El editor reemplaza al listado dentro del mismo <main>, que conservaba el
+  // scroll: con «Editar» en una cotizacion de abajo, o «Nueva cotización»
+  // desde la barra, se caia a media propuesta. El editor empieza arriba.
+  useEffect(()=>{
+    if(tab==="form") scrollAppToTop("auto");
+  }, [tab]);
+
+  // Dictar e Importar abren su panel arriba del formulario, pero los botones
+  // van en la barra fija y se pulsan desde cualquier altura: sin esto el panel
+  // salia fuera de la vista y solo se notaba que el boton desaparecia.
+  const [dictadoRef, subirAlDictado] = useSubirAlFormulario();
+  const [importarRef, subirAlImportar] = useSubirAlFormulario();
+  useEffect(()=>{ if(dictando) subirAlDictado(); }, [dictando, subirAlDictado]);
+  useEffect(()=>{ if(importando) subirAlImportar(); }, [importando, subirAlImportar]);
+
+  // Una propuesta nueva o duplicada se agrega al final, lejos del boton que
+  // la crea: se baja hasta ella.
+  const [propuestaPorMostrar,setPropuestaPorMostrar]=useState(null);
+  useEffect(()=>{
+    if(!propuestaPorMostrar) return undefined;
+    const id=requestAnimationFrame(()=>{
+      document.querySelector(`[data-propuesta-id="${CSS.escape(propuestaPorMostrar)}"]`)
+        ?.scrollIntoView({behavior:"smooth",block:"start"});
+      setPropuestaPorMostrar(null);
+    });
+    return ()=>cancelAnimationFrame(id);
+  }, [propuestaPorMostrar]);
 
   // En el editor la barra de arriba queda vacia: Volver y Guardar ya estan en
   // la barra fija del formulario, y tenerlos dos veces era ruido.
@@ -1265,15 +1296,21 @@ export default function Cotizacion({ctx}){
 
       {/* Armar hablando: rellena el formulario a partir de un dictado. El
           botón que lo abre está arriba, con el resto de acciones. */}
-      {dictando && <DictarCotizacion onAplicar={aplicarDictado} onCerrar={()=>setDictando(false)}/>}
+      {dictando && (
+        <div ref={dictadoRef} style={{scrollMarginTop:70}}>
+          <DictarCotizacion onAplicar={aplicarDictado} onCerrar={()=>setDictando(false)}/>
+        </div>
+      )}
 
       {/* Misma puerta que el dictado: cambia de donde sale el texto. */}
       {importando && (
-        <ImportarCotizacion
-          clientes={clientes}
-          onAplicar={(propuesta)=>{ aplicarDictado(propuesta); setImportando(false); }}
-          onCerrar={()=>setImportando(false)}
-        />
+        <div ref={importarRef} style={{scrollMarginTop:70}}>
+          <ImportarCotizacion
+            clientes={clientes}
+            onAplicar={(propuesta)=>{ aplicarDictado(propuesta); setImportando(false); }}
+            onCerrar={()=>setImportando(false)}
+          />
+        </div>
       )}
 
       {/* Identificación */}
@@ -1481,8 +1518,8 @@ export default function Cotizacion({ctx}){
       </div>
 
       {propuestas.map((propuesta,idx)=>(
+        <div key={propuesta.id} data-propuesta-id={propuesta.id} style={{scrollMarginTop:70}}>
         <PropuestaEditor
-          key={propuesta.id}
           propuesta={propuesta}
           indice={idx}
           total={propuestas.length}
@@ -1493,6 +1530,7 @@ export default function Cotizacion({ctx}){
           cl={cl}
           setCl={setCl}
         />
+        </div>
       ))}
 
       {/* Se oculta de la pantalla de creación/edición el bloque de Cierre (contacto, firma y datos adicionales)

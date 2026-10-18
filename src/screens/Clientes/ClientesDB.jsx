@@ -11,8 +11,12 @@ import { B, CD, SI, ST } from "../../styles/tokens";
 import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarFrase, normalizarMayusculas, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import { useIsMobile } from "../../hooks/useMediaQuery";
+import { useSubirAlFormulario } from "../../hooks/useSubirAlFormulario";
 export default function ClientesDB({ctx}){
   const isMobile = useIsMobile();
+  // El formulario va arriba de la lista: «Editar» en un cliente de abajo lo
+  // abria fuera de la vista y parecia que no hacia nada.
+  const [formRef, subirAlFormulario] = useSubirAlFormulario();
   const {clientes,setClientes,obras,cotizaciones,certs,setObras,setCotizaciones,setCerts}=ctx;
   const clienteBase={nombre:"",nit:"",telefono:"",ciudad:"",direccion:"",contacto:"",email:"",estado:"Activo",notas:""};
   const [showForm,setShowForm]=useState(false);
@@ -218,6 +222,19 @@ export default function ClientesDB({ctx}){
       notas:cli.notas||"",
     });
     setShowForm(true);
+    subirAlFormulario();
+  };
+
+  // Abre o cierra el formulario de cliente nuevo. Al abrirlo tambien sube.
+  const alternarNuevo=()=>{
+    if(showForm){
+      resetCliente();
+      return;
+    }
+    setForm(clienteBase);
+    setEditId(null);
+    setShowForm(true);
+    subirAlFormulario();
   };
 
   // El id se saca del numero mas alto que ya existe, no de cuantos clientes
@@ -243,7 +260,7 @@ export default function ClientesDB({ctx}){
   const nuevoRef = useRef(null);
   useEffect(()=>{
     importarRef.current = importarClientes;
-    nuevoRef.current = ()=>{ setShowForm((v)=>!v); if(showForm) resetCliente(); };
+    nuevoRef.current = alternarNuevo;
   });
 
   // Los botones viven en la barra de arriba, no en un titulo propio.
@@ -348,10 +365,7 @@ export default function ClientesDB({ctx}){
                 alignItems: "center",
                 gap: 6,
               }}
-              onClick={() => {
-                setShowForm((v) => !v);
-                if (showForm) resetCliente();
-              }}
+              onClick={alternarNuevo}
             >
               <span>{showForm ? "✕" : "+"}</span>
               <span>{showForm ? "Cerrar formulario" : "Nuevo cliente"}</span>
@@ -362,11 +376,11 @@ export default function ClientesDB({ctx}){
 
       {showForm && (
         <div
+          ref={formRef}
           style={{
             ...CD,
             marginBottom: 20,
-            border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
-            boxShadow: "0 4px 20px -4px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.02)",
+            scrollMarginTop: 16,
           }}
         >
           <div style={ST}>{editId ? "Editar cliente" : "Nuevo cliente"}</div>

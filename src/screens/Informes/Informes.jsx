@@ -8,7 +8,7 @@ import PrintHeader from "../../components/print/PrintHeader";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import { B, CD, SI, ST } from "../../styles/tokens";
-import { fmtD, fmtL, today } from "../../lib/format";
+import { fmtD, fmtL, scrollAppToTop, today } from "../../lib/format";
 import { openPrintTab } from "../../lib/abrirImpresion";
 import { buildInformePrintHtml } from "../../lib/informePrint";
 import { descargarInformePdf } from "../../lib/informePdf";
@@ -497,6 +497,13 @@ export default function Informes({ctx}){
 
   const abrirNuevoInformeRef = useRef(null);
   useEffect(()=>{ abrirNuevoInformeRef.current = abrirNuevoInforme; });
+
+  // El editor y la vista de un informe reemplazan al listado dentro del mismo
+  // <main>, que conservaba el scroll: «Editar» o «Ver» en un informe de abajo
+  // abria a media pagina. Al cambiar de vista se empieza arriba.
+  useEffect(()=>{
+    if(nuevo || sel) scrollAppToTop("auto");
+  }, [nuevo, editId, sel?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const enriquecerInforme = (inf) => {
     if (!inf) return inf;

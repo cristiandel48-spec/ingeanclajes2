@@ -1355,6 +1355,8 @@ export default function Agenda({ ctx }) {
   // Modal de creación / edición de compromiso normal
   const [modalAbierto, setModalAbierto] = useState(false);
   const [itemEdicion, setItemEdicion] = useState(null);
+  // La hoja del compromiso sube desde abajo en el telefono.
+  const isMobile = useIsMobile();
 
   const [formTipo, setFormTipo] = useState("visita");
   const [formTitulo, setFormTitulo] = useState("");
@@ -2284,338 +2286,284 @@ export default function Agenda({ ctx }) {
       )}
 
       {/* ==================================================================== */}
-      {/* MODAL CREAR / EDITAR COMPROMISO ESTILO APPLE */}
+      {/* MODAL CREAR / EDITAR COMPROMISO                                       */}
       {/* ==================================================================== */}
-      {modalAbierto && (
+      {/* Hoja al estilo de iOS: cabecera y botones fijos, y solo el contenido
+          se desplaza. Antes era una caja centrada sin alto maximo: con el
+          formulario mas alto que la pantalla se salia por arriba y por abajo,
+          y los botones de guardar quedaban fuera de la vista. En el telefono
+          sube desde abajo, como las hojas del sistema. */}
+      {modalAbierto && (() => {
+        const etiqueta = { fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 6 };
+        const campo = { ...SI, borderRadius: 12 };
+        const dosColumnas = { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 };
+        const tipos = Object.entries(TIPOS_COMPROMISO);
+        return (
         <div
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(15, 23, 42, 0.45)",
-            backdropFilter: "blur(4px)",
+            background: "rgba(0, 0, 0, 0.32)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
             display: "flex",
-            alignItems: "center",
+            alignItems: isMobile ? "flex-end" : "center",
             justifyContent: "center",
             zIndex: 9999,
-            padding: 16,
+            padding: isMobile ? 0 : 20,
           }}
           onClick={() => setModalAbierto(false)}
         >
           <div
+            data-no-wrap="true"
+            role="dialog"
+            aria-modal="true"
+            aria-label={itemEdicion ? "Editar compromiso" : "Nuevo compromiso"}
             style={{
               background: "var(--surface, #ffffff)",
-              borderRadius: 16,
+              borderRadius: isMobile ? "22px 22px 0 0" : 22,
               width: "100%",
-              maxWidth: 540,
-              padding: 24,
-              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-              border: "1px solid var(--border, #e2e8f0)",
+              maxWidth: 580,
+              maxHeight: isMobile ? "92dvh" : "min(88dvh, 860px)",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+              boxShadow: "0 30px 60px -12px rgba(0, 0, 0, 0.35)",
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: "var(--text-main, #0f172a)" }}>
-                {itemEdicion ? "Editar Compromiso" : "Nuevo Compromiso para Camila"}
+            {/* Cabecera fija */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: isMobile ? "16px 18px 12px" : "20px 24px 14px", flexShrink: 0 }}>
+              <h3 style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.01em", margin: 0, color: "var(--text-primary)" }}>
+                {itemEdicion ? "Editar compromiso" : "Nuevo compromiso"}
               </h3>
               <button
                 type="button"
                 onClick={() => setModalAbierto(false)}
+                aria-label="Cerrar"
                 style={{
-                  background: "transparent",
-                  border: "none",
-                  fontSize: 16,
-                  cursor: "pointer",
-                  color: "var(--text-muted, #94a3b8)",
+                  width: 30, height: 30, borderRadius: "50%", border: "none", cursor: "pointer",
+                  background: "var(--fill)", color: "var(--text-secondary)", fontSize: 13,
+                  display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                 }}
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={guardarCompromiso} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {/* Selector de Tipo de Compromiso */}
-              <div>
-                <label style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted, #64748b)", display: "block", marginBottom: 6 }}>
-                  TIPO DE COMPROMISO
-                </label>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
-                  {Object.entries(TIPOS_COMPROMISO).map(([tipoKey, conf]) => (
-                    <button
-                      key={tipoKey}
-                      type="button"
-                      onClick={() => setFormTipo(tipoKey)}
-                      style={{
-                        padding: "8px 6px",
-                        fontSize: 11.5,
-                        fontWeight: 600,
-                        borderRadius: 8,
-                        border: formTipo === tipoKey ? `2px solid ${conf.color}` : "1px solid var(--border, #e2e8f0)",
-                        background: formTipo === tipoKey ? conf.bg : "var(--surface, #ffffff)",
-                        color: formTipo === tipoKey ? conf.color : "var(--text-muted, #64748b)",
-                        cursor: "pointer",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        gap: 4,
-                      }}
-                    >
-                      <IconoTipo tipo={tipoKey} size={14} />
-                      {conf.label.split(" ")[0]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Título y Obra */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <form data-no-wrap="true" onSubmit={guardarCompromiso} style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: 1 }}>
+              {/* Contenido: lo unico que se desplaza */}
+              <div data-no-wrap="true" style={{ overflowY: "auto", WebkitOverflowScrolling: "touch", padding: isMobile ? "4px 18px 18px" : "4px 24px 20px", display: "flex", flexDirection: "column", gap: 18 }}>
+                {/* Tipo de compromiso: control segmentado. Con cinco tipos en una
+                    rejilla de cuatro, el quinto caia solo en otra fila. */}
                 <div>
-                  <label style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted, #64748b)", display: "block", marginBottom: 4 }}>
-                    OBRA / PROYECTO
-                  </label>
-                  <input
-                    type="text"
-                    value={formObra}
-                    onChange={(e) => setFormObra(e.target.value)}
-                    placeholder="Ej. Edificio Samanes"
-                    style={SI}
-                    required
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted, #64748b)", display: "block", marginBottom: 4 }}>
-                    CLIENTE / EMPRESA
-                  </label>
-                  <input
-                    type="text"
-                    value={formCliente}
-                    onChange={(e) => setFormCliente(e.target.value)}
-                    placeholder="Ej. Constructora Capital"
-                    style={SI}
-                  />
-                </div>
-              </div>
-
-              {/* Fecha y Hora */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <div>
-                  <label style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted, #64748b)", display: "block", marginBottom: 4 }}>
-                    FECHA
-                  </label>
-                  <input
-                    type="date"
-                    value={formFecha}
-                    onChange={(e) => setFormFecha(e.target.value)}
-                    style={SI}
-                    required
-                  />
-                  {getFestivoColombia(formFecha) && (
-                    <div
-                      style={{
-                        marginTop: 5,
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: "#991b1b",
-                        background: "rgba(254, 242, 242, 0.95)",
-                        border: "1px solid rgba(252, 165, 165, 0.7)",
-                        borderRadius: 6,
-                        padding: "3px 8px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                      }}
-                    >
-                      <span>🇨🇴</span>
-                      <span>Festivo oficial: {getFestivoColombia(formFecha).nombre}</span>
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                    <label style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted, #64748b)" }}>
-                      HORA (RELOJ)
-                    </label>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: "#c2410c",
-                        background: "#fff7ed",
-                        padding: "1px 7px",
-                        borderRadius: 6,
-                        border: "1px solid #fed7aa",
-                      }}
-                    >
-                      🕒 {horaA12h(formHora)}
-                    </span>
-                  </div>
-                  <input
-                    type="time"
-                    value={formHora}
-                    onChange={(e) => setFormHora(e.target.value)}
+                  <span style={etiqueta}>Tipo de compromiso</span>
+                  <div
+                    className="no-collapse-grid"
+                    role="radiogroup"
+                    aria-label="Tipo de compromiso"
                     style={{
-                      ...SI,
-                      cursor: "pointer",
-                      fontWeight: 700,
-                      fontSize: 13.5,
+                      display: "grid",
+                      gridTemplateColumns: `repeat(${tipos.length}, minmax(0, 1fr))`,
+                      gap: 2, padding: 3, borderRadius: 12, background: "var(--fill)",
+                      overflowX: "auto",
                     }}
-                    required
-                  />
-                  {/* Horarios rápidos habituales en obra y comités */}
-                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
-                    {[
-                      { l: "6:00 AM", v: "06:00" },
-                      { l: "7:00 AM", v: "07:00" },
-                      { l: "8:00 AM", v: "08:00" },
-                      { l: "9:00 AM", v: "09:00" },
-                      { l: "10:00 AM", v: "10:00" },
-                      { l: "2:00 PM", v: "14:00" },
-                      { l: "3:30 PM", v: "15:30" },
-                    ].map((h) => {
-                      const sel = formHora === h.v;
+                  >
+                    {tipos.map(([tipoKey, conf]) => {
+                      const activo = formTipo === tipoKey;
                       return (
                         <button
-                          key={h.v}
+                          key={tipoKey}
                           type="button"
-                          onClick={() => setFormHora(h.v)}
+                          role="radio"
+                          aria-checked={activo}
+                          onClick={() => setFormTipo(tipoKey)}
                           style={{
-                            fontSize: 10.5,
-                            fontWeight: sel ? 700 : 500,
-                            padding: "3px 6px",
-                            borderRadius: 6,
-                            border: sel ? "1px solid #f97316" : "1px solid var(--border, #e2e8f0)",
-                            background: sel ? "#fff7ed" : "var(--surface, #ffffff)",
-                            color: sel ? "#c2410c" : "var(--text-muted, #64748b)",
+                            padding: isMobile ? "8px 2px" : "8px 4px",
+                            fontSize: 11.5,
+                            fontWeight: activo ? 600 : 500,
+                            borderRadius: 9,
+                            border: "none",
+                            background: activo ? "var(--surface)" : "transparent",
+                            boxShadow: activo ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+                            color: activo ? "var(--text-primary)" : "var(--text-secondary)",
                             cursor: "pointer",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: 3,
+                            minWidth: 0,
+                            transition: "background .15s ease, box-shadow .15s ease",
                           }}
                         >
-                          {h.l}
+                          <span style={{ color: activo ? conf.color : "inherit", display: "inline-flex" }}>
+                            <IconoTipo tipo={tipoKey} size={15} />
+                          </span>
+                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>
+                            {conf.label.split(" ")[0]}
+                          </span>
                         </button>
                       );
                     })}
                   </div>
                 </div>
+
+                {/* Obra y cliente */}
+                <div style={dosColumnas}>
+                  <div>
+                    <label style={etiqueta}>Obra o proyecto</label>
+                    <input type="text" value={formObra} onChange={(e) => setFormObra(e.target.value)}
+                      placeholder="Ej. Edificio Samanes" style={campo} required />
+                  </div>
+                  <div>
+                    <label style={etiqueta}>Cliente o empresa</label>
+                    <input type="text" value={formCliente} onChange={(e) => setFormCliente(e.target.value)}
+                      placeholder="Ej. Constructora Capital" style={campo} />
+                  </div>
+                </div>
+
+                {/* Fecha y hora */}
+                <div style={dosColumnas}>
+                  <div>
+                    <label style={etiqueta}>Fecha</label>
+                    <input type="date" value={formFecha} onChange={(e) => setFormFecha(e.target.value)} style={campo} required />
+                    {getFestivoColombia(formFecha) && (
+                      <div style={{ marginTop: 6, fontSize: 11.5, color: "var(--danger-text)" }}>
+                        Festivo: {getFestivoColombia(formFecha).nombre}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <label style={etiqueta}>Hora</label>
+                      <span style={{ fontSize: 12, color: "var(--text-tertiary)", fontVariantNumeric: "tabular-nums" }}>
+                        {horaA12h(formHora)}
+                      </span>
+                    </div>
+                    <input type="time" value={formHora} onChange={(e) => setFormHora(e.target.value)}
+                      style={{ ...campo, cursor: "pointer" }} required />
+                    {/* Horas habituales en obra y comites */}
+                    <div style={{ display: "flex", gap: 2, flexWrap: "wrap", marginTop: 6, marginLeft: -4 }}>
+                      {[
+                        { l: "6:00 AM", v: "06:00" },
+                        { l: "7:00 AM", v: "07:00" },
+                        { l: "8:00 AM", v: "08:00" },
+                        { l: "9:00 AM", v: "09:00" },
+                        { l: "10:00 AM", v: "10:00" },
+                        { l: "2:00 PM", v: "14:00" },
+                        { l: "3:30 PM", v: "15:30" },
+                      ].map((h) => {
+                        const sel = formHora === h.v;
+                        return (
+                          <button
+                            key={h.v}
+                            type="button"
+                            onClick={() => setFormHora(h.v)}
+                            aria-pressed={sel}
+                            style={{
+                              fontSize: 11.5,
+                              fontWeight: sel ? 600 : 400,
+                              padding: "4px 9px",
+                              borderRadius: 980,
+                              border: "none",
+                              background: sel ? "var(--text-primary)" : "transparent",
+                              color: sel ? "var(--surface)" : "var(--text-secondary)",
+                              cursor: "pointer",
+                              fontVariantNumeric: "tabular-nums",
+                            }}
+                          >
+                            {h.l}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contacto y celular */}
+                <div style={dosColumnas}>
+                  <div>
+                    <label style={etiqueta}>Contacto o residente</label>
+                    <input type="text" value={formContacto} onChange={(e) => setFormContacto(e.target.value)}
+                      placeholder="Ej. Ing. Juan Buitrago" style={campo} />
+                  </div>
+                  <div>
+                    <label style={etiqueta}>Celular (WhatsApp)</label>
+                    <input type="tel" inputMode="tel" value={formTelefono} onChange={(e) => setFormTelefono(e.target.value)}
+                      placeholder="Ej. 3160240823" style={campo} />
+                  </div>
+                </div>
+
+                {/* Notas */}
+                <div>
+                  <label style={etiqueta}>Objetivo o notas técnicas</label>
+                  <textarea value={formNotas} onChange={(e) => setFormNotas(e.target.value)}
+                    placeholder="Detalles sobre anclajes, líneas de vida o temas a coordinar…"
+                    rows={3} style={{ ...campo, resize: "vertical", lineHeight: 1.5 }} />
+                </div>
+
+                {formTipo === "visita" && (
+                  <div>
+                    <label style={etiqueta}>Requerimientos SST y permisos de ingreso</label>
+                    <input type="text" value={formSst} onChange={(e) => setFormSst(e.target.value)}
+                      placeholder="Ej. ARL vigente, cartas de acceso, curso de alturas" style={campo} />
+                  </div>
+                )}
+
+                {formTipo === "reunion" && (
+                  <div>
+                    <label style={etiqueta}>Enlace de la reunión (Meet o Teams)</label>
+                    <input type="url" value={formLink} onChange={(e) => setFormLink(e.target.value)}
+                      placeholder="https://meet.google.com/…" style={campo} />
+                  </div>
+                )}
+
+                {/* Estrellita: solo para Cristian */}
+                {esCristian && (
+                  <label
+                    style={{
+                      display: "flex", alignItems: "center", gap: 12, padding: "12px 14px",
+                      borderRadius: 14, background: "var(--fill)", cursor: "pointer",
+                    }}
+                  >
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ display: "block", fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
+                        Fecha especial
+                      </span>
+                      <span style={{ display: "block", fontSize: 11.5, color: "var(--text-tertiary)", marginTop: 1 }}>
+                        Se marca con estrellita. Solo la ven Camila y tú.
+                      </span>
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={formEsEspecial}
+                      onChange={(e) => setFormEsEspecial(e.target.checked)}
+                      style={{ accentColor: "var(--text-primary)", width: 18, height: 18, cursor: "pointer", flexShrink: 0 }}
+                    />
+                  </label>
+                )}
               </div>
 
-              {/* Contacto y Celular */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <div>
-                  <label style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted, #64748b)", display: "block", marginBottom: 4 }}>
-                    CONTACTO / RESIDENTE
-                  </label>
-                  <input
-                    type="text"
-                    value={formContacto}
-                    onChange={(e) => setFormContacto(e.target.value)}
-                    placeholder="Ej. Ing. Juan Buitrago"
-                    style={SI}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted, #64748b)", display: "block", marginBottom: 4 }}>
-                    CELULAR (WHATSAPP)
-                  </label>
-                  <input
-                    type="text"
-                    value={formTelefono}
-                    onChange={(e) => setFormTelefono(e.target.value)}
-                    placeholder="Ej. 3160240823"
-                    style={SI}
-                  />
-                </div>
-              </div>
-
-              {/* Notas y Requisitos SST */}
-              <div>
-                <label style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted, #64748b)", display: "block", marginBottom: 4 }}>
-                  OBJETIVO DE LA VISITA / NOTAS TÉCNICAS
-                </label>
-                <textarea
-                  value={formNotas}
-                  onChange={(e) => setFormNotas(e.target.value)}
-                  placeholder="Detalles sobre anclajes, líneas de vida o temas a coordinar..."
-                  rows={2}
-                  style={{ ...SI, resize: "vertical" }}
-                />
-              </div>
-
-              {formTipo === "visita" && (
-                <div>
-                  <label style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted, #64748b)", display: "block", marginBottom: 4 }}>
-                    REQUERIMIENTOS SST / PERMISOS DE INGRESO
-                  </label>
-                  <input
-                    type="text"
-                    value={formSst}
-                    onChange={(e) => setFormSst(e.target.value)}
-                    placeholder="Ej. ARL vigente, cartas de acceso, curso de alturas"
-                    style={SI}
-                  />
-                </div>
-              )}
-
-              {formTipo === "reunion" && (
-                <div>
-                  <label style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-muted, #64748b)", display: "block", marginBottom: 4 }}>
-                    ENLACE DE REUNIÓN VIRTUAL (MEET / TEAMS)
-                  </label>
-                  <input
-                    type="text"
-                    value={formLink}
-                    onChange={(e) => setFormLink(e.target.value)}
-                    placeholder="https://meet.google.com/..."
-                    style={SI}
-                  />
-                </div>
-              )}
-
-
-              {/* Opción de estrellita para Cristian */}
-              {esCristian && (
-                <label
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: "9px 12px",
-                    borderRadius: 8,
-                    background: formEsEspecial ? "#fef3c7" : "var(--surface-subtle, #f8fafc)",
-                    border: formEsEspecial ? "1px solid #fde68a" : "1px solid var(--border, #e2e8f0)",
-                    cursor: "pointer",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: formEsEspecial ? "#92400e" : "var(--text-main, #0f172a)",
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={formEsEspecial}
-                    onChange={(e) => setFormEsEspecial(e.target.checked)}
-                    style={{ accentColor: "#f59e0b", width: 16, height: 16, cursor: "pointer" }}
-                  />
-                  <span>⭐ Marcar con Estrellita como Fecha Especial (Solo visible para Camila y tú)</span>
-                </label>
-              )}
-
-              {/* Botones de acción del modal */}
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 10 }}>
-                <button
-                  type="button"
-                  style={{
-                    ...B("var(--surface-subtle, #f1f5f9)", "var(--text-muted, #64748b)"),
-                    border: "1px solid var(--border, #e2e8f0)",
-                  }}
-                  onClick={() => setModalAbierto(false)}
-                >
+              {/* Botones fijos: siempre a la vista */}
+              <div
+                style={{
+                  display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8,
+                  padding: isMobile ? "12px 18px calc(12px + env(safe-area-inset-bottom))" : "14px 24px",
+                  borderTop: "1px solid var(--separator)", flexShrink: 0, background: "var(--surface)",
+                }}
+              >
+                <button type="button" className="ui-btn ui-btn--texto" onClick={() => setModalAbierto(false)}>
                   Cancelar
                 </button>
-                <button type="submit" style={B("#f47c20")}>
-                  {itemEdicion ? "Guardar Cambios" : "Guardar Compromiso"}
+                <button type="submit" className="ui-btn ui-btn--oscuro" style={isMobile ? { flex: 1 } : undefined}>
+                  {itemEdicion ? "Guardar cambios" : "Guardar compromiso"}
                 </button>
               </div>
             </form>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Modal para poner / editar Estrellita en Fecha Especial (Cristian para Camila) */}
       <ModalEstrellitaEspecial

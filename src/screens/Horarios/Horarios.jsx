@@ -14,9 +14,43 @@ import { puedeCrearPersonal } from "../../lib/permisos";
 import { normalizarMayusculas } from "../../lib/normalizarEntrada";
 import { resolverAutorGuardado } from "../../lib/autorAuditoria";
 import { useIsMobile } from "../../hooks/useMediaQuery";
+import { useSubirAlFormulario } from "../../hooks/useSubirAlFormulario";
 
 // Aire debajo de cada bloque. El kit no lo trae: lo pone quien coloca la pieza.
 const SEPARA = { marginBottom: ESPACIO.lg };
+
+// Fechas como texto AAAA-MM-DD, calculadas con la hora local. Con
+// toISOString una fecha de madrugada podia saltar al dia anterior por la zona
+// horaria.
+const aIso = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const desdeIso = (iso) => new Date(`${iso}T12:00:00`);
+const sumarDias = (iso, n) => {
+  const d = desdeIso(iso);
+  d.setDate(d.getDate() + n);
+  return aIso(d);
+};
+
+// Los dias de un rango, sin domingos salvo que se pidan. Con «hasta» vacio o
+// anterior al inicio es un solo dia, que es el caso de siempre. El tope evita
+// crear cientos de turnos por un año mal escrito.
+const MAX_DIAS_RANGO = 31;
+const diasDelRango = (desde, hasta, conDomingos) => {
+  if (!desde) return [];
+  if (!hasta || hasta <= desde) return [desde];
+  const dias = [];
+  for (let iso = desde; iso <= hasta && dias.length < MAX_DIAS_RANGO; iso = sumarDias(iso, 1)) {
+    if (conDomingos || desdeIso(iso).getDay() !== 0) dias.push(iso);
+  }
+  return dias;
+};
+
+// Jornadas de siempre, para no teclear las horas cada vez.
+const JORNADAS = [
+  { etiqueta: "Jornada 7–5", inicio: "07:00", fin: "17:00" },
+  { etiqueta: "Mañana 7–12", inicio: "07:00", fin: "12:00" },
+  { etiqueta: "Tarde 1–5", inicio: "13:00", fin: "17:00" },
+];
 
 // Recuadro tenue para agrupar campos dentro de una tarjeta, del mismo tono que
 // usa el Dashboard para sus bloques de alertas.
@@ -84,6 +118,10 @@ export default function Horarios({ctx}){
     empleadoIds:[],
     obraId:firstObraId,
     fecha:today(),
+    // Para poner a la cuadrilla toda la semana sin repetir el formulario por
+    // dia. Vacio = solo el dia de arriba.
+    fechaHasta:"",
+    incluirDomingos:false,
     turno1Inicio:"07:00",
     turno1Fin:"17:00",
     tarea1:"",
@@ -139,26 +177,63 @@ export default function Horarios({ctx}){
     return configs.filter(item=>item.turno && item.tarea);
   };
 
-  // El mismo turno para cada persona marcada: es lo que evita repetir el
-  // formulario una vez por trabajador.
+  // El mismo turno para cada persona marcada y cada dia del rango: es lo que
+  // evita repetir el formulario una vez por trabajador y una vez por dia.
   const buildTurnosPayload=(baseForm)=>{
     const turnos = buildTurnos(baseForm);
-    return (baseForm.empleadoIds||[]).flatMap((empleadoId)=>
-      turnos.map((item)=>({
-        empleadoId,
-        obraId: baseForm.obraId,
-        fecha: baseForm.fecha,
-        turno: item.turno,
-        tarea: item.tarea,
-      }))
+    const fechas = diasDelRango(baseForm.fecha, baseForm.fechaHasta, baseForm.incluirDomingos);
+    return fechas.flatMap((fecha)=>
+      (baseForm.empleadoIds||[]).flatMap((empleadoId)=>
+        turnos.map((item)=>({
+          empleadoId,
+          obraId: baseForm.obraId,
+          fecha,
+          turno: item.turno,
+          tarea: item.tarea,
+        }))
+      )
     );
   };
 
   // El texto que le llega a una persona. Vive aparte porque lo usan dos cosas:
   // el boton que abre su WhatsApp y la exportacion para el envio automatico.
   const armarMensajePersonal=(e,o,f,turnos)=>{
+    const lineaTurno=(item,idx)=>(idx+1) + ". " + (fmtTurno12Local(item.turno)) + (item.tarea ? " - " + (item.tarea) : "");
+    // Varios dias en un solo mensaje: los turnos van agrupados por fecha. Si
+    // no, la persona recibia una lista de horas sin saber de que dia era cada una.
+    const fechas=[...new Set(turnos.map((t)=>t.fecha||f))].sort();
+    if(fechas.length>1){
+      // Lo normal es el mismo turno todos los dias: entonces va una sola vez,
+      // con la lista de dias, en vez de repetirlo dia por dia.
+      const firmaDe=(fecha)=>turnos.filter((t)=>(t.fecha||f)===fecha).map((t)=>`${t.turno}|${t.tarea}`).sort().join("§");
+      if(fechas.every((fecha)=>firmaDe(fecha)===firmaDe(fechas[0]))){
+        const diasTexto=fechas.map((fecha)=>fmtD(fecha)||fecha).join(", ");
+        return [
+          "Hola " + (e.nombre) + ", has sido asignado a la obra *" + (normalizarMayusculas(o.proyecto)) + "* del cliente *" + (normalizarMayusculas(o.cliente)) + "* en *" + (o.direccion||o.ciudad) + "* estos " + fechas.length + " días:",
+          "*" + diasTexto + "*",
+          "",
+          "Turnos asignados (cada día):",
+          turnos.filter((t)=>(t.fecha||f)===fechas[0]).map(lineaTurno).join("\n"),
+          "",
+          "Por favor confirma tu asistencia.",
+          "*INGEANCLAJES S.A.S*",
+        ].join("\n");
+      }
+      const porDia=fechas.map((fecha)=>[
+        "*" + (fmtL(fecha) || fecha) + "*",
+        ...turnos.filter((t)=>(t.fecha||f)===fecha).map(lineaTurno),
+      ].join("\n"));
+      return [
+        "Hola " + (e.nombre) + ", has sido asignado a la obra *" + (normalizarMayusculas(o.proyecto)) + "* del cliente *" + (normalizarMayusculas(o.cliente)) + "* en *" + (o.direccion||o.ciudad) + "* estos " + fechas.length + " días:",
+        "",
+        porDia.join("\n\n"),
+        "",
+        "Por favor confirma tu asistencia.",
+        "*INGEANCLAJES S.A.S*",
+      ].join("\n");
+    }
     const fechaMsg = fmtD(f) || f;
-    const detalle = turnos.map((item,idx)=>(idx+1) + ". " + (fmtTurno12Local(item.turno)) + (item.tarea ? " - " + (item.tarea) : "")).join("\n");
+    const detalle = turnos.map(lineaTurno).join("\n");
     // Las lineas llevan saltos de verdad. Antes se escribian escapados y
     // WhatsApp los mostraba tal cual: el mensaje llegaba como un bloque con
     // las barras a la vista.
@@ -270,11 +345,100 @@ export default function Horarios({ctx}){
     }
 
     setShowF(false);
+    // La lista de abajo pasa al dia de lo que se acaba de guardar. Antes se
+    // quedaba en el que estaba y, al asignar para mañana, parecia que no se
+    // habia guardado nada.
+    setFechaF(form.fecha);
     setForm({...FORM_VACIO, obraId:form.obraId, fecha:form.fecha});
+  };
+
+  // Abre el formulario en el dia que se esta mirando -lo normal es armar el
+  // dia que se tiene en pantalla- y lleva la vista hasta el.
+  const [formRef, subirAlFormulario] = useSubirAlFormulario();
+  const abrirFormulario=()=>{
+    if(showF){ setShowF(false); return; }
+    setForm((prev)=>({...prev, fecha:fechaF, fechaHasta:""}));
+    setShowF(true);
+    subirAlFormulario();
+  };
+
+  // Copiar el dia anterior: la cuadrilla casi siempre repite. Se busca el
+  // ultimo dia con turnos en las dos semanas anteriores al que se esta viendo.
+  const diaAnteriorConTurnos = useMemo(()=>{
+    for(let i=1;i<=14;i++){
+      const f=sumarDias(fechaF,-i);
+      if(horarios.some((h)=>h.fecha===f)) return f;
+    }
+    return null;
+  }, [fechaF, horarios]);
+
+  const copiarDiaAnterior=()=>{
+    if(!diaAnteriorConTurnos) return;
+    const origen=horarios.filter((h)=>h.fecha===diaAnteriorConTurnos);
+    const nuevos=origen
+      .filter((h)=>obras.some((o)=>o.id===h.obraId) && empleados.some((e)=>e.id===h.empleadoId))
+      .map((h)=>({empleadoId:h.empleadoId, obraId:h.obraId, fecha:fechaF, turno:h.turno, tarea:h.tarea}))
+      .filter((p)=>!horarios.some((h)=>
+        h.empleadoId===p.empleadoId && h.obraId===p.obraId && h.fecha===p.fecha && h.turno===p.turno
+      ));
+    if(!nuevos.length){
+      setNotif({ok:false,texto:`Los turnos del ${fmtD(diaAnteriorConTurnos)} ya están en este día.`});
+      setTimeout(()=>setNotif(null),7000);
+      return;
+    }
+    const personas=new Set(nuevos.map((n)=>n.empleadoId)).size;
+    if(!window.confirm(
+      `¿Copiar ${nuevos.length} turno(s) de ${personas} persona(s) del ${fmtD(diaAnteriorConTurnos)} al ${fmtD(fechaF)}?\n\n` +
+      "Quedan iguales: obra, horario y tarea. Después puedes quitar o cambiar los que no aplican."
+    )) return;
+
+    const autorActual = resolverAutorGuardado(ctx?.membresia);
+    const ahoraIso = new Date().toISOString();
+    setHorarios((p)=>[
+      ...p,
+      ...nuevos.map((item,idx)=>({
+        id:"H" + (Date.now()) + "c" + (idx),
+        ...item,
+        creadoPor: ctx?.membresia?.userId || null,
+        creadoPorNombre: autorActual || "Camila Sepúlveda",
+        creadoEn: ahoraIso,
+        modificadoPor: ctx?.membresia?.userId || null,
+        modificadoPorNombre: autorActual || "Camila Sepúlveda",
+        modificadoEn: ahoraIso,
+      })),
+    ]);
+
+    // Igual que al guardar un grupo: los avisos quedan listos para mandarse.
+    const claves=[...new Set(nuevos.map((n)=>`${n.empleadoId}|${n.obraId}`))];
+    setPorAvisar(claves.map((clave)=>{
+      const [empleadoId,obraId]=clave.split("|");
+      return {empleadoId, obraId, fecha:fechaF,
+        turnos:nuevos.filter((n)=>n.empleadoId===empleadoId && n.obraId===obraId), enviado:false};
+    }));
+    setNotif({ok:true,texto:`Se copiaron ${nuevos.length} turno(s) del ${fmtD(diaAnteriorConTurnos)}. Avísales abajo.`});
+    setTimeout(()=>setNotif(null),10000);
   };
 
   const turnosBase = buildTurnos(form);
   const previewTurnos = buildTurnosPayload(form);
+  const fechasForm = diasDelRango(form.fecha, form.fechaHasta, form.incluirDomingos);
+
+  // Quien ya tiene turno ese dia en OTRA obra. No se bloquea -a veces se
+  // reparte el dia entre dos obras-, pero se avisa antes de guardar.
+  const choques = seleccionados.flatMap((e)=>
+    horarios
+      .filter((h)=>h.empleadoId===e.id && fechasForm.includes(h.fecha) && h.obraId!==form.obraId)
+      .map((h)=>({nombre:e.nombre, fecha:h.fecha, turno:h.turno, obra:obras.find((o)=>o.id===h.obraId)}))
+  );
+
+  // Tareas que ya se usaron en esta obra, las mas recientes primero: casi
+  // siempre se repite la de ayer.
+  const tareasSugeridas = [...new Set(
+    horarios
+      .filter((h)=>h.obraId===form.obraId && String(h.tarea||"").trim())
+      .sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)))
+      .map((h)=>h.tarea)
+  )].slice(0,12);
   // Con turnos recien guardados sin avisar, lo que toca hacer es avisarles.
   const avisarEsLoSiguiente = porAvisar.length > 0;
 
@@ -442,7 +606,7 @@ export default function Horarios({ctx}){
               // es avisarle a la gente, no asignar otro.
               variante={showF || avisarEsLoSiguiente ? "secondary" : "primary"}
               icono={showF ? "cerrar" : "mas"}
-              onClick={() => setShowF(!showF)}
+              onClick={abrirFormulario}
             >
               {showF ? "Cerrar" : "Asignar turnos"}
             </Button>
@@ -499,14 +663,14 @@ export default function Horarios({ctx}){
         <Callout tono={notif.ok ? "exito" : "peligro"} style={SEPARA}>{notif.texto}</Callout>
       )}
       {showF&&(
-        <Card ajustado style={SEPARA}>
+        <Card ajustado style={{...SEPARA,scrollMarginTop:16}} ref={formRef}>
           <CabeceraCard
             titulo="Nuevo horario"
             descripcion="Al guardar se le avisa por WhatsApp a cada persona marcada."
           />
           {/* La obra va primero: de ella sale el atajo para marcar al equipo
               completo, que es lo que evita repetir el formulario por persona. */}
-          <div style={{display:"grid",gridTemplateColumns:isMobile ? "1fr" : "1fr 1fr",gap:ESPACIO.md,marginBottom:ESPACIO.lg}}>
+          <div style={{display:"grid",gridTemplateColumns:isMobile ? "1fr" : "2fr 1fr 1fr",gap:ESPACIO.md,marginBottom:ESPACIO.sm}}>
             <Input
               label="Obra"
               como="select"
@@ -521,7 +685,24 @@ export default function Horarios({ctx}){
               value={form.fecha}
               onChange={e=>setForm({...form,fecha:e.target.value})}
             />
+            <Input
+              label="Hasta (opcional)"
+              type="date"
+              value={form.fechaHasta}
+              min={form.fecha}
+              onChange={e=>setForm({...form,fechaHasta:e.target.value})}
+              ayuda={fechasForm.length>1
+                ? `${fechasForm.length} días${form.incluirDomingos?"":", sin domingos"}`
+                : "Para varios días seguidos"}
+            />
           </div>
+          {fechasForm.length>1 && (
+            <label style={{display:"inline-flex",alignItems:"center",gap:8,...TIPO.footnote,fontWeight:400,color:"var(--text-secondary)",marginBottom:ESPACIO.md,cursor:"pointer"}}>
+              <input type="checkbox" checked={form.incluirDomingos} onChange={e=>setForm({...form,incluirDomingos:e.target.checked})}/>
+              Incluir domingos
+            </label>
+          )}
+          <div style={{marginBottom:ESPACIO.lg}}/>
 
           <div style={{marginBottom:ESPACIO.lg}}>
             <div className="ui-label">¿A quiénes?</div>
@@ -540,7 +721,16 @@ export default function Horarios({ctx}){
 
           <div style={{display:"grid",gridTemplateColumns:isMobile ? "1fr" : "1fr 1fr",gap:ESPACIO.md,marginBottom:ESPACIO.lg}}>
             <div style={PANEL}>
-              <div style={{...TIPO.eyebrow,color:"var(--text-tertiary)",marginBottom:ESPACIO.md}}>Turno 1</div>
+              <div style={{...TIPO.eyebrow,color:"var(--text-tertiary)",marginBottom:ESPACIO.sm}}>Turno 1</div>
+              <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:ESPACIO.sm,marginLeft:-6}}>
+                {JORNADAS.map((j)=>(
+                  <Button key={j.etiqueta} variante="texto" tam="sm"
+                    aria-pressed={form.turno1Inicio===j.inicio && form.turno1Fin===j.fin}
+                    onClick={()=>setForm({...form,turno1Inicio:j.inicio,turno1Fin:j.fin})}>
+                    {j.etiqueta}
+                  </Button>
+                ))}
+              </div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:ESPACIO.md,marginBottom:ESPACIO.sm}}>
                 <Input label="Desde" type="time" value={form.turno1Inicio} onChange={e=>setForm({...form,turno1Inicio:e.target.value})}/>
                 <Input label="Hasta" type="time" value={form.turno1Fin} onChange={e=>setForm({...form,turno1Fin:e.target.value})}/>
@@ -549,12 +739,27 @@ export default function Horarios({ctx}){
                 label="Tarea del turno 1"
                 value={form.tarea1}
                 onChange={e=>setForm({...form,tarea1:e.target.value})}
-                placeholder="Ej: Instalación anclajes"
+                list="horarios-tareas-sugeridas"
+                placeholder={tareasSugeridas[0] ? `Ej: ${tareasSugeridas[0]}` : "Ej: Instalación anclajes"}
                 ayuda={`Le llega como «${fmtTurno12Local(armarTurno(form.turno1Inicio, form.turno1Fin))}»`}
               />
             </div>
             <div style={PANEL}>
-              <div style={{...TIPO.eyebrow,color:"var(--text-tertiary)",marginBottom:ESPACIO.md}}>Turno 2 · opcional</div>
+              <div style={{...TIPO.eyebrow,color:"var(--text-tertiary)",marginBottom:ESPACIO.sm}}>Turno 2 · opcional</div>
+              <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:ESPACIO.sm,marginLeft:-6}}>
+                {JORNADAS.slice(1).map((j)=>(
+                  <Button key={j.etiqueta} variante="texto" tam="sm"
+                    aria-pressed={form.turno2Inicio===j.inicio && form.turno2Fin===j.fin}
+                    onClick={()=>setForm({...form,turno2Inicio:j.inicio,turno2Fin:j.fin})}>
+                    {j.etiqueta}
+                  </Button>
+                ))}
+                {(form.turno2Inicio || form.turno2Fin) && (
+                  <Button variante="texto" tam="sm" onClick={()=>setForm({...form,turno2Inicio:"",turno2Fin:"",tarea2:""})}>
+                    Quitar
+                  </Button>
+                )}
+              </div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:ESPACIO.md,marginBottom:ESPACIO.sm}}>
                 <Input label="Desde" type="time" value={form.turno2Inicio} onChange={e=>setForm({...form,turno2Inicio:e.target.value})}/>
                 <Input label="Hasta" type="time" value={form.turno2Fin} onChange={e=>setForm({...form,turno2Fin:e.target.value})}/>
@@ -563,6 +768,7 @@ export default function Horarios({ctx}){
                 label="Tarea del turno 2"
                 value={form.tarea2}
                 onChange={e=>setForm({...form,tarea2:e.target.value})}
+                list="horarios-tareas-sugeridas"
                 placeholder="Ej: Entrega, cierre, inspección"
                 ayuda={form.turno2Inicio && form.turno2Fin
                   ? `Le llega como «${fmtTurno12Local(armarTurno(form.turno2Inicio, form.turno2Fin))}»`
@@ -570,6 +776,23 @@ export default function Horarios({ctx}){
               />
             </div>
           </div>
+
+          {/* Las tareas que ya se usaron en esta obra salen al escribir. */}
+          <datalist id="horarios-tareas-sugeridas">
+            {tareasSugeridas.map((t)=><option key={t} value={t}/>)}
+          </datalist>
+
+          {choques.length>0&&(
+            <Callout tono="aviso" titulo="Ya tienen turno en otra obra ese día" style={{marginBottom:ESPACIO.lg}}>
+              {choques.slice(0,6).map((c,i)=>(
+                <div key={i}>
+                  <strong>{c.nombre}</strong> · {fmtD(c.fecha)} · {fmtTurno12Local(c.turno) || "sin hora"} en {c.obra?.proyecto || c.obra?.cliente || "otra obra"}
+                </div>
+              ))}
+              {choques.length>6 && <div>y {choques.length-6} más.</div>}
+              <div style={{marginTop:ESPACIO.xs}}>Puedes guardar igual si el día se reparte entre las dos obras.</div>
+            </Callout>
+          )}
 
           {turnosBase.length>0&&seleccionados.length>0&&obraSel&&(
             <div style={{...PANEL,marginBottom:ESPACIO.lg}}>
@@ -583,7 +806,11 @@ export default function Horarios({ctx}){
               }}>
                 <div>Hola <strong>{seleccionados[0].nombre}</strong>, has sido asignado a la obra <strong>{obraSel.proyecto}</strong> del cliente <strong>{obraSel.cliente}</strong>.</div>
                 <div>Lugar: <strong>{obraSel.direccion||obraSel.ciudad}, {obraSel.ciudad}</strong></div>
-                <div>Fecha: <strong>{fmtD(form.fecha) || form.fecha}</strong></div>
+                <div>
+                  {fechasForm.length>1
+                    ? <>Días: <strong>{fmtD(fechasForm[0])} al {fmtD(fechasForm[fechasForm.length-1])}</strong> ({fechasForm.length} días{form.incluirDomingos?"":", sin domingos"})</>
+                    : <>Fecha: <strong>{fmtD(form.fecha) || form.fecha}</strong></>}
+                </div>
                 <div style={{marginTop:ESPACIO.sm,fontWeight:600}}>Turnos asignados:</div>
                 <ul style={{margin:"6px 0 0 18px",padding:0}}>
                   {turnosBase.map((item,idx)=><li key={idx}><strong>{fmtTurno12Local(item.turno)}</strong> · {item.tarea}</li>)}
@@ -688,12 +915,18 @@ export default function Horarios({ctx}){
             {porAvisar.map((p)=>{
               const e=empleados.find(x=>x.id===p.empleadoId);
               const idx=empleados.findIndex(x=>x.id===p.empleadoId);
+              const diasP=[...new Set(p.turnos.map((t)=>t.fecha))];
+              const obraP=obras.find((o)=>o.id===p.obraId);
               return(
                 <ListRow
-                  key={p.empleadoId}
+                  key={`${p.empleadoId}|${p.obraId}`}
                   izquierda={<Av init={e?.avatar||"?"} color={PAL[idx%PAL.length]} size={30}/>}
                   titulo={e?.nombre || "—"}
-                  meta={p.turnos.map((t)=>fmtTurno12Local(t.turno)).join(" · ")}
+                  meta={
+                    (diasP.length>1 ? `${diasP.length} días · ` : "") +
+                    [...new Set(p.turnos.map((t)=>fmtTurno12Local(t.turno)))].join(" · ") +
+                    (obraP ? ` · ${obraP.proyecto || obraP.cliente}` : "")
+                  }
                   derecha={
                     <Button
                       variante={p.enviado?"tertiary":"secondary"}
@@ -701,7 +934,7 @@ export default function Horarios({ctx}){
                       icono={p.enviado?"check":undefined}
                       onClick={()=>{
                         enviarWA(p.empleadoId,p.obraId,p.fecha,p.turnos);
-                        setPorAvisar(prev=>prev.map(x=>x.empleadoId===p.empleadoId?{...x,enviado:true}:x));
+                        setPorAvisar(prev=>prev.map(x=>x.empleadoId===p.empleadoId && x.obraId===p.obraId?{...x,enviado:true}:x));
                       }}
                     >
                       {p.enviado?"Enviado · reenviar":"Avisar"}
@@ -715,18 +948,37 @@ export default function Horarios({ctx}){
       )}
 
       <Toolbar>
+        {/* Pasar de un dia a otro sin abrir el calendario: es lo que mas se
+            hace aqui, revisar hoy, mañana y lo que viene. */}
+        <Button variante="texto" tam="sm" soloIcono icono="flechaIzq" aria-label="Día anterior" title="Día anterior"
+          onClick={()=>setFechaF(sumarDias(fechaF,-1))}/>
         <Input
           type="date"
           value={fechaF}
-          onChange={e=>setFechaF(e.target.value)}
+          onChange={e=>e.target.value && setFechaF(e.target.value)}
           aria-label="Filtrar por fecha"
           wrapStyle={{flex:"0 0 auto"}}
           style={{width:"auto"}}
         />
+        <Button variante="texto" tam="sm" soloIcono icono="flechaDer" aria-label="Día siguiente" title="Día siguiente"
+          onClick={()=>setFechaF(sumarDias(fechaF,1))}/>
+        {fechaF!==today() && (
+          <Button variante="texto" tam="sm" onClick={()=>setFechaF(today())}>Hoy</Button>
+        )}
         <span style={{...TIPO.footnote,fontWeight:400,color:"var(--text-tertiary)"}}>
           {dia.length} turno{dia.length!==1?"s":""} · {fmtD(fechaF)}
         </span>
         <EspacioToolbar/>
+        {diaAnteriorConTurnos && (
+          <Button
+            variante="texto"
+            icono="mas"
+            onClick={copiarDiaAnterior}
+            title={`Copia a este día los turnos del ${fmtD(diaAnteriorConTurnos)}`}
+          >
+            Copiar del {fmtD(diaAnteriorConTurnos)}
+          </Button>
+        )}
         <Button
           variante="secondary"
           icono="documento"
@@ -744,7 +996,21 @@ export default function Horarios({ctx}){
             <EmptyState
               icono="calendario"
               titulo="No hay turnos para esta fecha"
-              texto="Elige otro día arriba, o asigna el primer turno de hoy."
+              texto={diaAnteriorConTurnos
+                ? `Puedes repetir los del ${fmtD(diaAnteriorConTurnos)} o asignarlos desde cero.`
+                : "Asigna el primer turno de este día."}
+              accion={
+                <div style={{display:"flex",gap:ESPACIO.sm,flexWrap:"wrap",justifyContent:"center"}}>
+                  {diaAnteriorConTurnos && (
+                    <Button variante="secondary" tam="sm" onClick={copiarDiaAnterior}>
+                      Copiar del {fmtD(diaAnteriorConTurnos)}
+                    </Button>
+                  )}
+                  <Button variante="primary" tam="sm" icono="mas" onClick={abrirFormulario} disabled={showF}>
+                    Asignar turnos
+                  </Button>
+                </div>
+              }
             />
           ) : (
             <Lista>

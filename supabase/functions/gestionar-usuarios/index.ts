@@ -577,6 +577,10 @@ Deno.serve(async (req) => {
         ? htmlAgenda(numero, agenda)
         : htmlCotizacion(numero, mensaje, detalle);
 
+      // La invitacion de la agenda viaja como .ics: con text/calendar Gmail y
+      // Outlook la muestran como evento con «Si / No / Quizas».
+      const icsBase64 = String(cuerpo.icsBase64 ?? "");
+
       const resultado = await enviarCorreo({
         para,
         asunto,
@@ -584,6 +588,8 @@ Deno.serve(async (req) => {
         html,
         adjunto: pdfBase64
           ? { nombre: nombreArchivo, base64: pdfBase64, tipo: "application/pdf" }
+          : icsBase64
+          ? { nombre: "invitacion.ics", base64: icsBase64, tipo: "text/calendar; method=REQUEST; charset=UTF-8" }
           : null,
       });
 

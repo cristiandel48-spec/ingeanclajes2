@@ -178,6 +178,79 @@ export async function acortarUrl(urlLarga) {
   return urlLarga;
 }
 
+const CORREO_VALIDO = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+// Los correos de los invitados se escriben a mano en un solo campo,
+// separados por coma o punto y coma.
+export function separarCorreos(texto = "") {
+  return String(texto || "")
+    .split(/[,;\s]+/)
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+export function correosInvalidos(texto = "") {
+  return separarCorreos(texto).filter((c) => !CORREO_VALIDO.test(c));
+}
+
+// Invitacion de calendario (.ics). Gmail, Outlook y el iPhone la reconocen y
+// muestran «Si / No / Quizas» y la agregan al calendario con su alarma. El
+// UID es el id del compromiso: si se edita y se vuelve a enviar, el evento se
+// actualiza en vez de duplicarse.
+export function generarIcsCompromiso(compromiso, invitados = []) {
+  const { h, m } = parsearHora(compromiso.hora);
+  const [y, mes, d] = String(compromiso.fecha || "").split("-").map(Number);
+  // Colombia esta en UTC-5 todo el año (sin horario de verano).
+  const inicio = new Date(Date.UTC(y, (mes || 1) - 1, d || 1, h + 5, m));
+  const fin = new Date(inicio.getTime() + 90 * 60 * 1000);
+  const utc = (f) => f.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const esc = (t) => String(t || "").replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/([,;])/g, "\\$1");
+
+  const tipoLabel = { visita: "Visita a obra", llamada: "Llamada", reunion: "Reunión", coordinacion: "Coordinación" }[compromiso.tipo] || "Compromiso";
+  const detalles = [
+    compromiso.cliente && `Cliente: ${compromiso.cliente}`,
+    compromiso.contacto && `Contacto: ${compromiso.contacto}${compromiso.telefono ? ` (${compromiso.telefono})` : ""}`,
+    compromiso.requerimientoSst && `SST: ${compromiso.requerimientoSst}`,
+    compromiso.notas && `Notas: ${compromiso.notas}`,
+    compromiso.linkReunion && `Reunión: ${compromiso.linkReunion}`,
+  ].filter(Boolean).join("\n");
+
+  const lineas = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Ingeanclajes//Agenda//ES",
+    "CALSCALE:GREGORIAN",
+    "METHOD:REQUEST",
+    "BEGIN:VEVENT",
+    `UID:${compromiso.id}@ingeanclajes`,
+    `DTSTAMP:${utc(new Date())}`,
+    `SEQUENCE:${Math.floor(Date.now() / 1000)}`,
+    `DTSTART:${utc(inicio)}`,
+    `DTEND:${utc(fin)}`,
+    `SUMMARY:${esc(`${tipoLabel} - ${compromiso.obra || compromiso.titulo || "Ingeanclajes"}`)}`,
+    `LOCATION:${esc(`${compromiso.obra || ""} ${compromiso.ciudad || ""}`.trim())}`,
+    `DESCRIPTION:${esc(detalles || "Ingeanclajes S.A.S.")}`,
+    "ORGANIZER;CN=Ingeanclajes S.A.S.:mailto:sistemasingeanclajes@gmail.com",
+    ...invitados.map((c) => `ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${c}`),
+    "STATUS:CONFIRMED",
+    "BEGIN:VALARM",
+    "TRIGGER:-PT1H",
+    "ACTION:DISPLAY",
+    "DESCRIPTION:Recordatorio",
+    "END:VALARM",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ];
+  return lineas.join("\r\n");
+}
+
+function aBase64(texto) {
+  const bytes = new TextEncoder().encode(texto);
+  let bin = "";
+  bytes.forEach((b) => { bin += String.fromCharCode(b); });
+  return btoa(bin);
+}
+
 // Envía notificación por correo automática a Camila en segundo plano desde sistemasingeanclajes@gmail.com
 export async function enviarNotificacionAgendaPorCorreo(compromiso, destinatarios = EMAIL_CAMILA_DEFAULT) {
   const tipoLabel = compromiso.tipo === "visita"
@@ -271,4 +344,72 @@ export async function enviarNotificacionAgendaPorCorreo(compromiso, destinatario
   }
 
   return { ok: true, envios };
+}
+
+// La invitacion a las personas externas: el cliente, el residente de obra.
+// Es la misma ficha que recibe Camila, pero saludando a quien la recibe y con
+// la invitacion de calendario adjunta.
+export async function enviarInvitacionAgenda(compromiso, correos = []) {
+  const lista = separarCorreos(Array.isArray(correos) ? correos.join(",") : correos)
+    .filter((c) => CORREO_VALIDO.test(c));
+  if (!lista.length) return { ok: true, envios: [] };
+
+  const tipoLabel = { visita: "Visita a obra", llamada: "Llamada", reunion: "Reunión", coordinacion: "Coordinación" }[compromiso.tipo] || "Compromiso";
+  const que = compromiso.obra || compromiso.titulo || "Compromiso";
+  const { diaSemana, fecha } = partesFechaLegible(compromiso.fecha);
+  const saludo = compromiso.contacto ? `Hola ${compromiso.contacto},` : "Hola,";
+  const asunto = asuntoSeguro(`Invitación: ${tipoLabel} - ${que} · ${formatFechaLegible(compromiso.fecha)} ${compromiso.hora || ""}`.trim());
+  const enlaceCorto = await acortarUrl(generarUrlGoogleCalendar(compromiso, lista));
+
+  const mensaje = [
+    saludo,
+    ``,
+    `Ingeanclajes S.A.S. te invita al siguiente compromiso:`,
+    ``,
+    `• ${tipoLabel}: ${que}`,
+    `• Fecha: ${formatFechaLegible(compromiso.fecha)}`,
+    `• Hora: ${compromiso.hora || "Por definir"}`,
+    compromiso.ciudad ? `• Ciudad: ${compromiso.ciudad}` : "",
+    compromiso.requerimientoSst ? `• Requerimientos SST: ${compromiso.requerimientoSst}` : "",
+    compromiso.notas ? `• Notas: ${compromiso.notas}` : "",
+    compromiso.linkReunion ? `• Enlace de la reunión: ${compromiso.linkReunion}` : "",
+    ``,
+    `Agregar a Google Calendar: ${enlaceCorto}`,
+    ``,
+    `Equipo Ingeanclajes S.A.S.`,
+  ].filter(Boolean).join("\n");
+
+  const agenda = {
+    saludo,
+    titulo: que,
+    tipo: tipoLabel,
+    diaSemana,
+    fecha,
+    hora: compromiso.hora || "",
+    cliente: compromiso.cliente || "",
+    ciudad: compromiso.ciudad || "",
+    obra: compromiso.obra || "",
+    contacto: compromiso.contacto || "",
+    telefono: compromiso.telefono || "",
+    sst: compromiso.requerimientoSst || "",
+    notas: compromiso.notas || "",
+    linkReunion: compromiso.linkReunion || "",
+    enlaceCalendar: enlaceCorto,
+  };
+
+  const icsBase64 = aBase64(generarIcsCompromiso(compromiso, lista));
+
+  const envios = await Promise.allSettled(
+    lista.map((para) =>
+      enviarCotizacionPorCorreo({ para, asunto, mensaje, agenda, numero: "AGENDA", icsBase64 })
+    )
+  );
+
+  const fallidos = envios
+    .map((res, i) => ({ correo: lista[i], res }))
+    .filter((item) => item.res.status === "rejected");
+  if (fallidos.length > 0) {
+    throw new Error(fallidos.map((f) => `${f.correo}: ${f.res.reason?.message || "Error"}`).join("; "));
+  }
+  return { ok: true, envios, correos: lista };
 }

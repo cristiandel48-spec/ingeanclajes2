@@ -5,6 +5,9 @@ import { abrirWhatsApp } from "../../lib/whatsapp";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import {
   enviarNotificacionAgendaPorCorreo,
+  enviarInvitacionAgenda,
+  separarCorreos,
+  correosInvalidos,
   generarUrlGoogleCalendar,
   horaA24h,
   horaA12h,
@@ -1367,6 +1370,7 @@ export default function Agenda({ ctx }) {
   const [formHora, setFormHora] = useState("08:00");
   const [formContacto, setFormContacto] = useState("");
   const [formTelefono, setFormTelefono] = useState("");
+  const [formCorreo, setFormCorreo] = useState("");
   const [formNotas, setFormNotas] = useState("");
   const [formSst, setFormSst] = useState("");
   const [formLink, setFormLink] = useState("");
@@ -1494,6 +1498,7 @@ export default function Agenda({ ctx }) {
     setFormHora("08:00");
     setFormContacto("");
     setFormTelefono("");
+    setFormCorreo("");
     setFormNotas("");
     setFormSst("");
     setFormLink("");
@@ -1512,6 +1517,7 @@ export default function Agenda({ ctx }) {
     setFormHora(horaA24h(item.hora || "08:00"));
     setFormContacto(item.contacto || "");
     setFormTelefono(item.telefono || "");
+    setFormCorreo(item.correoInvitado || "");
     setFormNotas(item.notas || "");
     setFormSst(item.requerimientoSst || "");
     setFormLink(item.linkReunion || "");
@@ -1525,6 +1531,12 @@ export default function Agenda({ ctx }) {
       alert("Por favor ingresa un título o el nombre de la obra.");
       return;
     }
+    const malos = correosInvalidos(formCorreo);
+    if (malos.length) {
+      alert(`Revisa el correo del invitado: ${malos.join(", ")}`);
+      return;
+    }
+    const invitados = separarCorreos(formCorreo);
 
     const payload = {
       id: itemEdicion?.id || `AG-${Date.now()}`,
@@ -1537,6 +1549,7 @@ export default function Agenda({ ctx }) {
       hora: horaA12h(formHora),
       contacto: formContacto.trim(),
       telefono: formTelefono.trim(),
+      correoInvitado: invitados.join(", "),
       notas: formNotas.trim(),
       requerimientoSst: formSst.trim(),
       linkReunion: formLink.trim(),
@@ -1561,15 +1574,28 @@ export default function Agenda({ ctx }) {
     // Estado visible de envío por correo
     setNotificacionEnvio({
       tipo: "loading",
-      mensaje: "Enviando notificación por correo a Camila...",
+      mensaje: invitados.length
+        ? `Enviando el aviso a Camila y la invitación a ${invitados.join(", ")}...`
+        : "Enviando notificación por correo a Camila...",
     });
 
-    // Enviar notificación automática por correo a Camila en segundo plano
-    enviarNotificacionAgendaPorCorreo(payload)
-      .then(() => {
+    // El aviso a Camila y la invitacion a los externos salen a la vez. Si
+    // falla uno, el otro igual se envia y el mensaje dice cual fallo.
+    Promise.allSettled([
+      enviarNotificacionAgendaPorCorreo(payload),
+      enviarInvitacionAgenda(payload, invitados),
+    ])
+      .then(([camila, externos]) => {
+        const fallas = [
+          camila.status === "rejected" && `a Camila (${camila.reason?.message || "error"})`,
+          externos.status === "rejected" && `la invitación (${externos.reason?.message || "error"})`,
+        ].filter(Boolean);
+        if (fallas.length) throw new Error(`no salió ${fallas.join(" ni ")}`);
         setNotificacionEnvio({
           tipo: "success",
-          mensaje: "✓ Notificación enviada por correo a Camila (camilascadavid@gmail.com)",
+          mensaje: invitados.length
+            ? `✓ Aviso enviado a Camila e invitación enviada a ${invitados.join(", ")}`
+            : "✓ Notificación enviada por correo a Camila (camilascadavid@gmail.com)",
         });
         setTimeout(() => {
           setNotificacionEnvio((prev) => (prev?.tipo === "success" ? null : prev));
@@ -2491,6 +2517,17 @@ export default function Agenda({ ctx }) {
                     <label style={etiqueta}>Celular (WhatsApp)</label>
                     <input type="tel" inputMode="tel" value={formTelefono} onChange={(e) => setFormTelefono(e.target.value)}
                       placeholder="Ej. 3160240823" style={campo} />
+                  </div>
+                </div>
+
+                {/* Correo del invitado: le llega la invitacion de calendario */}
+                <div>
+                  <label style={etiqueta}>Correo del invitado</label>
+                  <input type="text" inputMode="email" autoComplete="email" value={formCorreo}
+                    onChange={(e) => setFormCorreo(e.target.value)}
+                    placeholder="Ej. residente@constructora.com" style={campo} />
+                  <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 6 }}>
+                    Le llega la invitación para agregarla a su calendario. Para varios, sepáralos con coma.
                   </div>
                 </div>
 

@@ -1,7 +1,7 @@
 import AvisoFlujo from "../../components/AvisoFlujo";
 import BotonDictado from "../../components/ui/BotonDictado";
 import LBL from "../../components/ui/LBL";
-import { Button } from "../../components/ui";
+import { Button, Sheet } from "../../components/ui";
 import { TIPO } from "../../styles/designTokens";
 import { useEffect, useRef, useState } from "react";
 import { B, SI } from "../../styles/tokens";
@@ -10,7 +10,7 @@ import { leerImagenComprimida } from "../../lib/imagenes";
 import { normalizarFrase } from "../../lib/normalizarEntrada";
 import { normalizarBitacora, registroVacio, resumenBitacora, avanceDesdeBitacora, limpiarAvance, faltaAvance } from "../../lib/bitacoraObra";
 import { estadoSegunAvance } from "../../lib/flujoObra";
-import { confirmar, avisar } from "../../lib/dialogos";
+import { confirmar } from "../../lib/dialogos";
 
 // Pestana «Avance y fotos» del detalle de obra.
 //
@@ -35,9 +35,9 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "start" });
         // Si la jornada pide el avance, el cursor va ahi: es lo primero que
-        // hay que llenar.
+        // hay que llenar. Si ya lo trae, va directo a «¿Qué se hizo?».
         (el.querySelector("[data-falta-avance] input")
-          || el.querySelector("input:not([disabled]), textarea:not([disabled])"))?.focus({ preventScroll: true });
+          || el.querySelector("input[placeholder*='Ej:'], textarea:not([disabled]), input:not([disabled])"))?.focus({ preventScroll: true });
       }
       setRegistroPorMostrar(null);
     });
@@ -65,21 +65,32 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
       };
     }));
 
+  // Ventana que pide el avance antes de abrir la jornada. Un campo pequeño
+  // dentro de la jornada pasaba de largo: la persona no veia por que no podia
+  // seguir. { registroId } si es para una jornada que ya existe y no lo tiene;
+  // { registroId: null } para una jornada nueva.
+  const [pidiendoAvance, setPidiendoAvance] = useState(null);
+
   const agregarRegistro = () => {
-    // No se abre otra jornada mientras alguna no tenga su avance: se lleva a
-    // la persona a esa jornada para que lo anote.
+    // Si alguna jornada quedo sin avance, la ventana es para esa: no se abre
+    // otra mientras tanto.
     const pendiente = registros.find(faltaAvance);
-    if (pendiente) {
-      avisar({
-        titulo: "Falta el avance de la obra",
-        mensaje: `Antes de registrar otra jornada, escribe el avance de la obra en la del ${fmtD(pendiente.fecha) || "día sin fecha"}.`,
-      });
-      setRegistroPorMostrar(pendiente.id);
+    setPidiendoAvance({
+      registroId: pendiente ? pendiente.id : null,
+      fecha: pendiente?.fecha || "",
+      valorInicial: pendiente?.avance ?? "",
+    });
+  };
+
+  const guardarAvancePedido = (avance) => {
+    const destino = pidiendoAvance?.registroId;
+    setPidiendoAvance(null);
+    if (destino) {
+      guardarBitacora(registros.map((r) => (r.id === destino ? { ...r, avance } : r)));
+      setRegistroPorMostrar(destino);
       return;
     }
-    // Nace con una foto vacia lista para tocar: es lo primero que hace la
-    // gente cuando llega del sitio.
-    const nuevo = { ...registroVacio(today()), fotos: [] };
+    const nuevo = { ...registroVacio(today()), avance, fotos: [] };
     guardarBitacora([...registros, nuevo]);
     setRegistroPorMostrar(nuevo.id);
   };
@@ -210,6 +221,13 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
           <div style={{ fontSize: 11.5, fontWeight: 400, marginTop: 6, color: "var(--text-secondary)" }}>
             Dale a «Registrar avance del día» y sube las fotos de lo que se hizo.
           </div>
+          {!bloqueada && (
+            <div style={{ marginTop: 14 }}>
+              <Button variante="oscuro" tam="sm" icono="mas" onClick={agregarRegistro}>
+                Registrar primer avance del día
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -243,8 +261,21 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                   que lo tenga es la que manda en el avance de la obra. En las
                   jornadas nuevas es obligatorio: sin el, lo demas no se llena. */}
               <div data-falta-avance={falta || undefined}>
-                <LBL>Avance de la obra (%){registro.avanceObligatorio ? " *" : ""}</LBL>
-                <div style={{ position: "relative", borderRadius: 10, boxShadow: falta ? "0 0 0 2px var(--danger)" : "none" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                  <LBL>Avance de la obra (%){registro.avanceObligatorio || falta ? " *" : ""}</LBL>
+                  <button
+                    type="button"
+                    onClick={() => setPidiendoAvance({ registroId: registro.id, fecha: registro.fecha, valorInicial: registro.avance })}
+                    style={{ background: "none", border: "none", padding: 0, fontSize: 11, color: "var(--text-tertiary)", cursor: "pointer", textDecoration: "underline" }}
+                    title="Editar avance en ventana"
+                  >
+                    Cambiar
+                  </button>
+                </div>
+                <div
+                  style={{ position: "relative", borderRadius: 10, boxShadow: falta ? "0 0 0 2px var(--danger)" : "none", cursor: falta ? "pointer" : "default" }}
+                  onClick={falta ? () => setPidiendoAvance({ registroId: registro.id, fecha: registro.fecha, valorInicial: registro.avance }) : undefined}
+                >
                   <input
                     type="number"
                     inputMode="numeric"
@@ -263,7 +294,14 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                 </div>
                 {falta && (
                   <div role="alert" style={{ fontSize: 11.5, color: "var(--danger-text)", marginTop: 5, lineHeight: 1.35 }}>
-                    Escríbelo para poder seguir.
+                    Escríbelo para poder seguir.{" "}
+                    <button
+                      type="button"
+                      onClick={() => setPidiendoAvance({ registroId: registro.id, fecha: registro.fecha, valorInicial: registro.avance })}
+                      style={{ background: "none", border: "none", padding: 0, color: "var(--danger-text)", textDecoration: "underline", cursor: "pointer", fontSize: 11.5, fontFamily: "inherit" }}
+                    >
+                      Abrir
+                    </button>
                   </div>
                 )}
               </div>
@@ -410,6 +448,17 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
         );
       })}
 
+      {pidiendoAvance && (
+        <VentanaAvance
+          avanceActual={obra.avance ?? 0}
+          fecha={pidiendoAvance.fecha}
+          esJornadaExistente={Boolean(pidiendoAvance.registroId)}
+          valorInicial={pidiendoAvance.valorInicial}
+          onGuardar={guardarAvancePedido}
+          onCerrar={() => setPidiendoAvance(null)}
+        />
+      )}
+
       {registros.length > 0 && (
         <div style={{ background: "var(--surface-subtle, #fbfbfd)", border: "1px solid var(--border, #e5e5ea)", borderRadius: 10, padding: "10px 14px", fontSize: 11.5, color: "var(--text-muted, #6e6e73)" }}>
           Los cambios se guardan solos automáticamente. {resumen.sinFotos > 0
@@ -418,5 +467,118 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
         </div>
       )}
     </div>
+  );
+}
+
+// Ventana que pide el avance de la obra antes de registrar la jornada. Grande
+// y al centro, con el numero en letra grande, para que nadie siga sin verla.
+// No se cierra pulsando fuera: solo con «Cancelar» o la X.
+function VentanaAvance({ avanceActual, fecha, esJornadaExistente, valorInicial = null, onGuardar, onCerrar }) {
+  const [valor, setValor] = useState(
+    valorInicial !== null && valorInicial !== undefined && valorInicial !== ""
+      ? String(valorInicial)
+      : ""
+  );
+  const campoRef = useRef(null);
+
+  // La hoja lleva el foco a su primer boton (la X) al abrirse; justo despues
+  // se pasa al campo, que es lo unico que hay que llenar.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      campoRef.current?.focus();
+      campoRef.current?.select?.();
+    }, 40);
+    return () => clearTimeout(t);
+  }, []);
+
+  const numero = limpiarAvance(valor);
+  const numRaw = Number(valor);
+  const valido =
+    numero !== null &&
+    String(valor).trim() !== "" &&
+    !Number.isNaN(numRaw) &&
+    numRaw >= 0 &&
+    numRaw <= 100;
+
+  const guardar = (e) => {
+    e?.preventDefault();
+    if (!valido) return;
+    onGuardar(numero);
+  };
+
+  return (
+    <Sheet
+      abierta
+      titulo="¿Cuánto avance lleva la obra hoy?"
+      subtitulo={
+        esJornadaExistente
+          ? `Falta el avance de la jornada del ${fmtD(fecha) || "día sin fecha"}. Escríbelo para poder seguir con ella.`
+          : "Escribe el avance total de la obra a hoy, de 0 a 100. Sin este dato no se puede registrar la jornada."
+      }
+      onCerrar={onCerrar}
+      cerrarAlPulsarFondo={false}
+      pie={
+        <>
+          <Button variante="secondary" onClick={onCerrar}>Cancelar</Button>
+          <Button variante="primary" onClick={guardar} disabled={!valido}>
+            {esJornadaExistente ? "Guardar avance" : "Registrar jornada"}
+          </Button>
+        </>
+      }
+    >
+      <form onSubmit={guardar} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "8px 0 4px" }}>
+        <div style={{ position: "relative", width: 200 }}>
+          <input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={100}
+            step={1}
+            ref={campoRef}
+            value={valor}
+            onChange={(e) => setValor(e.target.value)}
+            placeholder="0"
+            aria-label="Avance de la obra a hoy, en porcentaje"
+            style={{
+              width: "100%",
+              boxSizing: "border-box",
+              textAlign: "center",
+              fontSize: 44,
+              fontWeight: 600,
+              letterSpacing: "-0.02em",
+              fontVariantNumeric: "tabular-nums",
+              padding: "14px 44px 14px 16px",
+              borderRadius: 16,
+              border: "none",
+              background: "var(--fill)",
+              color: "var(--text-primary)",
+              fontFamily: "inherit",
+              outline: "none",
+            }}
+          />
+          <span
+            style={{
+              position: "absolute",
+              right: 18,
+              top: "50%",
+              transform: "translateY(-50%)",
+              fontSize: 26,
+              color: "var(--text-tertiary)",
+              pointerEvents: "none",
+            }}
+          >
+            %
+          </span>
+        </div>
+        <div style={{ fontSize: 13, color: "var(--text-tertiary)" }}>
+          Avance registrado hasta ahora: {avanceActual}%
+        </div>
+        {numero === 100 && (
+          <div role="alert" style={{ fontSize: 12.5, color: "var(--danger-text)", textAlign: "center", maxWidth: 320, lineHeight: 1.4 }}>
+            Con 100% la obra pasa a Finalizada y su bitácora queda cerrada. Úsalo solo si la obra ya terminó.
+          </div>
+        )}
+      </form>
+    </Sheet>
   );
 }

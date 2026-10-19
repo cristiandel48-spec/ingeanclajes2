@@ -133,7 +133,7 @@ function mensajePorDefecto(c) {
   ].join("\n");
 }
 
-export default function EnviarCotizacion({ cotizacion, firmaImg = "", onCerrar }) {
+export default function EnviarCotizacion({ cotizacion, firmaImg = "", onCerrar, onEnviado }) {
   const [para, setPara] = useState(cotizacion?.contactoEmail || "");
   const [asunto, setAsunto] = useState(asuntoPorDefecto(cotizacion));
   const [mensajeOriginal] = useState(() => mensajePorDefecto(cotizacion));
@@ -171,6 +171,9 @@ export default function EnviarCotizacion({ cotizacion, firmaImg = "", onCerrar }
       });
 
       setEnviado(true);
+      // Solo despues de que el correo salio: quien la lista ve que el cliente
+      // ya la tiene, en vez de seguir viendola como «Pendiente».
+      onEnviado?.({ para: para.trim(), fecha: new Date().toISOString() });
     } catch (e) {
       setError(e.message || "No se pudo enviar el correo.");
     } finally {

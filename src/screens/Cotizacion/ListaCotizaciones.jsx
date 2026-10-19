@@ -36,6 +36,12 @@ const ORDENES = [
   },
 ];
 
+// Estados de la cotizacion antes de aprobarse: «Pendiente» es que aun no se
+// le ha enviado al cliente; «Enviada», que ya la tiene y falta su respuesta.
+const esAprobada = (c) => c.estado === "Aprobada" || Boolean(c.obraId);
+const esEnviada = (c) => c.estado === "Enviada" && !esAprobada(c);
+const esPendiente = (c) => !esAprobada(c) && c.estado !== "Borrador" && c.estado !== "Enviada";
+
 function enMilis(fecha) {
   if (!fecha) return 0;
   const t = new Date(fecha).getTime();
@@ -105,7 +111,8 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
     const lista = cotizaciones || [];
     return {
       todas: lista.length,
-      pendientes: lista.filter((c) => c.estado !== "Aprobada" && c.estado !== "Borrador").length,
+      pendientes: lista.filter(esPendiente).length,
+      enviadas: lista.filter(esEnviada).length,
       aprobadas: lista.filter((c) => c.estado === "Aprobada" || Boolean(c.obraId)).length,
       borradores: lista.filter((c) => c.estado === "Borrador").length,
     };
@@ -117,7 +124,9 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
 
     // 1. Filtro por estado
     if (estadoFiltro === "Pendientes") {
-      res = res.filter((c) => c.estado !== "Aprobada" && c.estado !== "Borrador");
+      res = res.filter(esPendiente);
+    } else if (estadoFiltro === "Enviadas") {
+      res = res.filter(esEnviada);
     } else if (estadoFiltro === "Aprobadas") {
       res = res.filter((c) => c.estado === "Aprobada" || Boolean(c.obraId));
     } else if (estadoFiltro === "Borrador") {
@@ -210,6 +219,11 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
             activo={estadoFiltro === "Pendientes"}
             onClick={() => setEstadoFiltro("Pendientes")}
             label={`Pendientes (${conteos.pendientes})`}
+          />
+          <BotonSegmentado
+            activo={estadoFiltro === "Enviadas"}
+            onClick={() => setEstadoFiltro("Enviadas")}
+            label={`Enviadas (${conteos.enviadas})`}
           />
           <BotonSegmentado
             activo={estadoFiltro === "Aprobadas"}
@@ -1076,9 +1090,15 @@ function BotonEstadoAprobacion({ cotizacion, acciones }) {
     }
   };
 
-  const bgNormal = aprobada ? "rgba(52, 199, 89, 0.12)" : "rgba(255, 149, 0, 0.12)";
-  const textNormal = aprobada ? "#28a745" : "#d97706";
-  const borderNormal = aprobada ? "rgba(52, 199, 89, 0.28)" : "rgba(255, 149, 0, 0.28)";
+  // Enviada va en gris: ya salio, no pide nada urgente; el naranja se queda
+  // para las que aun no se le han mandado al cliente.
+  const enviada = !aprobada && estado === "Enviada";
+  const bgNormal = aprobada ? "rgba(52, 199, 89, 0.12)" : enviada ? "var(--fill)" : "rgba(255, 149, 0, 0.12)";
+  const textNormal = aprobada ? "#28a745" : enviada ? "var(--text-secondary)" : "#d97706";
+  const borderNormal = aprobada ? "rgba(52, 199, 89, 0.28)" : enviada ? "var(--separator)" : "rgba(255, 149, 0, 0.28)";
+  const detalleEnvio = cotizacion.enviadaEn
+    ? ` Enviada el ${fmtD(String(cotizacion.enviadaEn).slice(0, 10))}${cotizacion.enviadaA ? ` a ${cotizacion.enviadaA}` : ""}.`
+    : "";
 
   const bgHover = aprobada ? "#fee2e2" : "#dcfce7";
   const textHover = aprobada ? "#dc2626" : "#15803d";
@@ -1092,8 +1112,9 @@ function BotonEstadoAprobacion({ cotizacion, acciones }) {
       onMouseLeave={() => setHover(false)}
       title={
         aprobada
-          ? "Cotización aprobada. Haz clic aquí para desaprobarla (devolver a Pendiente)"
-          : "Cotización pendiente. Haz clic aquí para aprobarla y crear la obra automáticamente"
+          ? "Cotización aprobada. Haz clic aquí para desaprobarla" + detalleEnvio
+          : (enviada ? "Cotización enviada al cliente." : "Cotización pendiente.") +
+            detalleEnvio + " Haz clic aquí para aprobarla y crear la obra automáticamente"
       }
       style={{
         background: hover ? bgHover : bgNormal,

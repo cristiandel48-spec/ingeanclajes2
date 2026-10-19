@@ -581,6 +581,17 @@ export default function Cotizacion({ctx}){
     return saved;
   };
 
+  // Al enviarla por correo pasa a «Enviada»: el cliente ya la tiene y falta
+  // su respuesta. Una aprobada se queda aprobada; reenviarla no la devuelve.
+  // Se guarda a quien y cuando, que es lo que se pregunta al hacer seguimiento.
+  const marcarEnviada = (cotId, {para, fecha})=>{
+    setCotizaciones((prev)=>prev.map((item)=>{
+      if(item.id!==cotId) return item;
+      const aprobada = item.estado==="Aprobada" || Boolean(item.obraId);
+      return {...item, estado: aprobada ? item.estado : "Enviada", enviadaEn: fecha, enviadaA: para};
+    }));
+  };
+
   const aprobarCotizacion = (cotId)=>{
     const base = cotizaciones.find((cotizacion)=>cotizacion.id===cotId);
     const snapshot = base ? getQuoteApprovalAccountingSnapshot(base) : null;
@@ -773,6 +784,9 @@ export default function Cotizacion({ctx}){
   const desaprobarCotizacion = (cotId)=>{
     const cotizacion = cotizaciones.find((c)=>c.id===cotId);
     if(!cotizacion) return;
+    // Si ya se le habia enviado al cliente, vuelve a «Enviada»: lo tiene en
+    // su correo y sigue esperando respuesta.
+    const estadoPrevio = cotizacion.enviadaEn ? "Enviada" : "Pendiente";
 
     // Buscar todas las obras asociadas a esta cotización (por obraId o por cotizacionId)
     const obrasAsociadas = obras.filter((o) =>
@@ -809,15 +823,15 @@ export default function Cotizacion({ctx}){
 
     if (!obraPrincipal) {
       if (!window.confirm(
-        `¿Devolver la cotización ${cotizacion.numero || cotizacion.id} a "Pendiente"?`
+        `¿Devolver la cotización ${cotizacion.numero || cotizacion.id} a "${estadoPrevio}"?`
       )) return;
 
       setCotizaciones((prev) => prev.map((c) => (
-        c.id === cotId ? { ...c, estado: "Pendiente", obraId: null } : c
+        c.id === cotId ? { ...c, estado: estadoPrevio, obraId: null } : c
       )));
     } else if (algunaConTrabajo) {
       if (!window.confirm(
-        `La cotización ${cotizacion.numero || cotizacion.id} volverá a "Pendiente".\n\n` +
+        `La cotización ${cotizacion.numero || cotizacion.id} volverá a "${estadoPrevio}".\n\n` +
         `La obra ${obraPrincipal.id} (${obraPrincipal.proyecto || obraPrincipal.cliente}) SE CONSERVA intacta: ya tiene trabajo registrado (avance, fotos, pagos, etc.).\n\n` +
         `Si más adelante vuelves a aprobarla, se reutilizará la misma obra ${obraPrincipal.id} sin generar duplicados ni alterar el consecutivo.\n\n` +
         `¿Deseas continuar?`
@@ -825,7 +839,7 @@ export default function Cotizacion({ctx}){
 
       // Conservar obraId para saber qué obra reactivar al aprobar de nuevo
       setCotizaciones((prev) => prev.map((c) => (
-        c.id === cotId ? { ...c, estado: "Pendiente", obraId: obraPrincipal.id } : c
+        c.id === cotId ? { ...c, estado: estadoPrevio, obraId: obraPrincipal.id } : c
       )));
 
       // Limpiar clones vacíos sobrantes si existieran
@@ -838,12 +852,12 @@ export default function Cotizacion({ctx}){
       }
     } else {
       if (!window.confirm(
-        `¿Devolver la cotización ${cotizacion.numero || cotizacion.id} a "Pendiente" y retirar la obra creada (${obraPrincipal.id})?\n\n` +
+        `¿Devolver la cotización ${cotizacion.numero || cotizacion.id} a "${estadoPrevio}" y retirar la obra creada (${obraPrincipal.id})?\n\n` +
         `La obra está sin empezar (0% de avance). Al retirarla, no afectará el consecutivo ni dejará registros vacíos.`
       )) return;
 
       setCotizaciones((prev) => prev.map((c) => (
-        c.id === cotId ? { ...c, estado: "Pendiente", obraId: null } : c
+        c.id === cotId ? { ...c, estado: estadoPrevio, obraId: null } : c
       )));
 
       // Eliminar las obras vacías para liberar el consecutivo y evitar duplicados
@@ -1061,7 +1075,7 @@ export default function Cotizacion({ctx}){
               ocultarControles={true}
             />
           </div>
-          {enviarCot && <EnviarCotizacion cotizacion={enviarCot} firmaImg={firmaImg} onCerrar={()=>setEnviarCot(null)}/>}
+          {enviarCot && <EnviarCotizacion cotizacion={enviarCot} firmaImg={firmaImg} onCerrar={()=>setEnviarCot(null)} onEnviado={(info)=>marcarEnviada(enviarCot.id, info)}/>}
         </div>
       );
     }
@@ -1168,7 +1182,7 @@ export default function Cotizacion({ctx}){
         {/* La lista tiene su propio return, aparte del formulario. Sin montar
             aqui el dialogo, el boton de enviar guardaba el estado y no pasaba
             nada visible. */}
-        {enviarCot && <EnviarCotizacion cotizacion={enviarCot} firmaImg={firmaImg} onCerrar={()=>setEnviarCot(null)}/>}
+        {enviarCot && <EnviarCotizacion cotizacion={enviarCot} firmaImg={firmaImg} onCerrar={()=>setEnviarCot(null)} onEnviado={(info)=>marcarEnviada(enviarCot.id, info)}/>}
       </div>
     );
   }
@@ -1581,7 +1595,7 @@ export default function Cotizacion({ctx}){
           alto={cabeEnDosColumnas ? "calc(100vh - 210px)" : "calc(100vh - 260px)"}
         />
       )}
-      {enviarCot && <EnviarCotizacion cotizacion={enviarCot} firmaImg={firmaImg} onCerrar={()=>setEnviarCot(null)}/>}
+      {enviarCot && <EnviarCotizacion cotizacion={enviarCot} firmaImg={firmaImg} onCerrar={()=>setEnviarCot(null)} onEnviado={(info)=>marcarEnviada(enviarCot.id, info)}/>}
 
       </div>
     </div>

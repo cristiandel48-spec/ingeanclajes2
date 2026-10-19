@@ -8,7 +8,8 @@ import { B, SI } from "../../styles/tokens";
 import { fmtD, today } from "../../lib/format";
 import { leerImagenComprimida } from "../../lib/imagenes";
 import { normalizarFrase } from "../../lib/normalizarEntrada";
-import { normalizarBitacora, registroVacio, resumenBitacora } from "../../lib/bitacoraObra";
+import { normalizarBitacora, registroVacio, resumenBitacora, avanceDesdeBitacora, limpiarAvance } from "../../lib/bitacoraObra";
+import { estadoSegunAvance } from "../../lib/flujoObra";
 import { confirmar } from "../../lib/dialogos";
 
 // Pestana «Avance y fotos» del detalle de obra.
@@ -45,8 +46,21 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
     return guardarBitacoraReal(siguiente);
   };
 
+  // Al guardar la bitacora tambien se mueve el avance de la obra: es el de la
+  // jornada mas reciente que lo tenga anotado. Si ninguna lo trae, el avance
+  // se queda como estaba (por ejemplo, el que se puso a mano antes).
   const guardarBitacoraReal = (siguiente) =>
-    setObras((prev) => prev.map((o) => (o.id === obra.id ? { ...o, bitacora: siguiente } : o)));
+    setObras((prev) => prev.map((o) => {
+      if (o.id !== obra.id) return o;
+      const desdeBitacora = avanceDesdeBitacora(siguiente);
+      if (!desdeBitacora) return { ...o, bitacora: siguiente };
+      return {
+        ...o,
+        bitacora: siguiente,
+        avance: desdeBitacora.avance,
+        estado: estadoSegunAvance(desdeBitacora.avance, o.estado),
+      };
+    }));
 
   const agregarRegistro = () => {
     // Nace con una foto vacia lista para tocar: es lo primero que hace la
@@ -205,10 +219,30 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
               </button>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "180px 1fr", gap: 12, marginBottom: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "180px 150px 1fr", gap: 12, marginBottom: 10 }}>
               <div>
                 <LBL>Fecha del trabajo</LBL>
                 <input type="date" value={registro.fecha} onChange={(e) => actualizarRegistro(registro.id, "fecha", e.target.value)} style={{ ...SI, background: "#ffffff", border: "1px solid var(--border, #d2d2d7)" }} />
+              </div>
+              {/* El avance de la obra a esta fecha. La jornada mas reciente
+                  que lo tenga es la que manda en el avance de la obra. */}
+              <div>
+                <LBL>Avance de la obra (%)</LBL>
+                <div style={{ position: "relative" }}>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={registro.avance ?? ""}
+                    onChange={(e) => actualizarRegistro(registro.id, "avance", limpiarAvance(e.target.value))}
+                    placeholder={String(obra.avance ?? 0)}
+                    aria-label="Avance de la obra a la fecha de esta jornada, en porcentaje"
+                    style={{ ...SI, background: "#ffffff", border: "1px solid var(--border, #d2d2d7)", paddingRight: 28, fontVariantNumeric: "tabular-nums" }}
+                  />
+                  <span style={{ position: "absolute", right: 11, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "var(--text-tertiary)", pointerEvents: "none" }}>%</span>
+                </div>
               </div>
               <div>
                 <LBL>¿Qué se hizo?</LBL>

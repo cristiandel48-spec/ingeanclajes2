@@ -11,6 +11,7 @@ import { TIPO } from "../../styles/designTokens";
 import { Button, Card, Icono, Input, SegmentedControl, StatusPill } from "../../components/ui";
 import { fmt, fmtD, today } from "../../lib/format";
 import { estadoSegunAvance, obraEstaCerrada } from "../../lib/flujoObra";
+import { avanceDesdeBitacora } from "../../lib/bitacoraObra";
 import { esAdmin, puedeCrearPersonal, puedeVerDinero } from "../../lib/permisos";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import { resolverAutorGuardado } from "../../lib/autorAuditoria";
@@ -119,6 +120,8 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
   };
 
   const estadoAvance = oAct.avance === 100 ? "Finalizado" : oAct.avance >= 90 ? "Listo para certificar" : "En Ejecución";
+  // { avance, fecha } de la jornada mas reciente que lo anoto, o null.
+  const avanceBitacora = avanceDesdeBitacora(oAct.bitacora);
 
   return(
     <div
@@ -342,6 +345,27 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             {bloqueada && <StatusPill tono="neutro">Obra cerrada</StatusPill>}
           </div>
         </div>
+        {/* El avance lo pone la bitacora: el de la jornada mas reciente que
+            lo tenga. Con eso ya no hay que moverlo a mano y el numero dice de
+            donde sale. Solo si ninguna jornada lo trae queda la barra para
+            moverlo, como antes. */}
+        {avanceBitacora ? (
+          <>
+            <div
+              role="progressbar"
+              aria-label="Avance de la obra"
+              aria-valuenow={oAct.avance}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              style={{ marginTop: 12, height: 6, borderRadius: 999, background: "var(--fill)", overflow: "hidden" }}
+            >
+              <div style={{ width: `${oAct.avance}%`, height: "100%", borderRadius: 999, background: "var(--text-primary)", transition: "width .3s ease" }} />
+            </div>
+            <div style={{ marginTop: 8, fontSize: 12, color: "var(--text-tertiary)" }}>
+              Según la bitácora{avanceBitacora.fecha ? ` del ${fmtD(avanceBitacora.fecha)}` : ""}. Para cambiarlo, anota el avance en la jornada del día en «Avance diario».
+            </div>
+          </>
+        ) : (
         <input
           type="range"
           min={0}
@@ -370,6 +394,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             cursor: bloqueada ? "not-allowed" : "pointer",
           }}
         />
+        )}
       </Card>
 
       {/* Quedan las tres que se usan. Materiales y Despacho, Gastos, Nomina y

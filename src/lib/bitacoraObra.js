@@ -17,8 +17,32 @@ export function registroVacio(fecha) {
     actividad: "",
     descripcion: "",
     observaciones: "",
+    // Avance de la obra (0-100) a la fecha de esta jornada. Vacio si no se
+    // anoto: entonces esta jornada no mueve el avance.
+    avance: null,
     fotos: [],
   };
+}
+
+// Deja el avance en un entero de 0 a 100, o null si no hay numero.
+export function limpiarAvance(valor) {
+  if (valor === null || valor === undefined || valor === "") return null;
+  const n = Math.round(Number(valor));
+  if (!Number.isFinite(n)) return null;
+  return Math.min(100, Math.max(0, n));
+}
+
+// El avance de la obra sale de la bitacora: el de la jornada mas reciente que
+// lo tenga anotado. Si dos jornadas son del mismo dia, manda la ultima
+// registrada. Devuelve { avance, fecha } o null si ninguna jornada lo trae.
+export function avanceDesdeBitacora(bitacora) {
+  const registros = normalizarBitacora(bitacora);
+  for (let i = registros.length - 1; i >= 0; i--) {
+    if (registros[i].avance !== null) {
+      return { avance: registros[i].avance, fecha: registros[i].fecha };
+    }
+  }
+  return null;
 }
 
 export function fotoVacia() {
@@ -37,6 +61,7 @@ export function normalizarBitacora(bitacora) {
       actividad: registro.actividad || "",
       descripcion: registro.descripcion || "",
       observaciones: registro.observaciones || "",
+      avance: limpiarAvance(registro.avance),
       fotos: Array.isArray(registro.fotos)
         ? registro.fotos
             .filter(Boolean)

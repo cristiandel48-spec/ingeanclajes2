@@ -508,7 +508,13 @@ export default function SupabaseGate({ children }) {
             tam="lg"
             bloque
             cargando={busy}
-            style={{ marginTop: ESPACIO.lg, height: 50, borderRadius: 13, fontSize: 15 }}
+            // «Entrar» se queda negro, como era: en el acceso es el unico
+            // boton y la pantalla lo pide con fuerza. Dentro del programa la
+            // principal es la pildora gris.
+            style={{
+              marginTop: ESPACIO.lg, height: 50, borderRadius: 13, fontSize: 15,
+              background: "var(--text-primary)", color: "var(--surface)",
+            }}
           >
             {busy ? "Ingresando…" : "Entrar"}
           </Button>

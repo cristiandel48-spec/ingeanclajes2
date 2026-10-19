@@ -1040,6 +1040,21 @@ export default function Cotizacion({ctx}){
               >
                 Enviar al cliente
               </button>
+              {/* WhatsApp vivia en el panel lateral de la lista, que se quito:
+                  ahora esta aqui, junto a «Enviar al cliente». Solo si la
+                  cotizacion tiene telefono. */}
+              {String(previewCot.telefono || "").replace(/\D/g, "") && (
+                <a
+                  href={`https://wa.me/57${String(previewCot.telefono).replace(/\D/g, "")}?text=${encodeURIComponent(
+                    `Hola ${previewCot.contacto || previewCot.cliente || ""}, te saludo de Ingeanclajes respecto a la cotización ${previewCot.numero || previewCot.id}...`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ ...B("var(--fill)"), textDecoration: "none", padding: "5px 12px", fontSize: 12 }}
+                >
+                  WhatsApp
+                </a>
+              )}
             </div>
           </div>
 

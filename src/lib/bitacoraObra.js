@@ -17,11 +17,19 @@ export function registroVacio(fecha) {
     actividad: "",
     descripcion: "",
     observaciones: "",
-    // Avance de la obra (0-100) a la fecha de esta jornada. Vacio si no se
-    // anoto: entonces esta jornada no mueve el avance.
+    // Avance de la obra (0-100) a la fecha de esta jornada. Es obligatorio en
+    // las jornadas nuevas: hasta que se anota, el resto de la jornada queda
+    // bloqueado. Las jornadas de antes de este cambio no lo traen y no se
+    // bloquean (no tienen la marca avanceObligatorio).
     avance: null,
+    avanceObligatorio: true,
     fotos: [],
   };
+}
+
+// La jornada pide el avance y todavia no lo tiene.
+export function faltaAvance(registro) {
+  return Boolean(registro?.avanceObligatorio) && registro?.avance === null;
 }
 
 // Deja el avance en un entero de 0 a 100, o null si no hay numero.
@@ -62,6 +70,7 @@ export function normalizarBitacora(bitacora) {
       descripcion: registro.descripcion || "",
       observaciones: registro.observaciones || "",
       avance: limpiarAvance(registro.avance),
+      avanceObligatorio: Boolean(registro.avanceObligatorio),
       fotos: Array.isArray(registro.fotos)
         ? registro.fotos
             .filter(Boolean)

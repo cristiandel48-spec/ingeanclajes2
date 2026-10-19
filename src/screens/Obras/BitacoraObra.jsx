@@ -8,9 +8,9 @@ import { B, SI } from "../../styles/tokens";
 import { fmtD, today } from "../../lib/format";
 import { leerImagenComprimida } from "../../lib/imagenes";
 import { normalizarFrase } from "../../lib/normalizarEntrada";
-import { normalizarBitacora, registroVacio, resumenBitacora, avanceDesdeBitacora, limpiarAvance } from "../../lib/bitacoraObra";
+import { normalizarBitacora, registroVacio, resumenBitacora, avanceDesdeBitacora, limpiarAvance, faltaAvance } from "../../lib/bitacoraObra";
 import { estadoSegunAvance } from "../../lib/flujoObra";
-import { confirmar } from "../../lib/dialogos";
+import { confirmar, avisar } from "../../lib/dialogos";
 
 // Pestana «Avance y fotos» del detalle de obra.
 //
@@ -34,7 +34,10 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
       const el = document.querySelector(`[data-registro-id="${CSS.escape(registroPorMostrar)}"]`);
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "start" });
-        el.querySelector("input:not([disabled]), textarea:not([disabled])")?.focus({ preventScroll: true });
+        // Si la jornada pide el avance, el cursor va ahi: es lo primero que
+        // hay que llenar.
+        (el.querySelector("[data-falta-avance] input")
+          || el.querySelector("input:not([disabled]), textarea:not([disabled])"))?.focus({ preventScroll: true });
       }
       setRegistroPorMostrar(null);
     });
@@ -63,6 +66,17 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
     }));
 
   const agregarRegistro = () => {
+    // No se abre otra jornada mientras alguna no tenga su avance: se lleva a
+    // la persona a esa jornada para que lo anote.
+    const pendiente = registros.find(faltaAvance);
+    if (pendiente) {
+      avisar({
+        titulo: "Falta el avance de la obra",
+        mensaje: `Antes de registrar otra jornada, escribe el avance de la obra en la del ${fmtD(pendiente.fecha) || "día sin fecha"}.`,
+      });
+      setRegistroPorMostrar(pendiente.id);
+      return;
+    }
     // Nace con una foto vacia lista para tocar: es lo primero que hace la
     // gente cuando llega del sitio.
     const nuevo = { ...registroVacio(today()), fotos: [] };
@@ -201,6 +215,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
 
       {registros.map((registro, idx) => {
         const fotosConImagen = (registro.fotos || []).filter((f) => f.img).length;
+        const falta = faltaAvance(registro);
         return (
           <div key={registro.id} data-registro-id={registro.id} style={{ scrollMarginTop: 16, background: "var(--surface-subtle, #fbfbfd)", border: "1px solid var(--border, #e5e5ea)", borderRadius: 14, padding: "16px 18px", marginBottom: 14, boxShadow: "0 1px 2px rgba(0,0,0,0.02)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, paddingBottom: 10, borderBottom: "1px solid var(--border, #f2f2f7)" }}>
@@ -225,10 +240,11 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                 <input type="date" value={registro.fecha} onChange={(e) => actualizarRegistro(registro.id, "fecha", e.target.value)} style={{ ...SI, background: "#ffffff", border: "1px solid var(--border, #d2d2d7)" }} />
               </div>
               {/* El avance de la obra a esta fecha. La jornada mas reciente
-                  que lo tenga es la que manda en el avance de la obra. */}
-              <div>
-                <LBL>Avance de la obra (%)</LBL>
-                <div style={{ position: "relative" }}>
+                  que lo tenga es la que manda en el avance de la obra. En las
+                  jornadas nuevas es obligatorio: sin el, lo demas no se llena. */}
+              <div data-falta-avance={falta || undefined}>
+                <LBL>Avance de la obra (%){registro.avanceObligatorio ? " *" : ""}</LBL>
+                <div style={{ position: "relative", borderRadius: 10, boxShadow: falta ? "0 0 0 2px var(--danger)" : "none" }}>
                   <input
                     type="number"
                     inputMode="numeric"
@@ -237,12 +253,19 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                     step={1}
                     value={registro.avance ?? ""}
                     onChange={(e) => actualizarRegistro(registro.id, "avance", limpiarAvance(e.target.value))}
-                    placeholder={String(obra.avance ?? 0)}
+                    // Sin el avance actual como sugerencia: en gris parecia que
+                    // ya estaba lleno, y es justo el dato que se debe escribir.
+                    placeholder="0 a 100"
                     aria-label="Avance de la obra a la fecha de esta jornada, en porcentaje"
                     style={{ ...SI, background: "#ffffff", border: "1px solid var(--border, #d2d2d7)", paddingRight: 28, fontVariantNumeric: "tabular-nums" }}
                   />
                   <span style={{ position: "absolute", right: 11, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "var(--text-tertiary)", pointerEvents: "none" }}>%</span>
                 </div>
+                {falta && (
+                  <div role="alert" style={{ fontSize: 11.5, color: "var(--danger-text)", marginTop: 5, lineHeight: 1.35 }}>
+                    Escríbelo para poder seguir.
+                  </div>
+                )}
               </div>
               <div>
                 <LBL>¿Qué se hizo?</LBL>
@@ -250,14 +273,19 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                   value={registro.actividad}
                   onChange={(e) => actualizarRegistro(registro.id, "actividad", e.target.value)}
                   onBlur={(e) => acomodarTexto(registro.id, "actividad", e.target.value)}
-                  placeholder="Ej: Instalación de líneas de vida en cubierta norte"
+                  placeholder={falta ? "Primero escribe el avance de la obra" : "Ej: Instalación de líneas de vida en cubierta norte"}
+                  disabled={falta}
                   spellCheck
                   lang="es"
-                  style={{ ...SI, background: "#ffffff", border: "1px solid var(--border, #d2d2d7)" }}
+                  style={{ ...SI, background: "#ffffff", border: "1px solid var(--border, #d2d2d7)", opacity: falta ? 0.5 : 1 }}
                 />
               </div>
             </div>
 
+            {/* Descripcion, observaciones y fotos: bloqueadas (inert) hasta que
+                la jornada tenga su avance. inert impide tocar, escribir y
+                llegar con el tabulador, y el lector de pantalla lo salta. */}
+            <div inert={falta} style={falta ? { opacity: 0.45, userSelect: "none" } : undefined}>
             <div style={{ marginBottom: 10 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                 <LBL>Descripción del trabajo</LBL>
@@ -377,6 +405,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                 ⏳ Cargando fotos… {subiendoFotos.hechas} de {subiendoFotos.total}
               </div>
             )}
+            </div>
           </div>
         );
       })}

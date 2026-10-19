@@ -21,6 +21,7 @@ import { printColilla, printCurrentPz, printLiquidacion, printVacaciones } from 
 import { generarColillaPdf, blobABase64 } from "../../lib/colillaPdf";
 import { enviarColillaPorCorreo } from "../../lib/backend/usuarios";
 import ModalEnvioMasivoColillas from "./ModalEnvioMasivoColillas";
+import { confirmar } from "../../lib/dialogos";
 
 // ── Piezas del area de personal ─────────────────────────────────────────────
 // Lo de abajo (horas extras, incapacidades, planilla, colillas) conserva su
@@ -299,7 +300,7 @@ export default function Nomina({ctx}){
       return normalizarEmpleado(siguiente);
     });
 
-  const guardarNuevoEmp=()=>{
+  const guardarNuevoEmp=async()=>{
     // Se normaliza tambien aqui, no solo al salir del campo: quien pega el
     // dato y le da guardar de una nunca dispara el onBlur.
     const nombre=normalizarNombrePropio(nf.nombre);
@@ -311,7 +312,7 @@ export default function Nomina({ctx}){
     // Dos personas con el mismo nombre casi siempre es la misma cargada dos
     // veces. Se avisa, pero se deja seguir: los homonimos existen.
     const repetido=empleadosBase.find((e)=>normalizarNombrePropio(e.nombre)===nombre);
-    if(repetido && !window.confirm(`Ya existe un empleado llamado ${nombre} (${repetido.id}).\n\n¿Aun así quieres crearlo otra vez?`)) return;
+    if(repetido && !(await confirmar(`¿Aun así quieres crear el empleado ${nombre} otra vez?\n\nYa existe un empleado con ese nombre (${repetido.id}).`))) return;
     const nextNumber=empleadosBase.reduce((maximo,empleado)=>{
       const match=String(empleado.id||"").match(/^E(\d+)$/);
       return match ? Math.max(maximo,Number(match[1])) : maximo;
@@ -615,7 +616,7 @@ export default function Nomina({ctx}){
   };
 
   const eliminarNominaHistorial = async (idAEliminar)=>{
-    if(!window.confirm("¿Seguro que deseas eliminar este corte guardado del historial?")) return;
+    if(!(await confirmar({titulo:"¿Seguro que deseas eliminar este corte guardado del historial?",destructivo:true}))) return;
     const filtradas = (Array.isArray(nominasGeneradas) ? nominasGeneradas : []).filter(item => item.id !== idAEliminar);
     setNominasGeneradas(filtradas);
     await guardarCambiosNomina("Corte de nómina eliminado del historial.", { nominasGeneradas: filtradas });

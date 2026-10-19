@@ -22,6 +22,7 @@ import SelectorEmojis from "./SelectorEmojis";
 import AdjuntoMensaje from "./AdjuntoMensaje";
 import BarraAdjuntoPrevia from "./BarraAdjuntoPrevia";
 import { procesarArchivoAdjunto, serializarAdjunto } from "../../lib/soporteAdjuntos";
+import { confirmar } from "../../lib/dialogos";
 
 function formatHoraCorta(isoString) {
   if (!isoString) return "";
@@ -614,7 +615,7 @@ export default function BotonSoporteFlotante() {
 
   const handleEliminarTicket = async (id) => {
     if (!id) return;
-    const ok = window.confirm("¿Estás seguro de que deseas eliminar esta conversación? Esta acción no se puede deshacer.");
+    const ok = await confirmar({ titulo: "¿Estás seguro de que deseas eliminar esta conversación?", mensaje: "Esta acción no se puede deshacer.", textoConfirmar: "Eliminar", destructivo: true });
     if (!ok) return;
 
     try {

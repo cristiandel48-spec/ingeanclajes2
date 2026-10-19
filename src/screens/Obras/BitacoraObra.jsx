@@ -9,6 +9,7 @@ import { fmtD, today } from "../../lib/format";
 import { leerImagenComprimida } from "../../lib/imagenes";
 import { normalizarFrase } from "../../lib/normalizarEntrada";
 import { normalizarBitacora, registroVacio, resumenBitacora } from "../../lib/bitacoraObra";
+import { confirmar } from "../../lib/dialogos";
 
 // Pestana «Avance y fotos» del detalle de obra.
 //
@@ -65,12 +66,12 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
     if (limpio !== valor) actualizarRegistro(id, campo, limpio);
   };
 
-  const eliminarRegistro = (registro) => {
+  const eliminarRegistro = async (registro) => {
     const cuantasFotos = (registro.fotos || []).filter((f) => f.img).length;
     const aviso = cuantasFotos
-      ? `Se va a borrar este registro del ${fmtD(registro.fecha) || "día sin fecha"} junto con sus ${cuantasFotos} foto(s). Esta acción no se puede deshacer.\n\n¿Continuar?`
+      ? `¿Borrar este registro del ${fmtD(registro.fecha) || "día sin fecha"} junto con sus ${cuantasFotos} foto(s)?\n\nEsta acción no se puede deshacer.`
       : "¿Borrar este registro de avance?";
-    if (!window.confirm(aviso)) return;
+    if (!(await confirmar(aviso))) return;
     guardarBitacora(registros.filter((r) => r.id !== registro.id));
   };
 

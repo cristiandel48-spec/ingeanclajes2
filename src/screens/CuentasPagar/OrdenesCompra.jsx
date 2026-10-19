@@ -8,6 +8,7 @@ import { useAppData } from "../../context/AppDataContext";
 import PrintHeader from "../../components/print/PrintHeader";
 import { descargarDocumentoPdf } from "../../lib/documentoPdf";
 import { siguienteIdUnico } from "../../lib/identificadores";
+import { confirmar } from "../../lib/dialogos";
 
 // Formatea moneda con decimales exactos al estilo ERP: $ 7.567.436,10
 function fmtMonedaErp(valor) {
@@ -305,9 +306,9 @@ export default function OrdenesCompra({
   };
 
   // Acciones de Aprobación
-  const aprobarOrden = (orden) => {
+  const aprobarOrden = async (orden) => {
     const aprobadorEsperado = orden.comprador || "María Camila Sepúlveda";
-    const confirmacion = window.confirm(
+    const confirmacion = await confirmar(
       `¿Confirmas la APROBACIÓN de la orden ${orden.id}?\n\n` +
       `Proveedor: ${orden.proveedorNombre}\n` +
       `Total: ${fmtMonedaErp(orden.total)}\n` +
@@ -377,7 +378,7 @@ export default function OrdenesCompra({
   };
 
   // Acción para causar la factura correspondiente a la Orden de Compra
-  const ejecutarCausacionOrden = () => {
+  const ejecutarCausacionOrden = async () => {
     if (!numFacturaCausacion.trim()) {
       alert("Por favor ingresa el número de la factura enviada por el proveedor.");
       return;
@@ -450,13 +451,16 @@ export default function OrdenesCompra({
     setShowModalCausar(false);
     setNumFacturaCausacion("");
     alert(`Factura ${numFacturaCausacion.trim()} causada exitosamente en Contabilidad vinculada a la Orden ${orden.id}.`);
-    if (typeof onIrACausacion === "function" && window.confirm("¿Deseas ir al módulo de Causación para ver la cuenta registrada?")) {
+    if (typeof onIrACausacion === "function" && await confirmar({
+      titulo: "¿Deseas ir al módulo de Causación para ver la cuenta registrada?",
+      conGuardando: false,
+    })) {
       onIrACausacion();
     }
   };
 
-  const eliminarOrden = (id) => {
-    if (!window.confirm(`¿Estás seguro de eliminar la orden de compra ${id}?`)) return;
+  const eliminarOrden = async (id) => {
+    if (!(await confirmar({ titulo: `¿Estás seguro de eliminar la orden de compra ${id}?`, destructivo: true }))) return;
     setOrdenesCompra((prev) => prev.filter((o) => o.id !== id));
     if (ordenDetalle?.id === id) setOrdenDetalle(null);
   };

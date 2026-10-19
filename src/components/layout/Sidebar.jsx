@@ -1,17 +1,4 @@
 import { useRef, useState } from "react";
-
-// Efecto Dock del Mac: al acercar el mouse, el icono que tiene debajo crece y
-// los vecinos crecen menos cuanto mas lejos estan. Se calcula con la
-// distancia vertical del cursor al centro de cada icono.
-const DOCK_ESCALA_MAX = 1.6;   // cuanto crece el icono que esta justo debajo
-const DOCK_ALCANCE = 110;      // hasta que distancia (px) se nota el efecto
-
-function escalaDock(distancia) {
-  if (distancia >= DOCK_ALCANCE) return 1;
-  // Curva coseno: suave en el borde del alcance y plana en el centro.
-  const t = Math.cos((distancia / DOCK_ALCANCE) * (Math.PI / 2));
-  return 1 + (DOCK_ESCALA_MAX - 1) * t;
-}
 import CreditoDesarrollo from "../CreditoDesarrollo";
 import logoIngeanclajes from "../../assets/logo-ingeanclajes.jpeg";
 import { NAV_SECTIONS, ICONS } from "../../config/navigation";
@@ -21,9 +8,24 @@ import { BRAND, RAIL_WIDTH, RAIL_WIDTH_EXPANDED } from "../../styles/shellTheme"
 import { BotonInstalarApp } from "../pwa/InstaladorApp";
 import { TIPO } from "../../styles/designTokens";
 
+// Efecto Dock del Mac: al acercar el mouse, el icono que tiene debajo crece y
+// los vecinos crecen menos cuanto mas lejos estan. Se calcula con la
+// distancia vertical del cursor al centro de cada icono.
+const DOCK_ESCALA_MAX = 2;     // cuanto crece el icono que esta justo debajo
+const DOCK_ALCANCE = 120;      // hasta que distancia (px) se nota el efecto
+const DOCK_ETIQUETA = 26;      // a menos de esto del centro se muestra el nombre
+
+function escalaDock(distancia) {
+  if (distancia >= DOCK_ALCANCE) return 1;
+  // Curva coseno: suave en el borde del alcance y plana en el centro.
+  const t = Math.cos((distancia / DOCK_ALCANCE) * (Math.PI / 2));
+  return 1 + (DOCK_ESCALA_MAX - 1) * t;
+}
+
 // Navegacion lateral.
-// Escritorio: barra de iconos que se despliega al pasar el cursor mostrando
-// los nombres. Se puede fijar abierta con el boton inferior.
+// Escritorio: barra de iconos. Al acercar el mouse los iconos crecen como en
+// el Dock del Mac y sale una etiqueta con el nombre al lado, sin abrir la
+// barra. Se puede fijar abierta, con los nombres, con el boton inferior.
 // Movil: panel deslizante sobre el contenido.
 export default function Sidebar({
   scr,
@@ -36,13 +38,16 @@ export default function Sidebar({
   pinned,
   onTogglePin,
 }) {
-  const [hovered, setHovered] = useState(false);
+  // Nombre que se muestra junto al icono que tiene el mouse encima.
+  const [etiqueta, setEtiqueta] = useState(null); // { texto, top }
   // Cada quien ve solo sus modulos. Mientras la membresia carga se
   // muestra el menu completo: no hay datos aun y evita un parpadeo.
   const { membresia } = useAppData();
   const secciones = membresia ? filtrarSecciones(NAV_SECTIONS, membresia) : NAV_SECTIONS;
 
-  const open = isMobile ? true : pinned || hovered;
+  // Ya no se despliega al pasar el mouse: los nombres salen en la etiqueta
+  // del Dock. Abierta solo si se fija.
+  const open = isMobile ? true : pinned;
   const reservedWidth = pinned ? RAIL_WIDTH_EXPANDED : RAIL_WIDTH;
   const showLabels = open;
 
@@ -65,7 +70,7 @@ export default function Sidebar({
     paddingTop: "env(safe-area-inset-top)",
     paddingBottom: "env(safe-area-inset-bottom)",
     paddingLeft: "env(safe-area-inset-left)",
-    boxShadow: (isMobile && mobileOpen) || (!isMobile && hovered && !pinned)
+    boxShadow: isMobile && mobileOpen
       ? (dark ? "0 0 0 100vmax rgba(9,11,16,.32), 8px 0 28px rgba(9,11,16,.28)" : "0 0 0 100vmax rgba(16,24,40,.08), 8px 0 24px rgba(16,24,40,.06)")
       : "none",
   };
@@ -89,10 +94,21 @@ export default function Sidebar({
     const y = e.clientY;
     cancelAnimationFrame(marcoRef.current);
     marcoRef.current = requestAnimationFrame(() => {
+      let cercano = null;
       listaRef.current?.querySelectorAll("[data-dock]").forEach((icono) => {
-        const r = icono.getBoundingClientRect();
-        icono.style.transform = `scale(${escalaDock(Math.abs(y - (r.top + r.height / 2))).toFixed(3)})`;
+        // El centro se mide en el boton, que no cambia de tamaño: si se
+        // midiera el icono ya ampliado, el calculo se alimentaria a si mismo.
+        const r = icono.closest("button").getBoundingClientRect();
+        const centro = r.top + r.height / 2;
+        const distancia = Math.abs(y - centro);
+        icono.style.transform = `scale(${escalaDock(distancia).toFixed(3)})`;
+        if (distancia < DOCK_ETIQUETA && (!cercano || distancia < cercano.distancia)) {
+          cercano = { distancia, centro, texto: icono.closest("button").getAttribute("aria-label") };
+        }
       });
+      // Con la barra fijada los nombres ya estan a la vista.
+      const nueva = cercano && !pinned ? { texto: cercano.texto, top: cercano.centro } : null;
+      setEtiqueta((prev) => (prev?.texto === nueva?.texto && prev?.top === nueva?.top ? prev : nueva));
     });
   };
 
@@ -101,6 +117,7 @@ export default function Sidebar({
     listaRef.current?.querySelectorAll("[data-dock]").forEach((icono) => {
       icono.style.transform = "scale(1)";
     });
+    setEtiqueta(null);
   };
 
   return (
@@ -119,8 +136,6 @@ export default function Sidebar({
 
       <nav
         style={railStyle}
-        onMouseEnter={() => !isMobile && setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
         aria-label="Navegación principal"
       >
         {/* Marca */}
@@ -177,7 +192,9 @@ export default function Sidebar({
                     key={item.id}
                     onClick={() => handleNavigate(item.id)}
                     aria-current={active ? "page" : undefined}
-                    title={item.label}
+                    // Sin title: el nombre lo muestra la etiqueta del Dock, y el
+                    // globo gris del navegador saldria encima de ella.
+                    aria-label={item.label}
                     style={{
                       width: "100%",
                       // 44px es el minimo tactil recomendado por Apple.
@@ -293,6 +310,33 @@ export default function Sidebar({
         )}
       </nav>
 
+      {/* Etiqueta del Dock: el nombre del modulo al lado del icono, como el
+          globo que sale sobre los iconos del Dock del Mac. Va fuera del <nav>
+          porque este recorta lo que se sale de su ancho. */}
+      {etiqueta && (
+        <div
+          role="tooltip"
+          style={{
+            position: "fixed",
+            left: RAIL_WIDTH + 10,
+            top: etiqueta.top,
+            transform: "translateY(-50%)",
+            zIndex: 101,
+            pointerEvents: "none",
+            background: "var(--surface)",
+            color: "var(--text-primary)",
+            border: "1px solid var(--separator)",
+            boxShadow: "var(--sombra-md)",
+            borderRadius: 8,
+            padding: "6px 11px",
+            fontSize: 13,
+            fontWeight: 500,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {etiqueta.texto}
+        </div>
+      )}
     </>
   );
 }

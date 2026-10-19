@@ -15,6 +15,7 @@ import { normalizarMayusculas } from "../../lib/normalizarEntrada";
 import { resolverAutorGuardado } from "../../lib/autorAuditoria";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import { useSubirAlFormulario } from "../../hooks/useSubirAlFormulario";
+import { confirmar } from "../../lib/dialogos";
 
 // Aire debajo de cada bloque. El kit no lo trae: lo pone quien coloca la pieza.
 const SEPARA = { marginBottom: ESPACIO.lg };
@@ -372,7 +373,7 @@ export default function Horarios({ctx}){
     return null;
   }, [fechaF, horarios]);
 
-  const copiarDiaAnterior=()=>{
+  const copiarDiaAnterior=async()=>{
     if(!diaAnteriorConTurnos) return;
     const origen=horarios.filter((h)=>h.fecha===diaAnteriorConTurnos);
     const nuevos=origen
@@ -387,10 +388,10 @@ export default function Horarios({ctx}){
       return;
     }
     const personas=new Set(nuevos.map((n)=>n.empleadoId)).size;
-    if(!window.confirm(
+    if(!(await confirmar(
       `¿Copiar ${nuevos.length} turno(s) de ${personas} persona(s) del ${fmtD(diaAnteriorConTurnos)} al ${fmtD(fechaF)}?\n\n` +
       "Quedan iguales: obra, horario y tarea. Después puedes quitar o cambiar los que no aplican."
-    )) return;
+    ))) return;
 
     const autorActual = resolverAutorGuardado(ctx?.membresia);
     const ahoraIso = new Date().toISOString();

@@ -25,6 +25,7 @@ import {
   obtenerFechasEspecialesDelMes,
 } from "../../lib/agendaEspecial";
 import ModalEstrellitaEspecial from "../../components/agenda/ModalEstrellitaEspecial";
+import { confirmar } from "../../lib/dialogos";
 
 // Meses y días en español
 const MESES = [
@@ -1339,8 +1340,8 @@ export default function Agenda({ ctx }) {
     }, 6000);
   };
 
-  const eliminarFechaEspecial = (id) => {
-    if (window.confirm("¿Deseas quitar esta estrellita y fecha especial?")) {
+  const eliminarFechaEspecial = async (id) => {
+    if (await confirmar({ titulo: "¿Deseas quitar esta estrellita y fecha especial?", textoConfirmar: "Quitar", destructivo: true })) {
       setCompromisos((prev) => (prev || []).filter((c) => c.id !== id));
       if (typeof ctx?.saveAllToCloud === "function") {
         ctx.saveAllToCloud().catch((err) => console.warn(err));
@@ -1481,8 +1482,8 @@ export default function Agenda({ ctx }) {
     );
   };
 
-  const eliminarCompromiso = (id) => {
-    if (window.confirm("¿Deseas eliminar este compromiso?")) {
+  const eliminarCompromiso = async (id) => {
+    if (await confirmar({ titulo: "¿Deseas eliminar este compromiso?", textoConfirmar: "Eliminar", destructivo: true })) {
       setCompromisos((prev) => prev.filter((c) => c.id !== id));
     }
   };

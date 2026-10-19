@@ -9,6 +9,7 @@ import { esAdmin } from "../../lib/permisos";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import { normalizarMayusculas } from "../../lib/normalizarEntrada";
 import { useIsMobile } from "../../hooks/useMediaQuery";
+import { confirmar } from "../../lib/dialogos";
 
 // Los servicios que se cotizan y su precio.
 //
@@ -58,11 +59,11 @@ export default function Catalogo({ ctx }) {
   };
 
   // La primera vez, para no teclear los dieciocho servicios a mano.
-  const sembrar = () => {
-    if (!window.confirm(
-      "Se van a cargar los servicios con los que venía el programa, con sus precios actuales.\n\n" +
-      "Solo se agregan los que falten; no se toca nada de lo que ya esté aquí.\n\n¿Continuar?"
-    )) return;
+  const sembrar = async () => {
+    if (!(await confirmar(
+      "¿Cargar los servicios con los que venía el programa?\n\n" +
+      "Se cargan con sus precios actuales. Solo se agregan los que falten; no se toca nada de lo que ya esté aquí."
+    ))) return;
     setCatalogoItems((prev) => {
       const actuales = prev || [];
       const yaEstan = new Set(actuales.map((f) => String(f.descripcion || "").trim().toUpperCase()));

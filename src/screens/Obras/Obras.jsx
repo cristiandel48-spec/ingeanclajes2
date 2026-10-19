@@ -16,6 +16,7 @@ import BuscadorCliente from "../../components/BuscadorCliente";
 import { avisoCelular, normalizarMayusculas, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
 import { resolverAutorGuardado } from "../../lib/autorAuditoria";
 import { useIsMobile } from "../../hooks/useMediaQuery";
+import { confirmar } from "../../lib/dialogos";
 
 // Siguiente consecutivo de obra. Se calcula sobre el numero mas alto que ya
 // existe, no sobre cuantas obras hay: al borrar una obra intermedia, contar
@@ -110,14 +111,14 @@ export default function Obras({ctx}){
     };
   }));
 
-  const guardarObra=()=>{
+  const guardarObra=async()=>{
     if(!nob.cliente.trim()){
       window.alert("Falta el nombre del cliente. Es lo único obligatorio para crear la obra.");
       return;
     }
     const clienteLimpio=normalizarRazonSocial(nob.cliente);
     const yaExiste=obras.find((o)=>normalizarRazonSocial(o.cliente)===clienteLimpio && normalizarMayusculas(o.proyecto)===normalizarMayusculas(nob.proyecto));
-    if(yaExiste && !window.confirm(`Ya hay una obra de ${clienteLimpio} con ese mismo proyecto (${yaExiste.id}).\n\n¿Aun así quieres crear otra?`)) return;
+    if(yaExiste && !(await confirmar(`¿Crear otra obra de todos modos?\n\nYa hay una obra de ${clienteLimpio} con ese mismo proyecto (${yaExiste.id}).`))) return;
     const id=siguienteIdObra(obras);
     const cotizacionVinculada = nob.cotizacionId ? cotizaciones.find((cotizacion)=>cotizacion.id===nob.cotizacionId) : null;
     const snapshot = cotizacionVinculada ? getQuoteApprovalAccountingSnapshot(cotizacionVinculada) : null;

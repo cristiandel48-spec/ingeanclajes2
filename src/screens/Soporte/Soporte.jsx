@@ -23,6 +23,7 @@ import SelectorEmojis from "../../components/soporte/SelectorEmojis";
 import AdjuntoMensaje from "../../components/soporte/AdjuntoMensaje";
 import BarraAdjuntoPrevia from "../../components/soporte/BarraAdjuntoPrevia";
 import { procesarArchivoAdjunto, serializarAdjunto } from "../../lib/soporteAdjuntos";
+import { confirmar } from "../../lib/dialogos";
 
 const ESTADOS = {
   todos: "Todos",
@@ -648,7 +649,7 @@ export default function Soporte({ ctx }) {
   // Eliminar conversación y mensajes
   const handleEliminarTicket = async (id) => {
     if (!id) return;
-    const ok = window.confirm("¿Estás seguro de que deseas eliminar esta conversación? Esta acción no se puede deshacer.");
+    const ok = await confirmar({ titulo: "¿Estás seguro de que deseas eliminar esta conversación?", mensaje: "Esta acción no se puede deshacer.", textoConfirmar: "Eliminar", destructivo: true });
     if (!ok) return;
 
     try {

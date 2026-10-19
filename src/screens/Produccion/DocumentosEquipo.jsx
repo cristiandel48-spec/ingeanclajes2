@@ -3,6 +3,7 @@ import { useSubirAlFormulario } from "../../hooks/useSubirAlFormulario";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import { limpiarDocumentosEjemplo } from "./documentosSeed";
 import { Icono } from "../../components/ui";
+import { confirmar } from "../../lib/dialogos";
 
 const NARANJA = "#f47c20";
 
@@ -689,15 +690,15 @@ export default function DocumentosEquipo({
   );
 
   // Eliminar documento
-  const eliminarDocumento = (id) => {
+  const eliminarDocumento = async (id) => {
     if (documentos.length <= 1) {
-      if (!window.confirm("¿Seguro que deseas eliminar este documento? El espacio quedará vacío.")) return;
+      if (!(await confirmar({ titulo: "¿Seguro que deseas eliminar este documento?", mensaje: "El espacio quedará vacío.", textoConfirmar: "Eliminar", destructivo: true }))) return;
       setDocumentos([]);
       setDocActivoId("");
       mostrarToast("Documento eliminado");
       return;
     }
-    if (!window.confirm("¿Seguro que deseas eliminar este documento?")) return;
+    if (!(await confirmar({ titulo: "¿Seguro que deseas eliminar este documento?", textoConfirmar: "Eliminar", destructivo: true }))) return;
     const restantes = documentos.filter((d) => d.id !== id);
     setDocumentos(restantes);
     setDocActivoId(restantes[0]?.id || "");

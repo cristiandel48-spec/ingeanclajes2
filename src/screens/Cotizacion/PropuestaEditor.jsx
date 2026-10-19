@@ -15,6 +15,7 @@ import { fmt } from "../../lib/format";
 import { DEFAULT_COT_INCLUYE } from "../../data/seed";
 import { FOTO_PUNTO_ANCLAJE_DEFAULT } from "../../assets/embeddedImages";
 import { isFotoPuntoAnclajeDefault, getTipoCotizacionLabel, tipoCotizacionCanonico } from "../../lib/cotizaciones";
+import { confirmar } from "../../lib/dialogos";
 
 // Editor de UNA propuesta. Todas las propuestas se muestran abiertas, una
 // debajo de otra, igual que salen en el documento.
@@ -663,9 +664,9 @@ export default function PropuestaEditor({
             <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
                   if (medicionActiva) {
-                    if (autoMapImg && window.confirm("¿Deseas también quitar la foto satelital de la cotización para que no aparezca en el PDF?")) {
+                    if (autoMapImg && (await confirmar("¿Quitar también la foto satelital de la cotización?\n\nAsí no aparecerá en el PDF."))) {
                       onChange({ medicionAutomatica: false, mapImg: null });
                       return;
                     }
@@ -691,8 +692,8 @@ export default function PropuestaEditor({
                 <>
                   <button
                     type="button"
-                    onClick={() => {
-                      if (window.confirm("¿Quitar la imagen satelital de esta propuesta? Ya no se imprimirá en el PDF ni en la cotización.")) {
+                    onClick={async () => {
+                      if (await confirmar("¿Quitar la imagen satelital de esta propuesta?\n\nYa no se imprimirá en el PDF ni en la cotización.")) {
                         onChange({ mapImg: null });
                       }
                     }}
@@ -777,8 +778,8 @@ export default function PropuestaEditor({
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  if (window.confirm("¿Quitar la imagen satelital de esta propuesta? Ya no se imprimirá en el PDF ni en la cotización.")) {
+                onClick={async () => {
+                  if (await confirmar("¿Quitar la imagen satelital de esta propuesta?\n\nYa no se imprimirá en el PDF ni en la cotización.")) {
                     onChange({ mapImg: null });
                   }
                 }}

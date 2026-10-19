@@ -8,6 +8,7 @@ import { CONTABILIDAD_CONFIG_INIT, PLAN_CUENTAS_INIT } from "../../data/seed";
 import { buildMonthDateRange, fmt, fmtD, isDateWithinRange, today } from "../../lib/format";
 import { downloadExcelWorkbook } from "../../lib/nomina";
 import { printCurrentPz } from "../../lib/print";
+import { confirmar } from "../../lib/dialogos";
 export default function Contabilidad({ctx}){
   const {
     clientes,
@@ -691,8 +692,8 @@ export default function Contabilidad({ctx}){
     setTab("comprobantes");
   };
 
-  const anularAsiento = (entryId)=>{
-    if(!window.confirm("¿Anular este comprobante manual?")) return;
+  const anularAsiento = async (entryId)=>{
+    if(!(await confirmar("¿Anular este comprobante manual?"))) return;
     setAsientosContables((prev)=>(prev || []).map((item)=>{
       const entry = normalizeAsientoContable(item, cuentasPlan);
       if(entry.id!==entryId) return entry;

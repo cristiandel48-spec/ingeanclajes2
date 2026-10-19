@@ -8,6 +8,7 @@ import {
   avisoCedula, avisoCelular, avisoNombre,
   normalizarDocumento, normalizarFrase, normalizarNombrePropio, normalizarTelefono,
 } from "../lib/normalizarEntrada";
+import { confirmar } from "../lib/dialogos";
 
 // Alta de un trabajador desde la obra o desde horarios.
 //
@@ -63,7 +64,7 @@ export default function NuevoEmpleadoRapido({ ctx, onCreado, onCerrar, obraId = 
     return nombre;
   };
 
-  const guardar = () => {
+  const guardar = async () => {
     setError("");
 
     if (!form.nombre.trim() || !form.apellidos.trim()) {
@@ -95,9 +96,9 @@ export default function NuevoEmpleadoRapido({ ctx, onCreado, onCerrar, obraId = 
     );
     if (existente) {
       if (existente.activo === false) {
-        const reactivar = window.confirm(
-          `${existente.nombre} ya está registrado pero aparece inactivo.\n\n` +
-          "¿Quieres reactivarlo y asignarlo a esta obra? Así conserva su historial " +
+        const reactivar = await confirmar(
+          `¿Reactivar a ${existente.nombre} y asignarlo a esta obra?\n\n` +
+          "Ya está registrado pero aparece inactivo. Así conserva su historial " +
           "en vez de crear una ficha nueva."
         );
         if (!reactivar) return;

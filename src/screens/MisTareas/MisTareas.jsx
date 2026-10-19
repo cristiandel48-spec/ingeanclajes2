@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { CD } from "../../styles/tokens";
+import { confirmar } from "../../lib/dialogos";
 
 // Lista de chequeo personal estilo Recordatorios de Apple. Cada usuario ve
 // solo la suya (la nube filtra por dueño); al marcar una tarea se tacha sola.
@@ -239,9 +240,9 @@ export default function MisTareas({ ctx }) {
     setModalSeccion(false);
   };
 
-  const eliminarSeccion = (sec) => {
+  const eliminarSeccion = async (sec) => {
     if (sec === "General") return;
-    if (!window.confirm(`¿Eliminar la lista desplegable "${sec}"? Las tareas pasarán a General.`)) return;
+    if (!(await confirmar(`¿Eliminar la lista desplegable "${sec}"?\n\nLas tareas pasarán a General.`))) return;
     setTareas((prev) =>
       (prev || []).map((t) => (t.seccion === sec ? { ...t, seccion: "General" } : t))
     );

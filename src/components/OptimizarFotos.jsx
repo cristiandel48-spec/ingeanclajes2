@@ -2,6 +2,7 @@ import { useState } from "react";
 import { B, CD, ST } from "../styles/tokens";
 import { contarFotosPesadas, recomprimirFotosPesadas } from "../lib/imagenes";
 import { cargarDetalleNube } from "../lib/backend/bootstrapAppData";
+import { confirmar } from "../lib/dialogos";
 
 // Reduce las fotos que se guardaron sin comprimir en su momento.
 //
@@ -93,10 +94,10 @@ export default function OptimizarFotos({ ctx, enModal = false, onCerrar = null }
   const optimizar = async () => {
     if (!revision?.fotos || !revision?.grupos) return;
     const aviso =
-      `Se van a reducir ${revision.fotos} foto(s), unos ${enMB(revision.caracteres).toFixed(1)} MB.\n\n` +
+      `¿Reducir ${revision.fotos} foto(s), unos ${enMB(revision.caracteres).toFixed(1)} MB?\n\n` +
       "Las fotos se ven igual en los PDF, solo pesan menos. El proceso puede " +
-      "tardar un par de minutos y no debes cerrar la página mientras corre.\n\n¿Continuar?";
-    if (!window.confirm(aviso)) return;
+      "tardar un par de minutos y no debes cerrar la página mientras corre.";
+    if (!(await confirmar(aviso))) return;
 
     setTrabajando(true);
     setProgreso({ hechas: 0, total: revision.fotos });

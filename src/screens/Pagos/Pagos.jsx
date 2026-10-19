@@ -17,6 +17,7 @@ import {
 import { useState, useMemo } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmt, today } from "../../lib/format";
+import { confirmar } from "../../lib/dialogos";
 
 export default function Pagos({ ctx }) {
   const {
@@ -278,7 +279,7 @@ export default function Pagos({ ctx }) {
     }));
   };
 
-  const eliminarPago = (pago) => {
+  const eliminarPago = async (pago) => {
     const obra = obras.find((o) => o.id === pago.obraId);
     const monto = Number(pago.monto || 0);
     const aviso =
@@ -303,7 +304,7 @@ export default function Pagos({ ctx }) {
 
 `) +
       `Esto no se puede deshacer.`;
-    if (!window.confirm(aviso)) return;
+    if (!(await confirmar(aviso))) return;
 
     if (pago.estado === "Pagado") devolverSaldoObra(pago.obraId, monto);
     setPagos((prev) => prev.filter((p) => p.id !== pago.id));

@@ -30,6 +30,7 @@ import { blobABase64, generarCotizacionPdf } from "../../lib/cotizacionPdf";
 import { enviarCotizacionPorCorreo } from "../../lib/backend/usuarios";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
+import { confirmar } from "../../lib/dialogos";
 export default function Cotizacion({ctx}){
   const {cotizaciones,setCotizaciones,obras,setObras,clientes,setClientes,empresaConfig,asegurarDetalle,cotDraft,setCotDraft,intencion,limpiarIntencion}=ctx;
   const [erroresCliente, setErroresCliente] = useState({});
@@ -249,10 +250,10 @@ export default function Cotizacion({ctx}){
     setPropuestaPorMostrar(copia.id);
   };
 
-  const eliminarPropuesta = (id)=>{
+  const eliminarPropuesta = async (id)=>{
     const objetivo = propuestasSnapshot.find((x)=>x.id===id);
     if(!objetivo) return;
-    if(!window.confirm(`¿Eliminar "${objetivo.nombre}"? Esta acción no se puede deshacer.`)) return;
+    if(!(await confirmar(`¿Eliminar "${objetivo.nombre}"?\n\nEsta acción no se puede deshacer.`))) return;
     const siguientes = propuestasSnapshot.filter((x)=>x.id!==id);
     setPropuestas(siguientes);
     if(propuestaActivaId===id) setPropuestaActivaId(siguientes[0]?.id || null);
@@ -583,7 +584,7 @@ export default function Cotizacion({ctx}){
     }));
   };
 
-  const aprobarCotizacion = (cotId)=>{
+  const aprobarCotizacion = async (cotId)=>{
     const base = cotizaciones.find((cotizacion)=>cotizacion.id===cotId);
     const snapshot = base ? getQuoteApprovalAccountingSnapshot(base) : null;
     const cotizacion = snapshot?.cotizacion || null;
@@ -593,13 +594,13 @@ export default function Cotizacion({ctx}){
     // en la etiqueta de estado: en el celular basta un toque sin querer. Se
     // pregunta antes, diciendo a donde va el correo, igual que al desaprobar.
     const correoCliente = String(cotizacion.contactoEmail || "").trim();
-    if(!window.confirm(
+    if(!(await confirmar(
       `¿Aprobar la cotización ${cotizacion.numero || cotizacion.id} de ${cotizacion.cliente || "este cliente"}?\n\n` +
       `• Se crea la obra en Ejecución de obra (o se reactiva la que ya tenía).\n` +
       (correoCliente
         ? `• Se le envía al cliente un correo con la cotización adjunta a ${correoCliente}.`
         : `• No se envía correo: la cotización no tiene correo del cliente.`)
-    )) return;
+    ))) return;
 
     // Buscar si ya existe alguna obra vinculada a esta cotización
     const obrasAsociadas = obras.filter((o) =>
@@ -772,7 +773,7 @@ export default function Cotizacion({ctx}){
   //   dejar registros vacíos y permitir que el consecutivo quede intacto.
   // - Si el usuario pulsa "Cancelar" en el cuadro de confirmación, la acción se aborta
   //   completamente (no se modifica nada).
-  const desaprobarCotizacion = (cotId)=>{
+  const desaprobarCotizacion = async (cotId)=>{
     const cotizacion = cotizaciones.find((c)=>c.id===cotId);
     if(!cotizacion) return;
     // Si ya se le habia enviado al cliente, vuelve a «Enviada»: lo tiene en
@@ -813,20 +814,19 @@ export default function Cotizacion({ctx}){
     const algunaConTrabajo = obrasAsociadas.some(tieneTrabajo);
 
     if (!obraPrincipal) {
-      if (!window.confirm(
+      if (!(await confirmar(
         `¿Devolver la cotización ${cotizacion.numero || cotizacion.id} a "${estadoPrevio}"?`
-      )) return;
+      ))) return;
 
       setCotizaciones((prev) => prev.map((c) => (
         c.id === cotId ? { ...c, estado: estadoPrevio, obraId: null } : c
       )));
     } else if (algunaConTrabajo) {
-      if (!window.confirm(
-        `La cotización ${cotizacion.numero || cotizacion.id} volverá a "${estadoPrevio}".\n\n` +
+      if (!(await confirmar(
+        `¿Devolver la cotización ${cotizacion.numero || cotizacion.id} a "${estadoPrevio}"?\n\n` +
         `La obra ${obraPrincipal.id} (${obraPrincipal.proyecto || obraPrincipal.cliente}) SE CONSERVA intacta: ya tiene trabajo registrado (avance, fotos, pagos, etc.).\n\n` +
-        `Si más adelante vuelves a aprobarla, se reutilizará la misma obra ${obraPrincipal.id} sin generar duplicados ni alterar el consecutivo.\n\n` +
-        `¿Deseas continuar?`
-      )) return;
+        `Si más adelante vuelves a aprobarla, se reutilizará la misma obra ${obraPrincipal.id} sin generar duplicados ni alterar el consecutivo.`
+      ))) return;
 
       // Conservar obraId para saber qué obra reactivar al aprobar de nuevo
       setCotizaciones((prev) => prev.map((c) => (
@@ -842,10 +842,10 @@ export default function Cotizacion({ctx}){
         setObras((prev) => prev.filter((o) => !idsClonesVacios.includes(o.id)));
       }
     } else {
-      if (!window.confirm(
+      if (!(await confirmar(
         `¿Devolver la cotización ${cotizacion.numero || cotizacion.id} a "${estadoPrevio}" y retirar la obra creada (${obraPrincipal.id})?\n\n` +
         `La obra está sin empezar (0% de avance). Al retirarla, no afectará el consecutivo ni dejará registros vacíos.`
-      )) return;
+      ))) return;
 
       setCotizaciones((prev) => prev.map((c) => (
         c.id === cotId ? { ...c, estado: estadoPrevio, obraId: null } : c
@@ -1160,8 +1160,8 @@ export default function Cotizacion({ctx}){
             duplicar: (c)=>duplicarCotizacion(c.id),
             pdf: async (c)=>descargarPdf((await asegurarDetalle("cotizaciones", c.id)) || c),
             enviar: async (c)=>setEnviarCot((await asegurarDetalle("cotizaciones", c.id)) || c),
-            eliminar: (c)=>{
-              if(!window.confirm(`¿Eliminar la cotización "${c.numero || c.id}" de ${c.cliente || "este cliente"}? Esta acción no se puede deshacer.`)) return;
+            eliminar: async (c)=>{
+              if(!(await confirmar(`¿Eliminar la cotización "${c.numero || c.id}" de ${c.cliente || "este cliente"}?\n\nEsta acción no se puede deshacer.`))) return;
               setCotizaciones((prev)=>prev.filter((x)=>x.id!==c.id));
             },
           }}

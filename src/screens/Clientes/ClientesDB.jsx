@@ -12,6 +12,7 @@ import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, norma
 import { siguienteIdUnico } from "../../lib/identificadores";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import { useSubirAlFormulario } from "../../hooks/useSubirAlFormulario";
+import { confirmar } from "../../lib/dialogos";
 export default function ClientesDB({ctx}){
   const isMobile = useIsMobile();
   // El formulario va arriba de la lista: «Editar» en un cliente de abajo lo
@@ -102,7 +103,7 @@ export default function ClientesDB({ctx}){
     setShowForm(false);
   };
 
-  const guardarCliente=()=>{
+  const guardarCliente=async()=>{
     if(!form.nombre?.trim()){
       window.alert("Falta el nombre o razón social del cliente.");
       return;
@@ -126,7 +127,7 @@ export default function ClientesDB({ctx}){
     };
 
     const repetido=clientes.find(c=>c.id!==editId && normalizarRazonSocial(c.nombre)===payload.nombre);
-    if(repetido && !window.confirm(`Ya existe un cliente llamado ${payload.nombre} (${repetido.id}).\n\n¿Aun así quieres crearlo otra vez?`)) return;
+    if(repetido && !(await confirmar(`Ya existe un cliente llamado ${payload.nombre} (${repetido.id}).\n\n¿Aun así quieres crearlo otra vez?`))) return;
 
     if(editId){
       const anterior=clientes.find(c=>c.id===editId);
@@ -193,7 +194,7 @@ export default function ClientesDB({ctx}){
     setClienteAUnificar(null);
   };
 
-  const eliminarCliente=(cli)=>{
+  const eliminarCliente=async(cli)=>{
     const atado=cli.obrasTotal+cli.cotizacionesTotal+cli.certificacionesTotal;
     if(atado>0){
       window.alert(
@@ -204,7 +205,7 @@ export default function ClientesDB({ctx}){
       );
       return;
     }
-    if(!window.confirm(`¿Eliminar la ficha de «${cli.nombre}»?\n\nNo tiene obras ni documentos asociados.`)) return;
+    if(!(await confirmar(`¿Eliminar la ficha de «${cli.nombre}»?\n\nNo tiene obras ni documentos asociados.`))) return;
     setClientes(prev=>prev.filter(c=>c.id!==cli.id));
   };
 

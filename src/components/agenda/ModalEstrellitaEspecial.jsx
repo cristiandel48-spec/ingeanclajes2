@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { B, SI } from "../../styles/tokens";
 import { getFestivoColombia } from "../../lib/festivosColombia";
 import { SUGERENCIAS_FECHAS_ESPECIALES } from "../../lib/agendaEspecial";
+import { confirmar } from "../../lib/dialogos";
 
 const ICONOS_DISPONIBLES = [
   { id: "⭐", label: "Estrellita" },
@@ -65,8 +66,9 @@ export default function ModalEstrellitaEspecial({
     });
   };
 
-  const handleEliminar = () => {
-    if (window.confirm("¿Deseas quitar esta estrellita y fecha especial?")) {
+  const handleEliminar = async () => {
+    // Sin «Guardando…»: onEliminar vuelve a preguntar y es el que borra.
+    if (await confirmar({ titulo: "¿Deseas quitar esta estrellita y fecha especial?", textoConfirmar: "Quitar", destructivo: true, conGuardando: false })) {
       onEliminar(itemEdicion.id);
     }
   };

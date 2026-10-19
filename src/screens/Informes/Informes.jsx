@@ -28,6 +28,7 @@ import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
 import { Button } from "../../components/ui";
+import { confirmar } from "../../lib/dialogos";
 
 // Editor del informe al estilo de apple.com: sin bordes ni sombras. Cada
 // seccion es un bloque blanco sobre el gris de la pagina, con su titulo
@@ -363,7 +364,7 @@ export default function Informes({ctx}){
   //
   // Solo se pisa lo que hay si venia de otra plantilla o estaba vacio. Si esta
   // escrito a mano se pregunta antes: puede ser el informe de media jornada.
-  const elegirTitulo=(ai,valor)=>{
+  const elegirTitulo=async(ai,valor)=>{
     if(valor==="__libre__"){ marcarLibre(ai,true); return; }
     marcarLibre(ai,false);
 
@@ -375,7 +376,7 @@ export default function Informes({ctx}){
 
     const act=form.actividades[ai]||{};
     if(!esTextoDePlantilla(act.actividadesRealizadas,act.descripcion)
-       && !window.confirm(`Ya hay texto escrito en esta actividad.\n\n¿Reemplazarlo por el de «${plantilla.titulo}»?`)){
+       && !(await confirmar(`¿Reemplazar el texto por el de «${plantilla.titulo}»?\n\nYa hay texto escrito en esta actividad.`))){
       updActividad(ai,"titulo",valor);
       return;
     }
@@ -624,14 +625,14 @@ export default function Informes({ctx}){
     setSel(inf);
   };
 
-  const importarItemsDeCotizacion = (itemsCot, cot) => {
+  const importarItemsDeCotizacion = async (itemsCot, cot) => {
     if (!itemsCot || !itemsCot.length) {
       window.alert("Esta cotización no tiene ítems registrados para importar.");
       return;
     }
 
     const tieneContenido = form.actividades.some((a) => a.titulo?.trim() || a.fotos?.length);
-    if (tieneContenido && !window.confirm(`¿Deseas agregar ${itemsCot.length} actividades basadas en los ítems de la cotización ${cot?.numero || ""}?`)) {
+    if (tieneContenido && !(await confirmar(`¿Agregar ${itemsCot.length} actividades basadas en los ítems de la cotización ${cot?.numero || ""}?`))) {
       return;
     }
 

@@ -1,6 +1,7 @@
 import { fmt } from "../../lib/format";
 import { getEstadoFlujoObra } from "../../lib/flujoObra";
 import { B } from "../../styles/tokens";
+import { confirmar } from "../../lib/dialogos";
 
 // Guia paso a paso de lo que falta en una obra para poder generar el informe
 // de actividades y la certificacion. Esta pensada para alguien que no conoce
@@ -50,22 +51,27 @@ export default function GuiaFlujoObra({
 
   // La certificacion se entrega con el pago total: es la condicion comercial
   // que sale impresa en la propia cotizacion.
-  const pedirConfirmacionCertificado = () => {
+  const pedirConfirmacionCertificado = async () => {
     if (!estaPagada) {
-      const seguir = window.confirm(
-        (verDinero
-          ? `Esta obra tiene un saldo pendiente de ${fmt(saldo)}.`
-          : "Esta obra todavía tiene saldo pendiente por cobrar.") + "\n\n" +
-        "En las condiciones de la cotización, la certificación se entrega con el pago total.\n\n" +
-        "¿Aun así quieres crear la certificación?"
-      );
+      const seguir = await confirmar({
+        titulo: "¿Aun así quieres crear la certificación?",
+        mensaje:
+          (verDinero
+            ? `Esta obra tiene un saldo pendiente de ${fmt(saldo)}.`
+            : "Esta obra todavía tiene saldo pendiente por cobrar.") + "\n\n" +
+          "En las condiciones de la cotización, la certificación se entrega con el pago total.",
+        textoConfirmar: "Crear certificación",
+        conGuardando: false,
+      });
       if (!seguir) return;
     }
     if (!estaTerminada) {
-      const seguir = window.confirm(
-        `La obra va en ${avance}% de avance y todavía no está marcada como finalizada.\n\n` +
-        "¿Aun así quieres crear la certificación?"
-      );
+      const seguir = await confirmar({
+        titulo: "¿Aun así quieres crear la certificación?",
+        mensaje: `La obra va en ${avance}% de avance y todavía no está marcada como finalizada.`,
+        textoConfirmar: "Crear certificación",
+        conGuardando: false,
+      });
       if (!seguir) return;
     }
     onCrearCertificacion();

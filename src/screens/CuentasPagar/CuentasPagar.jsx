@@ -12,6 +12,7 @@ import { parseIsoDate } from "../../lib/dates";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import ImportarFacturaDian from "./ImportarFacturaDian";
 import OrdenesCompra from "./OrdenesCompra";
+import { confirmar } from "../../lib/dialogos";
 export default function CuentasPagar({ctx}){
   const {cuentas,setCuentas,proveedores,setProveedores,obras,ordenesCompra=[],setOrdenesCompra,membresia,empleados=[]}=ctx;
 
@@ -344,7 +345,7 @@ export default function CuentasPagar({ctx}){
     setPagoProv({tipo:"Pago a proveedor",monto:"",fecha:today(),metodo:"Transferencia",notas:""});
   };
 
-  const guardarProveedor=()=>{
+  const guardarProveedor=async()=>{
     if(!provForm.nombre.trim()){
       window.alert("Falta el nombre o razón social del proveedor.");
       return;
@@ -354,7 +355,7 @@ export default function CuentasPagar({ctx}){
     const nombreLimpio=normalizarNombrePropio(provForm.nombre);
     const telefonoLimpio=normalizarTelefono(provForm.telefono);
     const repetido=proveedores.find(p=>p.id!==editProvId && normalizarNombrePropio(p.nombre)===nombreLimpio);
-    if(repetido && !window.confirm(`Ya existe un proveedor llamado ${nombreLimpio} (${repetido.id}).\n\n¿Aun así quieres crearlo otra vez?`)) return;
+    if(repetido && !(await confirmar(`¿Aun así quieres crear el proveedor ${nombreLimpio} otra vez?\n\nYa existe un proveedor con ese nombre (${repetido.id}).`))) return;
     const payload={
       ...provForm,
       nombre:nombreLimpio,
@@ -754,7 +755,7 @@ export default function CuentasPagar({ctx}){
   // devolverselo, o las facturas quedarian diciendo que se pagaron con un
   // dinero que ya no esta registrado.
 
-  const eliminarCuenta = (cuenta) => {
+  const eliminarCuenta = async (cuenta) => {
     const prov = proveedoresData.find((p)=>p.id===cuenta.proveedorId);
     const abonos = (cuenta.pagosHistorial || []).length;
     const aviso =
@@ -775,13 +776,13 @@ export default function CuentasPagar({ctx}){
 `
         : "") +
       `Esto no se puede deshacer.`;
-    if(!window.confirm(aviso)) return;
+    if(!(await confirmar(aviso))) return;
     setCuentas((prev)=>prev.filter((c)=>c.id!==cuenta.id));
   };
 
   // Borra un pago a proveedor y le devuelve el saldo a las facturas que
   // habia abonado. Un mismo pago puede repartirse entre varias.
-  const eliminarPagoProveedor = (pago) => {
+  const eliminarPagoProveedor = async (pago) => {
     const prov = proveedoresData.find((p)=>p.id===pago.proveedorId);
     const aviso =
       `¿Eliminar este pago a proveedor?
@@ -800,7 +801,7 @@ Ese valor volverá a quedar pendiente en la factura.
 
 ` +
       `Esto no se puede deshacer.`;
-    if(!window.confirm(aviso)) return;
+    if(!(await confirmar(aviso))) return;
 
     setCuentas((prev)=>prev.map((raw)=>{
       const cuenta = normalizarCuenta(raw);

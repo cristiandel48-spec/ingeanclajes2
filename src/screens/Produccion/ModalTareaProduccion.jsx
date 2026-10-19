@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { abrirWhatsApp } from "../../lib/whatsapp";
 import { useIsMobile } from "../../hooks/useMediaQuery";
+import { confirmar } from "../../lib/dialogos";
 
 export default function ModalTareaProduccion({
   tarea,
@@ -579,8 +580,8 @@ ${form.descripcion ? `Detalles: ${form.descripcion}` : ""}`;
               {tarea && onEliminar && (
                 <button
                   type="button"
-                  onClick={() => {
-                    if (window.confirm("¿Seguro que deseas eliminar esta tarea?")) {
+                  onClick={async () => {
+                    if (await confirmar({ titulo: "¿Seguro que deseas eliminar esta tarea?", textoConfirmar: "Eliminar", destructivo: true })) {
                       onEliminar(tarea.id);
                     }
                   }}

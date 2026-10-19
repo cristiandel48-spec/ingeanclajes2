@@ -19,6 +19,7 @@ import { detectarDispositivo } from "../../lib/backend";
 import { resolverEstadoConexionUsuario } from "../../lib/actividadConexiones";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import { useSubirAlFormulario } from "../../hooks/useSubirAlFormulario";
+import { confirmar } from "../../lib/dialogos";
 
 const FORM_VACIO = {
   nombre: "", email: "", clave: "", rol: "operator",
@@ -169,10 +170,11 @@ export default function Usuarios({ ctx }) {
   const nuevaClave = async (u) => {
     const clave = window.prompt(`Nueva contraseña para ${u.email}\n\nMínimo 8 caracteres. Anótala: no se puede volver a ver.`);
     if (!clave) return;
-    const avisar = window.confirm(`¿Enviarle la nueva contraseña por correo a ${u.email}?
-
-Aceptar: se la mandamos.
-Cancelar: se la entregas tú.`);
+    const avisar = await confirmar({
+      titulo: `¿Enviarle la nueva contraseña por correo a ${u.email}?`,
+      mensaje: "Aceptar: se la mandamos.\nCancelar: se la entregas tú.",
+      textoConfirmar: "Aceptar",
+    });
     await ejecutar(
       () => cambiarClave(u.user_id, clave, { email: u.email, nombre: u.nombre || "", enviarCorreo: avisar }),
       `Contraseña cambiada para ${u.email}.`
@@ -180,7 +182,7 @@ Cancelar: se la entregas tú.`);
   };
 
   const quitarAcceso = async (u) => {
-    if (!window.confirm(`¿Quitar del sistema a ${u.email}?\n\nDeja de entrar de inmediato. La cuenta no se borra, así que puedes volver a darle acceso después.`)) return;
+    if (!(await confirmar(`¿Quitar del sistema a ${u.email}?\n\nDeja de entrar de inmediato. La cuenta no se borra, así que puedes volver a darle acceso después.`))) return;
     await ejecutar(() => eliminarUsuario(u.user_id), `${u.email} ya no tiene acceso.`);
   };
 
@@ -193,11 +195,11 @@ Cancelar: se la entregas tú.`);
       membresiaActual: membresia,
     });
     const estadoTxt = infoConexion.estaEnLinea ? ` (Actualmente EN LÍNEA · ${infoConexion.dispositivo})` : "";
-    const confirmar = window.confirm(
+    const confirmado = await confirmar(
       `¿Cerrar la sesión de "${nombre}" (${u.email})${estadoTxt}?\n\n` +
       `Se desconectará de inmediato en su dispositivo y deberá ingresar credenciales de nuevo.`
     );
-    if (!confirmar) return;
+    if (!confirmado) return;
 
     try {
       const res = await cerrarSesionRemota(u.user_id, u.email, nombre);
@@ -330,9 +332,13 @@ Cancelar: se la entregas tú.`);
                 onClick={async () => {
                   const nuevoEstado = !appBloqueada;
                   const mensajeConfirm = nuevoEstado
-                    ? "🚨 ¿Seguro que quieres APAGAR la aplicación? Nadie salvo tú podrá entrar y verán la pantalla en blanco."
+                    ? {
+                        titulo: "🚨 ¿Seguro que quieres APAGAR la aplicación?",
+                        mensaje: "Nadie salvo tú podrá entrar y verán la pantalla en blanco.",
+                        destructivo: true,
+                      }
                     : "¿Reactivar el acceso a todos los usuarios?";
-                  if (window.confirm(mensajeConfirm)) {
+                  if (await confirmar(mensajeConfirm)) {
                     setGuardando(true);
                     try {
                       await setAppBloqueada(nuevoEstado);

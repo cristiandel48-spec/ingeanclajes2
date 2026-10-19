@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
 import SupabaseGate from "./SupabaseGate.jsx";
 import VerificacionPublica from "./screens/Certificaciones/VerificacionPublica.jsx";
+import DialogosGlobales from "./components/DialogosGlobales.jsx";
+import { confirmar } from "./lib/dialogos";
 
 class AppErrorBoundary extends Component {
   constructor(props) {
@@ -46,14 +48,16 @@ class AppErrorBoundary extends Component {
 // servidor. Quien tenga la pagina abierta y toque algo que se carga bajo
 // demanda -generar un PDF, por ejemplo- recibe un 404 y un mensaje en ingles
 // que no dice que hacer. Vite avisa de eso y aqui se traduce a una accion.
-window.addEventListener("vite:preloadError", (evento) => {
+window.addEventListener("vite:preloadError", async (evento) => {
   evento.preventDefault();
   console.error("Falta un archivo de una version anterior:", evento.payload);
-  const recargar = window.confirm(
-    "Se publicó una versión nueva del sistema mientras tenías esta página abierta.\n\n" +
-    "Hay que recargarla para seguir. Tus cambios guardados no se pierden.\n\n" +
-    "¿Recargar ahora?"
-  );
+  const recargar = await confirmar({
+    titulo: "Hay una versión nueva del sistema",
+    mensaje: "Se publicó mientras tenías esta página abierta. Hay que recargarla para seguir; tus cambios guardados no se pierden.",
+    textoConfirmar: "Recargar ahora",
+    destructivo: false,
+    conGuardando: false,
+  });
   if (recargar) window.location.reload();
 });
 
@@ -70,6 +74,7 @@ createRoot(document.getElementById("root")).render(
           <App />
         </SupabaseGate>
       )}
+      <DialogosGlobales />
     </AppErrorBoundary>
   </StrictMode>
 );

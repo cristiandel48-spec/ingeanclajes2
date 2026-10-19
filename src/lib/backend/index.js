@@ -18,6 +18,8 @@ export {
   eliminarUsuario,
   cambiarClave,
   registrarActividadUsuario,
+  leerAceptacionTerminos,
+  aceptarTerminos,
 } from "./usuarios";
 export {
   suscribirPresencia,

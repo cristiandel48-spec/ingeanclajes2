@@ -7,6 +7,8 @@ import { obtenerMensajeCierreInactividad } from "./lib/seguridadSesion";
 import EstilosAcceso from "./styles/EstilosAcceso";
 import { Button, Callout } from "./components/ui";
 import { TIPO, FUENTE, SOMBRA, ESPACIO } from "./styles/designTokens";
+import AceptacionTerminos from "./components/AceptacionTerminos";
+import { VERSION_TERMINOS } from "./lib/terminos";
 
 const isSupabaseConfigured = backend.isSupabaseConfigured;
 const getSupabaseClient = backend.getSupabaseClient;
@@ -240,9 +242,14 @@ export default function SupabaseGate({ children }) {
     try {
       const supabase = getSupabaseClient();
       await reintentandoSiChocanPestanas(() => resolveTenantId(supabase, import.meta.env.VITE_SUPABASE_TENANT_SLUG));
+      // Terminos de uso y Politica de datos: si la persona no ha aceptado la
+      // version vigente, se le muestran antes de entrar. Si no se pudo leer
+      // (null: la base aun no tiene la migracion 061) se deja pasar, para no
+      // dejar a nadie por fuera por un cambio pendiente en la base.
+      const aceptacion = await backend.leerAceptacionTerminos().catch(() => null);
       setUser(currentUser);
       setError("");
-      setStatus("ready");
+      setStatus(aceptacion && aceptacion.version !== VERSION_TERMINOS ? "terminos" : "ready");
       if (typeof backend.registrarActividadUsuario === "function") {
         backend.registrarActividadUsuario().catch(() => {});
       }
@@ -447,6 +454,19 @@ export default function SupabaseGate({ children }) {
           </Button>
         </div>
       </Pantalla>
+    );
+  }
+
+  if (status === "terminos" && user) {
+    return (
+      <AceptacionTerminos
+        email={user.email}
+        onAceptar={async () => {
+          await backend.aceptarTerminos(VERSION_TERMINOS);
+          setStatus("ready");
+        }}
+        onSalir={handleLogout}
+      />
     );
   }
 

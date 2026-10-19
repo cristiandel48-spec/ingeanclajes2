@@ -44,6 +44,36 @@ export async function getMiMembresia() {
   };
 }
 
+// Que version de los Terminos acepto quien tiene la sesion abierta.
+// Devuelve { version, aceptadoEn }, o null si la base todavia no tiene las
+// columnas (migracion 061 sin aplicar): en ese caso la pantalla de aceptacion
+// no se muestra, porque no habria donde guardar la respuesta y dejaria a
+// todos por fuera del sistema.
+export async function leerAceptacionTerminos() {
+  const supabase = getSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data, error } = await supabase
+    .from("memberships")
+    .select("terminos_version, terminos_aceptados_en")
+    .eq("user_id", user.id)
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    console.warn("No se pudo leer la aceptacion de terminos:", error.message);
+    return null;
+  }
+  return { version: data?.terminos_version || "", aceptadoEn: data?.terminos_aceptados_en || null };
+}
+
+export async function aceptarTerminos(version) {
+  const supabase = getSupabaseClient();
+  const navegador = typeof navigator !== "undefined" ? navigator.userAgent : null;
+  const { data, error } = await supabase.rpc("aceptar_terminos", { p_version: version, p_navegador: navegador });
+  if (error) throw error;
+  return data;
+}
+
 export async function listarUsuarios() {
   const supabase = getSupabaseClient();
   const tenantId = await getTenantIdActual();

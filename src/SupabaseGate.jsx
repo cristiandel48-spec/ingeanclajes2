@@ -8,6 +8,7 @@ import EstilosAcceso from "./styles/EstilosAcceso";
 import { Button, Callout } from "./components/ui";
 import { TIPO, FUENTE, SOMBRA, ESPACIO } from "./styles/designTokens";
 import AceptacionTerminos from "./components/AceptacionTerminos";
+import PantallaArranque from "./components/PantallaArranque";
 import { VERSION_TERMINOS } from "./lib/terminos";
 
 const isSupabaseConfigured = backend.isSupabaseConfigured;
@@ -220,6 +221,9 @@ export default function SupabaseGate({ children }) {
   const [error, setError] = useState("");
   const [aviso, setAviso] = useState("");
   const [busy, setBusy] = useState(false);
+  // Entre «Entrar» y la aplicacion lista se muestra la pantalla de arranque
+  // (logotipo y barra), no el formulario con el boton girando.
+  const [ingresando, setIngresando] = useState(false);
   const [user, setUser] = useState(null);
   // "permisos" = a la cuenta le falta membresia; "tecnico" = algo fallo.
   const [motivoBloqueo, setMotivoBloqueo] = useState("permisos");
@@ -312,6 +316,7 @@ export default function SupabaseGate({ children }) {
 
     try {
       setBusy(true);
+      setIngresando(true);
       setError("");
       setAviso("");
       const supabase = getSupabaseClient();
@@ -332,6 +337,7 @@ export default function SupabaseGate({ children }) {
       setError(mensajeAmable(authError));
     } finally {
       setBusy(false);
+      setIngresando(false);
     }
   };
 
@@ -394,29 +400,10 @@ export default function SupabaseGate({ children }) {
     );
   }
 
-  if (status === "checking") {
-    return (
-      <Pantalla>
-        <Encabezado />
-        <Titulo>Validando sesión</Titulo>
-        <Subtitulo>Un momento, estamos comprobando tu acceso.</Subtitulo>
-        {/* Antes solo habia texto: cuando el servidor tardaba, la pantalla
-            parecia congelada y no habia forma de saber si seguia trabajando. */}
-        <div
-          role="progressbar"
-          aria-label="Comprobando tu acceso"
-          style={{
-            marginTop: ESPACIO.xl, height: 4, borderRadius: 999,
-            background: "var(--fill)", overflow: "hidden",
-          }}
-        >
-          <div style={{
-            width: "40%", height: "100%", borderRadius: 999,
-            background: "var(--accent)", animation: "accesoProgreso 1.4s ease-in-out infinite",
-          }} />
-        </div>
-      </Pantalla>
-    );
+  // Validando la sesion o entrando: solo el logotipo y la barra, como el
+  // arranque del Mac.
+  if (status === "checking" || ingresando) {
+    return <PantallaArranque />;
   }
 
   if (status === "blocked" && user) {
@@ -476,9 +463,7 @@ export default function SupabaseGate({ children }) {
         <Encabezado />
 
         <Titulo>Inicia sesión</Titulo>
-        <Subtitulo style={{ marginBottom: 28 }}>
-          Tu trabajo se guarda solo en la nube.
-        </Subtitulo>
+        <div style={{ height: 20 }} />
 
         {mensajeInactividad && (
           <div style={{ marginBottom: 18 }}>

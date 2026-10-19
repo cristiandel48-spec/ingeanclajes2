@@ -232,7 +232,6 @@ export default function DocumentoEnVivo({
                 gap: 4,
               }}
             >
-              <span>📱</span>
               <span>Ajustar ({Math.round(escala * 100)}%)</span>
             </button>
             <button
@@ -253,7 +252,6 @@ export default function DocumentoEnVivo({
                 gap: 4,
               }}
             >
-              <span>🔍</span>
               <span>100% Lectura</span>
             </button>
           </div>

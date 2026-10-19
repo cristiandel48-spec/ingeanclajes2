@@ -27,10 +27,15 @@ export const componentesCss = `
     .ui-btn--bloque { width: 100%; }
     .ui-btn--icono { padding: 0; width: var(--ui-btn-alto); }
 
-    /* Todos en pildora y sin sombra, como los de la barra de Cotizaciones:
-       la principal es oscura y las demas grises, sin marco. */
-    .ui-btn--primary { background: var(--text-primary); color: var(--surface); border-radius: 980px; }
-    .ui-btn--primary:hover:not(:disabled) { opacity: .86; }
+    /* Tres tipos de boton en todo el programa, en pildora, sin marco ni
+       sombra y en grises, al estilo Apple:
+         principal  -> gris un punto mas oscuro y negrita (una por pantalla)
+         secundario -> gris claro
+         borrar     -> gris claro con la letra roja
+       Antes la principal era negra; ahora va en gris como en Soporte. */
+    .ui-btn--primary { background: var(--boton-principal); color: var(--text-primary);
+      border-radius: 980px; font-weight: 600; }
+    .ui-btn--primary:hover:not(:disabled) { background: var(--boton-principal-hover); }
 
     .ui-btn--secondary { background: var(--fill); color: var(--text-primary);
       border-color: transparent; border-radius: 980px; font-weight: 500; }
@@ -39,9 +44,9 @@ export const componentesCss = `
     .ui-btn--tertiary { background: transparent; color: var(--accent); }
     .ui-btn--tertiary:hover:not(:disabled) { background: var(--accent-tint); }
 
-    .ui-btn--destructive { background: var(--danger-bg); color: var(--danger-text);
-      border-color: var(--danger-bg); }
-    .ui-btn--destructive:hover:not(:disabled) { border-color: var(--danger); }
+    .ui-btn--destructive { background: var(--fill); color: var(--danger-text);
+      border-color: transparent; border-radius: 980px; font-weight: 500; }
+    .ui-btn--destructive:hover:not(:disabled) { background: var(--separator); }
 
     /* Barra al estilo de la de apple.com: las acciones son solo texto, sin
        caja ni emoji, y la principal es una pildora oscura. */
@@ -50,9 +55,10 @@ export const componentesCss = `
     .ui-btn--texto:hover:not(:disabled) { color: var(--text-primary); background: var(--fill); }
     .ui-btn--texto[aria-pressed="true"] { color: var(--text-primary); font-weight: 600; background: var(--fill); }
 
-    .ui-btn--oscuro { background: var(--text-primary); color: var(--surface);
-      border-radius: 980px; padding: 0 18px; }
-    .ui-btn--oscuro:hover:not(:disabled) { opacity: .86; }
+    /* «oscuro» era la principal de las barras: ahora es la misma principal gris. */
+    .ui-btn--oscuro { background: var(--boton-principal); color: var(--text-primary);
+      border-radius: 980px; padding: 0 18px; font-weight: 600; }
+    .ui-btn--oscuro:hover:not(:disabled) { background: var(--boton-principal-hover); }
 
     /* Entrada de cada modulo, como una ventana que vuelve del Dock en el Mac:
        crece desde abajo, se enfoca y aparece, despacio y sin rebote.
@@ -85,19 +91,30 @@ export const componentesCss = `
       box-shadow: none !important;
       border-radius: 980px !important;
     }
-    /* El naranja de «Guardar» y «Nueva …» era la accion principal: pasa a
-       la pildora oscura. Se reconoce por su color de borde, que solo usan
-       esos botones. */
+    /* Los botones pintados a mano con un color de «accion principal» pasan a
+       la principal gris. Se reconocen por su color, que el navegador guarda
+       como rgb(): el ambar de «Guardar Cotizacion» (#B54708, tambien en el
+       borde), el naranja de «Nueva obra» (#f47c20), los rojos (#E0342A y
+       #cc0000 de la vista previa), el verde de «Ir a la obra» (#16a34a) y el
+       negro que salia antes (#1d1d1f, #101828). */
     .transicion-modulo button[style*="181, 71, 8"],
     .topbar-acciones button[style*="181, 71, 8"],
-    /* Igual con los fondos naranja (#f47c20) y rojo (#E0342A) escritos a
-       mano: el navegador los guarda como rgb(), y asi se reconocen. */
     .transicion-modulo button[style*="background: rgb(244, 124, 32)"],
     .topbar-acciones button[style*="background: rgb(244, 124, 32)"],
     .transicion-modulo button[style*="background: rgb(224, 52, 42)"],
-    .topbar-acciones button[style*="background: rgb(224, 52, 42)"] {
-      background: var(--text-primary) !important;
-      color: var(--surface) !important;
+    .topbar-acciones button[style*="background: rgb(224, 52, 42)"],
+    .transicion-modulo button[style*="background: rgb(204, 0, 0)"],
+    .topbar-acciones button[style*="background: rgb(204, 0, 0)"],
+    .transicion-modulo button[style*="background: rgb(22, 163, 74)"],
+    .topbar-acciones button[style*="background: rgb(22, 163, 74)"],
+    .transicion-modulo button[style*="background: rgb(29, 29, 31)"],
+    .transicion-modulo button[style*="background: rgb(16, 24, 40)"],
+    .transicion-modulo button[style*="background: rgb(15, 23, 42)"],
+    /* El activo de los selectores «Ajustar / 100% Lectura» de la vista previa */
+    .transicion-modulo button[style*="background: var(--btn-guardar-bg"] {
+      background: var(--boton-principal) !important;
+      color: var(--text-primary) !important;
+      font-weight: 600 !important;
     }
 
     /* En el telefono y en obra todo lo que se toca mide 44 */

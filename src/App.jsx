@@ -8,6 +8,7 @@ import BotonSoporteFlotante from "./components/soporte/BotonSoporteFlotante";
 import NotificadorMensajesGlobal from "./components/notificaciones/NotificadorMensajesGlobal";
 import AvisoInteligenteAgenda from "./components/agenda/AvisoInteligenteAgenda";
 import { ToastProvider } from "./components/ui/Toast";
+import PantallaArranque from "./components/PantallaArranque";
 
 // Cada pantalla se trae al entrar en ella, no al abrir la aplicacion. Antes
 // todas venian en el paquete inicial -y con ellas las fotos de la ficha
@@ -174,7 +175,9 @@ function AppRoot() {
 
   // Mientras la membresia carga no se sabe que puede ver: mejor esperar que
   // enseñar una pantalla que quiza no le corresponde.
-  if (membresia === null) return <PantallaMensaje titulo="Cargando tu acceso…" />;
+  // Se sigue con la misma pantalla de arranque del inicio de sesion, para que
+  // entrar se vea como un solo arranque y no como tres pantallas distintas.
+  if (membresia === null) return <PantallaArranque />;
 
   // KILL SWITCH: Pantalla de fallo de conexión a la base de datos
   if (appBloqueada && !esSuperAdminCristian) {

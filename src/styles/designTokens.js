@@ -169,6 +169,10 @@ export const VARS_OSCURO = `
       --surface-hover: #20242E;
       --border-strong: #333846;
 
+      /* Boton principal: gris un punto mas claro que el relleno */
+      --boton-principal: #3A3E4A;
+      --boton-principal-hover: #444957;
+
       --success: #32D583; --success-bg: rgba(18, 183, 106, 0.14); --success-text: #6CE9A6;
       --warning: #FDB022; --warning-bg: rgba(247, 144, 9, 0.14);  --warning-text: #FEC84B;
       --danger:  #F97066; --danger-bg:  rgba(217, 45, 32, 0.14);  --danger-text:  #FDA29B;
@@ -223,6 +227,12 @@ export const tokensCss = `
       --surface-subtle: #F8FAFC;
       --surface-hover: #FFFDFB;
       --border-strong: #E2E8F0;
+
+      /* Botones, estilo Apple en grises: tres tipos en todo el programa.
+         Principal: gris un punto mas oscuro que el relleno, letra en negrita.
+         Secundario: el relleno (--fill). Borrar: el relleno con letra roja. */
+      --boton-principal: #E3E5EA;
+      --boton-principal-hover: #D8DBE1;
 
       /* Semanticos: solo para decir un estado, nunca para decorar */
       --success: #12B76A; --success-bg: #ECFDF3; --success-text: #027A48;

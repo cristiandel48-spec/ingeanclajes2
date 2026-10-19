@@ -571,15 +571,6 @@ export default function Cotizacion({ctx}){
     [tab, previewCot, isMobile]
   );
 
-  const guardarCotizacionYSubir = ()=>{
-    const saved = persistCotizacion({volverALista:false});
-    requestAnimationFrame(()=>{
-      requestAnimationFrame(()=>{
-        scrollAppToTop("smooth");
-      });
-    });
-    return saved;
-  };
 
   // Al enviarla por correo pasa a «Enviada»: el cliente ya la tiene y falta
   // su respuesta. Una aprobada se queda aprobada; reenviarla no la devuelve.
@@ -979,7 +970,6 @@ export default function Cotizacion({ctx}){
                   gap: 4,
                 }}
               >
-                <span>📱</span>
                 <span>Ajustar ({Math.round(escalaPreview * 100)}%)</span>
               </button>
               <button
@@ -1000,7 +990,6 @@ export default function Cotizacion({ctx}){
                   gap: 4,
                 }}
               >
-                <span>🔍</span>
                 <span>100% Lectura</span>
               </button>
 
@@ -1563,27 +1552,9 @@ export default function Cotizacion({ctx}){
           porque nunca se edita manualmente aquí, pero todos sus valores se preservan en textosDocumento
           y se siguen incluyendo automáticamente al imprimir y generar el PDF oficial. */}
 
-      <div style={{...CD,marginBottom:14}}>
-        <div style={{display:"flex",justifyContent:"flex-end",marginTop:16}}>
-          <button
-            type="button"
-            onClick={guardarCotizacionYSubir}
-            style={{
-              background: "#FFFAEB",
-              color: "#B54708",
-              border: "1px solid rgba(181, 71, 8, 0.35)",
-              borderRadius: 8,
-              fontSize: 12.5,
-              fontWeight: 700,
-              padding: "7px 20px",
-              cursor: "pointer",
-              boxShadow: "0 1px 2px rgba(181, 71, 8, 0.08)",
-            }}
-          >
-            Guardar Cotización
-          </button>
-        </div>
-      </div>
+      {/* Aqui habia un segundo «Guardar Cotizacion», en ambar. Se quito: el
+          «Guardar» de la barra fija de arriba se ve siempre y hace lo mismo,
+          y dos botones distintos para guardar confundian. */}
 
       </div>
 

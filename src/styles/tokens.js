@@ -62,9 +62,11 @@ const esRojo = (valor) => {
 export const B=(bg,c="#fff")=>{
   const luz = hexALuz(bg);
   const principal = luz !== null && luz < 0.6;
+  // Los tres tipos de boton del programa: principal en gris un punto mas
+  // oscuro, secundario en gris claro, y borrar en gris claro con letra roja.
   return {
-    background: principal ? "var(--text-primary)" : "var(--fill)",
-    color: principal ? "var(--surface)" : esRojo(c) ? "var(--danger-text)" : "var(--text-primary)",
+    background: principal ? "var(--boton-principal)" : "var(--fill)",
+    color: esRojo(c) ? "var(--danger-text)" : "var(--text-primary)",
     border:"none",borderRadius:980,padding:"8px 16px",fontSize:12.5,fontWeight:principal?600:500,
     cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6,fontFamily:"inherit",
     whiteSpace:"nowrap",boxShadow:"none",transition:`opacity ${TRANSICION.rapida}`,

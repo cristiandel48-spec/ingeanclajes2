@@ -39,10 +39,10 @@ const BADGES = {
   resuelto: { bg: "var(--fill)", text: "var(--text-tertiary)", border: "transparent", label: "Resuelto" },
 };
 
-// Estilo Apple en grises, sin negro: la accion principal es una pildora gris
-// un punto mas oscura que las demas, con la letra en negrita.
-const GRIS_FUERTE = "var(--border-strong)";
-const BOTON_PRINCIPAL = { ...B("var(--fill)"), background: GRIS_FUERTE, fontWeight: 600 };
+// Estilo Apple en grises, sin negro: la accion principal es la pildora gris
+// del programa (B con un color oscuro), y lo mio del chat usa ese mismo gris.
+const GRIS_FUERTE = "var(--boton-principal)";
+const BOTON_PRINCIPAL = B("#1d1d1f");
 
 function formatFechaRelativa(isoString) {
   if (!isoString) return "";

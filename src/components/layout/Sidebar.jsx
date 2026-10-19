@@ -1,4 +1,17 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+
+// Efecto Dock del Mac: al acercar el mouse, el icono que tiene debajo crece y
+// los vecinos crecen menos cuanto mas lejos estan. Se calcula con la
+// distancia vertical del cursor al centro de cada icono.
+const DOCK_ESCALA_MAX = 1.6;   // cuanto crece el icono que esta justo debajo
+const DOCK_ALCANCE = 110;      // hasta que distancia (px) se nota el efecto
+
+function escalaDock(distancia) {
+  if (distancia >= DOCK_ALCANCE) return 1;
+  // Curva coseno: suave en el borde del alcance y plana en el centro.
+  const t = Math.cos((distancia / DOCK_ALCANCE) * (Math.PI / 2));
+  return 1 + (DOCK_ESCALA_MAX - 1) * t;
+}
 import CreditoDesarrollo from "../CreditoDesarrollo";
 import logoIngeanclajes from "../../assets/logo-ingeanclajes.jpeg";
 import { NAV_SECTIONS, ICONS } from "../../config/navigation";
@@ -62,6 +75,34 @@ export default function Sidebar({
     if (isMobile) onCloseMobile();
   };
 
+  // Efecto Dock: solo en escritorio y si la persona no pidio menos animacion.
+  // Se escribe el transform directo en cada icono -sin pasar por React- para
+  // que siga al mouse sin retraso.
+  const listaRef = useRef(null);
+  const marcoRef = useRef(0);
+  const sinAnimacion = typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  const dockActivo = !isMobile && !sinAnimacion;
+
+  const moverDock = (e) => {
+    if (!dockActivo || !listaRef.current) return;
+    const y = e.clientY;
+    cancelAnimationFrame(marcoRef.current);
+    marcoRef.current = requestAnimationFrame(() => {
+      listaRef.current?.querySelectorAll("[data-dock]").forEach((icono) => {
+        const r = icono.getBoundingClientRect();
+        icono.style.transform = `scale(${escalaDock(Math.abs(y - (r.top + r.height / 2))).toFixed(3)})`;
+      });
+    });
+  };
+
+  const soltarDock = () => {
+    cancelAnimationFrame(marcoRef.current);
+    listaRef.current?.querySelectorAll("[data-dock]").forEach((icono) => {
+      icono.style.transform = "scale(1)";
+    });
+  };
+
   return (
     <>
       {/* Reserva el espacio del riel en el flujo del layout (solo escritorio). */}
@@ -104,7 +145,13 @@ export default function Sidebar({
         </div>
 
         {/* Secciones */}
-        <div className="app-scroll" style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "4px 12px 12px" }}>
+        <div
+          ref={listaRef}
+          className="app-scroll"
+          onMouseMove={moverDock}
+          onMouseLeave={soltarDock}
+          style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "4px 12px 12px" }}
+        >
           {secciones.map((section, sectionIndex) => (
             <div key={section.title} style={{ marginBottom: 6 }}>
               {showLabels ? (
@@ -162,7 +209,17 @@ export default function Sidebar({
                     onFocus={(e) => { if (!active) e.currentTarget.style.background = theme.railHoverBg; }}
                     onBlur={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
                   >
-                    <span style={{ flexShrink: 0, display: "flex", width: 20, justifyContent: "center" }}>
+                    <span
+                      data-dock
+                      style={{
+                        flexShrink: 0, display: "flex", width: 20, justifyContent: "center",
+                        // Crece hacia la derecha, como los iconos del Dock salen
+                        // del borde de la pantalla.
+                        transformOrigin: "left center",
+                        transition: "transform .12s ease-out",
+                        willChange: dockActivo ? "transform" : undefined,
+                      }}
+                    >
                       {ICONS[item.id]}
                     </span>
                     <span style={{

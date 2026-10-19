@@ -18,6 +18,7 @@ import {
   normalizeContabilidadConfig, normalizePlanCuenta, normalizeAsientoContable,
 } from "../lib/accounting";
 import { EJEMPLOS, sinEjemplos } from "../data/ejemplos";
+import { confirmar } from "../lib/dialogos";
 import { depurarObrasDuplicadas } from "../lib/obrasDuplicadas";
 import { iniciarVigilanteInactividad } from "../lib/seguridadSesion";
 import {
@@ -667,15 +668,60 @@ export function AppDataProvider({ children }) {
   }, [saveState, hasPendingChanges]);
 
   // Avisa antes de cerrar la pestana si quedan cambios sin subir.
+  //
+  // Ese aviso lo pinta el navegador («¿Quieres volver a cargar el sitio
+  // web?») y ningun navegador deja cambiar como se ve. Pero la forma mas
+  // comun de dispararlo es recargar con F5 o Ctrl+R, y eso si se puede
+  // atrapar: se pregunta con el dialogo del programa, se guarda y entonces
+  // se recarga, sin que llegue a salir el del navegador. El aviso del
+  // navegador queda solo para cerrar la pestana o el boton de recargar, que
+  // una pagina no puede interceptar.
+  const saltarAvisoRef = useRef(false);
   useEffect(() => {
     const enRiesgo = hasPendingChanges || saveState === "error";
     if (!enRiesgo) return;
     const onBeforeUnload = (event) => {
+      if (saltarAvisoRef.current) return;
       event.preventDefault();
       event.returnValue = "";
     };
+    const recargar = () => {
+      saltarAvisoRef.current = true;
+      window.location.reload();
+    };
+    const onTecla = async (event) => {
+      const esRecargar = event.key === "F5" ||
+        ((event.ctrlKey || event.metaKey) && String(event.key).toLowerCase() === "r");
+      if (!esRecargar) return;
+      event.preventDefault();
+      const guardar = await confirmar({
+        titulo: "¿Volver a cargar la página?",
+        mensaje: "Hay cambios que todavía no se han guardado en la nube. Primero se guardan y luego se recarga.",
+        textoConfirmar: "Guardar y recargar",
+        destructivo: false,
+      });
+      if (!guardar) return;
+      const resultado = await saveAllToCloudRef.current?.();
+      if (resultado?.ok) {
+        recargar();
+        return;
+      }
+      const igual = await confirmar({
+        titulo: "No se pudieron guardar los cambios",
+        mensaje: "Revisa la conexión a internet. Si recargas ahora, los cambios que no se guardaron se pierden.",
+        textoConfirmar: "Recargar sin guardar",
+        textoCancelar: "No recargar",
+        destructivo: true,
+        conGuardando: false,
+      });
+      if (igual) recargar();
+    };
     window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+    window.addEventListener("keydown", onTecla, true);
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      window.removeEventListener("keydown", onTecla, true);
+    };
   }, [hasPendingChanges, saveState]);
 
   // Limpia el reintento pendiente al desmontar.

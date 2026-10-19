@@ -1788,7 +1788,13 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
         -webkit-print-color-adjust:exact; print-color-adjust:exact; }
       .table .sub-row td:first-child { border-radius:8px 0 0 8px; }
       .table .sub-row td:last-child { border-radius:0 8px 8px 0; }
-      .table .grand-total td { border-top:.5pt solid var(--tinta); }
+      /* El total va resaltado igual que el subtotal: fondo gris y esquinas
+         redondeadas, en vez de la linea negra encima. */
+      .table .grand-total td { border-top:none; background:var(--fondo-resalte);
+        padding-top:12px; padding-bottom:12px;
+        -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      .table .grand-total td:first-child { border-radius:8px 0 0 8px; }
+      .table .grand-total td:last-child { border-radius:0 8px 8px 0; }
       .total-amount { color:var(--tinta); font-weight:600; font-size:20px; letter-spacing:-0.02em; }
       .accent { color:var(--tinta); }
 

@@ -850,17 +850,17 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
           ${(()=>{
             // La obra y el alcance se destacan en negrita negra pura
             let apertura = String(textos.saludo || "").trim().replace(/\.$/, "");
-            apertura = escapeHtml(apertura).replace(/\b([A-ZÁÉÍÓÚÜÑ0-9\(\)\-]{2,}(?:\s+[A-ZÁÉÍÓÚÜÑ0-9\(\)\-]+){2,})\b/g, '<strong style="color:#000000;font-weight:800;">$1</strong>');
+            apertura = escapeHtml(apertura).replace(/\b([A-ZÁÉÍÓÚÜÑ0-9\(\)\-]{2,}(?:\s+[A-ZÁÉÍÓÚÜÑ0-9\(\)\-]+){2,})\b/g, '<strong style="color:var(--tinta);font-weight:600;">$1</strong>');
             const conObra = c?.obra
-              ? `${apertura} en la obra <strong style="color:#000000;font-weight:800;">${escapeHtml(normalizarMayusculas(c.obra))}</strong>.`
+              ? `${apertura} en la obra <strong style="color:var(--tinta);font-weight:600;">${escapeHtml(normalizarMayusculas(c.obra))}</strong>.`
               : `${apertura}.`;
-            return `<p class="doc-copy" style="color:#000000;">${conObra}</p>`;
+            return `<p class="doc-copy" style="color:var(--tinta);">${conObra}</p>`;
           })()}
           <!-- Los renglones de la presentacion van seguidos, sin hueco entre
                ellos: son un mismo texto partido en lineas, no parrafos
                distintos, y separados dejaban tres huecos en mitad de la hoja. -->
-          ${lineasDeTexto(textos.presentacion).map((parrafo)=>`<p class="doc-copy junto" style="color:#000000;">${escapeHtml(parrafo)}</p>`).join("")}
-          ${textoInicial ? `<p class="doc-copy" style="color:#000000;">${escapeHtml(textoInicial)}</p>` : ""}
+          ${lineasDeTexto(textos.presentacion).map((parrafo)=>`<p class="doc-copy junto" style="color:var(--tinta);">${escapeHtml(parrafo)}</p>`).join("")}
+          ${textoInicial ? `<p class="doc-copy" style="color:var(--tinta);">${escapeHtml(textoInicial)}</p>` : ""}
 
           <h3 class="doc-h3 con-espacio">Definiciones que estructuran el alcance</h3>
           ${(()=>{
@@ -1259,12 +1259,26 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <title>Cotizacion ${escapeHtml(c?.numero || "")}</title>
     <style>
       ${cssHojaImpresion()}
-      :root { --texto: 11.5px; --titulo: 17px; }
-      body { font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; color:#000000; -webkit-font-smoothing:antialiased; }
+      /* Estilo Apple: la misma letra del programa (Inter) y solo dos tonos de
+         texto, el casi negro y el gris de Apple. Las lineas son grises y
+         finas; nada va en rojo ni en bloques oscuros. */
+      :root {
+        --texto: 11.5px; --titulo: 17px;
+        --letra: 'Inter', -apple-system, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+        --tinta: #1d1d1f;
+        --gris: #6e6e73;
+        --linea: #d2d2d7;
+        --linea-suave: #e8e8ed;
+        --fondo-suave: #f5f5f7;
+        /* Un punto mas oscuro que el fondo suave: en papel el #f5f5f7 casi
+           no se ve, y la fila resaltada tiene que notarse. */
+        --fondo-resalte: #e8e8ed;
+      }
+      body { font-family:var(--letra); color:var(--tinta); -webkit-font-smoothing:antialiased; }
 
       /* El relleno interno de 9mm desaparecio: ahora el margen lo pone
          @page. Antes se sumaban los dos -margen cero de hoja mas 9mm aqui-
@@ -1273,17 +1287,17 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       .page-inner { position:relative; width:100%; display:flex; flex-direction:column; flex:1 1 auto; }
       .page-content { display:block; flex:1 1 auto; }
 
-      h1, h2, h3 { margin:0; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; font-weight:700; color:#000000; text-wrap:balance; }
+      h1, h2, h3 { margin:0; font-family:var(--letra); font-weight:700; color:var(--tinta); text-wrap:balance; }
       p { margin:0 0 3mm; font-size: var(--texto); line-height:1.6;
-          text-align: justify; text-justify: inter-word; hyphens: auto; color:#000000; }
+          text-align: justify; text-justify: inter-word; hyphens: auto; color:var(--tinta); }
 
-      .header { display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid #000000; padding-bottom:2.6mm; margin:0 0 6mm; }
+      .header { display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid var(--tinta); padding-bottom:2.6mm; margin:0 0 6mm; }
       .logo { height:30px; width:auto; object-fit:contain; }
-      .header-right { font-size: var(--texto); letter-spacing:.06em; text-transform:uppercase; color:#000000; font-weight:700; text-align:right; }
+      .header-right { font-size: var(--texto); letter-spacing:.06em; text-transform:uppercase; color:var(--tinta); font-weight:700; text-align:right; }
       /* El codigo del formato: mas pequeno y en monoespaciada, para que se
          lea como un codigo y no compita con el numero de la cotizacion. */
-      .header-sello { font-family:Consolas,"Courier New",monospace; font-size:calc(var(--texto) * .92); letter-spacing:.02em; text-transform:none; color:#000000; font-weight:400; margin-top:2px; }
-      .header-sello b { color:#000000; font-weight:700; }
+      .header-sello { font-family:Consolas,"Courier New",monospace; font-size:calc(var(--texto) * .92); letter-spacing:.02em; text-transform:none; color:var(--tinta); font-weight:400; margin-top:2px; }
+      .header-sello b { color:var(--tinta); font-weight:700; }
 
       /* El pie se apoya en el fondo del bloque de la hoja (margin-top:auto,
          que viene de .page-footer) en vez de ir anclado con position:absolute
@@ -1293,7 +1307,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       .footer {
         margin-top:auto;
         padding-top:2.6mm;
-        border-top:1.5px solid #000000;
+        border-top:1.5px solid var(--tinta);
         display:grid;
         grid-template-columns: 1fr 1fr 1fr;
         gap:4mm;
@@ -1308,17 +1322,17 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
         font-weight:800;
         text-transform:uppercase;
         letter-spacing:.07em;
-        color:#000000;
+        color:var(--tinta);
         margin-bottom:2px;
       }
       .footer-main {
         font-weight:700;
-        color:#000000;
+        color:var(--tinta);
         font-size:calc(var(--texto) * 1.22);
       }
       .footer-sub {
         font-weight:700;
-        color:#000000;
+        color:var(--tinta);
         font-size:calc(var(--texto) * 1.13);
       }
       .footer-brand {
@@ -1326,69 +1340,69 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
         font-weight:800;
       }
 
-      .eyebrow { font-size: var(--texto); letter-spacing:.09em; text-transform:uppercase; color:#000000; font-weight:700; text-align:center; margin:0 0 6mm; padding-bottom:3mm; border-bottom:2px solid #000000; }
+      .eyebrow { font-size: var(--texto); letter-spacing:.09em; text-transform:uppercase; color:var(--tinta); font-weight:700; text-align:center; margin:0 0 6mm; padding-bottom:3mm; border-bottom:2px solid var(--tinta); }
       .eyebrow-gap { margin-top:9mm; }
-      .card-label { font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; color:#000000; font-weight:700; }
+      .card-label { font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; color:var(--tinta); font-weight:700; }
       .block-label { margin-bottom:2.6mm; }
       .centered { text-align:center; }
       .tnum { font-variant-numeric:tabular-nums; }
       .accent { color:#8A1518; }
 
-      .doc-h2 { font-size: var(--titulo); line-height:1.3; text-align:center; margin:0 auto 5mm; max-width:170mm; color:#000000; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; font-weight:700; }
+      .doc-h2 { font-size: var(--titulo); line-height:1.3; text-align:center; margin:0 auto 5mm; max-width:170mm; color:var(--tinta); font-family:var(--letra); font-weight:700; }
       .doc-h3.con-espacio { margin-top:12mm; }
-      .doc-h3 { font-size: var(--titulo); text-align:center; margin:0 0 4.5mm; color:#000000; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; font-weight:700; }
-      .doc-copy.junto { margin-bottom:0; color:#000000; }
-      .doc-copy { font-size: var(--texto); line-height:1.65; color:#000000; max-width:160mm; margin:0 auto 3mm;
+      .doc-h3 { font-size: var(--titulo); text-align:center; margin:0 0 4.5mm; color:var(--tinta); font-family:var(--letra); font-weight:700; }
+      .doc-copy.junto { margin-bottom:0; color:var(--tinta); }
+      .doc-copy { font-size: var(--texto); line-height:1.65; color:var(--tinta); max-width:160mm; margin:0 auto 3mm;
                   text-align: justify; text-justify: inter-word; hyphens: auto; }
-      .doc-copy strong { color:#000000 !important; font-weight:800; }
+      .doc-copy strong { color:var(--tinta) !important; font-weight:800; }
 
       .cover {
         padding-top: 8mm;
-        font-family: 'Source Sans 3', 'Segoe UI', Arial, sans-serif;
+        font-family: var(--letra);
       }
-      .cover-header { display:flex; justify-content:center; padding-bottom:5mm; border-bottom:2px solid #000000; }
+      .cover-header { display:flex; justify-content:center; padding-bottom:5mm; border-bottom:2px solid var(--tinta); }
       .cover-logo { height:44px; width:auto; }
-      .cover-firm { text-align:center; margin-top:7mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      .cover-firm-name { font-size:18px; font-weight:800; color:#000000; letter-spacing:.06em; margin-bottom:2.2mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; text-transform:uppercase; }
-      .cover-firm-nit { font-size:13px; font-weight:700; color:#000000; margin-bottom:2.2mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      .cover-firm-nit span { background:#ffffff; border:1.5px solid #000000; padding:2px 14px; border-radius:6px; letter-spacing:.04em; color:#000000; font-weight:700; }
-      .cover-firm-contact { font-size:13px; color:#000000; font-weight:600; letter-spacing:.01em; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .cover-firm { text-align:center; margin-top:7mm; font-family:var(--letra); }
+      .cover-firm-name { font-size:18px; font-weight:800; color:var(--tinta); letter-spacing:.06em; margin-bottom:2.2mm; font-family:var(--letra); text-transform:uppercase; }
+      .cover-firm-nit { font-size:13px; font-weight:700; color:var(--tinta); margin-bottom:2.2mm; font-family:var(--letra); }
+      .cover-firm-nit span { background:#ffffff; border:1.5px solid var(--tinta); padding:2px 14px; border-radius:6px; letter-spacing:.04em; color:var(--tinta); font-weight:700; }
+      .cover-firm-contact { font-size:13px; color:var(--tinta); font-weight:600; letter-spacing:.01em; font-family:var(--letra); }
       /* 1. Bloque Cliente: con aire generoso arriba y bajo "COTIZACIÓN PREPARADA PARA" */
-      .cover-client { margin-top:18mm; text-align:center; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      .cover-client .meta-label { font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#000000; font-weight:700; margin-bottom:4.5mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      .cover-client-name { font-size:18px; font-weight:800; margin:0 0 2.5mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; color:#000000; text-transform:uppercase; letter-spacing:.02em; line-height:1.3; }
-      .cover-client-nit { font-size:13px; font-weight:700; color:#000000; margin-top:0; margin-bottom:5.5mm; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; letter-spacing:.02em; }
-      .cover-client-grid { display:inline-grid; grid-template-columns:repeat(2,auto); gap:4.5mm 16mm; text-align:left; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      .ccg-k { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:#000000; margin-bottom:1.2mm; font-weight:700; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      .ccg-v { font-size:13px; font-weight:700; color:#000000; line-height:1.35; text-transform:uppercase; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .cover-client { margin-top:18mm; text-align:center; font-family:var(--letra); }
+      .cover-client .meta-label { font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--tinta); font-weight:700; margin-bottom:4.5mm; font-family:var(--letra); }
+      .cover-client-name { font-size:18px; font-weight:800; margin:0 0 2.5mm; font-family:var(--letra); color:var(--tinta); text-transform:uppercase; letter-spacing:.02em; line-height:1.3; }
+      .cover-client-nit { font-size:13px; font-weight:700; color:var(--tinta); margin-top:0; margin-bottom:5.5mm; font-family:var(--letra); letter-spacing:.02em; }
+      .cover-client-grid { display:inline-grid; grid-template-columns:repeat(2,auto); gap:4.5mm 16mm; text-align:left; font-family:var(--letra); }
+      .ccg-k { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--tinta); margin-bottom:1.2mm; font-weight:700; font-family:var(--letra); }
+      .ccg-v { font-size:13px; font-weight:700; color:var(--tinta); line-height:1.35; text-transform:uppercase; font-family:var(--letra); }
       /* 2. Bloque Propuesta Comercial: con separación clara y aire bajo "PROPUESTA COMERCIAL" */
-      .cover-title { margin-top:20mm; text-align:center; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      .cover-kicker { font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#000000; margin-bottom:5mm; font-weight:700; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      .cover-title h1 { font-size:18px; line-height:1.4; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif;
-        text-align:center; text-transform:uppercase; font-weight:800; color:#000000;
+      .cover-title { margin-top:20mm; text-align:center; font-family:var(--letra); }
+      .cover-kicker { font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--tinta); margin-bottom:5mm; font-weight:700; font-family:var(--letra); }
+      .cover-title h1 { font-size:18px; line-height:1.4; font-family:var(--letra);
+        text-align:center; text-transform:uppercase; font-weight:800; color:var(--tinta);
         max-width:155mm; margin-left:auto; margin-right:auto; letter-spacing:.02em; }
-      .meta-strip { margin-top:16mm; display:grid; grid-template-columns:repeat(4,1fr); border-top:1.5px solid #000000; border-bottom:1.5px solid #000000; padding:6.5mm 0; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
+      .meta-strip { margin-top:16mm; display:grid; grid-template-columns:repeat(4,1fr); border-top:1.5px solid var(--tinta); border-bottom:1.5px solid var(--tinta); padding:6.5mm 0; font-family:var(--letra); }
       .meta-cell { padding:0 3.5mm; border-right:1px solid #DDD; text-align:center; }
       .meta-cell.last { border-right:none; }
-      .meta-label { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:#000000; margin-bottom:2.5mm; font-weight:700; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      .meta-value { font-size:13px; font-weight:700; color:#000000; text-transform:uppercase; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; }
-      .meta-value.accent { color:#000000; font-weight:800; }
+      .meta-label { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--tinta); margin-bottom:2.5mm; font-weight:700; font-family:var(--letra); }
+      .meta-value { font-size:13px; font-weight:700; color:var(--tinta); text-transform:uppercase; font-family:var(--letra); }
+      .meta-value.accent { color:var(--tinta); font-weight:800; }
       /* 3. Pie de portada: expandido hacia abajo para balancear el folio carta */
-      .cover-foot { margin-top:20mm; padding-top:4mm; border-top:1px solid #DDD; display:flex; justify-content:space-between; align-items:center; gap:6mm; font-size:10px; color:#000000; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; font-weight:700; letter-spacing:.03em; }
-      .cover-sello { font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; font-size:10px; color:#000000; white-space:nowrap; font-weight:700; }
-      .cover-sello b { color:#000000; font-weight:800; }
+      .cover-foot { margin-top:20mm; padding-top:4mm; border-top:1px solid #DDD; display:flex; justify-content:space-between; align-items:center; gap:6mm; font-size:10px; color:var(--tinta); font-family:var(--letra); font-weight:700; letter-spacing:.03em; }
+      .cover-sello { font-family:var(--letra); font-size:10px; color:var(--tinta); white-space:nowrap; font-weight:700; }
+      .cover-sello b { color:var(--tinta); font-weight:800; }
 
       .def-list { border-top:1px solid #DDD; max-width:170mm; margin:0 auto; }
       .def-row { display:grid; grid-template-columns:44mm 1fr; gap:7mm; padding:4.5mm 0; border-bottom:1px solid #DDD; }
-      .def-term { font-size: var(--titulo); font-weight:700; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; color:#000000; }
-      .def-body { font-size: var(--texto); line-height:1.65; color:#000000; }
-      .def-body p { font-size: var(--texto); margin:0 0 2.5mm; color:#000000; }
-      .def-bullets { margin:0; padding-left:16px; font-size: var(--texto); line-height:1.65; color:#000000; }
+      .def-term { font-size: var(--titulo); font-weight:700; font-family:var(--letra); color:var(--tinta); }
+      .def-body { font-size: var(--texto); line-height:1.65; color:var(--tinta); }
+      .def-body p { font-size: var(--texto); margin:0 0 2.5mm; color:var(--tinta); }
+      .def-bullets { margin:0; padding-left:16px; font-size: var(--texto); line-height:1.65; color:var(--tinta); }
       .def-bullets li { margin-bottom:1.2mm; }
-      .bullet-list { margin:1.5mm 0 0 0; padding-left:18px; font-size: var(--texto); line-height:1.5; color:#000000; }
+      .bullet-list { margin:1.5mm 0 0 0; padding-left:18px; font-size: var(--texto); line-height:1.5; color:var(--tinta); }
       .bullet-list li { margin-bottom:1.3mm; }
-      .section-title { font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; color:#000000; font-weight:700; margin-bottom:2.6mm; }
-      .subheading { font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; color:#000000; font-weight:700; margin-bottom:2.6mm; }
+      .section-title { font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; color:var(--tinta); font-weight:700; margin-bottom:2.6mm; }
+      .subheading { font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; color:var(--tinta); font-weight:700; margin-bottom:2.6mm; }
 
       .incluye-block { margin:6mm 0 0; }
       .incluye-list { border-top:1px solid #DDD; padding-top:3.5mm; }
@@ -1396,10 +1410,10 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
          quedan alineados bajo la primera palabra, no bajo la vinieta. */
       .incluye-item {
         position:relative; padding-left:5mm; margin-bottom:1.7mm;
-        font-size: var(--texto); line-height:1.55; color:#000000; text-align:justify;
+        font-size: var(--texto); line-height:1.55; color:var(--tinta); text-align:justify;
       }
       .incluye-item:last-child { margin-bottom:0; }
-      .incluye-item::before { content:"–"; position:absolute; left:1.2mm; color:#000000; font-weight:700; }
+      .incluye-item::before { content:"–"; position:absolute; left:1.2mm; color:var(--tinta); font-weight:700; }
       .content-block { margin-bottom:5mm; }
 
       .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 0 5mm; }
@@ -1429,7 +1443,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       }
       .photo-grid.single .photo { height: var(--card-photo-h, 140mm); }
       .proposal-3-photo { height:52mm !important; object-fit:contain; object-position:center; background:#ffffff; }
-      .photo-caption { padding:5px 8px 6px; text-align:center; font-size: var(--texto); letter-spacing:.04em; text-transform:uppercase; color:#000000; border-top:1px solid #E2E8F0; background:#FAFAFA; font-weight:700; }
+      .photo-caption { padding:5px 8px 6px; text-align:center; font-size: var(--texto); letter-spacing:.04em; text-transform:uppercase; color:var(--tinta); border-top:1px solid #E2E8F0; background:#FAFAFA; font-weight:700; }
 
       .map-wrap {
         position:relative; width:100%; height:52mm;
@@ -1453,13 +1467,13 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       .table th { background:#1E1E1E; color:#fff; padding:8px 10px; font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; font-weight:600; text-align:center; border:none; }
       .table th.t-left { text-align:left; }
       .table th.t-right { text-align:right; }
-      .table td { border-bottom:1px solid #DDD; padding:8px 10px; vertical-align:middle; color:#000000; }
-      .table .sub-row td { font-weight:700; color:#000000; }
-      .table .soft-row td { color:#000000; font-size: var(--texto); border-bottom:1px solid #EEE; padding:6px 10px; }
+      .table td { border-bottom:1px solid #DDD; padding:8px 10px; vertical-align:middle; color:var(--tinta); }
+      .table .sub-row td { font-weight:700; color:var(--tinta); }
+      .table .soft-row td { color:var(--tinta); font-size: var(--texto); border-bottom:1px solid #EEE; padding:6px 10px; }
       .table .grand-total td { border-top:2px solid #1E1E1E; border-bottom:none; padding-top:12px; }
-      .total-label { font-size: var(--texto); font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#000000; }
+      .total-label { font-size: var(--texto); font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--tinta); }
       .total-amount { font-size: var(--titulo); color:#8A1518; font-weight:700; }
-      .row-num { color:#000000; font-size: var(--texto); }
+      .row-num { color:var(--tinta); font-size: var(--texto); }
 
       .t-center { text-align:center; }
       .t-right { text-align:right; }
@@ -1495,8 +1509,8 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       .ficha-card-title {
         font-size: 13px;
         font-weight: 700;
-        font-family: 'Source Sans 3', 'Segoe UI', Arial, sans-serif;
-        color: #000000;
+        font-family: var(--letra);
+        color: var(--tinta);
         line-height: 1.2;
       }
       .ficha-card-tag {
@@ -1504,7 +1518,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
         font-weight: 700;
         letter-spacing: .04em;
         text-transform: uppercase;
-        color: #000000;
+        color: var(--tinta);
         background: #F8FAFC;
         border: 1px solid #CBD5E1;
         padding: 1px 5px;
@@ -1535,13 +1549,13 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       .ficha-card-desc {
         font-size: 10px;
         line-height: 1.42;
-        color: #000000;
+        color: var(--tinta);
         text-align: justify;
         text-justify: inter-word;
         hyphens: auto;
       }
       .ficha-card-desc strong {
-        color: #000000;
+        color: var(--tinta);
       }
       .ficha-card-desc .split {
         margin-bottom: 1.5mm;
@@ -1551,7 +1565,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
 
       .ficha-row { display:grid; grid-template-columns:42mm 38mm 1fr; gap:6mm; padding:4.5mm 0; border-top:1px solid #DDD; align-items:center; }
       .ficha-row:last-of-type { border-bottom:1px solid #DDD; }
-      .ficha-name { font-size: var(--titulo); font-weight:700; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; color:#000000; }
+      .ficha-name { font-size: var(--titulo); font-weight:700; font-family:var(--letra); color:var(--tinta); }
       .ficha-img-box {
         width: 100%;
         height: 32mm;
@@ -1565,7 +1579,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
         box-sizing: border-box;
       }
       .ficha-img { max-width:100%; max-height:100%; object-fit:contain; }
-      .ficha-desc { font-size: var(--texto); line-height:1.6; color:#000000; }
+      .ficha-desc { font-size: var(--texto); line-height:1.6; color:var(--tinta); }
       .ficha-desc .split { margin-bottom:2.5mm; padding-bottom:2.5mm; border-bottom:1px dashed #DDD; }
 
       .conditions-block { margin:7mm 0 0; }
@@ -1578,21 +1592,21 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
          venian del codigo en minuscula. Puestos aqui, los cuatro se ven
          iguales sin tener que acordarse al escribirlos. */
       .meta-strong { font-size: var(--texto); font-weight:700; margin-top:1.6mm;
-        text-transform:uppercase; color:#000000; }
+        text-transform:uppercase; color:var(--tinta); }
 
-      .sst-block { margin:6mm 0; padding-top:4mm; border-top:2px solid #000000; }
-      .sst-title { font-size: var(--texto); letter-spacing:.08em; text-transform:uppercase; font-weight:700; margin-bottom:2.6mm; color:#000000; }
-      .sst-block p { font-size: var(--texto); line-height:1.7; margin:0; color:#000000; }
+      .sst-block { margin:6mm 0; padding-top:4mm; border-top:2px solid var(--tinta); }
+      .sst-title { font-size: var(--texto); letter-spacing:.08em; text-transform:uppercase; font-weight:700; margin-bottom:2.6mm; color:var(--tinta); }
+      .sst-block p { font-size: var(--texto); line-height:1.7; margin:0; color:var(--tinta); }
 
-      .signature { display:grid; grid-template-columns:1fr 1.05fr; gap:10mm; padding-top:5mm; border-top:1px solid #000000; }
-      .steps-list { margin:0; padding-left:17px; font-size: var(--texto); line-height:1.8; color:#000000; }
-      .contact-box { margin-top:5mm; padding:4mm 5mm; background:#F8FAFC; border:1px solid #CBD5E1; color:#000000; }
-      .contact-line { font-size: var(--texto); line-height:1.6; color:#000000; }
-      .sig-space { height:14mm; border-bottom:1px solid #000000; margin-bottom:3mm; display:flex; align-items:flex-end; }
+      .signature { display:grid; grid-template-columns:1fr 1.05fr; gap:10mm; padding-top:5mm; border-top:1px solid var(--tinta); }
+      .steps-list { margin:0; padding-left:17px; font-size: var(--texto); line-height:1.8; color:var(--tinta); }
+      .contact-box { margin-top:5mm; padding:4mm 5mm; background:#F8FAFC; border:1px solid #CBD5E1; color:var(--tinta); }
+      .contact-line { font-size: var(--texto); line-height:1.6; color:var(--tinta); }
+      .sig-space { height:14mm; border-bottom:1px solid var(--tinta); margin-bottom:3mm; display:flex; align-items:flex-end; }
       .sig-img { max-height:13mm; max-width:60mm; object-fit:contain; }
-      .sig-name { font-size: 15px; font-weight:700; font-family:'Source Sans 3', 'Segoe UI', Arial, sans-serif; color:#000000; white-space:nowrap; }
-      .sig-role { font-size: var(--texto); color:#000000; margin-top:.6mm; font-weight:600; }
-      .sig-meta { font-size: var(--texto); color:#000000; margin-top:2mm; line-height:1.65; }
+      .sig-name { font-size: 15px; font-weight:700; font-family:var(--letra); color:var(--tinta); white-space:nowrap; }
+      .sig-role { font-size: var(--texto); color:var(--tinta); margin-top:.6mm; font-weight:600; }
+      .sig-meta { font-size: var(--texto); color:var(--tinta); margin-top:2mm; line-height:1.65; }
 
       .appendix-page .page-content { padding: 0; box-sizing: border-box; }
 
@@ -1649,7 +1663,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       .ficha-llamada-guia {
         flex: 0 0 9mm;
         height: 1px;
-        background: #000;
+        background: var(--tinta);
         opacity: .5;
       }
       .ficha-llamada-texto {
@@ -1662,11 +1676,11 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
         font-weight: 700;
         letter-spacing: .05em;
         text-transform: uppercase;
-        color: #000;
+        color: var(--tinta);
       }
       .ficha-llamada-texto span {
         font-size: var(--texto);
-        color: #000;
+        color: var(--tinta);
       }
 
       .ficha-sistema-datos { margin: 0; }
@@ -1686,7 +1700,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
         font-weight: 700;
         letter-spacing: .06em;
         text-transform: uppercase;
-        color: #000;
+        color: var(--tinta);
         margin-top: 5mm;
       }
       .ficha-sistema-datos dt:first-child { margin-top: 0; }
@@ -1694,7 +1708,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
         margin: 1.2mm 0 0;
         font-size: var(--texto);
         line-height: 1.55;
-        color: #000;
+        color: var(--tinta);
       }
       .appendix-page .doc-h3 { margin: 0 0 2.5mm; }
       .appendix-img { width:auto; max-width:100%; height:auto; max-height:202mm; object-fit:contain; display:block; margin:0 auto; image-rendering: -webkit-optimize-contrast; image-rendering: auto; }
@@ -1705,6 +1719,89 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
       .price-table, .table, .table thead, .table tr,
       .def-row, .ficha-row, .meta-card, .conditions-grid,
       .sst-block, .signature, .content-block, .incluye-block { break-inside:avoid; page-break-inside:avoid; }
+
+      /* Acabado estilo Apple. Va al final para afinar las reglas de arriba
+         en un solo sitio: lineas finas en gris, etiquetas sin mayusculas
+         sostenidas y en gris, pesos mas ligeros y titulos con el espaciado
+         apretado de Apple. */
+      body { color:var(--tinta); letter-spacing:-0.005em; }
+      h1, h2, h3, .doc-h2, .doc-h3, .cover-title h1, .cover-client-name, .def-term,
+      .ficha-name, .ficha-card-title, .sig-name { font-weight:600; letter-spacing:-0.02em; }
+      .doc-copy strong { font-weight:600; }
+
+      .header { border-bottom:.5pt solid var(--linea); }
+      .header-right { text-transform:none; letter-spacing:0; font-weight:500; }
+      .header-sello, .header-sello b { font-family:var(--letra); }
+      .footer { border-top:.5pt solid var(--linea); }
+      .footer-col-center { border-color:var(--linea-suave); }
+      .footer-brand { color:var(--tinta); font-weight:500; }
+      .footer-main, .footer-sub { font-weight:400; }
+
+      .eyebrow { border-bottom:.5pt solid var(--linea); }
+      .cover-header { border-bottom:.5pt solid var(--linea); }
+      .cover-firm-name { font-weight:600; }
+      .cover-firm-nit span { border:none; padding:0; }
+      .cover-firm-nit, .cover-firm-contact, .cover-client-nit, .ccg-v, .meta-value { font-weight:400; }
+      .cover-client-name { font-weight:600; }
+      .cover-firm-nit span { font-weight:500; }
+      /* El titulo es lo que se lee primero: grande, apretado y en tipo
+         oracion, como los titulares de Apple. */
+      .cover-title h1 { font-weight:600; font-size:28px; line-height:1.15; text-transform:none;
+        letter-spacing:-0.03em; }
+      /* El titulo crecio: se le quita aire arriba para que la portada siga
+         cabiendo en una sola hoja. */
+      .cover-title { margin-top:14mm; }
+      .meta-strip { margin-top:12mm; }
+      .meta-value.accent { font-weight:600; }
+      .meta-strip { border-top:.5pt solid var(--linea); border-bottom:.5pt solid var(--linea); }
+      .meta-cell { border-color:var(--linea-suave); }
+      .cover-foot { border-color:var(--linea-suave); font-weight:400; }
+      .cover-sello, .cover-sello b { font-weight:500; }
+
+      .def-list, .def-row, .incluye-list, .conditions-grid, .meta-card, .meta-card.pad-left,
+      .ficha-row, .ficha-row:last-of-type { border-color:var(--linea-suave); }
+      .sst-block { border-top:.5pt solid var(--linea); }
+      .signature, .sig-space, .ficha-sistema-datos--pie { border-color:var(--linea); }
+      .meta-strong { font-weight:500; }
+      .sig-role { font-weight:400; }
+
+      /* Las etiquetas: en gris, peso medio y sin mayusculas sostenidas. */
+      .footer-label, .eyebrow, .card-label, .section-title, .subheading, .meta-label,
+      .cover-client .meta-label, .ccg-k, .cover-kicker, .sst-title, .photo-caption,
+      .ficha-card-tag, .ficha-llamada-texto b, .ficha-sistema-datos dt, .total-label {
+        text-transform:none; letter-spacing:0; font-weight:500; color:var(--gris);
+      }
+      .header-sello, .header-sello b, .footer-sub, .cover-firm-contact, .cover-client-nit,
+      .cover-foot, .cover-sello, .cover-sello b, .row-num, .sig-role, .sig-meta,
+      .incluye-item::before { color:var(--gris); }
+
+      /* Tabla de precios: sin banda oscura, encabezado gris sobre linea fina y
+         el total grande en negro. */
+      .table th { background:transparent; color:var(--gris); font-weight:500; text-transform:none;
+        letter-spacing:0; border-bottom:.5pt solid var(--linea); }
+      .table td { border-bottom:.5pt solid var(--linea-suave); }
+      .table .soft-row td { border-bottom:.5pt solid var(--linea-suave); }
+      /* El subtotal va resaltado con fondo gris suave y en negrita: separa los
+         items de lo que se suma encima, y es lo que se busca al leer la tabla.
+         print-color-adjust hace que el fondo salga tambien al imprimir. */
+      .table .sub-row td { font-weight:600; background:var(--fondo-resalte); border-bottom:none;
+        -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      .table .sub-row td:first-child { border-radius:8px 0 0 8px; }
+      .table .sub-row td:last-child { border-radius:0 8px 8px 0; }
+      .table .grand-total td { border-top:.5pt solid var(--tinta); }
+      .total-amount { color:var(--tinta); font-weight:600; font-size:20px; letter-spacing:-0.02em; }
+      .accent { color:var(--tinta); }
+
+      /* Tarjetas, fotos y fichas: esquinas amplias, linea suave y sin sombra. */
+      .photo-card, .ficha-card, .map-wrap, .ficha-card-img-box, .ficha-img-box {
+        border:.5pt solid var(--linea-suave); border-radius:12px; box-shadow:none; }
+      .photo-caption { background:#fff; border-top:.5pt solid var(--linea-suave); }
+      .ficha-card-header { border-bottom-color:var(--linea-suave); }
+      .ficha-card-tag { background:var(--fondo-suave); border:none; border-radius:6px; }
+      .ficha-card-img-box, .ficha-img-box { background:var(--fondo-suave); }
+      .ficha-card-desc .split, .ficha-desc .split { border-bottom-color:var(--linea-suave); }
+      .contact-box { background:var(--fondo-suave); border:none; border-radius:12px; }
+      .ficha-llamada-guia { background:var(--linea); opacity:1; }
 
       @media print {
         body { background:#fff; }

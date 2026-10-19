@@ -587,6 +587,18 @@ export default function Cotizacion({ctx}){
     const cotizacion = snapshot?.cotizacion || null;
     if(!cotizacion || !snapshot) return;
 
+    // Aprobar crea la obra y le escribe al cliente, y se hace con un solo clic
+    // en la etiqueta de estado: en el celular basta un toque sin querer. Se
+    // pregunta antes, diciendo a donde va el correo, igual que al desaprobar.
+    const correoCliente = String(cotizacion.contactoEmail || "").trim();
+    if(!window.confirm(
+      `¿Aprobar la cotización ${cotizacion.numero || cotizacion.id} de ${cotizacion.cliente || "este cliente"}?\n\n` +
+      `• Se crea la obra en Ejecución de obra (o se reactiva la que ya tenía).\n` +
+      (correoCliente
+        ? `• Se le envía al cliente un correo con la cotización adjunta a ${correoCliente}.`
+        : `• No se envía correo: la cotización no tiene correo del cliente.`)
+    )) return;
+
     // Buscar si ya existe alguna obra vinculada a esta cotización
     const obrasAsociadas = obras.filter((o) =>
       (cotizacion.obraId && o.id === cotizacion.obraId) ||

@@ -260,11 +260,33 @@ export function esMiMensaje(msg, membresia) {
   return false;
 }
 
+// «Visto» solo cuando la persona tiene la aplicacion delante. Con la pestaña
+// en segundo plano o la ventana minimizada el chat sigue abierto y llegaban
+// mensajes nuevos, y se marcaban como vistos sin que nadie los leyera: quien
+// los envio veia el doble check aunque la otra persona no estuviera. Se
+// espera a que la pagina vuelva a estar a la vista.
+function esperarPaginaVisible() {
+  if (typeof document === "undefined" || document.visibilityState === "visible") {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    const alVolver = () => {
+      if (document.visibilityState === "visible") {
+        document.removeEventListener("visibilitychange", alVolver);
+        resolve();
+      }
+    };
+    document.addEventListener("visibilitychange", alVolver);
+  });
+}
+
 /**
  * Marca como leídos todos los mensajes recibidos en un ticket para el usuario actual.
+ * Nunca marca los mensajes propios, y solo actua con la pagina a la vista.
  */
 export async function marcarMensajesComoLeidos(ticketId, membresia) {
-  if (!ticketId) return;
+  if (!ticketId || !membresia) return;
+  await esperarPaginaVisible();
   const ahora = new Date().toISOString();
 
   let targetUuid = ticketId;
@@ -315,15 +337,11 @@ export async function marcarMensajesComoLeidos(ticketId, membresia) {
             }
           }
         } else if (selectErr) {
-          // Intento fallback directo para marcar el ticket como leído
-          let fallbackQ = supabase
-            .from("soporte_mensajes")
-            .update({ leido: true })
-            .eq("ticket_id", targetUuid)
-            .eq("leido", false);
-
-          if (tenantId) fallbackQ = fallbackQ.eq("tenant_id", tenantId);
-          await fallbackQ;
+          // Antes aqui se marcaba TODO el ticket como leido, incluidos los
+          // mensajes propios, y quien enviaba veia «Visto» sin que nadie lo
+          // hubiera leido. Si no se puede saber de quien es cada mensaje, no
+          // se marca nada; se reintenta la proxima vez que se abra el chat.
+          console.warn("Aviso leyendo mensajes pendientes en Supabase:", selectErr);
         }
       }
     } catch (e) {

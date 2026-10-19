@@ -31,11 +31,18 @@ const ESTADOS = {
   resuelto: "Resueltos",
 };
 
+// Estilo Apple: los estados van en gris neutro, sin amarillo, azul ni verde.
+// El texto ya dice el estado; el color solo competia con el mensaje.
 const BADGES = {
-  pendiente: { bg: "#FEF0C7", text: "#B54708", border: "#FEDF89", label: "Pendiente" },
-  en_curso: { bg: "#EFF8FF", text: "#175CD3", border: "#B2DDFF", label: "En curso" },
-  resuelto: { bg: "#ECFDF3", text: "#027A48", border: "#A6F4C5", label: "Resuelto" },
+  pendiente: { bg: "var(--fill)", text: "var(--text-secondary)", border: "transparent", label: "Pendiente" },
+  en_curso: { bg: "var(--fill)", text: "var(--text-secondary)", border: "transparent", label: "En curso" },
+  resuelto: { bg: "var(--fill)", text: "var(--text-tertiary)", border: "transparent", label: "Resuelto" },
 };
+
+// Estilo Apple en grises, sin negro: la accion principal es una pildora gris
+// un punto mas oscura que las demas, con la letra en negrita.
+const GRIS_FUERTE = "var(--border-strong)";
+const BOTON_PRINCIPAL = { ...B("var(--fill)"), background: GRIS_FUERTE, fontWeight: 600 };
 
 function formatFechaRelativa(isoString) {
   if (!isoString) return "";
@@ -706,12 +713,12 @@ export default function Soporte({ ctx }) {
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                 <button
                   onClick={() => reproducirSonidoNotificacion()}
-                  style={{ ...B("var(--surface, #ffffff)", "var(--text-main)"), border: "1px solid var(--border, rgba(0, 0, 0, 0.12))", fontSize: 12, padding: "7px 13px", borderRadius: 10, fontWeight: 600, boxShadow: "0 1px 2px rgba(0,0,0,0.02)" }}
+                  style={B("var(--fill)")}
                   title="Probar sonido de notificación del computador"
                 >
-                  🔊 Probar timbre
+                  Probar timbre
                 </button>
-                <button onClick={abrirModalNuevo} style={{ ...B("#f47c20"), boxShadow: "0 1px 3px rgba(244, 124, 32, 0.25)" }}>
+                <button onClick={abrirModalNuevo} style={BOTON_PRINCIPAL}>
                   <span>+</span> Nueva conversación
                 </button>
               </div>
@@ -728,26 +735,26 @@ export default function Soporte({ ctx }) {
             }}
           >
             <div style={{ ...CD, padding: isMobile ? "10px 14px" : "14px 18px" }}>
-              <div style={{ fontSize: 11, color: "var(--text-muted, #667085)", fontWeight: 600 }}>CONVERSACIONES</div>
-              <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 800, color: "var(--text-main, #101828)", marginTop: 2 }}>
+              <div style={{ fontSize: 11, color: "var(--text-tertiary)", fontWeight: 500 }}>Conversaciones</div>
+              <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 600, color: "var(--text-primary)", marginTop: 2, letterSpacing: "-0.02em" }}>
                 {stats.total}
               </div>
             </div>
-            <div style={{ ...CD, padding: isMobile ? "10px 14px" : "14px 18px", borderLeft: "4px solid #F79009" }}>
-              <div style={{ fontSize: 11, color: "#B54708", fontWeight: 600 }}>PENDIENTES</div>
-              <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 800, color: "#B54708", marginTop: 2 }}>
+            <div style={{ ...CD, padding: isMobile ? "10px 14px" : "14px 18px" }}>
+              <div style={{ fontSize: 11, color: "var(--text-tertiary)", fontWeight: 500 }}>Pendientes</div>
+              <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 600, color: "var(--text-primary)", marginTop: 2, letterSpacing: "-0.02em" }}>
                 {stats.pendiente}
               </div>
             </div>
-            <div style={{ ...CD, padding: isMobile ? "10px 14px" : "14px 18px", borderLeft: "4px solid #175CD3" }}>
-              <div style={{ fontSize: 11, color: "#175CD3", fontWeight: 600 }}>EN CURSO</div>
-              <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 800, color: "#175CD3", marginTop: 2 }}>
+            <div style={{ ...CD, padding: isMobile ? "10px 14px" : "14px 18px" }}>
+              <div style={{ fontSize: 11, color: "var(--text-tertiary)", fontWeight: 500 }}>En curso</div>
+              <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 600, color: "var(--text-primary)", marginTop: 2, letterSpacing: "-0.02em" }}>
                 {stats.en_curso}
               </div>
             </div>
-            <div style={{ ...CD, padding: isMobile ? "10px 14px" : "14px 18px", borderLeft: "4px solid #12B76A" }}>
-              <div style={{ fontSize: 11, color: "#027A48", fontWeight: 600 }}>RESUELTOS</div>
-              <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 800, color: "#027A48", marginTop: 2 }}>
+            <div style={{ ...CD, padding: isMobile ? "10px 14px" : "14px 18px" }}>
+              <div style={{ fontSize: 11, color: "var(--text-tertiary)", fontWeight: 500 }}>Resueltos</div>
+              <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 600, color: "var(--text-primary)", marginTop: 2, letterSpacing: "-0.02em" }}>
                 {stats.resuelto}
               </div>
             </div>
@@ -781,7 +788,7 @@ export default function Soporte({ ctx }) {
             }}
           >
           {/* Barra de Filtro y Búsqueda */}
-          <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--border, #eaecf0)" }}>
+          <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--separator)" }}>
             <input
               type="text"
               placeholder="Buscar por persona, asunto, obra..."
@@ -800,9 +807,9 @@ export default function Soporte({ ctx }) {
                     onClick={() => setFiltroEstado(key)}
                     style={{
                       border: "none",
-                      background: activo ? "#E0342A" : "var(--surface-subtle, #f2f4f7)",
-                      color: activo ? "#fff" : "var(--text-muted, #667085)",
-                      borderRadius: 8,
+                      background: activo ? GRIS_FUERTE : "var(--fill)",
+                      color: activo ? "var(--text-primary)" : "var(--text-secondary)",
+                      borderRadius: 980,
                       padding: "5px 10px",
                       fontSize: 12,
                       fontWeight: 600,
@@ -821,13 +828,12 @@ export default function Soporte({ ctx }) {
           {/* Lista scrolleable */}
           <div style={{ flex: 1, overflowY: "auto" }}>
             {cargando ? (
-              <div style={{ padding: 24, textAlign: "center", color: "var(--text-muted, #667085)", fontSize: 13 }}>
+              <div style={{ padding: 24, textAlign: "center", color: "var(--text-tertiary)", fontSize: 13 }}>
                 Cargando conversaciones…
               </div>
             ) : ticketsFiltrados.length === 0 ? (
-              <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted, #667085)", fontSize: 13 }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>💬</div>
-                <div style={{ fontWeight: 700, color: "var(--text-main, #101828)", marginBottom: 4, fontSize: 14 }}>
+              <div style={{ padding: 40, textAlign: "center", color: "var(--text-tertiary)", fontSize: 13 }}>
+                <div style={{ fontWeight: 600, color: "var(--text-primary)", marginBottom: 4, fontSize: 14 }}>
                   {tickets.length === 0 ? "Bandeja limpia" : "Sin resultados"}
                 </div>
                 <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.5 }}>
@@ -841,7 +847,6 @@ export default function Soporte({ ctx }) {
                 const activo = ticket.id === ticketActivoId;
                 const badge = BADGES[ticket.estado] || BADGES.pendiente;
                 const interlocutor = obtenerNombreInterlocutor(ticket, membresia);
-                const esCamila = interlocutor.toLowerCase().includes("camila");
 
                 return (
                   <div
@@ -849,21 +854,18 @@ export default function Soporte({ ctx }) {
                     onClick={() => setTicketActivoId(ticket.id)}
                     style={{
                       padding: "14px 16px",
-                      borderBottom: "1px solid var(--border, #eaecf0)",
+                      borderBottom: "1px solid var(--separator)",
                       cursor: "pointer",
-                      backgroundColor: activo
-                        ? "var(--surface-active, rgba(224, 52, 42, 0.06))"
-                        : "transparent",
-                      borderLeft: activo ? "4px solid #E0342A" : "4px solid transparent",
+                      backgroundColor: activo ? "var(--fill)" : "transparent",
                       transition: "background-color 0.12s ease",
                     }}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main, #101828)", display: "flex", alignItems: "center", gap: 6 }}>
-                        {esCamila ? "💼" : "👤"} {interlocutor}
+                      <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
+                        {interlocutor}
                       </span>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 11, color: "var(--text-muted, #667085)" }}>
+                        <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
                           {formatFechaRelativa(ticket.actualizado_en || ticket.creado_en)}
                         </span>
                         <button
@@ -874,7 +876,7 @@ export default function Soporte({ ctx }) {
                           style={{
                             background: "transparent",
                             border: "none",
-                            color: "var(--text-muted, #667085)",
+                            color: "var(--text-tertiary)",
                             cursor: "pointer",
                             padding: "2px 5px",
                             fontSize: 12,
@@ -884,16 +886,19 @@ export default function Soporte({ ctx }) {
                             transition: "all 0.15s ease",
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.color = "#E0342A";
-                            e.currentTarget.style.background = "rgba(224, 52, 42, 0.08)";
+                            e.currentTarget.style.color = "var(--danger-text)";
+                            e.currentTarget.style.background = "var(--fill)";
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.color = "var(--text-muted, #667085)";
+                            e.currentTarget.style.color = "var(--text-tertiary)";
                             e.currentTarget.style.background = "transparent";
                           }}
                           title="Eliminar conversación"
+                          aria-label="Eliminar conversación"
                         >
-                          🗑️
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+                          </svg>
                         </button>
                       </div>
                     </div>
@@ -902,7 +907,7 @@ export default function Soporte({ ctx }) {
                       style={{
                         fontSize: 12.5,
                         fontWeight: 600,
-                        color: "var(--text-main, #101828)",
+                        color: "var(--text-primary)",
                         marginBottom: 4,
                         whiteSpace: "nowrap",
                         overflow: "hidden",
@@ -915,7 +920,7 @@ export default function Soporte({ ctx }) {
                     <div
                       style={{
                         fontSize: 12,
-                        color: "var(--text-muted, #667085)",
+                        color: "var(--text-tertiary)",
                         marginBottom: 8,
                         whiteSpace: "nowrap",
                         overflow: "hidden",
@@ -929,8 +934,8 @@ export default function Soporte({ ctx }) {
                       <span
                         style={{
                           fontSize: 11,
-                          color: "var(--text-muted, #667085)",
-                          backgroundColor: "var(--surface-subtle, #f2f4f7)",
+                          color: "var(--text-tertiary)",
+                          backgroundColor: "var(--fill)",
                           padding: "2px 6px",
                           borderRadius: 4,
                         }}
@@ -943,26 +948,25 @@ export default function Soporte({ ctx }) {
                           <span
                             style={{
                               fontSize: 10,
-                              fontWeight: 800,
-                              backgroundColor: "#FEE4E2",
-                              color: "#B42318",
-                              border: "1px solid #FDA29B",
-                              padding: "2px 6px",
-                              borderRadius: 6,
+                              fontWeight: 600,
+                              backgroundColor: GRIS_FUERTE,
+                              color: "var(--text-primary)",
+                              padding: "2px 7px",
+                              borderRadius: 980,
                             }}
                           >
-                            🔴 {ticketsConNoLeidosMap[ticket.id]} nuevo{ticketsConNoLeidosMap[ticket.id] > 1 ? "s" : ""}
+                            {ticketsConNoLeidosMap[ticket.id]} nuevo{ticketsConNoLeidosMap[ticket.id] > 1 ? "s" : ""}
                           </span>
                         )}
                         <span
                           style={{
                             fontSize: 10.5,
-                            fontWeight: 700,
+                            fontWeight: 600,
                             backgroundColor: badge.bg,
                             color: badge.text,
                             border: `1px solid ${badge.border}`,
                             padding: "2px 7px",
-                            borderRadius: 6,
+                            borderRadius: 980,
                           }}
                         >
                           {badge.label}
@@ -995,13 +999,13 @@ export default function Soporte({ ctx }) {
                 <div
                   style={{
                     padding: isMobile ? "10px 14px" : "12px 20px",
-                    borderBottom: "1px solid var(--border, #eaecf0)",
+                    borderBottom: "1px solid var(--separator)",
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
                     flexWrap: "wrap",
                     gap: 10,
-                    backgroundColor: "var(--surface, #ffffff)",
+                    backgroundColor: "var(--surface)",
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: "1 1 200px" }}>
@@ -1013,13 +1017,13 @@ export default function Soporte({ ctx }) {
                           setTicketActivoId(null);
                         }}
                         style={{
-                          border: "1px solid var(--border, #eaecf0)",
-                          background: "var(--surface-subtle, #f2f4f7)",
-                          color: "var(--text-main, #101828)",
+                          border: "1px solid var(--separator)",
+                          background: "var(--fill)",
+                          color: "var(--text-primary)",
                           borderRadius: 8,
                           padding: "6px 12px",
                           fontSize: 12.5,
-                          fontWeight: 700,
+                          fontWeight: 600,
                           cursor: "pointer",
                           display: "inline-flex",
                           alignItems: "center",
@@ -1034,23 +1038,23 @@ export default function Soporte({ ctx }) {
                     )}
                     <div style={{ minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        <h3 style={{ fontSize: isMobile ? 14 : 15, fontWeight: 800, margin: 0, color: "var(--text-main, #101828)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <h3 style={{ fontSize: isMobile ? 14 : 15, fontWeight: 600, margin: 0, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {ticketActivo.asunto}
                         </h3>
                         <span
                           style={{
                             fontSize: 10.5,
-                            fontWeight: 700,
+                            fontWeight: 600,
                             backgroundColor: (BADGES[ticketActivo.estado] || BADGES.pendiente).bg,
                             color: (BADGES[ticketActivo.estado] || BADGES.pendiente).text,
                             padding: "2px 7px",
-                            borderRadius: 6,
+                            borderRadius: 980,
                           }}
                         >
                           {(BADGES[ticketActivo.estado] || BADGES.pendiente).label}
                         </span>
                       </div>
-                      <div style={{ fontSize: 11.5, color: "var(--text-muted, #667085)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         Con: <strong>{obtenerNombreInterlocutor(ticketActivo, membresia)}</strong>
                         {ticketActivo.obra_nombre && ` · ${ticketActivo.obra_nombre}`}
                       </div>
@@ -1063,14 +1067,9 @@ export default function Soporte({ ctx }) {
                     <button
                       onClick={() => handleCambiarEstado("en_curso")}
                       style={{
-                        border: "1px solid var(--border, #eaecf0)",
-                        background: "transparent",
-                        color: "var(--text-main, #101828)",
-                        borderRadius: 8,
-                        padding: isMobile ? "5px 9px" : "6px 12px",
+                        ...B("var(--fill)"),
+                        padding: isMobile ? "5px 11px" : "6px 14px",
                         fontSize: isMobile ? 11.5 : 12,
-                        fontWeight: 600,
-                        cursor: "pointer",
                       }}
                     >
                       {isMobile ? "Reabrir" : "Reabrir conversación"}
@@ -1079,40 +1078,21 @@ export default function Soporte({ ctx }) {
                     <button
                       onClick={() => handleCambiarEstado("resuelto")}
                       style={{
-                        border: "1px solid #12B76A",
-                        background: "rgba(18, 183, 106, 0.1)",
-                        color: "#027A48",
-                        borderRadius: 8,
-                        padding: isMobile ? "5px 9px" : "6px 14px",
+                        ...BOTON_PRINCIPAL,
+                        padding: isMobile ? "5px 11px" : "6px 14px",
                         fontSize: isMobile ? 11.5 : 12,
-                        fontWeight: 700,
-                        cursor: "pointer",
                       }}
                     >
-                      {isMobile ? "✓ Resuelto" : "✓ Marcar como resuelto"}
+                      {isMobile ? "Resuelto" : "Marcar como resuelto"}
                     </button>
                   )}
                   <button
                     onClick={() => handleEliminarTicket(ticketActivo.id)}
+                    // Gris como los demas; solo el texto avisa en rojo que borra.
                     style={{
-                      border: "1px solid #FDA29B",
-                      background: "rgba(240, 68, 56, 0.08)",
-                      color: "#B42318",
-                      borderRadius: 8,
-                      padding: isMobile ? "5px 9px" : "6px 12px",
+                      ...B("var(--fill)", "#D92D20"),
+                      padding: isMobile ? "5px 11px" : "6px 14px",
                       fontSize: isMobile ? 11.5 : 12,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                      transition: "all 0.15s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = "#FEE4E2";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "rgba(240, 68, 56, 0.08)";
                     }}
                     title="Eliminar esta conversación por completo"
                   >
@@ -1130,11 +1110,11 @@ export default function Soporte({ ctx }) {
                   display: "flex",
                   flexDirection: "column",
                   gap: 16,
-                  backgroundColor: "var(--bg-app, #f9fafb)",
+                  backgroundColor: "var(--surface)",
                 }}
               >
                 {mensajes.length === 0 ? (
-                  <div style={{ textAlign: "center", color: "var(--text-muted, #667085)", margin: "auto", fontSize: 13 }}>
+                  <div style={{ textAlign: "center", color: "var(--text-tertiary)", margin: "auto", fontSize: 13 }}>
                     Inicia la conversación escribiendo un mensaje abajo.
                   </div>
                 ) : (
@@ -1155,7 +1135,7 @@ export default function Soporte({ ctx }) {
                           <div
                             style={{
                               fontSize: 11,
-                              color: "var(--text-muted, #667085)",
+                              color: "var(--text-tertiary)",
                               marginBottom: 4,
                               display: "flex",
                               alignItems: "center",
@@ -1176,10 +1156,9 @@ export default function Soporte({ ctx }) {
                                   fontSize: 10,
                                   padding: "1px 6px",
                                   borderRadius: 10,
-                                  fontWeight: 700,
-                                  backgroundColor: msg.leido ? "#e0f2fe" : "#f1f5f9",
-                                  color: msg.leido ? "#0284c7" : "#64748b",
-                                  border: `1px solid ${msg.leido ? "#bae6fd" : "#e2e8f0"}`,
+                                  fontWeight: 600,
+                                  backgroundColor: "var(--fill)",
+                                  color: msg.leido ? "var(--text-primary)" : "var(--text-tertiary)",
                                 }}
                                 title={msg.leido ? `Visto por ${interlocutorNombre}` : "Enviado · Pendiente de lectura"}
                               >
@@ -1204,16 +1183,18 @@ export default function Soporte({ ctx }) {
                           </div>
                           <div
                             style={{
-                              padding: "12px 16px",
-                              borderRadius: 14,
-                              borderTopRightRadius: esMio ? 2 : 14,
-                              borderTopLeftRadius: esMio ? 14 : 2,
-                              backgroundColor: esMio ? "#E0342A" : "var(--surface, #ffffff)",
-                              color: esMio ? "#ffffff" : "var(--text-main, #101828)",
-                              boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                              // Burbujas tipo iMessage en grises: las mias un
+                              // gris un punto mas oscuro, las recibidas gris claro.
+                              padding: "10px 14px",
+                              borderRadius: 18,
+                              borderBottomRightRadius: esMio ? 6 : 18,
+                              borderBottomLeftRadius: esMio ? 18 : 6,
+                              backgroundColor: esMio ? GRIS_FUERTE : "var(--fill)",
+                              color: "var(--text-primary)",
+                              boxShadow: "none",
                               fontSize: 13.5,
                               lineHeight: 1.5,
-                              border: esMio ? "none" : "1px solid var(--border, #eaecf0)",
+                              border: "none",
                               whiteSpace: "pre-wrap",
                               wordBreak: "break-word",
                             }}
@@ -1230,7 +1211,7 @@ export default function Soporte({ ctx }) {
                                 gap: 4,
                                 marginTop: 6,
                                 fontSize: 10.5,
-                                color: esMio ? "rgba(255, 255, 255, 0.85)" : "var(--text-muted, #94a3b8)",
+                                color: "var(--text-quaternary)",
                               }}
                             >
                               <span>{formatHoraCorta(msg.creado_en)}</span>
@@ -1240,8 +1221,8 @@ export default function Soporte({ ctx }) {
                                     display: "inline-flex",
                                     alignItems: "center",
                                     gap: 2,
-                                    fontWeight: 700,
-                                    color: msg.leido ? "#67e8f9" : "rgba(255, 255, 255, 0.72)",
+                                    fontWeight: 600,
+                                    color: msg.leido ? "var(--text-secondary)" : "var(--text-quaternary)",
                                   }}
                                   title={msg.leido ? `Visto por ${interlocutorNombre}` : "Enviado · Pendiente de lectura"}
                                 >
@@ -1285,11 +1266,11 @@ export default function Soporte({ ctx }) {
                 onSubmit={handleEnviarMensaje}
                 style={{
                   padding: isMobile ? "10px 12px calc(12px + env(safe-area-inset-bottom))" : "12px 18px",
-                  borderTop: "1px solid var(--border, #eaecf0)",
+                  borderTop: "1px solid var(--separator)",
                   display: "flex",
                   gap: 8,
                   alignItems: "center",
-                  backgroundColor: "var(--surface, #ffffff)",
+                  backgroundColor: "var(--surface)",
                   position: "relative",
                 }}
               >
@@ -1316,9 +1297,9 @@ export default function Soporte({ ctx }) {
                   type="button"
                   onClick={() => setSelectorEmojisOpen((prev) => !prev)}
                   style={{
-                    background: selectorEmojisOpen ? "var(--surface-subtle, #f2f4f7)" : "transparent",
-                    border: "1px solid var(--border, #eaecf0)",
-                    borderRadius: 8,
+                    background: selectorEmojisOpen ? "var(--fill)" : "transparent",
+                    border: "none",
+                    borderRadius: 980,
                     padding: isMobile ? "7px 9px" : "8px 10px",
                     fontSize: isMobile ? 16 : 18,
                     cursor: "pointer",
@@ -1338,22 +1319,24 @@ export default function Soporte({ ctx }) {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   style={{
-                    background: adjuntoStaged ? "rgba(224, 52, 42, 0.1)" : "transparent",
-                    border: "1px solid var(--border, #eaecf0)",
-                    borderRadius: 8,
+                    background: adjuntoStaged ? "var(--fill)" : "transparent",
+                    border: "none",
+                    borderRadius: 980,
                     padding: isMobile ? "7px 9px" : "8px 10px",
-                    fontSize: isMobile ? 15 : 17,
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
-                    color: adjuntoStaged ? "#E0342A" : "var(--text-muted, #667085)",
+                    color: adjuntoStaged ? "var(--text-primary)" : "var(--text-tertiary)",
                     lineHeight: 1,
                   }}
                   title="Adjuntar archivo, imagen o captura de pantalla"
+                  aria-label="Adjuntar archivo"
                 >
-                  📎
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M21 11.5l-8.6 8.6a5 5 0 01-7.1-7.1l8.6-8.6a3.3 3.3 0 014.7 4.7l-8.6 8.6a1.7 1.7 0 01-2.4-2.4l7.9-7.9" />
+                  </svg>
                 </button>
 
                 {/* Input de texto con soporte para Ctrl+V de capturas */}
@@ -1369,14 +1352,14 @@ export default function Soporte({ ctx }) {
                   onChange={(e) => setNuevoMensaje(e.target.value)}
                   onPaste={handlePaste}
                   disabled={enviando || procesandoAdjunto}
-                  style={{ ...SI, flex: 1, padding: isMobile ? "9px 12px" : "10px 14px", fontSize: isMobile ? 13 : 14 }}
+                  style={{ ...SI, flex: 1, padding: isMobile ? "9px 14px" : "10px 16px", fontSize: isMobile ? 13 : 14, borderRadius: 980 }}
                 />
 
                 <button
                   type="submit"
                   disabled={enviando || procesandoAdjunto || (!nuevoMensaje.trim() && !adjuntoStaged)}
                   style={{
-                    ...B("#E0342A"),
+                    ...BOTON_PRINCIPAL,
                     padding: isMobile ? "9px 14px" : "10px 18px",
                     fontSize: isMobile ? 13 : 14,
                     opacity: enviando || procesandoAdjunto || (!nuevoMensaje.trim() && !adjuntoStaged) ? 0.6 : 1,
@@ -1384,7 +1367,7 @@ export default function Soporte({ ctx }) {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {enviando || procesandoAdjunto ? "..." : "Enviar ➤"}
+                  {enviando || procesandoAdjunto ? "Enviando…" : "Enviar"}
                 </button>
               </form>
             </>
@@ -1396,13 +1379,12 @@ export default function Soporte({ ctx }) {
                 justifyContent: "center",
                 flex: 1,
                 flexDirection: "column",
-                color: "var(--text-muted, #667085)",
+                color: "var(--text-tertiary)",
                 padding: 40,
                 textAlign: "center",
               }}
             >
-              <div style={{ fontSize: 38, marginBottom: 12 }}>💬</div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: "var(--text-main, #101828)" }}>
+              <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: "var(--text-primary)" }}>
                 Selecciona una conversación para chatear
               </h3>
               <p style={{ fontSize: 13, maxWidth: 360, marginTop: 6 }}>
@@ -1423,7 +1405,8 @@ export default function Soporte({ ctx }) {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(16, 24, 40, 0.6)",
+            backgroundColor: "rgba(0, 0, 0, 0.4)",
+            backdropFilter: "blur(8px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -1437,21 +1420,21 @@ export default function Soporte({ ctx }) {
               maxWidth: 520,
               width: "100%",
               padding: 24,
-              boxShadow: "0 20px 24px -4px rgba(16, 24, 40, 0.15)",
+              boxShadow: "var(--shadow-lg, 0 20px 40px rgba(0, 0, 0, 0.12))",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <div>
-                <h3 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: "var(--text-main, #101828)" }}>
+                <h3 style={{ fontSize: 18, fontWeight: 600, margin: 0, color: "var(--text-primary)" }}>
                   Nueva Conversación / Incidencia
                 </h3>
-                <p style={{ fontSize: 12, color: "var(--text-muted, #667085)", margin: "4px 0 0" }}>
+                <p style={{ fontSize: 12, color: "var(--text-tertiary)", margin: "4px 0 0" }}>
                   Selecciona a Camila o a cualquier miembro del equipo para hablar
                 </p>
               </div>
               <button
                 onClick={() => setModalNuevoOpen(false)}
-                style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "var(--text-muted, #667085)" }}
+                style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "var(--text-tertiary)" }}
               >
                 ✕
               </button>
@@ -1460,23 +1443,23 @@ export default function Soporte({ ctx }) {
             <form onSubmit={handleCrearNuevoTicket} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {/* SELECTOR DE USUARIO DESTINATARIO */}
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 700, marginBottom: 5, color: "var(--text-main, #101828)" }}>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 5, color: "var(--text-primary)" }}>
                   Hablar con (Destinatario o Reportante) *
                 </label>
                 <select
                   value={usuarioSeleccionado}
                   onChange={(e) => handleCambiarUsuario(e.target.value)}
-                  style={{ ...SI, fontWeight: 600, color: "var(--text-main, #101828)" }}
+                  style={{ ...SI, fontWeight: 600, color: "var(--text-primary)" }}
                 >
                   <optgroup label="Equipo Ingeanclajes">
                     {opcionesUsuarios.map((u) => (
                       <option key={u.id} value={u.id}>
-                        👤 {u.nombre} {u.rol ? `(${u.rol})` : ""}
+                        {u.nombre} {u.rol ? `(${u.rol})` : ""}
                       </option>
                     ))}
                   </optgroup>
                   <optgroup label="Otros">
-                    <option value="otro">✍️ Escribir otro nombre o cliente manualmente...</option>
+                    <option value="otro">Escribir otro nombre o cliente manualmente…</option>
                   </optgroup>
                 </select>
 
@@ -1497,7 +1480,7 @@ export default function Soporte({ ctx }) {
 
               {/* ASUNTO */}
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 700, marginBottom: 4, color: "var(--text-main, #101828)" }}>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "var(--text-primary)" }}>
                   Asunto o Tema de la Conversación *
                 </label>
                 <input
@@ -1513,7 +1496,7 @@ export default function Soporte({ ctx }) {
               {/* OBRA Y PRIORIDAD */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "var(--text-main, #101828)" }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "var(--text-primary)" }}>
                     Obra Relacionada (Opcional)
                   </label>
                   <select
@@ -1527,7 +1510,7 @@ export default function Soporte({ ctx }) {
                         {o.nombre || o.obra} {o.cliente ? `(${o.cliente})` : ""}
                       </option>
                     ))}
-                    <option value="otra">✍️ Otra obra...</option>
+                    <option value="otra">Otra obra…</option>
                   </select>
                   {esOtraObra && (
                     <input
@@ -1541,7 +1524,7 @@ export default function Soporte({ ctx }) {
                 </div>
 
                 <div>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "var(--text-main, #101828)" }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "var(--text-primary)" }}>
                     Prioridad
                   </label>
                   <select
@@ -1559,7 +1542,7 @@ export default function Soporte({ ctx }) {
 
               {/* MENSAJE INICIAL */}
               <div>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "var(--text-main, #101828)" }}>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4, color: "var(--text-primary)" }}>
                   Primer mensaje / Detalle
                 </label>
                 <textarea
@@ -1576,19 +1559,19 @@ export default function Soporte({ ctx }) {
                   type="button"
                   onClick={() => setModalNuevoOpen(false)}
                   style={{
-                    border: "1px solid var(--border, #eaecf0)",
+                    border: "1px solid var(--separator)",
                     background: "transparent",
                     borderRadius: 10,
                     padding: "8px 16px",
                     cursor: "pointer",
                     fontSize: 13,
                     fontWeight: 600,
-                    color: "var(--text-muted, #667085)",
+                    color: "var(--text-tertiary)",
                   }}
                 >
                   Cancelar
                 </button>
-                <button type="submit" style={B("#E0342A")}>
+                <button type="submit" style={BOTON_PRINCIPAL}>
                   Iniciar Conversación
                 </button>
               </div>

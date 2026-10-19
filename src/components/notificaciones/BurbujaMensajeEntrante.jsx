@@ -28,18 +28,10 @@ export default function BurbujaMensajeEntrante({ notificacion, membresia, onAbri
     };
   }, [notificacion, pausado]);
 
-  // Si la burbuja está visible en pantalla por más de 2.5 segundos, el usuario
-  // ya ha visto el mensaje de texto entrante -> Marcar como leído de inmediato en Supabase y local
-  useEffect(() => {
-    const tId = notificacion?.ticketId || notificacion?.ticket_id;
-    if (!tId) return;
-
-    const timerLectura = setTimeout(() => {
-      marcarMensajesComoLeidos(tId, membresia).catch(() => {});
-    }, 2500);
-
-    return () => clearTimeout(timerLectura);
-  }, [notificacion?.ticketId, notificacion?.ticket_id, membresia]);
+  // La burbuja NO marca el mensaje como visto por aparecer: sale aunque la
+  // persona no este mirando -otra pestaña, el celular en la mesa- y quien
+  // envio veia «Visto» sin que nadie lo hubiera leido. Se marca solo cuando
+  // la persona la abre o la cierra, que es cuando de verdad la vio.
 
   if (!notificacion) return null;
 

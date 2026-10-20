@@ -250,7 +250,7 @@ export default function SupabaseGate({ children }) {
       // version vigente, se le muestran antes de entrar. Si no se pudo leer
       // (null: la base aun no tiene la migracion 061) se deja pasar, para no
       // dejar a nadie por fuera por un cambio pendiente en la base.
-      const aceptacion = await backend.leerAceptacionTerminos().catch(() => null);
+      const aceptacion = await backend.leerAceptacionTerminos(currentUser.id).catch(() => null);
       setUser(currentUser);
       setError("");
       setStatus(aceptacion && aceptacion.version !== VERSION_TERMINOS ? "terminos" : "ready");
@@ -293,7 +293,9 @@ export default function SupabaseGate({ children }) {
       if (!active) return;
       const currentUser = session?.user ?? null;
       setEmail(currentUser?.email ?? "");
-      validateAccess(currentUser);
+      // Fuera del aviso, como pide Supabase: validar hace consultas, y
+      // esperarlas dentro del aviso puede dejar la sesion trabada.
+      setTimeout(() => { if (active) validateAccess(currentUser); }, 0);
     });
 
     const subscription = listener?.data?.subscription ?? listener?.subscription ?? null;

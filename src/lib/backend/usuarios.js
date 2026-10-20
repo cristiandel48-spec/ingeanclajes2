@@ -49,16 +49,23 @@ export async function getMiMembresia() {
 // columnas (migracion 061 sin aplicar): en ese caso la pantalla de aceptacion
 // no se muestra, porque no habria donde guardar la respuesta y dejaria a
 // todos por fuera del sistema.
-export async function leerAceptacionTerminos() {
+//
+// Recibe el id del usuario y NO llama a supabase.auth: esto se usa al validar
+// la sesion, que corre dentro del aviso de cambio de sesion de Supabase, y
+// llamar ahi a auth.getUser() deja la sesion trabada para siempre (la
+// pantalla de arranque no pasaba de la barra). Tambien tiene un tope de
+// tiempo: si la base no contesta, no se bloquea la entrada.
+export async function leerAceptacionTerminos(userId) {
+  if (!userId) return null;
   const supabase = getSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data, error } = await supabase
+  const consulta = supabase
     .from("memberships")
     .select("terminos_version, terminos_aceptados_en")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .limit(1)
     .maybeSingle();
+  const tope = new Promise((resolver) => setTimeout(() => resolver({ data: null, error: { message: "sin respuesta en 8 s" } }), 8000));
+  const { data, error } = await Promise.race([consulta, tope]);
   if (error) {
     console.warn("No se pudo leer la aceptacion de terminos:", error.message);
     return null;

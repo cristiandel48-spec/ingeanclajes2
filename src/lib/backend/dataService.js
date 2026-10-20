@@ -1,4 +1,5 @@
 import { entityConfig, entityKeys } from "./entityConfig";
+import { crearAlmacenFotos } from "./fotosStorage";
 
 const DEFAULT_CHUNK_SIZE = 200;
 
@@ -195,6 +196,23 @@ export function createDataService({ supabase, tenantId }) {
   };
   const tablaParaLeer = (entity, cfg) => (lecturaReducida.has(entity) ? tablasLectura.get(entity) : cfg.table);
 
+  // Fotos en Storage (migracion 071, ver fotosStorage.js). Solo las columnas
+  // pesadas: ahi estan las fotos, y son las que no se traen al arrancar, asi
+  // que descargarlas no retrasa la entrada.
+  const fotos = supabase.storage ? crearAlmacenFotos({ supabase, tenantId }) : null;
+  const columnasConFotos = (cfg) => (fotos && cfg.columnasPesadas?.length ? cfg.columnasPesadas : null);
+  const cambiarFotos = async (cfg, fila, cambiar) => {
+    const columnas = columnasConFotos(cfg);
+    if (!columnas || !fila) return fila;
+    const copia = { ...fila };
+    for (const columna of columnas) {
+      if (columna in copia) copia[columna] = await cambiar(copia[columna]);
+    }
+    return copia;
+  };
+  const subirFotos = (cfg, filas) => Promise.all(filas.map((fila) => cambiarFotos(cfg, fila, fotos?.paraGuardar)));
+  const mostrarFotos = (cfg, fila) => cambiarFotos(cfg, fila, fotos?.paraMostrar);
+
   // Version de cada registro tal como se descargo: su updated_at, que la base
   // cambia en cada modificacion. Al guardar, un registro solo se actualiza si
   // en la base sigue esa misma version; si otra persona lo cambio entretanto,
@@ -293,6 +311,10 @@ export function createDataService({ supabase, tenantId }) {
     // Se marca lo que viene incompleto. La marca es la que impide despues que
     // un guardado deje sin fotos un registro que solo se cargo a medias.
     const parcial = columnas !== "*" && tabla === cfg.table;
+    // Normalmente no traen columnas pesadas; si la carga se degrado a "*", si.
+    if (!parcial && columnasConFotos(cfg)) {
+      for (let i = 0; i < filas.length; i += 1) filas[i] = await mostrarFotos(cfg, filas[i]);
+    }
     return filas.map((fila) => {
       anotarVersion(entity, fila);
       const item = cfg.fromRow(fila);
@@ -321,7 +343,7 @@ export function createDataService({ supabase, tenantId }) {
     }
     // Lo que se acaba de traer es lo vigente: su version pasa a ser la conocida.
     anotarVersion(entity, data);
-    return data ? cfg.fromRow(data) : null;
+    return data ? cfg.fromRow(await mostrarFotos(cfg, data)) : null;
   };
 
   const upsertMany = async (entity, items) => {
@@ -372,7 +394,7 @@ export function createDataService({ supabase, tenantId }) {
 
     const chunks = chunkArray(unicos);
     for (const chunk of chunks) {
-      const rows = chunk.map((item) => item.row);
+      const rows = await subirFotos(cfg, chunk.map((item) => item.row));
       const { error } = await supabase
         .from(cfg.table)
         .upsert(rows, { onConflict: "tenant_id,id" });
@@ -383,7 +405,7 @@ export function createDataService({ supabase, tenantId }) {
       }
 
       if (cfg.toLegacyRow && isMissingColumnError(error)) {
-        const legacyRows = chunk.map((item) =>
+        const legacyRows = await subirFotos(cfg, chunk.map((item) =>
           coerceEmptyToNull(
             {
               tenant_id: tenantId,
@@ -391,7 +413,7 @@ export function createDataService({ supabase, tenantId }) {
             },
             cfg.coerceNullCols
           )
-        );
+        ));
         const { error: legacyError } = await supabase
           .from(cfg.table)
           .upsert(legacyRows, { onConflict: "tenant_id,id" });
@@ -469,8 +491,9 @@ export function createDataService({ supabase, tenantId }) {
     // base rechaza alguno se pasa a uno por uno para saber cual.
     // Con lectura reducida la tabla no se puede leer: pedir de vuelta lo
     // insertado haria fallar el insert. Se inserta sin pedir nada.
-    const insertar = (filas, una = false) => {
-      let consulta = supabase.from(cfg.table).insert(filas);
+    const insertar = async (filas, una = false) => {
+      const conFotos = await subirFotos(cfg, [].concat(filas));
+      let consulta = supabase.from(cfg.table).insert(una ? conFotos[0] : conFotos);
       if (lecturaReducida.has(entity)) return consulta;
       consulta = consulta.select(columnasDevueltas);
       return una ? consulta.maybeSingle() : consulta;
@@ -608,9 +631,10 @@ export function createDataService({ supabase, tenantId }) {
       const version = versiones.get(claveVersion(entity, item.id));
       let legacy = false;
       for (;;) {
+        const [fila] = await subirFotos(cfg, [armar(item, legacy)]);
         const { data, error } = await supabase
           .from(cfg.table)
-          .update(armar(item, legacy))
+          .update(fila)
           .eq("tenant_id", tenantId)
           .eq("id", item.id)
           .eq("updated_at", version)
@@ -637,7 +661,7 @@ export function createDataService({ supabase, tenantId }) {
         conflictos.push({
           entity,
           item,
-          enBase: actual ? cfg.fromRow(actual) : null,
+          enBase: actual ? cfg.fromRow(await mostrarFotos(cfg, actual)) : null,
           versionBase: actual?.updated_at ?? null,
         });
         return;

@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createDataService } from "./dataService";
+import { PREFIJO_FOTO } from "./fotosStorage";
+import { fotoFalsa, storageFalso } from "./__pruebas__/fotos";
 
 const TENANT = "t1";
 
@@ -7,7 +9,7 @@ const TENANT = "t1";
 // cubre lo que usa dataService. Una tabla que no esta en `tablas` no existe
 // (responde PGRST205, como PostgREST). Un insert con un id repetido falla
 // entero con 23505, como en Postgres.
-function baseFalsa(tablas) {
+function baseFalsa(tablas, { storage } = {}) {
   const db = Object.fromEntries(
     Object.entries(tablas).map(([t, filas]) => [t, filas.map((f) => ({ tenant_id: TENANT, ...f }))])
   );
@@ -85,7 +87,7 @@ function baseFalsa(tablas) {
     }
   }
 
-  return { db, consultas, supabase: { from: (tabla) => new Consulta(tabla) } };
+  return { db, consultas, supabase: { from: (tabla) => new Consulta(tabla), ...(storage ? { storage } : {}) } };
 }
 
 beforeEach(() => {
@@ -207,5 +209,69 @@ describe("empleados sin el modulo Personal (migracion 070)", () => {
     const lista = await svc.list("empleados");
     expect(lista[0].salario).toBe(3000000);
     expect(svc.lecturaReducida.has("empleados")).toBe(false);
+  });
+});
+
+describe("fotos en Storage (migracion 071)", () => {
+  const informe = (foto) => ({
+    id: "INF-001",
+    proyecto: "Prueba",
+    actividades: [{ titulo: "Instalacion", fotos: [{ img: foto, descripcion: "antes" }] }],
+  });
+
+  it("al guardar, la foto va al bucket y en la fila queda la referencia", async () => {
+    const storage = storageFalso();
+    const { db, supabase } = baseFalsa({ informes: [] }, { storage });
+    const svc = createDataService({ supabase, tenantId: TENANT });
+
+    await svc.insertMany("informes", [informe(fotoFalsa())]);
+
+    const img = db.informes[0].actividades[0].fotos[0].img;
+    expect(img.startsWith(PREFIJO_FOTO + TENANT + "/")).toBe(true);
+    expect(storage.archivos.size).toBe(1);
+  });
+
+  it("al abrir el registro, la foto vuelve tal cual", async () => {
+    const storage = storageFalso();
+    const { supabase } = baseFalsa({ informes: [] }, { storage });
+    const foto = fotoFalsa(3);
+    await createDataService({ supabase, tenantId: TENANT }).insertMany("informes", [informe(foto)]);
+
+    // Otra sesion: nada en memoria.
+    const detalle = await createDataService({ supabase, tenantId: TENANT }).cargarDetalle("informes", "INF-001");
+
+    expect(detalle.actividades[0].fotos[0].img).toBe(foto);
+    expect(detalle.actividades[0].fotos[0].descripcion).toBe("antes");
+  });
+
+  it("las fotos viejas, dentro de la fila, se siguen leyendo", async () => {
+    const foto = fotoFalsa(5);
+    const { supabase } = baseFalsa({ informes: [informe(foto)] }, { storage: storageFalso() });
+
+    const detalle = await createDataService({ supabase, tenantId: TENANT }).cargarDetalle("informes", "INF-001");
+
+    expect(detalle.actividades[0].fotos[0].img).toBe(foto);
+  });
+
+  it("al editar un registro, tambien sube sus fotos", async () => {
+    const storage = storageFalso();
+    const base = baseFalsa({ informes: [{ ...informe(fotoFalsa(1)), updated_at: "v1" }] }, { storage });
+    const svc = createDataService({ supabase: base.supabase, tenantId: TENANT });
+    await svc.cargarDetalle("informes", "INF-001");
+
+    const { conflictos } = await svc.actualizarConVersion("informes", [informe(fotoFalsa(2))]);
+
+    expect(conflictos).toEqual([]);
+    expect(base.db.informes[0].actividades[0].fotos[0].img.startsWith(PREFIJO_FOTO)).toBe(true);
+  });
+
+  it("sin el bucket, la foto se guarda dentro de la fila como antes", async () => {
+    const storage = storageFalso({ falla: { message: "Bucket not found" } });
+    const { db, supabase } = baseFalsa({ informes: [] }, { storage });
+    const foto = fotoFalsa();
+
+    await createDataService({ supabase, tenantId: TENANT }).insertMany("informes", [informe(foto)]);
+
+    expect(db.informes[0].actividades[0].fotos[0].img).toBe(foto);
   });
 });

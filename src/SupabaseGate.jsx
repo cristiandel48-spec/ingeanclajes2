@@ -10,6 +10,8 @@ import { TIPO, FUENTE, SOMBRA, ESPACIO } from "./styles/designTokens";
 import AceptacionTerminos from "./components/AceptacionTerminos";
 import PantallaArranque from "./components/PantallaArranque";
 import { VERSION_TERMINOS } from "./lib/terminos";
+import Novedades from "./components/Novedades";
+import { novedadesPendientes, marcarNovedadesVistas } from "./lib/novedades";
 
 const isSupabaseConfigured = backend.isSupabaseConfigured;
 const getSupabaseClient = backend.getSupabaseClient;
@@ -228,6 +230,8 @@ export default function SupabaseGate({ children }) {
   // "permisos" = a la cuenta le falta membresia; "tecnico" = algo fallo.
   const [motivoBloqueo, setMotivoBloqueo] = useState("permisos");
   const [mensajeInactividad, setMensajeInactividad] = useState(null);
+  // Se cierra al instante, sin esperar a que la cuenta confirme que se vieron.
+  const [novedadesCerradas, setNovedadesCerradas] = useState(false);
 
   useEffect(() => {
     const msg = obtenerMensajeCierreInactividad();
@@ -376,6 +380,7 @@ export default function SupabaseGate({ children }) {
       } catch {}
       setUser(null);
       setPassword("");
+      setNovedadesCerradas(false);
       setStatus("login");
     } catch (logoutError) {
       setError(mensajeAmable(logoutError));
@@ -531,5 +536,19 @@ export default function SupabaseGate({ children }) {
     );
   }
 
-  return children;
+  // Siempre la misma forma (fragmento con la ventana opcional): si se
+  // devolviera `children` a secas al cerrarla, React montaria la app de nuevo.
+  return (
+    <>
+      {children}
+      {!novedadesCerradas && novedadesPendientes(user) ? (
+        <Novedades
+          onCerrar={() => {
+            setNovedadesCerradas(true);
+            marcarNovedadesVistas(getSupabaseClient(), user);
+          }}
+        />
+      ) : null}
+    </>
+  );
 }

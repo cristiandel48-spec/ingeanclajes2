@@ -19,6 +19,7 @@ import {
 } from "../lib/accounting";
 import { EJEMPLOS, sinEjemplos } from "../data/ejemplos";
 import { confirmar } from "../lib/dialogos";
+import { entidadesSinPermiso } from "../lib/permisos";
 import { iniciarVigilanteInactividad } from "../lib/seguridadSesion";
 import {
   cargarCacheUltimasConexionesLocal,
@@ -485,6 +486,8 @@ export function AppDataProvider({ children }) {
           if (!cancel) {
             setMembresia(mia);
             if (mia?.email) setAuthUserEmail(mia.email);
+            // Las tablas que la base no le deja escribir no se intentan guardar.
+            if (mia) backend.setEntidadesSinPermiso(entidadesSinPermiso(mia));
           }
         } catch (error) {
           console.error("No se pudo leer el rol del usuario:", error);

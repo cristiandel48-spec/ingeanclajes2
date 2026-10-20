@@ -7,6 +7,7 @@ export {
   syncCloudCollection,
   mapStateKeyToEntity,
   cargarDetalleNube,
+  setEntidadesSinPermiso,
 } from "./bootstrapAppData";
 export {
   getMiMembresia,

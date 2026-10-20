@@ -39,6 +39,18 @@ let baselineByEntity = {};
 // esto sea false, saveCloudAppData se niega a guardar.
 let baselineLoaded = false;
 
+// Tablas que esta persona no puede escribir (permisos por modulo, migracion
+// 063). Se saltan al guardar: si se intentaran, la base las rechaza y el
+// guardado de todo lo demas se detiene. Mientras no se sabe quien es, se
+// saltan todas las restringidas; AppDataContext la ajusta al cargar el rol.
+let entidadesSinPermiso = new Set([
+  "pagos", "contabilidad_config", "plan_cuentas", "asientos_contables", "nominas_generadas",
+]);
+
+export function setEntidadesSinPermiso(lista) {
+  entidadesSinPermiso = new Set(lista || []);
+}
+
 // Las fotos viajan dentro de los registros como textos base64 de 0,5 a 8 MB.
 // Antes, en cada autoguardado se copiaba cada foto de cada registro entero a
 // un texto nuevo solo para comparar, y el baseline guardaba otra copia: el
@@ -196,6 +208,8 @@ export async function saveCloudAppData(appData) {
   let huboCambios = false;
   for (const [entity, stateKey] of Object.entries(ENTITY_TO_STATE)) {
     if (!Object.prototype.hasOwnProperty.call(appData ?? {}, stateKey)) continue;
+    // Sin permiso: ni se sube ni se borra, y su baseline queda como estaba.
+    if (entidadesSinPermiso.has(entity)) continue;
 
     const cfg = entityConfig[entity];
     const items = (appData[stateKey] ?? []).filter((item) => item && item.id);

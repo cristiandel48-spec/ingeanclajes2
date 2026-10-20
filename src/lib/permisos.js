@@ -153,6 +153,35 @@ export function puedeVerDinero(membresia) {
   return esAdmin(membresia) || esContador(membresia);
 }
 
+// Tablas que la base solo deja leer y escribir con cierto modulo (migracion
+// 063). Tiene que coincidir con app.tiene_acceso_modulo: si la aplicacion
+// intentara guardar una de estas sin permiso, la base lo rechaza y el
+// autoguardado completo de esa persona se detiene.
+export const ENTIDADES_RESTRINGIDAS = {
+  pagos: ["pagos"],
+  contabilidad_config: ["contabilidad"],
+  plan_cuentas: ["contabilidad"],
+  asientos_contables: ["contabilidad"],
+  nominas_generadas: ["nomina"],
+};
+
+// Mismo criterio que la base: administrador o contador, modulos sin limitar
+// (null) o alguno de los modulos marcados. Se mira la lista tal como esta
+// guardada, no la del menu, porque es la que consulta la base.
+export function tieneAccesoTabla(membresia, entidad) {
+  const requeridos = ENTIDADES_RESTRINGIDAS[entidad];
+  if (!requeridos) return true;
+  if (!membresia || membresia.activo === false) return false;
+  if (["admin", "contador"].includes(membresia.role)) return true;
+  if (membresia.modulos == null) return true;
+  return requeridos.some((modulo) => membresia.modulos.includes(modulo));
+}
+
+/** Tablas restringidas que esta persona no puede guardar. */
+export function entidadesSinPermiso(membresia) {
+  return Object.keys(ENTIDADES_RESTRINGIDAS).filter((entidad) => !tieneAccesoTabla(membresia, entidad));
+}
+
 // Modulos permitidos, ya resueltos. null en la base significa "todos".
 export function modulosPermitidos(membresia) {
   const todos = NAV_ITEMS.map((item) => item.id);

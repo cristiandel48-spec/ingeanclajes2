@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { fmt, fmtD } from "../../lib/format";
-import { getQuoteProposals, getQuoteActiveProposal, normalizeProposalItems } from "../../lib/cotizaciones";
+import { getQuoteProposals, getQuoteActiveProposal, getQuoteProposalTotals, normalizeProposalItems } from "../../lib/cotizaciones";
 import Badge from "../../components/ui/Badge";
 import { B, BRAND } from "../../styles/tokens";
 
@@ -9,12 +9,17 @@ export default function ModalCotizacionDetalle({
   onClose,
   onImportarItems,
 }) {
+  // Los hooks van antes de cualquier return: si la cotizacion pasaba de tener
+  // valor a no tenerlo con la ventana abierta, React se caia con «Rendered
+  // fewer hooks than expected».
+  const [propuestaId, setPropuestaId] = useState(() => {
+    if (!cotizacion) return "";
+    return cotizacion.propuestaActivaId || getQuoteProposals(cotizacion)[0]?.id || "";
+  });
+
   if (!cotizacion) return null;
 
   const propuestas = getQuoteProposals(cotizacion);
-  const [propuestaId, setPropuestaId] = useState(
-    () => cotizacion.propuestaActivaId || propuestas[0]?.id || ""
-  );
 
   const propuestaActiva =
     propuestas.find((p) => p.id === propuestaId) ||
@@ -25,15 +30,13 @@ export default function ModalCotizacionDetalle({
     propuestaActiva.items || cotizacion.items || []
   );
 
-  const totalCalculado =
-    propuestaActiva.total ??
-    items.reduce((acc, it) => acc + (Number(it.cant) || 0) * (Number(it.vu) || 0), 0);
-
-  const subtotalCalculado =
-    propuestaActiva.subtotal ?? Math.round(totalCalculado / 1.19);
-
-  const ivaCalculado =
-    propuestaActiva.iva ?? (totalCalculado - subtotalCalculado);
+  // Las mismas cuentas que el editor y el PDF. Antes se sacaba el IVA como
+  // total / 1.19, que solo vale cuando el IVA va sobre todo; con AIU va solo
+  // sobre la utilidad y el «subtotal antes de IVA» salia mal.
+  const totales = getQuoteProposalTotals(cotizacion, propuestaActiva);
+  const totalCalculado = Math.round(totales.tot);
+  const ivaCalculado = Math.round(totales.iva);
+  const subtotalCalculado = totalCalculado - ivaCalculado;
 
   const mapImg = propuestaActiva.mapImg || cotizacion.mapImg;
 

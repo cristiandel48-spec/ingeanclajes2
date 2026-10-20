@@ -1,0 +1,1125 @@
+<!doctype html>
+  <html>
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <title>Cotizacion C-26002</title>
+    <style>
+      
+    @page { size: Letter; margin: 14mm 13mm 15mm; }
+
+    html, body { margin: 0; padding: 0; background: #ffffff; }
+
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    /* Una «hoja» es un bloque que empieza en pagina nueva y que fluye. No
+       lleva ni alto fijo ni recorte: eso es lo que hacia desaparecer el
+       contenido que no cabia. */
+    .page {
+      position: relative;
+      width: 100%;
+      min-height: 232mm;
+      display: flex;
+      flex-direction: column;
+      break-after: page;
+      page-break-after: always;
+    }
+    .page:last-child { break-after: auto; page-break-after: auto; }
+
+    /* El pie se va al fondo del bloque sin necesidad de posicionarlo contra
+       una hoja de alto fijo. */
+    .page-footer { margin-top: auto; }
+
+    /* Lo que no debe partirse por la mitad, y solo eso. Una tabla entera no
+       entra en esta lista a proposito. */
+    tr, thead, .no-partir, .foto-card, .bloque-firma, figure {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    /* Un titulo nunca se queda solo al final de una hoja. */
+    h1, h2, h3, h4, .doc-h2, .doc-h3 {
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+    p, li { orphans: 3; widows: 3; }
+
+    /* Que ninguna imagen se salga del ancho util, venga del tamaño que venga. */
+    img { max-width: 100%; height: auto; }
+
+    table { width: 100%; border-collapse: collapse; }
+    /* El encabezado de una tabla larga se repite en cada hoja. */
+    thead { display: table-header-group; }
+    tfoot { display: table-footer-group; }
+
+    
+    /* Solo en pantalla: se dibuja la hoja para poder revisar antes de enviar.
+       Al imprimir desaparece y manda @page, que es quien sabe cuanto cabe. */
+    @media screen {
+      body { background: #f1f5f9; padding: 24px 0; }
+      .page {
+        width: 8.5in;
+        margin: 0 auto 20px;
+        padding: 14mm 13mm 15mm;
+        background: #ffffff;
+        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+      }
+    }
+  
+      /* Estilo Apple: la misma letra del programa (Inter) y solo dos tonos de
+         texto, el casi negro y el gris de Apple. Las lineas son grises y
+         finas; nada va en rojo ni en bloques oscuros. */
+      :root {
+        --texto: 11.5px; --titulo: 17px;
+        --letra: 'Inter', -apple-system, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+        --tinta: #1d1d1f;
+        --gris: #6e6e73;
+        --linea: #d2d2d7;
+        --linea-suave: #e8e8ed;
+        --fondo-suave: #f5f5f7;
+        /* Un punto mas oscuro que el fondo suave: en papel el #f5f5f7 casi
+           no se ve, y la fila resaltada tiene que notarse. */
+        --fondo-resalte: #e8e8ed;
+      }
+      body { font-family:var(--letra); color:var(--tinta); -webkit-font-smoothing:antialiased; }
+
+      /* El relleno interno de 9mm desaparecio: ahora el margen lo pone
+         @page. Antes se sumaban los dos -margen cero de hoja mas 9mm aqui-
+         y el resultado solo cuadraba si quien imprimia escogia «sin
+         margenes» en el cuadro de Chrome. */
+      .page-inner { position:relative; width:100%; display:flex; flex-direction:column; flex:1 1 auto; }
+      .page-content { display:block; flex:1 1 auto; }
+
+      h1, h2, h3 { margin:0; font-family:var(--letra); font-weight:700; color:var(--tinta); text-wrap:balance; }
+      p { margin:0 0 3mm; font-size: var(--texto); line-height:1.6;
+          text-align: justify; text-justify: inter-word; hyphens: auto; color:var(--tinta); }
+
+      .header { display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid var(--tinta); padding-bottom:2.6mm; margin:0 0 6mm; }
+      .logo { height:30px; width:auto; object-fit:contain; }
+      .header-right { font-size: var(--texto); letter-spacing:.06em; text-transform:uppercase; color:var(--tinta); font-weight:700; text-align:right; }
+      /* El codigo del formato: mas pequeno y en monoespaciada, para que se
+         lea como un codigo y no compita con el numero de la cotizacion. */
+      .header-sello { font-family:Consolas,"Courier New",monospace; font-size:calc(var(--texto) * .92); letter-spacing:.02em; text-transform:none; color:var(--tinta); font-weight:400; margin-top:2px; }
+      .header-sello b { color:var(--tinta); font-weight:700; }
+
+      /* El pie se apoya en el fondo del bloque de la hoja (margin-top:auto,
+         que viene de .page-footer) en vez de ir anclado con position:absolute
+         contra una hoja de 11 pulgadas clavadas. Asi sigue abajo, pero si el
+         contenido crece lo empuja a la hoja siguiente en lugar de quedar
+         encima del texto. */
+      .footer {
+        margin-top:auto;
+        padding-top:2.6mm;
+        border-top:1.5px solid var(--tinta);
+        display:grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap:4mm;
+        background:#fff;
+        line-height:1.35;
+      }
+      .footer-col-left { text-align:left; }
+      .footer-col-center { text-align:center; border-left:1px solid #E2E8F0; border-right:1px solid #E2E8F0; padding:0 2mm; }
+      .footer-col-right { text-align:right; }
+      .footer-label {
+        font-size:calc(var(--texto) * 1.05);
+        font-weight:800;
+        text-transform:uppercase;
+        letter-spacing:.07em;
+        color:var(--tinta);
+        margin-bottom:2px;
+      }
+      .footer-main {
+        font-weight:700;
+        color:var(--tinta);
+        font-size:calc(var(--texto) * 1.22);
+      }
+      .footer-sub {
+        font-weight:700;
+        color:var(--tinta);
+        font-size:calc(var(--texto) * 1.13);
+      }
+      .footer-brand {
+        color:#cc0000;
+        font-weight:800;
+      }
+
+      .eyebrow { font-size: var(--texto); letter-spacing:.09em; text-transform:uppercase; color:var(--tinta); font-weight:700; text-align:center; margin:0 0 6mm; padding-bottom:3mm; border-bottom:2px solid var(--tinta); }
+      .eyebrow-gap { margin-top:9mm; }
+      .card-label { font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; color:var(--tinta); font-weight:700; }
+      .block-label { margin-bottom:2.6mm; }
+      .centered { text-align:center; }
+      .tnum { font-variant-numeric:tabular-nums; }
+      .accent { color:#8A1518; }
+
+      .doc-h2 { font-size: var(--titulo); line-height:1.3; text-align:center; margin:0 auto 5mm; max-width:170mm; color:var(--tinta); font-family:var(--letra); font-weight:700; }
+      .doc-h3.con-espacio { margin-top:12mm; }
+      .doc-h3 { font-size: var(--titulo); text-align:center; margin:0 0 4.5mm; color:var(--tinta); font-family:var(--letra); font-weight:700; }
+      .doc-copy.junto { margin-bottom:0; color:var(--tinta); }
+      .doc-copy { font-size: var(--texto); line-height:1.65; color:var(--tinta); max-width:160mm; margin:0 auto 3mm;
+                  text-align: justify; text-justify: inter-word; hyphens: auto; }
+      .doc-copy strong { color:var(--tinta) !important; font-weight:800; }
+
+      .cover {
+        padding-top: 8mm;
+        font-family: var(--letra);
+      }
+      .cover-header { display:flex; justify-content:center; padding-bottom:5mm; border-bottom:2px solid var(--tinta); }
+      .cover-logo { height:44px; width:auto; }
+      .cover-firm { text-align:center; margin-top:7mm; font-family:var(--letra); }
+      .cover-firm-name { font-size:18px; font-weight:800; color:var(--tinta); letter-spacing:.06em; margin-bottom:2.2mm; font-family:var(--letra); text-transform:uppercase; }
+      .cover-firm-nit { font-size:13px; font-weight:700; color:var(--tinta); margin-bottom:2.2mm; font-family:var(--letra); }
+      .cover-firm-nit span { background:#ffffff; border:1.5px solid var(--tinta); padding:2px 14px; border-radius:6px; letter-spacing:.04em; color:var(--tinta); font-weight:700; }
+      .cover-firm-contact { font-size:13px; color:var(--tinta); font-weight:600; letter-spacing:.01em; font-family:var(--letra); }
+      /* 1. Bloque Cliente: con aire generoso arriba y bajo "COTIZACIÓN PREPARADA PARA" */
+      .cover-client { margin-top:18mm; text-align:center; font-family:var(--letra); }
+      .cover-client .meta-label { font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--tinta); font-weight:700; margin-bottom:4.5mm; font-family:var(--letra); }
+      .cover-client-name { font-size:18px; font-weight:800; margin:0 0 2.5mm; font-family:var(--letra); color:var(--tinta); text-transform:uppercase; letter-spacing:.02em; line-height:1.3; }
+      .cover-client-nit { font-size:13px; font-weight:700; color:var(--tinta); margin-top:0; margin-bottom:5.5mm; font-family:var(--letra); letter-spacing:.02em; }
+      .cover-client-grid { display:inline-grid; grid-template-columns:repeat(2,auto); gap:4.5mm 16mm; text-align:left; font-family:var(--letra); }
+      .ccg-k { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--tinta); margin-bottom:1.2mm; font-weight:700; font-family:var(--letra); }
+      .ccg-v { font-size:13px; font-weight:700; color:var(--tinta); line-height:1.35; text-transform:uppercase; font-family:var(--letra); }
+      /* 2. Bloque Propuesta Comercial: con separación clara y aire bajo "PROPUESTA COMERCIAL" */
+      .cover-title { margin-top:20mm; text-align:center; font-family:var(--letra); }
+      .cover-kicker { font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--tinta); margin-bottom:5mm; font-weight:700; font-family:var(--letra); }
+      .cover-title h1 { font-size:18px; line-height:1.4; font-family:var(--letra);
+        text-align:center; text-transform:uppercase; font-weight:800; color:var(--tinta);
+        max-width:155mm; margin-left:auto; margin-right:auto; letter-spacing:.02em; }
+      .meta-strip { margin-top:16mm; display:grid; grid-template-columns:repeat(4,1fr); border-top:1.5px solid var(--tinta); border-bottom:1.5px solid var(--tinta); padding:6.5mm 0; font-family:var(--letra); }
+      .meta-cell { padding:0 3.5mm; border-right:1px solid #DDD; text-align:center; }
+      .meta-cell.last { border-right:none; }
+      .meta-label { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--tinta); margin-bottom:2.5mm; font-weight:700; font-family:var(--letra); }
+      .meta-value { font-size:13px; font-weight:700; color:var(--tinta); text-transform:uppercase; font-family:var(--letra); }
+      .meta-value.accent { color:var(--tinta); font-weight:800; }
+      /* 3. Pie de portada: expandido hacia abajo para balancear el folio carta */
+      .cover-foot { margin-top:20mm; padding-top:4mm; border-top:1px solid #DDD; display:flex; justify-content:space-between; align-items:center; gap:6mm; font-size:10px; color:var(--tinta); font-family:var(--letra); font-weight:700; letter-spacing:.03em; }
+      .cover-sello { font-family:var(--letra); font-size:10px; color:var(--tinta); white-space:nowrap; font-weight:700; }
+      .cover-sello b { color:var(--tinta); font-weight:800; }
+
+      .def-list { border-top:1px solid #DDD; max-width:170mm; margin:0 auto; }
+      .def-row { display:grid; grid-template-columns:44mm 1fr; gap:7mm; padding:4.5mm 0; border-bottom:1px solid #DDD; }
+      .def-term { font-size: var(--titulo); font-weight:700; font-family:var(--letra); color:var(--tinta); }
+      .def-body { font-size: var(--texto); line-height:1.65; color:var(--tinta); }
+      .def-body p { font-size: var(--texto); margin:0 0 2.5mm; color:var(--tinta); }
+      .def-bullets { margin:0; padding-left:16px; font-size: var(--texto); line-height:1.65; color:var(--tinta); }
+      .def-bullets li { margin-bottom:1.2mm; }
+      .bullet-list { margin:1.5mm 0 0 0; padding-left:18px; font-size: var(--texto); line-height:1.5; color:var(--tinta); }
+      .bullet-list li { margin-bottom:1.3mm; }
+      .section-title { font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; color:var(--tinta); font-weight:700; margin-bottom:2.6mm; }
+      .subheading { font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; color:var(--tinta); font-weight:700; margin-bottom:2.6mm; }
+
+      .incluye-block { margin:6mm 0 0; }
+      .incluye-list { border-top:1px solid #DDD; padding-top:3.5mm; }
+      /* Sangria francesa: el guion cuelga fuera y los renglones siguientes
+         quedan alineados bajo la primera palabra, no bajo la vinieta. */
+      .incluye-item {
+        position:relative; padding-left:5mm; margin-bottom:1.7mm;
+        font-size: var(--texto); line-height:1.55; color:var(--tinta); text-align:justify;
+      }
+      .incluye-item:last-child { margin-bottom:0; }
+      .incluye-item::before { content:"–"; position:absolute; left:1.2mm; color:var(--tinta); font-weight:700; }
+      .content-block { margin-bottom:5mm; }
+
+      .photo-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 0 5mm; }
+      .photo-grid.single { grid-template-columns:1fr; }
+      .photo-card {
+        border:1px solid #CBD5E1;
+        border-radius:6px;
+        overflow:hidden;
+        background:#ffffff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      }
+      /* La foto entra ENTERA en su recuadro con contain.
+         Con altura dinámica y expandida (hasta 144mm en individuales y 84mm en dobles),
+         los planos, isométricos, cotas y detalles de obra se ven nítidos y amplios
+         sin recortes y aprovechando la altura disponible de la hoja. */
+      .photo {
+        display:block;
+        width:100%;
+        height: var(--card-photo-h, 76mm);
+        object-fit:contain;
+        object-position:center;
+        background:#ffffff;
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: auto;
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+      }
+      .photo-grid.single .photo { height: var(--card-photo-h, 140mm); }
+      .proposal-3-photo { height:52mm !important; object-fit:contain; object-position:center; background:#ffffff; }
+      .photo-caption { padding:5px 8px 6px; text-align:center; font-size: var(--texto); letter-spacing:.04em; text-transform:uppercase; color:var(--tinta); border-top:1px solid #E2E8F0; background:#FAFAFA; font-weight:700; }
+
+      .map-wrap {
+        position:relative; width:100%; height:52mm;
+        border:1px solid #DDD; border-radius:6px; overflow:hidden;
+        background:#F4F4F2; margin:0 0 5mm;
+        display:flex; align-items:center; justify-content:center;
+      }
+      .proposal-3-map { height:72mm; background:#ffffff; }
+      .map-svg { display:block; width:100%; height:100%; background:#F4F4F2; }
+      .proposal-3-map .map-svg { background:#ffffff; }
+      .map-label-group { pointer-events:none; }
+      .map-label-group text {
+        text-anchor:middle; dominant-baseline:middle; font-weight:800; letter-spacing:.2px;
+        paint-order:stroke; stroke:#ffffff; stroke-width:3; stroke-linejoin:round; stroke-linecap:round;
+      }
+      .map-label-title { font-size:0; }
+      .map-label-value { font-size: var(--texto); }
+
+      .price-table { margin-top:2mm; }
+      .table { width:100%; border-collapse:collapse; font-size: var(--texto); }
+      .table th { background:#1E1E1E; color:#fff; padding:8px 10px; font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; font-weight:600; text-align:center; border:none; }
+      .table th.t-left { text-align:left; }
+      .table th.t-right { text-align:right; }
+      .table td { border-bottom:1px solid #DDD; padding:8px 10px; vertical-align:middle; color:var(--tinta); }
+      .table .sub-row td { font-weight:700; color:var(--tinta); }
+      .table .soft-row td { color:var(--tinta); font-size: var(--texto); border-bottom:1px solid #EEE; padding:6px 10px; }
+      .table .grand-total td { border-top:2px solid #1E1E1E; border-bottom:none; padding-top:12px; }
+      .total-label { font-size: var(--texto); font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--tinta); }
+      .total-amount { font-size: var(--titulo); color:#8A1518; font-weight:700; }
+      .row-num { color:var(--tinta); font-size: var(--texto); }
+
+      .t-center { text-align:center; }
+      .t-right { text-align:right; }
+      .t-left { text-align:left; }
+      .strong { font-weight:600; }
+
+      .ficha-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        gap: 4.5mm;
+        margin-top: 2mm;
+      }
+      .ficha-card {
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 3mm 3.5mm;
+        background: #FFFFFF;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        box-sizing: border-box;
+      }
+      .ficha-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 2mm;
+        padding-bottom: 1.5mm;
+        border-bottom: 1px solid #F1F5F9;
+        margin-bottom: 2mm;
+      }
+      .ficha-card-title {
+        font-size: 13px;
+        font-weight: 700;
+        font-family: var(--letra);
+        color: var(--tinta);
+        line-height: 1.2;
+      }
+      .ficha-card-tag {
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: var(--tinta);
+        background: #F8FAFC;
+        border: 1px solid #CBD5E1;
+        padding: 1px 5px;
+        border-radius: 4px;
+        white-space: nowrap;
+      }
+      .ficha-card-img-box {
+        width: 100%;
+        height: 66mm;
+        background: #FAFAFA;
+        border: 1px solid #E5E7EB;
+        border-radius: 6px;
+        padding: 2mm;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        margin-bottom: 2mm;
+      }
+      .ficha-card-img {
+        max-width: 100%;
+        max-height: 100%;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.06));
+      }
+      .ficha-card-desc {
+        font-size: 10px;
+        line-height: 1.42;
+        color: var(--tinta);
+        text-align: justify;
+        text-justify: inter-word;
+        hyphens: auto;
+      }
+      .ficha-card-desc strong {
+        color: var(--tinta);
+      }
+      .ficha-card-desc .split {
+        margin-bottom: 1.5mm;
+        padding-bottom: 1.5mm;
+        border-bottom: 1px dashed #E2E8F0;
+      }
+
+      .ficha-row { display:grid; grid-template-columns:42mm 38mm 1fr; gap:6mm; padding:4.5mm 0; border-top:1px solid #DDD; align-items:center; }
+      .ficha-row:last-of-type { border-bottom:1px solid #DDD; }
+      .ficha-name { font-size: var(--titulo); font-weight:700; font-family:var(--letra); color:var(--tinta); }
+      .ficha-img-box {
+        width: 100%;
+        height: 32mm;
+        background: #FAFAFA;
+        border: 1px solid #E5E7EB;
+        border-radius: 6px;
+        padding: 2mm;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+      }
+      .ficha-img { max-width:100%; max-height:100%; object-fit:contain; }
+      .ficha-desc { font-size: var(--texto); line-height:1.6; color:var(--tinta); }
+      .ficha-desc .split { margin-bottom:2.5mm; padding-bottom:2.5mm; border-bottom:1px dashed #DDD; }
+
+      .conditions-block { margin:7mm 0 0; }
+      .conditions-grid { display:grid; grid-template-columns:1fr 1fr; border-top:1px solid #DDD; }
+      .meta-card { padding:4.5mm 6mm 4.5mm 0; border-bottom:1px solid #DDD; }
+      .meta-card.pad-left { padding-left:6mm; padding-right:0; border-left:1px solid #EEE; }
+      /* Los cuatro valores de las condiciones comerciales van en mayuscula.
+         La forma de pago y el tiempo de ejecucion se escriben a mano y salian
+         como los hubiera escrito cada quien; la validez y la certificacion
+         venian del codigo en minuscula. Puestos aqui, los cuatro se ven
+         iguales sin tener que acordarse al escribirlos. */
+      .meta-strong { font-size: var(--texto); font-weight:700; margin-top:1.6mm;
+        text-transform:uppercase; color:var(--tinta); }
+
+      .sst-block { margin:6mm 0; padding-top:4mm; border-top:2px solid var(--tinta); }
+      .sst-title { font-size: var(--texto); letter-spacing:.08em; text-transform:uppercase; font-weight:700; margin-bottom:2.6mm; color:var(--tinta); }
+      .sst-block p { font-size: var(--texto); line-height:1.7; margin:0; color:var(--tinta); }
+
+      .signature { display:grid; grid-template-columns:1fr 1.05fr; gap:10mm; padding-top:5mm; border-top:1px solid var(--tinta); }
+      .steps-list { margin:0; padding-left:17px; font-size: var(--texto); line-height:1.8; color:var(--tinta); }
+      .contact-box { margin-top:5mm; padding:4mm 5mm; background:#F8FAFC; border:1px solid #CBD5E1; color:var(--tinta); }
+      .contact-line { font-size: var(--texto); line-height:1.6; color:var(--tinta); }
+      .sig-space { height:14mm; border-bottom:1px solid var(--tinta); margin-bottom:3mm; display:flex; align-items:flex-end; }
+      .sig-img { max-height:13mm; max-width:60mm; object-fit:contain; }
+      .sig-name { font-size: 15px; font-weight:700; font-family:var(--letra); color:var(--tinta); white-space:nowrap; }
+      .sig-role { font-size: var(--texto); color:var(--tinta); margin-top:.6mm; font-weight:600; }
+      .sig-meta { font-size: var(--texto); color:var(--tinta); margin-top:2mm; line-height:1.65; }
+
+      .appendix-page .page-content { padding: 0; box-sizing: border-box; }
+
+      /* Ficha de sistema: dibujo a la izquierda, caracteristicas a la
+         derecha. El recorte de la imagen se hace con clip-path, asi que el
+         archivo original no se toca y se puede reajustar en una linea. */
+      /* El dibujo no necesita media hoja: es alto y estrecho, y de su
+         columna solo ocupa unos 40mm de ancho. Lo que sobra se le da al
+         texto, que con descripciones detalladas lo agradece: con las dos
+         columnas iguales, los bloques salian tan altos que las dos
+         primeras llamadas se montaban una sobre otra. */
+      .ficha-sistema {
+        display: grid;
+        grid-template-columns: 0.8fr 1.2fr;
+        gap: 8mm;
+        align-items: center;
+        margin-top: 2mm;
+      }
+      /* El dibujo y la columna de llamadas miden EXACTAMENTE lo mismo, y
+         por eso se fija el alto en las dos en vez de dejarlo al contenido:
+         la altura de cada llamada es un porcentaje de su columna, asi que
+         si una caja fuera mas alta que la otra las llamadas dejarian de
+         caer sobre su pieza. */
+      /* 155mm: medido. Con las descripciones detalladas y el pie, la ficha
+         ocupa 205,8mm de los 208,4 que deja el area util de la hoja. Subir
+         este valor desborda a una segunda hoja; bajarlo acerca entre si
+         las dos primeras llamadas hasta que se montan. */
+      .ficha-sistema-img,
+      .ficha-llamadas { height: 155mm; }
+      .ficha-sistema-img {
+        display: flex; align-items: center; justify-content: center;
+        /* Recorta lo que la ampliacion saca de la caja. */
+        overflow: hidden;
+      }
+      .ficha-sistema-img img {
+        /* Se ajusta al alto de la caja ANTES de ampliar; la ampliacion la
+           calcula ampliarRecorte() a partir del recorte. */
+        height: 100%;
+        width: auto;
+        max-width: none;
+        object-fit: contain;
+      }
+      /* Llamadas: cada una a la altura de la pieza que describe, con una
+         linea fina que llega hasta el dibujo. */
+      .ficha-llamadas { position: relative; }
+      .ficha-llamada {
+        position: absolute;
+        left: 0; right: 0;
+        display: flex;
+        align-items: center;
+        gap: 0;
+        transform: translateY(-50%);
+      }
+      .ficha-llamada-guia {
+        flex: 0 0 9mm;
+        height: 1px;
+        background: var(--tinta);
+        opacity: .5;
+      }
+      .ficha-llamada-texto {
+        padding-left: 2.5mm;
+        line-height: 1.4;
+      }
+      .ficha-llamada-texto b {
+        display: block;
+        font-size: calc(var(--texto) * .92);
+        font-weight: 700;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        color: var(--tinta);
+      }
+      .ficha-llamada-texto span {
+        font-size: var(--texto);
+        color: var(--tinta);
+      }
+
+      .ficha-sistema-datos { margin: 0; }
+      /* Cuando ya hubo llamadas al lado del dibujo, lo general va debajo y
+         en dos columnas, para no estirar la hoja. */
+      .ficha-sistema-datos--pie {
+        margin-top: 4mm;
+        padding-top: 3mm;
+        border-top: 1px solid #000;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0 10mm;
+      }
+      .ficha-sistema-datos--pie dt { margin-top: 0; }
+      .ficha-sistema-datos dt {
+        font-size: calc(var(--texto) * .92);
+        font-weight: 700;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        color: var(--tinta);
+        margin-top: 5mm;
+      }
+      .ficha-sistema-datos dt:first-child { margin-top: 0; }
+      .ficha-sistema-datos dd {
+        margin: 1.2mm 0 0;
+        font-size: var(--texto);
+        line-height: 1.55;
+        color: var(--tinta);
+      }
+      .appendix-page .doc-h3 { margin: 0 0 2.5mm; }
+      .appendix-img { width:auto; max-width:100%; height:auto; max-height:202mm; object-fit:contain; display:block; margin:0 auto; image-rendering: -webkit-optimize-contrast; image-rendering: auto; }
+      .summary-spacing { margin-bottom:8mm; }
+      .summary-page .page-content { padding-bottom:30mm; }
+
+      .eyebrow, .doc-h2, .doc-h3, .photo-grid, .photo-card, .map-wrap,
+      .price-table, .table, .table thead, .table tr,
+      .def-row, .ficha-row, .meta-card, .conditions-grid,
+      .sst-block, .signature, .content-block, .incluye-block { break-inside:avoid; page-break-inside:avoid; }
+
+      /* Acabado estilo Apple. Va al final para afinar las reglas de arriba
+         en un solo sitio: lineas finas en gris, etiquetas sin mayusculas
+         sostenidas y en gris, pesos mas ligeros y titulos con el espaciado
+         apretado de Apple. */
+      body { color:var(--tinta); letter-spacing:-0.005em; }
+      h1, h2, h3, .doc-h2, .doc-h3, .cover-title h1, .cover-client-name, .def-term,
+      .ficha-name, .ficha-card-title, .sig-name { font-weight:600; letter-spacing:-0.02em; }
+      .doc-copy strong { font-weight:600; }
+
+      .header { border-bottom:.5pt solid var(--linea); }
+      .header-right { text-transform:none; letter-spacing:0; font-weight:500; }
+      .header-sello, .header-sello b { font-family:var(--letra); }
+      .footer { border-top:.5pt solid var(--linea); }
+      .footer-col-center { border-color:var(--linea-suave); }
+      .footer-brand { color:var(--tinta); font-weight:500; }
+      .footer-main, .footer-sub { font-weight:400; }
+
+      .eyebrow { border-bottom:.5pt solid var(--linea); }
+      .cover-header { border-bottom:.5pt solid var(--linea); }
+      .cover-firm-name { font-weight:600; }
+      .cover-firm-nit span { border:none; padding:0; }
+      .cover-firm-nit, .cover-firm-contact, .cover-client-nit, .ccg-v, .meta-value { font-weight:400; }
+      .cover-client-name { font-weight:600; }
+      .cover-firm-nit span { font-weight:500; }
+      /* El titulo es lo que se lee primero: grande, apretado y en tipo
+         oracion, como los titulares de Apple. */
+      .cover-title h1 { font-weight:600; font-size:28px; line-height:1.15; text-transform:none;
+        letter-spacing:-0.03em; }
+      /* El titulo crecio: se le quita aire arriba para que la portada siga
+         cabiendo en una sola hoja. */
+      .cover-title { margin-top:14mm; }
+      .meta-strip { margin-top:12mm; }
+      .meta-value.accent { font-weight:600; }
+      .meta-strip { border-top:.5pt solid var(--linea); border-bottom:.5pt solid var(--linea); }
+      .meta-cell { border-color:var(--linea-suave); }
+      .cover-foot { border-color:var(--linea-suave); font-weight:400; }
+      .cover-sello, .cover-sello b { font-weight:500; }
+
+      .def-list, .def-row, .incluye-list, .conditions-grid, .meta-card, .meta-card.pad-left,
+      .ficha-row, .ficha-row:last-of-type { border-color:var(--linea-suave); }
+      .sst-block { border-top:.5pt solid var(--linea); }
+      .signature, .sig-space, .ficha-sistema-datos--pie { border-color:var(--linea); }
+      .meta-strong { font-weight:500; }
+      .sig-role { font-weight:400; }
+
+      /* Las etiquetas: en gris, peso medio y sin mayusculas sostenidas. */
+      .footer-label, .eyebrow, .card-label, .section-title, .subheading, .meta-label,
+      .cover-client .meta-label, .ccg-k, .cover-kicker, .sst-title, .photo-caption,
+      .ficha-card-tag, .ficha-llamada-texto b, .ficha-sistema-datos dt, .total-label {
+        text-transform:none; letter-spacing:0; font-weight:500; color:var(--gris);
+      }
+      .header-sello, .header-sello b, .footer-sub, .cover-firm-contact, .cover-client-nit,
+      .cover-foot, .cover-sello, .cover-sello b, .row-num, .sig-role, .sig-meta,
+      .incluye-item::before { color:var(--gris); }
+
+      /* Tabla de precios: sin banda oscura, encabezado gris sobre linea fina y
+         el total grande en negro. */
+      .table th { background:transparent; color:var(--gris); font-weight:500; text-transform:none;
+        letter-spacing:0; border-bottom:.5pt solid var(--linea); }
+      .table td { border-bottom:.5pt solid var(--linea-suave); }
+      .table .soft-row td { border-bottom:.5pt solid var(--linea-suave); }
+      /* El subtotal va resaltado con fondo gris suave y en negrita: separa los
+         items de lo que se suma encima, y es lo que se busca al leer la tabla.
+         print-color-adjust hace que el fondo salga tambien al imprimir. */
+      .table .sub-row td { font-weight:600; background:var(--fondo-resalte); border-bottom:none;
+        -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      .table .sub-row td:first-child { border-radius:8px 0 0 8px; }
+      .table .sub-row td:last-child { border-radius:0 8px 8px 0; }
+      /* El total va resaltado igual que el subtotal: fondo gris y esquinas
+         redondeadas, en vez de la linea negra encima. */
+      .table .grand-total td { border-top:none; background:var(--fondo-resalte);
+        padding-top:12px; padding-bottom:12px;
+        -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      .table .grand-total td:first-child { border-radius:8px 0 0 8px; }
+      .table .grand-total td:last-child { border-radius:0 8px 8px 0; }
+      .total-amount { color:var(--tinta); font-weight:600; font-size:20px; letter-spacing:-0.02em; }
+      .accent { color:var(--tinta); }
+
+      /* Tarjetas, fotos y fichas: esquinas amplias, linea suave y sin sombra. */
+      .photo-card, .ficha-card, .map-wrap, .ficha-card-img-box, .ficha-img-box {
+        border:.5pt solid var(--linea-suave); border-radius:12px; box-shadow:none; }
+      .photo-caption { background:#fff; border-top:.5pt solid var(--linea-suave); }
+      .ficha-card-header { border-bottom-color:var(--linea-suave); }
+      .ficha-card-tag { background:var(--fondo-suave); border:none; border-radius:6px; }
+      .ficha-card-img-box, .ficha-img-box { background:var(--fondo-suave); }
+      .ficha-card-desc .split, .ficha-desc .split { border-bottom-color:var(--linea-suave); }
+      .contact-box { background:var(--fondo-suave); border:none; border-radius:12px; }
+      .ficha-llamada-guia { background:var(--linea); opacity:1; }
+
+      @media print {
+        body { background:#fff; }
+        .page { margin:0; }
+      }
+    </style>
+  </head>
+  <body>
+    
+    <section class="page">
+      <div class="page-inner">
+        <div class="page-content cover">
+          <header class="cover-header">
+            <img src="/src/assets/logo-ingeanclajes.jpeg" alt="Ingeanclajes" class="cover-logo" />
+          </header>
+          <div class="cover-firm">
+            <div class="cover-firm-name">INGEANCLAJES S.A.S.</div>
+            <div class="cover-firm-nit"><span>NIT 900.193.965-4</span></div>
+            <div class="cover-firm-contact">Calle 38 Sur # 36 &ndash; 48, Envigado &middot; PBX: (604) 448 26 86 &middot; Cel: 315 288 9541</div>
+          </div>
+          <div class="cover-client">
+            <div class="meta-label">Cotización preparada para</div>
+            <div class="cover-client-name">CONSTRUCTORA DE PRUEBA S.A.S.</div>
+            <div class="cover-client-nit tnum">NIT 900123456-7</div>
+            <div class="cover-client-grid">
+              <div><div class="ccg-k">Obra</div><div class="ccg-v">EDIFICIO TORRE NORTE</div></div>
+              <div><div class="ccg-k">Ciudad</div><div class="ccg-v">MEDELLÍN</div></div>
+              <div><div class="ccg-k">Contacto</div><div class="ccg-v">ANA PÉREZ</div></div>
+              <div><div class="ccg-k">Teléfono</div><div class="ccg-v tnum">3001234567</div></div>
+            </div>
+          </div>
+          <div class="cover-title">
+            <div class="cover-kicker">Propuesta Comercial</div>
+            <!-- El titulo va seguido, en una sola frase. Antes cada renglon
+                 que se escribiera en el formulario salia como una linea
+                 aparte; ahora el propio titulo parte donde toque segun el
+                 ancho, que es lo que hace que quede bien centrado. Se sigue
+                 leyendo lo guardado con saltos -las cotizaciones de antes-,
+                 pero unido con un espacio. -->
+            <h1>Sistema de Anclajes Certificado para Trabajo en Alturas</h1>
+          </div>
+          <div class="meta-strip">
+            <div class="meta-cell">
+              <div class="meta-label">Cotización</div>
+              <div class="meta-value tnum">C-26002</div>
+            </div>
+            <div class="meta-cell">
+              <div class="meta-label">Emisión</div>
+              <div class="meta-value">20 DE OCTUBRE DEL 2026</div>
+            </div>
+            <div class="meta-cell">
+              <div class="meta-label">Validez</div>
+              <div class="meta-value">30 días</div>
+            </div>
+            <div class="meta-cell last">
+              <div class="meta-label">Valor total</div>
+              <div class="meta-value tnum accent">$ 4.171.890</div>
+            </div>
+          </div>
+          <div class="cover-foot">
+            <span>Documento confidencial &middot; Uso exclusivo del destinatario</span>
+            <span>ENVIGADO, 20 DE OCTUBRE DEL 2026</span>
+          </div>
+        </div>
+        
+    <div class="footer">
+      <div class="footer-col footer-col-left">
+        <div class="footer-label">Sede Principal</div>
+        <div class="footer-main">Calle 38 Sur # 36 &ndash; 48</div>
+        <div class="footer-sub">Envigado</div>
+      </div>
+      <div class="footer-col footer-col-center">
+        <div class="footer-label">Líneas de Atención</div>
+        <div class="footer-main">PBX (604) 448 26 86</div>
+        <div class="footer-sub">Cel. 315 288 9541</div>
+      </div>
+      <div class="footer-col footer-col-right">
+        <div class="footer-label">Contacto Digital</div>
+        <div class="footer-main">comercial1ingeanclajes@gmail.com</div>
+        <div class="footer-sub footer-brand">www.ingeanclajessas.com</div>
+      </div>
+    </div>
+  
+      </div>
+    </section>
+  
+    
+    <section class="page">
+      <div class="page-inner">
+        
+    <div class="header">
+      <img src="/src/assets/logo-ingeanclajes.jpeg" class="logo" alt="Ingeanclajes" />
+      <div class="header-right">
+        <div>Ingeanclajes S.A.S. &middot; Cotización C-26002</div>
+      </div>
+    </div>
+  
+        <div class="page-content">
+          <h2 class="doc-h2">Cordial saludo, CONSTRUCTORA DE PRUEBA S.A.S.</h2>
+          <p class="doc-copy" style="color:var(--tinta);">Agradecemos la oportunidad de presentarles nuestra propuesta para el suministro e instalación de sistemas de protección contra caídas para trabajo seguro en alturas en la obra <strong style="color:var(--tinta);font-weight:600;">EDIFICIO TORRE NORTE</strong>.</p>
+          <!-- Los renglones de la presentacion van seguidos, sin hueco entre
+               ellos: son un mismo texto partido en lineas, no parrafos
+               distintos, y separados dejaban tres huecos en mitad de la hoja. -->
+          <p class="doc-copy junto" style="color:var(--tinta);">INGEANCLAJES S.A.S. es una empresa especializada en el diseño, fabricación e instalación de sistemas de protección contra caídas. Cada sistema se entrega certificado bajo la Resolución 4272 de 2021, con los certificados de fábrica de todos los elementos instalados y una recertificación anual sin costo.</p><p class="doc-copy junto" style="color:var(--tinta);">Nuestro personal está afiliado a ARL, salud y pensión, cuenta con los elementos de protección personal requeridos, y un coordinador de trabajo seguro en alturas acompaña la obra durante toda la ejecución. Entregamos las pólizas que exija el contratante y respondemos por los daños que puedan ocasionarse durante los trabajos.</p><p class="doc-copy junto" style="color:var(--tinta);">Quedamos atentos a cualquier inquietud sobre el alcance, los materiales o las condiciones comerciales de esta propuesta.</p>
+          
+
+          <h3 class="doc-h3 con-espacio">Definiciones que estructuran el alcance</h3>
+          
+              <div class="def-list">
+                <div class="def-row">
+                  <div class="def-term">Trabajo en altura</div>
+                  <div class="def-body">Se considera toda actividad, labor o trabajo que se deba realizar a una altura física igual o superior a <strong>2 metros desde el piso</strong>.</div>
+                </div>
+                <div class="def-row">
+                  <div class="def-term">Puntos de anclaje</div>
+                  <div class="def-body">Son componentes en acero, anclado con un epóxico químico, con perno de <span class="tnum">5/8</span> a una profundidad de <span class="tnum">12 cm</span> o más según el caso a estructuras en concreto, con capacidad de resistir una fuerza de caída de más de <strong>5000 Lbs</strong>.</div>
+                </div>
+                <div class="def-row">
+                  <div class="def-term">Línea de vida</div>
+                  <div class="def-body">
+                    <p>Son componentes de un sistema/equipo de protección de caídas, consistentes en una cuerda de nylon o cable de acero instalada en forma horizontal y vertical, tensionada y sujeta en tres o dos puntos de anclaje para otorgar movilidad al personal que trabaja en áreas elevadas.</p>
+                    <ul class="def-bullets">
+                      <li>La línea de vida permite la fijación o enganche en forma directa o indirecta al arnés completo para el cuerpo, o a un dispositivo de impacto o amortiguador.</li>
+                      <li>Las líneas de vida estarán constituidas por un solo cable continuo.</li>
+                      <li>Los anclajes a los cuales se fijarán las líneas de vida deben resistir al menos 5.000 libras por cada persona asegurada.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            
+        </div>
+        
+    <div class="footer">
+      <div class="footer-col footer-col-left">
+        <div class="footer-label">Sede Principal</div>
+        <div class="footer-main">Calle 38 Sur # 36 &ndash; 48</div>
+        <div class="footer-sub">Envigado</div>
+      </div>
+      <div class="footer-col footer-col-center">
+        <div class="footer-label">Líneas de Atención</div>
+        <div class="footer-main">PBX (604) 448 26 86</div>
+        <div class="footer-sub">Cel. 315 288 9541</div>
+      </div>
+      <div class="footer-col footer-col-right">
+        <div class="footer-label">Contacto Digital</div>
+        <div class="footer-main">comercial1ingeanclajes@gmail.com</div>
+        <div class="footer-sub footer-brand">www.ingeanclajessas.com</div>
+      </div>
+    </div>
+  
+      </div>
+    </section>
+  
+    
+      <section class="page">
+        <div class="page-inner">
+          
+    <div class="header">
+      <img src="/src/assets/logo-ingeanclajes.jpeg" class="logo" alt="Ingeanclajes" />
+      <div class="header-right">
+        <div>Ingeanclajes S.A.S. &middot; Cotización C-26002</div>
+      </div>
+    </div>
+  
+          <div class="page-content">
+            
+
+            
+
+            
+
+            
+
+            
+            
+            
+      <div class="price-table">
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="t-left" style="width:44%;">Descripción</th>
+              <th style="width:10%;">Cant.</th>
+              <th style="width:12%;">Unidad</th>
+              <th class="t-right" style="width:17%;">V. unitario</th>
+              <th class="t-right" style="width:17%;">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            
+        <tr>
+          <td>ESCALERA TIPO GATO CON GUARDA</td>
+          <td class="t-center tnum">6</td>
+          <td class="t-center">ML</td>
+          <td class="t-right tnum">$ 380.000</td>
+          <td class="t-right tnum strong">$ 2.280.000</td>
+        </tr>
+      
+        <tr>
+          <td>LÍNEA DE VIDA VERTICAL EN ESCALERA</td>
+          <td class="t-center tnum">6</td>
+          <td class="t-center">ML</td>
+          <td class="t-right tnum">$ 210.000</td>
+          <td class="t-right tnum strong">$ 1.260.000</td>
+        </tr>
+      
+            
+            <tr class="sub-row">
+              <td colspan="4">Subtotal</td>
+              <td class="t-right tnum strong">$ 3.540.000</td>
+            </tr>
+            
+            <tr class="soft-row">
+              <td colspan="4">Utilidades (15% del valor de la obra)</td>
+              <td class="t-right tnum">$ 531.000</td>
+            </tr>
+            <tr class="soft-row">
+              <td colspan="4">IVA (19% sobre utilidades)</td>
+              <td class="t-right tnum">$ 100.890</td>
+            </tr>
+            
+            <tr class="grand-total">
+              <td colspan="4" class="total-label">Total propuesta</td>
+              <td class="t-right tnum total-amount">$ 4.171.890</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    
+          </div>
+          
+    <div class="footer">
+      <div class="footer-col footer-col-left">
+        <div class="footer-label">Sede Principal</div>
+        <div class="footer-main">Calle 38 Sur # 36 &ndash; 48</div>
+        <div class="footer-sub">Envigado</div>
+      </div>
+      <div class="footer-col footer-col-center">
+        <div class="footer-label">Líneas de Atención</div>
+        <div class="footer-main">PBX (604) 448 26 86</div>
+        <div class="footer-sub">Cel. 315 288 9541</div>
+      </div>
+      <div class="footer-col footer-col-right">
+        <div class="footer-label">Contacto Digital</div>
+        <div class="footer-main">comercial1ingeanclajes@gmail.com</div>
+        <div class="footer-sub footer-brand">www.ingeanclajessas.com</div>
+      </div>
+    </div>
+  
+        </div>
+      </section>
+      
+    
+    
+    <section class="page appendix-page">
+      <div class="page-inner">
+        
+    <div class="header">
+      <img src="/src/assets/logo-ingeanclajes.jpeg" class="logo" alt="Ingeanclajes" />
+      <div class="header-right">
+        <div>Ingeanclajes S.A.S. &middot; Cotización C-26002</div>
+      </div>
+    </div>
+  
+        <div class="page-content">
+          <h3 class="doc-h3">Sistema de escalera fija tipo gato</h3>
+          <div class="ficha-sistema">
+            <div class="ficha-sistema-img">
+              <!-- Los dos hacen falta: clip-path quita lo que sobra -el
+                   logotipo del proveedor y sus recuadros de texto-, y el
+                   transform amplia lo que queda. Solo con el transform, la
+                   caja es mas ancha que el recorte y vuelven a asomar los
+                   recuadros por los lados. -->
+              <img
+                src="/src/assets/artico-escalera-gato.jpg"
+                alt="Escalera fija tipo gato en tubería redonda"
+                style="clip-path: inset(4% 12% 2% 52%); transform: scale(1.0638) translate(-20.00%, -1.00%);"
+              />
+            </div>
+            
+              <dl class="ficha-sistema-datos">
+                
+                  <dt>Normatividad</dt>
+                  <dd>Cumple la Resolución 4272 de 2021 del Ministerio del Trabajo de Colombia y la norma EN 795:2012, aplicables a los sistemas de acceso y a los dispositivos de anclaje para trabajo en alturas.</dd>
+                
+                  <dt>Largueros</dt>
+                  <dd>Tubería redonda de 2″ de diámetro, que es el elemento que recibe la carga y la transmite a los soportes de fijación a la estructura.</dd>
+                
+                  <dt>Peldaños</dt>
+                  <dd>Tubería redonda de 1 ½″ de diámetro, instalados cada 30 cm y con un ancho útil de 40 cm, de acuerdo con la norma existente.</dd>
+                
+                  <dt>Material</dt>
+                  <dd>Acero estructural 1040 en toda la escalera, con acabado y protección definidos según el ambiente de instalación.</dd>
+                
+              </dl>
+            
+          </div>
+          
+        </div>
+        
+    <div class="footer">
+      <div class="footer-col footer-col-left">
+        <div class="footer-label">Sede Principal</div>
+        <div class="footer-main">Calle 38 Sur # 36 &ndash; 48</div>
+        <div class="footer-sub">Envigado</div>
+      </div>
+      <div class="footer-col footer-col-center">
+        <div class="footer-label">Líneas de Atención</div>
+        <div class="footer-main">PBX (604) 448 26 86</div>
+        <div class="footer-sub">Cel. 315 288 9541</div>
+      </div>
+      <div class="footer-col footer-col-right">
+        <div class="footer-label">Contacto Digital</div>
+        <div class="footer-main">comercial1ingeanclajes@gmail.com</div>
+        <div class="footer-sub footer-brand">www.ingeanclajessas.com</div>
+      </div>
+    </div>
+  
+      </div>
+    </section>
+  
+    
+    <section class="page appendix-page">
+      <div class="page-inner">
+        
+    <div class="header">
+      <img src="/src/assets/logo-ingeanclajes.jpeg" class="logo" alt="Ingeanclajes" />
+      <div class="header-right">
+        <div>Ingeanclajes S.A.S. &middot; Cotización C-26002</div>
+      </div>
+    </div>
+  
+        <div class="page-content">
+          <h3 class="doc-h3">Escalera fija con línea de vida vertical</h3>
+          <div class="ficha-sistema">
+            <div class="ficha-sistema-img">
+              <!-- Los dos hacen falta: clip-path quita lo que sobra -el
+                   logotipo del proveedor y sus recuadros de texto-, y el
+                   transform amplia lo que queda. Solo con el transform, la
+                   caja es mas ancha que el recorte y vuelven a asomar los
+                   recuadros por los lados. -->
+              <img
+                src="/src/assets/artico-linea-vida-vertical.jpg"
+                alt="Sistema de línea de vida vertical sobre escalera fija"
+                style="clip-path: inset(3% 32% 2% 37%); transform: scale(1.0526) translate(-2.50%, -0.50%);"
+              />
+            </div>
+            
+              <div class="ficha-llamadas">
+                
+                  <div class="ficha-llamada" style="top:14%;">
+                    <span class="ficha-llamada-guia"></span>
+                    <div class="ficha-llamada-texto">
+                      <b>Soporte superior</b>
+                      <span>Con absorbedor de energía. Fija el extremo alto de la línea de vida a la estructura. El absorbedor se despliega ante una caída y disipa parte de la energía del impacto, de modo que la fuerza que llega al trabajador y a la estructura se mantiene dentro de los valores admisibles.</span>
+                    </div>
+                  </div>
+                
+                  <div class="ficha-llamada" style="top:45%;">
+                    <span class="ficha-llamada-guia"></span>
+                    <div class="ficha-llamada-texto">
+                      <b>Cable de acero</b>
+                      <span>Con alma de acero, SAE 316. Es el elemento por el que se desplaza el trabajador mientras sube o baja. El alma de acero reduce el alargamiento bajo carga, y la calidad SAE 316 le aporta resistencia a la corrosión, por lo que admite instalación a la intemperie y en ambientes agresivos.</span>
+                    </div>
+                  </div>
+                
+                  <div class="ficha-llamada" style="top:84%;">
+                    <span class="ficha-llamada-guia"></span>
+                    <div class="ficha-llamada-texto">
+                      <b>Soporte inferior y tensor</b>
+                      <span>Ancla el extremo bajo del cable y permite regular su tensión. Mantener la tensión correcta evita holguras que alargarían el recorrido de caída, y es el punto donde el sistema se reajusta en cada inspección periódica.</span>
+                    </div>
+                  </div>
+                
+              </div>
+            
+          </div>
+          
+            <dl class="ficha-sistema-datos ficha-sistema-datos--pie">
+              
+                <dt>Normatividad</dt>
+                <dd>Cumple la Resolución 4272 de 2021 del Ministerio del Trabajo de Colombia y la norma EN 795:2012, aplicables a los dispositivos de anclaje para protección contra caídas en trabajo en alturas.</dd>
+              
+                <dt>Estructura de la escalera</dt>
+                <dd>Largueros en tubería redonda de 2″ y peldaños en tubería redonda de 1 ½″. Los peldaños se instalan cada 30 cm y con un ancho de 40 cm, conforme a la norma. Fabricada en acero estructural 1040.</dd>
+              
+            </dl>
+          
+        </div>
+        
+    <div class="footer">
+      <div class="footer-col footer-col-left">
+        <div class="footer-label">Sede Principal</div>
+        <div class="footer-main">Calle 38 Sur # 36 &ndash; 48</div>
+        <div class="footer-sub">Envigado</div>
+      </div>
+      <div class="footer-col footer-col-center">
+        <div class="footer-label">Líneas de Atención</div>
+        <div class="footer-main">PBX (604) 448 26 86</div>
+        <div class="footer-sub">Cel. 315 288 9541</div>
+      </div>
+      <div class="footer-col footer-col-right">
+        <div class="footer-label">Contacto Digital</div>
+        <div class="footer-main">comercial1ingeanclajes@gmail.com</div>
+        <div class="footer-sub footer-brand">www.ingeanclajessas.com</div>
+      </div>
+    </div>
+  
+      </div>
+    </section>
+  
+    
+    
+    
+      <section class="page premium-final-page ">
+        <div class="page-inner">
+          
+    <div class="header">
+      <img src="/src/assets/logo-ingeanclajes.jpeg" class="logo" alt="Ingeanclajes" />
+      <div class="header-right">
+        <div>Ingeanclajes S.A.S. &middot; Cotización C-26002</div>
+      </div>
+    </div>
+  
+          <div class="page-content">
+            
+    <div class="keep conditions-block">
+      <div class="card-label block-label centered">Condiciones comerciales</div>
+      <div class="conditions-grid">
+        <div class="meta-card">
+          <div class="meta-label">Forma de pago</div>
+          <div class="meta-strong">50% ANTICIPO, 50% CONCLUIR LABORES</div>
+        </div>
+        <div class="meta-card pad-left">
+          <div class="meta-label">Tiempo de ejecución</div>
+          <div class="meta-strong">10 DIAS (4 EN FABRICACION, 6 DIAS EN INSTALACION)</div>
+        </div>
+        <div class="meta-card">
+          <div class="meta-label">Validez de la oferta</div>
+          <div class="meta-strong">30 días desde la entrega de esta cotización</div>
+        </div>
+        <div class="meta-card pad-left">
+          <div class="meta-label">Certificación</div>
+          <div class="meta-strong">Se entrega con el pago total</div>
+        </div>
+      </div>
+    </div>
+    
+
+      <div class="keep incluye-block">
+        <div class="card-label block-label centered">Esta cotización incluye</div>
+        <div class="incluye-list">
+          <div class="incluye-item">Tuercas y arandelas en ACERO GALVANIZADO.</div><div class="incluye-item">Los elementos utilizados en la instalación son certificados de fábrica, los cuales se adjuntan en la entrega de documentación de certificados.</div><div class="incluye-item">Transporte de materiales y de personal hasta el sitio de trabajo.</div><div class="incluye-item">Se entregan todos los certificados de acuerdo a la Resolución 4272 de trabajo seguro en alturas.</div><div class="incluye-item">Recertificación gratis al año siguiente de la instalación.</div><div class="incluye-item">Esta propuesta incluye el coordinador para trabajo seguro en alturas de tiempo completo en la obra.</div>
+        </div>
+      </div>
+    
+
+    <div class="keep sst-block">
+      <div class="sst-title">Sistema de Gestión de Seguridad y Salud en el Trabajo</div>
+      <p>INGEANCLAJES S.A.S. se encuentra comprometida con el cumplimiento de las directrices generales para la aplicación de la Resolución 4272 de 2021, garantizando la implementación del Sistema de Gestión de Seguridad y Salud en el Trabajo y manteniendo coherencia con la estrategia organizacional de la empresa, redundando en el mejoramiento de las condiciones de trabajo y calidad de vida de todas las personas, al evitar y minimizar los accidentes de trabajo, enfermedades laborales y fomentar una cultura preventiva y de autocuidado en los diferentes frentes de trabajo.</p>
+    </div>
+    
+
+    <div class="signature keep">
+      <div>
+        <div class="card-label block-label">Próximos pasos</div>
+        <ol class="steps-list">
+          <li>Confirmar aceptación por el medio de su preferencia.</li><li>Pago del anticipo pactado para iniciar fabricación.</li><li>Coordinación de visita técnica y cronograma de obra.</li><li>Instalación, certificación y entrega de pólizas.</li>
+        </ol>
+        <div class="contact-box">
+          <div class="meta-label">Para aceptar o resolver dudas</div>
+          <div class="contact-line">Cel. 315 288 9541</div>
+          <div class="contact-line">comercial1ingeanclajes@gmail.com</div>
+        </div>
+      </div>
+      <div>
+        <div class="card-label block-label">Cordialmente</div>
+        <div class="sig-space"><img class="sig-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" alt=""/></div>
+        <div class="sig-name">Ing. Jhon Jaime Sepúlveda Londoño</div>
+        <div class="sig-role">Gerente General</div>
+        <div class="sig-meta">MP. 05256-409949<br/>Tel. 315 288 9541</div>
+      </div>
+    </div>
+    
+          </div>
+          
+    <div class="footer">
+      <div class="footer-col footer-col-left">
+        <div class="footer-label">Sede Principal</div>
+        <div class="footer-main">Calle 38 Sur # 36 &ndash; 48</div>
+        <div class="footer-sub">Envigado</div>
+      </div>
+      <div class="footer-col footer-col-center">
+        <div class="footer-label">Líneas de Atención</div>
+        <div class="footer-main">PBX (604) 448 26 86</div>
+        <div class="footer-sub">Cel. 315 288 9541</div>
+      </div>
+      <div class="footer-col footer-col-right">
+        <div class="footer-label">Contacto Digital</div>
+        <div class="footer-main">comercial1ingeanclajes@gmail.com</div>
+        <div class="footer-sub footer-brand">www.ingeanclajessas.com</div>
+      </div>
+    </div>
+  
+        </div>
+      </section>
+    
+  </body>
+  </html>

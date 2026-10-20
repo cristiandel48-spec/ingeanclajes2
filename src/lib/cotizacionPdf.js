@@ -10,11 +10,7 @@
 
 import { buildCotizacionPrintHtml } from "./cotizacionPrint";
 import { MARGEN_HOJA } from "./hojaImpresion";
-import { avanceDePdf, dejarPintar } from "./progresoPdf";
-
-// Hoja carta a 96 ppp, que es la unidad en la que está escrita la plantilla.
-const ANCHO_HOJA = 816;
-const ALTO_HOJA = 1056;
+import { pdfDeHojas } from "./pdfHojas";
 
 // html2canvas no dibuja el documento: lo copia a otro iframe y lo redibuja
 // midiendo el texto palabra por palabra. Con una tipografía descargada de
@@ -79,120 +75,37 @@ function prepararHtmlParaPdf(html) {
     </style></head>`);
 }
 
-// Espera a que el documento del iframe tenga fuentes e imágenes listas. Sin
-// esto html2canvas dibuja huecos donde van las fotos y el logo.
-async function esperarRecursos(doc, ventana) {
-  try { await doc.fonts?.ready; } catch { /* navegador sin la API */ }
-
-  const imagenes = [...doc.images].filter((img) => !img.complete);
-  await Promise.all(imagenes.map((img) => new Promise((listo) => {
-    img.addEventListener("load", listo, { once: true });
-    img.addEventListener("error", listo, { once: true });
-  })));
-
-  // Un cuadro más para que el navegador termine de pintar.
-  await dejarPintar(ventana);
-}
-
 /**
  * Devuelve { blob, nombre } con el PDF de la cotización.
  * onProgreso recibe (hojaActual, hojasTotales) para poder mostrar avance:
  * en una cotización con fotos esto tarda varios segundos.
  */
 export async function generarCotizacionPdf(cotizacion, { firmaImg = "", sello = null, onProgreso } = {}) {
-  // Las dos librerias pesan cerca de un mega, asi que se cargan solo al
-  // generar un PDF. El precio es que si se publica una version nueva mientras
-  // alguien tiene la pagina abierta, el navegador pide un archivo que ya no
-  // existe y falla con un mensaje en ingles que no dice que hacer.
-  let html2canvas, jsPDF;
-  try {
-    const [mod1, mod2] = await Promise.all([import("html2canvas"), import("jspdf")]);
-    html2canvas = mod1.default;
-    jsPDF = mod2.jsPDF;
-  } catch {
-    throw new Error(
-      "Se publicó una versión nueva del sistema mientras tenías esta página abierta. " +
-      "Recárgala (Ctrl+Shift+R) y vuelve a intentarlo."
-    );
-  }
-
   const html = prepararHtmlParaPdf(buildCotizacionPrintHtml(cotizacion, { firmaImg, sello }));
-  const avance = avanceDePdf(onProgreso);
+  const blob = await pdfDeHojas(html, { onProgreso });
+  return { blob, nombre: nombreDeCotizacion(cotizacion) };
+}
 
-  // Se dibuja fuera de la vista, no oculto: display:none o visibility:hidden
-  // hacen que html2canvas mida todo en cero.
-  const marco = document.createElement("iframe");
-  marco.setAttribute("aria-hidden", "true");
-  marco.style.cssText =
-    `position:fixed;left:0;top:0;width:${ANCHO_HOJA}px;height:${ALTO_HOJA}px;opacity:0.01;pointer-events:none;z-index:-9999;border:0;`;
-  document.body.appendChild(marco);
-
-  try {
-    marco.srcdoc = html;
-    await new Promise((listo, fallo) => {
-      marco.addEventListener("load", listo, { once: true });
-      marco.addEventListener("error", () => fallo(new Error("No se pudo preparar el documento.")), { once: true });
-    });
-
-    const doc = marco.contentDocument;
-    const ventana = marco.contentWindow;
-    if (!doc) throw new Error("No se pudo leer el documento generado.");
-
-    await esperarRecursos(doc, ventana);
-
-    const hojas = [...doc.querySelectorAll(".page")];
-    if (!hojas.length) throw new Error("El documento salió vacío.");
-
-    const pdf = new jsPDF({ unit: "px", format: [ANCHO_HOJA, ALTO_HOJA], orientation: "portrait" });
-
-    for (let i = 0; i < hojas.length; i += 1) {
-      avance.hoja(i + 1, hojas.length);
-      await dejarPintar();
-
-      const lienzo = await html2canvas(hojas[i], {
-        // 3 = 288 puntos por pulgada, al borde del estandar de imprenta.
-        // Este PDF es el que se le adjunta al cliente en el correo de
-        // aprobacion y no puede salir por la impresion del navegador, asi
-        // que sigue siendo una foto de la hoja: lo unico que se puede hacer
-        // por el es que sea una foto buena. A 2,4 eran 230 ppp y el texto se
-        // veia blando al ampliarlo.
-        scale: 3,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-        windowWidth: ANCHO_HOJA,
-        windowHeight: ALTO_HOJA,
-      });
-
-      // JPEG de alta calidad: mantiene planos nítidos y sin halos de compresión
-      const imagen = lienzo.toDataURL("image/jpeg", 0.95);
-      if (i > 0) pdf.addPage([ANCHO_HOJA, ALTO_HOJA], "portrait");
-      pdf.addImage(imagen, "JPEG", 0, 0, ANCHO_HOJA, ALTO_HOJA, undefined, "MEDIUM");
-    }
-
-    // El nombre lleva numero, cliente y obra, como el de los informes y las
-    // certificaciones: en una carpeta con veinte, "Cotizacion C-26121" a
-    // secas no dice de quien es. Se limpian los caracteres que Windows no
-    // admite en un nombre de archivo.
-    const numero = String(cotizacion?.numero || cotizacion?.id || "cotizacion");
-    const partes = [numero, cotizacion?.cliente, cotizacion?.obra]
-      .map((t) => String(t || "").trim())
-      .filter(Boolean);
-    // La obra se repite muchas veces con el nombre del cliente; asi no sale dos veces.
-    const vistas = [];
-    for (const parte of partes) {
-      if (!vistas.some((v) => v.toLowerCase() === parte.toLowerCase())) vistas.push(parte);
-    }
-    const nombre = ("Cotizacion " + vistas.join(" "))
-      .replace(/[\\/:*?"<>|]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 120);
-    return { blob: pdf.output("blob"), nombre: `${nombre}.pdf` };
-  } finally {
-    marco.remove();
-    avance.cerrar();
+// El nombre lleva numero, cliente y obra, como el de los informes y las
+// certificaciones: en una carpeta con veinte, "Cotizacion C-26121" a secas no
+// dice de quien es. Se limpian los caracteres que Windows no admite en un
+// nombre de archivo.
+function nombreDeCotizacion(cotizacion) {
+  const numero = String(cotizacion?.numero || cotizacion?.id || "cotizacion");
+  const partes = [numero, cotizacion?.cliente, cotizacion?.obra]
+    .map((t) => String(t || "").trim())
+    .filter(Boolean);
+  // La obra se repite muchas veces con el nombre del cliente; asi no sale dos veces.
+  const vistas = [];
+  for (const parte of partes) {
+    if (!vistas.some((v) => v.toLowerCase() === parte.toLowerCase())) vistas.push(parte);
   }
+  const nombre = ("Cotizacion " + vistas.join(" "))
+    .replace(/[\\/:*?"<>|]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 120);
+  return `${nombre}.pdf`;
 }
 
 // El correo viaja en JSON, así que el PDF va en base64.

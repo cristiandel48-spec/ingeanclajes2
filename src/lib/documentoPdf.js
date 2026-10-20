@@ -4,13 +4,11 @@
 
 import { mostrarProgreso } from "./dialogos";
 import { dejarPintar } from "./progresoPdf";
+import { ALTO_HOJA, ANCHO_HOJA, abrirEnMarco, cargarLibreriasPdf, esperarRecursos } from "./pdfHojas";
 
 const PX_A_PT = 72 / 96;
 const ESCALA_DIBUJO = 3;
 
-// Hoja Carta a 96 ppp: 8,5 x 11 pulgadas
-const ANCHO_HOJA = 816;
-const ALTO_HOJA = 1056;
 const MARGEN = 40;
 const ANCHO_UTIL = ANCHO_HOJA - MARGEN * 2;
 const ALTO_UTIL = ALTO_HOJA - MARGEN * 2;
@@ -28,26 +26,6 @@ const HOJA_ESTILOS = `
   .doc-shell table { width: 100%; border-collapse: collapse; }
   img { max-width: 100%; }
 `;
-
-async function esperarRecursos(doc) {
-  try {
-    if (doc.fonts && doc.fonts.ready) await doc.fonts.ready;
-  } catch {
-    // API no soportada
-  }
-
-  const imagenes = [...doc.images].filter((img) => !img.complete);
-  if (!imagenes.length) return;
-  await Promise.all(
-    imagenes.map(
-      (img) =>
-        new Promise((listo) => {
-          img.addEventListener("load", listo, { once: true });
-          img.addEventListener("error", listo, { once: true });
-        })
-    )
-  );
-}
 
 /**
  * Identifica todas las cajas visuales atómicas que NO deben partirse por la mitad.
@@ -231,17 +209,7 @@ function calcularCortesPagina(cajas, altoTotal, altoPagina) {
 export async function generarDocumentoPdf(nodo, nombre = "Documento") {
   if (!nodo) throw new Error("No se encontró el documento en pantalla.");
 
-  let html2canvas, jsPDF;
-  try {
-    const [mod1, mod2] = await Promise.all([import("html2canvas"), import("jspdf")]);
-    html2canvas = mod1.default;
-    jsPDF = mod2.jsPDF;
-  } catch {
-    throw new Error(
-      "Se publicó una versión nueva del sistema mientras tenías esta página abierta. " +
-      "Recárgala (Ctrl+Shift+R) y vuelve a intentarlo."
-    );
-  }
+  const { html2canvas, jsPDF } = await cargarLibreriasPdf();
 
   const bleedLeft = Boolean(nodo?.getAttribute && nodo.getAttribute("data-bleed-left") === "true");
   const anchoDoc = bleedLeft ? ANCHO_HOJA : ANCHO_UTIL;
@@ -249,10 +217,7 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
   const margenY = bleedLeft ? 0 : MARGEN * PX_A_PT;
 
   const aviso = mostrarProgreso("Generando el PDF…");
-  const marco = document.createElement("iframe");
-  marco.setAttribute("aria-hidden", "true");
-  marco.style.cssText = `position:fixed;left:0;top:0;width:${anchoDoc}px;height:${bleedLeft ? ALTO_HOJA : 1000}px;opacity:0.01;pointer-events:none;z-index:-9999;border:0;`;
-  document.body.appendChild(marco);
+  let marco = null;
 
   try {
     const estilosBleed = bleedLeft ? `
@@ -282,18 +247,14 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
       }
     ` : "";
 
-    marco.srcdoc = `<!doctype html><html><head><meta charset="utf-8">
+    const html = `<!doctype html><html><head><meta charset="utf-8">
       <style>${HOJA_ESTILOS}${estilosBleed}</style></head>
       <body>${nodo.outerHTML}</body></html>`;
 
-    await new Promise((listo, fallo) => {
-      marco.addEventListener("load", listo, { once: true });
-      marco.addEventListener("error", () => fallo(new Error("No se pudo preparar el documento.")), { once: true });
-    });
-
-    const doc = marco.contentDocument;
-    if (!doc) throw new Error("No se pudo leer el documento generado.");
-    await esperarRecursos(doc);
+    const abierto = await abrirEnMarco(html, { ancho: anchoDoc, alto: bleedLeft ? ALTO_HOJA : 1000 });
+    marco = abierto.marco;
+    const { doc } = abierto;
+    await esperarRecursos(doc, abierto.ventana);
     await new Promise((listo) => setTimeout(listo, 140));
 
     const raiz = doc.body.firstElementChild;
@@ -379,7 +340,7 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
 
     return { blob: pdf.output("blob"), nombre: `${nombre}.pdf` };
   } finally {
-    marco.remove();
+    marco?.remove();
     aviso.cerrar();
   }
 }

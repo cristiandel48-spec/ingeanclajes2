@@ -28,7 +28,12 @@ export function detectarDispositivo() {
   return "Computador";
 }
 
-export const CANAL_PRESENCIA = "presencia-erp-ingeanclajes";
+// Canal PRIVADO (migracion 068). Antes era publico: cualquiera con la llave
+// publica, sin sesion, podia ver quien estaba conectado y mandar ordenes
+// falsas de «cerrar sesion». Ahora Supabase solo deja entrar a miembros
+// activos y solo el dueño puede mandar ordenes. El nombre cambio para no
+// mezclarse con el canal publico viejo.
+export const CANAL_PRESENCIA = "presencia-erp-ingeanclajes-privado";
 
 /**
  * Conecta el cliente al canal de presencia y escucha señales de control remoto.
@@ -58,6 +63,7 @@ export function suscribirPresencia({
 
   const canal = supabase.channel(CANAL_PRESENCIA, {
     config: {
+      private: true,
       presence: {
         key: miUserId,
       },
@@ -161,7 +167,12 @@ export function suscribirPresencia({
   canal.on("presence", { event: "join" }, emitirPresencia);
   canal.on("presence", { event: "leave" }, emitirPresencia);
 
-  canal.subscribe(async (status) => {
+  // Un canal privado necesita la sesion: Supabase revisa las reglas con ella
+  // antes de dejar entrar. Se pasa explicitamente antes de suscribirse.
+  const suscribir = () => canal.subscribe(async (status) => {
+    if (status === "CHANNEL_ERROR") {
+      console.warn("[Presencia] Supabase no dejo entrar al canal privado. ¿Falta la migracion 068?");
+    }
     if (status === "SUBSCRIBED") {
       try {
         await canal.track({
@@ -177,6 +188,11 @@ export function suscribirPresencia({
       }
     }
   });
+
+  supabase.auth.getSession()
+    .then(({ data }) => Promise.resolve(supabase.realtime.setAuth(data?.session?.access_token)))
+    .catch((err) => console.warn("[Presencia] No se pudo pasar la sesion al canal:", err))
+    .finally(suscribir);
 
   // Emisor de orden de desconexión remota (solo ejecutable si esSuperAdmin)
   const forzarCierreSesion = async (targetUserId, targetEmail, targetNombre) => {

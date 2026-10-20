@@ -13,6 +13,15 @@ import articoLineaVidaVertical from "../assets/artico-linea-vida-vertical.jpg?in
 import articoEscaleraGato from "../assets/artico-escalera-gato.jpg?inline";
 import { IMG_SOPORTE, IMG_TENSOR, IMG_EMPALMES, IMG_CABLE } from "../assets/componentesLineasVida";
 
+// El titulo de la portada siempre empieza con mayuscula. En el formulario se
+// ve en mayusculas porque el campo lo pinta asi, pero se guarda tal cual se
+// escribio, y si empezaba en minuscula la portada salia «recertificación de…».
+// Solo se toca la primera letra (saltando comillas o signos de apertura); lo
+// demas queda como lo escribio la persona.
+function primeraMayuscula(texto) {
+  return String(texto || "").replace(/^([^\p{L}]*)(\p{L})/u, (_, previo, letra) => previo + letra.toLocaleUpperCase("es-CO"));
+}
+
 export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}){
   const propuestas = getQuotePrintableProposals(c);
   const textoInicial = String(c?.textoInicial || "").trim();
@@ -811,7 +820,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
                  ancho, que es lo que hace que quede bien centrado. Se sigue
                  leyendo lo guardado con saltos -las cotizaciones de antes-,
                  pero unido con un espacio. -->
-            <h1>${escapeHtml(lineasDeTexto(textos.tituloPortada).join(" "))}</h1>
+            <h1>${escapeHtml(primeraMayuscula(lineasDeTexto(textos.tituloPortada).join(" ")))}</h1>
           </div>
           <div class="meta-strip">
             <div class="meta-cell">

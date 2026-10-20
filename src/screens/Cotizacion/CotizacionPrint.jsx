@@ -96,7 +96,7 @@ export default function CotizacionPrint({c}){
                 <tr><td colSpan={4} style={{border:"1px solid #222",padding:"7px 8px"}}>IVA (19%)</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{fmt(propuesta.iva)}</td></tr>
               ) : (
                 <>
-                  <tr><td colSpan={4} style={{border:"1px solid #222",padding:"7px 8px"}}>UTILIDADES ({propuesta.quote?.util||10}% VALOR DE LA OBRA)</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{fmt(propuesta.ut)}</td></tr>
+                  <tr><td colSpan={4} style={{border:"1px solid #222",padding:"7px 8px"}}>UTILIDADES ({propuesta.quote?.util ?? 10}% VALOR DE LA OBRA)</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{fmt(propuesta.ut)}</td></tr>
                   <tr><td colSpan={4} style={{border:"1px solid #222",padding:"7px 8px"}}>IVA (19% VALOR DE LAS UTILIDADES)</td><td style={{border:"1px solid #222",padding:"7px 8px",textAlign:"right"}}>{fmt(propuesta.iva)}</td></tr>
                 </>
               )}

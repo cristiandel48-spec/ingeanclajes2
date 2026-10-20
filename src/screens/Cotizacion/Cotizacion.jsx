@@ -19,7 +19,7 @@ import { corregirOrtografiaLocal } from "../../lib/correctorTexto";
 import { useEffect, useRef, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_TIEMPO_EJEC } from "../../data/seed";
-import { buildQuoteProposal, createQuoteProposalId, getQuoteApprovalAccountingSnapshot, getQuoteProposalLabel, getQuoteProposals, normalizeProposalItems, normalizeQuoteItems } from "../../lib/cotizaciones";
+import { buildQuoteProposal, createQuoteProposalId, getQuoteApprovalAccountingSnapshot, getQuoteProposalLabel, getQuoteProposals, normalizeProposalItems, normalizeQuoteItems, porcentajeUtilidad } from "../../lib/cotizaciones";
 import { fmt, scrollAppToTop, today } from "../../lib/format";
 import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarMayusculas, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
 import { downloadGeneratedFile } from "../../lib/download";
@@ -370,7 +370,7 @@ export default function Cotizacion({ctx}){
       const finalItems = normalizeQuoteItems({items:propuesta.items,geoMediciones:propuesta.geoMediciones,propuestas:propuestasSnapshot});
       const subtotal = finalItems.reduce((sum,item)=>sum + (Number(item.cant)||0)*(Number(item.vu)||0),0);
       const sinAiu = Boolean(propuesta.sinAiu);
-      const utilidad = sinAiu ? 0 : (subtotal * (Number(propuesta.util || 10) / 100));
+      const utilidad = sinAiu ? 0 : (subtotal * porcentajeUtilidad(propuesta.util) / 100);
       const iva = sinAiu ? (subtotal * 0.19) : (utilidad * 0.19);
       const total = Math.round(subtotal + utilidad + iva);
       return buildQuoteProposal({...propuesta,sinAiu,items:finalItems,total},index);

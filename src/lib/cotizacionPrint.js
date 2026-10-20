@@ -3,7 +3,7 @@ import { fmt } from "./format";
 import { escapeHtml } from "./html";
 import { normalizarMayusculas } from "./normalizarEntrada";
 import { LOGO_INGEANCLAJES } from "../assets/embeddedImages";
-import { getQuotePrintableProposals } from "./cotizaciones";
+import { getQuotePrintableProposals, porcentajeUtilidad } from "./cotizaciones";
 import { getStaticMapDimensions, buildStaticMapLabelData } from "./maps";
 import { hasVerticalLifeLineService, hasCatLadderService, tipoCotizacionCanonico } from "./cotizaciones";
 import { getTextosDocumento, lineasDeTexto } from "./cotizacionTextos";
@@ -642,7 +642,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
             </tr>
             ` : `
             <tr class="soft-row">
-              <td colspan="4">Utilidades (${numberFmt(propuesta.quote?.util || 10)}% del valor de la obra)</td>
+              <td colspan="4">Utilidades (${numberFmt(porcentajeUtilidad(propuesta.quote?.util))}% del valor de la obra)</td>
               <td class="t-right tnum">${money(propuesta.ut || 0)}</td>
             </tr>
             <tr class="soft-row">

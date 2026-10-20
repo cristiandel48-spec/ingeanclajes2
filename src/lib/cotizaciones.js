@@ -146,7 +146,7 @@ export function buildQuoteProposal(propuesta = {}, index = 0) {
     : [];
 
   const sinAiu = Boolean(propuesta.sinAiu ?? propuesta.ivaPleno ?? false);
-  const util = Number(propuesta.util ?? 10);
+  const util = porcentajeUtilidad(propuesta.util);
   const subtotal = items.reduce((sum, item) => sum + (Number(item.cant || 0) * Number(item.vu || 0)), 0);
   const utilidadValor = sinAiu ? 0 : (subtotal * (util / 100));
   const ivaValor = sinAiu ? (subtotal * 0.19) : (utilidadValor * 0.19);
@@ -207,7 +207,7 @@ export function getQuoteProposals(cotizacion = {}) {
         formaPago: cotizacion.formaPago || DEFAULT_COT_FORMA_PAGO,
         tiempoEjec: cotizacion.tiempoEjec || DEFAULT_COT_TIEMPO_EJEC,
         sinAiu: Boolean(cotizacion.sinAiu),
-        util: Number(cotizacion.util ?? 10),
+        util: porcentajeUtilidad(cotizacion.util),
         items: Array.isArray(cotizacion.items) ? cotizacion.items : [],
         geoMediciones: Array.isArray(cotizacion.geoMediciones) ? cotizacion.geoMediciones : [],
         geoMapView: cotizacion.geoMapView ?? null,
@@ -332,12 +332,22 @@ export function normalizeProposalItems(items=[]){
   });
 }
 
+// Porcentaje de utilidad de una propuesta: el primer valor guardado de los
+// que se pasen. El 0 es un valor valido. Con `util || 10` se convertia en 10:
+// el editor mostraba 0 % y el total guardado y el PDF cobraban 10 % mas su IVA.
+// Sin nada guardado, 10 %; vacio o no numerico, 0, como en el editor.
+export function porcentajeUtilidad(...candidatos) {
+  const valor = candidatos.find((v) => v !== undefined && v !== null);
+  if (valor === undefined) return 10;
+  return Number(valor) || 0;
+}
+
 export function getQuoteProposalTotals(baseQuote={}, propuesta){
   const quote = mergeQuoteWithProposal(baseQuote, propuesta);
   const sinAiu = Boolean(propuesta?.sinAiu ?? quote.sinAiu);
   const items = normalizeQuoteItems({ ...quote, items: propuesta?.items || [] });
   const sub = items.reduce((sum, item)=>sum + (Number(item.cant) || 0) * (Number(item.vu) || 0), 0);
-  const ut = sinAiu ? 0 : (sub * (Number(propuesta?.util ?? quote.util ?? 10) || 0) / 100);
+  const ut = sinAiu ? 0 : (sub * porcentajeUtilidad(propuesta?.util, quote.util) / 100);
   const iva = sinAiu ? (sub * 0.19) : (ut * 0.19);
   const tot = sub + ut + iva;
   return { quote, items, sub, ut, iva, tot, sinAiu };
@@ -441,7 +451,7 @@ export function getQuotePrintableProposals(baseQuote = {}){
     const sinAiu = Boolean(propuesta.sinAiu ?? quote.sinAiu);
     const items = normalizeQuoteItems(quote);
     const sub = items.reduce((sum, item)=>sum + (Number(item.cant) || 0) * (Number(item.vu) || 0), 0);
-    const ut = sinAiu ? 0 : (sub * (Number(quote.util || 10) / 100));
+    const ut = sinAiu ? 0 : (sub * porcentajeUtilidad(quote.util) / 100);
     const iva = sinAiu ? (sub * 0.19) : (ut * 0.19);
     const tot = sub + ut + iva;
     const measurements = Array.isArray(quote.geoMediciones) ? quote.geoMediciones : [];

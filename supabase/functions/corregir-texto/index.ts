@@ -31,8 +31,9 @@ const CORS = {
 
 const IA_URL = Deno.env.get("IA_URL") ?? "https://api.groq.com/openai/v1/chat/completions";
 // Modelo por defecto en Groq. Si IA_MODELO está configurado en Supabase se usa ese,
-// con respaldo automático a llama-3.1-8b-instant si falla.
-const IA_MODELO = Deno.env.get("IA_MODELO") ?? "llama-3.3-70b-versatile";
+// con respaldo automático a llama-3.1-8b-instant si falla. llama-3.3-70b-versatile
+// NO va: Groq lo apago el 16/08/2026 (ver commit 5cb7ecb).
+const IA_MODELO = Deno.env.get("IA_MODELO") ?? "openai/gpt-oss-120b";
 
 // Los campos mas largos -la descripcion de un informe- rondan los 1.500
 // caracteres. El tope deja aire de sobra y corta que alguien mande un libro.
@@ -96,6 +97,20 @@ Deno.serve(async (peticion) => {
       return responder({ error: "Tu sesión expiró. Inicia sesión de nuevo." }, 401);
     }
 
+    // Una sesion no basta: si el registro publico estuviera abierto, cualquiera
+    // crearia una cuenta y gastaria la cuota. Tiene que ser miembro activo de
+    // una empresa del sistema (su propia fila en memberships la puede leer).
+    const { data: membresias, error: errorMembresia } = await supabase
+      .schema("app")
+      .from("memberships")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .eq("activo", true)
+      .limit(1);
+    if (errorMembresia || !membresias?.length) {
+      return responder({ error: "Tu cuenta no tiene acceso activo a ninguna empresa." }, 403);
+    }
+
     const { texto } = await peticion.json();
     const original = String(texto ?? "");
     if (!original.trim()) return responder({ corregido: original, cambios: false });
@@ -105,7 +120,7 @@ Deno.serve(async (peticion) => {
 
     const modelosAProbar = Array.from(new Set([
       IA_MODELO,
-      "llama-3.3-70b-versatile",
+      "openai/gpt-oss-120b",
       "llama-3.1-8b-instant",
     ]));
 

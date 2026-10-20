@@ -45,6 +45,9 @@ let baselineLoaded = false;
 // saltan todas las restringidas; AppDataContext la ajusta al cargar el rol.
 let entidadesSinPermiso = new Set([
   "pagos", "contabilidad_config", "plan_cuentas", "asientos_contables", "nominas_generadas",
+  // Escritura por modulo (migracion 069).
+  "obras", "cotizaciones", "clientes", "certificaciones", "informes", "horarios",
+  "cuentas", "empleados", "cargos", "agenda", "proveedores", "ordenes_compra",
 ]);
 
 export function setEntidadesSinPermiso(lista) {

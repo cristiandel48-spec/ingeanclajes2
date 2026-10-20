@@ -165,21 +165,55 @@ export const ENTIDADES_RESTRINGIDAS = {
   nominas_generadas: ["nomina"],
 };
 
+// Tablas que todos leen pero solo MODIFICAN quienes tienen alguno de estos
+// modulos (migracion 069). Incluye los cruces que hace la aplicacion: aprobar
+// una cotizacion crea la obra, Horarios toca obras, renombrar un cliente
+// cambia sus obras, cotizaciones y certificados, Obras registra gastos...
+// Tiene que coincidir con la migracion.
+export const ENTIDADES_ESCRITURA = {
+  obras: ["obras", "cotizacion", "horarios", "clientes"],
+  cotizaciones: ["cotizacion", "obras", "clientes"],
+  clientes: ["clientes", "cotizacion"],
+  certificaciones: ["certificaciones", "vencimientos", "clientes"],
+  informes: ["informes"],
+  horarios: ["horarios", "obras"],
+  cuentas: ["obras", "pagos"],
+  empleados: ["nomina", "obras", "horarios"],
+  cargos: ["nomina", "obras", "horarios"],
+  agenda: ["agenda"],
+  proveedores: ["pagos"],
+  ordenes_compra: ["pagos"],
+};
+
 // Mismo criterio que la base: administrador o contador, modulos sin limitar
 // (null) o alguno de los modulos marcados. Se mira la lista tal como esta
 // guardada, no la del menu, porque es la que consulta la base.
-export function tieneAccesoTabla(membresia, entidad) {
-  const requeridos = ENTIDADES_RESTRINGIDAS[entidad];
-  if (!requeridos) return true;
+function tieneAlgunModulo(membresia, requeridos) {
   if (!membresia || membresia.activo === false) return false;
   if (["admin", "contador"].includes(membresia.role)) return true;
   if (membresia.modulos == null) return true;
   return requeridos.some((modulo) => membresia.modulos.includes(modulo));
 }
 
-/** Tablas restringidas que esta persona no puede guardar. */
+export function tieneAccesoTabla(membresia, entidad) {
+  const requeridos = ENTIDADES_RESTRINGIDAS[entidad];
+  if (!requeridos) return true;
+  return tieneAlgunModulo(membresia, requeridos);
+}
+
+export function puedeEscribirTabla(membresia, entidad) {
+  if (!tieneAccesoTabla(membresia, entidad)) return false;
+  const requeridos = ENTIDADES_ESCRITURA[entidad];
+  if (!requeridos) return true;
+  // El rol Consulta es de solo lectura en la base.
+  if (membresia?.role === "viewer") return false;
+  return tieneAlgunModulo(membresia, requeridos);
+}
+
+/** Tablas que esta persona no puede guardar: se saltan al autoguardar. */
 export function entidadesSinPermiso(membresia) {
-  return Object.keys(ENTIDADES_RESTRINGIDAS).filter((entidad) => !tieneAccesoTabla(membresia, entidad));
+  const todas = new Set([...Object.keys(ENTIDADES_RESTRINGIDAS), ...Object.keys(ENTIDADES_ESCRITURA)]);
+  return [...todas].filter((entidad) => !puedeEscribirTabla(membresia, entidad));
 }
 
 // Modulos permitidos, ya resueltos. null en la base significa "todos".

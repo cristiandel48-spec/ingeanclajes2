@@ -19,7 +19,6 @@ import {
 } from "../lib/accounting";
 import { EJEMPLOS, sinEjemplos } from "../data/ejemplos";
 import { confirmar } from "../lib/dialogos";
-import { depurarObrasDuplicadas } from "../lib/obrasDuplicadas";
 import { iniciarVigilanteInactividad } from "../lib/seguridadSesion";
 import {
   cargarCacheUltimasConexionesLocal,
@@ -540,10 +539,17 @@ export function AppDataProvider({ children }) {
           borrarCopiaCompartidaDeDocumentos();
         }
 
-        // Limpiar automáticamente obras duplicadas y corregir saltos de consecutivo
-        let obrasList = Array.isArray(cloud.obras) ? cloud.obras : [];
-        let cotizacionesList = Array.isArray(cloud.cotizaciones) ? cloud.cotizaciones : [];
-        let otrasEntidades = {
+        // Aqui corria una «depuracion» de obras duplicadas en cada arranque:
+        // borraba las obras sobrantes de una misma cotizacion y renumeraba las
+        // siguientes (OB-033 pasaba a OB-031). Decidia que obra tenia trabajo
+        // mirando la bitacora, que no se descarga al arrancar, asi que podia
+        // borrar una obra con bitacora y fotos, y cambiaba numeros ya usados en
+        // informes y documentos entregados. Se quito: los datos se cargan tal
+        // como estan en la base. La causa de los duplicados ya estaba cerrada
+        // (aprobar una cotizacion reutiliza su obra en vez de crear otra).
+        const obrasList = Array.isArray(cloud.obras) ? cloud.obras : [];
+        const cotizacionesList = Array.isArray(cloud.cotizaciones) ? cloud.cotizaciones : [];
+        const otrasEntidades = {
           cuentas: Array.isArray(cloud.cuentas) ? cloud.cuentas : [],
           pagos: Array.isArray(cloud.pagos) ? cloud.pagos : [],
           horarios: Array.isArray(cloud.horarios) ? cloud.horarios : [],
@@ -551,38 +557,6 @@ export function AppDataProvider({ children }) {
           informes: Array.isArray(cloud.informes) ? cloud.informes : [],
           ordenesCompra: Array.isArray(cloud.ordenesCompra) ? cloud.ordenesCompra : [],
         };
-
-        const {
-          obrasDepuradas,
-          cotizacionesAjustadas,
-          otrasEntidadesAjustadas,
-          huboLimpieza,
-          eliminadas,
-          renombradas,
-        } = depurarObrasDuplicadas(obrasList, cotizacionesList, otrasEntidades);
-
-        if (huboLimpieza) {
-          console.info(`[Depuración Obras] Eliminadas: ${eliminadas.join(", ")}`);
-          if (renombradas?.length) {
-            console.info("[Depuración Obras] Obras recompactadas para consecutivo:", renombradas);
-          }
-          obrasList = obrasDepuradas;
-          cotizacionesList = cotizacionesAjustadas;
-          if (otrasEntidadesAjustadas) {
-            otrasEntidades = { ...otrasEntidades, ...otrasEntidadesAjustadas };
-          }
-          try {
-            await saveCloudAppData({
-              ...cloud,
-              obras: obrasDepuradas,
-              cotizaciones: cotizacionesAjustadas,
-              ...otrasEntidadesAjustadas,
-            });
-            console.info("[Depuración Obras] Base de datos y consecutivos corregidos en la nube.");
-          } catch (e) {
-            console.warn("[Depuración Obras] No se pudo guardar la corrección en la nube:", e);
-          }
-        }
 
         // Con la tabla vacia se dejan los registros de ejemplo: una pantalla
         // que dice «todavia no hay nada» no enseña para que sirve, y quien la

@@ -621,7 +621,10 @@ export default function Cotizacion({ctx}){
         (Array.isArray(o?.empleados) && o.empleados.length > 0) ||
         (Array.isArray(o?.trazos) && o.trazos.length > 0) ||
         (Array.isArray(o?.anclajes) && o.anclajes.length > 0) ||
-        Number(o?.totalFotosAvance || 0) > 0
+        Number(o?.totalFotosAvance || 0) > 0 ||
+        // La bitacora no se descarga al arrancar: el contador de la base dice
+        // si tiene registros aunque la lista llegue vacia.
+        Number(o?.totalRegistrosAvance || 0) > 0
       );
 
       const ordenadas = [...obrasAsociadas].sort((a, b) => {
@@ -637,14 +640,12 @@ export default function Cotizacion({ctx}){
 
     let obraId;
     if (obraExistente) {
-      // REUTILIZAR LA OBRA EXISTENTE: No crear una nueva ni gastar otro consecutivo
+      // REUTILIZAR LA OBRA EXISTENTE: No crear una nueva ni gastar otro consecutivo.
+      // Si hubiera otras obras de la misma cotizacion no se borran: aprobar no
+      // debe eliminar nada. Quien las vea repetidas las borra a mano.
       obraId = obraExistente.id;
-      const idsClonesSobrantes = obrasAsociadas
-        .filter((o) => o.id !== obraId && Number(o.avance || 0) === 0)
-        .map((o) => o.id);
 
       setObras((prev) => prev
-        .filter((o) => !idsClonesSobrantes.includes(o.id))
         .map((o) => {
           if (o.id !== obraId) return o;
           return {

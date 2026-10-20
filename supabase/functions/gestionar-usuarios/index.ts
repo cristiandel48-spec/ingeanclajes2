@@ -27,6 +27,62 @@ function direccionSegura(valor: unknown): string {
   }
 }
 
+// ── Controles del envio de correo ────────────────────────────────────────────
+//
+// Cualquier miembro activo puede enviar desde el Gmail de la empresa:
+// cotizaciones, colillas, agenda, novedades. No se limitan los destinatarios
+// (la agenda invita a contactos externos y las cotizaciones van a correos de
+// clientes que no siempre estan registrados), pero si lo que se envia: el
+// adjunto tiene que ser un PDF o una invitacion de calendario de verdad, el
+// boton solo lleva a Google Calendar o al propio sistema, y cada persona tiene
+// un tope diario. Cada envio queda en app.correos_enviados.
+
+const LIMITE_CORREOS_DIA = Number(Deno.env.get("LIMITE_CORREOS_DIA") ?? 150);
+
+// Dueño del sistema: nadie mas puede cambiarle la contraseña.
+const CUENTAS_DUENO = String(Deno.env.get("CUENTAS_DUENO") ?? "cristiandel48@gmail.com")
+  .split(",").map((c) => c.trim().toLowerCase()).filter(Boolean);
+
+// Un salto de linea en el asunto permitiria colar cabeceras en el correo.
+function lineaSegura(valor: unknown, max: number) {
+  return String(valor ?? "").replace(/[\r\n\t]+/g, " ").trim().slice(0, max);
+}
+
+// El adjunto siempre sale como .pdf, sin caracteres raros ni dobles
+// extensiones del tipo «factura.pdf.html».
+function nombrePdfSeguro(valor: unknown) {
+  const base = String(valor ?? "")
+    .replace(/\.[a-z0-9]{1,5}$/i, "")
+    .replace(/[^\p{L}\p{N} _().-]/gu, "")
+    .replace(/\./g, " ")
+    .trim()
+    .slice(0, 100);
+  return `${base || "Documento"}.pdf`;
+}
+
+// Mira los primeros bytes del adjunto: un PDF empieza con «%PDF-» y una
+// invitacion con «BEGIN:VCALENDAR». Lo demas se rechaza.
+function base64EmpiezaCon(base64: string, prefijo: string) {
+  try {
+    return atob(base64.slice(0, 24)).startsWith(prefijo);
+  } catch {
+    return false;
+  }
+}
+
+const HOSTS_CALENDARIO = ["calendar.google.com", "www.google.com", "da.gd"];
+
+function enlaceCalendarioSeguro(valor: unknown, appUrl: string) {
+  try {
+    const u = new URL(String(valor ?? "").trim());
+    if (u.protocol !== "https:") return "";
+    if (HOSTS_CALENDARIO.includes(u.hostname) || (appUrl && u.origin === appUrl)) return u.toString();
+  } catch {
+    // no es una direccion
+  }
+  return "";
+}
+
 // Envio generico por SMTP desde la cuenta de la empresa. Devuelve el motivo
 // en vez de lanzar, para que quien llama decida si es un fallo grave o solo un
 // aviso que no salio.
@@ -543,17 +599,43 @@ Deno.serve(async (req) => {
 
   try {
     if (accion === "enviar-cotizacion") {
-      const para = String(cuerpo.para ?? "").trim();
-      const asunto = String(cuerpo.asunto ?? "").trim();
-      const mensaje = String(cuerpo.mensaje ?? "");
-      const pdfBase64 = String(cuerpo.pdfBase64 ?? "");
-      const nombreArchivo = String(cuerpo.nombreArchivo ?? "Cotizacion.pdf");
+      // Consulta es de solo mirar: no envia correos a nombre de la empresa.
+      if (propia.role === "viewer") {
+        return error("Tu rol es de consulta: no puede enviar correos desde la cuenta de la empresa.", 403);
+      }
 
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(para)) {
+      const para = lineaSegura(cuerpo.para, 254);
+      const asunto = lineaSegura(cuerpo.asunto, 200);
+      const mensaje = String(cuerpo.mensaje ?? "").slice(0, 20000);
+      const pdfBase64 = String(cuerpo.pdfBase64 ?? "");
+      const nombreArchivo = nombrePdfSeguro(cuerpo.nombreArchivo ?? "Cotizacion");
+
+      if (!/^[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+$/.test(para)) {
         return error("El correo del cliente no es válido.");
       }
       if (!asunto) return error("Escribe un asunto para el correo.");
       if (!mensaje.trim()) return error("Escribe el mensaje para el cliente.");
+      if (pdfBase64 && !base64EmpiezaCon(pdfBase64, "%PDF-")) {
+        return error("El adjunto no es un PDF válido.");
+      }
+
+      // Tope diario por persona. Si la tabla del registro no existe todavia
+      // (migracion 064 sin aplicar), no se bloquea el envio.
+      const desde = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { count: enviadosHoy, error: errConteo } = await admin
+        .schema("app")
+        .from("correos_enviados")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", quienLlama.id)
+        .gte("creado_en", desde);
+      if (errConteo) {
+        console.warn("No se pudo contar los correos enviados:", errConteo.message);
+      } else if ((enviadosHoy ?? 0) >= LIMITE_CORREOS_DIA) {
+        return error(
+          `Llegaste al límite de ${LIMITE_CORREOS_DIA} correos en 24 horas. Si necesitas enviar más, habla con el administrador.`,
+          429
+        );
+      }
 
       // Gmail rechaza por encima de 25 MB. Se corta antes para poder explicarlo
       // en vez de devolver un error del servidor de correo.
@@ -572,7 +654,12 @@ Deno.serve(async (req) => {
       // El aviso de la agenda trae sus campos sueltos y se pinta como ficha.
       // Si no vienen -una pestaña abierta con la version anterior- se cae al
       // camino de siempre y el correo sale igual que antes, en texto.
-      const agenda = (cuerpo.agenda ?? null) as DetalleAgenda | null;
+      const agendaCruda = (cuerpo.agenda ?? null) as DetalleAgenda | null;
+      // El boton «Añadir a mi calendario» solo puede llevar a Google Calendar
+      // o al propio sistema: si no, desaparece.
+      const agenda = agendaCruda
+        ? { ...agendaCruda, enlaceCalendar: enlaceCalendarioSeguro(agendaCruda.enlaceCalendar, appUrl) }
+        : null;
       const html = agenda
         ? htmlAgenda(numero, agenda)
         : htmlCotizacion(numero, mensaje, detalle);
@@ -580,6 +667,9 @@ Deno.serve(async (req) => {
       // La invitacion de la agenda viaja como .ics: con text/calendar Gmail y
       // Outlook la muestran como evento con «Si / No / Quizas».
       const icsBase64 = String(cuerpo.icsBase64 ?? "");
+      if (icsBase64 && !base64EmpiezaCon(icsBase64, "BEGIN:VCALENDAR")) {
+        return error("La invitación de calendario no es válida.");
+      }
 
       const resultado = await enviarCorreo({
         para,
@@ -594,6 +684,20 @@ Deno.serve(async (req) => {
       });
 
       if (!resultado.enviado) return error(resultado.motivo || "No se pudo enviar el correo.", 500);
+
+      // Queda el rastro de quien envio que. Si falla, el correo ya salio:
+      // solo se avisa en el registro de la funcion.
+      const { error: errRegistro } = await admin.schema("app").from("correos_enviados").insert({
+        tenant_id: tenantId,
+        user_id: quienLlama.id,
+        email_autor: quienLlama.email ?? null,
+        para,
+        asunto,
+        tipo: agenda ? "agenda" : (numero || "correo").slice(0, 60),
+        adjunto: pdfBase64 ? nombreArchivo : (icsBase64 ? "invitacion.ics" : null),
+      });
+      if (errRegistro) console.warn("No se pudo registrar el correo enviado:", errRegistro.message);
+
       return responder({ ok: true, para });
     }
 
@@ -690,15 +794,41 @@ Deno.serve(async (req) => {
 
     if (accion === "clave") {
       if (clave.length < 8) return error("La contraseña debe tener al menos 8 caracteres.");
+
+      // Solo se le cambia la clave a alguien de ESTA empresa. Antes bastaba
+      // con conocer el id de cualquier cuenta del proyecto.
+      const { data: suya, error: errSuya } = await admin
+        .schema("app")
+        .from("memberships")
+        .select("user_id")
+        .eq("tenant_id", tenantId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (errSuya) return error(errSuya.message, 500);
+      if (!suya) return error("Esa persona no pertenece a esta empresa.", 403);
+
+      // El correo con la clave nueva va a la direccion real de la cuenta, no a
+      // la que mande la aplicacion: si no, se podia pedir la clave de otro y
+      // recibirla en un correo propio.
+      const { data: objetivo, error: errObjetivo } = await admin.auth.admin.getUserById(userId);
+      if (errObjetivo || !objetivo?.user) return error("No se encontró la cuenta.", 404);
+      const emailReal = String(objetivo.user.email ?? "").toLowerCase();
+
+      // La cuenta del dueño solo la cambia el dueño.
+      const esDueno = CUENTAS_DUENO.includes(emailReal);
+      if (esDueno && !seModificaASiMismo) {
+        return error("La contraseña del dueño del sistema solo la puede cambiar él mismo.", 403);
+      }
+
       const { error: err } = await admin.auth.admin.updateUserById(userId, { password: clave });
       if (err) return error(err.message, 500);
 
       // Cambiarle la clave a alguien sin avisarle lo deja fuera del sistema
       // sin saber por que, asi que se le manda igual que al crearla.
       let correo: { enviado: boolean; motivo?: string } = { enviado: false, motivo: "No se solicitó." };
-      if (cuerpo.enviarCorreo !== false && email) {
+      if (cuerpo.enviarCorreo !== false && emailReal) {
         try {
-          correo = await enviarBienvenida({ nombre, email, clave, appUrl });
+          correo = await enviarBienvenida({ nombre, email: emailReal, clave, appUrl });
         } catch (e) {
           correo = { enviado: false, motivo: e instanceof Error ? e.message : "Error al enviar." };
         }

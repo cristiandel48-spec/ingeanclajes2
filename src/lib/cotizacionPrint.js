@@ -9,9 +9,29 @@ import { hasVerticalLifeLineService, hasCatLadderService, tipoCotizacionCanonico
 import { getTextosDocumento, lineasDeTexto } from "./cotizacionTextos";
 import { corregirOrtografiaLocal } from "./correctorTexto";
 import { cssHojaImpresion } from "./hojaImpresion";
-import articoLineaVidaVertical from "../assets/artico-linea-vida-vertical.jpg?inline";
-import articoEscaleraGato from "../assets/artico-escalera-gato.jpg?inline";
-import { IMG_SOPORTE, IMG_TENSOR, IMG_EMPALMES, IMG_CABLE } from "../assets/componentesLineasVida";
+// Las fotos de la ficha tecnica van como archivos aparte, no metidas en el
+// codigo: asi eran 1,3 MB de texto que se descargaban al abrir Cotizaciones
+// aunque nadie fuera a imprimir. El navegador las pide solo cuando el
+// documento las muestra, y las guarda en cache.
+import urlArticoLineaVidaVertical from "../assets/artico-linea-vida-vertical.jpg";
+import urlArticoEscaleraGato from "../assets/artico-escalera-gato.jpg";
+import urlSoporte from "../assets/componentes/soporte-intermedio-cubierta-cable.jpg";
+import urlTensor from "../assets/componentes/tensor.jpg";
+import urlEmpalmes from "../assets/componentes/empalmes-guardacables.jpg";
+import urlCable from "../assets/componentes/cable-acero.jpg";
+
+// Direccion completa: el documento se abre en una pestaña nueva o dentro de
+// un marco, y ahi una ruta como «/assets/…» podria no resolverse contra el
+// sitio.
+const absoluta = (url) => {
+  try { return new URL(url, window.location.href).href; } catch { return url; }
+};
+const articoLineaVidaVertical = absoluta(urlArticoLineaVidaVertical);
+const articoEscaleraGato = absoluta(urlArticoEscaleraGato);
+const IMG_SOPORTE = absoluta(urlSoporte);
+const IMG_TENSOR = absoluta(urlTensor);
+const IMG_EMPALMES = absoluta(urlEmpalmes);
+const IMG_CABLE = absoluta(urlCable);
 
 export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
   const propuestas = getQuotePrintableProposals(c);

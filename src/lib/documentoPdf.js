@@ -2,6 +2,9 @@
 // recertificacion, informe de actividades- garantizando que NUNCA se corten
 // fotos, tablas, textos ni firmas entre paginas.
 
+import { mostrarProgreso } from "./dialogos";
+import { dejarPintar } from "./progresoPdf";
+
 const PX_A_PT = 72 / 96;
 const ESCALA_DIBUJO = 3;
 
@@ -245,6 +248,7 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
   const margenX = bleedLeft ? 0 : MARGEN * PX_A_PT;
   const margenY = bleedLeft ? 0 : MARGEN * PX_A_PT;
 
+  const aviso = mostrarProgreso("Generando el PDF…");
   const marco = document.createElement("iframe");
   marco.setAttribute("aria-hidden", "true");
   marco.style.cssText = `position:fixed;left:0;top:0;width:${anchoDoc}px;height:${bleedLeft ? ALTO_HOJA : 1000}px;opacity:0.01;pointer-events:none;z-index:-9999;border:0;`;
@@ -296,6 +300,7 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
     if (!raiz) throw new Error("No se pudo leer el documento generado.");
     const altoTotal = bleedLeft ? ALTO_HOJA : raiz.scrollHeight;
 
+    await dejarPintar();
     const lienzo = await html2canvas(raiz, {
       scale: ESCALA_DIBUJO,
       useCORS: true,
@@ -375,6 +380,7 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
     return { blob: pdf.output("blob"), nombre: `${nombre}.pdf` };
   } finally {
     marco.remove();
+    aviso.cerrar();
   }
 }
 

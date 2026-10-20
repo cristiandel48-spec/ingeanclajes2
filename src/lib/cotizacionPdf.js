@@ -10,6 +10,7 @@
 
 import { buildCotizacionPrintHtml } from "./cotizacionPrint";
 import { MARGEN_HOJA } from "./hojaImpresion";
+import { avanceDePdf, dejarPintar } from "./progresoPdf";
 
 // Hoja carta a 96 ppp, que es la unidad en la que está escrita la plantilla.
 const ANCHO_HOJA = 816;
@@ -90,7 +91,7 @@ async function esperarRecursos(doc, ventana) {
   })));
 
   // Un cuadro más para que el navegador termine de pintar.
-  await new Promise((r) => ventana.requestAnimationFrame(() => r()));
+  await dejarPintar(ventana);
 }
 
 /**
@@ -116,6 +117,7 @@ export async function generarCotizacionPdf(cotizacion, { firmaImg = "", sello = 
   }
 
   const html = prepararHtmlParaPdf(buildCotizacionPrintHtml(cotizacion, { firmaImg, sello }));
+  const avance = avanceDePdf(onProgreso);
 
   // Se dibuja fuera de la vista, no oculto: display:none o visibility:hidden
   // hacen que html2canvas mida todo en cero.
@@ -144,7 +146,8 @@ export async function generarCotizacionPdf(cotizacion, { firmaImg = "", sello = 
     const pdf = new jsPDF({ unit: "px", format: [ANCHO_HOJA, ALTO_HOJA], orientation: "portrait" });
 
     for (let i = 0; i < hojas.length; i += 1) {
-      onProgreso?.(i + 1, hojas.length);
+      avance.hoja(i + 1, hojas.length);
+      await dejarPintar();
 
       const lienzo = await html2canvas(hojas[i], {
         // 3 = 288 puntos por pulgada, al borde del estandar de imprenta.
@@ -188,6 +191,7 @@ export async function generarCotizacionPdf(cotizacion, { firmaImg = "", sello = 
     return { blob: pdf.output("blob"), nombre: `${nombre}.pdf` };
   } finally {
     marco.remove();
+    avance.cerrar();
   }
 }
 

@@ -115,6 +115,29 @@ export function confirmar(opciones) {
   });
 }
 
+// Avance de una tarea larga (generar un PDF): el logotipo y la barra, con un
+// texto que se puede ir cambiando. No se cierra solo ni con Escape: lo cierra
+// quien lo abrio, cuando termina.
+//
+//   const aviso = mostrarProgreso("Preparando el PDF…");
+//   aviso.actualizar("Hoja 2 de 5", 0.4);
+//   aviso.cerrar();
+export function mostrarProgreso(texto) {
+  const id = siguienteId++;
+  cola = [...cola, { id, tipo: "progreso", guardando: true, textoGuardando: texto, fraccion: null, resolver() {} }];
+  emitir();
+  return {
+    actualizar(nuevoTexto, fraccion = null) {
+      cola = cola.map((d) => (d.id === id ? { ...d, textoGuardando: nuevoTexto, fraccion } : d));
+      emitir();
+    },
+    cerrar() {
+      cola = cola.filter((d) => d.id !== id);
+      emitir();
+    },
+  };
+}
+
 export function avisar(opciones) {
   const base = normalizar(opciones, "Aviso");
   return new Promise((resolver) => {

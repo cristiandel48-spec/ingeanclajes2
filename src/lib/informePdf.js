@@ -6,6 +6,7 @@ import { MARGEN_HOJA } from "./hojaImpresion";
 import { repaginarHojas } from "./repaginarHojas";
 import { nombreDocumento } from "./nombreArchivo";
 import { FUENTE } from "../styles/designTokens";
+import { avanceDePdf, dejarPintar } from "./progresoPdf";
 
 const ANCHO_HOJA = 816;
 const ALTO_HOJA = 1056;
@@ -55,7 +56,7 @@ async function esperarRecursos(doc, ventana) {
     );
   }
 
-  await new Promise((r) => ventana.requestAnimationFrame(() => r()));
+  await dejarPintar(ventana);
 }
 
 export async function generarInformePdf(informe, { empresaConfig, firmaImg = "", onProgreso } = {}) {
@@ -71,6 +72,7 @@ export async function generarInformePdf(informe, { empresaConfig, firmaImg = "",
   }
 
   const html = prepararHtmlParaPdf(buildInformePrintHtml(informe, { empresaConfig, firmaImg }));
+  const avance = avanceDePdf(onProgreso);
 
   const marco = document.createElement("iframe");
   marco.setAttribute("aria-hidden", "true");
@@ -118,7 +120,8 @@ export async function generarInformePdf(informe, { empresaConfig, firmaImg = "",
     const pdf = new jsPDF({ unit: "px", format: [ANCHO_HOJA, ALTO_HOJA], orientation: "portrait" });
 
     for (let i = 0; i < hojas.length; i += 1) {
-      onProgreso?.(i + 1, hojas.length);
+      avance.hoja(i + 1, hojas.length);
+      await dejarPintar();
 
       const lienzo = await html2canvas(hojas[i], {
         // Escala 3 = 288 ppp (estándar imprenta de alta fidelidad, idéntico a cotizaciones)
@@ -144,6 +147,7 @@ export async function generarInformePdf(informe, { empresaConfig, firmaImg = "",
     return { blob: pdf.output("blob"), nombre: `${nombre}.pdf` };
   } finally {
     marco.remove();
+    avance.cerrar();
   }
 }
 

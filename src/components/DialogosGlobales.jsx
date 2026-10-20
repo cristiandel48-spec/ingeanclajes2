@@ -18,7 +18,10 @@ const CSS = `
   }
 `;
 
-function Guardando({ texto }) {
+function Guardando({ texto, fraccion = null }) {
+  // Con avance conocido (hoja 2 de 5) la barra muestra cuanto va; sin el, se
+  // llena sola como al guardar.
+  const conAvance = typeof fraccion === "number";
   return (
     <div
       role="status"
@@ -30,7 +33,12 @@ function Guardando({ texto }) {
         <img src={logoIngeanclajes} alt="" style={{ width: 52, height: 52, objectFit: "contain" }} />
       </div>
       <div style={{ width: 160, height: 4, borderRadius: 999, background: "var(--fill)", overflow: "hidden" }}>
-        <div style={{ width: "100%", height: "100%", borderRadius: 999, background: "var(--text-primary)", transformOrigin: "left center", animation: "dialogoGuardando 1s cubic-bezier(.3,.7,.3,1) forwards" }} />
+        <div style={{
+          width: "100%", height: "100%", borderRadius: 999, background: "var(--text-primary)", transformOrigin: "left center",
+          ...(conAvance
+            ? { transform: `scaleX(${Math.max(0.05, Math.min(1, fraccion))})`, transition: "transform .3s ease" }
+            : { animation: "dialogoGuardando 1s cubic-bezier(.3,.7,.3,1) forwards" }),
+        }} />
       </div>
       <div style={{ fontSize: 13.5, color: "var(--text-secondary)" }}>{texto}</div>
     </div>
@@ -55,7 +63,7 @@ export default function DialogosGlobales() {
   if (d.guardando) {
     return (
       <Sheet abierta titulo={null} cerrarAlPulsarFondo={false}>
-        <Guardando texto={d.textoGuardando} />
+        <Guardando texto={d.textoGuardando} fraccion={d.fraccion} />
       </Sheet>
     );
   }

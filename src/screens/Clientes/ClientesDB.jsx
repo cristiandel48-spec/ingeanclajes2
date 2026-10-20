@@ -13,6 +13,27 @@ import { siguienteIdUnico } from "../../lib/identificadores";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import { useSubirAlFormulario } from "../../hooks/useSubirAlFormulario";
 import { confirmar } from "../../lib/dialogos";
+// NIT sin digito de verificacion ni puntos: «900.411.781-1» y «900411781»
+// son el mismo tercero.
+function nitBase(nit){
+  return String(nit||"").split("-")[0].replace(/\D/g,"");
+}
+
+// Un certificado emitido es un documento ya entregado: lleva el nombre con
+// el que salio. Antes, renombrar o unificar un cliente lo cambiaba tambien
+// ahi sin decir nada. Ahora se pregunta, y por defecto se deja como esta.
+async function cambiarCertificados(cuantos, viejo, nuevo){
+  if(!cuantos) return false;
+  return confirmar({
+    titulo: `¿Cambiar el cliente en ${cuantos} certificado(s) ya emitido(s)?`,
+    mensaje: `Llevan el nombre «${viejo}». Si los cambias, al volver a imprimirlos saldrán como «${nuevo}». ` +
+      "Lo normal es dejarlos como se entregaron. Las obras y cotizaciones ya quedaron con el nombre nuevo.",
+    textoConfirmar: "Cambiar también",
+    textoCancelar: "Dejarlos como están",
+    conGuardando: false,
+  });
+}
+
 export default function ClientesDB({ctx}){
   const isMobile = useIsMobile();
   // El formulario va arriba de la lista: «Editar» en un cliente de abajo lo
@@ -129,6 +150,13 @@ export default function ClientesDB({ctx}){
     const repetido=clientes.find(c=>c.id!==editId && normalizarRazonSocial(c.nombre)===payload.nombre);
     if(repetido && !(await confirmar(`Ya existe un cliente llamado ${payload.nombre} (${repetido.id}).\n\n¿Aun así quieres crearlo otra vez?`))) return;
 
+    // El mismo NIT con otro nombre es casi siempre el mismo tercero escrito
+    // distinto («SANDIEDO» por «SANDIEGO»): antes solo se comparaba el nombre.
+    const mismoNit=!repetido && nitBase(payload.nit)
+      ? clientes.find(c=>c.id!==editId && nitBase(c.nit)===nitBase(payload.nit))
+      : null;
+    if(mismoNit && !(await confirmar(`El NIT ${payload.nit} ya es de ${mismoNit.nombre} (${mismoNit.id}).\n\n¿Aun así quieres guardarlo como otro cliente? Si es el mismo, usa «Unificar».`))) return;
+
     if(editId){
       const anterior=clientes.find(c=>c.id===editId);
       setClientes(prev=>prev.map(c=>c.id===editId?{...c,...payload}:c));
@@ -136,7 +164,9 @@ export default function ClientesDB({ctx}){
       if(anterior && anterior.nombre!==payload.nombre){
         setObras(prev=>prev.map(o=>o.cliente===anterior.nombre?{...o,cliente:payload.nombre,nit:payload.nit||o.nit,tel:payload.telefono||o.tel,ciudad:payload.ciudad||o.ciudad,direccion:payload.direccion||o.direccion}:o));
         setCotizaciones(prev=>prev.map(c=>c.cliente===anterior.nombre?{...c,cliente:payload.nombre,telefono:payload.telefono||c.telefono,ciudad:payload.ciudad||c.ciudad}:c));
-        setCerts(prev=>prev.map(c=>c.cliente===anterior.nombre?{...c,cliente:payload.nombre,nit:payload.nit||c.nit,direccion:payload.direccion||c.direccion}:c));
+        if(await cambiarCertificados(certs.filter(c=>c.cliente===anterior.nombre).length, anterior.nombre, payload.nombre)){
+          setCerts(prev=>prev.map(c=>c.cliente===anterior.nombre?{...c,cliente:payload.nombre,nit:payload.nit||c.nit,direccion:payload.direccion||c.direccion}:c));
+        }
       }
     }else{
       const id=siguienteIdUnico(clientes,"CLI");
@@ -159,7 +189,7 @@ export default function ClientesDB({ctx}){
     setClienteAUnificar(cli);
   };
 
-  const ejecutarUnificacion=(origen, destino)=>{
+  const ejecutarUnificacion=async(origen, destino)=>{
     if(!origen || !destino || origen.id === destino.id) return;
     const viejo=origen.nombre;
     const nuevo=destino.nombre;
@@ -174,7 +204,9 @@ export default function ClientesDB({ctx}){
 
     setObras(prev=>prev.map(o=>coincideNombre(o.cliente)?{...o,cliente:nuevo}:o));
     setCotizaciones(prev=>prev.map(c=>coincideNombre(c.cliente)?{...c,cliente:nuevo}:c));
-    setCerts(prev=>prev.map(c=>coincideNombre(c.cliente)?{...c,cliente:nuevo}:c));
+    if(await cambiarCertificados(certs.filter(c=>coincideNombre(c.cliente)).length, viejo, nuevo)){
+      setCerts(prev=>prev.map(c=>coincideNombre(c.cliente)?{...c,cliente:nuevo}:c));
+    }
 
     // Lo que le falte al que se queda se completa con lo de la ficha que se va.
     setClientes(prev=>prev

@@ -71,6 +71,15 @@ export function setAlDetectarConflictos(fn) {
   alDetectarConflictos = typeof fn === "function" ? fn : null;
 }
 
+// Quien no tiene el modulo Personal no puede leer la tabla completa de
+// empleados (migracion 070): lee la vista sin datos de pago. AppDataContext
+// lo fija al conocer el rol, antes de cargar.
+const tablasLecturaReducida = {};
+export function setLecturaEmpleadosReducida(reducida) {
+  if (reducida) tablasLecturaReducida.empleados = "empleados_basico";
+  else tablasLecturaReducida.empleados = null;
+}
+
 // Ids que la persona decidio guardar igual («guardar la mia»), por entidad.
 const forzados = {};
 export function forzarGuardado(entity, id) {
@@ -211,6 +220,7 @@ export async function loadCloudAppData() {
   // Con varias pestañas abiertas, el cerrojo del token puede hacer fallar esto
   // sin que haya ningun problema real. Se reintenta antes de darlo por perdido.
   const service = await reintentandoSiChocanPestanas(() => getService());
+  for (const [entity, tabla] of Object.entries(tablasLecturaReducida)) service.usarTablaLectura(entity, tabla);
   const cloudData = await reintentandoSiChocanPestanas(() => service.loadAll());
 
   // Reiniciamos el baseline con lo que realmente vino de la nube.
@@ -282,6 +292,17 @@ export async function saveCloudAppData(appData) {
     // un numero repetido no pise el registro de otra persona.
     const existentes = upserts.filter((item) => baseline.has(item.id));
     const nuevos = upserts.filter((item) => !baseline.has(item.id));
+
+    // Lectura reducida (empleados sin el modulo Personal, migracion 070): solo
+    // se dan de alta registros nuevos. Modificar o borrar existentes es de
+    // Personal; la base lo rechazaria. Se quedan como estaban en el baseline.
+    if (service.lecturaReducida?.has(entity)) {
+      for (const item of existentes) nextMap.set(item.id, baseline.get(item.id));
+      for (const id of deletes) nextMap.set(id, baseline.get(id));
+      existentes.length = 0;
+      deletes.length = 0;
+    }
+
     if (existentes.length) {
       const forzadosEntidad = forzados[entity] ?? new Set();
       const { conflictos: chocados } = await service.actualizarConVersion(entity, existentes, forzadosEntidad);

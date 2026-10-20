@@ -19,7 +19,7 @@ import {
 } from "../lib/accounting";
 import { EJEMPLOS, sinEjemplos } from "../data/ejemplos";
 import { confirmar } from "../lib/dialogos";
-import { entidadesSinPermiso, esDueno } from "../lib/permisos";
+import { entidadesSinPermiso, esDueno, puedeVerPagoEmpleados } from "../lib/permisos";
 import { iniciarVigilanteInactividad } from "../lib/seguridadSesion";
 import {
   cargarCacheUltimasConexionesLocal,
@@ -596,6 +596,8 @@ export function AppDataProvider({ children }) {
             if (mia?.email) setAuthUserEmail(mia.email);
             // Las tablas que la base no le deja escribir no se intentan guardar.
             if (mia) backend.setEntidadesSinPermiso(entidadesSinPermiso(mia));
+            // Sin Personal, los empleados se leen sin salarios ni cuentas.
+            if (mia) backend.setLecturaEmpleadosReducida(!puedeVerPagoEmpleados(mia));
           }
         } catch (error) {
           console.error("No se pudo leer el rol del usuario:", error);

@@ -93,7 +93,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
     const e=empleados.find(x=>x.id===eid);
     if(!e)return s;
     const dias=diasMap[eid]?diasMap[eid].size:0;
-    return s+Math.round(e.salario/26)*dias;
+    return s+Math.round((Number(e.salario)||0)/26)*dias;
   },0);
 
   const guardarGasto=()=>{
@@ -478,7 +478,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                 const emp=empleados.find(x=>x.id===eid);
                 if(!emp)return null;
                 const diasEmp=diasMap[eid]?diasMap[eid].size:0;
-                const jornal=Math.round(emp.salario/26);
+                const jornal=Math.round((Number(emp.salario)||0)/26);
                 return(
                   <div key={eid} style={{background:"var(--surface-subtle)",borderRadius:14,padding:"14px 16px"}}>
                     <div style={{display:"flex",alignItems:"center",gap:12}}>
@@ -740,7 +740,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
               const emp=empleados.find(x=>x.id===eid);
               if(!emp)return null;
               const diasEmp=diasMap[eid]?diasMap[eid].size:0;
-              const jornal=Math.round(emp.salario/26);
+              const jornal=Math.round((Number(emp.salario)||0)/26);
               const subtotal=jornal*diasEmp;
               const ded=Math.round(subtotal*0.04);
               return(

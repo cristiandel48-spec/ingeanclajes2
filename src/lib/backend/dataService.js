@@ -177,6 +177,24 @@ export function createDataService({ supabase, tenantId }) {
   // ella o debe recurrir a la copia local.
   const tablasFaltantes = new Set();
 
+  // Lectura reducida: quien no tiene el modulo Personal no puede leer la tabla
+  // completa de empleados (salarios, cuentas); lee la vista empleados_basico
+  // (migracion 070). Para esas entidades:
+  //   - todas las lecturas van a la vista,
+  //   - solo se insertan registros nuevos (sin pedirlos de vuelta: la tabla no
+  //     se puede leer), y nunca se modifican ni se borran los existentes.
+  // Si la vista todavia no existe, se lee la tabla como siempre.
+  const tablasLectura = new Map();
+  const lecturaReducida = new Set();
+  const usarTablaLectura = (entity, tabla) => {
+    if (tabla) tablasLectura.set(entity, tabla);
+    else {
+      tablasLectura.delete(entity);
+      lecturaReducida.delete(entity);
+    }
+  };
+  const tablaParaLeer = (entity, cfg) => (lecturaReducida.has(entity) ? tablasLectura.get(entity) : cfg.table);
+
   // Version de cada registro tal como se descargo: su updated_at, que la base
   // cambia en cada modificacion. Al guardar, un registro solo se actualiza si
   // en la base sigue esa misma version; si otra persona lo cambio entretanto,
@@ -205,10 +223,14 @@ export function createDataService({ supabase, tenantId }) {
     // lo que pasaba con el catalogo -«column catalogo_items.updated_at does
     // not exist»-.
     let ordenar = true;
+    // Tabla de lectura: la vista reducida si esta persona no puede leer la
+    // tabla completa (ver usarTablaLectura).
+    let tabla = tablasLectura.get(entity) || cfg.table;
+    if (tabla !== cfg.table) columnas = "*";
 
     for (;;) {
       let consulta = supabase
-        .from(cfg.table)
+        .from(tabla)
         .select(columnas)
         .eq("tenant_id", tenantId);
       if (ordenar) consulta = consulta.order("updated_at", { ascending: true });
@@ -217,6 +239,16 @@ export function createDataService({ supabase, tenantId }) {
         .range(desde, desde + FILAS_POR_PAGINA - 1);
 
       if (error) {
+        // La vista reducida todavia no existe (migracion 070 sin aplicar): se
+        // lee la tabla completa, como antes.
+        if (tabla !== cfg.table && isMissingRelationError(error)) {
+          console.warn(`[${cfg.table}] no existe ${tabla}; se lee la tabla completa.`);
+          tabla = cfg.table;
+          columnas = columnasDeLista(cfg);
+          filas.length = 0;
+          desde = 0;
+          continue;
+        }
         if (cfg.optional && isMissingRelationError(error)) {
           tablasFaltantes.add(entity);
           return [];
@@ -254,9 +286,13 @@ export function createDataService({ supabase, tenantId }) {
       desde += FILAS_POR_PAGINA;
     }
 
+    // Leida de la vista reducida: a partir de aqui esta entidad solo inserta.
+    if (tabla !== cfg.table) lecturaReducida.add(entity);
+    else lecturaReducida.delete(entity);
+
     // Se marca lo que viene incompleto. La marca es la que impide despues que
     // un guardado deje sin fotos un registro que solo se cargo a medias.
-    const parcial = columnas !== "*";
+    const parcial = columnas !== "*" && tabla === cfg.table;
     return filas.map((fila) => {
       anotarVersion(entity, fila);
       const item = cfg.fromRow(fila);
@@ -273,7 +309,7 @@ export function createDataService({ supabase, tenantId }) {
     if (!id) return null;
 
     const { data, error } = await supabase
-      .from(cfg.table)
+      .from(tablaParaLeer(entity, cfg))
       .select("*")
       .eq("tenant_id", tenantId)
       .eq("id", id)
@@ -398,7 +434,7 @@ export function createDataService({ supabase, tenantId }) {
       if (!partes) return `${idOcupado}-${Date.now().toString(36)}`;
       const [, prefijo, numero] = partes;
       const { data, error } = await supabase
-        .from(cfg.table)
+        .from(tablaParaLeer(entity, cfg))
         .select("id")
         .eq("tenant_id", tenantId)
         .like("id", `${prefijo}-%`);
@@ -431,12 +467,18 @@ export function createDataService({ supabase, tenantId }) {
 
     // Primero en bloque, que es lo normal: ningun numero repetido. Solo si la
     // base rechaza alguno se pasa a uno por uno para saber cual.
+    // Con lectura reducida la tabla no se puede leer: pedir de vuelta lo
+    // insertado haria fallar el insert. Se inserta sin pedir nada.
+    const insertar = (filas, una = false) => {
+      let consulta = supabase.from(cfg.table).insert(filas);
+      if (lecturaReducida.has(entity)) return consulta;
+      consulta = consulta.select(columnasDevueltas);
+      return una ? consulta.maybeSingle() : consulta;
+    };
+
     const pendientes = [];
     for (const chunk of chunkArray(nuevos)) {
-      const { data, error } = await supabase
-        .from(cfg.table)
-        .insert(chunk.map((item) => armarFila(item, item.id)))
-        .select(columnasDevueltas);
+      const { data, error } = await insertar(chunk.map((item) => armarFila(item, item.id)));
       if (!error) {
         const porId = new Map((data ?? []).map((fila) => [fila.id, fila]));
         for (const fila of data ?? []) anotarVersion(entity, fila);
@@ -455,11 +497,7 @@ export function createDataService({ supabase, tenantId }) {
       let legacy = false;
       let guardado = false;
       for (let intento = 0; intento < 6 && !guardado; intento += 1) {
-        const { data, error } = await supabase
-          .from(cfg.table)
-          .insert(armarFila(item, id, legacy))
-          .select(columnasDevueltas)
-          .maybeSingle();
+        const { data, error } = await insertar(armarFila(item, id, legacy), true);
 
         if (!error) {
           guardado = true;
@@ -690,5 +728,7 @@ export function createDataService({ supabase, tenantId }) {
     deleteMany,
     replaceAll,
     loadAll,
+    usarTablaLectura,
+    lecturaReducida,
   };
 }

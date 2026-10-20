@@ -9,6 +9,7 @@ export {
   cargarDetalleNube,
   setEntidadesSinPermiso,
   setAlReasignarIds,
+  setLecturaEmpleadosReducida,
   setAlDetectarConflictos,
   forzarGuardado,
   aceptarVersionBase,
@@ -28,6 +29,7 @@ export {
   aceptarTerminos,
   leerBloqueoSistema,
   cambiarBloqueoSistema,
+  reactivarEmpleado,
 } from "./usuarios";
 export {
   suscribirPresencia,

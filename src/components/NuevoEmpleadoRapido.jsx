@@ -10,6 +10,8 @@ import {
 } from "../lib/normalizarEntrada";
 import { confirmar } from "../lib/dialogos";
 import { today } from "../lib/format";
+import { puedeVerPagoEmpleados } from "../lib/permisos";
+import { reactivarEmpleado } from "../lib/backend/usuarios";
 
 // Alta de un trabajador desde la obra o desde horarios.
 //
@@ -103,6 +105,16 @@ export default function NuevoEmpleadoRapido({ ctx, onCreado, onCerrar, obraId = 
           "en vez de crear una ficha nueva."
         );
         if (!reactivar) return;
+        // Sin el modulo Personal no se puede modificar la tabla de empleados
+        // (migracion 070): la reactivacion la hace una funcion de la base.
+        if (!puedeVerPagoEmpleados(membresia)) {
+          try {
+            await reactivarEmpleado(existente.id);
+          } catch (e) {
+            setError(`No se pudo reactivar: ${e?.message || "intenta de nuevo"}.`);
+            return;
+          }
+        }
         setEmpleados((prev) => prev.map((e) => (e.id === existente.id ? { ...e, activo: true } : e)));
         asignarAObra(existente.id);
         onCreado?.(existente.id, { reactivado: true, nombre: existente.nombre });

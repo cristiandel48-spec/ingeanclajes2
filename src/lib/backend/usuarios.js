@@ -112,6 +112,16 @@ export async function cambiarBloqueoSistema(bloqueado) {
   return Boolean(bloqueado);
 }
 
+// Reactivar a un empleado inactivo desde Obras u Horarios. Quien no tiene el
+// modulo Personal no puede modificar la tabla de empleados (migracion 070):
+// lo hace esta funcion de la base, que solo cambia «activo».
+export async function reactivarEmpleado(id) {
+  const supabase = getSupabaseClient();
+  const tenantId = await getTenantIdActual();
+  const { error } = await supabase.rpc("reactivar_empleado", { p_tenant: tenantId, p_id: id });
+  if (error) throw error;
+}
+
 export async function listarUsuarios() {
   const supabase = getSupabaseClient();
   const tenantId = await getTenantIdActual();

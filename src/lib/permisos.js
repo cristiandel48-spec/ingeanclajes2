@@ -210,6 +210,13 @@ export function puedeEscribirTabla(membresia, entidad) {
   return tieneAlgunModulo(membresia, requeridos);
 }
 
+// Salarios, cuentas bancarias y novedades de nomina (migracion 070): solo
+// administrador, contador o quien tenga el modulo Personal. Los demas leen
+// los empleados sin esos datos.
+export function puedeVerPagoEmpleados(membresia) {
+  return tieneAlgunModulo(membresia, ["nomina"]);
+}
+
 /** Tablas que esta persona no puede guardar: se saltan al autoguardar. */
 export function entidadesSinPermiso(membresia) {
   const todas = new Set([...Object.keys(ENTIDADES_RESTRINGIDAS), ...Object.keys(ENTIDADES_ESCRITURA)]);

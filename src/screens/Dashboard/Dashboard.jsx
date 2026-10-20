@@ -4,7 +4,7 @@ import { resumenVencimientos, etiquetaVencimiento, UMBRAL_URGENTE } from "../../
 import { resumenSeguimiento, etiquetaSeguimiento, UMBRAL_POR_VENCER } from "../../lib/seguimientoCotizaciones";
 import { puedeVerDinero } from "../../lib/permisos";
 import { TarjetaInstalarAppDashboard } from "../../components/pwa/InstaladorApp";
-import { formatFechaLegible, generarUrlGoogleCalendar } from "../../lib/agendaEmail";
+import { formatFechaLegible, generarUrlAppleCalendar, generarUrlGoogleCalendar } from "../../lib/agendaEmail";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
 import {
   Button, Card, ListRow, Lista, StatusPill, EmptyState,
@@ -500,6 +500,7 @@ export default function Dashboard({ ctx, go }) {
                     ? `https://waze.com/ul?q=${encodeURIComponent(ubicacion)}&navigate=yes`
                     : null;
                   const urlCal = generarUrlGoogleCalendar(item);
+                  const urlApple = generarUrlAppleCalendar(item);
 
                   return (
                     <div
@@ -563,7 +564,15 @@ export default function Dashboard({ ctx, go }) {
                               variante="secondary" tam="sm" icono="calendario"
                               onClick={() => window.open(urlCal, "_blank", "noopener,noreferrer")}
                             >
-                              Calendario
+                              Google Calendar
+                            </Button>
+                          )}
+                          {urlApple && (
+                            <Button
+                              variante="secondary" tam="sm" icono="calendario"
+                              onClick={() => { window.location.href = urlApple; }}
+                            >
+                              Apple Calendar
                             </Button>
                           )}
                         </div>

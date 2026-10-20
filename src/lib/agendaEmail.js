@@ -1,6 +1,9 @@
-// Utilidades de integración con Correo y Google Calendar para la Agenda de Camila
+// Utilidades de integración con Correo, Google Calendar y Apple Calendar para la Agenda de Camila
 import { enviarCotizacionPorCorreo } from "./backend/usuarios";
 import { asuntoSeguro } from "./asuntoCorreo";
+import { compromisoAParams, generarIcsCompromiso, parsearHora } from "./icsCompromiso";
+
+export { generarIcsCompromiso, parsearHora };
 
 export const EMAIL_CAMILA_DEFAULT = "camilascadavid@gmail.com";
 
@@ -50,23 +53,6 @@ export function formatFechaLegible(isoStr) {
   const { diaSemana, fecha } = partesFechaLegible(isoStr);
   if (!fecha) return "";
   return `${diaSemana}, ${fecha}`;
-}
-
-// Convierte hora legible (ej. "08:30 AM", "14:00", "2:00 PM") a objeto con hora y minuto
-export function parsearHora(horaStr) {
-  if (!horaStr) return { h: 9, m: 0 };
-  const str = String(horaStr).trim().toUpperCase();
-  const match = str.match(/(\d{1,2}):?(\d{2})?\s*(AM|PM)?/i);
-  if (!match) return { h: 9, m: 0 };
-
-  let h = parseInt(match[1], 10);
-  const m = match[2] ? parseInt(match[2], 10) : 0;
-  const ampm = match[3];
-
-  if (ampm === "PM" && h < 12) h += 12;
-  if (ampm === "AM" && h === 12) h = 0;
-
-  return { h, m };
 }
 
 // Convierte cualquier hora a formato "HH:mm" (24h) para input type="time"
@@ -154,6 +140,18 @@ export function generarUrlGoogleCalendar(compromiso, emailInvitado = EMAIL_CAMIL
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
+// Enlace para Apple Calendar (iPhone y Mac): lo atiende api/ics.js y
+// devuelve el compromiso como archivo de calendario. Tocarlo abre «Agregar al
+// calendario» en la app Calendario, sin cuenta de Google.
+export function generarUrlAppleCalendar(compromiso) {
+  if (!compromiso?.fecha) return "";
+  const origen =
+    typeof window !== "undefined" && window.location?.origin && !window.location.origin.includes("localhost")
+      ? window.location.origin
+      : "https://ingeanclajes2.vercel.app";
+  return `${origen}/api/ics?${compromisoAParams(compromiso).toString()}`;
+}
+
 // Acorta una URL larga (ej. de Google Calendar) para que el correo no tenga enlaces de 5 líneas
 export async function acortarUrl(urlLarga) {
   if (!urlLarga || typeof urlLarga !== "string" || !urlLarga.startsWith("http")) {
@@ -193,57 +191,6 @@ export function correosInvalidos(texto = "") {
   return separarCorreos(texto).filter((c) => !CORREO_VALIDO.test(c));
 }
 
-// Invitacion de calendario (.ics). Gmail, Outlook y el iPhone la reconocen y
-// muestran «Si / No / Quizas» y la agregan al calendario con su alarma. El
-// UID es el id del compromiso: si se edita y se vuelve a enviar, el evento se
-// actualiza en vez de duplicarse.
-export function generarIcsCompromiso(compromiso, invitados = []) {
-  const { h, m } = parsearHora(compromiso.hora);
-  const [y, mes, d] = String(compromiso.fecha || "").split("-").map(Number);
-  // Colombia esta en UTC-5 todo el año (sin horario de verano).
-  const inicio = new Date(Date.UTC(y, (mes || 1) - 1, d || 1, h + 5, m));
-  const fin = new Date(inicio.getTime() + 90 * 60 * 1000);
-  const utc = (f) => f.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-  const esc = (t) => String(t || "").replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/([,;])/g, "\\$1");
-
-  const tipoLabel = { visita: "Visita a obra", llamada: "Llamada", reunion: "Reunión", coordinacion: "Coordinación" }[compromiso.tipo] || "Compromiso";
-  const detalles = [
-    compromiso.cliente && `Cliente: ${compromiso.cliente}`,
-    compromiso.contacto && `Contacto: ${compromiso.contacto}${compromiso.telefono ? ` (${compromiso.telefono})` : ""}`,
-    compromiso.requerimientoSst && `SST: ${compromiso.requerimientoSst}`,
-    compromiso.notas && `Notas: ${compromiso.notas}`,
-    compromiso.linkReunion && `Reunión: ${compromiso.linkReunion}`,
-  ].filter(Boolean).join("\n");
-
-  const lineas = [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//Ingeanclajes//Agenda//ES",
-    "CALSCALE:GREGORIAN",
-    "METHOD:REQUEST",
-    "BEGIN:VEVENT",
-    `UID:${compromiso.id}@ingeanclajes`,
-    `DTSTAMP:${utc(new Date())}`,
-    `SEQUENCE:${Math.floor(Date.now() / 1000)}`,
-    `DTSTART:${utc(inicio)}`,
-    `DTEND:${utc(fin)}`,
-    `SUMMARY:${esc(`${tipoLabel} - ${compromiso.obra || compromiso.titulo || "Ingeanclajes"}`)}`,
-    `LOCATION:${esc(`${compromiso.obra || ""} ${compromiso.ciudad || ""}`.trim())}`,
-    `DESCRIPTION:${esc(detalles || "Ingeanclajes S.A.S.")}`,
-    "ORGANIZER;CN=Ingeanclajes S.A.S.:mailto:sistemasingeanclajes@gmail.com",
-    ...invitados.map((c) => `ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${c}`),
-    "STATUS:CONFIRMED",
-    "BEGIN:VALARM",
-    "TRIGGER:-PT1H",
-    "ACTION:DISPLAY",
-    "DESCRIPTION:Recordatorio",
-    "END:VALARM",
-    "END:VEVENT",
-    "END:VCALENDAR",
-  ];
-  return lineas.join("\r\n");
-}
-
 function aBase64(texto) {
   const bytes = new TextEncoder().encode(texto);
   let bin = "";
@@ -272,7 +219,13 @@ export async function enviarNotificacionAgendaPorCorreo(compromiso, destinatario
   const listaCorreos = correos.length ? correos : [EMAIL_CAMILA_DEFAULT];
 
   const enlaceCalendar = generarUrlGoogleCalendar(compromiso, listaCorreos);
-  const enlaceCorto = await acortarUrl(enlaceCalendar);
+  const [enlaceCorto, enlaceApple] = await Promise.all([
+    acortarUrl(enlaceCalendar),
+    acortarUrl(generarUrlAppleCalendar(compromiso)),
+  ]);
+  // El archivo de calendario adjunto: Mail de Apple lo muestra como evento
+  // con «Agregar al calendario», sin pasar por Google.
+  const icsBase64 = aBase64(generarIcsCompromiso(compromiso, listaCorreos));
 
   const mensaje = [
     `Hola Camila,`,
@@ -290,7 +243,10 @@ export async function enviarNotificacionAgendaPorCorreo(compromiso, destinatario
     compromiso.notas ? `• Notas adicionales: ${compromiso.notas}` : "",
     compromiso.linkReunion ? `• Enlace de reunión virtual: ${compromiso.linkReunion}` : "",
     ``,
-    `📅 Agendar con alarma en Google Calendar:`,
+    `📅 iPhone o Mac: abre el archivo de calendario adjunto, o agrégalo a Apple Calendar aquí:`,
+    enlaceApple,
+    ``,
+    `📅 Google Calendar:`,
     enlaceCorto,
     ``,
     `Equipo Ingeanclajes S.A.S.`,
@@ -327,6 +283,7 @@ export async function enviarNotificacionAgendaPorCorreo(compromiso, destinatario
         mensaje,
         agenda,
         numero: "AGENDA",
+        icsBase64,
       })
     )
   );

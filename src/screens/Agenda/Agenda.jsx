@@ -9,6 +9,7 @@ import {
   separarCorreos,
   correosInvalidos,
   generarUrlGoogleCalendar,
+  generarUrlAppleCalendar,
   horaA24h,
   horaA12h,
 } from "../../lib/agendaEmail";
@@ -695,6 +696,26 @@ function CompromisosDelDiaSection({
                     title="Añadir a Google Calendar con recordatorio para Camila"
                   >
                     📅 Google Calendar
+                  </a>
+
+                  {/* Sin target: en el iPhone el archivo abre «Agregar al
+                      calendario» en la misma pantalla. */}
+                  <a
+                    href={generarUrlAppleCalendar(item)}
+                    style={{
+                      ...B("var(--surface-subtle, #f1f5f9)", "var(--text-main, #0f172a)"),
+                      border: "1px solid var(--border, #e2e8f0)",
+                      fontSize: 11.5,
+                      padding: "5px 10px",
+                      borderRadius: 6,
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                    }}
+                    title="Añadir a Apple Calendar (iPhone o Mac) con recordatorio"
+                  >
+                    📅 Apple Calendar
                   </a>
                 </div>
               </div>
@@ -2240,6 +2261,24 @@ export default function Agenda({ ctx }) {
                       title="Añadir a Google Calendar con recordatorio para Camila"
                     >
                       📅 Google Calendar
+                    </a>
+
+                    <a
+                      href={generarUrlAppleCalendar(item)}
+                      style={{
+                        ...B("var(--surface-subtle, #f1f5f9)", "var(--text-main, #0f172a)"),
+                        fontSize: 11.5,
+                        padding: "6px 10px",
+                        borderRadius: 6,
+                        textDecoration: "none",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                        border: "1px solid var(--border, #e2e8f0)",
+                      }}
+                      title="Añadir a Apple Calendar (iPhone o Mac) con recordatorio"
+                    >
+                      📅 Apple Calendar
                     </a>
 
                     {item.telefono && (

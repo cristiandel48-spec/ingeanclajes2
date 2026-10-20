@@ -12,8 +12,9 @@ import { MODULOS_CONTADOR, MODULOS_MINIMOS, MODULOS_SOLO_ADMIN, ROLES, ROL_LABEL
 import { avisoNombre, normalizarNombrePropio } from "../../lib/normalizarEntrada";
 import {
   actualizarUsuario, cambiarClave, crearUsuario, desactivarUsuario,
-  eliminarUsuario, listarUsuarios, reactivarUsuario,
+  eliminarUsuario, enviarCotizacionPorCorreo, listarUsuarios, reactivarUsuario,
 } from "../../lib/backend/usuarios";
+import { ASUNTO_NOVEDADES, textoCorreoNovedades } from "../../lib/novedades";
 import { formatearUltimaConexion } from "../../lib/seguridadSesion";
 import { detectarDispositivo } from "../../lib/backend";
 import { resolverEstadoConexionUsuario } from "../../lib/actividadConexiones";
@@ -219,6 +220,47 @@ export default function Usuarios({ ctx }) {
     }
   };
 
+  // Novedades por correo a todo el equipo activo, uno por uno: cada persona
+  // recibe el suyo con su nombre y sin ver los correos de los demas. La pausa
+  // es la misma del envio de colillas, para no chocar con el limite de Gmail.
+  const enviarNovedades = async () => {
+    const destinatarios = usuarios.filter((u) => u.activo && u.email);
+    if (!destinatarios.length) {
+      setMensaje({ tono: "falta", texto: "No hay usuarios activos con correo." });
+      return;
+    }
+    const ok = await confirmar({
+      titulo: `¿Enviar las novedades a ${destinatarios.length} personas?`,
+      mensaje: `Sale desde el correo de la empresa a:\n${destinatarios.map((u) => u.email).join("\n")}`,
+      textoConfirmar: "Enviar",
+      destructivo: false,
+      textoGuardando: "Enviando…",
+    });
+    if (!ok) return;
+
+    setGuardando(true);
+    setMensaje(null);
+    const fallidos = [];
+    for (const u of destinatarios) {
+      try {
+        await enviarCotizacionPorCorreo({
+          para: u.email,
+          asunto: ASUNTO_NOVEDADES,
+          mensaje: textoCorreoNovedades(normalizarNombrePropio(u.nombre), window.location.origin),
+          numero: "NOVEDADES",
+        });
+      } catch (e) {
+        fallidos.push(`${u.email} (${e.message})`);
+      }
+      await new Promise((r) => setTimeout(r, 400));
+    }
+    setGuardando(false);
+    const enviados = destinatarios.length - fallidos.length;
+    setMensaje(fallidos.length
+      ? { tono: "falta", texto: `Se enviaron ${enviados} de ${destinatarios.length}. No salieron: ${fallidos.join("; ")}` }
+      : { tono: "listo", texto: `Novedades enviadas a ${enviados} personas.` });
+  };
+
   const soyYo = (u) => u.user_id === membresia?.user_id;
 
   return (
@@ -236,15 +278,24 @@ export default function Usuarios({ ctx }) {
         title="Usuarios y Permisos"
         subtitle="Gestión de accesos, roles y módulos del equipo de trabajo"
         action={
-          <button
-            style={{
-              ...B("#f47c20"),
-              boxShadow: "0 1px 3px rgba(244, 124, 32, 0.25)",
-            }}
-            onClick={abrirNuevo}
-          >
-            + Nuevo usuario
-          </button>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              style={{ ...B("var(--surface-subtle)", "var(--text-main)"), border: "1px solid var(--border)" }}
+              onClick={enviarNovedades}
+              disabled={guardando || cargando}
+            >
+              {guardando ? "Enviando…" : "Enviar novedades por correo"}
+            </button>
+            <button
+              style={{
+                ...B("#f47c20"),
+                boxShadow: "0 1px 3px rgba(244, 124, 32, 0.25)",
+              }}
+              onClick={abrirNuevo}
+            >
+              + Nuevo usuario
+            </button>
+          </div>
         }
       />
 

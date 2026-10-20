@@ -71,6 +71,30 @@ export const NOVEDADES = [
   },
 ];
 
+// El mismo contenido, como correo para el equipo. Viaja como texto: la funcion
+// de correo lo pinta dentro del marco de la empresa (cabecera y pie), igual
+// que una cotizacion sin cifras.
+export const ASUNTO_NOVEDADES = "Novedades del Sistema de Gestión Ingeanclajes";
+
+export function textoCorreoNovedades(nombre, appUrl) {
+  const trato = String(nombre || "").trim().split(" ")[0] || "Hola";
+  const secciones = NOVEDADES.map((s) => [s.titulo.toUpperCase(), ...s.puntos.map((p) => `• ${p}`)].join("\n"));
+  return [
+    `${trato},`,
+    "",
+    "El sistema de gestión tiene mejoras importantes. Te invitamos a entrar y explorarlas.",
+    ...(appUrl ? ["", `Entra aquí: ${appUrl}`] : []),
+    "",
+    secciones.join("\n\n"),
+    "",
+    "Si tienes la app instalada en el celular, ciérrala y ábrela de nuevo para recibir los cambios.",
+    "",
+    "Cualquier duda o error, escríbenos.",
+    "",
+    "Ingeanclajes S.A.S.",
+  ].join("\n");
+}
+
 // Se guarda en los datos de la cuenta (user_metadata) para que quien ya las
 // vio en el computador no las vuelva a ver en el celular. La copia local es
 // el respaldo por si la cuenta no se pudo actualizar.

@@ -2,6 +2,7 @@ import { createDataService, resolveTenantId } from "./dataService";
 import { getSupabaseClient, isSupabaseConfigured, reintentandoSiChocanPestanas } from "./supabaseClient";
 import { entityConfig } from "./entityConfig";
 import { registrarActividadUsuario } from "./usuarios";
+import { ENTIDADES_APAGADAS } from "../../config/modulosApagados";
 
 const ENTITY_TO_STATE = {
   obras: "obras",
@@ -221,13 +222,16 @@ export async function loadCloudAppData() {
   // sin que haya ningun problema real. Se reintenta antes de darlo por perdido.
   const service = await reintentandoSiChocanPestanas(() => getService());
   for (const [entity, tabla] of Object.entries(tablasLecturaReducida)) service.usarTablaLectura(entity, tabla);
-  const cloudData = await reintentandoSiChocanPestanas(() => service.loadAll());
+  const cloudData = await reintentandoSiChocanPestanas(() => service.loadAll(ENTIDADES_APAGADAS));
 
   // Reiniciamos el baseline con lo que realmente vino de la nube.
   baselineByEntity = {};
 
   const result = {};
   for (const [entity, stateKey] of Object.entries(ENTITY_TO_STATE)) {
+    // Modulo apagado: no se cargo. Sin clave en el resultado, la aplicacion
+    // deja ese estado como estaba; sin baseline, el guardado no lo toca.
+    if (ENTIDADES_APAGADAS.has(entity)) continue;
     const items = cloudData[entity] ?? [];
     setBaseline(entity, items);
     result[stateKey] = items;
@@ -264,6 +268,10 @@ export async function saveCloudAppData(appData) {
     if (!Object.prototype.hasOwnProperty.call(appData ?? {}, stateKey)) continue;
     // Sin permiso: ni se sube ni se borra, y su baseline queda como estaba.
     if (entidadesSinPermiso.has(entity)) continue;
+    // Modulo apagado: no se cargo, asi que tampoco se guarda. Sin esto, lo que
+    // la aplicacion tiene de arranque (el plan de cuentas por defecto, por
+    // ejemplo) se subiria como si fuera nuevo.
+    if (ENTIDADES_APAGADAS.has(entity)) continue;
 
     const cfg = entityConfig[entity];
     const items = (appData[stateKey] ?? []).filter((item) => item && item.id);

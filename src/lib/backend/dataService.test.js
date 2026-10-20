@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createDataService } from "./dataService";
+import { entityConfig } from "./entityConfig";
 import { PREFIJO_FOTO } from "./fotosStorage";
 import { fotoFalsa, storageFalso } from "./__pruebas__/fotos";
 
@@ -209,6 +210,20 @@ describe("empleados sin el modulo Personal (migracion 070)", () => {
     const lista = await svc.list("empleados");
     expect(lista[0].salario).toBe(3000000);
     expect(svc.lecturaReducida.has("empleados")).toBe(false);
+  });
+});
+
+describe("modulos apagados", () => {
+  it("loadAll no pide las tablas que se le indican", async () => {
+    const todas = Object.fromEntries(Object.values(entityConfig).map((cfg) => [cfg.table, []]));
+    const { consultas, supabase } = baseFalsa({ ...todas, clientes: [{ id: "CL-001", nombre: "A" }], pagos: [{ id: "P-1" }] });
+    const svc = createDataService({ supabase, tenantId: TENANT });
+
+    const datos = await svc.loadAll(new Set(["pagos"]));
+
+    expect(consultas.some((c) => c.tabla === "pagos")).toBe(false);
+    expect(datos.pagos).toBeUndefined();
+    expect(datos.clientes).toHaveLength(1);
   });
 });
 

@@ -722,11 +722,13 @@ export function createDataService({ supabase, tenantId }) {
   // Carga optimizada con Supabase Pro:
   // Al tener mayor capacidad de conexiones y haber separado las fotos a cargarDetalle,
   // cargamos en lotes paralelos de 5 tablas a la vez. Reduce el arranque de ~3.5s a <700ms.
-  const loadAll = async () => {
+  const loadAll = async (omitir = new Set()) => {
     const resultado = {};
     const CONCURRENCIA = 5;
-    for (let i = 0; i < entityKeys.length; i += CONCURRENCIA) {
-      const lote = entityKeys.slice(i, i + CONCURRENCIA);
+    // Las de modulos apagados no se piden (ver config/modulosApagados.js).
+    const aCargar = entityKeys.filter((entity) => !omitir.has(entity));
+    for (let i = 0; i < aCargar.length; i += CONCURRENCIA) {
+      const lote = aCargar.slice(i, i + CONCURRENCIA);
       const respuestas = await Promise.all(
         lote.map(async (entity) => ({
           entity,

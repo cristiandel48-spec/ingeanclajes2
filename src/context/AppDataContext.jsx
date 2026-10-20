@@ -700,14 +700,16 @@ export function AppDataProvider({ children }) {
         if (Array.isArray(cloud.clientes)) setClientes(oEjemplo(cloud.clientes, EJEMPLOS.clientes));
         if (Array.isArray(cloud.proveedores)) setProveedores(cloud.proveedores);
         if (Array.isArray(cloud.cuentas)) setCuentas(otrasEntidades.cuentas);
-        if (Array.isArray(cloud.ordenesCompra) && cloud.ordenesCompra.length) setOrdenesCompra(otrasEntidades.ordenesCompra);
-        if (Array.isArray(cloud.agenda)) {
-          const realesNube = cloud.agenda.filter((item) => !item?.__ejemplo && !String(item?.id || "").startsWith("AG-90"));
-          if (realesNube.length > 0) {
-            setAgenda(realesNube);
-          } else {
-            setAgenda((prev) => (prev || []).filter((item) => !item?.__ejemplo && !String(item?.id || "").startsWith("AG-90")));
-          }
+        // Ordenes de compra y agenda: manda la nube, aunque venga vacia. Antes,
+        // con la nube vacia se quedaba la copia de este navegador, y el
+        // autoguardado la volvia a subir: lo que otra persona habia borrado
+        // reaparecia. La copia local solo vale si la tabla no existe todavia.
+        const faltan = cloud.__tablasFaltantes || [];
+        if (Array.isArray(cloud.ordenesCompra) && !faltan.includes("ordenes_compra")) {
+          setOrdenesCompra(otrasEntidades.ordenesCompra);
+        }
+        if (Array.isArray(cloud.agenda) && !faltan.includes("agenda")) {
+          setAgenda(cloud.agenda.filter((item) => !item?.__ejemplo && !String(item?.id || "").startsWith("AG-90")));
         }
         if (Array.isArray(cloud.cotizaciones)) setCotizaciones(oEjemplo(cotizacionesList, EJEMPLOS.cotizaciones));
         if (Array.isArray(cloud.contabilidadConfig) && cloud.contabilidadConfig.length) {

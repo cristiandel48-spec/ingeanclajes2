@@ -35,6 +35,22 @@ describe("porcentajeUtilidad", () => {
     expect(porcentajeUtilidad("")).toBe(0);
     expect(porcentajeUtilidad("abc")).toBe(0);
   });
+
+  it("negativa es 0", () => {
+    expect(porcentajeUtilidad(-5)).toBe(0);
+  });
+});
+
+describe("valores negativos (F15)", () => {
+  it("una cantidad o un precio negativo no resta del total", () => {
+    const items = [...ITEMS, { id: 3, desc: "ERROR", cant: -2, unit: "UND", vu: 100000 }, { id: 4, desc: "ERROR", cant: 1, unit: "UND", vu: -50000 }];
+    expect(buildQuoteProposal({ items, util: 10 }).total).toBe(279750);
+    expect(getQuoteProposalTotals({}, { items, util: 10 }).sub).toBe(250000);
+  });
+
+  it("la utilidad negativa cuenta como 0", () => {
+    expect(buildQuoteProposal({ items: ITEMS, util: -10 }).total).toBe(250000);
+  });
 });
 
 describe("total de una propuesta", () => {

@@ -1046,8 +1046,9 @@ export default function PropuestaEditor({
                 />
                 <input
                   type="number"
+                  min="0"
                   value={it.cant}
-                  onChange={e => setItems(prev => prev.map(item => item.id === it.id ? { ...item, cant: parseFloat(e.target.value) || 0 } : item))}
+                  onChange={e => setItems(prev => prev.map(item => item.id === it.id ? { ...item, cant: Math.max(0, parseFloat(e.target.value) || 0) } : item))}
                   style={{ ...SI, fontSize: 12, padding: "5px 8px", textAlign: "center" }}
                 />
                 <input
@@ -1216,7 +1217,7 @@ export default function PropuestaEditor({
 
           {!sinAiu ? (
             <div style={{marginTop:12,display:"grid",gridTemplateColumns:"120px 1fr",gap:12,alignItems:"end"}}>
-              <div><LBL>Utilidad %</LBL><input type="number" value={p.util} onChange={e=>set("util", Number(e.target.value))} style={SI}/></div>
+              <div><LBL>Utilidad %</LBL><input type="number" min="0" value={p.util} onChange={e=>set("util", Math.max(0, Number(e.target.value) || 0))} style={SI}/></div>
               <div style={{fontSize:11,color:"var(--text-muted, #64748b)",paddingBottom:10}}>Ajusta el porcentaje de utilidad para recalcular el total</div>
             </div>
           ) : (

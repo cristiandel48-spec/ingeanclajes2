@@ -5,6 +5,9 @@ import { useAccionesTopbar } from "../../context/accionesPantalla";
 import GlobalStyles from "../../styles/GlobalStyles";
 import { getTheme } from "../../styles/shellTheme";
 import { useIsMobile } from "../../hooks/useMediaQuery";
+import { useAppData } from "../../context/AppDataContext";
+import Sheet from "../ui/Sheet";
+import Button from "../ui/Button";
 
 const PIN_KEY = "ingeanclajes.nav.pinned";
 const THEME_KEY = "ingeanclajes.theme";
@@ -39,6 +42,33 @@ const writeStored = (key, value) => {
 // ejemplo con una real seria mucho peor que un cartel de mas.
 function AvisoDeEjemplos() {
   return null;
+}
+
+// Si la carga inicial falla, la app queda con datos que no son los reales y
+// el guardado esta bloqueado. Antes el aviso era un punto rojo en la barra
+// -en el celular, solo el punto- y se podia seguir trabajando una tarde
+// entera sin que se guardara nada. Ahora no se puede cerrar: la unica salida
+// es volver a cargar.
+function AvisoCargaFallida() {
+  const { loadError } = useAppData();
+  if (!loadError) return null;
+  const motivo = String(loadError?.message || loadError || "").trim();
+  return (
+    <Sheet abierta titulo="No se pudieron cargar los datos" cerrarAlPulsarFondo={false}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingBottom: 6 }}>
+        <p style={{ margin: 0, lineHeight: 1.5 }}>
+          Lo que hay en pantalla no es la información real y no se está guardando nada.
+          Revisa la conexión a internet y vuelve a cargar.
+        </p>
+        {motivo && (
+          <p style={{ margin: 0, fontSize: 12.5, color: "var(--text-secondary)", wordBreak: "break-word" }}>
+            Detalle: {motivo}
+          </p>
+        )}
+        <Button onClick={() => window.location.reload()}>Volver a cargar</Button>
+      </div>
+    </Sheet>
+  );
 }
 
 export default function AppShell({ scr, onNavigate, children }) {
@@ -93,6 +123,7 @@ export default function AppShell({ scr, onNavigate, children }) {
       }}
     >
       <GlobalStyles divider={theme.divider} dark={dark} />
+      <AvisoCargaFallida />
 
       <Sidebar
         scr={scr}

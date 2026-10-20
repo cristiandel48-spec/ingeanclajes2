@@ -87,10 +87,16 @@ export function normalizeQuoteItem(item = {}, index = 0) {
   return {
     id: item.id ?? index + 1,
     desc: item.desc ?? "",
-    cant: Number(item.cant ?? 0),
+    cant: noNegativo(item.cant),
     unit: item.unit ?? "ML",
-    vu: Number(item.vu ?? 0),
+    vu: noNegativo(item.vu),
   };
+}
+
+// Cantidades, precios y utilidad no pueden ser negativos: un signo menos
+// colado restaba del total sin que se notara.
+function noNegativo(valor) {
+  return Math.max(0, Number(valor) || 0);
 }
 
 // El mismo tipo de trabajo llega escrito de varias formas: el id de siempre
@@ -325,9 +331,9 @@ export function normalizeProposalItems(items=[]){
     return {
       id,
       desc: it?.desc ? corregirOrtografiaLocal(String(it.desc)).toUpperCase() : "",
-      cant: Number(it?.cant || 0),
+      cant: noNegativo(it?.cant),
       unit: it?.unit ?? "UND",
-      vu: Number(it?.vu || 0),
+      vu: noNegativo(it?.vu),
     };
   });
 }
@@ -339,14 +345,14 @@ export function normalizeProposalItems(items=[]){
 export function porcentajeUtilidad(...candidatos) {
   const valor = candidatos.find((v) => v !== undefined && v !== null);
   if (valor === undefined) return 10;
-  return Number(valor) || 0;
+  return noNegativo(valor);
 }
 
 export function getQuoteProposalTotals(baseQuote={}, propuesta){
   const quote = mergeQuoteWithProposal(baseQuote, propuesta);
   const sinAiu = Boolean(propuesta?.sinAiu ?? quote.sinAiu);
   const items = normalizeQuoteItems({ ...quote, items: propuesta?.items || [] });
-  const sub = items.reduce((sum, item)=>sum + (Number(item.cant) || 0) * (Number(item.vu) || 0), 0);
+  const sub = items.reduce((sum, item)=>sum + noNegativo(item.cant) * noNegativo(item.vu), 0);
   const ut = sinAiu ? 0 : (sub * porcentajeUtilidad(propuesta?.util, quote.util) / 100);
   const iva = sinAiu ? (sub * 0.19) : (ut * 0.19);
   const tot = sub + ut + iva;
@@ -450,7 +456,7 @@ export function getQuotePrintableProposals(baseQuote = {}){
     const quote = mergeQuoteWithProposal(baseQuote, propuesta);
     const sinAiu = Boolean(propuesta.sinAiu ?? quote.sinAiu);
     const items = normalizeQuoteItems(quote);
-    const sub = items.reduce((sum, item)=>sum + (Number(item.cant) || 0) * (Number(item.vu) || 0), 0);
+    const sub = items.reduce((sum, item)=>sum + noNegativo(item.cant) * noNegativo(item.vu), 0);
     const ut = sinAiu ? 0 : (sub * porcentajeUtilidad(quote.util) / 100);
     const iva = sinAiu ? (sub * 0.19) : (ut * 0.19);
     const tot = sub + ut + iva;

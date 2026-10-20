@@ -1,5 +1,8 @@
 ﻿# Backend Escalable (Supabase + Vercel)
 
+> **Documento histórico** (abril de 2026): es el plan con el que se pasó a la
+> nube. La arquitectura vigente está en [ARQUITECTURA.md](ARQUITECTURA.md).
+
 Este proyecto hoy vive 100% en frontend (`src/App.jsx`).
 Para moverlo a nube sin romper la operación, la ruta recomendada es por fases:
 

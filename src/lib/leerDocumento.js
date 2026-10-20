@@ -32,8 +32,10 @@ async function textoDePdf(archivo) {
   const datos = new Uint8Array(await archivo.arrayBuffer());
 
   const version = pdfjs.version || "6.2.108";
-  const cMapUrl = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${version}/cmaps/`;
-  const standardFontDataUrl = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${version}/standard_fonts/`;
+  // Desde el propio sitio (vite.config.js los copia al compilar), no desde
+  // un servidor externo: si ese fallaba, no se podia leer ningun PDF.
+  const cMapUrl = new URL("/pdfjs/cmaps/", window.location.origin).href;
+  const standardFontDataUrl = new URL("/pdfjs/standard_fonts/", window.location.origin).href;
 
   let documento;
   try {
@@ -54,6 +56,8 @@ async function textoDePdf(archivo) {
         standardFontDataUrl,
       }).promise;
     } catch (err2) {
+      // Ultimo recurso: el worker del servidor externo. Solo llega aqui si
+      // los dos del propio sitio fallaron.
       console.warn("Fallo lectura de PDF con worker local, reintentando con CDN:", err2);
       pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
       documento = await pdfjs.getDocument({

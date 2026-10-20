@@ -246,7 +246,7 @@ export function suscribirPresencia({
       try {
         canal.untrack();
         supabase.removeChannel(canal);
-      } catch (e) {
+      } catch {
         // Limpieza pasiva
       }
     },

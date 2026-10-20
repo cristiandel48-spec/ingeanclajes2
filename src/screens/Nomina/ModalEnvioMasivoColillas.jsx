@@ -122,7 +122,7 @@ export default function ModalEnvioMasivoColillas({
 
       try {
         await enviarEmpleadoPorGmail(e, resumen);
-      } catch (e) {
+      } catch {
         // Continúa con el siguiente para no frenar la tanda masiva
       }
 

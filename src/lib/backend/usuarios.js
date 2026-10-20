@@ -164,7 +164,7 @@ export async function registrarActividadUsuario() {
             .update({ ultima_conexion: new Date().toISOString() })
             .eq("user_id", authData.user.id);
         }
-      } catch {}
+      } catch { /* la hora de conexion no es critica */ }
       return null;
     }
     return data;

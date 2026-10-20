@@ -80,7 +80,6 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
   const control = getControlDocumental(empresaConfig)?.informe;
   const docCodigo = control?.codigo || "FO-ACT-04";
   const docVersion = control?.version || "03";
-  const docFecha = control?.fecha ? fmtL(control.fecha) : fmtL(informe?.fechaInforme);
 
   const proyecto = normalizarMayusculas(informe?.proyecto || "");
   const localizacion = normalizarMayusculas(informe?.localizacion || "");

@@ -15,8 +15,6 @@ import {
   eliminarUsuario, enviarCotizacionPorCorreo, listarUsuarios, reactivarUsuario,
 } from "../../lib/backend/usuarios";
 import { ASUNTO_NOVEDADES, textoCorreoNovedades } from "../../lib/novedades";
-import { formatearUltimaConexion } from "../../lib/seguridadSesion";
-import { detectarDispositivo } from "../../lib/backend";
 import { resolverEstadoConexionUsuario } from "../../lib/actividadConexiones";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import { useSubirAlFormulario } from "../../hooks/useSubirAlFormulario";

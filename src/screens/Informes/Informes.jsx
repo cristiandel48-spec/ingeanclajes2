@@ -1077,7 +1077,6 @@ export default function Informes({ctx}){
         const control = getControlDocumental(empresaConfig)?.informe;
         const docCodigo = control?.codigo || "FO-ACT-04";
         const docVersion = control?.version || "03";
-        const docFecha = control?.fecha ? fmtL(control.fecha) : fmtL(sel?.fechaInforme);
         const proyecto = normalizarMayusculas(sel?.proyecto || "");
         const localizacion = normalizarMayusculas(sel?.localizacion || "");
         const cliente = normalizarMayusculas(sel?.cliente || (obras?.find(o => o.id === sel?.obraId)?.cliente) || "");

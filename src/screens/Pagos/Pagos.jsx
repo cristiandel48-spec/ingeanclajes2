@@ -51,12 +51,13 @@ export default function Pagos({ ctx }) {
   const [reteFuenteConcepto, setReteFuenteConcepto] = useState("obra_2"); // 2.0% contratos construcción
   const [reteFuenteTarifa, setReteFuenteTarifa] = useState(2.0);
   const [reteFuenteManual, setReteFuenteManual] = useState(false);
-  const [reteFuenteValor, setReteFuenteValor] = useState(0);
+  // ReteFuente y ReteICA no tienen valor manual en pantalla: siempre por tarifa.
+  const [reteFuenteValor] = useState(0);
 
   const [reteIcaConcepto, setReteIcaConcepto] = useState("ica_69"); // 6.9 por mil Envigado/Medellín
   const [reteIcaTarifa, setReteIcaTarifa] = useState(6.9);
   const [reteIcaManual, setReteIcaManual] = useState(false);
-  const [reteIcaValor, setReteIcaValor] = useState(0);
+  const [reteIcaValor] = useState(0);
 
   const [reteIvaConcepto, setReteIvaConcepto] = useState("ninguna");
   const [reteIvaTarifa, setReteIvaTarifa] = useState(0);
@@ -367,7 +368,7 @@ export default function Pagos({ ctx }) {
       medio: reciboCaja.metodo || "Transferencia",
       notas: (reciboCaja.notas || "").trim(),
       saldoAnterior,
-      saldoNuevo,
+      saldoNuevo: nuevoSaldo,
       totalObra: Number(obraSeleccionada?.total || 0),
       elaboradoPor: membresia?.nombre || "Administración Ingeanclajes",
     };

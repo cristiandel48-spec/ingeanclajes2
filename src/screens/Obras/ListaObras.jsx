@@ -671,7 +671,6 @@ function BotonSegmentado({ activo, onClick, label }) {
 
 function FilaTablaObraApple({
   o,
-  cotizacion,
   fotosCount = 0,
   horarios = [],
   zebra,
@@ -965,12 +964,10 @@ function FilaTablaObraApple({
 
 function TarjetaObraApple({
   o,
-  cotizacion,
   fotosCount = 0,
   horarios = [],
   onAbrir,
   onCambiarAvance,
-  onCambiarEstado,
   onToggleEnviado,
   puedeDesbloquear,
 }) {

@@ -1,5 +1,4 @@
 import fs from "fs";
-import path from "path";
 import { buildCotizacionPrintHtml } from "../src/lib/cotizacionPrint.js";
 
 // Leer la foto de la propuesta que el usuario subió

@@ -304,13 +304,13 @@ function embellecerTextoCompletoCertificacion(texto) {
 
   let nit = "";
   let cliente = "";
-  const mSolicitud = remaining.match(/(?:,\s*|\s+)(?:a\s+solicitud\s+de|por\s+encargo\s+de|para)\s+([^(,]+?)(?:\s*\(NIT:\s*([0-9kK.\-]+)\))?$/i);
+  const mSolicitud = remaining.match(/(?:,\s*|\s+)(?:a\s+solicitud\s+de|por\s+encargo\s+de|para)\s+([^(,]+?)(?:\s*\(NIT:\s*([0-9kK.-]+)\))?$/i);
   if (mSolicitud) {
     cliente = mSolicitud[1].trim();
     nit = mSolicitud[2] ? mSolicitud[2].trim() : "";
     remaining = remaining.slice(0, mSolicitud.index);
   } else {
-    const mNit = remaining.match(/(?:,\s*|\s+)con\s+NIT:\s*([0-9kK.\-]+)\s*(?:\(([^)]+)\))?$/i);
+    const mNit = remaining.match(/(?:,\s*|\s+)con\s+NIT:\s*([0-9kK.-]+)\s*(?:\(([^)]+)\))?$/i);
     if (mNit) {
       nit = mNit[1].trim();
       cliente = mNit[2] ? mNit[2].trim() : "";

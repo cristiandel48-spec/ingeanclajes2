@@ -13,16 +13,7 @@ import articoLineaVidaVertical from "../assets/artico-linea-vida-vertical.jpg?in
 import articoEscaleraGato from "../assets/artico-escalera-gato.jpg?inline";
 import { IMG_SOPORTE, IMG_TENSOR, IMG_EMPALMES, IMG_CABLE } from "../assets/componentesLineasVida";
 
-// El titulo de la portada siempre empieza con mayuscula. En el formulario se
-// ve en mayusculas porque el campo lo pinta asi, pero se guarda tal cual se
-// escribio, y si empezaba en minuscula la portada salia «recertificación de…».
-// Solo se toca la primera letra (saltando comillas o signos de apertura); lo
-// demas queda como lo escribio la persona.
-function primeraMayuscula(texto) {
-  return String(texto || "").replace(/^([^\p{L}]*)(\p{L})/u, (_, previo, letra) => previo + letra.toLocaleUpperCase("es-CO"));
-}
-
-export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}){
+export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
   const propuestas = getQuotePrintableProposals(c);
   const textoInicial = String(c?.textoInicial || "").trim();
   const textos = getTextosDocumento(c);
@@ -859,7 +850,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
           ${(()=>{
             // La obra y el alcance se destacan en negrita negra pura
             let apertura = String(textos.saludo || "").trim().replace(/\.$/, "");
-            apertura = escapeHtml(apertura).replace(/\b([A-ZÁÉÍÓÚÜÑ0-9\(\)\-]{2,}(?:\s+[A-ZÁÉÍÓÚÜÑ0-9\(\)\-]+){2,})\b/g, '<strong style="color:var(--tinta);font-weight:600;">$1</strong>');
+            apertura = escapeHtml(apertura).replace(/\b([A-ZÁÉÍÓÚÜÑ0-9()-]{2,}(?:\s+[A-ZÁÉÍÓÚÜÑ0-9()-]+){2,})\b/g, '<strong style="color:var(--tinta);font-weight:600;">$1</strong>');
             const conObra = c?.obra
               ? `${apertura} en la obra <strong style="color:var(--tinta);font-weight:600;">${escapeHtml(normalizarMayusculas(c.obra))}</strong>.`
               : `${apertura}.`;

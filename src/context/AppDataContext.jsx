@@ -1012,7 +1012,7 @@ export function AppDataProvider({ children }) {
       try {
         localStorage.setItem("ingeanclajes_ejemplos_ocultos", "true");
         localStorage.setItem("ingeanclajes_tareas_produccion", "[]");
-      } catch {}
+      } catch { /* sin almacenamiento del navegador: se sigue igual */ }
       setEjemplosOcultos(true);
       setObras(sinEjemplos);
       setCotizaciones(sinEjemplos);

@@ -62,7 +62,7 @@ export default function Produccion({ ctx = {} }) {
 
   const [modalAbierto, setModalAbierto] = useState(false);
   const [tareaSeleccionada, setTareaSeleccionada] = useState(null);
-  const [responsablePreseleccionado, setResponsablePreseleccionado] = useState("Paola");
+  const [, setResponsablePreseleccionado] = useState("Paola");
 
   const abrirNuevaTarea = (responsable = "Paola") => {
     setResponsablePreseleccionado(responsable);

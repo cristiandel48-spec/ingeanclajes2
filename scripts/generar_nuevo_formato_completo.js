@@ -1,5 +1,4 @@
 import fs from "fs";
-import path from "path";
 import QRCode from "qrcode";
 import { LOGO_INGEANCLAJES } from "../src/assets/embeddedImages.js";
 

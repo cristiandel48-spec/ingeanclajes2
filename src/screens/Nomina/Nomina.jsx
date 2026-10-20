@@ -2117,7 +2117,6 @@ export default function Nomina({ctx}){
             const totalSalud = resumenesActivos.reduce((sum, { resumen }) => sum + (resumen.salud || 0), 0);
             const totalPension = resumenesActivos.reduce((sum, { resumen }) => sum + (resumen.pension || 0), 0);
             const totalOtrasDeducciones = resumenesActivos.reduce((sum, { resumen }) => sum + (resumen.otrasDeducciones || 0), 0);
-            const totalDescuentos = resumenesActivos.reduce((sum, { resumen }) => sum + (resumen.totalDeducciones || 0), 0);
             const totalNeto = resumenesActivos.reduce((sum, { resumen }) => sum + (resumen.neto || 0), 0);
 
             return (

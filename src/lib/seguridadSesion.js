@@ -15,7 +15,7 @@ const CLAVE_MOTIVO_CIERRE = "erp_mensaje_cierre_inactividad";
 export function guardarMensajeCierreInactividad(mensaje) {
   try {
     sessionStorage.setItem(CLAVE_MOTIVO_CIERRE, mensaje);
-  } catch {}
+  } catch { /* sin almacenamiento del navegador: se sigue igual */ }
 }
 
 /**
@@ -28,7 +28,7 @@ export function obtenerMensajeCierreInactividad() {
       sessionStorage.removeItem(CLAVE_MOTIVO_CIERRE);
       return msg;
     }
-  } catch {}
+  } catch { /* sin almacenamiento del navegador: se sigue igual */ }
   return null;
 }
 
@@ -79,7 +79,7 @@ export function iniciarVigilanteInactividad({ onCierrePorInactividad } = {}) {
     ultimaActividad = Date.now();
     try {
       localStorage.setItem(CLAVE_ULTIMA_ACTIVIDAD, String(ultimaActividad));
-    } catch {}
+    } catch { /* sin almacenamiento del navegador: se sigue igual */ }
   };
 
   actualizarActividad();
@@ -129,7 +129,7 @@ export function iniciarVigilanteInactividad({ onCierrePorInactividad } = {}) {
         ultimaLocal = guardado;
         ultimaActividad = guardado;
       }
-    } catch {}
+    } catch { /* sin almacenamiento del navegador: se sigue igual */ }
 
     const inactivoMs = ahora - ultimaLocal;
     if (inactivoMs >= LIMITE_INACTIVIDAD_MS) {

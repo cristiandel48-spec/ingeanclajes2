@@ -9,7 +9,7 @@ import { B, CD, SI, ST } from "../../styles/tokens";
 import { buildCertForm, construirTextoSistema, getCertDefaultElements, unAnoDespues } from "./certConfig";
 import { redactarSistemasDesdeCotizacion } from "../../lib/certificacionTexto";
 import { fmtD, fmtL, scrollAppToTop } from "../../lib/format";
-import { normalizarRazonSocial, normalizarFrase, normalizarParrafos, normalizarTextoCertificacion } from "../../lib/normalizarEntrada";
+import { normalizarRazonSocial, normalizarFrase, normalizarTextoCertificacion } from "../../lib/normalizarEntrada";
 import { corregirOrtografiaLocal } from "../../lib/correctorTexto";
 import BotonCorregir from "../../components/ui/BotonCorregir";
 import { printCurrentPz } from "../../lib/print";

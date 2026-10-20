@@ -80,7 +80,7 @@ export default function ListaTareasProduccion({
   const [busqueda, setBusqueda] = useState("");
   const [filtroResponsable, setFiltroResponsable] = useState("todos");
   const [filtroObra, setFiltroObra] = useState(obraInicial || "todas");
-  const [filtroPrioridad, setFiltroPrioridad] = useState("todas");
+  const [filtroPrioridad] = useState("todas");
   const inputBusquedaRef = useRef(null);
 
   useEffect(() => {

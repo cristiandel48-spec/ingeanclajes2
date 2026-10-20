@@ -557,7 +557,7 @@ export function TarjetaInstalarAppDashboard() {
     setDescartado(true);
     try {
       localStorage.setItem("ingeanclajes.pwa.banner_descartado", "true");
-    } catch {}
+    } catch { /* sin almacenamiento del navegador: se sigue igual */ }
   };
 
   const handleInstalar = () => {

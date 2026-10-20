@@ -24,7 +24,7 @@ export function cargarCacheUltimasConexionesLocal() {
       const data = JSON.parse(raw);
       if (data && typeof data === "object") return data;
     }
-  } catch {}
+  } catch { /* sin almacenamiento del navegador: se sigue igual */ }
   return {};
 }
 
@@ -36,7 +36,7 @@ export function guardarCacheUltimasConexionesLocal(cache) {
     if (cache && typeof cache === "object") {
       localStorage.setItem(CLAVE_CACHE_CONEXIONES, JSON.stringify(cache));
     }
-  } catch {}
+  } catch { /* sin almacenamiento del navegador: se sigue igual */ }
 }
 
 /**

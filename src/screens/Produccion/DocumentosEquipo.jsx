@@ -35,9 +35,6 @@ const TIPOS_BLOQUE = [
 ];
 
 export default function DocumentosEquipo({
-  obras = [],
-  empleados = [],
-  usuarioActual = "Camila",
   documentosExternos,
   onActualizarDocumentos,
 }) {
@@ -379,7 +376,9 @@ export default function DocumentosEquipo({
       } else if (linea.includes("✓") || linea.includes("[x]")) {
         icono = "check";
       }
-      limpio = limpio.replace(/^[🟢🟡🔴✓]\s*/, "");
+      // Con la bandera u: sin ella, los emojis se leen como dos mitades y
+      // solo se quitaba la primera, dejando un caracter roto al inicio.
+      limpio = limpio.replace(/^[🟢🟡🔴✓]\s*/u, "");
 
       return {
         id: `v-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,

@@ -197,7 +197,7 @@ export default function MisTareas({ ctx }) {
     try {
       const guardadas = localStorage.getItem("ingeanclajes_secciones_personales");
       if (guardadas) return JSON.parse(guardadas);
-    } catch (e) {}
+    } catch { /* sin almacenamiento del navegador: se sigue igual */ }
     return ["General"];
   });
   const [seccionActiva, setSeccionActiva] = useState("General");
@@ -210,7 +210,7 @@ export default function MisTareas({ ctx }) {
   useEffect(() => {
     try {
       localStorage.setItem("ingeanclajes_secciones_personales", JSON.stringify(secciones));
-    } catch (e) {}
+    } catch { /* sin almacenamiento del navegador: se sigue igual */ }
   }, [secciones]);
 
   const todasLasSecciones = useMemo(() => {

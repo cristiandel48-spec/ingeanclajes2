@@ -23,7 +23,6 @@ import {
   esUsuarioCamila,
   esCompromisoEspecial,
   filtrarAgendaPorPermiso,
-  obtenerFechasEspecialesDelMes,
 } from "../../lib/agendaEspecial";
 import ModalEstrellitaEspecial from "../../components/agenda/ModalEstrellitaEspecial";
 import { confirmar } from "../../lib/dialogos";
@@ -734,11 +733,9 @@ function CalendarioMensualSection({
   mesSiguiente,
   celdasMes,
   eventosPorFecha,
-  fechaSeleccionada,
   setFechaSeleccionada,
   esCristian,
   esCamila,
-  compromisos,
   abrirModalEstrellita,
   toggleEstrellitaRapida,
 }) {
@@ -1298,7 +1295,7 @@ export default function Agenda({ ctx }) {
         if (typeof navigator !== "undefined" && navigator.vibrate) {
           navigator.vibrate([30, 40, 30]);
         }
-      } catch (_) {}
+      } catch { /* sin vibracion: no pasa nada */ }
 
       setNotificacionEnvio({
         tipo: "success",
@@ -1346,7 +1343,7 @@ export default function Agenda({ ctx }) {
       if (typeof navigator !== "undefined" && navigator.vibrate) {
         navigator.vibrate(60);
       }
-    } catch (_) {}
+    } catch { /* sin vibracion: no pasa nada */ }
 
     setNotificacionEnvio({
       tipo: "success",

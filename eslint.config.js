@@ -24,6 +24,18 @@ export default defineConfig([
     },
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      // Consejos del compilador de React y de la recarga en caliente: hablan
+      // de rendimiento o de comodidad al programar, no de errores. Quedan como
+      // aviso para que no frenen la publicacion; los errores de verdad
+      // (variables sin definir, claves repetidas...) si la frenan.
+      'react-hooks/purity': 'warn',
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/preserve-manual-memoization': 'warn',
+      'react-refresh/only-export-components': 'warn',
     },
+  },
+  {
+    files: ['scripts/**/*.js'],
+    languageOptions: { globals: globals.node },
   },
 ])

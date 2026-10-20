@@ -335,7 +335,7 @@ export default function SupabaseGate({ children }) {
 
       try {
         sessionStorage.removeItem("bienvenida_camila_mostrada_sesion");
-      } catch {}
+      } catch { /* sin almacenamiento del navegador: se sigue igual */ }
 
       setPassword("");
       await validateAccess(data.user ?? null);
@@ -377,7 +377,7 @@ export default function SupabaseGate({ children }) {
       await backend.signOut();
       try {
         sessionStorage.removeItem("bienvenida_camila_mostrada_sesion");
-      } catch {}
+      } catch { /* sin almacenamiento del navegador: se sigue igual */ }
       setUser(null);
       setPassword("");
       setNovedadesCerradas(false);

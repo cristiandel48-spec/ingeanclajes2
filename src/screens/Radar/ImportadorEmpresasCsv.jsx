@@ -137,7 +137,7 @@ export default function ImportadorEmpresasCsv({ clientes = [], setClientes, onFi
         }).filter((x) => x.nombre.trim().length > 0);
 
         setDatosParseados({ cabeceras, filas: mapeados });
-      } catch (err) {
+      } catch {
         window.alert("No se pudo leer el archivo CSV. Revisa que esté bien formateado.");
       } finally {
         setCargando(false);

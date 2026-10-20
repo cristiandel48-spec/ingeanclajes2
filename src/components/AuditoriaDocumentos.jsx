@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { CD, SI, ST } from "../styles/tokens";
 import { limpiarCreador, limpiarModificador } from "../lib/autorAuditoria";
-import { listarUsuarios, detectarDispositivo } from "../lib/backend";
-import { formatearUltimaConexion } from "../lib/seguridadSesion";
+import { listarUsuarios } from "../lib/backend";
 import { normalizarNombrePropio } from "../lib/normalizarEntrada";
 import { ROL_LABEL, sinCuentasSoporte } from "../lib/permisos";
 import { resolverEstadoConexionUsuario } from "../lib/actividadConexiones";

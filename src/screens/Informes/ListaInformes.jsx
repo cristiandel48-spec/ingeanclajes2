@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { fmtD } from "../../lib/format";
-import { useMediaQuery, useIsMobile } from "../../hooks/useMediaQuery";
+import { useIsMobile } from "../../hooks/useMediaQuery";
 
 const ORDENES = [
   { key: "recientes", label: "Más recientes", comparar: (a, b) => enMilis(b.fechaInforme) - enMilis(a.fechaInforme) || String(b.id).localeCompare(String(a.id)) },
@@ -452,7 +452,6 @@ function BotonSegmentado({ activo, onClick, label }) {
 }
 
 function TarjetaInformeApple({ informe: inf, acciones }) {
-  const isMobile = useIsMobile();
   const [hover, setHover] = useState(false);
   const fotos = contarFotos(inf);
   const actividades = contarActividades(inf);

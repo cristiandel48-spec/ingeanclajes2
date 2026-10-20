@@ -80,7 +80,26 @@ function construirInstruccion(catalogo: string) {
   ].join("\n");
 }
 
-Deno.serve(async (peticion) => {
+// Origenes que pueden llamar esta funcion desde un navegador (hallazgo S13).
+// Antes era «*»: cualquier pagina podia usarla con la sesion de quien la
+// visitara. La llamada igual exige sesion; esto cierra la puerta a otros
+// sitios. Se puede ampliar con ORIGENES_PERMITIDOS (separados por coma).
+const ORIGENES = (Deno.env.get("ORIGENES_PERMITIDOS") ??
+  "https://ingeanclajes2.vercel.app,http://localhost:5173,http://127.0.0.1:5173")
+  .split(",").map((o) => o.trim()).filter(Boolean);
+
+function conOrigenPermitido(manejar: (req: Request) => Response | Promise<Response>) {
+  return async (req: Request) => {
+    const origen = req.headers.get("origin") ?? "";
+    const respuesta = await manejar(req);
+    const cabeceras = new Headers(respuesta.headers);
+    cabeceras.set("Access-Control-Allow-Origin", ORIGENES.includes(origen) ? origen : ORIGENES[0]);
+    cabeceras.set("Vary", "Origin");
+    return new Response(respuesta.body, { status: respuesta.status, statusText: respuesta.statusText, headers: cabeceras });
+  };
+}
+
+Deno.serve(conOrigenPermitido(async (peticion) => {
   if (peticion.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (peticion.method !== "POST") return responder({ error: "Método no permitido" }, 405);
 
@@ -229,4 +248,4 @@ Deno.serve(async (peticion) => {
     console.error("Error armando la cotización:", error);
     return responder({ error: "No se pudo interpretar el dictado. Intenta de nuevo." }, 500);
   }
-});
+}));

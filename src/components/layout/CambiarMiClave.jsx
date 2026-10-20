@@ -12,7 +12,10 @@ import { TIPO } from "../../styles/designTokens";
 
 const MINIMO = 8;
 
-export default function CambiarMiClave({ onCerrar }) {
+// `obligatorio`: se abre al entrar con el enlace de recuperar contraseña. Ese
+// enlace da sesion sin pedir la contraseña, asi que antes de entrar hay que
+// poner una nueva: no se puede cancelar, solo salir (onSalir).
+export default function CambiarMiClave({ onCerrar, obligatorio = false, onSalir }) {
   const [clave, setClave] = useState("");
   const [repetida, setRepetida] = useState("");
   const [error, setError] = useState("");
@@ -50,7 +53,8 @@ export default function CambiarMiClave({ onCerrar }) {
       <Sheet
         titulo="Contraseña cambiada"
         onCerrar={onCerrar}
-        pie={<Button variante="primary" onClick={onCerrar}>Entendido</Button>}
+        cerrarAlPulsarFondo={!obligatorio}
+        pie={<Button variante="primary" onClick={onCerrar}>{obligatorio ? "Entrar" : "Entendido"}</Button>}
       >
         <p style={{ ...TIPO.body, color: "var(--text-secondary)", margin: 0 }}>
           La próxima vez que entres, usa la nueva. Si te llegó una por correo, ya puedes borrar
@@ -62,14 +66,16 @@ export default function CambiarMiClave({ onCerrar }) {
 
   return (
     <Sheet
-      titulo="Cambiar mi contraseña"
-      subtitulo={`Mínimo ${MINIMO} caracteres. Elige una que recuerdes: nadie más puede verla.`}
-      onCerrar={guardando ? undefined : onCerrar}
-      cerrarAlPulsarFondo={!guardando}
+      titulo={obligatorio ? "Crea tu nueva contraseña" : "Cambiar mi contraseña"}
+      subtitulo={obligatorio
+        ? `Entraste con el enlace de recuperación. Antes de seguir, elige una contraseña nueva (mínimo ${MINIMO} caracteres).`
+        : `Mínimo ${MINIMO} caracteres. Elige una que recuerdes: nadie más puede verla.`}
+      onCerrar={guardando || obligatorio ? undefined : onCerrar}
+      cerrarAlPulsarFondo={!guardando && !obligatorio}
       pie={
         <>
-          <Button variante="secondary" onClick={onCerrar} disabled={guardando}>
-            Cancelar
+          <Button variante="secondary" onClick={obligatorio ? onSalir : onCerrar} disabled={guardando}>
+            {obligatorio ? "Salir" : "Cancelar"}
           </Button>
           <Button variante="primary" onClick={guardar} cargando={guardando}>
             Cambiar

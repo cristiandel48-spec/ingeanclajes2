@@ -12,6 +12,27 @@ import PantallaArranque from "./components/PantallaArranque";
 import { VERSION_TERMINOS } from "./lib/terminos";
 import Novedades from "./components/Novedades";
 import { novedadesPendientes, marcarNovedadesVistas } from "./lib/novedades";
+import CambiarMiClave from "./components/layout/CambiarMiClave";
+import { borrarCopiasLocales } from "./lib/datosLocales";
+
+// El enlace de «¿Olvidaste tu contraseña?» abre el sistema con sesion, sin
+// pedir la contraseña (lo dice la direccion: «#...type=recovery»). Antes se
+// entraba y ya; ahora hay que poner una nueva primero. Se anota al cargar,
+// antes de que la libreria limpie la direccion, y en la pestaña, para que
+// recargar no sirva para saltarse el paso.
+const CLAVE_RECUPERACION = "ingeanclajes_debe_cambiar_clave";
+const marcarRecuperacion = (valor) => {
+  try {
+    if (valor) sessionStorage.setItem(CLAVE_RECUPERACION, "1");
+    else sessionStorage.removeItem(CLAVE_RECUPERACION);
+  } catch { /* sin almacenamiento del navegador: vale lo que hay en memoria */ }
+};
+if (typeof window !== "undefined" && /type=recovery/.test(window.location.hash + window.location.search)) {
+  marcarRecuperacion(true);
+}
+const vieneDeRecuperacion = () => {
+  try { return sessionStorage.getItem(CLAVE_RECUPERACION) === "1"; } catch { return false; }
+};
 
 const isSupabaseConfigured = backend.isSupabaseConfigured;
 const getSupabaseClient = backend.getSupabaseClient;
@@ -232,6 +253,7 @@ export default function SupabaseGate({ children }) {
   const [mensajeInactividad, setMensajeInactividad] = useState(null);
   // Se cierra al instante, sin esperar a que la cuenta confirme que se vieron.
   const [novedadesCerradas, setNovedadesCerradas] = useState(false);
+  const [debeCambiarClave, setDebeCambiarClave] = useState(vieneDeRecuperacion);
 
   useEffect(() => {
     const msg = obtenerMensajeCierreInactividad();
@@ -293,8 +315,14 @@ export default function SupabaseGate({ children }) {
 
     loadUser();
 
-    const listener = supabase.auth.onAuthStateChange((_event, session) => {
+    const listener = supabase.auth.onAuthStateChange((evento, session) => {
       if (!active) return;
+      // Cubre todas las salidas: el boton, la inactividad y el cierre remoto.
+      if (evento === "SIGNED_OUT") borrarCopiasLocales();
+      if (evento === "PASSWORD_RECOVERY") {
+        marcarRecuperacion(true);
+        setDebeCambiarClave(true);
+      }
       const currentUser = session?.user ?? null;
       setEmail(currentUser?.email ?? "");
       // Fuera del aviso, como pide Supabase: validar hace consultas, y
@@ -332,6 +360,11 @@ export default function SupabaseGate({ children }) {
       });
 
       if (authError) throw authError;
+
+      // Entro con su contraseña: si quedo marcado un enlace de recuperacion
+      // vencido, ya no hace falta cambiarla.
+      marcarRecuperacion(false);
+      setDebeCambiarClave(false);
 
       try {
         sessionStorage.removeItem("bienvenida_camila_mostrada_sesion");
@@ -375,12 +408,15 @@ export default function SupabaseGate({ children }) {
       setBusy(true);
       setError("");
       await backend.signOut();
+      borrarCopiasLocales();
       try {
         sessionStorage.removeItem("bienvenida_camila_mostrada_sesion");
       } catch { /* sin almacenamiento del navegador: se sigue igual */ }
       setUser(null);
       setPassword("");
       setNovedadesCerradas(false);
+      marcarRecuperacion(false);
+      setDebeCambiarClave(false);
       setStatus("login");
     } catch (logoutError) {
       setError(mensajeAmable(logoutError));
@@ -532,6 +568,22 @@ export default function SupabaseGate({ children }) {
             ¿Olvidaste tu contraseña?
           </button>
         </div>
+      </Pantalla>
+    );
+  }
+
+  if (debeCambiarClave) {
+    return (
+      <Pantalla>
+        <Encabezado />
+        <CambiarMiClave
+          obligatorio
+          onSalir={handleLogout}
+          onCerrar={() => {
+            marcarRecuperacion(false);
+            setDebeCambiarClave(false);
+          }}
+        />
       </Pantalla>
     );
   }

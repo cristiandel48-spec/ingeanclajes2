@@ -4,8 +4,6 @@ import { AppDataProvider, useAppData } from "./context/AppDataContext";
 import AppShell from "./components/layout/AppShell";
 import { AccionesPantallaProvider } from "./context/accionesPantalla";
 import { pantallaInicial, puedeVer } from "./lib/permisos";
-import BotonSoporteFlotante from "./components/soporte/BotonSoporteFlotante";
-import NotificadorMensajesGlobal from "./components/notificaciones/NotificadorMensajesGlobal";
 import AvisoInteligenteAgenda from "./components/agenda/AvisoInteligenteAgenda";
 import { ToastProvider } from "./components/ui/Toast";
 import PantallaArranque from "./components/PantallaArranque";
@@ -50,7 +48,6 @@ const Vencimientos = pantalla(() => import("./screens/Vencimientos/Vencimientos"
 const Usuarios = pantalla(() => import("./screens/Usuarios/Usuarios"));
 const Auditoria = pantalla(() => import("./screens/Auditoria/Auditoria"));
 const Formatos = pantalla(() => import("./screens/Formatos/Formatos"));
-const Soporte = pantalla(() => import("./screens/Soporte/Soporte"));
 const Agenda = pantalla(() => import("./screens/Agenda/Agenda"));
 const MisTareas = pantalla(() => import("./screens/MisTareas/MisTareas"));
 const RadarObras = pantalla(() => import("./screens/Radar/RadarObras"));
@@ -65,7 +62,6 @@ const Horarios = pantalla(() => import("./screens/Horarios/Horarios"));
 // config/navigation.jsx: para sumar una pantalla se agrega aqui y alli.
 const SCREENS = {
   dashboard: Dashboard,
-  soporte: Soporte,
   tareas: MisTareas,
   agenda: Agenda,
   cotizacion: Cotizacion,
@@ -204,9 +200,7 @@ function AppRoot() {
           <Screen ctx={ctx} go={setScr} />
         </Suspense>
       </div>
-      <NotificadorMensajesGlobal onIrASoporte={() => setScr("soporte")} />
       <AvisoInteligenteAgenda onIrAAgenda={() => setScr("agenda")} />
-      {destino !== "soporte" && <BotonSoporteFlotante />}
     </AppShell>
   );
 }

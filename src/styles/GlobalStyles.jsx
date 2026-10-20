@@ -334,7 +334,7 @@ ${componentesCss}
       }
 
       /* Modales y paneles fijos restringidos al ancho visual del móvil */
-      [style*="position: fixed"]:not(#soporte-widget-root):not(.app-shell * aside) {
+      [style*="position: fixed"]:not(.app-shell * aside) {
         max-width: 100vw !important;
         box-sizing: border-box !important;
       }
@@ -432,7 +432,7 @@ ${componentesCss}
         display: none !important;
       }
 
-      /* Margen inferior para que el botón de soporte flotante nunca tape controles ni sliders */
+      /* Margen inferior para que los avisos flotantes nunca tapen controles ni sliders */
       main {
         padding-bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
       }

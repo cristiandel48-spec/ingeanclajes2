@@ -44,10 +44,9 @@ export const MODULOS_CONTADOR = [
   "financiero",
 ];
 
-// Cada quien entra a lo que se le marca, más el canal de mensajes y soporte
-// para que cualquier colaborador pueda comunicarse y reportar incidencias, y
-// su lista personal de tareas, que es suya y no muestra datos de nadie mas.
-export const MODULOS_MINIMOS = ["soporte", "tareas"];
+// Cada quien entra a lo que se le marca, más su lista personal de tareas, que
+// es suya y no muestra datos de nadie mas.
+export const MODULOS_MINIMOS = ["tareas"];
 
 // Modulos del rol Administrador y de nadie mas. No se pueden conceder
 // marcando una casilla.

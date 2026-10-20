@@ -16,6 +16,7 @@ import { printCurrentPz } from "../../lib/print";
 import { descargarDocumentoPdf } from "../../lib/documentoPdf";
 import { nombreDocumento } from "../../lib/nombreArchivo";
 import { siguienteIdUnico } from "../../lib/identificadores";
+import { nuevoCodigoVerificacion } from "../../lib/verificacionCertificados";
 import ListaCertificaciones from "./ListaCertificaciones";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
@@ -335,6 +336,9 @@ export default function Certificaciones({ctx}){
       ...(editId
         ? { ...form, obraId: obraIdNormalizado, id: editId, estado: form.estado || "Vigente" }
         : { id: siguienteIdUnico(certs, "CERT"), estado: "Vigente", ...form, obraId: obraIdNormalizado }),
+      // El codigo del QR no cambia nunca: un QR ya impreso tiene que seguir
+      // sirviendo despues de editar el certificado.
+      codigoVerificacion: prev?.codigoVerificacion || form.codigoVerificacion || nuevoCodigoVerificacion(),
       creadoPor: prev?.creadoPor || miUserId,
       creadoPorNombre: prev?.creadoPorNombre ? normalizarNombrePersona(prev.creadoPorNombre, "Camila Sepúlveda") : (resolverAutorGuardado(ctx?.membresia) || "Camila Sepúlveda"),
       creadoEn: prev?.creadoEn || new Date().toISOString(),

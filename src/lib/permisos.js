@@ -53,16 +53,12 @@ export const MODULOS_MINIMOS = ["tareas"];
 //
 // - usuarios: si se pudiera dar, cualquiera con ese modulo se daria el resto.
 // - dashboard: es el resumen economico de la empresa.
-// - formatos: cambia el codigo y la version que se imprimen en TODOS los
-//   documentos de la empresa. Un dedazo ahi sale en cada cotizacion y en cada
-//   certificado, y es justo lo que revisa quien audita.
-export const MODULOS_SOLO_ADMIN = ["usuarios", "dashboard", "auditoria", "formatos"];
+export const MODULOS_SOLO_ADMIN = ["usuarios", "dashboard", "auditoria"];
 
 // Y esto solo lo ve el dueño, ni siquiera los demas administradores.
-// Módulos reservados exclusivamente al dueño.
-// La auditoría antes estaba solo para dueño; ahora está publicada para Camila Sepúlveda
-// y cualquier usuario con rol de Administrador.
-export const MODULOS_SOLO_DUENO = [];
+// La auditoria estuvo abierta a los administradores; volvio a ser solo del
+// dueño por decision suya.
+export const MODULOS_SOLO_DUENO = ["auditoria"];
 
 export function esAdmin(membresia) {
   return membresia?.role === "admin";

@@ -15,7 +15,7 @@
 //
 // Se guarda en app.empresa_config, en la misma fila que la firma.
 
-import { EMPRESA_CONFIG_ID, getEmpresaConfig } from "./firmaEmpresa";
+import { getEmpresaConfig } from "./firmaEmpresa";
 
 // Los documentos que se le entregan al cliente. Si manana hay mas -acta de
 // entrega, lista de chequeo-, se agregan aqui y aparecen solos en la pantalla
@@ -28,8 +28,8 @@ export const FORMATOS = [
   { clave: "recibo_caja",   etiqueta: "Recibo de Caja" },
 ];
 
-// Los primeros codigos de Ingeanclajes. Sirven de punto de partida: se cambian
-// desde la pantalla y lo que se guarde manda.
+// Los primeros codigos de Ingeanclajes. Si en la base hay algo guardado (de
+// cuando existia la pantalla «Formatos y versiones»), manda lo guardado.
 //
 // «IA» por la empresa y «FT» por formato. Es deliberadamente simple: la
 // codificacion de otras empresas -«EM.PR10.FT03»- lleva dentro el proceso y el
@@ -88,19 +88,4 @@ function fechaCorta(iso) {
   if (partes.length !== 3) return String(iso || "").trim();
   const [ano, mes, dia] = partes;
   return `${dia}/${mes}/${ano}`;
-}
-
-/** Devuelve la lista de configuracion con un formato cambiado. */
-export function setControlDocumental(empresaConfig, clave, campos) {
-  const lista = Array.isArray(empresaConfig) ? empresaConfig : [];
-  const actual = getEmpresaConfig(lista);
-  const previo = getControlDocumental(lista);
-
-  const fila = {
-    ...(actual || { id: EMPRESA_CONFIG_ID }),
-    controlDocumental: { ...previo, [clave]: { ...previo[clave], ...campos } },
-  };
-
-  if (!actual) return [...lista, fila];
-  return lista.map((row) => (row?.id === EMPRESA_CONFIG_ID ? fila : row));
 }

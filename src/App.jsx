@@ -47,7 +47,6 @@ const Informes = pantalla(() => import("./screens/Informes/Informes"));
 const Vencimientos = pantalla(() => import("./screens/Vencimientos/Vencimientos"));
 const Usuarios = pantalla(() => import("./screens/Usuarios/Usuarios"));
 const Auditoria = pantalla(() => import("./screens/Auditoria/Auditoria"));
-const Formatos = pantalla(() => import("./screens/Formatos/Formatos"));
 const Agenda = pantalla(() => import("./screens/Agenda/Agenda"));
 const MisTareas = pantalla(() => import("./screens/MisTareas/MisTareas"));
 const RadarObras = pantalla(() => import("./screens/Radar/RadarObras"));
@@ -81,7 +80,6 @@ const SCREENS = {
   financiero: Financiero,
   usuarios: Usuarios,
   auditoria: Auditoria,
-  formatos: Formatos,
 };
 
 export default function App() {

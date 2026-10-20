@@ -6,6 +6,7 @@ import { useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmt, fmtK } from "../../lib/format";
 import { printCurrentPz } from "../../lib/print";
+import { obrasMasNuevasPrimero } from "../../lib/identificadores";
 export default function Financiero({ctx}){
   const {obras,cuentas,empleados}=ctx;
   const [obraFiltro,setObraFiltro]=useState("todas");
@@ -34,7 +35,7 @@ export default function Financiero({ctx}){
         <div><LBL>Filtrar por obra</LBL>
           <select value={obraFiltro} onChange={e=>setObraFiltro(e.target.value)} style={{...SI,width:"auto"}}>
             <option value="todas">Todas las obras</option>
-            {obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}
+            {obrasMasNuevasPrimero(obras).map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}
           </select>
         </div>
         <button style={{...B("#f47c20"),marginTop:16}} onClick={()=>printCurrentPz("Informe financiero " + (obraFiltro))}>Imprimir informe</button>

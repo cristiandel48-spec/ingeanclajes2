@@ -23,6 +23,7 @@ import { siguienteIdUnico } from "../../lib/identificadores";
 import { PLANTILLAS_ACTIVIDAD, buscarPlantillaActividad, esTextoDePlantilla } from "./plantillasActividad";
 import ListaInformes from "./ListaInformes";
 import TarjetaCotizacionRef from "./TarjetaCotizacionRef";
+import { obrasMasNuevasPrimero } from "../../lib/identificadores";
 import ModalCotizacionDetalle from "./ModalCotizacionDetalle";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
@@ -216,7 +217,8 @@ export default function Informes({ctx}){
   // texto y la hoja parecia una cuadricula.
   const BORDE = "#ddd";
 
-  const firstObraId = obras[0]?.id || "";
+  // Arranca con la obra mas nueva, que es la que casi siempre se busca.
+  const firstObraId = obrasMasNuevasPrimero(obras)[0]?.id || "";
 
   // El informe no se escribe desde cero: la persona que estuvo en la obra ya
   // dejo el avance del dia con sus fotos en la pestana «Avance y fotos». Aqui
@@ -737,7 +739,7 @@ export default function Informes({ctx}){
                   actividades:(!hayContenidoEscrito && traidas.length) ? traidas : p.actividades,
                 };
               });
-            }} style={CAMPO}>{obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
+            }} style={CAMPO}>{obrasMasNuevasPrimero(obras).map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
             <div><LBL>Nombre del proyecto</LBL><input value={form.proyecto} onChange={e=>setForm(p=>({...p,proyecto:e.target.value}))} onBlur={e=>{const v=normalizarMayusculas(e.target.value);if(v!==form.proyecto)setForm(p=>({...p,proyecto:v}));}} autoCapitalize="characters" style={CAMPO}/></div>
             <div><LBL>Localización</LBL><input value={form.localizacion} onChange={e=>setForm(p=>({...p,localizacion:e.target.value}))} onBlur={e=>{const v=normalizarMayusculas(e.target.value);if(v!==form.localizacion)setForm(p=>({...p,localizacion:v}));}} autoCapitalize="characters" style={CAMPO}/></div>
             <div><LBL>Fecha del informe</LBL><input type="date" value={form.fechaInforme} onChange={e=>setForm(p=>({...p,fechaInforme:e.target.value}))} style={CAMPO}/></div>

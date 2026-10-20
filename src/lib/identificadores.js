@@ -21,6 +21,22 @@
  * @param {Array}  lista   registros existentes de esa entidad
  * @param {string} prefijo "COT", "OB", "CERT"…
  */
+// Numero del consecutivo de un id («OB-030» -> 30). 0 si no trae numero.
+function numeroDeId(id) {
+  const m = String(id ?? "").match(/(\d+)\s*$/);
+  return m ? Number(m[1]) : 0;
+}
+
+// Obras de la mas nueva a la mas vieja, para las listas donde se elige una
+// obra: casi siempre se busca la que se acaba de crear, y quedaba al final.
+// Manda el consecutivo, que sigue el orden de creacion (OB-031 es mas nueva
+// que OB-030) y lo tienen todas, tambien las viejas sin fecha de creacion.
+// No cambia la lista original.
+export function obrasMasNuevasPrimero(obras) {
+  const lista = Array.isArray(obras) ? [...obras] : [];
+  return lista.sort((a, b) => numeroDeId(b?.id) - numeroDeId(a?.id));
+}
+
 export function siguienteIdUnico(lista, prefijo, ancho = 3) {
   const registros = Array.isArray(lista) ? lista : [];
   const usados = new Set(

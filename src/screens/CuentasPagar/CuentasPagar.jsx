@@ -13,6 +13,7 @@ import { siguienteIdUnico } from "../../lib/identificadores";
 import ImportarFacturaDian from "./ImportarFacturaDian";
 import OrdenesCompra from "./OrdenesCompra";
 import { confirmar } from "../../lib/dialogos";
+import { obrasMasNuevasPrimero } from "../../lib/identificadores";
 export default function CuentasPagar({ctx}){
   const {cuentas,setCuentas,proveedores,setProveedores,obras,ordenesCompra=[],setOrdenesCompra,membresia,empleados=[]}=ctx;
 
@@ -1393,7 +1394,7 @@ Ese valor volverá a quedar pendiente en la factura.
                   <LBL>Obra asociada</LBL>
                   <select value={cxpForm.obraId} onChange={e=>setCxpForm({...cxpForm,obraId:e.target.value})} style={SI}>
                     <option value="">Sin obra / gasto general</option>
-                    {obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}
+                    {obrasMasNuevasPrimero(obras).map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}
                   </select>
                 </div>
                 <div>

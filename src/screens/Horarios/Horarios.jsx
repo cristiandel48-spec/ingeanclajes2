@@ -16,6 +16,7 @@ import { resolverAutorGuardado } from "../../lib/autorAuditoria";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import { useSubirAlFormulario } from "../../hooks/useSubirAlFormulario";
 import { confirmar } from "../../lib/dialogos";
+import { obrasMasNuevasPrimero } from "../../lib/identificadores";
 
 // Aire debajo de cada bloque. El kit no lo trae: lo pone quien coloca la pieza.
 const SEPARA = { marginBottom: ESPACIO.lg };
@@ -88,7 +89,8 @@ function CabeceraCard({ titulo, descripcion, accion }) {
 export default function Horarios({ctx}){
   const isMobile = useIsMobile();
   const {obras,setObras,empleados,horarios,setHorarios,irAPantalla,membresia}=ctx;
-  const firstObraId = obras[0]?.id || "";
+  // Arranca con la obra mas nueva, que es la que casi siempre se busca.
+  const firstObraId = obrasMasNuevasPrimero(obras)[0]?.id || "";
   const fmtHora12Local=(hhmm)=>{
     if(!hhmm || !String(hhmm).includes(':')) return hhmm || "";
     const [hs,ms] = String(hhmm).trim().split(':');
@@ -678,7 +680,7 @@ export default function Horarios({ctx}){
               value={form.obraId}
               onChange={e=>setForm({...form,obraId:e.target.value})}
             >
-              {obras.map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}
+              {obrasMasNuevasPrimero(obras).map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}
             </Input>
             <Input
               label="Fecha"
@@ -1070,7 +1072,7 @@ export default function Horarios({ctx}){
               titulo="Ninguna obra tiene turnos todavía"
               texto="Los turnos que asignes van quedando aquí, agrupados por obra."
             />
-          ) : obras.map(o=>{
+          ) : obrasMasNuevasPrimero(obras).map(o=>{
             const hs=horarios.filter(h=>h.obraId===o.id);
             if(!hs.length) return null;
             return(

@@ -2,6 +2,7 @@ import React from "react";
 import { LOGO_INGEANCLAJES } from "../../assets/embeddedImages";
 import { selloDe } from "../../lib/controlDocumental";
 import { numeroALetras } from "../../lib/numeroALetras";
+import { escapeHtml } from "../../lib/html";
 
 // Formatea moneda con decimales exactos estilo contable ERP: $ 2.500.000,00
 export function fmtPesos(valor) {
@@ -353,17 +354,28 @@ export function generarHtmlMediaCarta(recibo, obra, cliente, empresaConfig, elab
   const saldoAnterior = Number(recibo?.saldoAnterior ?? (Number(obra?.saldo || 0) + montoBruto));
   const saldoNuevo = Number(recibo?.saldoNuevo ?? Math.max(0, saldoAnterior - montoBruto));
 
-  const clienteNombre = cliente?.nombre || obra?.cliente || "Cliente sin registrar";
-  const clienteNit = cliente?.nit || obra?.nit || "No registrado";
-  const clienteTel = cliente?.tel || cliente?.telefono || obra?.tel || "No registrado";
-  const clienteDir = cliente?.direccion || obra?.direccion || "No registrada";
-  const clienteCiudad = cliente?.ciudad || obra?.ciudad || "Envigado";
+  // Los textos escritos a mano se escapan: este HTML se abre en una pestaña
+  // del mismo sitio, con la sesion de quien imprime.
+  const e = escapeHtml;
+  const clienteNombre = e(cliente?.nombre || obra?.cliente || "Cliente sin registrar");
+  const clienteNit = e(cliente?.nit || obra?.nit || "No registrado");
+  const clienteTel = e(cliente?.tel || cliente?.telefono || obra?.tel || "No registrado");
+  const clienteDir = e(cliente?.direccion || obra?.direccion || "No registrada");
+  const clienteCiudad = e(cliente?.ciudad || obra?.ciudad || "Envigado");
+  const reciboId = e(recibo?.id || "RC-0000");
+  const reciboFecha = e(recibo?.fecha || "Hoy");
+  const reciboMedio = e(recibo?.metodo || recibo?.medio || "Transferencia");
+  const reciboConcepto = `${e(recibo?.tipo || "Abono")} ${recibo?.notas ? `— ${e(recibo.notas)}` : "— Aplicación a saldo comercial de obra"}`;
+  const obraDestino = `${obra?.id ? `${e(obra.id)} · ` : ""}${e(obra?.proyecto || obra?.obra || "Pago general")}`;
+  const quienElabora = e(elaboradoPor || "");
+  const tarifaFuente = ret.reteFuente?.tarifa ? `${e(ret.reteFuente.tarifa)}% · ` : "";
+  const tarifaIca = ret.reteIca?.tarifa ? `${e(ret.reteIca.tarifa)}‰ · ` : "";
 
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Recibo de Caja No. ${recibo?.id || "RC"}</title>
+  <title>Recibo de Caja No. ${reciboId}</title>
   <style>
     @page {
       size: 8.5in 5.5in;
@@ -430,10 +442,10 @@ export function generarHtmlMediaCarta(recibo, obra, cliente, empresaConfig, elab
         <div style="color:#cc0000; font-weight:700;">www.ingeanclajessas.com</div>
       </div>
       <div style="border:1px solid #334155; width:125px; text-align:center; font-size:6pt; background:#f8fafc;">
-        <div style="padding:1px; border-bottom:1px solid #334155;">${sello?.linea || "SGC - INGEANCLAJES"}</div>
-        <div style="padding:1px; border-bottom:1px solid #334155; font-weight:700; font-family:Consolas,monospace;">${sello?.codigo || "IA-FT-05"}</div>
-        <div style="padding:1px; border-bottom:1px solid #334155;">${sello?.version || "Versión 1"}</div>
-        <div style="padding:1px; font-weight:800; color:#cc0000; font-size:7.5pt;">No. ${recibo?.id || "RC-0000"}</div>
+        <div style="padding:1px; border-bottom:1px solid #334155;">${e(sello?.linea || "SGC - INGEANCLAJES")}</div>
+        <div style="padding:1px; border-bottom:1px solid #334155; font-weight:700; font-family:Consolas,monospace;">${e(sello?.codigo || "IA-FT-05")}</div>
+        <div style="padding:1px; border-bottom:1px solid #334155;">${e(sello?.version || "Versión 1")}</div>
+        <div style="padding:1px; font-weight:800; color:#cc0000; font-size:7.5pt;">No. ${reciboId}</div>
       </div>
     </div>
 
@@ -451,9 +463,9 @@ export function generarHtmlMediaCarta(recibo, obra, cliente, empresaConfig, elab
     <table>
       <tr>
         <td class="lbl" style="width:16%;">CIUDAD Y FECHA:</td>
-        <td style="width:34%;">${clienteCiudad}, ${recibo?.fecha || "Hoy"}</td>
+        <td style="width:34%;">${clienteCiudad}, ${reciboFecha}</td>
         <td class="lbl" style="width:16%;">FORMA DE PAGO:</td>
-        <td style="width:34%;"><strong>${recibo?.metodo || recibo?.medio || "Transferencia"}</strong></td>
+        <td style="width:34%;"><strong>${reciboMedio}</strong></td>
       </tr>
       <tr>
         <td class="lbl">RECIBIDO DE:</td>
@@ -465,7 +477,7 @@ export function generarHtmlMediaCarta(recibo, obra, cliente, empresaConfig, elab
         <td class="lbl">DIRECCIÓN / TEL:</td>
         <td>${clienteDir} · Tel: ${clienteTel}</td>
         <td class="lbl">OBRA / DESTINO:</td>
-        <td><strong>${obra?.id ? `${obra.id} · ` : ""}${obra?.proyecto || obra?.obra || "Pago general"}</strong></td>
+        <td><strong>${obraDestino}</strong></td>
       </tr>
     </table>
 
@@ -476,8 +488,8 @@ export function generarHtmlMediaCarta(recibo, obra, cliente, empresaConfig, elab
         <strong style="color:#b45309; font-family:Consolas,monospace;">Total Retenido: -${fmtPesos(totalRet)}</strong>
       </div>
       <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:4px;">
-        <div>ReteFuente (Cta 135515): <strong>${vFuente > 0 ? `${ret.reteFuente?.tarifa ? `${ret.reteFuente.tarifa}% · ` : ""}-${fmtPesos(vFuente)}` : "$ 0,00"}</strong></div>
-        <div>ReteICA (Cta 135518): <strong>${vIca > 0 ? `${ret.reteIca?.tarifa ? `${ret.reteIca.tarifa}‰ · ` : ""}-${fmtPesos(vIca)}` : "$ 0,00"}</strong></div>
+        <div>ReteFuente (Cta 135515): <strong>${vFuente > 0 ? `${tarifaFuente}-${fmtPesos(vFuente)}` : "$ 0,00"}</strong></div>
+        <div>ReteICA (Cta 135518): <strong>${vIca > 0 ? `${tarifaIca}-${fmtPesos(vIca)}` : "$ 0,00"}</strong></div>
         <div>ReteIVA (Cta 135517): <strong>${vIva > 0 ? `-${fmtPesos(vIva)}` : "$ 0,00"}</strong></div>
         <div>Otras (Cta 135595): <strong>${vOtras > 0 ? `-${fmtPesos(vOtras)}` : "$ 0,00"}</strong></div>
       </div>
@@ -486,7 +498,7 @@ export function generarHtmlMediaCarta(recibo, obra, cliente, empresaConfig, elab
 
     <div style="border:1px solid #cbd5e1; padding:4px 6px; margin-bottom:5px; font-size:7pt; background:#fafafa;">
       <div><strong style="color:#334155;">LA SUMA DE (en letras):</strong> <strong>${montoLetras}${tieneRet ? ` (Neto recibido de un abono bruto de ${fmtPesos(montoBruto)} con retenciones de ${fmtPesos(totalRet)})` : ""}</strong></div>
-      <div style="margin-top:1px;"><strong style="color:#334155;">POR CONCEPTO DE:</strong> ${recibo?.tipo || "Abono"} ${recibo?.notas ? `— ${recibo.notas}` : "— Aplicación a saldo comercial de obra"}</div>
+      <div style="margin-top:1px;"><strong style="color:#334155;">POR CONCEPTO DE:</strong> ${reciboConcepto}</div>
     </div>
 
     <table>
@@ -512,7 +524,7 @@ export function generarHtmlMediaCarta(recibo, obra, cliente, empresaConfig, elab
       <div class="sig-box">
         <div class="sig-line" style="display:flex; align-items:flex-end; justify-content:center; color:#166534; font-weight:700; font-size:7pt;">✓ Recibido Conforme</div>
         <div style="font-weight:700;">INGEANCLAJES S.A.S.</div>
-        <div style="color:#64748b; font-size:6pt;">Elaboró / Recibió: ${elaboradoPor}</div>
+        <div style="color:#64748b; font-size:6pt;">Elaboró / Recibió: ${quienElabora}</div>
       </div>
       <div class="sig-box">
         <div class="sig-line"></div>

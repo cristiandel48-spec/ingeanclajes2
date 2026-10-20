@@ -1,6 +1,8 @@
 // Estimación técnica y lista de despacho de materiales para obras
 // a partir de los sistemas cotizados (Ingeanclajes)
 
+import { escapeHtml } from "./html";
+
 /**
  * Extrae metros de longitud de un texto técnico como "LÍNEA DE VIDA DE 15 M"
  */
@@ -265,16 +267,25 @@ export function generarDesgloseMateriales(itemsCot = []) {
  * con el formato oficial sobrio de Ingeanclajes.
  */
 export function generarRemisionDespachoHtml({ obra, cotizacion, materialesDespacho }) {
-  const numCot = cotizacion?.numero || "S/N";
-  const numObra = obra?.id || "OBRA";
-  const cliente = obra?.cliente || cotizacion?.cliente || "Cliente";
-  const nit = obra?.nit || cotizacion?.nit || "";
-  const proyecto = obra?.proyecto || "Proyecto";
-  const direccion = obra?.direccion || cotizacion?.direccion || "";
+  // Todo lo que viene de la obra, la cotizacion o los materiales se escribe a
+  // mano: se escapa antes de entrar al HTML de la pestaña de impresion, que
+  // corre con la sesion de quien imprime.
+  const e = escapeHtml;
+  const numCot = e(cotizacion?.numero || "S/N");
+  const numObra = e(obra?.id || "OBRA");
+  const cliente = e(obra?.cliente || cotizacion?.cliente || "Cliente");
+  const nit = e(obra?.nit || cotizacion?.nit || "");
+  const proyecto = e(obra?.proyecto || "Proyecto");
+  const direccion = e(obra?.direccion || cotizacion?.direccion || "");
   const fechaHoy = new Date().toLocaleDateString("es-CO", { year: "numeric", month: "long", day: "numeric" });
 
-  const entregables = materialesDespacho?.entregables || [];
-  const insumos = materialesDespacho?.insumos || [];
+  const entregables = (materialesDespacho?.entregables || []).map((x) => ({
+    cant: e(x?.cant ?? ""), unidad: e(x?.unidad ?? ""), descripcion: e(x?.descripcion ?? ""), estado: e(x?.estado || ""),
+  }));
+  const insumos = (materialesDespacho?.insumos || []).map((x) => ({
+    cant: e(x?.cant ?? ""), unidad: e(x?.unidad ?? ""), categoria: e(x?.categoria || ""), nombre: e(x?.nombre ?? ""),
+    verificado: x?.verificado, estado: x?.estado,
+  }));
 
   return `
 <!DOCTYPE html>

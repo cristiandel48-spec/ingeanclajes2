@@ -3,10 +3,17 @@
 // Pagos y la nomina solo necesitan esta funcion. Importandola desde alla se
 // llevaban todas esas fotos sin usarlas.
 
+import { escapeHtml } from "./html";
+
 // ─── Abre HTML completo en nueva pestaña con toolbar de impresión ───
 // NO bloquea la app principal. El usuario imprime/guarda PDF desde la pestaña.
+//
+// La pestaña nueva es del mismo sitio que la aplicacion: un texto con codigo
+// que llegue sin escapar se ejecuta ahi con la sesion de quien imprime. Por eso
+// el titulo se escapa aqui, y cada plantilla escapa sus datos.
 
-export function openPrintTab(fullHtml, title){
+export function openPrintTab(fullHtml, tituloCrudo){
+  const title = escapeHtml(tituloCrudo || "Documento");
   const w = window.open("", "_blank");
   if(!w){ alert("El navegador bloqueó la ventana emergente. Permite las ventanas emergentes para este sitio."); return; }
 

@@ -4,6 +4,23 @@ import { LOGO_INGEANCLAJES } from "../assets/embeddedImages";
 import { openPrintTab } from "./abrirImpresion";
 import { cssHojaImpresion } from "./hojaImpresion";
 import { NOMINA_CO_2026 } from "./nomina";
+import { escapeHtml } from "./html";
+
+// Los datos del empleado se escriben a mano (nombre, cargo, banco...). Se
+// escapan antes de meterlos en el HTML: un nombre con codigo se ejecutaria en
+// la pestaña de impresion con la sesion de quien imprime.
+function datosEmpleadoSeguros(empleado = {}) {
+  return {
+    nombre: escapeHtml(empleado.nombre || ""),
+    cedula: escapeHtml(empleado.cedula || "-"),
+    cargo: escapeHtml(empleado.cargo || "-"),
+    banco: escapeHtml(empleado.banco || "-"),
+    numeroCuenta: escapeHtml(empleado.numeroCuenta || "-"),
+    tipoContrato: escapeHtml(empleado.tipoContrato || "indefinido"),
+    fechaIngreso: escapeHtml(empleado.fechaIngreso || "N/A"),
+    causaRetiro: escapeHtml(empleado.causaRetiro || "—"),
+  };
+}
 
 export function printCurrentPz(title = "Documento"){
   const node = document.getElementById("pz");
@@ -49,7 +66,7 @@ export function printCurrentPz(title = "Documento"){
     .doc-shell { background: #fff; color: #111; }
   `;
 
-  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
     <style>
       ${estilosBleed}
       * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -68,7 +85,9 @@ export function printCurrentPz(title = "Documento"){
 
 export function printColilla(empleado, resumen, periodo){
   const fmtC = n => '$ ' + Math.round(Number(n)||0).toLocaleString('es-CO');
-  const periodLabel = periodo?.label || (periodo?.mes || new Date().toISOString().slice(0,7));
+  const periodoCrudo = periodo?.label || (periodo?.mes || new Date().toISOString().slice(0,7));
+  const periodLabel = escapeHtml(periodoCrudo);
+  const emp = datosEmpleadoSeguros(empleado);
   const devengados = [
     ['Salario del corte', resumen.salario],
     ['Incapacidad empleador', resumen.incapacidadEmpleador],
@@ -120,9 +139,9 @@ td{padding:8px 12px;border-top:1px solid #f1f5f9;}
     </div>
   </div>
   <div class="employee">
-    <strong>${empleado.nombre}</strong>
-    Cedula: ${empleado.cedula||'-'} · Cargo: ${empleado.cargo||'-'}<br/>Banco: ${empleado.banco||'-'} · Cuenta: ${empleado.numeroCuenta||'-'}
-    Periodo: ${periodLabel} · Dias laborados: ${resumen.diasNomina}${resumen.diasIncapacidad>0 ? ` · Dias incapacidad: ${resumen.diasIncapacidad}` : ""}
+    <strong>${emp.nombre}</strong>
+    Cedula: ${emp.cedula} · Cargo: ${emp.cargo}<br/>Banco: ${emp.banco} · Cuenta: ${emp.numeroCuenta}
+    Periodo: ${periodLabel} · Dias laborados: ${Number(resumen.diasNomina)||0}${resumen.diasIncapacidad>0 ? ` · Dias incapacidad: ${Number(resumen.diasIncapacidad)||0}` : ""}
   </div>
 </div>
 <div class="body">
@@ -138,12 +157,14 @@ td{padding:8px 12px;border-top:1px solid #f1f5f9;}
   <div class="foot">Documento generado el ${new Date().toLocaleDateString('es-CO')} · Ingeanclajes S.A.S</div>
 </div>
 </div></body></html>`;
-  openPrintTab(html, `Colilla ${empleado.nombre} - ${periodLabel}`);
+  openPrintTab(html, `Colilla ${empleado.nombre} - ${periodoCrudo}`);
 }
 
 export function printVacaciones(empleado, diasVacaciones, valorVacaciones){
   const fmtC = n => '$ ' + Math.round(Number(n)||0).toLocaleString('es-CO');
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Vacaciones ${empleado.nombre}</title>
+  const emp = datosEmpleadoSeguros(empleado);
+  const dias = Number(diasVacaciones) || 0;
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Vacaciones ${emp.nombre}</title>
 <style>
 @page{size:Letter;margin:12mm;}
 body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:18px;background:#fff;color:#0f172a;}
@@ -157,8 +178,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:18px;background:#f
 </style></head><body><div class="wrap">
 <div class="hd"><img src="${LOGO_INGEANCLAJES}" alt="Ingeanclajes"/><div style="text-align:right"><div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#64748b;font-weight:700">Liquidacion de vacaciones</div><div style="font-size:12px;font-weight:700;color:#166534">${today()}</div></div></div>
 <div class="bd">
-<div class="card"><strong style="font-size:16px;color:#142840">${empleado.nombre}</strong><br/>Cedula: ${empleado.cedula||'-'} · Cargo: ${empleado.cargo||'-'}<br/>Salario base: ${fmtC(empleado.salario||0)} · Dias a liquidar: ${diasVacaciones}</div>
-<div class="card">Esta liquidacion corresponde a vacaciones pagadas sin retiro del empleado. Valor calculado sobre salario basico: ${fmtC(empleado.salario||0)} ÷ 30 × ${diasVacaciones} dias.</div>
+<div class="card"><strong style="font-size:16px;color:#142840">${emp.nombre}</strong><br/>Cedula: ${emp.cedula} · Cargo: ${emp.cargo}<br/>Salario base: ${fmtC(empleado.salario||0)} · Dias a liquidar: ${dias}</div>
+<div class="card">Esta liquidacion corresponde a vacaciones pagadas sin retiro del empleado. Valor calculado sobre salario basico: ${fmtC(empleado.salario||0)} ÷ 30 × ${dias} dias.</div>
 <div class="total"><span>Valor vacaciones</span><span>${fmtC(valorVacaciones)}</span></div>
 </div>
 <div class="footer">Ingeanclajes S.A.S · Documento generado automaticamente</div>
@@ -168,6 +189,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:18px;background:#f
 
 export function printLiquidacion(empleado, pfl, indemn, diasVacPagar, fechaSalida, resumenRetiro, periodoRetiro){
   const fmtC = n => '$ ' + Math.round(Number(n)||0).toLocaleString('es-CO');
+  const emp = datosEmpleadoSeguros(empleado);
+  const corteFinal = escapeHtml(periodoRetiro?.label || "");
   const vacValorReal = Math.round(empleado.salario * (diasVacPagar||0) / 30);
   const total = pfl.cesantias + pfl.interesesCesantias + pfl.prima + vacValorReal + indemn + (resumenRetiro?.neto||0);
   const rows = [
@@ -183,7 +206,7 @@ export function printLiquidacion(empleado, pfl, indemn, diasVacPagar, fechaSalid
     ...((resumenRetiro?.salud||0)>0 ? [['Descuento salud empleado', '4% sobre salario + incapacidades + extras + comisiones', '- ' + fmtC(resumenRetiro?.salud||0)]] : []),
     ...((resumenRetiro?.pension||0)>0 ? [['Descuento pensión empleado', '4% sobre salario + incapacidades + extras + comisiones', '- ' + fmtC(resumenRetiro?.pension||0)]] : []),
     ...((resumenRetiro?.otrasDeducciones||0)>0 ? [['Otras deducciones', 'Conceptos autorizados del empleado', '- ' + fmtC(resumenRetiro?.otrasDeducciones||0)]] : []),
-    ['Neto nómina final', periodoRetiro?.label||'Corte final', fmtC(resumenRetiro?.neto||0)],
+    ['Neto nómina final', corteFinal||'Corte final', fmtC(resumenRetiro?.neto||0)],
     ['Cesantías (Art. 249 CST)', (empleado.salario + (empleado.salario<=NOMINA_CO_2026.topeAuxilio?NOMINA_CO_2026.auxilioTransporte:0)).toLocaleString('es-CO') + ' × ' + pfl.diasTrabajados + 'd ÷ 360', fmtC(pfl.cesantias)],
     ['Intereses cesantías (12% anual)', '12% s/ ' + fmtC(pfl.cesantias), fmtC(pfl.interesesCesantias)],
     ['Prima de servicios (Art. 306 CST)', 'Base × ' + pfl.diasTrabajados + 'd ÷ 360', fmtC(pfl.prima)],
@@ -193,7 +216,7 @@ export function printLiquidacion(empleado, pfl, indemn, diasVacPagar, fechaSalid
   const rowsHtml = rows.map(([k,b,v])=>
     '<tr><td style="padding:6px 14px;border-bottom:1px solid #f1f5f9">'+k+'</td><td style="padding:6px 14px;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:10px">'+b+'</td><td style="padding:6px 14px;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:600">'+v+'</td></tr>'
   ).join('');
-  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Liquidación '+empleado.nombre+'</title>'
+  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Liquidación '+emp.nombre+'</title>'
     +'<style>body{font-family:"Segoe UI",Arial,sans-serif;margin:0;padding:20px;background:#f8fafc;}'
     +'.wrap{max-width:640px;margin:0 auto;background:#fff;border:1px solid #ddd;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.1);}'
     +'.hd{background:#cc0000;color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;}'
@@ -207,11 +230,11 @@ export function printLiquidacion(empleado, pfl, indemn, diasVacPagar, fechaSalid
     +'@media print{body{background:#fff;padding:0;}.wrap{box-shadow:none;border:none;}}'
     +'</style></head><body><div class="wrap">'
     +'<div class="hd"><div><h2>LIQUIDACIÓN DEFINITIVA DE PRESTACIONES SOCIALES</h2><div style="font-size:11px;opacity:.8;margin-top:3px">Ingeanclajes S.A.S — NIT 900193965-4</div></div></div>'
-    +'<div class="emp"><strong>'+empleado.nombre+'</strong>'
-    +'Cédula: '+(empleado.cedula||'-')+'&nbsp;·&nbsp;Cargo: '+(empleado.cargo||'-')+'<br/>'
-    +'Tipo contrato: '+(empleado.tipoContrato||'indefinido')+'&nbsp;·&nbsp;Ingreso: '+(empleado.fechaIngreso||'N/A')+'&nbsp;·&nbsp;Salida: '+(fechaSalida||'N/A')+'<br/>'
-    +'Causa retiro: '+(empleado.causaRetiro||'—')+'&nbsp;·&nbsp;Tiempo laborado: '+pfl.diasTrabajados+' días ('+pfl.mesesTrabajados+' meses)<br/>'
-    +'Corte final: '+(periodoRetiro?.label||'No definido')
+    +'<div class="emp"><strong>'+emp.nombre+'</strong>'
+    +'Cédula: '+emp.cedula+'&nbsp;·&nbsp;Cargo: '+emp.cargo+'<br/>'
+    +'Tipo contrato: '+emp.tipoContrato+'&nbsp;·&nbsp;Ingreso: '+emp.fechaIngreso+'&nbsp;·&nbsp;Salida: '+escapeHtml(fechaSalida||'N/A')+'<br/>'
+    +'Causa retiro: '+emp.causaRetiro+'&nbsp;·&nbsp;Tiempo laborado: '+(Number(pfl.diasTrabajados)||0)+' días ('+(Number(pfl.mesesTrabajados)||0)+' meses)<br/>'
+    +'Corte final: '+(corteFinal||'No definido')
     +'</div>'
     +'<table><thead><tr style="background:#142840;color:#fff"><th style="padding:7px 14px;text-align:left">Concepto</th><th style="padding:7px 14px;text-align:left">Base de cálculo</th><th style="padding:7px 14px;text-align:right">Valor</th></tr></thead>'
     +'<tbody>'+rowsHtml+'</tbody>'
@@ -219,7 +242,7 @@ export function printLiquidacion(empleado, pfl, indemn, diasVacPagar, fechaSalid
     +'</table>'
     +'<div class="footer">'
     +'<div style="display:flex;justify-content:space-around;margin-bottom:10px;margin-top:10px">'
-    +'<div style="text-align:center">________________________<br/><span style="font-size:11px;color:#374151">Firma Empleado<br/>'+empleado.nombre+'<br/>C.C. '+(empleado.cedula||'')+'</span></div>'
+    +'<div style="text-align:center">________________________<br/><span style="font-size:11px;color:#374151">Firma Empleado<br/>'+emp.nombre+'<br/>C.C. '+escapeHtml(empleado.cedula||'')+'</span></div>'
     +'<div style="text-align:center">________________________<br/><span style="font-size:11px;color:#374151">Representante Legal<br/>Ingeanclajes S.A.S</span></div>'
     +'</div>'
     +'Generado el '+new Date().toLocaleDateString('es-CO',{year:"numeric",month:"long",day:"numeric"})+' · Este documento es constancia de pago de prestaciones sociales.'

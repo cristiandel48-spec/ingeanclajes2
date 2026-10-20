@@ -26,6 +26,8 @@ export {
   registrarActividadUsuario,
   leerAceptacionTerminos,
   aceptarTerminos,
+  leerBloqueoSistema,
+  cambiarBloqueoSistema,
 } from "./usuarios";
 export {
   suscribirPresencia,

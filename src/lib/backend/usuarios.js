@@ -81,6 +81,37 @@ export async function aceptarTerminos(version) {
   return data;
 }
 
+// Apagado remoto del sistema (migracion 067). El estado vive en
+// app.estado_sistema y solo lo cambia el dueño, con una funcion de la base
+// que mira el correo de la sesion. Mientras esta apagado, la base no entrega
+// datos a nadie mas: esto solo sirve para mostrar la pantalla adecuada.
+export async function leerBloqueoSistema() {
+  const supabase = getSupabaseClient();
+  const tenantId = await getTenantIdActual();
+  const { data, error } = await supabase
+    .from("estado_sistema")
+    .select("bloqueado")
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
+  if (error) {
+    // Sin la migracion 067 todavia no existe la tabla: no hay apagado.
+    if (error.code === "PGRST205" || error.code === "42P01") return { bloqueado: false };
+    throw error;
+  }
+  return { bloqueado: Boolean(data?.bloqueado) };
+}
+
+export async function cambiarBloqueoSistema(bloqueado) {
+  const supabase = getSupabaseClient();
+  const tenantId = await getTenantIdActual();
+  const { error } = await supabase.rpc("cambiar_bloqueo_sistema", {
+    p_tenant: tenantId,
+    p_bloqueado: Boolean(bloqueado),
+  });
+  if (error) throw error;
+  return Boolean(bloqueado);
+}
+
 export async function listarUsuarios() {
   const supabase = getSupabaseClient();
   const tenantId = await getTenantIdActual();

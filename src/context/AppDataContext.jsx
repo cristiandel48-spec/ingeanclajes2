@@ -19,7 +19,7 @@ import {
 } from "../lib/accounting";
 import { EJEMPLOS, sinEjemplos } from "../data/ejemplos";
 import { confirmar } from "../lib/dialogos";
-import { entidadesSinPermiso } from "../lib/permisos";
+import { entidadesSinPermiso, esDueno } from "../lib/permisos";
 import { iniciarVigilanteInactividad } from "../lib/seguridadSesion";
 import {
   cargarCacheUltimasConexionesLocal,
@@ -360,48 +360,17 @@ export function AppDataProvider({ children }) {
     }
   });
 
-  // Kill switch: si es true, todos los usuarios NO-superadmin ven pantalla
-  // en blanco (sin mensaje). Solo cristiandel48@gmail.com puede activarlo /
-  // desactivarlo desde su panel de control en la pantalla de Usuarios.
-  // El estado vive en empresaConfig (id="empresa") y se sincroniza con la nube.
-  const appBloqueada = Boolean(
-    Array.isArray(empresaConfig) && empresaConfig.some(
-      (row) => row?.appBloqueada || row?.controlDocumental?.appBloqueada
-    )
-  );
+  // Apagado remoto del sistema (migracion 067). Antes era una marca en
+  // empresaConfig, que cualquier usuario podia escribir, y solo escondia la
+  // pantalla. Ahora vive en app.estado_sistema: solo el dueño lo cambia (la
+  // base mira el correo de la sesion) y, mientras esta apagado, la base no
+  // entrega datos a nadie mas. Este estado solo decide que pantalla mostrar.
+  const [appBloqueada, setAppBloqueadaLocal] = useState(false);
 
   const setAppBloqueada = async (valor) => {
-    const lista = Array.isArray(empresaConfig) ? empresaConfig : [];
-    const actual = lista.find((row) => row?.id === "empresa") || lista[0];
-    const targetId = actual?.id || "empresa";
-    const fila = {
-      ...(actual || { id: targetId }),
-      id: targetId,
-      appBloqueada: Boolean(valor),
-      controlDocumental: {
-        ...(actual?.controlDocumental || {}),
-        appBloqueada: Boolean(valor),
-      },
-    };
-    const nuevaLista = lista.some((r) => r.id === targetId)
-      ? lista.map((r) => (r.id === targetId ? fila : r))
-      : [...lista, fila];
-
-    setEmpresaConfig(nuevaLista);
-
-    // Guardado inmediato en Supabase
-    try {
-      const payload = payloadRef.current ? payloadRef.current() : {};
-      await saveCloudAppData({
-        ...payload,
-        empresaConfig: nuevaLista,
-      });
-      setSaveState("saved");
-      setLastSavedAt(new Date());
-      setHasPendingChanges(false);
-    } catch (e) {
-      console.error("Error al guardar estado de bloqueo en la nube:", e);
-    }
+    // Si la base lo rechaza (no es el dueño), el error sube a la pantalla.
+    await backend.cambiarBloqueoSistema(Boolean(valor));
+    setAppBloqueadaLocal(Boolean(valor));
 
     // Emisión en tiempo real a todos los clientes conectados
     if (presenciaManagerRef.current?.emitirBloqueoSistema) {
@@ -630,6 +599,18 @@ export function AppDataProvider({ children }) {
           }
         } catch (error) {
           console.error("No se pudo leer el rol del usuario:", error);
+        }
+
+        // Sistema apagado: para quien no es el dueño la base no entrega datos,
+        // asi que no se cargan. Sin carga tampoco se guarda nada.
+        try {
+          const { bloqueado } = await backend.leerBloqueoSistema();
+          if (cancel) return;
+          setAppBloqueadaLocal(bloqueado);
+          const sesion = await getSessionUser().catch(() => null);
+          if (bloqueado && !esDueno({ email: sesion?.email })) return;
+        } catch (error) {
+          console.warn("No se pudo leer el estado del sistema:", error);
         }
 
         const cloud = await loadCloudAppData();

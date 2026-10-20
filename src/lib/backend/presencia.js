@@ -95,12 +95,13 @@ export function suscribirPresencia({
   });
 
   // Escucha si el superadmin apaga el sistema de forma remota en vivo
+  // El estado real lo decide la base (app.estado_sistema, migracion 067): este
+  // aviso solo hace recargar para leerlo. Por eso da igual quien lo mande:
+  // un aviso falso solo provoca una recarga. Se recarga al apagar y tambien al
+  // encender, para que quien veia la pantalla de apagado vuelva a entrar.
   canal.on("broadcast", { event: "estado_bloqueo_sistema" }, ({ payload }) => {
     if (!payload) return;
-    if (!esAdmin && payload.bloqueado) {
-      // Recargar para que AppRoot aplique la pantalla en blanco silenciosa de inmediato
-      window.location.reload();
-    }
+    if (!esAdmin) window.location.reload();
   });
 
   // Función para computar el mapa de usuarios en línea

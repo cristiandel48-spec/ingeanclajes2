@@ -61,6 +61,12 @@ export default function DialogosGlobales() {
   }
 
   const cancelar = () => cerrarDialogo(d.id, d.tipo === "confirmar" ? false : undefined);
+  // Cerrar sin elegir (Escape, la X, tocar fuera) cuenta como cancelar, salvo
+  // en las preguntas donde las dos opciones hacen algo: ahi devuelve
+  // `alCerrar`, para que quien pregunta pueda no hacer nada.
+  const cerrarSinElegir = () => (
+    d.tipo === "confirmar" && d.alCerrar !== undefined ? cerrarDialogo(d.id, d.alCerrar) : cancelar()
+  );
   const aceptar = () => {
     if (d.tipo === "confirmar" && d.conGuardando) {
       // Se responde ya, para que la accion arranque, y el dialogo se queda
@@ -77,7 +83,7 @@ export default function DialogosGlobales() {
       key={d.id}
       abierta
       titulo={d.titulo}
-      onCerrar={cancelar}
+      onCerrar={cerrarSinElegir}
       pie={
         d.tipo === "confirmar" ? (
           <>

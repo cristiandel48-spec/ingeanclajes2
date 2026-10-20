@@ -223,6 +223,70 @@ export function AppDataProvider({ children }) {
       "horarios", "agenda", "ordenesCompra",
     ];
 
+    // Edicion simultanea: otra persona guardo cambios en un registro que esta
+    // persona tambien cambio. No se piso nada; aqui se le pregunta con cual
+    // quedarse. Un aviso por registro aunque el autoguardado lo vuelva a
+    // detectar mientras la pregunta esta abierta.
+    const preguntando = new Set();
+    backend.setAlDetectarConflictos(async (conflictos) => {
+      for (const c of conflictos) {
+        const clave = `${c.entity}:${c.item.id}`;
+        if (preguntando.has(clave)) continue;
+        preguntando.add(clave);
+        try {
+          const nombre = [
+            c.item.numero || c.item.id,
+            c.item.proyecto || c.item.obra || c.item.cliente || c.item.nombre || c.item.titulo || "",
+          ].filter(Boolean).join(" · ");
+          const quien = String(c.enBase?.modificadoPorNombre || "").trim() || "Otra persona";
+          // Cerrar el aviso sin elegir devuelve null: no se toca nada, el
+          // registro sigue pendiente y se vuelve a preguntar al guardar.
+          const quedarseConLaMia = await confirmar(c.enBase
+            ? {
+                alCerrar: null,
+                titulo: `${quien} también cambió ${nombre}`,
+                mensaje:
+                  "Mientras lo editabas, otra persona guardó cambios en este mismo registro. Tus cambios en él todavía no se han guardado.\n\n" +
+                  "«Guardar la mía»: tus cambios reemplazan los suyos.\n" +
+                  "«Ver la suya»: se descartan tus cambios en este registro y ves lo que guardó la otra persona.",
+                textoConfirmar: "Guardar la mía",
+                textoCancelar: "Ver la suya",
+                destructivo: false,
+                conGuardando: false,
+              }
+            : {
+                alCerrar: null,
+                titulo: `Otra persona eliminó ${nombre}`,
+                mensaje:
+                  "Mientras lo editabas, otra persona lo eliminó. Tus cambios en él todavía no se han guardado.\n\n" +
+                  "«Recuperarlo»: se vuelve a crear con tus cambios.\n" +
+                  "«Dejarlo eliminado»: se descartan tus cambios.",
+                textoConfirmar: "Recuperarlo",
+                textoCancelar: "Dejarlo eliminado",
+                destructivo: false,
+                conGuardando: false,
+              });
+
+          if (quedarseConLaMia === null) continue;
+          if (quedarseConLaMia) {
+            backend.forzarGuardado(c.entity, c.item.id);
+          } else if (c.enBase) {
+            await backend.aceptarVersionBase(c.entity, c.enBase, c.versionBase);
+            SETTERS[c.stateKey]?.((lista) => (Array.isArray(lista) ? lista : []).map((item) =>
+              item?.id === c.item.id ? { ...c.enBase, __parcial: false } : item
+            ));
+          } else {
+            backend.olvidarRegistro(c.entity, c.item.id);
+            SETTERS[c.stateKey]?.((lista) => (Array.isArray(lista) ? lista : []).filter((item) => item?.id !== c.item.id));
+          }
+        } finally {
+          preguntando.delete(clave);
+        }
+        // Se guarda ya con la decision tomada, sin esperar a otro cambio.
+        saveAllToCloudRef.current?.();
+      }
+    });
+
     backend.setAlReasignarIds((cambios) => {
       for (const { entity, stateKey, viejo, nuevo, campos } of cambios) {
         const setter = SETTERS[stateKey];
@@ -244,7 +308,10 @@ export function AppDataProvider({ children }) {
         window.dispatchEvent(new CustomEvent("ids-reasignados", { detail: cambios }));
       } catch { /* sin ventana: no hay formularios abiertos que avisar */ }
     });
-    return () => backend.setAlReasignarIds(null);
+    return () => {
+      backend.setAlReasignarIds(null);
+      backend.setAlDetectarConflictos(null);
+    };
   }, []);
 
   // Presencia en tiempo real y superadministración (cristiandel48@gmail.com)
@@ -415,7 +482,32 @@ export function AppDataProvider({ children }) {
 
   payloadRef.current = buildCloudPayload;
 
+  // Los guardados van uno detras de otro. Antes podian cruzarse: el
+  // autoguardado, un reintento y el aviso de «volvio la conexion» arrancaban a
+  // la vez. Con el control de version (edicion simultanea) eso es peor: el
+  // segundo usaria la version vieja del registro y la persona veria un aviso
+  // de que «otra persona» lo cambio, cuando fue ella misma un segundo antes.
+  // Quien llega mientras otro guarda espera su turno, y guarda lo mas
+  // reciente (el payload se arma al empezar, no al pedirlo).
+  const guardadoEnCursoRef = useRef(null);
   const saveAllToCloud = async (override = null) => {
+    while (guardadoEnCursoRef.current) {
+      try {
+        await guardadoEnCursoRef.current;
+      } catch {
+        // El fallo del anterior lo maneja el anterior.
+      }
+    }
+    const promesa = guardarEnNubeAhora(override);
+    guardadoEnCursoRef.current = promesa;
+    try {
+      return await promesa;
+    } finally {
+      if (guardadoEnCursoRef.current === promesa) guardadoEnCursoRef.current = null;
+    }
+  };
+
+  const guardarEnNubeAhora = async (override = null) => {
     if (!isSupabaseConfigured()) return { ok: false, reason: "not-configured" };
     if (typeof saveCloudAppData !== "function") {
       console.warn("saveCloudAppData no está disponible en ./lib/backend");

@@ -106,6 +106,9 @@ export function confirmar(opciones) {
       // para preguntas que no guardan nada (por ejemplo «¿Recargar ahora?»).
       conGuardando: base.conGuardando ?? true,
       textoGuardando: base.textoGuardando || "Guardando…",
+      // Lo que se devuelve si se cierra sin elegir. Sin definir, cuenta como
+      // cancelar (false), que es lo de siempre.
+      alCerrar: base.alCerrar,
       resolver,
     }];
     emitir();

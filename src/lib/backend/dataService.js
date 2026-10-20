@@ -159,8 +159,11 @@ export function createDataService({ supabase, tenantId }) {
       const ligeras = todas.filter((c) => !cfg.columnasPesadas.includes(c));
       // tenant_id no sale de toRow y hace falta para saber de quien es la
       // fila. Las calculadas tampoco: las escribe un disparador y aqui solo
-      // se leen, para poder decir cuantas fotos hay sin traerlas.
-      return ["tenant_id", ...ligeras, ...(cfg.columnasCalculadas ?? [])].join(",");
+      // se leen, para poder decir cuantas fotos hay sin traerlas. updated_at
+      // es la version del registro (ver actualizarConVersion).
+      const extras = [...(cfg.columnasCalculadas ?? [])];
+      if (!extras.includes("updated_at")) extras.push("updated_at");
+      return ["tenant_id", ...ligeras, ...extras].join(",");
     } catch {
       // Si toRow no soporta un objeto vacio, mejor traerlo todo que romper la
       // carga: se pierde el ahorro, no los datos.
@@ -173,6 +176,20 @@ export function createDataService({ supabase, tenantId }) {
   // tabla» se ven igual, y quien lee la respuesta no sabe si puede fiarse de
   // ella o debe recurrir a la copia local.
   const tablasFaltantes = new Set();
+
+  // Version de cada registro tal como se descargo: su updated_at, que la base
+  // cambia en cada modificacion. Al guardar, un registro solo se actualiza si
+  // en la base sigue esa misma version; si otra persona lo cambio entretanto,
+  // no se pisa (ver actualizarConVersion). Las tablas sin updated_at se
+  // guardan como siempre.
+  const versiones = new Map();
+  const tablasConVersion = new Set();
+  const claveVersion = (entity, id) => `${entity}:${id}`;
+  const anotarVersion = (entity, fila) => {
+    if (!fila || !fila.id || !Object.prototype.hasOwnProperty.call(fila, "updated_at")) return;
+    tablasConVersion.add(entity);
+    if (fila.updated_at) versiones.set(claveVersion(entity, fila.id), fila.updated_at);
+  };
 
   const list = async (entity) => {
     const cfg = assertEntity(entity);
@@ -241,6 +258,7 @@ export function createDataService({ supabase, tenantId }) {
     // un guardado deje sin fotos un registro que solo se cargo a medias.
     const parcial = columnas !== "*";
     return filas.map((fila) => {
+      anotarVersion(entity, fila);
       const item = cfg.fromRow(fila);
       return parcial ? { ...item, __parcial: true } : item;
     });
@@ -265,6 +283,8 @@ export function createDataService({ supabase, tenantId }) {
       if (cfg.optional && isMissingRelationError(error)) return null;
       throw error;
     }
+    // Lo que se acaba de traer es lo vigente: su version pasa a ser la conocida.
+    anotarVersion(entity, data);
     return data ? cfg.fromRow(data) : null;
   };
 
@@ -366,7 +386,11 @@ export function createDataService({ supabase, tenantId }) {
     );
     // La base puede corregir el numero de la cotizacion (migracion 065): se
     // pide de vuelta para que la aplicacion muestre el que quedo.
-    const columnasDevueltas = cfg.table === "cotizaciones" ? "id, numero" : "id";
+    const columnasDevueltas = [
+      "id",
+      ...(cfg.table === "cotizaciones" ? ["numero"] : []),
+      ...(tablasConVersion.has(entity) ? ["updated_at"] : []),
+    ].join(", ");
     const reservados = new Set();
 
     const siguienteLibre = async (idOcupado) => {
@@ -415,6 +439,7 @@ export function createDataService({ supabase, tenantId }) {
         .select(columnasDevueltas);
       if (!error) {
         const porId = new Map((data ?? []).map((fila) => [fila.id, fila]));
+        for (const fila of data ?? []) anotarVersion(entity, fila);
         for (const item of chunk) {
           reservados.add(item.id);
           anotarNumero(item, porId.get(item.id));
@@ -439,6 +464,7 @@ export function createDataService({ supabase, tenantId }) {
         if (!error) {
           guardado = true;
           reservados.add(id);
+          anotarVersion(entity, data);
           if (id !== item.id) {
             const campos = {};
             if (data?.numero !== undefined && data.numero !== (item.numero ?? null)) campos.numero = data.numero;
@@ -484,6 +510,116 @@ export function createDataService({ supabase, tenantId }) {
       }
     }
     return cambios;
+  };
+
+  // Tablas que se guardan sin control de version. empresa_config la escriben
+  // todos a cada rato (la hora de la ultima conexion de cada uno): con control
+  // daria avisos de «otra persona lo cambio» sin parar y sin sentido.
+  const SIN_CONTROL_DE_VERSION = new Set(["empresa_config"]);
+
+  const refrescarVersiones = async (entity, ids) => {
+    const cfg = assertEntity(entity);
+    for (const chunk of chunkArray(ids)) {
+      const { data, error } = await supabase
+        .from(cfg.table)
+        .select("id, updated_at")
+        .eq("tenant_id", tenantId)
+        .in("id", chunk);
+      if (!error) for (const fila of data ?? []) anotarVersion(entity, fila);
+    }
+  };
+
+  // Registros que YA EXISTIAN. Antes se guardaban con upsert: si dos personas
+  // editaban la misma obra, ganaba la ultima en guardar y los cambios de la
+  // otra se perdian sin aviso. Ahora cada uno se actualiza solo si en la base
+  // sigue en la version que se descargo. Si no, no se toca y se devuelve como
+  // conflicto, con lo que hay en la base, para que la persona decida.
+  //
+  // `forzados` son los ids que la persona ya decidio guardar igual («guardar
+  // la mia»): esos van con upsert, como antes.
+  const actualizarConVersion = async (entity, items, forzados = new Set()) => {
+    const cfg = assertEntity(entity);
+    const conflictos = [];
+    const lista = (items ?? []).filter((item) => item && item.id);
+    if (!lista.length) return { conflictos };
+
+    const conControl = tablasConVersion.has(entity) && !SIN_CONTROL_DE_VERSION.has(entity);
+    const usaVersion = (item) =>
+      conControl && !forzados.has(item.id) && Boolean(versiones.get(claveVersion(entity, item.id)));
+
+    // Sin version conocida o con la decision ya tomada: como siempre.
+    const libres = lista.filter((item) => !usaVersion(item));
+    if (libres.length) {
+      await upsertMany(entity, libres);
+      if (tablasConVersion.has(entity)) await refrescarVersiones(entity, libres.map((item) => item.id));
+    }
+
+    const armar = (item, legacy) => {
+      const row = coerceEmptyToNull(
+        { tenant_id: tenantId, ...(legacy && cfg.toLegacyRow ? cfg.toLegacyRow(item) : cfg.toRow(item)) },
+        cfg.coerceNullCols
+      );
+      // Igual que en upsertMany: lo que no se trajo (fotos) no se pisa.
+      if (item.__parcial && cfg.columnasPesadas?.length) {
+        for (const columna of cfg.columnasPesadas) delete row[columna];
+      }
+      return row;
+    };
+
+    const actualizarUno = async (item) => {
+      const version = versiones.get(claveVersion(entity, item.id));
+      let legacy = false;
+      for (;;) {
+        const { data, error } = await supabase
+          .from(cfg.table)
+          .update(armar(item, legacy))
+          .eq("tenant_id", tenantId)
+          .eq("id", item.id)
+          .eq("updated_at", version)
+          .select("id, updated_at");
+        if (error) {
+          if (!legacy && cfg.toLegacyRow && isMissingColumnError(error)) {
+            legacy = true;
+            continue;
+          }
+          throw error;
+        }
+        if (data?.length) {
+          anotarVersion(entity, data[0]);
+          return;
+        }
+        // Ninguna fila con esa version: otra persona lo cambio o lo borro.
+        const { data: actual, error: errActual } = await supabase
+          .from(cfg.table)
+          .select("*")
+          .eq("tenant_id", tenantId)
+          .eq("id", item.id)
+          .maybeSingle();
+        if (errActual) throw errActual;
+        conflictos.push({
+          entity,
+          item,
+          enBase: actual ? cfg.fromRow(actual) : null,
+          versionBase: actual?.updated_at ?? null,
+        });
+        return;
+      }
+    };
+
+    // De a cinco a la vez: un cambio que toca muchos registros (la nomina de
+    // todo el personal) no se hace eterno, y la base no se satura.
+    const controlados = lista.filter(usaVersion);
+    for (let i = 0; i < controlados.length; i += 5) {
+      await Promise.all(controlados.slice(i, i + 5).map(actualizarUno));
+    }
+    return { conflictos };
+  };
+
+  // La persona eligio quedarse con lo que hay en la base: esa pasa a ser la
+  // version conocida del registro.
+  const fijarVersion = (entity, id, version) => {
+    if (version) versiones.set(claveVersion(entity, id), version);
+    else versiones.delete(claveVersion(entity, id));
   };
 
   const deleteMany = async (entity, ids) => {
@@ -549,6 +685,8 @@ export function createDataService({ supabase, tenantId }) {
     cargarDetalle,
     upsertMany,
     insertMany,
+    actualizarConVersion,
+    fijarVersion,
     deleteMany,
     replaceAll,
     loadAll,

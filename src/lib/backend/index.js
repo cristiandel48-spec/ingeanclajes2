@@ -9,6 +9,10 @@ export {
   cargarDetalleNube,
   setEntidadesSinPermiso,
   setAlReasignarIds,
+  setAlDetectarConflictos,
+  forzarGuardado,
+  aceptarVersionBase,
+  olvidarRegistro,
 } from "./bootstrapAppData";
 export {
   getMiMembresia,

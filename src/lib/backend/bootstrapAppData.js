@@ -59,6 +59,37 @@ export function setAlReasignarIds(fn) {
   alReasignarIds = typeof fn === "function" ? fn : null;
 }
 
+// Edicion simultanea. Si otra persona cambio un registro despues de que este
+// navegador lo descargara, el guardado no lo pisa (dataService
+// actualizarConVersion): lo deja pendiente y avisa por aqui para que la
+// persona elija entre guardar la suya o quedarse con la de la base.
+let alDetectarConflictos = null;
+export function setAlDetectarConflictos(fn) {
+  alDetectarConflictos = typeof fn === "function" ? fn : null;
+}
+
+// Ids que la persona decidio guardar igual («guardar la mia»), por entidad.
+const forzados = {};
+export function forzarGuardado(entity, id) {
+  (forzados[entity] ??= new Set()).add(id);
+}
+
+// La persona eligio la version de la base: pasa a ser la conocida y deja de
+// contar como cambio pendiente. Sin registro (lo borraron) se olvida.
+export async function aceptarVersionBase(entity, item, version) {
+  const service = await getService();
+  const cfg = entityConfig[entity];
+  const baseline = baselineByEntity[entity] ?? (baselineByEntity[entity] = new Map());
+  if (item) {
+    baseline.set(item.id, serializeForCompare(cfg?.toRow ? cfg.toRow(item) : item));
+    service.fijarVersion(entity, item.id, version);
+  }
+}
+
+export function olvidarRegistro(entity, id) {
+  baselineByEntity[entity]?.delete(id);
+}
+
 // Las fotos viajan dentro de los registros como textos base64 de 0,5 a 8 MB.
 // Antes, en cada autoguardado se copiaba cada foto de cada registro entero a
 // un texto nuevo solo para comparar, y el baseline guardaba otra copia: el
@@ -215,6 +246,7 @@ export async function saveCloudAppData(appData) {
 
   let huboCambios = false;
   const reasignados = [];
+  const conflictos = [];
   for (const [entity, stateKey] of Object.entries(ENTITY_TO_STATE)) {
     if (!Object.prototype.hasOwnProperty.call(appData ?? {}, stateKey)) continue;
     // Sin permiso: ni se sube ni se borra, y su baseline queda como estaba.
@@ -248,8 +280,19 @@ export async function saveCloudAppData(appData) {
     const existentes = upserts.filter((item) => baseline.has(item.id));
     const nuevos = upserts.filter((item) => !baseline.has(item.id));
     if (existentes.length) {
-      await service.upsertMany(entity, existentes);
+      const forzadosEntidad = forzados[entity] ?? new Set();
+      const { conflictos: chocados } = await service.actualizarConVersion(entity, existentes, forzadosEntidad);
       huboCambios = true;
+      // Lo forzado ya quedo guardado: la decision no se arrastra a cambios
+      // futuros, que vuelven a controlarse.
+      for (const item of existentes) forzadosEntidad.delete(item.id);
+      // Lo que choco sigue pendiente: su baseline se queda como estaba, asi el
+      // proximo guardado lo vuelve a intentar con lo que la persona decida.
+      for (const c of chocados) {
+        if (baseline.has(c.item.id)) nextMap.set(c.item.id, baseline.get(c.item.id));
+        else nextMap.delete(c.item.id);
+      }
+      conflictos.push(...chocados);
     }
     if (nuevos.length) {
       const cambios = await service.insertMany(entity, nuevos);
@@ -278,6 +321,15 @@ export async function saveCloudAppData(appData) {
 
   if (huboCambios) {
     registrarActividadUsuario().catch(() => {});
+  }
+
+  if (conflictos.length && alDetectarConflictos) {
+    const conEstado = conflictos.map((c) => ({ ...c, stateKey: ENTITY_TO_STATE[c.entity] }));
+    try {
+      alDetectarConflictos(conEstado);
+    } catch (error) {
+      console.error("No se pudo avisar de la edicion simultanea:", error);
+    }
   }
 
   if (reasignados.length && alReasignarIds) {

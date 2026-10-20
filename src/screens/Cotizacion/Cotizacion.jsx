@@ -56,6 +56,25 @@ export default function Cotizacion({ctx}){
   const [dictando,setDictando]=useState(false);
   const [importando,setImportando]=useState(false);
   const [cot,setCot]=useState("");
+
+  // Si al guardar esta cotizacion choco con un numero que otra persona ya
+  // habia usado, se guardo con el siguiente libre. El formulario abierto se
+  // pasa al numero nuevo: si siguiera con el viejo, el proximo guardado
+  // crearia otra copia.
+  const editCotRef=useRef(editCot);
+  useEffect(()=>{ editCotRef.current=editCot; },[editCot]);
+  useEffect(()=>{
+    const alReasignar=(ev)=>{
+      for(const c of ev.detail||[]){
+        if(c.entity!=="cotizaciones" || editCotRef.current!==c.viejo) continue;
+        editCotRef.current=c.nuevo;
+        setEditCot(c.nuevo);
+        if(c.campos?.numero) setCot(c.campos.numero);
+      }
+    };
+    window.addEventListener("ids-reasignados",alReasignar);
+    return ()=>window.removeEventListener("ids-reasignados",alReasignar);
+  },[]);
   const [fecha,setFecha]=useState(today());
   const [val,setVal]=useState(30);
   const [cl,setCl]=useState({nombre:"",nit:"",contacto:"",contactoEmail:"",obra:"",telefono:"",ciudad:"",direccion:"",coords:""});

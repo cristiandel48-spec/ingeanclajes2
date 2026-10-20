@@ -200,6 +200,53 @@ export function AppDataProvider({ children }) {
   const [membresia, setMembresia] = useState(null);
   const [cotDraft, setCotDraft] = useState(null);
 
+  // Numeros reasignados al guardar. Si un registro nuevo choco con un numero
+  // que otra persona ya habia usado, se guardo con el siguiente libre (ver
+  // dataService.insertMany). Aqui se corrige la copia de la aplicacion: el id
+  // del registro, los vinculos que lo apuntan y el numero de cotizacion que
+  // haya puesto la base. Las pantallas con un formulario abierto se enteran
+  // por el evento «ids-reasignados».
+  useEffect(() => {
+    const SETTERS = {
+      obras: setObras, empleados: setEmpleados, cargos: setCargos, pagos: setPagos,
+      horarios: setHorarios, certs: setCerts, informes: setInformes, clientes: setClientes,
+      proveedores: setProveedores, cuentas: setCuentas, ordenesCompra: setOrdenesCompra,
+      cotizaciones: setCotizaciones, agenda: setAgenda, catalogoItems: setCatalogoItems,
+    };
+    // Campo con el que otros registros apuntan a uno de esta entidad.
+    const VINCULOS = {
+      obras: "obraId", cotizaciones: "cotizacionId", proveedores: "proveedorId",
+      empleados: "empleadoId", cuentas: "facturaVinculadaId",
+    };
+    const COLECCIONES_CON_VINCULOS = [
+      "obras", "cotizaciones", "informes", "certs", "cuentas", "pagos",
+      "horarios", "agenda", "ordenesCompra",
+    ];
+
+    backend.setAlReasignarIds((cambios) => {
+      for (const { entity, stateKey, viejo, nuevo, campos } of cambios) {
+        const setter = SETTERS[stateKey];
+        if (setter) {
+          setter((lista) => (Array.isArray(lista) ? lista : []).map((item) =>
+            item?.id === viejo ? { ...item, id: nuevo, ...(campos || {}) } : item
+          ));
+        }
+        const campo = VINCULOS[entity];
+        if (campo && viejo !== nuevo) {
+          for (const clave of COLECCIONES_CON_VINCULOS) {
+            SETTERS[clave]?.((lista) => (Array.isArray(lista) ? lista : []).map((item) =>
+              item?.[campo] === viejo ? { ...item, [campo]: nuevo } : item
+            ));
+          }
+        }
+      }
+      try {
+        window.dispatchEvent(new CustomEvent("ids-reasignados", { detail: cambios }));
+      } catch { /* sin ventana: no hay formularios abiertos que avisar */ }
+    });
+    return () => backend.setAlReasignarIds(null);
+  }, []);
+
   // Presencia en tiempo real y superadministración (cristiandel48@gmail.com)
   const [usuariosEnLinea, setUsuariosEnLinea] = useState({});
   const [ultimasConexiones, setUltimasConexiones] = useState(() => cargarCacheUltimasConexionesLocal());

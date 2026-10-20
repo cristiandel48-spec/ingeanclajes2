@@ -8,6 +8,7 @@ export {
   mapStateKeyToEntity,
   cargarDetalleNube,
   setEntidadesSinPermiso,
+  setAlReasignarIds,
 } from "./bootstrapAppData";
 export {
   getMiMembresia,

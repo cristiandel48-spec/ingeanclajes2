@@ -51,6 +51,14 @@ export function setEntidadesSinPermiso(lista) {
   entidadesSinPermiso = new Set(lista || []);
 }
 
+// Cuando un registro nuevo choca con un numero que ya existe en la base, se
+// guarda con el siguiente libre (dataService.insertMany). La aplicacion se
+// entera por aqui para corregir su copia y los vinculos que lo apuntan.
+let alReasignarIds = null;
+export function setAlReasignarIds(fn) {
+  alReasignarIds = typeof fn === "function" ? fn : null;
+}
+
 // Las fotos viajan dentro de los registros como textos base64 de 0,5 a 8 MB.
 // Antes, en cada autoguardado se copiaba cada foto de cada registro entero a
 // un texto nuevo solo para comparar, y el baseline guardaba otra copia: el
@@ -206,6 +214,7 @@ export async function saveCloudAppData(appData) {
   const service = await getService();
 
   let huboCambios = false;
+  const reasignados = [];
   for (const [entity, stateKey] of Object.entries(ENTITY_TO_STATE)) {
     if (!Object.prototype.hasOwnProperty.call(appData ?? {}, stateKey)) continue;
     // Sin permiso: ni se sube ni se borra, y su baseline queda como estaba.
@@ -213,7 +222,7 @@ export async function saveCloudAppData(appData) {
 
     const cfg = entityConfig[entity];
     const items = (appData[stateKey] ?? []).filter((item) => item && item.id);
-    const baseline = baselineByEntity[entity] ?? new Map();
+    const baseline = baselineByEntity[entity] ?? (baselineByEntity[entity] = new Map());
 
     // 1) Upsert solo de lo nuevo o lo que cambió respecto al baseline.
     const nextMap = new Map();
@@ -234,9 +243,29 @@ export async function saveCloudAppData(appData) {
       if (!nextMap.has(id)) deletes.push(id);
     }
 
-    if (upserts.length) {
-      await service.upsertMany(entity, upserts);
+    // Lo que ya estaba en la base se actualiza; lo nuevo se inserta, para que
+    // un numero repetido no pise el registro de otra persona.
+    const existentes = upserts.filter((item) => baseline.has(item.id));
+    const nuevos = upserts.filter((item) => !baseline.has(item.id));
+    if (existentes.length) {
+      await service.upsertMany(entity, existentes);
       huboCambios = true;
+    }
+    if (nuevos.length) {
+      const cambios = await service.insertMany(entity, nuevos);
+      huboCambios = true;
+      // Lo insertado queda anotado ya: si algo falla mas abajo, el siguiente
+      // guardado no lo vuelve a tratar como nuevo.
+      for (const item of nuevos) baseline.set(item.id, nextMap.get(item.id));
+      for (const cambio of cambios) {
+        if (cambio.viejo === cambio.nuevo) continue;
+        const item = nuevos.find((x) => x.id === cambio.viejo);
+        const fila = cfg?.toRow ? cfg.toRow({ ...item, id: cambio.nuevo, ...cambio.campos }) : null;
+        nextMap.delete(cambio.viejo);
+        baseline.delete(cambio.viejo);
+        nextMap.set(cambio.nuevo, serializeForCompare(fila));
+      }
+      reasignados.push(...cambios);
     }
     if (deletes.length) {
       await service.deleteMany(entity, deletes);
@@ -249,6 +278,15 @@ export async function saveCloudAppData(appData) {
 
   if (huboCambios) {
     registrarActividadUsuario().catch(() => {});
+  }
+
+  if (reasignados.length && alReasignarIds) {
+    const conEstado = reasignados.map((c) => ({ ...c, stateKey: ENTITY_TO_STATE[c.entity] }));
+    try {
+      alReasignarIds(conEstado);
+    } catch (error) {
+      console.error("No se pudieron aplicar los numeros reasignados:", error);
+    }
   }
 }
 

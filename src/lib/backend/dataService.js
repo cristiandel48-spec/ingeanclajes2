@@ -347,6 +347,145 @@ export function createDataService({ supabase, tenantId }) {
     }
   };
 
+  // Registros NUEVOS: se insertan, no se hace upsert. El numero lo calcula el
+  // navegador como «el mayor que conozco + 1», y con dos personas trabajando
+  // a la vez -o una pestaña abierta desde hace horas- los dos sacan el mismo.
+  // Con upsert, el segundo borraba sin aviso el registro del primero. Con
+  // insert la base rechaza el repetido (23505) y aqui se le busca el siguiente
+  // numero libre consultando la base. Devuelve los cambios hechos para que la
+  // aplicacion actualice su copia: [{ entity, viejo, nuevo, campos }].
+  const insertMany = async (entity, items) => {
+    const cfg = assertEntity(entity);
+    const cambios = [];
+    const nuevos = (items ?? []).filter((item) => item && item.id);
+    if (!nuevos.length) return cambios;
+
+    const armarFila = (item, id, legacy = false) => coerceEmptyToNull(
+      { tenant_id: tenantId, ...(legacy && cfg.toLegacyRow ? cfg.toLegacyRow(item) : cfg.toRow(item)), id },
+      cfg.coerceNullCols
+    );
+    // La base puede corregir el numero de la cotizacion (migracion 065): se
+    // pide de vuelta para que la aplicacion muestre el que quedo.
+    const columnasDevueltas = cfg.table === "cotizaciones" ? "id, numero" : "id";
+    const reservados = new Set();
+
+    const siguienteLibre = async (idOcupado) => {
+      const partes = String(idOcupado).match(/^([A-Za-z]+)-(\d+)$/);
+      if (!partes) return `${idOcupado}-${Date.now().toString(36)}`;
+      const [, prefijo, numero] = partes;
+      const { data, error } = await supabase
+        .from(cfg.table)
+        .select("id")
+        .eq("tenant_id", tenantId)
+        .like("id", `${prefijo}-%`);
+      if (error) throw error;
+      let mayor = 0;
+      for (const fila of [...(data ?? []), ...[...reservados].map((id) => ({ id }))]) {
+        const m = String(fila.id).match(new RegExp(`^${prefijo}-(\\d+)$`, "i"));
+        if (m) mayor = Math.max(mayor, parseInt(m[1], 10));
+      }
+      return `${prefijo}-${String(mayor + 1).padStart(numero.length, "0")}`;
+    };
+
+    // Para saber si lo que hay en la base es este mismo registro. No cuentan
+    // la autoria ni lo que calcula la base (los rellenan triggers), y vacio y
+    // nulo se tratan igual.
+    const huella = (fila) => JSON.stringify(
+      Object.keys(fila)
+        .filter((k) => !/^(creado|modificado)_/.test(k) && !(cfg.columnasCalculadas || []).includes(k))
+        // El numero de cotizacion lo puede corregir la base (migracion 065).
+        .filter((k) => !(cfg.table === "cotizaciones" && k === "numero"))
+        .sort()
+        .map((k) => [k, fila[k] === "" || fila[k] === undefined ? null : fila[k]])
+    );
+
+    const anotarNumero = (item, fila) => {
+      if (fila?.numero !== undefined && fila.numero !== (item.numero ?? null)) {
+        cambios.push({ entity, viejo: item.id, nuevo: item.id, campos: { numero: fila.numero } });
+      }
+    };
+
+    // Primero en bloque, que es lo normal: ningun numero repetido. Solo si la
+    // base rechaza alguno se pasa a uno por uno para saber cual.
+    const pendientes = [];
+    for (const chunk of chunkArray(nuevos)) {
+      const { data, error } = await supabase
+        .from(cfg.table)
+        .insert(chunk.map((item) => armarFila(item, item.id)))
+        .select(columnasDevueltas);
+      if (!error) {
+        const porId = new Map((data ?? []).map((fila) => [fila.id, fila]));
+        for (const item of chunk) {
+          reservados.add(item.id);
+          anotarNumero(item, porId.get(item.id));
+        }
+        continue;
+      }
+      if (cfg.optional && isMissingRelationError(error)) return cambios;
+      pendientes.push(...chunk);
+    }
+
+    for (const item of pendientes) {
+      let id = item.id;
+      let legacy = false;
+      let guardado = false;
+      for (let intento = 0; intento < 6 && !guardado; intento += 1) {
+        const { data, error } = await supabase
+          .from(cfg.table)
+          .insert(armarFila(item, id, legacy))
+          .select(columnasDevueltas)
+          .maybeSingle();
+
+        if (!error) {
+          guardado = true;
+          reservados.add(id);
+          if (id !== item.id) {
+            const campos = {};
+            if (data?.numero !== undefined && data.numero !== (item.numero ?? null)) campos.numero = data.numero;
+            cambios.push({ entity, viejo: item.id, nuevo: id, campos });
+          } else {
+            anotarNumero(item, data);
+          }
+          break;
+        }
+
+        if (cfg.optional && isMissingRelationError(error)) return cambios;
+        if (!legacy && cfg.toLegacyRow && isMissingColumnError(error)) {
+          legacy = true;
+          intento -= 1;
+          continue;
+        }
+        if (error.code === "23505") {
+          // Puede ser este mismo registro: un guardado anterior alcanzo a
+          // insertarlo y fallo despues, antes de anotarlo como guardado. Si en
+          // la base esta igual, ya quedo; renumerarlo lo duplicaria.
+          if (id === item.id) {
+            const enBase = await cargarDetalle(entity, id).catch(() => null);
+            const mismo = enBase &&
+              huella(armarFila(enBase, id, legacy)) === huella(armarFila(item, id, legacy));
+            if (mismo) {
+              guardado = true;
+              reservados.add(id);
+              break;
+            }
+          }
+          // El numero es de otro registro: se busca el siguiente libre.
+          id = await siguienteLibre(id);
+          if (id !== item.id) {
+            console.warn(`[${cfg.table}] ${item.id} ya existia en la base; se guarda como ${id}.`);
+          }
+          continue;
+        }
+        throw error;
+      }
+      // Nunca se da por guardado lo que no entro: el autoguardado lo reintenta.
+      if (!guardado) {
+        throw new Error(`No se encontró un número libre para ${item.id} en ${cfg.table}. Recarga la página e intenta de nuevo.`);
+      }
+    }
+    return cambios;
+  };
+
   const deleteMany = async (entity, ids) => {
     const cfg = assertEntity(entity);
     const safeIds = (ids ?? []).filter(Boolean);
@@ -409,6 +548,7 @@ export function createDataService({ supabase, tenantId }) {
     list,
     cargarDetalle,
     upsertMany,
+    insertMany,
     deleteMany,
     replaceAll,
     loadAll,

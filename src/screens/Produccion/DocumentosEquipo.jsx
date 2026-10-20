@@ -4,6 +4,7 @@ import { useIsMobile } from "../../hooks/useMediaQuery";
 import { limpiarDocumentosEjemplo } from "./documentosSeed";
 import { Icono } from "../../components/ui";
 import { confirmar } from "../../lib/dialogos";
+import { today } from "../../lib/format";
 
 const NARANJA = "#f47c20";
 
@@ -139,8 +140,8 @@ export default function DocumentosEquipo({
       obraNombre: "",
       responsable: "",
       favorito: false,
-      fechaCreacion: new Date().toISOString().slice(0, 10),
-      fechaActualizacion: new Date().toISOString().slice(0, 10),
+      fechaCreacion: today(),
+      fechaActualizacion: today(),
       enlaces: [],
       bloques: [],
     };
@@ -156,7 +157,7 @@ export default function DocumentosEquipo({
     setDocumentos((prev) =>
       prev.map((d) =>
         d.id === docActivoId
-          ? { ...d, [campo]: valor, fechaActualizacion: new Date().toISOString().slice(0, 10) }
+          ? { ...d, [campo]: valor, fechaActualizacion: today() }
           : d
       )
     );
@@ -175,7 +176,7 @@ export default function DocumentosEquipo({
           });
           return { ...b, items: nuevosItems };
         });
-        return { ...d, bloques: nuevosBloques, fechaActualizacion: new Date().toISOString().slice(0, 10) };
+        return { ...d, bloques: nuevosBloques, fechaActualizacion: today() };
       })
     );
   };
@@ -193,13 +194,13 @@ export default function DocumentosEquipo({
           const nuevaTarea = {
             id: `t-${Date.now()}`,
             texto: texto.trim(),
-            fecha: new Date().toISOString().slice(0, 10),
+            fecha: today(),
             responsable: "",
             completada: false,
           };
           return { ...b, items: [...(b.items || []), nuevaTarea] };
         });
-        return { ...d, bloques: nuevosBloques, fechaActualizacion: new Date().toISOString().slice(0, 10) };
+        return { ...d, bloques: nuevosBloques, fechaActualizacion: today() };
       })
     );
   };
@@ -226,7 +227,7 @@ export default function DocumentosEquipo({
         const nuevosBloques = (d.bloques || []).map((b) =>
           b.id === bloqueId ? { ...b, ...campos } : b
         );
-        return { ...d, bloques: nuevosBloques, fechaActualizacion: new Date().toISOString().slice(0, 10) };
+        return { ...d, bloques: nuevosBloques, fechaActualizacion: today() };
       })
     );
   };
@@ -239,7 +240,7 @@ export default function DocumentosEquipo({
         return {
           ...d,
           bloques: (d.bloques || []).filter((b) => b.id !== bloqueId),
-          fechaActualizacion: new Date().toISOString().slice(0, 10),
+          fechaActualizacion: today(),
         };
       })
     );
@@ -275,7 +276,7 @@ export default function DocumentosEquipo({
           copia.splice(idx + 1, 0, nuevoItem);
           return { ...b, items: copia };
         });
-        return { ...d, bloques: nuevosBloques, fechaActualizacion: new Date().toISOString().slice(0, 10) };
+        return { ...d, bloques: nuevosBloques, fechaActualizacion: today() };
       })
     );
   };
@@ -292,7 +293,7 @@ export default function DocumentosEquipo({
           );
           return { ...b, items: nuevosItems };
         });
-        return { ...d, bloques: nuevosBloques, fechaActualizacion: new Date().toISOString().slice(0, 10) };
+        return { ...d, bloques: nuevosBloques, fechaActualizacion: today() };
       })
     );
   };
@@ -307,7 +308,7 @@ export default function DocumentosEquipo({
           const filtrados = (b.items || []).filter((item) => item.id !== itemId);
           return { ...b, items: filtrados };
         });
-        return { ...d, bloques: nuevosBloques, fechaActualizacion: new Date().toISOString().slice(0, 10) };
+        return { ...d, bloques: nuevosBloques, fechaActualizacion: today() };
       })
     );
   };
@@ -328,7 +329,7 @@ export default function DocumentosEquipo({
           });
           return { ...b, items: nuevosItems };
         });
-        return { ...d, bloques: nuevosBloques, fechaActualizacion: new Date().toISOString().slice(0, 10) };
+        return { ...d, bloques: nuevosBloques, fechaActualizacion: today() };
       })
     );
   };
@@ -348,7 +349,7 @@ export default function DocumentosEquipo({
           });
           return { ...b, items: nuevosItems };
         });
-        return { ...d, bloques: nuevosBloques, fechaActualizacion: new Date().toISOString().slice(0, 10) };
+        return { ...d, bloques: nuevosBloques, fechaActualizacion: today() };
       })
     );
   };
@@ -395,7 +396,7 @@ export default function DocumentosEquipo({
           if (b.id !== bloqueId) return b;
           return { ...b, items: [...(b.items || []), ...nuevosItems] };
         });
-        return { ...d, bloques: nuevosBloques, fechaActualizacion: new Date().toISOString().slice(0, 10) };
+        return { ...d, bloques: nuevosBloques, fechaActualizacion: today() };
       })
     );
     mostrarToast(`${nuevosItems.length} viñetas añadidas`);
@@ -419,8 +420,8 @@ export default function DocumentosEquipo({
         obraNombre: "",
         responsable: "",
         favorito: false,
-        fechaCreacion: new Date().toISOString().slice(0, 10),
-        fechaActualizacion: new Date().toISOString().slice(0, 10),
+        fechaCreacion: today(),
+        fechaActualizacion: today(),
         enlaces: [{ id: docActivo.id, titulo: `Volver a ${docActivo.titulo}`, desc: "Página principal" }],
         bloques: [
           {
@@ -513,7 +514,7 @@ export default function DocumentosEquipo({
           {
             id: `t-${Date.now()}`,
             texto: "Primera tarea",
-            fecha: new Date().toISOString().slice(0, 10),
+            fecha: today(),
             responsable: "",
             completada: false,
           },
@@ -536,7 +537,7 @@ export default function DocumentosEquipo({
           return {
             ...d,
             bloques: [...(d.bloques || []), nuevoBloque],
-            fechaActualizacion: new Date().toISOString().slice(0, 10),
+            fechaActualizacion: today(),
           };
         })
       );

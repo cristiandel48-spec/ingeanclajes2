@@ -85,7 +85,7 @@ export function printCurrentPz(title = "Documento"){
 
 export function printColilla(empleado, resumen, periodo){
   const fmtC = n => '$ ' + Math.round(Number(n)||0).toLocaleString('es-CO');
-  const periodoCrudo = periodo?.label || (periodo?.mes || new Date().toISOString().slice(0,7));
+  const periodoCrudo = periodo?.label || (periodo?.mes || today().slice(0,7));
   const periodLabel = escapeHtml(periodoCrudo);
   const emp = datosEmpleadoSeguros(empleado);
   const devengados = [

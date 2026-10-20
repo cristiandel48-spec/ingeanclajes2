@@ -3,6 +3,7 @@ import { B, SI } from "../../styles/tokens";
 import { getFestivoColombia } from "../../lib/festivosColombia";
 import { SUGERENCIAS_FECHAS_ESPECIALES } from "../../lib/agendaEspecial";
 import { confirmar } from "../../lib/dialogos";
+import { today } from "../../lib/format";
 
 const ICONOS_DISPONIBLES = [
   { id: "⭐", label: "Estrellita" },
@@ -36,7 +37,7 @@ export default function ModalEstrellitaEspecial({
         setHora(itemEdicion.hora || "");
         setIcono(itemEdicion.icono || "⭐");
       } else {
-        setFecha(fechaInicial || new Date().toISOString().slice(0, 10));
+        setFecha(fechaInicial || today());
         setTitulo("");
         setNotas("");
         setHora("");

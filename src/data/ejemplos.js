@@ -25,11 +25,14 @@
 // escriben en la pantalla de WhatsApp, y van en distintos puntos del recorrido
 // para que se vea entero.
 
+import { toIsoDate } from "../lib/dates";
+
 const hoy = new Date();
+// Fecha local, no UTC: en la noche toISOString daba el dia siguiente.
 const iso = (dias) => {
   const d = new Date(hoy);
   d.setDate(d.getDate() + dias);
-  return d.toISOString().slice(0, 10);
+  return toIsoDate(d);
 };
 
 const marca = { __ejemplo: true };

@@ -1,7 +1,13 @@
 // Formato de moneda, fechas y utilidades de rango de mes
 export const fmt  = n=>new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0}).format(n||0);
 export const fmtK = n=>n>=1000000?"$" + ((n/1000000).toFixed(1)) + "M":"$" + ((n/1000).toFixed(0)) + "K";
-export const today= ()=>new Date().toISOString().split("T")[0];
+// La fecha de hoy en la hora del equipo (Colombia), no en UTC. Con
+// toISOString(), despues de las 7 p. m. salia el dia siguiente: cotizaciones,
+// bitacora, pagos y nomina quedaban con la fecha de mañana.
+export const today= ()=>{
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+};
 // Una fecha suelta -"2026-08-18"- se ancla al mediodia para que el cambio de
 // huso no la corra un dia hacia atras.
 //

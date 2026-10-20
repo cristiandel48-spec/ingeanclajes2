@@ -1,3 +1,4 @@
+import { today } from "./format";
 // Lector e intérprete de Facturas Electrónicas de la DIAN (Colombia).
 //
 // Soporta:
@@ -252,8 +253,8 @@ function parsearXmlDian(xmlString) {
     formato: "xml-ubl",
     factura: facturaId || "SIN-NUMERO",
     cufe: (cufe.match(CUFE_REGEX)?.[1] || cufe).trim(),
-    fecha: fechaEmision || new Date().toISOString().slice(0, 10),
-    fechaVence: fechaVence || fechaEmision || new Date().toISOString().slice(0, 10),
+    fecha: fechaEmision || today(),
+    fechaVence: fechaVence || fechaEmision || today(),
     proveedor: {
       nombre: nombreProveedor || "Proveedor no identificado",
       nit: nitProveedor,
@@ -319,7 +320,7 @@ function parsearHtmlDian(htmlString) {
 
   // Extraer Fechas
   const fechaMatch = textoPlano.match(/(?:Fecha\s+(?:de\s+)?Emisi[oó]n|Fecha)[:\s]*(\d{4}[-/.]\d{2}[-/.]\d{2})/i);
-  const fecha = fechaMatch ? fechaMatch[1].replace(/\//g, "-") : new Date().toISOString().slice(0, 10);
+  const fecha = fechaMatch ? fechaMatch[1].replace(/\//g, "-") : today();
 
   const fechaVenceMatch = textoPlano.match(/(?:Fecha\s+(?:de\s+)?Vencimiento|Vence)[:\s]*(\d{4}[-/.]\d{2}[-/.]\d{2})/i);
   const fechaVence = fechaVenceMatch ? fechaVenceMatch[1].replace(/\//g, "-") : fecha;
@@ -407,8 +408,8 @@ export async function leerFacturaDian(archivoOTexto) {
       formato: "cufe-directo",
       factura: "CONSULTA-DIAN",
       cufe: soloCufe[1],
-      fecha: new Date().toISOString().slice(0, 10),
-      fechaVence: new Date().toISOString().slice(0, 10),
+      fecha: today(),
+      fechaVence: today(),
       proveedor: {
         nombre: "Proveedor por consultar en DIAN",
         nit: "",

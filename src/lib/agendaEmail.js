@@ -2,6 +2,7 @@
 import { enviarCotizacionPorCorreo } from "./backend/usuarios";
 import { asuntoSeguro } from "./asuntoCorreo";
 import { compromisoAParams, generarIcsCompromiso, parsearHora } from "./icsCompromiso";
+import { today } from "./format";
 
 export { generarIcsCompromiso, parsearHora };
 
@@ -81,7 +82,7 @@ export function horaA12h(time24) {
 // Genera el enlace a Google Calendar para incluirlo en el correo
 export function generarUrlGoogleCalendar(compromiso, emailInvitado = EMAIL_CAMILA_DEFAULT) {
   if (!compromiso) return "";
-  const isoFecha = compromiso.fecha || new Date().toISOString().slice(0, 10);
+  const isoFecha = compromiso.fecha || today();
   const { h, m } = parsearHora(compromiso.hora);
 
   const pad = (n) => String(n).padStart(2, "0");

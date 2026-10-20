@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { abrirWhatsApp } from "../../lib/whatsapp";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import { confirmar } from "../../lib/dialogos";
+import { today } from "../../lib/format";
+import { toIsoDate } from "../../lib/dates";
 
 export default function ModalTareaProduccion({
   tarea,
@@ -23,7 +25,7 @@ export default function ModalTareaProduccion({
     obraNombre: "Oficina / General",
     prioridad: "normal",
     estado: "por_hacer",
-    fechaLimite: new Date().toISOString().split("T")[0],
+    fechaLimite: today(),
     checklist: [],
   });
 
@@ -45,7 +47,7 @@ export default function ModalTareaProduccion({
         obraNombre: (obras && (obras[0]?.nombre || obras[0]?.cliente)) || "Oficina / General",
         prioridad: "normal",
         estado: "por_hacer",
-        fechaLimite: new Date().toISOString().split("T")[0],
+        fechaLimite: today(),
         checklist: [],
       });
     }
@@ -347,7 +349,7 @@ ${form.descripcion ? `Detalles: ${form.descripcion}` : ""}`;
                     type="button"
                     onClick={() => {
                       const d = new Date(Date.now() + s.dias * 86400000);
-                      setForm((p) => ({ ...p, fechaLimite: d.toISOString().split("T")[0] }));
+                      setForm((p) => ({ ...p, fechaLimite: toIsoDate(d) }));
                     }}
                     style={{
                       background: "var(--surface-subtle, #f5f5f7)",

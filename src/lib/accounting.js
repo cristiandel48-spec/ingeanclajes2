@@ -1,3 +1,4 @@
+import { today } from "./format";
 const safeArray = (value) => (Array.isArray(value) ? value : []);
 
 const roundMoney = (value) => Number((Number(value || 0)).toFixed(2));
@@ -592,7 +593,7 @@ export function createAsientoLine(overrides = {}) {
 
 export function buildEmptyManualAsiento(existingEntries = [], fecha = "") {
   const targetDate =
-    String(fecha || "").trim() || new Date().toISOString().slice(0, 10);
+    String(fecha || "").trim() || today();
   return normalizeAsientoContable({
     id: buildId("AST"),
     consecutivo: buildManualConsecutivo(existingEntries, targetDate),
@@ -613,7 +614,7 @@ export function buildEmptyManualAsiento(existingEntries = [], fecha = "") {
 }
 
 export function buildManualConsecutivo(existingEntries = [], fecha = "") {
-  const year = String(fecha || new Date().toISOString().slice(0, 10)).slice(0, 4);
+  const year = String(fecha || today()).slice(0, 4);
   const max = safeArray(existingEntries).reduce((currentMax, entry) => {
     const match = String(entry?.consecutivo || "").match(/^MC-(\d{4})-(\d+)$/);
     if (!match || match[1] !== year) return currentMax;

@@ -9,6 +9,7 @@ import {
   normalizarDocumento, normalizarFrase, normalizarNombrePropio, normalizarTelefono,
 } from "../lib/normalizarEntrada";
 import { confirmar } from "../lib/dialogos";
+import { today } from "../lib/format";
 
 // Alta de un trabajador desde la obra o desde horarios.
 //
@@ -138,7 +139,7 @@ export default function NuevoEmpleadoRapido({ ctx, onCreado, onCerrar, obraId = 
       tipoCuenta: "Ahorros",
       numeroCuenta: "",
       tipoContrato: "indefinido",
-      fechaIngreso: new Date().toISOString().slice(0, 10),
+      fechaIngreso: today(),
       horasExtrasPorObra: [],
       comisionesPorObra: [],
       altaEstado: "pendiente",

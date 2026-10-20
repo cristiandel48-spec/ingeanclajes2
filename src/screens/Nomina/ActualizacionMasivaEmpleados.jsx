@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import * as XLSX from "xlsx";
-import { fmt } from "../../lib/format";
+import { fmt, today } from "../../lib/format";
 import {
   normalizarDocumento,
   normalizarNombrePropio,
@@ -165,7 +165,7 @@ export default function ActualizacionMasivaEmpleados({
       wsInstrucciones["!cols"] = [{ wch: 120 }];
       XLSX.utils.book_append_sheet(wb, wsInstrucciones, "Instrucciones");
 
-      const fechaHoy = new Date().toISOString().slice(0, 10);
+      const fechaHoy = today();
       const nombreArchivo = `Formulario_Empleados_Ingeanclajes_${fechaHoy}.xlsx`;
 
       XLSX.writeFile(wb, nombreArchivo);
@@ -371,7 +371,7 @@ export default function ActualizacionMasivaEmpleados({
                 cargo: cargoRaw ? cargoRaw.trim().toUpperCase() : "OPERARIO",
                 salario: salarioNum > 0 ? salarioNum : 1423500,
                 tipoContrato: mapearTipoContrato(contratoRaw),
-                fechaIngreso: fechaIngresoRaw || new Date().toISOString().slice(0, 10),
+                fechaIngreso: fechaIngresoRaw || today(),
                 tel: normalizarTelefono(telRaw),
                 email: normalizarCorreo(emailRaw),
                 banco: bancoRaw || "Bancolombia",

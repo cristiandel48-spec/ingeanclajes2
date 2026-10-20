@@ -1,7 +1,7 @@
 // Generacion del HTML imprimible de cotizaciones y mensajes de envio
 import { fmt } from "./format";
 import { escapeHtml } from "./html";
-import { normalizarMayusculas } from "./normalizarEntrada";
+import { normalizarMayusculas, normalizarTituloFormal } from "./normalizarEntrada";
 import { LOGO_INGEANCLAJES } from "../assets/embeddedImages";
 import { getQuotePrintableProposals, porcentajeUtilidad } from "./cotizaciones";
 import { getStaticMapDimensions, buildStaticMapLabelData } from "./maps";
@@ -820,7 +820,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "", sello = null } = {}
                  ancho, que es lo que hace que quede bien centrado. Se sigue
                  leyendo lo guardado con saltos -las cotizaciones de antes-,
                  pero unido con un espacio. -->
-            <h1>${escapeHtml(primeraMayuscula(lineasDeTexto(textos.tituloPortada).join(" ")))}</h1>
+            <h1>${escapeHtml(normalizarTituloFormal(lineasDeTexto(textos.tituloPortada).join(" ")))}</h1>
           </div>
           <div class="meta-strip">
             <div class="meta-cell">

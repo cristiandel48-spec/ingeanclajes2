@@ -28,6 +28,25 @@ const SIGLAS = new Set([
   "sas", "sa", "ltda", "eu", "sca", "esp", "eps", "arl", "ips", "nit", "cc", "ce",
 ]);
 
+// Preposiciones, conjunciones y artículos que en un título van en minúscula (salvo al inicio)
+const MENORES_TITULO = new Set([
+  "a", "al", "ante", "bajo", "con", "contra", "de", "del", "desde", "durante",
+  "en", "entre", "hacia", "hasta", "para", "por", "según", "segun", "sin",
+  "sobre", "tras", "y", "e", "o", "u", "el", "la", "los", "las", "un", "una", "unos", "unas",
+]);
+
+// Siglas técnicas frecuentes en títulos de cotizaciones
+const SIGLAS_TITULO = new Set([
+  "sas", "sa", "ltda", "eu", "sca", "esp", "eps", "arl", "ips", "nit", "cc", "ce",
+  "sst", "pvc", "ansi", "osha", "nfc", "nps", "din", "iso", "led", "ac", "dc", "inox",
+]);
+
+function capitalizarPalabra(palabra) {
+  return palabra.replace(/^([^\p{L}]*)(\p{L})(.*)$/u, (_, previo, primera, resto) => {
+    return previo + primera.toLocaleUpperCase("es-CO") + resto.toLocaleLowerCase("es-CO");
+  });
+}
+
 const limpiarEspacios = (valor) => String(valor ?? "").trim().replace(/\s+/g, " ");
 
 import { corregirOrtografiaLocal } from "./correctorTexto";
@@ -42,6 +61,56 @@ export function corregirPalabras(valor) {
  * "  juan   PEREZ gomez " -> "Juan Perez Gomez"
  * "constructora velez sas" -> "Constructora Velez SAS"
  */
+/**
+ * Títulos formales (portada de cotización, propuestas comerciales):
+ * Mayúsculas iniciales por palabra ("Title Case"), dejando conectores y preposiciones
+ * en minúscula excepto al inicio. Respeta siglas técnicas (ANSI, OSHA, SST, S.A.S.)
+ * y números romanos (II, III, IV).
+ *
+ * "Sistema de ESCALERAS CertificadAS para Trabajo en Alturas" ->
+ * "Sistema de Escaleras Certificadas para Trabajo en Alturas"
+ */
+export function normalizarTituloFormal(valor) {
+  const texto = corregirPalabras(limpiarEspacios(valor));
+  if (!texto) return "";
+
+  return texto
+    .split(" ")
+    .map((palabra, i) => {
+      if (!palabra) return "";
+
+      // Si contiene puntos o siglas técnicas explícitas (S.A.S, ANSI, etc.)
+      if (palabra.includes(".")) return palabra.toUpperCase();
+      const limpia = palabra.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+      if (SIGLAS_TITULO.has(limpia)) return palabra.toUpperCase();
+
+      // Si es número romano ("II", "III", "IV")
+      if (/^(?=[MDCLXVI])M*(C[MD]|D?C{0,3})(X[CL]|L?X{0,3})(I[XV]|V?I{0,3})$/i.test(limpia) && limpia.length > 0) {
+        return palabra.toUpperCase();
+      }
+
+      // Si es conector o preposición menor y NO es la primera palabra
+      if (i > 0 && MENORES_TITULO.has(limpia)) {
+        return palabra.toLowerCase();
+      }
+
+      // Guiones internos: "contra-caídas" -> "Contra-Caídas"
+      if (palabra.includes("-")) {
+        return palabra
+          .split("-")
+          .map((sub, j) => {
+            const subLimpia = sub.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+            if (j > 0 && MENORES_TITULO.has(subLimpia)) return sub.toLowerCase();
+            return capitalizarPalabra(sub);
+          })
+          .join("-");
+      }
+
+      return capitalizarPalabra(palabra);
+    })
+    .join(" ");
+}
+
 export function normalizarNombrePropio(valor) {
   const texto = limpiarEspacios(valor);
   if (!texto) return "";

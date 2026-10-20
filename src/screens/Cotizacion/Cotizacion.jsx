@@ -21,7 +21,7 @@ import { B, CD, SI, ST } from "../../styles/tokens";
 import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_TIEMPO_EJEC } from "../../data/seed";
 import { buildQuoteProposal, createQuoteProposalId, getQuoteApprovalAccountingSnapshot, getQuoteProposalLabel, getQuoteProposals, normalizeProposalItems, normalizeQuoteItems, porcentajeUtilidad } from "../../lib/cotizaciones";
 import { fmt, scrollAppToTop, today } from "../../lib/format";
-import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarMayusculas, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
+import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarMayusculas, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono, normalizarTituloFormal } from "../../lib/normalizarEntrada";
 import { downloadGeneratedFile } from "../../lib/download";
 import { getFirmaImg } from "../../lib/firmaEmpresa";
 import { selloDe } from "../../lib/controlDocumental";
@@ -1457,7 +1457,7 @@ export default function Cotizacion({ctx}){
         <div style={{marginBottom:14}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
             <LBL>Título de la portada</LBL>
-            <BotonCorregir valor={textosDocumento.tituloPortada} onChange={(v)=>setTexto("tituloPortada",v)} compacto/>
+            <BotonCorregir valor={textosDocumento.tituloPortada} onChange={(v)=>setTexto("tituloPortada",normalizarTituloFormal(v))} compacto/>
           </div>
           {/* De una sola linea, centrado y en mayuscula: igual que sale
               impreso. Era un campo de varios renglones y cada uno salia como
@@ -1477,18 +1477,16 @@ export default function Cotizacion({ctx}){
             onChange={e=>setTexto("tituloPortada",e.target.value.replace(/\s+/g," "))}
             onBlur={e=>{
               const v = e.target.value.replace(/\s+/g," ");
-              const auto = corregirOrtografiaLocal(v);
-              if (auto !== v) {
+              const auto = normalizarTituloFormal(v);
+              if (auto !== textosDocumento.tituloPortada) {
                 setTexto("tituloPortada", auto);
               }
             }}
             style={{...SI,fontSize:14,fontWeight:600,
-              textAlign:"center",textTransform:"uppercase"}}
+              textAlign:"center"}}
           />
           <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>
-            El título grande de la primera hoja. Cámbialo según el trabajo: certificación, mantenimiento
-            de fachadas, obra blanca… Sale centrado y en mayúscula, como se ve aquí; si es largo, la hoja
-            lo reparte solo en varias líneas.
+            El título grande de la primera hoja. Cámbialo según el trabajo (se formatea automáticamente con mayúsculas iniciales por palabra). Sale centrado en la portada; si es largo, la hoja lo reparte solo en varias líneas.
           </div>
         </div>
         <div style={{marginBottom:14}}>

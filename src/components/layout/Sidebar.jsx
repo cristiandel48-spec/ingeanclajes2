@@ -1,10 +1,10 @@
 import { useRef, useState } from "react";
 import CreditoDesarrollo from "../CreditoDesarrollo";
-import logoIngeanclajes from "../../assets/logo-ingeanclajes.jpeg";
+import logoIa from "../../assets/logo-ia.png";
 import { NAV_SECTIONS, ICONS } from "../../config/navigation";
 import { useAppData } from "../../context/AppDataContext";
 import { filtrarSecciones } from "../../lib/permisos";
-import { BRAND, RAIL_WIDTH, RAIL_WIDTH_EXPANDED } from "../../styles/shellTheme";
+import { RAIL_WIDTH, RAIL_WIDTH_EXPANDED } from "../../styles/shellTheme";
 import { BotonInstalarApp } from "../pwa/InstaladorApp";
 import { TIPO } from "../../styles/designTokens";
 
@@ -143,11 +143,16 @@ export default function Sidebar({
           display: "flex", alignItems: "center", gap: 12,
           padding: "18px 16px 14px", flexShrink: 0, minHeight: 74,
         }}>
+          {/* Las letras «ia» del logo en un cuadro blanco. Antes iba el logo
+              entero, que es ancho, en 26px sobre rojo: no se leia y el rojo
+              del emblema se perdia en el fondo. Blanco en los dos temas para
+              que el rojo y el negro del logo se vean. */}
           <div style={{
-            width: 40, height: 40, borderRadius: 12, background: BRAND, flexShrink: 0,
+            width: 40, height: 40, borderRadius: 11, background: "#ffffff", flexShrink: 0,
             display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 0 0 1px rgba(0,0,0,.08)",
           }}>
-            <img src={logoIngeanclajes} alt="" style={{ width: 26, height: 26, objectFit: "contain", borderRadius: 6 }} />
+            <img src={logoIa} alt="" style={{ width: 22, height: 26, objectFit: "contain" }} />
           </div>
           <div style={{
             opacity: showLabels ? 1 : 0,

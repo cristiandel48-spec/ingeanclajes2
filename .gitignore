@@ -51,3 +51,6 @@ scripts/avisar-whatsapp/*.json
 # Son de esta maquina: la referencia del proyecto y las versiones de los
 # servicios. No van al repositorio.
 supabase/.temp/
+
+# Copias locales que deja scripts/migrar-fotos-storage.mjs
+respaldo-fotos/

@@ -8,7 +8,7 @@ import { B, SI } from "../../styles/tokens";
 import { fmtD, today } from "../../lib/format";
 import { leerImagenComprimida } from "../../lib/imagenes";
 import { normalizarFrase } from "../../lib/normalizarEntrada";
-import { normalizarBitacora, registroVacio, resumenBitacora, avanceDesdeBitacora, limpiarAvance, faltaAvance } from "../../lib/bitacoraObra";
+import { normalizarBitacora, registroVacio, resumenBitacora, calcularAvanceObra, maximoParaJornada, limpiarAvance, faltaAvance } from "../../lib/bitacoraObra";
 import { estadoSegunAvance } from "../../lib/flujoObra";
 import { confirmar } from "../../lib/dialogos";
 
@@ -49,21 +49,22 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
     return guardarBitacoraReal(siguiente);
   };
 
-  // Al guardar la bitacora tambien se mueve el avance de la obra: es el de la
-  // jornada mas reciente que lo tenga anotado. Si ninguna lo trae, el avance
-  // se queda como estaba (por ejemplo, el que se puso a mano antes).
+  // Al guardar la bitacora tambien se mueve el avance de la obra: el inicial
+  // mas lo que suma cada jornada. Es el unico sitio donde cambia.
   const guardarBitacoraReal = (siguiente) =>
     setObras((prev) => prev.map((o) => {
       if (o.id !== obra.id) return o;
-      const desdeBitacora = avanceDesdeBitacora(siguiente);
-      if (!desdeBitacora) return { ...o, bitacora: siguiente };
+      const { avance } = calcularAvanceObra(o.avanceInicial, siguiente);
       return {
         ...o,
         bitacora: siguiente,
-        avance: desdeBitacora.avance,
-        estado: estadoSegunAvance(desdeBitacora.avance, o.estado),
+        avance,
+        estado: estadoSegunAvance(avance, o.estado),
       };
     }));
+
+  // Lo que puede sumar una jornada sin pasar la obra de 100%.
+  const maximoDe = (registroId) => maximoParaJornada(obra.avanceInicial, registros, registroId);
 
   // Ventana que pide el avance antes de abrir la jornada. Un campo pequeño
   // dentro de la jornada pasaba de largo: la persona no veia por que no podia
@@ -257,12 +258,12 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                 <LBL>Fecha del trabajo</LBL>
                 <input type="date" value={registro.fecha} onChange={(e) => actualizarRegistro(registro.id, "fecha", e.target.value)} style={{ ...SI, background: "#ffffff", border: "1px solid var(--border, #d2d2d7)" }} />
               </div>
-              {/* El avance de la obra a esta fecha. La jornada mas reciente
-                  que lo tenga es la que manda en el avance de la obra. En las
-                  jornadas nuevas es obligatorio: sin el, lo demas no se llena. */}
+              {/* Lo que avanzo la obra en esta jornada. El avance de la obra
+                  es el inicial mas la suma de todas. En las jornadas nuevas
+                  es obligatorio: sin el, lo demas no se llena. */}
               <div data-falta-avance={falta || undefined}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                  <LBL>Avance de la obra (%){registro.avanceObligatorio || falta ? " *" : ""}</LBL>
+                  <LBL>Avance de la jornada (%){registro.avanceObligatorio || falta ? " *" : ""}</LBL>
                   <button
                     type="button"
                     onClick={() => setPidiendoAvance({ registroId: registro.id, fecha: registro.fecha, valorInicial: registro.avance })}
@@ -280,14 +281,18 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                     type="number"
                     inputMode="numeric"
                     min={0}
-                    max={100}
+                    max={maximoDe(registro.id)}
                     step={1}
                     value={registro.avance ?? ""}
-                    onChange={(e) => actualizarRegistro(registro.id, "avance", limpiarAvance(e.target.value))}
-                    // Sin el avance actual como sugerencia: en gris parecia que
-                    // ya estaba lleno, y es justo el dato que se debe escribir.
-                    placeholder="0 a 100"
-                    aria-label="Avance de la obra a la fecha de esta jornada, en porcentaje"
+                    // No deja pasar la obra de 100%: lo que sobra se recorta.
+                    onChange={(e) => {
+                      const valor = limpiarAvance(e.target.value);
+                      actualizarRegistro(registro.id, "avance", valor === null ? null : Math.min(valor, maximoDe(registro.id)));
+                    }}
+                    // Sin un numero como sugerencia: en gris parecia que ya
+                    // estaba lleno, y es justo el dato que se debe escribir.
+                    placeholder={`0 a ${maximoDe(registro.id)}`}
+                    aria-label="Lo que avanzó la obra en esta jornada, en porcentaje"
                     style={{ ...SI, background: "#ffffff", border: "1px solid var(--border, #d2d2d7)", paddingRight: 28, fontVariantNumeric: "tabular-nums" }}
                   />
                   <span style={{ position: "absolute", right: 11, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "var(--text-tertiary)", pointerEvents: "none" }}>%</span>
@@ -450,7 +455,8 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
 
       {pidiendoAvance && (
         <VentanaAvance
-          avanceActual={obra.avance ?? 0}
+          // Lo que lleva la obra sin contar esta jornada.
+          avanceActual={100 - maximoDe(pidiendoAvance.registroId)}
           fecha={pidiendoAvance.fecha}
           esJornadaExistente={Boolean(pidiendoAvance.registroId)}
           valorInicial={pidiendoAvance.valorInicial}
@@ -470,10 +476,14 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
   );
 }
 
-// Ventana que pide el avance de la obra antes de registrar la jornada. Grande
-// y al centro, con el numero en letra grande, para que nadie siga sin verla.
-// No se cierra pulsando fuera: solo con «Cancelar» o la X.
+// Ventana que pide lo que avanzo la obra en la jornada. Grande y al centro,
+// con el numero en letra grande, para que nadie siga sin verla. No se cierra
+// pulsando fuera: solo con «Cancelar» o la X.
+//
+// `avanceActual` es lo que lleva la obra sin esta jornada: la jornada puede
+// sumar hasta llegar a 100%, no mas.
 function VentanaAvance({ avanceActual, fecha, esJornadaExistente, valorInicial = null, onGuardar, onCerrar }) {
+  const maximo = Math.max(0, 100 - avanceActual);
   const [valor, setValor] = useState(
     valorInicial !== null && valorInicial !== undefined && valorInicial !== ""
       ? String(valorInicial)
@@ -498,7 +508,9 @@ function VentanaAvance({ avanceActual, fecha, esJornadaExistente, valorInicial =
     String(valor).trim() !== "" &&
     !Number.isNaN(numRaw) &&
     numRaw >= 0 &&
-    numRaw <= 100;
+    numRaw <= maximo;
+  const quedaria = numero === null ? avanceActual : Math.min(100, avanceActual + numero);
+  const seExcede = numero !== null && String(valor).trim() !== "" && numRaw > maximo;
 
   const guardar = (e) => {
     e?.preventDefault();
@@ -509,11 +521,11 @@ function VentanaAvance({ avanceActual, fecha, esJornadaExistente, valorInicial =
   return (
     <Sheet
       abierta
-      titulo="¿Cuánto avance lleva la obra hoy?"
+      titulo="¿Cuánto avanzó la obra en esta jornada?"
       subtitulo={
         esJornadaExistente
-          ? `Falta el avance de la jornada del ${fmtD(fecha) || "día sin fecha"}. Escríbelo para poder seguir con ella.`
-          : "Escribe el avance total de la obra a hoy, de 0 a 100. Sin este dato no se puede registrar la jornada."
+          ? `Escribe lo que avanzó la obra el ${fmtD(fecha) || "día sin fecha"}. Se suma al avance total de la obra.`
+          : `Escribe solo lo que se avanzó hoy, de 0 a ${maximo}. Se suma al avance total de la obra. Sin este dato no se puede registrar la jornada.`
       }
       onCerrar={onCerrar}
       cerrarAlPulsarFondo={false}
@@ -532,13 +544,13 @@ function VentanaAvance({ avanceActual, fecha, esJornadaExistente, valorInicial =
             type="number"
             inputMode="numeric"
             min={0}
-            max={100}
+            max={maximo}
             step={1}
             ref={campoRef}
             value={valor}
             onChange={(e) => setValor(e.target.value)}
             placeholder="0"
-            aria-label="Avance de la obra a hoy, en porcentaje"
+            aria-label="Lo que avanzó la obra en esta jornada, en porcentaje"
             style={{
               width: "100%",
               boxSizing: "border-box",
@@ -570,12 +582,18 @@ function VentanaAvance({ avanceActual, fecha, esJornadaExistente, valorInicial =
             %
           </span>
         </div>
-        <div style={{ fontSize: 13, color: "var(--text-tertiary)" }}>
-          Avance registrado hasta ahora: {avanceActual}%
+        <div style={{ fontSize: 13, color: "var(--text-tertiary)", textAlign: "center", lineHeight: 1.45 }}>
+          La obra lleva {avanceActual}%.
+          {valido && numero > 0 ? <> Con esta jornada quedaría en <strong style={{ color: "var(--text-primary)" }}>{quedaria}%</strong>.</> : null}
         </div>
-        {numero === 100 && (
+        {seExcede && (
           <div role="alert" style={{ fontSize: 12.5, color: "var(--danger-text)", textAlign: "center", maxWidth: 320, lineHeight: 1.4 }}>
-            Con 100% la obra pasa a Finalizada y su bitácora queda cerrada. Úsalo solo si la obra ya terminó.
+            Con eso la obra pasaría de 100%. A esta jornada le quedan como máximo {maximo}%.
+          </div>
+        )}
+        {valido && quedaria === 100 && (
+          <div role="alert" style={{ fontSize: 12.5, color: "var(--danger-text)", textAlign: "center", maxWidth: 320, lineHeight: 1.4 }}>
+            Con esta jornada la obra llega al 100%: pasa a Finalizada y su bitácora queda cerrada. Úsalo solo si la obra ya terminó.
           </div>
         )}
       </form>

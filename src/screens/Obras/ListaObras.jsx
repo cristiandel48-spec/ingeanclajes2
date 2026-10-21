@@ -47,7 +47,6 @@ export default function ListaObras({
   cotizaciones = [],
   horarios = [],
   onAbrir,
-  onCambiarAvance,
   onCambiarEstado,
   onToggleEnviado,
   puedeDesbloquear,
@@ -569,7 +568,6 @@ export default function ListaObras({
               fotosCount={fotosPorObra.get(o.id) || 0}
               horarios={horarios}
               onAbrir={() => onAbrir(o)}
-              onCambiarAvance={onCambiarAvance}
               onCambiarEstado={onCambiarEstado}
               onToggleEnviado={onToggleEnviado}
               puedeDesbloquear={puedeDesbloquear}
@@ -609,7 +607,7 @@ export default function ListaObras({
                 <span>Ciudad</span>
                 <span>Inicio</span>
                 <span style={{ textAlign: "center" }}>Equipo / Fotos</span>
-                <span>Avance en Vivo</span>
+                <span>Avance</span>
                 <span style={{ textAlign: "center" }}>Estado</span>
                 <span style={{ textAlign: "center" }}>Documentación</span>
                 <span style={{ textAlign: "right" }}>Acción</span>
@@ -626,7 +624,6 @@ export default function ListaObras({
                     horarios={horarios}
                     zebra={idx % 2 === 1}
                     onAbrir={() => onAbrir(o)}
-                    onCambiarAvance={onCambiarAvance}
                     onCambiarEstado={onCambiarEstado}
                     onToggleEnviado={onToggleEnviado}
                     puedeDesbloquear={puedeDesbloquear}
@@ -675,7 +672,6 @@ function FilaTablaObraApple({
   horarios = [],
   zebra,
   onAbrir,
-  onCambiarAvance,
   onCambiarEstado,
   onToggleEnviado,
   puedeDesbloquear,
@@ -815,7 +811,7 @@ function FilaTablaObraApple({
         </span>
       </div>
 
-      {/* Avance en Vivo (Slider interactivo en fila) */}
+      {/* Avance: solo se muestra; se cambia en las jornadas de la obra */}
       <div style={{ paddingRight: 10 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 2 }}>
           <span style={{ fontSize: 10.5, color: "var(--text-muted, #667085)" }}>Avance</span>
@@ -850,24 +846,6 @@ function FilaTablaObraApple({
             }}
           />
         </div>
-        <input
-          type="range"
-          min={0}
-          max={100}
-          value={avance}
-          disabled={bloqueada}
-          title={bloqueada ? "Obra finalizada: el avance está bloqueado." : "Deslizar para actualizar avance"}
-          onChange={(e) => onCambiarAvance(o.id, Number(e.target.value))}
-          style={{
-            width: "100%",
-            height: 4,
-            accentColor: colorBarra,
-            display: "block",
-            cursor: bloqueada ? "not-allowed" : "pointer",
-            opacity: bloqueada ? 0.5 : 1,
-            margin: 0,
-          }}
-        />
       </div>
 
       {/* Estado (Badge o Selector) */}
@@ -967,16 +945,13 @@ function TarjetaObraApple({
   fotosCount = 0,
   horarios = [],
   onAbrir,
-  onCambiarAvance,
   onToggleEnviado,
-  puedeDesbloquear,
 }) {
   const [hover, setHover] = useState(false);
   const idsDirectos = Array.isArray(o.empleados) ? o.empleados : [];
   const idsHorarios = (horarios || []).filter((h) => h.obraId === o.id).map((h) => h.empleadoId).filter(Boolean);
   const totalEmpleados = [...new Set([...idsDirectos, ...idsHorarios])].length;
   const avance = Number(o.avance) || 0;
-  const bloqueada = obraEstaCerrada(o) && !puedeDesbloquear;
   const enviado = Boolean(o.enviadoAlCliente);
 
   const cliente = normalizarRazonSocial(o.cliente);
@@ -1134,7 +1109,7 @@ function TarjetaObraApple({
         </div>
       </div>
 
-      {/* Avance Slider & Acciones */}
+      {/* Avance (solo se muestra; se cambia en las jornadas) y acciones */}
       <div style={{ paddingTop: 8, borderTop: "1px solid var(--border, rgba(0,0,0,0.05))", width: "100%", minWidth: 0, boxSizing: "border-box" }} onClick={(e) => e.stopPropagation()}>
         <div className="no-wrap" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, marginBottom: 2, width: "100%", minWidth: 0 }}>
           <span style={{ color: "var(--text-muted, #667085)" }}>Avance</span>
@@ -1162,21 +1137,6 @@ function TarjetaObraApple({
             }}
           />
         </div>
-        <input
-          type="range"
-          min={0}
-          max={100}
-          value={avance}
-          disabled={bloqueada}
-          onChange={(e) => onCambiarAvance(o.id, Number(e.target.value))}
-          style={{
-            width: "100%",
-            accentColor: colorBarra,
-            display: "block",
-            cursor: bloqueada ? "not-allowed" : "pointer",
-            margin: "0 0 6px",
-          }}
-        />
 
         <div className="no-wrap" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, width: "100%", minWidth: 0 }}>
           <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>

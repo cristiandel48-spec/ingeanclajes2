@@ -209,6 +209,9 @@ export const entityConfig = {
       coords: item.coords ?? null,
       estado: item.estado ?? null,
       avance: item.avance ?? null,
+      // Avance con el que la obra entro al sistema (migracion 074): el de la
+      // obra es este mas lo que suma cada jornada.
+      avance_inicial: item.avanceInicial ?? 0,
       total: item.total ?? null,
       pagado: item.pagado ?? null,
       saldo: item.saldo ?? null,
@@ -291,6 +294,7 @@ export const entityConfig = {
       coords: row.coords,
       estado: row.estado,
       avance: row.avance,
+      avanceInicial: Number(row.avance_inicial) || 0,
       total: row.total,
       pagado: row.pagado,
       saldo: row.saldo,

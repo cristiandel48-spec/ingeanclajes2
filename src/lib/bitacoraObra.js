@@ -17,10 +17,11 @@ export function registroVacio(fecha) {
     actividad: "",
     descripcion: "",
     observaciones: "",
-    // Avance de la obra (0-100) a la fecha de esta jornada. Es obligatorio en
-    // las jornadas nuevas: hasta que se anota, el resto de la jornada queda
-    // bloqueado. Las jornadas de antes de este cambio no lo traen y no se
-    // bloquean (no tienen la marca avanceObligatorio).
+    // Lo que avanzo la obra en esta jornada, en puntos de porcentaje: el
+    // avance de la obra es la suma de todas (ver calcularAvanceObra). Es
+    // obligatorio en las jornadas nuevas: hasta que se anota, el resto de la
+    // jornada queda bloqueado. Las jornadas de antes de este cambio no lo
+    // traen y no se bloquean (no tienen la marca avanceObligatorio).
     avance: null,
     avanceObligatorio: true,
     fotos: [],
@@ -40,17 +41,33 @@ export function limpiarAvance(valor) {
   return Math.min(100, Math.max(0, n));
 }
 
-// El avance de la obra sale de la bitacora: el de la jornada mas reciente que
-// lo tenga anotado. Si dos jornadas son del mismo dia, manda la ultima
-// registrada. Devuelve { avance, fecha } o null si ninguna jornada lo trae.
-export function avanceDesdeBitacora(bitacora) {
-  const registros = normalizarBitacora(bitacora);
-  for (let i = registros.length - 1; i >= 0; i--) {
-    if (registros[i].avance !== null) {
-      return { avance: registros[i].avance, fecha: registros[i].fecha };
-    }
-  }
-  return null;
+// Avance de la obra = avance inicial + lo que suma cada jornada, hasta 100.
+//
+// Antes era el de la jornada mas reciente, como si cada una anotara el total.
+// Pero en campo se anota lo que se avanzo ese dia: jornadas de 26% y 30%
+// mostraban 30% en vez de 56%. El avance inicial es el que traia la obra al
+// entrar al sistema o el que se le puso a mano antes (migracion 074).
+//
+// Devuelve { avance, inicial, jornadas, fecha }: `jornadas` es lo que suman
+// las jornadas y `fecha` la de la ultima que trae avance (o null).
+export function calcularAvanceObra(avanceInicial, bitacora) {
+  const inicial = limpiarAvance(avanceInicial) ?? 0;
+  const conAvance = normalizarBitacora(bitacora).filter((r) => r.avance !== null);
+  const jornadas = conAvance.reduce((suma, r) => suma + r.avance, 0);
+  return {
+    avance: Math.min(100, inicial + jornadas),
+    inicial,
+    jornadas,
+    fecha: conAvance.length ? conAvance[conAvance.length - 1].fecha : null,
+  };
+}
+
+// Lo maximo que puede sumar una jornada sin que la obra pase de 100%: lo que
+// falta, sin contar lo que ya tiene anotado esa misma jornada.
+export function maximoParaJornada(avanceInicial, bitacora, registroId) {
+  const otras = normalizarBitacora(bitacora).filter((r) => r.id !== registroId);
+  const { avance } = calcularAvanceObra(avanceInicial, otras);
+  return Math.max(0, 100 - avance);
 }
 
 export function fotoVacia() {

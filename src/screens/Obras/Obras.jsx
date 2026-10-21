@@ -77,14 +77,10 @@ export default function Obras({ctx}){
   // dejaba mal desde el primer dia.
   const [nob,setNob]=useState({cliente:"",tel:"",proyecto:"",ciudad:"",direccion:"",fechaInicio:today(),fechaFin:"",estado:"En Obra",avance:0,cotizacionId:""});
 
-  // Las dos comprueban el bloqueo aunque la pantalla ya lo esconda: la funcion
-  // se puede seguir llamando desde otro sitio, y el dato es el mismo.
-  const updAv=(id,v)=>setObras(p=>p.map((o)=>{
-    if(o.id!==id) return o;
-    if(obraEstaCerrada(o) && !puedeDesbloquear) return o;
-    const avance=Math.min(100,Math.max(0,v));
-    return {...o,avance,estado:estadoSegunAvance(avance,o.estado)};
-  }));
+  // El avance ya no se cambia desde la lista: solo en las jornadas de la obra
+  // (inicial + lo que suma cada una). El estado si.
+  // Comprueba el bloqueo aunque la pantalla ya lo esconda: la funcion se
+  // puede seguir llamando desde otro sitio, y el dato es el mismo.
   const updEst=(id,e)=>setObras(p=>p.map((o)=>{
     if(o.id!==id) return o;
     if(obraEstaCerrada(o) && !puedeDesbloquear) return o;
@@ -142,7 +138,10 @@ export default function Obras({ctx}){
       nit:"",
       coords:"",
       estado:estadoSegunAvance(nob.avance,nob.estado || "En Obra"),
+      // El que trae al entrar al sistema queda como avance inicial: las
+      // jornadas suman a partir de ahi.
       avance:Math.min(100,Math.max(0,Number(nob.avance || 0))),
+      avanceInicial:Math.min(100,Math.max(0,Number(nob.avance || 0))),
       total:totalObra,
       pagado:cobrado,
       saldo:totalObra-cobrado,
@@ -293,7 +292,7 @@ export default function Obras({ctx}){
               </select>
             </div>
             <div>
-              <LBL>Avance que lleva hoy (%)</LBL>
+              <LBL>Avance con el que llega (%)</LBL>
               <input type="number" min={0} max={100} value={nob.avance} onChange={e=>setNob({...nob,avance:parseInt(e.target.value,10)||0})} style={SI}/>
             </div>
             <div style={{ gridColumn: isMobile ? "span 1" : "span 3" }}>
@@ -349,7 +348,6 @@ export default function Obras({ctx}){
         cotizaciones={cotizaciones}
         horarios={horarios}
         onAbrir={(o)=>{ setSel(o); asegurarDetalle("obras", o.id); }}
-        onCambiarAvance={updAv}
         onCambiarEstado={updEst}
         onToggleEnviado={updEnviado}
         puedeDesbloquear={puedeDesbloquear}

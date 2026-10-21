@@ -1,6 +1,6 @@
 import Badge from "../../components/ui/Badge";
 import CampoTexto from "../../components/ui/CampoTexto";
-import H1 from "../../components/ui/H1";
+import { Button } from "../../components/ui";
 import LBL from "../../components/ui/LBL";
 import { useEffect, useRef, useState } from "react";
 import ListaClientes from "./ListaClientes";
@@ -296,47 +296,21 @@ export default function ClientesDB({ctx}){
     nuevoRef.current = alternarNuevo;
   });
 
-  // Los botones viven en la barra de arriba, no en un titulo propio.
+  // Los botones viven solo en la barra de arriba, como en Cotizaciones. Antes
+  // tambien habia un titulo grande con los mismos botones repetidos.
   useAccionesPantalla(
-    <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
+    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
       {sinRegistrar.length > 0 && (
-        <button
-          style={{
-            background: "var(--surface, #ffffff)",
-            color: "var(--text-main, #101828)",
-            border: "1px solid var(--border, rgba(0, 0, 0, 0.12))",
-            borderRadius: 8,
-            padding: "7px 12px",
-            fontSize: 12,
-            fontWeight: 600,
-            cursor: "pointer",
-            fontFamily: "inherit",
-            whiteSpace: "nowrap",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
-          }}
-          onClick={() => importarRef.current()}
-        >
-          ⬇ Importar {sinRegistrar.length} sugerido(s)
-        </button>
+        <Button variante="texto" tam="sm" icono="descargar" onClick={() => importarRef.current()}
+          title="Crear la ficha de los clientes que aparecen en obras, cotizaciones o certificados y aún no la tienen">
+          Importar {sinRegistrar.length} sugerido(s)
+        </Button>
       )}
-      <button
-        style={{
-          background: showForm ? "var(--surface, #ffffff)" : "#f47c20",
-          color: showForm ? "var(--text-main, #101828)" : "#ffffff",
-          border: showForm ? "1px solid var(--border, rgba(0, 0, 0, 0.12))" : "none",
-          borderRadius: 8,
-          padding: "7px 14px",
-          fontSize: 12,
-          fontWeight: 600,
-          cursor: "pointer",
-          fontFamily: "inherit",
-          whiteSpace: "nowrap",
-          boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-        }}
-        onClick={() => nuevoRef.current()}
-      >
-        {showForm ? "✕ Cerrar" : "+ Cliente"}
-      </button>
+      {showForm ? (
+        <Button variante="tertiary" tam="sm" icono="cerrar" onClick={() => nuevoRef.current()}>Cerrar</Button>
+      ) : (
+        <Button variante="oscuro" tam="sm" icono="mas" onClick={() => nuevoRef.current()}>Nuevo cliente</Button>
+      )}
     </div>,
     [sinRegistrar.length, showForm]
   );
@@ -346,73 +320,18 @@ export default function ClientesDB({ctx}){
       style={{
         maxWidth: 1360,
         margin: "0 auto",
-        padding: isMobile ? "10px 8px 24px" : "14px 16px 28px",
+        padding: isMobile ? "0 8px 24px" : "0 16px 28px",
         width: "100%",
         boxSizing: "border-box",
       }}
     >
-      <H1
-        eyebrow="DIRECTORIO COMERCIAL"
-        title="Clientes y Contratistas"
-        subtitle={`${clientesData.length} cliente(s) registrado(s) · Base de datos centralizada de clientes y terceros`}
-        action={
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-            {sinRegistrar.length > 0 && (
-              <button
-                style={{
-                  background: "var(--surface, #ffffff)",
-                  color: "var(--text-main, #101828)",
-                  border: "1px solid var(--border, rgba(0, 0, 0, 0.12))",
-                  borderRadius: 10,
-                  padding: "7px 13px",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                  whiteSpace: "nowrap",
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}
-                onClick={importarClientes}
-              >
-                <span>⬇</span>
-                <span>Importar {sinRegistrar.length} sugeridos</span>
-              </button>
-            )}
-            <button
-              style={{
-                background: showForm ? "var(--surface, #ffffff)" : "#f47c20",
-                color: showForm ? "var(--text-main, #101828)" : "#ffffff",
-                border: showForm ? "1px solid var(--border, rgba(0, 0, 0, 0.12))" : "none",
-                borderRadius: 10,
-                padding: "7px 15px",
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: "pointer",
-                fontFamily: "inherit",
-                whiteSpace: "nowrap",
-                boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-              }}
-              onClick={alternarNuevo}
-            >
-              <span>{showForm ? "✕" : "+"}</span>
-              <span>{showForm ? "Cerrar formulario" : "Nuevo cliente"}</span>
-            </button>
-          </div>
-        }
-      />
-
       {showForm && (
         <div
           ref={formRef}
           style={{
             ...CD,
-            marginBottom: 20,
+            marginTop: 12,
+            marginBottom: 8,
             scrollMarginTop: 16,
           }}
         >

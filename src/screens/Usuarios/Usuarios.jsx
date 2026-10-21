@@ -1,9 +1,10 @@
 // Administración del equipo: crear cuentas y decidir a qué módulos entra cada
 // persona. Solo la ve quien tiene rol Administrador.
 import AvisoFlujo from "../../components/AvisoFlujo";
-import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Button } from "../../components/ui";
+import { useAccionesPantalla } from "../../context/accionesPantalla";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { NAV_SECTIONS } from "../../config/navigation";
 import CampoTexto from "../../components/ui/CampoTexto";
@@ -261,41 +262,32 @@ export default function Usuarios({ ctx }) {
 
   const soyYo = (u) => u.user_id === membresia?.user_id;
 
+  // Los botones van en la barra de arriba, como en las demas pantallas; antes
+  // estaban en un titulo grande que repetia el nombre del modulo.
+  const accionesRef = useRef({});
+  useEffect(() => { accionesRef.current = { enviarNovedades, abrirNuevo }; });
+  useAccionesPantalla(
+    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+      <Button variante="texto" tam="sm" disabled={guardando || cargando} onClick={() => accionesRef.current.enviarNovedades()}>
+        {guardando ? "Enviando…" : "Enviar novedades por correo"}
+      </Button>
+      <Button variante="oscuro" tam="sm" icono="mas" onClick={() => accionesRef.current.abrirNuevo()}>
+        Nuevo usuario
+      </Button>
+    </div>,
+    [guardando, cargando]
+  );
+
   return (
     <div
       style={{
         maxWidth: 1360,
         margin: "0 auto",
-        padding: isMobile ? "10px 8px 24px" : "14px 16px 28px",
+        padding: isMobile ? "12px 8px 24px" : "16px 16px 28px",
         width: "100%",
         boxSizing: "border-box",
       }}
     >
-      <H1
-        eyebrow="ADMINISTRACIÓN Y SEGURIDAD"
-        title="Usuarios y Permisos"
-        subtitle="Gestión de accesos, roles y módulos del equipo de trabajo"
-        action={
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button
-              style={{ ...B("var(--surface-subtle)", "var(--text-main)"), border: "1px solid var(--border)" }}
-              onClick={enviarNovedades}
-              disabled={guardando || cargando}
-            >
-              {guardando ? "Enviando…" : "Enviar novedades por correo"}
-            </button>
-            <button
-              style={{
-                ...B("#f47c20"),
-                boxShadow: "0 1px 3px rgba(244, 124, 32, 0.25)",
-              }}
-              onClick={abrirNuevo}
-            >
-              + Nuevo usuario
-            </button>
-          </div>
-        }
-      />
 
       {esSuperAdminCristian && (
         <div

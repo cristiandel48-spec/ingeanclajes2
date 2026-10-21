@@ -5,6 +5,7 @@ import { ESTADOS_OBRA, estadoObraDe, obraEstaCerrada } from "../../lib/flujoObra
 import { resumenBitacora } from "../../lib/bitacoraObra";
 import IconoPalomita from "../../components/ui/IconoPalomita";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { BarraFija, CABECERA_FIJA } from "../../components/ui";
 
 const ORDENES = [
   {
@@ -197,7 +198,9 @@ export default function ListaObras({
     >
       {/* ============================================================= */}
       {/* BARRA DE HERRAMIENTAS: Búsqueda, Filtros y Segmented Control  */}
+      {/* Fija arriba al bajar, con el panel de filtros avanzados.      */}
       {/* ============================================================= */}
+      <BarraFija>
       <div
         style={{
           display: "flex",
@@ -205,7 +208,7 @@ export default function ListaObras({
           justifyContent: "space-between",
           alignItems: isMobile ? "stretch" : "center",
           gap: 12,
-          marginBottom: 16,
+          marginBottom: 10,
           flexWrap: "wrap",
         }}
       >
@@ -447,7 +450,7 @@ export default function ListaObras({
             border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
             borderRadius: 14,
             padding: "12px 16px",
-            marginBottom: 16,
+            marginBottom: 10,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -527,6 +530,7 @@ export default function ListaObras({
           </div>
         </div>
       )}
+      </BarraFija>
 
       {/* ============================================================= */}
       {/* RESULTADOS: LISTA / TABLA PREDETERMINADA O CUADRÍCULA         */}
@@ -580,15 +584,17 @@ export default function ListaObras({
             background: "var(--surface, #ffffff)",
             borderRadius: 14,
             border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
-            overflow: "hidden",
+            // clip y no hidden: hidden no deja pegar los titulos al bajar.
+            overflow: "clip",
             boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
           }}
         >
-          <div style={{ overflowX: "auto", width: "100%" }}>
+          <div style={{ overflowX: isMobile ? "auto" : "visible", width: "100%" }}>
             <div style={{ minWidth: 960 }}>
               {/* Encabezado de tabla */}
               <div
                 style={{
+                  ...CABECERA_FIJA,
                   display: "grid",
                   gridTemplateColumns: "90px 2.2fr 1.2fr 95px 105px 180px 115px 135px 80px",
                   padding: "10px 16px",

@@ -21,6 +21,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CD, SI } from "../styles/tokens";
 import { C, RANGOS_FECHA, enMilis } from "./listadoEstilos";
+import BarraFija from "./ui/BarraFija";
 
 /** Botón que se ilumina al pasar por encima, sin hoja de estilos. */
 export function Resaltable({ as = "div", estiloHover, style, children, ...resto }) {
@@ -158,7 +159,9 @@ export default function ListadoConFiltros({
   const ponerExtra = (clave, valor) => setExtra((p) => ({ ...p, [clave]: valor }));
 
   return (
-    <div style={{ ...CD, padding: 0, overflow: "hidden", width: "100%", boxSizing: "border-box" }}>
+    // clip y no hidden: hidden no deja que la barra de filtros se pegue arriba.
+    <div style={{ ...CD, padding: 0, overflow: "clip", width: "100%", boxSizing: "border-box" }}>
+      <BarraFija style={{ padding: 0, background: "var(--surface, #fff)" }}>
       <div style={{ padding: "12px 14px 11px", display: "flex", flexDirection: "column", gap: 9,
         borderBottom: `1px solid ${C.borde}`, width: "100%", boxSizing: "border-box" }}>
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", width: "100%" }}>
@@ -316,6 +319,7 @@ export default function ListadoConFiltros({
           </div>
         )}
       </div>
+      </BarraFija>
 
       {lista.length > 0 && (
         <div style={{ padding: vista === "lista" ? "10px 12px 14px" : 12, display: "grid",

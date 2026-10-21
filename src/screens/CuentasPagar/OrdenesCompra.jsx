@@ -4,6 +4,7 @@ import { today } from "../../lib/format";
 import { puedeAprobarOrdenCompra } from "../../lib/permisos";
 import Badge from "../../components/ui/Badge";
 import LBL from "../../components/ui/LBL";
+import BarraFija from "../../components/ui/BarraFija";
 import { useAppData } from "../../context/AppDataContext";
 import PrintHeader from "../../components/print/PrintHeader";
 import { descargarDocumentoPdf } from "../../lib/documentoPdf";
@@ -538,7 +539,9 @@ export default function OrdenesCompra({
       )}
 
       {/* Barra de Filtros y Acciones */}
-      <div style={{ ...CD, marginBottom: 16, padding: "14px 18px" }}>
+      {/* Buscador y filtros fijos arriba al bajar por la tabla. */}
+      <BarraFija style={{ paddingBottom: 8 }}>
+      <div style={{ ...CD, marginBottom: 0, padding: "14px 18px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flex: "1 1 300px" }}>
             <input
@@ -642,6 +645,7 @@ export default function OrdenesCompra({
           )}
         </div>
       </div>
+      </BarraFija>
 
       {/* TABLA PRINCIPAL DE ÓRDENES DE COMPRA (Estructura idéntica al ERP) */}
       <div style={{

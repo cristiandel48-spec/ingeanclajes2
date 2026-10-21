@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { fmtD } from "../../lib/format";
 import { useIsMobile } from "../../hooks/useMediaQuery";
+import { BarraFija, CABECERA_FIJA } from "../../components/ui";
 
 const ORDENES = [
   { key: "recientes", label: "Más recientes", comparar: (a, b) => enMilis(b.fechaInforme) - enMilis(a.fechaInforme) || String(b.id).localeCompare(String(a.id)) },
@@ -117,7 +118,8 @@ export default function ListaInformes({ informes = [], acciones = {} }) {
         position: "relative",
       }}
     >
-      {/* Barra de herramientas estilo Apple macOS */}
+      {/* Barra de herramientas estilo Apple macOS, fija arriba al bajar */}
+      <BarraFija>
       <div
         style={{
           display: "flex",
@@ -125,7 +127,7 @@ export default function ListaInformes({ informes = [], acciones = {} }) {
           justifyContent: "space-between",
           alignItems: isMobile ? "stretch" : "center",
           gap: 14,
-          marginBottom: 20,
+          marginBottom: 10,
           flexWrap: "wrap",
         }}
       >
@@ -338,6 +340,7 @@ export default function ListaInformes({ informes = [], acciones = {} }) {
           </select>
         </div>
       </div>
+      </BarraFija>
 
       {/* Listado de Informes */}
       {informesFiltrados.length === 0 ? (
@@ -383,13 +386,15 @@ export default function ListaInformes({ informes = [], acciones = {} }) {
             background: "var(--surface, #ffffff)",
             border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
             borderRadius: 16,
-            overflow: "hidden",
+            // clip y no hidden: hidden no deja pegar los titulos al bajar.
+            overflow: "clip",
             boxShadow: "0 2px 8px -2px rgba(0, 0, 0, 0.02)",
           }}
         >
           {/* Cabecera de la tabla */}
           <div
             style={{
+              ...CABECERA_FIJA,
               display: "grid",
               gridTemplateColumns: "100px 2.2fr 1.4fr 110px 100px 90px 130px",
               padding: "10px 16px",

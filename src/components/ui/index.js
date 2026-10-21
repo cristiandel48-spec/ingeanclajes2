@@ -24,5 +24,7 @@ export { default as Callout } from "./Callout";
 export { default as Sheet, SheetConfirmacion } from "./Sheet";
 export { default as PageHeader } from "./PageHeader";
 export { default as Toolbar, BuscadorToolbar, EspacioToolbar } from "./Toolbar";
+export { default as BarraFija } from "./BarraFija";
+export { CABECERA_FIJA } from "./cabeceraFija";
 export { default as Icono } from "./Icono";
 export { ToastProvider, useToast } from "./Toast";

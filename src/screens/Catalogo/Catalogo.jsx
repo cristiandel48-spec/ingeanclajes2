@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import AvisoFlujo from "../../components/AvisoFlujo";
-import H1 from "../../components/ui/H1";
+import { Button } from "../../components/ui";
 import { useAccionesPantalla } from "../../context/accionesPantalla";
-import { B, CD, SI, ST } from "../../styles/tokens";
+import { CD, SI, ST } from "../../styles/tokens";
 import { fmt } from "../../lib/format";
 import { filasDesdeSemilla, filasEditables } from "../../lib/catalogo";
 import { esAdmin } from "../../lib/permisos";
@@ -77,13 +77,11 @@ export default function Catalogo({ ctx }) {
 
   useAccionesPantalla(
     puedeEditar ? (
-      <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
         {filas.length === 0 && (
-          <button style={{ ...B("var(--surface-subtle)", "var(--text-muted)"), border: "1px solid var(--border)", fontSize: 12, padding: "7px 12px" }}
-            onClick={sembrar}>Cargar los de siempre</button>
+          <Button variante="texto" tam="sm" onClick={sembrar}>Cargar los de siempre</Button>
         )}
-        <button style={{ ...B("#f47c20"), fontSize: 12, padding: "7px 14px", fontWeight: 600, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}
-          onClick={agregar}>+ Nuevo servicio</button>
+        <Button variante="oscuro" tam="sm" icono="mas" onClick={agregar}>Nuevo servicio</Button>
       </div>
     ) : null,
     [puedeEditar, filas.length]
@@ -96,50 +94,16 @@ export default function Catalogo({ ctx }) {
       style={{
         maxWidth: 1360,
         margin: "0 auto",
-        padding: isMobile ? "10px 8px 24px" : "14px 16px 28px",
+        padding: isMobile ? "12px 8px 24px" : "16px 16px 28px",
         width: "100%",
         boxSizing: "border-box",
       }}
     >
-      <H1
-        eyebrow="TARIFARIO BASE Y SERVICIOS"
-        title="Catálogo y Precios"
-        subtitle={`${activos} de ${filas.length} servicio(s) activos · Tarifario oficial para generador de cotizaciones y mediciones`}
-        action={
-          puedeEditar ? (
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              {filas.length === 0 && (
-                <button
-                  style={{
-                    background: "var(--surface, #ffffff)",
-                    color: "var(--text-main, #101828)",
-                    border: "1px solid var(--border, rgba(0, 0, 0, 0.12))",
-                    borderRadius: 10,
-                    padding: "7px 13px",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
-                    fontFamily: "inherit",
-                  }}
-                  onClick={sembrar}
-                >
-                  Cargar los de siempre
-                </button>
-              )}
-              <button
-                style={{
-                  ...B("#f47c20"),
-                  boxShadow: "0 1px 3px rgba(244, 124, 32, 0.25)",
-                }}
-                onClick={agregar}
-              >
-                + Nuevo servicio
-              </button>
-            </div>
-          ) : null
-        }
-      />
+      {/* Sin titulo grande: la barra de arriba ya dice donde se esta y tiene
+          los botones. Aqui solo el conteo. */}
+      <div style={{ fontSize: 12, color: "var(--text-secondary)", margin: "2px 0 12px" }}>
+        {activos} de {filas.length} servicio(s) activos
+      </div>
 
       <AvisoFlujo tono="info" titulo="De aquí salen todos los precios">
         Lo que se cambie aquí lo usan al instante el editor de cotizaciones, el dictado, la

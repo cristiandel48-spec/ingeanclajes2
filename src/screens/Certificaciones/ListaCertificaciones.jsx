@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { fmtD } from "../../lib/format";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { useIsMobile } from "../../hooks/useMediaQuery";
+import { BarraFija, CABECERA_FIJA } from "../../components/ui";
 
 const ORDENES = [
   {
@@ -197,7 +198,8 @@ export default function ListaCertificaciones({ certs = [], acciones = {} }) {
         position: "relative",
       }}
     >
-      {/* Barra de herramientas estilo Apple macOS */}
+      {/* Barra de herramientas estilo Apple macOS, fija arriba al bajar */}
+      <BarraFija>
       <div
         style={{
           display: "flex",
@@ -205,7 +207,7 @@ export default function ListaCertificaciones({ certs = [], acciones = {} }) {
           justifyContent: "space-between",
           alignItems: isMobile ? "stretch" : "center",
           gap: 14,
-          marginBottom: 20,
+          marginBottom: 10,
           flexWrap: "wrap",
         }}
       >
@@ -432,6 +434,7 @@ export default function ListaCertificaciones({ certs = [], acciones = {} }) {
           </div>
         </div>
       </div>
+      </BarraFija>
 
       {/* Listado de Certificaciones */}
       {certsFiltradas.length === 0 ? (
@@ -477,7 +480,8 @@ export default function ListaCertificaciones({ certs = [], acciones = {} }) {
             background: "var(--surface, #ffffff)",
             border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
             borderRadius: 16,
-            overflowX: "auto",
+            // En escritorio clip y no auto: auto no deja pegar los titulos al bajar.
+            ...(isMobile ? { overflowX: "auto" } : { overflow: "clip" }),
             boxShadow: "0 2px 8px -2px rgba(0, 0, 0, 0.02)",
           }}
         >
@@ -485,6 +489,7 @@ export default function ListaCertificaciones({ certs = [], acciones = {} }) {
             {/* Cabecera de la tabla */}
             <div
               style={{
+                ...CABECERA_FIJA,
                 display: "grid",
                 gridTemplateColumns: "105px minmax(200px, 2.2fr) 130px 160px minmax(180px, 2fr) 120px",
                 padding: "10px 16px",

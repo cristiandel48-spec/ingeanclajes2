@@ -9,6 +9,7 @@ import {
 } from "../../lib/seguimientoCotizaciones";
 import { getQuoteActiveProposal } from "../../lib/cotizaciones";
 import { useMediaQuery, useIsMobile } from "../../hooks/useMediaQuery";
+import { BarraFija, CABECERA_FIJA } from "../../components/ui";
 
 const ORDENES = [
   {
@@ -183,7 +184,9 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
     >
       {/* ============================================================= */}
       {/* BARRA DE HERRAMIENTAS: Búsqueda, Filtros y Segmented Control  */}
+      {/* Fija arriba al bajar por la lista.                            */}
       {/* ============================================================= */}
+      <BarraFija>
       <div
         style={{
           display: "flex",
@@ -191,7 +194,7 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
           justifyContent: "space-between",
           alignItems: isMobile ? "stretch" : "center",
           gap: 14,
-          marginBottom: 20,
+          marginBottom: 12,
           flexWrap: "wrap",
         }}
       >
@@ -387,7 +390,7 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
           gap: 12,
           alignItems: "center",
           flexWrap: "wrap",
-          marginBottom: 18,
+          marginBottom: 10,
           fontSize: 12,
           color: "var(--text-muted, #6e6e73)",
         }}
@@ -463,6 +466,7 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
           </select>
         </div>
       </div>
+      </BarraFija>
 
       {/* ============================================================= */}
       {/* RESULTADOS / LISTA O CUADRÍCULA                               */}
@@ -511,14 +515,16 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
             background: "var(--surface, #ffffff)",
             borderRadius: 16,
             border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
-            overflow: "hidden",
+            // clip y no hidden: hidden no deja pegar los titulos al bajar.
+            overflow: "clip",
             boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
           }}
         >
-          <div style={{ overflowX: "auto", width: "100%" }}>
+          <div style={{ overflowX: isMobile ? "auto" : "visible", width: "100%" }}>
             <div style={{ minWidth: 840 }}>
               <div
                 style={{
+                  ...CABECERA_FIJA,
                   display: "grid",
                   gridTemplateColumns: "100px 1.8fr 1.2fr 100px 120px 120px 160px",
                   padding: "10px 16px",

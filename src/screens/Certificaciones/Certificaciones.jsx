@@ -3,7 +3,7 @@ import Badge from "../../components/ui/Badge";
 import CertificacionDetalle from "./CertificacionDetalle";
 import H1 from "../../components/ui/H1";
 import LBL from "../../components/ui/LBL";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSubirAlFormulario } from "../../hooks/useSubirAlFormulario";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { buildCertForm, construirTextoSistema, getCertDefaultElements, unAnoDespues } from "./certConfig";
@@ -18,7 +18,8 @@ import { nombreDocumento } from "../../lib/nombreArchivo";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import { nuevoCodigoVerificacion } from "../../lib/verificacionCertificados";
 import ListaCertificaciones from "./ListaCertificaciones";
-import { useAccionesPantalla } from "../../context/accionesPantalla";
+import { useAccionesPantalla, useTituloPantalla } from "../../context/accionesPantalla";
+import { Button } from "../../components/ui";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import { obrasMasNuevasPrimero } from "../../lib/identificadores";
@@ -390,64 +391,31 @@ export default function Certificaciones({ctx}){
 
   // En la barra superior: botones de acción fija para detalle (Volver, Editar, Descargar, Imprimir)
   // o botones de creación (+ Certificación, + Recertificación) en la lista.
+  // Mismos botones y mismo orden que en informes y cotizaciones.
+  const accionesCertRef = useRef({});
+  useEffect(() => { accionesCertRef.current = { editarCertificacion, descargarPdf, imprimir }; });
   useAccionesPantalla(
     sel && !nueva ? (
-      <div style={{ display: "flex", gap: 7, alignItems: "center", flexWrap: "nowrap" }}>
-        <button
-          style={{
-            ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)"),
-            border: "1px solid #cbd5e1",
-            padding: "7px 14px",
-            borderRadius: 8,
-            fontSize: 12,
-            fontWeight: 600,
-          }}
-          onClick={() => setSel(null)}
-        >
-          ← Volver
-        </button>
-        <button
-          style={{
-            ...B("rgba(37, 99, 235, 0.08)", "#2563eb"),
-            border: "1px solid rgba(37, 99, 235, 0.25)",
-            padding: "7px 14px",
-            borderRadius: 8,
-            fontSize: 12,
-            fontWeight: 700,
-          }}
-          onClick={() => editarCertificacion(sel)}
-        >
+      <div style={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "nowrap" }}>
+        <Button variante="texto" tam="sm" icono="flechaIzq" onClick={() => setSel(null)}>
+          Certificaciones
+        </Button>
+        <Button variante="texto" tam="sm" onClick={() => accionesCertRef.current.editarCertificacion(sel)}>
           Editar
-        </button>
-        <button
+        </Button>
+        <Button variante="texto" tam="sm" onClick={() => accionesCertRef.current.imprimir(sel)}>
+          Imprimir
+        </Button>
+        <Button
+          variante="oscuro"
+          tam="sm"
+          icono="descargar"
+          style={{ marginLeft: 6 }}
           disabled={descargandoPdf}
-          style={{
-            ...B("#16a34a", "#ffffff"),
-            boxShadow: "0 1px 3px rgba(22, 163, 74, 0.2)",
-            padding: "7px 16px",
-            borderRadius: 10,
-            fontSize: 12,
-            fontWeight: 700,
-            opacity: descargandoPdf ? 0.75 : 1,
-            cursor: descargandoPdf ? "wait" : "pointer",
-          }}
-          onClick={() => descargarPdf(sel)}
+          onClick={() => accionesCertRef.current.descargarPdf(sel)}
         >
-          {descargandoPdf ? "⏳ Generando PDF..." : "Descargar PDF"}
-        </button>
-        <button
-          style={{
-            ...B("#1d1d1f", "#ffffff"),
-            boxShadow: "0 1px 3px rgba(0, 0, 0, 0.12)",
-            padding: "7px 16px",
-            borderRadius: 10,
-            fontSize: 12,
-            fontWeight: 600,
-          }}
-          onClick={() => imprimir(sel)}
-        >
-          Imprimir / PDF
-        </button>
+          {descargandoPdf ? "Generando…" : "Descargar PDF"}
+        </Button>
       </div>
     ) : (!sel && !nueva) ? (
       <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
@@ -486,6 +454,7 @@ export default function Certificaciones({ctx}){
     ) : null,
     [sel, nueva, descargandoPdf]
   );
+  useTituloPantalla(sel && !nueva ? `Certificación ${sel.numero || sel.id}` : null);
 
   return(
     <div
@@ -896,7 +865,7 @@ export default function Certificaciones({ctx}){
           onEditar={editarCertificacion}
           onImprimir={imprimir}
           onDescargarPdf={descargarPdf}
-          mostrarBotones={true}
+          accionesEnBarra
           subtitle="Vista previa completa para revisar, editar e imprimir."
         />
       )}

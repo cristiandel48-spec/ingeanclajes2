@@ -1,7 +1,7 @@
 import Badge from "../../components/ui/Badge";
 import BuscadorCliente from "../../components/BuscadorCliente";
 import CampoTexto from "../../components/ui/CampoTexto";
-import { useAccionesPantalla } from "../../context/accionesPantalla";
+import { useAccionesPantalla, useTituloPantalla } from "../../context/accionesPantalla";
 import DictarCotizacion from "./DictarCotizacion";
 import ImportarCotizacion from "./ImportarCotizacion";
 import DocumentoEnVivo from "./DocumentoEnVivo";
@@ -567,29 +567,46 @@ export default function Cotizacion({ctx}){
 
   // En el editor la barra de arriba queda vacia: Volver y Guardar ya estan en
   // la barra fija del formulario, y tenerlos dos veces era ruido.
+  // Con una cotizacion abierta van aqui Volver, Editar, Enviar al cliente y
+  // Descargar PDF: en la cabecera del documento se perdian al bajar.
+  // Las acciones leen la version vigente de cada funcion por medio de la ref.
+  const accionesCotRef = useRef({});
+  useEffect(() => {
+    accionesCotRef.current = {
+      editar: () => { setEditCot(previewCot.id); hydrate(previewCot); setTab("form"); setPreviewCot(null); },
+      enviar: () => setEnviarCot(previewCot),
+      descargar: () => descargarPdf(previewCot),
+    };
+  });
   useAccionesPantalla(
     tab === "lista" ? (
-      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-        {previewCot && (
+      previewCot ? (
+        <div style={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "nowrap" }}>
+          <Button variante="texto" tam="sm" icono="flechaIzq" onClick={() => setPreviewCot(null)} title="Volver al listado de cotizaciones">
+            Cotizaciones
+          </Button>
+          <Button variante="texto" tam="sm" onClick={() => accionesCotRef.current.editar()}>Editar</Button>
+          <Button variante="texto" tam="sm" onClick={() => accionesCotRef.current.enviar()}>Enviar al cliente</Button>
           <Button
-            variante="texto"
+            variante="oscuro"
             tam="sm"
-            icono="flechaIzq"
-            onClick={() => setPreviewCot(null)}
-            title="Volver al listado de cotizaciones"
+            icono="descargar"
+            style={{ marginLeft: 6 }}
+            disabled={Boolean(bajandoPdf)}
+            onClick={() => accionesCotRef.current.descargar()}
           >
-            Volver
+            {bajandoPdf ? "Generando…" : "Descargar PDF"}
           </Button>
-        )}
-        {!(previewCot && isMobile) && (
-          <Button variante="oscuro" tam="sm" icono="mas" onClick={() => nuevaRef.current()}>
-            Nueva cotización
-          </Button>
-        )}
-      </div>
+        </div>
+      ) : (
+        <Button variante="oscuro" tam="sm" icono="mas" onClick={() => nuevaRef.current()}>
+          Nueva cotización
+        </Button>
+      )
     ) : null,
-    [tab, previewCot, isMobile]
+    [tab, previewCot, bajandoPdf]
   );
+  useTituloPantalla(tab === "lista" && previewCot ? `Cotización ${previewCot.numero || previewCot.id}` : null);
 
 
   // Al enviarla por correo pasa a «Enviada»: el cliente ya la tiene y falta
@@ -1013,56 +1030,9 @@ export default function Cotizacion({ctx}){
                 <span>100% Lectura</span>
               </button>
 
-              <button
-                style={{
-                  background: "transparent",
-                  color: "var(--text-muted, #475467)",
-                  border: "1px solid var(--border, #eaecf0)",
-                  borderRadius: 6,
-                  padding: "5px 12px",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-                onClick={()=>{setEditCot(previewCot.id);hydrate(previewCot);setTab("form");setPreviewCot(null);}}
-              >
-                Editar
-              </button>
-              <button
-                style={{
-                  background: "var(--surface-subtle, #f2f4f7)",
-                  color: "var(--text-main, #101828)",
-                  border: "1px solid var(--border, #eaecf0)",
-                  borderRadius: 6,
-                  padding: "5px 12px",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-                disabled={Boolean(bajandoPdf)}
-                onClick={()=>descargarPdf(previewCot)}
-              >
-                {bajandoPdf?"Generando…":"Descargar PDF"}
-              </button>
-              <button
-                style={{
-                  background: "#FFFAEB",
-                  color: "#B54708",
-                  border: "1px solid rgba(181, 71, 8, 0.35)",
-                  borderRadius: 6,
-                  padding: "5px 12px",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  boxShadow: "0 1px 2px rgba(181, 71, 8, 0.08)",
-                }}
-                onClick={()=>setEnviarCot(previewCot)}
-              >
-                Enviar al cliente
-              </button>
-              {/* WhatsApp vivia en el panel lateral de la lista, que se quito:
-                  ahora esta aqui, junto a «Enviar al cliente». Solo si la
-                  cotizacion tiene telefono. */}
+              {/* Editar, Enviar al cliente y Descargar PDF van en la barra de
+                  arriba, que no se mueve al bajar. WhatsApp queda aqui, solo
+                  si la cotizacion tiene telefono. */}
               {String(previewCot.telefono || "").replace(/\D/g, "") && (
                 <a
                   href={`https://wa.me/57${String(previewCot.telefono).replace(/\D/g, "")}?text=${encodeURIComponent(

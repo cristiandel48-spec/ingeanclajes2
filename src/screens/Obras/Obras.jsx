@@ -171,8 +171,9 @@ export default function Obras({ctx}){
   };
 
   // Botón superior de Nueva Obra (se integra en la barra superior junto al usuario e indicador de guardado)
+  // Con una obra abierta la barra la llena ObraDetalle.
   useAccionesPantalla(
-    sel ? null : (
+    sel ? undefined : (
       <button
         type="button"
         style={{

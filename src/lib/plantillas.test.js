@@ -100,7 +100,8 @@ const INFORMES = {
         actividadesRealizadas: "Se instalaron los anclajes extremos y el cable.",
         descripcion: "Trabajo en cubierta con acceso por escalera.",
         observaciones: "Sin novedades.",
-        fotos: [{ img: FOTO, descripcion: "Anclaje extremo" }, { img: FOTO, descripcion: "Cable tensionado" }],
+        // Una con comentario y otra sin: sin comentario no se imprime texto.
+        fotos: [{ img: FOTO, comentario: "Anclaje extremo instalado" }, { img: FOTO, descripcion: "Cable tensionado" }],
       },
       {
         titulo: "Prueba de carga",

@@ -8,6 +8,7 @@ import { puedeVer, pantallaInicial } from "../../lib/permisos";
 import { BotonInstalarApp } from "../pwa/InstaladorApp";
 import { Button, StatusPill } from "../ui";
 import { TIPO, CAPA } from "../../styles/designTokens";
+import { useTituloTopbar } from "../../context/accionesPantalla";
 
 // Barra superior: ubicacion actual, acciones de la pantalla, tema y usuario.
 // En movil incluye el boton que abre el menu lateral.
@@ -48,8 +49,11 @@ export default function Topbar({ scr, dark, onToggleTheme, isMobile, onOpenMenu,
   const { membresia, authUserEmail, usuariosEnLinea, esSuperAdminCristian, irAPantalla, agenda } = useAppData();
   // En el telefono el nombre largo se recortaba con puntos suspensivos:
   // «Recordatorio de agendas y visi…». El corto ya estaba en navigation.jsx.
-  const title = isMobile ? getScreenShort(scr) : getScreenTitle(scr);
-  const section = getScreenSection(scr);
+  // Con un documento abierto, la barra dice cual es («Informe INF-033») y
+  // arriba, en pequeño, el modulo.
+  const tituloDocumento = useTituloTopbar();
+  const title = tituloDocumento || (isMobile ? getScreenShort(scr) : getScreenTitle(scr));
+  const section = tituloDocumento ? getScreenTitle(scr) : getScreenSection(scr);
 
   const mananaIso = useMemo(() => {
     const d = new Date();

@@ -26,7 +26,7 @@ import TarjetaCotizacionRef from "./TarjetaCotizacionRef";
 import { obrasMasNuevasPrimero } from "../../lib/identificadores";
 import ModalCotizacionDetalle from "./ModalCotizacionDetalle";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
-import { useAccionesPantalla } from "../../context/accionesPantalla";
+import { useAccionesPantalla, useTituloPantalla } from "../../context/accionesPantalla";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
 import { Button } from "../../components/ui";
 import { confirmar } from "../../lib/dialogos";
@@ -558,19 +558,49 @@ export default function Informes({ctx}){
     );
   };
 
-  // En la barra superior: botones de acción fija para detalle (Volver, Editar, Descargar, Imprimir)
-  // o botón de creación (+ Nuevo Informe) en la lista.
-  // Con un informe abierto la barra de arriba queda vacia: Volver, Editar y
-  // PDF ya estan en la cabecera del propio informe, y tenerlos dos veces era
-  // ruido. En el listado solo va la pildora oscura de crear.
+  // En la barra superior, que no se mueve al bajar:
+  //   - en el listado, la pildora oscura de crear;
+  //   - con un informe abierto, Volver, Editar, Imprimir y Descargar PDF.
+  //     Antes iban en la cabecera del informe y se perdian al bajar por el
+  //     documento.
+  // Las acciones leen la version vigente de cada funcion por medio de la ref.
+  const viendoInforme = Boolean(sel && !nuevo && !editId);
+  const accionesInformeRef = useRef({});
+  useEffect(() => {
+    accionesInformeRef.current = {
+      editar: () => editarInforme(sel),
+      imprimir: () => imprimirInforme(sel),
+      descargar: () => descargarPdf(sel),
+    };
+  });
   useAccionesPantalla(
     (!sel && !nuevo && !editId) ? (
       <Button variante="oscuro" tam="sm" icono="mas" onClick={() => abrirNuevoInformeRef.current()}>
         Nuevo informe
       </Button>
+    ) : viendoInforme ? (
+      <div style={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "nowrap" }}>
+        <Button variante="texto" tam="sm" icono="flechaIzq" onClick={() => setSel(null)}>Informes</Button>
+        <Button variante="texto" tam="sm" onClick={() => accionesInformeRef.current.editar()}>Editar</Button>
+        <Button variante="texto" tam="sm" onClick={() => accionesInformeRef.current.imprimir()} title="Abre la pestaña de impresión del navegador">
+          Imprimir
+        </Button>
+        <Button
+          variante="oscuro"
+          tam="sm"
+          icono="descargar"
+          style={{ marginLeft: 6 }}
+          disabled={generandoPdf}
+          onClick={() => accionesInformeRef.current.descargar()}
+          title="Descarga el informe oficial en PDF directamente"
+        >
+          {generandoPdf ? "Generando…" : "Descargar PDF"}
+        </Button>
+      </div>
     ) : null,
-    [sel, nuevo, editId]
+    [sel, nuevo, editId, generandoPdf]
   );
+  useTituloPantalla(viendoInforme ? `Informe ${String(sel?.id || sel?.numero || "").trim()}`.trim() : null);
 
   const abrirNuevoInforme = ()=>{
     setEditId(null);
@@ -1093,47 +1123,15 @@ export default function Informes({ctx}){
 
         return (
           <div style={{ padding: isMobile ? "8px 10px 16px" : "8px 18px 16px" }}>
-            {/* Cabecera al estilo de apple.com, como el editor: el numero del
-                informe como titulo grande y las acciones como texto, con
-                Descargar PDF como unica pildora oscura. */}
-            <Button variante="texto" tam="sm" icono="flechaIzq" onClick={() => setSel(null)} style={{ marginLeft: -10 }}>
-              Informes
-            </Button>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: isMobile ? "stretch" : "flex-end",
-                flexDirection: isMobile ? "column" : "row",
-                gap: 14,
-                margin: "4px 0 16px",
-              }}
-            >
-              <div style={{ minWidth: 0 }}>
-                <h1 style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.015em", lineHeight: 1.25, margin: 0, color: "var(--text-primary)" }}>
-                  Informe {numDoc || sel?.id || sel?.numero || "técnico"}
-                </h1>
-                <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 3 }}>
-                  {[cliente, proyecto].filter(Boolean).join(" · ") || "Informe de actividades en obra"}
-                </div>
-              </div>
-
-              <div style={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center", flexShrink: 0 }}>
-                <Button variante="texto" tam="sm" onClick={() => editarInforme(sel)}>Editar</Button>
-                <Button variante="texto" tam="sm" onClick={() => imprimirInforme(sel)} title="Abre la pestaña de impresión del navegador">
-                  Imprimir
-                </Button>
-                <Button
-                  variante="oscuro"
-                  tam="sm"
-                  icono="descargar"
-                  style={{ marginLeft: 6 }}
-                  disabled={generandoPdf}
-                  onClick={() => descargarPdf(sel)}
-                  title="Descarga el informe oficial en PDF directamente"
-                >
-                  {generandoPdf ? "Generando…" : "Descargar PDF"}
-                </Button>
+            {/* El numero del informe y sus acciones (Volver, Editar, Imprimir,
+                Descargar PDF) van en la barra de arriba, que no se mueve al
+                bajar. Aqui queda de quien es. */}
+            <div style={{ margin: "4px 0 16px", minWidth: 0 }}>
+              <h1 style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.015em", lineHeight: 1.25, margin: 0, color: "var(--text-primary)" }}>
+                Informe {numDoc || sel?.id || sel?.numero || "técnico"}
+              </h1>
+              <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 3 }}>
+                {[cliente, proyecto].filter(Boolean).join(" · ") || "Informe de actividades en obra"}
               </div>
             </div>
 
@@ -1363,9 +1361,12 @@ export default function Informes({ctx}){
                                   EVIDENCIA {ai + 1}.{fi + 1}
                                 </span>
                               </div>
-                              <div style={{ padding: "7px 10px", fontSize: 9.5, color: "#27272a", lineHeight: 1.4, background: "#ffffff" }}>
-                                {ft.comentario || "Registro fotográfico y trazabilidad de actividades ejecutadas en sitio."}
-                              </div>
+                              {/* Sin comentario, la foto sale sola (igual que en el impreso). */}
+                              {String(ft.comentario || "").trim() && (
+                                <div style={{ padding: "7px 10px", fontSize: 9.5, color: "#27272a", lineHeight: 1.4, background: "#ffffff" }}>
+                                  {ft.comentario}
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>

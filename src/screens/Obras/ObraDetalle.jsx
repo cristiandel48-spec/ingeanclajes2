@@ -5,7 +5,8 @@ import FototecaObra from "./FototecaObra";
 import MaterialesDespachoObra from "./MaterialesDespachoObra";
 import LBL from "../../components/ui/LBL";
 import NuevoEmpleadoRapido from "../../components/NuevoEmpleadoRapido";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useAccionesPantalla, useTituloPantalla } from "../../context/accionesPantalla";
 import { B, CD, PAL, SI, ST } from "../../styles/tokens";
 import { TIPO } from "../../styles/designTokens";
 import { Button, Card, Icono, Input, SegmentedControl, StatusPill } from "../../components/ui";
@@ -68,6 +69,42 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       asegurarDetalle("obras", obraId);
     }
   }, [obraId, oAct?.__parcial, asegurarDetalle]);
+
+  // Volver, Crear informe y Certificar van en la barra de arriba, que no se
+  // mueve al bajar por la bitacora. Por la ref llaman a la version vigente.
+  const accionesObraRef = useRef({});
+  useEffect(() => { accionesObraRef.current = { onVolver, irAPantalla }; });
+  useAccionesPantalla(
+    oAct ? (
+      <div style={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "nowrap" }}>
+        <Button variante="texto" tam="sm" icono="flechaIzq" onClick={() => accionesObraRef.current.onVolver()}>
+          Obras
+        </Button>
+        <Button
+          variante="texto"
+          tam="sm"
+          onClick={() => accionesObraRef.current.irAPantalla("informes", { obraId })}
+          title="Crear informe de actividades para esta obra"
+        >
+          Crear informe
+        </Button>
+        <Button
+          variante="oscuro"
+          tam="sm"
+          style={{ marginLeft: 6 }}
+          onClick={() => accionesObraRef.current.irAPantalla("certificaciones", { obraId })}
+          title="Crear certificación de calidad para esta obra"
+        >
+          Certificar
+          <span style={{ opacity: 0.6, fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>
+            {oAct.avance >= 90 ? "Listo" : `${oAct.avance}%`}
+          </span>
+        </Button>
+      </div>
+    ) : null,
+    [obraId, Boolean(oAct), oAct?.avance]
+  );
+  useTituloPantalla(oAct ? `Obra ${oAct.id}` : null);
 
   if(!oAct)return null;
 
@@ -135,23 +172,10 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       }}
     >
       {/* Cabecera al estilo de apple.com: sin tarjeta, el cliente como
-          titulo grande, los datos de la obra en gris debajo y las acciones
-          como texto suelto con una sola pildora oscura, Certificar. */}
+          titulo grande y los datos de la obra en gris debajo. Las acciones
+          estan en la barra de arriba. */}
       <div style={{ marginBottom: 16 }}>
-        <Button variante="texto" tam="sm" icono="flechaIzq" onClick={onVolver} style={{ marginLeft: -10 }}>
-          Obras
-        </Button>
-
-        <div
-          style={{
-            display: "flex",
-            flexDirection: isMobile ? "column" : "row",
-            alignItems: isMobile ? "stretch" : "flex-end",
-            justifyContent: "space-between",
-            gap: isMobile ? 12 : 20,
-            marginTop: 8,
-          }}
-        >
+        <div>
           <div style={{ minWidth: 0, flex: 1 }}>
             <h1
               title={oAct.cliente}
@@ -194,29 +218,6 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                 {oAct.id} · {fmtD(oAct.fechaInicio)} → {fmtD(oAct.fechaFin) || "En curso"}
               </span>
             </div>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap", flexShrink: 0 }}>
-            <Button
-              variante="texto"
-              tam="sm"
-              onClick={() => irAPantalla("informes", { obraId: oAct.id })}
-              title="Crear informe de actividades para esta obra"
-            >
-              Crear informe
-            </Button>
-            <Button
-              variante="oscuro"
-              tam="sm"
-              style={{ marginLeft: 6 }}
-              onClick={() => irAPantalla("certificaciones", { obraId: oAct.id })}
-              title="Crear certificación de calidad para esta obra"
-            >
-              Certificar
-              <span style={{ opacity: 0.6, fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>
-                {oAct.avance >= 90 ? "Listo" : `${oAct.avance}%`}
-              </span>
-            </Button>
           </div>
         </div>
       </div>

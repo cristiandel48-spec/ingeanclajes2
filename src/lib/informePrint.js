@@ -255,11 +255,14 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
           EVIDENCIA ${actIdx + 1}.${fotoIdx + 1}
         </span>
       </div>
-      <div style="padding:5px 8px;font-size:8.5px;color:${TINTA};line-height:1.35;background:#ffffff;">
-        ${escapeHtml(ft.comentario || "Registro fotográfico y trazabilidad de actividades ejecutadas en sitio.")}
-      </div>
+      ${String(ft.comentario || "").trim() ? `<div style="padding:5px 8px;font-size:8.5px;color:${TINTA};line-height:1.35;background:#ffffff;">
+        ${escapeHtml(ft.comentario)}
+      </div>` : ""}
     </div>
   `;
+  // Sin comentario la foto sale sola: antes se ponia siempre «Registro
+  // fotografico y trazabilidad de actividades ejecutadas en sitio», que
+  // repetido debajo de cada foto no decia nada.
 
   const renderFotosFila = (parFotos, actIdx, startFotoIdx) => `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px;align-items:start;">

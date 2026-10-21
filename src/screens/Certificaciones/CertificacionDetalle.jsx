@@ -13,6 +13,9 @@ export default function CertificacionDetalle({
   onImprimir,
   onDescargarPdf,
   subtitle = "Vista completa del documento oficial",
+  // Certificaciones pone Volver, Editar, Imprimir y Descargar PDF en la barra
+  // de arriba; aqui quedan solo los controles de vista.
+  accionesEnBarra = false,
 }) {
   const isMobile = useIsMobile();
   const contenedorRef = useRef(null);
@@ -119,7 +122,7 @@ export default function CertificacionDetalle({
         </div>
 
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-          {typeof onVolver === "function" && (
+          {typeof onVolver === "function" && !accionesEnBarra && (
             <button
               type="button"
               style={{
@@ -207,7 +210,7 @@ export default function CertificacionDetalle({
             <span>100% Lectura</span>
           </button>
 
-          {typeof onEditar === "function" && (
+          {!accionesEnBarra && typeof onEditar === "function" && (
             <button
               type="button"
               style={{
@@ -227,6 +230,7 @@ export default function CertificacionDetalle({
           )}
 
           {/* Botón Descargar PDF idéntico al de Cotizaciones (señalado en amarillo) */}
+          {!accionesEnBarra && (<>
           <button
             type="button"
             style={{
@@ -261,6 +265,7 @@ export default function CertificacionDetalle({
           >
             Imprimir / PDF
           </button>
+          </>)}
         </div>
       </div>
 

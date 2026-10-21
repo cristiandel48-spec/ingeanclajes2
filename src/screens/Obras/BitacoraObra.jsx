@@ -20,7 +20,11 @@ import { confirmar } from "../../lib/dialogos";
 // Por eso cada registro lleva fecha: es la que decide si entra o no al
 // informe de esa quincena o de ese mes.
 
-export default function BitacoraObra({ obra, setObras, bloqueada = false, cargandoFotos = false }) {
+// `personalAsignado`: cuantas personas tiene la obra (las de la pestaña
+// Personal, directas o por turnos de Horarios). Sin nadie no se registra
+// avance: una obra al 56% sin un solo trabajador asignado no es coherente.
+export default function BitacoraObra({ obra, setObras, bloqueada = false, cargandoFotos = false, personalAsignado = null, onIrAPersonal }) {
+  const sinPersonal = personalAsignado === 0;
   const registros = normalizarBitacora(obra.bitacora);
   const resumen = resumenBitacora(obra.bitacora);
   const fotoRefs = useRef({});
@@ -72,7 +76,26 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
   // { registroId: null } para una jornada nueva.
   const [pidiendoAvance, setPidiendoAvance] = useState(null);
 
+  const avisarSinPersonal = async () => {
+    const ir = await confirmar({
+      titulo: "Primero asigna personal a la obra",
+      mensaje: "No se puede registrar avance en una obra sin personal asignado. Asigna a las personas que trabajan en ella en la pestaña «Personal» (o con turnos en Horarios) y vuelve aquí.",
+      textoConfirmar: "Ir a Personal",
+      textoCancelar: "Ahora no",
+      destructivo: false,
+      conGuardando: false,
+    });
+    if (ir) onIrAPersonal?.();
+  };
+
+  // Abre la ventana del avance, salvo que la obra no tenga personal.
+  const pedirAvance = (datos) => {
+    if (sinPersonal) return avisarSinPersonal();
+    setPidiendoAvance(datos);
+  };
+
   const agregarRegistro = () => {
+    if (sinPersonal) return avisarSinPersonal();
     // Si alguna jornada quedo sin avance, la ventana es para esa: no se abre
     // otra mientras tanto.
     const pendiente = registros.find(faltaAvance);
@@ -201,6 +224,20 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
         </div>
       )}
 
+      {sinPersonal && !bloqueada && (
+        <div role="alert" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap",
+          fontSize: 12.5, color: "var(--danger-text)", background: "var(--danger-bg, #fef2f2)",
+          border: "1px solid var(--danger-border, #fecaca)", borderRadius: 9, padding: "10px 12px",
+          marginBottom: 14, lineHeight: 1.45 }}>
+          <span>
+            <strong>Esta obra no tiene personal asignado.</strong> Para registrar avance, primero asigna a quienes trabajan en ella.
+          </span>
+          {onIrAPersonal && (
+            <Button variante="secondary" tam="sm" onClick={onIrAPersonal}>Ir a Personal</Button>
+          )}
+        </div>
+      )}
+
       {bloqueada && !cargandoFotos && (
         <div style={{ fontSize: 11.5, color: "#047857", background: "#ecfdf5",
           border: "1px solid #a7f3d0", borderRadius: 9, padding: "9px 12px",
@@ -266,7 +303,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                   <LBL>Avance de la jornada (%){registro.avanceObligatorio || falta ? " *" : ""}</LBL>
                   <button
                     type="button"
-                    onClick={() => setPidiendoAvance({ registroId: registro.id, fecha: registro.fecha, valorInicial: registro.avance })}
+                    onClick={() => pedirAvance({ registroId: registro.id, fecha: registro.fecha, valorInicial: registro.avance })}
                     style={{ background: "none", border: "none", padding: 0, fontSize: 11, color: "var(--text-tertiary)", cursor: "pointer", textDecoration: "underline" }}
                     title="Editar avance en ventana"
                   >
@@ -275,7 +312,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                 </div>
                 <div
                   style={{ position: "relative", borderRadius: 10, boxShadow: falta ? "0 0 0 2px var(--danger)" : "none", cursor: falta ? "pointer" : "default" }}
-                  onClick={falta ? () => setPidiendoAvance({ registroId: registro.id, fecha: registro.fecha, valorInicial: registro.avance }) : undefined}
+                  onClick={falta ? () => pedirAvance({ registroId: registro.id, fecha: registro.fecha, valorInicial: registro.avance }) : undefined}
                 >
                   <input
                     type="number"
@@ -284,6 +321,8 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                     max={maximoDe(registro.id)}
                     step={1}
                     value={registro.avance ?? ""}
+                    disabled={sinPersonal}
+                    title={sinPersonal ? "Asigna personal a la obra para registrar avance" : undefined}
                     // No deja pasar la obra de 100%: lo que sobra se recorta.
                     onChange={(e) => {
                       const valor = limpiarAvance(e.target.value);
@@ -302,7 +341,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
                     Escríbelo para poder seguir.{" "}
                     <button
                       type="button"
-                      onClick={() => setPidiendoAvance({ registroId: registro.id, fecha: registro.fecha, valorInicial: registro.avance })}
+                      onClick={() => pedirAvance({ registroId: registro.id, fecha: registro.fecha, valorInicial: registro.avance })}
                       style={{ background: "none", border: "none", padding: 0, color: "var(--danger-text)", textDecoration: "underline", cursor: "pointer", fontSize: 11.5, fontFamily: "inherit" }}
                     >
                       Abrir

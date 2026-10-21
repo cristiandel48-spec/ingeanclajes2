@@ -388,7 +388,9 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       {detTab==="avance"&&(
         <BitacoraObra obra={oAct} setObras={setObras}
           bloqueada={bloqueada || oAct.__parcial===true}
-          cargandoFotos={oAct.__parcial===true}/>
+          cargandoFotos={oAct.__parcial===true}
+          personalAsignado={empObra.length}
+          onIrAPersonal={()=>setDetTab("personal")}/>
       )}
 
       {/* TAB MATERIALES Y DESPACHO DE BODEGA */}

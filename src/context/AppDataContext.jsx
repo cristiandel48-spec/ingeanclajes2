@@ -20,7 +20,7 @@ import {
 import { EJEMPLOS, sinEjemplos } from "../data/ejemplos";
 import { confirmar } from "../lib/dialogos";
 import { entidadesSinPermiso, esDueno, puedeVerPagoEmpleados } from "../lib/permisos";
-import { iniciarVigilanteInactividad } from "../lib/seguridadSesion";
+import { iniciarSeguimientoActividad } from "../lib/seguridadSesion";
 import {
   cargarCacheUltimasConexionesLocal,
   guardarCacheUltimasConexionesLocal,
@@ -977,19 +977,15 @@ export function AppDataProvider({ children }) {
     };
   }, [membresia]);
 
-  // Vigilante de inactividad de 5 minutos (cierre automático si pasa 5 min inactivo o desconectado)
+  // Seguimiento de actividad: mantiene al dia la ultima conexion de cada
+  // usuario. No cierra la sesion; solo quien sale lo hace, o un cierre remoto.
   useEffect(() => {
     if (!isSupabaseConfigured()) return;
 
-    const vigilante = iniciarVigilanteInactividad({
-      onCierrePorInactividad: () => {
-        backend.signOut().catch(() => {});
-        window.location.reload();
-      },
-    });
+    const seguimiento = iniciarSeguimientoActividad();
 
     return () => {
-      vigilante.destruir();
+      seguimiento.destruir();
     };
   }, []);
 

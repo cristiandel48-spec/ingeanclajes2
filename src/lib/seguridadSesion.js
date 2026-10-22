@@ -1,36 +1,8 @@
-// Gestión de inactividad de sesión y formateo de última conexión.
-// Regla solicitada: si el usuario lleva 5 minutos desconectado o inactivo,
-// se cierra la sesión automáticamente por seguridad.
+// Seguimiento de actividad de sesión y formateo de última conexión.
+// La sesión ya no se cierra sola por estar inactivo: solo se mantiene al día
+// la última conexión de cada usuario para el panel de usuarios y la auditoría.
 
-import { signOut } from "./backend/supabaseClient";
 import { registrarActividadUsuario } from "./backend/usuarios";
-
-export const LIMITE_INACTIVIDAD_MS = 5 * 60 * 1000; // 5 minutos (300.000 ms)
-const CLAVE_ULTIMA_ACTIVIDAD = "erp_ultima_actividad_ts";
-const CLAVE_MOTIVO_CIERRE = "erp_mensaje_cierre_inactividad";
-
-/**
- * Guarda en sessionStorage un aviso explicativo para mostrar en el login
- */
-export function guardarMensajeCierreInactividad(mensaje) {
-  try {
-    sessionStorage.setItem(CLAVE_MOTIVO_CIERRE, mensaje);
-  } catch { /* sin almacenamiento del navegador: se sigue igual */ }
-}
-
-/**
- * Recupera y limpia el mensaje de cierre por inactividad
- */
-export function obtenerMensajeCierreInactividad() {
-  try {
-    const msg = sessionStorage.getItem(CLAVE_MOTIVO_CIERRE);
-    if (msg) {
-      sessionStorage.removeItem(CLAVE_MOTIVO_CIERRE);
-      return msg;
-    }
-  } catch { /* sin almacenamiento del navegador: se sigue igual */ }
-  return null;
-}
 
 /**
  * Formatea una fecha de conexión en un texto claro y amigable
@@ -66,43 +38,17 @@ export function formatearUltimaConexion(fecha) {
 }
 
 /**
- * Inicia el vigilante de inactividad de 5 minutos en el cliente.
- * Detecta teclado, ratón, toques, scroll y cambios de pestaña.
- * Coordina múltiples pestañas mediante localStorage.
+ * Inicia el seguimiento de actividad del usuario en el cliente.
+ * Detecta teclado, ratón, toques, scroll y cambios de pestaña solo para saber
+ * si la persona sigue usando el sistema y refrescar su última conexión en la
+ * base cada 2 minutos. No cierra la sesión en ningún caso.
  */
-export function iniciarVigilanteInactividad({ onCierrePorInactividad } = {}) {
-  let timerId = null;
-  let ultimaActividad = Date.now();
+export function iniciarSeguimientoActividad() {
   let destruido = false;
+  let ultimaActividad = Date.now();
 
   const actualizarActividad = () => {
     ultimaActividad = Date.now();
-    try {
-      localStorage.setItem(CLAVE_ULTIMA_ACTIVIDAD, String(ultimaActividad));
-    } catch { /* sin almacenamiento del navegador: se sigue igual */ }
-  };
-
-  actualizarActividad();
-
-  const ejecutarCierre = async () => {
-    if (destruido) return;
-    destruido = true;
-    limpiar();
-
-    guardarMensajeCierreInactividad(
-      "Tu sesión se cerró automáticamente por inactividad (más de 5 minutos desconectado o sin uso). Vuelve a ingresar tus datos para continuar."
-    );
-
-    if (typeof onCierrePorInactividad === "function") {
-      onCierrePorInactividad();
-    } else {
-      try {
-        await signOut();
-      } catch (e) {
-        console.warn("Error pasivo en signOut por inactividad:", e);
-      }
-      window.location.reload();
-    }
   };
 
   // Throttle: registrar actividad máxima una vez cada 8 segundos
@@ -117,32 +63,10 @@ export function iniciarVigilanteInactividad({ onCierrePorInactividad } = {}) {
   const EVENTOS = ["mousedown", "mousemove", "keydown", "touchstart", "scroll", "click"];
   EVENTOS.forEach((evt) => window.addEventListener(evt, onUserActivity, { passive: true }));
 
-  // Verificación periódica cada 5 segundos
-  const verificar = () => {
-    if (destruido) return;
-    const ahora = Date.now();
-
-    let ultimaLocal = ultimaActividad;
-    try {
-      const guardado = Number(localStorage.getItem(CLAVE_ULTIMA_ACTIVIDAD) || 0);
-      if (guardado > ultimaLocal) {
-        ultimaLocal = guardado;
-        ultimaActividad = guardado;
-      }
-    } catch { /* sin almacenamiento del navegador: se sigue igual */ }
-
-    const inactivoMs = ahora - ultimaLocal;
-    if (inactivoMs >= LIMITE_INACTIVIDAD_MS) {
-      ejecutarCierre();
-    }
-  };
-
-  timerId = setInterval(verificar, 5000);
-
-  // Al volver a la pestaña tras estar minimizado o desconectado
+  // Volver a la pestaña también cuenta como actividad
   const onVisibilidad = () => {
     if (document.visibilityState === "visible") {
-      verificar();
+      actualizarActividad();
     }
   };
   document.addEventListener("visibilitychange", onVisibilidad);
@@ -161,7 +85,6 @@ export function iniciarVigilanteInactividad({ onCierrePorInactividad } = {}) {
   registrarActividadUsuario().catch(() => {});
 
   const limpiar = () => {
-    if (timerId) clearInterval(timerId);
     if (heartbeatTimer) clearInterval(heartbeatTimer);
     EVENTOS.forEach((evt) => window.removeEventListener(evt, onUserActivity));
     document.removeEventListener("visibilitychange", onVisibilidad);

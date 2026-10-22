@@ -323,23 +323,6 @@ export default function Usuarios({ ctx }) {
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <span
                 style={{
-                  background: "rgba(244, 124, 32, 0.12)",
-                  color: "#ea580c",
-                  border: "1px solid rgba(244, 124, 32, 0.3)",
-                  padding: "5px 12px",
-                  borderRadius: 999,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 5,
-                }}
-                title="Si un usuario permanece más de 5 minutos inactivo o desconectado, el sistema cierra automáticamente su sesión por seguridad."
-              >
-                ⏱️ Límite: 5 min de inactividad
-              </span>
-              <span
-                style={{
                   background: "#10b981",
                   color: "#ffffff",
                   padding: "5px 14px",
@@ -619,11 +602,6 @@ export default function Usuarios({ ctx }) {
                         <strong style={{ color: estaEnLinea ? "#16a34a" : "var(--text-main)" }}>
                           {estaEnLinea ? `Conectado ahora (${dispositivo})` : `${textoUltimaConexion} (${dispositivo})`}
                         </strong>
-                        {!estaEnLinea && (
-                          <span style={{ fontSize: 10.5, color: "#9ca3af" }}>
-                            (Cierre automático tras 5 min desconectado)
-                          </span>
-                        )}
                       </div>
                     )}
                     <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 6 }}>

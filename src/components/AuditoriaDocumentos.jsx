@@ -488,9 +488,6 @@ export default function AuditoriaDocumentos({ ctx }) {
           <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-main)" }}>
             {listaUsuariosAuditoria.filter((u) => u.estaEnLinea).length} en línea ahora · {listaUsuariosAuditoria.length} usuarios registrados
           </span>
-          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-            ⏱️ Cierre automático de sesión tras 5 min de inactividad
-          </span>
         </div>
         <button
           type="button"
@@ -542,7 +539,6 @@ export default function AuditoriaDocumentos({ ctx }) {
                   <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Estado de conexión</th>
                   <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Última vez que se conectó</th>
                   <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Dispositivo</th>
-                  <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-muted)" }}>Límite sesión</th>
                 </tr>
               </thead>
               <tbody>
@@ -641,9 +637,6 @@ export default function AuditoriaDocumentos({ ctx }) {
                       </td>
                       <td style={{ padding: "10px 10px", color: "var(--text-muted)", fontSize: 11.5 }}>
                         {u.dispositivo || "Computador"}
-                      </td>
-                      <td style={{ padding: "10px 10px", color: "var(--text-muted)", fontSize: 11 }}>
-                        5 min inactividad
                       </td>
                     </tr>
                   );

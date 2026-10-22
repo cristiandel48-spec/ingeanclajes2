@@ -3,7 +3,6 @@ import * as backend from "./lib/backend";
 import CreditoDesarrollo from "./components/CreditoDesarrollo";
 import logoIngeanclajes from "./assets/logo-ingeanclajes.jpeg";
 import { SERVICIO_SUSPENDIDO } from "./lib/servicioEstado";
-import { obtenerMensajeCierreInactividad } from "./lib/seguridadSesion";
 import EstilosAcceso from "./styles/EstilosAcceso";
 import { Button, Callout } from "./components/ui";
 import { TIPO, FUENTE, SOMBRA, ESPACIO } from "./styles/designTokens";
@@ -160,7 +159,7 @@ function esFaltaDeSesion(error) {
 // Traduce los mensajes de Supabase a algo que entienda quien usa la app.
 function mensajeAmable(error) {
   const texto = String(error?.message || error || "").toLowerCase();
-  if (esFaltaDeSesion(error)) return "Se cerró la sesión por inactividad. Por favor vuelve a ingresar.";
+  if (esFaltaDeSesion(error)) return "La sesión ya no está abierta. Por favor vuelve a ingresar.";
   if (texto.includes("invalid login credentials")) return "Correo o contraseña incorrectos.";
   if (texto.includes("email not confirmed")) return "La cuenta existe pero no está confirmada. Pide que la activen desde el panel.";
   if (texto.includes("membres")) return "La cuenta no tiene permisos en esta empresa. Pide que te asignen acceso.";
@@ -250,17 +249,9 @@ export default function SupabaseGate({ children }) {
   const [user, setUser] = useState(null);
   // "permisos" = a la cuenta le falta membresia; "tecnico" = algo fallo.
   const [motivoBloqueo, setMotivoBloqueo] = useState("permisos");
-  const [mensajeInactividad, setMensajeInactividad] = useState(null);
   // Se cierra al instante, sin esperar a que la cuenta confirme que se vieron.
   const [novedadesCerradas, setNovedadesCerradas] = useState(false);
   const [debeCambiarClave, setDebeCambiarClave] = useState(vieneDeRecuperacion);
-
-  useEffect(() => {
-    const msg = obtenerMensajeCierreInactividad();
-    if (msg) {
-      setMensajeInactividad(msg);
-    }
-  }, []);
 
   const validateAccess = async (currentUser) => {
     if (!currentUser) {
@@ -317,7 +308,7 @@ export default function SupabaseGate({ children }) {
 
     const listener = supabase.auth.onAuthStateChange((evento, session) => {
       if (!active) return;
-      // Cubre todas las salidas: el boton, la inactividad y el cierre remoto.
+      // Cubre todas las salidas: el boton y el cierre remoto.
       if (evento === "SIGNED_OUT") borrarCopiasLocales();
       if (evento === "PASSWORD_RECOVERY") {
         marcarRecuperacion(true);
@@ -450,17 +441,17 @@ export default function SupabaseGate({ children }) {
   }
 
   if (status === "blocked" && user) {
-    const esInactividad = motivoBloqueo !== "permisos";
+    const esSesionVencida = motivoBloqueo !== "permisos";
 
     return (
       <Pantalla>
         <Encabezado />
         <Titulo>
-          {esInactividad ? "Sesión cerrada por inactividad" : "Tu cuenta no tiene acceso"}
+          {esSesionVencida ? "No se pudo abrir la sesión" : "Tu cuenta no tiene acceso"}
         </Titulo>
         <Subtitulo style={{ marginBottom: 20 }}>
-          {esInactividad ? (
-            <>Se cerró la sesión por inactividad. Vuelve a ingresar.</>
+          {esSesionVencida ? (
+            <>La sesión ya no está abierta. Vuelve a ingresar.</>
           ) : (
             <>
               Entraste como <strong style={{ color: "var(--text-primary)" }}>{user.email}</strong>, pero esa
@@ -469,7 +460,7 @@ export default function SupabaseGate({ children }) {
           )}
         </Subtitulo>
 
-        {!esInactividad && error ? <Callout tono="peligro">{error}</Callout> : null}
+        {!esSesionVencida && error ? <Callout tono="peligro">{error}</Callout> : null}
 
         <div style={{ marginTop: 18 }}>
           <Button
@@ -480,7 +471,7 @@ export default function SupabaseGate({ children }) {
             cargando={busy}
             style={{ height: 50, borderRadius: 13 }}
           >
-            {busy ? "Cerrando…" : esInactividad ? "Volver a ingresar" : "Salir e intentar con otra cuenta"}
+            {busy ? "Cerrando…" : esSesionVencida ? "Volver a ingresar" : "Salir e intentar con otra cuenta"}
           </Button>
         </div>
       </Pantalla>
@@ -507,12 +498,6 @@ export default function SupabaseGate({ children }) {
 
         <Titulo>Inicia sesión</Titulo>
         <div style={{ height: 20 }} />
-
-        {mensajeInactividad && (
-          <div style={{ marginBottom: 18 }}>
-            <Callout tono="aviso" icono="reloj">{mensajeInactividad}</Callout>
-          </div>
-        )}
 
         {error ? <div style={{ marginBottom: 18 }}><Callout tono="peligro">{error}</Callout></div> : null}
         {aviso ? <div style={{ marginBottom: 18 }}><Callout tono="exito">{aviso}</Callout></div> : null}

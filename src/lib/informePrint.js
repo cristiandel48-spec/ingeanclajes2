@@ -61,20 +61,46 @@ const calcularAltoPersonal = (arr) => {
   return 20 + filas * 38 + 10;
 };
 
+// Texto de las actividades y del dictamen a 10,5px (unos 8pt impresos):
+// ~81 caracteres y 15,5px por linea.
+const CARACTERES_LINEA = 81;
+const ALTO_LINEA = 15.5;
+
 const calcularAltoActividad = (act) => {
-  const lAct = estimarLineas(act.actividadesRealizadas, 85);
-  const lDesc = estimarLineas(act.descripcion, 85);
-  const lObs = estimarLineas(act.observaciones, 85);
-  const altoTextos = (lAct > 0 ? (16 + lAct * 14.8 + 4) : 0) +
-                     (lDesc > 0 ? (16 + lDesc * 14.8 + 4) : 0);
+  const lAct = estimarLineas(act.actividadesRealizadas, CARACTERES_LINEA);
+  const lDesc = estimarLineas(act.descripcion, CARACTERES_LINEA);
+  const lObs = estimarLineas(act.observaciones, CARACTERES_LINEA);
+  const altoTextos = (lAct > 0 ? (16 + lAct * ALTO_LINEA + 4) : 0) +
+                     (lDesc > 0 ? (16 + lDesc * ALTO_LINEA + 4) : 0);
   return 34 + (act.fecha ? 14 : 0) + altoTextos + (lObs > 0 ? 28 : 22) + 16;
 };
 
 const calcularAltoRecomendaciones = (rec) => {
   if (!rec) return 0;
-  const lRec = estimarLineas(rec, 85);
-  return 22 + lRec * 14.8 + 16 + 10;
+  const lRec = estimarLineas(rec, CARACTERES_LINEA);
+  return 22 + lRec * ALTO_LINEA + 16 + 10;
 };
+
+// «13 – 17 oct. 2026» en vez de «13 de octubre de 2026 al 17 de octubre de
+// 2026», que no cabia en su casilla y se partia en dos lineas. Solo repite
+// el mes o el año cuando cambian.
+const MESES_CORTOS = ["ene.", "feb.", "mar.", "abr.", "may.", "jun.", "jul.", "ago.", "sep.", "oct.", "nov.", "dic."];
+
+function fmtPeriodo(inicio, fin) {
+  const partes = (iso) => {
+    const d = new Date(iso + "T12:00:00");
+    return Number.isNaN(d.getTime()) ? null : { dia: d.getDate(), mes: d.getMonth(), anio: d.getFullYear() };
+  };
+  const a = inicio ? partes(inicio) : null;
+  const b = fin ? partes(fin) : null;
+  const corta = (p) => `${p.dia} ${MESES_CORTOS[p.mes]} ${p.anio}`;
+  if (!a && !b) return "";
+  if (!a || !b) return corta(a || b);
+  if (a.anio !== b.anio) return `${corta(a)} – ${corta(b)}`;
+  if (a.mes !== b.mes) return `${a.dia} ${MESES_CORTOS[a.mes]} – ${corta(b)}`;
+  if (a.dia !== b.dia) return `${a.dia} – ${corta(b)}`;
+  return corta(b);
+}
 
 export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } = {}) {
   const control = getControlDocumental(empresaConfig)?.informe;
@@ -85,7 +111,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
   const localizacion = normalizarMayusculas(informe?.localizacion || "");
   const cliente = normalizarMayusculas(informe?.cliente || informe?.contratante || informe?.empresa || "");
   const fechaInforme = fmtL(informe?.fechaInforme);
-  const periodo = `${fmtL(informe?.periodoInicio)} al ${fmtL(informe?.periodoFin)}`;
+  const periodo = fmtPeriodo(informe?.periodoInicio, informe?.periodoFin);
   const personal = Array.isArray(informe?.personal) ? informe.personal : [];
   const cotizacionRef = informe?.cotizacionNumero || informe?.cotizacionRef || informe?.cotizacionId || "";
   
@@ -107,11 +133,11 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
         <div>
           <div style="font-size:13.5px;font-weight:800;color:${TINTA};letter-spacing:-0.01em;">INGEANCLAJES <span style="font-size:11px;font-weight:700;color:${TINTA};">S.A.S.</span></div>
           <div style="font-size:9px;font-weight:700;color:${GRIS};text-transform:uppercase;letter-spacing:0.05em;margin-top:2px;">Sistemas de Ingeniería y Protección Contra Caídas</div>
-          <div style="font-size:8.5px;color:${GRIS};margin-top:1px;">NIT. 900.193.965-4 · PBX (604) 448 26 86 · Medellín, Colombia</div>
+          <div style="font-size:9px;color:${GRIS};margin-top:1px;">NIT. 900.193.965-4 · PBX (604) 448 26 86 · Medellín, Colombia</div>
         </div>
       </div>
       <div style="text-align:right;">
-        <div style="display:inline-block;padding:2px 8px;border-radius:4px;background:${FONDO};border:1px solid ${LINEA_SUAVE};font-size:8.5px;color:${GRIS};font-variant-numeric:tabular-nums;font-weight:600;margin-bottom:3px;">
+        <div style="display:inline-block;padding:2px 8px;border-radius:4px;background:${FONDO};border:1px solid ${LINEA_SUAVE};font-size:9px;color:${GRIS};font-variant-numeric:tabular-nums;font-weight:600;margin-bottom:3px;">
           SISTEMA DE GESTIÓN DE CALIDAD · ${escapeHtml(docCodigo)} (V-${escapeHtml(docVersion)})
         </div>
         <div style="font-size:12px;font-weight:800;color:${TINTA};letter-spacing:0.02em;text-transform:uppercase;">INFORME TÉCNICO DE ACTIVIDADES EN OBRA</div>
@@ -154,7 +180,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
           <td style="color:${TINTA};font-weight:600;font-size:10px;padding:3.5px 6px;border-top:1px solid ${LINEA_SUAVE};">${escapeHtml(localizacion || "MEDELLÍN")}</td>
           <td style="font-weight:700;color:${GRIS};letter-spacing:0.04em;text-transform:uppercase;padding:3.5px 6px;border-left:1px solid ${LINEA_SUAVE};border-top:1px solid ${LINEA_SUAVE};">NORMATIVA:</td>
           <td style="padding:3.5px 6px;border-top:1px solid ${LINEA_SUAVE};">
-            <span style="background:#ffffff;color:${TINTA};border:1px solid ${LINEA};font-size:8.5px;font-weight:700;padding:1.5px 6px;border-radius:3px;display:inline-block;letter-spacing:0.02em;">Res. 4272/2021 · OSHA 1926</span>
+            <span style="background:#ffffff;color:${TINTA};border:1px solid ${LINEA};font-size:9px;font-weight:700;padding:1.5px 6px;border-radius:3px;display:inline-block;letter-spacing:0.02em;">Res. 4272/2021 · OSHA 1926</span>
           </td>
         </tr>
         ${cotizacionRef ? `
@@ -172,21 +198,21 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
   const renderPersonalEnObra = () => `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
       <span style="font-size:10px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:${TINTA};">1. Personal Técnico Asignado en Sitio</span>
-      <span style="font-size:8.5px;font-weight:500;color:${GRIS};">Personal certificado con trabajo seguro en alturas</span>
+      <span style="font-size:9px;font-weight:500;color:${GRIS};">Personal certificado con trabajo seguro en alturas</span>
     </div>
     <div style="display:grid;grid-template-columns:repeat(${Math.min(3, Math.max(1, personal.length))}, 1fr);gap:7px;margin-bottom:10px;">
       ${personal.length > 0 ? personal.map((p, idx) => `
         <div style="border:1px solid ${LINEA_SUAVE};border-radius:6px;padding:5px 8px;background:#ffffff;display:flex;align-items:center;gap:7px;">
-          <div style="width:20px;height:20px;background:${FONDO};border-radius:4px;color:${TINTA};font-variant-numeric:tabular-nums;font-size:8.5px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <div style="width:20px;height:20px;background:${FONDO};border-radius:4px;color:${TINTA};font-variant-numeric:tabular-nums;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
             ${String(idx + 1).padStart(2, "0")}
           </div>
           <div style="min-width:0;flex:1;">
-            <div style="font-size:7.5px;font-weight:700;color:${GRIS};text-transform:uppercase;letter-spacing:0.04em;">${escapeHtml(String(p.cargo || "TÉCNICO ESPECIALISTA").toUpperCase())}</div>
+            <div style="font-size:9px;font-weight:700;color:${GRIS};text-transform:uppercase;letter-spacing:0.04em;">${escapeHtml(String(p.cargo || "TÉCNICO ESPECIALISTA").toUpperCase())}</div>
             <div style="font-size:10px;font-weight:600;color:${TINTA};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(p.nombre || "Sin nombre")}</div>
           </div>
         </div>
       `).join("") : `
-        <div style="border:1px dashed ${LINEA};border-radius:6px;padding:6px 9px;color:${GRIS};font-size:8.5px;font-style:italic;">Personal asignado conforme a programación de cuadrilla en obra.</div>
+        <div style="border:1px dashed ${LINEA};border-radius:6px;padding:6px 9px;color:${GRIS};font-size:9px;font-style:italic;">Personal asignado conforme a programación de cuadrilla en obra.</div>
       `}
     </div>
   `;
@@ -194,7 +220,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
   const renderBannerActividades = () => `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;padding-top:1px;">
       <span style="font-size:10px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:${TINTA};">2. Metodología y Registro de Actividades Ejecutadas</span>
-      <span style="font-size:8.5px;font-weight:500;color:${GRIS};">Control y Trazabilidad Operativa</span>
+      <span style="font-size:9px;font-weight:500;color:${GRIS};">Control y Trazabilidad Operativa</span>
     </div>
   `;
 
@@ -202,7 +228,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
     <div style="border:1px solid ${LINEA_SUAVE};border-radius:8px;background:#ffffff;padding:9px 12px;margin-bottom:10px;">
       <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid ${LINEA_SUAVE};padding-bottom:5px;margin-bottom:6px;">
         <div style="display:flex;align-items:center;gap:7px;">
-          <span style="background:${FONDO};color:${TINTA};font-variant-numeric:tabular-nums;font-size:8.5px;font-weight:700;padding:1.5px 6px;border-radius:3px;">
+          <span style="background:${FONDO};color:${TINTA};font-variant-numeric:tabular-nums;font-size:9px;font-weight:700;padding:1.5px 6px;border-radius:3px;">
             ACT-${String(idx + 1).padStart(2, "0")}
           </span>
           <span style="font-size:11px;font-weight:700;color:${TINTA};">
@@ -210,22 +236,22 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
           </span>
         </div>
         ${act.fecha ? `
-          <span style="font-size:8.5px;color:${GRIS};font-variant-numeric:tabular-nums;">
+          <span style="font-size:9px;color:${GRIS};font-variant-numeric:tabular-nums;">
             Fecha: ${escapeHtml(fmtL(act.fecha))}
           </span>
         ` : ""}
       </div>
 
-      <div style="font-size:10px;color:${TINTA};line-height:1.48;text-align:justify;">
+      <div style="font-size:10.5px;color:${TINTA};line-height:1.48;text-align:justify;">
         ${(act.actividadesRealizadas || "").trim() ? `
           <div style="margin-bottom:5px;">
-            <strong style="color:${GRIS};text-transform:uppercase;font-size:8.5px;letter-spacing:0.05em;display:block;margin-bottom:1px;">Actividades Realizadas:</strong>
+            <strong style="color:${GRIS};text-transform:uppercase;font-size:9px;letter-spacing:0.05em;display:block;margin-bottom:1px;">Actividades Realizadas:</strong>
             ${escapeHtml(act.actividadesRealizadas)}
           </div>
         ` : ""}
         ${(act.descripcion || "").trim() ? `
           <div style="margin-bottom:4px;">
-            <strong style="color:${GRIS};text-transform:uppercase;font-size:8.5px;letter-spacing:0.05em;display:block;margin-bottom:1px;">Descripción Técnica:</strong>
+            <strong style="color:${GRIS};text-transform:uppercase;font-size:9px;letter-spacing:0.05em;display:block;margin-bottom:1px;">Descripción Técnica:</strong>
             ${escapeHtml(act.descripcion)}
           </div>
         ` : ""}
@@ -240,22 +266,29 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
     </div>
   `;
 
-  const renderBannerFotos = (titulo) => `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-top:1px;">
-      <span style="font-size:10px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:${TINTA};">${escapeHtml(titulo)}</span>
-      <span style="font-size:8.5px;font-weight:500;color:${GRIS};">Registro Fotográfico en Sitio</span>
+  // Las evidencias son parte de su actividad, no una seccion aparte: antes
+  // salian como «3. Panel...» una vez por actividad, y la numeracion iba
+  // 2, 3, 3, 3 intercalada con las actividades.
+  const renderBannerFotos = (act, actIdx, continuacion) => `
+    <div style="display:flex;align-items:center;gap:7px;margin:-2px 0 6px;">
+      <span style="font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:${GRIS};">
+        Evidencias fotográficas · ACT-${String(actIdx + 1).padStart(2, "0")}${continuacion ? " (cont.)" : ""}
+      </span>
+      <span style="flex:1;height:1px;background:${LINEA_SUAVE};"></span>
     </div>
   `;
 
+  // La foto llena el recuadro (`cover`): con `contain` una foto vertical
+  // ocupaba un tercio del ancho entre dos franjas blancas.
   const renderFotoCard = (ft, actIdx, fotoIdx) => `
     <div class="foto-card" style="border:1px solid ${LINEA_SUAVE};border-radius:8px;overflow:hidden;background:#ffffff;display:flex;flex-direction:column;">
       <div style="height:155px;display:flex;align-items:center;justify-content:center;background:${FONDO};border-bottom:1px solid ${LINEA_SUAVE};overflow:hidden;position:relative;">
-        <img src="${ft.img || ft.url}" alt="Evidencia ${fotoIdx + 1}" style="width:100%;height:100%;object-fit:contain;display:block;background:#ffffff;"/>
-        <span style="position:absolute;top:5px;left:5px;background:rgba(255,255,255,0.92);color:${TINTA};font-size:8px;font-variant-numeric:tabular-nums;font-weight:700;padding:2px 6px;border-radius:4px;">
+        <img src="${ft.img || ft.url}" alt="Evidencia ${fotoIdx + 1}" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;background:${FONDO};"/>
+        <span style="position:absolute;top:5px;left:5px;background:rgba(255,255,255,0.92);color:${TINTA};font-size:9px;font-variant-numeric:tabular-nums;font-weight:700;padding:2px 6px;border-radius:4px;">
           EVIDENCIA ${actIdx + 1}.${fotoIdx + 1}
         </span>
       </div>
-      ${String(ft.comentario || "").trim() ? `<div style="padding:5px 8px;font-size:8.5px;color:${TINTA};line-height:1.35;background:#ffffff;">
+      ${String(ft.comentario || "").trim() ? `<div style="padding:5px 8px;font-size:9px;color:${TINTA};line-height:1.35;background:#ffffff;">
         ${escapeHtml(ft.comentario)}
       </div>` : ""}
     </div>
@@ -264,17 +297,19 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
   // fotografico y trazabilidad de actividades ejecutadas en sitio», que
   // repetido debajo de cada foto no decia nada.
 
+  // Una foto sola va centrada, del mismo tamaño que las demas. Antes iba a
+  // la izquierda con un recuadro punteado «(Espacio reservado)» al lado,
+  // que en un documento para el cliente se leia como algo sin terminar.
   const renderFotosFila = (parFotos, actIdx, startFotoIdx) => `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px;align-items:start;">
+    <div style="display:grid;grid-template-columns:${parFotos.length === 1 ? "calc(50% - 4.5px)" : "1fr 1fr"};justify-content:center;gap:9px;margin-bottom:9px;align-items:start;">
       ${parFotos.map((ft, i) => renderFotoCard(ft, actIdx, startFotoIdx + i)).join("")}
-      ${parFotos.length === 1 ? `<div style="border:1px dashed ${LINEA};border-radius:8px;background:${FONDO};height:100%;min-height:185px;display:flex;align-items:center;justify-content:center;color:${GRIS};font-size:8.5px;">(Espacio reservado)</div>` : ""}
     </div>
   `;
 
   const renderTablaRecomendaciones = () => `
     <div style="border:1px solid ${LINEA_SUAVE};border-radius:8px;overflow:hidden;margin-bottom:10px;background:${FONDO};padding:8px 12px;">
       <div style="font-size:9px;font-weight:800;color:${GRIS};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">DICTAMEN TÉCNICO Y RECOMENDACIONES</div>
-      <div style="font-size:9.5px;color:${TINTA};line-height:1.48;text-align:justify;white-space:pre-line;">${escapeHtml(recomendaciones)}</div>
+      <div style="font-size:10.5px;color:${TINTA};line-height:1.48;text-align:justify;white-space:pre-line;">${escapeHtml(recomendaciones)}</div>
     </div>
   `;
 
@@ -282,22 +317,22 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
     <table class="bloque-firma" style="width:100%;border-collapse:collapse;margin-top:10px;border-top:1px solid ${LINEA_SUAVE};padding-top:8px;">
       <tr>
         <td style="width:50%;padding:8px 12px 0 0;vertical-align:top;border-right:1px solid ${LINEA_SUAVE};">
-          <div style="font-size:8px;font-weight:700;color:${GRIS};letter-spacing:0.05em;text-transform:uppercase;margin-bottom:3px;">Por el Contratista Especialista:</div>
+          <div style="font-size:9px;font-weight:700;color:${GRIS};letter-spacing:0.05em;text-transform:uppercase;margin-bottom:3px;">Por el Contratista Especialista:</div>
           <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:3px;">
             ${firmaImg ? `<img src="${firmaImg}" alt="Firma" style="max-height:42px;max-width:180px;object-fit:contain;"/>` : `<div style="font-family:'Segoe Script',cursive,sans-serif;font-size:14px;font-weight:700;color:${TINTA};">Jhon Jaime Sepúlveda L.</div>`}
           </div>
           <div style="font-weight:800;font-size:10.5px;color:${TINTA};letter-spacing:0.01em;">ING. JHON JAIME SEPÚLVEDA LONDOÑO</div>
-          <div style="font-size:8.5px;color:${GRIS};margin-top:1px;">Gerente General · MP. 05256-409949</div>
-          <div style="font-size:8px;color:${GRIS};margin-top:1px;">Ingeanclajes S.A.S · NIT. 900.193.965-4</div>
+          <div style="font-size:9px;color:${GRIS};margin-top:1px;">Gerente General · MP. 05256-409949</div>
+          <div style="font-size:9px;color:${GRIS};margin-top:1px;">Ingeanclajes S.A.S · NIT. 900.193.965-4</div>
         </td>
         <td style="width:50%;padding:8px 0 0 12px;vertical-align:top;">
-          <div style="font-size:8px;font-weight:700;color:${GRIS};letter-spacing:0.05em;text-transform:uppercase;margin-bottom:3px;">Recibido por la Interventoría / Constructora:</div>
-          <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:3px;font-size:8.5px;color:${GRIS};font-style:italic;">
+          <div style="font-size:9px;font-weight:700;color:${GRIS};letter-spacing:0.05em;text-transform:uppercase;margin-bottom:3px;">Recibido por la Interventoría / Constructora:</div>
+          <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:3px;font-size:9px;color:${GRIS};font-style:italic;">
             (Firma y sello de recepción a satisfacción)
           </div>
           <div style="font-weight:700;font-size:9.5px;color:${TINTA};">NOMBRE: ____________________________________</div>
-          <div style="font-size:8.5px;color:${GRIS};margin-top:2px;">CARGO / FIRMA: ______________________________</div>
-          <div style="font-size:8.5px;color:${GRIS};margin-top:1px;">EMPRESA: ${escapeHtml(cliente || "Constructora / Contratante")}</div>
+          <div style="font-size:9px;color:${GRIS};margin-top:2px;">CARGO / FIRMA: ______________________________</div>
+          <div style="font-size:9px;color:${GRIS};margin-top:1px;">EMPRESA: ${escapeHtml(cliente || "Constructora / Contratante")}</div>
         </td>
       </tr>
     </table>
@@ -337,29 +372,35 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
 
   // 2. Empaquetar Actividades y Fotos de forma armónica
   actividades.forEach((act, actIdx) => {
-    const altoTabla = calcularAltoActividad(act);
     const fotos = (act.fotos || []).filter((ft) => ft.img || ft.url);
+    const filas = [];
+    for (let i = 0; i < fotos.length; i += 2) {
+      filas.push(fotos.slice(i, i + 2));
+    }
 
-    // Si la actividad no cabe en la hoja actual, abrir una nueva hoja limpia
-    if (alturaActual + altoTabla > getLimiteActual()) {
+    // La actividad sale en un solo bloque con su primera fila de fotos, para
+    // que nunca quede al final de una hoja y sus fotos en la siguiente. Al
+    // ir en un mismo `data-rol`, el repartido del PDF tampoco los separa.
+    const altoBloque = calcularAltoActividad(act) + (filas.length ? ALTO_BANNER_FOTOS + ALTO_FILA_FOTOS : 0);
+    if (alturaActual + altoBloque > getLimiteActual()) {
       nuevaPagina();
     }
 
-    paginas[pIdx].push(marcar(renderTablaActividad(act, actIdx), "contenido"));
-    alturaActual += altoTabla;
+    paginas[pIdx].push(marcar(
+      renderTablaActividad(act, actIdx) +
+        (filas.length ? renderBannerFotos(act, actIdx, false) + renderFotosFila(filas[0], actIdx, 0) : ""),
+      "contenido"
+    ));
+    alturaActual += altoBloque;
 
-    // Procesar fotos de la actividad
-    if (fotos.length > 0) {
-      const filas = [];
-      for (let i = 0; i < fotos.length; i += 2) {
-        filas.push(fotos.slice(i, i + 2));
-      }
+    // El resto de filas se reparte suelto; si alguna pasa a otra hoja, lleva
+    // de nuevo el titulo con «(cont.)».
+    if (filas.length > 1) {
+      let tituloPuesto = true;
 
-      let tituloPuesto = false;
-
-      filas.forEach((fila, fIdx) => {
-        const esPrimeraFila = fIdx === 0;
-        const espacioRequerido = (esPrimeraFila && !tituloPuesto) ? (ALTO_BANNER_FOTOS + ALTO_FILA_FOTOS) : ALTO_FILA_FOTOS;
+      filas.slice(1).forEach((fila, i) => {
+        const fIdx = i + 1;
+        const espacioRequerido = ALTO_FILA_FOTOS;
 
         if (alturaActual + espacioRequerido > getLimiteActual()) {
           nuevaPagina();
@@ -367,8 +408,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
         }
 
         if (!tituloPuesto) {
-          const textoTitulo = `3. Panel Técnico de Evidencias Fotográficas · ${act.titulo || "Actividad"}${fIdx > 0 ? " (Cont.)" : ""}`;
-          paginas[pIdx].push(marcar(renderBannerFotos(textoTitulo), "contenido"));
+          paginas[pIdx].push(marcar(renderBannerFotos(act, actIdx, true), "contenido"));
           alturaActual += ALTO_BANNER_FOTOS;
           tituloPuesto = true;
         }
@@ -467,7 +507,7 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-size: 8.5px;
+        font-size: 9px;
         color: ${GRIS};
       }
       @media print {

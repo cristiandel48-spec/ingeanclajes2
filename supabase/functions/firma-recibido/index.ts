@@ -114,6 +114,24 @@ const fechaCo = (iso: string) =>
 
 // ── Correo ───────────────────────────────────────────────────────────────────
 
+// Asunto sin tildes y corto, igual que src/lib/asuntoCorreo.js. Con tildes la
+// libreria de correo lo codifica, y si ademas es largo lo parte en dos lineas
+// por la mitad del texto codificado: el correo llego roto, con el From, el To
+// y la estructura interna a la vista en vez del mensaje.
+function asuntoSeguro(valor: unknown, maximo = 72) {
+  const plano = String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[·•–—]/g, "-")
+    .replace(/[^\x20-\x7e]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (plano.length <= maximo) return plano;
+  const corte = plano.slice(0, maximo);
+  const espacio = corte.lastIndexOf(" ");
+  return (espacio > maximo * 0.6 ? corte.slice(0, espacio) : corte).trim();
+}
+
 async function enviarCorreo({ para, asunto, texto: plano, html }: {
   para: string; asunto: string; texto: string; html: string;
 }) {
@@ -130,7 +148,7 @@ async function enviarCorreo({ para, asunto, texto: plano, html }: {
     },
   });
   try {
-    await cliente.send({ from: `Ingeanclajes <${usuario}>`, to: para, subject: asunto, content: plano, html });
+    await cliente.send({ from: `Ingeanclajes <${usuario}>`, to: para, subject: asuntoSeguro(asunto), content: plano, html });
     return { enviado: true };
   } catch (fallo) {
     return { enviado: false, motivo: String((fallo as Error)?.message ?? fallo) };
@@ -426,7 +444,8 @@ Deno.serve(conOrigenPermitido(async (req) => {
       const saludo = paraNombre ? `${escapeHtml(paraNombre.split(" ")[0])}, buen día.` : "Buen día.";
       const enviado = await enviarCorreo({
         para,
-        asunto: linea(`${titulo} ${numero} - firma de recibido - Ingeanclajes`, 200),
+        // Corto a proposito (menos de 72 letras): asi no se recorta.
+        asunto: `${titulo} ${numero} - firma de recibido`,
         texto: `${paraNombre ? paraNombre.split(" ")[0] + ", buen día." : "Buen día."}\n\n${mensaje || `Le enviamos el ${titulo.toLowerCase()} ${numero}.`}\n\nPara revisarlo y firmar el recibido entre a: ${enlace}\n\nEl enlace vence en 30 días.\n\nCordialmente,\nIngeanclajes S.A.S.`,
         html: marco(numero, `
           <p>${saludo}</p>

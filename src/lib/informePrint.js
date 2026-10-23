@@ -86,7 +86,7 @@ const calcularAltoRecomendaciones = (rec) => {
 // el mes o el año cuando cambian.
 const MESES_CORTOS = ["ene.", "feb.", "mar.", "abr.", "may.", "jun.", "jul.", "ago.", "sep.", "oct.", "nov.", "dic."];
 
-function fmtPeriodo(inicio, fin) {
+export function fmtPeriodo(inicio, fin) {
   const partes = (iso) => {
     const d = new Date(iso + "T12:00:00");
     return Number.isNaN(d.getTime()) ? null : { dia: d.getDate(), mes: d.getMonth(), anio: d.getFullYear() };

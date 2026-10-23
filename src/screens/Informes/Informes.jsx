@@ -10,7 +10,7 @@ import { useIsMobile } from "../../hooks/useMediaQuery";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmtD, fmtL, scrollAppToTop, today } from "../../lib/format";
 import { openPrintTab } from "../../lib/abrirImpresion";
-import { buildInformePrintHtml } from "../../lib/informePrint";
+import { buildInformePrintHtml, fmtPeriodo } from "../../lib/informePrint";
 import { descargarInformePdf } from "../../lib/informePdf";
 import { getControlDocumental } from "../../lib/controlDocumental";
 import { LOGO_INGEANCLAJES } from "../../assets/embeddedImages";
@@ -28,7 +28,8 @@ import ModalCotizacionDetalle from "./ModalCotizacionDetalle";
 import { ModalEnviarFirma, PanelFirmaRecibido } from "./FirmaRecibidoInforme";
 import { useEnviosFirma } from "../../hooks/useEnviosFirma";
 import ModalQuienRecibe from "../../components/ModalQuienRecibe";
-import { clientesConQuienRecibe, destinatarioDeInforme } from "../../lib/quienRecibe";
+import { clientesConQuienRecibe, correoValido, destinatarioDeInforme } from "../../lib/quienRecibe";
+import { normalizarCorreo } from "../../lib/normalizarEntrada";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { useAccionesPantalla, useTituloPantalla } from "../../context/accionesPantalla";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
@@ -76,6 +77,7 @@ export default function Informes({ctx}){
   const [generandoPdf,setGenerandoPdf]=useState(false);
   const [modalFirma,setModalFirma]=useState(false);
   const [pidiendoQuienRecibe,setPidiendoQuienRecibe]=useState(false);
+  const [intentoGuardar,setIntentoGuardar]=useState(false);
   const [nuevo,setNuevo]=useState(()=>Boolean(ctx.intencion?.pantalla==="informes" && ctx.intencion?.obraId));
   const [editId,setEditId]=useState(null);
   const { envios: enviosFirma, recargar: recargarEnviosFirma } = useEnviosFirma(sel && !nuevo && !editId ? sel.id : null);
@@ -536,7 +538,8 @@ export default function Informes({ctx}){
       // A quien proponer el envio a firma de recibido: quien recibe en la
       // obra, si no el contacto de la cotizacion, si no el del directorio.
       ...(() => {
-        const d = destinatarioDeInforme({ obra, cotizacion: cotVinc, clientes });
+        if (correoValido(inf.recibeEmail)) return { contactoEmail: normalizarCorreo(inf.recibeEmail), contacto: inf.recibeNombre || "" };
+        const d = destinatarioDeInforme({ obra: obra || { cliente: clienteFinal }, cotizacion: cotVinc, clientes });
         return { contactoEmail: d.email, contacto: d.nombre };
       })(),
     };
@@ -551,6 +554,12 @@ export default function Informes({ctx}){
   const descargarPdf = async (inf = sel) => {
     if (!inf || generandoPdf) return;
     const listo = enriquecerInforme(inf);
+    // Sin correo de quien recibe no se genera: se pide y despues se sigue.
+    if (!correoValido(listo.contactoEmail)) {
+      setSel(inf);
+      setPidiendoQuienRecibe("pdf");
+      return;
+    }
     setGenerandoPdf(true);
     try {
       await descargarInformePdf(listo, { empresaConfig, firmaImg });
@@ -565,6 +574,11 @@ export default function Informes({ctx}){
   const imprimirInforme = (inf = sel) => {
     if (!inf) return;
     const listo = enriquecerInforme(inf);
+    if (!correoValido(listo.contactoEmail)) {
+      setSel(inf);
+      setPidiendoQuienRecibe("imprimir");
+      return;
+    }
     const html = buildInformePrintHtml(listo, { empresaConfig, firmaImg });
     openPrintTab(
       html,
@@ -639,7 +653,31 @@ export default function Informes({ctx}){
     setNuevo(true);
   };
 
+  // Quien recibe segun el formulario: lo escrito, o lo que propone el sistema
+  // (la obra, la cotizacion o el directorio) mientras no se haya tocado.
+  const recibeDelFormulario = () => {
+    const obraAct = obras?.find((o) => o.id === form.obraId);
+    const cotVinc = cotizaciones?.find((c) => c.id === form.cotizacionId)
+      || (form.cotizacionNumero ? cotizaciones?.find((c) => c.numero === form.cotizacionNumero) : null)
+      || (obraAct?.cotizacionId ? cotizaciones?.find((c) => c.id === obraAct.cotizacionId) : null);
+    const sugerido = destinatarioDeInforme({
+      obra: obraAct || { cliente: form.cliente || form.contratante || "" },
+      cotizacion: cotVinc,
+      clientes,
+    });
+    return { email: form.recibeEmail ?? sugerido.email, nombre: form.recibeNombre ?? sugerido.nombre };
+  };
+
   const guardar=()=>{
+    // Sin correo de quien recibe no se guarda: el informe no se le podria
+    // enviar al cliente para la firma de recibido.
+    const recibe = recibeDelFormulario();
+    if (!correoValido(recibe.email)) {
+      setIntentoGuardar(true);
+      document.getElementById("informe-quien-recibe")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    setIntentoGuardar(false);
     const prev = editId ? informes.find((item) => item.id === editId) : null;
     const miUserId = ctx?.membresia?.userId || null;
     const miNombre = resolverAutorGuardado(ctx?.membresia, prev?.modificadoPorNombre);
@@ -669,6 +707,14 @@ export default function Informes({ctx}){
       modificadoEn: new Date().toISOString(),
     };
     setInformes(prevList=>editId ? prevList.map(item=>item.id===editId?{...item,...inf}:item) : [...prevList,inf]);
+    // Quien recibe queda en la obra (es la que lo guarda en la base) y sube
+    // al directorio de clientes.
+    const recibeNombre = normalizarNombrePropio(recibe.nombre || "");
+    const recibeEmail = normalizarCorreo(recibe.email);
+    if (obraAct && (obraAct.recibeEmail !== recibeEmail || obraAct.recibeNombre !== recibeNombre)) {
+      setObras((p) => p.map((o) => (o.id === obraAct.id ? { ...o, recibeNombre, recibeEmail } : o)));
+    }
+    setClientes?.((prevCli) => clientesConQuienRecibe(prevCli, obraAct || { cliente: clienteFinal }, { nombre: recibeNombre, email: recibeEmail }));
     setNuevo(false);
     setEditId(null);
     setSel(inf);
@@ -794,6 +840,36 @@ export default function Informes({ctx}){
             <div><LBL>Período hasta</LBL><input type="date" value={form.periodoFin} onChange={e=>setForm(p=>({...p,periodoFin:e.target.value}))} style={CAMPO}/></div>
           </div>
           </section>
+
+          {/* Quien recibe: obligatorio. Sin el correo el informe no se puede
+              enviar a firma de recibido, asi que no se deja guardar. Se
+              propone el de la obra, la cotizacion o el directorio. */}
+          {(() => {
+            const r = recibeDelFormulario();
+            const falta = !correoValido(r.email);
+            return (
+              <section id="informe-quien-recibe" style={BLOQUE}>
+                <h2 style={{...TITULO_BLOQUE,marginBottom:6}}>Quién recibe el informe</h2>
+                <div style={{...NOTA,marginBottom:12}}>
+                  A este correo se le envía el informe para que el cliente firme el recibido. Es obligatorio; queda guardado en la obra.
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:14}}>
+                  <div><LBL>Nombre de quien recibe</LBL>
+                    <input value={r.nombre} onChange={e=>setForm(p=>({...p,recibeNombre:e.target.value,recibeEmail:p.recibeEmail ?? r.email}))}
+                      onBlur={e=>setForm(p=>({...p,recibeNombre:normalizarNombrePropio(e.target.value)}))} placeholder="Residente o interventor de la obra" style={CAMPO}/>
+                  </div>
+                  <div><LBL>Correo de quien recibe *</LBL>
+                    <input type="email" inputMode="email" value={r.email} onChange={e=>setForm(p=>({...p,recibeEmail:e.target.value,recibeNombre:p.recibeNombre ?? r.nombre}))}
+                      onBlur={e=>setForm(p=>({...p,recibeEmail:normalizarCorreo(e.target.value)}))} placeholder="residente@constructora.com"
+                      style={{...CAMPO,...(falta && intentoGuardar ? {borderColor:"var(--danger, #b3261e)"} : {})}}/>
+                    {falta && intentoGuardar && (
+                      <div style={{fontSize:12,color:"var(--danger, #b3261e)",marginTop:4}}>Escribe el correo de quien recibe para poder guardar el informe.</div>
+                    )}
+                  </div>
+                </div>
+              </section>
+            );
+          })()}
 
           {/* Cotización de Referencia */}
           {(() => {
@@ -1128,7 +1204,7 @@ export default function Informes({ctx}){
         const localizacion = normalizarMayusculas(sel?.localizacion || "");
         const cliente = normalizarMayusculas(sel?.cliente || (obras?.find(o => o.id === sel?.obraId)?.cliente) || "");
         const fechaInforme = fmtL(sel?.fechaInforme);
-        const periodo = `${fmtL(sel?.periodoInicio)} al ${fmtL(sel?.periodoFin)}`;
+        const periodo = fmtPeriodo(sel?.periodoInicio, sel?.periodoFin);
         const personal = Array.isArray(sel?.personal) ? sel.personal : [];
         const numDoc = sel?.id ? String(sel.id).trim() : (sel?.numero ? String(sel.numero).trim() : "");
         const rawActividades = (sel.actividades || [{ titulo: sel.actividad, descripcion: sel.descripcion, observaciones: sel.observaciones, fotos: sel.fotos || [] }]).map(conActividadSeparada);
@@ -1171,7 +1247,7 @@ export default function Informes({ctx}){
                   Para enviar este informe al cliente y que firme el recibido, la obra necesita el correo de quien recibe
                   (el residente o el interventor).
                   <div style={{ marginTop: 10 }}>
-                    <Button tam="sm" onClick={() => (obraDeSel ? setPidiendoQuienRecibe(true) : setModalFirma(true))}>
+                    <Button tam="sm" onClick={() => setPidiendoQuienRecibe("firma")}>
                       Agregar correo
                     </Button>
                   </div>
@@ -1203,44 +1279,51 @@ export default function Informes({ctx}){
                   margin: "0 auto",
                 }}
               >
-                {/* Línea de acento superior estilo Apple Studio */}
-                <div style={{ height: 2.5, background: "#18181b", borderRadius: 1, marginBottom: 14 }}></div>
-
-                {/* Encabezado Editorial Apple */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid rgba(0,0,0,0.08)", paddingBottom: 14, marginBottom: 14 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                    {LOGO_INGEANCLAJES ? (
-                      <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{ height: 48, maxWidth: 190, objectFit: "contain", display: "block" }} />
-                    ) : (
-                      <div style={{ fontSize: 18, fontWeight: 800, color: "#18181b", letterSpacing: "-0.03em" }}>
-                        INGE<span style={{ color: "#ea580c" }}>ANCLAJES</span>
-                      </div>
-                    )}
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: "#18181b", letterSpacing: "-0.01em" }}>
-                        INGEANCLAJES <span style={{ fontSize: 11, fontWeight: 700, color: "#ea580c" }}>S.A.S.</span>
-                      </div>
-                      <div style={{ fontSize: 9.5, fontWeight: 700, color: "#52525b", textTransform: "uppercase", letterSpacing: "0.05em", marginTop: 2 }}>
-                        Sistemas de Ingeniería y Protección Contra Caídas
-                      </div>
-                      <div style={{ fontSize: 8.5, color: "#71717a", marginTop: 1 }}>
-                        NIT. 900.193.965-4 · PBX (604) 448 26 86 · Medellín, Colombia
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ display: "inline-block", padding: "2.5px 8px", borderRadius: 4, background: "#f4f4f5", border: "1px solid #e4e4e7", fontSize: 8.5, color: "#52525b", fontVariantNumeric: "tabular-nums", fontWeight: 600, marginBottom: 4 }}>
-                      SISTEMA DE GESTIÓN DE CALIDAD · {docCodigo} (V-{docVersion})
-                    </div>
-                    <div style={{ fontSize: 12.5, fontWeight: 800, color: "#18181b", letterSpacing: "0.02em", textTransform: "uppercase" }}>
-                      INFORME TÉCNICO DE ACTIVIDADES EN OBRA
-                    </div>
-                    <div style={{ fontSize: 10, color: "#18181b", fontVariantNumeric: "tabular-nums", fontWeight: 700, marginTop: 3 }}>
-                      Consecutivo: <span style={{ background: "#18181b", color: "#ffffff", padding: "2px 7px", borderRadius: 4 }}>{numDoc || "INF-OFICIAL"}</span>
-                    </div>
-                  </div>
-                </div>
+                {/* El mismo encabezado del PDF (informePrint.js): tres casillas
+                    de igual alto -logo, titulo y datos de control-. El de antes
+                    repetia el nombre de la empresa junto al logo y partia el
+                    titulo en dos lineas, y los dos lados no cuadraban. */}
+                <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, border: "1px solid #d2d2d7", borderRadius: 8, marginBottom: 14, tableLayout: isMobile ? "auto" : "fixed" }}>
+                  <tbody>
+                    <tr>
+                      {!isMobile && (
+                        <td style={{ width: "27%", padding: "10px 14px", borderRight: "1px solid #d2d2d7", verticalAlign: "middle", textAlign: "center" }}>
+                          {LOGO_INGEANCLAJES ? (
+                            <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{ height: 48, maxWidth: "100%", objectFit: "contain", display: "inline-block" }} />
+                          ) : (
+                            <div style={{ fontSize: 18, fontWeight: 800, color: "#1d1d1f" }}>INGEANCLAJES</div>
+                          )}
+                        </td>
+                      )}
+                      <td style={{ padding: "10px 14px", verticalAlign: "middle", textAlign: "center" }}>
+                        {isMobile && LOGO_INGEANCLAJES && (
+                          <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{ height: 36, objectFit: "contain", display: "block", margin: "0 auto 6px" }} />
+                        )}
+                        <div style={{ fontSize: 9.5, fontWeight: 600, color: "#6e6e73", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                          Sistema de gestión de calidad
+                        </div>
+                        <div style={{ fontSize: isMobile ? 13 : 15, fontWeight: 800, color: "#1d1d1f", letterSpacing: "0.01em", textTransform: "uppercase", marginTop: 3, lineHeight: 1.25 }}>
+                          Informe técnico de actividades en obra
+                        </div>
+                        <div style={{ fontSize: 9.5, color: "#6e6e73", marginTop: 4 }}>
+                          Ingeanclajes S.A.S. · NIT 900.193.965-4 · PBX (604) 448 26 86
+                        </div>
+                      </td>
+                      <td style={{ width: isMobile ? "38%" : "24%", padding: 0, borderLeft: "1px solid #d2d2d7", verticalAlign: "middle" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                          <tbody>
+                            {[["Código", docCodigo], ["Versión", docVersion], ["Consecutivo", numDoc || "INF-OFICIAL"]].map(([rotulo, valor], i) => (
+                              <tr key={rotulo}>
+                                <td style={{ padding: "5px 10px", fontSize: 9.5, fontWeight: 600, color: "#6e6e73", textTransform: "uppercase", letterSpacing: "0.04em", borderBottom: i < 2 ? "1px solid #e8e8ed" : "none" }}>{rotulo}</td>
+                                <td style={{ padding: "5px 10px", fontSize: 10.5, fontWeight: 700, color: "#1d1d1f", textAlign: "right", whiteSpace: "nowrap", borderBottom: i < 2 ? "1px solid #e8e8ed" : "none" }}>{valor}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
 
                 {/* Ficha de Datos del Proyecto */}
                 <div style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, padding: "10px 14px", marginBottom: 14, background: "#fafafa" }}>
@@ -1472,17 +1555,28 @@ export default function Informes({ctx}){
       })()}
 
       {pidiendoQuienRecibe && sel && (() => {
+        // Un informe sin obra igual lo pide: queda en el informe abierto y
+        // en el directorio de clientes.
         const obraDelInforme = obras?.find((o) => o.id === sel.obraId);
-        if (!obraDelInforme) return null;
+        const destino = obraDelInforme || { cliente: sel.cliente || sel.contratante || "", proyecto: sel.proyecto };
         return (
           <ModalQuienRecibe
-            obra={obraDelInforme}
+            obra={destino}
+            motivo={pidiendoQuienRecibe === "firma" ? "" : "Falta el correo de quien recibe: sin él no se genera el informe, porque no se le podría enviar al cliente para la firma de recibido."}
             onCerrar={() => setPidiendoQuienRecibe(false)}
             onGuardar={({ nombre, email }) => {
-              setObras((p) => p.map((o) => (o.id === obraDelInforme.id ? { ...o, recibeNombre: nombre, recibeEmail: email } : o)));
-              setClientes?.((prev) => clientesConQuienRecibe(prev, obraDelInforme, { nombre, email }));
+              if (obraDelInforme) {
+                setObras((p) => p.map((o) => (o.id === obraDelInforme.id ? { ...o, recibeNombre: nombre, recibeEmail: email } : o)));
+              }
+              setClientes?.((prev) => clientesConQuienRecibe(prev, destino, { nombre, email }));
+              const conRecibe = { ...sel, recibeNombre: nombre, recibeEmail: email };
+              setInformes((p) => p.map((i) => (i.id === sel.id ? { ...i, recibeNombre: nombre, recibeEmail: email } : i)));
+              setSel(conRecibe);
+              const seguir = pidiendoQuienRecibe;
               setPidiendoQuienRecibe(false);
-              setModalFirma(true);
+              if (seguir === "pdf") descargarPdf(conRecibe);
+              else if (seguir === "imprimir") imprimirInforme(conRecibe);
+              else setModalFirma(true);
             }}
           />
         );

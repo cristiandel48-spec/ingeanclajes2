@@ -25,6 +25,7 @@ import { useIsMobile } from "../../hooks/useMediaQuery";
 import { obrasMasNuevasPrimero } from "../../lib/identificadores";
 import { confirmar } from "../../lib/dialogos";
 import { esCamilaSepulveda } from "../../lib/agendaEspecial";
+import { certificacionRepetida } from "../../lib/duplicados";
 // Informes de una obra. Si se indica uno concreto, solo ese.
 const informesFuente = (informes, obraId, informeId = "")=>{
   if(!obraId) return [];
@@ -349,7 +350,45 @@ export default function Certificaciones({ctx}){
     subirAlFormulario();
   };
 
-  const guardar=()=>{
+  // Un segundo clic en «Guardar» antes de que se cierre el formulario creaba
+  // otra certificación igual.
+  const guardandoRef = useRef(false);
+
+  const guardar=async()=>{
+    if (guardandoRef.current) return;
+    guardandoRef.current = true;
+    try {
+      // La misma obra (y sede) no se certifica dos veces mientras la anterior
+      // siga vigente. Paso con una obra certificada tres veces el mismo dia.
+      // Solo al crear: al editar se deja corregir aunque ya hubiera repetidas.
+      const repetida = editId ? null : certificacionRepetida(certs, { ...form, obraId: form.obraId || null });
+      if (repetida) {
+        const folio = repetida.numero || repetida.id;
+        const ver = await confirmar({
+          titulo: "Esta obra ya está certificada",
+          mensaje: `${repetida.tipo || "La certificación"} ${folio} de ${repetida.cliente || "este cliente"} sigue vigente`
+            + (repetida.proxMant ? ` hasta el ${fmtL(repetida.proxMant)}` : "")
+            + ". No se puede crear otra para la misma obra y sede. Si hay que corregir algo, edita la que ya existe; "
+            + "si es otra sede de la obra, escríbela en el campo de la sede.",
+          textoConfirmar: `Ver ${folio}`,
+          textoCancelar: "Volver al formulario",
+          destructivo: false,
+          conGuardando: false,
+        });
+        if (ver) {
+          setNueva(false);
+          setEditId(null);
+          setSel(repetida);
+        }
+        return;
+      }
+      guardarSinRepetir();
+    } finally {
+      setTimeout(() => { guardandoRef.current = false; }, 800);
+    }
+  };
+
+  const guardarSinRepetir=()=>{
     const prev = editId ? certs.find((item) => item.id === editId) : null;
     const miUserId = ctx?.membresia?.userId || null;
     const miNombre = resolverAutorGuardado(ctx?.membresia, prev?.modificadoPorNombre);

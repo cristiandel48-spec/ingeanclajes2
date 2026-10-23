@@ -4,7 +4,7 @@ import { calcularVencimientos } from "../../lib/vencimientos";
 import ListaVencimientos from "./ListaVencimientos";
 import LBL from "../../components/ui/LBL";
 import { RECERT_ELEMENTOS_DEFAULT, unAnoDespues } from "../Certificaciones/certConfig";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmtD, today } from "../../lib/format";
 import { printCurrentPz } from "../../lib/print";
@@ -43,8 +43,14 @@ export default function Vencimientos({ctx}){
     setRecertForm(c);
   };
 
+  // Un segundo clic antes de cerrar el formulario creaba otra recertificación.
+  // La anterior ya queda marcada «Recertificado», asi que desde la lista no
+  // se puede recertificar dos veces la misma; esto cubre el doble clic.
+  const guardandoRef=useRef(false);
   const guardarRecert=()=>{
-    if(!recertData.fecha||!recertData.proxMant)return;
+    if(!recertData.fecha||!recertData.proxMant||guardandoRef.current)return;
+    guardandoRef.current=true;
+    setTimeout(()=>{guardandoRef.current=false;},800);
     const newId=siguienteIdUnico(certs,"CERT");
     const nuevaCert={id:newId,...recertData,estado:"Vigente"};
     // Marca la cert anterior como "Recertificado" y guarda nueva fecha

@@ -30,6 +30,7 @@ import { useEnviosFirma } from "../../hooks/useEnviosFirma";
 import ModalQuienRecibe from "../../components/ModalQuienRecibe";
 import { celularDeInforme, clientesConQuienRecibe, correoValido, destinatarioDeInforme, quienRecibeDeCliente } from "../../lib/quienRecibe";
 import { normalizarCorreo } from "../../lib/normalizarEntrada";
+import { informeRepetido } from "../../lib/duplicados";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { useAccionesPantalla, useTituloPantalla } from "../../context/accionesPantalla";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
@@ -669,7 +670,21 @@ export default function Informes({ctx}){
     return { email: form.recibeEmail ?? sugerido.email, nombre: form.recibeNombre ?? sugerido.nombre };
   };
 
-  const guardar=()=>{
+  // Un segundo clic en «Guardar» antes de cerrar el editor creaba otro
+  // informe igual.
+  const guardandoRef = useRef(false);
+
+  const guardar=async()=>{
+    if (guardandoRef.current) return;
+    guardandoRef.current = true;
+    try {
+      await guardarInforme();
+    } finally {
+      setTimeout(() => { guardandoRef.current = false; }, 800);
+    }
+  };
+
+  const guardarInforme=async()=>{
     // Sin correo de quien recibe no se guarda: el informe no se le podria
     // enviar al cliente para la firma de recibido.
     const recibe = recibeDelFormulario();
@@ -679,6 +694,28 @@ export default function Informes({ctx}){
       return;
     }
     setIntentoGuardar(false);
+
+    // La misma obra, sede y periodo no se informa dos veces.
+    // Solo al crear: al editar se deja corregir aunque ya hubiera repetidos.
+    const repetido = editId ? null : informeRepetido(informes, { ...form, obraId: form.obraId || null });
+    if (repetido) {
+      const ver = await confirmar({
+        titulo: "Ya hay un informe de esta obra en ese período",
+        mensaje: `El informe ${repetido.id} de ${repetido.proyecto || repetido.cliente || "esta obra"} cubre `
+          + `${fmtPeriodo(repetido.periodoInicio, repetido.periodoFin) || "esas fechas"}. No se puede crear otro para la misma obra, `
+          + "sede y período. Si falta algo, edita ese informe; si es otro período o sede, cambia las fechas o el nombre del proyecto.",
+        textoConfirmar: `Ver ${repetido.id}`,
+        textoCancelar: "Volver al informe",
+        destructivo: false,
+        conGuardando: false,
+      });
+      if (ver) {
+        setNuevo(false);
+        setEditId(null);
+        setSel(repetido);
+      }
+      return;
+    }
     const prev = editId ? informes.find((item) => item.id === editId) : null;
     const miUserId = ctx?.membresia?.userId || null;
     const miNombre = resolverAutorGuardado(ctx?.membresia, prev?.modificadoPorNombre);

@@ -6,12 +6,12 @@ import { normalizarMayusculas, normalizarTituloFormal } from "./normalizarEntrad
 import { LOGO_INGEANCLAJES } from "../assets/embeddedImages";
 import { getQuotePrintableProposals, porcentajeUtilidad } from "./cotizaciones";
 import { getStaticMapDimensions, buildStaticMapLabelData } from "./maps";
-import { TIPO_MANUAL, hasVerticalLifeLineService, hasCatLadderService, tipoCotizacionCanonico } from "./cotizaciones";
+import { TIPO_CAMIONERA, TIPO_MANUAL, hasVerticalLifeLineService, hasCatLadderService, tipoCotizacionCanonico } from "./cotizaciones";
 import { getTextosDocumento, lineasDeTexto } from "./cotizacionTextos";
 import { corregirOrtografiaLocal } from "./correctorTexto";
 import { cssHojaImpresion } from "./hojaImpresion";
 import { CSS_COTIZACION } from "./cotizacion/estilos";
-import { FICHA_ESCALERA_GATO, FICHA_LINEA_VIDA_VERTICAL, crearFichaSistema, paginasComponentes } from "./cotizacion/fichasTecnicas";
+import { FICHA_ESCALERA_GATO, FICHA_LINEA_CAMIONERA, FICHA_LINEA_VIDA_VERTICAL, crearFichaSistema, paginasComponentes } from "./cotizacion/fichasTecnicas";
 
 export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
   const propuestas = getQuotePrintableProposals(c);
@@ -33,6 +33,10 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
   // 2) Escalera tipo gato sola (sin línea de vida, sin canastilla)
   const showVerticalLifelineAppendix = propuestasConSistema.some((propuesta)=>hasVerticalLifeLineService(propuesta?.quote || propuesta))
     || (!todasManuales && hasVerticalLifeLineService({ alcance: c?.alcance, requerimientoCliente: textoInicial, items: c?.items, titulo: c?.titulo }));
+
+  // Ficha de la linea de vida camionera: despues del precio, como las de la
+  // escalera y la linea vertical, cuando alguna propuesta es de ese tipo.
+  const showCamioneraAppendix = propuestas.some((propuesta) => tipoDe(propuesta) === TIPO_CAMIONERA);
 
   const showCatLadderAppendix = propuestasConSistema.some((propuesta)=>hasCatLadderService(propuesta?.quote || propuesta))
     || (!todasManuales && hasCatLadderService({ alcance: c?.alcance, requerimientoCliente: textoInicial, items: c?.items, titulo: c?.titulo }));
@@ -1086,6 +1090,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     ${proposalSections}
     ${showCatLadderAppendix ? fichaSistema(FICHA_ESCALERA_GATO) : ""}
     ${showVerticalLifelineAppendix ? fichaSistema(FICHA_LINEA_VIDA_VERTICAL) : ""}
+    ${showCamioneraAppendix ? fichaSistema(FICHA_LINEA_CAMIONERA) : ""}
     ${showTechnicalPage ? renderTechnicalPage() : ""}
     ${mostrarResumenFinal ? "" : renderResumenPropuestas()}
     ${closingSections}

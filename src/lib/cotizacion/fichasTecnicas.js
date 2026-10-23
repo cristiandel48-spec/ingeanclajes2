@@ -16,6 +16,7 @@ import urlSoporte from "../../assets/componentes/soporte-intermedio-cubierta-cab
 import urlTensor from "../../assets/componentes/tensor.jpg";
 import urlEmpalmes from "../../assets/componentes/empalmes-guardacables.jpg";
 import urlCable from "../../assets/componentes/cable-acero.jpg";
+import urlLineaCamionera from "../../assets/linea-vida-camionera.jpg";
 
 // Direccion completa: el documento se abre en una pestaña nueva o dentro de
 // un marco, y ahi una ruta como «/assets/…» podria no resolverse contra el
@@ -29,6 +30,7 @@ const IMG_SOPORTE = absoluta(urlSoporte);
 const IMG_TENSOR = absoluta(urlTensor);
 const IMG_EMPALMES = absoluta(urlEmpalmes);
 const IMG_CABLE = absoluta(urlCable);
+const lineaCamionera = absoluta(urlLineaCamionera);
 
 // Ficha de un sistema. Recibe el encabezado y el pie de la cotizacion.
 export function crearFichaSistema({ headerHtml, footerHtml }) {
@@ -67,13 +69,13 @@ export function crearFichaSistema({ headerHtml, footerHtml }) {
     return `scale(${escala.toFixed(4)}) translate(${((0.5 - cx) * 100).toFixed(2)}%, ${((0.5 - cy) * 100).toFixed(2)}%)`;
   };
 
-  const fichaSistema = ({ titulo, imagen, alt, recorte, llamadas = [], notas = [] }) => `
+  const fichaSistema = ({ titulo, imagen, alt, recorte, llamadas = [], notas = [], ancha = false }) => `
     <section class="page appendix-page">
       <div class="page-inner">
         ${headerHtml}
         <div class="page-content">
           <h3 class="doc-h3">${escapeHtml(titulo)}</h3>
-          <div class="ficha-sistema">
+          <div class="ficha-sistema${ancha ? " ficha-sistema--ancha" : ""}">
             <div class="ficha-sistema-img">
               <!-- Los dos hacen falta: clip-path quita lo que sobra -el
                    logotipo del proveedor y sus recuadros de texto-, y el
@@ -172,6 +174,31 @@ export const FICHA_LINEA_VIDA_VERTICAL = {
       "Cumple la Resolución 4272 de 2021 del Ministerio del Trabajo de Colombia y la norma EN 795:2012, aplicables a los dispositivos de anclaje para protección contra caídas en trabajo en alturas."],
     ["Estructura de la escalera",
       "Largueros en tubería redonda de 2″ y peldaños en tubería redonda de 1 ½″. Los peldaños se instalan cada 30 cm y con un ancho de 40 cm, conforme a la norma. Fabricada en acero estructural 1040."],
+  ],
+};
+
+// Linea de vida camionera (aerea, sobre carrotanques y volquetas). La
+// ilustracion ya trae sus piezas rotuladas, asi que va entera -sin recorte- y
+// a la derecha lo que no se ve en el dibujo: normativa, diseño y conexion.
+export const FICHA_LINEA_CAMIONERA = {
+  titulo: "Sistema de línea de vida camionera",
+  imagen: lineaCamionera,
+  alt: "Línea de vida camionera aérea sobre un carrotanque",
+  recorte: "0% 0% 0% 0%",
+  // El dibujo es casi cuadrado: en la columna estrecha de las otras fichas
+  // se le cortaban los lados.
+  ancha: true,
+  notas: [
+    ["Normatividad",
+      "Se diseña e instala conforme a la Resolución 4272 de 2021 del Ministerio del Trabajo de Colombia. El diseño de la línea horizontal sigue la norma ANSI/ASSP Z359.6, los postes y su cimentación la NSR-10, y las distancias a redes eléctricas el RETIE."],
+    ["Postes",
+      "Tipo cuello de cisne en tubo de acero con riostra, sobre pedestal y dado de cimentación en concreto, con platina y pernos de anclaje. Se calculan para la carga de detención de una caída."],
+    ["Línea de vida",
+      "Cable de acero galvanizado tensionado entre los postes, por encima del vehículo, con absorbedor de energía y tensor en los extremos."],
+    ["Conexión del trabajador",
+      "Arnés de cuerpo completo con conexión dorsal y línea autorretráctil unida a un carro que se desliza por el cable, de modo que la persona va conectada en todo momento a lo largo del vehículo."],
+    ["Diseño",
+      "La altura del cable y la luz entre postes se definen en la memoria de cálculo, según el vehículo y la distancia de detención. El sistema lo diseña y certifica una persona calificada."],
   ],
 };
 

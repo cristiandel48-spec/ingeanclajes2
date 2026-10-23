@@ -12,7 +12,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { buildCotizacionPrintHtml } from "./cotizacionPrint";
 import { buildInformePrintHtml } from "./informePrint";
-import { FOTO_LINEA_CAMIONERA_DEFAULT } from "../assets/fotoLineaCamionera";
 
 beforeAll(() => {
   vi.useFakeTimers();
@@ -117,7 +116,12 @@ describe("cotizacion camionera", () => {
     expect(html).toContain("Línea de vida camionera");
     expect(html).toContain("cuello de cisne");
     expect(html).not.toContain("tensionada y sujeta en tres o dos puntos de anclaje");
-    expect(html).toContain(FOTO_LINEA_CAMIONERA_DEFAULT.slice(0, 80));
+    // La ilustracion va en su ficha tecnica, despues del precio, y no como
+    // foto de la propuesta.
+    expect(html).toContain("Sistema de línea de vida camionera");
+    expect(html).toContain("linea-vida-camionera");
+    expect(html).not.toContain("foto-def-linea-camionera");
+    expect(html.indexOf("Sistema de línea de vida camionera")).toBeGreaterThan(html.indexOf("Total propuesta"));
   });
 });
 

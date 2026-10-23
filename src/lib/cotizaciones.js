@@ -3,7 +3,6 @@ import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_TIEMPO_EJEC, DEFAULT_COT_INCLUYE } 
 import { measurementsToQuoteItems, buildMeasurementNarrative } from "./maps";
 import { corregirOrtografiaLocal } from "./correctorTexto";
 import { FOTO_PUNTO_ANCLAJE_DEFAULT } from "../assets/embeddedImages";
-import { FOTO_LINEA_CAMIONERA_DEFAULT } from "../assets/fotoLineaCamionera";
 
 // La foto por defecto del punto de anclaje, tal como es: la foto de
 // producto, sobre su fondo negro de estudio.
@@ -25,15 +24,21 @@ export function isFotoPuntoAnclajeDefault(foto) {
 }
 
 // La foto que una propuesta lleva sola segun su tipo: la del punto de
-// anclaje y la ilustracion de la linea de vida camionera. Al cambiar de tipo
-// se quita la del anterior y se pone la del nuevo; las fotos propias no se
-// tocan.
+// anclaje. Al cambiar de tipo se quita y se pone segun corresponda; las
+// fotos propias no se tocan.
 export const TIPO_CAMIONERA = "linea_vida_camionera";
 
 const FOTOS_POR_TIPO = {
   puntos_anclaje: { id: "foto-def-punto-anclaje", src: FOTO_PUNTO_ANCLAJE_DEFAULT, label: "Punto de anclaje certificado" },
-  [TIPO_CAMIONERA]: { id: "foto-def-linea-camionera", src: FOTO_LINEA_CAMIONERA_DEFAULT, label: "Línea de vida camionera (ilustración)" },
 };
+
+// La ilustracion de la linea camionera iba como foto de la propuesta, al
+// lado de las fotos de la obra. Ahora es su ficha tecnica, despues del
+// precio (fichasTecnicas.js). Las propuestas que ya la tenian guardada la
+// pierden sola: se reconoce por su id y su rotulo.
+const FOTOS_RETIRADAS = [
+  { id: "foto-def-linea-camionera", label: "Línea de vida camionera (ilustración)" },
+];
 
 export function fotoDefaultDeTipo(tipo) {
   const foto = FOTOS_POR_TIPO[tipoCotizacionCanonico(tipo)];
@@ -42,7 +47,8 @@ export function fotoDefaultDeTipo(tipo) {
 
 export function isFotoDefaultDeTipo(foto) {
   if (!foto) return false;
-  return Object.values(FOTOS_POR_TIPO).some((d) => foto.id === d.id || foto.src === d.src || foto.label === d.label);
+  return Object.values(FOTOS_POR_TIPO).some((d) => foto.id === d.id || foto.src === d.src || foto.label === d.label)
+    || FOTOS_RETIRADAS.some((d) => foto.id === d.id || foto.label === d.label);
 }
 
 /** Las fotos de la propuesta con la automatica del tipo, y sin la de otro. */

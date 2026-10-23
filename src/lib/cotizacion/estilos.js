@@ -392,6 +392,16 @@ export const CSS_COTIZACION = `
         max-width: none;
         object-fit: contain;
       }
+      /* Ficha con una ilustracion completa, mas ancha que alta para la
+         columna estrecha (la linea de vida camionera): se le da mas ancho al
+         dibujo y se muestra entero, sin recortar los lados. */
+      .ficha-sistema--ancha { grid-template-columns: 1.15fr 0.85fr; gap: 6mm; }
+      .ficha-sistema--ancha .ficha-sistema-img { height: auto; overflow: visible; }
+      .ficha-sistema--ancha .ficha-sistema-img img {
+        width: 100%; height: auto; max-height: 175mm; max-width: 100%;
+        transform: none !important; clip-path: none !important;
+        border-radius: 2mm;
+      }
       /* Llamadas: cada una a la altura de la pieza que describe, con una
          linea fina que llega hasta el dibujo. */
       .ficha-llamadas { position: relative; }

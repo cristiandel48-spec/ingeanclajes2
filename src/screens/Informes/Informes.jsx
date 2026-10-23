@@ -26,7 +26,9 @@ import TarjetaCotizacionRef from "./TarjetaCotizacionRef";
 import { obrasMasNuevasPrimero } from "../../lib/identificadores";
 import ModalCotizacionDetalle from "./ModalCotizacionDetalle";
 import { ModalEnviarFirma, PanelFirmaRecibido } from "./FirmaRecibidoInforme";
-import { useEnviosFirma } from "../../hooks/useEnviosFirma";
+import { useEnviosFirma, useEstadosFirmaInformes } from "../../hooks/useEnviosFirma";
+import { descargarPdfEnviado, listarEnviosFirma } from "../../lib/firmaRecibido";
+import { armarPdfConConstancia, descargarBlob, nombreConConstancia } from "../../lib/constanciaRecibido";
 import ModalQuienRecibe from "../../components/ModalQuienRecibe";
 import { celularDeInforme, clientesConQuienRecibe, correoValido, destinatarioDeInforme, quienRecibeDeCliente } from "../../lib/quienRecibe";
 import { normalizarCorreo } from "../../lib/normalizarEntrada";
@@ -34,7 +36,7 @@ import { informeRepetido } from "../../lib/duplicados";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { useAccionesPantalla, useTituloPantalla } from "../../context/accionesPantalla";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
-import { Button, Callout } from "../../components/ui";
+import { Button, Callout, useToast } from "../../components/ui";
 import { confirmar } from "../../lib/dialogos";
 import { FUENTE } from "../../styles/designTokens";
 
@@ -81,7 +83,12 @@ export default function Informes({ctx}){
   const [intentoGuardar,setIntentoGuardar]=useState(false);
   const [nuevo,setNuevo]=useState(()=>Boolean(ctx.intencion?.pantalla==="informes" && ctx.intencion?.obraId));
   const [editId,setEditId]=useState(null);
-  const { envios: enviosFirma, recargar: recargarEnviosFirma } = useEnviosFirma(sel && !nuevo && !editId ? sel.id : null);
+  const toast = useToast();
+  const { envios: enviosFirma, recargar: recargarEnviosFirma } = useEnviosFirma(sel && !nuevo && !editId ? sel.id : null, {
+    onFirmado: (e) => toast.exito(`${e.firmanteNombre || "El cliente"} firmó el recibido del informe ${e.numero || ""}.`),
+  });
+  // Para la marca de «Firmado» en la lista de informes.
+  const estadosFirma = useEstadosFirmaInformes(!sel && !nuevo && !editId);
   const [modalCotizacion,setModalCotizacion]=useState(false);
   const [cotizacionModalData,setCotizacionModalData]=useState(null);
   const fotoRefs=useRef({});
@@ -553,8 +560,33 @@ export default function Informes({ctx}){
   // -192 puntos por pulgada- y lo guardaba como JPEG, asi que el PDF era una
   // foto del documento: el texto dejaba de ser texto y se veia pixelado al
   // ampliarlo o al imprimirlo. Desde la pestaña de impresion, «Guardar como
+  // El envio firmado del informe, si lo hay. Del informe abierto ya se tiene;
+  // desde la lista se consulta en el momento.
+  const envioFirmadoDe = async (inf) => {
+    const lista = inf?.id === sel?.id && enviosFirma.length
+      ? enviosFirma
+      : await listarEnviosFirma("informe", inf?.id).catch(() => []);
+    return lista.find((e) => e.estado === "firmado") || null;
+  };
+
   const descargarPdf = async (inf = sel) => {
     if (!inf || generandoPdf) return;
+    // Firmado por el cliente: se entrega el PDF que recibio con la constancia
+    // al final, no uno nuevo sin firma.
+    const firmado = await envioFirmadoDe(inf);
+    if (firmado) {
+      setGenerandoPdf(true);
+      try {
+        const original = await descargarPdfEnviado(firmado.pdfRuta);
+        descargarBlob(await armarPdfConConstancia(original, firmado), nombreConConstancia(firmado));
+      } catch (fallo) {
+        console.error("Error al armar el PDF firmado:", fallo);
+        window.alert(fallo?.message || "No se pudo armar el PDF firmado.");
+      } finally {
+        setGenerandoPdf(false);
+      }
+      return;
+    }
     const listo = enriquecerInforme(inf);
     // Sin correo de quien recibe no se genera: se pide y despues se sigue.
     if (!correoValido(listo.contactoEmail)) {
@@ -627,11 +659,11 @@ export default function Informes({ctx}){
           onClick={() => accionesInformeRef.current.descargar()}
           title="Descarga el informe oficial en PDF directamente"
         >
-          {generandoPdf ? "Generando…" : "Descargar PDF"}
+          {generandoPdf ? "Generando…" : enviosFirma.some((e) => e.estado === "firmado") ? "Descargar PDF firmado" : "Descargar PDF"}
         </Button>
       </div>
     ) : null,
-    [sel, nuevo, editId, generandoPdf]
+    [sel, nuevo, editId, generandoPdf, enviosFirma]
   );
   useTituloPantalla(viendoInforme ? `Informe ${String(sel?.id || sel?.numero || "").trim()}`.trim() : null);
 
@@ -1215,6 +1247,7 @@ export default function Informes({ctx}){
       {!sel&&!nuevo&&(
         <ListaInformes
           informes={informes}
+          estadosFirma={estadosFirma}
           acciones={{
             ver: async (inf)=>{
               setSel(inf);

@@ -105,6 +105,28 @@ export async function listarEnviosFirma(tipo, documentoId) {
   return (data || []).map(desdeFila);
 }
 
+// Si un documento tiene un envio firmado, ese manda; si no, el mas avanzado.
+const PESO_ESTADO = { firmado: 3, abierto: 2, enviado: 1, anulado: 0 };
+
+/** { [documentoId]: estado } de todos los documentos de un tipo. */
+export async function listarEstadosFirma(tipo) {
+  if (!isSupabaseConfigured()) return {};
+  const { data, error } = await getSupabaseClient()
+    .from("firmas_documento")
+    .select("documento_id, estado")
+    .eq("tipo_documento", tipo);
+  if (error) {
+    if (/does not exist|relation|schema cache/i.test(error.message)) return {};
+    throw error;
+  }
+  const estados = {};
+  for (const f of data || []) {
+    const actual = estados[f.documento_id];
+    if (!actual || PESO_ESTADO[f.estado] > PESO_ESTADO[actual]) estados[f.documento_id] = f.estado;
+  }
+  return estados;
+}
+
 /** El PDF que se envio, tal cual (para armar la copia con la constancia). */
 export async function descargarPdfEnviado(ruta) {
   const { data, error } = await getSupabaseClient().storage.from("firmas").download(ruta);

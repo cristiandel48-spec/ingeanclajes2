@@ -1,7 +1,8 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { fmtD } from "../../lib/format";
 import { useIsMobile } from "../../hooks/useMediaQuery";
-import { BarraFija, CABECERA_FIJA } from "../../components/ui";
+import { BarraFija, CABECERA_FIJA, StatusPill } from "../../components/ui";
+import { ESTADO_FIRMA } from "../../lib/firmaRecibido";
 
 const ORDENES = [
   { key: "recientes", label: "Más recientes", comparar: (a, b) => enMilis(b.fechaInforme) - enMilis(a.fechaInforme) || String(b.id).localeCompare(String(a.id)) },
@@ -26,8 +27,19 @@ const contarActividades = (inf) => {
   return (inf?.actividades || []).length;
 };
 
-export default function ListaInformes({ informes = [], acciones = {} }) {
-  const isMobile = useIsMobile();
+// Firma de recibido del cliente. «Firmado» es lo que interesa ver de un
+// vistazo; lo pendiente sale mas discreto y lo anulado no sale.
+function MarcaFirma({ estado }) {
+  if (!estado || estado === "anulado") return null;
+  const e = ESTADO_FIRMA[estado];
+  return (
+    <StatusPill tono={e.tono} title="Firma de recibido del cliente" style={{ flexShrink: 0 }}>
+      {estado === "firmado" ? "Firmado" : estado === "abierto" ? "Sin firmar" : "Enviado a firma"}
+    </StatusPill>
+  );
+}
+
+export default function ListaInformes({ informes = [], acciones = {}, estadosFirma = {} }) {  const isMobile = useIsMobile();
   const [busqueda, setBusqueda] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState("Todos");
   const [orden, setOrden] = useState("recientes");
@@ -377,6 +389,7 @@ export default function ListaInformes({ informes = [], acciones = {} }) {
               key={inf.id}
               informe={inf}
               acciones={acciones}
+              estadoFirma={estadosFirma[inf.id]}
             />
           ))}
         </div>
@@ -421,6 +434,7 @@ export default function ListaInformes({ informes = [], acciones = {} }) {
               key={inf.id}
               informe={inf}
               acciones={acciones}
+              estadoFirma={estadosFirma[inf.id]}
               zebra={idx % 2 === 1}
             />
           ))}
@@ -456,7 +470,7 @@ function BotonSegmentado({ activo, onClick, label }) {
   );
 }
 
-function TarjetaInformeApple({ informe: inf, acciones }) {
+function TarjetaInformeApple({ informe: inf, acciones, estadoFirma }) {
   const [hover, setHover] = useState(false);
   const fotos = contarFotos(inf);
   const actividades = contarActividades(inf);
@@ -523,6 +537,7 @@ function TarjetaInformeApple({ informe: inf, acciones }) {
             >
               {inf.id}
             </span>
+            <MarcaFirma estado={estadoFirma} />
             <span style={{ fontSize: 11, color: "var(--text-muted, #667085)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {fmtD(inf.fechaInforme)}
             </span>
@@ -754,7 +769,7 @@ function TarjetaInformeApple({ informe: inf, acciones }) {
   );
 }
 
-function FilaTablaInforme({ informe: inf, acciones, zebra }) {
+function FilaTablaInforme({ informe: inf, acciones, estadoFirma, zebra }) {
   const fotos = contarFotos(inf);
   const actividades = contarActividades(inf);
   const operarios = (inf.personal || []).length;
@@ -799,6 +814,9 @@ function FilaTablaInforme({ informe: inf, acciones, zebra }) {
         >
           {inf.id}
         </span>
+        {estadoFirma && estadoFirma !== "anulado" && (
+          <div style={{ marginTop: 4 }}><MarcaFirma estado={estadoFirma} /></div>
+        )}
       </div>
 
       <div style={{ minWidth: 0, paddingRight: 8 }}>

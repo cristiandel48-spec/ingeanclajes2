@@ -814,8 +814,30 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
             // «Ninguno» o una categoria propia del catalogo (una linea de vida
             // camionera, un trabajo especial): sin definiciones automaticas.
             // Si hacen falta, se escriben en el marco tecnico de la cotizacion.
-            const TIPOS_CON_DEFINICIONES = ["linea_vida", "puntos_anclaje", "obra_blanca", "estructuras_metalicas", "escaleras", "caminaderos", "sistemas_completos", "servicios"];
+            const TIPOS_CON_DEFINICIONES = ["linea_vida", "linea_vida_camionera", "puntos_anclaje", "obra_blanca", "estructuras_metalicas", "escaleras", "caminaderos", "sistemas_completos", "servicios"];
             if (!TIPOS_CON_DEFINICIONES.includes(tipo)) return "";
+            // La camionera tiene su propia definicion: la de la linea de vida
+            // de cubierta (cable sobre la losa, soportes laterales) no aplica.
+            if(tipo === "linea_vida_camionera") return `
+              <div class="def-list">
+                <div class="def-row">
+                  <div class="def-term">Trabajo en altura</div>
+                  <div class="def-body">Se considera toda actividad, labor o trabajo que se deba realizar a una altura física igual o superior a <strong>2 metros desde el piso</strong>, como la que se hace sobre el techo o la carga de un vehículo.</div>
+                </div>
+                <div class="def-row">
+                  <div class="def-term">Línea de vida camionera</div>
+                  <div class="def-body">
+                    <p>Sistema aéreo de protección contra caídas para el personal que trabaja sobre carrotanques, volquetas y vehículos de carga. Un cable de acero tensionado entre postes tipo cuello de cisne, por encima del vehículo, permite que el trabajador se desplace a lo largo de él conectado en todo momento.</p>
+                    <ul class="def-bullets">
+                      <li>El trabajador se conecta con arnés de cuerpo completo y una línea autorretráctil a un carro que se desliza por el cable.</li>
+                      <li>La altura del cable y la luz entre postes se definen en la memoria de cálculo, según el vehículo y la distancia de detención de la caída.</li>
+                      <li>Los postes y sus dados de cimentación se diseñan para la carga de detención de la caída; el sistema lo diseña y certifica una persona calificada, conforme a la Resolución 4272 de 2021.</li>
+                      <li>Se respetan las distancias de seguridad a redes eléctricas (RETIE) en el diseño y el montaje.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            `;
             if(tipo === "obra_blanca") return `
               <div class="def-list">
                 <div class="def-row">

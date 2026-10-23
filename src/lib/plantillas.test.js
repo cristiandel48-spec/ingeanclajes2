@@ -12,6 +12,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { buildCotizacionPrintHtml } from "./cotizacionPrint";
 import { buildInformePrintHtml } from "./informePrint";
+import { FOTO_LINEA_CAMIONERA_DEFAULT } from "../assets/fotoLineaCamionera";
 
 beforeAll(() => {
   vi.useFakeTimers();
@@ -112,6 +113,11 @@ describe("cotizacion camionera", () => {
     );
     expect(html).not.toContain("Componentes del sistema");
     expect(html).not.toContain("Tensor de línea");
+    // Lleva su propia definicion y su ilustracion, no la de cubierta.
+    expect(html).toContain("Línea de vida camionera");
+    expect(html).toContain("cuello de cisne");
+    expect(html).not.toContain("tensionada y sujeta en tres o dos puntos de anclaje");
+    expect(html).toContain(FOTO_LINEA_CAMIONERA_DEFAULT.slice(0, 80));
   });
 });
 

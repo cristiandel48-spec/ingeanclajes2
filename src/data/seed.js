@@ -65,6 +65,18 @@ export const ITEMS_DB = [
     { desc:"LINEA DE VIDA CONEXION / TRANSVERSAL",unit:"ML",  vu:280000 },
     { desc:"RECERTIFICACION LINEA DE VIDA",       unit:"ML",  vu:45000  },
   ]},
+  // Su propio tipo de sistema (lleva «camioner»): ilustracion y definicion
+  // propias, sin los componentes de la linea horizontal. Precios por definir:
+  // se ponen en Catalogo (migracion 078).
+  { categoria:"Lineas de Vida Camioneras", items:[
+    { desc:"POSTE TIPO CUELLO DE CISNE CON PEDESTAL",                unit:"Und",    vu:0 },
+    { desc:"DADO DE CIMENTACION EN CONCRETO PARA POSTE",             unit:"Und",    vu:0 },
+    { desc:"LINEA DE VIDA CAMIONERA EN CABLE DE ACERO GALVANIZADO",  unit:"ML",     vu:0 },
+    { desc:"CARRO DESLIZANTE PARA LINEA DE VIDA CAMIONERA",          unit:"Und",    vu:0 },
+    { desc:"LINEA AUTORRETRACTIL PARA LINEA DE VIDA CAMIONERA",      unit:"Und",    vu:0 },
+    { desc:"DISEÑO Y MEMORIA DE CALCULO DE LINEA DE VIDA CAMIONERA", unit:"Global", vu:0 },
+    { desc:"CERTIFICACION DE LINEA DE VIDA CAMIONERA",               unit:"Global", vu:0 },
+  ]},
   { categoria:"Escaleras", items:[
     { desc:"ESCALERA FIJA CON LINEA DE VIDA VERTICAL", unit:"Metro", vu:1200000 },
     { desc:"ESCALERA TIPO GATO CON LINEA DE VIDA VERTICAL", unit:"Metro", vu:1250000 },

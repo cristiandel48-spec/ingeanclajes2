@@ -8,24 +8,22 @@ import { corregirOrtografiaLocal } from "../../lib/correctorTexto";
 import { leerImagenComprimida, rotarImagen90 } from "../../lib/imagenes";
 import { normalizarFrase } from "../../lib/normalizarEntrada";
 import { B, SI } from "../../styles/tokens";
-import { agruparCatalogo, buscarIndiceCategoriaCatalogo } from "../../lib/catalogo";
+import { agruparCatalogo } from "../../lib/catalogo";
 import { useAppData } from "../../context/AppDataContext";
 import { measurementsToQuoteItems } from "../../lib/maps";
 import { fmt } from "../../lib/format";
 import { DEFAULT_COT_INCLUYE } from "../../data/seed";
-import { FOTO_PUNTO_ANCLAJE_DEFAULT } from "../../assets/embeddedImages";
 import { TIPO_MANUAL, TIPO_CAMIONERA, fotosParaTipo, isFotoPuntoAnclajeDefault, getTipoCotizacionLabel, tipoCotizacionCanonico } from "../../lib/cotizaciones";
 import { confirmar } from "../../lib/dialogos";
 
-// Indice de la categoria del catalogo que corresponde al tipo. La camionera
-// solo usa una categoria propia (que tenga «camioner» en el nombre); si no la
-// hay devuelve -1, porque la busqueda normal la mandaria a «Lineas de Vida» y
-// le mostraria los componentes de la linea horizontal de cubierta.
+// Indice de la categoria del catalogo que corresponde al tipo, o -1 si no
+// tiene. Solo la que significa lo mismo: antes se buscaba «la mas parecida»
+// y, si el tipo no tenia categoria, se mostraba otra -Obra blanca abria
+// Servicios, Estructuras metalicas abria Lineas de Vida-. «Ninguno» no tiene.
 function indiceCategoriaDeTipo(catalogo, tipo) {
-  if (tipoCotizacionCanonico(tipo) === TIPO_CAMIONERA) {
-    return (catalogo || []).findIndex((cat) => tipoCotizacionCanonico(cat?.categoria) === TIPO_CAMIONERA);
-  }
-  return buscarIndiceCategoriaCatalogo(catalogo, tipo);
+  const canon = tipoCotizacionCanonico(tipo);
+  if (!canon || canon === TIPO_MANUAL) return -1;
+  return (catalogo || []).findIndex((cat) => tipoCotizacionCanonico(cat?.categoria) === canon);
 }
 
 // Editor de UNA propuesta. Todas las propuestas se muestran abiertas, una
@@ -54,9 +52,10 @@ export default function PropuestaEditor({
   // El catalogo sale de la base; si todavia no hay nada guardado, del codigo.
   const { catalogoItems } = useAppData();
   const catalogo = useMemo(() => agruparCatalogo(catalogoItems), [catalogoItems]);
-  const [dbCat, setDbCat] = useState(() => Math.max(0, indiceCategoriaDeTipo(catalogo, p?.tipoCotizacion)));
-  // Si se borro una categoria entera, el indice guardado puede quedar fuera.
-  const categoria = catalogo[dbCat] || catalogo[0] || { items: [] };
+  // -1: ninguna categoria elegida (la propuesta esta en «Ninguno» o su tipo
+  // todavia no tiene categoria en el catalogo).
+  const [dbCat, setDbCat] = useState(() => indiceCategoriaDeTipo(catalogo, p?.tipoCotizacion));
+  const categoria = dbCat >= 0 ? (catalogo[dbCat] || null) : null;
   const fotosRef = useRef();
   // Lo guardado puede venir con el id de siempre -"puntos_anclaje"- o con el
   // que salia del nombre de la categoria del catalogo -"anclajes"-. Aqui
@@ -66,15 +65,15 @@ export default function PropuestaEditor({
   // Sincronizar automáticamente la categoría del catálogo y mostrar el catálogo al cambiar el tipo de propuesta
   const tipoCotizacionAnteriorRef = useRef(p?.tipoCotizacion);
   useEffect(() => {
-    if (catalogo.length && p?.tipoCotizacion && tipoCotizacionCanonico(p.tipoCotizacion) !== TIPO_MANUAL) {
+    if (catalogo.length && p?.tipoCotizacion) {
       const idx = indiceCategoriaDeTipo(catalogo, p.tipoCotizacion);
-      // La camionera sin categoria propia no abre el catalogo: si lo hiciera
-      // saldria la categoria de la linea de vida horizontal.
+      // Sin categoria propia no se muestra ninguna: mostrar otra seria
+      // ofrecer items de un sistema distinto.
+      setDbCat(idx);
       if (idx < 0) {
         tipoCotizacionAnteriorRef.current = p.tipoCotizacion;
         return;
       }
-      setDbCat(idx);
       if (tipoCotizacionAnteriorRef.current !== p.tipoCotizacion) {
         setShowDB(true);
         tipoCotizacionAnteriorRef.current = p.tipoCotizacion;
@@ -123,11 +122,12 @@ export default function PropuestaEditor({
       const key = tipoCotizacionCanonico(est.id);
       if (!vistos.has(key)) {
         vistos.add(key);
-        const idx = buscarIndiceCategoriaCatalogo(catalogo, est.rawCategoria);
+        // No tiene categoria en el catalogo (la de arriba la habria
+        // encontrado): -1, y el catalogo rapido lo dice en vez de mostrar otra.
         list.push({
           id: est.id,
           label: est.label,
-          catIndex: idx >= 0 ? idx : 0,
+          catIndex: -1,
           rawCategoria: est.rawCategoria,
         });
       }
@@ -172,21 +172,18 @@ export default function PropuestaEditor({
     // Pulsar otra vez el que ya esta marcado lo desmarca: queda en «Ninguno».
     const desmarcar = !desdeCatalogo && tipo.id !== TIPO_MANUAL && esTipoActivo(tipo);
     if (tipo.id === TIPO_MANUAL || desmarcar) {
+      // En «Ninguno» no queda ninguna categoria marcada en el catalogo.
+      setDbCat(-1);
       onChange({ tipoCotizacion: TIPO_MANUAL, fotos: fotosParaTipo(p.fotos, TIPO_MANUAL) });
       return;
     }
     const idx = tipo.catIndex >= 0 && tipo.catIndex < catalogo.length
       ? tipo.catIndex
-      : indiceCategoriaDeTipo(catalogo, tipo.rawCategoria || tipo.id || tipo.label);
-    if (idx >= 0 && idx < catalogo.length) {
-      setDbCat(idx);
-      setShowDB(true);
-    } else if (tipoCotizacionCanonico(tipo.id) === TIPO_CAMIONERA) {
-      // Sin categoria propia: catalogo cerrado, sin componentes por defecto.
-      setShowDB(false);
-    } else {
-      setShowDB(true);
-    }
+      : indiceCategoriaDeTipo(catalogo, tipo.id);
+    // Sin categoria propia queda en -1: el catalogo rapido avisa que ese
+    // tipo no tiene items, en vez de abrir el de otro sistema.
+    setDbCat(idx >= 0 && idx < catalogo.length ? idx : -1);
+    setShowDB(true);
 
     // La foto automatica del tipo (punto de anclaje, linea camionera) entra
     // sola, y sale la del tipo anterior.
@@ -931,7 +928,7 @@ export default function PropuestaEditor({
                   Catálogo Rápido · 1 Clic para Insertar
                 </span>
                 <span style={{fontSize:11,color:"var(--text-muted, #6e6e73)"}}>
-                  Categoría {dbCat + 1} de {catalogo.length}
+                  {dbCat >= 0 ? `Categoría ${dbCat + 1} de ${catalogo.length}` : `${catalogo.length} categorías`}
                 </span>
               </div>
 
@@ -973,8 +970,15 @@ export default function PropuestaEditor({
                 })}
               </div>
 
+              {!categoria && (
+                <div style={{fontSize:12.5,color:"var(--text-muted, #6e6e73)",padding:"10px 2px",lineHeight:1.5}}>
+                  {tipoCanon === TIPO_MANUAL
+                    ? "La propuesta está en «Ninguno»: elige una categoría para tomar ítems, o escríbelos a mano abajo."
+                    : `«${labelTipoActual}» todavía no tiene ítems en el catálogo. Agrégalos en Catálogo o escríbelos a mano abajo.`}
+                </div>
+              )}
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))",gap:8}}>
-                {(categoria.items||[]).map((it,i)=>(
+                {(categoria?.items||[]).map((it,i)=>(
                   <div
                     key={i}
                     style={{

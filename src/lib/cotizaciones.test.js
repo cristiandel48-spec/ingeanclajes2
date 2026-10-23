@@ -126,6 +126,23 @@ describe("tipoCotizacionCanonico", () => {
     expect(tipoCotizacionCanonico("Línea de vida")).toBe("linea_vida");
   });
 
+  it("cada categoria del catalogo corresponde a su tipo de trabajo", () => {
+    const categorias = {
+      "Lineas de Vida": "linea_vida",
+      "Sistemas Completos": "sistemas_completos",
+      "Servicios": "servicios",
+      "Anclajes": "puntos_anclaje",
+      "Escaleras": "escaleras",
+      "caminaderos": "caminaderos",
+      "Lineas de Vida Camioneras": "linea_vida_camionera",
+      "Estructuras Metálicas": "estructuras_metalicas",
+      "Obra Blanca": "obra_blanca",
+    };
+    for (const [categoria, tipo] of Object.entries(categorias)) {
+      expect(tipoCotizacionCanonico(categoria)).toBe(tipo);
+    }
+  });
+
   it("una categoria propia conserva su id", () => {
     expect(tipoCotizacionCanonico("Andamios")).toBe("andamios");
   });

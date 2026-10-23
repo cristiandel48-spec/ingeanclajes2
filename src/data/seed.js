@@ -59,6 +59,13 @@ export const ITEMS_DB = [
     { desc:"FABRICACIÓN Y MONTAJE DE ESTRUCTURA METÁLICA",               unit:"Kg",    vu:18500   },
     { desc:"SOPORTE METÁLICO EN PERFIL ESTRUCTURAL",                     unit:"Und",   vu:350000  },
   ]},
+  // Precios por definir: se ponen en Catalogo (migracion 079).
+  { categoria:"Obra Blanca", items:[
+    { desc:"PUNTO DE ANCLAJE EMPOTRADO EN OBRA BLANCA",  unit:"Und", vu:0 },
+    { desc:"PLATINA EMPOTRADA PARA SISTEMA ANTICAÍDAS",  unit:"Und", vu:0 },
+    { desc:"ACOMPAÑAMIENTO TÉCNICO EN OBRA BLANCA",      unit:"Dia", vu:0 },
+    { desc:"RESANE Y ACABADO EN PUNTOS DE INSTALACIÓN",  unit:"Und", vu:0 },
+  ]},
   { categoria:"Lineas de Vida", items:[
     { desc:"LINEA DE VIDA HORIZONTAL",            unit:"ML",  vu:280000 },
     { desc:"LINEA DE VIDA VERTICAL",              unit:"ML",  vu:320000 },

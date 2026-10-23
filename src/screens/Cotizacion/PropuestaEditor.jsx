@@ -14,7 +14,7 @@ import { measurementsToQuoteItems } from "../../lib/maps";
 import { fmt } from "../../lib/format";
 import { DEFAULT_COT_INCLUYE } from "../../data/seed";
 import { FOTO_PUNTO_ANCLAJE_DEFAULT } from "../../assets/embeddedImages";
-import { isFotoPuntoAnclajeDefault, getTipoCotizacionLabel, tipoCotizacionCanonico } from "../../lib/cotizaciones";
+import { TIPO_MANUAL, isFotoPuntoAnclajeDefault, getTipoCotizacionLabel, tipoCotizacionCanonico } from "../../lib/cotizaciones";
 import { confirmar } from "../../lib/dialogos";
 
 // Editor de UNA propuesta. Todas las propuestas se muestran abiertas, una
@@ -51,7 +51,7 @@ export default function PropuestaEditor({
   // Sincronizar automáticamente la categoría del catálogo y mostrar el catálogo al cambiar el tipo de propuesta
   const tipoCotizacionAnteriorRef = useRef(p?.tipoCotizacion);
   useEffect(() => {
-    if (catalogo.length && p?.tipoCotizacion) {
+    if (catalogo.length && p?.tipoCotizacion && tipoCotizacionCanonico(p.tipoCotizacion) !== TIPO_MANUAL) {
       const idx = buscarIndiceCategoriaCatalogo(catalogo, p.tipoCotizacion);
       setDbCat(idx);
       if (tipoCotizacionAnteriorRef.current !== p.tipoCotizacion) {
@@ -112,6 +112,11 @@ export default function PropuestaEditor({
       }
     });
 
+    // 3. «Ninguno»: para lo que no es de ningun sistema del catalogo -una
+    // linea de vida camionera, un trabajo especial-. La propuesta no lleva
+    // textos, definiciones ni fichas de ningun tipo: solo lo que se escriba.
+    list.push({ id: TIPO_MANUAL, label: "Ninguno (manual)", catIndex: -1, rawCategoria: "" });
+
     return list;
   }, [catalogo]);
 
@@ -119,7 +124,9 @@ export default function PropuestaEditor({
   // se haya guardado con otra escritura: la lista de casos que habia aqui la
   // resuelve ahora tipoCotizacionCanonico.
   const esTipoActivo = (tipo) => {
-    if (!tipoCanon) return tipo.catIndex === 0;
+    // Sin tipo no se marca ninguno: antes se marcaba el primero y parecia
+    // elegido aunque nadie lo hubiera escogido.
+    if (!tipoCanon) return false;
     return tipoCanon === tipoCotizacionCanonico(tipo.id);
   };
 
@@ -130,7 +137,14 @@ export default function PropuestaEditor({
     return getTipoCotizacionLabel(p.tipoCotizacion);
   }, [p.tipoCotizacion, tiposTrabajo]);
 
-  const seleccionarTipoTrabajo = (tipo) => {
+  const seleccionarTipoTrabajo = (tipo, { desdeCatalogo = false } = {}) => {
+    // Pulsar otra vez el que ya esta marcado lo desmarca: queda en «Ninguno».
+    const desmarcar = !desdeCatalogo && tipo.id !== TIPO_MANUAL && esTipoActivo(tipo);
+    if (tipo.id === TIPO_MANUAL || desmarcar) {
+      const fotosSinDefault = (Array.isArray(p.fotos) ? p.fotos : []).filter((f) => !isFotoPuntoAnclajeDefault(f));
+      onChange({ tipoCotizacion: TIPO_MANUAL, fotos: fotosSinDefault });
+      return;
+    }
     const idx = tipo.catIndex >= 0 && tipo.catIndex < catalogo.length
       ? tipo.catIndex
       : buscarIndiceCategoriaCatalogo(catalogo, tipo.rawCategoria || tipo.label || tipo.id);
@@ -319,7 +333,7 @@ export default function PropuestaEditor({
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
             <LBL style={{ margin: 0 }}>Tipo de trabajo / sistema</LBL>
             <span style={{ fontSize: 11, color: "var(--text-muted, #86868b)" }}>
-              Selecciona el sistema para ver sus ítems en el catálogo rápido
+              Elige el sistema, o «Ninguno» si no es de ninguno. Pulsar el marcado lo desmarca.
             </span>
           </div>
           <div style={{ display: "flex", gap: 8, maxWidth: "100%", flexWrap: "wrap" }}>
@@ -941,8 +955,10 @@ export default function PropuestaEditor({
                             t.catIndex === i ||
                             tipoCotizacionCanonico(t.id) === tipoCotizacionCanonico(cat.categoria)
                         );
-                        if (tipoCoincidente) {
-                          seleccionarTipoTrabajo(tipoCoincidente);
+                        // Mirar otra categoria del catalogo para sacar un item no
+                        // cambia el tipo si la propuesta esta en «Ninguno».
+                        if (tipoCoincidente && tipoCanon !== TIPO_MANUAL) {
+                          seleccionarTipoTrabajo(tipoCoincidente, { desdeCatalogo: true });
                         }
                       }}
                       style={{

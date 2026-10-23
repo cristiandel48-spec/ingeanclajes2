@@ -108,6 +108,8 @@ function noNegativo(valor) {
 // ahora signifiquen lo mismo: sin esto, elegir «Anclajes» dejaba la propuesta
 // sin la foto del punto de anclaje y «Estructuras Metálicas» sin su campo de
 // especificaciones ni su definicion en el documento.
+export const TIPO_MANUAL = "manual";
+
 export function tipoCotizacionCanonico(tipo) {
   const t = String(tipo || "")
     .toLowerCase()
@@ -115,8 +117,14 @@ export function tipoCotizacionCanonico(tipo) {
     .replace(/[̀-ͯ]/g, "")
     .replace(/[^a-z0-9]/g, "");
   if (!t) return "";
+  // «Ninguno»: la propuesta no lleva textos, definiciones ni fichas de
+  // ningun sistema; solo lo que se escriba a mano.
+  if (t === "manual" || t === "ninguno") return TIPO_MANUAL;
   if (t.includes("anclaje")) return "puntos_anclaje";
-  if (t.includes("linea") || t.includes("vida")) return "linea_vida";
+  // Solo la linea de vida de siempre. Antes bastaba con que dijera «linea» o
+  // «vida», asi que «Línea de vida camionera» -que no tiene nada que ver- se
+  // volvia linea de vida y el documento salia con sus fichas y definiciones.
+  if (["lineadevida", "lineasdevida", "lineavida", "lineasvida", "lvh"].includes(t)) return "linea_vida";
   if (t.includes("estructura") || t.includes("metalic")) return "estructuras_metalicas";
   if (t.includes("blanca")) return "obra_blanca";
   if (t.includes("escaler")) return "escaleras";
@@ -128,6 +136,7 @@ export function tipoCotizacionCanonico(tipo) {
 }
 
 const ETIQUETAS_TIPO = {
+  manual: "Ninguno (manual)",
   linea_vida: "Línea de vida",
   puntos_anclaje: "Puntos de anclaje",
   obra_blanca: "Obra blanca",

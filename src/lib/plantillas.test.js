@@ -81,7 +81,28 @@ const COTIZACIONES = {
       },
     ],
   },
+  // Lo que pidio Camila: un trabajo que no es de ningun sistema. No debe
+  // salir nada de la linea de vida normal (ni fichas ni definiciones).
+  "ninguno-camionera": {
+    ...base,
+    id: "COT-005",
+    numero: "C-26005",
+    tipoCotizacion: "manual",
+    util: 10,
+    items: [{ id: 1, desc: "LÍNEA DE VIDA CAMIONERA PARA CARGUE DE VEHÍCULOS", cant: 1, unit: "GL", vu: 9500000 }],
+  },
 };
+
+describe("cotizacion en «Ninguno»", () => {
+  it("no lleva fichas ni definiciones de la linea de vida normal", () => {
+    const html = buildCotizacionPrintHtml(COTIZACIONES["ninguno-camionera"], { firmaImg: FOTO });
+    const lineaVida = buildCotizacionPrintHtml(COTIZACIONES["linea-vida-horizontal"], { firmaImg: FOTO });
+    expect(html).not.toContain("Definiciones que estructuran el alcance");
+    expect(html).not.toContain("Tensor de línea");
+    expect(lineaVida).toContain("Definiciones que estructuran el alcance");
+    expect(lineaVida).toContain("Tensor de línea");
+  });
+});
 
 const INFORMES = {
   "informe-con-fotos": {

@@ -129,4 +129,11 @@ describe("tipoCotizacionCanonico", () => {
   it("una categoria propia conserva su id", () => {
     expect(tipoCotizacionCanonico("Andamios")).toBe("andamios");
   });
+
+  it("una linea de vida distinta no se vuelve la linea de vida normal", () => {
+    expect(tipoCotizacionCanonico("Lineas de Vida")).toBe("linea_vida");
+    expect(tipoCotizacionCanonico("linea_vida")).toBe("linea_vida");
+    expect(tipoCotizacionCanonico("Línea de vida camionera")).toBe("lineadevidacamionera");
+    expect(tipoCotizacionCanonico("manual")).toBe("manual");
+  });
 });

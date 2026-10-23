@@ -6,7 +6,7 @@ import { normalizarMayusculas, normalizarTituloFormal } from "./normalizarEntrad
 import { LOGO_INGEANCLAJES } from "../assets/embeddedImages";
 import { getQuotePrintableProposals, porcentajeUtilidad } from "./cotizaciones";
 import { getStaticMapDimensions, buildStaticMapLabelData } from "./maps";
-import { hasVerticalLifeLineService, hasCatLadderService, tipoCotizacionCanonico } from "./cotizaciones";
+import { TIPO_MANUAL, hasVerticalLifeLineService, hasCatLadderService, tipoCotizacionCanonico } from "./cotizaciones";
 import { getTextosDocumento, lineasDeTexto } from "./cotizacionTextos";
 import { corregirOrtografiaLocal } from "./correctorTexto";
 import { cssHojaImpresion } from "./hojaImpresion";
@@ -17,14 +17,25 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
   const propuestas = getQuotePrintableProposals(c);
   const textoInicial = String(c?.textoInicial || "").trim();
   const textos = getTextosDocumento(c);
+  // El tipo de cada propuesta decide que fichas y definiciones lleva. Una en
+  // «Ninguno» (manual) no lleva ninguna: antes bastaba con que un item dijera
+  // «línea de vida» -«LÍNEA DE VIDA CAMIONERA»- para que el documento saliera
+  // con las fichas y definiciones de la linea de vida normal.
+  const tipoDe = (propuesta) => tipoCotizacionCanonico(propuesta?.quote?.tipoCotizacion || propuesta?.tipoCotizacion || "");
+  const propuestasConSistema = propuestas.filter((propuesta) => tipoDe(propuesta) !== TIPO_MANUAL);
+  const todasManuales = propuestas.length > 0 && propuestasConSistema.length === 0;
+  // Las fichas de la linea de vida horizontal, solo de propuestas que lo son.
+  const TIPOS_CON_LINEA_HORIZONTAL = ["linea_vida", "sistemas_completos"];
+  const propuestasLineaVida = propuestas.filter((propuesta) => TIPOS_CON_LINEA_HORIZONTAL.includes(tipoDe(propuesta)));
+  const primeraEsLineaVida = TIPOS_CON_LINEA_HORIZONTAL.includes(tipoDe(propuestas[0]));
   // Detección de láminas para escalera:
   // 1) Escalera fija con línea de vida vertical (cable, absorbedor, tensor)
   // 2) Escalera tipo gato sola (sin línea de vida, sin canastilla)
-  const showVerticalLifelineAppendix = propuestas.some((propuesta)=>hasVerticalLifeLineService(propuesta?.quote || propuesta))
-    || hasVerticalLifeLineService({ alcance: c?.alcance, requerimientoCliente: textoInicial, items: c?.items, titulo: c?.titulo });
+  const showVerticalLifelineAppendix = propuestasConSistema.some((propuesta)=>hasVerticalLifeLineService(propuesta?.quote || propuesta))
+    || (!todasManuales && hasVerticalLifeLineService({ alcance: c?.alcance, requerimientoCliente: textoInicial, items: c?.items, titulo: c?.titulo }));
 
-  const showCatLadderAppendix = propuestas.some((propuesta)=>hasCatLadderService(propuesta?.quote || propuesta))
-    || hasCatLadderService({ alcance: c?.alcance, requerimientoCliente: textoInicial, items: c?.items, titulo: c?.titulo });
+  const showCatLadderAppendix = propuestasConSistema.some((propuesta)=>hasCatLadderService(propuesta?.quote || propuesta))
+    || (!todasManuales && hasCatLadderService({ alcance: c?.alcance, requerimientoCliente: textoInicial, items: c?.items, titulo: c?.titulo }));
   // La lámina técnica de componentes (poste soporte lateral/intermedio, tensor de línea, etc.)
   // es EXCLUSIVA de LÍNEA DE VIDA (horizontal / continua).
   // NO debe incluirse para cotizaciones que solo tengan puntos de anclaje, obra blanca,
@@ -44,6 +55,10 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     if (t.includes("NO INCLUYE LINEA DE VIDA") || t.includes("SIN LINEA DE VIDA") || t.includes("NO INCLUYE LÍNEA DE VIDA")) {
       return false;
     }
+
+    // Una linea de vida camionera no es la linea horizontal de cubierta: no
+    // lleva sus postes, tensores ni soportes.
+    if (t.includes("CAMIONER")) return false;
 
     // Debe ser un ítem que contenga línea de vida
     const mencionaLineaVida = t.includes("LINEA DE VIDA") ||
@@ -69,8 +84,8 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
   };
 
   const allQuoteItems = [
-    ...(Array.isArray(c?.items) ? c.items : []),
-    ...propuestas.flatMap((propuesta) =>
+    ...(primeraEsLineaVida && Array.isArray(c?.items) ? c.items : []),
+    ...propuestasLineaVida.flatMap((propuesta) =>
       Array.isArray(propuesta?.items)
         ? propuesta.items
         : (Array.isArray(propuesta?.quote?.items) ? propuesta.quote.items : [])
@@ -81,8 +96,8 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     hasLifelineItem(it?.desc || it?.descripcion || it?.nombre)
   );
 
-  const hasMapLvh = (c?.geoMediciones || []).some((seg) => seg?.tipo === "LVH")
-    || propuestas.some((propuesta) => (propuesta?.geoMediciones || []).some((seg) => seg?.tipo === "LVH"));
+  const hasMapLvh = (primeraEsLineaVida && (c?.geoMediciones || []).some((seg) => seg?.tipo === "LVH"))
+    || propuestasLineaVida.some((propuesta) => (propuesta?.geoMediciones || []).some((seg) => seg?.tipo === "LVH"));
 
   // La lámina de componentes SOLO se muestra si el usuario agregó un ítem que tiene línea de vida
   // o si hay un segmento de línea horizontal medido en el mapa.
@@ -774,8 +789,9 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
           ${lineasDeTexto(textos.presentacion).map((parrafo)=>`<p class="doc-copy junto" style="color:var(--tinta);">${escapeHtml(parrafo)}</p>`).join("")}
           ${textoInicial ? `<p class="doc-copy" style="color:var(--tinta);">${escapeHtml(textoInicial)}</p>` : ""}
 
-          <h3 class="doc-h3 con-espacio">Definiciones que estructuran el alcance</h3>
           ${(()=>{
+            // Sin definiciones (propuesta en «Ninguno») tampoco sale el titulo.
+            const cuerpo = (()=>{
             // Si la cotizacion trae un marco tecnico propio, reemplaza a las
             // definiciones automaticas por tipo.
             const propio = String(textos.marcoTecnico || "").trim();
@@ -795,6 +811,11 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
             const tipo = tipoCotizacionCanonico(
               propuestas[0]?.quote?.tipoCotizacion || propuestas[0]?.tipoCotizacion || c?.tipoCotizacion || "linea_vida"
             );
+            // «Ninguno» o una categoria propia del catalogo (una linea de vida
+            // camionera, un trabajo especial): sin definiciones automaticas.
+            // Si hacen falta, se escriben en el marco tecnico de la cotizacion.
+            const TIPOS_CON_DEFINICIONES = ["linea_vida", "puntos_anclaje", "obra_blanca", "estructuras_metalicas", "escaleras", "caminaderos", "sistemas_completos", "servicios"];
+            if (!TIPOS_CON_DEFINICIONES.includes(tipo)) return "";
             if(tipo === "obra_blanca") return `
               <div class="def-list">
                 <div class="def-row">
@@ -872,6 +893,10 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
                 </div>
               </div>
             `;
+            })();
+            return cuerpo
+              ? `<h3 class="doc-h3 con-espacio">Definiciones que estructuran el alcance</h3>${cuerpo}`
+              : "";
           })()}
         </div>
         ${footerHtml}

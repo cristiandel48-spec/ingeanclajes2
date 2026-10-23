@@ -22,6 +22,7 @@ import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_TIEMPO_EJEC } from "../../data/seed
 import { buildQuoteProposal, createQuoteProposalId, getQuoteApprovalAccountingSnapshot, getQuoteProposalLabel, getQuoteProposals, normalizeProposalItems, normalizeQuoteItems, porcentajeUtilidad } from "../../lib/cotizaciones";
 import { fmt, scrollAppToTop, today } from "../../lib/format";
 import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarMayusculas, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono, normalizarTituloFormal } from "../../lib/normalizarEntrada";
+import { quienRecibeDeCliente } from "../../lib/quienRecibe";
 import { downloadGeneratedFile } from "../../lib/download";
 import { getFirmaImg } from "../../lib/firmaEmpresa";
 import { selloDe } from "../../lib/controlDocumental";
@@ -638,6 +639,12 @@ export default function Cotizacion({ctx}){
         : `• No se envía correo: la cotización no tiene correo del cliente.`)
     ))) return;
 
+    // Quien recibe los informes de la obra: el contacto de la cotizacion o,
+    // si no trae correo, el de la ficha del cliente en el directorio.
+    const delCliente = quienRecibeDeCliente(clientes, { cliente: cotizacion.cliente, nit: cotizacion.nit });
+    const recibeNombreCot = normalizarNombrePropio(cotizacion.contacto || delCliente?.nombre || "");
+    const recibeEmailCot = normalizarCorreo(cotizacion.contactoEmail || delCliente?.email || "");
+
     // Buscar si ya existe alguna obra vinculada a esta cotización
     const obrasAsociadas = obras.filter((o) =>
       (cotizacion.obraId && o.id === cotizacion.obraId) ||
@@ -695,8 +702,8 @@ export default function Cotizacion({ctx}){
             coords: cotizacion.coords || o.coords || "",
             // Quien recibe los informes: el que ya tenia la obra manda, porque
             // se puso a proposito para esa obra.
-            recibeNombre: o.recibeNombre || normalizarNombrePropio(cotizacion.contacto || ""),
-            recibeEmail: o.recibeEmail || normalizarCorreo(cotizacion.contactoEmail || ""),
+            recibeNombre: o.recibeNombre || recibeNombreCot,
+            recibeEmail: o.recibeEmail || recibeEmailCot,
             estado: o.estado === "Cancelada" ? "En Obra" : (o.estado || "En Obra"),
             total: snapshot.totalObra,
             saldo: Math.max(0, snapshot.totalObra - Number(o.pagado || 0)),
@@ -722,8 +729,8 @@ export default function Cotizacion({ctx}){
         coords:cotizacion.coords || "",
         // El contacto de la cotizacion es, de entrada, quien recibe los
         // informes de la obra. Se puede cambiar en el detalle de la obra.
-        recibeNombre:normalizarNombrePropio(cotizacion.contacto || ""),
-        recibeEmail:normalizarCorreo(cotizacion.contactoEmail || ""),
+        recibeNombre:recibeNombreCot,
+        recibeEmail:recibeEmailCot,
         estado:"En Obra",
         avance:0,
         total:snapshot.totalObra,

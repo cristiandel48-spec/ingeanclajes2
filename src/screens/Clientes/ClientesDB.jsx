@@ -13,6 +13,7 @@ import { siguienteIdUnico } from "../../lib/identificadores";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import { useSubirAlFormulario } from "../../hooks/useSubirAlFormulario";
 import { confirmar } from "../../lib/dialogos";
+import { obrasConContactoDeCliente } from "../../lib/quienRecibe";
 // NIT sin digito de verificacion ni puntos: «900.411.781-1» y «900411781»
 // son el mismo tercero.
 function nitBase(nit){
@@ -160,6 +161,11 @@ export default function ClientesDB({ctx}){
     if(editId){
       const anterior=clientes.find(c=>c.id===editId);
       setClientes(prev=>prev.map(c=>c.id===editId?{...c,...payload}:c));
+      // El contacto de la ficha baja a las obras del cliente que tenian el
+      // anterior o ninguno: los informes se envian a quien recibe en la obra.
+      if(anterior && (anterior.email!==payload.email || anterior.contacto!==payload.contacto || anterior.telefono!==payload.telefono)){
+        setObras(prev=>obrasConContactoDeCliente(prev, anterior, payload));
+      }
 
       if(anterior && anterior.nombre!==payload.nombre){
         setObras(prev=>prev.map(o=>o.cliente===anterior.nombre?{...o,cliente:payload.nombre,nit:payload.nit||o.nit,tel:payload.telefono||o.tel,ciudad:payload.ciudad||o.ciudad,direccion:payload.direccion||o.direccion}:o));

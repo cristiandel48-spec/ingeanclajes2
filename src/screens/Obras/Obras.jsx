@@ -14,7 +14,7 @@ import { esAdmin } from "../../lib/permisos";
 import ListaObras from "./ListaObras";
 import BuscadorCliente from "../../components/BuscadorCliente";
 import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarMayusculas, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
-import { clientesConQuienRecibe } from "../../lib/quienRecibe";
+import { clientesConQuienRecibe, quienRecibeDeCliente } from "../../lib/quienRecibe";
 import { resolverAutorGuardado } from "../../lib/autorAuditoria";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import { confirmar } from "../../lib/dialogos";
@@ -127,9 +127,11 @@ export default function Obras({ctx}){
     const cobrado = 0;
     const autorActual = resolverAutorGuardado(ctx?.membresia);
     const ahoraIso = new Date().toISOString();
-    // Quien recibe los informes: lo escrito, o el contacto de la cotizacion.
-    const recibeNombre = normalizarNombrePropio(nob.recibeNombre || cotizacionVinculada?.contacto || "");
-    const recibeEmail = normalizarCorreo(nob.recibeEmail || cotizacionVinculada?.contactoEmail || "");
+    // Quien recibe los informes: lo escrito, o el contacto de la cotizacion,
+    // o el de la ficha del cliente en el directorio.
+    const delCliente = quienRecibeDeCliente(clientes, { cliente: normalizarRazonSocial(nob.cliente) });
+    const recibeNombre = normalizarNombrePropio(nob.recibeNombre || cotizacionVinculada?.contacto || delCliente?.nombre || "");
+    const recibeEmail = normalizarCorreo(nob.recibeEmail || cotizacionVinculada?.contactoEmail || delCliente?.email || "");
 
     setObras(p=>[...p,{
       ...nob,
@@ -172,7 +174,7 @@ export default function Obras({ctx}){
       modificadoEn: ahoraIso,
     }]);
     if(recibeEmail && ctx.setClientes){
-      ctx.setClientes((prev)=>clientesConQuienRecibe(prev,{cliente:normalizarRazonSocial(nob.cliente),tel:normalizarTelefono(nob.tel),ciudad:normalizarMayusculas(nob.ciudad),direccion:normalizarMayusculas(nob.direccion)},{nombre:recibeNombre,email:recibeEmail}));
+      ctx.setClientes((prev)=>clientesConQuienRecibe(prev,{cliente:normalizarRazonSocial(nob.cliente),tel:normalizarTelefono(nob.tel),ciudad:normalizarMayusculas(nob.ciudad),direccion:normalizarMayusculas(nob.direccion)},{nombre:recibeNombre,email:recibeEmail,telefono:normalizarTelefono(nob.tel)}));
     }
     if(nob.cotizacionId){
       ctx.setCotizaciones(p=>p.map(c=>c.id===nob.cotizacionId?{...c,estado:"Aprobada",obraId:id}:c));

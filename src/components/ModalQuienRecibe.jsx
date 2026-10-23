@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button, Callout, Input, Sheet } from "./ui";
-import { avisoCorreo, normalizarCorreo, normalizarNombrePropio } from "../lib/normalizarEntrada";
+import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarNombrePropio, normalizarTelefono } from "../lib/normalizarEntrada";
 import { correoValido } from "../lib/quienRecibe";
 
 // Ventana para poner quien recibe los informes de una obra.
@@ -8,9 +8,14 @@ import { correoValido } from "../lib/quienRecibe";
 // La abre la bitacora antes del primer registro, si la obra no lo tiene, y el
 // detalle de la obra para cambiarlo. `motivo` dice por que se pide: en la
 // bitacora no se puede seguir sin el, y eso tiene que quedar claro.
-export default function ModalQuienRecibe({ obra, motivo = "", onGuardar, onCerrar }) {
-  const [nombre, setNombre] = useState(obra?.recibeNombre || "");
-  const [email, setEmail] = useState(obra?.recibeEmail || "");
+//
+// `sugerido` es lo que tiene la ficha del cliente en el directorio: si la
+// obra no tiene nada, se arranca con eso. Lo que se guarde aqui actualiza
+// esa ficha, que es de donde salen los informes y las certificaciones.
+export default function ModalQuienRecibe({ obra, sugerido = null, motivo = "", onGuardar, onCerrar }) {
+  const [nombre, setNombre] = useState(obra?.recibeNombre || sugerido?.nombre || "");
+  const [email, setEmail] = useState(obra?.recibeEmail || sugerido?.email || "");
+  const [telefono, setTelefono] = useState(obra?.tel || sugerido?.telefono || "");
   const [tocado, setTocado] = useState(false);
   const correo = normalizarCorreo(email);
   const ok = correoValido(correo) && nombre.trim().length >= 3;
@@ -18,7 +23,7 @@ export default function ModalQuienRecibe({ obra, motivo = "", onGuardar, onCerra
   const guardar = () => {
     setTocado(true);
     if (!ok) return;
-    onGuardar({ nombre: normalizarNombrePropio(nombre), email: correo });
+    onGuardar({ nombre: normalizarNombrePropio(nombre), email: correo, telefono: normalizarTelefono(telefono) });
   };
 
   return (
@@ -36,7 +41,7 @@ export default function ModalQuienRecibe({ obra, motivo = "", onGuardar, onCerra
       <div style={{ display: "grid", gap: 12 }}>
         <Callout tono="info">
           {motivo || "Es la persona del cliente a la que se le envían los informes de actividades para que firme el recibido."}
-          {" "}Suele ser el residente o el interventor de la obra. Se pide una sola vez por obra y queda también en el directorio de clientes.
+          {" "}Suele ser el residente o el interventor de la obra. Lo que guardes aquí también actualiza la ficha del cliente.
         </Callout>
         <Input
           label="Nombre de quien recibe"
@@ -58,6 +63,17 @@ export default function ModalQuienRecibe({ obra, motivo = "", onGuardar, onCerra
           placeholder="residente@constructora.com"
           ayuda="A este correo le llega el enlace para firmar y el código para confirmar que es él."
           error={tocado && !correoValido(correo) ? (avisoCorreo(correo) || "Escribe el correo de quien recibe.") : ""}
+        />
+        <Input
+          label="Celular"
+          type="tel"
+          inputMode="tel"
+          value={telefono}
+          onChange={(e) => setTelefono(e.target.value)}
+          onBlur={() => setTelefono((v) => normalizarTelefono(v))}
+          placeholder="3001234567"
+          ayuda="Para enviarle la firma también por WhatsApp."
+          error={tocado && telefono ? avisoCelular(telefono) : ""}
         />
       </div>
     </Sheet>

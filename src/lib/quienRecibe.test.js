@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clientesConQuienRecibe, destinatarioDeInforme, obraTieneQuienRecibe } from "./quienRecibe";
+import { clientesConQuienRecibe, destinatarioDeInforme, obraTieneQuienRecibe, obrasConContactoDeCliente, quienRecibeDeCliente } from "./quienRecibe";
 
 const obra = { id: "OB-001", cliente: "Constructora Prueba S.A.S.", nit: "900.111.222-3", ciudad: "MEDELLÍN" };
 
@@ -17,10 +17,24 @@ describe("quien recibe los informes", () => {
     expect(r[0].contacto).toBe("María Ruiz");
   });
 
-  it("no pisa el correo que el cliente ya tenia", () => {
-    const clientes = [{ id: "CLI-001", nombre: "CONSTRUCTORA PRUEBA S.A.S.", nit: "", email: "gerencia@prueba.com" }];
-    const r = clientesConQuienRecibe(clientes, obra, { nombre: "María Ruiz", email: "mruiz@prueba.com" });
-    expect(r).toBe(clientes);
+  it("lo escrito en la obra actualiza la ficha del cliente", () => {
+    const clientes = [{ id: "CLI-001", nombre: "CONSTRUCTORA PRUEBA S.A.S.", nit: "", email: "gerencia@prueba.com", contacto: "Gerencia", telefono: "3000000000" }];
+    const r = clientesConQuienRecibe(clientes, obra, { nombre: "María Ruiz", email: "mruiz@prueba.com", telefono: "317 667 5114" });
+    expect(r[0]).toMatchObject({ email: "mruiz@prueba.com", contacto: "María Ruiz", telefono: "3176675114" });
+    expect(clientesConQuienRecibe(r, obra, { nombre: "María Ruiz", email: "mruiz@prueba.com" })).toBe(r);
+  });
+
+  it("la obra toma el contacto del cliente y un cambio en Clientes llega a sus obras", () => {
+    const cli = { nombre: "CONSTRUCTORA PRUEBA S.A.S.", nit: "900.111.222-3", email: "mateo@prueba.com", contacto: "Mateo Betancur", telefono: "3176675114" };
+    expect(quienRecibeDeCliente([cli], obra)).toEqual({ nombre: "Mateo Betancur", email: "mateo@prueba.com", telefono: "3176675114" });
+    const obras = [
+      { ...obra, recibeEmail: "mateo@prueba.com", recibeNombre: "Mateo Betancur" },
+      { ...obra, id: "OB-002", recibeEmail: "" },
+      { ...obra, id: "OB-003", recibeEmail: "otra.persona@prueba.com" },
+      { id: "OB-004", cliente: "OTRO CLIENTE", recibeEmail: "" },
+    ];
+    const r = obrasConContactoDeCliente(obras, cli, { ...cli, email: "nuevo@prueba.com", contacto: "Ana Pérez" });
+    expect(r.map((o) => o.recibeEmail)).toEqual(["nuevo@prueba.com", "nuevo@prueba.com", "otra.persona@prueba.com", ""]);
   });
 
   it("agrega el cliente si no esta en el directorio", () => {

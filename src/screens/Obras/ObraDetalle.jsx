@@ -18,7 +18,7 @@ import { siguienteIdUnico } from "../../lib/identificadores";
 import { resolverAutorGuardado } from "../../lib/autorAuditoria";
 import { getTextosDocumento } from "../../lib/cotizacionTextos";
 import { getQuoteProposals } from "../../lib/cotizaciones";
-import { clientesConQuienRecibe, obraTieneQuienRecibe } from "../../lib/quienRecibe";
+import { clientesConQuienRecibe, obraTieneQuienRecibe, quienRecibeDeCliente } from "../../lib/quienRecibe";
 import ModalQuienRecibe from "../../components/ModalQuienRecibe";
 
 function extraerObjetoCotizacion(texto = "") {
@@ -42,7 +42,23 @@ function extraerObjetoCotizacion(texto = "") {
 }
 
 export default function ObraDetalle({obraId,ctx,onVolver}){
-  const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,ordenesCompra=[],horarios,setHorarios,irAPantalla,membresia,asegurarDetalle,setClientes}=ctx;
+  const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,ordenesCompra=[],horarios,setHorarios,irAPantalla,membresia,asegurarDetalle,clientes=[],setClientes}=ctx;
+  // Si la obra no tiene a quien enviarle los informes pero la ficha del
+  // cliente si, la obra lo toma sola: el directorio de clientes es de donde
+  // salen los informes y las certificaciones.
+  const obraParaContacto = obras.find((o) => o.id === obraId);
+  const contactoDelCliente = obraParaContacto && !obraTieneQuienRecibe(obraParaContacto)
+    ? quienRecibeDeCliente(clientes, obraParaContacto)
+    : null;
+  useEffect(() => {
+    if (!contactoDelCliente) return;
+    setObras((p) => p.map((o) => (o.id === obraId && !obraTieneQuienRecibe(o) ? {
+      ...o,
+      recibeNombre: contactoDelCliente.nombre,
+      recibeEmail: contactoDelCliente.email,
+      tel: o.tel || contactoDelCliente.telefono,
+    } : o)));
+  }, [obraId, contactoDelCliente?.email]); // eslint-disable-line react-hooks/exhaustive-deps
   // { motivo, seguir }: la ventana de quien recibe los informes. `seguir` es
   // lo que se queria hacer (abrir la jornada) y se hace al guardar.
   const [pidiendoQuienRecibe,setPidiendoQuienRecibe]=useState(null);
@@ -162,18 +178,19 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
   };
 
   // Guarda quien recibe en la obra y lo sube al directorio de clientes.
-  const guardarQuienRecibe = ({ nombre, email }) => {
+  const guardarQuienRecibe = ({ nombre, email, telefono }) => {
     const ahoraIso = new Date().toISOString();
     const autorActual = resolverAutorGuardado(membresia, oAct.modificadoPorNombre);
     setObras(p => p.map(o => o.id === obraId ? {
       ...o,
       recibeNombre: nombre,
       recibeEmail: email,
+      tel: telefono || o.tel,
       modificadoPor: membresia?.userId || null,
       modificadoPorNombre: autorActual || o.modificadoPorNombre,
       modificadoEn: ahoraIso,
     } : o));
-    setClientes?.((prev) => clientesConQuienRecibe(prev, oAct, { nombre, email }));
+    setClientes?.((prev) => clientesConQuienRecibe(prev, oAct, { nombre, email, telefono }));
     const seguir = pidiendoQuienRecibe?.seguir;
     setPidiendoQuienRecibe(null);
     seguir?.();
@@ -363,7 +380,10 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             {obraTieneQuienRecibe(oAct) ? (
               <div style={{ marginTop: 4, fontSize: 13.5, color: "var(--text-primary)" }}>
                 <strong style={{ fontWeight: 600 }}>{oAct.recibeNombre || "Sin nombre"}</strong>
-                <span style={{ color: "var(--text-secondary)" }}> · {oAct.recibeEmail}</span>
+                <span style={{ color: "var(--text-secondary)" }}> · {oAct.recibeEmail}{oAct.tel ? ` · ${oAct.tel}` : ""}</span>
+                <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginTop: 2 }}>
+                  Igual que en el directorio de clientes: si lo cambias aquí, se actualiza allá.
+                </div>
               </div>
             ) : (
               <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -386,6 +406,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       {pidiendoQuienRecibe && (
         <ModalQuienRecibe
           obra={oAct}
+          sugerido={quienRecibeDeCliente(clientes, oAct)}
           motivo={pidiendoQuienRecibe.motivo}
           onGuardar={guardarQuienRecibe}
           onCerrar={() => setPidiendoQuienRecibe(null)}
@@ -453,7 +474,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           cargandoFotos={oAct.__parcial===true}
           personalAsignado={empObra.length}
           onIrAPersonal={()=>setDetTab("personal")}
-          sinQuienRecibe={!obraTieneQuienRecibe(oAct)}
+          sinQuienRecibe={!obraTieneQuienRecibe(oAct) && !contactoDelCliente}
           onPedirQuienRecibe={(seguir)=>setPidiendoQuienRecibe({
             motivo:"Antes de registrar el avance falta el correo de quien recibe: sin él, el informe de actividades no se le puede enviar al cliente para que firme el recibido.",
             seguir,

@@ -28,7 +28,7 @@ import ModalCotizacionDetalle from "./ModalCotizacionDetalle";
 import { ModalEnviarFirma, PanelFirmaRecibido } from "./FirmaRecibidoInforme";
 import { useEnviosFirma } from "../../hooks/useEnviosFirma";
 import ModalQuienRecibe from "../../components/ModalQuienRecibe";
-import { celularDeInforme, clientesConQuienRecibe, correoValido, destinatarioDeInforme } from "../../lib/quienRecibe";
+import { celularDeInforme, clientesConQuienRecibe, correoValido, destinatarioDeInforme, quienRecibeDeCliente } from "../../lib/quienRecibe";
 import { normalizarCorreo } from "../../lib/normalizarEntrada";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { useAccionesPantalla, useTituloPantalla } from "../../context/accionesPantalla";
@@ -1567,11 +1567,12 @@ export default function Informes({ctx}){
             obra={destino}
             motivo={pidiendoQuienRecibe === "firma" ? "" : "Falta el correo de quien recibe: sin él no se genera el informe, porque no se le podría enviar al cliente para la firma de recibido."}
             onCerrar={() => setPidiendoQuienRecibe(false)}
-            onGuardar={({ nombre, email }) => {
+            sugerido={quienRecibeDeCliente(clientes, destino)}
+            onGuardar={({ nombre, email, telefono }) => {
               if (obraDelInforme) {
-                setObras((p) => p.map((o) => (o.id === obraDelInforme.id ? { ...o, recibeNombre: nombre, recibeEmail: email } : o)));
+                setObras((p) => p.map((o) => (o.id === obraDelInforme.id ? { ...o, recibeNombre: nombre, recibeEmail: email, tel: telefono || o.tel } : o)));
               }
-              setClientes?.((prev) => clientesConQuienRecibe(prev, destino, { nombre, email }));
+              setClientes?.((prev) => clientesConQuienRecibe(prev, destino, { nombre, email, telefono }));
               const conRecibe = { ...sel, recibeNombre: nombre, recibeEmail: email };
               setInformes((p) => p.map((i) => (i.id === sel.id ? { ...i, recibeNombre: nombre, recibeEmail: email } : i)));
               setSel(conRecibe);

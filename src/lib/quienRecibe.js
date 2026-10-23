@@ -3,9 +3,11 @@
 // Es la persona del cliente a la que se le envian los informes para firma de
 // recibido: casi siempre el residente o el interventor de esa obra. Se pide
 // una vez por obra -antes del primer registro de bitacora-, se copia de la
-// cotizacion al aprobarla y se sube al directorio de clientes.
+// cotizacion al aprobarla y se mantiene igual al directorio de clientes, que
+// es de donde salen los informes y las certificaciones: si el cliente ya tiene
+// contacto, la obra lo toma; si se escribe en la obra, actualiza al cliente.
 
-import { normalizarCorreo, normalizarDocumento, normalizarNombrePropio, normalizarRazonSocial } from "./normalizarEntrada";
+import { normalizarCorreo, normalizarDocumento, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "./normalizarEntrada";
 import { siguienteIdUnico } from "./identificadores";
 
 export function correoValido(valor) {
@@ -24,45 +26,97 @@ function buscarCliente(clientes, obra) {
   );
 }
 
+/** La ficha del directorio de clientes que corresponde a la obra. */
+export function clienteDeObra(clientes, obra) {
+  const i = obra ? buscarCliente(clientes, obra) : -1;
+  return i >= 0 ? clientes[i] : null;
+}
+
 /**
- * La lista de clientes con el correo de quien recibe ya puesto.
+ * Quien recibe segun el directorio de clientes: contacto, correo y telefono
+ * de la ficha del cliente. Vacio si la ficha no tiene un correo valido.
+ */
+export function quienRecibeDeCliente(clientes, obra) {
+  const c = clienteDeObra(clientes, obra);
+  if (!correoValido(c?.email)) return null;
+  return { nombre: c.contacto || "", email: normalizarCorreo(c.email), telefono: c.telefono || "" };
+}
+
+/**
+ * El directorio de clientes con el contacto que se puso en la obra.
  *
- * - Si el cliente no tiene correo, se le pone este (y el contacto, si falta).
- * - Si ya tiene uno distinto, NO se cambia: el de la obra queda en la obra.
- *   Un cliente grande tiene una persona por obra, y pisar el correo general
- *   con el del residente de turno haria mas daño que bien.
- * - Si el cliente no esta en el directorio, se agrega.
+ * El directorio es de donde salen los informes y las certificaciones, asi que
+ * lo que se escribe en la obra lo actualiza: correo, contacto y, si viene,
+ * el celular. Si el cliente no esta en el directorio, se agrega.
  *
  * Devuelve la misma lista si no hay nada que cambiar.
  */
-export function clientesConQuienRecibe(clientes, obra, { nombre, email }) {
+export function clientesConQuienRecibe(clientes, obra, { nombre, email, telefono }) {
   const correo = normalizarCorreo(email);
   if (!correoValido(correo) || !obra?.cliente) return clientes;
   const lista = Array.isArray(clientes) ? clientes : [];
   const i = buscarCliente(lista, obra);
+  const contacto = normalizarNombrePropio(nombre || "");
+  const tel = normalizarTelefono(telefono || "");
 
   if (i >= 0) {
     const c = lista[i];
-    if (normalizarCorreo(c.email)) return lista;
-    return lista.map((x, j) => (j === i
-      ? { ...x, email: correo, contacto: x.contacto || normalizarNombrePropio(nombre || "") }
-      : x));
+    const actualizado = {
+      ...c,
+      email: correo,
+      contacto: contacto || c.contacto || "",
+      telefono: tel || c.telefono || "",
+    };
+    if (actualizado.email === normalizarCorreo(c.email) && actualizado.contacto === (c.contacto || "") && actualizado.telefono === (c.telefono || "")) {
+      return lista;
+    }
+    return lista.map((x, j) => (j === i ? actualizado : x));
   }
 
   return [...lista, {
     id: siguienteIdUnico(lista, "CLI"),
     nombre: normalizarRazonSocial(obra.cliente),
     nit: obra.nit ? normalizarDocumento(obra.nit) : "",
-    telefono: obra.tel || "",
+    telefono: tel || obra.tel || "",
     ciudad: obra.ciudad || "",
     direccion: obra.direccion || "",
-    contacto: normalizarNombrePropio(nombre || ""),
+    contacto,
     email: correo,
     estado: "Activo",
     notas: "",
   }];
 }
 
+/**
+ * Las obras de un cliente con el contacto nuevo de su ficha.
+ *
+ * Al cambiar el contacto en el directorio, cada obra de ese cliente que tenia
+ * el contacto anterior -o ninguno- pasa al nuevo. La que tiene a otra persona
+ * puesta a proposito se deja como esta.
+ */
+export function obrasConContactoDeCliente(obras, anterior, nuevo) {
+  const correoNuevo = normalizarCorreo(nuevo?.email);
+  if (!correoValido(correoNuevo)) return obras;
+  const correoViejo = normalizarCorreo(anterior?.email);
+  const nombres = new Set([anterior?.nombre, nuevo?.nombre].map((n) => normalizarRazonSocial(n || "")).filter(Boolean));
+  const nit = nuevo?.nit || anterior?.nit ? normalizarDocumento(nuevo?.nit || anterior?.nit) : "";
+  let cambio = false;
+  const resultado = (obras || []).map((o) => {
+    const esDelCliente = (nit && o.nit && normalizarDocumento(o.nit) === nit) || nombres.has(normalizarRazonSocial(o.cliente || ""));
+    if (!esDelCliente) return o;
+    const actual = normalizarCorreo(o.recibeEmail);
+    if (actual && actual !== correoViejo) return o;
+    if (actual === correoNuevo && (o.recibeNombre || "") === (nuevo.contacto || o.recibeNombre || "")) return o;
+    cambio = true;
+    return {
+      ...o,
+      recibeEmail: correoNuevo,
+      recibeNombre: nuevo.contacto || o.recibeNombre || "",
+      tel: (!o.tel || o.tel === anterior?.telefono) && nuevo.telefono ? nuevo.telefono : o.tel,
+    };
+  });
+  return cambio ? resultado : obras;
+}
 /**
  * Celular para mandar la firma por WhatsApp: el de la obra, el de la
  * cotizacion o el del directorio de clientes.

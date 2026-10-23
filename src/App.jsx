@@ -7,6 +7,7 @@ import { pantallaInicial, puedeVer } from "./lib/permisos";
 import AvisoInteligenteAgenda from "./components/agenda/AvisoInteligenteAgenda";
 import { ToastProvider } from "./components/ui/Toast";
 import PantallaArranque from "./components/PantallaArranque";
+import { FUENTE } from "./styles/designTokens";
 
 // Cada pantalla se trae al entrar en ella, no al abrir la aplicacion. Antes
 // todas venian en el paquete inicial -y con ellas las fotos de la ficha
@@ -124,7 +125,7 @@ function PantallaErrorConexion() {
       padding: "40px 24px",
       background: "#ffffff",
       color: "#000000",
-      fontFamily: "system-ui, -apple-system, sans-serif",
+      fontFamily: FUENTE,
     }}>
       <div style={{ maxWidth: 600 }}>
         <h2 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 12px 0", color: "#000000" }}>

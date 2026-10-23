@@ -10,6 +10,7 @@ import PrintHeader from "../../components/print/PrintHeader";
 import { descargarDocumentoPdf } from "../../lib/documentoPdf";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import { confirmar } from "../../lib/dialogos";
+import { FUENTE } from "../../styles/designTokens";
 
 // Formatea moneda con decimales exactos al estilo ERP: $ 7.567.436,10
 function fmtMonedaErp(valor) {
@@ -737,7 +738,7 @@ export default function OrdenesCompra({
 
                       {/* Documento Origen */}
                       <td style={{ padding: "12px 14px" }}>
-                        <div style={{ fontFamily: "monospace", fontWeight: 700, color: "var(--text-muted, #475569)" }}>
+                        <div style={{ fontVariantNumeric: "tabular-nums", fontWeight: 700, color: "var(--text-muted, #475569)" }}>
                           {orden.documentoOrigen || "—"}
                         </div>
                         {orden.obraNombre && (
@@ -1488,7 +1489,7 @@ export default function OrdenesCompra({
                   style={{
                     background: "#fff",
                     color: "#111",
-                    fontFamily: "'Aptos', 'Segoe UI', Arial, sans-serif",
+                    fontFamily: FUENTE,
                     fontSize: 12,
                     lineHeight: 1.5,
                     border: "1px solid #d6dde6",
@@ -1646,8 +1647,8 @@ export default function OrdenesCompra({
                             <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px", color: "#1e293b", fontWeight: 500 }}>{it.desc}</td>
                             <td style={{ border: "1px solid #e2e8f0", padding: "6px 8px", textAlign: "center", fontWeight: 700 }}>{it.cant}</td>
                             <td style={{ border: "1px solid #e2e8f0", padding: "6px 8px", textAlign: "center", color: "#475569" }}>{it.unit}</td>
-                            <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px", textAlign: "right", fontFamily: "Consolas, monospace" }}>{fmtMonedaErp(it.vu)}</td>
-                            <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px", textAlign: "right", fontWeight: 700, fontFamily: "Consolas, monospace" }}>{fmtMonedaErp(it.total)}</td>
+                            <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmtMonedaErp(it.vu)}</td>
+                            <td style={{ border: "1px solid #e2e8f0", padding: "6px 10px", textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{fmtMonedaErp(it.total)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1660,17 +1661,17 @@ export default function OrdenesCompra({
                             </div>
                           </td>
                           <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px", textAlign: "right", fontWeight: 600, color: "#475569", background: "#f8fafc" }}>Subtotal:</td>
-                          <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px", textAlign: "right", fontWeight: 700, fontFamily: "Consolas, monospace" }}>{fmtMonedaErp(ordenDetalle.subtotal)}</td>
+                          <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px", textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{fmtMonedaErp(ordenDetalle.subtotal)}</td>
                         </tr>
                         {ordenDetalle.iva > 0 && (
                           <tr>
                             <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px", textAlign: "right", fontWeight: 600, color: "#475569", background: "#f8fafc" }}>IVA (19%):</td>
-                            <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px", textAlign: "right", fontWeight: 700, fontFamily: "Consolas, monospace" }}>{fmtMonedaErp(ordenDetalle.iva)}</td>
+                            <td style={{ border: "1px solid #cbd5e1", padding: "6px 10px", textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{fmtMonedaErp(ordenDetalle.iva)}</td>
                           </tr>
                         )}
                         <tr style={{ background: "#f1f5f9" }}>
                           <td style={{ border: "1px solid #cbd5e1", padding: "8px 10px", textAlign: "right", fontWeight: 800, color: "#0f172a", fontSize: 12 }}>TOTAL:</td>
-                          <td style={{ border: "1px solid #cbd5e1", padding: "8px 10px", textAlign: "right", fontWeight: 800, color: "#cc0000", fontSize: 13, fontFamily: "Consolas, monospace" }}>{fmtMonedaErp(ordenDetalle.total)}</td>
+                          <td style={{ border: "1px solid #cbd5e1", padding: "8px 10px", textAlign: "right", fontWeight: 800, color: "#cc0000", fontSize: 13, fontVariantNumeric: "tabular-nums" }}>{fmtMonedaErp(ordenDetalle.total)}</td>
                         </tr>
                       </tfoot>
                     </table>

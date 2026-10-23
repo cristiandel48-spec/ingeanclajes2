@@ -5,6 +5,7 @@
 import { mostrarProgreso } from "./dialogos";
 import { dejarPintar } from "./progresoPdf";
 import { ALTO_HOJA, ANCHO_HOJA, abrirEnMarco, cargarLibreriasPdf, esperarRecursos } from "./pdfHojas";
+import { FUENTE } from "../styles/designTokens";
 
 const PX_A_PT = 72 / 96;
 const ESCALA_DIBUJO = 3;
@@ -20,7 +21,7 @@ const HOJA_ESTILOS = `
     margin: 0;
     padding: 0;
     background: #fff;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+    font-family: ${FUENTE} !important;
   }
   .doc-shell { background: #fff; border: 0 !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
   .doc-shell table { width: 100%; border-collapse: collapse; }

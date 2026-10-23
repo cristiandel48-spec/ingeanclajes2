@@ -5,6 +5,8 @@ import SupabaseGate from "./SupabaseGate.jsx";
 import VerificacionPublica from "./screens/Certificaciones/VerificacionPublica.jsx";
 import DialogosGlobales from "./components/DialogosGlobales.jsx";
 import { confirmar } from "./lib/dialogos";
+import { FUENTE } from "./styles/designTokens";
+import { cssFuenteInter } from "./lib/fuenteInter";
 
 class AppErrorBoundary extends Component {
   constructor(props) {
@@ -23,7 +25,7 @@ class AppErrorBoundary extends Component {
   render() {
     if (this.state.error) {
       return (
-        <div style={{ minHeight: "100vh", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "'Segoe UI', sans-serif" }}>
+        <div style={{ minHeight: "100vh", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: FUENTE }}>
           <div style={{ maxWidth: 720, width: "100%", background: "#fff", border: "1px solid #fecaca", borderRadius: 18, padding: 24, boxShadow: "0 16px 40px rgba(15,23,42,0.08)" }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: "#b91c1c", textTransform: "uppercase", letterSpacing: 1 }}>
               Error De Arranque
@@ -60,6 +62,14 @@ window.addEventListener("vite:preloadError", async (evento) => {
   });
   if (recargar) window.location.reload();
 });
+
+// Inter se declara aqui, antes de pintar nada, y no en GlobalStyles: esos
+// estilos solo se montan despues de iniciar sesion, y la pantalla de acceso y
+// la verificacion publica de certificados salian con la letra de respaldo.
+const estiloFuente = document.createElement("style");
+estiloFuente.id = "fuente-inter";
+estiloFuente.textContent = cssFuenteInter();
+document.head.appendChild(estiloFuente);
 
 const searchParams = new URLSearchParams(window.location.search);
 const esValidacionPublica = searchParams.has("validar") || searchParams.has("v");

@@ -9,6 +9,7 @@
 // solo lo suyo: su plantilla, su reparto de hojas o sus cortes de pagina.
 
 import { avanceDePdf, dejarPintar } from "./progresoPdf";
+import { conFuenteInter } from "./fuenteInter";
 
 // Hoja carta a 96 ppp, la unidad en la que estan escritas las plantillas.
 export const ANCHO_HOJA = 816;
@@ -33,7 +34,12 @@ export async function cargarLibreriasPdf() {
 // Dibuja el HTML en un marco fuera de la vista. No oculto: display:none o
 // visibility:hidden hacen que html2canvas mida todo en cero. Quien lo pide
 // tiene que quitarlo al terminar (marco.remove()).
+//
+// El marco es un documento aparte: se le mete Inter aqui para que todos los
+// PDF -cotizacion, informe, certificado, orden de compra- salgan con la letra
+// de la aplicacion. `esperarRecursos` espera a que este cargada.
 export async function abrirEnMarco(html, { ancho = ANCHO_HOJA, alto = ALTO_HOJA, mensajeError = "No se pudo preparar el documento." } = {}) {
+  html = conFuenteInter(html);
   const marco = document.createElement("iframe");
   marco.setAttribute("aria-hidden", "true");
   marco.style.cssText =
@@ -57,7 +63,13 @@ export async function abrirEnMarco(html, { ancho = ANCHO_HOJA, alto = ALTO_HOJA,
 // Espera a que el documento del marco tenga fuentes e imagenes listas. Sin
 // esto html2canvas dibuja huecos donde van las fotos y el logo.
 export async function esperarRecursos(doc, ventana) {
-  try { await doc.fonts?.ready; } catch { /* navegador sin la API */ }
+  // Se pide Inter de forma explicita: `fonts.ready` solo espera a las letras
+  // que el navegador ya empezo a cargar, y podria resolverse antes de que
+  // arranque la de la negrita.
+  try {
+    await Promise.all(["400", "600", "700", "800"].map((grueso) => doc.fonts?.load(`${grueso} 16px Inter`)));
+    await doc.fonts?.ready;
+  } catch { /* navegador sin la API */ }
 
   const imagenes = [...doc.images].filter((img) => !img.complete);
   await Promise.all(imagenes.map((img) => new Promise((listo) => {

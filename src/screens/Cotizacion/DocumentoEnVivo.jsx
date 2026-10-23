@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { buildCotizacionPrintHtml } from "../../lib/cotizacionPrint";
+import { conFuenteInter } from "../../lib/fuenteInter";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 
 // Ancho real de una hoja carta a 96 ppp (8.5 x 96 = 816 px)
@@ -177,9 +178,11 @@ export default function DocumentoEnVivo({
       </script>
     `;
 
-    return html.includes("</head>")
+    // El marco de la vista previa es un documento aparte: se le pasa Inter
+    // para que se vea con la misma letra que la cotizacion impresa.
+    return conFuenteInter(html.includes("</head>")
       ? html.replace("</head>", `${cssInyectado}</head>`)
-      : `${html}${cssInyectado}`;
+      : `${html}${cssInyectado}`);
   }, [html, escalaEfectiva, modo]);
 
   return (

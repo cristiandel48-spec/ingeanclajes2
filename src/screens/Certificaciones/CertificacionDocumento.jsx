@@ -7,6 +7,7 @@ import { fmtL, today as hoy } from "../../lib/format";
 import { LOGO_INGEANCLAJES } from "../../assets/embeddedImages";
 import { normalizarTextoCertificacion } from "../../lib/normalizarEntrada";
 import { enlaceVerificacion } from "../../lib/verificacionCertificados";
+import { FUENTE } from "../../styles/designTokens";
 
 // Pone en negrita los datos del cliente dentro de una frase escrita en plano.
 const conNegritas = (texto, datos)=>{
@@ -202,7 +203,7 @@ export default function CertificacionDocumento({cert}){
       style={{
         background: "#fff",
         color: "#111",
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+        fontFamily: FUENTE,
         fontSize: 12,
         lineHeight: 1.45,
         border: "1px solid #ddd",
@@ -502,7 +503,7 @@ export default function CertificacionDocumento({cert}){
               <div style={{ fontSize: 9, color: "#475569", lineHeight: 1.3, maxWidth: 110 }}>
                 <strong style={{ fontSize: 10.5, color: "#0f172a", display: "block", marginBottom: 2 }}>VERIFICACIÓN DIGITAL</strong>
                 Escanea para validar autenticidad y vigencia
-                <div style={{ fontFamily: "monospace", fontSize: 10.5, fontWeight: 800, color: "#c81e1e", marginTop: 3 }}>
+                <div style={{ fontVariantNumeric: "tabular-nums", fontSize: 10.5, fontWeight: 800, color: "#c81e1e", marginTop: 3 }}>
                   FOLIO: {folioDoc}
                 </div>
               </div>

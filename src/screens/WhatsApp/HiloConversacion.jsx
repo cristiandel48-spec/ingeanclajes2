@@ -99,7 +99,7 @@ export default function HiloConversacion({ conversacion, ejemplo = false, onVolv
                   <strong>No se le pudo responder.</strong> Este cliente escribió y no recibió nada:
                   conviene llamarlo.
                   {m.error && (
-                    <div style={{ marginTop: 4, fontSize: 10.5, color: "#fca5a5", fontFamily: "Consolas, monospace" }}>
+                    <div style={{ marginTop: 4, fontSize: 10.5, color: "#fca5a5", fontVariantNumeric: "tabular-nums" }}>
                       {m.error}
                     </div>
                   )}

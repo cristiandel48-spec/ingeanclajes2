@@ -1,4 +1,5 @@
 import { fmt } from "./format";
+import { registrarInterEnPdf } from "./fuenteInter";
 
 /**
  * Convierte un Blob de PDF a string base64 puro (sin el prefijo data:application/pdf;base64,).
@@ -22,6 +23,9 @@ export function blobABase64(blob) {
 export async function generarColillaPdf(empleado, resumen, periodoNomina) {
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "pt", format: "letter", orientation: "portrait" });
+  // La misma letra de la aplicacion. Antes era Helvetica, la que jsPDF trae
+  // de fabrica, y la colilla no se parecia a ningun otro documento.
+  await registrarInterEnPdf(doc);
 
   const margenIzq = 40;
   const anchoPagina = 612; // 8.5 * 72 pt
@@ -32,22 +36,22 @@ export async function generarColillaPdf(empleado, resumen, periodoNomina) {
   doc.setFillColor(15, 23, 42); // Navy oscuro #0f172a
   doc.roundedRect(margenIzq, 40, anchoUtil, 48, 4, 4, "F");
 
-  doc.setFont("helvetica", "bold");
+  doc.setFont("Inter", "bold");
   doc.setFontSize(14);
   doc.setTextColor(255, 255, 255);
   doc.text("INGEANCLAJES S.A.S.", margenIzq + 16, 64);
 
-  doc.setFont("helvetica", "normal");
+  doc.setFont("Inter", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(148, 163, 184); // #94a3b8
   doc.text("NIT 900.193.965-4 · Especialistas en Anclajes y Alturas", margenIzq + 16, 78);
 
-  doc.setFont("helvetica", "bold");
+  doc.setFont("Inter", "bold");
   doc.setFontSize(11);
   doc.setTextColor(74, 222, 128); // #4ade80
   doc.text("COLILLA DE PAGO", margenDer - 16, 64, { align: "right" });
 
-  doc.setFont("helvetica", "normal");
+  doc.setFont("Inter", "normal");
   doc.setFontSize(9);
   doc.setTextColor(255, 255, 255);
   doc.text(String(periodoNomina?.label || "Corte de Nómina"), margenDer - 16, 78, { align: "right" });
@@ -58,12 +62,12 @@ export async function generarColillaPdf(empleado, resumen, periodoNomina) {
   doc.setDrawColor(226, 232, 240); // #e2e8f0
   doc.roundedRect(margenIzq, y, anchoUtil, 70, 4, 4, "FD");
 
-  doc.setFont("helvetica", "bold");
+  doc.setFont("Inter", "bold");
   doc.setFontSize(11);
   doc.setTextColor(15, 23, 42);
   doc.text(empleado.nombre || "Empleado", margenIzq + 14, y + 20);
 
-  doc.setFont("helvetica", "normal");
+  doc.setFont("Inter", "normal");
   doc.setFontSize(9);
   doc.setTextColor(71, 85, 105);
   doc.text(`Documento: ${empleado.cedula || "N/A"}   |   Cargo: ${empleado.cargo || "N/A"}`, margenIzq + 14, y + 36);
@@ -84,7 +88,7 @@ export async function generarColillaPdf(empleado, resumen, periodoNomina) {
   y = 185;
   doc.setFillColor(241, 245, 249);
   doc.rect(margenIzq, y, anchoUtil, 20, "F");
-  doc.setFont("helvetica", "bold");
+  doc.setFont("Inter", "bold");
   doc.setFontSize(9);
   doc.setTextColor(30, 41, 59);
   doc.text("CONCEPTO DEVENGADO", margenIzq + 10, y + 14);
@@ -99,7 +103,7 @@ export async function generarColillaPdf(empleado, resumen, periodoNomina) {
     resumen.incapacidadTotal > 0 ? ["Incapacidades reconocidas", resumen.incapacidadTotal] : null,
   ].filter(Boolean);
 
-  doc.setFont("helvetica", "normal");
+  doc.setFont("Inter", "normal");
   doc.setFontSize(9);
   devengados.forEach(([concepto, val]) => {
     y += 18;
@@ -115,7 +119,7 @@ export async function generarColillaPdf(empleado, resumen, periodoNomina) {
   y += 24;
   doc.setFillColor(241, 245, 249);
   doc.rect(margenIzq, y, anchoUtil, 20, "F");
-  doc.setFont("helvetica", "bold");
+  doc.setFont("Inter", "bold");
   doc.setFontSize(9);
   doc.setTextColor(30, 41, 59);
   doc.text("CONCEPTO DEDUCCIÓN", margenIzq + 10, y + 14);
@@ -129,7 +133,7 @@ export async function generarColillaPdf(empleado, resumen, periodoNomina) {
     otrasDed > 0 ? ["Otras deducciones autorizadas", otrasDed] : null,
   ].filter(Boolean);
 
-  doc.setFont("helvetica", "normal");
+  doc.setFont("Inter", "normal");
   doc.setFontSize(9);
   deducciones.forEach(([concepto, val]) => {
     y += 18;
@@ -146,7 +150,7 @@ export async function generarColillaPdf(empleado, resumen, periodoNomina) {
   doc.setFillColor(22, 101, 52); // Verde oscuro #166534
   doc.roundedRect(margenIzq, y, anchoUtil, 36, 4, 4, "F");
 
-  doc.setFont("helvetica", "bold");
+  doc.setFont("Inter", "bold");
   doc.setFontSize(11);
   doc.setTextColor(255, 255, 255);
   doc.text("TOTAL NETO A PAGAR:", margenIzq + 16, y + 23);
@@ -157,7 +161,7 @@ export async function generarColillaPdf(empleado, resumen, periodoNomina) {
 
   // 6. Pie de página
   y += 55;
-  doc.setFont("helvetica", "normal");
+  doc.setFont("Inter", "normal");
   doc.setFontSize(8);
   doc.setTextColor(148, 163, 184);
   doc.text(

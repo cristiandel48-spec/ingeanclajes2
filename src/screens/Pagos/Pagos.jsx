@@ -513,7 +513,7 @@ export default function Pagos({ ctx }) {
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
             <div style={ST}>Registrar Recibo de Caja (Comprobante de Ingreso)</div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#cc0000", fontFamily: "Consolas, monospace" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#cc0000", fontVariantNumeric: "tabular-nums" }}>
               Próximo consecutivo: {generarConsecutivoRC()}
             </div>
           </div>
@@ -547,7 +547,7 @@ export default function Pagos({ ctx }) {
                     }}
                   >
                     <span style={{ fontSize: 11, color: "var(--text-muted, #64748b)", fontWeight: 600 }}>NIT / C.C.:</span>
-                    <span style={{ fontSize: 12, fontWeight: 800, color: "var(--text-main, #0f172a)", fontFamily: "Consolas, monospace" }}>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: "var(--text-main, #0f172a)", fontVariantNumeric: "tabular-nums" }}>
                       {clienteObj.nit}
                     </span>
                     {clienteObj.ciudad && (
@@ -648,7 +648,7 @@ export default function Pagos({ ctx }) {
                         <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-main, #78350f)" }}>
                           1. Retención en la fuente (Renta)
                         </span>
-                        <span style={{ fontSize: 10, background: "rgba(3, 105, 161, 0.15)", color: "#38bdf8", padding: "1px 7px", borderRadius: 4, fontWeight: 800, fontFamily: "Consolas, monospace" }}>
+                        <span style={{ fontSize: 10, background: "rgba(3, 105, 161, 0.15)", color: "#38bdf8", padding: "1px 7px", borderRadius: 4, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>
                           Cuenta PUC: 135515
                         </span>
                       </div>
@@ -664,7 +664,7 @@ export default function Pagos({ ctx }) {
                             </option>
                           ))}
                         </select>
-                        <div style={{ textAlign: "right", fontFamily: "Consolas, monospace", fontWeight: 800, color: retencionesCalc.reteFuente.valor > 0 ? "#f59e0b" : "var(--text-muted, #64748b)", fontSize: 12.5 }}>
+                        <div style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 800, color: retencionesCalc.reteFuente.valor > 0 ? "#f59e0b" : "var(--text-muted, #64748b)", fontSize: 12.5 }}>
                           -{fmt(retencionesCalc.reteFuente.valor)}
                         </div>
                       </div>
@@ -689,7 +689,7 @@ export default function Pagos({ ctx }) {
                         <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-main, #78350f)" }}>
                           2. Retención de Industria y Comercio (ReteICA)
                         </span>
-                        <span style={{ fontSize: 10, background: "rgba(3, 105, 161, 0.15)", color: "#38bdf8", padding: "1px 7px", borderRadius: 4, fontWeight: 800, fontFamily: "Consolas, monospace" }}>
+                        <span style={{ fontSize: 10, background: "rgba(3, 105, 161, 0.15)", color: "#38bdf8", padding: "1px 7px", borderRadius: 4, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>
                           Cuenta PUC: 135518
                         </span>
                       </div>
@@ -705,7 +705,7 @@ export default function Pagos({ ctx }) {
                             </option>
                           ))}
                         </select>
-                        <div style={{ textAlign: "right", fontFamily: "Consolas, monospace", fontWeight: 800, color: retencionesCalc.reteIca.valor > 0 ? "#f59e0b" : "var(--text-muted, #64748b)", fontSize: 12.5 }}>
+                        <div style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 800, color: retencionesCalc.reteIca.valor > 0 ? "#f59e0b" : "var(--text-muted, #64748b)", fontSize: 12.5 }}>
                           -{fmt(retencionesCalc.reteIca.valor)}
                         </div>
                       </div>
@@ -730,7 +730,7 @@ export default function Pagos({ ctx }) {
                         <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-main, #78350f)" }}>
                           3. Retención de IVA (ReteIVA)
                         </span>
-                        <span style={{ fontSize: 10, background: "rgba(3, 105, 161, 0.15)", color: "#38bdf8", padding: "1px 7px", borderRadius: 4, fontWeight: 800, fontFamily: "Consolas, monospace" }}>
+                        <span style={{ fontSize: 10, background: "rgba(3, 105, 161, 0.15)", color: "#38bdf8", padding: "1px 7px", borderRadius: 4, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>
                           Cuenta PUC: 135517
                         </span>
                       </div>
@@ -746,7 +746,7 @@ export default function Pagos({ ctx }) {
                             </option>
                           ))}
                         </select>
-                        <div style={{ textAlign: "right", fontFamily: "Consolas, monospace", fontWeight: 800, color: retencionesCalc.reteIva.valor > 0 ? "#f59e0b" : "var(--text-muted, #64748b)", fontSize: 12.5 }}>
+                        <div style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 800, color: retencionesCalc.reteIva.valor > 0 ? "#f59e0b" : "var(--text-muted, #64748b)", fontSize: 12.5 }}>
                           -{fmt(retencionesCalc.reteIva.valor)}
                         </div>
                       </div>
@@ -773,7 +773,7 @@ export default function Pagos({ ctx }) {
                         <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--text-main, #78350f)" }}>
                           4. Otras deducciones / Estampillas
                         </span>
-                        <span style={{ fontSize: 10, background: "rgba(3, 105, 161, 0.15)", color: "#38bdf8", padding: "1px 7px", borderRadius: 4, fontWeight: 800, fontFamily: "Consolas, monospace" }}>
+                        <span style={{ fontSize: 10, background: "rgba(3, 105, 161, 0.15)", color: "#38bdf8", padding: "1px 7px", borderRadius: 4, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>
                           Cuenta PUC: 135595
                         </span>
                       </div>
@@ -789,7 +789,7 @@ export default function Pagos({ ctx }) {
                             </option>
                           ))}
                         </select>
-                        <div style={{ textAlign: "right", fontFamily: "Consolas, monospace", fontWeight: 800, color: retencionesCalc.otras.valor > 0 ? "#f59e0b" : "var(--text-muted, #64748b)", fontSize: 12.5 }}>
+                        <div style={{ textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 800, color: retencionesCalc.otras.valor > 0 ? "#f59e0b" : "var(--text-muted, #64748b)", fontSize: 12.5 }}>
                           -{fmt(retencionesCalc.otras.valor)}
                         </div>
                       </div>
@@ -816,15 +816,15 @@ export default function Pagos({ ctx }) {
                 <div style={{ background: "rgba(245, 158, 11, 0.12)", padding: "8px 12px", borderRadius: 8, display: "grid", gap: 4, border: "1px solid rgba(245, 158, 11, 0.25)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--text-main, #78350f)" }}>
                     <span>Valor Bruto Abonado a Cartera (Cuenta 130505):</span>
-                    <strong style={{ fontFamily: "Consolas, monospace" }}>{fmt(retencionesCalc.montoBruto)}</strong>
+                    <strong style={{ fontVariantNumeric: "tabular-nums" }}>{fmt(retencionesCalc.montoBruto)}</strong>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#f97316" }}>
                     <span>(-) Total Retenciones Practicadas (Cuentas 1355):</span>
-                    <strong style={{ fontFamily: "Consolas, monospace" }}>-{fmt(retencionesCalc.totalRetenciones)}</strong>
+                    <strong style={{ fontVariantNumeric: "tabular-nums" }}>-{fmt(retencionesCalc.totalRetenciones)}</strong>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#22c55e", borderTop: "1.5px solid rgba(245, 158, 11, 0.3)", paddingTop: 4, marginTop: 2 }}>
                     <span style={{ fontWeight: 800 }}>(=) Valor Neto que ingresa a Caja/Bancos (Cuenta 111005):</span>
-                    <strong style={{ fontFamily: "Consolas, monospace", fontSize: 15, fontWeight: 900 }}>{fmt(retencionesCalc.montoNeto)}</strong>
+                    <strong style={{ fontVariantNumeric: "tabular-nums", fontSize: 15, fontWeight: 900 }}>{fmt(retencionesCalc.montoNeto)}</strong>
                   </div>
                 </div>
               </div>
@@ -923,7 +923,7 @@ export default function Pagos({ ctx }) {
               {obraSeleccionada ? (
                 <div style={{ display: "grid", gap: 12 }}>
                   <div>
-                    <div style={{ fontSize: 11, color: "var(--text-muted, #64748b)", fontFamily: "Consolas, monospace" }}>
+                    <div style={{ fontSize: 11, color: "var(--text-muted, #64748b)", fontVariantNumeric: "tabular-nums" }}>
                       {obraSeleccionada.id}
                     </div>
                     <div style={{ fontSize: 18, fontWeight: 800, color: "var(--text-main, #1a1a2e)" }}>

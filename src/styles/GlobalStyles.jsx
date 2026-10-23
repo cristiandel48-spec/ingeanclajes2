@@ -6,9 +6,11 @@
 // Los colores NO se escriben aqui: vienen de styles/designTokens.js, que es la
 // unica fuente del sistema.
 
-import { tokensCss } from "./designTokens";
+import { FUENTE, tokensCss } from "./designTokens";
 import { componentesCss } from "./componentesCss";
 
+// Las reglas @font-face de Inter van en main.jsx, para que esten antes de la
+// pantalla de acceso.
 export default function GlobalStyles({ divider }) {
   const css = `
 ${tokensCss}
@@ -257,7 +259,7 @@ ${componentesCss}
       overflow-y: hidden;
       /* Sin rebote elastico al llegar al final en iOS. */
       overscroll-behavior-y: none;
-      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      font-family: ${FUENTE};
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       text-rendering: optimizeLegibility;

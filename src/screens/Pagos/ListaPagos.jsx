@@ -118,7 +118,7 @@ function Fila({ p, compacta, obra, acciones }) {
         <span style={{ fontSize: 13.5, fontWeight: 700, color: C.tinta }}>
           {normalizarRazonSocial(nombreCliente)}
         </span>
-        <span style={{ fontSize: 11, color: C.tenue, fontFamily: "Consolas, monospace", fontWeight: 700 }}>
+        <span style={{ fontSize: 11, color: C.tenue, fontVariantNumeric: "tabular-nums", fontWeight: 700 }}>
           {p.id}{p.fecha ? ` · ${fmtD(p.fecha)}` : ""}
         </span>
       </div>

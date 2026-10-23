@@ -30,6 +30,7 @@ import { useAccionesPantalla, useTituloPantalla } from "../../context/accionesPa
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
 import { Button } from "../../components/ui";
 import { confirmar } from "../../lib/dialogos";
+import { FUENTE } from "../../styles/designTokens";
 
 // Editor del informe al estilo de apple.com: sin bordes ni sombras. Cada
 // seccion es un bloque blanco sobre el gris de la pagina, con su titulo
@@ -1155,7 +1156,7 @@ export default function Informes({ctx}){
                 style={{
                   background: "#ffffff",
                   color: "#18181b",
-                  fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+                  fontFamily: FUENTE,
                   fontSize: 12,
                   lineHeight: 1.5,
                   border: "1px solid rgba(0,0,0,0.08)",
@@ -1195,13 +1196,13 @@ export default function Informes({ctx}){
                   </div>
 
                   <div style={{ textAlign: "right" }}>
-                    <div style={{ display: "inline-block", padding: "2.5px 8px", borderRadius: 4, background: "#f4f4f5", border: "1px solid #e4e4e7", fontSize: 8.5, color: "#52525b", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, marginBottom: 4 }}>
+                    <div style={{ display: "inline-block", padding: "2.5px 8px", borderRadius: 4, background: "#f4f4f5", border: "1px solid #e4e4e7", fontSize: 8.5, color: "#52525b", fontVariantNumeric: "tabular-nums", fontWeight: 600, marginBottom: 4 }}>
                       SISTEMA DE GESTIÓN DE CALIDAD · {docCodigo} (V-{docVersion})
                     </div>
                     <div style={{ fontSize: 12.5, fontWeight: 800, color: "#18181b", letterSpacing: "0.02em", textTransform: "uppercase" }}>
                       INFORME TÉCNICO DE ACTIVIDADES EN OBRA
                     </div>
-                    <div style={{ fontSize: 10, color: "#18181b", fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, marginTop: 3 }}>
+                    <div style={{ fontSize: 10, color: "#18181b", fontVariantNumeric: "tabular-nums", fontWeight: 700, marginTop: 3 }}>
                       Consecutivo: <span style={{ background: "#18181b", color: "#ffffff", padding: "2px 7px", borderRadius: 4 }}>{numDoc || "INF-OFICIAL"}</span>
                     </div>
                   </div>
@@ -1236,7 +1237,7 @@ export default function Informes({ctx}){
                       {(sel.cotizacionNumero || cotVincSel?.numero) && (
                         <tr>
                           <td style={{ fontWeight: 700, color: "#52525b", letterSpacing: "0.04em", textTransform: "uppercase", padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)" }}>REF. COTIZACIÓN:</td>
-                          <td colSpan={3} style={{ color: "#18181b", fontWeight: 700, padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)", fontFamily: "'JetBrains Mono', monospace" }}>
+                          <td colSpan={3} style={{ color: "#18181b", fontWeight: 700, padding: "4px 6px", borderTop: "1px solid rgba(0,0,0,0.04)", fontVariantNumeric: "tabular-nums" }}>
                             <span style={{ background: "#ffffff", color: "#18181b", padding: "2px 7px", borderRadius: 4, border: "1px solid #d4d4d8", fontSize: 9.5 }}>
                               {sel.cotizacionNumero || cotVincSel?.numero}
                             </span>
@@ -1279,7 +1280,7 @@ export default function Informes({ctx}){
                   {personal.length > 0 ? (
                     personal.map((p, idx) => (
                       <div key={idx} style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 6, padding: "6px 9px", background: "#ffffff", display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ width: 22, height: 22, background: "#f4f4f5", borderRadius: 4, color: "#18181b", fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <div style={{ width: 22, height: 22, background: "#f4f4f5", borderRadius: 4, color: "#18181b", fontVariantNumeric: "tabular-nums", fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                           {String(idx + 1).padStart(2, "0")}
                         </div>
                         <div style={{ minWidth: 0, flex: 1 }}>
@@ -1306,7 +1307,7 @@ export default function Informes({ctx}){
                     <div style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, background: "#ffffff", padding: "10px 14px", marginBottom: 12, boxShadow: "0 1px 2px rgba(0,0,0,0.02)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f4f4f5", paddingBottom: 5, marginBottom: 7 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ background: "#18181b", color: "#ffffff", fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 4 }}>
+                          <span style={{ background: "#18181b", color: "#ffffff", fontVariantNumeric: "tabular-nums", fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 4 }}>
                             ACT-{String(ai + 1).padStart(2, "0")}
                           </span>
                           <span style={{ fontSize: 11.5, fontWeight: 700, color: "#18181b" }}>
@@ -1314,7 +1315,7 @@ export default function Informes({ctx}){
                           </span>
                         </div>
                         {act.fecha && (
-                          <span style={{ fontSize: 9, color: "#71717a", fontFamily: "'JetBrains Mono', monospace" }}>
+                          <span style={{ fontSize: 9, color: "#71717a", fontVariantNumeric: "tabular-nums" }}>
                             Fecha: {fmtL(act.fecha)}
                           </span>
                         )}
@@ -1357,7 +1358,7 @@ export default function Informes({ctx}){
                             <div key={fi} style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, overflow: "hidden", background: "#ffffff", boxShadow: "0 1px 2px rgba(0,0,0,0.02)", display: "flex", flexDirection: "column" }}>
                               <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "#fafafa", borderBottom: "1px solid #f4f4f5", overflow: "hidden", position: "relative" }}>
                                 <img src={ft.img || ft.url} alt={`Evidencia ${fi + 1}`} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", background: "#ffffff" }} onError={e => { e.target.style.display = "none"; }} />
-                                <span style={{ position: "absolute", top: 6, left: 6, background: "rgba(0,0,0,0.68)", color: "#ffffff", fontSize: 8.5, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, padding: "2.5px 7px", borderRadius: 4 }}>
+                                <span style={{ position: "absolute", top: 6, left: 6, background: "rgba(0,0,0,0.68)", color: "#ffffff", fontSize: 8.5, fontVariantNumeric: "tabular-nums", fontWeight: 700, padding: "2.5px 7px", borderRadius: 4 }}>
                                   EVIDENCIA {ai + 1}.{fi + 1}
                                 </span>
                               </div>

@@ -2,6 +2,7 @@
 // a partir de los sistemas cotizados (Ingeanclajes)
 
 import { escapeHtml } from "./html";
+import { FUENTE } from "../styles/designTokens";
 
 /**
  * Extrae metros de longitud de un texto técnico como "LÍNEA DE VIDA DE 15 M"
@@ -296,7 +297,7 @@ export function generarRemisionDespachoHtml({ obra, cotizacion, materialesDespac
   <style>
     @page { size: letter; margin: 15mm 15mm; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: ${FUENTE};
       color: #1e293b;
       margin: 0;
       padding: 24px;

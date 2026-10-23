@@ -1979,7 +1979,7 @@ export default function DocumentosEquipo({
                     borderRadius: 14,
                     padding: "14px 18px",
                     color: "#f8fafc",
-                    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                    fontVariantNumeric: "tabular-nums",
                     fontSize: 11.5,
                     overflowX: "auto",
                   }}

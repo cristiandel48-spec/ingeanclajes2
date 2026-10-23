@@ -933,7 +933,7 @@ export default function ListaTareasProduccion({
                 <div>
                   <span
                     style={{
-                      fontFamily: "ui-monospace, monospace",
+                      fontVariantNumeric: "tabular-nums",
                       fontSize: 11,
                       fontWeight: 700,
                       padding: "2px 6px",
@@ -1041,7 +1041,7 @@ function TarjetaTareaApple({ tarea: t, onClick, onCambiarEstado, mostrarResponsa
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span
             style={{
-              fontFamily: "ui-monospace, monospace",
+              fontVariantNumeric: "tabular-nums",
               fontSize: 10.5,
               fontWeight: 700,
               padding: "2px 6px",

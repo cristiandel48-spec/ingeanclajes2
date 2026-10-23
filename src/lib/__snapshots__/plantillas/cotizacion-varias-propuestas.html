@@ -4,9 +4,6 @@
     <base href="/" />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <title>Cotizacion C-26004</title>
     <style>
       
@@ -74,7 +71,7 @@
          finas; nada va en rojo ni en bloques oscuros. */
       :root {
         --texto: 11.5px; --titulo: 17px;
-        --letra: 'Inter', -apple-system, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+        --letra: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
         --tinta: #1d1d1f;
         --gris: #6e6e73;
         --linea: #d2d2d7;
@@ -102,7 +99,7 @@
       .header-right { font-size: var(--texto); letter-spacing:.06em; text-transform:uppercase; color:var(--tinta); font-weight:700; text-align:right; }
       /* El codigo del formato: mas pequeno y en monoespaciada, para que se
          lea como un codigo y no compita con el numero de la cotizacion. */
-      .header-sello { font-family:Consolas,"Courier New",monospace; font-size:calc(var(--texto) * .92); letter-spacing:.02em; text-transform:none; color:var(--tinta); font-weight:400; margin-top:2px; }
+      .header-sello { font-family:var(--letra); font-variant-numeric:tabular-nums; font-size:calc(var(--texto) * .92); letter-spacing:.02em; text-transform:none; color:var(--tinta); font-weight:400; margin-top:2px; }
       .header-sello b { color:var(--tinta); font-weight:700; }
 
       /* El pie se apoya en el fondo del bloque de la hoja (margin-top:auto,

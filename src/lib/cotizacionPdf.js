@@ -12,50 +12,17 @@ import { buildCotizacionPrintHtml } from "./cotizacionPrint";
 import { MARGEN_HOJA } from "./hojaImpresion";
 import { pdfDeHojas } from "./pdfHojas";
 
-// html2canvas no dibuja el documento: lo copia a otro iframe y lo redibuja
-// midiendo el texto palabra por palabra. Con una tipografía descargada de
-// internet, la negrita no siempre llega a tiempo a esa copia: entonces mide
-// con una fuente y dibuja con otra, y las palabras salen pegadas
-// ("FISCALIAGENERALDELANACION").
-//
-// Para el PDF se cambian por fuentes que todo computador ya tiene. Cambia algo
-// el aspecto frente al documento impreso, pero se lee bien, que es lo que
-// importa en algo que va a un cliente.
+// La letra y los colores son los mismos de la cotizacion impresa. Antes aqui
+// se cambiaba todo a Arial, porque Inter venia de Google Fonts y la negrita no
+// siempre llegaba a tiempo al marco donde html2canvas redibuja el documento:
+// media con una letra y dibujaba con otra, y las palabras salian pegadas
+// ("FISCALIAGENERALDELANACION"). Con ese cambio venian tambien colores
+// distintos (texto negro, pie rojo, total vino). Ahora Inter va dentro de la
+// aplicacion y el marco espera a que cargue (pdfHojas.js), asi que el cliente
+// recibe el mismo documento que se reviso en pantalla.
 function prepararHtmlParaPdf(html) {
   return html
-    .replace(/<link[^>]*fonts\.(?:googleapis|gstatic)\.com[^>]*>/g, "")
     .replace("</head>", `<style>
-      body, .table, .table td, input, button,
-      h1, h2, h3, p, span, div, strong, li,
-      .cover-firm-name, .cover-firm-nit, .cover-firm-contact, .cover-kicker,
-      .cover-client-name, .cover-client-nit, .ccg-k, .ccg-v, .cover-foot, .cover-sello,
-      .def-term, .def-body, .def-bullets, .section-title, .subheading,
-      .ficha-card-title, .ficha-card-tag, .ficha-card-desc, .ficha-name, .ficha-desc,
-      .sig-name, .sig-role, .sig-meta,
-      .card-label, .meta-label, .meta-value, .meta-card, .meta-strong,
-      .steps-list, .contact-box, .contact-line,
-      .sst-title, .sst-block p, .doc-copy, .doc-h2, .doc-h3, .incluye-item {
-        font-family: Arial, 'Segoe UI', Helvetica, sans-serif !important;
-        color: #000000 !important;
-      }
-      .table th {
-        font-family: Arial, 'Segoe UI', Helvetica, sans-serif !important;
-        background: #1E1E1E !important;
-        color: #ffffff !important;
-      }
-      .sig-name {
-        font-size: 15px !important;
-        font-weight: 700 !important;
-        white-space: nowrap !important;
-        color: #000000 !important;
-      }
-      .footer-brand {
-        color: #cc0000 !important;
-      }
-      .total-amount, .accent {
-        color: #8A1518 !important;
-      }
-
       /* Hoja de tamaño fijo, SOLO para este camino.
          Este PDF se arma fotografiando cada .page y encajandola en una
          pagina de 8,5 x 11 exactas, asi que aqui la hoja si tiene que ser

@@ -598,7 +598,7 @@ function TarjetaInformeApple({ informe: inf, acciones }) {
             marginBottom: 8,
           }}
         >
-          📍 {localizacion || "Obra"} · <strong style={{ fontFamily: "monospace", color: "var(--text-main, #101828)" }}>{inf.obraId || "—"}</strong>
+          📍 {localizacion || "Obra"} · <strong style={{ fontVariantNumeric: "tabular-nums", color: "var(--text-main, #101828)" }}>{inf.obraId || "—"}</strong>
           {periodo ? ` · ${periodo}` : ""}
         </div>
 
@@ -812,7 +812,7 @@ function FilaTablaInforme({ informe: inf, acciones, zebra }) {
 
       <div style={{ minWidth: 0, color: "var(--text-muted, #475467)", fontSize: 11.5 }}>
         <div>📍 {localizacion || "—"}</div>
-        <div style={{ fontFamily: "monospace", fontSize: 11, color: "var(--text-subtle, #86868b)" }}>{inf.obraId || "—"}</div>
+        <div style={{ fontVariantNumeric: "tabular-nums", fontSize: 11, color: "var(--text-subtle, #86868b)" }}>{inf.obraId || "—"}</div>
       </div>
 
       <div>

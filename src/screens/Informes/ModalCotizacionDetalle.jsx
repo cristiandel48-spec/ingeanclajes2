@@ -106,7 +106,7 @@ export default function ModalCotizacionDetalle({
                     fontSize: 18,
                     fontWeight: 800,
                     color: "#0f172a",
-                    fontFamily: "'JetBrains Mono', monospace",
+                    fontVariantNumeric: "tabular-nums",
                   }}
                 >
                   {cotizacion.numero || "Cotización"}

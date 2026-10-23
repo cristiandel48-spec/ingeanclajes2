@@ -1663,7 +1663,7 @@ Ese valor volverá a quedar pendiente en la factura.
                         <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(34, 197, 94, 0.08)", border: "1px solid rgba(34, 197, 94, 0.25)", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", fontSize: 11 }}>
                             <span style={{ fontWeight: 700, color: "#22c55e" }}>⚡ DIAN CUFE:</span>
-                            <span style={{ fontFamily: "Consolas, monospace", color: "var(--text-main, #1e3a8a)", background: "var(--surface, #fff)", padding: "1px 5px", borderRadius: 4, border: "1px solid var(--border, #cbd5e1)" }}>
+                            <span style={{ fontVariantNumeric: "tabular-nums", color: "var(--text-main, #1e3a8a)", background: "var(--surface, #fff)", padding: "1px 5px", borderRadius: 4, border: "1px solid var(--border, #cbd5e1)" }}>
                               {c.cufe.slice(0, 16)}...{c.cufe.slice(-8)}
                             </span>
                             <button

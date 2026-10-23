@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { fmtL } from "../../lib/format";
 import { consultarCertificado } from "../../lib/verificacionCertificados";
 import logoIngeanclajes from "../../assets/logo-ingeanclajes.jpeg";
+import { FUENTE } from "../../styles/designTokens";
 
 // Pagina que abre el QR del certificado. Se ve sin iniciar sesion.
 //
@@ -96,7 +97,7 @@ export default function VerificacionPublica() {
     <div style={{
       minHeight: "100vh",
       background: "linear-gradient(180deg, #0f172a 0%, #1e293b 160px, #f8fafc 160px, #f8fafc 100%)",
-      fontFamily: "'Aptos', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      fontFamily: FUENTE,
       padding: "20px 14px 40px",
       color: "#0f172a",
       boxSizing: "border-box"
@@ -144,7 +145,7 @@ export default function VerificacionPublica() {
               }}>
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Folio Documental</div>
-                  <div style={{ fontSize: 18, fontWeight: 900, color: "#e0342a", fontFamily: "monospace" }}>{folio}</div>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: "#e0342a", fontVariantNumeric: "tabular-nums" }}>{folio}</div>
                 </div>
                 <span style={{
                   background: "rgba(224, 52, 42, 0.08)",

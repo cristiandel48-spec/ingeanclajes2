@@ -3,13 +3,15 @@
 // es el mismo de siempre, espacios incluidos: las pruebas de plantillas
 // (plantillas.test.js) comparan el HTML resultante letra por letra.
 
+import { FUENTE } from "../../styles/designTokens";
+
 export const CSS_COTIZACION = `
       /* Estilo Apple: la misma letra del programa (Inter) y solo dos tonos de
          texto, el casi negro y el gris de Apple. Las lineas son grises y
          finas; nada va en rojo ni en bloques oscuros. */
       :root {
         --texto: 11.5px; --titulo: 17px;
-        --letra: 'Inter', -apple-system, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+        --letra: ${FUENTE};
         --tinta: #1d1d1f;
         --gris: #6e6e73;
         --linea: #d2d2d7;
@@ -37,7 +39,7 @@ export const CSS_COTIZACION = `
       .header-right { font-size: var(--texto); letter-spacing:.06em; text-transform:uppercase; color:var(--tinta); font-weight:700; text-align:right; }
       /* El codigo del formato: mas pequeno y en monoespaciada, para que se
          lea como un codigo y no compita con el numero de la cotizacion. */
-      .header-sello { font-family:Consolas,"Courier New",monospace; font-size:calc(var(--texto) * .92); letter-spacing:.02em; text-transform:none; color:var(--tinta); font-weight:400; margin-top:2px; }
+      .header-sello { font-family:var(--letra); font-variant-numeric:tabular-nums; font-size:calc(var(--texto) * .92); letter-spacing:.02em; text-transform:none; color:var(--tinta); font-weight:400; margin-top:2px; }
       .header-sello b { color:var(--tinta); font-weight:700; }
 
       /* El pie se apoya en el fondo del bloque de la hoja (margin-top:auto,

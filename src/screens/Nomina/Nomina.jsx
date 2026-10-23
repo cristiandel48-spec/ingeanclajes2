@@ -22,6 +22,7 @@ import { generarColillaPdf, blobABase64 } from "../../lib/colillaPdf";
 import { enviarColillaPorCorreo } from "../../lib/backend/usuarios";
 import ModalEnvioMasivoColillas from "./ModalEnvioMasivoColillas";
 import { confirmar } from "../../lib/dialogos";
+import { FUENTE } from "../../styles/designTokens";
 
 // ── Piezas del area de personal ─────────────────────────────────────────────
 // Lo de abajo (horas extras, incapacidades, planilla, colillas) conserva su
@@ -2518,7 +2519,7 @@ export default function Nomina({ctx}){
             </div>
           </div>
           {mensajeGuardadoNomina ? <div style={{marginBottom:12,fontSize:12,fontWeight:700,color:"#166534"}}>{mensajeGuardadoNomina}</div> : null}
-          <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily:"'Aptos','Segoe UI',sans-serif",fontSize:11,padding:"30px 40px",border:"1px solid #ddd"}}>
+          <div id="pz" className="doc-shell" style={{background:"#fff",color:"#111",fontFamily: FUENTE,fontSize:11,padding:"30px 40px",border:"1px solid #ddd"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",borderBottom:"2px solid #003B71",paddingBottom:14,marginBottom:20}}>
               <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{height:60,objectFit:"contain"}}/>
               <div style={{textAlign:"right"}}><div style={{background:"#FFCD00",color:"#003B71",padding:"6px 16px",borderRadius:4,fontWeight:700}}>BANCOLOMBIA</div><div style={{fontSize:10,color:"#555",marginTop:4}}>Planilla Nómina · {nominaVistaActual.periodo.label}</div><div style={{fontSize:9,color:"#64748b",marginTop:4}}>{nominaEstaGenerada ? ("Generada el " + formatNominaGeneratedAt(nominaVistaActual.generadoEn)) : "Vista previa del corte"}</div></div>
@@ -2542,7 +2543,7 @@ export default function Nomina({ctx}){
                     </td>
                     <td style={{padding:"6px 8px",color:"#555",fontSize:9}}>{e.cedula||"-"}</td>
                     <td style={{padding:"6px 8px",color:"#555",fontSize:9}}>
-                      {e.banco}<br/>{e.tipoCuenta}<br/><span style={{fontFamily:"monospace"}}>{e.numeroCuenta}</span>
+                      {e.banco}<br/>{e.tipoCuenta}<br/><span style={{fontVariantNumeric: "tabular-nums"}}>{e.numeroCuenta}</span>
                       {observacionesBanco?.length ? <div style={{fontSize:9,color:"#b91c1c",marginTop:4}}>{observacionesBanco.join(" · ")}</div> : <div style={{fontSize:9,color:"#166534",marginTop:4}}>Listo para banco</div>}
                     </td>
                     <td style={{padding:"6px 8px",textAlign:"right",fontSize:10}}>

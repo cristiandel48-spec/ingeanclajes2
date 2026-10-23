@@ -276,7 +276,7 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
           <div key={registro.id} data-registro-id={registro.id} style={{ scrollMarginTop: 16, background: "var(--surface-subtle, #fbfbfd)", border: "1px solid var(--border, #e5e5ea)", borderRadius: 14, padding: "16px 18px", marginBottom: 14, boxShadow: "0 1px 2px rgba(0,0,0,0.02)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, paddingBottom: 10, borderBottom: "1px solid var(--border, #f2f2f7)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, fontFamily: "monospace", color: "var(--text-main, #1d1d1f)", background: "var(--surface, #ffffff)", border: "1px solid var(--border, #e5e5ea)", padding: "2px 7px", borderRadius: 5 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "var(--text-main, #1d1d1f)", background: "var(--surface, #ffffff)", border: "1px solid var(--border, #e5e5ea)", padding: "2px 7px", borderRadius: 5 }}>
                   Avance #{idx + 1}
                 </span>
                 {registro.fecha && <span style={{ color: "var(--text-main, #1d1d1f)", fontWeight: 600, fontSize: 12 }}>· {fmtD(registro.fecha)}</span>}

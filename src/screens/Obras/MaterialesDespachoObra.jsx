@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { generarDesgloseMateriales, generarRemisionDespachoHtml } from "../../lib/materialesObra";
+import { conFuenteInter } from "../../lib/fuenteInter";
 import { CD, ST, SI } from "../../styles/tokens";
 
 export default function MaterialesDespachoObra({
@@ -124,12 +125,15 @@ export default function MaterialesDespachoObra({
     });
     const ventana = window.open("", "_blank");
     if (ventana) {
-      ventana.document.write(html);
+      ventana.document.write(conFuenteInter(html));
       ventana.document.close();
       ventana.focus();
-      setTimeout(() => {
+      // Se imprime cuando Inter ya llego; si no, el cuadro de impresion
+      // salia con la letra de respaldo.
+      const listo = ventana.document.fonts?.ready || Promise.resolve();
+      listo.catch(() => {}).then(() => setTimeout(() => {
         ventana.print();
-      }, 300);
+      }, 300));
     }
   };
 

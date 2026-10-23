@@ -3,6 +3,7 @@ import { LOGO_INGEANCLAJES } from "../../assets/embeddedImages";
 import { selloDe } from "../../lib/controlDocumental";
 import { numeroALetras } from "../../lib/numeroALetras";
 import { escapeHtml } from "../../lib/html";
+import { FUENTE } from "../../styles/designTokens";
 
 // Formatea moneda con decimales exactos estilo contable ERP: $ 2.500.000,00
 export function fmtPesos(valor) {
@@ -58,7 +59,7 @@ export default function ReciboCajaMediaCarta({
         margin: "0 auto",
         background: "#ffffff",
         color: "#0f172a",
-        fontFamily: "'Aptos', 'Segoe UI', Arial, sans-serif",
+        fontFamily: FUENTE,
         fontSize: "10.5px",
         lineHeight: 1.3,
         border: "1px solid #cbd5e1",
@@ -123,7 +124,7 @@ export default function ReciboCajaMediaCarta({
           <div style={{ padding: "1px 3px", borderBottom: "1px solid #334155", fontWeight: 600, color: "#475569" }}>
             {sello?.linea || "SGC - INGEANCLAJES"}
           </div>
-          <div style={{ padding: "1px 3px", borderBottom: "1px solid #334155", fontWeight: 800, fontFamily: "Consolas, monospace", fontSize: 8, color: "#0f172a" }}>
+          <div style={{ padding: "1px 3px", borderBottom: "1px solid #334155", fontWeight: 800, fontVariantNumeric: "tabular-nums", fontSize: 8, color: "#0f172a" }}>
             {sello?.codigo || "IA-FT-05"}
           </div>
           <div style={{ padding: "1px 3px", borderBottom: "1px solid #334155", color: "#64748b" }}>
@@ -168,7 +169,7 @@ export default function ReciboCajaMediaCarta({
           <div style={{ fontSize: 7, fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
             {tieneRet ? `Bruto: ${fmtPesos(montoBruto)} · Ret: -${fmtPesos(totalRet)}` : "Valor Recibido"}
           </div>
-          <div style={{ fontSize: 13, fontWeight: 900, color: "#cc0000", fontFamily: "Consolas, monospace" }}>
+          <div style={{ fontSize: 13, fontWeight: 900, color: "#cc0000", fontVariantNumeric: "tabular-nums" }}>
             {tieneRet ? `NETO: ${fmtPesos(montoNeto)}` : fmtPesos(montoBruto)}
           </div>
         </div>
@@ -238,32 +239,32 @@ export default function ReciboCajaMediaCarta({
             <span style={{ fontWeight: 800, color: "#92400e", textTransform: "uppercase" }}>
               🛡️ Retenciones Practicadas por el Cliente (Anticipo de Impuestos a Favor de Ingeanclajes):
             </span>
-            <span style={{ fontWeight: 800, color: "#b45309", fontFamily: "Consolas, monospace" }}>
+            <span style={{ fontWeight: 800, color: "#b45309", fontVariantNumeric: "tabular-nums" }}>
               Total Retenido: -{fmtPesos(totalRet)}
             </span>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
             <div style={{ background: "#ffffff", padding: "3px 5px", borderRadius: 3, border: "1px solid #fef3c7" }}>
               <span style={{ color: "#78350f", fontSize: 7.5 }}>ReteFuente (Cta 135515):</span><br />
-              <strong style={{ fontFamily: "Consolas, monospace", color: vFuente > 0 ? "#b45309" : "#64748b" }}>
+              <strong style={{ fontVariantNumeric: "tabular-nums", color: vFuente > 0 ? "#b45309" : "#64748b" }}>
                 {vFuente > 0 ? `${ret.reteFuente?.tarifa ? `${ret.reteFuente.tarifa}% · ` : ""}-${fmtPesos(vFuente)}` : "$ 0,00"}
               </strong>
             </div>
             <div style={{ background: "#ffffff", padding: "3px 5px", borderRadius: 3, border: "1px solid #fef3c7" }}>
               <span style={{ color: "#78350f", fontSize: 7.5 }}>ReteICA (Cta 135518):</span><br />
-              <strong style={{ fontFamily: "Consolas, monospace", color: vIca > 0 ? "#b45309" : "#64748b" }}>
+              <strong style={{ fontVariantNumeric: "tabular-nums", color: vIca > 0 ? "#b45309" : "#64748b" }}>
                 {vIca > 0 ? `${ret.reteIca?.tarifa ? `${ret.reteIca.tarifa}‰ · ` : ""}-${fmtPesos(vIca)}` : "$ 0,00"}
               </strong>
             </div>
             <div style={{ background: "#ffffff", padding: "3px 5px", borderRadius: 3, border: "1px solid #fef3c7" }}>
               <span style={{ color: "#78350f", fontSize: 7.5 }}>ReteIVA (Cta 135517):</span><br />
-              <strong style={{ fontFamily: "Consolas, monospace", color: vIva > 0 ? "#b45309" : "#64748b" }}>
+              <strong style={{ fontVariantNumeric: "tabular-nums", color: vIva > 0 ? "#b45309" : "#64748b" }}>
                 {vIva > 0 ? `-${fmtPesos(vIva)}` : "$ 0,00"}
               </strong>
             </div>
             <div style={{ background: "#ffffff", padding: "3px 5px", borderRadius: 3, border: "1px solid #fef3c7" }}>
               <span style={{ color: "#78350f", fontSize: 7.5 }}>Otras (Cta 135595):</span><br />
-              <strong style={{ fontFamily: "Consolas, monospace", color: vOtras > 0 ? "#b45309" : "#64748b" }}>
+              <strong style={{ fontVariantNumeric: "tabular-nums", color: vOtras > 0 ? "#b45309" : "#64748b" }}>
                 {vOtras > 0 ? `-${fmtPesos(vOtras)}` : "$ 0,00"}
               </strong>
             </div>
@@ -299,7 +300,7 @@ export default function ReciboCajaMediaCarta({
           </tr>
         </thead>
         <tbody>
-          <tr style={{ textAlign: "center", fontFamily: "Consolas, monospace", fontWeight: 700 }}>
+          <tr style={{ textAlign: "center", fontVariantNumeric: "tabular-nums", fontWeight: 700 }}>
             <td style={{ border: "1px solid #e2e8f0", padding: "4px" }}>{fmtPesos(obra?.total || saldoAnterior)}</td>
             <td style={{ border: "1px solid #e2e8f0", padding: "4px", color: "#475569" }}>{fmtPesos(saldoAnterior)}</td>
             <td style={{ border: "1px solid #e2e8f0", padding: "4px", color: "#003B71" }}>- {fmtPesos(montoBruto)}</td>
@@ -383,7 +384,7 @@ export function generarHtmlMediaCarta(recibo, obra, cliente, empresaConfig, elab
     }
     * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; }
     body {
-      font-family: 'Aptos', 'Segoe UI', Arial, sans-serif;
+      font-family: ${FUENTE};
       font-size: 8.5pt;
       line-height: 1.25;
       color: #0f172a;
@@ -415,7 +416,7 @@ export function generarHtmlMediaCarta(recibo, obra, cliente, empresaConfig, elab
     table { width: 100%; border-collapse: collapse; margin-bottom: 6px; font-size: 8pt; }
     td, th { border: 1px solid #cbd5e1; padding: 3px 5px; }
     .lbl { background: #f8fafc; font-weight: 700; color: #334155; }
-    .mono { font-family: Consolas, monospace; }
+    .mono { font-variant-numeric: tabular-nums; }
     .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 6px; }
     .sig-box { border: 1px solid #cbd5e1; padding: 6px; text-align: center; font-size: 7.5pt; }
     .sig-line { height: 24px; border-bottom: 1px solid #94a3b8; margin-bottom: 3px; }
@@ -443,7 +444,7 @@ export function generarHtmlMediaCarta(recibo, obra, cliente, empresaConfig, elab
       </div>
       <div style="border:1px solid #334155; width:125px; text-align:center; font-size:6pt; background:#f8fafc;">
         <div style="padding:1px; border-bottom:1px solid #334155;">${e(sello?.linea || "SGC - INGEANCLAJES")}</div>
-        <div style="padding:1px; border-bottom:1px solid #334155; font-weight:700; font-family:Consolas,monospace;">${e(sello?.codigo || "IA-FT-05")}</div>
+        <div style="padding:1px; border-bottom:1px solid #334155; font-weight:700; font-variant-numeric: tabular-nums;">${e(sello?.codigo || "IA-FT-05")}</div>
         <div style="padding:1px; border-bottom:1px solid #334155;">${e(sello?.version || "Versión 1")}</div>
         <div style="padding:1px; font-weight:800; color:#cc0000; font-size:7.5pt;">No. ${reciboId}</div>
       </div>
@@ -456,7 +457,7 @@ export function generarHtmlMediaCarta(recibo, obra, cliente, empresaConfig, elab
       </div>
       <div style="background:#fff; border:1.5px solid #cc0000; padding:2px 6px; text-align:right;">
         <div style="font-size:6pt; font-weight:700; color:#64748b;">${tieneRet ? `Bruto: ${fmtPesos(montoBruto)} · Ret: -${fmtPesos(totalRet)}` : "VALOR RECIBIDO"}</div>
-        <div style="font-size:10.5pt; font-weight:900; color:#cc0000; font-family:Consolas,monospace;">${tieneRet ? `NETO: ${fmtPesos(montoNeto)}` : fmtPesos(montoBruto)}</div>
+        <div style="font-size:10.5pt; font-weight:900; color:#cc0000; font-variant-numeric: tabular-nums;">${tieneRet ? `NETO: ${fmtPesos(montoNeto)}` : fmtPesos(montoBruto)}</div>
       </div>
     </div>
 
@@ -485,7 +486,7 @@ export function generarHtmlMediaCarta(recibo, obra, cliente, empresaConfig, elab
     <div style="border:1px solid #fed7aa; background:#fffbeb; padding:3px 6px; margin-bottom:5px; font-size:7pt;">
       <div style="display:flex; justify-content:space-between; border-bottom:1px dashed #fde68a; padding-bottom:1px; margin-bottom:2px;">
         <strong style="color:#92400e;">🛡️ RETENCIONES PRACTICADAS POR EL CLIENTE (ANTICIPO DE IMPUESTOS A FAVOR):</strong>
-        <strong style="color:#b45309; font-family:Consolas,monospace;">Total Retenido: -${fmtPesos(totalRet)}</strong>
+        <strong style="color:#b45309; font-variant-numeric: tabular-nums;">Total Retenido: -${fmtPesos(totalRet)}</strong>
       </div>
       <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:4px;">
         <div>ReteFuente (Cta 135515): <strong>${vFuente > 0 ? `${tarifaFuente}-${fmtPesos(vFuente)}` : "$ 0,00"}</strong></div>
@@ -510,7 +511,7 @@ export function generarHtmlMediaCarta(recibo, obra, cliente, empresaConfig, elab
         ${tieneRet ? `<th style="color:#166534;">(=) Neto Recibido</th>` : ""}
         <th style="color:${saldoNuevo > 0 ? "#cc0000" : "#166534"};">Nuevo Saldo Pendiente</th>
       </tr>
-      <tr style="text-align:center; font-family:Consolas,monospace; font-weight:700;">
+      <tr style="text-align:center; font-variant-numeric: tabular-nums; font-weight:700;">
         <td>${fmtPesos(obra?.total || saldoAnterior)}</td>
         <td style="color:#475569;">${fmtPesos(saldoAnterior)}</td>
         <td style="color:#003B71;">- ${fmtPesos(montoBruto)}</td>

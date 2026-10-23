@@ -53,13 +53,13 @@ export default function PrintHeader({ dual, formato, empresaConfig, numeroDocume
                 fontSize:7.5,color:"#444",lineHeight:1.2,flex:1,
                 display:"flex",alignItems:"center",justifyContent:"center"}}>{sello.linea}</div>
               <div style={{borderBottom: num ? "1px solid #333" : "none",padding:"2px 4px",textAlign:"center",fontSize:8,fontWeight:700,
-                letterSpacing:.3,fontFamily:"Consolas, monospace",color:"#111",flex:1,
+                letterSpacing:.3,fontVariantNumeric: "tabular-nums",color:"#111",flex:1,
                 display:"flex",alignItems:"center",justifyContent:"center"}}>{sello.codigo}</div>
             </>
           )}
           {num && (
             <div style={{padding:"2px 4px",textAlign:"center",fontSize:8.5,fontWeight:800,
-              fontFamily:"Consolas, monospace",color:"#cc0000",background:"#fff5f5",flex:1,
+              fontVariantNumeric: "tabular-nums",color:"#cc0000",background:"#fff5f5",flex:1,
               display:"flex",alignItems:"center",justifyContent:"center",letterSpacing:.5}}>{num}</div>
           )}
         </div>

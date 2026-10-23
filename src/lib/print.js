@@ -5,6 +5,7 @@ import { openPrintTab } from "./abrirImpresion";
 import { cssHojaImpresion } from "./hojaImpresion";
 import { NOMINA_CO_2026 } from "./nomina";
 import { escapeHtml } from "./html";
+import { FUENTE } from "../styles/designTokens";
 
 // Los datos del empleado se escriben a mano (nombre, cargo, banco...). Se
 // escapan antes de meterlos en el HTML: un nombre con codigo se ejecutaria en
@@ -37,7 +38,7 @@ export function printCurrentPz(title = "Documento"){
       padding: 0 !important;
       background: #fff !important;
       color: #111;
-      font-family: Aptos, "Segoe UI", Arial, sans-serif;
+      font-family: ${FUENTE};
       width: 8.5in;
       height: 11in;
     }
@@ -62,7 +63,7 @@ export function printCurrentPz(title = "Documento"){
     }
   ` : `
     ${cssHojaImpresion({ vistaPrevia: false })}
-    html, body { color: #111; font-family: Aptos, "Segoe UI", Arial, sans-serif; font-size: 12pt; line-height: 1.5; }
+    html, body { color: #111; font-family: ${FUENTE}; font-size: 12pt; line-height: 1.5; }
     .doc-shell { background: #fff; color: #111; }
   `;
 
@@ -111,7 +112,7 @@ export function printColilla(empleado, resumen, periodo){
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Colilla ${periodLabel}</title>
 <style>
 @page{size:5.5in 8.5in;margin:8mm;}
-body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:0;background:#fff;color:#0f172a;}
+body{font-family:${FUENTE};margin:0;padding:0;background:#fff;color:#0f172a;}
 .sheet{width:100%;max-width:127mm;margin:0 auto;border:1px solid #dbe3ec;border-radius:16px;overflow:hidden;background:#fff;}
 .head{padding:14px 16px;background:linear-gradient(135deg,#fff7ed,#ffffff);border-bottom:1px solid #f1f5f9;}
 .brand{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;}
@@ -167,7 +168,7 @@ export function printVacaciones(empleado, diasVacaciones, valorVacaciones){
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Vacaciones ${emp.nombre}</title>
 <style>
 @page{size:Letter;margin:12mm;}
-body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:18px;background:#fff;color:#0f172a;}
+body{font-family:${FUENTE};margin:0;padding:18px;background:#fff;color:#0f172a;}
 .wrap{max-width:620px;margin:0 auto;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;}
 .hd{padding:16px 18px;background:linear-gradient(135deg,#ecfdf5,#ffffff);border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;}
 .hd img{height:48px;object-fit:contain;}
@@ -217,7 +218,7 @@ export function printLiquidacion(empleado, pfl, indemn, diasVacPagar, fechaSalid
     '<tr><td style="padding:6px 14px;border-bottom:1px solid #f1f5f9">'+k+'</td><td style="padding:6px 14px;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:10px">'+b+'</td><td style="padding:6px 14px;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:600">'+v+'</td></tr>'
   ).join('');
   const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Liquidación '+emp.nombre+'</title>'
-    +'<style>body{font-family:"Segoe UI",Arial,sans-serif;margin:0;padding:20px;background:#f8fafc;}'
+    +'<style>body{font-family:'+FUENTE+';margin:0;padding:20px;background:#f8fafc;}'
     +'.wrap{max-width:640px;margin:0 auto;background:#fff;border:1px solid #ddd;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.1);}'
     +'.hd{background:#cc0000;color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;}'
     +'.hd h2{margin:0;font-size:16px;letter-spacing:.5px;}'

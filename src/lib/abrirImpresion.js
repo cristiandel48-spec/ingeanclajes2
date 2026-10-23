@@ -4,6 +4,8 @@
 // llevaban todas esas fotos sin usarlas.
 
 import { escapeHtml } from "./html";
+import { conFuenteInter } from "./fuenteInter";
+import { FUENTE } from "../styles/designTokens";
 
 // ─── Abre HTML completo en nueva pestaña con toolbar de impresión ───
 // NO bloquea la app principal. El usuario imprime/guarda PDF desde la pestaña.
@@ -28,7 +30,7 @@ export function openPrintTab(fullHtml, tituloCrudo){
   //
   // Chrome recuerda las dos elecciones, asi que es una sola vez.
   const toolbar = `
-    <div id="print-toolbar" style="position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a2840;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 20px;font-family:sans-serif;box-shadow:0 2px 12px rgba(0,0,0,.3);">
+    <div id="print-toolbar" style="position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a2840;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 20px;font-family:${FUENTE};box-shadow:0 2px 12px rgba(0,0,0,.3);">
       <div style="min-width:0;">
         <div style="font-size:14px;font-weight:600;">${title || "Documento"}</div>
         <div style="font-size:11.5px;color:#cbd5e1;margin-top:2px;line-height:1.4;">
@@ -54,6 +56,8 @@ export function openPrintTab(fullHtml, tituloCrudo){
       <style>@media print{#print-toolbar,#print-toolbar+div{display:none!important;}}</style>
     </head><body>${toolbar}${fullHtml}</body></html>`;
   }
-  w.document.write(output);
+  // Cada documento trae su letra declarada, pero la pestaña es un documento
+  // aparte: sin esto Inter no existe ahi y cae en la de respaldo.
+  w.document.write(conFuenteInter(output));
   w.document.close();
 }

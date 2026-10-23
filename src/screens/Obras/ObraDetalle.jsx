@@ -729,7 +729,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                       </div>
                     ))}
                   </div>
-                  <div style={{marginTop:8,fontSize:10,color:"var(--text-subtle, #94a3b8)"}}>🏦 {emp.banco} · {emp.tipoCuenta} · <span style={{fontFamily:"monospace"}}>{emp.numeroCuenta||"—"}</span></div>
+                  <div style={{marginTop:8,fontSize:10,color:"var(--text-subtle, #94a3b8)"}}>🏦 {emp.banco} · {emp.tipoCuenta} · <span style={{fontVariantNumeric: "tabular-nums"}}>{emp.numeroCuenta||"—"}</span></div>
                 </div>
               );
             })}

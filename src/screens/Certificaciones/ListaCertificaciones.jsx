@@ -654,7 +654,7 @@ function TarjetaCertificacionApple({ cert: c, acciones }) {
               background: "var(--surface-subtle, #f5f5f7)",
               color: "var(--text-subtle, #55555a)",
               border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
-              fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+              fontVariantNumeric: "tabular-nums",
             }}
           >
             {c.numero || c.id}
@@ -886,7 +886,7 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
       <div>
         <span
           style={{
-            fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+            fontVariantNumeric: "tabular-nums",
             fontWeight: 700,
             fontSize: 11.5,
             color: "var(--text-main, #1d1d1f)",

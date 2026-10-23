@@ -31,6 +31,14 @@ export async function cargarLibreriasPdf() {
   }
 }
 
+// html2canvas acomoda cada palabra donde la puso el navegador, pero la
+// dibuja en un lienzo, y el lienzo no sabe de `font-variant-numeric`. Con
+// los numeros de ancho fijo de Inter el navegador ensancha cifras y guiones
+// y el lienzo no, asi que quedaba un hueco despues de cada guion:
+// «IA- FT- 02», «INF- 033». En el PDF se usan los numeros normales, que
+// miden lo mismo en los dos.
+const SIN_NUMEROS_FIJOS = "*, *::before, *::after { font-variant-numeric: normal !important; }";
+
 // Dibuja el HTML en un marco fuera de la vista. No oculto: display:none o
 // visibility:hidden hacen que html2canvas mida todo en cero. Quien lo pide
 // tiene que quitarlo al terminar (marco.remove()).
@@ -39,7 +47,7 @@ export async function cargarLibreriasPdf() {
 // PDF -cotizacion, informe, certificado, orden de compra- salgan con la letra
 // de la aplicacion. `esperarRecursos` espera a que este cargada.
 export async function abrirEnMarco(html, { ancho = ANCHO_HOJA, alto = ALTO_HOJA, mensajeError = "No se pudo preparar el documento." } = {}) {
-  html = conFuenteInter(html);
+  html = conFuenteInter(html).replace(/<\/head>/i, `<style>${SIN_NUMEROS_FIJOS}</style></head>`);
   const marco = document.createElement("iframe");
   marco.setAttribute("aria-hidden", "true");
   marco.style.cssText =

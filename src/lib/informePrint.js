@@ -125,27 +125,37 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
 
   // --- RENDERIZADORES DE FRAGMENTOS VISUALES ---
 
+  // Encabezado de formato controlado: tres casillas de igual alto -logo,
+  // titulo y datos de control- en vez de dos bloques flotando a cada lado.
+  // Antes el nombre de la empresa salia dos veces (en el logo y en texto), y
+  // el lema y el titulo no cabian y se partian en dos lineas, asi que los dos
+  // lados quedaban de alturas distintas y el encabezado se veia descuadrado.
+  const celdaControl = (etiqueta, valor, ultima = false) => `
+    <tr>
+      <td style="padding:4px 9px;font-size:9px;font-weight:600;color:${GRIS};text-transform:uppercase;letter-spacing:0.04em;${ultima ? "" : `border-bottom:1px solid ${LINEA_SUAVE};`}">${etiqueta}</td>
+      <td style="padding:4px 9px;font-size:10px;font-weight:700;color:${TINTA};text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;${ultima ? "" : `border-bottom:1px solid ${LINEA_SUAVE};`}">${valor}</td>
+    </tr>`;
+
   const renderHeaderPortada = () => `
-    <div style="height:2px;background:${TINTA};border-radius:1px;margin-bottom:10px;"></div>
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid ${LINEA_SUAVE};padding-bottom:10px;margin-bottom:10px;">
-      <div style="display:flex;align-items:center;gap:12px;">
-        ${LOGO_INGEANCLAJES ? `<img src="${LOGO_INGEANCLAJES}" alt="Ingeanclajes" style="height:46px;max-width:180px;object-fit:contain;display:block;"/>` : `<div style="font-size:17px;font-weight:800;color:${TINTA};letter-spacing:-0.03em;">INGE<span style="color:${TINTA};">ANCLAJES</span></div>`}
-        <div>
-          <div style="font-size:13.5px;font-weight:800;color:${TINTA};letter-spacing:-0.01em;">INGEANCLAJES <span style="font-size:11px;font-weight:700;color:${TINTA};">S.A.S.</span></div>
-          <div style="font-size:9px;font-weight:700;color:${GRIS};text-transform:uppercase;letter-spacing:0.05em;margin-top:2px;">Sistemas de Ingeniería y Protección Contra Caídas</div>
-          <div style="font-size:9px;color:${GRIS};margin-top:1px;">NIT. 900.193.965-4 · PBX (604) 448 26 86 · Medellín, Colombia</div>
-        </div>
-      </div>
-      <div style="text-align:right;">
-        <div style="display:inline-block;padding:2px 8px;border-radius:4px;background:${FONDO};border:1px solid ${LINEA_SUAVE};font-size:9px;color:${GRIS};font-variant-numeric:tabular-nums;font-weight:600;margin-bottom:3px;">
-          SISTEMA DE GESTIÓN DE CALIDAD · ${escapeHtml(docCodigo)} (V-${escapeHtml(docVersion)})
-        </div>
-        <div style="font-size:12px;font-weight:800;color:${TINTA};letter-spacing:0.02em;text-transform:uppercase;">INFORME TÉCNICO DE ACTIVIDADES EN OBRA</div>
-        <div style="font-size:10px;color:${TINTA};font-variant-numeric:tabular-nums;font-weight:700;margin-top:2px;">
-          Consecutivo: <span style="background:${FONDO};color:${TINTA};padding:1.5px 7px;border-radius:3px;">${escapeHtml(numDoc || "INF-OFICIAL")}</span>
-        </div>
-      </div>
-    </div>
+    <table style="width:100%;border-collapse:separate;border-spacing:0;border:1px solid ${LINEA};border-radius:8px;margin-bottom:10px;table-layout:fixed;">
+      <tr>
+        <td style="width:27%;padding:8px 12px;border-right:1px solid ${LINEA};vertical-align:middle;text-align:center;">
+          ${LOGO_INGEANCLAJES ? `<img src="${LOGO_INGEANCLAJES}" alt="Ingeanclajes" style="height:44px;max-width:100%;object-fit:contain;display:inline-block;"/>` : `<div style="font-size:17px;font-weight:800;color:${TINTA};letter-spacing:-0.03em;">INGEANCLAJES</div>`}
+        </td>
+        <td style="padding:8px 12px;vertical-align:middle;text-align:center;">
+          <div style="font-size:9px;font-weight:600;color:${GRIS};text-transform:uppercase;letter-spacing:0.08em;">Sistema de gestión de calidad</div>
+          <div style="font-size:14px;font-weight:800;color:${TINTA};letter-spacing:0.01em;text-transform:uppercase;margin-top:3px;line-height:1.25;">Informe técnico de actividades en obra</div>
+          <div style="font-size:9px;color:${GRIS};margin-top:4px;">Ingeanclajes S.A.S. · NIT 900.193.965-4 · PBX (604) 448 26 86</div>
+        </td>
+        <td style="width:24%;padding:0;border-left:1px solid ${LINEA};vertical-align:middle;">
+          <table style="width:100%;border-collapse:collapse;">
+            ${celdaControl("Código", escapeHtml(docCodigo))}
+            ${celdaControl("Versión", escapeHtml(docVersion))}
+            ${celdaControl("Consecutivo", escapeHtml(numDoc || "INF-OFICIAL"), true)}
+          </table>
+        </td>
+      </tr>
+    </table>
   `;
 
   const renderHeaderSecundario = () => `

@@ -580,6 +580,7 @@ export default function SupabaseGate({ children }) {
       {children}
       {!novedadesCerradas && novedadesPendientes(user) ? (
         <Novedades
+          user={user}
           onCerrar={() => {
             setNovedadesCerradas(true);
             marcarNovedadesVistas(getSupabaseClient(), user);

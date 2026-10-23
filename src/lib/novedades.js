@@ -5,6 +5,8 @@
 // Se escribe para quien usa el sistema, no para quien lo programa: lo que va
 // a notar en su trabajo, sin nombres tecnicos.
 
+import { esCamilaSepulveda } from "./agendaEspecial";
+
 export const VERSION_NOVEDADES = "2026-10-23";
 
 export const NOVEDADES = [
@@ -56,13 +58,28 @@ export function textoCorreoNovedades(nombre, appUrl) {
   ].join("\n");
 }
 
+// Novedades para una persona en particular. Se muestran junto con las
+// generales, aunque esa persona ya haya visto la tanda general, y cada una
+// una sola vez (se recuerdan por su `id`). `para(user)` decide a quien le sale.
+export const NOVEDADES_PERSONALES = [
+  {
+    id: "2026-10-23-eliminar-certificaciones",
+    para: (user) => esCamilaSepulveda({ email: user?.email, nombre: user?.user_metadata?.nombre }),
+    titulo: "Solo para ti: eliminar certificaciones",
+    puntos: [
+      "En Certificaciones, cada certificación tiene ahora el botón «Eliminar». Solo te aparece a ti.",
+      "Antes de borrar te pide confirmar. Si la certificación ya se entregó, su código QR deja de validarla, y no se puede deshacer.",
+    ],
+  },
+];
+
 // Se guarda en los datos de la cuenta (user_metadata) para que quien ya las
 // vio en el computador no las vuelva a ver en el celular. La copia local es
 // el respaldo por si la cuenta no se pudo actualizar.
 const claveLocal = (userId) => `novedades_vistas_${userId}`;
+const clavePersonales = (userId) => `novedades_personales_vistas_${userId}`;
 
-export function novedadesPendientes(user) {
-  if (!user) return false;
+function generalesPendientes(user) {
   if (user.user_metadata?.novedades_vistas === VERSION_NOVEDADES) return false;
   try {
     if (localStorage.getItem(claveLocal(user.id)) === VERSION_NOVEDADES) return false;
@@ -70,10 +87,37 @@ export function novedadesPendientes(user) {
   return true;
 }
 
+function personalesVistas(user) {
+  const vistas = new Set(Array.isArray(user.user_metadata?.novedades_personales_vistas) ? user.user_metadata.novedades_personales_vistas : []);
+  try {
+    JSON.parse(localStorage.getItem(clavePersonales(user.id)) || "[]").forEach((id) => vistas.add(id));
+  } catch { /* sin almacenamiento local */ }
+  return vistas;
+}
+
+/** Lo que esta persona todavia no ha visto: { generales, personales }. */
+export function novedadesDe(user) {
+  if (!user) return { generales: [], personales: [] };
+  const vistas = personalesVistas(user);
+  return {
+    generales: generalesPendientes(user) ? NOVEDADES : [],
+    personales: NOVEDADES_PERSONALES.filter((n) => !vistas.has(n.id) && n.para(user)),
+  };
+}
+
+export function novedadesPendientes(user) {
+  const { generales, personales } = novedadesDe(user);
+  return generales.length > 0 || personales.length > 0;
+}
+
 export async function marcarNovedadesVistas(supabase, user) {
+  const vistas = [...new Set([...personalesVistas(user), ...novedadesDe(user).personales.map((n) => n.id)])];
   try {
     localStorage.setItem(claveLocal(user.id), VERSION_NOVEDADES);
+    localStorage.setItem(clavePersonales(user.id), JSON.stringify(vistas));
   } catch { /* sin almacenamiento local */ }
-  const { error } = await supabase.auth.updateUser({ data: { novedades_vistas: VERSION_NOVEDADES } });
+  const { error } = await supabase.auth.updateUser({
+    data: { novedades_vistas: VERSION_NOVEDADES, novedades_personales_vistas: vistas },
+  });
   if (error) console.warn("No se pudo guardar que se vieron las novedades:", error.message);
 }

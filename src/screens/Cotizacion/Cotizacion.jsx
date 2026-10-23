@@ -693,6 +693,10 @@ export default function Cotizacion({ctx}){
             ciudad: cotizacion.ciudad || o.ciudad,
             direccion: cotizacion.direccion || o.direccion || "",
             coords: cotizacion.coords || o.coords || "",
+            // Quien recibe los informes: el que ya tenia la obra manda, porque
+            // se puso a proposito para esa obra.
+            recibeNombre: o.recibeNombre || normalizarNombrePropio(cotizacion.contacto || ""),
+            recibeEmail: o.recibeEmail || normalizarCorreo(cotizacion.contactoEmail || ""),
             estado: o.estado === "Cancelada" ? "En Obra" : (o.estado || "En Obra"),
             total: snapshot.totalObra,
             saldo: Math.max(0, snapshot.totalObra - Number(o.pagado || 0)),
@@ -716,6 +720,10 @@ export default function Cotizacion({ctx}){
         ciudad:cotizacion.ciudad,
         direccion:cotizacion.direccion || "",
         coords:cotizacion.coords || "",
+        // El contacto de la cotizacion es, de entrada, quien recibe los
+        // informes de la obra. Se puede cambiar en el detalle de la obra.
+        recibeNombre:normalizarNombrePropio(cotizacion.contacto || ""),
+        recibeEmail:normalizarCorreo(cotizacion.contactoEmail || ""),
         estado:"En Obra",
         avance:0,
         total:snapshot.totalObra,

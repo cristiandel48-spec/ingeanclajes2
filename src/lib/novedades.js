@@ -5,72 +5,33 @@
 // Se escribe para quien usa el sistema, no para quien lo programa: lo que va
 // a notar en su trabajo, sin nombres tecnicos.
 
-export const VERSION_NOVEDADES = "2026-10-20";
+export const VERSION_NOVEDADES = "2026-10-23";
 
 export const NOVEDADES = [
   {
-    titulo: "Más rápido",
+    titulo: "El cliente firma el recibido del informe",
     puntos: [
-      "La aplicación carga mucho más rápido, sobre todo en el celular.",
-      "Ya no se queda pegada en la barra de carga al entrar.",
+      "En el informe de actividades, «Enviar para firma» le manda al cliente un enlace para revisarlo y firmar el recibido desde el celular.",
+      "Para firmar, al cliente le llega un código a su correo: así queda probado que fue él quien recibió.",
+      "En el informe ves si ya lo abrió y quién firmó. «PDF con constancia» descarga el informe con la hoja de recibido firmada y un código QR de verificación.",
     ],
   },
   {
-    titulo: "Nuevo diseño",
+    titulo: "Correo de quien recibe en cada obra",
     puntos: [
-      "Todos los módulos tienen un estilo más limpio y fácil de leer.",
-      "El inicio de sesión se adapta al modo claro u oscuro de tu equipo.",
+      "Cada obra tiene ahora «Quién recibe los informes»: nombre y correo del residente o interventor del cliente.",
+      "Es obligatorio: si falta, el sistema lo pide antes de registrar el avance del día. Se pide una sola vez por obra.",
+      "Al aprobar una cotización se toma el contacto de la cotización, y el correo queda también en el directorio de clientes.",
     ],
   },
   {
-    titulo: "Obras",
+    titulo: "Impresos y PDF",
     puntos: [
-      "El avance de la obra sale de la bitácora diaria: cada jornada nueva pide el porcentaje de avance.",
-      "Las obras se ordenan de la más nueva a la más vieja.",
-      "El detalle de la obra está más ordenado, sin pestañas que no se usaban.",
+      "Todos los documentos usan la misma letra del programa, también la cotización que se envía por correo y las colillas.",
+      "El informe tiene un encabezado nuevo, letra más grande y cada actividad sale junto con sus fotos.",
     ],
-  },
-  {
-    titulo: "Cotizaciones",
-    puntos: [
-      "Nueva presentación al imprimir y en PDF, más limpia y profesional.",
-      "Al enviarla por correo queda marcada como «Enviada».",
-      "Antes de aprobar una cotización, el sistema pide confirmación.",
-      "Vuelve a salir la foto del punto de anclaje y se corrigió un error que a veces no dejaba guardar.",
-    ],
-  },
-  {
-    titulo: "Informes y certificados",
-    puntos: [
-      "Los PDF ya no dejan hojas en blanco ni cortan la portada.",
-      "Certificados con letra más grande, la firma en su sitio y el nombre de la obra en el archivo.",
-    ],
-  },
-  {
-    titulo: "Personal y horarios",
-    puntos: ["Asigna turnos para varios días a la vez y copia los del día anterior."],
-  },
-  {
-    titulo: "Agenda",
-    puntos: [
-      "Si agregas un invitado a un compromiso, le llega una invitación por correo.",
-      "Los avisos de compromisos se leen mejor en el celular.",
-    ],
-  },
-  {
-    titulo: "Mis tareas y notas",
-    puntos: [
-      "«Mis tareas» tiene su propio lugar en el menú.",
-      "Notas personales con listas desplegables, viñetas y bloques de color.",
-      "Desde el inicio ves lo que te falta por marcar.",
-    ],
-  },
-  {
-    titulo: "Guardado",
-    puntos: ["Si intentas recargar con cambios sin guardar, el sistema te avisa antes de perderlos."],
   },
 ];
-
 // El mismo contenido, como correo para el equipo. Viaja como texto: la funcion
 // de correo lo pinta dentro del marco de la empresa (cabecera y pie), igual
 // que una cotizacion sin cifras.

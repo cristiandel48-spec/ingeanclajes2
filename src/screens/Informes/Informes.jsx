@@ -27,10 +27,12 @@ import { obrasMasNuevasPrimero } from "../../lib/identificadores";
 import ModalCotizacionDetalle from "./ModalCotizacionDetalle";
 import { ModalEnviarFirma, PanelFirmaRecibido } from "./FirmaRecibidoInforme";
 import { useEnviosFirma } from "../../hooks/useEnviosFirma";
+import ModalQuienRecibe from "../../components/ModalQuienRecibe";
+import { clientesConQuienRecibe, destinatarioDeInforme } from "../../lib/quienRecibe";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { useAccionesPantalla, useTituloPantalla } from "../../context/accionesPantalla";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
-import { Button } from "../../components/ui";
+import { Button, Callout } from "../../components/ui";
 import { confirmar } from "../../lib/dialogos";
 import { FUENTE } from "../../styles/designTokens";
 
@@ -68,11 +70,12 @@ const fmtTurno12=(turno)=>{
 
 export default function Informes({ctx}){
   const isMobile = useIsMobile();
-  const {informes,setInformes,obras,empleados,horarios,intencion,limpiarIntencion,empresaConfig,irAPantalla,asegurarDetalle,cotizaciones=[]}=ctx;
+  const {informes,setInformes,obras,setObras,clientes=[],setClientes,empleados,horarios,intencion,limpiarIntencion,empresaConfig,irAPantalla,asegurarDetalle,cotizaciones=[]}=ctx;
   const firmaImg=getFirmaImg(empresaConfig);
   const [sel,setSel]=useState(null);
   const [generandoPdf,setGenerandoPdf]=useState(false);
   const [modalFirma,setModalFirma]=useState(false);
+  const [pidiendoQuienRecibe,setPidiendoQuienRecibe]=useState(false);
   const [nuevo,setNuevo]=useState(()=>Boolean(ctx.intencion?.pantalla==="informes" && ctx.intencion?.obraId));
   const [editId,setEditId]=useState(null);
   const { envios: enviosFirma, recargar: recargarEnviosFirma } = useEnviosFirma(sel && !nuevo && !editId ? sel.id : null);
@@ -530,9 +533,12 @@ export default function Informes({ctx}){
       contratante: clienteFinal,
       cotizacionNumero: cotNumFinal,
       cotizacionRef: inf.cotizacionRef || cotNumFinal,
-      // Para proponer a quien enviar la firma de recibido.
-      contactoEmail: inf.contactoEmail || cotVinc?.contactoEmail || "",
-      contacto: inf.contacto || cotVinc?.contacto || "",
+      // A quien proponer el envio a firma de recibido: quien recibe en la
+      // obra, si no el contacto de la cotizacion, si no el del directorio.
+      ...(() => {
+        const d = destinatarioDeInforme({ obra, cotizacion: cotVinc, clientes });
+        return { contactoEmail: d.email, contacto: d.nombre };
+      })(),
     };
   };
 
@@ -1159,6 +1165,19 @@ export default function Informes({ctx}){
                 />
               </div>
             )}
+            {!enviosFirma.length && !destinatarioDeInforme({ obra: obraDeSel, cotizacion: cotVincSel, clientes }).email && (
+              <div style={{ maxWidth: 920, margin: "0 auto 16px", width: "100%" }}>
+                <Callout tono="aviso" titulo="Falta el correo de quien recibe">
+                  Para enviar este informe al cliente y que firme el recibido, la obra necesita el correo de quien recibe
+                  (el residente o el interventor).
+                  <div style={{ marginTop: 10 }}>
+                    <Button tam="sm" onClick={() => (obraDeSel ? setPidiendoQuienRecibe(true) : setModalFirma(true))}>
+                      Agregar correo
+                    </Button>
+                  </div>
+                </Callout>
+              </div>
+            )}
             <PanelFirmaRecibido
               envios={enviosFirma}
               onRecargar={recargarEnviosFirma}
@@ -1449,6 +1468,23 @@ export default function Informes({ctx}){
               </div>
             </div>
           </div>
+        );
+      })()}
+
+      {pidiendoQuienRecibe && sel && (() => {
+        const obraDelInforme = obras?.find((o) => o.id === sel.obraId);
+        if (!obraDelInforme) return null;
+        return (
+          <ModalQuienRecibe
+            obra={obraDelInforme}
+            onCerrar={() => setPidiendoQuienRecibe(false)}
+            onGuardar={({ nombre, email }) => {
+              setObras((p) => p.map((o) => (o.id === obraDelInforme.id ? { ...o, recibeNombre: nombre, recibeEmail: email } : o)));
+              setClientes?.((prev) => clientesConQuienRecibe(prev, obraDelInforme, { nombre, email }));
+              setPidiendoQuienRecibe(false);
+              setModalFirma(true);
+            }}
+          />
         );
       })()}
 

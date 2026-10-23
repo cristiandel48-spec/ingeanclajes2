@@ -13,7 +13,8 @@ import { ESTADOS_OBRA, estadoSegunAvance, obraEstaCerrada } from "../../lib/fluj
 import { esAdmin } from "../../lib/permisos";
 import ListaObras from "./ListaObras";
 import BuscadorCliente from "../../components/BuscadorCliente";
-import { avisoCelular, normalizarMayusculas, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
+import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarMayusculas, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "../../lib/normalizarEntrada";
+import { clientesConQuienRecibe } from "../../lib/quienRecibe";
 import { resolverAutorGuardado } from "../../lib/autorAuditoria";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import { confirmar } from "../../lib/dialogos";
@@ -42,6 +43,8 @@ export default function Obras({ctx}){
         telefono: d.telefono || d.tel || "",
         ciudad: d.ciudad || "",
         direccion: d.direccion || "",
+        contacto: d.contacto || d.recibeNombre || "",
+        email: d.email || d.recibeEmail || d.contactoEmail || "",
       });
     };
     (clientes || []).forEach(registrar);
@@ -75,7 +78,7 @@ export default function Obras({ctx}){
   // `estado` y `avance` van en el formulario porque muchas obras se cargan al
   // sistema cuando ya llevan tiempo ejecutandose: arrancar siempre en 0% las
   // dejaba mal desde el primer dia.
-  const [nob,setNob]=useState({cliente:"",tel:"",proyecto:"",ciudad:"",direccion:"",fechaInicio:today(),fechaFin:"",estado:"En Obra",avance:0,cotizacionId:""});
+  const [nob,setNob]=useState({cliente:"",tel:"",proyecto:"",ciudad:"",direccion:"",fechaInicio:today(),fechaFin:"",estado:"En Obra",avance:0,cotizacionId:"",recibeNombre:"",recibeEmail:""});
 
   // El avance ya no se cambia desde la lista: solo en las jornadas de la obra
   // (inicial + lo que suma cada una). El estado si.
@@ -124,6 +127,9 @@ export default function Obras({ctx}){
     const cobrado = 0;
     const autorActual = resolverAutorGuardado(ctx?.membresia);
     const ahoraIso = new Date().toISOString();
+    // Quien recibe los informes: lo escrito, o el contacto de la cotizacion.
+    const recibeNombre = normalizarNombrePropio(nob.recibeNombre || cotizacionVinculada?.contacto || "");
+    const recibeEmail = normalizarCorreo(nob.recibeEmail || cotizacionVinculada?.contactoEmail || "");
 
     setObras(p=>[...p,{
       ...nob,
@@ -134,6 +140,8 @@ export default function Obras({ctx}){
       ciudad:normalizarMayusculas(nob.ciudad),
       direccion:normalizarMayusculas(nob.direccion),
       tel:normalizarTelefono(nob.tel),
+      recibeNombre,
+      recibeEmail,
       id,
       nit:"",
       coords:"",
@@ -163,10 +171,13 @@ export default function Obras({ctx}){
       modificadoPorNombre: autorActual || "Camila Sepúlveda",
       modificadoEn: ahoraIso,
     }]);
+    if(recibeEmail && ctx.setClientes){
+      ctx.setClientes((prev)=>clientesConQuienRecibe(prev,{cliente:normalizarRazonSocial(nob.cliente),tel:normalizarTelefono(nob.tel),ciudad:normalizarMayusculas(nob.ciudad),direccion:normalizarMayusculas(nob.direccion)},{nombre:recibeNombre,email:recibeEmail}));
+    }
     if(nob.cotizacionId){
       ctx.setCotizaciones(p=>p.map(c=>c.id===nob.cotizacionId?{...c,estado:"Aprobada",obraId:id}:c));
     }
-    setNob({cliente:"",tel:"",proyecto:"",ciudad:"",direccion:"",fechaInicio:today(),fechaFin:"",estado:"En Obra",avance:0,cotizacionId:""});
+    setNob({cliente:"",tel:"",proyecto:"",ciudad:"",direccion:"",fechaInicio:today(),fechaFin:"",estado:"En Obra",avance:0,cotizacionId:"",recibeNombre:"",recibeEmail:""});
     setShowNO(false);
   };
 
@@ -266,6 +277,8 @@ export default function Obras({ctx}){
                 tel: c.telefono || nob.tel,
                 ciudad: c.ciudad || nob.ciudad,
                 direccion: c.direccion || nob.direccion,
+                recibeNombre: nob.recibeNombre || c.contacto || "",
+                recibeEmail: nob.recibeEmail || c.email || "",
               })}
               ayuda="Toca o escribe para elegir un cliente existente y evitar duplicados."
             />
@@ -277,7 +290,11 @@ export default function Obras({ctx}){
               normalizar={normalizarMayusculas} placeholder="Ej: Medellín, Antioquia" autoCapitalize="characters"/>
             <CampoTexto label="Dirección" valor={nob.direccion} onChange={v=>setNob({...nob,direccion:v})}
               normalizar={normalizarMayusculas} placeholder="Dirección de la obra" autoCapitalize="characters"/>
-            <div>
+            <CampoTexto label="Quién recibe los informes" valor={nob.recibeNombre} onChange={v=>setNob({...nob,recibeNombre:v})}
+              normalizar={normalizarNombrePropio} placeholder="Residente o interventor de la obra" autoComplete="off"/>
+            <CampoTexto label="Correo de quien recibe" valor={nob.recibeEmail} onChange={v=>setNob({...nob,recibeEmail:v})}
+              normalizar={normalizarCorreo} revisar={avisoCorreo} placeholder="residente@constructora.com" inputMode="email" spellCheck={false}
+              ayuda="A este correo llegan los informes para firma de recibido. Se pide antes del primer registro de bitácora."/>            <div>
               <LBL>Fecha inicio</LBL>
               <input type="date" value={nob.fechaInicio} onChange={e=>setNob({...nob,fechaInicio:e.target.value})} style={SI}/>
               <div style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)",marginTop:3}}>La fecha real en que empezaron.</div>

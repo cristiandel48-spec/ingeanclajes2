@@ -18,6 +18,8 @@ import { siguienteIdUnico } from "../../lib/identificadores";
 import { resolverAutorGuardado } from "../../lib/autorAuditoria";
 import { getTextosDocumento } from "../../lib/cotizacionTextos";
 import { getQuoteProposals } from "../../lib/cotizaciones";
+import { clientesConQuienRecibe, obraTieneQuienRecibe } from "../../lib/quienRecibe";
+import ModalQuienRecibe from "../../components/ModalQuienRecibe";
 
 function extraerObjetoCotizacion(texto = "") {
   if (!texto) return "";
@@ -40,7 +42,10 @@ function extraerObjetoCotizacion(texto = "") {
 }
 
 export default function ObraDetalle({obraId,ctx,onVolver}){
-  const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,ordenesCompra=[],horarios,setHorarios,irAPantalla,membresia,asegurarDetalle}=ctx;
+  const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,ordenesCompra=[],horarios,setHorarios,irAPantalla,membresia,asegurarDetalle,setClientes}=ctx;
+  // { motivo, seguir }: la ventana de quien recibe los informes. `seguir` es
+  // lo que se queria hacer (abrir la jornada) y se hace al guardar.
+  const [pidiendoQuienRecibe,setPidiendoQuienRecibe]=useState(null);
   // Las cifras de la obra son confidenciales: quien organiza el trabajo no ve
   // cuanto se cobro ni el jornal de sus companeros.
   const verDinero=puedeVerDinero(membresia);
@@ -154,6 +159,24 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       modificadoPorNombre: autorActual || o.modificadoPorNombre || "Camila Sepúlveda",
       modificadoEn: ahoraIso,
     } : o));
+  };
+
+  // Guarda quien recibe en la obra y lo sube al directorio de clientes.
+  const guardarQuienRecibe = ({ nombre, email }) => {
+    const ahoraIso = new Date().toISOString();
+    const autorActual = resolverAutorGuardado(membresia, oAct.modificadoPorNombre);
+    setObras(p => p.map(o => o.id === obraId ? {
+      ...o,
+      recibeNombre: nombre,
+      recibeEmail: email,
+      modificadoPor: membresia?.userId || null,
+      modificadoPorNombre: autorActual || o.modificadoPorNombre,
+      modificadoEn: ahoraIso,
+    } : o));
+    setClientes?.((prev) => clientesConQuienRecibe(prev, oAct, { nombre, email }));
+    const seguir = pidiendoQuienRecibe?.seguir;
+    setPidiendoQuienRecibe(null);
+    seguir?.();
   };
 
   const estadoAvance = oAct.avance === 100 ? "Finalizado" : oAct.avance >= 90 ? "Listo para certificar" : "En Ejecución";
@@ -331,6 +354,44 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       )}
 
 
+      {/* A quien se le envian los informes para firma de recibido. Sin el
+          no se puede registrar avance: se avisa aqui antes de llegar ahi. */}
+      <Card ajustado style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ ...TIPO.eyebrow, color: "var(--text-tertiary)" }}>Quién recibe los informes</div>
+            {obraTieneQuienRecibe(oAct) ? (
+              <div style={{ marginTop: 4, fontSize: 13.5, color: "var(--text-primary)" }}>
+                <strong style={{ fontWeight: 600 }}>{oAct.recibeNombre || "Sin nombre"}</strong>
+                <span style={{ color: "var(--text-secondary)" }}> · {oAct.recibeEmail}</span>
+              </div>
+            ) : (
+              <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <StatusPill tono="aviso">Falta el correo</StatusPill>
+                <span style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+                  Se necesita para registrar avance y enviar los informes a firma.
+                </span>
+              </div>
+            )}
+          </div>
+          {!bloqueada && (
+            <Button variante={obraTieneQuienRecibe(oAct) ? "tertiary" : "secondary"} tam="sm"
+              onClick={() => setPidiendoQuienRecibe({ motivo: "", seguir: null })}>
+              {obraTieneQuienRecibe(oAct) ? "Cambiar" : "Agregar"}
+            </Button>
+          )}
+        </div>
+      </Card>
+
+      {pidiendoQuienRecibe && (
+        <ModalQuienRecibe
+          obra={oAct}
+          motivo={pidiendoQuienRecibe.motivo}
+          onGuardar={guardarQuienRecibe}
+          onCerrar={() => setPidiendoQuienRecibe(null)}
+        />
+      )}
+
       {/* Avance: la cifra grande, como un precio en apple.com, y la barra
           para moverlo debajo. */}
       <Card ajustado style={{ marginBottom: 20 }}>
@@ -391,7 +452,12 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           bloqueada={bloqueada || oAct.__parcial===true}
           cargandoFotos={oAct.__parcial===true}
           personalAsignado={empObra.length}
-          onIrAPersonal={()=>setDetTab("personal")}/>
+          onIrAPersonal={()=>setDetTab("personal")}
+          sinQuienRecibe={!obraTieneQuienRecibe(oAct)}
+          onPedirQuienRecibe={(seguir)=>setPidiendoQuienRecibe({
+            motivo:"Antes de registrar el avance falta el correo de quien recibe: sin él, el informe de actividades no se le puede enviar al cliente para que firme el recibido.",
+            seguir,
+          })}/>
       )}
 
       {/* TAB MATERIALES Y DESPACHO DE BODEGA */}

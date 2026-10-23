@@ -229,6 +229,9 @@ export const entityConfig = {
       modificado_por: item.modificadoPor ?? null,
       modificado_por_nombre: item.modificadoPorNombre ?? null,
       modificado_en: item.modificadoEn ?? null,
+      // Quien recibe los documentos de la obra (migracion 077).
+      recibe_nombre: item.recibeNombre ?? null,
+      recibe_email: item.recibeEmail ?? null,
       enviado_al_cliente: Boolean(item.enviadoAlCliente),
       fecha_envio_cliente: item.fechaEnvioCliente ?? null,
       empleados: safeArray(item.empleados),
@@ -322,6 +325,8 @@ export const entityConfig = {
       modificadoEn: row.modificado_en ?? row.updated_at ?? null,
       enviadoAlCliente: Boolean(row.enviado_al_cliente),
       fechaEnvioCliente: row.fecha_envio_cliente ?? null,
+      recibeNombre: row.recibe_nombre ?? "",
+      recibeEmail: row.recibe_email ?? "",
     }),
   },
   cotizaciones: {

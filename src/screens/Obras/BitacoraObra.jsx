@@ -23,7 +23,12 @@ import { confirmar } from "../../lib/dialogos";
 // `personalAsignado`: cuantas personas tiene la obra (las de la pestaña
 // Personal, directas o por turnos de Horarios). Sin nadie no se registra
 // avance: una obra al 56% sin un solo trabajador asignado no es coherente.
-export default function BitacoraObra({ obra, setObras, bloqueada = false, cargandoFotos = false, personalAsignado = null, onIrAPersonal }) {
+//
+// `sinQuienRecibe`: la obra no tiene a quien enviarle los informes. Antes de
+// abrir una jornada se pide con `onPedirQuienRecibe(seguir)`, que llama a
+// `seguir` cuando ya quedo guardado: sin ese correo el informe no se puede
+// enviar a firma de recibido.
+export default function BitacoraObra({ obra, setObras, bloqueada = false, cargandoFotos = false, personalAsignado = null, onIrAPersonal, sinQuienRecibe = false, onPedirQuienRecibe }) {
   const sinPersonal = personalAsignado === 0;
   const registros = normalizarBitacora(obra.bitacora);
   const resumen = resumenBitacora(obra.bitacora);
@@ -96,6 +101,11 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
 
   const agregarRegistro = () => {
     if (sinPersonal) return avisarSinPersonal();
+    if (sinQuienRecibe && onPedirQuienRecibe) return onPedirQuienRecibe(abrirJornada);
+    abrirJornada();
+  };
+
+  const abrirJornada = () => {
     // Si alguna jornada quedo sin avance, la ventana es para esa: no se abre
     // otra mientras tanto.
     const pendiente = registros.find(faltaAvance);

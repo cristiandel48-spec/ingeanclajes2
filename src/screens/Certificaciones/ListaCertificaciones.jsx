@@ -839,6 +839,26 @@ function TarjetaCertificacionApple({ cert: c, acciones }) {
               <span>PDF</span>
             </button>
           )}
+
+          {acciones.eliminar && (
+            <button
+              type="button"
+              onClick={alPulsar(acciones.eliminar)}
+              title="Eliminar la certificación"
+              style={{
+                background: "transparent",
+                color: "var(--danger, #b3261e)",
+                border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+                borderRadius: 10,
+                padding: "7px 10px",
+                fontSize: 11.5,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Eliminar
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -1070,6 +1090,25 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
             }}
           >
             Editar
+          </button>
+        )}
+        {acciones.eliminar && (
+          <button
+            type="button"
+            onClick={alPulsar(acciones.eliminar)}
+            title="Eliminar la certificación"
+            style={{
+              background: "transparent",
+              color: "var(--danger, #b3261e)",
+              border: "1px solid var(--border, rgba(0,0,0,0.12))",
+              borderRadius: 8,
+              padding: "4px 8px",
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Eliminar
           </button>
         )}
       </div>

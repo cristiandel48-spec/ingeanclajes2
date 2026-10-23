@@ -23,6 +23,8 @@ import { Button } from "../../components/ui";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import { obrasMasNuevasPrimero } from "../../lib/identificadores";
+import { confirmar } from "../../lib/dialogos";
+import { esCamilaSepulveda } from "../../lib/agendaEspecial";
 // Informes de una obra. Si se indica uno concreto, solo ese.
 const informesFuente = (informes, obraId, informeId = "")=>{
   if(!obraId) return [];
@@ -73,6 +75,25 @@ export default function Certificaciones({ctx}){
   const isMobile = useIsMobile();
   const {certs,setCerts,obras,clientes,cotizaciones,informes,intencion,limpiarIntencion,irAPantalla}=ctx;
   const [sel,setSel]=useState(null);
+  const puedeEliminar = esCamilaSepulveda(ctx?.membresia, ctx?.authUserEmail);
+
+  // Borra la certificacion. El QR que ya se entrego deja de validarla: la
+  // pagina de verificacion dira que no existe. Por eso se pregunta con el
+  // folio y el cliente a la vista.
+  const eliminarCertificacion = async (c) => {
+    if (!puedeEliminar) return;
+    const folio = c?.numero || c?.id || "";
+    const ok = await confirmar({
+      titulo: `Eliminar la certificación ${folio}`,
+      mensaje: `Se borrará la certificación ${folio}${c?.cliente ? ` de ${c.cliente}` : ""}. `
+        + "Si ya se entregó, su código QR dejará de validarla. Esta acción no se puede deshacer.",
+      textoConfirmar: "Eliminar certificación",
+      destructivo: true,
+    });
+    if (!ok) return;
+    setCerts((prev) => prev.filter((x) => x.id !== c.id));
+    if (sel?.id === c.id) setSel(null);
+  };
   // Obra que llega desde el detalle de obra ("Crear certificación").
   const obraSolicitada = intencion?.pantalla==="certificaciones" ? intencion.obraId : null;
   // Al llegar desde el boton «Certificar» de un informe viene tambien de cual,
@@ -854,6 +875,8 @@ export default function Certificaciones({ctx}){
             editar: (c)=>editarCertificacion(c),
             descargarPdf: (c)=>descargarPdf(c),
             imprimir: (c)=>imprimir(c),
+            // Eliminar es solo de Camila Sepúlveda: a nadie mas le sale el boton.
+            ...(puedeEliminar ? { eliminar: (c)=>eliminarCertificacion(c) } : {}),
           }}
         />
       )}

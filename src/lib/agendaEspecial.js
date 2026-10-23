@@ -45,6 +45,21 @@ export function esUsuarioCamila(membresia, authUserEmail = "") {
 }
 
 /**
+ * Solo Camila Sepúlveda, sin aproximaciones: su correo, o nombre y apellido
+ * juntos. Lo usa lo que nadie mas puede hacer, como eliminar una
+ * certificacion. `esUsuarioCamila` es mas amplia a proposito (cualquier
+ * «Sepúlveda» o la cuenta del sistema) y aqui dejaria pasar al gerente.
+ */
+export function esCamilaSepulveda(membresia, authUserEmail = "") {
+  const emails = [membresia?.email, authUserEmail].map((e) => String(e || "").toLowerCase().trim());
+  const nombre = String(membresia?.nombre || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
+  return emails.includes(EMAIL_CAMILA) || (nombre.includes("camila") && nombre.includes("sepulveda"));
+}
+
+/**
  * Determina si un compromiso o registro de agenda es una Fecha Especial con estrellita
  */
 export function esCompromisoEspecial(item) {

@@ -5,6 +5,7 @@
 //   Con sesion del equipo:
 //     enviar        guarda el PDF, le saca la huella y manda el enlace al cliente
 //     anular        deja sin efecto un envio que no se ha firmado
+//     enlace        el enlace de un envio pendiente, para mandarlo por WhatsApp
 //
 //   Sin sesion (las usa la pagina publica que abre el cliente con su enlace):
 //     abrir         datos del documento y enlace temporal al PDF; registra la apertura
@@ -447,6 +448,19 @@ Deno.serve(conOrigenPermitido(async (req) => {
       if (errRegistro) console.warn("No se pudo registrar el correo:", errRegistro.message);
 
       return responder({ ok: true, id, enlace });
+    }
+
+    // El enlace de un envio pendiente, para mandarlo tambien por WhatsApp.
+    // Solo mientras no este firmado ni anulado: el codigo para firmar sigue
+    // llegando al correo, asi que tener el enlace no basta para firmar.
+    if (accion === "enlace") {
+      const id = linea(cuerpo.id, 40);
+      const { data: f } = await tabla().select("id, token, estado, vence_en").eq("id", id).eq("tenant_id", tenantId).maybeSingle();
+      if (!f) return error("No se encontró el envío.", 404);
+      if (f.estado === "firmado") return error("Ya está firmado.", 409);
+      if (f.estado === "anulado") return error("Este envío fue anulado.", 410);
+      if (new Date(f.vence_en) < ahora) return error("El enlace venció. Envíalo de nuevo.", 410);
+      return responder({ ok: true, enlace: `${direccionApp(cuerpo.appUrl)}/?firmar=${f.token}` });
     }
 
     if (accion === "anular") {

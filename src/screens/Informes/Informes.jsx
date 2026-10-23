@@ -28,7 +28,7 @@ import ModalCotizacionDetalle from "./ModalCotizacionDetalle";
 import { ModalEnviarFirma, PanelFirmaRecibido } from "./FirmaRecibidoInforme";
 import { useEnviosFirma } from "../../hooks/useEnviosFirma";
 import ModalQuienRecibe from "../../components/ModalQuienRecibe";
-import { clientesConQuienRecibe, correoValido, destinatarioDeInforme } from "../../lib/quienRecibe";
+import { celularDeInforme, clientesConQuienRecibe, correoValido, destinatarioDeInforme } from "../../lib/quienRecibe";
 import { normalizarCorreo } from "../../lib/normalizarEntrada";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { useAccionesPantalla, useTituloPantalla } from "../../context/accionesPantalla";
@@ -538,9 +538,10 @@ export default function Informes({ctx}){
       // A quien proponer el envio a firma de recibido: quien recibe en la
       // obra, si no el contacto de la cotizacion, si no el del directorio.
       ...(() => {
-        if (correoValido(inf.recibeEmail)) return { contactoEmail: normalizarCorreo(inf.recibeEmail), contacto: inf.recibeNombre || "" };
+        const contactoCelular = celularDeInforme({ obra: obra || { cliente: clienteFinal }, cotizacion: cotVinc, clientes });
+        if (correoValido(inf.recibeEmail)) return { contactoEmail: normalizarCorreo(inf.recibeEmail), contacto: inf.recibeNombre || "", contactoCelular };
         const d = destinatarioDeInforme({ obra: obra || { cliente: clienteFinal }, cotizacion: cotVinc, clientes });
-        return { contactoEmail: d.email, contacto: d.nombre };
+        return { contactoEmail: d.email, contacto: d.nombre, contactoCelular };
       })(),
     };
   };
@@ -1255,6 +1256,8 @@ export default function Informes({ctx}){
               </div>
             )}
             <PanelFirmaRecibido
+              celular={celularDeInforme({ obra: obraDeSel || { cliente }, cotizacion: cotVincSel, clientes })}
+              proyecto={proyecto}
               envios={enviosFirma}
               onRecargar={recargarEnviosFirma}
               onEnviar={() => setModalFirma(true)}
@@ -1589,6 +1592,7 @@ export default function Informes({ctx}){
             informe={listo}
             contactoEmail={listo.contactoEmail}
             contactoNombre={listo.contacto}
+            celular={listo.contactoCelular}
             empresaConfig={empresaConfig}
             firmaImg={firmaImg}
             onCerrar={() => setModalFirma(false)}

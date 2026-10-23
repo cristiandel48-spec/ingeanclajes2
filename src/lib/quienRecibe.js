@@ -64,6 +64,15 @@ export function clientesConQuienRecibe(clientes, obra, { nombre, email }) {
 }
 
 /**
+ * Celular para mandar la firma por WhatsApp: el de la obra, el de la
+ * cotizacion o el del directorio de clientes.
+ */
+export function celularDeInforme({ obra, cotizacion, clientes }) {
+  const i = obra ? buscarCliente(clientes, obra) : -1;
+  return String(obra?.tel || cotizacion?.telefono || (i >= 0 ? clientes[i].telefono : "") || "").trim();
+}
+
+/**
  * A quien proponer el envio a firma de un informe, en este orden: quien
  * recibe en la obra, el contacto de la cotizacion y el del directorio.
  */

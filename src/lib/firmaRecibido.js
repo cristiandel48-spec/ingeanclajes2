@@ -64,6 +64,28 @@ export async function enviarParaFirma({ tipo = "informe", documentoId, numero, t
   });
 }
 
+/** El enlace de un envio pendiente (para WhatsApp). Devuelve el texto. */
+export async function enlaceDeEnvioFirma(id) {
+  const tenantId = await getTenantIdActual();
+  const { enlace } = await invocar("enlace", { tenantId, id });
+  return enlace;
+}
+
+/** El mensaje de WhatsApp con el enlace de firma, listo para enviar. */
+export function mensajeWhatsAppFirma({ nombre = "", numero = "", proyecto = "", enlace }) {
+  const saludo = String(nombre || "").trim().split(/\s+/)[0];
+  return [
+    `${saludo ? `${saludo}, buen día.` : "Buen día."}`,
+    "",
+    `Le enviamos el informe de actividades ${numero}${proyecto ? ` de ${proyecto}` : ""}. Puede revisarlo y firmar el recibido aquí:`,
+    enlace,
+    "",
+    "Para firmar le llega un código a su correo. Cualquier duda, por aquí estamos.",
+    "",
+    "Ingeanclajes S.A.S.",
+  ].join("\n");
+}
+
 export async function anularEnvioFirma(id) {
   const tenantId = await getTenantIdActual();
   return invocar("anular", { tenantId, id });

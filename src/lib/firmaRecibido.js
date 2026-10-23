@@ -44,24 +44,21 @@ async function invocar(accion, datos = {}) {
   return data;
 }
 
-async function aBase64(blob) {
-  const bytes = new Uint8Array(await blob.arrayBuffer());
-  let binario = "";
-  for (let i = 0; i < bytes.length; i += 0x8000) {
-    binario += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  }
-  return btoa(binario);
-}
-
 // ── Equipo ───────────────────────────────────────────────────────────────────
 
 /** Envia el PDF al cliente con el enlace de firma. Devuelve { id, enlace }. */
+//
+// El PDF se sube directo al almacenamiento con un permiso de un solo uso que
+// da la funcion, y despues se le pide enviar. Antes viajaba dentro de la
+// peticion, y un informe con muchas fotos dejaba a la funcion sin memoria.
 export async function enviarParaFirma({ tipo = "informe", documentoId, numero, titulo, cliente, para, paraNombre, mensaje, pdfBlob, pdfNombre }) {
   const tenantId = await getTenantIdActual();
-  return invocar("enviar", {
-    tenantId, tipo, documentoId, numero, titulo, cliente, para, paraNombre, mensaje, pdfNombre,
-    pdfBase64: await aBase64(pdfBlob),
-  });
+  const { ruta, token } = await invocar("preparar-subida", { tenantId });
+  const { error } = await getSupabaseClient().storage
+    .from("firmas")
+    .uploadToSignedUrl(ruta, token, pdfBlob, { contentType: "application/pdf" });
+  if (error) throw new Error(`No se pudo subir el PDF: ${error.message}`);
+  return invocar("enviar", { tenantId, tipo, documentoId, numero, titulo, cliente, para, paraNombre, mensaje, pdfNombre, ruta });
 }
 
 /** El enlace de un envio pendiente (para WhatsApp). Devuelve el texto. */

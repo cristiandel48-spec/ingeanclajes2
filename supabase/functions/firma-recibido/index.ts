@@ -3,7 +3,8 @@
 // Acciones:
 //
 //   Con sesion del equipo:
-//     enviar        guarda el PDF, le saca la huella y manda el enlace al cliente
+//     preparar-subida  permiso para que el navegador suba el PDF directo
+//     enviar        revisa el PDF subido, le saca la huella y manda el enlace
 //     anular        deja sin efecto un envio que no se ha firmado
 //     enlace        el enlace de un envio pendiente, para mandarlo por WhatsApp
 //
@@ -385,6 +386,16 @@ Deno.serve(conOrigenPermitido(async (req) => {
     if (!propia?.activo) return error("Tu cuenta no tiene acceso activo en esta empresa.", 403);
     if (propia.role === "viewer") return error("Tu rol es de consulta: no puede enviar documentos al cliente.", 403);
 
+    // Permiso de un solo uso para que el navegador suba el PDF directo al
+    // almacenamiento, sin pasar por aqui. La carpeta es la de la empresa y el
+    // nombre lo pone la funcion.
+    if (accion === "preparar-subida") {
+      const ruta = `${tenantId}/${crypto.randomUUID()}.pdf`;
+      const { data: subida, error: errSubida } = await admin.storage.from("firmas").createSignedUploadUrl(ruta);
+      if (errSubida || !subida) return error(`No se pudo preparar la subida del PDF: ${errSubida?.message ?? ""}`, 500);
+      return responder({ ok: true, ruta, token: subida.token });
+    }
+
     if (accion === "enviar") {
       const tipo = ["informe", "cotizacion", "certificado"].includes(String(cuerpo.tipo)) ? String(cuerpo.tipo) : "informe";
       const documentoId = linea(cuerpo.documentoId, 80);
@@ -395,27 +406,30 @@ Deno.serve(conOrigenPermitido(async (req) => {
       const paraNombre = linea(cuerpo.paraNombre, 120);
       const mensaje = texto(cuerpo.mensaje, 3000);
       const pdfNombre = linea(cuerpo.pdfNombre, 140).replace(/[^\p{L}\p{N} _().-]/gu, "") || `${numero}.pdf`;
-      const pdfBase64 = String(cuerpo.pdfBase64 ?? "");
+      // El PDF ya lo subio el navegador con el permiso de «preparar-subida».
+      // Antes viajaba aqui dentro en base64, y con un informe lleno de fotos
+      // la funcion se quedaba sin memoria ni tiempo («not having enough
+      // compute resources») decodificandolo letra por letra.
+      const ruta = linea(cuerpo.ruta, 120);
+      const rutaValida = new RegExp(`^${tenantId}/([0-9a-f-]{36})\\.pdf$`).exec(ruta);
 
       if (!documentoId) return error("Falta el documento.");
       if (!correoValido(para)) return error("El correo del cliente no es válido.");
+      if (!rutaValida) return error("No llegó el PDF del informe. Intenta de nuevo.");
+      const id = rutaValida[1];
 
-      let bytes: Uint8Array;
-      try {
-        bytes = Uint8Array.from(atob(pdfBase64), (c) => c.charCodeAt(0));
-      } catch {
-        return error("El PDF no llegó completo.");
+      const { data: archivo, error: errBajar } = await admin.storage.from("firmas").download(ruta);
+      if (errBajar || !archivo) return error("No llegó el PDF del informe. Intenta de nuevo.");
+      const bytes = new Uint8Array(await archivo.arrayBuffer());
+      if (bytes.length > MAX_PDF_BYTES) {
+        await admin.storage.from("firmas").remove([ruta]);
+        return error("El PDF pesa más de 20 MB. Quita algunas fotos.");
       }
-      if (bytes.length > MAX_PDF_BYTES) return error("El PDF pesa más de 20 MB. Quita algunas fotos.");
-      if (new TextDecoder().decode(bytes.slice(0, 5)) !== "%PDF-") return error("El archivo no es un PDF válido.");
-
-      const id = crypto.randomUUID();
-      const ruta = `${tenantId}/${id}.pdf`;
+      if (new TextDecoder().decode(bytes.subarray(0, 5)) !== "%PDF-") {
+        await admin.storage.from("firmas").remove([ruta]);
+        return error("El archivo no es un PDF válido.");
+      }
       const huella = await sha256Hex(bytes);
-
-      const { error: errSubir } = await admin.storage.from("firmas")
-        .upload(ruta, bytes, { contentType: "application/pdf", upsert: false });
-      if (errSubir) return error(`No se pudo guardar el PDF: ${errSubir.message}`, 500);
 
       const { data: fila, error: errFila } = await tabla().insert({
         id,

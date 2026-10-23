@@ -25,6 +25,8 @@ import ListaInformes from "./ListaInformes";
 import TarjetaCotizacionRef from "./TarjetaCotizacionRef";
 import { obrasMasNuevasPrimero } from "../../lib/identificadores";
 import ModalCotizacionDetalle from "./ModalCotizacionDetalle";
+import { ModalEnviarFirma, PanelFirmaRecibido } from "./FirmaRecibidoInforme";
+import { useEnviosFirma } from "../../hooks/useEnviosFirma";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { useAccionesPantalla, useTituloPantalla } from "../../context/accionesPantalla";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
@@ -70,8 +72,10 @@ export default function Informes({ctx}){
   const firmaImg=getFirmaImg(empresaConfig);
   const [sel,setSel]=useState(null);
   const [generandoPdf,setGenerandoPdf]=useState(false);
+  const [modalFirma,setModalFirma]=useState(false);
   const [nuevo,setNuevo]=useState(()=>Boolean(ctx.intencion?.pantalla==="informes" && ctx.intencion?.obraId));
   const [editId,setEditId]=useState(null);
+  const { envios: enviosFirma, recargar: recargarEnviosFirma } = useEnviosFirma(sel && !nuevo && !editId ? sel.id : null);
   const [modalCotizacion,setModalCotizacion]=useState(false);
   const [cotizacionModalData,setCotizacionModalData]=useState(null);
   const fotoRefs=useRef({});
@@ -526,6 +530,9 @@ export default function Informes({ctx}){
       contratante: clienteFinal,
       cotizacionNumero: cotNumFinal,
       cotizacionRef: inf.cotizacionRef || cotNumFinal,
+      // Para proponer a quien enviar la firma de recibido.
+      contactoEmail: inf.contactoEmail || cotVinc?.contactoEmail || "",
+      contacto: inf.contacto || cotVinc?.contacto || "",
     };
   };
 
@@ -585,6 +592,9 @@ export default function Informes({ctx}){
         <Button variante="texto" tam="sm" onClick={() => accionesInformeRef.current.editar()}>Editar</Button>
         <Button variante="texto" tam="sm" onClick={() => accionesInformeRef.current.imprimir()} title="Abre la pestaña de impresión del navegador">
           Imprimir
+        </Button>
+        <Button variante="texto" tam="sm" onClick={() => setModalFirma(true)} title="Envía el informe al cliente para que firme el recibido">
+          Enviar para firma
         </Button>
         <Button
           variante="oscuro"
@@ -1149,6 +1159,11 @@ export default function Informes({ctx}){
                 />
               </div>
             )}
+            <PanelFirmaRecibido
+              envios={enviosFirma}
+              onRecargar={recargarEnviosFirma}
+              onEnviar={() => setModalFirma(true)}
+            />
             <div className="doc-paper-wrapper" style={{ maxWidth: 920, margin: "0 auto", width: "100%" }}>
               <div
                 id="pz"
@@ -1434,6 +1449,21 @@ export default function Informes({ctx}){
               </div>
             </div>
           </div>
+        );
+      })()}
+
+      {modalFirma && sel && (() => {
+        const listo = enriquecerInforme(sel);
+        return (
+          <ModalEnviarFirma
+            informe={listo}
+            contactoEmail={listo.contactoEmail}
+            contactoNombre={listo.contacto}
+            empresaConfig={empresaConfig}
+            firmaImg={firmaImg}
+            onCerrar={() => setModalFirma(false)}
+            onEnviado={recargarEnviosFirma}
+          />
         );
       })()}
 

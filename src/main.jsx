@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
 import SupabaseGate from "./SupabaseGate.jsx";
 import VerificacionPublica from "./screens/Certificaciones/VerificacionPublica.jsx";
+import FirmaRecibidoPublica from "./screens/Firma/FirmaRecibidoPublica.jsx";
+import VerificacionRecibido from "./screens/Firma/VerificacionRecibido.jsx";
 import DialogosGlobales from "./components/DialogosGlobales.jsx";
 import { confirmar } from "./lib/dialogos";
 import { FUENTE } from "./styles/designTokens";
@@ -73,11 +75,19 @@ document.head.appendChild(estiloFuente);
 
 const searchParams = new URLSearchParams(window.location.search);
 const esValidacionPublica = searchParams.has("validar") || searchParams.has("v");
+// Paginas publicas de la firma de recibido: la que abre el cliente desde el
+// correo y la que abre el QR de la constancia. Ninguna pide sesion.
+const esFirmaPublica = searchParams.has("firmar");
+const esVerificacionRecibido = searchParams.has("recibido");
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <AppErrorBoundary>
-      {esValidacionPublica ? (
+      {esFirmaPublica ? (
+        <FirmaRecibidoPublica />
+      ) : esVerificacionRecibido ? (
+        <VerificacionRecibido />
+      ) : esValidacionPublica ? (
         <VerificacionPublica />
       ) : (
         <SupabaseGate>

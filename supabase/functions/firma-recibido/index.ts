@@ -423,7 +423,7 @@ Deno.serve(conOrigenPermitido(async (req) => {
       const bytes = new Uint8Array(await archivo.arrayBuffer());
       if (bytes.length > MAX_PDF_BYTES) {
         await admin.storage.from("firmas").remove([ruta]);
-        return error("El PDF pesa más de 20 MB. Quita algunas fotos.");
+        return error(`El PDF pesa ${(bytes.length / 1024 / 1024).toFixed(1)} MB y el límite es 20 MB. Quita algunas fotos.`);
       }
       if (new TextDecoder().decode(bytes.subarray(0, 5)) !== "%PDF-") {
         await admin.storage.from("firmas").remove([ruta]);

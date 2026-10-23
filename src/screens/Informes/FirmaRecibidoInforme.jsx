@@ -160,7 +160,11 @@ export function ModalEnviarFirma({ informe, contactoEmail = "", contactoNombre =
     setFallo("");
     try {
       setEstado("Generando el PDF…");
-      const { blob, nombre } = await generarInformePdf(informe, { empresaConfig, firmaImg });
+      const { blob, nombre } = await generarInformePdf(informe, { empresaConfig, firmaImg, liviano: true });
+      // Se avisa aqui, antes de subir nada, si aun asi es demasiado grande.
+      if (blob.size > 20 * 1024 * 1024) {
+        throw new Error(`El PDF pesa ${(blob.size / 1024 / 1024).toFixed(1)} MB y el límite para enviar es 20 MB. Quita algunas fotos del informe.`);
+      }
       setEstado("Enviando al cliente…");
       const r = await enviarParaFirma({
         tipo: "informe",

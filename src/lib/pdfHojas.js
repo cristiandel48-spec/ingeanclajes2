@@ -98,7 +98,11 @@ export async function esperarRecursos(doc, ventana) {
  * - antesDeFotografiar(doc, ventana): para ajustar el documento ya dibujado
  *   (el informe reparte de nuevo sus hojas con medidas reales).
  */
-export async function pdfDeHojas(html, { onProgreso, antesDeFotografiar, mensajeError, mensajeVacio = "El documento salió vacío." } = {}) {
+//
+// - escala y calidad: por defecto 3 (288 ppp) y JPEG 0,95, para el PDF que se
+//   descarga. Para enviar a firma se usa una version liviana (2 y 0,82, unos
+//   190 ppp): con un informe lleno de fotos la de 288 ppp pasaba de 20 MB.
+export async function pdfDeHojas(html, { onProgreso, antesDeFotografiar, mensajeError, mensajeVacio = "El documento salió vacío.", escala = 3, calidad = 0.95 } = {}) {
   const { html2canvas, jsPDF } = await cargarLibreriasPdf();
   const avance = avanceDePdf(onProgreso);
   let marco = null;
@@ -125,7 +129,7 @@ export async function pdfDeHojas(html, { onProgreso, antesDeFotografiar, mensaje
         // PDF es el que se le manda al cliente y sigue siendo una foto de la
         // hoja: lo unico que se puede hacer por el es que sea una foto buena.
         // A 2,4 eran 230 ppp y el texto se veia blando al ampliarlo.
-        scale: 3,
+        scale: escala,
         useCORS: true,
         backgroundColor: "#ffffff",
         logging: false,
@@ -134,7 +138,7 @@ export async function pdfDeHojas(html, { onProgreso, antesDeFotografiar, mensaje
       });
 
       // JPEG de alta calidad: mantiene planos nitidos y sin halos de compresion.
-      const imagen = lienzo.toDataURL("image/jpeg", 0.95);
+      const imagen = lienzo.toDataURL("image/jpeg", calidad);
       if (i > 0) pdf.addPage([ANCHO_HOJA, ALTO_HOJA], "portrait");
       pdf.addImage(imagen, "JPEG", 0, 0, ANCHO_HOJA, ALTO_HOJA, undefined, "MEDIUM");
     }

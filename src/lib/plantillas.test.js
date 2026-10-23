@@ -104,6 +104,17 @@ describe("cotizacion en «Ninguno»", () => {
   });
 });
 
+describe("cotizacion camionera", () => {
+  it("el tipo «Línea de vida camionera» no lleva los componentes de la horizontal", () => {
+    const html = buildCotizacionPrintHtml(
+      { ...COTIZACIONES["ninguno-camionera"], tipoCotizacion: "linea_vida_camionera" },
+      { firmaImg: FOTO },
+    );
+    expect(html).not.toContain("Componentes del sistema");
+    expect(html).not.toContain("Tensor de línea");
+  });
+});
+
 const INFORMES = {
   "informe-con-fotos": {
     id: "INF-001",

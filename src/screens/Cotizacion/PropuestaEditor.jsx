@@ -14,8 +14,19 @@ import { measurementsToQuoteItems } from "../../lib/maps";
 import { fmt } from "../../lib/format";
 import { DEFAULT_COT_INCLUYE } from "../../data/seed";
 import { FOTO_PUNTO_ANCLAJE_DEFAULT } from "../../assets/embeddedImages";
-import { TIPO_MANUAL, isFotoPuntoAnclajeDefault, getTipoCotizacionLabel, tipoCotizacionCanonico } from "../../lib/cotizaciones";
+import { TIPO_MANUAL, TIPO_CAMIONERA, fotosParaTipo, isFotoPuntoAnclajeDefault, getTipoCotizacionLabel, tipoCotizacionCanonico } from "../../lib/cotizaciones";
 import { confirmar } from "../../lib/dialogos";
+
+// Indice de la categoria del catalogo que corresponde al tipo. La camionera
+// solo usa una categoria propia (que tenga «camioner» en el nombre); si no la
+// hay devuelve -1, porque la busqueda normal la mandaria a «Lineas de Vida» y
+// le mostraria los componentes de la linea horizontal de cubierta.
+function indiceCategoriaDeTipo(catalogo, tipo) {
+  if (tipoCotizacionCanonico(tipo) === TIPO_CAMIONERA) {
+    return (catalogo || []).findIndex((cat) => tipoCotizacionCanonico(cat?.categoria) === TIPO_CAMIONERA);
+  }
+  return buscarIndiceCategoriaCatalogo(catalogo, tipo);
+}
 
 // Editor de UNA propuesta. Todas las propuestas se muestran abiertas, una
 // debajo de otra, igual que salen en el documento.
@@ -35,11 +46,15 @@ export default function PropuestaEditor({
   setCl,
 }) {
   const p = propuesta;
-  const [showDB, setShowDB] = useState(() => (Array.isArray(propuesta?.items) ? propuesta.items.length === 0 : true));
+  const [showDB, setShowDB] = useState(() => {
+    // La camionera sin categoria propia arranca con el catalogo cerrado.
+    if (tipoCotizacionCanonico(propuesta?.tipoCotizacion) === TIPO_CAMIONERA) return false;
+    return Array.isArray(propuesta?.items) ? propuesta.items.length === 0 : true;
+  });
   // El catalogo sale de la base; si todavia no hay nada guardado, del codigo.
   const { catalogoItems } = useAppData();
   const catalogo = useMemo(() => agruparCatalogo(catalogoItems), [catalogoItems]);
-  const [dbCat, setDbCat] = useState(() => buscarIndiceCategoriaCatalogo(catalogo, p?.tipoCotizacion));
+  const [dbCat, setDbCat] = useState(() => Math.max(0, indiceCategoriaDeTipo(catalogo, p?.tipoCotizacion)));
   // Si se borro una categoria entera, el indice guardado puede quedar fuera.
   const categoria = catalogo[dbCat] || catalogo[0] || { items: [] };
   const fotosRef = useRef();
@@ -52,7 +67,13 @@ export default function PropuestaEditor({
   const tipoCotizacionAnteriorRef = useRef(p?.tipoCotizacion);
   useEffect(() => {
     if (catalogo.length && p?.tipoCotizacion && tipoCotizacionCanonico(p.tipoCotizacion) !== TIPO_MANUAL) {
-      const idx = buscarIndiceCategoriaCatalogo(catalogo, p.tipoCotizacion);
+      const idx = indiceCategoriaDeTipo(catalogo, p.tipoCotizacion);
+      // La camionera sin categoria propia no abre el catalogo: si lo hiciera
+      // saldria la categoria de la linea de vida horizontal.
+      if (idx < 0) {
+        tipoCotizacionAnteriorRef.current = p.tipoCotizacion;
+        return;
+      }
       setDbCat(idx);
       if (tipoCotizacionAnteriorRef.current !== p.tipoCotizacion) {
         setShowDB(true);
@@ -112,7 +133,17 @@ export default function PropuestaEditor({
       }
     });
 
-    // 3. «Ninguno»: para lo que no es de ningun sistema del catalogo -una
+    // 3. «Línea de vida camionera»: su propio sistema. No toma la categoria
+    // «Lineas de Vida» del catalogo -la de cubierta-, asi que no le salen por
+    // defecto los componentes de la linea horizontal (postes, tensores,
+    // soportes); los items se agregan a mano o desde el catalogo.
+    // Si el catalogo ya tiene una categoria camionera, se usa esa (paso 1).
+    if (!vistos.has(TIPO_CAMIONERA)) {
+      vistos.add(TIPO_CAMIONERA);
+      list.push({ id: TIPO_CAMIONERA, label: "Línea de vida camionera", catIndex: -1, rawCategoria: "" });
+    }
+
+    // 4. «Ninguno»: para lo que no es de ningun sistema del catalogo -una
     // linea de vida camionera, un trabajo especial-. La propuesta no lleva
     // textos, definiciones ni fichas de ningun tipo: solo lo que se escriba.
     list.push({ id: TIPO_MANUAL, label: "Ninguno (manual)", catIndex: -1, rawCategoria: "" });
@@ -141,42 +172,25 @@ export default function PropuestaEditor({
     // Pulsar otra vez el que ya esta marcado lo desmarca: queda en «Ninguno».
     const desmarcar = !desdeCatalogo && tipo.id !== TIPO_MANUAL && esTipoActivo(tipo);
     if (tipo.id === TIPO_MANUAL || desmarcar) {
-      const fotosSinDefault = (Array.isArray(p.fotos) ? p.fotos : []).filter((f) => !isFotoPuntoAnclajeDefault(f));
-      onChange({ tipoCotizacion: TIPO_MANUAL, fotos: fotosSinDefault });
+      onChange({ tipoCotizacion: TIPO_MANUAL, fotos: fotosParaTipo(p.fotos, TIPO_MANUAL) });
       return;
     }
     const idx = tipo.catIndex >= 0 && tipo.catIndex < catalogo.length
       ? tipo.catIndex
-      : buscarIndiceCategoriaCatalogo(catalogo, tipo.rawCategoria || tipo.label || tipo.id);
+      : indiceCategoriaDeTipo(catalogo, tipo.rawCategoria || tipo.id || tipo.label);
     if (idx >= 0 && idx < catalogo.length) {
       setDbCat(idx);
-    }
-    setShowDB(true);
-
-    const fotosActuales = Array.isArray(p.fotos) ? p.fotos : [];
-    const esAnclaje = tipoCotizacionCanonico(tipo.id) === "puntos_anclaje";
-
-    if (esAnclaje) {
-      const tieneFoto = fotosActuales.some(isFotoPuntoAnclajeDefault);
-      const fotosSinDefault = fotosActuales.filter((f) => !isFotoPuntoAnclajeDefault(f));
-      onChange({
-        tipoCotizacion: tipo.id,
-        fotos: tieneFoto ? fotosActuales : [
-          {
-            id: "foto-def-punto-anclaje",
-            src: FOTO_PUNTO_ANCLAJE_DEFAULT,
-            label: "Punto de anclaje certificado",
-          },
-          ...fotosSinDefault,
-        ],
-      });
+      setShowDB(true);
+    } else if (tipoCotizacionCanonico(tipo.id) === TIPO_CAMIONERA) {
+      // Sin categoria propia: catalogo cerrado, sin componentes por defecto.
+      setShowDB(false);
     } else {
-      const fotosSinAnclaje = fotosActuales.filter((f) => !isFotoPuntoAnclajeDefault(f));
-      onChange({
-        tipoCotizacion: tipo.id,
-        fotos: fotosSinAnclaje,
-      });
+      setShowDB(true);
     }
+
+    // La foto automatica del tipo (punto de anclaje, linea camionera) entra
+    // sola, y sale la del tipo anterior.
+    onChange({ tipoCotizacion: tipo.id, fotos: fotosParaTipo(p.fotos, tipo.id) });
   };
 
   const set = (campo, valor) => onChange({ [campo]: valor });
@@ -191,22 +205,9 @@ export default function PropuestaEditor({
 
   useEffect(() => {
     const listaFotos = Array.isArray(p.fotos) ? p.fotos : [];
-    if (tipoCanon === "puntos_anclaje") {
-      if (!listaFotos.some(isFotoPuntoAnclajeDefault)) {
-        set("fotos", [
-          {
-            id: "foto-def-punto-anclaje",
-            src: FOTO_PUNTO_ANCLAJE_DEFAULT,
-            label: "Punto de anclaje certificado",
-          },
-          ...listaFotos,
-        ]);
-      }
-    } else {
-      if (listaFotos.some(isFotoPuntoAnclajeDefault)) {
-        set("fotos", listaFotos.filter((f) => !isFotoPuntoAnclajeDefault(f)));
-      }
-    }
+    const siguientes = fotosParaTipo(listaFotos, p.tipoCotizacion);
+    const cambio = siguientes.length !== listaFotos.length || siguientes.some((f, i) => f !== listaFotos[i]);
+    if (cambio) set("fotos", siguientes);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.tipoCotizacion]);
 
@@ -409,14 +410,7 @@ export default function PropuestaEditor({
                   type="button"
                   title="Adjuntar la foto oficial de punto de anclaje certificado a esta propuesta"
                   onClick={() => {
-                    setFotos(prev => [
-                      {
-                        id: "foto-def-punto-anclaje",
-                        src: FOTO_PUNTO_ANCLAJE_DEFAULT,
-                        label: "Punto de anclaje certificado",
-                      },
-                      ...(Array.isArray(prev) ? prev.filter(f => !isFotoPuntoAnclajeDefault(f)) : []),
-                    ]);
+                    setFotos(prev => fotosParaTipo(prev, "puntos_anclaje"));
                   }}
                   style={{
                     background: "#FFFAEB",
@@ -956,8 +950,8 @@ export default function PropuestaEditor({
                             tipoCotizacionCanonico(t.id) === tipoCotizacionCanonico(cat.categoria)
                         );
                         // Mirar otra categoria del catalogo para sacar un item no
-                        // cambia el tipo si la propuesta esta en «Ninguno».
-                        if (tipoCoincidente && tipoCanon !== TIPO_MANUAL) {
+                        // cambia el tipo si la propuesta esta en «Ninguno» o es camionera.
+                        if (tipoCoincidente && tipoCanon !== TIPO_MANUAL && tipoCanon !== TIPO_CAMIONERA) {
                           seleccionarTipoTrabajo(tipoCoincidente, { desdeCatalogo: true });
                         }
                       }}

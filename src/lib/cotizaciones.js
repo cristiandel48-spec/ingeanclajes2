@@ -3,6 +3,7 @@ import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_TIEMPO_EJEC, DEFAULT_COT_INCLUYE } 
 import { measurementsToQuoteItems, buildMeasurementNarrative } from "./maps";
 import { corregirOrtografiaLocal } from "./correctorTexto";
 import { FOTO_PUNTO_ANCLAJE_DEFAULT } from "../assets/embeddedImages";
+import { FOTO_LINEA_CAMIONERA_DEFAULT } from "../assets/fotoLineaCamionera";
 
 // La foto por defecto del punto de anclaje, tal como es: la foto de
 // producto, sobre su fondo negro de estudio.
@@ -21,6 +22,37 @@ export function isFotoPuntoAnclajeDefault(foto) {
     foto.src === FOTO_PUNTO_ANCLAJE_DEFAULT ||
     foto.label === "Punto de anclaje certificado"
   );
+}
+
+// La foto que una propuesta lleva sola segun su tipo: la del punto de
+// anclaje y la ilustracion de la linea de vida camionera. Al cambiar de tipo
+// se quita la del anterior y se pone la del nuevo; las fotos propias no se
+// tocan.
+export const TIPO_CAMIONERA = "linea_vida_camionera";
+
+const FOTOS_POR_TIPO = {
+  puntos_anclaje: { id: "foto-def-punto-anclaje", src: FOTO_PUNTO_ANCLAJE_DEFAULT, label: "Punto de anclaje certificado" },
+  [TIPO_CAMIONERA]: { id: "foto-def-linea-camionera", src: FOTO_LINEA_CAMIONERA_DEFAULT, label: "Línea de vida camionera (ilustración)" },
+};
+
+export function fotoDefaultDeTipo(tipo) {
+  const foto = FOTOS_POR_TIPO[tipoCotizacionCanonico(tipo)];
+  return foto ? { ...foto } : null;
+}
+
+export function isFotoDefaultDeTipo(foto) {
+  if (!foto) return false;
+  return Object.values(FOTOS_POR_TIPO).some((d) => foto.id === d.id || foto.src === d.src || foto.label === d.label);
+}
+
+/** Las fotos de la propuesta con la automatica del tipo, y sin la de otro. */
+export function fotosParaTipo(fotos, tipo) {
+  const lista = Array.isArray(fotos) ? fotos : [];
+  const def = fotoDefaultDeTipo(tipo);
+  const propias = lista.filter((f) => !isFotoDefaultDeTipo(f));
+  if (!def) return propias;
+  const yaEsta = lista.find((f) => f?.id === def.id || f?.src === def.src);
+  return [yaEsta || def, ...propias];
 }
 
 export function hasAnchorPointsService(propuesta = {}) {
@@ -120,6 +152,9 @@ export function tipoCotizacionCanonico(tipo) {
   // «Ninguno»: la propuesta no lleva textos, definiciones ni fichas de
   // ningun sistema; solo lo que se escriba a mano.
   if (t === "manual" || t === "ninguno") return TIPO_MANUAL;
+  // La camionera (aerea, sobre vehiculos) es su propio sistema: lleva su
+  // ilustracion y su definicion, no las de la linea de vida de cubierta.
+  if (t.includes("camioner")) return TIPO_CAMIONERA;
   if (t.includes("anclaje")) return "puntos_anclaje";
   // Solo la linea de vida de siempre. Antes bastaba con que dijera «linea» o
   // «vida», asi que «Línea de vida camionera» -que no tiene nada que ver- se
@@ -138,6 +173,7 @@ export function tipoCotizacionCanonico(tipo) {
 const ETIQUETAS_TIPO = {
   manual: "Ninguno (manual)",
   linea_vida: "Línea de vida",
+  linea_vida_camionera: "Línea de vida camionera",
   puntos_anclaje: "Puntos de anclaje",
   obra_blanca: "Obra blanca",
   estructuras_metalicas: "Estructuras metálicas",
@@ -168,14 +204,7 @@ export function buildQuoteProposal(propuesta = {}, index = 0) {
   const totalCalculado = Math.round(subtotal + utilidadValor + ivaValor);
 
   const tipoCotizacion = propuesta.tipoCotizacion || "linea_vida";
-  let fotos = Array.isArray(propuesta.fotos) ? propuesta.fotos : [];
-  if (tipoCotizacionCanonico(tipoCotizacion) === "puntos_anclaje") {
-    if (!fotos.some(isFotoPuntoAnclajeDefault)) {
-      fotos = [fotoPuntoAnclajeDefault(), ...fotos];
-    }
-  } else {
-    fotos = fotos.filter((f) => !isFotoPuntoAnclajeDefault(f));
-  }
+  const fotos = fotosParaTipo(propuesta.fotos, tipoCotizacion);
 
   const base = {
     id: propuesta.id || createQuoteProposalId(index + 1),
@@ -430,31 +459,25 @@ export function getQuoteProposalPhotos(baseQuote = {}, propuesta = {}, activePro
     propuesta?.quote?.tipoCotizacion || propuesta?.tipoCotizacion || baseQuote?.tipoCotizacion
   );
 
-  let ownPhotos = Array.isArray(propuesta?.fotos)
-    ? propuesta.fotos.filter((foto)=>foto?.src)
-    : [];
+  // La foto automatica de otro tipo no se imprime; la del tipo de esta
+  // propuesta si.
+  const def = fotoDefaultDeTipo(tipo);
+  const sinAjenas = (lista) => lista.filter((f) => !isFotoDefaultDeTipo(f) || (def && (f.id === def.id || f.src === def.src)));
 
-  if (tipo !== "puntos_anclaje") {
-    ownPhotos = ownPhotos.filter((f) => !isFotoPuntoAnclajeDefault(f));
-  }
+  const ownPhotos = sinAjenas(Array.isArray(propuesta?.fotos)
+    ? propuesta.fotos.filter((foto)=>foto?.src)
+    : []);
 
   if(ownPhotos.length) return ownPhotos;
 
   if(propuesta?.id && propuesta.id === activeProposalId){
-    let basePhotos = Array.isArray(baseQuote?.fotosCotizacion)
+    const basePhotos = sinAjenas(Array.isArray(baseQuote?.fotosCotizacion)
       ? baseQuote.fotosCotizacion.filter((foto)=>foto?.src)
-      : [];
-    if (tipo !== "puntos_anclaje") {
-      basePhotos = basePhotos.filter((f) => !isFotoPuntoAnclajeDefault(f));
-    }
+      : []);
     if(basePhotos.length) return basePhotos;
   }
 
-  if(tipo === "puntos_anclaje"){
-    return [fotoPuntoAnclajeDefault()];
-  }
-
-  return [];
+  return def ? [def] : [];
 }
 
 export function getQuotePrintableProposals(baseQuote = {}){

@@ -133,7 +133,8 @@ describe("tipoCotizacionCanonico", () => {
   it("una linea de vida distinta no se vuelve la linea de vida normal", () => {
     expect(tipoCotizacionCanonico("Lineas de Vida")).toBe("linea_vida");
     expect(tipoCotizacionCanonico("linea_vida")).toBe("linea_vida");
-    expect(tipoCotizacionCanonico("Línea de vida camionera")).toBe("lineadevidacamionera");
+    expect(tipoCotizacionCanonico("Línea de vida camionera")).toBe("linea_vida_camionera");
+    expect(tipoCotizacionCanonico("linea_vida_camionera")).toBe("linea_vida_camionera");
     expect(tipoCotizacionCanonico("manual")).toBe("manual");
   });
 });

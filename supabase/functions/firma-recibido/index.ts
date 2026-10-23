@@ -182,6 +182,18 @@ const boton = (href: string, rotulo: string) =>
 
 // ── Servidor ─────────────────────────────────────────────────────────────────
 
+// La cuenta tecnica de desarrollo no aparece como autora: lo que hace queda a
+// nombre de la responsable de operaciones, igual que en el resto del sistema
+// (src/lib/autorAuditoria.js). Asi tambien el aviso de «el cliente firmo» le
+// llega a ella. El id real de quien envio se guarda aparte (enviado_por).
+const CUENTAS_TECNICAS = String(Deno.env.get("CUENTAS_TECNICAS") ?? "cristiandel48@gmail.com")
+  .split(",").map((c) => c.trim().toLowerCase()).filter(Boolean);
+const CORREO_RESPONSABLE = String(Deno.env.get("CORREO_RESPONSABLE") ?? "camilascadavid@gmail.com").trim().toLowerCase();
+const autorVisible = (email?: string | null) => {
+  const correo = String(email ?? "").trim().toLowerCase();
+  if (!correo) return null;
+  return CUENTAS_TECNICAS.includes(correo) ? CORREO_RESPONSABLE : correo;
+};
 const ACCIONES_PUBLICAS = ["abrir", "pedir-codigo", "firmar"];
 
 Deno.serve(conOrigenPermitido(async (req) => {
@@ -442,12 +454,12 @@ Deno.serve(conOrigenPermitido(async (req) => {
         para_email: para,
         para_nombre: paraNombre || null,
         enviado_por: quien.id,
-        enviado_por_email: quien.email ?? null,
+        enviado_por_email: autorVisible(quien.email),
         pdf_ruta: ruta,
         pdf_sha256: huella,
         pdf_bytes: bytes.length,
         pdf_nombre: pdfNombre.endsWith(".pdf") ? pdfNombre : `${pdfNombre}.pdf`,
-        eventos: [evento("enviado", { por: quien.email ?? null, a: para })],
+        eventos: [evento("enviado", { por: autorVisible(quien.email), a: para })],
       }).select("id, token, codigo_verificacion").single();
       if (errFila) {
         await admin.storage.from("firmas").remove([ruta]);
@@ -475,7 +487,7 @@ Deno.serve(conOrigenPermitido(async (req) => {
       }
 
       const { error: errRegistro } = await admin.schema("app").from("correos_enviados").insert({
-        tenant_id: tenantId, user_id: quien.id, email_autor: quien.email ?? null,
+        tenant_id: tenantId, user_id: quien.id, email_autor: autorVisible(quien.email),
         para, asunto: `${titulo} ${numero} - firma de recibido`, tipo: "firma-recibido", adjunto: null,
       });
       if (errRegistro) console.warn("No se pudo registrar el correo:", errRegistro.message);
@@ -504,8 +516,8 @@ Deno.serve(conOrigenPermitido(async (req) => {
       const { error: errAnular } = await tabla().update({
         estado: "anulado",
         anulado_en: ahora.toISOString(),
-        anulado_por_email: quien.email ?? null,
-        eventos: [...(f.eventos ?? []), evento("anulado", { por: quien.email ?? null })],
+        anulado_por_email: autorVisible(quien.email),
+        eventos: [...(f.eventos ?? []), evento("anulado", { por: autorVisible(quien.email) })],
       }).eq("id", id);
       if (errAnular) return error(errAnular.message, 500);
       return responder({ ok: true });

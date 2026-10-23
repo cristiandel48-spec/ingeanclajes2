@@ -7,6 +7,7 @@ import {
 import { armarPdfConConstancia, descargarBlob, fechaHoraCo, nombreConConstancia } from "../../lib/constanciaRecibido";
 import { confirmar } from "../../lib/dialogos";
 import { normalizarCelular } from "../../lib/whatsapp";
+import { normalizarNombrePersona } from "../../lib/autorAuditoria";
 
 // Firma de recibido del informe: enviar al cliente y ver en que va.
 //
@@ -94,7 +95,9 @@ export function PanelFirmaRecibido({ envios, onRecargar, onEnviar, celular = "",
                 </div>
                 <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4, lineHeight: 1.6 }}>
                   Enviado a <strong style={{ color: "var(--text-secondary)" }}>{e.paraEmail}</strong> el {fechaCorta(e.enviadoEn)}
-                  {e.enviadoPor ? ` por ${e.enviadoPor}` : ""}
+                  {/* Con el nombre, no el correo; la cuenta tecnica sale como
+                      Camila Sepúlveda, igual que en el resto del historial. */}
+                  {e.enviadoPor ? ` por ${normalizarNombrePersona(e.enviadoPor)}` : ""}
                   {e.abiertoEn && <> · abierto el {fechaCorta(e.abiertoEn)}{e.vecesAbierto > 1 ? ` (${e.vecesAbierto} veces)` : ""}</>}
                   {e.firmadoEn && <> · <strong style={{ color: "var(--text-secondary)" }}>firmó {e.firmanteNombre}</strong>{e.firmanteCargo ? `, ${e.firmanteCargo}` : ""}, el {fechaHoraCo(e.firmadoEn)}</>}
                 </div>

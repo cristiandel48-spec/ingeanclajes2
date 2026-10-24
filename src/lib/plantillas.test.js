@@ -166,6 +166,19 @@ describe("fichas del punto de anclaje", () => {
     expect(html).not.toContain(GALV);
     expect(html).not.toContain(INOX);
   });
+
+  it("una propuesta con puntos de anclaje y linea de vida horizontal muestra ambas fichas", () => {
+    const html = imprimir({
+      ...COTIZACIONES["puntos-de-anclaje-sin-aiu"],
+      items: [
+        { id: 1, desc: "INSTALACIÓN PUNTO DE IANCLAJE ARTICO SAFE WORK ACERO INOXIDABLE", cant: 10, unit: "UND", vu: 340000 },
+        { id: 2, desc: "REMPLAZO DE ARGOLLAS EXISTENTES POR PUNTO DE ANCLAJE ARTICO SAFE WORK", cant: 50, unit: "UND", vu: 290000 },
+        { id: 3, desc: "DISEÑO INSTALACIÓN Y CERTIFICACIÓN DE LÍNEA DE VIDA HORIZONTAL FIJA EN ACERO INOXIDABLE", cant: 50, unit: "ML", vu: 360000 },
+      ],
+    });
+    expect(html).toContain(INOX);
+    expect(html).toContain("Componentes del sistema en acero inoxidable");
+  });
 });
 
 const INFORMES = {

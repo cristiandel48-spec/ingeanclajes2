@@ -25,9 +25,9 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
   const propuestasConSistema = propuestas.filter((propuesta) => tipoDe(propuesta) !== TIPO_MANUAL);
   const todasManuales = propuestas.length > 0 && propuestasConSistema.length === 0;
   // Las fichas de la linea de vida horizontal, solo de propuestas que lo son.
-  const TIPOS_CON_LINEA_HORIZONTAL = ["linea_vida", "sistemas_completos"];
-  const propuestasLineaVida = propuestas.filter((propuesta) => TIPOS_CON_LINEA_HORIZONTAL.includes(tipoDe(propuesta)));
-  const primeraEsLineaVida = TIPOS_CON_LINEA_HORIZONTAL.includes(tipoDe(propuestas[0]));
+
+  const propuestasLineaVida = propuestasConSistema.filter((propuesta) => tipoDe(propuesta) !== TIPO_CAMIONERA);
+  const primeraEsLineaVida = propuestas.length > 0 && ![TIPO_MANUAL, TIPO_CAMIONERA].includes(tipoDe(propuestas[0]));
   // Detección de láminas para escalera:
   // 1) Escalera fija con línea de vida vertical (cable, absorbedor, tensor)
   // 2) Escalera tipo gato sola (sin línea de vida, sin canastilla)

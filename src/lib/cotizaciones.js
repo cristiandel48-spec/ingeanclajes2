@@ -93,6 +93,7 @@ export function hasAnchorPointsService(propuesta = {}) {
 
 const FRASES_PUNTO_ANCLAJE = [
   "punto de anclaje",
+  "punto de ianclaje",
   "puntos de anclaje",
   "anclaje importado",
   "anclaje nacional",

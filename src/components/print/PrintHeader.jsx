@@ -33,8 +33,8 @@ export default function PrintHeader({ dual, formato, empresaConfig, numeroDocume
           al otro lado. */}
       <img src={LOGO_INGEANCLAJES} alt="Ingeanclajes" style={{height:52,objectFit:"contain",alignSelf:"center"}}/>
       <div style={{textAlign:"center",flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-        <div style={{fontSize:10,letterSpacing:3,color:"#333",textTransform:"uppercase",fontWeight:700}}>Especialistas en Anclajes</div>
-        {dual&&<img src={LOGO_CCS} alt="CCS" style={{height:34,objectFit:"contain",marginTop:3}}/>}
+        {!dual && <div style={{fontSize:10,letterSpacing:3,color:"#333",textTransform:"uppercase",fontWeight:700}}>Especialistas en Anclajes</div>}
+        {dual&&<img src={LOGO_CCS} alt="CCS" style={{height:54,objectFit:"contain"}}/>}
       </div>
       <div style={{textAlign:"right",fontSize:9,color:"#555",lineHeight:1.5,display:"flex",flexDirection:"column",justifyContent:"center"}}>
         <div>Calle 38 sur # 36 - 48, Envigado</div>

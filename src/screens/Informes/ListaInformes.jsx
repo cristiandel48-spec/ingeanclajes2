@@ -409,7 +409,9 @@ export default function ListaInformes({ informes = [], acciones = {}, estadosFir
             style={{
               ...CABECERA_FIJA,
               display: "grid",
-              gridTemplateColumns: "100px 2.2fr 1.4fr 110px 100px 90px 130px",
+              gridTemplateColumns: "96px minmax(160px, 2.2fr) minmax(130px, 1.4fr) 95px 80px 80px 160px",
+              columnGap: 10,
+              alignItems: "center",
               padding: "10px 16px",
               background: "var(--surface-subtle, #f5f5f7)",
               borderBottom: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
@@ -781,7 +783,8 @@ function FilaTablaInforme({ informe: inf, acciones, estadoFirma, zebra }) {
       onClick={() => acciones.ver?.(inf)}
       style={{
         display: "grid",
-        gridTemplateColumns: "100px 2.2fr 1.4fr 110px 100px 90px 130px",
+        gridTemplateColumns: "96px minmax(160px, 2.2fr) minmax(130px, 1.4fr) 95px 80px 80px 160px",
+        columnGap: 10,
         padding: "10px 16px",
         alignItems: "center",
         background: zebra ? "var(--surface-subtle, #fafbfd)" : "var(--surface, #ffffff)",
@@ -799,7 +802,7 @@ function FilaTablaInforme({ informe: inf, acciones, estadoFirma, zebra }) {
           : "var(--surface, #ffffff)";
       }}
     >
-      <div>
+      <div style={{ minWidth: 0 }}>
         <span
           style={{
             fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
@@ -819,7 +822,7 @@ function FilaTablaInforme({ informe: inf, acciones, estadoFirma, zebra }) {
         )}
       </div>
 
-      <div style={{ minWidth: 0, paddingRight: 8 }}>
+      <div style={{ minWidth: 0 }}>
         <div style={{ fontWeight: 600, color: "var(--text-main, #101828)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {proyecto}
         </div>
@@ -829,7 +832,7 @@ function FilaTablaInforme({ informe: inf, acciones, estadoFirma, zebra }) {
       </div>
 
       <div style={{ minWidth: 0, color: "var(--text-muted, #475467)", fontSize: 11.5 }}>
-        <div>📍 {localizacion || "—"}</div>
+        <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📍 {localizacion || "—"}</div>
         <div style={{ fontVariantNumeric: "tabular-nums", fontSize: 11, color: "var(--text-subtle, #86868b)" }}>{inf.obraId || "—"}</div>
       </div>
 
@@ -861,7 +864,7 @@ function FilaTablaInforme({ informe: inf, acciones, estadoFirma, zebra }) {
         </span>
       </div>
 
-      <div style={{ display: "flex", gap: 5, justifyContent: "flex-end" }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ minWidth: 0, display: "flex", gap: 5, justifyContent: "flex-end", flexWrap: "nowrap" }} onClick={(e) => e.stopPropagation()}>
         <button
           type="button"
           onClick={() => acciones.ver?.(inf)}

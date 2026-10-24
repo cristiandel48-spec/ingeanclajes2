@@ -4,6 +4,9 @@ import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { useIsMobile } from "../../hooks/useMediaQuery";
 import { BarraFija, CABECERA_FIJA } from "../../components/ui";
 
+const COLUMNAS_TABLA =
+  "96px minmax(160px, 2fr) 128px 152px minmax(180px, 2.2fr) 224px";
+
 const ORDENES = [
   {
     key: "recientes",
@@ -296,7 +299,7 @@ export default function ListaCertificaciones({ certs = [], acciones = {} }) {
               placeholder="Buscar por número, cliente, obra o sistema..."
               style={{
                 width: "100%",
-                padding: "8px 28px 8px 32px",
+                padding: !busqueda && !isMobile ? "8px 54px 8px 32px" : "8px 28px 8px 32px",
                 fontSize: 12.5,
                 borderRadius: 10,
                 border: "1px solid var(--border, rgba(0, 0, 0, 0.12))",
@@ -485,13 +488,15 @@ export default function ListaCertificaciones({ certs = [], acciones = {} }) {
             boxShadow: "0 2px 8px -2px rgba(0, 0, 0, 0.02)",
           }}
         >
-          <div style={{ minWidth: 880 }}>
+          <div style={{ minWidth: 920 }}>
             {/* Cabecera de la tabla */}
             <div
               style={{
                 ...CABECERA_FIJA,
                 display: "grid",
-                gridTemplateColumns: "105px minmax(200px, 2.2fr) 130px 160px minmax(180px, 2fr) 120px",
+                gridTemplateColumns: COLUMNAS_TABLA,
+                columnGap: 12,
+                alignItems: "center",
                 padding: "10px 16px",
                 background: "var(--surface-subtle, #f5f5f7)",
                 borderBottom: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
@@ -888,7 +893,8 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
       onMouseLeave={() => setHover(false)}
       style={{
         display: "grid",
-        gridTemplateColumns: "105px minmax(200px, 2.2fr) 130px 160px minmax(180px, 2fr) 120px",
+        gridTemplateColumns: COLUMNAS_TABLA,
+        columnGap: 12,
         alignItems: "center",
         padding: "11px 16px",
         background: hover
@@ -903,7 +909,7 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
       }}
     >
       {/* Documento */}
-      <div>
+      <div style={{ minWidth: 0 }}>
         <span
           style={{
             fontVariantNumeric: "tabular-nums",
@@ -914,6 +920,7 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
             padding: "2px 6px",
             borderRadius: 6,
             border: "1px solid var(--border, rgba(0, 0, 0, 0.08))",
+            whiteSpace: "nowrap",
           }}
         >
           {c.numero || c.id}
@@ -921,7 +928,7 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
       </div>
 
       {/* Cliente & Obra */}
-      <div style={{ minWidth: 0, paddingRight: 12 }}>
+      <div style={{ minWidth: 0 }}>
         <div
           style={{
             fontWeight: 600,
@@ -949,7 +956,7 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
       </div>
 
       {/* Tipo */}
-      <div>
+      <div style={{ minWidth: 0 }}>
         <span
           style={{
             fontSize: 10.5,
@@ -971,7 +978,7 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
       </div>
 
       {/* Vigencia & Próx. Mantenimiento */}
-      <div style={{ minWidth: 0, paddingRight: 8 }}>
+      <div style={{ minWidth: 0 }}>
         {semaforo ? (
           <div>
             <span
@@ -1027,7 +1034,6 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
-          paddingRight: 10,
         }}
         title={c.sistema}
       >
@@ -1035,7 +1041,16 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
       </div>
 
       {/* Acciones */}
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 6, alignItems: "center" }}>
+      <div
+        style={{
+          minWidth: 0,
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: 6,
+          alignItems: "center",
+          flexWrap: "nowrap",
+        }}
+      >
         <button
           type="button"
           onClick={alPulsar(acciones.ver)}
@@ -1048,6 +1063,8 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
             fontSize: 11,
             fontWeight: 600,
             cursor: "pointer",
+            flexShrink: 0,
+            whiteSpace: "nowrap",
           }}
         >
           Ver
@@ -1058,7 +1075,7 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
             onClick={alPulsar(acciones.descargarPdf || acciones.imprimir)}
             title="Descargar PDF oficial"
             style={{
-              background: "transparent",
+              background: "var(--surface, #ffffff)",
               color: "#16a34a",
               border: "1px solid rgba(22, 163, 74, 0.3)",
               borderRadius: 8,
@@ -1069,6 +1086,8 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
               display: "inline-flex",
               alignItems: "center",
               gap: 3,
+              flexShrink: 0,
+              whiteSpace: "nowrap",
             }}
           >
             PDF
@@ -1079,7 +1098,7 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
             type="button"
             onClick={alPulsar(acciones.editar)}
             style={{
-              background: "transparent",
+              background: "var(--surface, #ffffff)",
               color: "var(--text-muted, #475467)",
               border: "1px solid var(--border, rgba(0,0,0,0.12))",
               borderRadius: 8,
@@ -1087,6 +1106,8 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
               fontSize: 11,
               fontWeight: 600,
               cursor: "pointer",
+              flexShrink: 0,
+              whiteSpace: "nowrap",
             }}
           >
             Editar
@@ -1098,7 +1119,7 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
             onClick={alPulsar(acciones.eliminar)}
             title="Eliminar la certificación"
             style={{
-              background: "transparent",
+              background: "var(--surface, #ffffff)",
               color: "var(--danger, #b3261e)",
               border: "1px solid var(--border, rgba(0,0,0,0.12))",
               borderRadius: 8,
@@ -1106,6 +1127,8 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
               fontSize: 11,
               fontWeight: 600,
               cursor: "pointer",
+              flexShrink: 0,
+              whiteSpace: "nowrap",
             }}
           >
             Eliminar

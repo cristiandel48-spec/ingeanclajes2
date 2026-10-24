@@ -46,10 +46,16 @@ function prepararHtmlParaPdf(html) {
  * Devuelve { blob, nombre } con el PDF de la cotización.
  * onProgreso recibe (hojaActual, hojasTotales) para poder mostrar avance:
  * en una cotización con fotos esto tarda varios segundos.
+ *
+ * `liviano`: version para adjuntar al correo, a unos 190 ppp (escala 2,
+ * JPEG 0,82). Pesa la tercera parte y se lee igual. Con la de 288 ppp, una
+ * cotizacion con fotos y fichas tecnicas dejaba a la funcion de correo sin
+ * memoria («not having enough compute resources», WORKER_RESOURCE_LIMIT).
+ * La que se descarga sigue en alta calidad.
  */
-export async function generarCotizacionPdf(cotizacion, { firmaImg = "", sello = null, onProgreso } = {}) {
+export async function generarCotizacionPdf(cotizacion, { firmaImg = "", sello = null, onProgreso, liviano = false } = {}) {
   const html = prepararHtmlParaPdf(buildCotizacionPrintHtml(cotizacion, { firmaImg, sello }));
-  const blob = await pdfDeHojas(html, { onProgreso });
+  const blob = await pdfDeHojas(html, { onProgreso, ...(liviano ? { escala: 2, calidad: 0.82 } : {}) });
   return { blob, nombre: nombreDeCotizacion(cotizacion) };
 }
 

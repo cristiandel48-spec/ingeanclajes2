@@ -151,8 +151,16 @@ export default function EnviarCotizacion({ cotizacion, firmaImg = "", onCerrar, 
       setEstado("Preparando el documento…");
       const { blob, nombre } = await generarCotizacionPdf(cotizacion, {
         firmaImg,
+        // La version liviana: la de alta calidad no cabia en la funcion de
+        // correo cuando la cotizacion trae fotos y fichas tecnicas.
+        liviano: true,
         onProgreso: (hoja, total) => setEstado(`Generando el PDF · hoja ${hoja} de ${total}`),
       });
+      // Se avisa antes de mandar nada si aun asi es demasiado pesado.
+      const megas = blob.size / 1024 / 1024;
+      if (megas > 12) {
+        throw new Error(`El PDF pesa ${megas.toFixed(1)} MB y es demasiado para enviarlo por correo. Quita algunas fotos de la cotización o descárgalo y envíalo aparte.`);
+      }
 
       setEstado("Enviando el correo…");
       await enviarCotizacionPorCorreo({

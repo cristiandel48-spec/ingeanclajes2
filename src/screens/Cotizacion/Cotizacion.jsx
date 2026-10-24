@@ -775,7 +775,8 @@ export default function Cotizacion({ctx}){
     (async ()=>{
       let adjunto = {nombreArchivo:"", pdfBase64:""};
       try{
-        const {blob, nombre} = await generarCotizacionPdf(cotizacion,{firmaImg,sello:selloCotizacion});
+        // Liviana: va adjunta al correo de aprobacion.
+        const {blob, nombre} = await generarCotizacionPdf(cotizacion,{firmaImg,sello:selloCotizacion,liviano:true});
         adjunto = {nombreArchivo:nombre, pdfBase64:await blobABase64(blob)};
       }catch(e){
         console.error("No se pudo generar el PDF para adjuntarlo a la aprobacion:",e);

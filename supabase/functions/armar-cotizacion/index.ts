@@ -85,7 +85,7 @@ function construirInstruccion(catalogo: string) {
 // visitara. La llamada igual exige sesion; esto cierra la puerta a otros
 // sitios. Se puede ampliar con ORIGENES_PERMITIDOS (separados por coma).
 const ORIGENES = (Deno.env.get("ORIGENES_PERMITIDOS") ??
-  "https://ingeanclajes2.vercel.app,http://localhost:5173,http://127.0.0.1:5173")
+  "https://ingeanclajes.pages.dev,https://ingeanclajes2.vercel.app,http://localhost:5173,http://127.0.0.1:5173")
   .split(",").map((o) => o.trim()).filter(Boolean);
 
 function conOrigenPermitido(manejar: (req: Request) => Response | Promise<Response>) {

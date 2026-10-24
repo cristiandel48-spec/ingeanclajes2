@@ -1,11 +1,11 @@
-﻿# Ingeanclajes · Sistema de gestión
+# Ingeanclajes · Sistema de gestión
 
 Aplicación web de gestión comercial, técnica y operativa de Ingeanclajes S.A.S.:
 cotizaciones, obras, informes de actividades, certificaciones, personal y nómina,
 pagos y contabilidad.
 
-- **Producción:** https://ingeanclajes2.vercel.app
-- **Frontend:** React 19 + Vite, publicado en Vercel.
+- **Producción:** https://ingeanclajes.pages.dev
+- **Frontend:** React 19 + Vite, publicado en Cloudflare Pages.
 - **Backend:** Supabase (Postgres con RLS, Auth, Storage y funciones de borde).
 
 La arquitectura, el modelo de datos y cómo se publica cada parte están en
@@ -32,17 +32,18 @@ desde `localhost` queda en los datos reales.
 | `npm test` | Pruebas automáticas (Vitest), en `src/**/*.test.js`. |
 | `npm run lint` | ESLint. Los errores frenan la publicación; los avisos no. |
 | `npm run build` | Lint, pruebas y compilación, en ese orden. Si algo falla, se detiene. |
+| `npm run preview:cf` | Compila y levanta el entorno local de Cloudflare Pages (`wrangler pages dev`). |
+| `npm run deploy` | Compila (lint + pruebas + Vite) y publica en Cloudflare Pages (`ingeanclajes.pages.dev`). |
 
 ## Publicar
 
-- **App:** cada push a `main` lo publica Vercel solo. Vercel ejecuta `npm run build`,
-  así que una prueba o un error de lint que falle impide publicar la versión.
+- **App (Cloudflare Pages):** desde terminal con `npm run deploy`, o conectando el repositorio en Cloudflare Pages (comando de compilación `npm run build` y carpeta `dist`). Si falla una prueba o un error de lint, `npm run build` detiene la publicación.
 - **Migraciones de la base:** se aplican a mano en el SQL Editor de Supabase, en orden
   (ver [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md#migraciones)).
 - **Funciones de borde:**
 
   ```bash
-  npx supabase functions deploy gestionar-usuarios armar-cotizacion corregir-texto
+  npx supabase functions deploy gestionar-usuarios armar-cotizacion corregir-texto firma-recibido
   ```
 
 ## Variables de entorno de la app

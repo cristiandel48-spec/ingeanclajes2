@@ -7,6 +7,7 @@
 
 import { getSupabaseClient, isSupabaseConfigured } from "./backend/supabaseClient";
 import { getTenantIdActual } from "./backend/usuarios";
+import { obtenerOrigenPublico } from "./origenPublico";
 
 const FUNCION = import.meta.env.VITE_SUPABASE_FUNCION_FIRMA || "firma-recibido";
 
@@ -211,8 +212,6 @@ export const ESTADO_FIRMA = {
 };
 
 export function enlaceVerificacionFirma(codigo) {
-  const origen = typeof window !== "undefined" && !/localhost|127\.0\.0\.1/.test(window.location.origin)
-    ? window.location.origin
-    : "https://ingeanclajes2.vercel.app";
+  const origen = obtenerOrigenPublico();
   return `${origen}/?recibido=${codigo}`;
 }

@@ -8,8 +8,7 @@
 // se buscan en la base exigiendo que coincidan los dos.
 
 import { getSupabaseClient, isSupabaseConfigured } from "./backend/supabaseClient";
-
-const BASE_PUBLICA = "https://ingeanclajes2.vercel.app";
+import { obtenerOrigenPublico } from "./origenPublico";
 
 // 32 caracteres hexadecimales: 128 bits, imposible de adivinar.
 export function nuevoCodigoVerificacion() {
@@ -25,10 +24,7 @@ export function nuevoCodigoVerificacion() {
 // migracion), se cae al formato viejo con folio y cliente, que la pagina
 // tambien comprueba contra la base.
 export function enlaceVerificacion(cert) {
-  const origen =
-    typeof window !== "undefined" && window.location?.origin && !window.location.origin.includes("localhost")
-      ? window.location.origin
-      : BASE_PUBLICA;
+  const origen = obtenerOrigenPublico();
   const params = new URLSearchParams();
   if (cert?.codigoVerificacion) {
     params.set("v", "2");

@@ -42,7 +42,7 @@ function archivosPdfJs() {
 export default defineConfig({
   plugins: [react(), archivosPdfJs()],
   // Pruebas automaticas (npm test). Corren tambien antes de cada build: si
-  // una falla, Vercel no publica la version.
+  // una falla, no se publica la version en Cloudflare.
   test: {
     include: ['src/**/*.test.{js,jsx}'],
     environment: 'node',

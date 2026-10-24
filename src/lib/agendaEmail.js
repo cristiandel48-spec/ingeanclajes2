@@ -2,6 +2,7 @@
 import { enviarCotizacionPorCorreo } from "./backend/usuarios";
 import { asuntoSeguro } from "./asuntoCorreo";
 import { compromisoAParams, generarIcsCompromiso, parsearHora } from "./icsCompromiso";
+import { obtenerOrigenPublico } from "./origenPublico";
 import { today } from "./format";
 
 export { generarIcsCompromiso, parsearHora };
@@ -141,15 +142,12 @@ export function generarUrlGoogleCalendar(compromiso, emailInvitado = EMAIL_CAMIL
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
-// Enlace para Apple Calendar (iPhone y Mac): lo atiende api/ics.js y
-// devuelve el compromiso como archivo de calendario. Tocarlo abre «Agregar al
+// Enlace para Apple Calendar (iPhone y Mac): lo atiende /api/ics en Cloudflare
+// y devuelve el compromiso como archivo de calendario. Tocarlo abre «Agregar al
 // calendario» en la app Calendario, sin cuenta de Google.
 export function generarUrlAppleCalendar(compromiso) {
   if (!compromiso?.fecha) return "";
-  const origen =
-    typeof window !== "undefined" && window.location?.origin && !window.location.origin.includes("localhost")
-      ? window.location.origin
-      : "https://ingeanclajes2.vercel.app";
+  const origen = obtenerOrigenPublico();
   return `${origen}/api/ics?${compromisoAParams(compromiso).toString()}`;
 }
 

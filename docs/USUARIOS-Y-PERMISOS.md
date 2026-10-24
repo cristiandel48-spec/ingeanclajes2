@@ -46,7 +46,7 @@ No hay que configurar variables: Supabase le entrega las llaves sola.
 > terminar en `/gestionar-usuarios`. Si terminó en otra cosa, tienes dos
 > salidas: borrar la función y volver a crearla con el nombre correcto, o dejar
 > la que hay y decirle a la aplicación cómo se llama, añadiendo esta variable de
-> entorno (en `.env` y en Vercel):
+> entorno (en `.env` y en Cloudflare):
 >
 > ```
 > VITE_SUPABASE_FUNCION_USUARIOS=el-nombre-que-quedo

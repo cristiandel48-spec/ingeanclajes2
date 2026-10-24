@@ -6,7 +6,7 @@ explicado en los comentarios del código, que dicen el porqué de cada decisión
 ## Piezas
 
 ```
-Navegador (React + Vite, en Vercel)
+Navegador (React + Vite, en Cloudflare)
   │  supabase-js con la sesión del usuario
   ▼
 Supabase
@@ -15,8 +15,8 @@ Supabase
   ├─ Storage: bucket privado `fotos` (fotos de informes, obras y cotizaciones)
   └─ Funciones de borde (Deno): usuarios y correo, IA de cotizaciones y textos
 
-Vercel
-  └─ api/ics.js: archivo de calendario (.ics) para Apple Calendar
+Cloudflare Pages + Pages Functions
+  └─ functions/api/ics.js (/api/ics): archivo de calendario (.ics) para Apple Calendar
 ```
 
 ## Carpetas
@@ -81,7 +81,7 @@ Vercel
 
 ## Pruebas y publicación
 
-- `npm run build` ejecuta el lint, las pruebas y la compilación. Vercel usa ese
+- `npm run build` ejecuta el lint, las pruebas y la compilación. Cloudflare (o `npm run deploy`) usa ese
   comando, así que nada que falle llega a producción.
 - Las pruebas cubren la lógica de negocio (cotizaciones, nómina, permisos,
   consecutivos) y el guardado contra una base simulada. No cubren las pantallas

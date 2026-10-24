@@ -54,3 +54,7 @@ supabase/.temp/
 
 # Copias locales que deja scripts/migrar-fotos-storage.mjs
 respaldo-fotos/
+
+# Cache y variables locales de Cloudflare Wrangler
+.wrangler/
+.dev.vars

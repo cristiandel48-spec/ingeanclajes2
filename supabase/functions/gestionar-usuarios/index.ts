@@ -482,6 +482,70 @@ function htmlAgenda(numero: string, d: DetalleAgenda) {
   return marcoCorreo(numero, cuerpo, 26);
 }
 
+type DetalleAviso = {
+  saludo?: string;
+  titulo?: string;
+  intro?: string;
+  botonTexto?: string;
+  botonUrl?: string;
+  resaltado?: string;
+  bloques?: Array<{ titulo?: string; texto?: string }>;
+  cierre?: string;
+};
+
+function htmlAviso(numero: string, d: DetalleAviso, appUrl: string) {
+  const destino = direccionSegura(d.botonUrl) || appUrl;
+  const bloques = (d.bloques ?? []).filter((b) => b && (b.titulo || b.texto));
+
+  const filasBloques = bloques.map((b, idx) => (
+    '<div style="' + (idx > 0 ? "margin-top:14px;padding-top:14px;border-top:1px solid #e2e8f0;" : "") + '">'
+    + (b.titulo
+      ? '<div style="font-size:11.5px;color:#667085;text-transform:uppercase;letter-spacing:.06em;font-weight:700">'
+        + escapeHtml(String(b.titulo)) + '</div>'
+      : "")
+    + (b.texto
+      ? '<div style="margin-top:4px;font-size:14px;line-height:1.6;color:' + TINTA + '">'
+        + escapeHtml(String(b.texto)) + '</div>'
+      : "")
+    + '</div>'
+  )).join("");
+
+  const cuerpo = '<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1E1E1E;line-height:1.6">'
+    + '<p style="margin:0 0 12px">' + escapeHtml(String(d.saludo || "Hola").trim()) + ',</p>'
+    + (d.titulo
+      ? '<div style="font-size:20px;line-height:1.35;font-weight:700;color:' + TINTA + ';margin:0 0 12px">'
+        + escapeHtml(String(d.titulo)) + '</div>'
+      : "")
+    + (d.intro
+      ? '<p style="margin:0 0 18px;font-size:14.5px;line-height:1.6;color:' + TINTA + '">'
+        + escapeHtml(String(d.intro)) + '</p>'
+      : "")
+    + (destino
+      ? '<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 14px"><tr>'
+        + '<td style="background:#E0342A;border-radius:9px">'
+        + '<a href="' + escapeHtml(destino) + '" style="display:inline-block;padding:13px 26px;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px">'
+        + escapeHtml(String(d.botonTexto || "Entrar al sistema")) + '</a>'
+        + '</td></tr></table>'
+        + '<p style="margin:0 0 18px;font-size:12.5px;color:#667085">O copia esta dirección en el navegador:<br>'
+        + '<strong style="color:#1E1E1E">' + escapeHtml(destino) + '</strong></p>'
+      : "")
+    + (d.resaltado
+      ? '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 18px;background:#F6FFED;border:1px solid #CFE8BE;border-radius:8px">'
+        + '<tr><td style="padding:12px 14px;font-size:14px;line-height:1.6;color:#3F6212">'
+        + escapeHtml(String(d.resaltado)) + '</td></tr></table>'
+      : "")
+    + (filasBloques
+      ? '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 18px;border:1px solid #e2e8f0;border-radius:8px">'
+        + '<tr><td style="padding:14px 18px">' + filasBloques + '</td></tr></table>'
+      : "")
+    + (d.cierre
+      ? '<p style="margin:0;font-size:14px;line-height:1.6;color:#667085">' + escapeHtml(String(d.cierre)) + '</p>'
+      : "")
+    + '</div>';
+
+  return marcoCorreo(numero || "AVISO", cuerpo, 24).replace(/\s*\n\s*/g, " ").trim();
+}
+
 // El marco comun de todos los correos: fondo gris, tarjeta blanca, cabecera
 // negra con el nombre de la empresa y pie con los datos. Lo que cambia de un
 // correo a otro es lo que va dentro.
@@ -528,7 +592,7 @@ function error(mensaje: string, status = 400) {
 // visitara. La llamada igual exige sesion; esto cierra la puerta a otros
 // sitios. Se puede ampliar con ORIGENES_PERMITIDOS (separados por coma).
 const ORIGENES = (Deno.env.get("ORIGENES_PERMITIDOS") ??
-  "https://ingeanclajes2.vercel.app,http://localhost:5173,http://127.0.0.1:5173")
+  "https://ingeanclajes.pages.dev,https://ingeanclajes2.vercel.app,http://localhost:5173,http://127.0.0.1:5173")
   .split(",").map((o) => o.trim()).filter(Boolean);
 
 function conOrigenPermitido(manejar: (req: Request) => Response | Promise<Response>) {
@@ -679,8 +743,11 @@ Deno.serve(conOrigenPermitido(async (req) => {
       const agenda = agendaCruda
         ? { ...agendaCruda, enlaceCalendar: enlaceCalendarioSeguro(agendaCruda.enlaceCalendar, appUrl) }
         : null;
+      const aviso = (cuerpo.aviso ?? null) as DetalleAviso | null;
       const html = agenda
         ? htmlAgenda(numero, agenda)
+        : aviso
+        ? htmlAviso(numero, aviso, appUrl)
         : htmlCotizacion(numero, mensaje, detalle);
 
       // La invitacion de la agenda viaja como .ics: con text/calendar Gmail y

@@ -87,7 +87,7 @@ export const POLITICA_DATOS = [
   {
     titulo: "4. Dónde se guardan",
     parrafos: [
-      "Los datos se guardan en servicios de proveedores tecnológicos que actúan como encargados del tratamiento: almacenamiento en la nube (Supabase), alojamiento de la aplicación (Vercel) y envío de correos (Google). Algunos de estos servidores están fuera de Colombia, por lo que puede haber transferencia internacional de datos a países con medidas de protección adecuadas.",
+      "Los datos se guardan en servicios de proveedores tecnológicos que actúan como encargados del tratamiento: almacenamiento en la nube (Supabase), alojamiento de la aplicación (Cloudflare) y envío de correos (Google). Algunos de estos servidores están fuera de Colombia, por lo que puede haber transferencia internacional de datos a países con medidas de protección adecuadas.",
     ],
   },
   {

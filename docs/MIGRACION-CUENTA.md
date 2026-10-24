@@ -14,7 +14,7 @@ y en este orden, que está pensado para que nunca te quedes sin acceso.
 |---|---|---|
 | Datos (obras, cotizaciones, nómina) | Se conservan | Hay que exportarlos e importarlos |
 | Usuarios y contraseñas | Se conservan | **No se pueden migrar**: toca recrearlos y todos cambian su contraseña |
-| URL y llave del proyecto | No cambian | Cambian: hay que actualizar `.env` y Vercel |
+| URL y llave del proyecto | No cambian | Cambian: hay que actualizar `.env` y Cloudflare |
 | Tiempo | ~10 minutos | Varias horas, con riesgo de perder datos |
 
 Salvo que tengas una razón fuerte, usa la primera. La sección final cubre la
@@ -93,15 +93,15 @@ más adelante, con calma.
 
 ---
 
-## 4. Vercel (si la app está publicada)
+## 4. Cloudflare (si la app está publicada)
 
-1. Invita el correo nuevo al proyecto en Vercel.
-2. Revisa **Settings → Environment Variables**. Deben estar las tres:
+1. Invita el correo nuevo a la cuenta en Cloudflare (**Manage Account → Members**).
+2. En **Workers & Pages → ingeanclajes → Settings → Environment variables**, revisa que estén las variables de compilación si usas despliegue automático desde GitHub:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
    - `VITE_SUPABASE_TENANT_SLUG` = `ingeanclajes`
 
-Esas variables viven en Vercel, no en el repositorio: si faltan, la app
+Esas variables viven en Cloudflare (o en tu `.env` local al ejecutar `npm run deploy`), no en el repositorio: si faltan, la app
 publicada muestra "Falta configurar el servidor".
 
 ---
@@ -111,7 +111,7 @@ publicada muestra "Falta configurar el servidor".
 1. Invitar el correo nuevo como Owner en Supabase
 2. Crear el usuario de la app + ejecutar `NUEVO_USUARIO.sql`
 3. **Cerrar sesión y entrar con el correo nuevo** ← punto de control
-4. GitHub y Vercel
+4. GitHub y Cloudflare
 5. Solo entonces, quitar el correo personal
 
 ---
@@ -148,7 +148,7 @@ select id from app.tenants where slug = 'ingeanclajes';
 ```
 
 5. Actualizar `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` en `.env` y en
-   Vercel con los del proyecto nuevo (Settings → API).
+   Cloudflare con los del proyecto nuevo (Settings → API).
 6. Los usuarios de Authentication **no se pueden exportar con sus
    contraseñas**: hay que crearlos de nuevo y que cada persona defina una.
 

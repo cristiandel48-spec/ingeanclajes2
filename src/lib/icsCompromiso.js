@@ -2,10 +2,10 @@
 //
 // Es el formato que entienden todos los calendarios: Apple Calendar (iPhone y
 // Mac), Google Calendar y Outlook. Lo usan el correo (adjunto) y la funcion
-// del servidor api/ics.js, que lo entrega por un enlace: en el iPhone, tocar
-// ese enlace abre «Agregar al calendario» sin pasar por Google.
+// de Cloudflare Pages (/api/ics), que lo entrega por un enlace: en el iPhone,
+// tocar ese enlace abre «Agregar al calendario» sin pasar por Google.
 //
-// Sin dependencias del navegador: lo importa tambien la funcion de Vercel.
+// Sin dependencias del navegador: lo importa tambien Cloudflare Pages.
 
 // Convierte hora legible (ej. "08:30 AM", "14:00", "2:00 PM") a objeto con hora y minuto
 export function parsearHora(horaStr) {

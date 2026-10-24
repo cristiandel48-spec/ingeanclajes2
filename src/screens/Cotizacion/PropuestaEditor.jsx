@@ -13,7 +13,7 @@ import { useAppData } from "../../context/AppDataContext";
 import { measurementsToQuoteItems } from "../../lib/maps";
 import { fmt } from "../../lib/format";
 import { DEFAULT_COT_INCLUYE } from "../../data/seed";
-import { TIPO_MANUAL, TIPO_CAMIONERA, fotosParaTipo, isFotoPuntoAnclajeDefault, getTipoCotizacionLabel, tipoCotizacionCanonico } from "../../lib/cotizaciones";
+import { TIPO_MANUAL, TIPO_CAMIONERA, fotoDefaultDeTipo, fotosParaTipo, isFotoPuntoAnclajeDefault, getTipoCotizacionLabel, tipoCotizacionCanonico } from "../../lib/cotizaciones";
 import { confirmar } from "../../lib/dialogos";
 
 // Indice de la categoria del catalogo que corresponde al tipo, o -1 si no
@@ -402,7 +402,7 @@ export default function PropuestaEditor({
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,gap:8,flexWrap:"wrap"}}>
             <span style={{fontSize:12,fontWeight:600,color:"var(--text-main, #1a1a2e)"}}>Fotos de la propuesta</span>
             <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-              {tipoCanon === "puntos_anclaje" && !fotos.some(isFotoPuntoAnclajeDefault) && (
+              {fotoDefaultDeTipo("puntos_anclaje") && tipoCanon === "puntos_anclaje" && !fotos.some(isFotoPuntoAnclajeDefault) && (
                 <button
                   type="button"
                   title="Adjuntar la foto oficial de punto de anclaje certificado a esta propuesta"

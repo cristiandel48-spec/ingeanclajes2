@@ -29,7 +29,7 @@ export function isFotoPuntoAnclajeDefault(foto) {
 export const TIPO_CAMIONERA = "linea_vida_camionera";
 
 const FOTOS_POR_TIPO = {
-  puntos_anclaje: { id: "foto-def-punto-anclaje", src: FOTO_PUNTO_ANCLAJE_DEFAULT, label: "Punto de anclaje certificado" },
+
 };
 
 // La ilustracion de la linea camionera iba como foto de la propuesta, al
@@ -38,6 +38,7 @@ const FOTOS_POR_TIPO = {
 // pierden sola: se reconoce por su id y su rotulo.
 const FOTOS_RETIRADAS = [
   { id: "foto-def-linea-camionera", label: "Línea de vida camionera (ilustración)" },
+  { id: "foto-def-punto-anclaje", src: FOTO_PUNTO_ANCLAJE_DEFAULT, label: "Punto de anclaje certificado" },
 ];
 
 export function fotoDefaultDeTipo(tipo) {
@@ -48,7 +49,7 @@ export function fotoDefaultDeTipo(tipo) {
 export function isFotoDefaultDeTipo(foto) {
   if (!foto) return false;
   return Object.values(FOTOS_POR_TIPO).some((d) => foto.id === d.id || foto.src === d.src || foto.label === d.label)
-    || FOTOS_RETIRADAS.some((d) => foto.id === d.id || foto.label === d.label);
+    || FOTOS_RETIRADAS.some((d) => foto.id === d.id || (d.src && foto.src === d.src) || foto.label === d.label);
 }
 
 /** Las fotos de la propuesta con la automatica del tipo, y sin la de otro. */
@@ -88,6 +89,63 @@ export function hasAnchorPointsService(propuesta = {}) {
     text.includes("anclaje químico") ||
     text.includes("anclaje soldado")
   );
+}
+
+const FRASES_PUNTO_ANCLAJE = [
+  "punto de anclaje",
+  "puntos de anclaje",
+  "anclaje importado",
+  "anclaje nacional",
+  "anclaje epoxico",
+  "anclaje epóxico",
+  "anclaje químico",
+  "anclaje quimico",
+  "anclaje soldado",
+  "anclaje artico",
+  "anclaje ártico",
+];
+
+export function esTextoPuntoAnclaje(texto) {
+  const t = String(texto || "").toLowerCase();
+  return FRASES_PUNTO_ANCLAJE.some((frase) => t.includes(frase));
+}
+
+const textoDeItem = (item) => [item?.desc, item?.descripcion, item?.nombre]
+  .filter(Boolean)
+  .join(" ");
+
+export const MATERIAL_GALVANIZADO = "galvanizado";
+export const MATERIAL_INOXIDABLE = "inoxidable";
+
+export function materialAceroDeTexto(texto) {
+  const t = String(texto || "").toLowerCase();
+  if (/inoxidable|\binox\b/.test(t)) return MATERIAL_INOXIDABLE;
+  if (/galvanizad|\bgalv\b/.test(t)) return MATERIAL_GALVANIZADO;
+  return "";
+}
+
+export function materialesPuntoAnclaje(c = {}) {
+  const items = Array.isArray(c?.items) ? c.items : [];
+  const itemsAnclaje = items.filter((it) => esTextoPuntoAnclaje(textoDeItem(it)));
+  const esTipoAnclaje = tipoCotizacionCanonico(c?.tipoCotizacion) === "puntos_anclaje";
+
+  if (!itemsAnclaje.length && !esTipoAnclaje) return [];
+
+  const materiales = [];
+  const agregar = (mat) => {
+    if (mat && !materiales.includes(mat)) materiales.push(mat);
+  };
+
+  itemsAnclaje.forEach((it) => agregar(materialAceroDeTexto(textoDeItem(it))));
+
+  if (!materiales.length) {
+    agregar(materialAceroDeTexto([
+      c?.nombre, c?.titulo, c?.alcance, c?.propuestaAlcance, c?.requerimientoCliente,
+    ].filter(Boolean).join(" ")));
+  }
+
+  if (!materiales.length) materiales.push(MATERIAL_GALVANIZADO);
+  return materiales;
 }
 
 // El texto de "esta cotizacion incluye" acompaña ahora a TODAS las propuestas,

@@ -125,6 +125,49 @@ describe("cotizacion camionera", () => {
   });
 });
 
+describe("fichas del punto de anclaje", () => {
+  const GALV = "Punto de anclaje certificado en acero galvanizado";
+  const INOX = "Punto de anclaje certificado en acero inoxidable";
+  const imprimir = (cotizacion) => buildCotizacionPrintHtml(cotizacion, { firmaImg: FOTO });
+
+  it("sin material escrito va la de galvanizado, que es lo corriente", () => {
+    const html = imprimir(COTIZACIONES["puntos-de-anclaje-sin-aiu"]);
+    expect(html).toContain(GALV);
+    expect(html).not.toContain(INOX);
+    expect(html).not.toContain("foto-def-punto-anclaje");
+    expect(html.indexOf(GALV)).toBeGreaterThan(html.indexOf("Total propuesta"));
+  });
+
+  it("los dos materiales cotizados llevan las dos fichas, en el orden de los items", () => {
+    const html = imprimir({
+      ...COTIZACIONES["puntos-de-anclaje-sin-aiu"],
+      items: [
+        { id: 1, desc: "PUNTO DE ANCLAJE EPÓXICO EN ACERO GALVANIZADO", cant: 8, unit: "UND", vu: 180000 },
+        { id: 2, desc: "PUNTO DE ANCLAJE EPÓXICO EN ACERO INOXIDABLE", cant: 4, unit: "UND", vu: 240000 },
+      ],
+    });
+    expect(html).toContain(GALV);
+    expect(html).toContain(INOX);
+    expect(html.indexOf(GALV)).toBeLessThan(html.indexOf(INOX));
+    expect(html.indexOf(GALV)).toBeGreaterThan(html.indexOf("Total propuesta"));
+  });
+
+  it("solo inoxidable cuando solo se cotiza ese", () => {
+    const html = imprimir({
+      ...COTIZACIONES["puntos-de-anclaje-sin-aiu"],
+      items: [{ id: 1, desc: "PUNTO DE ANCLAJE EN ACERO INOXIDABLE", cant: 4, unit: "UND", vu: 240000 }],
+    });
+    expect(html).toContain(INOX);
+    expect(html).not.toContain(GALV);
+  });
+
+  it("una cotizacion de linea de vida no lleva ficha de punto de anclaje", () => {
+    const html = imprimir(COTIZACIONES["linea-vida-horizontal"]);
+    expect(html).not.toContain(GALV);
+    expect(html).not.toContain(INOX);
+  });
+});
+
 const INFORMES = {
   "informe-con-fotos": {
     id: "INF-001",

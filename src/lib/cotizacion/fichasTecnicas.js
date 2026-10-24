@@ -17,6 +17,7 @@ import urlTensor from "../../assets/componentes/tensor.jpg";
 import urlEmpalmes from "../../assets/componentes/empalmes-guardacables.jpg";
 import urlCable from "../../assets/componentes/cable-acero.jpg";
 import urlLineaCamionera from "../../assets/linea-vida-camionera.jpg";
+import urlPuntoAnclaje from "../../assets/punto-anclaje-default.jpg";
 
 // Direccion completa: el documento se abre en una pestaña nueva o dentro de
 // un marco, y ahi una ruta como «/assets/…» podria no resolverse contra el
@@ -31,6 +32,7 @@ const IMG_TENSOR = absoluta(urlTensor);
 const IMG_EMPALMES = absoluta(urlEmpalmes);
 const IMG_CABLE = absoluta(urlCable);
 const lineaCamionera = absoluta(urlLineaCamionera);
+const puntoAnclaje = absoluta(urlPuntoAnclaje);
 
 // Ficha de un sistema. Recibe el encabezado y el pie de la cotizacion.
 export function crearFichaSistema({ headerHtml, footerHtml }) {
@@ -201,6 +203,46 @@ export const FICHA_LINEA_CAMIONERA = {
       "La altura del cable y la luz entre postes se definen en la memoria de cálculo, según el vehículo y la distancia de detención. El sistema lo diseña y certifica una persona calificada."],
   ],
 };
+
+// El punto de anclaje se cotiza en dos materiales -acero galvanizado y acero
+// inoxidable- y cada uno es su propia ficha: cambian el acabado, el ambiente
+// en el que se instala y la tornilleria. Es una funcion y no dos constantes
+// porque tres de las cinco notas son las mismas en ambos materiales; escritas
+// dos veces, al corregir una se queda la otra sin corregir. La hoja de
+// componentes hace lo mismo con renderSingleTechnicalSheet(material).
+export const MATERIALES_PUNTO_ANCLAJE = ["galvanizado", "inoxidable"];
+
+const FOTO_PUNTO_ANCLAJE = {
+  galvanizado: puntoAnclaje,
+  inoxidable: puntoAnclaje,
+};
+
+export function fichaPuntoAnclaje(material = "galvanizado") {
+  const esInox = material === "inoxidable";
+  const acero = esInox ? "acero inoxidable" : "acero galvanizado";
+
+  return {
+    titulo: `Punto de anclaje certificado en ${acero}`,
+    imagen: FOTO_PUNTO_ANCLAJE[esInox ? "inoxidable" : "galvanizado"],
+    alt: `Punto de anclaje certificado en ${acero}`,
+    recorte: "0% 0% 0% 0%",
+    ancha: true,
+    notas: [
+      ["Normatividad",
+        "Cumple la Resolución 4272 de 2021 del Ministerio del Trabajo de Colombia y la norma EN 795:2012, aplicable a los dispositivos de anclaje para protección contra caídas en trabajo en alturas."],
+      ["Material", esInox
+        ? "Platina y argolla en acero inoxidable, sin recubrimiento: la resistencia a la corrosión es del material mismo y no se pierde con un golpe o un corte en obra. Es el que se instala en ambiente agresivo: zona costera o con salinidad, planta de alimentos o de proceso químico, y sitios donde se lava con químicos."
+        : "Platina y argolla en acero estructural con galvanizado en caliente por inmersión. El recubrimiento de zinc protege la pieza en cubiertas, fachadas y estructuras a la intemperie en ambiente normal; es el acabado corriente del punto de anclaje."],
+      ["Resistencia",
+        "Resiste una fuerza de detención de caída superior a 5.000 lb (2.268 kg) por cada persona asegurada."],
+      ["Instalación", esInox
+        ? "Se ancla a la estructura en concreto con epóxico químico y perno de 5/8″ a una profundidad de 12 cm o más según el caso; en estructura metálica va soldado. La tornillería es del mismo acero inoxidable: mezclarla con acero común forma un par galvánico que corroe la unión."
+        : "Se ancla a la estructura en concreto con epóxico químico y perno de 5/8″ a una profundidad de 12 cm o más según el caso; en estructura metálica va soldado."],
+      ["Conexión del trabajador",
+        "Es el punto donde el trabajador conecta su eslinga con absorbedor de energía o su línea autorretráctil. Cada punto atiende a una sola persona a la vez."],
+    ],
+  };
+}
 
 // Hoja de componentes de la linea de vida horizontal, una por material
 // (galvanizado o inoxidable) segun lo que se cotiza.

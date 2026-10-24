@@ -4,14 +4,14 @@ import { fmt } from "./format";
 import { escapeHtml } from "./html";
 import { normalizarMayusculas, normalizarTituloFormal } from "./normalizarEntrada";
 import { LOGO_INGEANCLAJES } from "../assets/embeddedImages";
-import { getQuotePrintableProposals, porcentajeUtilidad } from "./cotizaciones";
+import { getQuotePrintableProposals, materialesPuntoAnclaje, porcentajeUtilidad } from "./cotizaciones";
 import { getStaticMapDimensions, buildStaticMapLabelData } from "./maps";
 import { TIPO_CAMIONERA, TIPO_MANUAL, hasVerticalLifeLineService, hasCatLadderService, tipoCotizacionCanonico } from "./cotizaciones";
 import { getTextosDocumento, lineasDeTexto } from "./cotizacionTextos";
 import { corregirOrtografiaLocal } from "./correctorTexto";
 import { cssHojaImpresion } from "./hojaImpresion";
 import { CSS_COTIZACION } from "./cotizacion/estilos";
-import { FICHA_ESCALERA_GATO, FICHA_LINEA_CAMIONERA, FICHA_LINEA_VIDA_VERTICAL, crearFichaSistema, paginasComponentes } from "./cotizacion/fichasTecnicas";
+import { FICHA_ESCALERA_GATO, FICHA_LINEA_CAMIONERA, FICHA_LINEA_VIDA_VERTICAL, crearFichaSistema, fichaPuntoAnclaje, paginasComponentes } from "./cotizacion/fichasTecnicas";
 
 export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
   const propuestas = getQuotePrintableProposals(c);
@@ -37,6 +37,26 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
   // Ficha de la linea de vida camionera: despues del precio, como las de la
   // escalera y la linea vertical, cuando alguna propuesta es de ese tipo.
   const showCamioneraAppendix = propuestas.some((propuesta) => tipoDe(propuesta) === TIPO_CAMIONERA);
+
+  // Fichas del punto de anclaje: una por material cotizado -galvanizado,
+  // inoxidable o las dos-, como la hoja de componentes de la horizontal. Una
+  // propuesta en «Ninguno» no lleva ficha de ningun sistema.
+  const materialesAnclaje = [];
+  const agregarMaterialAnclaje = (material) => {
+    if (!materialesAnclaje.includes(material)) materialesAnclaje.push(material);
+  };
+  propuestasConSistema.forEach((propuesta) => {
+    materialesPuntoAnclaje(propuesta).forEach(agregarMaterialAnclaje);
+  });
+  if (!todasManuales) {
+    materialesPuntoAnclaje({
+      titulo: c?.titulo,
+      alcance: c?.alcance,
+      requerimientoCliente: textoInicial,
+      items: c?.items,
+      tipoCotizacion: c?.tipoCotizacion,
+    }).forEach(agregarMaterialAnclaje);
+  }
 
   const showCatLadderAppendix = propuestasConSistema.some((propuesta)=>hasCatLadderService(propuesta?.quote || propuesta))
     || (!todasManuales && hasCatLadderService({ alcance: c?.alcance, requerimientoCliente: textoInicial, items: c?.items, titulo: c?.titulo }));
@@ -1091,6 +1111,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     ${showCatLadderAppendix ? fichaSistema(FICHA_ESCALERA_GATO) : ""}
     ${showVerticalLifelineAppendix ? fichaSistema(FICHA_LINEA_VIDA_VERTICAL) : ""}
     ${showCamioneraAppendix ? fichaSistema(FICHA_LINEA_CAMIONERA) : ""}
+    ${materialesAnclaje.map((material) => fichaSistema(fichaPuntoAnclaje(material))).join("")}
     ${showTechnicalPage ? renderTechnicalPage() : ""}
     ${mostrarResumenFinal ? "" : renderResumenPropuestas()}
     ${closingSections}

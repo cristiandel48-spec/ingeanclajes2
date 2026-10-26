@@ -142,6 +142,7 @@ export const DEFAULT_COT_INCLUYE = [
   "Tuercas y arandelas en ACERO GALVANIZADO.",
   "Los elementos utilizados en la instalación son certificados de fábrica, los cuales se adjuntan en la entrega de documentación de certificados.",
   "Transporte de materiales y de personal hasta el sitio de trabajo.",
+  "Suministro e instalación de placa de identificación y certificación en acero inoxidable según Resolución 4272 de 2021.",
   "Se entregan todos los certificados de acuerdo a la Resolución 4272 de trabajo seguro en alturas.",
   "Recertificación gratis al año siguiente de la instalación.",
   "Esta propuesta incluye el coordinador para trabajo seguro en alturas de tiempo completo en la obra."

@@ -18,6 +18,7 @@ import urlEmpalmes from "../../assets/componentes/empalmes-guardacables.jpg";
 import urlCable from "../../assets/componentes/cable-acero.jpg";
 import urlLineaCamionera from "../../assets/linea-vida-camionera.jpg";
 import urlPuntoAnclaje from "../../assets/punto-anclaje-default.jpg";
+import urlPlaca from "../../assets/componentes/placa-identificacion.svg";
 
 // Direccion completa: el documento se abre en una pestaña nueva o dentro de
 // un marco, y ahi una ruta como «/assets/…» podria no resolverse contra el
@@ -33,6 +34,7 @@ const IMG_EMPALMES = absoluta(urlEmpalmes);
 const IMG_CABLE = absoluta(urlCable);
 const lineaCamionera = absoluta(urlLineaCamionera);
 const puntoAnclaje = absoluta(urlPuntoAnclaje);
+const placaIdentificacion = absoluta(urlPlaca);
 
 // Ficha de un sistema. Recibe el encabezado y el pie de la cotizacion.
 export function crearFichaSistema({ headerHtml, footerHtml }) {
@@ -210,6 +212,28 @@ export const FICHA_LINEA_CAMIONERA = {
 // porque tres de las cinco notas son las mismas en ambos materiales; escritas
 // dos veces, al corregir una se queda la otra sin corregir. La hoja de
 // componentes hace lo mismo con renderSingleTechnicalSheet(material).
+
+// Placa de identificacion y certificacion del sistema (Res. 4272 de 2021 y ANSI Z359.6).
+export const FICHA_PLACA_IDENTIFICACION = {
+  titulo: "Placa de identificación y certificación del sistema",
+  imagen: placaIdentificacion,
+  alt: "Placa de identificación y certificación Ingeanclajes en acero inoxidable según Resolución 4272 de 2021",
+  recorte: "0% 0% 0% 0%",
+  ancha: true,
+  notas: [
+    ["Normatividad",
+      "Cumple la Resolución 4272 de 2021 del Ministerio del Trabajo de Colombia y la norma ANSI/ASSP Z359.6. Exige rotulado e identificación indeleble en campo para verificación antes de su uso."],
+    ["Material y grabado",
+      "Fabricada en lámina de acero inoxidable AISI 304, resistente a la intemperie y ambientes industriales agresivos, con grabado láser de alta precisión."],
+    ["Trazabilidad y serial",
+      "Cada sistema cuenta con serial único asignado y troquelado físico, vinculado a su memoria de cálculo estructural y acta de entrega técnica."],
+    ["Capacidad y usuarios",
+      "Indica la resistencia de diseño de 5.000 lb (22,2 kN), el número máximo de usuarios simultáneos autorizados y el tipo de uso permitido."],
+    ["Control de recertificación",
+      "Matriz de inspección anual troquelable (2024–2035) para registrar la fecha de instalación y el cumplimiento de las recertificaciones anuales obligatorias."],
+  ],
+};
+
 export const MATERIALES_PUNTO_ANCLAJE = ["galvanizado", "inoxidable"];
 
 const FOTO_PUNTO_ANCLAJE = {

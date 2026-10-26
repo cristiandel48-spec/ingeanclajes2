@@ -11,7 +11,7 @@ import { getTextosDocumento, lineasDeTexto } from "./cotizacionTextos";
 import { corregirOrtografiaLocal } from "./correctorTexto";
 import { cssHojaImpresion } from "./hojaImpresion";
 import { CSS_COTIZACION } from "./cotizacion/estilos";
-import { FICHA_ESCALERA_GATO, FICHA_LINEA_CAMIONERA, FICHA_LINEA_VIDA_VERTICAL, crearFichaSistema, fichaPuntoAnclaje, paginasComponentes } from "./cotizacion/fichasTecnicas";
+import { FICHA_ESCALERA_GATO, FICHA_LINEA_CAMIONERA, FICHA_LINEA_VIDA_VERTICAL, FICHA_PLACA_IDENTIFICACION, crearFichaSistema, fichaPuntoAnclaje, paginasComponentes } from "./cotizacion/fichasTecnicas";
 
 export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
   const propuestas = getQuotePrintableProposals(c);
@@ -60,6 +60,9 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
 
   const showCatLadderAppendix = propuestasConSistema.some((propuesta)=>hasCatLadderService(propuesta?.quote || propuesta))
     || (!todasManuales && hasCatLadderService({ alcance: c?.alcance, requerimientoCliente: textoInicial, items: c?.items, titulo: c?.titulo }));
+  // Placa de identificacion y certificacion: obligatoria para sistemas certificados de alturas
+  // (linea horizontal, vertical, camionera o puntos de anclaje), salvo propuestas manuales.
+  const showPlacaAppendix = !todasManuales && (showCamioneraAppendix || showVerticalLifelineAppendix || showCatLadderAppendix || propuestasConSistema.length > 0);
   // La lámina técnica de componentes (poste soporte lateral/intermedio, tensor de línea, etc.)
   // es EXCLUSIVA de LÍNEA DE VIDA (horizontal / continua).
   // NO debe incluirse para cotizaciones que solo tengan puntos de anclaje, obra blanca,
@@ -1112,6 +1115,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     ${showCamioneraAppendix ? fichaSistema(FICHA_LINEA_CAMIONERA) : ""}
     ${materialesAnclaje.map((material) => fichaSistema(fichaPuntoAnclaje(material))).join("")}
     ${showTechnicalPage ? renderTechnicalPage() : ""}
+    ${showPlacaAppendix ? fichaSistema(FICHA_PLACA_IDENTIFICACION) : ""}
     ${proposalSections}
     ${mostrarResumenFinal ? "" : renderResumenPropuestas()}
     ${closingSections}

@@ -1,0 +1,235 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 580" width="100%" height="100%" font-family="'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <!-- Acero Inoxidable cepillado realista -->
+    <linearGradient id="metal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f5f6f8"/>
+      <stop offset="25%" stop-color="#e3e6eb"/>
+      <stop offset="50%" stop-color="#d4d8df"/>
+      <stop offset="75%" stop-color="#e8ecf1"/>
+      <stop offset="100%" stop-color="#cfd3da"/>
+    </linearGradient>
+    <filter id="bevel" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+    <linearGradient id="laser" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#181a1d"/>
+      <stop offset="100%" stop-color="#2a2e35"/>
+    </linearGradient>
+    <radialGradient id="remache" cx="40%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#b0b5bc"/>
+      <stop offset="100%" stop-color="#555a62"/>
+    </radialGradient>
+  </defs>
+
+  <style>
+    .txt-dark { fill: #1c2024; font-weight: 700; letter-spacing: -0.01em; }
+    .txt-blue { fill: #0066cc; font-weight: 700; }
+    .txt-red  { fill: #d62828; font-weight: 800; }
+    .txt-lbl  { font-size: 13px; font-weight: 800; fill: #1e2227; }
+    .txt-val  { font-size: 13px; font-weight: 600; fill: #2c3138; }
+    .txt-tbl  { font-size: 11.5px; font-weight: 700; fill: #1e2227; text-anchor: middle; }
+    .bdr-box  { stroke: #2a2f35; stroke-width: 1.6; fill: none; }
+    .bdr-thin { stroke: #3a4048; stroke-width: 1.2; fill: none; }
+    .check-mark { font-size: 15px; font-weight: 900; fill: #d62828; text-anchor: middle; }
+  </style>
+
+  <!-- Placa de Acero Inoxidable con sombra y bisel -->
+  <rect x="20" y="20" width="860" height="540" rx="14" fill="url(#metal)" filter="url(#bevel)" stroke="#b8bcc4" stroke-width="2"/>
+  <rect x="25" y="25" width="850" height="530" rx="10" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.6"/>
+
+  <!-- Orificios de remache en las 4 esquinas -->
+  <circle cx="48" cy="48" r="9" fill="url(#remache)" stroke="#3a3e45" stroke-width="1"/>
+  <circle cx="852" cy="48" r="9" fill="url(#remache)" stroke="#3a3e45" stroke-width="1"/>
+  <circle cx="48" cy="532" r="9" fill="url(#remache)" stroke="#3a3e45" stroke-width="1"/>
+  <circle cx="852" cy="532" r="9" fill="url(#remache)" stroke="#3a3e45" stroke-width="1"/>
+
+  <!-- LOGO INGEANCLAJES Y CONTACTO -->
+  <g transform="translate(60, 48)">
+    <!-- Ícono Ingeanclajes rojo -->
+    <path d="M 0 10 C 15 2, 35 2, 50 10 L 44 15 C 32 9, 18 9, 6 15 Z" fill="#d62828"/>
+    <path d="M 12 18 L 38 18 L 25 32 Z" fill="#d62828"/>
+    <circle cx="58" cy="18" r="4.5" fill="#d62828"/>
+    <text x="72" y="27" font-size="28" font-weight="900" fill="#1c2024" letter-spacing="0.04em">INGEANCLAJES</text>
+    <text x="72" y="44" font-size="11.5" font-weight="800" fill="#3a4048" letter-spacing="0.08em">ESPECIALISTAS EN ANCLAJES</text>
+  </g>
+
+  <!-- Datos derecha -->
+  <g transform="translate(510, 46)">
+    <text x="310" y="16" font-size="14.5" class="txt-blue" text-anchor="end">WWW.INGEANCLAJESSAS.COM</text>
+    <text x="310" y="34" font-size="13" class="txt-dark" text-anchor="end">ENVIGADO Calle 38 SUR # 36 48</text>
+    <text x="310" y="52" font-size="13" class="txt-dark" text-anchor="end">TELEFONO 604 448 26 86</text>
+  </g>
+
+  <!-- Cumple resolución -->
+  <text x="450" y="128" font-size="16" font-weight="900" fill="#1c2024" text-anchor="middle" letter-spacing="0.03em">
+    CUMPLE LA RESOLUCION 4272 DEL 2021
+  </text>
+
+  <!-- FILA 1: SISTEMA / REFERENCIA -->
+  <g transform="translate(60, 142)">
+    <rect x="0" y="0" width="180" height="26" class="bdr-box"/>
+    <text x="10" y="18" class="txt-lbl">SISTEMA / REFERENCIA</text>
+    
+    <!-- Celdas PA, LVH, LVV, LVC, OTRO -->
+    <!-- PA -->
+    <rect x="180" y="0" width="60" height="26" class="bdr-box"/>
+    <text x="210" y="18" class="txt-tbl">PA</text>
+    <rect x="240" y="0" width="55" height="26" class="bdr-box"/>
+    <text x="267" y="19" class="check-mark">X</text>
+
+    <!-- LVH -->
+    <rect x="295" y="0" width="60" height="26" class="bdr-box"/>
+    <text x="325" y="18" class="txt-tbl">LVH</text>
+    <rect x="355" y="0" width="55" height="26" class="bdr-box"/>
+
+    <!-- LVV -->
+    <rect x="410" y="0" width="60" height="26" class="bdr-box"/>
+    <text x="440" y="18" class="txt-tbl">LVV</text>
+    <rect x="470" y="0" width="55" height="26" class="bdr-box"/>
+
+    <!-- LVC -->
+    <rect x="525" y="0" width="60" height="26" class="bdr-box"/>
+    <text x="555" y="18" class="txt-tbl">LVC</text>
+    <rect x="585" y="0" width="55" height="26" class="bdr-box"/>
+
+    <!-- OTRO -->
+    <rect x="640" y="0" width="75" height="26" class="bdr-box"/>
+    <text x="677" y="18" class="txt-tbl">OTRO</text>
+    <rect x="715" y="0" width="65" height="26" class="bdr-box"/>
+  </g>
+
+  <!-- FILA 2: MAXIMO USUARIOS Y CAPACIDAD -->
+  <g transform="translate(60, 175)">
+    <rect x="0" y="0" width="160" height="26" class="bdr-box"/>
+    <text x="10" y="18" class="txt-lbl">MAXIMO USUARIOS</text>
+    <rect x="160" y="0" width="45" height="26" class="bdr-box"/>
+    <text x="182" y="18" class="txt-tbl">1</text>
+    <rect x="205" y="0" width="45" height="26" class="bdr-box"/>
+    <text x="227" y="19" class="check-mark">X</text>
+    <rect x="250" y="0" width="45" height="26" class="bdr-box"/>
+    <text x="272" y="18" class="txt-tbl">2</text>
+    <rect x="295" y="0" width="45" height="26" class="bdr-box"/>
+
+    <!-- Capacidad carga -->
+    <rect x="370" y="0" width="180" height="26" class="bdr-box"/>
+    <text x="380" y="18" class="txt-lbl">CAPACIDAD CARGA</text>
+    <rect x="550" y="0" width="145" height="26" class="bdr-box"/>
+    <text x="622" y="18" class="txt-tbl">5.000 Lb</text>
+    <rect x="695" y="0" width="85" height="26" class="bdr-box"/>
+    <text x="737" y="19" class="check-mark">X</text>
+  </g>
+
+  <!-- FILA 3: SERIAL Y MARCA -->
+  <g transform="translate(60, 208)">
+    <rect x="0" y="0" width="90" height="26" class="bdr-box"/>
+    <text x="10" y="18" class="txt-lbl">SERIAL</text>
+    <rect x="90" y="0" width="150" height="26" class="bdr-box"/>
+    <text x="165" y="18" class="txt-tbl">3412</text>
+
+    <!-- Marca -->
+    <rect x="420" y="0" width="100" height="26" class="bdr-box"/>
+    <text x="430" y="18" class="txt-lbl">MARCA</text>
+    <rect x="520" y="0" width="260" height="26" class="bdr-box"/>
+    <text x="650" y="18" class="txt-tbl">Artico safe Work</text>
+  </g>
+
+  <!-- FILA 4: USO -->
+  <g transform="translate(60, 241)">
+    <rect x="0" y="0" width="60" height="26" class="bdr-box"/>
+    <text x="10" y="18" class="txt-lbl">USO</text>
+    <rect x="60" y="0" width="720" height="26" class="bdr-box"/>
+    <text x="420" y="18" font-size="12.5" font-weight="900" fill="#1c2024" text-anchor="middle" letter-spacing="0.03em">
+      POSICIONAMIENTO/RESTRICCION Y DETECCIÓN
+    </text>
+  </g>
+
+  <!-- TABLA 1: FECHA DE INSTALACIÓN -->
+  <g transform="translate(60, 280)">
+    <rect x="0" y="0" width="780" height="22" fill="#d9dde3" class="bdr-box"/>
+    <text x="390" y="16" class="txt-lbl" text-anchor="middle">FECHA DE INSTALACIÓN</text>
+    
+    <!-- 12 Meses -->
+    <!-- ENE FEB MAR ABR MAY JUN JUL AGOS SEPT OCT NOV DIC -->
+    <g transform="translate(0, 22)">
+      <!-- Meses -->
+      <rect x="0" y="0" width="65" height="22" class="bdr-box"/><text x="32.5" y="16" class="txt-tbl">ENE</text>
+      <rect x="65" y="0" width="65" height="22" class="bdr-box"/><text x="97.5" y="16" class="txt-tbl">FEB</text>
+      <rect x="130" y="0" width="65" height="22" class="bdr-box"/><text x="162.5" y="16" class="txt-tbl">MAR</text>
+      <rect x="195" y="0" width="65" height="22" class="bdr-box"/><text x="227.5" y="16" class="txt-tbl">ABR</text>
+      <rect x="260" y="0" width="65" height="22" class="bdr-box"/><text x="292.5" y="16" class="txt-tbl">MAY</text>
+      <rect x="325" y="0" width="65" height="22" class="bdr-box"/><text x="357.5" y="16" class="txt-tbl">JUN</text>
+      <rect x="390" y="0" width="65" height="22" class="bdr-box"/><text x="422.5" y="16" class="txt-tbl">JUL</text>
+      <rect x="455" y="0" width="65" height="22" class="bdr-box"/><text x="487.5" y="16" class="txt-tbl">AGOS</text>
+      <rect x="520" y="0" width="65" height="22" class="bdr-box"/><text x="552.5" y="16" class="txt-tbl">SEPT</text>
+      <rect x="585" y="0" width="65" height="22" class="bdr-box"/><text x="617.5" y="16" class="txt-tbl">OCT</text>
+      <rect x="650" y="0" width="65" height="22" class="bdr-box"/><text x="682.5" y="16" class="txt-tbl">NOV</text>
+      <rect x="715" y="0" width="65" height="22" class="bdr-box"/><text x="747.5" y="16" class="txt-tbl">DIC</text>
+      <!-- Perforación mes septiembre troquelada -->
+      <circle cx="552.5" cy="11" r="6" fill="#1c2024" opacity="0.85"/>
+      <circle cx="552.5" cy="11" r="4.5" fill="#5c2020"/>
+
+      <!-- Años 2024 a 2035 -->
+      <g transform="translate(0, 22)">
+        <rect x="0" y="0" width="65" height="22" class="bdr-box"/><text x="32.5" y="16" class="txt-tbl">2024</text>
+        <rect x="65" y="0" width="65" height="22" class="bdr-box"/><text x="97.5" y="16" class="txt-tbl">2025</text>
+        <rect x="130" y="0" width="65" height="22" class="bdr-box"/><text x="162.5" y="16" class="txt-tbl">2026</text>
+        <rect x="195" y="0" width="65" height="22" class="bdr-box"/><text x="227.5" y="16" class="txt-tbl">2027</text>
+        <rect x="260" y="0" width="65" height="22" class="bdr-box"/><text x="292.5" y="16" class="txt-tbl">2028</text>
+        <rect x="325" y="0" width="65" height="22" class="bdr-box"/><text x="357.5" y="16" class="txt-tbl">2029</text>
+        <rect x="390" y="0" width="65" height="22" class="bdr-box"/><text x="422.5" y="16" class="txt-tbl">2030</text>
+        <rect x="455" y="0" width="65" height="22" class="bdr-box"/><text x="487.5" y="16" class="txt-tbl">2031</text>
+        <rect x="520" y="0" width="65" height="22" class="bdr-box"/><text x="552.5" y="16" class="txt-tbl">2032</text>
+        <rect x="585" y="0" width="65" height="22" class="bdr-box"/><text x="617.5" y="16" class="txt-tbl">2033</text>
+        <rect x="650" y="0" width="65" height="22" class="bdr-box"/><text x="682.5" y="16" class="txt-tbl">2034</text>
+        <rect x="715" y="0" width="65" height="22" class="bdr-box"/><text x="747.5" y="16" class="txt-tbl">2035</text>
+        <!-- Perforación año 2026 troquelada -->
+        <circle cx="162.5" cy="11" r="6" fill="#1c2024" opacity="0.85"/>
+        <circle cx="162.5" cy="11" r="4.5" fill="#5c2020"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- TABLA 2: FECHA DE CERTIFICACIÓN -->
+  <g transform="translate(60, 360)">
+    <rect x="0" y="0" width="780" height="22" fill="#d9dde3" class="bdr-box"/>
+    <text x="390" y="16" class="txt-lbl" text-anchor="middle">FECHA DE CERTIFICACIÓN</text>
+    
+    <!-- 12 Meses -->
+    <g transform="translate(0, 22)">
+      <rect x="0" y="0" width="65" height="22" class="bdr-box"/><text x="32.5" y="16" class="txt-tbl">ENE</text>
+      <rect x="65" y="0" width="65" height="22" class="bdr-box"/><text x="97.5" y="16" class="txt-tbl">FEB</text>
+      <rect x="130" y="0" width="65" height="22" class="bdr-box"/><text x="162.5" y="16" class="txt-tbl">MAR</text>
+      <rect x="195" y="0" width="65" height="22" class="bdr-box"/><text x="227.5" y="16" class="txt-tbl">ABR</text>
+      <rect x="260" y="0" width="65" height="22" class="bdr-box"/><text x="292.5" y="16" class="txt-tbl">MAY</text>
+      <rect x="325" y="0" width="65" height="22" class="bdr-box"/><text x="357.5" y="16" class="txt-tbl">JUN</text>
+      <rect x="390" y="0" width="65" height="22" class="bdr-box"/><text x="422.5" y="16" class="txt-tbl">JUL</text>
+      <rect x="455" y="0" width="65" height="22" class="bdr-box"/><text x="487.5" y="16" class="txt-tbl">AGOS</text>
+      <rect x="520" y="0" width="65" height="22" class="bdr-box"/><text x="552.5" y="16" class="txt-tbl">SEPT</text>
+      <rect x="585" y="0" width="65" height="22" class="bdr-box"/><text x="617.5" y="16" class="txt-tbl">OCT</text>
+      <rect x="650" y="0" width="65" height="22" class="bdr-box"/><text x="682.5" y="16" class="txt-tbl">NOV</text>
+      <rect x="715" y="0" width="65" height="22" class="bdr-box"/><text x="747.5" y="16" class="txt-tbl">DIC</text>
+
+      <!-- Años 2024 a 2035 -->
+      <g transform="translate(0, 22)">
+        <rect x="0" y="0" width="65" height="22" class="bdr-box"/><text x="32.5" y="16" class="txt-tbl">2024</text>
+        <rect x="65" y="0" width="65" height="22" class="bdr-box"/><text x="97.5" y="16" class="txt-tbl">2025</text>
+        <rect x="130" y="0" width="65" height="22" class="bdr-box"/><text x="162.5" y="16" class="txt-tbl">2026</text>
+        <rect x="195" y="0" width="65" height="22" class="bdr-box"/><text x="227.5" y="16" class="txt-tbl">2027</text>
+        <rect x="260" y="0" width="65" height="22" class="bdr-box"/><text x="292.5" y="16" class="txt-tbl">2028</text>
+        <rect x="325" y="0" width="65" height="22" class="bdr-box"/><text x="357.5" y="16" class="txt-tbl">2029</text>
+        <rect x="390" y="0" width="65" height="22" class="bdr-box"/><text x="422.5" y="16" class="txt-tbl">2030</text>
+        <rect x="455" y="0" width="65" height="22" class="bdr-box"/><text x="487.5" y="16" class="txt-tbl">2031</text>
+        <rect x="520" y="0" width="65" height="22" class="bdr-box"/><text x="552.5" y="16" class="txt-tbl">2032</text>
+        <rect x="585" y="0" width="65" height="22" class="bdr-box"/><text x="617.5" y="16" class="txt-tbl">2033</text>
+        <rect x="650" y="0" width="65" height="22" class="bdr-box"/><text x="682.5" y="16" class="txt-tbl">2034</text>
+        <rect x="715" y="0" width="65" height="22" class="bdr-box"/><text x="747.5" y="16" class="txt-tbl">2035</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Nota al pie de placa -->
+  <text x="450" y="470" font-size="11" font-weight="700" fill="#3a4048" text-anchor="middle" letter-spacing="0.05em">
+    ACERO INOXIDABLE GRABADO LÁSER · REGISTRO Y CONTROL DE INSPECCIÓN ANUAL OBLIGATORIA
+  </text>
+</svg>

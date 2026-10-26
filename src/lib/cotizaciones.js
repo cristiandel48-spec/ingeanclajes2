@@ -256,6 +256,252 @@ export function getTipoCotizacionLabel(tipo) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+export const TITULO_SUGERIDO_POR_TIPO = {
+  puntos_anclaje: "Sistema de Anclajes Certificado para Trabajo en Alturas",
+  linea_vida: "Sistema de Líneas de Vida Certificadas para Trabajo en Alturas",
+  linea_vida_camionera: "Instalación de Línea de Vida Camionera",
+  escaleras: "Sistema de Escaleras Certificadas para Trabajo en Alturas",
+  estructuras_metalicas: "Fabricación e Instalación de Estructura Metálica",
+  obra_blanca: "Ejecución de Trabajos y Adecuaciones en Obra Blanca",
+  caminaderos: "Sistema de Caminaderos Certificados para Trabajo en Alturas",
+  sistemas_completos: "Sistema de Protección contra Caídas para Trabajo en Alturas",
+  servicios: "Mantenimiento y Recertificación del Sistema Anticaídas",
+  [TIPO_MANUAL]: "Propuesta Técnica y Económica",
+};
+
+// Todas conservan el prefijo "Agradecemos la oportunidad de presentarles nuestra propuesta para "
+// (usado por ObraDetalle) y van sin punto final (cotizacionPrint agrega " en la obra X.").
+export const SALUDO_SUGERIDO_POR_TIPO = {
+  puntos_anclaje:
+    "Agradecemos la oportunidad de presentarles nuestra propuesta para el suministro e instalación de puntos de anclaje certificados para trabajo seguro en alturas",
+  linea_vida:
+    "Agradecemos la oportunidad de presentarles nuestra propuesta para el suministro e instalación de líneas de vida certificadas para trabajo seguro en alturas",
+  linea_vida_camionera:
+    "Agradecemos la oportunidad de presentarles nuestra propuesta para el suministro e instalación de una línea de vida camionera para el cargue y descargue seguro de vehículos",
+  escaleras:
+    "Agradecemos la oportunidad de presentarles nuestra propuesta para el suministro e instalación de escaleras certificadas para el acceso seguro en alturas",
+  caminaderos:
+    "Agradecemos la oportunidad de presentarles nuestra propuesta para el suministro e instalación de caminaderos certificados para el tránsito seguro sobre cubiertas",
+  estructuras_metalicas:
+    "Agradecemos la oportunidad de presentarles nuestra propuesta para el diseño, fabricación y montaje de la estructura metálica requerida",
+  obra_blanca:
+    "Agradecemos la oportunidad de presentarles nuestra propuesta para la ejecución de los trabajos de obra blanca solicitados",
+  sistemas_completos:
+    "Agradecemos la oportunidad de presentarles nuestra propuesta para el suministro e instalación de sistemas de protección contra caídas para trabajo seguro en alturas",
+  servicios:
+    "Agradecemos la oportunidad de presentarles nuestra propuesta para el mantenimiento y la recertificación del sistema de protección contra caídas",
+  [TIPO_MANUAL]:
+    "Agradecemos la oportunidad de presentarles nuestra propuesta para la ejecución de los trabajos solicitados",
+};
+
+const PRESENTACION_ARL_ALTURAS =
+  "Nuestro personal está afiliado a ARL, salud y pensión, cuenta con los elementos de protección personal requeridos, y un coordinador de trabajo seguro en alturas acompaña la obra durante toda la ejecución. Entregamos las pólizas que exija el contratante y respondemos por los daños que puedan ocasionarse durante los trabajos.";
+
+const PRESENTACION_ARL_OBRA =
+  "Nuestro personal está afiliado a ARL, salud y pensión y cuenta con los elementos de protección personal requeridos; cuando el trabajo lo exige, un coordinador de trabajo seguro en alturas acompaña la obra durante toda la ejecución. Entregamos las pólizas que exija el contratante y respondemos por los daños que puedan ocasionarse durante los trabajos.";
+
+const PRESENTACION_CIERRE =
+  "Quedamos atentos a cualquier inquietud sobre el alcance, los materiales o las condiciones comerciales de esta propuesta.";
+
+export const PRESENTACION_ALTURAS = [
+  "INGEANCLAJES S.A.S. es una empresa especializada en el diseño, fabricación e instalación de sistemas de protección contra caídas. Cada sistema se entrega certificado bajo la Resolución 4272 de 2021, con los certificados de fábrica de todos los elementos instalados y una recertificación anual sin costo.",
+  PRESENTACION_ARL_ALTURAS,
+  PRESENTACION_CIERRE,
+].join("\n");
+
+const PRESENTACION_ESTRUCTURAS = [
+  "INGEANCLAJES S.A.S. es una empresa especializada en el diseño, fabricación y montaje de estructuras metálicas. La perfilería y la tornillería se entregan con los certificados de fábrica correspondientes, la soldadura la ejecuta personal calificado y el montaje se recibe con el acta de entrega a satisfacción.",
+  PRESENTACION_ARL_OBRA,
+  PRESENTACION_CIERRE,
+].join("\n");
+
+const PRESENTACION_OBRA_BLANCA = [
+  "INGEANCLAJES S.A.S. ejecuta obra civil y acabados con personal propio y materiales de primera calidad. Cada frente se entrega terminado, limpio y con el acta de recibo a satisfacción del contratante.",
+  PRESENTACION_ARL_OBRA,
+  PRESENTACION_CIERRE,
+].join("\n");
+
+const PRESENTACION_GENERICA = [
+  "INGEANCLAJES S.A.S. es una empresa de ingeniería especializada en trabajo seguro en alturas, estructuras metálicas y obra civil. Los trabajos se ejecutan con personal propio y materiales con certificado de fábrica, y se entregan con el acta de recibo a satisfacción del contratante.",
+  PRESENTACION_ARL_OBRA,
+  PRESENTACION_CIERRE,
+].join("\n");
+
+export const PRESENTACION_SUGERIDA_POR_TIPO = {
+  puntos_anclaje: PRESENTACION_ALTURAS,
+  linea_vida: PRESENTACION_ALTURAS,
+  linea_vida_camionera: PRESENTACION_ALTURAS,
+  escaleras: PRESENTACION_ALTURAS,
+  caminaderos: PRESENTACION_ALTURAS,
+  sistemas_completos: PRESENTACION_ALTURAS,
+  servicios: PRESENTACION_ALTURAS,
+  estructuras_metalicas: PRESENTACION_ESTRUCTURAS,
+  obra_blanca: PRESENTACION_OBRA_BLANCA,
+  [TIPO_MANUAL]: PRESENTACION_GENERICA,
+};
+
+function normalizarTextoPlantilla(s) {
+  return String(s || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+export function coincideTextoPlantilla(a, b) {
+  return normalizarTextoPlantilla(a) === normalizarTextoPlantilla(b);
+}
+
+export function tituloSugeridoParaTipo(tipo) {
+  return TITULO_SUGERIDO_POR_TIPO[tipoCotizacionCanonico(tipo)] || "";
+}
+
+export function esTituloEstandarDeSistema(titulo) {
+  const actual = normalizarTextoPlantilla(titulo);
+  if (!actual) return true;
+  if (actual === normalizarTextoPlantilla("Instalación de Sistema de Protección en Obra Blanca")) {
+    return true;
+  }
+  return Object.values(TITULO_SUGERIDO_POR_TIPO).some((sug) => normalizarTextoPlantilla(sug) === actual);
+}
+
+export function saludoSugeridoParaTipo(tipo) {
+  return SALUDO_SUGERIDO_POR_TIPO[tipoCotizacionCanonico(tipo)] || "";
+}
+
+export function esSaludoEstandarDeSistema(saludo) {
+  const actual = normalizarTextoPlantilla(saludo);
+  if (!actual) return true;
+  return Object.values(SALUDO_SUGERIDO_POR_TIPO).some((sug) => normalizarTextoPlantilla(sug) === actual);
+}
+
+export function presentacionSugeridaParaTipo(tipo) {
+  return PRESENTACION_SUGERIDA_POR_TIPO[tipoCotizacionCanonico(tipo)] || PRESENTACION_ALTURAS;
+}
+
+export function esPresentacionEstandarDeSistema(presentacion) {
+  const actual = normalizarTextoPlantilla(presentacion);
+  if (!actual) return true;
+  return Object.values(PRESENTACION_SUGERIDA_POR_TIPO).some((sug) => normalizarTextoPlantilla(sug) === actual);
+}
+
+export function resolverTipoCotizacion(cotizacion = {}) {
+  const propuestas = Array.isArray(cotizacion?.propuestas) ? cotizacion.propuestas : [];
+  const activa =
+    propuestas.find((p) => p?.id && p.id === cotizacion?.propuestaActivaId) ||
+    propuestas[0] ||
+    null;
+  return tipoCotizacionCanonico(activa?.tipoCotizacion || cotizacion?.tipoCotizacion || "linea_vida") || "linea_vida";
+}
+
+// Lee el título de la portada (textosDocumento.tituloPortada) y deduce el tipo
+// canónico de trabajo/sistema para sincronizar la propuesta automáticamente.
+// Devuelve "" si el título está vacío o no permite inferir un tipo claro.
+export function inferirTipoDesdeTitulo(titulo) {
+  const limpio = String(titulo || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+  if (!limpio) return "";
+
+  // 1. Línea de vida camionera (antes que línea de vida normal)
+  if (limpio.includes("camioner")) return TIPO_CAMIONERA;
+
+  const mencionaSistemaAltura =
+    /\b(?:anclaj|lineas?\s+(?:de\s+)+vida|l\s*v\s*h\b|l\s*v\s*v\b|anticaidas?|anti\s+caidas?|escaler|caminader|pasarel)/.test(limpio);
+
+  // 2. Estructuras metálicas, pérgolas y plataformas estructurales
+  // (salvo cuando el título solo nombra la cubierta/estructura metálica donde se instala un sistema de alturas)
+  if (
+    /\bpergolas?\b/.test(limpio) ||
+    (
+      !mencionaSistemaAltura &&
+      (
+        /\bestructuras?\s+metalic/.test(limpio) ||
+        /\bplataformas?\s+(?:metalic|de\s+aires)/.test(limpio) ||
+        /\bcubiertas?\s+metalic/.test(limpio)
+      )
+    )
+  ) {
+    return "estructuras_metalicas";
+  }
+
+  // 3. Obra blanca explícita
+  if (!mencionaSistemaAltura && /\bobra\s+blanca\b/.test(limpio)) {
+    return "obra_blanca";
+  }
+
+  // 4. Trabajos civiles, cubiertas termoacústicas o ensayos sin sistema anticaídas -> manual
+  if (
+    !mencionaSistemaAltura &&
+    (
+      /\bevaluacion\s+estructural\b/.test(limpio) ||
+      /\banalisis\s+estructural\b/.test(limpio) ||
+      /\bpruebas?\s+de\s+carga\b/.test(limpio) ||
+      /\btecho\s+termo/.test(limpio) ||
+      /\btejas?\s+(?:termo|upvc)\b/.test(limpio) ||
+      /\bimpermeabiliz/.test(limpio) ||
+      /\bperforacion\b/.test(limpio)
+    )
+  ) {
+    return TIPO_MANUAL;
+  }
+
+  const tieneEscalera = /\bescaler|\bgato\b|\bmarinera\b/.test(limpio);
+  const tieneAnclaje = /\banclaj/.test(limpio);
+  const tieneCaminadero = /\bcaminader|\bpasarel/.test(limpio);
+  const tieneLineaVida =
+    /\blineas?\s+(?:de\s+)+vida/.test(limpio) ||
+    /\bl\s*v\s*h\b/.test(limpio) ||
+    /\bl\s*v\s*v\b/.test(limpio);
+
+  // 5. Escaleras solas (o escalera únicamente con su línea de vida vertical)
+  const esSoloVerticalConEscalera =
+    tieneEscalera &&
+    !tieneAnclaje &&
+    !tieneCaminadero &&
+    !/\bhorizontal|\bl\s*v\s*h\b/.test(limpio) &&
+    (!tieneLineaVida || /\blineas?\s+(?:de\s+)+vida\s+vertical|\bl\s*v\s*v\b/.test(limpio));
+
+  if (esSoloVerticalConEscalera) {
+    return "escaleras";
+  }
+
+  // 6. Línea de vida (horizontal, vertical exclusiva o combinada con otros sistemas)
+  if (tieneLineaVida) {
+    return "linea_vida";
+  }
+
+  // 7. Caminaderos o pasarelas (sin línea de vida ni otros sistemas)
+  if (tieneCaminadero && !tieneAnclaje && !tieneEscalera) {
+    return "caminaderos";
+  }
+
+  // 8. Puntos de anclaje (instalación o recertificación de anclajes)
+  if (tieneAnclaje) {
+    return "puntos_anclaje";
+  }
+
+  // 9. Mantenimiento, certificación, recertificación o inspección general de sistemas anticaídas
+  if (
+    /\b(?:recertificac|certificac|mantenimiento|inspeccion)\w*/.test(limpio) &&
+    /\b(?:anticaidas?|anti\s+caidas?|proteccion\s+contra\s+caidas|alturas?)/.test(limpio)
+  ) {
+    return "servicios";
+  }
+
+  // 10. Sistemas generales de protección contra caídas / sistemas completos
+  if (/\b(?:anticaidas?|anti\s+caidas?|proteccion\s+contra\s+caidas|sistemas?\s+completos?)/.test(limpio)) {
+    return "sistemas_completos";
+  }
+
+  return "";
+}
+
 export function buildQuoteProposal(propuesta = {}, index = 0) {
   const items = Array.isArray(propuesta.items)
     ? propuesta.items.map((item, itemIndex) => normalizeQuoteItem(item, itemIndex))

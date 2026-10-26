@@ -116,12 +116,12 @@ describe("cotizacion camionera", () => {
     expect(html).toContain("Línea de vida camionera");
     expect(html).toContain("cuello de cisne");
     expect(html).not.toContain("tensionada y sujeta en tres o dos puntos de anclaje");
-    // La ilustracion va en su ficha tecnica, despues del precio, y no como
+    // La ilustracion va en su ficha tecnica, antes del precio, y no como
     // foto de la propuesta.
     expect(html).toContain("Sistema de línea de vida camionera");
     expect(html).toContain("linea-vida-camionera");
     expect(html).not.toContain("foto-def-linea-camionera");
-    expect(html.indexOf("Sistema de línea de vida camionera")).toBeGreaterThan(html.indexOf("Total propuesta"));
+    expect(html.indexOf("Sistema de línea de vida camionera")).toBeLessThan(html.indexOf("Total propuesta"));
   });
 });
 
@@ -135,7 +135,7 @@ describe("fichas del punto de anclaje", () => {
     expect(html).toContain(GALV);
     expect(html).not.toContain(INOX);
     expect(html).not.toContain("foto-def-punto-anclaje");
-    expect(html.indexOf(GALV)).toBeGreaterThan(html.indexOf("Total propuesta"));
+    expect(html.indexOf(GALV)).toBeLessThan(html.indexOf("Total propuesta"));
   });
 
   it("los dos materiales cotizados llevan las dos fichas, en el orden de los items", () => {
@@ -149,7 +149,7 @@ describe("fichas del punto de anclaje", () => {
     expect(html).toContain(GALV);
     expect(html).toContain(INOX);
     expect(html.indexOf(GALV)).toBeLessThan(html.indexOf(INOX));
-    expect(html.indexOf(GALV)).toBeGreaterThan(html.indexOf("Total propuesta"));
+    expect(html.indexOf(GALV)).toBeLessThan(html.indexOf("Total propuesta"));
   });
 
   it("solo inoxidable cuando solo se cotiza ese", () => {

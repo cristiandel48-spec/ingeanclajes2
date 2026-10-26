@@ -19,7 +19,7 @@ import { corregirOrtografiaLocal } from "../../lib/correctorTexto";
 import { useEffect, useRef, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_TIEMPO_EJEC } from "../../data/seed";
-import { buildQuoteProposal, createQuoteProposalId, getQuoteApprovalAccountingSnapshot, getQuoteProposalLabel, getQuoteProposals, normalizeProposalItems, normalizeQuoteItems, porcentajeUtilidad } from "../../lib/cotizaciones";
+import { buildQuoteProposal, coincideTextoPlantilla, createQuoteProposalId, esPresentacionEstandarDeSistema, esSaludoEstandarDeSistema, esTituloEstandarDeSistema, fotosParaTipo, getQuoteApprovalAccountingSnapshot, getQuoteProposalLabel, getQuoteProposals, getTipoCotizacionLabel, inferirTipoDesdeTitulo, normalizeProposalItems, normalizeQuoteItems, porcentajeUtilidad, presentacionSugeridaParaTipo, saludoSugeridoParaTipo, tipoCotizacionCanonico, tituloSugeridoParaTipo } from "../../lib/cotizaciones";
 import { fmt, scrollAppToTop, today } from "../../lib/format";
 import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarMayusculas, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono, normalizarTituloFormal } from "../../lib/normalizarEntrada";
 import { quienRecibeDeCliente } from "../../lib/quienRecibe";
@@ -82,9 +82,18 @@ export default function Cotizacion({ctx}){
   const [textoInicial,setTextoInicial]=useState("");
   const [observacionesCot,setObservacionesCot]=useState("");
   // Textos fijos del documento, editables por cotizacion.
-  const [textosDocumento,setTextosDocumento]=useState(TEXTOS_DOCUMENTO_DEFAULT);
+  const [textosDocumento,setTextosDocumento]=useState(()=>({...TEXTOS_DOCUMENTO_DEFAULT,saludo:saludoSugeridoParaTipo("puntos_anclaje")||TEXTOS_DOCUMENTO_DEFAULT.saludo}));
   const setTexto=(clave,valor)=>setTextosDocumento(prev=>({...prev,[clave]:valor}));
-  const [propuestas,setPropuestas]=useState([buildQuoteProposal({id:createQuoteProposalId("new"),nombre:getQuoteProposalLabel(0),formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,util:10,items:[],incluyeTexto:""},0)]);
+  const [propuestas,setPropuestas]=useState(()=>[buildQuoteProposal({id:createQuoteProposalId("new"),nombre:getQuoteProposalLabel(0),tipoCotizacion:inferirTipoDesdeTitulo(TEXTOS_DOCUMENTO_DEFAULT.tituloPortada)||"puntos_anclaje",formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,util:10,items:[],incluyeTexto:""},0)]);
+  const [avisoCambioSistema, setAvisoCambioSistema] = useState(null);
+  const [escribiendoTitulo, setEscribiendoTitulo] = useState(false);
+  const debounceTituloRef = useRef(null);
+  const propuestasRef = useRef(propuestas);
+  useEffect(() => { propuestasRef.current = propuestas; }, [propuestas]);
+  const tituloInicialRef = useRef(TEXTOS_DOCUMENTO_DEFAULT.tituloPortada);
+  const tituloCambiadoTipoRef = useRef(false);
+  const tipoRechazadoRef = useRef("");
+  useEffect(() => () => { if (debounceTituloRef.current) clearTimeout(debounceTituloRef.current); }, []);
   const [propuestaActivaId,setPropuestaActivaId]=useState(null);
 
   // Numeracion real de la empresa: C-26115, C-26116, ... Si la base esta
@@ -126,7 +135,35 @@ export default function Cotizacion({ctx}){
   // construir la propuesta (ensureProposalDefaultTexts), que es una sola vez al
   // abrir; hacerlo tambien en cada tecla impedia dejar el campo vacio a
   // proposito: se borraba y volvia a aparecer solo.
+  // Actualiza título de portada, frase de apertura y presentación según el sistema,
+  // respetando siempre cualquier texto que la persona ya haya redactado a mano.
+  const aplicarTextosDelSistema = (canon, { actualizarTitulo = true, forzarTitulo = false } = {}) => {
+    const tituloSug = tituloSugeridoParaTipo(canon);
+    const saludoSug = saludoSugeridoParaTipo(canon);
+    const presentacionSug = presentacionSugeridaParaTipo(canon);
+    setTextosDocumento((prev) => {
+      const siguiente = { ...prev };
+      if (actualizarTitulo && tituloSug && (forzarTitulo || esTituloEstandarDeSistema(prev.tituloPortada))) {
+        siguiente.tituloPortada = tituloSug;
+      }
+      if (saludoSug && esSaludoEstandarDeSistema(prev.saludo)) {
+        siguiente.saludo = saludoSug;
+      }
+      if (presentacionSug && esPresentacionEstandarDeSistema(prev.presentacion)) {
+        siguiente.presentacion = presentacionSug;
+      }
+      return siguiente;
+    });
+  };
+
   const actualizarPropuesta = (id,patch)=>{
+    if (patch && Object.prototype.hasOwnProperty.call(patch, "tipoCotizacion")) {
+      if (debounceTituloRef.current) clearTimeout(debounceTituloRef.current);
+      setAvisoCambioSistema(null);
+      if (propuestas[0]?.id === id || propuestas.length === 1) {
+        aplicarTextosDelSistema(tipoCotizacionCanonico(patch.tipoCotizacion));
+      }
+    }
     setPropuestas((prev)=>prev.map((propuesta)=>(
       propuesta.id===id ? {...propuesta,...patch} : propuesta
     )));
@@ -137,6 +174,116 @@ export default function Cotizacion({ctx}){
   // Solo rellena lo que este VACIO: si la persona ya escribio el cliente a
   // mano, ese dato manda sobre lo que oyo el microfono. Los items se agregan
   // a los que ya haya, no los reemplazan.
+  const OPCIONES_SISTEMA_RAPIDO = [
+    { id: "puntos_anclaje", label: "Puntos de anclaje" },
+    { id: "linea_vida", label: "Línea de vida" },
+    { id: "linea_vida_camionera", label: "Línea camionera" },
+    { id: "escaleras", label: "Escaleras" },
+    { id: "caminaderos", label: "Caminaderos" },
+    { id: "estructuras_metalicas", label: "Estructuras metálicas" },
+    { id: "obra_blanca", label: "Obra blanca" },
+    { id: "sistemas_completos", label: "Sistemas completos" },
+    { id: "servicios", label: "Servicios / Recertificación" },
+    { id: "manual", label: "Ninguno (manual)" },
+  ];
+
+  // Elegir sistema desde los botones junto al título (o aplicar sugerencia):
+  // cambia la propuesta y, si el título sigue siendo uno estándar de sistema,
+  // pone también el título de portada correspondiente.
+  const elegirSistemaRapido = (nuevoTipo, { actualizarTitulo = true, rechazarTipoAuto = "" } = {}) => {
+    if (debounceTituloRef.current) clearTimeout(debounceTituloRef.current);
+    setEscribiendoTitulo(false);
+    setAvisoCambioSistema(null);
+    tipoRechazadoRef.current = rechazarTipoAuto || "";
+    const canon = tipoCotizacionCanonico(nuevoTipo) || "linea_vida";
+
+    setPropuestas((prev) => {
+      if (!prev.length) return prev;
+      return prev.map((propuesta, idx) => {
+        if (prev.length > 1 && idx !== 0) return propuesta;
+        return {
+          ...propuesta,
+          tipoCotizacion: canon,
+          fotos: fotosParaTipo(propuesta.fotos, canon),
+        };
+      });
+    });
+
+    aplicarTextosDelSistema(canon, { actualizarTitulo });
+  };
+
+  // Deduce el tipo de sistema al terminar de escribir el título de portada.
+  const sincronizarTipoConTitulo = (nuevoTitulo, { forzar = false } = {}) => {
+    if (debounceTituloRef.current) clearTimeout(debounceTituloRef.current);
+    setEscribiendoTitulo(false);
+    const tipoNuevo = inferirTipoDesdeTitulo(nuevoTitulo);
+    if (!tipoNuevo) {
+      setAvisoCambioSistema(null);
+      return;
+    }
+
+    if (tipoRechazadoRef.current && tipoNuevo !== tipoRechazadoRef.current) {
+      tipoRechazadoRef.current = "";
+    }
+    if (!forzar && tipoRechazadoRef.current === tipoNuevo) {
+      return;
+    }
+    if (forzar) {
+      tipoRechazadoRef.current = "";
+    }
+
+    const tipoInicial = inferirTipoDesdeTitulo(tituloInicialRef.current);
+    if (tipoNuevo !== tipoInicial) {
+      tituloCambiadoTipoRef.current = true;
+    }
+
+    if (!forzar && editCot && !tituloCambiadoTipoRef.current && tipoNuevo === tipoInicial) {
+      return;
+    }
+
+    const actuales = propuestasRef.current;
+    if (!actuales.length) return;
+    if (actuales.length > 1 && !forzar) return;
+
+    const tipoAnterior = tipoCotizacionCanonico(actuales[0]?.tipoCotizacion || "linea_vida");
+    if (!forzar && tipoAnterior === tipoNuevo) return;
+
+    if (!forzar && actuales.length === 1) {
+      setAvisoCambioSistema({ de: tipoAnterior, a: tipoNuevo });
+    } else {
+      setAvisoCambioSistema(null);
+    }
+
+    setPropuestas((prev) =>
+      prev.map((propuesta, idx) => {
+        if (prev.length > 1 && !forzar && idx !== 0) return propuesta;
+        return {
+          ...propuesta,
+          tipoCotizacion: tipoNuevo,
+          fotos: fotosParaTipo(propuesta.fotos, tipoNuevo),
+        };
+      })
+    );
+
+    // El título no se toca (lo acaba de escribir la persona), pero la frase de
+    // apertura y la presentación sí acompañan al nuevo sistema si siguen estándar.
+    aplicarTextosDelSistema(tipoNuevo, { actualizarTitulo: false });
+  };
+
+  const cambiarTituloPortada = (nuevoTitulo, { inmediato = false } = {}) => {
+    setTexto("tituloPortada", nuevoTitulo);
+    setAvisoCambioSistema(null);
+    if (debounceTituloRef.current) clearTimeout(debounceTituloRef.current);
+    if (inmediato) {
+      sincronizarTipoConTitulo(nuevoTitulo);
+    } else {
+      setEscribiendoTitulo(true);
+      debounceTituloRef.current = setTimeout(() => {
+        sincronizarTipoConTitulo(nuevoTitulo);
+      }, 500);
+    }
+  };
+
   const aplicarDictado = (propuesta)=>{
     setCl((prev)=>({
       ...prev,
@@ -329,7 +476,14 @@ export default function Cotizacion({ctx}){
     setCl({nombre:source.cliente || "",nit:source.nit || "",contacto:source.contacto || "",contactoEmail:source.contactoEmail || "",obra:source.obra || "",telefono:source.telefono || "",ciudad:source.ciudad || "",direccion:source.direccion || "",coords:source.coords || ""});
     setTextoInicial(source.textoInicial || "");
     setObservacionesCot(source.observaciones || "");
-    setTextosDocumento(getTextosDocumento(source));
+    const textosIniciales = getTextosDocumento(source);
+    setTextosDocumento(textosIniciales);
+    if (debounceTituloRef.current) clearTimeout(debounceTituloRef.current);
+    setEscribiendoTitulo(false);
+    setAvisoCambioSistema(null);
+    tipoRechazadoRef.current = "";
+    tituloInicialRef.current = textosIniciales.tituloPortada || "";
+    tituloCambiadoTipoRef.current = false;
 
     // Datos viejos guardaban fotos y mediciones a nivel de cotizacion, no de
     // propuesta: se migran a la que estaba activa para no perderlos.
@@ -357,7 +511,7 @@ export default function Cotizacion({ctx}){
   const nuevaCotizacion = ()=>{
     setEditCot(null);
     setPreviewCot(null);
-    hydrate({numero:getNextCotizacionNumero(cotizaciones),fecha:today(),val:30,cliente:"",obra:"",telefono:"",ciudad:"",coords:"",geoMediciones:[],geoMapView:null,fotosCotizacion:[],propuestas:[buildQuoteProposal({id:createQuoteProposalId("new"),nombre:getQuoteProposalLabel(0),formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,sinAiu:false,util:10,items:[],geoMediciones:[],geoMapView:null,mapImg:null,medicionAutomatica:false,incluyeTexto:""},0)]});
+    hydrate({numero:getNextCotizacionNumero(cotizaciones),fecha:today(),val:30,cliente:"",obra:"",telefono:"",ciudad:"",coords:"",geoMediciones:[],geoMapView:null,fotosCotizacion:[],textosDocumento:{...TEXTOS_DOCUMENTO_DEFAULT,saludo:saludoSugeridoParaTipo("puntos_anclaje")||TEXTOS_DOCUMENTO_DEFAULT.saludo},propuestas:[buildQuoteProposal({id:createQuoteProposalId("new"),nombre:getQuoteProposalLabel(0),tipoCotizacion:inferirTipoDesdeTitulo(TEXTOS_DOCUMENTO_DEFAULT.tituloPortada)||"puntos_anclaje",formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,sinAiu:false,util:10,items:[],geoMediciones:[],geoMapView:null,mapImg:null,medicionAutomatica:false,incluyeTexto:""},0)]});
     setTab("form");
   };
 
@@ -1439,11 +1593,173 @@ export default function Cotizacion({ctx}){
 
       <div style={{...CD,marginBottom:14}}>
         <div style={ST}>01 · Carta de presentación</div>
-        {/* Va primero porque es lo primero que se ve del documento. */}
+        {(() => {
+          const primeraPropuesta = propuestasSnapshot[0];
+          const tipoActual = tipoCotizacionCanonico(primeraPropuesta?.tipoCotizacion || "linea_vida");
+          const tipoSegunTitulo = inferirTipoDesdeTitulo(textosDocumento.tituloPortada);
+          const tituloSugerido = tituloSugeridoParaTipo(tipoActual);
+          const tituloDifiereDelSistema =
+            Boolean(tipoSegunTitulo) &&
+            tipoActual !== "manual" &&
+            tipoSegunTitulo !== tipoActual &&
+            !escribiendoTitulo &&
+            !avisoCambioSistema;
+
+          return (
+            <div
+              style={{
+                marginBottom: 16,
+                padding: "12px 14px",
+                borderRadius: 12,
+                background: "var(--surface-subtle, #f8fafc)",
+                border: "1px solid var(--border, #e2e8f0)",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #1e293b)" }}>
+                  Tipo de sistema {propuestasSnapshot.length > 1 ? "(Propuesta A)" : "de la cotización"}
+                </span>
+                <span style={{ fontSize: 10.5, color: "#64748b" }}>
+                  Elígelo primero: actualiza automáticamente el título, la frase de apertura, las definiciones y las fichas del PDF
+                </span>
+              </div>
+
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {OPCIONES_SISTEMA_RAPIDO.map((op) => {
+                  const activo = tipoActual === op.id;
+                  return (
+                    <button
+                      key={op.id}
+                      type="button"
+                      onClick={() => elegirSistemaRapido(op.id)}
+                      style={{
+                        padding: "6px 12px",
+                        borderRadius: 999,
+                        fontSize: 11.5,
+                        fontWeight: activo ? 700 : 500,
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        transition: "all 0.15s ease",
+                        background: activo ? "var(--text-main, #1d1d1f)" : "#ffffff",
+                        color: activo ? "#ffffff" : "var(--text-muted, #475569)",
+                        border: activo ? "1px solid var(--text-main, #1d1d1f)" : "1px solid #cbd5e1",
+                        boxShadow: activo ? "0 1px 4px rgba(0,0,0,0.12)" : "none",
+                      }}
+                    >
+                      {op.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {avisoCambioSistema && avisoCambioSistema.a === tipoActual && (
+                <div
+                  style={{
+                    marginTop: 8,
+                    padding: "6px 10px",
+                    borderRadius: 8,
+                    background: "#ecfdf3",
+                    border: "1px solid #abefc6",
+                    color: "#067647",
+                    fontSize: 11.5,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 8,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <span>
+                    ✨ Sistema cambiado automáticamente a <strong>{getTipoCotizacionLabel(avisoCambioSistema.a)}</strong> según el título que escribiste.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => elegirSistemaRapido(avisoCambioSistema.de, { actualizarTitulo: false, rechazarTipoAuto: avisoCambioSistema.a })}
+                    style={{
+                      background: "#ffffff",
+                      color: "#067647",
+                      border: "1px solid #6ce9a6",
+                      borderRadius: 999,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: "2px 9px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Deshacer (volver a {getTipoCotizacionLabel(avisoCambioSistema.de)})
+                  </button>
+                </div>
+              )}
+
+              {tituloDifiereDelSistema && (
+                <div
+                  style={{
+                    marginTop: 8,
+                    padding: "6px 10px",
+                    borderRadius: 8,
+                    background: "#fffaeb",
+                    border: "1px solid #fedf89",
+                    color: "#b54708",
+                    fontSize: 11.5,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 8,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <span>
+                    El título menciona <strong>{getTipoCotizacionLabel(tipoSegunTitulo)}</strong>, pero el sistema seleccionado es <strong>{getTipoCotizacionLabel(tipoActual)}</strong>.
+                  </span>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      onClick={() => sincronizarTipoConTitulo(textosDocumento.tituloPortada, { forzar: true })}
+                      style={{
+                        background: "#ffffff",
+                        color: "#b54708",
+                        border: "1px solid rgba(181,71,8,0.35)",
+                        borderRadius: 999,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        padding: "2px 9px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Cambiar sistema a «{getTipoCotizacionLabel(tipoSegunTitulo)}»
+                    </button>
+                    {tituloSugerido && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          aplicarTextosDelSistema(tipoActual, { forzarTitulo: true });
+                          setAvisoCambioSistema(null);
+                        }}
+                        style={{
+                          background: "transparent",
+                          color: "#7c2d12",
+                          border: "1px solid rgba(181,71,8,0.28)",
+                          borderRadius: 999,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          padding: "2px 9px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Cambiar título a «{getTipoCotizacionLabel(tipoActual)}»
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+        {/* 2° Título de la portada (se actualiza según el sistema elegido arriba mientras no se edite a mano). */}
         <div style={{marginBottom:14}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
             <LBL>Título de la portada</LBL>
-            <BotonCorregir valor={textosDocumento.tituloPortada} onChange={(v)=>setTexto("tituloPortada",normalizarTituloFormal(v))} compacto/>
+            <BotonCorregir valor={textosDocumento.tituloPortada} onChange={(v)=>cambiarTituloPortada(normalizarTituloFormal(v), { inmediato: true })} compacto/>
           </div>
           {/* De una sola linea, centrado y en mayuscula: igual que sale
               impreso. Era un campo de varios renglones y cada uno salia como
@@ -1460,17 +1776,49 @@ export default function Cotizacion({ctx}){
               hoja. */}
           <input
             value={String(textosDocumento.tituloPortada||"").replace(/\n+/g," ")}
-            onChange={e=>setTexto("tituloPortada",e.target.value.replace(/\s+/g," "))}
+            onChange={e=>cambiarTituloPortada(e.target.value.replace(/\s+/g," "))}
             onBlur={e=>{
               const v = e.target.value.replace(/\s+/g," ");
               const auto = normalizarTituloFormal(v);
               if (auto !== textosDocumento.tituloPortada) {
-                setTexto("tituloPortada", auto);
+                cambiarTituloPortada(auto, { inmediato: true });
+              } else {
+                sincronizarTipoConTitulo(v);
               }
             }}
             style={{...SI,fontSize:14,fontWeight:600,
               textAlign:"center"}}
           />
+          {(() => {
+            const tipoActual = tipoCotizacionCanonico(propuestasSnapshot[0]?.tipoCotizacion || "linea_vida");
+            const sug = tituloSugeridoParaTipo(tipoActual);
+            const tipoEnTitulo = inferirTipoDesdeTitulo(textosDocumento.tituloPortada);
+            const yaTieneBannerDiferencia = Boolean(tipoEnTitulo) && tipoActual !== "manual" && tipoEnTitulo !== tipoActual;
+            if (!sug || coincideTextoPlantilla(textosDocumento.tituloPortada, sug) || yaTieneBannerDiferencia) return null;
+            return (
+              <div style={{ marginTop: 5 }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTexto("tituloPortada", sug);
+                    setAvisoCambioSistema(null);
+                  }}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "#0369a1",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  Restaurar título sugerido para «{getTipoCotizacionLabel(tipoActual)}»
+                </button>
+              </div>
+            );
+          })()}
           <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>
             El título grande de la primera hoja. Cámbialo según el trabajo (se formatea automáticamente con mayúsculas iniciales por palabra). Sale centrado en la portada; si es largo, la hoja lo reparte solo en varias líneas.
           </div>
@@ -1486,7 +1834,32 @@ export default function Cotizacion({ctx}){
             }}
             style={{...SI,minHeight:60,resize:"vertical",lineHeight:1.6}}
           />
-          <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Se imprime después de &quot;Cordial saludo, [cliente]&quot;. Si la obra tiene nombre, se agrega al final. No hace falta el punto final.</div>
+          {(() => {
+            const tipoActual = tipoCotizacionCanonico(propuestasSnapshot[0]?.tipoCotizacion || "linea_vida");
+            const sug = saludoSugeridoParaTipo(tipoActual);
+            if (!sug || coincideTextoPlantilla(textosDocumento.saludo, sug)) return null;
+            return (
+              <div style={{ marginTop: 5 }}>
+                <button
+                  type="button"
+                  onClick={() => setTexto("saludo", sug)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "#0369a1",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  Restaurar frase sugerida para «{getTipoCotizacionLabel(tipoActual)}»
+                </button>
+              </div>
+            );
+          })()}
+          <div style={{fontSize:10,color:"#94a3b8",marginTop:4}}>Cambia automáticamente según el tipo de sistema mientras no la edites a mano. Se imprime después de &quot;Cordial saludo, [cliente]&quot;; si la obra tiene nombre, se agrega al final. No hace falta el punto final.</div>
         </div>
         {/* Se oculta de la visual «Presentación de la empresa»: el valor se
             conserva en textosDocumento.presentacion y se sigue imprimiendo en

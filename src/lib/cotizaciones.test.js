@@ -1,13 +1,25 @@
 import { describe, expect, it } from "vitest";
 import {
+  SALUDO_SUGERIDO_POR_TIPO,
+  TITULO_SUGERIDO_POR_TIPO,
   buildQuoteProposal,
+  coincideTextoPlantilla,
+  esPresentacionEstandarDeSistema,
+  esSaludoEstandarDeSistema,
+  esTituloEstandarDeSistema,
   getQuoteApprovalAccountingSnapshot,
   getQuoteProposalTotals,
+  inferirTipoDesdeTitulo,
   normalizeProposalItems,
   normalizeQuoteItems,
   porcentajeUtilidad,
+  presentacionSugeridaParaTipo,
+  resolverTipoCotizacion,
+  saludoSugeridoParaTipo,
   tipoCotizacionCanonico,
+  tituloSugeridoParaTipo,
 } from "./cotizaciones";
+import { getTextosDocumento } from "./cotizacionTextos";
 
 // Subtotal 250.000: 2 x 100.000 + 1 x 50.000
 const ITEMS = [
@@ -153,5 +165,93 @@ describe("tipoCotizacionCanonico", () => {
     expect(tipoCotizacionCanonico("Línea de vida camionera")).toBe("linea_vida_camionera");
     expect(tipoCotizacionCanonico("linea_vida_camionera")).toBe("linea_vida_camionera");
     expect(tipoCotizacionCanonico("manual")).toBe("manual");
+  });
+});
+
+describe("inferirTipoDesdeTitulo", () => {
+  it("distingue linea de vida camionera de la linea de vida normal", () => {
+    expect(inferirTipoDesdeTitulo("Instalación de Línea de Vida Camionera")).toBe("linea_vida_camionera");
+    expect(
+      inferirTipoDesdeTitulo("Reemplazo de Cable para Línea de Vida Camionera e Instalación de Línea de Vida Camionera")
+    ).toBe("linea_vida_camionera");
+    expect(inferirTipoDesdeTitulo("Sistema de líneas de vida Certificadas para Trabajo en Alturas")).toBe("linea_vida");
+    expect(inferirTipoDesdeTitulo("Sistema de l.v.h Certificado para Trabajo en Alturas")).toBe("linea_vida");
+    expect(inferirTipoDesdeTitulo("Sistema de líneas de de vidaCertificado para Trabajo en Altura")).toBe("linea_vida");
+  });
+
+  it("detecta estructuras metalicas y pergolas", () => {
+    expect(inferirTipoDesdeTitulo("estructura metálica plataforma de aires acondicionados")).toBe("estructuras_metalicas");
+    expect(inferirTipoDesdeTitulo("repotenciación de pergola")).toBe("estructuras_metalicas");
+    expect(inferirTipoDesdeTitulo("estructura metálica para parqueadero")).toBe("estructuras_metalicas");
+    expect(inferirTipoDesdeTitulo("instalacion pergola")).toBe("estructuras_metalicas");
+    expect(inferirTipoDesdeTitulo("Sistema de Líneas de Vida sobre Estructura Metálica")).toBe("linea_vida");
+    expect(inferirTipoDesdeTitulo("Instalación de Anclajes en Cubierta Metálica")).toBe("puntos_anclaje");
+  });
+
+  it("detecta escaleras solas y sistemas combinados con linea de vida", () => {
+    expect(inferirTipoDesdeTitulo("Sistema de ESCALERAS CertificadAS para Trabajo en Alturas")).toBe("escaleras");
+    expect(inferirTipoDesdeTitulo("Sistema de escalera tipo gato para Trabajo en Alturas")).toBe("escaleras");
+    expect(inferirTipoDesdeTitulo("ESCALERA PARA ACCESO A CUBIERTA")).toBe("escaleras");
+    expect(inferirTipoDesdeTitulo("Escalera fija con línea de vida vertical")).toBe("escaleras");
+    expect(inferirTipoDesdeTitulo("Sistema de lineas de vida y escalera Certificado para Trabajo en Alturas")).toBe("linea_vida");
+    expect(
+      inferirTipoDesdeTitulo("RECERTIFICACIÓN E INSTALACIÓN DE Sistema de Anclajes, LÍNEAS DE VIDA Y ESCALERAS")
+    ).toBe("linea_vida");
+  });
+
+  it("detecta anclajes, servicios de recertificacion y trabajos manuales", () => {
+    expect(inferirTipoDesdeTitulo("Sistema de Anclajes Certificado\npara Trabajo en Alturas")).toBe("puntos_anclaje");
+    expect(inferirTipoDesdeTitulo("recertificación del Sistema de Anclajes para Trabajo en Alturas")).toBe("puntos_anclaje");
+    expect(inferirTipoDesdeTitulo("recertificación Sistema de líneas de vida Certificadas")).toBe("linea_vida");
+    expect(inferirTipoDesdeTitulo("Mantenimiento y Recertificación de Todo el Sistema Anticaidas para Trabajo en Alturas")).toBe("servicios");
+    expect(inferirTipoDesdeTitulo("RECERTIFICACION SISTEMA ANTICAIDAS")).toBe("servicios");
+    expect(inferirTipoDesdeTitulo("INSTALACIÓN DE TECHO TERMO ACUSTICO")).toBe("manual");
+    expect(inferirTipoDesdeTitulo("serviCio de evaluación estructural")).toBe("manual");
+    expect(inferirTipoDesdeTitulo("pruebas de carga horizontal/vertical")).toBe("manual");
+    expect(inferirTipoDesdeTitulo("")).toBe("");
+  });
+
+  it("sincroniza en sentido inverso con titulos estandar por tipo", () => {
+    expect(tituloSugeridoParaTipo("escaleras")).toBe("Sistema de Escaleras Certificadas para Trabajo en Alturas");
+    expect(tituloSugeridoParaTipo("linea_vida_camionera")).toBe("Instalación de Línea de Vida Camionera");
+    expect(tituloSugeridoParaTipo("obra_blanca")).toBe("Ejecución de Trabajos y Adecuaciones en Obra Blanca");
+    expect(tituloSugeridoParaTipo("manual")).toBe("Propuesta Técnica y Económica");
+    expect(esTituloEstandarDeSistema("Sistema de Anclajes Certificado\npara Trabajo en Alturas")).toBe(true);
+    expect(esTituloEstandarDeSistema("Instalación de Sistema de Protección en Obra Blanca")).toBe(true);
+    expect(esTituloEstandarDeSistema("Instalación de Pérgola en Terraza Norte")).toBe(false);
+    expect(coincideTextoPlantilla("Sistema de Anclajes Certificado\npara Trabajo en Alturas", tituloSugeridoParaTipo("puntos_anclaje"))).toBe(true);
+    expect(resolverTipoCotizacion({ tipoCotizacion: "linea_vida", propuestas: [{ id: "p1", tipoCotizacion: "escaleras" }] })).toBe("escaleras");
+  });
+
+  it("ajusta frase de apertura y presentacion segun el tipo de sistema sin pisar textos personalizados", () => {
+    for (const [tipo, saludo] of Object.entries(SALUDO_SUGERIDO_POR_TIPO)) {
+      expect(saludo.startsWith("Agradecemos la oportunidad de presentarles nuestra propuesta para ")).toBe(true);
+      expect(saludo.endsWith(".")).toBe(false);
+      expect(esSaludoEstandarDeSistema(saludo)).toBe(true);
+      expect(Boolean(TITULO_SUGERIDO_POR_TIPO[tipo])).toBe(true);
+    }
+    expect(esSaludoEstandarDeSistema("Agradecemos la oportunidad de presentarles nuestra propuesta para impermeabilizar la terraza norte")).toBe(false);
+
+    // Obra blanca, estructuras metálicas y manual no deben prometer certificación 4272 en la carta
+    for (const tipoNoAlturas of ["obra_blanca", "estructuras_metalicas", "manual"]) {
+      const pres = presentacionSugeridaParaTipo(tipoNoAlturas);
+      expect(pres).not.toContain("4272");
+      expect(esPresentacionEstandarDeSistema(pres)).toBe(true);
+    }
+    expect(presentacionSugeridaParaTipo("puntos_anclaje")).toContain("4272");
+
+    const textosObraBlanca = getTextosDocumento({ tipoCotizacion: "obra_blanca" });
+    expect(textosObraBlanca.saludo).toBe(saludoSugeridoParaTipo("obra_blanca"));
+    expect(textosObraBlanca.presentacion).not.toContain("4272");
+
+    const textosPersonalizados = getTextosDocumento({
+      tipoCotizacion: "obra_blanca",
+      textosDocumento: {
+        saludo: "Propuesta especial para adecuación de consultorios",
+        presentacion: "Presentación redactada a medida para el cliente.",
+      },
+    });
+    expect(textosPersonalizados.saludo).toBe("Propuesta especial para adecuación de consultorios");
+    expect(textosPersonalizados.presentacion).toBe("Presentación redactada a medida para el cliente.");
   });
 });

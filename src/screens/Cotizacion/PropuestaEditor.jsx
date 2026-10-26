@@ -949,7 +949,8 @@ export default function PropuestaEditor({
                         // Mirar otra categoria del catalogo para sacar un item no
                         // cambia el tipo si la propuesta esta en «Ninguno» o es camionera.
                         if (tipoCoincidente && tipoCanon !== TIPO_MANUAL && tipoCanon !== TIPO_CAMIONERA) {
-                          seleccionarTipoTrabajo(tipoCoincidente, { desdeCatalogo: true });
+                          // Explorar otra categoria del catalogo para agregar un item auxiliar no cambia el tipo de sistema.
+                          void tipoCoincidente;
                         }
                       }}
                       style={{

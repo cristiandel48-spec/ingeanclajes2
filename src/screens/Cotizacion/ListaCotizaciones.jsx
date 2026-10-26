@@ -7,7 +7,8 @@ import {
   etiquetaSeguimiento,
   UMBRAL_POR_VENCER,
 } from "../../lib/seguimientoCotizaciones";
-import { getQuoteActiveProposal } from "../../lib/cotizaciones";
+import { getQuoteActiveProposal, getTipoCotizacionLabel, resolverTipoCotizacion } from "../../lib/cotizaciones";
+import { TEXTOS_DOCUMENTO_DEFAULT } from "../../lib/cotizacionTextos";
 import { useMediaQuery, useIsMobile } from "../../hooks/useMediaQuery";
 import { BarraFija, CABECERA_FIJA } from "../../components/ui";
 
@@ -53,6 +54,7 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
   const isMobile = useMediaQuery("(max-width: 768px)");
   const [busqueda, setBusqueda] = useState("");
   const [estadoFiltro, setEstadoFiltro] = useState("Todas");
+  const [tipoFiltro, setTipoFiltro] = useState("todos");
   const [obraFiltro, setObraFiltro] = useState("todas");
   const [seguimientoFiltro, setSeguimientoFiltro] = useState("todas");
   const [ordenActivo, setOrdenActivo] = useState("recientes");
@@ -105,6 +107,18 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
     ].sort((a, b) => a.localeCompare(b, "es"));
   }, [cotizaciones]);
 
+  // Lista de tipos de sistema presentes en las cotizaciones con su conteo
+  const tiposDisponibles = useMemo(() => {
+    const mapa = new Map();
+    for (const c of cotizaciones || []) {
+      const t = resolverTipoCotizacion(c);
+      mapa.set(t, (mapa.get(t) || 0) + 1);
+    }
+    return [...mapa.entries()]
+      .map(([id, count]) => ({ id, label: getTipoCotizacionLabel(id), count }))
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "es"));
+  }, [cotizaciones]);
+
   // Conteos para el Segmented Control
   const conteos = useMemo(() => {
     const lista = cotizaciones || [];
@@ -132,7 +146,12 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
       res = res.filter((c) => c.estado === "Borrador");
     }
 
-    // 2. Filtro por obra
+    // 2. Filtro por tipo de sistema
+    if (tipoFiltro !== "todos") {
+      res = res.filter((c) => resolverTipoCotizacion(c) === tipoFiltro);
+    }
+
+    // 2b. Filtro por obra
     if (obraFiltro !== "todas") {
       res = res.filter((c) => String(c.obra || "").trim() === obraFiltro);
     }
@@ -149,11 +168,13 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
       });
     }
 
-    // 4. Búsqueda de texto (Spotlight)
+    // 4. Búsqueda de texto (Spotlight: incluye también tipo de sistema y título de portada)
     if (busqueda.trim()) {
       const q = busqueda.toLowerCase().trim();
       res = res.filter((c) => {
-        const texto = [c.numero, c.id, c.cliente, c.obra, c.ciudad]
+        const tipoLabel = getTipoCotizacionLabel(resolverTipoCotizacion(c));
+        const tituloPortada = c?.textosDocumento?.tituloPortada || "";
+        const texto = [c.numero, c.id, c.cliente, c.obra, c.ciudad, tipoLabel, tituloPortada]
           .filter(Boolean)
           .join(" ")
           .toLowerCase();
@@ -166,7 +187,7 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
     res.sort(ordObj.comparar);
 
     return res;
-  }, [cotizaciones, estadoFiltro, obraFiltro, seguimientoFiltro, busqueda, ordenActivo]);
+  }, [cotizaciones, estadoFiltro, tipoFiltro, obraFiltro, seguimientoFiltro, busqueda, ordenActivo]);
 
   return (
     <div
@@ -273,7 +294,7 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
               type="text"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              placeholder="Buscar por cliente, obra o N°..."
+              placeholder="Buscar por cliente, obra, tipo o N°..."
               style={{
                 width: "100%",
                 padding: "8px 36px 8px 32px",
@@ -396,6 +417,30 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
         }}
       >
         <span style={{ fontWeight: 600 }}>Filtrar:</span>
+
+        {/* Filtro por Tipo de Sistema */}
+        <select
+          value={tipoFiltro}
+          onChange={(e) => setTipoFiltro(e.target.value)}
+          style={{
+            background: "var(--surface, #ffffff)",
+            border: "1px solid var(--border, rgba(0, 0, 0, 0.1))",
+            borderRadius: 8,
+            padding: "5px 10px",
+            fontSize: 12,
+            fontWeight: tipoFiltro !== "todos" ? 700 : 400,
+            color: "var(--text-main, #1d1d1f)",
+            outline: "none",
+            cursor: "pointer",
+          }}
+        >
+          <option value="todos">Todos los tipos ({(cotizaciones || []).length})</option>
+          {tiposDisponibles.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.label} ({t.count})
+            </option>
+          ))}
+        </select>
 
         {/* Filtro por Obra */}
         <select
@@ -570,6 +615,79 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
 // SUBCOMPONENTES
 // ===================================================================
 
+const ESTILOS_CHIP_TIPO = {
+  linea_vida: { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
+  puntos_anclaje: { bg: "#eef2ff", color: "#4338ca", border: "#c7d2fe" },
+  linea_vida_camionera: { bg: "#fff7ed", color: "#c2410c", border: "#fed7aa" },
+  escaleras: { bg: "#ecfdf5", color: "#047857", border: "#a7f3d0" },
+  estructuras_metalicas: { bg: "#f1f5f9", color: "#334155", border: "#cbd5e1" },
+  obra_blanca: { bg: "#faf5ff", color: "#7e22ce", border: "#e9d5ff" },
+  servicios: { bg: "#f0f9ff", color: "#0369a1", border: "#bae6fd" },
+  manual: { bg: "#f8fafc", color: "#475569", border: "#e2e8f0" },
+};
+
+function tituloPersonalizadoDe(cotizacion) {
+  const raw = String(cotizacion?.textosDocumento?.tituloPortada || "").replace(/\s+/g, " ").trim();
+  if (!raw) return "";
+  const porDefecto = String(TEXTOS_DOCUMENTO_DEFAULT.tituloPortada || "").replace(/\s+/g, " ").trim();
+  if (raw.toLowerCase() === porDefecto.toLowerCase()) return "";
+  return raw;
+}
+
+function ChipTipoSistema({ cotizacion, compacto = false }) {
+  const tipo = resolverTipoCotizacion(cotizacion);
+  const label = getTipoCotizacionLabel(tipo);
+  const paleta = ESTILOS_CHIP_TIPO[tipo] || ESTILOS_CHIP_TIPO.manual;
+  const tituloPropio = tituloPersonalizadoDe(cotizacion);
+
+  return (
+    <span
+      title={tituloPropio ? `${label} · ${tituloPropio}` : label}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 5,
+        padding: compacto ? "1px 7px" : "2px 8px",
+        borderRadius: 999,
+        fontSize: compacto ? 10.5 : 11,
+        fontWeight: 600,
+        background: paleta.bg,
+        color: paleta.color,
+        border: `1px solid ${paleta.border}`,
+        whiteSpace: "nowrap",
+        maxWidth: "100%",
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+function ResumenTipoYTitulo({ cotizacion }) {
+  const tituloPropio = tituloPersonalizadoDe(cotizacion);
+  return (
+    <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+      <div>
+        <ChipTipoSistema cotizacion={cotizacion} />
+      </div>
+      {tituloPropio ? (
+        <div
+          title={tituloPropio}
+          style={{
+            fontSize: 11,
+            color: "var(--text-subtle, #667085)",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          “{tituloPropio}”
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function BotonSegmentado({ activo, onClick, label }) {
   return (
     <button
@@ -740,6 +858,8 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
         >
           {obraNorm || activa?.nombre || "Cotización técnica"}
         </div>
+
+        <ResumenTipoYTitulo cotizacion={c} />
       </div>
 
       {/* Pie de la tarjeta: Total y Botones de acción */}
@@ -933,20 +1053,24 @@ function FilaTablaCotizacion({ cotizacion: c, acciones, zebra, onInspeccionar })
         {c.cliente || "Sin cliente"}
       </span>
 
-      <span
-        style={{
-          fontSize: 12.5,
-          fontWeight: 400,
-          color: "var(--text-muted, #475467)",
-          letterSpacing: "-0.01em",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-          paddingRight: 10,
-        }}
-      >
-        {c.obra || activa?.nombre || "—"}
-      </span>
+      <div style={{ minWidth: 0, paddingRight: 10 }}>
+        <div
+          style={{
+            fontSize: 12.5,
+            fontWeight: 400,
+            color: "var(--text-muted, #475467)",
+            letterSpacing: "-0.01em",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {c.obra || activa?.nombre || "—"}
+        </div>
+        <div style={{ marginTop: 3 }}>
+          <ChipTipoSistema cotizacion={c} compacto />
+        </div>
+      </div>
 
       <span style={{ color: "var(--text-muted, #667085)", fontSize: 12, fontWeight: 400 }}>
         {fmtD(c.fecha)}

@@ -34,8 +34,8 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
   const showVerticalLifelineAppendix = propuestasConSistema.some((propuesta)=>hasVerticalLifeLineService(propuesta?.quote || propuesta))
     || (!todasManuales && hasVerticalLifeLineService({ alcance: c?.alcance, requerimientoCliente: textoInicial, items: c?.items, titulo: c?.titulo }));
 
-  // Ficha de la linea de vida camionera: despues del precio, como las de la
-  // escalera y la linea vertical, cuando alguna propuesta es de ese tipo.
+  // Ficha de la linea de vida camionera y fichas tecnicas: antes del precio,
+  // para justificar las especificaciones tecnicas antes de los valores economicos.
   const showCamioneraAppendix = propuestas.some((propuesta) => tipoDe(propuesta) === TIPO_CAMIONERA);
 
   // Fichas del punto de anclaje: una por material cotizado -galvanizado,
@@ -1107,12 +1107,12 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
   <body>
     ${coverPage}
     ${introPage}
-    ${proposalSections}
     ${showCatLadderAppendix ? fichaSistema(FICHA_ESCALERA_GATO) : ""}
     ${showVerticalLifelineAppendix ? fichaSistema(FICHA_LINEA_VIDA_VERTICAL) : ""}
     ${showCamioneraAppendix ? fichaSistema(FICHA_LINEA_CAMIONERA) : ""}
     ${materialesAnclaje.map((material) => fichaSistema(fichaPuntoAnclaje(material))).join("")}
     ${showTechnicalPage ? renderTechnicalPage() : ""}
+    ${proposalSections}
     ${mostrarResumenFinal ? "" : renderResumenPropuestas()}
     ${closingSections}
   </body>

@@ -3,6 +3,14 @@
 // de revisarlos ni corregirlos. Ahora cada cotizacion guarda los suyos; si un
 // campo queda vacio se usa el valor por defecto de aqui.
 
+import {
+  esPresentacionEstandarDeSistema,
+  esSaludoEstandarDeSistema,
+  presentacionSugeridaParaTipo,
+  resolverTipoCotizacion,
+  saludoSugeridoParaTipo,
+} from "./cotizaciones";
+
 export const TEXTOS_DOCUMENTO_DEFAULT = {
   // Titulo grande de la portada. Es editable porque no todas las cotizaciones
   // son de trabajo en alturas: tambien hay certificaciones, mantenimiento de
@@ -82,6 +90,14 @@ export function getTextosDocumento(cotizacion = {}) {
   const firmaEsDelGerente = resultado.firmaNombre.trim().toLowerCase() === FIRMA_GERENTE;
   if (firmaEsDelGerente && resultado.firmaCargo.trim().toLowerCase() === CARGO_ANTERIOR) {
     resultado.firmaCargo = TEXTOS_DOCUMENTO_DEFAULT.firmaCargo;
+  }
+
+  const tipo = resolverTipoCotizacion(cotizacion);
+  if (esSaludoEstandarDeSistema(resultado.saludo)) {
+    resultado.saludo = saludoSugeridoParaTipo(tipo) || resultado.saludo;
+  }
+  if (esPresentacionEstandarDeSistema(resultado.presentacion)) {
+    resultado.presentacion = presentacionSugeridaParaTipo(tipo);
   }
 
   return resultado;

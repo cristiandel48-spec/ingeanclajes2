@@ -13,6 +13,7 @@ import Novedades from "./components/Novedades";
 import { novedadesPendientes, marcarNovedadesVistas } from "./lib/novedades";
 import CambiarMiClave from "./components/layout/CambiarMiClave";
 import { borrarCopiasLocales } from "./lib/datosLocales";
+import { medirDesfaseReloj, relojDesfasado } from "./lib/relojLocal";
 
 // El enlace de «¿Olvidaste tu contraseña?» abre el sistema con sesion, sin
 // pedir la contraseña (lo dice la direccion: «#...type=recovery»). Antes se
@@ -235,6 +236,42 @@ function PantallaSinConexion() {
   );
 }
 
+// Fecha u hora del computador mal puesta (ver src/lib/relojLocal.js). Sin
+// esto la persona ve «Tu cuenta no tiene acceso» y busca el problema en la
+// cuenta, que esta bien.
+function PantallaRelojMal({ desfaseMs }) {
+  const formato = { dateStyle: "medium", timeStyle: "short" };
+  const horaLocal = new Date().toLocaleString("es-CO", formato);
+  const horaReal = new Date(Date.now() + desfaseMs).toLocaleString("es-CO", formato);
+
+  return (
+    <Pantalla>
+      <Encabezado />
+      <Titulo>La fecha u hora de este computador está mal</Titulo>
+      <Subtitulo style={{ marginBottom: 20, maxWidth: "36ch" }}>
+        Tu computador marca <strong style={{ color: "var(--text-primary)" }}>{horaLocal}</strong>, pero
+        la hora real es <strong style={{ color: "var(--text-primary)" }}>{horaReal}</strong>. Con el
+        reloj así no se puede mantener la sesión abierta.
+      </Subtitulo>
+      <Callout tono="aviso">
+        En Windows: clic derecho en el reloj de la barra de tareas → «Ajustar fecha y hora».
+        Activa «Establecer la hora automáticamente», presiona «Sincronizar ahora» y vuelve a entrar.
+      </Callout>
+      <div style={{ marginTop: 18 }}>
+        <Button
+          variante="primary"
+          tam="lg"
+          bloque
+          onClick={() => window.location.reload()}
+          style={{ height: 50, borderRadius: 13 }}
+        >
+          Ya la corregí, volver a intentar
+        </Button>
+      </div>
+    </Pantalla>
+  );
+}
+
 export default function SupabaseGate({ children }) {
   const configured = useMemo(() => isSupabaseConfigured(), []);
   const [status, setStatus] = useState(configured ? "checking" : "unconfigured");
@@ -252,6 +289,14 @@ export default function SupabaseGate({ children }) {
   // Texto crudo del fallo tecnico: el mensaje amable no alcanza para
   // diagnosticar desde una foto de la pantalla.
   const [detalleTecnico, setDetalleTecnico] = useState("");
+  // Hora del servidor menos hora local, en ms; null mientras no se mide.
+  const [desfaseReloj, setDesfaseReloj] = useState(null);
+
+  useEffect(() => {
+    let vigente = true;
+    medirDesfaseReloj().then((desfase) => { if (vigente) setDesfaseReloj(desfase); });
+    return () => { vigente = false; };
+  }, []);
   // Se cierra al instante, sin esperar a que la cuenta confirme que se vieron.
   const [novedadesCerradas, setNovedadesCerradas] = useState(false);
   const [debeCambiarClave, setDebeCambiarClave] = useState(vieneDeRecuperacion);
@@ -440,6 +485,12 @@ export default function SupabaseGate({ children }) {
         </Subtitulo>
       </Pantalla>
     );
+  }
+
+  // Con el reloj mal, cualquier otra pantalla de acceso miente sobre la causa.
+  // Si ya entro y la app funciona, no se interrumpe.
+  if (relojDesfasado(desfaseReloj) && status !== "ready" && status !== "terminos") {
+    return <PantallaRelojMal desfaseMs={desfaseReloj} />;
   }
 
   // Validando la sesion o entrando: solo el logotipo y la barra, como el

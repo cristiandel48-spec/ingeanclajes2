@@ -667,12 +667,12 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
         : 8;
       const photoOverhead = 10;
 
-      const espacioDisponible = 214 - (tituloH + reqH + scopeH + narrH + mapH + tableH + photoOverhead);
+      const espacioDisponible = 194 - (tituloH + reqH + scopeH + narrH + mapH + tableH + photoOverhead);
 
       if (numFotos === 1) {
-        customPhotoHeight = Math.min(160, Math.max(105, Math.round(espacioDisponible * 0.95)));
+        customPhotoHeight = Math.min(135, Math.max(85, Math.round(espacioDisponible * 0.88)));
       } else {
-        customPhotoHeight = Math.min(105, Math.max(76, Math.round(espacioDisponible * 0.70)));
+        customPhotoHeight = Math.min(95, Math.max(70, Math.round(espacioDisponible * 0.68)));
       }
     }
 

@@ -49,7 +49,7 @@ export const CSS_COTIZACION = `
          encima del texto. */
       .footer {
         margin-top:auto;
-        padding-top:2.6mm;
+        padding-top:4mm;
         border-top:1.5px solid var(--tinta);
         display:grid;
         grid-template-columns: 1fr 1fr 1fr;
@@ -205,7 +205,7 @@ export const CSS_COTIZACION = `
       .map-label-title { font-size:0; }
       .map-label-value { font-size: var(--texto); }
 
-      .price-table { margin-top:2mm; }
+      .price-table { margin-top:2mm; margin-bottom:8mm; }
       .table { width:100%; border-collapse:collapse; font-size: var(--texto); }
       .table th { background:#1E1E1E; color:#fff; padding:8px 10px; font-size: var(--texto); letter-spacing:.07em; text-transform:uppercase; font-weight:600; text-align:center; border:none; }
       .table th.t-left { text-align:left; }
@@ -485,7 +485,7 @@ export const CSS_COTIZACION = `
       .header { border-bottom:.5pt solid var(--linea); }
       .header-right { text-transform:none; letter-spacing:0; font-weight:500; }
       .header-sello, .header-sello b { font-family:var(--letra); }
-      .footer { border-top:.5pt solid var(--linea); }
+      .footer { border-top:.5pt solid var(--linea); margin-top:auto; padding-top:4mm; }
       .footer-col-center { border-color:var(--linea-suave); }
       .footer-brand { color:var(--tinta); font-weight:500; }
       .footer-main, .footer-sub { font-weight:400; }

@@ -249,6 +249,9 @@ export default function SupabaseGate({ children }) {
   const [user, setUser] = useState(null);
   // "permisos" = a la cuenta le falta membresia; "tecnico" = algo fallo.
   const [motivoBloqueo, setMotivoBloqueo] = useState("permisos");
+  // Texto crudo del fallo tecnico: el mensaje amable no alcanza para
+  // diagnosticar desde una foto de la pantalla.
+  const [detalleTecnico, setDetalleTecnico] = useState("");
   // Se cierra al instante, sin esperar a que la cuenta confirme que se vieron.
   const [novedadesCerradas, setNovedadesCerradas] = useState(false);
   const [debeCambiarClave, setDebeCambiarClave] = useState(vieneDeRecuperacion);
@@ -279,6 +282,11 @@ export default function SupabaseGate({ children }) {
       setUser(currentUser);
       setMotivoBloqueo(esFaltaDePermisos(tenantError) ? "permisos" : "tecnico");
       setError(mensajeAmable(tenantError));
+      setDetalleTecnico(
+        [tenantError?.code, tenantError?.message || String(tenantError || ""), tenantError?.details, tenantError?.hint]
+          .filter(Boolean)
+          .join(" · ")
+      );
       setStatus("blocked");
     }
   };
@@ -451,7 +459,7 @@ export default function SupabaseGate({ children }) {
         </Titulo>
         <Subtitulo style={{ marginBottom: 20 }}>
           {esSesionVencida ? (
-            <>La sesión ya no está abierta. Vuelve a ingresar.</>
+            <>Hubo un problema técnico al abrir la sesión. Vuelve a ingresar; si sigue igual, envía una foto de esta pantalla a soporte.</>
           ) : (
             <>
               Entraste como <strong style={{ color: "var(--text-primary)" }}>{user.email}</strong>, pero esa
@@ -460,7 +468,21 @@ export default function SupabaseGate({ children }) {
           )}
         </Subtitulo>
 
-        {!esSesionVencida && error ? <Callout tono="peligro">{error}</Callout> : null}
+        {error ? <Callout tono="peligro">{error}</Callout> : null}
+
+        {esSesionVencida && detalleTecnico && detalleTecnico !== error ? (
+          <div
+            style={{
+              marginTop: 10, padding: "8px 10px", borderRadius: 8,
+              background: "var(--bg-secondary, rgba(0,0,0,0.04))",
+              fontFamily: "ui-monospace, Consolas, monospace", fontSize: 11.5,
+              color: "var(--text-secondary)", textAlign: "left",
+              wordBreak: "break-word", userSelect: "text",
+            }}
+          >
+            Detalle técnico: {detalleTecnico}
+          </div>
+        ) : null}
 
         <div style={{ marginTop: 18 }}>
           <Button

@@ -304,4 +304,22 @@ describe("plantilla del acta de entrega", () => {
     expect(html).toContain("Orden de trabajo");
     expect(html).toContain("ACT-001");
   });
+
+  it("plasma la firma digital del cliente en el recuadro Recibe conforme cuando esta firmado", () => {
+    const html = buildActaPrintHtml(ACTAS["acta-puntos-de-anclaje"], {
+      firmaCliente: {
+        estado: "firmado",
+        firma_imagen: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        firmante_nombre: "CARLOS MARIO PEREZ",
+        firmante_documento: "98765432",
+        firmante_cargo: "DIRECTOR DE OBRA",
+        firmado_en: "2026-10-27T15:00:00Z",
+      },
+    });
+    expect(html).toContain('alt="Firma del cliente"');
+    expect(html).toContain("NOMBRE: CARLOS MARIO PEREZ");
+    expect(html).toContain("C.C.: 98765432");
+    expect(html).toContain("CARGO: DIRECTOR DE OBRA");
+    expect(html).toContain("Firmado digitalmente");
+  });
 });

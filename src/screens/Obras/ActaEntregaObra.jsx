@@ -164,15 +164,17 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
     setActaId("");
   };
 
+  const envioFirmado = envios.find((e) => e.estado === "firmado") || null;
+
   const imprimir = () => openPrintTab(
-    buildActaPrintHtml(acta, { empresaConfig, firmaImg }),
+    buildActaPrintHtml(acta, { empresaConfig, firmaImg, firmaCliente: envioFirmado }),
     `Acta de entrega ${acta.id}`
   );
 
   const descargar = async () => {
     setGenerandoPdf(true);
     try {
-      await descargarActaPdf(acta, { empresaConfig, firmaImg });
+      await descargarActaPdf(acta, { empresaConfig, firmaImg, firmaCliente: envioFirmado });
     } catch (fallo) {
       toast.error(fallo.message || "No se pudo generar el PDF del acta.");
     } finally {
@@ -217,15 +219,19 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
               <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
                 Orden de trabajo {acta.id}
               </span>
-              <StatusPill tono={faltantes.length ? "aviso" : "exito"}>
-                {faltantes.length ? "Falta información" : "Lista para firmar"}
-              </StatusPill>
+              {envioFirmado ? (
+                <StatusPill tono="exito">Firmada por el cliente</StatusPill>
+              ) : (
+                <StatusPill tono={faltantes.length ? "aviso" : "exito"}>
+                  {faltantes.length ? "Falta información" : "Lista para firmar"}
+                </StatusPill>
+              )}
             </div>
           </div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             <Button tam="sm" variante="tertiary" onClick={imprimir}>Imprimir</Button>
             <Button tam="sm" variante="tertiary" disabled={generandoPdf} onClick={descargar}>
-              {generandoPdf ? "Generando…" : "Descargar PDF"}
+              {generandoPdf ? "Generando…" : envioFirmado ? "Descargar PDF firmado" : "Descargar PDF"}
             </Button>
             <Button tam="sm" variante="primary" onClick={() => setModalFirma(true)}>Enviar a firma</Button>
             {!bloqueada && <Button tam="sm" variante="texto" onClick={borrarActa}>Borrar</Button>}

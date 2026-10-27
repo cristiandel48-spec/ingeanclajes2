@@ -50,8 +50,8 @@ function repartirConMedidasReales(doc, ventana) {
 }
 
 // `liviano`: la version que se le envia al cliente para firmar, a unos 190 ppp.
-export async function generarActaPdf(acta, { empresaConfig, firmaImg = "", onProgreso, liviano = false } = {}) {
-  const html = prepararHtmlParaPdf(buildActaPrintHtml(acta, { empresaConfig, firmaImg }));
+export async function generarActaPdf(acta, { empresaConfig, firmaImg = "", onProgreso, liviano = false, firmaCliente = null } = {}) {
+  const html = prepararHtmlParaPdf(buildActaPrintHtml(acta, { empresaConfig, firmaImg, firmaCliente }));
   const blob = await pdfDeHojas(html, {
     onProgreso,
     ...(liviano ? { escala: 2, calidad: 0.82 } : {}),
@@ -65,10 +65,21 @@ export async function generarActaPdf(acta, { empresaConfig, firmaImg = "", onPro
 
 export async function descargarActaPdf(acta, opciones = {}) {
   const { blob, nombre } = await generarActaPdf(acta, opciones);
-  const url = URL.createObjectURL(blob);
+  let blobFinal = blob;
+  let nombreFinal = nombre;
+  if (opciones.firmaCliente && opciones.firmaCliente.estado === "firmado") {
+    try {
+      const { armarPdfConConstancia, nombreConConstancia } = await import("./constanciaRecibido");
+      blobFinal = await armarPdfConConstancia(blob, opciones.firmaCliente);
+      nombreFinal = `${nombreConConstancia(opciones.firmaCliente)}.pdf`;
+    } catch (e) {
+      console.warn("No se pudo adjuntar la constancia de recibido:", e);
+    }
+  }
+  const url = URL.createObjectURL(blobFinal);
   const enlace = document.createElement("a");
   enlace.href = url;
-  enlace.download = nombre;
+  enlace.download = nombreFinal;
   document.body.appendChild(enlace);
   enlace.click();
   enlace.remove();

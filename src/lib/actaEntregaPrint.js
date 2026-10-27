@@ -28,7 +28,7 @@ const val = (v) => escapeHtml(String(v ?? "").trim());
 // cliente, y una casilla en blanco no se ve como un dato que falta.
 const valOrRaya = (v) => (String(v ?? "").trim() ? val(v) : "<span style=\"color:#c7c7cc;\">__________________</span>");
 
-export function buildActaPrintHtml(acta, { empresaConfig, firmaImg = "" } = {}) {
+export function buildActaPrintHtml(acta, { empresaConfig, firmaImg = "", firmaCliente = null } = {}) {
   const control = getControlDocumental(empresaConfig)?.acta;
   const docCodigo = control?.codigo || "FORM-SST-89";
   const docVersion = control?.version || "02";
@@ -37,6 +37,14 @@ export function buildActaPrintHtml(acta, { empresaConfig, firmaImg = "" } = {}) 
   const contratante = normalizarMayusculas(acta?.contratante || "");
   const sistemas = Array.isArray(acta?.sistemas) ? acta.sistemas : [];
   const colaboradores = (Array.isArray(acta?.colaboradores) ? acta.colaboradores : []).filter(Boolean);
+
+  const firmaClienteObj = firmaCliente || acta?.firmaCliente || null;
+  const firmaClienteImg = firmaClienteObj?.firmaImagen || firmaClienteObj?.firma_imagen || acta?.recibeFirma || acta?.firmaImagen || "";
+  const nombreFirmante = firmaClienteObj?.firmanteNombre || firmaClienteObj?.firmante_nombre || acta?.recibeNombre;
+  const documentoFirmante = firmaClienteObj?.firmanteDocumento || firmaClienteObj?.firmante_documento || acta?.recibeDocumento;
+  const cargoFirmante = firmaClienteObj?.firmanteCargo || firmaClienteObj?.firmante_cargo || acta?.recibeCargo;
+  const fechaFirmadoIso = firmaClienteObj?.firmadoEn || firmaClienteObj?.firmado_en;
+  const fechaFirmadoTexto = fechaFirmadoIso ? fmtL(fechaFirmadoIso) : "";
 
   const celdaControl = (etiqueta, valor, ultima = false) => `
     <tr>
@@ -174,11 +182,14 @@ export function buildActaPrintHtml(acta, { empresaConfig, firmaImg = "" } = {}) 
         <td style="width:50%;padding:10px 0 0 12px;vertical-align:top;">
           <div style="font-size:9px;font-weight:700;color:${GRIS};letter-spacing:0.05em;text-transform:uppercase;margin-bottom:3px;">Recibe conforme · ${val(contratante || "El contratante")}</div>
           <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:3px;font-size:9px;color:${GRIS};font-style:italic;">
-            (Firma de recepción a satisfacción)
+            ${firmaClienteImg
+              ? `<img src="${firmaClienteImg}" alt="Firma del cliente" style="max-height:42px;max-width:180px;object-fit:contain;display:inline-block;font-style:normal;"/>`
+              : `(Firma de recepción a satisfacción)`}
           </div>
-          <div style="font-size:9.5px;color:${TINTA};font-weight:700;">NOMBRE: ${valOrRaya(acta?.recibeNombre)}</div>
-          <div style="font-size:9px;color:${GRIS};margin-top:3px;">C.C.: ${valOrRaya(acta?.recibeDocumento)}</div>
-          <div style="font-size:9px;color:${GRIS};margin-top:3px;">CARGO: ${valOrRaya(acta?.recibeCargo)}</div>
+          <div style="font-size:9.5px;color:${TINTA};font-weight:700;">NOMBRE: ${valOrRaya(nombreFirmante)}</div>
+          <div style="font-size:9px;color:${GRIS};margin-top:3px;">C.C.: ${valOrRaya(documentoFirmante)}</div>
+          <div style="font-size:9px;color:${GRIS};margin-top:3px;">CARGO: ${valOrRaya(cargoFirmante)}</div>${fechaFirmadoTexto ? `
+          <div style="font-size:8px;color:${GRIS};margin-top:3px;">Firmado digitalmente · ${val(fechaFirmadoTexto)}</div>` : ""}
         </td>
       </tr>
     </table>

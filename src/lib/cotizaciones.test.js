@@ -17,6 +17,7 @@ import {
   resolverTipoCotizacion,
   saludoSugeridoParaTipo,
   tipoCotizacionCanonico,
+  tipoDocumentoDePropuesta,
   tituloSugeridoParaTipo,
 } from "./cotizaciones";
 import { getTextosDocumento } from "./cotizacionTextos";
@@ -165,6 +166,24 @@ describe("tipoCotizacionCanonico", () => {
     expect(tipoCotizacionCanonico("Línea de vida camionera")).toBe("linea_vida_camionera");
     expect(tipoCotizacionCanonico("linea_vida_camionera")).toBe("linea_vida_camionera");
     expect(tipoCotizacionCanonico("manual")).toBe("manual");
+  });
+});
+
+describe("tipoDocumentoDePropuesta", () => {
+  const camionera = [
+    { desc: "CAMBIO DE CABLE PARA LÍNEA DE VIDA CAMIONERA EN ACERO INOXIDABLE CON TENSOR" },
+    { desc: "LÍNEA DE VIDA CAMIONERA CON DOS SOPORTES" },
+  ];
+  it("una «Línea de vida» con items solo de la camionera se imprime como camionera (C-26189)", () => {
+    expect(tipoDocumentoDePropuesta({ tipoCotizacion: "linea_vida", items: camionera })).toBe("linea_vida_camionera");
+    expect(tipoDocumentoDePropuesta({ quote: { tipoCotizacion: "Lineas de Vida", items: camionera } })).toBe("linea_vida_camionera");
+  });
+  it("una propuesta mixta, sin items camioneros o de otro tipo no cambia", () => {
+    expect(tipoDocumentoDePropuesta({ tipoCotizacion: "linea_vida", items: [...camionera, { desc: "LÍNEA DE VIDA HORIZONTAL EN CUBIERTA" }] })).toBe("linea_vida");
+    expect(tipoDocumentoDePropuesta({ tipoCotizacion: "linea_vida", items: ITEMS })).toBe("linea_vida");
+    expect(tipoDocumentoDePropuesta({ tipoCotizacion: "linea_vida", items: [] })).toBe("linea_vida");
+    expect(tipoDocumentoDePropuesta({ tipoCotizacion: "manual", items: camionera })).toBe("manual");
+    expect(tipoDocumentoDePropuesta({ tipoCotizacion: "puntos_anclaje", items: camionera })).toBe("puntos_anclaje");
   });
 });
 

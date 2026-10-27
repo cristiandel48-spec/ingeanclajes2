@@ -235,6 +235,25 @@ export function tipoCotizacionCanonico(tipo) {
   return t;
 }
 
+// El tipo con el que se imprime una propuesta. Es el guardado, salvo una
+// propuesta en «Línea de vida» cuyos items de linea de vida son TODOS de la
+// camionera: esa es una camionera. Quedaban asi cuando se marcaba el boton
+// «Línea de vida» para un trabajo camionero, y el documento salia con las
+// definiciones de la linea de cubierta y sin la ficha ni la ilustracion de la
+// camionera (C-26189). Una propuesta mixta -cubierta y camionera- sigue
+// siendo de linea de vida.
+export function tipoDocumentoDePropuesta(propuesta) {
+  const quote = propuesta?.quote || propuesta || {};
+  const tipo = tipoCotizacionCanonico(quote.tipoCotizacion || propuesta?.tipoCotizacion || "");
+  if (tipo !== "linea_vida") return tipo;
+  const items = Array.isArray(propuesta?.items) ? propuesta.items : (Array.isArray(quote.items) ? quote.items : []);
+  const deLinea = items
+    .map((item) => normalizarTextoPlantilla(item?.desc || item?.descripcion || item?.nombre))
+    .filter((texto) => /\blineas? de vida\b|camioner/.test(texto));
+  if (deLinea.length && deLinea.every((texto) => texto.includes("camioner"))) return TIPO_CAMIONERA;
+  return tipo;
+}
+
 const ETIQUETAS_TIPO = {
   manual: "Ninguno (manual)",
   linea_vida: "Línea de vida",

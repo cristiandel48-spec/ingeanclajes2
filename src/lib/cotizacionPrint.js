@@ -6,7 +6,7 @@ import { normalizarMayusculas, normalizarTituloFormal } from "./normalizarEntrad
 import { LOGO_INGEANCLAJES } from "../assets/embeddedImages";
 import { getQuotePrintableProposals, materialesPuntoAnclaje, porcentajeUtilidad } from "./cotizaciones";
 import { getStaticMapDimensions, buildStaticMapLabelData } from "./maps";
-import { TIPO_CAMIONERA, TIPO_MANUAL, hasVerticalLifeLineService, hasCatLadderService, tipoCotizacionCanonico } from "./cotizaciones";
+import { TIPO_CAMIONERA, TIPO_MANUAL, hasVerticalLifeLineService, hasCatLadderService, tipoCotizacionCanonico, tipoDocumentoDePropuesta } from "./cotizaciones";
 import { getTextosDocumento, lineasDeTexto } from "./cotizacionTextos";
 import { corregirOrtografiaLocal } from "./correctorTexto";
 import { cssHojaImpresion } from "./hojaImpresion";
@@ -21,7 +21,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
   // «Ninguno» (manual) no lleva ninguna: antes bastaba con que un item dijera
   // «línea de vida» -«LÍNEA DE VIDA CAMIONERA»- para que el documento saliera
   // con las fichas y definiciones de la linea de vida normal.
-  const tipoDe = (propuesta) => tipoCotizacionCanonico(propuesta?.quote?.tipoCotizacion || propuesta?.tipoCotizacion || "");
+  const tipoDe = tipoDocumentoDePropuesta;
   const propuestasConSistema = propuestas.filter((propuesta) => tipoDe(propuesta) !== TIPO_MANUAL);
   const todasManuales = propuestas.length > 0 && propuestasConSistema.length === 0;
   // Las fichas de la linea de vida horizontal, solo de propuestas que lo son.
@@ -835,9 +835,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
                 ).join("")
               }</div>`;
             }
-            const tipo = tipoCotizacionCanonico(
-              propuestas[0]?.quote?.tipoCotizacion || propuestas[0]?.tipoCotizacion || c?.tipoCotizacion || "linea_vida"
-            );
+            const tipo = (propuestas[0] && tipoDe(propuestas[0])) || tipoCotizacionCanonico(c?.tipoCotizacion || "linea_vida");
             // «Ninguno» o una categoria propia del catalogo (una linea de vida
             // camionera, un trabajo especial): sin definiciones automaticas.
             // Si hacen falta, se escriben en el marco tecnico de la cotizacion.

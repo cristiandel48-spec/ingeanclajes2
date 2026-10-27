@@ -430,11 +430,11 @@ Deno.serve(conOrigenPermitido(async (req) => {
 
       if (!documentoId) return error("Falta el documento.");
       if (!correoValido(para)) return error("El correo del cliente no es válido.");
-      if (!rutaValida) return error("No llegó el PDF del informe. Intenta de nuevo.");
+      if (!rutaValida) return error("No llegó el PDF del documento. Intenta de nuevo.");
       const id = rutaValida[1];
 
       const { data: archivo, error: errBajar } = await admin.storage.from("firmas").download(ruta);
-      if (errBajar || !archivo) return error("No llegó el PDF del informe. Intenta de nuevo.");
+      if (errBajar || !archivo) return error("No llegó el PDF del documento. Intenta de nuevo.");
       const bytes = new Uint8Array(await archivo.arrayBuffer());
       if (bytes.length > MAX_PDF_BYTES) {
         await admin.storage.from("firmas").remove([ruta]);

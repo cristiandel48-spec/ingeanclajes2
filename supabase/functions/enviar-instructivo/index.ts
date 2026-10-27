@@ -13,6 +13,22 @@ function responder(cuerpo: unknown, status = 200) {
   });
 }
 
+// Asunto sin tildes, simbolos ni emojis, y corto (<= 72 chars).
+// Previene que denomailer rompa la cabecera MIME y el correo se vea como texto plano con los headers crudos.
+function asuntoSeguro(valor: unknown, maximo = 72) {
+  const plano = String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[·•–—]/g, "-")
+    .replace(/[^\x20-\x7e]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (plano.length <= maximo) return plano;
+  const corte = plano.slice(0, maximo);
+  const espacio = corte.lastIndexOf(" ");
+  return (espacio > maximo * 0.6 ? corte.slice(0, espacio) : corte).trim();
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: CORS });
@@ -43,7 +59,7 @@ Deno.serve(async (req) => {
     return responder({ error: "Se requiere al menos un destinatario." }, 400);
   }
 
-  const asunto = String(body.asunto || "Instructivo Acta de Entrega FORM-SST-89");
+  const asunto = asuntoSeguro(body.asunto || "Instructivo Acta de Entrega FORM-SST-89");
   const texto = String(body.texto || "");
   const html = String(body.html || "");
   const adjuntos = Array.isArray(body.adjuntos) ? body.adjuntos : (body.adjunto ? [body.adjunto] : []);

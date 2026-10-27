@@ -220,7 +220,8 @@ export default function PropuestaEditor({
         fallos.push(err?.message || `No se pudo cargar «${file?.name || "la foto"}».`);
       }
     }
-    if (nuevas.length) setFotos((prev) => [...prev, ...nuevas]);
+    // Sobre la propuesta vigente, no sobre la de cuando se escogieron.
+    if (nuevas.length) onChange((vigente) => ({ fotos: [...(Array.isArray(vigente.fotos) ? vigente.fotos : []), ...nuevas] }));
     if (fallos.length) {
       await avisar({
         titulo: fallos.length === 1 ? "No se pudo agregar la foto" : `No se pudieron agregar ${fallos.length} fotos`,

@@ -34,6 +34,9 @@ export default function ImportarFacturaDian({
   const procesarContenido = async (archivoOTexto) => {
     setCargando(true);
     setError("");
+    // Si el archivo nuevo falla, no debe quedar a la vista la factura anterior
+    // como si fuera la de este archivo.
+    setResultado(null);
     try {
       const data = await leerFacturaDian(archivoOTexto);
       setResultado(data);
@@ -53,6 +56,8 @@ export default function ImportarFacturaDian({
       setTipoOperacion(op);
       setTarifaRetFuente(autorret ? 0 : (op === "servicio" ? 4.0 : 2.5));
     } catch (err) {
+      // Sin la ✓ de «archivo leído»: no se pudo leer.
+      setArchivo(null);
       setError(err.message || "No se pudo interpretar el archivo de la DIAN.");
     } finally {
       setCargando(false);

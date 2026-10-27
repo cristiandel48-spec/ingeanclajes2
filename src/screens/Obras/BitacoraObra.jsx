@@ -60,13 +60,18 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
 
   // Al guardar la bitacora tambien se mueve el avance de la obra: el inicial
   // mas lo que suma cada jornada. Es el unico sitio donde cambia.
+  //
+  // `siguiente` puede ser una funcion de la bitacora vigente: la usan las
+  // fotos, que tardan en procesarse; si se armara con la de antes de empezar,
+  // pisaria lo que se escribio mientras tanto.
   const guardarBitacoraReal = (siguiente) =>
     setObras((prev) => prev.map((o) => {
       if (o.id !== obra.id) return o;
-      const { avance } = calcularAvanceObra(o.avanceInicial, siguiente);
+      const lista = typeof siguiente === "function" ? siguiente(normalizarBitacora(o.bitacora)) : siguiente;
+      const { avance } = calcularAvanceObra(o.avanceInicial, lista);
       return {
         ...o,
-        bitacora: siguiente,
+        bitacora: lista,
         avance,
         estado: estadoSegunAvance(avance, o.estado),
       };
@@ -186,8 +191,8 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
     setSubiendoFotos(null);
 
     if (imagenes.length) {
-      guardarBitacora(
-        registros.map((r) => {
+      guardarBitacora((vigentes) =>
+        vigentes.map((r) => {
           if (r.id !== registroId) return r;
           const existentes = (r.fotos || []).filter((f) => f.img);
           const nuevas = imagenes.map((img) => ({ img, comentario: "" }));

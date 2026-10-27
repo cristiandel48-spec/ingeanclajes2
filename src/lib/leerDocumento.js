@@ -16,58 +16,80 @@ const MINIMO_CARACTERES = 40;
 
 export const TIPOS_ACEPTADOS = ".pdf,.txt";
 
+// Se usa el build «legacy» de pdf.js: el normal necesita funciones que Safari
+// anterior a 18.2 no tiene (Uint8Array.toHex, Map.getOrInsertComputed) y en
+// esos Mac no abria ningun PDF. El legacy trae esos remiendos.
 async function cargarPdfJs() {
-  const pdfjs = await import("pdfjs-dist");
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.min.mjs");
+  // Si el modulo no llega (pasa con la pestaña abierta durante un deploy: el
+  // archivo de la version anterior ya no existe), no hay nada que reintentar.
+  if (!pdfjs?.getDocument) throw new Error("Hay una versión nueva del sistema: recarga la página e inténtalo otra vez.");
+  let workerPropio = null;
   try {
-    const workerModule = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
-    pdfjs.GlobalWorkerOptions.workerSrc = workerModule.default || "/pdf.worker.min.mjs";
+    workerPropio = (await import("pdfjs-dist/legacy/build/pdf.worker.min.mjs?url")).default;
   } catch {
-    pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+    // Queda el del servidor externo.
   }
-  return pdfjs;
+  return { pdfjs, workerPropio };
+}
+
+// Errores del propio archivo: con otro worker daria igual, no se reintenta.
+const ERRORES_DEL_ARCHIVO = {
+  PasswordException: "Ese PDF está protegido con contraseña. Pídele al cliente una versión sin clave, o ábrelo y guárdalo de nuevo como PDF sin protección.",
+  InvalidPDFException: "Ese archivo no es un PDF válido o está dañado. Prueba descargarlo otra vez.",
+  FormatError: "Ese PDF está dañado o tiene un formato que no se puede leer. Prueba descargarlo otra vez o pedirlo de nuevo.",
+};
+
+export function mensajeErrorPdf(fallo) {
+  return ERRORES_DEL_ARCHIVO[fallo?.name] || null;
+}
+
+async function abrirPdf(pdfjs, datos, workerSrc, opciones) {
+  pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
+  // Copia de los datos en cada intento: pdf.js los transfiere al worker y el
+  // original queda vacio; reintentar con el mismo daba «ArrayBuffer detached».
+  const tarea = pdfjs.getDocument({ ...opciones, data: datos.slice() });
+  try {
+    return await tarea.promise;
+  } catch (fallo) {
+    try { await tarea.destroy(); } catch { /* ya estaba cerrada */ }
+    throw fallo;
+  }
 }
 
 async function textoDePdf(archivo) {
-  const pdfjs = await cargarPdfJs();
+  const { pdfjs, workerPropio } = await cargarPdfJs();
   const datos = new Uint8Array(await archivo.arrayBuffer());
 
   const version = pdfjs.version || "6.2.108";
   // Desde el propio sitio (vite.config.js los copia al compilar), no desde
   // un servidor externo: si ese fallaba, no se podia leer ningun PDF.
-  const cMapUrl = new URL("/pdfjs/cmaps/", window.location.origin).href;
-  const standardFontDataUrl = new URL("/pdfjs/standard_fonts/", window.location.origin).href;
+  const opciones = {
+    cMapUrl: new URL("/pdfjs/cmaps/", window.location.origin).href,
+    cMapPacked: true,
+    standardFontDataUrl: new URL("/pdfjs/standard_fonts/", window.location.origin).href,
+  };
+
+  // Primero el worker del propio sitio; el del servidor externo solo si ese
+  // falla al arrancar.
+  const workers = [
+    workerPropio,
+    `https://cdn.jsdelivr.net/npm/pdfjs-dist@${version}/legacy/build/pdf.worker.min.mjs`,
+  ].filter(Boolean);
 
   let documento;
-  try {
-    documento = await pdfjs.getDocument({
-      data: datos,
-      cMapUrl,
-      cMapPacked: true,
-      standardFontDataUrl,
-    }).promise;
-  } catch (err1) {
-    console.warn("Fallo lectura inicial de PDF con worker, reintentando con worker público:", err1);
+  let ultimoFallo;
+  for (const workerSrc of workers) {
     try {
-      pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-      documento = await pdfjs.getDocument({
-        data: datos,
-        cMapUrl,
-        cMapPacked: true,
-        standardFontDataUrl,
-      }).promise;
-    } catch (err2) {
-      // Ultimo recurso: el worker del servidor externo. Solo llega aqui si
-      // los dos del propio sitio fallaron.
-      console.warn("Fallo lectura de PDF con worker local, reintentando con CDN:", err2);
-      pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
-      documento = await pdfjs.getDocument({
-        data: datos,
-        cMapUrl,
-        cMapPacked: true,
-        standardFontDataUrl,
-      }).promise;
+      documento = await abrirPdf(pdfjs, datos, workerSrc, opciones);
+      break;
+    } catch (fallo) {
+      ultimoFallo = fallo;
+      if (mensajeErrorPdf(fallo)) throw fallo;
+      console.warn(`No se pudo abrir el PDF con el worker ${workerSrc}:`, fallo);
     }
   }
+  if (!documento) throw ultimoFallo || new Error("No se pudo abrir el PDF.");
 
   const paginas = [];
   for (let n = 1; n <= documento.numPages; n += 1) {
@@ -95,6 +117,21 @@ async function textoDePdf(archivo) {
 }
 
 /**
+ * Texto de un .txt. Se intenta UTF-8; si trae caracteres que no son UTF-8
+ * (los .txt que guarda el Bloc de notas viejo o Excel en Windows vienen en
+ * Windows-1252), se relee asi para no mostrar «Bogot�».
+ */
+export function textoPlano(buffer) {
+  const utf8 = new TextDecoder("utf-8").decode(buffer);
+  if (!utf8.includes("�")) return utf8;
+  try {
+    return new TextDecoder("windows-1252").decode(buffer);
+  } catch {
+    return utf8;
+  }
+}
+
+/**
  * Devuelve el texto del archivo y como se obtuvo.
  * Lanza un Error con un mensaje ya entendible si no se puede.
  */
@@ -104,7 +141,13 @@ export async function leerTextoDeArchivo(archivo) {
   const nombre = String(archivo.name || "").toLowerCase();
 
   if (nombre.endsWith(".txt")) {
-    const texto = (await archivo.text()).trim();
+    let texto = "";
+    try {
+      texto = textoPlano(await archivo.arrayBuffer()).trim();
+    } catch (fallo) {
+      console.error("No se pudo leer el TXT:", fallo);
+      throw new Error("No se pudo leer ese archivo. Si está en iCloud, guárdalo primero en el equipo y súbelo desde esa copia.");
+    }
     if (!texto) throw new Error("Ese archivo está vacío.");
     return { texto, comoSeLeyo: "texto", paginas: 1 };
   }
@@ -115,7 +158,7 @@ export async function leerTextoDeArchivo(archivo) {
       texto = await textoDePdf(archivo);
     } catch (fallo) {
       console.error("No se pudo abrir el PDF:", fallo);
-      throw new Error(`No se pudo leer ese archivo PDF: ${fallo?.message || "Puede estar protegido o en un formato no soportado."}`);
+      throw new Error(mensajeErrorPdf(fallo) || `No se pudo leer ese archivo PDF: ${fallo?.message || "puede estar protegido o en un formato no soportado."}`);
     }
     if (texto.length < MINIMO_CARACTERES) {
       throw new Error(

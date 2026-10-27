@@ -157,7 +157,16 @@ export default function Cotizacion({ctx}){
     });
   };
 
+  // `patch` puede ser una funcion de la propuesta vigente: la usan las fotos,
+  // que tardan en procesarse; con el objeto armado antes de empezar se
+  // perdian las de otra tanda o lo que se edito mientras tanto.
   const actualizarPropuesta = (id,patch)=>{
+    if (typeof patch === "function") {
+      setPropuestas((prev)=>prev.map((propuesta)=>(
+        propuesta.id===id ? {...propuesta,...patch(propuesta)} : propuesta
+      )));
+      return;
+    }
     if (patch && Object.prototype.hasOwnProperty.call(patch, "tipoCotizacion")) {
       if (debounceTituloRef.current) clearTimeout(debounceTituloRef.current);
       setAvisoCambioSistema(null);
@@ -1453,7 +1462,7 @@ export default function Cotizacion({ctx}){
           width: isMobile ? "100%" : "auto",
         }}>
           {!dictando && (
-            <Button variante="texto" tam="sm" onClick={() => setDictando(true)} title="Armar la cotización hablando">
+            <Button variante="texto" tam="sm" onClick={() => { setDictando(true); if (!cabeEnDosColumnas) setVerDocumento(false); }} title="Armar la cotización hablando">
               Dictar
             </Button>
           )}
@@ -1462,7 +1471,10 @@ export default function Cotizacion({ctx}){
             <Button
               variante="texto"
               tam="sm"
-              onClick={() => setImportando(true)}
+              // En pantalla angosta el documento tapa el formulario: con «Ver
+              // documento» abierto, el panel se abria oculto y parecia que el
+              // boton no hacia nada.
+              onClick={() => { setImportando(true); if (!cabeEnDosColumnas) setVerDocumento(false); }}
               title="Leer la solicitud que mandó el cliente y armar la cotización con ella"
             >
               Importar

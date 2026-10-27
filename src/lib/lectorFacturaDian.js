@@ -11,12 +11,63 @@ import { today } from "./format";
 // o SHA-1/SHA-256 de 64 a 96 caracteres).
 const CUFE_REGEX = /\b([0-9a-fA-F]{64,96})\b/;
 
-// Normaliza números monetarios evitando NaN.
+// Normaliza números monetarios del XML UBL (punto decimal: «1250000.00») evitando NaN.
 const toNum = (val) => {
   if (val === null || val === undefined || val === "") return 0;
   const num = Number(String(val).replace(/,/g, "").trim());
   return Number.isFinite(num) ? num : 0;
 };
+
+/**
+ * Monto escrito para personas, como sale en el HTML de la factura. En
+ * Colombia el punto separa miles y la coma decimales («$ 1.250.000,00»);
+ * algunos portales usan el formato ingles («1,250,000.00»). Antes se quitaban
+ * solo las comas y «1.250.000» daba 0.
+ */
+export function montoTexto(val) {
+  let s = String(val ?? "").replace(/[^\d.,-]/g, "");
+  if (!s) return 0;
+  const ultimoPunto = s.lastIndexOf(".");
+  const ultimaComa = s.lastIndexOf(",");
+  if (ultimoPunto >= 0 && ultimaComa >= 0) {
+    // El que va de ultimo es el decimal; el otro, de miles.
+    s = ultimaComa > ultimoPunto
+      ? s.replace(/\./g, "").replace(",", ".")
+      : s.replace(/,/g, "");
+  } else {
+    const sep = ultimaComa >= 0 ? "," : ultimoPunto >= 0 ? "." : null;
+    if (sep) {
+      const partes = s.split(sep);
+      // Varias veces, o una con tres cifras detras («125.000»): son miles.
+      const sonMiles = partes.length > 2 || partes[partes.length - 1].length === 3;
+      s = sonMiles ? partes.join("") : partes.join(".");
+    }
+  }
+  const num = Number(s);
+  return Number.isFinite(num) ? num : 0;
+}
+
+// Notas credito y debito tienen otra estructura y restan o suman a una
+// factura anterior: causarlas como si fueran una factura nueva da valores mal.
+const NOTA_REGEX = /<(?:\w+:)?(CreditNote|DebitNote)[\s>]/;
+
+function rechazarNotas(texto) {
+  const nota = texto.match(NOTA_REGEX)?.[1];
+  if (nota) {
+    throw new Error(
+      nota === "CreditNote"
+        ? "Ese archivo es una nota crédito, no una factura. Por ahora solo se pueden causar facturas: regístrala a mano."
+        : "Ese archivo es una nota débito, no una factura. Por ahora solo se pueden causar facturas: regístrala a mano."
+    );
+  }
+}
+
+function exigirTotales(resultado) {
+  if (!resultado.subtotal && !resultado.valorTotalPagar) {
+    throw new Error("No se encontraron los valores de la factura (subtotal y total salen en 0). Revisa que sea el .xml de la factura y no otro documento del .zip.");
+  }
+  return resultado;
+}
 
 // Busca texto en nodos XML ignorando el prefijo de namespace (cbc:, cac:, fe:, etc.).
 function findTextByLocalName(parent, localName) {
@@ -327,13 +378,14 @@ function parsearHtmlDian(htmlString) {
 
   // Extraer Subtotal y Totales numéricos
   const subtotalMatch = textoPlano.match(/(?:Subtotal|Total\s+Bruto|Base\s+Gravable)[:\s]*\$?\s*([\d.,]{3,15})/i);
-  const subtotal = subtotalMatch ? toNum(subtotalMatch[1]) : 0;
+  const subtotal = subtotalMatch ? montoTexto(subtotalMatch[1]) : 0;
 
   const ivaMatch = textoPlano.match(/(?:IVA|Total\s+IVA|Impuesto)[:\s]*\$?\s*([\d.,]{3,15})/i);
-  const valorIva = ivaMatch ? toNum(ivaMatch[1]) : 0;
+  const valorIva = ivaMatch ? montoTexto(ivaMatch[1]) : 0;
 
-  const totalMatch = textoPlano.match(/(?:Total\s+a\s+Pagar|Total\s+Factura|Valor\s+Total|Total)[:\s]*\$?\s*([\d.,]{3,15})/i);
-  const valorTotalPagar = totalMatch ? toNum(totalMatch[1]) : subtotal + valorIva;
+  // \b: sin el, «Total» tambien encontraba el «total» de «Subtotal».
+  const totalMatch = textoPlano.match(/\b(?:Total\s+a\s+Pagar|Total\s+Factura|Valor\s+Total|Total)\b[:\s]*\$?\s*([\d.,]{3,15})/i);
+  const valorTotalPagar = totalMatch ? montoTexto(totalMatch[1]) : subtotal + valorIva;
 
   return {
     formato: "html-dian",
@@ -381,7 +433,11 @@ export async function leerFacturaDian(archivoOTexto) {
   if (typeof archivoOTexto === "string") {
     texto = archivoOTexto.trim();
   } else if (archivoOTexto && typeof archivoOTexto.text === "function") {
-    texto = (await archivoOTexto.text()).trim();
+    try {
+      texto = (await archivoOTexto.text()).trim();
+    } catch {
+      throw new Error("No se pudo leer ese archivo. Si está en iCloud, guárdalo primero en el equipo y súbelo desde esa copia.");
+    }
   } else {
     throw new Error("No se suministró un archivo o texto de factura válido.");
   }
@@ -392,13 +448,14 @@ export async function leerFacturaDian(archivoOTexto) {
 
   // Detectar formato
   const esXml = texto.startsWith("<?xml") || texto.includes("<AttachedDocument") || texto.includes("<Invoice");
+  rechazarNotas(texto);
   if (esXml) {
-    return parsearXmlDian(texto);
+    return exigirTotales(parsearXmlDian(texto));
   }
 
   const esHtml = texto.includes("<html") || texto.includes("<!DOCTYPE html") || texto.includes("<table") || texto.includes("<div");
   if (esHtml) {
-    return parsearHtmlDian(texto);
+    return exigirTotales(parsearHtmlDian(texto));
   }
 
   // Si viene solo un CUFE pegado

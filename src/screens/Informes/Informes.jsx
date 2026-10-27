@@ -708,6 +708,12 @@ export default function Informes({ctx}){
 
   const guardar=async()=>{
     if (guardandoRef.current) return;
+    // Guardar a mitad de la carga dejaba fuera las fotos que faltaban: se
+    // agregan al formulario cuando terminan, despues de haber guardado.
+    if (subiendoFotos) {
+      toast.mostrar(`Espera a que terminen de cargar las fotos (${subiendoFotos.hechas} de ${subiendoFotos.total}).`);
+      return;
+    }
     guardandoRef.current = true;
     try {
       await guardarInforme();
@@ -1237,7 +1243,7 @@ export default function Informes({ctx}){
           <section style={BLOQUE}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:12}}><h2 style={TITULO_BLOQUE}>Recomendaciones generales</h2><BotonCorregir valor={form.recomendaciones} onChange={(v)=>setForm(p=>({...p,recomendaciones:v}))} compacto/></div><textarea value={form.recomendaciones} onChange={e=>setForm(p=>({...p,recomendaciones:e.target.value}))} onBlur={e=>{const v=normalizarParrafos(e.target.value);if(v!==form.recomendaciones)setForm(p=>({...p,recomendaciones:v}));}} rows={6} placeholder="Recomendaciones para el cliente..." spellCheck lang="es" style={{...CAMPO,resize:"vertical",minHeight:130,lineHeight:1.5,fontSize:13}}/></section>
           <div style={{display:"flex",gap:8,alignItems:"center",justifyContent:"flex-end",flexWrap:"wrap",paddingTop:8}}>
             <Button variante="texto" onClick={()=>{setNuevo(false);setEditId(null);}}>Cancelar</Button>
-            <Button variante="oscuro" tam="lg" onClick={guardar}>{editId ? "Guardar cambios" : "Guardar informe"}</Button>
+            <Button variante="oscuro" tam="lg" onClick={guardar} disabled={!!subiendoFotos}>{subiendoFotos ? "Cargando fotos…" : editId ? "Guardar cambios" : "Guardar informe"}</Button>
           </div>
         </div>
       )}

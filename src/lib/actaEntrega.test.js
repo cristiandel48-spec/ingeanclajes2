@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   aceroDeCotizacion,
   construirActa,
+  datosDeEjecucion,
   descripcionDelTrabajo,
   faltantesDelActa,
   fechasDeTrabajo,
@@ -11,6 +12,7 @@ import {
   sistemasDeCotizacion,
   tieneActaEntrega,
 } from "./actaEntrega";
+import { buildActaPrintHtml } from "./actaEntregaPrint";
 
 const obra = {
   id: "OB-010",
@@ -95,6 +97,18 @@ describe("lo que sabe la obra", () => {
     });
   });
 
+  it("si hay dos coordinadores salen los dos, no solo el primero", () => {
+    const conDos = [
+      ...empleados,
+      { id: "EMP-4", nombre: "richard buelvas", cargo: "COORDINADOR DE ALTURAS" },
+    ];
+    const enObra = { ...obra, empleados: ["EMP-1", "EMP-2", "EMP-3", "EMP-4"] };
+    const personal = personalDeObra(enObra, [], conDos);
+    expect(personal.coordinadorAlturas).toBe("Paola Escobar · Richard Buelvas");
+    // Ninguno de los dos se repite abajo como colaborador.
+    expect(personal.colaboradores).toEqual(["William Álvarez"]);
+  });
+
   it("la descripcion prefiere los informes y, si no hay, la bitacora", () => {
     const informes = [{ obraId: "OB-010", actividades: [{ descripcion: "Se instalaron 30 puntos de anclaje." }] }];
     expect(descripcionDelTrabajo(obra, informes)).toBe("Se instalaron 30 puntos de anclaje.");
@@ -161,6 +175,104 @@ describe("el acta armada", () => {
     // escribirlas en la obra. Lo demas lo trajo la cotizacion.
     expect(faltantesDelActa(acta)).toEqual(["las áreas intervenidas"]);
     expect(faltantesDelActa({ sistemas: [] })).toContain("el contratante");
+  });
+});
+
+// ── De la obra a la hoja que firma el cliente ───────────────────────────────
+//
+// Lo de arriba comprueba cada paso por separado. Esto comprueba la CADENA
+// entera, que es de lo que depende poder fiarse del acta: lo que el equipo
+// dejo escrito trabajando -quien tuvo turno, que se hizo cada jornada, que se
+// cotizo- tiene que aparecer, con esas mismas palabras, en la hoja impresa.
+describe("lo que se registro en la obra llega a la hoja impresa", () => {
+  const obraEnEjecucion = {
+    id: "OB-045",
+    cliente: "Productos Alimenticios Sol de Oriente S.A.S",
+    nit: "811035319-7",
+    cotizacionId: "COT-077",
+    empleados: ["EMP-1", "EMP-3"],
+    bitacora: [
+      { fecha: "2026-10-12", descripcion: "Se ancló la escalera con epóxico y se dejó fraguar." },
+      { fecha: "2026-10-14", descripcion: "Se instaló la línea de vida vertical de 9 metros." },
+    ],
+  };
+
+  const equipo = [
+    { id: "EMP-1", nombre: "jamer rincón", cargo: "LIDER DE PROYECTO" },
+    { id: "EMP-3", nombre: "paola escobar", cargo: "COORDINADORA DE ALTURAS" },
+    { id: "EMP-9", nombre: "alguien de otra obra", cargo: "INSTALADOR" },
+  ];
+
+  // El turno de William en esta obra esta en Horarios, no en la obra: asi es
+  // como entra la gente que se suma un dia sin quedar asignada.
+  const horarios = [
+    { obraId: "OB-045", fecha: "2026-10-13", empleadoId: "EMP-4" },
+    { obraId: "OB-999", fecha: "2026-10-13", empleadoId: "EMP-9" },
+  ];
+  const equipoConTurno = [...equipo, { id: "EMP-4", nombre: "william álvarez", cargo: "INSTALADOR" }];
+
+  const cotizacion = {
+    id: "COT-077",
+    items: [{ desc: "Suministro e instalación de línea de vida vertical", unit: "ML", cant: 9 }],
+  };
+
+  const hoja = () => {
+    const acta = construirActa({
+      obra: obraEnEjecucion,
+      cotizacion,
+      informes: [{ obraId: "OB-999", descripcion: "Trabajo de otra obra." }],
+      horarios,
+      empleados: equipoConTurno,
+      obras: [],
+    });
+    return { acta, html: buildActaPrintHtml(acta, { empresaConfig: [], firmaImg: "" }) };
+  };
+
+  it("quien ejecuto el trabajo sale en el acta y en la hoja", () => {
+    const { acta, html } = hoja();
+    expect(acta.liderProyecto).toBe("Jamer Rincón");
+    expect(acta.coordinadorAlturas).toBe("Paola Escobar");
+    expect(acta.colaboradores).toEqual(["William Álvarez"]);
+    for (const nombre of ["Jamer Rincón", "Paola Escobar", "William Álvarez"]) {
+      expect(html).toContain(nombre);
+    }
+    // Y quien firma la entrega es el lider de proyecto, no otro.
+    expect(html).toMatch(/Entrega conforme[\s\S]*Jamer Rincón[\s\S]*Líder de proyecto/);
+  });
+
+  it("lo que se escribio en cada jornada sale en la descripcion", () => {
+    const { html } = hoja();
+    expect(html).toContain("Se ancló la escalera con epóxico y se dejó fraguar.");
+    expect(html).toContain("Se instaló la línea de vida vertical de 9 metros.");
+  });
+
+  it("cada jornada va en su propio parrafo, que es lo que deja partir la hoja", () => {
+    const { html } = hoja();
+    expect(html).toContain('data-divisible="1"');
+    expect((html.match(/data-parte="parrafo"/g) || []).length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("lo cotizado sale en la tabla de lo entregado, con su cantidad", () => {
+    const { html } = hoja();
+    expect(html).toMatch(/<td[^>]*>9<\/td>/);
+    expect(html).toContain("ML");
+    expect(html).toContain("LÍNEA DE VIDA VERTICAL");
+    expect(html).toContain("PRODUCTOS ALIMENTICIOS SOL DE ORIENTE S.A.S");
+  });
+
+  it("no se cuela nada de otra obra", () => {
+    const { html } = hoja();
+    expect(html).not.toContain("Trabajo de otra obra.");
+    expect(html).not.toContain("Alguien de Otra Obra");
+  });
+
+  it("traer de la ejecucion devuelve lo mismo con que se armo el acta", () => {
+    const { acta } = hoja();
+    const traido = datosDeEjecucion({ obra: obraEnEjecucion, informes: [], horarios, empleados: equipoConTurno });
+    expect(traido.liderProyecto).toBe(acta.liderProyecto);
+    expect(traido.coordinadorAlturas).toBe(acta.coordinadorAlturas);
+    expect(traido.colaboradores).toEqual(acta.colaboradores);
+    expect(traido.descripcion).toBe(acta.descripcion);
   });
 });
 

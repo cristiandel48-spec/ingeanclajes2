@@ -14,7 +14,7 @@ import { measurementsToQuoteItems } from "../../lib/maps";
 import { fmt } from "../../lib/format";
 import { DEFAULT_COT_INCLUYE } from "../../data/seed";
 import { TIPO_MANUAL, TIPO_CAMIONERA, fotoDefaultDeTipo, fotosParaTipo, isFotoPuntoAnclajeDefault, getTipoCotizacionLabel, tipoCotizacionCanonico } from "../../lib/cotizaciones";
-import { confirmar } from "../../lib/dialogos";
+import { avisar, confirmar } from "../../lib/dialogos";
 
 // Indice de la categoria del catalogo que corresponde al tipo, o -1 si no
 // tiene. Solo la que significa lo mismo: antes se buscaba «la mas parecida»
@@ -648,17 +648,36 @@ export default function PropuestaEditor({
               <span style={{ fontSize: 28, lineHeight: 1 }}>+</span>
               <span style={{ fontSize: 13, fontWeight: 700 }}>Agregar foto</span>
               <span style={{ fontSize: 11, color: "var(--text-muted, #94a3b8)", fontWeight: 500 }}>
-                Formatos JPG, PNG, WEBP
+                Formatos JPG, PNG, WEBP (HEIC solo en Safari)
               </span>
             </div>
           </div>
           {/* Carga de fotos con alta resolución optimizada para documentos y fotos de obra */}
-          <input ref={fotosRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={async(e)=>{
+          <input ref={fotosRef} type="file" accept="image/*,.heic,.heif" multiple style={{display:"none"}} onChange={async(e)=>{
             const archivos=Array.from(e.target.files||[]);
             e.target.value="";
+            // Una foto que no se puede abrir (HEIC en Chrome, archivo dañado)
+            // no frena a las demas, pero se avisa cual fue y que hacer.
+            // Se agregan todas juntas al final: setFotos parte de la lista que
+            // habia al abrir el selector, y llamarlo una vez por foto dejaba
+            // solo la ultima cuando se escogian varias.
+            const nuevas=[];
+            const fallos=[];
             for(const file of archivos){
-              const src=await leerImagenComprimida(file, { ladoMax: 2400, calidad: 0.90 });
-              setFotos(prev=>[...prev,{id:Date.now()+Math.random(),src,label:""}]);
+              try{
+                const src=await leerImagenComprimida(file, { ladoMax: 2400, calidad: 0.90 });
+                nuevas.push({id:Date.now()+Math.random(),src,label:""});
+              }catch(err){
+                console.error("No se pudo cargar la foto:",file?.name,err);
+                fallos.push(err?.message||`No se pudo cargar «${file?.name||"la foto"}».`);
+              }
+            }
+            if(nuevas.length) setFotos(prev=>[...prev,...nuevas]);
+            if(fallos.length){
+              await avisar({
+                titulo: fallos.length===1 ? "No se pudo agregar la foto" : `No se pudieron agregar ${fallos.length} fotos`,
+                mensaje: fallos.join("\n\n"),
+              });
             }
           }}/>
         </div>

@@ -76,6 +76,11 @@ export function normalizarActas(obra) {
   }));
 }
 
+/** Devuelve true si la obra ya tiene al menos un acta de entrega registrada. */
+export function tieneActaEntrega(obra) {
+  return normalizarActas(obra).length > 0;
+}
+
 /** Todas las actas de todas las obras, para numerar la siguiente sin repetir. */
 export function todasLasActas(obras) {
   return (Array.isArray(obras) ? obras : []).flatMap((o) => normalizarActas(o));

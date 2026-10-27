@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAccionesPantalla, useTituloPantalla } from "../../context/accionesPantalla";
 import { B, CD, PAL, SI, ST } from "../../styles/tokens";
 import { TIPO } from "../../styles/designTokens";
-import { Button, Card, Icono, Input, SegmentedControl, StatusPill } from "../../components/ui";
+import { Button, Card, Icono, Input, SegmentedControl, StatusPill, useToast } from "../../components/ui";
 import { fmt, fmtD, today } from "../../lib/format";
 import { obraEstaCerrada } from "../../lib/flujoObra";
 import { calcularAvanceObra } from "../../lib/bitacoraObra";
@@ -20,6 +20,7 @@ import { resolverAutorGuardado } from "../../lib/autorAuditoria";
 import { getTextosDocumento } from "../../lib/cotizacionTextos";
 import { getQuoteProposals } from "../../lib/cotizaciones";
 import { clientesConQuienRecibe, obraTieneQuienRecibe, quienRecibeDeCliente } from "../../lib/quienRecibe";
+import { tieneActaEntrega } from "../../lib/actaEntrega";
 import ModalQuienRecibe from "../../components/ModalQuienRecibe";
 
 function extraerObjetoCotizacion(texto = "") {
@@ -43,6 +44,7 @@ function extraerObjetoCotizacion(texto = "") {
 }
 
 export default function ObraDetalle({obraId,ctx,onVolver}){
+  const toast = useToast();
   const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,ordenesCompra=[],horarios,setHorarios,irAPantalla,membresia,asegurarDetalle,clientes=[],setClientes}=ctx;
   // Si la obra no tiene a quien enviarle los informes pero la ficha del
   // cliente si, la obra lo toma sola: el directorio de clientes es de donde
@@ -92,10 +94,21 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
     }
   }, [obraId, oAct?.__parcial, asegurarDetalle]);
 
+  const tieneActa = tieneActaEntrega(oAct);
+
+  const irACrearInforme = () => {
+    if (!tieneActa) {
+      toast.error("Esta obra no tiene acta de entrega. Primero debes crear el acta de entrega (FORM-SST-89) para poder generar el informe de actividades.");
+      setDetTab("acta");
+      return;
+    }
+    irAPantalla("informes", { obraId });
+  };
+
   // Volver, Crear informe y Certificar van en la barra de arriba, que no se
   // mueve al bajar por la bitacora. Por la ref llaman a la version vigente.
   const accionesObraRef = useRef({});
-  useEffect(() => { accionesObraRef.current = { onVolver, irAPantalla }; });
+  useEffect(() => { accionesObraRef.current = { onVolver, irAPantalla, irACrearInforme }; });
   useAccionesPantalla(
     oAct ? (
       <div style={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "nowrap" }}>
@@ -105,8 +118,9 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
         <Button
           variante="texto"
           tam="sm"
-          onClick={() => accionesObraRef.current.irAPantalla("informes", { obraId })}
-          title="Crear informe de actividades para esta obra"
+          onClick={() => accionesObraRef.current.irACrearInforme()}
+          title={tieneActa ? "Crear informe de actividades para esta obra" : "Falta el acta de entrega (FORM-SST-89) para poder generar el informe"}
+          style={!tieneActa ? { opacity: 0.6 } : {}}
         >
           Crear informe
         </Button>
@@ -124,7 +138,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
         </Button>
       </div>
     ) : null,
-    [obraId, Boolean(oAct), oAct?.avance]
+    [obraId, Boolean(oAct), oAct?.avance, tieneActa]
   );
   useTituloPantalla(oAct ? `Obra ${oAct.id}` : null);
 

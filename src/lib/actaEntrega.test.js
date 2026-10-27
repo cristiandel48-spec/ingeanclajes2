@@ -9,6 +9,7 @@ import {
   objetivoDeCotizacion,
   personalDeObra,
   sistemasDeCotizacion,
+  tieneActaEntrega,
 } from "./actaEntrega";
 
 const obra = {
@@ -175,5 +176,12 @@ describe("las actas guardadas en la obra", () => {
     expect(acta.sistemas).toEqual([]);
     expect(acta.colaboradores).toEqual([]);
     expect(acta.recibeCargo).toBe("");
+  });
+
+  it("tieneActaEntrega detecta correctamente si la obra tiene o no acta", () => {
+    expect(tieneActaEntrega(null)).toBe(false);
+    expect(tieneActaEntrega({ id: "OB-001" })).toBe(false);
+    expect(tieneActaEntrega({ id: "OB-001", actas: [] })).toBe(false);
+    expect(tieneActaEntrega({ id: "OB-001", actas: [{ id: "ACT-001" }] })).toBe(true);
   });
 });

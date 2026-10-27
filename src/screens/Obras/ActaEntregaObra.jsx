@@ -189,6 +189,7 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
           titulo="Esta obra no tiene acta de entrega"
           texto={
             "El acta (FORM-SST-89) es la hoja que firma el cliente cuando se le entrega el trabajo. " +
+            "Es un requisito obligatorio: sin el acta de entrega no se puede generar el informe de actividades de esta obra. " +
             "El programa la arma con los datos de la obra y de su cotización; en la obra solo hay que revisarla y firmarla."
           }
           accion={!bloqueada ? <Button variante="primary" icono="mas" onClick={crearActa}>Crear acta de entrega</Button> : null}

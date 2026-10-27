@@ -33,6 +33,7 @@ import ModalQuienRecibe from "../../components/ModalQuienRecibe";
 import { celularDeInforme, clientesConQuienRecibe, correoValido, destinatarioDeInforme, quienRecibeDeCliente } from "../../lib/quienRecibe";
 import { normalizarCorreo } from "../../lib/normalizarEntrada";
 import { informeRepetido } from "../../lib/duplicados";
+import { tieneActaEntrega } from "../../lib/actaEntrega";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { useAccionesPantalla, useTituloPantalla } from "../../context/accionesPantalla";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
@@ -329,6 +330,9 @@ export default function Informes({ctx}){
   // montar, asi el formulario abre ya con esa obra y sus datos.
   const obraSolicitada = intencion?.pantalla==="informes" ? intencion.obraId : null;
   const [form,setForm]=useState(()=>buildInformeForm(obraSolicitada?{obraId:obraSolicitada}:{}));
+
+  const obraSeleccionada = obras.find((x) => x.id === form.obraId) || null;
+  const faltaActaEnObra = !editId && Boolean(obraSeleccionada && !tieneActaEntrega(obraSeleccionada));
 
   // La intencion se descarta al salir de la pantalla, para que al volver por
   // el menu no se reabra el formulario.
@@ -723,6 +727,12 @@ export default function Informes({ctx}){
   };
 
   const guardarInforme=async()=>{
+    // Requisito obligatorio: La obra debe tener acta de entrega (FORM-SST-89)
+    if (faltaActaEnObra && obraSeleccionada) {
+      toast.error(`La obra ${obraSeleccionada.id} no tiene acta de entrega. Primero debes crear el acta de entrega (FORM-SST-89) en la obra antes de generar su informe de actividades.`);
+      return;
+    }
+
     // Sin correo de quien recibe no se guarda: el informe no se le podria
     // enviar al cliente para la firma de recibido.
     const recibe = recibeDelFormulario();
@@ -908,7 +918,13 @@ export default function Informes({ctx}){
                   actividades:(!hayContenidoEscrito && traidas.length) ? traidas : p.actividades,
                 };
               });
-            }} style={CAMPO}>{obrasMasNuevasPrimero(obras).map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
+            }} style={CAMPO}>{obrasMasNuevasPrimero(obras).map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select>
+              {faltaActaEnObra && (
+                <div style={{ marginTop: 8, padding: "8px 12px", borderRadius: 8, background: "#fff1f0", border: "1px solid #ffa39e", color: "#cf1322", fontSize: 12, lineHeight: 1.45 }}>
+                  ⚠️ <strong>Esta obra no tiene acta de entrega (FORM-SST-89).</strong> Debes crear el acta de entrega en la obra antes de poder generar su informe de actividades.
+                </div>
+              )}
+            </div>
             <div><LBL>Nombre del proyecto</LBL><input value={form.proyecto} onChange={e=>setForm(p=>({...p,proyecto:e.target.value}))} onBlur={e=>{const v=normalizarMayusculas(e.target.value);if(v!==form.proyecto)setForm(p=>({...p,proyecto:v}));}} autoCapitalize="characters" style={CAMPO}/></div>
             <div><LBL>Localización</LBL><input value={form.localizacion} onChange={e=>setForm(p=>({...p,localizacion:e.target.value}))} onBlur={e=>{const v=normalizarMayusculas(e.target.value);if(v!==form.localizacion)setForm(p=>({...p,localizacion:v}));}} autoCapitalize="characters" style={CAMPO}/></div>
             <div><LBL>Fecha del informe</LBL><input type="date" value={form.fechaInforme} onChange={e=>setForm(p=>({...p,fechaInforme:e.target.value}))} style={CAMPO}/></div>
@@ -1243,7 +1259,15 @@ export default function Informes({ctx}){
           <section style={BLOQUE}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:12}}><h2 style={TITULO_BLOQUE}>Recomendaciones generales</h2><BotonCorregir valor={form.recomendaciones} onChange={(v)=>setForm(p=>({...p,recomendaciones:v}))} compacto/></div><textarea value={form.recomendaciones} onChange={e=>setForm(p=>({...p,recomendaciones:e.target.value}))} onBlur={e=>{const v=normalizarParrafos(e.target.value);if(v!==form.recomendaciones)setForm(p=>({...p,recomendaciones:v}));}} rows={6} placeholder="Recomendaciones para el cliente..." spellCheck lang="es" style={{...CAMPO,resize:"vertical",minHeight:130,lineHeight:1.5,fontSize:13}}/></section>
           <div style={{display:"flex",gap:8,alignItems:"center",justifyContent:"flex-end",flexWrap:"wrap",paddingTop:8}}>
             <Button variante="texto" onClick={()=>{setNuevo(false);setEditId(null);}}>Cancelar</Button>
-            <Button variante="oscuro" tam="lg" onClick={guardar} disabled={!!subiendoFotos}>{subiendoFotos ? "Cargando fotos…" : editId ? "Guardar cambios" : "Guardar informe"}</Button>
+            <Button
+              variante="oscuro"
+              tam="lg"
+              onClick={guardar}
+              disabled={!!subiendoFotos || faltaActaEnObra}
+              title={faltaActaEnObra ? "No se puede guardar: la obra debe tener acta de entrega (FORM-SST-89)" : ""}
+            >
+              {subiendoFotos ? "Cargando fotos…" : editId ? "Guardar cambios" : "Guardar informe"}
+            </Button>
           </div>
         </div>
       )}

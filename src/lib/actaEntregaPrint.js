@@ -163,14 +163,28 @@ export function buildActaPrintHtml(acta, { empresaConfig, firmaImg = "", firmaCl
     </div>
   `;
 
-  const bloqueTexto = (titulo, cuerpo, vacio) => `
+  // El cuerpo va partido en parrafos -un parrafo por cada renglon en blanco-
+  // en vez de en un solo bloque de texto. Asi, cuando la descripcion no cabe
+  // en lo que queda de hoja, se reparte por parrafos entre una hoja y la
+  // siguiente (ver lib/repaginarHojas.js) en lugar de saltar entera y dejar
+  // media hoja en blanco detras.
+  const parrafosDe = (cuerpo) => String(cuerpo || "")
+    .trim()
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  const bloqueTexto = (titulo, cuerpo, vacio) => {
+    const parrafos = parrafosDe(cuerpo);
+    return `
     <div style="font-size:10px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:${TINTA};margin-bottom:5px;">${titulo}</div>
-    <div style="border:1px solid ${LINEA_SUAVE};border-radius:8px;background:#ffffff;padding:9px 12px;margin-bottom:10px;">
-      ${String(cuerpo || "").trim()
-        ? `<div style="font-size:10.5px;color:${TINTA};line-height:1.48;text-align:justify;white-space:pre-line;">${val(cuerpo)}</div>`
-        : `<div style="font-size:9.5px;color:${GRIS};font-style:italic;">${vacio}</div>`}
+    <div data-parte="caja" style="border:1px solid ${LINEA_SUAVE};border-radius:8px;background:#ffffff;padding:9px 12px;margin-bottom:10px;">
+      ${parrafos.length
+        ? parrafos.map((p, i) => `<div data-parte="parrafo" style="font-size:10.5px;color:${TINTA};line-height:1.48;text-align:justify;white-space:pre-line;${i ? "margin-top:7px;" : ""}">${val(p)}</div>`).join("")
+        : `<div data-parte="parrafo" style="font-size:9.5px;color:${GRIS};font-style:italic;">${vacio}</div>`}
     </div>
   `;
+  };
 
   const firmas = () => `
     <table class="bloque-firma" style="width:100%;border-collapse:collapse;margin-top:4px;border-top:1px solid ${LINEA_SUAVE};padding-top:8px;">
@@ -204,14 +218,14 @@ export function buildActaPrintHtml(acta, { empresaConfig, firmaImg = "", firmaCl
   // generar el PDF, midiendo lo ya dibujado (ver lib/repaginarHojas.js). Aqui
   // se emite una sola hoja: el acta cabe en una salvo que la descripcion del
   // trabajo sea muy larga, y entonces el reparto la pasa a la siguiente.
-  const marcar = (html, rol) => `<div data-rol="${rol}">${html}</div>`;
+  const marcar = (html, rol, divisible = false) => `<div data-rol="${rol}"${divisible ? ' data-divisible="1"' : ""}>${html}</div>`;
 
   const contenido = [
     marcar(encabezadoPortada() + datosContratante(), "fijo"),
     marcar(sistemaInstalado(), "contenido"),
     marcar(personalEnObra(), "contenido"),
-    marcar(bloqueTexto("3. Descripción del trabajo realizado", acta?.descripcion, "Sin descripción del trabajo."), "contenido"),
-    marcar(bloqueTexto("4. Observaciones", acta?.observaciones, "Sin observaciones."), "contenido"),
+    marcar(bloqueTexto("3. Descripción del trabajo realizado", acta?.descripcion, "Sin descripción del trabajo."), "contenido", true),
+    marcar(bloqueTexto("4. Observaciones", acta?.observaciones, "Sin observaciones."), "contenido", true),
     marcar(firmas(), "contenido"),
   ].join("\n");
 

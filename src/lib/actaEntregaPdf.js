@@ -11,7 +11,7 @@ import { nombreDocumento } from "./nombreArchivo";
 import { FUENTE } from "../styles/designTokens";
 import { ALTO_HOJA, pdfDeHojas } from "./pdfHojas";
 
-function prepararHtmlParaPdf(html) {
+export function prepararHtmlParaPdf(html) {
   return html
     .replace("</head>", `<style>
       body, table, td, th, input, button,
@@ -33,7 +33,7 @@ function prepararHtmlParaPdf(html) {
 
 // Igual que en el informe: el alto util es el de la hoja menos los margenes
 // (que aqui son el `padding` de .page) menos el pie.
-function repartirConMedidasReales(doc, ventana) {
+export function repartirConMedidasReales(doc, ventana) {
   try {
     const primera = doc.querySelector(".page");
     const pie = primera?.querySelector(".page-footer");

@@ -24,6 +24,17 @@
 //
 // Si no encuentra esas marcas no toca nada y lo deja como estaba, asi que
 // es seguro llamarlo sobre un documento que no las trae.
+//
+// ── Bloques que se pueden partir ─────────────────────────────────────────
+//
+// Un bloque de contenido se mueve entero, y cuando es alto -la descripcion
+// del trabajo de un acta ocupa media hoja- al no caber se va a la hoja
+// siguiente y deja un hueco en blanco enorme detras.
+//
+// Por eso un bloque puede venir marcado `data-divisible="1"`: dentro trae
+// un `[data-parte="caja"]` cuyos hijos (los parrafos) si se pueden repartir.
+// Entonces en la hoja se deja lo que quepa y el resto sigue en la siguiente,
+// sin el titulo, como un texto que continua.
 
 /**
  * @param {Document} doc  Documento ya dibujado (el del iframe oculto).
@@ -63,6 +74,11 @@ export function repaginarHojas(doc, { altoUtil }) {
   for (const seccion of secciones) contenedorDe(seccion).replaceChildren();
 
   const nuevas = [];
+  // La ultima hoja que hay puesta en el documento. Hace falta llevarla a
+  // mano: `secciones` es la lista de las que habia al empezar, asi que a
+  // partir de la tercera hoja nueva todas se colgaban detras de la primera
+  // y el documento quedaba con las hojas desordenadas.
+  let ultima = secciones[secciones.length - 1];
   const abrirHoja = (primera) => {
     let seccion;
     if (nuevas.length < secciones.length) {
@@ -72,8 +88,9 @@ export function repaginarHojas(doc, { altoUtil }) {
       seccion.className = molde.className;
       seccion.innerHTML = molde.innerHTML;
       contenedorDe(seccion).replaceChildren();
-      secciones[secciones.length - 1].after(seccion);
+      ultima.after(seccion);
     }
+    ultima = seccion;
     const caja = contenedorDe(seccion);
     if (primera && fijo) caja.appendChild(fijo);
     if (!primera && encabezado) caja.appendChild(encabezado.cloneNode(true));
@@ -94,17 +111,71 @@ export function repaginarHojas(doc, { altoUtil }) {
     return total;
   };
 
-  for (const bloque of bloques) {
+  // Deja en la hoja los parrafos del bloque que quepan y devuelve un bloque
+  // gemelo -sin titulo- con los que sobraron, o null si no se pudo partir.
+  const partir = (bloque) => {
+    const contenedor = bloque.querySelector('[data-parte="caja"]');
+    const parrafos = contenedor ? [...contenedor.children] : [];
+    if (parrafos.length < 2) return null;
+
+    contenedor.replaceChildren();
     caja.appendChild(bloque);
-    if (altoDe(caja) > altoUtil && caja.children.length > 1) {
-      // No cabia: se lleva a una hoja nueva. Si es el unico bloque de la
-      // hoja se queda igual, porque moverlo no arreglaria nada y lo
-      // dejaria dando saltos de hoja en hoja.
-      caja.removeChild(bloque);
-      caja = abrirHoja(false);
-      caja.appendChild(bloque);
-      movidos += 1;
+
+    const sobrantes = [];
+    for (const parrafo of parrafos) {
+      // En cuanto uno no cabe, los que siguen van detras de el: el texto
+      // tiene que seguir leyendose en orden.
+      if (sobrantes.length) { sobrantes.push(parrafo); continue; }
+      contenedor.appendChild(parrafo);
+      if (altoDe(caja) > altoUtil) {
+        contenedor.removeChild(parrafo);
+        sobrantes.push(parrafo);
+      }
     }
+
+    // Ni el primer parrafo cabia: partirlo no sirve de nada, se deja que el
+    // bloque entero se vaya a la hoja siguiente.
+    if (!contenedor.children.length) {
+      caja.removeChild(bloque);
+      contenedor.replaceChildren(...parrafos);
+      return null;
+    }
+
+    const resto = bloque.cloneNode(false);
+    const cajaResto = contenedor.cloneNode(false);
+    cajaResto.append(...sobrantes);
+    resto.appendChild(cajaResto);
+    return resto;
+  };
+
+  const pendientes = [...bloques];
+  while (pendientes.length) {
+    const bloque = pendientes.shift();
+    caja.appendChild(bloque);
+    if (altoDe(caja) <= altoUtil) continue;
+
+    const eraElUnico = caja.children.length === 1;
+    caja.removeChild(bloque);
+
+    const resto = bloque.dataset?.divisible === "1" ? partir(bloque) : null;
+    if (resto) {
+      // Lo que cupo ya quedo puesto; el resto sigue en la hoja siguiente.
+      caja = abrirHoja(false);
+      pendientes.unshift(resto);
+      movidos += 1;
+      continue;
+    }
+
+    // No cabia y no se puede partir. Si es el unico bloque de la hoja se
+    // queda igual, porque moverlo no arreglaria nada y lo dejaria dando
+    // saltos de hoja en hoja.
+    if (eraElUnico) {
+      caja.appendChild(bloque);
+      continue;
+    }
+    caja = abrirHoja(false);
+    caja.appendChild(bloque);
+    movidos += 1;
   }
 
   // 3. Se tiran las hojas que quedaron sin usar y se renumera el pie.

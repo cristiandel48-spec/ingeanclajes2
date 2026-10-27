@@ -11,7 +11,7 @@ import { B, CD, SI, ST } from "../../styles/tokens";
 import { fmtD, fmtL, scrollAppToTop, today } from "../../lib/format";
 import { openPrintTab } from "../../lib/abrirImpresion";
 import { buildInformePrintHtml, fmtPeriodo } from "../../lib/informePrint";
-import { descargarInformePdf } from "../../lib/informePdf";
+import { descargarInformePdf, generarInformePdf } from "../../lib/informePdf";
 import { getControlDocumental } from "../../lib/controlDocumental";
 import { LOGO_INGEANCLAJES } from "../../assets/embeddedImages";
 import { bitacoraAActividades, normalizarBitacora, registrosDelPeriodo } from "../../lib/bitacoraObra";
@@ -25,7 +25,7 @@ import ListaInformes from "./ListaInformes";
 import TarjetaCotizacionRef from "./TarjetaCotizacionRef";
 import { obrasMasNuevasPrimero } from "../../lib/identificadores";
 import ModalCotizacionDetalle from "./ModalCotizacionDetalle";
-import { ModalEnviarFirma, PanelFirmaRecibido } from "./FirmaRecibidoInforme";
+import { ModalEnviarFirma, PanelFirmaRecibido } from "../../components/FirmaRecibidoDocumento";
 import { useEnviosFirma, useEstadosFirmaInformes } from "../../hooks/useEnviosFirma";
 import { descargarPdfEnviado, listarEnviosFirma } from "../../lib/firmaRecibido";
 import { armarPdfConConstancia, descargarBlob, nombreConConstancia } from "../../lib/constanciaRecibido";
@@ -1666,7 +1666,16 @@ export default function Informes({ctx}){
         const listo = enriquecerInforme(sel);
         return (
           <ModalEnviarFirma
-            informe={listo}
+            documento={listo}
+            tipo="informe"
+            etiqueta="Informe"
+            tituloFormato="Informe técnico de actividades"
+            generarPdf={generarInformePdf}
+            mensajePorDefecto={
+              `Le enviamos el informe de actividades ${listo.id || listo.numero || ""}` +
+              `${listo.proyecto ? ` de ${listo.proyecto}` : ""}, con el registro de los trabajos ejecutados ` +
+              "y las evidencias fotográficas."
+            }
             contactoEmail={listo.contactoEmail}
             contactoNombre={listo.contacto}
             celular={listo.contactoCelular}

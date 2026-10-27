@@ -242,6 +242,9 @@ export const entityConfig = {
       img_sat: item.imgSat ?? null,
       geo_map_view: item.geoMapView ?? null,
       bitacora: safeArray(item.bitacora),
+      // Actas de entrega de obra (migracion 081). Van dentro de la obra, como
+      // la bitacora: un acta sin su obra no significa nada.
+      actas: safeArray(item.actas),
     }),
     // Sin la migracion 027 la columna `bitacora` no existe y el guardado de
     // TODAS las obras fallaba. Con esta fila de respaldo la obra se sigue
@@ -317,6 +320,7 @@ export const entityConfig = {
       imgSat: row.img_sat,
       geoMapView: row.geo_map_view,
       bitacora: safeArray(row.bitacora),
+      actas: safeArray(row.actas),
       creadoPor: row.creado_por ?? null,
       creadoPorNombre: row.creado_por_nombre ?? "",
       creadoEn: row.creado_en ?? row.created_at ?? null,

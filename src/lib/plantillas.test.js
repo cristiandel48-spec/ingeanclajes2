@@ -10,6 +10,7 @@
 // y se revisa la diferencia antes de subirla.
 
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { buildActaPrintHtml } from "./actaEntregaPrint";
 import { buildCotizacionPrintHtml } from "./cotizacionPrint";
 import { buildInformePrintHtml } from "./informePrint";
 
@@ -232,4 +233,75 @@ describe("plantilla de informe", () => {
       );
     });
   }
+});
+
+// El acta de entrega de obra, con la misma obra de los ejemplos de arriba.
+// Es la que se llenaba a mano: lo que se compara aqui es que las casillas del
+// formato de papel sigan saliendo todas y en su sitio.
+const ACTAS = {
+  "acta-puntos-de-anclaje": {
+    id: "ACT-001",
+    obraId: "OB-010",
+    fecha: "2026-10-20",
+    contratante: "CONSTRUCTORA DE PRUEBA S.A.S.",
+    nit: "900123456-7",
+    telefono: "3001234567",
+    correoFacturacion: "facturacion@prueba.com",
+    correoAdministrativo: "residente@prueba.com",
+    contactoAdministrativo: "Ana Pérez",
+    direccionObra: "EDIFICIO TORRE NORTE, CRA 1 # 2-3, MEDELLÍN",
+    objetivo: "PUNTOS DE ANCLAJE",
+    areasIntervenidas: "CUBIERTA Y TERRAZA DE LA SUBESTACIÓN",
+    fechaInicio: "2026-10-13",
+    fechaEntrega: "2026-10-17",
+    sistemas: [{ cantidad: 30, unidad: "Und", descripcion: "PUNTO DE ANCLAJE CERTIFICADO 5000 LB" }],
+    acero: "galvanizado",
+    colaboradores: ["Juan Gómez", "Luis Ríos"],
+    coordinadorAlturas: "Paola Escobar",
+    liderProyecto: "Jamer Rincón",
+    descripcion: "Se instalaron 30 puntos de anclaje en terraza y cubierta, repartidos según la necesidad de cada módulo.",
+    observaciones: "El sistema queda en óptimas condiciones para el debido uso.",
+    recibeNombre: "Eduard Zuñiga",
+    recibeDocumento: "1040354193",
+    recibeCargo: "RESIDENTE SST",
+  },
+  // Un acta a medias, como sale cuando la obra no tiene cotizacion
+  // vinculada: las casillas vacias salen con su raya para escribirlas a mano.
+  "acta-sin-cotizacion": {
+    id: "ACT-002",
+    fecha: "2026-10-20",
+    contratante: "CONSTRUCTORA DE PRUEBA S.A.S.",
+    sistemas: [],
+    colaboradores: [],
+    acero: "",
+    descripcion: "",
+    observaciones: "",
+  },
+};
+
+describe("plantilla del acta de entrega", () => {
+  for (const [nombre, acta] of Object.entries(ACTAS)) {
+    it(nombre, async () => {
+      await expect(buildActaPrintHtml(acta, { firmaImg: FOTO })).toMatchFileSnapshot(
+        `./__snapshots__/plantillas/${nombre}.html`
+      );
+    });
+  }
+
+  it("marca el acero que se instaló y no el otro", () => {
+    const galvanizado = buildActaPrintHtml(ACTAS["acta-puntos-de-anclaje"]);
+    const inoxidable = buildActaPrintHtml({ ...ACTAS["acta-puntos-de-anclaje"], acero: "inoxidable" });
+    const marcada = (html, etiqueta) =>
+      new RegExp(`✕[^]{0,220}?${etiqueta}`).test(html);
+    expect(marcada(galvanizado, "Acero galvanizado")).toBe(true);
+    expect(marcada(galvanizado, "Acero inoxidable")).toBe(false);
+    expect(marcada(inoxidable, "Acero inoxidable")).toBe(true);
+  });
+
+  it("lleva su codigo de formato y el numero de la orden de trabajo", () => {
+    const html = buildActaPrintHtml(ACTAS["acta-puntos-de-anclaje"]);
+    expect(html).toContain("FORM-SST-89");
+    expect(html).toContain("Orden de trabajo");
+    expect(html).toContain("ACT-001");
+  });
 });

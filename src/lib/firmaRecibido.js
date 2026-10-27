@@ -70,12 +70,12 @@ export async function enlaceDeEnvioFirma(id) {
 }
 
 /** El mensaje de WhatsApp con el enlace de firma, listo para enviar. */
-export function mensajeWhatsAppFirma({ nombre = "", numero = "", proyecto = "", enlace }) {
+export function mensajeWhatsAppFirma({ tipo = "informe", nombre = "", numero = "", proyecto = "", enlace }) {
   const saludo = String(nombre || "").trim().split(/\s+/)[0];
   return [
     `${saludo ? `${saludo}, buen día.` : "Buen día."}`,
     "",
-    `Le enviamos el informe de actividades ${numero}${proyecto ? ` de ${proyecto}` : ""}. Puede revisarlo y firmar el recibido aquí:`,
+    `Le enviamos ${conArticulo(tipo)} ${numero}${proyecto ? ` de ${proyecto}` : ""}. Puede revisar y firmar el recibido aquí:`,
     enlace,
     "",
     "Para firmar le llega un código a su correo. Cualquier duda, por aquí estamos.",
@@ -194,7 +194,19 @@ export async function verificarFirma(codigo) {
 
 // ── Textos ───────────────────────────────────────────────────────────────────
 
-const NOMBRE_TIPO = { informe: "informe de actividades", cotizacion: "cotización", certificado: "certificado" };
+const NOMBRE_TIPO = {
+  informe: "informe de actividades",
+  cotizacion: "cotización",
+  certificado: "certificado",
+  acta: "acta de entrega de obra",
+};
+
+// «el informe de actividades», «la cotización», «el acta de entrega de obra».
+// El articulo va aparte porque el acta y la cotizacion son femeninas y el
+// mensaje quedaba diciendo «le enviamos el acta… el cotización».
+const FEMENINOS = new Set(["cotizacion", "acta"]);
+const conArticulo = (tipo) =>
+  `${FEMENINOS.has(tipo) ? "la" : "el"} ${NOMBRE_TIPO[tipo] || "documento"}`;
 
 /** Lo que el cliente acepta al firmar. Se guarda tal cual en la constancia. */
 export function textoDeRecibido({ tipo = "informe", numero = "", titulo = "" } = {}) {

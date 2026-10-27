@@ -7,12 +7,13 @@ const CADA_MS = 20000;
 
 const pendiente = (e) => e.estado === "enviado" || e.estado === "abierto";
 
-// Envios a firma de recibido de un informe, para el panel del informe.
+// Envios a firma de recibido de un documento, para su panel. `tipo` dice de
+// cual: «informe» o «acta» de entrega.
 //
 // Mientras alguno este pendiente se vuelve a consultar solo: antes habia que
 // salir del informe y volver a entrar para ver que el cliente ya habia
 // firmado. `onFirmado(envio)` avisa cuando uno pasa a firmado.
-export function useEnviosFirma(informeId, { onFirmado } = {}) {
+export function useEnviosFirma(documentoId, { tipo = "informe", onFirmado } = {}) {
   const [envios, setEnvios] = useState([]);
   const [cargando, setCargando] = useState(false);
   const anteriores = useRef(new Map());
@@ -20,10 +21,10 @@ export function useEnviosFirma(informeId, { onFirmado } = {}) {
   useEffect(() => { avisar.current = onFirmado; });
 
   const recargar = useCallback(async () => {
-    if (!informeId) { setEnvios([]); anteriores.current = new Map(); return; }
+    if (!documentoId) { setEnvios([]); anteriores.current = new Map(); return; }
     setCargando(true);
     try {
-      const lista = await listarEnviosFirma("informe", informeId);
+      const lista = await listarEnviosFirma(tipo, documentoId);
       for (const e of lista) {
         const antes = anteriores.current.get(e.id);
         if (antes && antes !== "firmado" && e.estado === "firmado") avisar.current?.(e);
@@ -35,7 +36,7 @@ export function useEnviosFirma(informeId, { onFirmado } = {}) {
     } finally {
       setCargando(false);
     }
-  }, [informeId]);
+  }, [documentoId, tipo]);
 
   useEffect(() => { recargar(); }, [recargar]);
 

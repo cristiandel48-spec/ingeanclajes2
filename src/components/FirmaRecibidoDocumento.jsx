@@ -1,18 +1,22 @@
 import { useState } from "react";
-import { Button, Callout, Input, Sheet, StatusPill, useToast } from "../../components/ui";
-import { generarInformePdf } from "../../lib/informePdf";
+import { Button, Callout, Input, Sheet, StatusPill, useToast } from "./ui";
 import {
   ESTADO_FIRMA, anularEnvioFirma, descargarPdfEnviado, enlaceDeEnvioFirma, enlaceVerificacionFirma, enviarParaFirma, mensajeWhatsAppFirma,
-} from "../../lib/firmaRecibido";
-import { armarPdfConConstancia, descargarBlob, fechaHoraCo, nombreConConstancia } from "../../lib/constanciaRecibido";
-import { confirmar } from "../../lib/dialogos";
-import { normalizarCelular } from "../../lib/whatsapp";
-import { normalizarNombrePersona } from "../../lib/autorAuditoria";
+} from "../lib/firmaRecibido";
+import { armarPdfConConstancia, descargarBlob, fechaHoraCo, nombreConConstancia } from "../lib/constanciaRecibido";
+import { confirmar } from "../lib/dialogos";
+import { normalizarCelular } from "../lib/whatsapp";
+import { normalizarNombrePersona } from "../lib/autorAuditoria";
 
-// Firma de recibido del informe: enviar al cliente y ver en que va.
+// Firma de recibido de un documento: enviarlo al cliente y ver en que va.
 //
-// El panel va encima del documento. Si el informe nunca se envio no ocupa
-// nada; cuando hay envios dice el estado del ultimo y deja ver los demas.
+// Vivia dentro de Informes, porque el informe de actividades fue el primero
+// que se envio a firma. El acta de entrega hace lo mismo con el mismo
+// mecanismo, asi que el panel y la ventana se mudaron aqui: lo unico que
+// cambia entre uno y otro es el tipo, el titulo y como se genera su PDF.
+//
+// El panel va encima del documento. Si nunca se envio no ocupa nada; cuando
+// hay envios dice el estado del ultimo y deja ver los demas.
 
 const fechaCorta = (iso) =>
   iso ? new Date(iso).toLocaleString("es-CO", { timeZone: "America/Bogota", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
@@ -24,7 +28,8 @@ function direccionWhatsApp(celular, mensaje) {
   const texto = encodeURIComponent(mensaje);
   return tel ? `https://wa.me/${tel}?text=${texto}` : `https://api.whatsapp.com/send?text=${texto}`;
 }
-export function PanelFirmaRecibido({ envios, onRecargar, onEnviar, celular = "", proyecto = "" }) {
+
+export function PanelFirmaRecibido({ envios, onRecargar, onEnviar, celular = "", proyecto = "", tipo = "informe" }) {
   const toast = useToast();
   const [ocupado, setOcupado] = useState("");
   const [verTodos, setVerTodos] = useState(false);
@@ -69,7 +74,7 @@ export function PanelFirmaRecibido({ envios, onRecargar, onEnviar, celular = "",
     setOcupado(e.id);
     try {
       const enlace = await enlaceDeEnvioFirma(e.id);
-      const url = direccionWhatsApp(celular, mensajeWhatsAppFirma({ nombre: e.paraNombre, numero: e.numero, proyecto, enlace }));
+      const url = direccionWhatsApp(celular, mensajeWhatsAppFirma({ tipo, nombre: e.paraNombre, numero: e.numero, proyecto, enlace }));
       if (ventana) ventana.location.href = url;
       else window.location.href = url;
     } catch (fallo) {
@@ -142,14 +147,40 @@ export function PanelFirmaRecibido({ envios, onRecargar, onEnviar, celular = "",
   );
 }
 
-export function ModalEnviarFirma({ informe, contactoEmail = "", contactoNombre = "", celular = "", empresaConfig, firmaImg, onCerrar, onEnviado }) {
+/**
+ * Ventana de envio a firma.
+ *
+ * @param {object} props
+ * @param {object} props.documento   el informe o el acta: de ahi salen id,
+ *   numero, proyecto y cliente.
+ * @param {string} props.tipo        «informe» o «acta»: es lo que guarda la
+ *   base y lo que decide los textos del correo y de WhatsApp.
+ * @param {string} props.etiqueta    como se llama en el subtitulo: «Informe».
+ * @param {string} props.tituloFormato  el nombre del formato, que es lo que
+ *   el cliente acepta al firmar.
+ * @param {(doc:object, opciones:object)=>Promise<{blob:Blob,nombre:string}>} props.generarPdf
+ * @param {string} props.mensajePorDefecto  el cuerpo del correo, editable.
+ */
+export function ModalEnviarFirma({
+  documento,
+  tipo = "informe",
+  etiqueta = "Informe",
+  tituloFormato = "Informe técnico de actividades",
+  generarPdf,
+  mensajePorDefecto = "",
+  contactoEmail = "",
+  contactoNombre = "",
+  celular = "",
+  empresaConfig,
+  firmaImg,
+  onCerrar,
+  onEnviado,
+}) {
   const toast = useToast();
   const [para, setPara] = useState(contactoEmail);
   const [paraNombre, setParaNombre] = useState(contactoNombre);
-  const numero = String(informe?.id || informe?.numero || "").trim();
-  const [mensaje, setMensaje] = useState(
-    `Le enviamos el informe de actividades ${numero}${informe?.proyecto ? ` de ${informe.proyecto}` : ""}, con el registro de los trabajos ejecutados y las evidencias fotográficas.`
-  );
+  const numero = String(documento?.id || documento?.numero || "").trim();
+  const [mensaje, setMensaje] = useState(mensajePorDefecto);
   const [estado, setEstado] = useState("");
   const [fallo, setFallo] = useState("");
   // Despues de enviar queda el enlace, para mandarlo tambien por WhatsApp.
@@ -163,18 +194,18 @@ export function ModalEnviarFirma({ informe, contactoEmail = "", contactoNombre =
     setFallo("");
     try {
       setEstado("Generando el PDF…");
-      const { blob, nombre } = await generarInformePdf(informe, { empresaConfig, firmaImg, liviano: true });
+      const { blob, nombre } = await generarPdf(documento, { empresaConfig, firmaImg, liviano: true });
       // Se avisa aqui, antes de subir nada, si aun asi es demasiado grande.
       if (blob.size > 20 * 1024 * 1024) {
-        throw new Error(`El PDF pesa ${(blob.size / 1024 / 1024).toFixed(1)} MB y el límite para enviar es 20 MB. Quita algunas fotos del informe.`);
+        throw new Error(`El PDF pesa ${(blob.size / 1024 / 1024).toFixed(1)} MB y el límite para enviar es 20 MB. Quita algunas fotos del documento.`);
       }
       setEstado("Enviando al cliente…");
       const r = await enviarParaFirma({
-        tipo: "informe",
-        documentoId: informe.id,
+        tipo,
+        documentoId: documento.id,
         numero,
-        titulo: "Informe técnico de actividades",
-        cliente: informe.cliente || informe.contratante || "",
+        titulo: tituloFormato,
+        cliente: documento.cliente || documento.contratante || "",
         para: para.trim(),
         paraNombre: paraNombre.trim(),
         mensaje: mensaje.trim(),
@@ -194,14 +225,14 @@ export function ModalEnviarFirma({ informe, contactoEmail = "", contactoNombre =
 
   if (enlace) {
     const abrir = () => window.open(
-      direccionWhatsApp(cel, mensajeWhatsAppFirma({ nombre: paraNombre, numero, proyecto: informe?.proyecto, enlace })),
+      direccionWhatsApp(cel, mensajeWhatsAppFirma({ tipo, nombre: paraNombre, numero, proyecto: documento?.proyecto, enlace })),
       "_blank",
       "noopener"
     );
     return (
       <Sheet
         titulo="Enviado al cliente"
-        subtitulo={`Informe ${numero}`}
+        subtitulo={`${etiqueta} ${numero}`}
         onCerrar={onCerrar}
         pie={
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
@@ -229,7 +260,7 @@ export function ModalEnviarFirma({ informe, contactoEmail = "", contactoNombre =
   return (
     <Sheet
       titulo="Enviar para firma de recibido"
-      subtitulo={`Informe ${numero}`}
+      subtitulo={`${etiqueta} ${numero}`}
       onCerrar={estado ? undefined : onCerrar}
       cerrarAlPulsarFondo={!estado}
       pie={
@@ -241,7 +272,7 @@ export function ModalEnviarFirma({ informe, contactoEmail = "", contactoNombre =
     >
       <div style={{ display: "grid", gap: 12 }}>
         <Callout tono="info">
-          El cliente recibe un enlace para ver el informe y firmar el recibido. Para firmar le llega un código a este
+          El cliente recibe un enlace para ver el documento y firmar el recibido. Para firmar le llega un código a este
           correo, así queda probado que fue él. Al firmar, el PDF queda con una constancia y un QR de verificación.
         </Callout>
         <Input label="Correo del cliente" obligatorio type="email" value={para} onChange={(e) => setPara(e.target.value)}

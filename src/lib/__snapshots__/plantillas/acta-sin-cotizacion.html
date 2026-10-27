@@ -1,0 +1,269 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Acta de entrega ACT-002 CONSTRUCTORA DE PRUEBA S.A.S.</title>
+    <style>
+      
+    @page { size: Letter; margin: 14mm 13mm 15mm; }
+
+    html, body { margin: 0; padding: 0; background: #ffffff; }
+
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    /* Una «hoja» es un bloque que empieza en pagina nueva y que fluye. No
+       lleva ni alto fijo ni recorte: eso es lo que hacia desaparecer el
+       contenido que no cabia. */
+    .page {
+      position: relative;
+      width: 100%;
+      min-height: 232mm;
+      display: flex;
+      flex-direction: column;
+      break-after: page;
+      page-break-after: always;
+    }
+    .page:last-child { break-after: auto; page-break-after: auto; }
+
+    /* El pie se va al fondo del bloque sin necesidad de posicionarlo contra
+       una hoja de alto fijo. */
+    .page-footer { margin-top: auto; }
+
+    /* Lo que no debe partirse por la mitad, y solo eso. Una tabla entera no
+       entra en esta lista a proposito. */
+    tr, thead, .no-partir, .foto-card, .bloque-firma, figure {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    /* Un titulo nunca se queda solo al final de una hoja. */
+    h1, h2, h3, h4, .doc-h2, .doc-h3 {
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+    p, li { orphans: 3; widows: 3; }
+
+    /* Que ninguna imagen se salga del ancho util, venga del tamaño que venga. */
+    img { max-width: 100%; height: auto; }
+
+    table { width: 100%; border-collapse: collapse; }
+    /* El encabezado de una tabla larga se repite en cada hoja. */
+    thead { display: table-header-group; }
+    tfoot { display: table-footer-group; }
+
+    
+    /* Solo en pantalla: se dibuja la hoja para poder revisar antes de enviar.
+       Al imprimir desaparece y manda @page, que es quien sabe cuanto cabe. */
+    @media screen {
+      body { background: #f1f5f9; padding: 24px 0; }
+      .page {
+        width: 8.5in;
+        margin: 0 auto 20px;
+        padding: 14mm 13mm 15mm;
+        background: #ffffff;
+        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+      }
+    }
+  
+
+      * { letter-spacing: normal; }
+      html, body {
+        font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        color: #1d1d1f;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: geometricPrecision;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .page-inner {
+        position: relative;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        min-height: 232mm;
+        height: 100%;
+        box-sizing: border-box;
+      }
+      .page-content { display: block; flex: 1 1 auto; }
+      .page-footer {
+        margin-top: auto;
+        border-top: 1px solid #e8e8ed;
+        padding-top: 5px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 9px;
+        color: #6e6e73;
+      }
+      @media print {
+        #print-toolbar, #print-toolbar + div { display: none !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <section class="page">
+      <div class="page-inner">
+        <div class="page-content">
+          <div data-rol="fijo">
+    <table style="width:100%;border-collapse:separate;border-spacing:0;border:1px solid #d2d2d7;border-radius:8px;margin-bottom:10px;table-layout:fixed;">
+      <tr>
+        <td style="width:27%;padding:8px 12px;border-right:1px solid #d2d2d7;vertical-align:middle;text-align:center;">
+          <img src="/src/assets/logo-ingeanclajes.jpeg" alt="Ingeanclajes" style="height:44px;max-width:100%;object-fit:contain;display:inline-block;"/>
+        </td>
+        <td style="padding:8px 12px;vertical-align:middle;text-align:center;">
+          <div style="font-size:9px;font-weight:600;color:#6e6e73;text-transform:uppercase;letter-spacing:0.08em;">Sistema de gestión de seguridad y salud en el trabajo</div>
+          <div style="font-size:14px;font-weight:800;color:#1d1d1f;letter-spacing:0.01em;text-transform:uppercase;margin-top:3px;line-height:1.25;">Acta de entrega de obra</div>
+          <div style="font-size:9px;color:#6e6e73;margin-top:4px;">Ingeanclajes S.A.S. · NIT 900.193.965-4 · PBX (604) 448 26 86</div>
+        </td>
+        <td style="width:26%;padding:0;border-left:1px solid #d2d2d7;vertical-align:middle;">
+          <table style="width:100%;border-collapse:collapse;">
+            
+    <tr>
+      <td style="padding:4px 9px;font-size:9px;font-weight:600;color:#6e6e73;text-transform:uppercase;letter-spacing:0.04em;border-bottom:1px solid #e8e8ed;">Código</td>
+      <td style="padding:4px 9px;font-size:10px;font-weight:700;color:#1d1d1f;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;border-bottom:1px solid #e8e8ed;">FORM-SST-89</td>
+    </tr>
+            
+    <tr>
+      <td style="padding:4px 9px;font-size:9px;font-weight:600;color:#6e6e73;text-transform:uppercase;letter-spacing:0.04em;border-bottom:1px solid #e8e8ed;">Versión</td>
+      <td style="padding:4px 9px;font-size:10px;font-weight:700;color:#1d1d1f;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;border-bottom:1px solid #e8e8ed;">02</td>
+    </tr>
+            
+    <tr>
+      <td style="padding:4px 9px;font-size:9px;font-weight:600;color:#6e6e73;text-transform:uppercase;letter-spacing:0.04em;">Orden de trabajo</td>
+      <td style="padding:4px 9px;font-size:10px;font-weight:700;color:#1d1d1f;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">ACT-002</td>
+    </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  
+    <div style="border:1px solid #e8e8ed;border-radius:8px;padding:8px 12px;margin-bottom:10px;background:#f5f5f7;">
+      <table style="width:100%;border-collapse:collapse;font-size:9.5px;">
+        
+      <tr>
+        <td style="width:17%;font-weight:700;color:#6e6e73;letter-spacing:0.04em;text-transform:uppercase;padding:4px 6px;">Contratante:</td>
+        <td style="width:33%;color:#1d1d1f;font-weight:600;font-size:10px;padding:4px 6px;">CONSTRUCTORA DE PRUEBA S.A.S.</td>
+        <td style="width:17%;font-weight:700;color:#6e6e73;letter-spacing:0.04em;text-transform:uppercase;padding:4px 6px;border-left:1px solid #e8e8ed;">NIT:</td>
+        <td style="width:33%;color:#1d1d1f;font-weight:600;font-size:10px;padding:4px 6px;"><span style="color:#c7c7cc;">__________________</span></td>
+      </tr>
+        
+      <tr>
+        <td style="width:17%;font-weight:700;color:#6e6e73;letter-spacing:0.04em;text-transform:uppercase;padding:4px 6px;border-top:1px solid #e8e8ed;">Dirección de obra:</td>
+        <td style="width:33%;color:#1d1d1f;font-weight:600;font-size:10px;padding:4px 6px;border-top:1px solid #e8e8ed;"><span style="color:#c7c7cc;">__________________</span></td>
+        <td style="width:17%;font-weight:700;color:#6e6e73;letter-spacing:0.04em;text-transform:uppercase;padding:4px 6px;border-left:1px solid #e8e8ed;border-top:1px solid #e8e8ed;">Teléfono:</td>
+        <td style="width:33%;color:#1d1d1f;font-weight:600;font-size:10px;padding:4px 6px;border-top:1px solid #e8e8ed;"><span style="color:#c7c7cc;">__________________</span></td>
+      </tr>
+        
+      <tr>
+        <td style="width:17%;font-weight:700;color:#6e6e73;letter-spacing:0.04em;text-transform:uppercase;padding:4px 6px;border-top:1px solid #e8e8ed;">Contacto admin.:</td>
+        <td style="width:33%;color:#1d1d1f;font-weight:600;font-size:10px;padding:4px 6px;border-top:1px solid #e8e8ed;"><span style="color:#c7c7cc;">__________________</span></td>
+        <td style="width:17%;font-weight:700;color:#6e6e73;letter-spacing:0.04em;text-transform:uppercase;padding:4px 6px;border-left:1px solid #e8e8ed;border-top:1px solid #e8e8ed;">Correo fact. electrónica:</td>
+        <td style="width:33%;color:#1d1d1f;font-weight:600;font-size:10px;padding:4px 6px;border-top:1px solid #e8e8ed;"><span style="color:#c7c7cc;">__________________</span></td>
+      </tr>
+        
+      <tr>
+        <td style="width:17%;font-weight:700;color:#6e6e73;letter-spacing:0.04em;text-transform:uppercase;padding:4px 6px;border-top:1px solid #e8e8ed;">Objetivo del proyecto:</td>
+        <td style="width:33%;color:#1d1d1f;font-weight:600;font-size:10px;padding:4px 6px;border-top:1px solid #e8e8ed;"><span style="color:#c7c7cc;">__________________</span></td>
+        <td style="width:17%;font-weight:700;color:#6e6e73;letter-spacing:0.04em;text-transform:uppercase;padding:4px 6px;border-left:1px solid #e8e8ed;border-top:1px solid #e8e8ed;">Correo administrativo:</td>
+        <td style="width:33%;color:#1d1d1f;font-weight:600;font-size:10px;padding:4px 6px;border-top:1px solid #e8e8ed;"><span style="color:#c7c7cc;">__________________</span></td>
+      </tr>
+        
+      <tr>
+        <td style="width:17%;font-weight:700;color:#6e6e73;letter-spacing:0.04em;text-transform:uppercase;padding:4px 6px;border-top:1px solid #e8e8ed;">Áreas intervenidas:</td>
+        <td style="width:33%;color:#1d1d1f;font-weight:600;font-size:10px;padding:4px 6px;border-top:1px solid #e8e8ed;"><span style="color:#c7c7cc;">__________________</span></td>
+        <td style="width:17%;font-weight:700;color:#6e6e73;letter-spacing:0.04em;text-transform:uppercase;padding:4px 6px;border-left:1px solid #e8e8ed;border-top:1px solid #e8e8ed;">Fecha de inicio:</td>
+        <td style="width:33%;color:#1d1d1f;font-weight:600;font-size:10px;padding:4px 6px;border-top:1px solid #e8e8ed;"><span style="color:#c7c7cc;">__________________</span></td>
+      </tr>
+        
+      <tr>
+        <td style="width:17%;font-weight:700;color:#6e6e73;letter-spacing:0.04em;text-transform:uppercase;padding:4px 6px;border-top:1px solid #e8e8ed;">Fecha del acta:</td>
+        <td style="width:33%;color:#1d1d1f;font-weight:600;font-size:10px;padding:4px 6px;border-top:1px solid #e8e8ed;">20 de octubre de 2026</td>
+        <td style="width:17%;font-weight:700;color:#6e6e73;letter-spacing:0.04em;text-transform:uppercase;padding:4px 6px;border-left:1px solid #e8e8ed;border-top:1px solid #e8e8ed;">Fecha de entrega:</td>
+        <td style="width:33%;color:#1d1d1f;font-weight:600;font-size:10px;padding:4px 6px;border-top:1px solid #e8e8ed;"><span style="color:#c7c7cc;">__________________</span></td>
+      </tr>
+      </table>
+    </div>
+  </div>
+<div data-rol="contenido">
+    <div style="font-size:10px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:#1d1d1f;margin-bottom:5px;">1. Sistema instalado o recertificado</div>
+    <div style="border:1px solid #e8e8ed;border-radius:8px;background:#ffffff;padding:8px 12px;margin-bottom:10px;">
+      <div style="padding-bottom:6px;margin-bottom:6px;border-bottom:1px solid #e8e8ed;">
+        
+    <span style="display:inline-flex;align-items:center;gap:5px;margin-right:14px;">
+      <span style="display:inline-block;width:11px;height:11px;border:1px solid #1d1d1f;border-radius:2px;text-align:center;line-height:10px;font-size:9px;font-weight:800;color:#1d1d1f;background:#ffffff;">&nbsp;</span>
+      <span style="font-size:10px;font-weight:500;color:#6e6e73;">Acero galvanizado</span>
+    </span>
+        
+    <span style="display:inline-flex;align-items:center;gap:5px;margin-right:14px;">
+      <span style="display:inline-block;width:11px;height:11px;border:1px solid #1d1d1f;border-radius:2px;text-align:center;line-height:10px;font-size:9px;font-weight:800;color:#1d1d1f;background:#ffffff;">&nbsp;</span>
+      <span style="font-size:10px;font-weight:500;color:#6e6e73;">Acero inoxidable</span>
+    </span>
+      </div>
+      <div style="font-size:9.5px;color:#6e6e73;font-style:italic;">Sin sistemas registrados en la cotización de la obra.</div>
+    </div>
+  </div>
+<div data-rol="contenido">
+    <div style="font-size:10px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:#1d1d1f;margin-bottom:5px;">2. Personal que ejecutó el trabajo</div>
+    <div style="border:1px solid #e8e8ed;border-radius:8px;background:#ffffff;padding:8px 12px;margin-bottom:10px;">
+      <table style="width:100%;border-collapse:collapse;font-size:9.5px;">
+        <tr>
+          <td style="width:17%;font-weight:700;color:#6e6e73;letter-spacing:0.04em;text-transform:uppercase;padding:4px 6px 4px 0;vertical-align:top;">Colaboradores:</td>
+          <td style="color:#1d1d1f;font-weight:600;font-size:10px;padding:4px 0;">
+            <span style="color:#c7c7cc;">__________________</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:#6e6e73;letter-spacing:0.04em;text-transform:uppercase;padding:4px 6px 4px 0;border-top:1px solid #e8e8ed;">Coordinador de alturas:</td>
+          <td style="color:#1d1d1f;font-weight:600;font-size:10px;padding:4px 0;border-top:1px solid #e8e8ed;"><span style="color:#c7c7cc;">__________________</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:700;color:#6e6e73;letter-spacing:0.04em;text-transform:uppercase;padding:4px 6px 4px 0;border-top:1px solid #e8e8ed;">Líder de proyecto:</td>
+          <td style="color:#1d1d1f;font-weight:600;font-size:10px;padding:4px 0;border-top:1px solid #e8e8ed;"><span style="color:#c7c7cc;">__________________</span></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+<div data-rol="contenido">
+    <div style="font-size:10px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:#1d1d1f;margin-bottom:5px;">3. Descripción del trabajo realizado</div>
+    <div style="border:1px solid #e8e8ed;border-radius:8px;background:#ffffff;padding:9px 12px;margin-bottom:10px;">
+      <div style="font-size:9.5px;color:#6e6e73;font-style:italic;">Sin descripción del trabajo.</div>
+    </div>
+  </div>
+<div data-rol="contenido">
+    <div style="font-size:10px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:#1d1d1f;margin-bottom:5px;">4. Observaciones</div>
+    <div style="border:1px solid #e8e8ed;border-radius:8px;background:#ffffff;padding:9px 12px;margin-bottom:10px;">
+      <div style="font-size:9.5px;color:#6e6e73;font-style:italic;">Sin observaciones.</div>
+    </div>
+  </div>
+<div data-rol="contenido">
+    <table class="bloque-firma" style="width:100%;border-collapse:collapse;margin-top:4px;border-top:1px solid #e8e8ed;padding-top:8px;">
+      <tr>
+        <td style="width:50%;padding:10px 12px 0 0;vertical-align:top;border-right:1px solid #e8e8ed;">
+          <div style="font-size:9px;font-weight:700;color:#6e6e73;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:3px;">Entrega conforme · Ingeanclajes S.A.S.</div>
+          <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:3px;">
+            <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" alt="Firma" style="max-height:42px;max-width:180px;object-fit:contain;"/>
+          </div>
+          <div style="font-weight:800;font-size:10.5px;color:#1d1d1f;"><span style="color:#c7c7cc;">__________________</span></div>
+          <div style="font-size:9px;color:#6e6e73;margin-top:1px;">Líder de proyecto</div>
+          <div style="font-size:9px;color:#6e6e73;margin-top:6px;">Coordinación SST: <span style="color:#c7c7cc;">__________________</span></div>
+        </td>
+        <td style="width:50%;padding:10px 0 0 12px;vertical-align:top;">
+          <div style="font-size:9px;font-weight:700;color:#6e6e73;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:3px;">Recibe conforme · CONSTRUCTORA DE PRUEBA S.A.S.</div>
+          <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:3px;font-size:9px;color:#6e6e73;font-style:italic;">
+            (Firma de recepción a satisfacción)
+          </div>
+          <div style="font-size:9.5px;color:#1d1d1f;font-weight:700;">NOMBRE: <span style="color:#c7c7cc;">__________________</span></div>
+          <div style="font-size:9px;color:#6e6e73;margin-top:3px;">C.C.: <span style="color:#c7c7cc;">__________________</span></div>
+          <div style="font-size:9px;color:#6e6e73;margin-top:3px;">CARGO: <span style="color:#c7c7cc;">__________________</span></div>
+        </td>
+      </tr>
+    </table>
+  </div>
+        </div>
+        <div class="page-footer">
+          <span>Ingeanclajes S.A.S · Acta de entrega ACT-002 · FORM-SST-89 (V-02)</span>
+          <span data-rol="numeracion">Página 1 de 1</span>
+        </div>
+      </div>
+    </section>
+  </body>
+</html>

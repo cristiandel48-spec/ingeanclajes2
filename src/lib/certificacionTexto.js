@@ -56,7 +56,7 @@ export function enteroALetras(n) {
 }
 
 // Limpia prefijos comerciales típicos de facturación o cotización
-function limpiarPrefijoComercial(texto = "") {
+export function limpiarPrefijoComercial(texto = "") {
   let limpio = String(texto || "").trim();
   const prefijos = [
     /^suministro\s*,\s*transporte\s*e\s*instalaci[oó]n\s+de\s+/i,
@@ -100,6 +100,17 @@ function normalizarUnidadesTecnicas(texto = "") {
     .trim();
 }
 
+/**
+ * Si un ítem cotizado es un gasto de la obra y no un sistema que se entrega:
+ * viáticos, pólizas, cursos, alquiler… Esos no van en el certificado ni en el
+ * acta de entrega, que hablan de lo que queda instalado.
+ */
+export function esItemAdministrativo(descripcion = "") {
+  const texto = String(descripcion || "");
+  const administrativo = /\b(vi[aá]ticos|transporte|alimentaci[oó]n|p[oó]liza|administraci[oó]n|curso|capacitaci[oó]n|examen|seguridad\s+social|arl|alquiler|andr[oó]meda)\b/i.test(texto);
+  return administrativo && !/\b(l[ií]nea|anclaje|escalera|baranda|arn[eé]s)\b/i.test(texto);
+}
+
 // Convierte un ítem cotizado a redacción gramatical para certificado
 export function formatearItemParaCertificado(item = {}) {
   const cant = Math.max(1, Math.round(Number(item.cant || item.cantidad || 1)));
@@ -107,10 +118,7 @@ export function formatearItemParaCertificado(item = {}) {
   if (!descRaw.trim()) return null;
 
   // Filtrar ítems administrativos que no corresponden a sistemas físicos
-  const esAdministrativo = /\b(vi[aá]ticos|transporte|alimentaci[oó]n|p[oó]liza|administraci[oó]n|curso|capacitaci[oó]n|examen|seguridad\s+social|arl|alquiler|andr[oó]meda)\b/i.test(descRaw);
-  if (esAdministrativo && !/\b(l[ií]nea|anclaje|escalera|baranda|arn[eé]s)\b/i.test(descRaw)) {
-    return null;
-  }
+  if (esItemAdministrativo(descRaw)) return null;
 
   let limpio = limpiarPrefijoComercial(descRaw).toLowerCase();
 

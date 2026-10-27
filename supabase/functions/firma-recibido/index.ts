@@ -409,7 +409,10 @@ Deno.serve(conOrigenPermitido(async (req) => {
     }
 
     if (accion === "enviar") {
-      const tipo = ["informe", "cotizacion", "certificado"].includes(String(cuerpo.tipo)) ? String(cuerpo.tipo) : "informe";
+      // «acta» es el acta de entrega de obra (migracion 081). Los tipos que
+      // se admiten aqui son los mismos de la restriccion de la tabla: uno que
+      // falte en cualquiera de los dos lados se guarda como informe o falla.
+      const tipo = ["informe", "cotizacion", "certificado", "acta"].includes(String(cuerpo.tipo)) ? String(cuerpo.tipo) : "informe";
       const documentoId = linea(cuerpo.documentoId, 80);
       const numero = linea(cuerpo.numero, 80) || documentoId;
       const titulo = linea(cuerpo.titulo, 200) || "Documento";

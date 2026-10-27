@@ -17,13 +17,14 @@
 
 import { getEmpresaConfig } from "./firmaEmpresa";
 
-// Los documentos que se le entregan al cliente. Si manana hay mas -acta de
-// entrega, lista de chequeo-, se agregan aqui y aparecen solos en la pantalla
-// de configuracion.
+// Los documentos que se le entregan al cliente. Si manana hay mas -lista de
+// chequeo, permiso de trabajo-, se agregan aqui y aparecen solos en la
+// pantalla de configuracion.
 export const FORMATOS = [
   { clave: "cotizacion",    etiqueta: "Cotización" },
   { clave: "informe",       etiqueta: "Informe de actividades" },
   { clave: "certificacion", etiqueta: "Certificación" },
+  { clave: "acta",          etiqueta: "Acta de entrega de obra" },
   { clave: "orden_compra",  etiqueta: "Orden de Compra" },
   { clave: "recibo_caja",   etiqueta: "Recibo de Caja" },
 ];
@@ -39,6 +40,9 @@ export const CONTROL_POR_DEFECTO = {
   cotizacion:    { codigo: "IA-FT-01", version: "1", fecha: "2026-08-14" },
   informe:       { codigo: "IA-FT-02", version: "1", fecha: "2026-08-14" },
   certificacion: { codigo: "IA-FT-03", version: "1", fecha: "2026-08-14" },
+  // El acta ya venia codificada por el SG-SST, y en la obra la piden por ese
+  // nombre. Se respeta el codigo del papel en vez de inventarle uno nuevo.
+  acta:          { codigo: "FORM-SST-89", version: "02", fecha: "2020-12-09" },
   orden_compra:  { codigo: "IA-FT-04", version: "1", fecha: "2026-09-04" },
   recibo_caja:   { codigo: "IA-FT-05", version: "1", fecha: "2026-09-08" },
 };

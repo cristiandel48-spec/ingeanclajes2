@@ -1,3 +1,4 @@
+import ActaEntregaObra from "./ActaEntregaObra";
 import Av from "../../components/ui/Av";
 import Badge from "../../components/ui/Badge";
 import BitacoraObra from "./BitacoraObra";
@@ -461,6 +462,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
             { id: "avance", label: "Avance diario" },
             { id: "fototeca", label: "Fototeca y ZIP" },
             { id: "personal", label: "Personal", cuenta: empObra.length },
+            { id: "acta", label: "Acta de entrega", cuenta: (oAct.actas || []).length || undefined },
           ]}
         />
       </div>
@@ -496,6 +498,11 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       {/* TAB FOTOTECA Y DESCARGA EN ZIP */}
       {detTab==="fototeca"&&(
         <FototecaObra obra={oAct} ctx={ctx}/>
+      )}
+
+      {/* TAB ACTA DE ENTREGA (FORM-SST-89) */}
+      {detTab==="acta"&&(
+        <ActaEntregaObra obra={oAct} ctx={ctx} setObras={setObras} bloqueada={bloqueada}/>
       )}
 
       {/* TAB PERSONAL */}

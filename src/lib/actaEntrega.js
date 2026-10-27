@@ -286,6 +286,8 @@ export function construirActa({ obra, cotizacion = null, cliente = null, informe
     ...personal,
     descripcion: descripcionDelTrabajo(obra, informes),
     recibeNombre: normalizarNombrePropio(obra?.recibeNombre || cliente?.contacto || ""),
+    recibeDocumento: texto(obra?.recibeDocumento || cliente?.contactoCedula || cliente?.contacto_cedula || ""),
+    recibeCargo: texto(obra?.recibeCargo || cliente?.contactoCargo || cliente?.contacto_cargo || ""),
   };
 }
 

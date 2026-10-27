@@ -7,7 +7,7 @@
 // es de donde salen los informes y las certificaciones: si el cliente ya tiene
 // contacto, la obra lo toma; si se escribe en la obra, actualiza al cliente.
 
-import { normalizarCorreo, normalizarDocumento, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "./normalizarEntrada";
+import { normalizarCorreo, normalizarDocumento, normalizarMayusculas, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono } from "./normalizarEntrada";
 import { siguienteIdUnico } from "./identificadores";
 
 export function correoValido(valor) {
@@ -33,41 +33,60 @@ export function clienteDeObra(clientes, obra) {
 }
 
 /**
- * Quien recibe segun el directorio de clientes: contacto, correo y telefono
- * de la ficha del cliente. Vacio si la ficha no tiene un correo valido.
+ * Quien recibe segun el directorio de clientes: contacto, correo, telefono,
+ * documento y cargo de la ficha del cliente.
  */
 export function quienRecibeDeCliente(clientes, obra) {
   const c = clienteDeObra(clientes, obra);
-  if (!correoValido(c?.email)) return null;
-  return { nombre: c.contacto || "", email: normalizarCorreo(c.email), telefono: c.telefono || "" };
+  if (!c) return null;
+  if (!correoValido(c?.email) && !c?.contacto) return null;
+  return {
+    nombre: c.contacto || "",
+    email: normalizarCorreo(c.email || ""),
+    telefono: c.telefono || "",
+    documento: c.contactoCedula || c.contacto_cedula || "",
+    cargo: c.contactoCargo || c.contacto_cargo || "",
+  };
 }
 
 /**
- * El directorio de clientes con el contacto que se puso en la obra.
+ * El directorio de clientes con el contacto que se puso en la obra o en el acta.
  *
  * El directorio es de donde salen los informes y las certificaciones, asi que
- * lo que se escribe en la obra lo actualiza: correo, contacto y, si viene,
- * el celular. Si el cliente no esta en el directorio, se agrega.
+ * lo que se escribe en la obra lo actualiza: contacto, cedula, cargo, correo y
+ * telefono. Si el cliente no esta en el directorio, se agrega.
  *
  * Devuelve la misma lista si no hay nada que cambiar.
  */
-export function clientesConQuienRecibe(clientes, obra, { nombre, email, telefono }) {
-  const correo = normalizarCorreo(email);
-  if (!correoValido(correo) || !obra?.cliente) return clientes;
+export function clientesConQuienRecibe(clientes, obra, { nombre, email, telefono, documento, cargo } = {}) {
+  if (!obra?.cliente) return clientes;
   const lista = Array.isArray(clientes) ? clientes : [];
   const i = buscarCliente(lista, obra);
   const contacto = normalizarNombrePropio(nombre || "");
   const tel = normalizarTelefono(telefono || "");
+  const correo = normalizarCorreo(email || "");
+  const doc = normalizarDocumento(documento || "");
+  const car = normalizarMayusculas(cargo || "");
+
+  if (!correoValido(correo) && !contacto && !doc && !car) return clientes;
 
   if (i >= 0) {
     const c = lista[i];
     const actualizado = {
       ...c,
-      email: correo,
+      email: correoValido(correo) ? correo : (c.email || ""),
       contacto: contacto || c.contacto || "",
+      contactoCedula: doc || c.contactoCedula || c.contacto_cedula || "",
+      contactoCargo: car || c.contactoCargo || c.contacto_cargo || "",
       telefono: tel || c.telefono || "",
     };
-    if (actualizado.email === normalizarCorreo(c.email) && actualizado.contacto === (c.contacto || "") && actualizado.telefono === (c.telefono || "")) {
+    if (
+      actualizado.email === (c.email || "") &&
+      actualizado.contacto === (c.contacto || "") &&
+      actualizado.contactoCedula === (c.contactoCedula || c.contacto_cedula || "") &&
+      actualizado.contactoCargo === (c.contactoCargo || c.contacto_cargo || "") &&
+      actualizado.telefono === (c.telefono || "")
+    ) {
       return lista;
     }
     return lista.map((x, j) => (j === i ? actualizado : x));
@@ -81,7 +100,9 @@ export function clientesConQuienRecibe(clientes, obra, { nombre, email, telefono
     ciudad: obra.ciudad || "",
     direccion: obra.direccion || "",
     contacto,
-    email: correo,
+    contactoCedula: doc,
+    contactoCargo: car,
+    email: correoValido(correo) ? correo : "",
     estado: "Activo",
     notas: "",
   }];

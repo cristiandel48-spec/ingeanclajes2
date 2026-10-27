@@ -6,7 +6,7 @@ import { openPrintTab } from "../../lib/abrirImpresion";
 import { confirmar } from "../../lib/dialogos";
 import { getFirmaImg } from "../../lib/firmaEmpresa";
 import { normalizarCorreo, normalizarDocumento, normalizarMayusculas, normalizarNombrePropio } from "../../lib/normalizarEntrada";
-import { clienteDeObra } from "../../lib/quienRecibe";
+import { clienteDeObra, clientesConQuienRecibe } from "../../lib/quienRecibe";
 import { buildActaPrintHtml } from "../../lib/actaEntregaPrint";
 import { descargarActaPdf, generarActaPdf } from "../../lib/actaEntregaPdf";
 import { construirActa, faltantesDelActa, normalizarActas } from "../../lib/actaEntrega";
@@ -28,7 +28,17 @@ const SECCION = { marginBottom: 18 };
 const REJILLA = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 };
 
 export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false }) {
-  const { cotizaciones = [], clientes = [], empleados = [], horarios = [], informes = [], obras = [], empresaConfig } = ctx;
+  const {
+    cotizaciones = [],
+    clientes = [],
+    setClientes,
+    empleados = [],
+    horarios = [],
+    informes = [],
+    setInformes,
+    obras = [],
+    empresaConfig,
+  } = ctx;
   const toast = useToast();
   const firmaImg = getFirmaImg(empresaConfig);
 
@@ -40,10 +50,79 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
   const acta = actas.find((a) => a.id === actaId) || null;
   const { envios, recargar: recargarEnvios } = useEnviosFirma(acta?.id || "", { tipo: "acta" });
 
+  const clienteFicha = clienteDeObra(clientes, obra);
+  const clientesConContacto = (Array.isArray(clientes) ? clientes : [])
+    .filter((c) => c && c.contacto && c.contacto.trim().length >= 2);
+
+  const empleadosActivos = (Array.isArray(empleados) ? empleados : [])
+    .filter((e) => e && e.activo !== false)
+    .sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
+
   const guardarActa = (id, cambios) =>
     setObras((prev) => prev.map((o) => (o.id === obra.id
       ? { ...o, actas: normalizarActas(o).map((a) => (a.id === id ? { ...a, ...cambios } : a)) }
       : o)));
+
+  // Sincroniza quien recibe en el acta, la obra, los informes de actividades y la tabla de clientes
+  const sincronizarContactoRecibe = ({ nombre, documento, cargo }, { notificar = false } = {}) => {
+    if (!acta) return;
+    const nomLimpio = normalizarNombrePropio(nombre !== undefined ? nombre : acta.recibeNombre);
+    const docLimpio = normalizarDocumento(documento !== undefined ? documento : acta.recibeDocumento);
+    const cargoLimpio = normalizarMayusculas(cargo !== undefined ? cargo : acta.recibeCargo);
+
+    // 1. Guardar en el acta actual
+    guardarActa(acta.id, {
+      recibeNombre: nomLimpio,
+      recibeDocumento: docLimpio,
+      recibeCargo: cargoLimpio,
+    });
+
+    // 2. Guardar en la obra (recibeNombre, recibeDocumento, recibeCargo) y en sus actas
+    setObras((prev) => prev.map((o) => {
+      if (o.id !== obra.id) return o;
+      return {
+        ...o,
+        recibeNombre: nomLimpio || o.recibeNombre,
+        recibeDocumento: docLimpio || o.recibeDocumento,
+        recibeCargo: cargoLimpio || o.recibeCargo,
+        actas: normalizarActas(o).map((a) => (a.id === acta.id ? {
+          ...a,
+          recibeNombre: nomLimpio,
+          recibeDocumento: docLimpio,
+          recibeCargo: cargoLimpio,
+        } : a)),
+      };
+    }));
+
+    // 3. Sincronizar en la base de datos de Clientes
+    if (typeof setClientes === "function") {
+      setClientes((prev) => clientesConQuienRecibe(prev, obra, {
+        nombre: nomLimpio,
+        documento: docLimpio,
+        cargo: cargoLimpio,
+        email: acta.correoAdministrativo || obra.recibeEmail || "",
+        telefono: acta.telefono || obra.tel || "",
+      }));
+    }
+
+    // 4. Sincronizar en los informes de actividades de esta obra
+    if (typeof setInformes === "function") {
+      setInformes((prev) => (Array.isArray(prev) ? prev : []).map((inf) => {
+        if (inf.obraId !== obra.id) return inf;
+        return {
+          ...inf,
+          recibeNombre: nomLimpio || inf.recibeNombre,
+          recibeDocumento: docLimpio || inf.recibeDocumento,
+          recibeCargo: cargoLimpio || inf.recibeCargo,
+          contacto: nomLimpio || inf.contacto,
+        };
+      }));
+    }
+
+    if (notificar && nomLimpio) {
+      toast.exito("Contacto actualizado en el cliente, la obra y sus informes.");
+    }
+  };
 
   const upd = (campo) => (ev) => guardarActa(acta.id, { [campo]: ev.target.value });
   // Al salir del campo se acomoda lo escrito: mayusculas donde el formato las
@@ -265,19 +344,143 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
         <div style={SECCION}>
           <h3 style={{ ...TIPO.headline, margin: "0 0 10px", color: "var(--text-primary)" }}>Quién ejecutó el trabajo</h3>
           <div style={REJILLA}>
-            <Input label="Coordinador de alturas" value={acta.coordinadorAlturas} disabled={bloqueada}
-              onChange={upd("coordinadorAlturas")} onBlur={alSalir("coordinadorAlturas", normalizarNombrePropio)} />
-            <Input label="Líder de proyecto" obligatorio value={acta.liderProyecto} disabled={bloqueada}
-              onChange={upd("liderProyecto")} onBlur={alSalir("liderProyecto", normalizarNombrePropio)} />
+            <div>
+              <Input
+                label="Coordinador de alturas"
+                value={acta.coordinadorAlturas}
+                disabled={bloqueada}
+                list="lista-empleados-coordinador"
+                onChange={upd("coordinadorAlturas")}
+                onBlur={alSalir("coordinadorAlturas", normalizarNombrePropio)}
+              />
+              {!bloqueada && empleadosActivos.length > 0 && (
+                <select
+                  aria-label="Elegir coordinador de alturas de la lista de empleados"
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value) guardarActa(acta.id, { coordinadorAlturas: normalizarNombrePropio(e.target.value) });
+                  }}
+                  style={{
+                    width: "100%",
+                    marginTop: 4,
+                    padding: "4px 8px",
+                    borderRadius: 6,
+                    border: "1px dashed var(--border)",
+                    background: "var(--surface)",
+                    color: "var(--text-secondary)",
+                    fontSize: 11.5,
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="">👤 Elegir de la base de empleados…</option>
+                  {empleadosActivos.map((e) => (
+                    <option key={e.id} value={e.nombre}>
+                      {e.nombre} {e.cargo ? `· ${e.cargo}` : ""}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div>
+              <Input
+                label="Líder de proyecto"
+                obligatorio
+                value={acta.liderProyecto}
+                disabled={bloqueada}
+                list="lista-empleados-lider"
+                onChange={upd("liderProyecto")}
+                onBlur={alSalir("liderProyecto", normalizarNombrePropio)}
+              />
+              {!bloqueada && empleadosActivos.length > 0 && (
+                <select
+                  aria-label="Elegir líder de proyecto de la lista de empleados"
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value) guardarActa(acta.id, { liderProyecto: normalizarNombrePropio(e.target.value) });
+                  }}
+                  style={{
+                    width: "100%",
+                    marginTop: 4,
+                    padding: "4px 8px",
+                    borderRadius: 6,
+                    border: "1px dashed var(--border)",
+                    background: "var(--surface)",
+                    color: "var(--text-secondary)",
+                    fontSize: 11.5,
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="">👤 Elegir de la base de empleados…</option>
+                  {empleadosActivos.map((e) => (
+                    <option key={e.id} value={e.nombre}>
+                      {e.nombre} {e.cargo ? `· ${e.cargo}` : ""}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
           </div>
+
+          <datalist id="lista-empleados-coordinador">
+            {empleadosActivos.map((e) => (
+              <option key={e.id} value={e.nombre}>
+                {e.nombre} {e.cargo ? `(${e.cargo})` : ""}
+              </option>
+            ))}
+          </datalist>
+          <datalist id="lista-empleados-lider">
+            {empleadosActivos.map((e) => (
+              <option key={e.id} value={e.nombre}>
+                {e.nombre} {e.cargo ? `(${e.cargo})` : ""}
+              </option>
+            ))}
+          </datalist>
+
           <div style={{ marginTop: 12 }}>
-            <Input label="Colaboradores" como="textarea" rows={2} disabled={bloqueada}
-              ayuda="Uno por línea. Salen de quién tuvo turno en esta obra."
+            <Input
+              label="Colaboradores"
+              como="textarea"
+              rows={2}
+              disabled={bloqueada}
+              ayuda="Uno por línea. Salen de quién tuvo turno en esta obra o puedes agregar más desde la lista."
               value={acta.colaboradores.join("\n")}
               onChange={(ev) => guardarActa(acta.id, { colaboradores: ev.target.value.split("\n") })}
               onBlur={(ev) => guardarActa(acta.id, {
                 colaboradores: ev.target.value.split("\n").map(normalizarNombrePropio).filter(Boolean),
-              })} />
+              })}
+            />
+            {!bloqueada && empleadosActivos.length > 0 && (
+              <div style={{ marginTop: 6, display: "flex", gap: 8, alignItems: "center" }}>
+                <select
+                  aria-label="Agregar colaborador de la lista de empleados"
+                  value=""
+                  onChange={(e) => {
+                    const nom = normalizarNombrePropio(e.target.value);
+                    if (!nom) return;
+                    if (!acta.colaboradores.some((c) => c.toLowerCase() === nom.toLowerCase())) {
+                      guardarActa(acta.id, { colaboradores: [...acta.colaboradores, nom] });
+                    }
+                  }}
+                  style={{
+                    padding: "4px 10px",
+                    borderRadius: 6,
+                    border: "1px dashed var(--border)",
+                    background: "var(--surface)",
+                    color: "var(--text-secondary)",
+                    fontSize: 11.5,
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="">➕ Agregar colaborador de la base de empleados…</option>
+                  {empleadosActivos.map((e) => (
+                    <option key={e.id} value={e.nombre}>
+                      {e.nombre} {e.cargo ? `· ${e.cargo}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         </div>
 
@@ -293,18 +496,102 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
         </div>
 
         <div>
-          <h3 style={{ ...TIPO.headline, margin: "0 0 10px", color: "var(--text-primary)" }}>Recibe conforme</h3>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
+            <h3 style={{ ...TIPO.headline, margin: 0, color: "var(--text-primary)" }}>Recibe conforme</h3>
+            {!bloqueada && (
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                {clienteFicha?.contacto && (
+                  <Button
+                    tam="xs"
+                    variante="tertiary"
+                    onClick={() => {
+                      sincronizarContactoRecibe({
+                        nombre: clienteFicha.contacto,
+                        documento: clienteFicha.contactoCedula || clienteFicha.contacto_cedula || acta.recibeDocumento,
+                        cargo: clienteFicha.contactoCargo || clienteFicha.contacto_cargo || acta.recibeCargo,
+                      }, { notificar: true });
+                    }}
+                    title={`Cargar datos del cliente ${clienteFicha.nombre}`}
+                  >
+                    👤 Traer contacto de {clienteFicha.nombre}: {clienteFicha.contacto}
+                  </Button>
+                )}
+                {clientesConContacto.length > 0 && (
+                  <select
+                    aria-label="Elegir contacto de la base de clientes"
+                    value=""
+                    onChange={(e) => {
+                      const c = clientes.find((x) => x.id === e.target.value);
+                      if (c?.contacto) {
+                        sincronizarContactoRecibe({
+                          nombre: c.contacto,
+                          documento: c.contactoCedula || c.contacto_cedula || "",
+                          cargo: c.contactoCargo || c.contacto_cargo || "",
+                        }, { notificar: true });
+                      }
+                    }}
+                    style={{
+                      padding: "4px 8px",
+                      borderRadius: 6,
+                      border: "1px dashed var(--border)",
+                      background: "var(--surface)",
+                      color: "var(--text-secondary)",
+                      fontSize: 11.5,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <option value="">👤 Elegir de la BD de clientes…</option>
+                    {clientesConContacto.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.contacto} · {c.nombre}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+          </div>
+
           <div style={REJILLA}>
-            <Input label="Nombre" value={acta.recibeNombre} disabled={bloqueada}
-              onChange={upd("recibeNombre")} onBlur={alSalir("recibeNombre", normalizarNombrePropio)} />
-            <Input label="Cédula" value={acta.recibeDocumento} disabled={bloqueada}
-              onChange={upd("recibeDocumento")} onBlur={alSalir("recibeDocumento", normalizarDocumento)} />
-            <Input label="Cargo" value={acta.recibeCargo} disabled={bloqueada}
-              onChange={upd("recibeCargo")} onBlur={alSalir("recibeCargo", normalizarMayusculas)} />
+            <Input
+              label="Nombre"
+              value={acta.recibeNombre}
+              disabled={bloqueada}
+              onChange={upd("recibeNombre")}
+              onBlur={(ev) => {
+                const val = normalizarNombrePropio(ev.target.value);
+                if (val !== acta.recibeNombre) {
+                  sincronizarContactoRecibe({ nombre: val }, { notificar: true });
+                }
+              }}
+            />
+            <Input
+              label="Cédula"
+              value={acta.recibeDocumento}
+              disabled={bloqueada}
+              onChange={upd("recibeDocumento")}
+              onBlur={(ev) => {
+                const val = normalizarDocumento(ev.target.value);
+                if (val !== acta.recibeDocumento) {
+                  sincronizarContactoRecibe({ documento: val });
+                }
+              }}
+            />
+            <Input
+              label="Cargo"
+              value={acta.recibeCargo}
+              disabled={bloqueada}
+              onChange={upd("recibeCargo")}
+              onBlur={(ev) => {
+                const val = normalizarMayusculas(ev.target.value);
+                if (val !== acta.recibeCargo) {
+                  sincronizarContactoRecibe({ cargo: val });
+                }
+              }}
+            />
           </div>
           <div style={{ fontSize: 11.5, color: "var(--text-tertiary)", marginTop: 8, lineHeight: 1.5 }}>
-            Si el acta se envía a firma, estos tres los escribe el cliente al firmar y quedan en la constancia. Aquí
-            se llenan cuando se imprime y se firma en la obra.
+            Al modificar o escribir el contacto aquí, se actualiza automáticamente en la ficha del cliente, en la obra y en sus informes de actividades.
           </div>
         </div>
       </Card>

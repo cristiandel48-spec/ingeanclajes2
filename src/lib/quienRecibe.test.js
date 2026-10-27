@@ -19,14 +19,14 @@ describe("quien recibe los informes", () => {
 
   it("lo escrito en la obra actualiza la ficha del cliente", () => {
     const clientes = [{ id: "CLI-001", nombre: "CONSTRUCTORA PRUEBA S.A.S.", nit: "", email: "gerencia@prueba.com", contacto: "Gerencia", telefono: "3000000000" }];
-    const r = clientesConQuienRecibe(clientes, obra, { nombre: "María Ruiz", email: "mruiz@prueba.com", telefono: "317 667 5114" });
-    expect(r[0]).toMatchObject({ email: "mruiz@prueba.com", contacto: "María Ruiz", telefono: "3176675114" });
+    const r = clientesConQuienRecibe(clientes, obra, { nombre: "María Ruiz", email: "mruiz@prueba.com", telefono: "317 667 5114", documento: "10203040", cargo: "Residente" });
+    expect(r[0]).toMatchObject({ email: "mruiz@prueba.com", contacto: "María Ruiz", telefono: "3176675114", contactoCedula: "10203040", contactoCargo: "RESIDENTE" });
     expect(clientesConQuienRecibe(r, obra, { nombre: "María Ruiz", email: "mruiz@prueba.com" })).toBe(r);
   });
 
   it("la obra toma el contacto del cliente y un cambio en Clientes llega a sus obras", () => {
     const cli = { nombre: "CONSTRUCTORA PRUEBA S.A.S.", nit: "900.111.222-3", email: "mateo@prueba.com", contacto: "Mateo Betancur", telefono: "3176675114" };
-    expect(quienRecibeDeCliente([cli], obra)).toEqual({ nombre: "Mateo Betancur", email: "mateo@prueba.com", telefono: "3176675114" });
+    expect(quienRecibeDeCliente([cli], obra)).toEqual({ nombre: "Mateo Betancur", email: "mateo@prueba.com", telefono: "3176675114", documento: "", cargo: "" });
     const obras = [
       { ...obra, recibeEmail: "mateo@prueba.com", recibeNombre: "Mateo Betancur" },
       { ...obra, id: "OB-002", recibeEmail: "" },

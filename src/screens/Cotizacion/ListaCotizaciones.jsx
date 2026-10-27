@@ -571,7 +571,7 @@ export default function ListaCotizaciones({ cotizaciones = [], acciones = {} }) 
                 style={{
                   ...CABECERA_FIJA,
                   display: "grid",
-                  gridTemplateColumns: "100px 1.8fr 1.2fr 100px 120px 120px 160px",
+                  gridTemplateColumns: "100px 1.8fr 1.2fr 100px 120px 120px 190px",
                   padding: "10px 16px",
                   background: "var(--surface-subtle, #fbfbfd)",
                   borderBottom: "1px solid var(--border, rgba(0,0,0,0.08))",
@@ -959,7 +959,8 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
             📋
           </button>
 
-          {!isMobile && (
+          {/* En el celular no cabe: alli se elimina desde la cotizacion abierta. */}
+          {!isMobile && acciones.eliminar && (
             <button
               type="button"
               title="Eliminar permanentemente"
@@ -1006,7 +1007,7 @@ function FilaTablaCotizacion({ cotizacion: c, acciones, zebra, onInspeccionar })
       onClick={onInspeccionar}
       style={{
         display: "grid",
-        gridTemplateColumns: "100px 1.8fr 1.2fr 100px 120px 120px 160px",
+        gridTemplateColumns: "100px 1.8fr 1.2fr 100px 120px 120px 190px",
         padding: "11px 16px",
         alignItems: "center",
         background: zebra ? "var(--surface-subtle, #fafbfd)" : "var(--surface, #ffffff)",
@@ -1142,6 +1143,24 @@ function FilaTablaCotizacion({ cotizacion: c, acciones, zebra, onInspeccionar })
         >
           📋
         </button>
+        {acciones.eliminar && (
+          <button
+            type="button"
+            onClick={alPulsar(acciones.eliminar)}
+            title="Eliminar permanentemente"
+            style={{
+              background: "rgba(239, 68, 68, 0.08)",
+              color: "#dc2626",
+              border: "1px solid rgba(239, 68, 68, 0.2)",
+              borderRadius: 6,
+              padding: "4px 6px",
+              fontSize: 11,
+              cursor: "pointer",
+            }}
+          >
+            🗑️
+          </button>
+        )}
       </div>
     </div>
   );

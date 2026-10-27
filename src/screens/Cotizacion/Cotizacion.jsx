@@ -32,6 +32,7 @@ import { enviarCotizacionPorCorreo } from "../../lib/backend/usuarios";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
 import { confirmar } from "../../lib/dialogos";
+import { puedeEscribirTabla } from "../../lib/permisos";
 export default function Cotizacion({ctx}){
   const {cotizaciones,setCotizaciones,obras,setObras,clientes,setClientes,empresaConfig,asegurarDetalle,cotDraft,setCotDraft,intencion,limpiarIntencion}=ctx;
   const [erroresCliente, setErroresCliente] = useState({});
@@ -1104,6 +1105,25 @@ export default function Cotizacion({ctx}){
     setCotizaciones((prev) => [copia, ...prev]);
   };
 
+  // Borrado definitivo, como en el resto de la aplicacion (no hay papelera).
+  // Basta con sacarla de la lista: el autoguardado compara con lo que vino de
+  // la nube y la borra en Supabase (filtrando por tenant; la politica
+  // cotizaciones_escribir de la migracion 069 decide si se puede).
+  // La obra que haya creado al aprobarse no se toca.
+  const eliminarCotizacion = async (c) => {
+    const obraId = c.obraId || obras.find((o) => o.cotizacionId === c.id)?.id;
+    const ok = await confirmar({
+      titulo: `¿Eliminar la cotización ${c.numero || c.id}?`,
+      mensaje: `${c.cliente || "Sin cliente"}${obraId ? `\n\nLa obra ${obraId} que se creó al aprobarla no se borra.` : ""}\n\nEsta acción no se puede deshacer.`,
+      textoConfirmar: "Eliminar",
+      destructivo: true,
+    });
+    if (!ok) return;
+    setCotizaciones((prev) => prev.filter((x) => x.id !== c.id));
+    setPreviewCot((prev) => (prev?.id === c.id ? null : prev));
+  };
+  const puedeEliminar = puedeEscribirTabla(ctx?.membresia, "cotizaciones");
+
 
   if(tab==="lista"){
     if(previewCot){
@@ -1214,6 +1234,16 @@ export default function Cotizacion({ctx}){
                 >
                   WhatsApp
                 </a>
+              )}
+              {puedeEliminar && (
+                <button
+                  type="button"
+                  onClick={() => eliminarCotizacion(previewCot)}
+                  title="Eliminar esta cotización"
+                  style={{ ...B("#fee2e2", "#b91c1c"), padding: "5px 12px", fontSize: 12 }}
+                >
+                  Eliminar
+                </button>
               )}
             </div>
           </div>
@@ -1335,10 +1365,7 @@ export default function Cotizacion({ctx}){
             duplicar: (c)=>duplicarCotizacion(c.id),
             pdf: async (c)=>descargarPdf((await asegurarDetalle("cotizaciones", c.id)) || c),
             enviar: async (c)=>setEnviarCot((await asegurarDetalle("cotizaciones", c.id)) || c),
-            eliminar: async (c)=>{
-              if(!(await confirmar(`¿Eliminar la cotización "${c.numero || c.id}" de ${c.cliente || "este cliente"}?\n\nEsta acción no se puede deshacer.`))) return;
-              setCotizaciones((prev)=>prev.filter((x)=>x.id!==c.id));
-            },
+            ...(puedeEliminar ? { eliminar: eliminarCotizacion } : {}),
           }}
         />
 

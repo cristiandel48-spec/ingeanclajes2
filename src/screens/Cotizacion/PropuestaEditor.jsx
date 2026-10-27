@@ -200,6 +200,35 @@ export default function PropuestaEditor({
   const setItems = (siguiente) => set("items", aplicar(items, siguiente));
   const setFotos = (siguiente) => set("fotos", aplicar(fotos, siguiente));
 
+  // Fotos que llegan del selector o arrastradas al recuadro. Una que no se
+  // puede abrir (HEIC en Chrome, archivo de iCloud sin bajar) no frena a las
+  // demas, pero se avisa cual fue y que hacer. Se agregan todas juntas al
+  // final: setFotos parte de la lista que habia al empezar, y llamarlo una vez
+  // por foto dejaba solo la ultima cuando se escogian varias.
+  const [arrastrandoFoto, setArrastrandoFoto] = useState(false);
+  const agregarArchivosFoto = async (archivos) => {
+    const lista = Array.from(archivos || []);
+    if (!lista.length) return;
+    const nuevas = [];
+    const fallos = [];
+    for (const file of lista) {
+      try {
+        const src = await leerImagenComprimida(file, { ladoMax: 2400, calidad: 0.90 });
+        nuevas.push({ id: Date.now() + Math.random(), src, label: "" });
+      } catch (err) {
+        console.error("No se pudo cargar la foto:", file?.name, err);
+        fallos.push(err?.message || `No se pudo cargar «${file?.name || "la foto"}».`);
+      }
+    }
+    if (nuevas.length) setFotos((prev) => [...prev, ...nuevas]);
+    if (fallos.length) {
+      await avisar({
+        titulo: fallos.length === 1 ? "No se pudo agregar la foto" : `No se pudieron agregar ${fallos.length} fotos`,
+        mensaje: fallos.join("\n\n"),
+      });
+    }
+  };
+
   useEffect(() => {
     const listaFotos = Array.isArray(p.fotos) ? p.fotos : [];
     const siguientes = fotosParaTipo(listaFotos, p.tipoCotizacion);
@@ -627,8 +656,24 @@ export default function PropuestaEditor({
                 </div>
               </div>
             ))}
+            {/* Tambien se puede arrastrar la foto aqui: en algunos Mac el
+                selector deja «Cargar» en gris aunque haya una foto escogida. */}
             <div
               onClick={() => fotosRef.current.click()}
+              onDragOver={(e) => {
+                if (!Array.from(e.dataTransfer?.types || []).includes("Files")) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "copy";
+                if (!arrastrandoFoto) setArrastrandoFoto(true);
+              }}
+              onDragLeave={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget)) setArrastrandoFoto(false);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setArrastrandoFoto(false);
+                agregarArchivosFoto(e.dataTransfer?.files);
+              }}
               style={{
                 border: "2px dashed #f47c20",
                 borderRadius: 10,
@@ -638,7 +683,7 @@ export default function PropuestaEditor({
                 alignItems: "center",
                 justifyContent: "center",
                 cursor: "pointer",
-                background: "var(--c-acento-suave, #fff8f3)",
+                background: arrastrandoFoto ? "#ffe8d6" : "var(--c-acento-suave, #fff8f3)",
                 color: "#f47c20",
                 fontWeight: 600,
                 gap: 8,
@@ -646,39 +691,17 @@ export default function PropuestaEditor({
               }}
             >
               <span style={{ fontSize: 28, lineHeight: 1 }}>+</span>
-              <span style={{ fontSize: 13, fontWeight: 700 }}>Agregar foto</span>
-              <span style={{ fontSize: 11, color: "var(--text-muted, #94a3b8)", fontWeight: 500 }}>
-                Formatos JPG, PNG, WEBP (HEIC solo en Safari)
+              <span style={{ fontSize: 13, fontWeight: 700 }}>{arrastrandoFoto ? "Suelta la foto aquí" : "Agregar foto"}</span>
+              <span style={{ fontSize: 11, color: "var(--text-muted, #94a3b8)", fontWeight: 500, textAlign: "center", padding: "0 10px" }}>
+                Haz clic o arrastra la foto aquí · JPG, PNG, WEBP
               </span>
             </div>
           </div>
           {/* Carga de fotos con alta resolución optimizada para documentos y fotos de obra */}
-          <input ref={fotosRef} type="file" accept="image/*,.heic,.heif" multiple style={{display:"none"}} onChange={async(e)=>{
+          <input ref={fotosRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={(e)=>{
             const archivos=Array.from(e.target.files||[]);
             e.target.value="";
-            // Una foto que no se puede abrir (HEIC en Chrome, archivo dañado)
-            // no frena a las demas, pero se avisa cual fue y que hacer.
-            // Se agregan todas juntas al final: setFotos parte de la lista que
-            // habia al abrir el selector, y llamarlo una vez por foto dejaba
-            // solo la ultima cuando se escogian varias.
-            const nuevas=[];
-            const fallos=[];
-            for(const file of archivos){
-              try{
-                const src=await leerImagenComprimida(file, { ladoMax: 2400, calidad: 0.90 });
-                nuevas.push({id:Date.now()+Math.random(),src,label:""});
-              }catch(err){
-                console.error("No se pudo cargar la foto:",file?.name,err);
-                fallos.push(err?.message||`No se pudo cargar «${file?.name||"la foto"}».`);
-              }
-            }
-            if(nuevas.length) setFotos(prev=>[...prev,...nuevas]);
-            if(fallos.length){
-              await avisar({
-                titulo: fallos.length===1 ? "No se pudo agregar la foto" : `No se pudieron agregar ${fallos.length} fotos`,
-                mensaje: fallos.join("\n\n"),
-              });
-            }
+            agregarArchivosFoto(archivos);
           }}/>
         </div>
 

@@ -54,6 +54,7 @@ import { normalizarMayusculas, normalizarNombrePropio } from "./normalizarEntrad
  * @property {string} recibeNombre
  * @property {string} recibeDocumento
  * @property {string} recibeCargo
+ * @property {string} firmaLider  firma escaneada de quien entrega, para esta acta
  */
 
 // La observacion que va en todas las actas. Esta copiada de las que ya se
@@ -112,6 +113,10 @@ function actaVacia(obraId = "") {
     recibeNombre: "",
     recibeDocumento: "",
     recibeCargo: "",
+    // La firma de quien entrega. Se sube en el acta, que es cuando se sabe
+    // quien la firma: el lider de proyecto cambia de obra en obra. Vacia, la
+    // hoja sale con la firma de la empresa, que es como salia antes.
+    firmaLider: "",
   };
 }
 
@@ -254,6 +259,21 @@ export function descripcionDelTrabajo(obra, informes = []) {
   return [...new Set(deBitacora)].join("\n\n");
 }
 
+/**
+ * Lo que la obra ya sabe de su propia ejecucion, en las casillas del acta.
+ *
+ * Es lo que el equipo dejo escrito trabajando -quien tuvo turno, que se hizo
+ * en cada jornada, que se redacto en los informes-, no algo que haya que
+ * volver a elegir a mano en una lista. El acta se crea con esto y se puede
+ * volver a traer cuando la obra avanza (boton «Traer de la ejecucion»).
+ */
+export function datosDeEjecucion({ obra, informes = [], horarios = [], empleados = [] }) {
+  return {
+    ...personalDeObra(obra, horarios, empleados),
+    descripcion: descripcionDelTrabajo(obra, informes),
+  };
+}
+
 // ── El acta completa ────────────────────────────────────────────────────────
 
 /**
@@ -271,7 +291,7 @@ export function descripcionDelTrabajo(obra, informes = []) {
  */
 export function construirActa({ obra, cotizacion = null, cliente = null, informes = [], horarios = [], empleados = [], obras = [] }) {
   const fechas = fechasDeTrabajo(obra, horarios);
-  const personal = personalDeObra(obra, horarios, empleados);
+  const ejecucion = datosDeEjecucion({ obra, informes, horarios, empleados });
 
   return {
     ...actaVacia(obra?.id),
@@ -288,8 +308,7 @@ export function construirActa({ obra, cotizacion = null, cliente = null, informe
     fechaEntrega: texto(obra?.fechaFin) || fechas.fin || today(),
     sistemas: sistemasDeCotizacion(cotizacion),
     acero: aceroDeCotizacion(cotizacion),
-    ...personal,
-    descripcion: descripcionDelTrabajo(obra, informes),
+    ...ejecucion,
     recibeNombre: normalizarNombrePropio(obra?.recibeNombre || cliente?.contacto || ""),
     recibeDocumento: texto(obra?.recibeDocumento || cliente?.contactoCedula || cliente?.contacto_cedula || ""),
     recibeCargo: texto(obra?.recibeCargo || cliente?.contactoCargo || cliente?.contacto_cargo || ""),

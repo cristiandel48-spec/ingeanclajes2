@@ -38,6 +38,11 @@ export function buildActaPrintHtml(acta, { empresaConfig, firmaImg = "", firmaCl
   const sistemas = Array.isArray(acta?.sistemas) ? acta.sistemas : [];
   const colaboradores = (Array.isArray(acta?.colaboradores) ? acta.colaboradores : []).filter(Boolean);
 
+  // Quien entrega firma con la firma que se subio en esta acta -el lider de
+  // proyecto cambia de obra en obra-; si no se subio ninguna, sale la de la
+  // empresa, que es lo que habia antes.
+  const firmaEntrega = String(acta?.firmaLider || "").trim() || firmaImg;
+
   const firmaClienteObj = firmaCliente || acta?.firmaCliente || null;
   const firmaClienteImg = firmaClienteObj?.firmaImagen || firmaClienteObj?.firma_imagen || acta?.recibeFirma || acta?.firmaImagen || "";
   const nombreFirmante = firmaClienteObj?.firmanteNombre || firmaClienteObj?.firmante_nombre || acta?.recibeNombre;
@@ -173,7 +178,7 @@ export function buildActaPrintHtml(acta, { empresaConfig, firmaImg = "", firmaCl
         <td style="width:50%;padding:10px 12px 0 0;vertical-align:top;border-right:1px solid ${LINEA_SUAVE};">
           <div style="font-size:9px;font-weight:700;color:${GRIS};letter-spacing:0.05em;text-transform:uppercase;margin-bottom:3px;">Entrega conforme · Ingeanclajes S.A.S.</div>
           <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:3px;">
-            ${firmaImg ? `<img src="${firmaImg}" alt="Firma" style="max-height:42px;max-width:180px;object-fit:contain;"/>` : ""}
+            ${firmaEntrega ? `<img src="${firmaEntrega}" alt="Firma" style="max-height:42px;max-width:180px;object-fit:contain;"/>` : ""}
           </div>
           <div style="font-weight:800;font-size:10.5px;color:${TINTA};">${valOrRaya(acta?.liderProyecto)}</div>
           <div style="font-size:9px;color:${GRIS};margin-top:1px;">Líder de proyecto</div>

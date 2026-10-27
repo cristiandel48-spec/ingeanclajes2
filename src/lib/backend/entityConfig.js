@@ -787,6 +787,10 @@ export const entityConfig = {
       linkReunion: row.link_reunion || "",
       estado: row.estado || "pendiente",
       prioridad: row.prioridad || "normal",
+      // Quien creo el compromiso (migracion 075). Solo se lee: lo pone la base
+      // con auth.uid() y toRow no lo envia. Sirve para saber quien puede
+      // quitar una estrellita, que la base solo deja borrar a su dueño.
+      usuarioId: row.usuario_id || "",
     }),
   },
   // Lista de chequeo personal de cada usuario. El dueño (usuario_id) no sale

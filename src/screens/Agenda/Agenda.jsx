@@ -23,6 +23,7 @@ import {
   esUsuarioCamila,
   esCompromisoEspecial,
   filtrarAgendaPorPermiso,
+  puedeQuitarEstrellita,
 } from "../../lib/agendaEspecial";
 import ModalEstrellitaEspecial from "../../components/agenda/ModalEstrellitaEspecial";
 import { confirmar } from "../../lib/dialogos";
@@ -150,11 +151,16 @@ function CompromisosDelDiaSection({
   esCamila,
   abrirModalEstrellita,
   eliminarFechaEspecial,
+  puedeQuitar,
 }) {
   const festivoDelDia = getFestivoColombia(fechaSeleccionada);
-  const fechaEspecialDelDia = (esCristian || esCamila)
-    ? eventosDelDia.find(esCompromisoEspecial)
+  const especialDelDia = eventosDelDia.find(esCompromisoEspecial) || null;
+  const fechaEspecialDelDia = (esCristian || esCamila || puedeQuitar?.(especialDelDia))
+    ? especialDelDia
     : null;
+  // La tarjeta de Camila no tenia como quitarla: quien la puso y entra con
+  // una cuenta que la app no reconoce como «Cristian» no veia ningun boton.
+  const quitarDesdeTarjeta = Boolean(fechaEspecialDelDia) && !esCristian && puedeQuitar?.(fechaEspecialDelDia);
   const compromisosTrabajo = eventosDelDia.filter((c) => !esCompromisoEspecial(c));
 
   return (
@@ -288,12 +294,31 @@ function CompromisosDelDiaSection({
                 <span>Con mucho cariño, Cristian Flores</span>
               </div>
             </div>
+            {quitarDesdeTarjeta && (
+              <button
+                type="button"
+                onClick={() => eliminarFechaEspecial(fechaEspecialDelDia.id)}
+                style={{
+                  padding: "6px 12px",
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  borderRadius: 8,
+                  border: "1px solid #fecaca",
+                  background: "#ffffff",
+                  color: "#dc2626",
+                  cursor: "pointer",
+                  flexShrink: 0,
+                }}
+              >
+                ✕ Quitar
+              </button>
+            )}
           </div>
         </div>
       )}
 
-      {/* Tarjeta de Fecha Especial para Cristian */}
-      {fechaEspecialDelDia && esCristian && (
+      {/* Tarjeta de Fecha Especial para Cristian (o para quien la puso) */}
+      {fechaEspecialDelDia && (esCristian || (quitarDesdeTarjeta && !esCamila)) && (
         <div
           style={{
             background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 45%, #fff1f2 100%)",
@@ -1212,10 +1237,25 @@ export default function Agenda({ ctx }) {
     }
   };
 
+  // Quien puede quitar una estrellita: quien la puso o un administrador. En
+  // la vista simulada («Ver como») se comporta como la persona simulada.
+  const miUserId = ctx?.membresia?.user_id || "";
+  const esAdmin = vistaRolSimulada === "auto"
+    && (ctx?.membresia?.role === "admin" || Boolean(ctx?.esSuperAdminCristian));
+  const puedeQuitar = (item) => puedeQuitarEstrellita(item, {
+    esCristian,
+    esAdmin,
+    miUserId: vistaRolSimulada === "auto" ? miUserId : "",
+  });
+
   // Compromisos filtrados según permisos (las fechas especiales solo las ven Cristian y Camila)
   const compromisosVisibles = useMemo(() => {
-    return filtrarAgendaPorPermiso(compromisos, { esCristian, esCamila });
-  }, [compromisos, esCristian, esCamila]);
+    return filtrarAgendaPorPermiso(compromisos, {
+      esCristian,
+      esCamila,
+      miUserId: vistaRolSimulada === "auto" ? miUserId : "",
+    });
+  }, [compromisos, esCristian, esCamila, miUserId, vistaRolSimulada]);
 
   // Estados principales
   const [vista, setVista] = useState("mes"); // "mes" | "agenda"
@@ -1372,6 +1412,31 @@ export default function Agenda({ ctx }) {
         setNotificacionEnvio((prev) => (prev?.tipo === "success" ? null : prev));
       }, 4000);
     }
+  };
+
+  // Todas las estrellitas que esta persona puede quitar, de cualquier mes.
+  // Antes solo se quitaban de una en una y desde el dia exacto.
+  const estrellitasQuitables = compromisosVisibles.filter((c) => puedeQuitar(c));
+
+  const quitarTodasLasEstrellitas = async () => {
+    const ids = new Set(estrellitasQuitables.map((c) => c.id));
+    const n = ids.size;
+    if (!n) return;
+    const ok = await confirmar({
+      titulo: n === 1 ? "¿Quitar la estrellita del calendario?" : `¿Quitar las ${n} estrellitas del calendario?`,
+      mensaje: "Se borran también de la agenda de Camila. No se puede deshacer.",
+      textoConfirmar: "Quitar",
+      destructivo: true,
+    });
+    if (!ok) return;
+    setCompromisos((prev) => (prev || []).filter((c) => !ids.has(c.id)));
+    setNotificacionEnvio({
+      tipo: "success",
+      mensaje: n === 1 ? "✓ Estrellita quitada del calendario." : `✓ ${n} estrellitas quitadas del calendario.`,
+    });
+    setTimeout(() => {
+      setNotificacionEnvio((prev) => (prev?.tipo === "success" ? null : prev));
+    }, 4000);
   };
 
   // Modal de creación / edición de compromiso normal
@@ -1983,6 +2048,35 @@ export default function Agenda({ ctx }) {
               </button>
             )}
 
+            {estrellitasQuitables.length > 0 && (
+              <button
+                type="button"
+                style={{
+                  background: "var(--surface, #ffffff)",
+                  color: "#dc2626",
+                  border: "1px solid #fecaca",
+                  borderRadius: 8,
+                  padding: "6px 14px",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  whiteSpace: "nowrap",
+                }}
+                onClick={quitarTodasLasEstrellitas}
+                title="Quitar del calendario todas las estrellitas que pusiste"
+              >
+                <span>✕</span>
+                <span>
+                  {estrellitasQuitables.length === 1
+                    ? "Quitar estrellita"
+                    : `Quitar estrellitas (${estrellitasQuitables.length})`}
+                </span>
+              </button>
+            )}
+
             <button
               type="button"
               style={{
@@ -2105,6 +2199,7 @@ export default function Agenda({ ctx }) {
             esCamila={esCamila}
             abrirModalEstrellita={abrirModalEstrellita}
             eliminarFechaEspecial={eliminarFechaEspecial}
+            puedeQuitar={puedeQuitar}
           />
           {/* Calendario Mensual Completo ABAJO */}
           <CalendarioMensualSection
@@ -2324,22 +2419,26 @@ export default function Agenda({ ctx }) {
                     >
                       ✎
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => eliminarCompromiso(item.id)}
-                      style={{
-                        padding: "6px 8px",
-                        fontSize: 12,
-                        borderRadius: 6,
-                        border: "1px solid var(--border, #e2e8f0)",
-                        background: "var(--surface, #ffffff)",
-                        cursor: "pointer",
-                        color: "#ef4444",
-                      }}
-                      title="Eliminar"
-                    >
-                      ✕
-                    </button>
+                    {/* Una estrellita solo la quita quien la puso o un admin;
+                        a Camila la base no la deja y volvia a salir. */}
+                    {(!esCompromisoEspecial(item) || puedeQuitar(item)) && (
+                      <button
+                        type="button"
+                        onClick={() => (esCompromisoEspecial(item) ? eliminarFechaEspecial(item.id) : eliminarCompromiso(item.id))}
+                        style={{
+                          padding: "6px 8px",
+                          fontSize: 12,
+                          borderRadius: 6,
+                          border: "1px solid var(--border, #e2e8f0)",
+                          background: "var(--surface, #ffffff)",
+                          cursor: "pointer",
+                          color: "#ef4444",
+                        }}
+                        title="Eliminar"
+                      >
+                        ✕
+                      </button>
+                    )}
                   </div>
                 </div>
               );

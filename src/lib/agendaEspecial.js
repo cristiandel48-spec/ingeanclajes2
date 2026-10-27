@@ -76,14 +76,30 @@ export function esCompromisoEspecial(item) {
  * Filtra la lista de agenda asegurando que las fechas especiales solo sean
  * visibles para Cristian Flores y Camila Sepúlveda.
  */
-export function filtrarAgendaPorPermiso(listaAgenda, { esCristian, esCamila }) {
+export function filtrarAgendaPorPermiso(listaAgenda, { esCristian, esCamila, miUserId = "" }) {
   if (!Array.isArray(listaAgenda)) return [];
   // Cristian y Camila tienen acceso a ver las fechas especiales
   if (esCristian || esCamila) {
     return listaAgenda;
   }
-  // Cualquier otro usuario o empleado regular NO ve las fechas especiales
-  return listaAgenda.filter((item) => !esCompromisoEspecial(item));
+  // Cualquier otro usuario o empleado regular NO ve las fechas especiales,
+  // salvo las que puso él mismo: si no, quien entra con una cuenta cuyo nombre
+  // no dice «Cristian» no veria las suyas y no podria quitarlas.
+  return listaAgenda.filter(
+    (item) => !esCompromisoEspecial(item) || (miUserId && item.usuarioId === miUserId)
+  );
+}
+
+/**
+ * Quien puede quitar una estrellita: quien la puso (usuario_id, migracion
+ * 075) o un administrador (migracion 080). Cristian siempre, como hasta ahora.
+ * Camila, que solo la recibe, no: la base no la dejaria borrar y la estrellita
+ * volveria a salir al recargar.
+ */
+export function puedeQuitarEstrellita(item, { esCristian, esAdmin, miUserId = "" }) {
+  if (!esCompromisoEspecial(item)) return false;
+  if (esCristian || esAdmin) return true;
+  return Boolean(miUserId) && item.usuarioId === miUserId;
 }
 
 /**

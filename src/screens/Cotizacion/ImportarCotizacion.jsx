@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import AvisoFlujo from "../../components/AvisoFlujo";
+import ZonaArchivos from "../../components/ZonaArchivos";
 import { B, SI } from "../../styles/tokens";
 import { armarCotizacionDesdeTexto } from "../../lib/asistenteCotizacion";
 import { agruparCatalogo } from "../../lib/catalogo";
@@ -111,7 +112,13 @@ export default function ImportarCotizacion({ onAplicar, onCerrar, clientes = [] 
   };
 
   return (
-    <div style={{ background: "var(--surface, #fff)", border: "1px solid #f47c20", borderRadius: 14, padding: 20, marginBottom: 16 }}>
+    // Tambien se puede soltar el archivo sobre el panel: en algunos Mac el
+    // selector deja «Cargar» en gris aunque el archivo sea valido.
+    <ZonaArchivos
+      alRecibir={(archivos) => { if (!paso) procesar(archivos[0]); }}
+      deshabilitado={!!paso}
+      estiloArrastrando={{ outline: "2px dashed #f47c20", outlineOffset: 4 }}
+      style={{ background: "var(--surface, #fff)", border: "1px solid #f47c20", borderRadius: 14, padding: 20, marginBottom: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 10 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-main, #1a1a2e)" }}>Importar cotización con IA</div>
         <button onClick={onCerrar} style={{ ...B("var(--btn-cancelar-bg, #f1f5f9)", "var(--btn-cancelar-txt, #475569)"), fontSize: 12, padding: "6px 12px" }}>Cerrar</button>
@@ -119,8 +126,9 @@ export default function ImportarCotizacion({ onAplicar, onCerrar, clientes = [] 
 
       {!propuesta && (
         <AvisoFlujo tono="info" titulo="Sube la solicitud que te mandó el cliente">
-          Sirve el PDF que llega por correo o un archivo de texto. <strong>Se lee el texto que trae
-          el archivo dentro</strong>, así que los números salen exactos y no cuesta nada.
+          Sirve el PDF que llega por correo o un archivo de texto: escógelo o arrástralo a este
+          recuadro. <strong>Se lee el texto que trae el archivo dentro</strong>, así que los números
+          salen exactos y no cuesta nada.
           <div style={{ marginTop: 5 }}>
             Las fotos y los PDF escaneados todavía no: esos no tienen letras sino imagen, y
             necesitan otro modelo. Si el cliente te lo puede mandar en PDF, mejor.
@@ -268,6 +276,6 @@ export default function ImportarCotizacion({ onAplicar, onCerrar, clientes = [] 
           </div>
         </div>
       )}
-    </div>
+    </ZonaArchivos>
   );
 }

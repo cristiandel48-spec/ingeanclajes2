@@ -7,6 +7,7 @@ import FirmaRecibidoPublica from "./screens/Firma/FirmaRecibidoPublica.jsx";
 import VerificacionRecibido from "./screens/Firma/VerificacionRecibido.jsx";
 import DialogosGlobales from "./components/DialogosGlobales.jsx";
 import { confirmar } from "./lib/dialogos";
+import { protegerSoltarFuera } from "./lib/soltarArchivos";
 import { FUENTE } from "./styles/designTokens";
 import { cssFuenteInter } from "./lib/fuenteInter";
 
@@ -64,6 +65,8 @@ window.addEventListener("vite:preloadError", async (evento) => {
   });
   if (recargar) window.location.reload();
 });
+
+protegerSoltarFuera();
 
 // Inter se declara aqui, antes de pintar nada, y no en GlobalStyles: esos
 // estilos solo se montan despues de iniciar sesion, y la pantalla de acceso y

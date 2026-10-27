@@ -4,6 +4,7 @@ import BotonDictado from "../../components/ui/BotonDictado";
 import MedidorMapa from "../../components/maps/MedidorMapa";
 import { imagenDelMapa } from "../../lib/mapaEstatico";
 import LBL from "../../components/ui/LBL";
+import ZonaArchivos from "../../components/ZonaArchivos";
 import { corregirOrtografiaLocal } from "../../lib/correctorTexto";
 import { leerImagenComprimida, rotarImagen90 } from "../../lib/imagenes";
 import { normalizarFrase } from "../../lib/normalizarEntrada";
@@ -200,12 +201,11 @@ export default function PropuestaEditor({
   const setItems = (siguiente) => set("items", aplicar(items, siguiente));
   const setFotos = (siguiente) => set("fotos", aplicar(fotos, siguiente));
 
-  // Fotos que llegan del selector o arrastradas al recuadro. Una que no se
-  // puede abrir (HEIC en Chrome, archivo de iCloud sin bajar) no frena a las
-  // demas, pero se avisa cual fue y que hacer. Se agregan todas juntas al
-  // final: setFotos parte de la lista que habia al empezar, y llamarlo una vez
-  // por foto dejaba solo la ultima cuando se escogian varias.
-  const [arrastrandoFoto, setArrastrandoFoto] = useState(false);
+  // Fotos que llegan del selector, arrastradas o pegadas en el recuadro. Una
+  // que no se puede abrir (HEIC en Chrome, archivo de iCloud sin bajar) no
+  // frena a las demas, pero se avisa cual fue y que hacer. Se agregan todas
+  // juntas al final: setFotos parte de la lista que habia al empezar, y
+  // llamarlo una vez por foto dejaba solo la ultima cuando se escogian varias.
   const agregarArchivosFoto = async (archivos) => {
     const lista = Array.from(archivos || []);
     if (!lista.length) return;
@@ -656,24 +656,13 @@ export default function PropuestaEditor({
                 </div>
               </div>
             ))}
-            {/* Tambien se puede arrastrar la foto aqui: en algunos Mac el
-                selector deja «Cargar» en gris aunque haya una foto escogida. */}
-            <div
-              onClick={() => fotosRef.current.click()}
-              onDragOver={(e) => {
-                if (!Array.from(e.dataTransfer?.types || []).includes("Files")) return;
-                e.preventDefault();
-                e.dataTransfer.dropEffect = "copy";
-                if (!arrastrandoFoto) setArrastrandoFoto(true);
-              }}
-              onDragLeave={(e) => {
-                if (!e.currentTarget.contains(e.relatedTarget)) setArrastrandoFoto(false);
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                setArrastrandoFoto(false);
-                agregarArchivosFoto(e.dataTransfer?.files);
-              }}
+            {/* Tambien se puede arrastrar o pegar la foto aqui: en algunos
+                Mac el selector deja «Cargar» en gris aunque haya una foto escogida. */}
+            <ZonaArchivos
+              onClick={() => fotosRef.current?.click()}
+              alRecibir={agregarArchivosFoto}
+              title="Haz clic para escoger fotos, o arrástralas aquí desde el Finder o el Explorador"
+              estiloArrastrando={{ background: "#ffe8d6" }}
               style={{
                 border: "2px dashed #f47c20",
                 borderRadius: 10,
@@ -683,19 +672,23 @@ export default function PropuestaEditor({
                 alignItems: "center",
                 justifyContent: "center",
                 cursor: "pointer",
-                background: arrastrandoFoto ? "#ffe8d6" : "var(--c-acento-suave, #fff8f3)",
+                background: "var(--c-acento-suave, #fff8f3)",
                 color: "#f47c20",
                 fontWeight: 600,
                 gap: 8,
                 transition: "all 0.15s ease",
               }}
             >
-              <span style={{ fontSize: 28, lineHeight: 1 }}>+</span>
-              <span style={{ fontSize: 13, fontWeight: 700 }}>{arrastrandoFoto ? "Suelta la foto aquí" : "Agregar foto"}</span>
-              <span style={{ fontSize: 11, color: "var(--text-muted, #94a3b8)", fontWeight: 500, textAlign: "center", padding: "0 10px" }}>
-                Haz clic o arrastra la foto aquí · JPG, PNG, WEBP
-              </span>
-            </div>
+              {(arrastrando) => (
+                <>
+                  <span style={{ fontSize: 28, lineHeight: 1 }}>+</span>
+                  <span style={{ fontSize: 13, fontWeight: 700 }}>{arrastrando ? "Suelta la foto aquí" : "Agregar foto"}</span>
+                  <span style={{ fontSize: 11, color: "var(--text-muted, #94a3b8)", fontWeight: 500, textAlign: "center", padding: "0 10px" }}>
+                    Haz clic o arrastra la foto aquí · JPG, PNG, WEBP
+                  </span>
+                </>
+              )}
+            </ZonaArchivos>
           </div>
           {/* Carga de fotos con alta resolución optimizada para documentos y fotos de obra */}
           <input ref={fotosRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={(e)=>{

@@ -207,7 +207,7 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
       ? { ...o, actas: [...normalizarActas(o), nueva] }
       : o)));
     setActaId(nueva.id);
-    toast.exito(`Acta ${nueva.id} creada con los datos de la obra. RevÃ­sala antes de entregarla.`);
+    toast.exito(`Acta ${nueva.id} creada con los datos de la obra. Revísala antes de entregarla.`);
   };
 
   // Vuelve a traer de la obra quien ejecuto el trabajo y que se hizo. Sirve
@@ -217,7 +217,7 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
     const datos = datosDeEjecucion({ obra, informes, horarios, empleados });
     const hayAlgo = datos.liderProyecto || datos.coordinadorAlturas || datos.colaboradores.length || datos.descripcion;
     if (!hayAlgo) {
-      toast.error("La obra todavÃ­a no tiene personal asignado ni jornadas registradas.");
+      toast.error("La obra todavía no tiene personal asignado ni jornadas registradas.");
       return;
     }
     guardarActa(acta.id, {
@@ -226,7 +226,7 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
       colaboradores: datos.colaboradores.length ? datos.colaboradores : acta.colaboradores,
       descripcion: datos.descripcion || acta.descripcion,
     });
-    toast.exito("Se trajo lo que el equipo registrÃ³ en la ejecuciÃ³n de la obra.");
+    toast.exito("Se trajo lo que el equipo registró en la ejecución de la obra.");
   };
 
   const subirFirma = async (file) => {
@@ -243,13 +243,13 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
   const guardarFirmaEnEmpresa = () => {
     if (typeof setEmpresaConfig !== "function" || !acta.firmaLider) return;
     setEmpresaConfig((prev) => setFirmaImg(prev, acta.firmaLider));
-    toast.exito("Esta firma queda como la de la empresa para los prÃ³ximos documentos.");
+    toast.exito("Esta firma queda como la de la empresa para los próximos documentos.");
   };
 
   const borrarActa = async () => {
     const ok = await confirmar({
       titulo: `Borrar el acta ${acta.id}`,
-      mensaje: "Se borra de la obra con todo lo que se le haya escrito. Los envÃ­os a firma que ya se hicieron no se borran.",
+      mensaje: "Se borra de la obra con todo lo que se le haya escrito. Los envíos a firma que ya se hicieron no se borran.",
       textoConfirmar: "Borrar acta",
       destructivo: true,
     });
@@ -286,7 +286,7 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
           texto={
             "El acta (FORM-SST-89) es la hoja que firma el cliente cuando se le entrega el trabajo. " +
             "Es un requisito obligatorio: sin el acta de entrega no se puede generar el informe de actividades de esta obra. " +
-            "El programa la arma con los datos de la obra y de su cotizaciÃ³n; en la obra solo hay que revisarla y firmarla."
+            "El programa la arma con los datos de la obra y de su cotización; en la obra solo hay que revisarla y firmarla."
           }
           accion={!bloqueada ? <Button variante="primary" icono="mas" onClick={crearActa}>Crear acta de entrega</Button> : null}
         />
@@ -295,7 +295,7 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
             <span style={{ ...TIPO.footnote, color: "var(--text-tertiary)" }}>Actas de esta obra:</span>
             {actas.map((a) => (
               <Button key={a.id} tam="sm" variante="tertiary" onClick={() => setActaId(a.id)}>
-                {a.id} Â· {fmtD(a.fecha)}
+                {a.id} · {fmtD(a.fecha)}
               </Button>
             ))}
           </div>
@@ -305,14 +305,13 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
   }
 
   const faltantes = faltantesDelActa(acta);
-  const firmaEnLaHoja = acta.firmaLider || firmaEmpresa;
 
   return (
     <>
       <Card ajustado style={{ marginBottom: ESPACIO.lg }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: ESPACIO.md, flexWrap: "wrap" }}>
           <div style={{ minWidth: 0 }}>
-            <div style={{ ...TIPO.eyebrow, color: "var(--text-tertiary)" }}>Acta de entrega de obra Â· FORM-SST-89</div>
+            <div style={{ ...TIPO.eyebrow, color: "var(--text-tertiary)" }}>Acta de entrega de obra · FORM-SST-89</div>
             <div style={{ display: "flex", alignItems: "center", gap: ESPACIO.sm, flexWrap: "wrap", marginTop: 6 }}>
               <span style={{ ...TIPO.title2, color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
                 Orden de trabajo {acta.id}
@@ -321,7 +320,7 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
                 <StatusPill tono="exito">Firmada por el cliente</StatusPill>
               ) : (
                 <StatusPill tono={faltantes.length ? "aviso" : "exito"}>
-                  {faltantes.length ? "Falta informaciÃ³n" : "Lista para firmar"}
+                  {faltantes.length ? "Falta información" : "Lista para firmar"}
                 </StatusPill>
               )}
             </div>
@@ -329,7 +328,7 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             <Button tam="sm" variante="tertiary" onClick={imprimir}>Imprimir</Button>
             <Button tam="sm" variante="tertiary" disabled={generandoPdf} onClick={descargar}>
-              {generandoPdf ? "Generandoâ€¦" : envioFirmado ? "Descargar PDF firmado" : "Descargar PDF"}
+              {generandoPdf ? "Generando…" : envioFirmado ? "Descargar PDF firmado" : "Descargar PDF"}
             </Button>
             <Button tam="sm" variante="primary" onClick={() => setModalFirma(true)}>Enviar a firma</Button>
             {!bloqueada && <Button tam="sm" variante="texto" onClick={borrarActa}>Borrar</Button>}
@@ -341,7 +340,7 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
             <span style={{ ...TIPO.footnote, color: "var(--text-tertiary)" }}>Otras actas:</span>
             {actas.filter((a) => a.id !== acta.id).map((a) => (
               <Button key={a.id} tam="sm" variante="tertiary" onClick={() => setActaId(a.id)}>
-                {a.id} Â· {fmtD(a.fecha)}
+                {a.id} · {fmtD(a.fecha)}
               </Button>
             ))}
           </div>
@@ -349,8 +348,8 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
 
         {faltantes.length > 0 && (
           <Callout tono="aviso" style={{ marginTop: ESPACIO.md }}>
-            Antes de entregarla falta {faltantes.join(", ")}. Se puede imprimir asÃ­ y completarla a mano, pero
-            escrita aquÃ­ queda guardada con la obra.
+            Antes de entregarla falta {faltantes.join(", ")}. Se puede imprimir así y completarla a mano, pero
+            escrita aquí queda guardada con la obra.
           </Callout>
         )}
 
@@ -371,31 +370,31 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
       />
 
       <Card ajustado>
-        <Seccion primera titulo="Contratante y obra" nota="Sale de la ficha del cliente y de la cotizaciÃ³n de esta obra.">
+        <Seccion primera titulo="Contratante y obra" nota="Sale de la ficha del cliente y de la cotización de esta obra.">
           <div style={REJILLA}>
             <Input label="Contratante" value={acta.contratante} disabled={bloqueada}
               onChange={upd("contratante")} onBlur={alSalir("contratante", normalizarMayusculas)} />
             <Input label="NIT" value={acta.nit} disabled={bloqueada}
               onChange={upd("nit")} onBlur={alSalir("nit", normalizarDocumento)} />
-            <Input label="TelÃ©fono" type="tel" inputMode="tel" value={acta.telefono} disabled={bloqueada} onChange={upd("telefono")} />
+            <Input label="Teléfono" type="tel" inputMode="tel" value={acta.telefono} disabled={bloqueada} onChange={upd("telefono")} />
             <Input label="Contacto administrativo" value={acta.contactoAdministrativo} disabled={bloqueada}
               onChange={upd("contactoAdministrativo")} onBlur={alSalir("contactoAdministrativo", normalizarNombrePropio)} />
-            <Input label="Correo de facturaciÃ³n electrÃ³nica" type="email" value={acta.correoFacturacion} disabled={bloqueada}
+            <Input label="Correo de facturación electrónica" type="email" value={acta.correoFacturacion} disabled={bloqueada}
               onChange={upd("correoFacturacion")} onBlur={alSalir("correoFacturacion", normalizarCorreo)} />
             <Input label="Correo administrativo" type="email" value={acta.correoAdministrativo} disabled={bloqueada}
               onChange={upd("correoAdministrativo")} onBlur={alSalir("correoAdministrativo", normalizarCorreo)} />
           </div>
           <div style={{ ...REJILLA, marginTop: ESPACIO.md }}>
-            <Input label="DirecciÃ³n de obra" value={acta.direccionObra} disabled={bloqueada}
+            <Input label="Dirección de obra" value={acta.direccionObra} disabled={bloqueada}
               onChange={upd("direccionObra")} onBlur={alSalir("direccionObra", normalizarMayusculas)} />
-            <Input label="Ãreas intervenidas" obligatorio value={acta.areasIntervenidas} disabled={bloqueada}
-              placeholder="Cubierta y terraza de la subestaciÃ³n"
-              ayuda="DÃ³nde se trabajÃ³. Es lo Ãºnico que el programa no puede deducir."
+            <Input label="Áreas intervenidas" obligatorio value={acta.areasIntervenidas} disabled={bloqueada}
+              placeholder="Cubierta y terraza de la subestación"
+              ayuda="Dónde se trabajó. Es lo único que el programa no puede deducir."
               onChange={upd("areasIntervenidas")} />
           </div>
           <div style={{ marginTop: ESPACIO.md }}>
             <Input label="Objetivo del proyecto" obligatorio value={acta.objetivo} disabled={bloqueada}
-              ayuda="Sale de los Ã­tems de la cotizaciÃ³n vinculada."
+              ayuda="Sale de los ítems de la cotización vinculada."
               onChange={upd("objetivo")} onBlur={alSalir("objetivo", normalizarMayusculas)} />
           </div>
           <div style={{ ...REJILLA, marginTop: ESPACIO.md }}>
@@ -405,7 +404,7 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
           </div>
         </Seccion>
 
-        <Seccion titulo="Sistema instalado o recertificado" nota="Las cantidades vienen de la cotizaciÃ³n aprobada.">
+        <Seccion titulo="Sistema instalado o recertificado" nota="Las cantidades vienen de la cotización aprobada.">
           <Input label="Acero" como="select" value={acta.acero} disabled={bloqueada} onChange={upd("acero")}>
             <option value="">Sin especificar</option>
             <option value="galvanizado">Acero galvanizado</option>
@@ -436,7 +435,7 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
               </div>
             )) : (
               <div style={{ ...TIPO.callout, color: "var(--text-tertiary)" }}>
-                La obra no tiene cotizaciÃ³n vinculada con Ã­tems, asÃ­ que no hay cantidades que traer. Se escriben a
+                La obra no tiene cotización vinculada con ítems, así que no hay cantidades que traer. Se escriben a
                 mano sobre la hoja impresa.
               </div>
             )}
@@ -444,11 +443,11 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
         </Seccion>
 
         <Seccion
-          titulo="QuiÃ©n ejecutÃ³ el trabajo"
-          nota="Sale de quiÃ©n tuvo turno en esta obra y del cargo que tiene en Personal."
+          titulo="Quién ejecutó el trabajo"
+          nota="Sale de quién tuvo turno en esta obra y del cargo que tiene en Personal."
           accion={!bloqueada && (
             <Button tam="sm" variante="tertiary" onClick={traerDeEjecucion}>
-              Traer de la ejecuciÃ³n
+              Traer de la ejecución
             </Button>
           )}
         >
@@ -458,11 +457,12 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
               value={acta.coordinadorAlturas}
               disabled={bloqueada}
               list="lista-empleados-acta"
+              ayuda="Si hay más de uno, sepáralos con · "
               onChange={upd("coordinadorAlturas")}
               onBlur={alSalir("coordinadorAlturas", normalizarNombrePropio)}
             />
             <Input
-              label="LÃ­der de proyecto"
+              label="Líder de proyecto"
               obligatorio
               value={acta.liderProyecto}
               disabled={bloqueada}
@@ -486,7 +486,7 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
               como="textarea"
               rows={3}
               disabled={bloqueada}
-              ayuda="Uno por lÃ­nea. Son los que tuvieron turno en esta obra."
+              ayuda="Uno por línea. Son los que tuvieron turno en esta obra."
               value={acta.colaboradores.join("\n")}
               onChange={(ev) => guardarActa(acta.id, { colaboradores: ev.target.value.split("\n") })}
               onBlur={(ev) => guardarActa(acta.id, {
@@ -498,9 +498,9 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
 
         <Seccion
           titulo="Lo que se hizo"
-          nota="Viene de los informes de actividades de esta obra y, si no hay, de la bitÃ¡cora."
+          nota="Viene de los informes de actividades de esta obra y, si no hay, de la bitácora."
         >
-          <Input label="DescripciÃ³n del trabajo realizado" obligatorio como="textarea" rows={8} disabled={bloqueada}
+          <Input label="Descripción del trabajo realizado" obligatorio como="textarea" rows={8} disabled={bloqueada}
             value={acta.descripcion} onChange={upd("descripcion")} />
           <div style={{ marginTop: ESPACIO.md }}>
             <Input label="Observaciones" como="textarea" rows={3} disabled={bloqueada}
@@ -516,29 +516,34 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
             display: "flex", alignItems: "center", gap: ESPACIO.lg, flexWrap: "wrap",
             padding: ESPACIO.lg, borderRadius: RADIO.control, background: "var(--fill)",
           }}>
+            {/* El recuadro muestra SOLO la firma de esta acta. Vacio queda en
+                blanco: es el sitio donde se sube la de quien entrega, y ver
+                ahi la de la empresa hacia creer que ya estaba puesta. */}
             <div style={{
               width: 200, height: 76, display: "flex", alignItems: "center", justifyContent: "center",
               borderRadius: RADIO.chip, background: "#ffffff",
-              border: firmaEnLaHoja ? "1px solid var(--separator)" : "1px dashed var(--border)",
+              border: acta.firmaLider ? "1px solid var(--separator)" : "1px dashed var(--border)",
             }}>
-              {firmaEnLaHoja ? (
-                <img src={firmaEnLaHoja} alt="Firma de quien entrega"
+              {acta.firmaLider ? (
+                <img src={acta.firmaLider} alt="Firma de quien entrega"
                   style={{ maxHeight: 60, maxWidth: 180, objectFit: "contain" }} />
               ) : (
-                <span style={{ ...TIPO.caption, color: "var(--text-quaternary)" }}>Sin firma</span>
+                <span style={{ ...TIPO.caption, color: "var(--text-quaternary)" }}>
+                  Sin firma todavía
+                </span>
               )}
             </div>
 
             <div style={{ minWidth: 200, flex: 1 }}>
               <div style={{ ...TIPO.footnote, color: "var(--text-primary)" }}>
-                {acta.liderProyecto || "LÃ­der de proyecto"}
+                {acta.liderProyecto || "Líder de proyecto"}
               </div>
               <div style={{ ...TIPO.caption, color: "var(--text-tertiary)", marginTop: 2, fontWeight: 400 }}>
                 {acta.firmaLider
                   ? "Firma subida para esta acta."
                   : firmaEmpresa
-                    ? "Se estÃ¡ usando la firma de la empresa. Sube la de quien entrega si es otra persona."
-                    : "TodavÃ­a no hay firma: la hoja sale con la raya para firmar a mano."}
+                    ? "Sube aquí la firma de quien entrega. Mientras no la subas, la hoja sale con la firma de la empresa."
+                    : "Sube aquí la firma de quien entrega. Mientras no la subas, la hoja sale con la raya para firmar a mano."}
               </div>
               {!bloqueada && (
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: ESPACIO.sm }}>
@@ -574,8 +579,8 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
         <Seccion
           titulo="Recibe conforme"
           nota={clienteFicha?.nombre
-            ? `Es el contacto de ${clienteFicha.nombre}, el cliente de esta obra. Al corregirlo aquÃ­ se corrige tambiÃ©n en su ficha, en la obra y en sus informes.`
-            : "Al escribirlo aquÃ­ se guarda tambiÃ©n en la ficha del cliente, en la obra y en sus informes."}
+            ? `Es el contacto de ${clienteFicha.nombre}, el cliente de esta obra. Al corregirlo aquí se corrige también en su ficha, en la obra y en sus informes.`
+            : "Al escribirlo aquí se guarda también en la ficha del cliente, en la obra y en sus informes."}
         >
           <div style={REJILLA}>
             <Input
@@ -591,7 +596,7 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
               }}
             />
             <Input
-              label="CÃ©dula"
+              label="Cédula"
               value={acta.recibeDocumento}
               disabled={bloqueada}
               onChange={upd("recibeDocumento")}

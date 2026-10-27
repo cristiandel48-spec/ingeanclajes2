@@ -213,13 +213,16 @@ export function personalDeObra(obra, horarios = [], empleados = []) {
     .map((id) => (Array.isArray(empleados) ? empleados : []).find((e) => e?.id === id))
     .filter(Boolean);
 
-  const porCargo = (regex) => gente.find((e) => regex.test(texto(e.cargo)));
-  const coordinador = porCargo(ES_COORDINADOR);
-  const lider = porCargo(ES_LIDER);
-  const mandos = new Set([coordinador?.id, lider?.id].filter(Boolean));
+  // Coordinadores pueden ser varios -en una obra grande van dos-, asi que
+  // salen todos los que tengan ese cargo, separados por punto medio, que es
+  // como se leen tambien los colaboradores en la hoja impresa. El lider de
+  // proyecto es uno solo: es quien firma la entrega.
+  const coordinadores = gente.filter((e) => ES_COORDINADOR.test(texto(e.cargo)));
+  const lider = gente.find((e) => ES_LIDER.test(texto(e.cargo)));
+  const mandos = new Set([...coordinadores.map((e) => e.id), lider?.id].filter(Boolean));
 
   return {
-    coordinadorAlturas: normalizarNombrePropio(coordinador?.nombre || ""),
+    coordinadorAlturas: coordinadores.map((e) => normalizarNombrePropio(e.nombre)).join(" · "),
     liderProyecto: normalizarNombrePropio(lider?.nombre || ""),
     // Los dos que firman no se repiten en la lista de colaboradores: en el
     // formato de papel van en casillas distintas.

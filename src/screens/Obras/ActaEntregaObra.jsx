@@ -82,14 +82,15 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
   const [modalFirma, setModalFirma] = useState(false);
   const [generandoPdf, setGenerandoPdf] = useState(false);
   const archivoFirma = useRef(null);
-  // Las actas a las que ya se les completo el contacto del cliente, para no
-  // volver a escribirlo encima si la persona lo borra a proposito.
-  const contactoPuesto = useRef(new Set());
+  // Las casillas que ya se completaron solas («ACT-003:nit»), para no volver a
+  // escribirlas encima si la persona las borra a proposito.
+  const autocompletado = useRef(new Set());
 
   const acta = actas.find((a) => a.id === actaId) || null;
   const { envios, recargar: recargarEnvios } = useEnviosFirma(acta?.id || "", { tipo: "acta" });
 
   const clienteFicha = clienteDeObra(clientes, obra);
+  const cotizacionDeObra = cotizaciones.find((c) => c.id === obra.cotizacionId) || null;
 
   const empleadosActivos = (Array.isArray(empleados) ? empleados : [])
     .filter((e) => e && e.activo !== false)
@@ -170,19 +171,36 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
     cargo: String(obra?.recibeCargo || clienteFicha?.contactoCargo || clienteFicha?.contacto_cargo || "").trim(),
   };
 
+  // El NIT del contratante -la cedula, si es una persona- puede estar en la
+  // obra, en la ficha del cliente o en la cotizacion. Se mira en los tres.
+  const nitDelContratante = String(
+    obra?.nit || clienteFicha?.nit || cotizacionDeObra?.nit || ""
+  ).trim();
+
+  // Lo que ya esta guardado en otra parte se completa solo, una vez por acta y
+  // solo si la casilla esta vacia: lo que haya escrito alguien no se pisa.
   useEffect(() => {
     if (!acta || bloqueada) return;
-    if (acta.recibeNombre?.trim()) return;
-    if (!contactoCliente.nombre) return;
-    if (contactoPuesto.current.has(acta.id)) return;
-    contactoPuesto.current.add(acta.id);
-    guardarActa(acta.id, {
-      recibeNombre: contactoCliente.nombre,
-      recibeDocumento: acta.recibeDocumento || contactoCliente.documento,
-      recibeCargo: acta.recibeCargo || contactoCliente.cargo,
-    });
+    const cambios = {};
+    const primeraVez = (campo) => {
+      const clave = `${acta.id}:${campo}`;
+      if (autocompletado.current.has(clave)) return false;
+      autocompletado.current.add(clave);
+      return true;
+    };
+
+    if (!acta.recibeNombre?.trim() && contactoCliente.nombre && primeraVez("recibe")) {
+      cambios.recibeNombre = contactoCliente.nombre;
+      cambios.recibeDocumento = acta.recibeDocumento || contactoCliente.documento;
+      cambios.recibeCargo = acta.recibeCargo || contactoCliente.cargo;
+    }
+    if (!acta.nit?.trim() && nitDelContratante && primeraVez("nit")) {
+      cambios.nit = nitDelContratante;
+    }
+
+    if (Object.keys(cambios).length) guardarActa(acta.id, cambios);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [acta?.id, contactoCliente.nombre, bloqueada]);
+  }, [acta?.id, contactoCliente.nombre, nitDelContratante, bloqueada]);
 
   const upd = (campo) => (ev) => guardarActa(acta.id, { [campo]: ev.target.value });
   // Al salir del campo se acomoda lo escrito: mayusculas donde el formato las
@@ -196,8 +214,8 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
   const crearActa = () => {
     const nueva = construirActa({
       obra,
-      cotizacion: cotizaciones.find((c) => c.id === obra.cotizacionId) || null,
-      cliente: clienteDeObra(clientes, obra),
+      cotizacion: cotizacionDeObra,
+      cliente: clienteFicha,
       informes,
       horarios,
       empleados,
@@ -374,7 +392,7 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
           <div style={REJILLA}>
             <Input label="Contratante" value={acta.contratante} disabled={bloqueada}
               onChange={upd("contratante")} onBlur={alSalir("contratante", normalizarMayusculas)} />
-            <Input label="NIT" value={acta.nit} disabled={bloqueada}
+            <Input label="NIT o cédula" value={acta.nit} disabled={bloqueada}
               onChange={upd("nit")} onBlur={alSalir("nit", normalizarDocumento)} />
             <Input label="Teléfono" type="tel" inputMode="tel" value={acta.telefono} disabled={bloqueada} onChange={upd("telefono")} />
             <Input label="Contacto administrativo" value={acta.contactoAdministrativo} disabled={bloqueada}

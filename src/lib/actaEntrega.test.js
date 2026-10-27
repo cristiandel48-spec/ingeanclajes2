@@ -160,6 +160,22 @@ describe("el acta armada", () => {
     expect(acta.observaciones).toContain("óptimas condiciones");
   });
 
+  it("el NIT o la cedula salen de la obra, del cliente o de la cotizacion", () => {
+    const sinNit = { ...obra, nit: "" };
+    const armarCon = ({ cliente, cot }) => construirActa({
+      obra: sinNit, cotizacion: cot, cliente, empleados, obras: [],
+    }).nit;
+
+    // Lo que trae la obra manda sobre lo demas.
+    expect(armar().nit).toBe("900.111.222-3");
+    // Si la obra no lo trae, se busca en la ficha del cliente…
+    expect(armarCon({ cliente: { nit: "71.624.880" }, cot: cotizacion })).toBe("71.624.880");
+    // …y si tampoco, en la cotizacion de la que salio la obra.
+    expect(armarCon({ cliente: null, cot: { ...cotizacion, nit: "811035319-7" } })).toBe("811035319-7");
+    // Sin ningun dato guardado no se inventa nada.
+    expect(armarCon({ cliente: null, cot: cotizacion })).toBe("");
+  });
+
   it("el consecutivo no pisa a un acta que ya existe, ni siquiera de otra obra", () => {
     const yaHay = [
       { id: "OB-001", actas: [{ id: "ACT-001" }] },

@@ -300,7 +300,12 @@ export function construirActa({ obra, cotizacion = null, cliente = null, informe
     ...actaVacia(obra?.id),
     id: siguienteIdUnico(todasLasActas(obras), "ACT"),
     contratante: normalizarMayusculas(obra?.cliente || ""),
-    nit: texto(obra?.nit),
+    // El NIT -o la cedula, cuando el contratante es una persona- se busca en
+    // los tres sitios donde puede estar escrito. La obra no siempre lo trae:
+    // cuando se crea desde la cotizacion aprobada queda en la cotizacion, y
+    // cuando el cliente ya estaba en el directorio, en su ficha. Antes solo
+    // se miraba la obra y la casilla salia en blanco teniendolo guardado.
+    nit: texto(obra?.nit || cliente?.nit || cotizacion?.nit),
     telefono: texto(obra?.tel || cliente?.telefono),
     correoFacturacion: texto(cliente?.email),
     correoAdministrativo: texto(obra?.recibeEmail || cliente?.email),

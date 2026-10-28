@@ -304,19 +304,25 @@ describe("el cargo de quien recibe llega hasta la hoja firmada", () => {
       nombre: "Wilson Alzate",
       email: "profesionalsst@inteckno.com",
       telefono: "3192315246",
+      documento: "1017234567",
       cargo: "profesional sst",
     });
     expect(clientes[0].contacto).toBe("Wilson Alzate");
-    // Se guarda en mayusculas, como va en el formato.
+    expect(clientes[0].contactoCedula).toBe("1017234567");
+    // El cargo se guarda en mayusculas, como va en el formato.
     expect(clientes[0].contactoCargo).toBe("PROFESIONAL SST");
   });
 
-  it("de la ficha del cliente pasa al acta y de ahi a la casilla CARGO", () => {
-    const cliente = { contacto: "Wilson Alzate", contactoCargo: "PROFESIONAL SST" };
+  it("de la ficha del cliente pasa al acta y de ahi a las casillas C.C. y CARGO", () => {
+    const cliente = { contacto: "Wilson Alzate", contactoCedula: "1017234567", contactoCargo: "PROFESIONAL SST" };
     const acta = construirActa({ obra: obraInteckno, cliente, obras: [] });
     expect(acta.recibeNombre).toBe("Wilson Alzate");
+    expect(acta.recibeDocumento).toBe("1017234567");
     expect(acta.recibeCargo).toBe("PROFESIONAL SST");
-    expect(buildActaPrintHtml(acta, { empresaConfig: [] })).toContain("CARGO: PROFESIONAL SST");
+    const html = buildActaPrintHtml(acta, { empresaConfig: [] });
+    expect(html).toContain("NOMBRE: Wilson Alzate");
+    expect(html).toContain("C.C.: 1017234567");
+    expect(html).toContain("CARGO: PROFESIONAL SST");
   });
 
   it("lo que diga la obra manda sobre la ficha del cliente", () => {

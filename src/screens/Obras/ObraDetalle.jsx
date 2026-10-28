@@ -20,7 +20,8 @@ import { resolverAutorGuardado } from "../../lib/autorAuditoria";
 import { getTextosDocumento } from "../../lib/cotizacionTextos";
 import { getQuoteProposals } from "../../lib/cotizaciones";
 import { clienteDeObra, clientesConQuienRecibe, correoValido, obraTieneQuienRecibe, quienRecibeDeCliente } from "../../lib/quienRecibe";
-import { motivoActaPendiente, textoActaPendiente } from "../../lib/actaEntrega";
+import { AVISO_ACTA_EN_OBRA, motivoActaPendiente, textoActaPendiente } from "../../lib/actaEntrega";
+import { confirmar } from "../../lib/dialogos";
 import { useEstadosFirmaActas } from "../../hooks/useEnviosFirma";
 import ModalQuienRecibe from "../../components/ModalQuienRecibe";
 
@@ -137,6 +138,34 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
     toast.error(textoActaPendiente(oAct, estadosActas));
     setDetTab("acta");
   };
+
+  // Las obras a las que ya se les recordo el acta en esta sesion. Sin esto,
+  // el aviso saldria cada vez que se toca la pestaña de avance y acabaria
+  // siendo una molestia que se cierra sin leer.
+  const yaAvisadas = useRef(new Set());
+
+  // Al entrar a registrar el avance, que es cuando quien esta en la obra
+  // puede resolverlo, se recuerda el acta pendiente. Va como alerta del
+  // sistema y no como letrero fijo: un letrero siempre puesto deja de leerse.
+  //
+  // Como efecto y no al pulsar la pestaña, porque la obra abre directamente
+  // en «Avance diario»: al entrar tambien tiene que salir.
+  useEffect(() => {
+    if (detTab !== "avance" || bloqueada) return;
+    if (!estadosActasListos || !motivoActa) return;
+    if (yaAvisadas.current.has(obraId)) return;
+    yaAvisadas.current.add(obraId);
+    confirmar({
+      titulo: motivoActa === "sin-acta"
+        ? "Esta obra todavía no tiene acta de entrega"
+        : "El cliente todavía no ha firmado el acta de entrega",
+      mensaje: AVISO_ACTA_EN_OBRA,
+      textoConfirmar: "Ir al acta",
+      textoCancelar: "Ahora no",
+      destructivo: false,
+      conGuardando: false,
+    }).then((irAlActa) => { if (irAlActa) setDetTab("acta"); });
+  }, [detTab, bloqueada, estadosActasListos, motivoActa, obraId]);
 
   const irACrearInforme = () => {
     if (!tieneActa) return avisarActaPendiente();

@@ -6,9 +6,6 @@ import {
 } from "../../lib/sonidoNotificacion";
 import { getFestivoColombia } from "../../lib/festivosColombia";
 import { B } from "../../styles/tokens";
-import { AVISO_ACTA_EN_OBRA, obrasConActaPendiente } from "../../lib/actaEntrega";
-import { useEstadosFirmaActas } from "../../hooks/useEnviosFirma";
-import { obraEstaCerrada } from "../../lib/flujoObra";
 
 function toIso(d) {
   const y = d.getFullYear();
@@ -101,8 +98,8 @@ import {
   filtrarAgendaPorPermiso,
 } from "../../lib/agendaEspecial";
 
-export default function AvisoInteligenteAgenda({ onIrAAgenda, onIrAObra }) {
-  const { agenda, obras, membresia, authUserEmail, esSuperAdminCristian } = useAppData();
+export default function AvisoInteligenteAgenda({ onIrAAgenda }) {
+  const { agenda, membresia, authUserEmail, esSuperAdminCristian } = useAppData();
   const esCristian = esUsuarioCristian(membresia, authUserEmail) || esSuperAdminCristian;
   const esCamila = esUsuarioCamila(membresia, authUserEmail);
 
@@ -136,20 +133,6 @@ export default function AvisoInteligenteAgenda({ onIrAAgenda, onIrAObra }) {
     return agendaVisible.filter((item) => item.fecha === hoyIso && item.estado !== "completado");
   }, [agendaVisible, hoyIso]);
 
-  // Obras que ya están para entregar y no tienen el acta firmada por el
-  // cliente. Sin esa firma no se puede certificar ni hacer el informe, así
-  // que es trabajo que se queda atascado sin que nadie se entere.
-  //
-  // Solo las que van por el 90% o más: avisar de una obra que empezó ayer
-  // sería ruido, y el aviso dejaría de leerse.
-  const { estados: estadosActas, listo: estadosActasListos } = useEstadosFirmaActas();
-  const obrasSinActaFirmada = useMemo(
-    () => (estadosActasListos
-      ? obrasConActaPendiente(obras, estadosActas, { estaCerrada: obraEstaCerrada })
-      : []),
-    [obras, estadosActas, estadosActasListos]
-  );
-
   // Escuchar evento personalizado para abrir el modal desde cualquier lugar (Topbar, menú, etc.)
   useEffect(() => {
     const handleAbrirAviso = (e) => {
@@ -171,9 +154,7 @@ export default function AvisoInteligenteAgenda({ onIrAAgenda, onIrAObra }) {
   // Auto-disparo inteligente: En la tarde (a partir de las 13:00) o al final de la jornada,
   // si hay compromisos mañana y aún no se ha mostrado hoy el recordatorio.
   useEffect(() => {
-    // También se dispara si no hay compromisos pero sí hay actas sin firmar:
-    // es lo que deja atascados los informes y las certificaciones.
-    if (compromisosManana.length === 0 && obrasSinActaFirmada.length === 0) return;
+    if (compromisosManana.length === 0) return;
 
     const claveVisto = `agenda_aviso_manana_visto_${hoyIso}`;
     const yaVistoHoy = localStorage.getItem(claveVisto);
@@ -191,14 +172,9 @@ export default function AvisoInteligenteAgenda({ onIrAAgenda, onIrAObra }) {
 
         // Notificación de escritorio si está en otra pestaña o minimizado
         const primerCompromiso = compromisosManana[0];
-        const pendientesActa = obrasSinActaFirmada.length
-          ? ` · ${obrasSinActaFirmada.length} obra(s) esperando el acta firmada.`
-          : "";
         mostrarNotificacionEscritorio({
-          titulo: primerCompromiso ? "📅 Agenda de mañana · Ingeanclajes" : "📋 Pendientes · Ingeanclajes",
-          cuerpo: primerCompromiso
-            ? `Recuerda: Mañana tienes ${compromisosManana.length} compromiso(s). El primero a las ${primerCompromiso.hora || "primera hora"} en ${primerCompromiso.obra || primerCompromiso.titulo}.${pendientesActa}`
-            : `Tienes ${obrasSinActaFirmada.length} obra(s) sin el acta de entrega firmada: sin eso no se puede certificar ni hacer el informe.`,
+          titulo: "📅 Agenda de mañana · Ingeanclajes",
+          cuerpo: `Recuerda: Mañana tienes ${compromisosManana.length} compromiso(s). El primero a las ${primerCompromiso.hora || "primera hora"} en ${primerCompromiso.obra || primerCompromiso.titulo}.`,
           alHacerClic: () => {
             onIrAAgenda?.();
           },
@@ -207,7 +183,7 @@ export default function AvisoInteligenteAgenda({ onIrAAgenda, onIrAObra }) {
 
       return () => clearTimeout(timer);
     }
-  }, [compromisosManana, obrasSinActaFirmada, hoyIso, onIrAAgenda]);
+  }, [compromisosManana, hoyIso, onIrAAgenda]);
 
   const marcarComoVisto = () => {
     try {
@@ -252,7 +228,7 @@ export default function AvisoInteligenteAgenda({ onIrAAgenda, onIrAObra }) {
     window.open(`https://waze.com/ul?q=${destino}&navigate=yes`, "_blank");
   };
 
-  if (!modalAbierto || (compromisosManana.length === 0 && obrasSinActaFirmada.length === 0)) return null;
+  if (!modalAbierto || compromisosManana.length === 0) return null;
 
   return (
     <div
@@ -554,60 +530,6 @@ export default function AvisoInteligenteAgenda({ onIrAAgenda, onIrAObra }) {
             );
           })}
         </div>
-
-        {/* Obras esperando el acta firmada. Va con los compromisos porque es
-            lo mismo: trabajo pendiente que alguien tiene que ir a cerrar, y
-            este es el aviso que la gente sí lee. */}
-        {obrasSinActaFirmada.length > 0 && (
-          <div style={{ padding: "0 24px 14px" }}>
-            <div style={{
-              border: "1px solid #fde68a", background: "#fffbeb", borderRadius: 12,
-              padding: "12px 14px",
-            }}>
-              <div style={{ fontSize: 12.5, fontWeight: 700, color: "#92400e", marginBottom: 2 }}>
-                📋 {obrasSinActaFirmada.length === 1
-                  ? "Una obra espera el acta de entrega firmada"
-                  : `${obrasSinActaFirmada.length} obras esperan el acta de entrega firmada`}
-              </div>
-              <div style={{ fontSize: 11.5, color: "#a16207", lineHeight: 1.45, marginBottom: 8 }}>
-                {AVISO_ACTA_EN_OBRA}
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {obrasSinActaFirmada.slice(0, 5).map((o) => (
-                  <button
-                    key={o.id}
-                    type="button"
-                    onClick={() => { cerrarModal(); onIrAObra?.(o.id); }}
-                    style={{
-                      display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
-                      width: "100%", textAlign: "left", cursor: "pointer", fontFamily: "inherit",
-                      background: "#ffffff", border: "1px solid #fde68a", borderRadius: 9,
-                      padding: "7px 10px",
-                    }}
-                  >
-                    <span style={{ minWidth: 0 }}>
-                      <span style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#78350f" }}>
-                        {o.id} · {o.cliente || "Sin cliente"}
-                      </span>
-                      <span style={{ display: "block", fontSize: 10.5, color: "#a16207", marginTop: 1 }}>
-                        {o.motivoActa === "sin-acta" ? "No tiene acta" : "Acta sin firmar"}
-                        {o.proyecto ? ` · ${o.proyecto}` : ""}
-                      </span>
-                    </span>
-                    <span style={{ fontSize: 10.5, fontWeight: 700, color: "#b45309", whiteSpace: "nowrap" }}>
-                      {Number(o.avance || 0)}% →
-                    </span>
-                  </button>
-                ))}
-                {obrasSinActaFirmada.length > 5 && (
-                  <div style={{ fontSize: 10.5, color: "#a16207" }}>
-                    … y {obrasSinActaFirmada.length - 5} más.
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Compromisos de hoy pendientes advertencia sutil */}
         {compromisosHoyPendientes.length > 0 && (

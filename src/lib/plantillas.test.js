@@ -233,6 +233,25 @@ describe("plantilla de informe", () => {
       );
     });
   }
+
+  // Iba en una fila flex y un texto de conforme largo aplastaba el estado:
+  // se partia en «Estado: Concluido» y debajo «100%», y el 100% acababa
+  // leyendose como parte de la frase de al lado.
+  it("el estado de la actividad no se encoge ni se parte en dos renglones", () => {
+    const [informe] = Object.values(INFORMES);
+    const conTextoLargo = {
+      ...informe,
+      actividades: (informe.actividades || []).map((a) => ({
+        ...a,
+        observaciones: "Ensayos de tracción a 6 puntos de anclaje especiales. "
+          + "6 ensayos de tracción a puntos de anclaje especiales (varilla lisa doblada en forma U Ø1 ¼\").",
+      })),
+    };
+    const html = buildInformePrintHtml(conTextoLargo, { firmaImg: FOTO });
+    expect(html).toContain("ESTADO: CONCLUIDO · 100%");
+    expect(html).toContain("white-space:nowrap");
+    expect(html).not.toContain("display:flex;justify-content:space-between;align-items:center;font-size:9px;");
+  });
 });
 
 // El acta de entrega de obra, con la misma obra de los ejemplos de arriba.

@@ -30,7 +30,7 @@ import { useEnviosFirma, useEstadosFirmaInformes } from "../../hooks/useEnviosFi
 import { descargarPdfEnviado, listarEnviosFirma } from "../../lib/firmaRecibido";
 import { armarPdfConConstancia, descargarBlob, nombreConConstancia } from "../../lib/constanciaRecibido";
 import ModalQuienRecibe from "../../components/ModalQuienRecibe";
-import { celularDeInforme, clientesConQuienRecibe, correoValido, destinatarioDeInforme, quienRecibeDeCliente } from "../../lib/quienRecibe";
+import { celularDeInforme, clienteDeObra, clientesConQuienRecibe, correoValido, destinatarioDeInforme, quienRecibeDeCliente } from "../../lib/quienRecibe";
 import { normalizarCorreo } from "../../lib/normalizarEntrada";
 import { informeRepetido } from "../../lib/duplicados";
 import { tieneActaEntrega } from "../../lib/actaEntrega";
@@ -538,13 +538,30 @@ export default function Informes({ctx}){
       || (obra?.cotizacionId ? cotizaciones?.find((c) => c.id === obra.cotizacionId) : null)
       || (obra?.cliente ? cotizaciones?.find((c) => c.cliente && normalizarRazonSocial(c.cliente) === normalizarRazonSocial(obra.cliente)) : null);
 
-    const clienteFinal = inf.cliente || inf.contratante || obra?.cliente || "";
+    const nombreEscrito = inf.cliente || inf.contratante || obra?.cliente || "";
+    // La razon social de la ficha manda sobre lo que se escribio a la carrera
+    // en la obra o en el informe: en la hoja que se le entrega al cliente va
+    // su nombre legal completo -«INTECKNO S.A.S», no «INTECKNO»-.
+    const ficha = clienteDeObra(clientes, obra || { cliente: nombreEscrito, nit: inf.nit });
+    const clienteFinal = ficha?.nombre || nombreEscrito;
     const cotNumFinal = inf.cotizacionNumero || cotVinc?.numero || cotVinc?.id || obra?.cotizacionId || "";
+
+    // La localizacion llevaba solo la ciudad. Se le antepone la direccion -la
+    // de la obra si la tiene, si no la de la ficha del cliente- sin pisar lo
+    // que alguien haya escrito ahi.
+    const direccion = String(obra?.direccion || ficha?.direccion || "").trim();
+    const localizacionFinal = (() => {
+      const actual = String(inf.localizacion || "").trim();
+      if (!direccion) return actual;
+      if (actual.toUpperCase().includes(direccion.toUpperCase())) return actual;
+      return [direccion, actual].filter(Boolean).join(", ");
+    })();
 
     return {
       ...inf,
       cliente: clienteFinal,
       contratante: clienteFinal,
+      localizacion: localizacionFinal,
       cotizacionNumero: cotNumFinal,
       cotizacionRef: inf.cotizacionRef || cotNumFinal,
       // A quien proponer el envio a firma de recibido: quien recibe en la

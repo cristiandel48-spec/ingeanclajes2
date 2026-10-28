@@ -71,18 +71,17 @@ export async function generarActaPdf(acta, { empresaConfig, firmaImg = "", onPro
 
 export async function descargarActaPdf(acta, opciones = {}) {
   const { blob, nombre } = await generarActaPdf(acta, opciones);
-  let blobFinal = blob;
-  let nombreFinal = nombre;
-  if (opciones.firmaCliente && opciones.firmaCliente.estado === "firmado") {
-    try {
-      const { armarPdfConConstancia, nombreConConstancia } = await import("./constanciaRecibido");
-      blobFinal = await armarPdfConConstancia(blob, opciones.firmaCliente);
-      nombreFinal = `${nombreConConstancia(opciones.firmaCliente)}.pdf`;
-    } catch (e) {
-      console.warn("No se pudo adjuntar la constancia de recibido:", e);
-    }
-  }
-  const url = URL.createObjectURL(blobFinal);
+  // El acta firmada sale en una sola hoja: la firma del cliente y el QR de
+  // verificacion ya van en su recuadro «Recibe conforme», asi que la hoja de
+  // constancia al final repetia lo mismo y hacia de dos hojas lo que es un
+  // formato de una.
+  //
+  // El detalle de respaldo -IP, navegador, veces que abrio el enlace y la
+  // huella SHA-256 del PDF- no se pierde: sigue a un clic en «PDF con
+  // constancia», en el panel de firma de la obra, y detras del QR.
+  const firmada = opciones.firmaCliente?.estado === "firmado";
+  const nombreFinal = firmada ? nombre.replace(/\.pdf$/i, " - firmada.pdf") : nombre;
+  const url = URL.createObjectURL(blob);
   const enlace = document.createElement("a");
   enlace.href = url;
   enlace.download = nombreFinal;

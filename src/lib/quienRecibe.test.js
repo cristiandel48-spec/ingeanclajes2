@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clientesConQuienRecibe, destinatarioDeInforme, obraTieneQuienRecibe, obrasConContactoDeCliente, quienRecibeDeCliente } from "./quienRecibe";
+import { claveRazonSocial, clienteDeObra, clientesConQuienRecibe, destinatarioDeInforme, obraTieneQuienRecibe, obrasConContactoDeCliente, quienRecibeDeCliente } from "./quienRecibe";
 
 const obra = { id: "OB-001", cliente: "Constructora Prueba S.A.S.", nit: "900.111.222-3", ciudad: "MEDELLÍN" };
 
@@ -84,6 +84,39 @@ describe("quien recibe los informes", () => {
     expect(r[0].email).toBe("gerencia@prueba.com");
     expect(r[0].contacto).toBe("Gerencia");
     expect(r[0].contactoCargo).toBe("PROFESIONAL SST");
+  });
+
+  // La obra decia «INTECKNO» y la ficha «INTECKNO S.A.S»: no se reconocian, y
+  // el acta salia sin NIT ni correo de facturacion teniendolos guardados.
+  describe("encontrar la ficha cuando el nombre esta escrito distinto", () => {
+    const ficha = {
+      id: "CLI-009", nombre: "INTECKNO S.A.S", nit: "901166216-5",
+      email: "profesionalsst@inteckno.com", contacto: "Wilson Alzate",
+    };
+
+    it("la forma juridica no cambia a que empresa se refiere", () => {
+      expect(claveRazonSocial("INTECKNO S.A.S")).toBe("INTECKNO");
+      expect(claveRazonSocial("INTECKNO")).toBe("INTECKNO");
+      expect(claveRazonSocial("Constructora Prueba Ltda.")).toBe("CONSTRUCTORA PRUEBA");
+      expect(claveRazonSocial("Gómez y Cía S.A.")).toBe("GOMEZ");
+      // Una empresa que se llame asi de verdad no se queda sin nombre.
+      expect(claveRazonSocial("SAS")).toBe("SAS");
+    });
+
+    it("la obra sin S.A.S encuentra la ficha igual", () => {
+      expect(clienteDeObra([ficha], { cliente: "INTECKNO" })).toBe(ficha);
+      expect(clienteDeObra([ficha], { cliente: "Inteckno s.a.s" })).toBe(ficha);
+    });
+
+    it("el NIT manda sobre el nombre", () => {
+      const otra = { id: "CLI-010", nombre: "INTECKNO", nit: "800000000-1" };
+      expect(clienteDeObra([otra, ficha], { cliente: "INTECKNO", nit: "901166216-5" })).toBe(ficha);
+    });
+
+    it("empresas distintas no se confunden", () => {
+      expect(clienteDeObra([ficha], { cliente: "INTECNO" })).toBeNull();
+      expect(clienteDeObra([ficha], { cliente: "OTRA EMPRESA S.A.S" })).toBeNull();
+    });
   });
 
   it("el informe toma primero el de la obra, luego la cotizacion y luego el directorio", () => {

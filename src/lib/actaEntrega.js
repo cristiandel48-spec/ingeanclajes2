@@ -299,7 +299,10 @@ export function construirActa({ obra, cotizacion = null, cliente = null, informe
   return {
     ...actaVacia(obra?.id),
     id: siguienteIdUnico(todasLasActas(obras), "ACT"),
-    contratante: normalizarMayusculas(obra?.cliente || ""),
+    // La razon social de la ficha manda sobre lo que se escribio en la obra:
+    // el acta la firma el cliente y ahi va su nombre legal completo
+    // -«INTECKNO S.A.S», no «INTECKNO»-, que es el que esta en el directorio.
+    contratante: normalizarMayusculas(cliente?.nombre || obra?.cliente || ""),
     // El NIT -o la cedula, cuando el contratante es una persona- se busca en
     // los tres sitios donde puede estar escrito. La obra no siempre lo trae:
     // cuando se crea desde la cotizacion aprobada queda en la cotizacion, y

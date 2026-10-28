@@ -17,13 +17,48 @@ export function correoValido(valor) {
 /** Si la obra ya tiene a quien enviarle los informes. */
 export const obraTieneQuienRecibe = (obra) => correoValido(obra?.recibeEmail);
 
+// La forma juridica se escribe o no segun el dia: la obra decia «INTECKNO» y
+// la ficha «INTECKNO S.A.S», y para el programa eran dos clientes distintos.
+// Entonces el acta salia sin NIT y sin correo de facturacion teniendolos
+// guardados, porque no encontraba la ficha.
+const FORMAS_JURIDICAS = new Set(["SAS", "SA", "LTDA", "EU", "SCA", "CIA", "ESP", "BIC", "Y", "E"]);
+
+/** El nombre de una empresa sin puntuacion ni forma juridica: «INTECKNO». */
+export function claveRazonSocial(valor) {
+  const palabras = normalizarRazonSocial(valor || "")
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^A-Z0-9 ]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ")
+    .filter(Boolean);
+  // Se quitan por el final: «CONSTRUCTORA SAS» pierde SAS, pero «SAS» sola
+  // -si alguien llamo asi a su empresa- se queda como esta.
+  while (palabras.length > 1 && FORMAS_JURIDICAS.has(palabras[palabras.length - 1])) palabras.pop();
+  return palabras.join(" ");
+}
+
 function buscarCliente(clientes, obra) {
+  const lista = clientes || [];
+  // 1. El NIT es lo unico que identifica al cliente sin lugar a dudas.
   const nit = obra?.nit ? normalizarDocumento(obra.nit) : "";
+  if (nit) {
+    const i = lista.findIndex((c) => c?.nit && normalizarDocumento(c.nit) === nit);
+    if (i >= 0) return i;
+  }
+  // 2. El nombre tal como esta escrito.
   const nombre = normalizarRazonSocial(obra?.cliente || "");
-  return (clientes || []).findIndex((c) =>
-    (nit && c.nit && normalizarDocumento(c.nit) === nit) ||
-    (nombre && normalizarRazonSocial(c.nombre || "") === nombre)
-  );
+  if (nombre) {
+    const i = lista.findIndex((c) => normalizarRazonSocial(c?.nombre || "") === nombre);
+    if (i >= 0) return i;
+  }
+  // 3. El nombre sin la forma juridica, que es donde se perdian.
+  const clave = claveRazonSocial(obra?.cliente);
+  if (clave.length >= 3) {
+    const i = lista.findIndex((c) => claveRazonSocial(c?.nombre) === clave);
+    if (i >= 0) return i;
+  }
+  return -1;
 }
 
 /** La ficha del directorio de clientes que corresponde a la obra. */

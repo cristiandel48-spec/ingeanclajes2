@@ -161,6 +161,18 @@ describe("el acta armada", () => {
     expect(acta.observaciones).toContain("óptimas condiciones");
   });
 
+  it("el contratante y su NIT salen de la ficha aunque la obra lo escriba corto", () => {
+    const acta = construirActa({
+      obra: { id: "OB-050", cliente: "INTECKNO", nit: "" },
+      cliente: { nombre: "INTECKNO S.A.S", nit: "901166216-5", email: "profesionalsst@inteckno.com" },
+      obras: [],
+    });
+    // En la hoja que firma el cliente va su nombre legal completo.
+    expect(acta.contratante).toBe("INTECKNO S.A.S");
+    expect(acta.nit).toBe("901166216-5");
+    expect(acta.correoFacturacion).toBe("profesionalsst@inteckno.com");
+  });
+
   it("el NIT o la cedula salen de la obra, del cliente o de la cotizacion", () => {
     const sinNit = { ...obra, nit: "" };
     const armarCon = ({ cliente, cot }) => construirActa({

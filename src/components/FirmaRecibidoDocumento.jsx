@@ -183,13 +183,20 @@ export function ModalEnviarFirma({
   // Despues de enviar queda el enlace, para mandarlo tambien por WhatsApp.
   const [enlace, setEnlace] = useState("");
   const [cel, setCel] = useState(celular);
+  // Por donde se mando, para no decirle «le llegó un correo» a quien eligió
+  // WhatsApp y no recibió ninguno.
+  const [canal, setCanal] = useState("correo");
 
   const correoOk = /^[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+$/.test(para.trim());
 
-  // `porWhatsApp`: ademas de enviar el correo, abre WhatsApp con el mensaje y
-  // el enlace ya escritos. El correo se manda igual porque el codigo para
-  // firmar llega ahi: es la prueba de que firmo quien recibe. WhatsApp solo
-  // lleva el enlace, que es por donde el cliente lo abre de verdad.
+  // Dos formas de mandarlo, una por boton:
+  //
+  //   correo    le llega el aviso con el enlace a su correo.
+  //   WhatsApp  no se manda ese aviso; el enlace va por WhatsApp.
+  //
+  // En los dos casos hace falta el correo, porque el CODIGO para firmar llega
+  // ahi cuando el cliente lo pide desde el enlace, y es lo que prueba que
+  // firmo el. Por eso el campo sigue siendo obligatorio.
   const enviar = async ({ porWhatsApp = false } = {}) => {
     if (!correoOk) { setFallo("Escribe un correo válido."); return; }
     setFallo("");
@@ -215,9 +222,13 @@ export function ModalEnviarFirma({
         mensaje: mensaje.trim(),
         pdfBlob: blob,
         pdfNombre: nombre,
+        soloEnlace: porWhatsApp,
       });
-      toast.exito(`Enviado a ${para.trim()}. Te avisaremos por correo cuando firme.`);
+      toast.exito(porWhatsApp
+        ? "Listo. Revisa el mensaje de WhatsApp y dale enviar."
+        : `Enviado a ${para.trim()}. Te avisaremos por correo cuando firme.`);
       onEnviado?.();
+      setCanal(porWhatsApp ? "whatsapp" : "correo");
       setEnlace(r?.enlace || "");
       if (r?.enlace && porWhatsApp) {
         const url = direccionWhatsApp(cel, mensajeWhatsAppFirma({
@@ -245,20 +256,31 @@ export function ModalEnviarFirma({
     );
     return (
       <Sheet
-        titulo="Enviado al cliente"
+        titulo={canal === "whatsapp" ? "Listo para enviar por WhatsApp" : "Enviado al cliente"}
         subtitulo={`${etiqueta} ${numero}`}
         onCerrar={onCerrar}
         pie={
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
             <Button variante="tertiary" onClick={onCerrar}>Listo</Button>
-            <Button variante="primary" onClick={abrir}>Enviar también por WhatsApp</Button>
+            <Button variante="primary" onClick={abrir}>
+              {canal === "whatsapp" ? "Volver a abrir WhatsApp" : "Enviar también por WhatsApp"}
+            </Button>
           </div>
         }
       >
         <div style={{ display: "grid", gap: 12 }}>
           <Callout tono="exito">
-            Le llegó un correo a <strong>{para.trim()}</strong> con el enlace para firmar. Por WhatsApp le llega más
-            rápido: el mensaje sale ya escrito, solo hay que darle enviar.
+            {canal === "whatsapp" ? (
+              <>
+                Se abrió WhatsApp con el mensaje y el enlace ya escritos: revísalo y dale enviar.
+                No se le mandó ningún correo de aviso.
+              </>
+            ) : (
+              <>
+                Le llegó un correo a <strong>{para.trim()}</strong> con el enlace para firmar. Por WhatsApp le llega
+                más rápido: el mensaje sale ya escrito, solo hay que darle enviar.
+              </>
+            )}
           </Callout>
           <Input label="Celular del cliente" type="tel" inputMode="tel" value={cel} onChange={(e) => setCel(e.target.value)}
             placeholder="3001234567"
@@ -281,25 +303,29 @@ export function ModalEnviarFirma({
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
           <Button variante="tertiary" onClick={onCerrar} disabled={Boolean(estado)}>Cancelar</Button>
           <Button variante="secondary" onClick={() => enviar({ porWhatsApp: true })} disabled={Boolean(estado) || !correoOk}
-            title={normalizarCelular(cel) ? `Envía el correo y abre WhatsApp con ${cel}` : "Envía el correo y abre WhatsApp para elegir el contacto"}>
-            Enviar y abrir WhatsApp
+            title={normalizarCelular(cel) ? `Abre WhatsApp con ${cel} y el enlace escrito` : "Abre WhatsApp para elegir el contacto"}>
+            Enviar por WhatsApp
           </Button>
-          <Button variante="primary" onClick={() => enviar()} disabled={Boolean(estado) || !correoOk}>{estado || "Enviar"}</Button>
+          <Button variante="primary" onClick={() => enviar()} disabled={Boolean(estado) || !correoOk}>
+            {estado || "Enviar por correo"}
+          </Button>
         </div>
       }
     >
       <div style={{ display: "grid", gap: 12 }}>
         <Callout tono="info">
-          El cliente recibe un enlace para ver el documento y firmar el recibido. Para firmar le llega un código a este
-          correo, así queda probado que fue él. Al firmar, el PDF queda con una constancia y un QR de verificación.
+          El cliente recibe un enlace para ver el documento y firmar el recibido. <strong>Por correo</strong> le llega
+          el enlace a su buzón; <strong>por WhatsApp</strong> se abre el chat con el mensaje escrito y no se le manda
+          correo de aviso. En los dos casos, para firmar le llega un código a su correo, así queda probado que fue él.
+          Al firmar, el PDF queda con una constancia y un QR de verificación.
         </Callout>
         <Input label="Correo del cliente" obligatorio type="email" value={para} onChange={(e) => setPara(e.target.value)}
-          ayuda="El código para firmar llega a este correo: debe ser el de quien recibe." />
+          ayuda="Hace falta aunque lo mandes por WhatsApp: ahí le llega el código para firmar." />
         <Input label="Nombre de quien recibe" value={paraNombre} onChange={(e) => setParaNombre(e.target.value)} />
         <Input label="Celular del cliente" type="tel" inputMode="tel" value={cel} onChange={(e) => setCel(e.target.value)}
           placeholder="3001234567"
           ayuda={normalizarCelular(cel)
-            ? "«Enviar y abrir WhatsApp» abre el chat con este número, con el enlace ya escrito."
+            ? "«Enviar por WhatsApp» abre el chat con este número, con el enlace ya escrito."
             : "Sin celular, WhatsApp te deja elegir el contacto al enviarlo."} />
         <Input label="Mensaje" como="textarea" rows={4} value={mensaje} onChange={(e) => setMensaje(e.target.value)} />
         {fallo && <Callout tono="peligro">{fallo}</Callout>}

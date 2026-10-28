@@ -52,14 +52,21 @@ async function invocar(accion, datos = {}) {
 // El PDF se sube directo al almacenamiento con un permiso de un solo uso que
 // da la funcion, y despues se le pide enviar. Antes viajaba dentro de la
 // peticion, y un informe con muchas fotos dejaba a la funcion sin memoria.
-export async function enviarParaFirma({ tipo = "informe", documentoId, numero, titulo, cliente, para, paraNombre, mensaje, pdfBlob, pdfNombre }) {
+// `soloEnlace`: no manda el correo de aviso, solo deja el envio creado y
+// devuelve el enlace para mandarlo por WhatsApp. El correo sigue haciendo
+// falta porque el codigo para firmar llega ahi cuando el cliente lo pide.
+//
+// Si la funcion publicada es anterior a esto, no conoce la marca y manda el
+// correo igual: el envio funciona lo mismo, solo que el cliente recibe las
+// dos cosas.
+export async function enviarParaFirma({ tipo = "informe", documentoId, numero, titulo, cliente, para, paraNombre, mensaje, pdfBlob, pdfNombre, soloEnlace = false }) {
   const tenantId = await getTenantIdActual();
   const { ruta, token } = await invocar("preparar-subida", { tenantId });
   const { error } = await getSupabaseClient().storage
     .from("firmas")
     .uploadToSignedUrl(ruta, token, pdfBlob, { contentType: "application/pdf" });
   if (error) throw new Error(`No se pudo subir el PDF: ${error.message}`);
-  return invocar("enviar", { tenantId, tipo, documentoId, numero, titulo, cliente, para, paraNombre, mensaje, pdfNombre, ruta });
+  return invocar("enviar", { tenantId, tipo, documentoId, numero, titulo, cliente, para, paraNombre, mensaje, pdfNombre, ruta, soloEnlace });
 }
 
 /** El enlace de un envio pendiente (para WhatsApp). Devuelve el texto. */

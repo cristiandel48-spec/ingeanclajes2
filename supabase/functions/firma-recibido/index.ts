@@ -462,7 +462,7 @@ Deno.serve(conOrigenPermitido(async (req) => {
         pdf_sha256: huella,
         pdf_bytes: bytes.length,
         pdf_nombre: pdfNombre.endsWith(".pdf") ? pdfNombre : `${pdfNombre}.pdf`,
-        eventos: [evento("enviado", { por: autorVisible(quien.email), a: para })],
+        eventos: [evento("enviado", { por: autorVisible(quien.email), a: para, canal: cuerpo.soloEnlace === true ? "whatsapp" : "correo" })],
       }).select("id, token, codigo_verificacion").single();
       if (errFila) {
         await admin.storage.from("firmas").remove([ruta]);
@@ -470,6 +470,15 @@ Deno.serve(conOrigenPermitido(async (req) => {
       }
 
       const enlace = `${direccionApp(cuerpo.appUrl)}/?firmar=${fila.token}`;
+
+      // `soloEnlace`: el enlace se le manda al cliente por WhatsApp, asi que
+      // no hace falta el correo de aviso. El correo se sigue exigiendo arriba
+      // porque el CODIGO para firmar llega ahi cuando el cliente lo pide, que
+      // es lo que prueba que firmo el.
+      if (cuerpo.soloEnlace === true) {
+        return responder({ ok: true, id, enlace });
+      }
+
       const saludo = paraNombre ? `${escapeHtml(paraNombre.split(" ")[0])}, buen día.` : "Buen día.";
       const enviado = await enviarCorreo({
         para,

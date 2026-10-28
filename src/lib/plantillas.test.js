@@ -234,6 +234,41 @@ describe("plantilla de informe", () => {
     });
   }
 
+  // El cliente que recibe la obra es el mismo que recibe el informe, asi que
+  // la firma del acta vale para los dos y el informe deja de salir con la
+  // casilla en blanco. Aqui NO van el rastro del envio ni el QR: son del acta.
+  it("con el acta firmada trae la firma, la cedula y el cargo del cliente", () => {
+    const [informe] = Object.values(INFORMES);
+    const html = buildInformePrintHtml(informe, {
+      firmaImg: FOTO,
+      firmaCliente: {
+        estado: "firmado",
+        firmaImagen: FOTO,
+        firmanteNombre: "WILSON ALZATE",
+        firmanteDocumento: "1034639949",
+        firmanteCargo: "RESIDENTE DE OBRA",
+        firmadoEn: "2026-10-27T22:25:57.000Z",
+        codigoVerificacion: "A7F3K2M9",
+        eventos: [{ evento: "firmado", en: "2026-10-27T22:25:57.000Z", ip: "181.142.100.115" }],
+      },
+    });
+    expect(html).toContain('alt="Firma del cliente"');
+    expect(html).toContain("NOMBRE: WILSON ALZATE");
+    expect(html).toContain("C.C.: 1034639949");
+    expect(html).toContain("CARGO: RESIDENTE DE OBRA");
+    expect(html).toContain("Firmado electrónicamente · 27 de octubre de 2026");
+    expect(html).not.toContain("Rastro del envío");
+    expect(html).not.toContain("alt=\"Código QR de verificación\"");
+  });
+
+  it("sin acta firmada el informe sigue saliendo con sus rayas para firmar", () => {
+    const [informe] = Object.values(INFORMES);
+    const html = buildInformePrintHtml(informe, { firmaImg: FOTO });
+    expect(html).toContain("(Firma y sello de recepción a satisfacción)");
+    expect(html).toContain("NOMBRE: ____");
+    expect(html).not.toContain('alt="Firma del cliente"');
+  });
+
   // Iba en una fila flex y un texto de conforme largo aplastaba el estado:
   // se partia en «Estado: Concluido» y debajo «100%», y el 100% acababa
   // leyendose como parte de la frase de al lado.

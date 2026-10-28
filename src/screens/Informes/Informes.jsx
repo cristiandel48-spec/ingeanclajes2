@@ -33,7 +33,7 @@ import ModalQuienRecibe from "../../components/ModalQuienRecibe";
 import { celularDeInforme, clienteDeObra, clientesConQuienRecibe, correoValido, destinatarioDeInforme, quienRecibeDeCliente } from "../../lib/quienRecibe";
 import { normalizarCorreo } from "../../lib/normalizarEntrada";
 import { informeRepetido } from "../../lib/duplicados";
-import { tieneActaEntrega } from "../../lib/actaEntrega";
+import { normalizarActas, tieneActaEntrega } from "../../lib/actaEntrega";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { useAccionesPantalla, useTituloPantalla } from "../../context/accionesPantalla";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
@@ -590,6 +590,26 @@ export default function Informes({ctx}){
     return lista.find((e) => e.estado === "firmado") || null;
   };
 
+  // La firma del ACTA de entrega de la obra del informe, si ya esta firmada.
+  //
+  // Quien recibe la obra y quien recibe el informe son la misma persona, asi
+  // que esa firma vale para los dos documentos: el informe deja de salir con
+  // la casilla en blanco para completarla a mano. Se mira de la ultima acta
+  // hacia atras, que es la que corresponde a la entrega mas reciente.
+  //
+  // Si no hay conexion o la obra no tiene acta firmada, devuelve null y el
+  // informe sale como siempre, con sus rayas.
+  const firmaDelActaDeLaObra = async (inf) => {
+    const obra = obras?.find((o) => o.id === inf?.obraId);
+    const actas = normalizarActas(obra);
+    for (let i = actas.length - 1; i >= 0; i -= 1) {
+      const envios = await listarEnviosFirma("acta", actas[i].id).catch(() => []);
+      const firmada = envios.find((e) => e.estado === "firmado");
+      if (firmada) return firmada;
+    }
+    return null;
+  };
+
   const descargarPdf = async (inf = sel) => {
     if (!inf || generandoPdf) return;
     // Firmado por el cliente: se entrega el PDF que recibio con la constancia
@@ -617,7 +637,8 @@ export default function Informes({ctx}){
     }
     setGenerandoPdf(true);
     try {
-      await descargarInformePdf(listo, { empresaConfig, firmaImg });
+      const firmaCliente = await firmaDelActaDeLaObra(listo);
+      await descargarInformePdf(listo, { empresaConfig, firmaImg, firmaCliente });
     } catch (fallo) {
       console.error("Error al generar PDF del informe:", fallo);
       window.alert(fallo?.message || "No se pudo generar el PDF.");
@@ -626,7 +647,7 @@ export default function Informes({ctx}){
     }
   };
 
-  const imprimirInforme = (inf = sel) => {
+  const imprimirInforme = async (inf = sel) => {
     if (!inf) return;
     const listo = enriquecerInforme(inf);
     if (!correoValido(listo.contactoEmail)) {
@@ -634,7 +655,8 @@ export default function Informes({ctx}){
       setPidiendoQuienRecibe("imprimir");
       return;
     }
-    const html = buildInformePrintHtml(listo, { empresaConfig, firmaImg });
+    const firmaCliente = await firmaDelActaDeLaObra(listo);
+    const html = buildInformePrintHtml(listo, { empresaConfig, firmaImg, firmaCliente });
     openPrintTab(
       html,
       `Informe ${listo?.id || listo?.numero || ""} ${listo?.proyecto || listo?.cliente || ""}`.trim()

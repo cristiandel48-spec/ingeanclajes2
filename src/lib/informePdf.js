@@ -35,8 +35,8 @@ function prepararHtmlParaPdf(html) {
 
 // `liviano`: version para enviar a firma de recibido, a unos 190 ppp. Se lee
 // igual de bien en pantalla e impresa, y pesa la tercera parte.
-export async function generarInformePdf(informe, { empresaConfig, firmaImg = "", onProgreso, liviano = false } = {}) {
-  const html = prepararHtmlParaPdf(buildInformePrintHtml(informe, { empresaConfig, firmaImg }));
+export async function generarInformePdf(informe, { empresaConfig, firmaImg = "", onProgreso, liviano = false, firmaCliente = null } = {}) {
+  const html = prepararHtmlParaPdf(buildInformePrintHtml(informe, { empresaConfig, firmaImg, firmaCliente }));
   const blob = await pdfDeHojas(html, {
     onProgreso,
     ...(liviano ? { escala: 2, calidad: 0.82 } : {}),

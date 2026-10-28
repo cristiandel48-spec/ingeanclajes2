@@ -102,7 +102,20 @@ export function fmtPeriodo(inicio, fin) {
   return corta(b);
 }
 
-export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } = {}) {
+/**
+ * @param {object} [opciones.firmaCliente]  La firma de recibido del ACTA de
+ *   entrega de esta obra, si ya esta firmada. El cliente que recibe la obra es
+ *   el mismo que recibe el informe, asi que su firma se plasma tambien aqui y
+ *   la casilla deja de salir en blanco para completarla a mano.
+ */
+export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", firmaCliente = null } = {}) {
+  const firmaClienteImg = firmaCliente?.firmaImagen || firmaCliente?.firma_imagen || "";
+  const nombreFirmante = firmaCliente?.firmanteNombre || firmaCliente?.firmante_nombre || "";
+  const documentoFirmante = firmaCliente?.firmanteDocumento || firmaCliente?.firmante_documento || "";
+  const cargoFirmante = firmaCliente?.firmanteCargo || firmaCliente?.firmante_cargo || "";
+  const fechaFirmaIso = firmaCliente?.firmadoEn || firmaCliente?.firmado_en || "";
+  const fechaFirmaTexto = fechaFirmaIso ? fmtL(fechaFirmaIso) : "";
+
   const control = getControlDocumental(empresaConfig)?.informe;
   const docCodigo = control?.codigo || "FO-ACT-04";
   const docVersion = control?.version || "03";
@@ -349,12 +362,20 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "" } 
         </td>
         <td style="width:50%;padding:8px 0 0 12px;vertical-align:top;">
           <div style="font-size:9px;font-weight:700;color:${GRIS};letter-spacing:0.05em;text-transform:uppercase;margin-bottom:3px;">Recibido por la Interventoría / Constructora:</div>
+          <!-- Si el cliente ya firmo el acta de entrega de esta obra, su firma
+               vale tambien aqui: es la misma persona recibiendo el mismo
+               trabajo. Se trae la firma, la cedula y el cargo, y nada mas: el
+               rastro del envio y el QR son del acta y aqui no pintan. -->
           <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:3px;font-size:9px;color:${GRIS};font-style:italic;">
-            (Firma y sello de recepción a satisfacción)
+            ${firmaClienteImg
+              ? `<img src="${firmaClienteImg}" alt="Firma del cliente" style="max-height:42px;max-width:180px;object-fit:contain;display:inline-block;font-style:normal;"/>`
+              : "(Firma y sello de recepción a satisfacción)"}
           </div>
-          <div style="font-weight:700;font-size:9.5px;color:${TINTA};">NOMBRE: ____________________________________</div>
-          <div style="font-size:9px;color:${GRIS};margin-top:2px;">CARGO / FIRMA: ______________________________</div>
-          <div style="font-size:9px;color:${GRIS};margin-top:1px;">EMPRESA: ${escapeHtml(cliente || "Constructora / Contratante")}</div>
+          <div style="font-weight:700;font-size:9.5px;color:${TINTA};">NOMBRE: ${nombreFirmante ? escapeHtml(nombreFirmante) : "____________________________________"}</div>
+          <div style="font-size:9px;color:${GRIS};margin-top:2px;">C.C.: ${documentoFirmante ? escapeHtml(documentoFirmante) : "______________________________"}</div>
+          <div style="font-size:9px;color:${GRIS};margin-top:2px;">CARGO: ${cargoFirmante ? escapeHtml(cargoFirmante) : "____________________________"}</div>
+          <div style="font-size:9px;color:${GRIS};margin-top:1px;">EMPRESA: ${escapeHtml(cliente || "Constructora / Contratante")}</div>${fechaFirmaTexto ? `
+          <div style="font-size:8px;color:${GRIS};margin-top:3px;">Firmado electrónicamente · ${escapeHtml(fechaFirmaTexto)}</div>` : ""}
         </td>
       </tr>
     </table>

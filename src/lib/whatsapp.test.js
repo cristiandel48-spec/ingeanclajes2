@@ -36,6 +36,11 @@ describe("el enlace de WhatsApp para firmar", () => {
     expect(mensaje).toContain("le llega un código a su correo");
   });
 
+  it("la cotizacion sigue siendo femenina", () => {
+    const m = mensajeWhatsAppFirma({ tipo: "cotizacion", numero: "C-26115", enlace });
+    expect(m).toContain("Le enviamos la cotización C-26115.");
+  });
+
   it("con celular abre el chat de esa persona", () => {
     const url = urlWhatsAppOElegirContacto("3192315246", mensaje);
     expect(url.startsWith("https://wa.me/573192315246?text=")).toBe(true);

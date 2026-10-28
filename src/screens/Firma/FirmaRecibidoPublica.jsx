@@ -1,14 +1,22 @@
 import { useEffect, useState } from "react";
 import logoIngeanclajes from "../../assets/logo-ingeanclajes.jpeg";
 import { FUENTE } from "../../styles/designTokens";
-import { abrirFirma, enlaceVerificacionFirma, firmarRecibido, pedirCodigoFirma, textoDeRecibido } from "../../lib/firmaRecibido";
+import { abrirFirma, enlaceVerificacionFirma, firmarRecibido, textoDeRecibido } from "../../lib/firmaRecibido";
 import { armarPdfConConstancia, descargarBlob, fechaHoraCo, nombreConConstancia } from "../../lib/constanciaRecibido";
 import RecuadroFirma from "./RecuadroFirma";
 
-// Pagina que abre el cliente desde el correo (?firmar=<token>). Sin cuenta:
-// el enlace es la llave, y el codigo que llega a su correo prueba que es el.
+// Pagina que abre el cliente desde el correo o el WhatsApp (?firmar=<token>).
+// Sin cuenta y sin codigos: el enlace es la llave, y se firma ahi mismo.
 //
-// Va pensada para el celular, que es donde casi siempre se abre el correo.
+// Antes, antes de firmar, habia que pedir un codigo de seis digitos que
+// llegaba al correo. En el celular eso obligaba a salir de WhatsApp, abrir el
+// correo, copiarlo y volver a entrar, y en ese salto se perdia la firma.
+//
+// Lo que respalda la firma: tener el enlace -secreto y enviado solo a quien
+// recibe-, el nombre y el documento que escribe, la firma que dibuja, y la
+// huella que queda guardada (fecha y hora, IP y navegador).
+//
+// Va pensada para el celular, que es donde casi siempre se abre.
 
 const C = {
   tinta: "#1d1d1f",
@@ -64,8 +72,6 @@ export default function FirmaRecibidoPublica() {
   const [datos, setDatos] = useState({ nombre: "", documento: "", cargo: "", empresa: "", observaciones: "" });
   const [firmaImagen, setFirmaImagen] = useState("");
   const [acepta, setAcepta] = useState(false);
-  const [codigo, setCodigo] = useState("");
-  const [codigoEnviadoA, setCodigoEnviadoA] = useState("");
   const [ocupado, setOcupado] = useState("");
   const [fallo, setFallo] = useState("");
   const [firma, setFirma] = useState(null);
@@ -93,27 +99,12 @@ export default function FirmaRecibidoPublica() {
     : !acepta ? "Marque la casilla de recibido."
     : "";
 
-  const pedirCodigo = async () => {
-    if (faltante) { setFallo(faltante); return; }
-    setFallo("");
-    setOcupado("codigo");
-    try {
-      const r = await pedirCodigoFirma(token);
-      setCodigoEnviadoA(r.a);
-    } catch (e) {
-      setFallo(e.message);
-    } finally {
-      setOcupado("");
-    }
-  };
-
   const firmar = async () => {
     if (faltante) { setFallo(faltante); return; }
-    if (!/^\d{6}$/.test(codigo)) { setFallo("Escriba los 6 dígitos del código que le llegó al correo."); return; }
     setFallo("");
     setOcupado("firmar");
     try {
-      const r = await firmarRecibido(token, { ...datos, codigo, firmaImagen, acepta, textoAceptado });
+      const r = await firmarRecibido(token, { ...datos, firmaImagen, acepta, textoAceptado });
       setFirma(r.firma);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) {
@@ -230,32 +221,12 @@ export default function FirmaRecibidoPublica() {
 
             {fallo && <Aviso>{fallo}</Aviso>}
 
-            {!codigoEnviadoA ? (
-              <>
-                <div style={{ fontSize: 13.5, color: C.gris, marginBottom: 10, lineHeight: 1.5 }}>
-                  Para confirmar que es usted, le enviaremos un código de 6 dígitos a <strong style={{ color: C.tinta }}>{documento.paraEmail}</strong>.
-                </div>
-                <button type="button" onClick={pedirCodigo} disabled={ocupado === "codigo"} style={botonPrincipal(ocupado !== "codigo")}>
-                  {ocupado === "codigo" ? "Enviando código…" : "Enviarme el código"}
-                </button>
-              </>
-            ) : (
-              <>
-                <Aviso tono="ok">Le enviamos un código a <strong>{codigoEnviadoA}</strong>. Vence en 10 minutos.</Aviso>
-                <label><span style={rotulo}>Código de 6 dígitos</span>
-                  <input style={{ ...campo, fontSize: 22, letterSpacing: "0.3em", textAlign: "center" }} value={codigo}
-                    onChange={(e) => setCodigo(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    inputMode="numeric" autoComplete="one-time-code" placeholder="••••••" />
-                </label>
-                <button type="button" onClick={firmar} disabled={ocupado === "firmar"} style={{ ...botonPrincipal(ocupado !== "firmar"), marginTop: 12 }}>
-                  {ocupado === "firmar" ? "Firmando…" : "Firmar recibido"}
-                </button>
-                <button type="button" onClick={pedirCodigo} disabled={ocupado === "codigo"}
-                  style={{ background: "none", border: 0, color: C.gris, fontSize: 13, marginTop: 10, width: "100%", cursor: "pointer", fontFamily: "inherit" }}>
-                  ¿No le llegó? Enviar otro código
-                </button>
-              </>
-            )}
+            {/* Se firma aquí mismo. Antes había que pedir un código al correo,
+                salir a buscarlo y volver: en el celular mucha gente se quedaba
+                en ese paso y el recibido no se firmaba nunca. */}
+            <button type="button" onClick={firmar} disabled={ocupado === "firmar"} style={botonPrincipal(ocupado !== "firmar")}>
+              {ocupado === "firmar" ? "Firmando…" : "Firmar recibido"}
+            </button>
           </div>
         )}
 

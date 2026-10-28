@@ -306,15 +306,27 @@ Deno.serve(conOrigenPermitido(async (req) => {
         const firmaImagen = String(cuerpo.firmaImagen ?? "");
         const textoAceptado = texto(cuerpo.textoAceptado, 600);
 
-        if (!f.codigo_hash || !f.codigo_vence_en) return error("Primero pide el código que llega a tu correo.");
-        if (new Date(f.codigo_vence_en) < ahora) return error("El código venció. Pide uno nuevo.");
-        if ((f.codigo_intentos ?? 0) >= MAX_INTENTOS_CODIGO) return error("Demasiados intentos con este código. Pide uno nuevo.", 429);
-        if (!/^\d{6}$/.test(codigo) || (await sha256Hex(`${token}:${codigo}`)) !== f.codigo_hash) {
-          await tabla().update({
-            codigo_intentos: (f.codigo_intentos ?? 0) + 1,
-            eventos: [...eventos, evento("codigo-incorrecto")],
-          }).eq("id", f.id);
-          return error("El código no coincide. Revisa el último correo que te llegó.");
+        // El codigo de seis digitos que llegaba al correo ya no hace falta
+        // para firmar. En el celular obligaba a salir de WhatsApp, abrir el
+        // correo, copiarlo y volver, y ahi se quedaba mucha gente sin firmar.
+        //
+        // Lo que respalda la firma pasa a ser: tener el enlace -que es
+        // secreto y solo se le manda a quien recibe-, el nombre y el documento
+        // que escribe, la firma que dibuja, y la huella que queda guardada
+        // (fecha y hora, IP y navegador). Es una firma electronica simple, que
+        // es lo que la Ley 527 de 1999 admite para un recibido.
+        //
+        // Si alguien ya habia pedido un codigo, se verifica igual: asi un
+        // enlace a medio firmar no se queda bloqueado ni pierde esa prueba.
+        if (f.codigo_hash && f.codigo_vence_en && new Date(f.codigo_vence_en) >= ahora && codigo) {
+          if ((f.codigo_intentos ?? 0) >= MAX_INTENTOS_CODIGO) return error("Demasiados intentos con este código.", 429);
+          if (!/^\d{6}$/.test(codigo) || (await sha256Hex(`${token}:${codigo}`)) !== f.codigo_hash) {
+            await tabla().update({
+              codigo_intentos: (f.codigo_intentos ?? 0) + 1,
+              eventos: [...eventos, evento("codigo-incorrecto")],
+            }).eq("id", f.id);
+            return error("El código no coincide. Revisa el último correo que te llegó.");
+          }
         }
         if (nombre.length < 3) return error("Escribe tu nombre completo.");
         if (!/^[A-Za-z0-9.\- ]{4,30}$/.test(documento)) return error("Escribe tu número de documento.");
@@ -339,7 +351,7 @@ Deno.serve(conOrigenPermitido(async (req) => {
           texto_aceptado: textoAceptado,
           // El codigo es de un solo uso.
           codigo_hash: null,
-          eventos: [...eventos, evento("codigo-verificado"), evento("firmado", { nombre })],
+          eventos: [...eventos, evento("firmado", { nombre, verificacion: codigo ? "codigo" : "enlace" })],
         };
         // Solo se firma si sigue sin firmar: dos pestañas a la vez no firman dos veces.
         const { data: guardado, error: errFirma } = await tabla()

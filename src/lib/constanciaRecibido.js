@@ -111,7 +111,9 @@ async function hojaConstancia(firma) {
     ["Documento", firma.firmanteDocumento],
     ["Cargo", firma.firmanteCargo],
     ["Empresa", firma.firmanteEmpresa],
-    ["Correo verificado", firma.firmanteEmail ? `${firma.firmanteEmail} (con código de un solo uso)` : ""],
+    // Antes decia «(con código de un solo uso)». Ya no se pide ese codigo
+    // para firmar, asi que escribirlo aqui seria afirmar algo que no paso.
+    ["Correo al que se envió", firma.firmanteEmail || ""],
     ["Fecha y hora", fechaHoraCo(firma.firmadoEn)],
     ["Dirección IP", firma.firmaIp],
   ]);
@@ -187,8 +189,9 @@ async function hojaConstancia(firma) {
     doc.setDrawColor(...LINEA);
     doc.line(izq, 748, der, 748);
     texto(
-      "Firma electrónica en los términos de la Ley 527 de 1999 y el Decreto 2364 de 2012: quien firma se identificó con un código "
-        + "enviado al correo al que se remitió el documento y aceptó el texto de recibido. La huella SHA-256 identifica el archivo exacto recibido.",
+      "Firma electrónica en los términos de la Ley 527 de 1999 y el Decreto 2364 de 2012: quien firma abrió el enlace privado "
+        + "que se le remitió, se identificó con su nombre y documento y aceptó el texto de recibido. Se registran la fecha y hora, "
+        + "la dirección IP y el navegador desde el que se firmó. La huella SHA-256 identifica el archivo exacto recibido.",
       izq, 760, { tam: 7.5, color: GRIS, max: ancho },
     );
   }

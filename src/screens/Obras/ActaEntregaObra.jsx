@@ -13,6 +13,7 @@ import { descargarActaPdf, generarActaPdf } from "../../lib/actaEntregaPdf";
 import { construirActa, datosDeEjecucion, faltantesDelActa, normalizarActas } from "../../lib/actaEntrega";
 import { useEnviosFirma } from "../../hooks/useEnviosFirma";
 import { ModalEnviarFirma, PanelFirmaRecibido } from "../../components/FirmaRecibidoDocumento";
+import SelectorPersona from "../../components/SelectorPersona";
 
 // El acta de entrega de obra dentro de la obra.
 //
@@ -92,9 +93,23 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
   const clienteFicha = clienteDeObra(clientes, obra);
   const cotizacionDeObra = cotizaciones.find((c) => c.id === obra.cotizacionId) || null;
 
-  const empleadosActivos = (Array.isArray(empleados) ? empleados : [])
+  // El personal para los selectores, marcando a quien estuvo en ESTA obra:
+  // es casi siempre a quien se busca, asi que sale primero en la lista.
+  const idsEnLaObra = new Set([
+    ...(Array.isArray(obra?.empleados) ? obra.empleados : []),
+    ...(Array.isArray(horarios) ? horarios : [])
+      .filter((h) => h?.obraId === obra?.id)
+      .map((h) => h?.empleadoId),
+  ].filter(Boolean));
+
+  const personal = (Array.isArray(empleados) ? empleados : [])
     .filter((e) => e && e.activo !== false)
-    .sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
+    .map((e) => ({
+      id: e.id,
+      nombre: e.nombre || "",
+      cargo: e.cargo || "",
+      enLaObra: idsEnLaObra.has(e.id),
+    }));
 
   const guardarActa = (id, cambios) =>
     setObras((prev) => prev.map((o) => (o.id === obra.id
@@ -470,33 +485,26 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
           )}
         >
           <div style={REJILLA}>
-            <Input
+            <SelectorPersona
               label="Coordinador de alturas"
               value={acta.coordinadorAlturas}
               disabled={bloqueada}
-              list="lista-empleados-acta"
-              ayuda="Si hay más de uno, sepáralos con · "
-              onChange={upd("coordinadorAlturas")}
+              personas={personal}
+              ayuda="Si hay más de uno, sepáralos con ·"
+              onChange={(v) => guardarActa(acta.id, { coordinadorAlturas: v })}
               onBlur={alSalir("coordinadorAlturas", normalizarNombrePropio)}
             />
-            <Input
+            <SelectorPersona
               label="Líder de proyecto"
               obligatorio
               value={acta.liderProyecto}
               disabled={bloqueada}
-              list="lista-empleados-acta"
-              onChange={upd("liderProyecto")}
+              personas={personal}
+              placeholder="Quién firma la entrega"
+              onChange={(v) => guardarActa(acta.id, { liderProyecto: v })}
               onBlur={alSalir("liderProyecto", normalizarNombrePropio)}
             />
           </div>
-
-          <datalist id="lista-empleados-acta">
-            {empleadosActivos.map((e) => (
-              <option key={e.id} value={e.nombre}>
-                {e.cargo || ""}
-              </option>
-            ))}
-          </datalist>
 
           <div style={{ marginTop: ESPACIO.md }}>
             <Input

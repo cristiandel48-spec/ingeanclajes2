@@ -590,6 +590,18 @@ export default function Informes({ctx}){
     return lista.find((e) => e.estado === "firmado") || null;
   };
 
+  // La misma firma, para la vista en pantalla: lo que se ve antes de imprimir
+  // tiene que ser lo que sale impreso.
+  const [firmaActa, setFirmaActa] = useState(null);
+  useEffect(() => {
+    let vivo = true;
+    setFirmaActa(null);
+    if (!sel?.obraId) return undefined;
+    firmaDelActaDeLaObra(sel).then((f) => { if (vivo) setFirmaActa(f); });
+    return () => { vivo = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sel?.id, sel?.obraId]);
+
   // La firma del ACTA de entrega de la obra del informe, si ya esta firmada.
   //
   // Quien recibe la obra y quien recibe el informe son la misma persona, asi
@@ -1674,12 +1686,29 @@ export default function Informes({ctx}){
                         <div style={{ fontSize: 8.5, fontWeight: 700, color: "#71717a", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 4 }}>
                           Recibido por la Interventoría / Constructora:
                         </div>
+                        {/* Lo mismo que sale impreso (lib/informePrint.js):
+                            con el acta de la obra firmada, aqui va la firma
+                            del cliente en vez de las rayas. */}
                         <div style={{ height: 48, display: "flex", alignItems: "flex-end", marginBottom: 4, fontSize: 9, color: "#a1a1aa", fontStyle: "italic" }}>
-                          (Firma y sello de recepción a satisfacción)
+                          {firmaActa?.firmaImagen
+                            ? <img src={firmaActa.firmaImagen} alt="Firma del cliente" style={{ maxHeight: 46, maxWidth: 190, objectFit: "contain" }} />
+                            : "(Firma y sello de recepción a satisfacción)"}
                         </div>
-                        <div style={{ fontWeight: 700, fontSize: 10, color: "#18181b" }}>NOMBRE: ____________________________________</div>
-                        <div style={{ fontSize: 9, color: "#52525b", marginTop: 3 }}>CARGO / FIRMA: ______________________________</div>
+                        <div style={{ fontWeight: 700, fontSize: 10, color: "#18181b" }}>
+                          NOMBRE: {firmaActa?.firmanteNombre || "____________________________________"}
+                        </div>
+                        <div style={{ fontSize: 9, color: "#52525b", marginTop: 3 }}>
+                          C.C.: {firmaActa?.firmanteDocumento || "______________________________"}
+                        </div>
+                        <div style={{ fontSize: 9, color: "#52525b", marginTop: 3 }}>
+                          CARGO: {firmaActa?.firmanteCargo || "____________________________"}
+                        </div>
                         <div style={{ fontSize: 9, color: "#52525b", marginTop: 2 }}>EMPRESA: {cliente || "Constructora / Contratante"}</div>
+                        {firmaActa?.firmadoEn && (
+                          <div style={{ fontSize: 8, color: "#71717a", marginTop: 3 }}>
+                            Firmado electrónicamente · {fmtL(firmaActa.firmadoEn)}
+                          </div>
+                        )}
                       </td>
                     </tr>
                   </tbody>

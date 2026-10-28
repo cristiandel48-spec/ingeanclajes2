@@ -11,7 +11,6 @@ import { normalizarFrase } from "../../lib/normalizarEntrada";
 import { normalizarBitacora, registroVacio, resumenBitacora, calcularAvanceObra, maximoParaJornada, limpiarAvance, faltaAvance } from "../../lib/bitacoraObra";
 import { estadoSegunAvance } from "../../lib/flujoObra";
 import { confirmar } from "../../lib/dialogos";
-import { AVISO_ACTA_EN_OBRA } from "../../lib/actaEntrega";
 
 // Pestana «Avance y fotos» del detalle de obra.
 //
@@ -29,7 +28,7 @@ import { AVISO_ACTA_EN_OBRA } from "../../lib/actaEntrega";
 // abrir una jornada se pide con `onPedirQuienRecibe(seguir)`, que llama a
 // `seguir` cuando ya quedo guardado: sin ese correo el informe no se puede
 // enviar a firma de recibido.
-export default function BitacoraObra({ obra, setObras, bloqueada = false, cargandoFotos = false, personalAsignado = null, onIrAPersonal, sinQuienRecibe = false, onPedirQuienRecibe, avisoActa = "", onIrAlActa }) {
+export default function BitacoraObra({ obra, setObras, bloqueada = false, cargandoFotos = false, personalAsignado = null, onIrAPersonal, sinQuienRecibe = false, onPedirQuienRecibe }) {
   const sinPersonal = personalAsignado === 0;
   const registros = normalizarBitacora(obra.bitacora);
   const resumen = resumenBitacora(obra.bitacora);
@@ -254,27 +253,10 @@ export default function BitacoraObra({ obra, setObras, bloqueada = false, cargan
         </div>
       )}
 
-      {/* Quien registra el avance es quien esta en la obra, y es quien puede
-          hacer firmar el acta ahi mismo. Aqui se le recuerda, porque de eso
-          depende que despues se puedan hacer el informe y la certificacion. */}
-      {avisoActa && !bloqueada && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap",
-          fontSize: 12.5, color: "#92400e", background: "#fffbeb",
-          border: "1px solid #fde68a", borderRadius: 9, padding: "10px 12px",
-          marginBottom: 14, lineHeight: 1.45 }}>
-          <span>
-            <strong>
-              {avisoActa === "sin-acta"
-                ? "Esta obra todavía no tiene acta de entrega."
-                : "El cliente todavía no ha firmado el acta de entrega."}
-            </strong>{" "}
-            {AVISO_ACTA_EN_OBRA}
-          </span>
-          {onIrAlActa && (
-            <Button variante="secondary" tam="sm" onClick={onIrAlActa}>Ir al acta</Button>
-          )}
-        </div>
-      )}
+      {/* El recordatorio del acta NO va aqui como letrero fijo: un aviso
+          siempre puesto deja de leerse. Va en el aviso de pendientes que sale
+          al cerrar el programa, junto con las visitas del dia siguiente
+          (components/agenda/AvisoInteligenteAgenda.jsx). */}
 
       {bloqueada && !cargandoFotos && (
         <div style={{ fontSize: 11.5, color: "#047857", background: "#ecfdf5",

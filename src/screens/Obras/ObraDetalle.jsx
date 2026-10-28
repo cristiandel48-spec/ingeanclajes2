@@ -540,9 +540,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           onPedirQuienRecibe={(seguir)=>setPidiendoQuienRecibe({
             motivo:"Antes de registrar el avance falta el correo de quien recibe: sin él, el informe de actividades no se le puede enviar al cliente para que firme el recibido.",
             seguir,
-          })}
-          avisoActa={motivoActa}
-          onIrAlActa={()=>setDetTab("acta")}/>
+          })}/>
       )}
 
       {/* TAB MATERIALES Y DESPACHO DE BODEGA */}

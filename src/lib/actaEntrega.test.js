@@ -4,6 +4,7 @@ import {
   actaEntregaConcluida,
   construirActa,
   motivoActaPendiente,
+  obrasConActaPendiente,
   textoActaPendiente,
   datosDeEjecucion,
   descripcionDelTrabajo,
@@ -401,6 +402,40 @@ describe("el candado del acta para certificar y para el informe", () => {
   it("con varias actas basta con que una este firmada", () => {
     expect(motivoActaPendiente(conDos, { "ACT-011": "enviado", "ACT-012": "firmado" })).toBe("");
     expect(motivoActaPendiente(conDos, { "ACT-011": "enviado" })).toBe("sin-firma");
+  });
+
+  // Lo que alimenta el aviso de pendientes que sale al cerrar el programa.
+  describe("las obras que se avisan como pendientes", () => {
+    const obras = [
+      { id: "OB-001", avance: 100, actas: [{ id: "ACT-001" }] },            // sin firmar
+      { id: "OB-002", avance: 95, actas: [{ id: "ACT-002" }] },             // firmada
+      { id: "OB-003", avance: 90 },                                        // sin acta
+      { id: "OB-004", avance: 40, actas: [{ id: "ACT-004" }] },            // apenas empieza
+      { id: "OB-005", avance: 100, actas: [{ id: "ACT-005" }], cerrada: true },
+    ];
+    const estados = { "ACT-002": "firmado" };
+    const estaCerrada = (o) => Boolean(o.cerrada);
+
+    it("solo las que ya estan para entregar y les falta el acta", () => {
+      const r = obrasConActaPendiente(obras, estados, { estaCerrada });
+      expect(r.map((o) => o.id)).toEqual(["OB-001", "OB-003"]);
+      expect(r.map((o) => o.motivoActa)).toEqual(["sin-firma", "sin-acta"]);
+    });
+
+    it("una obra que apenas arranca no se avisa, para que el aviso se siga leyendo", () => {
+      expect(obrasConActaPendiente([obras[3]], {}, { estaCerrada })).toEqual([]);
+      // Pero si se baja el umbral, si.
+      expect(obrasConActaPendiente([obras[3]], {}, { estaCerrada, desdeAvance: 10 })).toHaveLength(1);
+    });
+
+    it("una obra cerrada tampoco: ahi ya no hay nada que hacer", () => {
+      expect(obrasConActaPendiente([obras[4]], {}, { estaCerrada })).toEqual([]);
+    });
+
+    it("sin obras no revienta", () => {
+      expect(obrasConActaPendiente(null, {})).toEqual([]);
+      expect(obrasConActaPendiente([], {})).toEqual([]);
+    });
   });
 
   it("el aviso dice que obra es y que hacer", () => {

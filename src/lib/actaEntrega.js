@@ -114,6 +114,25 @@ export function motivoActaPendiente(obra, estadosFirma = {}) {
   return actaEntregaConcluida(obra, estadosFirma) ? "" : "sin-firma";
 }
 
+/**
+ * Las obras que ya estan para entregar y no tienen el acta firmada.
+ *
+ * Es lo que alimenta el aviso de pendientes: trabajo que se queda atascado
+ * -sin acta firmada no hay informe ni certificacion- sin que nadie se entere.
+ *
+ * `desdeAvance` deja fuera las obras que apenas empiezan: avisar de una que
+ * arranco ayer seria ruido, y el aviso dejaria de leerse. Las obras cerradas
+ * tampoco entran: ahi ya no hay nada que hacer.
+ *
+ * @returns {Array} las obras, cada una con `motivoActa` ("sin-acta"|"sin-firma").
+ */
+export function obrasConActaPendiente(obras, estadosFirma = {}, { desdeAvance = 90, estaCerrada = () => false } = {}) {
+  return (Array.isArray(obras) ? obras : [])
+    .filter((o) => o && !estaCerrada(o) && Number(o.avance || 0) >= desdeAvance)
+    .map((o) => ({ ...o, motivoActa: motivoActaPendiente(o, estadosFirma) }))
+    .filter((o) => o.motivoActa);
+}
+
 /** El aviso completo para ese motivo, con el numero de la obra delante. */
 export function textoActaPendiente(obra, estadosFirma = {}) {
   const motivo = motivoActaPendiente(obra, estadosFirma);

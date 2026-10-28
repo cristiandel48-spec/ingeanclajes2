@@ -199,7 +199,10 @@ function AppRoot() {
           <Screen ctx={ctx} go={setScr} />
         </Suspense>
       </div>
-      <AvisoInteligenteAgenda onIrAAgenda={() => setScr("agenda")} />
+      <AvisoInteligenteAgenda
+        onIrAAgenda={() => setScr("agenda")}
+        onIrAObra={(obraId) => ctx.irAPantalla?.("obras", { obraId })}
+      />
     </AppShell>
   );
 }

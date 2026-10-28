@@ -83,7 +83,15 @@ export default function FirmaRecibidoPublica() {
         if (!activo) return;
         setCarga({ estado: "listo", documento: r.documento, vencido: r.vencido });
         if (r.firma) setFirma(r.firma);
-        setDatos((d) => ({ ...d, empresa: r.documento?.cliente || "" }));
+        // El nombre y la empresa ya los sabe el sistema: son los que se
+        // pusieron al enviarlo. Que el cliente los vuelva a escribir en el
+        // celular solo es un paso mas para equivocarse o abandonar. Quedan
+        // puestos y editables, por si lo recibe otra persona.
+        setDatos((d) => ({
+          ...d,
+          nombre: d.nombre || r.documento?.paraNombre || "",
+          empresa: r.documento?.cliente || "",
+        }));
       })
       .catch((e) => { if (activo) setCarga({ estado: "error", mensaje: e.message }); });
     return () => { activo = false; };

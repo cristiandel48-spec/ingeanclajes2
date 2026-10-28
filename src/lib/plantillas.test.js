@@ -334,5 +334,28 @@ describe("plantilla del acta de entrega", () => {
     expect(html).not.toContain('alt="Firma del cliente"');
     expect(html).not.toContain('alt="Código QR de verificación"');
     expect(html).toContain("(Firma de recepción a satisfacción)");
+    expect(html).not.toContain("Rastro del envío");
+  });
+
+  // Desde que el acta firmada no lleva la hoja de constancia, el rastro -como
+  // se mando, cuando abrio el enlace y cuando firmo- va impreso en el acta.
+  it("firmada lleva el rastro del envio al pie", () => {
+    const html = buildActaPrintHtml(ACTAS["acta-puntos-de-anclaje"], {
+      firmaCliente: { estado: "firmado", firmante_nombre: "CARLOS MARIO PEREZ" },
+      rastro: {
+        filas: [
+          { fecha: "27 de octubre de 2026, 10:23:40 p. m.", etiqueta: "Enviado por WhatsApp", ip: "181.142.100.115" },
+          { fecha: "27 de octubre de 2026, 10:25:20 p. m.", etiqueta: "Enlace abierto", ip: "181.142.100.115" },
+          { fecha: "27 de octubre de 2026, 10:25:57 p. m.", etiqueta: "Recibido firmado", ip: "181.142.100.115" },
+        ],
+        omitidas: 2,
+      },
+    });
+    expect(html).toContain("Rastro del envío");
+    expect(html).toContain("Enviado por WhatsApp");
+    expect(html).toContain("Enlace abierto");
+    expect(html).toContain("Recibido firmado");
+    expect(html).toContain("IP 181.142.100.115");
+    expect(html).toContain("2 apertura(s) más");
   });
 });

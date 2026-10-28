@@ -6,6 +6,7 @@
 
 import { buildActaPrintHtml } from "./actaEntregaPrint";
 import { qrVerificacionFirma } from "./firmaRecibido";
+import { rastroDelEnvio } from "./constanciaRecibido";
 import { MARGEN_HOJA } from "./hojaImpresion";
 import { repaginarHojas } from "./repaginarHojas";
 import { nombreDocumento } from "./nombreArchivo";
@@ -54,10 +55,10 @@ export function repartirConMedidasReales(doc, ventana) {
 export async function generarActaPdf(acta, { empresaConfig, firmaImg = "", onProgreso, liviano = false, firmaCliente = null } = {}) {
   // El QR de verificacion solo tiene sentido cuando ya esta firmada: antes de
   // eso no hay nada que verificar.
-  const qrVerificacion = firmaCliente?.estado === "firmado"
-    ? await qrVerificacionFirma(firmaCliente.codigoVerificacion)
-    : "";
-  const html = prepararHtmlParaPdf(buildActaPrintHtml(acta, { empresaConfig, firmaImg, firmaCliente, qrVerificacion }));
+  const firmada = firmaCliente?.estado === "firmado";
+  const qrVerificacion = firmada ? await qrVerificacionFirma(firmaCliente.codigoVerificacion) : "";
+  const rastro = firmada ? rastroDelEnvio(firmaCliente) : null;
+  const html = prepararHtmlParaPdf(buildActaPrintHtml(acta, { empresaConfig, firmaImg, firmaCliente, qrVerificacion, rastro }));
   const blob = await pdfDeHojas(html, {
     onProgreso,
     ...(liviano ? { escala: 2, calidad: 0.82 } : {}),

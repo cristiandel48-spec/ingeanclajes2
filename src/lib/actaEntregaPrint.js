@@ -28,7 +28,7 @@ const val = (v) => escapeHtml(String(v ?? "").trim());
 // cliente, y una casilla en blanco no se ve como un dato que falta.
 const valOrRaya = (v) => (String(v ?? "").trim() ? val(v) : "<span style=\"color:#c7c7cc;\">__________________</span>");
 
-export function buildActaPrintHtml(acta, { empresaConfig, firmaImg = "", firmaCliente = null, qrVerificacion = "" } = {}) {
+export function buildActaPrintHtml(acta, { empresaConfig, firmaImg = "", firmaCliente = null, qrVerificacion = "", rastro = null } = {}) {
   const control = getControlDocumental(empresaConfig)?.acta;
   const docCodigo = control?.codigo || "FORM-SST-89";
   const docVersion = control?.version || "02";
@@ -228,7 +228,31 @@ export function buildActaPrintHtml(acta, { empresaConfig, firmaImg = "", firmaCl
         </td>
       </tr>
     </table>
+    ${rastroDelEnvioHtml()}
   `;
+
+  // El rastro del envio al pie del acta: cuando se mando, cuando abrio el
+  // enlace y cuando firmo, con la IP de cada paso. Antes solo estaba en la
+  // hoja de constancia; al dejar de adjuntarla, el acta se quedaba sin la
+  // prueba de como se firmo.
+  const rastroDelEnvioHtml = () => {
+    const filas = rastro?.filas || [];
+    if (!filas.length) return "";
+    return `
+    <div style="margin-top:10px;padding-top:6px;border-top:1px solid ${LINEA_SUAVE};">
+      <div style="font-size:8.5px;font-weight:700;color:${GRIS};letter-spacing:0.05em;text-transform:uppercase;margin-bottom:4px;">Rastro del envío</div>
+      <table style="width:100%;border-collapse:collapse;font-size:8px;color:${GRIS};">
+        ${filas.map((f) => `
+          <tr>
+            <td style="padding:1.5px 0;white-space:nowrap;">${val(f.fecha)}</td>
+            <td style="padding:1.5px 10px;font-weight:700;color:${TINTA};">${val(f.etiqueta)}</td>
+            <td style="padding:1.5px 0;text-align:right;white-space:nowrap;">${f.ip ? `IP ${val(f.ip)}` : ""}</td>
+          </tr>`).join("")}
+        ${rastro?.omitidas ? `
+          <tr><td colspan="3" style="padding:1.5px 0;font-style:italic;">… y ${val(rastro.omitidas)} apertura(s) más del enlace.</td></tr>` : ""}
+      </table>
+    </div>`;
+  };
 
   // Las marcas `data-rol` son para volver a repartir el contenido en hojas al
   // generar el PDF, midiendo lo ya dibujado (ver lib/repaginarHojas.js). Aqui

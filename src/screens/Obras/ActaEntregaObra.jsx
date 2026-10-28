@@ -10,6 +10,7 @@ import { normalizarCorreo, normalizarDocumento, normalizarMayusculas, normalizar
 import { clienteDeObra, clientesConQuienRecibe } from "../../lib/quienRecibe";
 import { buildActaPrintHtml } from "../../lib/actaEntregaPrint";
 import { qrVerificacionFirma } from "../../lib/firmaRecibido";
+import { rastroDelEnvio } from "../../lib/constanciaRecibido";
 import { descargarActaPdf, generarActaPdf } from "../../lib/actaEntregaPdf";
 import { construirActa, datosDeEjecucion, faltantesDelActa, normalizarActas } from "../../lib/actaEntrega";
 import { useEnviosFirma } from "../../hooks/useEnviosFirma";
@@ -309,8 +310,9 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
 
   const imprimir = async () => {
     const qrVerificacion = envioFirmado ? await qrVerificacionFirma(envioFirmado.codigoVerificacion) : "";
+    const rastro = envioFirmado ? rastroDelEnvio(envioFirmado) : null;
     openPrintTab(
-      buildActaPrintHtml(acta, { empresaConfig, firmaImg: firmaEmpresa, firmaCliente: envioFirmado, qrVerificacion }),
+      buildActaPrintHtml(acta, { empresaConfig, firmaImg: firmaEmpresa, firmaCliente: envioFirmado, qrVerificacion, rastro }),
       `Acta de entrega ${acta.id}`
     );
   };

@@ -36,6 +36,31 @@ export function fechaHoraCo(iso) {
 
 // Las aperturas se repiten cada vez que el cliente vuelve al enlace: se dejan
 // las tres primeras y se cuenta el resto, para que el rastro quepa en la hoja.
+/**
+ * El rastro del envio en filas listas para pintar: cuando se mando, cuando se
+ * abrio el enlace y cuando se firmo, con la IP de cada paso.
+ *
+ * Lo usan la hoja de constancia y el acta de entrega, que lo lleva impreso al
+ * pie desde que la constancia dejo de adjuntarse.
+ *
+ * @returns {{filas: {fecha:string, etiqueta:string, ip:string}[], omitidas:number}}
+ */
+export function rastroDelEnvio(firma) {
+  const { eventos, omitidas } = rastroResumido(firma?.eventos);
+  return {
+    filas: eventos.map((e) => ({
+      fecha: fechaHoraCo(e.en).replace(" (hora de Colombia)", ""),
+      // Desde que se puede mandar por WhatsApp, «Enviado por correo» no
+      // siempre era cierto.
+      etiqueta: e.evento === "enviado" && e.canal === "whatsapp"
+        ? "Enviado por WhatsApp"
+        : (EVENTOS[e.evento] || e.evento),
+      ip: e.ip || "",
+    })),
+    omitidas,
+  };
+}
+
 function rastroResumido(eventos = []) {
   const salida = [];
   let aperturas = 0;

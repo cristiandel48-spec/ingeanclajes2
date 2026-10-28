@@ -184,8 +184,13 @@ const boton = (href: string, rotulo: string) =>
 
 // La cuenta tecnica de desarrollo no aparece como autora: lo que hace queda a
 // nombre de la responsable de operaciones, igual que en el resto del sistema
-// (src/lib/autorAuditoria.js). Asi tambien el aviso de «el cliente firmo» le
-// llega a ella. El id real de quien envio se guarda aparte (enviado_por).
+// (src/lib/autorAuditoria.js). El id real de quien envio se guarda aparte
+// (enviado_por).
+//
+// Esto solo decide el NOMBRE que se ve en el envio. Ya no manda correo a
+// nadie del equipo: el aviso de «el cliente firmo» se quito, porque le
+// llegaba a la responsable un correo por cada documento firmado y eso se ve
+// igual en la aplicacion.
 const CUENTAS_TECNICAS = String(Deno.env.get("CUENTAS_TECNICAS") ?? "cristiandel48@gmail.com")
   .split(",").map((c) => c.trim().toLowerCase()).filter(Boolean);
 const CORREO_RESPONSABLE = String(Deno.env.get("CORREO_RESPONSABLE") ?? "camilascadavid@gmail.com").trim().toLowerCase();
@@ -378,14 +383,12 @@ Deno.serve(conOrigenPermitido(async (req) => {
               <p style="color:#5f6368;font-size:12px">La constancia se puede verificar en ${escapeHtml(verificar)}</p>`),
           }),
         ];
-        if (f.enviado_por_email && correoValido(f.enviado_por_email)) {
-          avisos.push(enviarCorreo({
-            para: f.enviado_por_email,
-            asunto: linea(`El cliente firmó el recibido ${f.documento_numero ?? ""}`, 200),
-            texto: `${nombre} firmó el recibido del documento ${f.documento_numero ?? ""}.\nVerificación: ${verificar}`,
-            html: marco(f.documento_numero ?? "", `<p>El cliente firmó el recibido.</p>${resumen}${boton(verificar, "Ver la constancia")}`),
-          }));
-        }
+        // Al que envio el documento NO se le avisa por correo. Lo tiene en la
+        // aplicacion: el panel de firma de la obra pasa a «Firmada por el
+        // cliente» solo, y el acta habilita imprimir y descargar. Un correo
+        // mas por cada documento firmado es ruido en un buzon de trabajo.
+        //
+        // El unico aviso que sale es el del cliente, con su copia firmada.
         for (const r of await Promise.all(avisos)) {
           if (!r.enviado) console.warn("No salió un aviso de firma:", r.motivo);
         }

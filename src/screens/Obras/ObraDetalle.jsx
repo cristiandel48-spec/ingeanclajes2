@@ -20,7 +20,8 @@ import { resolverAutorGuardado } from "../../lib/autorAuditoria";
 import { getTextosDocumento } from "../../lib/cotizacionTextos";
 import { getQuoteProposals } from "../../lib/cotizaciones";
 import { clienteDeObra, clientesConQuienRecibe, correoValido, obraTieneQuienRecibe, quienRecibeDeCliente } from "../../lib/quienRecibe";
-import { tieneActaEntrega } from "../../lib/actaEntrega";
+import { motivoActaPendiente, textoActaPendiente } from "../../lib/actaEntrega";
+import { useEstadosFirmaActas } from "../../hooks/useEnviosFirma";
 import ModalQuienRecibe from "../../components/ModalQuienRecibe";
 
 function extraerObjetoCotizacion(texto = "") {
@@ -125,21 +126,32 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
     }
   }, [obraId, oAct?.__parcial, asegurarDetalle]);
 
-  const tieneActa = tieneActaEntrega(oAct);
+  // El acta cuenta cuando esta hecha Y firmada por el cliente. Solo se bloquea
+  // cuando ya se sabe el estado de las firmas: lo que no se sabe no es lo
+  // mismo que «sin firmar».
+  const { estados: estadosActas, listo: estadosActasListos } = useEstadosFirmaActas();
+  const motivoActa = estadosActasListos ? motivoActaPendiente(oAct, estadosActas) : "";
+  const tieneActa = !motivoActa;
+
+  const avisarActaPendiente = () => {
+    toast.error(textoActaPendiente(oAct, estadosActas));
+    setDetTab("acta");
+  };
 
   const irACrearInforme = () => {
-    if (!tieneActa) {
-      toast.error("Esta obra no tiene acta de entrega. Primero debes crear el acta de entrega (FORM-SST-89) para poder generar el informe de actividades.");
-      setDetTab("acta");
-      return;
-    }
+    if (!tieneActa) return avisarActaPendiente();
     irAPantalla("informes", { obraId });
+  };
+
+  const irACertificar = () => {
+    if (!tieneActa) return avisarActaPendiente();
+    irAPantalla("certificaciones", { obraId });
   };
 
   // Volver, Crear informe y Certificar van en la barra de arriba, que no se
   // mueve al bajar por la bitacora. Por la ref llaman a la version vigente.
   const accionesObraRef = useRef({});
-  useEffect(() => { accionesObraRef.current = { onVolver, irAPantalla, irACrearInforme }; });
+  useEffect(() => { accionesObraRef.current = { onVolver, irAPantalla, irACrearInforme, irACertificar }; });
   useAccionesPantalla(
     oAct ? (
       <div style={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "nowrap" }}>
@@ -150,7 +162,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           variante="texto"
           tam="sm"
           onClick={() => accionesObraRef.current.irACrearInforme()}
-          title={tieneActa ? "Crear informe de actividades para esta obra" : "Falta el acta de entrega (FORM-SST-89) para poder generar el informe"}
+          title={tieneActa ? "Crear informe de actividades para esta obra" : textoActaPendiente(oAct, estadosActas)}
           style={!tieneActa ? { opacity: 0.6 } : {}}
         >
           Crear informe
@@ -158,9 +170,9 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
         <Button
           variante="oscuro"
           tam="sm"
-          style={{ marginLeft: 6 }}
-          onClick={() => accionesObraRef.current.irAPantalla("certificaciones", { obraId })}
-          title="Crear certificación de calidad para esta obra"
+          onClick={() => accionesObraRef.current.irACertificar()}
+          title={tieneActa ? "Crear certificación de calidad para esta obra" : textoActaPendiente(oAct, estadosActas)}
+          style={{ marginLeft: 6, ...(tieneActa ? {} : { opacity: 0.6 }) }}
         >
           Certificar
           <span style={{ opacity: 0.6, fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>
@@ -528,7 +540,9 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           onPedirQuienRecibe={(seguir)=>setPidiendoQuienRecibe({
             motivo:"Antes de registrar el avance falta el correo de quien recibe: sin él, el informe de actividades no se le puede enviar al cliente para que firme el recibido.",
             seguir,
-          })}/>
+          })}
+          avisoActa={motivoActa}
+          onIrAlActa={()=>setDetTab("acta")}/>
       )}
 
       {/* TAB MATERIALES Y DESPACHO DE BODEGA */}

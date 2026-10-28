@@ -82,6 +82,49 @@ export function tieneActaEntrega(obra) {
   return normalizarActas(obra).length > 0;
 }
 
+// Lo que se le dice a quien intenta certificar o hacer el informe sin el acta
+// firmada. Esta aqui y no en cada pantalla para que las tres digan lo mismo.
+export const AVISO_ACTA_SIN_FIRMAR =
+  "Pídele al coordinador de SST o al encargado de la obra que haga el acta de entrega con el cliente "
+  + "y se la haga firmar. Sin el acta firmada no se puede certificar ni hacer el informe de actividades.";
+
+export const AVISO_ACTA_EN_OBRA =
+  "Haz el acta de entrega y hazla firmar del cliente, para que se puedan hacer el informe de actividades "
+  + "y la certificación.";
+
+/**
+ * Un acta esta CONCLUIDA cuando existe y el cliente la firmo. Crearla no
+ * basta: lo que cierra la entrega es la firma de quien recibe.
+ *
+ * @param {object} obra
+ * @param {Record<string,string>} estadosFirma  { [actaId]: estado }, de
+ *   useEstadosFirmaActas. Lo que no este ahi se da por no firmado.
+ */
+export function actaEntregaConcluida(obra, estadosFirma = {}) {
+  return normalizarActas(obra).some((a) => estadosFirma?.[a.id] === "firmado");
+}
+
+/**
+ * Por que no se puede certificar ni hacer el informe, o "" si si se puede.
+ *
+ * @returns {"sin-acta"|"sin-firma"|""}
+ */
+export function motivoActaPendiente(obra, estadosFirma = {}) {
+  if (!tieneActaEntrega(obra)) return "sin-acta";
+  return actaEntregaConcluida(obra, estadosFirma) ? "" : "sin-firma";
+}
+
+/** El aviso completo para ese motivo, con el numero de la obra delante. */
+export function textoActaPendiente(obra, estadosFirma = {}) {
+  const motivo = motivoActaPendiente(obra, estadosFirma);
+  if (!motivo) return "";
+  const cual = obra?.id ? `La obra ${obra.id}` : "Esta obra";
+  const que = motivo === "sin-acta"
+    ? "no tiene acta de entrega."
+    : "tiene el acta de entrega sin firmar por el cliente.";
+  return `${cual} ${que} ${AVISO_ACTA_SIN_FIRMAR}`;
+}
+
 /** Todas las actas de todas las obras, para numerar la siguiente sin repetir. */
 export function todasLasActas(obras) {
   return (Array.isArray(obras) ? obras : []).flatMap((o) => normalizarActas(o));

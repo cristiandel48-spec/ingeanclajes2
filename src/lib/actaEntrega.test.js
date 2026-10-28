@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   aceroDeCotizacion,
+  actaEntregaConcluida,
   construirActa,
+  motivoActaPendiente,
+  textoActaPendiente,
   datosDeEjecucion,
   descripcionDelTrabajo,
   faltantesDelActa,
@@ -368,5 +371,46 @@ describe("las actas guardadas en la obra", () => {
     expect(tieneActaEntrega({ id: "OB-001" })).toBe(false);
     expect(tieneActaEntrega({ id: "OB-001", actas: [] })).toBe(false);
     expect(tieneActaEntrega({ id: "OB-001", actas: [{ id: "ACT-001" }] })).toBe(true);
+  });
+});
+
+// Sin acta FIRMADA no se certifica ni se hace el informe de actividades.
+// Crear el acta no basta: lo que cierra la entrega es la firma del cliente.
+describe("el candado del acta para certificar y para el informe", () => {
+  const sinActa = { id: "OB-001" };
+  const conActa = { id: "OB-002", actas: [{ id: "ACT-010" }] };
+  const conDos = { id: "OB-003", actas: [{ id: "ACT-011" }, { id: "ACT-012" }] };
+
+  it("sin acta no se puede", () => {
+    expect(motivoActaPendiente(sinActa, {})).toBe("sin-acta");
+    expect(actaEntregaConcluida(sinActa, {})).toBe(false);
+  });
+
+  it("con el acta hecha pero sin firmar, tampoco", () => {
+    expect(motivoActaPendiente(conActa, {})).toBe("sin-firma");
+    expect(motivoActaPendiente(conActa, { "ACT-010": "enviado" })).toBe("sin-firma");
+    expect(motivoActaPendiente(conActa, { "ACT-010": "abierto" })).toBe("sin-firma");
+    expect(motivoActaPendiente(conActa, { "ACT-010": "anulado" })).toBe("sin-firma");
+  });
+
+  it("firmada por el cliente, si", () => {
+    expect(motivoActaPendiente(conActa, { "ACT-010": "firmado" })).toBe("");
+    expect(actaEntregaConcluida(conActa, { "ACT-010": "firmado" })).toBe(true);
+  });
+
+  it("con varias actas basta con que una este firmada", () => {
+    expect(motivoActaPendiente(conDos, { "ACT-011": "enviado", "ACT-012": "firmado" })).toBe("");
+    expect(motivoActaPendiente(conDos, { "ACT-011": "enviado" })).toBe("sin-firma");
+  });
+
+  it("el aviso dice que obra es y que hacer", () => {
+    expect(textoActaPendiente(sinActa, {})).toContain("La obra OB-001 no tiene acta de entrega.");
+    expect(textoActaPendiente(conActa, {})).toContain("sin firmar por el cliente");
+    for (const obra of [sinActa, conActa]) {
+      expect(textoActaPendiente(obra, {})).toContain("coordinador de SST");
+      expect(textoActaPendiente(obra, {})).toContain("no se puede certificar ni hacer el informe");
+    }
+    // Firmada no hay nada que avisar.
+    expect(textoActaPendiente(conActa, { "ACT-010": "firmado" })).toBe("");
   });
 });

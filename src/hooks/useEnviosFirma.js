@@ -61,16 +61,34 @@ export function useEnviosFirma(documentoId, { tipo = "informe", onFirmado } = {}
 // Estado de firma de todos los informes, para marcar los firmados en la
 // lista: { [informeId]: "firmado" | "abierto" | "enviado" }.
 export function useEstadosFirmaInformes(activo = true) {
+  return useEstadosFirma("informe", activo).estados;
+}
+
+/**
+ * Estado de firma de todos los documentos de un tipo: { [documentoId]: estado }.
+ *
+ * Devuelve tambien `listo`, que dice si la consulta ya respondio. Hace falta
+ * para los candados: lo que todavia no se sabe NO es lo mismo que «no esta
+ * firmado». Sin esa distincion, un corte de red dejaria la aplicacion
+ * bloqueando informes y certificaciones de obras que si estan firmadas.
+ */
+export function useEstadosFirma(tipo, activo = true) {
   const [estados, setEstados] = useState({});
+  const [listo, setListo] = useState(false);
   useEffect(() => {
-    if (!activo) return undefined;
+    if (!activo) { setListo(false); return undefined; }
     let vivo = true;
-    const cargar = () => listarEstadosFirma("informe")
-      .then((r) => { if (vivo) setEstados(r); })
+    const cargar = () => listarEstadosFirma(tipo)
+      .then((r) => { if (vivo) { setEstados(r); setListo(true); } })
       .catch((e) => console.warn("No se pudo leer el estado de las firmas:", e));
     cargar();
     const id = setInterval(() => { if (document.visibilityState === "visible") cargar(); }, CADA_MS * 3);
     return () => { vivo = false; clearInterval(id); };
-  }, [activo]);
-  return estados;
+  }, [tipo, activo]);
+  return { estados, listo };
+}
+
+/** Estado de firma de las actas de entrega, para los candados de la obra. */
+export function useEstadosFirmaActas(activo = true) {
+  return useEstadosFirma("acta", activo);
 }

@@ -26,14 +26,14 @@ import TarjetaCotizacionRef from "./TarjetaCotizacionRef";
 import { obrasMasNuevasPrimero } from "../../lib/identificadores";
 import ModalCotizacionDetalle from "./ModalCotizacionDetalle";
 import { ModalEnviarFirma, PanelFirmaRecibido } from "../../components/FirmaRecibidoDocumento";
-import { useEnviosFirma, useEstadosFirmaInformes } from "../../hooks/useEnviosFirma";
+import { useEnviosFirma, useEstadosFirmaActas, useEstadosFirmaInformes } from "../../hooks/useEnviosFirma";
 import { descargarPdfEnviado, listarEnviosFirma } from "../../lib/firmaRecibido";
 import { armarPdfConConstancia, descargarBlob, nombreConConstancia } from "../../lib/constanciaRecibido";
 import ModalQuienRecibe from "../../components/ModalQuienRecibe";
 import { celularDeInforme, clienteDeObra, clientesConQuienRecibe, correoValido, destinatarioDeInforme, quienRecibeDeCliente } from "../../lib/quienRecibe";
 import { normalizarCorreo } from "../../lib/normalizarEntrada";
 import { informeRepetido } from "../../lib/duplicados";
-import { normalizarActas, tieneActaEntrega } from "../../lib/actaEntrega";
+import { AVISO_ACTA_SIN_FIRMAR, motivoActaPendiente, normalizarActas, textoActaPendiente } from "../../lib/actaEntrega";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { useAccionesPantalla, useTituloPantalla } from "../../context/accionesPantalla";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
@@ -332,7 +332,14 @@ export default function Informes({ctx}){
   const [form,setForm]=useState(()=>buildInformeForm(obraSolicitada?{obraId:obraSolicitada}:{}));
 
   const obraSeleccionada = obras.find((x) => x.id === form.obraId) || null;
-  const faltaActaEnObra = !editId && Boolean(obraSeleccionada && !tieneActaEntrega(obraSeleccionada));
+  // El acta no basta con que exista: tiene que estar firmada por el cliente.
+  // Solo se bloquea cuando la consulta de firmas ya respondio (`listo`): lo
+  // que no se sabe no es lo mismo que «sin firmar», y un corte de red no
+  // puede dejar sin informes a obras que si estan firmadas.
+  const { estados: estadosActas, listo: estadosActasListos } = useEstadosFirmaActas();
+  const motivoActa = obraSeleccionada ? motivoActaPendiente(obraSeleccionada, estadosActas) : "";
+  const faltaActaEnObra = !editId && Boolean(obraSeleccionada) && estadosActasListos && Boolean(motivoActa);
+  const avisoActa = faltaActaEnObra ? textoActaPendiente(obraSeleccionada, estadosActas) : "";
 
   // La intencion se descarta al salir de la pantalla, para que al volver por
   // el menu no se reabra el formulario.
@@ -778,9 +785,10 @@ export default function Informes({ctx}){
   };
 
   const guardarInforme=async()=>{
-    // Requisito obligatorio: La obra debe tener acta de entrega (FORM-SST-89)
+    // Requisito obligatorio: el acta de entrega (FORM-SST-89) tiene que estar
+    // hecha Y firmada por el cliente.
     if (faltaActaEnObra && obraSeleccionada) {
-      toast.error(`La obra ${obraSeleccionada.id} no tiene acta de entrega. Primero debes crear el acta de entrega (FORM-SST-89) en la obra antes de generar su informe de actividades.`);
+      toast.error(avisoActa);
       return;
     }
 
@@ -972,7 +980,12 @@ export default function Informes({ctx}){
             }} style={CAMPO}>{obrasMasNuevasPrimero(obras).map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select>
               {faltaActaEnObra && (
                 <div style={{ marginTop: 8, padding: "8px 12px", borderRadius: 8, background: "#fff1f0", border: "1px solid #ffa39e", color: "#cf1322", fontSize: 12, lineHeight: 1.45 }}>
-                  ⚠️ <strong>Esta obra no tiene acta de entrega (FORM-SST-89).</strong> Debes crear el acta de entrega en la obra antes de poder generar su informe de actividades.
+                  ⚠️ <strong>
+                    {motivoActa === "sin-acta"
+                      ? "Esta obra no tiene acta de entrega (FORM-SST-89)."
+                      : "El cliente todavía no ha firmado el acta de entrega (FORM-SST-89)."}
+                  </strong>{" "}
+                  {AVISO_ACTA_SIN_FIRMAR}
                 </div>
               )}
             </div>
@@ -1315,7 +1328,7 @@ export default function Informes({ctx}){
               tam="lg"
               onClick={guardar}
               disabled={!!subiendoFotos || faltaActaEnObra}
-              title={faltaActaEnObra ? "No se puede guardar: la obra debe tener acta de entrega (FORM-SST-89)" : ""}
+              title={faltaActaEnObra ? avisoActa : ""}
             >
               {subiendoFotos ? "Cargando fotos…" : editId ? "Guardar cambios" : "Guardar informe"}
             </Button>

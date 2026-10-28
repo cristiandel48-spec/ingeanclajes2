@@ -26,6 +26,8 @@ import { obrasMasNuevasPrimero } from "../../lib/identificadores";
 import { confirmar } from "../../lib/dialogos";
 import { esCamilaSepulveda } from "../../lib/agendaEspecial";
 import { certificacionRepetida } from "../../lib/duplicados";
+import { AVISO_ACTA_SIN_FIRMAR, motivoActaPendiente, textoActaPendiente } from "../../lib/actaEntrega";
+import { useEstadosFirmaActas } from "../../hooks/useEnviosFirma";
 // Informes de una obra. Si se indica uno concreto, solo ese.
 const informesFuente = (informes, obraId, informeId = "")=>{
   if(!obraId) return [];
@@ -75,6 +77,8 @@ const observacionesDesdeInformes = (informes, obraId, informeId = "")=>{
 export default function Certificaciones({ctx}){
   const isMobile = useIsMobile();
   const {certs,setCerts,obras,clientes,cotizaciones,informes,intencion,limpiarIntencion,irAPantalla}=ctx;
+  // Para el candado del acta: sin acta firmada por el cliente no se certifica.
+  const { estados: estadosActas, listo: estadosActasListos } = useEstadosFirmaActas();
   const [sel,setSel]=useState(null);
   const puedeEliminar = esCamilaSepulveda(ctx?.membresia, ctx?.authUserEmail);
 
@@ -356,6 +360,18 @@ export default function Certificaciones({ctx}){
 
   const guardar=async()=>{
     if (guardandoRef.current) return;
+    // Requisito obligatorio: no se certifica una obra cuya acta de entrega no
+    // este hecha Y firmada por el cliente. Lo que cierra la entrega es la
+    // firma de quien recibe; sin ella la obra no esta entregada.
+    //
+    // Solo se bloquea al CREAR y cuando ya se sabe el estado de las firmas:
+    // una certificacion vieja se sigue pudiendo corregir, y un corte de red
+    // no puede dejar sin certificar a obras que si estan firmadas.
+    const obraDeLaCert = obras.find((x) => x.id === form.obraId) || null;
+    if (!editId && obraDeLaCert && estadosActasListos && motivoActaPendiente(obraDeLaCert, estadosActas)) {
+      window.alert(textoActaPendiente(obraDeLaCert, estadosActas));
+      return;
+    }
     guardandoRef.current = true;
     try {
       // La misma obra (y sede) no se certifica dos veces mientras la anterior
@@ -633,6 +649,24 @@ export default function Certificaciones({ctx}){
                 </div>
               </div>
             )}
+
+            {/* El candado del acta, a la vista y no solo al pulsar Guardar. */}
+            {(() => {
+              if (editId || !estadosActasListos) return null;
+              const obraSel = obras.find((x) => x.id === form.obraId);
+              const motivo = obraSel ? motivoActaPendiente(obraSel, estadosActas) : "";
+              if (!motivo) return null;
+              return (
+                <div style={{gridColumn:"span 3",padding:"8px 12px",borderRadius:8,background:"#fff1f0",border:"1px solid #ffa39e",color:"#cf1322",fontSize:12,lineHeight:1.45}}>
+                  ⚠️ <strong>
+                    {motivo === "sin-acta"
+                      ? "Esta obra no tiene acta de entrega (FORM-SST-89)."
+                      : "El cliente todavía no ha firmado el acta de entrega (FORM-SST-89)."}
+                  </strong>{" "}
+                  {AVISO_ACTA_SIN_FIRMAR}
+                </div>
+              );
+            })()}
             <div><LBL>Tipo</LBL><select value={form.tipo} onChange={e=>{
               const t=e.target.value;
               aplicarCambio({tipo:t,elementos:getCertDefaultElements(t, form.tipoSistema)});

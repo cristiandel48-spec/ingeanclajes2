@@ -43,6 +43,49 @@ describe("quien recibe los informes", () => {
     expect(r[1]).toMatchObject({ id: "CLI-005", email: "mruiz@prueba.com", estado: "Activo" });
   });
 
+  // El caso de la obra OB-046: el correo quedo guardado en la obra y la ficha
+  // del cliente se quedo sin el. Al abrir la obra, lo que ella sabe sube al
+  // directorio, que es de donde salen los informes y las certificaciones.
+  it("lo que tiene la obra rellena la ficha del cliente que se quedo vacia", () => {
+    const obraConDatos = {
+      ...obra,
+      recibeNombre: "Wilson Alzate",
+      recibeEmail: "profesionalsst@inteckno.com",
+      recibeCargo: "PROFESIONAL SST",
+      tel: "3192315246",
+    };
+    const fichaVacia = [{ id: "CLI-001", nombre: "CONSTRUCTORA PRUEBA S.A.S.", nit: "900.111.222-3", email: "", contacto: "Wilson Alzate" }];
+    const r = clientesConQuienRecibe(fichaVacia, obraConDatos, {
+      nombre: obraConDatos.recibeNombre,
+      email: obraConDatos.recibeEmail,
+      telefono: obraConDatos.tel,
+      cargo: obraConDatos.recibeCargo,
+    });
+    expect(r[0]).toMatchObject({
+      email: "profesionalsst@inteckno.com",
+      contacto: "Wilson Alzate",
+      contactoCargo: "PROFESIONAL SST",
+    });
+
+    // Y al volver a pasar lo mismo devuelve LA MISMA lista, que es lo que
+    // impide que el relleno automatico se repita en bucle al abrir la obra.
+    const otraVez = clientesConQuienRecibe(r, obraConDatos, {
+      nombre: obraConDatos.recibeNombre,
+      email: obraConDatos.recibeEmail,
+      telefono: obraConDatos.tel,
+      cargo: obraConDatos.recibeCargo,
+    });
+    expect(otraVez).toBe(r);
+  });
+
+  it("rellenar desde la obra no pisa el correo que la ficha ya tenia", () => {
+    const ficha = [{ id: "CLI-001", nombre: "CONSTRUCTORA PRUEBA S.A.S.", nit: "900.111.222-3", email: "gerencia@prueba.com", contacto: "Gerencia" }];
+    const r = clientesConQuienRecibe(ficha, { ...obra, recibeEmail: "" }, { nombre: "", email: "", telefono: "", cargo: "PROFESIONAL SST" });
+    expect(r[0].email).toBe("gerencia@prueba.com");
+    expect(r[0].contacto).toBe("Gerencia");
+    expect(r[0].contactoCargo).toBe("PROFESIONAL SST");
+  });
+
   it("el informe toma primero el de la obra, luego la cotizacion y luego el directorio", () => {
     const clientes = [{ nombre: "CONSTRUCTORA PRUEBA S.A.S.", email: "dir@prueba.com", contacto: "Directorio" }];
     const cot = { contactoEmail: "cot@prueba.com", contacto: "Cotización" };

@@ -19,7 +19,7 @@ import { siguienteIdUnico } from "../../lib/identificadores";
 import { resolverAutorGuardado } from "../../lib/autorAuditoria";
 import { getTextosDocumento } from "../../lib/cotizacionTextos";
 import { getQuoteProposals } from "../../lib/cotizaciones";
-import { clientesConQuienRecibe, obraTieneQuienRecibe, quienRecibeDeCliente } from "../../lib/quienRecibe";
+import { clienteDeObra, clientesConQuienRecibe, correoValido, obraTieneQuienRecibe, quienRecibeDeCliente } from "../../lib/quienRecibe";
 import { tieneActaEntrega } from "../../lib/actaEntrega";
 import ModalQuienRecibe from "../../components/ModalQuienRecibe";
 
@@ -62,6 +62,37 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
       tel: o.tel || contactoDelCliente.telefono,
     } : o)));
   }, [obraId, contactoDelCliente?.email]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Y al reves: lo que tenga la obra sube al directorio si alla falta.
+  //
+  // POR QUE: el dato se guarda en los dos sitios a la vez al escribirlo en la
+  // ventana de quien recibe, pero las obras de antes de esa ventana -y
+  // cualquiera cuyo guardado se quedara a medias- tienen el correo en la obra
+  // y la ficha del cliente vacia. Asi no habia forma de que se arreglara solo:
+  // el unico camino era cliente -> obra. Ahora, al abrir la obra, lo que la
+  // obra sabe y la ficha no, se sube.
+  //
+  // Solo rellena lo que esta en blanco: `clientesConQuienRecibe` nunca pisa un
+  // dato que ya exista, y devuelve la MISMA lista cuando no hay nada que
+  // cambiar, asi que esto no se repite en bucle.
+  useEffect(() => {
+    if (!obraParaContacto || typeof setClientes !== "function") return;
+    const ficha = clienteDeObra(clientes, obraParaContacto);
+    if (!ficha) return;
+    const faltaAlgo =
+      (!correoValido(ficha.email) && correoValido(obraParaContacto.recibeEmail)) ||
+      (!ficha.contacto && obraParaContacto.recibeNombre) ||
+      (!(ficha.contactoCedula || ficha.contacto_cedula) && obraParaContacto.recibeDocumento) ||
+      (!(ficha.contactoCargo || ficha.contacto_cargo) && obraParaContacto.recibeCargo);
+    if (!faltaAlgo) return;
+    setClientes((prev) => clientesConQuienRecibe(prev, obraParaContacto, {
+      nombre: obraParaContacto.recibeNombre || "",
+      email: obraParaContacto.recibeEmail || "",
+      telefono: obraParaContacto.tel || "",
+      documento: obraParaContacto.recibeDocumento || "",
+      cargo: obraParaContacto.recibeCargo || "",
+    }));
+  }, [obraId, obraParaContacto?.recibeEmail, obraParaContacto?.recibeNombre, obraParaContacto?.recibeDocumento, obraParaContacto?.recibeCargo, clientes]); // eslint-disable-line react-hooks/exhaustive-deps
   // { motivo, seguir }: la ventana de quien recibe los informes. `seguir` es
   // lo que se queria hacer (abrir la jornada) y se hace al guardar.
   const [pidiendoQuienRecibe,setPidiendoQuienRecibe]=useState(null);

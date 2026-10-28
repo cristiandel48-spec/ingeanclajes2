@@ -248,12 +248,24 @@
         </td>
         <td style="width:50%;padding:10px 0 0 12px;vertical-align:top;">
           <div style="font-size:9px;font-weight:700;color:#6e6e73;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:3px;">Recibe conforme · CONSTRUCTORA DE PRUEBA S.A.S.</div>
-          <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:3px;font-size:9px;color:#6e6e73;font-style:italic;">
-            (Firma de recepción a satisfacción)
-          </div>
-          <div style="font-size:9.5px;color:#1d1d1f;font-weight:700;">NOMBRE: <span style="color:#c7c7cc;">__________________</span></div>
-          <div style="font-size:9px;color:#6e6e73;margin-top:3px;">C.C.: <span style="color:#c7c7cc;">__________________</span></div>
-          <div style="font-size:9px;color:#6e6e73;margin-top:3px;">CARGO: <span style="color:#c7c7cc;">__________________</span></div>
+          <!-- Firmada: la firma que dibujo el cliente y el QR de verificacion
+               suben aqui, al recuadro donde se espera ver su firma. Antes solo
+               estaban en la hoja de constancia, al final, y la hoja del acta
+               -que es la que se archiva y se imprime- salia con la raya en
+               blanco como si nadie la hubiera firmado. -->
+          <table style="width:100%;border-collapse:collapse;">
+            <tr>
+              <td style="vertical-align:top;padding:0;">
+                <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:3px;font-size:9px;color:#6e6e73;font-style:italic;">
+                  (Firma de recepción a satisfacción)
+                </div>
+                <div style="font-size:9.5px;color:#1d1d1f;font-weight:700;">NOMBRE: <span style="color:#c7c7cc;">__________________</span></div>
+                <div style="font-size:9px;color:#6e6e73;margin-top:3px;">C.C.: <span style="color:#c7c7cc;">__________________</span></div>
+                <div style="font-size:9px;color:#6e6e73;margin-top:3px;">CARGO: <span style="color:#c7c7cc;">__________________</span></div>
+              </td>
+              
+            </tr>
+          </table>
         </td>
       </tr>
     </table>

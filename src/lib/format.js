@@ -50,4 +50,18 @@ export const isDateWithinRange = (iso = "", inicio = "", fin = "")=>{
   if(fin && value > fin) return false;
   return true;
 };
-export const fmtL = iso=>{ if(!iso)return""; const ms=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"]; const d=new Date(iso+"T12:00:00"); return (d.getDate()) + " de " + (ms[d.getMonth()]) + " de " + (d.getFullYear()); };
+// «27 de octubre de 2026». Acepta una fecha suelta (2026-10-27) o una fecha
+// con hora (2026-10-27T22:40:00Z, que es como se guarda cuando el cliente
+// firma). A la suelta se le pone el mediodia para que el huso horario no la
+// corra un dia; la que ya trae hora se lee tal cual.
+//
+// Antes solo servia la suelta: a la otra le pegaba «T12:00:00» detras, salia
+// una fecha invalida y el acta firmada decia «NaN de undefined de NaN».
+export const fmtL = iso=>{
+  if(!iso)return"";
+  const ms=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  const valor=String(iso);
+  const d=/\d{2}:\d{2}/.test(valor) ? new Date(valor) : new Date(valor+"T12:00:00");
+  if(Number.isNaN(d.getTime()))return"";
+  return (d.getDate()) + " de " + (ms[d.getMonth()]) + " de " + (d.getFullYear());
+};

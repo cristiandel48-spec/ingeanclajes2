@@ -238,3 +238,23 @@ export function enlaceVerificacionFirma(codigo) {
   const origen = obtenerOrigenPublico();
   return `${origen}/?recibido=${codigo}`;
 }
+
+/**
+ * El QR de verificacion como imagen, para pegarlo en el documento firmado.
+ *
+ * Quien tenga la hoja en la mano lo escanea y ve si esa firma es de verdad.
+ * La libreria se carga solo cuando hace falta: pesa y no se usa al arrancar.
+ */
+export async function qrVerificacionFirma(codigo) {
+  if (!codigo) return "";
+  try {
+    const QRCode = await import("qrcode");
+    return await QRCode.toDataURL(enlaceVerificacionFirma(codigo), {
+      margin: 1, width: 320, color: { dark: "#1d1d1f", light: "#ffffff" },
+    });
+  } catch (fallo) {
+    // Sin QR el documento sale igual: es una ayuda, no un requisito.
+    console.warn("No se pudo generar el QR de verificación:", fallo);
+    return "";
+  }
+}

@@ -9,6 +9,7 @@ import { leerImagenComprimida } from "../../lib/imagenes";
 import { normalizarCorreo, normalizarDocumento, normalizarMayusculas, normalizarNombrePropio } from "../../lib/normalizarEntrada";
 import { clienteDeObra, clientesConQuienRecibe } from "../../lib/quienRecibe";
 import { buildActaPrintHtml } from "../../lib/actaEntregaPrint";
+import { qrVerificacionFirma } from "../../lib/firmaRecibido";
 import { descargarActaPdf, generarActaPdf } from "../../lib/actaEntregaPdf";
 import { construirActa, datosDeEjecucion, faltantesDelActa, normalizarActas } from "../../lib/actaEntrega";
 import { useEnviosFirma } from "../../hooks/useEnviosFirma";
@@ -306,10 +307,13 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
     cabecera.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const imprimir = () => openPrintTab(
-    buildActaPrintHtml(acta, { empresaConfig, firmaImg: firmaEmpresa, firmaCliente: envioFirmado }),
-    `Acta de entrega ${acta.id}`
-  );
+  const imprimir = async () => {
+    const qrVerificacion = envioFirmado ? await qrVerificacionFirma(envioFirmado.codigoVerificacion) : "";
+    openPrintTab(
+      buildActaPrintHtml(acta, { empresaConfig, firmaImg: firmaEmpresa, firmaCliente: envioFirmado, qrVerificacion }),
+      `Acta de entrega ${acta.id}`
+    );
+  };
 
   const descargar = async () => {
     setGenerandoPdf(true);

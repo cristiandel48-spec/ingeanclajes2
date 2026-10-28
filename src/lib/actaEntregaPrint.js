@@ -28,7 +28,7 @@ const val = (v) => escapeHtml(String(v ?? "").trim());
 // cliente, y una casilla en blanco no se ve como un dato que falta.
 const valOrRaya = (v) => (String(v ?? "").trim() ? val(v) : "<span style=\"color:#c7c7cc;\">__________________</span>");
 
-export function buildActaPrintHtml(acta, { empresaConfig, firmaImg = "", firmaCliente = null } = {}) {
+export function buildActaPrintHtml(acta, { empresaConfig, firmaImg = "", firmaCliente = null, qrVerificacion = "" } = {}) {
   const control = getControlDocumental(empresaConfig)?.acta;
   const docCodigo = control?.codigo || "FORM-SST-89";
   const docVersion = control?.version || "02";
@@ -200,15 +200,31 @@ export function buildActaPrintHtml(acta, { empresaConfig, firmaImg = "", firmaCl
         </td>
         <td style="width:50%;padding:10px 0 0 12px;vertical-align:top;">
           <div style="font-size:9px;font-weight:700;color:${GRIS};letter-spacing:0.05em;text-transform:uppercase;margin-bottom:3px;">Recibe conforme · ${val(contratante || "El contratante")}</div>
-          <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:3px;font-size:9px;color:${GRIS};font-style:italic;">
-            ${firmaClienteImg
-              ? `<img src="${firmaClienteImg}" alt="Firma del cliente" style="max-height:42px;max-width:180px;object-fit:contain;display:inline-block;font-style:normal;"/>`
-              : `(Firma de recepción a satisfacción)`}
-          </div>
-          <div style="font-size:9.5px;color:${TINTA};font-weight:700;">NOMBRE: ${valOrRaya(nombreFirmante)}</div>
-          <div style="font-size:9px;color:${GRIS};margin-top:3px;">C.C.: ${valOrRaya(documentoFirmante)}</div>
-          <div style="font-size:9px;color:${GRIS};margin-top:3px;">CARGO: ${valOrRaya(cargoFirmante)}</div>${fechaFirmadoTexto ? `
-          <div style="font-size:8px;color:${GRIS};margin-top:3px;">Firmado digitalmente · ${val(fechaFirmadoTexto)}</div>` : ""}
+          <!-- Firmada: la firma que dibujo el cliente y el QR de verificacion
+               suben aqui, al recuadro donde se espera ver su firma. Antes solo
+               estaban en la hoja de constancia, al final, y la hoja del acta
+               -que es la que se archiva y se imprime- salia con la raya en
+               blanco como si nadie la hubiera firmado. -->
+          <table style="width:100%;border-collapse:collapse;">
+            <tr>
+              <td style="vertical-align:top;padding:0;">
+                <div style="height:44px;display:flex;align-items:flex-end;margin-bottom:3px;font-size:9px;color:${GRIS};font-style:italic;">
+                  ${firmaClienteImg
+                    ? `<img src="${firmaClienteImg}" alt="Firma del cliente" style="max-height:42px;max-width:170px;object-fit:contain;display:inline-block;font-style:normal;"/>`
+                    : `(Firma de recepción a satisfacción)`}
+                </div>
+                <div style="font-size:9.5px;color:${TINTA};font-weight:700;">NOMBRE: ${valOrRaya(nombreFirmante)}</div>
+                <div style="font-size:9px;color:${GRIS};margin-top:3px;">C.C.: ${valOrRaya(documentoFirmante)}</div>
+                <div style="font-size:9px;color:${GRIS};margin-top:3px;">CARGO: ${valOrRaya(cargoFirmante)}</div>${fechaFirmadoTexto ? `
+                <div style="font-size:8px;color:${GRIS};margin-top:3px;">Firmado electrónicamente · ${val(fechaFirmadoTexto)}</div>` : ""}
+              </td>
+              ${qrVerificacion ? `
+              <td style="width:78px;vertical-align:top;padding:0 0 0 8px;text-align:center;">
+                <img src="${qrVerificacion}" alt="Código QR de verificación" style="width:70px;height:70px;display:block;margin:0 auto;"/>
+                <div style="font-size:7px;color:${GRIS};line-height:1.3;margin-top:2px;">Verifique<br/>esta firma</div>
+              </td>` : ""}
+            </tr>
+          </table>
         </td>
       </tr>
     </table>

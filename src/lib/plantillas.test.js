@@ -305,8 +305,9 @@ describe("plantilla del acta de entrega", () => {
     expect(html).toContain("ACT-001");
   });
 
-  it("plasma la firma digital del cliente en el recuadro Recibe conforme cuando esta firmado", () => {
+  it("plasma la firma del cliente y el QR en el recuadro Recibe conforme cuando esta firmado", () => {
     const html = buildActaPrintHtml(ACTAS["acta-puntos-de-anclaje"], {
+      qrVerificacion: "data:image/png;base64,QUFB",
       firmaCliente: {
         estado: "firmado",
         firma_imagen: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
@@ -320,6 +321,18 @@ describe("plantilla del acta de entrega", () => {
     expect(html).toContain("NOMBRE: CARLOS MARIO PEREZ");
     expect(html).toContain("C.C.: 98765432");
     expect(html).toContain("CARGO: DIRECTOR DE OBRA");
-    expect(html).toContain("Firmado digitalmente");
+    // «Firma electronica», no «firma digital»: en Colombia la firma digital es
+    // la de certificado, y esta no lo es. Lo mismo dice la constancia.
+    expect(html).toContain("Firmado electrónicamente");
+    // Y la fecha se lee, que es lo que fallaba: salia «NaN de undefined».
+    expect(html).toContain("27 de octubre de 2026");
+    expect(html).toContain('alt="Código QR de verificación"');
+  });
+
+  it("sin firmar no sale ni el QR ni la firma del cliente", () => {
+    const html = buildActaPrintHtml(ACTAS["acta-puntos-de-anclaje"]);
+    expect(html).not.toContain('alt="Firma del cliente"');
+    expect(html).not.toContain('alt="Código QR de verificación"');
+    expect(html).toContain("(Firma de recepción a satisfacción)");
   });
 });

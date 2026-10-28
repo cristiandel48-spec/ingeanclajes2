@@ -5,6 +5,7 @@
 // descripcion del trabajo puede pasarse de hoja- y se fotografia cada hoja.
 
 import { buildActaPrintHtml } from "./actaEntregaPrint";
+import { qrVerificacionFirma } from "./firmaRecibido";
 import { MARGEN_HOJA } from "./hojaImpresion";
 import { repaginarHojas } from "./repaginarHojas";
 import { nombreDocumento } from "./nombreArchivo";
@@ -51,7 +52,12 @@ export function repartirConMedidasReales(doc, ventana) {
 
 // `liviano`: la version que se le envia al cliente para firmar, a unos 190 ppp.
 export async function generarActaPdf(acta, { empresaConfig, firmaImg = "", onProgreso, liviano = false, firmaCliente = null } = {}) {
-  const html = prepararHtmlParaPdf(buildActaPrintHtml(acta, { empresaConfig, firmaImg, firmaCliente }));
+  // El QR de verificacion solo tiene sentido cuando ya esta firmada: antes de
+  // eso no hay nada que verificar.
+  const qrVerificacion = firmaCliente?.estado === "firmado"
+    ? await qrVerificacionFirma(firmaCliente.codigoVerificacion)
+    : "";
+  const html = prepararHtmlParaPdf(buildActaPrintHtml(acta, { empresaConfig, firmaImg, firmaCliente, qrVerificacion }));
   const blob = await pdfDeHojas(html, {
     onProgreso,
     ...(liviano ? { escala: 2, calidad: 0.82 } : {}),

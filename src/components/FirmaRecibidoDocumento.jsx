@@ -5,7 +5,7 @@ import {
 } from "../lib/firmaRecibido";
 import { armarPdfConConstancia, descargarBlob, fechaHoraCo, nombreConConstancia } from "../lib/constanciaRecibido";
 import { confirmar } from "../lib/dialogos";
-import { normalizarCelular } from "../lib/whatsapp";
+import { normalizarCelular, urlWhatsAppOElegirContacto } from "../lib/whatsapp";
 import { normalizarNombrePersona } from "../lib/autorAuditoria";
 
 // Firma de recibido de un documento: enviarlo al cliente y ver en que va.
@@ -22,12 +22,9 @@ const fechaCorta = (iso) =>
   iso ? new Date(iso).toLocaleString("es-CO", { timeZone: "America/Bogota", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
 
 // Direccion de WhatsApp con el mensaje escrito. Con celular abre ese chat; sin
-// el, WhatsApp deja elegir a quien mandarlo.
-function direccionWhatsApp(celular, mensaje) {
-  const tel = normalizarCelular(celular);
-  const texto = encodeURIComponent(mensaje);
-  return tel ? `https://wa.me/${tel}?text=${texto}` : `https://api.whatsapp.com/send?text=${texto}`;
-}
+// el, WhatsApp deja elegir a quien mandarlo. Vive en lib/whatsapp.js para
+// poder comprobarla sin tener que pulsar «Enviar», que manda de verdad.
+const direccionWhatsApp = urlWhatsAppOElegirContacto;
 
 export function PanelFirmaRecibido({ envios, onRecargar, onEnviar, celular = "", proyecto = "", tipo = "informe" }) {
   const toast = useToast();
@@ -189,9 +186,16 @@ export function ModalEnviarFirma({
 
   const correoOk = /^[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+$/.test(para.trim());
 
-  const enviar = async () => {
+  // `porWhatsApp`: ademas de enviar el correo, abre WhatsApp con el mensaje y
+  // el enlace ya escritos. El correo se manda igual porque el codigo para
+  // firmar llega ahi: es la prueba de que firmo quien recibe. WhatsApp solo
+  // lleva el enlace, que es por donde el cliente lo abre de verdad.
+  const enviar = async ({ porWhatsApp = false } = {}) => {
     if (!correoOk) { setFallo("Escribe un correo válido."); return; }
     setFallo("");
+    // La ventana se abre en el mismo clic y se le pone la direccion despues:
+    // abierta al volver de la promesa, el navegador la bloquea por emergente.
+    const ventana = porWhatsApp ? window.open("", "_blank") : null;
     try {
       setEstado("Generando el PDF…");
       const { blob, nombre } = await generarPdf(documento, { empresaConfig, firmaImg, liviano: true });
@@ -215,8 +219,18 @@ export function ModalEnviarFirma({
       toast.exito(`Enviado a ${para.trim()}. Te avisaremos por correo cuando firme.`);
       onEnviado?.();
       setEnlace(r?.enlace || "");
+      if (r?.enlace && porWhatsApp) {
+        const url = direccionWhatsApp(cel, mensajeWhatsAppFirma({
+          tipo, nombre: paraNombre.trim(), numero, proyecto: documento?.proyecto, enlace: r.enlace,
+        }));
+        if (ventana) ventana.location.href = url;
+        else window.open(url, "_blank", "noopener");
+      } else {
+        ventana?.close();
+      }
       if (!r?.enlace) onCerrar();
     } catch (e) {
+      ventana?.close();
       setFallo(e.message || "No se pudo enviar.");
     } finally {
       setEstado("");
@@ -264,9 +278,13 @@ export function ModalEnviarFirma({
       onCerrar={estado ? undefined : onCerrar}
       cerrarAlPulsarFondo={!estado}
       pie={
-        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
           <Button variante="tertiary" onClick={onCerrar} disabled={Boolean(estado)}>Cancelar</Button>
-          <Button variante="primary" onClick={enviar} disabled={Boolean(estado) || !correoOk}>{estado || "Enviar"}</Button>
+          <Button variante="secondary" onClick={() => enviar({ porWhatsApp: true })} disabled={Boolean(estado) || !correoOk}
+            title={normalizarCelular(cel) ? `Envía el correo y abre WhatsApp con ${cel}` : "Envía el correo y abre WhatsApp para elegir el contacto"}>
+            Enviar y abrir WhatsApp
+          </Button>
+          <Button variante="primary" onClick={() => enviar()} disabled={Boolean(estado) || !correoOk}>{estado || "Enviar"}</Button>
         </div>
       }
     >
@@ -278,6 +296,11 @@ export function ModalEnviarFirma({
         <Input label="Correo del cliente" obligatorio type="email" value={para} onChange={(e) => setPara(e.target.value)}
           ayuda="El código para firmar llega a este correo: debe ser el de quien recibe." />
         <Input label="Nombre de quien recibe" value={paraNombre} onChange={(e) => setParaNombre(e.target.value)} />
+        <Input label="Celular del cliente" type="tel" inputMode="tel" value={cel} onChange={(e) => setCel(e.target.value)}
+          placeholder="3001234567"
+          ayuda={normalizarCelular(cel)
+            ? "«Enviar y abrir WhatsApp» abre el chat con este número, con el enlace ya escrito."
+            : "Sin celular, WhatsApp te deja elegir el contacto al enviarlo."} />
         <Input label="Mensaje" como="textarea" rows={4} value={mensaje} onChange={(e) => setMensaje(e.target.value)} />
         {fallo && <Callout tono="peligro">{fallo}</Callout>}
       </div>

@@ -299,7 +299,9 @@ describe("lo que se registro en la obra llega a la hoja impresa", () => {
 describe("el cargo de quien recibe llega hasta la hoja firmada", () => {
   const obraInteckno = { id: "OB-050", cliente: "Inteckno S.A.S", proyecto: "La Pilona Avecedo" };
 
-  it("lo que guarda la ventana queda en la ficha del cliente", () => {
+  // El nombre, el correo y el cargo se escriben en la ventana de quien recibe;
+  // la cedula, en el propio acta. Los cuatro suben a la ficha por aqui.
+  it("lo que se escribe del contacto queda en la ficha del cliente", () => {
     const clientes = clientesConQuienRecibe([], obraInteckno, {
       nombre: "Wilson Alzate",
       email: "profesionalsst@inteckno.com",

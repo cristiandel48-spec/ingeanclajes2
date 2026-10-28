@@ -224,23 +224,22 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
   };
 
   // Guarda quien recibe en la obra y lo sube al directorio de clientes.
-  const guardarQuienRecibe = ({ nombre, email, telefono, documento, cargo }) => {
+  const guardarQuienRecibe = ({ nombre, email, telefono, cargo }) => {
     const ahoraIso = new Date().toISOString();
     const autorActual = resolverAutorGuardado(membresia, oAct.modificadoPorNombre);
     setObras(p => p.map(o => o.id === obraId ? {
       ...o,
       recibeNombre: nombre,
       recibeEmail: email,
-      // La cedula y el cargo viajan al acta de entrega. Si se dejan en blanco
-      // no se pisa lo que ya hubiera puesto.
-      recibeDocumento: documento || o.recibeDocumento,
+      // El cargo viaja al acta de entrega. Si se deja en blanco no se pisa el
+      // que ya hubiera puesto. La cedula se escribe en el acta, no aqui.
       recibeCargo: cargo || o.recibeCargo,
       tel: telefono || o.tel,
       modificadoPor: membresia?.userId || null,
       modificadoPorNombre: autorActual || o.modificadoPorNombre,
       modificadoEn: ahoraIso,
     } : o));
-    setClientes?.((prev) => clientesConQuienRecibe(prev, oAct, { nombre, email, telefono, documento, cargo }));
+    setClientes?.((prev) => clientesConQuienRecibe(prev, oAct, { nombre, email, telefono, cargo }));
     const seguir = pidiendoQuienRecibe?.seguir;
     setPidiendoQuienRecibe(null);
     seguir?.();

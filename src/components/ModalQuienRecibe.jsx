@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button, Callout, Input, Sheet } from "./ui";
-import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarMayusculas, normalizarNombrePropio, normalizarTelefono } from "../lib/normalizarEntrada";
+import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarMayusculas, normalizarNombrePropio, normalizarTelefono } from "../lib/normalizarEntrada";
 import { correoValido } from "../lib/quienRecibe";
 
 // Ventana para poner quien recibe los informes de una obra.
@@ -16,11 +16,12 @@ export default function ModalQuienRecibe({ obra, sugerido = null, motivo = "", o
   const [nombre, setNombre] = useState(obra?.recibeNombre || sugerido?.nombre || "");
   const [email, setEmail] = useState(obra?.recibeEmail || sugerido?.email || "");
   const [telefono, setTelefono] = useState(obra?.tel || sugerido?.telefono || "");
-  // La cedula y el cargo son las otras dos casillas que el cliente firma en el
-  // acta de entrega, debajo de su nombre: NOMBRE, C.C. y CARGO. Se piden aqui,
-  // que es donde ya se esta preguntando por esa persona, para no tener que
-  // escribirlas otra vez en cada acta.
-  const [documento, setDocumento] = useState(obra?.recibeDocumento || sugerido?.documento || "");
+  // El cargo va al acta de entrega, debajo del nombre de quien firma el
+  // recibido. Se pide aqui, que es donde ya se esta preguntando por esa
+  // persona, para no tener que escribirlo otra vez en cada acta.
+  //
+  // La cedula NO se pide aqui a proposito: se escribe en el acta, que es
+  // donde de verdad hace falta, y desde ahi sube sola a la ficha del cliente.
   const [cargo, setCargo] = useState(obra?.recibeCargo || sugerido?.cargo || "");
   const [tocado, setTocado] = useState(false);
   const correo = normalizarCorreo(email);
@@ -33,7 +34,6 @@ export default function ModalQuienRecibe({ obra, sugerido = null, motivo = "", o
       nombre: normalizarNombrePropio(nombre),
       email: correo,
       telefono: normalizarTelefono(telefono),
-      documento: normalizarDocumento(documento),
       cargo: normalizarMayusculas(cargo),
     });
   };
@@ -77,20 +77,12 @@ export default function ModalQuienRecibe({ obra, sugerido = null, motivo = "", o
           error={tocado && !correoValido(correo) ? (avisoCorreo(correo) || "Escribe el correo de quien recibe.") : ""}
         />
         <Input
-          label="Cédula"
-          inputMode="numeric"
-          value={documento}
-          onChange={(e) => setDocumento(e.target.value)}
-          onBlur={() => setDocumento((v) => normalizarDocumento(v))}
-          placeholder="1017234567"
-        />
-        <Input
           label="Cargo"
           value={cargo}
           onChange={(e) => setCargo(e.target.value)}
           onBlur={() => setCargo((v) => normalizarMayusculas(v))}
           placeholder="RESIDENTE DE OBRA"
-          ayuda="La cédula y el cargo salen debajo de su nombre en el acta de entrega, donde firma el recibido."
+          ayuda="Sale debajo de su nombre en el acta de entrega, donde firma el recibido."
         />
         <Input
           label="Celular"

@@ -202,9 +202,13 @@ const NOMBRE_TIPO = {
 };
 
 // «el informe de actividades», «la cotización», «el acta de entrega de obra».
-// El articulo va aparte porque el acta y la cotizacion son femeninas y el
-// mensaje quedaba diciendo «le enviamos el acta… el cotización».
-const FEMENINOS = new Set(["cotizacion", "acta"]);
+// El articulo va aparte porque la cotizacion es femenina y el mensaje quedaba
+// diciendo «le enviamos el cotización».
+//
+// «Acta» tambien es femenina, pero lleva articulo masculino en singular por
+// empezar por «a» tonica, igual que «el agua» o «el aula». Decia «la acta»,
+// y esto se le manda escrito al cliente por WhatsApp.
+const FEMENINOS = new Set(["cotizacion"]);
 const conArticulo = (tipo) =>
   `${FEMENINOS.has(tipo) ? "la" : "el"} ${NOMBRE_TIPO[tipo] || "documento"}`;
 

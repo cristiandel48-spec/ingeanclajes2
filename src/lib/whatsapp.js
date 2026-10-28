@@ -28,6 +28,18 @@ export function urlWhatsApp(numero, mensaje) {
   return `https://wa.me/${tel}?text=${encodeURIComponent(mensaje)}`;
 }
 
+/**
+ * Como urlWhatsApp, pero sin celular NO devuelve null: abre WhatsApp con el
+ * mensaje escrito para que la persona elija a quien mandarselo.
+ *
+ * Es lo que hace falta al enviar un documento a firma: muchas veces la obra
+ * no tiene el celular guardado y aun asi se quiere mandar el enlace.
+ */
+export function urlWhatsAppOElegirContacto(numero, mensaje) {
+  return urlWhatsApp(numero, mensaje)
+    || `https://api.whatsapp.com/send?text=${encodeURIComponent(mensaje)}`;
+}
+
 // Devuelve el motivo si no se pudo abrir, o null si todo bien.
 export function abrirWhatsApp(numero, mensaje) {
   const url = urlWhatsApp(numero, mensaje);

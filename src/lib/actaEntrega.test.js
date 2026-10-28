@@ -13,6 +13,7 @@ import {
   tieneActaEntrega,
 } from "./actaEntrega";
 import { buildActaPrintHtml } from "./actaEntregaPrint";
+import { clientesConQuienRecibe } from "./quienRecibe";
 
 const obra = {
   id: "OB-010",
@@ -289,6 +290,42 @@ describe("lo que se registro en la obra llega a la hoja impresa", () => {
     expect(traido.coordinadorAlturas).toBe(acta.coordinadorAlturas);
     expect(traido.colaboradores).toEqual(acta.colaboradores);
     expect(traido.descripcion).toBe(acta.descripcion);
+  });
+});
+
+// El cargo de quien recibe se escribe UNA vez, en la ventana de «quien recibe
+// los informes de esta obra», y de ahi tiene que llegar hasta la casilla CARGO
+// de la hoja que firma el cliente. Esto comprueba ese camino.
+describe("el cargo de quien recibe llega hasta la hoja firmada", () => {
+  const obraInteckno = { id: "OB-050", cliente: "Inteckno S.A.S", proyecto: "La Pilona Avecedo" };
+
+  it("lo que guarda la ventana queda en la ficha del cliente", () => {
+    const clientes = clientesConQuienRecibe([], obraInteckno, {
+      nombre: "Wilson Alzate",
+      email: "profesionalsst@inteckno.com",
+      telefono: "3192315246",
+      cargo: "profesional sst",
+    });
+    expect(clientes[0].contacto).toBe("Wilson Alzate");
+    // Se guarda en mayusculas, como va en el formato.
+    expect(clientes[0].contactoCargo).toBe("PROFESIONAL SST");
+  });
+
+  it("de la ficha del cliente pasa al acta y de ahi a la casilla CARGO", () => {
+    const cliente = { contacto: "Wilson Alzate", contactoCargo: "PROFESIONAL SST" };
+    const acta = construirActa({ obra: obraInteckno, cliente, obras: [] });
+    expect(acta.recibeNombre).toBe("Wilson Alzate");
+    expect(acta.recibeCargo).toBe("PROFESIONAL SST");
+    expect(buildActaPrintHtml(acta, { empresaConfig: [] })).toContain("CARGO: PROFESIONAL SST");
+  });
+
+  it("lo que diga la obra manda sobre la ficha del cliente", () => {
+    const acta = construirActa({
+      obra: { ...obraInteckno, recibeNombre: "Wilson Alzate", recibeCargo: "INTERVENTOR" },
+      cliente: { contacto: "Otro Contacto", contactoCargo: "PROFESIONAL SST" },
+      obras: [],
+    });
+    expect(acta.recibeCargo).toBe("INTERVENTOR");
   });
 });
 

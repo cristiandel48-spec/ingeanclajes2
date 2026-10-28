@@ -1668,13 +1668,13 @@ export default function Informes({ctx}){
             motivo={pidiendoQuienRecibe === "firma" ? "" : "Falta el correo de quien recibe: sin él no se genera el informe, porque no se le podría enviar al cliente para la firma de recibido."}
             onCerrar={() => setPidiendoQuienRecibe(false)}
             sugerido={quienRecibeDeCliente(clientes, destino)}
-            onGuardar={({ nombre, email, telefono }) => {
+            onGuardar={({ nombre, email, telefono, cargo }) => {
               if (obraDelInforme) {
-                setObras((p) => p.map((o) => (o.id === obraDelInforme.id ? { ...o, recibeNombre: nombre, recibeEmail: email, tel: telefono || o.tel } : o)));
+                setObras((p) => p.map((o) => (o.id === obraDelInforme.id ? { ...o, recibeNombre: nombre, recibeEmail: email, recibeCargo: cargo || o.recibeCargo, tel: telefono || o.tel } : o)));
               }
-              setClientes?.((prev) => clientesConQuienRecibe(prev, destino, { nombre, email, telefono }));
-              const conRecibe = { ...sel, recibeNombre: nombre, recibeEmail: email };
-              setInformes((p) => p.map((i) => (i.id === sel.id ? { ...i, recibeNombre: nombre, recibeEmail: email } : i)));
+              setClientes?.((prev) => clientesConQuienRecibe(prev, destino, { nombre, email, telefono, cargo }));
+              const conRecibe = { ...sel, recibeNombre: nombre, recibeEmail: email, recibeCargo: cargo || sel.recibeCargo };
+              setInformes((p) => p.map((i) => (i.id === sel.id ? { ...i, recibeNombre: nombre, recibeEmail: email, recibeCargo: cargo || i.recibeCargo } : i)));
               setSel(conRecibe);
               const seguir = pidiendoQuienRecibe;
               setPidiendoQuienRecibe(false);

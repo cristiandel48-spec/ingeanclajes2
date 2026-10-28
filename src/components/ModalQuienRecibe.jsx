@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button, Callout, Input, Sheet } from "./ui";
-import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarNombrePropio, normalizarTelefono } from "../lib/normalizarEntrada";
+import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarMayusculas, normalizarNombrePropio, normalizarTelefono } from "../lib/normalizarEntrada";
 import { correoValido } from "../lib/quienRecibe";
 
 // Ventana para poner quien recibe los informes de una obra.
@@ -16,6 +16,10 @@ export default function ModalQuienRecibe({ obra, sugerido = null, motivo = "", o
   const [nombre, setNombre] = useState(obra?.recibeNombre || sugerido?.nombre || "");
   const [email, setEmail] = useState(obra?.recibeEmail || sugerido?.email || "");
   const [telefono, setTelefono] = useState(obra?.tel || sugerido?.telefono || "");
+  // El cargo va al acta de entrega, debajo del nombre de quien firma el
+  // recibido. Se pide aqui, que es donde ya se esta preguntando por esa
+  // persona, para no tener que escribirlo otra vez en cada acta.
+  const [cargo, setCargo] = useState(obra?.recibeCargo || sugerido?.cargo || "");
   const [tocado, setTocado] = useState(false);
   const correo = normalizarCorreo(email);
   const ok = correoValido(correo) && nombre.trim().length >= 3;
@@ -23,7 +27,12 @@ export default function ModalQuienRecibe({ obra, sugerido = null, motivo = "", o
   const guardar = () => {
     setTocado(true);
     if (!ok) return;
-    onGuardar({ nombre: normalizarNombrePropio(nombre), email: correo, telefono: normalizarTelefono(telefono) });
+    onGuardar({
+      nombre: normalizarNombrePropio(nombre),
+      email: correo,
+      telefono: normalizarTelefono(telefono),
+      cargo: normalizarMayusculas(cargo),
+    });
   };
 
   return (
@@ -63,6 +72,14 @@ export default function ModalQuienRecibe({ obra, sugerido = null, motivo = "", o
           placeholder="residente@constructora.com"
           ayuda="A este correo le llega el enlace para firmar y el código para confirmar que es él."
           error={tocado && !correoValido(correo) ? (avisoCorreo(correo) || "Escribe el correo de quien recibe.") : ""}
+        />
+        <Input
+          label="Cargo"
+          value={cargo}
+          onChange={(e) => setCargo(e.target.value)}
+          onBlur={() => setCargo((v) => normalizarMayusculas(v))}
+          placeholder="RESIDENTE DE OBRA"
+          ayuda="Sale debajo de su nombre en el acta de entrega, donde firma el recibido."
         />
         <Input
           label="Celular"

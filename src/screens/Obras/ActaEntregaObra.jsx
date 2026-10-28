@@ -83,6 +83,7 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
   const [modalFirma, setModalFirma] = useState(false);
   const [generandoPdf, setGenerandoPdf] = useState(false);
   const archivoFirma = useRef(null);
+  const cabecera = useRef(null);
   // Las casillas que ya se completaron solas («ACT-003:nit»), para no volver a
   // escribirlas encima si la persona las borra a proposito.
   const autocompletado = useRef(new Set());
@@ -294,6 +295,16 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
   };
 
   const envioFirmado = envios.find((e) => e.estado === "firmado") || null;
+  const esperandoFirma = "Imprimir y descargar el PDF se habilitan cuando el cliente firme el acta.";
+
+  // Lo escrito ya está guardado; esto cierra el repaso y lleva arriba, a los
+  // botones de enviar a firma y borrar.
+  const guardarYSubir = () => {
+    const faltan = faltantesDelActa(acta);
+    if (faltan.length) toast.mostrar(`Acta guardada. Pendiente: ${faltan.join(", ")}.`);
+    else toast.exito("Acta guardada y completa. Ya se le puede enviar a firma.");
+    cabecera.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const imprimir = () => openPrintTab(
     buildActaPrintHtml(acta, { empresaConfig, firmaImg: firmaEmpresa, firmaCliente: envioFirmado }),
@@ -341,6 +352,9 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
 
   return (
     <>
+      {/* `scrollMarginTop` deja sitio para la barra de arriba, que es fija:
+          sin eso, «Guardar» sube hasta aquí y la deja tapando los botones. */}
+      <div ref={cabecera} style={{ scrollMarginTop: 84 }}>
       <Card ajustado style={{ marginBottom: ESPACIO.lg }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: ESPACIO.md, flexWrap: "wrap" }}>
           <div style={{ minWidth: 0 }}>
@@ -358,9 +372,15 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
               )}
             </div>
           </div>
+          {/* Imprimir y descargar quedan para cuando el cliente ya firmó: lo
+              que se guarda y se archiva es el acta firmada, no un borrador. */}
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            <Button tam="sm" variante="tertiary" onClick={imprimir}>Imprimir</Button>
-            <Button tam="sm" variante="tertiary" disabled={generandoPdf} onClick={descargar}>
+            <Button tam="sm" variante="tertiary" onClick={imprimir} disabled={!envioFirmado}
+              title={envioFirmado ? "" : esperandoFirma}>
+              Imprimir
+            </Button>
+            <Button tam="sm" variante="tertiary" disabled={generandoPdf || !envioFirmado} onClick={descargar}
+              title={envioFirmado ? "" : esperandoFirma}>
               {generandoPdf ? "Generando…" : envioFirmado ? "Descargar PDF firmado" : "Descargar PDF"}
             </Button>
             <Button tam="sm" variante="primary" onClick={() => setModalFirma(true)}>Enviar a firma</Button>
@@ -381,8 +401,13 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
 
         {faltantes.length > 0 && (
           <Callout tono="aviso" style={{ marginTop: ESPACIO.md }}>
-            Antes de entregarla falta {faltantes.join(", ")}. Se puede imprimir así y completarla a mano, pero
-            escrita aquí queda guardada con la obra.
+            Antes de entregarla queda pendiente: {faltantes.join(", ")}. Se guarda igual con la obra.
+          </Callout>
+        )}
+
+        {!envioFirmado && (
+          <Callout tono="info" style={{ marginTop: ESPACIO.md }}>
+            {esperandoFirma}
           </Callout>
         )}
 
@@ -392,6 +417,7 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
           </Button>
         )}
       </Card>
+      </div>
 
       <PanelFirmaRecibido
         tipo="acta"
@@ -647,6 +673,26 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada = false
             />
           </div>
         </Seccion>
+
+        {/* El acta se guarda sola mientras se escribe -arriba se ve la hora
+            del ultimo guardado-, asi que este boton no guarda nada que no
+            este guardado ya: cierra el repaso y devuelve arriba, que es
+            donde estan enviar a firma y borrar. Sin el habia que subir a
+            mano por una pantalla larga sin saber si quedaba algo pendiente. */}
+        {!bloqueada && (
+          <div style={{
+            display: "flex", justifyContent: "flex-end", alignItems: "center", gap: ESPACIO.md,
+            flexWrap: "wrap", marginTop: ESPACIO.xxl, paddingTop: ESPACIO.lg,
+            borderTop: "1px solid var(--separator)",
+          }}>
+            <span style={{ ...TIPO.caption, color: "var(--text-tertiary)", fontWeight: 400 }}>
+              {faltantes.length
+                ? `Pendiente: ${faltantes.join(", ")}.`
+                : "Está completa."}
+            </span>
+            <Button variante="primary" onClick={guardarYSubir}>Guardar</Button>
+          </div>
+        )}
       </Card>
 
       {modalFirma && (

@@ -26,7 +26,7 @@ import { obrasMasNuevasPrimero } from "../../lib/identificadores";
 import { confirmar } from "../../lib/dialogos";
 import { esCamilaSepulveda } from "../../lib/agendaEspecial";
 import { certificacionRepetida } from "../../lib/duplicados";
-import { AVISO_ACTA_SIN_FIRMAR, motivoActaPendiente, textoActaPendiente } from "../../lib/actaEntrega";
+import { AVISO_ACTA_SIN_FIRMAR, motivoActaPendiente } from "../../lib/actaEntrega";
 import { useEstadosFirmaActas } from "../../hooks/useEnviosFirma";
 // Informes de una obra. Si se indica uno concreto, solo ese.
 const informesFuente = (informes, obraId, informeId = "")=>{
@@ -367,11 +367,7 @@ export default function Certificaciones({ctx}){
     // Solo se bloquea al CREAR y cuando ya se sabe el estado de las firmas:
     // una certificacion vieja se sigue pudiendo corregir, y un corte de red
     // no puede dejar sin certificar a obras que si estan firmadas.
-    const obraDeLaCert = obras.find((x) => x.id === form.obraId) || null;
-    if (!editId && obraDeLaCert && estadosActasListos && motivoActaPendiente(obraDeLaCert, estadosActas)) {
-      window.alert(textoActaPendiente(obraDeLaCert, estadosActas));
-      return;
-    }
+    // La alarma se muestra en el banner superior del formulario; no bloquea el guardado según solicitud.
     guardandoRef.current = true;
     try {
       // La misma obra (y sede) no se certifica dos veces mientras la anterior

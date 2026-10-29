@@ -135,8 +135,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
   const tieneActa = !motivoActa;
 
   const avisarActaPendiente = () => {
-    toast.error(textoActaPendiente(oAct, estadosActas), { posicion: "centro" });
-    setDetTab("acta");
+    toast.warning(textoActaPendiente(oAct, estadosActas), { posicion: "centro" });
   };
 
   // Las obras a las que ya se les recordo el acta en esta sesion. Sin esto,
@@ -168,12 +167,12 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
   }, [detTab, bloqueada, estadosActasListos, motivoActa, obraId]);
 
   const irACrearInforme = () => {
-    if (!tieneActa) return avisarActaPendiente();
+    if (!tieneActa) avisarActaPendiente();
     irAPantalla("informes", { obraId });
   };
 
   const irACertificar = () => {
-    if (!tieneActa) return avisarActaPendiente();
+    if (!tieneActa) avisarActaPendiente();
     irAPantalla("certificaciones", { obraId });
   };
 
@@ -192,7 +191,6 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           tam="sm"
           onClick={() => accionesObraRef.current.irACrearInforme()}
           title={tieneActa ? "Crear informe de actividades para esta obra" : textoActaPendiente(oAct, estadosActas)}
-          style={!tieneActa ? { opacity: 0.6 } : {}}
         >
           Crear informe
         </Button>
@@ -201,7 +199,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
           tam="sm"
           onClick={() => accionesObraRef.current.irACertificar()}
           title={tieneActa ? "Crear certificación de calidad para esta obra" : textoActaPendiente(oAct, estadosActas)}
-          style={{ marginLeft: 6, ...(tieneActa ? {} : { opacity: 0.6 }) }}
+          style={{ marginLeft: 6 }}
         >
           Certificar
           <span style={{ opacity: 0.6, fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>

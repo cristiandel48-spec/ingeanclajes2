@@ -842,11 +842,9 @@ export default function Informes({ctx}){
   };
 
   const guardarInforme=async()=>{
-    // Requisito obligatorio: el acta de entrega (FORM-SST-89) tiene que estar
-    // hecha Y firmada por el cliente.
+    // Alerta de acta de entrega (FORM-SST-89): no bloquea el guardado según solicitud.
     if (faltaActaEnObra && obraSeleccionada) {
-      toast.error(avisoActa);
-      return;
+      toast.warning(avisoActa);
     }
 
     // Sin correo de quien recibe no se guarda: el informe no se le podria
@@ -1384,7 +1382,7 @@ export default function Informes({ctx}){
               variante="oscuro"
               tam="lg"
               onClick={guardar}
-              disabled={!!subiendoFotos || faltaActaEnObra}
+              disabled={!!subiendoFotos}
               title={faltaActaEnObra ? avisoActa : ""}
             >
               {subiendoFotos ? "Cargando fotos…" : editId ? "Guardar cambios" : "Guardar informe"}

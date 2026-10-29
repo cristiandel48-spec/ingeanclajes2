@@ -261,10 +261,12 @@ export const componentesCss = `
       font-size: 14px; line-height: 20px; align-items: flex-start; }
     .ui-toaster--centro .ui-toast__dot { margin-top: 6px; }
     .ui-toaster--centro .ui-toast--error { border-color: var(--danger); }
+    .ui-toaster--centro .ui-toast--warning { border-color: #f59e0b; }
     .ui-toast__dot { width: 8px; height: 8px; border-radius: 50%; flex: none;
       background: var(--text-quaternary); }
     .ui-toast--exito .ui-toast__dot { background: var(--success); }
     .ui-toast--error .ui-toast__dot { background: var(--danger); }
+    .ui-toast--warning .ui-toast__dot { background: #f59e0b; }
     .ui-toast__accion { border: none; background: var(--fill); color: var(--accent);
       font-family: inherit; font-size: 12.5px; font-weight: 600;
       border-radius: 999px; padding: 6px 12px; cursor: pointer; flex: none;

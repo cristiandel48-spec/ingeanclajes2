@@ -345,6 +345,12 @@ export default function Certificaciones({ctx}){
     subirAlFormulario();
   };
 
+  useEffect(() => {
+    if (intencion?.pantalla === "certificaciones" && intencion?.obraId) {
+      abrirNuevaCertificacion("Certificación", intencion.obraId);
+    }
+  }, [intencion]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const editarCertificacion = (cert)=>{
     setEditId(cert.id);
     setNuevoElem("");

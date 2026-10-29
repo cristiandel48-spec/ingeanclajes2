@@ -33,6 +33,7 @@ export function useToast() {
       mostrar: (texto) => console.info("[aviso]", texto),
       exito: (texto) => console.info("[aviso]", texto),
       error: (texto) => console.warn("[aviso]", texto),
+      warning: (texto) => console.warn("[aviso]", texto),
       cerrar: () => {},
     };
   }
@@ -102,6 +103,7 @@ export function ToastProvider({ children }) {
     mostrar,
     exito: (texto, opciones) => mostrar(texto, { ...opciones, tono: "exito" }),
     error: (texto, opciones) => mostrar(texto, { ...opciones, tono: "error" }),
+    warning: (texto, opciones) => mostrar(texto, { ...opciones, tono: "warning" }),
     cerrar,
   }), [mostrar, cerrar]);
 

@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAccionesPantalla, useTituloPantalla } from "../../context/accionesPantalla";
 import { B, CD, PAL, SI, ST } from "../../styles/tokens";
 import { TIPO } from "../../styles/designTokens";
-import { Button, Card, Icono, Input, SegmentedControl, StatusPill, useToast } from "../../components/ui";
+import { Button, Card, Icono, Input, SegmentedControl, StatusPill } from "../../components/ui";
 import { fmt, fmtD, today } from "../../lib/format";
 import { obraEstaCerrada } from "../../lib/flujoObra";
 import { calcularAvanceObra } from "../../lib/bitacoraObra";
@@ -46,7 +46,6 @@ function extraerObjetoCotizacion(texto = "") {
 }
 
 export default function ObraDetalle({obraId,ctx,onVolver}){
-  const toast = useToast();
   const {obras,setObras,empleados,cotizaciones,cuentas,setCuentas,proveedores,ordenesCompra=[],horarios,setHorarios,irAPantalla,membresia,asegurarDetalle,clientes=[],setClientes}=ctx;
   // Si la obra no tiene a quien enviarle los informes pero la ficha del
   // cliente si, la obra lo toma sola: el directorio de clientes es de donde
@@ -134,9 +133,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
   const motivoActa = estadosActasListos ? motivoActaPendiente(oAct, estadosActas) : "";
   const tieneActa = !motivoActa;
 
-  const avisarActaPendiente = () => {
-    toast.warning(textoActaPendiente(oAct, estadosActas), { posicion: "centro" });
-  };
+  
 
   // Las obras a las que ya se les recordo el acta en esta sesion. Sin esto,
   // el aviso saldria cada vez que se toca la pestaña de avance y acabaria
@@ -167,29 +164,25 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
   }, [detTab, bloqueada, estadosActasListos, motivoActa, obraId]);
 
   const irACrearInforme = () => {
-    if (!tieneActa) avisarActaPendiente();
     irAPantalla("informes", { obraId });
   };
 
   const irACertificar = () => {
-    if (!tieneActa) avisarActaPendiente();
     irAPantalla("certificaciones", { obraId });
   };
 
   // Volver, Crear informe y Certificar van en la barra de arriba, que no se
   // mueve al bajar por la bitacora. Por la ref llaman a la version vigente.
-  const accionesObraRef = useRef({});
-  useEffect(() => { accionesObraRef.current = { onVolver, irAPantalla, irACrearInforme, irACertificar }; });
-  useAccionesPantalla(
+    useAccionesPantalla(
     oAct ? (
       <div style={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "nowrap" }}>
-        <Button variante="texto" tam="sm" icono="flechaIzq" onClick={() => accionesObraRef.current.onVolver()}>
+        <Button variante="texto" tam="sm" icono="flechaIzq" onClick={onVolver}>
           Obras
         </Button>
         <Button
           variante="texto"
           tam="sm"
-          onClick={() => accionesObraRef.current.irACrearInforme()}
+          onClick={irACrearInforme}
           title={tieneActa ? "Crear informe de actividades para esta obra" : textoActaPendiente(oAct, estadosActas)}
         >
           Crear informe
@@ -197,7 +190,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
         <Button
           variante="oscuro"
           tam="sm"
-          onClick={() => accionesObraRef.current.irACertificar()}
+          onClick={irACertificar}
           title={tieneActa ? "Crear certificación de calidad para esta obra" : textoActaPendiente(oAct, estadosActas)}
           style={{ marginLeft: 6 }}
         >
@@ -208,7 +201,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
         </Button>
       </div>
     ) : null,
-    [obraId, Boolean(oAct), oAct?.avance, tieneActa]
+    [obraId, Boolean(oAct), oAct?.avance, tieneActa, onVolver, irAPantalla]
   );
   useTituloPantalla(oAct ? `Obra ${oAct.id}` : null);
 

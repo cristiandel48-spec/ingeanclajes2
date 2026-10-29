@@ -344,6 +344,16 @@ export default function Informes({ctx}){
   // La intencion se descarta al salir de la pantalla, para que al volver por
   // el menu no se reabra el formulario.
   useEffect(()=>()=>limpiarIntencion(),[limpiarIntencion]);
+  useEffect(() => {
+    if (intencion?.pantalla === "informes" && intencion?.obraId) {
+      setEditId(null);
+      setSel(null);
+      fotoRefs.current = {};
+      setForm(buildInformeForm({ obraId: intencion.obraId }));
+      setNuevo(true);
+    }
+  }, [intencion]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
 
 
@@ -844,7 +854,7 @@ export default function Informes({ctx}){
   const guardarInforme=async()=>{
     // Alerta de acta de entrega (FORM-SST-89): no bloquea el guardado según solicitud.
     if (faltaActaEnObra && obraSeleccionada) {
-      toast.warning(avisoActa);
+      toast.mostrar(avisoActa);
     }
 
     // Sin correo de quien recibe no se guarda: el informe no se le podria

@@ -313,12 +313,16 @@ export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", f
     </div>
   `;
 
-  // La foto llena el recuadro (`cover`): con `contain` una foto vertical
-  // ocupaba un tercio del ancho entre dos franjas blancas.
+  // La foto va ENTERA (`contain`), sin recortar ni deformar. Con `cover`
+  // llenaba el recuadro, pero una foto vertical en esta caja apaisada
+  // quedaba reducida a una franja del centro, como ampliada: el cliente no
+  // veia la evidencia completa. El PDF no lo mostraba porque html2canvas
+  // ignoraba object-fit y estiraba la foto; desde que pdfHojas.js lo respeta
+  // salia igual que en la impresion. Lo que sobra a los lados queda en gris.
   const renderFotoCard = (ft, actIdx, fotoIdx) => `
     <div class="foto-card" style="border:1px solid ${LINEA_SUAVE};border-radius:8px;overflow:hidden;background:#ffffff;display:flex;flex-direction:column;">
       <div style="height:155px;display:flex;align-items:center;justify-content:center;background:${FONDO};border-bottom:1px solid ${LINEA_SUAVE};overflow:hidden;position:relative;">
-        <img src="${ft.img || ft.url}" alt="Evidencia ${fotoIdx + 1}" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;background:${FONDO};"/>
+        <img src="${ft.img || ft.url}" alt="Evidencia ${fotoIdx + 1}" style="width:100%;height:100%;object-fit:contain;object-position:center;display:block;background:${FONDO};"/>
         <span style="position:absolute;top:5px;left:5px;background:rgba(255,255,255,0.92);color:${TINTA};font-size:9px;font-variant-numeric:tabular-nums;font-weight:700;padding:2px 6px;border-radius:4px;">
           EVIDENCIA ${actIdx + 1}.${fotoIdx + 1}
         </span>

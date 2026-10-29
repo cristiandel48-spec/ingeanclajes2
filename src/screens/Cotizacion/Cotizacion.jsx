@@ -1227,8 +1227,12 @@ export default function Cotizacion({ctx}){
       pie={<Button variante="tertiary" onClick={() => eligiendoPropuesta.resolver(null)}>Cancelar</Button>}
     >
       <div style={{ display: "grid", gap: 8 }}>
-        {eligiendoPropuesta.opciones.map((p) => {
+        {eligiendoPropuesta.opciones.map((p, pIdx) => {
           const valor = getQuoteApprovalAccountingSnapshot({ ...eligiendoPropuesta.cotizacion, propuestaActivaId: p.id })?.totalObra || 0;
+          const itemsProp = Array.isArray(p.items) && p.items.length ? p.items : [];
+          const nombreMostrar = p.nombre && !/^propuesta(\s+[a-z0-9]+)?$/i.test(p.nombre.trim())
+            ? p.nombre
+            : `${p.nombre || `Propuesta ${String.fromCharCode(65 + pIdx)}`}${itemsProp[0]?.desc ? `: ${itemsProp[0].desc}` : ""}`;
           return (
             <button
               key={p.id}
@@ -1242,7 +1246,7 @@ export default function Cotizacion({ctx}){
               }}
             >
               <span style={{ minWidth: 0 }}>
-                <span style={{ display: "block", fontWeight: 600 }}>{p.nombre}</span>
+                <span style={{ display: "block", fontWeight: 600 }}>{nombreMostrar}</span>
                 {p.alcance && (
                   <span style={{ display: "block", fontSize: 12.5, color: "var(--text-tertiary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {p.alcance}

@@ -364,6 +364,23 @@ export default function PropuestaEditor({
         </div>
       </div>
 
+        {/* Título o nombre de la propuesta */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <LBL style={{ margin: 0 }}>Nombre o identificación de la propuesta</LBL>
+            <span style={{ fontSize: 11, color: "var(--text-muted, #86868b)" }}>
+              Saldrá en la tabla resumen del documento. Si lo dejas como «Propuesta ${String.fromCharCode(65 + indice)}», toma automáticamente los ítems cotizados.
+            </span>
+          </div>
+          <input
+            type="text"
+            value={p.nombre || ""}
+            onChange={e => set("nombre", e.target.value)}
+            placeholder={`Ej: PROPUESTA ${String.fromCharCode(65 + indice)}: ${p.items?.[0]?.desc || labelTipoActual}`}
+            style={{ ...SI, fontWeight: 600 }}
+          />
+        </div>
+
         {/* 1. Tipo de trabajo / propuesta */}
         <div style={{ marginBottom: 18 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>

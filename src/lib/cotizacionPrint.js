@@ -267,19 +267,94 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
             <tr>
               <th class="t-left" style="width:26px;"></th>
               <th class="t-left">Propuesta / servicio</th>
-              <th style="width:110px;">Cant.</th>
-              <th class="t-right" style="width:150px;">Valor total</th>
+              <th class="t-center" style="width:55px;">Cant.</th>
+              <th class="t-center" style="width:60px;">Unidad</th>
+              <th class="t-right" style="width:115px;">V. unitario</th>
+              <th class="t-right" style="width:130px;">Valor total</th>
             </tr>
           </thead>
           <tbody>
-            ${resumenPropuestas.map((row, i) => `
-              <tr>
-                <td class="row-num tnum">${String(i + 1).padStart(2, "0")}</td>
-                <td>${escapeHtml(row.nombre || "")}</td>
-                <td class="t-center tnum">${escapeHtml(row.cantidadLabel || "0 UND")}</td>
-                <td class="t-right tnum strong">${money(row.total || 0)}</td>
-              </tr>
-            `).join("")}
+            ${propuestas.map((propuesta, idx) => {
+              const items = Array.isArray(propuesta?.items)
+                ? propuesta.items
+                : (Array.isArray(propuesta?.quote?.items) ? propuesta.quote.items : []);
+              const letra = String.fromCharCode(65 + Math.max(0, idx % 26));
+              const rawNombre = String(propuesta?.nombre || propuesta?.quote?.propuestaNombre || "").trim();
+              const esGenerico = !rawNombre || /^propuesta(\s+[a-z0-9]+)?$/i.test(rawNombre);
+              const customNombre = !esGenerico ? rawNombre.toUpperCase() : null;
+              const totalPropuesta = Math.round(Number(Number.isFinite(Number(propuesta?.tot)) ? propuesta.tot : (propuesta?.quote?.total || 0)));
+
+              if (items.length === 1) {
+                const item = items[0];
+                const rawDesc = corregirOrtografiaLocal(String(item?.desc || item?.descripcion || item?.nombre || "")).trim().toUpperCase();
+                const itemDescLimpio = rawDesc.replace(/^PROPUESTA\s*:?\s*/i, "");
+                const descMostrar = customNombre
+                  ? escapeHtml(customNombre)
+                  : (itemDescLimpio ? `PROPUESTA ${letra}: ${escapeHtml(itemDescLimpio)}` : `PROPUESTA ${letra}`);
+                const qtyNumber = Number(item?.cant || 0);
+                const qty = Number.isInteger(qtyNumber) ? numberFmt(qtyNumber) : qtyNumber.toFixed(2).replace(/\.00$/, "");
+                const unit = escapeHtml(normalizeProposalMeasureUnit(item?.unit || item?.unidad || "UND"));
+                const vu = money(item?.vu || 0);
+
+                return `
+                  <tr>
+                    <td class="row-num tnum">${String(idx + 1).padStart(2, "0")}</td>
+                    <td><strong>${descMostrar}</strong></td>
+                    <td class="t-center tnum">${qty}</td>
+                    <td class="t-center">${unit}</td>
+                    <td class="t-right tnum">${vu}</td>
+                    <td class="t-right tnum strong">${money(totalPropuesta)}</td>
+                  </tr>
+                `;
+              }
+
+              if (items.length > 1) {
+                const tituloCabecera = customNombre
+                  ? escapeHtml(customNombre)
+                  : `PROPUESTA ${letra}`;
+
+                const itemsRows = items.map((it) => {
+                  const itDesc = escapeHtml(corregirOrtografiaLocal(String(it?.desc || it?.descripcion || it?.nombre || "")).trim().toUpperCase());
+                  const itQtyNumber = Number(it?.cant || 0);
+                  const itQty = Number.isInteger(itQtyNumber) ? numberFmt(itQtyNumber) : itQtyNumber.toFixed(2).replace(/\.00$/, "");
+                  const itUnit = escapeHtml(normalizeProposalMeasureUnit(it?.unit || it?.unidad || "UND"));
+                  const itVu = money(it?.vu || 0);
+                  const itSub = money(Number(it?.cant || 0) * Number(it?.vu || 0));
+
+                  return `
+                    <tr class="soft-row">
+                      <td></td>
+                      <td style="padding-left:14px;color:var(--gris, #555);">&bull;&nbsp; ${itDesc}</td>
+                      <td class="t-center tnum">${itQty}</td>
+                      <td class="t-center">${itUnit}</td>
+                      <td class="t-right tnum">${itVu}</td>
+                      <td class="t-right tnum" style="color:var(--gris, #666);">${itSub}</td>
+                    </tr>
+                  `;
+                }).join("");
+
+                return `
+                  <tr class="sub-row">
+                    <td class="row-num tnum">${String(idx + 1).padStart(2, "0")}</td>
+                    <td colspan="4"><strong>${tituloCabecera}</strong></td>
+                    <td class="t-right tnum strong">${money(totalPropuesta)}</td>
+                  </tr>
+                  ${itemsRows}
+                `;
+              }
+
+              const descVacia = customNombre ? escapeHtml(customNombre) : `PROPUESTA ${letra}`;
+              return `
+                <tr>
+                  <td class="row-num tnum">${String(idx + 1).padStart(2, "0")}</td>
+                  <td><strong>${descVacia}</strong></td>
+                  <td class="t-center tnum">-</td>
+                  <td class="t-center">-</td>
+                  <td class="t-right tnum">-</td>
+                  <td class="t-right tnum strong">${money(totalPropuesta)}</td>
+                </tr>
+              `;
+            }).join("")}
           </tbody>
         </table>
       </div>
@@ -1033,7 +1108,13 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     const bloques = [];
 
     if (includeSummary) {
-      bloques.push({ alto: 34 + propuestas.length * 7, html: renderResumenBlock() });
+      let totalFilas = 0;
+      for (const p of propuestas) {
+        const items = Array.isArray(p?.items) ? p.items : (Array.isArray(p?.quote?.items) ? p.quote.items : []);
+        totalFilas += items.length > 1 ? (items.length + 1) : 1;
+      }
+      const altoEstimado = 36 + totalFilas * 8;
+      bloques.push({ alto: altoEstimado, html: renderResumenBlock() });
     }
 
     bloques.push({ alto: 53, html: `

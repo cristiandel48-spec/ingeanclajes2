@@ -86,11 +86,10 @@ export function tieneActaEntrega(obra) {
 // firmada. Esta aqui y no en cada pantalla para que las tres digan lo mismo.
 export const AVISO_ACTA_SIN_FIRMAR =
   "Pídele al coordinador de SST o al encargado de la obra que haga el acta de entrega con el cliente "
-  + "y se la haga firmar. Sin el acta firmada no se puede certificar ni hacer el informe de actividades.";
+  + "y se la haga firmar para formalizar la entrega de la obra.";
 
 export const AVISO_ACTA_EN_OBRA =
-  "Haz el acta de entrega y hazla firmar del cliente, para que se puedan hacer el informe de actividades "
-  + "y la certificación.";
+  "Haz el acta de entrega y hazla firmar del cliente para formalizar la entrega de la obra.";
 
 /**
  * Un acta esta CONCLUIDA cuando existe y el cliente la firmo. Crearla no

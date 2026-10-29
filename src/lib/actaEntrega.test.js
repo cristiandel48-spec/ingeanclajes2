@@ -457,7 +457,7 @@ describe("el candado del acta para certificar y para el informe", () => {
     expect(textoActaPendiente(conActa, {})).toContain("sin firmar por el cliente");
     for (const obra of [sinActa, conActa]) {
       expect(textoActaPendiente(obra, {})).toContain("coordinador de SST");
-      expect(textoActaPendiente(obra, {})).toContain("no se puede certificar ni hacer el informe");
+      expect(textoActaPendiente(obra, {})).toContain("formalizar la entrega de la obra");
     }
     // Firmada no hay nada que avisar.
     expect(textoActaPendiente(conActa, { "ACT-010": "firmado" })).toBe("");

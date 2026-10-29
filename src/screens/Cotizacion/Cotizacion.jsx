@@ -33,8 +33,32 @@ import { siguienteIdUnico } from "../../lib/identificadores";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
 import { confirmar } from "../../lib/dialogos";
 import { puedeEscribirTabla } from "../../lib/permisos";
+// Si la obra ya tiene trabajo y no se puede retirar al desaprobar. Una sola
+// regla para aprobar y desaprobar: antes desaprobar no miraba el contador de
+// avances de la base -la bitacora no se descarga al arrancar- y borraba obras
+// con avances registrados en 0%, dejando sin obra sus informes y actas.
+function obraTieneTrabajo(o, { informes = [], certs = [] } = {}) {
+  if (!o) return false;
+  return Boolean(
+    Number(o.avance || 0) > 0 ||
+    Number(o.pagado || 0) > 0 ||
+    Number(o.costos || 0) > 0 ||
+    (Array.isArray(o.bitacora) && o.bitacora.length > 0) ||
+    (Array.isArray(o.empleados) && o.empleados.length > 0) ||
+    (Array.isArray(o.trazos) && o.trazos.length > 0) ||
+    (Array.isArray(o.anclajes) && o.anclajes.length > 0) ||
+    (Array.isArray(o.actas) && o.actas.length > 0) ||
+    Number(o.totalFotosAvance || 0) > 0 ||
+    Number(o.totalRegistrosAvance || 0) > 0 ||
+    (Array.isArray(informes) && informes.some((inf) => inf?.obraId === o.id)) ||
+    (Array.isArray(certs) && certs.some((cert) => cert?.obraId === o.id))
+  );
+}
+
 export default function Cotizacion({ctx}){
   const {cotizaciones,setCotizaciones,obras,setObras,clientes,setClientes,empresaConfig,asegurarDetalle,cotDraft,setCotDraft,intencion,limpiarIntencion}=ctx;
+  // Lo que cuelga de una obra, para no retirarla si ya tiene documentos.
+  const vinculosObra = { informes: ctx.informes || [], certs: ctx.certs || [] };
   const [erroresCliente, setErroresCliente] = useState({});
   const firmaImg=getFirmaImg(empresaConfig);
   // Codigo y version del formato de cotizacion. Null si no esta configurado,
@@ -89,6 +113,28 @@ export default function Cotizacion({ctx}){
   const [avisoCambioSistema, setAvisoCambioSistema] = useState(null);
   const [escribiendoTitulo, setEscribiendoTitulo] = useState(false);
   const debounceTituloRef = useRef(null);
+
+  // Cambios sin guardar en el editor. «Cotizaciones» volvia al listado sin
+  // preguntar y se perdia todo lo escrito, que en el celular es mucho.
+  // La huella se toma en el primer render despues de cargar o guardar (no en
+  // `hydrate`: al montar, las propuestas todavia se acomodan y saldria
+  // «cambiada» sin que nadie toque nada).
+  const huellaFormulario = () => JSON.stringify({ cot, fecha, val, cl, textoInicial, observacionesCot, textosDocumento, propuestas });
+  const huellaLimpiaRef = useRef(null);
+  useEffect(() => {
+    if (tab === "form" && huellaLimpiaRef.current === null) huellaLimpiaRef.current = huellaFormulario();
+  });
+  const salirDelEditor = async () => {
+    const hayCambios = huellaLimpiaRef.current !== null && huellaFormulario() !== huellaLimpiaRef.current;
+    if (hayCambios && !(await confirmar({
+      titulo: "Salir sin guardar",
+      mensaje: "Esta cotización tiene cambios sin guardar. Si sales ahora se pierden.",
+      textoConfirmar: "Salir sin guardar",
+      textoCancelar: "Seguir editando",
+      destructivo: true,
+    }))) return;
+    setTab("lista");
+  };
   const propuestasRef = useRef(propuestas);
   useEffect(() => { propuestasRef.current = propuestas; }, [propuestas]);
   const tituloInicialRef = useRef(TEXTOS_DOCUMENTO_DEFAULT.tituloPortada);
@@ -478,6 +524,7 @@ export default function Cotizacion({ctx}){
 
 
   const hydrate = (source={})=>{
+    huellaLimpiaRef.current = null;
     const all = getQuoteProposals(source);
     const activeId = (all.find((propuesta)=>propuesta.id===source.propuestaActivaId) || all[0])?.id || null;
     setCot(source.numero || `P-${34155 + cotizaciones.length}`);
@@ -628,13 +675,21 @@ export default function Cotizacion({ctx}){
         };
         if (index >= 0) {
           const previo = prevList[index];
+          // Lo vacio no borra lo que ya tenia la ficha: una cotizacion sin
+          // correo dejaba al cliente sin el correo al que llegan sus informes.
+          // Y si se encontro por NIT con otro nombre, el nombre de la ficha se
+          // respeta: escribirlo distinto en una cotizacion no renombra al cliente.
+          const porNit = Boolean(nitNorm && previo.nit && normalizarDocumento(previo.nit) === nitNorm);
           const actualizado = {
             ...previo,
             ...cliData,
+            nombre: porNit && previo.nombre ? previo.nombre : cliData.nombre,
             nit: cliData.nit || previo.nit || "",
             direccion: cliData.direccion || previo.direccion,
             telefono: cliData.telefono || previo.telefono,
             ciudad: cliData.ciudad || previo.ciudad,
+            contacto: cliData.contacto || previo.contacto || "",
+            email: cliData.email || previo.email || "",
           };
           return prevList.map((c, i) => (i === index ? actualizado : c));
         }
@@ -644,6 +699,8 @@ export default function Cotizacion({ctx}){
 
     setPropuestas(propuestasFinales);
     setEditCot(data.id);
+    // Lo guardado pasa a ser el punto de partida de «sin cambios».
+    huellaLimpiaRef.current = null;
     if(volverALista) setTab("lista");
     return data;
   };
@@ -820,19 +877,7 @@ export default function Cotizacion({ctx}){
 
     let obraExistente = null;
     if (obrasAsociadas.length > 0) {
-      const tieneTrabajo = (o) => Boolean(
-        Number(o?.avance || 0) > 0 ||
-        Number(o?.pagado || 0) > 0 ||
-        Number(o?.costos || 0) > 0 ||
-        (Array.isArray(o?.bitacora) && o.bitacora.length > 0) ||
-        (Array.isArray(o?.empleados) && o.empleados.length > 0) ||
-        (Array.isArray(o?.trazos) && o.trazos.length > 0) ||
-        (Array.isArray(o?.anclajes) && o.anclajes.length > 0) ||
-        Number(o?.totalFotosAvance || 0) > 0 ||
-        // La bitacora no se descarga al arrancar: el contador de la base dice
-        // si tiene registros aunque la lista llegue vacia.
-        Number(o?.totalRegistrosAvance || 0) > 0
-      );
+      const tieneTrabajo = (o) => obraTieneTrabajo(o, vinculosObra);
 
       const ordenadas = [...obrasAsociadas].sort((a, b) => {
         const aTrab = tieneTrabajo(a) ? (Number(a.avance || 0) || 1) : 0;
@@ -1006,16 +1051,7 @@ export default function Cotizacion({ctx}){
       ))
     );
 
-    const tieneTrabajo = (o) => Boolean(
-      Number(o?.avance || 0) > 0 ||
-      Number(o?.pagado || 0) > 0 ||
-      Number(o?.costos || 0) > 0 ||
-      (Array.isArray(o?.bitacora) && o.bitacora.length > 0) ||
-      (Array.isArray(o?.empleados) && o.empleados.length > 0) ||
-      (Array.isArray(o?.trazos) && o.trazos.length > 0) ||
-      (Array.isArray(o?.anclajes) && o.anclajes.length > 0) ||
-      Number(o?.totalFotosAvance || 0) > 0
-    );
+    const tieneTrabajo = (o) => obraTieneTrabajo(o, vinculosObra);
 
     const obraPrincipal = obrasAsociadas.length > 0
       ? [...obrasAsociadas].sort((a, b) => {
@@ -1422,7 +1458,7 @@ export default function Cotizacion({ctx}){
             variante="texto"
             tam="sm"
             icono="flechaIzq"
-            onClick={() => setTab("lista")}
+            onClick={salirDelEditor}
             title="Volver al listado de cotizaciones"
           >
             Cotizaciones

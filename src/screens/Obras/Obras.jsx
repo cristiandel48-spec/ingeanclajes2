@@ -319,7 +319,11 @@ export default function Obras({ctx}){
               <LBL>Vincular cotización comercial (opcional)</LBL>
               <select value={nob.cotizacionId} onChange={e=>setNob({...nob,cotizacionId:e.target.value})} style={SI}>
                 <option value="">Sin cotización vinculada</option>
-                {cotizaciones.filter(c=>!c.obraId).map(c=><option key={c.id} value={c.id}>{c.numero} · {c.cliente} {c.total ? `($${c.total.toLocaleString()})` : ""}</option>)}
+                {/* Fuera las que ya tienen obra. `obraId` no se guarda en la
+                    base: tras recargar llega vacio, asi que tambien se mira
+                    si alguna obra apunta a la cotizacion por id o por numero.
+                    Sin esto se podia crear una segunda obra para la misma. */}
+                {cotizaciones.filter(c=>!c.obraId && !obras.some(o=>o?.cotizacionId && (String(o.cotizacionId)===String(c.id) || (c.numero && String(o.cotizacionId)===String(c.numero))))).map(c=><option key={c.id} value={c.id}>{c.numero} · {c.cliente} {c.total ? `($${c.total.toLocaleString()})` : ""}</option>)}
               </select>
               <div style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)",marginTop:3}}>Si la vinculas, toma el valor total de la cotización y esa pasa a estado «Aprobada».</div>
             </div>

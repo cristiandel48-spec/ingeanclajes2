@@ -89,6 +89,107 @@ export async function esperarRecursos(doc, ventana) {
   await dejarPintar(ventana);
 }
 
+// html2canvas no conoce `clip-path` ni `object-fit`. Con el primero la ficha
+// de la linea de vida vertical salia con la lamina ENTERA del proveedor -sus
+// recuadros de texto y el dibujo corrido- en vez del recorte; con el segundo
+// las fotos se estiraban para llenar su caja. En la impresion del navegador
+// todo salia bien, solo fallaba el PDF.
+//
+// Aqui, ya con todo dibujado, se mide donde quedo cada una de esas imagenes y
+// se repite el resultado con lo que html2canvas si entiende: una caja con
+// overflow:hidden del tamaño de lo visible y la imagen completa dentro, en su
+// sitio y a su tamaño. La caja va encima de la hoja y la imagen original se
+// oculta, asi el documento no se mueve.
+const recuadro = (r) => ({ izq: r.left, arr: r.top, der: r.right, aba: r.bottom });
+const cortar = (a, b) => ({
+  izq: Math.max(a.izq, b.izq), arr: Math.max(a.arr, b.arr),
+  der: Math.min(a.der, b.der), aba: Math.min(a.aba, b.aba),
+});
+
+// «inset(3% 32% 2% 37%)» -> lo que se recorta por cada lado, en pixeles del
+// recuadro ya ampliado (el recorte se escala con la imagen).
+function recorteDe(clipPath, img, r) {
+  const m = /^inset\(([^)]*)\)/.exec(clipPath || "");
+  if (!m) return null;
+  const v = m[1].split(/\s+round\s+/)[0].trim().split(/\s+/);
+  const [a, d = a, b = a, i = d] = v;
+  const escalaX = img.offsetWidth ? (r.der - r.izq) / img.offsetWidth : 1;
+  const escalaY = img.offsetHeight ? (r.aba - r.arr) / img.offsetHeight : 1;
+  const px = (t, total, escala) => (t.endsWith("%") ? (parseFloat(t) / 100) * total : (parseFloat(t) || 0) * escala);
+  const ancho = r.der - r.izq, alto = r.aba - r.arr;
+  return {
+    izq: r.izq + px(i, ancho, escalaX), arr: r.arr + px(a, alto, escalaY),
+    der: r.der - px(d, ancho, escalaX), aba: r.aba - px(b, alto, escalaY),
+  };
+}
+
+// Donde cae la imagen entera con object-fit contain/cover dentro de su caja.
+function ajusteDe(estilo, img, caja) {
+  const ancho = caja.der - caja.izq, alto = caja.aba - caja.arr;
+  const prop = img.naturalWidth / img.naturalHeight;
+  const cubre = estilo.objectFit === "cover";
+  let w = ancho, h = ancho / prop;
+  if (cubre ? h < alto : h > alto) { h = alto; w = alto * prop; }
+  const [px = "50%", py = "50%"] = (estilo.objectPosition || "").split(/\s+/);
+  const pos = (t, libre) => (t.endsWith("%") ? (parseFloat(t) / 100) * libre : parseFloat(t) || 0);
+  const izq = caja.izq + pos(px, ancho - w), arr = caja.arr + pos(py, alto - h);
+  return { izq, arr, der: izq + w, aba: arr + h };
+}
+
+export function rehacerImagenes(hoja, ventana) {
+  const base = hoja.getBoundingClientRect();
+  const capas = [];
+  for (const img of hoja.querySelectorAll("img")) {
+    if (!img.naturalWidth || !img.naturalHeight) continue;
+    const estilo = ventana.getComputedStyle(img);
+    if (estilo.visibility === "hidden" || estilo.display === "none") continue;
+    const recortada = estilo.clipPath && estilo.clipPath !== "none";
+    const movida = estilo.transform && estilo.transform !== "none";
+    const ajustada = estilo.objectFit === "contain" || estilo.objectFit === "cover";
+    if (!recortada && !movida && !ajustada) continue;
+
+    // `completa`: donde se dibuja la imagen entera. `visible`: lo que se ve.
+    let completa = recuadro(img.getBoundingClientRect());
+    let visible = completa;
+    if (ajustada) {
+      const caja = completa;
+      completa = ajusteDe(estilo, img, caja);
+      visible = cortar(caja, completa);
+    }
+    if (recortada) visible = cortar(visible, recorteDe(estilo.clipPath, img, completa) || visible);
+    // El contenedor que recorta lo que la ampliacion saca de la caja.
+    for (let p = img.parentElement; p && p !== hoja; p = p.parentElement) {
+      const o = ventana.getComputedStyle(p).overflow;
+      if (o && o !== "visible") { visible = cortar(visible, recuadro(p.getBoundingClientRect())); break; }
+    }
+    if (visible.der <= visible.izq || visible.aba <= visible.arr) continue;
+
+    const caja = hoja.ownerDocument.createElement("div");
+    caja.style.cssText =
+      `position:absolute;overflow:hidden;margin:0;padding:0;border:0;` +
+      `left:${visible.izq - base.left - hoja.clientLeft}px;top:${visible.arr - base.top - hoja.clientTop}px;` +
+      `width:${visible.der - visible.izq}px;height:${visible.aba - visible.arr}px;` +
+      `border-radius:${estilo.borderRadius};`;
+    const copia = hoja.ownerDocument.createElement("img");
+    copia.src = img.currentSrc || img.src;
+    copia.alt = "";
+    copia.style.cssText =
+      `position:absolute;display:block;margin:0;padding:0;border:0;max-width:none;max-height:none;` +
+      `left:${completa.izq - visible.izq}px;top:${completa.arr - visible.arr}px;` +
+      `width:${completa.der - completa.izq}px;height:${completa.aba - completa.arr}px;`;
+    caja.appendChild(copia);
+    capas.push([img, caja]);
+  }
+  if (!capas.length) return;
+  // Se agrega al final, despues de medir todo: si no, cada capa nueva podria
+  // mover lo que falta por medir.
+  if (ventana.getComputedStyle(hoja).position === "static") hoja.style.position = "relative";
+  for (const [img, caja] of capas) {
+    img.style.visibility = "hidden";
+    hoja.appendChild(caja);
+  }
+}
+
 /**
  * PDF de un documento ya dividido en hojas (.page) de tamaño carta: una
  * fotografia por hoja. Devuelve el Blob del PDF.
@@ -117,6 +218,7 @@ export async function pdfDeHojas(html, { onProgreso, antesDeFotografiar, mensaje
 
     const hojas = [...doc.querySelectorAll(".page")];
     if (!hojas.length) throw new Error(mensajeVacio);
+    hojas.forEach((hoja) => rehacerImagenes(hoja, ventana));
 
     const pdf = new jsPDF({ unit: "px", format: [ANCHO_HOJA, ALTO_HOJA], orientation: "portrait" });
 

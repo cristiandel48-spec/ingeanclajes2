@@ -194,9 +194,8 @@ export function ModalEnviarFirma({
   //   correo    le llega el aviso con el enlace a su correo.
   //   WhatsApp  no se manda ese aviso; el enlace va por WhatsApp.
   //
-  // En los dos casos hace falta el correo, porque el CODIGO para firmar llega
-  // ahi cuando el cliente lo pide desde el enlace, y es lo que prueba que
-  // firmo el. Por eso el campo sigue siendo obligatorio.
+  // En los dos casos hace falta el correo: queda en la constancia como el de
+  // quien recibe. Por eso el campo sigue siendo obligatorio.
   const enviar = async ({ porWhatsApp = false } = {}) => {
     if (!correoOk) { setFallo("Escribe un correo válido."); return; }
     setFallo("");
@@ -226,7 +225,7 @@ export function ModalEnviarFirma({
       });
       toast.exito(porWhatsApp
         ? "Listo. Revisa el mensaje de WhatsApp y dale enviar."
-        : `Enviado a ${para.trim()}. Te avisaremos por correo cuando firme.`);
+        : `Enviado a ${para.trim()}. Cuando firme, aquí cambia a «Firmado».`);
       onEnviado?.();
       setCanal(porWhatsApp ? "whatsapp" : "correo");
       setEnlace(r?.enlace || "");
@@ -286,7 +285,7 @@ export function ModalEnviarFirma({
             placeholder="3001234567"
             ayuda={normalizarCelular(cel) ? "Se abre el chat con este número." : "Sin celular, WhatsApp te deja elegir el contacto."} />
           <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
-            El código para firmar sigue llegando al correo: es la prueba de que firmó quien recibe.
+            El cliente firma en el mismo enlace, sin códigos. Cuando firme, el envío cambia a «Firmado».
           </div>
         </div>
       </Sheet>
@@ -316,11 +315,11 @@ export function ModalEnviarFirma({
         <Callout tono="info">
           El cliente recibe un enlace para ver el documento y firmar el recibido. <strong>Por correo</strong> le llega
           el enlace a su buzón; <strong>por WhatsApp</strong> se abre el chat con el mensaje escrito y no se le manda
-          correo de aviso. En los dos casos, para firmar le llega un código a su correo, así queda probado que fue él.
+          correo de aviso. En los dos casos firma en el mismo enlace, con el dedo, sin códigos.
           Al firmar, el PDF queda con una constancia y un QR de verificación.
         </Callout>
         <Input label="Correo del cliente" obligatorio type="email" value={para} onChange={(e) => setPara(e.target.value)}
-          ayuda="Hace falta aunque lo mandes por WhatsApp: ahí le llega el código para firmar." />
+          ayuda="Hace falta aunque lo mandes por WhatsApp: queda en la constancia de recibido." />
         <Input label="Nombre de quien recibe" value={paraNombre} onChange={(e) => setParaNombre(e.target.value)} />
         <Input label="Celular del cliente" type="tel" inputMode="tel" value={cel} onChange={(e) => setCel(e.target.value)}
           placeholder="3001234567"

@@ -54,7 +54,7 @@ async function invocar(accion, datos = {}) {
 // peticion, y un informe con muchas fotos dejaba a la funcion sin memoria.
 // `soloEnlace`: no manda el correo de aviso, solo deja el envio creado y
 // devuelve el enlace para mandarlo por WhatsApp. El correo sigue haciendo
-// falta porque el codigo para firmar llega ahi cuando el cliente lo pide.
+// falta: queda en la constancia como el de quien recibe.
 //
 // Si la funcion publicada es anterior a esto, no conoce la marca y manda el
 // correo igual: el envio funciona lo mismo, solo que el cliente recibe las
@@ -85,7 +85,7 @@ export function mensajeWhatsAppFirma({ tipo = "informe", nombre = "", numero = "
     `Le enviamos ${conArticulo(tipo)} ${numero}${proyecto ? ` de ${proyecto}` : ""}. Puede revisar y firmar el recibido aquí:`,
     enlace,
     "",
-    "Para firmar le llega un código a su correo. Cualquier duda, por aquí estamos.",
+    "Solo tiene que abrir el enlace, revisar el documento y firmar con el dedo en la pantalla. Cualquier duda, por aquí estamos.",
     "",
     "Ingeanclajes S.A.S.",
   ].join("\n");

@@ -336,7 +336,9 @@ Deno.serve(conOrigenPermitido(async (req) => {
         if (nombre.length < 3) return error("Escribe tu nombre completo.");
         if (!/^[A-Za-z0-9.\- ]{4,30}$/.test(documento)) return error("Escribe tu número de documento.");
         if (cuerpo.acepta !== true) return error("Marca la casilla de recibido para poder firmar.");
-        if (!firmaImagen.startsWith("data:image/png;base64,") || firmaImagen.length > MAX_FIRMA_CARACTERES) {
+        // Todo el valor tiene que ser base64: solo el prefijo dejaba pasar
+        // comillas y etiquetas que luego se escribian en la hoja impresa.
+        if (!/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(firmaImagen) || firmaImagen.length > MAX_FIRMA_CARACTERES) {
           return error("Dibuja tu firma en el recuadro.");
         }
         if (!textoAceptado) return error("Falta el texto de recibido.");
@@ -486,11 +488,25 @@ Deno.serve(conOrigenPermitido(async (req) => {
 
       const enlace = `${direccionApp(cuerpo.appUrl)}/?firmar=${fila.token}`;
 
+      // Un envio nuevo reemplaza a los que seguian pendientes del mismo
+      // documento: «Enviar de nuevo» dejaba vivos los enlaces anteriores y el
+      // cliente podia firmar dos veces, cada una sobre un PDF distinto.
+      const anularAnteriores = async () => {
+        const { error: errAnular } = await tabla()
+          .update({ estado: "anulado", anulado_en: new Date().toISOString() })
+          .eq("tenant_id", tenantId)
+          .eq("tipo_documento", tipo)
+          .eq("documento_id", documentoId)
+          .in("estado", ["enviado", "abierto"])
+          .neq("id", id);
+        if (errAnular) console.warn("No se pudieron anular los envios anteriores:", errAnular.message);
+      };
+
       // `soloEnlace`: el enlace se le manda al cliente por WhatsApp, asi que
       // no hace falta el correo de aviso. El correo se sigue exigiendo arriba
-      // porque el CODIGO para firmar llega ahi cuando el cliente lo pide, que
-      // es lo que prueba que firmo el.
+      // porque queda en la constancia como el de quien recibe.
       if (cuerpo.soloEnlace === true) {
+        await anularAnteriores();
         return responder({ ok: true, id, enlace });
       }
 
@@ -503,7 +519,7 @@ Deno.serve(conOrigenPermitido(async (req) => {
         html: marco(numero, `
           <p>${saludo}</p>
           <p>${escapeHtml(mensaje || `Le enviamos el ${titulo.toLowerCase()} ${numero}${cliente ? " de " + cliente : ""}.`).replace(/\n/g, "<br>")}</p>
-          <p>Desde el enlace puede revisar el documento y firmar el recibido. Le llegará un código a este correo para confirmar que es usted.</p>
+          <p>Desde el enlace puede revisar el documento y firmar el recibido ahí mismo, con el dedo en la pantalla.</p>
           ${boton(enlace, "Revisar y firmar el recibido")}
           <p style="color:#5f6368;font-size:12px">El enlace vence en 30 días. Si el botón no abre, copie esta dirección: ${escapeHtml(enlace)}</p>
           <p>Cordialmente,<br>Ingeanclajes S.A.S.</p>`),
@@ -519,12 +535,13 @@ Deno.serve(conOrigenPermitido(async (req) => {
       });
       if (errRegistro) console.warn("No se pudo registrar el correo:", errRegistro.message);
 
+      await anularAnteriores();
       return responder({ ok: true, id, enlace });
     }
 
     // El enlace de un envio pendiente, para mandarlo tambien por WhatsApp.
-    // Solo mientras no este firmado ni anulado: el codigo para firmar sigue
-    // llegando al correo, asi que tener el enlace no basta para firmar.
+    // Solo mientras no este firmado ni anulado. Ojo: desde ae179fc el enlace
+    // basta para firmar, asi que solo se le da a quien tiene sesion.
     if (accion === "enlace") {
       const id = linea(cuerpo.id, 40);
       const { data: f } = await tabla().select("id, token, estado, vence_en").eq("id", id).eq("tenant_id", tenantId).maybeSingle();

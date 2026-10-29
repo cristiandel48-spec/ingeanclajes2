@@ -9,7 +9,7 @@
 // de la misma empresa y van a la misma carpeta del cliente.
 
 import { fmtL } from "./format";
-import { escapeHtml } from "./html";
+import { escapeHtml, imagenDeFirmaSegura } from "./html";
 import { normalizarMayusculas } from "./normalizarEntrada";
 import { LOGO_INGEANCLAJES } from "../assets/embeddedImages";
 import { getControlDocumental } from "./controlDocumental";
@@ -44,7 +44,11 @@ export function buildActaPrintHtml(acta, { empresaConfig, firmaImg = "", firmaCl
   const firmaEntrega = String(acta?.firmaLider || "").trim() || firmaImg;
 
   const firmaClienteObj = firmaCliente || acta?.firmaCliente || null;
-  const firmaClienteImg = firmaClienteObj?.firmaImagen || firmaClienteObj?.firma_imagen || acta?.recibeFirma || acta?.firmaImagen || "";
+  // La firma la dibuja el cliente desde un enlace publico y se escribe tal
+  // cual en el src de la hoja: solo se acepta si es de verdad una imagen.
+  const firmaClienteImg = imagenDeFirmaSegura(
+    firmaClienteObj?.firmaImagen || firmaClienteObj?.firma_imagen || acta?.recibeFirma || acta?.firmaImagen || ""
+  );
   const nombreFirmante = firmaClienteObj?.firmanteNombre || firmaClienteObj?.firmante_nombre || acta?.recibeNombre;
   const documentoFirmante = firmaClienteObj?.firmanteDocumento || firmaClienteObj?.firmante_documento || acta?.recibeDocumento;
   const cargoFirmante = firmaClienteObj?.firmanteCargo || firmaClienteObj?.firmante_cargo || acta?.recibeCargo;

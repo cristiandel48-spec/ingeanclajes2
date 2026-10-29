@@ -174,7 +174,7 @@ export default function FirmaRecibidoPublica() {
               <div><span style={{ color: C.gris }}>Firmó:</span> <strong>{firma.firmanteNombre}</strong></div>
               <div><span style={{ color: C.gris }}>Documento:</span> {firma.firmanteDocumento}</div>
               {firma.firmanteCargo && <div><span style={{ color: C.gris }}>Cargo:</span> {firma.firmanteCargo}</div>}
-              <div><span style={{ color: C.gris }}>Correo verificado:</span> {firma.firmanteEmail}</div>
+              <div><span style={{ color: C.gris }}>Correo:</span> {firma.firmanteEmail}</div>
             </div>
             {fallo && <div style={{ marginTop: 12 }}><Aviso>{fallo}</Aviso></div>}
             <button type="button" onClick={descargarCopia} disabled={ocupado === "descargar"} style={{ ...botonPrincipal(ocupado !== "descargar"), marginTop: 14 }}>

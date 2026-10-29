@@ -12,9 +12,8 @@ import { buildActaPrintHtml } from "../../lib/actaEntregaPrint";
 import { qrVerificacionFirma } from "../../lib/firmaRecibido";
 import { rastroDelEnvio } from "../../lib/constanciaRecibido";
 import { descargarActaPdf, generarActaPdf } from "../../lib/actaEntregaPdf";
-import { actaFirmadaEnPapel, construirActa, datosDeEjecucion, faltantesDelActa, normalizarActas } from "../../lib/actaEntrega";
-import { today } from "../../lib/format";
-import { useEnviosFirma } from "../../hooks/useEnviosFirma";
+import { construirActa, datosDeEjecucion, faltantesDelActa, normalizarActas } from "../../lib/actaEntrega";
+import { useEnviosFirma, useEstadosFirmaActas } from "../../hooks/useEnviosFirma";
 import { ModalEnviarFirma, PanelFirmaRecibido } from "../../components/FirmaRecibidoDocumento";
 import SelectorPersona from "../../components/SelectorPersona";
 
@@ -65,7 +64,7 @@ function Seccion({ titulo, nota, accion, primera = false, children }) {
   );
 }
 
-export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada: obraBloqueada = false, puedeMarcarPapel = false, autor = "" }) {
+export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada: obraBloqueada = false }) {
   const {
     cotizaciones = [],
     clientes = [],
@@ -94,11 +93,12 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada: obraBl
   const acta = actas.find((a) => a.id === actaId) || null;
   const { envios, recargar: recargarEnvios } = useEnviosFirma(acta?.id || "", { tipo: "acta" });
   const envioFirmado = envios.find((e) => e.estado === "firmado") || null;
-  const enPapel = actaFirmadaEnPapel(acta);
-  const firmada = !!envioFirmado || enPapel;
-  // Firmada, el acta ya no se toca: lo que se imprime tiene que ser lo que
-  // firmo el cliente. La obra cerrada tambien la deja solo para consultar.
+  const firmada = !!envioFirmado;
+  // Firmada, el acta ya no se toca: el PDF tiene que decir lo mismo que lo
+  // que firmo el cliente. La obra cerrada tambien la deja solo para consultar.
   const bloqueada = obraBloqueada || firmada;
+  // Los numeros de acta que ya se mandaron a firma, para no repetirlos.
+  const { estados: estadosFirmaActas } = useEstadosFirmaActas();
 
   const clienteFicha = clienteDeObra(clientes, obra);
   const cotizacionDeObra = cotizaciones.find((c) => c.id === obra.cotizacionId) || null;
@@ -245,6 +245,7 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada: obraBl
       horarios,
       empleados,
       obras,
+      idsConFirma: Object.keys(estadosFirmaActas || {}),
     });
     setObras((prev) => prev.map((o) => (o.id === obra.id
       ? { ...o, actas: [...normalizarActas(o), nueva] }
@@ -304,32 +305,6 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada: obraBl
   };
 
   const esperandoFirma = "Imprimir y descargar el PDF se habilitan cuando el cliente firme el acta.";
-
-  // El cliente firmo la hoja impresa: un administrador lo deja registrado
-  // para que la obra se pueda certificar y hacer su informe.
-  const marcarEnPapel = async () => {
-    const ok = await confirmar({
-      titulo: `Acta ${acta.id} firmada en papel`,
-      mensaje: "Confirma que el cliente firmó esta acta en la hoja impresa y que la hoja está archivada. "
-        + "Queda registrado quién lo marcó y cuándo, y el acta ya no se puede editar.",
-      textoConfirmar: "Sí, la firmó en papel",
-      destructivo: false,
-    });
-    if (!ok) return;
-    guardarActa(acta.id, { firmadaEnPapel: { fecha: today(), por: autor || "Administrador" } });
-    toast.exito("Acta marcada como firmada en papel.");
-  };
-
-  const quitarMarcaPapel = async () => {
-    const ok = await confirmar({
-      titulo: "Quitar la marca de firmada en papel",
-      mensaje: "El acta vuelve a quedar sin firmar: la obra no se podrá certificar ni hacer su informe hasta que se firme.",
-      textoConfirmar: "Quitar marca",
-      destructivo: true,
-    });
-    if (!ok) return;
-    guardarActa(acta.id, { firmadaEnPapel: null });
-  };
 
   // Lo escrito ya está guardado; esto cierra el repaso y lleva arriba, a los
   // botones de enviar a firma y borrar.
@@ -403,8 +378,6 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada: obraBl
               </span>
               {envioFirmado ? (
                 <StatusPill tono="exito">Firmada por el cliente</StatusPill>
-              ) : enPapel ? (
-                <StatusPill tono="exito">Firmada en papel</StatusPill>
               ) : (
                 <StatusPill tono={faltantes.length ? "aviso" : "exito"}>
                   {faltantes.length ? "Falta información" : "Lista para firmar"}
@@ -415,23 +388,15 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada: obraBl
           {/* Imprimir y descargar quedan para cuando el cliente ya firmó: lo
               que se guarda y se archiva es el acta firmada, no un borrador. */}
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {/* Un administrador la puede imprimir sin firmar: es la hoja que
-                el cliente firma en papel cuando no puede hacerlo por el enlace. */}
-            <Button tam="sm" variante="tertiary" onClick={imprimir} disabled={!firmada && !puedeMarcarPapel}
-              title={firmada || puedeMarcarPapel ? "" : esperandoFirma}>
-              {firmada ? "Imprimir" : "Imprimir para firmar"}
+            <Button tam="sm" variante="tertiary" onClick={imprimir} disabled={!firmada}
+              title={firmada ? "" : esperandoFirma}>
+              Imprimir
             </Button>
             <Button tam="sm" variante="tertiary" disabled={generandoPdf || !firmada} onClick={descargar}
               title={firmada ? "" : esperandoFirma}>
               {generandoPdf ? "Generando…" : envioFirmado ? "Descargar PDF firmado" : "Descargar PDF"}
             </Button>
             {!firmada && <Button tam="sm" variante="primary" onClick={() => setModalFirma(true)}>Enviar a firma</Button>}
-            {!firmada && !obraBloqueada && puedeMarcarPapel && (
-              <Button tam="sm" variante="tertiary" onClick={marcarEnPapel}>Firmada en papel</Button>
-            )}
-            {enPapel && !envioFirmado && puedeMarcarPapel && !obraBloqueada && (
-              <Button tam="sm" variante="texto" onClick={quitarMarcaPapel}>Quitar marca de papel</Button>
-            )}
             {!bloqueada && <Button tam="sm" variante="texto" onClick={borrarActa}>Borrar</Button>}
           </div>
         </div>
@@ -456,12 +421,6 @@ export default function ActaEntregaObra({ obra, ctx, setObras, bloqueada: obraBl
         {!firmada && (
           <Callout tono="info" style={{ marginTop: ESPACIO.md }}>
             {esperandoFirma}
-          </Callout>
-        )}
-
-        {enPapel && (
-          <Callout tono="info" style={{ marginTop: ESPACIO.md }}>
-            Firmada por el cliente en la hoja impresa. Lo marcó {acta.firmadaEnPapel.por || "un administrador"} el {fmtD(acta.firmadaEnPapel.fecha)}.
           </Callout>
         )}
 

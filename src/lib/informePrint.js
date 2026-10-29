@@ -3,7 +3,7 @@
 // Empaquetado fluido por páginas con fidelidad 100%, sin desbordes y con paginación exacta.
 
 import { fmtL } from "./format";
-import { escapeHtml } from "./html";
+import { escapeHtml, imagenDeFirmaSegura } from "./html";
 import { normalizarMayusculas } from "./normalizarEntrada";
 import { LOGO_INGEANCLAJES } from "../assets/embeddedImages";
 import { getControlDocumental } from "./controlDocumental";
@@ -109,7 +109,7 @@ export function fmtPeriodo(inicio, fin) {
  *   la casilla deja de salir en blanco para completarla a mano.
  */
 export function buildInformePrintHtml(informe, { empresaConfig, firmaImg = "", firmaCliente = null } = {}) {
-  const firmaClienteImg = firmaCliente?.firmaImagen || firmaCliente?.firma_imagen || "";
+  const firmaClienteImg = imagenDeFirmaSegura(firmaCliente?.firmaImagen || firmaCliente?.firma_imagen || "");
   const nombreFirmante = firmaCliente?.firmanteNombre || firmaCliente?.firmante_nombre || "";
   const documentoFirmante = firmaCliente?.firmanteDocumento || firmaCliente?.firmante_documento || "";
   const cargoFirmante = firmaCliente?.firmanteCargo || firmaCliente?.firmante_cargo || "";

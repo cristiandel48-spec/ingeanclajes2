@@ -17,7 +17,7 @@ describe("el celular para wa.me", () => {
 });
 
 // El acta y el informe se mandan a firma con «Enviar y abrir WhatsApp»: se
-// envia el correo -ahi va el codigo para firmar- y se abre WhatsApp con el
+// crea el envio y se abre WhatsApp con el
 // enlace ya escrito. Esto comprueba la direccion que se abre, que es lo unico
 // que se puede comprobar sin enviar de verdad.
 describe("el enlace de WhatsApp para firmar", () => {
@@ -33,7 +33,10 @@ describe("el enlace de WhatsApp para firmar", () => {
     expect(mensaje).toContain("Le enviamos el acta de entrega de obra ACT-006 de LA PILONA AVECEDO.");
     expect(mensaje).not.toContain("la acta");
     expect(mensaje).toContain(enlace);
-    expect(mensaje).toContain("le llega un código a su correo");
+    // Desde ae179fc se firma en el mismo enlace: no se le promete un codigo
+    // que nunca le va a llegar.
+    expect(mensaje).toContain("Solo tiene que abrir el enlace");
+    expect(mensaje).not.toContain("código");
   });
 
   it("la cotizacion sigue siendo femenina", () => {

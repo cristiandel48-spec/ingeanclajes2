@@ -353,6 +353,20 @@ describe("el cargo de quien recibe llega hasta la hoja firmada", () => {
   });
 });
 
+describe("el numero de un acta nueva", () => {
+  it("no reusa el numero de un acta borrada que ya se mando a firma", () => {
+    const obras = [{ id: "OB-020", actas: [{ id: "ACT-001" }] }];
+    // ACT-002 se borro despues de enviarla a firma: su firma sigue en la base.
+    const nueva = construirActa({ obra: obras[0], obras, idsConFirma: ["ACT-002"] });
+    expect(nueva.id).toBe("ACT-003");
+  });
+
+  it("sin envios a firma sigue el consecutivo de siempre", () => {
+    const obras = [{ id: "OB-020", actas: [{ id: "ACT-001" }] }];
+    expect(construirActa({ obra: obras[0], obras }).id).toBe("ACT-002");
+  });
+});
+
 describe("las actas guardadas en la obra", () => {
   it("una obra sin actas devuelve una lista vacia", () => {
     expect(normalizarActas({ id: "OB-001" })).toEqual([]);
@@ -397,15 +411,6 @@ describe("el candado del acta para certificar y para el informe", () => {
   it("firmada por el cliente, si", () => {
     expect(motivoActaPendiente(conActa, { "ACT-010": "firmado" })).toBe("");
     expect(actaEntregaConcluida(conActa, { "ACT-010": "firmado" })).toBe(true);
-  });
-
-  it("firmada en papel y marcada por un administrador, tambien", () => {
-    const enPapel = { id: "OB-004", actas: [{ id: "ACT-013", firmadaEnPapel: { fecha: "2026-10-29", por: "Admin" } }] };
-    expect(motivoActaPendiente(enPapel, {})).toBe("");
-    expect(actaEntregaConcluida(enPapel, {})).toBe(true);
-    // Una marca a medias (sin fecha) no cuenta.
-    const aMedias = { id: "OB-005", actas: [{ id: "ACT-014", firmadaEnPapel: { por: "Admin" } }] };
-    expect(motivoActaPendiente(aMedias, {})).toBe("sin-firma");
   });
 
   it("con varias actas basta con que una este firmada", () => {

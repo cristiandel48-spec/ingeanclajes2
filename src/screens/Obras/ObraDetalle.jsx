@@ -591,8 +591,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
 
       {/* TAB ACTA DE ENTREGA (FORM-SST-89) */}
       {detTab==="acta"&&(
-        <ActaEntregaObra obra={oAct} ctx={ctx} setObras={setObras} bloqueada={bloqueada}
-          puedeMarcarPapel={esAdmin(membresia)} autor={resolverAutorGuardado(membresia)}/>
+        <ActaEntregaObra obra={oAct} ctx={ctx} setObras={setObras} bloqueada={bloqueada}/>
       )}
 
       {/* TAB PERSONAL */}

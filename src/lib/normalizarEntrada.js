@@ -295,22 +295,15 @@ function embellecerTextoCompletoCertificacion(texto) {
 
   let remaining = cuerpo;
 
-  let direccion = "";
-  const mDir = remaining.match(/(?:,\s*|\s+)(?:con\s+DIRECCI[OÓ]N:|\s*ubicad[ao]\s+en\s+la|\s*ubicad[ao]\s+en)\s*(.+)$/i);
-  if (mDir) {
-    direccion = mDir[1].trim();
-    remaining = remaining.slice(0, mDir.index);
-  }
-
   let nit = "";
   let cliente = "";
-  const mSolicitud = remaining.match(/(?:,\s*|\s+)(?:a\s+solicitud\s+de|por\s+encargo\s+de|para)\s+([^(,]+?)(?:\s*\(NIT:\s*([0-9kK.-]+)\))?$/i);
+  const mSolicitud = remaining.match(/(?:,\s*|\s+)(?:a\s+solicitud\s+de|por\s+encargo\s+de|para)\s+([^(,]+?)(?:\s*\(NIT:\s*([0-9kK.-]+)\))?(?:,|$)/i);
   if (mSolicitud) {
     cliente = mSolicitud[1].trim();
     nit = mSolicitud[2] ? mSolicitud[2].trim() : "";
     remaining = remaining.slice(0, mSolicitud.index);
   } else {
-    const mNit = remaining.match(/(?:,\s*|\s+)con\s+NIT:\s*([0-9kK.-]+)\s*(?:\(([^)]+)\))?$/i);
+    const mNit = remaining.match(/(?:,\s*|\s+)con\s+NIT:\s*([0-9kK.-]+)\s*(?:\(([^)]+)\))?(?:,|$)/i);
     if (mNit) {
       nit = mNit[1].trim();
       cliente = mNit[2] ? mNit[2].trim() : "";
@@ -322,6 +315,13 @@ function embellecerTextoCompletoCertificacion(texto) {
         remaining = remaining.slice(0, mClienteDe.index);
       }
     }
+  }
+
+  let direccion = "";
+  const mDir = remaining.match(/(?:,\s*|\s+)(?:con\s+DIRECCI[OÓ]N:|\s*ubicad[ao]\s+en\s+(?:la\s+|el\s+)?)\s*(.+)$/i);
+  if (mDir) {
+    direccion = mDir[1].trim();
+    remaining = remaining.slice(0, mDir.index);
   }
 
   let lugar = "";
@@ -338,7 +338,10 @@ function embellecerTextoCompletoCertificacion(texto) {
   const cleanLugar = lugar.replace(/^\(|\)$/g, "").trim();
   const cleanCliente = cliente.replace(/^\(|\)$/g, "").trim();
   const cleanNit = nit.trim();
-  const cleanDir = direccion.trim();
+  let cleanDir = direccion.trim();
+  if (cleanDir && (cleanDir.toLowerCase().includes("caucasia epm") || cleanDir.toLowerCase() === cleanLugar.toLowerCase())) {
+    cleanDir = "";
+  }
 
   const partes = [detalleLindo];
   if (cleanLugar) {

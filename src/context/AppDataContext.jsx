@@ -30,6 +30,7 @@ import {
 import { detectarDispositivo } from "../lib/backend/presencia";
 import { DOCUMENTOS_EQUIPO_INIT, limpiarDocumentosEjemplo } from "../screens/Produccion/documentosSeed";
 import { TAREAS_PRODUCCION_INIT, limpiarTareasEjemplo } from "../screens/Produccion/tareasSeed";
+import { sanitizarListaCertificados } from "../screens/Certificaciones/certSanitizer";
 
 const isSupabaseConfigured = backend.isSupabaseConfigured;
 const loadCloudAppData = backend.loadCloudAppData;
@@ -675,6 +676,7 @@ export function AppDataProvider({ children }) {
         // como estan en la base. La causa de los duplicados ya estaba cerrada
         // (aprobar una cotizacion reutiliza su obra en vez de crear otra).
         const obrasList = Array.isArray(cloud.obras) ? cloud.obras : [];
+        const clientesList = Array.isArray(cloud.clientes) ? cloud.clientes : [];
         const cotizacionesList = Array.isArray(cloud.cotizaciones) ? cloud.cotizaciones : [];
         const otrasEntidades = {
           cuentas: Array.isArray(cloud.cuentas) ? cloud.cuentas : [],
@@ -697,7 +699,8 @@ export function AppDataProvider({ children }) {
         if (Array.isArray(cloud.cargos)) setCargos(normalizarCargos(cloud.cargos));
         if (Array.isArray(cloud.pagos)) setPagos(oEjemplo(otrasEntidades.pagos, EJEMPLOS.pagos));
         if (Array.isArray(cloud.horarios)) setHorarios(otrasEntidades.horarios);
-        if (Array.isArray(cloud.certs)) setCerts(oEjemplo(otrasEntidades.certs, EJEMPLOS.certs));
+        const certsLimpios = sanitizarListaCertificados(otrasEntidades.certs, { clientes: clientesList, obras: obrasList });
+        if (Array.isArray(cloud.certs)) setCerts(oEjemplo(certsLimpios, EJEMPLOS.certs));
         if (Array.isArray(cloud.informes)) setInformes(oEjemplo(otrasEntidades.informes, EJEMPLOS.informes));
         if (Array.isArray(cloud.clientes)) setClientes(oEjemplo(cloud.clientes, EJEMPLOS.clientes));
         if (Array.isArray(cloud.proveedores)) setProveedores(cloud.proveedores);
@@ -826,6 +829,12 @@ export function AppDataProvider({ children }) {
       window.removeEventListener("keydown", onTecla, true);
     };
   }, [hasPendingChanges, saveState]);
+
+  // Sanea certificados con datos erróneos de obra en dirección fiscal
+  useEffect(() => {
+    if (!certs || !certs.length || !clientes || !clientes.length) return;
+    setCerts((prev) => sanitizarListaCertificados(prev, { clientes, obras }));
+  }, [clientes, obras]);
 
   // Limpia el reintento pendiente al desmontar.
   useEffect(() => () => {

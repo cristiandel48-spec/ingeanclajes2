@@ -8,6 +8,7 @@ import { LOGO_INGEANCLAJES } from "../../assets/embeddedImages";
 import { normalizarTextoCertificacion } from "../../lib/normalizarEntrada";
 import { enlaceVerificacion } from "../../lib/verificacionCertificados";
 import { FUENTE } from "../../styles/designTokens";
+import { sanitizarCertificado } from "./certSanitizer";
 
 // Pone en negrita los datos del cliente dentro de una frase escrita en plano.
 const conNegritas = (texto, datos)=>{
@@ -45,7 +46,7 @@ const renderTextoSistema = (cert)=>{
     const mLugar = afterVerbo.match(/instalados\s+en\s+([^,]+)/i);
     const lugarTexto = mLugar ? mLugar[1].trim() : (cert?.lugar || "");
 
-    const mDir = afterVerbo.match(/ubicad[ao]\s+en\s+la\s+([^,]+)/i);
+    const mDir = afterVerbo.match(/ubicad[ao]\s+en\s+(?:la\s+|el\s+)?([^,]+)/i);
     const dirTexto = mDir ? mDir[1].trim() : (cert?.direccion || "");
 
     const mCli = afterVerbo.match(/a\s+solicitud\s+de\s+([^(,]+?)(?:\s*\(NIT:\s*([^)]+)\))?(?:,|$)/i);
@@ -142,8 +143,9 @@ function generarFranjaSeguridad(ancho = 44, alto = 1056) {
   }
 }
 
-export default function CertificacionDocumento({cert}){
-  const {empresaConfig}=useAppData();
+export default function CertificacionDocumento({ cert: certRaw }) {
+  const { empresaConfig, clientes, obras } = useAppData();
+  const cert = sanitizarCertificado(certRaw, { clientes, obras });
   const firmaImg=getFirmaImg(empresaConfig);
   const [qrUrl, setQrUrl] = useState("");
   const [franjaUrl, setFranjaUrl] = useState(() => {

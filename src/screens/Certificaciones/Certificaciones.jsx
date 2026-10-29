@@ -7,9 +7,10 @@ import { useEffect, useRef, useState } from "react";
 import { useSubirAlFormulario } from "../../hooks/useSubirAlFormulario";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { buildCertForm, construirTextoSistema, getCertDefaultElements, unAnoDespues } from "./certConfig";
+import { buscarDireccionFiscalCliente, sanitizarCertificado } from "./certSanitizer";
 import { redactarSistemasDesdeCotizacion } from "../../lib/certificacionTexto";
 import { fmtD, fmtL, scrollAppToTop } from "../../lib/format";
-import { normalizarRazonSocial, normalizarFrase, normalizarTextoCertificacion, normalizarDocumento } from "../../lib/normalizarEntrada";
+import { normalizarRazonSocial, normalizarFrase, normalizarTextoCertificacion } from "../../lib/normalizarEntrada";
 import { clienteDeObra, claveRazonSocial } from "../../lib/quienRecibe";
 import { corregirOrtografiaLocal } from "../../lib/correctorTexto";
 import BotonCorregir from "../../components/ui/BotonCorregir";
@@ -135,29 +136,7 @@ export default function Certificaciones({ctx}){
 
   // La direccion debe salir de la ficha del cliente en el directorio, nunca de los datos o nombre de la obra.
   const buscarDireccionCliente=(obra,clienteTexto)=>{
-    const c = obra ? clienteDeObra(clientes, obra) : null;
-    if (c?.direccion?.trim()) return c.direccion.trim();
-
-    const nombre = normalizarRazonSocial(clienteTexto || obra?.cliente || "");
-    if (nombre) {
-      const ficha = (clientes || []).find((x) =>
-        normalizarRazonSocial(x?.nombre || "") === nombre ||
-        claveRazonSocial(x?.nombre || "") === claveRazonSocial(nombre) ||
-        (obra?.nit && x?.nit && normalizarDocumento(x.nit) === normalizarDocumento(obra.nit))
-      );
-      if (ficha?.direccion?.trim()) return ficha.direccion.trim();
-
-      const vinculada = obra?.cotizacionId
-        ? (cotizaciones || []).find((item) => item.id === obra.cotizacionId)
-        : null;
-      if (vinculada?.direccion?.trim()) return vinculada.direccion.trim();
-
-      const porNombre = (cotizaciones || []).find((item) => normalizarRazonSocial(item.cliente) === nombre && item.direccion);
-      if (porNombre?.direccion?.trim()) return porNombre.direccion.trim();
-    }
-
-    // Trae exclusivamente datos del directorio de clientes; nunca tomar el nombre o sede de la obra como direccion
-    return "";
+    return buscarDireccionFiscalCliente(clientes, obra, clienteTexto);
   };
 
   const [nueva,setNueva]=useState(()=>Boolean(obraSolicitada));
@@ -372,9 +351,10 @@ export default function Certificaciones({ctx}){
   const editarCertificacion = (cert)=>{
     setEditId(cert.id);
     setNuevoElem("");
-    setForm(buildCertForm(cert));
+    const saneado = sanitizarCertificado(cert, { clientes, obras });
+    setForm(buildCertForm(saneado));
     setNueva(true);
-    setSel(cert);
+    setSel(saneado);
     subirAlFormulario();
   };
 

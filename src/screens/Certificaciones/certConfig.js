@@ -186,8 +186,11 @@ export const construirTextoSistema = ({
     partes.push(`instalados en ${prefijo}${enMayuscula(donde)}`);
   }
 
-  if (String(direccion || "").trim()) {
-    partes.push(`ubicada en la ${enMayuscula(direccion)}`);
+  const dirLimpia = String(direccion || "").trim().replace(/[.\s]+$/, "");
+  if (dirLimpia) {
+    const dirSinPrefijo = dirLimpia.replace(/^(ubicad[ao]\s+en\s+(la\s+|el\s+)?|en\s+(la\s+|el\s+)?)/i, "").trim();
+    const prefijoArticulo = /^(calle|carrera|cra|cl\b|diagonal|transversal|avenida|av\b)/i.test(dirSinPrefijo) ? "la " : "";
+    partes.push(`ubicada en ${prefijoArticulo}${enMayuscula(dirSinPrefijo)}`);
   }
 
   const cli = String(cliente || "").trim();

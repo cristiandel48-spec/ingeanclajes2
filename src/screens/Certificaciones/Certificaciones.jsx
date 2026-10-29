@@ -9,7 +9,8 @@ import { B, CD, SI, ST } from "../../styles/tokens";
 import { buildCertForm, construirTextoSistema, getCertDefaultElements, unAnoDespues } from "./certConfig";
 import { redactarSistemasDesdeCotizacion } from "../../lib/certificacionTexto";
 import { fmtD, fmtL, scrollAppToTop } from "../../lib/format";
-import { normalizarRazonSocial, normalizarFrase, normalizarTextoCertificacion } from "../../lib/normalizarEntrada";
+import { normalizarRazonSocial, normalizarFrase, normalizarTextoCertificacion, normalizarDocumento } from "../../lib/normalizarEntrada";
+import { clienteDeObra, claveRazonSocial } from "../../lib/quienRecibe";
 import { corregirOrtografiaLocal } from "../../lib/correctorTexto";
 import BotonCorregir from "../../components/ui/BotonCorregir";
 import { printCurrentPz } from "../../lib/print";
@@ -111,35 +112,52 @@ export default function Certificaciones({ctx}){
   // acomodada, para que "Proco Inc" encuentre a "PROCO INC".
   const buscarNit=(obra,clienteTexto)=>{
     if(obra?.nit) return obra.nit;
-    const nombre=normalizarRazonSocial(clienteTexto || obra?.cliente || "");
-    if(!nombre) return "";
+    const c = obra ? clienteDeObra(clientes, obra) : null;
+    if (c?.nit?.trim()) return c.nit.trim();
 
-    const ficha=(clientes||[]).find((c)=>normalizarRazonSocial(c.nombre)===nombre);
-    if(ficha?.nit) return ficha.nit;
+    const nombre = normalizarRazonSocial(clienteTexto || obra?.cliente || "");
+    if (!nombre) return "";
 
-    const vinculada=obra?.cotizacionId
-      ? (cotizaciones||[]).find((c)=>c.id===obra.cotizacionId)
+    const ficha = (clientes || []).find((x) =>
+      normalizarRazonSocial(x?.nombre || "") === nombre ||
+      claveRazonSocial(x?.nombre || "") === claveRazonSocial(nombre)
+    );
+    if (ficha?.nit?.trim()) return ficha.nit.trim();
+
+    const vinculada = obra?.cotizacionId
+      ? (cotizaciones || []).find((item) => item.id === obra.cotizacionId)
       : null;
-    if(vinculada?.nit) return vinculada.nit;
+    if (vinculada?.nit?.trim()) return vinculada.nit.trim();
 
-    const porNombre=(cotizaciones||[]).find((c)=>normalizarRazonSocial(c.cliente)===nombre && c.nit);
+    const porNombre = (cotizaciones || []).find((item) => normalizarRazonSocial(item.cliente) === nombre && item.nit);
     return porNombre?.nit || "";
   };
 
-  // La direccion tambien sale de la ficha del cliente, no de la obra. En la
-  // obra suele estar la sede concreta -"TENERIFE #43"- y en el certificado
-  // tiene que ir la del cliente, que es a quien se le expide el documento.
+  // La direccion debe salir de la ficha del cliente en el directorio, nunca de los datos o nombre de la obra.
   const buscarDireccionCliente=(obra,clienteTexto)=>{
-    const nombre=normalizarRazonSocial(clienteTexto || obra?.cliente || "");
-    if(nombre){
-      const ficha=(clientes||[]).find((c)=>normalizarRazonSocial(c.nombre)===nombre);
-      if(ficha?.direccion) return ficha.direccion;
-      const vinculada=obra?.cotizacionId
-        ? (cotizaciones||[]).find((c)=>c.id===obra.cotizacionId)
+    const c = obra ? clienteDeObra(clientes, obra) : null;
+    if (c?.direccion?.trim()) return c.direccion.trim();
+
+    const nombre = normalizarRazonSocial(clienteTexto || obra?.cliente || "");
+    if (nombre) {
+      const ficha = (clientes || []).find((x) =>
+        normalizarRazonSocial(x?.nombre || "") === nombre ||
+        claveRazonSocial(x?.nombre || "") === claveRazonSocial(nombre) ||
+        (obra?.nit && x?.nit && normalizarDocumento(x.nit) === normalizarDocumento(obra.nit))
+      );
+      if (ficha?.direccion?.trim()) return ficha.direccion.trim();
+
+      const vinculada = obra?.cotizacionId
+        ? (cotizaciones || []).find((item) => item.id === obra.cotizacionId)
         : null;
-      if(vinculada?.direccion) return vinculada.direccion;
+      if (vinculada?.direccion?.trim()) return vinculada.direccion.trim();
+
+      const porNombre = (cotizaciones || []).find((item) => normalizarRazonSocial(item.cliente) === nombre && item.direccion);
+      if (porNombre?.direccion?.trim()) return porNombre.direccion.trim();
     }
-    return obra?.direccion || obra?.ciudad || "";
+
+    // Trae exclusivamente datos del directorio de clientes; nunca tomar el nombre o sede de la obra como direccion
+    return "";
   };
 
   const [nueva,setNueva]=useState(()=>Boolean(obraSolicitada));

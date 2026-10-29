@@ -346,7 +346,9 @@ function embellecerTextoCompletoCertificacion(texto) {
     partes.push(`instalados en ${prefijo}${cleanLugar}`);
   }
   if (cleanDir) {
-    partes.push(`ubicada en la ${cleanDir}`);
+    const dirSinPrefijo = cleanDir.replace(/^(ubicad[ao]\s+en\s+(la\s+|el\s+)?|en\s+(la\s+|el\s+)?)/i, "").trim();
+    const prefijoArticulo = /^(calle|carrera|cra|cl\b|diagonal|transversal|avenida|av\b)/i.test(dirSinPrefijo) ? "la " : "";
+    partes.push(`ubicada en ${prefijoArticulo}${dirSinPrefijo}`);
   }
   if (cleanCliente && cleanNit) {
     partes.push(`a solicitud de ${cleanCliente} (NIT: ${cleanNit})`);

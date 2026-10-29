@@ -249,6 +249,10 @@ export const componentesCss = `
     /* Icono del menu dentro de su cuadro de color: mas chico y de trazo mas
        grueso, para que se lea en blanco sobre el color. */
     .rail-icono svg { width: 17px; height: 17px; stroke-width: 2.1; }
+    /* Atajos del resumen del dia en el Dashboard: cuadro de 24, icono de 14. */
+    .dash-atajo .rail-icono svg { width: 14px; height: 14px; }
+    .dash-atajo { transition: background .12s ease, border-color .12s ease; }
+    .dash-atajo:hover { background: var(--surface-subtle); border-color: var(--text-quaternary); }
     /* En el centro: lo que frena el trabajo y hay que leer. Varias lineas,
        asi que deja la forma de pastilla por una tarjeta. */
     .ui-toaster--centro { bottom: auto; top: 50%; transform: translate(-50%, -50%);

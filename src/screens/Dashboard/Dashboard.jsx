@@ -135,20 +135,9 @@ function CabeceraTarjeta({ titulo, descripcion, accion }) {
 // hay y, debajo, lo que toca hacer ahi. Antes solo decia el nombre del modulo
 // y una frase fija, y la tarjeta no le servia a nadie para decidir nada.
 function TarjetaAcceso({ modulo, numero, titulo, aviso, onClick }) {
-  const color = ICON_COLORS[modulo] || "#8E8E93";
   return (
     <Card interactivo ajustado onClick={onClick} aria-label={titulo}>
-      <span
-        className="rail-icono"
-        style={{
-          width: 32, height: 32, borderRadius: 9, color: "#ffffff",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          background: `linear-gradient(180deg, color-mix(in srgb, ${color} 80%, #ffffff), ${color})`,
-          boxShadow: "inset 0 0 0 0.5px rgba(0,0,0,.10), 0 1px 1.5px rgba(0,0,0,.14)",
-        }}
-      >
-        {ICONS[modulo]}
-      </span>
+      <IconoModulo modulo={modulo} />
       <div style={{ ...CIFRA, fontSize: 28, lineHeight: "32px", fontWeight: 600, color: "var(--text-primary)", marginTop: ESPACIO.md }}>
         {numero}
       </div>
@@ -164,6 +153,45 @@ function TarjetaAcceso({ modulo, numero, titulo, aviso, onClick }) {
         </StatusPill>
       )}
     </Card>
+  );
+}
+
+// Cuadro de color del modulo con su icono en blanco, el mismo del menu.
+function IconoModulo({ modulo, size = 32, radio = 9 }) {
+  const color = ICON_COLORS[modulo] || "#8E8E93";
+  return (
+    <span
+      className="rail-icono"
+      style={{
+        width: size, height: size, borderRadius: radio, color: "#ffffff", flexShrink: 0,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        background: `linear-gradient(180deg, color-mix(in srgb, ${color} 80%, #ffffff), ${color})`,
+        boxShadow: "inset 0 0 0 0.5px rgba(0,0,0,.10), 0 1px 1.5px rgba(0,0,0,.14)",
+      }}
+    >
+      {ICONS[modulo]}
+    </span>
+  );
+}
+
+// Atajo del resumen del dia, bajo el saludo: cuantos hay y a donde llevar.
+function AtajoResumen({ modulo, numero, texto, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="dash-atajo"
+      style={{
+        display: "inline-flex", alignItems: "center", gap: ESPACIO.sm,
+        padding: "7px 14px 7px 8px", borderRadius: 12, cursor: "pointer",
+        background: "var(--surface)", border: "1px solid var(--separator)",
+        font: "inherit", color: "var(--text-secondary)", fontSize: 13.5,
+      }}
+    >
+      <IconoModulo modulo={modulo} size={24} radio={7} />
+      <span style={{ ...CIFRA, fontSize: 16, fontWeight: 600, color: "var(--text-primary)" }}>{numero}</span>
+      {texto}
+    </button>
   );
 }
 
@@ -222,7 +250,7 @@ function FilaAlerta({ titulo, meta, tono, etiqueta, onClick, multilinea = false 
 
 export default function Dashboard({ ctx, go }) {
   const {
-    obras = [], cotizaciones = [], certs = [], membresia, agenda = [], clientes = [],
+    obras = [], cotizaciones = [], certs = [], membresia, agenda = [],
     tareasPersonales = [], documentosEquipo = [], informes = [],
   } = ctx;
   // Las firmas de actas e informes, para que las tarjetas de arriba digan que
@@ -294,26 +322,25 @@ export default function Dashboard({ ctx, go }) {
     : informesSinFirmar > 0 ? { tono: "aviso", texto: `${informesSinFirmar} sin firmar` }
     : { tono: "exito", texto: "Todos firmados" };
 
-  const clientesConObra = new Set(
-    listaObrasActivas.map((o) => String(o.clienteId || o.cliente || "").trim().toLowerCase()).filter(Boolean)
-  ).size;
-
-  const partesDelDia = [
-    eventosHoy.length > 0
-      ? `Tienes ${eventosHoy.length} compromiso${eventosHoy.length > 1 ? "s" : ""} hoy`
-      : "Agenda de hoy al día",
-    seg.requierenAccion.length > 0
-      ? `${seg.requierenAccion.length} cotización${seg.requierenAccion.length > 1 ? "es" : ""} por llamar`
-      : null,
-    pendientes.length > 0
-      ? `${pendientes.length} tarea${pendientes.length > 1 ? "s" : ""} sin marcar`
-      : null,
+  // El resumen del dia ya no es una frase: son atajos con su numero que llevan
+  // a donde se resuelve cada cosa. Solo salen los que tienen algo.
+  const atajos = [
+    eventosHoy.length > 0 && {
+      modulo: "agenda", numero: eventosHoy.length,
+      texto: eventosHoy.length === 1 ? "compromiso hoy" : "compromisos hoy",
+      onClick: () => go("agenda"),
+    },
+    seg.requierenAccion.length > 0 && {
+      modulo: "cotizacion", numero: seg.requierenAccion.length,
+      texto: seg.requierenAccion.length === 1 ? "cotización por llamar" : "cotizaciones por llamar",
+      onClick: () => go("cotizacion"),
+    },
+    pendientes.length > 0 && {
+      modulo: "tareas", numero: pendientes.length,
+      texto: pendientes.length === 1 ? "tarea sin marcar" : "tareas sin marcar",
+      onClick: () => go("tareas"),
+    },
   ].filter(Boolean);
-  // Con tres partes, unirlas todas con «y» suena a lista de la compra.
-  const resumenDelDia =
-    (partesDelDia.length > 1
-      ? `${partesDelDia.slice(0, -1).join(", ")} y ${partesDelDia[partesDelDia.length - 1]}`
-      : partesDelDia[0] || "") + ".";
 
   return (
     <div
@@ -325,25 +352,81 @@ export default function Dashboard({ ctx, go }) {
         paddingBottom: ESPACIO.xxl,
       }}
     >
-      <PageHeader
-        eyebrow={formatFechaLegible(hoyIso) || "Centro de operaciones"}
-        titulo={`${saludo}, ${nombreUsuario}`}
-        subtitulo={resumenDelDia}
-        linea={false}
-      />
+      {/* Arriba, dos columnas con las mismas medidas que las de abajo: el
+          saludo a la izquierda y las cuatro tarjetas a la derecha, en el
+          espacio que quedaba vacio junto al saludo. En el movil van una
+          debajo de la otra. */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1.22fr) minmax(0, 1fr)",
+          gap: ESPACIO.lg,
+          // Arriba los dos: alineado abajo, el saludo bajaba y dejaba un hueco
+          // encima cuando las tarjetas eran mas altas.
+          alignItems: "start",
+          marginBottom: ESPACIO.lg,
+        }}
+      >
+        <div style={{ minWidth: 0 }}>
+          <PageHeader
+            eyebrow={formatFechaLegible(hoyIso) || "Centro de operaciones"}
+            titulo={`${saludo}, ${nombreUsuario}`}
+            subtitulo={atajos.length ? undefined : "Todo al día: sin compromisos, llamadas ni tareas pendientes."}
+            linea={false}
+          />
 
-      {/* La unica accion principal de la pantalla es la primera. */}
-      <Toolbar>
-        <Button variante="primary" icono="mas" onClick={() => go("cotizacion")}>
-          Nueva cotización
-        </Button>
-        <Button variante="secondary" icono="calendario" onClick={() => go("agenda")}>
-          Agendar visita
-        </Button>
-        <Button variante="secondary" icono="usuario" onClick={() => go("clientes")}>
-          Clientes
-        </Button>
-      </Toolbar>
+          {atajos.length > 0 && (
+            <div style={{ display: "flex", gap: ESPACIO.sm, flexWrap: "wrap", marginBottom: ESPACIO.lg }}>
+              {atajos.map((a) => <AtajoResumen key={a.modulo} {...a} />)}
+            </div>
+          )}
+
+          {/* La unica accion principal de la pantalla es la primera.
+              A Clientes se llega desde el menu. */}
+          <Toolbar>
+            <Button variante="primary" icono="mas" onClick={() => go("cotizacion")}>
+              Nueva cotización
+            </Button>
+            <Button variante="secondary" icono="calendario" onClick={() => go("agenda")}>
+              Agendar visita
+            </Button>
+          </Toolbar>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            // Siempre las tres en una fila: si bajaba una a otra fila, la
+            // columna crecia y dejaba un hueco encima del saludo. minmax y no
+            // 1fr a secas para que no se salgan de la columna.
+            gridTemplateColumns: isMobile ? "1fr 1fr 1fr" : "repeat(3, minmax(0, 1fr))",
+            gap: ESPACIO.sm,
+            minWidth: 0,
+          }}
+        >
+          <TarjetaAcceso
+            modulo="obras"
+            numero={obrasActivas}
+            titulo="Obras en curso"
+            aviso={avisoObras}
+            onClick={() => go("obras")}
+          />
+          <TarjetaAcceso
+            modulo="certificaciones"
+            numero={certsVigentes}
+            titulo="Certificaciones"
+            aviso={avisoCerts}
+            onClick={() => go("certificaciones")}
+          />
+          <TarjetaAcceso
+            modulo="informes"
+            numero={informesDelMes.length}
+            titulo="Informes del mes"
+            aviso={avisoInformes}
+            onClick={() => go("informes")}
+          />
+        </div>
+      </div>
 
       <TarjetaInstalarAppDashboard />
 
@@ -355,49 +438,8 @@ export default function Dashboard({ ctx, go }) {
           alignItems: "start",
         }}
       >
-        {/* ── Accesos y cotizaciones recientes ───────────────────────── */}
+        {/* ── Notas y cotizaciones recientes ──────────────────────────── */}
         <div style={{ display: "flex", flexDirection: "column", gap: ESPACIO.lg, minWidth: 0 }}>
-          <div
-            className="grid-2-col"
-            style={{
-              display: "grid",
-              // minmax(0,…) y no 1fr a secas: con 1fr la pista no baja del
-              // ancho de su contenido y las tarjetas se salian de la columna
-              // en pantallas medianas.
-              gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, minmax(0, 1fr))",
-              gap: ESPACIO.sm,
-            }}
-          >
-            <TarjetaAcceso
-              modulo="obras"
-              numero={obrasActivas}
-              titulo="Obras en curso"
-              aviso={avisoObras}
-              onClick={() => go("obras")}
-            />
-            <TarjetaAcceso
-              modulo="certificaciones"
-              numero={certsVigentes}
-              titulo="Certificaciones"
-              aviso={avisoCerts}
-              onClick={() => go("certificaciones")}
-            />
-            <TarjetaAcceso
-              modulo="informes"
-              numero={informesDelMes.length}
-              titulo="Informes del mes"
-              aviso={avisoInformes}
-              onClick={() => go("informes")}
-            />
-            <TarjetaAcceso
-              modulo="clientes"
-              numero={clientes.length}
-              titulo="Clientes"
-              aviso={clientesConObra > 0 ? { tono: "acento", texto: `${clientesConObra} con obra activa` } : null}
-              onClick={() => go("clientes")}
-            />
-          </div>
-
           {/* El acceso a las notas y las tareas no va de quinta tarjeta en la
               fila de arriba: con cinco pistas los titulos no caben en un
               portatil. Va aqui, donde ademas cabe el recordatorio. */}

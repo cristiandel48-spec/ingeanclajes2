@@ -181,6 +181,23 @@ export const FICHA_LINEA_VIDA_VERTICAL = {
   ],
 };
 
+// Linea de vida vertical sola, sin escalera. Es el mismo dibujo y las mismas
+// piezas, pero recortado de lado a lado hasta el larguero y el cable: los
+// peldaños quedan fuera. Arriba y abajo se recorta igual que en la de la
+// escalera, asi que las alturas de las llamadas son las mismas.
+export const FICHA_LINEA_VIDA_VERTICAL_SOLA = {
+  titulo: "Sistema de línea de vida vertical",
+  imagen: articoLineaVidaVertical,
+  alt: "Sistema de línea de vida vertical",
+  recorte: "3% 35% 2% 54%",
+  llamadas: FICHA_LINEA_VIDA_VERTICAL.llamadas,
+  notas: [
+    FICHA_LINEA_VIDA_VERTICAL.notas[0],
+    ["Instalación",
+      "Se fija a la estructura existente -escalera, torre, poste o columna- con un soporte superior y uno inferior. El trabajador se conecta con arnés de cuerpo completo y un arrestador de caídas que se desliza por el cable y lo acompaña mientras sube o baja."],
+  ],
+};
+
 // Linea de vida camionera (aerea, sobre carrotanques y volquetas). La
 // ilustracion ya trae sus piezas rotuladas, asi que va entera -sin recorte- y
 // a la derecha lo que no se ve en el dibujo: normativa, diseño y conexion.

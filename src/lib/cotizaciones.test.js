@@ -249,6 +249,16 @@ describe("inferirTipoDesdeTitulo", () => {
     ).toBe("linea_vida");
   });
 
+  it("distingue la linea de vida vertical sola de la escalera con vertical", () => {
+    expect(inferirTipoDesdeTitulo("Sistema de Línea de Vida Vertical Certificada para Trabajo en Alturas")).toBe("linea_vida_vertical");
+    expect(inferirTipoDesdeTitulo("Instalación de líneas de vida verticales en torre")).toBe("linea_vida_vertical");
+    expect(inferirTipoDesdeTitulo("Escalera fija con línea de vida vertical")).toBe("escaleras");
+    expect(inferirTipoDesdeTitulo("Líneas de vida horizontal y vertical")).toBe("linea_vida");
+    expect(tipoCotizacionCanonico("Línea de vida vertical")).toBe("linea_vida_vertical");
+    expect(tipoCotizacionCanonico("LVV")).toBe("linea_vida_vertical");
+    expect(tipoCotizacionCanonico("Escalera con línea vertical")).toBe("escaleras");
+  });
+
   it("detecta anclajes, servicios de recertificacion y trabajos manuales", () => {
     expect(inferirTipoDesdeTitulo("Sistema de Anclajes Certificado\npara Trabajo en Alturas")).toBe("puntos_anclaje");
     expect(inferirTipoDesdeTitulo("recertificación del Sistema de Anclajes para Trabajo en Alturas")).toBe("puntos_anclaje");

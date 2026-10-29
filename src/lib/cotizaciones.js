@@ -27,6 +27,10 @@ export function isFotoPuntoAnclajeDefault(foto) {
 // anclaje. Al cambiar de tipo se quita y se pone segun corresponda; las
 // fotos propias no se tocan.
 export const TIPO_CAMIONERA = "linea_vida_camionera";
+// Linea de vida vertical sola, sin escalera: se instala en una escalera,
+// torre o columna que ya existe. La «Escalera fija con línea de vida
+// vertical» sigue siendo de escaleras.
+export const TIPO_VERTICAL = "linea_vida_vertical";
 
 const FOTOS_POR_TIPO = {
 
@@ -220,6 +224,7 @@ export function tipoCotizacionCanonico(tipo) {
   // La camionera (aerea, sobre vehiculos) es su propio sistema: lleva su
   // ilustracion y su definicion, no las de la linea de vida de cubierta.
   if (t.includes("camioner")) return TIPO_CAMIONERA;
+  if (t === "lvv" || (t.includes("vertical") && !t.includes("escaler"))) return TIPO_VERTICAL;
   if (t.includes("anclaje")) return "puntos_anclaje";
   // Solo la linea de vida de siempre. Antes bastaba con que dijera «linea» o
   // «vida», asi que «Línea de vida camionera» -que no tiene nada que ver- se
@@ -258,6 +263,7 @@ const ETIQUETAS_TIPO = {
   manual: "Ninguno (manual)",
   linea_vida: "Línea de vida",
   linea_vida_camionera: "Línea de vida camionera",
+  linea_vida_vertical: "Línea de vida vertical",
   puntos_anclaje: "Puntos de anclaje",
   obra_blanca: "Obra blanca",
   estructuras_metalicas: "Estructuras metálicas",
@@ -279,6 +285,7 @@ export const TITULO_SUGERIDO_POR_TIPO = {
   puntos_anclaje: "Sistema de Anclajes Certificado para Trabajo en Alturas",
   linea_vida: "Sistema de Líneas de Vida Certificadas para Trabajo en Alturas",
   linea_vida_camionera: "Instalación de Línea de Vida Camionera",
+  linea_vida_vertical: "Sistema de Línea de Vida Vertical Certificada para Trabajo en Alturas",
   escaleras: "Sistema de Escaleras Certificadas para Trabajo en Alturas",
   estructuras_metalicas: "Fabricación e Instalación de Estructura Metálica",
   obra_blanca: "Ejecución de Trabajos y Adecuaciones en Obra Blanca",
@@ -297,6 +304,8 @@ export const SALUDO_SUGERIDO_POR_TIPO = {
     "Agradecemos la oportunidad de presentarles nuestra propuesta para el suministro e instalación de líneas de vida certificadas para trabajo seguro en alturas",
   linea_vida_camionera:
     "Agradecemos la oportunidad de presentarles nuestra propuesta para el suministro e instalación de una línea de vida camionera para el cargue y descargue seguro de vehículos",
+  linea_vida_vertical:
+    "Agradecemos la oportunidad de presentarles nuestra propuesta para el suministro e instalación de una línea de vida vertical certificada para el ascenso y descenso seguro en alturas",
   escaleras:
     "Agradecemos la oportunidad de presentarles nuestra propuesta para el suministro e instalación de escaleras certificadas para el acceso seguro en alturas",
   caminaderos:
@@ -350,6 +359,7 @@ export const PRESENTACION_SUGERIDA_POR_TIPO = {
   puntos_anclaje: PRESENTACION_ALTURAS,
   linea_vida: PRESENTACION_ALTURAS,
   linea_vida_camionera: PRESENTACION_ALTURAS,
+  linea_vida_vertical: PRESENTACION_ALTURAS,
   escaleras: PRESENTACION_ALTURAS,
   caminaderos: PRESENTACION_ALTURAS,
   sistemas_completos: PRESENTACION_ALTURAS,
@@ -488,6 +498,15 @@ export function inferirTipoDesdeTitulo(titulo) {
 
   if (esSoloVerticalConEscalera) {
     return "escaleras";
+  }
+
+  // 5b. Línea de vida vertical sola: sin escalera ni otro sistema.
+  if (
+    !tieneEscalera && !tieneAnclaje && !tieneCaminadero &&
+    !/\bhorizontal|\bl\s*v\s*h\b/.test(limpio) &&
+    (/\blineas?\s+(?:de\s+)+vida\s+verticale?s?\b/.test(limpio) || /\bl\s*v\s*v\b/.test(limpio))
+  ) {
+    return TIPO_VERTICAL;
   }
 
   // 6. Línea de vida (horizontal, vertical exclusiva o combinada con otros sistemas)

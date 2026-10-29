@@ -243,6 +243,7 @@ export default function Cotizacion({ctx}){
     { id: "puntos_anclaje", label: "Puntos de anclaje" },
     { id: "linea_vida", label: "Línea de vida" },
     { id: "linea_vida_camionera", label: "Línea camionera" },
+    { id: "linea_vida_vertical", label: "Línea vertical" },
     { id: "escaleras", label: "Escaleras" },
     { id: "caminaderos", label: "Caminaderos" },
     { id: "estructuras_metalicas", label: "Estructuras metálicas" },

@@ -6,12 +6,12 @@ import { normalizarMayusculas, normalizarTituloFormal } from "./normalizarEntrad
 import { LOGO_INGEANCLAJES } from "../assets/embeddedImages";
 import { getQuotePrintableProposals, materialesPuntoAnclaje, porcentajeUtilidad } from "./cotizaciones";
 import { getStaticMapDimensions, buildStaticMapLabelData } from "./maps";
-import { TIPO_CAMIONERA, TIPO_MANUAL, hasVerticalLifeLineService, hasCatLadderService, tipoCotizacionCanonico, tipoDocumentoDePropuesta } from "./cotizaciones";
+import { TIPO_CAMIONERA, TIPO_MANUAL, TIPO_VERTICAL, hasVerticalLifeLineService, hasCatLadderService, tipoCotizacionCanonico, tipoDocumentoDePropuesta } from "./cotizaciones";
 import { getTextosDocumento, lineasDeTexto } from "./cotizacionTextos";
 import { corregirOrtografiaLocal } from "./correctorTexto";
 import { cssHojaImpresion } from "./hojaImpresion";
 import { CSS_COTIZACION } from "./cotizacion/estilos";
-import { FICHA_ESCALERA_GATO, FICHA_LINEA_CAMIONERA, FICHA_LINEA_VIDA_VERTICAL, FICHA_PLACA_IDENTIFICACION, crearFichaSistema, fichaPuntoAnclaje, paginasComponentes } from "./cotizacion/fichasTecnicas";
+import { FICHA_ESCALERA_GATO, FICHA_LINEA_CAMIONERA, FICHA_LINEA_VIDA_VERTICAL, FICHA_LINEA_VIDA_VERTICAL_SOLA, FICHA_PLACA_IDENTIFICACION, crearFichaSistema, fichaPuntoAnclaje, paginasComponentes } from "./cotizacion/fichasTecnicas";
 
 export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
   const propuestas = getQuotePrintableProposals(c);
@@ -31,8 +31,13 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
   // Detección de láminas para escalera:
   // 1) Escalera fija con línea de vida vertical (cable, absorbedor, tensor)
   // 2) Escalera tipo gato sola (sin línea de vida, sin canastilla)
-  const showVerticalLifelineAppendix = propuestasConSistema.some((propuesta)=>hasVerticalLifeLineService(propuesta?.quote || propuesta))
-    || (!todasManuales && hasVerticalLifeLineService({ alcance: c?.alcance, requerimientoCliente: textoInicial, items: c?.items, titulo: c?.titulo }));
+  // Una propuesta de «Línea de vida vertical» lleva la ficha sin escalera, y
+  // no cuenta para las de escalera aunque sus items digan «vertical». El
+  // alcance de la cotizacion tampoco: describe la misma vertical.
+  const showVerticalSolaAppendix = propuestasConSistema.some((propuesta) => tipoDe(propuesta) === TIPO_VERTICAL);
+  const propuestasEscalera = propuestasConSistema.filter((propuesta) => tipoDe(propuesta) !== TIPO_VERTICAL);
+  const showVerticalLifelineAppendix = propuestasEscalera.some((propuesta)=>hasVerticalLifeLineService(propuesta?.quote || propuesta))
+    || (!todasManuales && !showVerticalSolaAppendix && hasVerticalLifeLineService({ alcance: c?.alcance, requerimientoCliente: textoInicial, items: c?.items, titulo: c?.titulo }));
 
   // Ficha de la linea de vida camionera y fichas tecnicas: antes del precio,
   // para justificar las especificaciones tecnicas antes de los valores economicos.
@@ -58,8 +63,8 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     }).forEach(agregarMaterialAnclaje);
   }
 
-  const showCatLadderAppendix = propuestasConSistema.some((propuesta)=>hasCatLadderService(propuesta?.quote || propuesta))
-    || (!todasManuales && hasCatLadderService({ alcance: c?.alcance, requerimientoCliente: textoInicial, items: c?.items, titulo: c?.titulo }));
+  const showCatLadderAppendix = propuestasEscalera.some((propuesta)=>hasCatLadderService(propuesta?.quote || propuesta))
+    || (!todasManuales && !showVerticalSolaAppendix && hasCatLadderService({ alcance: c?.alcance, requerimientoCliente: textoInicial, items: c?.items, titulo: c?.titulo }));
   // Placa de identificacion y certificacion: obligatoria para sistemas certificados de alturas
   // (linea horizontal, vertical, camionera o puntos de anclaje), salvo propuestas manuales.
   const showPlacaAppendix = !todasManuales && (showCamioneraAppendix || showVerticalLifelineAppendix || showCatLadderAppendix || propuestasConSistema.length > 0);
@@ -856,7 +861,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
             // «Ninguno» o una categoria propia del catalogo (una linea de vida
             // camionera, un trabajo especial): sin definiciones automaticas.
             // Si hacen falta, se escriben en el marco tecnico de la cotizacion.
-            const TIPOS_CON_DEFINICIONES = ["linea_vida", "linea_vida_camionera", "puntos_anclaje", "obra_blanca", "estructuras_metalicas", "escaleras", "caminaderos", "sistemas_completos", "servicios"];
+            const TIPOS_CON_DEFINICIONES = ["linea_vida", "linea_vida_camionera", TIPO_VERTICAL, "puntos_anclaje", "obra_blanca", "estructuras_metalicas", "escaleras", "caminaderos", "sistemas_completos", "servicios"];
             if (!TIPOS_CON_DEFINICIONES.includes(tipo)) return "";
             // La camionera tiene su propia definicion: la de la linea de vida
             // de cubierta (cable sobre la losa, soportes laterales) no aplica.
@@ -875,6 +880,26 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
                       <li>La altura del cable y la luz entre postes se definen en la memoria de cálculo, según el vehículo y la distancia de detención de la caída.</li>
                       <li>Los postes y sus dados de cimentación se diseñan para la carga de detención de la caída; el sistema lo diseña y certifica una persona calificada, conforme a la Resolución 4272 de 2021.</li>
                       <li>Se respetan las distancias de seguridad a redes eléctricas (RETIE) en el diseño y el montaje.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            `;
+            if(tipo === TIPO_VERTICAL) return `
+              <div class="def-list">
+                <div class="def-row">
+                  <div class="def-term">Trabajo en altura</div>
+                  <div class="def-body">Se considera toda actividad, labor o trabajo que se deba realizar a una altura física igual o superior a <strong>2 metros desde el piso</strong>.</div>
+                </div>
+                <div class="def-row">
+                  <div class="def-term">Línea de vida vertical</div>
+                  <div class="def-body">
+                    <p>Sistema de protección contra caídas para el ascenso y descenso en alturas. Un cable de acero tensionado entre un soporte superior y uno inferior, fijados a la estructura, guía el arrestador de caídas al que va conectado el trabajador.</p>
+                    <ul class="def-bullets">
+                      <li>El trabajador se conecta con arnés de cuerpo completo a un arrestador de caídas que se desliza por el cable y se bloquea ante una caída.</li>
+                      <li>El soporte superior lleva un absorbedor de energía que limita la fuerza que llega al trabajador y a la estructura.</li>
+                      <li>La línea de vida está constituida por un solo cable continuo, con su tensor en el extremo inferior.</li>
+                      <li>Los anclajes a los cuales se fija la línea de vida deben resistir al menos 5.000 libras por cada persona asegurada.</li>
                     </ul>
                   </div>
                 </div>
@@ -1127,6 +1152,7 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     ${introPage}
     ${showCatLadderAppendix ? fichaSistema(FICHA_ESCALERA_GATO) : ""}
     ${showVerticalLifelineAppendix ? fichaSistema(FICHA_LINEA_VIDA_VERTICAL) : ""}
+    ${showVerticalSolaAppendix ? fichaSistema(FICHA_LINEA_VIDA_VERTICAL_SOLA) : ""}
     ${showCamioneraAppendix ? fichaSistema(FICHA_LINEA_CAMIONERA) : ""}
     ${materialesAnclaje.map((material) => fichaSistema(fichaPuntoAnclaje(material))).join("")}
     ${showTechnicalPage ? renderTechnicalPage() : ""}

@@ -621,6 +621,7 @@ const ESTILOS_CHIP_TIPO = {
   linea_vida: { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
   puntos_anclaje: { bg: "#eef2ff", color: "#4338ca", border: "#c7d2fe" },
   linea_vida_camionera: { bg: "#fff7ed", color: "#c2410c", border: "#fed7aa" },
+  linea_vida_vertical: { bg: "#f0fdfa", color: "#0f766e", border: "#99f6e4" },
   escaleras: { bg: "#ecfdf5", color: "#047857", border: "#a7f3d0" },
   estructuras_metalicas: { bg: "#f1f5f9", color: "#334155", border: "#cbd5e1" },
   obra_blanca: { bg: "#faf5ff", color: "#7e22ce", border: "#e9d5ff" },

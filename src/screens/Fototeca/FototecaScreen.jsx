@@ -22,7 +22,7 @@ export default function FototecaScreen({ ctx }) {
   // Limpiar intención al salir
   useEffect(() => {
     return () => {
-      if (limpiarIntencion) limpiarIntencion();
+      if (limpiarIntencion) limpiarIntencion("fototeca");
     };
   }, [limpiarIntencion]);
 

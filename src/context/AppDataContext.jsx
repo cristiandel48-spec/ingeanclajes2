@@ -388,7 +388,9 @@ export function AppDataProvider({ children }) {
   };
   // Estable, para que las pantallas puedan usarla como dependencia de un
   // efecto sin recrearlo en cada render.
-  const limpiarIntencion = useCallback(() => setIntencion(null), []);
+  const limpiarIntencion = useCallback((pantalla) => {
+    setIntencion((prev) => (!pantalla || prev?.pantalla === pantalla ? null : prev));
+  }, []);
   const bootstrappedRef = useRef(false);
   const autosaveTimerRef = useRef(null);
 

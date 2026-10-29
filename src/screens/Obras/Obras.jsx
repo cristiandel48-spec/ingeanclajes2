@@ -61,7 +61,7 @@ export default function Obras({ctx}){
   const [sel,setSel]=useState(()=>obras.find((o)=>o.id===obraSolicitada) || null);
 
   // Se descarta al salir, para que al volver por el menu no se reabra sola.
-  useEffect(()=>()=>limpiarIntencion(),[limpiarIntencion]);
+  useEffect(()=>()=>limpiarIntencion("obras"),[limpiarIntencion]);
   const [showNO,setShowNO]=useState(false);
   // «Nueva Obra» va en la barra de arriba y se pulsa con la lista ya bajada;
   // el formulario sale arriba de la lista, asi que se sube hasta el.

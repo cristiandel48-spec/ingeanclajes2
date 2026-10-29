@@ -181,7 +181,7 @@ export default function Certificaciones({ctx}){
   });
 
   // Se descarta al salir, para que al volver por el menu no se reabra.
-  useEffect(()=>()=>limpiarIntencion(),[limpiarIntencion]);
+  useEffect(()=>()=>limpiarIntencion("certificaciones"),[limpiarIntencion]);
   const [nuevoElem,setNuevoElem]=useState("");
 
   // Una obra puede tener VARIOS informes -una sede por informe- y de cada uno

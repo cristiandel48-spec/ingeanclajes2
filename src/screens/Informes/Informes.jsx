@@ -343,7 +343,7 @@ export default function Informes({ctx}){
 
   // La intencion se descarta al salir de la pantalla, para que al volver por
   // el menu no se reabra el formulario.
-  useEffect(()=>()=>limpiarIntencion(),[limpiarIntencion]);
+  useEffect(()=>()=>limpiarIntencion("informes"),[limpiarIntencion]);
   useEffect(() => {
     if (intencion?.pantalla === "informes" && intencion?.obraId) {
       setEditId(null);

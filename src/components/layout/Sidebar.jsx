@@ -41,7 +41,7 @@ export default function Sidebar({
   onTogglePin,
 }) {
   // Nombre que se muestra junto al icono que tiene el mouse encima.
-  const [etiqueta, setEtiqueta] = useState(null); // { texto, top }
+  const [etiqueta, setEtiqueta] = useState(null); // { texto, top, color }
   // Cada quien ve solo sus modulos. Mientras la membresia carga se
   // muestra el menu completo: no hay datos aun y evita un parpadeo.
   const { membresia } = useAppData();
@@ -105,11 +105,15 @@ export default function Sidebar({
         const distancia = Math.abs(y - centro);
         icono.style.transform = `scale(${escalaDock(distancia).toFixed(3)})`;
         if (distancia < DOCK_ETIQUETA && (!cercano || distancia < cercano.distancia)) {
-          cercano = { distancia, centro, texto: icono.closest("button").getAttribute("aria-label") };
+          cercano = {
+            distancia, centro,
+            texto: icono.closest("button").getAttribute("aria-label"),
+            color: icono.dataset.color,
+          };
         }
       });
       // Con la barra fijada los nombres ya estan a la vista.
-      const nueva = cercano && !pinned ? { texto: cercano.texto, top: cercano.centro } : null;
+      const nueva = cercano && !pinned ? { texto: cercano.texto, top: cercano.centro, color: cercano.color } : null;
       setEtiqueta((prev) => (prev?.texto === nueva?.texto && prev?.top === nueva?.top ? prev : nueva));
     });
   };
@@ -240,6 +244,7 @@ export default function Sidebar({
                         hacia abajo le da el relieve de los iconos del Mac. */}
                     <span
                       data-dock
+                      data-color={ICON_COLORS[item.id] || "#8E8E93"}
                       className="rail-icono"
                       style={{
                         flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
@@ -339,9 +344,11 @@ export default function Sidebar({
             transform: "translateY(-50%)",
             zIndex: 101,
             pointerEvents: "none",
-            background: "var(--surface)",
-            color: "var(--text-primary)",
-            border: "1px solid var(--separator)",
+            // Del color del icono que tiene el mouse, con letra blanca: asi la
+            // etiqueta se ve como parte del icono y no como un globo aparte.
+            background: etiqueta.color || "var(--surface)",
+            color: etiqueta.color ? "#ffffff" : "var(--text-primary)",
+            border: etiqueta.color ? "none" : "1px solid var(--separator)",
             boxShadow: "var(--sombra-md)",
             borderRadius: 8,
             padding: "6px 11px",

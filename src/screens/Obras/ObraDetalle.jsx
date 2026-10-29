@@ -135,7 +135,7 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
   const tieneActa = !motivoActa;
 
   const avisarActaPendiente = () => {
-    toast.error(textoActaPendiente(oAct, estadosActas));
+    toast.error(textoActaPendiente(oAct, estadosActas), { posicion: "centro" });
     setDetTab("acta");
   };
 

@@ -246,6 +246,14 @@ export const componentesCss = `
       font-size: 13px; line-height: 18px; font-weight: 500;
       animation: uiToastEntra var(--transicion-entrada); max-width: 100%; }
     .ui-toast__texto { min-width: 0; overflow-wrap: anywhere; }
+    /* En el centro: lo que frena el trabajo y hay que leer. Varias lineas,
+       asi que deja la forma de pastilla por una tarjeta. */
+    .ui-toaster--centro { bottom: auto; top: 50%; transform: translate(-50%, -50%);
+      flex-direction: column; }
+    .ui-toaster--centro .ui-toast { border-radius: 16px; padding: 16px 20px;
+      font-size: 14px; line-height: 20px; align-items: flex-start; }
+    .ui-toaster--centro .ui-toast__dot { margin-top: 6px; }
+    .ui-toaster--centro .ui-toast--error { border-color: var(--danger); }
     .ui-toast__dot { width: 8px; height: 8px; border-radius: 50%; flex: none;
       background: var(--text-quaternary); }
     .ui-toast--exito .ui-toast__dot { background: var(--success); }

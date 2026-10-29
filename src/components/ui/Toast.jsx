@@ -17,6 +17,10 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 //   aviso.exito("Cotización guardada");
 //   aviso.error("No se pudo enviar el correo");
 //   aviso.mostrar("Tarea eliminada", { accion: { label: "Deshacer", onClick: restaurar } });
+//   aviso.error("Falta el acta firmada…", { posicion: "centro" });
+//
+// `posicion: "centro"` es para lo que frena el trabajo y hay que leer: abajo,
+// junto al borde, pasaba desapercibido sobre el contenido de la pantalla.
 
 const ToastContext = createContext(null);
 
@@ -77,7 +81,7 @@ export function ToastProvider({ children }) {
 
   const mostrar = useCallback((texto, opciones = {}) => {
     const id = ++contador;
-    const { tono = "neutro", accion, duracion } = opciones;
+    const { tono = "neutro", accion, duracion, posicion = "abajo" } = opciones;
     setAvisos((prev) => [
       // Mas de tres a la vez tapan la pantalla; se queda con los ultimos.
       ...prev.slice(-2),
@@ -86,6 +90,7 @@ export function ToastProvider({ children }) {
         texto,
         tono,
         accion,
+        posicion,
         // Con «Deshacer» se da mas tiempo: hay que leerlo y decidir.
         duracion: duracion ?? (accion ? 7000 : tono === "error" ? 8000 : 4000),
       },
@@ -103,9 +108,16 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={valor}>
       {children}
-      {avisos.length > 0 && (
+      {avisos.some((a) => a.posicion !== "centro") && (
         <div className="ui-toaster" aria-live="polite">
-          {avisos.map((a) => (
+          {avisos.filter((a) => a.posicion !== "centro").map((a) => (
+            <Toast key={a.id} aviso={a} onCerrar={() => cerrar(a.id)} />
+          ))}
+        </div>
+      )}
+      {avisos.some((a) => a.posicion === "centro") && (
+        <div className="ui-toaster ui-toaster--centro" aria-live="assertive">
+          {avisos.filter((a) => a.posicion === "centro").map((a) => (
             <Toast key={a.id} aviso={a} onCerrar={() => cerrar(a.id)} />
           ))}
         </div>

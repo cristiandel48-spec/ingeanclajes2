@@ -102,6 +102,41 @@ function pendientesSinMarcar(tareas, notas) {
   return items.sort((a, b) => (b.dias ?? -1) - (a.dias ?? -1));
 }
 
+// ── Lo que viene en la agenda ──────────────────────────────────────────
+const MAX_PROXIMOS = 4;
+const DIAS_PROXIMOS = 14;
+const NOMBRES_DIA = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+const NOMBRES_MES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+  "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
+// Fecha ISO (yyyy-mm-dd) a Date local, sin el corrimiento de zona horaria.
+function fechaLocal(iso) {
+  const [a, m, d] = String(iso || "").slice(0, 10).split("-").map(Number);
+  return a && m && d ? new Date(a, m - 1, d) : null;
+}
+
+// «Mañana, viernes 30», «Lunes 2» o, a mas de una semana, «Lunes 10 de noviembre».
+function etiquetaDia(iso, hoyIso) {
+  const f = fechaLocal(iso);
+  const h = fechaLocal(hoyIso);
+  if (!f || !h) return iso;
+  const dias = Math.round((f - h) / 86400000);
+  const nombre = `${NOMBRES_DIA[f.getDay()]} ${f.getDate()}`;
+  if (dias === 1) return `Mañana, ${nombre}`;
+  const texto = dias <= 6 ? nombre : `${nombre} de ${NOMBRES_MES[f.getMonth()]}`;
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
+// La rayita de cada compromiso, del color del modulo con el que tiene que ver:
+// una visita es obra, una llamada es seguimiento de cotizacion.
+function colorDeCompromiso(ev) {
+  if (ev?.tipo === "visita") return ICON_COLORS.obras;
+  if (ev?.tipo === "llamada") return ICON_COLORS.cotizacion;
+  if (ev?.tipo === "reunion") return ICON_COLORS.clientes;
+  if (ev?.tipo === "especial") return ICON_COLORS.agenda;
+  return "#8E8E93";
+}
+
 // Cabecera de una tarjeta del tablero: titulo a la izquierda y, si hay, un
 // enlace a la derecha. Antes cada bloque la escribia a su manera.
 function CabeceraTarjeta({ titulo, descripcion, accion }) {
@@ -277,6 +312,24 @@ export default function Dashboard({ ctx, go }) {
   const eventosHoy = (Array.isArray(agenda) ? agenda : []).filter(
     (item) => item.fecha === hoyIso && item.estado !== "completado"
   );
+
+  // Los siguientes compromisos de las proximas dos semanas, agrupados por dia.
+  const limiteProximos = (() => {
+    const f = fechaLocal(hoyIso);
+    if (!f) return "";
+    f.setDate(f.getDate() + DIAS_PROXIMOS);
+    return `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, "0")}-${String(f.getDate()).padStart(2, "0")}`;
+  })();
+  const proximosPorDia = (Array.isArray(agenda) ? agenda : [])
+    .filter((item) => item?.fecha > hoyIso && item.fecha <= limiteProximos && item.estado !== "completado")
+    .sort((a, b) => `${a.fecha} ${a.hora || "99"}`.localeCompare(`${b.fecha} ${b.hora || "99"}`))
+    .slice(0, MAX_PROXIMOS)
+    .reduce((grupos, ev) => {
+      const ultimo = grupos[grupos.length - 1];
+      if (ultimo?.fecha === ev.fecha) ultimo.eventos.push(ev);
+      else grupos.push({ fecha: ev.fecha, eventos: [ev] });
+      return grupos;
+    }, []);
 
   const horaActual = new Date().getHours();
   const saludo =
@@ -566,7 +619,12 @@ export default function Dashboard({ ctx, go }) {
         <div style={{ display: "flex", flexDirection: "column", gap: ESPACIO.lg, minWidth: 0 }}>
           <Card ajustado>
             <CabeceraTarjeta
-              titulo="Visitas y agenda de hoy"
+              titulo={
+                <span style={{ display: "inline-flex", alignItems: "center", gap: ESPACIO.sm }}>
+                  <IconoModulo modulo="agenda" size={26} radio={8} />
+                  Agenda
+                </span>
+              }
               accion={
                 <Button variante="tertiary" tam="sm" iconoDerecha="flechaDer" onClick={() => go("agenda")}>
                   Abrir agenda
@@ -575,16 +633,14 @@ export default function Dashboard({ ctx, go }) {
             />
 
             {eventosHoy.length === 0 ? (
-              <EmptyState
-                icono="calendario"
-                titulo="Sin compromisos para hoy"
-                texto="No hay visitas técnicas ni llamadas de seguimiento para esta fecha."
-                accion={
-                  <Button variante="secondary" icono="mas" onClick={() => go("agenda")}>
-                    Programar compromiso
-                  </Button>
-                }
-              />
+              // Una linea y no un estado vacio grande: el espacio es para lo
+              // que viene, que es lo que sirve cuando hoy no hay nada.
+              <div style={{
+                ...TIPO.footnote, color: "var(--text-secondary)",
+                background: "var(--surface-subtle)", borderRadius: 10, padding: "10px 12px",
+              }}>
+                Hoy no tienes compromisos.
+              </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: ESPACIO.sm }}>
                 {eventosHoy.map((item) => {
@@ -679,6 +735,56 @@ export default function Dashboard({ ctx, go }) {
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {/* Lo que viene en los proximos dias, agrupado por dia. */}
+            {proximosPorDia.length > 0 ? (
+              <div style={{ marginTop: ESPACIO.md }}>
+                {proximosPorDia.map(({ fecha, eventos }) => (
+                  <div key={fecha} style={{ marginTop: ESPACIO.sm }}>
+                    <div style={{ ...TIPO.caption, color: "var(--text-tertiary)", marginBottom: 2 }}>
+                      {etiquetaDia(fecha, hoyIso)}
+                    </div>
+                    {eventos.map((ev) => (
+                      <button
+                        key={ev.id}
+                        type="button"
+                        onClick={() => go("agenda")}
+                        style={{
+                          display: "grid", gridTemplateColumns: "48px 4px minmax(0, 1fr)", gap: 10,
+                          width: "100%", padding: "7px 0", background: "none", border: "none",
+                          textAlign: "left", font: "inherit", cursor: "pointer", color: "inherit",
+                        }}
+                      >
+                        <span style={{ ...CIFRA, ...TIPO.footnote, color: "var(--text-secondary)", paddingTop: 1 }}>
+                          {ev.hora || "—"}
+                        </span>
+                        <span style={{ borderRadius: 4, background: colorDeCompromiso(ev) }} />
+                        <span style={{ minWidth: 0 }}>
+                          <span style={{
+                            ...TIPO.footnote, fontWeight: 600, color: "var(--text-primary)", display: "block",
+                            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                          }}>
+                            {ev.titulo || ev.obra || "Compromiso"}
+                          </span>
+                          <span style={{
+                            ...TIPO.caption, fontWeight: 400, color: "var(--text-tertiary)", display: "block",
+                            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                          }}>
+                            {[ev.titulo ? ev.obra : null, ev.cliente].filter(Boolean).join(" · ") || ev.ciudad || ""}
+                          </span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ) : eventosHoy.length === 0 && (
+              <div style={{ marginTop: ESPACIO.md }}>
+                <Button variante="secondary" tam="sm" icono="mas" onClick={() => go("agenda")}>
+                  Programar compromiso
+                </Button>
               </div>
             )}
           </Card>

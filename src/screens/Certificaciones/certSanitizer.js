@@ -32,6 +32,62 @@ export function esDireccionDeObra(direccion, obra, certLugar = "") {
 }
 
 /**
+ * Limpia y desduplica una dirección fiscal para que nunca contenga frases repetidas
+ * ni números desprendidos por error de tipeo/separación.
+ */
+export function limpiarDireccionFiscal(raw) {
+  let d = String(raw || "").trim().replace(/[.\s]+$/, "");
+  if (!d) return "";
+
+  // Quitar prefijos comunes
+  d = d.replace(/^(ubicad[ao]\s+en\s+(?:la\s+|el\s+)?|en\s+(?:la\s+|el\s+)?)/i, "").trim();
+
+  // Si trae un número huérfano al inicio como "75, CALLE 40 SUR..."
+  const mPrefijoNum = d.match(/^(\d+[a-zA-Z]?),\s*(calle|carrera|cra|cl|diagonal|transversal|av|avenida|circular)\b(.+)$/i);
+  if (mPrefijoNum) {
+    const num = mPrefijoNum[1];
+    const via = mPrefijoNum[2];
+    const resto = mPrefijoNum[3];
+    // Reubicar el número en su lugar habitual tras la vía
+    d = `${via}${resto}`.replace(/,\s*(envigado|medell[ií]n|itag[uü][ií]|sabaneta|bello|antioquia)/i, ` - ${num}, $1`);
+    if (!d.includes(num)) d = `${via}${resto} - ${num}`;
+  }
+
+  // Detectar y eliminar repeticiones de bloques completos (ej: "A, B, C, A, B, C, A, B, C" -> "A, B, C")
+  const partes = d.split(/,\s*/);
+  const mitad = Math.floor(partes.length / 2);
+  for (let tam = 1; tam <= mitad; tam++) {
+    const patron = partes.slice(0, tam).join(", ").toLowerCase();
+    let esRepeticion = true;
+    for (let i = tam; i < partes.length; i += tam) {
+      const pedazo = partes.slice(i, i + tam).join(", ").toLowerCase();
+      if (pedazo !== patron && !patron.startsWith(pedazo)) {
+        esRepeticion = false;
+        break;
+      }
+    }
+    if (esRepeticion && partes.length >= tam * 2) {
+      d = partes.slice(0, tam).join(", ");
+      break;
+    }
+  }
+
+  // Desduplicar fragmentos adyacentes idénticos
+  const tokens = d.split(/,\s*/);
+  const tokensUnicos = [];
+  for (const t of tokens) {
+    const tTrim = t.trim();
+    if (!tTrim) continue;
+    if (tokensUnicos.length > 0 && tokensUnicos[tokensUnicos.length - 1].toLowerCase() === tTrim.toLowerCase()) {
+      continue;
+    }
+    tokensUnicos.push(tTrim);
+  }
+
+  return tokensUnicos.join(", ").trim();
+}
+
+/**
  * Busca la dirección fiscal del cliente exclusivamente en el directorio de clientes.
  * Nunca toma el nombre o sede de la obra como dirección fiscal.
  */
@@ -42,7 +98,7 @@ export function buscarDireccionFiscalCliente(clientes, obra, clienteTexto = "", 
   if (obra) {
     const c = clienteDeObra(lista, obra);
     if (c?.direccion?.trim() && !esDireccionDeObra(c.direccion, obra)) {
-      return c.direccion.trim();
+      return limpiarDireccionFiscal(c.direccion.trim());
     }
   }
 
@@ -51,7 +107,7 @@ export function buscarDireccionFiscalCliente(clientes, obra, clienteTexto = "", 
   if (nitNorm) {
     const porNit = lista.find((x) => normalizarDocumento(x?.nit) === nitNorm);
     if (porNit?.direccion?.trim() && !esDireccionDeObra(porNit.direccion, obra)) {
-      return porNit.direccion.trim();
+      return limpiarDireccionFiscal(porNit.direccion.trim());
     }
   }
 
@@ -64,7 +120,7 @@ export function buscarDireccionFiscalCliente(clientes, obra, clienteTexto = "", 
       (clave.length >= 3 && claveRazonSocial(x?.nombre || "") === clave)
     );
     if (porNombre?.direccion?.trim() && !esDireccionDeObra(porNombre.direccion, obra)) {
-      return porNombre.direccion.trim();
+      return limpiarDireccionFiscal(porNombre.direccion.trim());
     }
   }
 
@@ -73,66 +129,52 @@ export function buscarDireccionFiscalCliente(clientes, obra, clienteTexto = "", 
 
 /**
  * Sanea el párrafo del sistema certificado de un certificado:
- * - Si hay dirección fiscal real, actualiza o inyecta "ubicada en ...".
- * - Si NO hay dirección fiscal (o la guardada era el nombre de la obra),
- *   elimina cualquier mención errónea a "ubicada en la CAUCASIA EPM" o "ubicada en la".
+ * - Corrige "la sede" a "la obra".
+ * - Elimina repeticiones y deja una sola dirección fiscal limpia.
+ * - Es 100% idempotente (no duplica texto en ejecuciones sucesivas).
  */
 export function sanitizarTextoSistema(sistema, direccionFiscal = "", lugar = "") {
-  const t = String(sistema || "").trim();
+  let t = String(sistema || "").trim();
   if (!t) return "";
 
-  const dirLimpia = String(direccionFiscal || "").trim().replace(/[.\s]+$/, "");
-  const dirSinPrefijo = dirLimpia.replace(/^(ubicad[ao]\s+en\s+(?:la\s+|el\s+)?|en\s+(?:la\s+|el\s+)?)/i, "").trim();
+  // 1. En certificaciones de ingeniería de alturas es "la obra", nunca "la sede"
+  t = t.replace(/\binstalad[ao]s?\s+en\s+(?:la\s+(?:sede|obra)\s+)+/gi, "instalados en la obra ");
+  t = t.replace(/\ben\s+la\s+sede\b/gi, "en la obra");
+
+  const dirLimpia = limpiarDireccionFiscal(direccionFiscal);
 
   // Si la dirección provista es en realidad nombre de obra, descartarla
-  if (dirSinPrefijo && (esDireccionDeObra(dirSinPrefijo, null, lugar) || dirSinPrefijo.toLowerCase().includes("caucasia epm"))) {
+  if (dirLimpia && (esDireccionDeObra(dirLimpia, null, lugar) || dirLimpia.toLowerCase().includes("caucasia epm"))) {
     return sanitizarTextoSistema(t, "", lugar);
   }
 
-  if (dirSinPrefijo) {
+  // Captura TODO el bloque entre "ubicada en" y la solicitud o cierre
+  const regexBloqueDireccion = /,\s*ubicad[ao]\s+en[\s\S]*?(?=,\s*a\s+solicitud\s+de|,\s*con\s+NIT|,\s*fueron\s+inspeccionados|$)/i;
+
+  if (dirLimpia) {
+    const dirSinPrefijo = dirLimpia.replace(/^(ubicad[ao]\s+en\s+(?:la\s+|el\s+)?|en\s+(?:la\s+|el\s+)?)/i, "").trim();
     const prefijo = /^(calle|carrera|cra|cl\b|diagonal|transversal|avenida|av\b)/i.test(dirSinPrefijo) ? "la " : "";
     const textoDir = `ubicada en ${prefijo}${dirSinPrefijo.toUpperCase()}`;
 
-    // Si ya tiene una cláusula "ubicada en ..." o "con DIRECCIÓN: ..."
-    if (/,\s*(?:ubicad[ao]\s+en\s+(?:la\s+|el\s+)?|con\s+DIRECCI[OÓ]N:\s*)[^,]+/i.test(t)) {
-      return normalizarTextoCertificacion(
-        t.replace(/,\s*(?:ubicad[ao]\s+en\s+(?:la\s+|el\s+)?|con\s+DIRECCI[OÓ]N:\s*)[^,]+/i, `, ${textoDir}`)
-      );
+    // Si ya existe un bloque de dirección (repetido o no), se reemplaza TODO el bloque de una vez
+    if (regexBloqueDireccion.test(t)) {
+      t = t.replace(regexBloqueDireccion, `, ${textoDir}`);
+    } else if (/,\s*a\s+solicitud\s+de/i.test(t)) {
+      t = t.replace(/,\s*a\s+solicitud\s+de/i, `, ${textoDir}, a solicitud de`);
     }
 
-    // Si no la tiene pero tiene "a solicitud de", inyectar antes
-    if (/,\s*a\s+solicitud\s+de/i.test(t)) {
-      return normalizarTextoCertificacion(
-        t.replace(/,\s*a\s+solicitud\s+de/i, `, ${textoDir}, a solicitud de`)
-      );
-    }
+    return normalizarTextoCertificacion(t);
   }
 
-  // Sin dirección fiscal: eliminar cualquier cláusula espuria de dirección
-  let limpio = t;
-
-  // 1. Eliminar "ubicada en la CAUCASIA EPM" o variaciones
-  limpio = limpio.replace(/,\s*ubicad[ao]\s+en\s+(?:la\s+|el\s+)?CAUCASIA(?:\s+EPM)?[^,]*/gi, "");
-
-  // 2. Eliminar "ubicada en ..." si coincide con el lugar
-  if (lugar) {
-    const lugarEscapado = lugar.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    limpio = limpio.replace(new RegExp(`,\\s*ubicad[ao]\\s+en\\s+(?:la\\s+|el\\s+)?${lugarEscapado}[^,]*`, "gi"), "");
+  // Sin dirección fiscal: eliminar TODO el bloque de dirección
+  if (regexBloqueDireccion.test(t)) {
+    t = t.replace(regexBloqueDireccion, "");
   }
 
-  // 3. Eliminar cláusulas vacías o huérfanas tipo "ubicada en la," o "ubicada en,"
-  limpio = limpio.replace(/,\s*ubicad[ao]\s+en\s*(?:la\s*|el\s*)?(?=,\s*a solicitud de|,\s*con NIT|,\s*fueron inspeccionados|$)/gi, "");
+  // Limpiar cualquier residuo de CAUCASIA EPM
+  t = t.replace(/,\s*ubicad[ao]\s+en\s+(?:la\s+|el\s+)?CAUCASIA(?:\s+EPM)?[^,]*/gi, "");
 
-  // 4. Si la dirección que tenía era claramente de obra, eliminarla
-  limpio = limpio.replace(/,\s*ubicad[ao]\s+en\s+(?:la\s+|el\s+)?[^,]+?(?=,\s*a solicitud de|,\s*con NIT)/gi, (match) => {
-    const cuerpoMatch = match.replace(/^,\s*ubicad[ao]\s+en\s+(?:la\s+|el\s+)?/i, "").trim();
-    if (esDireccionDeObra(cuerpoMatch, null, lugar) || cuerpoMatch.toLowerCase().includes("caucasia")) {
-      return "";
-    }
-    return match;
-  });
-
-  return normalizarTextoCertificacion(limpio);
+  return normalizarTextoCertificacion(t);
 }
 
 /**
@@ -142,15 +184,13 @@ export function sanitizarCertificado(cert, { clientes = [], obras = [] } = {}) {
   if (!cert) return cert;
 
   const obra = (obras || []).find((o) => o.id === cert.obraId);
-  const dirFiscal = buscarDireccionFiscalCliente(clientes, obra, cert.cliente, cert.nit);
+  let dirFiscal = buscarDireccionFiscalCliente(clientes, obra, cert.cliente, cert.nit);
 
-  let direccionFinal = "";
-  if (dirFiscal) {
-    direccionFinal = dirFiscal;
-  } else if (cert.direccion && !esDireccionDeObra(cert.direccion, obra, cert.lugar)) {
-    direccionFinal = cert.direccion.trim();
+  if (!dirFiscal && cert.direccion && !esDireccionDeObra(cert.direccion, obra, cert.lugar)) {
+    dirFiscal = cert.direccion.trim();
   }
 
+  const direccionFinal = limpiarDireccionFiscal(dirFiscal);
   const sistemaFinal = sanitizarTextoSistema(cert.sistema, direccionFinal, cert.lugar);
 
   if (direccionFinal === (cert.direccion || "") && sistemaFinal === (cert.sistema || "")) {

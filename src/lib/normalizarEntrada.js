@@ -325,7 +325,7 @@ function embellecerTextoCompletoCertificacion(texto) {
   }
 
   let lugar = "";
-  const mLugar = remaining.match(/(?:,\s*|\s+)instalados\s+en\s+(?:la\s+sede\s+|el\s+proyecto\s+|las\s+instalaciones\s+de\s+)?(\([^)]+\)|[^,]+)$/i);
+  const mLugar = remaining.match(/(?:,\s*|\s+)instalados\s+en\s+(?:la\s+(?:sede|obra)\s+|el\s+proyecto\s+|las\s+instalaciones\s+de\s+)?(\([^)]+\)|[^,]+)$/i);
   if (mLugar) {
     lugar = mLugar[1].trim();
     remaining = remaining.slice(0, mLugar.index);
@@ -335,7 +335,8 @@ function embellecerTextoCompletoCertificacion(texto) {
   rawDetalle = rawDetalle.replace(/^los\s+sistemas\s+de\s+protecci[oó]n\s+contra\s+ca[ií]das\s*(?:instalados,?\s*)?(?:consistentes\s+en:?\s*)?/i, "").trim();
   const detalleLindo = embellecerDetalleCertificacion(rawDetalle);
 
-  const cleanLugar = lugar.replace(/^\(|\)$/g, "").trim();
+  let cleanLugar = lugar.replace(/^\(|\)$/g, "").trim();
+  cleanLugar = cleanLugar.replace(/^(?:la\s+|el\s+|las\s+)?(?:sede|obra|proyecto|instalaciones)\s+/i, "").trim();
   const cleanCliente = cliente.replace(/^\(|\)$/g, "").trim();
   const cleanNit = nit.trim();
   let cleanDir = direccion.trim();
@@ -345,7 +346,7 @@ function embellecerTextoCompletoCertificacion(texto) {
 
   const partes = [detalleLindo];
   if (cleanLugar) {
-    const prefijo = /^(sede|proyecto|obra|instalaciones|edificio|planta)/i.test(cleanLugar) ? "" : "la sede ";
+    const prefijo = /^(sede|proyecto|obra|instalaciones|edificio|planta)/i.test(cleanLugar) ? "" : "la obra ";
     partes.push(`instalados en ${prefijo}${cleanLugar}`);
   }
   if (cleanDir) {

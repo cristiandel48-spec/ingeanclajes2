@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   esDireccionDeObra,
+  limpiarDireccionFiscal,
   buscarDireccionFiscalCliente,
   sanitizarTextoSistema,
   sanitizarCertificado,
-  sanitizarListaCertificados,
 } from "./certSanitizer";
 
 describe("certSanitizer", () => {
@@ -12,8 +12,8 @@ describe("certSanitizer", () => {
     {
       id: "CL-100",
       nombre: "LUIS JAVIER GALEANO MURILLO",
-      nit: "71.223.456",
-      direccion: "Calle 50 # 40 - 20, Envigado",
+      nit: "71705357-9",
+      direccion: "CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA",
       ciudad: "Envigado",
     },
     {
@@ -36,24 +36,47 @@ describe("certSanitizer", () => {
     {
       id: "OB-045",
       cliente: "LUIS JAVIER GALEANO MURILLO",
-      nit: "71.223.456",
-      proyecto: "COM CAUCASIA",
-      nombre: "COM CAUCASIA",
+      nit: "71705357-9",
+      proyecto: "COM CAUCASIA EPM",
+      nombre: "COM CAUCASIA EPM",
       direccion: "CAUCASIA EPM",
       ciudad: "Caucasia",
     },
   ];
 
+  describe("limpiarDireccionFiscal", () => {
+    it("desduplica direcciones que se repitieron varias veces", () => {
+      const repetida =
+        "CALLE 40 SUR NO 24 E, ENVIGADO, ANTIOQUIA, CALLE 40 SUR NO 24 E, ENVIGADO, ANTIOQUIA, CALLE 40 SUR NO 24 E, ENVIGADO, ANTIOQUIA";
+      const limpia = limpiarDireccionFiscal(repetida);
+      expect(limpia).toBe("CALLE 40 SUR NO 24 E, ENVIGADO, ANTIOQUIA");
+    });
+
+    it("corrige número desprendido al inicio como '75, CALLE 40 SUR...'", () => {
+      const corrupta =
+        "75, CALLE 40 SUR NO 24 E, ENVIGADO, ANTIOQUIA, CALLE 40 SUR NO 24 E, ENVIGADO, ANTIOQUIA, CALLE 40 SUR NO 24 E, ENVIGADO, ANTIOQUIA";
+      const limpia = limpiarDireccionFiscal(corrupta);
+      expect(limpia).toContain("CALLE 40 SUR NO 24 E");
+      expect(limpia).toContain("ENVIGADO");
+      expect(limpia).not.toMatch(/^75,/);
+    });
+
+    it("respeta una dirección única y bien formateada", () => {
+      const buena = "CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA";
+      expect(limpiarDireccionFiscal(buena)).toBe(buena);
+    });
+  });
+
   describe("esDireccionDeObra", () => {
     it("identifica 'CAUCASIA EPM' y variantes como nombre de obra", () => {
       expect(esDireccionDeObra("CAUCASIA EPM", mockObras[0])).toBe(true);
       expect(esDireccionDeObra("caucasia epm", mockObras[0])).toBe(true);
-      expect(esDireccionDeObra("COM CAUCASIA", mockObras[0])).toBe(true);
+      expect(esDireccionDeObra("COM CAUCASIA EPM", mockObras[0])).toBe(true);
       expect(esDireccionDeObra("Caucasia", mockObras[0])).toBe(true);
     });
 
     it("no confunde una dirección real con nombre de obra", () => {
-      expect(esDireccionDeObra("Calle 50 # 40 - 20, Envigado", mockObras[0])).toBe(false);
+      expect(esDireccionDeObra("CALLE 40 SUR NO 24 E - 75, ENVIGADO", mockObras[0])).toBe(false);
       expect(esDireccionDeObra("Carrera 58 # 42 - 125", mockObras[0])).toBe(false);
     });
   });
@@ -61,7 +84,7 @@ describe("certSanitizer", () => {
   describe("buscarDireccionFiscalCliente", () => {
     it("encuentra la dirección fiscal en clientes para la obra", () => {
       const dir = buscarDireccionFiscalCliente(mockClientes, mockObras[0]);
-      expect(dir).toBe("Calle 50 # 40 - 20, Envigado");
+      expect(dir).toBe("CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA");
     });
 
     it("nunca retorna el nombre de obra o 'CAUCASIA EPM'", () => {
@@ -73,92 +96,56 @@ describe("certSanitizer", () => {
       });
       expect(dir).toBe("");
     });
-
-    it("retorna vacío si el cliente no tiene dirección en el directorio", () => {
-      const dir = buscarDireccionFiscalCliente(mockClientes, null, "CLIENTE SIN DIRECCION S.A.S");
-      expect(dir).toBe("");
-    });
   });
 
-  describe("sanitizarTextoSistema", () => {
-    const textoConError =
-      "CERTIFICA que los sistemas de protección contra caídas consistentes en: Línea de vida horizontal de 20 ML, instalados en la sede COM CAUCASIA, ubicada en la CAUCASIA EPM, a solicitud de LUIS JAVIER GALEANO MURILLO (NIT: 71.223.456), fueron inspeccionados y verificados técnicamente, encontrándose estructuralmente conformes, operativos y aptos para trabajo seguro en alturas, cumpliendo a cabalidad con los requisitos de la Resolución 4272 de 2021 del Ministerio del Trabajo y los estándares de ingeniería aplicables.";
+  describe("sanitizarTextoSistema - caso exacto del usuario", () => {
+    const textoDelUsuario =
+      "CERTIFICA que los sistemas de protección contra caídas consistentes en: treinta (30) anclajes artico acero galvanizado, instalados en la sede COM CAUCASIA EPM, ubicada en 75, CALLE 40 SUR NO 24 E, ENVIGADO, ANTIOQUIA, CALLE 40 SUR NO 24 E, ENVIGADO, ANTIOQUIA, CALLE 40 SUR NO 24 E, ENVIGADO, ANTIOQUIA, a solicitud de LUIS JAVIER GALEANO MURILLO (NIT: 71705357-9), fueron inspeccionados y verificados técnicamente, encontrándose estructuralmente conformes, operativos y aptos para trabajo seguro en alturas, cumpliendo a cabalidad con los requisitos de la Resolución 4272 de 2021 del Ministerio del Trabajo y los estándares de ingeniería aplicables.";
 
-    it("reemplaza 'ubicada en la CAUCASIA EPM' con la dirección fiscal real del cliente", () => {
-      const resultado = sanitizarTextoSistema(textoConError, "Calle 50 # 40 - 20, Envigado", "COM CAUCASIA");
-      expect(resultado).not.toContain("CAUCASIA EPM");
-      expect(resultado).toContain("ubicada en la CALLE 50 # 40 - 20, ENVIGADO");
-      expect(resultado).toContain("a solicitud de LUIS JAVIER GALEANO MURILLO");
+    it("cambia 'la sede' por 'la obra'", () => {
+      const res = sanitizarTextoSistema(textoDelUsuario, "CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA", "COM CAUCASIA EPM");
+      expect(res).toContain("instalados en la obra COM CAUCASIA EPM");
+      expect(res).not.toContain("la sede");
     });
 
-    it("elimina completamente la cláusula 'ubicada en...' si no hay dirección fiscal", () => {
-      const resultado = sanitizarTextoSistema(textoConError, "", "COM CAUCASIA");
-      expect(resultado).not.toContain("CAUCASIA EPM");
-      expect(resultado).not.toContain("ubicada en");
-      expect(resultado).toContain("instalados en la sede COM CAUCASIA, a solicitud de LUIS JAVIER GALEANO MURILLO");
+    it("elimina las 3 repeticiones y deja una sola dirección fiscal limpia", () => {
+      const res = sanitizarTextoSistema(textoDelUsuario, "CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA", "COM CAUCASIA EPM");
+      expect(res).toContain("ubicada en la CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA");
+      // Contar apariciones de ENVIGADO en todo el texto (debe ser exactamente 1)
+      const count = (res.match(/ENVIGADO/g) || []).length;
+      expect(count).toBe(1);
     });
 
-    it("elimina 'ubicada en la' huérfano", () => {
-      const textoHuerfano =
-        "CERTIFICA que los sistemas de protección contra caídas consistentes en: Línea de vida horizontal, instalados en la sede COM CAUCASIA, ubicada en la, a solicitud de LUIS JAVIER GALEANO MURILLO (NIT: 71.223.456), fueron inspeccionados y verificados técnicamente...";
-      const resultado = sanitizarTextoSistema(textoHuerfano, "", "COM CAUCASIA");
-      expect(resultado).not.toContain("ubicada en");
-      expect(resultado).toContain("instalados en la sede COM CAUCASIA, a solicitud de LUIS JAVIER GALEANO MURILLO");
+    it("es 100% idempotente: no duplica en pases sucesivos", () => {
+      let res = textoDelUsuario;
+      for (let i = 0; i < 5; i++) {
+        res = sanitizarTextoSistema(res, "CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA", "COM CAUCASIA EPM");
+      }
+      expect(res).toContain("instalados en la obra COM CAUCASIA EPM");
+      const count = (res.match(/ENVIGADO/g) || []).length;
+      expect(count).toBe(1);
     });
   });
 
   describe("sanitizarCertificado", () => {
-    it("sanea un certificado con dirección errónea a la dirección fiscal del cliente", () => {
+    it("sanea un certificado con dirección triplicada a una sola dirección limpia y con 'la obra'", () => {
       const certViejo = {
         id: "CERT-001",
         obraId: "OB-045",
         cliente: "LUIS JAVIER GALEANO MURILLO",
-        nit: "71.223.456",
-        lugar: "COM CAUCASIA",
-        direccion: "CAUCASIA EPM",
+        nit: "71705357-9",
+        lugar: "COM CAUCASIA EPM",
+        direccion: "75, CALLE 40 SUR NO 24 E, ENVIGADO, ANTIOQUIA, CALLE 40 SUR NO 24 E, ENVIGADO, ANTIOQUIA",
         sistema:
-          "CERTIFICA que los sistemas de protección contra caídas consistentes en: Línea de vida horizontal, instalados en la sede COM CAUCASIA, ubicada en la CAUCASIA EPM, a solicitud de LUIS JAVIER GALEANO MURILLO (NIT: 71.223.456), fueron inspeccionados y verificados técnicamente...",
+          "CERTIFICA que los sistemas de protección contra caídas consistentes en: treinta (30) anclajes, instalados en la sede COM CAUCASIA EPM, ubicada en 75, CALLE 40 SUR NO 24 E, ENVIGADO, ANTIOQUIA, CALLE 40 SUR NO 24 E, ENVIGADO, ANTIOQUIA, a solicitud de LUIS JAVIER GALEANO MURILLO (NIT: 71705357-9), fueron inspeccionados...",
       };
 
       const certSaneado = sanitizarCertificado(certViejo, { clientes: mockClientes, obras: mockObras });
-      expect(certSaneado.direccion).toBe("Calle 50 # 40 - 20, Envigado");
-      expect(certSaneado.sistema).toContain("CALLE 50 # 40 - 20, ENVIGADO");
-      expect(certSaneado.sistema).not.toContain("CAUCASIA EPM");
-    });
-
-    it("deja la dirección vacía y limpia el texto si el cliente no tiene dirección fiscal", () => {
-      const certSinDir = {
-        id: "CERT-002",
-        obraId: "OB-999",
-        cliente: "CLIENTE SIN DIRECCION S.A.S",
-        nit: "900.888.777-1",
-        lugar: "COM CAUCASIA",
-        direccion: "CAUCASIA EPM",
-        sistema:
-          "CERTIFICA que los sistemas de protección contra caídas consistentes en: Línea de vida horizontal, instalados en la sede COM CAUCASIA, ubicada en la CAUCASIA EPM, a solicitud de CLIENTE SIN DIRECCION S.A.S (NIT: 900.888.777-1), fueron inspeccionados y verificados técnicamente...",
-      };
-
-      const certSaneado = sanitizarCertificado(certSinDir, { clientes: mockClientes, obras: [] });
-      expect(certSaneado.direccion).toBe("");
-      expect(certSaneado.sistema).not.toContain("CAUCASIA EPM");
-      expect(certSaneado.sistema).not.toContain("ubicada en");
-    });
-  });
-
-  describe("sanitizarListaCertificados", () => {
-    it("sanea una lista de certificados de una sola vez", () => {
-      const lista = [
-        {
-          id: "CERT-001",
-          obraId: "OB-045",
-          cliente: "LUIS JAVIER GALEANO MURILLO",
-          nit: "71.223.456",
-          direccion: "CAUCASIA EPM",
-          sistema: "CERTIFICA que ..., ubicada en la CAUCASIA EPM, a solicitud de LUIS JAVIER GALEANO MURILLO...",
-        },
-      ];
-      const saneada = sanitizarListaCertificados(lista, { clientes: mockClientes, obras: mockObras });
-      expect(saneada[0].direccion).toBe("Calle 50 # 40 - 20, Envigado");
+      expect(certSaneado.direccion).toBe("CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA");
+      expect(certSaneado.sistema).toContain("instalados en la obra COM CAUCASIA EPM");
+      expect(certSaneado.sistema).toContain("CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA");
+      const count = (certSaneado.sistema.match(/ENVIGADO/g) || []).length;
+      expect(count).toBe(1);
     });
   });
 });

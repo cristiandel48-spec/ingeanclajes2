@@ -182,7 +182,7 @@ export const construirTextoSistema = ({
 
   const donde = String(lugar || "").trim().replace(/[.\s]+$/, "");
   if (donde) {
-    const prefijo = /^(sede|proyecto|obra|instalaciones|edificio|planta)/i.test(donde) ? "" : "la sede ";
+    const prefijo = /^(sede|proyecto|obra|instalaciones|edificio|planta)/i.test(donde) ? "" : "la obra ";
     partes.push(`instalados en ${prefijo}${enMayuscula(donde)}`);
   }
 

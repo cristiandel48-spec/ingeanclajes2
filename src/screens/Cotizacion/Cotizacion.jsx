@@ -31,7 +31,7 @@ import { blobABase64, generarCotizacionPdf } from "../../lib/cotizacionPdf";
 import { enviarCotizacionPorCorreo } from "../../lib/backend/usuarios";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
-import { confirmar } from "../../lib/dialogos";
+import { avisar, confirmar } from "../../lib/dialogos";
 import { puedeEscribirTabla } from "../../lib/permisos";
 // Si la obra ya tiene trabajo y no se puede retirar al desaprobar. Una sola
 // regla para aprobar y desaprobar: antes desaprobar no miraba el contador de
@@ -1167,6 +1167,9 @@ export default function Cotizacion({ctx}){
       fecha: today(),
       estado: "Pendiente",
       obraId: null,
+      // La copia no se ha enviado: no hereda el envio de la original.
+      enviadaEn: null,
+      enviadaA: null,
       propuestas: propuestasClonadas,
       propuestaActivaId: propuestasClonadas[0]?.id || null,
       creadoPor: miUserId,
@@ -1186,10 +1189,23 @@ export default function Cotizacion({ctx}){
   // cotizaciones_escribir de la migracion 069 decide si se puede).
   // La obra que haya creado al aprobarse no se toca.
   const eliminarCotizacion = async (c) => {
-    const obraId = c.obraId || obras.find((o) => o.cotizacionId === c.id)?.id;
+    // Con obra no se borra: la obra, sus informes y sus actas leen de aqui el
+    // alcance y los valores, y sin ella tomaban los de OTRA cotizacion del
+    // mismo cliente. Si el cliente se echo para atras, se marca rechazada.
+    const obraId = c.obraId || obras.find((o) => o?.cotizacionId && (
+      String(o.cotizacionId) === String(c.id) || (c.numero && String(o.cotizacionId) === String(c.numero))
+    ))?.id;
+    if (obraId) {
+      await avisar({
+        titulo: `La cotización ${c.numero || c.id} no se puede eliminar`,
+        mensaje: `Tiene la obra ${obraId}, y la obra, sus informes y sus actas usan sus datos. ` +
+          "Si la obra no va, desaprueba la cotización primero; si ya no tiene obra, ahí sí se puede eliminar.",
+      });
+      return;
+    }
     const ok = await confirmar({
       titulo: `¿Eliminar la cotización ${c.numero || c.id}?`,
-      mensaje: `${c.cliente || "Sin cliente"}${obraId ? `\n\nLa obra ${obraId} que se creó al aprobarla no se borra.` : ""}\n\nEsta acción no se puede deshacer.`,
+      mensaje: `${c.cliente || "Sin cliente"}\n\nEsta acción no se puede deshacer.`,
       textoConfirmar: "Eliminar",
       destructivo: true,
     });
@@ -1479,6 +1495,18 @@ export default function Cotizacion({ctx}){
             },
             aprobar: (c)=>aprobarCotizacion(c.id),
             desaprobar: (c)=>desaprobarCotizacion(c.id),
+            // El cliente dijo que no: sale del seguimiento sin borrarla, y un
+            // clic en su estado la devuelve si el cliente vuelve.
+            rechazar: async (c)=>{
+              if(!(await confirmar({
+                titulo: `Cotización ${c.numero || c.id} rechazada`,
+                mensaje: `Marca que ${c.cliente || "el cliente"} no la aceptó. Deja de salir en las llamadas pendientes; no se borra y se puede reactivar.`,
+                textoConfirmar: "Marcar rechazada",
+                destructivo: false,
+              }))) return;
+              setCotizaciones((prev)=>prev.map((x)=>x.id===c.id?{...x,estado:"Rechazada"}:x));
+            },
+            reactivar: (c)=>setCotizaciones((prev)=>prev.map((x)=>x.id===c.id?{...x,estado:x.enviadaEn?"Enviada":"Pendiente"}:x)),
             duplicar: (c)=>duplicarCotizacion(c.id),
             pdf: async (c)=>descargarPdf((await asegurarDetalle("cotizaciones", c.id)) || c),
             enviar: async (c)=>setEnviarCot((await asegurarDetalle("cotizaciones", c.id)) || c),

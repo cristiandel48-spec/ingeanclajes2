@@ -117,5 +117,16 @@ select '082 cedula y cargo de quien recibe',
                          where table_schema='app' and table_name='obras'
                            and column_name='recibe_documento')
             then 'APLICADA' else 'FALTA' end
+union all
+-- Antes de publicar el codigo que la usa: sin estas columnas el guardado de
+-- cotizaciones cae a la fila vieja y no sube las propuestas.
+select '083 fecha y destinatario del envio de la cotizacion',
+       case when exists (select 1 from information_schema.columns
+                         where table_schema='app' and table_name='cotizaciones'
+                           and column_name='enviada_en')
+             and exists (select 1 from information_schema.columns
+                         where table_schema='app' and table_name='cotizaciones'
+                           and column_name='enviada_a')
+            then 'APLICADA' else 'FALTA' end
 
 order by migracion;

@@ -467,17 +467,33 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
   // Reparte parejo en vez de llenar hojas hasta arriba: con 50 items, tres
   // hojas de 17 se ven mucho mejor que dos llenas y una con dos renglones
   // sueltos en medio de una pagina en blanco.
+  //
+  // Se cuenta en RENGLONES, no en items: una descripcion larga del catalogo
+  // ocupa 3 o 4 lineas, y contando items la ultima hoja se llenaba de mas y
+  // el subtotal, el IVA y el total se salian del papel sin avisar. Un item
+  // corto pesa 1, como antes, asi que las cotizaciones normales no cambian.
+  const CARACTERES_POR_RENGLON = 60;
+  const pesoItem = (item) => Math.max(1, Math.ceil(String(item?.desc || "").length / CARACTERES_POR_RENGLON));
+  const pesoDe = (lista) => lista.reduce((s, item) => s + pesoItem(item), 0);
+
   const repartirParejo = (lista, hojas) => {
     const grupos = [];
-    let restantes = lista.length;
+    let restante = pesoDe(lista);
     let desde = 0;
     for (let quedan = hojas; quedan > 0; quedan -= 1) {
-      const tamano = Math.ceil(restantes / quedan);
-      grupos.push(lista.slice(desde, desde + tamano));
-      desde += tamano;
-      restantes -= tamano;
+      const objetivo = Math.ceil(restante / quedan);
+      let hasta = desde;
+      let peso = 0;
+      // Al menos un item por hoja; despues, mientras no se pase del objetivo.
+      while (hasta < lista.length && (hasta === desde || peso + pesoItem(lista[hasta]) <= objetivo || quedan === 1)) {
+        peso += pesoItem(lista[hasta]);
+        hasta += 1;
+      }
+      grupos.push(lista.slice(desde, hasta));
+      desde = hasta;
+      restante -= peso;
     }
-    return grupos;
+    return grupos.filter((g) => g.length);
   };
 
   // Reparte los items en hojas y dice si la tabla va junto al texto o aparte.
@@ -506,18 +522,30 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
       maxFilasJuntoAlTexto = 11;
     }
 
-    if (items.length <= maxFilasJuntoAlTexto) {
-      return { juntoAlTexto: true, hojas: items.length ? [items] : [] };
+    // Un alcance o una narrativa larga tambien le quita sitio a la tabla en
+    // la hoja compartida: pasados ~600 caracteres, un renglon menos por cada 300.
+    const largoTexto = String(propuesta.alcancePropuesta || "").length
+      + String(propuesta.narrative || "").length
+      + (hasClientReq ? String(propuesta.requerimientoCliente || "").length : 0);
+    maxFilasJuntoAlTexto = Math.max(0, maxFilasJuntoAlTexto - Math.max(0, Math.ceil((largoTexto - 600) / 300)));
+
+    const pesoTotal = pesoDe(items);
+    if (items.length && pesoTotal <= maxFilasJuntoAlTexto) {
+      return { juntoAlTexto: true, hojas: [items] };
     }
+    if (!items.length) return { juntoAlTexto: true, hojas: [] };
 
     // Minimo de hojas donde cabe todo, sabiendo que la ultima lleva totales.
     let hojas = 1;
-    while ((hojas - 1) * FILAS_HOJA + FILAS_HOJA_FINAL < items.length) hojas += 1;
+    while ((hojas - 1) * FILAS_HOJA + FILAS_HOJA_FINAL < pesoTotal) hojas += 1;
 
     // Al repartir parejo la ultima puede pasarse del sitio que le queda con
-    // los totales; en ese caso se abre una hoja mas y se vuelve a repartir.
+    // los totales, o una hoja del de una hoja; en ese caso se abre una hoja
+    // mas y se vuelve a repartir.
+    const sePasa = (gs) => pesoDe(gs[gs.length - 1]) > FILAS_HOJA_FINAL
+      || gs.slice(0, -1).some((g) => pesoDe(g) > FILAS_HOJA);
     let grupos = repartirParejo(items, hojas);
-    while (grupos[grupos.length - 1].length > FILAS_HOJA_FINAL && hojas < items.length) {
+    while (sePasa(grupos) && hojas < items.length) {
       hojas += 1;
       grupos = repartirParejo(items, hojas);
     }

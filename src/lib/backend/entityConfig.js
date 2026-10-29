@@ -357,7 +357,7 @@ export const entityConfig = {
       "modificado_por_nombre",
       "modificado_en",
     ],
-    coerceNullCols: ["fecha", "validez_dias", "utilidad_pct", "total"],
+    coerceNullCols: ["fecha", "validez_dias", "utilidad_pct", "total", "enviada_en"],
     toRow: (item) => ({
       id: item.id,
       numero: item.numero ?? null,
@@ -390,6 +390,9 @@ export const entityConfig = {
       fotos_cotizacion: safeArray(item.fotosCotizacion),
       geo_map_view: item.geoMapView ?? null,
       estado: item.estado ?? null,
+      // Cuando y a quien se envio (migracion 083).
+      enviada_en: item.enviadaEn ?? null,
+      enviada_a: item.enviadaA ?? null,
     }),
     toLegacyRow: (item) => ({
       id: item.id,
@@ -444,6 +447,8 @@ export const entityConfig = {
       fotosCotizacion: safeArray(row.fotos_cotizacion),
       geoMapView: row.geo_map_view,
       estado: row.estado,
+      enviadaEn: row.enviada_en ?? null,
+      enviadaA: row.enviada_a ?? null,
       // Autoria. Solo se LEE: la escribe un disparador de la base con el
       // usuario de la sesion, para que no dependa de que la pantalla se
       // acuerde de mandarla ni se pueda falsear desde el cliente. Por eso

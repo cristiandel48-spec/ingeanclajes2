@@ -198,8 +198,16 @@ export default function PropuestaEditor({
 
   const aplicar = (actual, siguiente) =>
     typeof siguiente === "function" ? siguiente(actual) : siguiente;
-  const setItems = (siguiente) => set("items", aplicar(items, siguiente));
-  const setFotos = (siguiente) => set("fotos", aplicar(fotos, siguiente));
+  // Con una funcion se aplica sobre la propuesta VIGENTE, no sobre la de este
+  // render: rotar una foto tarda, y si mientras tanto terminaban de cargar
+  // otras, al guardar la rotacion se escribia la lista vieja y se perdian.
+  const sobreVigente = (campo, siguiente) => (
+    typeof siguiente === "function"
+      ? onChange((vigente) => ({ [campo]: siguiente(Array.isArray(vigente?.[campo]) ? vigente[campo] : []) }))
+      : set(campo, aplicar(campo === "items" ? items : fotos, siguiente))
+  );
+  const setItems = (siguiente) => sobreVigente("items", siguiente);
+  const setFotos = (siguiente) => sobreVigente("fotos", siguiente);
 
   // Fotos que llegan del selector, arrastradas o pegadas en el recuadro. Una
   // que no se puede abrir (HEIC en Chrome, archivo de iCloud sin bajar) no

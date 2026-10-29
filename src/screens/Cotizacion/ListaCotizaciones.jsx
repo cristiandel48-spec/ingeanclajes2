@@ -42,7 +42,9 @@ const ORDENES = [
 // le ha enviado al cliente; «Enviada», que ya la tiene y falta su respuesta.
 const esAprobada = (c) => c.estado === "Aprobada" || Boolean(c.obraId);
 const esEnviada = (c) => c.estado === "Enviada" && !esAprobada(c);
-const esPendiente = (c) => !esAprobada(c) && c.estado !== "Borrador" && c.estado !== "Enviada";
+// «Rechazada»: el cliente dijo que no. Sale del seguimiento y de las pendientes.
+const esRechazada = (c) => !esAprobada(c) && (c.estado === "Rechazada" || c.estado === "Anulada");
+const esPendiente = (c) => !esAprobada(c) && !esRechazada(c) && c.estado !== "Borrador" && c.estado !== "Enviada";
 
 function enMilis(fecha) {
   if (!fecha) return 0;
@@ -959,6 +961,27 @@ function TarjetaCotizacionApple({ cotizacion: c, acciones, onInspeccionar }) {
             📋
           </button>
 
+          {/* El cliente dijo que no: sale del seguimiento sin borrarla. */}
+          {acciones.rechazar && !esAprobada(c) && !esRechazada(c) && (
+            <button
+              type="button"
+              title="Marcar como rechazada por el cliente"
+              onClick={alPulsar(acciones.rechazar)}
+              style={{
+                background: "transparent",
+                color: "var(--text-muted, #6e6e73)",
+                border: "1px solid var(--border, rgba(0,0,0,0.12))",
+                borderRadius: 8,
+                padding: "5px 9px",
+                fontSize: 11.5,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Rechazada
+            </button>
+          )}
+
           {/* En el celular no cabe: alli se elimina desde la cotizacion abierta. */}
           {!isMobile && acciones.eliminar && (
             <button
@@ -1143,6 +1166,23 @@ function FilaTablaCotizacion({ cotizacion: c, acciones, zebra, onInspeccionar })
         >
           📋
         </button>
+        {acciones.rechazar && !esAprobada(c) && !esRechazada(c) && (
+          <button
+            type="button"
+            onClick={alPulsar(acciones.rechazar)}
+            title="Marcar como rechazada por el cliente"
+            style={{
+              background: "transparent",
+              border: "1px solid var(--border, rgba(0,0,0,0.1))",
+              borderRadius: 6,
+              padding: "4px 6px",
+              fontSize: 11,
+              cursor: "pointer",
+            }}
+          >
+            ✕
+          </button>
+        )}
         {acciones.eliminar && (
           <button
             type="button"
@@ -1170,9 +1210,15 @@ function BotonEstadoAprobacion({ cotizacion, acciones }) {
   const [hover, setHover] = useState(false);
   const aprobada = cotizacion.estado === "Aprobada" || Boolean(cotizacion.obraId);
   const estado = cotizacion.estado || "Pendiente";
+  const rechazada = esRechazada(cotizacion);
 
   const handleClick = (e) => {
     e.stopPropagation();
+    // Rechazada: un clic la reactiva, por si el cliente vuelve.
+    if (rechazada) {
+      if (typeof acciones?.reactivar === "function") acciones.reactivar(cotizacion);
+      return;
+    }
     if (aprobada) {
       if (typeof acciones?.desaprobar === "function") {
         acciones.desaprobar(cotizacion);
@@ -1187,9 +1233,9 @@ function BotonEstadoAprobacion({ cotizacion, acciones }) {
   // Enviada va en gris: ya salio, no pide nada urgente; el naranja se queda
   // para las que aun no se le han mandado al cliente.
   const enviada = !aprobada && estado === "Enviada";
-  const bgNormal = aprobada ? "rgba(52, 199, 89, 0.12)" : enviada ? "var(--fill)" : "rgba(255, 149, 0, 0.12)";
-  const textNormal = aprobada ? "#28a745" : enviada ? "var(--text-secondary)" : "#d97706";
-  const borderNormal = aprobada ? "rgba(52, 199, 89, 0.28)" : enviada ? "var(--separator)" : "rgba(255, 149, 0, 0.28)";
+  const bgNormal = rechazada ? "rgba(239, 68, 68, 0.08)" : aprobada ? "rgba(52, 199, 89, 0.12)" : enviada ? "var(--fill)" : "rgba(255, 149, 0, 0.12)";
+  const textNormal = rechazada ? "#b42318" : aprobada ? "#28a745" : enviada ? "var(--text-secondary)" : "#d97706";
+  const borderNormal = rechazada ? "rgba(239, 68, 68, 0.22)" : aprobada ? "rgba(52, 199, 89, 0.28)" : enviada ? "var(--separator)" : "rgba(255, 149, 0, 0.28)";
   const detalleEnvio = cotizacion.enviadaEn
     ? ` Enviada el ${fmtD(String(cotizacion.enviadaEn).slice(0, 10))}${cotizacion.enviadaA ? ` a ${cotizacion.enviadaA}` : ""}.`
     : "";
@@ -1205,7 +1251,9 @@ function BotonEstadoAprobacion({ cotizacion, acciones }) {
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       title={
-        aprobada
+        rechazada
+          ? "El cliente la rechazó. Haz clic aquí para reactivarla"
+          : aprobada
           ? "Cotización aprobada. Haz clic aquí para desaprobarla" + detalleEnvio
           : (enviada ? "Cotización enviada al cliente." : "Cotización pendiente.") +
             detalleEnvio + " Haz clic aquí para aprobarla y crear la obra automáticamente"
@@ -1229,7 +1277,9 @@ function BotonEstadoAprobacion({ cotizacion, acciones }) {
       }}
     >
       <span>
-        {hover ? (aprobada ? "↩ Desaprobar" : "✓ Aprobar") : aprobada ? "✓ Aprobada" : estado}
+        {rechazada
+          ? (hover ? "↩ Reactivar" : "Rechazada")
+          : hover ? (aprobada ? "↩ Desaprobar" : "✓ Aprobar") : aprobada ? "✓ Aprobada" : estado}
       </span>
     </button>
   );

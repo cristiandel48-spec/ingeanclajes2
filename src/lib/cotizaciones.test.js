@@ -9,6 +9,7 @@ import {
   esTituloEstandarDeSistema,
   getQuoteApprovalAccountingSnapshot,
   getQuoteProposalTotals,
+  getQuoteProposals,
   inferirTipoDesdeTitulo,
   normalizeProposalItems,
   normalizeQuoteItems,
@@ -27,6 +28,36 @@ const ITEMS = [
   { id: 1, desc: "LINEA DE VIDA", cant: 2, unit: "ML", vu: 100000 },
   { id: 2, desc: "CERTIFICACION", cant: 1, unit: "UND", vu: 50000 },
 ];
+
+describe("varias propuestas son alternativas", () => {
+  const conDos = {
+    // Los items de la cotizacion son copia de la propuesta activa (la B).
+    items: ITEMS,
+    propuestaActivaId: "B",
+    propuestas: [
+      { id: "A", nombre: "Propuesta A", util: 10, items: [] },
+      { id: "B", nombre: "Propuesta B", util: 10, items: ITEMS },
+    ],
+  };
+
+  it("una Propuesta A vacia no hereda los items de la B", () => {
+    const [a, b] = getQuoteProposals(conDos);
+    expect(a.items).toEqual([]);
+    expect(b.items).toHaveLength(2);
+  });
+
+  it("con una sola propuesta sin items, toma los de la cotizacion (datos viejos)", () => {
+    const [unica] = getQuoteProposals({ items: ITEMS, propuestas: [{ id: "A", util: 10, items: [] }] });
+    expect(unica.items).toHaveLength(2);
+  });
+
+  it("aprobar con otra propuesta activa toma el valor de esa", () => {
+    const deB = getQuoteApprovalAccountingSnapshot(conDos);
+    const deA = getQuoteApprovalAccountingSnapshot({ ...conDos, propuestaActivaId: "A" });
+    expect(deB.subtotalCotizacion).toBe(250000);
+    expect(deA.subtotalCotizacion).toBe(0);
+  });
+});
 
 describe("porcentajeUtilidad", () => {
   it("respeta el 0 % guardado", () => {

@@ -561,10 +561,15 @@ export function buildQuoteProposal(propuesta = {}, index = 0) {
 
 export function getQuoteProposals(cotizacion = {}) {
   if (Array.isArray(cotizacion.propuestas) && cotizacion.propuestas.length) {
+    // Los items de nivel de cotizacion solo rellenan la primera propuesta
+    // cuando hay UNA: son copia de la propuesta activa, y con varias una
+    // Propuesta A vacia heredaba los items de la B al reabrir y el PDF
+    // imprimia los mismos precios dos veces.
+    const unaSola = cotizacion.propuestas.length === 1;
     return cotizacion.propuestas.map((propuesta, index) => {
       const itemsPropuesta = (Array.isArray(propuesta.items) && propuesta.items.length)
         ? propuesta.items
-        : (index === 0 && Array.isArray(cotizacion.items) && cotizacion.items.length ? cotizacion.items : (propuesta.items || []));
+        : (unaSola && index === 0 && Array.isArray(cotizacion.items) && cotizacion.items.length ? cotizacion.items : (propuesta.items || []));
       return buildQuoteProposal({ ...propuesta, items: itemsPropuesta }, index);
     });
   }

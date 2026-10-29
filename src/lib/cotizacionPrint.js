@@ -229,39 +229,33 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
     return { measures, label: formatProposalMeasures(measures) };
   };
 
-  const mergeProposalMeasures = (rows = []) => {
-    const totalsByUnit = new Map();
-    rows.forEach((row) => {
-      const measures = Array.isArray(row?.measures) ? row.measures : [];
-      measures.forEach((measure) => {
-        const qty = Number(measure?.quantity || 0);
-        if (!Number.isFinite(qty) || qty <= 0) return;
-        const unit = normalizeProposalMeasureUnit(measure?.unit || "UND");
-        totalsByUnit.set(unit, (totalsByUnit.get(unit) || 0) + qty);
-      });
-    });
-    return Array.from(totalsByUnit.entries()).map(([unit, quantity]) => ({ unit, quantity }));
-  };
-
   const resumenPropuestas = propuestas.map((propuesta, idx) => {
     const measureSummary = getProposalMeasureSummary(propuesta);
     return {
       nombre: propuesta?.nombre || propuesta?.quote?.propuestaNombre || `Propuesta ${idx + 1}`,
       measures: measureSummary.measures,
       cantidadLabel: measureSummary.label,
-      total: Math.round(Number(propuesta?.tot || propuesta?.quote?.total || 0)),
+      // `tot` es lo calculado; el total guardado solo si no hay calculo. Con
+      // `||` una propuesta que de verdad vale $0 imprimia el total viejo.
+      total: Math.round(Number(Number.isFinite(Number(propuesta?.tot)) ? propuesta.tot : (propuesta?.quote?.total || 0))),
     };
   });
 
+  // Las propuestas son ALTERNATIVAS: el cliente escoge una. Antes la portada y
+  // el resumen las sumaban -A $10M y B $14M daban «Valor total $24M»-, un
+  // valor que el cliente nunca va a pagar. Con varias, la portada dice
+  // «Valor desde» el de la mas barata, y el resumen muestra cada una sin sumar.
   const mostrarResumenFinal = resumenPropuestas.length >= 2;
-  const totalResumenCantidad = formatProposalMeasures(mergeProposalMeasures(resumenPropuestas));
-  const totalResumenValor = resumenPropuestas.reduce((sum, row) => sum + Number(row.total || 0), 0);
+  const valoresPropuestas = resumenPropuestas.map((row) => Number(row.total || 0)).filter((v) => v > 0);
+  const valorPortada = mostrarResumenFinal && valoresPropuestas.length
+    ? Math.min(...valoresPropuestas)
+    : resumenPropuestas.reduce((sum, row) => sum + Number(row.total || 0), 0);
 
   const renderResumenBlock = () => {
     if (!mostrarResumenFinal) return "";
 
     return `
-      <h2 class="doc-h2">Valor total de la cotización</h2>
+      <h2 class="doc-h2">Valor de cada propuesta</h2>
       <div class="price-table summary-spacing">
         <table class="table">
           <thead>
@@ -281,15 +275,10 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
                 <td class="t-right tnum strong">${money(row.total || 0)}</td>
               </tr>
             `).join("")}
-            <tr class="grand-total">
-              <td></td>
-              <td class="total-label">Total general</td>
-              <td class="t-center tnum">${escapeHtml(totalResumenCantidad)}</td>
-              <td class="t-right tnum total-amount">${money(totalResumenValor)}</td>
-            </tr>
           </tbody>
         </table>
       </div>
+      <p style="font-size:9.5pt;color:#6b7280;margin:6px 0 0;">Las propuestas son alternativas: el valor a pagar es el de la propuesta que se apruebe.</p>
     `;
   };
 
@@ -781,8 +770,8 @@ export function buildCotizacionPrintHtml(c, { firmaImg = "" } = {}){
               <div class="meta-value">${escapeHtml(String(c?.val || 30))} días</div>
             </div>
             <div class="meta-cell last">
-              <div class="meta-label">Valor total</div>
-              <div class="meta-value tnum accent">${money(totalResumenValor)}</div>
+              <div class="meta-label">${mostrarResumenFinal ? "Valor desde" : "Valor total"}</div>
+              <div class="meta-value tnum accent">${money(valorPortada)}</div>
             </div>
           </div>
           <div class="cover-foot">

@@ -13,13 +13,13 @@ import { useMediaQuery, useIsMobile } from "../../hooks/useMediaQuery";
 import { useSubirAlFormulario } from "../../hooks/useSubirAlFormulario";
 import { TEXTOS_DOCUMENTO_DEFAULT, getTextosDocumento } from "../../lib/cotizacionTextos";
 import LBL from "../../components/ui/LBL";
-import { Button } from "../../components/ui";
+import { Button, Sheet } from "../../components/ui";
 import BotonCorregir from "../../components/ui/BotonCorregir";
 import { corregirOrtografiaLocal } from "../../lib/correctorTexto";
 import { useEffect, useRef, useState } from "react";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { DEFAULT_COT_FORMA_PAGO, DEFAULT_COT_TIEMPO_EJEC } from "../../data/seed";
-import { buildQuoteProposal, coincideTextoPlantilla, createQuoteProposalId, esPresentacionEstandarDeSistema, esSaludoEstandarDeSistema, esTituloEstandarDeSistema, fotosParaTipo, getQuoteApprovalAccountingSnapshot, getQuoteProposalLabel, getQuoteProposals, getTipoCotizacionLabel, inferirTipoDesdeTitulo, normalizeProposalItems, normalizeQuoteItems, porcentajeUtilidad, presentacionSugeridaParaTipo, saludoSugeridoParaTipo, tipoCotizacionCanonico, tituloSugeridoParaTipo } from "../../lib/cotizaciones";
+import { buildQuoteProposal, coincideTextoPlantilla, createQuoteProposalId, esPresentacionEstandarDeSistema, esSaludoEstandarDeSistema, esTituloEstandarDeSistema, fotosParaTipo, getQuoteApprovalAccountingSnapshot, getQuoteProposalLabel, getQuoteProposals, getTipoCotizacionLabel, mergeQuoteWithProposal, inferirTipoDesdeTitulo, normalizeProposalItems, normalizeQuoteItems, porcentajeUtilidad, presentacionSugeridaParaTipo, saludoSugeridoParaTipo, tipoCotizacionCanonico, tituloSugeridoParaTipo } from "../../lib/cotizaciones";
 import { fmt, scrollAppToTop, today } from "../../lib/format";
 import { avisoCelular, avisoCorreo, normalizarCorreo, normalizarDocumento, normalizarMayusculas, normalizarNombrePropio, normalizarRazonSocial, normalizarTelefono, normalizarTituloFormal } from "../../lib/normalizarEntrada";
 import { quienRecibeDeCliente } from "../../lib/quienRecibe";
@@ -111,6 +111,8 @@ export default function Cotizacion({ctx}){
   const setTexto=(clave,valor)=>setTextosDocumento(prev=>({...prev,[clave]:valor}));
   const [propuestas,setPropuestas]=useState(()=>[buildQuoteProposal({id:createQuoteProposalId("new"),nombre:getQuoteProposalLabel(0),tipoCotizacion:inferirTipoDesdeTitulo(TEXTOS_DOCUMENTO_DEFAULT.tituloPortada)||"puntos_anclaje",formaPago:DEFAULT_COT_FORMA_PAGO,tiempoEjec:DEFAULT_COT_TIEMPO_EJEC,util:10,items:[],incluyeTexto:""},0)]);
   const [avisoCambioSistema, setAvisoCambioSistema] = useState(null);
+  // Ventana para escoger cual propuesta aprobo el cliente: { cotizacion, opciones, resolver }.
+  const [eligiendoPropuesta, setEligiendoPropuesta] = useState(null);
   const [escribiendoTitulo, setEscribiendoTitulo] = useState(false);
   const debounceTituloRef = useRef(null);
 
@@ -170,13 +172,20 @@ export default function Cotizacion({ctx}){
 
   const propuestaActiva = propuestasSnapshot.find((x)=>x.id===propuestaActivaId) || propuestasSnapshot[0];
 
-  const totalCotizacionCalculado = propuestasSnapshot.reduce((acc, p) => {
+  // El total de cada propuesta. Son alternativas: con varias, la cabecera dice
+  // «desde» el de la mas barata, no la suma (que era un valor que nadie paga).
+  const totalesPorPropuesta = propuestasSnapshot.map((p) => {
     const pItems = Array.isArray(p.items) ? p.items : [];
     const sub = pItems.reduce((s, it) => s + (Number(it.cant) || 0) * (Number(it.vu) || 0), 0);
     const ut = p.sinAiu ? 0 : (sub * (Number(p.util) || 0)) / 100;
     const iva = p.sinAiu ? (sub * 0.19) : (ut * 0.19);
-    return acc + sub + ut + iva;
-  }, 0);
+    return sub + ut + iva;
+  });
+  const totalesConValor = totalesPorPropuesta.filter((t) => t > 0);
+  const variasPropuestas = totalesPorPropuesta.length > 1;
+  const totalCotizacionCalculado = variasPropuestas
+    ? (totalesConValor.length ? Math.min(...totalesConValor) : 0)
+    : (totalesPorPropuesta[0] || 0);
 
   // El texto de "esta cotizacion incluye" ya no se rellena aqui. Se rellena al
   // construir la propuesta (ensureProposalDefaultTexts), que es una sola vez al
@@ -843,8 +852,22 @@ export default function Cotizacion({ctx}){
   };
 
   const aprobarCotizacion = async (cotId)=>{
-    const base = cotizaciones.find((cotizacion)=>cotizacion.id===cotId);
-    const snapshot = base ? getQuoteApprovalAccountingSnapshot(base) : null;
+    const original = cotizaciones.find((cotizacion)=>cotizacion.id===cotId);
+    if(!original) return;
+
+    // Las propuestas de una cotizacion son ALTERNATIVAS: el cliente escoge
+    // una. Antes se aprobaba la «activa», que era la del ultimo mapa que se
+    // abrio, y la obra podia quedar con el valor de la otra. Con varias, se
+    // pregunta cual escogio el cliente.
+    const opciones = getQuoteProposals(original);
+    let elegida = null;
+    if (opciones.length > 1) {
+      elegida = await new Promise((resolver) => setEligiendoPropuesta({ cotizacion: original, opciones, resolver }));
+      setEligiendoPropuesta(null);
+      if (!elegida) return;
+    }
+    const base = elegida ? { ...original, propuestaActivaId: elegida.id } : original;
+    const snapshot = getQuoteApprovalAccountingSnapshot(base);
     const cotizacion = snapshot?.cotizacion || null;
     if(!cotizacion || !snapshot) return;
 
@@ -854,6 +877,7 @@ export default function Cotizacion({ctx}){
     const correoCliente = String(cotizacion.contactoEmail || "").trim();
     if(!(await confirmar(
       `¿Aprobar la cotización ${cotizacion.numero || cotizacion.id} de ${cotizacion.cliente || "este cliente"}?\n\n` +
+      (elegida ? `• Propuesta aprobada: ${elegida.nombre} · ${fmt(snapshot.totalObra)}\n` : `• Valor: ${fmt(snapshot.totalObra)}\n`) +
       `• Se crea la obra en Ejecución de obra (o se reactiva la que ya tenía).\n` +
       (correoCliente
         ? `• Se le envía al cliente un correo con la cotización adjunta a ${correoCliente}.`
@@ -962,7 +986,13 @@ export default function Cotizacion({ctx}){
       }]);
     }
 
-    setCotizaciones((prev)=>prev.map((item)=>item.id===cotId?{...item,estado:"Aprobada",obraId}:item));
+    // La propuesta aprobada queda como la de la cotizacion: su valor es el que
+    // muestra la lista y el que se reporta, no el de la otra alternativa.
+    setCotizaciones((prev)=>prev.map((item)=>item.id!==cotId ? item : {
+      ...(elegida ? mergeQuoteWithProposal(item, elegida) : item),
+      estado:"Aprobada",
+      obraId,
+    }));
     setObraCreada({id:obraId,cliente:cotizacion.cliente,proyecto:cotizacion.obra,correo:"enviando"});
 
     // Confirmacion al cliente, sin preguntar nada: aprobar ya fue la decision.
@@ -1170,6 +1200,46 @@ export default function Cotizacion({ctx}){
   const puedeEliminar = puedeEscribirTabla(ctx?.membresia, "cotizaciones");
 
 
+  // Cual propuesta aprobo el cliente. Se aprueba desde el listado y desde la
+  // vista previa, asi que la ventana va en las dos.
+  const ventanaElegirPropuesta = eligiendoPropuesta && (
+    <Sheet
+      titulo="¿Cuál propuesta aprobó el cliente?"
+      subtitulo={`${eligiendoPropuesta.cotizacion.numero || eligiendoPropuesta.cotizacion.id} · ${eligiendoPropuesta.cotizacion.cliente || ""}`}
+      onCerrar={() => eligiendoPropuesta.resolver(null)}
+      pie={<Button variante="tertiary" onClick={() => eligiendoPropuesta.resolver(null)}>Cancelar</Button>}
+    >
+      <div style={{ display: "grid", gap: 8 }}>
+        {eligiendoPropuesta.opciones.map((p) => {
+          const valor = getQuoteApprovalAccountingSnapshot({ ...eligiendoPropuesta.cotizacion, propuestaActivaId: p.id })?.totalObra || 0;
+          return (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => eligiendoPropuesta.resolver(p)}
+              style={{
+                display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12,
+                width: "100%", padding: "14px 16px", borderRadius: 12, cursor: "pointer",
+                background: "var(--surface)", border: "1px solid var(--separator)",
+                font: "inherit", textAlign: "left", color: "var(--text-primary)",
+              }}
+            >
+              <span style={{ minWidth: 0 }}>
+                <span style={{ display: "block", fontWeight: 600 }}>{p.nombre}</span>
+                {p.alcance && (
+                  <span style={{ display: "block", fontSize: 12.5, color: "var(--text-tertiary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {p.alcance}
+                  </span>
+                )}
+              </span>
+              <span style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{fmt(valor)}</span>
+            </button>
+          );
+        })}
+      </div>
+    </Sheet>
+  );
+
   if(tab==="lista"){
     if(previewCot){
       return (
@@ -1315,11 +1385,13 @@ export default function Cotizacion({ctx}){
             />
           </div>
           {enviarCot && <EnviarCotizacion cotizacion={enviarCot} firmaImg={firmaImg} onCerrar={()=>setEnviarCot(null)} onEnviado={(info)=>marcarEnviada(enviarCot.id, info)}/>}
+          {ventanaElegirPropuesta}
         </div>
       );
     }
     return (
       <div style={{padding: isMobile ? "8px 0 24px" : "12px 20px", width: "100%", boxSizing: "border-box"}}>
+        {ventanaElegirPropuesta}
         {/* Al aprobar, se explica que se creo y cual es el siguiente paso:
             quien cotiza no tiene por que saber que ahora existe una obra. */}
         {obraCreada && (
@@ -1487,7 +1559,7 @@ export default function Cotizacion({ctx}){
           </span>
 
           <span style={{ fontSize: 13.5, color: "var(--text-secondary)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", letterSpacing: "-0.01em" }}>
-            {fmt(totalCotizacionCalculado)}
+            {variasPropuestas ? `Desde ${fmt(totalCotizacionCalculado)}` : fmt(totalCotizacionCalculado)}
           </span>
         </div>
 

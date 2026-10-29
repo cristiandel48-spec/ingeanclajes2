@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import CreditoDesarrollo from "../CreditoDesarrollo";
 import logoIa from "../../assets/logo-ia.png";
-import { NAV_SECTIONS, ICONS } from "../../config/navigation";
+import { NAV_SECTIONS, ICONS, ICON_COLORS } from "../../config/navigation";
 import { useAppData } from "../../context/AppDataContext";
 import { filtrarSecciones } from "../../lib/permisos";
 import { RAIL_WIDTH, RAIL_WIDTH_EXPANDED } from "../../styles/shellTheme";
@@ -205,7 +205,9 @@ export default function Sidebar({
                       // 44px es el minimo tactil recomendado por Apple.
                       minHeight: 44,
                       display: "flex", alignItems: "center", gap: 12,
-                      padding: "0 12px", marginBottom: 3,
+                      // 10px y no 12: el cuadro de color mide 28 y en el riel
+                      // angosto (72px) es lo que cabe sin recortarse.
+                      padding: "0 10px", marginBottom: 3,
                       borderRadius: 10, border: "none", cursor: "pointer",
                       background: active ? theme.railActiveBg : "transparent",
                       color: active ? theme.railTextActive : theme.railText,
@@ -231,10 +233,17 @@ export default function Sidebar({
                     onFocus={(e) => { if (!active) e.currentTarget.style.background = theme.railHoverBg; }}
                     onBlur={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
                   >
+                    {/* El icono en blanco sobre un cuadro de color, como en
+                        Ajustes del Sistema del Mac. El degradado leve de arriba
+                        hacia abajo le da el relieve de los iconos del Mac. */}
                     <span
                       data-dock
+                      className="rail-icono"
                       style={{
-                        flexShrink: 0, display: "flex", width: 20, justifyContent: "center",
+                        flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                        width: 28, height: 28, borderRadius: 8, color: "#ffffff",
+                        background: `linear-gradient(180deg, color-mix(in srgb, ${ICON_COLORS[item.id] || "#8E8E93"} 80%, #ffffff), ${ICON_COLORS[item.id] || "#8E8E93"})`,
+                        boxShadow: "inset 0 0 0 0.5px rgba(0,0,0,.10), 0 1px 1.5px rgba(0,0,0,.14)",
                         // Crece hacia la derecha, como los iconos del Dock salen
                         // del borde de la pantalla.
                         transformOrigin: "left center",

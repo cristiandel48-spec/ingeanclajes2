@@ -246,6 +246,9 @@ export const componentesCss = `
       font-size: 13px; line-height: 18px; font-weight: 500;
       animation: uiToastEntra var(--transicion-entrada); max-width: 100%; }
     .ui-toast__texto { min-width: 0; overflow-wrap: anywhere; }
+    /* Icono del menu dentro de su cuadro de color: mas chico y de trazo mas
+       grueso, para que se lea en blanco sobre el color. */
+    .rail-icono svg { width: 17px; height: 17px; stroke-width: 2.1; }
     /* En el centro: lo que frena el trabajo y hay que leer. Varias lineas,
        asi que deja la forma de pastilla por una tarjeta. */
     .ui-toaster--centro { bottom: auto; top: 50%; transform: translate(-50%, -50%);

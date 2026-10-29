@@ -36,6 +36,27 @@ export const ICONS = {
   auditoria: ico(<><path d="M4 4h13l3 3v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><circle cx="11" cy="12" r="3"/><path d="M13.2 14.2 16 17"/></>),
 };
 
+// El color del cuadro de cada modulo en el menu, como los iconos de Ajustes
+// del Sistema en el Mac: se reconoce el modulo por el color antes de leerlo.
+// Los que no estan aqui salen en gris.
+export const ICON_COLORS = {
+  dashboard: "#E0342A",
+  tareas: "#F5A300",
+  agenda: "#FF375F",
+  cotizacion: "#0A84FF",
+  clientes: "#5E5CE6",
+  catalogo: "#30B0C7",
+  obras: "#FF7A00",
+  horarios: "#AF52DE",
+  nomina: "#A2845E",
+  fototeca: "#E64AA6",
+  informes: "#0FA3E0",
+  certificaciones: "#28B446",
+  vencimientos: "#F2B100",
+  usuarios: "#8E8E93",
+  auditoria: "#636366",
+};
+
 // Secciones del menu. `label` es el nombre visible; `short` se usa en la
 // barra superior movil cuando el nombre largo no cabe.
 export const NAV_SECTIONS = [

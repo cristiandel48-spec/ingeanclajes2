@@ -11,7 +11,9 @@ import { TIPO } from "../../styles/designTokens";
 // Efecto Dock del Mac: al acercar el mouse, el icono que tiene debajo crece y
 // los vecinos crecen menos cuanto mas lejos estan. Se calcula con la
 // distancia vertical del cursor al centro de cada icono.
-const DOCK_ESCALA_MAX = 2;     // cuanto crece el icono que esta justo debajo
+// 1.6 y no 2: las filas van cada 47px y el cuadro mide 28; al doble se
+// enciman con el de arriba y el de abajo aunque el riel sea mas ancho.
+const DOCK_ESCALA_MAX = 1.6;   // cuanto crece el icono que esta justo debajo
 const DOCK_ALCANCE = 120;      // hasta que distancia (px) se nota el efecto
 const DOCK_ETIQUETA = 26;      // a menos de esto del centro se muestra el nombre
 
@@ -206,7 +208,7 @@ export default function Sidebar({
                       minHeight: 44,
                       display: "flex", alignItems: "center", gap: 12,
                       // 10px y no 12: el cuadro de color mide 28 y en el riel
-                      // angosto (72px) es lo que cabe sin recortarse.
+                      // angosto es lo que cabe sin recortarse.
                       padding: "0 10px", marginBottom: 3,
                       borderRadius: 10, border: "none", cursor: "pointer",
                       background: active ? theme.railActiveBg : "transparent",

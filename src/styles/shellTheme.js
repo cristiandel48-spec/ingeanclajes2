@@ -29,6 +29,8 @@ const tema = {
 export const getTheme = () => tema;
 
 // Medidas del armazon reutilizadas por varios componentes.
-export const RAIL_WIDTH = 72;
+// 84 y no 72: deja aire a la derecha para que el cuadro de color crezca con
+// el efecto Dock sin pasarse al contenido.
+export const RAIL_WIDTH = 84;
 export const RAIL_WIDTH_EXPANDED = 252;
 export const TOPBAR_HEIGHT = 64;

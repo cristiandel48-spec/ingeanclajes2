@@ -295,19 +295,28 @@ function embellecerTextoCompletoCertificacion(texto) {
 
   let remaining = cuerpo;
 
+  // 1. Extraer dirección (puede estar al final tras la solicitud o antes de ella)
+  let direccion = "";
+  const mDir = remaining.match(/(?:,\s*|\s+)(?:con\s+DIRECCI[OÓ]N:\s*|con\s+direcci[oó]n\s+en\s+(?:la\s+|el\s+)?|ubicad[ao]\s+en\s+(?:la\s+|el\s+)?)([\s\S]+?)(?=(?:,\s*(?:a\s+solicitud\s+de|por\s+encargo\s+de|para|con\s+NIT|instalados\s+en|fueron\s+inspeccionados|cumplen\s+a\s+cabalidad))|$)/i);
+  if (mDir) {
+    direccion = mDir[1].trim();
+    remaining = remaining.slice(0, mDir.index) + remaining.slice(mDir.index + mDir[0].length);
+  }
+
+  // 2. Extraer cliente y NIT
   let nit = "";
   let cliente = "";
-  const mSolicitud = remaining.match(/(?:,\s*|\s+)(?:a\s+solicitud\s+de|por\s+encargo\s+de|para)\s+([^(,]+?)(?:\s*\(NIT:\s*([0-9kK.-]+)\))?(?:,|$)/i);
+  const mSolicitud = remaining.match(/(?:,\s*|\s+)(?:a\s+solicitud\s+de|por\s+encargo\s+de|para)\s+([^(,]+?)(?:\s*\(NIT:\s*([0-9kK.-]+)\))?(?=(?:,\s*(?:con\s+DIRECCI[OÓ]N|con\s+direcci[oó]n|ubicad[ao]\s+en|instalados\s+en))|$)/i);
   if (mSolicitud) {
     cliente = mSolicitud[1].trim();
     nit = mSolicitud[2] ? mSolicitud[2].trim() : "";
-    remaining = remaining.slice(0, mSolicitud.index);
+    remaining = remaining.slice(0, mSolicitud.index) + remaining.slice(mSolicitud.index + mSolicitud[0].length);
   } else {
     const mNit = remaining.match(/(?:,\s*|\s+)con\s+NIT:\s*([0-9kK.-]+)\s*(?:\(([^)]+)\))?(?:,|$)/i);
     if (mNit) {
       nit = mNit[1].trim();
       cliente = mNit[2] ? mNit[2].trim() : "";
-      remaining = remaining.slice(0, mNit.index);
+      remaining = remaining.slice(0, mNit.index) + remaining.slice(mNit.index + mNit[0].length);
     } else {
       const mClienteDe = remaining.match(/(?:,\s*|\s+)de\s+([^,]+)$/i);
       if (mClienteDe) {
@@ -317,21 +326,15 @@ function embellecerTextoCompletoCertificacion(texto) {
     }
   }
 
-  let direccion = "";
-  const mDir = remaining.match(/(?:,\s*|\s+)(?:con\s+DIRECCI[OÓ]N:|\s*ubicad[ao]\s+en\s+(?:la\s+|el\s+)?)\s*(.+)$/i);
-  if (mDir) {
-    direccion = mDir[1].trim();
-    remaining = remaining.slice(0, mDir.index);
-  }
-
+  // 3. Extraer lugar / obra de instalación
   let lugar = "";
-  const mLugar = remaining.match(/(?:,\s*|\s+)instalados\s+en\s+(?:la\s+(?:sede|obra)\s+|el\s+proyecto\s+|las\s+instalaciones\s+de\s+)?(\([^)]+\)|[^,]+)$/i);
+  const mLugar = remaining.match(/(?:,\s*|\s+)instalados\s+en\s+(?:la\s+(?:sede|obra)\s+|el\s+proyecto\s+|las\s+instalaciones\s+de\s+)?(\([^)]+\)|[^(,]+?)(?=(?:,\s*(?:a\s+solicitud|con\s+NIT|con\s+direcci[oó]n|ubicad[ao]\s+en))|$)/i);
   if (mLugar) {
     lugar = mLugar[1].trim();
-    remaining = remaining.slice(0, mLugar.index);
+    remaining = remaining.slice(0, mLugar.index) + remaining.slice(mLugar.index + mLugar[0].length);
   }
 
-  let rawDetalle = remaining.trim().replace(/[,\s]+$/, "");
+  let rawDetalle = remaining.trim().replace(/[\s,]+$/, "");
   rawDetalle = rawDetalle.replace(/^los\s+sistemas\s+de\s+protecci[oó]n\s+contra\s+ca[ií]das\s*(?:instalados,?\s*)?(?:consistentes\s+en:?\s*)?/i, "").trim();
   const detalleLindo = embellecerDetalleCertificacion(rawDetalle);
 
@@ -349,17 +352,17 @@ function embellecerTextoCompletoCertificacion(texto) {
     const prefijo = /^(sede|proyecto|obra|instalaciones|edificio|planta)/i.test(cleanLugar) ? "" : "la obra ";
     partes.push(`instalados en ${prefijo}${cleanLugar}`);
   }
-  if (cleanDir) {
-    const dirSinPrefijo = cleanDir.replace(/^(ubicad[ao]\s+en\s+(la\s+|el\s+)?|en\s+(la\s+|el\s+)?)/i, "").trim();
-    const prefijoArticulo = /^(calle|carrera|cra|cl\b|diagonal|transversal|avenida|av\b)/i.test(dirSinPrefijo) ? "la " : "";
-    partes.push(`ubicada en ${prefijoArticulo}${dirSinPrefijo}`);
-  }
   if (cleanCliente && cleanNit) {
     partes.push(`a solicitud de ${cleanCliente} (NIT: ${cleanNit})`);
   } else if (cleanCliente) {
     partes.push(`a solicitud de ${cleanCliente}`);
   } else if (cleanNit) {
     partes.push(`con NIT: ${cleanNit}`);
+  }
+  if (cleanDir) {
+    const dirSinPrefijo = cleanDir.replace(/^(con\s+direcci[oó]n\s+en\s+(la\s+|el\s+)?|ubicad[ao]\s+en\s+(la\s+|el\s+)?|en\s+(la\s+|el\s+)?)/i, "").trim();
+    const prefijoArticulo = /^(calle|carrera|cra|cl\b|diagonal|transversal|avenida|av\b)/i.test(dirSinPrefijo) ? "la " : "";
+    partes.push(`con dirección en ${prefijoArticulo}${dirSinPrefijo}`);
   }
 
   const textoCierre = ", fueron inspeccionados y verificados técnicamente, encontrándose estructuralmente conformes, operativos y aptos para trabajo seguro en alturas, cumpliendo a cabalidad con los requisitos de la Resolución 4272 de 2021 del Ministerio del Trabajo y los estándares de ingeniería aplicables.";

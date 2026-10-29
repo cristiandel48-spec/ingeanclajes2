@@ -40,7 +40,7 @@ export function limpiarDireccionFiscal(raw) {
   if (!d) return "";
 
   // Quitar prefijos comunes
-  d = d.replace(/^(ubicad[ao]\s+en\s+(?:la\s+|el\s+)?|en\s+(?:la\s+|el\s+)?)/i, "").trim();
+  d = d.replace(/^(con\s+direcci[oó]n\s+en\s+(?:la\s+|el\s+)?|ubicad[ao]\s+en\s+(?:la\s+|el\s+)?|en\s+(?:la\s+|el\s+)?)/i, "").trim();
 
   // Si trae un número huérfano al inicio como "75, CALLE 40 SUR..."
   const mPrefijoNum = d.match(/^(\d+[a-zA-Z]?),\s*(calle|carrera|cra|cl|diagonal|transversal|av|avenida|circular)\b(.+)$/i);
@@ -148,31 +148,31 @@ export function sanitizarTextoSistema(sistema, direccionFiscal = "", lugar = "")
     return sanitizarTextoSistema(t, "", lugar);
   }
 
-  // Captura TODO el bloque entre "ubicada en" y la solicitud o cierre
-  const regexBloqueDireccion = /,\s*ubicad[ao]\s+en[\s\S]*?(?=,\s*a\s+solicitud\s+de|,\s*con\s+NIT|,\s*fueron\s+inspeccionados|$)/i;
+  // 2. Eliminar cualquier bloque antiguo de dirección ubicado ANTES de "a solicitud de"
+  t = t.replace(/,\s*ubicad[ao]\s+en[\s\S]*?(?=,\s*a\s+solicitud\s+de|,\s*con\s+NIT|,\s*fueron\s+inspeccionados|$)/i, "");
+
+  // 3. Gestionar el bloque de dirección después del cliente
+  const regexSolicitud = /(,\s*(?:a\s+solicitud\s+de\s+[^(,]+?(?:\s*\([^)]+\))?|con\s+NIT:\s*[0-9kK.-]+(?:\s*\([^)]+\))?))(?:,\s*(?:con\s+direcci[oó]n\s+en|ubicad[ao]\s+en)[\s\S]*?)?(?=,\s*(?:fueron\s+inspeccionados|cumplen\s+a\s+cabalidad)|$)/i;
 
   if (dirLimpia) {
-    const dirSinPrefijo = dirLimpia.replace(/^(ubicad[ao]\s+en\s+(?:la\s+|el\s+)?|en\s+(?:la\s+|el\s+)?)/i, "").trim();
+    const dirSinPrefijo = dirLimpia.replace(/^(con\s+direcci[oó]n\s+en\s+(?:la\s+|el\s+)?|ubicad[ao]\s+en\s+(?:la\s+|el\s+)?|en\s+(?:la\s+|el\s+)?)/i, "").trim();
     const prefijo = /^(calle|carrera|cra|cl\b|diagonal|transversal|avenida|av\b)/i.test(dirSinPrefijo) ? "la " : "";
-    const textoDir = `ubicada en ${prefijo}${dirSinPrefijo.toUpperCase()}`;
+    const textoDir = `con dirección en ${prefijo}${dirSinPrefijo.toUpperCase()}`;
 
-    // Si ya existe un bloque de dirección (repetido o no), se reemplaza TODO el bloque de una vez
-    if (regexBloqueDireccion.test(t)) {
-      t = t.replace(regexBloqueDireccion, `, ${textoDir}`);
-    } else if (/,\s*a\s+solicitud\s+de/i.test(t)) {
-      t = t.replace(/,\s*a\s+solicitud\s+de/i, `, ${textoDir}, a solicitud de`);
+    if (regexSolicitud.test(t)) {
+      t = t.replace(regexSolicitud, `$1, ${textoDir}`);
+    } else {
+      t = t.replace(/(?:,\s*(?:con\s+direcci[oó]n\s+en|ubicad[ao]\s+en)[\s\S]*?)?(?=,\s*(?:fueron\s+inspeccionados|cumplen\s+a\s+cabalidad)|$)/i, `, ${textoDir}`);
     }
-
-    return normalizarTextoCertificacion(t);
-  }
-
-  // Sin dirección fiscal: eliminar TODO el bloque de dirección
-  if (regexBloqueDireccion.test(t)) {
-    t = t.replace(regexBloqueDireccion, "");
+  } else {
+    if (regexSolicitud.test(t)) {
+      t = t.replace(regexSolicitud, "$1");
+    }
+    t = t.replace(/,\s*(?:con\s+direcci[oó]n\s+en|ubicad[ao]\s+en)[\s\S]*?(?=,\s*(?:fueron\s+inspeccionados|cumplen\s+a\s+cabalidad)|$)/i, "");
   }
 
   // Limpiar cualquier residuo de CAUCASIA EPM
-  t = t.replace(/,\s*ubicad[ao]\s+en\s+(?:la\s+|el\s+)?CAUCASIA(?:\s+EPM)?[^,]*/gi, "");
+  t = t.replace(/,\s*(?:con\s+direcci[oó]n\s+en|ubicad[ao]\s+en)\s+(?:la\s+|el\s+)?CAUCASIA(?:\s+EPM)?[^,]*/gi, "");
 
   return normalizarTextoCertificacion(t);
 }

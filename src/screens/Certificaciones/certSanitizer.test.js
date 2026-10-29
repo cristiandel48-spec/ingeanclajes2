@@ -108,10 +108,9 @@ describe("certSanitizer", () => {
       expect(res).not.toContain("la sede");
     });
 
-    it("elimina las 3 repeticiones y deja una sola dirección fiscal limpia", () => {
+    it("ubica la dirección fiscal después del cliente con 'con dirección en' y una sola vez", () => {
       const res = sanitizarTextoSistema(textoDelUsuario, "CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA", "COM CAUCASIA EPM");
-      expect(res).toContain("ubicada en la CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA");
-      // Contar apariciones de ENVIGADO en todo el texto (debe ser exactamente 1)
+      expect(res).toContain("instalados en la obra COM CAUCASIA EPM, a solicitud de LUIS JAVIER GALEANO MURILLO (NIT: 71705357-9), con dirección en la CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA, fueron inspeccionados");
       const count = (res.match(/ENVIGADO/g) || []).length;
       expect(count).toBe(1);
     });
@@ -121,14 +120,14 @@ describe("certSanitizer", () => {
       for (let i = 0; i < 5; i++) {
         res = sanitizarTextoSistema(res, "CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA", "COM CAUCASIA EPM");
       }
-      expect(res).toContain("instalados en la obra COM CAUCASIA EPM");
+      expect(res).toContain("instalados en la obra COM CAUCASIA EPM, a solicitud de LUIS JAVIER GALEANO MURILLO (NIT: 71705357-9), con dirección en la CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA, fueron inspeccionados");
       const count = (res.match(/ENVIGADO/g) || []).length;
       expect(count).toBe(1);
     });
   });
 
   describe("sanitizarCertificado", () => {
-    it("sanea un certificado con dirección triplicada a una sola dirección limpia y con 'la obra'", () => {
+    it("sanea un certificado con dirección triplicada a una sola dirección limpia y con 'la obra' y dirección después del cliente", () => {
       const certViejo = {
         id: "CERT-001",
         obraId: "OB-045",
@@ -142,8 +141,7 @@ describe("certSanitizer", () => {
 
       const certSaneado = sanitizarCertificado(certViejo, { clientes: mockClientes, obras: mockObras });
       expect(certSaneado.direccion).toBe("CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA");
-      expect(certSaneado.sistema).toContain("instalados en la obra COM CAUCASIA EPM");
-      expect(certSaneado.sistema).toContain("CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA");
+      expect(certSaneado.sistema).toContain("instalados en la obra COM CAUCASIA EPM, a solicitud de LUIS JAVIER GALEANO MURILLO (NIT: 71705357-9), con dirección en la CALLE 40 SUR NO 24 E - 75, ENVIGADO, ANTIOQUIA, fueron inspeccionados");
       const count = (certSaneado.sistema.match(/ENVIGADO/g) || []).length;
       expect(count).toBe(1);
     });

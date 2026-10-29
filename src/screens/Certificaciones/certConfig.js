@@ -186,13 +186,6 @@ export const construirTextoSistema = ({
     partes.push(`instalados en ${prefijo}${enMayuscula(donde)}`);
   }
 
-  const dirLimpia = String(direccion || "").trim().replace(/[.\s]+$/, "");
-  if (dirLimpia) {
-    const dirSinPrefijo = dirLimpia.replace(/^(ubicad[ao]\s+en\s+(la\s+|el\s+)?|en\s+(la\s+|el\s+)?)/i, "").trim();
-    const prefijoArticulo = /^(calle|carrera|cra|cl\b|diagonal|transversal|avenida|av\b)/i.test(dirSinPrefijo) ? "la " : "";
-    partes.push(`ubicada en ${prefijoArticulo}${enMayuscula(dirSinPrefijo)}`);
-  }
-
   const cli = String(cliente || "").trim();
   const nroNit = String(nit || "").trim();
   if (cli && nroNit) {
@@ -201,6 +194,13 @@ export const construirTextoSistema = ({
     partes.push(`a solicitud de ${enMayuscula(cli)}`);
   } else if (nroNit) {
     partes.push(`con NIT: ${nroNit}`);
+  }
+
+  const dirLimpia = String(direccion || "").trim().replace(/[.\s]+$/, "");
+  if (dirLimpia) {
+    const dirSinPrefijo = dirLimpia.replace(/^(con\s+direcci[oó]n\s+en\s+(?:la\s+|el\s+)?|ubicad[ao]\s+en\s+(?:la\s+|el\s+)?|en\s+(?:la\s+|el\s+)?)/i, "").trim();
+    const prefijoArticulo = /^(calle|carrera|cra|cl\b|diagonal|transversal|avenida|av\b)/i.test(dirSinPrefijo) ? "la " : "";
+    partes.push(`con dirección en ${prefijoArticulo}${enMayuscula(dirSinPrefijo)}`);
   }
 
   void fecha; void fechaLarga;

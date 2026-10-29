@@ -6,9 +6,13 @@ import { puedeVerDinero } from "../../lib/permisos";
 import { TarjetaInstalarAppDashboard } from "../../components/pwa/InstaladorApp";
 import { formatFechaLegible, generarUrlAppleCalendar, generarUrlGoogleCalendar } from "../../lib/agendaEmail";
 import { useMediaQuery } from "../../hooks/useMediaQuery";
+import { useEstadosFirmaActas, useEstadosFirmaInformes } from "../../hooks/useEnviosFirma";
+import { obrasConActaPendiente } from "../../lib/actaEntrega";
+import { obraEstaCerrada } from "../../lib/flujoObra";
+import { ICONS, ICON_COLORS } from "../../config/navigation";
 import {
   Button, Card, ListRow, Lista, StatusPill, EmptyState,
-  PageHeader, Toolbar, Icono,
+  PageHeader, Toolbar,
 } from "../../components/ui";
 import { TIPO, CIFRA, ESPACIO } from "../../styles/designTokens";
 
@@ -127,12 +131,26 @@ function CabeceraTarjeta({ titulo, descripcion, accion }) {
   );
 }
 
-// Acceso directo a un modulo.
-function TarjetaAcceso({ icono, titulo, subtitulo, onClick }) {
+// Acceso directo a un modulo: su icono de color -el mismo del menu-, cuantos
+// hay y, debajo, lo que toca hacer ahi. Antes solo decia el nombre del modulo
+// y una frase fija, y la tarjeta no le servia a nadie para decidir nada.
+function TarjetaAcceso({ modulo, numero, titulo, aviso, onClick }) {
+  const color = ICON_COLORS[modulo] || "#8E8E93";
   return (
     <Card interactivo ajustado onClick={onClick} aria-label={titulo}>
-      <div style={{ color: "var(--text-tertiary)", marginBottom: ESPACIO.sm }}>
-        <Icono nombre={icono} size={20} />
+      <span
+        className="rail-icono"
+        style={{
+          width: 32, height: 32, borderRadius: 9, color: "#ffffff",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: `linear-gradient(180deg, color-mix(in srgb, ${color} 80%, #ffffff), ${color})`,
+          boxShadow: "inset 0 0 0 0.5px rgba(0,0,0,.10), 0 1px 1.5px rgba(0,0,0,.14)",
+        }}
+      >
+        {ICONS[modulo]}
+      </span>
+      <div style={{ ...CIFRA, fontSize: 28, lineHeight: "32px", fontWeight: 600, color: "var(--text-primary)", marginTop: ESPACIO.md }}>
+        {numero}
       </div>
       <div style={{
         ...TIPO.footnote, fontWeight: 600, color: "var(--text-primary)",
@@ -140,12 +158,11 @@ function TarjetaAcceso({ icono, titulo, subtitulo, onClick }) {
       }}>
         {titulo}
       </div>
-      <div style={{
-        ...TIPO.caption, fontWeight: 400, color: "var(--text-tertiary)", marginTop: 2,
-        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-      }}>
-        {subtitulo}
-      </div>
+      {aviso && (
+        <StatusPill tono={aviso.tono} style={{ marginTop: ESPACIO.sm, maxWidth: "100%" }}>
+          {aviso.texto}
+        </StatusPill>
+      )}
     </Card>
   );
 }
@@ -206,8 +223,13 @@ function FilaAlerta({ titulo, meta, tono, etiqueta, onClick, multilinea = false 
 export default function Dashboard({ ctx, go }) {
   const {
     obras = [], cotizaciones = [], certs = [], membresia, agenda = [], clientes = [],
-    tareasPersonales = [], documentosEquipo = [],
+    tareasPersonales = [], documentosEquipo = [], informes = [],
   } = ctx;
+  // Las firmas de actas e informes, para que las tarjetas de arriba digan que
+  // falta firmar. Mientras no responden (`listo`), no se avisa nada: lo que no
+  // se sabe no es lo mismo que «sin firmar».
+  const { estados: estadosActas, listo: actasListas } = useEstadosFirmaActas();
+  const { estados: estadosInformes, listo: informesListos } = useEstadosFirmaInformes();
   const isMobile = useMediaQuery("(max-width: 768px)");
   const verDinero = puedeVerDinero(membresia);
   // `go` solo cambia de pantalla; `irAPantalla` ademas lleva contexto, que es
@@ -241,9 +263,40 @@ export default function Dashboard({ ctx, go }) {
       ? "Camila"
       : "Equipo");
 
-  const obrasActivas = obras.filter(
+  const listaObrasActivas = obras.filter(
     (o) => o.estado !== "Cancelada" && o.estado !== "Finalizado" && o.estado !== "Terminada"
-  ).length;
+  );
+  const obrasActivas = listaObrasActivas.length;
+
+  // ── Lo que dice cada tarjeta de arriba ──────────────────────────────────
+  // Obras al 90% o mas sin el acta firmada: son las que no se pueden ni
+  // certificar ni hacer su informe.
+  const sinActa = actasListas
+    ? obrasConActaPendiente(obras, estadosActas, { estaCerrada: obraEstaCerrada }).length
+    : null;
+  const avisoObras = sinActa === null ? null
+    : sinActa > 0 ? { tono: "peligro", texto: `${sinActa} sin acta firmada` }
+    : { tono: "exito", texto: "Actas al día" };
+
+  const certsVigentes = venc.lista.filter((c) => c.diasRestantes !== null && c.diasRestantes >= 0).length;
+  const avisoCerts = venc.vencidas.length > 0
+    ? { tono: "peligro", texto: `${venc.vencidas.length} vencida${venc.vencidas.length === 1 ? "" : "s"}` }
+    : venc.urgentes.length > 0
+    ? { tono: "aviso", texto: `${venc.urgentes.length} vence${venc.urgentes.length === 1 ? "" : "n"} pronto` }
+    : { tono: "exito", texto: "Todas al día" };
+
+  // Los informes del mes y, de esos, los que el cliente aun no firma.
+  const mesActual = hoyIso.slice(0, 7);
+  const informesDelMes = (Array.isArray(informes) ? informes : [])
+    .filter((inf) => String(inf?.fechaInforme || inf?.fecha || "").slice(0, 7) === mesActual);
+  const informesSinFirmar = informesDelMes.filter((inf) => estadosInformes?.[inf.id] !== "firmado").length;
+  const avisoInformes = !informesListos || informesDelMes.length === 0 ? null
+    : informesSinFirmar > 0 ? { tono: "aviso", texto: `${informesSinFirmar} sin firmar` }
+    : { tono: "exito", texto: "Todos firmados" };
+
+  const clientesConObra = new Set(
+    listaObrasActivas.map((o) => String(o.clienteId || o.cliente || "").trim().toLowerCase()).filter(Boolean)
+  ).size;
 
   const partesDelDia = [
     eventosHoy.length > 0
@@ -316,27 +369,31 @@ export default function Dashboard({ ctx, go }) {
             }}
           >
             <TarjetaAcceso
-              icono="obra"
+              modulo="obras"
+              numero={obrasActivas}
               titulo="Obras en curso"
-              subtitulo={`${obrasActivas} proyecto${obrasActivas === 1 ? "" : "s"}`}
+              aviso={avisoObras}
               onClick={() => go("obras")}
             />
             <TarjetaAcceso
-              icono="escudo"
+              modulo="certificaciones"
+              numero={certsVigentes}
               titulo="Certificaciones"
-              subtitulo="Alturas Res. 4272"
+              aviso={avisoCerts}
               onClick={() => go("certificaciones")}
             />
             <TarjetaAcceso
-              icono="documento"
-              titulo="Informes"
-              subtitulo="Técnicos y as-built"
+              modulo="informes"
+              numero={informesDelMes.length}
+              titulo="Informes del mes"
+              aviso={avisoInformes}
               onClick={() => go("informes")}
             />
             <TarjetaAcceso
-              icono="usuario"
+              modulo="clientes"
+              numero={clientes.length}
               titulo="Clientes"
-              subtitulo={`${clientes.length} registrados`}
+              aviso={clientesConObra > 0 ? { tono: "acento", texto: `${clientesConObra} con obra activa` } : null}
               onClick={() => go("clientes")}
             />
           </div>

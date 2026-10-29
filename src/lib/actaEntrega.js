@@ -86,22 +86,35 @@ export function tieneActaEntrega(obra) {
 // firmada. Esta aqui y no en cada pantalla para que las tres digan lo mismo.
 export const AVISO_ACTA_SIN_FIRMAR =
   "Pídele al coordinador de SST o al encargado de la obra que haga el acta de entrega con el cliente "
-  + "y se la haga firmar. Sin el acta firmada no se puede certificar ni hacer el informe de actividades.";
+  + "y se la haga firmar. Sin el acta firmada no se puede certificar ni hacer el informe de actividades. "
+  + "Si el cliente ya la firmó en papel, un administrador la marca como «Firmada en papel» en el acta.";
 
 export const AVISO_ACTA_EN_OBRA =
   "Haz el acta de entrega y hazla firmar del cliente, para que se puedan hacer el informe de actividades "
   + "y la certificación.";
 
 /**
- * Un acta esta CONCLUIDA cuando existe y el cliente la firmo. Crearla no
- * basta: lo que cierra la entrega es la firma de quien recibe.
+ * El acta la firmo el cliente en la hoja impresa y no por el enlace.
+ *
+ * POR QUE: hay clientes sin correo ni WhatsApp, y actas que ya se firmaron en
+ * papel en la obra. Sin esto esas obras quedaban sin poder certificarse ni
+ * hacer el informe. La marca la pone un administrador y queda quien y cuando.
+ */
+export function actaFirmadaEnPapel(acta) {
+  return !!acta?.firmadaEnPapel?.fecha;
+}
+
+/**
+ * Un acta esta CONCLUIDA cuando existe y el cliente la firmo, por el enlace o
+ * en papel. Crearla no basta: lo que cierra la entrega es la firma de quien
+ * recibe.
  *
  * @param {object} obra
  * @param {Record<string,string>} estadosFirma  { [actaId]: estado }, de
  *   useEstadosFirmaActas. Lo que no este ahi se da por no firmado.
  */
 export function actaEntregaConcluida(obra, estadosFirma = {}) {
-  return normalizarActas(obra).some((a) => estadosFirma?.[a.id] === "firmado");
+  return normalizarActas(obra).some((a) => estadosFirma?.[a.id] === "firmado" || actaFirmadaEnPapel(a));
 }
 
 /**
@@ -179,6 +192,8 @@ function actaVacia(obraId = "") {
     // quien la firma: el lider de proyecto cambia de obra en obra. Vacia, la
     // hoja sale con la firma de la empresa, que es como salia antes.
     firmaLider: "",
+    // { fecha, por }: el cliente la firmo en la hoja impresa. Ver actaFirmadaEnPapel.
+    firmadaEnPapel: null,
   };
 }
 

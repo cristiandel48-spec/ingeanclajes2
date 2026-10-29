@@ -478,6 +478,35 @@ export default function Informes({ctx}){
     a.titulo?.trim() || a.descripcion?.trim() || a.observaciones?.trim() || (a.fotos||[]).some((f)=>f.img)
   );
 
+  // La bitacora de la obra no viene en la carga inicial: solo llega al abrir
+  // la obra. Un informe nuevo hecho desde aqui, de una obra que no se abrio en
+  // esta sesion, salia vacio y decia «No hay avances registrados». Se pide la
+  // obra completa y, cuando llega, se arma el periodo y las actividades con
+  // ella, siempre que no se haya escrito nada todavia.
+  const obraDelFormParcial = obraSeleccionada?.__parcial === true;
+  const esperandoBitacora = useRef("");
+  useEffect(()=>{
+    if(!nuevo || editId || !form.obraId) return;
+    if(obraDelFormParcial){
+      esperandoBitacora.current = form.obraId;
+      asegurarDetalle("obras", form.obraId);
+      return;
+    }
+    if(esperandoBitacora.current !== form.obraId) return;
+    esperandoBitacora.current = "";
+    if(hayContenidoEscrito) return;
+    const armado = buildInformeForm({ obraId: form.obraId });
+    fotoRefs.current={};
+    setForm(p=>p.obraId!==armado.obraId ? p : ({
+      ...p,
+      periodoInicio:armado.periodoInicio,
+      periodoFin:armado.periodoFin,
+      personal:armado.personal,
+      actividades:armado.actividades,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nuevo, editId, form.obraId, obraDelFormParcial]);
+
   // Trae los avances de la obra SIN duplicar ni pisar lo escrito.
   //
   // Cada avance viaja con la marca del registro del que salio
@@ -629,8 +658,33 @@ export default function Informes({ctx}){
     return null;
   };
 
-  const descargarPdf = async (inf = sel) => {
-    if (!inf || generandoPdf) return;
+  // El informe con sus actividades y fotos. Desde la lista llega el registro
+  // de la carga inicial, que no las trae: sin esto el PDF salia solo con el
+  // texto de la primera actividad y sin el registro fotografico.
+  // Devuelve null si todavia no se pudo traer: mejor no generar que entregar
+  // un informe incompleto.
+  const informeCompleto = async (inf) => {
+    if (!inf?.id || inf.__parcial !== true) return inf;
+    const traido = await asegurarDetalle("informes", inf.id);
+    if (traido) return traido;
+    const enEstado = informes.find((x) => x.id === inf.id);
+    if (enEstado && enEstado.__parcial !== true) return enEstado;
+    window.alert("Todavía se están cargando las fotos de este informe. Intenta de nuevo en unos segundos.");
+    return null;
+  };
+
+  // El PDF que se le envia al cliente sale de `sel`: tiene que estar completo.
+  const abrirEnvioFirma = async () => {
+    const completo = await informeCompleto(sel);
+    if (!completo) return;
+    if (completo !== sel) setSel(completo);
+    setModalFirma(true);
+  };
+
+  const descargarPdf = async (infEntrada = sel) => {
+    if (!infEntrada || generandoPdf) return;
+    const inf = await informeCompleto(infEntrada);
+    if (!inf) return;
     // Firmado por el cliente: se entrega el PDF que recibio con la constancia
     // al final, no uno nuevo sin firma.
     const firmado = await envioFirmadoDe(inf);
@@ -666,7 +720,9 @@ export default function Informes({ctx}){
     }
   };
 
-  const imprimirInforme = async (inf = sel) => {
+  const imprimirInforme = async (infEntrada = sel) => {
+    if (!infEntrada) return;
+    const inf = await informeCompleto(infEntrada);
     if (!inf) return;
     const listo = enriquecerInforme(inf);
     if (!correoValido(listo.contactoEmail)) {
@@ -695,6 +751,7 @@ export default function Informes({ctx}){
       editar: () => editarInforme(sel),
       imprimir: () => imprimirInforme(sel),
       descargar: () => descargarPdf(sel),
+      enviarFirma: () => abrirEnvioFirma(),
     };
   });
   useAccionesPantalla(
@@ -709,7 +766,7 @@ export default function Informes({ctx}){
         <Button variante="texto" tam="sm" onClick={() => accionesInformeRef.current.imprimir()} title="Abre la pestaña de impresión del navegador">
           Imprimir
         </Button>
-        <Button variante="texto" tam="sm" onClick={() => setModalFirma(true)} title="Envía el informe al cliente para que firme el recibido">
+        <Button variante="texto" tam="sm" onClick={() => accionesInformeRef.current.enviarFirma()} title="Envía el informe al cliente para que firme el recibido">
           Enviar para firma
         </Button>
         <Button
@@ -1424,7 +1481,7 @@ export default function Informes({ctx}){
               proyecto={proyecto}
               envios={enviosFirma}
               onRecargar={recargarEnviosFirma}
-              onEnviar={() => setModalFirma(true)}
+              onEnviar={abrirEnvioFirma}
             />
             <div className="doc-paper-wrapper" style={{ maxWidth: 920, margin: "0 auto", width: "100%" }}>
               <div

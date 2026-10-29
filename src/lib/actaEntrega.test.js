@@ -399,6 +399,15 @@ describe("el candado del acta para certificar y para el informe", () => {
     expect(actaEntregaConcluida(conActa, { "ACT-010": "firmado" })).toBe(true);
   });
 
+  it("firmada en papel y marcada por un administrador, tambien", () => {
+    const enPapel = { id: "OB-004", actas: [{ id: "ACT-013", firmadaEnPapel: { fecha: "2026-10-29", por: "Admin" } }] };
+    expect(motivoActaPendiente(enPapel, {})).toBe("");
+    expect(actaEntregaConcluida(enPapel, {})).toBe(true);
+    // Una marca a medias (sin fecha) no cuenta.
+    const aMedias = { id: "OB-005", actas: [{ id: "ACT-014", firmadaEnPapel: { por: "Admin" } }] };
+    expect(motivoActaPendiente(aMedias, {})).toBe("sin-firma");
+  });
+
   it("con varias actas basta con que una este firmada", () => {
     expect(motivoActaPendiente(conDos, { "ACT-011": "enviado", "ACT-012": "firmado" })).toBe("");
     expect(motivoActaPendiente(conDos, { "ACT-011": "enviado" })).toBe("sin-firma");

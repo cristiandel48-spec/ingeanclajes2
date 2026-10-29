@@ -138,7 +138,7 @@ export function PanelFirmaRecibido({ envios, onRecargar, onEnviar, celular = "",
             {verTodos ? "Ver solo el último" : `Ver los ${envios.length} envíos`}
           </Button>
         ) : <span />}
-        <Button tam="sm" variante="tertiary" onClick={onEnviar}>Enviar de nuevo</Button>
+        {onEnviar && <Button tam="sm" variante="tertiary" onClick={onEnviar}>Enviar de nuevo</Button>}
       </div>
     </div>
   );

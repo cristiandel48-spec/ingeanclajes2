@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { fmtL } from "../../lib/format";
 import { consultarCertificado } from "../../lib/verificacionCertificados";
+import { limpiarDireccionFiscal, sanitizarTextoSistema } from "./certSanitizer";
 import logoIngeanclajes from "../../assets/logo-ingeanclajes.jpeg";
 import { FUENTE } from "../../styles/designTokens";
 
@@ -81,7 +82,14 @@ export default function VerificacionPublica() {
     return () => { activo = false; };
   }, []);
 
-  const cert = resultado.estado === "encontrado" ? resultado.cert : null;
+  const certRaw = resultado.estado === "encontrado" ? resultado.cert : null;
+  const cert = certRaw
+    ? {
+        ...certRaw,
+        direccion: limpiarDireccionFiscal(certRaw.direccion),
+        sistema: sanitizarTextoSistema(certRaw.sistema, limpiarDireccionFiscal(certRaw.direccion), certRaw.lugar),
+      }
+    : null;
   const estado = cert ? estadoDe(cert) : resultado.estado;
   const banner = BANNER[estado];
   const folio = cert ? (cert.numero || cert.id) : "";

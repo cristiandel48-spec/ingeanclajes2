@@ -59,12 +59,15 @@ export function enteroALetras(n) {
 export function limpiarPrefijoComercial(texto = "") {
   let limpio = String(texto || "").trim();
   const prefijos = [
+    /^suministro\s*,\s*fabricaci[oó]n\s*,\s*transporte\s*e\s*instalaci[oó]n\s+de\s+/i,
     /^suministro\s*,\s*transporte\s*e\s*instalaci[oó]n\s+de\s+/i,
+    /^suministro\s*,\s*fabricaci[oó]n\s*e\s*instalaci[oó]n\s+de\s+/i,
     /^suministro\s*,\s*montaje\s*e\s*instalaci[oó]n\s+de\s+/i,
     /^suministro\s*e\s*instalaci[oó]n\s+de\s+/i,
     /^suministro\s*y\s*montaje\s+de\s+/i,
     /^suministro\s*y\s*adecuaci[oó]n\s+de\s+/i,
     /^suministro\s+de\s+/i,
+    /^fabricaci[oó]n\s*,\s*suministro\s*e\s*instalaci[oó]n\s+de\s+/i,
     /^fabricaci[oó]n\s*e\s*instalaci[oó]n\s+de\s+/i,
     /^fabricaci[oó]n\s*y\s*montaje\s+de\s+/i,
     /^instalaci[oó]n\s*y\s*montaje\s+de\s+/i,
@@ -73,12 +76,15 @@ export function limpiarPrefijoComercial(texto = "") {
     /^adecuaci[oó]n\s+de\s+/i,
     /^provisi[oó]n\s*e\s*instalaci[oó]n\s+de\s+/i,
     /^provisi[oó]n\s+de\s+/i,
-    /^inspecci[oó]n\s*y\s*certificaci[oó]n\s+(anual\s+)?de\s+/i,
-    /^certificaci[oó]n\s+(anual\s+)?de\s+/i,
+    /^(?:servicio\s+de\s+)?(?:(?:inspecci[oó]n|reinspecci[oó]n|mantenimiento(?:\s+preventivo)?)\s*(?:,\s*|\s+y\s+|\s+e\s+))*(?:recertificaci[oó]n|certificaci[oó]n)(?:\s+t[eé]cnica)?(?:\s+anual)?(?:\s+de)?\s+/i,
+    /^(?:servicio\s+de\s+)?(?:inspecci[oó]n|reinspecci[oó]n|mantenimiento(?:\s+preventivo)?)(?:\s+t[eé]cnica|\s+anual)*\s+de\s+/i,
   ];
 
   for (const regex of prefijos) {
-    limpio = limpio.replace(regex, "");
+    const candidato = limpio.replace(regex, "").trim();
+    if (candidato) {
+      limpio = candidato;
+    }
   }
 
   // Quitar puntos al final
@@ -111,29 +117,15 @@ export function esItemAdministrativo(descripcion = "") {
   return administrativo && !/\b(l[ií]nea|anclaje|escalera|baranda|arn[eé]s)\b/i.test(texto);
 }
 
-// Convierte un ítem cotizado a redacción gramatical para certificado
-export function formatearItemParaCertificado(item = {}) {
-  const cant = Math.max(1, Math.round(Number(item.cant || item.cantidad || 1)));
-  const descRaw = item.desc || item.descripcion || item.nombre || "";
-  if (!descRaw.trim()) return null;
+const SUSTANTIVO_FEMENINO_RE =
+  /^(l[ií]neas?|escalas?|escaleras?|canastillas?|redes?|red\b|barandas?|barandillas?|estructuras?|plataformas?|pasarelas?|puertas?|compuertas?|jaulas?|cuerdas?|eslingas?)/i;
 
-  // Filtrar ítems administrativos que no corresponden a sistemas físicos
-  if (esItemAdministrativo(descRaw)) return null;
+const SUSTANTIVO_PLURAL_RE =
+  /^(puntos|anclajes|l[ií]neas|escaleras|escalas|sistemas|barandas|barandillas|estructuras|postes|redes|canastillas|plataformas|pasarelas)\b/i;
 
-  let limpio = limpiarPrefijoComercial(descRaw).toLowerCase();
-
-  // Normalizar unidades y preservar siglas técnicas estándar
-  limpio = normalizarUnidadesTecnicas(limpio)
-    .replace(/\bansi\b/gi, "ANSI")
-    .replace(/\bosha\b/gi, "OSHA")
-    .replace(/\bkn\b/g, "kN")
-    .replace(/\bb7\b/gi, "B7")
-    .replace(/\ba4\b/gi, "A4")
-    .replace(/\bhilti\b/gi, "Hilti")
-    .replace(/\bsikadur\b/gi, "Sikadur");
-
-  // Determinar género gramatical para el número 1
-  const esFemenino = /^(l[ií]nea|escala|escalera|canastilla|red|baranda|estructura)/i.test(limpio);
+function formatearConCantidad(cant, cuerpo) {
+  let limpio = cuerpo.trim();
+  const esFemenino = SUSTANTIVO_FEMENINO_RE.test(limpio);
 
   if (cant === 1) {
     const prefijo = esFemenino ? "una (1)" : "un (1)";
@@ -172,6 +164,66 @@ export function formatearItemParaCertificado(item = {}) {
   return `${prefijo} ${limpio}`;
 }
 
+// Convierte un ítem cotizado a redacción gramatical para certificado
+export function formatearItemParaCertificado(item = {}) {
+  const cant = Math.max(1, Math.round(Number(item.cant || item.cantidad || 1)));
+  const descRaw = String(item.desc || item.descripcion || item.nombre || "");
+  if (!descRaw.trim()) return null;
+
+  // Filtrar ítems administrativos que no corresponden a sistemas físicos
+  if (esItemAdministrativo(descRaw)) return null;
+
+  const esServicioInspeccion =
+    /^(?:servicio\s+de\s+)?(?:inspecci[oó]n|reinspecci[oó]n|mantenimiento|recertificaci[oó]n|certificaci[oó]n)\b/i.test(
+      descRaw.trim()
+    );
+  const unidadRaw = String(item.unit || item.unidad || "").trim();
+  const esUnidadGlobal = /^(?:glb|global|servicio|lote)\b/i.test(unidadRaw);
+
+  let limpio = limpiarPrefijoComercial(descRaw).toLowerCase();
+
+  // Normalizar unidades y preservar siglas técnicas estándar
+  limpio = normalizarUnidadesTecnicas(limpio)
+    .replace(/\bansi\b/gi, "ANSI")
+    .replace(/\bosha\b/gi, "OSHA")
+    .replace(/\bkn\b/g, "kN")
+    .replace(/\bb7\b/gi, "B7")
+    .replace(/\ba4\b/gi, "A4")
+    .replace(/\bhilti\b/gi, "Hilti")
+    .replace(/\bsikadur\b/gi, "Sikadur");
+
+  // 1. Si el texto ya trae cantidad formateada en letras y número ("cuatro (4) ..."), no anteponer otra cantidad
+  if (/^[a-záéíóúñ]+(?:\s+y\s+[a-záéíóúñ]+)?\s*\(\s*\d+\s*\)\s+/i.test(limpio)) {
+    return limpio;
+  }
+
+  // 2. Si la descripción misma ya empieza con un número explícito ("4 líneas de vida...", "18 puntos de anclaje...")
+  const mNumInicial = limpio.match(/^(\d+)\s+([a-záéíóúñ][\s\S]*)$/i);
+  if (mNumInicial) {
+    const cantEnTexto = Math.max(1, Math.round(Number(mNumInicial[1]) || 1));
+    return formatearConCantidad(cantEnTexto, mNumInicial[2]);
+  }
+
+  // 3. Si es 1 servicio global / recertificación anual sobre sistemas en plural ("RECERTIFICACIÓN ANUAL PUNTOS DE ANCLAJE"),
+  //    no forzar "un (1) punto de anclaje": la cantidad 1 es del servicio global, no de un único punto.
+  if (cant === 1 && (esServicioInspeccion || esUnidadGlobal) && SUSTANTIVO_PLURAL_RE.test(limpio)) {
+    return limpio;
+  }
+
+  return formatearConCantidad(cant, limpio);
+}
+
+/** Obtiene los ítems de la propuesta activa (o la primera) de una cotización, con respaldo en cotizacion.items. */
+export function itemsDeCotizacionActiva(cotizacion) {
+  if (!cotizacion) return [];
+  if (Array.isArray(cotizacion.propuestas) && cotizacion.propuestas.length) {
+    const activa =
+      cotizacion.propuestas.find((p) => p.id === cotizacion.propuestaActivaId) || cotizacion.propuestas[0];
+    if (Array.isArray(activa?.items) && activa.items.length) return activa.items;
+  }
+  return Array.isArray(cotizacion.items) ? cotizacion.items : [];
+}
+
 /**
  * Genera la descripción de los sistemas a certificar tomando como base
  * los ítems aprobados de la cotización vinculada.
@@ -182,27 +234,33 @@ export function formatearItemParaCertificado(item = {}) {
 export function redactarSistemasDesdeCotizacion(cotizacion) {
   if (!cotizacion) return { texto: "", cantidadTotal: 0, itemsRedactados: [] };
 
-  // Obtener propuestas e ítems
-  const items = [];
-  if (Array.isArray(cotizacion.propuestas) && cotizacion.propuestas.length) {
-    // Si hay propuesta activa, priorizarla; si no, la primera propuesta
-    const activa = cotizacion.propuestas.find((p) => p.id === cotizacion.propuestaActivaId) || cotizacion.propuestas[0];
-    if (Array.isArray(activa.items)) items.push(...activa.items);
-  } else if (Array.isArray(cotizacion.items) && cotizacion.items.length) {
-    items.push(...cotizacion.items);
-  }
-
+  const items = itemsDeCotizacionActiva(cotizacion);
   if (!items.length) return { texto: "", cantidadTotal: 0, itemsRedactados: [] };
+
+  // Agrupar ítems idénticos para evitar repeticiones del mismo ítem en la misma frase
+  const agrupados = new Map();
+  for (const it of items) {
+    const desc = String(it?.desc || it?.descripcion || it?.nombre || "").trim();
+    if (!desc || esItemAdministrativo(desc)) continue;
+    const unidad = String(it?.unit || it?.unidad || "UND").trim();
+    const cant = Math.max(1, Math.round(Number(it?.cant || it?.cantidad || 1)));
+    const clave = `${limpiarPrefijoComercial(desc).toLowerCase()}|${unidad.toLowerCase()}`;
+    const previo = agrupados.get(clave);
+    if (previo) {
+      previo.cant += cant;
+    } else {
+      agrupados.set(clave, { ...it, desc, unidad, cant });
+    }
+  }
 
   const redactados = [];
   let sumaCantidades = 0;
 
-  for (const it of items) {
+  for (const it of agrupados.values()) {
     const formatted = formatearItemParaCertificado(it);
     if (formatted) {
       redactados.push(formatted);
-      const c = Math.max(1, Math.round(Number(it.cant || it.cantidad || 1)));
-      sumaCantidades += c;
+      sumaCantidades += it.cant;
     }
   }
 

@@ -221,49 +221,155 @@ function numTexto(n, fem = true) {
 }
 
 /**
+ * Elimina conectores y cláusulas huérfanas o repetidas en textos de certificación
+ * (por ejemplo "a solicitud, a solicitud, a solicitud de ...", "; más más ...", "(NIT: X) (NIT: X)").
+ */
+export function limpiarConectoresRepetidosCertificacion(valor) {
+  let s = String(valor || "");
+  if (!s) return s;
+
+  let previo = "";
+  let guard = 0;
+  while (s !== previo && guard < 12) {
+    previo = s;
+    guard++;
+
+    // Verbo inicial duplicado ("CERTIFICA que CERTIFICA que ...")
+    s = s.replace(/^(CERTIFICA|RECERTIFICA)\s+que\s+(?:(?:CERTIFICA|RECERTIFICA)\s+que\s+)+/i, "$1 que ");
+
+    // Prefijo "los sistemas de protección contra caídas consistentes en:" duplicado
+    s = s.replace(
+      /(los\s+sistemas\s+de\s+protecci[oó]n\s+contra\s+ca[ií]das\s*(?:instalados,?\s*)?consistentes\s+en:\s*)(?:los\s+sistemas\s+de\s+protecci[oó]n\s+contra\s+ca[ií]das\s*(?:instalados,?\s*)?consistentes\s+en:\s*)+/gi,
+      "$1"
+    );
+
+    // Conector "a solicitud" / "a solicitud de" / "por encargo de" huérfano antes de otro "a solicitud" / "por encargo"
+    s = s.replace(
+      /(?:,\s*|\s+)(?:a\s+solicitud(?:\s+de)?|por\s+encargo(?:\s+de)?)\s*(?=,\s*(?:a\s+solicitud|por\s+encargo)\b)/gi,
+      ""
+    );
+    s = s.replace(
+      /\b(?:a\s+solicitud(?:\s+de)?|por\s+encargo(?:\s+de)?)\s+(?=(?:a\s+solicitud|por\s+encargo)\b)/gi,
+      ""
+    );
+    s = s.replace(
+      /,\s*solicitud(?:\s+de)?\s*(?=,\s*a\s+solicitud\b)/gi,
+      ""
+    );
+
+    // Conector "a solicitud" / "a solicitud de" huérfano sin cliente justo antes de otra cláusula o cierre
+    s = s.replace(
+      /(?:,\s*|\s+)a\s+solicitud(?:\s+de)?\s*(?=(?:,\s*(?:instalad[ao]s?\s+en|con\s+NIT|con\s+direcci[oó]n|ubicad[ao]\s+en|fueron\s+inspeccionados|cumplen\s+a\s+cabalidad)\b)|$)/gi,
+      ""
+    );
+
+    // Conector "instalados en (la obra/sede)" huérfano antes de otro "instalados en"
+    s = s.replace(
+      /(?:,\s*|\s+)instalad[ao]s?\s+en(?:\s+(?:la\s+(?:obra|sede)|el\s+proyecto|las\s+instalaciones(?:\s+de)?))?\s*(?=,\s*instalad[ao]s?\s+en\b)/gi,
+      ""
+    );
+
+    // Conector "con dirección (en)" huérfano antes de otro "con dirección"
+    s = s.replace(
+      /,\s*con\s+direcci[oó]n(?:\s+en)?\s*(?=,\s*con\s+direcci[oó]n\b)/gi,
+      ""
+    );
+
+    // "; más más ..." -> "; más "
+    s = s.replace(/(?<![\p{L}\p{N}])(?:m[aá]s\s+){2,}/giu, "más ");
+
+    // "adicionales adicionales" -> "adicionales"
+    s = s.replace(/(?<![\p{L}\p{N}])(?:adicionales\s+)+adicionales(?![\p{L}\p{N}])/giu, "adicionales");
+
+    // "(NIT: X) (NIT: X)" repetido
+    s = s.replace(/(\(\s*NIT\s*:\s*[^)]+\))(?:\s*\1)+/gi, "$1");
+
+    // Preposiciones / artículos repetidos accidentalmente ("de de", "en en", "con con", "la la")
+    s = s.replace(/(?<![\p{L}\p{N}])(de|en|la|el|los|las|con|por|para|que|y)\s+\1(?![\p{L}\p{N}])/giu, "$1");
+
+    // Signos de puntuación repetidos (", ,", "; ;")
+    s = s.replace(/(?:,\s*){2,}/g, ", ");
+    s = s.replace(/(?:;\s*){2,}/g, "; ");
+  }
+
+  return s;
+}
+
+function quitarParentesisEnvolventes(valor) {
+  let s = String(valor || "").trim();
+  if (/^\([^()]+\)$/.test(s)) {
+    s = s.slice(1, -1).trim();
+  }
+  return s;
+}
+
+/**
  * Embellece y sintetiza técnicamente las descripciones de actividades de obra
- * para convertirlas en un alcance de certificación impecable.
+ * para convertirlas en un alcance de certificación impecable e idempotente.
  */
 function embellecerDetalleCertificacion(raw) {
   let str = String(raw || "").trim();
   if (!str) return str;
 
-  // Si ya tiene redacción pulida ("consistentes en:"), no sobreescribir
-  if (/consistentes en:/i.test(str)) return str;
+  // Quitar prefijo repetido si llega envuelto varias veces
+  str = str
+    .replace(
+      /^(?:los\s+sistemas\s+de\s+protecci[oó]n\s+contra\s+ca[ií]das\s*(?:instalados,?\s*)?(?:consistentes\s+en:?\s*)?)+/i,
+      ""
+    )
+    .trim();
+
+  if (!str) return "los sistemas de protección contra caídas";
+
+  // Limpiar prefijos comerciales redundantes de recertificación / certificación anual cuando se colaron en el detalle
+  // Ej: "un (1) recertificación anual puntos de anclaje" -> "puntos de anclaje"
+  const sinPrefijoRedundante = str
+    .replace(
+      /^(?:un[oa]?\s*(?:\(\s*1\s*\)\s*)?)?(?:servicio\s+de\s+)?(?:(?:inspecci[oó]n|reinspecci[oó]n|mantenimiento(?:\s+preventivo)?)\s*(?:,\s*|\s+y\s+|\s+e\s+))*(?:recertificaci[oó]n|certificaci[oó]n)(?:\s+t[eé]cnica)?(?:\s+anual)?(?:\s+de)?\s+(?=[\p{L}\p{N}])/iu,
+      ""
+    )
+    .trim();
+  if (sinPrefijoRedundante) {
+    str = sinPrefijoRedundante;
+  }
 
   // Limpiar frases repetitivas de notas de campo ("Instalación de líneas de vida...", "Instalación de puntos de anclaje...")
   str = str.replace(/(?:^|[.;])\s*instalaci[oó]n\s+(?:de\s+)?(?:l[ií]neas?\s+de\s+vida|puntos?\s+de\s+anclaje[s]?|sistemas?\s+antica[ií]das?)[.:]?\s*/gi, "; ");
 
   // Normalizar unidades y metros: "10ml" -> "10 m", "32ml" -> "32 m"
   str = str.replace(/(\d+)\s*(?:ml|mts?|metros?(?:\s+lineales)?)(?!\w)/gi, "$1 m");
-  // Número suelto tras "de" antes de "y", coma o punto: "de 45 y" -> "de 45 m y"
-  str = str.replace(/\bde\s+(\d+)\s+(y|,|\.)/gi, "de $1 m $2");
+  // Número corto suelto tras "de" antes de "y", coma o punto: "de 45 y" -> "de 45 m y" (evita años como 2021)
+  str = str.replace(/\bde\s+(\d{1,3})\s+(y|,|\.)/gi, (m, num, sig) => (Number(num) <= 500 ? `de ${num} m ${sig}` : m));
 
   // Estandarizar "puntos de anclajes" -> "puntos de anclaje"
   str = str.replace(/\bpuntos?\s+de\s+anclajes\b/gi, "puntos de anclaje");
 
   // Limpiar punto y coma inicial si quedó
-  str = str.replace(/^;\s*/, "").trim();
+  str = str.replace(/^[;,\s]+|[;,\s]+$/g, "").trim();
 
-  // Dividir por bloques/tramos si hay puntos seguidos o punto y coma
-  const rawBloques = str.split(/[;.]\s+/).map((s) => s.trim()).filter(Boolean);
+  // Dividir por bloques/tramos (punto y coma, o punto seguido que no sea abreviatura)
+  const rawBloques = str
+    .split(/;\s+|(?<!\b(?:No|Nro|Art|Res|Cap|Num|Ref|aprox|pág|pag|S\.A|E\.U|Ltda))\.\s+/i)
+    .map((s) => s.replace(/^m[aá]s\s+/i, "").trim())
+    .filter(Boolean);
 
-  // Procesar números en palabras
+  // Procesar números en palabras sin duplicar si ya están formateados
   const bloques = rawBloques.map((bloque) => {
     let b = bloque;
-    b = b.replace(/\b1\s+l[ií]nea\b/gi, "una (1) línea");
-    b = b.replace(/\b(\d+)\s+l[ií]neas\b/gi, (m, n) => numTexto(n, true) + " líneas");
-    b = b.replace(/\b1\s+punto\s+de\s+anclaje\b/gi, "un (1) punto de anclaje");
-    b = b.replace(/\b(\d+)\s+puntos?\s+de\s+anclaje\b/gi, (m, n) => numTexto(n, false) + " puntos de anclaje");
+    b = b.replace(/(?<!\(\s*)\b1\s+l[ií]nea\b/gi, "una (1) línea");
+    b = b.replace(/(?<!\(\s*)\b(\d+)\s+l[ií]neas\b/gi, (m, n) => numTexto(n, true) + " líneas");
+    b = b.replace(/(?<!\(\s*)\b1\s+punto\s+de\s+anclaje\b/gi, "un (1) punto de anclaje");
+    b = b.replace(/(?<!\(\s*)\b(\d+)\s+puntos?\s+de\s+anclaje\b/gi, (m, n) => numTexto(n, false) + " puntos de anclaje");
     return b;
   });
 
-  if (bloques.length === 0) return raw;
+  if (bloques.length === 0) return "los sistemas de protección contra caídas consistentes en: " + str;
 
   let finalDetalle = "";
   if (bloques.length === 4) {
+    const b3SinAdicionales = bloques[3].replace(/\s+adicionales$/i, "");
     const tramo1 = `${bloques[0]} con ${bloques[1]}`;
-    const tramo2 = `${bloques[2]} con ${bloques[3]} adicionales`;
+    const tramo2 = `${bloques[2]} con ${b3SinAdicionales} adicionales`;
     finalDetalle = `${tramo1}; más ${tramo2}`;
   } else if (bloques.length === 2) {
     if (/puntos?\s+de\s+anclaje/i.test(bloques[1]) && /l[ií]nea/i.test(bloques[0])) {
@@ -278,12 +384,22 @@ function embellecerDetalleCertificacion(raw) {
   return "los sistemas de protección contra caídas consistentes en: " + finalDetalle;
 }
 
+const FRONTERA_CLAUSULA_CERT =
+  "(?=(?:,\\s*(?:instalad[ao]s?\\s+en\\b|a\\s+solicitud\\s+de\\b|por\\s+encargo\\s+de\\b|con\\s+NIT\\s*:|con\\s+direcci[oó]n\\b|ubicad[ao]\\s+en\\b))|$)";
+
 /**
- * Reestructura y embellece el texto completo de una certificación (Opción A ejecutiva)
+ * Reestructura y embellece el texto completo de una certificación de forma 100% idempotente,
+ * soportando paréntesis y comas en nombres de clientes y obras (ej. "COLOMBIA (MALL SANTANA)").
  */
 function embellecerTextoCompletoCertificacion(texto) {
-  const t = String(texto || "").trim();
+  let t = String(texto || "").trim();
   if (!t) return t;
+
+  t = t
+    .replace(/^INGEANCLAJES\s+S\.?A\.?S\.?\s+/i, "")
+    .replace(/^(CERTIFICA|RECERTIFICA)\s*:\s*(?=los\s+sistemas\b)/i, "$1 que ");
+
+  t = limpiarConectoresRepetidosCertificacion(t);
 
   const mVerbo = t.match(/^(CERTIFICA|RECERTIFICA)\s+que\s+/i);
   if (!mVerbo) return t;
@@ -293,55 +409,83 @@ function embellecerTextoCompletoCertificacion(texto) {
   const mCierre = afterVerbo.match(/(,\s*(?:fueron\s+inspeccionados|cumplen\s+a\s+cabalidad)[\s\S]*)$/i);
   const cuerpo = mCierre ? afterVerbo.slice(0, mCierre.index) : afterVerbo;
 
-  let remaining = cuerpo;
+  let remaining = limpiarConectoresRepetidosCertificacion(cuerpo);
 
-  // 1. Extraer dirección (puede estar al final tras la solicitud o antes de ella)
+  // 1. Extraer todas las cláusulas de dirección (desduplicando si había varias)
   let direccion = "";
-  const mDir = remaining.match(/(?:,\s*|\s+)(?:con\s+DIRECCI[OÓ]N:\s*|con\s+direcci[oó]n(?:\s+en)?\s*(?:la\s+|el\s+)?|ubicad[ao]\s+en\s*(?:la\s+|el\s+)?)([\s\S]+?)(?=(?:,\s*(?:a\s+solicitud\s+de|por\s+encargo\s+de|para|con\s+NIT|instalados\s+en|fueron\s+inspeccionados|cumplen\s+a\s+cabalidad))|$)/i);
-  if (mDir) {
-    direccion = mDir[1].trim();
-    remaining = remaining.slice(0, mDir.index) + remaining.slice(mDir.index + mDir[0].length);
-  }
+  const reDir = new RegExp(
+    `,\\s*(?:con\\s+DIRECCI[OÓ]N\\s*:\\s*|con\\s+direcci[oó]n(?:\\s+en)?\\s*(?:la\\s+|el\\s+)?|ubicad[ao]\\s+en\\s*(?:la\\s+|el\\s+)?)([\\s\\S]+?)${FRONTERA_CLAUSULA_CERT}`,
+    "gi"
+  );
+  remaining = remaining.replace(reDir, (_, capDir) => {
+    const cand = String(capDir || "").trim();
+    if (cand && !direccion) direccion = cand;
+    return "";
+  });
 
-  // 2. Extraer cliente y NIT
+  // 2. Extraer cliente y NIT (soportando paréntesis internos como "(MALL SANTANA)" y desduplicando si se repitió)
   let nit = "";
   let cliente = "";
-  const mSolicitud = remaining.match(/(?:,\s*|\s+)(?:a\s+solicitud\s+de|por\s+encargo\s+de|para)\s+([^(,]+?)(?:\s*\(NIT:\s*([0-9kK.-]+)\))?(?=(?:,\s*(?:con\s+DIRECCI[OÓ]N|con\s+direcci[oó]n|ubicad[ao]\s+en|instalados\s+en))|$)/i);
-  if (mSolicitud) {
-    cliente = mSolicitud[1].trim();
-    nit = mSolicitud[2] ? mSolicitud[2].trim() : "";
-    remaining = remaining.slice(0, mSolicitud.index) + remaining.slice(mSolicitud.index + mSolicitud[0].length);
-  } else {
-    const mNit = remaining.match(/(?:,\s*|\s+)con\s+NIT:\s*([0-9kK.-]+)\s*(?:\(([^)]+)\))?(?:,|$)/i);
-    if (mNit) {
-      nit = mNit[1].trim();
-      cliente = mNit[2] ? mNit[2].trim() : "";
-      remaining = remaining.slice(0, mNit.index) + remaining.slice(mNit.index + mNit[0].length);
-    } else {
-      const mClienteDe = remaining.match(/(?:,\s*|\s+)de\s+([^,]+)$/i);
-      if (mClienteDe) {
-        cliente = mClienteDe[1].trim();
-        remaining = remaining.slice(0, mClienteDe.index);
-      }
+  const reSolicitud = new RegExp(
+    `,\\s*(?:a\\s+solicitud\\s+de|por\\s+encargo\\s+de)\\s+([\\s\\S]+?)${FRONTERA_CLAUSULA_CERT}`,
+    "gi"
+  );
+  let huboSolicitud = false;
+  remaining = remaining.replace(reSolicitud, (_, rawCliCap) => {
+    huboSolicitud = true;
+    let rawCli = String(rawCliCap || "").trim().replace(/[\s,]+$/, "");
+    // Extraer uno o varios "(NIT: ...)" al final sin truncar otros paréntesis del nombre del cliente
+    let mNitFinal = rawCli.match(/^(.*?)\s*\(\s*NIT\s*:\s*([^)]+)\)\s*$/i);
+    while (mNitFinal) {
+      rawCli = mNitFinal[1].trim();
+      if (!nit) nit = mNitFinal[2].trim();
+      mNitFinal = rawCli.match(/^(.*?)\s*\(\s*NIT\s*:\s*([^)]+)\)\s*$/i);
     }
+    if (rawCli && !cliente) cliente = rawCli;
+    return "";
+  });
+
+  if (!huboSolicitud) {
+    const reSoloNit = new RegExp(
+      `,\\s*con\\s+NIT\\s*:\\s*([0-9kK.\\s-]+?)(?:\\s*\\(([^)]+)\\))?${FRONTERA_CLAUSULA_CERT}`,
+      "gi"
+    );
+    remaining = remaining.replace(reSoloNit, (_, capNit, capCli) => {
+      if (capNit && !nit) nit = capNit.trim();
+      if (capCli && !cliente) cliente = capCli.trim();
+      return "";
+    });
   }
 
-  // 3. Extraer lugar / obra de instalación
+  // 3. Extraer lugar / obra de instalación (soportando paréntesis como "COLOMBIA (MALL SANTANA)")
   let lugar = "";
-  const mLugar = remaining.match(/(?:,\s*|\s+)instalados\s+en\s+(?:la\s+(?:sede|obra)\s+|el\s+proyecto\s+|las\s+instalaciones\s+de\s+)?(\([^)]+\)|[^(,]+?)(?=(?:,\s*(?:a\s+solicitud|con\s+NIT|con\s+direcci[oó]n|ubicad[ao]\s+en))|$)/i);
-  if (mLugar) {
-    lugar = mLugar[1].trim();
-    remaining = remaining.slice(0, mLugar.index) + remaining.slice(mLugar.index + mLugar[0].length);
-  }
+  const reLugar = new RegExp(
+    `(?:,\\s*|\\s+)instalad[ao]s?\\s+en\\s+(?:la\\s+(?:sede|obra)\\s+|el\\s+proyecto\\s+|las\\s+instalaciones\\s+de\\s+)?([\\s\\S]+?)${FRONTERA_CLAUSULA_CERT}`,
+    "gi"
+  );
+  remaining = remaining.replace(reLugar, (_, capLugar) => {
+    const cand = String(capLugar || "").trim().replace(/[\s,]+$/, "");
+    if (cand && !lugar) lugar = cand;
+    return "";
+  });
 
-  let rawDetalle = remaining.trim().replace(/[\s,]+$/, "");
-  rawDetalle = rawDetalle.replace(/^los\s+sistemas\s+de\s+protecci[oó]n\s+contra\s+ca[ií]das\s*(?:instalados,?\s*)?(?:consistentes\s+en:?\s*)?/i, "").trim();
+  // Limpiar cualquier conector residual al final del detalle
+  let rawDetalle = limpiarConectoresRepetidosCertificacion(remaining)
+    .replace(/(?:,\s*|\s+)a\s+solicitud(?:\s+de)?\s*$/i, "")
+    .trim()
+    .replace(/[\s,]+$/, "");
+  rawDetalle = rawDetalle
+    .replace(
+      /^(?:los\s+sistemas\s+de\s+protecci[oó]n\s+contra\s+ca[ií]das\s*(?:instalados,?\s*)?(?:consistentes\s+en:?\s*)?)+/i,
+      ""
+    )
+    .trim();
   const detalleLindo = embellecerDetalleCertificacion(rawDetalle);
 
-  let cleanLugar = lugar.replace(/^\(|\)$/g, "").trim();
+  let cleanLugar = quitarParentesisEnvolventes(lugar);
   cleanLugar = cleanLugar.replace(/^(?:la\s+|el\s+|las\s+)?(?:sede|obra|proyecto|instalaciones)\s+/i, "").trim();
-  const cleanCliente = cliente.replace(/^\(|\)$/g, "").trim();
-  const cleanNit = nit.trim();
+  const cleanCliente = quitarParentesisEnvolventes(cliente);
+  const cleanNit = nit.replace(/^NIT\s*:?\s*/i, "").trim();
   let cleanDir = direccion.trim();
   if (cleanDir && (cleanDir.toLowerCase().includes("caucasia epm") || cleanDir.toLowerCase() === cleanLugar.toLowerCase())) {
     cleanDir = "";
@@ -364,7 +508,13 @@ function embellecerTextoCompletoCertificacion(texto) {
     partes.push(`con dirección ${dirSinPrefijo}`);
   }
 
-  const textoCierre = ", fueron inspeccionados y verificados técnicamente, encontrándose estructuralmente conformes, operativos y aptos para trabajo seguro en alturas, cumpliendo a cabalidad con los requisitos de la Resolución 4272 de 2021 del Ministerio del Trabajo y los estándares de ingeniería aplicables.";
+  // Respetar normativa personalizada si ya venía en el cierre oficial
+  let textoCierre =
+    ", fueron inspeccionados y verificados técnicamente, encontrándose estructuralmente conformes, operativos y aptos para trabajo seguro en alturas, cumpliendo a cabalidad con los requisitos de la Resolución 4272 de 2021 del Ministerio del Trabajo y los estándares de ingeniería aplicables.";
+  if (mCierre && /^,\s*fueron\s+inspeccionados\s+y\s+verificados\s+t[eé]cnicamente/i.test(mCierre[1])) {
+    textoCierre = mCierre[1].trim();
+    if (!textoCierre.endsWith(".")) textoCierre += ".";
+  }
 
   return `${verbo} que ${partes.join(", ")}${textoCierre}`;
 }
@@ -382,6 +532,9 @@ export function normalizarTextoCertificacion(valor) {
 
   // Auto-embellecimiento de certificaciones
   res = embellecerTextoCompletoCertificacion(res);
+
+  // Limpieza adicional de conectores repetidos (incluso en redacciones libres)
+  res = limpiarConectoresRepetidosCertificacion(res);
 
   // 1. Limpiar dobles puntos accidentales ("..", "...")
   res = res.replace(/\.{2,}/g, ".");

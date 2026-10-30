@@ -1,4 +1,9 @@
-import { normalizarRazonSocial, normalizarDocumento, normalizarTextoCertificacion } from "../../lib/normalizarEntrada";
+import {
+  normalizarRazonSocial,
+  normalizarDocumento,
+  normalizarTextoCertificacion,
+  limpiarConectoresRepetidosCertificacion,
+} from "../../lib/normalizarEntrada";
 import { clienteDeObra, claveRazonSocial } from "../../lib/quienRecibe";
 import { DEPARTAMENTOS_COLOMBIA } from "../../data/colombiaUbicaciones";
 
@@ -255,6 +260,9 @@ export function sanitizarTextoSistema(sistema, direccionFiscal = "", lugar = "")
   let t = String(sistema || "").trim();
   if (!t) return "";
 
+  // 0. Limpiar conectores repetidos o huérfanos preexistentes ("a solicitud, a solicitud de ...")
+  t = limpiarConectoresRepetidosCertificacion(t);
+
   // 1. En certificaciones de ingeniería de alturas es "la obra", nunca "la sede"
   t = t.replace(/\binstalad[ao]s?\s+en\s+(?:la\s+(?:sede|obra)\s+)+/gi, "instalados en la obra ");
   t = t.replace(/\ben\s+la\s+sede\b/gi, "en la obra");
@@ -266,26 +274,27 @@ export function sanitizarTextoSistema(sistema, direccionFiscal = "", lugar = "")
     return sanitizarTextoSistema(t, "", lugar);
   }
 
-  // 2. Eliminar cualquier bloque antiguo de dirección ubicado ANTES de "a solicitud de"
-  t = t.replace(/,\s*(?:con\s+direcci[oó]n(?:\s+en)?|ubicad[ao]\s+en)[\s\S]*?(?=,\s*a\s+solicitud\s+de|,\s*con\s+NIT|,\s*fueron\s+inspeccionados|$)/i, "");
+  // 2. Eliminar todos los bloques previos de dirección (tanto antes como después de "a solicitud de")
+  t = t.replace(
+    /,\s*(?:con\s+DIRECCI[OÓ]N\s*:\s*|con\s+direcci[oó]n(?:\s+en)?\s*(?:la\s+|el\s+)?|ubicad[ao]\s+en\s*(?:la\s+|el\s+)?)[\s\S]*?(?=(?:,\s*(?:instalad[ao]s?\s+en|a\s+solicitud\s+de|por\s+encargo\s+de|con\s+NIT|con\s+direcci[oó]n|ubicad[ao]\s+en|fueron\s+inspeccionados|cumplen\s+a\s+cabalidad)\b)|$)/gi,
+    ""
+  );
 
-  // 3. Gestionar el bloque de dirección después del cliente
-  const regexSolicitud = /(,\s*(?:a\s+solicitud\s+de\s+[^(,]+?(?:\s*\([^)]+\))?|con\s+NIT:\s*[0-9kK.-]+(?:\s*\([^)]+\))?))(?:,\s*(?:con\s+direcci[oó]n(?:\s+en)?|ubicad[ao]\s+en)[\s\S]*?)?(?=,\s*(?:fueron\s+inspeccionados|cumplen\s+a\s+cabalidad)|$)/i;
+  // 3. Insertar una única dirección limpia después del cliente (soportando paréntesis múltiples como "(MALL SANTANA) (NIT: ...)")
+  const regexSolicitud =
+    /(,\s*(?:a\s+solicitud\s+de\s+[\s\S]+?|con\s+NIT:\s*[0-9kK.\s-]+(?:\s*\([^)]+\))?))(?=,\s*(?:fueron\s+inspeccionados|cumplen\s+a\s+cabalidad)\b|$)/i;
 
   if (dirLimpia) {
-    const dirSinPrefijo = dirLimpia.replace(/^(?:con\s+direcci[oó]n(?:\s+en)?\s*(?:la\s+|el\s+)?|con\s+direcci[oó]n\s+|ubicad[ao]\s+en\s*(?:la\s+|el\s+)?|en\s*(?:la\s+|el\s+)?|la\s+|el\s+)/i, "").trim();
+    const dirSinPrefijo = dirLimpia
+      .replace(/^(?:con\s+direcci[oó]n(?:\s+en)?\s*(?:la\s+|el\s+)?|con\s+direcci[oó]n\s+|ubicad[ao]\s+en\s*(?:la\s+|el\s+)?|en\s*(?:la\s+|el\s+)?|la\s+|el\s+)/i, "")
+      .trim();
     const textoDir = `con dirección ${dirSinPrefijo.toUpperCase()}`;
 
     if (regexSolicitud.test(t)) {
       t = t.replace(regexSolicitud, `$1, ${textoDir}`);
     } else {
-      t = t.replace(/(?:,\s*(?:con\s+direcci[oó]n(?:\s+en)?|ubicad[ao]\s+en)[\s\S]*?)?(?=,\s*(?:fueron\s+inspeccionados|cumplen\s+a\s+cabalidad)|$)/i, `, ${textoDir}`);
+      t = t.replace(/(?=,\s*(?:fueron\s+inspeccionados|cumplen\s+a\s+cabalidad)\b|$)/i, `, ${textoDir}`);
     }
-  } else {
-    if (regexSolicitud.test(t)) {
-      t = t.replace(regexSolicitud, "$1");
-    }
-    t = t.replace(/,\s*(?:con\s+direcci[oó]n(?:\s+en)?|ubicad[ao]\s+en)[\s\S]*?(?=,\s*(?:fueron\s+inspeccionados|cumplen\s+a\s+cabalidad)|$)/i, "");
   }
 
   // Limpiar cualquier residuo de CAUCASIA EPM

@@ -7,8 +7,8 @@ import { useEffect, useRef, useState } from "react";
 import { useSubirAlFormulario } from "../../hooks/useSubirAlFormulario";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { buildCertForm, construirTextoSistema, getCertDefaultElements, unAnoDespues } from "./certConfig";
-import { buscarDireccionFiscalCliente, limpiarDireccionFiscal, sanitizarCertificado } from "./certSanitizer";
-import { redactarSistemasDesdeCotizacion, esItemAdministrativo, formatearItemParaCertificado } from "../../lib/certificacionTexto";
+import { buscarDireccionFiscalCliente, limpiarDireccionFiscal, sanitizarCertificado, sanitizarTextoSistema } from "./certSanitizer";
+import { redactarSistemasDesdeCotizacion, esItemAdministrativo, formatearItemParaCertificado, itemsDeCotizacionActiva } from "../../lib/certificacionTexto";
 import { fmtD, fmtL, scrollAppToTop } from "../../lib/format";
 import { normalizarRazonSocial, normalizarFrase, normalizarTextoCertificacion } from "../../lib/normalizarEntrada";
 import { clienteDeObra, claveRazonSocial } from "../../lib/quienRecibe";
@@ -48,12 +48,26 @@ const fechaDesdeInformes = (informes, obraId, informeId = "")=>{
   return fechas.length ? fechas[fechas.length-1] : "";
 };
 
+const desduplicarTextos = (lista) => {
+  const vistos = new Set();
+  const salida = [];
+  for (const item of lista) {
+    const limpio = String(item || "").trim().replace(/[.\s]+$/, "");
+    if (!limpio) continue;
+    const clave = limpio.toLowerCase().replace(/\s+/g, " ");
+    if (vistos.has(clave)) continue;
+    vistos.add(clave);
+    salida.push(limpio);
+  }
+  return salida;
+};
+
 // El nombre del proyecto del informe: "CREAFAM SEDE SAN BLAS". Es el DONDE
 // del certificado, y distingue una sede de otra dentro de la misma obra.
 const proyectoDesdeInformes = (informes, obraId, informeId = "")=>{
-  const nombres = [...new Set(informesFuente(informes, obraId, informeId)
-    .map((i)=>String(i.proyecto || "").trim())
-    .filter(Boolean))];
+  const nombres = desduplicarTextos(
+    informesFuente(informes, obraId, informeId).map((i)=>i.proyecto)
+  );
   return nombres[0] || "";
 };
 
@@ -61,19 +75,20 @@ const proyectoDesdeInformes = (informes, obraId, informeId = "")=>{
 // "Creafam san blas recertificacion 1 linea de vida". Sirve de respaldo
 // cuando el informe no trae observaciones.
 const actividadesDesdeInformes = (informes, obraId, informeId = "")=>{
-  const titulos = [...new Set(informesFuente(informes, obraId, informeId)
-    .flatMap((i)=>(i.actividades||[]).map((a)=>String(a?.titulo||"").trim()))
-    .filter(Boolean))];
+  const titulos = desduplicarTextos(
+    informesFuente(informes, obraId, informeId)
+      .flatMap((i)=>(i.actividades||[]).map((a)=>a?.titulo))
+  );
   return titulos.join("; ");
 };
 
 // Lo anotado en las observaciones de esos informes, sin repetir.
 const observacionesDesdeInformes = (informes, obraId, informeId = "")=>{
-  const textos = informesFuente(informes, obraId, informeId)
-    .flatMap((i)=>(i.actividades||[]).map((a)=>String(a?.observaciones||"").trim()))
-    .filter(Boolean)
-    .map((t)=>t.replace(/[.\s]+$/, ""));
-  return [...new Set(textos)].join(". ");
+  const textos = desduplicarTextos(
+    informesFuente(informes, obraId, informeId)
+      .flatMap((i)=>(i.actividades||[]).map((a)=>a?.observaciones))
+  );
+  return textos.join(". ");
 };
 
 
@@ -228,7 +243,7 @@ export default function Certificaciones({ctx}){
     if (!o?.cotizacionId) return [];
     const cot = (cotizaciones || []).find((c) => c.id === o.cotizacionId);
     if (!cot) return [];
-    const items = Array.isArray(cot.items) ? cot.items : [];
+    const items = itemsDeCotizacionActiva(cot);
     return items
       .filter((it) => !esItemAdministrativo(it?.desc || it?.descripcion || ""))
       .map((it, idx) => {
@@ -384,13 +399,13 @@ export default function Certificaciones({ctx}){
     if(sel && !nueva) scrollAppToTop("auto");
   }, [sel?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const abrirNuevaCertificacion = (tipo="Certificación", obraId=null, itemDesc = "", itemCant = 0)=>{
+  const abrirNuevaCertificacion = (tipo="Certificación", obraId=null, itemDesc = "", itemCant = 0, informeId = "")=>{
     const obra = obras.find((x)=>x.id===obraId) || obras[0] || null;
     setEditId(null);
     setNuevoElem("");
-    setInformeRef("");
+    setInformeRef(informeId);
     setActividadSeleccionadaKey("");
-    const fechaObra = fechaDeLaObra(obra?.id);
+    const fechaObra = fechaDesdeInformes(informes, obra?.id, informeId);
     const cotDeObra = sistemasDesdeCotizacionDeObra(obra?.id);
     const cantSugerida = itemCant || (itemDesc ? 1 : (cotDeObra?.cantidadTotal || 1));
     const tipoSis = itemDesc ? detectarTipoSistema(itemDesc) : "";
@@ -406,7 +421,13 @@ export default function Certificaciones({ctx}){
       ...(fechaObra ? {fecha:fechaObra} : {}),
     });
     if(obra?.id){
-      const detalleTexto = itemDesc || queSeCertifica(obra.id);
+      const detalleTexto = itemDesc
+        || cotDeObra?.texto
+        || observacionesDesdeInformes(informes, obra.id, informeId)
+        || actividadesDesdeInformes(informes, obra.id, informeId);
+      const lugarObra = nuevo.lugar
+        || proyectoDesdeInformes(informes, obra.id, informeId)
+        || String(obra.proyecto || "").trim();
       const t = construirTextoSistema({
         tipo: nuevo.tipo,
         tipoSistema: tipoSis,
@@ -416,7 +437,7 @@ export default function Certificaciones({ctx}){
         direccion: nuevo.direccion,
         fechaLarga: fmtL(nuevo.fecha),
         normativa: nuevo.normativa,
-        lugar: nuevo.lugar || proyectoDeObra(obra.id),
+        lugar: lugarObra,
         detalle: detalleTexto,
       });
       if(t) nuevo.sistema = t;
@@ -429,7 +450,7 @@ export default function Certificaciones({ctx}){
 
   useEffect(() => {
     if (intencion?.pantalla === "certificaciones" && intencion?.obraId) {
-      abrirNuevaCertificacion("Certificación", intencion.obraId, intencion.itemDesc || "", intencion.itemCant || 0);
+      abrirNuevaCertificacion("Certificación", intencion.obraId, intencion.itemDesc || "", intencion.itemCant || 0, intencion.informeId || "");
     }
   }, [intencion]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -496,10 +517,13 @@ export default function Certificaciones({ctx}){
     const miUserId = ctx?.membresia?.userId || null;
     const miNombre = resolverAutorGuardado(ctx?.membresia, prev?.modificadoPorNombre);
     const obraIdNormalizado = form.obraId || null;
+    const direccionSaneada = limpiarDireccionFiscal(form.direccion);
+    const sistemaSaneado = sanitizarTextoSistema(form.sistema, direccionSaneada, form.lugar);
+    const formLimpio = { ...form, direccion: direccionSaneada, sistema: sistemaSaneado };
     const c = {
       ...(editId
-        ? { ...form, obraId: obraIdNormalizado, id: editId, estado: form.estado || "Vigente" }
-        : { id: siguienteIdUnico(certs, "CERT"), estado: "Vigente", ...form, obraId: obraIdNormalizado }),
+        ? { ...formLimpio, obraId: obraIdNormalizado, id: editId, estado: form.estado || "Vigente" }
+        : { id: siguienteIdUnico(certs, "CERT"), estado: "Vigente", ...formLimpio, obraId: obraIdNormalizado }),
       // El codigo del QR no cambia nunca: un QR ya impreso tiene que seguir
       // sirviendo despues de editar el certificado.
       codigoVerificacion: prev?.codigoVerificacion || form.codigoVerificacion || nuevoCodigoVerificacion(),
@@ -789,7 +813,7 @@ export default function Certificaciones({ctx}){
               const dir=form.direccion || buscarDireccionCliente(null,nombre);
               aplicarCambio({cliente:nombre,nit,direccion:dir});
             }} style={SI}/></div>
-            <div><LBL>NIT</LBL><input value={form.nit} onChange={e=>setForm({...form,nit:e.target.value})} style={SI}/></div>
+            <div><LBL>NIT</LBL><input value={form.nit} onChange={e=>aplicarCambio({nit:e.target.value})} style={SI}/></div>
             <div style={{gridColumn:"span 2"}}><LBL>Dirección del cliente</LBL><input value={form.direccion} onChange={e=>aplicarCambio({direccion:e.target.value})} onBlur={e=>{const v=limpiarDireccionFiscal(normalizarFrase(e.target.value));if(v!==form.direccion)aplicarCambio({direccion:v});}} style={SI}/></div>
             <div>
               <LBL>Próximo mantenimiento</LBL>

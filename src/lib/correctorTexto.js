@@ -246,7 +246,7 @@ const DICCIONARIO_DIRECTO = {
   "pagina": "página",
   "paginas": "páginas",
   "parrafo": "párrafo",
-  "parrafos": "parrafos",
+  "parrafos": "párrafos",
   "valido": "válido",
   "valida": "válida",
   "validos": "válidos",
@@ -402,16 +402,31 @@ function ajustarCaso(palabraOriginal, palabraCorregida) {
 export function corregirOrtografiaLocal(texto) {
   if (!texto || typeof texto !== "string") return "";
 
-  const corregido = texto.replace(/\b[A-Za-zÁÉÍÓÚáéíóúñÑüÜ]+\b/g, (palabra) => {
-    // Si contiene números o caracteres de unidad (ej. "80M", "5000LBS"), no tocar
-    if (/\d/.test(palabra)) return palabra;
+  const quitarTildes = (s) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-    const clave = palabra.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  // Reparar vocales tildadas duplicadas por ejecuciones previas con límites ASCII (\b)
+  // Ej: "óóptimos" -> "óptimos", "inspecciónó" -> "inspeccionó"
+  let base = texto
+    .replace(/([áéíóúÁÉÍÓÚ])\1+/g, "$1")
+    .replace(/([csx])ión([óáéíú])(?![\p{L}\p{N}])/giu, "$1ion$2");
+
+  const corregido = base.replace(/(?<![\p{L}\p{N}])[\p{L}]+(?![\p{L}\p{N}])/gu, (palabra) => {
+    const clave = quitarTildes(palabra);
+    const yaTieneTilde = /[áéíóúÁÉÍÓÚ]/.test(palabra);
 
     // 1. Búsqueda en diccionario directo
     if (DICCIONARIO_DIRECTO[clave]) {
-      return ajustarCaso(palabra, DICCIONARIO_DIRECTO[clave]);
+      const destino = DICCIONARIO_DIRECTO[clave];
+      // Si la palabra original ya trae una tilde intencional (ej. "suministró", "publicó", "validó")
+      // y no tiene ningún error de letras respecto al diccionario, respetarla.
+      if (yaTieneTilde && quitarTildes(destino) === clave) {
+        return palabra;
+      }
+      return ajustarCaso(palabra, destino);
     }
+
+    // Si ya lleva tilde puesta a propósito (ej. "inspeccionó", "tensionó"), no alterar su morfología
+    if (yaTieneTilde) return palabra;
 
     // 2. Regla morfológica: palabras terminadas en cion, sion, xion sin tilde
     const matchCion = palabra.match(/^(.+?)([csx]ion)$/i);
@@ -424,8 +439,17 @@ export function corregirOrtografiaLocal(texto) {
 
     // 3. Coincidencia difusa de distancia 1 para errores de tipeo en palabras técnicas
     if (clave.length >= 6) {
+      const pareceFlexionVerbal = /(?:ar|er|ir|o|e|as|es|an|en|aron|ieron|ado|ada|ados|adas|ido|ida)$/i.test(clave);
       for (const [candClave, candValor] of Object.entries(DICCIONARIO_DIRECTO)) {
         if (candClave.length >= 6 && levenshteinDist1(clave, candClave)) {
+          // No convertir verbos conjugados/infinitivos ("validar", "publicar", "tensiono") en sustantivos/adjetivos de solo-tilde
+          if (
+            pareceFlexionVerbal &&
+            quitarTildes(candValor) === candClave &&
+            clave.slice(0, 5) === candClave.slice(0, 5)
+          ) {
+            continue;
+          }
           return ajustarCaso(palabra, candValor);
         }
       }

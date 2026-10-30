@@ -227,7 +227,7 @@ export default function CertificacionEscalerasDocumento({ cert: certRaw }) {
           marginLeft: 58,
           marginRight: 24,
           paddingTop: 16,
-          paddingBottom: 14,
+          paddingBottom: 16,
           position: "relative",
           zIndex: 1,
           height: "100%",
@@ -237,8 +237,8 @@ export default function CertificacionEscalerasDocumento({ cert: certRaw }) {
           flexDirection: "column",
         }}
       >
-        {/* Encabezado Oficial en cada página */}
-        <div style={{ padding: "0 0 8px", flexShrink: 0 }}>
+        {/* Encabezado Oficial en cada página (aire amplio debajo de la línea roja para despegar títulos) */}
+        <div style={{ padding: numeroPagina === 1 ? "0 0 20px" : "0 0 26px", flexShrink: 0 }}>
           <PrintHeader dual={true} formato="certificacion" empresaConfig={empresaConfig} numeroDocumento={folioDoc} />
         </div>
 
@@ -255,12 +255,12 @@ export default function CertificacionEscalerasDocumento({ cert: certRaw }) {
           {contenido}
         </div>
 
-        {/* Pie de página oficial idéntico a la certificación estándar */}
+        {/* Pie de página oficial con respiro respecto al cuerpo */}
         <div
           style={{
             borderTop: "1px solid #cbd5e1",
-            paddingTop: 6,
-            marginTop: 8,
+            paddingTop: 8,
+            marginTop: 18,
             flexShrink: 0,
             textAlign: "center",
             fontSize: 9.5,
@@ -469,7 +469,7 @@ export default function CertificacionEscalerasDocumento({ cert: certRaw }) {
           </div>
 
           {/* Tabla 2: 15 Pruebas de la Norma ANSI A14.5 */}
-          <div style={{ marginBottom: 18 }}>
+          <div style={{ marginBottom: 15 }}>
             <div style={{ fontSize: 11.5, fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>
               Pruebas aplicadas a este tipo de escaleras:
             </div>
@@ -485,9 +485,9 @@ export default function CertificacionEscalerasDocumento({ cert: certRaw }) {
             >
               <thead>
                 <tr style={{ background: "#f8fafc", color: "#0f172a", borderBottom: "1px solid #cbd5e1" }}>
-                  <th style={{ padding: "6px 10px", textAlign: "left", width: "22%", fontWeight: 700 }}>Numeral de la norma</th>
-                  <th style={{ padding: "6px 10px", textAlign: "left", fontWeight: 700 }}>Descripción de la prueba</th>
-                  <th style={{ padding: "6px 10px", textAlign: "center", width: "18%", fontWeight: 700 }}>Resultado</th>
+                  <th style={{ padding: "5.5px 10px", textAlign: "left", width: "22%", fontWeight: 700 }}>Numeral de la norma</th>
+                  <th style={{ padding: "5.5px 10px", textAlign: "left", fontWeight: 700 }}>Descripción de la prueba</th>
+                  <th style={{ padding: "5.5px 10px", textAlign: "center", width: "18%", fontWeight: 700 }}>Resultado</th>
                 </tr>
               </thead>
               <tbody>
@@ -499,9 +499,9 @@ export default function CertificacionEscalerasDocumento({ cert: certRaw }) {
                       borderBottom: "1px solid #e2e8f0",
                     }}
                   >
-                    <td style={{ padding: "4.5px 10px", fontWeight: 600, color: "#334155", fontVariantNumeric: "tabular-nums" }}>{p.numeral}</td>
-                    <td style={{ padding: "4.5px 10px", color: "#1e293b" }}>{p.descripcion}</td>
-                    <td style={{ padding: "4.5px 10px", textAlign: "center" }}>
+                    <td style={{ padding: "4px 10px", fontWeight: 600, color: "#334155", fontVariantNumeric: "tabular-nums" }}>{p.numeral}</td>
+                    <td style={{ padding: "4px 10px", color: "#1e293b" }}>{p.descripcion}</td>
+                    <td style={{ padding: "4px 10px", textAlign: "center" }}>
                       <span
                         style={{
                           background: "#f0fdf4",
@@ -521,13 +521,13 @@ export default function CertificacionEscalerasDocumento({ cert: certRaw }) {
                 ))}
               </tbody>
             </table>
-            <div style={{ fontSize: 10, color: "#64748b", fontStyle: "italic", marginTop: 6 }}>
+            <div style={{ fontSize: 10, color: "#64748b", fontStyle: "italic", marginTop: 5 }}>
               * Todas las pruebas no fueron aplicadas a este lote de fabricación; la periodicidad está definida en el plan de calidad interno.
             </div>
           </div>
 
           {/* Sección 4: Resultados */}
-          <div style={{ marginBottom: 18 }}>
+          <div style={{ marginBottom: 15 }}>
             <div style={TITULO_SECCION_STYLE}>
               <span>4.</span>
               <span>Resultados de Conformidad</span>

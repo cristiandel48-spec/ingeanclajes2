@@ -246,13 +246,36 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
         overflow: hidden !important;
         box-sizing: border-box !important;
       }
+      .doc-page {
+        width: ${ANCHO_HOJA}px !important;
+        height: ${ALTO_HOJA}px !important;
+        min-height: ${ALTO_HOJA}px !important;
+        max-height: ${ALTO_HOJA}px !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+      }
+      .doc-shell-multi {
+        background: transparent !important;
+        border: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
     ` : "";
 
     const html = `<!doctype html><html><head><meta charset="utf-8">
       <style>${HOJA_ESTILOS}${estilosBleed}</style></head>
       <body>${nodo.outerHTML}</body></html>`;
 
-    const abierto = await abrirEnMarco(html, { ancho: anchoDoc, alto: bleedLeft ? ALTO_HOJA : 1000 });
+    const paginasPrev = nodo.querySelectorAll ? [...nodo.querySelectorAll(".doc-page")] : [];
+    const numHojas = Math.max(1, paginasPrev.length);
+    const altoMarco = bleedLeft ? ALTO_HOJA * numHojas : Math.max(ALTO_HOJA, nodo.scrollHeight || 1000);
+
+    const abierto = await abrirEnMarco(html, { ancho: anchoDoc, alto: altoMarco });
     marco = abierto.marco;
     const { doc } = abierto;
     await esperarRecursos(doc, abierto.ventana);
@@ -260,6 +283,36 @@ export async function generarDocumentoPdf(nodo, nombre = "Documento") {
 
     const raiz = doc.body.firstElementChild;
     if (!raiz) throw new Error("No se pudo leer el documento generado.");
+
+    const paginas = [...raiz.querySelectorAll(".doc-page")];
+    if (paginas.length > 0) {
+      const pdf = new jsPDF({ unit: "pt", format: HOJA_PT, orientation: "portrait" });
+      for (let i = 0; i < paginas.length; i++) {
+        aviso.hoja(i + 1, paginas.length);
+        await dejarPintar();
+        const pLienzo = await html2canvas(paginas[i], {
+          scale: ESCALA_DIBUJO,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          logging: false,
+          windowWidth: ANCHO_HOJA,
+          windowHeight: ALTO_HOJA,
+        });
+        if (i > 0) pdf.addPage(HOJA_PT, "portrait");
+        pdf.addImage(
+          pLienzo.toDataURL("image/jpeg", 0.95),
+          "JPEG",
+          0,
+          0,
+          HOJA_PT[0],
+          HOJA_PT[1],
+          undefined,
+          "FAST"
+        );
+      }
+      return { blob: pdf.output("blob"), nombre: `${nombre}.pdf` };
+    }
+
     const altoTotal = bleedLeft ? ALTO_HOJA : raiz.scrollHeight;
 
     await dejarPintar();

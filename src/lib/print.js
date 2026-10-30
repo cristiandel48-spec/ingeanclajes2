@@ -40,7 +40,6 @@ export function printCurrentPz(title = "Documento"){
       color: #111;
       font-family: ${FUENTE};
       width: 8.5in;
-      height: 11in;
     }
     #print-toolbar, #print-toolbar + div { display: none !important; }
     .doc-shell {
@@ -58,6 +57,36 @@ export function printCurrentPz(title = "Documento"){
       position: relative !important;
       overflow: hidden !important;
       box-sizing: border-box !important;
+      page-break-after: avoid !important;
+      break-after: avoid !important;
+    }
+    .doc-shell-multi {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 8.5in !important;
+    }
+    .doc-page {
+      background: #fff !important;
+      color: #111 !important;
+      width: 8.5in !important;
+      height: 11in !important;
+      min-height: 11in !important;
+      max-height: 11in !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      position: relative !important;
+      overflow: hidden !important;
+      box-sizing: border-box !important;
+      page-break-after: always !important;
+      break-after: page !important;
+    }
+    .doc-page:last-child {
       page-break-after: avoid !important;
       break-after: avoid !important;
     }

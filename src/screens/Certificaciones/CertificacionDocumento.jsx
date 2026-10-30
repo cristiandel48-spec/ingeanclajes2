@@ -9,6 +9,8 @@ import { normalizarTextoCertificacion } from "../../lib/normalizarEntrada";
 import { enlaceVerificacion } from "../../lib/verificacionCertificados";
 import { FUENTE } from "../../styles/designTokens";
 import { sanitizarCertificado } from "./certSanitizer";
+import CertificacionEscalerasDocumento from "./CertificacionEscalerasDocumento";
+import { esCertificacionEscalera } from "./certConfig";
 
 // Pone en negrita los datos del cliente dentro de una frase escrita en plano.
 const conNegritas = (texto, datos)=>{
@@ -143,9 +145,7 @@ function generarFranjaSeguridad(ancho = 44, alto = 1056) {
   }
 }
 
-export default function CertificacionDocumento({ cert: certRaw }) {
-  const { empresaConfig, clientes, obras } = useAppData();
-  const cert = sanitizarCertificado(certRaw, { clientes, obras });
+function CertificacionEstandarDocumento({ cert, empresaConfig }) {
   const firmaImg=getFirmaImg(empresaConfig);
   const [qrUrl, setQrUrl] = useState("");
   const [franjaUrl, setFranjaUrl] = useState(() => {
@@ -201,7 +201,7 @@ export default function CertificacionDocumento({ cert: certRaw }) {
     <div
       id="pz"
       data-bleed-left="true"
-      className="doc-shell"
+      className="doc-page doc-bleed-page doc-shell"
       style={{
         background: "#fff",
         color: "#111",
@@ -535,4 +535,15 @@ export default function CertificacionDocumento({ cert: certRaw }) {
       </div>
     </div>
   );
+}
+
+export default function CertificacionDocumento({ cert: certRaw }) {
+  const { empresaConfig, clientes, obras } = useAppData();
+  const cert = sanitizarCertificado(certRaw, { clientes, obras });
+
+  if (esCertificacionEscalera(cert)) {
+    return <CertificacionEscalerasDocumento cert={cert} />;
+  }
+
+  return <CertificacionEstandarDocumento cert={cert} empresaConfig={empresaConfig} />;
 }

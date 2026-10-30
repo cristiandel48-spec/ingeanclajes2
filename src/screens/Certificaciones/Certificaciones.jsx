@@ -275,24 +275,32 @@ export default function Certificaciones({ctx}){
 
   const certificarItemIndividual = (item) => {
     const tipoSis = item.tipoSistema || form.tipoSistema || "";
-    const elementos = getCertDefaultElements(form.tipo, tipoSis);
+    const esEsc = tipoSis === "Escalera fija";
+    const elementos = getCertDefaultElements(esEsc ? "Certificación de Escaleras" : form.tipo, tipoSis);
     const detalle = item.textoRedactado || item.desc;
     const cant = Number(item.cant) || 1;
+    const mLong = detalle.match(/(\d+(?:[.,]\d+)?)\s*(?:m\b|mts\b|metros)/i);
+    const longDetectada = mLong ? `${mLong[1]} metros` : (esEsc ? "5.5 metros" : "");
+    const norm = esEsc ? "ANSI ASC A14.5-2017 & Resolución 4272 de 2021" : form.normativa;
     const texto = construirTextoSistema({
-      tipo: form.tipo,
+      tipo: esEsc ? "Certificación de Escaleras" : form.tipo,
       tipoSistema: tipoSis,
       cantidad: cant,
       cliente: form.cliente,
       nit: form.nit,
       direccion: form.direccion,
       fechaLarga: fmtL(form.fecha),
-      normativa: form.normativa,
+      normativa: norm,
       lugar: form.lugar || proyectoDeObra(form.obraId),
       detalle: detalle,
     });
     setForm((prev) => ({
       ...prev,
       tipoSistema: tipoSis,
+      formatoEscalera: esEsc || prev.formatoEscalera,
+      longitudEscalera: longDetectada || prev.longitudEscalera || (esEsc ? "5.5 metros" : ""),
+      tipoEscalera: prev.tipoEscalera || "TIPO GATO",
+      normativa: norm,
       cantidad: cant,
       elementos,
       sistema: texto,
@@ -303,22 +311,30 @@ export default function Certificaciones({ctx}){
   const certificarActividadIndividual = (act) => {
     const detalle = act.observaciones || act.titulo;
     const tipoSis = act.tipoSistema || detectarTipoSistema(detalle);
-    const elementos = getCertDefaultElements(form.tipo, tipoSis);
+    const esEsc = tipoSis === "Escalera fija";
+    const elementos = getCertDefaultElements(esEsc ? "Certificación de Escaleras" : form.tipo, tipoSis);
+    const mLong = detalle.match(/(\d+(?:[.,]\d+)?)\s*(?:m\b|mts\b|metros)/i);
+    const longDetectada = mLong ? `${mLong[1]} metros` : (esEsc ? "5.5 metros" : "");
+    const norm = esEsc ? "ANSI ASC A14.5-2017 & Resolución 4272 de 2021" : form.normativa;
     const texto = construirTextoSistema({
-      tipo: form.tipo,
+      tipo: esEsc ? "Certificación de Escaleras" : form.tipo,
       tipoSistema: tipoSis,
       cantidad: 1,
       cliente: form.cliente,
       nit: form.nit,
       direccion: form.direccion,
       fechaLarga: fmtL(form.fecha),
-      normativa: form.normativa,
+      normativa: norm,
       lugar: form.lugar || proyectoDeObra(form.obraId),
       detalle: detalle,
     });
     setForm((prev) => ({
       ...prev,
       tipoSistema: tipoSis,
+      formatoEscalera: esEsc || prev.formatoEscalera,
+      longitudEscalera: longDetectada || prev.longitudEscalera || (esEsc ? "5.5 metros" : ""),
+      tipoEscalera: prev.tipoEscalera || "TIPO GATO",
+      normativa: norm,
       cantidad: 1,
       elementos,
       sistema: texto,
@@ -788,8 +804,17 @@ export default function Certificaciones({ctx}){
             })()}
             <div><LBL>Tipo</LBL><select value={form.tipo} onChange={e=>{
               const t=e.target.value;
-              aplicarCambio({tipo:t,elementos:getCertDefaultElements(t, form.tipoSistema)});
-            }} style={SI}>{["Certificación","Recertificación"].map(t=><option key={t}>{t}</option>)}</select></div>
+              const esEsc = t === "Certificación de Escaleras";
+              aplicarCambio({
+                tipo: t,
+                elementos: getCertDefaultElements(t, form.tipoSistema),
+                ...(esEsc ? {
+                  formatoEscalera: true,
+                  tipoSistema: "Escalera fija",
+                  normativa: "ANSI ASC A14.5-2017 & Resolución 4272 de 2021",
+                } : {})
+              });
+            }} style={SI}>{["Certificación","Recertificación","Certificación de Escaleras"].map(t=><option key={t}>{t}</option>)}</select></div>
             <div><LBL>Número</LBL><input value={form.numero} onChange={e=>setForm({...form,numero:e.target.value})} placeholder="C-2026-001" style={SI}/></div>
             <div>
               <LBL>Fecha</LBL>
@@ -827,6 +852,89 @@ export default function Certificaciones({ctx}){
               </div>
             </div>
           </div>
+
+          {/* Opciones y parámetros específicos para Certificación de Escaleras */}
+          {(form.formatoEscalera || form.tipo === "Certificación de Escaleras" || form.tipoSistema === "Escalera fija") && (
+            <div style={{
+              background: "#eff6ff",
+              border: "1.5px solid #bfdbfe",
+              borderRadius: 8,
+              padding: "10px 14px",
+              marginBottom: 12,
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 6 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#1e40af", display: "flex", alignItems: "center", gap: 6 }}>
+                  <span>🪜</span>
+                  <span>Parámetros Oficiales de Escaleras (ANSI ASC A14.5-2017)</span>
+                </span>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <span style={{ fontSize: 11, color: "#475569" }}>Formato:</span>
+                  <button
+                    type="button"
+                    onClick={() => setForm(p => ({ ...p, formatoEscalera: true }))}
+                    style={{
+                      padding: "2px 8px",
+                      borderRadius: 4,
+                      fontSize: 10.5,
+                      fontWeight: form.formatoEscalera ? 700 : 500,
+                      background: form.formatoEscalera ? "#1d4ed8" : "#ffffff",
+                      color: form.formatoEscalera ? "#ffffff" : "#475569",
+                      border: "1px solid #93c5fd",
+                      cursor: "pointer",
+                    }}
+                  >
+                    🪜 Formato Técnico (3 págs)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm(p => ({ ...p, formatoEscalera: false }))}
+                    style={{
+                      padding: "2px 8px",
+                      borderRadius: 4,
+                      fontSize: 10.5,
+                      fontWeight: !form.formatoEscalera ? 700 : 500,
+                      background: !form.formatoEscalera ? "#1d4ed8" : "#ffffff",
+                      color: !form.formatoEscalera ? "#ffffff" : "#475569",
+                      border: "1px solid #93c5fd",
+                      cursor: "pointer",
+                    }}
+                  >
+                    📄 Formato Estándar (1 pág)
+                  </button>
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 10 }}>
+                <div>
+                  <LBL>Tipo de Escalera</LBL>
+                  <input
+                    value={form.tipoEscalera || "TIPO GATO"}
+                    onChange={e => setForm(p => ({ ...p, tipoEscalera: e.target.value.toUpperCase() }))}
+                    placeholder="TIPO GATO"
+                    style={SI}
+                  />
+                </div>
+                <div>
+                  <LBL>Longitud / Altura</LBL>
+                  <input
+                    value={form.longitudEscalera || ""}
+                    onChange={e => setForm(p => ({ ...p, longitudEscalera: e.target.value }))}
+                    placeholder="Ej: 5.5 metros"
+                    style={SI}
+                  />
+                </div>
+                <div>
+                  <LBL>Carga de Prueba</LBL>
+                  <input
+                    value={form.cargaPrueba || "1200 lb – 544,3 kg"}
+                    onChange={e => setForm(p => ({ ...p, cargaPrueba: e.target.value }))}
+                    placeholder="1200 lb – 544,3 kg"
+                    style={SI}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* El sitio concreto dentro del edificio. Se escribe aqui porque no
               esta en ningun otro documento: se intento sacarlo de las
               observaciones del informe y salia "instalados en 1 LINEA DE VIDA

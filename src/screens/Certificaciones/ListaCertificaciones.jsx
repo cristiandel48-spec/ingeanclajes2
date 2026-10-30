@@ -584,6 +584,7 @@ function TarjetaCertificacionApple({ cert: c, acciones }) {
   const isMobile = useIsMobile();
   const [hover, setHover] = useState(false);
   const recert = c.tipo === "Recertificación";
+  const esEscalera = c.tipo === "Certificación de Escaleras" || c.tipoSistema === "Escalera fija" || c.formatoEscalera || String(c.sistema || "").toLowerCase().includes("escalera");
   const cliente = normalizarRazonSocial(c.cliente);
   const lugar = String(c.lugar || "").trim();
   const repetido =
@@ -637,16 +638,16 @@ function TarjetaCertificacionApple({ cert: c, acciones }) {
               fontWeight: 600,
               padding: "2px 8px",
               borderRadius: 6,
-              background: recert ? "#f5f3ff" : "#eff6ff",
-              color: recert ? "#6d28d9" : "#1d4ed8",
-              border: `1px solid ${recert ? "#ddd6fe" : "#bfdbfe"}`,
+              background: esEscalera ? "#f0fdf4" : (recert ? "#f5f3ff" : "#eff6ff"),
+              color: esEscalera ? "#166534" : (recert ? "#6d28d9" : "#1d4ed8"),
+              border: `1px solid ${esEscalera ? "#bbf7d0" : (recert ? "#ddd6fe" : "#bfdbfe")}`,
               display: "inline-flex",
               alignItems: "center",
               gap: 4,
             }}
           >
-            <span>{recert ? "🔄" : "🛡️"}</span>
-            <span>{c.tipo || "Certificación"}</span>
+            <span>{esEscalera ? "🪜" : (recert ? "🔄" : "🛡️")}</span>
+            <span>{esEscalera ? "Escaleras" : (c.tipo || "Certificación")}</span>
           </span>
 
           {/* Código Monospace */}
@@ -873,6 +874,7 @@ function TarjetaCertificacionApple({ cert: c, acciones }) {
 function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
   const [hover, setHover] = useState(false);
   const recert = c.tipo === "Recertificación";
+  const esEscalera = c.tipo === "Certificación de Escaleras" || c.tipoSistema === "Escalera fija" || c.formatoEscalera || String(c.sistema || "").toLowerCase().includes("escalera");
   const cliente = normalizarRazonSocial(c.cliente);
   const lugar = String(c.lugar || "").trim();
   const repetido =
@@ -963,17 +965,17 @@ function FilaTablaCertificacion({ cert: c, acciones, zebra }) {
             fontWeight: 600,
             padding: "2px 7px",
             borderRadius: 6,
-            background: recert ? "#f5f3ff" : "#eff6ff",
-            color: recert ? "#6d28d9" : "#1d4ed8",
-            border: `1px solid ${recert ? "#ddd6fe" : "#bfdbfe"}`,
+            background: esEscalera ? "#f0fdf4" : (recert ? "#f5f3ff" : "#eff6ff"),
+            color: esEscalera ? "#166534" : (recert ? "#6d28d9" : "#1d4ed8"),
+            border: `1px solid ${esEscalera ? "#bbf7d0" : (recert ? "#ddd6fe" : "#bfdbfe")}`,
             display: "inline-flex",
             alignItems: "center",
             gap: 3,
             whiteSpace: "nowrap",
           }}
         >
-          <span>{recert ? "🔄" : "🛡️"}</span>
-          <span>{c.tipo || "Certificación"}</span>
+          <span>{esEscalera ? "🪜" : (recert ? "🔄" : "🛡️")}</span>
+          <span>{esEscalera ? "Escaleras" : (c.tipo || "Certificación")}</span>
         </span>
       </div>
 

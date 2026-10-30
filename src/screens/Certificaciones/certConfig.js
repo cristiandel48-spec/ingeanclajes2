@@ -36,11 +36,24 @@ export const CERT_ELEMENTOS_BY_SISTEMA = {
     "Epóxico ProAnchor Elite ESP",
   ],
   "Escalera fija": [
-    "Peldaños acero galvanizado",
-    "Largueros perfil L",
-    "Pernos de fijación",
-    "Guardacuerpo lateral",
-    "Línea de vida vertical integrada",
+    "Peldaños en acero galvanizado antideslizante",
+    "Largueros perfil estructural",
+    "Pernos de anclaje estructural Grado 8",
+    "Guardacuerpo de protección (jaula de seguridad)",
+    "Línea de vida vertical cable de acero Ø 8mm",
+    "Absorbedor de energía e impacto",
+    "Dispositivo anticaídas deslizante (freno de seguridad)",
+    "Tensor y anclajes superior e inferior",
+  ],
+  "Certificación de Escaleras": [
+    "Peldaños en acero galvanizado antideslizante",
+    "Largueros perfil estructural",
+    "Pernos de anclaje estructural Grado 8",
+    "Guardacuerpo de protección (jaula de seguridad)",
+    "Línea de vida vertical cable de acero Ø 8mm",
+    "Absorbedor de energía e impacto",
+    "Dispositivo anticaídas deslizante (freno de seguridad)",
+    "Tensor y anclajes superior e inferior",
   ],
   "Línea de vida vertical": [
     "Cable de acero Ø 8mm galvanizado",
@@ -51,9 +64,48 @@ export const CERT_ELEMENTOS_BY_SISTEMA = {
   ],
 };
 
+export const PRUEBAS_ESCALERAS_ANSI = [
+  { numeral: "8.3.1", descripcion: "Prueba de flexión horizontal", resultado: "Conforme" },
+  { numeral: "8.3.2", descripcion: "Prueba de deflexión", resultado: "Conforme" },
+  { numeral: "8.3.3", descripcion: "Prueba de carga en escalera inclinada", resultado: "Conforme" },
+  { numeral: "8.3.4", descripcion: "Prueba de componentes", resultado: "Conforme" },
+  { numeral: "8.3.5", descripcion: "Prueba de flexión de peldaño", resultado: "Conforme" },
+  { numeral: "8.3.6", descripcion: "Prueba de unión de peldaño y larguero", resultado: "Conforme" },
+  { numeral: "8.3.7", descripcion: "Prueba de torque a peldaño", resultado: "Conforme" },
+  { numeral: "8.3.8", descripcion: "Prueba de balanceo lateral", resultado: "Conforme" },
+  { numeral: "8.3.9", descripcion: "Prueba de flexión de riel en voladizo", resultado: "Conforme" },
+  { numeral: "8.3.10", descripcion: "Prueba de torsión a sección de escalera", resultado: "Conforme" },
+  { numeral: "8.3.11", descripcion: "Prueba de deslizamiento de pie de apoyo", resultado: "Conforme" },
+  { numeral: "8.3.12", descripcion: "Prueba de extensión de cuerpo de escalera", resultado: "Conforme" },
+  { numeral: "8.7.2.1", descripcion: "Prueba cíclica de flexión horizontal", resultado: "Conforme" },
+  { numeral: "8.7.2.2", descripcion: "Prueba de desplazamiento relativo de riel lateral", resultado: "Conforme" },
+  { numeral: "8.7.3", descripcion: "Prueba cíclica de carga a rieles laterales", resultado: "Conforme" },
+];
+
+export const CAPACIDAD_CARGA_ESCALERA = {
+  tipo: "TIPO GATO",
+  prueba: "Capacidad de carga",
+  requisito: "300 lb – 136 kg",
+  cargaPrueba: "1200 lb – 544,3 kg",
+};
+
+export function esCertificacionEscalera(cert) {
+  if (!cert) return false;
+  if (cert.formatoEscalera === true) return true;
+  if (cert.formatoEscalera === false) return false;
+  const tipo = String(cert.tipo || "").toLowerCase();
+  const tipoSis = String(cert.tipoSistema || "").toLowerCase();
+  const sis = String(cert.sistema || "").toLowerCase();
+  if (tipo.includes("escalera")) return true;
+  if (tipoSis.includes("escalera")) return true;
+  if (sis.includes("escalera") && (sis.includes("ansi") || sis.includes("a14.5") || sis.includes("gato") || sis.includes("artico") || sis.includes("metro"))) return true;
+  return false;
+}
+
 export const getCertDefaultElements = (tipo="Certificación", tipoSistema="", fallback=[])=>{
   if (Array.isArray(fallback) && fallback.length) return [...fallback];
   if (tipo === "Recertificación") return [...RECERT_ELEMENTOS_DEFAULT];
+  if (tipo === "Certificación de Escaleras") return [...CERT_ELEMENTOS_BY_SISTEMA["Certificación de Escaleras"]];
   if (tipoSistema && CERT_ELEMENTOS_BY_SISTEMA[tipoSistema]) return [...CERT_ELEMENTOS_BY_SISTEMA[tipoSistema]];
   return [...CERT_ELEMENTOS_DEFAULT];
 };
@@ -244,6 +296,10 @@ export const buildCertForm = (overrides={})=>{
   const tipo = overrides.tipo || "Certificación";
   const tipoSistema = overrides.tipoSistema || "";
   const fecha = overrides.fecha || today();
+  const formatoEscalera = overrides.formatoEscalera ?? (
+    String(tipo).toLowerCase().includes("escalera") ||
+    String(tipoSistema).toLowerCase().includes("escalera")
+  );
   return {
     // Antes venia fijo en "OB-001": si esa obra no existia, el desplegable
     // mostraba otra pero se guardaba un id inexistente, y el cliente y la
@@ -253,6 +309,12 @@ export const buildCertForm = (overrides={})=>{
     lugar: overrides.lugar ?? "",
     tipo,
     tipoSistema,
+    formatoEscalera,
+    tipoEscalera: overrides.tipoEscalera || "TIPO GATO",
+    longitudEscalera: overrides.longitudEscalera || "",
+    cargaPrueba: overrides.cargaPrueba || "1200 lb – 544,3 kg",
+    requisitoCarga: overrides.requisitoCarga || "300 lb – 136 kg",
+    garantiaAnos: overrides.garantiaAnos || 2,
     numero: "",
     fecha,
     cliente: "",
@@ -264,7 +326,9 @@ export const buildCertForm = (overrides={})=>{
     // Mientras nadie retoque el parrafo a mano, se rehace solo al cambiar el
     // encabezado. En cuanto se edita, manda lo escrito.
     sistemaAuto: true,
-    normativa: "Resolución 4272 de 2021",
+    normativa: formatoEscalera
+      ? (overrides.normativa || "ANSI ASC A14.5-2017 & Resolución 4272 de 2021")
+      : (overrides.normativa || "Resolución 4272 de 2021"),
     ingeniero: "ING. JHON JAIME SEPULVEDA LONDOÑO",
     cargo: overrides.cargo || "Gerente General",
     matricula: "MP. 05256-409949",

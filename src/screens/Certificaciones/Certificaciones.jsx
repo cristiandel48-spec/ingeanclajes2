@@ -874,51 +874,61 @@ export default function Certificaciones({ctx}){
                   <span>🪜</span>
                   <span>Parámetros Oficiales de Escaleras (ANSI ASC A14.5-2017)</span>
                 </span>
-                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                  <span style={{ fontSize: 11, color: "#475569" }}>Formato:</span>
-                  <button
-                    type="button"
-                    onClick={() => setForm(p => ({ ...p, formatoEscalera: true }))}
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#1e40af" }}>Formato:</span>
+                  <select
+                    value={form.formatoEscalera !== false ? "3" : "1"}
+                    onChange={(e) => setForm(p => ({ ...p, formatoEscalera: e.target.value === "3" }))}
                     style={{
-                      padding: "2px 8px",
-                      borderRadius: 4,
-                      fontSize: 10.5,
-                      fontWeight: form.formatoEscalera ? 700 : 500,
-                      background: form.formatoEscalera ? "#1d4ed8" : "#ffffff",
-                      color: form.formatoEscalera ? "#ffffff" : "#475569",
-                      border: "1px solid #93c5fd",
-                      cursor: "pointer",
+                      ...SI,
+                      width: "auto",
+                      minWidth: 260,
+                      padding: "4px 10px",
+                      fontSize: 11.5,
+                      fontWeight: 600,
+                      color: "#1e40af",
+                      borderColor: "#93c5fd",
+                      background: "#ffffff",
+                      borderRadius: 6,
                     }}
                   >
-                    🪜 Formato Técnico (3 págs)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setForm(p => ({ ...p, formatoEscalera: false }))}
-                    style={{
-                      padding: "2px 8px",
-                      borderRadius: 4,
-                      fontSize: 10.5,
-                      fontWeight: !form.formatoEscalera ? 700 : 500,
-                      background: !form.formatoEscalera ? "#1d4ed8" : "#ffffff",
-                      color: !form.formatoEscalera ? "#ffffff" : "#475569",
-                      border: "1px solid #93c5fd",
-                      cursor: "pointer",
-                    }}
-                  >
-                    📄 Formato Estándar (1 pág)
-                  </button>
+                    <option value="3">🪜 Formato Oficial Técnico (3 hojas · ANSI ASC A14.5)</option>
+                    <option value="1">📄 Formato Estándar (1 hoja)</option>
+                  </select>
                 </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 10 }}>
                 <div>
                   <LBL>Tipo de Escalera</LBL>
-                  <input
-                    value={form.tipoEscalera || "TIPO GATO"}
-                    onChange={e => setForm(p => ({ ...p, tipoEscalera: e.target.value.toUpperCase() }))}
-                    placeholder="TIPO GATO"
+                  <select
+                    value={
+                      ["TIPO GATO", "TIPO GATO CON LÍNEA DE VIDA VERTICAL", "TIPO GATO CON JAULA DE SEGURIDAD", "ESCALERA MARINERA", "ESCALERA FIJA VERTICAL"].includes(form.tipoEscalera)
+                        ? form.tipoEscalera
+                        : (form.tipoEscalera ? "OTRO" : "TIPO GATO")
+                    }
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v !== "OTRO") {
+                        setForm((p) => ({ ...p, tipoEscalera: v }));
+                      }
+                    }}
                     style={SI}
-                  />
+                  >
+                    <option value="TIPO GATO">TIPO GATO</option>
+                    <option value="TIPO GATO CON LÍNEA DE VIDA VERTICAL">TIPO GATO CON LÍNEA DE VIDA VERTICAL</option>
+                    <option value="TIPO GATO CON JAULA DE SEGURIDAD">TIPO GATO CON JAULA DE SEGURIDAD</option>
+                    <option value="ESCALERA MARINERA">ESCALERA MARINERA</option>
+                    <option value="ESCALERA FIJA VERTICAL">ESCALERA FIJA VERTICAL</option>
+                    <option value="OTRO">Otro tipo de escalera...</option>
+                  </select>
+                  {form.tipoEscalera && !["TIPO GATO", "TIPO GATO CON LÍNEA DE VIDA VERTICAL", "TIPO GATO CON JAULA DE SEGURIDAD", "ESCALERA MARINERA", "ESCALERA FIJA VERTICAL"].includes(form.tipoEscalera) && (
+                    <input
+                      value={form.tipoEscalera || ""}
+                      onChange={e => setForm(p => ({ ...p, tipoEscalera: e.target.value.toUpperCase() }))}
+                      placeholder="Escribe el tipo de escalera..."
+                      style={{ ...SI, marginTop: 4 }}
+                    />
+                  )}
                 </div>
                 <div>
                   <LBL>Longitud / Altura</LBL>

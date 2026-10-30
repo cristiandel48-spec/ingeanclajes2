@@ -129,7 +129,7 @@ export default function CertificacionEscalerasDocumento({ cert: certRaw }) {
   const renderHojaBase = (numeroPagina, contenido) => (
     <div
       key={`hoja-${numeroPagina}`}
-      className="doc-page doc-bleed-page"
+      className="doc-page doc-bleed-page page"
       data-page={numeroPagina}
       style={{
         background: "#ffffff",

@@ -322,16 +322,16 @@ function embellecerDetalleCertificacion(raw) {
   if (!str) return "los sistemas de protección contra caídas";
 
   // Limpiar prefijos comerciales redundantes de recertificación / certificación anual cuando se colaron en el detalle
+  // Ej: "once (11) recertificación anual puntos de anclaje" -> "once (11) puntos de anclaje"
   // Ej: "un (1) recertificación anual puntos de anclaje" -> "puntos de anclaje"
-  const sinPrefijoRedundante = str
-    .replace(
-      /^(?:un[oa]?\s*(?:\(\s*1\s*\)\s*)?)?(?:servicio\s+de\s+)?(?:(?:inspecci[oó]n|reinspecci[oó]n|mantenimiento(?:\s+preventivo)?)\s*(?:,\s*|\s+y\s+|\s+e\s+))*(?:recertificaci[oó]n|certificaci[oó]n)(?:\s+t[eé]cnica)?(?:\s+anual)?(?:\s+de)?\s+(?=[\p{L}\p{N}])/iu,
-      ""
-    )
-    .trim();
-  if (sinPrefijoRedundante) {
-    str = sinPrefijoRedundante;
-  }
+  str = str.replace(
+    /^([a-záéíóúñ]+(?:\s+y\s+[a-záéíóúñ]+)?\s*\(\s*\d+\s*\)\s*|\d+\s*)?(?:servicio\s+de\s+)?(?:(?:inspecci[oó]n|reinspecci[oó]n|mantenimiento(?:\s+preventivo)?)\s*(?:,\s*|\s+y\s+|\s+e\s+))*(?:recertificaci[oó]n|certificaci[oó]n)(?:\s+t[eé]cnica)?(?:\s+anual)?(?:\s+de)?\s+(?=[\p{L}\p{N}])/iu,
+    (match, cant) => {
+      const c = String(cant || "").trim();
+      if (/^un[oa]?\s*\(\s*1\s*\)$/i.test(c)) return "";
+      return c ? `${c} ` : "";
+    }
+  ).trim();
 
   // Limpiar frases repetitivas de notas de campo ("Instalación de líneas de vida...", "Instalación de puntos de anclaje...")
   str = str.replace(/(?:^|[.;])\s*instalaci[oó]n\s+(?:de\s+)?(?:l[ií]neas?\s+de\s+vida|puntos?\s+de\s+anclaje[s]?|sistemas?\s+antica[ií]das?)[.:]?\s*/gi, "; ");

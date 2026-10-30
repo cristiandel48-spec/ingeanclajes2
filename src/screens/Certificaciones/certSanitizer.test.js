@@ -227,21 +227,21 @@ describe("certSanitizer", () => {
 
     it("repara automáticamente certificados ya guardados con 'a solicitud, a solicitud, a solicitud de ...' y prefijos redundantes", () => {
       const certCorrupto = {
-        id: "CERT-CORRUPTO",
+        id: "CERT-046",
         tipo: "Recertificación",
-        cliente: "CONSTRUCTORA CONCONCRETO COLOMBIA (MALL SANTANA)",
+        cliente: "CONSTRUCTORA MONSERRATE DE COLOMBIA (MALL SANTANA)",
         nit: "890942766-4",
         direccion: "CL 50A #86 - 52",
-        lugar: "",
+        lugar: "MALL SANTANA",
         sistema:
-          "RECERTIFICA que los sistemas de protección contra caídas consistentes en: un (1) recertificación anual puntos de anclaje, a solicitud, a solicitud, a solicitud, a solicitud de CONSTRUCTORA CONCONCRETO COLOMBIA (MALL SANTANA) (NIT: 890942766-4), con dirección CL 50A #86 - 52, fueron inspeccionados y verificados técnicamente, encontrándose estructuralmente conformes, operativos y aptos para trabajo seguro en alturas, cumpliendo a cabalidad con los requisitos de la Resolución 4272 de 2021 del Ministerio del Trabajo y los estándares de ingeniería aplicables.",
+          "RECERTIFICA que los sistemas de protección contra caídas consistentes en: once (11) recertificación anual puntos de anclaje, a solicitud, a solicitud, a solicitud, a solicitud, a solicitud, a solicitud, a solicitud, instalados en la obra MALL SANTANA, a solicitud de CONSTRUCTORA MONSERRATE DE COLOMBIA (MALL SANTANA) (NIT: 890942766-4), con dirección CL 50A #86 - 52, fueron inspeccionados y verificados técnicamente, encontrándose estructuralmente conformes, operativos y aptos para trabajo seguro en alturas, cumpliendo a cabalidad con los requisitos de la Resolución 4272 de 2021 del Ministerio del Trabajo y los estándares de ingeniería aplicables.",
       };
 
       const reparado = sanitizarCertificado(certCorrupto, { clientes: [], obras: [] });
       expect(reparado.sistema.match(/a\s+solicitud/gi) || []).toHaveLength(1);
-      expect(reparado.sistema).not.toMatch(/un\s*\(1\)\s*recertificaci[oó]n/i);
+      expect(reparado.sistema).not.toMatch(/recertificaci[oó]n/i);
       expect(reparado.sistema).toContain(
-        "consistentes en: puntos de anclaje, a solicitud de CONSTRUCTORA CONCONCRETO COLOMBIA (MALL SANTANA) (NIT: 890942766-4), con dirección CL 50A #86 - 52, fueron inspeccionados"
+        "RECERTIFICA que los sistemas de protección contra caídas consistentes en: once (11) puntos de anclaje, instalados en la obra MALL SANTANA, a solicitud de CONSTRUCTORA MONSERRATE DE COLOMBIA (MALL SANTANA) (NIT: 890942766-4), con dirección CL 50A #86 - 52, fueron inspeccionados"
       );
 
       // Idempotencia tras reparar

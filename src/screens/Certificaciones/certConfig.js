@@ -323,8 +323,9 @@ export const buildCertForm = (overrides={})=>{
     // Cuantos elementos se certifican: alimenta el parrafo automatico.
     cantidad: "",
     // Mientras nadie retoque el parrafo a mano, se rehace solo al cambiar el
-    // encabezado. En cuanto se edita, manda lo escrito.
-    sistemaAuto: true,
+    // encabezado. Si ya viene un sistema redactado (como al editar un certificado),
+    // manda lo escrito para que no se pierdan las modificaciones del usuario.
+    sistemaAuto: overrides.sistema ? false : (overrides.sistemaAuto ?? true),
     normativa: formatoEscalera
       ? (overrides.normativa || "ANSI ASC A14.5-2017 & Resolución 4272 de 2021")
       : (overrides.normativa || "Resolución 4272 de 2021"),

@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSubirAlFormulario } from "../../hooks/useSubirAlFormulario";
 import { B, CD, SI, ST } from "../../styles/tokens";
 import { buildCertForm, construirTextoSistema, getCertDefaultElements, unAnoDespues } from "./certConfig";
-import { buscarDireccionFiscalCliente, sanitizarCertificado } from "./certSanitizer";
+import { buscarDireccionFiscalCliente, limpiarDireccionFiscal, sanitizarCertificado } from "./certSanitizer";
 import { redactarSistemasDesdeCotizacion, esItemAdministrativo, formatearItemParaCertificado } from "../../lib/certificacionTexto";
 import { fmtD, fmtL, scrollAppToTop } from "../../lib/format";
 import { normalizarRazonSocial, normalizarFrase, normalizarTextoCertificacion } from "../../lib/normalizarEntrada";
@@ -84,14 +84,6 @@ function detectarTipoSistema(texto = "") {
   if (/l[ií]nea\s+de\s+vida\s+horizontal|\blvh\b/i.test(t)) return "Líneas de vida horizontales";
   if (/anclaje|punto|artico/i.test(t)) return "Puntos de anclaje";
   return "";
-}
-
-function iconoPorSistema(tipoSistema = "") {
-  if (tipoSistema === "Escalera fija") return "🪜";
-  if (tipoSistema === "Línea de vida vertical") return "🪢";
-  if (tipoSistema === "Líneas de vida horizontales") return "↔️";
-  if (tipoSistema === "Puntos de anclaje") return "⚓";
-  return "⚙️";
 }
 
 export default function Certificaciones({ctx}){
@@ -273,7 +265,7 @@ export default function Certificaciones({ctx}){
       nit: form.nit,
       direccion: form.direccion,
       fechaLarga: fmtL(form.fecha),
-      normativa: norm,
+      normativa: norm?.includes("ANSI ASC") ? "Resolución 4272 de 2021" : norm,
       lugar: form.lugar || proyectoDeObra(form.obraId),
       detalle: detalle,
     });
@@ -339,7 +331,7 @@ export default function Certificaciones({ctx}){
           nit:siguiente.nit,
           direccion:siguiente.direccion,
           fechaLarga:fmtL(siguiente.fecha),
-          normativa:siguiente.normativa,
+          normativa:siguiente.normativa?.includes("ANSI ASC") ? "Resolución 4272 de 2021" : siguiente.normativa,
           lugar:siguiente.lugar
             || proyectoDesdeInformes(informes, siguiente.obraId, refInforme)
             || String((obras||[]).find((o)=>o.id===siguiente.obraId)?.proyecto || "").trim(),
@@ -371,7 +363,7 @@ export default function Certificaciones({ctx}){
       nit:form.nit,
       direccion:direccionCliente,
       fechaLarga:fmtL(form.fecha),
-      normativa:form.normativa,
+      normativa:form.normativa?.includes("ANSI ASC") ? "Resolución 4272 de 2021" : form.normativa,
       lugar:form.lugar || proyectoDeObra(form.obraId),
       detalle:detalleTexto,
     });
@@ -750,15 +742,15 @@ export default function Certificaciones({ctx}){
               </div>
             )}
 
-            {/* El candado del acta, a la vista y no solo al pulsar Guardar. */}
+            {/* Aviso del acta de entrega con tokens minimalistas */}
             {(() => {
               if (editId || !estadosActasListos) return null;
               const obraSel = obras.find((x) => x.id === form.obraId);
               const motivo = obraSel ? motivoActaPendiente(obraSel, estadosActas) : "";
               if (!motivo) return null;
               return (
-                <div style={{gridColumn:"span 3",padding:"8px 12px",borderRadius:8,background:"#fff1f0",border:"1px solid #ffa39e",color:"#cf1322",fontSize:12,lineHeight:1.45}}>
-                  ⚠️ <strong>
+                <div style={{gridColumn:"span 3",padding:"10px 14px",borderRadius:10,background:"var(--danger-bg)",color:"var(--danger-text)",fontSize:12,lineHeight:1.45}}>
+                  <strong>
                     {motivo === "sin-acta"
                       ? "Esta obra no tiene acta de entrega (FORM-SST-89)."
                       : "El cliente todavía no ha firmado el acta de entrega (FORM-SST-89)."}
@@ -783,10 +775,8 @@ export default function Certificaciones({ctx}){
             <div>
               <LBL>Fecha</LBL>
               <input type="date" value={form.fecha} onChange={e=>aplicarCambio({fecha:e.target.value})} style={SI}/>
-              {/* De donde salio, para que se note que no es la de hoy sino la
-                  del trabajo, y se pueda cambiar sabiendo lo que se cambia. */}
               {fechaDeLaObra(form.obraId) && (
-                <div style={{fontSize:10,color: form.fecha===fechaDeLaObra(form.obraId) ? "#34d399" : "#f59e0b", marginTop:3, lineHeight:1.4}}>
+                <div style={{fontSize:10.5,color: form.fecha===fechaDeLaObra(form.obraId) ? "var(--success-text)" : "var(--warning-text)", marginTop:3, lineHeight:1.4}}>
                   {form.fecha===fechaDeLaObra(form.obraId)
                     ? <>Es el fin del período del informe de {form.obraId}.</>
                     : <>El informe de {form.obraId} termina el {fmtD(fechaDeLaObra(form.obraId))}.</>}
@@ -795,43 +785,35 @@ export default function Certificaciones({ctx}){
             </div>
             <div><LBL>Cliente</LBL><input value={form.cliente} onChange={e=>aplicarCambio({cliente:e.target.value})} onBlur={e=>{
               const nombre=normalizarRazonSocial(e.target.value);
-              // Si el NIT esta vacio se busca el de ese cliente; si ya hay uno
-              // escrito no se pisa, que puede ser una sede o un caso especial.
               const nit=form.nit || buscarNit(null,nombre);
-              aplicarCambio({cliente:nombre,nit});
+              const dir=form.direccion || buscarDireccionCliente(null,nombre);
+              aplicarCambio({cliente:nombre,nit,direccion:dir});
             }} style={SI}/></div>
             <div><LBL>NIT</LBL><input value={form.nit} onChange={e=>setForm({...form,nit:e.target.value})} style={SI}/></div>
-            <div style={{gridColumn:"span 2"}}><LBL>Dirección del cliente</LBL><input value={form.direccion} onChange={e=>aplicarCambio({direccion:e.target.value})} onBlur={e=>{const v=normalizarFrase(e.target.value);if(v!==form.direccion)aplicarCambio({direccion:v});}} style={SI}/></div>
+            <div style={{gridColumn:"span 2"}}><LBL>Dirección del cliente</LBL><input value={form.direccion} onChange={e=>aplicarCambio({direccion:e.target.value})} onBlur={e=>{const v=limpiarDireccionFiscal(normalizarFrase(e.target.value));if(v!==form.direccion)aplicarCambio({direccion:v});}} style={SI}/></div>
             <div>
               <LBL>Próximo mantenimiento</LBL>
-              {/* Al escribirlo a mano deja de seguir a la fecha. */}
               <input type="date" value={form.proxMant}
                 onChange={e=>setForm({...form,proxMant:e.target.value,proxMantAuto:false})} style={SI}/>
-              <div style={{fontSize:10,color:form.proxMant?"#34d399":"#f59e0b",marginTop:3,lineHeight:1.4}}>
+              <div style={{fontSize:10.5,color:form.proxMant?"var(--text-tertiary)":"var(--warning-text)",marginTop:3,lineHeight:1.4}}>
                 {form.proxMant
                   ? (form.proxMantAuto!==false
-                      ? "Propuesto a un año de la fecha, como dice el documento. Cámbialo si aplica otro plazo."
+                      ? "Propuesto a un año de la fecha. Cámbialo si aplica otro plazo."
                       : "Fecha puesta a mano.")
                   : "Sin esta fecha la certificación no aparece en Vencimientos ni en las alertas."}
               </div>
             </div>
           </div>
 
-          {/* Selector de sistemas individuales contratados en cotización justo debajo de Dirección del cliente */}
+          {/* Desplegable minimalista estilo Apple para certificar por actividad o sistema individual */}
           {(() => {
             const itemsCot = itemsIndividualesCotizacion(form.obraId);
             if (!itemsCot.length) return null;
             return (
-              <div style={{
-                marginBottom: 12,
-                padding: "10px 14px",
-                background: "var(--surface-subtle, #f8fafc)",
-                border: "1px solid var(--border, #e2e8f0)",
-                borderRadius: 8,
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 4 }}>
-                  <LBL>⚡ Certificar por actividad o sistema individual</LBL>
-                  <span style={{ fontSize: 10.5, fontWeight: 500, color: "var(--text-tertiary, #94a3b8)" }}>
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 6 }}>
+                  <LBL>Certificar por actividad o sistema individual</LBL>
+                  <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
                     Haz una certificación por cada sistema
                   </span>
                 </div>
@@ -862,93 +844,73 @@ export default function Certificaciones({ctx}){
                   }}
                   style={SI}
                 >
-                  <option value="">-- Selecciona el sistema o actividad a certificar de esta obra --</option>
-                  <optgroup label="📋 Ítems contratados en cotización">
-                    {itemsCot.map((item, idx) => (
-                      <option key={`cot-${idx}`} value={`cot-${idx}`}>
-                        {iconoPorSistema(item.tipoSistema)} {item.desc} ({item.cant} {item.unidad})
-                      </option>
-                    ))}
-                  </optgroup>
+                  <option value="">Todos los sistemas contratados en la obra</option>
+                  {itemsCot.map((item, idx) => (
+                    <option key={`cot-${idx}`} value={`cot-${idx}`}>
+                      {item.desc} · {item.cant} {item.unidad}
+                    </option>
+                  ))}
                 </select>
               </div>
             );
           })()}
 
-          {/* Parámetros Oficiales de Escaleras (formato fijo de 3 hojas) */}
+          {/* Parámetros de Escaleras integrados al diseño minimalista (siempre 3 hojas fijas) */}
           {(form.formatoEscalera || form.tipo === "Certificación de Escaleras" || form.tipoSistema === "Escalera fija") && (
-            <div style={{
-              background: "#eff6ff",
-              border: "1.5px solid #bfdbfe",
-              borderRadius: 8,
-              padding: "10px 14px",
-              marginBottom: 12,
-            }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 6 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "#1e40af", display: "flex", alignItems: "center", gap: 6 }}>
-                  <span>🪜</span>
-                  <span>Parámetros Oficiales de Escaleras (ANSI ASC A14.5-2017)</span>
-                </span>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 10 }}>
-                <div>
-                  <LBL>Tipo de Escalera</LBL>
-                  <select
-                    value={
-                      ["TIPO GATO", "TIPO GATO CON LÍNEA DE VIDA VERTICAL", "TIPO GATO CON JAULA DE SEGURIDAD", "ESCALERA MARINERA", "ESCALERA FIJA VERTICAL"].includes(form.tipoEscalera)
-                        ? form.tipoEscalera
-                        : (form.tipoEscalera ? "OTRO" : "TIPO GATO")
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
+              <div>
+                <LBL>Tipo de escalera</LBL>
+                <select
+                  value={
+                    ["TIPO GATO", "TIPO GATO CON LÍNEA DE VIDA VERTICAL", "TIPO GATO CON JAULA DE SEGURIDAD", "ESCALERA MARINERA", "ESCALERA FIJA VERTICAL"].includes(form.tipoEscalera)
+                      ? form.tipoEscalera
+                      : (form.tipoEscalera ? "OTRO" : "TIPO GATO")
+                  }
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v !== "OTRO") {
+                      setForm((p) => ({ ...p, tipoEscalera: v }));
                     }
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      if (v !== "OTRO") {
-                        setForm((p) => ({ ...p, tipoEscalera: v }));
-                      }
-                    }}
-                    style={SI}
-                  >
-                    <option value="TIPO GATO">TIPO GATO</option>
-                    <option value="TIPO GATO CON LÍNEA DE VIDA VERTICAL">TIPO GATO CON LÍNEA DE VIDA VERTICAL</option>
-                    <option value="TIPO GATO CON JAULA DE SEGURIDAD">TIPO GATO CON JAULA DE SEGURIDAD</option>
-                    <option value="ESCALERA MARINERA">ESCALERA MARINERA</option>
-                    <option value="ESCALERA FIJA VERTICAL">ESCALERA FIJA VERTICAL</option>
-                    <option value="OTRO">Otro tipo de escalera...</option>
-                  </select>
-                  {form.tipoEscalera && !["TIPO GATO", "TIPO GATO CON LÍNEA DE VIDA VERTICAL", "TIPO GATO CON JAULA DE SEGURIDAD", "ESCALERA MARINERA", "ESCALERA FIJA VERTICAL"].includes(form.tipoEscalera) && (
-                    <input
-                      value={form.tipoEscalera || ""}
-                      onChange={e => setForm(p => ({ ...p, tipoEscalera: e.target.value.toUpperCase() }))}
-                      placeholder="Escribe el tipo de escalera..."
-                      style={{ ...SI, marginTop: 4 }}
-                    />
-                  )}
-                </div>
-                <div>
-                  <LBL>Longitud / Altura</LBL>
+                  }}
+                  style={SI}
+                >
+                  <option value="TIPO GATO">TIPO GATO</option>
+                  <option value="TIPO GATO CON LÍNEA DE VIDA VERTICAL">TIPO GATO CON LÍNEA DE VIDA VERTICAL</option>
+                  <option value="TIPO GATO CON JAULA DE SEGURIDAD">TIPO GATO CON JAULA DE SEGURIDAD</option>
+                  <option value="ESCALERA MARINERA">ESCALERA MARINERA</option>
+                  <option value="ESCALERA FIJA VERTICAL">ESCALERA FIJA VERTICAL</option>
+                  <option value="OTRO">Otro tipo de escalera…</option>
+                </select>
+                {form.tipoEscalera && !["TIPO GATO", "TIPO GATO CON LÍNEA DE VIDA VERTICAL", "TIPO GATO CON JAULA DE SEGURIDAD", "ESCALERA MARINERA", "ESCALERA FIJA VERTICAL"].includes(form.tipoEscalera) && (
                   <input
-                    value={form.longitudEscalera || ""}
-                    onChange={e => setForm(p => ({ ...p, longitudEscalera: e.target.value }))}
-                    placeholder="Ej: 5.5 metros"
-                    style={SI}
+                    value={form.tipoEscalera || ""}
+                    onChange={e => setForm(p => ({ ...p, tipoEscalera: e.target.value.toUpperCase() }))}
+                    placeholder="Escribe el tipo de escalera…"
+                    style={{ ...SI, marginTop: 6 }}
                   />
-                </div>
-                <div>
-                  <LBL>Carga de Prueba</LBL>
-                  <input
-                    value={form.cargaPrueba || "1200 lb – 544,3 kg"}
-                    onChange={e => setForm(p => ({ ...p, cargaPrueba: e.target.value }))}
-                    placeholder="1200 lb – 544,3 kg"
-                    style={SI}
-                  />
-                </div>
+                )}
+              </div>
+              <div>
+                <LBL>Longitud / altura</LBL>
+                <input
+                  value={form.longitudEscalera || ""}
+                  onChange={e => setForm(p => ({ ...p, longitudEscalera: e.target.value }))}
+                  placeholder="Ej: 5.5 metros"
+                  style={SI}
+                />
+              </div>
+              <div>
+                <LBL>Carga de prueba</LBL>
+                <input
+                  value={form.cargaPrueba || "1200 lb – 544,3 kg"}
+                  onChange={e => setForm(p => ({ ...p, cargaPrueba: e.target.value }))}
+                  placeholder="1200 lb – 544,3 kg"
+                  style={SI}
+                />
               </div>
             </div>
           )}
 
-          {/* El sitio concreto dentro del edificio. Se escribe aqui porque no
-              esta en ningun otro documento: se intento sacarlo de las
-              observaciones del informe y salia "instalados en 1 LINEA DE VIDA
-              HORIZONTAL DE 7 M PERIMETRAL", que dice que se hizo, no donde. */}
           <div style={{marginBottom:12}}>
             <LBL>¿Dónde se instaló?</LBL>
             <input
@@ -958,14 +920,14 @@ export default function Certificaciones({ctx}){
               placeholder={proyectoDeObra(form.obraId) || "El cuarto de ascensores · La cubierta del bloque 2…"}
               style={SI}
             />
-            <div style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)",marginTop:3}}>
-              Sale en el certificado: «instalados en <strong>{(form.lugar||proyectoDeObra(form.obraId)||"…").toUpperCase()}</strong>».
-              Vacío toma el nombre del proyecto del informe. Escribe aquí si quieres precisar el
-              sitio: «el cuarto de ascensores», «la cubierta del bloque 2».
+            <div style={{fontSize:11,color:"var(--text-tertiary)",marginTop:4,lineHeight:1.45}}>
+              Sale en el certificado: «instalados en la obra <strong style={{color:"var(--text-secondary)"}}>{(form.lugar||proyectoDeObra(form.obraId)||"…").toUpperCase()}</strong>».
+              Vacío toma el nombre del proyecto del informe.
             </div>
           </div>
-          <div style={{marginBottom:12}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+
+          <div style={{marginBottom:14}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:4}}>
               <LBL>Sistema certificado</LBL>
               <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
                 {sistemasDesdeCotizacionDeObra(form.obraId)?.texto && (
@@ -977,17 +939,8 @@ export default function Certificaciones({ctx}){
                         setActividadSeleccionadaKey(""); aplicarCambio({ cantidad: c.cantidadTotal, sistemaAuto: true }, informeRef, "cotizacion", "");
                       }
                     }}
-                    style={{
-                      background: "#FFFAEB",
-                      color: "#B54708",
-                      border: "1px solid rgba(181, 71, 8, 0.35)",
-                      borderRadius: 6,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      padding: "4px 8px",
-                      cursor: "pointer",
-                    }}
-                    title="Cargar los sistemas con cantidades en letras y números desde la cotización vinculada"
+                    style={{...B("var(--fill)","var(--text-primary)"),fontSize:11.5,padding:"5px 11px"}}
+                    title="Cargar todos los sistemas contratados desde la cotización vinculada"
                   >
                     Desde cotización ({obras.find(o=>o.id===form.obraId)?.cotizacionId ? (cotizaciones.find(c=>c.id===obras.find(o=>o.id===form.obraId)?.cotizacionId)?.numero || "Cot") : "Cot"})
                   </button>
@@ -996,16 +949,7 @@ export default function Certificaciones({ctx}){
                   <button
                     type="button"
                     onClick={() => { setActividadSeleccionadaKey(""); aplicarCambio({ sistemaAuto: true }, informeRef, "informe", ""); }}
-                    style={{
-                      background: "var(--surface-subtle, #f2f4f7)",
-                      color: "var(--text-main, #1e293b)",
-                      border: "1px solid var(--border, #cbd5e1)",
-                      borderRadius: 6,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      padding: "4px 8px",
-                      cursor: "pointer",
-                    }}
+                    style={{...B("var(--fill)","var(--text-primary)"),fontSize:11.5,padding:"5px 11px"}}
                     title="Cargar la redacción registrada en el informe de actividades"
                   >
                     Desde informe
@@ -1016,7 +960,7 @@ export default function Certificaciones({ctx}){
                   onChange={(v)=>setForm(p=>({...p,sistema:normalizarTextoCertificacion(v),sistemaAuto:false}))}
                   compacto
                 />
-                <button onClick={()=>rehacerTexto("auto")} style={{...B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)"),fontSize:11,padding:"5px 11px"}}>
+                <button type="button" onClick={()=>rehacerTexto("auto")} style={{...B("var(--fill)","var(--text-primary)"),fontSize:11.5,padding:"5px 11px"}}>
                   Rehacer
                 </button>
               </div>
@@ -1026,30 +970,21 @@ export default function Certificaciones({ctx}){
               onChange={e=>setForm({...form,sistema:e.target.value,sistemaAuto:false})}
               onBlur={e=>{const v=normalizarTextoCertificacion(e.target.value);if(v!==form.sistema)setForm(p=>({...p,sistema:v}));}}
               rows={4}
-              placeholder="Se arma solo al llenar el tipo, el sistema, la cantidad y el cliente. También puedes escribirlo a mano."
+              placeholder="Se arma solo al llenar el tipo, el sistema y el cliente. También puedes escribirlo a mano."
               spellCheck lang="es"
               style={{...SI,resize:"vertical"}}
             />
-            <div style={{fontSize:10.5,color:"var(--text-subtle, #94a3b8)",marginTop:3}}>
+            <div style={{fontSize:11,color:"var(--text-tertiary)",marginTop:4}}>
               {form.sistemaAuto===false
-                ? "Lo estás escribiendo a mano, así que ya no se rehace solo. Usa el botón para volver al texto automático."
-                : "Se actualiza solo con lo que elijas arriba. En cuanto lo edites, deja de hacerlo."}
+                ? "Editado a mano · Usa «Rehacer» si quieres volver a la redacción automática."
+                : "Se actualiza automáticamente con lo que elijas arriba."}
             </div>
-            {/* Indicador de fuente del texto */}
-            {sistemasDesdeCotizacionDeObra(form.obraId)?.texto ? (
-              <div style={{fontSize:10.5,color:"#15803d",marginTop:5,lineHeight:1.5}}>
-                ✓ Redacción legal generada automáticamente desde la <strong>cotización vinculada</strong>: cantidades en letras y números según Res. 4272/2021.
-              </div>
-            ) : queSeCertifica(form.obraId) ? (
-              <div style={{fontSize:10.5,color:"#34d399",marginTop:5,lineHeight:1.5}}>
-                Se arma con lo registrado en la obra: <strong>qué se certifica</strong> del informe, <strong>dónde</strong> del nombre del proyecto, y el NIT y la dirección del cliente.
-              </div>
-            ) : null}
           </div>
+
           <div style={{marginBottom:18}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-              <LBL>Elementos y Componentes Utilizados ({form.elementos.length})</LBL>
-              <span style={{fontSize:11,color:"var(--text-subtle, #94a3b8)"}}>Componentes certificados instalados o inspeccionados</span>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:8,flexWrap:"wrap",gap:6}}>
+              <LBL>Elementos y componentes utilizados ({form.elementos.length})</LBL>
+              <span style={{fontSize:11,color:"var(--text-tertiary)"}}>Componentes verificados en el sistema</span>
             </div>
 
             <div style={{display:"flex",flexDirection:"column",marginBottom:12}}>
@@ -1062,12 +997,13 @@ export default function Certificaciones({ctx}){
                   padding:"4px 2px"
                 }}>
                   <span style={{
-                    fontSize: 10.5,
-                    fontWeight: 800,
-                    color: "var(--text-subtle, #94a3b8)",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "var(--text-tertiary)",
                     width: 24,
                     textAlign: "center",
-                    flexShrink: 0
+                    flexShrink: 0,
+                    fontVariantNumeric: "tabular-nums"
                   }}>
                     {String(i + 1).padStart(2, "0")}
                   </span>
@@ -1078,7 +1014,7 @@ export default function Certificaciones({ctx}){
                       const auto=corregirOrtografiaLocal(e.target.value);
                       if(auto!==el)setForm(prev=>({...prev,elementos:prev.elementos.map((x,j)=>j===i?auto:x)}));
                     }}
-                    style={{...SI,fontSize:12.5,border:"none",background:"transparent",padding:"4px 0",boxShadow:"none"}}
+                    style={{...SI,fontSize:13,border:"none",background:"transparent",padding:"4px 0",boxShadow:"none"}}
                   />
                   <button
                     type="button"
@@ -1119,8 +1055,8 @@ export default function Certificaciones({ctx}){
                     }
                   }
                 }}
-                placeholder="Escribe un componente y presiona Enter para agregar..."
-                style={{...SI,fontSize:12.5,flex:1}}
+                placeholder="Escribe un componente y presiona Enter para agregar…"
+                style={{...SI,fontSize:13,flex:1}}
               />
               <button
                 type="button"
@@ -1131,42 +1067,21 @@ export default function Certificaciones({ctx}){
                     setNuevoElem("");
                   }
                 }}
-                style={{
-                  ...B("#1d1d1f","#ffffff"),
-                  padding:"8px 16px",
-                  fontSize:12,
-                  fontWeight:600,
-                  borderRadius:10,
-                  flexShrink:0,
-                  boxShadow:"0 1px 3px rgba(0, 0, 0, 0.12)",
-                }}
+                style={{...B("var(--fill)","var(--text-primary)"),padding:"8px 16px",fontSize:12.5,flexShrink:0}}
               >
-                + Agregar Elemento
+                + Agregar
               </button>
             </div>
           </div>
-          <div style={{display:"flex",gap:12,marginTop:18,paddingTop:14,borderTop:"1px solid var(--border-color, #e2e8f0)"}}>
+          <div style={{display:"flex",gap:10,marginTop:18,paddingTop:14,borderTop:"1px solid var(--separator)"}}>
             <button
-              style={{
-                ...B("#1d1d1f","#ffffff"),
-                padding:"10px 24px",
-                fontSize:13,
-                fontWeight:600,
-                borderRadius:10,
-                boxShadow:"0 1px 3px rgba(0, 0, 0, 0.12)"
-              }}
+              style={{...B("#1d1d1f","#ffffff"),padding:"9px 22px",fontSize:13}}
               onClick={guardar}
             >
               {editId ? "Guardar cambios" : "Guardar certificación"}
             </button>
             <button
-              style={{
-                ...B("var(--btn-cancelar-bg, #f1f5f9)","var(--btn-cancelar-txt, #475569)"),
-                padding:"10px 20px",
-                fontSize:13,
-                fontWeight:600,
-                borderRadius:10
-              }}
+              style={{...B("var(--fill)","var(--text-primary)"),padding:"9px 18px",fontSize:13}}
               onClick={()=>{setNueva(false);setEditId(null);}}
             >
               Cancelar

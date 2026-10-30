@@ -6,6 +6,7 @@ import { fmtD } from "../../lib/format";
 import { descargarDocumentoPdf } from "../../lib/documentoPdf";
 import { nombreDocumento } from "../../lib/nombreArchivo";
 import { useIsMobile } from "../../hooks/useMediaQuery";
+import { B } from "../../styles/tokens";
 
 export default function CertificacionDetalle({
   cert,
@@ -99,53 +100,42 @@ export default function CertificacionDetalle({
     : null;
   const estadoVigencia =
     diasHastaVencer === null
-      ? { label: "Sin fecha programada", bg: "rgba(148, 163, 184, 0.12)", color: "#64748b" }
+      ? { label: "Sin fecha programada", bg: "var(--fill)", color: "var(--text-secondary)" }
       : diasHastaVencer < 0
-      ? { label: `Venció hace ${Math.abs(diasHastaVencer)} días`, bg: "rgba(239, 68, 68, 0.12)", color: "#dc2626" }
+      ? { label: `Venció hace ${Math.abs(diasHastaVencer)} días`, bg: "var(--danger-bg)", color: "var(--danger-text)" }
       : diasHastaVencer <= 30
-      ? { label: `Vence en ${diasHastaVencer} días`, bg: "rgba(245, 158, 11, 0.12)", color: "#d97706" }
-      : { label: `Vigente · Inspección en ${diasHastaVencer}d`, bg: "rgba(16, 185, 129, 0.12)", color: "#059669" };
+      ? { label: `Vence en ${diasHastaVencer} días`, bg: "var(--warning-bg)", color: "var(--warning-text)" }
+      : { label: `Vigente · Inspección en ${diasHastaVencer} d`, bg: "var(--success-bg)", color: "var(--success-text)" };
 
   return (
     <div style={{ padding: isMobile ? "8px 10px 16px" : "8px 18px 16px" }}>
-      {/* Barra de Título y Acciones IDÉNTICA al módulo de Cotizaciones */}
+      {/* Barra superior minimalista estilo Apple */}
       <div
         style={{
+          maxWidth: previewExpandido ? "100%" : "1060px",
+          margin: "0 auto 12px",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           gap: 12,
           flexWrap: "wrap",
-          marginBottom: 10,
           padding: "2px 0",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <h1 style={{ fontSize: 17, fontWeight: 800, margin: 0, color: "var(--text-h1, #101828)", lineHeight: 1.2 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+          <h1 style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.015em", margin: 0, color: "var(--text-primary)", lineHeight: 1.2 }}>
             {cert.tipo || "Certificación"} {cert.numero || cert.id}
           </h1>
-          <span style={{ fontSize: 12, color: "var(--text-muted, #667085)" }}>
+          <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
             {subtitle}
           </span>
         </div>
 
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           {typeof onVolver === "function" && !accionesEnBarra && (
             <button
               type="button"
-              style={{
-                background: "var(--surface-subtle, #f2f4f7)",
-                color: "var(--text-main, #101828)",
-                border: "1px solid var(--border, #eaecf0)",
-                borderRadius: 6,
-                padding: "5px 12px",
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-              }}
+              style={{ ...B("var(--fill)", "var(--text-primary)"), fontSize: 12, padding: "6px 13px" }}
               onClick={onVolver}
               title="Volver al listado"
             >
@@ -153,140 +143,117 @@ export default function CertificacionDetalle({
             </button>
           )}
 
-          {/* Botón para Minimizar / Maximizar */}
+          {/* Control segmentado Apple: Ajustar / 100% */}
+          <div
+            style={{
+              background: "var(--fill)",
+              padding: 3,
+              borderRadius: 10,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 2,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setModo("auto")}
+              title="Ajusta el documento al ancho de la pantalla"
+              style={{
+                background: modo === "auto" ? "var(--surface)" : "transparent",
+                color: modo === "auto" ? "var(--text-primary)" : "var(--text-secondary)",
+                border: "none",
+                borderRadius: 7,
+                padding: isMobile ? "4px 9px" : "5px 11px",
+                fontSize: 11.5,
+                fontWeight: modo === "auto" ? 600 : 500,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                boxShadow: modo === "auto" ? "0 1px 2px rgba(0,0,0,0.08)" : "none",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              Ajustar ({Math.round(escala * 100)}%)
+            </button>
+            <button
+              type="button"
+              onClick={() => setModo("real")}
+              title="Muestra el documento al 100% de tamaño real"
+              style={{
+                background: modo === "real" ? "var(--surface)" : "transparent",
+                color: modo === "real" ? "var(--text-primary)" : "var(--text-secondary)",
+                border: "none",
+                borderRadius: 7,
+                padding: isMobile ? "4px 9px" : "5px 11px",
+                fontSize: 11.5,
+                fontWeight: modo === "real" ? 600 : 500,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                boxShadow: modo === "real" ? "0 1px 2px rgba(0,0,0,0.08)" : "none",
+              }}
+            >
+              100% Lectura
+            </button>
+          </div>
+
           <button
             type="button"
             onClick={() => setPreviewExpandido((prev) => !prev)}
             title={previewExpandido ? "Minimizar horizontalmente" : "Maximizar horizontalmente"}
             style={{
-              background: previewExpandido ? "#1d1d1f" : "var(--surface-subtle, #f2f4f7)",
-              color: previewExpandido ? "#ffffff" : "var(--text-main, #101828)",
-              border: `1px solid ${previewExpandido ? "#1d1d1f" : "var(--border, #eaecf0)"}`,
-              borderRadius: 6,
-              padding: isMobile ? "5px 9px" : "5px 11px",
+              ...B(previewExpandido ? "#1d1d1f" : "var(--fill)", "#ffffff"),
               fontSize: 11.5,
-              fontWeight: 700,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 4,
+              padding: isMobile ? "5px 10px" : "6px 12px",
             }}
           >
-            <span>↔</span>
-            <span>{previewExpandido ? "Minimizar" : "Maximizar"}</span>
-          </button>
-
-          {/* Controles de vista: Ajustar a pantalla o 100% Lectura */}
-          <button
-            type="button"
-            onClick={() => setModo("auto")}
-            title="Ajusta el documento al ancho de la pantalla"
-            style={{
-              background: modo === "auto" ? "var(--btn-guardar-bg, #cc0000)" : "var(--btn-cancelar-bg, #f1f5f9)",
-              color: modo === "auto" ? "#ffffff" : "var(--btn-cancelar-txt, #475569)",
-              border: `1px solid ${modo === "auto" ? "var(--btn-guardar-bg, #cc0000)" : "var(--border, #cbd5e1)"}`,
-              borderRadius: 6,
-              padding: isMobile ? "5px 9px" : "5px 11px",
-              fontSize: 11.5,
-              fontWeight: 700,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 4,
-            }}
-          >
-            <span>Ajustar ({Math.round(escala * 100)}%)</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setModo("real")}
-            title="Muestra el documento al 100% de tamaño real"
-            style={{
-              background: modo === "real" ? "var(--btn-guardar-bg, #cc0000)" : "var(--btn-cancelar-bg, #f1f5f9)",
-              color: modo === "real" ? "#ffffff" : "var(--btn-cancelar-txt, #475569)",
-              border: `1px solid ${modo === "real" ? "var(--btn-guardar-bg, #cc0000)" : "var(--border, #cbd5e1)"}`,
-              borderRadius: 6,
-              padding: isMobile ? "5px 9px" : "5px 11px",
-              fontSize: 11.5,
-              fontWeight: 700,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 4,
-            }}
-          >
-            <span>100% Lectura</span>
+            {previewExpandido ? "Minimizar" : "Maximizar"}
           </button>
 
           {!accionesEnBarra && typeof onEditar === "function" && (
             <button
               type="button"
-              style={{
-                background: "transparent",
-                color: "var(--text-muted, #475467)",
-                border: "1px solid var(--border, #eaecf0)",
-                borderRadius: 6,
-                padding: "5px 12px",
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
+              style={{ ...B("var(--fill)", "var(--text-primary)"), fontSize: 12, padding: "6px 13px" }}
               onClick={() => onEditar(cert)}
             >
               Editar
             </button>
           )}
 
-          {/* Botón Descargar PDF idéntico al de Cotizaciones (señalado en amarillo) */}
-          {!accionesEnBarra && (<>
-          <button
-            type="button"
-            style={{
-              background: "var(--surface-subtle, #f2f4f7)",
-              color: "var(--text-main, #101828)",
-              border: "1px solid var(--border, #eaecf0)",
-              borderRadius: 6,
-              padding: "5px 12px",
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: descargando ? "wait" : "pointer",
-            }}
-            disabled={descargando}
-            onClick={descargarPdf}
-          >
-            {descargando ? "Generando…" : "Descargar PDF"}
-          </button>
+          {!accionesEnBarra && (
+            <>
+              <button
+                type="button"
+                style={{
+                  ...B("#1d1d1f", "#ffffff"),
+                  fontSize: 12,
+                  padding: "6px 14px",
+                  cursor: descargando ? "wait" : "pointer",
+                }}
+                disabled={descargando}
+                onClick={descargarPdf}
+              >
+                {descargando ? "Generando…" : "Descargar PDF"}
+              </button>
 
-          <button
-            type="button"
-            style={{
-              background: "var(--surface-subtle, #f2f4f7)",
-              color: "var(--text-main, #101828)",
-              border: "1px solid var(--border, #eaecf0)",
-              borderRadius: 6,
-              padding: "5px 12px",
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-            onClick={imprimir}
-          >
-            Imprimir / PDF
-          </button>
-          </>)}
+              <button
+                type="button"
+                style={{ ...B("var(--fill)", "var(--text-primary)"), fontSize: 12, padding: "6px 13px" }}
+                onClick={imprimir}
+              >
+                Imprimir
+              </button>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Dossier Técnico Oficial Card */}
+      {/* Tarjeta resumen minimalista estilo Apple */}
       <div
         style={{
           maxWidth: previewExpandido ? "100%" : "1060px",
           margin: "0 auto 16px",
-          background: "var(--card-bg, #ffffff)",
-          border: "1px solid var(--border-color, #e2e8f0)",
-          borderRadius: 14,
-          padding: "14px 20px",
-          boxShadow: "0 2px 10px rgba(0,0,0,0.03)",
+          background: "var(--surface)",
+          borderRadius: 18,
+          padding: "16px 20px",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -299,45 +266,38 @@ export default function CertificacionDetalle({
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
             <span
               style={{
-                background: "rgba(224, 52, 42, 0.1)",
-                color: "#E0342A",
-                fontSize: 10.5,
-                fontWeight: 800,
-                padding: "3px 8px",
-                borderRadius: 6,
+                fontSize: 11,
+                fontWeight: 600,
+                color: "var(--text-tertiary)",
                 textTransform: "uppercase",
-                letterSpacing: 0.8,
+                letterSpacing: "0.04em",
               }}
             >
-              Dossier Técnico Oficial
-            </span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-subtle, #64748b)" }}>
               Folio {cert.numero || cert.id || "S/N"}
             </span>
           </div>
-          <div style={{ fontSize: 17, fontWeight: 800, color: "var(--text-main, #0f172a)", lineHeight: 1.3 }}>
+          <div style={{ fontSize: 16.5, fontWeight: 700, letterSpacing: "-0.015em", color: "var(--text-primary)", lineHeight: 1.3 }}>
             {cert.cliente || "Certificación Técnica"}
           </div>
-          <div style={{ fontSize: 12.5, color: "var(--text-subtle, #64748b)", marginTop: 3 }}>
+          <div style={{ fontSize: 12.5, color: "var(--text-tertiary)", marginTop: 3 }}>
             {cert.lugar ? `${cert.lugar} · ` : ""}
             {cert.tipo || "Certificación"} emitida el {fmtD(cert.fecha)}
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <div
             style={{
-              background: "var(--bg-subtle, #f8fafc)",
-              border: "1px solid var(--border-color, #e2e8f0)",
-              borderRadius: 10,
+              background: "var(--fill)",
+              borderRadius: 12,
               padding: "8px 14px",
               textAlign: "right",
             }}
           >
-            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-subtle, #94a3b8)", textTransform: "uppercase", letterSpacing: 0.5 }}>
-              Normativa de Conformidad
+            <div style={{ fontSize: 10.5, fontWeight: 600, color: "var(--text-tertiary)", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+              Normativa
             </div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main, #334155)", marginTop: 2 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", marginTop: 2 }}>
               {esMultiHoja ? "ANSI ASC A14.5 · NTC 17025 · Res. 4272" : "Res. 4272 / ANSI Z359"}
             </div>
           </div>
@@ -345,18 +305,17 @@ export default function CertificacionDetalle({
           <div
             style={{
               background: estadoVigencia.bg,
-              border: `1px solid ${estadoVigencia.color}30`,
-              borderRadius: 10,
+              borderRadius: 12,
               padding: "8px 14px",
               textAlign: "right",
             }}
           >
-            <div style={{ fontSize: 10, fontWeight: 700, color: estadoVigencia.color, textTransform: "uppercase", letterSpacing: 0.5 }}>
-              Próximo Mantenimiento
+            <div style={{ fontSize: 10.5, fontWeight: 600, color: estadoVigencia.color, textTransform: "uppercase", letterSpacing: "0.03em" }}>
+              Próximo mantenimiento
             </div>
-            <div style={{ fontSize: 12.5, fontWeight: 800, color: estadoVigencia.color, marginTop: 2 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: estadoVigencia.color, marginTop: 2, fontVariantNumeric: "tabular-nums" }}>
               {cert.proxMant ? fmtD(cert.proxMant) : "No asignado"}
-              <span style={{ display: "block", fontSize: 10.5, fontWeight: 600, opacity: 0.85 }}>
+              <span style={{ display: "block", fontSize: 10.5, fontWeight: 500, opacity: 0.85 }}>
                 {estadoVigencia.label}
               </span>
             </div>
@@ -385,7 +344,7 @@ export default function CertificacionDetalle({
             width: 816,
             minWidth: 816,
             zoom: escalaEfectiva,
-            boxShadow: esMultiHoja ? "none" : "0 8px 30px rgba(15, 23, 42, 0.12)",
+            boxShadow: esMultiHoja ? "none" : "0 8px 28px rgba(15, 23, 42, 0.08)",
             borderRadius: 4,
             background: esMultiHoja ? "transparent" : "#ffffff",
           }}

@@ -5,86 +5,12 @@ import { getFirmaImg } from "../../lib/firmaEmpresa";
 import PrintHeader from "../../components/print/PrintHeader";
 import { fmtL, today as hoy } from "../../lib/format";
 import { LOGO_INGEANCLAJES } from "../../assets/embeddedImages";
-import { normalizarTextoCertificacion } from "../../lib/normalizarEntrada";
 import { enlaceVerificacion } from "../../lib/verificacionCertificados";
 import { FUENTE } from "../../styles/designTokens";
 import { sanitizarCertificado } from "./certSanitizer";
 import CertificacionEscalerasDocumento from "./CertificacionEscalerasDocumento";
 import { esCertificacionEscalera } from "./certConfig";
-
-// Pone en negrita los datos del cliente dentro de una frase escrita en plano.
-const conNegritas = (texto, datos)=>{
-  const trozos = [...new Set((datos||[]).map((d)=>String(d||"").trim()).filter((d)=>d.length>2))]
-    .sort((a,b)=>b.length-a.length);
-  if(!trozos.length) return texto;
-
-  const escapar = (t)=>t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const patron = new RegExp(`(${trozos.map(escapar).join("|")})`, "gi");
-
-  return String(texto||"").split(patron).map((parte,i)=>(
-    trozos.some((t)=>t.toLowerCase()===parte.toLowerCase())
-      ? <strong key={i}>{parte}</strong>
-      : <span key={i}>{parte}</span>
-  ));
-};
-
-// Formatea el párrafo del sistema certificado resaltando en negrita todos los datos dinámicos
-const renderTextoSistema = (cert)=>{
-  const t = String(cert?.sistema || "").trim();
-  if(!t) return null;
-
-  // Si viene en el formato crudo antiguo ("con NIT: ... con DIRECCIÓN: ..."), lo normalizamos a Opción A
-  const textoLimpio = normalizarTextoCertificacion(t);
-
-  const mVerbo = textoLimpio.match(/^(CERTIFICA|RECERTIFICA)\s+que\s+/i);
-  if (mVerbo) {
-    const verbo = mVerbo[1].toUpperCase();
-    const afterVerbo = textoLimpio.slice(mVerbo[0].length);
-
-    // Extraer fragmentos para negrita precisa
-    const mDetalle = afterVerbo.match(/^los\s+sistemas\s+de\s+protecci[oó]n\s+contra\s+ca[ií]das\s+consistentes\s+en:\s*([^,]+)/i);
-    const detalleTexto = mDetalle ? mDetalle[1].trim() : (cert?.detalle || "");
-
-    const mLugar = afterVerbo.match(/instalados\s+en\s+(?:la\s+obra\s+|la\s+sede\s+|el\s+proyecto\s+)?([^,]+)/i);
-    const lugarTexto = mLugar ? mLugar[1].trim() : (cert?.lugar || "");
-
-    const mDir = afterVerbo.match(/(?:con\s+direcci[oó]n(?:\s+en)?|ubicad[ao]\s+en)\s*(?:la\s+|el\s+)?([\s\S]+?)(?=,\s*fueron\s+inspeccionados|$)/i);
-    const dirTexto = mDir ? mDir[1].trim() : (cert?.direccion || "");
-
-    const mCli = afterVerbo.match(/a\s+solicitud\s+de\s+([^(,]+?)(?:\s*\(NIT:\s*([^)]+)\))?(?:,|$)/i);
-    const cliTexto = mCli ? mCli[1].trim() : (cert?.cliente || "");
-    const nitTexto = mCli && mCli[2] ? mCli[2].trim() : (cert?.nit || "");
-
-    const trozosNegrita = [
-      verbo,
-      detalleTexto,
-      lugarTexto,
-      dirTexto,
-      cliTexto,
-      nitTexto,
-      "fueron inspeccionados y verificados técnicamente",
-      "estructuralmente conformes, operativos y aptos para trabajo seguro en alturas",
-      cert?.normativa,
-      "Resolución 4272 de 2021",
-      ...(textoLimpio.match(/\([^)]+\)/g) || [])
-    ].filter(Boolean);
-
-    return conNegritas(textoLimpio, trozosNegrita);
-  }
-
-  return conNegritas(textoLimpio, [
-    "CERTIFICA",
-    "RECERTIFICA",
-    cert?.nit,
-    cert?.cliente,
-    cert?.direccion,
-    cert?.lugar,
-    cert?.detalle,
-    cert?.normativa,
-    "Resolución 4272 de 2021",
-    ...(textoLimpio.match(/\([^)]+\)/g) || [])
-  ]);
-};
+import { renderTextoSistema } from "./renderTextoSistema";
 
 function generarFranjaSeguridad(ancho = 44, alto = 1056) {
   if (typeof document === "undefined") return "";

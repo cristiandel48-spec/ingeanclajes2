@@ -90,4 +90,24 @@ describe("Certificación de Escaleras", () => {
     expect(resultado.nombre).toBe("Certificacion CERT-040.pdf");
     expect(resultado.blob).toBeInstanceOf(Blob);
   });
+
+  it("resalta en negrita exactamente el verbo y los 4 datos dinámicos del certificado", async () => {
+    const { renderTextoSistema } = await import("./renderTextoSistema");
+    const cert = {
+      sistema:
+        "CERTIFICA que los sistemas de protección contra caídas consistentes en: una (1) escalera mantenimiento, instalados en la obra YUMBO VALLE DEL CUAUCA, a solicitud de IC ASESORÍAS Y PROYECTOS S.A.S (NIT: 811001850-0), con dirección CALLE 40 SUR NO 24 E - 75, fueron inspeccionados y verificados técnicamente, encontrándose estructuralmente conformes.",
+    };
+    const nodos = renderTextoSistema(cert);
+    const textosNegrita = nodos
+      .filter((n) => n?.type === "strong")
+      .map((n) => n.props.children);
+
+    expect(textosNegrita).toEqual([
+      "CERTIFICA",
+      "una (1) escalera mantenimiento",
+      "YUMBO VALLE DEL CUAUCA",
+      "IC ASESORÍAS Y PROYECTOS S.A.S (NIT: 811001850-0)",
+      "CALLE 40 SUR NO 24 E - 75",
+    ]);
+  });
 });

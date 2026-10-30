@@ -676,7 +676,7 @@ export default function Cotizacion({ctx}){
         const cliData = {
           nombre: nomNorm,
           nit: nitNorm,
-          direccion: normalizarMayusculas(cl.direccion),
+          direccion: (String(cl.direccion || "").split(",").length >= 3 && !/\d/.test(String(cl.direccion || ""))) ? "" : normalizarMayusculas(cl.direccion),
           ciudad: normalizarMayusculas(cl.ciudad),
           telefono: normalizarTelefono(cl.telefono),
           contacto: normalizarNombrePropio(cl.contacto),
@@ -695,7 +695,7 @@ export default function Cotizacion({ctx}){
             ...cliData,
             nombre: porNit && previo.nombre ? previo.nombre : cliData.nombre,
             nit: cliData.nit || previo.nit || "",
-            direccion: cliData.direccion || previo.direccion,
+            direccion: previo.direccion || cliData.direccion,
             telefono: cliData.telefono || previo.telefono,
             ciudad: cliData.ciudad || previo.ciudad,
             contacto: cliData.contacto || previo.contacto || "",

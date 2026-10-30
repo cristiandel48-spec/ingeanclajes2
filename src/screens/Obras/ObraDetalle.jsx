@@ -428,11 +428,11 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                           key={it.id || idx}
                           style={{
                             display: "grid",
-                            gridTemplateColumns: "64px minmax(0,1fr)",
+                            gridTemplateColumns: "64px minmax(0,1fr) auto",
                             gap: 12,
                             padding: "8px 0",
                             borderTop: idx === 0 ? "none" : "1px solid var(--separator)",
-                            alignItems: "baseline",
+                            alignItems: "center",
                           }}
                         >
                           <span style={{ fontSize: 12.5, color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
@@ -440,25 +440,46 @@ export default function ObraDetalle({obraId,ctx,onVolver}){
                             <span style={{ color: "var(--text-tertiary)", fontSize: 11 }}>{unidad}</span>
                           </span>
                           <span style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--text-primary)", flex: 1 }}>{desc}</span>
-                          <button
-                            type="button"
-                            onClick={() => irAPantalla("certificaciones", { obraId, itemDesc: desc, itemCant: cant })}
-                            style={{
-                              background: "#f0fdf4",
-                              border: "1px solid #bbf7d0",
-                              color: "#166534",
-                              borderRadius: 6,
-                              padding: "3px 8px",
-                              fontSize: 11,
-                              fontWeight: 600,
-                              cursor: "pointer",
-                              whiteSpace: "nowrap",
-                              marginLeft: 8,
-                            }}
-                            title={`Crear certificación específica para: ${desc}`}
-                          >
-                            📜 Certificar
-                          </button>
+                          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                            <button
+                              type="button"
+                              onClick={() => irAPantalla("informes", { obraId, itemDesc: desc, itemCant: cant, itemUnit: unidad })}
+                              style={{
+                                background: "var(--fill, #f5f5f7)",
+                                border: "1px solid var(--border, rgba(0,0,0,0.08))",
+                                color: "var(--text-primary, #1d1d1f)",
+                                borderRadius: 8,
+                                padding: "4px 9px",
+                                fontSize: 11,
+                                fontWeight: 600,
+                                cursor: "pointer",
+                                whiteSpace: "nowrap",
+                                fontFamily: "inherit",
+                              }}
+                              title={`Crear informe de actividades para: ${desc}`}
+                            >
+                              Informe
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => irAPantalla("certificaciones", { obraId, itemDesc: desc, itemCant: cant })}
+                              style={{
+                                background: "var(--surface, #ffffff)",
+                                border: "1px solid var(--border, rgba(0,0,0,0.12))",
+                                color: "var(--text-primary, #1d1d1f)",
+                                borderRadius: 8,
+                                padding: "4px 9px",
+                                fontSize: 11,
+                                fontWeight: 600,
+                                cursor: "pointer",
+                                whiteSpace: "nowrap",
+                                fontFamily: "inherit",
+                              }}
+                              title={`Crear certificación específica para: ${desc}`}
+                            >
+                              Certificar
+                            </button>
+                          </div>
                         </div>
                       );
                     })}

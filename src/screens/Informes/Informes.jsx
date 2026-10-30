@@ -17,10 +17,16 @@ import { LOGO_INGEANCLAJES } from "../../assets/embeddedImages";
 import { bitacoraAActividades, normalizarBitacora, registrosDelPeriodo } from "../../lib/bitacoraObra";
 import { leerImagenComprimida } from "../../lib/imagenes";
 import { normalizarFrase, normalizarMayusculas, normalizarNombrePropio, normalizarParrafos } from "../../lib/normalizarEntrada";
-import { DEFAULT_INFORME_ACTIVIDADES, DEFAULT_INFORME_DESCRIPCION, DEFAULT_INFORME_RECOMENDACIONES } from "../../data/seed";
+import { DEFAULT_INFORME_RECOMENDACIONES } from "../../data/seed";
 import { conActividadSeparada } from "../../lib/informeTextos";
 import { siguienteIdUnico } from "../../lib/identificadores";
 import { PLANTILLAS_ACTIVIDAD, buscarPlantillaActividad, esTextoDePlantilla } from "./plantillasActividad";
+import {
+  crearActividadVacia,
+  normalizarActividadesInforme,
+  construirActividadDesdeItemCot,
+  evaluarGuardadoInforme,
+} from "./informeReglas";
 import ListaInformes from "./ListaInformes";
 import TarjetaCotizacionRef from "./TarjetaCotizacionRef";
 import { obrasMasNuevasPrimero } from "../../lib/identificadores";
@@ -32,13 +38,13 @@ import { armarPdfConConstancia, descargarBlob, nombreConConstancia } from "../..
 import ModalQuienRecibe from "../../components/ModalQuienRecibe";
 import { celularDeInforme, clienteDeObra, clientesConQuienRecibe, correoValido, destinatarioDeInforme, quienRecibeDeCliente } from "../../lib/quienRecibe";
 import { normalizarCorreo } from "../../lib/normalizarEntrada";
-import { informeRepetido } from "../../lib/duplicados";
 import { AVISO_ACTA_SIN_FIRMAR, motivoActaPendiente, normalizarActas, textoActaPendiente } from "../../lib/actaEntrega";
 import { normalizarRazonSocial } from "../../lib/normalizarEntrada";
 import { useAccionesPantalla, useTituloPantalla } from "../../context/accionesPantalla";
 import { resolverAutorGuardado, normalizarNombrePersona } from "../../lib/autorAuditoria";
 import { Button, Callout, useToast } from "../../components/ui";
 import { confirmar } from "../../lib/dialogos";
+import { getQuoteActiveProposal, normalizeProposalItems } from "../../lib/cotizaciones";
 import { FUENTE } from "../../styles/designTokens";
 
 // Editor del informe al estilo de apple.com: sin bordes ni sombras. Cada
@@ -98,7 +104,7 @@ export default function Informes({ctx}){
   // todos los informes. Es solo el punto de partida: se edita encima y lo
   // escrito manda. Las actividades que llegan de la bitacora de la obra traen
   // su propia descripcion y no pasan por aqui.
-  const emptyActividad=()=>({titulo:"",actividadesRealizadas:DEFAULT_INFORME_ACTIVIDADES,descripcion:DEFAULT_INFORME_DESCRIPCION,observaciones:"",fecha:"",fotos:[]});
+  const emptyActividad = crearActividadVacia;
   // `agregada` marca las filas que puso la persona a mano en el informe, para
   // conservarlas cuando se resincroniza con la obra. Arranca en modo lista:
   // lo normal es elegir a alguien registrado, no escribirlo.
@@ -248,35 +254,7 @@ export default function Informes({ctx}){
     return bitacoraAActividades(registrosDelPeriodo(obraSel.bitacora, desde, hasta));
   };
 
-  const normalizeInformeActividades = (data={})=>{
-    if(Array.isArray(data.actividades) && data.actividades.length){
-      // conActividadSeparada acomoda los informes guardados cuando los dos
-      // bloques iban juntos en un solo campo. Los ya separados no se tocan.
-      return data.actividades.map(conActividadSeparada).map((actividad)=>({
-        ...emptyActividad(),
-        ...actividad,
-        fotos:Array.isArray(actividad?.fotos)
-          ? actividad.fotos
-              .filter(foto=>Boolean(foto?.img||foto?.url))
-              .map((foto)=>({img:foto.img||foto.url,comentario:foto.comentario||""}))
-          : [],
-      }));
-    }
-    if(data.actividad || data.descripcion || data.observaciones || (Array.isArray(data.fotos) && data.fotos.length)){
-      return [{
-        ...emptyActividad(),
-        titulo:data.actividad||"",
-        descripcion:data.descripcion||"",
-        observaciones:data.observaciones||"",
-        fotos:Array.isArray(data.fotos)
-          ? data.fotos
-              .filter(foto=>Boolean(foto?.img||foto?.url))
-              .map((foto)=>({img:foto.img||foto.url,comentario:foto.comentario||""}))
-          : [],
-      }];
-    }
-    return [emptyActividad()];
-  };
+  const normalizeInformeActividades = normalizarActividadesInforme;
 
   const buildInformeForm = (data={})=>{
     // Se resuelve la obra aqui y se traen sus datos de una: el efecto que
@@ -329,13 +307,28 @@ export default function Informes({ctx}){
   // Obra que llega desde el detalle de obra ("Crear informe"). Se lee al
   // montar, asi el formulario abre ya con esa obra y sus datos.
   const obraSolicitada = intencion?.pantalla==="informes" ? intencion.obraId : null;
-  const [form,setForm]=useState(()=>buildInformeForm(obraSolicitada?{obraId:obraSolicitada}:{}));
+  const [form,setForm]=useState(()=>buildInformeForm(obraSolicitada?{
+    obraId:obraSolicitada,
+    ...(intencion?.itemDesc ? {
+      actividades: [construirActividadDesdeItemCot({
+        desc: intencion.itemDesc,
+        cant: intencion.itemCant || 1,
+        unit: intencion.itemUnit || "Und",
+      })],
+    } : {}),
+  }:{}));
 
   const obraSeleccionada = obras.find((x) => x.id === form.obraId) || null;
-  // El acta no basta con que exista: tiene que estar firmada por el cliente.
-  // Solo se bloquea cuando la consulta de firmas ya respondio (`listo`): lo
-  // que no se sabe no es lo mismo que «sin firmar», y un corte de red no
-  // puede dejar sin informes a obras que si estan firmadas.
+  const informesDeEstaObra = (informes || []).filter((inf) => inf?.obraId && inf.obraId === form.obraId);
+  const cotizacionVinculadaForm = cotizaciones.find((c) => c.id === form.cotizacionId)
+    || (form.cotizacionNumero ? cotizaciones.find((c) => c.numero === form.cotizacionNumero) : null)
+    || cotizaciones.find((c) => c.id === obraSeleccionada?.cotizacionId)
+    || (obraSeleccionada?.cliente ? cotizaciones.find((c) => c.cliente && normalizarRazonSocial(c.cliente) === normalizarRazonSocial(obraSeleccionada.cliente)) : null);
+  const itemsCotizacionForm = cotizacionVinculadaForm
+    ? normalizeProposalItems((getQuoteActiveProposal(cotizacionVinculadaForm) || {}).items || cotizacionVinculadaForm.items || [])
+    : [];
+
+  // El aviso de acta es únicamente informativo; nunca bloquea a los usuarios.
   const { estados: estadosActas, listo: estadosActasListos } = useEstadosFirmaActas();
   const motivoActa = obraSeleccionada ? motivoActaPendiente(obraSeleccionada, estadosActas) : "";
   const faltaActaEnObra = !editId && Boolean(obraSeleccionada) && estadosActasListos && Boolean(motivoActa);
@@ -349,7 +342,16 @@ export default function Informes({ctx}){
       setEditId(null);
       setSel(null);
       fotoRefs.current = {};
-      setForm(buildInformeForm({ obraId: intencion.obraId }));
+      setForm(buildInformeForm({
+        obraId: intencion.obraId,
+        ...(intencion.itemDesc ? {
+          actividades: [construirActividadDesdeItemCot({
+            desc: intencion.itemDesc,
+            cant: intencion.itemCant || 1,
+            unit: intencion.itemUnit || "Und",
+          })],
+        } : {}),
+      }));
       setNuevo(true);
     }
   }, [intencion]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -380,8 +382,8 @@ export default function Informes({ctx}){
     const obraSel = obras.find(o=>o.id===form.obraId);
     setForm(prev=>{
       const nextPersonal = buildPersonalDesdeObra(prev.obraId, prev.periodoInicio, prev.periodoFin, prev.personal);
-      const nextProyecto = normalizarMayusculas(obraSel?.proyecto || prev.proyecto || '');
-      const nextLocal = normalizarMayusculas(obraSel?.ciudad || prev.localizacion || '');
+      const nextProyecto = normalizarMayusculas(prev.proyecto || obraSel?.proyecto || '');
+      const nextLocal = normalizarMayusculas(prev.localizacion || obraSel?.ciudad || '');
       const samePersonal = JSON.stringify(nextPersonal)===JSON.stringify(prev.personal);
       if(samePersonal && nextProyecto===prev.proyecto && nextLocal===prev.localizacion) return prev;
       return {...prev,proyecto:nextProyecto,localizacion:nextLocal,personal:nextPersonal};
@@ -396,21 +398,35 @@ export default function Informes({ctx}){
   const marcarLibre=(ai,libre)=>setEscribiendoTitulo((prev)=>
     libre ? [...new Set([...prev,ai])] : prev.filter((i)=>i!==ai));
 
-  // El titulo de la actividad trae consigo sus textos.
-  //
-  // Los trabajos son siempre los mismos y el texto que se escribia era casi
-  // igual cada vez. Al elegir uno se rellenan "Actividades realizadas" y
-  // "Descripcion"; se pueden corregir despues, que para eso siguen siendo
-  // campos de escribir.
-  //
-  // Solo se pisa lo que hay si venia de otra plantilla o estaba vacio. Si esta
-  // escrito a mano se pregunta antes: puede ser el informe de media jornada.
+  // El titulo de la actividad trae consigo sus textos (desde ítem de cotización o plantilla).
   const elegirTitulo=async(ai,valor)=>{
     if(valor==="__libre__"){ marcarLibre(ai,true); return; }
     marcarLibre(ai,false);
 
     // "— Elige el trabajo —": se limpia el titulo y se deja el resto como esta.
     if(!valor){ updActividad(ai,"titulo",""); return; }
+
+    if(valor.startsWith("__cot__:")){
+      const idxItem = Number(valor.slice("__cot__:".length));
+      const itemCot = itemsCotizacionForm[idxItem];
+      if(!itemCot) return;
+      const act = form.actividades[ai] || {};
+      if(!esTextoDePlantilla(act.actividadesRealizadas, act.descripcion)
+         && (act.actividadesRealizadas || "").trim()
+         && !(await confirmar(`¿Reemplazar el texto por el del ítem «${itemCot.desc}»?\n\nYa hay texto escrito en esta actividad.`))){
+        updActividad(ai, "titulo", itemCot.desc || "");
+        return;
+      }
+      const generada = construirActividadDesdeItemCot(itemCot, cotizacionVinculadaForm?.numero || "", act.fecha || form.fechaInforme || today());
+      setForm(p=>({...p,actividades:p.actividades.map((a,i)=>i===ai?{
+        ...a,
+        titulo: generada.titulo,
+        actividadesRealizadas: generada.actividadesRealizadas,
+        descripcion: generada.descripcion,
+        observaciones: a.observaciones || generada.observaciones,
+      }:a)}));
+      return;
+    }
 
     const plantilla=buscarPlantillaActividad(valor);
     if(!plantilla){ updActividad(ai,"titulo",valor); return; }
@@ -684,10 +700,17 @@ export default function Informes({ctx}){
   };
 
   // El PDF que se le envia al cliente sale de `sel`: tiene que estar completo.
+  // Solo al enviar a firma se solicita el correo si falta; guardar, imprimir y
+  // descargar PDF nunca bloquean a los usuarios.
   const abrirEnvioFirma = async () => {
     const completo = await informeCompleto(sel);
     if (!completo) return;
     if (completo !== sel) setSel(completo);
+    const listo = enriquecerInforme(completo);
+    if (!correoValido(listo.contactoEmail)) {
+      setPidiendoQuienRecibe("firma");
+      return;
+    }
     setModalFirma(true);
   };
 
@@ -712,12 +735,6 @@ export default function Informes({ctx}){
       return;
     }
     const listo = enriquecerInforme(inf);
-    // Sin correo de quien recibe no se genera: se pide y despues se sigue.
-    if (!correoValido(listo.contactoEmail)) {
-      setSel(inf);
-      setPidiendoQuienRecibe("pdf");
-      return;
-    }
     setGenerandoPdf(true);
     try {
       const firmaCliente = await firmaDelActaDeLaObra(listo);
@@ -735,11 +752,6 @@ export default function Informes({ctx}){
     const inf = await informeCompleto(infEntrada);
     if (!inf) return;
     const listo = enriquecerInforme(inf);
-    if (!correoValido(listo.contactoEmail)) {
-      setSel(inf);
-      setPidiendoQuienRecibe("imprimir");
-      return;
-    }
     const firmaCliente = await firmaDelActaDeLaObra(listo);
     const html = buildInformePrintHtml(listo, { empresaConfig, firmaImg, firmaCliente });
     openPrintTab(
@@ -852,46 +864,47 @@ export default function Informes({ctx}){
   };
 
   const guardarInforme=async()=>{
-    // Alerta de acta de entrega (FORM-SST-89): no bloquea el guardado según solicitud.
+    // Alerta de acta de entrega (FORM-SST-89): solo informativa, nunca bloquea el guardado.
     if (faltaActaEnObra && obraSeleccionada) {
       toast.mostrar(avisoActa);
     }
 
-    // Sin correo de quien recibe no se guarda: el informe no se le podria
-    // enviar al cliente para la firma de recibido.
+    // Correo de quien recibe y múltiples informes por obra: nunca bloquean al usuario.
     const recibe = recibeDelFormulario();
-    if (!correoValido(recibe.email)) {
+    const evaluacion = evaluarGuardadoInforme({
+      informes,
+      form,
+      editId,
+      recibeEmail: recibe.email,
+    });
+    if (evaluacion.formatoCorreoInvalido) {
       setIntentoGuardar(true);
       document.getElementById("informe-quien-recibe")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
     setIntentoGuardar(false);
 
-    // La misma obra, sede y periodo no se informa dos veces.
-    // Solo al crear: al editar se deja corregir aunque ya hubiera repetidos.
-    const repetido = editId ? null : informeRepetido(informes, { ...form, obraId: form.obraId || null });
-    if (repetido) {
-      const ver = await confirmar({
-        titulo: "Ya hay un informe de esta obra en ese período",
-        mensaje: `El informe ${repetido.id} de ${repetido.proyecto || repetido.cliente || "esta obra"} cubre `
-          + `${fmtPeriodo(repetido.periodoInicio, repetido.periodoFin) || "esas fechas"}. No se puede crear otro para la misma obra, `
-          + "sede y período. Si falta algo, edita ese informe; si es otro período o sede, cambia las fechas o el nombre del proyecto.",
-        textoConfirmar: `Ver ${repetido.id}`,
-        textoCancelar: "Volver al informe",
+    const actividades = normalizeInformeActividades(form);
+    if (evaluacion.requiereConfirmarDuplicado && evaluacion.informeSimilar) {
+      const repetido = evaluacion.informeSimilar;
+      const crearOtro = await confirmar({
+        titulo: "Ya existe un informe con estas mismas actividades",
+        mensaje: `El informe ${repetido.id} de ${repetido.proyecto || repetido.cliente || "esta obra"} (${fmtPeriodo(repetido.periodoInicio, repetido.periodoFin) || "mismo período"}) ya registra este mismo contenido. ¿Deseas guardar otro informe adicional de todas formas?`,
+        textoConfirmar: "Sí, guardar adicional",
+        textoCancelar: `Ver ${repetido.id}`,
         destructivo: false,
         conGuardando: false,
       });
-      if (ver) {
+      if (!crearOtro) {
         setNuevo(false);
         setEditId(null);
         setSel(repetido);
+        return;
       }
-      return;
     }
     const prev = editId ? informes.find((item) => item.id === editId) : null;
     const miUserId = ctx?.membresia?.userId || null;
     const miNombre = resolverAutorGuardado(ctx?.membresia, prev?.modificadoPorNombre);
-    const actividades = normalizeInformeActividades(form);
     const legacyActividad = actividades[0] || emptyActividad();
     // Se habia perdido en un cambio posterior a 645fbec y guardar lanzaba
     // ReferenceError: el informe no se guardaba.
@@ -917,14 +930,19 @@ export default function Informes({ctx}){
       modificadoEn: new Date().toISOString(),
     };
     setInformes(prevList=>editId ? prevList.map(item=>item.id===editId?{...item,...inf}:item) : [...prevList,inf]);
-    // Quien recibe queda en la obra (es la que lo guarda en la base) y sube
-    // al directorio de clientes.
+    // Quien recibe queda en la obra y sube al directorio de clientes solo cuando hay dato válido.
     const recibeNombre = normalizarNombrePropio(recibe.nombre || "");
-    const recibeEmail = normalizarCorreo(recibe.email);
-    if (obraAct && (obraAct.recibeEmail !== recibeEmail || obraAct.recibeNombre !== recibeNombre)) {
-      setObras((p) => p.map((o) => (o.id === obraAct.id ? { ...o, recibeNombre, recibeEmail } : o)));
+    const recibeEmail = correoValido(recibe.email) ? normalizarCorreo(recibe.email) : "";
+    if (obraAct && ((recibeEmail && obraAct.recibeEmail !== recibeEmail) || (recibeNombre && obraAct.recibeNombre !== recibeNombre))) {
+      setObras((p) => p.map((o) => (o.id === obraAct.id ? {
+        ...o,
+        ...(recibeNombre ? { recibeNombre } : {}),
+        ...(recibeEmail ? { recibeEmail } : {}),
+      } : o)));
     }
-    setClientes?.((prevCli) => clientesConQuienRecibe(prevCli, obraAct || { cliente: clienteFinal }, { nombre: recibeNombre, email: recibeEmail }));
+    if (recibeEmail || recibeNombre) {
+      setClientes?.((prevCli) => clientesConQuienRecibe(prevCli, obraAct || { cliente: clienteFinal }, { nombre: recibeNombre, email: recibeEmail }));
+    }
     setNuevo(false);
     setEditId(null);
     setSel(inf);
@@ -1043,9 +1061,14 @@ export default function Informes({ctx}){
                 };
               });
             }} style={CAMPO}>{obrasMasNuevasPrimero(obras).map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select>
+              {!editId && informesDeEstaObra.length > 0 && (
+                <div style={{ marginTop: 6, fontSize: 11.5, color: "var(--text-tertiary)", lineHeight: 1.45 }}>
+                  Esta obra ya tiene {informesDeEstaObra.length} informe{informesDeEstaObra.length === 1 ? "" : "s"} ({informesDeEstaObra.map((i) => i.id).join(", ")}). Puedes crear todos los informes adicionales que necesites por actividad, frente o período.
+                </div>
+              )}
               {faltaActaEnObra && (
-                <div style={{ marginTop: 8, padding: "8px 12px", borderRadius: 8, background: "#fff1f0", border: "1px solid #ffa39e", color: "#cf1322", fontSize: 12, lineHeight: 1.45 }}>
-                  ⚠️ <strong>
+                <div style={{ marginTop: 8, padding: "10px 14px", borderRadius: 10, background: "var(--danger-bg)", color: "var(--danger-text)", fontSize: 12, lineHeight: 1.45 }}>
+                  <strong>
                     {motivoActa === "sin-acta"
                       ? "Esta obra no tiene acta de entrega (FORM-SST-89)."
                       : "El cliente todavía no ha firmado el acta de entrega (FORM-SST-89)."}
@@ -1062,29 +1085,28 @@ export default function Informes({ctx}){
           </div>
           </section>
 
-          {/* Quien recibe: obligatorio. Sin el correo el informe no se puede
-              enviar a firma de recibido, asi que no se deja guardar. Se
-              propone el de la obra, la cotizacion o el directorio. */}
+          {/* Quien recibe: opcional al guardar. Se usa cuando se envia a firma electronica. */}
           {(() => {
             const r = recibeDelFormulario();
-            const falta = !correoValido(r.email);
+            const emailEscrito = String(r.email || "").trim();
+            const formatoInvalido = Boolean(emailEscrito) && !correoValido(emailEscrito);
             return (
               <section id="informe-quien-recibe" style={BLOQUE}>
                 <h2 style={{...TITULO_BLOQUE,marginBottom:6}}>Quién recibe el informe</h2>
                 <div style={{...NOTA,marginBottom:12}}>
-                  A este correo se le envía el informe para que el cliente firme el recibido. Es obligatorio; queda guardado en la obra.
+                  A este correo se envía el informe cuando desees solicitar la firma electrónica de recibido del cliente. Es opcional al guardar y queda sincronizado con la obra.
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:14}}>
                   <div><LBL>Nombre de quien recibe</LBL>
                     <input value={r.nombre} onChange={e=>setForm(p=>({...p,recibeNombre:e.target.value,recibeEmail:p.recibeEmail ?? r.email}))}
                       onBlur={e=>setForm(p=>({...p,recibeNombre:normalizarNombrePropio(e.target.value)}))} placeholder="Residente o interventor de la obra" style={CAMPO}/>
                   </div>
-                  <div><LBL>Correo de quien recibe *</LBL>
+                  <div><LBL>Correo de quien recibe</LBL>
                     <input type="email" inputMode="email" value={r.email} onChange={e=>setForm(p=>({...p,recibeEmail:e.target.value,recibeNombre:p.recibeNombre ?? r.nombre}))}
-                      onBlur={e=>setForm(p=>({...p,recibeEmail:normalizarCorreo(e.target.value)}))} placeholder="residente@constructora.com"
-                      style={{...CAMPO,...(falta && intentoGuardar ? {borderColor:"var(--danger, #b3261e)"} : {})}}/>
-                    {falta && intentoGuardar && (
-                      <div style={{fontSize:12,color:"var(--danger, #b3261e)",marginTop:4}}>Escribe el correo de quien recibe para poder guardar el informe.</div>
+                      onBlur={e=>setForm(p=>({...p,recibeEmail:normalizarCorreo(e.target.value)}))} placeholder="residente@constructora.com (opcional)"
+                      style={{...CAMPO,...(formatoInvalido && intentoGuardar ? {borderColor:"var(--danger, #b3261e)"} : {})}}/>
+                    {formatoInvalido && intentoGuardar && (
+                      <div style={{fontSize:12,color:"var(--danger, #b3261e)",marginTop:4}}>Revisa el formato del correo o déjalo vacío por ahora.</div>
                     )}
                   </div>
                 </div>
@@ -1261,20 +1283,38 @@ export default function Informes({ctx}){
                         empiezan por lo que hay puesto-, y ademas no se notaba
                         que aquello se pudiera desplegar. */}
                     <select
-                      value={escribiendoTitulo.includes(ai) ? "__libre__" : (buscarPlantillaActividad(act.titulo) ? act.titulo : "")}
+                      value={(() => {
+                        if (escribiendoTitulo.includes(ai)) return "__libre__";
+                        const idxCot = itemsCotizacionForm.findIndex(
+                          (it) => String(it?.desc || "").trim().toLowerCase() === String(act.titulo || "").trim().toLowerCase()
+                        );
+                        if (idxCot >= 0) return `__cot__:${idxCot}`;
+                        return buscarPlantillaActividad(act.titulo) ? act.titulo : "";
+                      })()}
                       onChange={e=>elegirTitulo(ai,e.target.value)}
                       style={CAMPO}>
-                      <option value="">— Elige el trabajo —</option>
-                      {PLANTILLAS_ACTIVIDAD.map((p)=>(
-                        <option key={p.titulo} value={p.titulo}>{p.titulo}</option>
-                      ))}
+                      <option value="">— Elige el trabajo o ítem contratado —</option>
+                      {itemsCotizacionForm.length > 0 && (
+                        <optgroup label="Ítems contratados en cotización">
+                          {itemsCotizacionForm.map((it, idx) => (
+                            <option key={`cot-${idx}`} value={`__cot__:${idx}`}>
+                              {it.desc} ({it.cant || 1} {it.unit || "Und"})
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                      <optgroup label="Plantillas de actividad">
+                        {PLANTILLAS_ACTIVIDAD.map((p)=>(
+                          <option key={p.titulo} value={p.titulo}>{p.titulo}</option>
+                        ))}
+                      </optgroup>
                       <option value="__libre__">Otro (lo escribo yo)</option>
                     </select>
 
                     {/* El campo de escribir solo aparece cuando hace falta:
                         si se eligio "Otro" o si lo que hay puesto no sale en
                         la lista -por ejemplo un informe de los de antes-. */}
-                    {(escribiendoTitulo.includes(ai) || (act.titulo && !buscarPlantillaActividad(act.titulo))) && (
+                    {(escribiendoTitulo.includes(ai) || (act.titulo && !buscarPlantillaActividad(act.titulo) && !itemsCotizacionForm.some((it) => String(it?.desc || "").trim().toLowerCase() === String(act.titulo || "").trim().toLowerCase()))) && (
                       <input
                         value={act.titulo}
                         onChange={e=>updActividad(ai,"titulo",e.target.value)}
@@ -1664,25 +1704,26 @@ export default function Informes({ctx}){
                           </span>
                           <button
                             type="button"
+                            className="no-print"
                             onClick={() => irAPantalla("certificaciones", {
                               obraId: sel?.obraId,
                               informeId: sel?.id,
                               itemDesc: act.observaciones || act.titulo
                             })}
                             style={{
-                              background: "#f0fdf4",
-                              border: "1px solid #bbf7d0",
-                              color: "#166534",
-                              borderRadius: 5,
-                              padding: "2px 7px",
-                              fontSize: 10,
+                              background: "var(--fill, #f5f5f7)",
+                              border: "1px solid var(--border, rgba(0,0,0,0.08))",
+                              color: "var(--text-primary, #1d1d1f)",
+                              borderRadius: 6,
+                              padding: "2px 8px",
+                              fontSize: 10.5,
                               fontWeight: 600,
                               cursor: "pointer",
                               marginLeft: 8,
                             }}
                             title="Crear certificación para esta actividad específica"
                           >
-                            📜 Certificar
+                            Certificar
                           </button>
                         </div>
                         {act.fecha && (

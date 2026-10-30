@@ -178,11 +178,11 @@ export default function TarjetaCotizacionRef({
               key={idx}
               style={{
                 display: "grid",
-                gridTemplateColumns: "90px minmax(0,1fr)",
+                gridTemplateColumns: onImportarItems ? "90px minmax(0,1fr) auto" : "90px minmax(0,1fr)",
                 gap: 12,
                 padding: "8px 0",
                 borderTop: idx === 0 ? "none" : "1px solid var(--separator)",
-                alignItems: "baseline",
+                alignItems: "center",
                 fontSize: 12,
               }}
             >
@@ -191,6 +191,16 @@ export default function TarjetaCotizacionRef({
                 <span style={{ color: "var(--text-tertiary)", fontSize: 11 }}>{it.unit || "Und"}</span>
               </span>
               <span style={{ color: "var(--text-primary)", lineHeight: 1.45 }}>{it.desc}</span>
+              {onImportarItems && (
+                <Button
+                  variante="texto"
+                  tam="sm"
+                  onClick={() => onImportarItems([it], cotizacion)}
+                  title="Usar este ítem como actividad en el informe"
+                >
+                  + Usar ítem
+                </Button>
+              )}
             </div>
           ))
         )}

@@ -405,6 +405,11 @@ export function normalizarTextoCertificacion(valor) {
   res = res.replace(/\bRESOLUCION\b/g, "RESOLUCIÓN");
   res = res.replace(/\bCERTIFICACION\b/g, "CERTIFICACIÓN");
 
+  // 7. Limpieza de sede a obra y conectores indebidos en dirección
+  res = res.replace(/\binstalad[ao]s?\s+en\s+la\s+sede\b/gi, "instalados en la obra");
+  res = res.replace(/\bcon\s+direcci[oó]n\s+en\s+(?:la\s+|el\s+)?/gi, "con dirección ");
+  res = res.replace(/\bcon\s+direcci[oó]n\s+en\b/gi, "con dirección ");
+
   const lineas = res.split("\n").map((l) => l.replace(/[ \t]+/g, " ").trim());
   return lineas.join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }

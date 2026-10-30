@@ -198,6 +198,7 @@ export default function Certificaciones({ctx}){
   // Se descarta al salir, para que al volver por el menu no se reabra.
   useEffect(()=>()=>limpiarIntencion("certificaciones"),[limpiarIntencion]);
   const [nuevoElem,setNuevoElem]=useState("");
+  const [actividadSeleccionadaKey, setActividadSeleccionadaKey] = useState("");
 
   // Una obra puede tener VARIOS informes -una sede por informe- y de cada uno
   // sale su propia certificacion. Por eso se elige de cual se toman los datos
@@ -281,9 +282,10 @@ export default function Certificaciones({ctx}){
     const cant = Number(item.cant) || 1;
     const mLong = detalle.match(/(\d+(?:[.,]\d+)?)\s*(?:m\b|mts\b|metros)/i);
     const longDetectada = mLong ? `${mLong[1]} metros` : (esEsc ? "5.5 metros" : "");
-    const norm = esEsc ? "ANSI ASC A14.5-2017 & Resolución 4272 de 2021" : form.normativa;
+    const norm = esEsc ? "ANSI ASC A14.5-2017 & Resolución 4272 de 2021" : (form.normativa?.includes("ANSI ASC") ? "Resolución 4272 de 2021" : form.normativa);
+    const tipoFinal = esEsc ? "Certificación de Escaleras" : (form.tipo === "Certificación de Escaleras" ? "Certificación" : form.tipo);
     const texto = construirTextoSistema({
-      tipo: esEsc ? "Certificación de Escaleras" : form.tipo,
+      tipo: tipoFinal,
       tipoSistema: tipoSis,
       cantidad: cant,
       cliente: form.cliente,
@@ -296,8 +298,9 @@ export default function Certificaciones({ctx}){
     });
     setForm((prev) => ({
       ...prev,
+      tipo: tipoFinal,
       tipoSistema: tipoSis,
-      formatoEscalera: esEsc || prev.formatoEscalera,
+      formatoEscalera: esEsc,
       longitudEscalera: longDetectada || prev.longitudEscalera || (esEsc ? "5.5 metros" : ""),
       tipoEscalera: prev.tipoEscalera || "TIPO GATO",
       normativa: norm,
@@ -315,9 +318,10 @@ export default function Certificaciones({ctx}){
     const elementos = getCertDefaultElements(esEsc ? "Certificación de Escaleras" : form.tipo, tipoSis);
     const mLong = detalle.match(/(\d+(?:[.,]\d+)?)\s*(?:m\b|mts\b|metros)/i);
     const longDetectada = mLong ? `${mLong[1]} metros` : (esEsc ? "5.5 metros" : "");
-    const norm = esEsc ? "ANSI ASC A14.5-2017 & Resolución 4272 de 2021" : form.normativa;
+    const norm = esEsc ? "ANSI ASC A14.5-2017 & Resolución 4272 de 2021" : (form.normativa?.includes("ANSI ASC") ? "Resolución 4272 de 2021" : form.normativa);
+    const tipoFinal = esEsc ? "Certificación de Escaleras" : (form.tipo === "Certificación de Escaleras" ? "Certificación" : form.tipo);
     const texto = construirTextoSistema({
-      tipo: esEsc ? "Certificación de Escaleras" : form.tipo,
+      tipo: tipoFinal,
       tipoSistema: tipoSis,
       cantidad: 1,
       cliente: form.cliente,
@@ -330,8 +334,9 @@ export default function Certificaciones({ctx}){
     });
     setForm((prev) => ({
       ...prev,
+      tipo: tipoFinal,
       tipoSistema: tipoSis,
-      formatoEscalera: esEsc || prev.formatoEscalera,
+      formatoEscalera: esEsc,
       longitudEscalera: longDetectada || prev.longitudEscalera || (esEsc ? "5.5 metros" : ""),
       tipoEscalera: prev.tipoEscalera || "TIPO GATO",
       normativa: norm,
@@ -439,6 +444,7 @@ export default function Certificaciones({ctx}){
     setEditId(null);
     setNuevoElem("");
     setInformeRef("");
+    setActividadSeleccionadaKey("");
     const fechaObra = fechaDeLaObra(obra?.id);
     const cotDeObra = sistemasDesdeCotizacionDeObra(obra?.id);
     const cantSugerida = itemCant || (itemDesc ? 1 : (cotDeObra?.cantidadTotal || 1));
@@ -485,6 +491,7 @@ export default function Certificaciones({ctx}){
   const editarCertificacion = (cert)=>{
     setEditId(cert.id);
     setNuevoElem("");
+    setActividadSeleccionadaKey("");
     const saneado = sanitizarCertificado(cert, { clientes, obras });
     setForm(buildCertForm(saneado));
     setNueva(true);
@@ -740,7 +747,7 @@ export default function Certificaciones({ctx}){
           </div>
 
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:12}}>
-            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const id=e.target.value;setInformeRef("");const o=obras.find(x=>x.id===id);const f=fechaDeLaObra(id);const c=sistemasDesdeCotizacionDeObra(id);aplicarCambio({obraId:id,cliente:o?.cliente||"",direccion:buscarDireccionCliente(o),nit:buscarNit(o),cantidad:c?.cantidadTotal || 1,...(f?{fecha:f}:{})}, "");}} style={SI}>{obrasMasNuevasPrimero(obras).map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
+            <div><LBL>Obra asociada</LBL>{!obras.length && <div style={{fontSize:10.5,color:"#b45309",marginBottom:4}}>No hay obras. Aprueba una cotización para crear la obra.</div>}<select value={form.obraId} onChange={e=>{const id=e.target.value;setInformeRef("");setActividadSeleccionadaKey("");const o=obras.find(x=>x.id===id);const f=fechaDeLaObra(id);const c=sistemasDesdeCotizacionDeObra(id);aplicarCambio({obraId:id,cliente:o?.cliente||"",direccion:buscarDireccionCliente(o),nit:buscarNit(o),cantidad:c?.cantidadTotal || 1,...(f?{fecha:f}:{})}, "");}} style={SI}>{obrasMasNuevasPrimero(obras).map(o=><option key={o.id} value={o.id}>{o.id} · {o.cliente}</option>)}</select></div>
             {/* Una obra con varias sedes lleva un informe por sede, y de cada
                 uno sale su propia certificacion. Aqui se elige cual. */}
             {informesDeObra(form.obraId).length > 1 && (
@@ -955,75 +962,63 @@ export default function Certificaciones({ctx}){
             </div>
           </div>
           <div style={{marginBottom:12}}>
-            {/* Selector de actividades y sistemas individuales de la obra */}
+            {/* Selector de actividades y sistemas individuales de la obra en lista desplegable */}
             {(() => {
               const itemsCot = itemsIndividualesCotizacion(form.obraId);
               const actsInf = actividadesIndividualesInforme(form.obraId, informeRef);
               if (!itemsCot.length && !actsInf.length) return null;
               return (
                 <div style={{
-                  marginBottom: 10,
-                  padding: "9px 12px",
+                  marginBottom: 12,
+                  padding: "10px 14px",
                   background: "var(--surface-subtle, #f8fafc)",
                   border: "1px solid var(--border, #e2e8f0)",
                   borderRadius: 8,
                 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-secondary, #475569)", marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span>⚡ Certificar por actividad o sistema individual:</span>
-                    <span style={{ fontSize: 10, fontWeight: 500, color: "var(--text-tertiary, #94a3b8)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 4 }}>
+                    <LBL>⚡ Certificar por actividad o sistema individual</LBL>
+                    <span style={{ fontSize: 10.5, fontWeight: 500, color: "var(--text-tertiary, #94a3b8)" }}>
                       Haz una certificación por cada sistema
                     </span>
                   </div>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                    {itemsCot.map((item, idx) => (
-                      <button
-                        key={`item-cot-${idx}`}
-                        type="button"
-                        onClick={() => certificarItemIndividual(item)}
-                        style={{
-                          background: "#ffffff",
-                          border: "1px solid #0284c7",
-                          color: "#0369a1",
-                          borderRadius: 6,
-                          padding: "4px 9px",
-                          fontSize: 11.5,
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 5,
-                        }}
-                        title={`Cargar ${item.desc} (${item.cant} ${item.unidad})`}
-                      >
-                        <span>{iconoPorSistema(item.tipoSistema)}</span>
-                        <span>{item.desc} ({item.cant} {item.unidad})</span>
-                      </button>
-                    ))}
-                    {actsInf.map((act, idx) => (
-                      <button
-                        key={`act-inf-${idx}`}
-                        type="button"
-                        onClick={() => certificarActividadIndividual(act)}
-                        style={{
-                          background: "#ffffff",
-                          border: "1px solid #059669",
-                          color: "#047857",
-                          borderRadius: 6,
-                          padding: "4px 9px",
-                          fontSize: 11.5,
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 5,
-                        }}
-                        title={`Cargar actividad: ${act.titulo || act.observaciones}`}
-                      >
-                        <span>📋</span>
-                        <span>{act.titulo || act.observaciones}</span>
-                      </button>
-                    ))}
-                  </div>
+                  <select
+                    value={actividadSeleccionadaKey}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setActividadSeleccionadaKey(val);
+                      if (!val) return;
+                      if (val.startsWith("cot-")) {
+                        const idx = Number(val.replace("cot-", ""));
+                        const item = itemsCot[idx];
+                        if (item) certificarItemIndividual(item);
+                      } else if (val.startsWith("inf-")) {
+                        const idx = Number(val.replace("inf-", ""));
+                        const act = actsInf[idx];
+                        if (act) certificarActividadIndividual(act);
+                      }
+                    }}
+                    style={SI}
+                  >
+                    <option value="">-- Selecciona el sistema o actividad a certificar de esta obra --</option>
+                    {itemsCot.length > 0 && (
+                      <optgroup label="📋 Ítems contratados en cotización">
+                        {itemsCot.map((item, idx) => (
+                          <option key={`cot-${idx}`} value={`cot-${idx}`}>
+                            {iconoPorSistema(item.tipoSistema)} {item.desc} ({item.cant} {item.unidad})
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {actsInf.length > 0 && (
+                      <optgroup label="📝 Actividades ejecutadas en informe">
+                        {actsInf.map((act, idx) => (
+                          <option key={`inf-${idx}`} value={`inf-${idx}`}>
+                            {iconoPorSistema(act.tipoSistema)} {act.titulo || act.observaciones}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </select>
                 </div>
               );
             })()}

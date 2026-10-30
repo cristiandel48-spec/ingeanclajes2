@@ -172,6 +172,8 @@ export function sanitizarTextoSistema(sistema, direccionFiscal = "", lugar = "")
 
   // Limpiar cualquier residuo de CAUCASIA EPM
   t = t.replace(/,\s*(?:con\s+direcci[oó]n(?:\s+en)?|ubicad[ao]\s+en)\s*(?:la\s+|el\s+)?CAUCASIA(?:\s+EPM)?[^,]*/gi, "");
+  t = t.replace(/\bcon\s+direcci[oó]n\s+en\s+(?:la\s+|el\s+)?/gi, "con dirección ");
+  t = t.replace(/\bcon\s+direcci[oó]n\s+en\b/gi, "con dirección ");
 
   return normalizarTextoCertificacion(t);
 }
